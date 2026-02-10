@@ -31,9 +31,7 @@ function renderPopoverStartDate(courseInstanceId: string) {
           which that particular course instance is offered. You can do so by editing the{' '}
           <code>infoCourseInstance.json</code> file for the course instance. For more information,
           see the{' '}
-          <a href="https://prairielearn.readthedocs.io/en/latest/accessControl/">
-            documentation on access control
-          </a>
+          <a href="https://docs.prairielearn.com/accessControl/">documentation on access control</a>
           .
         </p>
       </Popover.Body>
@@ -58,9 +56,7 @@ function renderPopoverEndDate(courseInstanceId: string) {
           which that particular course instance is offered. You can do so by editing the{' '}
           <code>infoCourseInstance.json</code> file for the course instance. For more information,
           see the{' '}
-          <a href="https://prairielearn.readthedocs.io/en/latest/accessControl/">
-            documentation on access control
-          </a>
+          <a href="https://docs.prairielearn.com/accessControl/">documentation on access control</a>
           .
         </p>
       </Popover.Body>

@@ -12,12 +12,12 @@ import { run } from '@prairielearn/run';
 
 import { PageLayout } from '../../components/PageLayout.js';
 import { b64EncodeUnicode } from '../../lib/base64-util.js';
+import { propertyValueWithDefault } from '../../lib/editorUtil.shared.js';
 import {
   AssessmentSetRenameEditor,
   FileModifyEditor,
   MultiEditor,
   getOriginalHash,
-  propertyValueWithDefault,
 } from '../../lib/editors.js';
 import { getPaths } from '../../lib/instructorFiles.js';
 import { formatJsonWithPrettier } from '../../lib/prettier.js';

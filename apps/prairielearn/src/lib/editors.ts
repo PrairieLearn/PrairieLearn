@@ -39,7 +39,7 @@ import {
   type Question,
   type User,
 } from './db-types.js';
-import { getNamesForCopy } from './editorUtil.shared.js';
+import { getNamesForCopy, getUniqueNames } from './editorUtil.shared.js';
 import { idsEqual } from './id.js';
 import { EXAMPLE_COURSE_PATH, REPOSITORY_ROOT_PATH } from './paths.js';
 import { formatJsonWithPrettier } from './prettier.js';
@@ -100,126 +100,12 @@ async function cleanAndResetRepository(
   });
 }
 
-export function getUniqueNames({
-  shortNames,
-  longNames,
-  shortName = 'New',
-  longName = 'New',
-}: {
-  shortNames: string[];
-  longNames: string[];
-  /**
-   * Defaults to 'New' because this function previously only handled the case where the shortName was 'New'
-   * Long name is matched case-sensitively
-   */
-  shortName?: string;
-  /**
-   * Defaults to 'New' because this function previously only handled the case where the longName was 'New'
-   * Short name is always matched case-insensitively, as it is generally used to construct file paths
-   */
-  longName?: string;
-}): { shortName: string; longName: string } {
-  function getNumberShortName(oldShortNames: string[]): number {
-    let numberOfMostRecentCopy = 1;
-
-    const shortNameCompare = shortName.toLowerCase();
-
-    oldShortNames.forEach((oldShortName) => {
-      // shortName is a copy of oldShortName if:
-      // it matches (case-sensitively), or
-      // if oldShortName matches {shortName}_{number from 0-9}
-
-      const oldShortNameCompare = oldShortName.toLowerCase();
-      const found =
-        shortNameCompare === oldShortNameCompare ||
-        oldShortNameCompare.match(new RegExp(`^${shortNameCompare}_([0-9]+)$`));
-      if (found) {
-        const foundNumber = found === true ? 1 : Number.parseInt(found[1]);
-        if (foundNumber >= numberOfMostRecentCopy) {
-          numberOfMostRecentCopy = foundNumber + 1;
-        }
-      }
-    });
-    return numberOfMostRecentCopy;
-  }
-
-  function getNumberLongName(oldLongNames: string[]): number {
-    let numberOfMostRecentCopy = 1;
-    // longName is a copy of oldLongName if:
-    // it matches exactly, or
-    // if oldLongName matches {longName} ({number from 0-9})
-
-    oldLongNames.forEach((oldLongName) => {
-      if (typeof oldLongName !== 'string') return;
-      const found =
-        oldLongName === longName || oldLongName.match(new RegExp(`^${longName} \\(([0-9]+)\\)$`));
-      if (found) {
-        const foundNumber = found === true ? 1 : Number.parseInt(found[1]);
-        if (foundNumber >= numberOfMostRecentCopy) {
-          numberOfMostRecentCopy = foundNumber + 1;
-        }
-      }
-    });
-    return numberOfMostRecentCopy;
-  }
-
-  const numberShortName = getNumberShortName(shortNames);
-  const numberLongName = getNumberLongName(longNames);
-  const number = Math.max(numberShortName, numberLongName);
-
-  if (number === 1 && shortName !== 'New' && longName !== 'New') {
-    // If there are no existing copies, and the shortName/longName aren't the default ones, no number is needed at the end of the names
-    return {
-      shortName,
-      longName,
-    };
-  } else {
-    // If there are existing copies, a number is needed at the end of the names
-    return {
-      shortName: `${shortName}_${number}`,
-      longName: `${longName} (${number})`,
-    };
-  }
-}
-
 export async function getOriginalHash(path: string) {
   try {
     return sha256(b64EncodeUnicode(await fs.readFile(path, 'utf8'))).toString();
   } catch (err: any) {
     if (err.code === 'ENOENT') return null;
     throw err;
-  }
-}
-
-/**
- * Returns the new value if it differs from the default value. Otherwise, returns undefined.
- * This is helpful for setting JSON properties that we only want to write to if they are different
- * than the default value.
- *
- * `defaultValue` may be either a value to compare directly with `===`, or a function
- * that accepts a value and returns a boolean to indicate if it should be considered
- * a default value.
- *
- */
-export function propertyValueWithDefault(existingValue: any, newValue: any, defaultValue: any) {
-  const isExistingDefault =
-    typeof defaultValue === 'function'
-      ? defaultValue(existingValue)
-      : existingValue === defaultValue;
-  const isNewDefault =
-    typeof defaultValue === 'function' ? defaultValue(newValue) : newValue === defaultValue;
-
-  if (existingValue === undefined) {
-    if (!isNewDefault) {
-      return newValue;
-    }
-    return undefined;
-  } else {
-    if (!isExistingDefault && isNewDefault) {
-      return undefined;
-    } else {
-      return newValue;
-    }
   }
 }
 
@@ -1625,12 +1511,16 @@ export class QuestionDeleteEditor extends Editor {
 
 export class QuestionRenameEditor extends Editor {
   private qid_new: string;
+  private title_new: string | undefined;
   private question: Question;
 
-  constructor(params: BaseEditorOptions<{ question: Question }> & { qid_new: string }) {
+  constructor(
+    params: BaseEditorOptions<{ question: Question }> & { qid_new: string; title_new?: string },
+  ) {
     const {
       locals: { question },
       qid_new,
+      title_new,
     } = params;
 
     super({
@@ -1639,40 +1529,28 @@ export class QuestionRenameEditor extends Editor {
     });
 
     this.qid_new = qid_new;
+    this.title_new = title_new;
     this.question = question;
   }
 
-  async write() {
-    assert(this.question.qid, 'question.qid is required');
-
-    debug('QuestionRenameEditor: write()');
-
-    const questionsPath = path.join(this.course.path, 'questions');
-    const oldPath = path.join(questionsPath, this.question.qid);
-    const newPath = path.join(questionsPath, this.qid_new);
-
-    // Skip editing if the paths are the same.
-    if (oldPath === newPath) return null;
-
-    // Ensure that the updated question folder path is fully contained in the questions directory
-    if (!contains(questionsPath, newPath)) {
-      throw new AugmentedError('Invalid folder path', {
-        info: html`
-          <p>The updated path of the question folder</p>
-          <div class="container">
-            <pre class="bg-dark text-white rounded p-2">${newPath}</pre>
-          </div>
-          <p>must be inside the root directory</p>
-          <div class="container">
-            <pre class="bg-dark text-white rounded p-2">${questionsPath}</pre>
-          </div>
-        `,
-      });
-    }
+  private async moveQuestion({
+    oldPath,
+    newPath,
+    existingQid,
+    questionsPath,
+  }: {
+    oldPath: string;
+    newPath: string;
+    existingQid: string;
+    questionsPath: string;
+  }) {
+    const pathsToAdd: string[] = [];
 
     debug(`Move files from ${oldPath} to ${newPath}`);
     await fs.move(oldPath, newPath, { overwrite: false });
-    await this.removeEmptyPrecedingSubfolders(questionsPath, this.question.qid);
+    await this.removeEmptyPrecedingSubfolders(questionsPath, existingQid);
+
+    pathsToAdd.push(oldPath, newPath);
 
     debug(`Find all assessments (in all course instances) that contain ${this.question.qid}`);
     const assessments = await sqldb.queryRows(
@@ -1683,8 +1561,6 @@ export class QuestionRenameEditor extends Editor {
         assessment_directory: AssessmentSchema.shape.tid,
       }),
     );
-
-    const pathsToAdd = [oldPath, newPath];
 
     debug(
       `For each assessment, read/write infoAssessment.json to replace ${this.question.qid} with ${this.qid_new}`,
@@ -1733,9 +1609,86 @@ export class QuestionRenameEditor extends Editor {
       await fs.writeFile(infoPath, formattedJson);
     }
 
+    return pathsToAdd;
+  }
+
+  async write() {
+    assert(this.question.qid, 'question.qid is required');
+
+    debug('QuestionRenameEditor: write()');
+
+    const questionsPath = path.join(this.course.path, 'questions');
+    const oldPath = path.join(questionsPath, this.question.qid);
+    const newPath = path.join(questionsPath, this.qid_new);
+
+    const qidChanging = oldPath !== newPath;
+
+    // Skip editing if neither the QID nor the title is changing.
+    if (!qidChanging && !this.title_new) return null;
+
+    // Ensure that the updated question folder path is fully contained in the questions directory
+    if (qidChanging && !contains(questionsPath, newPath)) {
+      throw new AugmentedError('Invalid folder path', {
+        info: html`
+          <p>The updated path of the question folder</p>
+          <div class="container">
+            <pre class="bg-dark text-white rounded p-2">${newPath}</pre>
+          </div>
+          <p>must be inside the root directory</p>
+          <div class="container">
+            <pre class="bg-dark text-white rounded p-2">${questionsPath}</pre>
+          </div>
+        `,
+      });
+    }
+
+    const pathsToAdd: string[] = [];
+
+    if (qidChanging) {
+      pathsToAdd.push(
+        ...(await this.moveQuestion({
+          oldPath,
+          newPath,
+          questionsPath,
+          existingQid: this.question.qid,
+        })),
+      );
+    }
+
+    // Update the question title in info.json if a new title was provided.
+    if (this.title_new) {
+      // Use the new path if QID changed, otherwise use the old path.
+      const questionPath = qidChanging ? newPath : oldPath;
+      const questionInfoPath = path.join(questionPath, 'info.json');
+
+      debug(`Read ${questionInfoPath}`);
+      const questionInfoJson: any = await fs.readJson(questionInfoPath);
+
+      debug(`Update title in ${questionInfoPath}`);
+      questionInfoJson.title = this.title_new;
+
+      const formattedQuestionInfoJson = await formatJsonWithPrettier(
+        JSON.stringify(questionInfoJson),
+      );
+      await fs.writeFile(questionInfoPath, formattedQuestionInfoJson);
+
+      // Only add to pathsToAdd if we haven't already added the question path.
+      if (!qidChanging) {
+        pathsToAdd.push(questionPath);
+      }
+    }
+
+    const commitMessage = run(() => {
+      if (qidChanging) {
+        return `rename question ${this.question.qid} to ${this.qid_new}`;
+      }
+
+      return `update title of question ${this.question.qid}`;
+    });
+
     return {
       pathsToAdd,
-      commitMessage: `rename question ${this.question.qid} to ${this.qid_new}`,
+      commitMessage,
     };
   }
 }
