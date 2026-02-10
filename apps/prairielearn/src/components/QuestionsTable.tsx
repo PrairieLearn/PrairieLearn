@@ -238,7 +238,7 @@ export function QuestionsTable({
                     <div class="d-flex flex-row flex-wrap justify-content-center gap-3">
                       <a
                         class="btn btn-sm btn-primary"
-                        href="${urlPrefix}/course_admin/questions/new"
+                        href="${urlPrefix}/course_admin/questions/create"
                       >
                         <i class="fa fa-plus" aria-hidden="true"></i>
                         Add question

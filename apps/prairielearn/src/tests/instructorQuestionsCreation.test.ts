@@ -31,14 +31,14 @@ describe('Creating a question', () => {
   test.sequential('create a new empty question', async () => {
     // Fetch the questions page for the course instance
     const questionsResponse = await fetchCheerio(
-      `${siteUrl}/pl/course_instance/1/instructor/course_admin/questions/new`,
+      `${siteUrl}/pl/course_instance/1/instructor/course_admin/questions/create`,
     );
 
     assert.equal(questionsResponse.status, 200);
 
     // Create the new empty question
     const createQuestionResponse = await fetchCheerio(
-      `${siteUrl}/pl/course_instance/1/instructor/course_admin/questions/new`,
+      `${siteUrl}/pl/course_instance/1/instructor/course_admin/questions/create`,
       {
         method: 'POST',
         body: new URLSearchParams({
@@ -77,14 +77,14 @@ describe('Creating a question', () => {
   test.sequential('create a new question from the example course templates', async () => {
     // Fetch the questions page for the course instance
     const questionsResponse = await fetchCheerio(
-      `${siteUrl}/pl/course_instance/1/instructor/course_admin/questions/new`,
+      `${siteUrl}/pl/course_instance/1/instructor/course_admin/questions/create`,
     );
 
     assert.equal(questionsResponse.status, 200);
 
     // Create the new template question based on the random graph template question
     const createQuestionResponse = await fetchCheerio(
-      `${siteUrl}/pl/course_instance/1/instructor/course_admin/questions/new`,
+      `${siteUrl}/pl/course_instance/1/instructor/course_admin/questions/create`,
       {
         method: 'POST',
         body: new URLSearchParams({
@@ -155,14 +155,14 @@ describe('Creating a question', () => {
   test.sequential('create a new question to be used as template', async () => {
     // Fetch the questions page for the course instance
     const questionsResponse = await fetchCheerio(
-      `${siteUrl}/pl/course_instance/1/instructor/course_admin/questions/new`,
+      `${siteUrl}/pl/course_instance/1/instructor/course_admin/questions/create`,
     );
 
     assert.equal(questionsResponse.status, 200);
 
     // Create the new empty question
     const createQuestionResponse = await fetchCheerio(
-      `${siteUrl}/pl/course_instance/1/instructor/course_admin/questions/new`,
+      `${siteUrl}/pl/course_instance/1/instructor/course_admin/questions/create`,
       {
         method: 'POST',
         body: new URLSearchParams({
@@ -200,14 +200,14 @@ describe('Creating a question', () => {
   test.sequential('create a new question from the new course-specific template', async () => {
     // Fetch the questions page for the course instance
     const questionsResponse = await fetchCheerio(
-      `${siteUrl}/pl/course_instance/1/instructor/course_admin/questions/new`,
+      `${siteUrl}/pl/course_instance/1/instructor/course_admin/questions/create`,
     );
 
     assert.equal(questionsResponse.status, 200);
 
     // Create the new template question based on the course-specific template question
     const createQuestionResponse = await fetchCheerio(
-      `${siteUrl}/pl/course_instance/1/instructor/course_admin/questions/new`,
+      `${siteUrl}/pl/course_instance/1/instructor/course_admin/questions/create`,
       {
         method: 'POST',
         body: new URLSearchParams({
@@ -280,13 +280,13 @@ describe('Creating a question', () => {
   test.sequential('create new question with duplicate qid, title', async () => {
     // Fetch the questions page for the course instance
     const questionsResponse = await fetchCheerio(
-      `${siteUrl}/pl/course_instance/1/instructor/course_admin/questions/new`,
+      `${siteUrl}/pl/course_instance/1/instructor/course_admin/questions/create`,
     );
     assert.equal(questionsResponse.status, 200);
 
     // Create the new empty question with the same qid and title as the first question
     const createQuestionResponse = await fetchCheerio(
-      `${siteUrl}/pl/course_instance/1/instructor/course_admin/questions/new`,
+      `${siteUrl}/pl/course_instance/1/instructor/course_admin/questions/create`,
       {
         method: 'POST',
         body: new URLSearchParams({
@@ -322,13 +322,13 @@ describe('Creating a question', () => {
   test.sequential('should not be able to create a question without a title or qid', async () => {
     // Fetch the questions page for the course instance
     const questionsResponse = await fetchCheerio(
-      `${siteUrl}/pl/course_instance/1/instructor/course_admin/questions/new`,
+      `${siteUrl}/pl/course_instance/1/instructor/course_admin/questions/create`,
     );
     assert.equal(questionsResponse.status, 200);
 
     // Create a new empty question without a title or qid
     const createQuestionResponse = await fetchCheerio(
-      `${siteUrl}/pl/course_instance/1/instructor/course_admin/questions/new`,
+      `${siteUrl}/pl/course_instance/1/instructor/course_admin/questions/create`,
       {
         method: 'POST',
         body: new URLSearchParams({
@@ -347,13 +347,13 @@ describe('Creating a question', () => {
     async () => {
       // Fetch the questions page for the course instance
       const questionsResponse = await fetchCheerio(
-        `${siteUrl}/pl/course_instance/1/instructor/course_admin/questions/new`,
+        `${siteUrl}/pl/course_instance/1/instructor/course_admin/questions/create`,
       );
       assert.equal(questionsResponse.status, 200);
 
       // Create a new empty question without specifying start_from
       const createQuestionResponse = await fetchCheerio(
-        `${siteUrl}/pl/course_instance/1/instructor/course_admin/questions/new`,
+        `${siteUrl}/pl/course_instance/1/instructor/course_admin/questions/create`,
         {
           method: 'POST',
           body: new URLSearchParams({
@@ -374,13 +374,13 @@ describe('Creating a question', () => {
     async () => {
       // Fetch the questions page for the course instance
       const questionsResponse = await fetchCheerio(
-        `${siteUrl}/pl/course_instance/1/instructor/course_admin/questions/new`,
+        `${siteUrl}/pl/course_instance/1/instructor/course_admin/questions/create`,
       );
       assert.equal(questionsResponse.status, 200);
 
       // Create a new empty question with a qid not contained in the root directory
       const createQuestionResponse = await fetchCheerio(
-        `${siteUrl}/pl/course_instance/1/instructor/course_admin/questions/new`,
+        `${siteUrl}/pl/course_instance/1/instructor/course_admin/questions/create`,
         {
           method: 'POST',
           body: new URLSearchParams({
@@ -403,13 +403,13 @@ describe('Creating a question', () => {
     async () => {
       // Fetch the questions page for the course instance
       const questionsResponse = await fetchCheerio(
-        `${siteUrl}/pl/course_instance/1/instructor/course_admin/questions/new`,
+        `${siteUrl}/pl/course_instance/1/instructor/course_admin/questions/create`,
       );
       assert.equal(questionsResponse.status, 200);
 
       // Create a new empty question with a non-existent template question qid
       const createQuestionResponse = await fetchCheerio(
-        `${siteUrl}/pl/course_instance/1/instructor/course_admin/questions/new`,
+        `${siteUrl}/pl/course_instance/1/instructor/course_admin/questions/create`,
         {
           method: 'POST',
           body: new URLSearchParams({
@@ -437,13 +437,13 @@ describe('Creating a question', () => {
     async () => {
       // Fetch the questions page for the course instance
       const questionsResponse = await fetchCheerio(
-        `${siteUrl}/pl/course_instance/1/instructor/course_admin/questions/new`,
+        `${siteUrl}/pl/course_instance/1/instructor/course_admin/questions/create`,
       );
       assert.equal(questionsResponse.status, 200);
 
       // Create a new question from a template with a template_qid not contained in the correct root directory
       const createQuestionResponse = await fetchCheerio(
-        `${siteUrl}/pl/course_instance/1/instructor/course_admin/questions/new`,
+        `${siteUrl}/pl/course_instance/1/instructor/course_admin/questions/create`,
         {
           method: 'POST',
           body: new URLSearchParams({

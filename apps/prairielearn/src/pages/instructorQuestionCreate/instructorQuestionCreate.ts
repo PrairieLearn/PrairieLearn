@@ -13,7 +13,7 @@ import { selectCourseInstancesWithStaffAccess } from '../../models/course-instan
 import { selectQuestionsForCourse } from '../../models/questions.js';
 import { getTemplateQuestions } from '../instructorQuestions/templateQuestions.js';
 
-import { InstructorQuestionNewPage } from './instructorQuestionNew.html.js';
+import { InstructorQuestionCreatePage } from './instructorQuestionCreate.html.js';
 
 const router = Router();
 
@@ -47,7 +47,7 @@ router.get(
     const templateQuestions = await getTemplateQuestions(questions);
 
     res.send(
-      InstructorQuestionNewPage({
+      InstructorQuestionCreatePage({
         templateQuestions,
         resLocals: res.locals,
       }),

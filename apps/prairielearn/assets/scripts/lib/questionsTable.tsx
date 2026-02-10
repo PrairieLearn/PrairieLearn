@@ -280,7 +280,7 @@ onDocumentReady(() => {
   if (showAddQuestionButton) {
     tableSettings.buttons.addQuestion = {
       html: html`
-        <a class="btn btn-secondary" href="${urlPrefix}/course_admin/questions/new">
+        <a class="btn btn-secondary" href="${urlPrefix}/course_admin/questions/create">
           <i class="fa fa-plus" aria-hidden="true"></i>
           Add question
         </a>
