@@ -1,5 +1,6 @@
 import clsx from 'clsx';
 import { useCallback, useMemo, useRef, useState } from 'react';
+import ReactMarkdown from 'react-markdown';
 
 import { QuestionShortNameDescription } from '../../components/ShortNameDescriptions.js';
 import { SHORT_NAME_PATTERN } from '../../lib/short-name.js';
@@ -156,7 +157,7 @@ function TemplateCardRadioGroup({
         aria-label={label}
         style={{
           display: 'grid',
-          gridTemplateColumns: 'repeat(auto-fill, minmax(200px, 1fr))',
+          gridTemplateColumns: 'repeat(auto-fill, minmax(min(200px, calc(50% - 0.5rem)), 1fr))',
           gap: '1rem',
         }}
       >
@@ -168,7 +169,7 @@ function TemplateCardRadioGroup({
               ref={(el) => {
                 cardsRef.current[index] = el;
               }}
-              className={clsx('card', {
+              className={clsx('card overflow-hidden', {
                 'border-primary': isSelected,
                 'border-secondary': !isSelected,
               })}
@@ -278,7 +279,9 @@ function TemplateCardRadioGroup({
                 </div>
               </div>
               {isExpanded && card.readme && (
-                <p className="small text-muted mb-0 mt-1">{card.readme.trim()}</p>
+                <div className={clsx('small mt-1 markdown-body', { 'text-muted': !isSelected })}>
+                  <ReactMarkdown>{card.readme.trim()}</ReactMarkdown>
+                </div>
               )}
             </div>
           </div>
@@ -557,12 +560,28 @@ export function CreateQuestionForm({
         {/* Empty question state */}
         {startFrom === 'empty' && <StartFromScratchState />}
 
-        <div className="mt-3 d-flex justify-content-end">
-          <input type="hidden" name="__action" value="add_question" />
-          <input type="hidden" name="__csrf_token" value={csrfToken} />
-          <button type="submit" className="btn btn-primary">
-            Create
-          </button>
+        <div style={{ position: 'sticky', bottom: 0 }}>
+          <div
+            style={{
+              height: '2rem',
+              background: 'linear-gradient(to bottom, rgba(255,255,255,0), white)',
+              pointerEvents: 'none',
+            }}
+          />
+          <div
+            className="d-flex justify-content-end py-3"
+            style={{ backgroundColor: 'white' }}
+          >
+            <input type="hidden" name="__action" value="add_question" />
+            <input type="hidden" name="__csrf_token" value={csrfToken} />
+            <button
+              type="submit"
+              className="btn btn-primary"
+              disabled={isTemplateSelected && !selectedTemplateQid}
+            >
+              Create
+            </button>
+          </div>
         </div>
       </form>
     </div>
