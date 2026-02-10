@@ -1,5 +1,5 @@
 columns
-    color: text not null default 'gray1'::text
+    color: text not null
     course_instance_id: bigint not null
     id: bigint not null default nextval('student_labels_id_seq'::regclass)
     name: text not null

@@ -32,11 +32,11 @@ function assertEnrollmentMatchesLabel(enrollment: Enrollment, label: StudentLabe
 export async function createStudentLabel({
   courseInstanceId,
   name,
-  color = 'gray1',
+  color,
 }: {
   courseInstanceId: string;
   name: string;
-  color?: ColorJson;
+  color: ColorJson;
 }): Promise<StudentLabel> {
   return await queryRow(
     sql.create_student_label,

@@ -1,6 +1,6 @@
 import { afterAll, assert, beforeAll, beforeEach, describe, it } from 'vitest';
 
-import { StudentLabelSchema } from '../../lib/db-types.js';
+import { CourseInstanceSchema, StudentLabelSchema } from '../../lib/db-types.js';
 import * as helperDb from '../helperDb.js';
 
 import * as util from './util.js';
@@ -10,10 +10,7 @@ import * as util from './util.js';
  */
 async function findSyncedStudentLabels(courseInstanceId: string) {
   const syncedLabels = await util.dumpTableWithSchema('student_labels', StudentLabelSchema);
-  const courseInstances = await util.dumpTableWithSchema(
-    'course_instances',
-    (await import('../../lib/db-types.js')).CourseInstanceSchema,
-  );
+  const courseInstances = await util.dumpTableWithSchema('course_instances', CourseInstanceSchema);
   const courseInstance = courseInstances.find((ci) => ci.short_name === courseInstanceId);
   assert.isOk(courseInstance);
 

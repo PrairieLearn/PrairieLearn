@@ -60,8 +60,16 @@ describe('Student Label Model', () => {
   describe('createStudentLabel', () => {
     it('creates student labels with unique ids', async () => {
       await helperDb.runInTransactionAndRollback(async () => {
-        const label1 = await createStudentLabel({ courseInstanceId: '1', name: 'Label 1' });
-        const label2 = await createStudentLabel({ courseInstanceId: '1', name: 'Label 2' });
+        const label1 = await createStudentLabel({
+          courseInstanceId: '1',
+          name: 'Label 1',
+          color: 'gray1',
+        });
+        const label2 = await createStudentLabel({
+          courseInstanceId: '1',
+          name: 'Label 2',
+          color: 'gray1',
+        });
 
         assert.notEqual(label1.id, label2.id);
         assert.equal(label1.course_instance_id, label2.course_instance_id);
@@ -72,10 +80,18 @@ describe('Student Label Model', () => {
 
     it('allows creating label with same name after deletion', async () => {
       await helperDb.runInTransactionAndRollback(async () => {
-        const label1 = await createStudentLabel({ courseInstanceId: '1', name: 'Test Label' });
+        const label1 = await createStudentLabel({
+          courseInstanceId: '1',
+          name: 'Test Label',
+          color: 'gray1',
+        });
         await deleteStudentLabel(label1);
 
-        const label2 = await createStudentLabel({ courseInstanceId: '1', name: 'Test Label' });
+        const label2 = await createStudentLabel({
+          courseInstanceId: '1',
+          name: 'Test Label',
+          color: 'gray1',
+        });
 
         assert.notEqual(label1.id, label2.id);
         assert.equal(label2.name, 'Test Label');
@@ -110,9 +126,13 @@ describe('Student Label Model', () => {
         // Empty initially (no pre-existing labels in course instance 2)
         assert.isEmpty(await selectStudentLabelsInCourseInstance(courseInstance));
 
-        await createStudentLabel({ courseInstanceId: '2', name: 'Label A' });
-        await createStudentLabel({ courseInstanceId: '2', name: 'Label B' });
-        const labelToDelete = await createStudentLabel({ courseInstanceId: '2', name: 'Label C' });
+        await createStudentLabel({ courseInstanceId: '2', name: 'Label A', color: 'gray1' });
+        await createStudentLabel({ courseInstanceId: '2', name: 'Label B', color: 'gray1' });
+        const labelToDelete = await createStudentLabel({
+          courseInstanceId: '2',
+          name: 'Label C',
+          color: 'gray1',
+        });
 
         await deleteStudentLabel(labelToDelete);
 
@@ -131,6 +151,7 @@ describe('Student Label Model', () => {
         const createdLabel = await createStudentLabel({
           courseInstanceId: '1',
           name: 'Test Label',
+          color: 'gray1',
         });
 
         const retrievedLabel = await selectStudentLabelById({
@@ -150,7 +171,11 @@ describe('Student Label Model', () => {
           selectStudentLabelById({ id: '999999', courseInstance }),
         ).rejects.toThrowError();
 
-        const label = await createStudentLabel({ courseInstanceId: '1', name: 'Test Label' });
+        const label = await createStudentLabel({
+          courseInstanceId: '1',
+          name: 'Test Label',
+          color: 'gray1',
+        });
         await deleteStudentLabel(label);
 
         await expect(
@@ -161,7 +186,11 @@ describe('Student Label Model', () => {
 
     it('throws 403 when label does not belong to course instance', async () => {
       await helperDb.runInTransactionAndRollback(async () => {
-        const label = await createStudentLabel({ courseInstanceId: '1', name: 'Test Label' });
+        const label = await createStudentLabel({
+          courseInstanceId: '1',
+          name: 'Test Label',
+          color: 'gray1',
+        });
         // Use course instance 2 (the 'public' course instance in testCourse)
         const courseInstance2 = await selectCourseInstanceById('2');
 
@@ -198,7 +227,11 @@ describe('Student Label Model', () => {
     it('adds label to enrollment and returns null on duplicate', async () => {
       await helperDb.runInTransactionAndRollback(async () => {
         const enrollment = await createEnrollment();
-        const label = await createStudentLabel({ courseInstanceId: '1', name: 'Test Label' });
+        const label = await createStudentLabel({
+          courseInstanceId: '1',
+          name: 'Test Label',
+          color: 'gray1',
+        });
 
         const result = await addEnrollmentToStudentLabel({
           enrollment,
@@ -225,7 +258,11 @@ describe('Student Label Model', () => {
     it('removes label from enrollment', async () => {
       await helperDb.runInTransactionAndRollback(async () => {
         const enrollment = await createEnrollment();
-        const label = await createStudentLabel({ courseInstanceId: '1', name: 'Test Label' });
+        const label = await createStudentLabel({
+          courseInstanceId: '1',
+          name: 'Test Label',
+          color: 'gray1',
+        });
 
         await addEnrollmentToStudentLabel({
           enrollment,
@@ -246,7 +283,11 @@ describe('Student Label Model', () => {
   describe('selectEnrollmentsInStudentLabel', () => {
     it('returns enrollments that have the label', async () => {
       await helperDb.runInTransactionAndRollback(async () => {
-        const label = await createStudentLabel({ courseInstanceId: '1', name: 'Test Label' });
+        const label = await createStudentLabel({
+          courseInstanceId: '1',
+          name: 'Test Label',
+          color: 'gray1',
+        });
 
         // Empty initially
         assert.isEmpty(await selectEnrollmentsInStudentLabel(label));
@@ -281,8 +322,16 @@ describe('Student Label Model', () => {
         // Empty initially
         assert.isEmpty(await selectStudentLabelsForEnrollment(enrollment));
 
-        const label1 = await createStudentLabel({ courseInstanceId: '1', name: 'Label A' });
-        const label2 = await createStudentLabel({ courseInstanceId: '1', name: 'Label B' });
+        const label1 = await createStudentLabel({
+          courseInstanceId: '1',
+          name: 'Label A',
+          color: 'gray1',
+        });
+        const label2 = await createStudentLabel({
+          courseInstanceId: '1',
+          name: 'Label B',
+          color: 'gray1',
+        });
 
         await addEnrollmentToStudentLabel({
           enrollment,
@@ -313,7 +362,11 @@ describe('Student Label Model', () => {
     it('creates audit event when adding enrollment to label', async () => {
       await helperDb.runInTransactionAndRollback(async () => {
         const enrollment = await createEnrollment();
-        const label = await createStudentLabel({ courseInstanceId: '1', name: 'Test Label' });
+        const label = await createStudentLabel({
+          courseInstanceId: '1',
+          name: 'Test Label',
+          color: 'gray1',
+        });
 
         await addEnrollmentToStudentLabel({
           enrollment,
@@ -342,7 +395,11 @@ describe('Student Label Model', () => {
     it('does NOT create audit event when adding duplicate enrollment', async () => {
       await helperDb.runInTransactionAndRollback(async () => {
         const enrollment = await createEnrollment();
-        const label = await createStudentLabel({ courseInstanceId: '1', name: 'Test Label' });
+        const label = await createStudentLabel({
+          courseInstanceId: '1',
+          name: 'Test Label',
+          color: 'gray1',
+        });
 
         // First add
         await addEnrollmentToStudentLabel({
@@ -373,7 +430,11 @@ describe('Student Label Model', () => {
     it('creates audit event when removing enrollment from label', async () => {
       await helperDb.runInTransactionAndRollback(async () => {
         const enrollment = await createEnrollment();
-        const label = await createStudentLabel({ courseInstanceId: '1', name: 'Test Label' });
+        const label = await createStudentLabel({
+          courseInstanceId: '1',
+          name: 'Test Label',
+          color: 'gray1',
+        });
 
         await addEnrollmentToStudentLabel({
           enrollment,
@@ -412,7 +473,11 @@ describe('Student Label Model', () => {
       await helperDb.runInTransactionAndRollback(async () => {
         const enrollment1 = await createEnrollment();
         const enrollment2 = await createEnrollment();
-        const label = await createStudentLabel({ courseInstanceId: '1', name: 'Bulk Label' });
+        const label = await createStudentLabel({
+          courseInstanceId: '1',
+          name: 'Bulk Label',
+          color: 'gray1',
+        });
 
         await addEnrollmentsToStudentLabel({
           enrollments: [enrollment1, enrollment2],
@@ -448,7 +513,11 @@ describe('Student Label Model', () => {
       await helperDb.runInTransactionAndRollback(async () => {
         const enrollment1 = await createEnrollment();
         const enrollment2 = await createEnrollment();
-        const label = await createStudentLabel({ courseInstanceId: '1', name: 'Bulk Label' });
+        const label = await createStudentLabel({
+          courseInstanceId: '1',
+          name: 'Bulk Label',
+          color: 'gray1',
+        });
 
         await addEnrollmentsToStudentLabel({
           enrollments: [enrollment1, enrollment2],
@@ -493,7 +562,11 @@ describe('Student Label Model', () => {
       await helperDb.runInTransactionAndRollback(async () => {
         const enrollment1 = await createEnrollment();
         const enrollment2 = await createEnrollment();
-        const label = await createStudentLabel({ courseInstanceId: '1', name: 'Bulk Label' });
+        const label = await createStudentLabel({
+          courseInstanceId: '1',
+          name: 'Bulk Label',
+          color: 'gray1',
+        });
 
         // First add enrollment1
         await addEnrollmentToStudentLabel({
