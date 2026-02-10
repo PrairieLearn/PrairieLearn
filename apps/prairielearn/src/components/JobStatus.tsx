@@ -1,16 +1,19 @@
-import { html } from '@prairielearn/html';
+import { renderHtml } from '@prairielearn/react';
 
-import type { Job, JobSequence } from '../lib/db-types.js';
+import type { Job } from '../lib/db-types.js';
 
-// eslint-disable-next-line @typescript-eslint/no-duplicate-type-constituents
-export function JobStatus({ status }: { status: Job['status'] | JobSequence['status'] }) {
+export function JobStatus({ status }: { status: Job['status'] }) {
   if (status === 'Running') {
-    return html`<span class="badge text-bg-primary">Running</span>`;
+    return <span className="badge text-bg-primary">Running</span>;
   } else if (status === 'Success') {
-    return html`<span class="badge text-bg-success">Success</span>`;
+    return <span className="badge text-bg-success">Success</span>;
   } else if (status === 'Error') {
-    return html`<span class="badge text-bg-danger">Error</span>`;
+    return <span className="badge text-bg-danger">Error</span>;
   }
 
-  return html`<span class="badge text-bg-secondary">Unknown</span>`;
+  return <span className="badge text-bg-secondary">Unknown</span>;
+}
+
+export function JobStatusHTML({ status }: { status: Job['status'] }) {
+  return renderHtml(<JobStatus status={status} />);
 }

@@ -1,5 +1,6 @@
 import { type z } from 'zod';
 
+import { html } from '@prairielearn/html';
 import { renderHtml } from '@prairielearn/react';
 
 import { CourseRequestsTable } from '../../components/CourseRequestsTable.js';
@@ -213,22 +214,29 @@ function CourseInsertForm({
         <label className="form-label" htmlFor="courseAddInstitution">
           Institution:
         </label>
-        <select
-          id="courseAddInstitution"
-          name="institution_id"
-          className="form-select"
-          // @ts-expect-error -- onchange is needed because this form is rendered
-          // as a string for a Bootstrap popover, not managed by React
-          onchange="this.closest('form').querySelector('[name=display_timezone]').value = this.querySelector('option:checked').dataset.timezone;"
-        >
-          {institutions.map((i) => {
-            return (
-              <option key={i.id} value={i.id} data-timezone={i.display_timezone}>
-                {i.short_name}
-              </option>
-            );
-          })}
-        </select>
+        {/* React doesn't let us emit raw event handlers, so
+            instead we render the select inside a dangerouslySetInnerHTML block. */}
+        <div
+          // eslint-disable-next-line @eslint-react/dom/no-dangerously-set-innerhtml
+          dangerouslySetInnerHTML={{
+            __html: html`
+              <select
+                id="courseAddInstitution"
+                name="institution_id"
+                class="form-select"
+                onchange="this.closest('form').querySelector('[name=display_timezone]').value = this.querySelector('option:checked').dataset.timezone;"
+              >
+                ${institutions.map(
+                  (i) => html`
+                    <option value="${i.id}" data-timezone="${i.display_timezone}">
+                      ${i.short_name}
+                    </option>
+                  `,
+                )}
+              </select>
+            `.toString(),
+          }}
+        />
       </div>
       <div className="mb-3">
         <label className="form-label" htmlFor="courseAddInputShortName">

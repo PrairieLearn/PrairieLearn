@@ -1,8 +1,10 @@
 import clsx from 'clsx';
 import { Fragment } from 'react';
 
+import { html } from '@prairielearn/html';
 import { renderHtml } from '@prairielearn/react';
 
+import { getAdministratorCourseRequestsUrl } from '../lib/client/url.js';
 import { type CourseRequestRow } from '../lib/course-request.js';
 import { type Institution } from '../lib/db-types.js';
 
@@ -31,7 +33,7 @@ export function CourseRequestsTable({
         {!showAll && (
           <a
             className="btn btn-sm btn-light ms-auto"
-            href={`${urlPrefix}/administrator/courseRequests`}
+            href={getAdministratorCourseRequestsUrl({ urlPrefix })}
           >
             <i className="fa fa-search" aria-hidden="true" />
             <span className="d-none d-sm-inline">View All</span>
@@ -93,10 +95,7 @@ export function CourseRequestsTable({
                           data-bs-placement="auto"
                           data-bs-title="Deny course request"
                           data-bs-content={renderHtml(
-                            CourseRequestDenyForm({
-                              request: row,
-                              csrfToken,
-                            }),
+                            <CourseRequestDenyForm request={row} csrfToken={csrfToken} />,
                           ).toString()}
                         >
                           <i className="fa fa-times" aria-hidden="true" /> Deny
@@ -110,12 +109,12 @@ export function CourseRequestsTable({
                           data-bs-placement="auto"
                           data-bs-title="Approve course request"
                           data-bs-content={renderHtml(
-                            CourseRequestApproveForm({
-                              request: row,
-                              institutions,
-                              coursesRoot,
-                              csrfToken,
-                            }),
+                            <CourseRequestApproveForm
+                              request={row}
+                              institutions={institutions}
+                              coursesRoot={coursesRoot}
+                              csrfToken={csrfToken}
+                            />,
                           ).toString()}
                         >
                           <i className="fa fa-check" aria-hidden="true" /> Approve
@@ -184,37 +183,38 @@ export function CourseRequestsTable({
                           aria-label="Course request jobs"
                         >
                           <thead>
-                            <th>Number</th>
-                            <th>Start Date</th>
-                            <th>End Date</th>
-                            <th>User</th>
-                            <th>Status</th>
-                            <th />
+                            <tr>
+                              <th>Number</th>
+                              <th>Start Date</th>
+                              <th>End Date</th>
+                              <th>User</th>
+                              <th>Status</th>
+                              <th />
+                            </tr>
                           </thead>
-                          {[...row.jobs].reverse().map((job) => {
-                            return (
-                              <tr key={job.id}>
-                                <td>{job.number}</td>
-                                <td>{job.start_date.toISOString()}</td>
-                                <td>{job.finish_date?.toISOString()}</td>
-                                <td>{job.authn_user_name}</td>
-                                <td
-                                  // eslint-disable-next-line @eslint-react/dom/no-dangerously-set-innerhtml
-                                  dangerouslySetInnerHTML={{
-                                    __html: JobStatus({ status: job.status }).toString(),
-                                  }}
-                                />
-                                <td>
-                                  <a
-                                    href={`${urlPrefix}/administrator/jobSequence/${job.id}`}
-                                    className="btn btn-xs btn-info float-end"
-                                  >
-                                    Details
-                                  </a>
-                                </td>
-                              </tr>
-                            );
-                          })}
+                          <tbody>
+                            {[...row.jobs].reverse().map((job) => {
+                              return (
+                                <tr key={job.id}>
+                                  <td>{job.number}</td>
+                                  <td>{job.start_date.toISOString()}</td>
+                                  <td>{job.finish_date?.toISOString()}</td>
+                                  <td>{job.authn_user_name}</td>
+                                  <td>
+                                    <JobStatus status={job.status} />
+                                  </td>
+                                  <td>
+                                    <a
+                                      href={`${urlPrefix}/administrator/jobSequence/${job.id}`}
+                                      className="btn btn-xs btn-info float-end"
+                                    >
+                                      Details
+                                    </a>
+                                  </td>
+                                </tr>
+                              );
+                            })}
+                          </tbody>
                         </table>
                       </div>
                     </td>
@@ -257,22 +257,29 @@ function CourseRequestApproveForm({
         <label className="form-label" htmlFor="courseRequestAddInstitution">
           Institution:
         </label>
-        <select
-          id="courseRequestAddInstitution"
-          name="institution_id"
-          className="form-select"
-          // @ts-expect-error -- onchange is needed because this form is rendered
-          // as a string for a Bootstrap popover, not managed by React
-          onchange="this.closest('form').querySelector('[name=display_timezone]').value = this.querySelector('option:checked').dataset.timezone;"
-        >
-          {institutions.map((i) => {
-            return (
-              <option key={i.id} value={i.id} data-timezone={i.display_timezone}>
-                {i.short_name}
-              </option>
-            );
-          })}
-        </select>
+        {/* React doesn't let us emit raw event handlers, so
+            instead we render the select inside a dangerouslySetInnerHTML block. */}
+        <div
+          // eslint-disable-next-line @eslint-react/dom/no-dangerously-set-innerhtml
+          dangerouslySetInnerHTML={{
+            __html: html`
+              <select
+                id="courseRequestAddInstitution"
+                name="institution_id"
+                class="form-select"
+                onchange="this.closest('form').querySelector('[name=display_timezone]').value = this.querySelector('option:checked').dataset.timezone;"
+              >
+                ${institutions.map(
+                  (i) => html`
+                    <option value="${i.id}" data-timezone="${i.display_timezone}">
+                      ${i.short_name}
+                    </option>
+                  `,
+                )}
+              </select>
+            `.toString(),
+          }}
+        />
       </div>
       <div className="mb-3">
         <label className="form-label" htmlFor="courseRequestAddInputShortName">
