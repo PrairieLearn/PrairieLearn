@@ -493,11 +493,11 @@ export function StudentAssessmentInstance({
           </table>
         </div>
 
-        <div class="card-footer">
-          ${resLocals.assessment.type === 'Exam' &&
-          resLocals.assessment_instance.open &&
-          resLocals.authz_result.active
-            ? html`
+        ${resLocals.assessment.type === 'Exam' &&
+        resLocals.assessment_instance.open &&
+        resLocals.authz_result.active
+          ? html`
+              <div class="card-footer">
                 ${someQuestionsAllowRealTimeGrading
                   ? html`
                       <form name="grade-form" method="POST">
@@ -607,17 +607,26 @@ export function StudentAssessmentInstance({
                         </li>
                       </ul>
                     `}
-              `
-            : ''}
-          ${!resLocals.authz_result.authorized_edit
+                ${!resLocals.authz_result.authorized_edit
+                  ? html`
+                      <div class="alert alert-warning mt-4" role="alert">
+                        You are viewing the assessment of a different user and so are not authorized
+                        to submit questions for grading or to mark the assessment as complete.
+                      </div>
+                    `
+                  : ''}
+              </div>
+            `
+          : !resLocals.authz_result.authorized_edit
             ? html`
-                <div class="alert alert-warning mt-4" role="alert">
-                  You are viewing the assessment of a different user and so are not authorized to
-                  submit questions for grading or to mark the assessment as complete.
+                <div class="card-footer">
+                  <div class="alert alert-warning mt-4" role="alert">
+                    You are viewing the assessment of a different user and so are not authorized to
+                    submit questions for grading or to mark the assessment as complete.
+                  </div>
                 </div>
               `
             : ''}
-        </div>
       </div>
 
       ${resLocals.assessment.allow_personal_notes
