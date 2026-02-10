@@ -4,12 +4,12 @@ columns
     id: bigint not null default nextval('student_labels_id_seq'::regclass)
     name: text not null
 
-check constraints
-    student_labels_name_length_check: CHECK (length(name) <= 1000)
-
 indexes
     student_labels_pkey: PRIMARY KEY (id) USING btree (id)
     student_labels_course_instance_id_name_key: UNIQUE (course_instance_id, name) USING btree (course_instance_id, name)
+
+check constraints
+    student_labels_name_length_check: CHECK (length(name) <= 1000)
 
 foreign-key constraints
     student_labels_course_instance_id_fkey: FOREIGN KEY (course_instance_id) REFERENCES course_instances(id) ON UPDATE CASCADE ON DELETE CASCADE
