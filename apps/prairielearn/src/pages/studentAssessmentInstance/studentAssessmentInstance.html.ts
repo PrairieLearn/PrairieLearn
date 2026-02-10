@@ -155,12 +155,6 @@ export function StudentAssessmentInstance({
   const userGroupRoles = groupInfo
     ? getRoleNamesForUser(groupInfo, resLocals.authz_data.user).join(', ')
     : null;
-  const unauthorizedEditWarning = html`
-    <div class="alert alert-warning mt-4" role="alert">
-      You are viewing the assessment of a different user and so are not authorized to submit
-      questions for grading or to mark the assessment as complete.
-    </div>
-  `;
   const showExamFooterContent =
     resLocals.assessment.type === 'Exam' &&
     resLocals.assessment_instance.open &&
@@ -623,7 +617,14 @@ export function StudentAssessmentInstance({
                           `}
                     `
                   : ''}
-                ${showUnauthorizedEditWarning ? unauthorizedEditWarning : ''}
+                ${showUnauthorizedEditWarning
+                  ? html`
+                      <div class="alert alert-warning mt-4" role="alert">
+                        You are viewing the assessment of a different user and so are not authorized
+                        to submit questions for grading or to mark the assessment as complete.
+                      </div>
+                    `
+                  : ''}
               </div>
             `
           : ''}
