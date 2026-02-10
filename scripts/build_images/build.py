@@ -207,7 +207,7 @@ def build_image(
     manifest_url = f"http://localhost:5000/v2/{image}/manifests/{digest}"
     req = urllib.request.Request(
         manifest_url,
-        headers={"Accept": "application/vnd.oci.image.manifest.v1+json"},
+        headers={"Accept": "application/vnd.docker.distribution.manifest.v2+json"},
     )
     with urllib.request.urlopen(req) as resp:
         manifest_data = json.loads(resp.read())
