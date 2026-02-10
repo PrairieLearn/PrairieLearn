@@ -73,8 +73,18 @@ router.get(
 
 router.post(
   '/',
+  createAuthzMiddleware({
+    oneOfPermissions: ['has_course_permission_edit'],
+    unauthorizedUsers: 'block',
+  }),
   typedAsyncHandler<'course' | 'course-instance'>(async (req, res) => {
     if (req.body.__action === 'add_question') {
+      if (res.locals.course.example_course) {
+        throw new error.HttpStatusError(
+          403,
+          'Access denied. Cannot make changes to example course.',
+        );
+      }
       if (!req.body.qid) {
         throw new error.HttpStatusError(400, 'QID is required');
       }
