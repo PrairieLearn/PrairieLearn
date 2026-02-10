@@ -106,7 +106,7 @@ export function SubmissionPanel({
         ? html`
             <div class="card mb-4 grading-block border-info">
               <div
-                class="card-header bg-info text-white d-flex align-items-center collapsible-card-header ${!expanded
+                class="card-header bg-info d-flex align-items-center collapsible-card-header ${!expanded
                   ? ' collapsed'
                   : ''}"
               >
@@ -118,7 +118,7 @@ export function SubmissionPanel({
                 </div>
                 <button
                   type="button"
-                  class="expand-icon-container btn btn-outline-light btn-sm ${!expanded
+                  class="expand-icon-container btn btn-outline-dark btn-sm ${!expanded
                     ? 'collapsed'
                     : ''}"
                   data-bs-toggle="collapse"
