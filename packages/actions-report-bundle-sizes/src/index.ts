@@ -209,10 +209,28 @@ async function fetchBaseline(
   return null;
 }
 
+async function isLatestMasterCommit(
+  octokit: ReturnType<typeof github.getOctokit>,
+): Promise<boolean> {
+  const { data: branch } = await octokit.rest.repos.getBranch({
+    owner: github.context.repo.owner,
+    repo: github.context.repo.repo,
+    branch: 'master',
+  });
+  return branch.commit.sha === github.context.sha;
+}
+
 async function pushBaseline(
   octokit: ReturnType<typeof github.getOctokit>,
   sizes: SizesJson,
 ): Promise<void> {
+  // Skip if a newer commit has already landed on master, since that build
+  // will (or already did) write a more up-to-date baseline.
+  if (!(await isLatestMasterCommit(octokit))) {
+    core.warning('Skipping baseline update: a newer commit exists on master');
+    return;
+  }
+
   const content = Buffer.from(JSON.stringify(sizes, null, 2) + '\n').toString('base64');
 
   // Check if file already exists to get its SHA (required for updates).
@@ -236,15 +254,27 @@ async function pushBaseline(
     }
   }
 
-  await octokit.rest.repos.createOrUpdateFileContents({
-    owner: github.context.repo.owner,
-    repo: github.context.repo.repo,
-    path: BASELINE_PATH,
-    message: 'Update bundle size baseline',
-    content,
-    sha: existingSha,
-    branch: BASELINE_BRANCH,
-  });
+  try {
+    await octokit.rest.repos.createOrUpdateFileContents({
+      owner: github.context.repo.owner,
+      repo: github.context.repo.repo,
+      path: BASELINE_PATH,
+      message: 'Update bundle size baseline',
+      content,
+      sha: existingSha,
+      branch: BASELINE_BRANCH,
+    });
+  } catch (err: unknown) {
+    if (typeof err === 'object' && err !== null && 'status' in err && err.status === 409) {
+      core.warning('Skipping baseline update: conflict (a newer build likely wrote first)');
+      return;
+    }
+    if (typeof err === 'object' && err !== null && 'status' in err && err.status === 422) {
+      core.warning('Skipping baseline update: SHA mismatch (a newer build likely wrote first)');
+      return;
+    }
+    throw err;
+  }
 
   core.info('Pushed bundle size baseline to size-report branch');
 }
