@@ -152,7 +152,7 @@ export const sharedConfig = defineConfig({
         // relative() can return an empty string, causing an error
         // if passed as an argument to the ignores function, so this case
         // should be short-circuited.
-        if (!relativePath) {
+        if (!relativePath || relativePath.startsWith('..')) {
           return false;
         }
 
