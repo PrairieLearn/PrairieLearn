@@ -6,8 +6,8 @@ import * as github from '@actions/github';
 const CI_REPORT_MARKER = '<!-- ci-report -->';
 const SECTION_START = '<!-- bundle-sizes -->';
 const SECTION_END = '<!-- /bundle-sizes -->';
-const BASELINE_BRANCH = 'bundle-size';
-const BASELINE_PATH = 'sizes.json';
+const BASELINE_BRANCH = 'size-report';
+const BASELINE_PATH = 'bundle-sizes.json';
 
 interface AssetSizes {
   raw: number;
@@ -201,7 +201,7 @@ async function fetchBaseline(
     }
   } catch (err: unknown) {
     if (typeof err === 'object' && err !== null && 'status' in err && err.status === 404) {
-      core.info('No baseline found on bundle-size branch');
+      core.info('No baseline found on size-report branch');
       return null;
     }
     throw err;
@@ -229,8 +229,8 @@ async function pushBaseline(
     }
   } catch (err: unknown) {
     if (typeof err === 'object' && err !== null && 'status' in err && err.status === 404) {
-      // File doesn't exist yet, will be created. Note: the branch must
-      // already exist; the Contents API cannot create branches.
+      // File doesn't exist yet, will be created. Note: the size-report
+      // branch must already exist; the Contents API cannot create branches.
     } else {
       throw err;
     }
@@ -246,7 +246,7 @@ async function pushBaseline(
     branch: BASELINE_BRANCH,
   });
 
-  core.info('Pushed bundle size baseline to bundle-size branch');
+  core.info('Pushed bundle size baseline to size-report branch');
 }
 
 async function commentOnPr(
@@ -315,7 +315,7 @@ async function main() {
       return;
     }
 
-    // Fetch baseline from bundle-size branch.
+    // Fetch baseline from size-report branch.
     const oldSizes = await fetchBaseline(octokit);
 
     // Build the comment section and post it.
