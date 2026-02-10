@@ -35,33 +35,6 @@
         { "id": "template/symbolic-input/random", "points": 1, "maxPoints": 4 },
         { "id": "template/figure/dynamic", "points": 1, "maxPoints": 4 }
       ]
-    },
-    {
-      "title": "More question examples and tips",
-      "questions": [
-        { "id": "demo/numberInputGradingMethod", "points": 1, "maxPoints": 2 },
-        { "id": "demo/numberInputTips", "points": 1, "maxPoints": 2 },
-        { "id": "demo/randomDataFrame", "points": 2, "maxPoints": 6 },
-        { "id": "demo/overlayTriangle", "points": 2, "maxPoints": 4 },
-        { "id": "demo/overlayDropdown", "points": 1, "maxPoints": 5 },
-        { "id": "demo/proofBlocks", "points": 1, "maxPoints": 5 },
-        { "id": "demo/markdownEditorLivePreview", "points": 2 },
-        { "id": "demo/graphvizEditorPreview", "points": 2 },
-        { "id": "demo/addHTMLtable", "points": 2, "maxPoints": 4 },
-        { "id": "demo/insertEmbeddedVideo", "points": 2, "maxPoints": 4 },
-        { "id": "element/markdown", "points": 2, "maxPoints": 10 },
-        { "id": "demo/survey", "points": 1, "maxPoints": 1 }
-      ]
-    },
-    {
-      "title": "Questions using additional customization (elements or grading function)",
-      "questions": [
-        { "id": "demo/custom/element", "points": 1, "maxPoints": 1 },
-        { "id": "demo/custom/gradeFunction", "points": 1, "maxPoints": 1 },
-        { "id": "demo/custom/extension", "points": 1, "maxPoints": 1 },
-        { "id": "demo/custom/elementHiddenTag", "points": 1, "maxPoints": 1 },
-        { "id": "demo/custom/stylingScripts", "points": 1, "maxPoints": 1 }
-      ]
     }
   ]
 }
