@@ -1,5 +1,5 @@
 import { HttpStatusError } from '@prairielearn/error';
-import { loadSqlEquiv, queryOptionalRow, queryRow, queryRows } from '@prairielearn/postgres';
+import { loadSqlEquiv, queryRow, queryRows } from '@prairielearn/postgres';
 
 import { type AuthzData } from '../lib/authz-data-lib.js';
 import {
@@ -16,6 +16,15 @@ import type { ColorJson } from '../schemas/infoCourse.js';
 import { insertAuditEvent } from './audit-event.js';
 
 const sql = loadSqlEquiv(import.meta.url);
+
+function assertLabelMatchesCourseInstance(
+  label: StudentLabel,
+  courseInstance: CourseInstance,
+): void {
+  if (label.course_instance_id !== courseInstance.id) {
+    throw new HttpStatusError(403, 'Label does not belong to this course instance');
+  }
+}
 
 function assertEnrollmentMatchesLabel(enrollment: Enrollment, label: StudentLabel): void {
   if (enrollment.course_instance_id !== label.course_instance_id) {
@@ -68,13 +77,8 @@ export async function selectStudentLabelById({
   id: string;
   courseInstance: CourseInstance;
 }): Promise<StudentLabel> {
-  const label = await queryOptionalRow(sql.select_student_label_by_id, { id }, StudentLabelSchema);
-  if (!label) {
-    throw new HttpStatusError(404, 'Label not found');
-  }
-  if (label.course_instance_id !== courseInstance.id) {
-    throw new HttpStatusError(403, 'Label does not belong to this course instance');
-  }
+  const label = await queryRow(sql.select_student_label_by_id, { id }, StudentLabelSchema);
+  assertLabelMatchesCourseInstance(label, courseInstance);
   return label;
 }
 
