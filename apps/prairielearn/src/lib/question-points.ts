@@ -245,6 +245,7 @@ export async function updateInstanceQuestionStats({
   const submissionScores = await queryRows(
     sql.select_submissions_for_stats,
     { instance_question_id: instanceQuestion.id },
+    // Only graded submissions are selected, so the score is never null.
     z.number(),
   );
   if (submissionScores.length === 0) {
