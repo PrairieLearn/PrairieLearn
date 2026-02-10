@@ -1,3 +1,5 @@
+import assert from 'node:assert';
+
 import { loadSqlEquiv, queryRow } from '@prairielearn/postgres';
 import { IdSchema } from '@prairielearn/zod';
 
@@ -13,6 +15,10 @@ export async function updateIssueOpenStatus({
   issueId: string;
   open: boolean;
 }): Promise<string> {
+  assert(
+    process.env.NODE_ENV === 'test',
+    'updateIssueOpenStatus can only be called in a test environment',
+  );
   return await queryRow(
     sql.update_issue_open_status,
     {

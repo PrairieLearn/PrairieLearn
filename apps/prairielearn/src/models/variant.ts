@@ -291,6 +291,10 @@ export async function insertTestVariant({
   userId: string;
   variantSeed?: string;
 }) {
+  assert(
+    process.env.NODE_ENV === 'test',
+    'insertTestVariant can only be called in a test environment',
+  );
   return await queryRow(
     sql.insert_test_variant,
     {
