@@ -15,10 +15,7 @@ export async function updateIssueOpenStatus({
   issueId: string;
   open: boolean;
 }): Promise<string> {
-  assert(
-    process.env.NODE_ENV === 'test',
-    'updateIssueOpenStatus can only be called in a test environment',
-  );
+  assert(process.env.NODE_ENV === 'test');
   return await queryRow(
     sql.update_issue_open_status,
     {

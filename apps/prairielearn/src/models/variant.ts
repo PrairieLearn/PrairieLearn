@@ -274,7 +274,6 @@ export async function lockVariant({ variant_id }: { variant_id: string }) {
 }
 
 /**
- * Insert a minimal variant for testing purposes only.
  * This creates a variant with just the required fields, without going through
  * the full question generation process.
  */
@@ -291,10 +290,7 @@ export async function insertTestVariant({
   userId: string;
   variantSeed?: string;
 }) {
-  assert(
-    process.env.NODE_ENV === 'test',
-    'insertTestVariant can only be called in a test environment',
-  );
+  assert(process.env.NODE_ENV === 'test');
   return await queryRow(
     sql.insert_test_variant,
     {

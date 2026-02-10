@@ -44,7 +44,7 @@ export async function insertIssue({
   systemData,
   userId,
   authnUserId,
-}: IssueData): Promise<string> {
+}: IssueData) {
   // Truncate all strings in the data objects to 1000 characters. This ensures
   // that we don't store too much unnecessary data. This data is here for
   // convenience, but it's not the source of truth: pretty much all of it
@@ -75,10 +75,7 @@ export async function insertIssue({
 /**
  * Inserts an issue for a thrown error.
  */
-export async function insertIssueForError(
-  err: ErrorMaybeWithData,
-  data: IssueForErrorData,
-): Promise<string> {
+export async function insertIssueForError(err: ErrorMaybeWithData, data: IssueForErrorData) {
   return insertIssue({
     ...data,
     manuallyReported: false,

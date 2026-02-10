@@ -1,5 +1,7 @@
 import { defineConfig, devices } from '@playwright/test';
 
+// Set the NODE_ENV to 'test' for the Playwright tests.
+// Certain model functions are only allowed to be called in a test environment.
 process.env.NODE_ENV = 'test';
 
 /**
