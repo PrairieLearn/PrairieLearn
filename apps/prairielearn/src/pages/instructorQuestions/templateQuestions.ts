@@ -3,6 +3,8 @@ import { EXAMPLE_COURSE_PATH } from '../../lib/paths.js';
 import { type QuestionsPageData } from '../../models/questions.js';
 import { loadQuestions } from '../../sync/course-db.js';
 
+const TEMPLATE_QID_PREFIX = 'template/';
+
 let cachedTemplateQuestionExampleCourse: { qid: string; title: string }[] | null = null;
 
 /**
@@ -20,10 +22,8 @@ let cachedTemplateQuestionExampleCourse: { qid: string; title: string }[] | null
  *    on the database.
  */
 async function getTemplateQuestionsExampleCourse() {
-  if (!config.devMode) {
-    if (cachedTemplateQuestionExampleCourse) {
-      return cachedTemplateQuestionExampleCourse;
-    }
+  if (!config.devMode && cachedTemplateQuestionExampleCourse) {
+    return cachedTemplateQuestionExampleCourse;
   }
 
   const questions = await loadQuestions({
@@ -35,7 +35,7 @@ async function getTemplateQuestionsExampleCourse() {
 
   const templateQuestions = Object.entries(questions)
     .map(([qid, question]) => ({ qid, title: question.data?.title }))
-    .filter(({ qid, title }) => qid.startsWith('template/') && title !== undefined) as {
+    .filter(({ qid, title }) => qid.startsWith(TEMPLATE_QID_PREFIX) && title !== undefined) as {
     qid: string;
     title: string;
   }[];
@@ -59,7 +59,7 @@ async function getTemplateQuestionsExampleCourse() {
 export async function getTemplateQuestions(questions: QuestionsPageData[]) {
   const exampleCourseTemplateQuestions = await getTemplateQuestionsExampleCourse();
   const courseTemplateQuestions = questions
-    .filter(({ qid }) => qid.startsWith('template/'))
+    .filter(({ qid }) => qid.startsWith(TEMPLATE_QID_PREFIX))
     .map(({ qid, title }) => ({ example_course: false, qid, title }));
   return [
     ...exampleCourseTemplateQuestions.map((q) => ({ example_course: true, ...q })),
