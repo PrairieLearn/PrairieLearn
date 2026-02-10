@@ -1,5 +1,4 @@
 import { runInTransactionAsync } from '@prairielearn/postgres';
-import { run } from '@prairielearn/run';
 
 import { type CourseInstance } from '../../lib/db-types.js';
 import { insertAuditEvent } from '../../models/audit-event.js';
@@ -28,10 +27,10 @@ export async function syncStudentLabels(
   courseInstance: CourseInstance,
   studentLabels: StudentLabelJson[] | undefined,
   authnUserId: string | null = null,
-): Promise<Record<string, string>> {
+): Promise<void> {
   const desiredLabels = studentLabels ?? [];
 
-  return await runInTransactionAsync(async () => {
+  await runInTransactionAsync(async () => {
     const existingLabels = await selectStudentLabelsInCourseInstance(courseInstance);
 
     const existingByName = new Map(existingLabels.map((label) => [label.name, label]));
@@ -45,29 +44,16 @@ export async function syncStudentLabels(
     const labelsToDelete = existingLabels.filter((label) => !desiredByName.has(label.name));
 
     if (labelsToCreate.length === 0 && labelsToUpdate.length === 0 && labelsToDelete.length === 0) {
-      // Build name to ID map from existing labels (nothing changed)
-      const nameToIdMap: Record<string, string> = {};
-      for (const label of existingLabels) {
-        nameToIdMap[label.name] = label.id;
-      }
-      return nameToIdMap;
+      return;
     }
 
-    const insertedLabels = await run(async () => {
-      if (labelsToCreate.length === 0) return [];
-
-      const results = [];
-      for (const label of labelsToCreate) {
-        results.push(
-          await createStudentLabel({
-            courseInstanceId: courseInstance.id,
-            name: label.name,
-            color: label.color,
-          }),
-        );
-      }
-      return results;
-    });
+    for (const label of labelsToCreate) {
+      await createStudentLabel({
+        courseInstanceId: courseInstance.id,
+        name: label.name,
+        color: label.color,
+      });
+    }
 
     for (const label of labelsToUpdate) {
       const existing = existingByName.get(label.name)!;
@@ -102,21 +88,5 @@ export async function syncStudentLabels(
       // Delete the label (cascade removes enrollment links)
       await deleteStudentLabel(label);
     }
-
-    // Build name to ID map from existing (not deleted) + newly inserted labels
-    const nameToIdMap: Record<string, string> = {};
-    const deletedIds = new Set(labelsToDelete.map((l) => l.id));
-
-    for (const label of existingLabels) {
-      if (!deletedIds.has(label.id)) {
-        nameToIdMap[label.name] = label.id;
-      }
-    }
-
-    for (const label of insertedLabels) {
-      nameToIdMap[label.name] = label.id;
-    }
-
-    return nameToIdMap;
   });
 }
