@@ -1,4 +1,5 @@
 export PATH := $(CURDIR)/.venv/bin:$(PATH)
+export TURBO_NO_UPDATE_NOTIFIER := 1
 
 # On macOS, set flags for pygraphviz to find graphviz headers
 # See https://github.com/pygraphviz/pygraphviz/blob/main/INSTALL.txt
@@ -10,7 +11,7 @@ endif
 .PHONY: build
 
 build:
-	@TURBO_NO_UPDATE_NOTIFIER=1 yarn turbo run build --output-logs=errors-only
+	@yarn turbo run build --output-logs=errors-only
 build-verbose:
 	@yarn turbo run build
 build-sequential:
@@ -171,7 +172,7 @@ typecheck-contrib:
 typecheck-scripts:
 	@yarn tsgo -p scripts --noEmit
 typecheck-js:
-	@TURBO_NO_UPDATE_NOTIFIER=1 yarn turbo run build --output-logs=errors-only
+	@yarn turbo run build --output-logs=errors-only
 typecheck-python: python-deps
 	@yarn pyright
 typecheck-sql:
