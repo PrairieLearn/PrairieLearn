@@ -612,6 +612,9 @@ export function CreateQuestionForm({
           </div>
         )}
 
+        {/* Empty question state */}
+        {startFrom === 'empty' && <StartFromScratchState />}
+
         <div className="mt-3 d-flex justify-content-end">
           <input type="hidden" name="__action" value="add_question" />
           <input type="hidden" name="__csrf_token" value={csrfToken} />
@@ -643,6 +646,40 @@ function EmptySearchState({
       <button type="button" className="btn btn-outline-primary btn-sm" onClick={onStartFromScratch}>
         Start from scratch instead
       </button>
+    </div>
+  );
+}
+
+function StartFromScratchState() {
+  return (
+    <div className="d-flex justify-content-center my-3">
+      <div
+        className="text-center py-5 px-4"
+        style={{
+          maxWidth: 500,
+          width: '100%',
+          border: '2px dashed #dee2e6',
+          borderRadius: 12,
+          backgroundColor: '#f8f9fa',
+        }}
+      >
+        <div
+          className="d-inline-flex align-items-center justify-content-center mb-3"
+          style={{
+            width: 56,
+            height: 56,
+            borderRadius: '50%',
+            backgroundColor: '#e9ecef',
+          }}
+        >
+          <i className="fa fa-file-alt fa-lg text-muted" aria-hidden="true" />
+        </div>
+        <h3 className="h5 mb-2">Start from scratch</h3>
+        <p className="text-muted mb-0">
+          You'll get a blank question with the basic file structure. Perfect if you already know
+          what you're building.
+        </p>
+      </div>
     </div>
   );
 }
