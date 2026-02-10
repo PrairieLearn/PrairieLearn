@@ -1,6 +1,7 @@
 import clsx from 'clsx';
+import { Fragment } from 'react';
 
-import { escapeHtml, html } from '@prairielearn/html';
+import { renderHtml } from '@prairielearn/react';
 
 import { type CourseRequestRow } from '../lib/course-request.js';
 import { type Institution } from '../lib/db-types.js';
@@ -23,24 +24,22 @@ export function CourseRequestsTable({
   urlPrefix: string;
 }) {
   const headerPrefix = showAll ? 'All' : 'Pending';
-  return html`
-    <div class="card mb-4">
-      <div class="card-header bg-primary text-white d-flex align-items-center">
-        <h2>${headerPrefix} course requests</h2>
-        ${showAll
-          ? ''
-          : html`
-              <a
-                class="btn btn-sm btn-light ms-auto"
-                href="${urlPrefix}/administrator/courseRequests"
-              >
-                <i class="fa fa-search" aria-hidden="true"></i>
-                <span class="d-none d-sm-inline">View All</span>
-              </a>
-            `}
+  return (
+    <div className="card mb-4">
+      <div className="card-header bg-primary text-white d-flex align-items-center">
+        <h2>{headerPrefix} course requests</h2>
+        {!showAll && (
+          <a
+            className="btn btn-sm btn-light ms-auto"
+            href={`${urlPrefix}/administrator/courseRequests`}
+          >
+            <i className="fa fa-search" aria-hidden="true" />
+            <span className="d-none d-sm-inline">View All</span>
+          </a>
+        )}
       </div>
       <div>
-        <table class="table table-sm" aria-label="Course requests">
+        <table className="table table-sm" aria-label="Course requests">
           <thead>
             <tr>
               <th>Created At</th>
@@ -51,190 +50,189 @@ export function CourseRequestsTable({
               <th>GitHub Username</th>
               <th>Referral Source</th>
               <th>Status</th>
-              ${showAll ? html`<th>Updated By</th>` : ''}
+              {showAll && <th>Updated By</th>}
               <th>Actions</th>
               <th>Details</th>
             </tr>
           </thead>
           <tbody>
-            ${rows.map((row) => {
-              return html`
+            {rows.map((row) => (
+              <Fragment key={row.id}>
                 <tr>
-                  <td class="align-middle">${row.created_at.toISOString()}</td>
-                  <td class="align-middle">${row.short_name}: ${row.title}</td>
-                  <td class="align-middle">${row.institution}</td>
-                  <td class="align-middle">
-                    ${row.first_name} ${row.last_name} (${row.work_email})
+                  <td className="align-middle">{row.created_at.toISOString()}</td>
+                  <td className="align-middle">
+                    {row.short_name}: {row.title}
                   </td>
-                  <td class="align-middle">${row.user_name} (${row.user_uid})</td>
-                  <td class="align-middle">${row.github_user}</td>
-                  <td class="align-middle">${row.referral_source}</td>
-                  <td class="align-middle">
-                    ${CourseRequestStatusIcon({ status: row.approved_status })}
+                  <td className="align-middle">{row.institution}</td>
+                  <td className="align-middle">
+                    {row.first_name} {row.last_name} ({row.work_email})
                   </td>
-                  ${showAll
-                    ? html`
-                        <td class="align-middle">
-                          ${row.approved_status !== 'pending'
-                            ? (row.approved_by_name ?? 'Automatically Approved')
-                            : ''}
-                        </td>
-                      `
-                    : ''}
-                  <td class="align-middle">
-                    ${row.approved_status !== 'approved'
-                      ? html`
-                          <button
-                            type="button"
-                            class="btn btn-sm btn-danger text-nowrap me-2"
-                            data-bs-toggle="popover"
-                            data-bs-container="body"
-                            data-bs-html="true"
-                            data-bs-placement="auto"
-                            data-bs-title="Deny course request"
-                            data-bs-content="${escapeHtml(
-                              CourseRequestDenyForm({
-                                request: row,
-                                csrfToken,
-                              }),
-                            )}"
-                          >
-                            <i class="fa fa-times" aria-hidden="true"></i> Deny
-                          </button>
-                          <button
-                            type="button"
-                            class="btn btn-sm btn-success text-nowrap"
-                            data-bs-toggle="popover"
-                            data-bs-container="body"
-                            data-bs-html="true"
-                            data-bs-placement="auto"
-                            data-bs-title="Approve course request"
-                            data-bs-content="${escapeHtml(
-                              CourseRequestApproveForm({
-                                request: row,
-                                institutions,
-                                coursesRoot,
-                                csrfToken,
-                              }),
-                            )}"
-                          >
-                            <i class="fa fa-check" aria-hidden="true"></i> Approve
-                          </button>
-                        `
-                      : ''}
+                  <td className="align-middle">
+                    {row.user_name} ({row.user_uid})
                   </td>
-                  <td class="align-middle">
-                    <div class="dropdown">
+                  <td className="align-middle">{row.github_user}</td>
+                  <td className="align-middle">{row.referral_source}</td>
+                  <td className="align-middle">
+                    <CourseRequestStatusIcon status={row.approved_status} />
+                  </td>
+                  {showAll && (
+                    <td className="align-middle">
+                      {row.approved_status !== 'pending' &&
+                        (row.approved_by_name ?? 'Automatically Approved')}
+                    </td>
+                  )}
+                  <td className="align-middle">
+                    {row.approved_status !== 'approved' && (
+                      <>
+                        <button
+                          type="button"
+                          className="btn btn-sm btn-danger text-nowrap me-2"
+                          data-bs-toggle="popover"
+                          data-bs-container="body"
+                          data-bs-html="true"
+                          data-bs-placement="auto"
+                          data-bs-title="Deny course request"
+                          data-bs-content={renderHtml(
+                            CourseRequestDenyForm({
+                              request: row,
+                              csrfToken,
+                            }),
+                          ).toString()}
+                        >
+                          <i className="fa fa-times" aria-hidden="true" /> Deny
+                        </button>
+                        <button
+                          type="button"
+                          className="btn btn-sm btn-success text-nowrap"
+                          data-bs-toggle="popover"
+                          data-bs-container="body"
+                          data-bs-html="true"
+                          data-bs-placement="auto"
+                          data-bs-title="Approve course request"
+                          data-bs-content={renderHtml(
+                            CourseRequestApproveForm({
+                              request: row,
+                              institutions,
+                              coursesRoot,
+                              csrfToken,
+                            }),
+                          ).toString()}
+                        >
+                          <i className="fa fa-check" aria-hidden="true" /> Approve
+                        </button>
+                      </>
+                    )}
+                  </td>
+                  <td className="align-middle">
+                    <div className="dropdown">
                       <button
-                        class="btn btn-secondary btn-xs dropdown-toggle"
+                        className="btn btn-secondary btn-xs dropdown-toggle"
                         type="button"
                         data-bs-toggle="dropdown"
                         aria-expanded="false"
                       >
                         Show Details
                       </button>
-                      <ul class="dropdown-menu">
+                      <ul className="dropdown-menu">
                         <li>
                           <button
-                            class="${clsx('dropdown-item', 'show-hide-btn', {
+                            className={clsx('dropdown-item', 'show-hide-btn', {
                               collapsed: !row.note,
-                            })}"
+                            })}
                             data-bs-toggle="collapse"
-                            data-bs-target="#course-requests-note-${row.id}"
-                            aria-expanded="${row.note ? 'true' : 'false'}"
-                            aria-controls="course-requests-note-${row.id}"
+                            data-bs-target={`#course-requests-note-${row.id}`}
+                            aria-expanded={row.note ? 'true' : 'false'}
+                            aria-controls={`course-requests-note-${row.id}`}
                           >
-                            <span class="show-when-collapsed">Edit Note</span>
-                            <span class="show-when-expanded">Close Note</span>
+                            <span className="show-when-collapsed">Edit Note</span>
+                            <span className="show-when-expanded">Close Note</span>
                           </button>
                         </li>
-                        ${row.jobs.length > 0
-                          ? html`
-                              <li>
-                                <button
-                                  class="dropdown-item show-hide-btn collapsed"
-                                  data-bs-toggle="collapse"
-                                  data-bs-target="#course-requests-job-list-${row.id}"
-                                  aria-expanded="false"
-                                  aria-controls="course-requests-job-list-${row.id}"
-                                >
-                                  Show jobs
-                                </button>
-                              </li>
-                            `
-                          : ''}
+                        {row.jobs.length > 0 && (
+                          <li>
+                            <button
+                              className="dropdown-item show-hide-btn collapsed"
+                              data-bs-toggle="collapse"
+                              data-bs-target={`#course-requests-job-list-${row.id}`}
+                              aria-expanded="false"
+                              aria-controls={`course-requests-job-list-${row.id}`}
+                            >
+                              Show jobs
+                            </button>
+                          </li>
+                        )}
                       </ul>
                     </div>
                   </td>
                 </tr>
                 <tr>
-                  <td colspan="${showAll ? 11 : 10}" class="p-0">
+                  <td colSpan={showAll ? 11 : 10} className="p-0">
                     <div
-                      id="course-requests-note-${row.id}"
-                      class="${clsx('collapse', { show: row.note })}"
+                      id={`course-requests-note-${row.id}`}
+                      className={clsx('collapse', { show: row.note })}
                     >
-                      ${CourseRequestEditNoteForm({
-                        request: row,
-                        csrfToken,
-                      })}
+                      <CourseRequestEditNoteForm request={row} csrfToken={csrfToken} />
                     </div>
                   </td>
                 </tr>
-                ${row.jobs.length > 0
-                  ? html`
-                      <tr>
-                        <td colspan="${showAll ? 11 : 10}" class="p-0">
-                          <div id="course-requests-job-list-${row.id}" class="collapse">
-                            <table
-                              class="table table-sm table-active mb-0"
-                              aria-label="Course request jobs"
-                            >
-                              <thead>
-                                <th>Number</th>
-                                <th>Start Date</th>
-                                <th>End Date</th>
-                                <th>User</th>
-                                <th>Status</th>
-                                <th></th>
-                              </thead>
-                              ${[...row.jobs].reverse().map((job) => {
-                                return html`
-                                  <tr>
-                                    <td>${job.number}</td>
-                                    <td>${job.start_date.toISOString()}</td>
-                                    <td>${job.finish_date?.toISOString()}</td>
-                                    <td>${job.authn_user_name}</td>
-                                    <td>${JobStatus({ status: job.status })}</td>
-                                    <td>
-                                      <a
-                                        href="${urlPrefix}/administrator/jobSequence/${job.id}"
-                                        class="btn btn-xs btn-info float-end"
-                                      >
-                                        Details
-                                      </a>
-                                    </td>
-                                  </tr>
-                                `;
-                              })}
-                            </table>
-                          </div>
-                        </td>
-                      </tr>
-                    `
-                  : ''}
-              `;
-            })}
+                {row.jobs.length > 0 && (
+                  <tr>
+                    <td colSpan={showAll ? 11 : 10} className="p-0">
+                      <div id={`course-requests-job-list-${row.id}`} className="collapse">
+                        <table
+                          className="table table-sm table-active mb-0"
+                          aria-label="Course request jobs"
+                        >
+                          <thead>
+                            <th>Number</th>
+                            <th>Start Date</th>
+                            <th>End Date</th>
+                            <th>User</th>
+                            <th>Status</th>
+                            <th />
+                          </thead>
+                          {[...row.jobs].reverse().map((job) => {
+                            return (
+                              <tr key={job.id}>
+                                <td>{job.number}</td>
+                                <td>{job.start_date.toISOString()}</td>
+                                <td>{job.finish_date?.toISOString()}</td>
+                                <td>{job.authn_user_name}</td>
+                                <td
+                                  // eslint-disable-next-line @eslint-react/dom/no-dangerously-set-innerhtml
+                                  dangerouslySetInnerHTML={{
+                                    __html: JobStatus({ status: job.status }).toString(),
+                                  }}
+                                />
+                                <td>
+                                  <a
+                                    href={`${urlPrefix}/administrator/jobSequence/${job.id}`}
+                                    className="btn btn-xs btn-info float-end"
+                                  >
+                                    Details
+                                  </a>
+                                </td>
+                              </tr>
+                            );
+                          })}
+                        </table>
+                      </div>
+                    </td>
+                  </tr>
+                )}
+              </Fragment>
+            ))}
           </tbody>
         </table>
       </div>
-      <div class="card-footer">
+      <div className="card-footer">
         <small>
           Accepting a course request will automatically create a new GitHub repository and add the
           course to the database.
         </small>
       </div>
     </div>
-  `;
+  );
 }
 
 function CourseRequestApproveForm({
@@ -249,95 +247,116 @@ function CourseRequestApproveForm({
   csrfToken: string;
 }) {
   const repo_name = 'pl-' + request.short_name.replaceAll(' ', '').toLowerCase();
-  return html`
-    <form name="create-course-from-request-form-${request.id}" method="POST">
-      <input type="hidden" name="__csrf_token" value="${csrfToken}" />
+  return (
+    <form name={`create-course-from-request-form-${request.id}`} method="POST">
+      <input type="hidden" name="__csrf_token" value={csrfToken} />
       <input type="hidden" name="__action" value="create_course_from_request" />
-      <input type="hidden" name="request_id" value="${request.id}" />
+      <input type="hidden" name="request_id" value={request.id} />
 
-      <div class="mb-3">
-        <label class="form-label">Institution:</label>
+      <div className="mb-3">
+        <label className="form-label" htmlFor="courseRequestAddInstitution">
+          Institution:
+        </label>
         <select
+          id="courseRequestAddInstitution"
           name="institution_id"
-          class="form-select"
+          className="form-select"
+          // @ts-expect-error -- onchange is needed because this form is rendered
+          // as a string for a Bootstrap popover, not managed by React
           onchange="this.closest('form').querySelector('[name=display_timezone]').value = this.querySelector('option:checked').dataset.timezone;"
         >
-          ${institutions.map((i) => {
-            return html`
-              <option value="${i.id}" data-timezone="${i.display_timezone}">${i.short_name}</option>
-            `;
+          {institutions.map((i) => {
+            return (
+              <option key={i.id} value={i.id} data-timezone={i.display_timezone}>
+                {i.short_name}
+              </option>
+            );
           })}
         </select>
       </div>
-      <div class="mb-3">
-        <label class="form-label" for="courseRequestAddInputShortName">Short name:</label>
+      <div className="mb-3">
+        <label className="form-label" htmlFor="courseRequestAddInputShortName">
+          Short name:
+        </label>
         <input
           type="text"
-          class="form-control"
+          className="form-control"
           id="courseRequestAddInputShortName"
           name="short_name"
           placeholder="XC 101"
-          value="${request.short_name}"
+          defaultValue={request.short_name}
         />
       </div>
-      <div class="mb-3">
-        <label class="form-label" for="courseRequestAddInputTitle">Title:</label>
+      <div className="mb-3">
+        <label className="form-label" htmlFor="courseRequestAddInputTitle">
+          Title:
+        </label>
         <input
           type="text"
-          class="form-control"
+          className="form-control"
           id="courseRequestAddInputTitle"
           name="title"
           placeholder="Template course title"
-          value="${request.title}"
+          defaultValue={request.title}
         />
       </div>
-      <div class="mb-3">
-        <label class="form-label" for="courseRequestAddInputTimezone">Timezone:</label>
+      <div className="mb-3">
+        <label className="form-label" htmlFor="courseRequestAddInputTimezone">
+          Timezone:
+        </label>
         <input
           type="text"
-          class="form-control"
+          className="form-control"
           id="courseRequestAddInputTimezone"
           name="display_timezone"
-          value="${institutions[0]?.display_timezone}"
+          defaultValue={institutions[0]?.display_timezone}
         />
       </div>
-      <div class="mb-3">
-        <label class="form-label" for="courseRequestAddInputPath">Path:</label>
+      <div className="mb-3">
+        <label className="form-label" htmlFor="courseRequestAddInputPath">
+          Path:
+        </label>
         <input
           type="text"
-          class="form-control"
+          className="form-control"
           id="courseRequestAddInputPath"
           name="path"
-          value="${coursesRoot + '/' + repo_name}"
+          defaultValue={coursesRoot + '/' + repo_name}
         />
       </div>
-      <div class="mb-3">
-        <label class="form-label" for="courseRequestAddInputRepositoryName">Repository Name:</label>
+      <div className="mb-3">
+        <label className="form-label" htmlFor="courseRequestAddInputRepositoryName">
+          Repository Name:
+        </label>
         <input
           type="text"
-          class="form-control"
+          className="form-control"
           id="courseRequestAddInputRepository"
           name="repository_short_name"
-          value="${repo_name}"
+          defaultValue={repo_name}
         />
       </div>
-      <div class="mb-3">
-        <label for="courseRequestAddInputGithubUser">GitHub Username:</label>
+      <div className="mb-3">
+        <label htmlFor="courseRequestAddInputGithubUser">GitHub Username:</label>
         <input
           type="text"
-          class="form-control"
+          className="form-control"
           id="courseRequestAddInputGithubUser"
           name="github_user"
-          value="${request.github_user}"
+          defaultValue={request.github_user ?? ''}
         />
       </div>
 
-      <div class="text-end">
-        <button type="button" class="btn btn-secondary" data-bs-dismiss="popover">Cancel</button>
-        <button type="submit" class="btn btn-primary">Create course</button>
+      <div className="text-end">
+        <button type="button" className="btn btn-secondary" data-bs-dismiss="popover">
+          Cancel
+        </button>
+        <button type="submit" className="btn btn-primary">
+          Create course
+        </button>
       </div>
     </form>
-  `;
+  );
 }
 
 function CourseRequestDenyForm({
@@ -347,32 +366,54 @@ function CourseRequestDenyForm({
   request: CourseRequestRow;
   csrfToken: string;
 }) {
-  return html`
+  return (
     <form method="POST">
-      <input type="hidden" name="__csrf_token" value="${csrfToken}" />
+      <input type="hidden" name="__csrf_token" value={csrfToken} />
       <input type="hidden" name="__action" value="approve_deny_course_request" />
       <input type="hidden" name="approve_deny_action" value="denied" />
-      <input type="hidden" name="request_id" value="${request.id}" />
-      <button type="button" class="btn btn-secondary" data-bs-dismiss="popover">Cancel</button>
-      <button type="submit" class="btn btn-danger">Deny</button>
+      <input type="hidden" name="request_id" value={request.id} />
+      <button type="button" className="btn btn-secondary" data-bs-dismiss="popover">
+        Cancel
+      </button>
+      <button type="submit" className="btn btn-danger">
+        Deny
+      </button>
     </form>
-  `;
+  );
 }
 
 function CourseRequestStatusIcon({ status }: { status: CourseRequestRow['approved_status'] }) {
   switch (status) {
     case 'pending':
-      return html`<span class="badge text-bg-secondary"><i class="fa fa-clock"></i> Pending</span>`;
+      return (
+        <span className="badge text-bg-secondary">
+          <i className="fa fa-clock" /> Pending
+        </span>
+      );
     case 'creating':
-      return html`<span class="badge text-bg-info"
-        ><i class="fa fa-sync"></i> Job in progress</span
-      >`;
+      return (
+        <span className="badge text-bg-info">
+          <i className="fa fa-sync" /> Job in progress
+        </span>
+      );
     case 'failed':
-      return html`<span class="badge text-bg-danger"><i class="fa fa-times"></i> Job failed</span>`;
+      return (
+        <span className="badge text-bg-danger">
+          <i className="fa fa-times" /> Job failed
+        </span>
+      );
     case 'approved':
-      return html`<span class="badge text-bg-success"><i class="fa fa-check"></i> Approved</span>`;
+      return (
+        <span className="badge text-bg-success">
+          <i className="fa fa-check" /> Approved
+        </span>
+      );
     case 'denied':
-      return html`<span class="badge text-bg-danger"><i class="fa fa-times"></i> Denied</span>`;
+      return (
+        <span className="badge text-bg-danger">
+          <i className="fa fa-times" /> Denied
+        </span>
+      );
   }
 }
 
@@ -383,33 +424,32 @@ function CourseRequestEditNoteForm({
   request: CourseRequestRow;
   csrfToken: string;
 }) {
-  return html`
+  return (
     <form method="POST">
-      <input type="hidden" name="__csrf_token" value="${csrfToken}" />
+      <input type="hidden" name="__csrf_token" value={csrfToken} />
       <input type="hidden" name="__action" value="update_course_request_note" />
-      <input type="hidden" name="request_id" value="${request.id}" />
-      <div class="d-flex gap-2 align-items-center py-2 px-2">
+      <input type="hidden" name="request_id" value={request.id} />
+      <div className="d-flex gap-2 align-items-center py-2 px-2">
         <textarea
-          class="form-control flex-grow-1"
-          id="course-request-note-${request.id}"
+          className="form-control flex-grow-1"
+          id={`course-request-note-${request.id}`}
           name="note"
-          rows="1"
+          rows={1}
           placeholder="Add a note about this course request..."
-        >
-${request.note ?? ''}</textarea
-        >
+          defaultValue={request.note ?? ''}
+        />
         <button
           type="button"
-          class="btn btn-secondary"
+          className="btn btn-secondary"
           data-bs-toggle="collapse"
-          data-bs-target="#course-requests-note-${request.id}"
+          data-bs-target={`#course-requests-note-${request.id}`}
         >
           Cancel
         </button>
-        <button type="submit" class="btn btn-primary text-nowrap">
-          <i class="fa fa-save" aria-hidden="true"></i> Save note
+        <button type="submit" className="btn btn-primary text-nowrap">
+          <i className="fa fa-save" aria-hidden="true" /> Save note
         </button>
       </div>
     </form>
-  `;
+  );
 }

@@ -3,6 +3,7 @@ import { Router } from 'express';
 import * as error from '@prairielearn/error';
 import * as sqldb from '@prairielearn/postgres';
 
+import { PageLayout } from '../../components/PageLayout.js';
 import { config } from '../../lib/config.js';
 import {
   createCourseFromRequest,
@@ -26,12 +27,27 @@ router.get(
     const institutions = await selectAllInstitutions();
     const courses = await sqldb.queryRows(sql.select_courses, CourseWithInstitutionSchema);
     res.send(
-      AdministratorCourses({
-        course_requests,
-        institutions,
-        courses,
-        coursesRoot: config.coursesRoot,
+      PageLayout({
         resLocals: res.locals,
+        pageTitle: 'Courses',
+        navContext: {
+          type: 'administrator',
+          page: 'admin',
+          subPage: 'courses',
+        },
+        options: {
+          fullWidth: true,
+        },
+        content: (
+          <AdministratorCourses
+            courseRequests={course_requests}
+            institutions={institutions}
+            courses={courses}
+            coursesRoot={config.coursesRoot}
+            csrfToken={res.locals.__csrf_token}
+            urlPrefix={res.locals.urlPrefix}
+          />
+        ),
       }),
     );
   }),

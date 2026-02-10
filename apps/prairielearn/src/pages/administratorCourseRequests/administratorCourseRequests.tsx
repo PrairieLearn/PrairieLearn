@@ -2,6 +2,7 @@ import { Router } from 'express';
 
 import * as error from '@prairielearn/error';
 
+import { PageLayout } from '../../components/PageLayout.js';
 import { config } from '../../lib/config.js';
 import {
   createCourseFromRequest,
@@ -21,11 +22,26 @@ router.get(
     const rows = await selectAllCourseRequests();
     const institutions = await selectAllInstitutions();
     res.send(
-      AdministratorCourseRequests({
-        rows,
-        institutions,
-        coursesRoot: config.coursesRoot,
+      PageLayout({
         resLocals: res.locals,
+        pageTitle: 'Course Requests',
+        navContext: {
+          type: 'administrator',
+          page: 'admin',
+          subPage: 'courses',
+        },
+        options: {
+          fullWidth: true,
+        },
+        content: (
+          <AdministratorCourseRequests
+            rows={rows}
+            institutions={institutions}
+            coursesRoot={config.coursesRoot}
+            csrfToken={res.locals.__csrf_token}
+            urlPrefix={res.locals.urlPrefix}
+          />
+        ),
       }),
     );
   }),
