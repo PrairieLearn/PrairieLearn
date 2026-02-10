@@ -4,6 +4,7 @@ import pg from 'pg';
 
 import {
   SCHEMA_MIGRATIONS_PATH,
+  extractTimestampFromFilename,
   initBatchedMigrations,
   init as initMigrations,
   stopBatchedMigrations,
@@ -20,7 +21,8 @@ const POSTGRES_INIT_CONNECTION_STRING = 'postgres://postgres@localhost/postgres'
 const POSTGRES_DATABASE = 'pltest';
 const POSTGRES_DATABASE_TEMPLATE = 'pltest_template';
 
-const postgresTestUtils = sqldb.makePostgresTestUtils({
+/** @lintignore */
+export const postgresTestUtils = sqldb.makePostgresTestUtils({
   user: POSTGRES_USER,
   host: POSTGRES_HOST,
   defaultDatabase: 'postgres',
@@ -138,6 +140,45 @@ export async function setupDatabases({ configurePool = true }: { configurePool?:
   return poolConfig;
 }
 
+async function runMigrations(
+  migrationFilters: Parameters<typeof initMigrations>[0]['migrationFilters'] = {},
+): Promise<void> {
+  await initMigrations({
+    directories: [path.resolve(import.meta.dirname, '..', 'migrations'), SCHEMA_MIGRATIONS_PATH],
+    project: 'prairielearn',
+    migrationFilters,
+  });
+}
+
+/**
+ * Runs all migrations with a timestamp before the given migration.
+ * @param migrationName The name of the migration to run all migrations before.
+ */
+async function runMigrationsBefore(migrationName: string): Promise<void> {
+  await runMigrations({
+    beforeTimestamp: extractTimestampFromFilename(migrationName),
+    inclusiveBefore: false,
+  });
+}
+
+/**
+ * Runs all migrations with a timestamp before the given migration, and including the given migration.
+ * @param migrationName The name of the migration to run all migrations including.
+ */
+async function runMigrationsThrough(migrationName: string): Promise<void> {
+  await runMigrations({
+    beforeTimestamp: extractTimestampFromFilename(migrationName),
+    inclusiveBefore: true,
+  });
+}
+
+/**
+ * Runs any migrations that have not yet been run.
+ */
+async function runRemainingMigrations(): Promise<void> {
+  await runMigrations();
+}
+
 export async function before(): Promise<void> {
   await setupDatabases();
 }
@@ -174,6 +215,70 @@ export async function dropTemplate(): Promise<void> {
     // Always drop the template regardless of PL_KEEP_TEST_DB env
     force: true,
   });
+}
+
+/**
+ * Helper function for testing migrations.
+ *
+ * @lintignore
+ * @param params
+ * @param params.name The name of the migration to test.
+ * @param params.beforeMigration A function to run before the migration.
+ * @param params.afterMigration A function to run after the migration.
+ */
+export async function testMigration<T>({
+  name,
+  beforeMigration,
+  afterMigration,
+}: {
+  name: string;
+  beforeMigration?: () => Promise<T> | T;
+  afterMigration?: (beforeResult: T) => Promise<void> | void;
+}): Promise<void> {
+  const dbName = getDatabaseNameForCurrentWorker();
+
+  const poolConfig = await postgresTestUtils.createDatabase({
+    dropExistingDatabase: true,
+    database: dbName,
+    configurePool: true,
+  });
+
+  // We have to do this here so that `migrations.init` can successfully
+  // acquire a lock.
+  await namedLocks.init(poolConfig, (err) => {
+    throw err;
+  });
+
+  // Some migrations will call `enqueueBatchedMigration` and `finalizeBatchedMigration`,
+  // so we need to make sure the batched migration machinery is initialized.
+  initBatchedMigrations({
+    project: 'prairielearn',
+    directories: [path.resolve(import.meta.dirname, '..', 'batched-migrations')],
+  });
+
+  try {
+    await runMigrationsBefore(name);
+
+    // This is done to support tests that may need to use sprocs. This might fail
+    // if the migration creates tables that any sproc depends on. We'll cross that
+    // bridge if we come to it.
+    await sqldb.setRandomSearchSchemaAsync('test');
+    await sprocs.init();
+
+    const result = (await beforeMigration?.()) as T;
+
+    await runMigrationsThrough(name);
+
+    if (afterMigration) {
+      await afterMigration(result);
+    }
+
+    await runRemainingMigrations();
+  } finally {
+    await stopBatchedMigrations();
+    await closeSql();
+    await postgresTestUtils.dropDatabase();
+  }
 }
 
 export async function resetDatabase(): Promise<void> {

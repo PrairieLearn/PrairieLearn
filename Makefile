@@ -94,7 +94,7 @@ test-e2e: start-support
 
 check-dependencies:
 	@yarn depcruise apps/*/src apps/*/assets packages/*/src
-	@yarn knip -c .knip.ts
+	@yarn knip -c .knip.ts --tags=-lintignore
 
 check-jsonschema:
 	@yarn dlx tsx scripts/gen-jsonschema.mts check

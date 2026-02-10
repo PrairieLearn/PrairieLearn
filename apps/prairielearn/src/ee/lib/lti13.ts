@@ -29,9 +29,12 @@ import {
   Lti13InstanceSchema,
   UserSchema,
 } from '../../lib/db-types.js';
+import type { UntypedResLocals } from '../../lib/res-locals.types.js';
 import { type ServerJob } from '../../lib/server-jobs.js';
 import { selectUsersWithCourseInstanceAccess } from '../../models/course-instances.js';
 import { selectLti13Instance } from '../models/lti13Instance.js';
+
+import { getInstitutionAuthenticationProviders } from './institution.js';
 
 const sql = loadSqlEquiv(import.meta.url);
 
@@ -369,6 +372,22 @@ export class Lti13Claim {
     delete this.req.session.lti13_claims;
     delete this.req.session.authn_lti13_instance_id;
   }
+}
+
+/** @lintignore */
+export async function validateLti13CourseInstance(resLocals: UntypedResLocals): Promise<boolean> {
+  const hasLti13CourseInstance = await queryRow(
+    sql.select_ci_validation,
+    { course_instance_id: resLocals.course_instance.id },
+    z.boolean(),
+  );
+
+  if (!hasLti13CourseInstance) {
+    return false;
+  }
+
+  const instAuthProviders = await getInstitutionAuthenticationProviders(resLocals.institution.id);
+  return instAuthProviders.some((a) => a.name === 'LTI 1.3');
 }
 
 export async function getAccessToken(lti13_instance_id: string) {
