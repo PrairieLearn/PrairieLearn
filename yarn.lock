@@ -4352,6 +4352,19 @@ __metadata:
   languageName: node
   linkType: hard
 
+"@prairielearn/actions-report-bundle-sizes@workspace:packages/actions-report-bundle-sizes":
+  version: 0.0.0-use.local
+  resolution: "@prairielearn/actions-report-bundle-sizes@workspace:packages/actions-report-bundle-sizes"
+  dependencies:
+    "@actions/core": "npm:^3.0.0"
+    "@actions/github": "npm:^9.0.0"
+    "@prairielearn/tsconfig": "workspace:^"
+    "@types/node": "npm:^24.10.9"
+    "@typescript/native-preview": "npm:^7.0.0-dev.20260203.1"
+    typescript: "npm:^5.9.3"
+  languageName: unknown
+  linkType: soft
+
 "@prairielearn/actions-report-image-sizes@workspace:packages/actions-report-image-sizes":
   version: 0.0.0-use.local
   resolution: "@prairielearn/actions-report-image-sizes@workspace:packages/actions-report-image-sizes"
@@ -18323,6 +18336,7 @@ __metadata:
     get-stream: "npm:^9.0.1"
     globby: "npm:^16.1.0"
     htmlhint: "npm:^1.8.0"
+    ignore: "npm:^7.0.5"
     knip: "npm:^5.83.1"
     linkinator: "npm:^7.5.3"
     markdownlint-cli: "npm:^0.47.0"

@@ -1,9 +1,8 @@
 import clsx from 'clsx';
 import { useMemo, useRef, useState } from 'react';
 
-import { SHORT_NAME_PATTERN } from '../lib/short-name.js';
-
-import { QuestionShortNameDescription } from './ShortNameDescriptions.js';
+import { QuestionShortNameDescription } from '../../components/ShortNameDescriptions.js';
+import { SHORT_NAME_PATTERN } from '../../lib/short-name.js';
 
 interface SelectableCardProps {
   id: string;
@@ -148,10 +147,14 @@ function RadioCardGroup({ label, value, options, onChange }: RadioCardGroupProps
   );
 }
 
-export function CreateQuestionModalContents({
+export function CreateQuestionForm({
   templateQuestions,
+  csrfToken,
+  questionsUrl,
 }: {
   templateQuestions: { example_course: boolean; qid: string; title: string }[];
+  csrfToken: string;
+  questionsUrl: string;
 }) {
   const [startFrom, setStartFrom] = useState('example');
   const [selectedTemplateQid, setSelectedTemplateQid] = useState('');
@@ -196,85 +199,105 @@ export function CreateQuestionModalContents({
   });
 
   return (
-    <>
-      <div className="mb-3">
-        <label className="form-label" htmlFor="title">
-          Title
-        </label>
-        <input
-          type="text"
-          className="form-control"
-          id="title"
-          name="title"
-          aria-describedby="title_help"
-          required
-        />
-        <small id="title_help" className="form-text text-muted">
-          The full name of the question, visible to users.
-        </small>
-      </div>
-
-      <div className="mb-3">
-        <label className="form-label" htmlFor="qid">
-          Question identifier (QID)
-        </label>
-        <input
-          type="text"
-          className="form-control"
-          id="qid"
-          name="qid"
-          aria-describedby="qid_help"
-          // TODO: use `validateShortName` with react-hook-form to provide more specific
-          //validation feedback (e.g., "cannot start with a slash").
-          pattern={SHORT_NAME_PATTERN}
-          required
-        />
-        <small id="qid_help" className="form-text text-muted">
-          <QuestionShortNameDescription />
-        </small>
-      </div>
-
-      {hasAnyTemplates && (
-        <RadioCardGroup
-          label="Start from"
-          value={startFrom}
-          options={startFromOptions}
-          onChange={setStartFrom}
-        />
-      )}
-
-      {/* Always include hidden input for form submission */}
-      <input type="hidden" name="start_from" value={startFrom} />
-
-      {isTemplateSelected && filteredTemplateQuestions.length > 0 && (
+    <div style={{ maxWidth: 768, margin: '0 auto' }}>
+      <nav aria-label="breadcrumb" className="mb-3">
+        <ol className="breadcrumb mb-0">
+          <li className="breadcrumb-item">
+            <a href={questionsUrl}>Questions</a>
+          </li>
+          <li className="breadcrumb-item active" aria-current="page">
+            Create question
+          </li>
+        </ol>
+      </nav>
+      <form method="POST" autoComplete="off">
         <div className="mb-3">
-          <label className="form-label" htmlFor="template_qid">
-            Template
+          <label className="form-label" htmlFor="title">
+            Title
           </label>
-          <select
-            className="form-select"
-            id="template_qid"
-            name="template_qid"
-            aria-describedby="template_help"
-            value={selectedTemplate?.qid ?? ''}
+          <input
+            type="text"
+            className="form-control"
+            id="title"
+            name="title"
+            aria-describedby="title_help"
             required
-            onChange={(e) => setSelectedTemplateQid(e.currentTarget.value)}
-          >
-            <option value="">Select a template...</option>
-            {filteredTemplateQuestions.map((question) => (
-              <option key={question.qid} value={question.qid}>
-                {question.title}
-              </option>
-            ))}
-          </select>
-          <small id="template_help" className="form-text text-muted">
-            The question will be created from this template. To create your own template, create a
-            question with a QID starting with "<code>template/</code>".
+          />
+          <small id="title_help" className="form-text text-muted">
+            The full name of the question, visible to users.
           </small>
         </div>
-      )}
-    </>
+
+        <div className="mb-3">
+          <label className="form-label" htmlFor="qid">
+            Question identifier (QID)
+          </label>
+          <input
+            type="text"
+            className="form-control"
+            id="qid"
+            name="qid"
+            aria-describedby="qid_help"
+            // TODO: use `validateShortName` with react-hook-form to provide more specific
+            //validation feedback (e.g., "cannot start with a slash").
+            pattern={SHORT_NAME_PATTERN}
+            required
+          />
+          <small id="qid_help" className="form-text text-muted">
+            <QuestionShortNameDescription />
+          </small>
+        </div>
+
+        {hasAnyTemplates && (
+          <RadioCardGroup
+            label="Start from"
+            value={startFrom}
+            options={startFromOptions}
+            onChange={setStartFrom}
+          />
+        )}
+
+        {/* Always include hidden input for form submission */}
+        <input type="hidden" name="start_from" value={startFrom} />
+
+        {isTemplateSelected && filteredTemplateQuestions.length > 0 && (
+          <div className="mb-3">
+            <label className="form-label" htmlFor="template_qid">
+              Template
+            </label>
+            <select
+              className="form-select"
+              id="template_qid"
+              name="template_qid"
+              aria-describedby="template_help"
+              value={selectedTemplate?.qid ?? ''}
+              required
+              onChange={(e) => setSelectedTemplateQid(e.currentTarget.value)}
+            >
+              <option value="">Select a template...</option>
+              {filteredTemplateQuestions.map((question) => (
+                <option key={question.qid} value={question.qid}>
+                  {question.title}
+                </option>
+              ))}
+            </select>
+            <small id="template_help" className="form-text text-muted">
+              The question will be created from this template. To create your own template, create a
+              question with a QID starting with "<code>template/</code>".
+            </small>
+          </div>
+        )}
+
+        <div className="mt-3 d-flex justify-content-end">
+          <input type="hidden" name="__action" value="add_question" />
+          <input type="hidden" name="__csrf_token" value={csrfToken} />
+          <button type="submit" className="btn btn-primary">
+            Create
+          </button>
+        </div>
+      </form>
+    </div>
   );
 }
 
-CreateQuestionModalContents.displayName = 'CreateQuestionModalContents';
+CreateQuestionForm.displayName = 'CreateQuestionForm';
