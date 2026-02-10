@@ -16,6 +16,7 @@
     "@types/express": "^4.17.25"
   },
   "devDependencies": {
-    "@typescript/native-preview": "^7.0.0-dev.20260130.1"
+    "@prairielearn/tsconfig": "workspace:^",
+    "@typescript/native-preview": "^7.0.0-dev.20260203.1"
   }
 }
