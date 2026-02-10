@@ -12,13 +12,18 @@ jobs:
     permissions:
       # Needed for OIDC trusted publishing
       id-token: write
-      # Needed to be able to commit/push/PR the versioning PRs
-      contents: write
-      pull-requests: write
     steps:
+      - name: Generate token
+        id: generate-token
+        uses: actions/create-github-app-token@v2
+        with:
+          app-id: ${{ secrets.CI_BOT_APP_ID }}
+          private-key: ${{ secrets.CI_BOT_APP_PRIVATE_KEY }}
+
       - name: Checkout Repo
         uses: actions/checkout@v6
         with:
+          token: ${{ steps.generate-token.outputs.token }}
           # This makes Actions fetch all Git history so that Changesets can generate changelogs with the correct commits
           fetch-depth: 0
 
@@ -59,4 +64,4 @@ jobs:
           # This complements `--no-git-tag` in the `release` script in `package.json`.
           createGithubReleases: false
         env:
-          GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+          GITHUB_TOKEN: ${{ steps.generate-token.outputs.token }}

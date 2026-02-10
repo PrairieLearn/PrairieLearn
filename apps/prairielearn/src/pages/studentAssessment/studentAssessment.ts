@@ -6,18 +6,18 @@ import { flash } from '@prairielearn/flash';
 import { markdownToHtml } from '@prairielearn/markdown';
 
 import { makeAssessmentInstance } from '../../lib/assessment.js';
-import { typedAsyncHandler } from '../../lib/res-locals.js';
 import {
-  TeamOperationError,
-  canUserAssignTeamRoles,
-  createTeam,
-  getTeamConfig,
-  getTeamId,
-  getTeamInfo,
-  joinTeam,
-  leaveTeam,
-  updateTeamRoles,
-} from '../../lib/teams.js';
+  GroupOperationError,
+  canUserAssignGroupRoles,
+  createGroup,
+  getGroupConfig,
+  getGroupId,
+  getGroupInfo,
+  joinGroup,
+  leaveGroup,
+  updateGroupRoles,
+} from '../../lib/groups.js';
+import { typedAsyncHandler } from '../../lib/res-locals.js';
 import { getClientFingerprintId } from '../../middlewares/clientFingerprint.js';
 import logPageView from '../../middlewares/logPageView.js';
 import selectAndAuthzAssessment from '../../middlewares/selectAndAuthzAssessment.js';
@@ -48,7 +48,7 @@ router.get(
       // the assessment (or that they're trying to start a new instance of a
       // multi-instance assessment), and the assessment is not active.
       //
-      // This check means that students will be unable to join a team if an
+      // This check means that students will be unable to join a group if an
       // assessment is inactive, which we're deeming to be sensible behavior.
       res.status(403).send(StudentAssessmentAccess({ resLocals: res.locals }));
       return;
@@ -65,7 +65,7 @@ router.get(
     // students to create and start a new assessment instance.
     if (!checkPasswordOrRedirect(req, res)) return;
 
-    // For homeworks without team work, create the new assessment instance
+    // For homeworks without group work, create the new assessment instance
     // and redirect to it without further student action.
     if (!res.locals.assessment.team_work && res.locals.assessment.type === 'Homework') {
       const time_limit_min = null;
@@ -101,24 +101,24 @@ router.get(
       return;
     }
 
-    // Get the team config info
-    const teamConfig = await getTeamConfig(res.locals.assessment.id);
+    // Get the group config info
+    const groupConfig = await getGroupConfig(res.locals.assessment.id);
 
-    // Check whether the user is currently in a team in the current assessment by trying to get a team_id
-    const teamId = await getTeamId(res.locals.assessment.id, res.locals.user.id);
+    // Check whether the user is currently in a group in the current assessment by trying to get a group_id
+    const groupId = await getGroupId(res.locals.assessment.id, res.locals.user.id);
 
-    const teamInfo = teamId === null ? null : await getTeamInfo(teamId, teamConfig);
+    const groupInfo = groupId === null ? null : await getGroupInfo(groupId, groupConfig);
     const userCanAssignRoles =
-      teamInfo != null &&
-      teamConfig.has_roles &&
-      (canUserAssignTeamRoles(teamInfo, res.locals.user.id) ||
+      groupInfo != null &&
+      groupConfig.has_roles &&
+      (canUserAssignGroupRoles(groupInfo, res.locals.user.id) ||
         res.locals.authz_data.has_course_instance_permission_edit);
 
     res.send(
       StudentAssessment({
         resLocals: res.locals,
-        teamConfig,
-        teamInfo,
+        groupConfig,
+        groupInfo,
         userCanAssignRoles,
         customHonorCode,
       }),
@@ -146,13 +146,13 @@ router.post(
       if (!checkPasswordOrRedirect(req, res)) return;
 
       if (res.locals.assessment.team_work) {
-        const teamConfig = await getTeamConfig(res.locals.assessment.id);
-        const teamId = await getTeamId(res.locals.assessment.id, res.locals.user.id);
-        if (teamId === null) {
+        const groupConfig = await getGroupConfig(res.locals.assessment.id);
+        const groupId = await getGroupId(res.locals.assessment.id, res.locals.user.id);
+        if (groupId === null) {
           throw new HttpStatusError(403, 'Cannot create a new instance while not in a group.');
         }
-        const teamInfo = await getTeamInfo(teamId, teamConfig);
-        if (!teamInfo.start) {
+        const groupInfo = await getGroupInfo(groupId, groupConfig);
+        if (!groupInfo.start) {
           throw new HttpStatusError(
             403,
             'Group has invalid composition or role assignment. Cannot start assessment.',
@@ -173,12 +173,12 @@ router.post(
         client_fingerprint_id,
       });
       res.redirect(`${res.locals.urlPrefix}/assessment_instance/${assessment_instance_id}`);
-    } else if (req.body.__action === 'join_team') {
-      const teamConfig = await getTeamConfig(res.locals.assessment.id);
-      if (!teamConfig.student_authz_join) {
+    } else if (req.body.__action === 'join_group') {
+      const groupConfig = await getGroupConfig(res.locals.assessment.id);
+      if (!groupConfig.student_authz_join) {
         throw new HttpStatusError(403, 'You are not authorized to join a group.');
       }
-      await joinTeam({
+      await joinGroup({
         course_instance: res.locals.course_instance,
         assessment: res.locals.assessment,
         fullJoinCode: req.body.join_code,
@@ -186,54 +186,54 @@ router.post(
         authn_user_id: res.locals.authn_user.id,
         authzData: res.locals.authz_data,
       }).catch((err) => {
-        if (err instanceof TeamOperationError) {
+        if (err instanceof GroupOperationError) {
           flash('error', err.message);
         } else {
           throw err;
         }
       });
       res.redirect(req.originalUrl);
-    } else if (req.body.__action === 'create_team') {
-      const teamConfig = await getTeamConfig(res.locals.assessment.id);
-      if (!teamConfig.student_authz_create) {
+    } else if (req.body.__action === 'create_group') {
+      const groupConfig = await getGroupConfig(res.locals.assessment.id);
+      if (!groupConfig.student_authz_create) {
         throw new HttpStatusError(403, 'You are not authorized to create a group.');
       }
-      await createTeam({
+      await createGroup({
         course_instance: res.locals.course_instance,
         assessment: res.locals.assessment,
-        team_name: teamConfig.student_authz_choose_name ? req.body.team_name : null,
+        group_name: groupConfig.student_authz_choose_name ? req.body.group_name : null,
         uids: [res.locals.user.uid],
         authn_user_id: res.locals.authn_user.id,
         authzData: res.locals.authz_data,
       }).catch((err) => {
-        if (err instanceof TeamOperationError) {
+        if (err instanceof GroupOperationError) {
           flash('error', err.message);
         } else {
           throw err;
         }
       });
       res.redirect(req.originalUrl);
-    } else if (req.body.__action === 'update_team_roles') {
-      // Check whether the user is currently in a team
-      const teamId = await getTeamId(res.locals.assessment.id, res.locals.user.id);
-      if (teamId == null) {
+    } else if (req.body.__action === 'update_group_roles') {
+      // Check whether the user is currently in a group
+      const groupId = await getGroupId(res.locals.assessment.id, res.locals.user.id);
+      if (groupId == null) {
         throw new HttpStatusError(403, 'Cannot change group roles while not in a group.');
       }
-      await updateTeamRoles(
+      await updateGroupRoles(
         req.body,
         res.locals.assessment.id,
-        teamId,
+        groupId,
         res.locals.user.id,
         res.locals.authz_data.has_course_instance_permission_edit,
         res.locals.authn_user.id,
       );
       res.redirect(req.originalUrl);
-    } else if (req.body.__action === 'leave_team') {
-      const teamConfig = await getTeamConfig(res.locals.assessment.id);
-      if (!teamConfig.student_authz_leave) {
+    } else if (req.body.__action === 'leave_group') {
+      const groupConfig = await getGroupConfig(res.locals.assessment.id);
+      if (!groupConfig.student_authz_leave) {
         throw new HttpStatusError(403, 'You are not authorized to leave your group.');
       }
-      await leaveTeam(res.locals.assessment.id, res.locals.user.id, res.locals.authn_user.id);
+      await leaveGroup(res.locals.assessment.id, res.locals.user.id, res.locals.authn_user.id);
       res.redirect(req.originalUrl);
     } else {
       throw new HttpStatusError(400, `unknown __action: ${req.body.__action}`);

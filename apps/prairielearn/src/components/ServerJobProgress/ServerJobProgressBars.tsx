@@ -24,7 +24,7 @@ import type { JobProgress } from '../../lib/serverJobProgressSocket.shared.js';
  * @param params.statusText Text describing the server job status.
  * @param params.statusText.inProgress Text for in-progress jobs.
  * @param params.statusText.complete Text for completed jobs.
- * @param params.statusText.failed Text for failed jobs.
+ * @param params.statusText.failed Default text for failed jobs. If a job has a specific failure message, it will be displayed instead.
  *
  * @param params.onDismissCompleteJobSequence Callback when the user dismisses a completed job progress alert. Used to remove the job from state.
  */
@@ -76,7 +76,10 @@ export function ServerJobsProgressInfo({
             total: jobProgress.num_total,
           }}
           statusIcons={statusIconsSafe}
-          statusText={statusTextSafe}
+          statusText={{
+            ...statusTextSafe,
+            failed: jobProgress.job_failure_message ?? statusTextSafe.failed,
+          }}
           itemNames={itemNames}
           onDismissCompleteJobSequence={onDismissCompleteJobSequence}
         />

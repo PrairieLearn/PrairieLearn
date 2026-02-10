@@ -7,9 +7,9 @@ import {
   type AssessmentInstance,
   type Course,
   type CourseInstance,
+  type Group,
   type InstanceQuestion,
   type Question,
-  type Team,
   type User,
   type Variant,
 } from '../lib/db-types.js';
@@ -26,8 +26,8 @@ export function InstructorInfoPanel({
   lastGrader,
   question,
   variant,
-  instance_team,
-  instance_team_uid_list,
+  instance_group,
+  instance_group_uid_list,
   instance_user,
   authz_data,
   question_is_shared,
@@ -43,8 +43,8 @@ export function InstructorInfoPanel({
   lastGrader?: User | null;
   question?: Question;
   variant?: Variant;
-  instance_team?: Team | null;
-  instance_team_uid_list?: string[] | null;
+  instance_group?: Group | null;
+  instance_group_uid_list?: string[] | null;
   instance_user?: User | null;
   authz_data: Record<string, any>;
   question_is_shared?: boolean;
@@ -74,7 +74,7 @@ export function InstructorInfoPanel({
         <h2>Staff information</h2>
       </div>
       ${ListGroup([
-        InstanceUserInfo({ instance_user, instance_team, instance_team_uid_list }),
+        InstanceUserInfo({ instance_user, instance_group, instance_group_uid_list }),
         QuestionInfo({
           course,
           course_instance,
@@ -111,23 +111,23 @@ function ListGroup(children: HtmlValue[]) {
 
 function InstanceUserInfo({
   instance_user,
-  instance_team,
-  instance_team_uid_list,
+  instance_group,
+  instance_group_uid_list,
 }: {
   instance_user?: User | null;
-  instance_team?: Team | null;
-  instance_team_uid_list?: string[] | null;
+  instance_group?: Group | null;
+  instance_group_uid_list?: string[] | null;
 }) {
-  if (instance_user == null && instance_team == null) return '';
+  if (instance_user == null && instance_group == null) return '';
   return html`
     <div>
       <details>
-        ${instance_team != null
+        ${instance_group != null
           ? html`
               <summary><h3 class="card-title h5">Group details</h3></summary>
               <div class="d-flex flex-wrap">
-                <div class="pe-1">${instance_team.name}</div>
-                <div class="pe-1">(${instance_team_uid_list?.join(', ')})</div>
+                <div class="pe-1">${instance_group.name}</div>
+                <div class="pe-1">(${instance_group_uid_list?.join(', ')})</div>
               </div>
             `
           : html`

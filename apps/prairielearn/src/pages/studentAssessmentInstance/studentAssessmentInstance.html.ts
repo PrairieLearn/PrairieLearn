@@ -9,6 +9,7 @@ import {
   RegenerateInstanceAlert,
   RegenerateInstanceModal,
 } from '../../components/AssessmentRegenerate.js';
+import { GroupWorkInfoContainer } from '../../components/GroupWorkInfoContainer.js';
 import { InstructorInfoPanel } from '../../components/InstructorInfoPanel.js';
 import { Modal } from '../../components/Modal.js';
 import { PageLayout } from '../../components/PageLayout.js';
@@ -21,18 +22,17 @@ import {
 } from '../../components/QuestionScore.js';
 import { ScorebarHtml } from '../../components/Scorebar.js';
 import { StudentAccessRulesPopover } from '../../components/StudentAccessRulesPopover.js';
-import { TeamWorkInfoContainer } from '../../components/TeamWorkInfoContainer.js';
 import { TimeLimitExpiredModal } from '../../components/TimeLimitExpiredModal.js';
 import { compiledScriptTag } from '../../lib/assets.js';
 import {
   type AssessmentInstance,
   AssessmentQuestionSchema,
+  type GroupConfig,
   InstanceQuestionSchema,
-  type TeamConfig,
 } from '../../lib/db-types.js';
 import { formatPoints } from '../../lib/format.js';
+import { type GroupInfo, getRoleNamesForUser } from '../../lib/groups.js';
 import type { ResLocalsForPage } from '../../lib/res-locals.js';
-import { type TeamInfo, getRoleNamesForUser } from '../../lib/teams.js';
 import { SimpleVariantWithScoreSchema } from '../../models/variant.js';
 
 export const InstanceQuestionRowSchema = InstanceQuestionSchema.extend({
@@ -60,7 +60,7 @@ export const InstanceQuestionRowSchema = InstanceQuestionSchema.extend({
   allow_grade_date: DateFromISOString.nullable(),
   allow_grade_interval: z.string(),
   previous_variants: z.array(SimpleVariantWithScoreSchema).optional(),
-  team_role_permissions: z
+  group_role_permissions: z
     .object({
       can_view: z.boolean(),
       can_submit: z.boolean(),
@@ -72,8 +72,8 @@ export type InstanceQuestionRow = z.infer<typeof InstanceQuestionRowSchema>;
 export function StudentAssessmentInstance({
   instance_question_rows,
   showTimeLimitExpiredModal,
-  teamConfig,
-  teamInfo,
+  groupConfig,
+  groupInfo,
   userCanAssignRoles,
   userCanDeleteAssessmentInstance,
   resLocals,
@@ -88,13 +88,13 @@ export function StudentAssessmentInstance({
   };
 } & (
   | {
-      teamConfig: TeamConfig;
-      teamInfo: TeamInfo;
+      groupConfig: GroupConfig;
+      groupInfo: GroupInfo;
       userCanAssignRoles: boolean;
     }
   | {
-      teamConfig?: undefined;
-      teamInfo?: undefined;
+      groupConfig?: undefined;
+      groupInfo?: undefined;
       userCanAssignRoles?: undefined;
     }
 )) {
@@ -152,8 +152,8 @@ export function StudentAssessmentInstance({
         : 1 + trailingColumnsCount;
   });
 
-  const userTeamRoles = teamInfo
-    ? getRoleNamesForUser(teamInfo, resLocals.authz_data.user).join(', ')
+  const userGroupRoles = groupInfo
+    ? getRoleNamesForUser(groupInfo, resLocals.authz_data.user).join(', ')
     : null;
 
   return PageLayout({
@@ -259,12 +259,12 @@ export function StudentAssessmentInstance({
                     })}
                   </div>
                 `}
-            ${teamConfig != null
+            ${groupConfig != null
               ? html`
                   <div class="col-lg-12">
-                    ${TeamWorkInfoContainer({
-                      teamConfig,
-                      teamInfo,
+                    ${GroupWorkInfoContainer({
+                      groupConfig,
+                      groupInfo,
                       userCanAssignRoles,
                       csrfToken: resLocals.__csrf_token,
                     })}
@@ -342,7 +342,7 @@ export function StudentAssessmentInstance({
                     <td>
                       ${RowLabel({
                         instance_question_row,
-                        userTeamRoles,
+                        userGroupRoles,
                         urlPrefix: resLocals.urlPrefix,
                         rowLabelText:
                           resLocals.assessment.type === 'Exam'
@@ -635,8 +635,8 @@ export function StudentAssessmentInstance({
         course_instance: resLocals.course_instance,
         assessment: resLocals.assessment,
         assessment_instance: resLocals.assessment_instance,
-        instance_team: resLocals.instance_team,
-        instance_team_uid_list: resLocals.instance_team_uid_list,
+        instance_group: resLocals.instance_group,
+        instance_group_uid_list: resLocals.instance_group_uid_list,
         instance_user: resLocals.instance_user,
         authz_data: resLocals.authz_data,
         questionContext: resLocals.assessment.type === 'Exam' ? 'student_exam' : 'student_homework',
@@ -802,12 +802,12 @@ function ZoneInfoPopover({ label, content }: { label: string; content: string })
 
 function RowLabel({
   instance_question_row,
-  userTeamRoles,
+  userGroupRoles,
   rowLabelText,
   urlPrefix,
 }: {
   instance_question_row: InstanceQuestionRow;
-  userTeamRoles: string | null;
+  userGroupRoles: string | null;
   rowLabelText: string;
   urlPrefix: string;
 }) {
@@ -816,8 +816,8 @@ function RowLabel({
     lockedPopoverText = instance_question_row.prev_sequence_locked
       ? 'A previous question must be completed before you can access this one.'
       : `You must score at least ${instance_question_row.prev_advance_score_perc}% on ${instance_question_row.prev_title} to unlock this question.`;
-  } else if (!(instance_question_row.team_role_permissions?.can_view ?? true)) {
-    lockedPopoverText = `Your current group role (${userTeamRoles}) restricts access to this question.`;
+  } else if (!(instance_question_row.group_role_permissions?.can_view ?? true)) {
+    lockedPopoverText = `Your current group role (${userGroupRoles}) restricts access to this question.`;
   }
 
   return html`

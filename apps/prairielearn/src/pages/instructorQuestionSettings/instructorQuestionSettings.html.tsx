@@ -1,55 +1,33 @@
 import { z } from 'zod';
 
-import { type HtmlValue, escapeHtml, html } from '@prairielearn/html';
+import { html } from '@prairielearn/html';
 import { renderHtml } from '@prairielearn/react';
-import { IdSchema } from '@prairielearn/zod';
+import { Hydrate } from '@prairielearn/react/server';
 
-import { AssessmentBadgeHtml } from '../../components/AssessmentBadge.js';
-import { GitHubButtonHtml } from '../../components/GitHubButton.js';
-import { Modal } from '../../components/Modal.js';
+import { GitHubButton } from '../../components/GitHubButton.js';
 import { PageLayout } from '../../components/PageLayout.js';
 import { QuestionShortNameDescription } from '../../components/ShortNameDescriptions.js';
 import { TagBadgeList } from '../../components/TagBadge.js';
 import { TagDescription } from '../../components/TagDescription.js';
-import { TopicBadgeHtml } from '../../components/TopicBadge.js';
+import { TopicBadge } from '../../components/TopicBadge.js';
 import { TopicDescription } from '../../components/TopicDescription.js';
 import { compiledScriptTag, nodeModulesAssetPath } from '../../lib/assets.js';
-import {
-  AssessmentSchema,
-  AssessmentSetSchema,
-  CourseInstanceSchema,
-  type Question,
-  type Tag,
-  type Topic,
-} from '../../lib/db-types.js';
+import { type Tag, type Topic } from '../../lib/db-types.js';
 import { idsEqual } from '../../lib/id.js';
 import type { ResLocalsForPage } from '../../lib/res-locals.js';
 import { SHORT_NAME_PATTERN } from '../../lib/short-name.js';
 import { encodePath } from '../../lib/uri-util.js';
 import { type CourseWithPermissions } from '../../models/course.js';
 
-export const SelectedAssessmentsSchema = z.object({
-  short_name: CourseInstanceSchema.shape.short_name,
-  long_name: CourseInstanceSchema.shape.long_name,
-  course_instance_id: IdSchema,
-  assessments: z.array(
-    z.object({
-      assessment_id: IdSchema,
-      color: AssessmentSetSchema.shape.color,
-      label: AssessmentSetSchema.shape.abbreviation,
-      title: AssessmentSchema.shape.title,
-      type: AssessmentSchema.shape.type,
-    }),
-  ),
-});
-type SelectedAssessments = z.infer<typeof SelectedAssessmentsSchema>;
-
-export const SharingSetRowSchema = z.object({
-  id: IdSchema,
-  name: z.string(),
-  in_set: z.boolean(),
-});
-export type SharingSetRow = z.infer<typeof SharingSetRowSchema>;
+import { QuestionSettingsCardFooter } from './components/QuestionSettingsCardFooter.js';
+import { QuestionSharing } from './components/QuestionSharing.js';
+import { QuestionTestsForm } from './components/QuestionTestsForm.js';
+import {
+  EditableCourseSchema,
+  type SelectedAssessments,
+  SelectedAssessmentsSchema,
+  type SharingSetRow,
+} from './instructorQuestionSettings.types.js';
 
 export function InstructorQuestionSettings({
   resLocals,
@@ -89,6 +67,13 @@ export function InstructorQuestionSettings({
   const shouldShowAssessmentsList = !!resLocals.course_instance;
   const questionTagNames = new Set(questionTags.map((tag) => tag.name));
 
+  const canCopy =
+    editableCourses.length > 0 &&
+    resLocals.authz_data.has_course_permission_view &&
+    resLocals.question.course_id === resLocals.course.id;
+
+  const showFooter = canCopy || canEdit;
+
   return PageLayout({
     resLocals,
     pageTitle: 'Settings',
@@ -123,7 +108,7 @@ export function InstructorQuestionSettings({
           class="card-header bg-primary text-white d-flex align-items-center justify-content-between"
         >
           <h1>Question Settings</h1>
-          ${GitHubButtonHtml(questionGHLink)}
+          ${renderHtml(<GitHubButton gitHubLink={questionGHLink} />)}
         </div>
         <div class="card-body">
           <form name="edit-question-settings-form" method="POST">
@@ -206,7 +191,7 @@ export function InstructorQuestionSettings({
                               })}
                             </select>
                           `
-                        : TopicBadgeHtml(resLocals.topic)}
+                        : renderHtml(<TopicBadge topic={resLocals.topic} />)}
                     </td>
                   </tr>
                   <tr>
@@ -247,10 +232,12 @@ export function InstructorQuestionSettings({
                     ? html`<tr>
                         <th class="align-middle">Assessments</th>
                         <td>
-                          ${AssessmentBadges({
-                            assessmentsWithQuestion,
-                            courseInstanceId: resLocals.course_instance.id,
-                          })}
+                          ${renderHtml(
+                            <AssessmentBadges
+                              assessmentsWithQuestion={assessmentsWithQuestion}
+                              courseInstanceId={resLocals.course_instance.id}
+                            />,
+                          )}
                         </td>
                       </tr>`
                     : ''}
@@ -611,10 +598,13 @@ ${Object.keys(resLocals.question.external_grading_environment).length > 0 &&
                 <div>
                   <h2 class="h4">Sharing</h2>
                   <div data-testid="shared-with">
-                    ${QuestionSharing({
-                      question: resLocals.question,
-                      sharingSetsIn: sharingSetsIn ?? [],
-                    })}
+                    ${renderHtml(
+                      <QuestionSharing
+                        sharePublicly={resLocals.question.share_publicly}
+                        shareSourcePublicly={resLocals.question.share_source_publicly}
+                        sharingSetsIn={sharingSetsIn ?? []}
+                      />,
+                    )}
                   </div>
                 </div>
               `
@@ -627,10 +617,12 @@ ${Object.keys(resLocals.question.external_grading_environment).length > 0 &&
                 <div>
                   <h2 class="h4">Tests</h2>
                   <div>
-                    ${QuestionTestsForm({
-                      questionTestPath,
-                      questionTestCsrfToken,
-                    })}
+                    ${renderHtml(
+                      <QuestionTestsForm
+                        questionTestPath={questionTestPath}
+                        csrfToken={questionTestCsrfToken}
+                      />,
+                    )}
                   </div>
                 </div>
               `
@@ -659,226 +651,27 @@ ${Object.keys(resLocals.question.external_grading_environment).length > 0 &&
                 `
             : ''}
         </div>
-        ${(editableCourses.length > 0 && resLocals.authz_data.has_course_permission_view) || canEdit
-          ? html`
-              <div class="card-footer d-flex flex-wrap gap-2">
-                ${editableCourses.length > 0 &&
-                resLocals.authz_data.has_course_permission_view &&
-                resLocals.question.course_id === resLocals.course.id
-                  ? html`
-                      <button
-                        type="button"
-                        class="btn btn-sm btn-primary"
-                        id="copyQuestionButton"
-                        data-bs-toggle="popover"
-                        data-bs-container="body"
-                        data-bs-html="true"
-                        data-bs-placement="auto"
-                        data-bs-title="Copy this question"
-                        data-bs-content="${escapeHtml(
-                          CopyForm({
-                            csrfToken: resLocals.__csrf_token,
-                            editableCourses,
-                            courseId: resLocals.course.id,
-                          }),
-                        )}"
-                      >
-                        <i class="fa fa-clone"></i>
-                        <span>Make a copy of this question</span>
-                      </button>
-                    `
-                  : ''}
-                ${canEdit
-                  ? html`
-                      <button
-                        type="button"
-                        class="btn btn-sm btn-primary"
-                        data-bs-toggle="modal"
-                        data-bs-target="#deleteQuestionModal"
-                      >
-                        <i class="fa fa-times" aria-hidden="true"></i> Delete this question
-                      </button>
-                      ${DeleteQuestionModal({
-                        qid: resLocals.question.qid!,
-                        assessmentsWithQuestion,
-                        csrfToken: resLocals.__csrf_token,
-                      })}
-                    `
-                  : ''}
-              </div>
-            `
+        ${showFooter
+          ? renderHtml(
+              // TODO: Pass full course/question objects when the whole page is hydrated.
+              <Hydrate>
+                <QuestionSettingsCardFooter
+                  canEdit={canEdit}
+                  canCopy={canCopy}
+                  editableCourses={z.array(EditableCourseSchema).parse(editableCourses)}
+                  courseId={resLocals.course.id}
+                  qid={resLocals.question.qid!}
+                  assessmentsWithQuestion={z
+                    .array(SelectedAssessmentsSchema)
+                    .parse(assessmentsWithQuestion)}
+                  csrfToken={resLocals.__csrf_token}
+                />
+              </Hydrate>,
+            )
           : ''}
       </div>
     `,
   });
-}
-
-function CopyForm({
-  csrfToken,
-  editableCourses,
-  courseId,
-}: {
-  csrfToken: string;
-  editableCourses: CourseWithPermissions[];
-  courseId: string;
-}) {
-  return html`
-    <form name="copy-question-form" method="POST">
-      <input type="hidden" name="__action" value="copy_question" />
-      <input type="hidden" name="__csrf_token" value="${csrfToken}" />
-      <div class="mb-3">
-        <label class="form-label" for="to-course-id-select">
-          The copied question will be added to the following course:
-        </label>
-        <select class="form-select" id="to-course-id-select" name="to_course_id" required>
-          ${editableCourses.map((c) => {
-            return html`
-              <option value="${c.id}" ${idsEqual(c.id, courseId) ? 'selected' : ''}>
-                ${c.short_name}
-              </option>
-            `;
-          })}
-        </select>
-      </div>
-      <div class="text-end">
-        <button type="button" class="btn btn-secondary" data-bs-dismiss="popover">Cancel</button>
-        <button type="submit" class="btn btn-primary">Submit</button>
-      </div>
-    </form>
-  `;
-}
-
-function DeleteQuestionModal({
-  qid,
-  assessmentsWithQuestion,
-  csrfToken,
-}: {
-  qid: string;
-  assessmentsWithQuestion: SelectedAssessments[];
-  csrfToken: string;
-}) {
-  return Modal({
-    id: 'deleteQuestionModal',
-    title: 'Delete question',
-    body: html`
-      <p>
-        Are you sure you want to delete the question
-        <strong>${qid}</strong>?
-      </p>
-      ${assessmentsWithQuestion.length > 0
-        ? html`
-            <p>It is included by these assessments:</p>
-            <ul class="list-group my-4">
-              ${assessmentsWithQuestion.map((a_with_q) => {
-                return html`
-                  <li class="list-group-item">
-                    <div class="h6">
-                      ${a_with_q.short_name ?? html`<i>Unknown</i>`}
-                      (${a_with_q.long_name ?? html`<i>Unknown</i>`})
-                    </div>
-                    ${a_with_q.assessments.map((assessment) =>
-                      AssessmentBadgeHtml({
-                        courseInstanceId: a_with_q.course_instance_id,
-                        assessment,
-                      }),
-                    )}
-                  </li>
-                `;
-              })}
-            </ul>
-            <p>
-              So, if you delete it, you will be unable to sync your course content to the database
-              until you either remove the question from these assessments or create a new question
-              with the same QID.
-            </p>
-          `
-        : ''}
-    `,
-    footer: html`
-      <input type="hidden" name="__action" value="delete_question" />
-      <input type="hidden" name="__csrf_token" value="${csrfToken}" />
-      <button type="button" class="btn btn-secondary" data-bs-dismiss="modal">Cancel</button>
-      <button type="submit" class="btn btn-danger">Delete</button>
-    `,
-  });
-}
-
-function QuestionTestsForm({
-  questionTestPath,
-  questionTestCsrfToken,
-}: {
-  questionTestPath: string;
-  questionTestCsrfToken: string;
-}) {
-  return html`
-    <form
-      name="question-tests-form"
-      method="POST"
-      action="${questionTestPath}"
-      class="d-flex flex-wrap gap-2"
-    >
-      <input type="hidden" name="__csrf_token" value="${questionTestCsrfToken}" />
-      <button
-        type="submit"
-        class="btn btn-sm btn-outline-primary"
-        name="__action"
-        value="test_once"
-      >
-        Test once with full details
-      </button>
-      <button type="submit" class="btn btn-sm btn-outline-primary" name="__action" value="test_100">
-        Test 100 times with only results
-      </button>
-    </form>
-  `;
-}
-
-function QuestionSharing({
-  question,
-  sharingSetsIn,
-}: {
-  question: Question;
-  sharingSetsIn: SharingSetRow[];
-}) {
-  if (!question.share_publicly && !question.share_source_publicly && sharingSetsIn.length === 0) {
-    return html`<p>This question is not being shared.</p>`;
-  }
-
-  const details: HtmlValue[] = [];
-
-  if (question.share_publicly) {
-    details.push(html`
-      <p>
-        <span class="badge color-green3 me-1">Public</span>
-        This question is publicly shared and can be imported by other courses.
-      </p>
-    `);
-  }
-
-  if (question.share_source_publicly) {
-    details.push(html`
-      <p>
-        <span class="badge color-green3 me-1">Public source</span>
-        This question's source is publicly shared.
-      </p>
-    `);
-  }
-
-  if (sharingSetsIn.length > 0) {
-    const sharedWithLabel =
-      sharingSetsIn.length === 1 ? '1 sharing set' : `${sharingSetsIn.length} sharing sets`;
-
-    details.push(html`
-      <p>
-        Shared with ${sharedWithLabel}:
-        ${sharingSetsIn.map((sharing_set) => {
-          return html` <span class="badge color-gray1">${sharing_set.name}</span> `;
-        })}
-      </p>
-    `);
-  }
-
-  return details;
 }
 
 function AssessmentBadges({
@@ -896,21 +689,22 @@ function AssessmentBadges({
     !assessmentsInCourseInstance?.assessments ||
     assessmentsInCourseInstance.assessments.length === 0
   ) {
-    return html`
-      <small class="text-muted text-center">
+    return (
+      <small className="text-muted text-center">
         This question is not included in any assessments in this course instance.
       </small>
-    `;
+    );
   }
 
   return assessmentsInCourseInstance.assessments.map((assessment) => {
-    return html`
+    return (
       <a
-        href="/pl/course_instance/${assessmentsInCourseInstance.course_instance_id}/instructor/assessment/${assessment.assessment_id}"
-        class="btn btn-badge color-${assessment.color}"
+        key={assessment.assessment_id}
+        href={`/pl/course_instance/${assessmentsInCourseInstance.course_instance_id}/instructor/assessment/${assessment.assessment_id}`}
+        className={`btn btn-badge color-${assessment.color}`}
       >
-        ${assessment.label}
+        {assessment.label}
       </a>
-    `;
+    );
   });
 }

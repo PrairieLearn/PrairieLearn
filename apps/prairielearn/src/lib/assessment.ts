@@ -10,6 +10,10 @@ import { DateFromISOString, IdSchema } from '@prairielearn/zod';
 import { selectAssessmentInfoForJob } from '../models/assessment.js';
 
 import {
+  computeAssessmentInstanceScoreByZone,
+  updateAssessmentInstanceGrade,
+} from './assessment-grading.js';
+import {
   type Assessment,
   type AssessmentInstance,
   AssessmentInstanceSchema,
@@ -19,10 +23,10 @@ import {
   VariantSchema,
 } from './db-types.js';
 import { gradeVariant } from './grading.js';
+import { getGroupId } from './groups.js';
 import * as ltiOutcomes from './ltiOutcomes.js';
 import type { UntypedResLocals } from './res-locals.types.js';
 import { createServerJob } from './server-jobs.js';
-import { getTeamId } from './teams.js';
 
 const debug = debugfn('prairielearn:assessment');
 const sql = sqldb.loadSqlEquiv(import.meta.url);
@@ -132,10 +136,10 @@ export async function makeAssessmentInstance({
   client_fingerprint_id: string | null;
 }): Promise<string> {
   return await sqldb.runInTransactionAsync(async () => {
-    let team_id: string | null = null;
+    let group_id: string | null = null;
     if (assessment.team_work) {
-      team_id = await getTeamId(assessment.id, user_id);
-      if (team_id == null) {
+      group_id = await getGroupId(assessment.id, user_id);
+      if (group_id == null) {
         throw new error.HttpStatusError(403, 'No group found for this user in this assessment');
       }
     }
@@ -144,7 +148,7 @@ export async function makeAssessmentInstance({
       sql.insert_assessment_instance,
       {
         assessment_id: assessment.id,
-        team_id,
+        group_id,
         user_id,
         mode,
         time_limit_min,
@@ -198,9 +202,12 @@ export async function updateAssessmentInstance(
       IdSchema,
     );
 
+    const pointsByZone = await computeAssessmentInstanceScoreByZone({ assessment_instance_id });
+    const totalPointsZones = pointsByZone.reduce((sum, zone) => sum + zone.max_points, 0);
+
     const newMaxPoints = await sqldb.queryOptionalRow(
       sql.update_assessment_instance_max_points,
-      { assessment_instance_id, authn_user_id },
+      { assessment_instance_id, total_points_zones: totalPointsZones, authn_user_id },
       AssessmentInstanceSchema.pick({ max_points: true, max_bonus_points: true }),
     );
     // If assessment was not updated, grades do not need to be recomputed.
@@ -208,20 +215,12 @@ export async function updateAssessmentInstance(
 
     // if updated, regrade to pick up max_points changes, etc.
     if (recomputeGrades) {
-      await sqldb.callRow(
-        'assessment_instances_grade',
-        [
-          assessment_instance_id,
-          authn_user_id,
-          null, // credit
-          true, // only_log_if_score_updated
-        ],
-        z.object({
-          updated: z.boolean(),
-          new_points: z.number(),
-          new_score_perc: z.number(),
-        }),
-      );
+      await updateAssessmentInstanceGrade({
+        assessment_instance_id,
+        authn_user_id,
+        onlyLogIfScoreUpdated: true,
+        precomputedPointsByZone: pointsByZone,
+      });
     }
     return true;
   });
@@ -460,7 +459,7 @@ export async function updateAssessmentStatistics(assessment_id: string): Promise
   });
 }
 
-export async function updateAssessmentInstanceScore(
+export async function setAssessmentInstanceScore(
   assessment_instance_id: string,
   score_perc: number,
   authn_user_id: string,
@@ -481,7 +480,7 @@ export async function updateAssessmentInstanceScore(
   });
 }
 
-export async function updateAssessmentInstancePoints(
+export async function setAssessmentInstancePoints(
   assessment_instance_id: string,
   points: number,
   authn_user_id: string,
@@ -631,7 +630,7 @@ export function canDeleteAssessmentInstance(resLocals: UntypedResLocals): boolea
     (resLocals.authz_data.authn_has_course_permission_preview ||
       resLocals.authz_data.authn_has_course_instance_permission_view) &&
     // Check that the assessment instance belongs to this user, or that the
-    // user belongs to the team that created the assessment instance.
+    // user belongs to the group that created the assessment instance.
     resLocals.authz_result.authorized_edit &&
     // Check that the assessment instance was created by an instructor; bypass
     // this check if the course is an example course.

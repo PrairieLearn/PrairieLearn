@@ -11,6 +11,8 @@ import * as sqldb from '@prairielearn/postgres';
 import {
   AssessmentInstanceSchema,
   AssessmentQuestionSchema,
+  GroupRoleSchema,
+  GroupSchema,
   InstanceQuestionSchema,
   QuestionSchema,
   RubricGradingItemSchema,
@@ -18,15 +20,13 @@ import {
   SprocUsersGetDisplayedRoleSchema,
   type Submission,
   SubmissionSchema,
-  TeamRoleSchema,
-  TeamSchema,
   UserSchema,
   type Variant,
   VariantSchema,
 } from '../../lib/db-types.js';
+import { getGroupConfig } from '../../lib/groups.js';
 import { type ResLocalsForPage, typedAsyncHandler } from '../../lib/res-locals.js';
 import { assessmentFilenamePrefix } from '../../lib/sanitize-name.js';
-import { getTeamConfig } from '../../lib/teams.js';
 
 import {
   type Filenames,
@@ -77,7 +77,7 @@ const AssessmentInstanceSubmissionRowSchema = z.object({
   submission_number: z.number(),
   final_submission_per_variant: z.boolean(),
   best_submission_per_variant: z.boolean(),
-  group_name: TeamSchema.shape.name.nullable(),
+  group_name: GroupSchema.shape.name.nullable(),
   uid_list: z.array(z.string()).nullable(),
   submission_user: UserSchema.shape.uid.nullable(),
   assigned_grader: UserSchema.shape.uid.nullable(),
@@ -105,7 +105,7 @@ const ManualGradingSubmissionRowSchema = z.object({
   true_answer: SubmissionSchema.shape.true_answer,
   submitted_answer: SubmissionSchema.shape.submitted_answer,
   old_partial_scores: SubmissionSchema.shape.partial_scores,
-  group_name: TeamSchema.shape.name.nullable(),
+  group_name: GroupSchema.shape.name.nullable(),
   uid_list: z.array(z.string()).nullable(),
 });
 
@@ -141,11 +141,11 @@ export function getFilenames(locals: ResLocalsForPage<'assessment'>) {
     allFilesZipFilename: prefix + 'all_files.zip',
   };
   if (locals.assessment.team_work) {
-    filenames.teamsCsvFilename = prefix + 'groups.csv';
-    filenames.scoresTeamCsvFilename = prefix + 'scores_by_group.csv';
-    filenames.scoresTeamAllCsvFilename = prefix + 'scores_by_group_all.csv';
-    filenames.pointsTeamCsvFilename = prefix + 'points_by_group.csv';
-    filenames.pointsTeamAllCsvFilename = prefix + 'points_by_group_all.csv';
+    filenames.groupsCsvFilename = prefix + 'groups.csv';
+    filenames.scoresGroupCsvFilename = prefix + 'scores_by_group.csv';
+    filenames.scoresGroupAllCsvFilename = prefix + 'scores_by_group_all.csv';
+    filenames.pointsGroupCsvFilename = prefix + 'points_by_group.csv';
+    filenames.pointsGroupAllCsvFilename = prefix + 'points_by_group_all.csv';
   }
   return filenames;
 }
@@ -297,14 +297,14 @@ async function sendInstancesCsv(
   res: Response,
   req: Request,
   columns: Columns,
-  options: { only_highest: boolean; team_work?: boolean },
+  options: { only_highest: boolean; group_work?: boolean },
 ) {
   const result = await sqldb.queryCursor(
     sql.select_assessment_instances,
     {
       assessment_id: res.locals.assessment.id,
       highest_score: options.only_highest,
-      team_work: options.team_work,
+      group_work: options.group_work,
     },
     z.unknown(),
   );
@@ -333,7 +333,7 @@ router.get(
       ['UIN', 'uin'],
     ];
     const usernameColumn: Columns = [['Username', 'username']];
-    const teamNameColumn: Columns = [
+    const groupNameColumn: Columns = [
       ['Group name', 'group_name'],
       ['Usernames', 'uid_list'],
     ];
@@ -352,8 +352,8 @@ router.get(
     ];
     const scoresColumns = studentColumn.concat(scoreColumn);
     const pointsColumns = studentColumn.concat(pointColumn);
-    const scoresTeamColumns = teamNameColumn.concat(scoreColumn);
-    const pointsTeamColumns = teamNameColumn.concat(pointColumn);
+    const scoresGroupColumns = groupNameColumn.concat(scoreColumn);
+    const pointsGroupColumns = groupNameColumn.concat(pointColumn);
     const scoresByUsernameColumns = usernameColumn.concat(scoreColumn);
     const pointsByUsernameColumns = usernameColumn.concat(pointColumn);
     let identityColumn = studentColumn.concat(
@@ -363,7 +363,7 @@ router.get(
       ]),
     );
     if (res.locals.assessment.team_work) {
-      identityColumn = teamNameColumn;
+      identityColumn = groupNameColumn;
     }
     const instancesColumns = identityColumn.concat(instanceColumn);
 
@@ -386,12 +386,12 @@ router.get(
     } else if (req.params.filename === filenames.instancesCsvFilename) {
       await sendInstancesCsv(res, req, instancesColumns, {
         only_highest: true,
-        team_work: res.locals.assessment.team_work,
+        group_work: res.locals.assessment.team_work,
       });
     } else if (req.params.filename === filenames.instancesAllCsvFilename) {
       await sendInstancesCsv(res, req, instancesColumns, {
         only_highest: false,
-        team_work: res.locals.assessment.team_work,
+        group_work: res.locals.assessment.team_work,
       });
     } else if (req.params.filename === filenames.instanceQuestionsCsvFilename) {
       const cursor = await sqldb.queryCursor(
@@ -433,7 +433,7 @@ router.get(
       );
 
       // Replace user-friendly column names with upload-friendly names
-      identityColumn = (res.locals.assessment.team_work ? teamNameColumn : studentColumn).map(
+      identityColumn = (res.locals.assessment.team_work ? groupNameColumn : studentColumn).map(
         (pair) => [pair[1], pair[1]],
       );
       const columns = identityColumn.concat([
@@ -548,44 +548,44 @@ router.get(
 
       res.attachment(req.params.filename);
       await pipeCursorToArchive(res, cursor, extractFilesForSubmissions);
-    } else if (req.params.filename === filenames.teamsCsvFilename) {
-      const teamConfig = await getTeamConfig(res.locals.assessment.id);
+    } else if (req.params.filename === filenames.groupsCsvFilename) {
+      const groupConfig = await getGroupConfig(res.locals.assessment.id);
       const cursor = await sqldb.queryCursor(
-        sql.team_configs,
+        sql.group_configs,
         { assessment_id: res.locals.assessment.id },
         z.object({
-          name: TeamSchema.shape.name,
+          name: GroupSchema.shape.name,
           uid: UserSchema.shape.uid,
-          roles: z.array(TeamRoleSchema.shape.role_name),
+          roles: z.array(GroupRoleSchema.shape.role_name),
         }),
       );
 
       const columns: Columns = [
-        ['groupName', 'name'],
-        ['UID', 'uid'],
+        ['group_name', 'name'],
+        ['uid', 'uid'],
       ];
-      if (teamConfig.has_roles) columns.push(['Role(s)', 'roles']);
+      if (groupConfig.has_roles) columns.push(['Role(s)', 'roles']);
       res.attachment(req.params.filename);
       await pipeline(cursor.stream(100), stringifyWithColumns(columns), res);
-    } else if (req.params.filename === filenames.scoresTeamCsvFilename) {
-      await sendInstancesCsv(res, req, scoresTeamColumns, {
+    } else if (req.params.filename === filenames.scoresGroupCsvFilename) {
+      await sendInstancesCsv(res, req, scoresGroupColumns, {
         only_highest: true,
-        team_work: true,
+        group_work: true,
       });
-    } else if (req.params.filename === filenames.scoresTeamAllCsvFilename) {
-      await sendInstancesCsv(res, req, scoresTeamColumns, {
+    } else if (req.params.filename === filenames.scoresGroupAllCsvFilename) {
+      await sendInstancesCsv(res, req, scoresGroupColumns, {
         only_highest: false,
-        team_work: true,
+        group_work: true,
       });
-    } else if (req.params.filename === filenames.pointsTeamCsvFilename) {
-      await sendInstancesCsv(res, req, pointsTeamColumns, {
+    } else if (req.params.filename === filenames.pointsGroupCsvFilename) {
+      await sendInstancesCsv(res, req, pointsGroupColumns, {
         only_highest: true,
-        team_work: true,
+        group_work: true,
       });
-    } else if (req.params.filename === filenames.pointsTeamAllCsvFilename) {
-      await sendInstancesCsv(res, req, pointsTeamColumns, {
+    } else if (req.params.filename === filenames.pointsGroupAllCsvFilename) {
+      await sendInstancesCsv(res, req, pointsGroupColumns, {
         only_highest: false,
-        team_work: true,
+        group_work: true,
       });
     } else {
       throw new error.HttpStatusError(404, 'Unknown filename: ' + req.params.filename);

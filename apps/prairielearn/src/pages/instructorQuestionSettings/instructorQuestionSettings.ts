@@ -1,6 +1,5 @@
 import * as path from 'path';
 
-import sha256 from 'crypto-js/sha256.js';
 import { Router } from 'express';
 import asyncHandler from 'express-async-handler';
 import fs from 'fs-extra';
@@ -20,13 +19,14 @@ import {
 import { b64EncodeUnicode } from '../../lib/base64-util.js';
 import { copyQuestionBetweenCourses } from '../../lib/copy-content.js';
 import { EnumGradingMethodSchema } from '../../lib/db-types.js';
+import { propertyValueWithDefault } from '../../lib/editorUtil.shared.js';
 import {
   FileModifyEditor,
   MultiEditor,
   QuestionCopyEditor,
   QuestionDeleteEditor,
   QuestionRenameEditor,
-  propertyValueWithDefault,
+  getOriginalHash,
 } from '../../lib/editors.js';
 import { features } from '../../lib/features/index.js';
 import { courseRepoContentUrl } from '../../lib/github.js';
@@ -44,12 +44,12 @@ import { selectQuestionByUuid } from '../../models/question.js';
 import { selectTagsByCourseId, selectTagsByQuestionId } from '../../models/tags.js';
 import { selectTopicsByCourseId } from '../../models/topics.js';
 
+import { InstructorQuestionSettings } from './instructorQuestionSettings.html.js';
 import {
-  InstructorQuestionSettings,
   SelectedAssessmentsSchema,
   type SharingSetRow,
   SharingSetRowSchema,
-} from './instructorQuestionSettings.html.js';
+} from './instructorQuestionSettings.types.js';
 
 const router = Router();
 const sql = sqldb.loadSqlEquiv(import.meta.url);
@@ -490,12 +490,8 @@ router.get(
     });
     const infoPath = path.join('questions', res.locals.question.qid!, 'info.json');
     const fullInfoPath = path.join(res.locals.course.path, infoPath);
-    const questionInfoExists = await fs.pathExists(fullInfoPath);
 
-    let origHash = '';
-    if (questionInfoExists) {
-      origHash = sha256(b64EncodeUnicode(await fs.readFile(fullInfoPath, 'utf8'))).toString();
-    }
+    const origHash = (await getOriginalHash(fullInfoPath)) ?? '';
 
     const canEdit =
       res.locals.authz_data.has_course_permission_edit && !res.locals.course.example_course;

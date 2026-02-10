@@ -102,32 +102,32 @@
       "type": "string"
     },
     "groupWork": {
-      "description": "Whether the assessment will support group work. DEPRECATED -- prefer using teams instead.",
+      "description": "Whether the assessment will support group work. DEPRECATED -- prefer using the \"groups\" property instead.",
       "type": "boolean",
       "default": false,
       "deprecated": true
     },
     "groupMaxSize": {
-      "description": "Maximum number of students in a group. DEPRECATED -- prefer using teams instead.",
+      "description": "Maximum number of students in a group. DEPRECATED -- prefer using the \"groups\" property instead.",
       "type": "number",
       "deprecated": true
     },
     "groupMinSize": {
-      "description": "Minimum number of students in a group. DEPRECATED -- prefer using teams instead.",
+      "description": "Minimum number of students in a group. DEPRECATED -- prefer using the \"groups\" property instead.",
       "type": "number",
       "deprecated": true
     },
     "groupRoles": {
-      "description": "Array of custom user roles in a group. DEPRECATED -- prefer using teams instead.",
+      "description": "Array of custom user roles in a group. DEPRECATED -- prefer using the \"groups\" property instead.",
       "type": "array",
       "items": {
-        "$ref": "#/definitions/GroupRoleJsonSchema"
+        "$ref": "#/definitions/LegacyGroupRoleJsonSchema"
       },
       "default": [],
       "deprecated": true
     },
     "canSubmit": {
-      "description": "A list of group role names that can submit questions. Only applicable for group assessments. DEPRECATED -- prefer using teams instead.",
+      "description": "A list of group role names that can submit questions. Only applicable for group assessments. DEPRECATED -- prefer using the \"groups\" property instead.",
       "type": "array",
       "items": {
         "type": "string"
@@ -137,7 +137,7 @@
       "deprecated": true
     },
     "canView": {
-      "description": "A list of group role names that can view questions. Only applicable for group assessments. DEPRECATED -- prefer using teams instead.",
+      "description": "A list of group role names that can view questions. Only applicable for group assessments. DEPRECATED -- prefer using the \"groups\" property instead.",
       "type": "array",
       "items": {
         "type": "string"
@@ -147,77 +147,77 @@
       "deprecated": true
     },
     "studentGroupCreate": {
-      "description": "Whether students can create groups. DEPRECATED -- prefer using teams instead.",
+      "description": "Whether students can create groups. DEPRECATED -- prefer using the \"groups\" property instead.",
       "type": "boolean",
       "default": false,
       "deprecated": true
     },
     "studentGroupChooseName": {
-      "description": "Whether students can choose a group name when creating a group. Only applicable if studentGroupCreate is true. DEPRECATED -- prefer using teams instead.",
+      "description": "Whether students can choose a group name when creating a group. Only applicable if studentGroupCreate is true. DEPRECATED -- prefer using the \"groups\" property instead.",
       "type": "boolean",
       "default": true,
       "deprecated": true
     },
     "studentGroupJoin": {
-      "description": "Whether students can join groups. DEPRECATED -- prefer using teams instead.",
+      "description": "Whether students can join groups. DEPRECATED -- prefer using the \"groups\" property instead.",
       "type": "boolean",
       "default": false,
       "deprecated": true
     },
     "studentGroupLeave": {
-      "description": "Whether students can leave groups. DEPRECATED -- prefer using teams instead.",
+      "description": "Whether students can leave groups. DEPRECATED -- prefer using the \"groups\" property instead.",
       "type": "boolean",
       "default": false,
       "deprecated": true
     },
-    "teams": {
-      "description": "Configuration for team-based assessments.",
+    "groups": {
+      "description": "Configuration for group-based assessments.",
       "type": "object",
       "additionalProperties": false,
       "properties": {
         "enabled": {
-          "description": "Whether teams are enabled for this assessment.",
+          "description": "Whether groups are enabled for this assessment.",
           "type": "boolean",
           "default": true
         },
         "minMembers": {
-          "description": "Minimum number of students in a team.",
+          "description": "Minimum number of students in a group.",
           "type": "number"
         },
         "maxMembers": {
-          "description": "Maximum number of students in a team.",
+          "description": "Maximum number of students in a group.",
           "type": "number"
         },
         "roles": {
-          "description": "Array of custom user roles in a team.",
+          "description": "Array of custom user roles in a group.",
           "type": "array",
           "items": {
-            "$ref": "#/definitions/TeamRoleJsonSchema"
+            "$ref": "#/definitions/GroupsRoleJsonSchema"
           },
           "uniqueItems": true,
           "default": []
         },
         "studentPermissions": {
-          "description": "Student permissions for team management.",
+          "description": "Student permissions for group management.",
           "type": "object",
           "properties": {
-            "canCreateTeam": {
-              "description": "Whether students can create teams.",
+            "canCreateGroup": {
+              "description": "Whether students can create groups.",
               "type": "boolean",
               "default": false
             },
-            "canJoinTeam": {
-              "description": "Whether students can join teams.",
+            "canJoinGroup": {
+              "description": "Whether students can join groups.",
               "type": "boolean",
               "default": false
             },
-            "canLeaveTeam": {
-              "description": "Whether students can leave teams.",
+            "canLeaveGroup": {
+              "description": "Whether students can leave groups.",
               "type": "boolean",
               "default": false
             },
-            "canNameTeam": {
-              "description": "Whether students can choose a team name when creating a team.",
+            "canNameGroup": {
+              "description": "Whether students can choose a group name when creating a group.",
               "type": "boolean",
               "default": true
             }
@@ -225,7 +225,7 @@
           "default": {}
         },
         "rolePermissions": {
-          "description": "Role-based permissions for team assessments.",
+          "description": "Role-based permissions for group assessments.",
           "type": "object",
           "properties": {
             "canAssignRoles": {
@@ -277,31 +277,6 @@
     }
   },
   "definitions": {
-    "GroupRoleJsonSchema": {
-      "description": "A custom role for use in group assessments that allows control over certain permissions.",
-      "type": "object",
-      "required": ["name"],
-      "properties": {
-        "name": {
-          "description": "The group role's name (i.e. Manager, Reflector, Recorder).",
-          "type": "string"
-        },
-        "minimum": {
-          "description": "The minimum number of users that should be in this role in a group.",
-          "type": "number",
-          "default": 0
-        },
-        "maximum": {
-          "description": "The maximum number of users that should be in this role in a group.",
-          "type": "number"
-        },
-        "canAssignRoles": {
-          "description": "Whether users with this role can assign other users' group roles.",
-          "type": "boolean",
-          "default": false
-        }
-      }
-    },
     "AssessmentAccessRuleJsonSchema": {
       "description": "An access rule that permits people to access this assessment. All restrictions in the rule must be satisfied for the rule to allow access.",
       "type": "object",
@@ -408,7 +383,7 @@
           "description": "Array of questions in the zone.",
           "type": "array",
           "items": {
-            "$ref": "#/definitions/ZoneQuestionJsonSchema"
+            "$ref": "#/definitions/ZoneQuestionBlockJsonSchema"
           },
           "minItems": 1
         },
@@ -426,7 +401,7 @@
           "type": "boolean"
         },
         "canSubmit": {
-          "description": "A list of team role names that can submit questions in this zone. Only applicable for team assessments.",
+          "description": "A list of group role names that can submit questions in this zone. Only applicable for group assessments.",
           "type": "array",
           "items": {
             "type": "string"
@@ -435,7 +410,7 @@
           "default": []
         },
         "canView": {
-          "description": "A list of team role names that can view questions in this zone. Only applicable for team assessments.",
+          "description": "A list of group role names that can view questions in this zone. Only applicable for group assessments.",
           "type": "array",
           "items": {
             "type": "string"
@@ -445,7 +420,7 @@
         }
       }
     },
-    "ZoneQuestionJsonSchema": {
+    "ZoneQuestionBlockJsonSchema": {
       "type": "object",
       "properties": {
         "comment": {
@@ -510,7 +485,7 @@
           "type": "boolean"
         },
         "canSubmit": {
-          "description": "A list of team role names that can submit the question. Only applicable for team assessments.",
+          "description": "A list of group role names that can submit the question. Only applicable for group assessments.",
           "type": "array",
           "items": {
             "type": "string"
@@ -519,7 +494,7 @@
           "default": []
         },
         "canView": {
-          "description": "A list of team role names that can view the question. Only applicable for team assessments.",
+          "description": "A list of group role names that can view the question. Only applicable for group assessments.",
           "type": "array",
           "items": {
             "type": "string"
@@ -620,13 +595,38 @@
       "minimum": 0,
       "maximum": 100
     },
-    "TeamRoleJsonSchema": {
-      "description": "A custom role for use in team assessments.",
+    "LegacyGroupRoleJsonSchema": {
+      "description": "A custom role for use in group assessments that allows control over certain permissions.",
       "type": "object",
       "required": ["name"],
       "properties": {
         "name": {
-          "description": "The team role's name (e.g., Manager, Recorder).",
+          "description": "The group role's name (i.e. Manager, Reflector, Recorder).",
+          "type": "string"
+        },
+        "minimum": {
+          "description": "The minimum number of users that should be in this role in a group.",
+          "type": "number",
+          "default": 0
+        },
+        "maximum": {
+          "description": "The maximum number of users that should be in this role in a group.",
+          "type": "number"
+        },
+        "canAssignRoles": {
+          "description": "Whether users with this role can assign other users' group roles.",
+          "type": "boolean",
+          "default": false
+        }
+      }
+    },
+    "GroupsRoleJsonSchema": {
+      "description": "A custom role for use in group assessments.",
+      "type": "object",
+      "required": ["name"],
+      "properties": {
+        "name": {
+          "description": "The group role's name (e.g., Manager, Recorder).",
           "type": "string"
         },
         "minMembers": {

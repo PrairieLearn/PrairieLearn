@@ -107,6 +107,38 @@ function SyncErrorsAndWarningsForContext({
   }
 }
 
+function LegacyPublishingBannerComponent({
+  navContext,
+  resLocals,
+}: {
+  navContext: NavContext;
+  resLocals: UntypedResLocals;
+}) {
+  if (navContext.type !== 'instructor') return null;
+  if (navContext.page !== 'instance_admin' || navContext.subPage !== 'students') return null;
+
+  const { course_instance: courseInstance } = resLocals;
+
+  // Only show banner if using legacy publishing
+  if (!courseInstance || courseInstance.modern_publishing) return null;
+
+  return (
+    <div
+      className="alert alert-warning py-2 mb-0 rounded-0 border-0 border-bottom small"
+      role="alert"
+    >
+      You are using access rules to control who can access the course instance.{' '}
+      <a
+        href="https://docs.prairielearn.com/courseInstance/#migrating-from-allowaccess"
+        className="alert-link"
+      >
+        Migrate to publishing
+      </a>{' '}
+      to unlock additional enrollment management features.
+    </div>
+  );
+}
+
 function UnpublishedBannerComponent({
   navContext,
   resLocals,
@@ -351,6 +383,9 @@ export function PageLayout({
                 'd-flex flex-column',
               )}"
             >
+              ${renderHtml(
+                <LegacyPublishingBannerComponent navContext={navContext} resLocals={resLocals} />,
+              )}
               ${renderHtml(
                 <UnpublishedBannerComponent navContext={navContext} resLocals={resLocals} />,
               )}

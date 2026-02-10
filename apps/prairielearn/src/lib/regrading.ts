@@ -1,17 +1,12 @@
 import { z } from 'zod';
 
 import { logger } from '@prairielearn/logger';
-import {
-  callRow,
-  loadSqlEquiv,
-  queryRow,
-  queryRows,
-  runInTransactionAsync,
-} from '@prairielearn/postgres';
+import { loadSqlEquiv, queryRow, queryRows, runInTransactionAsync } from '@prairielearn/postgres';
 import { IdSchema } from '@prairielearn/zod';
 
 import { selectAssessmentInfoForJob } from '../models/assessment.js';
 
+import { updateAssessmentInstanceGrade } from './assessment-grading.js';
 import { updateAssessmentInstance } from './assessment.js';
 import { AssessmentInstanceSchema, AssessmentSchema, QuestionSchema } from './db-types.js';
 import * as ltiOutcomes from './ltiOutcomes.js';
@@ -22,7 +17,7 @@ const sql = loadSqlEquiv(import.meta.url);
 const RegradeAssessmentInstanceInfoSchema = z.object({
   assessment_instance_label: z.string(),
   user_uid: z.string().nullable(),
-  team_name: z.string().nullable(),
+  group_name: z.string().nullable(),
   assessment_id: IdSchema,
   course_instance_id: IdSchema,
   course_id: IdSchema,
@@ -31,12 +26,7 @@ const RegradeAssessmentInstancesSchema = z.object({
   assessment_instance_id: IdSchema,
   assessment_instance_label: z.string(),
   user_uid: z.string().nullable(),
-  team_name: z.string().nullable(),
-});
-const AssessmentInstancesGradeSchema = z.object({
-  updated: z.boolean(),
-  new_points: z.number(),
-  new_score_perc: z.number(),
+  group_name: z.string().nullable(),
 });
 
 /**
@@ -53,10 +43,10 @@ export async function regradeAssessmentInstance(
     RegradeAssessmentInstanceInfoSchema,
   );
   const assessment_instance_label = assessmentInstance.assessment_instance_label;
-  const userOrTeam = assessmentInstance.user_uid || `group "${assessmentInstance.team_name}"`;
+  const userOrGroup = assessmentInstance.user_uid || `group "${assessmentInstance.group_name}"`;
   const serverJob = await createServerJob({
     type: 'regrade_assessment_instance',
-    description: 'Regrade ' + assessment_instance_label + ' for ' + userOrTeam,
+    description: 'Regrade ' + assessment_instance_label + ' for ' + userOrGroup,
     userId: user_id,
     authnUserId: authn_user_id,
     courseId: assessmentInstance.course_id,
@@ -68,7 +58,7 @@ export async function regradeAssessmentInstance(
   // continue executing below to launch the jobs themselves.
 
   serverJob.executeInBackground(async (job) => {
-    job.info('Regrading ' + assessment_instance_label + ' for ' + userOrTeam);
+    job.info('Regrading ' + assessment_instance_label + ' for ' + userOrGroup);
     const regrade = await regradeSingleAssessmentInstance({
       assessment_instance_id,
       authn_user_id,
@@ -131,13 +121,13 @@ export async function regradeAllAssessmentInstances(
     let output_count = 0;
     for (const row of assessment_instances) {
       let msg: string;
-      const userOrTeam = row.user_uid || `group "${row.team_name}"`;
+      const userOrGroup = row.user_uid || `group "${row.group_name}"`;
       try {
         const regrade = await regradeSingleAssessmentInstance({
           assessment_instance_id: row.assessment_instance_id,
           authn_user_id,
         });
-        msg = `Regraded ${row.assessment_instance_label} for ${userOrTeam}: `;
+        msg = `Regraded ${row.assessment_instance_label} for ${userOrGroup}: `;
         if (regrade.updated) {
           updated_count++;
           msg += `New score: ${Math.floor(
@@ -150,7 +140,7 @@ export async function regradeAllAssessmentInstances(
       } catch (err) {
         logger.error('error while regrading', { row, err });
         error_count++;
-        msg = `ERROR updating ${row.assessment_instance_label} for ${userOrTeam}`;
+        msg = `ERROR updating ${row.assessment_instance_label} for ${userOrGroup}`;
       }
       output = (output == null ? '' : `${output}\n`) + msg;
 
@@ -204,15 +194,12 @@ async function regradeSingleAssessmentInstance({
       QuestionSchema.shape.qid,
     );
 
-    const { updated: gradeUpdated, new_score_perc: newScorePerc } = await callRow(
-      'assessment_instances_grade',
-      [
+    const { updated: gradeUpdated, score_perc: newScorePerc } = await updateAssessmentInstanceGrade(
+      {
         assessment_instance_id,
         authn_user_id,
-        null, // credit
-        true, // only_log_if_score_updated
-      ],
-      AssessmentInstancesGradeSchema,
+        onlyLogIfScoreUpdated: true,
+      },
     );
 
     return {
