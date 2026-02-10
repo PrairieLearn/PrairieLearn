@@ -52,7 +52,7 @@ export type PublishingJson = z.infer<typeof PublishingJsonSchema>;
 
 export const StudentLabelJsonSchema = z
   .object({
-    name: z.string().min(1).max(255).describe('The name of the student label.'),
+    name: z.string().min(1).max(1000).describe('The name of the student label.'),
     color: ColorJsonSchema,
   })
   .strict()
