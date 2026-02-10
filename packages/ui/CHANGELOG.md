@@ -1,5 +1,11 @@
 # @prairielearn/ui
 
+## 3.1.3
+
+### Patch Changes
+
+- c34d474: Add @prairielearn/run as dep
+
 ## 3.1.2
 
 ### Patch Changes
