@@ -115,6 +115,7 @@ When working with assessment "groups" / "teams", see the [`groups-and-teams` ski
 - Don't add extra defensive checks or try/catch blocks that are abnormal for that area of the codebase (especially if called by trusted / validated codepaths).
 - Don't add extra comments that a human wouldn't add or that are inconsistent with the rest of the file.
 - Always check for existing model functions in `apps/prairielearn/src/models/` or lib functions before writing one-off database queries.
+- Don't re-export functions or types from other modules just for convenience or backward compatibility (e.g. `export { bar } from 'foo'`).
 
 ### User interface conventions
 

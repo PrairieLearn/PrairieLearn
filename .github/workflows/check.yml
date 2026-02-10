@@ -63,6 +63,13 @@ jobs:
 
       - name: Build all code
         run: make build
+
+      - name: Report bundle sizes
+        uses: ./packages/actions-report-bundle-sizes
+        with:
+          sizes-path: apps/prairielearn/public/build/sizes.json
+          token: ${{ secrets.GITHUB_TOKEN }}
+
       - name: Run the JavaScript linter
         run: make lint-js
       - name: Run the links linter
