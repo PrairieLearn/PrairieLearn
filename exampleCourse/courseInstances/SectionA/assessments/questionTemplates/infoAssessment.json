@@ -10,6 +10,9 @@
       "questions": [
         { "id": "template/multiple-choice/fixed", "points": 1 },
         { "id": "template/multiple-choice/dropdown", "points": 1 },
+        { "id": "template/multiple-choice/true-false", "points": 1 },
+        { "id": "template/multiple-choice/all-of-the-above", "points": 1 },
+        { "id": "template/multiple-choice/none-of-the-above", "points": 1 },
         { "id": "template/checkbox/fixed", "points": 1 },
         { "id": "template/integer-input/fixed", "points": 1 },
         { "id": "template/number-input/fixed", "points": 1 },
@@ -19,13 +22,13 @@
         { "id": "template/order-blocks/fixed", "points": 1 },
         { "id": "template/rich-text-editor/basic", "points": 1 },
         { "id": "template/file-editor/fixed", "points": 1 },
-        { "id": "template/file-upload/fixed", "points": 1 }
+        { "id": "template/file-upload/fixed", "points": 1 },
+        { "id": "template/image-capture/static", "points": 1 }
       ]
     },
     {
       "title": "Intermediate questions: randomization without Python",
       "questions": [
-        { "id": "template/multiple-choice/random", "points": 1, "maxPoints": 3 },
         { "id": "template/multiple-choice/distractor-pool", "points": 1, "maxPoints": 3 },
         { "id": "template/multiple-choice/multi-correct-pool", "points": 1, "maxPoints": 3 },
         { "id": "template/multiple-choice/images", "points": 1, "maxPoints": 3 },
@@ -38,9 +41,16 @@
         { "id": "template/multiple-choice/random-prompt", "points": 1, "maxPoints": 3 },
         { "id": "template/multiple-choice/numeric", "points": 1, "maxPoints": 3 },
         { "id": "template/multiple-choice/random-prompt-true-false", "points": 1, "maxPoints": 3 },
+        { "id": "template/checkbox/random-prompt", "points": 1, "maxPoints": 3 },
+        { "id": "template/checkbox/feedback", "points": 1, "maxPoints": 3 },
         { "id": "template/integer-input/random", "points": 1, "maxPoints": 3 },
         { "id": "template/number-input/random", "points": 1, "maxPoints": 3 },
+        { "id": "template/number-input/random-prompt", "points": 1, "maxPoints": 3 },
+        { "id": "template/number-input/multiple-answer-inputs", "points": 1, "maxPoints": 3 },
+        { "id": "template/string-input/random", "points": 1, "maxPoints": 3 },
         { "id": "template/symbolic-input/random", "points": 1, "maxPoints": 3 },
+        { "id": "template/matrix-input/random", "points": 1, "maxPoints": 3 },
+        { "id": "template/matrix-component-input/random-graph", "points": 1, "maxPoints": 3 },
         { "id": "template/figure/dynamic", "points": 1, "maxPoints": 3 }
       ]
     }
