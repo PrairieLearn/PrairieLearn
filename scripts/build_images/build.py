@@ -5,6 +5,7 @@ import os
 import subprocess
 import sys
 import tempfile
+import urllib.request
 from typing import Literal, cast, get_args
 
 from utils import (
@@ -202,6 +203,16 @@ def build_image(
     print(f"Metadata: {metadata.strip()}")
     digest = json.loads(metadata)["containerimage.digest"]
 
+    # Query local registry for image size.
+    manifest_url = f"http://localhost:5000/v2/{image}/manifests/{digest}"
+    req = urllib.request.Request(
+        manifest_url,
+        headers={"Accept": "application/vnd.oci.image.manifest.v1+json"},
+    )
+    with urllib.request.urlopen(req) as resp:
+        manifest_data = json.loads(resp.read())
+    image_size = sum(layer["size"] for layer in manifest_data.get("layers", []))
+
     # Write metadata to the metadata directory
     if metadata_dir:
         metadata = json.loads(metadata)
@@ -210,6 +221,8 @@ def build_image(
         # If pushing is enabled, the image name will be a comma-separated list of image names.
         # We'll replace it with just the plain image name.
         metadata["image.name"] = image
+        metadata["image.platform"] = platform
+        metadata["image.size"] = image_size
 
         # We need a unique name for the metadata file. We'll use the part of the
         # image name after the last slash, and a hash of the build ref.
