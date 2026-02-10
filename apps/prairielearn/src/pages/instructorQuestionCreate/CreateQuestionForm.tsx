@@ -170,7 +170,6 @@ function TemplateCardRadioGroup({
               }}
               className={clsx('card overflow-hidden', {
                 'border-primary': isSelected,
-                'border-secondary': !isSelected,
               })}
               style={{ cursor: 'pointer' }}
               role="radio"
@@ -225,7 +224,6 @@ function TemplateCardRadioGroup({
             }}
             className={clsx('card', {
               'border-primary bg-primary bg-opacity-10': isSelected,
-              'border-secondary': !isSelected,
             })}
             style={{ cursor: 'pointer' }}
             role="radio"
