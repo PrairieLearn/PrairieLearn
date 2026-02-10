@@ -6,8 +6,8 @@ import * as sqldb from '@prairielearn/postgres';
 import { config } from '../../lib/config.js';
 import {
   createCourseFromRequest,
-  selectPendingCourseRequests,
   denyCourseRequest,
+  selectPendingCourseRequests,
   updateCourseRequestNote,
 } from '../../lib/course-request.js';
 import { typedAsyncHandler } from '../../lib/res-locals.js';
@@ -84,7 +84,7 @@ router.post(
         displayTimezone: req.body.display_timezone,
         path: req.body.path,
         repoShortName: req.body.repository_short_name,
-        githubUser: req.body.github_user.length > 0 ? req.body.github_user : null,
+        githubUser: req.body.github_user?.length > 0 ? req.body.github_user : null,
         authnUser: res.locals.authn_user,
       });
       return res.redirect(`/pl/administrator/jobSequence/${jobSequenceId}/`);

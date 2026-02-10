@@ -5,8 +5,8 @@ import * as error from '@prairielearn/error';
 import { config } from '../../lib/config.js';
 import {
   createCourseFromRequest,
-  selectAllCourseRequests,
   denyCourseRequest,
+  selectAllCourseRequests,
   updateCourseRequestNote,
 } from '../../lib/course-request.js';
 import { typedAsyncHandler } from '../../lib/res-locals.js';
