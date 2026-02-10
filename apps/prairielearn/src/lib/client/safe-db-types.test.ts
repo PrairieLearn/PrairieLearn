@@ -457,7 +457,7 @@ const minimalStaffQuestion: z.input<typeof StaffQuestionSchema> = {
   json_comment: null,
   json_external_grading_comment: null,
   json_workspace_comment: null,
-  number: 1,
+  number: null,
   options: null,
   partial_credit: null,
   qid: null,

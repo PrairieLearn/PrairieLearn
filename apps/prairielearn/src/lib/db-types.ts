@@ -1284,7 +1284,7 @@ export const QuestionSchema = z.object({
     .union([z.string(), z.array(z.any()), z.record(z.any())])
     .nullable(),
   json_workspace_comment: z.union([z.string(), z.array(z.any()), z.record(z.any())]).nullable(),
-  number: z.number(),
+  number: z.number().nullable(),
   options: z.any().nullable(),
   partial_credit: z.boolean().nullable(),
   qid: z.string().nullable(),

@@ -17,7 +17,7 @@ columns
     json_comment: jsonb
     json_external_grading_comment: jsonb
     json_workspace_comment: jsonb
-    number: integer not null
+    number: integer
     options: jsonb
     partial_credit: boolean default true
     qid: text

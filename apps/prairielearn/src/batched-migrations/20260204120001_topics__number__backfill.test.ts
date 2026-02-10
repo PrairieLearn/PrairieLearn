@@ -33,10 +33,13 @@ describe('topics number backfill migration', () => {
 
         await migration.execute(1n, 10000n);
 
+        return courseId;
+      },
+      afterMigration: async (courseId) => {
         const topics = await sqldb.queryRows(
           'SELECT name, number FROM topics WHERE course_id = $course_id ORDER BY name',
           { course_id: courseId },
-          z.object({ name: z.string(), number: z.number().nullable() }),
+          z.object({ name: z.string(), number: z.number() }),
         );
 
         expect(topics).toEqual([
@@ -69,10 +72,13 @@ describe('topics number backfill migration', () => {
 
         await migration.execute(1n, 10000n);
 
+        return courseId;
+      },
+      afterMigration: async (courseId) => {
         const topics = await sqldb.queryRows(
           'SELECT name, number FROM topics WHERE course_id = $course_id ORDER BY name',
           { course_id: courseId },
-          z.object({ name: z.string(), number: z.number().nullable() }),
+          z.object({ name: z.string(), number: z.number() }),
         );
 
         expect(topics).toEqual([
@@ -103,10 +109,13 @@ describe('topics number backfill migration', () => {
 
         await migration.execute(1n, 10000n);
 
+        return courseId;
+      },
+      afterMigration: async (courseId) => {
         const topics = await sqldb.queryRows(
           'SELECT name, number FROM topics WHERE course_id = $course_id ORDER BY name',
           { course_id: courseId },
-          z.object({ name: z.string(), number: z.number().nullable() }),
+          z.object({ name: z.string(), number: z.number() }),
         );
 
         expect(topics).toEqual([

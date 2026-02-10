@@ -43,15 +43,6 @@ SET NOT NULL;
 ALTER TABLE job_sequences
 DROP CONSTRAINT job_sequences_number_not_null;
 
-ALTER TABLE questions VALIDATE CONSTRAINT questions_number_not_null;
-
-ALTER TABLE questions
-ALTER COLUMN number
-SET NOT NULL;
-
-ALTER TABLE questions
-DROP CONSTRAINT questions_number_not_null;
-
 ALTER TABLE tags VALIDATE CONSTRAINT tags_number_not_null;
 
 ALTER TABLE tags

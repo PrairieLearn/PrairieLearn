@@ -13,9 +13,6 @@ ADD CONSTRAINT course_instance_access_rules_number_not_null CHECK (number IS NOT
 ALTER TABLE job_sequences
 ADD CONSTRAINT job_sequences_number_not_null CHECK (number IS NOT NULL) NOT VALID;
 
-ALTER TABLE questions
-ADD CONSTRAINT questions_number_not_null CHECK (number IS NOT NULL) NOT VALID;
-
 ALTER TABLE tags
 ADD CONSTRAINT tags_number_not_null CHECK (number IS NOT NULL) NOT VALID;
 

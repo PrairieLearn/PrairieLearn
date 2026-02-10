@@ -5,7 +5,7 @@ interface NamedEntity {
 }
 
 type ExistingEntity<Entity> = Entity & {
-  number: number;
+  number: number | null;
   implicit: boolean;
 };
 

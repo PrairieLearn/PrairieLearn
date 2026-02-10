@@ -90,8 +90,8 @@ BEGIN
         WHERE dest.id = dest_id AND dest.course_id = syncing_course_id
     ),
     insert_unmatched_src_rows AS (
-        INSERT INTO questions AS dest (course_id, qid, uuid, deleted_at, number)
-        SELECT syncing_course_id, src_qid, src_uuid, NULL, 0
+        INSERT INTO questions AS dest (course_id, qid, uuid, deleted_at)
+        SELECT syncing_course_id, src_qid, src_uuid, NULL
         FROM matched_rows
         WHERE dest_id IS NULL
         RETURNING dest.qid AS src_qid, dest.id AS inserted_dest_id

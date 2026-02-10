@@ -457,8 +457,8 @@ BEGIN
                             RAISE EXCEPTION 'Question ID should not be null';
                         END IF;
 
-                        INSERT INTO questions AS dest (course_id, qid, uuid, deleted_at, number)
-                        VALUES (syncing_course_id, null, null, null, 0) RETURNING dest.id INTO new_question_id;
+                        INSERT INTO questions AS dest (course_id, qid, uuid, deleted_at)
+                        VALUES (syncing_course_id, null, null, null) RETURNING dest.id INTO new_question_id;
                     ELSE
                         new_question_id := (assessment_question->>'question_id')::bigint;
                     END IF;
