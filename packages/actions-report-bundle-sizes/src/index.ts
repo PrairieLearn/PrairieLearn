@@ -185,7 +185,7 @@ function upsertSection(existingBody: string | null, newSection: string): string 
 
 async function fetchBaseline(
   octokit: ReturnType<typeof github.getOctokit>,
-): Promise<{ content: SizesJson; sha: string } | null> {
+): Promise<SizesJson | null> {
   try {
     const response = await octokit.rest.repos.getContent({
       owner: github.context.repo.owner,
@@ -195,10 +195,9 @@ async function fetchBaseline(
     });
 
     if ('content' in response.data && response.data.type === 'file') {
-      const content = JSON.parse(
+      return JSON.parse(
         Buffer.from(response.data.content, 'base64').toString('utf-8'),
       ) as SizesJson;
-      return { content, sha: response.data.sha };
     }
   } catch (err: unknown) {
     if (typeof err === 'object' && err !== null && 'status' in err && err.status === 404) {
@@ -230,7 +229,8 @@ async function pushBaseline(
     }
   } catch (err: unknown) {
     if (typeof err === 'object' && err !== null && 'status' in err && err.status === 404) {
-      // File or branch doesn't exist yet, will be created.
+      // File doesn't exist yet, will be created. Note: the branch must
+      // already exist; the Contents API cannot create branches.
     } else {
       throw err;
     }
@@ -316,8 +316,7 @@ async function main() {
     }
 
     // Fetch baseline from bundle-size branch.
-    const baseline = await fetchBaseline(octokit);
-    const oldSizes = baseline?.content ?? null;
+    const oldSizes = await fetchBaseline(octokit);
 
     // Build the comment section and post it.
     const section = buildCommentSection(oldSizes, newSizes);
