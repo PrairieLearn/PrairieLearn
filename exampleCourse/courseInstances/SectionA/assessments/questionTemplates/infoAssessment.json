@@ -6,7 +6,7 @@
   "number": "6",
   "zones": [
     {
-      "title": "Fixed templates: no randomization",
+      "title": "Basic questions: fixed answers, no randomization",
       "questions": [
         { "id": "template/multiple-choice/fixed", "points": 1 },
         { "id": "template/checkbox/fixed", "points": 1 },
@@ -18,14 +18,14 @@
       ]
     },
     {
-      "title": "Randomized templates: element-level randomization (no Python)",
+      "title": "Intermediate questions: element-level randomization, no Python",
       "questions": [
         { "id": "template/multiple-choice/random", "points": 1, "maxPoints": 4 },
         { "id": "template/multiple-choice/images", "points": 1, "maxPoints": 4 }
       ]
     },
     {
-      "title": "Randomized templates: server-side randomization (Python)",
+      "title": "Advanced questions: server-side randomization with Python",
       "questions": [
         { "id": "template/multiple-choice/random-prompt", "points": 1, "maxPoints": 4 },
         { "id": "template/multiple-choice/numeric", "points": 1, "maxPoints": 4 },
