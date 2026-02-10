@@ -3,37 +3,55 @@ import { readFile } from 'fs/promises';
 import { globby } from 'globby';
 import type { KnipConfig } from 'knip';
 
-const usedExampleDependencies = [
-  ...(await globby('{exampleCourse,testCourse}/**/info.json')),
-  ...(await globby('apps/prairielearn/elements/**/info.json')),
+// These packages don't appear in info.json or nodeModulesAssetPath() calls but we still want them.
+const FALSE_POSITIVE_DEPS = [
+  'd3',
+  'marked',
+  'clipboard',
+  'async',
+  'tom-select',
+  'qrcode-svg',
+  'socket.io-client',
+  'lodash',
+  'ace-builds',
+  'bootstrap-table',
+  'bootstrap',
+  'jquery',
+  'highlight.js',
 ];
 
-const questionAndElementConfigFiles = await Promise.all(
-  usedExampleDependencies.map(async (path) => {
+const infoJsonPaths = await globby(
+  '{exampleCourse,testCourse,apps/prairielearn/elements}/**/info.json',
+);
+
+const infoJsonContents = await Promise.all(
+  infoJsonPaths.map(async (path) => {
     const content = await readFile(path, 'utf-8');
     return JSON.parse(content);
   }),
 );
 
-const questionAndElementDependencies = questionAndElementConfigFiles.flatMap((infoJson) => [
+const infoJsonDependencies = infoJsonContents.flatMap((infoJson) => [
   ...(infoJson.dependencies?.nodeModulesStyles ?? []),
   ...(infoJson.dependencies?.nodeModulesScripts ?? []),
   ...Object.values(infoJson.dynamicDependencies?.nodeModulesScripts ?? {}),
 ]);
 
 const sourceFiles = await globby('apps/prairielearn/**/*.{ts,tsx}');
-const assetPathRegex = /nodeModulesAssetPath\([\n ]*'(.*)',?[\n ]*\)/g;
+const assetPathRegex = /nodeModulesAssetPath\(\s*'([^']*)'\s*\)/g;
 
-const sourceFileDependencies = await Promise.all(
-  sourceFiles.map(async (path) => {
-    const content = await readFile(path, 'utf-8');
-    const matches = [...content.matchAll(assetPathRegex)].map((match) => match[1]);
-    return matches;
-  }),
-);
+const sourceFileDependencies = (
+  await Promise.all(
+    sourceFiles.map(async (path) => {
+      const content = await readFile(path, 'utf-8');
+      return [...content.matchAll(assetPathRegex)].map((match) => match[1]);
+    }),
+  )
+).flat();
 
+// Extract package names from full dependency paths (e.g. "lodash/lodash.min.js" -> "lodash").
 const packageDependencies = new Set<string>(
-  [...questionAndElementDependencies, ...sourceFileDependencies].flat().map((dep) => {
+  [...infoJsonDependencies, ...sourceFileDependencies].map((dep) => {
     const parts = dep.split('/');
     if (parts[0].startsWith('@')) {
       return parts.slice(0, 2).join('/');
@@ -41,6 +59,10 @@ const packageDependencies = new Set<string>(
     return parts[0];
   }),
 );
+
+for (const dep of FALSE_POSITIVE_DEPS) {
+  packageDependencies.delete(dep);
+}
 
 const config: KnipConfig = {
   workspaces: {
@@ -74,14 +96,6 @@ const config: KnipConfig = {
     'apps/grader-host': {
       project: ['**/*.{ts,cts,mts,tsx}'],
     },
-    'packages/preact-cjs-compat': {
-      entry: ['src/jsx-runtime.js'],
-      project: ['**/*.{ts,cts,mts,tsx}'],
-    },
-    'packages/preact-cjs': {
-      entry: ['src/*.js'],
-      project: ['**/*.{ts,cts,mts,tsx}'],
-    },
     'packages/migrations': {
       entry: ['src/{batched-migrations,migrations}/fixtures/*.ts'],
       project: ['**/*.{ts,cts,mts,tsx}'],
@@ -100,25 +114,7 @@ const config: KnipConfig = {
     },
   },
   ignoreDependencies: [
-    ...[...packageDependencies].filter(
-      (dep) =>
-        // False positives, as we rely on these packages for our own code as well.
-        ![
-          'd3',
-          'marked',
-          'clipboard',
-          'async',
-          'tom-select',
-          'qrcode-svg',
-          'socket.io-client',
-          'lodash',
-          'ace-builds',
-          'bootstrap-table',
-          'bootstrap',
-          'jquery',
-          'highlight.js',
-        ].includes(dep),
-    ),
+    ...packageDependencies,
     'backbone',
     'mersenne',
     'numeric',
@@ -129,6 +125,7 @@ const config: KnipConfig = {
     'pyright',
     's3rver',
   ],
+  // TODO: enable these features
   exclude: ['binaries', 'dependencies', 'exports', 'types'],
 };
 
