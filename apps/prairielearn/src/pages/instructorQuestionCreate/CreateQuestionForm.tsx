@@ -11,74 +11,8 @@ import type {
 import { EvocativePreview } from './EvocativePreview.js';
 
 // ---------------------------------------------------------------------------
-// SelectableCard + RadioCardGroup (reused for "Start from" selector)
+// RadioCardGroup (compact radio buttons for "Start from" selector)
 // ---------------------------------------------------------------------------
-
-interface SelectableCardProps {
-  id: string;
-  title: string;
-  description: string;
-  selected: boolean;
-  onClick: () => void;
-  onKeyDown: (e: React.KeyboardEvent) => void;
-  cardRef: (el: HTMLElement | null) => void;
-}
-
-function SelectableCard({
-  id,
-  title,
-  description,
-  selected,
-  onClick,
-  onKeyDown,
-  cardRef,
-}: SelectableCardProps) {
-  const handleKeyDown = (e: React.KeyboardEvent) => {
-    if (e.key === 'Enter' || e.key === ' ') {
-      e.preventDefault();
-      onClick();
-    }
-    onKeyDown(e);
-  };
-
-  return (
-    <div
-      ref={cardRef}
-      className={clsx('card h-100', {
-        'border-primary bg-primary bg-opacity-10': selected,
-        'border-secondary': !selected,
-      })}
-      style={{ cursor: 'pointer' }}
-      role="radio"
-      tabIndex={selected ? 0 : -1}
-      aria-checked={selected}
-      aria-labelledby={`${id}_title`}
-      aria-describedby={`${id}_description`}
-      onClick={onClick}
-      onKeyDown={handleKeyDown}
-    >
-      <div className="card-body text-center d-flex flex-column justify-content-center">
-        <div
-          id={`${id}_title`}
-          className={clsx('card-title', { 'text-primary fw-bold': selected })}
-        >
-          {title}
-        </div>
-        <div
-          id={`${id}_description`}
-          className={clsx('card-text small', { 'text-muted': !selected })}
-        >
-          {description}
-        </div>
-      </div>
-      {selected && (
-        <div className="position-absolute top-0 end-0 p-2">
-          <i className="fa fa-check-circle text-primary" aria-hidden="true" />
-        </div>
-      )}
-    </div>
-  );
-}
 
 function RadioCardGroup({
   label,
@@ -128,35 +62,37 @@ function RadioCardGroup({
   };
 
   return (
-    <fieldset className="mb-3">
-      {/* `col-form-label` correctly overrides the default font size for `legend` */}
-      <legend className="col-form-label">{label}</legend>
-      <div
-        role="radiogroup"
-        aria-label={label}
-        style={{
-          display: 'grid',
-          gridTemplateColumns: 'repeat(auto-fit, minmax(min(240px, 100%), 1fr))',
-          gap: '1rem',
-          gridAutoRows: '1fr',
-        }}
-      >
-        {options.map((option, index) => (
-          <SelectableCard
+    <div role="radiogroup" aria-label={label} className="d-flex flex-wrap gap-2">
+      {options.map((option, index) => {
+        const isSelected = value === option.id;
+        return (
+          <div
             key={option.id}
-            id={option.id}
-            title={option.title}
-            description={option.description}
-            selected={value === option.id}
-            cardRef={(el) => {
+            ref={(el) => {
               cardsRef.current[index] = el;
             }}
+            className={clsx('border rounded-3 px-3 py-2', {
+              'border-primary bg-primary bg-opacity-10 text-primary fw-semibold': isSelected,
+            })}
+            style={{ cursor: 'pointer' }}
+            role="radio"
+            tabIndex={isSelected ? 0 : -1}
+            aria-checked={isSelected}
+            aria-label={option.description}
             onClick={() => onChange(option.id)}
-            onKeyDown={(e) => handleKeyDown(e, index)}
-          />
-        ))}
-      </div>
-    </fieldset>
+            onKeyDown={(e) => {
+              if (e.key === 'Enter' || e.key === ' ') {
+                e.preventDefault();
+                onChange(option.id);
+              }
+              handleKeyDown(e, index);
+            }}
+          >
+            {option.title}
+          </div>
+        );
+      })}
+    </div>
   );
 }
 
@@ -484,6 +420,7 @@ export function CreateQuestionForm({
         </ol>
       </nav>
       <form method="POST" autoComplete="off">
+        <h2 className="h4 mb-3">Name your question</h2>
         <div className="mb-3">
           <label className="form-label" htmlFor="title">
             Title
@@ -522,12 +459,19 @@ export function CreateQuestionForm({
         </div>
 
         {hasAnyTemplates && (
-          <RadioCardGroup
-            label="Start from"
-            value={startFrom}
-            options={startFromOptions}
-            onChange={handleStartFromChange}
-          />
+          <div className="mb-3">
+            <hr className="my-4" />
+            <h2 className="h4 mb-1">Choose a starting point</h2>
+            <p className="text-muted mb-3">
+              Pick a template to get started quickly, or begin from scratch.
+            </p>
+            <RadioCardGroup
+              label="Choose a starting point"
+              value={startFrom}
+              options={startFromOptions}
+              onChange={handleStartFromChange}
+            />
+          </div>
         )}
 
         {/* Hidden inputs for form submission */}
@@ -541,14 +485,12 @@ export function CreateQuestionForm({
         {/* Search + template gallery */}
         {isTemplateSelected && (
           <div className="mb-3">
-            <label className="form-label" htmlFor="template_search">
-              Search templates
-            </label>
             <input
               type="search"
               className="form-control"
               id="template_search"
-              placeholder="Search by name or description..."
+              aria-label="Search templates"
+              placeholder="Search templates..."
               value={searchQuery}
               onChange={(e) => handleSearch(e.currentTarget.value)}
             />
@@ -567,7 +509,7 @@ export function CreateQuestionForm({
                   <div className="d-flex flex-column gap-4">
                     {filteredZones.map((zone, zoneIndex) => (
                       <section key={zone.title} aria-label={zone.title}>
-                        <h3 className="h6 text-muted mb-2">{zone.title}</h3>
+                        <h3 className="h6 fw-semibold mb-2">{zone.title}</h3>
                         <TemplateCardRadioGroup
                           label={zone.title}
                           cards={zone.questions}
