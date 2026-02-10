@@ -10,6 +10,8 @@ const COLORS = {
   bg: '#f8f9fa',
   shape: '#dee2e6',
   shapeDark: '#ced4da',
+  accent: '#8aadc8',
+  accentDark: '#6b93b3',
 };
 
 function TextLines({ count = 2, widths }: { count?: number; widths?: string[] }) {
@@ -31,7 +33,7 @@ function TextLines({ count = 2, widths }: { count?: number; widths?: string[] })
   );
 }
 
-function RadioRow({ width = '55%' }: { width?: string }) {
+function RadioRow({ width = '55%', selected = false }: { width?: string; selected?: boolean }) {
   return (
     <div style={{ display: 'flex', alignItems: 'center', gap: 8 }}>
       <div
@@ -39,7 +41,9 @@ function RadioRow({ width = '55%' }: { width?: string }) {
           width: 12,
           height: 12,
           borderRadius: '50%',
-          border: `2px solid ${COLORS.shapeDark}`,
+          border: `2px solid ${selected ? COLORS.accentDark : COLORS.shapeDark}`,
+          backgroundColor: selected ? COLORS.accent : undefined,
+          boxShadow: selected ? 'inset 0 0 0 2px white' : undefined,
           flexShrink: 0,
         }}
       />
@@ -47,7 +51,7 @@ function RadioRow({ width = '55%' }: { width?: string }) {
         style={{
           height: 7,
           width,
-          backgroundColor: COLORS.shape,
+          backgroundColor: selected ? COLORS.accent : COLORS.shape,
           borderRadius: 3,
         }}
       />
@@ -55,7 +59,7 @@ function RadioRow({ width = '55%' }: { width?: string }) {
   );
 }
 
-function CheckboxRow({ width = '55%' }: { width?: string }) {
+function CheckboxRow({ width = '55%', checked = false }: { width?: string; checked?: boolean }) {
   return (
     <div style={{ display: 'flex', alignItems: 'center', gap: 8 }}>
       <div
@@ -63,15 +67,31 @@ function CheckboxRow({ width = '55%' }: { width?: string }) {
           width: 12,
           height: 12,
           borderRadius: 2,
-          border: `2px solid ${COLORS.shapeDark}`,
+          border: `2px solid ${checked ? COLORS.accentDark : COLORS.shapeDark}`,
+          backgroundColor: checked ? COLORS.accent : undefined,
           flexShrink: 0,
+          display: 'flex',
+          alignItems: 'center',
+          justifyContent: 'center',
         }}
-      />
+      >
+        {checked && (
+          <svg width="8" height="8" viewBox="0 0 8 8" fill="none">
+            <path
+              d="M1.5 4L3.5 6L6.5 2"
+              stroke="white"
+              strokeWidth="1.5"
+              strokeLinecap="round"
+              strokeLinejoin="round"
+            />
+          </svg>
+        )}
+      </div>
       <div
         style={{
           height: 7,
           width,
-          backgroundColor: COLORS.shape,
+          backgroundColor: checked ? COLORS.accent : COLORS.shape,
           borderRadius: 3,
         }}
       />
@@ -79,7 +99,7 @@ function CheckboxRow({ width = '55%' }: { width?: string }) {
   );
 }
 
-function InputField({ width = '100%' }: { width?: string }) {
+function InputField({ width = '100%', text }: { width?: string; text?: string }) {
   return (
     <div
       style={{
@@ -88,12 +108,38 @@ function InputField({ width = '100%' }: { width?: string }) {
         border: `2px solid ${COLORS.shapeDark}`,
         borderRadius: 4,
         backgroundColor: 'white',
+        display: 'flex',
+        alignItems: 'center',
+        paddingLeft: 6,
+        paddingRight: 6,
       }}
-    />
+    >
+      {text && (
+        <span
+          style={{
+            fontSize: 10,
+            fontFamily: 'monospace',
+            color: COLORS.accentDark,
+            lineHeight: 1,
+            whiteSpace: 'nowrap',
+          }}
+        >
+          {text}
+        </span>
+      )}
+    </div>
   );
 }
 
-function LabeledInput({ labelWidth = '20%', inputWidth = '50%' }) {
+function LabeledInput({
+  labelWidth = '20%',
+  inputWidth = '50%',
+  text,
+}: {
+  labelWidth?: string;
+  inputWidth?: string;
+  text?: string;
+}) {
   return (
     <div style={{ display: 'flex', alignItems: 'center', gap: 8 }}>
       <div
@@ -105,7 +151,7 @@ function LabeledInput({ labelWidth = '20%', inputWidth = '50%' }) {
           flexShrink: 0,
         }}
       />
-      <InputField width={inputWidth} />
+      <InputField width={inputWidth} text={text} />
     </div>
   );
 }
@@ -116,7 +162,7 @@ function MultipleChoicePreview() {
       <TextLines count={2} />
       <div style={{ display: 'flex', flexDirection: 'column', gap: 8, marginTop: 4 }}>
         <RadioRow width="60%" />
-        <RadioRow width="45%" />
+        <RadioRow width="45%" selected />
         <RadioRow width="52%" />
         <RadioRow width="38%" />
       </div>
@@ -129,10 +175,10 @@ function CheckboxPreview() {
     <div style={{ display: 'flex', flexDirection: 'column', gap: 10 }}>
       <TextLines count={2} />
       <div style={{ display: 'flex', flexDirection: 'column', gap: 8, marginTop: 4 }}>
-        <CheckboxRow width="45%" />
+        <CheckboxRow width="45%" checked />
         <CheckboxRow width="55%" />
-        <CheckboxRow width="38%" />
-        <CheckboxRow width="50%" />
+        <CheckboxRow width="38%" checked />
+        <CheckboxRow width="50%" checked />
       </div>
     </div>
   );
@@ -142,7 +188,7 @@ function IntegerInputPreview() {
   return (
     <div style={{ display: 'flex', flexDirection: 'column', gap: 10 }}>
       <TextLines count={2} />
-      <LabeledInput labelWidth="15%" inputWidth="40%" />
+      <LabeledInput labelWidth="15%" inputWidth="40%" text="42" />
     </div>
   );
 }
@@ -151,7 +197,7 @@ function NumberInputPreview() {
   return (
     <div style={{ display: 'flex', flexDirection: 'column', gap: 10 }}>
       <TextLines count={2} />
-      <LabeledInput labelWidth="15%" inputWidth="45%" />
+      <LabeledInput labelWidth="15%" inputWidth="45%" text="3.14" />
     </div>
   );
 }
@@ -160,7 +206,7 @@ function StringInputPreview() {
   return (
     <div style={{ display: 'flex', flexDirection: 'column', gap: 10 }}>
       <TextLines count={2} />
-      <InputField width="70%" />
+      <InputField width="70%" text="Hello, world!" />
     </div>
   );
 }
@@ -169,7 +215,7 @@ function SymbolicInputPreview() {
   return (
     <div style={{ display: 'flex', flexDirection: 'column', gap: 10 }}>
       <TextLines count={2} widths={['75%', '50%']} />
-      <LabeledInput labelWidth="20%" inputWidth="55%" />
+      <LabeledInput labelWidth="20%" inputWidth="55%" text="x² + 2x" />
     </div>
   );
 }
@@ -216,8 +262,22 @@ function RichTextEditorPreview() {
             borderBottomLeftRadius: 4,
             borderBottomRightRadius: 4,
             backgroundColor: 'white',
+            padding: '6px 8px',
+            display: 'flex',
+            flexDirection: 'column',
+            gap: 4,
           }}
-        />
+        >
+          <div
+            style={{ height: 6, width: '85%', backgroundColor: COLORS.shape, borderRadius: 3 }}
+          />
+          <div
+            style={{ height: 6, width: '60%', backgroundColor: COLORS.shape, borderRadius: 3 }}
+          />
+          <div
+            style={{ height: 6, width: '40%', backgroundColor: COLORS.shape, borderRadius: 3 }}
+          />
+        </div>
       </div>
     </div>
   );
@@ -260,6 +320,7 @@ export function EvocativePreview({ qid }: { qid: string }) {
         padding: '16px 20px',
         display: 'flex',
         alignItems: 'flex-start',
+        userSelect: 'none',
       }}
     >
       <div style={{ width: '100%' }}>

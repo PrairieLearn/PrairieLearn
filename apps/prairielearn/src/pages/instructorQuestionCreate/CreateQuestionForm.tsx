@@ -115,7 +115,6 @@ function TemplateCardRadioGroup({
   showPreviews: boolean;
 }) {
   const cardsRef = useRef<(HTMLElement | null)[]>([]);
-  const [expandedQid, setExpandedQid] = useState<string | null>(null);
 
   const handleKeyDown = (e: React.KeyboardEvent, currentIndex: number) => {
     let newIndex = currentIndex;
@@ -218,7 +217,6 @@ function TemplateCardRadioGroup({
     <div role="radiogroup" aria-label={label} className="d-flex flex-column gap-2">
       {cards.map((card, index) => {
         const isSelected = selectedQid === card.qid;
-        const isExpanded = expandedQid === card.qid;
         return (
           <div
             key={card.qid}
@@ -252,34 +250,10 @@ function TemplateCardRadioGroup({
                 >
                   {card.title}
                 </span>
-                <div className="d-flex align-items-center gap-2">
-                  {isSelected && (
-                    <i className="fa fa-check-circle text-primary" aria-hidden="true" />
-                  )}
-                  {card.readme && (
-                    <button
-                      type="button"
-                      className="btn btn-sm btn-link p-0 text-muted"
-                      aria-label={`${isExpanded ? 'Hide' : 'Show'} details for ${card.title}`}
-                      aria-expanded={isExpanded}
-                      onClick={(e) => {
-                        e.stopPropagation();
-                        setExpandedQid(isExpanded ? null : card.qid);
-                      }}
-                    >
-                      <i
-                        className={clsx('fa', {
-                          'fa-chevron-up': isExpanded,
-                          'fa-info-circle': !isExpanded,
-                        })}
-                        aria-hidden="true"
-                      />
-                    </button>
-                  )}
-                </div>
+                {isSelected && <i className="fa fa-check-circle text-primary" aria-hidden="true" />}
               </div>
-              {isExpanded && card.readme && (
-                <div className={clsx('small mt-1 markdown-body', { 'text-muted': !isSelected })}>
+              {isSelected && card.readme && (
+                <div className="small mt-1 markdown-body">
                   <ReactMarkdown>{card.readme.trim()}</ReactMarkdown>
                 </div>
               )}
@@ -568,10 +542,7 @@ export function CreateQuestionForm({
               pointerEvents: 'none',
             }}
           />
-          <div
-            className="d-flex justify-content-end py-3"
-            style={{ backgroundColor: 'white' }}
-          >
+          <div className="d-flex justify-content-end py-3" style={{ backgroundColor: 'white' }}>
             <input type="hidden" name="__action" value="add_question" />
             <input type="hidden" name="__csrf_token" value={csrfToken} />
             <button
