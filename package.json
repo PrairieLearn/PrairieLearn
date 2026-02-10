@@ -46,6 +46,8 @@
     "eslint": "^9.39.2",
     "globby": "^16.1.0",
     "htmlhint": "^1.8.0",
+    "ignore": "^7.0.5",
+    "knip": "^5.83.1",
     "linkinator": "^7.5.3",
     "markdownlint-cli": "^0.47.0",
     "prettier": "3.8.1",
