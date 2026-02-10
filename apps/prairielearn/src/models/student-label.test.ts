@@ -148,19 +148,19 @@ describe('Student Label Model', () => {
   describe('selectStudentLabelsInCourseInstance', () => {
     it('returns all labels for a course instance', async () => {
       await helperDb.runInTransactionAndRollback(async () => {
-        // Use course instance 2 which has no pre-existing labels
-        const courseInstance = await selectCourseInstanceById('2');
-        assert.isEmpty(await selectStudentLabelsInCourseInstance(courseInstance));
+        const courseInstance = await selectCourseInstanceById('1');
+        const initialLabels = await selectStudentLabelsInCourseInstance(courseInstance);
 
-        await createTestLabel('Label A', { courseInstanceId: '2' });
-        await createTestLabel('Label B', { courseInstanceId: '2' });
-        const labelToDelete = await createTestLabel('Label C', { courseInstanceId: '2' });
+        await createTestLabel('Label A');
+        await createTestLabel('Label B');
+        const labelToDelete = await createTestLabel('Label C');
         await deleteStudentLabel(labelToDelete);
 
         const labels = await selectStudentLabelsInCourseInstance(courseInstance);
-        assert.equal(labels.length, 2);
-        assert.equal(labels[0].name, 'Label A');
-        assert.equal(labels[1].name, 'Label B');
+        assert.equal(labels.length, initialLabels.length + 2);
+        assert.isTrue(labels.some((l) => l.name === 'Label A'));
+        assert.isTrue(labels.some((l) => l.name === 'Label B'));
+        assert.isFalse(labels.some((l) => l.name === 'Label C'));
       });
     });
   });

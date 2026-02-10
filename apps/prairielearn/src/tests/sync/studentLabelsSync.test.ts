@@ -1,20 +1,19 @@
 import { afterAll, assert, beforeAll, beforeEach, describe, it } from 'vitest';
 
-import { CourseInstanceSchema, StudentLabelSchema } from '../../lib/db-types.js';
+import { selectCourseInstanceByShortName } from '../../models/course-instances.js';
+import { selectCourseByShortName } from '../../models/course.js';
+import { selectStudentLabelsInCourseInstance } from '../../models/student-label.js';
 import * as helperDb from '../helperDb.js';
 
 import * as util from './util.js';
 
-/**
- * Helper to find synced student labels for a course instance.
- */
-async function findSyncedStudentLabels(courseInstanceId: string) {
-  const syncedLabels = await util.dumpTableWithSchema('student_labels', StudentLabelSchema);
-  const courseInstances = await util.dumpTableWithSchema('course_instances', CourseInstanceSchema);
-  const courseInstance = courseInstances.find((ci) => ci.short_name === courseInstanceId);
-  assert.isOk(courseInstance);
-
-  return syncedLabels.filter((label) => label.course_instance_id === courseInstance.id);
+async function findSyncedStudentLabels(courseInstanceShortName: string) {
+  const course = await selectCourseByShortName('TEST 101');
+  const courseInstance = await selectCourseInstanceByShortName({
+    course,
+    shortName: courseInstanceShortName,
+  });
+  return selectStudentLabelsInCourseInstance(courseInstance);
 }
 
 describe('Student labels syncing', () => {
