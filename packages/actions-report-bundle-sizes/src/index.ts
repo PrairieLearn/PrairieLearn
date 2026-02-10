@@ -53,7 +53,7 @@ function diffSizes(oldSizes: SizesJson | null, newSizes: SizesJson): DiffEntry[]
 
     if (oldEntry && newEntry) {
       const diff = newEntry.gzip - oldEntry.gzip;
-      if (diff !== 0) {
+      if (Math.abs(diff) >= 5) {
         entries.push({
           name: key,
           kind: 'changed',
