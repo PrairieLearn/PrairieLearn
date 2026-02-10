@@ -131,7 +131,7 @@ export function CourseRequestsTable({
                         data-bs-toggle="dropdown"
                         aria-expanded="false"
                       >
-                        Show Details
+                        Show details
                       </button>
                       <ul className="dropdown-menu">
                         <li>
