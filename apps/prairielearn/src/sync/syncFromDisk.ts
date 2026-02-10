@@ -152,14 +152,18 @@ export async function syncDiskToSqlWithLock(
       syncCourseInstances.sync(courseId, courseData),
     );
     await timed('Synced student labels', async () => {
-      for (const [ciid, courseInstanceData] of Object.entries(courseData.courseInstances)) {
-        const courseInstanceId = courseInstanceIds[ciid];
-        if (courseInstanceId) {
-          const courseInstance = await selectCourseInstanceById(courseInstanceId);
-          const studentLabels = courseInstanceData.courseInstance.data?.studentLabels;
-          await syncStudentLabels(courseInstance, studentLabels);
-        }
-      }
+      await async.eachLimit(
+        Object.entries(courseData.courseInstances),
+        3,
+        async ([ciid, courseInstanceData]) => {
+          const courseInstanceId = courseInstanceIds[ciid];
+          if (courseInstanceId) {
+            const courseInstance = await selectCourseInstanceById(courseInstanceId);
+            const studentLabels = courseInstanceData.courseInstance.data?.studentLabels;
+            await syncStudentLabels(courseInstance, studentLabels);
+          }
+        },
+      );
     });
     await timed('Synced topics', () => syncTopics.sync(courseId, courseData));
     const questionIds = await timed('Synced questions', () =>

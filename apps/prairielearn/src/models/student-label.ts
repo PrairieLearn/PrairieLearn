@@ -11,6 +11,7 @@ import {
   StudentLabelEnrollmentSchema,
   StudentLabelSchema,
 } from '../lib/db-types.js';
+import type { ColorJson } from '../schemas/infoCourse.js';
 
 import { insertAuditEvent } from './audit-event.js';
 
@@ -35,7 +36,7 @@ export async function createStudentLabel({
 }: {
   courseInstanceId: string;
   name: string;
-  color?: string;
+  color?: ColorJson;
 }): Promise<StudentLabel> {
   return await queryRow(
     sql.create_student_label,
@@ -256,7 +257,7 @@ export async function selectStudentLabelsForEnrollment(
  */
 export async function updateStudentLabelColor(
   label: StudentLabel,
-  color: string,
+  color: ColorJson,
 ): Promise<StudentLabel> {
   return await queryRow(
     sql.update_student_label_color,

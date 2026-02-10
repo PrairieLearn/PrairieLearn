@@ -22,6 +22,7 @@ import {
   selectStudentLabelById,
   selectStudentLabelsForEnrollment,
   selectStudentLabelsInCourseInstance,
+  updateStudentLabelColor,
 } from './student-label.js';
 
 let enrollmentCounter = 0;
@@ -78,6 +79,24 @@ describe('Student Label Model', () => {
 
         assert.notEqual(label1.id, label2.id);
         assert.equal(label2.name, 'Test Label');
+      });
+    });
+  });
+
+  describe('updateStudentLabelColor', () => {
+    it('updates color and returns updated label', async () => {
+      await helperDb.runInTransactionAndRollback(async () => {
+        const label = await createStudentLabel({
+          courseInstanceId: '1',
+          name: 'Color Label',
+          color: 'gray1',
+        });
+        assert.equal(label.color, 'gray1');
+
+        const updated = await updateStudentLabelColor(label, 'red1');
+        assert.equal(updated.id, label.id);
+        assert.equal(updated.color, 'red1');
+        assert.equal(updated.name, 'Color Label');
       });
     });
   });
