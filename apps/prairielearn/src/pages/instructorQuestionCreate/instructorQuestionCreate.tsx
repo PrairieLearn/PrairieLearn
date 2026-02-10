@@ -3,7 +3,9 @@ import fs from 'fs-extra';
 
 import * as error from '@prairielearn/error';
 import { flash } from '@prairielearn/flash';
+import { Hydrate } from '@prairielearn/react/server';
 
+import { PageLayout } from '../../components/PageLayout.js';
 import { extractPageContext } from '../../lib/client/page-context.js';
 import { getCourseFilesClient } from '../../lib/course-files-api.js';
 import { typedAsyncHandler } from '../../lib/res-locals.js';
@@ -13,7 +15,7 @@ import { selectCourseInstancesWithStaffAccess } from '../../models/course-instan
 import { selectQuestionsForCourse } from '../../models/questions.js';
 import { getTemplateQuestions } from '../instructorQuestions/templateQuestions.js';
 
-import { InstructorQuestionCreatePage } from './instructorQuestionCreate.html.js';
+import { CreateQuestionForm } from './CreateQuestionForm.js';
 
 const router = Router();
 
@@ -47,9 +49,23 @@ router.get(
     const templateQuestions = await getTemplateQuestions(questions);
 
     res.send(
-      InstructorQuestionCreatePage({
-        templateQuestions,
+      PageLayout({
         resLocals: res.locals,
+        pageTitle: 'Create question',
+        navContext: {
+          type: 'instructor',
+          page: 'course_admin',
+          subPage: 'questions',
+        },
+        content: (
+          <Hydrate>
+            <CreateQuestionForm
+              templateQuestions={templateQuestions}
+              csrfToken={res.locals.__csrf_token}
+              questionsUrl={`${res.locals.urlPrefix}/course_admin/questions`}
+            />
+          </Hydrate>
+        ),
       }),
     );
   }),

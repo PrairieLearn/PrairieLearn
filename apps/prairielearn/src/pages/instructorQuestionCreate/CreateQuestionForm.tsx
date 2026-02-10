@@ -1,9 +1,8 @@
 import clsx from 'clsx';
 import { useMemo, useRef, useState } from 'react';
 
-import { SHORT_NAME_PATTERN } from '../lib/short-name.js';
-
-import { QuestionShortNameDescription } from './ShortNameDescriptions.js';
+import { QuestionShortNameDescription } from '../../components/ShortNameDescriptions.js';
+import { SHORT_NAME_PATTERN } from '../../lib/short-name.js';
 
 interface SelectableCardProps {
   id: string;
@@ -148,7 +147,7 @@ function RadioCardGroup({ label, value, options, onChange }: RadioCardGroupProps
   );
 }
 
-export function CreateQuestionFormContents({
+export function CreateQuestionForm({
   templateQuestions,
   csrfToken,
   questionsUrl,
@@ -301,4 +300,4 @@ export function CreateQuestionFormContents({
   );
 }
 
-CreateQuestionFormContents.displayName = 'CreateQuestionFormContents';
+CreateQuestionForm.displayName = 'CreateQuestionForm';
