@@ -150,6 +150,9 @@ describe('Student Label Model', () => {
       await helperDb.runInTransactionAndRollback(async () => {
         const courseInstance = await selectCourseInstanceById('1');
         const initialLabels = await selectStudentLabelsInCourseInstance(courseInstance);
+        for (const label of initialLabels) {
+          await deleteStudentLabel(label);
+        }
 
         await createTestLabel('Label A');
         await createTestLabel('Label B');
@@ -157,7 +160,7 @@ describe('Student Label Model', () => {
         await deleteStudentLabel(labelToDelete);
 
         const labels = await selectStudentLabelsInCourseInstance(courseInstance);
-        assert.equal(labels.length, initialLabels.length + 2);
+        assert.equal(labels.length, 2);
         assert.isTrue(labels.some((l) => l.name === 'Label A'));
         assert.isTrue(labels.some((l) => l.name === 'Label B'));
         assert.isFalse(labels.some((l) => l.name === 'Label C'));
