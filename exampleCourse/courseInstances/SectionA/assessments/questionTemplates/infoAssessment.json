@@ -20,7 +20,7 @@
     {
       "title": "Randomized templates: element-level randomization (no Python)",
       "questions": [
-        { "id": "template/multiple-choice/random", "points": 1, "maxPoints": 2 },
+        { "id": "template/multiple-choice/random", "points": 1, "maxPoints": 4 },
         { "id": "template/multiple-choice/images", "points": 1, "maxPoints": 4 }
       ]
     },
@@ -29,10 +29,10 @@
       "questions": [
         { "id": "template/multiple-choice/random-prompt", "points": 1, "maxPoints": 4 },
         { "id": "template/multiple-choice/numeric", "points": 1, "maxPoints": 4 },
-        { "id": "template/multiple-choice/random-prompt-true-false", "points": 1, "maxPoints": 2 },
-        { "id": "template/integer-input/random", "points": 1, "maxPoints": 2 },
-        { "id": "template/number-input/random", "points": 1, "maxPoints": 2 },
-        { "id": "template/symbolic-input/random", "points": 2, "maxPoints": 10 },
+        { "id": "template/multiple-choice/random-prompt-true-false", "points": 1, "maxPoints": 4 },
+        { "id": "template/integer-input/random", "points": 1, "maxPoints": 4 },
+        { "id": "template/number-input/random", "points": 1, "maxPoints": 4 },
+        { "id": "template/symbolic-input/random", "points": 1, "maxPoints": 4 },
         { "id": "template/figure/dynamic", "points": 1, "maxPoints": 4 }
       ]
     },
