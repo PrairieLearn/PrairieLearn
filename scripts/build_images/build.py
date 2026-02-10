@@ -203,15 +203,35 @@ def build_image(
     print(f"Metadata: {metadata.strip()}")
     digest = json.loads(metadata)["containerimage.digest"]
 
-    # Query local registry for image size.
-    manifest_url = f"http://localhost:5000/v2/{image}/manifests/{digest}"
-    req = urllib.request.Request(
-        manifest_url,
-        headers={"Accept": "application/vnd.docker.distribution.manifest.v2+json"},
+    # Query local registry for image size. The image is pushed as an OCI image
+    # index, so we first fetch the index, then fetch the platform-specific
+    # manifest to get the layer sizes.
+    registry_base = f"http://localhost:5000/v2/{image}/manifests"
+    index_req = urllib.request.Request(
+        f"{registry_base}/{digest}",
+        headers={"Accept": "application/vnd.oci.image.index.v1+json"},
     )
-    with urllib.request.urlopen(req) as resp:
-        manifest_data = json.loads(resp.read())
-    image_size = sum(layer["size"] for layer in manifest_data.get("layers", []))
+    with urllib.request.urlopen(index_req) as resp:
+        index_data = json.loads(resp.read())
+
+    # Find the manifest for the target platform.
+    target_os, target_arch = platform.split("/", 1)
+    manifest_digest = None
+    for manifest in index_data.get("manifests", []):
+        p = manifest.get("platform", {})
+        if p.get("os") == target_os and p.get("architecture") == target_arch:
+            manifest_digest = manifest["digest"]
+            break
+
+    image_size = 0
+    if manifest_digest:
+        manifest_req = urllib.request.Request(
+            f"{registry_base}/{manifest_digest}",
+            headers={"Accept": "application/vnd.oci.image.manifest.v1+json"},
+        )
+        with urllib.request.urlopen(manifest_req) as resp:
+            manifest_data = json.loads(resp.read())
+        image_size = sum(layer["size"] for layer in manifest_data.get("layers", []))
 
     # Write metadata to the metadata directory
     if metadata_dir:
