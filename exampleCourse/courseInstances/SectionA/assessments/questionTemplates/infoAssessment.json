@@ -13,13 +13,20 @@
         { "id": "template/multiple-choice/random-prompt", "points": 1, "maxPoints": 4 },
         { "id": "template/multiple-choice/numeric", "points": 1, "maxPoints": 4 },
         { "id": "template/multiple-choice/random-prompt-true-false", "points": 1, "maxPoints": 2 },
+        { "id": "template/multiple-choice/fixed", "points": 1 },
         { "id": "template/multiple-choice/images", "points": 1, "maxPoints": 4 },
         { "id": "demo/multiAnswerMC", "points": 2, "maxPoints": 10 },
+        { "id": "template/checkbox/fixed", "points": 1 },
         { "id": "template/integer-input/random", "points": 1, "maxPoints": 2 },
+        { "id": "template/integer-input/fixed", "points": 1 },
         { "id": "template/number-input/random", "points": 1, "maxPoints": 2 },
+        { "id": "template/number-input/fixed", "points": 1 },
+        { "id": "template/string-input/fixed", "points": 1 },
+        { "id": "template/symbolic-input/fixed", "points": 1 },
         { "id": "demo/matrixAlgebra", "points": 2, "maxPoints": 10 },
         { "id": "template/symbolic-input/random", "points": 2, "maxPoints": 10 },
-        { "id": "template/figure/dynamic", "points": 1, "maxPoints": 4 }
+        { "id": "template/figure/dynamic", "points": 1, "maxPoints": 4 },
+        { "id": "template/rich-text-editor/basic", "points": 1 }
       ]
     },
     {

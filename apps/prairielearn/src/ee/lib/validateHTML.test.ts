@@ -104,6 +104,55 @@ describe('isValidMustacheTemplateName', () => {
   });
 });
 
+describe('validateHTML forbidden document tags', () => {
+  it('rejects <html> tag', () => {
+    const errors = validateHTML('<html><pl-question-panel>Hello</pl-question-panel></html>', true);
+    assert.lengthOf(errors, 1);
+    assert.include(errors[0], '<html>');
+  });
+
+  it('rejects <body> tag', () => {
+    const errors = validateHTML('<body><pl-question-panel>Hello</pl-question-panel></body>', true);
+    assert.lengthOf(errors, 1);
+    assert.include(errors[0], '<body>');
+  });
+
+  it('rejects <head> tag', () => {
+    const errors = validateHTML(
+      '<head><meta charset="utf-8"></head><pl-question-panel>Hello</pl-question-panel>',
+      true,
+    );
+    assert.lengthOf(errors, 1);
+    assert.include(errors[0], '<head>');
+  });
+
+  it('rejects <!DOCTYPE> declaration', () => {
+    const errors = validateHTML(
+      '<!DOCTYPE html>\n<pl-question-panel>Hello</pl-question-panel>',
+      true,
+    );
+    assert.lengthOf(errors, 1);
+    assert.include(errors[0], '<!DOCTYPE>');
+  });
+
+  it('rejects case-insensitive variants', () => {
+    const errors = validateHTML(
+      '<HTML><BODY><pl-question-panel>Hello</pl-question-panel></BODY></HTML>',
+      true,
+    );
+    assert.lengthOf(errors, 1);
+    assert.include(errors[0], '<html>');
+  });
+
+  it('accepts valid content without document tags', () => {
+    const errors = validateHTML(
+      '<pl-question-panel><p>What is 2+2?</p></pl-question-panel><pl-integer-input answers-name="ans" correct-answer="4"></pl-integer-input>',
+      true,
+    );
+    assert.deepEqual(errors, []);
+  });
+});
+
 describe('validateHTML integer attributes', () => {
   /** Test integer validation via pl-integer-input's weight attribute */
   function validateIntegerAttr(value: string): string[] {
