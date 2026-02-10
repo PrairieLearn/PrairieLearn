@@ -480,7 +480,7 @@ function FilterHelpModal() {
 
             <h3 className="h4">Qualifier negation</h3>
             <p>
-              Any qualifier can be negated with the a hyphen (<code>-</code>). For example,{' '}
+              Any qualifier can be negated with a hyphen (<code>-</code>). For example,{' '}
               <code>-is:manually-reported</code> would return all issues that were{' '}
               <strong>not</strong> manually reported.
             </p>
