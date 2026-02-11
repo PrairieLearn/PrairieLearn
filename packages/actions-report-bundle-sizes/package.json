@@ -1,24 +1,23 @@
 {
-  "name": "@prairielearn/logger",
-  "version": "3.1.0",
+  "name": "@prairielearn/actions-report-bundle-sizes",
+  "version": "1.0.0",
   "type": "module",
   "repository": {
     "type": "git",
     "url": "https://github.com/PrairieLearn/PrairieLearn.git",
-    "directory": "packages/logger"
+    "directory": "packages/actions-report-bundle-sizes"
   },
+  "private": true,
   "engines": {
     "node": ">=24.0.0"
   },
-  "main": "./dist/index.js",
+  "main": "dist/index.js",
   "scripts": {
-    "build": "tsgo",
-    "dev": "tsgo --watch --preserveWatchOutput"
+    "build": "tsgo"
   },
   "dependencies": {
-    "logform": "^2.7.0",
-    "winston": "^3.19.0",
-    "zod": "^3.25.76"
+    "@actions/core": "^3.0.0",
+    "@actions/github": "^9.0.0"
   },
   "devDependencies": {
     "@prairielearn/tsconfig": "workspace:^",
