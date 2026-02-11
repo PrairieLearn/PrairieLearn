@@ -501,7 +501,7 @@ export function StudentAssessmentInstance({
 
         ${showCardFooter
           ? html`
-              <div class="card-footer d-flex flex-column gap-4">
+              <div class="card-footer d-flex flex-column gap-3">
                 ${showExamFooterContent
                   ? html`
                       ${someQuestionsAllowRealTimeGrading
