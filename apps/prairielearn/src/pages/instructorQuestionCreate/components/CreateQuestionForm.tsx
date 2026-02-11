@@ -2,6 +2,8 @@ import clsx from 'clsx';
 import { useCallback, useMemo, useRef, useState } from 'react';
 import ReactMarkdown from 'react-markdown';
 
+import { run } from '@prairielearn/run';
+
 import { QuestionShortNameDescription } from '../../../components/ShortNameDescriptions.js';
 import { SHORT_NAME_PATTERN } from '../../../lib/short-name.js';
 import type {
@@ -9,7 +11,7 @@ import type {
   TemplateQuestionZone,
 } from '../../instructorQuestions/templateQuestions.js';
 
-import { WireframePreview, getCardInfo } from './WireframePreview.js';
+import { WireframePreview, getCardInfo, hasWireframePreview } from './WireframePreview.js';
 
 export const ZONE_INFO: Partial<Record<string, { heading: string; description: string }>> = {
   'Basic questions: no randomization': {
@@ -29,10 +31,7 @@ export const ZONE_INFO: Partial<Record<string, { heading: string; description: s
   },
 };
 
-// ---------------------------------------------------------------------------
-// RadioCardGroup (compact radio buttons for "Start from" selector)
-// ---------------------------------------------------------------------------
-
+/** Compact radio buttons for the "Start from" selector. */
 function RadioCardGroup({
   label,
   value,
@@ -122,10 +121,6 @@ function RadioCardGroup({
     </div>
   );
 }
-
-// ---------------------------------------------------------------------------
-// Template card components
-// ---------------------------------------------------------------------------
 
 function TemplateCardRadioGroup({
   label,
@@ -305,10 +300,6 @@ function TemplateCardRadioGroup({
   );
 }
 
-// ---------------------------------------------------------------------------
-// Search helper
-// ---------------------------------------------------------------------------
-
 function matchesSearch(query: string, question: TemplateQuestion): boolean {
   const lowerQuery = query.toLowerCase();
   if (question.title.toLowerCase().includes(lowerQuery)) return true;
@@ -319,9 +310,16 @@ function matchesSearch(query: string, question: TemplateQuestion): boolean {
   return false;
 }
 
-// ---------------------------------------------------------------------------
-// Main form component
-// ---------------------------------------------------------------------------
+function matchesCourseTemplateSearch(
+  query: string,
+  template: { qid: string; title: string },
+): boolean {
+  const lowerQuery = query.toLowerCase();
+  return (
+    template.title.toLowerCase().includes(lowerQuery) ||
+    template.qid.toLowerCase().includes(lowerQuery)
+  );
+}
 
 export function CreateQuestionForm({
   exampleCourseZones,
@@ -356,13 +354,10 @@ export function CreateQuestionForm({
 
   const filteredCourseTemplates = useMemo(() => {
     if (!searchQuery) return courseTemplates;
-    const lowerQuery = searchQuery.toLowerCase();
-    return courseTemplates.filter(
-      (t) => t.title.toLowerCase().includes(lowerQuery) || t.qid.toLowerCase().includes(lowerQuery),
-    );
+    return courseTemplates.filter((t) => matchesCourseTemplateSearch(searchQuery, t));
   }, [searchQuery, courseTemplates]);
 
-  const totalFilteredCount = useMemo(() => {
+  const totalFilteredCount = run(() => {
     if (startFrom === 'example') {
       return filteredZones.reduce((sum, z) => sum + z.questions.length, 0);
     }
@@ -370,7 +365,7 @@ export function CreateQuestionForm({
       return filteredCourseTemplates.length;
     }
     return 0;
-  }, [startFrom, filteredZones, filteredCourseTemplates]);
+  });
 
   // Deselect template if it's been filtered out
   const handleSearch = useCallback(
@@ -384,9 +379,7 @@ export function CreateQuestionForm({
                 z.questions.some((q) => q.qid === selectedTemplateQid && matchesSearch(query, q)),
               )
             : courseTemplates.some(
-                (t) =>
-                  t.qid === selectedTemplateQid &&
-                  t.title.toLowerCase().includes(query.toLowerCase()),
+                (t) => t.qid === selectedTemplateQid && matchesCourseTemplateSearch(query, t),
               );
         if (!isVisible) {
           setSelectedTemplateQid('');
@@ -530,13 +523,15 @@ export function CreateQuestionForm({
                     <div className="mt-4">
                       {filteredZones.length > 0 ? (
                         <div className="d-flex flex-column gap-5">
-                          {filteredZones.map((zone, zoneIndex) => {
+                          {filteredZones.map((zone) => {
                             const zoneInfo = ZONE_INFO[zone.title];
+                            const zoneLabel = zoneInfo?.heading ?? zone.title;
+                            const showPreviews = zone.questions.every((q) =>
+                              hasWireframePreview(q.qid),
+                            );
                             return (
-                              <section key={zone.title} aria-label={zone.title}>
-                                <h3 className="h6 fw-semibold mb-1">
-                                  {zoneInfo?.heading ?? zone.title}
-                                </h3>
+                              <section key={zone.title} aria-label={zoneLabel}>
+                                <h3 className="h6 fw-semibold mb-1">{zoneLabel}</h3>
                                 {zoneInfo?.description && (
                                   <p className="text-muted small mb-2">{zoneInfo.description}</p>
                                 )}
@@ -544,7 +539,7 @@ export function CreateQuestionForm({
                                   label={zone.title}
                                   cards={zone.questions}
                                   selectedQid={selectedTemplateQid}
-                                  showPreviews={zoneIndex === 0}
+                                  showPreviews={showPreviews}
                                   onSelect={setSelectedTemplateQid}
                                 />
                               </section>
@@ -624,10 +619,6 @@ export function CreateQuestionForm({
 }
 
 CreateQuestionForm.displayName = 'CreateQuestionForm';
-
-// ---------------------------------------------------------------------------
-// Empty search state
-// ---------------------------------------------------------------------------
 
 function EmptySearchState({
   query,

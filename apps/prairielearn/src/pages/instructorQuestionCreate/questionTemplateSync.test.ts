@@ -7,7 +7,7 @@ import { EXAMPLE_COURSE_PATH } from '../../lib/paths.js';
 import { AssessmentJsonSchema } from '../../schemas/index.js';
 
 import { ZONE_INFO } from './components/CreateQuestionForm.js';
-import { getCardInfo, hasWireframePreview } from './components/WireframePreview.js';
+import { hasWireframePreview } from './components/WireframePreview.js';
 
 const ASSESSMENT_PATH = path.join(
   EXAMPLE_COURSE_PATH,
@@ -51,23 +51,13 @@ describe('Question template sync', () => {
     }
   });
 
-  test('every basic question (first zone) has an wireframe preview', () => {
+  test('every basic question (first zone) has a BASIC_QUESTION_MAP entry', () => {
     const basicZone = zones[0];
     for (const question of basicZone.questions) {
       expect(
         hasWireframePreview(question.id!),
-        `Basic question "${question.id}" is missing an wireframe preview in WireframePreview.tsx`,
+        `Basic question "${question.id}" is missing a BASIC_QUESTION_MAP entry in WireframePreview.tsx`,
       ).toBe(true);
-    }
-  });
-
-  test('every basic question (first zone) has card info', () => {
-    const basicZone = zones[0];
-    for (const question of basicZone.questions) {
-      expect(
-        getCardInfo(question.id!),
-        `Basic question "${question.id}" is missing a CARD_INFO_MAP entry in WireframePreview.tsx`,
-      ).not.toBeNull();
     }
   });
 

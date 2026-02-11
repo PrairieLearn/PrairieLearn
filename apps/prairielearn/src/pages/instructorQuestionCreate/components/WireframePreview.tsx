@@ -607,111 +607,107 @@ function ImageCapturePreview() {
   );
 }
 
-// ---------------------------------------------------------------------------
-// Preview map — keyed by full QID so each basic template question gets a
-// unique preview. Adding a new basic template question requires adding a
-// corresponding entry here.
-// ---------------------------------------------------------------------------
-
-const PREVIEW_MAP: Record<string, () => React.JSX.Element> = {
-  'template/multiple-choice/fixed': MultipleChoiceFixedPreview,
-  'template/multiple-choice/dropdown': DropdownPreview,
-  'template/multiple-choice/true-false': TrueFalsePreview,
-  'template/multiple-choice/all-of-the-above': AllOfTheAbovePreview,
-  'template/multiple-choice/none-of-the-above': NoneOfTheAbovePreview,
-  'template/checkbox/fixed': CheckboxFixedPreview,
-  'template/integer-input/fixed': IntegerInputPreview,
-  'template/number-input/fixed': NumberInputPreview,
-  'template/string-input/fixed': StringInputPreview,
-  'template/symbolic-input/fixed': SymbolicInputPreview,
-  'template/matching/fixed': MatchingPreview,
-  'template/order-blocks/fixed': OrderBlocksPreview,
-  'template/rich-text-editor/basic': RichTextEditorPreview,
-  'template/file-editor/fixed': FileEditorPreview,
-  'template/file-upload/fixed': FileUploadPreview,
-  'template/image-capture/static': ImageCapturePreview,
+/**
+ * Keyed by full QID so each basic template question gets its own unique
+ * preview, label, and description. Adding a new basic template question
+ * requires adding a corresponding entry here.
+ */
+const BASIC_QUESTION_MAP: Partial<
+  Record<string, { label: string; description: string; Preview: () => React.JSX.Element }>
+> = {
+  'template/multiple-choice/fixed': {
+    label: 'Multiple choice',
+    description: 'Select a single correct answer',
+    Preview: MultipleChoiceFixedPreview,
+  },
+  'template/multiple-choice/all-of-the-above': {
+    label: 'All of the above',
+    description: 'Include an "all of the above" option',
+    Preview: AllOfTheAbovePreview,
+  },
+  'template/multiple-choice/none-of-the-above': {
+    label: 'None of the above',
+    description: 'Include a "none of the above" option',
+    Preview: NoneOfTheAbovePreview,
+  },
+  'template/multiple-choice/true-false': {
+    label: 'True/false',
+    description: 'Choose between true and false',
+    Preview: TrueFalsePreview,
+  },
+  'template/multiple-choice/dropdown': {
+    label: 'Dropdown',
+    description: 'Select an answer from a dropdown menu',
+    Preview: DropdownPreview,
+  },
+  'template/checkbox/fixed': {
+    label: 'Checkbox',
+    description: 'Select multiple correct answers',
+    Preview: CheckboxFixedPreview,
+  },
+  'template/integer-input/fixed': {
+    label: 'Integer input',
+    description: 'Enter a whole number',
+    Preview: IntegerInputPreview,
+  },
+  'template/number-input/fixed': {
+    label: 'Number input',
+    description: 'Enter a decimal number or fraction',
+    Preview: NumberInputPreview,
+  },
+  'template/string-input/fixed': {
+    label: 'String input',
+    description: 'Enter a text response',
+    Preview: StringInputPreview,
+  },
+  'template/symbolic-input/fixed': {
+    label: 'Symbolic input',
+    description: 'Enter a mathematical expression',
+    Preview: SymbolicInputPreview,
+  },
+  'template/matching/fixed': {
+    label: 'Matching',
+    description: 'Match items to their correct pairs',
+    Preview: MatchingPreview,
+  },
+  'template/order-blocks/fixed': {
+    label: 'Order blocks',
+    description: 'Arrange blocks in the correct order',
+    Preview: OrderBlocksPreview,
+  },
+  'template/rich-text-editor/basic': {
+    label: 'Rich text editor',
+    description: 'Write a formatted text response',
+    Preview: RichTextEditorPreview,
+  },
+  'template/file-editor/fixed': {
+    label: 'Code editor',
+    description: 'Edit code in a built-in editor',
+    Preview: FileEditorPreview,
+  },
+  'template/file-upload/fixed': {
+    label: 'File upload',
+    description: 'Upload a file as an answer',
+    Preview: FileUploadPreview,
+  },
+  'template/image-capture/static': {
+    label: 'Image capture',
+    description: 'Take or upload a photo',
+    Preview: ImageCapturePreview,
+  },
 };
 
 /**
  * Returns true if the given QID has a dedicated wireframe preview.
  */
 export function hasWireframePreview(qid: string): boolean {
-  return qid in PREVIEW_MAP;
+  return qid in BASIC_QUESTION_MAP;
 }
 
-// ---------------------------------------------------------------------------
-// Card info — simplified labels and descriptions for basic template cards.
-// ---------------------------------------------------------------------------
-
-const CARD_INFO_MAP: Record<string, { label: string; description: string }> = {
-  'template/multiple-choice/fixed': {
-    label: 'Multiple choice',
-    description: 'Select a single correct answer',
-  },
-  'template/multiple-choice/all-of-the-above': {
-    label: 'All of the above',
-    description: 'Include an "all of the above" option',
-  },
-  'template/multiple-choice/none-of-the-above': {
-    label: 'None of the above',
-    description: 'Include a "none of the above" option',
-  },
-  'template/multiple-choice/true-false': {
-    label: 'True/false',
-    description: 'Choose between true and false',
-  },
-  'template/multiple-choice/dropdown': {
-    label: 'Dropdown',
-    description: 'Select an answer from a dropdown menu',
-  },
-  'template/checkbox/fixed': {
-    label: 'Checkbox',
-    description: 'Select multiple correct answers',
-  },
-  'template/integer-input/fixed': {
-    label: 'Integer input',
-    description: 'Enter a whole number',
-  },
-  'template/number-input/fixed': {
-    label: 'Number input',
-    description: 'Enter a decimal number or fraction',
-  },
-  'template/string-input/fixed': {
-    label: 'String input',
-    description: 'Enter a text response',
-  },
-  'template/symbolic-input/fixed': {
-    label: 'Symbolic input',
-    description: 'Enter a mathematical expression',
-  },
-  'template/matching/fixed': {
-    label: 'Matching',
-    description: 'Match items to their correct pairs',
-  },
-  'template/order-blocks/fixed': {
-    label: 'Order blocks',
-    description: 'Arrange blocks in the correct order',
-  },
-  'template/rich-text-editor/basic': {
-    label: 'Rich text editor',
-    description: 'Write a formatted text response',
-  },
-  'template/file-editor/fixed': {
-    label: 'Code editor',
-    description: 'Edit code in a built-in editor',
-  },
-  'template/file-upload/fixed': {
-    label: 'File upload',
-    description: 'Upload a file as an answer',
-  },
-  'template/image-capture/static': {
-    label: 'Image capture',
-    description: 'Take or upload a photo',
-  },
-};
-
 export function getCardInfo(qid: string): { label: string; description: string } | null {
-  return CARD_INFO_MAP[qid] ?? null;
+  const entry = BASIC_QUESTION_MAP[qid];
+  if (!entry) return null;
+  return { label: entry.label, description: entry.description };
 }
 
 function FallbackPreview() {
@@ -719,7 +715,7 @@ function FallbackPreview() {
 }
 
 export function WireframePreview({ qid }: { qid: string }) {
-  const PreviewComponent = PREVIEW_MAP[qid] ?? FallbackPreview;
+  const PreviewComponent = BASIC_QUESTION_MAP[qid]?.Preview ?? FallbackPreview;
 
   return (
     <div
