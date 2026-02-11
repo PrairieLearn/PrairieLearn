@@ -358,6 +358,7 @@ export function StudentAssessmentInstance({
                               realTimeGradingPartiallyDisabled:
                                 someQuestionsAllowRealTimeGrading &&
                                 someQuestionsForbidRealTimeGrading,
+                              allow_grade_left_ms: instance_question_row.allow_grade_left_ms,
                             })}
                           </td>
                           ${resLocals.has_auto_grading_question && someQuestionsAllowRealTimeGrading

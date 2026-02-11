@@ -435,10 +435,11 @@ interface QuestionFooterResLocals {
   tryAgainUrl: string;
   question: Question;
   variant: Variant;
-  instance_question: (InstanceQuestion & { allow_grade_left_ms?: number }) | null;
+  instance_question: InstanceQuestion | null;
   assessment_question: AssessmentQuestion | null;
   instance_question_info: Record<string, any>;
   authz_result: Record<string, any> | null;
+  allow_grade_left_ms: number;
   group_config: GroupConfig | null;
   group_info: GroupInfo | null;
   group_role_permissions: {
@@ -510,6 +511,7 @@ export function QuestionFooterContent({
     assessment_question,
     instance_question_info,
     authz_result,
+    allow_grade_left_ms,
     group_config,
     group_info,
     group_role_permissions,
@@ -659,7 +661,7 @@ export function QuestionFooterContent({
         showGradeButton,
         disableGradeButton,
         assessment_question,
-        allowGradeLeftMs: instance_question?.allow_grade_left_ms ?? 0,
+        allowGradeLeftMs: allow_grade_left_ms,
       })}
     `;
   });

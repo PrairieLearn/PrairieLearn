@@ -27,7 +27,6 @@ import {
   getGroupInfo,
   getQuestionGroupPermissions,
 } from '../lib/groups.js';
-import { computeNextAllowedGradingTimeMs } from '../models/instance-question.js';
 import type { SimpleVariantWithScore } from '../models/variant.js';
 
 const sql = sqldb.loadSqlEquiv(import.meta.url);
@@ -101,11 +100,6 @@ export async function selectAndAuthzInstanceQuestion(req: Request, res: Response
   if (!row.authz_result.authorized) throw new error.HttpStatusError(403, 'Access denied');
 
   Object.assign(res.locals, row);
-  if (res.locals.assessment_question.grade_rate_minutes) {
-    res.locals.instance_question.allow_grade_left_ms = await computeNextAllowedGradingTimeMs({
-      instanceQuestionId: res.locals.instance_question.id,
-    });
-  }
   if (res.locals.assessment.team_work) {
     res.locals.group_config = await getGroupConfig(res.locals.assessment.id);
     res.locals.group_info = await getGroupInfo(
