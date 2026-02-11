@@ -517,7 +517,7 @@ export function StudentAssessmentInstance({
                                 ? html`
                                     <button
                                       type="submit"
-                                      class="btn btn-info my-2"
+                                      class="btn btn-info"
                                       ${!resLocals.authz_result.authorized_edit ? 'disabled' : ''}
                                     >
                                       Grade ${savedAnswers} saved
@@ -525,7 +525,7 @@ export function StudentAssessmentInstance({
                                     </button>
                                   `
                                 : html`
-                                    <button type="submit" class="btn btn-info my-2" disabled>
+                                    <button type="submit" class="btn btn-info" disabled>
                                       No saved answers to grade
                                     </button>
                                   `}
