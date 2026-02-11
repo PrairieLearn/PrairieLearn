@@ -430,8 +430,7 @@ export function CreateQuestionForm({
           </small>
         </div>
 
-        <div className="mb-3">
-          <hr className="my-4" />
+        <div className="mb-3 mt-4">
           <h2 className="h4 mb-1">Choose a starting point</h2>
           <p className="text-muted mb-3">
             Pick a template to get started quickly, or begin from scratch.
@@ -596,18 +595,15 @@ function EmptyCourseTemplatesState() {
 const DOC_LINKS = [
   {
     href: 'https://docs.prairielearn.com/question/overview/',
-    icon: 'fa fa-book',
     label: 'How questions are structured',
   },
   {
     href: 'https://docs.prairielearn.com/elements/',
-    icon: 'fa fa-puzzle-piece',
-    label: 'Common element types',
+    label: 'Available elements',
   },
   {
     href: 'https://docs.prairielearn.com/question/template/',
-    icon: 'fa fa-file-code',
-    label: 'question.html reference',
+    label: 'Writing question HTML',
   },
 ];
 
@@ -623,27 +619,17 @@ function StartFromScratchState() {
       <div className="mt-4 pt-4 border-top">
         <h3 className="h6 fw-semibold mb-1">New to PrairieLearn?</h3>
         <p className="text-muted small mb-3">
-          These resources will help you get oriented before you start building.
+          Review these guides to understand the basics before you begin.
         </p>
-        <div className="d-flex flex-column gap-2">
+        <ul className="small mb-0" style={{ listStyleType: "'– '" }}>
           {DOC_LINKS.map((link) => (
-            <a
-              key={link.href}
-              href={link.href}
-              target="_blank"
-              rel="noopener noreferrer"
-              className="d-flex align-items-center gap-2 text-decoration-none text-body small"
-            >
-              <i
-                className={`${link.icon} text-muted`}
-                aria-hidden="true"
-                style={{ width: 16, textAlign: 'center' }}
-              />
-              <span>{link.label}</span>
-              <i className="fa fa-arrow-right text-muted ms-auto small" aria-hidden="true" />
-            </a>
+            <li key={link.href}>
+              <a href={link.href} target="_blank" rel="noopener noreferrer">
+                {link.label}
+              </a>
+            </li>
           ))}
-        </div>
+        </ul>
       </div>
     </div>
   );
