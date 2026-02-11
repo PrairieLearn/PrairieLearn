@@ -426,12 +426,8 @@ function RichTextEditorPreview() {
           gap: 4,
         }}
       >
-        <div
-          style={{ height: 6, width: '85%', backgroundColor: COLORS.shape, borderRadius: 3 }}
-        />
-        <div
-          style={{ height: 6, width: '60%', backgroundColor: COLORS.shape, borderRadius: 3 }}
-        />
+        <div style={{ height: 6, width: '85%', backgroundColor: COLORS.shape, borderRadius: 3 }} />
+        <div style={{ height: 6, width: '60%', backgroundColor: COLORS.shape, borderRadius: 3 }} />
       </div>
     </div>
   );
@@ -678,7 +674,7 @@ const CARD_INFO_MAP: Record<string, { label: string; description: string }> = {
   },
   'template/number-input/fixed': {
     label: 'Number input',
-    description: 'Enter a decimal or fraction',
+    description: 'Enter a decimal number or fraction',
   },
   'template/string-input/fixed': {
     label: 'String input',
@@ -732,7 +728,7 @@ export function EvocativePreview({ qid }: { qid: string }) {
         aspectRatio: '5 / 2',
         overflow: 'hidden',
         backgroundColor: COLORS.bg,
-        padding: '16px 20px',
+        padding: '1rem',
         display: 'flex',
         alignItems: 'flex-start',
         userSelect: 'none',
