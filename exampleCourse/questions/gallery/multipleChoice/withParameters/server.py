@@ -4,7 +4,7 @@ import random
 
 def generate(data):
     # gravity (m/s^2)
-    g = data["preferences"]["gravitationalConstant"]
+    g = data["preferences"]["gravitational_constant"]
     # mass of the ball (kg)
     m = random.choice([3, 1.4, 1.6, 1.8])
     # angle with horizontal (in degrees)

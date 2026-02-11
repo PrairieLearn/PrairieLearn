@@ -50,7 +50,7 @@
           "id": "gallery/multipleChoice/withParameters",
           "points": 1,
           "preferences": {
-            "gravitationalConstant": 13
+            "gravitational_constant": 13
           }
         }
       ]

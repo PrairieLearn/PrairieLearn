@@ -5,7 +5,7 @@
   "type": "v3",
   "tags": ["Sp26", "mfsilva"],
   "preferences": {
-    "gravitationalConstant": {
+    "gravitational_constant": {
       "type": "number",
       "default": 9.8
     }
