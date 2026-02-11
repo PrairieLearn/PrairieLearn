@@ -122,62 +122,88 @@ function RadioCardGroup({
   );
 }
 
-function TemplateCardRadioGroup({
-  label,
+/**
+ * Shared keyboard handler for arrow-key navigation within a radiogroup.
+ * Operates on a flat list of all QIDs so navigation spans across zone
+ * boundaries within a single radiogroup.
+ */
+function useRadioGroupNavigation({
+  allQids,
+  onSelect,
+}: {
+  allQids: string[];
+  onSelect: (qid: string) => void;
+}) {
+  const cardsRef = useRef<(HTMLElement | null)[]>([]);
+
+  const handleKeyDown = useCallback(
+    (e: React.KeyboardEvent, flatIndex: number) => {
+      let newIndex = flatIndex;
+
+      switch (e.key) {
+        case 'ArrowDown':
+        case 'ArrowRight':
+          e.preventDefault();
+          newIndex = (flatIndex + 1) % allQids.length;
+          break;
+        case 'ArrowUp':
+        case 'ArrowLeft':
+          e.preventDefault();
+          newIndex = flatIndex === 0 ? allQids.length - 1 : flatIndex - 1;
+          break;
+        case 'Home':
+          e.preventDefault();
+          newIndex = 0;
+          break;
+        case 'End':
+          e.preventDefault();
+          newIndex = allQids.length - 1;
+          break;
+        default:
+          return;
+      }
+
+      onSelect(allQids[newIndex]);
+
+      setTimeout(() => {
+        cardsRef.current[newIndex]?.focus();
+      }, 0);
+    },
+    [allQids, onSelect],
+  );
+
+  return { cardsRef, handleKeyDown };
+}
+
+/**
+ * Renders template cards without a radiogroup wrapper. The parent is
+ * responsible for providing the `role="radiogroup"` container and
+ * passing in shared refs/keyboard navigation for cross-zone arrow keys.
+ */
+function TemplateCards({
   cards,
   selectedQid,
   onSelect,
   showPreviews,
   showQid,
+  hasSelectionInGroup,
+  flatIndexOffset,
+  cardsRef,
+  onKeyDown,
 }: {
-  label: string;
   cards: TemplateQuestion[];
   selectedQid: string;
   onSelect: (qid: string) => void;
   showPreviews: boolean;
   showQid?: boolean;
+  hasSelectionInGroup: boolean;
+  flatIndexOffset: number;
+  cardsRef: React.MutableRefObject<(HTMLElement | null)[]>;
+  onKeyDown: (e: React.KeyboardEvent, flatIndex: number) => void;
 }) {
-  const cardsRef = useRef<(HTMLElement | null)[]>([]);
-  const hasSelection = cards.some((c) => c.qid === selectedQid);
-
-  const handleKeyDown = (e: React.KeyboardEvent, currentIndex: number) => {
-    let newIndex = currentIndex;
-
-    switch (e.key) {
-      case 'ArrowDown':
-      case 'ArrowRight':
-        e.preventDefault();
-        newIndex = (currentIndex + 1) % cards.length;
-        break;
-      case 'ArrowUp':
-      case 'ArrowLeft':
-        e.preventDefault();
-        newIndex = currentIndex === 0 ? cards.length - 1 : currentIndex - 1;
-        break;
-      case 'Home':
-        e.preventDefault();
-        newIndex = 0;
-        break;
-      case 'End':
-        e.preventDefault();
-        newIndex = cards.length - 1;
-        break;
-      default:
-        return;
-    }
-
-    onSelect(cards[newIndex].qid);
-
-    setTimeout(() => {
-      cardsRef.current[newIndex]?.focus();
-    }, 0);
-  };
-
   if (showPreviews) {
     return (
       <div
-        role="radiogroup"
-        aria-label={label}
         style={{
           display: 'grid',
           gridTemplateColumns: 'repeat(auto-fill, minmax(min(200px, calc(50% - 0.5rem)), 1fr))',
@@ -185,20 +211,21 @@ function TemplateCardRadioGroup({
         }}
       >
         {cards.map((card, index) => {
+          const flatIndex = flatIndexOffset + index;
           const isSelected = selectedQid === card.qid;
           const cardInfo = getCardInfo(card.qid);
           return (
             <div
               key={card.qid}
               ref={(el) => {
-                cardsRef.current[index] = el;
+                cardsRef.current[flatIndex] = el;
               }}
               className={clsx('card overflow-hidden', {
                 'border-primary': isSelected,
               })}
               style={{ cursor: 'pointer' }}
               role="radio"
-              tabIndex={isSelected || (!hasSelection && index === 0) ? 0 : -1}
+              tabIndex={isSelected || (!hasSelectionInGroup && flatIndex === 0) ? 0 : -1}
               aria-checked={isSelected}
               aria-label={cardInfo?.label ?? card.title}
               onClick={() => onSelect(card.qid)}
@@ -207,7 +234,7 @@ function TemplateCardRadioGroup({
                   e.preventDefault();
                   onSelect(card.qid);
                 }
-                handleKeyDown(e, index);
+                onKeyDown(e, flatIndex);
               }}
             >
               <WireframePreview qid={card.qid} />
@@ -244,21 +271,22 @@ function TemplateCardRadioGroup({
 
   // Compact list for intermediate/advanced templates
   return (
-    <div role="radiogroup" aria-label={label} className="d-flex flex-column gap-2">
+    <div className="d-flex flex-column gap-2">
       {cards.map((card, index) => {
+        const flatIndex = flatIndexOffset + index;
         const isSelected = selectedQid === card.qid;
         return (
           <div
             key={card.qid}
             ref={(el) => {
-              cardsRef.current[index] = el;
+              cardsRef.current[flatIndex] = el;
             }}
             className={clsx('card', {
               'border-primary bg-primary bg-opacity-10': isSelected,
             })}
             style={{ cursor: 'pointer' }}
             role="radio"
-            tabIndex={isSelected || (!hasSelection && index === 0) ? 0 : -1}
+            tabIndex={isSelected || (!hasSelectionInGroup && flatIndex === 0) ? 0 : -1}
             aria-checked={isSelected}
             aria-label={card.title}
             onClick={() => onSelect(card.qid)}
@@ -267,7 +295,7 @@ function TemplateCardRadioGroup({
                 e.preventDefault();
                 onSelect(card.qid);
               }
-              handleKeyDown(e, index);
+              onKeyDown(e, flatIndex);
             }}
           >
             <div className="card-body py-2 px-3">
@@ -358,13 +386,28 @@ export function CreateQuestionForm({
     return courseTemplates.filter((t) => matchesCourseTemplateSearch(searchQuery, t));
   }, [searchQuery, courseTemplates]);
 
+  // Build flat QID lists for radiogroup keyboard navigation.
+  const exampleQids = useMemo(
+    () => filteredZones.flatMap((z) => z.questions.map((q) => q.qid)),
+    [filteredZones],
+  );
+  const courseQids = useMemo(
+    () => filteredCourseTemplates.map((t) => t.qid),
+    [filteredCourseTemplates],
+  );
+
+  const exampleNav = useRadioGroupNavigation({
+    allQids: exampleQids,
+    onSelect: setSelectedTemplateQid,
+  });
+  const courseNav = useRadioGroupNavigation({
+    allQids: courseQids,
+    onSelect: setSelectedTemplateQid,
+  });
+
   const totalFilteredCount = run(() => {
-    if (startFrom === 'example') {
-      return filteredZones.reduce((sum, z) => sum + z.questions.length, 0);
-    }
-    if (startFrom === 'course') {
-      return filteredCourseTemplates.length;
-    }
+    if (startFrom === 'example') return exampleQids.length;
+    if (startFrom === 'course') return courseQids.length;
     return 0;
   });
 
@@ -523,27 +566,40 @@ export function CreateQuestionForm({
                   {startFrom === 'example' && (
                     <div className="mt-4">
                       {filteredZones.length > 0 ? (
-                        <div className="d-flex flex-column gap-5">
+                        <div
+                          role="radiogroup"
+                          aria-label="Choose a template"
+                          className="d-flex flex-column gap-5"
+                        >
                           {filteredZones.map((zone) => {
                             const zoneInfo = ZONE_INFO[zone.title];
                             const zoneLabel = zoneInfo?.heading ?? zone.title;
                             const showPreviews = zone.questions.every((q) =>
                               hasWireframePreview(q.qid),
                             );
+                            // Compute where this zone's cards start in the flat list.
+                            let flatIndexOffset = 0;
+                            for (const z of filteredZones) {
+                              if (z === zone) break;
+                              flatIndexOffset += z.questions.length;
+                            }
                             return (
-                              <section key={zone.title} aria-label={zoneLabel}>
+                              <div key={zone.title} role="group" aria-label={zoneLabel}>
                                 <h3 className="h6 fw-semibold mb-1">{zoneLabel}</h3>
                                 {zoneInfo?.description && (
                                   <p className="text-muted small mb-2">{zoneInfo.description}</p>
                                 )}
-                                <TemplateCardRadioGroup
-                                  label={zone.title}
+                                <TemplateCards
                                   cards={zone.questions}
                                   selectedQid={selectedTemplateQid}
                                   showPreviews={showPreviews}
+                                  hasSelectionInGroup={exampleQids.includes(selectedTemplateQid)}
+                                  flatIndexOffset={flatIndexOffset}
+                                  cardsRef={exampleNav.cardsRef}
                                   onSelect={setSelectedTemplateQid}
+                                  onKeyDown={exampleNav.handleKeyDown}
                                 />
-                              </section>
+                              </div>
                             );
                           })}
                         </div>
@@ -560,19 +616,24 @@ export function CreateQuestionForm({
                   {startFrom === 'course' && (
                     <div className="mt-3">
                       {filteredCourseTemplates.length > 0 ? (
-                        <TemplateCardRadioGroup
-                          label="Course templates"
-                          cards={filteredCourseTemplates.map((t) => ({
-                            ...t,
-                            // TODO: read README.md from the course directory
-                            // to show descriptions like we do for built-in templates.
-                            readme: null,
-                          }))}
-                          selectedQid={selectedTemplateQid}
-                          showPreviews={false}
-                          showQid
-                          onSelect={setSelectedTemplateQid}
-                        />
+                        <div role="radiogroup" aria-label="Course templates">
+                          <TemplateCards
+                            cards={filteredCourseTemplates.map((t) => ({
+                              ...t,
+                              // TODO: read README.md from the course directory
+                              // to show descriptions like we do for built-in templates.
+                              readme: null,
+                            }))}
+                            selectedQid={selectedTemplateQid}
+                            showPreviews={false}
+                            hasSelectionInGroup={courseQids.includes(selectedTemplateQid)}
+                            flatIndexOffset={0}
+                            cardsRef={courseNav.cardsRef}
+                            showQid
+                            onSelect={setSelectedTemplateQid}
+                            onKeyDown={courseNav.handleKeyDown}
+                          />
+                        </div>
                       ) : (
                         <EmptySearchState
                           query={searchQuery}
@@ -631,7 +692,7 @@ function EmptySearchState({
   return (
     <div className="text-center py-4">
       <p className="text-muted mb-2">No templates match{query ? ` "${query}"` : ''}.</p>
-      <button type="button" className="btn btn-outline-primary btn-sm" onClick={onStartFromScratch}>
+      <button type="button" className="btn btn-link btn-sm" onClick={onStartFromScratch}>
         Start from scratch instead
       </button>
     </div>
