@@ -56,7 +56,7 @@ export const StudentLabelJsonSchema = z
       .string()
       .regex(/^[0-9a-fA-F]{8}-[0-9a-fA-F]{4}-[0-9a-fA-F]{4}-[0-9a-fA-F]{4}-[0-9a-fA-F]{12}$/)
       .describe('Unique identifier (UUID v4).'),
-    name: z.string().min(1).max(1000).describe('The name of the student label.'),
+    name: z.string().min(1).max(255).describe('The name of the student label.'),
     color: ColorJsonSchema,
   })
   .strict()

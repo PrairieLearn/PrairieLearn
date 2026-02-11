@@ -30,6 +30,7 @@ import * as syncSharingSets from './fromDisk/sharing.js';
 import { syncStudentLabels } from './fromDisk/studentLabels.js';
 import * as syncTags from './fromDisk/tags.js';
 import * as syncTopics from './fromDisk/topics.js';
+import * as infofile from './infofile.js';
 import {
   checkInvalidDraftQuestionSharing,
   checkInvalidPublicSharingRemovals,
@@ -157,11 +158,11 @@ export async function syncDiskToSqlWithLock(
         3,
         async ([ciid, courseInstanceData]) => {
           const courseInstanceId = courseInstanceIds[ciid];
-          if (courseInstanceId) {
-            const courseInstance = await selectCourseInstanceById(courseInstanceId);
-            const studentLabels = courseInstanceData.courseInstance.data?.studentLabels;
-            await syncStudentLabels(courseInstance, studentLabels);
-          }
+          assert(courseInstanceId);
+          if (infofile.hasErrors(courseInstanceData.courseInstance)) return;
+          const courseInstance = await selectCourseInstanceById(courseInstanceId);
+          const studentLabels = courseInstanceData.courseInstance.data?.studentLabels;
+          await syncStudentLabels(courseInstance, studentLabels);
         },
       );
     });

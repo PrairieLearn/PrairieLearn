@@ -11,7 +11,7 @@ indexes
     student_labels_course_instance_id_uuid_key: UNIQUE (course_instance_id, uuid) USING btree (course_instance_id, uuid)
 
 check constraints
-    student_labels_name_length_check: CHECK (length(name) <= 1000)
+    student_labels_name_length_check: CHECK (length(name) <= 255)
 
 foreign-key constraints
     student_labels_course_instance_id_fkey: FOREIGN KEY (course_instance_id) REFERENCES course_instances(id) ON UPDATE CASCADE ON DELETE CASCADE

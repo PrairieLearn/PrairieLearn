@@ -1666,6 +1666,31 @@ function validateCourseInstance({
     }
   }
 
+  if (courseInstance.studentLabels) {
+    const knownNames = new Map<string, number>();
+    const duplicateNames = new Set<string>();
+    courseInstance.studentLabels.forEach((label, index) => {
+      if (knownNames.has(label.name)) {
+        duplicateNames.add(label.name);
+      }
+      knownNames.set(label.name, index);
+    });
+    if (duplicateNames.size > 0) {
+      const duplicateNamesString = [...duplicateNames.values()]
+        .map((name) => `"${name}"`)
+        .join(', ');
+      warnings.push(
+        `Found duplicates in 'studentLabels': ${duplicateNamesString}. Only the last of each duplicate will be synced.`,
+      );
+      // Deduplicate by name, keeping the last occurrence
+      const deduped = new Map<string, (typeof courseInstance.studentLabels)[number]>();
+      for (const label of courseInstance.studentLabels) {
+        deduped.set(label.name, label);
+      }
+      courseInstance.studentLabels = [...deduped.values()];
+    }
+  }
+
   return { warnings, errors };
 }
 

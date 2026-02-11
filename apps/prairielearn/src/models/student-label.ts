@@ -1,5 +1,7 @@
+import assert from 'node:assert';
+
 import { HttpStatusError } from '@prairielearn/error';
-import { loadSqlEquiv, queryRow, queryRows } from '@prairielearn/postgres';
+import { loadSqlEquiv, queryRow, queryRows, runInTransactionAsync } from '@prairielearn/postgres';
 
 import { type AuthzData } from '../lib/authz-data-lib.js';
 import {
@@ -39,19 +41,19 @@ function assertEnrollmentMatchesLabel(enrollment: Enrollment, label: StudentLabe
  * Creates a new student label in the given course instance.
  */
 export async function createStudentLabel({
-  courseInstanceId,
+  courseInstance,
   uuid,
   name,
   color,
 }: {
-  courseInstanceId: string;
+  courseInstance: CourseInstance;
   uuid: string;
   name: string;
   color: ColorJson;
 }): Promise<StudentLabel> {
   return await queryRow(
     sql.create_student_label,
-    { course_instance_id: courseInstanceId, uuid, name, color },
+    { course_instance_id: courseInstance.id, uuid, name, color },
     StudentLabelSchema,
   );
 }
@@ -95,7 +97,7 @@ export async function deleteStudentLabel(label: StudentLabel): Promise<StudentLa
  * Adds a label to an enrollment. If the enrollment already has this label,
  * this is a no-op.
  */
-export async function addEnrollmentToStudentLabel({
+export async function addLabelToEnrollment({
   enrollment,
   label,
   authzData,
@@ -104,7 +106,7 @@ export async function addEnrollmentToStudentLabel({
   label: StudentLabel;
   authzData: AuthzData;
 }): Promise<StudentLabelEnrollment | null> {
-  const results = await addEnrollmentsToStudentLabel({
+  const results = await addLabelToEnrollments({
     enrollments: [enrollment],
     label,
     authzData,
@@ -115,7 +117,7 @@ export async function addEnrollmentToStudentLabel({
 /**
  * Removes a label from an enrollment.
  */
-export async function removeEnrollmentFromStudentLabel({
+export async function removeLabelFromEnrollment({
   enrollment,
   label,
   authzData,
@@ -124,7 +126,7 @@ export async function removeEnrollmentFromStudentLabel({
   label: StudentLabel;
   authzData: AuthzData;
 }): Promise<StudentLabelEnrollment | null> {
-  const results = await removeEnrollmentsFromStudentLabel({
+  const results = await removeLabelFromEnrollments({
     enrollments: [enrollment],
     label,
     authzData,
@@ -136,7 +138,7 @@ export async function removeEnrollmentFromStudentLabel({
  * Adds a label to multiple enrollments in a single operation.
  * Returns the enrollments that received the label (those that didn't already have it).
  */
-export async function addEnrollmentsToStudentLabel({
+export async function addLabelToEnrollments({
   enrollments,
   label,
   authzData,
@@ -153,41 +155,42 @@ export async function addEnrollmentsToStudentLabel({
     assertEnrollmentMatchesLabel(enrollment, label);
   }
 
-  const results = await queryRows(
-    sql.add_enrollments_to_student_label,
-    { enrollment_ids: enrollments.map((e) => e.id), student_label_id: label.id },
-    StudentLabelEnrollmentSchema,
-  );
+  return await runInTransactionAsync(async () => {
+    const results = await queryRows(
+      sql.add_enrollments_to_student_label,
+      { enrollment_ids: enrollments.map((e) => e.id), student_label_id: label.id },
+      StudentLabelEnrollmentSchema,
+    );
 
-  // Create a map of enrollment_id to enrollment for quick lookup
-  const enrollmentMap = new Map(enrollments.map((e) => [e.id, e]));
+    const enrollmentMap = new Map(enrollments.map((e) => [e.id, e]));
 
-  // Log audit events for each added enrollment
-  for (const result of results) {
-    const enrollment = enrollmentMap.get(result.enrollment_id);
-    await insertAuditEvent({
-      tableName: 'student_label_enrollments',
-      action: 'insert',
-      actionDetail: 'enrollment_added',
-      rowId: result.id,
-      newRow: result,
-      subjectUserId: enrollment?.user_id ?? null,
-      courseInstanceId: label.course_instance_id,
-      enrollmentId: result.enrollment_id,
-      agentUserId: authzData.user.id,
-      agentAuthnUserId: 'authn_user' in authzData ? authzData.authn_user.id : authzData.user.id,
-      context: { label_name: label.name },
-    });
-  }
+    for (const result of results) {
+      const enrollment = enrollmentMap.get(result.enrollment_id);
+      assert(enrollment);
+      await insertAuditEvent({
+        tableName: 'student_label_enrollments',
+        action: 'insert',
+        actionDetail: 'enrollment_added',
+        rowId: result.id,
+        newRow: result,
+        subjectUserId: enrollment.user_id ?? null,
+        courseInstanceId: label.course_instance_id,
+        enrollmentId: result.enrollment_id,
+        agentUserId: authzData.user.id,
+        agentAuthnUserId: 'authn_user' in authzData ? authzData.authn_user.id : authzData.user.id,
+        context: { label_name: label.name },
+      });
+    }
 
-  return results;
+    return results;
+  });
 }
 
 /**
  * Removes a label from multiple enrollments in a single operation.
  * Returns the enrollments that had the label removed.
  */
-export async function removeEnrollmentsFromStudentLabel({
+export async function removeLabelFromEnrollments({
   enrollments,
   label,
   authzData,
@@ -204,34 +207,35 @@ export async function removeEnrollmentsFromStudentLabel({
     assertEnrollmentMatchesLabel(enrollment, label);
   }
 
-  const deletedRows = await queryRows(
-    sql.remove_enrollments_from_student_label,
-    { enrollment_ids: enrollments.map((e) => e.id), student_label_id: label.id },
-    StudentLabelEnrollmentSchema,
-  );
+  return await runInTransactionAsync(async () => {
+    const deletedRows = await queryRows(
+      sql.remove_enrollments_from_student_label,
+      { enrollment_ids: enrollments.map((e) => e.id), student_label_id: label.id },
+      StudentLabelEnrollmentSchema,
+    );
 
-  // Create a map of enrollment_id to enrollment for quick lookup
-  const enrollmentMap = new Map(enrollments.map((e) => [e.id, e]));
+    const enrollmentMap = new Map(enrollments.map((e) => [e.id, e]));
 
-  // Log audit events for each removed enrollment
-  for (const deletedRow of deletedRows) {
-    const enrollment = enrollmentMap.get(deletedRow.enrollment_id);
-    await insertAuditEvent({
-      tableName: 'student_label_enrollments',
-      action: 'delete',
-      actionDetail: 'enrollment_removed',
-      rowId: deletedRow.id,
-      oldRow: deletedRow,
-      subjectUserId: enrollment?.user_id ?? null,
-      courseInstanceId: label.course_instance_id,
-      enrollmentId: deletedRow.enrollment_id,
-      agentUserId: authzData.user.id,
-      agentAuthnUserId: 'authn_user' in authzData ? authzData.authn_user.id : authzData.user.id,
-      context: { label_name: label.name },
-    });
-  }
+    for (const deletedRow of deletedRows) {
+      const enrollment = enrollmentMap.get(deletedRow.enrollment_id);
+      assert(enrollment);
+      await insertAuditEvent({
+        tableName: 'student_label_enrollments',
+        action: 'delete',
+        actionDetail: 'enrollment_removed',
+        rowId: deletedRow.id,
+        oldRow: deletedRow,
+        subjectUserId: enrollment.user_id ?? null,
+        courseInstanceId: label.course_instance_id,
+        enrollmentId: deletedRow.enrollment_id,
+        agentUserId: authzData.user.id,
+        agentAuthnUserId: 'authn_user' in authzData ? authzData.authn_user.id : authzData.user.id,
+        context: { label_name: label.name },
+      });
+    }
 
-  return deletedRows;
+    return deletedRows;
+  });
 }
 
 /**

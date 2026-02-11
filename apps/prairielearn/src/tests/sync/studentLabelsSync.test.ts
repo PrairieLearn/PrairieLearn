@@ -3,11 +3,12 @@ import crypto from 'node:crypto';
 import { afterAll, assert, beforeAll, beforeEach, describe, it } from 'vitest';
 
 import { dangerousFullSystemAuthz } from '../../lib/authz-data-lib.js';
+import { selectAuditEvents } from '../../models/audit-event.js';
 import { selectCourseInstanceByShortName } from '../../models/course-instances.js';
 import { selectCourseByShortName } from '../../models/course.js';
 import { ensureUncheckedEnrollment } from '../../models/enrollment.js';
 import {
-  addEnrollmentsToStudentLabel,
+  addLabelToEnrollments,
   selectStudentLabelsForEnrollment,
   selectStudentLabelsInCourseInstance,
 } from '../../models/student-label.js';
@@ -226,7 +227,7 @@ describe('Student labels syncing', () => {
         actionDetail: 'implicit_joined',
       });
       assert.isNotNull(enrollment);
-      await addEnrollmentsToStudentLabel({
+      await addLabelToEnrollments({
         enrollments: [enrollment],
         label: originalLabel,
         authzData: dangerousFullSystemAuthz(),
@@ -255,6 +256,91 @@ describe('Student labels syncing', () => {
       assert.equal(enrollmentLabels.length, 1);
       assert.equal(enrollmentLabels[0].id, originalLabel.id);
       assert.equal(enrollmentLabels[0].name, 'Section 1');
+    });
+
+    it('creates audit events when label is deleted via sync', async () => {
+      const uuid1 = crypto.randomUUID();
+      const courseData = util.getCourseData();
+
+      courseData.courseInstances[util.COURSE_INSTANCE_ID].courseInstance.studentLabels = [
+        { uuid: uuid1, name: 'SyncLabel', color: 'red1' },
+      ];
+
+      const courseDir = await util.writeCourseToTempDirectory(courseData);
+      await util.syncCourseData(courseDir);
+
+      const syncedLabels = await findSyncedStudentLabels(util.COURSE_INSTANCE_ID);
+      const syncLabel = syncedLabels.find((l) => l.name === 'SyncLabel');
+      assert.isOk(syncLabel);
+
+      const course = await selectCourseByShortName('TEST 101');
+      const courseInstance = await selectCourseInstanceByShortName({
+        course,
+        shortName: util.COURSE_INSTANCE_ID,
+      });
+
+      const user1 = await getOrCreateUser({
+        uid: 'audit-test1@example.com',
+        name: 'Audit Test User 1',
+        uin: 'audit-test1@example.com',
+        email: 'audit-test1@example.com',
+      });
+      const user2 = await getOrCreateUser({
+        uid: 'audit-test2@example.com',
+        name: 'Audit Test User 2',
+        uin: 'audit-test2@example.com',
+        email: 'audit-test2@example.com',
+      });
+
+      const enrollment1 = await ensureUncheckedEnrollment({
+        userId: user1.id,
+        courseInstance,
+        requiredRole: ['System'],
+        authzData: dangerousFullSystemAuthz(),
+        actionDetail: 'implicit_joined',
+      });
+      const enrollment2 = await ensureUncheckedEnrollment({
+        userId: user2.id,
+        courseInstance,
+        requiredRole: ['System'],
+        authzData: dangerousFullSystemAuthz(),
+        actionDetail: 'implicit_joined',
+      });
+      assert.isNotNull(enrollment1);
+      assert.isNotNull(enrollment2);
+
+      await addLabelToEnrollments({
+        enrollments: [enrollment1, enrollment2],
+        label: syncLabel,
+        authzData: dangerousFullSystemAuthz(),
+      });
+
+      // Remove label by syncing without it
+      courseData.courseInstances[util.COURSE_INSTANCE_ID].courseInstance.studentLabels = [];
+      await util.overwriteAndSyncCourseData(courseData, courseDir);
+
+      const auditEvents1 = await selectAuditEvents({
+        subject_user_id: enrollment1.user_id!,
+        table_names: ['student_label_enrollments'],
+        course_instance_id: courseInstance.id,
+      });
+      const auditEvents2 = await selectAuditEvents({
+        subject_user_id: enrollment2.user_id!,
+        table_names: ['student_label_enrollments'],
+        course_instance_id: courseInstance.id,
+      });
+
+      assert.equal(auditEvents1.length, 2);
+      const deleteEvent1 = auditEvents1.find((e) => e.action === 'delete');
+      assert.isDefined(deleteEvent1);
+      assert.equal(deleteEvent1.action_detail, 'enrollment_removed');
+      assert.deepEqual(deleteEvent1.context, { label_name: 'SyncLabel' });
+
+      assert.equal(auditEvents2.length, 2);
+      const deleteEvent2 = auditEvents2.find((e) => e.action === 'delete');
+      assert.isDefined(deleteEvent2);
+      assert.equal(deleteEvent2.action_detail, 'enrollment_removed');
+      assert.deepEqual(deleteEvent2.context, { label_name: 'SyncLabel' });
     });
   });
 });
