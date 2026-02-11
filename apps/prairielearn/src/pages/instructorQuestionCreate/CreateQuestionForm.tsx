@@ -529,29 +529,29 @@ export function CreateQuestionForm({
           </div>
         )}
 
+        <input type="hidden" name="__action" value="add_question" />
+        <input type="hidden" name="__csrf_token" value={csrfToken} />
+
         {/* Empty question state */}
         {startFrom === 'empty' && <StartFromScratchState />}
 
-        <div style={{ position: 'sticky', bottom: 0 }}>
-          <div
-            style={{
-              height: '2rem',
-              background: 'linear-gradient(to bottom, rgba(255,255,255,0), white)',
-              pointerEvents: 'none',
-            }}
-          />
-          <div className="d-flex justify-content-end py-3" style={{ backgroundColor: 'white' }}>
-            <input type="hidden" name="__action" value="add_question" />
-            <input type="hidden" name="__csrf_token" value={csrfToken} />
-            <button
-              type="submit"
-              className="btn btn-primary"
-              disabled={isTemplateSelected && !selectedTemplateQid}
-            >
-              Create
-            </button>
+        {/* Sticky footer for template states */}
+        {isTemplateSelected && (
+          <div style={{ position: 'sticky', bottom: 0 }}>
+            <div
+              style={{
+                height: '2rem',
+                background: 'linear-gradient(to bottom, rgba(255,255,255,0), white)',
+                pointerEvents: 'none',
+              }}
+            />
+            <div className="d-flex justify-content-end py-3" style={{ backgroundColor: 'white' }}>
+              <button type="submit" className="btn btn-primary" disabled={!selectedTemplateQid}>
+                Create question <i className="fa fa-arrow-right ms-1" aria-hidden="true" />
+              </button>
+            </div>
           </div>
-        </div>
+        )}
       </form>
     </div>
   );
@@ -580,35 +580,57 @@ function EmptySearchState({
   );
 }
 
+const DOC_LINKS = [
+  {
+    href: 'https://docs.prairielearn.com/question/overview/',
+    icon: 'fa fa-book',
+    label: 'How questions are structured',
+  },
+  {
+    href: 'https://docs.prairielearn.com/elements/',
+    icon: 'fa fa-puzzle-piece',
+    label: 'Common element types',
+  },
+  {
+    href: 'https://docs.prairielearn.com/question/template/',
+    icon: 'fa fa-file-code',
+    label: 'question.html reference',
+  },
+];
+
 function StartFromScratchState() {
   return (
-    <div className="d-flex justify-content-center my-3">
-      <div
-        className="text-center py-5 px-4"
-        style={{
-          maxWidth: 500,
-          width: '100%',
-          border: '2px dashed #dee2e6',
-          borderRadius: 12,
-          backgroundColor: '#f8f9fa',
-        }}
-      >
-        <div
-          className="d-inline-flex align-items-center justify-content-center mb-3"
-          style={{
-            width: 56,
-            height: 56,
-            borderRadius: '50%',
-            backgroundColor: '#e9ecef',
-          }}
-        >
-          <i className="fa fa-file-alt fa-lg text-muted" aria-hidden="true" />
-        </div>
-        <h3 className="h5 mb-2">Start from scratch</h3>
-        <p className="text-muted mb-0">
-          You'll get a blank question with the basic file structure. Perfect if you already know
-          what you're building.
+    <div className="my-3" style={{ maxWidth: 480 }}>
+      <p className="small mb-3">
+        You'll start with empty <code>question.html</code> and <code>server.py</code> files.
+      </p>
+      <button type="submit" className="btn btn-primary text-nowrap">
+        Create question <i className="fa fa-arrow-right ms-1" aria-hidden="true" />
+      </button>
+      <div className="mt-4 pt-4 border-top">
+        <h3 className="h6 fw-semibold mb-1">New to PrairieLearn?</h3>
+        <p className="text-muted small mb-3">
+          These resources will help you get oriented before you start building.
         </p>
+        <div className="d-flex flex-column gap-2">
+          {DOC_LINKS.map((link) => (
+            <a
+              key={link.href}
+              href={link.href}
+              target="_blank"
+              rel="noopener noreferrer"
+              className="d-flex align-items-center gap-2 text-decoration-none text-body small"
+            >
+              <i
+                className={`${link.icon} text-muted`}
+                aria-hidden="true"
+                style={{ width: 16, textAlign: 'center' }}
+              />
+              <span>{link.label}</span>
+              <i className="fa fa-arrow-right text-muted ms-auto small" aria-hidden="true" />
+            </a>
+          ))}
+        </div>
       </div>
     </div>
   );
