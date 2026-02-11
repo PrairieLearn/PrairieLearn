@@ -64,9 +64,7 @@ function extractDefaultPreferences(
 
   const defaults: Record<string, string | number | boolean> = {};
   for (const [key, prop] of Object.entries(properties)) {
-    if (prop && 'default' in prop) {
-      defaults[key] = prop.default;
-    }
+    defaults[key] = prop.default;
   }
   return defaults;
 }

@@ -88,12 +88,14 @@ function getPreferences(
 ): Record<string, string | number | boolean> {
   // If variant options contain preferences, use them
   if (variantOptions && 'preferences' in variantOptions) {
-    return (variantOptions.preferences as Record<string, string | number | boolean>);
+    return variantOptions.preferences as Record<string, string | number | boolean>;
   }
 
   // Otherwise, extract defaults from question's preferences schema (for generate phase)
   if (question?.preferences_schema) {
-    const schema = question.preferences_schema as Record<string, { default: string | number | boolean }> | undefined;
+    const schema = question.preferences_schema as
+      | Record<string, { default: string | number | boolean }>
+      | undefined;
     if (schema) {
       const defaults: Record<string, string | number | boolean> = {};
       for (const [key, prop] of Object.entries(schema)) {

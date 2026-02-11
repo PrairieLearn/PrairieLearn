@@ -24,7 +24,7 @@ import * as infofile from '../infofile.js';
 import { type InfoFile } from '../infofile.js';
 
 // We use a single global instance so that schemas aren't recompiled every time they're used
-const ajv = new Ajv({ allErrors: true });
+const ajv = new Ajv({ allErrors: true, allowUnionTypes: true });
 
 const sql = sqldb.loadSqlEquiv(import.meta.url);
 
@@ -60,7 +60,6 @@ function mergeAndValidatePreferences(
     return { preferences: {}, errors };
   }
 
-
   // Extract defaults from schema
   const merged: QuestionPreferences = {};
   for (const [key, prop] of Object.entries(schema)) {
@@ -73,7 +72,7 @@ function mergeAndValidatePreferences(
   }
 
   // Validate merged preferences against the JSON schema using AJV
-  const validate = ajv.compile({ type: "object", properties: schema, });
+  const validate = ajv.compile({ type: 'object', properties: schema });
   const valid = validate(merged);
 
   if (!valid && validate.errors) {
