@@ -501,7 +501,7 @@ export function StudentAssessmentInstance({
 
         ${showCardFooter
           ? html`
-              <div class="card-footer">
+              <div class="card-footer d-flex flex-column gap-4">
                 ${showExamFooterContent
                   ? html`
                       ${someQuestionsAllowRealTimeGrading
@@ -619,7 +619,7 @@ export function StudentAssessmentInstance({
                   : ''}
                 ${showUnauthorizedEditWarning
                   ? html`
-                      <div class="alert alert-warning mt-4" role="alert">
+                      <div class="alert alert-warning mb-0" role="alert">
                         You are viewing the assessment of a different user and so are not authorized
                         to submit questions for grading or to mark the assessment as complete.
                       </div>
