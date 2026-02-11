@@ -21,6 +21,7 @@ import clientFingerprint from '../../middlewares/clientFingerprint.js';
 import logPageView from '../../middlewares/logPageView.js';
 import selectAndAuthzAssessmentInstance from '../../middlewares/selectAndAuthzAssessmentInstance.js';
 import studentAssessmentAccess from '../../middlewares/studentAssessmentAccess.js';
+import { computeNextAllowedGradingTimeMs } from '../../models/instance-question.js';
 import { selectVariantsByInstanceQuestion } from '../../models/variant.js';
 
 import {
@@ -233,6 +234,11 @@ router.get(
       instance_question.previous_variants = allPreviousVariants.filter((variant) =>
         idsEqual(variant.instance_question_id, instance_question.id),
       );
+      if (instance_question.grade_rate_minutes) {
+        instance_question.allow_grade_left_ms = await computeNextAllowedGradingTimeMs({
+          instanceQuestionId: instance_question.id,
+        });
+      }
     }
 
     res.locals.has_manual_grading_question = instance_question_rows.some(

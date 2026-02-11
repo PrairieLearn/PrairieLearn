@@ -9,6 +9,7 @@ import { IdSchema, IntervalSchema } from '@prairielearn/zod';
 
 import { updateCourseInstanceUsagesForSubmission } from '../models/course-instance-usages.js';
 import { insertGradingJob, updateGradingJobAfterGrading } from '../models/grading-job.js';
+import { computeNextAllowedGradingTimeMs } from '../models/instance-question.js';
 import { lockVariant } from '../models/variant.js';
 import * as questionServers from '../question-servers/index.js';
 
@@ -381,12 +382,10 @@ export async function gradeVariant({
   );
   if (submission == null) return;
 
-  if (!ignoreGradeRateLimit) {
-    const nextGradingAllowedMs = await sqldb.callRow(
-      'instance_questions_next_allowed_grade',
-      [variant.instance_question_id],
-      z.number(),
-    );
+  if (!ignoreGradeRateLimit && variant.instance_question_id != null) {
+    const nextGradingAllowedMs = await computeNextAllowedGradingTimeMs({
+      instanceQuestionId: variant.instance_question_id,
+    });
     if (nextGradingAllowedMs > 0) return;
   }
 

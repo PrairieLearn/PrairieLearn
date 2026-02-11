@@ -17,7 +17,6 @@ import {
   InstanceQuestionSchema,
   QuestionSchema,
   SprocAuthzAssessmentInstanceSchema,
-  SprocInstanceQuestionsNextAllowedGradeSchema,
   SprocUsersGetDisplayedRoleSchema,
   UserSchema,
 } from '../lib/db-types.js';
@@ -28,6 +27,7 @@ import {
   getGroupInfo,
   getQuestionGroupPermissions,
 } from '../lib/groups.js';
+import { computeNextAllowedGradingTimeMs } from '../models/instance-question.js';
 import type { SimpleVariantWithScore } from '../models/variant.js';
 
 const sql = sqldb.loadSqlEquiv(import.meta.url);
@@ -59,10 +59,7 @@ const SelectAndAuthzInstanceQuestionSchema = z.object({
   instance_role: SprocUsersGetDisplayedRoleSchema,
   instance_group: GroupSchema.nullable(),
   instance_group_uid_list: z.array(z.string()),
-  instance_question: z.object({
-    ...SprocInstanceQuestionsNextAllowedGradeSchema.shape,
-    ...InstanceQuestionSchema.shape,
-  }),
+  instance_question: InstanceQuestionSchema.extend({ allow_grade_left_ms: z.number().default(0) }),
   instance_question_info: InstanceQuestionInfoSchema,
   assessment_question: AssessmentQuestionSchema,
   question: QuestionSchema,
@@ -104,6 +101,11 @@ export async function selectAndAuthzInstanceQuestion(req: Request, res: Response
   if (!row.authz_result.authorized) throw new error.HttpStatusError(403, 'Access denied');
 
   Object.assign(res.locals, row);
+  if (res.locals.assessment_question.grade_rate_minutes) {
+    res.locals.instance_question.allow_grade_left_ms = await computeNextAllowedGradingTimeMs({
+      instanceQuestionId: res.locals.instance_question.id,
+    });
+  }
   if (res.locals.assessment.team_work) {
     res.locals.group_config = await getGroupConfig(res.locals.assessment.id);
     res.locals.group_info = await getGroupInfo(

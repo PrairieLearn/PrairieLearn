@@ -44,6 +44,7 @@ export const InstanceQuestionRowSchema = InstanceQuestionSchema.extend({
   max_manual_points: z.number().nullable(),
   max_auto_points: z.number().nullable(),
   init_points: z.number().nullable(),
+  grade_rate_minutes: AssessmentQuestionSchema.shape.grade_rate_minutes,
   allow_real_time_grading: AssessmentQuestionSchema.shape.allow_real_time_grading,
   row_order: z.number(),
   question_number: z.string(),
@@ -56,7 +57,7 @@ export const InstanceQuestionRowSchema = InstanceQuestionSchema.extend({
   prev_advance_score_perc: z.number().nullable(),
   prev_title: z.string().nullable(),
   prev_sequence_locked: z.boolean().nullable(),
-  allow_grade_left_ms: z.coerce.number(),
+  allow_grade_left_ms: z.number().default(0), // Computed after the query if needed, defaults to zero if grade_rate_minutes is null
   previous_variants: z.array(SimpleVariantWithScoreSchema).optional(),
   group_role_permissions: z
     .object({
