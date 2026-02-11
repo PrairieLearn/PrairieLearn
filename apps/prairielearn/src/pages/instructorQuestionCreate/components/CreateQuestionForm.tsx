@@ -43,41 +43,11 @@ function RadioCardGroup({
   options: { id: string; title: string; description: string }[];
   onChange: (value: string) => void;
 }) {
-  const cardsRef = useRef<(HTMLElement | null)[]>([]);
-
-  const handleKeyDown = (e: React.KeyboardEvent, currentIndex: number) => {
-    let newIndex = currentIndex;
-
-    switch (e.key) {
-      case 'ArrowDown':
-      case 'ArrowRight':
-        e.preventDefault();
-        newIndex = (currentIndex + 1) % options.length;
-        break;
-      case 'ArrowUp':
-      case 'ArrowLeft':
-        e.preventDefault();
-        newIndex = currentIndex === 0 ? options.length - 1 : currentIndex - 1;
-        break;
-      case 'Home':
-        e.preventDefault();
-        newIndex = 0;
-        break;
-      case 'End':
-        e.preventDefault();
-        newIndex = options.length - 1;
-        break;
-      default:
-        return;
-    }
-
-    onChange(options[newIndex].id);
-
-    // Focus the newly selected element, but only after a rerender.
-    setTimeout(() => {
-      cardsRef.current[newIndex]?.focus();
-    }, 0);
-  };
+  const ids = useMemo(() => options.map((o) => o.id), [options]);
+  const { cardsRef, handleKeyDown } = useRadioGroupNavigation({
+    items: ids,
+    onSelect: onChange,
+  });
 
   return (
     <div
@@ -128,11 +98,11 @@ function RadioCardGroup({
  * boundaries within a single radiogroup.
  */
 function useRadioGroupNavigation({
-  allQids,
+  items,
   onSelect,
 }: {
-  allQids: string[];
-  onSelect: (qid: string) => void;
+  items: string[];
+  onSelect: (value: string) => void;
 }) {
   const cardsRef = useRef<(HTMLElement | null)[]>([]);
 
@@ -144,12 +114,12 @@ function useRadioGroupNavigation({
         case 'ArrowDown':
         case 'ArrowRight':
           e.preventDefault();
-          newIndex = (flatIndex + 1) % allQids.length;
+          newIndex = (flatIndex + 1) % items.length;
           break;
         case 'ArrowUp':
         case 'ArrowLeft':
           e.preventDefault();
-          newIndex = flatIndex === 0 ? allQids.length - 1 : flatIndex - 1;
+          newIndex = flatIndex === 0 ? items.length - 1 : flatIndex - 1;
           break;
         case 'Home':
           e.preventDefault();
@@ -157,19 +127,19 @@ function useRadioGroupNavigation({
           break;
         case 'End':
           e.preventDefault();
-          newIndex = allQids.length - 1;
+          newIndex = items.length - 1;
           break;
         default:
           return;
       }
 
-      onSelect(allQids[newIndex]);
+      onSelect(items[newIndex]);
 
       setTimeout(() => {
         cardsRef.current[newIndex]?.focus();
       }, 0);
     },
-    [allQids, onSelect],
+    [items, onSelect],
   );
 
   return { cardsRef, handleKeyDown };
@@ -397,11 +367,11 @@ export function CreateQuestionForm({
   );
 
   const exampleNav = useRadioGroupNavigation({
-    allQids: exampleQids,
+    items: exampleQids,
     onSelect: setSelectedTemplateQid,
   });
   const courseNav = useRadioGroupNavigation({
-    allQids: courseQids,
+    items: courseQids,
     onSelect: setSelectedTemplateQid,
   });
 
