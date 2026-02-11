@@ -6,7 +6,7 @@ import { config } from '../../lib/config.js';
 import { EXAMPLE_COURSE_PATH } from '../../lib/paths.js';
 import { type QuestionsPageData } from '../../models/questions.js';
 import { loadQuestions } from '../../sync/course-db.js';
-import { hasEvocativePreview } from '../instructorQuestionCreate/EvocativePreview.js';
+import { hasEvocativePreview } from '../instructorQuestionCreate/components/EvocativePreview.js';
 
 const TEMPLATE_QID_PREFIX = 'template/';
 

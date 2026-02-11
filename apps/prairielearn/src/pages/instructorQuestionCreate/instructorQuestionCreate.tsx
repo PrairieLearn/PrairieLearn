@@ -15,7 +15,7 @@ import { selectCourseInstancesWithStaffAccess } from '../../models/course-instan
 import { selectQuestionsForCourse } from '../../models/questions.js';
 import { getTemplateQuestions } from '../instructorQuestions/templateQuestions.js';
 
-import { CreateQuestionForm } from './CreateQuestionForm.js';
+import { CreateQuestionForm } from './components/CreateQuestionForm.js';
 
 const router = Router();
 
@@ -56,6 +56,10 @@ router.get(
           type: 'instructor',
           page: 'course_admin',
           subPage: 'questions',
+        },
+        options: {
+          contentPadding: false,
+          contentContainerClassName: 'bg-light',
         },
         content: (
           <Hydrate>

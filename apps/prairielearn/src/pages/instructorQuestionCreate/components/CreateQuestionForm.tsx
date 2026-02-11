@@ -2,12 +2,12 @@ import clsx from 'clsx';
 import { useCallback, useMemo, useRef, useState } from 'react';
 import ReactMarkdown from 'react-markdown';
 
-import { QuestionShortNameDescription } from '../../components/ShortNameDescriptions.js';
-import { SHORT_NAME_PATTERN } from '../../lib/short-name.js';
+import { QuestionShortNameDescription } from '../../../components/ShortNameDescriptions.js';
+import { SHORT_NAME_PATTERN } from '../../../lib/short-name.js';
 import type {
   TemplateQuestion,
   TemplateQuestionZone,
-} from '../instructorQuestions/templateQuestions.js';
+} from '../../instructorQuestions/templateQuestions.js';
 
 import { EvocativePreview } from './EvocativePreview.js';
 
@@ -63,7 +63,15 @@ function RadioCardGroup({
   };
 
   return (
-    <div role="radiogroup" aria-label={label} className="d-flex flex-wrap gap-2">
+    <div
+      role="radiogroup"
+      aria-label={label}
+      style={{
+        display: 'grid',
+        gridTemplateColumns: 'repeat(auto-fit, minmax(min(100%, 200px), 1fr))',
+        gap: '0.5rem',
+      }}
+    >
       {options.map((option, index) => {
         const isSelected = value === option.id;
         return (
@@ -72,7 +80,7 @@ function RadioCardGroup({
             ref={(el) => {
               cardsRef.current[index] = el;
             }}
-            className={clsx('border rounded-3 px-3 py-2', {
+            className={clsx('border rounded-3 px-3 py-2 text-center', {
               'border-primary bg-primary bg-opacity-10 text-primary fw-semibold': isSelected,
             })}
             style={{ cursor: 'pointer' }}
@@ -391,182 +399,190 @@ export function CreateQuestionForm({
   );
 
   return (
-    <div style={{ maxWidth: 960, margin: '0 auto' }}>
-      <nav aria-label="breadcrumb" className="mb-3">
-        <ol className="breadcrumb mb-0">
-          <li className="breadcrumb-item">
-            <a href={questionsUrl}>Questions</a>
-          </li>
-          <li className="breadcrumb-item active" aria-current="page">
-            Create question
-          </li>
-        </ol>
-      </nav>
-      <form method="POST" autoComplete="off">
-        <h2 className="h4 mb-3">Name your question</h2>
-        <div className="mb-3">
-          <label className="form-label" htmlFor="title">
-            Title
-          </label>
-          <input
-            type="text"
-            className="form-control"
-            id="title"
-            name="title"
-            aria-describedby="title_help"
-            required
-          />
-          <small id="title_help" className="form-text text-muted">
-            The full name of the question, visible to users.
-          </small>
-        </div>
+    <div className="bg-light p-4">
+      <div className="card p-3" style={{ maxWidth: '48rem', margin: '0 auto' }}>
+        <nav aria-label="breadcrumb" className="mb-3">
+          <ol className="breadcrumb mb-0">
+            <li className="breadcrumb-item">
+              <a href={questionsUrl}>Questions</a>
+            </li>
+            <li className="breadcrumb-item active" aria-current="page">
+              Create question
+            </li>
+          </ol>
+        </nav>
+        <form method="POST" autoComplete="off">
+          <div className="mb-5">
+            <h2 className="h5">Name your question</h2>
+            <div className="mb-3">
+              <label className="form-label" htmlFor="title">
+                Title
+              </label>
+              <input
+                type="text"
+                className="form-control"
+                id="title"
+                name="title"
+                aria-describedby="title_help"
+                required
+              />
+              <small id="title_help" className="form-text text-muted">
+                The full name of the question, visible to users.
+              </small>
+            </div>
 
-        <div className="mb-3">
-          <label className="form-label" htmlFor="qid">
-            Question identifier (QID)
-          </label>
-          <input
-            type="text"
-            className="form-control"
-            id="qid"
-            name="qid"
-            aria-describedby="qid_help"
-            // TODO: use `validateShortName` with react-hook-form to provide more specific
-            //validation feedback (e.g., "cannot start with a slash").
-            pattern={SHORT_NAME_PATTERN}
-            required
-          />
-          <small id="qid_help" className="form-text text-muted">
-            <QuestionShortNameDescription />
-          </small>
-        </div>
-
-        <div className="mb-3 mt-4">
-          <h2 className="h4 mb-1">Choose a starting point</h2>
-          <p className="text-muted mb-3">
-            Pick a template to get started quickly, or begin from scratch.
-          </p>
-          <RadioCardGroup
-            label="Choose a starting point"
-            value={startFrom}
-            options={startFromOptions}
-            onChange={handleStartFromChange}
-          />
-        </div>
-
-        {/* Hidden inputs for form submission */}
-        <input type="hidden" name="start_from" value={startFrom} />
-        <input
-          type="hidden"
-          name="template_qid"
-          value={isTemplateSelected ? selectedTemplateQid : ''}
-        />
-
-        {/* Search + template gallery */}
-        {isTemplateSelected && (
-          <div className="mb-3">
-            {startFrom === 'course' && courseTemplates.length === 0 ? (
-              <EmptyCourseTemplatesState />
-            ) : (
-              <>
-                <input
-                  type="search"
-                  className="form-control"
-                  id="template_search"
-                  aria-label="Search templates"
-                  placeholder="Search templates..."
-                  value={searchQuery}
-                  onChange={(e) => handleSearch(e.currentTarget.value)}
-                />
-
-                {/* Live region for search result count */}
-                <div className="visually-hidden" aria-live="polite" aria-atomic="true">
-                  {searchQuery
-                    ? `${totalFilteredCount} template${totalFilteredCount !== 1 ? 's' : ''} found`
-                    : ''}
-                </div>
-
-                {/* PrairieLearn templates */}
-                {startFrom === 'example' && (
-                  <div className="mt-3">
-                    {filteredZones.length > 0 ? (
-                      <div className="d-flex flex-column gap-4">
-                        {filteredZones.map((zone, zoneIndex) => (
-                          <section key={zone.title} aria-label={zone.title}>
-                            <h3 className="h6 fw-semibold mb-2">{zone.title}</h3>
-                            <TemplateCardRadioGroup
-                              label={zone.title}
-                              cards={zone.questions}
-                              selectedQid={selectedTemplateQid}
-                              showPreviews={zoneIndex === 0}
-                              onSelect={setSelectedTemplateQid}
-                            />
-                          </section>
-                        ))}
-                      </div>
-                    ) : (
-                      <EmptySearchState
-                        query={searchQuery}
-                        onStartFromScratch={() => handleStartFromChange('empty')}
-                      />
-                    )}
-                  </div>
-                )}
-
-                {/* Course templates */}
-                {startFrom === 'course' && (
-                  <div className="mt-3">
-                    {filteredCourseTemplates.length > 0 ? (
-                      <TemplateCardRadioGroup
-                        label="Course templates"
-                        cards={filteredCourseTemplates.map((t) => ({
-                          ...t,
-                          // TODO: read README.md from the course directory
-                          // to show descriptions like we do for built-in templates.
-                          readme: null,
-                        }))}
-                        selectedQid={selectedTemplateQid}
-                        showPreviews={false}
-                        showQid
-                        onSelect={setSelectedTemplateQid}
-                      />
-                    ) : (
-                      <EmptySearchState
-                        query={searchQuery}
-                        onStartFromScratch={() => handleStartFromChange('empty')}
-                      />
-                    )}
-                  </div>
-                )}
-              </>
-            )}
-          </div>
-        )}
-
-        <input type="hidden" name="__action" value="add_question" />
-        <input type="hidden" name="__csrf_token" value={csrfToken} />
-
-        {/* Empty question state */}
-        {startFrom === 'empty' && <StartFromScratchState />}
-
-        {/* Sticky footer for template states */}
-        {isTemplateSelected && !(startFrom === 'course' && courseTemplates.length === 0) && (
-          <div style={{ position: 'sticky', bottom: 0 }}>
-            <div
-              style={{
-                height: '2rem',
-                background: 'linear-gradient(to bottom, rgba(255,255,255,0), white)',
-                pointerEvents: 'none',
-              }}
-            />
-            <div className="d-flex justify-content-end py-3" style={{ backgroundColor: 'white' }}>
-              <button type="submit" className="btn btn-primary" disabled={!selectedTemplateQid}>
-                Create question <i className="fa fa-arrow-right ms-1" aria-hidden="true" />
-              </button>
+            <div className="mb-3">
+              <label className="form-label" htmlFor="qid">
+                Question identifier (QID)
+              </label>
+              <input
+                type="text"
+                className="form-control"
+                id="qid"
+                name="qid"
+                aria-describedby="qid_help"
+                // TODO: use `validateShortName` with react-hook-form to provide more specific
+                //validation feedback (e.g., "cannot start with a slash").
+                pattern={SHORT_NAME_PATTERN}
+                required
+              />
+              <small id="qid_help" className="form-text text-muted">
+                <QuestionShortNameDescription />
+              </small>
             </div>
           </div>
-        )}
-      </form>
+
+          <div className="mb-3 mt-4">
+            <h2 className="h5 mb-1">Choose a starting point</h2>
+            <p className="text-muted mb-3">
+              Pick a template to get started quickly, or begin from scratch.
+            </p>
+            <RadioCardGroup
+              label="Choose a starting point"
+              value={startFrom}
+              options={startFromOptions}
+              onChange={handleStartFromChange}
+            />
+          </div>
+
+          {/* Hidden inputs for form submission */}
+          <input type="hidden" name="start_from" value={startFrom} />
+          <input
+            type="hidden"
+            name="template_qid"
+            value={isTemplateSelected ? selectedTemplateQid : ''}
+          />
+
+          {/* Search + template gallery */}
+          {isTemplateSelected && (
+            <div className="mb-3">
+              {startFrom === 'course' && courseTemplates.length === 0 ? (
+                <EmptyCourseTemplatesState />
+              ) : (
+                <>
+                  <input
+                    type="search"
+                    className="form-control"
+                    id="template_search"
+                    aria-label="Search templates"
+                    placeholder="Search templates..."
+                    value={searchQuery}
+                    onChange={(e) => handleSearch(e.currentTarget.value)}
+                  />
+
+                  {/* Live region for search result count */}
+                  <div className="visually-hidden" aria-live="polite" aria-atomic="true">
+                    {searchQuery
+                      ? `${totalFilteredCount} template${totalFilteredCount !== 1 ? 's' : ''} found`
+                      : ''}
+                  </div>
+
+                  {/* PrairieLearn templates */}
+                  {startFrom === 'example' && (
+                    <div className="mt-3">
+                      {filteredZones.length > 0 ? (
+                        <div className="d-flex flex-column gap-4">
+                          {filteredZones.map((zone, zoneIndex) => (
+                            <section key={zone.title} aria-label={zone.title}>
+                              <h3 className="h6 fw-semibold mb-2">{zone.title}</h3>
+                              <TemplateCardRadioGroup
+                                label={zone.title}
+                                cards={zone.questions}
+                                selectedQid={selectedTemplateQid}
+                                showPreviews={zoneIndex === 0}
+                                onSelect={setSelectedTemplateQid}
+                              />
+                            </section>
+                          ))}
+                        </div>
+                      ) : (
+                        <EmptySearchState
+                          query={searchQuery}
+                          onStartFromScratch={() => handleStartFromChange('empty')}
+                        />
+                      )}
+                    </div>
+                  )}
+
+                  {/* Course templates */}
+                  {startFrom === 'course' && (
+                    <div className="mt-3">
+                      {filteredCourseTemplates.length > 0 ? (
+                        <TemplateCardRadioGroup
+                          label="Course templates"
+                          cards={filteredCourseTemplates.map((t) => ({
+                            ...t,
+                            // TODO: read README.md from the course directory
+                            // to show descriptions like we do for built-in templates.
+                            readme: null,
+                          }))}
+                          selectedQid={selectedTemplateQid}
+                          showPreviews={false}
+                          showQid
+                          onSelect={setSelectedTemplateQid}
+                        />
+                      ) : (
+                        <EmptySearchState
+                          query={searchQuery}
+                          onStartFromScratch={() => handleStartFromChange('empty')}
+                        />
+                      )}
+                    </div>
+                  )}
+                </>
+              )}
+            </div>
+          )}
+
+          <input type="hidden" name="__action" value="add_question" />
+          <input type="hidden" name="__csrf_token" value={csrfToken} />
+
+          {/* Empty question state */}
+          {startFrom === 'empty' && <StartFromScratchState />}
+
+          {/* Sticky footer for template states */}
+          {isTemplateSelected && !(startFrom === 'course' && courseTemplates.length === 0) && (
+            <div style={{ position: 'sticky', bottom: 0 }}>
+              <div
+                style={{
+                  height: '2rem',
+                  background: 'linear-gradient(to bottom, rgba(255,255,255,0), white)',
+                  pointerEvents: 'none',
+                }}
+              />
+              <div className="d-grid py-3" style={{ backgroundColor: 'white' }}>
+                <button
+                  type="submit"
+                  className="btn btn-primary text-center"
+                  disabled={!selectedTemplateQid}
+                >
+                  Create question <i className="fa fa-arrow-right ms-1" aria-hidden="true" />
+                </button>
+              </div>
+            </div>
+          )}
+        </form>
+      </div>
     </div>
   );
 }
@@ -597,8 +613,8 @@ function EmptySearchState({
 function EmptyCourseTemplatesState() {
   return (
     <div className="text-center py-4">
-      <p className="text-muted mb-1">This course doesn't have any templates yet.</p>
-      <p className="text-muted small mb-0">
+      <p className="mb-1">This course doesn't have any templates yet.</p>
+      <p className="small mb-0">
         To create a course template, create a question with a QID starting with{' '}
         <code>template/</code>.
       </p>
@@ -623,19 +639,19 @@ const DOC_LINKS = [
 
 function StartFromScratchState() {
   return (
-    <div className="my-3" style={{ maxWidth: 480 }}>
-      <p className="small mb-3">
+    <div className="d-grid gap-3">
+      <p className="mb-0">
         You'll start with empty <code>question.html</code> and <code>server.py</code> files.
       </p>
       <button type="submit" className="btn btn-primary text-nowrap">
         Create question <i className="fa fa-arrow-right ms-1" aria-hidden="true" />
       </button>
-      <div className="mt-4 pt-4 border-top">
+      <div className="card card-body bg-light">
         <h3 className="h6 fw-semibold mb-1">New to PrairieLearn?</h3>
-        <p className="text-muted small mb-3">
-          Review these guides to understand the basics before you begin.
+        <p className="text-muted small mb-1">
+          Check out these resources to understand the basics before you begin.
         </p>
-        <ul className="small mb-0" style={{ listStyleType: "'– '" }}>
+        <ul className="small mb-0" style={{ listStyleType: "'– '", marginInlineStart: '-0.5rem' }}>
           {DOC_LINKS.map((link) => (
             <li key={link.href}>
               <a href={link.href} target="_blank" rel="noopener noreferrer">
