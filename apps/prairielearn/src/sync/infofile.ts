@@ -54,3 +54,8 @@ export function makeInfoFile<T>(
 export function makeError<T>(error: string): InfoFile<T> {
   return { errors: [error], warnings: [] };
 }
+
+/** @lintignore */
+export function makeWarning<T>(warning: string): InfoFile<T> {
+  return { warnings: [warning], errors: [] };
+}

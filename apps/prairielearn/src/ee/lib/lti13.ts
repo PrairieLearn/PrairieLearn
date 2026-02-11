@@ -728,20 +728,24 @@ export async function fetchRetryPaginated(
 }
 
 // https://www.imsglobal.org/spec/lti-ags/v2p0#score-publish-service
-interface Lti13Score {
-  scoreGiven: number;
-  scoreMaximum: number;
-  userId: string;
-  scoringUserId?: string;
-  activityProgress: 'Initialized' | 'Started' | 'InProgress' | 'Submitted' | 'Completed';
-  gradingProgress: 'FullyGraded' | 'Pending' | 'PendingManual' | 'Failed' | 'NotReady';
-  timestamp: Date;
-  submission?: {
-    startedAt?: Date;
-    submittedAt?: Date;
-  };
-  comment?: string;
-}
+// eslint-disable-next-line @typescript-eslint/no-unused-vars
+const Lti13ScoreSchema = z.object({
+  scoreGiven: z.number(),
+  scoreMaximum: z.number(),
+  userId: z.string(),
+  scoringUserId: z.string().optional(),
+  activityProgress: z.enum(['Initialized', 'Started', 'InProgress', 'Submitted', 'Completed']),
+  gradingProgress: z.enum(['FullyGraded', 'Pending', 'PendingManual', 'Failed', 'NotReady']),
+  timestamp: DateFromISOString,
+  submission: z
+    .object({
+      startedAt: DateFromISOString.optional(),
+      submittedAt: DateFromISOString.optional(),
+    })
+    .optional(),
+  comment: z.string().optional(),
+});
+type Lti13Score = z.infer<typeof Lti13ScoreSchema>;
 
 const UserWithLti13SubSchema = UserSchema.extend({
   lti13_sub: z.string().nullable(),
