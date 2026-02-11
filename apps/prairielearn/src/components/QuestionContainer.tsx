@@ -659,7 +659,6 @@ export function QuestionFooterContent({
       ${SubmitRateFooter({
         questionContext,
         showGradeButton,
-        disableGradeButton,
         assessment_question,
         allowGradeLeftMs: allow_grade_left_ms,
       })}
@@ -672,13 +671,11 @@ export function QuestionFooterContent({
 function SubmitRateFooter({
   questionContext,
   showGradeButton,
-  disableGradeButton,
   assessment_question,
   allowGradeLeftMs,
 }: {
   questionContext: QuestionContext;
   showGradeButton: boolean;
-  disableGradeButton: boolean;
   assessment_question: AssessmentQuestion | null;
   allowGradeLeftMs: number;
 }) {
@@ -701,7 +698,7 @@ function SubmitRateFooter({
     <div class="row">
       <div class="col d-flex justify-content-between">
         <span class="d-flex">
-          ${disableGradeButton
+          ${allowGradeLeftMs > 0
             ? html`
                 <small class="fst-italic ms-2 mt-1 submission-suspended-msg">
                   Grading possible in <span id="submission-suspended-display"></span>
