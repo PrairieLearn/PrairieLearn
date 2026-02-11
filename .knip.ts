@@ -113,12 +113,16 @@ const config: KnipConfig = {
     'apps/grader-host': {
       project: ['**/*.{ts,cts,mts,tsx}'],
     },
+    'packages/*': {
+      entry: ['src/index.ts'],
+      project: ['**/*.{ts,cts,mts,tsx}'],
+    },
     'packages/migrations': {
-      entry: ['src/{batched-migrations,migrations}/fixtures/*.ts'],
+      entry: ['src/index.ts', 'src/{batched-migrations,migrations}/fixtures/*.ts'],
       project: ['**/*.{ts,cts,mts,tsx}'],
     },
     'packages/session': {
-      entry: ['src/test-utils.ts'],
+      entry: ['src/index.ts', 'src/test-utils.ts'],
       project: ['**/*.{ts,cts,mts,tsx}'],
     },
     'packages/tsconfig': {
@@ -126,7 +130,7 @@ const config: KnipConfig = {
       project: [],
     },
     'packages/markdown': {
-      entry: ['src/benchmark.ts'],
+      entry: ['src/index.ts', 'src/benchmark.ts'],
       project: ['**/*.{ts,cts,mts,tsx}'],
     },
   },

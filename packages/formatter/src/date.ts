@@ -109,7 +109,6 @@ export function formatTz(timeZone: string): string {
 /**
  * Format a date to a human-readable string like '14:27:00 (CDT)'.
  *
- * @lintignore
  * @param date The date to format.
  * @param timeZone The time zone to use for formatting.
  * @param options
