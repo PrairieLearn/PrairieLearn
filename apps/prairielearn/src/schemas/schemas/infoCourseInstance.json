@@ -141,8 +141,13 @@
         "description": "A single student label, can represent a collection of students (e.g. \"Section A\").",
         "type": "object",
         "additionalProperties": false,
-        "required": ["name", "color"],
+        "required": ["uuid", "name", "color"],
         "properties": {
+          "uuid": {
+            "description": "Unique identifier (UUID v4).",
+            "type": "string",
+            "pattern": "^[0-9a-fA-F]{8}-[0-9a-fA-F]{4}-[0-9a-fA-F]{4}-[0-9a-fA-F]{4}-[0-9a-fA-F]{12}$"
+          },
           "name": {
             "description": "The name of the student label.",
             "type": "string",

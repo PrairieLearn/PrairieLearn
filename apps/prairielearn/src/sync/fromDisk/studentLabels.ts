@@ -8,7 +8,7 @@ import {
   selectEnrollmentsInStudentLabel,
   selectStudentLabelEnrollmentsForLabel,
   selectStudentLabelsInCourseInstance,
-  updateStudentLabelColor,
+  updateStudentLabel,
 } from '../../models/student-label.js';
 import type { StudentLabelJson } from '../../schemas/infoCourseInstance.js';
 
@@ -16,8 +16,10 @@ import type { StudentLabelJson } from '../../schemas/infoCourseInstance.js';
  * Syncs student labels for a course instance from JSON configuration.
  * JSON is always the source of truth:
  * - Labels not in JSON are deleted
- * - Labels in JSON are upserted (insert or update color)
+ * - Labels in JSON are upserted (insert or update name/color)
  * - If studentLabels is undefined, all labels are deleted
+ *
+ * Matching is done by UUID so that renames preserve enrollments.
  *
  * @param courseInstance - The course instance to sync labels for
  * @param studentLabels - The labels from the JSON config, or undefined to delete all
@@ -33,15 +35,15 @@ export async function syncStudentLabels(
   await runInTransactionAsync(async () => {
     const existingLabels = await selectStudentLabelsInCourseInstance(courseInstance);
 
-    const existingByName = new Map(existingLabels.map((label) => [label.name, label]));
-    const desiredByName = new Map(desiredLabels.map((label) => [label.name, label]));
+    const existingByUuid = new Map(existingLabels.map((label) => [label.uuid, label]));
+    const desiredByUuid = new Map(desiredLabels.map((label) => [label.uuid, label]));
 
-    const labelsToCreate = desiredLabels.filter((label) => !existingByName.has(label.name));
+    const labelsToCreate = desiredLabels.filter((label) => !existingByUuid.has(label.uuid));
     const labelsToUpdate = desiredLabels.filter((label) => {
-      const existing = existingByName.get(label.name);
-      return existing && existing.color !== label.color;
+      const existing = existingByUuid.get(label.uuid);
+      return existing && (existing.name !== label.name || existing.color !== label.color);
     });
-    const labelsToDelete = existingLabels.filter((label) => !desiredByName.has(label.name));
+    const labelsToDelete = existingLabels.filter((label) => !desiredByUuid.has(label.uuid));
 
     if (labelsToCreate.length === 0 && labelsToUpdate.length === 0 && labelsToDelete.length === 0) {
       return;
@@ -50,14 +52,15 @@ export async function syncStudentLabels(
     for (const label of labelsToCreate) {
       await createStudentLabel({
         courseInstanceId: courseInstance.id,
+        uuid: label.uuid,
         name: label.name,
         color: label.color,
       });
     }
 
     for (const label of labelsToUpdate) {
-      const existing = existingByName.get(label.name)!;
-      await updateStudentLabelColor(existing, label.color);
+      const existing = existingByUuid.get(label.uuid)!;
+      await updateStudentLabel(existing, label.name, label.color);
     }
 
     for (const label of labelsToDelete) {

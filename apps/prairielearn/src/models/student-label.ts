@@ -40,16 +40,18 @@ function assertEnrollmentMatchesLabel(enrollment: Enrollment, label: StudentLabe
  */
 export async function createStudentLabel({
   courseInstanceId,
+  uuid,
   name,
   color,
 }: {
   courseInstanceId: string;
+  uuid: string;
   name: string;
   color: ColorJson;
 }): Promise<StudentLabel> {
   return await queryRow(
     sql.create_student_label,
-    { course_instance_id: courseInstanceId, name, color },
+    { course_instance_id: courseInstanceId, uuid, name, color },
     StudentLabelSchema,
   );
 }
@@ -257,15 +259,16 @@ export async function selectStudentLabelsForEnrollment(
 }
 
 /**
- * Updates the color of a student label.
+ * Updates the name and color of a student label.
  */
-export async function updateStudentLabelColor(
+export async function updateStudentLabel(
   label: StudentLabel,
+  name: string,
   color: ColorJson,
 ): Promise<StudentLabel> {
   return await queryRow(
-    sql.update_student_label_color,
-    { id: label.id, color },
+    sql.update_student_label,
+    { id: label.id, name, color },
     StudentLabelSchema,
   );
 }

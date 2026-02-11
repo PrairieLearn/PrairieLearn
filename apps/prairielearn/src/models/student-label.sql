@@ -1,8 +1,8 @@
 -- BLOCK create_student_label
 INSERT INTO
-  student_labels (course_instance_id, name, color)
+  student_labels (course_instance_id, name, color, uuid)
 VALUES
-  ($course_instance_id, $name, $color)
+  ($course_instance_id, $name, $color, $uuid)
 RETURNING
   *;
 
@@ -69,9 +69,10 @@ WHERE
 RETURNING
   *;
 
--- BLOCK update_student_label_color
+-- BLOCK update_student_label
 UPDATE student_labels
 SET
+  name = $name,
   color = $color
 WHERE
   id = $id

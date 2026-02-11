@@ -1,3 +1,5 @@
+import crypto from 'node:crypto';
+
 import { afterAll, assert, beforeAll, describe, expect, it } from 'vitest';
 
 import { dangerousFullSystemAuthz } from '../lib/authz-data-lib.js';
@@ -23,7 +25,7 @@ import {
   selectStudentLabelById,
   selectStudentLabelsForEnrollment,
   selectStudentLabelsInCourseInstance,
-  updateStudentLabelColor,
+  updateStudentLabel,
 } from './student-label.js';
 
 let enrollmentCounter = 0;
@@ -52,9 +54,9 @@ async function createEnrollment(courseInstanceId = '1'): Promise<Enrollment> {
 
 async function createTestLabel(
   name: string,
-  { courseInstanceId = '1', color = 'gray1' as ColorJson } = {},
+  { courseInstanceId = '1', color = 'gray1' as ColorJson, uuid = crypto.randomUUID() } = {},
 ) {
-  return createStudentLabel({ courseInstanceId, name, color });
+  return createStudentLabel({ courseInstanceId, uuid, name, color });
 }
 
 async function addToLabel(enrollment: Enrollment, label: StudentLabel) {
@@ -131,16 +133,16 @@ describe('Student Label Model', () => {
     });
   });
 
-  describe('updateStudentLabelColor', () => {
-    it('updates color and returns updated label', async () => {
+  describe('updateStudentLabel', () => {
+    it('updates name and color and returns updated label', async () => {
       await helperDb.runInTransactionAndRollback(async () => {
         const label = await createTestLabel('Color Label');
         assert.equal(label.color, 'gray1');
 
-        const updated = await updateStudentLabelColor(label, 'red1');
+        const updated = await updateStudentLabel(label, 'Renamed Label', 'red1');
         assert.equal(updated.id, label.id);
         assert.equal(updated.color, 'red1');
-        assert.equal(updated.name, 'Color Label');
+        assert.equal(updated.name, 'Renamed Label');
       });
     });
   });
@@ -228,6 +230,7 @@ describe('Student Label Model', () => {
             course_instance_id: '1',
             name: 'nonexistent',
             color: 'gray1',
+            uuid: crypto.randomUUID(),
           }),
         ).rejects.toThrowError();
       });
@@ -448,8 +451,9 @@ describe('Student Label Model', () => {
     it('creates audit events when label is deleted via sync', async () => {
       await helperDb.runInTransactionAndRollback(async () => {
         const courseInstance = await selectCourseInstanceById('1');
+        const uuid = crypto.randomUUID();
 
-        await syncStudentLabels(courseInstance, [{ name: 'SyncLabel', color: 'red1' }], null);
+        await syncStudentLabels(courseInstance, [{ uuid, name: 'SyncLabel', color: 'red1' }], null);
 
         const labels = await selectStudentLabelsInCourseInstance(courseInstance);
         const syncLabel = labels.find((l) => l.name === 'SyncLabel');

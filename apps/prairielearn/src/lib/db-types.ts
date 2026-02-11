@@ -1415,6 +1415,7 @@ export const StudentLabelSchema = z.object({
   course_instance_id: IdSchema,
   id: IdSchema,
   name: z.string(),
+  uuid: z.string(),
 });
 export type StudentLabel = z.infer<typeof StudentLabelSchema>;
 
