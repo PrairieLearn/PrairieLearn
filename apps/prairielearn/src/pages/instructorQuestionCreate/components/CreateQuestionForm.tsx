@@ -9,7 +9,7 @@ import type {
   TemplateQuestionZone,
 } from '../../instructorQuestions/templateQuestions.js';
 
-import { EvocativePreview, getCardInfo } from './EvocativePreview.js';
+import { WireframePreview, getCardInfo } from './WireframePreview.js';
 
 export const ZONE_INFO: Partial<Record<string, { heading: string; description: string }>> = {
   'Basic questions: no randomization': {
@@ -214,7 +214,7 @@ function TemplateCardRadioGroup({
                 handleKeyDown(e, index);
               }}
             >
-              <EvocativePreview qid={card.qid} />
+              <WireframePreview qid={card.qid} />
               <div
                 className={clsx('card-body py-2 px-3', {
                   'bg-primary bg-opacity-10': isSelected,

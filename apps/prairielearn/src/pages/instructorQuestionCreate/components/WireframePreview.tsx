@@ -1,5 +1,5 @@
 /**
- * Evocative wireframe previews for basic template question cards.
+ * Wireframe previews for basic template question cards.
  *
  * These are simple, wire-framey representations of what each question type
  * looks like. They're purely decorative (aria-hidden) and use basic CSS
@@ -633,9 +633,9 @@ const PREVIEW_MAP: Record<string, () => React.JSX.Element> = {
 };
 
 /**
- * Returns true if the given QID has a dedicated evocative preview.
+ * Returns true if the given QID has a dedicated wireframe preview.
  */
-export function hasEvocativePreview(qid: string): boolean {
+export function hasWireframePreview(qid: string): boolean {
   return qid in PREVIEW_MAP;
 }
 
@@ -718,7 +718,7 @@ function FallbackPreview() {
   return <TextLines count={3} widths={['80%', '65%', '50%']} />;
 }
 
-export function EvocativePreview({ qid }: { qid: string }) {
+export function WireframePreview({ qid }: { qid: string }) {
   const PreviewComponent = PREVIEW_MAP[qid] ?? FallbackPreview;
 
   return (
@@ -741,4 +741,4 @@ export function EvocativePreview({ qid }: { qid: string }) {
   );
 }
 
-EvocativePreview.displayName = 'EvocativePreview';
+WireframePreview.displayName = 'WireframePreview';

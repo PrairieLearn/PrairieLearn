@@ -7,7 +7,7 @@ import { EXAMPLE_COURSE_PATH } from '../../lib/paths.js';
 import { AssessmentJsonSchema } from '../../schemas/index.js';
 
 import { ZONE_INFO } from './components/CreateQuestionForm.js';
-import { getCardInfo, hasEvocativePreview } from './components/EvocativePreview.js';
+import { getCardInfo, hasWireframePreview } from './components/WireframePreview.js';
 
 const ASSESSMENT_PATH = path.join(
   EXAMPLE_COURSE_PATH,
@@ -51,12 +51,12 @@ describe('Question template sync', () => {
     }
   });
 
-  test('every basic question (first zone) has an evocative preview', () => {
+  test('every basic question (first zone) has an wireframe preview', () => {
     const basicZone = zones[0];
     for (const question of basicZone.questions) {
       expect(
-        hasEvocativePreview(question.id!),
-        `Basic question "${question.id}" is missing an evocative preview in EvocativePreview.tsx`,
+        hasWireframePreview(question.id!),
+        `Basic question "${question.id}" is missing an wireframe preview in WireframePreview.tsx`,
       ).toBe(true);
     }
   });
@@ -66,20 +66,20 @@ describe('Question template sync', () => {
     for (const question of basicZone.questions) {
       expect(
         getCardInfo(question.id!),
-        `Basic question "${question.id}" is missing a CARD_INFO_MAP entry in EvocativePreview.tsx`,
+        `Basic question "${question.id}" is missing a CARD_INFO_MAP entry in WireframePreview.tsx`,
       ).not.toBeNull();
     }
   });
 
-  test('no stale evocative previews for questions not in the basic zone', () => {
+  test('no stale wireframe previews for questions not in the basic zone', () => {
     const basicQids = new Set(zones[0].questions.map((q) => q.id));
 
     const previewsOutsideBasic = allQids.filter(
-      (qid) => !basicQids.has(qid) && hasEvocativePreview(qid),
+      (qid) => !basicQids.has(qid) && hasWireframePreview(qid),
     );
     expect(
       previewsOutsideBasic,
-      `Non-basic questions have evocative previews (these should only be in the first zone): ${previewsOutsideBasic.join(', ')}`,
+      `Non-basic questions have wireframe previews (these should only be in the first zone): ${previewsOutsideBasic.join(', ')}`,
     ).toEqual([]);
   });
 
