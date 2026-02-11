@@ -51,7 +51,7 @@ import {
 import { type ColumnId, createColumns } from '../utils/columnDefinitions.js';
 import { createColumnFilters } from '../utils/columnFilters.js';
 import { generateAiGraderName } from '../utils/columnUtils.js';
-import type { ManualGradingTrpcClient } from '../utils/trpc-client.js';
+import { useTRPC } from '../utils/trpc-context.js';
 import { type useManualGradingActions } from '../utils/useManualGradingActions.js';
 
 import type { ConflictModalState } from './GradingConflictModal.js';
@@ -72,7 +72,6 @@ export interface AssessmentQuestionTableProps {
   course: PageContext<'assessmentQuestion', 'instructor'>['course'];
   courseInstance: PageContext<'assessmentQuestion', 'instructor'>['course_instance'];
   csrfToken: string;
-  trpcClient: ManualGradingTrpcClient;
   instanceQuestionsInfo: InstanceQuestionRowWithAIGradingStats[];
   urlPrefix: string;
   assessment: StaffAssessment;
@@ -142,7 +141,6 @@ function AiGradingOption({
 export function AssessmentQuestionTable({
   hasCourseInstancePermissionEdit,
   csrfToken,
-  trpcClient,
   instanceQuestionsInfo: initialInstanceQuestionsInfo,
   urlPrefix,
   assessment,
@@ -161,6 +159,8 @@ export function AssessmentQuestionTable({
   onSetConflictModalState,
   mutations,
 }: AssessmentQuestionTableProps) {
+  const trpc = useTRPC();
+
   // Query state management
   const [globalFilter, setGlobalFilter] = useQueryState('search', parseAsString.withDefault(''));
   const [sorting, setSorting] = useQueryState<SortingState>(
@@ -231,9 +231,8 @@ export function AssessmentQuestionTable({
     data: instanceQuestionsInfo = initialInstanceQuestionsInfo,
     error: instanceQuestionsError,
     isError: isInstanceQuestionsError,
-  } = useQuery<InstanceQuestionRow[]>({
-    queryKey: ['instance-questions'],
-    queryFn: async () => await trpcClient.instances.query(),
+  } = useQuery({
+    ...trpc.instances.queryOptions(),
     staleTime: Infinity,
     initialData: initialInstanceQuestionsInfo,
   });
@@ -376,7 +375,7 @@ export function AssessmentQuestionTable({
       // instance question grading data (e.g. AI agreements, grading status)
       // may have changed.
       void queryClientInstance.invalidateQueries({
-        queryKey: ['instance-questions'],
+        queryKey: trpc.instances.queryKey(),
       });
     },
   });
@@ -398,7 +397,7 @@ export function AssessmentQuestionTable({
         scrollRef,
         onEditPointsSuccess: () => {
           void queryClientInstance.invalidateQueries({
-            queryKey: ['instance-questions'],
+            queryKey: trpc.instances.queryKey(),
           });
         },
         onEditPointsConflict: (conflictDetailsUrl: string) => {
@@ -418,6 +417,7 @@ export function AssessmentQuestionTable({
       createCheckboxProps,
       scrollRef,
       queryClientInstance,
+      trpc.instances,
       onSetConflictModalState,
     ],
   );
@@ -684,7 +684,7 @@ export function AssessmentQuestionTable({
           className="mb-3"
           dismissible
           onClose={() => {
-            void queryClientInstance.refetchQueries({ queryKey: ['instance-questions'] });
+            void queryClientInstance.refetchQueries({ queryKey: trpc.instances.queryKey() });
           }}
         >
           <strong>Error loading instance questions:</strong> {instanceQuestionsError.message}

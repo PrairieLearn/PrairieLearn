@@ -1,5 +1,11 @@
 # @prairielearn/express-test-utils
 
+## 2.0.8
+
+### Patch Changes
+
+- c34d474: Update dependencies
+
 ## 2.0.7
 
 ### Patch Changes
