@@ -138,6 +138,7 @@ function TemplateCardRadioGroup({
   showQid?: boolean;
 }) {
   const cardsRef = useRef<(HTMLElement | null)[]>([]);
+  const hasSelection = cards.some((c) => c.qid === selectedQid);
 
   const handleKeyDown = (e: React.KeyboardEvent, currentIndex: number) => {
     let newIndex = currentIndex;
@@ -197,7 +198,7 @@ function TemplateCardRadioGroup({
               })}
               style={{ cursor: 'pointer' }}
               role="radio"
-              tabIndex={isSelected ? 0 : -1}
+              tabIndex={isSelected || (!hasSelection && index === 0) ? 0 : -1}
               aria-checked={isSelected}
               aria-label={cardInfo?.label ?? card.title}
               onClick={() => onSelect(card.qid)}
@@ -257,7 +258,7 @@ function TemplateCardRadioGroup({
             })}
             style={{ cursor: 'pointer' }}
             role="radio"
-            tabIndex={isSelected ? 0 : -1}
+            tabIndex={isSelected || (!hasSelection && index === 0) ? 0 : -1}
             aria-checked={isSelected}
             aria-label={card.title}
             onClick={() => onSelect(card.qid)}
@@ -272,13 +273,13 @@ function TemplateCardRadioGroup({
             <div className="card-body py-2 px-3">
               <div className="d-flex align-items-center justify-content-between">
                 <div>
-                  <span
+                  <div
                     className={clsx('small', {
                       'text-primary fw-bold': isSelected,
                     })}
                   >
                     {card.title}
-                  </span>
+                  </div>
                   {showQid && (
                     <div className="text-muted small" style={{ fontSize: '0.75rem' }}>
                       {card.qid}
@@ -593,7 +594,7 @@ export function CreateQuestionForm({
 
           {/* Sticky footer for template states */}
           {isTemplateSelected && !(startFrom === 'course' && courseTemplates.length === 0) && (
-            <div style={{ position: 'sticky', bottom: 0 }}>
+            <div style={{ position: 'sticky', bottom: 0, marginBottom: '-1rem' }}>
               <div
                 style={{
                   height: '2rem',
@@ -601,7 +602,7 @@ export function CreateQuestionForm({
                   pointerEvents: 'none',
                 }}
               />
-              <div className="d-grid py-3" style={{ backgroundColor: 'white' }}>
+              <div className="d-grid pb-3" style={{ backgroundColor: 'white' }}>
                 <button
                   type="submit"
                   className="btn btn-primary text-center"
