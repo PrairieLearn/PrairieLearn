@@ -158,31 +158,6 @@ function InputField({ width = '100%', text }: { width?: string; text?: string })
   );
 }
 
-function LabeledInput({
-  labelWidth = '20%',
-  inputWidth = '50%',
-  text,
-}: {
-  labelWidth?: string;
-  inputWidth?: string;
-  text?: string;
-}) {
-  return (
-    <div style={{ display: 'flex', alignItems: 'center', gap: 8 }}>
-      <div
-        style={{
-          height: 8,
-          width: labelWidth,
-          backgroundColor: COLORS.shapeDark,
-          borderRadius: 4,
-          flexShrink: 0,
-        }}
-      />
-      <InputField width={inputWidth} text={text} />
-    </div>
-  );
-}
-
 // ---------------------------------------------------------------------------
 // Multiple choice variants
 // ---------------------------------------------------------------------------
@@ -308,7 +283,7 @@ function IntegerInputPreview() {
   return (
     <div style={{ display: 'flex', flexDirection: 'column', gap: 10 }}>
       <TextLines count={2} />
-      <LabeledInput labelWidth="15%" inputWidth="40%" text="42" />
+      <InputField width="40%" text="42" />
     </div>
   );
 }
@@ -317,7 +292,7 @@ function NumberInputPreview() {
   return (
     <div style={{ display: 'flex', flexDirection: 'column', gap: 10 }}>
       <TextLines count={2} />
-      <LabeledInput labelWidth="15%" inputWidth="45%" text="3.14" />
+      <InputField width="45%" text="3.14" />
     </div>
   );
 }
@@ -326,7 +301,7 @@ function StringInputPreview() {
   return (
     <div style={{ display: 'flex', flexDirection: 'column', gap: 10 }}>
       <TextLines count={2} />
-      <InputField width="70%" text="Hello, world!" />
+      <InputField width="fit-content" text="Hello, world!" />
     </div>
   );
 }
@@ -335,7 +310,7 @@ function SymbolicInputPreview() {
   return (
     <div style={{ display: 'flex', flexDirection: 'column', gap: 10 }}>
       <TextLines count={2} widths={['75%', '50%']} />
-      <LabeledInput labelWidth="20%" inputWidth="55%" text="x² + 2x" />
+      <InputField width="55%" text="x² + 2x" />
     </div>
   );
 }
@@ -457,7 +432,13 @@ function RichTextEditorPreview() {
   return (
     <div style={{ display: 'flex', flexDirection: 'column', gap: 10 }}>
       <TextLines count={2} />
-      <div>
+      <div
+        style={{
+          border: `2px solid ${COLORS.shapeDark}`,
+          borderRadius: 4,
+          overflow: 'hidden',
+        }}
+      >
         {/* Toolbar */}
         <div
           style={{
@@ -465,8 +446,6 @@ function RichTextEditorPreview() {
             gap: 4,
             padding: '4px 6px',
             backgroundColor: COLORS.shape,
-            borderTopLeftRadius: 4,
-            borderTopRightRadius: 4,
             borderBottom: `1px solid ${COLORS.shapeDark}`,
           }}
         >
@@ -490,10 +469,6 @@ function RichTextEditorPreview() {
         <div
           style={{
             height: 48,
-            border: `2px solid ${COLORS.shapeDark}`,
-            borderTop: 'none',
-            borderBottomLeftRadius: 4,
-            borderBottomRightRadius: 4,
             backgroundColor: 'white',
             padding: '6px 8px',
             display: 'flex',
@@ -565,7 +540,7 @@ function FileEditorPreview() {
               flex: 1,
             }}
           >
-            <div style={{ display: 'flex', gap: 4 }}>
+            <div style={{ display: 'flex', gap: 4, height: 7, alignItems: 'center' }}>
               <div
                 style={{
                   height: 6,
@@ -580,23 +555,39 @@ function FileEditorPreview() {
             </div>
             <div
               style={{
-                height: 6,
-                width: '70%',
-                backgroundColor: COLORS.shape,
-                borderRadius: 2,
+                height: 7,
+                display: 'flex',
+                alignItems: 'center',
                 marginLeft: 12,
               }}
-            />
+            >
+              <div
+                style={{
+                  height: 6,
+                  width: '70%',
+                  backgroundColor: COLORS.shape,
+                  borderRadius: 2,
+                }}
+              />
+            </div>
             <div
               style={{
-                height: 6,
-                width: '45%',
-                backgroundColor: COLORS.shape,
-                borderRadius: 2,
+                height: 7,
+                display: 'flex',
+                alignItems: 'center',
                 marginLeft: 12,
               }}
-            />
-            <div style={{ height: 6 }} />
+            >
+              <div
+                style={{
+                  height: 6,
+                  width: '45%',
+                  backgroundColor: COLORS.shape,
+                  borderRadius: 2,
+                }}
+              />
+            </div>
+            <div style={{ height: 7 }} />
           </div>
         </div>
       </div>
