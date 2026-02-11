@@ -6,6 +6,7 @@ import { config } from '../../lib/config.js';
 import { EXAMPLE_COURSE_PATH } from '../../lib/paths.js';
 import { type QuestionsPageData } from '../../models/questions.js';
 import { loadQuestions } from '../../sync/course-db.js';
+import { hasEvocativePreview } from '../instructorQuestionCreate/EvocativePreview.js';
 
 const TEMPLATE_QID_PREFIX = 'template/';
 
@@ -79,6 +80,24 @@ async function getExampleCourseZones(): Promise<TemplateQuestionZone[]> {
   } catch {
     // If the assessment file is missing or malformed, fall back to a flat list.
     zones = await buildFlatZone(questionTitleMap);
+  }
+
+  // The first zone contains basic questions that are displayed with evocative
+  // preview cards. Every question in that zone must have a dedicated preview.
+  if (zones.length > 0) {
+    const basicZone = zones[0];
+    const missingPreviews = basicZone.questions.filter((q) => !hasEvocativePreview(q.qid));
+
+    if (missingPreviews.length > 0) {
+      const missingQids = missingPreviews.map((q) => q.qid).join(', ');
+
+      if (process.env.NODE_ENV === 'test') {
+        throw new Error(`Basic template questions are missing evocative previews: ${missingQids}`);
+      }
+
+      // In production, silently filter out questions without previews.
+      basicZone.questions = basicZone.questions.filter((q) => hasEvocativePreview(q.qid));
+    }
   }
 
   if (!config.devMode) {
