@@ -1,3 +1,5 @@
+import clsx from 'clsx';
+
 import { escapeHtml, html } from '@prairielearn/html';
 
 import { type CourseRequestRow } from '../lib/course-request.js';
@@ -122,20 +124,60 @@ export function CourseRequestsTable({
                       : ''}
                   </td>
                   <td class="align-middle">
-                    ${row.jobs.length > 0
-                      ? html`
+                    <div class="dropdown">
+                      <button
+                        class="btn btn-secondary btn-xs dropdown-toggle"
+                        type="button"
+                        data-bs-toggle="dropdown"
+                        aria-expanded="false"
+                      >
+                        Show Details
+                      </button>
+                      <ul class="dropdown-menu">
+                        <li>
                           <button
-                            class="btn btn-secondary btn-xs text-nowrap show-hide-btn collapsed"
+                            class="${clsx('dropdown-item', 'show-hide-btn', {
+                              collapsed: !row.note,
+                            })}"
                             data-bs-toggle="collapse"
-                            data-bs-target="#course-requests-job-list-${row.id}"
-                            aria-expanded="false"
-                            aria-controls="course-requests-job-list-${row.id}"
+                            data-bs-target="#course-requests-note-${row.id}"
+                            aria-expanded="${row.note ? 'true' : 'false'}"
+                            aria-controls="course-requests-note-${row.id}"
                           >
-                            <i class="fa fa-angle-up expand-icon"></i>
-                            Show Jobs
+                            <span class="show-when-collapsed">Edit Note</span>
+                            <span class="show-when-expanded">Close Note</span>
                           </button>
-                        `
-                      : ''}
+                        </li>
+                        ${row.jobs.length > 0
+                          ? html`
+                              <li>
+                                <button
+                                  class="dropdown-item show-hide-btn collapsed"
+                                  data-bs-toggle="collapse"
+                                  data-bs-target="#course-requests-job-list-${row.id}"
+                                  aria-expanded="false"
+                                  aria-controls="course-requests-job-list-${row.id}"
+                                >
+                                  Show jobs
+                                </button>
+                              </li>
+                            `
+                          : ''}
+                      </ul>
+                    </div>
+                  </td>
+                </tr>
+                <tr>
+                  <td colspan="${showAll ? 11 : 10}" class="p-0">
+                    <div
+                      id="course-requests-note-${row.id}"
+                      class="${clsx('collapse', { show: row.note })}"
+                    >
+                      ${CourseRequestEditNoteForm({
+                        request: row,
+                        csrfToken,
+                      })}
+                    </div>
                   </td>
                 </tr>
                 ${row.jobs.length > 0
@@ -308,7 +350,7 @@ function CourseRequestDenyForm({
   return html`
     <form method="POST">
       <input type="hidden" name="__csrf_token" value="${csrfToken}" />
-      <input type="hidden" name="__action" value="approve_deny_course_request" />
+      <input type="hidden" name="__action" value="deny_course_request" />
       <input type="hidden" name="approve_deny_action" value="deny" />
       <input type="hidden" name="request_id" value="${request.id}" />
       <button type="button" class="btn btn-secondary" data-bs-dismiss="popover">Cancel</button>
@@ -332,4 +374,46 @@ function CourseRequestStatusIcon({ status }: { status: CourseRequestRow['approve
     case 'denied':
       return html`<span class="badge text-bg-danger"><i class="fa fa-times"></i> Denied</span>`;
   }
+}
+
+function CourseRequestEditNoteForm({
+  request,
+  csrfToken,
+}: {
+  request: CourseRequestRow;
+  csrfToken: string;
+}) {
+  return html`
+    <form method="POST">
+      <input type="hidden" name="__csrf_token" value="${csrfToken}" />
+      <input type="hidden" name="__action" value="update_course_request_note" />
+      <input type="hidden" name="request_id" value="${request.id}" />
+      <div class="d-flex gap-2 align-items-center py-2 px-2">
+        <label class="visually-hidden" for="course-request-note-${request.id}">
+          Note for course request ${request.short_name}
+        </label>
+        <textarea
+          class="form-control flex-grow-1"
+          id="course-request-note-${request.id}"
+          name="note"
+          rows="1"
+          maxlength="10000"
+          placeholder="Add a note about this course request..."
+        >
+${request.note ?? ''}</textarea
+        >
+        <button
+          type="button"
+          class="btn btn-secondary"
+          data-bs-toggle="collapse"
+          data-bs-target="#course-requests-note-${request.id}"
+        >
+          Cancel
+        </button>
+        <button type="submit" class="btn btn-primary text-nowrap">
+          <i class="fa fa-save" aria-hidden="true"></i> Save note
+        </button>
+      </div>
+    </form>
+  `;
 }
