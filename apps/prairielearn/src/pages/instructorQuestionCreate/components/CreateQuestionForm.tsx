@@ -9,7 +9,25 @@ import type {
   TemplateQuestionZone,
 } from '../../instructorQuestions/templateQuestions.js';
 
-import { EvocativePreview } from './EvocativePreview.js';
+import { EvocativePreview, getCardInfo } from './EvocativePreview.js';
+
+const ZONE_INFO: Record<string, { heading: string; description: string }> = {
+  'Basic questions: no randomization': {
+    heading: 'Basic questions',
+    description:
+      'These questions use hardcoded prompts and answers. Great for getting started quickly.',
+  },
+  'Intermediate questions: randomization without Python': {
+    heading: 'Intermediate questions',
+    description:
+      'These questions use built-in randomization features to create unique variants for each student without writing any code.',
+  },
+  'Advanced questions: randomization with Python': {
+    heading: 'Advanced questions',
+    description:
+      'These questions use Python to generate randomized parameters, enabling complex computations and dynamic figures.',
+  },
+};
 
 // ---------------------------------------------------------------------------
 // RadioCardGroup (compact radio buttons for "Start from" selector)
@@ -172,6 +190,7 @@ function TemplateCardRadioGroup({
       >
         {cards.map((card, index) => {
           const isSelected = selectedQid === card.qid;
+          const cardInfo = getCardInfo(card.qid);
           return (
             <div
               key={card.qid}
@@ -185,7 +204,7 @@ function TemplateCardRadioGroup({
               role="radio"
               tabIndex={isSelected ? 0 : -1}
               aria-checked={isSelected}
-              aria-label={card.title}
+              aria-label={cardInfo?.label ?? card.title}
               onClick={() => onSelect(card.qid)}
               onKeyDown={(e) => {
                 if (e.key === 'Enter' || e.key === ' ') {
@@ -202,12 +221,18 @@ function TemplateCardRadioGroup({
                 })}
               >
                 <div
-                  className={clsx('card-title small mb-0', {
-                    'text-primary fw-bold': isSelected,
+                  className={clsx('card-title mb-0 fw-bold', {
+                    'text-primary': isSelected,
                   })}
+                  style={{ fontSize: '0.85rem' }}
                 >
-                  {card.title}
+                  {cardInfo?.label ?? card.title}
                 </div>
+                {cardInfo && (
+                  <div className="text-muted" style={{ fontSize: '0.75rem' }}>
+                    {cardInfo.description}
+                  </div>
+                )}
               </div>
               {isSelected && (
                 <div className="position-absolute top-0 end-0 p-1">
@@ -288,6 +313,9 @@ function matchesSearch(query: string, question: TemplateQuestion): boolean {
   const lowerQuery = query.toLowerCase();
   if (question.title.toLowerCase().includes(lowerQuery)) return true;
   if (question.readme?.toLowerCase().includes(lowerQuery)) return true;
+  const cardInfo = getCardInfo(question.qid);
+  if (cardInfo?.label.toLowerCase().includes(lowerQuery)) return true;
+  if (cardInfo?.description.toLowerCase().includes(lowerQuery)) return true;
   return false;
 }
 
@@ -400,7 +428,7 @@ export function CreateQuestionForm({
 
   return (
     <div className="bg-light p-4">
-      <div className="card p-3" style={{ maxWidth: '48rem', margin: '0 auto' }}>
+      <div className="card p-3" style={{ maxWidth: '64rem', margin: '0 auto' }}>
         <nav aria-label="breadcrumb" className="mb-3">
           <ol className="breadcrumb mb-0">
             <li className="breadcrumb-item">
@@ -499,12 +527,19 @@ export function CreateQuestionForm({
 
                   {/* PrairieLearn templates */}
                   {startFrom === 'example' && (
-                    <div className="mt-3">
+                    <div className="mt-4">
                       {filteredZones.length > 0 ? (
-                        <div className="d-flex flex-column gap-4">
+                        <div className="d-flex flex-column gap-5">
                           {filteredZones.map((zone, zoneIndex) => (
                             <section key={zone.title} aria-label={zone.title}>
-                              <h3 className="h6 fw-semibold mb-2">{zone.title}</h3>
+                              <h3 className="h6 fw-semibold mb-1">
+                                {ZONE_INFO[zone.title]?.heading ?? zone.title}
+                              </h3>
+                              {ZONE_INFO[zone.title]?.description && (
+                                <p className="text-muted small mb-2">
+                                  {ZONE_INFO[zone.title].description}
+                                </p>
+                              )}
                               <TemplateCardRadioGroup
                                 label={zone.title}
                                 cards={zone.questions}

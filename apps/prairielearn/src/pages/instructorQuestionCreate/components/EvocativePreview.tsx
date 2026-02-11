@@ -643,6 +643,81 @@ export function hasEvocativePreview(qid: string): boolean {
   return qid in PREVIEW_MAP;
 }
 
+// ---------------------------------------------------------------------------
+// Card info — simplified labels and descriptions for basic template cards.
+// ---------------------------------------------------------------------------
+
+const CARD_INFO_MAP: Record<string, { label: string; description: string }> = {
+  'template/multiple-choice/fixed': {
+    label: 'Multiple choice',
+    description: 'Select a single correct answer',
+  },
+  'template/multiple-choice/all-of-the-above': {
+    label: 'All of the above',
+    description: 'Include an "all of the above" option',
+  },
+  'template/multiple-choice/none-of-the-above': {
+    label: 'None of the above',
+    description: 'Include a "none of the above" option',
+  },
+  'template/multiple-choice/true-false': {
+    label: 'True/false',
+    description: 'Choose between true and false',
+  },
+  'template/multiple-choice/dropdown': {
+    label: 'Dropdown',
+    description: 'Select an answer from a dropdown menu',
+  },
+  'template/checkbox/fixed': {
+    label: 'Checkbox',
+    description: 'Select multiple correct answers',
+  },
+  'template/integer-input/fixed': {
+    label: 'Integer input',
+    description: 'Enter a whole number',
+  },
+  'template/number-input/fixed': {
+    label: 'Number input',
+    description: 'Enter a decimal or fraction',
+  },
+  'template/string-input/fixed': {
+    label: 'String input',
+    description: 'Enter a text response',
+  },
+  'template/symbolic-input/fixed': {
+    label: 'Symbolic input',
+    description: 'Enter a mathematical expression',
+  },
+  'template/matching/fixed': {
+    label: 'Matching',
+    description: 'Match items to their correct pairs',
+  },
+  'template/order-blocks/fixed': {
+    label: 'Order blocks',
+    description: 'Arrange blocks in the correct order',
+  },
+  'template/rich-text-editor/basic': {
+    label: 'Rich text editor',
+    description: 'Write a formatted text response',
+  },
+  'template/file-editor/fixed': {
+    label: 'Code editor',
+    description: 'Edit code in a built-in editor',
+  },
+  'template/file-upload/fixed': {
+    label: 'File upload',
+    description: 'Upload a file as an answer',
+  },
+  'template/image-capture/static': {
+    label: 'Image capture',
+    description: 'Take or upload a photo',
+  },
+};
+
+export function getCardInfo(qid: string): { label: string; description: string } | null {
+  return CARD_INFO_MAP[qid] ?? null;
+}
+
 function FallbackPreview() {
   return <TextLines count={3} widths={['80%', '65%', '50%']} />;
 }
