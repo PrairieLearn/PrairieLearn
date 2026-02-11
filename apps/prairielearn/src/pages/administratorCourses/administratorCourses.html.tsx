@@ -1,17 +1,11 @@
-import { type z } from 'zod';
+import { useState } from 'react';
 
-import { html } from '@prairielearn/html';
-import { renderHtml } from '@prairielearn/react';
+import { OverlayTrigger } from '@prairielearn/ui';
 
 import { CourseRequestsTable } from '../../components/CourseRequestsTable.js';
-import { config } from '../../lib/config.js';
-import { type CourseRequestRow } from '../../lib/course-request.js';
-import { CourseSchema, type Institution, InstitutionSchema } from '../../lib/db-types.js';
+import type { CourseRequestRow } from '../../lib/course-request.js';
 
-export const CourseWithInstitutionSchema = CourseSchema.extend({
-  institution: InstitutionSchema,
-});
-type CourseWithInstitution = z.infer<typeof CourseWithInstitutionSchema>;
+import type { AdminInstitution, CourseWithInstitution } from './administratorCourses.shared.js';
 
 export function AdministratorCourses({
   courseRequests,
@@ -20,14 +14,19 @@ export function AdministratorCourses({
   coursesRoot,
   csrfToken,
   urlPrefix,
+  courseRepoDefaultBranch,
 }: {
   courseRequests: CourseRequestRow[];
-  institutions: Institution[];
+  institutions: AdminInstitution[];
   courses: CourseWithInstitution[];
   coursesRoot: string;
   csrfToken: string;
   urlPrefix: string;
+  courseRepoDefaultBranch: string;
 }) {
+  const [showInsertCoursePopover, setShowInsertCoursePopover] = useState(false);
+  const [showDeleteCoursePopover, setShowDeleteCoursePopover] = useState(false);
+
   return (
     <>
       <h1 className="visually-hidden">Courses</h1>
@@ -42,24 +41,29 @@ export function AdministratorCourses({
       <div id="courses" className="card mb-4">
         <div className="card-header bg-primary text-white d-flex align-items-center">
           <h2>Courses</h2>
-          <button
-            type="button"
-            className="btn btn-sm btn-light ms-auto"
-            data-bs-toggle="popover"
-            data-bs-container="body"
-            data-bs-html="true"
-            data-bs-placement="auto"
-            data-bs-title="Add new course"
-            data-bs-content={renderHtml(
-              CourseInsertForm({
-                institutions,
-                csrfToken,
-              }),
-            ).toString()}
+          <OverlayTrigger
+            trigger="click"
+            placement="auto"
+            popover={{
+              header: 'Add new course',
+              body: (
+                <CourseInsertForm
+                  institutions={institutions}
+                  csrfToken={csrfToken}
+                  courseRepoDefaultBranch={courseRepoDefaultBranch}
+                  onCancel={() => setShowInsertCoursePopover(false)}
+                />
+              ),
+            }}
+            show={showInsertCoursePopover}
+            rootClose
+            onToggle={setShowInsertCoursePopover}
           >
-            <i className="fa fa-plus" aria-hidden="true" />
-            <span className="d-none d-sm-inline">Add course</span>
-          </button>
+            <button className="btn btn-sm btn-light ms-auto">
+              <i className="fa fa-plus" aria-hidden="true" />
+              <span className="d-none d-sm-inline">Add course</span>
+            </button>
+          </OverlayTrigger>
         </div>
         <div className="table-responsive">
           <table className="table table-sm table-hover table-striped" aria-label="Courses">
@@ -122,25 +126,28 @@ export function AdministratorCourses({
                       csrfToken={csrfToken}
                     />
                     <td className="align-middle">
-                      <button
-                        type="button"
-                        className="btn btn-sm btn-danger text-nowrap"
-                        id={`courseDeleteButton${course.id}`}
-                        data-bs-toggle="popover"
-                        data-bs-container="body"
-                        data-bs-html="true"
-                        data-bs-placement="auto"
-                        data-bs-title={`Confirm deletion of ${course.short_name}`}
-                        data-bs-content={renderHtml(
-                          CourseDeleteForm({
-                            id: `courseDeleteButton${course.id}`,
-                            course,
-                            csrfToken,
-                          }),
-                        ).toString()}
+                      <OverlayTrigger
+                        trigger="click"
+                        placement="auto"
+                        popover={{
+                          header: `Confirm deletion of ${course.short_name}`,
+                          body: (
+                            <CourseDeleteForm
+                              id={`courseDeleteButton${course.id}`}
+                              course={course}
+                              csrfToken={csrfToken}
+                              onCancel={() => setShowDeleteCoursePopover(false)}
+                            />
+                          ),
+                        }}
+                        show={showDeleteCoursePopover}
+                        rootClose
+                        onToggle={setShowDeleteCoursePopover}
                       >
-                        <i className="fa fa-times" aria-hidden="true" /> Delete course
-                      </button>
+                        <button className="btn btn-sm btn-danger text-nowrap">
+                          <i className="fa fa-times" aria-hidden="true" /> Delete course
+                        </button>
+                      </OverlayTrigger>
                     </td>
                   </tr>
                 );
@@ -162,14 +169,18 @@ export function AdministratorCourses({
   );
 }
 
+AdministratorCourses.displayName = 'AdministratorCourses';
+
 function CourseDeleteForm({
   id,
   course,
   csrfToken,
+  onCancel,
 }: {
   id: string;
   course: CourseWithInstitution;
   csrfToken: string;
+  onCancel: () => void;
 }) {
   return (
     <form name="add-user-form" method="POST">
@@ -188,7 +199,7 @@ function CourseDeleteForm({
         />
       </div>
       <div className="text-end">
-        <button type="button" className="btn btn-secondary" data-bs-dismiss="popover">
+        <button type="button" className="btn btn-secondary" onClick={onCancel}>
           Cancel
         </button>
         <button type="submit" className="btn btn-danger">
@@ -202,10 +213,16 @@ function CourseDeleteForm({
 function CourseInsertForm({
   institutions,
   csrfToken,
+  courseRepoDefaultBranch,
+  onCancel,
 }: {
-  institutions: Institution[];
+  institutions: AdminInstitution[];
   csrfToken: string;
+  courseRepoDefaultBranch: string;
+  onCancel: () => void;
 }) {
+  const [timezone, setTimezone] = useState(institutions[0]?.display_timezone ?? '');
+
   return (
     <form name="add-course-form" method="POST">
       <input type="hidden" name="__action" value="courses_insert" />
@@ -214,29 +231,23 @@ function CourseInsertForm({
         <label className="form-label" htmlFor="courseAddInstitution">
           Institution:
         </label>
-        {/* React doesn't let us emit raw event handlers, so
-            instead we render the select inside a dangerouslySetInnerHTML block. */}
-        <div
-          // eslint-disable-next-line @eslint-react/dom/no-dangerously-set-innerhtml
-          dangerouslySetInnerHTML={{
-            __html: html`
-              <select
-                id="courseAddInstitution"
-                name="institution_id"
-                class="form-select"
-                onchange="this.closest('form').querySelector('[name=display_timezone]').value = this.querySelector('option:checked').dataset.timezone;"
-              >
-                ${institutions.map(
-                  (i) => html`
-                    <option value="${i.id}" data-timezone="${i.display_timezone}">
-                      ${i.short_name}
-                    </option>
-                  `,
-                )}
-              </select>
-            `.toString(),
+        <select
+          id="courseAddInstitution"
+          name="institution_id"
+          className="form-select"
+          onChange={({ currentTarget }) => {
+            const selected = institutions.find((i) => i.id === currentTarget.value);
+            if (selected) {
+              setTimezone(selected.display_timezone);
+            }
           }}
-        />
+        >
+          {institutions.map((i) => (
+            <option key={i.id} value={i.id}>
+              {i.short_name}
+            </option>
+          ))}
+        </select>
       </div>
       <div className="mb-3">
         <label className="form-label" htmlFor="courseAddInputShortName">
@@ -271,7 +282,8 @@ function CourseInsertForm({
           className="form-control"
           id="courseAddInputTimezone"
           name="display_timezone"
-          defaultValue={institutions[0]?.display_timezone}
+          value={timezone}
+          onChange={(e) => setTimezone(e.currentTarget.value)}
         />
       </div>
       <div className="mb-3">
@@ -307,11 +319,11 @@ function CourseInsertForm({
           className="form-control"
           id="courseAddInputBranch"
           name="branch"
-          defaultValue={config.courseRepoDefaultBranch}
+          defaultValue={courseRepoDefaultBranch}
         />
       </div>
       <div className="text-end">
-        <button type="button" className="btn btn-secondary" data-bs-dismiss="popover">
+        <button type="button" className="btn btn-secondary" onClick={onCancel}>
           Cancel
         </button>
         <button type="submit" className="btn btn-primary">
@@ -335,28 +347,34 @@ function CourseUpdateColumn({
   href?: string;
   csrfToken: string;
 }) {
+  const [showPopover, setShowPopover] = useState(false);
+
   return (
     <td className="align-middle">
       {href !== undefined ? <a href={href}>{course[columnName]}</a> : course[columnName]}
-      <button
-        type="button"
-        className="btn btn-xs btn-secondary"
-        data-bs-toggle="popover"
-        data-bs-container="body"
-        data-bs-html="true"
-        data-bs-placement="auto"
-        data-bs-title={`Change ${label}`}
-        data-bs-content={renderHtml(
-          CourseUpdateColumnForm({
-            course,
-            columnName,
-            csrfToken,
-            label,
-          }),
-        ).toString()}
+      <OverlayTrigger
+        trigger="click"
+        placement="auto"
+        popover={{
+          header: `Change ${label}`,
+          body: (
+            <CourseUpdateColumnForm
+              course={course}
+              columnName={columnName}
+              csrfToken={csrfToken}
+              label={label}
+              onCancel={() => setShowPopover(false)}
+            />
+          ),
+        }}
+        show={showPopover}
+        rootClose
+        onToggle={setShowPopover}
       >
-        <i className="fa fa-edit" aria-hidden="true" />
-      </button>
+        <button className="btn btn-xs btn-secondary">
+          <i className="fa fa-edit" aria-hidden="true" />
+        </button>
+      </OverlayTrigger>
     </td>
   );
 }
@@ -366,11 +384,13 @@ function CourseUpdateColumnForm({
   columnName,
   csrfToken,
   label,
+  onCancel,
 }: {
   course: CourseWithInstitution;
   columnName: keyof CourseWithInstitution;
   csrfToken: string;
   label: string;
+  onCancel: () => void;
 }) {
   return (
     <form name="edit-course-column-form" method="POST">
@@ -388,7 +408,7 @@ function CourseUpdateColumnForm({
         />
       </div>
       <div className="text-end">
-        <button type="button" className="btn btn-secondary" data-bs-dismiss="popover">
+        <button type="button" className="btn btn-secondary" onClick={onCancel}>
           Cancel
         </button>
         <button type="submit" className="btn btn-primary">
