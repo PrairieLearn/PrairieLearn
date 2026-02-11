@@ -221,8 +221,6 @@ export type SprocAuthzCourseInstance = z.infer<typeof SprocAuthzCourseInstanceSc
 
 // Result of instance_questions_next_allowed_grade sproc
 export const SprocInstanceQuestionsNextAllowedGradeSchema = z.object({
-  allow_grade_date: DateFromISOString.nullable(),
-  allow_grade_interval: z.string(),
   allow_grade_left_ms: z.coerce.number(),
 });
 

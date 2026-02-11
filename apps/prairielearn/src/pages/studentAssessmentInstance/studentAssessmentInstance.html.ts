@@ -3,7 +3,7 @@ import { z } from 'zod';
 import { EncodedData } from '@prairielearn/browser-utils';
 import { html, unsafeHtml } from '@prairielearn/html';
 import { run } from '@prairielearn/run';
-import { DateFromISOString, IdSchema } from '@prairielearn/zod';
+import { IdSchema } from '@prairielearn/zod';
 
 import {
   RegenerateInstanceAlert,
@@ -57,8 +57,6 @@ export const InstanceQuestionRowSchema = InstanceQuestionSchema.extend({
   prev_title: z.string().nullable(),
   prev_sequence_locked: z.boolean().nullable(),
   allow_grade_left_ms: z.coerce.number(),
-  allow_grade_date: DateFromISOString.nullable(),
-  allow_grade_interval: z.string(),
   previous_variants: z.array(SimpleVariantWithScoreSchema).optional(),
   group_role_permissions: z
     .object({

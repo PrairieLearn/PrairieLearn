@@ -1,3 +1,4 @@
+import { formatInterval } from '@prairielearn/formatter';
 import { type HtmlValue, escapeHtml, html, joinHtml } from '@prairielearn/html';
 import { run } from '@prairielearn/run';
 
@@ -16,7 +17,6 @@ import type { SimpleVariantWithScore } from '../models/variant.js';
 interface QuestionScorePanelContentProps {
   instance_question: InstanceQuestion & {
     allow_grade_left_ms?: number;
-    allow_grade_interval?: string;
   };
   assessment: Assessment;
   assessment_question: AssessmentQuestion;
@@ -320,7 +320,10 @@ export function ExamQuestionStatus({
               data-bs-toggle="popover"
               data-bs-container="body"
               data-bs-html="true"
-              data-bs-content="This question limits the rate of submissions. Further grade allowed ${instance_question.allow_grade_interval} (as of the loading of this page)."
+              data-bs-content="This question limits the rate of submissions. Further grade allowed in ${formatInterval(
+                instance_question.allow_grade_left_ms ?? 0,
+                { fullPartNames: true, firstOnly: true },
+              )} (as of the loading of this page)."
               data-bs-placement="auto"
             >
               <i class="fa fa-hourglass-half" aria-hidden="true"></i>

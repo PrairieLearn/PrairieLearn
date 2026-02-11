@@ -71,8 +71,6 @@ const sql = sqldb.loadSqlEquiv(import.meta.url);
 
 type InstanceQuestionWithAllowGrade = InstanceQuestion & {
   allow_grade_left_ms: number;
-  allow_grade_date: Date | null;
-  allow_grade_interval: string;
 };
 
 const SubmissionInfoSchema = z.object({

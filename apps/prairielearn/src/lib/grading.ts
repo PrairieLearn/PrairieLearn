@@ -19,7 +19,6 @@ import {
   InstanceQuestionSchema,
   type Question,
   QuestionSchema,
-  SprocInstanceQuestionsNextAllowedGradeSchema,
   type Submission,
   SubmissionSchema,
   type Variant,
@@ -383,12 +382,12 @@ export async function gradeVariant({
   if (submission == null) return;
 
   if (!ignoreGradeRateLimit) {
-    const resultNextAllowed = await sqldb.callRow(
+    const nextGradingAllowedMs = await sqldb.callRow(
       'instance_questions_next_allowed_grade',
       [variant.instance_question_id],
-      SprocInstanceQuestionsNextAllowedGradeSchema,
+      z.number(),
     );
-    if (resultNextAllowed.allow_grade_left_ms > 0) return;
+    if (nextGradingAllowedMs > 0) return;
   }
 
   const grading_job = await insertGradingJob({ submission_id: submission.id, authn_user_id });
