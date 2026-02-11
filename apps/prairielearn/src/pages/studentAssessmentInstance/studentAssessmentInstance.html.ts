@@ -530,7 +530,7 @@ export function StudentAssessmentInstance({
                                     </button>
                                   `}
                             </form>
-                            <ul class="my-1">
+                            <ul class="mb-0">
                               ${suspendedSavedAnswers > 1
                                 ? html`
                                     <li>
@@ -597,7 +597,7 @@ export function StudentAssessmentInstance({
                             </ul>
                           `
                         : html`
-                            <ul class="my-1">
+                            <ul class="mb-0">
                               <li>
                                 Submit your answer to each question with the
                                 <strong>Save</strong> button on the question page.
