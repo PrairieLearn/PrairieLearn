@@ -25,7 +25,7 @@ interface QuestionScorePanelContentProps {
     question_number: string | null;
     previous_variants: SimpleVariantWithScore[] | null;
   };
-  allow_grade_left_ms: number;
+  allowGradeLeftMs: number;
   urlPrefix: string;
 }
 
@@ -70,7 +70,7 @@ export function QuestionScorePanelContent({
   instance_question_info,
   variant,
   urlPrefix,
-  allow_grade_left_ms,
+  allowGradeLeftMs,
 }: QuestionScorePanelContentProps) {
   const hasAutoAndManualPoints =
     assessment_question.max_auto_points &&
@@ -93,7 +93,7 @@ export function QuestionScorePanelContent({
                   ${ExamQuestionStatus({
                     instance_question,
                     assessment_question,
-                    allow_grade_left_ms,
+                    allowGradeLeftMs,
                   })}
                 </td>
               </tr>
@@ -253,7 +253,7 @@ export function ExamQuestionStatus({
   instance_question,
   assessment_question,
   realTimeGradingPartiallyDisabled,
-  allow_grade_left_ms,
+  allowGradeLeftMs,
 }: {
   instance_question: InstanceQuestion;
   assessment_question: Pick<
@@ -267,7 +267,7 @@ export function ExamQuestionStatus({
    * (because real-time grading is disabled).
    */
   realTimeGradingPartiallyDisabled?: boolean;
-  allow_grade_left_ms: number;
+  allowGradeLeftMs: number;
 }) {
   // Special case: if this is a manually graded question in the "saved" state,
   // we want to differentiate it from saved auto-graded questions which can
@@ -317,7 +317,7 @@ export function ExamQuestionStatus({
     <span class="align-middle">
       <span class="badge text-bg-${badgeColor}">${badgeText}</span>
 
-      ${allow_grade_left_ms > 0
+      ${allowGradeLeftMs > 0
         ? html`
             <button
               type="button"
@@ -326,7 +326,7 @@ export function ExamQuestionStatus({
               data-bs-container="body"
               data-bs-html="true"
               data-bs-content="This question limits the rate of submissions. Further grade allowed in ${formatInterval(
-                allow_grade_left_ms,
+                allowGradeLeftMs,
                 { fullPartNames: true, firstOnly: true },
               )} (as of the loading of this page)."
               data-bs-placement="auto"

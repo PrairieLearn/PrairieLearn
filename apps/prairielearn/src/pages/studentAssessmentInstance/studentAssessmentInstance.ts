@@ -235,7 +235,7 @@ router.get(
         idsEqual(variant.instance_question_id, instance_question.id),
       );
       if (instance_question.grade_rate_minutes) {
-        instance_question.allow_grade_left_ms = await computeNextAllowedGradingTimeMs({
+        instance_question.allowGradeLeftMs = await computeNextAllowedGradingTimeMs({
           instanceQuestionId: instance_question.id,
         });
       }

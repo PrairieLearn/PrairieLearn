@@ -57,7 +57,7 @@ export const InstanceQuestionRowSchema = InstanceQuestionSchema.extend({
   prev_advance_score_perc: z.number().nullable(),
   prev_title: z.string().nullable(),
   prev_sequence_locked: z.boolean().nullable(),
-  allow_grade_left_ms: z.number().default(0), // Computed after the query if needed, defaults to zero if grade_rate_minutes is null
+  allowGradeLeftMs: z.number().default(0), // Computed after the query if needed, defaults to zero if grade_rate_minutes is null
   previous_variants: z.array(SimpleVariantWithScoreSchema).optional(),
   group_role_permissions: z
     .object({
@@ -113,7 +113,7 @@ export function StudentAssessmentInstance({
 
   instance_question_rows.forEach((question) => {
     if (question.status === 'saved') {
-      if (question.allow_grade_left_ms > 0) {
+      if (question.allowGradeLeftMs > 0) {
         suspendedSavedAnswers++;
       } else if (
         (question.max_auto_points || !question.max_manual_points) &&
@@ -358,7 +358,7 @@ export function StudentAssessmentInstance({
                               realTimeGradingPartiallyDisabled:
                                 someQuestionsAllowRealTimeGrading &&
                                 someQuestionsForbidRealTimeGrading,
-                              allow_grade_left_ms: instance_question_row.allow_grade_left_ms,
+                              allowGradeLeftMs: instance_question_row.allowGradeLeftMs,
                             })}
                           </td>
                           ${resLocals.has_auto_grading_question && someQuestionsAllowRealTimeGrading

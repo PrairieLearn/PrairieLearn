@@ -255,7 +255,7 @@ function buildLocals({
   assessment_instance,
   assessment_question,
   group_config,
-  allow_grade_left_ms,
+  allowGradeLeftMs,
   authz_result,
 }: {
   variant: Variant;
@@ -269,7 +269,7 @@ function buildLocals({
   assessment_instance?: AssessmentInstance | null;
   assessment_question?: AssessmentQuestion | null;
   group_config?: GroupConfig | null;
-  allow_grade_left_ms: number;
+  allowGradeLeftMs: number;
   authz_result?: any;
 }) {
   const locals: ResLocalsBuildLocals = {
@@ -331,7 +331,7 @@ function buildLocals({
     if (assessment_question.allow_real_time_grading === false) {
       locals.showGradeButton = false;
     }
-    if (allow_grade_left_ms > 0) {
+    if (allowGradeLeftMs > 0) {
       locals.disableGradeButton = true;
     }
   }
@@ -507,11 +507,11 @@ export async function getAndRenderVariant(
   Object.assign(urls, urlOverrides);
   Object.assign(locals, urls);
 
-  const allow_grade_left_ms =
+  const allowGradeLeftMs =
     instance_question != null && assessment_question?.grade_rate_minutes
       ? await computeNextAllowedGradingTimeMs({ instanceQuestionId: instance_question.id })
       : 0;
-  locals.allow_grade_left_ms = allow_grade_left_ms;
+  locals.allowGradeLeftMs = allowGradeLeftMs;
 
   const newLocals = buildLocals({
     variant,
@@ -521,7 +521,7 @@ export async function getAndRenderVariant(
     assessment,
     assessment_instance,
     assessment_question,
-    allow_grade_left_ms,
+    allowGradeLeftMs,
     group_config,
     authz_result,
   });
@@ -717,7 +717,7 @@ export async function renderPanelsForSubmission({
           assessment_instance_id: assessment_instance.id,
           instance_question_id: variant.instance_question_id,
         });
-  const allow_grade_left_ms =
+  const allowGradeLeftMs =
     instance_question != null && assessment_question?.grade_rate_minutes
       ? await computeNextAllowedGradingTimeMs({ instanceQuestionId: instance_question.id })
       : 0;
@@ -739,7 +739,7 @@ export async function renderPanelsForSubmission({
       assessment,
       assessment_instance,
       assessment_question,
-      allow_grade_left_ms,
+      allowGradeLeftMs,
       group_config,
       authz_result,
     }),
@@ -816,7 +816,7 @@ export async function renderPanelsForSubmission({
         variant,
         urlPrefix,
         instance_question_info: { question_number, previous_variants },
-        allow_grade_left_ms,
+        allowGradeLeftMs,
       }).toString();
     },
     async () => {
@@ -855,7 +855,7 @@ export async function renderPanelsForSubmission({
           group_info,
           group_role_permissions: groupRolePermissions,
           user,
-          allow_grade_left_ms,
+          allowGradeLeftMs,
           ...locals,
         },
         questionContext,

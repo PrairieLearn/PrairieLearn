@@ -58,7 +58,7 @@ const SelectAndAuthzInstanceQuestionSchema = z.object({
   instance_role: SprocUsersGetDisplayedRoleSchema,
   instance_group: GroupSchema.nullable(),
   instance_group_uid_list: z.array(z.string()),
-  instance_question: InstanceQuestionSchema.extend({ allow_grade_left_ms: z.number().default(0) }),
+  instance_question: InstanceQuestionSchema,
   instance_question_info: InstanceQuestionInfoSchema,
   assessment_question: AssessmentQuestionSchema,
   question: QuestionSchema,

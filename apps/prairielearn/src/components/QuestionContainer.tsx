@@ -439,7 +439,7 @@ interface QuestionFooterResLocals {
   assessment_question: AssessmentQuestion | null;
   instance_question_info: Record<string, any>;
   authz_result: Record<string, any> | null;
-  allow_grade_left_ms: number;
+  allowGradeLeftMs: number;
   group_config: GroupConfig | null;
   group_info: GroupInfo | null;
   group_role_permissions: {
@@ -511,7 +511,7 @@ export function QuestionFooterContent({
     assessment_question,
     instance_question_info,
     authz_result,
-    allow_grade_left_ms,
+    allowGradeLeftMs,
     group_config,
     group_info,
     group_role_permissions,
@@ -660,7 +660,7 @@ export function QuestionFooterContent({
         questionContext,
         showGradeButton,
         assessment_question,
-        allowGradeLeftMs: allow_grade_left_ms,
+        allowGradeLeftMs,
       })}
     `;
   });
