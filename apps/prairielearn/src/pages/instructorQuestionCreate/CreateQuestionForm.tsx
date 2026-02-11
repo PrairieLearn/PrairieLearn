@@ -107,12 +107,14 @@ function TemplateCardRadioGroup({
   selectedQid,
   onSelect,
   showPreviews,
+  showQid,
 }: {
   label: string;
   cards: TemplateQuestion[];
   selectedQid: string;
   onSelect: (qid: string) => void;
   showPreviews: boolean;
+  showQid?: boolean;
 }) {
   const cardsRef = useRef<(HTMLElement | null)[]>([]);
 
@@ -241,13 +243,20 @@ function TemplateCardRadioGroup({
           >
             <div className="card-body py-2 px-3">
               <div className="d-flex align-items-center justify-content-between">
-                <span
-                  className={clsx('small', {
-                    'text-primary fw-bold': isSelected,
-                  })}
-                >
-                  {card.title}
-                </span>
+                <div>
+                  <span
+                    className={clsx('small', {
+                      'text-primary fw-bold': isSelected,
+                    })}
+                  >
+                    {card.title}
+                  </span>
+                  {showQid && (
+                    <div className="text-muted small" style={{ fontSize: '0.75rem' }}>
+                      {card.qid}
+                    </div>
+                  )}
+                </div>
                 {isSelected && <i className="fa fa-check-circle text-primary" aria-hidden="true" />}
               </div>
               {isSelected && card.readme && (
@@ -312,7 +321,9 @@ export function CreateQuestionForm({
   const filteredCourseTemplates = useMemo(() => {
     if (!searchQuery) return courseTemplates;
     const lowerQuery = searchQuery.toLowerCase();
-    return courseTemplates.filter((t) => t.title.toLowerCase().includes(lowerQuery));
+    return courseTemplates.filter(
+      (t) => t.title.toLowerCase().includes(lowerQuery) || t.qid.toLowerCase().includes(lowerQuery),
+    );
   }, [searchQuery, courseTemplates]);
 
   const totalFilteredCount = useMemo(() => {
@@ -510,10 +521,13 @@ export function CreateQuestionForm({
                         label="Course templates"
                         cards={filteredCourseTemplates.map((t) => ({
                           ...t,
+                          // TODO: read README.md from the course directory
+                          // to show descriptions like we do for built-in templates.
                           readme: null,
                         }))}
                         selectedQid={selectedTemplateQid}
                         showPreviews={false}
+                        showQid
                         onSelect={setSelectedTemplateQid}
                       />
                     ) : (
