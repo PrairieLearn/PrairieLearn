@@ -545,6 +545,12 @@ export function CreateQuestionForm({
                 <EmptyCourseTemplatesState />
               ) : (
                 <>
+                  {startFrom === 'course' && (
+                    <p className="text-muted small mb-3">
+                      Course templates are reusable starting points defined by your course. Any
+                      question with a QID starting with <code>template/</code> will appear here.
+                    </p>
+                  )}
                   <input
                     type="search"
                     className="form-control"
@@ -704,8 +710,8 @@ function EmptyCourseTemplatesState() {
     <div className="text-center py-4">
       <p className="mb-1">This course doesn't have any templates yet.</p>
       <p className="small mb-0">
-        To create a course template, create a question with a QID starting with{' '}
-        <code>template/</code>.
+        Course templates are reusable starting points defined by your course. To create one, add a
+        question with a QID starting with <code>template/</code>.
       </p>
     </div>
   );
