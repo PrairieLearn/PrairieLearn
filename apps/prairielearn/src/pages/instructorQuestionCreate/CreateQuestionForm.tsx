@@ -295,9 +295,7 @@ export function CreateQuestionForm({
   const [selectedTemplateQid, setSelectedTemplateQid] = useState('');
   const [searchQuery, setSearchQuery] = useState('');
 
-  const hasCourseTemplates = courseTemplates.length > 0;
   const hasExampleTemplates = exampleCourseZones.length > 0;
-  const hasAnyTemplates = hasExampleTemplates || hasCourseTemplates;
   const isTemplateSelected = ['example', 'course'].includes(startFrom);
 
   // Filter zones/templates by search query
@@ -368,19 +366,18 @@ export function CreateQuestionForm({
     });
   }
 
-  if (hasCourseTemplates) {
-    startFromOptions.push({
+  startFromOptions.push(
+    {
       id: 'course',
       title: 'Course template',
       description: 'Start with a template from your course',
-    });
-  }
-
-  startFromOptions.push({
-    id: 'empty',
-    title: 'Empty question',
-    description: 'Start with a blank question and build from scratch',
-  });
+    },
+    {
+      id: 'empty',
+      title: 'Empty question',
+      description: 'Start with a blank question and build from scratch',
+    },
+  );
 
   return (
     <div style={{ maxWidth: 960, margin: '0 auto' }}>
@@ -433,21 +430,19 @@ export function CreateQuestionForm({
           </small>
         </div>
 
-        {hasAnyTemplates && (
-          <div className="mb-3">
-            <hr className="my-4" />
-            <h2 className="h4 mb-1">Choose a starting point</h2>
-            <p className="text-muted mb-3">
-              Pick a template to get started quickly, or begin from scratch.
-            </p>
-            <RadioCardGroup
-              label="Choose a starting point"
-              value={startFrom}
-              options={startFromOptions}
-              onChange={handleStartFromChange}
-            />
-          </div>
-        )}
+        <div className="mb-3">
+          <hr className="my-4" />
+          <h2 className="h4 mb-1">Choose a starting point</h2>
+          <p className="text-muted mb-3">
+            Pick a template to get started quickly, or begin from scratch.
+          </p>
+          <RadioCardGroup
+            label="Choose a starting point"
+            value={startFrom}
+            options={startFromOptions}
+            onChange={handleStartFromChange}
+          />
+        </div>
 
         {/* Hidden inputs for form submission */}
         <input type="hidden" name="start_from" value={startFrom} />
@@ -460,71 +455,77 @@ export function CreateQuestionForm({
         {/* Search + template gallery */}
         {isTemplateSelected && (
           <div className="mb-3">
-            <input
-              type="search"
-              className="form-control"
-              id="template_search"
-              aria-label="Search templates"
-              placeholder="Search templates..."
-              value={searchQuery}
-              onChange={(e) => handleSearch(e.currentTarget.value)}
-            />
+            {startFrom === 'course' && courseTemplates.length === 0 ? (
+              <EmptyCourseTemplatesState />
+            ) : (
+              <>
+                <input
+                  type="search"
+                  className="form-control"
+                  id="template_search"
+                  aria-label="Search templates"
+                  placeholder="Search templates..."
+                  value={searchQuery}
+                  onChange={(e) => handleSearch(e.currentTarget.value)}
+                />
 
-            {/* Live region for search result count */}
-            <div className="visually-hidden" aria-live="polite" aria-atomic="true">
-              {searchQuery
-                ? `${totalFilteredCount} template${totalFilteredCount !== 1 ? 's' : ''} found`
-                : ''}
-            </div>
+                {/* Live region for search result count */}
+                <div className="visually-hidden" aria-live="polite" aria-atomic="true">
+                  {searchQuery
+                    ? `${totalFilteredCount} template${totalFilteredCount !== 1 ? 's' : ''} found`
+                    : ''}
+                </div>
 
-            {/* PrairieLearn templates */}
-            {startFrom === 'example' && (
-              <div className="mt-3">
-                {filteredZones.length > 0 ? (
-                  <div className="d-flex flex-column gap-4">
-                    {filteredZones.map((zone, zoneIndex) => (
-                      <section key={zone.title} aria-label={zone.title}>
-                        <h3 className="h6 fw-semibold mb-2">{zone.title}</h3>
-                        <TemplateCardRadioGroup
-                          label={zone.title}
-                          cards={zone.questions}
-                          selectedQid={selectedTemplateQid}
-                          showPreviews={zoneIndex === 0}
-                          onSelect={setSelectedTemplateQid}
-                        />
-                      </section>
-                    ))}
+                {/* PrairieLearn templates */}
+                {startFrom === 'example' && (
+                  <div className="mt-3">
+                    {filteredZones.length > 0 ? (
+                      <div className="d-flex flex-column gap-4">
+                        {filteredZones.map((zone, zoneIndex) => (
+                          <section key={zone.title} aria-label={zone.title}>
+                            <h3 className="h6 fw-semibold mb-2">{zone.title}</h3>
+                            <TemplateCardRadioGroup
+                              label={zone.title}
+                              cards={zone.questions}
+                              selectedQid={selectedTemplateQid}
+                              showPreviews={zoneIndex === 0}
+                              onSelect={setSelectedTemplateQid}
+                            />
+                          </section>
+                        ))}
+                      </div>
+                    ) : (
+                      <EmptySearchState
+                        query={searchQuery}
+                        onStartFromScratch={() => handleStartFromChange('empty')}
+                      />
+                    )}
                   </div>
-                ) : (
-                  <EmptySearchState
-                    query={searchQuery}
-                    onStartFromScratch={() => handleStartFromChange('empty')}
-                  />
                 )}
-              </div>
-            )}
 
-            {/* Course templates */}
-            {startFrom === 'course' && (
-              <div className="mt-3">
-                {filteredCourseTemplates.length > 0 ? (
-                  <TemplateCardRadioGroup
-                    label="Course templates"
-                    cards={filteredCourseTemplates.map((t) => ({
-                      ...t,
-                      readme: null,
-                    }))}
-                    selectedQid={selectedTemplateQid}
-                    showPreviews={false}
-                    onSelect={setSelectedTemplateQid}
-                  />
-                ) : (
-                  <EmptySearchState
-                    query={searchQuery}
-                    onStartFromScratch={() => handleStartFromChange('empty')}
-                  />
+                {/* Course templates */}
+                {startFrom === 'course' && (
+                  <div className="mt-3">
+                    {filteredCourseTemplates.length > 0 ? (
+                      <TemplateCardRadioGroup
+                        label="Course templates"
+                        cards={filteredCourseTemplates.map((t) => ({
+                          ...t,
+                          readme: null,
+                        }))}
+                        selectedQid={selectedTemplateQid}
+                        showPreviews={false}
+                        onSelect={setSelectedTemplateQid}
+                      />
+                    ) : (
+                      <EmptySearchState
+                        query={searchQuery}
+                        onStartFromScratch={() => handleStartFromChange('empty')}
+                      />
+                    )}
+                  </div>
                 )}
-              </div>
+              </>
             )}
           </div>
         )}
@@ -536,7 +537,7 @@ export function CreateQuestionForm({
         {startFrom === 'empty' && <StartFromScratchState />}
 
         {/* Sticky footer for template states */}
-        {isTemplateSelected && (
+        {isTemplateSelected && !(startFrom === 'course' && courseTemplates.length === 0) && (
           <div style={{ position: 'sticky', bottom: 0 }}>
             <div
               style={{
@@ -576,6 +577,18 @@ function EmptySearchState({
       <button type="button" className="btn btn-outline-primary btn-sm" onClick={onStartFromScratch}>
         Start from scratch instead
       </button>
+    </div>
+  );
+}
+
+function EmptyCourseTemplatesState() {
+  return (
+    <div className="text-center py-4">
+      <p className="text-muted mb-1">This course doesn't have any templates yet.</p>
+      <p className="text-muted small mb-0">
+        To create a course template, create a question with a QID starting with{' '}
+        <code>template/</code>.
+      </p>
     </div>
   );
 }
