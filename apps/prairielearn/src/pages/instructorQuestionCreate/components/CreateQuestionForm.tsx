@@ -11,7 +11,7 @@ import type {
 
 import { EvocativePreview, getCardInfo } from './EvocativePreview.js';
 
-const ZONE_INFO: Record<string, { heading: string; description: string }> = {
+export const ZONE_INFO: Partial<Record<string, { heading: string; description: string }>> = {
   'Basic questions: no randomization': {
     heading: 'Basic questions',
     description:
@@ -530,25 +530,26 @@ export function CreateQuestionForm({
                     <div className="mt-4">
                       {filteredZones.length > 0 ? (
                         <div className="d-flex flex-column gap-5">
-                          {filteredZones.map((zone, zoneIndex) => (
-                            <section key={zone.title} aria-label={zone.title}>
-                              <h3 className="h6 fw-semibold mb-1">
-                                {ZONE_INFO[zone.title]?.heading ?? zone.title}
-                              </h3>
-                              {ZONE_INFO[zone.title]?.description && (
-                                <p className="text-muted small mb-2">
-                                  {ZONE_INFO[zone.title].description}
-                                </p>
-                              )}
-                              <TemplateCardRadioGroup
-                                label={zone.title}
-                                cards={zone.questions}
-                                selectedQid={selectedTemplateQid}
-                                showPreviews={zoneIndex === 0}
-                                onSelect={setSelectedTemplateQid}
-                              />
-                            </section>
-                          ))}
+                          {filteredZones.map((zone, zoneIndex) => {
+                            const zoneInfo = ZONE_INFO[zone.title];
+                            return (
+                              <section key={zone.title} aria-label={zone.title}>
+                                <h3 className="h6 fw-semibold mb-1">
+                                  {zoneInfo?.heading ?? zone.title}
+                                </h3>
+                                {zoneInfo?.description && (
+                                  <p className="text-muted small mb-2">{zoneInfo.description}</p>
+                                )}
+                                <TemplateCardRadioGroup
+                                  label={zone.title}
+                                  cards={zone.questions}
+                                  selectedQid={selectedTemplateQid}
+                                  showPreviews={zoneIndex === 0}
+                                  onSelect={setSelectedTemplateQid}
+                                />
+                              </section>
+                            );
+                          })}
                         </div>
                       ) : (
                         <EmptySearchState
