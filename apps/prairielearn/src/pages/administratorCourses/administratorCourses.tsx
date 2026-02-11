@@ -7,8 +7,8 @@ import { PageLayout } from '../../components/PageLayout.js';
 import { config } from '../../lib/config.js';
 import {
   createCourseFromRequest,
-  selectPendingCourseRequests,
   denyCourseRequest,
+  selectPendingCourseRequests,
   updateCourseRequestNote,
 } from '../../lib/course-request.js';
 import { typedAsyncHandler } from '../../lib/res-locals.js';

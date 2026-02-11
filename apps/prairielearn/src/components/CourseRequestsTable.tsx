@@ -40,7 +40,7 @@ export function CourseRequestsTable({
           </a>
         )}
       </div>
-      <div>
+      <div className="table-responsive">
         <table className="table table-sm" aria-label="Course requests">
           <thead>
             <tr>

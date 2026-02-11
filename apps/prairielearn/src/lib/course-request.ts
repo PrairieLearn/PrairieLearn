@@ -109,19 +109,16 @@ export async function createCourseFromRequest({
     authnUser,
   );
 
-  // Do this in the background once the caller has redirected the response.
-
-  try {
-    await sendCourseRequestMessage(
-      '*Creating course*\n' +
-        `Course rubric: ${repoShortName}\n` +
-        `Course title: ${title}\n` +
-        `Approved by: ${authnUser.name}`,
-    );
-  } catch (err) {
+  // Send the Slack message in the background without blocking the response.
+  sendCourseRequestMessage(
+    '*Creating course*\n' +
+      `Course rubric: ${repoShortName}\n` +
+      `Course title: ${title}\n` +
+      `Approved by: ${authnUser.name}`,
+  ).catch((err) => {
     logger.error('Error sending course request message to Slack', err);
     Sentry.captureException(err);
-  }
+  });
 
   return jobSequenceId;
 }
