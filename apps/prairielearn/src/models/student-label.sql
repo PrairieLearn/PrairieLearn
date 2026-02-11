@@ -51,7 +51,7 @@ WHERE
 ORDER BY
   sl.name;
 
--- BLOCK add_enrollments_to_student_label
+-- BLOCK add_label_to_enrollments
 INSERT INTO
   student_label_enrollments (enrollment_id, student_label_id)
 SELECT
@@ -61,7 +61,7 @@ ON CONFLICT (enrollment_id, student_label_id) DO NOTHING
 RETURNING
   *;
 
--- BLOCK remove_enrollments_from_student_label
+-- BLOCK remove_label_from_enrollments
 DELETE FROM student_label_enrollments
 WHERE
   student_label_id = $student_label_id

@@ -244,14 +244,10 @@ describe('Student labels syncing', () => {
       assert.equal(syncedLabels.length, 1);
 
       const renamedLabel = syncedLabels[0];
-      // Same database row (id preserved)
       assert.equal(renamedLabel.id, originalLabel.id);
-      // Name updated
       assert.equal(renamedLabel.name, 'Section 1');
-      // UUID unchanged
       assert.equal(renamedLabel.uuid, originalLabel.uuid);
 
-      // Enrollment is still linked
       const enrollmentLabels = await selectStudentLabelsForEnrollment(enrollment);
       assert.equal(enrollmentLabels.length, 1);
       assert.equal(enrollmentLabels[0].id, originalLabel.id);

@@ -306,7 +306,6 @@ describe('Student Label Model', () => {
         assert.isTrue(labels.some((l) => l.id === label1.id));
         assert.isTrue(labels.some((l) => l.id === label2.id));
 
-        // Excludes deleted labels (cascade delete removes enrollments too)
         await deleteStudentLabel(label1);
         const labelsAfterDelete = await selectStudentLabelsForEnrollment(enrollment);
         assert.equal(labelsAfterDelete.length, 1);
@@ -439,10 +438,7 @@ describe('Student Label Model', () => {
         const auditEvents1 = await getLabelAuditEvents(enrollment1, label.course_instance_id);
         const auditEvents2 = await getLabelAuditEvents(enrollment2, label.course_instance_id);
 
-        // enrollment1 should only have 1 event (from the first individual add)
         assert.equal(auditEvents1.length, 1);
-
-        // enrollment2 should have 1 event (from the bulk add)
         assert.equal(auditEvents2.length, 1);
         assert.equal(auditEvents2[0].action, 'insert');
       });

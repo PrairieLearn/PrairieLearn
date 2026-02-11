@@ -152,7 +152,7 @@
             "description": "The name of the student label.",
             "type": "string",
             "minLength": 1,
-            "maxLength": 1000
+            "maxLength": 255
           },
           "color": {
             "$ref": "#/definitions/ColorJsonSchema"

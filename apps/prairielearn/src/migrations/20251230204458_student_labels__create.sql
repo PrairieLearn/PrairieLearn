@@ -18,5 +18,4 @@ CREATE TABLE student_label_enrollments (
   UNIQUE (enrollment_id, student_label_id)
 );
 
--- This index is used to quickly find all enrollments that are members of a given student label.
 CREATE INDEX student_label_enrollments_student_label_id_key ON student_label_enrollments (student_label_id);

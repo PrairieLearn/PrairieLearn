@@ -157,7 +157,7 @@ export async function addLabelToEnrollments({
 
   return await runInTransactionAsync(async () => {
     const results = await queryRows(
-      sql.add_enrollments_to_student_label,
+      sql.add_label_to_enrollments,
       { enrollment_ids: enrollments.map((e) => e.id), student_label_id: label.id },
       StudentLabelEnrollmentSchema,
     );
@@ -209,7 +209,7 @@ export async function removeLabelFromEnrollments({
 
   return await runInTransactionAsync(async () => {
     const deletedRows = await queryRows(
-      sql.remove_enrollments_from_student_label,
+      sql.remove_label_from_enrollments,
       { enrollment_ids: enrollments.map((e) => e.id), student_label_id: label.id },
       StudentLabelEnrollmentSchema,
     );

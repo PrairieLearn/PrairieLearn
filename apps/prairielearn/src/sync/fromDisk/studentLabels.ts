@@ -12,9 +12,6 @@ import {
 } from '../../models/student-label.js';
 import type { StudentLabelJson } from '../../schemas/infoCourseInstance.js';
 
-/**
- * Syncs student labels for a course instance from JSON configuration.
- */
 export async function syncStudentLabels(
   courseInstance: CourseInstance,
   studentLabels: StudentLabelJson[] | undefined,
