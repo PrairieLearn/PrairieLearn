@@ -164,14 +164,10 @@ function InputField({ width = '100%', text }: { width?: string; text?: string })
 
 function MultipleChoiceFixedPreview() {
   return (
-    <div style={{ display: 'flex', flexDirection: 'column', gap: 10 }}>
-      <TextLines count={2} />
-      <div style={{ display: 'flex', flexDirection: 'column', gap: 8, marginTop: 4 }}>
-        <RadioRow width="60%" />
-        <RadioRow width="45%" selected />
-        <RadioRow width="52%" />
-        <RadioRow width="38%" />
-      </div>
+    <div style={{ display: 'flex', flexDirection: 'column', gap: 8 }}>
+      <RadioRow width="60%" />
+      <RadioRow width="45%" selected />
+      <RadioRow width="52%" />
     </div>
   );
 }
@@ -179,7 +175,6 @@ function MultipleChoiceFixedPreview() {
 function DropdownPreview() {
   return (
     <div style={{ display: 'flex', flexDirection: 'column', gap: 10 }}>
-      <TextLines count={2} />
       <div style={{ display: 'flex', alignItems: 'center', gap: 6, flexWrap: 'wrap' }}>
         <div style={{ height: 8, width: '25%', backgroundColor: COLORS.shape, borderRadius: 4 }} />
         <div
@@ -223,40 +218,29 @@ function DropdownPreview() {
 
 function TrueFalsePreview() {
   return (
-    <div style={{ display: 'flex', flexDirection: 'column', gap: 10 }}>
-      <TextLines count={2} />
-      <div style={{ display: 'flex', flexDirection: 'column', gap: 8, marginTop: 4 }}>
-        <RadioRow text="True" selected />
-        <RadioRow text="False" />
-      </div>
+    <div style={{ display: 'flex', flexDirection: 'column', gap: 8 }}>
+      <RadioRow text="True" selected />
+      <RadioRow text="False" />
     </div>
   );
 }
 
 function AllOfTheAbovePreview() {
   return (
-    <div style={{ display: 'flex', flexDirection: 'column', gap: 10 }}>
-      <TextLines count={2} />
-      <div style={{ display: 'flex', flexDirection: 'column', gap: 8, marginTop: 4 }}>
-        <RadioRow width="55%" />
-        <RadioRow width="42%" />
-        <RadioRow width="48%" />
-        <RadioRow text="All of the above" selected />
-      </div>
+    <div style={{ display: 'flex', flexDirection: 'column', gap: 8 }}>
+      <RadioRow width="55%" />
+      <RadioRow width="42%" />
+      <RadioRow text="All of the above" selected />
     </div>
   );
 }
 
 function NoneOfTheAbovePreview() {
   return (
-    <div style={{ display: 'flex', flexDirection: 'column', gap: 10 }}>
-      <TextLines count={2} />
-      <div style={{ display: 'flex', flexDirection: 'column', gap: 8, marginTop: 4 }}>
-        <RadioRow width="55%" />
-        <RadioRow width="42%" />
-        <RadioRow width="48%" />
-        <RadioRow text="None of the above" selected />
-      </div>
+    <div style={{ display: 'flex', flexDirection: 'column', gap: 8 }}>
+      <RadioRow width="55%" />
+      <RadioRow width="42%" />
+      <RadioRow text="None of the above" selected />
     </div>
   );
 }
@@ -267,52 +251,28 @@ function NoneOfTheAbovePreview() {
 
 function CheckboxFixedPreview() {
   return (
-    <div style={{ display: 'flex', flexDirection: 'column', gap: 10 }}>
-      <TextLines count={2} />
-      <div style={{ display: 'flex', flexDirection: 'column', gap: 8, marginTop: 4 }}>
-        <CheckboxRow width="45%" checked />
-        <CheckboxRow width="55%" />
-        <CheckboxRow width="38%" checked />
-        <CheckboxRow width="50%" checked />
-      </div>
+    <div style={{ display: 'flex', flexDirection: 'column', gap: 8 }}>
+      <CheckboxRow width="45%" checked />
+      <CheckboxRow width="55%" />
+      <CheckboxRow width="38%" checked />
     </div>
   );
 }
 
 function IntegerInputPreview() {
-  return (
-    <div style={{ display: 'flex', flexDirection: 'column', gap: 10 }}>
-      <TextLines count={2} />
-      <InputField width="40%" text="42" />
-    </div>
-  );
+  return <InputField width="40%" text="42" />;
 }
 
 function NumberInputPreview() {
-  return (
-    <div style={{ display: 'flex', flexDirection: 'column', gap: 10 }}>
-      <TextLines count={2} />
-      <InputField width="45%" text="3.14" />
-    </div>
-  );
+  return <InputField width="45%" text="3.14" />;
 }
 
 function StringInputPreview() {
-  return (
-    <div style={{ display: 'flex', flexDirection: 'column', gap: 10 }}>
-      <TextLines count={2} />
-      <InputField width="fit-content" text="Hello, world!" />
-    </div>
-  );
+  return <InputField width="fit-content" text="Hello, world!" />;
 }
 
 function SymbolicInputPreview() {
-  return (
-    <div style={{ display: 'flex', flexDirection: 'column', gap: 10 }}>
-      <TextLines count={2} widths={['75%', '50%']} />
-      <InputField width="55%" text="x² + 2x" />
-    </div>
-  );
+  return <InputField width="55%" text="x² + 2x" />;
 }
 
 function MatchingRow({
@@ -367,14 +327,10 @@ function MatchingRow({
 
 function MatchingPreview() {
   return (
-    <div style={{ display: 'flex', flexDirection: 'column', gap: 10 }}>
-      <TextLines count={1} widths={['70%']} />
-      <div style={{ display: 'flex', flexDirection: 'column', gap: 6, marginTop: 2 }}>
-        <MatchingRow labelWidth="40%" optionWidth="30%" />
-        <MatchingRow labelWidth="30%" optionWidth="35%" selected />
-        <MatchingRow labelWidth="45%" optionWidth="25%" />
-        <MatchingRow labelWidth="35%" optionWidth="30%" />
-      </div>
+    <div style={{ display: 'flex', flexDirection: 'column', gap: 6 }}>
+      <MatchingRow labelWidth="40%" optionWidth="30%" />
+      <MatchingRow labelWidth="30%" optionWidth="35%" selected />
+      <MatchingRow labelWidth="45%" optionWidth="25%" />
     </div>
   );
 }
@@ -416,76 +372,66 @@ function DragBlock({ width, accent = false }: { width: string; accent?: boolean 
 
 function OrderBlocksPreview() {
   return (
-    <div style={{ display: 'flex', flexDirection: 'column', gap: 10 }}>
-      <TextLines count={1} widths={['65%']} />
-      <div style={{ display: 'flex', flexDirection: 'column', gap: 5, marginTop: 2 }}>
-        <DragBlock width="75%" />
-        <DragBlock width="60%" accent />
-        <DragBlock width="80%" />
-        <DragBlock width="65%" />
-      </div>
+    <div style={{ display: 'flex', flexDirection: 'column', gap: 5 }}>
+      <DragBlock width="75%" />
+      <DragBlock width="60%" accent />
+      <DragBlock width="80%" />
     </div>
   );
 }
 
 function RichTextEditorPreview() {
   return (
-    <div style={{ display: 'flex', flexDirection: 'column', gap: 10 }}>
-      <TextLines count={2} />
+    <div
+      style={{
+        border: `2px solid ${COLORS.shapeDark}`,
+        borderRadius: 4,
+        overflow: 'hidden',
+      }}
+    >
+      {/* Toolbar */}
       <div
         style={{
-          border: `2px solid ${COLORS.shapeDark}`,
-          borderRadius: 4,
-          overflow: 'hidden',
+          display: 'flex',
+          gap: 4,
+          padding: '4px 6px',
+          backgroundColor: COLORS.shape,
+          borderBottom: `1px solid ${COLORS.shapeDark}`,
         }}
       >
-        {/* Toolbar */}
         <div
-          style={{
-            display: 'flex',
-            gap: 4,
-            padding: '4px 6px',
-            backgroundColor: COLORS.shape,
-            borderBottom: `1px solid ${COLORS.shapeDark}`,
-          }}
-        >
-          <div
-            style={{ width: 14, height: 10, backgroundColor: COLORS.shapeDark, borderRadius: 2 }}
-          />
-          <div
-            style={{ width: 14, height: 10, backgroundColor: COLORS.shapeDark, borderRadius: 2 }}
-          />
-          <div
-            style={{ width: 14, height: 10, backgroundColor: COLORS.shapeDark, borderRadius: 2 }}
-          />
-          <div
-            style={{ width: 20, height: 10, backgroundColor: COLORS.shapeDark, borderRadius: 2 }}
-          />
-          <div
-            style={{ width: 14, height: 10, backgroundColor: COLORS.shapeDark, borderRadius: 2 }}
-          />
-        </div>
-        {/* Editor area */}
+          style={{ width: 14, height: 10, backgroundColor: COLORS.shapeDark, borderRadius: 2 }}
+        />
         <div
-          style={{
-            height: 48,
-            backgroundColor: 'white',
-            padding: '6px 8px',
-            display: 'flex',
-            flexDirection: 'column',
-            gap: 4,
-          }}
-        >
-          <div
-            style={{ height: 6, width: '85%', backgroundColor: COLORS.shape, borderRadius: 3 }}
-          />
-          <div
-            style={{ height: 6, width: '60%', backgroundColor: COLORS.shape, borderRadius: 3 }}
-          />
-          <div
-            style={{ height: 6, width: '40%', backgroundColor: COLORS.shape, borderRadius: 3 }}
-          />
-        </div>
+          style={{ width: 14, height: 10, backgroundColor: COLORS.shapeDark, borderRadius: 2 }}
+        />
+        <div
+          style={{ width: 14, height: 10, backgroundColor: COLORS.shapeDark, borderRadius: 2 }}
+        />
+        <div
+          style={{ width: 20, height: 10, backgroundColor: COLORS.shapeDark, borderRadius: 2 }}
+        />
+        <div
+          style={{ width: 14, height: 10, backgroundColor: COLORS.shapeDark, borderRadius: 2 }}
+        />
+      </div>
+      {/* Editor area */}
+      <div
+        style={{
+          height: 36,
+          backgroundColor: 'white',
+          padding: '6px 8px',
+          display: 'flex',
+          flexDirection: 'column',
+          gap: 4,
+        }}
+      >
+        <div
+          style={{ height: 6, width: '85%', backgroundColor: COLORS.shape, borderRadius: 3 }}
+        />
+        <div
+          style={{ height: 6, width: '60%', backgroundColor: COLORS.shape, borderRadius: 3 }}
+        />
       </div>
     </div>
   );
@@ -493,102 +439,99 @@ function RichTextEditorPreview() {
 
 function FileEditorPreview() {
   return (
-    <div style={{ display: 'flex', flexDirection: 'column', gap: 10 }}>
-      <TextLines count={2} />
-      <div
-        style={{
-          border: `2px solid ${COLORS.shapeDark}`,
-          borderRadius: 4,
-          backgroundColor: 'white',
-          overflow: 'hidden',
-        }}
-      >
-        <div style={{ display: 'flex' }}>
-          {/* Line numbers */}
-          <div
-            style={{
-              display: 'flex',
-              flexDirection: 'column',
-              gap: 4,
-              padding: '6px 5px',
-              backgroundColor: COLORS.bg,
-              borderRight: `1px solid ${COLORS.shape}`,
-              alignItems: 'flex-end',
-            }}
-          >
-            {[1, 2, 3, 4].map((n) => (
-              <div
-                key={n}
-                style={{
-                  fontSize: 7,
-                  fontFamily: 'monospace',
-                  color: COLORS.shapeDark,
-                  lineHeight: 1,
-                }}
-              >
-                {n}
-              </div>
-            ))}
-          </div>
-          {/* Code lines */}
-          <div
-            style={{
-              display: 'flex',
-              flexDirection: 'column',
-              gap: 4,
-              padding: '6px 8px',
-              flex: 1,
-            }}
-          >
-            <div style={{ display: 'flex', gap: 4, height: 7, alignItems: 'center' }}>
-              <div
-                style={{
-                  height: 6,
-                  width: 18,
-                  backgroundColor: COLORS.accent,
-                  borderRadius: 2,
-                }}
-              />
-              <div
-                style={{ height: 6, width: '50%', backgroundColor: COLORS.shape, borderRadius: 2 }}
-              />
-            </div>
+    <div
+      style={{
+        border: `2px solid ${COLORS.shapeDark}`,
+        borderRadius: 4,
+        backgroundColor: 'white',
+        overflow: 'hidden',
+      }}
+    >
+      <div style={{ display: 'flex' }}>
+        {/* Line numbers */}
+        <div
+          style={{
+            display: 'flex',
+            flexDirection: 'column',
+            gap: 4,
+            padding: '6px 5px',
+            backgroundColor: COLORS.bg,
+            borderRight: `1px solid ${COLORS.shape}`,
+            alignItems: 'flex-end',
+          }}
+        >
+          {[1, 2, 3, 4].map((n) => (
             <div
+              key={n}
               style={{
-                height: 7,
-                display: 'flex',
-                alignItems: 'center',
-                marginLeft: 12,
+                fontSize: 7,
+                fontFamily: 'monospace',
+                color: COLORS.shapeDark,
+                lineHeight: 1,
               }}
             >
-              <div
-                style={{
-                  height: 6,
-                  width: '70%',
-                  backgroundColor: COLORS.shape,
-                  borderRadius: 2,
-                }}
-              />
+              {n}
             </div>
+          ))}
+        </div>
+        {/* Code lines */}
+        <div
+          style={{
+            display: 'flex',
+            flexDirection: 'column',
+            gap: 4,
+            padding: '6px 8px',
+            flex: 1,
+          }}
+        >
+          <div style={{ display: 'flex', gap: 4, height: 7, alignItems: 'center' }}>
             <div
               style={{
-                height: 7,
-                display: 'flex',
-                alignItems: 'center',
-                marginLeft: 12,
+                height: 6,
+                width: 18,
+                backgroundColor: COLORS.accent,
+                borderRadius: 2,
               }}
-            >
-              <div
-                style={{
-                  height: 6,
-                  width: '45%',
-                  backgroundColor: COLORS.shape,
-                  borderRadius: 2,
-                }}
-              />
-            </div>
-            <div style={{ height: 7 }} />
+            />
+            <div
+              style={{ height: 6, width: '50%', backgroundColor: COLORS.shape, borderRadius: 2 }}
+            />
           </div>
+          <div
+            style={{
+              height: 7,
+              display: 'flex',
+              alignItems: 'center',
+              marginLeft: 12,
+            }}
+          >
+            <div
+              style={{
+                height: 6,
+                width: '70%',
+                backgroundColor: COLORS.shape,
+                borderRadius: 2,
+              }}
+            />
+          </div>
+          <div
+            style={{
+              height: 7,
+              display: 'flex',
+              alignItems: 'center',
+              marginLeft: 12,
+            }}
+          >
+            <div
+              style={{
+                height: 6,
+                width: '45%',
+                backgroundColor: COLORS.shape,
+                borderRadius: 2,
+              }}
+            />
+          </div>
+          <div style={{ height: 7 }} />
         </div>
       </div>
     </div>
@@ -597,79 +540,73 @@ function FileEditorPreview() {
 
 function FileUploadPreview() {
   return (
-    <div style={{ display: 'flex', flexDirection: 'column', gap: 10 }}>
-      <TextLines count={2} />
-      <div
-        style={{
-          height: 52,
-          border: `2px dashed ${COLORS.shapeDark}`,
-          borderRadius: 6,
-          display: 'flex',
-          flexDirection: 'column',
-          alignItems: 'center',
-          justifyContent: 'center',
-          gap: 4,
-        }}
-      >
-        <svg width="16" height="16" viewBox="0 0 16 16" fill="none">
-          <path
-            d="M8 2v8M5 5l3-3 3 3"
-            stroke={COLORS.shapeDark}
-            strokeWidth="1.5"
-            strokeLinecap="round"
-            strokeLinejoin="round"
-          />
-          <path
-            d="M2 10v3a1 1 0 001 1h10a1 1 0 001-1v-3"
-            stroke={COLORS.shapeDark}
-            strokeWidth="1.5"
-            strokeLinecap="round"
-            strokeLinejoin="round"
-          />
-        </svg>
-        <div style={{ height: 6, width: 50, backgroundColor: COLORS.shape, borderRadius: 3 }} />
-      </div>
+    <div
+      style={{
+        height: 52,
+        border: `2px dashed ${COLORS.shapeDark}`,
+        borderRadius: 6,
+        display: 'flex',
+        flexDirection: 'column',
+        alignItems: 'center',
+        justifyContent: 'center',
+        gap: 4,
+      }}
+    >
+      <svg width="16" height="16" viewBox="0 0 16 16" fill="none">
+        <path
+          d="M8 2v8M5 5l3-3 3 3"
+          stroke={COLORS.shapeDark}
+          strokeWidth="1.5"
+          strokeLinecap="round"
+          strokeLinejoin="round"
+        />
+        <path
+          d="M2 10v3a1 1 0 001 1h10a1 1 0 001-1v-3"
+          stroke={COLORS.shapeDark}
+          strokeWidth="1.5"
+          strokeLinecap="round"
+          strokeLinejoin="round"
+        />
+      </svg>
+      <div style={{ height: 6, width: 50, backgroundColor: COLORS.shape, borderRadius: 3 }} />
     </div>
   );
 }
 
 function ImageCapturePreview() {
   return (
-    <div style={{ display: 'flex', flexDirection: 'column', gap: 10 }}>
-      <TextLines count={2} />
-      <div
-        style={{
-          height: 52,
-          border: `2px dashed ${COLORS.shapeDark}`,
-          borderRadius: 6,
-          display: 'flex',
-          flexDirection: 'column',
-          alignItems: 'center',
-          justifyContent: 'center',
-          gap: 4,
-        }}
-      >
-        <svg width="18" height="16" viewBox="0 0 18 16" fill="none">
-          <rect
-            x="1"
-            y="3"
-            width="16"
-            height="12"
-            rx="2"
-            stroke={COLORS.shapeDark}
-            strokeWidth="1.5"
-          />
-          <circle cx="9" cy="9" r="3" stroke={COLORS.shapeDark} strokeWidth="1.5" />
-          <path
-            d="M6 3l1-2h4l1 2"
-            stroke={COLORS.shapeDark}
-            strokeWidth="1.5"
-            strokeLinecap="round"
-            strokeLinejoin="round"
-          />
-        </svg>
-        <div style={{ height: 6, width: 60, backgroundColor: COLORS.shape, borderRadius: 3 }} />
-      </div>
+    <div
+      style={{
+        height: 52,
+        border: `2px dashed ${COLORS.shapeDark}`,
+        borderRadius: 6,
+        display: 'flex',
+        flexDirection: 'column',
+        alignItems: 'center',
+        justifyContent: 'center',
+        gap: 4,
+      }}
+    >
+      <svg width="18" height="16" viewBox="0 0 18 16" fill="none">
+        <rect
+          x="1"
+          y="3"
+          width="16"
+          height="12"
+          rx="2"
+          stroke={COLORS.shapeDark}
+          strokeWidth="1.5"
+        />
+        <circle cx="9" cy="9" r="3" stroke={COLORS.shapeDark} strokeWidth="1.5" />
+        <path
+          d="M6 3l1-2h4l1 2"
+          stroke={COLORS.shapeDark}
+          strokeWidth="1.5"
+          strokeLinecap="round"
+          strokeLinejoin="round"
+        />
+      </svg>
+      <div style={{ height: 6, width: 60, backgroundColor: COLORS.shape, borderRadius: 3 }} />
     </div>
   );
 }
@@ -717,7 +654,7 @@ export function EvocativePreview({ qid }: { qid: string }) {
     <div
       aria-hidden="true"
       style={{
-        aspectRatio: '3 / 2',
+        aspectRatio: '5 / 2',
         overflow: 'hidden',
         backgroundColor: COLORS.bg,
         padding: '16px 20px',
