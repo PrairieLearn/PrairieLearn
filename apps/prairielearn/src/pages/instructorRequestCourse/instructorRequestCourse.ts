@@ -11,6 +11,7 @@ import { IdSchema } from '@prairielearn/zod';
 
 import { Lti13Claim } from '../../ee/lib/lti13.js';
 import { config } from '../../lib/config.js';
+import { insertCourseRequest } from '../../lib/course-request.js';
 import * as github from '../../lib/github.js';
 import { isEnterprise } from '../../lib/license.js';
 import * as opsbot from '../../lib/opsbot.js';
@@ -129,21 +130,17 @@ router.post(
     }
 
     // Otherwise, insert the course request and send a Slack message.
-    const course_request_id = await queryRow(
-      sql.insert_course_request,
-      {
-        short_name,
-        title,
-        user_id: res.locals.authn_user.id,
-        github_user,
-        first_name,
-        last_name,
-        work_email,
-        institution,
-        referral_source,
-      },
-      IdSchema,
-    );
+    const course_request_id = await insertCourseRequest({
+      short_name,
+      title,
+      user_id: res.locals.authn_user.id,
+      github_user,
+      first_name,
+      last_name,
+      work_email,
+      institution,
+      referral_source,
+    });
 
     // Check if we can automatically approve and create the course.
     const canAutoCreateCourse = await queryRow(
