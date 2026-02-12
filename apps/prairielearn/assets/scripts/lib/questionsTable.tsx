@@ -204,13 +204,15 @@ onDocumentReady(() => {
     question: QuestionsPageData,
   ) {
     return (question.assessments ?? [])
-      .filter(
-        (assessment) => assessment.course_instance_id.toString() === course_instance_id.toString(),
-      )
-      .map((assessment) =>
+      .filter((a) => a.assessment.course_instance_id.toString() === course_instance_id.toString())
+      .map((a) =>
         AssessmentBadgeHtml({
           courseInstanceId: course_instance_id,
-          assessment,
+          assessment: {
+            assessment_id: a.assessment.id,
+            color: a.assessment_set.color,
+            label: a.assessment_set.abbreviation + a.assessment.number,
+          },
         }).toString(),
       )
       .join(' ');
@@ -222,8 +224,8 @@ onDocumentReady(() => {
       ...new Set(
         data
           .flatMap((row) => row.assessments ?? [])
-          .filter((row) => row.course_instance_id === ci_id)
-          .map(({ label }) => label),
+          .filter((a) => a.assessment.course_instance_id === ci_id)
+          .map((a) => a.assessment_set.abbreviation + a.assessment.number),
       ),
     ].sort((a, b) => a.localeCompare(b));
     return {

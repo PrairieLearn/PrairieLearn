@@ -3,8 +3,9 @@ import { z } from 'zod';
 import * as sqldb from '@prairielearn/postgres';
 
 import {
+  AssessmentSchema,
+  AssessmentSetSchema,
   SharingSetSchema,
-  SprocAssessmentsFormatForQuestionSchema,
   TagSchema,
   TopicSchema,
 } from '../lib/db-types.js';
@@ -26,7 +27,10 @@ const QuestionsPageDataSchema = z.object({
   share_publicly: z.boolean(),
   share_source_publicly: z.boolean(),
   sharing_sets: z.array(SharingSetSchema).nullable().optional(),
-  assessments: SprocAssessmentsFormatForQuestionSchema.nullable().optional(),
+  assessments: z
+    .array(z.object({ assessment: AssessmentSchema, assessment_set: AssessmentSetSchema }))
+    // The public questions endpoint does not have assessments, so we need to make this optional.
+    .optional(),
 });
 export type QuestionsPageData = z.infer<typeof QuestionsPageDataSchema>;
 
@@ -44,10 +48,9 @@ export async function selectQuestionsForCourse(
 
   const questions = rows.map((row) => ({
     ...row,
-    assessments:
-      row.assessments?.filter((assessment) =>
-        course_instance_ids.some((id) => idsEqual(id, assessment.course_instance_id)),
-      ) ?? null,
+    assessments: (row.assessments ?? []).filter((a) =>
+      course_instance_ids.some((id) => idsEqual(id, a.assessment.course_instance_id)),
+    ),
   }));
   return questions;
 }

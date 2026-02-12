@@ -83,7 +83,41 @@ WITH
 SELECT
   to_json(q) AS question,
   to_json(top) AS topic,
-  assessments_format_for_question (q.id, ci.id) AS assessments,
+  COALESCE(
+    (
+      SELECT
+        jsonb_agg(
+          jsonb_build_object(
+            'assessment',
+            to_jsonb(a),
+            'assessment_set',
+            to_jsonb(aset)
+          )
+          ORDER BY
+            aset.number,
+            aset.id,
+            a.number,
+            a.id
+        )
+      FROM
+        assessments AS a
+        JOIN assessment_sets AS aset ON (aset.id = a.assessment_set_id)
+      WHERE
+        EXISTS (
+          SELECT
+            1
+          FROM
+            assessment_questions AS aq
+          WHERE
+            aq.assessment_id = a.id
+            AND aq.question_id = q.id
+            AND aq.deleted_at IS NULL
+        )
+        AND a.deleted_at IS NULL
+        AND a.course_instance_id = ci.id
+    ),
+    '[]'::jsonb
+  ) AS assessments,
   issue_count.open_issue_count
 FROM
   questions AS q
