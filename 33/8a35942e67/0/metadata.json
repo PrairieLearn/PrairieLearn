@@ -1,0 +1,37 @@
+{
+  "cli_version": "0.4.2",
+  "checkpoint_id": "338a35942e67",
+  "session_id": "2a73b590-744f-4a95-acd4-6e2888100d5e",
+  "strategy": "manual-commit",
+  "created_at": "2026-02-12T21:17:57.588759Z",
+  "branch": "reteps/remove-assessments_format_for_question",
+  "checkpoints_count": 4,
+  "files_touched": [
+    "apps/prairielearn/assets/scripts/lib/questionsTable.tsx",
+    "apps/prairielearn/src/lib/db-types.ts",
+    "apps/prairielearn/src/middlewares/selectAndAuthzInstructorQuestion.sql",
+    "apps/prairielearn/src/middlewares/selectAndAuthzInstructorQuestion.ts",
+    "apps/prairielearn/src/migrations/20260212210843_assessments_format_for_question__drop.sql",
+    "apps/prairielearn/src/models/questions.sql",
+    "apps/prairielearn/src/models/questions.ts",
+    "apps/prairielearn/src/sprocs/assessments_format_for_question.sql",
+    "apps/prairielearn/src/sprocs/index.ts"
+  ],
+  "agent": "Claude Code",
+  "token_usage": {
+    "input_tokens": 57,
+    "cache_creation_tokens": 113821,
+    "cache_read_tokens": 3671774,
+    "output_tokens": 1202,
+    "api_call_count": 49
+  },
+  "initial_attribution": {
+    "calculated_at": "2026-02-12T21:17:57.558721Z",
+    "agent_lines": 91,
+    "human_added": 3300,
+    "human_modified": 1,
+    "human_removed": 0,
+    "total_committed": 3392,
+    "agent_percentage": 2.6827830188679247
+  }
+}

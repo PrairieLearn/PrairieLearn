@@ -1,0 +1,34 @@
+{
+  "cli_version": "0.4.2",
+  "checkpoint_id": "338a35942e67",
+  "strategy": "manual-commit",
+  "branch": "reteps/remove-assessments_format_for_question",
+  "checkpoints_count": 4,
+  "files_touched": [
+    "apps/prairielearn/assets/scripts/lib/questionsTable.tsx",
+    "apps/prairielearn/src/lib/db-types.ts",
+    "apps/prairielearn/src/middlewares/selectAndAuthzInstructorQuestion.sql",
+    "apps/prairielearn/src/middlewares/selectAndAuthzInstructorQuestion.ts",
+    "apps/prairielearn/src/migrations/20260212210843_assessments_format_for_question__drop.sql",
+    "apps/prairielearn/src/models/questions.sql",
+    "apps/prairielearn/src/models/questions.ts",
+    "apps/prairielearn/src/sprocs/assessments_format_for_question.sql",
+    "apps/prairielearn/src/sprocs/index.ts"
+  ],
+  "sessions": [
+    {
+      "metadata": "/33/8a35942e67/0/metadata.json",
+      "transcript": "/33/8a35942e67/0/full.jsonl",
+      "context": "/33/8a35942e67/0/context.md",
+      "content_hash": "/33/8a35942e67/0/content_hash.txt",
+      "prompt": "/33/8a35942e67/0/prompt.txt"
+    }
+  ],
+  "token_usage": {
+    "input_tokens": 57,
+    "cache_creation_tokens": 113821,
+    "cache_read_tokens": 3671774,
+    "output_tokens": 1202,
+    "api_call_count": 49
+  }
+}

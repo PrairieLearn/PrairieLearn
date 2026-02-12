@@ -1,0 +1,176 @@
+Implement the following plan:
+
+# Remove `assessments_format_for_question` sproc
+
+## Context
+
+The `assessments_format_for_question` sproc builds a JSONB array of `{ label, assessment_id, course_instance_id, share_source_publicly, color }` by hand-picking columns from `assessments` and `assessment_sets`. We want to replace it with inline SQL using `to_jsonb()` full-row returns and compute derived values (like `label`) in TypeScript.
+
+## Call sites
+
+1. **`apps/prairielearn/src/models/questions.sql:51`** — called with `(q.id, NULL)` to get all assessments across all course instances for each question. Results sent to browser via bootstrap-table.
+2. **`apps/prairielearn/src/middlewares/selectAndAuthzInstructorQuestion.sql:86`** — called with `(q.id, ci.id)` to get assessments for a single question in a specific course instance. Result stays server-side on `res.locals`.
+
+## Step 1: Replace sproc call in `models/questions.sql`
+
+Replace `assessments_format_for_question(q.id, NULL) AS assessments` with an inline correlated subquery:
+
+```sql
+(
+  SELECT
+    jsonb_agg(
+      jsonb_build_object(
+        'assessment', to_jsonb(a),
+        'assessment_set', to_jsonb(aset)
+      )
+      ORDER BY aset.number, aset.id, a.number, a.id
+    )
+  FROM
+    assessments AS a
+    JOIN assessment_sets AS aset ON (aset.id = a.assessment_set_id)
+  WHERE
+    EXISTS (
+      SELECT 1
+      FROM assessment_questions AS aq
+      WHERE aq.assessment_id = a.id
+        AND aq.question_id = q.id
+        AND aq.deleted_at IS NULL
+    )
+    AND a.deleted_at IS NULL
+) AS assessments
+```
+
+## Step 2: Update `models/questions.ts`
+
+- Remove `SprocAssessmentsFormatForQuestionSchema` import
+- Define a raw schema for parsing the SQL result using full row types:
+
+```typescript
+const QuestionAssessmentRowSchema = z.object({
+  assessment: AssessmentSchema,
+  assessment_set: AssessmentSetSchema,
+});
+```
+
+- Update `QuestionsPageDataSchema` to use `z.array(QuestionAssessmentRowSchema).nullable().optional()` for the `assessments` field
+- Update `QuestionsPageData` type accordingly — consumers now get `{ assessment: Assessment; assessment_set: AssessmentSet }[]`
+- In `selectQuestionsForCourse`, keep the existing filter-by-`course_instance_ids` logic but adapt to the new shape:
+
+```typescript
+row.assessments?.filter((a) =>
+  course_instance_ids.some((id) => idsEqual(id, a.assessment.course_instance_id)),
+) ?? null
+```
+
+## Step 3: Update `assets/scripts/lib/questionsTable.tsx`
+
+Adapt the `assessmentsByCourseInstanceFormatter` and `assessmentsByCourseInstanceList` functions to the new shape. When calling `AssessmentBadgeHtml`, construct the expected `{ assessment_id, color, label }` from full rows:
+
+```typescript
+AssessmentBadgeHtml({
+  courseInstanceId: course_instance_id,
+  assessment: {
+    assessment_id: a.assessment.id,
+    color: a.assessment_set.color,
+    label: a.assessment_set.abbreviation + a.assessment.number,
+  },
+})
+```
+
+Similarly adapt the filter list to use `a.assessment.course_instance_id` and compute labels from `a.assessment_set.abbreviation + a.assessment.number`.
+
+## Step 4: Replace sproc call in `selectAndAuthzInstructorQuestion.sql`
+
+Same inline subquery pattern, but with `AND a.course_instance_id = ci.id` filter:
+
+```sql
+(
+  SELECT
+    jsonb_agg(
+      jsonb_build_object(
+        'assessment', to_jsonb(a),
+        'assessment_set', to_jsonb(aset)
+      )
+      ORDER BY aset.number, aset.id, a.number, a.id
+    )
+  FROM
+    assessments AS a
+    JOIN assessment_sets AS aset ON (aset.id = a.assessment_set_id)
+  WHERE
+    EXISTS (
+      SELECT 1
+      FROM assessment_questions AS aq
+      WHERE aq.assessment_id = a.id
+        AND aq.question_id = q.id
+        AND aq.deleted_at IS NULL
+    )
+    AND a.deleted_at IS NULL
+    AND a.course_instance_id = ci.id
+) AS assessments,
+```
+
+## Step 5: Update `selectAndAuthzInstructorQuestion.ts`
+
+- Remove `SprocAssessmentsFormatForQuestionSchema` import
+- Add `AssessmentSchema`, `AssessmentSetSchema` imports
+- Update `SelectAndAuthWithCourseInstanceSchema` to use `z.array(z.object({ assessment: AssessmentSchema, assessment_set: AssessmentSetSchema })).nullable()` for the `assessments` field
+
+## Step 6: Delete sproc and clean up
+
+- **Delete** `apps/prairielearn/src/sprocs/assessments_format_for_question.sql`
+- **Remove** `'assessments_format_for_question.sql'` from `apps/prairielearn/src/sprocs/index.ts` (line 32)
+- **Remove** `SprocAssessmentsFormatForQuestionSchema` from `apps/prairielearn/src/lib/db-types.ts` (lines 99-108)
+
+## Step 7: Add migration to drop the function
+
+Create `apps/prairielearn/src/migrations/{TIMESTAMP}_assessments_format_for_question__drop.sql`:
+
+```sql
+DROP FUNCTION IF EXISTS assessments_format_for_question(bigint, bigint, bigint);
+```
+
+## Files to modify
+
+| File | Action |
+|------|--------|
+| `apps/prairielearn/src/models/questions.sql` | Replace sproc call with inline subquery |
+| `apps/prairielearn/src/models/questions.ts` | Update schema + types |
+| `apps/prairielearn/assets/scripts/lib/questionsTable.tsx` | Adapt to new data shape |
+| `apps/prairielearn/src/middlewares/selectAndAuthzInstructorQuestion.sql` | Replace sproc call with inline subquery |
+| `apps/prairielearn/src/middlewares/selectAndAuthzInstructorQuestion.ts` | Update schema + types |
+| `apps/prairielearn/src/lib/db-types.ts` | Remove `SprocAssessmentsFormatForQuestionSchema` |
+| `apps/prairielearn/src/sprocs/assessments_format_for_question.sql` | Delete |
+| `apps/prairielearn/src/sprocs/index.ts` | Remove sproc entry |
+| `apps/prairielearn/src/migrations/...` | New migration to drop function |
+
+## Notes
+
+- The `AssessmentBadge` component (`{ assessment_id, color, label }` props) is not changed — callers construct this shape from the full row data.
+- The `skip_assessment_id` parameter is unused in both call sites and is dropped.
+- `label` is now computed in TypeScript as `assessment_set.abbreviation + assessment.number` instead of in SQL.
+- Full Assessment rows include stats columns (~50 fields) that get serialized to the browser for the questions table. Zod parses them all. If payload size is a concern, we can use `AssessmentSchema.pick(...)` to limit fields, but for now full rows keep things simple and consistent.
+
+## Verification
+
+1. `./scripts/typecheck-file.sh` on all modified `.ts`/`.tsx` files
+2. `make format-changed` to format all changes
+3. Visit `http://localhost:3000` → navigate to a course's Questions page → verify assessment badges render correctly with correct labels and colors
+4. Navigate to a course instance's question preview → verify assessments display in the sidebar
+5. Run `yarn test apps/prairielearn/src/tests/instructorQuestions.test.ts` if it exists, or search for related test files
+
+
+If you need specific details from before exiting plan mode (like exact code snippets, error messages, or content you generated), read the full transcript at: /Users/peter/.REDACTED.jsonl
+
+If this plan can be broken down into multiple independent tasks, consider using the TeamCreate tool to create a team and parallelize the work.
+
+---
+
+why is it both nullable and optional?
+
+---
+
+can you have it default to an empty array, so its just optional
+
+---
+
+can't you update the sql instead of doing it in zod
