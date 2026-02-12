@@ -118,7 +118,7 @@ describe('parseSubmission', () => {
     expect(result).toEqual([{ type: 'image', fileName: 'old.jpg', fileData: 'olddata' }]);
   });
 
-  it('should skip image segment when file data is not found', () => {
+  it('should include image segment with null fileData when file data is not found', () => {
     const result = parseSubmission({
       submission_text: [
         '<p>Text</p>',
@@ -128,7 +128,10 @@ describe('parseSubmission', () => {
         _files: [{ name: 'other.jpg', contents: 'otherdata' }],
       },
     });
-    expect(result).toEqual([{ type: 'text', text: '<p>Text</p>' }]);
+    expect(result).toEqual([
+      { type: 'text', text: '<p>Text</p>' },
+      { type: 'image', fileName: 'missing.jpg', fileData: null },
+    ]);
   });
 
   it('should throw when image found but no submitted_answer', () => {

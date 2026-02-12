@@ -346,21 +346,17 @@ export function parseSubmission({
 
   // Get the HTML with markers in place of images, then split on them.
   const htmlWithMarkers = $('body').html() ?? '';
-  const parts = htmlWithMarkers.split(
-    new RegExp(`(__AI_GRADING_IMAGE_${nonce}_\\d+__)`),
-  );
+  const parts = htmlWithMarkers.split(new RegExp(`(__AI_GRADING_IMAGE_${nonce}_\\d+__)`));
 
   const segments: SubmissionHTMLSegment[] = [];
   for (const part of parts) {
     const imageData = imageDataByMarker.get(part);
     if (imageData) {
-      if (imageData.fileData) {
-        segments.push({
-          type: 'image',
-          fileName: imageData.fileName,
-          fileData: imageData.fileData,
-        });
-      }
+      segments.push({
+        type: 'image',
+        fileName: imageData.fileName,
+        fileData: imageData.fileData,
+      });
     } else {
       const text = part.trim();
       if (text) {
