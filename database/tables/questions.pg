@@ -6,7 +6,7 @@ columns
     directory: text
     draft: boolean not null default false
     external_grading_enable_networking: boolean
-    external_grading_enabled: boolean default false
+    external_grading_enabled: boolean not null
     external_grading_entrypoint: text
     external_grading_environment: jsonb not null default '{}'::jsonb
     external_grading_files: text[] default ARRAY[]::text[]
