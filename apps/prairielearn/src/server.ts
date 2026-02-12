@@ -1300,6 +1300,14 @@ export async function initExpress(): Promise<Express> {
       (await import('./ee/pages/instructorInstanceAdminLti13/instructorInstanceAdminLti13.js'))
         .default,
     );
+    app.use(
+      '/pl/course_instance/:course_instance_id/instructor/instance_admin/lti13_assignment_selection',
+      (
+        await import(
+          './ee/pages/instructorInstanceAdminLti13AssignmentSelection/instructorInstanceAdminLti13AssignmentSelection.js'
+        )
+      ).default,
+    );
   }
 
   // Global client files
