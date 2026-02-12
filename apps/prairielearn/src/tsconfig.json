@@ -1,6 +1,7 @@
 {
   "extends": "@prairielearn/tsconfig/tsconfig.app.json",
   "compilerOptions": {
+    "lib": ["ES2022", "DOM", "DOM.Iterable"],
     "rootDir": "./",
     "outDir": "../dist",
     "types": [
