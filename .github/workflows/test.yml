@@ -40,6 +40,7 @@ jobs:
           # We need the whole history so we can diff against `master` to determine
           # what images need to be built.
           fetch-depth: 0
+          show-progress: false
 
       # We won't try to push in this job, but we still authenticate if the
       # secrets are available so that we don't hit image pull rate limits.
@@ -100,6 +101,8 @@ jobs:
         shardTotal: [4]
     steps:
       - uses: actions/checkout@v6
+        with:
+          show-progress: false
 
       # We uninstall `man-db` to speed up the installation of other packages
       # by avoiding building man pages for them. As this is a non-interactive
@@ -222,6 +225,8 @@ jobs:
     runs-on: ubuntu-latest
     steps:
       - uses: actions/checkout@v6
+        with:
+          show-progress: false
       - name: Set up Node
         uses: actions/setup-node@v6
         with:

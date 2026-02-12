@@ -38,6 +38,7 @@ SELECT
   r.github_user,
   r.first_name,
   r.last_name,
+  r.note,
   r.work_email,
   r.institution,
   r.referral_source,
@@ -62,5 +63,44 @@ UPDATE course_requests
 SET
   approved_by = $user_id,
   approved_status = $action
+WHERE
+  course_requests.id = $id
+RETURNING
+  course_requests.id;
+
+-- BLOCK insert_course_request
+INSERT INTO
+  course_requests (
+    short_name,
+    title,
+    user_id,
+    github_user,
+    first_name,
+    last_name,
+    work_email,
+    institution,
+    referral_source,
+    approved_status
+  )
+VALUES
+  (
+    $short_name,
+    $title,
+    $user_id,
+    $github_user,
+    $first_name,
+    $last_name,
+    $work_email,
+    $institution,
+    $referral_source,
+    'pending'
+  )
+RETURNING
+  course_requests.id;
+
+-- BLOCK update_course_request_note
+UPDATE course_requests
+SET
+  note = $note
 WHERE
   course_requests.id = $id;

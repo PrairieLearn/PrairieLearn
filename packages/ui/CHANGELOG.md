@@ -1,5 +1,17 @@
 # @prairielearn/ui
 
+## 3.1.4
+
+### Patch Changes
+
+- 5381771: Use `ReactNode` instead of `JSX.Element` for `TanstackTableCard` and `ColumnManager` props
+
+## 3.1.3
+
+### Patch Changes
+
+- c34d474: Add @prairielearn/run as dep
+
 ## 3.1.2
 
 ### Patch Changes

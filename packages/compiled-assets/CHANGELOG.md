@@ -1,5 +1,11 @@
 # @prairielearn/compiled-assets
 
+## 4.1.0
+
+### Minor Changes
+
+- a6b3d9d: Emit `sizes.json` with per-entry-point bundle sizes during build
+
 ## 4.0.1
 
 ### Patch Changes

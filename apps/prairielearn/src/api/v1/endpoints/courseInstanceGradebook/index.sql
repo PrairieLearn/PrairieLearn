@@ -113,64 +113,53 @@ WITH
         s.user_id = u.id
         AND s.assessment_id = a.assessment_id
       )
-  ),
-  object_data AS (
-    SELECT
-      user_id,
-      user_uid,
-      user_uin,
-      user_name,
-      user_role,
-      ARRAY_AGG(
-        jsonb_build_object(
-          'assessment_id',
-          assessment_id,
-          'assessment_name',
-          assessment_name,
-          'assessment_label',
-          assessment_label,
-          'assessment_set_abbreviation',
-          assessment_set_abbreviation,
-          'assessment_number',
-          assessment_number,
-          'assessment_instance_id',
-          assessment_instance_id,
-          'score_perc',
-          score_perc,
-          'max_points',
-          max_points,
-          'points',
-          points,
-          'start_date',
-          start_date,
-          'duration_seconds',
-          duration_seconds
-        )
-        ORDER BY
-          (
-            assessment_set_number,
-            assessment_order_by,
-            assessment_id
-          )
-      ) AS assessments
-    FROM
-      scores
-    GROUP BY
-      user_id,
-      user_uid,
-      user_uin,
-      user_name,
-      user_role
   )
 SELECT
-  coalesce(
-    jsonb_agg(
-      to_jsonb(object_data)
-      ORDER BY
-        user_role DESC,
-        user_uid ASC
-    ),
-    '[]'::jsonb
-  ) AS item
+  user_id,
+  user_uid,
+  user_uin,
+  user_name,
+  user_role,
+  ARRAY_AGG(
+    jsonb_build_object(
+      'assessment_id',
+      assessment_id,
+      'assessment_name',
+      assessment_name,
+      'assessment_label',
+      assessment_label,
+      'assessment_set_abbreviation',
+      assessment_set_abbreviation,
+      'assessment_number',
+      assessment_number,
+      'assessment_instance_id',
+      assessment_instance_id,
+      'score_perc',
+      score_perc,
+      'max_points',
+      max_points,
+      'points',
+      points,
+      'start_date',
+      start_date,
+      'duration_seconds',
+      duration_seconds
+    )
+    ORDER BY
+      (
+        assessment_set_number,
+        assessment_order_by,
+        assessment_id
+      )
+  ) AS assessments
 FROM
-  object_data;
+  scores
+GROUP BY
+  user_id,
+  user_uid,
+  user_uin,
+  user_name,
+  user_role
+ORDER BY
+  user_role DESC,
+  user_uid ASC;

@@ -13,7 +13,7 @@ const router = Router({ mergeParams: true });
 router.get(
   '/:unsafe_submission_id',
   asyncHandler(async (req, res) => {
-    const data = await sqldb.queryRow(
+    const data = await sqldb.queryOptionalRow(
       sql.select_submissions,
       {
         course_instance_id: res.locals.course_instance.id,
@@ -22,12 +22,10 @@ router.get(
       },
       SubmissionDataSchema,
     );
-    if (data.length === 0) {
-      res.status(404).send({
-        message: 'Not Found',
-      });
+    if (data == null) {
+      res.status(404).send({ message: 'Not Found' });
     } else {
-      res.status(200).send(data[0]);
+      res.status(200).send(data);
     }
   }),
 );

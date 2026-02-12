@@ -186,13 +186,22 @@ async.series(
 );
 
 async function isJobCanceled(job: GradingJobMessage) {
-  const canceled = await sqldb.queryRow(
+  const canceled = await sqldb.queryOptionalRow(
     sql.check_job_cancellation,
     {
       grading_job_id: job.jobId,
     },
     z.boolean(),
   );
+
+  if (canceled == null) {
+    // If the job no longer exists, we consider it canceled.
+
+    // Grading jobs are hard deleted when an instructor deletes
+    // an assessment instance: either individually, or in bulk,
+    // or because they regenerated their own assessment instance.
+    return true;
+  }
 
   return canceled;
 }

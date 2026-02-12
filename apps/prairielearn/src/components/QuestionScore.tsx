@@ -49,7 +49,7 @@ export function QuestionScorePanel(
             <div class="card-footer">
               ${authz_result?.authorized_edit === false
                 ? html`
-                    <div class="alert alert-warning mt-2" role="alert">
+                    <div class="alert alert-warning mb-0" role="alert">
                       You are viewing the question instance of a different user and so are not
                       authorized to report an error.
                     </div>

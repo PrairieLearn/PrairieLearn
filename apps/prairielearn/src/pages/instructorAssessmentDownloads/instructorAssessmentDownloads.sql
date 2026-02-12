@@ -33,7 +33,7 @@ WITH
         AND ai.date_limit IS NOT NULL THEN greatest(
           0,
           floor(
-            DATE_PART('epoch', (ai.date_limit - current_timestamp)) / (60 * 1000)
+            DATE_PART('epoch', (ai.date_limit - current_timestamp)) / 60
           )
         )::text || ' min'
         WHEN ai.open THEN 'Open'

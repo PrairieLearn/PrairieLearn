@@ -1,1 +1,1 @@
-This question demonstrates how to create a question that provides dynamic feedback for incorrect answers.
+This question provides dynamic feedback for each incorrect answer using per-option feedback attributes on `<pl-answer>`.

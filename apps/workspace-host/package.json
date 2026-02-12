@@ -45,6 +45,7 @@
     "zod": "^3.25.76"
   },
   "devDependencies": {
+    "@prairielearn/tsconfig": "workspace:^",
     "@types/minimist": "^1.2.5",
     "@types/node": "^24.10.9",
     "@typescript/native-preview": "^7.0.0-dev.20260203.1",

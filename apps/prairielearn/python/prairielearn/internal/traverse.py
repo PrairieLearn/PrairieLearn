@@ -1,5 +1,5 @@
 from collections import deque
-from collections.abc import Callable
+from collections.abc import Callable, Sequence
 from html import escape as html_escape
 from html import unescape as html_unescape
 from itertools import chain
@@ -48,12 +48,17 @@ def format_attrib_value(v: str) -> str:
     return v.replace("&", "&amp;").replace('"', "&quot;").replace("\xa0", "&nbsp;")
 
 
-def get_source_definition(element: lxml.html.HtmlElement) -> str:
+def get_source_definition(
+    element: lxml.html.HtmlElement,
+    attribute_filter: Sequence[str] | None = None,
+) -> str:
     if not isinstance(element.tag, str):
         raise TypeError(f"Invalid tag type: {type(element.tag)}")
 
     attributes = (
-        f'''{k}="{format_attrib_value(v)}"''' for k, v in element.attrib.items()
+        f'''{k}="{format_attrib_value(v)}"'''
+        for k, v in element.attrib.items()
+        if attribute_filter is None or k in attribute_filter
     )
     return f"<{' '.join((element.tag, *attributes))}>"
 

@@ -632,7 +632,7 @@ export function AiQuestionGenerationChat({
 
     const onMouseMove = (e: MouseEvent) => {
       const dx = e.clientX - startX;
-      const newWidth = Math.min(maxWidth, Math.max(minWidth, startWidth + dx));
+      const newWidth = Math.min(maxWidth, Math.max(minWidth, startWidth - dx));
       container.style.setProperty('--chat-width', `${newWidth}px`);
     };
 
@@ -666,7 +666,7 @@ export function AiQuestionGenerationChat({
 
   return (
     <div className="app-chat-container">
-      <div ref={containerRef} className="app-chat px-2 pb-2 bg-light border-end">
+      <div ref={containerRef} className="app-chat px-2 pb-2 bg-light border-start">
         <div
           className={clsx('app-chat-history', {
             'd-flex align-items-center justify-content-center': !hasMessages,

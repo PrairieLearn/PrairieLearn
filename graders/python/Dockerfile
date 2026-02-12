@@ -21,7 +21,8 @@ RUN dnf -y update \
     && arch="$(uname -m)" \
     && curl -LO "https://github.com/conda-forge/miniforge/releases/latest/download/Miniforge3-Linux-${arch}.sh" \
     && bash "Miniforge3-Linux-${arch}.sh" -b -p /usr/local -f \
-    && rm "Miniforge3-Linux-${arch}.sh"
+    && rm "Miniforge3-Linux-${arch}.sh" \
+    && /usr/local/bin/conda clean -afy
 
 COPY requirements.txt /
 RUN python3 -m pip install --no-cache-dir -r /requirements.txt

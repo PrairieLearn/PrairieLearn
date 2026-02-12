@@ -1,7 +1,10 @@
 import crypto from 'node:crypto';
+import { existsSync, readFileSync } from 'node:fs';
+import { fileURLToPath } from 'node:url';
 
 import { slash } from '@vitest/utils/helpers';
-import { resolve } from 'pathe';
+import ignore from 'ignore';
+import { dirname, relative, resolve } from 'pathe';
 import { defineConfig, mergeConfig } from 'vitest/config';
 import { BaseSequencer, type TestSpecification } from 'vitest/node';
 
@@ -17,6 +20,18 @@ const SLOW_TESTS_SHARDS: Record<number, string[]> = {
 };
 
 const SLOW_TESTS = Object.values(SLOW_TESTS_SHARDS).flat();
+
+// Save repository root, for running in any directory
+const repoRoot = dirname(fileURLToPath(import.meta.url));
+
+// Loads and parses the gitignore file using the ignore package,
+// which already handles directories, nested paths and edge cases
+// using the same rules Git uses.
+const gitignore = ignore();
+const gitignorePath = resolve(repoRoot, '.gitignore');
+if (existsSync(gitignorePath)) {
+  gitignore.add(readFileSync(gitignorePath, 'utf8'));
+}
 
 // Each shard will get a certain slice of the tests outside of SLOW_TESTS.
 // This is a rough heuristic to try to balance the runtime of each shard.
@@ -124,6 +139,26 @@ export const sharedConfig = defineConfig({
           ],
         ]
       : ['default'],
+  },
+  server: {
+    watch: {
+      // The file-watching system calls this function for every file change.
+      // Returning true means "ignore this file".
+      ignored: (filePath: string) => {
+        // Absolute paths need to be converted to relative paths,
+        // because .gitignore rules are evaluated relative to the root.
+        const relativePath = relative(repoRoot, filePath);
+
+        // relative() can return an empty string, causing an error
+        // if passed as an argument to the ignores function, so this case
+        // should be short-circuited.
+        if (!relativePath || relativePath.startsWith('..')) {
+          return false;
+        }
+
+        return gitignore.ignores(relativePath);
+      },
+    },
   },
 });
 

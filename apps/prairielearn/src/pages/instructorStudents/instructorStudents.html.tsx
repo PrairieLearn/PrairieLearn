@@ -1,4 +1,4 @@
-import { QueryClient, useQuery } from '@tanstack/react-query';
+import { QueryClient, useQuery, useQueryClient } from '@tanstack/react-query';
 import {
   type ColumnFiltersState,
   type ColumnPinningState,
@@ -45,6 +45,7 @@ import type { EnumEnrollmentStatus } from '../../lib/db-types.js';
 import { courseInstanceFilenamePrefix } from '../../lib/sanitize-name.js';
 
 import { InviteStudentsModal } from './components/InviteStudentsModal.js';
+import { SyncStudentsModal } from './components/SyncStudentsModal.js';
 import {
   ROLE_VALUES,
   STATUS_VALUES,
@@ -71,10 +72,12 @@ function ManageEnrollmentsDropdown({
   courseInstance,
   authzData,
   onInvite,
+  onSync,
 }: {
   courseInstance: PageContext<'courseInstance', 'instructor'>['course_instance'];
   authzData: PageContextWithAuthzData['authz_data'];
   onInvite: () => void;
+  onSync: () => void;
 }) {
   const [copiedCode, setCopiedCode] = useState(false);
   const [copiedLink, setCopiedLink] = useState(false);
@@ -117,6 +120,10 @@ function ManageEnrollmentsDropdown({
       <Dropdown.Item as="button" type="button" disabled={!canEdit} onClick={onInvite}>
         <i className="bi bi-person-plus me-2" aria-hidden="true" />
         Invite students
+      </Dropdown.Item>
+      <Dropdown.Item as="button" type="button" disabled={!canEdit} onClick={onSync}>
+        <i className="bi bi-arrow-left-right me-2" aria-hidden="true" />
+        Synchronize student list
       </Dropdown.Item>
 
       <Dropdown.Divider />
@@ -270,13 +277,46 @@ function StudentsCard({
     initialData: initialStudents,
   });
 
+  const queryClient = useQueryClient();
+
   const [showInvite, setShowInvite] = useState(false);
+  const [showSync, setShowSync] = useState(false);
   const [copiedEnrollLink, setCopiedEnrollLink] = useState(false);
 
   const handleCopyEnrollLink = async () => {
     await copyToClipboard(selfEnrollLink);
     setCopiedEnrollLink(true);
     setTimeout(() => setCopiedEnrollLink(false), 2000);
+  };
+
+  const syncStudents = async (
+    toInvite: string[],
+    toCancelInvitation: string[],
+    toRemove: string[],
+  ): Promise<void> => {
+    const body = {
+      __action: 'sync_students',
+      __csrf_token: csrfToken,
+      toInvite,
+      toCancelInvitation,
+      toRemove,
+    };
+    const res = await fetch(window.location.href, {
+      method: 'POST',
+      body: JSON.stringify(body),
+      headers: { 'Content-Type': 'application/json', Accept: 'application/json' },
+    });
+    const json = await res.json();
+    if (!res.ok) {
+      throw new Error(json.error);
+    }
+    const { job_sequence_id } = z
+      .object({
+        job_sequence_id: z.string(),
+      })
+      .parse(json);
+
+    window.location.href = getCourseInstanceJobSequenceUrl(courseInstance.id, job_sequence_id);
   };
 
   const inviteStudents = async (uids: string[]): Promise<void> => {
@@ -485,13 +525,19 @@ function StudentsCard({
           hasSelection: false,
         }}
         headerButtons={
-          courseInstance.modern_publishing ? (
+          courseInstance.modern_publishing && (
             <ManageEnrollmentsDropdown
               courseInstance={courseInstance}
               authzData={authzData}
               onInvite={() => setShowInvite(true)}
+              onSync={() => {
+                // Reload the latest student data so that the preview of sync actions
+                // will be as accurate as possible.
+                void queryClient.invalidateQueries({ queryKey: ['enrollments', 'students'] });
+                setShowSync(true);
+              }}
             />
-          ) : undefined
+          )
         }
         globalFilter={{
           placeholder: 'Search by UID, name, email...',
@@ -576,6 +622,13 @@ function StudentsCard({
         courseInstance={courseInstance}
         onHide={() => setShowInvite(false)}
         onSubmit={inviteStudents}
+      />
+      <SyncStudentsModal
+        show={showSync}
+        courseInstance={courseInstance}
+        students={students}
+        onHide={() => setShowSync(false)}
+        onSubmit={syncStudents}
       />
     </>
   );

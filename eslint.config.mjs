@@ -237,8 +237,5 @@ export default [
     'apps/*/dist/*',
     'apps/prairielearn/public/build/*',
     'packages/*/dist/*',
-
-    // News items
-    'apps/prairielearn/src/news_items/*',
   ]),
 ];

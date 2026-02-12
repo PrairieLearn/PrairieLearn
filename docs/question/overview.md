@@ -17,11 +17,13 @@ A question is made up of three main components:
 To create a new question through the PrairieLearn web interface:
 
 1. Navigate to the **Questions** tab in your course.
-2. Click the **Add Question** button.
-3. Choose a starting point:
-   - **Blank question**: Creates an empty question with just the essential files.
-   - **Template**: You can select one of PrairieLearn's pre-built question templates to use as a starting point, or [create your own template](#custom-templates). Templates provide pre-configured structures that can speed up question creation.
-4. Enter a Question ID (QID) for your new question and click **Create**.
+2. Click the **Add question** button.
+3. Enter a title and Question ID (QID) for your new question.
+4. Choose a starting point:
+   - **Empty question**: Creates a blank question with just the essential files (`question.html` and `server.py`).
+   - **PrairieLearn template**: Start from one of PrairieLearn's pre-built question templates.
+   - **Course template**: Start from a template defined in your course. See [Custom templates](#custom-templates) for details.
+5. Click **Create question**.
 
 !!! tip
 

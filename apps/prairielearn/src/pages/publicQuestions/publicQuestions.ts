@@ -33,7 +33,6 @@ router.get(
           showAddQuestionButton: false,
           qidPrefix,
           urlPrefix: res.locals.urlPrefix,
-          __csrf_token: res.locals.__csrf_token,
         }),
       }),
     );

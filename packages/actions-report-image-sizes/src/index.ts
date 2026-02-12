@@ -2,6 +2,10 @@ import * as core from '@actions/core';
 import * as github from '@actions/github';
 import { z } from 'zod';
 
+const CI_REPORT_MARKER = '<!-- ci-report -->';
+const SECTION_START = '<!-- image-sizes -->';
+const SECTION_END = '<!-- /image-sizes -->';
+
 interface ChangedImage {
   name: string;
   platform: string | null;
@@ -197,6 +201,25 @@ async function getAllImagesFromRegistry({
   return sizes;
 }
 
+function upsertSection(existingBody: string | null, newSection: string): string {
+  if (!existingBody) {
+    return `${CI_REPORT_MARKER}\n${newSection}`;
+  }
+
+  const startIdx = existingBody.indexOf(SECTION_START);
+  const endIdx = existingBody.indexOf(SECTION_END);
+
+  if (startIdx !== -1 && endIdx !== -1) {
+    // Replace existing section.
+    return (
+      existingBody.slice(0, startIdx) + newSection + existingBody.slice(endIdx + SECTION_END.length)
+    );
+  }
+
+  // Append section.
+  return existingBody + '\n' + newSection;
+}
+
 async function commentSizeReport(title: string, changedImages: ChangedImage[]) {
   // Don't comment if there were no changed images.
   if (changedImages.length === 0) return;
@@ -220,11 +243,13 @@ async function commentSizeReport(title: string, changedImages: ChangedImage[]) {
     },
   );
 
+  // Look for the shared CI report comment, or fall back to the old format.
   const existingComment = comments.find(
     (comment) =>
-      (comment.body?.startsWith(`## ${title}`) /* Old format */ ||
-        comment.body?.startsWith(`<details><summary><b>${title}</b>`)) &&
-      comment.user?.login === 'github-actions[bot]',
+      comment.user?.login === 'github-actions[bot]' &&
+      (comment.body?.includes(CI_REPORT_MARKER) ||
+        comment.body?.startsWith(`## ${title}`) ||
+        comment.body?.startsWith(`<details><summary><b>${title}</b>`)),
   );
 
   // Sort images by name and platform.
@@ -256,11 +281,11 @@ async function commentSizeReport(title: string, changedImages: ChangedImage[]) {
     summaryLine = 'No significant size changes';
   }
 
-  // Generate new comment body with collapsible format.
+  // Generate section content.
   const lines = [
-    `<details><summary><b>${title}</b></summary>`,
+    SECTION_START,
+    `<details><summary><b>${title}</b> — ${summaryLine}</summary>`,
     '',
-    // Markdown table header
     '| Image | Platform | Old Size | New Size | Change |',
     '| --- | --- | --- | --- | --- |',
   ];
@@ -284,20 +309,26 @@ async function commentSizeReport(title: string, changedImages: ChangedImage[]) {
     );
   }
 
-  lines.push('', '</details>', '', summaryLine);
+  lines.push('', '</details>', SECTION_END);
 
-  const body = lines.join('\n');
+  const section = lines.join('\n');
+
+  // If migrating from old format (no CI_REPORT_MARKER), start fresh with the new format.
+  const existingBody = existingComment?.body?.includes(CI_REPORT_MARKER)
+    ? existingComment.body
+    : null;
+  const body = upsertSection(existingBody, section);
 
   // Update or create comment.
   if (existingComment) {
-    octokit.rest.issues.updateComment({
+    await octokit.rest.issues.updateComment({
       owner: github.context.repo.owner,
       repo: github.context.repo.repo,
       comment_id: existingComment.id,
       body,
     });
   } else {
-    octokit.rest.issues.createComment({
+    await octokit.rest.issues.createComment({
       owner: github.context.repo.owner,
       repo: github.context.repo.repo,
       issue_number: prNumber,

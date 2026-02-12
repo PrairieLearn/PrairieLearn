@@ -15,6 +15,7 @@
     "reteps.htmlmustache-lsp",
     "supabase.postgrestools",
     "tamasfe.even-better-toml",
-    "vitest.explorer"
+    "vitest.explorer",
+    "webpro.vscode-knip"
   ]
 }

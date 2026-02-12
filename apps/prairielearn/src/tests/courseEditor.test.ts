@@ -40,7 +40,7 @@ const courseInstancesUrl = `${courseUrl}/course_admin/instances`;
 
 const courseInstanceUrl = baseUrl + '/course_instance/1/instructor';
 
-const questionsUrl = `${courseInstanceUrl}/course_admin/questions`;
+const questionCreateUrl = `${courseInstanceUrl}/course_admin/questions/create`;
 const assessmentsUrl = `${courseInstanceUrl}/instance_admin/assessments`;
 
 const newQuestionUrl = `${courseInstanceUrl}/question/2/settings`;
@@ -77,8 +77,8 @@ function getCourseInstanceCreatePostInfo(page: cheerio.Cheerio<any>) {
 
 const testEditData: EditData[] = [
   {
-    url: questionsUrl,
-    formSelector: '#createQuestionModal',
+    url: questionCreateUrl,
+    formSelector: 'form[method="POST"]',
     action: 'add_question',
     info: 'questions/New_1/info.json',
     data: {
@@ -101,8 +101,8 @@ const testEditData: EditData[] = [
   },
   {
     // Create a question with a template question as the starting point
-    url: questionsUrl,
-    formSelector: '#createQuestionModal',
+    url: questionCreateUrl,
+    formSelector: 'form[method="POST"]',
     action: 'add_question',
     info: 'questions/custom_id/info.json',
     data: {

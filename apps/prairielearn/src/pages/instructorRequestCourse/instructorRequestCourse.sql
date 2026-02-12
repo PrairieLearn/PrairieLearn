@@ -40,36 +40,6 @@ WHERE
 LIMIT
   1;
 
--- BLOCK insert_course_request
-INSERT INTO
-  course_requests (
-    short_name,
-    title,
-    user_id,
-    github_user,
-    first_name,
-    last_name,
-    work_email,
-    institution,
-    referral_source,
-    approved_status
-  )
-VALUES
-  (
-    $short_name,
-    $title,
-    $user_id,
-    $github_user,
-    $first_name,
-    $last_name,
-    $work_email,
-    $institution,
-    $referral_source,
-    'pending'
-  )
-RETURNING
-  course_requests.id AS course_request_id;
-
 -- BLOCK can_auto_create_course
 SELECT
   (

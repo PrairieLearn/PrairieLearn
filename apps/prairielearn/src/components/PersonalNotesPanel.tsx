@@ -71,7 +71,7 @@ export function PersonalNotesPanel({
                   `
                 : !authz_result.authorized_edit
                   ? html`
-                      <div class="alert alert-warning mt-2" role="alert">
+                      <div class="alert alert-warning mb-0" role="alert">
                         You are viewing the ${context} instance of a different user and so are not
                         authorized to add or delete personal notes.
                       </div>

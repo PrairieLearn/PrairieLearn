@@ -1,6 +1,6 @@
 import { type Column, type Table } from '@tanstack/react-table';
 import clsx from 'clsx';
-import { type JSX, useEffect, useRef, useState } from 'react';
+import { type ReactNode, useEffect, useRef, useState } from 'react';
 import Button from 'react-bootstrap/Button';
 import Dropdown from 'react-bootstrap/Dropdown';
 
@@ -195,7 +195,7 @@ function ColumnItem<RowDataModel>({
 
 interface ColumnManagerProps<RowDataModel> {
   table: Table<RowDataModel>;
-  topContent?: JSX.Element;
+  topContent?: ReactNode;
 }
 
 /**
