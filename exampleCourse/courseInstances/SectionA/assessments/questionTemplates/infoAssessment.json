@@ -9,10 +9,10 @@
       "title": "Basic questions: no randomization",
       "questions": [
         { "id": "template/multiple-choice/fixed", "points": 1 },
-        { "id": "template/multiple-choice/dropdown", "points": 1 },
-        { "id": "template/multiple-choice/true-false", "points": 1 },
         { "id": "template/multiple-choice/all-of-the-above", "points": 1 },
         { "id": "template/multiple-choice/none-of-the-above", "points": 1 },
+        { "id": "template/multiple-choice/true-false", "points": 1 },
+        { "id": "template/multiple-choice/dropdown", "points": 1 },
         { "id": "template/checkbox/fixed", "points": 1 },
         { "id": "template/integer-input/fixed", "points": 1 },
         { "id": "template/number-input/fixed", "points": 1 },
