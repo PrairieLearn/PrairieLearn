@@ -37,7 +37,6 @@ describe('Student labels syncing', () => {
     it('syncs student labels from JSON to database', async () => {
       const courseData = util.getCourseData();
 
-      // Add student labels to course instance
       courseData.courseInstances[util.COURSE_INSTANCE_ID].courseInstance.studentLabels = [
         { uuid: crypto.randomUUID(), name: 'Section A', color: 'blue1' },
         { uuid: crypto.randomUUID(), name: 'Section B', color: 'green1' },
@@ -64,7 +63,6 @@ describe('Student labels syncing', () => {
       const uuid2 = crypto.randomUUID();
       const { courseData, courseDir } = await util.createAndSyncCourseData();
 
-      // Add initial labels
       courseData.courseInstances[util.COURSE_INSTANCE_ID].courseInstance.studentLabels = [
         { uuid: uuid1, name: 'Section A', color: 'blue1' },
       ];
@@ -74,7 +72,6 @@ describe('Student labels syncing', () => {
       let syncedLabels = await findSyncedStudentLabels(util.COURSE_INSTANCE_ID);
       assert.equal(syncedLabels.length, 1);
 
-      // Add another label
       courseData.courseInstances[util.COURSE_INSTANCE_ID].courseInstance.studentLabels = [
         { uuid: uuid1, name: 'Section A', color: 'blue1' },
         { uuid: uuid2, name: 'Section B', color: 'green1' },
@@ -91,7 +88,6 @@ describe('Student labels syncing', () => {
       const uuid2 = crypto.randomUUID();
       const courseData = util.getCourseData();
 
-      // Add two labels
       courseData.courseInstances[util.COURSE_INSTANCE_ID].courseInstance.studentLabels = [
         { uuid: uuid1, name: 'Section A', color: 'blue1' },
         { uuid: uuid2, name: 'Section B', color: 'green1' },
@@ -103,7 +99,6 @@ describe('Student labels syncing', () => {
       let syncedLabels = await findSyncedStudentLabels(util.COURSE_INSTANCE_ID);
       assert.equal(syncedLabels.length, 2);
 
-      // Remove one label
       courseData.courseInstances[util.COURSE_INSTANCE_ID].courseInstance.studentLabels = [
         { uuid: uuid1, name: 'Section A', color: 'blue1' },
       ];
@@ -119,7 +114,6 @@ describe('Student labels syncing', () => {
       const uuid1 = crypto.randomUUID();
       const courseData = util.getCourseData();
 
-      // Add a label
       courseData.courseInstances[util.COURSE_INSTANCE_ID].courseInstance.studentLabels = [
         { uuid: uuid1, name: 'Section A', color: 'blue1' },
       ];
@@ -131,7 +125,6 @@ describe('Student labels syncing', () => {
       assert.equal(syncedLabels.length, 1);
       assert.equal(syncedLabels[0].color, 'blue1');
 
-      // Update the color
       courseData.courseInstances[util.COURSE_INSTANCE_ID].courseInstance.studentLabels = [
         { uuid: uuid1, name: 'Section A', color: 'red1' },
       ];
@@ -146,7 +139,6 @@ describe('Student labels syncing', () => {
     it('deletes all labels when studentLabels is undefined', async () => {
       const courseData = util.getCourseData();
 
-      // Add labels first
       courseData.courseInstances[util.COURSE_INSTANCE_ID].courseInstance.studentLabels = [
         { uuid: crypto.randomUUID(), name: 'Section A', color: 'blue1' },
         { uuid: crypto.randomUUID(), name: 'Section B', color: 'green1' },
@@ -158,7 +150,6 @@ describe('Student labels syncing', () => {
       let syncedLabels = await findSyncedStudentLabels(util.COURSE_INSTANCE_ID);
       assert.equal(syncedLabels.length, 2);
 
-      // Remove studentLabels (undefined)
       delete courseData.courseInstances[util.COURSE_INSTANCE_ID].courseInstance.studentLabels;
 
       await util.overwriteAndSyncCourseData(courseData, courseDir);
@@ -170,7 +161,6 @@ describe('Student labels syncing', () => {
     it('deletes all labels when studentLabels is empty array', async () => {
       const courseData = util.getCourseData();
 
-      // Add labels first
       courseData.courseInstances[util.COURSE_INSTANCE_ID].courseInstance.studentLabels = [
         { uuid: crypto.randomUUID(), name: 'Section A', color: 'blue1' },
       ];
@@ -181,7 +171,6 @@ describe('Student labels syncing', () => {
       let syncedLabels = await findSyncedStudentLabels(util.COURSE_INSTANCE_ID);
       assert.equal(syncedLabels.length, 1);
 
-      // Set to empty array
       courseData.courseInstances[util.COURSE_INSTANCE_ID].courseInstance.studentLabels = [];
 
       await util.overwriteAndSyncCourseData(courseData, courseDir);
@@ -194,7 +183,6 @@ describe('Student labels syncing', () => {
       const uuid1 = crypto.randomUUID();
       const courseData = util.getCourseData();
 
-      // Add a label
       courseData.courseInstances[util.COURSE_INSTANCE_ID].courseInstance.studentLabels = [
         { uuid: uuid1, name: 'Section A', color: 'blue1' },
       ];
@@ -207,7 +195,6 @@ describe('Student labels syncing', () => {
       const originalLabel = syncedLabels[0];
       assert.equal(originalLabel.name, 'Section A');
 
-      // Create an enrollment and add it to the label
       const course = await selectCourseByShortName('TEST 101');
       const courseInstance = await selectCourseInstanceByShortName({
         course,
@@ -233,7 +220,6 @@ describe('Student labels syncing', () => {
         authzData: dangerousFullSystemAuthz(),
       });
 
-      // Rename the label (same UUID, different name)
       courseData.courseInstances[util.COURSE_INSTANCE_ID].courseInstance.studentLabels = [
         { uuid: uuid1, name: 'Section 1', color: 'blue1' },
       ];
@@ -311,7 +297,6 @@ describe('Student labels syncing', () => {
         authzData: dangerousFullSystemAuthz(),
       });
 
-      // Remove label by syncing without it
       courseData.courseInstances[util.COURSE_INSTANCE_ID].courseInstance.studentLabels = [];
       await util.overwriteAndSyncCourseData(courseData, courseDir);
 

@@ -39,6 +39,7 @@ function assertEnrollmentMatchesLabel(enrollment: Enrollment, label: StudentLabe
 
 /**
  * Creates a new student label in the given course instance.
+ * Should only be called by sync code and tests.
  */
 export async function createStudentLabel({
   courseInstance,
@@ -88,6 +89,8 @@ export async function selectStudentLabelById({
 
 /**
  * Deletes a student label.
+ *
+ * Should only be called by sync code and tests.
  */
 export async function deleteStudentLabel(label: StudentLabel): Promise<StudentLabel> {
   return await queryRow(sql.delete_student_label, { id: label.id }, StudentLabelSchema);
