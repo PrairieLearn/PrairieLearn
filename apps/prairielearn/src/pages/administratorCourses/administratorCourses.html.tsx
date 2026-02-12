@@ -1,11 +1,15 @@
 import { useState } from 'react';
+import type { z } from 'zod';
 
 import { OverlayTrigger } from '@prairielearn/ui';
 
 import { CourseRequestsTable } from '../../components/CourseRequestsTable.js';
+import type { RawAdminInstitutionSchema } from '../../lib/client/safe-db-types.js';
 import type { CourseRequestRow } from '../../lib/course-request.js';
 
-import type { AdminInstitution, CourseWithInstitution } from './administratorCourses.shared.js';
+import type { CourseWithInstitution } from './administratorCourses.shared.js';
+
+type AdminInstitution = z.infer<typeof RawAdminInstitutionSchema>;
 
 export function AdministratorCourses({
   courseRequests,
@@ -25,7 +29,7 @@ export function AdministratorCourses({
   courseRepoDefaultBranch: string;
 }) {
   const [showInsertCoursePopover, setShowInsertCoursePopover] = useState(false);
-  const [showDeleteCoursePopover, setShowDeleteCoursePopover] = useState(false);
+  const [deleteCourseId, setDeleteCourseId] = useState<string | null>(null);
 
   return (
     <>
@@ -136,13 +140,13 @@ export function AdministratorCourses({
                               id={`courseDeleteButton${course.id}`}
                               course={course}
                               csrfToken={csrfToken}
-                              onCancel={() => setShowDeleteCoursePopover(false)}
+                              onCancel={() => setDeleteCourseId(null)}
                             />
                           ),
                         }}
-                        show={showDeleteCoursePopover}
+                        show={deleteCourseId === course.id}
                         rootClose
-                        onToggle={setShowDeleteCoursePopover}
+                        onToggle={(open) => setDeleteCourseId(open ? course.id : null)}
                       >
                         <button className="btn btn-sm btn-danger text-nowrap">
                           <i className="fa fa-times" aria-hidden="true" /> Delete course
@@ -198,8 +202,8 @@ function CourseDeleteForm({
           name="confirm_short_name"
         />
       </div>
-      <div className="text-end">
-        <button type="button" className="btn btn-secondary" onClick={onCancel}>
+      <div className="d-flex justify-content-end gap-2">
+        <button type="button" className="btn btn-secondary gap-2" onClick={onCancel}>
           Cancel
         </button>
         <button type="submit" className="btn btn-danger">
@@ -322,7 +326,7 @@ function CourseInsertForm({
           defaultValue={courseRepoDefaultBranch}
         />
       </div>
-      <div className="text-end">
+      <div className="d-flex flex-wrap gap-1">
         <button type="button" className="btn btn-secondary" onClick={onCancel}>
           Cancel
         </button>
@@ -371,7 +375,7 @@ function CourseUpdateColumn({
         rootClose
         onToggle={setShowPopover}
       >
-        <button className="btn btn-xs btn-secondary">
+        <button className="btn btn-xs btn-secondary ms-1">
           <i className="fa fa-edit" aria-hidden="true" />
         </button>
       </OverlayTrigger>
@@ -407,7 +411,7 @@ function CourseUpdateColumnForm({
           aria-label={label}
         />
       </div>
-      <div className="text-end">
+      <div className="d-flex justify-content-end gap-2">
         <button type="button" className="btn btn-secondary" onClick={onCancel}>
           Cancel
         </button>

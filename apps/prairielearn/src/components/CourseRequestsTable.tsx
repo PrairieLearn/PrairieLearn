@@ -1,13 +1,16 @@
 import { useState } from 'react';
 import { Dropdown } from 'react-bootstrap';
+import type { z } from 'zod';
 
 import { OverlayTrigger } from '@prairielearn/ui';
 
+import type { RawAdminInstitutionSchema } from '../lib/client/safe-db-types.js';
 import { getAdministratorCourseRequestsUrl } from '../lib/client/url.js';
 import type { CourseRequestRow } from '../lib/course-request.js';
-import type { Institution } from '../lib/db-types.js';
 
 import { JobStatus } from './JobStatus.js';
+
+type AdminInstitution = z.infer<typeof RawAdminInstitutionSchema>;
 
 export function CourseRequestsTable({
   rows,
@@ -18,7 +21,7 @@ export function CourseRequestsTable({
   urlPrefix,
 }: {
   rows: CourseRequestRow[];
-  institutions: Institution[];
+  institutions: AdminInstitution[];
   coursesRoot: string;
   showAll: boolean;
   csrfToken: string;
@@ -92,7 +95,7 @@ function CourseRequestTableRow({
   urlPrefix,
 }: {
   row: CourseRequestRow;
-  institutions: Institution[];
+  institutions: AdminInstitution[];
   coursesRoot: string;
   showAll: boolean;
   csrfToken: string;
@@ -128,9 +131,9 @@ function CourseRequestTableRow({
               (row.approved_by_name ?? 'Automatically Approved')}
           </td>
         )}
-        <td className="align-middle">
+        <td className="align-middle py-1">
           {row.approved_status !== 'approved' && (
-            <>
+            <div className="d-flex flex-wrap gap-1">
               <OverlayTrigger
                 trigger="click"
                 placement="auto"
@@ -148,7 +151,7 @@ function CourseRequestTableRow({
                 rootClose
                 onToggle={setShowDenyPopover}
               >
-                <button className="btn btn-sm btn-danger text-nowrap me-2">
+                <button className="btn btn-sm btn-danger text-nowrap">
                   <i className="fa fa-times" aria-hidden="true" /> Deny
                 </button>
               </OverlayTrigger>
@@ -175,12 +178,12 @@ function CourseRequestTableRow({
                   <i className="fa fa-check" aria-hidden="true" /> Approve
                 </button>
               </OverlayTrigger>
-            </>
+            </div>
           )}
         </td>
         <td className="align-middle">
           <Dropdown>
-            <Dropdown.Toggle variant="secondary" size="sm">
+            <Dropdown.Toggle variant="secondary" size="sm" className="btn-xs">
               Show details
             </Dropdown.Toggle>
             <Dropdown.Menu>
@@ -262,7 +265,7 @@ function CourseRequestApproveForm({
   onCancel,
 }: {
   request: CourseRequestRow;
-  institutions: Institution[];
+  institutions: AdminInstitution[];
   coursesRoot: string;
   csrfToken: string;
   onCancel: () => void;
@@ -372,7 +375,7 @@ function CourseRequestApproveForm({
         />
       </div>
 
-      <div className="text-end">
+      <div className="d-flex justify-content-end gap-2">
         <button type="button" className="btn btn-secondary" onClick={onCancel}>
           Cancel
         </button>
@@ -394,7 +397,7 @@ function CourseRequestDenyForm({
   onCancel: () => void;
 }) {
   return (
-    <form method="POST">
+    <form method="POST" className="d-flex justify-content-end gap-2">
       <input type="hidden" name="__csrf_token" value={csrfToken} />
       <input type="hidden" name="__action" value="deny_course_request" />
       <input type="hidden" name="approve_deny_action" value="deny" />
