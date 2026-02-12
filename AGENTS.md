@@ -122,6 +122,7 @@ When working with assessment "groups" / "teams", see the [`groups-and-teams` ski
 
 - Use `react-bootstrap` components for UI elements.
 - Titles and buttons should use sentence case ("Save course", "Discard these changes").
+- Form inputs with validation errors should include `aria-invalid` and `aria-errormessage` attributes pointing to the error message element's `id`.
 
 ### Testing
 
@@ -160,6 +161,7 @@ The PrairieLearn web application renders HTML in one of two ways:
 - Pass `res.locals` to `getPageContext` to get information about the course instance / authentication state.
 - If you hydrate a component with `Hydrate`, you must register the component with `registerHydratedComponent` in a file in `apps/prairielearn/assets/scripts/esm-bundles/hydrated-components`.
 - Don't use `useMemo` for cheap computations. Use `run` from `@prairielearn/run` instead (an IIFE helper that executes a function immediately).
+- Avoid unnecessary `useEffect` when using `react-hook-form`. The `watch()` function returns reactive values that trigger re-renders automatically, so derived state can be computed directly without `useEffect`.
 
 ## Python guidance
 
