@@ -22,6 +22,7 @@ export const DEV_EXECUTION_MODE = IS_VITEST ? 'test' : IS_VITE ? 'hmr' : 'dev';
 const TokenPricingSchema = z.object({
   input: z.number().nonnegative(),
   cachedInput: z.number().nonnegative(),
+  cacheWrite: z.number().nonnegative(),
   output: z.number().nonnegative(),
 });
 
@@ -162,7 +163,6 @@ export const ConfigSchema = z.object({
   fileUploadMaxParts: z.number().default(1000),
   fileStoreS3Bucket: z.string().default('file-store'),
   fileStoreStorageTypeDefault: z.enum(['S3', 'FileSystem']).default('S3'),
-  initNewsItems: z.boolean().default(true),
   cronActive: z.boolean().default(true),
   /**
    * A list of cron job names that should be run. If this is set to a non-null
@@ -596,6 +596,7 @@ export const ConfigSchema = z.object({
       'gpt-5-mini-2025-08-07': TokenPricingSchema,
       'gpt-5-2025-08-07': TokenPricingSchema,
       'gpt-5.1-2025-11-13': TokenPricingSchema,
+      'gpt-5.2-2025-12-11': TokenPricingSchema,
       'gemini-2.5-flash': TokenPricingSchema,
       'gemini-3-flash-preview': TokenPricingSchema,
       'gemini-3-pro-preview': TokenPricingSchema,
@@ -606,22 +607,26 @@ export const ConfigSchema = z.object({
     .default({
       // Prices current as of 2025-11-26. Values obtained from
       // https://platform.openai.com/docs/pricing
-      'gpt-4o-2024-11-20': { input: 2.5, cachedInput: 1.25, output: 10 },
-      'gpt-5-mini-2025-08-07': { input: 0.25, cachedInput: 0.025, output: 2 },
-      'gpt-5-2025-08-07': { input: 1.25, cachedInput: 0.125, output: 10 },
-      'gpt-5.1-2025-11-13': { input: 1.25, cachedInput: 0.125, output: 10 },
+      // OpenAI does not charge for cache writes.
+      'gpt-4o-2024-11-20': { input: 2.5, cachedInput: 1.25, cacheWrite: 0, output: 10 },
+      'gpt-5-mini-2025-08-07': { input: 0.25, cachedInput: 0.025, cacheWrite: 0, output: 2 },
+      'gpt-5-2025-08-07': { input: 1.25, cachedInput: 0.125, cacheWrite: 0, output: 10 },
+      'gpt-5.1-2025-11-13': { input: 1.25, cachedInput: 0.125, cacheWrite: 0, output: 10 },
+      'gpt-5.2-2025-12-11': { input: 1.75, cachedInput: 0.175, cacheWrite: 0, output: 14 },
 
       // Prices current as of 2025-11-25. Values obtained from
       // https://ai.google.dev/gemini-api/docs/pricing
-      'gemini-2.5-flash': { input: 0.3, cachedInput: 0.03, output: 2.5 },
-      'gemini-3-flash-preview': { input: 0.5, cachedInput: 0.05, output: 3 },
-      'gemini-3-pro-preview': { input: 2, cachedInput: 0.2, output: 12 },
+      // Google does not charge for cache writes.
+      'gemini-2.5-flash': { input: 0.3, cachedInput: 0.03, cacheWrite: 0, output: 2.5 },
+      'gemini-3-flash-preview': { input: 0.5, cachedInput: 0.05, cacheWrite: 0, output: 3 },
+      'gemini-3-pro-preview': { input: 2, cachedInput: 0.2, cacheWrite: 0, output: 12 },
 
       // Prices current as of 2025-11-25. Values obtained from
-      // https://www.claude.com/pricing#api
-      'claude-haiku-4-5': { input: 1, cachedInput: 0.1, output: 5 },
-      'claude-sonnet-4-5': { input: 3, cachedInput: 0.3, output: 15 },
-      'claude-opus-4-5': { input: 5, cachedInput: 0.5, output: 25 },
+      // https://www.anthropic.com/pricing#api
+      // Anthropic charges 1.25x the input price for cache writes.
+      'claude-haiku-4-5': { input: 1, cachedInput: 0.1, cacheWrite: 1.25, output: 5 },
+      'claude-sonnet-4-5': { input: 3, cachedInput: 0.3, cacheWrite: 3.75, output: 15 },
+      'claude-opus-4-5': { input: 5, cachedInput: 0.5, cacheWrite: 6.25, output: 25 },
     }),
   exampleCoursePath: z.string().default('./exampleCourse'),
 });

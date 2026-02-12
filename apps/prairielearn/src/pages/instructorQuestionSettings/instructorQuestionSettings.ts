@@ -18,6 +18,7 @@ import {
 import { b64EncodeUnicode } from '../../lib/base64-util.js';
 import { copyQuestionBetweenCourses } from '../../lib/copy-content.js';
 import { EnumGradingMethodSchema } from '../../lib/db-types.js';
+import { propertyValueWithDefault } from '../../lib/editorUtil.shared.js';
 import {
   FileModifyEditor,
   MultiEditor,
@@ -25,7 +26,6 @@ import {
   QuestionDeleteEditor,
   QuestionRenameEditor,
   getOriginalHash,
-  propertyValueWithDefault,
 } from '../../lib/editors.js';
 import { features } from '../../lib/features/index.js';
 import { courseRepoContentUrl } from '../../lib/github.js';

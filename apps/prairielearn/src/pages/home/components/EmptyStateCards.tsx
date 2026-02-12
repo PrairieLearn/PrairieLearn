@@ -46,7 +46,7 @@ export function EmptyStateCards({
                   Request course
                 </a>
                 <a
-                  href="https://prairielearn.readthedocs.io/en/latest"
+                  href="https://docs.prairielearn.com"
                   className="btn btn-outline-primary flex-fill d-flex gap-2 justify-content-center"
                   target="_blank"
                   rel="noopener noreferrer"

@@ -1,18 +1,20 @@
-import type {
-  GenerateObjectResult,
-  GenerateTextResult,
-  LanguageModelUsage,
-  ModelMessage,
-  UserContent,
+import {
+  type GenerateObjectResult,
+  type GenerateTextResult,
+  type LanguageModel,
+  type LanguageModelUsage,
+  type ModelMessage,
+  type UserContent,
+  generateObject,
 } from 'ai';
 import * as cheerio from 'cheerio';
 import { Redis } from 'ioredis';
 import mustache from 'mustache';
+import sharp from 'sharp';
 import { z } from 'zod';
 
 import { logger } from '@prairielearn/logger';
 import {
-  callRow,
   execute,
   loadSqlEquiv,
   queryRow,
@@ -21,9 +23,11 @@ import {
 } from '@prairielearn/postgres';
 import { run } from '@prairielearn/run';
 import * as Sentry from '@prairielearn/sentry';
+import { assertNever } from '@prairielearn/utils';
 import { IdSchema } from '@prairielearn/zod';
 
-import { calculateResponseCost, formatPrompt } from '../../../lib/ai.js';
+import { calculateResponseCost, formatPrompt } from '../../../lib/ai-util.js';
+import { updateAssessmentInstanceGrade } from '../../../lib/assessment-grading.js';
 import { config } from '../../../lib/config.js';
 import {
   AssessmentQuestionSchema,
@@ -33,7 +37,6 @@ import {
   InstanceQuestionSchema,
   type RubricItem,
   RubricItemSchema,
-  SprocAssessmentInstancesGradeSchema,
   type Submission,
   SubmissionSchema,
   type Variant,
@@ -43,6 +46,7 @@ import * as ltiOutcomes from '../../../lib/ltiOutcomes.js';
 import { RedisRateLimiter } from '../../../lib/redis-rate-limiter.js';
 
 import type { AiGradingModelId } from './ai-grading-models.shared.js';
+import { type CounterClockwiseRotationDegrees, RotationCorrectionOutputSchema } from './types.js';
 
 const sql = loadSqlEquiv(import.meta.url);
 
@@ -223,14 +227,75 @@ export function generateSubmissionMessage({
   submission_text: string;
   submitted_answer: Record<string, any> | null;
 }): ModelMessage {
-  const content: UserContent = [];
+  const segments = parseSubmission({
+    submission_text,
+    submitted_answer,
+  });
 
-  // Walk through the submitted HTML from top to bottom, appending alternating text and image segments
-  // to the message content to construct an AI-readable version of the submission.
+  const content: UserContent = segments.map((segment) => {
+    switch (segment.type) {
+      case 'text':
+        return segment;
+      case 'image':
+        if (segment.fileData) {
+          // fileData does not contain the MIME type header, so we add it.
+          return {
+            type: 'image',
+            image: `data:image/jpeg;base64,${segment.fileData}`,
+            providerOptions: {
+              openai: {
+                imageDetail: 'auto',
+              },
+            },
+          };
+        } else {
+          return {
+            type: 'text',
+            text: `Image capture with ${segment.fileName} was not captured.`,
+          };
+        }
+      default:
+        assertNever(segment);
+    }
+  });
+
+  return {
+    role: 'user',
+    content,
+  };
+}
+
+type SubmissionHTMLSegment =
+  | {
+      type: 'text';
+      text: string;
+    }
+  | {
+      type: 'image';
+      fileName: string;
+      /**
+       * Base64-encoded image data. Does not include MIME type header
+       * If null, the image was not found in the submitted answer.
+       */
+      fileData: string | null;
+    };
+
+/**
+ * Helper function that returns parsed text and image segments from the HTML of a student submission.
+ */
+function parseSubmission({
+  submission_text,
+  submitted_answer,
+}: {
+  submission_text: string;
+  submitted_answer: Record<string, any> | null;
+}): SubmissionHTMLSegment[] {
+  const segments: SubmissionHTMLSegment[] = [];
 
   const $submission_html = cheerio.load(submission_text);
   let submissionTextSegment = '';
 
+  // Walk through the submitted HTML from top to bottom, appending alternating text and image segments.
   $submission_html
     .root()
     .find('body')
@@ -240,7 +305,7 @@ export function generateSubmissionMessage({
       if (imageCaptureUUID) {
         if (submissionTextSegment) {
           // Push and reset the current text segment before adding the image.
-          content.push({
+          segments.push({
             type: 'text',
             text: submissionTextSegment.trim(),
           });
@@ -273,41 +338,53 @@ export function generateSubmissionMessage({
         );
 
         if (fileData) {
-          // fileData.contents does not contain the MIME type header, so we add it.
-          content.push({
+          segments.push({
             type: 'image',
-            image: `data:image/jpeg;base64,${fileData.contents}`,
-            providerOptions: {
-              openai: {
-                imageDetail: 'auto',
-              },
-            },
+            fileName: fileData.name,
+            fileData: fileData.contents,
           });
-        } else {
-          // If the submitted answer doesn't contain the image, the student likely
-          // didn't capture an image.
-          content.push({
-            type: 'text',
-            text: `Image capture with ${fileName} was not captured.`,
-          });
-          return;
         }
       } else {
         submissionTextSegment += $submission_html(node).text();
       }
     });
-
   if (submissionTextSegment) {
-    content.push({
+    segments.push({
       type: 'text',
       text: submissionTextSegment.trim(),
     });
   }
 
-  return {
-    role: 'user',
-    content,
-  };
+  return segments;
+}
+
+/**
+ * Returns all images the student submitted via pl-image-capture.
+ * Returns a mapping from an image's filename to its base64-encoded contents.
+ */
+export function extractSubmissionImages({
+  submission_text,
+  submitted_answer,
+}: {
+  submission_text: string;
+  submitted_answer: Record<string, any>;
+}): Record<string, string> {
+  const segments = parseSubmission({
+    submission_text,
+    submitted_answer,
+  });
+
+  const images = segments.reduce(
+    (acc, segment) => {
+      if (segment.type === 'image' && segment.fileData) {
+        acc[segment.fileName] = segment.fileData;
+      }
+      return acc;
+    },
+    {} as Record<string, string>,
+  );
+
+  return images;
 }
 
 export function parseAiRubricItems({
@@ -394,10 +471,92 @@ export async function insertAiGradingJob({
     job_sequence_id,
     prompt: JSON.stringify(prompt),
     completion: response,
+    rotation_correction_degrees: null,
     model: model_id,
     prompt_tokens: response.usage.inputTokens ?? 0,
     completion_tokens: response.usage.outputTokens ?? 0,
     cost: calculateResponseCost({ model: model_id, usage: response.usage }),
+    course_id,
+    course_instance_id,
+  });
+}
+
+/**
+ * Create an AI grading job that performed rotation correction on its submitted images.
+ * This accounts for all responses associated with detecting and correcting rotation issues.
+ *
+ * @param params
+ * @param params.grading_job_id
+ * @param params.job_sequence_id
+ * @param params.model_id
+ * @param params.prompt
+ * @param params.gradingResponseWithRotationIssue - The initial AI grading response, wherein the LLM detected non-upright images.
+ * @param params.rotationCorrections - For each image, the amount of degrees counterclockwise it was rotated and the response of the rotation correction LLM call.
+ * @param params.gradingResponseWithRotationCorrection - The final AI grading response after rotation correction.
+ * @param params.course_id
+ * @param params.course_instance_id
+ */
+export async function insertAiGradingJobWithRotationCorrection({
+  grading_job_id,
+  job_sequence_id,
+  model_id,
+  prompt,
+  gradingResponseWithRotationIssue,
+  rotationCorrections,
+  gradingResponseWithRotationCorrection,
+  course_id,
+  course_instance_id,
+}: {
+  grading_job_id: string;
+  job_sequence_id: string;
+  model_id: AiGradingModelId;
+  prompt: ModelMessage[];
+  gradingResponseWithRotationIssue: GenerateObjectResult<any>;
+  rotationCorrections: Record<
+    string,
+    {
+      degreesRotated: CounterClockwiseRotationDegrees;
+      response: GenerateObjectResult<any>;
+    }
+  >;
+  gradingResponseWithRotationCorrection: GenerateObjectResult<any> | GenerateTextResult<any, any>;
+  course_id: string;
+  course_instance_id?: string;
+}): Promise<void> {
+  let prompt_tokens =
+    (gradingResponseWithRotationIssue.usage.inputTokens ?? 0) +
+    (gradingResponseWithRotationCorrection.usage.inputTokens ?? 0);
+  let completion_tokens =
+    (gradingResponseWithRotationIssue.usage.outputTokens ?? 0) +
+    (gradingResponseWithRotationCorrection.usage.outputTokens ?? 0);
+  let cost =
+    calculateResponseCost({
+      model: model_id,
+      usage: gradingResponseWithRotationIssue.usage,
+    }) +
+    calculateResponseCost({
+      model: model_id,
+      usage: gradingResponseWithRotationCorrection.usage,
+    });
+
+  const rotationCorrectionDegrees: Record<string, CounterClockwiseRotationDegrees> = {};
+  for (const [filename, { degreesRotated, response }] of Object.entries(rotationCorrections)) {
+    prompt_tokens += response.usage.inputTokens ?? 0;
+    completion_tokens += response.usage.outputTokens ?? 0;
+    cost += calculateResponseCost({ model: model_id, usage: response.usage });
+    rotationCorrectionDegrees[filename] = degreesRotated;
+  }
+
+  await execute(sql.insert_ai_grading_job, {
+    grading_job_id,
+    job_sequence_id,
+    prompt: JSON.stringify(prompt),
+    completion: gradingResponseWithRotationCorrection,
+    rotation_correction_degrees: rotationCorrectionDegrees,
+    model: model_id,
+    prompt_tokens,
+    completion_tokens,
+    cost,
     course_id,
     course_instance_id,
   });
@@ -454,18 +613,13 @@ export async function deleteAiGradingJobs({
     );
 
     for (const iq of iqs) {
-      await callRow(
-        'assessment_instances_grade',
-        [
-          iq.assessment_instance_id,
-          // We use the user who is performing the deletion.
-          authn_user_id,
-          100, // credit
-          false, // only_log_if_score_updated
-          true, // allow_decrease
-        ],
-        SprocAssessmentInstancesGradeSchema,
-      );
+      await updateAssessmentInstanceGrade({
+        assessment_instance_id: iq.assessment_instance_id,
+        // We use the user who is performing the deletion.
+        authn_user_id,
+        credit: 100,
+        allowDecrease: true,
+      });
     }
 
     return iqs;
@@ -548,6 +702,168 @@ export async function addAiGradingCostToIntervalUsage({
   await rateLimiter.addToIntervalUsage(getIntervalUsageKey(courseInstance), responseCost);
 }
 
+/**
+ * Rotates a base64-encoded image by the specified counterclockwise rotation.
+ *
+ * @param base64Image - The base64-encoded image to rotate.
+ * @param rotation - The amount of counterclockwise rotation to apply (in degrees).
+ */
+async function rotateBase64Image(
+  base64Image: string,
+  rotation: CounterClockwiseRotationDegrees,
+): Promise<string> {
+  const base64Data = base64Image.replace(/^data:image\/\w+;base64,/, '');
+  const imageBuffer = Buffer.from(base64Data, 'base64');
+
+  // The sharp rotate method uses clockwise rotation, so we convert.
+  const clockwiseRotation = (360 - rotation) % 360;
+
+  const rotatedImageBuffer = await sharp(imageBuffer).rotate(clockwiseRotation).toBuffer();
+  return rotatedImageBuffer.toString('base64');
+}
+
+/**
+ * Reorients a base64-encoded image to be upright using an LLM.
+ * Designed specifically for images of handwritten student submissions.
+ *
+ * The function rotates the image 0, 90, 180, and 270 degrees counterclockwise, then
+ * prompts the LLM to select which of the four images is closest to being upright.
+ *
+ * @param params
+ * @param params.image - The base64-encoded image to correct.
+ * @param params.model - The LLM to use for determining the correct orientation.
+ */
+async function correctImageOrientation({
+  image,
+  model,
+}: {
+  image: string;
+  model: LanguageModel;
+}): Promise<{
+  correctedImage: string;
+  degreesRotated: CounterClockwiseRotationDegrees;
+  response: GenerateObjectResult<any>;
+}> {
+  const rotated90 = await rotateBase64Image(image, 90);
+  const rotated180 = await rotateBase64Image(image, 180);
+  const rotated270 = await rotateBase64Image(image, 270);
+
+  const prompt: ModelMessage[] = [
+    {
+      role: 'system',
+      content: formatPrompt([
+        'Of the four images provided, select the one that is closest to being upright.',
+        'Upright (0 degrees): The handwriting is in a standard reading position already.',
+        "Only use the student's handwriting to determine its orientation. Do not use the background or the page.",
+      ]),
+    },
+  ];
+
+  const images = [image, rotated90, rotated180, rotated270];
+
+  const rotationCorrectionDegrees: CounterClockwiseRotationDegrees[] = [0, 90, 180, 270];
+
+  for (let i = 1; i <= 4; i++) {
+    prompt.push({
+      role: 'user',
+      content: [
+        {
+          type: 'text',
+          text: `${i}:`,
+        },
+        {
+          type: 'image',
+          image: `data:image/jpeg;base64,${images[i - 1]}`,
+          providerOptions: {
+            openai: {
+              imageDetail: 'auto',
+            },
+          },
+        },
+      ],
+    });
+  }
+
+  const response = await generateObject({
+    model,
+    schema: RotationCorrectionOutputSchema,
+    messages: prompt,
+  });
+
+  const index = Number.parseInt(response.object.upright_image) - 1;
+
+  return {
+    correctedImage: images[index],
+    degreesRotated: rotationCorrectionDegrees[index],
+    response,
+  };
+}
+
+/**
+ * Reorients all submitted images to be upright using the provided LLM.
+ *
+ * @param param
+ * @param param.submittedAnswer - The student's submitted answer object.
+ * @param param.submittedImages - A mapping from filenames to base64-encoded images.
+ * @param param.model - The LLM to use for determining the correct orientations.
+ *
+ * @returns An updated submitted answer with corrected images, rotations correction amounts, and LLM responses.
+ */
+export async function correctImagesOrientation({
+  submittedAnswer,
+  /** The key is the filename, and the value is the base64-encoded image */
+  submittedImages,
+  model,
+}: {
+  submittedAnswer: Record<string, any>;
+  submittedImages: Record<string, string>;
+  model: LanguageModel;
+}) {
+  if (!submittedAnswer._files) {
+    return {
+      rotatedSubmittedAnswer: submittedAnswer,
+      rotationCorrections: {},
+    };
+  }
+
+  const rotatedSubmittedAnswer = {
+    ...submittedAnswer,
+    _files: submittedAnswer._files.map((file: { name: string; contents: string }) => ({ ...file })),
+  };
+
+  const rotationCorrections: Record<
+    string,
+    {
+      degreesRotated: CounterClockwiseRotationDegrees;
+      response: GenerateObjectResult<any>;
+    }
+  > = {};
+
+  for (const [filename, image] of Object.entries(submittedImages)) {
+    const { correctedImage, degreesRotated, response } = await correctImageOrientation({
+      image,
+      model,
+    });
+
+    const existingIndex = submittedAnswer._files.findIndex(
+      (file: { name: string; contents: string }) => file.name === filename,
+    );
+
+    if (existingIndex !== -1) {
+      rotatedSubmittedAnswer._files[existingIndex].contents = correctedImage;
+    }
+
+    rotationCorrections[filename] = {
+      degreesRotated,
+      response,
+    };
+  }
+
+  return {
+    rotatedSubmittedAnswer,
+    rotationCorrections,
+  };
+}
 /**
  * Correct malformed AI rubric grading responses from Google Gemini by escaping backslashes in rubric item keys.
  *

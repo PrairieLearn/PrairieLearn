@@ -27,7 +27,7 @@ import {
   getGroupConfig,
   getGroupInfo,
   getQuestionGroupPermissions,
-} from '../lib/teams.js';
+} from '../lib/groups.js';
 import type { SimpleVariantWithScore } from '../models/variant.js';
 
 const sql = sqldb.loadSqlEquiv(import.meta.url);
