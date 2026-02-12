@@ -5,7 +5,11 @@ import { Temporal } from '@js-temporal/polyfill';
 import fs from 'fs-extra';
 import { afterAll, assert, beforeAll, beforeEach, describe, it } from 'vitest';
 
-import { CourseInstanceAccessRuleSchema, CourseInstanceSchema } from '../../lib/db-types.js';
+import {
+  CourseInstanceAccessRuleSchema,
+  CourseInstanceSchema,
+  StudentLabelSchema,
+} from '../../lib/db-types.js';
 import { idsEqual } from '../../lib/id.js';
 import { selectCourseInstanceByUuid } from '../../models/course-instances.js';
 import { selectCourseById } from '../../models/course.js';
@@ -858,5 +862,26 @@ describe('Course instance syncing', () => {
         assert.deepEqual(result, db);
       });
     }
+  });
+
+  it('records a warning if two student labels have the same name and deduplicates them', async () => {
+    const courseData = util.getCourseData();
+    courseData.courseInstances[util.COURSE_INSTANCE_ID].courseInstance.studentLabels = [
+      { uuid: crypto.randomUUID(), name: 'Section A', color: 'red1' },
+      { uuid: crypto.randomUUID(), name: 'Section A', color: 'blue1' },
+    ];
+    const courseDir = await util.writeCourseToTempDirectory(courseData);
+    await util.syncCourseData(courseDir);
+
+    const syncedCourseInstance = await findSyncedCourseInstance(util.COURSE_INSTANCE_ID);
+    assert.isNotNull(syncedCourseInstance.sync_warnings);
+    assert.match(syncedCourseInstance.sync_warnings, /Found duplicates in 'studentLabels'/);
+
+    const syncedLabels = (
+      await util.dumpTableWithSchema('student_labels', StudentLabelSchema)
+    ).filter((l) => idsEqual(l.course_instance_id, syncedCourseInstance.id));
+    assert.lengthOf(syncedLabels, 1);
+    assert.equal(syncedLabels[0].name, 'Section A');
+    assert.equal(syncedLabels[0].color, 'blue1');
   });
 });
