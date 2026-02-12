@@ -42,7 +42,7 @@ export function GroupInfoModal({
           mutation.mutate(
             {
               selection: modalState.ids,
-              closedSubmissionsOnly,
+              closed_instance_questions_only: closedSubmissionsOnly,
             },
             {
               onSuccess: onHide,
@@ -54,7 +54,7 @@ export function GroupInfoModal({
           mutation.mutate(
             {
               selection: 'all',
-              closedSubmissionsOnly,
+              closed_instance_questions_only: closedSubmissionsOnly,
             },
             {
               onSuccess: onHide,
@@ -66,7 +66,7 @@ export function GroupInfoModal({
           mutation.mutate(
             {
               selection: 'ungrouped',
-              closedSubmissionsOnly,
+              closed_instance_questions_only: closedSubmissionsOnly,
             },
             {
               onSuccess: onHide,
