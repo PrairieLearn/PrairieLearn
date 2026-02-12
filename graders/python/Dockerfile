@@ -4,28 +4,22 @@ ARG CACHEBUST=2026-01-15-14-21-34
 # Needed to properly handle UTF-8
 ENV PYTHONIOENCODING=UTF-8
 ENV LANG=en_US.UTF-8
+ENV UV_INSTALL_DIR=/usr/local/bin
+ENV UV_COMPILE_BYTECODE=1 UV_NO_CACHE=1
+ENV PATH="/venv/bin:$PATH"
 
 WORKDIR /
 
 RUN dnf -y update \
-    && dnf install -y \
-    util-linux \
-    sudo \
-    gcc \
-    make \
-    dos2unix \
-    graphviz \
-    graphviz-devel \
+    && dnf install -y util-linux sudo gcc make dos2unix graphviz graphviz-devel tar \
     && dnf clean all \
-    && echo "setting up conda..." \
-    && arch="$(uname -m)" \
-    && curl -LO "https://github.com/conda-forge/miniforge/releases/latest/download/Miniforge3-Linux-${arch}.sh" \
-    && bash "Miniforge3-Linux-${arch}.sh" -b -p /usr/local -f \
-    && rm "Miniforge3-Linux-${arch}.sh" \
-    && /usr/local/bin/conda clean -afy
+    && echo "setting up uv..." \
+    && curl -LO "https://astral.sh/uv/install.sh" \
+    && bash "install.sh" && rm "install.sh" \
+    && uv venv --python-preference managed --python 3.13 /venv
 
 COPY requirements.txt /
-RUN python3 -m pip install --no-cache-dir -r /requirements.txt
+RUN uv pip install -r /requirements.txt
 
 # Copy the source files last to speed up local dev
 COPY python_autograder /python_autograder
