@@ -63,7 +63,7 @@ export function AdministratorCourses({
             rootClose
             onToggle={setShowInsertCoursePopover}
           >
-            <button className="btn btn-sm btn-light ms-auto">
+            <button type="button" className="btn btn-sm btn-light ms-auto">
               <i className="fa fa-plus" aria-hidden="true" />
               <span className="d-none d-sm-inline">Add course</span>
             </button>
@@ -148,7 +148,7 @@ export function AdministratorCourses({
                         rootClose
                         onToggle={(open) => setDeleteCourseId(open ? course.id : null)}
                       >
-                        <button className="btn btn-sm btn-danger text-nowrap">
+                        <button type="button" className="btn btn-sm btn-danger text-nowrap">
                           <i className="fa fa-times" aria-hidden="true" /> Delete course
                         </button>
                       </OverlayTrigger>
@@ -375,7 +375,7 @@ function CourseUpdateColumn({
         rootClose
         onToggle={setShowPopover}
       >
-        <button className="btn btn-xs btn-secondary ms-1">
+        <button type="button" className="btn btn-xs btn-secondary ms-1" aria-label={`Edit ${label}`}>
           <i className="fa fa-edit" aria-hidden="true" />
         </button>
       </OverlayTrigger>

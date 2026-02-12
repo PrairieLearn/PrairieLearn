@@ -151,7 +151,7 @@ function CourseRequestTableRow({
                 rootClose
                 onToggle={setShowDenyPopover}
               >
-                <button className="btn btn-sm btn-danger text-nowrap">
+                <button type="button" className="btn btn-sm btn-danger text-nowrap">
                   <i className="fa fa-times" aria-hidden="true" /> Deny
                 </button>
               </OverlayTrigger>
@@ -174,7 +174,7 @@ function CourseRequestTableRow({
                 rootClose
                 onToggle={setShowApprovePopover}
               >
-                <button className="btn btn-sm btn-success text-nowrap">
+                <button type="button" className="btn btn-sm btn-success text-nowrap">
                   <i className="fa fa-check" aria-hidden="true" /> Approve
                 </button>
               </OverlayTrigger>
