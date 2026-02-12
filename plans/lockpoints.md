@@ -177,8 +177,33 @@ Then for each question in zone with number `qz_number`:
      }
      ```
 
-3. **`apps/prairielearn/src/lib/question-render.ts`** (~line 324)
-   - When `lockpoint_read_only` is true, set `showGradeButton = false`, `showSaveButton = false`, `allowAnswerEditing = false`
+3. **`apps/prairielearn/src/lib/question-render.ts`** — `buildLocals` function (~line 254)
+   - `buildLocals` does not currently receive `instance_question_info`. Add a new optional parameter `lockpoint_read_only?: boolean`.
+   - Insert a new block **after** the Homework/Exam-specific logic (line 333) and **before** the `!variant.open` cascade (line 342):
+     ```typescript
+     if (lockpoint_read_only) {
+       locals.showGradeButton = false;
+       locals.showSaveButton = false;
+       locals.allowAnswerEditing = false;
+       // NOTE: We intentionally do NOT show the true answer for lockpoint-read-only
+       // questions. Students can review their submissions but shouldn't see correct
+       // answers just because they advanced. Reconsider this during review.
+     }
+     ```
+   - This placement ensures lockpoint-read-only overrides Homework's default `showGradeButton = true` but does NOT trigger `showTryAgainButton` (which only activates in the `!variant.open` / `!iq.open` block later).
+   - Callers of `buildLocals` (in `renderQuestion` and `renderQuestionForSubmission`) must pass `lockpoint_read_only` from `res.locals.instance_question_info.lockpoint_read_only`.
+
+4. **`apps/prairielearn/src/middlewares/selectAndAuthzInstanceQuestion.ts`** — `InstanceQuestionInfoSchema`
+   - Add to the schema:
+     ```typescript
+     lockpoint_not_yet_crossed: z.boolean(),
+     lockpoint_read_only: z.boolean(),
+     ```
+   - Add to the `next_instance_question` sub-object:
+     ```typescript
+     lockpoint_not_yet_crossed: z.boolean().nullable(),
+     ```
+   - The corresponding SQL (`selectAndAuthzInstanceQuestion.sql`) must add `lockpoint_not_yet_crossed` to the `lead()` window function that populates `next_instance_question`, matching the existing `sequence_locked` pattern.
 
 ### API endpoint: Cross a lockpoint
 
@@ -207,6 +232,44 @@ Create `crossLockpoint()` function that uses a single atomic SQL `INSERT ... SEL
 4. All questions in prior zones satisfy `advanceScorePerc` (no `sequence_locked` question exists before this zone)
 5. `ON CONFLICT DO NOTHING` for idempotent concurrent requests
 
+The advanceScorePerc check (point 4) requires calling `question_order()` to get `sequence_locked` state. Sketch:
+
+```sql
+INSERT INTO assessment_instance_crossed_lockpoints
+    (assessment_instance_id, zone_id, authn_user_id)
+SELECT $assessment_instance_id, z.id, $authn_user_id
+FROM zones z
+JOIN assessment_instances ai ON ai.id = $assessment_instance_id
+WHERE z.id = $zone_id
+  AND z.lockpoint = true
+  AND z.assessment_id = ai.assessment_id
+  -- This must be the next uncrossed lockpoint
+  AND NOT EXISTS (
+      SELECT 1 FROM zones z2
+      LEFT JOIN assessment_instance_crossed_lockpoints aicl
+          ON aicl.zone_id = z2.id AND aicl.assessment_instance_id = $assessment_instance_id
+      WHERE z2.assessment_id = z.assessment_id
+        AND z2.lockpoint = true
+        AND z2.number < z.number
+        AND aicl.id IS NULL
+  )
+  -- No sequence_locked questions in prior zones
+  AND NOT EXISTS (
+      SELECT 1 FROM question_order($assessment_instance_id) qo
+      JOIN instance_questions iq ON iq.id = qo.instance_question_id
+      JOIN assessment_questions aq ON aq.id = iq.assessment_question_id
+      JOIN alternative_groups ag ON ag.id = aq.alternative_group_id
+      WHERE ag.zone_id IN (
+          SELECT z3.id FROM zones z3
+          WHERE z3.assessment_id = z.assessment_id AND z3.number < z.number
+      )
+      AND qo.sequence_locked = true
+  )
+ON CONFLICT (assessment_instance_id, zone_id) DO NOTHING;
+```
+
+If 0 rows are inserted (either conflict or validation failed), the function should check which condition failed and return an appropriate error message. Use `RETURNING id` to distinguish conflict (idempotent success) from validation failure.
+
 ### Interaction with advanceScorePerc
 
 The `first_uncrossed_lockpoint` CTE in `question_order` handles this naturally: if `advanceScorePerc` locks a question, the student can't reach the lockpoint crossing UI. The `crossLockpoint` function additionally verifies no questions in prior zones are `sequence_locked`.
@@ -223,7 +286,9 @@ No changes needed. Since we compute lockpoint status on-the-fly from `assessment
 
 **File:** `apps/prairielearn/src/pages/studentAssessmentInstance/studentAssessmentInstance.html.ts`
 
-Between zone headers, when a zone has `lockpoint = true` and it hasn't been crossed yet, render a special "lockpoint barrier" row spanning the full table width.
+When rendering the question table, insert a lockpoint barrier row between zones. The barrier appears **after the last question row of Zone N** and **before the zone header of Zone N+1** when Zone N+1 has `lockpoint = true`. This is a full-width `<tr>` with `colspan` spanning all columns, styled distinctly (e.g., warning background). The rendering loop groups questions by zone; when transitioning from one zone to the next, check if the next zone has `lockpoint: true` and render the barrier row.
+
+The barrier should include `__csrf_token` in a hidden input (required for all POST forms).
 
 **File:** `apps/prairielearn/src/pages/studentAssessmentInstance/studentAssessmentInstance.sql`
 
@@ -249,8 +314,8 @@ When the next uncrossed lockpoint is reachable, show a button in a barrier row t
   → Opens modal with:
      - Warning text explaining consequences
      - Checkbox: "I understand that questions above will become read-only"
-     - [Cancel] [Cross lockpoint] buttons
-     - Form POSTs __action=cross_lockpoint with zone_id
+     - [Cancel] [Confirm] buttons (Confirm disabled until checkbox checked)
+     - Form POSTs __action=cross_lockpoint with zone_id and __csrf_token
 ```
 
 ### Question row display
@@ -267,15 +332,15 @@ Questions that are `lockpoint_not_yet_crossed`:
 
 **File:** `apps/prairielearn/src/pages/studentAssessmentInstance/studentAssessmentInstance.html.ts` `RowLabel` function (~line 803)
 
+**Priority:** In `RowLabel`, check `sequence_locked` first, then `lockpoint_not_yet_crossed` as an `else if`. This gives `sequence_locked` precedence when both apply, which is correct since the student must address the score threshold first.
+
 ---
 
 ## Phase 5: Student UI - Instance Question Page
 
 ### Block submissions on read-only questions
 
-**File:** `apps/prairielearn/src/lib/question-render.ts` (~line 324)
-
-When `lockpoint_read_only` is true: hide save/grade buttons, disable answer editing.
+Handled in Phase 3 (item 3) via `buildLocals` in `question-render.ts`. No separate work needed here — just confirming the data flow: `selectAndAuthzInstanceQuestion.sql` → `res.locals.instance_question_info.lockpoint_read_only` → passed to `buildLocals` → buttons/editing disabled.
 
 ### Read-only banner
 
@@ -394,7 +459,8 @@ No changes needed. Lockpoints only affect the student's ability to make new subm
 | `apps/prairielearn/src/sync/fromDisk/assessments.ts` | Sync `lockpoint`, add validation |
 | `apps/prairielearn/src/sprocs/sync_assessments.sql` | Add `lockpoint` to zone upsert |
 | `apps/prairielearn/src/sprocs/question_order.sql` | Add `lockpoint_not_yet_crossed`, `lockpoint_read_only` |
-| `apps/prairielearn/src/middlewares/selectAndAuthzInstanceQuestion.sql` | Block `lockpoint_not_yet_crossed`, pass `lockpoint_read_only` |
+| `apps/prairielearn/src/middlewares/selectAndAuthzInstanceQuestion.sql` | Block `lockpoint_not_yet_crossed`, pass `lockpoint_read_only`, add to `next_instance_question` |
+| `apps/prairielearn/src/middlewares/selectAndAuthzInstanceQuestion.ts` | Add lockpoint fields to `InstanceQuestionInfoSchema` |
 | `apps/prairielearn/src/lib/assessment.ts` | Add `crossLockpoint()` function |
 | `apps/prairielearn/src/lib/assessment.sql` | Add `crossLockpoint` SQL, event log UNION |
 | `apps/prairielearn/src/pages/studentAssessmentInstance/studentAssessmentInstance.ts` | Handle `cross_lockpoint` POST |
@@ -430,7 +496,7 @@ No changes needed. Lockpoints only affect the student's ability to make new subm
 
 9. **Course sync validation errors**: Need to integrate lockpoint validation into existing sync error reporting. Follow the `advanceScorePerc` validation pattern.
 
-10. **Test data**: Need a test course with lockpoint assessments. Model on `testSequentialQuestions.test.ts` and its test course fixtures.
+10. **Test data**: Need a test course with lockpoint assessments. Add fixture in `apps/prairielearn/src/tests/testCourse/` (same directory used by `testSequentialQuestions.test.ts`). Model on `testSequentialQuestions.test.ts` and its test course fixtures.
 
 ---
 
