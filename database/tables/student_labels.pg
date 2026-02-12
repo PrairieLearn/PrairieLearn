@@ -7,7 +7,7 @@ columns
 
 indexes
     student_labels_pkey: PRIMARY KEY (id) USING btree (id)
-    student_labels_course_instance_id_name_key: UNIQUE (course_instance_id, name) DEFERRABLE INITIALLY IMMEDIATE USING btree (course_instance_id, name)
+    student_labels_course_instance_id_name_key: UNIQUE (course_instance_id, name) DEFERRABLE USING btree (course_instance_id, name)
     student_labels_course_instance_id_uuid_key: UNIQUE (course_instance_id, uuid) USING btree (course_instance_id, uuid)
 
 check constraints
