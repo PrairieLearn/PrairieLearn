@@ -288,15 +288,6 @@ function MatchingRow({
     <div style={{ display: 'flex', alignItems: 'center', gap: 8 }}>
       <div
         style={{
-          height: 7,
-          width: labelWidth,
-          backgroundColor: COLORS.shape,
-          borderRadius: 3,
-          flexShrink: 0,
-        }}
-      />
-      <div
-        style={{
           height: 20,
           width: optionWidth,
           minWidth: 40,
@@ -307,7 +298,7 @@ function MatchingRow({
           alignItems: 'center',
           paddingLeft: 4,
           paddingRight: 4,
-          marginLeft: 'auto',
+          flexShrink: 0,
         }}
       >
         {selected && (
@@ -321,6 +312,15 @@ function MatchingRow({
           />
         )}
       </div>
+      <div
+        style={{
+          height: 7,
+          width: labelWidth,
+          backgroundColor: COLORS.shape,
+          borderRadius: 3,
+          marginLeft: 'auto',
+        }}
+      />
     </div>
   );
 }
