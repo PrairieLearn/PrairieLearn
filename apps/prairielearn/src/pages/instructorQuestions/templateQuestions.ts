@@ -5,6 +5,7 @@ import fs from 'fs-extra';
 import { config } from '../../lib/config.js';
 import { EXAMPLE_COURSE_PATH } from '../../lib/paths.js';
 import { type QuestionsPageData } from '../../models/questions.js';
+import { AssessmentJsonSchema, type ZoneAssessmentJson } from '../../schemas/index.js';
 import { loadQuestions } from '../../sync/course-db.js';
 import { hasWireframePreview } from '../instructorQuestionCreate/components/WireframePreview.js';
 
@@ -73,14 +74,8 @@ async function getExampleCourseZones(): Promise<TemplateQuestionZone[]> {
 
   // Read the assessment file for zone categorization.
   const assessmentPath = path.join(EXAMPLE_COURSE_PATH, TEMPLATE_ASSESSMENT_PATH);
-  let zones: TemplateQuestionZone[];
-  try {
-    const assessmentData = await fs.readJson(assessmentPath);
-    zones = await buildZonesFromAssessment(assessmentData, questionTitleMap);
-  } catch {
-    // If the assessment file is missing or malformed, fall back to a flat list.
-    zones = await buildFlatZone(questionTitleMap);
-  }
+  const assessmentData = AssessmentJsonSchema.parse(await fs.readJson(assessmentPath));
+  const zones = await buildZonesFromAssessment(assessmentData.zones, questionTitleMap);
 
   // The first zone contains basic questions that are displayed with wireframe
   // preview cards. Every question in that zone must have a dedicated preview.
@@ -90,13 +85,7 @@ async function getExampleCourseZones(): Promise<TemplateQuestionZone[]> {
 
     if (missingPreviews.length > 0) {
       const missingQids = missingPreviews.map((q) => q.qid).join(', ');
-
-      if (process.env.NODE_ENV === 'test') {
-        throw new Error(`Basic template questions are missing wireframe previews: ${missingQids}`);
-      }
-
-      // In production, silently filter out questions without previews.
-      basicZone.questions = basicZone.questions.filter((q) => hasWireframePreview(q.qid));
+      throw new Error(`Basic template questions are missing wireframe previews: ${missingQids}`);
     }
   }
 
@@ -108,28 +97,29 @@ async function getExampleCourseZones(): Promise<TemplateQuestionZone[]> {
 }
 
 async function buildZonesFromAssessment(
-  assessmentData: { zones?: { title: string; questions: { id: string }[] }[] },
+  assessmentZones: ZoneAssessmentJson[],
   questionTitleMap: Map<string, string>,
 ): Promise<TemplateQuestionZone[]> {
-  if (!assessmentData.zones?.length) {
+  if (assessmentZones.length === 0) {
     return buildFlatZone(questionTitleMap);
   }
 
   const zones: TemplateQuestionZone[] = [];
 
-  for (const zone of assessmentData.zones) {
+  for (const zone of assessmentZones) {
     const questions: TemplateQuestion[] = [];
 
-    for (const { id: qid } of zone.questions) {
-      const title = questionTitleMap.get(qid);
+    for (const question of zone.questions) {
+      if (!question.id) continue;
+      const title = questionTitleMap.get(question.id);
       if (!title) continue;
 
-      const readme = await readTemplateReadme(qid);
-      questions.push({ qid, title, readme });
+      const readme = await readTemplateReadme(question.id);
+      questions.push({ qid: question.id, title, readme });
     }
 
     if (questions.length > 0) {
-      zones.push({ title: zone.title, questions });
+      zones.push({ title: zone.title ?? '', questions });
     }
   }
 
