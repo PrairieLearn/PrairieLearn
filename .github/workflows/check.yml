@@ -52,8 +52,7 @@ jobs:
       - name: Preinstall node-gyp headers
         run: yarn dlx node-gyp install
       - name: Install Node dependencies
-        # We turn off --inline-builds to avoid extra output in successful builds
-        run: yarn install --immutable
+        run: yarn install --immutable --inline-builds
 
       - name: Set up Turborepo cache
         uses: actions/cache@v5
