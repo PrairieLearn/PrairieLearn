@@ -2,6 +2,7 @@ import { Router } from 'express';
 
 import * as error from '@prairielearn/error';
 import * as sqldb from '@prairielearn/postgres';
+import { Hydrate } from '@prairielearn/react/server';
 
 import { PageLayout } from '../../components/PageLayout.js';
 import { config } from '../../lib/config.js';
@@ -15,7 +16,8 @@ import { typedAsyncHandler } from '../../lib/res-locals.js';
 import { deleteCourse, insertCourse, selectCourseById } from '../../models/course.js';
 import { selectAllInstitutions } from '../../models/institution.js';
 
-import { AdministratorCourses, CourseWithInstitutionSchema } from './administratorCourses.html.js';
+import { AdministratorCourses } from './administratorCourses.html.js';
+import { CourseWithInstitutionSchema } from './administratorCourses.shared.js';
 
 const router = Router();
 const sql = sqldb.loadSqlEquiv(import.meta.url);
@@ -39,14 +41,17 @@ router.get(
           fullWidth: true,
         },
         content: (
-          <AdministratorCourses
-            courseRequests={course_requests}
-            institutions={institutions}
-            courses={courses}
-            coursesRoot={config.coursesRoot}
-            csrfToken={res.locals.__csrf_token}
-            urlPrefix={res.locals.urlPrefix}
-          />
+          <Hydrate>
+            <AdministratorCourses
+              courseRequests={course_requests}
+              institutions={institutions}
+              courses={courses}
+              coursesRoot={config.coursesRoot}
+              csrfToken={res.locals.__csrf_token}
+              urlPrefix={res.locals.urlPrefix}
+              courseRepoDefaultBranch={config.courseRepoDefaultBranch}
+            />
+          </Hydrate>
         ),
       }),
     );
