@@ -1,7 +1,6 @@
+import { QueryClient } from '@tanstack/react-query';
 import { useCallback, useState } from 'react';
-import { z } from 'zod';
 
-import { SafeQuestionsPageDataSchema } from '../../components/QuestionsTable.shared.js';
 import {
   type CourseInstance,
   QuestionsTable,
@@ -10,6 +9,7 @@ import {
 
 import { CreateQuestionModal, type TemplateQuestion } from './CreateQuestionModal.js';
 import { createInstructorQuestionsTrpcClient } from './trpc-client.js';
+import { TRPCProvider } from './trpc-context.js';
 
 export interface InstructorQuestionsTableProps {
   questions: SafeQuestionsPageData[];
@@ -42,14 +42,12 @@ export function InstructorQuestionsTable({
 }: InstructorQuestionsTableProps) {
   const [showCreateModal, setShowCreateModal] = useState(false);
   const [trpcClient] = useState(() => createInstructorQuestionsTrpcClient());
+  const [queryClient] = useState(() => new QueryClient());
 
-  const fetchQuestions = useCallback(async () => {
-    const data = await trpcClient.questions.query();
-    return z.array(SafeQuestionsPageDataSchema).parse(data);
-  }, [trpcClient]);
+  const fetchQuestions = useCallback(() => trpcClient.questions.query(), [trpcClient]);
 
   return (
-    <>
+    <TRPCProvider trpcClient={trpcClient} queryClient={queryClient}>
       <QuestionsTable
         questions={questions}
         courseInstances={courseInstances}
@@ -72,7 +70,7 @@ export function InstructorQuestionsTable({
           onHide={() => setShowCreateModal(false)}
         />
       )}
-    </>
+    </TRPCProvider>
   );
 }
 

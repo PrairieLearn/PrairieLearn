@@ -2,6 +2,7 @@ import { initTRPC } from '@trpc/server';
 import type { CreateExpressContextOptions } from '@trpc/server/adapters/express';
 import superjson from 'superjson';
 
+import { SafeQuestionsPageDataSchema } from '../../components/QuestionsTable.shared.js';
 import type { ResLocalsForPage } from '../../lib/res-locals.js';
 import { selectPublicQuestionsForCourse } from '../../models/questions.js';
 
@@ -17,7 +18,8 @@ const t = initTRPC.context<TRPCContext>().create({
 });
 
 const questionsQuery = t.procedure.query(async (opts) => {
-  return await selectPublicQuestionsForCourse(opts.ctx.course.id);
+  const rawQuestions = await selectPublicQuestionsForCourse(opts.ctx.course.id);
+  return rawQuestions.map((q) => SafeQuestionsPageDataSchema.parse(q));
 });
 
 export const publicQuestionsRouter = t.router({

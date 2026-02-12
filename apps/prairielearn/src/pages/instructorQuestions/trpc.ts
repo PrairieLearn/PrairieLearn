@@ -2,6 +2,7 @@ import { TRPCError, initTRPC } from '@trpc/server';
 import type { CreateExpressContextOptions } from '@trpc/server/adapters/express';
 import superjson from 'superjson';
 
+import { SafeQuestionsPageDataSchema } from '../../components/QuestionsTable.shared.js';
 import { extractPageContext } from '../../lib/client/page-context.js';
 import { selectCourseInstancesWithStaffAccess } from '../../models/course-instances.js';
 import { selectQuestionsForCourse } from '../../models/questions.js';
@@ -35,10 +36,12 @@ const questionsQuery = t.procedure.query(async (opts) => {
     requiredRole: ['Previewer'],
   });
 
-  return await selectQuestionsForCourse(
+  const rawQuestions = await selectQuestionsForCourse(
     opts.ctx.course.id,
     courseInstances.map((ci) => ci.id),
   );
+
+  return rawQuestions.map((q) => SafeQuestionsPageDataSchema.parse(q));
 });
 
 export const instructorQuestionsRouter = t.router({

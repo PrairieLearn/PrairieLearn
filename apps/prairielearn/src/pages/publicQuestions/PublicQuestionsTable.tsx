@@ -1,23 +1,22 @@
+import { QueryClient } from '@tanstack/react-query';
 import { useCallback, useState } from 'react';
-import { z } from 'zod';
 
-import { SafeQuestionsPageDataSchema } from '../../components/QuestionsTable.shared.js';
-import {
-  QuestionsTable,
-  type QuestionsTableProps,
-} from '../../components/QuestionsTable.js';
+import { QuestionsTable, type QuestionsTableProps } from '../../components/QuestionsTable.js';
 
 import { createPublicQuestionsTrpcClient } from './trpc-client.js';
+import { TRPCProvider } from './trpc-context.js';
 
 export function PublicQuestionsTable(props: Omit<QuestionsTableProps, 'fetchQuestions'>) {
   const [trpcClient] = useState(() => createPublicQuestionsTrpcClient());
+  const [queryClient] = useState(() => new QueryClient());
 
-  const fetchQuestions = useCallback(async () => {
-    const data = await trpcClient.questions.query();
-    return z.array(SafeQuestionsPageDataSchema).parse(data);
-  }, [trpcClient]);
+  const fetchQuestions = useCallback(() => trpcClient.questions.query(), [trpcClient]);
 
-  return <QuestionsTable fetchQuestions={fetchQuestions} {...props} />;
+  return (
+    <TRPCProvider trpcClient={trpcClient} queryClient={queryClient}>
+      <QuestionsTable fetchQuestions={fetchQuestions} {...props} />
+    </TRPCProvider>
+  );
 }
 
 PublicQuestionsTable.displayName = 'PublicQuestionsTable';
