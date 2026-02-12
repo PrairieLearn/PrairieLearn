@@ -1,4 +1,4 @@
-import { runInTransactionAsync } from '@prairielearn/postgres';
+import { execute, runInTransactionAsync } from '@prairielearn/postgres';
 
 import { type CourseInstance } from '../../lib/db-types.js';
 import { insertAuditEvent } from '../../models/audit-event.js';
@@ -36,6 +36,11 @@ export async function syncStudentLabels(
       return;
     }
 
+    // Defer the name uniqueness constraint so that label name swaps don't
+    // cause intermediate constraint violations.
+    // If we end up doing this in other places, we should add a helper function to the postgres library.
+    await execute('SET CONSTRAINTS student_labels_course_instance_id_name_key DEFERRED;');
+
     for (const label of labelsToCreate) {
       await createStudentLabel({
         courseInstance,
@@ -47,7 +52,7 @@ export async function syncStudentLabels(
 
     for (const label of labelsToUpdate) {
       const existing = existingByUuid.get(label.uuid)!;
-      await updateStudentLabel(existing, label.name, label.color);
+      await updateStudentLabel({ label: existing, name: label.name, color: label.color });
     }
 
     for (const label of labelsToDelete) {

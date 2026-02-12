@@ -5,7 +5,8 @@ CREATE TABLE student_labels (
   color TEXT NOT NULL,
   uuid UUID NOT NULL,
   -- This also creates an index to lookup student_labels for a course instance.
-  UNIQUE (course_instance_id, name),
+  -- DEFERRABLE allows name swaps during sync without intermediate constraint violations.
+  CONSTRAINT student_labels_course_instance_id_name_key UNIQUE (course_instance_id, name) DEFERRABLE INITIALLY IMMEDIATE,
   UNIQUE (course_instance_id, uuid),
   CONSTRAINT student_labels_name_length_check CHECK (length(name) <= 255)
 );

@@ -157,8 +157,8 @@ export async function syncDiskToSqlWithLock(
         Object.entries(courseData.courseInstances),
         3,
         async ([ciid, courseInstanceData]) => {
+          // Every course instance id should be in this lookup.
           const courseInstanceId = courseInstanceIds[ciid];
-          assert(courseInstanceId);
           if (infofile.hasErrors(courseInstanceData.courseInstance)) return;
           const courseInstance = await selectCourseInstanceById(courseInstanceId);
           const studentLabels = courseInstanceData.courseInstance.data?.studentLabels;

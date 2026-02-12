@@ -267,12 +267,18 @@ export async function selectStudentLabelsForEnrollment(
 
 /**
  * Updates the name and color of a student label.
+ *
+ * Should only be called by sync code and tests.
  */
-export async function updateStudentLabel(
-  label: StudentLabel,
-  name: string,
-  color: ColorJson,
-): Promise<StudentLabel> {
+export async function updateStudentLabel({
+  label,
+  name,
+  color,
+}: {
+  label: StudentLabel;
+  name: string;
+  color: ColorJson;
+}): Promise<StudentLabel> {
   return await queryRow(
     sql.update_student_label,
     { id: label.id, name, color },

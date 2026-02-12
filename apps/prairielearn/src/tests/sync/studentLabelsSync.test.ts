@@ -240,6 +240,76 @@ describe('Student labels syncing', () => {
       assert.equal(enrollmentLabels[0].name, 'Section 1');
     });
 
+    it('swaps names between two labels', async () => {
+      const uuid1 = crypto.randomUUID();
+      const uuid2 = crypto.randomUUID();
+      const courseData = util.getCourseData();
+
+      courseData.courseInstances[util.COURSE_INSTANCE_ID].courseInstance.studentLabels = [
+        { uuid: uuid1, name: 'Section A', color: 'blue1' },
+        { uuid: uuid2, name: 'Section B', color: 'green1' },
+      ];
+
+      const courseDir = await util.writeCourseToTempDirectory(courseData);
+      await util.syncCourseData(courseDir);
+
+      let syncedLabels = await findSyncedStudentLabels(util.COURSE_INSTANCE_ID);
+      assert.equal(syncedLabels.length, 2);
+
+      const labelA = syncedLabels.find((l) => l.uuid === uuid1);
+      const labelB = syncedLabels.find((l) => l.uuid === uuid2);
+      assert.isOk(labelA);
+      assert.isOk(labelB);
+      assert.equal(labelA.name, 'Section A');
+      assert.equal(labelB.name, 'Section B');
+
+      // Swap the names.
+      courseData.courseInstances[util.COURSE_INSTANCE_ID].courseInstance.studentLabels = [
+        { uuid: uuid1, name: 'Section B', color: 'blue1' },
+        { uuid: uuid2, name: 'Section A', color: 'green1' },
+      ];
+
+      await util.overwriteAndSyncCourseData(courseData, courseDir);
+
+      syncedLabels = await findSyncedStudentLabels(util.COURSE_INSTANCE_ID);
+      assert.equal(syncedLabels.length, 2);
+
+      const updatedA = syncedLabels.find((l) => l.uuid === uuid1);
+      const updatedB = syncedLabels.find((l) => l.uuid === uuid2);
+      assert.isOk(updatedA);
+      assert.isOk(updatedB);
+      assert.equal(updatedA.name, 'Section B');
+      assert.equal(updatedA.id, labelA.id);
+      assert.equal(updatedB.name, 'Section A');
+      assert.equal(updatedB.id, labelB.id);
+    });
+
+    it('produces a sync error for duplicate UUIDs', async () => {
+      const sharedUuid = crypto.randomUUID();
+      const courseData = util.getCourseData();
+
+      courseData.courseInstances[util.COURSE_INSTANCE_ID].courseInstance.studentLabels = [
+        { uuid: sharedUuid, name: 'Label A', color: 'blue1' },
+        { uuid: sharedUuid, name: 'Label B', color: 'green1' },
+      ];
+
+      const courseDir = await util.writeCourseToTempDirectory(courseData);
+      const results = await util.syncCourseData(courseDir);
+      assert.isOk(results.status === 'complete');
+
+      const courseInstanceData = results.courseData.courseInstances[util.COURSE_INSTANCE_ID];
+      assert.isOk(courseInstanceData);
+      const errors = courseInstanceData.courseInstance.errors;
+      assert.isAbove(errors.length, 0);
+      assert.isOk(
+        errors.some((e: string) => e.includes('duplicate UUID') && e.includes(sharedUuid)),
+      );
+
+      // Labels should not be synced because the course instance has errors.
+      const syncedLabels = await findSyncedStudentLabels(util.COURSE_INSTANCE_ID);
+      assert.equal(syncedLabels.length, 0);
+    });
+
     it('creates audit events when label is deleted via sync', async () => {
       const uuid1 = crypto.randomUUID();
       const courseData = util.getCourseData();

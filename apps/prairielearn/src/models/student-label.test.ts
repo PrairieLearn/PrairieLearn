@@ -139,7 +139,7 @@ describe('Student Label Model', () => {
         const label = await createTestLabel('Color Label');
         assert.equal(label.color, 'gray1');
 
-        const updated = await updateStudentLabel(label, 'Renamed Label', 'red1');
+        const updated = await updateStudentLabel({ label, name: 'Renamed Label', color: 'red1' });
         assert.equal(updated.id, label.id);
         assert.equal(updated.color, 'red1');
         assert.equal(updated.name, 'Renamed Label');

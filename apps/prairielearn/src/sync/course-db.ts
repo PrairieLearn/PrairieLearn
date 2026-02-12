@@ -1650,6 +1650,23 @@ function validateCourseInstance({
       );
       courseInstance.studentLabels = result.entries;
     }
+
+    const uuidCounts = new Map<string, string[]>();
+    for (const label of courseInstance.studentLabels) {
+      const names = uuidCounts.get(label.uuid);
+      if (names) {
+        names.push(label.name);
+      } else {
+        uuidCounts.set(label.uuid, [label.name]);
+      }
+    }
+    for (const [uuid, names] of uuidCounts) {
+      if (names.length > 1) {
+        errors.push(
+          `Found duplicate UUID "${uuid}" in 'studentLabels' for labels: ${names.map((n) => `"${n}"`).join(', ')}.`,
+        );
+      }
+    }
   }
 
   return { warnings, errors };
