@@ -1,0 +1,29 @@
+{
+  "cli_version": "0.4.2",
+  "checkpoint_id": "ad06557bd074",
+  "strategy": "manual-commit",
+  "branch": "reteps/external-grader-enabled-fixes",
+  "checkpoints_count": 2,
+  "files_touched": [
+    "apps/prairielearn/src/lib/db-types.ts",
+    "apps/prairielearn/src/migrations/20260212202741_questions__external_grading_enabled__drop_default.sql",
+    "apps/prairielearn/src/schemas/infoQuestion.ts",
+    "database/tables/questions.pg"
+  ],
+  "sessions": [
+    {
+      "metadata": "/ad/06557bd074/0/metadata.json",
+      "transcript": "/ad/06557bd074/0/full.jsonl",
+      "context": "/ad/06557bd074/0/context.md",
+      "content_hash": "/ad/06557bd074/0/content_hash.txt",
+      "prompt": "/ad/06557bd074/0/prompt.txt"
+    }
+  ],
+  "token_usage": {
+    "input_tokens": 24,
+    "cache_creation_tokens": 17818,
+    "cache_read_tokens": 964565,
+    "output_tokens": 633,
+    "api_call_count": 20
+  }
+}

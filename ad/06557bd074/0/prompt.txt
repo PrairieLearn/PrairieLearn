@@ -1,0 +1,5 @@
+after making it non-null, i actually want another migration that drops the default, and then to give the zod schema a default value of true.
+
+---
+
+no no the json schema not db-types. infoQUestion.ts, make update-jsonschema

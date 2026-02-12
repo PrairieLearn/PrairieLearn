@@ -1,0 +1,32 @@
+{
+  "cli_version": "0.4.2",
+  "checkpoint_id": "ad06557bd074",
+  "session_id": "0b7bf70b-b9dc-4565-b9e6-aa05ea499135",
+  "strategy": "manual-commit",
+  "created_at": "2026-02-12T20:36:33.505734Z",
+  "branch": "reteps/external-grader-enabled-fixes",
+  "checkpoints_count": 2,
+  "files_touched": [
+    "apps/prairielearn/src/lib/db-types.ts",
+    "apps/prairielearn/src/migrations/20260212202741_questions__external_grading_enabled__drop_default.sql",
+    "apps/prairielearn/src/schemas/infoQuestion.ts",
+    "database/tables/questions.pg"
+  ],
+  "agent": "Claude Code",
+  "token_usage": {
+    "input_tokens": 24,
+    "cache_creation_tokens": 17818,
+    "cache_read_tokens": 964565,
+    "output_tokens": 633,
+    "api_call_count": 20
+  },
+  "initial_attribution": {
+    "calculated_at": "2026-02-12T20:36:33.488401Z",
+    "agent_lines": 1,
+    "human_added": 2208,
+    "human_modified": 4,
+    "human_removed": 0,
+    "total_committed": 2213,
+    "agent_percentage": 0.045187528242205156
+  }
+}
