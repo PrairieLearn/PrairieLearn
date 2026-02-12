@@ -1,24 +1,11 @@
 import { TimezoneContext } from '../../components/FriendlyDate.js';
 import { setCookieClient } from '../../lib/client/cookie.js';
-import {
-  type StaffAuditEvent,
-  type StaffCourseInstance,
-  type StaffEnrollment,
-  type StaffUser,
-} from '../../lib/client/safe-db-types.js';
-import { type SprocUsersGetDisplayedRole } from '../../lib/db-types.js';
+import { type StaffAuditEvent } from '../../lib/client/safe-db-types.js';
 import { type StaffGradebookRow } from '../../lib/gradebook.shared.js';
 
-import { OverviewCard } from './components/OverviewCard.js';
+import { OverviewCard, type UserDetail } from './components/OverviewCard.js';
 import { StudentAuditEventsTable } from './components/StudentAuditEventsTable.js';
 import { StudentGradebookTable } from './components/StudentGradebookTable.js';
-
-interface UserDetail {
-  user: StaffUser | null;
-  course_instance: StaffCourseInstance;
-  enrollment: StaffEnrollment;
-  role: SprocUsersGetDisplayedRole;
-}
 
 interface StudentDetailProps {
   auditEvents: StaffAuditEvent[];

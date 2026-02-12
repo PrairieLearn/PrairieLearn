@@ -16,7 +16,7 @@ export const UserDetailSchema = z.object({
   role: z.enum(['None', 'Student', 'Staff']),
 });
 
-type UserDetail = z.infer<typeof UserDetailSchema>;
+export type UserDetail = z.infer<typeof UserDetailSchema>;
 
 export function OverviewCard({
   student,
