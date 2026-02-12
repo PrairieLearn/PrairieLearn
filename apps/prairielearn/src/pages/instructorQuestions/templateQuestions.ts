@@ -147,8 +147,9 @@ async function readTemplateReadme(qid: string): Promise<string | null> {
   const readmePath = path.join(EXAMPLE_COURSE_PATH, 'questions', qid, 'README.md');
   try {
     return await fs.readFile(readmePath, 'utf-8');
-  } catch {
-    return null;
+  } catch (err: any) {
+    if (err.code === 'ENOENT') return null;
+    throw err;
   }
 }
 
