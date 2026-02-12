@@ -3,13 +3,14 @@
   "checkpoint_id": "9ff65b42d75a",
   "strategy": "manual-commit",
   "branch": "reteps/ci-noisy-logs",
-  "checkpoints_count": 1,
+  "checkpoints_count": 3,
   "files_touched": [
     ".github/workflows/check.yml",
     ".github/workflows/image-builder.yml",
     ".github/workflows/images.yml",
     ".github/workflows/release.yml",
-    ".github/workflows/test.yml"
+    ".github/workflows/test.yml",
+    "AGENTS.md"
   ],
   "sessions": [
     {
@@ -18,13 +19,20 @@
       "context": "/9f/f65b42d75a/0/context.md",
       "content_hash": "/9f/f65b42d75a/0/content_hash.txt",
       "prompt": "/9f/f65b42d75a/0/prompt.txt"
+    },
+    {
+      "metadata": "/9f/f65b42d75a/1/metadata.json",
+      "transcript": "/9f/f65b42d75a/1/full.jsonl",
+      "context": "/9f/f65b42d75a/1/context.md",
+      "content_hash": "/9f/f65b42d75a/1/content_hash.txt",
+      "prompt": "/9f/f65b42d75a/1/prompt.txt"
     }
   ],
   "token_usage": {
-    "input_tokens": 5,
-    "cache_creation_tokens": 32675,
-    "cache_read_tokens": 173478,
-    "output_tokens": 5,
-    "api_call_count": 4
+    "input_tokens": 46,
+    "cache_creation_tokens": 128987,
+    "cache_read_tokens": 3313483,
+    "output_tokens": 4094,
+    "api_call_count": 37
   }
 }

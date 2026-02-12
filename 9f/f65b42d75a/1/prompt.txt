@@ -1,0 +1,13 @@
+i have various improvements to my agents.md file scattered across branches that aren't merged into master. can you collect/find all those (double check they aren't already added), and add them to the agents.md on this branch
+
+---
+
+this seems like we are making everything worse
+
+---
+
+figure out which of my branches have active, unmerged prs, and look at the agents.md improvements on those
+
+---
+
+yes do 1-6

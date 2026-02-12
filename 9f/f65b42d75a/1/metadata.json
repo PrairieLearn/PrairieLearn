@@ -1,0 +1,29 @@
+{
+  "cli_version": "0.4.2",
+  "checkpoint_id": "9ff65b42d75a",
+  "session_id": "2ce1bb70-f45e-4db6-934f-654c7d77e123",
+  "strategy": "manual-commit",
+  "created_at": "2026-02-12T06:41:38.523821Z",
+  "branch": "reteps/ci-noisy-logs",
+  "checkpoints_count": 2,
+  "files_touched": [
+    "AGENTS.md"
+  ],
+  "agent": "Claude Code",
+  "token_usage": {
+    "input_tokens": 41,
+    "cache_creation_tokens": 96312,
+    "cache_read_tokens": 3140005,
+    "output_tokens": 4089,
+    "api_call_count": 33
+  },
+  "initial_attribution": {
+    "calculated_at": "2026-02-12T06:41:38.467425Z",
+    "agent_lines": 9,
+    "human_added": 2202,
+    "human_modified": 1,
+    "human_removed": 0,
+    "total_committed": 2212,
+    "agent_percentage": 0.406871609403255
+  }
+}
