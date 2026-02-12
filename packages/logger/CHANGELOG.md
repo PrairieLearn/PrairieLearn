@@ -1,5 +1,11 @@
 # @prairielearn/logger
 
+## 3.1.0
+
+### Minor Changes
+
+- 35ca957: Add `withoutLogging` utility to `@prairielearn/logger` for temporarily silencing logger output during test execution.
+
 ## 3.0.1
 
 ### Patch Changes

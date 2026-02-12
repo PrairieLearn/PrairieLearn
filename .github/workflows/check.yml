@@ -32,6 +32,7 @@ jobs:
         with:
           # This makes Actions fetch all Git history so that Changesets can generate changelogs with the correct commits
           fetch-depth: 0
+          show-progress: false
 
       - name: Install additional dependencies
         run: |-
@@ -62,6 +63,13 @@ jobs:
 
       - name: Build all code
         run: make build
+
+      - name: Report bundle sizes
+        uses: ./packages/actions-report-bundle-sizes
+        with:
+          sizes-path: apps/prairielearn/public/build/sizes.json
+          token: ${{ secrets.GITHUB_TOKEN }}
+
       - name: Run the JavaScript linter
         run: make lint-js
       - name: Run the links linter
@@ -127,6 +135,8 @@ jobs:
     runs-on: ubuntu-latest
     steps:
       - uses: actions/checkout@v6
+        with:
+          show-progress: false
 
       - name: Install OS packages
         run: |-
@@ -188,6 +198,8 @@ jobs:
     runs-on: ubuntu-latest
     steps:
       - uses: actions/checkout@v6
+        with:
+          show-progress: false
       - name: Install additional dependencies
         run: |-
           sudo curl -fsSL https://github.com/hadolint/hadolint/releases/download/v2.14.0/hadolint-Linux-x86_64 -o /bin/hadolint && \

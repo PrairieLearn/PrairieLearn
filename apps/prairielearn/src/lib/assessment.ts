@@ -14,6 +14,10 @@ import {
 import { selectAssessmentInfoForJob } from '../models/assessment.js';
 
 import {
+  computeAssessmentInstanceScoreByZone,
+  updateAssessmentInstanceGrade,
+} from './assessment-grading.js';
+import {
   type Assessment,
   type AssessmentInstance,
   AssessmentInstanceSchema,
@@ -199,9 +203,12 @@ export async function updateAssessmentInstance(
       IdSchema,
     );
 
+    const pointsByZone = await computeAssessmentInstanceScoreByZone({ assessment_instance_id });
+    const totalPointsZones = pointsByZone.reduce((sum, zone) => sum + zone.max_points, 0);
+
     const newMaxPoints = await sqldb.queryOptionalRow(
       sql.update_assessment_instance_max_points,
-      { assessment_instance_id, authn_user_id },
+      { assessment_instance_id, total_points_zones: totalPointsZones, authn_user_id },
       AssessmentInstanceSchema.pick({ max_points: true, max_bonus_points: true }),
     );
     // If assessment was not updated, grades do not need to be recomputed.
@@ -209,20 +216,12 @@ export async function updateAssessmentInstance(
 
     // if updated, regrade to pick up max_points changes, etc.
     if (recomputeGrades) {
-      await sqldb.callRow(
-        'assessment_instances_grade',
-        [
-          assessment_instance_id,
-          authn_user_id,
-          null, // credit
-          true, // only_log_if_score_updated
-        ],
-        z.object({
-          updated: z.boolean(),
-          new_points: z.number(),
-          new_score_perc: z.number(),
-        }),
-      );
+      await updateAssessmentInstanceGrade({
+        assessment_instance_id,
+        authn_user_id,
+        onlyLogIfScoreUpdated: true,
+        precomputedPointsByZone: pointsByZone,
+      });
     }
     return true;
   });
@@ -458,7 +457,7 @@ export async function updateAssessmentStatistics(assessment_id: string): Promise
   });
 }
 
-export async function updateAssessmentInstanceScore(
+export async function setAssessmentInstanceScore(
   assessment_instance_id: string,
   score_perc: number,
   authn_user_id: string,
@@ -487,7 +486,7 @@ export async function updateAssessmentInstanceScore(
   });
 }
 
-export async function updateAssessmentInstancePoints(
+export async function setAssessmentInstancePoints(
   assessment_instance_id: string,
   points: number,
   authn_user_id: string,
