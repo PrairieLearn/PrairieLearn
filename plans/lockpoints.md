@@ -6,7 +6,7 @@ PrairieLearn assessments currently have no mechanism to make earlier questions r
 
 Key design decisions (from issue + user clarification):
 
-- Crossing a lockpoint uses a **checkbox + confirm button in a modal**
+- Crossing a lockpoint uses a **checkbox + confirm button in a modal** (sufficient friction for MVP; can reconsider adding a typed phrase later if needed)
 - Lockpoint-locked status is computed by **extending `question_order` sproc** (single query for all lock state)
 - The "low-friction path when all previous questions are already closed" is **deferred** (leave a TODO)
 - **Full scope** minus the instructor "undo" feature
@@ -193,6 +193,8 @@ Then for each question in zone with number `qz_number`:
    - Do NOT add `lockpoint_read_only` here -- students should still be able to VIEW read-only questions
    - Add `lockpoint_read_only` and `lockpoint_not_yet_crossed` to the `instance_question_info` JSON object for downstream use
 
+   **Direct URL access:** When a student navigates directly to a `lockpoint_not_yet_crossed` question (e.g., via bookmark or manual URL), the WHERE clause filters it out and the middleware throws a 403. Update the error message in `selectAndAuthzInstanceQuestion.ts` to detect this case: if the question exists but is lockpoint-blocked, return `HttpStatusError(403, 'This question is not yet accessible. You must cross the lockpoint on the assessment overview page first.')`. This matches the existing `sequence_locked` behavior pattern but provides a lockpoint-specific message.
+
 2. **`apps/prairielearn/src/pages/studentInstanceQuestion/studentInstanceQuestion.ts`** (line 172-188)
    - In `validateAndProcessSubmission`, add:
      ```typescript
@@ -202,20 +204,36 @@ Then for each question in zone with number `qz_number`:
      ```
 
 3. **`apps/prairielearn/src/lib/question-render.ts`** — `buildLocals` function (~line 254)
-   - `buildLocals` does not currently receive `instance_question_info`. Add a new optional parameter `lockpoint_read_only?: boolean`.
+   - `buildLocals` currently takes 9 positional parameters via a destructured options object. Add `lockpoint_read_only?: boolean` to the existing options object:
+     ```typescript
+     function buildLocals({
+       variant,
+       question,
+       instance_question,
+       // ... existing params ...
+       lockpoint_read_only, // NEW
+     }: {
+       // ... existing types ...
+       lockpoint_read_only?: boolean;
+     })
+     ```
    - Insert a new block **after** the Homework/Exam-specific logic (line 333) and **before** the `!variant.open` cascade (line 342):
      ```typescript
      if (lockpoint_read_only) {
        locals.showGradeButton = false;
        locals.showSaveButton = false;
        locals.allowAnswerEditing = false;
-       // NOTE: We intentionally do NOT show the true answer for lockpoint-read-only
-       // questions. Students can review their submissions but shouldn't see correct
-       // answers just because they advanced. Reconsider this during review.
+       // We intentionally do NOT show the true answer or "Try again" for
+       // lockpoint-read-only questions. The question and variant may still
+       // be "open" — the student simply can't submit because they chose to
+       // advance. Showing correct answers just because a student crossed a
+       // lockpoint would let them share answers with classmates who haven't
+       // crossed yet (especially on group assessments). Students can still
+       // review their own previous submissions.
      }
      ```
    - This placement ensures lockpoint-read-only overrides Homework's default `showGradeButton = true` but does NOT trigger `showTryAgainButton` (which only activates in the `!variant.open` / `!iq.open` block later).
-   - Callers of `buildLocals` (currently `getAndRenderVariant` and `renderPanelsForSubmission`) must pass `lockpoint_read_only`.
+   - Callers of `buildLocals` (currently `getAndRenderVariant` and `renderPanelsForSubmission`) must pass `lockpoint_read_only` from `res.locals.instance_question_info.lockpoint_read_only`.
 
 4. **`apps/prairielearn/src/middlewares/selectAndAuthzInstanceQuestion.ts`** — `InstanceQuestionInfoSchema`
    - Add to the schema:
@@ -322,7 +340,21 @@ WHERE
 ON CONFLICT (assessment_instance_id, zone_id) DO NOTHING;
 ```
 
-If 0 rows are inserted (either conflict or validation failed), the function should check which condition failed and return an appropriate error message. Prefer a single SQL block that returns a status enum (`inserted`, `already_crossed`, `not_lockpoint`, `wrong_assessment`, `prior_lockpoint_not_crossed`, `prior_zone_not_unlocked`) to avoid race-prone multi-query post-check logic.
+The `ON CONFLICT DO NOTHING` means Postgres never errors on this INSERT — it either inserts a row or silently does nothing. The 0-rows-inserted case covers two scenarios:
+
+1. **Already crossed** (conflict): Harmless. The redirect reloads the page showing the already-crossed state.
+2. **Validation failed** (WHERE clause didn't match): The UI should prevent this — the "Proceed" button is only shown when the lockpoint is crossable. If a student manually crafts a POST or has a stale page, a generic error is appropriate.
+
+In the TypeScript `crossLockpoint()` function, check `rowCount`:
+
+```typescript
+const result = await queryRows(sql.cross_lockpoint, { ... });
+if (result.rowCount === 0) {
+  throw new HttpStatusError(403, 'Unable to cross this lockpoint. Please return to the assessment overview and try again.');
+}
+```
+
+No status enum or post-check query is needed. The UI prevents all invalid paths, and the generic 403 is sufficient for edge cases (stale tabs, concurrent group members, crafted requests).
 
 ### Interaction with advanceScorePerc
 
@@ -425,13 +457,39 @@ Show alert when viewing a lockpoint-read-only question:
 
 **File:** `apps/prairielearn/src/components/QuestionNavigation.tsx`
 
-When the next question is in a zone with an uncrossed lockpoint:
+Add a new `lockpointNotYetCrossed` prop to `QuestionNavSideButton` (and `QuestionNavSideGroup`):
 
-- Show the Next button as disabled with lock icon
-- Popover: "You must cross the lockpoint on the assessment overview page to proceed."
+```typescript
+export function QuestionNavSideButton({
+  instanceQuestionId,
+  sequenceLocked,
+  lockpointNotYetCrossed, // NEW
+  urlPrefix,
+  whichButton,
+  groupRolePermissions,
+  advanceScorePerc,
+  userGroupRoles,
+}: {
+  // ...existing types...
+  lockpointNotYetCrossed?: boolean | null;
+})
+```
 
-Pass `lockpoint_not_yet_crossed` for the next question through the `next_instance_question` JSON in `selectAndAuthzInstanceQuestion.sql`.
-Also pass it through `select_submission_info` in `question-render.sql` so real-time panel updates keep navigation consistent.
+In the disabled-explanation logic (~line 75-82), add a new `else if` branch after the existing `sequenceLocked` check:
+
+```typescript
+} else if (lockpointNotYetCrossed) {
+  disabledExplanation = html`You must cross the lockpoint on the assessment overview page before
+    you can proceed to the next question.`;
+}
+```
+
+This reuses the existing disabled button rendering (same `btn-secondary` + lock icon + popover pattern). No new CSS or button variants needed.
+
+**Data flow:** Pass `lockpoint_not_yet_crossed` for the next question through:
+1. `next_instance_question` JSON in `selectAndAuthzInstanceQuestion.sql` (via `lead()` window function, matching the existing `sequence_locked` pattern)
+2. `select_submission_info` in `question-render.sql` (so real-time panel updates after submissions keep navigation consistent)
+3. All call sites of `QuestionNavSideButton` / `QuestionNavSideGroup` that pass the next-question props
 
 ---
 
@@ -478,7 +536,7 @@ Add a new UNION block to `assessment_instance_log`:
 UNION
 (
   SELECT
-    7.7 AS event_order,
+    7.7 AS event_order, -- Between 7.5 (Time limit expiry) and 8 (View variant); no conflict
     'Cross lockpoint'::text AS event_name,
     'purple2'::text AS event_color,
     aicl.crossed_at AS date,
@@ -527,6 +585,74 @@ No changes needed. Lockpoints only affect the student's ability to make new subm
 
 ---
 
+## Phase 8: Documentation
+
+**File:** `docs/assessment/configuration.md`
+
+Add a new section after "Sequential questions" (`advanceScorePerc`) documenting lockpoints:
+
+### Lockpoints
+
+Lockpoints allow instructors to create one-way barriers between zones. When a student crosses a lockpoint, all questions in previous zones become read-only — students can review their previous submissions but cannot make new ones.
+
+Document:
+- The `lockpoint` zone property and its behavior
+- Example `infoAssessment.json` configuration (use the test fixture below)
+- Multiple lockpoints and sequential crossing
+- Interaction with `advanceScorePerc` (must satisfy score thresholds before crossing)
+- Interaction with workspaces: **lockpoints do not make workspaces read-only**. Lockpoints gate access to future questions/resources; they should not be used to remove access to previous workspaces. If a workspace question precedes a lockpoint, students retain access to that workspace even after crossing.
+- Configuration timing: lockpoints should be configured before students begin the assessment. Adding a lockpoint after students have started will require those students to cross the new lockpoint, which may lock them out of zones they were previously working in.
+- Group assessments: all group members share lockpoint state. Any member can cross a lockpoint.
+
+### Test fixture
+
+**File:** `testCourse/courseInstances/Sp15/assessments/exam18-lockpoints/infoAssessment.json`
+
+```json
+{
+  "uuid": "a new uuid",
+  "type": "Exam",
+  "title": "Exam with lockpoints",
+  "set": "Exam",
+  "number": "18",
+  "zones": [
+    {
+      "title": "Conceptual questions",
+      "questions": [
+        {
+          "id": "addNumbers",
+          "points": 10
+        }
+      ]
+    },
+    {
+      "title": "Coding questions",
+      "lockpoint": true,
+      "questions": [
+        {
+          "id": "addVectors",
+          "points": 10
+        }
+      ]
+    },
+    {
+      "title": "Advanced questions",
+      "lockpoint": true,
+      "questions": [
+        {
+          "id": "fossilFuelsRadio",
+          "points": 10
+        }
+      ]
+    }
+  ]
+}
+```
+
+This provides a 3-zone assessment with lockpoints on zones 2 and 3 for testing sequential crossing, read-only state, and the full lockpoint lifecycle.
+
+---
+
 ## Files Modified (Summary)
 
 | File                                                                                             | Change                                                                                         |
@@ -555,6 +681,8 @@ No changes needed. Lockpoints only affect the student's ability to make new subm
 | `apps/prairielearn/src/pages/instructorAssessmentInstance/instructorAssessmentInstance.html.tsx` | Lockpoint crossing details                                                                     |
 | `apps/prairielearn/src/pages/instructorAssessmentInstance/instructorAssessmentInstance.sql`      | Query crossed lockpoints                                                                       |
 | `apps/prairielearn/src/pages/instructorAssessmentInstance/instructorAssessmentInstance.ts`       | Pass lockpoint data                                                                            |
+| `docs/assessment/configuration.md`                                                              | Add lockpoints documentation section                                                           |
+| `testCourse/courseInstances/Sp15/assessments/exam18-lockpoints/infoAssessment.json`             | **NEW** - test fixture                                                                         |
 
 ---
 
@@ -576,9 +704,11 @@ No changes needed. Lockpoints only affect the student's ability to make new subm
 
 8. **Re-sync after lockpoint removed from config**: If an instructor removes a lockpoint after students crossed it, the `assessment_instance_crossed_lockpoints` row persists but `zones.lockpoint` becomes false. The `question_order` sproc handles this gracefully since it only checks `z.lockpoint = true`.
 
-9. **Course sync validation errors**: Need to integrate lockpoint validation into existing sync error reporting. Follow the `advanceScorePerc` validation pattern.
+9. **Re-sync after lockpoint added to config**: If an instructor adds `lockpoint: true` to a zone after students are already past it, those students will see `lockpoint_not_yet_crossed = true` for that zone and all subsequent zones, locking them out until they cross it. This is technically correct behavior (the student hasn't crossed the lockpoint), but could be confusing. **Mitigation:** Document in user-facing docs that lockpoints should be configured before students begin, and that adding lockpoints mid-assessment will require affected students to cross the new lockpoint. The instructor "undo" feature (deferred) would also help here.
 
-10. **Test data**: Add a fixture assessment under `testCourse/courseInstances/Sp15/assessments/` (e.g. `exam18-lockpoints`). `testSequentialQuestions.test.ts` already uses this test course fixture pattern.
+10. **Course sync validation errors**: Need to integrate lockpoint validation into existing sync error reporting. Follow the `advanceScorePerc` validation pattern.
+
+11. **Test data**: Add a fixture assessment under `testCourse/courseInstances/Sp15/assessments/` (e.g. `exam18-lockpoints`). `testSequentialQuestions.test.ts` already uses this test course fixture pattern.
 
 ---
 
