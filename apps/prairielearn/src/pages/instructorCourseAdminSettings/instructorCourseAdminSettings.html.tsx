@@ -225,7 +225,7 @@ export function InstructorCourseAdminSettings({
                 name="ai_question_generation"
                 value="1"
                 id="ai_question_generation_toggle"
-                checked={aiQuestionGenerationEnabled}
+                defaultChecked={aiQuestionGenerationEnabled}
               />
               <label
                 className="form-check-label d-flex align-items-center"
