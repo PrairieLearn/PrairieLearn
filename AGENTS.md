@@ -93,7 +93,7 @@ Migrations are stored in `apps/prairielearn/src/migrations`. See the [`README.md
 
 If you make a change to the database, make sure to update the database schema description in `database/` and the Zod types/table list in `apps/prairielearn/src/lib/db-types.ts`.
 
-**Always prefer model functions over raw SQL queries.** Check `apps/prairielearn/src/models/` for existing functions before writing any database queries. Model functions provide type safety, consistent patterns, and proper abstractions. Only write raw queries when no suitable model function exists.
+**Always prefer existing model functions over one-off raw SQL queries.** Check `apps/prairielearn/src/models/` for existing functions before writing any database queries. Model functions provide type safety, consistent patterns, and proper abstractions. Only write raw queries when no suitable model function exists.
 
 ### SQL query conventions
 
