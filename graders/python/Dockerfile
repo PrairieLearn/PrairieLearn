@@ -4,7 +4,10 @@ ARG CACHEBUST=2026-01-15-14-21-34
 # Needed to properly handle UTF-8
 ENV PYTHONIOENCODING=UTF-8
 ENV LANG=en_US.UTF-8
+
+# Set uv and Python environment variables
 ENV UV_INSTALL_DIR=/usr/local/bin
+ENV UV_PYTHON_INSTALL_DIR=/usr/local/bin
 ENV UV_COMPILE_BYTECODE=1 UV_NO_CACHE=1
 ENV PATH="/venv/bin:$PATH"
 
@@ -16,7 +19,8 @@ RUN dnf -y update \
     && echo "setting up uv..." \
     && curl -LO "https://astral.sh/uv/install.sh" \
     && bash "install.sh" && rm "install.sh" \
-    && uv venv --python-preference managed --python 3.13 /venv
+    && uv python install 3.13 \
+    && uv venv --python 3.13 /venv
 
 COPY requirements.txt /
 RUN uv pip install -r /requirements.txt
