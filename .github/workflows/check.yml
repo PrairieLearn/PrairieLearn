@@ -32,6 +32,7 @@ jobs:
         with:
           # This makes Actions fetch all Git history so that Changesets can generate changelogs with the correct commits
           fetch-depth: 0
+          fetch-tags: false
           show-progress: false
 
       - name: Install additional dependencies
@@ -51,7 +52,8 @@ jobs:
       - name: Preinstall node-gyp headers
         run: yarn dlx node-gyp install
       - name: Install Node dependencies
-        run: yarn install --immutable --inline-builds
+        # We turn off --inline-builds to avoid extra output in successful builds
+        run: yarn install --immutable
 
       - name: Set up Turborepo cache
         uses: actions/cache@v5
