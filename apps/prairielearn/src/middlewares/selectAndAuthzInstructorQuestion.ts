@@ -5,12 +5,7 @@ import z from 'zod';
 import * as error from '@prairielearn/error';
 import * as sqldb from '@prairielearn/postgres';
 
-import {
-  AssessmentSchema,
-  AssessmentSetSchema,
-  QuestionSchema,
-  TopicSchema,
-} from '../lib/db-types.js';
+import { QuestionSchema, TopicSchema } from '../lib/db-types.js';
 
 const sql = sqldb.loadSqlEquiv(import.meta.url);
 
@@ -23,9 +18,6 @@ const SelectAndAuthSchema = z.object({
 const SelectAndAuthWithCourseInstanceSchema = z.object({
   question: QuestionSchema,
   topic: TopicSchema,
-  assessments: z.array(
-    z.object({ assessment: AssessmentSchema, assessment_set: AssessmentSetSchema }),
-  ),
   open_issue_count: z.coerce.number(),
 });
 

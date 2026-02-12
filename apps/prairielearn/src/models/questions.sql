@@ -65,19 +65,12 @@ SELECT
             a.id
         )
       FROM
-        assessments AS a
+        assessment_questions AS aq
+        JOIN assessments AS a ON (a.id = aq.assessment_id)
         JOIN assessment_sets AS aset ON (aset.id = a.assessment_set_id)
       WHERE
-        EXISTS (
-          SELECT
-            1
-          FROM
-            assessment_questions AS aq
-          WHERE
-            aq.assessment_id = a.id
-            AND aq.question_id = q.id
-            AND aq.deleted_at IS NULL
-        )
+        aq.question_id = q.id
+        AND aq.deleted_at IS NULL
         AND a.deleted_at IS NULL
     ),
     '[]'::jsonb
