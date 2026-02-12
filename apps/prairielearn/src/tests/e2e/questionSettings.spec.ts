@@ -35,33 +35,25 @@ test.describe('Question settings', () => {
     const originalInfo = JSON.parse(await fs.readFile(infoJsonPath, 'utf8'));
     expect(originalInfo.title).toBe('Add two numbers');
 
-    // Wait for the form to be present
     const form = page.locator('form[name="edit-question-settings-form"]');
     await expect(form).toBeVisible({ timeout: 10000 });
 
-    // Wait for hydration - the save button should be present and the form should have data
     const saveButton = page.locator('#save-button');
     await expect(saveButton).toBeVisible({ timeout: 10000 });
 
-    // Wait for the title input to have a value (indicates hydration is complete)
     const titleInput = page.locator('#title');
     await expect(titleInput).toHaveValue('Add two numbers', { timeout: 15000 });
 
-    // Now edit the title
     await titleInput.click();
     await titleInput.fill('Updated title from e2e test');
 
-    // The save button should now be enabled
     await expect(saveButton).toBeEnabled({ timeout: 5000 });
 
-    // Click save
     await saveButton.click();
     await page.waitForURL(/\/question\/\d+\/settings$/);
 
-    // Wait for success message
     await expect(page.locator('.alert-success')).toBeVisible();
 
-    // Verify persistence
     const updatedInfo = JSON.parse(await fs.readFile(infoJsonPath, 'utf8'));
     expect(updatedInfo.title).toBe('Updated title from e2e test');
   });
@@ -71,7 +63,6 @@ test.describe('Question settings', () => {
 
     const infoJsonPath = path.join(testCoursePath, 'questions', 'addNumbers', 'info.json');
 
-    // Wait for the form and hydration
     const form = page.locator('form[name="edit-question-settings-form"]');
     await expect(form).toBeVisible({ timeout: 10000 });
 
@@ -81,22 +72,18 @@ test.describe('Question settings', () => {
     const saveButton = page.locator('#save-button');
     await expect(saveButton).toBeVisible();
 
-    // Click the Topic ComboBox button to open the dropdown
     const topicComboBoxButton = page.locator('[aria-label="Show suggestions"]').first();
     await topicComboBoxButton.click();
 
-    // Wait for listbox and select Calculus
     const listbox = page.getByRole('listbox');
     await expect(listbox).toBeVisible({ timeout: 5000 });
     await listbox.getByText('Calculus', { exact: true }).click();
 
-    // Save
     await expect(saveButton).toBeEnabled({ timeout: 5000 });
     await saveButton.click();
     await page.waitForURL(/\/question\/\d+\/settings$/);
     await expect(page.locator('.alert-success')).toBeVisible();
 
-    // Verify
     const updatedInfo = JSON.parse(await fs.readFile(infoJsonPath, 'utf8'));
     expect(updatedInfo.topic).toBe('Calculus');
   });
@@ -111,7 +98,6 @@ test.describe('Question settings', () => {
     const originalInfo = JSON.parse(await fs.readFile(infoJsonPath, 'utf8'));
     const originalSingleVariant = originalInfo.singleVariant ?? false;
 
-    // Wait for the form and hydration
     const form = page.locator('form[name="edit-question-settings-form"]');
     await expect(form).toBeVisible({ timeout: 10000 });
 
@@ -121,17 +107,14 @@ test.describe('Question settings', () => {
     const saveButton = page.locator('#save-button');
     await expect(saveButton).toBeVisible();
 
-    // Click the checkbox
     const singleVariantCheckbox = page.locator('#single_variant');
     await singleVariantCheckbox.click();
 
-    // Save
     await expect(saveButton).toBeEnabled({ timeout: 5000 });
     await saveButton.click();
     await page.waitForURL(/\/question\/\d+\/settings$/);
     await expect(page.locator('.alert-success')).toBeVisible();
 
-    // Verify
     const updatedInfo = JSON.parse(await fs.readFile(infoJsonPath, 'utf8'));
     if (originalSingleVariant) {
       expect(updatedInfo.singleVariant).toBeFalsy();
@@ -148,7 +131,6 @@ test.describe('Question settings', () => {
 
     const infoJsonPath = path.join(testCoursePath, 'questions', 'addNumbers', 'info.json');
 
-    // Wait for the form and hydration
     const form = page.locator('form[name="edit-question-settings-form"]');
     await expect(form).toBeVisible({ timeout: 10000 });
 
@@ -158,17 +140,14 @@ test.describe('Question settings', () => {
     const saveButton = page.locator('#save-button');
     await expect(saveButton).toBeVisible();
 
-    // Change grading method
     const gradingMethodSelect = page.locator('#grading_method');
     await gradingMethodSelect.selectOption('Manual');
 
-    // Save
     await expect(saveButton).toBeEnabled({ timeout: 5000 });
     await saveButton.click();
     await page.waitForURL(/\/question\/\d+\/settings$/);
     await expect(page.locator('.alert-success')).toBeVisible();
 
-    // Verify
     const updatedInfo = JSON.parse(await fs.readFile(infoJsonPath, 'utf8'));
     expect(updatedInfo.gradingMethod).toBe('Manual');
   });

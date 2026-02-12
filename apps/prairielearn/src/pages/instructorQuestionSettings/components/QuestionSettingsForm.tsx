@@ -228,6 +228,8 @@ export const QuestionSettingsForm = ({
           className={clsx('form-control font-monospace', errors.qid && 'is-invalid')}
           id="qid"
           disabled={!canEdit}
+          aria-invalid={!!errors.qid || undefined}
+          aria-errormessage={errors.qid ? 'qid-error' : undefined}
           {...register('qid', {
             required: 'QID is required',
             validate: {
@@ -244,7 +246,11 @@ export const QuestionSettingsForm = ({
             },
           })}
         />
-        {errors.qid && <div className="invalid-feedback">{errors.qid.message}</div>}
+        {errors.qid && (
+          <div id="qid-error" className="invalid-feedback">
+            {errors.qid.message}
+          </div>
+        )}
         <small className="form-text text-muted">
           <QuestionShortNameDescription />
         </small>
@@ -289,7 +295,6 @@ export const QuestionSettingsForm = ({
                     placeholder="Select a topic"
                     aria-labelledby="topic-label"
                     renderItem={(item) => (
-                      // Override Bootstrap's dropdown-item white-space: nowrap to allow description text to wrap.
                       <div style={{ whiteSpace: 'normal' }}>
                         <TopicBadge topic={item.data!} />
                         {item.data!.description && (
@@ -324,7 +329,6 @@ export const QuestionSettingsForm = ({
                     placeholder="Select tags"
                     aria-labelledby="tags-label"
                     renderItem={(item) => (
-                      // Override Bootstrap's dropdown-item white-space: nowrap to allow description text to wrap.
                       <div style={{ whiteSpace: 'normal' }}>
                         <TagBadge tag={item.data!} />
                         {!item.data!.implicit && item.data!.description && (
@@ -463,12 +467,16 @@ export const QuestionSettingsForm = ({
                 className={clsx('form-control', errors.workspace_image && 'is-invalid')}
                 id="workspace_image"
                 disabled={!canEdit}
+                aria-invalid={!!errors.workspace_image || undefined}
+                aria-errormessage={errors.workspace_image ? 'workspace_image-error' : undefined}
                 {...register('workspace_image', {
                   required: 'Image is required for workspace',
                 })}
               />
               {errors.workspace_image && (
-                <div className="invalid-feedback">{errors.workspace_image.message}</div>
+                <div id="workspace_image-error" className="invalid-feedback">
+                  {errors.workspace_image.message}
+                </div>
               )}
               <small className="form-text text-muted">
                 The Docker image that will be used to serve this workspace. Only images from the
@@ -485,6 +493,8 @@ export const QuestionSettingsForm = ({
                 className={clsx('form-control', errors.workspace_port && 'is-invalid')}
                 id="workspace_port"
                 disabled={!canEdit}
+                aria-invalid={!!errors.workspace_port || undefined}
+                aria-errormessage={errors.workspace_port ? 'workspace_port-error' : undefined}
                 // Disable default behavior of incrementing/decrementing the value when scrolling
                 onWheel={(e) => e.currentTarget.blur()}
                 {...register('workspace_port', {
@@ -492,7 +502,9 @@ export const QuestionSettingsForm = ({
                 })}
               />
               {errors.workspace_port && (
-                <div className="invalid-feedback">{errors.workspace_port.message}</div>
+                <div id="workspace_port-error" className="invalid-feedback">
+                  {errors.workspace_port.message}
+                </div>
               )}
               <small className="form-text text-muted">
                 The port number used in the Docker image.
@@ -508,12 +520,16 @@ export const QuestionSettingsForm = ({
                 className={clsx('form-control', errors.workspace_home && 'is-invalid')}
                 id="workspace_home"
                 disabled={!canEdit}
+                aria-invalid={!!errors.workspace_home || undefined}
+                aria-errormessage={errors.workspace_home ? 'workspace_home-error' : undefined}
                 {...register('workspace_home', {
                   required: 'Home is required for workspace',
                 })}
               />
               {errors.workspace_home && (
-                <div className="invalid-feedback">{errors.workspace_home.message}</div>
+                <div id="workspace_home-error" className="invalid-feedback">
+                  {errors.workspace_home.message}
+                </div>
               )}
               <small className="form-text text-muted">
                 The home directory of the workspace container.
@@ -564,12 +580,18 @@ export const QuestionSettingsForm = ({
                 className={clsx('form-control', errors.workspace_environment && 'is-invalid')}
                 id="workspace_environment"
                 disabled={!canEdit}
+                aria-invalid={!!errors.workspace_environment || undefined}
+                aria-errormessage={
+                  errors.workspace_environment ? 'workspace_environment-error' : undefined
+                }
                 {...register('workspace_environment', {
                   validate: validateJson,
                 })}
               />
               {errors.workspace_environment && (
-                <div className="invalid-feedback">{errors.workspace_environment.message}</div>
+                <div id="workspace_environment-error" className="invalid-feedback">
+                  {errors.workspace_environment.message}
+                </div>
               )}
               <small className="form-text text-muted">
                 Environment variables to set inside the workspace container. Variables must be
@@ -656,12 +678,18 @@ export const QuestionSettingsForm = ({
                 className={clsx('form-control', errors.external_grading_image && 'is-invalid')}
                 id="external_grading_image"
                 disabled={!canEdit}
+                aria-invalid={!!errors.external_grading_image || undefined}
+                aria-errormessage={
+                  errors.external_grading_image ? 'external_grading_image-error' : undefined
+                }
                 {...register('external_grading_image', {
                   required: externalGradingEnabled && 'Image is required for external grading',
                 })}
               />
               {errors.external_grading_image && (
-                <div className="invalid-feedback">{errors.external_grading_image.message}</div>
+                <div id="external_grading_image-error" className="invalid-feedback">
+                  {errors.external_grading_image.message}
+                </div>
               )}
               <small className="form-text text-muted">
                 The Docker image that will be used to grade this question. Only images from the
@@ -734,12 +762,18 @@ export const QuestionSettingsForm = ({
                 )}
                 id="external_grading_environment"
                 disabled={!canEdit}
+                aria-invalid={!!errors.external_grading_environment || undefined}
+                aria-errormessage={
+                  errors.external_grading_environment
+                    ? 'external_grading_environment-error'
+                    : undefined
+                }
                 {...register('external_grading_environment', {
                   validate: validateJson,
                 })}
               />
               {errors.external_grading_environment && (
-                <div className="invalid-feedback">
+                <div id="external_grading_environment-error" className="invalid-feedback">
                   {errors.external_grading_environment.message}
                 </div>
               )}

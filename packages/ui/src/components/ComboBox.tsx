@@ -231,6 +231,8 @@ export function TagPicker<T = void>({
   renderTagContent = defaultRenderTagContent,
   tagClassName = defaultTagClassName,
 }: TagPickerProps<T>) {
+  // TODO: Once https://github.com/adobe/react-spectrum/pull/9525 is released, we can refactor this to avoid embedding a `Select` component.
+
   const { contains } = useFilter({ sensitivity: 'base' });
   const [isOpen, setIsOpen] = useState(false);
 

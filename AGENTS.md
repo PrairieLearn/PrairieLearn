@@ -122,6 +122,7 @@ When working with assessment "groups" / "teams", see the [`groups-and-teams` ski
 
 - Use `react-bootstrap` components for UI elements.
 - Titles and buttons should use sentence case ("Save course", "Discard these changes").
+- Form inputs with validation errors should include `aria-invalid` and `aria-errormessage` attributes pointing to the error message element's `id`.
 
 ### Testing
 
