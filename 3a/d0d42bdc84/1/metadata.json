@@ -1,0 +1,30 @@
+{
+  "cli_version": "0.4.2",
+  "checkpoint_id": "3ad0d42bdc84",
+  "session_id": "39d495ce-a106-4843-94cb-f40d15743db3",
+  "strategy": "manual-commit",
+  "created_at": "2026-02-12T05:47:40.457274Z",
+  "branch": "reteps/server-dom-types",
+  "checkpoints_count": 2,
+  "files_touched": [
+    "apps/prairielearn/src/test-dom.ts",
+    "apps/prairielearn/src/tsconfig.json"
+  ],
+  "agent": "Claude Code",
+  "token_usage": {
+    "input_tokens": 41,
+    "cache_creation_tokens": 21322,
+    "cache_read_tokens": 1783315,
+    "output_tokens": 616,
+    "api_call_count": 35
+  },
+  "initial_attribution": {
+    "calculated_at": "2026-02-12T05:47:40.449936Z",
+    "agent_lines": 1,
+    "human_added": 2200,
+    "human_modified": 0,
+    "human_removed": 0,
+    "total_committed": 2201,
+    "agent_percentage": 0.045433893684688774
+  }
+}
