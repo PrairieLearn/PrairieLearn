@@ -28,18 +28,9 @@ describe('Creating a question', () => {
 
   afterAll(helperServer.after);
 
-  test.sequential(
-    'should load the question creation page with all basic template previews',
-    async () => {
-      const response = await fetchCheerio(
-        `${siteUrl}/pl/course_instance/1/instructor/course_admin/questions/create`,
-      );
-      assert.equal(response.status, 200);
-    },
-  );
-
   test.sequential('create a new empty question', async () => {
-    // Fetch the questions page for the course instance
+    // Fetch the questions page for the course instance. This will fail loudly
+    // if any of the template questions are misconfigured.
     const questionsResponse = await fetchCheerio(
       `${siteUrl}/pl/course_instance/1/instructor/course_admin/questions/create`,
     );
