@@ -1,0 +1,40 @@
+# Reduce CI log noise in JavaScript check job
+
+## Context
+
+The `check-js` CI job produces ~1,300 lines of log output, but only ~350 are useful. The two biggest noise sources are git tag fetching (~550 lines, 42%) and native build output from `--inline-builds` (~200 lines, 15%). This change eliminates both.
+
+## Changes
+
+### 1. Add `fetch-tags: false` to checkouts that don't need tags
+
+Eliminates ~550 `[new tag]` lines per job. These jobs only need commit history, not tags.
+
+**`.github/workflows/check.yml`** — `check-js` job (line 31): add `fetch-tags: false`
+
+**`.github/workflows/test.yml`** — `test-prairielearn` job (line 38): add `fetch-tags: false`
+
+**`.github/workflows/image-builder.yml`** — `build-images` job (line 36): add `fetch-tags: false` and `show-progress: false`
+
+### 2. Remove `--inline-builds` from `yarn install`
+
+Eliminates ~200 lines of node-gyp spawn args, C++ compilation output, etc. Without `--inline-builds`, yarn only shows native build output on failure.
+
+**`.github/workflows/check.yml`** line 54: change `yarn install --immutable --inline-builds` to `yarn install --immutable`
+
+### 3. Add `show-progress: false` where missing (minor)
+
+**`.github/workflows/release.yml`** line 24: add `show-progress: false`
+
+**`.github/workflows/images.yml`** line 62: add `show-progress: false`
+
+### Not changing
+
+- **`release.yml`** `fetch-tags`: Left alone because `changesets/action` may use tags to determine published versions.
+
+## Verification
+
+- Push to branch and confirm the `check-js` job no longer prints `[new tag]` lines or native build spam
+- Confirm `changeset status --since` still passes in `check-js`
+- Confirm `yarn install` still succeeds (native builds still happen, just output is hidden unless they fail)
+- Confirm image-builder diffing against master still works

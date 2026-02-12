@@ -1,0 +1,30 @@
+{
+  "cli_version": "0.4.2",
+  "checkpoint_id": "9ff65b42d75a",
+  "strategy": "manual-commit",
+  "branch": "reteps/ci-noisy-logs",
+  "checkpoints_count": 1,
+  "files_touched": [
+    ".github/workflows/check.yml",
+    ".github/workflows/image-builder.yml",
+    ".github/workflows/images.yml",
+    ".github/workflows/release.yml",
+    ".github/workflows/test.yml"
+  ],
+  "sessions": [
+    {
+      "metadata": "/9f/f65b42d75a/0/metadata.json",
+      "transcript": "/9f/f65b42d75a/0/full.jsonl",
+      "context": "/9f/f65b42d75a/0/context.md",
+      "content_hash": "/9f/f65b42d75a/0/content_hash.txt",
+      "prompt": "/9f/f65b42d75a/0/prompt.txt"
+    }
+  ],
+  "token_usage": {
+    "input_tokens": 5,
+    "cache_creation_tokens": 32675,
+    "cache_read_tokens": 173478,
+    "output_tokens": 5,
+    "api_call_count": 4
+  }
+}

@@ -1,0 +1,33 @@
+{
+  "cli_version": "0.4.2",
+  "checkpoint_id": "9ff65b42d75a",
+  "session_id": "152ca8ca-a1a6-4173-8c85-ca0877e276f8",
+  "strategy": "manual-commit",
+  "created_at": "2026-02-12T06:41:38.040044Z",
+  "branch": "reteps/ci-noisy-logs",
+  "checkpoints_count": 1,
+  "files_touched": [
+    ".github/workflows/check.yml",
+    ".github/workflows/image-builder.yml",
+    ".github/workflows/images.yml",
+    ".github/workflows/release.yml",
+    ".github/workflows/test.yml"
+  ],
+  "agent": "Claude Code",
+  "token_usage": {
+    "input_tokens": 5,
+    "cache_creation_tokens": 32675,
+    "cache_read_tokens": 173478,
+    "output_tokens": 5,
+    "api_call_count": 4
+  },
+  "initial_attribution": {
+    "calculated_at": "2026-02-12T06:41:38.029827Z",
+    "agent_lines": 4,
+    "human_added": 1095,
+    "human_modified": 5,
+    "human_removed": 0,
+    "total_committed": 1104,
+    "agent_percentage": 0.36231884057971014
+  }
+}
