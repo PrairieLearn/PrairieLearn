@@ -345,7 +345,7 @@ function parseSubmission({
           });
         }
       } else {
-        submissionTextSegment += $submission_html(node).text();
+        submissionTextSegment += $submission_html.html(node) ?? '';
       }
     });
   if (submissionTextSegment) {
