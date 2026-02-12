@@ -308,10 +308,12 @@ export function parseSubmission({
 
   // Extract image data and replace each image element with a unique marker
   // so we can split the HTML into alternating text/image segments.
+  // The nonce prevents students from injecting markers into their submissions.
+  const nonce = crypto.randomUUID();
   const imageDataByMarker = new Map<string, { fileName: string; fileData: string | null }>();
 
   imageElements.each((i, el) => {
-    const marker = `__AI_GRADING_IMAGE_${i}__`;
+    const marker = `__AI_GRADING_IMAGE_${nonce}_${i}__`;
 
     const fileName = run(() => {
       // New style, where `<pl-image-capture>` has been specialized for AI grading rendering.
@@ -344,7 +346,9 @@ export function parseSubmission({
 
   // Get the HTML with markers in place of images, then split on them.
   const htmlWithMarkers = $('body').html() ?? '';
-  const parts = htmlWithMarkers.split(/(__AI_GRADING_IMAGE_\d+__)/);
+  const parts = htmlWithMarkers.split(
+    new RegExp(`(__AI_GRADING_IMAGE_${nonce}_\\d+__)`),
+  );
 
   const segments: SubmissionHTMLSegment[] = [];
   for (const part of parts) {
