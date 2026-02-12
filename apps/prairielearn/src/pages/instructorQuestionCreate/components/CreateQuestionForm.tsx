@@ -44,8 +44,9 @@ function RadioCardGroup({
   onChange: (value: string) => void;
 }) {
   const ids = useMemo(() => options.map((o) => o.id), [options]);
-  const { cardsRef, handleKeyDown } = useRadioGroupNavigation({
+  const { getItemProps } = useRadioGroupNavigation({
     items: ids,
+    selectedValue: value,
     onSelect: onChange,
   });
 
@@ -64,25 +65,12 @@ function RadioCardGroup({
         return (
           <div
             key={option.id}
-            ref={(el) => {
-              cardsRef.current[index] = el;
-            }}
+            {...getItemProps(index)}
             className={clsx('border rounded-3 px-3 py-2 text-center', {
               'border-primary bg-primary bg-opacity-10 text-primary fw-semibold': isSelected,
             })}
             style={{ cursor: 'pointer' }}
-            role="radio"
-            tabIndex={isSelected ? 0 : -1}
-            aria-checked={isSelected}
             aria-label={option.description}
-            onClick={() => onChange(option.id)}
-            onKeyDown={(e) => {
-              if (e.key === 'Enter' || e.key === ' ') {
-                e.preventDefault();
-                onChange(option.id);
-              }
-              handleKeyDown(e, index);
-            }}
           >
             {option.title}
           </div>
@@ -93,33 +81,42 @@ function RadioCardGroup({
 }
 
 /**
- * Shared keyboard handler for arrow-key navigation within a radiogroup.
- * Operates on a flat list of all QIDs so navigation spans across zone
- * boundaries within a single radiogroup.
+ * Keyboard navigation and accessibility props for a radiogroup.
+ * Handles arrow-key wrapping, Home/End, and Enter/Space activation.
+ * Returns `getItemProps(index)` to spread onto each radio item.
  */
 function useRadioGroupNavigation({
   items,
+  selectedValue,
   onSelect,
 }: {
   items: string[];
+  selectedValue: string;
   onSelect: (value: string) => void;
 }) {
   const cardsRef = useRef<(HTMLElement | null)[]>([]);
+  const hasSelection = items.includes(selectedValue);
 
   const handleKeyDown = useCallback(
-    (e: React.KeyboardEvent, flatIndex: number) => {
-      let newIndex = flatIndex;
+    (e: React.KeyboardEvent, index: number) => {
+      if (e.key === 'Enter' || e.key === ' ') {
+        e.preventDefault();
+        onSelect(items[index]);
+        return;
+      }
+
+      let newIndex = index;
 
       switch (e.key) {
         case 'ArrowDown':
         case 'ArrowRight':
           e.preventDefault();
-          newIndex = (flatIndex + 1) % items.length;
+          newIndex = (index + 1) % items.length;
           break;
         case 'ArrowUp':
         case 'ArrowLeft':
           e.preventDefault();
-          newIndex = flatIndex === 0 ? items.length - 1 : flatIndex - 1;
+          newIndex = index === 0 ? items.length - 1 : index - 1;
           break;
         case 'Home':
           e.preventDefault();
@@ -142,34 +139,47 @@ function useRadioGroupNavigation({
     [items, onSelect],
   );
 
-  return { cardsRef, handleKeyDown };
+  function getItemProps(index: number) {
+    return {
+      ref: (el: HTMLElement | null) => {
+        cardsRef.current[index] = el;
+      },
+      role: 'radio' as const,
+      tabIndex: items[index] === selectedValue || (!hasSelection && index === 0) ? 0 : -1,
+      'aria-checked': items[index] === selectedValue,
+      onClick: () => onSelect(items[index]),
+      onKeyDown: (e: React.KeyboardEvent) => handleKeyDown(e, index),
+    };
+  }
+
+  return { getItemProps };
 }
 
 /**
  * Renders template cards without a radiogroup wrapper. The parent is
- * responsible for providing the `role="radiogroup"` container and
- * passing in shared refs/keyboard navigation for cross-zone arrow keys.
+ * responsible for providing the `role="radiogroup"` container.
  */
 function TemplateCards({
   cards,
   selectedQid,
-  onSelect,
   showPreviews,
   showQid,
-  hasSelectionInGroup,
   flatIndexOffset,
-  cardsRef,
-  onKeyDown,
+  getItemProps,
 }: {
   cards: TemplateQuestion[];
   selectedQid: string;
-  onSelect: (qid: string) => void;
   showPreviews: boolean;
   showQid?: boolean;
-  hasSelectionInGroup: boolean;
   flatIndexOffset: number;
-  cardsRef: React.MutableRefObject<(HTMLElement | null)[]>;
-  onKeyDown: (e: React.KeyboardEvent, flatIndex: number) => void;
+  getItemProps: (index: number) => {
+    ref: (el: HTMLElement | null) => void;
+    role: 'radio';
+    tabIndex: number;
+    'aria-checked': boolean;
+    onClick: () => void;
+    onKeyDown: (e: React.KeyboardEvent) => void;
+  };
 }) {
   if (showPreviews) {
     return (
@@ -181,31 +191,17 @@ function TemplateCards({
         }}
       >
         {cards.map((card, index) => {
-          const flatIndex = flatIndexOffset + index;
           const isSelected = selectedQid === card.qid;
           const cardInfo = getCardInfo(card.qid);
           return (
             <div
               key={card.qid}
-              ref={(el) => {
-                cardsRef.current[flatIndex] = el;
-              }}
+              {...getItemProps(flatIndexOffset + index)}
               className={clsx('card overflow-hidden', {
                 'border-primary': isSelected,
               })}
               style={{ cursor: 'pointer' }}
-              role="radio"
-              tabIndex={isSelected || (!hasSelectionInGroup && flatIndex === 0) ? 0 : -1}
-              aria-checked={isSelected}
               aria-label={cardInfo?.label ?? card.title}
-              onClick={() => onSelect(card.qid)}
-              onKeyDown={(e) => {
-                if (e.key === 'Enter' || e.key === ' ') {
-                  e.preventDefault();
-                  onSelect(card.qid);
-                }
-                onKeyDown(e, flatIndex);
-              }}
             >
               <WireframePreview qid={card.qid} />
               <div
@@ -243,30 +239,16 @@ function TemplateCards({
   return (
     <div className="d-flex flex-column gap-2">
       {cards.map((card, index) => {
-        const flatIndex = flatIndexOffset + index;
         const isSelected = selectedQid === card.qid;
         return (
           <div
             key={card.qid}
-            ref={(el) => {
-              cardsRef.current[flatIndex] = el;
-            }}
+            {...getItemProps(flatIndexOffset + index)}
             className={clsx('card', {
               'border-primary bg-primary bg-opacity-10': isSelected,
             })}
             style={{ cursor: 'pointer' }}
-            role="radio"
-            tabIndex={isSelected || (!hasSelectionInGroup && flatIndex === 0) ? 0 : -1}
-            aria-checked={isSelected}
             aria-label={card.title}
-            onClick={() => onSelect(card.qid)}
-            onKeyDown={(e) => {
-              if (e.key === 'Enter' || e.key === ' ') {
-                e.preventDefault();
-                onSelect(card.qid);
-              }
-              onKeyDown(e, flatIndex);
-            }}
           >
             <div className="card-body py-2 px-3">
               <div className="d-flex align-items-center justify-content-between">
@@ -368,10 +350,12 @@ export function CreateQuestionForm({
 
   const exampleNav = useRadioGroupNavigation({
     items: exampleQids,
+    selectedValue: selectedTemplateQid,
     onSelect: setSelectedTemplateQid,
   });
   const courseNav = useRadioGroupNavigation({
     items: courseQids,
+    selectedValue: selectedTemplateQid,
     onSelect: setSelectedTemplateQid,
   });
 
@@ -569,11 +553,8 @@ export function CreateQuestionForm({
                                   cards={zone.questions}
                                   selectedQid={selectedTemplateQid}
                                   showPreviews={showPreviews}
-                                  hasSelectionInGroup={exampleQids.includes(selectedTemplateQid)}
                                   flatIndexOffset={flatIndexOffset}
-                                  cardsRef={exampleNav.cardsRef}
-                                  onSelect={setSelectedTemplateQid}
-                                  onKeyDown={exampleNav.handleKeyDown}
+                                  getItemProps={exampleNav.getItemProps}
                                 />
                               </div>
                             );
@@ -602,12 +583,9 @@ export function CreateQuestionForm({
                             }))}
                             selectedQid={selectedTemplateQid}
                             showPreviews={false}
-                            hasSelectionInGroup={courseQids.includes(selectedTemplateQid)}
                             flatIndexOffset={0}
-                            cardsRef={courseNav.cardsRef}
+                            getItemProps={courseNav.getItemProps}
                             showQid
-                            onSelect={setSelectedTemplateQid}
-                            onKeyDown={courseNav.handleKeyDown}
                           />
                         </div>
                       ) : (
@@ -708,9 +686,6 @@ function StartFromScratchState() {
       <p className="mb-0">
         You'll start with empty <code>question.html</code> and <code>server.py</code> files.
       </p>
-      <button type="submit" className="btn btn-primary text-nowrap">
-        Create question <i className="fa fa-arrow-right ms-1" aria-hidden="true" />
-      </button>
       <div className="card card-body bg-light">
         <h3 className="h6 fw-semibold mb-1">New to PrairieLearn?</h3>
         <p className="text-muted small mb-1">
@@ -726,6 +701,9 @@ function StartFromScratchState() {
           ))}
         </ul>
       </div>
+      <button type="submit" className="btn btn-primary text-nowrap">
+        Create question <i className="fa fa-arrow-right ms-1" aria-hidden="true" />
+      </button>
     </div>
   );
 }
