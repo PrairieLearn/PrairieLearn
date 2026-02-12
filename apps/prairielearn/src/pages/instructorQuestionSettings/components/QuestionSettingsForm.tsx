@@ -141,15 +141,32 @@ export const QuestionSettingsForm = ({
     workspace_enable_networking: question.workspace_enable_networking ?? false,
     workspace_rewrite_url: question.workspace_url_rewrite ?? true,
     external_grading_enabled: !!question.external_grading_image,
-    external_grading_image: question.external_grading_image ?? '',
-    external_grading_entrypoint: question.external_grading_entrypoint ?? '',
-    external_grading_files: question.external_grading_files?.join(', ') ?? '',
-    external_grading_timeout: question.external_grading_timeout?.toString() ?? '',
-    external_grading_enable_networking: question.external_grading_enable_networking ?? false,
+    // The external grading enabled flag is deprecated, but in some edge cases it may be set to false even with configured fields.
+    // In this case, we want to clear the other fields, as false + configured is no longer a valid state in the UI.
+    external_grading_image:
+      question.external_grading_enabled === false ? '' : (question.external_grading_image ?? ''),
+    external_grading_entrypoint:
+      question.external_grading_enabled === false
+        ? ''
+        : (question.external_grading_entrypoint ?? ''),
+    external_grading_files:
+      question.external_grading_enabled === false
+        ? []
+        : (question.external_grading_files?.join(', ') ?? ''),
+    external_grading_timeout:
+      question.external_grading_enabled === false
+        ? ''
+        : (question.external_grading_timeout?.toString() ?? ''),
+    external_grading_enable_networking:
+      question.external_grading_enabled === false
+        ? false
+        : (question.external_grading_enable_networking ?? false),
     external_grading_environment:
-      Object.keys(question.external_grading_environment).length > 0
-        ? JSON.stringify(question.external_grading_environment, null, 2)
-        : '{}',
+      question.external_grading_enabled === false
+        ? '{}'
+        : Object.keys(question.external_grading_environment).length > 0
+          ? JSON.stringify(question.external_grading_environment, null, 2)
+          : '{}',
   };
 
   const {

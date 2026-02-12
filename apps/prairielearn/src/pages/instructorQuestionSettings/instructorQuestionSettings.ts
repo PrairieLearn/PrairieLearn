@@ -160,7 +160,6 @@ router.post(
           workspace_graded_files: GradedFilesSchema,
           workspace_enable_networking: BooleanFromCheckboxSchema,
           workspace_environment: z.string().optional(),
-          external_grading_enabled: BooleanFromCheckboxSchema,
           external_grading_image: z.string().optional(),
           external_grading_files: GradedFilesSchema,
           external_grading_entrypoint: ArgumentsSchema,
@@ -276,11 +275,8 @@ router.post(
 
       const externalGradingOptions = {
         comment: questionInfo.externalGradingOptions?.comment ?? undefined,
-        enabled: propertyValueWithDefault(
-          questionInfo.externalGradingOptions?.enabled,
-          body.external_grading_enabled,
-          false,
-        ),
+        // We always clear enabled, and fallback to the defalt value of 'true'.
+        // Since the options are only set if there are explicit values, this will be true if there is an image set.
         image: propertyValueWithDefault(
           questionInfo.externalGradingOptions?.image,
           body.external_grading_image,
