@@ -1,0 +1,9 @@
+add aria to the form in apps/prairielearn/src/pages/instructorQuestionSettings/components/QuestionSettingsForm.tsx -- with aria-errormessage and aria-isinvalid
+
+---
+
+add a note to agents.md about this
+
+---
+
+yes, claude.md

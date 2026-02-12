@@ -1,0 +1,27 @@
+{
+  "cli_version": "0.4.2",
+  "checkpoint_id": "c9f668332034",
+  "strategy": "manual-commit",
+  "branch": "reteps/question-settings-react",
+  "checkpoints_count": 2,
+  "files_touched": [
+    "CLAUDE.md",
+    "apps/prairielearn/src/pages/instructorQuestionSettings/components/QuestionSettingsForm.tsx"
+  ],
+  "sessions": [
+    {
+      "metadata": "/c9/f668332034/0/metadata.json",
+      "transcript": "/c9/f668332034/0/full.jsonl",
+      "context": "/c9/f668332034/0/context.md",
+      "content_hash": "/c9/f668332034/0/content_hash.txt",
+      "prompt": "/c9/f668332034/0/prompt.txt"
+    }
+  ],
+  "token_usage": {
+    "input_tokens": 30,
+    "cache_creation_tokens": 29526,
+    "cache_read_tokens": 1379878,
+    "output_tokens": 1422,
+    "api_call_count": 24
+  }
+}
