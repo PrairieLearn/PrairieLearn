@@ -1,0 +1,3 @@
+the frontend basically needs to use the JSON value for external_grading_enabled -- if it is set in JSON, don't update the posted value. Otherwise, use true/empty string behavior.
+
+or is it easier to resolve this on the backend and not post?

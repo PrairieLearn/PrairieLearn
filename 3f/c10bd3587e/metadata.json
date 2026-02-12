@@ -3,7 +3,7 @@
   "checkpoint_id": "3fc10bd3587e",
   "strategy": "manual-commit",
   "branch": "reteps/question-settings-react",
-  "checkpoints_count": 1,
+  "checkpoints_count": 2,
   "files_touched": [
     "apps/prairielearn/src/batched-migrations/20260212202738_questions__external_grading_enabled__backfill.sql",
     "apps/prairielearn/src/batched-migrations/20260212202738_questions__external_grading_enabled__backfill.ts",
@@ -13,6 +13,7 @@
     "apps/prairielearn/src/migrations/20260212202738_questions__external_grading_enabled__backfill.ts",
     "apps/prairielearn/src/migrations/20260212202739_questions__external_grading_enabled__backfill__finalize.ts",
     "apps/prairielearn/src/migrations/20260212202740_questions__external_grading_enabled__nonnull.sql",
+    "apps/prairielearn/src/pages/instructorQuestionSettings/instructorQuestionSettings.ts",
     "database/tables/questions.pg"
   ],
   "sessions": [
@@ -22,13 +23,20 @@
       "context": "/3f/c10bd3587e/0/context.md",
       "content_hash": "/3f/c10bd3587e/0/content_hash.txt",
       "prompt": "/3f/c10bd3587e/0/prompt.txt"
+    },
+    {
+      "metadata": "/3f/c10bd3587e/1/metadata.json",
+      "transcript": "/3f/c10bd3587e/1/full.jsonl",
+      "context": "/3f/c10bd3587e/1/context.md",
+      "content_hash": "/3f/c10bd3587e/1/content_hash.txt",
+      "prompt": "/3f/c10bd3587e/1/prompt.txt"
     }
   ],
   "token_usage": {
-    "input_tokens": 1728,
-    "cache_creation_tokens": 35538,
-    "cache_read_tokens": 1334845,
-    "output_tokens": 557,
-    "api_call_count": 21
+    "input_tokens": 1739,
+    "cache_creation_tokens": 66361,
+    "cache_read_tokens": 1849430,
+    "output_tokens": 655,
+    "api_call_count": 30
   }
 }
