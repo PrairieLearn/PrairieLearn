@@ -1,0 +1,26 @@
+{
+  "cli_version": "0.4.2",
+  "checkpoint_id": "3ad0d42bdc84",
+  "strategy": "manual-commit",
+  "branch": "reteps/server-dom-types",
+  "checkpoints_count": 1,
+  "files_touched": [
+    "scripts/typecheck-file.sh"
+  ],
+  "sessions": [
+    {
+      "metadata": "/3a/d0d42bdc84/0/metadata.json",
+      "transcript": "/3a/d0d42bdc84/0/full.jsonl",
+      "context": "/3a/d0d42bdc84/0/context.md",
+      "content_hash": "/3a/d0d42bdc84/0/content_hash.txt",
+      "prompt": "/3a/d0d42bdc84/0/prompt.txt"
+    }
+  ],
+  "token_usage": {
+    "input_tokens": 79,
+    "cache_creation_tokens": 47016,
+    "cache_read_tokens": 4056359,
+    "output_tokens": 2699,
+    "api_call_count": 63
+  }
+}
