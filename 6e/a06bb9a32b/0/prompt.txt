@@ -1,0 +1,190 @@
+Implement the following plan:
+
+# Remove `assessment_instance_label` sproc
+
+## Context
+
+The `assessment_instance_label` SQL stored procedure computes a display label for assessment instances (e.g. "HW1", "Q3#2") by concatenating `assessment_set.abbreviation + assessment.number`, plus `#instance_number` for multi-instance assessments. This logic is simple enough to live in TypeScript. The sproc is called in 3 SQL files, and the calling queries already return full row objects for the constituent tables in two of the three cases. The regrading queries currently return only individual columns and should be modernized to use full row returns.
+
+## Plan
+
+### 1. Create TypeScript utility function
+
+**New file:** `apps/prairielearn/src/lib/assessment-label.ts`
+
+```typescript
+import type { Assessment, AssessmentInstance, AssessmentSet } from './db-types.js';
+
+export function assessmentLabel(assessment: Assessment, assessmentSet: AssessmentSet): string {
+  return assessmentSet.abbreviation + assessment.number;
+}
+
+export function assessmentInstanceLabel(
+  assessmentInstance: AssessmentInstance,
+  assessment: Assessment,
+  assessmentSet: AssessmentSet,
+): string {
+  let label = assessmentLabel(assessment, assessmentSet);
+  if (assessment.multiple_instance) {
+    label += '#' + assessmentInstance.number;
+  }
+  return label;
+}
+```
+
+### 2. Update `selectAndAuthzAssessmentInstance` middleware
+
+**`selectAndAuthzAssessmentInstance.sql`** (line 57): Remove the sproc call:
+```diff
+-  assessment_instance_label (ai, a, aset) AS assessment_instance_label,
+```
+
+Also remove the `assessment_label` inline expression (line 58) since it can be computed from the full rows already returned:
+```diff
+-  aset.abbreviation || a.number AS assessment_label,
+```
+
+**`selectAndAuthzAssessmentInstance.ts`**:
+- Remove `assessment_instance_label` and `assessment_label` from the Zod schema
+- After the query, compute both labels in TypeScript from `row.assessment` and `row.assessment_set`
+- Assign them to `res.locals` alongside the query result
+- Update the exported `ResLocalsAssessmentInstance` type to include the computed label fields
+
+### 3. Update `selectAndAuthzInstanceQuestion` middleware
+
+**`selectAndAuthzInstanceQuestion.sql`** (line 101): Remove the sproc call:
+```diff
+-  assessment_instance_label (ai, a, aset) AS assessment_instance_label,
+```
+
+**`selectAndAuthzInstanceQuestion.ts`**:
+- Remove `assessment_instance_label` from the Zod schema
+- Compute label in TypeScript from `row.assessment_instance`, `row.assessment`, `row.assessment_set` (all already returned)
+- Assign to `res.locals`
+- Update exported `ResLocalsInstanceQuestion` type
+
+### 4. Update regrading queries to use full row returns
+
+**`regrading.sql`**: Rewrite both query blocks to return full row objects via `to_jsonb()`.
+
+`select_regrade_assessment_instance_info`:
+```sql
+SELECT
+  to_jsonb(ai) AS assessment_instance,
+  to_jsonb(a) AS assessment,
+  to_jsonb(aset) AS assessment_set,
+  to_jsonb(u) AS instance_user,
+  to_jsonb(g) AS instance_group,
+  to_jsonb(ci) AS course_instance,
+  to_jsonb(c) AS course
+FROM
+  assessment_instances AS ai
+  JOIN assessments AS a ON (a.id = ai.assessment_id)
+  JOIN assessment_sets AS aset ON (aset.id = a.assessment_set_id)
+  JOIN course_instances AS ci ON (ci.id = a.course_instance_id)
+  JOIN courses AS c ON (c.id = ci.course_id)
+  LEFT JOIN users AS u ON (u.id = ai.user_id)
+  LEFT JOIN teams AS g ON (g.id = ai.team_id)
+WHERE
+  ai.id = $assessment_instance_id
+  AND g.deleted_at IS NULL;
+```
+
+`select_regrade_assessment_instances`:
+```sql
+SELECT
+  to_jsonb(ai) AS assessment_instance,
+  to_jsonb(a) AS assessment,
+  to_jsonb(aset) AS assessment_set,
+  to_jsonb(u) AS instance_user,
+  to_jsonb(g) AS instance_group
+FROM
+  assessments AS a
+  JOIN assessment_sets AS aset ON (aset.id = a.assessment_set_id)
+  JOIN assessment_instances AS ai ON (ai.assessment_id = a.id)
+  LEFT JOIN users AS u ON (u.id = ai.user_id)
+  LEFT JOIN teams AS g ON (g.id = ai.team_id)
+WHERE
+  a.id = $assessment_id
+  AND g.deleted_at IS NULL
+ORDER BY
+  u.uid,
+  u.id,
+  ai.number;
+```
+
+**`regrading.ts`**: Update Zod schemas to use full row types and compute labels in TypeScript:
+
+```typescript
+const RegradeAssessmentInstanceInfoSchema = z.object({
+  assessment_instance: AssessmentInstanceSchema,
+  assessment: AssessmentSchema,
+  assessment_set: AssessmentSetSchema,
+  instance_user: UserSchema.nullable(),
+  instance_group: GroupSchema.nullable(),
+  course_instance: CourseInstanceSchema,
+  course: CourseSchema,
+});
+
+const RegradeAssessmentInstancesSchema = z.object({
+  assessment_instance: AssessmentInstanceSchema,
+  assessment: AssessmentSchema,
+  assessment_set: AssessmentSetSchema,
+  instance_user: UserSchema.nullable(),
+  instance_group: GroupSchema.nullable(),
+});
+```
+
+Update `regradeAssessmentInstance()` to compute label and extract IDs from full row objects:
+- `assessmentInstanceLabel(row.assessment_instance, row.assessment, row.assessment_set)`
+- `row.instance_user?.uid` instead of `row.user_uid`
+- `row.instance_group?.name` instead of `row.group_name`
+- `row.assessment.id` instead of `row.assessment_id`
+- `row.course_instance.id` instead of `row.course_instance_id`
+- `row.course.id` instead of `row.course_id`
+
+Update `regradeAllAssessmentInstances()` similarly:
+- `row.assessment_instance.id` instead of `row.assessment_instance_id`
+- Compute label from full row objects
+
+### 5. Remove the sproc
+
+- **`apps/prairielearn/src/sprocs/index.ts`**: Remove `'assessment_instance_label.sql'` from the array
+- **Delete** `apps/prairielearn/src/sprocs/assessment_instance_label.sql`
+
+### 6. Create migration to drop the function
+
+**New file:** `apps/prairielearn/src/migrations/{timestamp}_assessment_instance_label__drop.sql`
+```sql
+DROP FUNCTION IF EXISTS assessment_instance_label(assessment_instances, assessments, assessment_sets);
+```
+
+### 7. No changes needed to UI consumers
+
+`Navbar.tsx` and `instructorAssessmentInstance.html.tsx` access `assessment_instance_label` from `resLocals`, which will still be populated by the middlewares.
+
+## Files to modify
+
+- `apps/prairielearn/src/lib/assessment-label.ts` (new)
+- `apps/prairielearn/src/middlewares/selectAndAuthzAssessmentInstance.sql`
+- `apps/prairielearn/src/middlewares/selectAndAuthzAssessmentInstance.ts`
+- `apps/prairielearn/src/middlewares/selectAndAuthzInstanceQuestion.sql`
+- `apps/prairielearn/src/middlewares/selectAndAuthzInstanceQuestion.ts`
+- `apps/prairielearn/src/lib/regrading.sql`
+- `apps/prairielearn/src/lib/regrading.ts`
+- `apps/prairielearn/src/sprocs/index.ts`
+- `apps/prairielearn/src/sprocs/assessment_instance_label.sql` (delete)
+- `apps/prairielearn/src/migrations/` (new migration)
+
+## Verification
+
+1. Typecheck changed files: `./scripts/typecheck-file.sh <files>`
+2. Run `make build` to check everything compiles
+3. Search for any remaining references: `grep -r assessment_instance_label` to confirm no stale usages
+4. Run relevant tests: `yarn test apps/prairielearn/src/tests/` to verify no regressions
+5. Manually verify on dev server that assessment instance pages show correct labels
+
+
+If you need specific details from before exiting plan mode (like exact code snippets, error messages, or content you generated), read the full transcript at: /Users/peter/.REDACTED.jsonl
+
+If this plan can be broken down into multiple independent tasks, consider using the TeamCreate tool to create a team and parallelize the work.

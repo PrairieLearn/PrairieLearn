@@ -1,0 +1,35 @@
+{
+  "cli_version": "0.4.2",
+  "checkpoint_id": "6ea06bb9a32b",
+  "strategy": "manual-commit",
+  "branch": "reteps/remove-assessment_instance_label",
+  "checkpoints_count": 1,
+  "files_touched": [
+    "apps/prairielearn/src/lib/assessment-label.ts",
+    "apps/prairielearn/src/lib/regrading.sql",
+    "apps/prairielearn/src/lib/regrading.ts",
+    "apps/prairielearn/src/middlewares/selectAndAuthzAssessmentInstance.sql",
+    "apps/prairielearn/src/middlewares/selectAndAuthzAssessmentInstance.ts",
+    "apps/prairielearn/src/middlewares/selectAndAuthzInstanceQuestion.sql",
+    "apps/prairielearn/src/middlewares/selectAndAuthzInstanceQuestion.ts",
+    "apps/prairielearn/src/migrations/20260212170000_assessment_instance_label__drop.sql",
+    "apps/prairielearn/src/sprocs/assessment_instance_label.sql",
+    "apps/prairielearn/src/sprocs/index.ts"
+  ],
+  "sessions": [
+    {
+      "metadata": "/6e/a06bb9a32b/0/metadata.json",
+      "transcript": "/6e/a06bb9a32b/0/full.jsonl",
+      "context": "/6e/a06bb9a32b/0/context.md",
+      "content_hash": "/6e/a06bb9a32b/0/content_hash.txt",
+      "prompt": "/6e/a06bb9a32b/0/prompt.txt"
+    }
+  ],
+  "token_usage": {
+    "input_tokens": 38,
+    "cache_creation_tokens": 47283,
+    "cache_read_tokens": 2432479,
+    "output_tokens": 3333,
+    "api_call_count": 36
+  }
+}
