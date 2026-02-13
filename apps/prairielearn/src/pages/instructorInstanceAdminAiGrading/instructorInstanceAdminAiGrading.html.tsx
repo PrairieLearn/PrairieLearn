@@ -92,7 +92,7 @@ export function InstructorInstanceAdminAiGrading({
                 </div>
 
                 <div className="table-responsive border rounded overflow-hidden">
-                  <table className="table table-sm table-hover mb-0 border-bottom-0" aria-label="API key credentials">
+                  <table className="table table-sm table-hover mb-0" aria-label="API key credentials">
                   <thead>
                     <tr>
                       <th className="px-3 py-2">Provider</th>
