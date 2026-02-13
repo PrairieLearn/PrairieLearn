@@ -117,10 +117,7 @@ router.post(
           'image/webp',
           'application/pdf',
         ];
-        if (
-          !req.file.mimetype.startsWith('image/') &&
-          !allowedMimeTypes.includes(req.file.mimetype)
-        ) {
+        if (!allowedMimeTypes.includes(req.file.mimetype)) {
           throw new error.HttpStatusError(
             400,
             'Unsupported file type. Please upload an image (PNG, JPG, GIF, WebP) or PDF.',
@@ -143,6 +140,9 @@ router.post(
 
         promptArgs.userMessageParts = parts;
       } else {
+        if (!req.body.prompt?.trim()) {
+          throw new error.HttpStatusError(400, 'Please provide a prompt or upload a file.');
+        }
         promptArgs.prompt = req.body.prompt;
       }
 
