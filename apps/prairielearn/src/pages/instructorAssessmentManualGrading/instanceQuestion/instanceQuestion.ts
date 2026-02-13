@@ -15,7 +15,10 @@ import {
   selectRubricGradingItems,
   toggleAiGradingMode,
 } from '../../../ee/lib/ai-grading/ai-grading-util.js';
-import type { InstanceQuestionAIGradingInfo } from '../../../ee/lib/ai-grading/types.js';
+import type {
+  InstanceQuestionAIGradingInfo,
+  InstanceQuestionAIGradingInfoBase,
+} from '../../../ee/lib/ai-grading/types.js';
 import {
   selectAssessmentQuestionHasInstanceQuestionGroups,
   selectInstanceQuestionGroup,
@@ -217,17 +220,44 @@ router.get(
           return false;
         });
 
-        aiGradingInfo = {
+        const aiGradingInfoBase: InstanceQuestionAIGradingInfoBase = {
           submissionManuallyGraded,
           prompt: formattedPrompt,
           selectedRubricItemIds: selectedRubricItems.map((item) => item.id),
           explanation,
-          hasImage,
-          rotationCorrectionDegrees:
-            hasImage && ai_grading_job_data.rotation_correction_degrees
-              ? JSON.stringify(ai_grading_job_data.rotation_correction_degrees)
-              : null,
         };
+
+        if (hasImage) {
+          const rotationCorrectionDegrees = ai_grading_job_data.rotation_correction_degrees
+            ? JSON.stringify(ai_grading_job_data.rotation_correction_degrees)
+            : '{}';
+
+          const rotationCorrectionStatus = run(() => {
+            if (!ai_grading_job_data.rotation_correction_degrees) {
+              return 'not-flagged' as const;
+            }
+            const hasNonZeroRotations = Object.values(
+              ai_grading_job_data.rotation_correction_degrees,
+            ).some((degrees) => degrees !== 0);
+            return hasNonZeroRotations
+              ? ('flagged-and-corrected' as const)
+              : ('flagged-not-corrected' as const);
+          });
+
+          aiGradingInfo = {
+            ...aiGradingInfoBase,
+            hasImage: true,
+            rotationCorrectionStatus,
+            rotationCorrectionDegrees,
+          };
+        } else {
+          aiGradingInfo = {
+            ...aiGradingInfoBase,
+            hasImage: false,
+            rotationCorrectionStatus: null,
+            rotationCorrectionDegrees: null,
+          };
+        }
       }
     }
 

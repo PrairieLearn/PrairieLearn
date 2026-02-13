@@ -114,6 +114,7 @@ export function QuestionContainer({
         ? AIGradingExplanation({
             explanation: aiGradingInfo.explanation,
             hasImage: aiGradingInfo.hasImage,
+            rotationCorrectionStatus: aiGradingInfo.rotationCorrectionStatus,
             rotationCorrectionDegrees: aiGradingInfo.rotationCorrectionDegrees,
           })
         : ''}
@@ -202,10 +203,16 @@ function AIGradingPrompt({ prompt }: { prompt: string }) {
 function AIGradingExplanation({
   explanation,
   hasImage,
+  rotationCorrectionStatus,
   rotationCorrectionDegrees,
 }: {
   explanation: string | null;
   hasImage: boolean;
+  rotationCorrectionStatus:
+    | 'not-flagged'
+    | 'flagged-not-corrected'
+    | 'flagged-and-corrected'
+    | null;
   rotationCorrectionDegrees: string | null;
 }) {
   return html`
@@ -231,21 +238,42 @@ function AIGradingExplanation({
       >
         <div class="card-body">
           ${hasImage
-            ? rotationCorrectionDegrees
-              ? html`
-<p style="white-space: pre-wrap;">An image was uploaded in a rotated state by the student (this was an error by the student). The system corrected its rotation prior to AI grading.
+            ? run(() => {
+                switch (rotationCorrectionStatus) {
+                  case 'not-flagged':
+                    return html`<p>
+                        All student-submitted images were uploaded in an upright state.
+                      </p>
+                      <br />`;
+                  case 'flagged-not-corrected':
+                    return html`<p>
+                        All student-submitted images were uploaded in an upright state.
+                      </p>
+
+                      <p>
+                        The system initially flagged an image uploaded by the student as incorrectly
+                        rotated.
+                      </p>
+
+                      <p>
+                        After a second review, the system determined that the image was correctly
+                        rotated.
+                      </p>
+                      <br />`;
+                  case 'flagged-and-corrected':
+                    return html`<p style="white-space: pre-wrap;">An image was uploaded in a rotated state by the student (this was an error by the student). The system corrected its rotation prior to AI grading.
 
 If there are rubric items associated with image rotation, then please note that this image was rotated.
 
 Counterclockwise rotation corrections, in degrees:
+
 <pre>${rotationCorrectionDegrees}</pre>
 </p>
-<br />
-              `
-              : html`
-                  <p>All student-submitted images were uploaded in an upright state.</p>
-                  <br />
-                `
+<br />`;
+                  default:
+                    return '';
+                }
+              })
             : ''}
           ${explanation
             ? html`

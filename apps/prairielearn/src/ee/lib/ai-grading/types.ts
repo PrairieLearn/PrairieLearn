@@ -33,7 +33,7 @@ export interface AiGradingGeneralStats {
   rubric_stats: Record<string, number>;
 }
 
-export interface InstanceQuestionAIGradingInfo {
+export interface InstanceQuestionAIGradingInfoBase {
   /** If the submission was also manually graded. */
   submissionManuallyGraded: boolean;
   /** The IDs of the rubric items selected by the AI grader. */
@@ -42,11 +42,23 @@ export interface InstanceQuestionAIGradingInfo {
   prompt: string;
   /** Explanation from the LLM for AI grading */
   explanation: string | null;
-  /** If the submission had an image or not. */
-  hasImage: boolean;
-  /** Stringified JSON of rotation degrees for each image, by filename. */
-  rotationCorrectionDegrees: string | null;
 }
+
+export type InstanceQuestionAIGradingInfo = InstanceQuestionAIGradingInfoBase &
+  (
+    | {
+        hasImage: true;
+        rotationCorrectionStatus: 'not-flagged' | 'flagged-not-corrected' | 'flagged-and-corrected';
+        /** Stringified JSON of rotation degrees for each image, by filename. */
+        rotationCorrectionDegrees: string;
+      }
+    | {
+        hasImage: false;
+        rotationCorrectionStatus: null;
+        /** Stringified JSON of rotation degrees for each image, by filename. */
+        rotationCorrectionDegrees: null;
+      }
+  );
 
 export const AIGradingOrientationSchema = z.enum([
   'Upright (0 degrees)',
