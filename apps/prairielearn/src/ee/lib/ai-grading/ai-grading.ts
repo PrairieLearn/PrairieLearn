@@ -465,10 +465,23 @@ export async function aiGrade({
             model,
           });
 
+          // If no rotation corrections were applied, skip the second grading pass to save costs and use the initial response.
+          const noRotationsNeeded = Object.values(rotationCorrections).every(
+            (correction) => correction.degreesRotated === 0,
+          );
+
+          if (noRotationsNeeded) {
+            return {
+              finalGradingResponse: initialResponse,
+              rotationCorrectionApplied: false,
+            };
+          }
+
           // Regenerate the prompt with the rotation-corrected images.
           input = await generatePrompt({
             questionPrompt,
             questionAnswer,
+            rotationCorrected: true,
             submission_text,
             submitted_answer: rotatedSubmittedAnswer,
             rubric_items,
