@@ -261,15 +261,19 @@ function AIGradingExplanation({
                       </p>
                       <br />`;
                   case 'flagged-and-corrected':
-                    return html`<p style="white-space: pre-wrap;">An image was uploaded in a rotated state by the student (this was an error by the student). The system corrected its rotation prior to AI grading.
+                    return html`<p>
+                        An image was uploaded in a rotated state by the student (this was an error
+                        by the student). The system corrected its rotation prior to AI grading.
+                      </p>
 
-If there are rubric items associated with image rotation, then please note that this image was rotated.
+                      <p>
+                        If there are rubric items associated with image rotation, then please note
+                        that this image was rotated.
+                      </p>
 
-Counterclockwise rotation corrections, in degrees:
-
-<pre>${rotationCorrectionDegrees}</pre>
-</p>
-<br />`;
+                      <p>Counterclockwise rotation corrections, in degrees:</p>
+                      <pre>${rotationCorrectionDegrees}</pre>
+                      <br />`;
                   default:
                     return '';
                 }
