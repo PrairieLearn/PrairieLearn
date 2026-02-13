@@ -1027,9 +1027,7 @@ async function renderPanel(
   const html = await run(async () => {
     if (isEnterprise() && locals.questionRenderContext === 'ai_grading') {
       const { stripHtmlForAiGrading } = await import('../ee/lib/ai-grading/ai-grading-render.js');
-      return await stripHtmlForAiGrading(cachedData.html, {
-        preservedStyleProperties: panel === 'submission' ? ['background-color'] : [],
-      });
+      return await stripHtmlForAiGrading(cachedData.html);
     }
 
     return cachedData.html;
