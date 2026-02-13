@@ -2,7 +2,7 @@ import json
 import pathlib
 
 import pytest
-from grading.grade_modes import grade_submission
+from pl_sketch_grading import grade_submission
 
 """
 Tests for the pl-sketch element's grading functions.

@@ -6,9 +6,14 @@ import string
 import chevron
 import lxml.html
 import prairielearn as pl
-from grading.grade_modes import grade_submission
-from grading.types import SketchCanvasSize, SketchGrader, SketchInitial, SketchTool
-from grading.utils import format_initials, parse_function_string
+from pl_sketch_grading import grade_submission
+from sketchresponse.types import (
+    SketchCanvasSize,
+    SketchGrader,
+    SketchInitial,
+    SketchTool,
+)
+from sketchresponse.utils import format_initials, parse_function_string
 
 WEIGHT_DEFAULT = 1
 XRANGE_DEFAULT = "-5,5"

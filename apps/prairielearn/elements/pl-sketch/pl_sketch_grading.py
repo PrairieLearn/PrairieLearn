@@ -2,10 +2,9 @@ import base64
 import json
 
 import prairielearn as pl
-
-from .model import Asymptote, GradeableFunction, LineSegment, Polygon
-from .types import SketchGrader, SketchTool
-from .utils import (
+from sketchresponse.grader_lib import Asymptote, GradeableFunction, LineSegment, Polygon
+from sketchresponse.types import SketchGrader, SketchTool
+from sketchresponse.utils import (
     flip_grader_data,
     get_coverage_length_px,
     get_gap_length_px,
