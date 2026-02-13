@@ -1,0 +1,198 @@
+Implement the following plan:
+
+# Plan: Remove `admin_assessment_question_number` sproc
+
+## Context
+
+The `admin_assessment_question_number` SQL stored procedure computes a formatted question number string for instructor/admin views. It takes an `assessment_question_id` and returns either `"3"` (single question in group) or `"3.2"` (multiple questions in group). This logic is simple enough to inline, and moving it to TypeScript with full row returns improves type safety and consistency with the rest of the codebase.
+
+## Step 1: Create shared TypeScript utility
+
+Create `apps/prairielearn/src/lib/assessment-question-number.ts`:
+
+```ts
+export function formatAssessmentQuestionNumber({
+  alternativeGroupNumber,
+  numberInAlternativeGroup,
+  alternativeGroupSize,
+}: {
+  alternativeGroupNumber: number;
+  numberInAlternativeGroup: number;
+  alternativeGroupSize: number;
+}): string {
+  if (alternativeGroupSize === 1) {
+    return String(alternativeGroupNumber);
+  }
+  return `${alternativeGroupNumber}.${numberInAlternativeGroup}`;
+}
+```
+
+## Step 2: Update each SQL/TS call site
+
+### 2a. `instructorAssessmentQuestionStatistics` (already has all data)
+
+**SQL** (`apps/prairielearn/src/pages/instructorAssessmentQuestionStatistics/instructorAssessmentQuestionStatistics.sql`):
+- Remove line 39: `admin_assessment_question_number(aq.id) AS assessment_question_number,`
+- Already has `ag.number AS alternative_group_number` and `alternative_group_size` window function
+
+**TS** (`instructorAssessmentQuestionStatistics.html.tsx`):
+- Remove `assessment_question_number: z.string()` from schema
+- Compute with `formatAssessmentQuestionNumber()` at all 4 usage sites (line 108 CSV, line 128 chart labels, lines 192/336 table cells)
+
+**TS** (`instructorAssessmentQuestionStatistics.ts`):
+- Update CSV export line 108 to compute the number
+
+### 2b. `instructorAssessmentManualGrading/assessment` (already has all data, `number` is unused)
+
+**SQL** (`apps/prairielearn/src/pages/instructorAssessmentManualGrading/assessment/assessment.sql`):
+- Remove line 59: `admin_assessment_question_number(aq.id) AS number,`
+- Already has `ag.number AS alternative_group_number` and `alternative_group_size`
+
+**TS** (`assessment.html.tsx`):
+- Remove `number: z.string().nullable()` from `ManualGradingQuestionSchema`
+- No other changes needed - template already uses `alternative_group_number` and `number_in_alternative_group` directly at line 195-196
+
+### 2c. `instructorQuestionStatistics` (needs `alternative_groups` join)
+
+**SQL** (`apps/prairielearn/src/pages/instructorQuestionStatistics/instructorQuestionStatistics.sql`):
+- Add `JOIN alternative_groups AS ag ON (ag.id = aq.alternative_group_id)` to FROM clause
+- Replace `admin_assessment_question_number(aq.id) AS assessment_question_number,` with:
+  ```sql
+  ag.number AS alternative_group_number,
+  aq.number_in_alternative_group,
+  (SELECT count(*) FROM assessment_questions WHERE alternative_group_id = ag.id AND deleted_at IS NULL)::integer AS alternative_group_size,
+  ```
+
+**TS** (`instructorQuestionStatistics.html.tsx`):
+- Replace `assessment_question_number: z.string()` with `alternative_group_number: z.number().nullable()`, `alternative_group_size: z.number()` in `AssessmentQuestionStatsRowSchema`
+- Note: `number_in_alternative_group` is already on `AssessmentQuestionSchema` (the base), so no need to add it
+- Compute with `formatAssessmentQuestionNumber()` at usage sites
+
+**TS** (`instructorQuestionStatistics.ts`):
+- Update CSV export line 85 to compute the number
+
+### 2d. `instructorAssessmentInstance` - `assessment_instance_stats` query (needs join)
+
+**SQL** (`apps/prairielearn/src/pages/instructorAssessmentInstance/instructorAssessmentInstance.sql`):
+- In `assessment_instance_stats` block: add `JOIN alternative_groups AS ag ON (ag.id = aq.alternative_group_id)`
+- Replace `admin_assessment_question_number(aq.id) AS number` with:
+  ```sql
+  ag.number AS alternative_group_number,
+  (SELECT count(*) FROM assessment_questions WHERE alternative_group_id = ag.id AND deleted_at IS NULL)::integer AS alternative_group_size,
+  ```
+- Add `ag.id` to `GROUP BY`
+
+**TS** (`instructorAssessmentInstance.html.tsx`):
+- In `AssessmentInstanceStatsSchema`: replace `number: z.string().nullable()` with `alternative_group_number: z.number().nullable()`, `alternative_group_size: z.number()`
+- Update line 514 (`I-${row.number}.`) to use `formatAssessmentQuestionNumber()`
+
+### 2e. `instructorAssessmentInstance` - `select_instance_questions` query (already has join)
+
+**SQL** (same file, `select_instance_questions` block):
+- Replace `admin_assessment_question_number(aq.id) AS instructor_question_number` with:
+  ```sql
+  ag.number AS alternative_group_number,
+  (SELECT count(*) FROM assessment_questions WHERE alternative_group_id = ag.id AND deleted_at IS NULL)::integer AS alternative_group_size,
+  ```
+- Already joins `alternative_groups AS ag`
+
+**TS** (`instructorAssessmentInstance.html.tsx`):
+- In `InstanceQuestionRowSchema`: replace `instructor_question_number: z.string()` with `alternative_group_number: z.number().nullable()`, `alternative_group_size: z.number()`
+- Update lines 356 and 626 to compute with `formatAssessmentQuestionNumber()`
+
+### 2f. `selectAndAuthzAssessmentQuestion` middleware (needs join)
+
+**SQL** (`apps/prairielearn/src/middlewares/selectAndAuthzAssessmentQuestion.sql`):
+- Add `JOIN alternative_groups AS ag ON (ag.id = aq.alternative_group_id)` to FROM
+- Replace `admin_assessment_question_number(aq.id) AS number_in_alternative_group` with:
+  ```sql
+  ag.number AS alternative_group_number,
+  (SELECT count(*) FROM assessment_questions WHERE alternative_group_id = ag.id AND deleted_at IS NULL)::integer AS alternative_group_size
+  ```
+
+**TS** (`apps/prairielearn/src/middlewares/selectAndAuthzAssessmentQuestion.ts`):
+- In `SelectAndAuthzAssessmentQuestionSchema`: replace `number_in_alternative_group: z.string()` with `alternative_group_number: z.number().nullable()`, `alternative_group_size: z.number()`
+
+**TS** (`apps/prairielearn/src/lib/client/page-context.ts`):
+- In `StaffAssessmentQuestionContextSchema`: replace `number_in_alternative_group: z.string()` with `alternative_group_number: z.number().nullable()`, `alternative_group_size: z.number()`
+
+**Consumers** (update to compute display string with `formatAssessmentQuestionNumber()`):
+- `apps/prairielearn/src/pages/instructorAssessmentManualGrading/assessmentQuestion/assessmentQuestion.tsx` lines 142, 184
+- `apps/prairielearn/src/pages/instructorAssessmentManualGrading/instanceQuestion/instanceQuestion.html.tsx` line 85, 147
+- `apps/prairielearn/src/lib/client/page-context.test.ts` lines 293, 366, 626, 632
+
+### 2g. `selectAndAuthzInstanceQuestion` middleware (needs join)
+
+**SQL** (`apps/prairielearn/src/middlewares/selectAndAuthzInstanceQuestion.sql`):
+- Add `JOIN alternative_groups AS ag ON (ag.id = aq.alternative_group_id)` to FROM
+- In the `jsonb_build_object`, replace `admin_assessment_question_number(aq.id)` with inline SQL:
+  ```sql
+  CASE
+    WHEN (SELECT count(*) FROM assessment_questions WHERE alternative_group_id = ag.id AND deleted_at IS NULL) = 1
+      THEN ag.number::text
+    ELSE ag.number::text || '.' || aq.number_in_alternative_group::text
+  END
+  ```
+  (Inline SQL here because the result goes into a `jsonb_build_object` with key `instructor_question_number` and changing the shape would require updating a separate schema. This is the simplest change.)
+
+### 2h. `assessment.sql` - `question_data` CTE (needs join)
+
+**SQL** (`apps/prairielearn/src/lib/assessment.sql`):
+- In `question_data` CTE (~line 1400): add `JOIN alternative_groups AS ag ON (ag.id = aq.alternative_group_id)` to FROM
+- Replace `admin_assessment_question_number(aq.id) AS instructor_question_number` with inline SQL:
+  ```sql
+  CASE
+    WHEN (SELECT count(*) FROM assessment_questions WHERE alternative_group_id = ag.id AND deleted_at IS NULL) = 1
+      THEN ag.number::text
+    ELSE ag.number::text || '.' || aq.number_in_alternative_group::text
+  END AS instructor_question_number
+  ```
+  (Inline SQL here because the result flows into a large UNION query and the `InstanceLogSchema` expects `instructor_question_number: z.string().nullable()`. Changing the shape would cascade into the assessment instance log CSV export.)
+
+### 2i. `instructorQuestionSettings` (ORDER BY only, needs join)
+
+**SQL** (`apps/prairielearn/src/pages/instructorQuestionSettings/instructorQuestionSettings.sql`):
+- Add `JOIN alternative_groups AS ag ON (ag.id = aq.alternative_group_id)` to FROM in subquery
+- Replace `ORDER BY admin_assessment_question_number(aq.id)` with:
+  ```sql
+  ORDER BY ag.number, aq.number_in_alternative_group
+  ```
+  (Sorting by the two integer columns produces the same ordering as sorting by the formatted string, and is simpler.)
+
+## Step 3: Remove the sproc
+
+- Delete `apps/prairielearn/src/sprocs/admin_assessment_question_number.sql`
+- Remove `'admin_assessment_question_number.sql'` from `apps/prairielearn/src/sprocs/index.ts` (line 38)
+
+## Step 4: Create database migration
+
+Create `apps/prairielearn/src/migrations/YYYYMMDDHHMMSS_admin_assessment_question_number__drop.sql`:
+```sql
+DROP FUNCTION IF EXISTS admin_assessment_question_number(bigint);
+```
+
+## Summary of changes by strategy
+
+| Strategy | Files |
+|----------|-------|
+| **Remove sproc, compute in TS** (full row returns) | 2a (assessmentQuestionStats), 2b (manualGrading/assessment), 2c (questionStatistics), 2d (assessmentInstance stats), 2e (assessmentInstance questions), 2f (selectAndAuthzAssessmentQuestion middleware + consumers) |
+| **Replace with inline SQL** (in jsonb_build_object or CTE) | 2g (selectAndAuthzInstanceQuestion), 2h (assessment.sql question_data CTE) |
+| **Replace with simpler ORDER BY** | 2i (instructorQuestionSettings) |
+
+## Verification
+
+1. Run `./scripts/typecheck-file.sh` on all changed `.ts`/`.tsx` files
+2. Run `make build` to verify full type checking
+3. Run `make format-changed` to format
+4. Run tests: `yarn test apps/prairielearn/src/lib/client/page-context.test.ts`
+5. Manual verification: connect to dev server at `http://localhost:3000` and verify question numbers display correctly on:
+   - Assessment question statistics page
+   - Question statistics page
+   - Manual grading assessment page
+   - Assessment instance page
+   - Manual grading instance question page
+
+
+If you need specific details from before exiting plan mode (like exact code snippets, error messages, or content you generated), read the full transcript at: /Users/peter/.claude/projects/-Users-peter-work-PrairieLearn/e5aa3330-eca6-4fde-a388-4d95969c5c51.jsonl
+
+If this plan can be broken down into multiple independent tasks, consider using the TeamCreate tool to create a team and parallelize the work.

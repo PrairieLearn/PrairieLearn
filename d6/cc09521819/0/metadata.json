@@ -1,0 +1,50 @@
+{
+  "cli_version": "0.4.2",
+  "checkpoint_id": "d6cc09521819",
+  "session_id": "17163b5b-f62e-4d0e-9276-c89846ee2c56",
+  "strategy": "manual-commit",
+  "created_at": "2026-02-13T04:25:41.701159Z",
+  "branch": "reteps/remove-admin_assessment_question_number",
+  "checkpoints_count": 1,
+  "files_touched": [
+    "apps/prairielearn/src/lib/assessment-question-number.ts",
+    "apps/prairielearn/src/lib/assessment.sql",
+    "apps/prairielearn/src/lib/client/page-context.test.ts",
+    "apps/prairielearn/src/lib/client/page-context.ts",
+    "apps/prairielearn/src/middlewares/selectAndAuthzAssessmentQuestion.sql",
+    "apps/prairielearn/src/middlewares/selectAndAuthzAssessmentQuestion.ts",
+    "apps/prairielearn/src/middlewares/selectAndAuthzInstanceQuestion.sql",
+    "apps/prairielearn/src/migrations/20260212120000_admin_assessment_question_number__drop.sql",
+    "apps/prairielearn/src/pages/instructorAssessmentInstance/instructorAssessmentInstance.html.tsx",
+    "apps/prairielearn/src/pages/instructorAssessmentInstance/instructorAssessmentInstance.sql",
+    "apps/prairielearn/src/pages/instructorAssessmentManualGrading/assessment/assessment.html.tsx",
+    "apps/prairielearn/src/pages/instructorAssessmentManualGrading/assessment/assessment.sql",
+    "apps/prairielearn/src/pages/instructorAssessmentManualGrading/assessmentQuestion/assessmentQuestion.tsx",
+    "apps/prairielearn/src/pages/instructorAssessmentQuestionStatistics/instructorAssessmentQuestionStatistics.html.tsx",
+    "apps/prairielearn/src/pages/instructorAssessmentQuestionStatistics/instructorAssessmentQuestionStatistics.sql",
+    "apps/prairielearn/src/pages/instructorAssessmentQuestionStatistics/instructorAssessmentQuestionStatistics.ts",
+    "apps/prairielearn/src/pages/instructorQuestionSettings/instructorQuestionSettings.sql",
+    "apps/prairielearn/src/pages/instructorQuestionStatistics/instructorQuestionStatistics.html.tsx",
+    "apps/prairielearn/src/pages/instructorQuestionStatistics/instructorQuestionStatistics.sql",
+    "apps/prairielearn/src/pages/instructorQuestionStatistics/instructorQuestionStatistics.ts",
+    "apps/prairielearn/src/sprocs/admin_assessment_question_number.sql",
+    "apps/prairielearn/src/sprocs/index.ts"
+  ],
+  "agent": "Claude Code",
+  "token_usage": {
+    "input_tokens": 59,
+    "cache_creation_tokens": 113316,
+    "cache_read_tokens": 7211531,
+    "output_tokens": 1412,
+    "api_call_count": 57
+  },
+  "initial_attribution": {
+    "calculated_at": "2026-02-13T04:25:41.616585Z",
+    "agent_lines": 162,
+    "human_added": 0,
+    "human_modified": 0,
+    "human_removed": 0,
+    "total_committed": 162,
+    "agent_percentage": 100
+  }
+}
