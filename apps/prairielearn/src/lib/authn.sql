@@ -2,15 +2,7 @@
 SELECT
   to_jsonb(u.*) AS user,
   to_jsonb(i.*) AS institution,
-  (adm.id IS NOT NULL) AS is_administrator,
-  (
-    SELECT
-      count(*)::integer
-    FROM
-      news_item_notifications
-    WHERE
-      user_id = $user_id
-  ) AS news_item_notification_count
+  (adm.id IS NOT NULL) AS is_administrator
 FROM
   users AS u
   LEFT JOIN administrators AS adm ON (adm.user_id = u.id)

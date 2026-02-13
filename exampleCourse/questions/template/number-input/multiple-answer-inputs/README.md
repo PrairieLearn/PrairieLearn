@@ -1,1 +1,1 @@
-This question demonstrates how to create a question that prompts for multiple numerical answers with `<pl-number-input>`. The student is asked to find the roots of a quadratic equation.
+This question uses multiple `<pl-number-input>` elements to prompt for several numerical answers. The student is asked to find the roots of a quadratic equation.

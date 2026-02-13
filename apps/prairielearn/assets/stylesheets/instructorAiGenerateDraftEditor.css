@@ -9,9 +9,9 @@
 
   height: 100%;
   display: grid;
-  grid-template-areas: 'back preview-tabs' 'chat preview';
+  grid-template-areas: 'preview-tabs chat' 'preview chat';
   grid-template-rows: min-content 1fr;
-  grid-template-columns: var(--chat-width, 500px) 1fr;
+  grid-template-columns: 1fr var(--chat-width, 500px);
 }
 
 .app-chat-container {
@@ -25,10 +25,6 @@
   grid-template-rows: 1fr min-content;
   height: 100%;
   position: relative;
-}
-
-.app-back {
-  grid-area: back;
 }
 
 .app-chat-history {
@@ -55,7 +51,7 @@
 .app-chat-resizer {
   position: absolute;
   top: 0;
-  right: 0;
+  left: 0;
   width: 6px;
   height: 100%;
   cursor: col-resize;
@@ -94,7 +90,7 @@
 /* Reflow to a vertical layout on narrow viewports */
 @media (max-width: 768px) {
   .app-content {
-    grid-template-areas: 'back' 'chat' 'preview-tabs' 'preview';
+    grid-template-areas: 'preview-tabs' 'preview' 'chat';
     grid-template-columns: 1fr;
     height: unset;
   }
@@ -112,10 +108,6 @@
     grid-template-rows: min-content 1fr 1fr;
     grid-template-columns: 1fr;
   }
-}
-
-.markdown-body > :last-child {
-  margin-bottom: 0;
 }
 
 .markdown-body ul {

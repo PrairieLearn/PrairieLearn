@@ -3,6 +3,7 @@ import { escapeHtml, html, unsafeHtml } from '@prairielearn/html';
 import { run } from '@prairielearn/run';
 
 import type { InstanceQuestionAIGradingInfo } from '../ee/lib/ai-grading/types.js';
+import { ansiToHtml } from '../lib/chalk.js';
 import { config } from '../lib/config.js';
 import { type CopyTarget } from '../lib/copy-content.js';
 import type {
@@ -14,10 +15,10 @@ import type {
   User,
   Variant,
 } from '../lib/db-types.js';
+import { type GroupInfo, getRoleNamesForUser } from '../lib/groups.js';
 import { idsEqual } from '../lib/id.js';
 import type { IssueRenderData } from '../lib/question-render.types.js';
 import type { UntypedResLocals } from '../lib/res-locals.types.js';
-import { type GroupInfo, getRoleNamesForUser } from '../lib/teams.js';
 import type { SimpleVariantWithScore } from '../models/variant.js';
 
 import { AiGradingHtmlPreview } from './AiGradingHtmlPreview.js';
@@ -351,7 +352,7 @@ export function IssuePanel({
                 ? html`
                     <p><strong>Console log:</strong></p>
                     <pre class="bg-dark text-white rounded p-3">
-${issue.system_data.courseErrData.outputBoth}</pre
+${unsafeHtml(ansiToHtml(issue.system_data.courseErrData.outputBoth))}</pre
                     >
                   `
                 : ''}
@@ -521,7 +522,7 @@ export function QuestionFooterContent({
     }
 
     if (authz_result?.authorized_edit === false) {
-      return html`<div class="alert alert-warning mt-2" role="alert">
+      return html`<div class="alert alert-warning mb-0" role="alert">
         You are viewing the question instance of a different user and so are not authorized to save
         answers, to submit answers for grading, or to try a new variant of this same question.
       </div>`;
