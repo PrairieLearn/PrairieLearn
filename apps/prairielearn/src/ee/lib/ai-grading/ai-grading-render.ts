@@ -1,16 +1,22 @@
 import * as cheerio from 'cheerio';
 import { ElementType } from 'domelementtype';
-import type { AnyNode } from 'domhandler';
+import type { Element } from 'domhandler';
 
 import { formatHtmlWithPrettier } from '../../../lib/prettier.js';
 
+/**
+ * These attributes are chosen to be preserved because they can influence the
+ * interpretation of both the correct answer and a submitted response. Specifically,
+ * they're relevant in questions where instructors ask students to highlight text
+ * or change its color in `<pl-rich-text-editor>`.
+ */
 const PRESERVED_STYLE_PROPERTIES = new Set(['color', 'background-color']);
 
 /**
  * Strips the style attribute from an element, preserving only
  * color and background-color.
  */
-function stripStyleAttribute($: cheerio.CheerioAPI, el: AnyNode): void {
+function stripStyleAttribute($: cheerio.CheerioAPI, el: Element): void {
   const parsedStyle = $(el).prop('style');
 
   const preservedDeclarations = new Map<string, string>();
@@ -45,7 +51,7 @@ function stripStyleAttribute($: cheerio.CheerioAPI, el: AnyNode): void {
   }
 }
 
-function stripBootstrapAttributes($: cheerio.CheerioAPI, el: AnyNode): void {
+function stripBootstrapAttributes($: cheerio.CheerioAPI, el: Element): void {
   for (const name of Object.keys(el.attribs)) {
     if (name.startsWith('data-bs-')) {
       $(el).removeAttr(name);
