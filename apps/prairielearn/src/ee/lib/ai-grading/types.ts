@@ -42,6 +42,8 @@ export interface InstanceQuestionAIGradingInfo {
   prompt: string;
   /** Explanation from the LLM for AI grading */
   explanation: string | null;
+  /** If the submission had an image or not. */
+  hasImage: boolean;
   /** Stringified JSON of rotation degrees for each image, by filename. */
   rotationCorrectionDegrees: string | null;
 }

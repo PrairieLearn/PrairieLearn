@@ -10,6 +10,7 @@ import { DateFromISOString, IdSchema } from '@prairielearn/zod';
 
 import { calculateAiGradingStats } from '../../../ee/lib/ai-grading/ai-grading-stats.js';
 import {
+  containsImageCapture,
   selectLastSubmissionId,
   selectRubricGradingItems,
   toggleAiGradingMode,
@@ -131,6 +132,8 @@ router.get(
      */
     let aiGradingInfo: InstanceQuestionAIGradingInfo | undefined = undefined;
 
+    const localsForRender = await prepareLocalsForRender(req.query, res.locals)
+
     if (aiGradingEnabled) {
       const submission_id = await selectLastSubmissionId(instance_question.id);
       const ai_grading_job_data = await sqldb.queryOptionalRow(
@@ -207,12 +210,16 @@ router.get(
           return null;
         });
 
+        const submission_text = localsForRender.resLocals.submissionHtmls[0];
+        const hasImage = containsImageCapture(submission_text);
+
         aiGradingInfo = {
           submissionManuallyGraded,
           prompt: formattedPrompt,
           selectedRubricItemIds: selectedRubricItems.map((item) => item.id),
           explanation,
-          rotationCorrectionDegrees: ai_grading_job_data.rotation_correction_degrees
+          hasImage,
+          rotationCorrectionDegrees: (hasImage && ai_grading_job_data.rotation_correction_degrees)
             ? JSON.stringify(ai_grading_job_data.rotation_correction_degrees)
             : null,
         };
@@ -231,7 +238,7 @@ router.get(
 
     res.send(
       InstanceQuestionPage({
-        ...(await prepareLocalsForRender(req.query, res.locals)),
+        ...localsForRender,
         assignedGrader,
         lastGrader,
         selectedInstanceQuestionGroup: instanceQuestionGroup,

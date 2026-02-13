@@ -112,6 +112,7 @@ export function QuestionContainer({
       ${['instructor', 'manual_grading'].includes(questionContext) && aiGradingInfo
         ? AIGradingExplanation({
             explanation: aiGradingInfo.explanation,
+            hasImage: aiGradingInfo.hasImage,
             rotationCorrectionDegrees: aiGradingInfo.rotationCorrectionDegrees,
           })
         : ''}
@@ -199,9 +200,11 @@ function AIGradingPrompt({ prompt }: { prompt: string }) {
 
 function AIGradingExplanation({
   explanation,
+  hasImage,
   rotationCorrectionDegrees,
 }: {
   explanation: string | null;
+  hasImage: boolean;
   rotationCorrectionDegrees: string | null;
 }) {
   return html`
@@ -233,7 +236,8 @@ ${explanation}
 </pre>
               `
             : ''}
-          ${rotationCorrectionDegrees
+          ${hasImage ? (
+            rotationCorrectionDegrees
             ? html`
                 <br />
                 <pre style="white-space: pre-wrap;">
@@ -247,7 +251,8 @@ Counterclockwise rotation corrections, in degrees: ${rotationCorrectionDegrees}
                 <pre>
 All student-submitted images were uploaded in an upright state.
 </pre>
-              `}
+              `
+          ) : ''}
         </div>
       </div>
     </div>
