@@ -17,17 +17,22 @@ function renderEnrollmentEventText(event: StaffAuditEvent): string {
     implicit_joined: 'Enrolled in course',
     explicit_joined: 'Enrolled in course',
     invited: 'Invited to course',
+    invited_by_manual_sync: 'Invited to course (manual student list sync)',
     invitation_accepted: 'Accepted invitation',
     invitation_rejected: 'Rejected invitation',
     blocked: 'Blocked from course',
     unblocked: 'Reenrolled in course (unblocked)',
-    // You can never actually see this state since canceling an invitation hard-deletes the enrollment.
-    invitation_deleted: 'Invitation cancelled',
+    unblocked_by_manual_sync: 'Unblocked (manual student list sync)',
     left: 'Student left course',
-    // NOTE: at the time of writing, we hadn't yet written any `removed` events to production.
-    // We should feel free to adjust this text or the action detail later if needed.
-    removed: 'Student removed from course by instructor',
+    removed: 'Removed from course by instructor',
+    removed_by_manual_sync: 'Removed from course (manual student list sync)',
+    reenrolled_by_manual_sync: 'Reenrolled (manual student list sync)',
     reenrolled_by_instructor: 'Reenrolled in course by instructor',
+
+    // You can never actually see these states since canceling an invitation
+    // hard-deletes the enrollment.
+    invitation_deleted: 'Invitation cancelled',
+    invitation_deleted_by_manual_sync: 'Invitation cancelled (manual student list sync)',
   };
 
   const detail = detailMap[action_detail as SupportedActionsForTable<'enrollments'>];
