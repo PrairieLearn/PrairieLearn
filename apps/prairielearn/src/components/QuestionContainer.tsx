@@ -230,10 +230,10 @@ function AIGradingExplanation({
         id="ai-grading-explanation-body"
       >
         <div class="card-body">
-          ${hasImage ? (
-            rotationCorrectionDegrees
-            ? html`
-                <p style="white-space: pre-wrap;">An image was uploaded in a rotated state by the student (this was an error by the student). The system corrected its rotation prior to AI grading.
+          ${hasImage
+            ? rotationCorrectionDegrees
+              ? html`
+<p style="white-space: pre-wrap;">An image was uploaded in a rotated state by the student (this was an error by the student). The system corrected its rotation prior to AI grading.
 
 If there are rubric items associated with image rotation, then please note that this image was rotated.
 
@@ -242,13 +242,11 @@ Counterclockwise rotation corrections, in degrees:
 </p>
 <br />
               `
-            : html`
-                <p>
-All student-submitted images were uploaded in an upright state.
-</p>
-<br />
-              `
-          ) : ''}
+              : html`
+                  <p>All student-submitted images were uploaded in an upright state.</p>
+                  <br />
+                `
+            : ''}
           ${explanation
             ? html`
                 <pre class="mb-0 overflow-visible mathjax_process" style="white-space: pre-wrap;">

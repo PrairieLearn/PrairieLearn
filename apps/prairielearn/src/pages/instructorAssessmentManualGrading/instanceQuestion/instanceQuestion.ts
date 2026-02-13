@@ -132,7 +132,7 @@ router.get(
      */
     let aiGradingInfo: InstanceQuestionAIGradingInfo | undefined = undefined;
 
-    const localsForRender = await prepareLocalsForRender(req.query, res.locals)
+    const localsForRender = await prepareLocalsForRender(req.query, res.locals);
 
     if (aiGradingEnabled) {
       const submission_id = await selectLastSubmissionId(instance_question.id);
@@ -210,8 +210,12 @@ router.get(
           return null;
         });
 
-        const submission_text = localsForRender.resLocals.submissionHtmls[0];
-        const hasImage = containsImageCapture(submission_text);
+        const hasImage = run(() => {
+          if (localsForRender.resLocals.submissionHtmls.length > 0) {
+            return containsImageCapture(localsForRender.resLocals.submissionHtmls[0]);
+          }
+          return false;
+        });
 
         aiGradingInfo = {
           submissionManuallyGraded,
@@ -219,9 +223,10 @@ router.get(
           selectedRubricItemIds: selectedRubricItems.map((item) => item.id),
           explanation,
           hasImage,
-          rotationCorrectionDegrees: (hasImage && ai_grading_job_data.rotation_correction_degrees)
-            ? JSON.stringify(ai_grading_job_data.rotation_correction_degrees)
-            : null,
+          rotationCorrectionDegrees:
+            hasImage && ai_grading_job_data.rotation_correction_degrees
+              ? JSON.stringify(ai_grading_job_data.rotation_correction_degrees)
+              : null,
         };
       }
     }
