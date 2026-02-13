@@ -8,16 +8,15 @@ import { afterAll, assert, beforeAll, describe, test } from 'vitest';
 
 import expressListEndpoints, { type Endpoint } from '@prairielearn/express-list-endpoints';
 import * as sqldb from '@prairielearn/postgres';
+import { assertNever } from '@prairielearn/utils';
 import { IdSchema } from '@prairielearn/zod';
 
 import { dangerousFullSystemAuthz } from '../../lib/authz-data-lib.js';
 import { config } from '../../lib/config.js';
 import { features } from '../../lib/features/index.js';
 import { TEST_COURSE_PATH } from '../../lib/paths.js';
-import { assertNever } from '../../lib/types.js';
 import { selectCourseInstanceById } from '../../models/course-instances.js';
 import { ensureUncheckedEnrollment } from '../../models/enrollment.js';
-import * as news_items from '../../news_items/index.js';
 import * as server from '../../server.js';
 import * as helperServer from '../helperServer.js';
 
@@ -90,6 +89,9 @@ async function checkPage(url: string) {
   const validationResults = await validator.validateString(text, {
     plugins: [Bootstrap4ConstructPlugin],
     rules: {
+      // React 19's renderToString outputs camelCase attribute names (e.g., colSpan
+      // instead of colspan). HTML is case-insensitive, so we accept both.
+      'attr-case': ['error', { style: ['lowercase', 'camelcase'] }],
       'bootstrap4-construct': 'error',
       'attribute-boolean-style': 'off',
       'attribute-empty-style': 'off',
@@ -102,6 +104,9 @@ async function checkPage(url: string) {
       'no-trailing-whitespace': 'off',
       'script-type': 'off',
       'unique-landmark': 'off',
+      // React 19's useId() generates IDs like "_R_1lc_" which don't begin with a
+      // letter. We use relaxed mode to allow any non-empty ID without whitespace.
+      'valid-id': ['error', { relaxed: true }],
       'void-style': 'off',
       'wcag/h63': 'off',
       // We use `role="radiogroup"` and `role="radio"` for custom radio buttons.
@@ -249,7 +254,6 @@ const SKIP_ROUTES = [
   '/pl/course_instance/:course_instance_id/instructor/instance_question/:instance_question_id/clientFilesQuestion/*',
   '/pl/course_instance/:course_instance_id/instructor/instance_question/:instance_question_id/generatedFilesQuestion/variant/:unsafe_variant_id/*',
   '/pl/course_instance/:course_instance_id/instructor/instance_question/:instance_question_id/submission/:unsafe_submission_id/file/*',
-  '/pl/course_instance/:course_instance_id/instructor/news_item/:news_item_id/*',
   '/pl/course_instance/:course_instance_id/instructor/question/:question_id/clientFilesCourse/*',
   '/pl/course_instance/:course_instance_id/instructor/question/:question_id/clientFilesQuestion/*',
   '/pl/course_instance/:course_instance_id/instructor/question/:question_id/generatedFilesQuestion/variant/:unsafe_variant_id/*',
@@ -260,7 +264,6 @@ const SKIP_ROUTES = [
   '/pl/course_instance/:course_instance_id/instructor/question/:question_id/statistics/:filename',
   '/pl/course_instance/:course_instance_id/instructor/question/:question_id/submission/:unsafe_submission_id/file/*',
   '/pl/course_instance/:course_instance_id/instructor/question/:question_id/text/:filename',
-  '/pl/course_instance/:course_instance_id/news_item/:news_item_id/*',
   '/pl/course_instance/:course_instance_id/sharedElements/course/:producing_course_id/cacheableElements/:cachebuster/*',
   '/pl/course_instance/:course_instance_id/sharedElements/course/:producing_course_id/elements/*',
   '/pl/course_instance/:course_instance_id/instructor/sharedElements/course/:producing_course_id/cacheableElements/:cachebuster/*',
@@ -269,7 +272,6 @@ const SKIP_ROUTES = [
   '/pl/course/:course_id/cacheableElements/:cachebuster/*',
   '/pl/course/:course_id/clientFilesCourse/*',
   '/pl/course/:course_id/course_admin/file_download/*',
-  '/pl/course/:course_id/news_item/:news_item_id/*',
   '/pl/course/:course_id/question/:question_id/clientFilesCourse/*',
   '/pl/course/:course_id/question/:question_id/clientFilesQuestion/*',
   '/pl/course/:course_id/elements/*',
@@ -285,7 +287,6 @@ const SKIP_ROUTES = [
   '/pl/course/:course_id/grading_job/:job_id/file/:file',
   '/pl/course/:course_id/sharedElements/course/:producing_course_id/cacheableElements/:cachebuster/*',
   '/pl/course/:course_id/sharedElements/course/:producing_course_id/elements/*',
-  '/pl/news_item/:news_item_id/*',
   '/pl/public/course/:course_id/cacheableElements/:cachebuster/*',
   '/pl/public/course/:course_id/elements/*',
   '/pl/public/course/:course_id/question/:question_id/clientFilesQuestion/*',
@@ -395,20 +396,9 @@ describe('accessibility', () => {
     await helperServer.before(TEST_COURSE_PATH)();
     config.cronActive = true;
 
-    // We want to test a news item page, so we need to "init" them.
-    await news_items.init({
-      notifyIfPreviouslyEmpty: true,
-      errorIfLockNotAcquired: true,
-    });
-
     const app = await server.initExpress();
     endpoints = expressListEndpoints(app);
     endpoints.sort((a, b) => a.path.localeCompare(b.path));
-
-    const news_item_id = await sqldb.queryRow(
-      'SELECT id FROM news_items ORDER BY id ASC LIMIT 1',
-      IdSchema,
-    );
 
     const assessment_id = await sqldb.queryRow(
       'SELECT id FROM assessments WHERE tid = $tid',
@@ -423,7 +413,7 @@ describe('accessibility', () => {
     );
 
     const user_id = await sqldb.queryRow(
-      'SELECT user_id FROM users WHERE uid = $uid',
+      'SELECT id FROM users WHERE uid = $uid',
       { uid: 'dev@example.com' },
       IdSchema,
     );
@@ -443,7 +433,6 @@ describe('accessibility', () => {
 
     routeParams = {
       ...STATIC_ROUTE_PARAMS,
-      news_item_id,
       assessment_id,
       question_id,
       user_id,
@@ -472,7 +461,7 @@ describe('accessibility', () => {
     );
 
     await sqldb.executeRow(
-      'UPDATE pl_courses SET sharing_name = $sharing_name WHERE id = $course_id',
+      'UPDATE courses SET sharing_name = $sharing_name WHERE id = $course_id',
       { sharing_name: 'test', course_id },
     );
   });

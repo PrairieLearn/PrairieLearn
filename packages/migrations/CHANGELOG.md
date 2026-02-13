@@ -1,5 +1,52 @@
 # @prairielearn/migrations
 
+## 5.0.1
+
+### Patch Changes
+
+- 8bdf6ea: Upgrade all JavaScript dependencies
+- Updated dependencies [8bdf6ea]
+  - @prairielearn/named-locks@4.0.1
+  - @prairielearn/postgres@5.0.2
+  - @prairielearn/logger@3.0.1
+  - @prairielearn/error@3.0.2
+
+## 5.0.0
+
+### Major Changes
+
+- 3914bb4: Upgrade to Node 24
+
+### Patch Changes
+
+- Updated dependencies [3914bb4]
+  - @prairielearn/named-locks@4.0.0
+  - @prairielearn/postgres@5.0.0
+  - @prairielearn/logger@3.0.0
+  - @prairielearn/error@3.0.0
+
+## 4.0.5
+
+### Patch Changes
+
+- 0900843: Switch to the `tsgo` compiler
+- Updated dependencies [0900843]
+  - @prairielearn/named-locks@3.0.28
+  - @prairielearn/postgres@4.5.2
+  - @prairielearn/logger@2.0.25
+  - @prairielearn/error@2.0.24
+
+## 4.0.4
+
+### Patch Changes
+
+- 70a8029: Upgrade all JavaScript dependencies
+- Updated dependencies [70a8029]
+  - @prairielearn/named-locks@3.0.27
+  - @prairielearn/postgres@4.5.1
+  - @prairielearn/logger@2.0.24
+  - @prairielearn/error@2.0.23
+
 ## 4.0.3
 
 ### Patch Changes

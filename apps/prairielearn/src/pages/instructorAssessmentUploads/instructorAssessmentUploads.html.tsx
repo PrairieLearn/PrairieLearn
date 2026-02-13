@@ -7,7 +7,7 @@ import { Modal } from '../../components/Modal.js';
 import { PageLayout } from '../../components/PageLayout.js';
 import { config } from '../../lib/config.js';
 import { JobSequenceSchema, UserSchema } from '../../lib/db-types.js';
-import type { UntypedResLocals } from '../../lib/res-locals.types.js';
+import type { ResLocalsForPage } from '../../lib/res-locals.js';
 
 export const UploadJobSequenceSchema = z.object({
   job_sequence: JobSequenceSchema,
@@ -20,7 +20,7 @@ export function InstructorAssessmentUploads({
   resLocals,
   uploadJobSequences,
 }: {
-  resLocals: UntypedResLocals;
+  resLocals: ResLocalsForPage<'assessment'>;
   uploadJobSequences: UploadJobSequence[];
 }) {
   return PageLayout({
@@ -39,11 +39,11 @@ export function InstructorAssessmentUploads({
         ? html`
             ${UploadInstanceQuestionScoresModal({
               csrfToken: resLocals.__csrf_token,
-              groupWork: resLocals.assessment.group_work,
+              groupWork: resLocals.assessment.team_work,
             })}
             ${UploadAssessmentInstanceScoresModal({
               csrfToken: resLocals.__csrf_token,
-              groupWork: resLocals.assessment.group_work,
+              groupWork: resLocals.assessment.team_work,
             })}
             ${config.devMode
               ? UploadSubmissionsCsvModal({ csrfToken: resLocals.__csrf_token })
@@ -51,7 +51,7 @@ export function InstructorAssessmentUploads({
           `
         : ''}
       ${AssessmentUploadCard({
-        groupWork: resLocals.assessment.group_work,
+        groupWork: resLocals.assessment.team_work,
         assessmentSetName: resLocals.assessment_set.name,
         assessmentNumber: resLocals.assessment.number,
         authzHasPermissionEdit: resLocals.authz_data.has_course_instance_permission_edit,
@@ -72,7 +72,7 @@ function AssessmentUploadCard({
 }: {
   groupWork: boolean;
   assessmentSetName: string;
-  assessmentNumber: number;
+  assessmentNumber: string;
   authzHasPermissionEdit: boolean;
   uploadJobSequences: UploadJobSequence[];
   urlPrefix: string;
@@ -224,7 +224,7 @@ ${groupWork ? 'group2' : 'student2@example.com'},1,matrixMultiply,100,Great job!
       Additional information, including instructions on how to update points instead of percentage
       or to update the auto/manual portions of the score, can be found in the
       <a
-        href="https://prairielearn.readthedocs.io/en/latest/manualGrading/#manual-grading-using-file-uploads"
+        href="https://docs.prairielearn.com/manualGrading/#manual-grading-using-file-uploads"
         target="_blank"
         rel="noopener noreferrer"
         >Manual Grading documentation</a

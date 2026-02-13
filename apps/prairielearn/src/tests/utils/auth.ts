@@ -1,4 +1,4 @@
-import _ from 'lodash';
+import { escapeRegExp } from 'es-toolkit';
 import { z } from 'zod';
 
 import { callRow, execute, loadSqlEquiv, queryOptionalRow, queryRow } from '@prairielearn/postgres';
@@ -65,11 +65,7 @@ export async function getOrCreateUser(authUser: AuthUser): Promise<User> {
     // The sproc returns multiple columns, but we only use the ID.
     z.object({ user_id: IdSchema }),
   );
-  return await queryRow(
-    'SELECT * FROM users WHERE user_id = $id',
-    { id: user.user_id },
-    UserSchema,
-  );
+  return await queryRow('SELECT * FROM users WHERE id = $id', { id: user.user_id }, UserSchema);
 }
 
 /** Helper function to create institutions for testing */
@@ -80,7 +76,7 @@ export async function createInstitution(id: string, shortName: string, longName:
       id,
       short_name: shortName,
       long_name: longName,
-      uid_regexp: `@${_.escapeRegExp(shortName)}$`,
+      uid_regexp: `@${escapeRegExp(shortName)}$`,
     },
     InstitutionSchema,
   );

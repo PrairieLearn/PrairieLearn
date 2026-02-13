@@ -7,7 +7,6 @@ import { IdSchema } from '@prairielearn/zod';
 
 import { config } from '../lib/config.js';
 import { AssessmentInstanceSchema, GroupRoleSchema, type User } from '../lib/db-types.js';
-import { TEST_COURSE_PATH } from '../lib/paths.js';
 import { generateAndEnrollUsers } from '../models/enrollment.js';
 
 import { assertAlert } from './helperClient.js';
@@ -90,7 +89,7 @@ async function updateGroupRoles(
 ): Promise<cheerio.CheerioAPI> {
   // Uncheck all of the inputs
   const roleIds = groupRoles.map((role) => role.id);
-  const userIds = studentUsers.map((user) => user.user_id);
+  const userIds = studentUsers.map((user) => user.id);
   for (const roleId of roleIds) {
     for (const userId of userIds) {
       const elementId = `#user_role_${roleId}-${userId}`;
@@ -213,9 +212,9 @@ async function prepareGroup() {
     '#leaveGroupModal',
   );
   const validRoleConfig = [
-    { roleId: manager.id, groupUserId: studentUsers[0].user_id },
-    { roleId: recorder.id, groupUserId: studentUsers[1].user_id },
-    { roleId: reflector.id, groupUserId: studentUsers[2].user_id },
+    { roleId: manager.id, groupUserId: studentUsers[0].id },
+    { roleId: recorder.id, groupUserId: studentUsers[1].id },
+    { roleId: reflector.id, groupUserId: studentUsers[2].id },
   ];
   $ = await updateGroupRoles(
     validRoleConfig,
@@ -243,7 +242,7 @@ async function prepareGroup() {
     sql.select_all_assessment_instance,
     AssessmentInstanceSchema,
   );
-  assert.equal(assessmentInstanceResult.group_id, '1');
+  assert.equal(assessmentInstanceResult.team_id, '1');
   const assessmentInstanceId = assessmentInstanceResult.id;
 
   return {
@@ -263,7 +262,7 @@ async function prepareGroup() {
 
 describe('Assessment instance with group roles & permissions - Exam', function () {
   describe('valid group role configuration tests', { timeout: 20_000 }, function () {
-    beforeAll(helperServer.before(TEST_COURSE_PATH));
+    beforeAll(helperServer.before());
 
     beforeAll(function () {
       storedConfig.authUid = config.authUid;
@@ -412,7 +411,7 @@ describe('Assessment instance with group roles & permissions - Exam', function (
   });
 
   describe('invalid role configuration tests', { timeout: 20_000 }, function () {
-    beforeAll(helperServer.before(TEST_COURSE_PATH));
+    beforeAll(helperServer.before());
 
     beforeAll(function () {
       storedConfig.authUid = config.authUid;
@@ -446,10 +445,10 @@ describe('Assessment instance with group roles & permissions - Exam', function (
         '#leaveGroupModal',
       );
       const invalidRoleConfig = [
-        { roleId: manager.id, groupUserId: studentUsers[0].user_id },
-        { roleId: recorder.id, groupUserId: studentUsers[0].user_id },
-        { roleId: recorder.id, groupUserId: studentUsers[1].user_id },
-        { roleId: reflector.id, groupUserId: studentUsers[2].user_id },
+        { roleId: manager.id, groupUserId: studentUsers[0].id },
+        { roleId: recorder.id, groupUserId: studentUsers[0].id },
+        { roleId: recorder.id, groupUserId: studentUsers[1].id },
+        { roleId: reflector.id, groupUserId: studentUsers[2].id },
       ];
       let $ = await updateGroupRoles(
         invalidRoleConfig,

@@ -18,14 +18,13 @@ import {
 
 const sql = sqldb.loadSqlEquiv(import.meta.url);
 
-const SelectAndAuthzAssessmentInstanceSchema = z.object({
+const SelectAndAuthzAssessmentInstanceBaseSchema = z.object({
   assessment_instance: AssessmentInstanceSchema.extend({
     formatted_date: z.string(),
   }),
   assessment_instance_remaining_ms: z.number().nullable(),
   assessment_instance_time_limit_ms: z.number().nullable(),
   assessment_instance_time_limit_expired: z.boolean(),
-  instance_user: UserSchema.nullable(),
   instance_role: SprocUsersGetDisplayedRoleSchema,
   assessment: AssessmentSchema,
   assessment_set: AssessmentSetSchema,
@@ -33,9 +32,20 @@ const SelectAndAuthzAssessmentInstanceSchema = z.object({
   assessment_instance_label: z.string(),
   assessment_label: z.string(),
   file_list: z.array(FileSchema),
-  instance_group: GroupSchema.nullable(),
   instance_group_uid_list: z.array(z.string()),
 });
+
+// See `user_team_xor` constraint
+const SelectAndAuthzAssessmentInstanceSchema = z.union([
+  SelectAndAuthzAssessmentInstanceBaseSchema.extend({
+    instance_user: UserSchema,
+    instance_group: z.null(),
+  }),
+  SelectAndAuthzAssessmentInstanceBaseSchema.extend({
+    instance_user: z.null(),
+    instance_group: GroupSchema,
+  }),
+]);
 
 export type ResLocalsAssessmentInstance = z.infer<typeof SelectAndAuthzAssessmentInstanceSchema>;
 

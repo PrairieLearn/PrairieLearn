@@ -1,27 +1,28 @@
 import clsx from 'clsx';
+import type { ReactNode } from 'react';
 
 import { compiledScriptTag, compiledStylesheetTag } from '@prairielearn/compiled-assets';
 import { formatDateFriendly } from '@prairielearn/formatter';
 import { HtmlSafeString, html, unsafeHtml } from '@prairielearn/html';
-import { renderHtml } from '@prairielearn/preact';
-import type { VNode } from '@prairielearn/preact-cjs';
+import { renderHtml } from '@prairielearn/react';
 import { run } from '@prairielearn/run';
+import { assertNever } from '@prairielearn/utils';
 
 import { getNavPageTabs } from '../lib/navPageTabs.js';
 import { computeStatus } from '../lib/publishing.js';
 import type { UntypedResLocals } from '../lib/res-locals.types.js';
-import { assertNever } from '../lib/types.js';
 
 import { AssessmentNavigation } from './AssessmentNavigation.js';
 import { HeadContents } from './HeadContents.js';
 import { Navbar } from './Navbar.js';
 import type { NavContext } from './Navbar.types.js';
 import { ContextNavigation } from './NavbarContext.js';
+import { PageFooter } from './PageFooter.js';
 import { SideNav } from './SideNav.js';
 import { SyncErrorsAndWarnings } from './SyncErrorsAndWarnings.js';
 
 function asHtmlSafe(
-  content: HtmlSafeString | HtmlSafeString[] | VNode<any> | undefined,
+  content: HtmlSafeString | HtmlSafeString[] | ReactNode | undefined,
 ): HtmlSafeString | HtmlSafeString[] | undefined {
   if (Array.isArray(content) || content instanceof HtmlSafeString || content === undefined) {
     return content;
@@ -106,6 +107,38 @@ function SyncErrorsAndWarningsForContext({
   }
 }
 
+function LegacyPublishingBannerComponent({
+  navContext,
+  resLocals,
+}: {
+  navContext: NavContext;
+  resLocals: UntypedResLocals;
+}) {
+  if (navContext.type !== 'instructor') return null;
+  if (navContext.page !== 'instance_admin' || navContext.subPage !== 'students') return null;
+
+  const { course_instance: courseInstance } = resLocals;
+
+  // Only show banner if using legacy publishing
+  if (!courseInstance || courseInstance.modern_publishing) return null;
+
+  return (
+    <div
+      className="alert alert-warning py-2 mb-0 rounded-0 border-0 border-bottom small"
+      role="alert"
+    >
+      You are using access rules to control who can access the course instance.{' '}
+      <a
+        href="https://docs.prairielearn.com/courseInstance/#migrating-from-allowaccess"
+        className="alert-link"
+      >
+        Migrate to publishing
+      </a>{' '}
+      to unlock additional enrollment management features.
+    </div>
+  );
+}
+
 function UnpublishedBannerComponent({
   navContext,
   resLocals,
@@ -148,9 +181,12 @@ function UnpublishedBannerComponent({
   });
 
   return (
-    <div class="alert alert-warning py-2 mb-0 rounded-0 border-0 border-bottom small" role="alert">
+    <div
+      className="alert alert-warning py-2 mb-0 rounded-0 border-0 border-bottom small"
+      role="alert"
+    >
       {message}{' '}
-      <a href={`${urlPrefix}/instance_admin/publishing`} class="alert-link">
+      <a href={`${urlPrefix}/instance_admin/publishing`} className="alert-link">
         Configure publishing settings
       </a>
     </div>
@@ -180,6 +216,8 @@ export function PageLayout({
     fullHeight?: boolean;
     /** Whether the page content should have padding around it. */
     contentPadding?: boolean;
+    /** Additional classes to apply to the main content container. */
+    contentContainerClassName?: string;
     /** A note to display after the pageTitle, shown in parenthesis. */
     pageNote?: string;
     /** Enables an htmx extension for an element and all its children */
@@ -196,23 +234,27 @@ export function PageLayout({
      * will not be persisted to the user's session.
      */
     forcedInitialNavToggleState?: boolean;
+    /** Whether or not to show the branded page footer. */
+    showFooter?: boolean;
   };
   /** Include scripts and other additional head content here. */
-  headContent?: HtmlSafeString | HtmlSafeString[] | VNode<any>;
+  headContent?: HtmlSafeString | HtmlSafeString[] | ReactNode;
   /** The content of the page in the body before the main container. */
-  preContent?: HtmlSafeString | HtmlSafeString[] | VNode<any>;
+  preContent?: HtmlSafeString | HtmlSafeString[] | ReactNode;
   /** The main content of the page within the main container. */
-  content: HtmlSafeString | HtmlSafeString[] | VNode<any>;
+  content: HtmlSafeString | HtmlSafeString[] | ReactNode;
   /** The content of the page in the body after the main container. */
-  postContent?: HtmlSafeString | HtmlSafeString[] | VNode<any>;
+  postContent?: HtmlSafeString | HtmlSafeString[] | ReactNode;
 }) {
   const resolvedOptions = {
     fullWidth: false,
     fullHeight: false,
     contentPadding: true,
+    contentContainerClassName: '',
     hxExt: '',
     dataAttributes: {},
     enableNavbar: true,
+    showFooter: false,
     ...options,
   };
 
@@ -264,6 +306,10 @@ export function PageLayout({
     }
   }
 
+  if (sideNavEnabled && resolvedOptions.showFooter) {
+    throw new Error('Cannot show the footer when the side nav is enabled.');
+  }
+
   return html`
     <!doctype html>
     <html lang="en">
@@ -277,7 +323,11 @@ export function PageLayout({
         ${sideNavEnabled ? compiledScriptTag('pageLayoutClient.ts') : ''}
       </head>
       <body
-        class="${resolvedOptions.fullHeight ? 'd-flex flex-column h-100' : ''}"
+        class="${clsx({
+          'd-flex flex-column': resolvedOptions.fullHeight || resolvedOptions.showFooter,
+          'h-100': resolvedOptions.fullHeight,
+          'min-vh-100': resolvedOptions.showFooter,
+        })}"
         hx-ext="${resolvedOptions.hxExt}"
         ${unsafeHtml(
           Object.entries(resolvedOptions.dataAttributes)
@@ -297,6 +347,7 @@ export function PageLayout({
             // Not persisted.
             'mobile-collapsed',
             resolvedOptions.fullHeight && 'h-100',
+            resolvedOptions.showFooter && 'flex-grow-1',
           )}"
         >
           ${resolvedOptions.enableNavbar
@@ -329,10 +380,16 @@ export function PageLayout({
           <div class="${clsx(sideNavEnabled && 'app-main', resolvedOptions.fullHeight && 'h-100')}">
             <div
               class="${clsx(
-                sideNavEnabled ? 'app-main-container' : 'h-100 w-100',
+                sideNavEnabled && 'app-main-container',
+                !sideNavEnabled && resolvedOptions.fullWidth && 'w-100',
+                !sideNavEnabled && resolvedOptions.fullHeight && 'h-100',
                 'd-flex flex-column',
+                resolvedOptions.contentContainerClassName,
               )}"
             >
+              ${renderHtml(
+                <LegacyPublishingBannerComponent navContext={navContext} resLocals={resLocals} />,
+              )}
               ${renderHtml(
                 <UnpublishedBannerComponent navContext={navContext} resLocals={resLocals} />,
               )}
@@ -375,6 +432,7 @@ export function PageLayout({
             </div>
           </div>
         </div>
+        ${resolvedOptions.showFooter ? renderHtml(<PageFooter />) : ''}
       </body>
     </html>
   `.toString();

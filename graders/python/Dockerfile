@@ -1,5 +1,5 @@
 FROM amazonlinux:2023
-ARG CACHEBUST=2025-12-15-14-21-51
+ARG CACHEBUST=2026-01-15-14-21-34
 
 # Needed to properly handle UTF-8
 ENV PYTHONIOENCODING=UTF-8
@@ -21,7 +21,8 @@ RUN dnf -y update \
     && arch="$(uname -m)" \
     && curl -LO "https://github.com/conda-forge/miniforge/releases/latest/download/Miniforge3-Linux-${arch}.sh" \
     && bash "Miniforge3-Linux-${arch}.sh" -b -p /usr/local -f \
-    && rm "Miniforge3-Linux-${arch}.sh"
+    && rm "Miniforge3-Linux-${arch}.sh" \
+    && /usr/local/bin/conda clean -afy
 
 COPY requirements.txt /
 RUN python3 -m pip install --no-cache-dir -r /requirements.txt

@@ -1,4 +1,4 @@
-import _ from 'lodash';
+import { chunk, shuffle } from 'es-toolkit';
 import * as streamifier from 'streamifier';
 
 import * as namedLocks from '@prairielearn/named-locks';
@@ -85,13 +85,22 @@ export async function uploadInstanceGroups({
           totalCount = 0;
         await runInTransactionAsync(async () => {
           for await (const { record } of csvParser) {
-            const { uid, groupname } = record;
-            if (!uid || !groupname) continue;
+            const uid = record.uid;
+            // `groupname` is supported for backwards compatibility. `group_name` is preferred.
+            const group_name = record.group_name ?? record.groupname;
+
+            if (!uid) {
+              throw new Error('Missing required "uid" value in CSV row.');
+            }
+            if (!group_name) {
+              throw new Error('Missing required "group_name" value in CSV row.');
+            }
+
             totalCount++;
             await createOrAddToGroup({
               course_instance,
               assessment,
-              group_name: groupname,
+              group_name,
               uids: [uid],
               authn_user_id,
               authzData,
@@ -99,7 +108,7 @@ export async function uploadInstanceGroups({
               () => successCount++,
               (err) => {
                 if (err instanceof GroupOperationError) {
-                  job.error(`Error adding ${uid} to group ${groupname}: ${err.message}`);
+                  job.error(`Error adding ${uid} to group ${group_name}: ${err.message}`);
                 } else {
                   throw err;
                 }
@@ -185,13 +194,12 @@ export async function randomGroups({
         job.verbose('Randomly generate groups for ' + assessment_label);
         job.verbose('----------------------------------------');
         job.verbose('Fetching the enrollment lists...');
-        const studentsToGroup = await queryRows(
+        const studentsWithoutGroup = await queryRows(
           sql.select_enrolled_students_without_group,
           { assessment_id: assessment.id },
           UserSchema,
         );
-        _.shuffle(studentsToGroup);
-        const numStudents = studentsToGroup.length;
+        const numStudents = studentsWithoutGroup.length;
         job.verbose(
           `There are ${numStudents} students enrolled in ${assessment_label} without a group`,
         );
@@ -201,9 +209,9 @@ export async function randomGroups({
         let groupsCreated = 0,
           studentsGrouped = 0;
         await runInTransactionAsync(async () => {
-          // Create groups using the groups of maximum size where possible
-          const userGroups = _.chunk(
-            studentsToGroup.map((user) => user.uid),
+          // Create random teams using the maximum size where possible
+          const userGroups = chunk(
+            shuffle(studentsWithoutGroup.map((user) => user.uid)),
             max_group_size,
           );
           // If the last group is too small, move students from larger groups to the last group

@@ -1,5 +1,7 @@
+import * as cheerio from 'cheerio';
+import { ElementType } from 'domelementtype';
+import { isEqual, pick, range } from 'es-toolkit';
 import jsonStringifySafe from 'json-stringify-safe';
-import _ from 'lodash';
 import { z } from 'zod';
 
 import * as sqldb from '@prairielearn/postgres';
@@ -22,6 +24,90 @@ import { ensureVariant, getQuestionCourse } from './question-variant.js';
 import { type ServerJob, createServerJob } from './server-jobs.js';
 
 const sql = sqldb.loadSqlEquiv(import.meta.url);
+
+/**
+ * Extracts unique dynamic file names from HTML content by parsing with cheerio
+ * and searching all element attributes for URLs matching the pattern
+ * `generatedFilesQuestion/variant/{variantId}/{filename}`.
+ */
+function extractDynamicFileUrls(html: string, variantId: string): string[] {
+  const $ = cheerio.load(html);
+  const pattern = new RegExp(`generatedFilesQuestion/variant/${variantId}/([^?#]+)$`);
+  const filenames = new Set<string>();
+
+  // We intentionally look for more than just `a[href]` and `img[src]` in case
+  // other tags or attributes are used to reference dynamic files. For instance,
+  // people might use `srcset`, or use `data-*` attributes for lazy loading or
+  // other client-side purposes.
+  $('*').each((_, el) => {
+    if (el.type !== ElementType.Tag) return;
+    for (const value of Object.values(el.attribs)) {
+      const match = value.match(pattern);
+      if (match) filenames.add(match[1].trim());
+    }
+  });
+
+  return Array.from(filenames);
+}
+
+async function testDynamicFiles({
+  htmls,
+  variant,
+  question,
+  course,
+  question_course,
+  user_id,
+  authn_user_id,
+}: {
+  htmls: {
+    questionHtml?: string;
+    submissionHtmls?: string[];
+    answerHtml?: string;
+    extraHeadersHtml?: string;
+  };
+  variant: Variant;
+  question: Question;
+  course: Course;
+  question_course: Course;
+  user_id: string;
+  authn_user_id: string;
+}): Promise<void> {
+  if (variant.broken_at) return;
+
+  const questionModule = questionServers.getModule(question.type);
+  if (!questionModule.file) return;
+
+  const allHtml = [
+    htmls.questionHtml ?? '',
+    htmls.answerHtml ?? '',
+    htmls.extraHeadersHtml ?? '',
+    ...(htmls.submissionHtmls ?? []),
+  ].join('\n');
+
+  const filenames = extractDynamicFileUrls(allHtml, variant.id);
+  if (filenames.length === 0) return;
+
+  for (const filename of filenames) {
+    const decodedFilename = decodeURIComponent(filename);
+    const { courseIssues } = await questionModule.file(
+      decodedFilename,
+      variant,
+      question,
+      question_course,
+    );
+
+    const studentMessage = 'Error creating file: ' + decodedFilename;
+    const courseData = { variant, question, course, filename: decodedFilename };
+    await writeCourseIssues(
+      courseIssues,
+      variant,
+      user_id,
+      authn_user_id,
+      studentMessage,
+      courseData,
+    );
+  }
+}
 
 interface TestResultStats {
   generateDuration: number;
@@ -108,7 +194,7 @@ function compareTestResults(
   const checkEqual = (name: string, var1: any, var2: any) => {
     const json1 = jsonStringifySafe(var1);
     const json2 = jsonStringifySafe(var2);
-    if (!_.isEqual(var1, var2)) {
+    if (!isEqual(var1, var2)) {
       courseIssues.push(new Error(`"${name}" mismatch: expected "${json1}" but got "${json2}"`));
     }
   };
@@ -274,14 +360,33 @@ async function testQuestion(
   const authn_user = await selectUserById(authn_user_id);
 
   const initialRenderStart = Date.now();
+  const initialRenderLocals = {
+    question,
+    course: variant_course,
+    urlPrefix: `/pl/course/${variant_course.id}`,
+    user,
+    authn_user,
+    is_administrator: false,
+    questionHtml: undefined as string | undefined,
+    submissionHtmls: undefined as string[] | undefined,
+    answerHtml: undefined as string | undefined,
+    extraHeadersHtml: undefined as string | undefined,
+  };
   try {
-    await getAndRenderVariant(variant.id, null, {
+    await getAndRenderVariant(variant.id, null, initialRenderLocals);
+    await testDynamicFiles({
+      htmls: {
+        questionHtml: initialRenderLocals.questionHtml,
+        submissionHtmls: initialRenderLocals.submissionHtmls,
+        answerHtml: initialRenderLocals.answerHtml,
+        extraHeadersHtml: initialRenderLocals.extraHeadersHtml,
+      },
+      variant,
       question,
       course: variant_course,
-      urlPrefix: `/pl/course/${variant_course.id}`,
-      user,
-      authn_user,
-      is_administrator: false,
+      question_course,
+      user_id,
+      authn_user_id,
     });
   } finally {
     const initialRenderEnd = Date.now();
@@ -306,14 +411,33 @@ async function testQuestion(
 
     // Render once more to make sure we can render the various panels with the submitted data.
     const finalRenderStart = Date.now();
+    const finalRenderLocals = {
+      question,
+      course: variant_course,
+      urlPrefix: `/pl/course/${variant_course.id}`,
+      user,
+      authn_user,
+      is_administrator: false,
+      questionHtml: undefined as string | undefined,
+      submissionHtmls: undefined as string[] | undefined,
+      answerHtml: undefined as string | undefined,
+      extraHeadersHtml: undefined as string | undefined,
+    };
     try {
-      await getAndRenderVariant(variant.id, null, {
+      await getAndRenderVariant(variant.id, null, finalRenderLocals);
+      await testDynamicFiles({
+        htmls: {
+          questionHtml: finalRenderLocals.questionHtml,
+          submissionHtmls: finalRenderLocals.submissionHtmls,
+          answerHtml: finalRenderLocals.answerHtml,
+          extraHeadersHtml: finalRenderLocals.extraHeadersHtml,
+        },
+        variant,
         question,
         course: variant_course,
-        urlPrefix: `/pl/course/${variant_course.id}`,
-        user,
-        authn_user,
-        is_administrator: false,
+        question_course,
+        user_id,
+        authn_user_id,
       });
     } finally {
       const finalRenderEnd = Date.now();
@@ -371,37 +495,36 @@ async function runTest({
   );
 
   if (showDetails) {
-    const variantKeys = ['broken_at', 'options', 'params', 'true_answer', 'variant_seed'];
+    const variantKeys = ['broken_at', 'options', 'params', 'true_answer', 'variant_seed'] as const;
     const expectedDataKeys = [
       'format_errors',
       'gradable',
       'partial_scores',
       'raw_submitted_answer',
       'score',
-    ];
+    ] as const;
     const submissionKeys = [
       'broken',
       'correct',
       'feedback',
       'format_errors',
       'gradable',
-      'grading_method',
       'partial_scores',
       'raw_submitted_answer',
       'score',
       'submitted_answer',
       'true_answer',
-    ];
-    logger.verbose('variant:\n' + jsonStringifySafe(_.pick(variant, variantKeys), null, '    '));
+    ] as const;
+    logger.verbose('variant:\n' + jsonStringifySafe(pick(variant, variantKeys), null, '    '));
     if (expectedTestData) {
       logger.verbose(
         'expectedTestData:\n' +
-          jsonStringifySafe(_.pick(expectedTestData, expectedDataKeys), null, '    '),
+          jsonStringifySafe(pick(expectedTestData, expectedDataKeys), null, '    '),
       );
     }
     if (submission) {
       logger.verbose(
-        'submission:\n' + jsonStringifySafe(_.pick(submission, submissionKeys), null, '    '),
+        'submission:\n' + jsonStringifySafe(pick(submission, submissionKeys), null, '    '),
       );
     }
   }
@@ -470,7 +593,7 @@ export async function startTestQuestion({
   const stats: TestResultStats[] = [];
 
   serverJob.executeInBackground(async (job) => {
-    for (const iter of Array.from({ length: count * TEST_TYPES.length }).keys()) {
+    for (const iter of range(count * TEST_TYPES.length)) {
       const type = TEST_TYPES[iter % TEST_TYPES.length];
       const testIterationIndex = Math.floor(iter / TEST_TYPES.length) + 1;
       // Generate a deterministic seed if a prefix was provided, otherwise let the system generate a random one

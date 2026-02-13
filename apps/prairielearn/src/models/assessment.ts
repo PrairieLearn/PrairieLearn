@@ -43,11 +43,6 @@ export async function selectAssessmentByTid({
   );
 }
 
-export async function selectAssessmentIsPublic(assessment_id: string): Promise<boolean> {
-  const isPublic = await queryRow(sql.check_assessment_is_public, { assessment_id }, z.boolean());
-  return isPublic;
-}
-
 export async function selectAssessmentInfoForJob(assessment_id: string) {
   return await queryRow(
     sql.select_assessment_info_for_job,

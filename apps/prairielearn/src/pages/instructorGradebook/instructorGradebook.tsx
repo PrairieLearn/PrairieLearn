@@ -3,11 +3,11 @@ import asyncHandler from 'express-async-handler';
 
 import { HttpStatusError } from '@prairielearn/error';
 import { loadSqlEquiv, queryRows } from '@prairielearn/postgres';
-import { Hydrate } from '@prairielearn/preact/server';
+import { Hydrate } from '@prairielearn/react/server';
 
 import { InsufficientCoursePermissionsCardPage } from '../../components/InsufficientCoursePermissionsCard.js';
 import { PageLayout } from '../../components/PageLayout.js';
-import { updateAssessmentInstanceScore } from '../../lib/assessment.js';
+import { setAssessmentInstanceScore } from '../../lib/assessment.js';
 import { extractPageContext } from '../../lib/client/page-context.js';
 import {
   checkAssessmentInstanceBelongsToCourseInstance,
@@ -138,10 +138,10 @@ router.post(
         req.body.assessment_instance_id,
         res.locals.course_instance.id,
       );
-      await updateAssessmentInstanceScore(
+      await setAssessmentInstanceScore(
         req.body.assessment_instance_id,
         req.body.score_perc,
-        res.locals.authn_user.user_id,
+        res.locals.authn_user.id,
       );
 
       const updatedScores = await queryRows(

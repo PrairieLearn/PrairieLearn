@@ -1,4 +1,4 @@
-import _ from 'lodash';
+import { range } from 'es-toolkit';
 import { z } from 'zod';
 
 import { html, unsafeHtml } from '@prairielearn/html';
@@ -19,7 +19,7 @@ import {
   ZoneSchema,
 } from '../../lib/db-types.js';
 import { formatFloat } from '../../lib/format.js';
-import type { UntypedResLocals } from '../../lib/res-locals.types.js';
+import type { ResLocalsForPage } from '../../lib/res-locals.js';
 import { STAT_DESCRIPTIONS } from '../shared/assessmentStatDescriptions.js';
 
 export const AssessmentQuestionStatsRowSchema = AssessmentQuestionSchema.extend({
@@ -49,7 +49,7 @@ export function InstructorAssessmentQuestionStatistics({
   questionStatsCsvFilename: string;
   statsLastUpdated: string;
   rows: AssessmentQuestionStatsRow[];
-  resLocals: UntypedResLocals;
+  resLocals: ResLocalsForPage<'assessment'>;
 }) {
   const histminiOptions = { width: 60, height: 20, ymax: 1 };
 
@@ -119,8 +119,8 @@ export function InstructorAssessmentQuestionStatistics({
                   data-xdata="${JSON.stringify(rows.map((q) => q.mean_question_score))}"
                   data-ydata="${JSON.stringify(rows.map((q) => q.discrimination))}"
                   data-options="${JSON.stringify({
-                    xgrid: _.range(0, 110, 10),
-                    ygrid: _.range(0, 110, 10),
+                    xgrid: range(0, 110, 10),
+                    ygrid: range(0, 110, 10),
                     xlabel: 'mean score / %',
                     ylabel: 'discrimination / %',
                     radius: 2,

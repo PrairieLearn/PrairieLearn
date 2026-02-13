@@ -1,4 +1,4 @@
-import { useLayoutEffect, useRef, useState } from 'preact/hooks';
+import { type ReactNode, useLayoutEffect, useRef, useState } from 'react';
 import Button from 'react-bootstrap/Button';
 import Card from 'react-bootstrap/Card';
 import CardBody from 'react-bootstrap/CardBody';
@@ -11,8 +11,11 @@ import InputGroupText from 'react-bootstrap/InputGroupText';
 
 import { run } from '@prairielearn/run';
 
+import { mathjaxTypeset } from '../../../lib/client/mathjax.js';
+
 import {
   type ExamplePromptWithId,
+  type SampleQuestionVariant,
   type VariantOption,
   generateSampleQuestionVariant,
   variantOptionToString,
@@ -20,12 +23,16 @@ import {
 
 export function SampleQuestionDemo({
   prompt,
-  onMathjaxTypeset,
+  initialVariant,
+  header,
 }: {
   prompt: ExamplePromptWithId;
-  onMathjaxTypeset: (elements?: Element[]) => Promise<void>;
+  initialVariant?: SampleQuestionVariant;
+  header?: ReactNode;
 }) {
-  const [variant, setVariant] = useState(() => generateSampleQuestionVariant(prompt.id));
+  const [variant, setVariant] = useState(
+    () => initialVariant ?? generateSampleQuestionVariant(prompt.id),
+  );
 
   // Used if the question receives a number or string response
   const [userInputResponse, setUserInputResponse] = useState('');
@@ -35,7 +42,7 @@ export function SampleQuestionDemo({
 
   const [grade, setGrade] = useState<number | null>(null);
 
-  const cardRef = useRef<HTMLElement | null>(null);
+  const cardRef = useRef<HTMLDivElement | null>(null);
 
   const handleSelectOption = (option: string) => {
     if (prompt.answerType === 'radio') {
@@ -72,9 +79,9 @@ export function SampleQuestionDemo({
   // When a new variant is loaded, typeset the MathJax content.
   useLayoutEffect(() => {
     if (cardRef.current) {
-      void onMathjaxTypeset([cardRef.current]);
+      void mathjaxTypeset([cardRef.current]);
     }
-  }, [variant.question, onMathjaxTypeset]);
+  }, [variant.question]);
 
   const handleGrade = () => {
     if (variant.answerType === 'number' && prompt.answerType === 'number') {
@@ -139,15 +146,15 @@ export function SampleQuestionDemo({
   };
 
   // The correct answer to the problem, displayed to the user
-  const answerText = run(() => {
+  const answerText = run((): string => {
     if (variant.answerType === 'checkbox' || variant.answerType === 'radio') {
       return variant.correctAnswer.map((option) => variantOptionToString(option)).join(', ');
     }
     if (variant.answerType === 'number') {
       // Round the answer to 4 decimal places
-      return Math.round(variant.correctAnswer * 1e4) / 1e4;
+      return String(Math.round(variant.correctAnswer * 1e4) / 1e4);
     }
-    return variant.correctAnswer;
+    return String(variant.correctAnswer);
   });
 
   const placeholder = run(() => {
@@ -166,13 +173,8 @@ export function SampleQuestionDemo({
   });
 
   return (
-    <Card ref={cardRef} class="shadow">
-      <CardHeader>
-        <div class="d-flex align-items-center gap-2">
-          <p class="mb-0">{prompt.name}</p>
-          <span class="badge rounded-pill bg-success me-3">Try me!</span>
-        </div>
-      </CardHeader>
+    <Card ref={cardRef}>
+      {header && <CardHeader>{header}</CardHeader>}
       <CardBody>
         {variant.question
           .split(/(\$\$[\s\S]+?\$\$|\$[\s\S]+?\$|\*\*[\s\S]+?\*\*)/g)
@@ -215,12 +217,12 @@ export function SampleQuestionDemo({
         )}
       </CardBody>
       <CardFooter>
-        <div class="d-flex flex-wrap justify-content-end align-items-center gap-2">
+        <div className="d-flex flex-wrap justify-content-end align-items-center gap-2">
           <i>Answer: {answerText}</i>
-          <div class="flex-grow-1" />
-          <div class="d-flex align-items-center gap-2">
+          <div className="flex-grow-1" />
+          <div className="d-flex align-items-center gap-2">
             <Button onClick={handleGenerateNewVariant}>
-              <span class="text-nowrap">New variant</span>
+              <span className="text-nowrap">New variant</span>
             </Button>
 
             <Button onClick={handleGrade}>Grade</Button>
@@ -241,7 +243,7 @@ function FeedbackBadge({ grade }: { grade: number }) {
       return 'bg-danger';
     }
   });
-  return <span class={`badge ${badgeType}`}>{Math.floor(grade)}%</span>;
+  return <span className={`badge ${badgeType}`}>{Math.floor(grade)}%</span>;
 }
 
 function NumericOrStringInput({
@@ -260,8 +262,13 @@ function NumericOrStringInput({
   onChange: (text: string) => void;
 }) {
   return (
-    <InputGroup class="mt-2">
-      <InputGroupText key={answerLabel} as="label" for="sample-question-response" id="answer-label">
+    <InputGroup className="mt-2">
+      <InputGroupText
+        key={answerLabel}
+        as="label"
+        htmlFor="sample-question-response"
+        id="answer-label"
+      >
         {answerLabel}
       </InputGroupText>
       <FormControl
@@ -273,7 +280,7 @@ function NumericOrStringInput({
       />
       {(answerUnits || grade !== null) && (
         <InputGroupText>
-          {answerUnits && <span class={grade !== null ? 'me-2' : ''}>{answerUnits}</span>}
+          {answerUnits && <span className={grade !== null ? 'me-2' : ''}>{answerUnits}</span>}
           {grade !== null && <FeedbackBadge grade={grade} />}
         </InputGroupText>
       )}
@@ -295,7 +302,7 @@ function CheckboxOrRadioInput({
   onSelectOption: (option: string) => void;
 }) {
   return (
-    <div class="mt-2">
+    <div className="mt-2">
       {options.map((option) => (
         <FormCheck
           key={option.value}
@@ -308,7 +315,7 @@ function CheckboxOrRadioInput({
         />
       ))}
       {grade !== null && (
-        <div class="mt-2">
+        <div className="mt-2">
           <FeedbackBadge grade={grade} />
         </div>
       )}

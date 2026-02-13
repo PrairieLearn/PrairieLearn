@@ -1,11 +1,6 @@
 -- BLOCK select_access_tokens
 SELECT
-  id,
-  name,
-  token,
-  token_hash,
-  format_date_full_compact (created_at, 'UTC') AS created_at,
-  format_date_full_compact (last_used_at, 'UTC') AS last_used_at
+  *
 FROM
   access_tokens
 WHERE

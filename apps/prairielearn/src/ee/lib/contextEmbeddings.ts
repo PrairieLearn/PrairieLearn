@@ -87,7 +87,7 @@ async function insertDocumentChunk(
     QuestionGenerationContextEmbeddingSchema,
   );
 
-  if (chunk && chunk.doc_text === doc.text) {
+  if (chunk?.doc_text === doc.text) {
     job.info(
       `Chunk for ${filepath} (${doc.chunkId || 'no chunk ID'}) already exists in the database. Skipping.`,
     );
@@ -131,12 +131,12 @@ export async function syncContextDocuments(embeddingModel: EmbeddingModel, authn
       const filename = path.basename(file.path);
       if (filename !== 'question.html') continue;
 
-      const fileText = await buildContextForQuestion(path.dirname(file.path));
-      if (fileText) {
+      const questionContext = await buildContextForQuestion(path.dirname(file.path));
+      if (questionContext) {
         await insertDocumentChunk(
           embeddingModel,
           path.relative(REPOSITORY_ROOT_PATH, file.path),
-          { text: fileText, chunkId: '' },
+          { text: questionContext.context, chunkId: '' },
           job,
           openAiUserFromAuthn(authnUserId),
         );

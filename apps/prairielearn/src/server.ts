@@ -10,6 +10,7 @@ import * as Sentry from '@prairielearn/sentry';
 import * as fs from 'node:fs';
 import * as http from 'node:http';
 import * as https from 'node:https';
+import * as os from 'node:os';
 import * as path from 'node:path';
 import * as url from 'node:url';
 import * as util from 'node:util';
@@ -20,6 +21,7 @@ import bodyParser from 'body-parser';
 import cookie from 'cookie';
 import cookieParser from 'cookie-parser';
 import esMain from 'es-main';
+import { sampleSize } from 'es-toolkit';
 import express, {
   type Express,
   type NextFunction,
@@ -51,6 +53,7 @@ import * as sqldb from '@prairielearn/postgres';
 import { run } from '@prairielearn/run';
 import { createSessionMiddleware } from '@prairielearn/session';
 import { getCheckedSignedTokenData } from '@prairielearn/signed-token';
+import { assertNever } from '@prairielearn/utils';
 
 import * as cron from './cron/index.js';
 import * as assets from './lib/assets.js';
@@ -72,17 +75,17 @@ import * as load from './lib/load.js';
 import { APP_ROOT_PATH, REPOSITORY_ROOT_PATH } from './lib/paths.js';
 import { isServerInitialized, isServerPending, setServerState } from './lib/server-initialized.js';
 import * as serverJobs from './lib/server-jobs.js';
+import * as serverJobProgressSocket from './lib/serverJobProgressSocket.js';
 import { PostgresSessionStore } from './lib/session-store.js';
 import * as socketServer from './lib/socket-server.js';
 import { SocketActivityMetrics } from './lib/telemetry/socket-activity-metrics.js';
-import { assertNever } from './lib/types.js';
 import { getSearchParams } from './lib/url.js';
 import * as workspace from './lib/workspace.js';
 import { markAllWorkspaceHostsUnhealthy } from './lib/workspaceHost.js';
 import { enterpriseOnly } from './middlewares/enterpriseOnly.js';
 import staticNodeModules from './middlewares/staticNodeModules.js';
 import { makeWorkspaceProxyMiddleware } from './middlewares/workspaceProxy.js';
-import * as news_items from './news_items/index.js';
+import { selectCourseById } from './models/course.js';
 import * as freeformServer from './question-servers/freeform.js';
 import * as sprocs from './sprocs/index.js';
 
@@ -188,11 +191,11 @@ export async function initExpress(): Promise<Express> {
         '/pl/api/',
         // Static assets don't need to read from or write to sessions.
         //
-        // Note that the `/assets` route is configured to turn any missing files into 404
+        // Note that the assets route is configured to turn any missing files into 404
         // errors, not to fall through and allow other routes to try to serve them. If they
         // did fall through, we'd likely end up running code that does expect sessions to
         // be present, e.g. `middlewares/authn`.
-        '/assets',
+        config.assetsPrefix,
       ],
       sessionRouter,
     ),
@@ -524,8 +527,6 @@ export async function initExpress(): Promise<Express> {
   app.use('/pl/settings', (await import('./pages/userSettings/userSettings.js')).default);
   app.use('/pl/enroll', (await import('./pages/enroll/enroll.js')).default);
   app.use('/pl/password', (await import('./pages/authPassword/authPassword.js')).default);
-  app.use('/pl/news_items', (await import('./pages/newsItems/newsItems.js')).default);
-  app.use('/pl/news_item', (await import('./pages/newsItem/newsItem.js')).default);
   app.use('/pl/request_course', [
     // Users can post data to this page and then view it, so we'll block access to prevent
     // students from using to infiltrate or exfiltrate exam information.
@@ -663,16 +664,6 @@ export async function initExpress(): Promise<Express> {
     },
   ]);
 
-  // Some course instance student pages only require course instance authorization (already checked)
-  app.use(
-    '/pl/course_instance/:course_instance_id(\\d+)/news_items',
-    (await import('./pages/newsItems/newsItems.js')).default,
-  );
-  app.use(
-    '/pl/course_instance/:course_instance_id(\\d+)/news_item',
-    (await import('./pages/newsItem/newsItem.js')).default,
-  );
-
   // Some course instance student pages only require the authn user to have permissions
   app.use('/pl/course_instance/:course_instance_id(\\d+)/effectiveUser', [
     (await import('./middlewares/authzAuthnHasCoursePreviewOrInstanceView.js')).default,
@@ -696,14 +687,6 @@ export async function initExpress(): Promise<Express> {
   app.use(
     '/pl/course_instance/:course_instance_id(\\d+)/instructor/effectiveUser',
     (await import('./pages/instructorEffectiveUser/instructorEffectiveUser.js')).default,
-  );
-  app.use(
-    '/pl/course_instance/:course_instance_id(\\d+)/instructor/news_items',
-    (await import('./pages/newsItems/newsItems.js')).default,
-  );
-  app.use(
-    '/pl/course_instance/:course_instance_id(\\d+)/instructor/news_item',
-    (await import('./pages/newsItem/newsItem.js')).default,
   );
 
   // All other course instance student pages require the effective user to have permissions
@@ -1193,6 +1176,10 @@ export async function initExpress(): Promise<Express> {
     (await import('./pages/instructorIssues/instructorIssues.js')).default,
   );
   app.use(
+    '/pl/course_instance/:course_instance_id(\\d+)/instructor/course_admin/questions/create',
+    (await import('./pages/instructorQuestionCreate/instructorQuestionCreate.js')).default,
+  );
+  app.use(
     '/pl/course_instance/:course_instance_id(\\d+)/instructor/course_admin/questions',
     (await import('./pages/instructorQuestions/instructorQuestions.js')).default,
   );
@@ -1550,14 +1537,6 @@ export async function initExpress(): Promise<Express> {
     '/pl/course/:course_id(\\d+)/effectiveUser',
     (await import('./pages/instructorEffectiveUser/instructorEffectiveUser.js')).default,
   );
-  app.use(
-    '/pl/course/:course_id(\\d+)/news_items',
-    (await import('./pages/newsItems/newsItems.js')).default,
-  );
-  app.use(
-    '/pl/course/:course_id(\\d+)/news_item',
-    (await import('./pages/newsItem/newsItem.js')).default,
-  );
 
   // All other course pages require the effective user to have permission
   app.use(
@@ -1668,6 +1647,10 @@ export async function initExpress(): Promise<Express> {
   app.use(
     '/pl/course/:course_id(\\d+)/course_admin/issues',
     (await import('./pages/instructorIssues/instructorIssues.js')).default,
+  );
+  app.use(
+    '/pl/course/:course_id(\\d+)/course_admin/questions/create',
+    (await import('./pages/instructorQuestionCreate/instructorQuestionCreate.js')).default,
   );
   app.use(
     '/pl/course/:course_id(\\d+)/course_admin/questions',
@@ -1806,6 +1789,7 @@ export async function initExpress(): Promise<Express> {
       res.locals.urlPrefix = '/pl/public/course/' + req.params.course_id;
       next();
     },
+    (await import('./middlewares/authzPublicCourseOrInstance.js')).default,
   ]);
   app.use('/pl/public/course/:course_id(\\d+)/question/:question_id(\\d+)/file_view', [
     function (req: Request, res: Response, next: NextFunction) {
@@ -1857,17 +1841,6 @@ export async function initExpress(): Promise<Express> {
       coreElements: false,
     }),
   );
-  app.use(
-    '/pl/public/course_instance/:course_instance_id(\\d+)/assessments',
-    (await import('./pages/publicAssessments/publicAssessments.js')).default,
-  );
-  app.use(/^(\/pl\/public\/course_instance\/[0-9]+\/assessment\/[0-9]+)\/?$/, (req, res, _next) => {
-    res.redirect(`${req.params[0]}/questions`);
-  });
-  app.use(
-    '/pl/public/course_instance/:course_instance_id(\\d+)/assessment/:assessment_id(\\d+)/questions',
-    (await import('./pages/publicAssessmentQuestions/publicAssessmentQuestions.js')).default,
-  );
 
   // Client files for questions
   app.use(
@@ -1889,6 +1862,26 @@ export async function initExpress(): Promise<Express> {
   app.use(
     '/pl/public/course/:course_id(\\d+)/question/:question_id(\\d+)/submission/:unsafe_submission_id(\\d+)/file',
     [(await import('./pages/submissionFile/submissionFile.js')).default({ publicEndpoint: true })],
+  );
+
+  // Publicly shared course instances and assessments
+  app.use('/pl/public/course_instance/:course_instance_id(\\d+)', [
+    function (req: Request, res: Response, next: NextFunction) {
+      res.locals.navbarType = 'public';
+      next();
+    },
+    (await import('./middlewares/authzPublicCourseOrInstance.js')).default,
+  ]);
+  app.use(
+    '/pl/public/course_instance/:course_instance_id(\\d+)/assessments',
+    (await import('./pages/publicAssessments/publicAssessments.js')).default,
+  );
+  app.use(/^(\/pl\/public\/course_instance\/[0-9]+\/assessment\/[0-9]+)\/?$/, (req, res, _next) => {
+    res.redirect(`${req.params[0]}/questions`);
+  });
+  app.use(
+    '/pl/public/course_instance/:course_instance_id(\\d+)/assessment/:assessment_id(\\d+)/questions',
+    (await import('./pages/publicAssessmentQuestions/publicAssessmentQuestions.js')).default,
   );
 
   //////////////////////////////////////////////////////////////////////
@@ -2007,11 +2000,7 @@ export async function initExpress(): Promise<Express> {
   // This should come first so that both Sentry and our own error page can
   // read the error ID and any status code.
   app.use((err: any, req: Request, res: Response, next: NextFunction) => {
-    const chars = [...'0123456789ABCDEFGHIJKLMNOPQRSTUVWXYZ'];
-
-    res.locals.error_id = Array.from({ length: 12 })
-      .map(() => chars[Math.floor(Math.random() * chars.length)])
-      .join('');
+    res.locals.error_id = sampleSize([...'0123456789ABCDEFGHIJKLMNOPQRSTUVWXYZ'], 12).join('');
 
     err.status = err.status ?? maybeGetStatusCodeFromSqlError(err) ?? 500;
 
@@ -2148,8 +2137,8 @@ export async function insertDevUser() {
     " VALUES ('dev@example.com', 'Dev User')" +
     ' ON CONFLICT (uid) DO UPDATE' +
     ' SET name = EXCLUDED.name' +
-    ' RETURNING user_id;';
-  const user_id = await sqldb.queryRow(sql, UserSchema.shape.user_id);
+    ' RETURNING id;';
+  const user_id = await sqldb.queryRow(sql, UserSchema.shape.id);
   const adminSql =
     'INSERT INTO administrators (user_id)' +
     ' VALUES ($user_id)' +
@@ -2188,13 +2177,15 @@ if (shouldStartServer) {
     setServerState('pending');
     logger.verbose('PrairieLearn server start');
 
-    // For backwards compatibility, we'll default to trying to load config
-    // files from both the application and repository root.
-    //
-    // We'll put the app config file second so that it can override anything
-    // in the repository root config file.
     let configPaths = [
+      // To support Git worktrees (useful for agentic development), we'll look
+      // for config files in `~/.config/prairielearn/config.json`. We check here
+      // first so the following repo/app configs can still take precedence.
+      path.join(os.homedir(), '.config', 'prairielearn', 'config.json'),
+      // For backwards compatibility, we'll check the repository root before loading
+      // app-specific config.
       path.join(REPOSITORY_ROOT_PATH, 'config.json'),
+      // The app config file is checked last so that it will always take precedence.
       path.join(APP_ROOT_PATH, 'config.json'),
     ];
 
@@ -2510,8 +2501,9 @@ if (shouldStartServer) {
 
     if ('sync-course' in argv) {
       logger.info(`option --sync-course passed, syncing course ${argv['sync-course']}...`);
+      const course = await selectCourseById(argv['sync-course']);
       const { jobSequenceId, jobPromise } = await pullAndUpdateCourse({
-        courseId: argv['sync-course'],
+        course,
         authnUserId: null,
         userId: null,
       });
@@ -2522,15 +2514,6 @@ if (shouldStartServer) {
         logger.info(`Job ${job.id} finished with status '${job.status}'.\n${job.output}`);
       });
       process.exit(0);
-    }
-
-    if (config.initNewsItems) {
-      // We initialize news items asynchronously so that servers can boot up
-      // in production as quickly as possible.
-      void news_items.initInBackground({
-        // Always notify in production environments.
-        notifyIfPreviouslyEmpty: !config.devMode,
-      });
     }
 
     // We need to initialize these first, as the code callers require these
@@ -2559,11 +2542,12 @@ if (shouldStartServer) {
     app = await initExpress();
     const httpServer = await startServer(app);
 
-    socketServer.init(httpServer);
+    await socketServer.init(httpServer);
 
     externalGradingSocket.init();
     externalGrader.init();
     externalImageCaptureSocket.init();
+    serverJobProgressSocket.init();
 
     workspace.init();
     serverJobs.init();
@@ -2669,7 +2653,7 @@ if (shouldStartServer) {
   await socketServer.close();
   app = await initExpress();
   const httpServer = await startServer(app);
-  socketServer.init(httpServer);
+  await socketServer.init(httpServer);
 }
 
 /**

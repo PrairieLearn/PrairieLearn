@@ -5,6 +5,7 @@ import { Modal } from 'react-bootstrap';
 import { type StaffTag, type StaffTopic } from '../lib/client/safe-db-types.js';
 import { ColorJsonSchema } from '../schemas/infoCourse.js';
 
+import { ColorSwatch } from './ColorSwatch.js';
 import { TagBadge } from './TagBadge.js';
 import { TopicBadge } from './TopicBadge.js';
 
@@ -81,7 +82,7 @@ export function EditTagsTopicsModal<Entity extends StaffTopic | StaffTag>({
       <Modal.Body>
         {entity ? (
           <>
-            <div class="d-flex flex-column align-items-center mb-4">
+            <div className="d-flex flex-column align-items-center mb-4">
               {state.type !== 'closed' && state.entityType === 'topic' ? (
                 <TopicBadge
                   topic={{
@@ -98,13 +99,13 @@ export function EditTagsTopicsModal<Entity extends StaffTopic | StaffTag>({
                 />
               )}
             </div>
-            <div class="mb-3">
-              <label class="form-label" for="name">
+            <div className="mb-3">
+              <label className="form-label" htmlFor="name">
                 Name
               </label>
               <input
                 type="text"
-                class={clsx('form-control', invalidName && 'is-invalid')}
+                className={clsx('form-control', invalidName && 'is-invalid')}
                 id="name"
                 value={entity.name}
                 onChange={(e) =>
@@ -115,19 +116,19 @@ export function EditTagsTopicsModal<Entity extends StaffTopic | StaffTag>({
                 }
               />
               {invalidName && (
-                <div class="invalid-feedback">
+                <div className="invalid-feedback">
                   {state.type !== 'closed' && state.entityType === 'topic' ? 'Topic' : 'Tag'} name
                   is required
                 </div>
               )}
             </div>
-            <div class="mb-3">
-              <label class="form-label" for="color">
+            <div className="mb-3">
+              <label className="form-label" htmlFor="color">
                 Color
               </label>
-              <div class="d-flex gap-2 align-items-center">
+              <div className="d-flex gap-2 align-items-center">
                 <select
-                  class={clsx('form-select', invalidColor && 'is-invalid')}
+                  className={clsx('form-select', invalidColor && 'is-invalid')}
                   id="color"
                   value={entity.color}
                   onChange={(e) =>
@@ -143,40 +144,22 @@ export function EditTagsTopicsModal<Entity extends StaffTopic | StaffTag>({
                     </option>
                   ))}
                 </select>
-                <svg
-                  viewBox="0 0 32 32"
-                  // `form-control-color` provides the correct sizing. We override the
-                  // cursor and padding to make it appear just as a plain, non-interactive
-                  // color swatch.
-                  class="form-control-color p-0"
-                  style={{ cursor: 'default' }}
-                  aria-hidden="true"
-                >
-                  <rect
-                    width="32"
-                    height="32"
-                    style={{
-                      fill: `var(--color-${entity.color})`,
-                      rx: 'var(--bs-border-radius)',
-                      ry: 'var(--bs-border-radius)',
-                    }}
-                  />
-                </svg>
+                <ColorSwatch color={entity.color} />
               </div>
               {invalidColor && (
-                <div class="invalid-feedback">
+                <div className="invalid-feedback">
                   {state.type !== 'closed' && state.entityType === 'topic' ? 'Topic' : 'Tag'} color
                   is required
                 </div>
               )}
             </div>
-            <div class="mb-3">
-              <label class="form-label" for="description">
+            <div className="mb-3">
+              <label className="form-label" htmlFor="description">
                 Description
               </label>
               <input
                 type="text"
-                class="form-control"
+                className="form-control"
                 id="description"
                 value={entity.description}
                 onChange={(e) =>
@@ -191,7 +174,7 @@ export function EditTagsTopicsModal<Entity extends StaffTopic | StaffTag>({
         ) : null}
       </Modal.Body>
       <Modal.Footer>
-        <button type="button" class="btn btn-primary me-2" onClick={handleSubmit}>
+        <button type="button" className="btn btn-primary me-2" onClick={handleSubmit}>
           {isCreateMode
             ? state.entityType === 'topic'
               ? 'Add topic'
@@ -200,7 +183,7 @@ export function EditTagsTopicsModal<Entity extends StaffTopic | StaffTag>({
               ? 'Update topic'
               : 'Update tag'}
         </button>
-        <button type="button" class="btn btn-secondary" onClick={onClose}>
+        <button type="button" className="btn btn-secondary" onClick={onClose}>
           Close
         </button>
       </Modal.Footer>

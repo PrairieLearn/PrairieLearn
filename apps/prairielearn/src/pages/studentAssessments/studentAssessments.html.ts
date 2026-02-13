@@ -14,13 +14,13 @@ import {
   AssessmentSchema,
   AssessmentSetSchema,
 } from '../../lib/db-types.js';
-import type { UntypedResLocals } from '../../lib/res-locals.types.js';
+import { type ResLocalsForPage } from '../../lib/res-locals.js';
 
 export const StudentAssessmentsRowSchema = z.object({
   multiple_instance_header: z.boolean(),
   assessment_number: AssessmentSchema.shape.number,
   title: AssessmentSchema.shape.title,
-  group_work: AssessmentSchema.shape.group_work.nullable(),
+  team_work: AssessmentSchema.shape.team_work.nullable(),
   assessment_set_name: AssessmentSetSchema.shape.name,
   assessment_set_color: AssessmentSetSchema.shape.color,
   label: z.string(),
@@ -41,7 +41,7 @@ export function StudentAssessments({
   resLocals,
   rows,
 }: {
-  resLocals: UntypedResLocals;
+  resLocals: ResLocalsForPage<'course-instance'>;
   rows: StudentAssessmentsRow[];
 }) {
   const { urlPrefix, authz_data } = resLocals;
@@ -96,7 +96,7 @@ export function StudentAssessments({
                         : html`
                             <a href="${urlPrefix}${row.link}">
                               ${row.title}
-                              ${row.group_work
+                              ${row.team_work
                                 ? html`<i class="fas fa-users" aria-hidden="true"></i>`
                                 : ''}
                             </a>
@@ -122,11 +122,12 @@ export function StudentAssessments({
           </table>
         </div>
       </div>
-      ${authz_data.mode === 'Exam'
+      ${authz_data.mode === 'Exam' && authz_data.mode_reason === 'PrairieTest'
         ? html`
             <p>
               Don't see your exam? Exams for this course are only made available to students with
-              checked-in exam reservations. See a proctor for assistance.
+              checked-in exam reservations who have clicked the "Start exam" button in PrairieTest.
+              See a proctor for assistance.
             </p>
           `
         : ''}

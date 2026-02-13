@@ -1,0 +1,6 @@
+{
+  "scripts": {
+    "setup": "make deps && make e2e-deps",
+    "run": "make dev"
+  }
+}

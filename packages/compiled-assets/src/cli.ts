@@ -12,7 +12,27 @@ import { type AssetsManifest, build } from './index.js';
 const gzip = promisify(zlib.gzip);
 const brotli = promisify(zlib.brotliCompress);
 
-type CompressedSizes = Record<string, Record<string, number>>;
+interface AssetSizes {
+  raw: number;
+  gzip: number;
+  brotli: number;
+}
+
+type CompressedSizes = Record<string, AssetSizes>;
+
+/**
+ * Collects all unique asset paths from the manifest, including entry points and their preloads.
+ */
+function getAllAssetPaths(manifest: AssetsManifest): Set<string> {
+  const allPaths = new Set<string>();
+  for (const asset of Object.values(manifest)) {
+    allPaths.add(asset.assetPath);
+    for (const preload of asset.preloads) {
+      allPaths.add(preload);
+    }
+  }
+  return allPaths;
+}
 
 /**
  * Writes gzip and brotli compressed versions of the assets in the specified directory.
@@ -28,15 +48,17 @@ async function writeCompressedAssets(
   manifest: AssetsManifest,
 ): Promise<CompressedSizes> {
   const compressedSizes: CompressedSizes = {};
+  const allAssetPaths = getAllAssetPaths(manifest);
+
   await Promise.all(
-    Object.values(manifest).map(async (asset) => {
-      const destinationFilePath = path.resolve(destination, asset.assetPath);
+    [...allAssetPaths].map(async (assetPath) => {
+      const destinationFilePath = path.resolve(destination, assetPath);
       const contents = await fs.readFile(destinationFilePath);
       const gzipCompressed = await gzip(contents);
       const brotliCompressed = await brotli(contents);
       await fs.writeFile(`${destinationFilePath}.gz`, gzipCompressed);
       await fs.writeFile(`${destinationFilePath}.br`, brotliCompressed);
-      compressedSizes[asset.assetPath] = {
+      compressedSizes[assetPath] = {
         raw: contents.length,
         gzip: gzipCompressed.length,
         brotli: brotliCompressed.length,
@@ -44,6 +66,32 @@ async function writeCompressedAssets(
     }),
   );
   return compressedSizes;
+}
+
+/**
+ * Calculates the total size of an entry point including all its preloaded chunks.
+ */
+function calculateTotalSizes(
+  asset: AssetsManifest[string],
+  compressedSizes: CompressedSizes,
+): AssetSizes {
+  const entrySizes = compressedSizes[asset.assetPath];
+  const total: AssetSizes = {
+    raw: entrySizes.raw,
+    gzip: entrySizes.gzip,
+    brotli: entrySizes.brotli,
+  };
+
+  for (const preload of asset.preloads) {
+    const preloadSizes = compressedSizes[preload];
+    if (preloadSizes) {
+      total.raw += preloadSizes.raw;
+      total.gzip += preloadSizes.gzip;
+      total.brotli += preloadSizes.brotli;
+    }
+  }
+
+  return total;
 }
 
 program.command('build <source> <destination>').action(async (source, destination) => {
@@ -55,16 +103,23 @@ program.command('build <source> <destination>').action(async (source, destinatio
 
   // Format the output into an object that we can pass to `console.table`.
   const results: Record<string, any> = {};
+  const sizesJson: Record<string, AssetSizes> = {};
   Object.entries(manifest).forEach(([entryPoint, asset]) => {
-    const sizes = compressedSizes[asset.assetPath];
+    const totalSizes = calculateTotalSizes(asset, compressedSizes);
+
     results[entryPoint] = {
       'Output file': asset.assetPath,
-      Size: prettyBytes(sizes.raw),
-      'Size (gzip)': prettyBytes(sizes.gzip),
-      'Size (brotli)': prettyBytes(sizes.brotli),
+      Size: prettyBytes(totalSizes.raw),
+      'Size (gzip)': prettyBytes(totalSizes.gzip),
+      'Size (brotli)': prettyBytes(totalSizes.brotli),
     };
+
+    sizesJson[entryPoint] = totalSizes;
   });
   console.table(results);
+
+  // Write the result for processing by other tools (e.g. our bundle size reporting action).
+  await fs.writeJSON(path.resolve(destination, 'sizes.json'), sizesJson, { spaces: 2 });
 });
 
 program.parseAsync(process.argv).catch((err) => {

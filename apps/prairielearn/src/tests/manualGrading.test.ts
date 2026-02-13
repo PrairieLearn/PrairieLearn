@@ -1,5 +1,7 @@
+import { createTRPCClient, httpLink } from '@trpc/client';
 import * as cheerio from 'cheerio';
 import fetch from 'node-fetch';
+import superjson from 'superjson';
 import { afterAll, assert, beforeAll, describe, test } from 'vitest';
 
 import * as sqldb from '@prairielearn/postgres';
@@ -12,7 +14,7 @@ import {
   insertCourseInstancePermissions,
   insertCoursePermissionsByUserUid,
 } from '../models/course-permissions.js';
-import type { InstanceQuestionRowWithAIGradingStats } from '../pages/instructorAssessmentManualGrading/assessmentQuestion/assessmentQuestion.types.js';
+import { type ManualGradingAssessmentQuestionRouter } from '../pages/instructorAssessmentManualGrading/assessmentQuestion/trpc.js';
 
 import {
   type User,
@@ -34,7 +36,7 @@ const defaultUser: User = {
 };
 
 type MockUser = User & {
-  user_id?: string;
+  id?: string;
   authUid: string;
 };
 
@@ -142,6 +144,39 @@ async function submitGradeForm(
   });
 }
 
+async function createTrpcClient(assessmentQuestionUrl: string) {
+  // Fetch the page to get the CSRF token from hydration data
+  const pageResponse = await fetch(assessmentQuestionUrl);
+  const pageHtml = await pageResponse.text();
+  const $ = cheerio.load(pageHtml);
+
+  // Extract trpcCsrfToken from the hydration data
+  const dataScript = $(
+    'script[data-component-props][data-component="AssessmentQuestionManualGrading"]',
+  );
+  const propsJson = dataScript.text();
+  const props = superjson.parse<{ trpcCsrfToken: string }>(propsJson);
+  const trpcCsrfToken = props.trpcCsrfToken;
+
+  return createTRPCClient<ManualGradingAssessmentQuestionRouter>({
+    links: [
+      httpLink({
+        url: assessmentQuestionUrl + '/trpc',
+        headers: {
+          'X-TRPC': 'true',
+          'X-CSRF-Token': trpcCsrfToken,
+        },
+        transformer: superjson,
+      }),
+    ],
+  });
+}
+
+async function loadInstances(assessmentQuestionUrl: string) {
+  const client = await createTrpcClient(assessmentQuestionUrl);
+  return await client.instances.query();
+}
+
 function checkGradingResults(assigned_grader: MockUser, grader: MockUser): void {
   test.sequential('manual grading page for instance question lists updated values', async () => {
     setUser(defaultUser);
@@ -172,19 +207,13 @@ function checkGradingResults(assigned_grader: MockUser, grader: MockUser): void 
 
   test.sequential('manual grading page for assessment question lists updated values', async () => {
     setUser(defaultUser);
-    const manualGradingAQData = (await (
-      await fetch(manualGradingAssessmentQuestionUrl + '/instances.json', {
-        headers: { Accept: 'application/json' },
-      })
-    ).json()) as { instance_questions: InstanceQuestionRowWithAIGradingStats[] };
-    const instanceList = manualGradingAQData.instance_questions;
-    assert(instanceList);
+    const instanceList = await loadInstances(manualGradingAssessmentQuestionUrl);
     assert.lengthOf(instanceList, 1);
     assert.equal(instanceList[0].instance_question.id, iqId);
     assert.isNotOk(instanceList[0].instance_question.requires_manual_grading);
-    assert.equal(instanceList[0].instance_question.assigned_grader, assigned_grader.user_id);
+    assert.equal(instanceList[0].instance_question.assigned_grader, assigned_grader.id);
     assert.equal(instanceList[0].assigned_grader_name, assigned_grader.authName);
-    assert.equal(instanceList[0].instance_question.last_grader, grader.user_id);
+    assert.equal(instanceList[0].instance_question.last_grader, grader.id);
     assert.equal(instanceList[0].last_grader_name, grader.authName);
     assert.closeTo(instanceList[0].instance_question.score_perc!, score_percent, 0.01);
     assert.closeTo(instanceList[0].instance_question.points!, score_points, 0.01);
@@ -433,16 +462,16 @@ describe('Manual Grading', { timeout: 80_000 }, function () {
   beforeAll(async () => {
     await Promise.all(
       mockStaff.map(async (staff) => {
-        const { user_id } = await insertCoursePermissionsByUserUid({
+        const { id } = await insertCoursePermissionsByUserUid({
           course_id: '1',
           uid: staff.authUid,
           course_role: 'None',
           authn_user_id: '1',
         });
-        staff.user_id = user_id;
+        staff.id = id;
         await insertCourseInstancePermissions({
           course_id: '1',
-          user_id: staff.user_id,
+          user_id: staff.id,
           course_instance_id: '1',
           course_instance_role: 'Student Data Editor',
           authn_user_id: '1',
@@ -533,13 +562,7 @@ describe('Manual Grading', { timeout: 80_000 }, function () {
         'manual grading page for assessment question should list one instance',
         async () => {
           setUser(defaultUser);
-          const manualGradingAQData = (await (
-            await fetch(manualGradingAssessmentQuestionUrl + '/instances.json', {
-              headers: { Accept: 'application/json' },
-            })
-          ).json()) as { instance_questions: InstanceQuestionRowWithAIGradingStats[] };
-          const instanceList = manualGradingAQData.instance_questions;
-          assert(instanceList);
+          const instanceList = await loadInstances(manualGradingAssessmentQuestionUrl);
           assert.lengthOf(instanceList, 1);
           assert.equal(instanceList[0].instance_question.id, iqId);
           assert.isOk(instanceList[0].instance_question.requires_manual_grading);
@@ -629,19 +652,10 @@ describe('Manual Grading', { timeout: 80_000 }, function () {
     describe('Assigning grading to staff members', () => {
       test.sequential('tag question to specific grader', async () => {
         setUser(defaultUser);
-        const manualGradingAQPage = await (await fetch(manualGradingAssessmentQuestionUrl)).text();
-        const $manualGradingAQPage = cheerio.load(manualGradingAQPage);
-        const token = $manualGradingAQPage('#test_csrf_token').text() || '';
-
-        await fetch(manualGradingAssessmentQuestionUrl, {
-          method: 'POST',
-          headers: { 'Content-Type': 'application/json', Accept: 'application/json' },
-          body: JSON.stringify({
-            __action: 'batch_action',
-            __csrf_token: token,
-            batch_action_data: { assigned_grader: mockStaff[0].user_id },
-            instance_question_id: iqId.toString(),
-          }),
+        const client = await createTrpcClient(manualGradingAssessmentQuestionUrl);
+        await client.setAssignedGrader.mutate({
+          assigned_grader: mockStaff[0].id!,
+          instance_question_ids: [iqId.toString()],
         });
       });
 
@@ -649,19 +663,12 @@ describe('Manual Grading', { timeout: 80_000 }, function () {
         'manual grading page for assessment question should list tagged grader',
         async () => {
           setUser(defaultUser);
-          const manualGradingAQData = (await (
-            await fetch(manualGradingAssessmentQuestionUrl + '/instances.json', {
-              headers: { Accept: 'application/json' },
-            })
-          ).json()) as {
-            instance_questions: InstanceQuestionRowWithAIGradingStats[];
-          };
-          const instanceList = manualGradingAQData.instance_questions;
+          const instanceList = await loadInstances(manualGradingAssessmentQuestionUrl);
           assert(instanceList);
           assert.lengthOf(instanceList, 1);
           assert.equal(instanceList[0].instance_question.id, iqId);
           assert.isOk(instanceList[0].instance_question.requires_manual_grading);
-          assert.equal(instanceList[0].instance_question.assigned_grader, mockStaff[0].user_id);
+          assert.equal(instanceList[0].instance_question.assigned_grader, mockStaff[0].id);
           assert.equal(instanceList[0].assigned_grader_name, mockStaff[0].authName);
           assert.isNotOk(instanceList[0].instance_question.last_grader);
           assert.isNotOk(instanceList[0].last_grader_name);
@@ -1217,13 +1224,7 @@ describe('Manual Grading', { timeout: 80_000 }, function () {
         'manual grading page for assessment question should list one instance',
         async () => {
           setUser(defaultUser);
-          const manualGradingAQData = (await (
-            await fetch(manualGradingAssessmentQuestionUrl + '/instances.json', {
-              headers: { Accept: 'application/json' },
-            })
-          ).json()) as { instance_questions: InstanceQuestionRowWithAIGradingStats[] };
-          const instanceList = manualGradingAQData.instance_questions;
-          assert(instanceList);
+          const instanceList = await loadInstances(manualGradingAssessmentQuestionUrl);
           assert.lengthOf(instanceList, 1);
           assert.equal(instanceList[0].instance_question.id, iqId);
           assert.isOk(instanceList[0].instance_question.requires_manual_grading);

@@ -1,5 +1,5 @@
 FROM ubuntu:24.04
-ARG CACHEBUST=2025-12-15-14-21-51
+ARG CACHEBUST=2026-01-15-14-21-34
 
 LABEL maintainer="jonatan@yorku.ca"
 
@@ -26,12 +26,15 @@ RUN apt-get update \
     # which would be the case if we installed libclang-dev, but since that
     # package is too large and mostly unnecessary, we add a symlink to the
     # existing libclang.so.1.
+    #
+    # See https://documentation.ubuntu.com/ubuntu-for-developers/reference/availability/llvm/
+    # for llvm version availability.
     && ln -s /usr/lib/llvm-18/lib/libclang.so.1 /usr/lib/libclang.so \
     && groupadd sbuser && useradd -g sbuser sbuser \
     # Install uv and Python
     && curl -LO https://astral.sh/uv/install.sh \
     && UV_INSTALL_DIR=/usr/local/bin sh /install.sh && rm /install.sh \
-    && uv venv --python-preference managed --python 3.12 /cgrader/.venv
+    && uv venv --python-preference managed --python 3.13 /cgrader/.venv
 
 COPY requirements.txt /requirements.txt
 RUN uv pip install -r /requirements.txt

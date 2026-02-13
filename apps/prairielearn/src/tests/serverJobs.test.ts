@@ -1,7 +1,8 @@
 import stripAnsi from 'strip-ansi';
-import { afterAll, assert, beforeAll, describe, expect, it } from 'vitest';
+import { afterAll, assert, beforeAll, describe, expect, it, vi } from 'vitest';
 
 import { logger } from '@prairielearn/logger';
+import * as Sentry from '@prairielearn/sentry';
 
 import { createServerJob, getJobSequence } from '../lib/server-jobs.js';
 
@@ -133,6 +134,75 @@ describe('server-jobs', () => {
       const job = finishedJobSequence.jobs[0];
       assert.equal(job.status, 'Error');
       assert.match(stripAnsi(job.output ?? ''), /^testing info\nError: failing job\n\s+at/);
+    });
+  });
+
+  describe('Sentry error reporting', () => {
+    it('does not report errors to Sentry by default', async () => {
+      const sentrySpy = vi.spyOn(Sentry, 'captureException');
+
+      const serverJob = await createServerJob({
+        type: 'test',
+        description: 'test job sequence',
+        userId: null,
+        authnUserId: null,
+      });
+
+      await serverJob.execute(async () => {
+        throw new Error('test error');
+      });
+
+      expect(sentrySpy).not.toHaveBeenCalled();
+      sentrySpy.mockRestore();
+    });
+
+    it('reports unexpected errors to Sentry when enabled', async () => {
+      const sentrySpy = vi.spyOn(Sentry, 'captureException');
+
+      const serverJob = await createServerJob({
+        type: 'test_type',
+        description: 'test description',
+        userId: null,
+        authnUserId: null,
+        reportErrorsToSentry: true,
+      });
+
+      await serverJob.execute(async () => {
+        throw new Error('unexpected error');
+      });
+
+      expect(sentrySpy).toHaveBeenCalledWith(
+        expect.any(Error),
+        expect.objectContaining({
+          tags: expect.objectContaining({
+            'job_sequence.id': serverJob.jobSequenceId,
+            'job_sequence.type': 'test_type',
+          }),
+          extra: expect.objectContaining({
+            description: 'test description',
+          }),
+        }),
+      );
+      sentrySpy.mockRestore();
+    });
+
+    it('does not report job.fail() errors to Sentry even when enabled', async () => {
+      const sentrySpy = vi.spyOn(Sentry, 'captureException');
+
+      const serverJob = await createServerJob({
+        type: 'test',
+        description: 'test job sequence',
+        userId: null,
+        authnUserId: null,
+        reportErrorsToSentry: true,
+      });
+
+      await serverJob.execute(async (job) => {
+        job.fail('intentional failure');
+      });
+
+      expect(sentrySpy).not.toHaveBeenCalled();
+      sentrySpy.mockRestore();
     });
   });
 });

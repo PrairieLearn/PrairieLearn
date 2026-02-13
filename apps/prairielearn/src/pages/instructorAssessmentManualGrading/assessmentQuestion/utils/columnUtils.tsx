@@ -33,18 +33,18 @@ export function PointsWithEditButton({
   csrfToken: string;
   onSuccess: () => void;
   onConflict: (conflictDetailsUrl: string) => void;
-  scrollRef: React.RefObject<HTMLDivElement> | null;
+  scrollRef: React.RefObject<HTMLDivElement | null> | null;
 }) {
   const points = row.instance_question[field];
   const maxPoints = row.assessment_question[`max_${field}`];
 
   return (
-    <div class="d-flex align-items-center justify-content-center gap-1">
+    <div className="d-flex align-items-center justify-content-center gap-1">
       <span>
         {points != null ? formatPoints(points) : '—'}
         {maxPoints != null && (
-          <small class="ms-1">
-            /<span class="text-muted">{maxPoints}</span>
+          <small className="ms-1">
+            /<span className="text-muted">{maxPoints}</span>
           </small>
         )}
       </span>
@@ -79,14 +79,14 @@ export function ScoreWithEditButton({
   csrfToken: string;
   onSuccess: () => void;
   onConflict: (conflictDetailsUrl: string) => void;
-  scrollRef: React.RefObject<HTMLDivElement> | null;
+  scrollRef: React.RefObject<HTMLDivElement | null> | null;
 }) {
   const score = row.instance_question.score_perc;
 
   return (
-    <div class="d-flex align-items-center justify-content-center gap-1">
+    <div className="d-flex align-items-center justify-content-center gap-1">
       {score != null && (
-        <div class="d-inline-block align-middle">
+        <div className="d-inline-block align-middle">
           <Scorebar score={score} minWidth="10em" />
         </div>
       )}
