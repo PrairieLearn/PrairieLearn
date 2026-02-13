@@ -16,6 +16,7 @@ import { type Timezone, formatTimezone } from '../../lib/timezone.shared.js';
 import { encodePathNoNormalize } from '../../lib/uri-util.shared.js';
 
 import { CopyCourseInstanceModal } from './components/CopyCourseInstanceModal.js';
+import { CustomApiKeysModal } from './components/CustomApiKeysModal.js';
 import { SelfEnrollmentSettings } from './components/SelfEnrollmentSettings.js';
 import type { SettingsFormValues } from './instructorInstanceAdminSettings.types.js';
 
@@ -59,6 +60,8 @@ export function InstructorInstanceAdminSettings({
   const [queryClient] = useState(() => new QueryClient());
 
   const [showCopyModal, setShowCopyModal] = useState(false);
+  const [showApiKeysModal, setShowApiKeysModal] = useState(false);
+  const [useCustomApiKeys, setUseCustomApiKeys] = useState(false);
 
   const shortNames = new Set(names.map((name) => name.short_name));
 
@@ -234,6 +237,38 @@ export function InstructorInstanceAdminSettings({
               <p>This course instance is not being shared.</p>
             )}
 
+            <h2 className="h4 mt-4">AI grading</h2>
+            <div className="mb-3">
+              <div className="form-check">
+                <input
+                  type="checkbox"
+                  className="form-check-input"
+                  id="use_custom_api_keys"
+                  disabled={!canEdit}
+                  checked={useCustomApiKeys}
+                  onChange={(e) => setUseCustomApiKeys(e.target.checked)}
+                />
+                <label className="form-check-label" htmlFor="use_custom_api_keys">
+                  Use custom API keys
+                </label>
+              </div>
+              <small className="form-text text-muted ms-4">
+                By default, PrairieLearn uses proprietary API keys for AI grading. Select this to
+                configure your own API keys.
+              </small>
+            </div>
+            {useCustomApiKeys && canEdit && (
+              <div className="mb-3">
+                <button
+                  type="button"
+                  className="btn btn-sm btn-outline-primary"
+                  onClick={() => setShowApiKeysModal(true)}
+                >
+                  <i className="fa fa-key" aria-hidden="true" /> Update API keys
+                </button>
+              </div>
+            )}
+
             {canEdit ? (
               <>
                 <button
@@ -303,6 +338,15 @@ export function InstructorInstanceAdminSettings({
           courseInstance={courseInstance}
           isAdministrator={isAdministrator}
           onHide={() => setShowCopyModal(false)}
+        />
+
+        <CustomApiKeysModal
+          show={showApiKeysModal}
+          csrfToken={csrfToken}
+          hasOpenAiKey={false}
+          hasGoogleKey={true}
+          hasAnthropicKey={false}
+          onClose={() => setShowApiKeysModal(false)}
         />
       </div>
     </QueryClientProviderDebug>
