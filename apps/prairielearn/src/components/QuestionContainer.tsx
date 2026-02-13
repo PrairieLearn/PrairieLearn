@@ -240,17 +240,19 @@ ${explanation}
             rotationCorrectionDegrees
             ? html`
                 <br />
-                <pre style="white-space: pre-wrap;">
-An image was uploaded in a rotated state by the student (this was an error by the student) and the system has corrected the rotation so that grading can proceed. If there are rubric items associated with image rotation then please note that this image was in fact rotated.
+                <p style="white-space: pre-wrap;">An image was uploaded in a rotated state by the student (this was an error by the student). The system corrected its rotation prior to AI grading.
 
-Counterclockwise rotation corrections, in degrees: ${rotationCorrectionDegrees}
-</pre>
+If there are rubric items associated with image rotation, then please note that this image was rotated.
+
+Counterclockwise rotation corrections, in degrees:
+<pre>${rotationCorrectionDegrees}</pre>
+</p>
               `
             : html`
                 <br />
-                <pre>
+                <p>
 All student-submitted images were uploaded in an upright state.
-</pre>
+</p>
               `
           ) : ''}
         </div>
