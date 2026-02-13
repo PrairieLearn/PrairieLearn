@@ -264,6 +264,7 @@ function makeSystemPrompt({ isExistingQuestion }: { isExistingQuestion: boolean 
           'You are creating a new question from scratch.',
           "You MUST generate a `question.html` file that meets the user's requirements.",
           'If necessary, also generate a `server.py` file.',
+          'If the user provides an image or PDF of an existing problem, carefully analyze it and recreate it as a PrairieLearn question with appropriate elements and randomized parameters.',
         ],
     [
       'You MUST ONLY use the PrairieLearn elements listed above.',

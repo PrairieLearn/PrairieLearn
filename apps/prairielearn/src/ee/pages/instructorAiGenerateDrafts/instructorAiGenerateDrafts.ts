@@ -1,3 +1,4 @@
+import type { UIMessage } from 'ai';
 import { Router } from 'express';
 import asyncHandler from 'express-async-handler';
 
@@ -102,6 +103,49 @@ router.post(
       }
 
       const { model, modelId } = getAgenticModel();
+
+      // Build the prompt arguments. When a file is uploaded, we use
+      // multimodal `userMessageParts` so the AI can see the image.
+      // Otherwise, we use the plain `prompt` string (original behavior).
+      const promptArgs: { prompt?: string; userMessageParts?: UIMessage['parts'] } = {};
+
+      if (req.file) {
+        const allowedMimeTypes = [
+          'image/png',
+          'image/jpeg',
+          'image/gif',
+          'image/webp',
+          'application/pdf',
+        ];
+        if (
+          !req.file.mimetype.startsWith('image/') &&
+          !allowedMimeTypes.includes(req.file.mimetype)
+        ) {
+          throw new error.HttpStatusError(
+            400,
+            'Unsupported file type. Please upload an image (PNG, JPG, GIF, WebP) or PDF.',
+          );
+        }
+
+        const mimeType = req.file.mimetype;
+        const base64 = req.file.buffer.toString('base64');
+        const parts: UIMessage['parts'] = [];
+
+        if (req.body.prompt) {
+          parts.push({ type: 'text' as const, text: req.body.prompt });
+        }
+
+        parts.push({
+          type: 'file' as const,
+          mediaType: mimeType,
+          url: `data:${mimeType};base64,${base64}`,
+        });
+
+        promptArgs.userMessageParts = parts;
+      } else {
+        promptArgs.prompt = req.body.prompt;
+      }
+
       const result = await editQuestionWithAgent({
         model,
         modelId,
@@ -109,7 +153,7 @@ router.post(
         user: res.locals.authn_user,
         authnUser: res.locals.authn_user,
         hasCoursePermissionEdit: res.locals.authz_data.has_course_permission_edit,
-        prompt: req.body.prompt,
+        ...promptArgs,
       });
 
       res.set({

@@ -1,3 +1,4 @@
+import { filesize } from 'filesize';
 import { z } from 'zod';
 
 import { compiledScriptTag, compiledStylesheetTag } from '@prairielearn/compiled-assets';
@@ -10,6 +11,7 @@ import { Modal } from '../../../components/Modal.js';
 import { PageLayout } from '../../../components/PageLayout.js';
 import { nodeModulesAssetPath } from '../../../lib/assets.js';
 import { getAiQuestionGenerationDraftsUrl } from '../../../lib/client/url.js';
+import { config } from '../../../lib/config.js';
 import { DraftQuestionMetadataSchema } from '../../../lib/db-types.js';
 import type { UntypedResLocals } from '../../../lib/res-locals.types.js';
 
@@ -84,6 +86,7 @@ export function InstructorAIGenerateDrafts({
             id="add-question-form"
             name="add-question-form"
             hx-post="${getAiQuestionGenerationDraftsUrl({ urlPrefix: resLocals.urlPrefix })}"
+            hx-encoding="multipart/form-data"
             hx-target="#generation-results"
             hx-swap="outerHTML"
             hx-disabled-elt="button"
@@ -102,6 +105,23 @@ export function InstructorAIGenerateDrafts({
                 class="form-control js-textarea-autosize"
                 style="resize: none;"
               ></textarea>
+            </div>
+            <div class="mb-3">
+              <label class="form-label" for="ai-file-upload">
+                Upload an image or PDF (optional)
+              </label>
+              <input
+                type="file"
+                name="file"
+                id="ai-file-upload"
+                class="form-control"
+                accept="image/*,.pdf"
+              />
+              <div class="form-text">
+                Upload a screenshot or PDF of an existing problem to convert it into a PrairieLearn
+                question. Max file size:
+                ${filesize(config.fileUploadMaxBytes, { base: 10, round: 0 })}.
+              </div>
             </div>
             <button type="submit" class="btn btn-primary w-100">
               <span

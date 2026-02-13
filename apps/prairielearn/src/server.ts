@@ -306,6 +306,12 @@ export async function initExpress(): Promise<Express> {
     '/pl/public/course/:course_id(\\d+)/question/:question_id(\\d+)/externalImageCapture/variant/:variant_id(\\d+)',
     upload.single('file'),
   );
+  // AI question generation file uploads
+  app.post(
+    '/pl/course_instance/:course_instance_id(\\d+)/instructor/ai_generate_question_drafts',
+    upload.single('file'),
+  );
+  app.post('/pl/course/:course_id(\\d+)/ai_generate_question_drafts', upload.single('file'));
 
   // Collect metrics on workspace proxy sockets. Note that this only tracks
   // outgoing sockets (those going to workspaces). Incoming sockets are tracked
