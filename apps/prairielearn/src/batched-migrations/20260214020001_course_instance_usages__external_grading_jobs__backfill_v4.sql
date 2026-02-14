@@ -39,7 +39,7 @@ SELECT
   -- effective user, we are only using this to avoid contention when there are
   -- many users updating simultaneously.
   v.authn_user_id,
-  -- It's possible that there are different values of `include_in_statistics` bu
+  -- It's possible that there are different values of `include_in_statistics` but
   -- we aren't worried about tracking this accurately.
   any_value (coalesce(ai.include_in_statistics, false)),
   sum(gj.grading_finished_at - gj.grading_received_at)
@@ -47,7 +47,6 @@ FROM
   grading_jobs AS gj
   JOIN submissions AS s ON (s.id = gj.submission_id)
   JOIN variants AS v ON (v.id = s.variant_id)
-  JOIN questions AS q ON (q.id = v.question_id)
   JOIN courses AS c ON (c.id = v.course_id)
   JOIN institutions AS i ON (i.id = c.institution_id)
   LEFT JOIN instance_questions AS iq ON (iq.id = v.instance_question_id)
