@@ -46,7 +46,8 @@ FROM
   LEFT JOIN assessments AS a ON (a.id = ai.assessment_id)
   LEFT JOIN course_instances AS ci ON (ci.id = a.course_instance_id)
 WHERE
-  s.id >= $start
+  s.date < $END_DATE
+  AND s.id >= $start
   AND s.id <= $end
 ON CONFLICT (
   type,
