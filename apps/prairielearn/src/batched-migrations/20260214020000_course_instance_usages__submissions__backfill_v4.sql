@@ -39,7 +39,7 @@ FROM
   submissions AS s
   JOIN variants AS v ON (v.id = s.variant_id)
   JOIN questions AS q ON (q.id = v.question_id)
-  JOIN pl_courses AS c ON (c.id = v.course_id)
+  JOIN courses AS c ON (c.id = v.course_id)
   JOIN institutions AS i ON (i.id = c.institution_id)
   LEFT JOIN instance_questions AS iq ON (iq.id = v.instance_question_id)
   LEFT JOIN assessment_instances AS ai ON (ai.id = iq.assessment_instance_id)
