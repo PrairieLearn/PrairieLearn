@@ -21,6 +21,10 @@ export default makeBatchedMigration({
     return { min: 1n, max, batchSize: 100_000 };
   },
   async execute(start: bigint, end: bigint): Promise<void> {
-    await execute(sql.update_course_instance_usages_for_external_gradings, { start, end });
+    await execute(sql.update_course_instance_usages_for_external_gradings, {
+      start,
+      end,
+      END_DATE,
+    });
   },
 });

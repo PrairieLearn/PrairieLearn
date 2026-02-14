@@ -61,6 +61,7 @@ WHERE
   AND gj.grading_finished_at IS NOT NULL
   -- Avoid inserting negative durations.
   AND gj.grading_finished_at > gj.grading_received_at
+  AND gj.grading_finished_at < $END_DATE
   AND gj.id >= $start
   AND gj.id <= $end
 GROUP BY

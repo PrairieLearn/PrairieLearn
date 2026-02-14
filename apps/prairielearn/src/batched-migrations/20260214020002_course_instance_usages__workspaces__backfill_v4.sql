@@ -53,7 +53,8 @@ FROM
   LEFT JOIN assessments AS a ON (a.id = ai.assessment_id)
   LEFT JOIN course_instances AS ci ON (ci.id = a.course_instance_id)
 WHERE
-  w.id >= $start
+  w.state_updated_at < $END_DATE
+  AND w.id >= $start
   AND w.id <= $end
 GROUP BY
   -- We need to aggregate by all columns in the unique constraint because INSERT
