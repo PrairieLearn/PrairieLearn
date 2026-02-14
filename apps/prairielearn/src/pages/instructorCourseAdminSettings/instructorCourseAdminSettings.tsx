@@ -3,9 +3,11 @@ import * as path from 'path';
 import { Router } from 'express';
 import fs from 'fs-extra';
 
+import { compiledScriptTag } from '@prairielearn/compiled-assets';
 import * as error from '@prairielearn/error';
 import { flash } from '@prairielearn/flash';
 
+import { PageLayout } from '../../components/PageLayout.js';
 import { b64EncodeUnicode } from '../../lib/base64-util.js';
 import { CourseInfoCreateEditor, FileModifyEditor, getOriginalHash } from '../../lib/editors.js';
 import { features } from '../../lib/features/index.js';
@@ -47,15 +49,31 @@ router.get(
     );
 
     res.send(
-      InstructorCourseAdminSettings({
+      PageLayout({
         resLocals: res.locals,
-        aiQuestionGenerationEnabled,
-        aiQuestionGenerationCourseToggleEnabled,
-        coursePathExists,
-        courseInfoExists,
-        availableTimezones,
-        origHash,
-        courseGHLink,
+        pageTitle: 'Course Settings',
+        navContext: {
+          type: 'instructor',
+          page: 'course_admin',
+          subPage: 'settings',
+        },
+        headContent: compiledScriptTag('instructorCourseAdminSettingsClient.ts'),
+        content: (
+          <InstructorCourseAdminSettings
+            aiQuestionGenerationEnabled={aiQuestionGenerationEnabled}
+            aiQuestionGenerationCourseToggleEnabled={aiQuestionGenerationCourseToggleEnabled}
+            authzData={res.locals.authz_data}
+            availableTimezones={availableTimezones}
+            course={res.locals.course}
+            courseGHLink={courseGHLink}
+            courseInfoExists={courseInfoExists}
+            coursePathExists={coursePathExists}
+            csrfToken={res.locals.__csrf_token}
+            institution={res.locals.institution}
+            origHash={origHash}
+            urlPrefix={res.locals.urlPrefix}
+          />
+        ),
       }),
     );
   }),
