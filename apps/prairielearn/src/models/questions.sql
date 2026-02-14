@@ -48,7 +48,33 @@ SELECT
     WHERE
       ssq.question_id = q.id
   ) AS sharing_sets,
-  assessments_format_for_question (q.id, NULL) AS assessments
+  COALESCE(
+    (
+      SELECT
+        jsonb_agg(
+          jsonb_build_object(
+            'assessment',
+            to_jsonb(a),
+            'assessment_set',
+            to_jsonb(aset)
+          )
+          ORDER BY
+            aset.number,
+            aset.id,
+            a.number,
+            a.id
+        )
+      FROM
+        assessment_questions AS aq
+        JOIN assessments AS a ON (a.id = aq.assessment_id)
+        JOIN assessment_sets AS aset ON (aset.id = a.assessment_set_id)
+      WHERE
+        aq.question_id = q.id
+        AND aq.deleted_at IS NULL
+        AND a.deleted_at IS NULL
+    ),
+    '[]'::jsonb
+  ) AS assessments
 FROM
   questions AS q
   JOIN topics AS top ON (top.id = q.topic_id)
