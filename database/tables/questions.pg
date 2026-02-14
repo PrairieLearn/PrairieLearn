@@ -20,6 +20,7 @@ columns
     number: integer
     options: jsonb
     partial_credit: boolean default true
+    preferences_schema: jsonb
     qid: text
     share_publicly: boolean not null default false
     share_source_publicly: boolean not null default false

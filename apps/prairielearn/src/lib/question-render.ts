@@ -480,6 +480,7 @@ export async function getAndRenderVariant(
         options,
         require_open,
         locals.client_fingerprint_id ?? null,
+        locals.assessment?.id ?? null,
       );
     }
   });

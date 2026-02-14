@@ -34,7 +34,7 @@ import * as infofile from './infofile.js';
 import { isDraftQid } from './question.js';
 
 // We use a single global instance so that schemas aren't recompiled every time they're used
-const ajv = new Ajv({ allErrors: true });
+const ajv = new Ajv({ allErrors: true, allowUnionTypes: true });
 
 const DEFAULT_ASSESSMENT_SETS: AssessmentSetJson[] = [
   {

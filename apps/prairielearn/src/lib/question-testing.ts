@@ -350,6 +350,7 @@ async function testQuestion(
       options,
       require_open,
       client_fingerprint_id,
+      null, // assessment_id
     );
   } finally {
     const generateEnd = Date.now();

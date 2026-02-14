@@ -210,6 +210,12 @@ export const AdvanceScorePercJsonSchema = z
   .lte(100)
   .describe('Minimum score percentage to unlock access to subsequent questions.');
 
+export const QuestionPreferencesJsonSchema = z.record(
+  z.string().min(1),
+  z.union([z.string(), z.number(), z.boolean()]),
+);
+export type QuestionPreferences = z.infer<typeof QuestionPreferencesJsonSchema>;
+
 const QuestionPointsJsonSchema = z.object({
   points: PointsJsonSchema.optional(),
   autoPoints: PointsJsonSchema.optional(),
@@ -245,6 +251,9 @@ export const QuestionAlternativeJsonSchema = QuestionPointsJsonSchema.extend({
       'Whether to allow real-time grading for this question alternative. If not specified, inherits from the question level.',
     )
     .optional(),
+  preferences: QuestionPreferencesJsonSchema.describe(
+    'The parameters passed to the question to customize its behavior.',
+  ).optional(),
 });
 
 export type QuestionAlternativeJson = z.infer<typeof QuestionAlternativeJsonSchema>;
@@ -303,6 +312,9 @@ export const ZoneQuestionBlockJsonSchema = QuestionPointsJsonSchema.extend({
     )
     .optional()
     .default([]),
+  preferences: QuestionPreferencesJsonSchema.describe(
+    'The parameters passed to the question to customize its behavior.',
+  ).optional(),
 });
 
 export type ZoneQuestionBlockJson = z.infer<typeof ZoneQuestionBlockJsonSchema>;

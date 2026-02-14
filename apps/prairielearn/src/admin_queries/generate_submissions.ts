@@ -98,6 +98,7 @@ export default async function ({
         { variant_seed: null },
         true, // require_open
         null, // client_fingerprint_id
+        assessment.id,
       );
 
       const currentTestType =
