@@ -1,3 +1,5 @@
+import crypto from 'node:crypto';
+import { readFile, readdir } from 'node:fs/promises';
 import * as path from 'path';
 
 import pg from 'pg';
@@ -98,7 +100,7 @@ async function createFromTemplate({
   });
 }
 
-async function closeSql(): Promise<void> {
+export async function closeSql(): Promise<void> {
   await namedLocks.close();
   await sqldb.closeAsync();
 }
@@ -198,22 +200,95 @@ export async function after(): Promise<void> {
   await postgresTestUtils.dropDatabase();
 }
 
+async function readDirFiles(dirPath: string, extensions: string[]): Promise<string[]> {
+  const entries = await readdir(dirPath);
+  return entries.filter((f) => extensions.some((ext) => f.endsWith(ext))).sort();
+}
+
+/**
+ * Computes the hash of all the files in the migrations, sprocs, and batched migrations directories.
+ */
+async function computeTemplateHash(): Promise<string> {
+  const hash = crypto.createHash('sha256');
+
+  const dirs: { path: string; extensions: string[] }[] = [
+    {
+      path: path.resolve(import.meta.dirname, '..', 'migrations'),
+      extensions: ['.sql', '.ts', '.js'],
+    },
+    { path: SCHEMA_MIGRATIONS_PATH, extensions: ['.sql'] },
+    { path: path.resolve(import.meta.dirname, '..', 'sprocs'), extensions: ['.sql', '.ts'] },
+    {
+      path: path.resolve(import.meta.dirname, '..', 'batched-migrations'),
+      extensions: ['.sql', '.ts'],
+    },
+  ];
+
+  for (const dir of dirs) {
+    const files = await readDirFiles(dir.path, dir.extensions);
+    for (const file of files) {
+      const filePath = path.join(dir.path, file);
+      const content = await readFile(filePath);
+      hash.update(filePath);
+      hash.update(content);
+    }
+  }
+
+  return hash.digest('hex');
+}
+
+/**
+ * Gets the hash of the template database as a database comment.
+ */
+async function getStoredTemplateHash(): Promise<string | null> {
+  const client = new pg.Client(POSTGRES_INIT_CONNECTION_STRING);
+  await client.connect();
+  try {
+    const result = await client.query(
+      "SELECT shobj_description(oid, 'pg_database') AS comment FROM pg_database WHERE datname = $1",
+      [POSTGRES_DATABASE_TEMPLATE],
+    );
+    return result.rows[0]?.comment ?? null;
+  } finally {
+    await client.end();
+  }
+}
+
+/**
+ * Stores the hash of the template database as a database comment.
+ */
+async function setStoredTemplateHash(hash: string): Promise<void> {
+  const client = new pg.Client(POSTGRES_INIT_CONNECTION_STRING);
+  await client.connect();
+  try {
+    await client.query(
+      `COMMENT ON DATABASE ${client.escapeIdentifier(POSTGRES_DATABASE_TEMPLATE)} IS ${client.escapeLiteral(hash)}`,
+    );
+  } finally {
+    await client.end();
+  }
+}
+
 export async function createTemplate(): Promise<void> {
+  const currentHash = await computeTemplateHash();
+  const templateExists = await databaseExists(POSTGRES_DATABASE_TEMPLATE);
+
+  // This is a fast path to avoid re-creating the template database if it already exists and the hash is the same.
+  if (templateExists) {
+    const storedHash = await getStoredTemplateHash();
+    if (storedHash === currentHash) {
+      return;
+    }
+  }
+
   await postgresTestUtils.createDatabase({
     dropExistingDatabase: true,
     database: POSTGRES_DATABASE_TEMPLATE,
     configurePool: false,
     prepare: () => runMigrationsAndSprocs(POSTGRES_DATABASE_TEMPLATE, true),
   });
-}
 
-export async function dropTemplate(): Promise<void> {
-  await closeSql();
-  await postgresTestUtils.dropDatabase({
-    database: POSTGRES_DATABASE_TEMPLATE,
-    // Always drop the template regardless of PL_KEEP_TEST_DB env
-    force: true,
-  });
+  await setStoredTemplateHash(currentHash);
 }
 
 /**
