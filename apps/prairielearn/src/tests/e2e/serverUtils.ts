@@ -8,7 +8,7 @@ import * as tmp from 'tmp-promise';
 
 import type { Config } from '../../lib/config.js';
 
-export const BASE_PORT = 3014;
+const BASE_PORT = 3014;
 
 interface WorkerServerOptions {
   /** Additional course directories to include beyond the defaults */
@@ -65,7 +65,7 @@ export async function setupWorkerServer(
  * Starts the server as a subprocess and waits for it to be ready.
  * Returns a function to kill the subprocess.
  */
-export async function startServerSubprocess(
+async function startServerSubprocess(
   configPath: string,
 ): Promise<{ serverProcess: ChildProcess; kill: () => Promise<void> }> {
   // We do this instead of importing the server.ts file directly because Playwright

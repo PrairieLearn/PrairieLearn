@@ -5,6 +5,7 @@ import { type Workspace, WorkspaceSchema } from '../lib/db-types.js';
 
 const sql = loadSqlEquiv(import.meta.url);
 
+/** @lintignore */
 export function selectWorkspace(workspace_id: string): Promise<Workspace> {
   return queryRow(sql.select_workspace, { workspace_id }, WorkspaceSchema);
 }

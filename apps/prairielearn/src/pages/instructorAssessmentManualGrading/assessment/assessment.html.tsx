@@ -29,7 +29,7 @@ export const ManualGradingQuestionSchema = AssessmentQuestionSchema.extend({
     .nullable(),
   num_open_instances: z.coerce.number(),
 });
-export type ManualGradingQuestion = z.infer<typeof ManualGradingQuestionSchema>;
+type ManualGradingQuestion = z.infer<typeof ManualGradingQuestionSchema>;
 
 export function ManualGradingAssessment({
   resLocals,

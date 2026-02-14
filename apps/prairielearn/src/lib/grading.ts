@@ -58,7 +58,7 @@ type SubmissionDataForSaving = Pick<Submission, 'variant_id' | 'auth_user_id'> &
     user_id: string;
   };
 
-export async function insertSubmission({
+async function insertSubmission({
   submitted_answer,
   raw_submitted_answer,
   format_errors,

@@ -1,4 +1,4 @@
-import { z } from 'zod';
+import z from 'zod';
 
 import { loadSqlEquiv, queryOptionalRow, queryRow, queryRows } from '@prairielearn/postgres';
 
@@ -54,10 +54,11 @@ export async function selectQuestionByInstanceQuestionId(
   );
 }
 
-export const QuestionForCopySchema = QuestionSchema.extend({
+// eslint-disable-next-line @typescript-eslint/no-unused-vars
+const QuestionForCopySchema = QuestionSchema.extend({
   should_copy: z.boolean().optional(),
 });
-export type QuestionForCopy = z.infer<typeof QuestionForCopySchema>;
+type QuestionForCopy = z.infer<typeof QuestionForCopySchema>;
 
 export async function selectQuestionsForCourseInstanceCopy(
   course_instance_id: string,

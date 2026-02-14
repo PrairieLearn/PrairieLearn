@@ -27,7 +27,7 @@ import type {
   ResLocalsQuestionRender,
 } from './question-render.types.js';
 
-export interface ResLocals extends ResLocalsAuthnUser, ResLocalsConfig, ResLocalsDate {
+interface ResLocals extends ResLocalsAuthnUser, ResLocalsConfig, ResLocalsDate {
   __csrf_token: string;
 }
 
@@ -82,7 +82,7 @@ interface ResLocalsForPageLookup {
 export type ResLocalsForPage<T extends keyof ResLocalsForPageLookup> =
   true extends IsUnion<T> ? MergeUnion<ResLocalsForPageLookup[T]> : ResLocalsForPageLookup[T];
 
-export type PageType = keyof ResLocalsForPageLookup;
+type PageType = keyof ResLocalsForPageLookup;
 
 /**
  * A wrapper around {@link asyncHandler} that ensures that the locals

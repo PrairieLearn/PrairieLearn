@@ -3,30 +3,17 @@ import { z } from 'zod';
 import { formatDate } from '@prairielearn/formatter';
 import { html } from '@prairielearn/html';
 
-import {
-  AdministratorQueryResultSchema,
-  type AdministratorQuerySpecs,
-} from '../../admin_queries/lib/util.js';
+import { type AdministratorQuerySpecs } from '../../admin_queries/lib/util.js';
 import { PageLayout } from '../../components/PageLayout.js';
 import { nodeModulesAssetPath } from '../../lib/assets.js';
 import { type QueryRun, QueryRunSchema } from '../../lib/db-types.js';
 import type { ResLocalsForPage } from '../../lib/res-locals.js';
 
-export const AdministratorQueryRunParamsSchema = z.object({
-  name: z.string(),
-  sql: z.string(),
-  params: z.record(z.any()),
-  authn_user_id: z.string(),
-  error: z.string().optional().nullable(),
-  result: AdministratorQueryResultSchema.nullable(),
-  formatted_date: z.string().optional().nullable(),
-});
-
 export const QueryRunRowSchema = QueryRunSchema.extend({
   user_name: z.string().nullable(),
   user_uid: z.string().nullable(),
 });
-export type QueryRunRow = z.infer<typeof QueryRunRowSchema>;
+type QueryRunRow = z.infer<typeof QueryRunRowSchema>;
 
 export function AdministratorQuery({
   resLocals,

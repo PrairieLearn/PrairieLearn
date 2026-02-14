@@ -11,7 +11,7 @@ import { logger } from '@prairielearn/logger';
 
 import { EXAMPLE_COURSE_PATH, TEST_COURSE_PATH } from './paths.js';
 
-export const DEV_MODE = process.env.NODE_ENV !== 'production';
+const DEV_MODE = process.env.NODE_ENV !== 'production';
 
 // We don't compare against 'test' since we use the 'MODE' environment variable
 // for running a subset of our tests.
@@ -26,7 +26,7 @@ const TokenPricingSchema = z.object({
   output: z.number().nonnegative(),
 });
 
-export const STANDARD_COURSE_DIRS = [
+const STANDARD_COURSE_DIRS = [
   '/course',
   '/course2',
   '/course3',

@@ -67,7 +67,7 @@ export const InstanceQuestionRowSchema = InstanceQuestionSchema.extend({
     })
     .optional(),
 });
-export type InstanceQuestionRow = z.infer<typeof InstanceQuestionRowSchema>;
+type InstanceQuestionRow = z.infer<typeof InstanceQuestionRowSchema>;
 
 export function StudentAssessmentInstance({
   instance_question_rows,

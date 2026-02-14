@@ -232,6 +232,7 @@ async function reconcilePlanGrants(
   }
 }
 
+/** @lintignore */
 export function planGrantsSatisfyRequiredPlans(planGrants: PlanGrant[], requiredPlans: PlanName[]) {
   const planNames = getPlanNamesFromPlanGrants(planGrants);
   return requiredPlans.every((requiredPlan) => planNames.includes(requiredPlan));

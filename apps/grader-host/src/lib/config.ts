@@ -14,7 +14,7 @@ import logger from './logger.js';
 // Determine what environment we're running in
 const isProduction = process.env.NODE_ENV === 'production';
 
-export const ConfigSchema = z.object({
+const ConfigSchema = z.object({
   maxConcurrentJobs: z.number().default(5),
   useEc2MetadataService: z.boolean().default(true),
   useConsoleLoggingForJobs: z.boolean().default(true),
