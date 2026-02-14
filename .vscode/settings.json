@@ -30,8 +30,15 @@
   "[json]": {
     "files.insertFinalNewline": true
   },
-  "typescript.preferences.autoImportSpecifierExcludeRegexes": ["^react$"],
-  "typescript.tsdk": "node_modules/typescript/lib",
+  "files.associations": {
+    "**/exampleCourse/questions/**/question.html": "htmlmustache",
+    "**/testCourse/questions/**/question.html": "htmlmustache"
+  },
+  "knip.configFilePath": ".knip.ts",
+  "knip.requireConfig": true,
+  "java.project.resourceFilters": ["node_modules", "\\.git", "exampleCourse"],
+  "java.project.referencedLibraries": ["graders/java/libs/*.jar"],
+  "java.project.sourcePaths": ["graders/java"],
   "json.schemaDownload.enable": true,
   "json.schemas": [
     {
@@ -75,14 +82,8 @@
   "python.testing.unittestEnabled": false,
   "python.testing.pytestEnabled": true,
   "sqlfluff.executablePath": "${workspaceFolder}/.venv/bin/sqlfluff",
+  "typescript.tsdk": "node_modules/typescript/lib",
   "vitest.maximumConfigs": 100,
   // This conflicts with the Prettier formatter, so we disable it.
-  "yaml.format.enable": false,
-  "java.project.resourceFilters": ["node_modules", "\\.git", "exampleCourse"],
-  "java.project.referencedLibraries": ["graders/java/libs/*.jar"],
-  "java.project.sourcePaths": ["graders/java"],
-  "files.associations": {
-    "**/exampleCourse/questions/**/question.html": "htmlmustache",
-    "**/testCourse/questions/**/question.html": "htmlmustache"
-  }
+  "yaml.format.enable": false
 }
