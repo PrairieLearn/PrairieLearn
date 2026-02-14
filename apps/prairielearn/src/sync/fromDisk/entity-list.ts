@@ -5,7 +5,6 @@ interface NamedEntity {
 }
 
 type ExistingEntity<Entity> = Entity & {
-  /** TODO: make non-nullable once we make this non-null in the database schemas. */
   number: number | null;
   implicit: boolean;
 };
