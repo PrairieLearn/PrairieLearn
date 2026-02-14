@@ -196,7 +196,7 @@ export const infoCourseInstance = prairielearnZodToJsonSchema(CourseInstanceJson
   name: 'Course instance information',
   nameStrategy: 'title',
   target: 'jsonSchema7',
-  definitions: { CommentJsonSchema },
+  definitions: { ColorJsonSchema, CommentJsonSchema },
 }) as JSONSchemaType<CourseInstanceJson>;
 
 export const infoElementCore = prairielearnZodToJsonSchema(ElementCoreJsonSchema, {
