@@ -32,6 +32,7 @@ jobs:
         with:
           # This makes Actions fetch all Git history so that Changesets can generate changelogs with the correct commits
           fetch-depth: 0
+          fetch-tags: false
           show-progress: false
 
       - name: Install additional dependencies
