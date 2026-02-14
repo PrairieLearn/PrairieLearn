@@ -577,6 +577,8 @@ export type Author = z.infer<typeof AuthorSchema>;
 export const BatchedMigrationJobSchema = null;
 export const BatchedMigrationSchema = null;
 
+export const CachedNewsItemSchema = null;
+
 export const ChunkSchema = z.object({
   assessment_id: IdSchema.nullable(),
   course_id: IdSchema,
@@ -1225,6 +1227,17 @@ export const LtiOutcomeSchema = z.object({
 export const MigrationSchema = null;
 export const NamedLockSchema = null;
 
+export const NewsItemSchema = z.object({
+  fetched_at: DateFromISOString,
+  guid: z.string(),
+  hidden_at: DateFromISOString.nullable(),
+  id: IdSchema,
+  link: z.string(),
+  pub_date: DateFromISOString,
+  title: z.string(),
+});
+export type NewsItem = z.infer<typeof NewsItemSchema>;
+
 export const PageViewLogSchema = null;
 
 export const PlanGrantSchema = z.object({
@@ -1484,6 +1497,13 @@ export const UserSchema = z.object({
 });
 export type User = z.infer<typeof UserSchema>;
 
+export const UserNewsReadTimestampSchema = z.object({
+  id: IdSchema,
+  last_read_at: DateFromISOString,
+  user_id: IdSchema,
+});
+export type UserNewsReadTimestamp = z.infer<typeof UserNewsReadTimestampSchema>;
+
 export const UserSessionSchema = z.object({
   created_at: DateFromISOString,
   data: z.any(),
@@ -1669,6 +1689,7 @@ export const TableNames = [
   'lti_outcomes',
   'migrations',
   'named_locks',
+  'news_items',
   'page_view_logs',
   'courses',
   'plan_grants',
@@ -1692,6 +1713,7 @@ export const TableNames = [
   'tags',
   'time_series',
   'topics',
+  'user_news_read_timestamps',
   'user_sessions',
   'users',
   'variant_view_logs',

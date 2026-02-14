@@ -230,6 +230,7 @@
     "remark-stringify": "^11.0.0",
     "requirejs": "^2.3.8",
     "resumable-stream": "^2.2.10",
+    "rss-parser": "^3.13.0",
     "search-string": "^4.1.0",
     "selector-observer": "^2.1.6",
     "selector-set": "^1.1.5",
