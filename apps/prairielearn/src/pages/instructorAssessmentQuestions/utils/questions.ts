@@ -70,6 +70,7 @@ export function buildHierarchicalAssessment(
       maxPoints: row.zone.max_points ?? undefined,
       numberChoose: row.zone.number_choose ?? undefined,
       bestQuestions: row.zone.best_questions ?? undefined,
+      lockpoint: row.zone.lockpoint,
       questions: [],
       advanceScorePerc: row.zone.advance_score_perc ?? undefined,
       gradeRateMinutes: row.zone.json_grade_rate_minutes ?? undefined,

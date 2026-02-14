@@ -125,7 +125,8 @@ WITH
     SELECT
       iq.id AS current_id,
       (lead(iq.id) OVER w) AS id,
-      (lead(qo.sequence_locked) OVER w) AS sequence_locked
+      (lead(qo.sequence_locked) OVER w) AS sequence_locked,
+      (lead(qo.lockpoint_not_yet_crossed) OVER w) AS lockpoint_not_yet_crossed
     FROM
       instance_questions AS iq
       JOIN assessment_instances AS ai ON (ai.id = iq.assessment_instance_id)
@@ -168,11 +169,14 @@ SELECT
   to_jsonb(lgj) AS grading_job,
   to_jsonb(s) AS submission,
   qo.question_number,
+  COALESCE(qo.lockpoint_read_only, false) AS lockpoint_read_only,
   jsonb_build_object(
     'id',
     next_iq.id,
     'sequence_locked',
-    next_iq.sequence_locked
+    next_iq.sequence_locked,
+    'lockpoint_not_yet_crossed',
+    next_iq.lockpoint_not_yet_crossed
   ) AS next_instance_question,
   to_jsonb(aq) AS assessment_question,
   to_jsonb(ai) AS assessment_instance,

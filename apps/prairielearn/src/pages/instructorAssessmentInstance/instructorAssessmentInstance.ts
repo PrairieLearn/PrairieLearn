@@ -6,6 +6,7 @@ import { z } from 'zod';
 import { stringifyStream } from '@prairielearn/csv';
 import { HttpStatusError } from '@prairielearn/error';
 import * as sqldb from '@prairielearn/postgres';
+import { DateFromISOString, IdSchema } from '@prairielearn/zod';
 
 import {
   type InstanceLogEntry,
@@ -33,6 +34,17 @@ const sql = sqldb.loadSqlEquiv(import.meta.url);
 const DateDurationResultSchema = z.object({
   assessment_instance_date_formatted: z.string(),
   assessment_instance_duration: z.string(),
+});
+
+const CrossedLockpointSchema = z.object({
+  zone_id: IdSchema,
+  zone_number: z.number(),
+  zone_title: z.string().nullable(),
+  lockpoint_crossed: z.boolean(),
+  crossed_at: DateFromISOString.nullable(),
+  crossed_at_formatted: z.string().nullable(),
+  authn_user_id: IdSchema.nullable(),
+  auth_user_uid: z.string().nullable(),
 });
 
 function makeLogCsvFilename(locals: ResLocalsForPage<'assessment-instance'>) {
@@ -79,6 +91,11 @@ router.get(
       { assessment_instance_id: res.locals.assessment_instance.id },
       InstanceQuestionRowSchema,
     );
+    const crossedLockpoints = await sqldb.queryRows(
+      sql.select_crossed_lockpoints,
+      { assessment_instance_id: res.locals.assessment_instance.id },
+      CrossedLockpointSchema,
+    );
 
     const assessmentInstanceLog = await selectAssessmentInstanceLog(
       res.locals.assessment_instance.id,
@@ -93,6 +110,7 @@ router.get(
         assessment_instance_date_formatted,
         assessment_instance_duration,
         instance_questions,
+        crossedLockpoints,
         assessmentInstanceLog,
       }),
     );

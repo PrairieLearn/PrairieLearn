@@ -38,7 +38,13 @@ import { SimpleVariantWithScoreSchema } from '../../models/variant.js';
 export const InstanceQuestionRowSchema = InstanceQuestionSchema.extend({
   start_new_zone: z.boolean(),
   zone_id: IdSchema,
+  zone_number: z.number(),
   zone_title: z.string().nullable(),
+  lockpoint: z.boolean(),
+  lockpoint_crossed: z.boolean(),
+  lockpoint_crossed_at: DateFromISOString.nullable(),
+  lockpoint_crossed_at_formatted: z.string().nullable(),
+  lockpoint_crossed_auth_user_uid: z.string().nullable(),
   question_title: z.string(),
   max_points: z.number().nullable(),
   max_manual_points: z.number().nullable(),
@@ -53,6 +59,8 @@ export const InstanceQuestionRowSchema = InstanceQuestionSchema.extend({
   zone_has_best_questions: z.boolean(),
   file_count: z.number(),
   sequence_locked: z.boolean(),
+  lockpoint_not_yet_crossed: z.boolean(),
+  lockpoint_read_only: z.boolean(),
   prev_advance_score_perc: z.number().nullable(),
   prev_title: z.string().nullable(),
   prev_sequence_locked: z.boolean().nullable(),
@@ -162,6 +170,31 @@ export function StudentAssessmentInstance({
   const showUnauthorizedEditWarning = !resLocals.authz_result.authorized_edit;
   const showCardFooter = showExamFooterContent || showUnauthorizedEditWarning;
 
+  const firstUncrossedLockpointZoneNumber = instance_question_rows
+    .filter((row) => row.start_new_zone && row.lockpoint && !row.lockpoint_crossed)
+    .map((row) => row.zone_number)
+    .sort((a, b) => a - b)[0];
+
+  const hasSequenceLockedInPriorZones = (zoneNumber: number) =>
+    instance_question_rows.some((row) => row.zone_number < zoneNumber && row.sequence_locked);
+
+  function isBarrierCrossable(row: InstanceQuestionRow) {
+    return (
+      resLocals.assessment_instance.open &&
+      resLocals.authz_result.active &&
+      resLocals.authz_result.authorized_edit &&
+      row.lockpoint &&
+      !row.lockpoint_crossed &&
+      row.zone_number === firstUncrossedLockpointZoneNumber &&
+      !hasSequenceLockedInPriorZones(row.zone_number)
+    );
+  }
+
+  const crossableLockpointRows = instance_question_rows.filter(
+    (row) =>
+      row.start_new_zone && row.lockpoint && !row.lockpoint_crossed && isBarrierCrossable(row),
+  );
+
   return PageLayout({
     resLocals,
     pageTitle: '', // Calculated automatically
@@ -193,6 +226,52 @@ export function StudentAssessmentInstance({
             csrfToken: resLocals.__csrf_token,
           })
         : ''}
+      ${crossableLockpointRows.map((row) =>
+        Modal({
+          id: `crossLockpointModal-${row.zone_id}`,
+          title: 'Proceed to next section?',
+          body: html`
+            <p>
+              Questions above will become read-only. You can review your previous submissions but
+              cannot make new ones.
+            </p>
+            ${groupConfig != null
+              ? html`
+                  <p class="fw-bold">
+                    This will affect all group members. Questions above will become read-only for
+                    everyone in your group.
+                  </p>
+                `
+              : ''}
+            <div class="form-check">
+              <input
+                class="form-check-input"
+                type="checkbox"
+                id="lockpoint-confirm-${row.zone_id}"
+                onchange="document.getElementById('lockpoint-submit-${row.zone_id}').disabled = !this.checked"
+              />
+              <label class="form-check-label" for="lockpoint-confirm-${row.zone_id}">
+                I understand that questions above will become read-only
+              </label>
+            </div>
+          `,
+          footer: html`
+            <input type="hidden" name="__csrf_token" value="${resLocals.__csrf_token}" />
+            <input type="hidden" name="zone_id" value="${row.zone_id}" />
+            <button type="button" class="btn btn-secondary" data-bs-dismiss="modal">Cancel</button>
+            <button
+              id="lockpoint-submit-${row.zone_id}"
+              type="submit"
+              name="__action"
+              value="cross_lockpoint"
+              class="btn btn-warning"
+              disabled
+            >
+              Confirm
+            </button>
+          `,
+        }),
+      )}
       ${showTimeLimitExpiredModal ? TimeLimitExpiredModal({ showAutomatically: true }) : ''}
       ${userCanDeleteAssessmentInstance
         ? RegenerateInstanceModal({ csrfToken: resLocals.__csrf_token })
@@ -317,6 +396,69 @@ export function StudentAssessmentInstance({
             <tbody>
               ${instance_question_rows.map(
                 (instance_question_row) => html`
+                  ${instance_question_row.start_new_zone && instance_question_row.lockpoint
+                    ? html`
+                        <tr>
+                          <th colspan="${zoneTitleColspan}" class="align-middle">
+                            ${instance_question_row.lockpoint_crossed
+                              ? html`
+                                  <div
+                                    class="alert alert-success py-2 my-0 d-flex justify-content-between align-items-center"
+                                  >
+                                    <span>
+                                      <i class="fas fa-check-circle me-1" aria-hidden="true"></i>
+                                      Section completed
+                                      ${instance_question_row.lockpoint_crossed_auth_user_uid
+                                        ? html`
+                                            by
+                                            ${instance_question_row.lockpoint_crossed_auth_user_uid}
+                                          `
+                                        : ''}
+                                      ${instance_question_row.lockpoint_crossed_at
+                                        ? html`
+                                            at
+                                            ${instance_question_row.lockpoint_crossed_at_formatted}
+                                          `
+                                        : ''}
+                                    </span>
+                                  </div>
+                                `
+                              : isBarrierCrossable(instance_question_row)
+                                ? html`
+                                    <div
+                                      class="alert alert-warning py-2 my-0 d-flex justify-content-between align-items-center"
+                                    >
+                                      <span>
+                                        Crossing this lockpoint makes questions above read-only.
+                                      </span>
+                                      <button
+                                        type="button"
+                                        class="btn btn-warning btn-sm"
+                                        data-bs-toggle="modal"
+                                        data-bs-target="#crossLockpointModal-${instance_question_row.zone_id}"
+                                      >
+                                        Proceed to next section
+                                      </button>
+                                    </div>
+                                  `
+                                : html`
+                                    <div
+                                      class="alert alert-light py-2 my-0 d-flex justify-content-between align-items-center"
+                                    >
+                                      <span>Complete previous sections first.</span>
+                                      <button
+                                        type="button"
+                                        class="btn btn-secondary btn-sm"
+                                        disabled
+                                      >
+                                        Proceed to next section
+                                      </button>
+                                    </div>
+                                  `}
+                          </th>
+                        </tr>
+                      `
+                    : ''}
                   ${instance_question_row.start_new_zone && instance_question_row.zone_title
                     ? html`
                         <tr>
@@ -341,9 +483,12 @@ export function StudentAssessmentInstance({
                       `
                     : ''}
                   <tr
-                    class="${instance_question_row.sequence_locked
+                    class="${instance_question_row.sequence_locked ||
+                    instance_question_row.lockpoint_not_yet_crossed
                       ? 'bg-light pl-sequence-locked'
-                      : ''}"
+                      : instance_question_row.lockpoint_read_only
+                        ? 'table-warning pl-lockpoint-read-only'
+                        : ''}"
                   >
                     <td>
                       ${RowLabel({
@@ -821,35 +966,46 @@ function RowLabel({
   rowLabelText: string;
   urlPrefix: string;
 }) {
-  let lockedPopoverText: string | null = null;
+  let lockMessage: string | null = null;
+  let showLink = true;
+
   if (instance_question_row.sequence_locked) {
-    lockedPopoverText = instance_question_row.prev_sequence_locked
+    showLink = false;
+    lockMessage = instance_question_row.prev_sequence_locked
       ? 'A previous question must be completed before you can access this one.'
       : `You must score at least ${instance_question_row.prev_advance_score_perc}% on ${instance_question_row.prev_title} to unlock this question.`;
+  } else if (instance_question_row.lockpoint_not_yet_crossed) {
+    showLink = false;
+    lockMessage = 'You must cross the lockpoint above to access this question.';
   } else if (!(instance_question_row.group_role_permissions?.can_view ?? true)) {
-    lockedPopoverText = `Your current group role (${userGroupRoles}) restricts access to this question.`;
+    showLink = false;
+    lockMessage = `Your current group role (${userGroupRoles}) restricts access to this question.`;
+  } else if (instance_question_row.lockpoint_read_only) {
+    lockMessage = 'This question is read-only because you have advanced past a lockpoint.';
   }
 
   return html`
-    ${lockedPopoverText != null
+    ${showLink
       ? html`
-          <span class="text-muted">${rowLabelText}</span>
+          <a href="${urlPrefix}/instance_question/${instance_question_row.id}/">${rowLabelText}</a>
+        `
+      : html`<span class="text-muted">${rowLabelText}</span>`}
+    ${lockMessage != null
+      ? html`
           <button
             type="button"
             class="btn btn-xs border text-secondary ms-1"
             data-bs-toggle="popover"
             data-bs-container="body"
             data-bs-html="true"
-            data-bs-content="${lockedPopoverText}"
+            data-bs-content="${lockMessage}"
             data-test-id="locked-instance-question-row"
             aria-label="Locked"
           >
             <i class="fas fa-lock" aria-hidden="true"></i>
           </button>
         `
-      : html`
-          <a href="${urlPrefix}/instance_question/${instance_question_row.id}/">${rowLabelText}</a>
-        `}
+      : ''}
     ${instance_question_row.file_count > 0
       ? html`
           <button

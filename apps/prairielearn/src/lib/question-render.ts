@@ -79,8 +79,10 @@ const SubmissionInfoSchema = z.object({
   grading_job: GradingJobSchema.nullable(),
   submission: SubmissionSchema,
   question_number: z.string().nullable(),
+  lockpoint_read_only: z.boolean(),
   next_instance_question: z.object({
     id: IdSchema.nullable(),
+    lockpoint_not_yet_crossed: z.boolean().nullable(),
     sequence_locked: z.boolean().nullable(),
   }),
   assessment_question: AssessmentQuestionSchema.nullable(),
@@ -261,6 +263,7 @@ function buildLocals({
   assessment_question,
   group_config,
   authz_result,
+  lockpoint_read_only,
 }: {
   variant: Variant;
   question: Question;
@@ -274,6 +277,7 @@ function buildLocals({
   assessment_question?: AssessmentQuestion | null;
   group_config?: GroupConfig | null;
   authz_result?: any;
+  lockpoint_read_only?: boolean;
 }) {
   const locals: ResLocalsBuildLocals = {
     showGradeButton: false,
@@ -337,6 +341,12 @@ function buildLocals({
     if (instance_question.allow_grade_left_ms > 0) {
       locals.disableGradeButton = true;
     }
+  }
+
+  if (lockpoint_read_only) {
+    locals.showGradeButton = false;
+    locals.showSaveButton = false;
+    locals.allowAnswerEditing = false;
   }
 
   if (
@@ -418,6 +428,7 @@ export async function getAndRenderVariant(
     group_config?: GroupConfig;
     group_role_permissions?: QuestionGroupPermissions;
     instance_question?: InstanceQuestionWithAllowGrade;
+    instance_question_info?: { lockpoint_read_only?: boolean };
     authz_data?: Record<string, any>;
     authz_result?: Record<string, any>;
     client_fingerprint_id?: string | null;
@@ -520,6 +531,7 @@ export async function getAndRenderVariant(
     assessment_question,
     group_config,
     authz_result,
+    lockpoint_read_only: locals.instance_question_info?.lockpoint_read_only,
   });
   if (
     (locals.questionRenderContext === 'manual_grading' ||
@@ -705,6 +717,7 @@ export async function renderPanelsForSubmission({
     user_uid,
     question_number,
     group_config,
+    lockpoint_read_only,
   } = submissionInfo;
   const previous_variants =
     variant.instance_question_id == null || assessment_instance == null
@@ -733,6 +746,7 @@ export async function renderPanelsForSubmission({
       assessment_question,
       group_config,
       authz_result,
+      lockpoint_read_only,
     }),
   };
 
@@ -876,6 +890,7 @@ export async function renderPanelsForSubmission({
       panels.questionNavNextButton = QuestionNavSideButton({
         instanceQuestionId: next_instance_question.id,
         sequenceLocked: next_instance_question.sequence_locked,
+        lockpointNotYetCrossed: next_instance_question.lockpoint_not_yet_crossed,
         urlPrefix,
         whichButton: 'next',
         groupRolePermissions: nextQuestionGroupRolePermissions,

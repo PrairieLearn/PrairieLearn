@@ -8,6 +8,7 @@ columns
     json_can_view: text[]
     json_comment: jsonb
     json_grade_rate_minutes: double precision
+    lockpoint: boolean not null default false
     max_points: double precision
     number: integer not null
     number_choose: integer

@@ -164,6 +164,7 @@ An assessment is broken down in to a list of zones, like this:
 | `numberChoose`         | integer | Number of questions to select for each student from this zone. (Optional; default: select all)                                                        |
 | `maxPoints`            | number  | Limit on the number of points that can be earned from this zone. (Optional; default: sum of question max points)                                      |
 | `bestQuestions`        | integer | Only this many questions in the zone will count towards the total points (highest-point questions will count). (Optional; default: use all questions) |
+| `lockpoint`            | boolean | Creates a one-way barrier at this zone; crossing it makes all earlier zones read-only. (Optional; default: `false`)                                   |
 | `allowRealTimeGrading` | boolean | Whether to grade questions in this zone in real time (Exams only). (Optional; default: `true`)                                                        |
 | `comment`              | string  | Free‑form comment for the zone. (Optional; default: none)                                                                                             |
 
@@ -739,6 +740,48 @@ If a student uses all of their attempts on a question and cannot submit any more
 ### :warning: Warning about in-order questions and high-stakes exams
 
 The `advanceScorePerc` attribute is intended to be used in [group work](#enabling-group-work-for-collaborative-assessments) and assessment types which are indirectly supported, such as worksheets (see [multiple instance assessments](#multiple-instance-versus-single-instance-assessments)). In the interest of allowing students to best demonstrate their knowledge of course material, we **strongly** discourage the use of this feature in high-stakes exams where the student cannot receive help from course staff.
+
+## Lockpoints
+
+Lockpoints let you create one-way barriers between zones. Set `"lockpoint": true` on a zone where students must explicitly confirm moving forward. Once crossed, all questions in earlier zones become read-only: students can still view prior work and submissions, but cannot submit new answers there.
+
+```json title="infoAssessment.json"
+{
+  "uuid": "3d4ef390-5e04-4a7d-9dce-6cf8f5c17311",
+  "type": "Exam",
+  "title": "Exam with lockpoints",
+  "set": "Exam",
+  "number": "18",
+  "zones": [
+    {
+      "title": "Conceptual questions",
+      "questions": [{ "id": "addNumbers", "points": 10 }]
+    },
+    {
+      "title": "Coding questions",
+      "lockpoint": true,
+      "questions": [{ "id": "addVectors", "points": 10 }]
+    },
+    {
+      "title": "Advanced questions",
+      "lockpoint": true,
+      "questions": [{ "id": "fossilFuelsRadio", "points": 10 }]
+    }
+  ]
+}
+```
+
+Lockpoints are crossed sequentially. If multiple lockpoints are configured, students must cross them in zone order.
+
+Lockpoints and `advanceScorePerc` work together: students still must satisfy any in-order gating before they can cross the next lockpoint.
+
+In group assessments, lockpoints are shared by the group. Any member can cross a lockpoint, and the resulting read-only state applies to everyone in that group.
+
+Students can finish the assessment at any time, even if some lockpoints are not crossed.
+
+Lockpoints do not make workspaces read-only. They control question submission access, not workspace container access.
+
+To avoid surprising students, configure lockpoints before students begin an assessment. Adding lockpoints after students have already started may lock zones they were previously working in until they cross the new lockpoint.
 
 ## Auto-closing Exam assessments
 

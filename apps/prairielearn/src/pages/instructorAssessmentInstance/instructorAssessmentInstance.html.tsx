@@ -60,6 +60,17 @@ export const InstanceQuestionRowSchema = InstanceQuestionSchema.extend({
 });
 type InstanceQuestionRow = z.infer<typeof InstanceQuestionRowSchema>;
 
+interface CrossedLockpoint {
+  zone_id: string;
+  zone_number: number;
+  zone_title: string | null;
+  lockpoint_crossed: boolean;
+  crossed_at: Date | null;
+  crossed_at_formatted: string | null;
+  authn_user_id: string | null;
+  auth_user_uid: string | null;
+}
+
 const FINGERPRINT_COLORS = ['red2', 'orange2', 'green2', 'blue2', 'turquoise2', 'purple2'];
 
 export function InstructorAssessmentInstance({
@@ -69,6 +80,7 @@ export function InstructorAssessmentInstance({
   assessment_instance_date_formatted,
   assessment_instance_duration,
   instance_questions,
+  crossedLockpoints,
   assessmentInstanceLog,
 }: {
   resLocals: ResLocalsForPage<'assessment-instance'>;
@@ -77,8 +89,13 @@ export function InstructorAssessmentInstance({
   assessment_instance_date_formatted: string;
   assessment_instance_duration: string;
   instance_questions: InstanceQuestionRow[];
+  crossedLockpoints: CrossedLockpoint[];
   assessmentInstanceLog: InstanceLogEntry[];
 }) {
+  const crossedLockpointsByZoneId = new Map(
+    crossedLockpoints.map((lockpoint) => [lockpoint.zone_id, lockpoint]),
+  );
+
   return PageLayout({
     resLocals,
     pageTitle: resLocals.instance_group?.name ?? resLocals.instance_user?.uid ?? '',
@@ -328,7 +345,25 @@ export function InstructorAssessmentInstance({
             </thead>
             <tbody>
               ${instance_questions.map((instance_question) => {
+                const crossedLockpoint = crossedLockpointsByZoneId.get(instance_question.zone_id);
                 return html`
+                  ${instance_question.start_new_zone && crossedLockpoint
+                    ? html`
+                        <tr>
+                          <th colspan="9" class="bg-light fw-normal">
+                            ${crossedLockpoint.lockpoint_crossed
+                              ? html`
+                                  Lockpoint crossed by
+                                  ${crossedLockpoint.auth_user_uid ?? 'unknown user'}
+                                  ${crossedLockpoint.crossed_at_formatted
+                                    ? html`at ${crossedLockpoint.crossed_at_formatted}`
+                                    : ''}
+                                `
+                              : html`Lockpoint not yet crossed`}
+                          </th>
+                        </tr>
+                      `
+                    : ''}
                   ${instance_question.start_new_zone && instance_question.zone_title
                     ? html`
                         <tr>

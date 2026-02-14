@@ -1073,3 +1073,10 @@ yarn test apps/prairielearn/src/tests/testLockpoints.test.ts
 9. Crossing a lockpoint is initiated only from the assessment instance overview page; next-question navigation remains disabled until the lockpoint is crossed there.
 10. Non-emulating staff (`has_course_instance_permission_edit` with `authorized_edit = false`) cannot cross lockpoints.
 11. Crossed-by display should use UID only.
+
+---
+
+## Implementation deviations (2026-02-14)
+
+- UI crossed-at display uses SQL-formatted timestamps (`format_date_full_compact` with course-instance timezone) rather than formatting JS `Date` objects in templates.
+- Test implementation currently focuses on core lockpoint lifecycle behavior in `testLockpoints.test.ts`, and does not yet cover every optional edge-case scenario listed in the Verification checklist.

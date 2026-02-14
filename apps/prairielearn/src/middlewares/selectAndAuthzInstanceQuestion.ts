@@ -39,10 +39,13 @@ const InstanceQuestionInfoSchema = z.object({
   }),
   next_instance_question: z.object({
     id: IdSchema.nullable(),
+    lockpoint_not_yet_crossed: z.boolean().nullable(),
     sequence_locked: z.boolean().nullable(),
   }),
   question_number: z.string(),
   advance_score_perc: z.number().nullable(),
+  lockpoint_not_yet_crossed: z.boolean(),
+  lockpoint_read_only: z.boolean(),
   sequence_locked: z.boolean(),
   instructor_question_number: z.string(),
 });

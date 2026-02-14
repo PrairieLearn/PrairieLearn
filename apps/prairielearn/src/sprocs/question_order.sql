@@ -5,28 +5,58 @@ CREATE FUNCTION
         instance_question_id bigint,
         row_order integer,
         question_number text,
-        sequence_locked boolean
+        sequence_locked boolean,
+        lockpoint_not_yet_crossed boolean,
+        lockpoint_read_only boolean
     )
 AS $$
--- Used to determine if an instance question should block 
+-- Used to determine if an instance question should block
 -- access to further questions when advanceScorePerc is set.
 WITH locks_next AS (
-    SELECT 
+    SELECT
         iq.id AS instance_question_id,
         -- Advancement locking rule 1:
         NOT ( -- Do not lock next question if:
             -- Run out of attempts
-            (iq.open = false) 
+            (iq.open = false)
             OR -- Score >= unlock score
             (100*COALESCE(iq.highest_submission_score, 0)
                 >= aq.effective_advance_score_perc) 
         ) AS locking
     FROM
-        assessment_instances ai 
+        assessment_instances ai
         JOIN instance_questions AS iq ON (iq.assessment_instance_id = ai.id)
         JOIN assessment_questions AS aq ON (aq.id = iq.assessment_question_id)
     WHERE
         ai.id = arg_assessment_instance_id
+),
+lockpoint_info AS (
+    SELECT
+        z.id AS zone_id,
+        z.number AS zone_number,
+        aicl.id IS NOT NULL AS is_crossed
+    FROM
+        zones z
+        LEFT JOIN assessment_instance_crossed_lockpoints aicl ON aicl.zone_id = z.id
+        AND aicl.assessment_instance_id = arg_assessment_instance_id
+    WHERE
+        z.assessment_id = (
+            SELECT
+                assessment_id
+            FROM
+                assessment_instances
+            WHERE
+                id = arg_assessment_instance_id
+        )
+        AND z.lockpoint = true
+),
+first_uncrossed_lockpoint AS (
+    SELECT
+        MIN(zone_number) AS zone_number
+    FROM
+        lockpoint_info
+    WHERE
+        NOT is_crossed
 )
 SELECT
     iq.id AS instance_question_id,
@@ -46,7 +76,17 @@ SELECT
         ((lag(aq.id) OVER w) IS NOT NULL)
         AND -- Any previous question locks all questions ahead of it
         (BOOL_OR(locks_next.locking) OVER (ROWS BETWEEN UNBOUNDED PRECEDING AND 1 PRECEDING))
-    ) AS sequence_locked
+    ) AS sequence_locked,
+    COALESCE(z.number >= first_uncrossed_lockpoint.zone_number, false) AS lockpoint_not_yet_crossed,
+    EXISTS (
+        SELECT
+            1
+        FROM
+            lockpoint_info
+        WHERE
+            is_crossed
+            AND zone_number > z.number
+    ) AS lockpoint_read_only
 FROM
     assessment_instances AS ai
     JOIN assessments AS a ON (a.id = ai.assessment_id)
@@ -57,6 +97,7 @@ FROM
     JOIN alternative_groups AS ag ON (ag.id = aq.alternative_group_id)
     JOIN zones AS z ON (z.id = ag.zone_id)
     JOIN assessment_sets AS aset ON (aset.id = a.assessment_set_id)
+    CROSS JOIN first_uncrossed_lockpoint
 WHERE
     ai.id = arg_assessment_instance_id
     AND aq.deleted_at IS NULL

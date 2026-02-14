@@ -10,10 +10,14 @@ WITH
         'id',
         (lead(iq.id) OVER w),
         'sequence_locked',
-        (lead(qo.sequence_locked) OVER w)
+        (lead(qo.sequence_locked) OVER w),
+        'lockpoint_not_yet_crossed',
+        (lead(qo.lockpoint_not_yet_crossed) OVER w)
       ) AS next_instance_question,
       qo.question_number,
-      qo.sequence_locked
+      qo.sequence_locked,
+      qo.lockpoint_not_yet_crossed,
+      qo.lockpoint_read_only
     FROM
       instance_questions AS this_iq
       JOIN assessment_instances AS ai ON (ai.id = this_iq.assessment_instance_id)
@@ -90,6 +94,10 @@ SELECT
     aq.effective_advance_score_perc,
     'sequence_locked',
     iqi.sequence_locked,
+    'lockpoint_not_yet_crossed',
+    iqi.lockpoint_not_yet_crossed,
+    'lockpoint_read_only',
+    iqi.lockpoint_read_only,
     'instructor_question_number',
     admin_assessment_question_number (aq.id)
   ) AS instance_question_info,
@@ -132,4 +140,5 @@ WHERE
   )
   AND q.deleted_at IS NULL
   AND a.deleted_at IS NULL
-  AND NOT iqi.sequence_locked;
+  AND NOT iqi.sequence_locked
+  AND NOT iqi.lockpoint_not_yet_crossed;

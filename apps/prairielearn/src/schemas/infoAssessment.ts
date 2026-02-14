@@ -336,6 +336,13 @@ export const ZoneAssessmentJsonSchema = z.object({
       'Only this many of the questions in this zone, with the highest number of awarded points, will count toward the total points.',
     )
     .optional(),
+  lockpoint: z
+    .boolean()
+    .describe(
+      'If true, students must explicitly acknowledge advancing past this point. All questions in previous zones become read-only after crossing.',
+    )
+    .optional()
+    .default(false),
   questions: z
     .array(ZoneQuestionBlockJsonSchema)
     .min(1)
@@ -369,6 +376,7 @@ export const ZoneAssessmentJsonSchema = z.object({
 });
 
 export type ZoneAssessmentJson = z.infer<typeof ZoneAssessmentJsonSchema>;
+export type ZoneAssessmentJsonInput = z.input<typeof ZoneAssessmentJsonSchema>;
 
 export const AssessmentJsonSchema = z
   .object({
@@ -551,7 +559,26 @@ export const AssessmentJsonSchema = z
       .default(false),
   })
   .strict()
-  .describe('Configuration data for an assessment.');
+  .describe('Configuration data for an assessment.')
+  .superRefine((assessment, ctx) => {
+    if (assessment.zones[0]?.lockpoint) {
+      ctx.addIssue({
+        code: z.ZodIssueCode.custom,
+        message: 'The first zone cannot have lockpoint: true',
+        path: ['zones', 0, 'lockpoint'],
+      });
+    }
+
+    assessment.zones.forEach((zone, index) => {
+      if (zone.lockpoint && zone.numberChoose === 0) {
+        ctx.addIssue({
+          code: z.ZodIssueCode.custom,
+          message: 'A lockpoint zone must include at least one selectable question',
+          path: ['zones', index, 'numberChoose'],
+        });
+      }
+    });
+  });
 
 export type AssessmentJson = z.infer<typeof AssessmentJsonSchema>;
 export type AssessmentJsonInput = z.input<typeof AssessmentJsonSchema>;

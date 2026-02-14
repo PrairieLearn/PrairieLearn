@@ -345,6 +345,36 @@ export async function gradeAssessmentInstance({
   await sqldb.execute(sql.unset_grading_needed, { assessment_instance_id });
 }
 
+export async function crossLockpoint({
+  assessment_instance_id,
+  zone_id,
+  authn_user_id,
+}: {
+  assessment_instance_id: string;
+  zone_id: string;
+  authn_user_id: string;
+}): Promise<void> {
+  const crossedLockpointId = await sqldb.queryOptionalRow(
+    sql.cross_lockpoint,
+    { assessment_instance_id, zone_id, authn_user_id },
+    IdSchema,
+  );
+
+  if (crossedLockpointId != null) return;
+
+  const alreadyCrossed = await sqldb.queryOptionalRow(
+    sql.check_lockpoint_crossed,
+    { assessment_instance_id, zone_id },
+    IdSchema,
+  );
+  if (alreadyCrossed != null) return;
+
+  throw new error.HttpStatusError(
+    403,
+    'Unable to cross this lockpoint. Please return to the assessment overview and try again.',
+  );
+}
+
 const InstancesToGradeSchema = z.object({
   assessment_instance_id: IdSchema,
   instance_number: z.number(),
