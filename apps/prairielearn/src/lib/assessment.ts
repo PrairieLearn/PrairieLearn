@@ -17,6 +17,7 @@ import {
   type Assessment,
   type AssessmentInstance,
   AssessmentInstanceSchema,
+  type AssessmentSet,
   ClientFingerprintSchema,
   CourseSchema,
   QuestionSchema,
@@ -51,6 +52,22 @@ export const InstanceLogSchema = z.object({
   instructor_question_number: z.string().nullable(),
 });
 export type InstanceLogEntry = z.infer<typeof InstanceLogSchema>;
+
+export function assessmentLabel(assessment: Assessment, assessmentSet: AssessmentSet): string {
+  return assessmentSet.abbreviation + assessment.number;
+}
+
+export function assessmentInstanceLabel(
+  assessmentInstance: AssessmentInstance,
+  assessment: Assessment,
+  assessmentSet: AssessmentSet,
+): string {
+  let label = assessmentLabel(assessment, assessmentSet);
+  if (assessment.multiple_instance) {
+    label += '#' + assessmentInstance.number;
+  }
+  return label;
+}
 
 /**
  * Check that an assessment_instance_id really belongs to the given assessment_id

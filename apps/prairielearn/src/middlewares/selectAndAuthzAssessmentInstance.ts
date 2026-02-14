@@ -5,6 +5,7 @@ import z from 'zod';
 import * as error from '@prairielearn/error';
 import * as sqldb from '@prairielearn/postgres';
 
+import { assessmentInstanceLabel, assessmentLabel } from '../lib/assessment.js';
 import {
   AssessmentInstanceSchema,
   AssessmentSchema,
@@ -29,8 +30,6 @@ const SelectAndAuthzAssessmentInstanceBaseSchema = z.object({
   assessment: AssessmentSchema,
   assessment_set: AssessmentSetSchema,
   authz_result: SprocAuthzAssessmentInstanceSchema,
-  assessment_instance_label: z.string(),
-  assessment_label: z.string(),
   file_list: z.array(FileSchema),
   instance_group_uid_list: z.array(z.string()),
 });
@@ -47,7 +46,10 @@ const SelectAndAuthzAssessmentInstanceSchema = z.union([
   }),
 ]);
 
-export type ResLocalsAssessmentInstance = z.infer<typeof SelectAndAuthzAssessmentInstanceSchema>;
+export type ResLocalsAssessmentInstance = z.infer<typeof SelectAndAuthzAssessmentInstanceSchema> & {
+  assessment_instance_label: string;
+  assessment_label: string;
+};
 
 export async function selectAndAuthzAssessmentInstance(req: Request, res: Response) {
   const row = await sqldb.queryOptionalRow(
@@ -67,7 +69,14 @@ export async function selectAndAuthzAssessmentInstance(req: Request, res: Respon
   if (!row.authz_result.authorized) {
     throw new error.HttpStatusError(403, 'Access denied');
   }
-  Object.assign(res.locals, row);
+  Object.assign(res.locals, row, {
+    assessment_instance_label: assessmentInstanceLabel(
+      row.assessment_instance,
+      row.assessment,
+      row.assessment_set,
+    ),
+    assessment_label: assessmentLabel(row.assessment, row.assessment_set),
+  });
 }
 
 export default asyncHandler(async (req, res, next) => {
