@@ -183,7 +183,7 @@ def to_json(
         }
 
     if np.isscalar(v) and np.iscomplexobj(v):
-        return {"_type": "complex", "_value": {"real": v.real, "imag": v.imag}}  # pyright:ignore[reportAttributeAccessIssue]
+        return {"_type": "complex", "_value": {"real": v.real, "imag": v.imag}}
     elif isinstance(v, np.ndarray):
         if np.isrealobj(v):
             return {"_type": "ndarray", "_value": v.tolist(), "_dtype": str(v.dtype)}
@@ -953,8 +953,7 @@ def latex_from_2darray(
     if A.ndim != 2:
         raise ValueError("input should be a 2D numpy array")
     lines = (
-        np
-        .array2string(A, formatter=formatter)
+        np.array2string(A, formatter=formatter)
         .replace("[", "")
         .replace("]", "")
         .splitlines()
