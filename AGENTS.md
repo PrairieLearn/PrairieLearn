@@ -93,7 +93,7 @@ Migrations are stored in `apps/prairielearn/src/migrations`. See the [`README.md
 
 If you make a change to the database, make sure to update the database schema description in `database/` and the Zod types/table list in `apps/prairielearn/src/lib/db-types.ts`.
 
-Prefer interacting with the database using model functions in `apps/prairielearn/src/models/`.
+**Always prefer model functions over raw SQL queries.** Check `apps/prairielearn/src/models/` for existing functions before writing any database queries. Model functions provide type safety, consistent patterns, and proper abstractions. Only write raw queries when no suitable model function exists.
 
 Course content repositories use JSON files like `infoCourse.json`, `infoCourseInstance.json`, and `infoAssessment.json` to configure different parts of the course. The schemas for these files are stored as Zod schemas in `schemas/`. If you make a change to a schema file in `schemas/`, make sure to update the JSON schema with `make update-jsonschema`.
 
@@ -114,7 +114,7 @@ When working with assessment "groups" / "teams", see the [`groups-and-teams` ski
 - NEVER use `as any` casts in TypeScript code to avoid type errors.
 - Don't add extra defensive checks or try/catch blocks that are abnormal for that area of the codebase (especially if called by trusted / validated codepaths).
 - Don't add extra comments that a human wouldn't add or that are inconsistent with the rest of the file.
-- Always check for existing model functions in `apps/prairielearn/src/models/` or lib functions before writing one-off database queries.
+- **ALWAYS use model or library functions from `apps/prairielearn/src/models/` or `apps/prairielearn/src/lib/` instead of writing raw SQL queries.** Before writing any `queryRow`, `queryRows`, or similar database calls, search the models directory for an existing function. This applies to both production code and tests.
 - Express request handlers must always either send a response (either by calling `res.send`/etc. or throwing an error) or explicitly pass control by calling `next(...)`.
 - Don't re-export functions or types from other modules just for convenience or backward compatibility (e.g. `export { bar } from 'foo'`).
 

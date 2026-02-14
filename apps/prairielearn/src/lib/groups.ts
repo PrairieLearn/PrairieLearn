@@ -738,3 +738,15 @@ export async function deleteAllGroups(assessmentId: string, authnUserId: string)
 export function getRoleNamesForUser(groupInfo: GroupInfo, user: User): string[] {
   return groupInfo.rolesInfo?.roleAssignments[user.uid]?.map((r) => r.role_name) ?? ['None'];
 }
+
+/**
+ * Check if a user is a member of a group.
+ */
+export async function isUserInGroup({ groupId, userId }: { groupId: string; userId: string }) {
+  const result = await sqldb.queryRow(
+    sql.is_user_in_group,
+    { group_id: groupId, user_id: userId },
+    z.boolean(),
+  );
+  return result;
+}

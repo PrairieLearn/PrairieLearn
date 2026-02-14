@@ -4,11 +4,15 @@ import { logger } from '@prairielearn/logger';
 import { loadSqlEquiv, queryRow, queryRows, runInTransactionAsync } from '@prairielearn/postgres';
 import { IdSchema } from '@prairielearn/zod';
 
+import {
+  flagSelfModifiedAssessmentInstance,
+  selectAndLockAssessmentInstance,
+} from '../models/assessment-instance.js';
 import { selectAssessmentInfoForJob } from '../models/assessment.js';
 
 import { updateAssessmentInstanceGrade } from './assessment-grading.js';
 import { updateAssessmentInstance } from './assessment.js';
-import { AssessmentInstanceSchema, AssessmentSchema, QuestionSchema } from './db-types.js';
+import { QuestionSchema } from './db-types.js';
 import * as ltiOutcomes from './ltiOutcomes.js';
 import { createServerJob } from './server-jobs.js';
 
@@ -173,14 +177,14 @@ async function regradeSingleAssessmentInstance({
   authn_user_id: string;
 }) {
   return await runInTransactionAsync(async () => {
-    const assessmentInstance = await queryRow(
-      sql.select_and_lock_assessment_instance,
-      { assessment_instance_id },
-      AssessmentInstanceSchema.extend({ assessment_type: AssessmentSchema.shape.type }),
-    );
+    const result = await selectAndLockAssessmentInstance(assessment_instance_id);
+    if (result == null) {
+      throw new Error('Assessment instance not found');
+    }
+    const { assessment_instance: assessmentInstance, assessment } = result;
 
     const assessmentUpdated =
-      assessmentInstance.assessment_type === 'Homework'
+      assessment.type === 'Homework'
         ? await updateAssessmentInstance(
             assessment_instance_id,
             authn_user_id,
@@ -201,6 +205,14 @@ async function regradeSingleAssessmentInstance({
         onlyLogIfScoreUpdated: true,
       },
     );
+
+    await flagSelfModifiedAssessmentInstance({
+      assessmentInstanceId: assessment_instance_id,
+      assessmentInstanceUserId: assessmentInstance.user_id,
+      assessmentInstanceGroupId: assessmentInstance.team_id,
+      courseInstanceId: assessment.course_instance_id,
+      authnUserId: authn_user_id,
+    });
 
     return {
       updated: assessmentUpdated || updatedQuestionQids.length > 0 || gradeUpdated,

@@ -76,6 +76,9 @@ export const SubmissionForScoreUpdateSchema = z.object({
   manual_points: PointsSchema,
   manual_rubric_grading_id: IdSchema.nullable(),
   modified_at_conflict: z.boolean(),
+  assessment_instance_user_id: IdSchema.nullable(),
+  assessment_instance_team_id: IdSchema.nullable(),
+  course_instance_id: IdSchema,
 });
 
 export const InstanceQuestionToUpdateSchema = RubricGradingSchema.extend({

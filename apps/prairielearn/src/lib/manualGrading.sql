@@ -453,7 +453,10 @@ SELECT
   -- We are comparing a database timestamp (microseconds precision) to a time
   -- that comes from the client (milliseconds precision). This avoids a precision
   -- mismatch that would cause the comparison to fail.
-  AND date_trunc('milliseconds', $check_modified_at) != date_trunc('milliseconds', iq.modified_at) AS modified_at_conflict
+  AND date_trunc('milliseconds', $check_modified_at) != date_trunc('milliseconds', iq.modified_at) AS modified_at_conflict,
+  ai.user_id AS assessment_instance_user_id,
+  ai.team_id AS assessment_instance_team_id,
+  a.course_instance_id
 FROM
   instance_questions AS iq
   JOIN assessment_questions AS aq ON (aq.id = iq.assessment_question_id)

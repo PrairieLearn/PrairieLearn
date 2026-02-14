@@ -46,7 +46,12 @@ import { courseInstanceFilenamePrefix } from '../../lib/sanitize-name.js';
 
 import { InviteStudentsModal } from './components/InviteStudentsModal.js';
 import { SyncStudentsModal } from './components/SyncStudentsModal.js';
-import { STATUS_VALUES, type StudentRow, StudentRowSchema } from './instructorStudents.shared.js';
+import {
+  ROLE_VALUES,
+  STATUS_VALUES,
+  type StudentRow,
+  StudentRowSchema,
+} from './instructorStudents.shared.js';
 
 // This default must be declared outside the component to ensure referential
 // stability across renders, as `[] !== []` in JavaScript.
@@ -55,6 +60,7 @@ const DEFAULT_SORT: SortingState = [{ id: 'user_uid', desc: false }];
 const DEFAULT_PINNING: ColumnPinningState = { left: ['user_uid'], right: [] };
 
 const DEFAULT_ENROLLMENT_STATUS_FILTER: EnumEnrollmentStatus[] = [];
+const DEFAULT_ROLE_FILTER: (typeof ROLE_VALUES)[number][] = [];
 
 const columnHelper = createColumnHelper<StudentRow>();
 
@@ -180,6 +186,7 @@ interface StudentsCardProps {
 type ColumnId =
   | 'user_uid'
   | 'user_name'
+  | 'role'
   | 'enrollment_status'
   | 'user_email'
   | 'enrollment_first_joined_at';
@@ -208,6 +215,10 @@ function StudentsCard({
       DEFAULT_ENROLLMENT_STATUS_FILTER,
     ),
   );
+  const [roleFilter, setRoleFilter] = useQueryState(
+    'role',
+    parseAsArrayOf(parseAsStringLiteral(ROLE_VALUES)).withDefault(DEFAULT_ROLE_FILTER),
+  );
 
   // The individual column filters are the source of truth, and this is derived from them.
   const columnFilters: { id: ColumnId; value: any }[] = useMemo(() => {
@@ -216,18 +227,23 @@ function StudentsCard({
         id: 'enrollment_status',
         value: enrollmentStatusFilter,
       },
+      {
+        id: 'role',
+        value: roleFilter,
+      },
     ];
-  }, [enrollmentStatusFilter]);
+  }, [enrollmentStatusFilter, roleFilter]);
 
   const columnFilterSetters = useMemo<Record<ColumnId, Updater<any>>>(() => {
     return {
       user_uid: undefined,
       user_name: undefined,
+      role: setRoleFilter,
       enrollment_status: setEnrollmentStatusFilter,
       user_email: undefined,
       enrollment_first_joined_at: undefined,
     };
-  }, [setEnrollmentStatusFilter]);
+  }, [setEnrollmentStatusFilter, setRoleFilter]);
 
   // Sync TanStack column filter changes back to URL
   const handleColumnFiltersChange = useMemo(
@@ -359,6 +375,16 @@ function StudentsCard({
           );
         },
       }),
+      columnHelper.accessor('role', {
+        id: 'role',
+        header: 'Role',
+        cell: (info) => info.getValue(),
+        filterFn: (row, columnId, filterValues: string[]) => {
+          if (filterValues.length === 0) return true;
+          const current = row.getValue<StudentRow['role']>(columnId);
+          return filterValues.includes(current);
+        },
+      }),
       columnHelper.accessor((row) => row.enrollment.status, {
         id: 'enrollment_status',
         header: 'Status',
@@ -404,7 +430,17 @@ function StudentsCard({
   );
 
   const allColumnIds = columns.map((col) => col.id).filter((id) => typeof id === 'string');
-  const defaultColumnVisibility = Object.fromEntries(allColumnIds.map((id) => [id, true]));
+
+  // Show role column by default only if any student has a non-'None' role
+  const hasNonNoneRole = students.some((student) => student.role !== 'None');
+  const defaultColumnVisibility = Object.fromEntries(
+    allColumnIds.map((id) => {
+      if (id === 'role') {
+        return [id, hasNonNoneRole];
+      }
+      return [id, true];
+    }),
+  );
   const [columnVisibility, setColumnVisibility] = useQueryState(
     'columns',
     parseAsColumnVisibilityStateWithColumns(allColumnIds).withDefault(defaultColumnVisibility),
@@ -474,6 +510,7 @@ function StudentsCard({
               { value: row.user?.uid ?? row.enrollment.pending_uid, name: 'uid' },
               { value: row.user?.name ?? null, name: 'name' },
               { value: row.user?.email ?? null, name: 'email' },
+              { value: row.role, name: 'role' },
               { value: row.enrollment.status, name: 'status' },
               {
                 value: row.enrollment.first_joined_at
@@ -507,6 +544,13 @@ function StudentsCard({
         }}
         tableOptions={{
           filters: {
+            role: ({ header }: { header: Header<StudentRow, StudentRow['role']> }) => (
+              <CategoricalColumnFilter
+                column={header.column}
+                allColumnValues={ROLE_VALUES}
+                renderValueLabel={({ value }) => <span>{value}</span>}
+              />
+            ),
             enrollment_status: ({
               header,
             }: {

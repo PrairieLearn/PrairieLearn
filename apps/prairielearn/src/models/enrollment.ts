@@ -1,4 +1,4 @@
-import z from 'zod';
+import { z } from 'zod';
 
 import * as error from '@prairielearn/error';
 import {
@@ -578,6 +578,43 @@ async function _selectAndLockEnrollment(id: string) {
 }
 
 /**
+ * Low-level function to update an enrollment's status.
+ * Caller must hold a lock on the enrollment and user.
+ */
+async function _updateEnrollmentStatus({
+  lockedEnrollment,
+  status,
+  actionDetail,
+  agentUserId,
+  agentAuthnUserId,
+}: {
+  lockedEnrollment: Enrollment;
+  status: EnumEnrollmentStatus;
+  actionDetail: SupportedActionsForTable<'enrollments'>;
+  agentUserId: string | null;
+  agentAuthnUserId: string | null;
+}): Promise<Enrollment> {
+  const newEnrollment = await queryRow(
+    sql.set_enrollment_status,
+    { enrollment_id: lockedEnrollment.id, status },
+    EnrollmentSchema,
+  );
+
+  await insertAuditEvent({
+    tableName: 'enrollments',
+    action: 'update',
+    actionDetail,
+    rowId: newEnrollment.id,
+    oldRow: lockedEnrollment,
+    newRow: newEnrollment,
+    agentUserId,
+    agentAuthnUserId,
+  });
+
+  return newEnrollment;
+}
+
+/**
  * Updates the status of an existing enrollment record.
  *
  * If the enrollment is not in the required status or already in the desired status, this will throw an error.
@@ -678,24 +715,13 @@ export async function setEnrollmentStatus({
     // Assert that the caller is authorized to perform the action.
     assertHasRole(authzData, requiredRole);
 
-    const newEnrollment = await queryRow(
-      sql.set_enrollment_status,
-      { enrollment_id: lockedEnrollment.id, status },
-      EnrollmentSchema,
-    );
-
-    await insertAuditEvent({
-      tableName: 'enrollments',
-      action: 'update',
+    return await _updateEnrollmentStatus({
+      lockedEnrollment,
+      status,
       actionDetail: transitionInformation.actionDetail,
-      rowId: newEnrollment.id,
-      oldRow: lockedEnrollment,
-      newRow: newEnrollment,
       agentUserId: authzData.user.id,
       agentAuthnUserId: 'authn_user' in authzData ? authzData.authn_user.id : authzData.user.id,
     });
-
-    return newEnrollment;
   });
 }
 
@@ -901,4 +927,118 @@ export async function inviteEnrollment({
       requiredRole,
     });
   });
+}
+
+type StaffPermissionsActionDetail = 'staff_permissions_granted' | 'staff_permissions_removed';
+
+const UpdatedEnrollmentRowSchema = z.object({
+  old_enrollment: EnrollmentSchema,
+  new_enrollment: EnrollmentSchema,
+  course_id: z.string().optional(),
+});
+
+/**
+ * Updates enrollment for a user in a specific course instance to 'removed' status.
+ * Used when staff permissions are granted at the course instance level.
+ * Must be called within a transaction.
+ */
+export async function updateEnrollmentToRemovedForStaffPermissions({
+  courseInstanceId,
+  userId,
+  actionDetail,
+  agentUserId,
+  agentAuthnUserId,
+}: {
+  courseInstanceId: string;
+  userId: string;
+  actionDetail: StaffPermissionsActionDetail;
+  agentUserId: string;
+  agentAuthnUserId: string;
+}): Promise<void> {
+  const lockedEnrollment = await queryOptionalRow(
+    sql.select_and_lock_joined_enrollment_by_course_instance_and_user,
+    { course_instance_id: courseInstanceId, user_id: userId },
+    EnrollmentSchema,
+  );
+
+  if (!lockedEnrollment) {
+    return;
+  }
+
+  await selectAndLockUser(userId);
+
+  await _updateEnrollmentStatus({
+    lockedEnrollment,
+    status: 'removed',
+    actionDetail,
+    agentUserId,
+    agentAuthnUserId,
+  });
+}
+
+/**
+ * Updates all enrollments for a user in all instances of a course to 'removed' status.
+ * Used when staff permissions are granted or removed at the course level.
+ * Must be called within a transaction.
+ */
+export async function updateEnrollmentsToRemovedForCourse({
+  courseId,
+  userId,
+  actionDetail,
+  agentUserId,
+  agentAuthnUserId,
+}: {
+  courseId: string;
+  userId: string;
+  actionDetail: StaffPermissionsActionDetail;
+  agentUserId: string;
+  agentAuthnUserId: string;
+}): Promise<void> {
+  await updateEnrollmentsToRemovedForCourseBatch({
+    courseId,
+    userIds: [userId],
+    actionDetail,
+    agentUserId,
+    agentAuthnUserId,
+  });
+}
+
+/**
+ * Updates all enrollments for multiple users in all instances of a course to 'removed' status.
+ * Used when staff permissions are removed for multiple users.
+ * Must be called within a transaction.
+ */
+export async function updateEnrollmentsToRemovedForCourseBatch({
+  courseId,
+  userIds,
+  actionDetail,
+  agentUserId,
+  agentAuthnUserId,
+}: {
+  courseId: string;
+  userIds: string[];
+  actionDetail: StaffPermissionsActionDetail;
+  agentUserId: string;
+  agentAuthnUserId: string;
+}): Promise<void> {
+  if (userIds.length === 0) return;
+
+  const rows = await queryRows(
+    sql.update_enrollments_to_removed_for_course_batch,
+    { course_id: courseId, user_ids: userIds },
+    UpdatedEnrollmentRowSchema,
+  );
+
+  for (const row of rows) {
+    await insertAuditEvent({
+      tableName: 'enrollments',
+      action: 'update',
+      actionDetail,
+      rowId: row.new_enrollment.id,
+      oldRow: row.old_enrollment,
+      newRow: row.new_enrollment,
+      agentUserId,
+      agentAuthnUserId,
+    });
+  }
 }

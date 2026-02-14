@@ -579,3 +579,15 @@ SELECT
   'delete'
 FROM
   deleted_groups;
+
+-- BLOCK is_user_in_group
+SELECT
+  EXISTS (
+    SELECT
+      1
+    FROM
+      team_users
+    WHERE
+      team_id = $group_id
+      AND user_id = $user_id
+  );

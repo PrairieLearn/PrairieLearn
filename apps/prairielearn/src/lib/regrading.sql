@@ -39,18 +39,6 @@ ORDER BY
   u.id,
   ai.number;
 
--- BLOCK select_and_lock_assessment_instance
-SELECT
-  ai.*,
-  a.type AS assessment_type
-FROM
-  assessment_instances AS ai
-  JOIN assessments AS a ON (a.id = ai.assessment_id)
-WHERE
-  ai.id = $assessment_instance_id
-FOR NO KEY UPDATE OF
-  ai;
-
 -- BLOCK regrade_instance_questions
 WITH
   updated_instance_questions AS (
