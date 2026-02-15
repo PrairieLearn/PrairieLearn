@@ -1,0 +1,11 @@
+Address this issue on this branch
+
+https://github.com/PrairieLearn/PrairieLearn/actions/runs/22017532687/job/63621464829?pr=14127 fails
+
+---
+
+I thought I was using my own github actions token (CI_BOT_APP_PRIVATE_KEY) for dependabot prs?
+
+---
+
+can you have it log to the job output the bundle size summary in that case? also, i need a similar fix for the docker image workflow.

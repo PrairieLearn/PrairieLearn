@@ -1,0 +1,27 @@
+{
+  "cli_version": "0.4.2",
+  "checkpoint_id": "a102c0037771",
+  "strategy": "manual-commit",
+  "branch": "reteps/docker-image-build-rework",
+  "checkpoints_count": 2,
+  "files_touched": [
+    "packages/actions-report-bundle-sizes/src/index.ts",
+    "packages/actions-report-image-sizes/src/index.ts"
+  ],
+  "sessions": [
+    {
+      "metadata": "/a1/02c0037771/0/metadata.json",
+      "transcript": "/a1/02c0037771/0/full.jsonl",
+      "context": "/a1/02c0037771/0/context.md",
+      "content_hash": "/a1/02c0037771/0/content_hash.txt",
+      "prompt": "/a1/02c0037771/0/prompt.txt"
+    }
+  ],
+  "token_usage": {
+    "input_tokens": 52,
+    "cache_creation_tokens": 53443,
+    "cache_read_tokens": 3282375,
+    "output_tokens": 1886,
+    "api_call_count": 46
+  }
+}
