@@ -2,7 +2,7 @@ import { useMemo, useRef, useState } from 'react';
 import { Modal, Overlay, Popover } from 'react-bootstrap';
 import { z } from 'zod';
 
-import { downloadAsJSON } from '@prairielearn/browser-utils';
+import { downloadAsJSON, executeScripts } from '@prairielearn/browser-utils';
 
 import type { AiGradingGeneralStats } from '../ee/lib/ai-grading/types.js';
 import { b64EncodeUnicode } from '../lib/base64-util.js';
@@ -483,6 +483,20 @@ export function RubricSettings({
         });
         window.resetInstructorGradingPanel();
         await window.mathjaxTypeset();
+      }
+
+      if (data.submissionPanel && data.submissionId) {
+        const oldSubmission = document.getElementById(`submission-${data.submissionId}`);
+        if (oldSubmission) {
+          const temp = document.createElement('div');
+          temp.innerHTML = data.submissionPanel;
+          const newSubmission = temp.firstElementChild;
+          if (newSubmission) {
+            oldSubmission.replaceWith(newSubmission);
+            executeScripts(newSubmission);
+            await window.mathjaxTypeset();
+          }
+        }
       }
 
       // Since we are preserving the temporary rubric item selection in the instance question page, the page is not refreshed
