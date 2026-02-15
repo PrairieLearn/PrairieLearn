@@ -14,7 +14,8 @@ window.PLOrderBlocks = function (uuid, options) {
     blocks.forEach((block) => {
       block.setAttribute('tabindex', '-1');
       if (enableIndentation) {
-        setIndentation(block, 0);
+        const existingIndent = parseInt(block.style.marginLeft) || 0;
+        setIndentation(block, existingIndent);
       }
       block.setAttribute('id', uuid + '-' + blockNum);
       blockNum += 1;
