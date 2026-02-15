@@ -103,7 +103,7 @@
 
 
 {{#submission}}
-{{#inline}}<span class="d-inline-block">{{/inline}}
+{{#block}}<div>{{/block}}{{#inline}}<span class="d-inline-block">{{/inline}}
 {{#error}}
 
 <span>
@@ -213,13 +213,15 @@ ${{a_sub}}$
 {{#partial}}<span class="badge text-bg-warning"><i class="far fa-circle" aria-hidden="true"></i> {{partial}}%</span>{{/partial}}
 {{#incorrect}}<span class="badge text-bg-danger"><i class="fas fa-times" aria-hidden="true"></i> 0%</span>{{/incorrect}}
 {{/error}}
-{{#inline}}</span>{{/inline}}
+{{#inline}}</span>{{/inline}}{{#block}}</div>{{/block}}
 {{/submission}}
 
 {{#answer}}
+{{#block}}<div>{{/block}}{{#inline}}<span class="d-inline-block">{{/inline}}
 {{#label}}<span>{{{label}}}</span>{{/label}}
 ${{a_tru}}$
 {{#suffix}}<span>{{suffix}}</span>{{/suffix}}
+{{#inline}}</span>{{/inline}}{{#block}}</div>{{/block}}
 {{/answer}}
 
 {{#format}}
