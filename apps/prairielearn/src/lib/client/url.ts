@@ -94,3 +94,7 @@ export function getCourseInstanceSettingsUrl(courseInstanceId: string): string {
 export function getAiQuestionGenerationDraftsUrl({ urlPrefix }: { urlPrefix: string }): string {
   return `${urlPrefix}/ai_generate_question_drafts`;
 }
+
+export function getAdministratorCourseRequestsUrl({ urlPrefix }: { urlPrefix: string }): string {
+  return `${urlPrefix}/administrator/courseRequests`;
+}
