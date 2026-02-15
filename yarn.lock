@@ -4375,7 +4375,6 @@ __metadata:
     "@types/node": "npm:^24.10.9"
     "@typescript/native-preview": "npm:^7.0.0-dev.20260203.1"
     typescript: "npm:^5.9.3"
-    zod: "npm:^3.25.76"
   languageName: unknown
   linkType: soft
 
