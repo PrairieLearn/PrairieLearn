@@ -1,0 +1,236 @@
+review the comments on the pr by nathan
+
+---
+
+yes, address comments
+
+---
+
+Base directory for this skill: /Users/peter/.claude/skills/pr-comment-resolver
+
+# PR Comment Resolver
+
+This skill handles unresolved **inline review comments** (comments on specific lines in the diff) on a GitHub PR. It does NOT handle general PR comments or top-level review summaries.
+
+## Workflow
+
+**CRITICAL: Before posting ANY "Fixed in" or "Added in" response, you MUST:**
+1. **Verify the change** - Read the file again after committing to confirm your change is present
+2. **Push the commit** - The commit hash in your reply must be accessible on the remote so reviewers can click it
+
+Never claim to have made a change without verification. Never reply with a commit hash that hasn't been pushed.
+
+### 1. Fetch all unresolved inline review comments
+
+Get inline review comments using the GitHub API:
+
+```bash
+gh api repos/{owner}/{repo}/pulls/{pr}/comments --jq '.[] | {id: .id, path: .path, line: .line, author: .user.login, body: .body}'
+```
+
+This returns comments that have `path`, `line`, `diff_hunk` fields - these are inline diff comments.
+
+### 2. Categorize each comment
+
+For each unresolved inline comment, determine:
+
+- **Source**: Is it from a bot (coderabbit, claude, copilot, github-actions) or a human?
+- **Type**: Is it an **inline code suggestion**, question, concern, or discussion point?
+- **Scope**: Is it a localized fix or does it raise broader refactoring concerns?
+
+**Detecting inline code suggestions**: GitHub inline suggestions have a specific format in the comment body:
+
+````markdown
+```suggestion
+const newCode = 'replacement';
+```
+````
+
+These appear when a reviewer uses GitHub's "Add a suggestion" feature to propose specific code changes.
+
+### 3. Handle inline code suggestions (preferred)
+
+When a comment contains an inline code suggestion (` ```suggestion` block), **prefer to apply it directly**:
+
+1. **Extract the suggested code** from the suggestion block
+2. **Apply the suggestion** - Replace the original lines with the suggested code
+3. **Propagate related changes**:
+   - If the suggestion renames a variable/function, search for other usages and update them
+   - If the suggestion changes a type or interface, update callers/implementers
+   - If the suggestion changes an import, check if it affects other files
+4. **Fix the build** - Run type checking and fix any errors caused by the change
+5. **Format the file** - Run the project's formatter on modified files
+6. **Commit and push** - Commit the change, then push to the remote
+7. **Verify before responding** - Re-read the file to confirm your change is present, then reply with the pushed commit hash
+
+**Example flow for a variable rename suggestion:**
+
+```
+Suggestion: Rename `userData` to `user`
+
+1. Apply: Replace `userData` with `user` at the suggested location
+2. Propagate: Search file for other `userData` references, update them
+3. Build: Run typecheck, fix any type errors
+4. Format: Run prettier/formatter on the file
+5. Commit and push: git commit && git push
+6. Verify: Re-read the file, confirm the change, reply with pushed commit hash
+```
+
+If the suggestion is invalid or would break things, explain why in your reply instead of applying it.
+
+### 4. Handle bot comments (coderabbit, claude, copilot)
+
+Bot comments (without inline code suggestions) require validation before acting:
+
+1. **Investigate the suggestion** - Read the file at the specific line, understand the context
+2. **Assess validity** - Is the bot correct? Consider:
+   - Does the suggestion actually improve the code?
+   - Is it based on outdated information or missing context?
+   - Does it conflict with project conventions?
+3. **Take action**:
+   - If valid and localized: Make the fix, commit, and **push**
+   - If invalid: Reply explaining why the suggestion doesn't apply
+   - If partially valid: Make partial fix or propose alternative, commit, and **push**
+4. **Verify and respond** - Re-read the file to confirm your change is present, then reply with the pushed commit hash (e.g., "Fixed in abc1234")
+
+### 5. Handle human comments
+
+Human comments often warrant more nuance:
+
+- **Direct fix requests**: Make the fix if clear and localized
+- **Questions**: Answer the question or ask for clarification
+- **Discussion points**: Engage in discussion, don't rush to "fix"
+- **Refactoring suggestions**: Flag for user decision - these may need broader discussion
+
+### 6. Deciding when NOT to auto-fix
+
+Do NOT automatically fix when:
+
+- The comment raises architectural or design concerns
+- Multiple valid approaches exist and preference is unclear
+- The fix would touch many files or change APIs
+- The comment is asking for user input/decision
+- The suggestion conflicts with existing patterns in the codebase
+
+In these cases, **research first, then recommend**:
+
+1. Search the codebase for similar patterns and how they're handled
+2. Check for existing utilities, helpers, or conventions that apply
+3. Consider tradeoffs of different approaches
+4. Form a concrete recommendation based on findings
+
+Then **ask the user locally** (do NOT post a GitHub comment yet):
+- Show the comment and relevant context
+- Present your research findings (with file:line references)
+- Give your recommended approach and reasoning
+- List alternative options if relevant
+
+Only post a GitHub comment after the user decides and you take action.
+
+## Response format
+
+**CRITICAL: Every GitHub comment that references a fix or change MUST include the commit hash, and that commit MUST be pushed to the remote first.** Without a pushed commit hash, reviewers cannot click through to verify what was changed.
+
+When replying to an inline comment after taking action:
+
+```
+Fixed in <commit_hash>
+```
+
+or
+
+```
+Added comment in <commit_hash>
+```
+
+or
+
+```
+<action description> in <commit_hash>
+```
+
+For discussion/investigation without a commit:
+
+```
+<your response>
+```
+
+## Required footer
+
+ALWAYS end every GitHub comment with:
+
+```
+<sub>🤖 Comment by Claude Code</sub>
+```
+
+## Example replies
+
+### After applying an inline suggestion
+
+```
+Applied suggestion. Also updated 3 other usages of `userData` in the same file.
+
+Fixed in abc1234
+
+<sub>🤖 Comment by Claude Code</sub>
+```
+
+### After making a fix
+
+```
+Good catch! Fixed the null check.
+
+Fixed in abc1234
+
+<sub>🤖 Comment by Claude Code</sub>
+```
+
+### Disagreeing with a bot suggestion
+
+```
+I investigated this suggestion, but I don't think it applies here because:
+
+1. The current implementation follows our established pattern in `lib/db.ts`
+2. The suggested change would break backwards compatibility with existing callers
+
+Let me know if you'd like to discuss further.
+
+<sub>🤖 Comment by Claude Code</sub>
+```
+
+### Flagging for user decision (local conversation, NOT a GitHub comment)
+
+**Comment from @coderabbitai on `src/api/users.ts:42`:**
+> Consider adding error handling for the database query here.
+
+**My research:**
+- `lib/api.ts` uses a Result pattern for all database operations
+- `lib/auth.ts` uses try/catch with specific error types
+- Most route handlers in `pages/` rely on the global error middleware
+
+**My recommendation:** Use try/catch with a specific `ValidationError` here, since this is input validation and we already have that pattern in `lib/validation.ts:45`. The Result pattern would be overkill for a single validation check.
+
+**Options:**
+1. Add try/catch with ValidationError (recommended)
+2. Use the Result pattern from lib/api.ts
+3. Leave as-is and rely on global error middleware
+
+How would you like me to proceed?
+
+## Commands
+
+To reply to a specific inline review comment:
+
+```bash
+gh api repos/{owner}/{repo}/pulls/{pr}/comments -X POST -f body="<message>" -F in_reply_to={comment_id}
+```
+
+## Usage
+
+1. Run `/pr-comment-resolver` or `/pr-comment-resolver <PR_NUMBER>`
+2. Claude will fetch and display all unresolved inline review comments
+3. For each comment, Claude will:
+   - Show the comment, file path, line number, and relevant code context
+   - Indicate whether it's from a bot or human
+   - Propose an action (fix, reply, or flag for discussion)
+   - Ask for user confirmation before acting on ambiguous comments
