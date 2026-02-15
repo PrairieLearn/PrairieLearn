@@ -269,36 +269,47 @@ async function commentOnPr(
   prNumber: number,
   section: string,
 ): Promise<void> {
-  const comments = await octokit.paginate(
-    'GET /repos/{owner}/{repo}/issues/{issue_number}/comments',
-    {
-      owner: github.context.repo.owner,
-      repo: github.context.repo.repo,
-      issue_number: prNumber,
-    },
-  );
+  try {
+    const comments = await octokit.paginate(
+      'GET /repos/{owner}/{repo}/issues/{issue_number}/comments',
+      {
+        owner: github.context.repo.owner,
+        repo: github.context.repo.repo,
+        issue_number: prNumber,
+      },
+    );
 
-  const existingComment = comments.find(
-    (comment) =>
-      comment.user?.login === 'github-actions[bot]' && comment.body?.includes(CI_REPORT_MARKER),
-  );
+    const existingComment = comments.find(
+      (comment) =>
+        comment.user?.login === 'github-actions[bot]' && comment.body?.includes(CI_REPORT_MARKER),
+    );
 
-  const body = upsertSection(existingComment?.body ?? null, section);
+    const body = upsertSection(existingComment?.body ?? null, section);
 
-  if (existingComment) {
-    await octokit.rest.issues.updateComment({
-      owner: github.context.repo.owner,
-      repo: github.context.repo.repo,
-      comment_id: existingComment.id,
-      body,
-    });
-  } else {
-    await octokit.rest.issues.createComment({
-      owner: github.context.repo.owner,
-      repo: github.context.repo.repo,
-      issue_number: prNumber,
-      body,
-    });
+    if (existingComment) {
+      await octokit.rest.issues.updateComment({
+        owner: github.context.repo.owner,
+        repo: github.context.repo.repo,
+        comment_id: existingComment.id,
+        body,
+      });
+    } else {
+      await octokit.rest.issues.createComment({
+        owner: github.context.repo.owner,
+        repo: github.context.repo.repo,
+        issue_number: prNumber,
+        body,
+      });
+    }
+  } catch (err: unknown) {
+    if (typeof err === 'object' && err !== null && 'status' in err && err.status === 403) {
+      core.warning(
+        'Could not comment on PR (token lacks write permissions). Bundle size summary:',
+      );
+      core.info(section);
+      return;
+    }
+    throw err;
   }
 }
 
