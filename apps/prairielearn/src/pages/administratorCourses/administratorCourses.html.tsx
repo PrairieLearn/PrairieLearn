@@ -1,15 +1,12 @@
 import { useState } from 'react';
-import type { z } from 'zod';
 
 import { OverlayTrigger } from '@prairielearn/ui';
 
 import { CourseRequestsTable } from '../../components/CourseRequestsTable.js';
-import type { RawAdminInstitutionSchema } from '../../lib/client/safe-db-types.js';
+import type { AdminInstitution } from '../../lib/client/safe-db-types.js';
 import type { CourseRequestRow } from '../../lib/course-request.js';
 
 import type { CourseWithInstitution } from './administratorCourses.shared.js';
-
-type AdminInstitution = z.infer<typeof RawAdminInstitutionSchema>;
 
 export function AdministratorCourses({
   courseRequests,
@@ -187,7 +184,7 @@ function CourseDeleteForm({
   onCancel: () => void;
 }) {
   return (
-    <form name="add-user-form" method="POST">
+    <form name="course-delete-form" method="POST">
       <input type="hidden" name="__action" value="courses_delete" />
       <input type="hidden" name="__csrf_token" value={csrfToken} />
       <input type="hidden" name="course_id" value={course.id} />
@@ -375,7 +372,11 @@ function CourseUpdateColumn({
         rootClose
         onToggle={setShowPopover}
       >
-        <button type="button" className="btn btn-xs btn-secondary ms-1" aria-label={`Edit ${label}`}>
+        <button
+          type="button"
+          className="btn btn-xs btn-secondary ms-1"
+          aria-label={`Edit ${label}`}
+        >
           <i className="fa fa-edit" aria-hidden="true" />
         </button>
       </OverlayTrigger>

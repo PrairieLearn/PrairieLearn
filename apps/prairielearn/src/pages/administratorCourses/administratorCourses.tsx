@@ -5,6 +5,7 @@ import * as sqldb from '@prairielearn/postgres';
 import { Hydrate } from '@prairielearn/react/server';
 
 import { PageLayout } from '../../components/PageLayout.js';
+import { AdminInstitutionSchema } from '../../lib/client/safe-db-types.js';
 import { config } from '../../lib/config.js';
 import {
   createCourseFromRequest,
@@ -44,7 +45,7 @@ router.get(
           <Hydrate>
             <AdministratorCourses
               courseRequests={course_requests}
-              institutions={institutions}
+              institutions={AdminInstitutionSchema.array().parse(institutions)}
               courses={courses}
               coursesRoot={config.coursesRoot}
               csrfToken={res.locals.__csrf_token}

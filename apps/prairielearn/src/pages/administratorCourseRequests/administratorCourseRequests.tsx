@@ -1,8 +1,10 @@
 import { Router } from 'express';
 
 import * as error from '@prairielearn/error';
+import { Hydrate } from '@prairielearn/react/server';
 
 import { PageLayout } from '../../components/PageLayout.js';
+import { AdminInstitutionSchema } from '../../lib/client/safe-db-types.js';
 import { config } from '../../lib/config.js';
 import {
   createCourseFromRequest,
@@ -35,13 +37,15 @@ router.get(
           fullWidth: true,
         },
         content: (
-          <AdministratorCourseRequests
-            rows={rows}
-            institutions={institutions}
-            coursesRoot={config.coursesRoot}
-            csrfToken={res.locals.__csrf_token}
-            urlPrefix={res.locals.urlPrefix}
-          />
+          <Hydrate>
+            <AdministratorCourseRequests
+              rows={rows}
+              institutions={AdminInstitutionSchema.array().parse(institutions)}
+              coursesRoot={config.coursesRoot}
+              csrfToken={res.locals.__csrf_token}
+              urlPrefix={res.locals.urlPrefix}
+            />
+          </Hydrate>
         ),
       }),
     );

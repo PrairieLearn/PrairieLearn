@@ -1,16 +1,13 @@
 import { useState } from 'react';
 import { Dropdown } from 'react-bootstrap';
-import type { z } from 'zod';
 
 import { OverlayTrigger } from '@prairielearn/ui';
 
-import type { RawAdminInstitutionSchema } from '../lib/client/safe-db-types.js';
+import type { AdminInstitution } from '../lib/client/safe-db-types.js';
 import { getAdministratorCourseRequestsUrl } from '../lib/client/url.js';
 import type { CourseRequestRow } from '../lib/course-request.js';
 
 import { JobStatus } from './JobStatus.js';
-
-type AdminInstitution = z.infer<typeof RawAdminInstitutionSchema>;
 
 export function CourseRequestsTable({
   rows,
@@ -38,7 +35,7 @@ export function CourseRequestsTable({
             href={getAdministratorCourseRequestsUrl({ urlPrefix })}
           >
             <i className="fa fa-search" aria-hidden="true" />
-            <span className="d-none d-sm-inline">View All</span>
+            <span className="d-none d-sm-inline">View all</span>
           </a>
         )}
       </div>
@@ -183,10 +180,15 @@ function CourseRequestTableRow({
         </td>
         <td className="align-middle">
           <Dropdown>
-            <Dropdown.Toggle variant="secondary" size="sm" className="btn-xs">
+            <Dropdown.Toggle
+              variant="secondary"
+              size="sm"
+              className="btn-xs"
+              aria-label={`Show details for ${row.short_name}`}
+            >
               Show details
             </Dropdown.Toggle>
-            <Dropdown.Menu>
+            <Dropdown.Menu popperConfig={{ strategy: 'fixed' }} renderOnMount>
               <Dropdown.Item as="button" onClick={() => setNoteOpen(!noteOpen)}>
                 {noteOpen ? 'Close Note' : 'Edit Note'}
               </Dropdown.Item>
@@ -222,7 +224,9 @@ function CourseRequestTableRow({
                     <th>End Date</th>
                     <th>User</th>
                     <th>Status</th>
-                    <th />
+                    <th>
+                      <span className="visually-hidden">Details</span>
+                    </th>
                   </tr>
                 </thead>
                 <tbody>
@@ -271,6 +275,8 @@ function CourseRequestApproveForm({
   onCancel: () => void;
 }) {
   const repo_name = 'pl-' + request.short_name.replaceAll(' ', '').toLowerCase();
+  const [timezone, setTimezone] = useState(institutions[0]?.display_timezone ?? '');
+
   return (
     <form name={`create-course-from-request-form-${request.id}`} method="POST">
       <input type="hidden" name="__csrf_token" value={csrfToken} />
@@ -286,17 +292,14 @@ function CourseRequestApproveForm({
           name="institution_id"
           className="form-select"
           onChange={({ currentTarget }) => {
-            const selectedOption = currentTarget.selectedOptions[0];
-            const timezoneInput = currentTarget
-              .closest('form')
-              ?.querySelector<HTMLInputElement>('[name=display_timezone]');
-            if (timezoneInput) {
-              timezoneInput.value = selectedOption.dataset.timezone ?? '';
+            const selected = institutions.find((i) => i.id === currentTarget.value);
+            if (selected) {
+              setTimezone(selected.display_timezone);
             }
           }}
         >
           {institutions.map((i) => (
-            <option key={i.id} value={i.id} data-timezone={i.display_timezone}>
+            <option key={i.id} value={i.id}>
               {i.short_name}
             </option>
           ))}
@@ -337,7 +340,8 @@ function CourseRequestApproveForm({
           className="form-control"
           id="courseRequestAddInputTimezone"
           name="display_timezone"
-          defaultValue={institutions[0]?.display_timezone}
+          value={timezone}
+          onChange={(e) => setTimezone(e.currentTarget.value)}
         />
       </div>
       <div className="mb-3">
@@ -354,18 +358,18 @@ function CourseRequestApproveForm({
       </div>
       <div className="mb-3">
         <label className="form-label" htmlFor="courseRequestAddInputRepositoryName">
-          Repository Name:
+          Repository name:
         </label>
         <input
           type="text"
           className="form-control"
-          id="courseRequestAddInputRepository"
+          id="courseRequestAddInputRepositoryName"
           name="repository_short_name"
           defaultValue={repo_name}
         />
       </div>
       <div className="mb-3">
-        <label htmlFor="courseRequestAddInputGithubUser">GitHub Username:</label>
+        <label htmlFor="courseRequestAddInputGithubUser">GitHub username:</label>
         <input
           type="text"
           className="form-control"
@@ -417,31 +421,31 @@ function CourseRequestStatusIcon({ status }: { status: CourseRequestRow['approve
     case 'pending':
       return (
         <span className="badge text-bg-secondary">
-          <i className="fa fa-clock" /> Pending
+          <i className="fa fa-clock" aria-hidden="true" /> Pending
         </span>
       );
     case 'creating':
       return (
         <span className="badge text-bg-info">
-          <i className="fa fa-sync" /> Job in progress
+          <i className="fa fa-sync" aria-hidden="true" /> Job in progress
         </span>
       );
     case 'failed':
       return (
         <span className="badge text-bg-danger">
-          <i className="fa fa-times" /> Job failed
+          <i className="fa fa-times" aria-hidden="true" /> Job failed
         </span>
       );
     case 'approved':
       return (
         <span className="badge text-bg-success">
-          <i className="fa fa-check" /> Approved
+          <i className="fa fa-check" aria-hidden="true" /> Approved
         </span>
       );
     case 'denied':
       return (
         <span className="badge text-bg-danger">
-          <i className="fa fa-times" /> Denied
+          <i className="fa fa-times" aria-hidden="true" /> Denied
         </span>
       );
   }
