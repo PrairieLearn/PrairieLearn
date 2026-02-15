@@ -1,0 +1,26 @@
+{
+  "cli_version": "0.4.2",
+  "checkpoint_id": "d7a3277af34f",
+  "strategy": "manual-commit",
+  "branch": "master",
+  "checkpoints_count": 1,
+  "files_touched": [
+    "apps/prairielearn/elements/pl-order-blocks/pl-order-blocks.js"
+  ],
+  "sessions": [
+    {
+      "metadata": "/d7/a3277af34f/0/metadata.json",
+      "transcript": "/d7/a3277af34f/0/full.jsonl",
+      "context": "/d7/a3277af34f/0/context.md",
+      "content_hash": "/d7/a3277af34f/0/content_hash.txt",
+      "prompt": "/d7/a3277af34f/0/prompt.txt"
+    }
+  ],
+  "token_usage": {
+    "input_tokens": 18,
+    "cache_creation_tokens": 63191,
+    "cache_read_tokens": 917371,
+    "output_tokens": 609,
+    "api_call_count": 17
+  }
+}

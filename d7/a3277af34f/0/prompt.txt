@@ -1,0 +1,110 @@
+Triage and respond to a PrairieLearn support question from Slack.
+
+## Phase 1: Gather Context
+
+1. Fetch the Slack message using `mcp__slack__conversations_search_messages` with the provided URL (https://prairielearn.slack.com/archives/C266KEH9A/p1771104542716789)
+2. Fetch the full thread using `mcp__slack__conversations_replies` to see any existing responses and whether the question is already resolved
+3. Identify the type of issue:
+   - **Documentation gap** - Question answerable but docs are missing/unclear
+   - **User confusion** - Question answerable by existing docs
+   - **Bug report** - Something isn't working as expected
+   - **Feature request** - User wants new functionality
+
+## Phase 2: Investigate
+
+1. Search PrairieLearn documentation in `docs/` for relevant content
+2. Search the codebase if it's a potential bug
+3. Search GitHub issues using `gh issue list --search "..."` for existing related issues
+4. Use `/issue <number>` to analyze any relevant existing issues
+5. If it's a bug report, try to verify whether the reported behavior is expected or a genuine bug
+
+## Phase 3: Recommend Actions
+
+Present a summary of the thread and your findings, then use the `AskUserQuestion` tool to let the user choose the next action. Possible options include:
+
+- **Respond on Slack** - Draft a message pointing to docs/solution (user will copy/paste - never send directly)
+- **File GitHub issue** - For confirmed bugs or feature requests
+- **Create documentation PR** - For documentation gaps (invoke `/pr-create-draft`)
+- **Create bug fix PR** - For simple fixes (invoke `/pr-create-draft`)
+- **No action needed** - Thread already resolved or question already answered
+
+Only include options that are relevant to the specific situation. Put the recommended option first and add "(Recommended)" to its label.
+
+## Phase 4: Execute (with user approval)
+
+### For Slack responses
+
+Draft the response message for the user to copy/paste. Never send messages directly to Slack.
+
+### For GitHub issues
+
+Use `gh issue create` with appropriate type and labels:
+
+```bash
+gh issue create --title "..." --body "..." --type "Bug" --label "..."
+# Types: "Bug", "Enhancement", or "Task"
+```
+
+Issue body should include:
+
+- Source: Link to the Slack thread
+- Reporter: Slack username
+- Description: Summary of the issue
+- Confirmed by: Whether anyone else verified the issue
+
+### Branch handling (for PRs)
+
+Before creating any commits or PRs, handle the user's current branch state:
+
+1. Note the current branch: `git branch --show-current`
+2. Check for uncommitted changes: `git status --porcelain`
+3. If there are uncommitted changes, stash them: `git stash`
+4. Fetch latest master: `git fetch origin master`
+5. Create a new branch from master: `git checkout -b reteps/<descriptive-branch-name> origin/master`
+6. Make changes, commit, push, and create PR
+7. Return to original branch: `git checkout <original-branch>`
+8. If we stashed in step 3, restore changes: `git stash pop`
+
+### PR conventions
+
+- **Branch names** must start with `reteps/` (e.g., `reteps/docs-prepare-function`)
+- **PR titles** use sentence case with backticks for code: `Add tip for using \`prepare()\` in progressive reveal questions`
+- **Source attribution** in PR description should include the reporter's name and Slack link: `Source: Jennifer Laaser ([Slack thread](url))`
+
+### For PRs
+
+Invoke `/pr-create-draft` for documentation improvements or bug fixes.
+
+## Documentation Improvements
+
+- Only suggest docs changes when existing documentation is genuinely lacking
+- Prefer adding detail to appropriate existing sections over creating new pages
+- **Always confirm with user before suggesting UI documentation changes** (UI layout is not thoroughly documented by design)
+- Skip docs suggestions if existing documentation adequately covers the topic
+
+**Writing guidelines:**
+
+- **Be concise** - Documentation changes must be brief and to the point
+- **Focus on the generic pattern** - Document the broader solution, not the specific user's scenario
+- **One solution only** - Document the best/recommended approach; do not include alternative solutions or workarounds discussed in the thread
+- **No caveats or edge cases** - If the thread discussed multiple approaches, pick the best one and document only that
+
+## Available Skills to Invoke
+
+**Project-specific (PrairieLearn):**
+
+- `/issue <number>` - Read and analyze existing GitHub issues
+- `/pr <number>` - Read and analyze PRs
+
+**User-level:**
+
+- `/pr-create-draft` - Create draft PRs for documentation or bug fixes
+
+## Key Behaviors
+
+1. **Always investigate first** - Don't assume the user's report is accurate
+2. **Check thread replies** - The answer may already be there
+3. **Ask before acting** - Present recommendations, get approval
+4. **Draft Slack responses** - User will copy/paste, never auto-send
+5. **Link sources** - Reference Slack threads in issues/PRs
+6. **Use existing skills** - Invoke `/pr-create-draft`, `/issue`, `/rams`, etc. when appropriate
