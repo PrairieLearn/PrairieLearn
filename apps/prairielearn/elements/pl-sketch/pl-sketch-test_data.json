@@ -47,7 +47,7 @@
           ],
           "tool_data": {
             "fd": {
-              "type": "freeform",
+              "name": "freeform",
               "helper": null,
               "readonly": null
             }
@@ -128,7 +128,7 @@
           ],
           "tool_data": {
             "pt": {
-              "type": "point",
+              "name": "point",
               "helper": null,
               "readonly": null
             }
@@ -211,7 +211,8 @@
           ],
           "tool_data": {
             "pg": {
-              "type": "polygon",
+              "name": "polyline",
+              "closed": true,
               "helper": null,
               "readonly": null
             }
@@ -311,13 +312,13 @@
           ],
           "tool_data": {
             "line": {
-              "type": "line-segment",
+              "name": "line-segment",
               "group": null,
               "helper": false,
               "readonly": false
             },
             "line-v": {
-              "type": "line-segment",
+              "name": "line-segment",
               "group": null,
               "helper": false,
               "readonly": false
@@ -398,7 +399,7 @@
           ],
           "tool_data": {
             "hl": {
-              "type": "horizontal-line",
+              "name": "horizontal-line",
               "helper": null,
               "readonly": null
             }
@@ -478,7 +479,7 @@
           ],
           "tool_data": {
             "vl": {
-              "type": "vertical-line",
+              "name": "vertical-line",
               "helper": null,
               "readonly": null
             }

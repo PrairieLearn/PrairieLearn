@@ -309,6 +309,7 @@
       <pl-sketch-tool id="pg" type="polygon"></pl-sketch-tool>
       <pl-sketch-tool id="pt" type="point"></pl-sketch-tool>
       <pl-sketch-tool id="pg-2" type="polygon" fill-color="purple"></pl-sketch-tool>
+      <pl-sketch-tool id="hl" type="horizontal-line"></pl-sketch-tool>
       <pl-sketch-initial toolid="fd" fun="-x"></pl-sketch-initial>
       <pl-sketch-initial toolid="pg" coordinates="-0.5,-0.5, 0,0,1,0,1.5,-0.5,1,1.5,0,1.5"></pl-sketch-initial>
       <pl-sketch-initial toolid="pt" coordinates="1,1.5"></pl-sketch-initial>
@@ -316,11 +317,14 @@
       <pl-sketch-initial toolid="pt" coordinates="3,3.5"></pl-sketch-initial>
       <pl-sketch-initial toolid="pt" coordinates="-4,-3.5"></pl-sketch-initial>
       <pl-sketch-initial toolid="pg-2" coordinates="-2.5,-2, -2.9,-5,-4,-3"></pl-sketch-initial>
+      <pl-sketch-initial toolid="hl" coordinates="1"></pl-sketch-initial>
       <pl-sketch-grade type = "greater-than" toolid="pt" fun="x" debug="true" feedback="PT-gt-x"></pl-sketch-grade> 
       <pl-sketch-grade type = "less-than" toolid="pg-2" fun="-x" xrange="-3,-2" debug="true" feedback="PGT-lt--x-cut"></pl-sketch-grade>  
       <pl-sketch-grade type = "less-than" y="0" toolid="fd" xrange="0,1" debug="true" feedback="FDT-less"></pl-sketch-grade> 
       <pl-sketch-grade type = "greater-than" y="0" toolid="fd" xrange="-1,0" debug="true" feedback="FDT-greater"></pl-sketch-grade> 
       <pl-sketch-grade type = "greater-than" y="0" toolid="pg" xrange="0,1" debug="true" feedback="PGT-greater-range"></pl-sketch-grade> 
+      <pl-sketch-grade type = "greater-than" y="0" toolid="hl" xrange="0,1" debug="true" feedback="HL-greater"></pl-sketch-grade> 
+      <pl-sketch-grade type = "less-than" y="2" toolid="hl" xrange="0,1" debug="true" feedback="HL-less"></pl-sketch-grade> 
     </pl-sketch>
   </div>
 </div>
@@ -336,16 +340,20 @@
       <pl-sketch-tool id="fd" type="free-draw"></pl-sketch-tool>
       <pl-sketch-tool id="pg" type="polygon"></pl-sketch-tool>
       <pl-sketch-tool id="pg-2" type="polygon" fill-color="purple"></pl-sketch-tool>
+      <pl-sketch-tool id="hl" type="horizontal-line"></pl-sketch-tool>
       <pl-sketch-initial toolid="fd" fun="x"></pl-sketch-initial>
       <pl-sketch-initial toolid="pg" coordinates="(1.2,4),(1.4,4),(1.4,5.5),(3.2,5.5),(3.2,4),(3.4,4),(3.4,6),(1.2,6)"></pl-sketch-initial>
       <pl-sketch-initial toolid="pg" coordinates="(-1,-4),(-0.2,-4),(-0.2,-5.5),(1.2,-5.5),(1.2,-4),(1.8,-4),(1.8,-6),(-1,-6)"></pl-sketch-initial>
       <pl-sketch-initial toolid="pg-2" coordinates="1.2,0.5,1.8,0.5,1.5,1"></pl-sketch-initial>
       <pl-sketch-initial toolid="pg-2" coordinates="0.2,-0.5,0.8,-0.5,0.5,-1"></pl-sketch-initial>
-
+      <pl-sketch-initial toolid="hl" coordinates="1"></pl-sketch-initial>
+      <pl-sketch-initial toolid="hl" coordinates="3"></pl-sketch-initial>
       <pl-sketch-grade type = "greater-than" toolid="pg-2" fun="0" xrange="0,1" debug="true" feedback="PGT-less-0"></pl-sketch-grade> 
       <pl-sketch-grade type = "less-than" toolid="pg-2" fun="0" xrange="1,2" debug="true" feedback="PGT-greater-0"></pl-sketch-grade> 
       <pl-sketch-grade type = "less-than" y="0" toolid="fd" xrange="0,1" debug="true" feedback="FDT-less"></pl-sketch-grade> 
-      <pl-sketch-grade type = "greater-than" y="0" toolid="fd" xrange="-1,0" debug="true" feedback="FDT-greater"></pl-sketch-grade> 
+      <pl-sketch-grade type = "greater-than" y="0" toolid="fd" xrange="-1,0" debug="true" feedback="FDT-greater"></pl-sketch-grade>
+      <pl-sketch-grade type = "greater-than" y="2" toolid="hl" xrange="0,1" debug="true" feedback="HL-greater"></pl-sketch-grade> 
+      <pl-sketch-grade type = "less-than" y="2" toolid="hl" xrange="0,1" debug="true" feedback="HL-less"></pl-sketch-grade>  
     </pl-sketch>
   </div>
 </div>
