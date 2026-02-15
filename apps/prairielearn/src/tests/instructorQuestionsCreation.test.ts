@@ -44,8 +44,7 @@ describe('Creating a question', () => {
         method: 'POST',
         body: new URLSearchParams({
           __action: 'add_question',
-          __csrf_token: questionsResponse.$('input[name=__csrf_token]').val() as string,
-          orig_hash: questionsResponse.$('input[name=orig_hash]').val() as string,
+          __csrf_token: questionsResponse.$('#test_csrf_token').text(),
           title: 'Test Question',
           qid: 'test-question',
           start_from: 'empty',
@@ -90,8 +89,7 @@ describe('Creating a question', () => {
         method: 'POST',
         body: new URLSearchParams({
           __action: 'add_question',
-          __csrf_token: questionsResponse.$('input[name=__csrf_token]').val() as string,
-          orig_hash: questionsResponse.$('input[name=orig_hash]').val() as string,
+          __csrf_token: questionsResponse.$('#test_csrf_token').text(),
           title: 'Test Random Graph',
           qid: 'test-random-graph',
           start_from: 'example',
@@ -168,8 +166,7 @@ describe('Creating a question', () => {
         method: 'POST',
         body: new URLSearchParams({
           __action: 'add_question',
-          __csrf_token: questionsResponse.$('input[name=__csrf_token]').val() as string,
-          orig_hash: questionsResponse.$('input[name=orig_hash]').val() as string,
+          __csrf_token: questionsResponse.$('#test_csrf_token').text(),
           title: 'Test Template Question',
           qid: 'template/courseTemplate',
           start_from: 'empty',
@@ -213,8 +210,7 @@ describe('Creating a question', () => {
         method: 'POST',
         body: new URLSearchParams({
           __action: 'add_question',
-          __csrf_token: questionsResponse.$('input[name=__csrf_token]').val() as string,
-          orig_hash: questionsResponse.$('input[name=orig_hash]').val() as string,
+          __csrf_token: questionsResponse.$('#test_csrf_token').text(),
           title: 'Test Course-specific Template',
           qid: 'test-course-template',
           start_from: 'course',
@@ -292,8 +288,7 @@ describe('Creating a question', () => {
         method: 'POST',
         body: new URLSearchParams({
           __action: 'add_question',
-          __csrf_token: questionsResponse.$('input[name=__csrf_token]').val() as string,
-          orig_hash: questionsResponse.$('input[name=orig_hash]').val() as string,
+          __csrf_token: questionsResponse.$('#test_csrf_token').text(),
           title: 'Test Question',
           qid: 'test-question',
           start_from: 'empty',
@@ -334,8 +329,7 @@ describe('Creating a question', () => {
         method: 'POST',
         body: new URLSearchParams({
           __action: 'add_question',
-          __csrf_token: questionsResponse.$('input[name=__csrf_token]').val() as string,
-          orig_hash: questionsResponse.$('input[name=orig_hash]').val() as string,
+          __csrf_token: questionsResponse.$('#test_csrf_token').text(),
           start_from: 'empty',
         }),
       },
@@ -359,8 +353,7 @@ describe('Creating a question', () => {
           method: 'POST',
           body: new URLSearchParams({
             __action: 'add_question',
-            __csrf_token: questionsResponse.$('input[name=__csrf_token]').val() as string,
-            orig_hash: questionsResponse.$('input[name=orig_hash]').val() as string,
+            __csrf_token: questionsResponse.$('#test_csrf_token').text(),
             title: 'New Test Question',
             qid: 'new-test-question',
           }),
@@ -386,8 +379,7 @@ describe('Creating a question', () => {
           method: 'POST',
           body: new URLSearchParams({
             __action: 'add_question',
-            __csrf_token: questionsResponse.$('input[name=__csrf_token]').val() as string,
-            orig_hash: questionsResponse.$('input[name=orig_hash]').val() as string,
+            __csrf_token: questionsResponse.$('#test_csrf_token').text(),
             title: 'New Test Question',
             qid: '../new-test-question',
             start_from: 'empty',
@@ -415,8 +407,7 @@ describe('Creating a question', () => {
           method: 'POST',
           body: new URLSearchParams({
             __action: 'add_question',
-            __csrf_token: questionsResponse.$('input[name=__csrf_token]').val() as string,
-            orig_hash: questionsResponse.$('input[name=orig_hash]').val() as string,
+            __csrf_token: questionsResponse.$('#test_csrf_token').text(),
             title: 'New Test Question',
             qid: 'new-test-question',
             start_from: 'example',
@@ -449,8 +440,7 @@ describe('Creating a question', () => {
           method: 'POST',
           body: new URLSearchParams({
             __action: 'add_question',
-            __csrf_token: questionsResponse.$('input[name=__csrf_token]').val() as string,
-            orig_hash: questionsResponse.$('input[name=orig_hash]').val() as string,
+            __csrf_token: questionsResponse.$('#test_csrf_token').text(),
             title: 'New Test Question',
             qid: 'new-test-question',
             start_from: 'example',
