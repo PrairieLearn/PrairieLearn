@@ -190,7 +190,7 @@ function CourseRequestTableRow({
             </Dropdown.Toggle>
             <Dropdown.Menu popperConfig={{ strategy: 'fixed' }} renderOnMount>
               <Dropdown.Item as="button" onClick={() => setNoteOpen(!noteOpen)}>
-                {noteOpen ? 'Close Note' : 'Edit Note'}
+                {noteOpen ? 'Close note' : 'Edit note'}
               </Dropdown.Item>
               {row.jobs.length > 0 && (
                 <Dropdown.Item as="button" onClick={() => setJobsOpen(!jobsOpen)}>

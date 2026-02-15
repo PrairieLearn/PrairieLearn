@@ -29,3 +29,5 @@ export function AdministratorCourseRequests({
     </>
   );
 }
+
+AdministratorCourseRequests.displayName = 'AdministratorCourseRequests';

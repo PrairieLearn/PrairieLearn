@@ -136,7 +136,7 @@ describe('Course requests', { timeout: 60_000 }, function () {
 
     test.sequential('deny the second request', async () => {
       const response = await helperClient.fetchCheerio(courseRequestsAdminUrl);
-      csrfToken = extractCsrfToken(response.$, 'CourseRequestsTable');
+      csrfToken = extractCsrfToken(response.$, 'AdministratorCourseRequests');
 
       const denyResponse = await fetch(courseRequestsAdminUrl, {
         method: 'POST',
