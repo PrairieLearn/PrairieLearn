@@ -98,5 +98,6 @@ jobs:
         with:
           title: All images
           sha: ${{ env.COMMIT_SHA }}
+          pushed: ${{ secrets.DOCKERHUB_USERNAME != '' }}
           token: ${{ secrets.GITHUB_TOKEN }}
           sizes-path: ${{ runner.temp }}/image-sizes.json

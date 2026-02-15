@@ -32,16 +32,15 @@ interface DiffEntry {
   platform: string;
   oldSize: number | null;
   newSize: number;
-  digest: string;
 }
 
 function diffSizes(oldSizes: ImageSizesJson | null, newSizes: ImageSizesJson): DiffEntry[] {
   const entries: DiffEntry[] = [];
 
   for (const [image, platforms] of Object.entries(newSizes)) {
-    for (const [platform, { size, digest }] of Object.entries(platforms)) {
+    for (const [platform, { size }] of Object.entries(platforms)) {
       const oldSize = oldSizes?.[image]?.[platform]?.size ?? null;
-      entries.push({ image, platform, oldSize, newSize: size, digest });
+      entries.push({ image, platform, oldSize, newSize: size });
     }
   }
 
@@ -57,6 +56,7 @@ function diffSizes(oldSizes: ImageSizesJson | null, newSizes: ImageSizesJson): D
 function buildCommentSection(
   title: string,
   sha: string,
+  pushed: boolean,
   oldSizes: ImageSizesJson | null,
   newSizes: ImageSizesJson,
 ): string {
@@ -97,9 +97,10 @@ function buildCommentSection(
     );
 
     for (const entry of entries) {
-      const shortDigest = entry.digest.slice(7); // Remove "sha256:" prefix
-      const imageLink = `https://hub.docker.com/layers/${entry.image}/${sha}/images/sha256-${shortDigest}?context=explore`;
-      const imageName = `[${entry.image}](${imageLink})`;
+      const imageWithTag = `${entry.image}:${sha}`;
+      const imageName = pushed
+        ? `[\`${imageWithTag}\`](https://hub.docker.com/r/${entry.image}/tags?name=${sha})`
+        : `\`${imageWithTag}\``;
       const oldSize = entry.oldSize != null ? formatBytes(entry.oldSize) : 'N/A';
       const newSize = formatBytes(entry.newSize);
       const change =
@@ -294,9 +295,7 @@ async function commentOnPr(
     }
   } catch (err: unknown) {
     if (typeof err === 'object' && err !== null && 'status' in err && err.status === 403) {
-      core.warning(
-        'Could not comment on PR (token lacks write permissions). Image size summary:',
-      );
+      core.warning('Could not comment on PR (token lacks write permissions). Image size summary:');
       core.info(section);
       return;
     }
@@ -308,6 +307,7 @@ async function main() {
   const sizesPath = core.getInput('sizes-path', { required: true });
   const title = core.getInput('title', { required: true });
   const sha = core.getInput('sha', { required: true });
+  const pushed = core.getInput('pushed') === 'true';
   const token = core.getInput('token', { required: true });
 
   const eventName = github.context.eventName;
@@ -335,7 +335,7 @@ async function main() {
     }
 
     const oldSizes = await fetchBaseline(octokit);
-    const section = buildCommentSection(title, sha, oldSizes, newSizes);
+    const section = buildCommentSection(title, sha, pushed, oldSizes, newSizes);
     await commentOnPr(octokit, prNumber, title, section);
     core.info('Posted image size comment on PR');
   } else {

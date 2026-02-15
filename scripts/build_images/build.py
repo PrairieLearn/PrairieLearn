@@ -215,6 +215,8 @@ def build_image(
         index_data = json.loads(resp.read())
 
     # Find the manifest for the target platform.
+    # Note: we only support platforms without variants (e.g., linux/amd64,
+    # linux/arm64). Platforms with variants (e.g., linux/arm/v7) are not supported.
     target_os, target_arch = platform.split("/", 1)
     manifest_digest = None
     for manifest in index_data.get("manifests", []):
@@ -223,15 +225,22 @@ def build_image(
             manifest_digest = manifest["digest"]
             break
 
-    image_size = 0
-    if manifest_digest:
-        manifest_req = urllib.request.Request(
-            f"{registry_base}/{manifest_digest}",
-            headers={"Accept": "application/vnd.oci.image.manifest.v1+json"},
+    if not manifest_digest:
+        raise RuntimeError(
+            f"Could not find manifest for platform {platform} in image index for {image}@{digest}"
         )
-        with urllib.request.urlopen(manifest_req) as resp:
-            manifest_data = json.loads(resp.read())
-        image_size = sum(layer["size"] for layer in manifest_data.get("layers", []))
+
+    manifest_req = urllib.request.Request(
+        f"{registry_base}/{manifest_digest}",
+        headers={"Accept": "application/vnd.oci.image.manifest.v1+json"},
+    )
+    with urllib.request.urlopen(manifest_req) as resp:
+        manifest_data = json.loads(resp.read())
+    image_size = sum(layer["size"] for layer in manifest_data.get("layers", []))
+    if image_size == 0:
+        raise RuntimeError(
+            f"Image size is 0 for {image}@{digest} ({platform}), this likely indicates broken assumptions"
+        )
 
     # Write metadata to the metadata directory
     if metadata_dir:

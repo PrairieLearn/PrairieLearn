@@ -37,8 +37,8 @@ def collect_sizes(metadata_dir: str) -> dict:
         digest = metadata.get("containerimage.digest")
 
         if not image_name or not platform or image_size is None or not digest:
-            print(f"Skipping {filename}: missing required fields")
-            continue
+            print(f"Error: {filename} is missing required fields")
+            sys.exit(1)
 
         if image_name not in sizes:
             sizes[image_name] = {}

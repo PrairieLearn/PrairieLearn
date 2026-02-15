@@ -53,7 +53,7 @@ function diffSizes(oldSizes: SizesJson | null, newSizes: SizesJson): DiffEntry[]
 
     if (oldEntry && newEntry) {
       const diff = newEntry.gzip - oldEntry.gzip;
-      if (Math.abs(diff) >= 5) {
+      if (Math.abs(diff) >= 16) {
         entries.push({
           name: key,
           kind: 'changed',
@@ -303,9 +303,7 @@ async function commentOnPr(
     }
   } catch (err: unknown) {
     if (typeof err === 'object' && err !== null && 'status' in err && err.status === 403) {
-      core.warning(
-        'Could not comment on PR (token lacks write permissions). Bundle size summary:',
-      );
+      core.warning('Could not comment on PR (token lacks write permissions). Bundle size summary:');
       core.info(section);
       return;
     }
