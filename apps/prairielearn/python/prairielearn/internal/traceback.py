@@ -82,6 +82,10 @@ def make_rich_excepthook(
     ``relative_to`` is a directory path. If provided, absolute filenames that
     start with this prefix will be shortened to relative paths.
     """
+    # Some of these features are now upstream PRs, so we should remove them once they are merged.
+    # https://github.com/Textualize/rich/pull/3968
+    # https://github.com/Textualize/rich/pull/3969
+    # https://github.com/Textualize/rich/pull/3970
 
     def _hook(
         exc_type: type[BaseException],
