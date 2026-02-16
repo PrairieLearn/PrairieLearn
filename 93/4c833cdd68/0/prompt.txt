@@ -1,0 +1,7 @@
+look into this bug report: https://github.com/PrairieLearn/PrairieLearn/issues/13151
+
+and look at how all elements handle significant figures/if we have library code for this already
+
+---
+
+ok, fix it

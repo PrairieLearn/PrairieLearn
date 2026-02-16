@@ -1,0 +1,27 @@
+{
+  "cli_version": "0.4.2",
+  "checkpoint_id": "934c833cdd68",
+  "strategy": "manual-commit",
+  "branch": "reteps/significant-figures",
+  "checkpoints_count": 1,
+  "files_touched": [
+    "apps/prairielearn/elements/pl-number-input/pl-number-input.py",
+    "apps/prairielearn/elements/pl-number-input/pl_number_input_test.py"
+  ],
+  "sessions": [
+    {
+      "metadata": "/93/4c833cdd68/0/metadata.json",
+      "transcript": "/93/4c833cdd68/0/full.jsonl",
+      "context": "/93/4c833cdd68/0/context.md",
+      "content_hash": "/93/4c833cdd68/0/content_hash.txt",
+      "prompt": "/93/4c833cdd68/0/prompt.txt"
+    }
+  ],
+  "token_usage": {
+    "input_tokens": 29,
+    "cache_creation_tokens": 54432,
+    "cache_read_tokens": 1597058,
+    "output_tokens": 1097,
+    "api_call_count": 25
+  }
+}

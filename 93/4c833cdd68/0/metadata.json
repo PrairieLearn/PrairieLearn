@@ -1,0 +1,31 @@
+{
+  "cli_version": "0.4.2",
+  "checkpoint_id": "934c833cdd68",
+  "session_id": "d1bb44de-be8d-40dd-adc3-c7fc174e02aa",
+  "strategy": "manual-commit",
+  "created_at": "2026-02-16T03:42:49.598283Z",
+  "branch": "reteps/significant-figures",
+  "checkpoints_count": 1,
+  "files_touched": [
+    "apps/prairielearn/elements/pl-number-input/pl-number-input.py",
+    "apps/prairielearn/elements/pl-number-input/pl_number_input_test.py"
+  ],
+  "agent": "Claude Code",
+  "transcript_identifier_at_start": "52dcce01-d030-4398-90dd-2e9ce674589b",
+  "token_usage": {
+    "input_tokens": 29,
+    "cache_creation_tokens": 54432,
+    "cache_read_tokens": 1597058,
+    "output_tokens": 1097,
+    "api_call_count": 25
+  },
+  "initial_attribution": {
+    "calculated_at": "2026-02-16T03:42:49.560344Z",
+    "agent_lines": 11,
+    "human_added": 1100,
+    "human_modified": 0,
+    "human_removed": 0,
+    "total_committed": 1111,
+    "agent_percentage": 0.9900990099009901
+  }
+}
