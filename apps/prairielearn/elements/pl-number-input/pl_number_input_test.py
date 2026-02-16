@@ -42,6 +42,11 @@ def test_only_string_precision_fn(
         ("40.", 2),
         ("0.0001", 1),
         ("0.000690", 3),
+        ("1.0000", 5),
+        ("1.0001", 5),
+        ("10.01", 4),
+        ("100.00", 5),
+        ("0.010", 2),
     ],
 )
 def test_only_significant_digits_fn(

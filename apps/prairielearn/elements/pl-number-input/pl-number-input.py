@@ -144,9 +144,8 @@ def get_string_precision(number_string: str) -> float:
 def get_string_significant_digits(number_string: str) -> int:
     if "." in number_string:
         number_string_partition = number_string.partition(".")
-        integer_part = len(number_string_partition[0].lstrip("0"))
-        decimal_part = len(number_string_partition[2].lstrip("0"))
-        return integer_part + decimal_part
+        all_digits = number_string_partition[0] + number_string_partition[2]
+        return len(all_digits.lstrip("0"))
 
     return len(number_string.strip("0"))
 
@@ -488,8 +487,9 @@ def grade(element_html: str, data: pl.QuestionData) -> None:
         elif comparison is ComparisonType.SIGFIG:
             digits = pl.get_integer_attrib(element, "digits", DIGITS_DEFAULT)
 
+            raw_answer = data["raw_submitted_answers"].get(name, str(submitted_answer))
             submitted_answer_precision = get_string_significant_digits(
-                str(submitted_answer)
+                str(raw_answer)
             )
             is_correct = pl.is_correct_scalar_sf(
                 submitted_answer_converted, correct_answer_converted, digits
@@ -498,8 +498,9 @@ def grade(element_html: str, data: pl.QuestionData) -> None:
                 feedback = ANSWER_INSUFFICIENT_PRECISION_WARNING
         elif comparison is ComparisonType.DECDIG:
             digits = pl.get_integer_attrib(element, "digits", DIGITS_DEFAULT)
+            raw_answer = data["raw_submitted_answers"].get(name, str(submitted_answer))
             submitted_answer_precision = get_string_decimal_digits(
-                str(submitted_answer)
+                str(raw_answer)
             )
             is_correct = pl.is_correct_scalar_dd(
                 submitted_answer_converted, correct_answer_converted, digits
