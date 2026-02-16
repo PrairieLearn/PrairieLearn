@@ -26,12 +26,17 @@ export function CalculatorModalButton(): HtmlSafeString {
   `;
 }
 
-export function CalculatorModal(): HtmlSafeString {
+export function CalculatorModal({
+  storageKey
+}: {
+  storageKey: string
+}): HtmlSafeString {
   return html`
     <div
       class="modal fade"
       id="calculatorModal"
       tabindex="-1"
+      data-storage-key="${storageKey}"
       aria-labelledby="calculatorModalLabel"
       aria-hidden="true"
     >

@@ -95,7 +95,9 @@ export function StudentInstanceQuestion({
       ${userCanDeleteAssessmentInstance
         ? RegenerateInstanceModal({ csrfToken: resLocals.__csrf_token })
         : ''}
-      ${hasCalculator ? CalculatorModal() : ''}
+      ${hasCalculator ? CalculatorModal({
+          storageKey: `calculator-${resLocals.assessment.uuid}`
+        }) : ''}
     `,
     content: html`
       ${userCanDeleteAssessmentInstance ? RegenerateInstanceAlert() : ''}

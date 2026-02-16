@@ -685,7 +685,7 @@ onDocumentReady(() => {
     modal.addEventListener('shown.bs.modal', () => {
       if (!calculatorInitialized) {
         calculatorInitialized = true;
-        initCalculator('pl-calculator').catch((err) => {
+        initCalculator(modal.dataset.storageKey ?? 'pl-calculator').catch((err) => {
           console.error('Failed to initialize calculator:', err);
         });
       }
