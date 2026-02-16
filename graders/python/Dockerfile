@@ -20,7 +20,7 @@ RUN dnf -y update \
     && echo "setting up uv..." \
     && curl -LO https://astral.sh/uv/install.sh \
     && UV_INSTALL_DIR=/usr/local/bin sh /install.sh && rm /install.sh \
-    && uv venv --python 3.13 /venv
+    && uv venv --python-preference managed --python 3.13 /venv
 
 COPY requirements.txt /
 RUN uv pip install -r /requirements.txt
