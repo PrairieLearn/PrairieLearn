@@ -17,11 +17,9 @@ DECLARE
     log_update boolean;
     use_credit integer;
     points DOUBLE PRECISION;
-    pending_points DOUBLE PRECISION;
     score_perc DOUBLE PRECISION;
     score_perc_pending DOUBLE PRECISION;
     total_points DOUBLE PRECISION;
-    total_pending_manual_points DOUBLE PRECISION;
     max_points DOUBLE PRECISION;
     max_bonus_points DOUBLE PRECISION;
     current_score_perc DOUBLE PRECISION;
@@ -56,63 +54,14 @@ BEGIN
         t_points_by_zone AS (SELECT * FROM assessment_instances_points(assessment_instance_id)),
         t_used_for_grade AS (SELECT unnest(iq_ids) AS iq_ids FROM t_points_by_zone),
         v_used_for_grade AS (SELECT array_agg(iq_ids) AS iq_ids FROM t_used_for_grade),
-        t_max_used_for_grade AS (
-            SELECT
-                tpz.zid,
-                unnest(tpz.max_iq_ids) AS iq_id
-            FROM t_points_by_zone AS tpz
-        ),
-        t_pending_by_zone AS (
-            SELECT
-                tpz.zid,
-                CASE
-                    WHEN z.max_points IS NULL THEN
-                        sum(
-                                CASE
-                                    WHEN
-                                        COALESCE(aq.max_manual_points, 0) > 0
-                                    AND iq.requires_manual_grading
-                                THEN COALESCE(aq.max_manual_points, 0)
-                                ELSE 0
-                            END
-                        )
-                    ELSE
-                        LEAST(
-                            sum(
-                                CASE
-                                    WHEN
-                                        COALESCE(aq.max_manual_points, 0) > 0
-                                        AND iq.requires_manual_grading
-                                    THEN COALESCE(aq.max_manual_points, 0)
-                                    ELSE 0
-                                END
-                            ),
-                            z.max_points
-                        )
-                END AS pending_points
-            FROM
-                t_points_by_zone AS tpz
-                JOIN zones AS z ON (z.id = tpz.zid)
-                LEFT JOIN t_max_used_for_grade AS used_iq_id ON (used_iq_id.zid = tpz.zid)
-                LEFT JOIN instance_questions AS iq ON (iq.id = used_iq_id.iq_id)
-                LEFT JOIN assessment_questions AS aq ON (aq.id = iq.assessment_question_id)
-            GROUP BY
-                tpz.zid,
-                z.max_points
-        ),
-        v_total_points AS (SELECT sum(t_points_by_zone.points) AS total_points FROM t_points_by_zone),
-        v_total_pending_manual_points AS (
-            SELECT sum(t_pending_by_zone.pending_points) AS total_pending_manual_points
-            FROM t_pending_by_zone
-        )
+        v_total_points AS (SELECT sum(t_points_by_zone.points) AS total_points FROM t_points_by_zone)
     SELECT
         v_total_points.total_points,
-        v_total_pending_manual_points.total_pending_manual_points,
         v_used_for_grade.iq_ids
     INTO
-        total_points, total_pending_manual_points, instance_questions_used_for_grade
+        total_points, instance_questions_used_for_grade
     FROM
-        v_total_points, v_total_pending_manual_points, v_used_for_grade;
+        v_total_points, v_used_for_grade;
 
 
     -- #########################################################################
@@ -146,18 +95,7 @@ BEGIN
     -- #########################################################################
     -- pending manual points and score_perc_pending
 
-    pending_points := coalesce(total_pending_manual_points, 0);
-    score_perc_pending := CASE
-        WHEN max_points IS NULL OR max_points <= 0 THEN 0
-        ELSE
-            LEAST(
-                100,
-                GREATEST(
-                    0,
-                    pending_points / max_points * 100
-                )
-            )
-        END;
+    score_perc_pending := assessment_instances_score_perc_pending(assessment_instance_id);
 
     -- pack everything into new_values
     SELECT points, score_perc, score_perc_pending INTO new_values;
