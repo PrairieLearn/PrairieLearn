@@ -140,7 +140,7 @@ export const ExternalGradingOptionsJsonSchema = z
     enabled: z
       .boolean()
       .describe(
-        '[DEPRECATED, DO NOT USE] Whether the external grader is currently enabled. Useful if it is breaking, for example.',
+        'Whether the external grader is currently enabled. Useful if it is breaking, for example.',
       )
       .optional(),
     image: z
