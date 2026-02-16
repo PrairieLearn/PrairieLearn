@@ -27,3 +27,12 @@ WHERE
   iq.assessment_instance_id = $assessment_instance_id
   AND iq.assessment_question_id = aq.id
   AND aq.max_manual_points > 0;
+
+-- BLOCK count_pending_instance_questions
+SELECT
+  count(*)::int AS count
+FROM
+  instance_questions AS iq
+WHERE
+  iq.assessment_instance_id = $assessment_instance_id
+  AND iq.requires_manual_grading;

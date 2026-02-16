@@ -1,0 +1,36 @@
+{
+  "uuid": "44c61f51-0a8d-407c-a5a3-0c7b5f3c3b8f",
+  "type": "Homework",
+  "title": "Homework score_perc_pending bestQuestions selection",
+  "set": "Homework",
+  "number": "95",
+  "allowAccess": [{ "credit": 100 }],
+  "zones": [
+    {
+      "title": "Best-questions zone with manual questions",
+      "bestQuestions": 1,
+      "questions": [
+        {
+          "id": "manualGrade/shortAnswer",
+          "points": 1,
+          "maxPoints": 10
+        },
+        {
+          "id": "manualGrade/codeUpload",
+          "points": 1,
+          "maxPoints": 5
+        }
+      ]
+    },
+    {
+      "title": "Second zone with auto question",
+      "questions": [
+        {
+          "id": "addNumbers",
+          "points": 1,
+          "maxPoints": 20
+        }
+      ]
+    }
+  ]
+}
