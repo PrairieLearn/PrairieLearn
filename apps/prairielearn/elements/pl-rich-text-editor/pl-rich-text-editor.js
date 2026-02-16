@@ -279,7 +279,7 @@ function initializeFormulaPopover(quill, uuid) {
     const range = quill.getSelection(true);
     // If there is a selection, set the input value to the selected text or existing formula.
     input.value = quill
-      .getContents(range)
+      .getContents(range.index, range.length)
       .map((op) => (typeof op.insert === 'string' ? op.insert : (op.insert?.formula ?? '')))
       .join('');
     // Trigger input event to show initial preview or clear previous preview
