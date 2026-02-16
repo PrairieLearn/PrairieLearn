@@ -86,7 +86,7 @@ export function validateJson(value: string): string | true {
   if (!value || value.trim() === '' || value.trim() === '{}') return true;
   try {
     const parsed = JSON.parse(value);
-    if (typeof parsed !== 'object' || Array.isArray(parsed)) {
+    if (parsed === null || typeof parsed !== 'object' || Array.isArray(parsed)) {
       return 'Must be a valid JSON object';
     }
     return true;
@@ -151,7 +151,7 @@ export const QuestionSettingsForm = ({
         : (question.external_grading_entrypoint ?? ''),
     external_grading_files:
       question.external_grading_enabled === false
-        ? []
+        ? ''
         : (question.external_grading_files?.join(', ') ?? ''),
     external_grading_timeout:
       question.external_grading_enabled === false

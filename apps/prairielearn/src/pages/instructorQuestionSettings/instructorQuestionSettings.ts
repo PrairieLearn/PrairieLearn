@@ -275,7 +275,7 @@ router.post(
 
       const externalGradingOptions = {
         comment: questionInfo.externalGradingOptions?.comment ?? undefined,
-        // We always clear enabled, and fallback to the defalt value of 'true'.
+        // We always clear enabled, and fall back to the default value of 'true'.
         // Since the options are only set if there are explicit values, this will be true if there is an image set.
         image: propertyValueWithDefault(
           questionInfo.externalGradingOptions?.image,
