@@ -90,12 +90,11 @@ WITH
     SET
       enabled = EXCLUDED.enabled,
       settings = EXCLUDED.settings
-    RETURNING
-      assessment_tools.id,
-      assessment_tools.assessment_id,
-      assessment_tools.tool
   )
-DELETE FROM assessment_tools
+-- set enabled = false for any tools that are enabled in the database for this assessment, but not present in the incoming list of tools
+UPDATE assessment_tools
+SET
+  enabled = FALSE
 WHERE
   assessment_id = ANY ($assessment_ids::bigint[])
   AND (assessment_id, tool) NOT IN (

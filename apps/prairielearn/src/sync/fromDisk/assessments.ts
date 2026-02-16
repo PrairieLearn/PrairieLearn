@@ -6,7 +6,7 @@ import { assertNever } from '@prairielearn/utils';
 import { IdSchema } from '@prairielearn/zod';
 
 import { config } from '../../lib/config.js';
-import { SprocSyncAssessmentsSchema } from '../../lib/db-types.js';
+import { type AssessmentTool, SprocSyncAssessmentsSchema } from '../../lib/db-types.js';
 import { features } from '../../lib/features/index.js';
 import {
   type AssessmentJson,
@@ -492,21 +492,24 @@ export async function sync(
     SprocSyncAssessmentsSchema,
   );
 
-  const toolRows: { assessment_id: string; tool: string; enabled: boolean; settings: object }[] = [];
+  const toolRows: Partial<AssessmentTool>[] = [];
   const assessmentIds: string[] = [];
 
   for (const [tid, assessment] of Object.entries(assessments)) {
     const assessmentId = nameToIdMap?.[tid];
-    if (!assessmentId || !assessment.data?.tools) continue;
+    if (!assessmentId) continue;
 
     assessmentIds.push(assessmentId);
-    for (const [toolName, toolConfig] of Object.entries(assessment.data.tools)) {
-      toolRows.push({
-        assessment_id: assessmentId,
-        tool: toolName,
-        enabled: toolConfig.enabled,
-        settings: {},
-      });
+
+    if (assessment.data?.tools) {
+      for (const [toolName, { enabled, ...settings }] of Object.entries(assessment.data.tools)) {
+        toolRows.push({
+          assessment_id: assessmentId,
+          tool: toolName,
+          enabled,
+          settings,
+        });
+      }
     }
   }
 
