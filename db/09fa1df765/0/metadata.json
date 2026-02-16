@@ -1,0 +1,31 @@
+{
+  "cli_version": "0.4.2",
+  "checkpoint_id": "db09fa1df765",
+  "session_id": "b04d9d9e-404f-4a4e-a780-97eeff1aeda9",
+  "strategy": "manual-commit",
+  "created_at": "2026-02-16T02:18:55.182331Z",
+  "branch": "reteps/xml-safari-bug",
+  "checkpoints_count": 1,
+  "files_touched": [
+    "apps/prairielearn/elements/pl-drawing/mechanicsObjects.js",
+    "context.md"
+  ],
+  "agent": "Claude Code",
+  "transcript_identifier_at_start": "95ee757d-b3e5-473e-ac83-57deb48dc8d4",
+  "token_usage": {
+    "input_tokens": 837,
+    "cache_creation_tokens": 317021,
+    "cache_read_tokens": 11771701,
+    "output_tokens": 7981,
+    "api_call_count": 110
+  },
+  "initial_attribution": {
+    "calculated_at": "2026-02-16T02:18:55.01955Z",
+    "agent_lines": 70,
+    "human_added": 5959,
+    "human_modified": 3,
+    "human_removed": 0,
+    "total_committed": 6031,
+    "agent_percentage": 1.160669872326314
+  }
+}

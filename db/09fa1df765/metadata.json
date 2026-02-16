@@ -1,0 +1,27 @@
+{
+  "cli_version": "0.4.2",
+  "checkpoint_id": "db09fa1df765",
+  "strategy": "manual-commit",
+  "branch": "reteps/xml-safari-bug",
+  "checkpoints_count": 1,
+  "files_touched": [
+    "apps/prairielearn/elements/pl-drawing/mechanicsObjects.js",
+    "context.md"
+  ],
+  "sessions": [
+    {
+      "metadata": "/db/09fa1df765/0/metadata.json",
+      "transcript": "/db/09fa1df765/0/full.jsonl",
+      "context": "/db/09fa1df765/0/context.md",
+      "content_hash": "/db/09fa1df765/0/content_hash.txt",
+      "prompt": "/db/09fa1df765/0/prompt.txt"
+    }
+  ],
+  "token_usage": {
+    "input_tokens": 837,
+    "cache_creation_tokens": 317021,
+    "cache_read_tokens": 11771701,
+    "output_tokens": 7981,
+    "api_call_count": 110
+  }
+}

@@ -1,0 +1,332 @@
+Triage and respond to a PrairieLearn support question from Slack.
+
+## Phase 1: Gather Context
+
+1. Fetch the Slack message using `mcp__slack__conversations_search_messages` with the provided URL (https://prairielearn.slack.com/archives/C266KEH9A/p1771020501693639)
+2. Fetch the full thread using `mcp__slack__conversations_replies` to see any existing responses and whether the question is already resolved
+3. Identify the type of issue:
+   - **Documentation gap** - Question answerable but docs are missing/unclear
+   - **User confusion** - Question answerable by existing docs
+   - **Bug report** - Something isn't working as expected
+   - **Feature request** - User wants new functionality
+
+## Phase 2: Investigate
+
+1. Search PrairieLearn documentation in `docs/` for relevant content
+2. Search the codebase if it's a potential bug
+3. Search GitHub issues using `gh issue list --search "..."` for existing related issues
+4. Use `/issue <number>` to analyze any relevant existing issues
+5. If it's a bug report, try to verify whether the reported behavior is expected or a genuine bug
+
+## Phase 3: Recommend Actions
+
+Present a summary of the thread and your findings, then use the `AskUserQuestion` tool to let the user choose the next action. Possible options include:
+
+- **Respond on Slack** - Draft a message pointing to docs/solution (user will copy/paste - never send directly)
+- **File GitHub issue** - For confirmed bugs or feature requests
+- **Create documentation PR** - For documentation gaps (invoke `/pr-create-draft`)
+- **Create bug fix PR** - For simple fixes (invoke `/pr-create-draft`)
+- **No action needed** - Thread already resolved or question already answered
+
+Only include options that are relevant to the specific situation. Put the recommended option first and add "(Recommended)" to its label.
+
+## Phase 4: Execute (with user approval)
+
+### For Slack responses
+
+Draft the response message for the user to copy/paste. Never send messages directly to Slack.
+
+### For GitHub issues
+
+Use `gh issue create` with appropriate type and labels:
+
+```bash
+gh issue create --title "..." --body "..." --type "Bug" --label "..."
+# Types: "Bug", "Enhancement", or "Task"
+```
+
+Issue body should include:
+
+- Source: Link to the Slack thread
+- Reporter: Slack username
+- Description: Summary of the issue
+- Confirmed by: Whether anyone else verified the issue
+
+### Branch handling (for PRs)
+
+Before creating any commits or PRs, handle the user's current branch state:
+
+1. Note the current branch: `git branch --show-current`
+2. Check for uncommitted changes: `git status --porcelain`
+3. If there are uncommitted changes, stash them: `git stash`
+4. Fetch latest master: `git fetch origin master`
+5. Create a new branch from master: `git checkout -b reteps/<descriptive-branch-name> origin/master`
+6. Make changes, commit, push, and create PR
+7. Return to original branch: `git checkout <original-branch>`
+8. If we stashed in step 3, restore changes: `git stash pop`
+
+### PR conventions
+
+- **Branch names** must start with `reteps/` (e.g., `reteps/docs-prepare-function`)
+- **PR titles** use sentence case with backticks for code: `Add tip for using \`prepare()\` in progressive reveal questions`
+- **Source attribution** in PR description should include the reporter's name and Slack link: `Source: Jennifer Laaser ([Slack thread](url))`
+
+### For PRs
+
+Invoke `/pr-create-draft` for documentation improvements or bug fixes.
+
+## Documentation Improvements
+
+- Only suggest docs changes when existing documentation is genuinely lacking
+- Prefer adding detail to appropriate existing sections over creating new pages
+- **Always confirm with user before suggesting UI documentation changes** (UI layout is not thoroughly documented by design)
+- Skip docs suggestions if existing documentation adequately covers the topic
+
+**Writing guidelines:**
+
+- **Be concise** - Documentation changes must be brief and to the point
+- **Focus on the generic pattern** - Document the broader solution, not the specific user's scenario
+- **One solution only** - Document the best/recommended approach; do not include alternative solutions or workarounds discussed in the thread
+- **No caveats or edge cases** - If the thread discussed multiple approaches, pick the best one and document only that
+
+## Available Skills to Invoke
+
+**Project-specific (PrairieLearn):**
+
+- `/issue <number>` - Read and analyze existing GitHub issues
+- `/pr <number>` - Read and analyze PRs
+
+**User-level:**
+
+- `/pr-create-draft` - Create draft PRs for documentation or bug fixes
+
+## Key Behaviors
+
+1. **Always investigate first** - Don't assume the user's report is accurate
+2. **Check thread replies** - The answer may already be there
+3. **Ask before acting** - Present recommendations, get approval
+4. **Draft Slack responses** - User will copy/paste, never auto-send
+5. **Link sources** - Reference Slack threads in issues/PRs
+6. **Use existing skills** - Invoke `/pr-create-draft`, `/issue`, `/rams`, etc. when appropriate
+
+---
+
+<bash-input>git checkout master</bash-input>
+
+---
+
+<bash-stdout>M	apps/prairielearn/elements/pl-drawing/mechanicsObjects.js
+Your branch is up to date with 'origin/master'.
+Switched to branch 'master'</bash-stdout><bash-stderr></bash-stderr>
+
+---
+
+<bash-input>git checkout -b reteps/xml-safari-bug</bash-input>
+
+---
+
+<bash-stdout>Switched to a new branch 'reteps/xml-safari-bug'</bash-stdout><bash-stderr></bash-stderr>
+
+---
+
+Yes, and write down the bug in a context.md file.
+
+---
+
+create a plan for a mathjax fix.
+
+---
+
+This session is being continued from a previous conversation that ran out of context. The summary below covers the earlier portion of the conversation.
+
+Analysis:
+Let me chronologically analyze the conversation:
+
+1. **Initial request**: User invoked `/slack-support` with a Slack URL to triage a PrairieLearn support question about pl-drawing figures not rendering correctly on some browsers.
+
+2. **Phase 1 - Gathering context**: I fetched the Slack message and thread. The issue was about pl-drawing labels not rendering (missing text parts in figures), primarily on iPad/Safari. Two related threads were found.
+
+3. **Phase 1 continued**: I investigated the pl-drawing element code, searched for GitHub issues, and found that MathJax was upgraded from 3.2.2 to 4.1.0 on Jan 17, 2026, just before the reports started (Feb 3).
+
+4. **User chose "Investigate MathJax upgrade"** when asked about next steps.
+
+5. **Deep investigation**: I examined:
+   - The MathJax upgrade commit (5c47fa63cf)
+   - The font retrieval fix (3d1d446e42)
+   - mechanicsObjects.js gen_text pipeline
+   - MathJax 4 source code on GitHub (HTMLAdaptor, Wrapper, FontData, FontCache)
+   - MathJax 4 documentation for breaking changes
+   - Known MathJax/Safari SVG compatibility issues
+
+6. **User said**: "you could look at mathjax source on github too" - directing me to check GitHub source directly.
+
+7. **Key finding from GitHub**: MathJax 4's `useNode()` uses `this.adaptor.setAttribute(use, 'href', id, XLINKNS)` and the HTMLAdaptor converts this to `setAttributeNS(XLINKNS, 'xlink:href', value)`.
+
+8. **User chose "Try to get a reproduction"** - they want to fix upstream in MathJax if needed.
+
+9. **Reproduction attempts**: Created test HTML pages and ran them through Playwright browsers:
+   - First attempt failed because Playwright wasn't importable (module resolution issue)
+   - Fixed by using direct path imports and .mjs files
+   - WebKit wasn't installed initially, installed it
+   - Both Chromium and WebKit 26.0 passed all tests
+
+10. **User said**: "can you try to use an older safari version"
+
+11. **Testing older WebKit**: Installed playwright-core@1.40.0 which bundles WebKit 17.4 (Safari 17.4). **ALL 11 labels FAILED on WebKit 17.4** with "Image load failed".
+
+12. **Root cause narrowing**:
+    - `getAttribute('xlink:href')` worked fine on WebKit 17.4
+    - jQuery `<use>` replacement worked fine
+    - SVG serialization worked fine
+    - **Image loading from data URI FAILED**
+    - Stripping `data-semantic-*` attributes → SUCCESS
+    - Replacing attribute values with dummy text → SUCCESS
+    - **It's the CONTENT of the attributes, not size**
+    - `data-semantic-speech` contains SSML markup: `<prosody pitch="..."> <mark name="..."/> <say-as>Q</say-as> </prosody>`
+    - `outerHTML` doesn't escape `<` in attribute values (HTML serialization rules)
+    - SVG loaded as data URI is parsed as XML, where `<` in attrs must be `&lt;`
+    - **XMLSerializer properly escapes → SUCCESS**
+    - Manual escaping of `<>` in attrs → SUCCESS
+
+13. **User asked**: "the xmlserializer fix, is that on my end? what part am i upstreaming, and what part am i doing myself"
+
+14. I explained: XMLSerializer fix is on PL side (mechanicsObjects.js), upstream MathJax issue is about SRE storing raw SSML in SVG data attributes.
+
+15. **User**: "Yes, and write down the bug in a context.md file" - after checking out master and creating branch `reteps/xml-safari-bug`
+
+16. I made the fix in mechanicsObjects.js and created context.md. Verified the fix passes on both WebKit 17.4 and 26.0.
+
+17. **User entered plan mode**: "create a plan for a mathjax fix"
+
+18. I wrote a plan for the PL-side fix. User rejected it: "no no a plan for the upstream bug, i'm going to take this plan and put up a fix in the mathjax repo"
+
+So the current task is: Create a plan for the **upstream MathJax fix** that the user will implement in the MathJax repository.
+
+Key files:
+- `apps/prairielearn/elements/pl-drawing/mechanicsObjects.js` - already modified with XMLSerializer fix
+- `context.md` - already created documenting the bug
+- MathJax source files on GitHub:
+  - `ts/output/svg/Wrapper.ts` - creates `<use>` elements
+  - `ts/adaptors/HTMLAdaptor.ts` - setAttribute method
+  - `ts/output/common/FontData.ts` - defaultParams
+  - The Speech Rule Engine files that add `data-semantic-*` attributes
+
+The upstream issue is that MathJax 4's SRE puts raw SSML markup in `data-semantic-speech` attributes on SVG elements. When these SVGs are serialized with `outerHTML` and used standalone (data URIs, files), the result is invalid XML.
+
+Summary:
+1. Primary Request and Intent:
+   The user initially invoked `/slack-support` to triage a PrairieLearn support question about pl-drawing labels not rendering on certain browsers (primarily iPad/Safari). Through investigation, this evolved into:
+   - Investigating the MathJax 3.2.2 → 4.1.0 upgrade as the likely cause
+   - Reproducing the bug (achieved on WebKit 17.4 via Playwright)
+   - Identifying the root cause (MathJax 4's SRE `data-semantic-speech` attributes contain SSML with literal `<`/`>` that makes SVG invalid XML when serialized with `outerHTML`)
+   - Making a PrairieLearn-side fix (XMLSerializer instead of outerHTML)
+   - **Current request**: Creating a plan for the **upstream MathJax fix** that the user will implement in the MathJax repository themselves
+
+2. Key Technical Concepts:
+   - **MathJax 4 Speech Rule Engine (SRE)**: New in MathJax 4, adds `data-semantic-*` attributes to SVG output containing SSML (Speech Synthesis Markup Language) content
+   - **HTML vs XML serialization**: `Element.outerHTML` uses HTML serialization rules (doesn't require escaping `<` in attribute values). `XMLSerializer.serializeToString()` uses XML rules (escapes `<` as `&lt;`)
+   - **SVG as data URI**: When SVG is loaded as `data:image/svg+xml;base64,...` via `new Image()`, browsers parse it as XML, not HTML
+   - **pl-drawing label pipeline**: MathJax `tex2svgPromise()` → jQuery replaces `<use>` elements with inlined glyph paths → SVG serialized → base64 encoded → loaded as `fabric.Image`
+   - **WebKit version differences**: WebKit ≤17.4 (Safari ≤17) strictly rejects invalid XML in SVG images; WebKit 26+ (Safari 18+) is more lenient
+   - **Playwright cross-browser testing**: Used `playwright-core@1.40.0` for WebKit 17.4 and current Playwright for WebKit 26.0
+
+3. Files and Code Sections:
+
+   - **`apps/prairielearn/elements/pl-drawing/mechanicsObjects.js`** (PrairieLearn)
+     - Core file containing the `LatexText` class that renders MathJax labels in pl-drawing
+     - **Modified**: Replaced `svg.outerHTML` with `new XMLSerializer().serializeToString(svg)` at line ~996, removed the `NS\d+:href` Safari workaround, added `.catch(console.error)` to `gen_text()` calls
+     - Key code (the fix):
+     ```javascript
+     // Use XMLSerializer instead of outerHTML so that the SVG is serialized
+     // as valid XML. outerHTML uses HTML serialization rules, which don't
+     // escape '<' and '>' inside attribute values. MathJax 4's Speech Rule
+     // Engine adds data-semantic-speech attributes containing SSML markup
+     // (e.g. <prosody>, <say-as>) that include these characters. When the
+     // SVG is later loaded as a data: URI image, it's parsed as XML, and
+     // the unescaped '<' causes older WebKit versions (Safari ≤17) to reject
+     // the SVG as malformed.
+     let svgSource = new XMLSerializer().serializeToString(svg);
+     ```
+     - Previously was:
+     ```javascript
+     let svgSource = svg.outerHTML;
+     // Fix for Safari, https://stackoverflow.com/questions/30273775/...
+     svgSource = svgSource.replaceAll(/NS\d+:href/gi, 'xlink:href');
+     ```
+
+   - **`context.md`** (PrairieLearn repo root, new file)
+     - Documents the bug, root cause, reproduction, and fix for the PL-side change
+
+   - **MathJax source files (on GitHub, read-only investigation)**:
+     - `ts/output/svg/Wrapper.ts` - `useNode()` method creates `<use>` elements with `xlink:href`
+     - `ts/adaptors/HTMLAdaptor.ts` - `setAttribute()` method handles namespace via `setAttributeNS()`
+     - `ts/output/common/FontData.ts` - `defaultParams.x_height = 0.442` (static)
+     - `ts/output/svg/FontCache.ts` - Font caching mechanism
+     - The Speech Rule Engine adds `data-semantic-speech`, `data-semantic-braille`, `data-semantic-summary`, `data-semantic-prefix` attributes containing SSML/Braille markup
+
+   - **`apps/prairielearn/src/lib/client/mathjax.ts`** (PrairieLearn)
+     - MathJax configuration including SVG output, `fontCache: 'local'`, `linebreaks: { inline: false }`, font path setup
+
+   - **Test files created in `/tmp/`**:
+     - `/tmp/mathjax-test.html`, `/tmp/mathjax-test-v2.html` - Basic reproduction tests
+     - `/tmp/mathjax-debug.html` - Detailed debug output showing SVG attributes
+     - `/tmp/mathjax-strip-test.html` - Proved stripping `data-semantic-*` fixes the issue
+     - `/tmp/mathjax-size-test.html` - Proved it's content not size (dummy values work)
+     - `/tmp/mathjax-xml-test.html` - Proved XMLSerializer fix works
+     - `/tmp/mathjax-verify-fix.html` - Final verification of the fix
+
+4. Errors and Fixes:
+   - **Playwright import errors**: `Cannot find module 'playwright'` and `Cannot find module 'playwright-core'` when running test scripts from `/tmp/`. Fixed by using absolute path imports: `import { webkit } from '/Users/peter/work/PrairieLearn/node_modules/playwright-core/index.mjs'`
+   - **WebKit not installed**: Playwright WebKit browser wasn't downloaded. Fixed with `npx playwright install webkit`
+   - **Old Playwright WebKit 17.4 download**: CDN URL failed (400 error), but fallback CDN URL succeeded automatically
+   - **Browser path conflict**: When testing both old and new WebKit in same script with `PLAYWRIGHT_BROWSERS_PATH` env var, new WebKit couldn't find its binary. Fixed by running separate scripts for each
+
+5. Problem Solving:
+   - **Reproduction achieved**: After failing to reproduce on WebKit 26.0, installed `playwright-core@1.40.0` to get WebKit 17.4 — all labels failed, confirming the bug
+   - **Root cause isolated through systematic elimination**:
+     1. `getAttribute('xlink:href')` works fine → not a namespace issue
+     2. jQuery `<use>` replacement works fine → not a DOM manipulation issue
+     3. SVG serialization produces valid-looking output → not a structural issue
+     4. Image loading from data URI fails → the SVG is invalid XML
+     5. Stripping `data-semantic-*` attributes fixes it → these attrs are the problem
+     6. Replacing attr values with dummy text fixes it → it's the content, not count
+     7. `outerHTML` produces 8 attrs with literal `<>`, XMLSerializer produces 0 → `outerHTML` doesn't XML-escape
+     8. Using XMLSerializer instead of outerHTML → SUCCESS on both WebKit 17.4 and 26.0
+
+6. All User Messages:
+   - (Invoked `/slack-support` with Slack URL)
+   - Selected "Investigate MathJax upgrade" when asked about next steps
+   - "you could look at mathjax source on github too"
+   - Selected "Try to get a reproduction of the issue, i want to fix this upstream in mathjax if needed"
+   - Selected "can you try to use an older safari version"
+   - "the xmlserializer fix, is that on my end? what part am i upstreaming, and what part am i doing myself"
+   - (Ran `git checkout master` and `git checkout -b reteps/xml-safari-bug` locally)
+   - "Yes, and write down the bug in a context.md file."
+   - (Entered plan mode) "create a plan for a mathjax fix."
+   - "no no a plan for the upstream bug, i'm going to take this plan and put up a fix in the mathjax repo" (rejecting my PL-focused plan)
+
+7. Pending Tasks:
+   - **Create a plan for the upstream MathJax fix** — the user wants a plan they can take to the MathJax repository to fix the SRE/SVG attribute escaping issue
+   - The PrairieLearn-side fix (XMLSerializer) is already done in the working tree on branch `reteps/xml-safari-bug` but not yet committed/PR'd
+   - Filing an upstream MathJax issue
+   - Drafting a Slack response for the `#pl-help` threads
+
+8. Current Work:
+   I am in **plan mode** and need to write a plan for the **upstream MathJax fix** (not the PrairieLearn fix). The user explicitly rejected my first plan attempt saying "no no a plan for the upstream bug, i'm going to take this plan and put up a fix in the mathjax repo." The plan file is at `/Users/peter/.claude/plans/tender-tinkering-platypus.md` and currently contains the rejected PL-side plan that needs to be replaced with an upstream MathJax plan.
+
+   The upstream fix needs to address: MathJax 4's Speech Rule Engine storing raw SSML markup (`<prosody>`, `<say-as>`, `<mark/>`) in `data-semantic-speech` SVG data attributes without proper XML escaping, making SVG output invalid when serialized with `outerHTML` and used standalone.
+
+9. Optional Next Step:
+   Write a new plan to `/Users/peter/.claude/plans/tender-tinkering-platypus.md` focused on the **upstream MathJax repository fix**. This should include:
+   - Which MathJax source files need to be modified (the SRE integration that writes `data-semantic-speech` attributes)
+   - How to fix the SSML content in attributes (escape `<`/`>`, use different encoding, or provide option to disable)
+   - How to reproduce and verify the fix
+   
+   User's exact words: "no no a plan for the upstream bug, i'm going to take this plan and put up a fix in the mathjax repo"
+
+If you need specific details from before compaction (like exact code snippets, error messages, or content you generated), read the full transcript at: /Users/peter/.claude/projects/-Users-peter-work-PrairieLearn/b04d9d9e-404f-4a4e-a780-97eeff1aeda9.jsonl
+Please continue the conversation from where we left off without asking the user any further questions. Continue with the last task that you were asked to work on.
+
+---
+
+[Request interrupted by user for tool use]
