@@ -69,6 +69,15 @@ describe('stripHtmlForAiGrading', () => {
       expect($('p').attr('style')).toBeUndefined();
     });
 
+    it('does not preserve style properties that only include a preserved name as a substring', async () => {
+      const result = await stripHtmlForAiGrading(
+        '<p style="border-color: red; margin: 0">Plain answer</p>',
+      );
+
+      const $ = cheerio.load(result);
+      expect($('p').attr('style')).toBeUndefined();
+    });
+
     it('keeps only the final value for repeated preserved properties', async () => {
       const result = await stripHtmlForAiGrading(
         '<p style="background-color: yellow; color: blue; background-color: red">Highlighted answer</p>',

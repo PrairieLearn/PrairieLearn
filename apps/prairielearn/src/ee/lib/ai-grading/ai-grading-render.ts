@@ -12,6 +12,16 @@ import { formatHtmlWithPrettier } from '../../../lib/prettier.js';
  */
 const PRESERVED_STYLE_PROPERTIES = new Set(['color', 'background-color']);
 
+const ESCAPED_PRESERVED_STYLE_PROPERTIES = Array.from(PRESERVED_STYLE_PROPERTIES, (property) => {
+  // @ts-expect-error -- https://github.com/microsoft/TypeScript/issues/61321
+  return RegExp.escape(property);
+});
+
+const PRESERVED_STYLE_PROPERTY_REGEX = new RegExp(
+  String.raw`(?:^|;)\s*(?:${ESCAPED_PRESERVED_STYLE_PROPERTIES.join('|')})\s*:`,
+  'i',
+);
+
 /**
  * Strips the style attribute from an element, preserving only
  * color and background-color.
@@ -29,7 +39,7 @@ function stripStyleAttribute($: cheerio.CheerioAPI, el: Element): void {
 
   // Fast path: skip style parsing entirely when we know no preserved
   // property name can be present.
-  if (!styleAttribute.toLowerCase().includes('color')) {
+  if (!PRESERVED_STYLE_PROPERTY_REGEX.test(styleAttribute)) {
     delete el.attribs.style;
     return;
   }
