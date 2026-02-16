@@ -999,8 +999,10 @@ mechanicsObjects.LatexText = fabric.util.createClass(fabric.Object, {
     // Engine adds data-semantic-speech attributes containing SSML markup
     // (e.g. <prosody>, <say-as>) that include these characters. When the
     // SVG is later loaded as a data: URI image, it's parsed as XML, and
-    // the unescaped '<' causes older WebKit versions (Safari ≤17) to reject
-    // the SVG as malformed.
+    // the unescaped '<' causes Safari < 26.0 to reject
+    // the SVG as malformed (see https://developer.chrome.com/blog/escape-attributes).
+    // TODO: once https://github.com/mathjax/MathJax-src/pull/1432
+    // is merged, we can revert to using outerHTML.
     const svgSource = new XMLSerializer().serializeToString(svg);
 
     const base64svg = 'data:image/svg+xml;base64,' + btoa(unescape(encodeURIComponent(svgSource)));
