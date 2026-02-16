@@ -37,7 +37,7 @@ export function jsdocConfig(): TSESLint.FlatConfig.ConfigArray {
       rules: {
         ...jsdoc.configs['flat/recommended-typescript-error'].rules,
         'jsdoc/check-line-alignment': 'error',
-        'jsdoc/check-tag-names': ['error', { definedTags: ['knip-ignore'] }],
+        'jsdoc/check-tag-names': ['error', { definedTags: ['knipignore'] }],
         'jsdoc/convert-to-jsdoc-comments': [
           'error',
           {
