@@ -3,18 +3,18 @@ SELECT
   ni.*
 FROM
   news_items AS ni
-  LEFT JOIN user_news_read_timestamps AS unrt ON unrt.user_id = $user_id
+  LEFT JOIN news_item_read_states AS nirs ON nirs.user_id = $user_id
 WHERE
-  ni.pub_date > COALESCE(unrt.last_read_at, '-infinity'::timestamptz)
+  ni.pub_date > COALESCE(nirs.last_read_at, '-infinity'::timestamptz)
   AND ni.hidden_at IS NULL
 ORDER BY
   ni.pub_date DESC
 LIMIT
   $limit;
 
--- BLOCK upsert_user_news_read_timestamp
+-- BLOCK upsert_news_item_read_state
 INSERT INTO
-  user_news_read_timestamps (user_id, last_read_at)
+  news_item_read_states (user_id, last_read_at)
 VALUES
   ($user_id, now())
 ON CONFLICT (user_id) DO UPDATE

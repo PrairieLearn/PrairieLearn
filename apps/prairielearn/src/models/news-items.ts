@@ -4,8 +4,8 @@ import {
   type NewsItem,
   NewsItemSchema,
   type User,
-  type UserNewsReadTimestamp,
-  UserNewsReadTimestampSchema,
+  type NewsItemReadState,
+  NewsItemReadStateSchema,
 } from '../lib/db-types.js';
 
 const sql = loadSqlEquiv(import.meta.url);
@@ -23,11 +23,11 @@ export async function selectUnreadNewsItemsForUser(
 
 export async function markNewsItemsAsReadForUser(
   user: Pick<User, 'id'>,
-): Promise<UserNewsReadTimestamp> {
+): Promise<NewsItemReadState> {
   return await queryRow(
-    sql.upsert_user_news_read_timestamp,
+    sql.upsert_news_item_read_state,
     { user_id: user.id },
-    UserNewsReadTimestampSchema,
+    NewsItemReadStateSchema,
   );
 }
 
