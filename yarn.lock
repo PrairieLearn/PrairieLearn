@@ -1890,6 +1890,16 @@ __metadata:
   languageName: node
   linkType: hard
 
+"@cortex-js/compute-engine@npm:^0.50.1":
+  version: 0.50.2
+  resolution: "@cortex-js/compute-engine@npm:0.50.2"
+  dependencies:
+    complex-esm: "npm:^2.1.1-esm1"
+    decimal.js: "npm:^10.6.0"
+  checksum: 10c0/3ee3494dec121b91a3dff9e7f15a4e80fd109169a4420babaed5bb57f4ff4e70f9fb019db2d3cf10bcb4db48d44c7bca00d729f88d4fea61b58cc796efbb2236
+  languageName: node
+  linkType: hard
+
 "@cropper/element-canvas@npm:^2.1.0":
   version: 2.1.0
   resolution: "@cropper/element-canvas@npm:2.1.0"
@@ -4938,6 +4948,7 @@ __metadata:
     "@aws-sdk/client-sqs": "npm:^3.981.0"
     "@aws-sdk/credential-providers": "npm:^3.981.0"
     "@aws-sdk/lib-storage": "npm:^3.981.0"
+    "@cortex-js/compute-engine": "npm:^0.50.1"
     "@dnd-kit/core": "npm:^6.3.1"
     "@dnd-kit/react": "npm:^0.2.3"
     "@dnd-kit/sortable": "npm:^10.0.0"

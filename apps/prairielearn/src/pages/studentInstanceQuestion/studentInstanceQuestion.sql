@@ -10,3 +10,14 @@ ORDER BY
   v.date DESC
 LIMIT
   1;
+
+-- BLOCK select_assessment_tools
+SELECT
+  tool,
+  enabled,
+  settings
+FROM
+  assessment_tools
+WHERE
+  assessment_id = $assessment_id
+  AND enabled = TRUE;

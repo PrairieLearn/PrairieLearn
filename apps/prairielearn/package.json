@@ -33,6 +33,7 @@
     "@aws-sdk/client-sqs": "^3.981.0",
     "@aws-sdk/credential-providers": "^3.981.0",
     "@aws-sdk/lib-storage": "^3.981.0",
+    "@cortex-js/compute-engine": "^0.50.1",
     "@dnd-kit/core": "^6.3.1",
     "@dnd-kit/react": "^0.2.3",
     "@dnd-kit/sortable": "^10.0.0",

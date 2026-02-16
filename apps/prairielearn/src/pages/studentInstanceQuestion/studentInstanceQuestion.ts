@@ -4,13 +4,13 @@ import url from 'node:url';
 import { type Request, type Response, Router } from 'express';
 
 import { HttpStatusError } from '@prairielearn/error';
-import { loadSqlEquiv, queryOptionalRow } from '@prairielearn/postgres';
+import { loadSqlEquiv, queryOptionalRow, queryRows } from '@prairielearn/postgres';
 import { IdSchema } from '@prairielearn/zod';
 
 import checkPlanGrantsForQuestion from '../../ee/middlewares/checkPlanGrantsForQuestion.js';
 import { canDeleteAssessmentInstance, gradeAssessmentInstance } from '../../lib/assessment.js';
 import { getQuestionCopyTargets } from '../../lib/copy-content.js';
-import { type File } from '../../lib/db-types.js';
+import { AssessmentToolSchema, type File } from '../../lib/db-types.js';
 import { deleteFile, uploadFile } from '../../lib/file-store.js';
 import { getQuestionGroupPermissions } from '../../lib/groups.js';
 import { idsEqual } from '../../lib/id.js';
@@ -313,6 +313,15 @@ router.get(
     const isAssessmentAvailable =
       res.locals.assessment_instance.open && res.locals.authz_result.active;
 
+    const assessmentTools = await queryRows(
+      sql.select_assessment_tools,
+      { assessment_id: res.locals.assessment.id },
+      AssessmentToolSchema.pick({ tool: true, enabled: true, settings: true }),
+    );
+    const enabledTools = assessmentTools
+      .filter((t) => t.enabled)
+      .map((t) => t.tool);
+
     if (variant_id === null && !isAssessmentAvailable) {
       // We can't generate a new variant in this case, so we
       // fetch and display the most recent non-broken variant.
@@ -328,6 +337,7 @@ router.get(
           StudentInstanceQuestion({
             resLocals: res.locals,
             userCanDeleteAssessmentInstance: canDeleteAssessmentInstance(res.locals),
+            enabledTools,
           }),
         );
         return;
@@ -390,6 +400,7 @@ router.get(
         assignedGrader,
         lastGrader,
         questionCopyTargets,
+        enabledTools,
       }),
     );
   }),

@@ -502,6 +502,17 @@ export type AssessmentQuestionRolePermission = z.infer<
   typeof AssessmentQuestionRolePermissionSchema
 >;
 
+export const AssessmentToolSchema = z.object({
+  assessment_id: IdSchema.nullable(),
+  enabled: z.boolean(),
+  id: IdSchema,
+  settings: z.record(z.unknown()),
+  // or enum?
+  tool: z.string(),
+  zone_id: IdSchema.nullable(),
+});
+export type AssessmentTool = z.infer<typeof AssessmentToolSchema>;
+
 export const AssessmentSetSchema = z.object({
   abbreviation: z.string(),
   color: z.string(),
@@ -1616,6 +1627,7 @@ export const TableNames = [
   'assessment_score_logs',
   'assessment_sets',
   'assessment_state_logs',
+  'assessment_tools',
   'assessments',
   'audit_events',
   'audit_logs',

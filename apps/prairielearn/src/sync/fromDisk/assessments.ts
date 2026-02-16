@@ -486,11 +486,36 @@ export async function sync(
     ]);
   });
 
-  await sqldb.callRow(
+  const nameToIdMap = await sqldb.callRow(
     'sync_assessments',
     [assessmentParams, courseId, courseInstanceId, config.checkSharingOnSync],
     SprocSyncAssessmentsSchema,
   );
+
+  const toolRows: { assessment_id: string; tool: string; enabled: boolean; settings: object }[] = [];
+  const assessmentIds: string[] = [];
+
+  for (const [tid, assessment] of Object.entries(assessments)) {
+    const assessmentId = nameToIdMap?.[tid];
+    if (!assessmentId || !assessment.data?.tools) continue;
+
+    assessmentIds.push(assessmentId);
+    for (const [toolName, toolConfig] of Object.entries(assessment.data.tools)) {
+      toolRows.push({
+        assessment_id: assessmentId,
+        tool: toolName,
+        enabled: toolConfig.enabled,
+        settings: {},
+      });
+    }
+  }
+
+  if (assessmentIds.length > 0) {
+    await sqldb.execute(sql.sync_assessment_tools, {
+      tools: JSON.stringify(toolRows),
+      assessment_ids: assessmentIds,
+    });
+  }
 }
 
 export async function validateAssessmentSharedQuestions(

@@ -62,3 +62,46 @@ FROM
   courses
 WHERE
   id = $course_id;
+
+-- BLOCK sync_assessment_tools
+WITH
+  desired_tools AS (
+    SELECT
+      *
+    FROM
+      jsonb_to_recordset($tools::jsonb) AS (
+        assessment_id bigint,
+        tool text,
+        enabled boolean,
+        settings jsonb
+      )
+  ),
+  upserted AS (
+    INSERT INTO
+      assessment_tools (assessment_id, tool, enabled, settings)
+    SELECT
+      assessment_id,
+      tool,
+      enabled,
+      settings
+    FROM
+      desired_tools
+    ON CONFLICT (assessment_id, tool) DO UPDATE
+    SET
+      enabled = EXCLUDED.enabled,
+      settings = EXCLUDED.settings
+    RETURNING
+      assessment_tools.id,
+      assessment_tools.assessment_id,
+      assessment_tools.tool
+  )
+DELETE FROM assessment_tools
+WHERE
+  assessment_id = ANY ($assessment_ids::bigint[])
+  AND (assessment_id, tool) NOT IN (
+    SELECT
+      assessment_id,
+      tool
+    FROM
+      desired_tools
+  );

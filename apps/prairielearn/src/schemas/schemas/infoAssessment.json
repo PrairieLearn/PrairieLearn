@@ -274,6 +274,20 @@
       "description": "If true, the assessment's JSON configuration and question list are available for others to view and copy.",
       "type": "boolean",
       "default": false
+    },
+    "tools": {
+      "description": "Configuration for assessment tools.",
+      "type": "object",
+      "additionalProperties": {
+        "type": "object",
+        "required": ["enabled"],
+        "properties": {
+          "enabled": {
+            "description": "Whether this assessment tool is enabled.",
+            "type": "boolean"
+          }
+        }
+      }
     }
   },
   "definitions": {
