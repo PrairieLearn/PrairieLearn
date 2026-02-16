@@ -241,11 +241,8 @@ export function TagPicker<T = void>({
   return (
     <div className="position-relative">
       {name &&
-        (value.length > 0 ? (
-          value.map((v) => <input key={v} name={name} type="hidden" value={v} />)
-        ) : (
-          <input name={name} type="hidden" value="" />
-        ))}
+        value.length > 0 &&
+        value.map((v) => <input key={v} name={name} type="hidden" value={v} />)}
 
       {/* Render selected tags outside the Select trigger button. The HTML spec prohibits
           interactive content (buttons) inside buttons: https://adrianroselli.com/2016/12/be-wary-of-nesting-roles.html */}

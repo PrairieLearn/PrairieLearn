@@ -225,9 +225,10 @@ export const QuestionSettingsForm = ({
   const otherQids = new Set(qids.filter((q) => q !== defaultValues.qid));
 
   const handleFormSubmit = async (e: React.SubmitEvent<HTMLFormElement>) => {
+    e.preventDefault();
     const isValid = await trigger();
-    if (!isValid) {
-      e.preventDefault();
+    if (isValid) {
+      e.currentTarget.submit();
     }
   };
 
