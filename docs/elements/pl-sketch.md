@@ -1,6 +1,11 @@
 # `pl-sketch` element
 
-Display and sketch curves and other mathematical objects (e.g., points, asymptotes, polygons).
+Sketch curves and other mathematical objects (e.g., points, asymptotes, polygons) via freehand drawing or drag&drop. Drawings can be auto-graded using mathematical criteria. Some example criteria are:
+
+- Are the expected number of points or asymptotes marked at the right places?
+- Is a sketched function close to a reference function?
+- Is a sketched function always monotonically increasing?
+- Is the expected area of the canvas covered (by a polygon)?
 
 ## Sample element
 
@@ -21,6 +26,10 @@ Display and sketch curves and other mathematical objects (e.g., points, asymptot
     <pl-sketch-grade type="match-fun" debug="true" toolid="fd" fun="2**x"></pl-sketch-grade> 
   </pl-sketch>
 ```
+
+### Accessibility
+
+Due to the highly graphical nature of this element, there are currently no viable keyboard controls or reasonable screen reader interaction available. To meet some accessibility needs, alternative versions of sketching questions will be necessary, for example to allow students to give textual descriptions rather than drawing.
 
 ## Customizations
 
@@ -77,7 +86,7 @@ Lines drawn in any shape using drag-and-release. Lines are slightly smoothened a
 
 **Defaults:**
 
-```
+```html
 id="fd" label="Function f(x)" color="blue"
 ```
 
@@ -87,7 +96,7 @@ Points placed by clicking at a specific location in the canvas.
 
 **Defaults:**
 
-```
+```html
 id="pt" label="Point" color="black" size="15"
 ```
 
@@ -97,7 +106,7 @@ Horizontal lines that span the entire canvas (effectively marking a y-coordinate
 
 **Defaults:**
 
-```
+```html
 id="hl" label="Horizontal Line" color="dimgray" dash-style="dashdotted"
 ```
 
@@ -107,7 +116,7 @@ Vertical lines that span the entire canvas (effectively marking an x-coordinate)
 
 **Defaults:**
 
-```
+```html
 id="vl" label="Vertical Line" color="dimgray" dash-style="dashdotted"
 ```
 
@@ -117,8 +126,9 @@ Straight lines that can be drawn between two points. Optional constaints can res
 
 **Defaults:**
 
-```
-id="line" label="Line" color="red" dash-style="solid" direction-constraint="none" length-constraint="0" arrowhead="0"
+```html
+id="line" label="Line" color="red" dash-style="solid" direction-constraint="none"
+length-constraint="0" arrowhead="0"
 ```
 
 #### **`polyline`**
@@ -127,7 +137,7 @@ Complex lines, each consisting of straight line segments. Each segment extends t
 
 **Defaults:**
 
-```
+```html
 id="pline" label="Polyline" color="orange" dash-style="solid"
 ```
 
@@ -137,7 +147,7 @@ Complex lines, each consisting of multiple line segments. Segments are curved to
 
 **Defaults:**
 
-```
+```html
 id="sp" label="Spline" color="purple"
 ```
 
@@ -147,7 +157,7 @@ Polygon shapes, each consisting of multiple line segments with connected endpoin
 
 **Defaults:**
 
-```
+```html
 id="pg" label="Polygon" color="mediumseagreen" fill-color="mediumseagreen" fill-opacity="0.5"
 ```
 
