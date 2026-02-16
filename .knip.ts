@@ -82,8 +82,8 @@ const config: KnipConfig = {
   tags: ['-lintignore'],
   workspaces: {
     '.': {
-      entry: [],
-      project: [],
+      entry: ['scripts/*.{mts,mjs}'],
+      project: ['scripts/*.{mts,mjs}'],
       // https://knip.dev/guides/configuring-project-files#ignore-issues-in-specific-files
       ignore: ['vitest.config.ts', 'eslint.config.mjs'],
     },

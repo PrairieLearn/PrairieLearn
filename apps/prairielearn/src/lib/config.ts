@@ -26,7 +26,7 @@ const TokenPricingSchema = z.object({
   output: z.number().nonnegative(),
 });
 
-const STANDARD_COURSE_DIRS = [
+export const STANDARD_COURSE_DIRS = [
   '/course',
   '/course2',
   '/course3',
