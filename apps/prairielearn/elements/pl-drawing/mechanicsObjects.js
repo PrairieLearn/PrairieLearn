@@ -993,10 +993,15 @@ mechanicsObjects.LatexText = fabric.util.createClass(fabric.Object, {
     svg.setAttribute('width', width + 'px');
     svg.setAttribute('height', height + 'px');
 
-    let svgSource = svg.outerHTML;
-
-    // Fix for Safari, https://stackoverflow.com/questions/30273775/namespace-prefix-ns1-for-href-on-tagelement-is-not-defined-setattributens
-    svgSource = svgSource.replaceAll(/NS\d+:href/gi, 'xlink:href');
+    // Use XMLSerializer instead of outerHTML so that the SVG is serialized
+    // as valid XML. outerHTML uses HTML serialization rules, which don't
+    // escape '<' and '>' inside attribute values. MathJax 4's Speech Rule
+    // Engine adds data-semantic-speech attributes containing SSML markup
+    // (e.g. <prosody>, <say-as>) that include these characters. When the
+    // SVG is later loaded as a data: URI image, it's parsed as XML, and
+    // the unescaped '<' causes older WebKit versions (Safari ≤17) to reject
+    // the SVG as malformed.
+    const svgSource = new XMLSerializer().serializeToString(svg);
 
     const base64svg = 'data:image/svg+xml;base64,' + btoa(unescape(encodeURIComponent(svgSource)));
 
@@ -1031,7 +1036,7 @@ mechanicsObjects.LatexText = fabric.util.createClass(fabric.Object, {
     this.label = text;
 
     if (text) {
-      this.gen_text(this.label, options);
+      this.gen_text(this.label, options).catch(console.error);
     }
 
     if (options.selectable) {
@@ -1042,7 +1047,7 @@ mechanicsObjects.LatexText = fabric.util.createClass(fabric.Object, {
         );
         if (new_text !== null) {
           this.label = new_text;
-          this.gen_text(this.parse(new_text), options);
+          this.gen_text(this.parse(new_text), options).catch(console.error);
 
           // Fire an event to ensure that the text is updated in the submission data.
           this.fire('modified');
