@@ -72,7 +72,7 @@
     "@prairielearn/sentry": "workspace:^",
     "@prairielearn/session": "workspace:^",
     "@prairielearn/signed-token": "workspace:^",
-    "@prairielearn/sketchresponse": "^0.0.2",
+    "@prairielearn/sketchresponse": "^0.0.3",
     "@prairielearn/tsconfig": "workspace:^",
     "@prairielearn/ui": "workspace:^",
     "@prairielearn/utils": "workspace:^",

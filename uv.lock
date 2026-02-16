@@ -1077,7 +1077,7 @@ requires-dist = [
     { name = "scikit-learn", specifier = "==1.8.0" },
     { name = "scipy", specifier = "==1.17.0" },
     { name = "seaborn", specifier = "==0.13.2" },
-    { name = "sketchresponse", specifier = "==0.0.1" },
+    { name = "sketchresponse", specifier = "==0.0.3" },
     { name = "statsmodels", specifier = "==0.14.6" },
     { name = "sympy", specifier = "==1.14.0" },
     { name = "text-unidecode", specifier = "==1.3" },
@@ -1588,16 +1588,16 @@ wheels = [
 
 [[package]]
 name = "sketchresponse"
-version = "0.0.1"
+version = "0.0.3"
 source = { registry = "https://pypi.org/simple" }
 dependencies = [
     { name = "future" },
     { name = "numpy" },
     { name = "sympy" },
 ]
-sdist = { url = "https://files.pythonhosted.org/packages/c0/aa/2759da0d20d06dd0b4f7288757969ea0b947efb641e19baca50a50a8ac81/sketchresponse-0.0.1.tar.gz", hash = "sha256:e159c6266c69c0abd87325b33be790ffc3c41a914937e410e35cd4000755510d", size = 65922, upload-time = "2026-02-11T05:27:39.64Z" }
+sdist = { url = "https://files.pythonhosted.org/packages/87/b1/8d791a882a77b628b830376ebeb416078070399e04e62285bf9e60cecc71/sketchresponse-0.0.3.tar.gz", hash = "sha256:71bee921c9ba42e06b29789ffd48f7efbda009226612fd15a957fbad576ebeeb", size = 65987, upload-time = "2026-02-16T02:57:55.928Z" }
 wheels = [
-    { url = "https://files.pythonhosted.org/packages/13/2a/1ee67c9ebe615b317490ae6f5ddbbea62011496436f2efa3a0a67fdd77b2/sketchresponse-0.0.1-py3-none-any.whl", hash = "sha256:387df64b84a311a02b43833b402d80b4b9871d626f1706c6d2bf7a81cbec41cd", size = 76242, upload-time = "2026-02-11T05:27:38.566Z" },
+    { url = "https://files.pythonhosted.org/packages/d1/09/417db604c03671933cccacffbf6ae60d9c4635447527bd3fd504eb1e7924/sketchresponse-0.0.3-py3-none-any.whl", hash = "sha256:7642125ec1f7bae308617ddacb3347b877dc7f559f088f7a9b94262e234a96c6", size = 76253, upload-time = "2026-02-16T02:57:54.249Z" },
 ]
 
 [[package]]
