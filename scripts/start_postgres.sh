@@ -21,8 +21,9 @@ fi
 
 mkdir -p $PGDATA
 chown -f postgres:postgres $PGDATA
-su postgres -c "${PG_BIN}/pg_ctl status" > /dev/null 2>&1
-if [[ $? == 4 ]]; then
+pg_status=0
+su postgres -c "${PG_BIN}/pg_ctl status" > /dev/null 2>&1 || pg_status=$?
+if [[ $pg_status == 4 ]]; then
     echo "Making new postgres database at ${PGDATA}"
     su postgres -c "${PG_BIN}/initdb"
     INIT_RESOLVE=true

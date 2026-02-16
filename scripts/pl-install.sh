@@ -9,10 +9,8 @@ apt-get update -y
 apt-get upgrade -y
 
 # Add PostgreSQL APT repository for PostgreSQL 17 (from https://www.postgresql.org/download/linux/ubuntu/)
-apt-get install -y curl ca-certificates
-install -d /usr/share/postgresql-common/pgdg
-curl -o /usr/share/postgresql-common/pgdg/apt.postgresql.org.asc --fail https://www.postgresql.org/media/keys/ACCC4CF8.asc
-echo 'deb [signed-by=/usr/share/postgresql-common/pgdg/apt.postgresql.org.asc] https://apt.postgresql.org/pub/repos/apt noble-pgdg main' > /etc/apt/sources.list.d/pgdg.list
+apt-get install -y postgresql-common
+/usr/share/postgresql-common/pgdg/apt.postgresql.org.sh -y
 apt-get update -y
 
 # Notes:
@@ -72,7 +70,8 @@ rm -rf /tmp/pgvector
 # `autoremove` keeps `clang-19` due `build-essential -> dpkg-dev` recommending
 # `gcc | c-compiler` (`clang-19` provides `c-compiler`). Purge these roots
 # explicitly so the rest of the LLVM toolchain becomes removable.
-apt-get purge -y postgresql-server-dev-17 $(dpkg -l | grep -oP '(clang|llvm)-\d+(-dev)?' | sort -u) || true
+mapfile -t llvm_pkgs < <(dpkg -l | grep -oP '(clang|llvm)-\d+(-dev)?' | sort -u)
+apt-get purge -y postgresql-server-dev-17 "${llvm_pkgs[@]}" || true
 apt-get autoremove -y
 
 echo "setting up uv + venv..."
