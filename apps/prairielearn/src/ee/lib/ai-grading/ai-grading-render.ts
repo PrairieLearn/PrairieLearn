@@ -49,10 +49,7 @@ function stripStyleAttribute($: cheerio.CheerioAPI, el: Element): void {
     const propertyName = rawPropertyName.trim().toLowerCase();
     if (!PRESERVED_STYLE_PROPERTIES.has(propertyName)) continue;
 
-    const rawPropertyValue =
-      parsedStyle[rawPropertyName] ??
-      // Prefer exact key match, but fall back to lowercase for safety.
-      parsedStyle[propertyName];
+    const rawPropertyValue = parsedStyle[rawPropertyName];
     if (typeof rawPropertyValue !== 'string') continue;
 
     const propertyValue = rawPropertyValue.trim();
@@ -66,6 +63,9 @@ function stripStyleAttribute($: cheerio.CheerioAPI, el: Element): void {
     return;
   }
 
+  // `prop('style')` gives us a parsed style object, but no companion serializer.
+  // Manual serialization is safe here because the property names come from a
+  // fixed allowlist and values come from Cheerio's parser.
   el.attribs.style = Array.from(preservedDeclarations.entries())
     .map(([propertyName, propertyValue]) => `${propertyName}: ${propertyValue}`)
     .join('; ');
