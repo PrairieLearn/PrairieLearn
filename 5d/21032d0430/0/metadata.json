@@ -1,0 +1,30 @@
+{
+  "cli_version": "0.4.2",
+  "checkpoint_id": "5d21032d0430",
+  "session_id": "53333e7f-0fd0-4241-bc29-c2a40703daa7",
+  "strategy": "manual-commit",
+  "created_at": "2026-02-16T14:47:36.821471Z",
+  "branch": "reteps/question-settings-react",
+  "checkpoints_count": 1,
+  "files_touched": [
+    "apps/prairielearn/src/pages/instructorQuestionSettings/components/QuestionSettingsForm.tsx",
+    "packages/ui/src/components/ComboBox.tsx"
+  ],
+  "agent": "Claude Code",
+  "token_usage": {
+    "input_tokens": 6,
+    "cache_creation_tokens": 11058,
+    "cache_read_tokens": 172115,
+    "output_tokens": 522,
+    "api_call_count": 4
+  },
+  "initial_attribution": {
+    "calculated_at": "2026-02-16T14:47:36.810509Z",
+    "agent_lines": 5,
+    "human_added": 1100,
+    "human_modified": 0,
+    "human_removed": 0,
+    "total_committed": 1105,
+    "agent_percentage": 0.4524886877828055
+  }
+}

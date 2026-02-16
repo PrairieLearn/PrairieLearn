@@ -1,0 +1,13 @@
+The changes introduce two functional regressions: client-side validation can be bypassed due to async submit handling, and clearing all tags persists an empty tag value. Both issues
+  affect correctness of saved question settings.
+
+  Full review comments:
+
+  - [P1] Prevent default before awaiting async form validation — /Users/peter/work/PrairieLearn/apps/prairielearn/src/pages/instructorQuestionSettings/components/
+    QuestionSettingsForm.tsx:227-231
+    The submit handler calls await trigger() and only then e.preventDefault(), but form submission is not paused while async work runs, so invalid forms can still submit before
+    preventDefault executes. This bypasses the new client-side checks (e.g., duplicate QID or malformed JSON fields) and can send bad payloads to the server, where JSON.parse(...) paths
+    can throw and return an error page instead of inline validation feedback.
+  - [P1] Omit empty hidden tag value when no tags are selected — /Users/peter/work/PrairieLearn/packages/ui/src/components/ComboBox.tsx:243-248
+    When no tags are selected, this renders a hidden tags input with value="", so the backend receives tags: '' instead of an omitted field. With ArrayFromStringOrArraySchema, that
+    becomes [''], and saving writes an empty-string tag into info.json rather than clearing tags. This creates invalid tag data whenever a user clears all tags and saves.
