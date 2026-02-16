@@ -1,0 +1,28 @@
+{
+  "cli_version": "0.4.2",
+  "checkpoint_id": "74a19336ee92",
+  "strategy": "manual-commit",
+  "branch": "reteps/question-settings-react",
+  "checkpoints_count": 4,
+  "files_touched": [
+    "apps/prairielearn/src/models/grading-job.sql",
+    "apps/prairielearn/src/tests/brokenGrading.test.sql",
+    "apps/prairielearn/src/tests/brokenGrading.test.ts"
+  ],
+  "sessions": [
+    {
+      "metadata": "/74/a19336ee92/0/metadata.json",
+      "transcript": "/74/a19336ee92/0/full.jsonl",
+      "context": "/74/a19336ee92/0/context.md",
+      "content_hash": "/74/a19336ee92/0/content_hash.txt",
+      "prompt": "/74/a19336ee92/0/prompt.txt"
+    }
+  ],
+  "token_usage": {
+    "input_tokens": 122,
+    "cache_creation_tokens": 102050,
+    "cache_read_tokens": 11324864,
+    "output_tokens": 8109,
+    "api_call_count": 113
+  }
+}

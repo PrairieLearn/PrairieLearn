@@ -1,0 +1,31 @@
+{
+  "cli_version": "0.4.2",
+  "checkpoint_id": "74a19336ee92",
+  "session_id": "d63e19fd-5c60-491c-a737-096f5d68bca0",
+  "strategy": "manual-commit",
+  "created_at": "2026-02-16T14:08:48.031157Z",
+  "branch": "reteps/question-settings-react",
+  "checkpoints_count": 4,
+  "files_touched": [
+    "apps/prairielearn/src/models/grading-job.sql",
+    "apps/prairielearn/src/tests/brokenGrading.test.sql",
+    "apps/prairielearn/src/tests/brokenGrading.test.ts"
+  ],
+  "agent": "Claude Code",
+  "token_usage": {
+    "input_tokens": 122,
+    "cache_creation_tokens": 102050,
+    "cache_read_tokens": 11324864,
+    "output_tokens": 8109,
+    "api_call_count": 113
+  },
+  "initial_attribution": {
+    "calculated_at": "2026-02-16T14:08:47.962267Z",
+    "agent_lines": 0,
+    "human_added": 4240,
+    "human_modified": 161,
+    "human_removed": 0,
+    "total_committed": 4400,
+    "agent_percentage": 0
+  }
+}
