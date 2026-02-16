@@ -216,6 +216,8 @@ export function PageLayout({
     fullHeight?: boolean;
     /** Whether the page content should have padding around it. */
     contentPadding?: boolean;
+    /** Additional classes to apply to the main content container. */
+    contentContainerClassName?: string;
     /** A note to display after the pageTitle, shown in parenthesis. */
     pageNote?: string;
     /** Enables an htmx extension for an element and all its children */
@@ -248,6 +250,7 @@ export function PageLayout({
     fullWidth: false,
     fullHeight: false,
     contentPadding: true,
+    contentContainerClassName: '',
     hxExt: '',
     dataAttributes: {},
     enableNavbar: true,
@@ -381,6 +384,7 @@ export function PageLayout({
                 !sideNavEnabled && resolvedOptions.fullWidth && 'w-100',
                 !sideNavEnabled && resolvedOptions.fullHeight && 'h-100',
                 'd-flex flex-column',
+                resolvedOptions.contentContainerClassName,
               )}"
             >
               ${renderHtml(

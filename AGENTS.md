@@ -50,7 +50,7 @@ Run `make format-changed` from the root directory to format all changed files (s
 
 Typechecking:
 
-- Individual files: `make build` + grep for the file in the build output. Don't use `./scripts/typecheck-file.sh path/to/file.ts` unless the user asks for it.
+- Individual files: `./scripts/typecheck-file.sh path/to/file.ts [path/to/file2.ts] ...`
 - All files: `make build`. You will need to do this after making changes to a package.
 
 Linting:
@@ -122,6 +122,7 @@ When working with assessment "groups" / "teams", see the [`groups-and-teams` ski
 
 - Use `react-bootstrap` components for UI elements.
 - Titles and buttons should use sentence case ("Save course", "Discard these changes").
+- Prefer using [Bootstrap Icons](https://icons.getbootstrap.com/) for icons in new code.
 
 ### Testing
 
