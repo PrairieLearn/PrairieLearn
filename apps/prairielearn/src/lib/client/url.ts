@@ -65,7 +65,7 @@ export function getSelfEnrollmentLookupUrl(
   return `/pl/course_instance/lookup?${params.toString()}`;
 }
 
-/** @knip-ignore */
+/** @knipignore */
 export function getCourseInstanceSyncUrl(courseInstanceId: string): string {
   return `/pl/course_instance/${courseInstanceId}/instructor/syncs`;
 }

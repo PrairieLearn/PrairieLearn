@@ -79,7 +79,7 @@ for (const dep of REFERENCED_NODE_MODULES_DEPS) {
 }
 
 const config: KnipConfig = {
-  tags: ['-knip-ignore'],
+  tags: ['-knipignore'],
   workspaces: {
     '.': {
       entry: ['scripts/*.{mts,mjs}'],
@@ -114,15 +114,14 @@ const config: KnipConfig = {
       project: ['**/*.{ts,cts,mts,tsx}'],
     },
     'packages/*': {
-      entry: ['src/index.ts'],
       project: ['**/*.{ts,cts,mts,tsx}'],
     },
     'packages/migrations': {
-      entry: ['src/index.ts', 'src/{batched-migrations,migrations}/fixtures/*.ts'],
+      entry: ['src/{batched-migrations,migrations}/fixtures/*.ts'],
       project: ['**/*.{ts,cts,mts,tsx}'],
     },
     'packages/session': {
-      entry: ['src/index.ts', 'src/test-utils.ts'],
+      entry: ['src/test-utils.ts'],
       project: ['**/*.{ts,cts,mts,tsx}'],
     },
     'packages/tsconfig': {
@@ -130,7 +129,7 @@ const config: KnipConfig = {
       project: [],
     },
     'packages/markdown': {
-      entry: ['src/index.ts', 'src/benchmark.ts'],
+      entry: ['src/benchmark.ts'],
       project: ['**/*.{ts,cts,mts,tsx}'],
     },
   },
@@ -141,7 +140,7 @@ const config: KnipConfig = {
     // ...FALSE_NEGATIVE_CLI_DEPS,
   ],
   // TODO: enable these features
-  exclude: ['binaries', 'dependencies'],
+  exclude: ['binaries', 'dependencies', 'unlisted'],
 };
 
 export default config;
