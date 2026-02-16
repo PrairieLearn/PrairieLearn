@@ -221,10 +221,6 @@ export async function initCalculator(storageKey) {
     localStorage.setItem(storageKey, JSON.stringify(data));
   }
 
-  // Initialize ans variable to bottom to bypass initial assignment
-  // currently `ans` breaks if at any point it gets assigned to function type
-  // see https://github.com/cortex-js/compute-engine/issues/288
-  ce.declare('ans', 'any');
   ce.assign('ans', ce.parse('\\bot'));
 
   // Define custom functions
