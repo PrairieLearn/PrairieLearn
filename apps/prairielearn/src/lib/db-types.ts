@@ -720,6 +720,7 @@ export const CourseRequestSchema = z.object({
   id: IdSchema,
   institution: z.string().nullable(),
   last_name: z.string().nullable(),
+  note: z.string().nullable(),
   referral_source: z.string().nullable(),
   short_name: z.string(),
   title: z.string(),
