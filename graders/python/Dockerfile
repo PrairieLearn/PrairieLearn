@@ -7,7 +7,9 @@ ENV LANG=en_US.UTF-8
 
 # Set uv and Python environment variables. The Python installation directory is
 # set to a location that is visible to all users, since the venv is created by
-# root but the autograder runs as a limited user.
+# root but the autograder runs as a limited user. This setting allows Python to
+# be executed both as root (e.g., for custom builds or entrypoints) and as the
+# limited user (for the autograder itself).
 ENV UV_PYTHON_INSTALL_DIR=/usr/local/bin
 ENV UV_COMPILE_BYTECODE=1 UV_NO_CACHE=1
 ENV PATH="/venv/bin:$PATH"
