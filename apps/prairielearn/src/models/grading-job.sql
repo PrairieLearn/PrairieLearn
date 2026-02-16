@@ -173,6 +173,14 @@ WITH
         ) THEN FALSE
         ELSE v.open
       END,
+      -- Mark the variant as broken if grading produced a fatal error.
+      -- If it was already broken, or if the current grading job is broken, 
+      -- mark it as broken.
+      broken_at = CASE
+        WHEN $broken THEN COALESCE(v.broken_at, now())
+        ELSE v.broken_at
+      END,
+      broken = v.broken OR $broken,
       modified_at = now()
     FROM
       question_data AS qd

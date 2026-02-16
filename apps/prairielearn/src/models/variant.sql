@@ -81,7 +81,7 @@ WHERE
   AND iq.id = $unsafe_instance_question_id
   AND iq.assessment_instance_id = $assessment_instance_id;
 
--- BLOCK select_variant_by_instance_question_id
+-- BLOCK select_variant_scores_by_instance_question_id
 WITH
   variant_max_submission_scores AS (
     SELECT
@@ -117,6 +117,16 @@ WHERE
     OR iq.id = $instance_question_id
   )
   AND v.broken_at IS NULL
+ORDER BY
+  v.date;
+
+-- BLOCK select_variants_by_instance_question_id
+SELECT
+  v.*
+FROM
+  variants AS v
+WHERE
+  v.instance_question_id = $instance_question_id
 ORDER BY
   v.date;
 

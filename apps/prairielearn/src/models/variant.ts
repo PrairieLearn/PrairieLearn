@@ -72,7 +72,23 @@ export async function resetVariantsForInstanceQuestion({
   });
 }
 
+export async function selectVariantById({ variant_id }: { variant_id: string }): Promise<Variant> {
+  return await queryRow(sql.select_variant_by_id, { variant_id }, VariantSchema);
+}
+
 export async function selectVariantsByInstanceQuestion({
+  instance_question_id,
+}: {
+  instance_question_id: string;
+}): Promise<Variant[]> {
+  return await queryRows(
+    sql.select_variants_by_instance_question_id,
+    { instance_question_id },
+    VariantSchema,
+  );
+}
+
+export async function selectVariantScoresByInstanceQuestion({
   assessment_instance_id,
   instance_question_id,
 }: {
@@ -80,7 +96,7 @@ export async function selectVariantsByInstanceQuestion({
   instance_question_id?: string;
 }) {
   return await queryRows(
-    sql.select_variant_by_instance_question_id,
+    sql.select_variant_scores_by_instance_question_id,
     { assessment_instance_id, instance_question_id },
     SimpleVariantWithScoreSchema,
   );

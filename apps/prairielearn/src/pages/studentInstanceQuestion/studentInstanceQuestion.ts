@@ -22,7 +22,10 @@ import clientFingerprint from '../../middlewares/clientFingerprint.js';
 import { enterpriseOnly } from '../../middlewares/enterpriseOnly.js';
 import { logPageView } from '../../middlewares/logPageView.js';
 import { selectUserById } from '../../models/user.js';
-import { selectAndAuthzVariant, selectVariantsByInstanceQuestion } from '../../models/variant.js';
+import {
+  selectAndAuthzVariant,
+  selectVariantScoresByInstanceQuestion,
+} from '../../models/variant.js';
 
 import { StudentInstanceQuestion } from './studentInstanceQuestion.html.js';
 
@@ -349,10 +352,11 @@ router.get(
       question: res.locals.question,
     });
 
-    res.locals.instance_question_info.previous_variants = await selectVariantsByInstanceQuestion({
-      assessment_instance_id: res.locals.assessment_instance.id,
-      instance_question_id: res.locals.instance_question.id,
-    });
+    res.locals.instance_question_info.previous_variants =
+      await selectVariantScoresByInstanceQuestion({
+        assessment_instance_id: res.locals.assessment_instance.id,
+        instance_question_id: res.locals.instance_question.id,
+      });
 
     if (
       res.locals.group_config?.has_roles &&

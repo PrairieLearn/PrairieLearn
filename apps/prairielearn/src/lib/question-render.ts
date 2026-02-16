@@ -21,7 +21,7 @@ import {
   type SubmissionForRender,
   SubmissionPanel,
 } from '../components/SubmissionPanel.js';
-import { selectAndAuthzVariant, selectVariantsByInstanceQuestion } from '../models/variant.js';
+import { selectAndAuthzVariant, selectVariantScoresByInstanceQuestion } from '../models/variant.js';
 import * as questionServers from '../question-servers/index.js';
 
 import type { ResLocalsAuthnUser } from './authn.types.js';
@@ -709,7 +709,7 @@ export async function renderPanelsForSubmission({
   const previous_variants =
     variant.instance_question_id == null || assessment_instance == null
       ? null
-      : await selectVariantsByInstanceQuestion({
+      : await selectVariantScoresByInstanceQuestion({
           assessment_instance_id: assessment_instance.id,
           instance_question_id: variant.instance_question_id,
         });

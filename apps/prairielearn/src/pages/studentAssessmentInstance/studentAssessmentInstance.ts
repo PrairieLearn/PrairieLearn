@@ -21,7 +21,7 @@ import clientFingerprint from '../../middlewares/clientFingerprint.js';
 import logPageView from '../../middlewares/logPageView.js';
 import selectAndAuthzAssessmentInstance from '../../middlewares/selectAndAuthzAssessmentInstance.js';
 import studentAssessmentAccess from '../../middlewares/studentAssessmentAccess.js';
-import { selectVariantsByInstanceQuestion } from '../../models/variant.js';
+import { selectVariantScoresByInstanceQuestion } from '../../models/variant.js';
 
 import {
   InstanceQuestionRowSchema,
@@ -226,7 +226,7 @@ router.get(
       { assessment_instance_id: res.locals.assessment_instance.id },
       InstanceQuestionRowSchema,
     );
-    const allPreviousVariants = await selectVariantsByInstanceQuestion({
+    const allPreviousVariants = await selectVariantScoresByInstanceQuestion({
       assessment_instance_id: res.locals.assessment_instance.id,
     });
     for (const instance_question of instance_question_rows) {
