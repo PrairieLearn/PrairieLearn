@@ -16,20 +16,45 @@ function formatDateAdded(date: Date): string {
   });
 }
 
+function credentialsEqual(
+  a: AiGradingApiKeyCredential[],
+  b: AiGradingApiKeyCredential[],
+): boolean {
+  if (a.length !== b.length) return false;
+  return a.every(
+    (c, i) =>
+      c.id === b[i]?.id &&
+      c.provider === b[i].provider &&
+      c.apiKeyMasked === b[i].apiKeyMasked &&
+      c.dateAdded === b[i].dateAdded,
+  );
+}
+
 export function InstructorInstanceAdminAiGrading({
   initialUseCustomApiKeys,
   initialApiKeyCredentials,
   canEdit,
+  csrfToken,
 }: {
   initialUseCustomApiKeys: boolean;
   initialApiKeyCredentials: AiGradingApiKeyCredential[];
   canEdit: boolean;
+  csrfToken: string;
 }) {
   const [useCustomApiKeys, setUseCustomApiKeys] = useState(initialUseCustomApiKeys);
   const [credentials, setCredentials] = useState<AiGradingApiKeyCredential[]>(initialApiKeyCredentials);
   const [showAddModal, setShowAddModal] = useState(false);
   const [addProvider, setAddProvider] = useState<AiGradingProvider>('OpenAI');
   const [addApiKey, setAddApiKey] = useState('');
+
+  const isDirty =
+    useCustomApiKeys !== initialUseCustomApiKeys ||
+    !credentialsEqual(credentials, initialApiKeyCredentials);
+
+  const handleCancel = () => {
+    setUseCustomApiKeys(initialUseCustomApiKeys);
+    setCredentials([...initialApiKeyCredentials]);
+  };
 
   const handleAddKey = () => {
     if (!addApiKey.trim()) return;
@@ -55,7 +80,9 @@ export function InstructorInstanceAdminAiGrading({
         <h1 className="mb-0">AI grading settings</h1>
       </div>
       <div className="card-body">
-        <Form.Check>
+        <form method="POST">
+          <input type="hidden" name="__csrf_token" value={csrfToken} />
+          <Form.Check>
           <Form.Check.Input
             type="checkbox"
             id="use-custom-api-keys"
@@ -138,8 +165,28 @@ export function InstructorInstanceAdminAiGrading({
                 </div>
               </div>
             </>
-          ) : <></>
-        }
+          ) : null}
+          {canEdit && (
+            <div className="d-flex flex-wrap mt-3">
+              <button
+                id="save-button"
+                type="submit"
+                className="btn btn-primary"
+                disabled={!isDirty}
+              >
+                Save
+              </button>
+              <button
+                id="cancel-button"
+                type="button"
+                className="btn btn-secondary ms-2"
+                onClick={handleCancel}
+              >
+                Cancel
+              </button>
+            </div>
+          )}
+        </form>
       </div>
 
       <Modal show={showAddModal} backdrop="static" onHide={() => setShowAddModal(false)}>

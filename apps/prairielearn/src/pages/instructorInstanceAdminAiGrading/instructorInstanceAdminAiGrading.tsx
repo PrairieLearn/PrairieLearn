@@ -1,5 +1,7 @@
 import { Router } from 'express';
 
+import * as error from '@prairielearn/error';
+import { flash } from '@prairielearn/flash';
 import { Hydrate } from '@prairielearn/react/server';
 
 import { PageLayout } from '../../components/PageLayout.js';
@@ -19,7 +21,7 @@ router.get(
     unauthorizedUsers: 'block',
   }),
   typedAsyncHandler<'course-instance'>(async (req, res) => {
-    const { authz_data: authzData } = extractPageContext(res.locals, {
+    const { authz_data: authzData, __csrf_token: csrfToken } = extractPageContext(res.locals, {
       pageType: 'courseInstance',
       accessType: 'instructor',
     });
@@ -44,11 +46,31 @@ router.get(
               initialUseCustomApiKeys={false}
               initialApiKeyCredentials={initialApiKeyCredentials}
               canEdit={!!canEdit}
+              csrfToken={csrfToken}
             />
           </Hydrate>
         ),
       }),
     );
+  }),
+);
+
+router.post(
+  '/',
+  createAuthzMiddleware({
+    oneOfPermissions: ['has_course_permission_view', 'has_course_instance_permission_view'],
+    unauthorizedUsers: 'block',
+  }),
+  typedAsyncHandler<'course-instance'>(async (req, res) => {
+    const { authz_data: authzData } = extractPageContext(res.locals, {
+      pageType: 'courseInstance',
+      accessType: 'instructor',
+    });
+    if (!authzData.has_course_permission_edit || !authzData.has_course_instance_permission_edit) {
+      throw new error.HttpStatusError(403, 'Access denied (must be a course and course instance editor)');
+    }
+    flash('success', 'AI grading settings saved');
+    res.redirect(req.originalUrl);
   }),
 );
 
