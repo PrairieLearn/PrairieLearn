@@ -232,12 +232,6 @@ async function reconcilePlanGrants(
   }
 }
 
-/** @lintignore */
-export function planGrantsSatisfyRequiredPlans(planGrants: PlanGrant[], requiredPlans: PlanName[]) {
-  const planNames = getPlanNamesFromPlanGrants(planGrants);
-  return requiredPlans.every((requiredPlan) => planNames.includes(requiredPlan));
-}
-
 async function getInstitutionForCourseInstance(course_instance_id: string): Promise<Institution> {
   return await queryRow(
     sql.select_institution_for_course_instance,

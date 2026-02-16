@@ -79,7 +79,7 @@ for (const dep of REFERENCED_NODE_MODULES_DEPS) {
 }
 
 const config: KnipConfig = {
-  tags: ['-lintignore'],
+  tags: ['-knip-ignore'],
   workspaces: {
     '.': {
       entry: ['scripts/*.{mts,mjs}'],

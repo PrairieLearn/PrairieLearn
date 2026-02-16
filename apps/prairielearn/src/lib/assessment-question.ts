@@ -52,10 +52,9 @@ const RawStaffAssessmentQuestionRowSchema = AssessmentQuestionRowMetaSchema.exte
   StaffAssessmentQuestionSqlSchema.shape,
 );
 
-/** @lintignore */
-export const StaffAssessmentQuestionRowSchema =
+const _StaffAssessmentQuestionRowSchema =
   RawStaffAssessmentQuestionRowSchema.brand<'StaffAssessmentQuestionRow'>();
-export type StaffAssessmentQuestionRow = z.infer<typeof StaffAssessmentQuestionRowSchema>;
+export type StaffAssessmentQuestionRow = z.infer<typeof _StaffAssessmentQuestionRowSchema>;
 
 export async function selectAssessmentQuestions({
   assessment_id,

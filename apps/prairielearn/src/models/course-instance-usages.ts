@@ -77,7 +77,7 @@ export async function updateCourseInstanceUsagesForGradingJob({
  * @param param.model The model used for the prompt.
  * @param param.usage The usage object returned by model provider's API.
  */
-async function updateCourseInstanceUsagesForAiGrading({
+export async function updateCourseInstanceUsagesForAiGrading({
   gradingJobId,
   authnUserId,
   model,

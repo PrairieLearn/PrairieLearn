@@ -354,12 +354,12 @@ export function compiledStylesheetTag(sourceFile: string): HtmlSafeString {
   return compiledAssets.compiledStylesheetTag(sourceFile);
 }
 
-/** @lintignore */
+/** @knip-ignore */
 export function compiledScriptPath(sourceFile: string): string {
   return compiledAssets.compiledScriptPath(sourceFile);
 }
 
-/** @lintignore */
+/** @knip-ignore */
 export function compiledStylesheetPath(sourceFile: string): string {
   return compiledAssets.compiledStylesheetPath(sourceFile);
 }
