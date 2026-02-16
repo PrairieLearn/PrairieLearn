@@ -1,4 +1,0 @@
-
-
-def generate(data):
-    pass
