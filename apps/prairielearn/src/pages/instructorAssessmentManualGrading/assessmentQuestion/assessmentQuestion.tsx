@@ -5,6 +5,7 @@ import * as error from '@prairielearn/error';
 import { execute, loadSqlEquiv, queryRows } from '@prairielearn/postgres';
 import { Hydrate } from '@prairielearn/react/server';
 import { run } from '@prairielearn/run';
+import { IdSchema } from '@prairielearn/zod';
 
 import { AssessmentOpenInstancesAlert } from '../../../components/AssessmentOpenInstancesAlert.js';
 import { PageLayout } from '../../../components/PageLayout.js';
@@ -28,6 +29,7 @@ import {
   selectInstanceQuestionGroups,
 } from '../../../ee/lib/ai-instance-question-grouping/ai-instance-question-grouping-util.js';
 import { aiInstanceQuestionGrouping } from '../../../ee/lib/ai-instance-question-grouping/ai-instance-question-grouping.js';
+import { updateAssessmentInstancesScorePercPending } from '../../../lib/assessment.js';
 import { extractPageContext } from '../../../lib/client/page-context.js';
 import {
   StaffInstanceQuestionGroupSchema,
@@ -382,14 +384,36 @@ router.post(
             );
           }
         }
-        await execute(sql.update_instance_questions, {
-          assessment_question_id: res.locals.assessment_question.id,
-          instance_question_ids,
-          update_requires_manual_grading: 'requires_manual_grading' in action_data,
-          requires_manual_grading: !!action_data?.requires_manual_grading,
-          update_assigned_grader: 'assigned_grader' in action_data,
-          assigned_grader: action_data?.assigned_grader,
-        });
+        const update_requires_manual_grading = 'requires_manual_grading' in action_data;
+        let updatedAssessmentInstanceIds: { assessment_instance_id: string }[] = [];
+        if (update_requires_manual_grading) {
+          updatedAssessmentInstanceIds = await queryRows(
+            sql.update_instance_questions_returning_assessment_instance_id,
+            {
+              assessment_question_id: res.locals.assessment_question.id,
+              instance_question_ids,
+              update_requires_manual_grading,
+              requires_manual_grading: !!action_data?.requires_manual_grading,
+              update_assigned_grader: 'assigned_grader' in action_data,
+              assigned_grader: action_data?.assigned_grader,
+            },
+            z.object({ assessment_instance_id: IdSchema }),
+          );
+        } else {
+          await execute(sql.update_instance_questions, {
+            assessment_question_id: res.locals.assessment_question.id,
+            instance_question_ids,
+            update_requires_manual_grading,
+            requires_manual_grading: !!action_data?.requires_manual_grading,
+            update_assigned_grader: 'assigned_grader' in action_data,
+            assigned_grader: action_data?.assigned_grader,
+          });
+        }
+        if (update_requires_manual_grading) {
+          await updateAssessmentInstancesScorePercPending([
+            ...new Set(updatedAssessmentInstanceIds.map((row) => row.assessment_instance_id)),
+          ]);
+        }
         res.sendStatus(204);
       }
     } else if (req.body.__action === 'edit_question_points') {

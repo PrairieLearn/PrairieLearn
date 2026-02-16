@@ -375,7 +375,9 @@ UPDATE instance_questions iq
 SET
   requires_manual_grading = TRUE
 WHERE
-  iq.assessment_question_id = $assessment_question_id;
+  iq.assessment_question_id = $assessment_question_id
+RETURNING
+  iq.assessment_instance_id;
 
 -- BLOCK insert_rubric_grading
 WITH

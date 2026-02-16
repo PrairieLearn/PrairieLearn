@@ -12,6 +12,7 @@ import { insertGradingJob, updateGradingJobAfterGrading } from '../models/gradin
 import { lockVariant } from '../models/variant.js';
 import * as questionServers from '../question-servers/index.js';
 
+import { updateAssessmentInstancesScorePercPending } from './assessment.js';
 import { ensureChunksForCourseAsync } from './chunks.js';
 import {
   AssessmentQuestionSchema,
@@ -19,7 +20,6 @@ import {
   InstanceQuestionSchema,
   type Question,
   QuestionSchema,
-  SprocAssessmentInstancesGradeSchema,
   SprocInstanceQuestionsNextAllowedGradeSchema,
   type Submission,
   SubmissionSchema,
@@ -166,16 +166,7 @@ export async function insertSubmission({
       await sqldb.callAsync('instance_questions_calculate_stats', [variant.instance_question_id]);
 
       if ((variant.max_manual_points ?? 0) > 0) {
-        await sqldb.callRow(
-          'assessment_instances_grade',
-          [
-            variant.assessment_instance_id,
-            auth_user_id,
-            credit,
-            true, // only_log_if_score_updated
-          ],
-          SprocAssessmentInstancesGradeSchema,
-        );
+        await updateAssessmentInstancesScorePercPending([variant.assessment_instance_id]);
       }
     }
 

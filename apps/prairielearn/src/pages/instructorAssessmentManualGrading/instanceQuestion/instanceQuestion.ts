@@ -21,6 +21,7 @@ import {
   selectInstanceQuestionGroups,
   updateManualInstanceQuestionGroup,
 } from '../../../ee/lib/ai-instance-question-grouping/ai-instance-question-grouping-util.js';
+import { updateAssessmentInstancesScorePercPending } from '../../../lib/assessment.js';
 import {
   AiGradingJobSchema,
   GradingJobSchema,
@@ -660,6 +661,9 @@ router.post(
         assigned_grader,
         requires_manual_grading: actionPrompt !== 'graded',
       });
+      await updateAssessmentInstancesScorePercPending([
+        res.locals.instance_question.assessment_instance_id,
+      ]);
 
       req.session.skip_graded_submissions = req.session.skip_graded_submissions ?? true;
       req.session.show_submissions_assigned_to_me_only =

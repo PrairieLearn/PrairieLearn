@@ -502,6 +502,14 @@ export async function updateAssessmentInstancePoints(
   });
 }
 
+export async function updateAssessmentInstancesScorePercPending(
+  assessment_instance_ids: string[],
+): Promise<void> {
+  await sqldb.execute(sql.update_assessment_instances_score_perc_pending, {
+    assessment_instance_ids,
+  });
+}
+
 /**
  * Selects a log of all events associated to an assessment instance.
  *
