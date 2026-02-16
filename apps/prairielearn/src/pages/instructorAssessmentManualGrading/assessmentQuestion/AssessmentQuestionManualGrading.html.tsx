@@ -51,6 +51,7 @@ export interface AssessmentQuestionManualGradingProps {
   isDevMode: boolean;
   questionTitle: string;
   questionNumber: number;
+  availableAiGradingProviders: string[];
 }
 
 type AssessmentQuestionManualGradingInnerProps = Omit<
@@ -79,6 +80,7 @@ function AssessmentQuestionManualGradingInner({
   numOpenInstances,
   questionTitle,
   questionNumber,
+  availableAiGradingProviders,
 }: AssessmentQuestionManualGradingInnerProps) {
   const trpc = useTRPC();
   const queryClient = useQueryClient();
@@ -169,6 +171,7 @@ function AssessmentQuestionManualGradingInner({
         aiGradingStats={aiGradingStats}
         mutations={mutations}
         initialOngoingJobSequenceTokens={initialOngoingJobSequenceTokens}
+        availableAiGradingProviders={availableAiGradingProviders}
         onSetGroupInfoModalState={setGroupInfoModalState}
         onSetConflictModalState={setConflictModalState}
       />

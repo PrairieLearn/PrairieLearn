@@ -84,6 +84,7 @@ export interface AssessmentQuestionTableProps {
   courseStaff: StaffUser[];
   aiGradingStats: AiGradingGeneralStats | null;
   initialOngoingJobSequenceTokens: Record<string, string> | null;
+  availableAiGradingProviders: string[];
   onSetGroupInfoModalState: (modalState: GroupInfoModalState) => void;
   onSetConflictModalState: (modalState: ConflictModalState) => void;
   mutations: ReturnType<typeof useManualGradingActions>;
@@ -102,17 +103,23 @@ function AiGradingOption({
   text,
   numToGrade,
   aiGradingModelSelectionEnabled,
+  availableProviders,
   onSelectModel,
 }: {
   text: string;
   numToGrade: number;
   aiGradingModelSelectionEnabled: boolean;
+  availableProviders: string[];
   onSelectModel: (modelId: AiGradingModelId) => void;
 }) {
+  const isDefaultModelAvailable = availableProviders.includes(
+    AI_GRADING_MODELS.find((m) => m.modelId === DEFAULT_AI_GRADING_MODEL)!.provider,
+  );
+
   if (!aiGradingModelSelectionEnabled) {
     return (
       <Dropdown.Item
-        disabled={numToGrade === 0}
+        disabled={numToGrade === 0 || !isDefaultModelAvailable}
         onClick={() => onSelectModel(DEFAULT_AI_GRADING_MODEL)}
       >
         <AiGradingOptionContent text={text} numToGrade={numToGrade} />
@@ -120,19 +127,37 @@ function AiGradingOption({
     );
   }
 
+  const hasAnyAvailableModel = AI_GRADING_MODELS.some((model) =>
+    availableProviders.includes(model.provider),
+  );
+
   return (
     <Dropdown drop="end">
-      <Dropdown.Toggle className={`dropdown-item ${numToGrade > 0 ? '' : 'disabled'}`}>
+      <Dropdown.Toggle
+        className={`dropdown-item ${numToGrade > 0 && hasAnyAvailableModel ? '' : 'disabled'}`}
+      >
         <AiGradingOptionContent text={text} numToGrade={numToGrade} />
       </Dropdown.Toggle>
       <Dropdown.Menu>
         <p className="my-0 text-muted px-3">AI grader model</p>
         <Dropdown.Divider />
-        {AI_GRADING_MODELS.map((model) => (
-          <Dropdown.Item key={model.modelId} onClick={() => onSelectModel(model.modelId)}>
-            {model.name}
-          </Dropdown.Item>
-        ))}
+        {AI_GRADING_MODELS.map((model) => {
+          const isAvailable = availableProviders.includes(model.provider);
+          return (
+            <Dropdown.Item
+              key={model.modelId}
+              disabled={!isAvailable}
+              onClick={() => onSelectModel(model.modelId)}
+            >
+              {model.name}
+              {!isAvailable && (
+                <span className="text-muted ms-2" style={{ fontSize: '0.85em' }}>
+                  (no API key)
+                </span>
+              )}
+            </Dropdown.Item>
+          );
+        })}
       </Dropdown.Menu>
     </Dropdown>
   );
@@ -155,6 +180,7 @@ export function AssessmentQuestionTable({
   courseInstance,
   aiGradingStats,
   initialOngoingJobSequenceTokens,
+  availableAiGradingProviders,
   onSetGroupInfoModalState,
   onSetConflictModalState,
   mutations,
@@ -732,6 +758,7 @@ export function AssessmentQuestionTable({
                       text="Grade all human-graded"
                       numToGrade={aiGradingCounts.humanGraded}
                       aiGradingModelSelectionEnabled={aiGradingModelSelectionEnabled}
+                      availableProviders={availableAiGradingProviders}
                       onSelectModel={(modelId) => {
                         gradeSubmissionsMutation.mutate(
                           {
@@ -753,6 +780,7 @@ export function AssessmentQuestionTable({
                       text="Grade selected"
                       numToGrade={aiGradingCounts.selected}
                       aiGradingModelSelectionEnabled={aiGradingModelSelectionEnabled}
+                      availableProviders={availableAiGradingProviders}
                       onSelectModel={(modelId) => {
                         gradeSubmissionsMutation.mutate(
                           {
@@ -775,6 +803,7 @@ export function AssessmentQuestionTable({
                       text="Grade all"
                       numToGrade={aiGradingCounts.all}
                       aiGradingModelSelectionEnabled={aiGradingModelSelectionEnabled}
+                      availableProviders={availableAiGradingProviders}
                       onSelectModel={(modelId) => {
                         gradeSubmissionsMutation.mutate(
                           {
