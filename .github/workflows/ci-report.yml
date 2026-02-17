@@ -6,6 +6,8 @@ on:
     types: [completed]
 
 permissions:
+  actions: read
+  contents: read
   pull-requests: write
 
 # Serialize per branch so concurrent Check + Images completions don't race on the comment.

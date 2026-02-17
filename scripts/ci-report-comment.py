@@ -37,6 +37,7 @@ def find_existing_comment(repo: str, pr_number: str) -> tuple[str | None, str]:
     """Return (comment_id, body) of the existing CI report comment, or (None, "")."""
     raw = _gh(
         "api",
+        "--paginate",
         f"repos/{repo}/issues/{pr_number}/comments?per_page=100",
         "--jq",
         f'map(select(.user.login == "github-actions[bot]" and (.body | contains("{_MARKER}"))))[0] // empty',
