@@ -579,6 +579,9 @@ def format_formula_editor_submission_for_sympy(
     # Merge space-separated characters into proper tokens (e.g., "s i n" -> "sin")
     text = _merge_spaced_tokens(text, known_tokens)
 
+    # Remove parens around subscript, e.g., "var_(test )" -> "var_test " to restore variable names with underscores
+    text = re.sub(r"_\(\s*([a-zA-Z0-9]+)\s*\)", r"_\1 ", text)
+
     # Add spaces between letters and numbers for implicit multiplication,
     # but preserve tokens like "f2" that are custom function names
     text = _add_multiplication_spaces(text, known_tokens)
@@ -615,6 +618,9 @@ def _build_known_tokens(
         for token in tokens
         if psu.greek_unicode_transform(token) != token
     ]
+
+    # Add all parts of tokens with subscripts (e.g., "var" and "test" for "var_test")
+    tokens += [part for token in tokens for part in token.split("_") if part]
 
     # Filter out single-letter tokens
     tokens = [token for token in tokens if len(token) > 1]

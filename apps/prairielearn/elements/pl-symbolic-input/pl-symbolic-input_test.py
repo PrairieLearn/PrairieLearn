@@ -92,6 +92,17 @@ def test_format_submission_for_sympy_absolute_value(sub: str, expected: str) -> 
         ("x2 + x2 + f2(x)", False, ["x"], ["f2"], "x 2 + x 2 + f2(x)"),
         # Formatting operators
         ("{:s i n ( x ):}", True, ["x"], [], "sin ( x )"),
+        # Subscript operators
+        ("x_0", True, ["x_0"], [], "x_0"),
+        ("x_( t e s t )", True, ["x_test"], [], "x_test "),
+        ("v a r_(t e s t 0)", True, ["var_test0"], [], "var_test0 "),
+        (
+            "v a r_(t e s t)v a r_(t e s t)",
+            True,
+            ["var_test"],
+            [],
+            "var_test var_test ",
+        ),
     ],
 )
 def test_format_formula_editor_submission_for_sympy(

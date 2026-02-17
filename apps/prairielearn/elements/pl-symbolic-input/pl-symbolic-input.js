@@ -419,8 +419,7 @@
           ')',
           {
             class: 'small',
-            latex: '\\mathrm{sign}',
-            insert: '\\operatorname{sign}\\left({#@}\\right)',
+            latex: '{#@}_{#?}',
           },
         ],
         [
