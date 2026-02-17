@@ -9,15 +9,15 @@ import {
   type AiGradingApiKeyCredential,
 } from './instructorInstanceAdminAiGrading.types.js';
 
-async function postAction(csrfToken: string, body: Record<string, unknown>) {
+async function postAction(csrfToken: string, body: Record<string, unknown>, errorMessage: string) {
   const resp = await fetch(window.location.pathname, {
     method: 'POST',
     headers: { 'Content-Type': 'application/json' },
     body: JSON.stringify({ __csrf_token: csrfToken, ...body }),
   });
   if (!resp.ok) {
-    const text = await resp.text();
-    throw new Error(text || 'Request failed');
+    const result = await resp.json().catch(() => null);
+    throw new Error(result?.error ?? errorMessage);
   }
   return resp.json();
 }
@@ -86,10 +86,14 @@ function AiGradingSettingsContent({
 
   const toggleMutation = useMutation({
     mutationFn: async (newValue: boolean) => {
-      return postAction(csrfToken, {
-        __action: 'update_use_custom_api_keys',
-        ai_grading_use_custom_api_keys: newValue,
-      });
+      return postAction(
+        csrfToken,
+        {
+          __action: 'update_use_custom_api_keys',
+          ai_grading_use_custom_api_keys: newValue,
+        },
+        'Failed to update custom API key setting',
+      );
     },
     onSuccess: (_data, newValue) => {
       setUseCustomApiKeys(newValue);
@@ -98,11 +102,15 @@ function AiGradingSettingsContent({
 
   const addMutation = useMutation({
     mutationFn: async ({ provider, secretKey }: { provider: string; secretKey: string }) => {
-      return postAction(csrfToken, {
-        __action: 'add_credential',
-        provider,
-        secret_key: secretKey,
-      });
+      return postAction(
+        csrfToken,
+        {
+          __action: 'add_credential',
+          provider,
+          secret_key: secretKey,
+        },
+        'Failed to save API key',
+      );
     },
     onSuccess: (data: { credential: AiGradingApiKeyCredential }) => {
       setCredentials((prev) => {
@@ -117,10 +125,14 @@ function AiGradingSettingsContent({
 
   const deleteMutation = useMutation({
     mutationFn: async (credentialId: string) => {
-      return postAction(csrfToken, {
-        __action: 'delete_credential',
-        credential_id: credentialId,
-      });
+      return postAction(
+        csrfToken,
+        {
+          __action: 'delete_credential',
+          credential_id: credentialId,
+        },
+        'Failed to delete API key',
+      );
     },
     onSuccess: () => {
       if (deleteTarget) {
@@ -225,128 +237,173 @@ function AiGradingSettingsContent({
         )}
       </div>
 
-      {/* Add key modal */}
-      <Modal
+      <AddApiKeyModal
         show={showAddModal}
-        backdrop="static"
+        providerOptions={providerOptions}
+        provider={addProvider}
+        apiKey={addApiKey}
+        existingProvider={existingProviderForAdd}
+        mutation={addMutation}
+        onProviderChange={setAddProvider}
+        onApiKeyChange={setAddApiKey}
         onHide={() => {
-          if (!addMutation.isPending) {
-            setShowAddModal(false);
-            addMutation.reset();
-          }
+          setShowAddModal(false);
+          addMutation.reset();
         }}
-      >
-        <Modal.Header closeButton>
-          <Modal.Title>Add API key</Modal.Title>
-        </Modal.Header>
-        <Modal.Body>
-          {addMutation.isError && (
-            <Alert variant="danger" dismissible onClose={() => addMutation.reset()}>
-              {addMutation.error.message}
-            </Alert>
-          )}
-          <Form.Group className="mb-3">
-            <Form.Label htmlFor="add-key-provider">Provider</Form.Label>
-            <Form.Select
-              id="add-key-provider"
-              value={addProvider}
-              onChange={(e) => setAddProvider(e.target.value)}
-            >
-              {providerOptions.map((p) => (
-                <option key={p.value} value={p.value}>
-                  {p.label}
-                </option>
-              ))}
-            </Form.Select>
-          </Form.Group>
-          <Form.Group className="mb-3">
-            <Form.Label htmlFor="add-key-value">API key</Form.Label>
-            <Form.Control
-              id="add-key-value"
-              type="password"
-              value={addApiKey}
-              placeholder="Enter your API key"
-              autoComplete="off"
-              onChange={(e) => setAddApiKey(e.target.value)}
-            />
-          </Form.Group>
-          {existingProviderForAdd && (
-            <Alert variant="warning" className="mb-0">
-              <i className="bi bi-exclamation-triangle-fill me-2" aria-hidden="true" />A key for{' '}
-              <strong>{existingProviderForAdd.provider}</strong> already exists. Saving will
-              overwrite the existing key.
-            </Alert>
-          )}
-        </Modal.Body>
-        <Modal.Footer>
-          <button
-            type="button"
-            className="btn btn-outline-secondary"
-            disabled={addMutation.isPending}
-            onClick={() => setShowAddModal(false)}
-          >
-            Cancel
-          </button>
-          <button
-            type="button"
-            className="btn btn-primary"
-            disabled={!addApiKey.trim() || addMutation.isPending}
-            onClick={() =>
-              addMutation.mutate({ provider: addProvider, secretKey: addApiKey.trim() })
-            }
-          >
-            {addMutation.isPending ? 'Saving...' : 'Save key'}
-          </button>
-        </Modal.Footer>
-      </Modal>
+        onSubmit={() => addMutation.mutate({ provider: addProvider, secretKey: addApiKey.trim() })}
+      />
 
-      {/* Delete confirmation modal */}
-      <Modal
-        show={deleteTarget !== null}
+      <DeleteApiKeyModal
+        target={deleteTarget}
+        mutation={deleteMutation}
         onHide={() => {
-          if (!deleteMutation.isPending) {
-            setDeleteTarget(null);
-            deleteMutation.reset();
+          setDeleteTarget(null);
+          deleteMutation.reset();
+        }}
+        onConfirm={() => {
+          if (deleteTarget) {
+            deleteMutation.mutate(deleteTarget.id);
           }
         }}
-      >
-        <Modal.Header closeButton>
-          <Modal.Title>Delete API key</Modal.Title>
-        </Modal.Header>
-        <Modal.Body>
-          {deleteMutation.isError && (
-            <Alert variant="danger" dismissible onClose={() => deleteMutation.reset()}>
-              {deleteMutation.error.message}
-            </Alert>
-          )}
-          <p>
-            Are you sure you want to delete the <strong>{deleteTarget?.provider}</strong> API key?
-            This action cannot be undone.
-          </p>
-        </Modal.Body>
-        <Modal.Footer>
-          <button
-            type="button"
-            className="btn btn-outline-secondary"
-            disabled={deleteMutation.isPending}
-            onClick={() => setDeleteTarget(null)}
-          >
-            Cancel
-          </button>
-          <button
-            type="button"
-            className="btn btn-danger"
-            disabled={deleteMutation.isPending}
-            onClick={() => {
-              if (deleteTarget) {
-                deleteMutation.mutate(deleteTarget.id);
-              }
-            }}
-          >
-            {deleteMutation.isPending ? 'Deleting...' : 'Delete'}
-          </button>
-        </Modal.Footer>
-      </Modal>
+      />
     </div>
+  );
+}
+
+function AddApiKeyModal({
+  show,
+  providerOptions,
+  provider,
+  apiKey,
+  existingProvider,
+  mutation,
+  onProviderChange,
+  onApiKeyChange,
+  onHide,
+  onSubmit,
+}: {
+  show: boolean;
+  providerOptions: readonly { value: string; label: string }[];
+  provider: string;
+  apiKey: string;
+  existingProvider: AiGradingApiKeyCredential | undefined;
+  mutation: { isPending: boolean; isError: boolean; error: Error | null; reset: () => void };
+  onProviderChange: (value: string) => void;
+  onApiKeyChange: (value: string) => void;
+  onHide: () => void;
+  onSubmit: () => void;
+}) {
+  return (
+    <Modal show={show} backdrop="static" onHide={() => !mutation.isPending && onHide()}>
+      <Modal.Header closeButton>
+        <Modal.Title>Add API key</Modal.Title>
+      </Modal.Header>
+      <Modal.Body>
+        {mutation.isError && (
+          <Alert variant="danger" dismissible onClose={() => mutation.reset()}>
+            {mutation.error?.message}
+          </Alert>
+        )}
+        <Form.Group className="mb-3">
+          <Form.Label htmlFor="add-key-provider">Provider</Form.Label>
+          <Form.Select
+            id="add-key-provider"
+            value={provider}
+            onChange={(e) => onProviderChange(e.target.value)}
+          >
+            {providerOptions.map((p) => (
+              <option key={p.value} value={p.value}>
+                {p.label}
+              </option>
+            ))}
+          </Form.Select>
+        </Form.Group>
+        <Form.Group className="mb-3">
+          <Form.Label htmlFor="add-key-value">API key</Form.Label>
+          <Form.Control
+            id="add-key-value"
+            type="password"
+            value={apiKey}
+            placeholder="Enter your API key"
+            autoComplete="off"
+            onChange={(e) => onApiKeyChange(e.target.value)}
+          />
+        </Form.Group>
+        {existingProvider && (
+          <Alert variant="warning" className="mb-0">
+            <i className="bi bi-exclamation-triangle-fill me-2" aria-hidden="true" />A key for{' '}
+            <strong>{existingProvider.provider}</strong> already exists. Saving will overwrite the
+            existing key.
+          </Alert>
+        )}
+      </Modal.Body>
+      <Modal.Footer>
+        <button
+          type="button"
+          className="btn btn-outline-secondary"
+          disabled={mutation.isPending}
+          onClick={onHide}
+        >
+          Cancel
+        </button>
+        <button
+          type="button"
+          className="btn btn-primary"
+          disabled={!apiKey.trim() || mutation.isPending}
+          onClick={onSubmit}
+        >
+          {mutation.isPending ? 'Saving...' : 'Save key'}
+        </button>
+      </Modal.Footer>
+    </Modal>
+  );
+}
+
+function DeleteApiKeyModal({
+  target,
+  mutation,
+  onHide,
+  onConfirm,
+}: {
+  target: AiGradingApiKeyCredential | null;
+  mutation: { isPending: boolean; isError: boolean; error: Error | null; reset: () => void };
+  onHide: () => void;
+  onConfirm: () => void;
+}) {
+  return (
+    <Modal show={target !== null} onHide={() => !mutation.isPending && onHide()}>
+      <Modal.Header closeButton>
+        <Modal.Title>Delete API key</Modal.Title>
+      </Modal.Header>
+      <Modal.Body>
+        {mutation.isError && (
+          <Alert variant="danger" dismissible onClose={() => mutation.reset()}>
+            {mutation.error?.message}
+          </Alert>
+        )}
+        <p>
+          Are you sure you want to delete the <strong>{target?.provider}</strong> API key? This
+          action cannot be undone.
+        </p>
+      </Modal.Body>
+      <Modal.Footer>
+        <button
+          type="button"
+          className="btn btn-outline-secondary"
+          disabled={mutation.isPending}
+          onClick={onHide}
+        >
+          Cancel
+        </button>
+        <button
+          type="button"
+          className="btn btn-danger"
+          disabled={mutation.isPending}
+          onClick={onConfirm}
+        >
+          {mutation.isPending ? 'Deleting...' : 'Delete'}
+        </button>
+      </Modal.Footer>
+    </Modal>
   );
 }

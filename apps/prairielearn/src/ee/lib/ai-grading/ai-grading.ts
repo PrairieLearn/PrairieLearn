@@ -109,68 +109,33 @@ export async function aiGrade({
   }
 
   const provider = AI_GRADING_MODEL_PROVIDERS[model_id];
-  const useCustomKeys = course_instance.ai_grading_use_custom_api_keys;
-  const resolvedKeys = useCustomKeys ? await resolveAiGradingKeys(course_instance) : null;
+  const resolvedKeys = await resolveAiGradingKeys(course_instance);
 
   const model = run(() => {
     if (provider === 'openai') {
-      if (useCustomKeys) {
-        if (!resolvedKeys?.openai) {
-          throw new error.HttpStatusError(
-            403,
-            'Model not available (custom OpenAI API key not provided)',
-          );
-        }
-        return createOpenAI({
-          apiKey: resolvedKeys.openai.apiKey,
-          organization: resolvedKeys.openai.organization ?? undefined,
-        })(model_id);
-      }
-      if (!config.aiGradingOpenAiApiKey || !config.aiGradingOpenAiOrganization) {
+      if (!resolvedKeys.openai) {
         throw new error.HttpStatusError(403, 'Model not available (OpenAI API key not provided)');
       }
       return createOpenAI({
-        apiKey: config.aiGradingOpenAiApiKey,
-        organization: config.aiGradingOpenAiOrganization,
+        apiKey: resolvedKeys.openai.apiKey,
+        organization: resolvedKeys.openai.organization ?? undefined,
       })(model_id);
     } else if (provider === 'google') {
-      if (useCustomKeys) {
-        if (!resolvedKeys?.google) {
-          throw new error.HttpStatusError(
-            403,
-            'Model not available (custom Google API key not provided)',
-          );
-        }
-        return createGoogleGenerativeAI({
-          apiKey: resolvedKeys.google.apiKey,
-        })(model_id);
-      }
-      if (!config.aiGradingGoogleApiKey) {
+      if (!resolvedKeys.google) {
         throw new error.HttpStatusError(403, 'Model not available (Google API key not provided)');
       }
       return createGoogleGenerativeAI({
-        apiKey: config.aiGradingGoogleApiKey,
+        apiKey: resolvedKeys.google.apiKey,
       })(model_id);
     } else {
-      if (useCustomKeys) {
-        if (!resolvedKeys?.anthropic) {
-          throw new error.HttpStatusError(
-            403,
-            'Model not available (custom Anthropic API key not provided)',
-          );
-        }
-        return createAnthropic({
-          apiKey: resolvedKeys.anthropic.apiKey,
-        })(model_id);
-      }
-      if (!config.aiGradingAnthropicApiKey) {
+      if (!resolvedKeys.anthropic) {
         throw new error.HttpStatusError(
           403,
           'Model not available (Anthropic API key not provided)',
         );
       }
       return createAnthropic({
-        apiKey: config.aiGradingAnthropicApiKey,
+        apiKey: resolvedKeys.anthropic.apiKey,
       })(model_id);
     }
   });
@@ -227,6 +192,8 @@ export async function aiGrade({
   });
 
   serverJob.executeInBackground(async (job) => {
+    // Skip rate limiting when using custom API keys, since the course instance
+    // is paying for their own usage and platform limits don't apply.
     const skipRateLimit = course_instance.ai_grading_use_custom_api_keys;
     let rateLimitExceeded =
       !skipRateLimit &&
@@ -280,9 +247,10 @@ export async function aiGrade({
 
       // Since other jobs may be concurrently running, we could exceed the rate limit
       // by 19 requests worth of usage. We are okay with this potential race condition.
-      const intervalCost = skipRateLimit ? 0 : await getIntervalUsage(course_instance);
-
-      if (!skipRateLimit && intervalCost > config.aiGradingRateLimitDollars) {
+      if (
+        !skipRateLimit &&
+        (await getIntervalUsage(course_instance)) > config.aiGradingRateLimitDollars
+      ) {
         logger.error(
           "You've reached the hourly usage cap for AI grading. Please try again later. AI grading jobs that are still in progress will continue to completion.",
         );

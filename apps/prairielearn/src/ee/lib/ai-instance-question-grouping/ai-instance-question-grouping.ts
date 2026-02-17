@@ -7,7 +7,6 @@ import { HttpStatusError } from '@prairielearn/error';
 import { assertNever } from '@prairielearn/utils';
 
 import { type OpenAIModelId, formatPrompt, logResponseUsage } from '../../../lib/ai-util.js';
-import { config } from '../../../lib/config.js';
 import type {
   AssessmentQuestion,
   Course,
@@ -192,31 +191,16 @@ export async function aiInstanceQuestionGrouping({
     );
   }
 
-  const useCustomKeys = course_instance.ai_grading_use_custom_api_keys;
-
-  let openaiApiKey: string;
-  let openaiOrganization: string | undefined;
-
-  if (useCustomKeys) {
-    const resolvedKeys = await resolveAiGradingKeys(course_instance);
-    if (!resolvedKeys.openai) {
-      throw new HttpStatusError(403, 'AI submission grouping requires a custom OpenAI API key.');
-    }
-    openaiApiKey = resolvedKeys.openai.apiKey;
-    openaiOrganization = resolvedKeys.openai.organization ?? undefined;
-  } else {
-    if (!config.aiGradingOpenAiApiKey || !config.aiGradingOpenAiOrganization) {
-      throw new HttpStatusError(403, 'Feature not available.');
-    }
-    openaiApiKey = config.aiGradingOpenAiApiKey;
-    openaiOrganization = config.aiGradingOpenAiOrganization;
+  const resolvedKeys = await resolveAiGradingKeys(course_instance);
+  if (!resolvedKeys.openai) {
+    throw new HttpStatusError(403, 'AI submission grouping requires an OpenAI API key.');
   }
 
-  const openai = createOpenAI({
-    apiKey: openaiApiKey,
-    organization: openaiOrganization,
+  const openAi = createOpenAI({
+    apiKey: resolvedKeys.openai.apiKey,
+    organization: resolvedKeys.openai.organization ?? undefined,
   });
-  const model = openai(INSTANCE_QUESTION_GROUPING_OPENAI_MODEL);
+  const model = openAi(INSTANCE_QUESTION_GROUPING_OPENAI_MODEL);
 
   const serverJob = await createServerJob({
     type: 'ai_instance_question_grouping',

@@ -6,12 +6,16 @@ import * as sqldb from '@prairielearn/postgres';
 import { Hydrate } from '@prairielearn/react/server';
 
 import { PageLayout } from '../../components/PageLayout.js';
+import {
+  AI_GRADING_PROVIDER_DISPLAY_NAMES,
+  type AiGradingProvider,
+} from '../../ee/lib/ai-grading/ai-grading-models.shared.js';
 import { extractPageContext } from '../../lib/client/page-context.js';
 import { config } from '../../lib/config.js';
 import {
   CourseInstanceAiGradingCredentialSchema,
   CourseInstanceSchema,
-  EnumAiGradingCredentialProviderSchema,
+  EnumAiGradingProviderSchema,
 } from '../../lib/db-types.js';
 import { features } from '../../lib/features/index.js';
 import { typedAsyncHandler } from '../../lib/res-locals.js';
@@ -24,14 +28,8 @@ import type { AiGradingApiKeyCredential } from './instructorInstanceAdminAiGradi
 const router = Router();
 const sql = sqldb.loadSqlEquiv(import.meta.url);
 
-const PROVIDER_DISPLAY_NAMES: Record<string, string> = {
-  openai: 'OpenAI',
-  google: 'Google',
-  anthropic: 'Anthropic',
-};
-
 function maskApiKey(key: string): string {
-  if (key.length <= 7) return '\u2022\u2022\u2022\u2022\u2022\u2022\u2022';
+  if (key.length <= 7) return '.......';
   return `${key.slice(0, 3)}...${key.slice(-4)}`;
 }
 
@@ -44,7 +42,7 @@ function formatCredential(cred: {
   const decrypted = decryptFromStorage(cred.encrypted_secret_key);
   return {
     id: cred.id,
-    provider: PROVIDER_DISPLAY_NAMES[cred.provider] ?? cred.provider,
+    provider: AI_GRADING_PROVIDER_DISPLAY_NAMES[cred.provider as AiGradingProvider],
     providerValue: cred.provider,
     apiKeyMasked: maskApiKey(decrypted),
     dateAdded: cred.created_at.toLocaleDateString('en-US', {
@@ -129,11 +127,6 @@ router.post(
     unauthorizedUsers: 'block',
   }),
   typedAsyncHandler<'course-instance'>(async (req, res) => {
-    const aiGradingEnabled = await features.enabledFromLocals('ai-grading', res.locals);
-    if (!aiGradingEnabled) {
-      throw new error.HttpStatusError(403, 'Access denied (feature not available)');
-    }
-
     const { course_instance: courseInstance, authz_data: authzData } = extractPageContext(
       res.locals,
       {
@@ -142,6 +135,10 @@ router.post(
       },
     );
 
+    const aiGradingEnabled = await features.enabledFromLocals('ai-grading', res.locals);
+    if (!aiGradingEnabled) {
+      throw new error.HttpStatusError(403, 'Access denied (feature not available)');
+    }
     if (!authzData.has_course_permission_edit || !authzData.has_course_instance_permission_edit) {
       throw new error.HttpStatusError(403, 'Access denied');
     }
@@ -164,7 +161,7 @@ router.post(
     } else if (req.body.__action === 'add_credential') {
       const { provider, secret_key } = z
         .object({
-          provider: EnumAiGradingCredentialProviderSchema,
+          provider: EnumAiGradingProviderSchema,
           secret_key: z.string().min(1),
         })
         .parse(req.body);

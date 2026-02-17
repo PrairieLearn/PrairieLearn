@@ -24,8 +24,8 @@ export type EnumAiQuestionGenerationMessageStatus = z.infer<
   typeof EnumAiQuestionGenerationMessageStatusSchema
 >;
 
-export const EnumAiGradingCredentialProviderSchema = z.enum(['openai', 'google', 'anthropic']);
-export type EnumAiGradingCredentialProvider = z.infer<typeof EnumAiGradingCredentialProviderSchema>;
+export const EnumAiGradingProviderSchema = z.enum(['openai', 'google', 'anthropic']);
+export type EnumAiGradingProvider = z.infer<typeof EnumAiGradingProviderSchema>;
 
 export const EnumAssessmentTypeSchema = z.enum(['Exam', 'RetryExam', 'Basic', 'Game', 'Homework']);
 export type EnumAssessmentType = z.infer<typeof EnumAssessmentTypeSchema>;
@@ -676,7 +676,7 @@ export const CourseInstanceAiGradingCredentialSchema = z.object({
   created_at: DateFromISOString,
   encrypted_secret_key: z.string(),
   id: IdSchema,
-  provider: EnumAiGradingCredentialProviderSchema,
+  provider: EnumAiGradingProviderSchema,
   updated_at: DateFromISOString,
 });
 export type CourseInstanceAiGradingCredential = z.infer<

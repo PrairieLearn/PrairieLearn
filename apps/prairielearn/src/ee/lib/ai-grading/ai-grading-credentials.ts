@@ -1,14 +1,16 @@
-import { queryRows } from '@prairielearn/postgres';
+import { loadSqlEquiv, queryRows } from '@prairielearn/postgres';
 
 import { config } from '../../../lib/config.js';
 import {
   type CourseInstance,
   CourseInstanceAiGradingCredentialSchema,
-  type EnumAiGradingCredentialProvider,
+  type EnumAiGradingProvider,
 } from '../../../lib/db-types.js';
 import { decryptFromStorage } from '../../../lib/storage-crypt.js';
 
 import { AI_GRADING_MODEL_PROVIDERS, type AiGradingModelId } from './ai-grading-models.shared.js';
+
+const sql = loadSqlEquiv(import.meta.url);
 
 export interface ResolvedProviderKeys {
   openai: { apiKey: string; organization: string | null } | null;
@@ -42,7 +44,7 @@ export async function resolveAiGradingKeys(
   }
 
   const credentials = await queryRows(
-    'SELECT * FROM course_instance_ai_grading_credentials WHERE course_instance_id = $course_instance_id',
+    sql.select_credentials_for_course_instance,
     { course_instance_id: courseInstance.id },
     CourseInstanceAiGradingCredentialSchema,
   );
@@ -73,9 +75,9 @@ export async function resolveAiGradingKeys(
  */
 export async function getAvailableAiGradingProviders(
   courseInstance: CourseInstance,
-): Promise<Set<EnumAiGradingCredentialProvider>> {
+): Promise<Set<EnumAiGradingProvider>> {
   const keys = await resolveAiGradingKeys(courseInstance);
-  const available = new Set<EnumAiGradingCredentialProvider>();
+  const available = new Set<EnumAiGradingProvider>();
   if (keys.openai) available.add('openai');
   if (keys.google) available.add('google');
   if (keys.anthropic) available.add('anthropic');

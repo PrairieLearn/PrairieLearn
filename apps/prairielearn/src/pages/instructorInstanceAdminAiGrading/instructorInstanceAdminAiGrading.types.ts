@@ -1,8 +1,4 @@
-export const AI_GRADING_PROVIDER_OPTIONS = [
-  { value: 'openai', label: 'OpenAI' },
-  { value: 'google', label: 'Google' },
-  { value: 'anthropic', label: 'Anthropic' },
-] as const;
+export { AI_GRADING_PROVIDER_OPTIONS } from '../../ee/lib/ai-grading/ai-grading-models.shared.js';
 
 export interface AiGradingApiKeyCredential {
   id: string;
