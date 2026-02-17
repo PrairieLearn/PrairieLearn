@@ -272,34 +272,3 @@ export async function lockVariant({ variant_id }: { variant_id: string }) {
     throw new Error('Variant or assessment instance could not be locked.');
   }
 }
-
-/**
- * This creates a variant with just the required fields, without going through
- * the full question generation process.
- */
-export async function insertTestVariant({
-  questionId,
-  courseId,
-  authnUserId,
-  userId,
-  variantSeed,
-}: {
-  questionId: string;
-  courseId: string;
-  authnUserId: string;
-  userId: string;
-  variantSeed?: string;
-}) {
-  assert(process.env.NODE_ENV === 'test');
-  return await queryRow(
-    sql.insert_test_variant,
-    {
-      question_id: questionId,
-      course_id: courseId,
-      authn_user_id: authnUserId,
-      user_id: userId,
-      variant_seed: variantSeed ?? `test_seed_${Date.now()}`,
-    },
-    IdSchema,
-  );
-}

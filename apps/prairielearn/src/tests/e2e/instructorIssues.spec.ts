@@ -1,11 +1,11 @@
 import type { Page } from '@playwright/test';
 
 import * as sqldb from '@prairielearn/postgres';
+import { IdSchema } from '@prairielearn/zod';
 
 import { insertIssue } from '../../lib/issues.js';
 import { selectCourseByShortName } from '../../models/course.js';
 import { selectQuestionByQid } from '../../models/question.js';
-import { insertTestVariant } from '../../models/variant.js';
 import { type AuthUser, getOrCreateUser } from '../utils/auth.js';
 
 import { expect, test } from './fixtures.js';
@@ -15,6 +15,32 @@ const ISSUES_URL = '/pl/course/1/course_admin/issues';
 
 async function closeIssue(issueId: string) {
   await sqldb.execute(sql.close_issue, { issue_id: issueId });
+}
+
+async function insertTestVariant({
+  questionId,
+  courseId,
+  authnUserId,
+  userId,
+  variantSeed,
+}: {
+  questionId: string;
+  courseId: string;
+  authnUserId: string;
+  userId: string;
+  variantSeed?: string;
+}) {
+  return await sqldb.queryRow(
+    sql.insert_test_variant,
+    {
+      question_id: questionId,
+      course_id: courseId,
+      authn_user_id: authnUserId,
+      user_id: userId,
+      variant_seed: variantSeed ?? `test_seed_${Date.now()}`,
+    },
+    IdSchema,
+  );
 }
 
 async function syncAllCourses(page: Page) {
