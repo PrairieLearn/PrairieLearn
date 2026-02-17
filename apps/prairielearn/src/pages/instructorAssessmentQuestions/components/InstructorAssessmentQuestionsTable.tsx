@@ -400,8 +400,8 @@ function InstructorAssessmentQuestionsTableInner({
         type: 'ADD_QUESTION',
         zoneTrackingId: questionEditState.zoneTrackingId,
         question: {
-          ...createQuestionWithTrackingId(),
           ...(normalizedQuestion as ZoneQuestionBlockForm),
+          ...createQuestionWithTrackingId(),
         },
         questionData: preparedQuestionData,
       });
