@@ -189,6 +189,10 @@ export function AssessmentQuestionTable({
 }: AssessmentQuestionTableProps) {
   const trpc = useTRPC();
 
+  // When not using custom API keys, all providers are available (platform provides keys).
+  const ALL_PROVIDERS = ['openai', 'google', 'anthropic'];
+  const effectiveAvailableProviders = useCustomApiKeys ? availableAiGradingProviders : ALL_PROVIDERS;
+
   // Query state management
   const [globalFilter, setGlobalFilter] = useQueryState('search', parseAsString.withDefault(''));
   const [sorting, setSorting] = useQueryState<SortingState>(
@@ -750,10 +754,10 @@ export function AssessmentQuestionTable({
           hasCourseInstancePermissionEdit ? (
             aiGradingMode ? (
               <>
-                {useCustomApiKeys && availableAiGradingProviders.length === 0 ? (
+                {useCustomApiKeys && effectiveAvailableProviders.length === 0 ? (
                   <OverlayTrigger
                     tooltip={{
-                      body: 'You must add an API key in AI grading settings before using AI grading.',
+                      body: 'To AI grade, add a key or disable "Use custom API keys" in AI grading settings.',
                       props: { id: 'ai-grading-no-keys-tooltip' },
                     }}
                   >
@@ -775,7 +779,7 @@ export function AssessmentQuestionTable({
                         text="Grade all human-graded"
                         numToGrade={aiGradingCounts.humanGraded}
                         aiGradingModelSelectionEnabled={aiGradingModelSelectionEnabled}
-                        availableProviders={availableAiGradingProviders}
+                        availableProviders={effectiveAvailableProviders}
                         onSelectModel={(modelId) => {
                           gradeSubmissionsMutation.mutate(
                             {
@@ -797,7 +801,7 @@ export function AssessmentQuestionTable({
                         text="Grade selected"
                         numToGrade={aiGradingCounts.selected}
                         aiGradingModelSelectionEnabled={aiGradingModelSelectionEnabled}
-                        availableProviders={availableAiGradingProviders}
+                        availableProviders={effectiveAvailableProviders}
                         onSelectModel={(modelId) => {
                           gradeSubmissionsMutation.mutate(
                             {
@@ -820,7 +824,7 @@ export function AssessmentQuestionTable({
                         text="Grade all"
                         numToGrade={aiGradingCounts.all}
                         aiGradingModelSelectionEnabled={aiGradingModelSelectionEnabled}
-                        availableProviders={availableAiGradingProviders}
+                        availableProviders={effectiveAvailableProviders}
                         onSelectModel={(modelId) => {
                           gradeSubmissionsMutation.mutate(
                             {
@@ -845,10 +849,10 @@ export function AssessmentQuestionTable({
                     </Dropdown.Menu>
                   </Dropdown>
                 )}
-                {useCustomApiKeys && !availableAiGradingProviders.includes('openai') ? (
+                {useCustomApiKeys && !effectiveAvailableProviders.includes('openai') ? (
                   <OverlayTrigger
                     tooltip={{
-                      body: 'AI submission grouping requires an OpenAI API key. Add one in AI grading settings.',
+                      body: 'To use submission grouping, add an OpenAI key or disable "Use custom API keys" in AI grading settings.',
                       props: { id: 'ai-grouping-no-openai-tooltip' },
                     }}
                   >

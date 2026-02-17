@@ -129,9 +129,11 @@ router.get(
       config.secretKey,
     );
 
-    const availableAiGradingProviders = aiGradingEnabled
-      ? [...(await getAvailableAiGradingProviders(res.locals.course_instance))]
-      : [];
+    const useCustomApiKeys = course_instance.ai_grading_use_custom_api_keys;
+    const availableAiGradingProviders =
+      aiGradingEnabled && useCustomApiKeys
+        ? [...(await getAvailableAiGradingProviders(res.locals.course_instance))]
+        : [];
 
     res.send(
       PageLayout({
@@ -188,7 +190,7 @@ router.get(
                 questionTitle={question.title ?? ''}
                 questionNumber={Number(number_in_alternative_group)}
                 availableAiGradingProviders={availableAiGradingProviders}
-                useCustomApiKeys={course_instance.ai_grading_use_custom_api_keys}
+                useCustomApiKeys={useCustomApiKeys}
               />
             </Hydrate>
           </>
