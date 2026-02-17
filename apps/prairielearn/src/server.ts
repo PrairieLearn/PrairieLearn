@@ -2349,9 +2349,7 @@ if (shouldStartServer) {
         logger.info(`Created database ${pgConfig.database}`);
       } catch (err: any) {
         // 42P04 = duplicate_database: https://www.postgresql.org/docs/current/errcodes-appendix.html
-        if (err?.code === '42P04') {
-          logger.info(`Database ${pgConfig.database} already exists`);
-        } else {
+        if (err?.code !== '42P04') {
           throw err;
         }
       } finally {
