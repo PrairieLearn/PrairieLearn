@@ -280,8 +280,19 @@ def render(element_html: str, data: pl.QuestionData) -> str:
     raw_submitted_answer = data["raw_submitted_answers"].get(name, None)
     if raw_submitted_answer is None:
         raw_submitted_answer = initial_value
-    if raw_submitted_answer_latex is None:
-        raw_submitted_answer_latex = initial_value
+    if raw_submitted_answer_latex is None and initial_value is not None:
+        if formula_editor:
+            initial_parsed = psu.convert_string_to_sympy(
+                initial_value,
+                variables,
+                allow_complex=allow_complex,
+                custom_functions=custom_functions,
+                allow_trig_functions=allow_trig,
+                simplify_expression=simplify_expression,
+            )
+            raw_submitted_answer_latex = sympy.latex(initial_parsed)
+        else:
+            raw_submitted_answer_latex = initial_value
 
     score = data["partial_scores"].get(name, {}).get("score")
 
