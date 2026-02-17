@@ -138,7 +138,7 @@ router.post(
 
     if (req.body.__action === 'update_use_custom_api_keys') {
       const { ai_grading_use_custom_api_keys } = z
-        .object({ ai_grading_use_custom_api_keys: z.coerce.boolean() })
+        .object({ ai_grading_use_custom_api_keys: z.boolean() })
         .parse(req.body);
 
       await sqldb.queryRow(

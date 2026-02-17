@@ -9,7 +9,7 @@ import {
   type AiGradingApiKeyCredential,
 } from './instructorInstanceAdminAiGrading.types.js';
 
-async function postAction(csrfToken: string, body: Record<string, string>) {
+async function postAction(csrfToken: string, body: Record<string, unknown>) {
   const resp = await fetch(window.location.pathname, {
     method: 'POST',
     headers: { 'Content-Type': 'application/json' },
@@ -79,7 +79,7 @@ function AiGradingSettingsContent({
     mutationFn: async (newValue: boolean) => {
       return postAction(csrfToken, {
         __action: 'update_use_custom_api_keys',
-        ai_grading_use_custom_api_keys: String(newValue),
+        ai_grading_use_custom_api_keys: newValue,
       });
     },
     onSuccess: (_data, newValue) => {
