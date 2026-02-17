@@ -228,10 +228,9 @@ router.get(
         };
 
         if (hasImage) {
-          const rotationCorrectionDegrees =
-            ai_grading_job_data.rotation_correction_degrees
-              ? JSON.stringify(ai_grading_job_data.rotation_correction_degrees)
-              : null;
+          const rotationCorrectionDegrees = ai_grading_job_data.rotation_correction_degrees
+            ? JSON.stringify(ai_grading_job_data.rotation_correction_degrees)
+            : null;
 
           const rotationCorrectionStatus = run(() => {
             if (
