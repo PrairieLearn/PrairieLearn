@@ -22,7 +22,7 @@ dependencies = [
   "numpy==2.4.2",
   "openpyxl==3.1.5",
   "pandas==2.3.3",
-  "pillow==12.1.0",
+  "pillow==12.1.1",
   "pint==0.25.2",
   "psutil==7.2.2",
   "pulp==3.3.0",
