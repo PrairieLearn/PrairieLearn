@@ -69,6 +69,7 @@ This is a collection of how to sequence some common migrations. Bullet points ar
   - Finalize the batched migration
   - Add the constraint with `NOT VALID` (this allows the constraint to be added without validating existing data)
   - In a separate migration/transaction, validate the constraint (this validates all existing data against the constraint)
+  - If adding constraints to multiple tables, use a **separate migration for each table's validation**. `VALIDATE CONSTRAINT` and `ALTER COLUMN ... SET NOT NULL` take `ACCESS EXCLUSIVE` locks, so batching them into a single transaction will hold locks on all tables simultaneously and block reads/writes for the duration.
 
 ### Rename column with a default value, no data preservation
 
