@@ -1,0 +1,13 @@
+globs:
+  - "**/*.md"
+
+ignores:
+  - "**/node_modules/**"
+  - "exampleCourse/**"
+  - "testCourse/**"
+  - "**/dist/**"
+  - "**/test-results/**"
+  - ".claude/**"
+  - ".venv/**"
+  - ".agents/**"
+  - ".context/**"
