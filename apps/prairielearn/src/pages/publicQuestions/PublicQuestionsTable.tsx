@@ -1,21 +1,46 @@
 import { QueryClient } from '@tanstack/react-query';
-import { useCallback, useState } from 'react';
+import { useState } from 'react';
+
+import { NuqsAdapter } from '@prairielearn/ui';
 
 import { QuestionsTable, type QuestionsTableProps } from '../../components/QuestionsTable.js';
+import { QueryClientProviderDebug } from '../../lib/client/tanstackQuery.js';
 
 import { createPublicQuestionsTrpcClient } from './trpc-client.js';
-import { TRPCProvider } from './trpc-context.js';
+import { TRPCProvider, useTRPC } from './trpc-context.js';
 
-export function PublicQuestionsTable(props: Omit<QuestionsTableProps, 'fetchQuestions'>) {
-  const [trpcClient] = useState(() => createPublicQuestionsTrpcClient());
+export interface PublicQuestionsTableProps extends Omit<
+  QuestionsTableProps,
+  'questionsQueryOptions'
+> {
+  search: string;
+  isDevMode: boolean;
+}
+
+type PublicQuestionsTableInnerProps = Omit<PublicQuestionsTableProps, 'search' | 'isDevMode'>;
+
+function PublicQuestionsTableInner(props: PublicQuestionsTableInnerProps) {
+  const trpc = useTRPC();
+
+  return <QuestionsTable questionsQueryOptions={trpc.questions.queryOptions()} {...props} />;
+}
+
+export function PublicQuestionsTable({
+  search,
+  isDevMode,
+  ...innerProps
+}: PublicQuestionsTableProps) {
   const [queryClient] = useState(() => new QueryClient());
-
-  const fetchQuestions = useCallback(() => trpcClient.questions.query(), [trpcClient]);
+  const [trpcClient] = useState(() => createPublicQuestionsTrpcClient());
 
   return (
-    <TRPCProvider trpcClient={trpcClient} queryClient={queryClient}>
-      <QuestionsTable fetchQuestions={fetchQuestions} {...props} />
-    </TRPCProvider>
+    <NuqsAdapter search={search}>
+      <QueryClientProviderDebug client={queryClient} isDevMode={isDevMode}>
+        <TRPCProvider trpcClient={trpcClient} queryClient={queryClient}>
+          <PublicQuestionsTableInner {...innerProps} />
+        </TRPCProvider>
+      </QueryClientProviderDebug>
+    </NuqsAdapter>
   );
 }
 

@@ -1,15 +1,18 @@
 import { QueryClient } from '@tanstack/react-query';
-import { useCallback, useState } from 'react';
+import { useState } from 'react';
+
+import { NuqsAdapter } from '@prairielearn/ui';
 
 import {
   type CourseInstance,
   QuestionsTable,
   type SafeQuestionsPageData,
 } from '../../components/QuestionsTable.js';
+import { QueryClientProviderDebug } from '../../lib/client/tanstackQuery.js';
 
 import { CreateQuestionModal, type TemplateQuestion } from './CreateQuestionModal.js';
 import { createInstructorQuestionsTrpcClient } from './trpc-client.js';
-import { TRPCProvider } from './trpc-context.js';
+import { TRPCProvider, useTRPC } from './trpc-context.js';
 
 export interface InstructorQuestionsTableProps {
   questions: SafeQuestionsPageData[];
@@ -26,7 +29,12 @@ export interface InstructorQuestionsTableProps {
   csrfToken: string;
 }
 
-export function InstructorQuestionsTable({
+type InstructorQuestionsTableInnerProps = Omit<
+  InstructorQuestionsTableProps,
+  'search' | 'isDevMode'
+>;
+
+function InstructorQuestionsTableInner({
   questions,
   courseInstances,
   currentCourseInstanceId,
@@ -35,19 +43,14 @@ export function InstructorQuestionsTable({
   showSharingSets,
   urlPrefix,
   qidPrefix,
-  search,
-  isDevMode,
   templateQuestions,
   csrfToken,
-}: InstructorQuestionsTableProps) {
+}: InstructorQuestionsTableInnerProps) {
   const [showCreateModal, setShowCreateModal] = useState(false);
-  const [trpcClient] = useState(() => createInstructorQuestionsTrpcClient());
-  const [queryClient] = useState(() => new QueryClient());
-
-  const fetchQuestions = useCallback(() => trpcClient.questions.query(), [trpcClient]);
+  const trpc = useTRPC();
 
   return (
-    <TRPCProvider trpcClient={trpcClient} queryClient={queryClient}>
+    <>
       <QuestionsTable
         questions={questions}
         courseInstances={courseInstances}
@@ -57,9 +60,7 @@ export function InstructorQuestionsTable({
         showSharingSets={showSharingSets}
         urlPrefix={urlPrefix}
         qidPrefix={qidPrefix}
-        search={search}
-        isDevMode={isDevMode}
-        fetchQuestions={fetchQuestions}
+        questionsQueryOptions={trpc.questions.queryOptions()}
         onAddQuestion={() => setShowCreateModal(true)}
       />
       {showAddQuestionButton && (
@@ -70,7 +71,26 @@ export function InstructorQuestionsTable({
           onHide={() => setShowCreateModal(false)}
         />
       )}
-    </TRPCProvider>
+    </>
+  );
+}
+
+export function InstructorQuestionsTable({
+  search,
+  isDevMode,
+  ...innerProps
+}: InstructorQuestionsTableProps) {
+  const [queryClient] = useState(() => new QueryClient());
+  const [trpcClient] = useState(() => createInstructorQuestionsTrpcClient());
+
+  return (
+    <NuqsAdapter search={search}>
+      <QueryClientProviderDebug client={queryClient} isDevMode={isDevMode}>
+        <TRPCProvider trpcClient={trpcClient} queryClient={queryClient}>
+          <InstructorQuestionsTableInner {...innerProps} />
+        </TRPCProvider>
+      </QueryClientProviderDebug>
+    </NuqsAdapter>
   );
 }
 

@@ -1,4 +1,4 @@
-import { QueryClient, useQuery } from '@tanstack/react-query';
+import { useQuery } from '@tanstack/react-query';
 import {
   type ColumnFiltersState,
   type ColumnPinningState,
@@ -18,7 +18,6 @@ import { Alert, Button } from 'react-bootstrap';
 
 import {
   CategoricalColumnFilter,
-  NuqsAdapter,
   OverlayTrigger,
   TanstackTableCard,
   TanstackTableEmptyState,
@@ -27,7 +26,6 @@ import {
   parseAsSortingState,
 } from '@prairielearn/ui';
 
-import { QueryClientProviderDebug } from '../lib/client/tanstackQuery.js';
 import { getAiQuestionGenerationDraftsUrl } from '../lib/client/url.js';
 
 import { AssessmentBadgeList } from './AssessmentBadge.js';
@@ -94,7 +92,7 @@ function CopyQidButton({ qid, qidPrefix }: { qid: string; qidPrefix: string }) {
   );
 }
 
-interface QuestionsTableCardProps {
+export interface QuestionsTableProps {
   questions: SafeQuestionsPageData[];
   courseInstances: CourseInstance[];
   currentCourseInstanceId?: string;
@@ -105,10 +103,14 @@ interface QuestionsTableCardProps {
   qidPrefix?: string;
   /** Required when showAddQuestionButton is true */
   onAddQuestion?: () => void;
-  fetchQuestions: () => Promise<SafeQuestionsPageData[]>;
+  questionsQueryOptions: {
+    queryKey: readonly unknown[];
+
+    queryFn?: (...args: any[]) => SafeQuestionsPageData[] | Promise<SafeQuestionsPageData[]>;
+  };
 }
 
-function QuestionsTableCard({
+export function QuestionsTable({
   questions: initialQuestions,
   courseInstances,
   currentCourseInstanceId,
@@ -118,8 +120,8 @@ function QuestionsTableCard({
   urlPrefix,
   qidPrefix,
   onAddQuestion,
-  fetchQuestions,
-}: QuestionsTableCardProps) {
+  questionsQueryOptions,
+}: QuestionsTableProps) {
   const [globalFilter, setGlobalFilter] = useQueryState('search', parseAsString.withDefault(''));
   const [sorting, setSorting] = useQueryState<SortingState>(
     'sort',
@@ -360,12 +362,11 @@ function QuestionsTableCard({
   const [columnSizing, setColumnSizing] = useState<ColumnSizingState>({});
 
   const {
-    data: questions,
+    data: questions = initialQuestions,
     error: questionsError,
     isError: isQuestionsError,
-  } = useQuery<SafeQuestionsPageData[], Error>({
-    queryKey: ['questions', urlPrefix],
-    queryFn: fetchQuestions,
+  } = useQuery({
+    ...questionsQueryOptions,
     staleTime: Infinity,
     initialData: initialQuestions,
   });
@@ -864,58 +865,6 @@ function QuestionsTableCard({
         }}
       />
     </>
-  );
-}
-
-export interface QuestionsTableProps {
-  questions: SafeQuestionsPageData[];
-  courseInstances: CourseInstance[];
-  currentCourseInstanceId?: string;
-  showAddQuestionButton: boolean;
-  showAiGenerateQuestionButton: boolean;
-  showSharingSets: boolean;
-  urlPrefix: string;
-  qidPrefix?: string;
-  search: string;
-  isDevMode: boolean;
-  /** Required when showAddQuestionButton is true */
-  onAddQuestion?: () => void;
-  fetchQuestions: () => Promise<SafeQuestionsPageData[]>;
-}
-
-export function QuestionsTable({
-  questions,
-  courseInstances,
-  currentCourseInstanceId,
-  showAddQuestionButton,
-  showAiGenerateQuestionButton,
-  showSharingSets,
-  urlPrefix,
-  qidPrefix,
-  search,
-  isDevMode,
-  onAddQuestion,
-  fetchQuestions,
-}: QuestionsTableProps) {
-  const [queryClient] = useState(() => new QueryClient());
-
-  return (
-    <NuqsAdapter search={search}>
-      <QueryClientProviderDebug client={queryClient} isDevMode={isDevMode}>
-        <QuestionsTableCard
-          questions={questions}
-          courseInstances={courseInstances}
-          currentCourseInstanceId={currentCourseInstanceId}
-          showAddQuestionButton={showAddQuestionButton}
-          showAiGenerateQuestionButton={showAiGenerateQuestionButton}
-          showSharingSets={showSharingSets}
-          urlPrefix={urlPrefix}
-          qidPrefix={qidPrefix}
-          fetchQuestions={fetchQuestions}
-          onAddQuestion={onAddQuestion}
-        />
-      </QueryClientProviderDebug>
-    </NuqsAdapter>
   );
 }
 
