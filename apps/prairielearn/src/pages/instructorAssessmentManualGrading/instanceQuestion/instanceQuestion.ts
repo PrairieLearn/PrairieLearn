@@ -21,7 +21,7 @@ import {
   selectInstanceQuestionGroups,
   updateManualInstanceQuestionGroup,
 } from '../../../ee/lib/ai-instance-question-grouping/ai-instance-question-grouping-util.js';
-import { updateAssessmentInstancesScorePercPending } from '../../../lib/assessment.js';
+import { updateAssessmentInstancesScorePercPending } from '../../../lib/assessment-grading.js';
 import {
   AiGradingJobSchema,
   GradingJobSchema,

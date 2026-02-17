@@ -7,6 +7,7 @@ import z from 'zod';
 
 import * as sqldb from '@prairielearn/postgres';
 
+import { updateAssessmentInstanceGrade } from '../lib/assessment-grading.js';
 import { b64EncodeUnicode } from '../lib/base64-util.js';
 import { updateAssessmentInstanceGrade } from '../lib/assessment-grading.js';
 import { config } from '../lib/config.js';

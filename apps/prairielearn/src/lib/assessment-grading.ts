@@ -23,6 +23,15 @@ const AssessmentInstanceZonePointsSchema = z.object({
 });
 type AssessmentInstanceZonePoints = z.infer<typeof AssessmentInstanceZonePointsSchema>;
 
+export async function updateAssessmentInstancesScorePercPending(
+  assessment_instance_ids: string[],
+): Promise<void> {
+  if (assessment_instance_ids.length === 0) return;
+  await execute(sql.update_assessment_instances_score_perc_pending, {
+    assessment_instance_ids,
+  });
+}
+
 export async function updateAssessmentInstanceGrade({
   assessment_instance_id,
   authn_user_id,
@@ -83,6 +92,8 @@ export async function updateAssessmentInstanceGrade({
     if (!allowDecrease) {
       score_perc = Math.max(score_perc, assessmentInstance.score_perc ?? 0);
     }
+
+    await updateAssessmentInstancesScorePercPending([assessment_instance_id]);
 
     const updated =
       points !== assessmentInstance.points || score_perc !== assessmentInstance.score_perc;

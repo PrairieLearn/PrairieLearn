@@ -798,27 +798,6 @@ SELECT
 FROM
   updated_assessment_instances AS ai;
 
--- BLOCK update_assessment_instances_score_perc_pending
-WITH
-  new_pending AS (
-    SELECT
-      ai.id,
-      assessment_instances_score_perc_pending (ai.id) AS score_perc_pending
-    FROM
-      assessment_instances AS ai
-    WHERE
-      ai.id = ANY ($assessment_instance_ids::bigint[])
-  )
-UPDATE assessment_instances AS ai
-SET
-  score_perc_pending = np.score_perc_pending,
-  modified_at = now()
-FROM
-  new_pending AS np
-WHERE
-  ai.id = np.id
-  AND ai.score_perc_pending IS DISTINCT FROM np.score_perc_pending;
-
 -- BLOCK assessment_instance_log
 WITH
   ai_group_users AS (

@@ -360,14 +360,12 @@ export async function updateAssessmentQuestionRubric(
     }
 
     if (tag_for_manual_grading) {
-      const updatedAssessmentInstanceIds = await sqldb.queryRows(
+      const assessment_instance_ids = await sqldb.queryRows(
         sql.tag_for_manual_grading,
         { assessment_question_id },
-        z.object({ assessment_instance_id: IdSchema }),
+        IdSchema,
       );
-      await updateAssessmentInstancesScorePercPending([
-        ...new Set(updatedAssessmentInstanceIds.map((row) => row.assessment_instance_id)),
-      ]);
+      await updateAssessmentInstancesScorePercPending(Array.from(new Set(assessment_instance_ids)));
     }
   });
 }
