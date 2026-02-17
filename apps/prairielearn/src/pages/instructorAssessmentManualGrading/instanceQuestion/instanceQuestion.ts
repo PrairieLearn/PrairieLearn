@@ -228,12 +228,16 @@ router.get(
         };
 
         if (hasImage) {
-          const rotationCorrectionDegrees = ai_grading_job_data.rotation_correction_degrees
-            ? JSON.stringify(ai_grading_job_data.rotation_correction_degrees)
-            : null;
+          const rotationCorrectionDegrees =
+            ai_grading_job_data.rotation_correction_degrees
+              ? JSON.stringify(ai_grading_job_data.rotation_correction_degrees)
+              : null;
 
           const rotationCorrectionStatus = run(() => {
-            if (!ai_grading_job_data.rotation_correction_degrees) {
+            if (
+              !ai_grading_job_data.rotation_correction_degrees ||
+              Object.keys(ai_grading_job_data.rotation_correction_degrees).length === 0
+            ) {
               return 'not-flagged' as const;
             }
             const hasNonZeroRotations = Object.values(
