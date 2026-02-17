@@ -11,7 +11,6 @@ apt-get upgrade -y
 # Add PostgreSQL APT repository for PostgreSQL 17 (from https://www.postgresql.org/download/linux/ubuntu/)
 apt-get install -y postgresql-common
 /usr/share/postgresql-common/pgdg/apt.postgresql.org.sh -y
-apt-get update -y
 
 # Notes:
 # - `g++` (via build-essential) is needed to build the native bindings in `packages/bind-mount`
