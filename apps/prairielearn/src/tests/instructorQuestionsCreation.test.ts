@@ -456,4 +456,31 @@ describe('Creating a question', () => {
       );
     },
   );
+
+  test.sequential('create a new empty question from the questions table endpoint', async () => {
+    const questionsResponse = await fetchCheerio(
+      `${siteUrl}/pl/course_instance/1/instructor/course_admin/questions`,
+    );
+    assert.equal(questionsResponse.status, 200);
+
+    const createQuestionResponse = await fetchCheerio(
+      `${siteUrl}/pl/course_instance/1/instructor/course_admin/questions`,
+      {
+        method: 'POST',
+        body: new URLSearchParams({
+          __action: 'add_question',
+          __csrf_token: questionsResponse.$('#test_csrf_token').text(),
+          title: 'Question from table endpoint',
+          qid: 'question-from-table-endpoint',
+          start_from: 'empty',
+        }),
+      },
+    );
+
+    assert.equal(createQuestionResponse.status, 200);
+    assert.match(
+      createQuestionResponse.url,
+      /\/pl\/course_instance\/1\/instructor\/question\/\d+\/file_edit\/questions\/question-from-table-endpoint\/question\.html$/,
+    );
+  });
 });
