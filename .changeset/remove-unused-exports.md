@@ -1,6 +1,6 @@
 ---
 '@prairielearn/browser-utils': patch
-'@prairielearn/eslint-plugin-prairielearn': patch
+'@prairielearn/eslint-plugin': patch
 '@prairielearn/opentelemetry': patch
 '@prairielearn/postgres': patch
 '@prairielearn/eslint-config': patch
