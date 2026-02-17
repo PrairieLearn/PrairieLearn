@@ -2,10 +2,10 @@ import { loadSqlEquiv, queryRow, queryRows } from '@prairielearn/postgres';
 
 import {
   type NewsItem,
-  NewsItemSchema,
-  type User,
   type NewsItemReadState,
   NewsItemReadStateSchema,
+  NewsItemSchema,
+  type User,
 } from '../lib/db-types.js';
 
 const sql = loadSqlEquiv(import.meta.url);
