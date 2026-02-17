@@ -192,11 +192,11 @@ export async function aiGrade({
   });
 
   serverJob.executeInBackground(async (job) => {
-    // Skip rate limiting when using custom API keys, since the course instance
-    // is paying for their own usage and platform limits don't apply.
-    const skipRateLimit = course_instance.ai_grading_use_custom_api_keys;
+    // Skip rate limiting and cost tracking when using custom API keys, since the
+    // course instance is paying for their own usage and platform limits don't apply.
+    const skipRateLimitAndCostTracking = course_instance.ai_grading_use_custom_api_keys;
     let rateLimitExceeded =
-      !skipRateLimit &&
+      !skipRateLimitAndCostTracking &&
       (await getIntervalUsage(course_instance)) > config.aiGradingRateLimitDollars;
 
     // If the rate limit has already been exceeded, log it and exit early.
@@ -248,7 +248,7 @@ export async function aiGrade({
       // Since other jobs may be concurrently running, we could exceed the rate limit
       // by 19 requests worth of usage. We are okay with this potential race condition.
       if (
-        !skipRateLimit &&
+        !skipRateLimitAndCostTracking &&
         (await getIntervalUsage(course_instance)) > config.aiGradingRateLimitDollars
       ) {
         logger.error(
@@ -508,24 +508,28 @@ export async function aiGrade({
             ],
             logger,
           });
-          for (const response of [
-            ...Object.values(rotationCorrections).map((r) => r.response),
-            gradingResponseWithRotationIssue,
-            finalGradingResponse,
-          ]) {
-            await addAiGradingCostToIntervalUsage({
-              courseInstance: course_instance,
-              model: model_id,
-              usage: response.usage,
-            });
+          if (!skipRateLimitAndCostTracking) {
+            for (const response of [
+              ...Object.values(rotationCorrections).map((r) => r.response),
+              gradingResponseWithRotationIssue,
+              finalGradingResponse,
+            ]) {
+              await addAiGradingCostToIntervalUsage({
+                courseInstance: course_instance,
+                model: model_id,
+                usage: response.usage,
+              });
+            }
           }
         } else {
           logResponseUsage({ response: finalGradingResponse, logger });
-          await addAiGradingCostToIntervalUsage({
-            courseInstance: course_instance,
-            model: model_id,
-            usage: finalGradingResponse.usage,
-          });
+          if (!skipRateLimitAndCostTracking) {
+            await addAiGradingCostToIntervalUsage({
+              courseInstance: course_instance,
+              model: model_id,
+              usage: finalGradingResponse.usage,
+            });
+          }
         }
 
         logger.info(`Parsed response: ${JSON.stringify(finalGradingResponse.object, null, 2)}`);
@@ -770,24 +774,28 @@ export async function aiGrade({
             ],
             logger,
           });
-          for (const response of [
-            ...Object.values(rotationCorrections).map((r) => r.response),
-            gradingResponseWithRotationIssue,
-            finalGradingResponse,
-          ]) {
-            await addAiGradingCostToIntervalUsage({
-              courseInstance: course_instance,
-              model: model_id,
-              usage: response.usage,
-            });
+          if (!skipRateLimitAndCostTracking) {
+            for (const response of [
+              ...Object.values(rotationCorrections).map((r) => r.response),
+              gradingResponseWithRotationIssue,
+              finalGradingResponse,
+            ]) {
+              await addAiGradingCostToIntervalUsage({
+                courseInstance: course_instance,
+                model: model_id,
+                usage: response.usage,
+              });
+            }
           }
         } else {
           logResponseUsage({ response: finalGradingResponse, logger });
-          await addAiGradingCostToIntervalUsage({
-            courseInstance: course_instance,
-            model: model_id,
-            usage: finalGradingResponse.usage,
-          });
+          if (!skipRateLimitAndCostTracking) {
+            await addAiGradingCostToIntervalUsage({
+              courseInstance: course_instance,
+              model: model_id,
+              usage: finalGradingResponse.usage,
+            });
+          }
         }
 
         logger.info(`Parsed response: ${JSON.stringify(finalGradingResponse.object, null, 2)}`);

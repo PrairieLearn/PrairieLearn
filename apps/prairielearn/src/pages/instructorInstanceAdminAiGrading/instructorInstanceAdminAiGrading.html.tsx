@@ -16,7 +16,7 @@ async function postAction(csrfToken: string, body: Record<string, unknown>, erro
     body: JSON.stringify({ __csrf_token: csrfToken, ...body }),
   });
   if (!resp.ok) {
-    const result = await resp.json().catch(() => null);
+    const result = await resp.json();
     throw new Error(result?.error ?? errorMessage);
   }
   return resp.json();
@@ -92,7 +92,7 @@ function AiGradingSettingsContent({
           __action: 'update_use_custom_api_keys',
           ai_grading_use_custom_api_keys: newValue,
         },
-        'Failed to update custom API key setting',
+        'Failed to toggle the custom API key setting',
       );
     },
     onSuccess: (_data, newValue) => {

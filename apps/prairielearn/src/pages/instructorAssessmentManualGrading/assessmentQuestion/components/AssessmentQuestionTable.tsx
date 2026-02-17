@@ -637,10 +637,12 @@ export function AssessmentQuestionTable({
     groupSubmissionMutation,
   } = mutations;
 
-  // When using custom API keys and no keys are available for the relevant providers,
-  // the AI grading button should be disabled. When model selection is disabled,
-  // only OpenAI is used (the default model is OpenAI), so we specifically check for
-  // an OpenAI key. When model selection is enabled, we check all providers.
+  // When using custom API keys:
+  //
+  // If model selection is disabled, grading will use an OpenAI model, so we
+  // specifically check for an OpenAI key.
+  //
+  // If model selection is enabled, we check key availability across all providers.
   const aiGradingDisabledNoKeys =
     useCustomApiKeys &&
     (aiGradingModelSelectionEnabled

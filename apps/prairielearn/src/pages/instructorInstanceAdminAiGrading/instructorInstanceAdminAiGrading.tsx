@@ -29,7 +29,7 @@ const router = Router();
 const sql = sqldb.loadSqlEquiv(import.meta.url);
 
 function maskApiKey(key: string): string {
-  if (key.length <= 7) return '.......';
+  if (key.length <= 7) return '.'.repeat(7);
   return `${key.slice(0, 3)}...${key.slice(-4)}`;
 }
 
@@ -127,6 +127,11 @@ router.post(
     unauthorizedUsers: 'block',
   }),
   typedAsyncHandler<'course-instance'>(async (req, res) => {
+    const aiGradingEnabled = await features.enabledFromLocals('ai-grading', res.locals);
+    if (!aiGradingEnabled) {
+      throw new error.HttpStatusError(403, 'Access denied (feature not available)');
+    }
+
     const { course_instance: courseInstance, authz_data: authzData } = extractPageContext(
       res.locals,
       {
@@ -135,10 +140,6 @@ router.post(
       },
     );
 
-    const aiGradingEnabled = await features.enabledFromLocals('ai-grading', res.locals);
-    if (!aiGradingEnabled) {
-      throw new error.HttpStatusError(403, 'Access denied (feature not available)');
-    }
     if (!authzData.has_course_permission_edit || !authzData.has_course_instance_permission_edit) {
       throw new error.HttpStatusError(403, 'Access denied');
     }
