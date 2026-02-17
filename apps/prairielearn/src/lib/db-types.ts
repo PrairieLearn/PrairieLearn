@@ -720,6 +720,7 @@ export const CourseRequestSchema = z.object({
   id: IdSchema,
   institution: z.string().nullable(),
   last_name: z.string().nullable(),
+  note: z.string().nullable(),
   referral_source: z.string().nullable(),
   short_name: z.string(),
   title: z.string(),
@@ -1224,8 +1225,6 @@ export const LtiOutcomeSchema = z.object({
 export const MigrationSchema = null;
 export const NamedLockSchema = null;
 
-export const NewsItemSchema = null;
-export const NewsItemNotificationSchema = null;
 export const PageViewLogSchema = null;
 
 export const PlanGrantSchema = z.object({
@@ -1417,6 +1416,7 @@ export const StudentLabelSchema = z.object({
   course_instance_id: IdSchema,
   id: IdSchema,
   name: z.string(),
+  uuid: z.string(),
 });
 export type StudentLabel = z.infer<typeof StudentLabelSchema>;
 
@@ -1685,8 +1685,6 @@ export const TableNames = [
   'lti_outcomes',
   'migrations',
   'named_locks',
-  'news_item_notifications',
-  'news_items',
   'page_view_logs',
   'courses',
   'plan_grants',

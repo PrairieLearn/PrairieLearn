@@ -54,6 +54,7 @@ import { LabelModifyModal } from '../instructorStudentsLabels/components/LabelMo
 import { createStudentLabelsTrpcClient } from '../instructorStudentsLabels/utils/trpc-client.js';
 
 import { InviteStudentsModal } from './components/InviteStudentsModal.js';
+import { SyncStudentsModal } from './components/SyncStudentsModal.js';
 import { STATUS_VALUES, type StudentRow, StudentRowSchema } from './instructorStudents.shared.js';
 
 /**
@@ -131,10 +132,16 @@ async function copyToClipboard(text: string) {
   await navigator.clipboard.writeText(text);
 }
 
-function CopyEnrollmentLinkButton({
+function ManageEnrollmentsDropdown({
   courseInstance,
+  authzData,
+  onInvite,
+  onSync,
 }: {
   courseInstance: PageContext<'courseInstance', 'instructor'>['course_instance'];
+  authzData: PageContextWithAuthzData['authz_data'];
+  onInvite: () => void;
+  onSync: () => void;
 }) {
   const [copiedCode, setCopiedCode] = useState(false);
   const [copiedLink, setCopiedLink] = useState(false);
@@ -170,14 +177,20 @@ function CopyEnrollmentLinkButton({
     setTimeout(() => setCopiedCode(false), 2000);
   };
 
+  const canEdit = authzData.has_course_instance_permission_edit;
+
   return (
-    <DropdownButton
-      as={ButtonGroup}
-      title="Enrollment details"
-      size="sm"
-      disabled={!courseInstance.self_enrollment_enabled}
-      variant="light"
-    >
+    <DropdownButton as={ButtonGroup} title="Manage enrollments" size="sm" variant="light">
+      <Dropdown.Item as="button" type="button" disabled={!canEdit} onClick={onInvite}>
+        <i className="bi bi-person-plus me-2" aria-hidden="true" />
+        Invite students
+      </Dropdown.Item>
+      <Dropdown.Item as="button" type="button" disabled={!canEdit} onClick={onSync}>
+        <i className="bi bi-arrow-left-right me-2" aria-hidden="true" />
+        Synchronize student list
+      </Dropdown.Item>
+
+      <Dropdown.Divider />
       {courseInstance.self_enrollment_use_enrollment_code && (
         <OverlayTrigger
           placement="right"
@@ -348,12 +361,43 @@ function StudentsCard({
   });
 
   const [showInvite, setShowInvite] = useState(false);
+  const [showSync, setShowSync] = useState(false);
   const [copiedEnrollLink, setCopiedEnrollLink] = useState(false);
 
   const handleCopyEnrollLink = async () => {
     await copyToClipboard(selfEnrollLink);
     setCopiedEnrollLink(true);
     setTimeout(() => setCopiedEnrollLink(false), 2000);
+  };
+
+  const syncStudents = async (
+    toInvite: string[],
+    toCancelInvitation: string[],
+    toRemove: string[],
+  ): Promise<void> => {
+    const body = {
+      __action: 'sync_students',
+      __csrf_token: csrfToken,
+      toInvite,
+      toCancelInvitation,
+      toRemove,
+    };
+    const res = await fetch(window.location.href, {
+      method: 'POST',
+      body: JSON.stringify(body),
+      headers: { 'Content-Type': 'application/json', Accept: 'application/json' },
+    });
+    const json = await res.json();
+    if (!res.ok) {
+      throw new Error(json.error);
+    }
+    const { job_sequence_id } = z
+      .object({
+        job_sequence_id: z.string(),
+      })
+      .parse(json);
+
+    window.location.href = getCourseInstanceJobSequenceUrl(courseInstance.id, job_sequence_id);
   };
 
   const inviteStudents = async (uids: string[]): Promise<void> => {
@@ -739,18 +783,17 @@ function StudentsCard({
               </Dropdown>
             )}
             {courseInstance.modern_publishing && (
-              <>
-                <Button
-                  variant="light"
-                  size="sm"
-                  disabled={!authzData.has_course_instance_permission_edit}
-                  onClick={() => setShowInvite(true)}
-                >
-                  <i className="bi bi-person-plus me-2" aria-hidden="true" />
-                  Invite students
-                </Button>
-                <CopyEnrollmentLinkButton courseInstance={courseInstance} />
-              </>
+              <ManageEnrollmentsDropdown
+                courseInstance={courseInstance}
+                authzData={authzData}
+                onInvite={() => setShowInvite(true)}
+                onSync={() => {
+                  // Reload the latest student data so that the preview of sync actions
+                  // will be as accurate as possible.
+                  void queryClient.invalidateQueries({ queryKey: ['enrollments', 'students'] });
+                  setShowSync(true);
+                }}
+              />
             )}
           </>
         }
@@ -848,6 +891,13 @@ function StudentsCard({
         courseInstance={courseInstance}
         onHide={() => setShowInvite(false)}
         onSubmit={inviteStudents}
+      />
+      <SyncStudentsModal
+        show={showSync}
+        courseInstance={courseInstance}
+        students={students}
+        onHide={() => setShowSync(false)}
+        onSubmit={syncStudents}
       />
       <LabelModifyModal
         data={showCreateLabelModal ? { type: 'add', origHash } : null}

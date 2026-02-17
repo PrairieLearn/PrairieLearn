@@ -52,8 +52,12 @@ export type PublishingJson = z.infer<typeof PublishingJsonSchema>;
 
 export const StudentLabelJsonSchema = z
   .object({
-    name: z.string().min(1).max(255).describe('The name of the student label.'),
-    color: ColorJsonSchema.describe('The color to display for this label.'),
+    uuid: z
+      .string()
+      .regex(/^[0-9a-fA-F]{8}-[0-9a-fA-F]{4}-[0-9a-fA-F]{4}-[0-9a-fA-F]{4}-[0-9a-fA-F]{12}$/)
+      .describe('Unique identifier (UUID v4).'),
+    name: z.string().trim().min(1).max(255).describe('The name of the student label.'),
+    color: ColorJsonSchema,
   })
   .strict()
   .describe('A single student label, can represent a collection of students (e.g. "Section A").');

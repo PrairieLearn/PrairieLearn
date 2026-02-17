@@ -1,9 +1,11 @@
+import crypto from 'node:crypto';
+
 import { afterAll, assert, beforeAll, describe, expect, it } from 'vitest';
 
 import { dangerousFullSystemAuthz } from '../lib/authz-data-lib.js';
-import type { Enrollment } from '../lib/db-types.js';
+import type { Enrollment, StudentLabel } from '../lib/db-types.js';
 import { TEST_COURSE_PATH } from '../lib/paths.js';
-import { syncStudentLabels } from '../sync/fromDisk/studentLabels.js';
+import type { ColorJson } from '../schemas/infoCourse.js';
 import * as helperCourse from '../tests/helperCourse.js';
 import * as helperDb from '../tests/helperDb.js';
 import { getOrCreateUser } from '../tests/utils/auth.js';
@@ -12,16 +14,17 @@ import { selectAuditEvents } from './audit-event.js';
 import { selectCourseInstanceById } from './course-instances.js';
 import { ensureUncheckedEnrollment } from './enrollment.js';
 import {
-  addEnrollmentToStudentLabel,
-  addEnrollmentsToStudentLabel,
+  addLabelToEnrollment,
+  addLabelToEnrollments,
   createStudentLabel,
   deleteStudentLabel,
-  removeEnrollmentFromStudentLabel,
-  removeEnrollmentsFromStudentLabel,
+  removeLabelFromEnrollment,
+  removeLabelFromEnrollments,
   selectEnrollmentsInStudentLabel,
   selectStudentLabelById,
   selectStudentLabelsForEnrollment,
   selectStudentLabelsInCourseInstance,
+  updateStudentLabel,
 } from './student-label.js';
 
 let enrollmentCounter = 0;
@@ -48,6 +51,54 @@ async function createEnrollment(courseInstanceId = '1'): Promise<Enrollment> {
   return enrollment;
 }
 
+async function createTestLabel(
+  name: string,
+  { courseInstanceId = '1', color = 'gray1' as ColorJson, uuid = crypto.randomUUID() } = {},
+) {
+  const courseInstance = await selectCourseInstanceById(courseInstanceId);
+  return createStudentLabel({ courseInstance, uuid, name, color });
+}
+
+async function addToLabel(enrollment: Enrollment, label: StudentLabel) {
+  return addLabelToEnrollment({
+    enrollment,
+    label,
+    authzData: dangerousFullSystemAuthz(),
+  });
+}
+
+async function removeFromLabel(enrollment: Enrollment, label: StudentLabel) {
+  return removeLabelFromEnrollment({
+    enrollment,
+    label,
+    authzData: dangerousFullSystemAuthz(),
+  });
+}
+
+async function bulkAddToLabel(enrollments: Enrollment[], label: StudentLabel) {
+  return addLabelToEnrollments({
+    enrollments,
+    label,
+    authzData: dangerousFullSystemAuthz(),
+  });
+}
+
+async function bulkRemoveFromLabel(enrollments: Enrollment[], label: StudentLabel) {
+  return removeLabelFromEnrollments({
+    enrollments,
+    label,
+    authzData: dangerousFullSystemAuthz(),
+  });
+}
+
+async function getLabelAuditEvents(enrollment: Enrollment, courseInstanceId: string) {
+  return selectAuditEvents({
+    subject_user_id: enrollment.user_id!,
+    table_names: ['student_label_enrollments'],
+    course_instance_id: courseInstanceId,
+  });
+}
+
 describe('Student Label Model', () => {
   beforeAll(async function () {
     await helperDb.before();
@@ -59,8 +110,8 @@ describe('Student Label Model', () => {
   describe('createStudentLabel', () => {
     it('creates student labels with unique ids', async () => {
       await helperDb.runInTransactionAndRollback(async () => {
-        const label1 = await createStudentLabel({ courseInstanceId: '1', name: 'Label 1' });
-        const label2 = await createStudentLabel({ courseInstanceId: '1', name: 'Label 2' });
+        const label1 = await createTestLabel('Label 1');
+        const label2 = await createTestLabel('Label 2');
 
         assert.notEqual(label1.id, label2.id);
         assert.equal(label1.course_instance_id, label2.course_instance_id);
@@ -71,10 +122,10 @@ describe('Student Label Model', () => {
 
     it('allows creating label with same name after deletion', async () => {
       await helperDb.runInTransactionAndRollback(async () => {
-        const label1 = await createStudentLabel({ courseInstanceId: '1', name: 'Test Label' });
-        await deleteStudentLabel(label1.id);
+        const label1 = await createTestLabel('Test Label');
+        await deleteStudentLabel(label1);
 
-        const label2 = await createStudentLabel({ courseInstanceId: '1', name: 'Test Label' });
+        const label2 = await createTestLabel('Test Label');
 
         assert.notEqual(label1.id, label2.id);
         assert.equal(label2.name, 'Test Label');
@@ -82,25 +133,39 @@ describe('Student Label Model', () => {
     });
   });
 
+  describe('updateStudentLabel', () => {
+    it('updates name and color and returns updated label', async () => {
+      await helperDb.runInTransactionAndRollback(async () => {
+        const label = await createTestLabel('Color Label');
+        assert.equal(label.color, 'gray1');
+
+        const updated = await updateStudentLabel({ label, name: 'Renamed Label', color: 'red1' });
+        assert.equal(updated.id, label.id);
+        assert.equal(updated.color, 'red1');
+        assert.equal(updated.name, 'Renamed Label');
+      });
+    });
+  });
+
   describe('selectStudentLabelsInCourseInstance', () => {
     it('returns all labels for a course instance', async () => {
       await helperDb.runInTransactionAndRollback(async () => {
-        // Use course instance 2 which has no pre-existing labels
-        const courseInstance = await selectCourseInstanceById('2');
+        const courseInstance = await selectCourseInstanceById('1');
+        const initialLabels = await selectStudentLabelsInCourseInstance(courseInstance);
+        for (const label of initialLabels) {
+          await deleteStudentLabel(label);
+        }
 
-        // Empty initially (no pre-existing labels in course instance 2)
-        assert.isEmpty(await selectStudentLabelsInCourseInstance(courseInstance));
-
-        await createStudentLabel({ courseInstanceId: '2', name: 'Label A' });
-        await createStudentLabel({ courseInstanceId: '2', name: 'Label B' });
-        const labelToDelete = await createStudentLabel({ courseInstanceId: '2', name: 'Label C' });
-
-        await deleteStudentLabel(labelToDelete.id);
+        await createTestLabel('Label A');
+        await createTestLabel('Label B');
+        const labelToDelete = await createTestLabel('Label C');
+        await deleteStudentLabel(labelToDelete);
 
         const labels = await selectStudentLabelsInCourseInstance(courseInstance);
         assert.equal(labels.length, 2);
-        assert.equal(labels[0].name, 'Label A');
-        assert.equal(labels[1].name, 'Label B');
+        assert.isTrue(labels.some((l) => l.name === 'Label A'));
+        assert.isTrue(labels.some((l) => l.name === 'Label B'));
+        assert.isFalse(labels.some((l) => l.name === 'Label C'));
       });
     });
   });
@@ -109,10 +174,7 @@ describe('Student Label Model', () => {
     it('returns student label by id', async () => {
       await helperDb.runInTransactionAndRollback(async () => {
         const courseInstance = await selectCourseInstanceById('1');
-        const createdLabel = await createStudentLabel({
-          courseInstanceId: '1',
-          name: 'Test Label',
-        });
+        const createdLabel = await createTestLabel('Test Label');
 
         const retrievedLabel = await selectStudentLabelById({
           id: createdLabel.id,
@@ -131,8 +193,8 @@ describe('Student Label Model', () => {
           selectStudentLabelById({ id: '999999', courseInstance }),
         ).rejects.toThrowError();
 
-        const label = await createStudentLabel({ courseInstanceId: '1', name: 'Test Label' });
-        await deleteStudentLabel(label.id);
+        const label = await createTestLabel('Test Label');
+        await deleteStudentLabel(label);
 
         await expect(
           selectStudentLabelById({ id: label.id, courseInstance }),
@@ -142,8 +204,7 @@ describe('Student Label Model', () => {
 
     it('throws 403 when label does not belong to course instance', async () => {
       await helperDb.runInTransactionAndRollback(async () => {
-        const label = await createStudentLabel({ courseInstanceId: '1', name: 'Test Label' });
-        // Use course instance 2 (the 'public' course instance in testCourse)
+        const label = await createTestLabel('Test Label');
         const courseInstance2 = await selectCourseInstanceById('2');
 
         await expect(
@@ -163,54 +224,45 @@ describe('Student Label Model', () => {
   describe('deleteStudentLabel', () => {
     it('throws error when deleting non-existent label', async () => {
       await helperDb.runInTransactionAndRollback(async () => {
-        await expect(deleteStudentLabel('999999')).rejects.toThrowError();
+        await expect(
+          deleteStudentLabel({
+            id: '999999',
+            course_instance_id: '1',
+            name: 'nonexistent',
+            color: 'gray1',
+            uuid: crypto.randomUUID(),
+          }),
+        ).rejects.toThrowError();
       });
     });
   });
 
-  describe('addEnrollmentToStudentLabel', () => {
+  describe('addLabelToEnrollment', () => {
     it('adds label to enrollment and returns null on duplicate', async () => {
       await helperDb.runInTransactionAndRollback(async () => {
         const enrollment = await createEnrollment();
-        const label = await createStudentLabel({ courseInstanceId: '1', name: 'Test Label' });
+        const label = await createTestLabel('Test Label');
 
-        const result = await addEnrollmentToStudentLabel({
-          enrollment,
-          label,
-          authzData: dangerousFullSystemAuthz(),
-        });
+        const result = await addToLabel(enrollment, label);
 
         assert.isNotNull(result);
         assert.equal(result.enrollment_id, enrollment.id);
         assert.equal(result.student_label_id, label.id);
 
-        // Adding again returns null
-        const duplicate = await addEnrollmentToStudentLabel({
-          enrollment,
-          label,
-          authzData: dangerousFullSystemAuthz(),
-        });
+        const duplicate = await addToLabel(enrollment, label);
         assert.isNull(duplicate);
       });
     });
   });
 
-  describe('removeEnrollmentFromStudentLabel', () => {
+  describe('removeLabelFromEnrollment', () => {
     it('removes label from enrollment', async () => {
       await helperDb.runInTransactionAndRollback(async () => {
         const enrollment = await createEnrollment();
-        const label = await createStudentLabel({ courseInstanceId: '1', name: 'Test Label' });
+        const label = await createTestLabel('Test Label');
 
-        await addEnrollmentToStudentLabel({
-          enrollment,
-          label,
-          authzData: dangerousFullSystemAuthz(),
-        });
-        await removeEnrollmentFromStudentLabel({
-          enrollment,
-          label,
-          authzData: dangerousFullSystemAuthz(),
-        });
+        await addToLabel(enrollment, label);
+        await removeFromLabel(enrollment, label);
 
         assert.isEmpty(await selectEnrollmentsInStudentLabel(label));
       });
@@ -220,24 +272,14 @@ describe('Student Label Model', () => {
   describe('selectEnrollmentsInStudentLabel', () => {
     it('returns enrollments that have the label', async () => {
       await helperDb.runInTransactionAndRollback(async () => {
-        const label = await createStudentLabel({ courseInstanceId: '1', name: 'Test Label' });
-
-        // Empty initially
+        const label = await createTestLabel('Test Label');
         assert.isEmpty(await selectEnrollmentsInStudentLabel(label));
 
         const enrollment1 = await createEnrollment();
         const enrollment2 = await createEnrollment();
 
-        await addEnrollmentToStudentLabel({
-          enrollment: enrollment1,
-          label,
-          authzData: dangerousFullSystemAuthz(),
-        });
-        await addEnrollmentToStudentLabel({
-          enrollment: enrollment2,
-          label,
-          authzData: dangerousFullSystemAuthz(),
-        });
+        await addToLabel(enrollment1, label);
+        await addToLabel(enrollment2, label);
 
         const enrollments = await selectEnrollmentsInStudentLabel(label);
         assert.equal(enrollments.length, 2);
@@ -251,31 +293,20 @@ describe('Student Label Model', () => {
     it('returns labels for enrollment', async () => {
       await helperDb.runInTransactionAndRollback(async () => {
         const enrollment = await createEnrollment();
-
-        // Empty initially
         assert.isEmpty(await selectStudentLabelsForEnrollment(enrollment));
 
-        const label1 = await createStudentLabel({ courseInstanceId: '1', name: 'Label A' });
-        const label2 = await createStudentLabel({ courseInstanceId: '1', name: 'Label B' });
+        const label1 = await createTestLabel('Label A');
+        const label2 = await createTestLabel('Label B');
 
-        await addEnrollmentToStudentLabel({
-          enrollment,
-          label: label1,
-          authzData: dangerousFullSystemAuthz(),
-        });
-        await addEnrollmentToStudentLabel({
-          enrollment,
-          label: label2,
-          authzData: dangerousFullSystemAuthz(),
-        });
+        await addToLabel(enrollment, label1);
+        await addToLabel(enrollment, label2);
 
         const labels = await selectStudentLabelsForEnrollment(enrollment);
         assert.equal(labels.length, 2);
         assert.isTrue(labels.some((l) => l.id === label1.id));
         assert.isTrue(labels.some((l) => l.id === label2.id));
 
-        // Excludes deleted labels (cascade delete removes enrollments too)
-        await deleteStudentLabel(label1.id);
+        await deleteStudentLabel(label1);
         const labelsAfterDelete = await selectStudentLabelsForEnrollment(enrollment);
         assert.equal(labelsAfterDelete.length, 1);
         assert.equal(labelsAfterDelete[0].id, label2.id);
@@ -287,19 +318,11 @@ describe('Student Label Model', () => {
     it('creates audit event when adding enrollment to label', async () => {
       await helperDb.runInTransactionAndRollback(async () => {
         const enrollment = await createEnrollment();
-        const label = await createStudentLabel({ courseInstanceId: '1', name: 'Test Label' });
+        const label = await createTestLabel('Test Label');
 
-        await addEnrollmentToStudentLabel({
-          enrollment,
-          label,
-          authzData: dangerousFullSystemAuthz(),
-        });
+        await addToLabel(enrollment, label);
 
-        const auditEvents = await selectAuditEvents({
-          subject_user_id: enrollment.user_id!,
-          table_names: ['student_label_enrollments'],
-          course_instance_id: label.course_instance_id,
-        });
+        const auditEvents = await getLabelAuditEvents(enrollment, label.course_instance_id);
 
         assert.equal(auditEvents.length, 1);
         assert.equal(auditEvents[0].action, 'insert');
@@ -316,30 +339,14 @@ describe('Student Label Model', () => {
     it('does NOT create audit event when adding duplicate enrollment', async () => {
       await helperDb.runInTransactionAndRollback(async () => {
         const enrollment = await createEnrollment();
-        const label = await createStudentLabel({ courseInstanceId: '1', name: 'Test Label' });
+        const label = await createTestLabel('Test Label');
 
-        // First add
-        await addEnrollmentToStudentLabel({
-          enrollment,
-          label,
-          authzData: dangerousFullSystemAuthz(),
-        });
+        await addToLabel(enrollment, label);
 
-        // Second add (duplicate)
-        const duplicate = await addEnrollmentToStudentLabel({
-          enrollment,
-          label,
-          authzData: dangerousFullSystemAuthz(),
-        });
+        const duplicate = await addToLabel(enrollment, label);
         assert.isNull(duplicate);
 
-        const auditEvents = await selectAuditEvents({
-          subject_user_id: enrollment.user_id!,
-          table_names: ['student_label_enrollments'],
-          course_instance_id: label.course_instance_id,
-        });
-
-        // Should only have one audit event (from the first add)
+        const auditEvents = await getLabelAuditEvents(enrollment, label.course_instance_id);
         assert.equal(auditEvents.length, 1);
       });
     });
@@ -347,27 +354,12 @@ describe('Student Label Model', () => {
     it('creates audit event when removing enrollment from label', async () => {
       await helperDb.runInTransactionAndRollback(async () => {
         const enrollment = await createEnrollment();
-        const label = await createStudentLabel({ courseInstanceId: '1', name: 'Test Label' });
+        const label = await createTestLabel('Test Label');
 
-        await addEnrollmentToStudentLabel({
-          enrollment,
-          label,
-          authzData: dangerousFullSystemAuthz(),
-        });
+        await addToLabel(enrollment, label);
+        await removeFromLabel(enrollment, label);
 
-        await removeEnrollmentFromStudentLabel({
-          enrollment,
-          label,
-          authzData: dangerousFullSystemAuthz(),
-        });
-
-        const auditEvents = await selectAuditEvents({
-          subject_user_id: enrollment.user_id!,
-          table_names: ['student_label_enrollments'],
-          course_instance_id: label.course_instance_id,
-        });
-
-        // Should have 2 events: insert and delete
+        const auditEvents = await getLabelAuditEvents(enrollment, label.course_instance_id);
         assert.equal(auditEvents.length, 2);
 
         const deleteEvent = auditEvents.find((e) => e.action === 'delete');
@@ -386,25 +378,12 @@ describe('Student Label Model', () => {
       await helperDb.runInTransactionAndRollback(async () => {
         const enrollment1 = await createEnrollment();
         const enrollment2 = await createEnrollment();
-        const label = await createStudentLabel({ courseInstanceId: '1', name: 'Bulk Label' });
+        const label = await createTestLabel('Bulk Label');
 
-        await addEnrollmentsToStudentLabel({
-          enrollments: [enrollment1, enrollment2],
-          label,
-          authzData: dangerousFullSystemAuthz(),
-        });
+        await bulkAddToLabel([enrollment1, enrollment2], label);
 
-        const auditEvents1 = await selectAuditEvents({
-          subject_user_id: enrollment1.user_id!,
-          table_names: ['student_label_enrollments'],
-          course_instance_id: label.course_instance_id,
-        });
-
-        const auditEvents2 = await selectAuditEvents({
-          subject_user_id: enrollment2.user_id!,
-          table_names: ['student_label_enrollments'],
-          course_instance_id: label.course_instance_id,
-        });
+        const auditEvents1 = await getLabelAuditEvents(enrollment1, label.course_instance_id);
+        const auditEvents2 = await getLabelAuditEvents(enrollment2, label.course_instance_id);
 
         assert.equal(auditEvents1.length, 1);
         assert.equal(auditEvents1[0].action, 'insert');
@@ -422,33 +401,14 @@ describe('Student Label Model', () => {
       await helperDb.runInTransactionAndRollback(async () => {
         const enrollment1 = await createEnrollment();
         const enrollment2 = await createEnrollment();
-        const label = await createStudentLabel({ courseInstanceId: '1', name: 'Bulk Label' });
+        const label = await createTestLabel('Bulk Label');
 
-        await addEnrollmentsToStudentLabel({
-          enrollments: [enrollment1, enrollment2],
-          label,
-          authzData: dangerousFullSystemAuthz(),
-        });
+        await bulkAddToLabel([enrollment1, enrollment2], label);
+        await bulkRemoveFromLabel([enrollment1, enrollment2], label);
 
-        await removeEnrollmentsFromStudentLabel({
-          enrollments: [enrollment1, enrollment2],
-          label,
-          authzData: dangerousFullSystemAuthz(),
-        });
+        const auditEvents1 = await getLabelAuditEvents(enrollment1, label.course_instance_id);
+        const auditEvents2 = await getLabelAuditEvents(enrollment2, label.course_instance_id);
 
-        const auditEvents1 = await selectAuditEvents({
-          subject_user_id: enrollment1.user_id!,
-          table_names: ['student_label_enrollments'],
-          course_instance_id: label.course_instance_id,
-        });
-
-        const auditEvents2 = await selectAuditEvents({
-          subject_user_id: enrollment2.user_id!,
-          table_names: ['student_label_enrollments'],
-          course_instance_id: label.course_instance_id,
-        });
-
-        // Each enrollment should have 2 events: insert and delete
         assert.equal(auditEvents1.length, 2);
         const deleteEvent1 = auditEvents1.find((e) => e.action === 'delete');
         assert.isDefined(deleteEvent1);
@@ -467,97 +427,20 @@ describe('Student Label Model', () => {
       await helperDb.runInTransactionAndRollback(async () => {
         const enrollment1 = await createEnrollment();
         const enrollment2 = await createEnrollment();
-        const label = await createStudentLabel({ courseInstanceId: '1', name: 'Bulk Label' });
+        const label = await createTestLabel('Bulk Label');
 
         // First add enrollment1
-        await addEnrollmentToStudentLabel({
-          enrollment: enrollment1,
-          label,
-          authzData: dangerousFullSystemAuthz(),
-        });
+        await addToLabel(enrollment1, label);
 
         // Bulk add both (enrollment1 is duplicate)
-        await addEnrollmentsToStudentLabel({
-          enrollments: [enrollment1, enrollment2],
-          label,
-          authzData: dangerousFullSystemAuthz(),
-        });
+        await bulkAddToLabel([enrollment1, enrollment2], label);
 
-        const auditEvents1 = await selectAuditEvents({
-          subject_user_id: enrollment1.user_id!,
-          table_names: ['student_label_enrollments'],
-          course_instance_id: label.course_instance_id,
-        });
+        const auditEvents1 = await getLabelAuditEvents(enrollment1, label.course_instance_id);
+        const auditEvents2 = await getLabelAuditEvents(enrollment2, label.course_instance_id);
 
-        const auditEvents2 = await selectAuditEvents({
-          subject_user_id: enrollment2.user_id!,
-          table_names: ['student_label_enrollments'],
-          course_instance_id: label.course_instance_id,
-        });
-
-        // enrollment1 should only have 1 event (from the first individual add)
         assert.equal(auditEvents1.length, 1);
-
-        // enrollment2 should have 1 event (from the bulk add)
         assert.equal(auditEvents2.length, 1);
         assert.equal(auditEvents2[0].action, 'insert');
-      });
-    });
-
-    it('creates audit events when label is deleted via sync', async () => {
-      await helperDb.runInTransactionAndRollback(async () => {
-        // Create label via sync with initial JSON
-        await syncStudentLabels('1', [{ name: 'SyncLabel', color: 'red1' }], null);
-
-        // Get the created label
-        const courseInstance = await selectCourseInstanceById('1');
-        const labels = await selectStudentLabelsInCourseInstance(courseInstance);
-        const syncLabel = labels.find((l) => l.name === 'SyncLabel');
-        assert.isDefined(syncLabel);
-
-        // Add enrollments to the label
-        const enrollment1 = await createEnrollment();
-        const enrollment2 = await createEnrollment();
-
-        await addEnrollmentToStudentLabel({
-          enrollment: enrollment1,
-          label: syncLabel,
-          authzData: dangerousFullSystemAuthz(),
-        });
-        await addEnrollmentToStudentLabel({
-          enrollment: enrollment2,
-          label: syncLabel,
-          authzData: dangerousFullSystemAuthz(),
-        });
-
-        // Remove label by syncing without it
-        await syncStudentLabels('1', [], null);
-
-        // Verify audit events created for each enrollment
-        const auditEvents1 = await selectAuditEvents({
-          subject_user_id: enrollment1.user_id!,
-          table_names: ['student_label_enrollments'],
-          course_instance_id: '1',
-        });
-
-        const auditEvents2 = await selectAuditEvents({
-          subject_user_id: enrollment2.user_id!,
-          table_names: ['student_label_enrollments'],
-          course_instance_id: '1',
-        });
-
-        // Should have 2 events each: insert and delete
-        assert.equal(auditEvents1.length, 2);
-        const deleteEvent1 = auditEvents1.find((e) => e.action === 'delete');
-        assert.isDefined(deleteEvent1);
-        assert.equal(deleteEvent1.action_detail, 'enrollment_removed');
-        assert.deepEqual(deleteEvent1.context, { label_name: 'SyncLabel' });
-
-        assert.equal(auditEvents2.length, 2);
-        const deleteEvent2 = auditEvents2.find((e) => e.action === 'delete');
-        assert.isDefined(deleteEvent2);
-        assert.equal(deleteEvent2.action_detail, 'enrollment_removed');
-        assert.deepEqual(deleteEvent2.context, { label_name: 'SyncLabel' });
       });
     });
   });

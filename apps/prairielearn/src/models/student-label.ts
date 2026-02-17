@@ -1,7 +1,7 @@
 import assert from 'node:assert';
 
 import { HttpStatusError } from '@prairielearn/error';
-import { loadSqlEquiv, queryOptionalRow, queryRow, queryRows } from '@prairielearn/postgres';
+import { loadSqlEquiv, queryRow, queryRows, runInTransactionAsync } from '@prairielearn/postgres';
 
 import { type AuthzData } from '../lib/authz-data-lib.js';
 import {
@@ -13,10 +13,20 @@ import {
   StudentLabelEnrollmentSchema,
   StudentLabelSchema,
 } from '../lib/db-types.js';
+import type { ColorJson } from '../schemas/infoCourse.js';
 
 import { insertAuditEvent } from './audit-event.js';
 
 const sql = loadSqlEquiv(import.meta.url);
+
+function assertLabelMatchesCourseInstance(
+  label: StudentLabel,
+  courseInstance: CourseInstance,
+): void {
+  if (label.course_instance_id !== courseInstance.id) {
+    throw new HttpStatusError(403, 'Label does not belong to this course instance');
+  }
+}
 
 function assertEnrollmentMatchesLabel(enrollment: Enrollment, label: StudentLabel): void {
   if (enrollment.course_instance_id !== label.course_instance_id) {
@@ -29,22 +39,22 @@ function assertEnrollmentMatchesLabel(enrollment: Enrollment, label: StudentLabe
 
 /**
  * Creates a new student label in the given course instance.
- *
- * This should ONLY be called for testing.
+ * Should only be called by sync code and tests.
  */
 export async function createStudentLabel({
-  courseInstanceId,
+  courseInstance,
+  uuid,
   name,
-  color = 'gray1',
+  color,
 }: {
-  courseInstanceId: string;
+  courseInstance: CourseInstance;
+  uuid: string;
   name: string;
-  color?: string;
+  color: ColorJson;
 }): Promise<StudentLabel> {
-  assert(process.env.NODE_ENV === 'test');
   return await queryRow(
     sql.create_student_label,
-    { course_instance_id: courseInstanceId, name, color },
+    { course_instance_id: courseInstance.id, uuid, name, color },
     StudentLabelSchema,
   );
 }
@@ -72,31 +82,25 @@ export async function selectStudentLabelById({
   id: string;
   courseInstance: CourseInstance;
 }): Promise<StudentLabel> {
-  const label = await queryOptionalRow(sql.select_student_label_by_id, { id }, StudentLabelSchema);
-  if (!label) {
-    throw new HttpStatusError(404, 'Label not found');
-  }
-  if (label.course_instance_id !== courseInstance.id) {
-    throw new HttpStatusError(403, 'Label does not belong to this course instance');
-  }
+  const label = await queryRow(sql.select_student_label_by_id, { id }, StudentLabelSchema);
+  assertLabelMatchesCourseInstance(label, courseInstance);
   return label;
 }
 
 /**
  * Deletes a student label.
  *
- * This should ONLY be called for testing.
+ * Should only be called by sync code and tests.
  */
-export async function deleteStudentLabel(id: string): Promise<StudentLabel> {
-  assert(process.env.NODE_ENV === 'test');
-  return await queryRow(sql.delete_student_label, { id }, StudentLabelSchema);
+export async function deleteStudentLabel(label: StudentLabel): Promise<StudentLabel> {
+  return await queryRow(sql.delete_student_label, { id: label.id }, StudentLabelSchema);
 }
 
 /**
  * Adds a label to an enrollment. If the enrollment already has this label,
  * this is a no-op.
  */
-export async function addEnrollmentToStudentLabel({
+export async function addLabelToEnrollment({
   enrollment,
   label,
   authzData,
@@ -105,7 +109,7 @@ export async function addEnrollmentToStudentLabel({
   label: StudentLabel;
   authzData: AuthzData;
 }): Promise<StudentLabelEnrollment | null> {
-  const results = await addEnrollmentsToStudentLabel({
+  const results = await addLabelToEnrollments({
     enrollments: [enrollment],
     label,
     authzData,
@@ -116,7 +120,7 @@ export async function addEnrollmentToStudentLabel({
 /**
  * Removes a label from an enrollment.
  */
-export async function removeEnrollmentFromStudentLabel({
+export async function removeLabelFromEnrollment({
   enrollment,
   label,
   authzData,
@@ -125,7 +129,7 @@ export async function removeEnrollmentFromStudentLabel({
   label: StudentLabel;
   authzData: AuthzData;
 }): Promise<StudentLabelEnrollment | null> {
-  const results = await removeEnrollmentsFromStudentLabel({
+  const results = await removeLabelFromEnrollments({
     enrollments: [enrollment],
     label,
     authzData,
@@ -137,7 +141,7 @@ export async function removeEnrollmentFromStudentLabel({
  * Adds a label to multiple enrollments in a single operation.
  * Returns the enrollments that received the label (those that didn't already have it).
  */
-export async function addEnrollmentsToStudentLabel({
+export async function addLabelToEnrollments({
   enrollments,
   label,
   authzData,
@@ -154,41 +158,42 @@ export async function addEnrollmentsToStudentLabel({
     assertEnrollmentMatchesLabel(enrollment, label);
   }
 
-  const results = await queryRows(
-    sql.add_enrollments_to_student_label,
-    { enrollment_ids: enrollments.map((e) => e.id), student_label_id: label.id },
-    StudentLabelEnrollmentSchema,
-  );
+  return await runInTransactionAsync(async () => {
+    const results = await queryRows(
+      sql.add_label_to_enrollments,
+      { enrollment_ids: enrollments.map((e) => e.id), student_label_id: label.id },
+      StudentLabelEnrollmentSchema,
+    );
 
-  // Create a map of enrollment_id to enrollment for quick lookup
-  const enrollmentMap = new Map(enrollments.map((e) => [e.id, e]));
+    const enrollmentMap = new Map(enrollments.map((e) => [e.id, e]));
 
-  // Log audit events for each added enrollment
-  for (const result of results) {
-    const enrollment = enrollmentMap.get(result.enrollment_id);
-    await insertAuditEvent({
-      tableName: 'student_label_enrollments',
-      action: 'insert',
-      actionDetail: 'enrollment_added',
-      rowId: result.id,
-      newRow: result,
-      subjectUserId: enrollment?.user_id ?? null,
-      courseInstanceId: label.course_instance_id,
-      enrollmentId: result.enrollment_id,
-      agentUserId: authzData.user.id,
-      agentAuthnUserId: 'authn_user' in authzData ? authzData.authn_user.id : authzData.user.id,
-      context: { label_name: label.name },
-    });
-  }
+    for (const result of results) {
+      const enrollment = enrollmentMap.get(result.enrollment_id);
+      assert(enrollment);
+      await insertAuditEvent({
+        tableName: 'student_label_enrollments',
+        action: 'insert',
+        actionDetail: 'enrollment_added',
+        rowId: result.id,
+        newRow: result,
+        subjectUserId: enrollment.user_id ?? null,
+        courseInstanceId: label.course_instance_id,
+        enrollmentId: result.enrollment_id,
+        agentUserId: authzData.user.id,
+        agentAuthnUserId: 'authn_user' in authzData ? authzData.authn_user.id : authzData.user.id,
+        context: { label_name: label.name },
+      });
+    }
 
-  return results;
+    return results;
+  });
 }
 
 /**
  * Removes a label from multiple enrollments in a single operation.
  * Returns the enrollments that had the label removed.
  */
-export async function removeEnrollmentsFromStudentLabel({
+export async function removeLabelFromEnrollments({
   enrollments,
   label,
   authzData,
@@ -205,34 +210,35 @@ export async function removeEnrollmentsFromStudentLabel({
     assertEnrollmentMatchesLabel(enrollment, label);
   }
 
-  const deletedRows = await queryRows(
-    sql.remove_enrollments_from_student_label,
-    { enrollment_ids: enrollments.map((e) => e.id), student_label_id: label.id },
-    StudentLabelEnrollmentSchema,
-  );
+  return await runInTransactionAsync(async () => {
+    const deletedRows = await queryRows(
+      sql.remove_label_from_enrollments,
+      { enrollment_ids: enrollments.map((e) => e.id), student_label_id: label.id },
+      StudentLabelEnrollmentSchema,
+    );
 
-  // Create a map of enrollment_id to enrollment for quick lookup
-  const enrollmentMap = new Map(enrollments.map((e) => [e.id, e]));
+    const enrollmentMap = new Map(enrollments.map((e) => [e.id, e]));
 
-  // Log audit events for each removed enrollment
-  for (const deletedRow of deletedRows) {
-    const enrollment = enrollmentMap.get(deletedRow.enrollment_id);
-    await insertAuditEvent({
-      tableName: 'student_label_enrollments',
-      action: 'delete',
-      actionDetail: 'enrollment_removed',
-      rowId: deletedRow.id,
-      oldRow: deletedRow,
-      subjectUserId: enrollment?.user_id ?? null,
-      courseInstanceId: label.course_instance_id,
-      enrollmentId: deletedRow.enrollment_id,
-      agentUserId: authzData.user.id,
-      agentAuthnUserId: 'authn_user' in authzData ? authzData.authn_user.id : authzData.user.id,
-      context: { label_name: label.name },
-    });
-  }
+    for (const deletedRow of deletedRows) {
+      const enrollment = enrollmentMap.get(deletedRow.enrollment_id);
+      assert(enrollment);
+      await insertAuditEvent({
+        tableName: 'student_label_enrollments',
+        action: 'delete',
+        actionDetail: 'enrollment_removed',
+        rowId: deletedRow.id,
+        oldRow: deletedRow,
+        subjectUserId: enrollment.user_id ?? null,
+        courseInstanceId: label.course_instance_id,
+        enrollmentId: deletedRow.enrollment_id,
+        agentUserId: authzData.user.id,
+        agentAuthnUserId: 'authn_user' in authzData ? authzData.authn_user.id : authzData.user.id,
+        context: { label_name: label.name },
+      });
+    }
 
-  return deletedRows;
+    return deletedRows;
+  });
 }
 
 /**
@@ -256,5 +262,39 @@ export async function selectStudentLabelsForEnrollment(
     sql.select_student_labels_for_enrollment,
     { enrollment_id: enrollment.id },
     StudentLabelSchema,
+  );
+}
+
+/**
+ * Updates the name and color of a student label.
+ *
+ * Should only be called by sync code and tests.
+ */
+export async function updateStudentLabel({
+  label,
+  name,
+  color,
+}: {
+  label: StudentLabel;
+  name: string;
+  color: ColorJson;
+}): Promise<StudentLabel> {
+  return await queryRow(
+    sql.update_student_label,
+    { id: label.id, name, color },
+    StudentLabelSchema,
+  );
+}
+
+/**
+ * Selects all student_label_enrollments rows for a given label.
+ */
+export async function selectStudentLabelEnrollmentsForLabel(
+  label: StudentLabel,
+): Promise<StudentLabelEnrollment[]> {
+  return await queryRows(
+    sql.select_student_label_enrollments_for_label,
+    { student_label_id: label.id },
+    StudentLabelEnrollmentSchema,
   );
 }

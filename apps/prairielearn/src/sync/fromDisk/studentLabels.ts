@@ -1,140 +1,83 @@
-import { z } from 'zod';
+import { execute, runInTransactionAsync } from '@prairielearn/postgres';
 
-import { execute, loadSqlEquiv, queryRows, runInTransactionAsync } from '@prairielearn/postgres';
-import { run } from '@prairielearn/run';
-import { IdSchema } from '@prairielearn/zod';
-
-import { StudentLabelSchema } from '../../lib/db-types.js';
+import { type CourseInstance } from '../../lib/db-types.js';
 import { insertAuditEvent } from '../../models/audit-event.js';
+import {
+  createStudentLabel,
+  deleteStudentLabel,
+  selectEnrollmentsInStudentLabel,
+  selectStudentLabelEnrollmentsForLabel,
+  selectStudentLabelsInCourseInstance,
+  updateStudentLabel,
+} from '../../models/student-label.js';
 import type { StudentLabelJson } from '../../schemas/infoCourseInstance.js';
 
-const sql = loadSqlEquiv(import.meta.url);
-
-const EnrollmentForLabelDeleteSchema = z.object({
-  student_label_enrollment_id: IdSchema,
-  enrollment_id: IdSchema,
-  student_label_id: IdSchema,
-  user_id: IdSchema.nullable(),
-  label_name: z.string(),
-});
-
-/**
- * Syncs student labels for a course instance from JSON configuration.
- * JSON is always the source of truth:
- * - Labels not in JSON are deleted
- * - Labels in JSON are upserted (insert or update color)
- * - If studentLabels is undefined, all labels are deleted
- *
- * @param courseInstanceId - The ID of the course instance
- * @param studentLabels - The labels from the JSON config, or undefined to delete all
- * @param authnUserId - The authenticated user ID for audit logging (null for system operations)
- */
 export async function syncStudentLabels(
-  courseInstanceId: string,
+  courseInstance: CourseInstance,
   studentLabels: StudentLabelJson[] | undefined,
   authnUserId: string | null = null,
-): Promise<Record<string, string>> {
+): Promise<void> {
   const desiredLabels = studentLabels ?? [];
 
-  const existingLabels = await queryRows(
-    sql.select_student_labels,
-    { course_instance_id: courseInstanceId },
-    StudentLabelSchema,
-  );
+  await runInTransactionAsync(async () => {
+    const existingLabels = await selectStudentLabelsInCourseInstance(courseInstance);
 
-  const existingByName = new Map(existingLabels.map((label) => [label.name, label]));
-  const desiredByName = new Map(desiredLabels.map((label) => [label.name, label]));
+    const existingByUuid = new Map(existingLabels.map((label) => [label.uuid, label]));
+    const desiredByUuid = new Map(desiredLabels.map((label) => [label.uuid, label]));
 
-  const labelsToCreate = desiredLabels.filter((label) => !existingByName.has(label.name));
-  const labelsToUpdate = desiredLabels.filter((label) => {
-    const existing = existingByName.get(label.name);
-    return existing && existing.color !== label.color;
-  });
-  const labelsToDelete = existingLabels
-    .filter((label) => !desiredByName.has(label.name))
-    .map((label) => label.name);
-
-  const newLabels = await run(async () => {
-    if (labelsToCreate.length === 0 && labelsToUpdate.length === 0 && labelsToDelete.length === 0) {
-      return [];
-    }
-
-    return await runInTransactionAsync(async () => {
-      const insertedLabels = await run(async () => {
-        if (labelsToCreate.length === 0) return [];
-
-        return queryRows(
-          sql.insert_student_labels,
-          {
-            course_instance_id: courseInstanceId,
-            student_labels: labelsToCreate.map((l) => JSON.stringify([l.name, l.color])),
-          },
-          StudentLabelSchema,
-        );
-      });
-
-      if (labelsToUpdate.length > 0) {
-        await execute(sql.update_student_labels, {
-          course_instance_id: courseInstanceId,
-          student_labels: labelsToUpdate.map((l) => JSON.stringify([l.name, l.color])),
-        });
-      }
-
-      if (labelsToDelete.length > 0) {
-        // Query affected enrollments before deletion for audit logging
-        const affectedEnrollments = await queryRows(
-          sql.select_enrollments_for_labels_to_delete,
-          {
-            course_instance_id: courseInstanceId,
-            student_labels: labelsToDelete,
-          },
-          EnrollmentForLabelDeleteSchema,
-        );
-
-        // Delete the labels (this will cascade delete student_label_enrollments)
-        await execute(sql.delete_student_labels, {
-          course_instance_id: courseInstanceId,
-          student_labels: labelsToDelete,
-        });
-
-        // Log audit events for each removed enrollment
-        for (const enrollment of affectedEnrollments) {
-          await insertAuditEvent({
-            tableName: 'student_label_enrollments',
-            action: 'delete',
-            actionDetail: 'enrollment_removed',
-            rowId: enrollment.student_label_enrollment_id,
-            oldRow: {
-              id: enrollment.student_label_enrollment_id,
-              enrollment_id: enrollment.enrollment_id,
-              student_label_id: enrollment.student_label_id,
-            },
-            subjectUserId: enrollment.user_id,
-            courseInstanceId,
-            enrollmentId: enrollment.enrollment_id,
-            agentUserId: authnUserId,
-            agentAuthnUserId: authnUserId,
-            context: { label_name: enrollment.label_name },
-          });
-        }
-      }
-
-      return insertedLabels;
+    const labelsToCreate = desiredLabels.filter((label) => !existingByUuid.has(label.uuid));
+    const labelsToUpdate = desiredLabels.filter((label) => {
+      const existing = existingByUuid.get(label.uuid);
+      return existing && (existing.name !== label.name || existing.color !== label.color);
     });
-  });
+    const labelsToDelete = existingLabels.filter((label) => !desiredByUuid.has(label.uuid));
 
-  // Build name to ID map from existing (not deleted) + newly inserted labels
-  const nameToIdMap: Record<string, string> = {};
-
-  for (const label of existingLabels) {
-    if (!labelsToDelete.includes(label.name)) {
-      nameToIdMap[label.name] = label.id;
+    if (labelsToCreate.length === 0 && labelsToUpdate.length === 0 && labelsToDelete.length === 0) {
+      return;
     }
-  }
 
-  for (const label of newLabels) {
-    nameToIdMap[label.name] = label.id;
-  }
+    // Defer the name uniqueness constraint so that label name swaps don't
+    // cause intermediate constraint violations.
+    // If we end up doing this in other places, we should add a helper function to the postgres library.
+    await execute('SET CONSTRAINTS student_labels_course_instance_id_name_key DEFERRED;');
 
-  return nameToIdMap;
+    for (const label of labelsToCreate) {
+      await createStudentLabel({
+        courseInstance,
+        uuid: label.uuid,
+        name: label.name,
+        color: label.color,
+      });
+    }
+
+    for (const label of labelsToUpdate) {
+      const existing = existingByUuid.get(label.uuid)!;
+      await updateStudentLabel({ label: existing, name: label.name, color: label.color });
+    }
+
+    for (const label of labelsToDelete) {
+      const enrollments = await selectEnrollmentsInStudentLabel(label);
+      const labelEnrollments = await selectStudentLabelEnrollmentsForLabel(label);
+
+      const userIdByEnrollmentId = new Map(enrollments.map((e) => [e.id, e.user_id]));
+
+      for (const sle of labelEnrollments) {
+        await insertAuditEvent({
+          tableName: 'student_label_enrollments',
+          action: 'delete',
+          actionDetail: 'enrollment_removed',
+          rowId: sle.id,
+          oldRow: sle,
+          subjectUserId: userIdByEnrollmentId.get(sle.enrollment_id) ?? null,
+          courseInstanceId: courseInstance.id,
+          enrollmentId: sle.enrollment_id,
+          agentUserId: authnUserId,
+          agentAuthnUserId: authnUserId,
+          context: { label_name: label.name },
+        });
+      }
+
+      await deleteStudentLabel(label);
+    }
+  });
 }
