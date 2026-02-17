@@ -1,0 +1,5 @@
+I need to add some vscode settings for reteps.htmlmustache-lsp. printwidth=100 customCodeTags=pl-code,pl-file-editor
+
+---
+
+can i change an extension identifier?

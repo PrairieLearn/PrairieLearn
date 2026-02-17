@@ -1,0 +1,29 @@
+{
+  "cli_version": "0.4.2",
+  "checkpoint_id": "904de5e91548",
+  "session_id": "cbc47d11-aa7b-4071-b2dd-41bd5c00f857",
+  "strategy": "manual-commit",
+  "created_at": "2026-02-17T15:48:58.395771Z",
+  "branch": "reteps/htmlmustache-lsp-settings",
+  "checkpoints_count": 1,
+  "files_touched": [
+    ".vscode/settings.json"
+  ],
+  "agent": "Claude Code",
+  "token_usage": {
+    "input_tokens": 9,
+    "cache_creation_tokens": 10731,
+    "cache_read_tokens": 216381,
+    "output_tokens": 69,
+    "api_call_count": 5
+  },
+  "initial_attribution": {
+    "calculated_at": "2026-02-17T15:48:58.387097Z",
+    "agent_lines": 29,
+    "human_added": 1105,
+    "human_modified": 3,
+    "human_removed": 0,
+    "total_committed": 1137,
+    "agent_percentage": 2.550571679859279
+  }
+}

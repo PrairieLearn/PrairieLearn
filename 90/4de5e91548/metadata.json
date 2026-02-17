@@ -1,0 +1,26 @@
+{
+  "cli_version": "0.4.2",
+  "checkpoint_id": "904de5e91548",
+  "strategy": "manual-commit",
+  "branch": "reteps/htmlmustache-lsp-settings",
+  "checkpoints_count": 1,
+  "files_touched": [
+    ".vscode/settings.json"
+  ],
+  "sessions": [
+    {
+      "metadata": "/90/4de5e91548/0/metadata.json",
+      "transcript": "/90/4de5e91548/0/full.jsonl",
+      "context": "/90/4de5e91548/0/context.md",
+      "content_hash": "/90/4de5e91548/0/content_hash.txt",
+      "prompt": "/90/4de5e91548/0/prompt.txt"
+    }
+  ],
+  "token_usage": {
+    "input_tokens": 9,
+    "cache_creation_tokens": 10731,
+    "cache_read_tokens": 216381,
+    "output_tokens": 69,
+    "api_call_count": 5
+  }
+}
