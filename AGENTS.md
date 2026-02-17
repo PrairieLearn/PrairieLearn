@@ -55,7 +55,7 @@ Typechecking:
 
 Linting:
 
-- Individual files: `yarn eslint --fix path/to/file.ts`. Prefer using a skill / LSP / MCP for this to improve performance.
+- Individual files: `yarn eslint --fix path/to/file.ts`. Prefer using a skill / LSP / MCP for this to improve performance. For dead code detection: use `make check-dependencies`.
 - All files: `make lint-js`
 
 Formatting:
