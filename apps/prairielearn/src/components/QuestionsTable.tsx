@@ -1,8 +1,10 @@
+import { type RankingInfo, rankItem } from '@tanstack/match-sorter-utils';
 import { useQuery } from '@tanstack/react-query';
 import {
   type ColumnFiltersState,
   type ColumnPinningState,
   type ColumnSizingState,
+  type FilterFn,
   type Header,
   type SortingState,
   type Updater,
@@ -36,6 +38,21 @@ import { TagBadgeList } from './TagBadge.js';
 import { TopicBadge } from './TopicBadge.js';
 
 export type { CourseInstance, SafeQuestionsPageData } from './QuestionsTable.shared.js';
+
+declare module '@tanstack/react-table' {
+  interface FilterFns {
+    fuzzy: FilterFn<unknown>;
+  }
+  interface FilterMeta {
+    itemRank: RankingInfo;
+  }
+}
+
+const fuzzyFilter: FilterFn<any> = (row, columnId, value, addMeta) => {
+  const itemRank = rankItem(row.getValue(columnId), value);
+  addMeta({ itemRank });
+  return itemRank.passed;
+};
 
 const DEFAULT_SORT: SortingState = [];
 const DEFAULT_PINNING: ColumnPinningState = { left: ['qid'], right: [] };
@@ -751,6 +768,10 @@ export function QuestionsTable({
     data: questions,
     columns,
     columnResizeMode: 'onChange',
+    filterFns: {
+      fuzzy: fuzzyFilter,
+    },
+    globalFilterFn: 'fuzzy',
     getRowId: (row) => row.id,
     state: {
       sorting,
