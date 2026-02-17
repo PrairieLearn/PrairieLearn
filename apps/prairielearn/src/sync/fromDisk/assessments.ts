@@ -78,7 +78,13 @@ function mergeAndValidatePreferences(
   if (!valid && validate.errors) {
     for (const error of validate.errors) {
       const path = error.instancePath || '/';
-      errors.push(`Question "${qid}": preferences${path} ${error.message}`);
+      let message = `Question "${qid}": preferences${path} ${error.message}`;
+
+      if (error.keyword === 'enum' && error.params.allowedValues) {
+        message += `: ${error.params.allowedValues.join(', ')}`;
+      }
+
+      errors.push(message);
     }
   }
 

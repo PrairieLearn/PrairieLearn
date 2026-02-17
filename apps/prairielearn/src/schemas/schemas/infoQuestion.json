@@ -395,16 +395,40 @@
           {
             "type": "object",
             "additionalProperties": false,
-            "required": ["enum", "default"],
+            "required": ["type", "enum", "default"],
             "properties": {
+              "type": {
+                "type": "string",
+                "const": "string"
+              },
               "enum": {
                 "type": "array",
                 "items": {
-                  "type": ["string", "number"]
+                  "type": "string"
                 }
               },
               "default": {
-                "type": ["string", "number"]
+                "type": "string"
+              }
+            }
+          },
+          {
+            "type": "object",
+            "additionalProperties": false,
+            "required": ["type", "enum", "default"],
+            "properties": {
+              "type": {
+                "type": "string",
+                "const": "number"
+              },
+              "enum": {
+                "type": "array",
+                "items": {
+                  "type": "number"
+                }
+              },
+              "default": {
+                "type": "number"
               }
             }
           }

@@ -23,18 +23,25 @@ const BooleanType = z
   .strict();
 
 // For Enums, we ensure 'default' matches the allowed primitive types
-const EnumType = z
-  .object({
-    enum: z.array(z.union([z.string(), z.number()])),
-    default: z.union([z.string(), z.number()]),
-  })
-  .strict()
-  .refine((data) => data.enum.includes(data.default), {
-    message: 'Default value must be present in the enum options',
-    path: ['default'],
-  });
+const StringEnumType = z.object({
+  type: z.literal("string"),
+  enum: z.array(z.string()),
+  default: z.string()
+}).strict().refine((data) => data.enum.includes(data.default), {
+  message: 'Default value must be present in the enum options',
+  path: ['default'],
+});
 
-const FieldSchema = z.union([StringType, NumberType, BooleanType, EnumType]);
+const NumberEnumType = z.object({
+  type: z.literal("number"),
+  enum: z.array(z.number()),
+  default: z.number()
+}).strict().refine((data) => data.enum.includes(data.default), {
+  message: 'Default value must be present in the enum options',
+  path: ['default'],
+});
+
+const FieldSchema = z.union([StringType, NumberType, BooleanType, StringEnumType, NumberEnumType]);
 
 export const QuestionParameterJsonSchema = z.record(z.string(), FieldSchema);
 
