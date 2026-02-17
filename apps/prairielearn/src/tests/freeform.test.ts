@@ -1,6 +1,6 @@
 import { describe, expect, it } from 'vitest';
 
-import { getPreferences } from './freeform.js';
+import { getPreferences } from '../../src/question-servers/freeform.js';
 
 describe('getPreferences', () => {
   it('returns preferences when provided', () => {
@@ -22,6 +22,19 @@ describe('getPreferences', () => {
     };
     expect(getPreferences({ preferencesSchema })).toEqual({
       theme: 'light',
+      fontSize: 12,
+      showHints: true,
+    });
+  });
+
+  it('extracts partial defaults from preferencesSchema when preferences is provided', () => {
+    const preferencesSchema = {
+      theme: { default: 'light' },
+      fontSize: { default: 12 },
+      showHints: { default: true },
+    };
+    expect(getPreferences({ preferencesSchema, preferences: { theme: 'dark' } })).toEqual({
+      theme: 'dark',
       fontSize: 12,
       showHints: true,
     });

@@ -89,21 +89,14 @@ export function getPreferences({
   preferences?: Record<string, string | number | boolean> | null;
   preferencesSchema?: Record<string, { default: string | number | boolean }> | null;
 }): Record<string, string | number | boolean> {
-  if (preferences) {
-    return preferences;
-  }
-
+  const defaults: Record<string, string | number | boolean> = {};
   if (preferencesSchema) {
-    const defaults: Record<string, string | number | boolean> = {};
     for (const [key, prop] of Object.entries(preferencesSchema)) {
-      if ('default' in prop) {
-        defaults[key] = prop.default;
-      }
+      defaults[key] = prop.default;
     }
-    return defaults;
   }
 
-  return {};
+  return { ...defaults, ...preferences };
 }
 
 // Maps core element names to element info
