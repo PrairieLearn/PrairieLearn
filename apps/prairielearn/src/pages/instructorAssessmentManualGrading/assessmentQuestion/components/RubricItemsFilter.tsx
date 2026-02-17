@@ -1,4 +1,4 @@
-import { useMemo } from 'preact/compat';
+import { useMemo } from 'react';
 import { Dropdown } from 'react-bootstrap';
 
 import type { RubricData } from '../../../../lib/manualGrading.types.js';
@@ -36,7 +36,7 @@ export function RubricItemsFilter({
   const sortedRubricItems = useMemo(() => {
     if (!rubricData) return [];
 
-    return [...rubricData.rubric_items].sort((a, b) => a.number - b.number);
+    return [...rubricData.rubric_items].sort((a, b) => a.rubric_item.number - b.rubric_item.number);
   }, [rubricData]);
 
   if (!rubricData || rubricData.rubric_items.length === 0) {
@@ -50,7 +50,7 @@ export function RubricItemsFilter({
         variant="tanstack-table"
       >
         <i
-          class={rubricItemsFilter.length > 0 ? 'bi bi-funnel-fill me-2' : 'bi bi-funnel me-2'}
+          className={rubricItemsFilter.length > 0 ? 'bi bi-funnel-fill me-2' : 'bi bi-funnel me-2'}
           aria-hidden="true"
         />
         Filter by rubric items
@@ -58,31 +58,36 @@ export function RubricItemsFilter({
       <Dropdown.Menu align="end" style={{ width: '400px' }}>
         {sortedRubricItems.map((item) => (
           <Dropdown.Item
-            key={item.id}
+            key={item.rubric_item.id}
             as="label"
             style={{ cursor: 'pointer', whiteSpace: 'normal' }}
             onClick={(e) => e.stopPropagation()}
           >
-            <div class="d-flex align-items-center gap-2">
+            <div className="d-flex align-items-center gap-2">
               <input
                 type="checkbox"
-                checked={rubricItemsFilter.includes(item.id)}
+                checked={rubricItemsFilter.includes(item.rubric_item.id)}
                 onChange={(e) => {
                   const checked = e.currentTarget.checked;
                   void setRubricItemsFilter((prev) => {
                     if (checked) {
-                      return [...prev, item.id];
+                      return [...prev, item.rubric_item.id];
                     } else {
-                      return prev.filter((v) => v !== item.id);
+                      return prev.filter((v) => v !== item.rubric_item.id);
                     }
                   });
                 }}
               />
-              <div>{item.description}</div>
-              <small class="text-muted text-nowrap">
-                {item.points > 0 ? `+${item.points}` : item.points} pts
+              <div>{item.rubric_item.description}</div>
+              <small className="text-muted text-nowrap">
+                {item.rubric_item.points > 0
+                  ? `+${item.rubric_item.points}`
+                  : item.rubric_item.points}{' '}
+                pts
               </small>
-              <span class="ms-auto badge bg-secondary">{rubricItemUsage.get(item.id) ?? 0}</span>
+              <span className="ms-auto badge bg-secondary">
+                {rubricItemUsage.get(item.rubric_item.id) ?? 0}
+              </span>
             </div>
           </Dropdown.Item>
         ))}

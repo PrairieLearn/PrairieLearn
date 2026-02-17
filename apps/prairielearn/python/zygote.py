@@ -26,13 +26,13 @@ import subprocess
 import sys
 import time
 import types
+import warnings
 from collections.abc import Iterable, Sequence
 from importlib.abc import MetaPathFinder
 from inspect import signature
 from typing import Any
 
 import prairielearn.internal.zygote_utils as zu
-from prairielearn.internal import question_phases
 
 saved_path = copy.copy(sys.path)
 
@@ -79,6 +79,30 @@ if drop_privileges:
 import logging
 
 logging.getLogger("matplotlib.font_manager").disabled = True
+
+# As part of our Python 3.13 upgrade strategy, we'll silence warnings that complain
+# about invalid escape sequences in string literals. We're going to defer forcing
+# courses to do anything about them until we have automated tooling in place to help
+# with the fixes.
+#
+# This won't cause problems for first-party code, since we have Ruff checking for
+# these issues as part of our linting process.
+warnings.filterwarnings(
+    "ignore",
+    category=SyntaxWarning,
+    message=r"invalid escape sequence .*",
+)
+
+# Importing pandas causes pyarrow to create native threads. These threads are
+# invisible to Python's threading module but are detected by os.fork(), which
+# emits a DeprecationWarning about potential deadlocks. The threads are from
+# pyarrow's C++ code, not Python threads holding the GIL, so they're safe to
+# fork with. We suppress this warning since it's a false positive in our case.
+warnings.filterwarnings(
+    "ignore",
+    category=DeprecationWarning,
+    message=r".*multi-threaded.*fork\(\).*",
+)
 
 # Pre-load commonly used modules
 import html
@@ -164,6 +188,28 @@ def try_dumps(obj: Any, *, sort_keys: bool = False, allow_nan: bool = False) -> 
 
 
 def worker_loop() -> None:
+    from prairielearn.internal.traceback import make_rich_excepthook
+
+    sys.excepthook = make_rich_excepthook(
+        suppress=[
+            # Suppress source code for core library code — show
+            # the filename/line but not the code itself.
+            os.path.join(os.path.dirname(__file__), "prairielearn"),
+        ],
+        hide=[
+            # Hide frames from internal library and infrastructure code.
+            __file__,
+            os.path.join(os.path.dirname(__file__), "prairielearn", "internal"),
+        ],
+        # Print paths relative to `apps/prairielearn`
+        relative_to=os.path.dirname(os.path.dirname(__file__)),
+    )
+
+    # The prairielearn.internal module is only needed in the worker process.
+    # Because it makes use of threading, we only import it after forking to
+    # avoid warnings about inheriting threads from the parent process.
+    from prairielearn.internal import question_phases
+
     # Whether the PRNGs have already been seeded in this worker_loop() call
     seeded = False
 
@@ -343,11 +389,9 @@ def worker_loop() -> None:
                 exec(code, mod)
                 mod_cache[file_path] = mod
 
-            # check whether we have the desired fcn in the module
-            if fcn in mod:
-                # get the desired function in the loaded module
-                method = mod[fcn]
-
+            # try to load and execute the desired function
+            method = zu.get_module_function(mod, fcn)
+            if method is not None:
                 # check if the desired function is a legacy element function - if
                 # so, we add an argument for element_index
                 arg_names = list(signature(method).parameters.keys())
@@ -487,10 +531,14 @@ with open(4, "w", encoding="utf-8") as exitf:
                     json.dump({"exited": True}, exitf)
                     exitf.write("\n")
                     exitf.flush()
+                elif os.WEXITSTATUS(status) == 1:
+                    # The worker died due to an unhandled exception; its
+                    # stderr already contains the relevant traceback, so
+                    # exit without adding another one.
+                    sys.exit(1)
                 else:
-                    # The worker did not exit gracefully
                     raise RuntimeError(
-                        f"worker process exited unexpectedly with status {status}"
+                        f"worker process exited unexpectedly with status {os.WEXITSTATUS(status)}"
                     )
             else:
                 # Something else happened that is weird

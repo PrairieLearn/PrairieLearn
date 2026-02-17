@@ -1,5 +1,4 @@
 import { Router } from 'express';
-import asyncHandler from 'express-async-handler';
 import { z } from 'zod';
 
 import * as error from '@prairielearn/error';
@@ -7,6 +6,7 @@ import { flash } from '@prairielearn/flash';
 import { execute, loadSqlEquiv, queryRow } from '@prairielearn/postgres';
 
 import { CourseInstanceSchema, CourseSchema } from '../../../lib/db-types.js';
+import { typedAsyncHandler } from '../../../lib/res-locals.js';
 import { parseDesiredPlanGrants } from '../../lib/billing/components/PlanGrantsEditor.js';
 import {
   getPlanGrantsForCourseInstance,
@@ -41,7 +41,7 @@ async function selectCourseInstanceAndCourseInInstitution({
 
 router.get(
   '/',
-  asyncHandler(async (req, res) => {
+  typedAsyncHandler<'plain'>(async (req, res) => {
     const institution = await getInstitution(req.params.institution_id);
     const { course, course_instance } = await selectCourseInstanceAndCourseInInstitution({
       institution_id: req.params.institution_id,
@@ -65,11 +65,15 @@ router.get(
 
 router.post(
   '/',
-  asyncHandler(async (req, res) => {
+  typedAsyncHandler<'plain'>(async (req, res) => {
     const { course_instance } = await selectCourseInstanceAndCourseInInstitution({
       institution_id: req.params.institution_id,
       unsafe_course_instance_id: req.params.course_instance_id,
     });
+
+    if (course_instance.deleted_at != null) {
+      throw new error.HttpStatusError(403, 'Cannot modify a deleted course instance');
+    }
 
     if (req.body.__action === 'update_enrollment_limit') {
       await execute(sql.update_enrollment_limit, {
@@ -88,7 +92,7 @@ router.post(
       await reconcilePlanGrantsForCourseInstance(
         course_instance.id,
         desiredPlans,
-        res.locals.authn_user.user_id,
+        res.locals.authn_user.id,
       );
       flash('success', 'Successfully updated institution plan grants.');
       res.redirect(req.originalUrl);

@@ -1,10 +1,14 @@
 /* eslint-disable react-hooks/rules-of-hooks */
+import { execSync } from 'node:child_process';
 import fs from 'node:fs/promises';
+import path from 'node:path';
 
 import { test as base } from '@playwright/test';
 import * as tmp from 'tmp-promise';
 
-import type { Config } from '../../lib/config.js';
+import { TEST_COURSE_PATH } from '../../lib/paths.js';
+
+import { setupWorkerServer } from './serverUtils.js';
 
 export { expect } from '@playwright/test';
 
@@ -15,62 +19,52 @@ interface TestFixtures {
 
 interface WorkerFixtures {
   workerPort: number;
+  /** Path to the temporary writable copy of testCourse */
+  testCoursePath: string;
 }
-
-const BASE_PORT = 3014;
 
 /**
  * Worker-scoped fixture that configures Playwright tests to use worker-specific ports.
- * Each Playwright worker gets its own server instance with its own isolated database.
+ * Each Playwright worker gets its own server instance with its own isolated database
+ * and a separate writable copy of testCourse.
  *
- * The server auto-starts when TEST_WORKER_INDEX is set (see server.ts).
- * The TEST_WORKER_INDEX environment variable is used to determine which database
- * to use for this worker, ensuring test isolation across parallel workers.
+ * The server is started as a subprocess and we wait for the "PrairieLearn server ready"
+ * message in the output to know when it's ready.
+ *
+ * The testCoursePath fixture provides the path to the temporary copy of testCourse,
+ * which can be safely modified by tests without affecting other workers or the
+ * original testCourse directory.
  *
  * See https://playwright.dev/docs/test-fixtures#automatic-fixtures and
  * https://playwright.dev/docs/test-parallel#isolate-test-data-between-parallel-workers
  */
 export const test = base.extend<TestFixtures, WorkerFixtures>({
-  workerPort: [
+  testCoursePath: [
     // eslint-disable-next-line no-empty-pattern
-    async ({}, use, workerInfo) => {
-      // Pick a unique port based on the worker index.
-      const port = BASE_PORT + workerInfo.workerIndex + 1;
+    async ({}, use) => {
+      const tempDir = await tmp.dir({ unsafeCleanup: true });
+      const tempTestCoursePath = path.join(tempDir.path, 'testCourse');
+      await fs.cp(TEST_COURSE_PATH, tempTestCoursePath, { recursive: true });
 
-      // Initialize the database with the test utils.
-      const { setupDatabases, after: destroyDatabases } = await import('../helperDb.js');
-      const setupResults = await setupDatabases({ configurePool: false });
+      // The file editor requires git
+      execSync('git init -b master', { cwd: tempTestCoursePath });
+      execSync('git add -A', { cwd: tempTestCoursePath });
+      execSync('git config user.name "Dev User"', { cwd: tempTestCoursePath });
+      execSync('git config user.email "dev@example.com"', { cwd: tempTestCoursePath });
+      execSync('git commit -m "Initial commit"', { cwd: tempTestCoursePath });
 
-      await tmp.withFile(
-        async (tmpFile) => {
-          // Construct a test-specific config and write it to disk.
-          const config: Partial<Config> = {
-            serverPort: String(port),
-            postgresqlUser: setupResults.user,
-            postgresqlDatabase: setupResults.database,
-            postgresqlHost: setupResults.host,
-          };
-          await fs.writeFile(tmpFile.path, JSON.stringify(config, null, 2));
+      await use(tempTestCoursePath);
 
-          process.env.NODE_ENV = 'test';
-          process.env.PL_CONFIG_PATH = tmpFile.path;
-          process.env.PL_START_SERVER = 'true';
+      await tempDir.cleanup();
+    },
+    { scope: 'worker' },
+  ],
 
-          // This import implicitly starts the server
-          const { close } = await import('../../server.js');
-
-          try {
-            await use(port);
-          } finally {
-            // Clean up the server
-            await close();
-
-            // Tear down the testing database.
-            await destroyDatabases();
-          }
-        },
-        { postfix: 'config.json' },
-      );
+  workerPort: [
+    async ({ testCoursePath }, use, workerInfo) => {
+      await setupWorkerServer(workerInfo, use, {
+        courseDirs: [testCoursePath],
+      });
     },
     { scope: 'worker' },
   ],

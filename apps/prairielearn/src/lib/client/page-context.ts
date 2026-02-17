@@ -31,7 +31,6 @@ const BasePageContextSchema = z.object({
   access_as_administrator: z.boolean(),
   is_administrator: z.boolean(),
   is_institution_administrator: z.boolean(),
-  news_item_notification_count: SelectUserSchema.shape.news_item_notification_count,
   navPage: NavPageSchema,
   /** You should prefer to set the navbarType instead of using this value. */
   navbarType: NavbarTypeSchema,
@@ -72,7 +71,6 @@ const StudentCourseContextSchema = z
         short_name: z.string(),
       })
       .brand('StudentCourse'),
-    has_enhanced_navigation: z.boolean(),
   })
   .brand<'StudentCourseContext'>();
 type StudentCourseContext = z.infer<typeof StudentCourseContextSchema>;
@@ -87,7 +85,6 @@ const StaffCourseContextSchema = z
       })
       .brand('StaffCourse'),
     institution: StaffInstitutionSchema,
-    has_enhanced_navigation: z.boolean(),
   })
   .brand<'StaffCourseContext'>();
 type StaffCourseContext = z.infer<typeof StaffCourseContextSchema>;

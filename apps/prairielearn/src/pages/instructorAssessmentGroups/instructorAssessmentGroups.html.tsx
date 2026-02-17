@@ -1,20 +1,19 @@
 import { z } from 'zod';
 
 import { escapeHtml, html } from '@prairielearn/html';
-import { renderHtml } from '@prairielearn/preact';
+import { IdSchema } from '@prairielearn/zod';
 
 import { Modal } from '../../components/Modal.js';
 import { PageLayout } from '../../components/PageLayout.js';
-import { AssessmentSyncErrorsAndWarnings } from '../../components/SyncErrorsAndWarnings.js';
 import { nodeModulesAssetPath } from '../../lib/assets.js';
-import { type GroupConfig, IdSchema, UserSchema } from '../../lib/db-types.js';
-import type { UntypedResLocals } from '../../lib/res-locals.types.js';
+import { type GroupConfig, UserSchema } from '../../lib/db-types.js';
+import type { ResLocalsForPage } from '../../lib/res-locals.js';
 
 export const GroupUsersRowSchema = z.object({
   group_id: IdSchema,
   name: z.string(),
   size: z.number(),
-  users: z.array(UserSchema.pick({ user_id: true, uid: true })),
+  users: z.array(UserSchema.pick({ id: true, uid: true })),
 });
 type GroupUsersRow = z.infer<typeof GroupUsersRowSchema>;
 
@@ -29,7 +28,7 @@ export function InstructorAssessmentGroups({
   groupConfigInfo?: GroupConfig;
   groups?: GroupUsersRow[];
   notAssigned?: string[];
-  resLocals: UntypedResLocals;
+  resLocals: ResLocalsForPage<'assessment'>;
 }) {
   return PageLayout({
     resLocals,
@@ -55,15 +54,6 @@ export function InstructorAssessmentGroups({
         )}"></script>
     `,
     content: html`
-      ${renderHtml(
-        <AssessmentSyncErrorsAndWarnings
-          authzData={resLocals.authz_data}
-          assessment={resLocals.assessment}
-          courseInstance={resLocals.course_instance}
-          course={resLocals.course}
-          urlPrefix={resLocals.urlPrefix}
-        />,
-      )}
       ${!groupConfigInfo
         ? html`
             <div class="card mb-4">
@@ -123,7 +113,7 @@ export function InstructorAssessmentGroups({
                 ? html`
                     <div class="container-fluid">
                       <div class="row">
-                        <div class="col-sm bg-light py-4 border" align="center">
+                        <div class="col-sm bg-light py-4 border text-center">
                           <button
                             type="button"
                             class="btn btn-primary text-nowrap"
@@ -134,7 +124,7 @@ export function InstructorAssessmentGroups({
                           </button>
                           <div class="mt-2">Upload a CSV file with group assignments.</div>
                         </div>
-                        <div class="col-sm bg-light py-4 border" align="center">
+                        <div class="col-sm bg-light py-4 border text-center">
                           <button
                             type="button"
                             class="btn btn-primary text-nowrap"
@@ -356,7 +346,7 @@ function RemoveMembersForm({ row, csrfToken }: { row: GroupUsersRow; csrfToken: 
         <label class="form-label" for="delete-member-form-${row.group_id}">UID:</label>
         <select class="form-select" name="user_id" id="delete-member-form-${row.group_id}">
           ${row.users.map((user) => {
-            return html` <option value="${user.user_id}">${user.uid}</option> `;
+            return html` <option value="${user.id}">${user.uid}</option> `;
           })}
         </select>
       </div>
@@ -379,7 +369,7 @@ function UploadAssessmentGroupsModal({ csrfToken }: { csrfToken: string }) {
     body: html`
       <p>Upload a CSV file in the format of:</p>
       <code class="text-dark">
-        groupName,UID<br />
+        group_name,uid<br />
         groupA,one@example.com<br />
         groupA,two@example.com<br />
         groupB,three@example.com<br />
@@ -387,8 +377,8 @@ function UploadAssessmentGroupsModal({ csrfToken }: { csrfToken: string }) {
       >
       <!-- Closing code tag not on its own line to improve copy/paste formatting -->
       <p class="mt-3">
-        The <code>groupname</code> column should be a unique identifier for each group. To change
-        the grouping, link uids to the groupname.
+        The <code>group_name</code> column should be a unique identifier for each group. To change
+        the grouping, link uids to the group name.
       </p>
       <div class="mb-3">
         <label class="form-label" for="uploadAssessmentGroupsFileInput"> Choose CSV file </label>
@@ -510,7 +500,7 @@ function DeleteAllGroupsModal({
 }: {
   csrfToken: string;
   assessmentSetName: string;
-  assessmentNumber: number;
+  assessmentNumber: string;
 }) {
   return Modal({
     id: 'deleteAllGroupsModal',

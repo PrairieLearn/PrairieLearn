@@ -49,8 +49,6 @@ import { TanstackTableCard } from '@prairielearn/ui';
     </>
   }
   globalFilter={{
-    value: globalFilter,
-    setValue: setGlobalFilter,
     placeholder: 'Search by UID, name, email...',
   }}
   tableOptions={tableOptions}
@@ -107,6 +105,30 @@ const tableOptions = {
   },
 };
 ```
+
+### ComboBox and TagPicker
+
+Accessible combobox components built on [React Aria](https://react-spectrum.adobe.com/react-aria/).
+
+```tsx
+import { ComboBox, TagPicker, type ComboBoxItem } from '@prairielearn/ui';
+import { useState } from 'react';
+
+const items: ComboBoxItem[] = [
+  { id: '1', label: 'Apple' },
+  { id: '2', label: 'Banana' },
+];
+
+// Single selection
+const [selected, setSelected] = useState<string | null>(null);
+<ComboBox items={items} value={selected} onChange={setSelected} label="Fruit" />;
+
+// Multi-selection with tags
+const [selectedIds, setSelectedIds] = useState<string[]>([]);
+<TagPicker items={items} value={selectedIds} onChange={setSelectedIds} label="Fruits" />;
+```
+
+Items can include `searchableText` for filtering on text different from the label, and `data` for custom data passed to `renderItem`.
 
 ## nuqs Utilities
 

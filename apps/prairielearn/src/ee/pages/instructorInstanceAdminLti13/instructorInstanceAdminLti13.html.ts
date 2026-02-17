@@ -11,7 +11,7 @@ import {
   type Lti13Assessment,
   type Lti13Instance,
 } from '../../../lib/db-types.js';
-import type { UntypedResLocals } from '../../../lib/res-locals.types.js';
+import type { ResLocalsForPage } from '../../../lib/res-locals.js';
 import { type Lineitems, type Lti13CombinedInstance } from '../../lib/lti13.js';
 
 export const AssessmentRowSchema = AssessmentSchema.merge(
@@ -27,7 +27,7 @@ export function InstructorInstanceAdminLti13NoInstances({
   resLocals,
   lti13_instances,
 }: {
-  resLocals: UntypedResLocals;
+  resLocals: ResLocalsForPage<'course-instance'>;
   lti13_instances: Lti13Instance[];
 }): string {
   return PageLayout({
@@ -53,10 +53,7 @@ export function InstructorInstanceAdminLti13NoInstances({
                   No learning management systems (LMSes) at your institution are available for
                   integration with PrairieLearn. Please contact your IT administrators to set up an
                   integration. You can refer them to the
-                  <a
-                    target="_blank"
-                    href="https://prairielearn.readthedocs.io/en/latest/lti13/"
-                    rel="noreferrer"
+                  <a target="_blank" href="https://docs.prairielearn.com/lti13/" rel="noreferrer"
                     >documentation</a
                   >.
                 </p>
@@ -75,7 +72,7 @@ export function InstructorInstanceAdminLti13NoInstances({
                 <p>
                   <a
                     target="_blank"
-                    href="https://prairielearn.readthedocs.io/en/latest/lmsIntegrationInstructor/"
+                    href="https://docs.prairielearn.com/lmsIntegrationInstructor/"
                     rel="noreferrer"
                   >
                     How can I integrate my course with an LMS?
@@ -98,7 +95,7 @@ export function InstructorInstanceAdminLti13({
   assessments,
   lineitems,
 }: {
-  resLocals: UntypedResLocals;
+  resLocals: ResLocalsForPage<'course-instance'>;
   instance: Lti13CombinedInstance;
   instances: Lti13CombinedInstance[];
   assessments: AssessmentRow[];
@@ -218,7 +215,7 @@ function LinkedAssessments({
   assessments,
   lineitems,
 }: {
-  resLocals: UntypedResLocals;
+  resLocals: ResLocalsForPage<'course-instance'>;
   lms_name: string;
   assessments: AssessmentRow[];
   lineitems: Lti13Assessment[];
@@ -327,7 +324,7 @@ function LinkedAssessments({
                 <td class="align-middle">
                   <a href="${urlPrefix}/assessment/${row.id}/"
                     >${row.title}
-                    ${row.group_work
+                    ${row.team_work
                       ? html` <i class="fas fa-users" aria-hidden="true"></i> `
                       : ''}</a
                   >

@@ -8,7 +8,6 @@ import lxml.html
 import prairielearn as pl
 import prairielearn.sympy_utils as psu
 import sympy
-from prairielearn.timeout_utils import ThreadingTimeout, TimeoutState
 from typing_extensions import assert_never
 
 
@@ -29,6 +28,7 @@ DISPLAY_LOG_AS_LN_DEFAULT = False
 DISPLAY_SIMPLIFIED_EXPRESSION_DEFAULT = True
 IMAGINARY_UNIT_FOR_DISPLAY_DEFAULT = "i"
 ALLOW_TRIG_FUNCTIONS_DEFAULT = True
+ADDITIONAL_SIMPLIFICATIONS_DEFAULT = None
 SIZE_DEFAULT = 35
 SHOW_FORMULA_EDITOR_DEFAULT = False
 SHOW_HELP_TEXT_DEFAULT = True
@@ -41,6 +41,13 @@ SYMBOLIC_INPUT_MUSTACHE_TEMPLATE_NAME = "pl-symbolic-input.mustache"
 # This timeout is chosen to allow multiple sympy-based elements to grade on one page,
 # while not exceeding the global timeout enforced for Python execution.
 SYMPY_TIMEOUT = 3
+# Additional simplifications supported by SymPy
+SYMPY_ADDITIONAL_SIMPLIFICATIONS = {
+    "expand": sympy.expand,
+    "powsimp": sympy.powsimp,
+    "trigsimp": sympy.trigsimp,
+    "expand_log": sympy.expand_log,
+}
 
 
 def prepare(element_html: str, data: pl.QuestionData) -> None:
@@ -56,6 +63,7 @@ def prepare(element_html: str, data: pl.QuestionData) -> None:
         "allow-complex",
         "imaginary-unit-for-display",
         "allow-trig-functions",
+        "additional-simplifications",
         "size",
         "formula-editor",
         "show-help-text",
@@ -71,6 +79,28 @@ def prepare(element_html: str, data: pl.QuestionData) -> None:
     ]
     pl.check_attribs(element, required_attribs, optional_attribs)
     name = pl.get_string_attrib(element, "answers-name")
+
+    # Validate that user-specified variables/functions don't conflict with built-ins
+    variables = psu.get_items_list(
+        pl.get_string_attrib(element, "variables", VARIABLES_DEFAULT)
+    )
+    custom_functions = psu.get_items_list(
+        pl.get_string_attrib(element, "custom-functions", CUSTOM_FUNCTIONS_DEFAULT)
+    )
+    allow_complex = pl.get_boolean_attrib(
+        element, "allow-complex", ALLOW_COMPLEX_DEFAULT
+    )
+    allow_trig = pl.get_boolean_attrib(
+        element, "allow-trig-functions", ALLOW_TRIG_FUNCTIONS_DEFAULT
+    )
+    psu.validate_names_for_conflicts(
+        name,
+        variables,
+        custom_functions,
+        allow_complex=allow_complex,
+        allow_trig_functions=allow_trig,
+    )
+
     pl.check_answers_names(data, name)
 
     if pl.has_attrib(element, "correct-answer"):
@@ -78,6 +108,7 @@ def prepare(element_html: str, data: pl.QuestionData) -> None:
             raise ValueError(f"duplicate correct_answers variable name: {name}")
 
         a_true = pl.get_string_attrib(element, "correct-answer")
+
         variables = psu.get_items_list(
             pl.get_string_attrib(element, "variables", VARIABLES_DEFAULT)
         )
@@ -126,6 +157,20 @@ def prepare(element_html: str, data: pl.QuestionData) -> None:
     )
     if imaginary_unit not in {"i", "j"}:
         raise ValueError("imaginary-unit-for-display must be either i or j")
+
+    additional_simplifications = psu.get_items_list(
+        pl.get_string_attrib(
+            element, "additional-simplifications", ADDITIONAL_SIMPLIFICATIONS_DEFAULT
+        )
+    )
+    # Note: it is an intentional decision to allow repeats in the list, as this might be (rarely) an
+    # intended way to work around SymPy limitations
+    if not all(
+        item in SYMPY_ADDITIONAL_SIMPLIFICATIONS for item in additional_simplifications
+    ):
+        raise ValueError(
+            "The 'additional-simplifications' contain one of more unsupported simplification(s). Please see the documentation for a full list of supported simplifications."
+        )
 
 
 def render(element_html: str, data: pl.QuestionData) -> str:
@@ -343,9 +388,20 @@ def parse(element_html: str, data: pl.QuestionData) -> None:
     formula_editor = pl.get_boolean_attrib(
         element, "formula-editor", SHOW_FORMULA_EDITOR_DEFAULT
     )
+
     variables = psu.get_items_list(
         pl.get_string_attrib(element, "variables", VARIABLES_DEFAULT)
     )
+
+    # See https://github.com/PrairieLearn/PrairieLearn/issues/12053
+    has_variables = pl.has_attrib(element, "variables")
+    if not has_variables:
+        a_tru = data["correct_answers"].get(name, {})
+        # If no variables attribute was specified but we have a correct answer dict,
+        # use the correct answer's variables for parsing.
+        if isinstance(a_tru, dict) and "_variables" in a_tru:
+            variables = a_tru["_variables"]
+
     custom_functions = psu.get_items_list(
         pl.get_string_attrib(element, "custom-functions", CUSTOM_FUNCTIONS_DEFAULT)
     )
@@ -405,6 +461,7 @@ def parse(element_html: str, data: pl.QuestionData) -> None:
         allow_trig_functions=allow_trig,
         imaginary_unit=imaginary_unit,
         custom_functions=custom_functions,
+        simplify_expression=simplify_expression,
     )
 
     if error_msg is not None:
@@ -526,7 +583,7 @@ def format_formula_editor_submission_for_sympy(
     known_tokens = _build_known_tokens(allow_trig, variables, custom_functions)
 
     # Replace Greek unicode letters with spaced ASCII for consistent handling further on
-    text = "".join([_greek_transform(char) for char in text])
+    text = "".join(_greek_transform(char) for char in text)
 
     # Merge space-separated characters into proper tokens (e.g., "s i n" -> "sin")
     text = _merge_spaced_tokens(text, known_tokens)
@@ -686,6 +743,11 @@ def grade(element_html: str, data: pl.QuestionData) -> None:
     allow_trig = pl.get_boolean_attrib(
         element, "allow-trig-functions", ALLOW_TRIG_FUNCTIONS_DEFAULT
     )
+    additional_simplifications = psu.get_items_list(
+        pl.get_string_attrib(
+            element, "additional-simplifications", ADDITIONAL_SIMPLIFICATIONS_DEFAULT
+        )
+    )
     weight = pl.get_integer_attrib(element, "weight", WEIGHT_DEFAULT)
 
     # Get true answer (if it does not exist, create no grade - leave it
@@ -733,16 +795,25 @@ def grade(element_html: str, data: pl.QuestionData) -> None:
                 a_sub, allow_complex=allow_complex, allow_trig_functions=allow_trig
             )
 
+        for simplification in additional_simplifications:
+            simp_f = SYMPY_ADDITIONAL_SIMPLIFICATIONS[simplification]
+            a_sub_sympy = simp_f(a_sub_sympy)
+            a_tru_sympy = simp_f(a_tru_sympy)
+            # Make the type checker happy
+            assert isinstance(a_sub_sympy, sympy.Expr)
+            assert isinstance(a_tru_sympy, sympy.Expr)
+
         return a_tru_sympy.equals(a_sub_sympy) is True, None
 
     try:
-        with ThreadingTimeout(SYMPY_TIMEOUT) as ctx:
-            pl.grade_answer_parameterized(data, name, grade_function, weight=weight)
-        if ctx.state == TimeoutState.TIMED_OUT:
-            # If sympy times out, it's because the comparison couldn't converge, so we return an error.
-            data["format_errors"][name] = (
-                "Your answer did not converge, try a simpler expression."
-            )
+        pl.grade_answer_parameterized(
+            data,
+            name,
+            grade_function,
+            weight=weight,
+            timeout=SYMPY_TIMEOUT,
+            timeout_format_error="Your answer did not converge, try a simpler expression.",
+        )
     except ValueError as e:
         # We only want to catch the integer string conversion limit ValueError.
         # Others might be outside of the student's control and should error like normal.

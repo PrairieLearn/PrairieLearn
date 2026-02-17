@@ -1,27 +1,25 @@
-import _ from 'lodash';
+import { range } from 'es-toolkit';
 import { z } from 'zod';
 
 import { html, unsafeHtml } from '@prairielearn/html';
-import { renderHtml } from '@prairielearn/preact';
+import { IdSchema } from '@prairielearn/zod';
 
 import { Modal } from '../../components/Modal.js';
 import { PageLayout } from '../../components/PageLayout.js';
 import { ScorebarHtml } from '../../components/Scorebar.js';
-import { AssessmentSyncErrorsAndWarnings } from '../../components/SyncErrorsAndWarnings.js';
 import { compiledScriptTag } from '../../lib/assets.js';
 import {
   AlternativeGroupSchema,
   AssessmentQuestionSchema,
   CourseInstanceSchema,
   CourseSchema,
-  IdSchema,
   QuestionSchema,
   TagSchema,
   TopicSchema,
   ZoneSchema,
 } from '../../lib/db-types.js';
 import { formatFloat } from '../../lib/format.js';
-import type { UntypedResLocals } from '../../lib/res-locals.types.js';
+import type { ResLocalsForPage } from '../../lib/res-locals.js';
 import { STAT_DESCRIPTIONS } from '../shared/assessmentStatDescriptions.js';
 
 export const AssessmentQuestionStatsRowSchema = AssessmentQuestionSchema.extend({
@@ -51,7 +49,7 @@ export function InstructorAssessmentQuestionStatistics({
   questionStatsCsvFilename: string;
   statsLastUpdated: string;
   rows: AssessmentQuestionStatsRow[];
-  resLocals: UntypedResLocals;
+  resLocals: ResLocalsForPage<'assessment'>;
 }) {
   const histminiOptions = { width: 60, height: 20, ymax: 1 };
 
@@ -71,15 +69,6 @@ export function InstructorAssessmentQuestionStatistics({
       <h1 class="visually-hidden">
         ${resLocals.assessment_set.name} ${resLocals.assessment.number} Question Statistics
       </h1>
-      ${renderHtml(
-        <AssessmentSyncErrorsAndWarnings
-          authzData={resLocals.authz_data}
-          assessment={resLocals.assessment}
-          courseInstance={resLocals.course_instance}
-          course={resLocals.course}
-          urlPrefix={resLocals.urlPrefix}
-        />,
-      )}
       ${resLocals.authz_data.has_course_permission_edit
         ? Modal({
             title: 'Refresh statistics',
@@ -130,8 +119,8 @@ export function InstructorAssessmentQuestionStatistics({
                   data-xdata="${JSON.stringify(rows.map((q) => q.mean_question_score))}"
                   data-ydata="${JSON.stringify(rows.map((q) => q.discrimination))}"
                   data-options="${JSON.stringify({
-                    xgrid: _.range(0, 110, 10),
-                    ygrid: _.range(0, 110, 10),
+                    xgrid: range(0, 110, 10),
+                    ygrid: range(0, 110, 10),
                     xlabel: 'mean score / %',
                     ylabel: 'discrimination / %',
                     radius: 2,

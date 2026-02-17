@@ -1,28 +1,29 @@
 import assert from 'assert';
 import * as path from 'path';
 
-import sha256 from 'crypto-js/sha256.js';
 import { Router } from 'express';
-import asyncHandler from 'express-async-handler';
 import fs from 'fs-extra';
 import z from 'zod';
 
 import * as error from '@prairielearn/error';
 import { flash } from '@prairielearn/flash';
 import { loadSqlEquiv, queryRows, runInTransactionAsync } from '@prairielearn/postgres';
-import { Hydrate } from '@prairielearn/preact/server';
+import { Hydrate } from '@prairielearn/react/server';
+import { DatetimeLocalStringSchema } from '@prairielearn/zod';
 
 import { PageLayout } from '../../components/PageLayout.js';
-import { CourseInstanceSyncErrorsAndWarnings } from '../../components/SyncErrorsAndWarnings.js';
 import { type AuthzData, assertHasRole } from '../../lib/authz-data-lib.js';
 import { b64EncodeUnicode } from '../../lib/base64-util.js';
 import { extractPageContext } from '../../lib/client/page-context.js';
 import { isRenderableComment } from '../../lib/comments.js';
 import { config } from '../../lib/config.js';
 import { type CourseInstance, CourseInstanceAccessRuleSchema } from '../../lib/db-types.js';
-import { FileModifyEditor, propertyValueWithDefault } from '../../lib/editors.js';
+import { propertyValueWithDefault } from '../../lib/editorUtil.shared.js';
+import { FileModifyEditor, getOriginalHash } from '../../lib/editors.js';
 import { getPaths } from '../../lib/instructorFiles.js';
 import { formatJsonWithPrettier } from '../../lib/prettier.js';
+import { typedAsyncHandler } from '../../lib/res-locals.js';
+import { createAuthzMiddleware } from '../../middlewares/authzHelper.js';
 import {
   addEnrollmentToPublishingExtension,
   createPublishingExtensionWithEnrollments,
@@ -38,7 +39,7 @@ import { type CourseInstanceJsonInput } from '../../schemas/infoCourseInstance.j
 
 import { CourseInstancePublishing } from './components/CourseInstancePublishing.js';
 import { LegacyAccessRuleCard } from './components/LegacyAccessRuleCard.js';
-import { CourseInstancePublishingExtensionWithUsersSchema } from './instructorInstanceAdminPublishing.types.js';
+import { CourseInstancePublishingExtensionRowSchema } from './instructorInstanceAdminPublishing.types.js';
 import { plainDateTimeStringToDate } from './utils/dateUtils.js';
 
 const router = Router();
@@ -62,28 +63,31 @@ export async function selectPublishingExtensionsWithUsersByCourseInstance({
   return await queryRows(
     sql.select_publishing_extensions_with_users_by_course_instance,
     { course_instance_id: courseInstance.id },
-    CourseInstancePublishingExtensionWithUsersSchema,
+    CourseInstancePublishingExtensionRowSchema,
   );
 }
 
 // Supports a client-side table refresh.
 router.get(
   '/extension/data.json',
-  asyncHandler(async (req, res) => {
-    const {
-      authz_data: { has_course_instance_permission_view: hasCourseInstancePermissionView },
-    } = extractPageContext(res.locals, {
-      pageType: 'courseInstance',
-      accessType: 'instructor',
-    });
+  typedAsyncHandler<'course-instance'>(async (req, res) => {
+    const { authz_data: authzData, course_instance: courseInstance } = extractPageContext(
+      res.locals,
+      {
+        pageType: 'courseInstance',
+        accessType: 'instructor',
+      },
+    );
+
+    const { has_course_instance_permission_view: hasCourseInstancePermissionView } = authzData;
 
     if (!hasCourseInstancePermissionView) {
       throw new error.HttpStatusError(403, 'Access denied (must be a course instance viewer)');
     }
 
     const accessControlExtensions = await selectPublishingExtensionsWithUsersByCourseInstance({
-      courseInstance: res.locals.course_instance,
-      authzData: res.locals.authz_data,
+      courseInstance,
+      authzData,
       requiredRole: ['Student Data Viewer'],
     });
     res.json(accessControlExtensions);
@@ -94,13 +98,16 @@ router.get(
 // Returns the list of UIDs that are NOT enrolled (invalidUids).
 router.get(
   '/extension/check',
-  asyncHandler(async (req, res) => {
-    const {
-      authz_data: { has_course_instance_permission_edit: hasCourseInstancePermissionEdit },
-    } = extractPageContext(res.locals, {
-      pageType: 'courseInstance',
-      accessType: 'instructor',
-    });
+  typedAsyncHandler<'course-instance'>(async (req, res) => {
+    const { course_instance: courseInstance, authz_data: authzData } = extractPageContext(
+      res.locals,
+      {
+        pageType: 'courseInstance',
+        accessType: 'instructor',
+      },
+    );
+
+    const { has_course_instance_permission_edit: hasCourseInstancePermissionEdit } = authzData;
 
     if (!hasCourseInstancePermissionEdit) {
       throw new error.HttpStatusError(403, 'Access denied (must be course instance editor)');
@@ -116,9 +123,9 @@ router.get(
     // Verify each UID is enrolled (matches either users.uid or enrollments.pending_uid)
     const validRecords = await selectUsersAndEnrollmentsByUidsInCourseInstance({
       uids,
-      courseInstance: res.locals.course_instance,
+      courseInstance,
       requiredRole: ['Student Data Viewer'],
-      authzData: res.locals.authz_data,
+      authzData,
     });
     const validUids = new Set(validRecords.map((record) => record.user.uid));
     const invalidUids = uids.filter((uid) => !validUids.has(uid));
@@ -129,46 +136,51 @@ router.get(
 
 router.get(
   '/',
-  asyncHandler(async (req, res) => {
-    const publishingExtensions = await selectPublishingExtensionsWithUsersByCourseInstance({
-      courseInstance: res.locals.course_instance,
-      authzData: res.locals.authz_data,
-      requiredRole: ['Student Data Viewer'],
-    });
-
+  createAuthzMiddleware({
+    oneOfPermissions: ['has_course_permission_view', 'has_course_instance_permission_view'],
+    unauthorizedUsers: 'block',
+  }),
+  typedAsyncHandler<'course-instance'>(async (req, res) => {
     const {
-      authz_data: {
-        has_course_instance_permission_edit: hasCourseInstancePermissionEdit,
-        has_course_instance_permission_view: hasCourseInstancePermissionView,
-      },
+      authz_data: authzData,
       __csrf_token: csrfToken,
       course_instance: courseInstance,
+      course,
     } = extractPageContext(res.locals, {
       pageType: 'courseInstance',
       accessType: 'instructor',
     });
 
+    const {
+      has_course_permission_edit: hasCoursePermissionEdit,
+      has_course_instance_permission_edit: hasCourseInstancePermissionEdit,
+      has_course_instance_permission_view: hasCourseInstancePermissionView,
+    } = authzData;
+
     assert(hasCourseInstancePermissionEdit !== undefined);
     assert(hasCourseInstancePermissionView !== undefined);
 
+    // Only fetch extensions if user has student data view permission
+    const publishingExtensions = hasCourseInstancePermissionView
+      ? await selectPublishingExtensionsWithUsersByCourseInstance({
+          courseInstance,
+          authzData,
+          requiredRole: ['Student Data Viewer'],
+        })
+      : [];
+
     // Calculate orig_hash for the infoCourseInstance.json file
     const infoCourseInstancePath = path.join(
-      res.locals.course.path,
+      course.path,
       'courseInstances',
       courseInstance.short_name,
       'infoCourseInstance.json',
     );
-    const infoCourseInstancePathExists = await fs.pathExists(infoCourseInstancePath);
-    let origHash: string | null = null;
-    if (infoCourseInstancePathExists) {
-      origHash = sha256(
-        b64EncodeUnicode(await fs.readFile(infoCourseInstancePath, 'utf8')),
-      ).toString();
-    }
+    const origHash = await getOriginalHash(infoCourseInstancePath);
 
     const accessRules = await queryRows(
       sql.course_instance_access_rules,
-      { course_instance_id: res.locals.course_instance.id },
+      { course_instance_id: courseInstance.id },
       CourseInstanceAccessRuleSchema,
     );
 
@@ -185,35 +197,28 @@ router.get(
           page: 'instance_admin',
           subPage: 'publishing',
         },
-        content: (
-          <>
-            <CourseInstanceSyncErrorsAndWarnings
-              authzData={res.locals.authz_data}
-              courseInstance={res.locals.course_instance}
-              course={res.locals.course}
-              urlPrefix={res.locals.urlPrefix}
+        content: courseInstance.modern_publishing ? (
+          <Hydrate>
+            <CourseInstancePublishing
+              courseInstance={courseInstance}
+              canEditPublishing={
+                hasCoursePermissionEdit && !course.example_course && origHash !== null
+              }
+              canViewExtensions={hasCourseInstancePermissionView}
+              canEditExtensions={hasCoursePermissionEdit && hasCourseInstancePermissionEdit}
+              csrfToken={csrfToken}
+              origHash={origHash}
+              extensions={publishingExtensions}
+              isDevMode={config.devMode}
             />
-
-            {courseInstance.modern_publishing ? (
-              <Hydrate>
-                <CourseInstancePublishing
-                  courseInstance={courseInstance}
-                  canEdit={hasCourseInstancePermissionEdit && origHash !== null}
-                  csrfToken={csrfToken}
-                  origHash={origHash}
-                  publishingExtensions={publishingExtensions}
-                  isDevMode={config.devMode}
-                />
-              </Hydrate>
-            ) : (
-              <LegacyAccessRuleCard
-                accessRules={accessRules}
-                showComments={showComments}
-                courseInstance={courseInstance}
-                hasCourseInstancePermissionView={hasCourseInstancePermissionView}
-              />
-            )}
-          </>
+          </Hydrate>
+        ) : (
+          <LegacyAccessRuleCard
+            accessRules={accessRules}
+            showComments={showComments}
+            courseInstance={courseInstance}
+            hasCourseInstancePermissionView={hasCourseInstancePermissionView}
+          />
         ),
       }),
     );
@@ -222,22 +227,26 @@ router.get(
 
 router.post(
   '/',
-  asyncHandler(async (req, res) => {
-    const { authz_data: authzData, course_instance: courseInstance } = extractPageContext(
-      res.locals,
-      {
-        pageType: 'courseInstance',
-        accessType: 'instructor',
-      },
-    );
+  typedAsyncHandler<'course-instance'>(async (req, res) => {
+    const {
+      authz_data: authzData,
+      course,
+      course_instance: courseInstance,
+      urlPrefix,
+    } = extractPageContext(res.locals, {
+      pageType: 'courseInstance',
+      accessType: 'instructor',
+    });
 
-    const { has_course_instance_permission_edit: hasCourseInstancePermissionEdit } = authzData;
-
-    if (!hasCourseInstancePermissionEdit) {
-      throw new error.HttpStatusError(403, 'Access denied (must be course instance editor)');
-    }
+    const {
+      has_course_permission_edit: hasCoursePermissionEdit,
+      has_course_instance_permission_edit: hasCourseInstancePermissionEdit,
+    } = authzData;
 
     if (req.body.__action === 'update_publishing') {
+      if (!hasCoursePermissionEdit) {
+        throw new error.HttpStatusError(403, 'Access denied (must be a course editor)');
+      }
       if (!courseInstance.modern_publishing) {
         flash('error', 'Cannot update publishing when legacy allowAccess rules are present');
         res.redirect(req.originalUrl);
@@ -245,9 +254,9 @@ router.post(
       }
       // Read the existing infoCourseInstance.json file
       const infoCourseInstancePath = path.join(
-        res.locals.course.path,
+        course.path,
         'courseInstances',
-        res.locals.course_instance.short_name,
+        courseInstance.short_name,
         'infoCourseInstance.json',
       );
 
@@ -263,8 +272,8 @@ router.post(
 
       const parsedBody = z
         .object({
-          start_date: z.string(),
-          end_date: z.string(),
+          start_date: z.union([z.literal(''), DatetimeLocalStringSchema]),
+          end_date: z.union([z.literal(''), DatetimeLocalStringSchema]),
         })
         .parse(req.body);
 
@@ -294,7 +303,7 @@ router.post(
       // JSON file has been formatted and is ready to be written
       const paths = getPaths(undefined, res.locals);
       const editor = new FileModifyEditor({
-        locals: res.locals as any,
+        locals: res.locals,
         container: {
           rootPath: paths.rootPath,
           invalidRootPaths: paths.invalidRootPaths,
@@ -308,7 +317,7 @@ router.post(
       try {
         await editor.executeWithServerJob(serverJob);
       } catch {
-        res.redirect(res.locals.urlPrefix + '/edit_error/' + serverJob.jobSequenceId);
+        res.redirect(urlPrefix + '/edit_error/' + serverJob.jobSequenceId);
         return;
       }
 
@@ -319,6 +328,14 @@ router.post(
 
     if (req.accepts('html')) {
       throw new error.HttpStatusError(406, 'Not acceptable');
+    }
+
+    // Extension actions require both course editor and student data editor permissions
+    if (!hasCoursePermissionEdit || !hasCourseInstancePermissionEdit) {
+      throw new error.HttpStatusError(
+        403,
+        'Access denied (must be a course editor and student data editor)',
+      );
     }
 
     if (req.body.__action === 'add_extension') {

@@ -1,21 +1,25 @@
 import { useMutation } from '@tanstack/react-query';
 import { Alert, Modal } from 'react-bootstrap';
 
-export type ExtensionDeleteModalState = null | {
+export interface ExtensionDeleteModalData {
   extensionId: string;
   extensionName: string | null;
   userData: { uid: string; name: string | null; enrollment_id: string }[];
-};
+}
 
 export function ExtensionDeleteModal({
-  modalState,
+  data,
   csrfToken,
+  show,
   onHide,
+  onExited,
   onSuccess,
 }: {
-  modalState: ExtensionDeleteModalState;
+  data: ExtensionDeleteModalData | null;
   csrfToken: string;
+  show: boolean;
   onHide: () => void;
+  onExited: () => void;
   onSuccess: () => void;
 }) {
   const deleteMutation = useMutation({
@@ -38,36 +42,10 @@ export function ExtensionDeleteModal({
     onSuccess,
   });
 
-  const ModalBody = () => {
-    if (!modalState) return null;
-    return (
-      <>
-        <div class="mb-3">
-          Are you sure you want to delete{' '}
-          {modalState.extensionName === null
-            ? 'this extension'
-            : `the extension "${modalState.extensionName}"`}
-          ?
-        </div>
-        <label class="form-label" for="ext-uids">
-          UIDs
-        </label>
-        <textarea
-          id="ext-uids"
-          class="form-control"
-          rows={5}
-          placeholder="One UID per line, or comma/space separated"
-          value={modalState.userData.map((user) => user.uid).join('\n')}
-          readOnly
-        />
-      </>
-    );
-  };
-
   return (
-    <Modal backdrop="static" show={modalState !== null} onHide={onHide}>
+    <Modal backdrop="static" show={show} onHide={onHide} onExited={onExited}>
       <Modal.Header closeButton>
-        <Modal.Title>Delete Extension</Modal.Title>
+        <Modal.Title>Delete extension</Modal.Title>
       </Modal.Header>
       <Modal.Body>
         {deleteMutation.isError && (
@@ -75,12 +53,41 @@ export function ExtensionDeleteModal({
             {deleteMutation.error.message}
           </Alert>
         )}
-        <ModalBody />
+        {data && (
+          <>
+            <p>
+              Are you sure you want to delete{' '}
+              {data.extensionName === null
+                ? 'this extension'
+                : `the extension "${data.extensionName}"`}
+              ?
+            </p>
+            <details>
+              <summary>Show affected students</summary>
+              <table className="table table-bordered table-sm mb-0">
+                <thead>
+                  <tr>
+                    <th>UID</th>
+                    <th>Name</th>
+                  </tr>
+                </thead>
+                <tbody>
+                  {data.userData.map((user) => (
+                    <tr key={user.enrollment_id}>
+                      <td>{user.uid}</td>
+                      <td>{user.name ?? '—'}</td>
+                    </tr>
+                  ))}
+                </tbody>
+              </table>
+            </details>
+          </>
+        )}
       </Modal.Body>
       <Modal.Footer>
         <button
           type="button"
-          class="btn btn-outline-secondary"
+          className="btn btn-outline-secondary"
           disabled={deleteMutation.isPending}
           onClick={onHide}
         >
@@ -88,11 +95,11 @@ export function ExtensionDeleteModal({
         </button>
         <button
           type="button"
-          class="btn btn-danger"
+          className="btn btn-danger"
           disabled={deleteMutation.isPending}
           onClick={() => {
-            if (!modalState) return;
-            void deleteMutation.mutate(modalState.extensionId);
+            if (!data) return;
+            void deleteMutation.mutate(data.extensionId);
           }}
         >
           {deleteMutation.isPending ? 'Deleting...' : 'Delete'}

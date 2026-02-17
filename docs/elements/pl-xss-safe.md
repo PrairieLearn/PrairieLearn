@@ -16,10 +16,10 @@ Removes potentially dangerous scripts from HTML. This is recommended when parsin
 
 | Attribute             | Type   | Default | Description                                                                                                                                                   |
 | --------------------- | ------ | ------- | ------------------------------------------------------------------------------------------------------------------------------------------------------------- |
-| `source-file-name`    | string | —       | Name of the source file with existing code to be used (instead of using the existing code between the element tags as illustrated in the above code snippet). |
-| `submitted-file-name` | string | —       | Name of the file submitted by the user to (typically using a `pl-file-editor` or `pl-file-upload` element) with the code to be used.                          |
 | `contents`            | string | —       | Raw contents to be displayed.                                                                                                                                 |
 | `language`            | string | html    | Language of the provided code. The values "html" or "markdown" are currently supported.                                                                       |
+| `source-file-name`    | string | —       | Name of the source file with existing code to be used (instead of using the existing code between the element tags as illustrated in the above code snippet). |
+| `submitted-file-name` | string | —       | Name of the file submitted by the user to (typically using a `pl-file-editor` or `pl-file-upload` element) with the code to be used.                          |
 
 Note that only one of the attributes `source-file-name`, `submitted-file-name` or `contents` may be provided in the same element.
 

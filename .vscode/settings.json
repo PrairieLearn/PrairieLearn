@@ -27,8 +27,18 @@
     "editor.defaultFormatter": "esbenp.prettier-vscode",
     "editor.formatOnSave": true
   },
-  "typescript.preferences.autoImportSpecifierExcludeRegexes": ["^react$"],
-  "typescript.tsdk": "node_modules/typescript/lib",
+  "[json]": {
+    "files.insertFinalNewline": true
+  },
+  "files.associations": {
+    "**/exampleCourse/questions/**/question.html": "htmlmustache",
+    "**/testCourse/questions/**/question.html": "htmlmustache"
+  },
+  "knip.configFilePath": ".knip.ts",
+  "knip.requireConfig": true,
+  "java.project.resourceFilters": ["node_modules", "\\.git", "exampleCourse"],
+  "java.project.referencedLibraries": ["graders/java/libs/*.jar"],
+  "java.project.sourcePaths": ["graders/java"],
   "json.schemaDownload.enable": true,
   "json.schemas": [
     {
@@ -71,9 +81,9 @@
   "python.testing.pytestArgs": ["apps/prairielearn/elements", "apps/prairielearn/python/test"],
   "python.testing.unittestEnabled": false,
   "python.testing.pytestEnabled": true,
-  "[json]": {
-    "files.insertFinalNewline": true
-  },
+  "sqlfluff.executablePath": "${workspaceFolder}/.venv/bin/sqlfluff",
+  "typescript.tsdk": "node_modules/typescript/lib",
   "vitest.maximumConfigs": 100,
-  "sqlfluff.executablePath": "${workspaceFolder}/.venv/bin/sqlfluff"
+  // This conflicts with the Prettier formatter, so we disable it.
+  "yaml.format.enable": false
 }

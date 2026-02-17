@@ -18,6 +18,7 @@
 import { type z } from 'zod';
 
 import {
+  AccessTokenSchema as RawAccessTokenSchema,
   AlternativeGroupSchema as RawAlternativeGroupSchema,
   AssessmentInstanceSchema as RawAssessmentInstanceSchema,
   AssessmentModuleSchema as RawAssessmentModuleSchema,
@@ -26,6 +27,7 @@ import {
   AssessmentSetSchema as RawAssessmentSetSchema,
   AuditEventSchema as RawAuditEventSchema,
   AuthnProviderSchema as RawAuthnProviderSchema,
+  CourseInstancePublishingExtensionSchema as RawCourseInstancePublishingExtensionSchema,
   CourseInstanceSchema as RawCourseInstanceSchema,
   CourseSchema as RawCourseSchema,
   EnrollmentSchema as RawEnrollmentSchema,
@@ -33,11 +35,24 @@ import {
   InstanceQuestionSchema as RawInstanceQuestionSchema,
   InstitutionSchema as RawInstitutionSchema,
   QuestionSchema as RawQuestionSchema,
+  RubricItemSchema as RawRubricItemSchema,
+  RubricSchema as RawRubricSchema,
   TagSchema as RawTagSchema,
   TopicSchema as RawTopicSchema,
   UserSchema as RawUserSchema,
   ZoneSchema as RawZoneSchema,
 } from '../db-types.js';
+
+/** Access Tokens */
+export const RawUserAccessTokenSchema = RawAccessTokenSchema.pick({
+  created_at: true,
+  id: true,
+  last_used_at: true,
+  name: true,
+  user_id: true,
+});
+export const UserAccessTokenSchema = RawUserAccessTokenSchema.brand<'UserAccessToken'>();
+export type UserAccessToken = z.infer<typeof UserAccessTokenSchema>;
 
 /** Alternative Groups */
 export const StaffAlternativeGroupSchema =
@@ -59,7 +74,6 @@ export const RawStudentAssessmentSchema = RawStaffAssessmentSchema.pick({
   constant_question_value: true,
   course_instance_id: true,
   deleted_at: true,
-  group_work: true,
   honor_code: true,
   id: true,
   max_bonus_points: true,
@@ -68,6 +82,7 @@ export const RawStudentAssessmentSchema = RawStaffAssessmentSchema.pick({
   number: true,
   require_honor_code: true,
   shuffle_questions: true,
+  team_work: true,
   text: true,
   tid: true,
   title: true,
@@ -101,7 +116,6 @@ export const RawStudentAssessmentInstanceSchema__UNSAFE = RawStaffAssessmentInst
   date_limit: true,
   duration: true,
   grading_needed: true,
-  group_id: true,
   id: true,
   max_bonus_points: true,
   max_points: true,
@@ -109,9 +123,11 @@ export const RawStudentAssessmentInstanceSchema__UNSAFE = RawStaffAssessmentInst
   modified_at: true,
   number: true,
   open: true,
+  team_id: true,
   // '__UNSAFE' indicates that this schema needs further transformations before being sent to the client.
   points: true, // potentially sensitive
   score_perc: true, // potentially sensitive
+  score_perc_pending: true, // potentially sensitive
   user_id: true,
 });
 export const StudentAssessmentInstanceSchema__UNSAFE =
@@ -171,6 +187,14 @@ export type StaffAssessmentQuestion = z.infer<typeof StaffAssessmentQuestionSche
 /** Audit Events */
 export const StaffAuditEventSchema = RawAuditEventSchema.brand<'StaffAuditEvent'>();
 export type StaffAuditEvent = z.infer<typeof StaffAuditEventSchema>;
+
+/** Authn Providers */
+export const RawStaffAuthnProviderSchema = RawAuthnProviderSchema.pick({
+  id: true,
+  name: true,
+});
+export const StaffAuthnProviderSchema = RawStaffAuthnProviderSchema.brand<'StaffAuthnProvider'>();
+export type StaffAuthnProvider = z.infer<typeof StaffAuthnProviderSchema>;
 
 /** Courses */
 export const RawAdminCourseSchema = RawCourseSchema;
@@ -245,9 +269,9 @@ export const RawStudentCourseInstanceSchema = RawStaffCourseInstanceSchema.pick(
   course_id: true,
   deleted_at: true,
   display_timezone: true,
-  hide_in_enroll_page: true,
   id: true,
   long_name: true,
+  modern_publishing: true,
   publishing_end_date: true,
   publishing_start_date: true,
   short_name: true,
@@ -256,11 +280,13 @@ export const StudentCourseInstanceSchema =
   RawStudentCourseInstanceSchema.brand<'StudentCourseInstance'>();
 export type StudentCourseInstance = z.infer<typeof StudentCourseInstanceSchema>;
 
-export const RawPublicCourseInstanceSchema = RawStudentCourseInstanceSchema.pick({
+export const RawPublicCourseInstanceSchema = RawStaffCourseInstanceSchema.pick({
   assessments_group_by: true,
   display_timezone: true,
   id: true,
   long_name: true,
+  self_enrollment_enabled: true,
+  self_enrollment_use_enrollment_code: true,
   short_name: true,
 });
 export const PublicCourseInstanceSchema =
@@ -334,13 +360,12 @@ export const RawStaffInstitutionSchema = RawInstitutionSchema.pick({
 export const StaffInstitutionSchema = RawStaffInstitutionSchema.brand<'StaffInstitution'>();
 export type StaffInstitution = z.infer<typeof StaffInstitutionSchema>;
 
-/** AuthnProviders */
-export const RawStaffAuthnProviderSchema = RawAuthnProviderSchema.pick({
-  id: true,
-  name: true,
-});
-export const StaffAuthnProviderSchema = RawStaffAuthnProviderSchema.brand<'StaffAuthnProvider'>();
-export type StaffAuthnProvider = z.infer<typeof StaffAuthnProviderSchema>;
+/** Publishing Extensions */
+export const StaffCourseInstancePublishingExtensionSchema =
+  RawCourseInstancePublishingExtensionSchema.brand<'StaffCourseInstancePublishingExtension'>();
+export type StaffCourseInstancePublishingExtension = z.infer<
+  typeof StaffCourseInstancePublishingExtensionSchema
+>;
 
 /** Questions */
 export const RawStaffQuestionSchema = RawQuestionSchema;
@@ -367,21 +392,21 @@ export type StaffTag = z.infer<typeof StaffTagSchema>;
 /** Users */
 export const RawStaffUserSchema = RawUserSchema.pick({
   email: true,
+  id: true,
   institution_id: true,
   name: true,
   uid: true,
   uin: true,
-  user_id: true,
 });
 export type RawStaffUser = z.infer<typeof RawStaffUserSchema>;
 export const StaffUserSchema = RawStaffUserSchema.brand<'StaffUser'>();
 export type StaffUser = z.infer<typeof StaffUserSchema>;
 
 const RawStudentUserSchema = RawStaffUserSchema.pick({
+  id: true,
   institution_id: true,
   name: true,
   uid: true,
-  user_id: true,
 });
 export const StudentUserSchema = RawStudentUserSchema.brand<'StudentUser'>();
 export type StudentUser = z.infer<typeof StudentUserSchema>;
@@ -389,3 +414,9 @@ export type StudentUser = z.infer<typeof StudentUserSchema>;
 /** Zones */
 export const StaffZoneSchema = RawZoneSchema.brand<'StaffZone'>();
 export type StaffZone = z.infer<typeof StaffZoneSchema>;
+
+export const StaffRubricSchema = RawRubricSchema.brand<'StaffRubric'>();
+export type StaffRubric = z.infer<typeof StaffRubricSchema>;
+
+export const StaffRubricItemSchema = RawRubricItemSchema.brand<'StaffRubricItem'>();
+export type StaffRubricItem = z.infer<typeof StaffRubricItemSchema>;

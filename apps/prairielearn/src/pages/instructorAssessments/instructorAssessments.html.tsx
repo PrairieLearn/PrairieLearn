@@ -1,7 +1,7 @@
 import { EncodedData } from '@prairielearn/browser-utils';
 import { formatInterval } from '@prairielearn/formatter';
 import { html } from '@prairielearn/html';
-import { renderHtml } from '@prairielearn/preact';
+import { renderHtml } from '@prairielearn/react';
 import { run } from '@prairielearn/run';
 
 import { AssessmentModuleHeadingHtml } from '../../components/AssessmentModuleHeading.js';
@@ -10,11 +10,12 @@ import { IssueBadgeHtml } from '../../components/IssueBadge.js';
 import { Modal } from '../../components/Modal.js';
 import { PageLayout } from '../../components/PageLayout.js';
 import { ScorebarHtml } from '../../components/Scorebar.js';
-import { CourseInstanceSyncErrorsAndWarnings } from '../../components/SyncErrorsAndWarnings.js';
+import { AssessmentShortNameDescription } from '../../components/ShortNameDescriptions.js';
 import { SyncProblemButtonHtml } from '../../components/SyncProblemButton.js';
 import { compiledScriptTag } from '../../lib/assets.js';
 import { type AssessmentModule, type AssessmentSet } from '../../lib/db-types.js';
-import type { UntypedResLocals } from '../../lib/res-locals.types.js';
+import type { ResLocalsForPage } from '../../lib/res-locals.js';
+import { SHORT_NAME_PATTERN } from '../../lib/short-name.js';
 import { type AssessmentRow, type AssessmentStatsRow } from '../../models/assessment.js';
 
 import { type StatsUpdateData } from './instructorAssessments.types.js';
@@ -28,7 +29,7 @@ export function InstructorAssessments({
   assessmentModules,
   assessmentsGroupBy,
 }: {
-  resLocals: UntypedResLocals;
+  resLocals: ResLocalsForPage<'assessment'>;
   rows: AssessmentRow[];
   assessmentIdsNeedingStatsUpdate: string[];
   csvFilename: string;
@@ -57,14 +58,6 @@ export function InstructorAssessments({
       )}
     `,
     content: html`
-      ${renderHtml(
-        <CourseInstanceSyncErrorsAndWarnings
-          authzData={authz_data}
-          courseInstance={resLocals.course_instance}
-          course={course}
-          urlPrefix={urlPrefix}
-        />,
-      )}
       <div class="card mb-4">
         <div class="card-header bg-primary text-white d-flex align-items-center">
           <h1>Assessments</h1>
@@ -90,7 +83,7 @@ export function InstructorAssessments({
                     <tr>
                       <th style="width: 1%"><span class="visually-hidden">Label</span></th>
                       <th><span class="visually-hidden">Title</span></th>
-                      <th>AID</th>
+                      <th>Short name</th>
                       <th class="text-center">Students</th>
                       <th class="text-center">Scores</th>
                       <th class="text-center">Mean Score</th>
@@ -135,7 +128,7 @@ export function InstructorAssessments({
                                 : ''}
                             <a href="${urlPrefix}/assessment/${row.id}/">
                               ${row.title}
-                              ${row.group_work
+                              ${row.team_work
                                 ? html` <i class="fas fa-users" aria-hidden="true"></i> `
                                 : ''}
                             </a>
@@ -173,7 +166,7 @@ export function InstructorAssessments({
                 <p>
                   Learn more in the
                   <a
-                    href="https://prairielearn.readthedocs.io/en/latest/assessment/"
+                    href="https://docs.prairielearn.com/assessment/"
                     target="_blank"
                     rel="noreferrer"
                     >assessments documentation</a
@@ -278,6 +271,9 @@ function CreateAssessmentModal({
     id: 'createAssessmentModal',
     title: 'Create assessment',
     formMethod: 'POST',
+    // TODO: if/when this page is converted to React, use `validateShortName`
+    // from `../../lib/short-name.js` with react-hook-form to provide more specific
+    // validation feedback (e.g., "cannot start with a slash").
     body: html`
       <div class="mb-3">
         <label class="form-label" for="title">Title</label>
@@ -294,19 +290,18 @@ function CreateAssessmentModal({
         </small>
       </div>
       <div class="mb-3">
-        <label class="form-label" for="aid">Assessment identifier (AID)</label>
+        <label class="form-label" for="aid">Short name</label>
         <input
           type="text"
           class="form-control"
           id="aid"
           name="aid"
           required
-          pattern="[\\-A-Za-z0-9_\\/]+"
+          pattern="${SHORT_NAME_PATTERN}"
           aria-describedby="aid_help"
         />
         <small id="aid_help" class="form-text text-muted">
-          A short unique identifier for this assessment, such as "exam1-functions" or
-          "hw2-derivatives". Use only letters, numbers, dashes, and underscores, with no spaces.
+          ${renderHtml(<AssessmentShortNameDescription />)}
         </small>
       </div>
       <div class="mb-3">

@@ -1,9 +1,9 @@
-import { renderHtml } from '@prairielearn/preact';
+import { renderHtml } from '@prairielearn/react';
 
 import type { Topic } from '../lib/db-types.js';
 
 export function TopicBadge({ topic }: { topic: Pick<Topic, 'name' | 'color'> }) {
-  return <span class={`badge color-${topic.color}`}>{topic.name}</span>;
+  return <span className={`badge color-${topic.color}`}>{topic.name}</span>;
 }
 
 export function TopicBadgeHtml(topic: Pick<Topic, 'name' | 'color'>) {

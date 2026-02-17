@@ -1,18 +1,17 @@
 import { pipeline } from 'node:stream/promises';
 
 import { Router } from 'express';
-import asyncHandler from 'express-async-handler';
 
-import { stringifyStream } from '@prairielearn/csv';
+import { stringifyNonblocking } from '@prairielearn/csv';
 import { HttpStatusError } from '@prairielearn/error';
 
-import { getGradebookRows, getGradebookRowsCursor } from '../../lib/gradebook.js';
+import { getGradebookRows } from '../../lib/gradebook.js';
 import {
   type StudentGradebookRow,
   computeLabel,
   computeTitle,
 } from '../../lib/gradebook.shared.js';
-import type { UntypedResLocals } from '../../lib/res-locals.types.js';
+import { type ResLocalsForPage, typedAsyncHandler } from '../../lib/res-locals.js';
 import { courseInstanceFilenamePrefix } from '../../lib/sanitize-name.js';
 import logPageView from '../../middlewares/logPageView.js';
 
@@ -20,7 +19,7 @@ import { StudentGradebook, type StudentGradebookTableRow } from './studentGradeb
 
 const router = Router();
 
-function buildCsvFilename(locals: UntypedResLocals) {
+function buildCsvFilename(locals: ResLocalsForPage<'course-instance'>) {
   return courseInstanceFilenamePrefix(locals.course_instance, locals.course) + 'gradebook.csv';
 }
 
@@ -35,7 +34,7 @@ function mapRow(
   return {
     assessment_id: raw.assessment.id,
     assessment_instance_id: raw.assessment_instance.id,
-    assessment_group_work: raw.assessment.group_work ?? false,
+    assessment_group_work: raw.assessment.team_work,
     title: computeTitle(raw),
     assessment_set_heading: raw.assessment_set.heading,
     assessment_set_color: raw.assessment_set.color,
@@ -49,10 +48,10 @@ function mapRow(
 router.get(
   '/',
   logPageView('studentGradebook'),
-  asyncHandler(async (req, res) => {
+  typedAsyncHandler<'course-instance'>(async (req, res) => {
     const rawRows = await getGradebookRows({
       course_instance_id: res.locals.course_instance.id,
-      user_id: res.locals.user.user_id,
+      user_id: res.locals.user.id,
       authz_data: res.locals.authz_data,
       req_date: res.locals.req_date,
       auth: 'student',
@@ -70,34 +69,33 @@ router.get(
 
 router.get(
   '/:filename',
-  asyncHandler(async (req, res) => {
+  typedAsyncHandler<'course-instance'>(async (req, res) => {
     if (req.params.filename !== buildCsvFilename(res.locals)) {
       throw new HttpStatusError(404, `Unknown filename: ${req.params.filename}`);
     }
 
-    const cursor = await getGradebookRowsCursor({
+    const rows = await getGradebookRows({
       course_instance_id: res.locals.course_instance.id,
-      user_id: res.locals.user.user_id,
+      user_id: res.locals.user.id,
       authz_data: res.locals.authz_data,
       req_date: res.locals.req_date,
       auth: 'student',
     });
 
-    const stringifier = stringifyStream<StudentGradebookRow>({
+    const csvData = rows.map((row) => [
+      computeTitle(row),
+      row.assessment_set.heading,
+      row.show_closed_assessment_score ? row.assessment_instance.score_perc?.toFixed(6) : null,
+    ]);
+
+    const stringifier = stringifyNonblocking(csvData, {
       header: true,
       columns: ['Assessment', 'Set', 'Score'],
-      transform(row) {
-        return [
-          computeTitle(row),
-          row.assessment_set.heading,
-          row.show_closed_assessment_score ? row.assessment_instance.score_perc?.toFixed(6) : null,
-        ];
-      },
     });
 
     res.setHeader('Content-Type', 'text/csv');
     res.attachment(buildCsvFilename(res.locals));
-    await pipeline(cursor.stream(100), stringifier, res);
+    await pipeline(stringifier, res);
   }),
 );
 

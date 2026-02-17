@@ -1,15 +1,13 @@
 import { z } from 'zod';
 
 import { html } from '@prairielearn/html';
-import { renderHtml } from '@prairielearn/preact';
 
-import { CommentPopover } from '../../components/CommentPopover.js';
+import { CommentPopoverHtml } from '../../components/CommentPopover.js';
 import { PageLayout } from '../../components/PageLayout.js';
-import { AssessmentSyncErrorsAndWarnings } from '../../components/SyncErrorsAndWarnings.js';
 import { isRenderableComment } from '../../lib/comments.js';
 import { config } from '../../lib/config.js';
 import { JsonCommentSchema } from '../../lib/db-types.js';
-import type { UntypedResLocals } from '../../lib/res-locals.types.js';
+import type { ResLocalsForPage } from '../../lib/res-locals.js';
 
 export const AssessmentAccessRulesSchema = z.object({
   mode: z.string(),
@@ -33,7 +31,7 @@ export function InstructorAssessmentAccess({
   resLocals,
   accessRules,
 }: {
-  resLocals: UntypedResLocals;
+  resLocals: ResLocalsForPage<'assessment'>;
   accessRules: AssessmentAccessRules[];
 }) {
   const showComments = accessRules.some((access_rule) => isRenderableComment(access_rule.comment));
@@ -49,16 +47,6 @@ export function InstructorAssessmentAccess({
       fullWidth: true,
     },
     content: html`
-      ${renderHtml(
-        <AssessmentSyncErrorsAndWarnings
-          authzData={resLocals.authz_data}
-          assessment={resLocals.assessment}
-          courseInstance={resLocals.course_instance}
-          course={resLocals.course}
-          urlPrefix={resLocals.urlPrefix}
-        />,
-      )}
-
       <div class="card mb-4">
         <div class="card-header bg-primary text-white d-flex align-items-center">
           <h1>${resLocals.assessment_set.name} ${resLocals.assessment.number}: Access</h1>
@@ -93,7 +81,7 @@ export function InstructorAssessmentAccess({
                 // student data. See https://github.com/PrairieLearn/PrairieLearn/issues/3342
                 return html`
                   <tr>
-                    ${showComments ? html`<td>${CommentPopover(access_rule.comment)}</td>` : ''}
+                    ${showComments ? html`<td>${CommentPopoverHtml(access_rule.comment)}</td>` : ''}
                     <td>${access_rule.mode}</td>
                     <td>
                       ${access_rule.uids === '—' ||
@@ -147,10 +135,7 @@ export function InstructorAssessmentAccess({
         <div class="card-footer">
           <small>
             Instructions on how to change the access rules can be found in the
-            <a
-              href="https://prairielearn.readthedocs.io/en/latest/accessControl/"
-              target="_blank"
-              rel="noreferrer"
+            <a href="https://docs.prairielearn.com/accessControl/" target="_blank" rel="noreferrer"
               >PrairieLearn documentation</a
             >. Note that changing time limit rules does not affect assessments in progress; to
             change the time limit for these exams please visit the

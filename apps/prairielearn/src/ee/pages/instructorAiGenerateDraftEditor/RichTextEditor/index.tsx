@@ -19,9 +19,9 @@ import { Underline } from '@tiptap/extension-underline';
 import { Focus, Selection, UndoRedo } from '@tiptap/extensions';
 import { EditorContent, useEditor } from '@tiptap/react';
 // import { BubbleMenu, FloatingMenu } from '@tiptap/react/menus';
-import { useState } from 'preact/compat';
 import prettierHtmlPlugin from 'prettier/plugins/html';
 import prettier from 'prettier/standalone';
+import { useEffect, useState } from 'react';
 import { Card, Form } from 'react-bootstrap';
 
 import { DragHandleMenu } from './components/DragHandleMenu.js';
@@ -48,15 +48,19 @@ function formatHtmlWithPrettier(html: string): Promise<string> {
  * @param params
  * @param params.htmlContents - The initial HTML contents of the editor.
  * @param params.csrfToken
+ * @param params.isGenerating - Whether AI generation is in progress
  */
 const RichTextEditor = ({
   csrfToken: _csrfToken,
   htmlContents,
+  isGenerating,
 }: {
   htmlContents: string | null;
   csrfToken: string;
+  isGenerating: boolean;
 }) => {
   const editor = useEditor({
+    editable: !isGenerating,
     parseOptions: {
       // TODO: we basically want the parser to collapse whitespace per HTML's rules, except in Raw HTML blocks
       preserveWhitespace: true, // 'full',
@@ -121,6 +125,16 @@ const RichTextEditor = ({
   const [rawHtml, setRawHtml] = useState<string | null>(null);
   const [debugMode, setDebugMode] = useState<boolean>(false);
 
+  // Sync `isGenerating` to editor editable state.
+  useEffect(() => {
+    if (editor) {
+      // Shut up linter. This is how we have to do this. `useEditor` doesn't react
+      // to changes in the `editable` option after initialization.
+      // eslint-disable-next-line react-you-might-not-need-an-effect/no-pass-data-to-parent, react-you-might-not-need-an-effect/no-derived-state
+      editor.setEditable(!isGenerating);
+    }
+  }, [editor, isGenerating]);
+
   if (htmlContents === null) {
     return null;
   }
@@ -131,10 +145,10 @@ const RichTextEditor = ({
 
   return (
     <>
-      <Card class="m-3">
+      <Card className="m-3">
         <Card.Header>
-          <div class="d-flex align-items-center justify-content-between">
-            Rich Text Editor
+          <div className="d-flex align-items-center justify-content-between">
+            Rich text editor
             <Form.Check
               type="switch"
               id="rich-text-editor-debug-mode"
@@ -145,24 +159,32 @@ const RichTextEditor = ({
           </div>
         </Card.Header>
         <Card.Body>
-          <div class="d-flex align-items-center gap-2 mb-2" />
-          <div class="mb-3" />
-          <EditorContent editor={editor} class="border" />
+          {isGenerating && (
+            <div className="alert alert-info mb-3 py-2 d-flex align-items-center" role="alert">
+              <div className="spinner-border spinner-border-sm me-2" role="status">
+                <span className="visually-hidden">Loading...</span>
+              </div>
+              Editor is read-only while generation is in progress
+            </div>
+          )}
+          <div className="d-flex align-items-center gap-2 mb-2" />
+          <div className="mb-3" />
+          <EditorContent editor={editor} className="border" />
           <DragHandleMenu editor={editor} />
           {debugMode && (
             <>
-              <Card class="mt-3">
+              <Card className="mt-3">
                 <Card.Header>Formatted HTML</Card.Header>
                 <Card.Body>
-                  <pre class="mb-0">
+                  <pre className="mb-0">
                     <code>{formattedHtml ?? ''}</code>
                   </pre>
                 </Card.Body>
               </Card>
-              <Card class="mt-3">
+              <Card className="mt-3">
                 <Card.Header>Internal HTML</Card.Header>
                 <Card.Body>
-                  <pre class="mb-0">
+                  <pre className="mb-0">
                     <code>{rawHtml ?? ''}</code>
                   </pre>
                 </Card.Body>

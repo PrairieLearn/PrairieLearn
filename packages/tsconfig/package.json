@@ -1,9 +1,12 @@
 {
   "name": "@prairielearn/tsconfig",
-  "version": "0.0.0",
-  "private": true,
-  "main": "tsconfig.json",
+  "version": "2.0.0",
+  "repository": {
+    "type": "git",
+    "url": "https://github.com/PrairieLearn/PrairieLearn.git",
+    "directory": "packages/tsconfig"
+  },
   "files": [
-    "tsconfig.json"
+    "*.json"
   ]
 }

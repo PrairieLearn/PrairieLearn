@@ -1,5 +1,41 @@
 # @prairielearn/eslint-plugin
 
+## 3.1.0
+
+### Minor Changes
+
+- 174fbb4: Add `no-current-target-in-callback` lint rule to detect when `event.currentTarget` is accessed inside a nested callback within a React event handler. This pattern is problematic because React may execute callbacks asynchronously, at which point `currentTarget` may already be nullified.
+
+## 3.0.1
+
+### Patch Changes
+
+- 8bdf6ea: Upgrade all JavaScript dependencies
+
+## 3.0.0
+
+### Major Changes
+
+- 3914bb4: Upgrade to Node 24
+
+## 2.3.2
+
+### Patch Changes
+
+- 0900843: Switch to the `tsgo` compiler
+
+## 2.3.1
+
+### Patch Changes
+
+- 70a8029: Upgrade all JavaScript dependencies
+
+## 2.3.0
+
+### Minor Changes
+
+- 2aa898c: Add new `safe-db-types` rule
+
 ## 2.2.7
 
 ### Patch Changes

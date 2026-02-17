@@ -12,7 +12,7 @@ const TEST_USER = {
   email: 'test@illinois.edu',
   institution_id: '1',
   uin: '123456789',
-  user_id: '1',
+  id: '1',
 };
 
 const TEST_INSTITUTION = {
@@ -32,7 +32,6 @@ const createBaseContext = (overrides: Record<string, any> = {}) => ({
   authn_is_administrator: false,
   is_administrator: false,
   is_institution_administrator: false,
-  news_item_notification_count: 0,
   navPage: 'home' as const,
   access_as_administrator: false,
   authn_user: TEST_USER,
@@ -105,10 +104,10 @@ const STUDENT_COURSE_INSTANCE = {
   course_id: '1',
   deleted_at: null,
   display_timezone: 'America/Chicago',
-  hide_in_enroll_page: false,
   id: '1',
   long_name: 'Example Student Course Instance',
   short_name: 'Example Student Course',
+  modern_publishing: false,
   publishing_end_date: null,
   publishing_start_date: null,
 };
@@ -128,7 +127,6 @@ const STUDENT_COURSE = {
 const mockStudentData = {
   course_instance: STUDENT_COURSE_INSTANCE,
   course: STUDENT_COURSE,
-  has_enhanced_navigation: false,
 };
 
 const mockInstructorData = {
@@ -167,7 +165,6 @@ const mockInstructorData = {
     show_getting_started: false,
   },
   institution: TEST_INSTITUTION,
-  has_enhanced_navigation: false,
 };
 
 const STAFF_ASSESSMENT_SET = {
@@ -199,7 +196,7 @@ const STAFF_ASSESSMENT = {
   duration_stat_median: '00:30:00',
   duration_stat_min: '00:10:00',
   duration_stat_thresholds: [],
-  group_work: false,
+  team_work: false,
   honor_code: null,
   id: '1',
   json_allow_real_time_grading: true,
@@ -504,7 +501,6 @@ describe('extractPageContext with courseInstance pageType', () => {
     const studentDataWithExtra = {
       course_instance: { ...mockStudentData.course_instance, extra: 'field' },
       course: { ...mockStudentData.course, another: 'field' },
-      has_enhanced_navigation: false,
       ...createBaseContext(),
       authz_data: createStudentAuthzData(),
     };
@@ -522,7 +518,6 @@ describe('extractPageContext with courseInstance pageType', () => {
       course_instance: { ...mockInstructorData.course_instance, extra: 'field' },
       course: { ...mockInstructorData.course, another: 'field' },
       institution: { ...mockInstructorData.institution, extra: 'field' },
-      has_enhanced_navigation: false,
       ...createBaseContext({ navbarType: 'instructor' }),
       authz_data: createInstructorAuthzData(),
     };

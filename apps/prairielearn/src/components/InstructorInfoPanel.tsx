@@ -1,15 +1,14 @@
 import { formatDate, formatInterval } from '@prairielearn/formatter';
 import { type HtmlValue, html } from '@prairielearn/html';
+import { DateFromISOString, IntervalSchema } from '@prairielearn/zod';
 
 import {
   type Assessment,
   type AssessmentInstance,
   type Course,
   type CourseInstance,
-  DateFromISOString,
   type Group,
   type InstanceQuestion,
-  IntervalSchema,
   type Question,
   type User,
   type Variant,
@@ -281,7 +280,7 @@ function AssessmentInstanceInfo({
   return html`
     <h3 class="card-title h5">Assessment instance</h3>
     <div class="d-flex flex-wrap">
-      <div class="pe-1">AID:</div>
+      <div class="pe-1">Assessment:</div>
       <div>
         <a href="${instructorUrlPrefix}/assessment/${assessment.id}">${assessment.tid}</a>
       </div>

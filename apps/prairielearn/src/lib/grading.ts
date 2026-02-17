@@ -5,6 +5,7 @@ import { z } from 'zod';
 
 import * as error from '@prairielearn/error';
 import * as sqldb from '@prairielearn/postgres';
+import { IdSchema, IntervalSchema } from '@prairielearn/zod';
 
 import { updateCourseInstanceUsagesForSubmission } from '../models/course-instance-usages.js';
 import { insertGradingJob, updateGradingJobAfterGrading } from '../models/grading-job.js';
@@ -15,9 +16,7 @@ import { ensureChunksForCourseAsync } from './chunks.js';
 import {
   AssessmentQuestionSchema,
   type Course,
-  IdSchema,
   InstanceQuestionSchema,
-  IntervalSchema,
   type Question,
   QuestionSchema,
   SprocInstanceQuestionsNextAllowedGradeSchema,
@@ -30,6 +29,7 @@ import * as externalGrader from './externalGrader.js';
 import { idsEqual } from './id.js';
 import { writeCourseIssues } from './issues.js';
 import * as ltiOutcomes from './ltiOutcomes.js';
+import { updateInstanceQuestionStats } from './question-points.js';
 import { getQuestionCourse } from './question-variant.js';
 import * as workspaceHelper from './workspace.js';
 
@@ -128,7 +128,7 @@ export async function insertSubmission({
 
     const delta = await sqldb.queryOptionalRow(
       sql.select_and_update_last_access,
-      { user_id: variant.user_id, group_id: variant.group_id },
+      { user_id: variant.user_id, group_id: variant.team_id },
       IntervalSchema.nullable(),
     );
 
@@ -155,15 +155,19 @@ export async function insertSubmission({
 
     await updateCourseInstanceUsagesForSubmission({ submission_id, user_id });
 
-    if (variant.assessment_instance_id != null) {
-      await sqldb.execute(sql.update_instance_question_post_submission, {
-        instance_question_id: variant.instance_question_id,
-        assessment_instance_id: variant.assessment_instance_id,
-        delta,
-        status: gradable ? 'saved' : 'invalid',
-        requires_manual_grading: (variant.max_manual_points ?? 0) > 0,
-      });
-      await sqldb.callAsync('instance_questions_calculate_stats', [variant.instance_question_id]);
+    if (variant.instance_question_id != null) {
+      const instanceQuestion = await sqldb.queryRow(
+        sql.update_instance_question_post_submission,
+        {
+          instance_question_id: variant.instance_question_id,
+          assessment_instance_id: variant.assessment_instance_id,
+          delta,
+          status: gradable ? 'saved' : 'invalid',
+          requires_manual_grading: (variant.max_manual_points ?? 0) > 0,
+        },
+        InstanceQuestionSchema,
+      );
+      await updateInstanceQuestionStats({ instanceQuestion });
     }
 
     return { submission_id, variant };

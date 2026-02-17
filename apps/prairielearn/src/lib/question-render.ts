@@ -5,6 +5,7 @@ import * as error from '@prairielearn/error';
 import * as sqldb from '@prairielearn/postgres';
 import { run } from '@prairielearn/run';
 import { generateSignedToken } from '@prairielearn/signed-token';
+import { IdSchema } from '@prairielearn/zod';
 
 import { AssessmentScorePanel } from '../components/AssessmentScorePanel.js';
 import { QuestionFooterContent } from '../components/QuestionContainer.js';
@@ -40,7 +41,6 @@ import {
   GradingJobSchema,
   type GroupConfig,
   GroupConfigSchema,
-  IdSchema,
   type InstanceQuestion,
   type Question,
   type Submission,
@@ -140,8 +140,8 @@ async function render(
   const studentMessage = 'Error rendering question';
   const courseData = { variant, question, submission, course: variant_course };
   // user information may not be populated when rendering a panel.
-  const user_id = locals.user?.user_id ?? null;
-  const authn_user_id = locals.authn_user?.user_id ?? null;
+  const user_id = locals.user?.id ?? null;
+  const authn_user_id = locals.authn_user?.id ?? null;
   await writeCourseIssues(
     courseIssues,
     variant,
@@ -248,6 +248,7 @@ export interface ResLocalsBuildLocals {
   variantAttemptsTotal: number;
   submissions: SubmissionForRender[];
   variantToken: string;
+  jobSequenceTokens: Record<string, string>;
 }
 
 function buildLocals({
@@ -292,6 +293,7 @@ function buildLocals({
     // Used for "auth" for external grading realtime results
     // ID is coerced to a string so that it matches what we get back from the client
     variantToken: generateSignedToken({ variantId: variant.id.toString() }, config.secretKey),
+    jobSequenceTokens: {},
   };
 
   if (!assessment || !assessment_instance || !assessment_question || !instance_question) {
@@ -470,8 +472,8 @@ export async function getAndRenderVariant(
       return await ensureVariant(
         locals.question.id,
         instance_question_id,
-        locals.user.user_id,
-        locals.authn_user.user_id,
+        locals.user.id,
+        locals.authn_user.id,
         locals.course_instance ?? null,
         locals.course,
         question_course,
@@ -659,6 +661,7 @@ export async function renderPanelsForSubmission({
   authorizedEdit,
   renderScorePanels,
   groupRolePermissions,
+  authz_result,
 }: {
   unsafe_submission_id: string;
   question: Question;
@@ -671,6 +674,7 @@ export async function renderPanelsForSubmission({
   authorizedEdit: boolean;
   renderScorePanels: boolean;
   groupRolePermissions: { can_view: boolean; can_submit: boolean } | null;
+  authz_result?: { active: boolean };
 }): Promise<SubmissionPanels> {
   const submissionInfo = await sqldb.queryOptionalRow(
     sql.select_submission_info,
@@ -728,6 +732,7 @@ export async function renderPanelsForSubmission({
       assessment_instance,
       assessment_question,
       group_config,
+      authz_result,
     }),
   };
 
@@ -823,9 +828,9 @@ export async function renderPanelsForSubmission({
       if (!renderScorePanels) return;
 
       const group_info = await run(async () => {
-        if (!assessment_instance?.group_id || !group_config) return null;
+        if (!assessment_instance?.team_id || !group_config) return null;
 
-        return await getGroupInfo(assessment_instance.group_id, group_config);
+        return await getGroupInfo(assessment_instance.team_id, group_config);
       });
 
       panels.questionPanelFooter = QuestionFooterContent({
@@ -856,14 +861,14 @@ export async function renderPanelsForSubmission({
       let nextQuestionGroupRolePermissions: { can_view: boolean } | null = null;
       let userGroupRoles = 'None';
 
-      if (assessment_instance?.group_id && group_config?.has_roles) {
+      if (assessment_instance?.team_id && group_config?.has_roles) {
         nextQuestionGroupRolePermissions = await getQuestionGroupPermissions(
           next_instance_question.id,
-          assessment_instance.group_id,
-          user.user_id,
+          assessment_instance.team_id,
+          user.id,
         );
         userGroupRoles =
-          (await getUserRoles(assessment_instance.group_id, user.user_id))
+          (await getUserRoles(assessment_instance.team_id, user.id))
             .map((role) => role.role_name)
             .join(', ') || 'None';
       }

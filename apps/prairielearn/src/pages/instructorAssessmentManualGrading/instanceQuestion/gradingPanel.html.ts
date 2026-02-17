@@ -1,6 +1,9 @@
 import assert from 'assert';
 
+import mustache from 'mustache';
+
 import { html } from '@prairielearn/html';
+import { markdownToHtml } from '@prairielearn/markdown';
 import { run } from '@prairielearn/run';
 
 import type { InstanceQuestionAIGradingInfo } from '../../../ee/lib/ai-grading/types.js';
@@ -34,8 +37,9 @@ export function GradingPanel({
   selectedInstanceQuestionGroup = null,
   instanceQuestionGroups,
   skip_graded_submissions,
+  show_submissions_assigned_to_me_only,
 }: {
-  resLocals: ResLocalsForPage['instance-question'];
+  resLocals: ResLocalsForPage<'instance-question'>;
   context: 'main' | 'existing' | 'conflicting';
   graders?: User[] | null;
   disable?: boolean;
@@ -49,11 +53,13 @@ export function GradingPanel({
   selectedInstanceQuestionGroup?: InstanceQuestionGroup | null;
   instanceQuestionGroups?: InstanceQuestionGroup[];
   skip_graded_submissions?: boolean;
+  show_submissions_assigned_to_me_only?: boolean;
 }) {
   const auto_points = custom_auto_points ?? resLocals.instance_question.auto_points ?? 0;
   const manual_points = custom_manual_points ?? resLocals.instance_question.manual_points ?? 0;
   const points = custom_points ?? resLocals.instance_question.points ?? 0;
   const submission = grading_job ?? resLocals.submission;
+
   assert(submission, 'submission is missing');
   assert(resLocals.submission, 'resLocals.submission is missing');
 
@@ -62,7 +68,15 @@ export function GradingPanel({
   disable = disable || !resLocals.authz_data.has_course_instance_permission_edit;
   skip_text = skip_text || 'Next';
 
+  // Users are only assigned to grade submissions if they have edit permissions.
+  // If the user has no edit permissions (view only), we set show_submissions_assigned_to_me_only to false so
+  // the next button does not filter by assigned grader.
+  show_submissions_assigned_to_me_only = !resLocals.authz_data.has_course_instance_permission_edit
+    ? false
+    : show_submissions_assigned_to_me_only;
+
   const showSkipGradedSubmissionsButton = !disable && context === 'main';
+  const showAssignedToMeButton = !disable && context === 'main';
 
   const emptyGroup = {
     assessment_question_id: resLocals.assessment_question.id,
@@ -77,6 +91,16 @@ export function GradingPanel({
     ? [...instanceQuestionGroups, emptyGroup]
     : [emptyGroup];
 
+  const graderGuidelines = resLocals.rubric_data?.rubric.grader_guidelines;
+  const mustacheParams = {
+    correct_answers: resLocals.submission.true_answer ?? {},
+    params: resLocals.submission.params ?? {},
+    submitted_answers: resLocals.submission.submitted_answer,
+  };
+  const graderGuidelinesRendered = graderGuidelines
+    ? markdownToHtml(mustache.render(graderGuidelines, mustacheParams), { inline: true })
+    : null;
+
   return html`
     <form
       name="manual-grading-form"
@@ -85,10 +109,10 @@ export function GradingPanel({
       data-max-manual-points="${resLocals.assessment_question.max_manual_points}"
       data-max-points="${resLocals.assessment_question.max_points}"
       data-rubric-active="${!!resLocals.rubric_data}"
-      data-rubric-replace-auto-points="${resLocals.rubric_data?.replace_auto_points}"
-      data-rubric-starting-points="${resLocals.rubric_data?.starting_points}"
-      data-rubric-max-extra-points="${resLocals.rubric_data?.max_extra_points}"
-      data-rubric-min-points="${resLocals.rubric_data?.min_points}"
+      data-rubric-replace-auto-points="${resLocals.rubric_data?.rubric.replace_auto_points}"
+      data-rubric-starting-points="${resLocals.rubric_data?.rubric.starting_points}"
+      data-rubric-max-extra-points="${resLocals.rubric_data?.rubric.max_extra_points}"
+      data-rubric-min-points="${resLocals.rubric_data?.rubric.min_points}"
     >
       <input type="hidden" name="__csrf_token" value="${resLocals.__csrf_token}" />
       <input
@@ -191,9 +215,17 @@ export function GradingPanel({
               </li>
             `
           : ''}
+        ${graderGuidelinesRendered
+          ? html`
+              <li class="list-group-item">
+                <div class="mb-1">Guidelines:</div>
+                <p class="my-3" style="white-space: pre-line;">${graderGuidelinesRendered}</p>
+              </li>
+            `
+          : ''}
         <li class="list-group-item">
           ${ManualPointsSection({ context, disable, manual_points, resLocals })}
-          ${!resLocals.rubric_data?.replace_auto_points ||
+          ${!resLocals.rubric_data?.rubric.replace_auto_points ||
           (!resLocals.assessment_question.max_auto_points && !auto_points)
             ? RubricInputSection({ resLocals, disable, aiGradingInfo })
             : ''}
@@ -205,7 +237,7 @@ export function GradingPanel({
               </li>
               <li class="list-group-item">
                 ${TotalPointsSection({ context, disable, points, resLocals })}
-                ${resLocals.rubric_data?.replace_auto_points
+                ${resLocals.rubric_data?.rubric.replace_auto_points
                   ? RubricInputSection({ resLocals, disable, aiGradingInfo })
                   : ''}
               </li>
@@ -252,30 +284,58 @@ ${submission.feedback?.manual}</textarea
             `
           : ''}
         <li class="list-group-item d-flex align-items-center justify-content-end flex-wrap gap-2">
-          <div class="form-check">
-            ${showSkipGradedSubmissionsButton
-              ? html`
-                  <input
-                    id="skip_graded_submissions"
-                    type="checkbox"
-                    class="form-check-input"
-                    name="skip_graded_submissions"
-                    value="true"
-                    ${skip_graded_submissions ? 'checked' : ''}
-                  />
-                  <label class="form-check-label" for="skip_graded_submissions">
-                    Skip graded submissions
-                  </label>
-                `
-              : html`
-                  <input
-                    id="skip_graded_submissions"
-                    type="hidden"
-                    name="skip_graded_submissions"
-                    value="${skip_graded_submissions ? 'true' : 'false'}"
-                  />
-                `}
+          <div>
+            <div class="form-check">
+              ${showSkipGradedSubmissionsButton
+                ? html`
+                    <input
+                      id="skip_graded_submissions"
+                      type="checkbox"
+                      class="form-check-input"
+                      name="skip_graded_submissions"
+                      value="true"
+                      ${skip_graded_submissions ? 'checked' : ''}
+                    />
+                    <label class="form-check-label" for="skip_graded_submissions">
+                      Skip graded submissions
+                    </label>
+                  `
+                : html`
+                    <input
+                      id="skip_graded_submissions"
+                      type="hidden"
+                      name="skip_graded_submissions"
+                      value="${skip_graded_submissions ? 'true' : 'false'}"
+                    />
+                  `}
+            </div>
+
+            <div class="form-check">
+              ${showAssignedToMeButton
+                ? html`
+                    <input
+                      id="show_submissions_assigned_to_me_only"
+                      type="checkbox"
+                      class="form-check-input"
+                      name="show_submissions_assigned_to_me_only"
+                      value="true"
+                      ${show_submissions_assigned_to_me_only ? 'checked' : ''}
+                    />
+                    <label class="form-check-label" for="show_submissions_assigned_to_me_only">
+                      Skip submissions not assigned to me
+                    </label>
+                  `
+                : html`
+                    <input
+                      id="show_submissions_assigned_to_me_only"
+                      type="hidden"
+                      name="show_submissions_assigned_to_me_only"
+                      value="${show_submissions_assigned_to_me_only ? 'true' : 'false'}"
+                    />
+                  `}
+            </div>
           </div>
+
           <span class="ms-auto">
             ${!disable
               ? html`
@@ -375,7 +435,7 @@ ${submission.feedback?.manual}</textarea
                             type="submit"
                             class="dropdown-item"
                             name="__action"
-                            value="reassign_${grader.user_id}"
+                            value="reassign_${grader.id}"
                           >
                             Assign to: ${grader.name} (${grader.uid})
                           </button>

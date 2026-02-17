@@ -1,5 +1,35 @@
 # @prairielearn/logger
 
+## 3.1.0
+
+### Minor Changes
+
+- 35ca957: Add `withoutLogging` utility to `@prairielearn/logger` for temporarily silencing logger output during test execution.
+
+## 3.0.1
+
+### Patch Changes
+
+- 8bdf6ea: Upgrade all JavaScript dependencies
+
+## 3.0.0
+
+### Major Changes
+
+- 3914bb4: Upgrade to Node 24
+
+## 2.0.25
+
+### Patch Changes
+
+- 0900843: Switch to the `tsgo` compiler
+
+## 2.0.24
+
+### Patch Changes
+
+- 70a8029: Upgrade all JavaScript dependencies
+
 ## 2.0.23
 
 ### Patch Changes

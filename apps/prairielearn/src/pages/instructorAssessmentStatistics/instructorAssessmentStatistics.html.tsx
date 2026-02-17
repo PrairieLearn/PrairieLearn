@@ -1,14 +1,12 @@
-import _ from 'lodash';
+import { range } from 'es-toolkit';
 import { z } from 'zod';
 
 import { html } from '@prairielearn/html';
-import { renderHtml } from '@prairielearn/preact';
 
 import { PageLayout } from '../../components/PageLayout.js';
-import { AssessmentSyncErrorsAndWarnings } from '../../components/SyncErrorsAndWarnings.js';
 import { compiledScriptTag } from '../../lib/assets.js';
 import { type Assessment, AssessmentInstanceSchema, AssessmentSchema } from '../../lib/db-types.js';
-import type { UntypedResLocals } from '../../lib/res-locals.types.js';
+import type { ResLocalsForPage } from '../../lib/res-locals.js';
 
 export const DurationStatSchema = z.object({
   median_formatted: z.string(),
@@ -53,7 +51,7 @@ export function InstructorAssessmentStatistics({
   userScores,
   filenames,
 }: {
-  resLocals: UntypedResLocals;
+  resLocals: ResLocalsForPage<'assessment'>;
   assessment: Assessment;
   durationStat: DurationStat;
   assessmentScoreHistogramByDate: AssessmentScoreHistogramByDate[];
@@ -73,15 +71,6 @@ export function InstructorAssessmentStatistics({
     },
     headContent: compiledScriptTag('instructorAssessmentStatisticsClient.ts'),
     content: html`
-      ${renderHtml(
-        <AssessmentSyncErrorsAndWarnings
-          authzData={resLocals.authz_data}
-          assessment={resLocals.assessment}
-          courseInstance={resLocals.course_instance}
-          course={resLocals.course}
-          urlPrefix={resLocals.urlPrefix}
-        />,
-      )}
       <h1 class="visually-hidden">
         ${resLocals.assessment_set.name} ${assessment.number} Statistics
       </h1>
@@ -95,7 +84,7 @@ export function InstructorAssessmentStatistics({
                 <div
                   class="js-histogram"
                   data-histogram="${JSON.stringify(assessment.score_stat_hist)}"
-                  data-xgrid="${JSON.stringify(_.range(0, 110, 10))}"
+                  data-xgrid="${JSON.stringify(range(0, 110, 10))}"
                   data-options="${JSON.stringify({
                     ymin: 0,
                     xlabel: 'score / %',
@@ -236,7 +225,7 @@ export function InstructorAssessmentStatistics({
                   data-ydata="${JSON.stringify(userScores.map((user) => user.score_perc))}"
                   data-options="${JSON.stringify({
                     xgrid: durationStat.thresholds.map((durationMs) => durationMs / 1000),
-                    ygrid: _.range(0, 110, 10),
+                    ygrid: range(0, 110, 10),
                     xlabel: 'duration',
                     ylabel: 'score / %',
                     xTickLabels: durationStat.thresholds.map(durationLabel),
@@ -273,11 +262,11 @@ export function InstructorAssessmentStatistics({
                     })),
                   )}"
                   data-options="${JSON.stringify({
-                    ygrid: _.range(0, 110, 10),
+                    ygrid: range(0, 110, 10),
                     xgrid: assessmentScoreHistogramByDate.length,
                     xlabel: 'start date',
                     ylabel: 'score / %',
-                    yTickLabels: _.range(100, -10, -10),
+                    yTickLabels: range(100, -10, -10),
                     width: assessmentScoreHistogramByDate.length * 200,
                   })}"
                 ></div>

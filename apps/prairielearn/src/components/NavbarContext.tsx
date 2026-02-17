@@ -16,9 +16,7 @@ export function ContextNavigation({
 }) {
   if (!navPage) return '';
 
-  const navPagesTabs: Partial<Record<Exclude<NavPage, undefined>, TabInfo[]>> = getNavPageTabs(
-    resLocals.has_enhanced_navigation,
-  );
+  const navPagesTabs: Partial<Record<Exclude<NavPage, undefined>, TabInfo[]>> = getNavPageTabs();
   const navPageTabs = navPagesTabs[navPage];
 
   // Some navPages do not have tabs
@@ -26,16 +24,7 @@ export function ContextNavigation({
 
   return html`
     <nav>
-      <ul
-        class="
-          nav 
-          nav-tabs 
-          pl-nav-tabs-bar 
-          pt-2
-          px-3 
-          bg-light
-        "
-      >
+      <ul class="nav nav-tabs pl-nav-tabs-bar pt-2 px-3 bg-light">
         ${navPageTabs.map((tabInfo) => NavbarTab({ navSubPage, resLocals, tabInfo }))}
       </ul>
     </nav>

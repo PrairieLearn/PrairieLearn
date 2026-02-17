@@ -78,10 +78,9 @@ You can extend the end date of the course instance to particular students by cre
 
 By default, only students that belong to the course's institution can access the course instance. You can use the `institution` property to allow access from other institutions. It can be set to `"Any"` to allow access from all institutions, or to a specific institution name, such as `"UIUC"`, or for LTI 1.1-linked courses, to `"LTI"`. For instance, you can use the following rule to allow students from any institution to access the course instance between the specified dates:
 
-!!! note "Planned deprecation"
+!!! warning "Deprecated"
 
-    The `institution` property is planned to be deprecated in the future alongside the release of our new self-enrollment system which has an equivalent feature. If you really need this control, then you should still use the `allowAccess` property.
-    <!-- Remove this note when the new system is released -->
+    The `institution` property in `allowAccess` is deprecated. Use the `selfEnrollment.restrictToInstitution` setting instead. See [enrollment controls](#enrollment-controls) for details.
 
 ```json title="infoCourseInstance.json"
 {
@@ -96,6 +95,14 @@ By default, only students that belong to the course's institution can access the
 ```
 
 ### Migrating from `allowAccess`
+
+!!! note
+
+    Most users will not need to migrate from `allowAccess` to publishing manually. Copying or creating a course instance in the UI will automatically switch to the new publishing system. If you would like to migrate manually, you can follow the steps below.
+
+!!! warning "LTI 1.1 courses should not migrate"
+
+    Courses using LTI 1.1 should not migrate to the new publishing system. LTI 1.1 requires an `allowAccess` rule with `"institution": "LTI"` to function properly.
 
 To migrate from `allowAccess` to publishing extensions:
 
@@ -154,24 +161,6 @@ To migrate from `allowAccess` to publishing extensions:
 
 ## Enrollment controls
 
-!!! warning "Not fully available yet"
-
-    The new self-enrollment system will be released in January 2026. Currently, your course instance will always be available for self-enrollment via a direct link, you cannot block users, or limit self-enrollment to specific institutions. The only configurable setting until the new system is fully available is the `hideInEnrollPage` setting.
-
-    The default values for the new system:
-
-    ```json title="infoCourseInstance.json"
-    {
-      "hideInEnrollPage": /* current value of hideInEnrollPage */,
-      "selfEnrollment": { /* None of these settings are modifiable in the old system */
-        "enabled": true,
-        "restrictToInstitution": true, /* If publishing is not set up, this value is ignored. */
-        "beforeDate": null,
-        "useEnrollmentCode": false,
-      }
-    }
-    ```
-
 Students can enroll in a course instance through a few different ways:
 
 1. They can use a URL specific to the course instance or [to one of its assessments](../assessment/configuration.md#linking-to-assessments). You can find the "student link" on the "Settings" tab of the course instance. This link points students to the list of assessments associated to the course instance, enrolling them automatically in the course instance if they are not yet enrolled.
@@ -179,12 +168,6 @@ Students can enroll in a course instance through a few different ways:
 2. They can use a self-enrollment code. You can find the enrollment code on the "Settings" tab of the course instance after enabling "Use enrollment code for self-enrollment". Students can enroll in a course by clicking on the "Add course" button on their PrairieLearn homepage and entering the enrollment code.
 
 3. They can be invited to a course instance by an instructor. Instructors can invite students to a course instance by visiting the "Students" tab of the course instance and clicking the "Invite" button. Invites will show up on the student's PrairieLearn homepage.
-
-4. They can use the "Add or remove courses" button on PrairieLearn's homepage. This button opens a page listing all course instances that are currently available for enrollment, giving students the option to add new courses.
-
-!!! warning "Course listing page is being removed"
-
-    The courses listing page (enrollment option #4) will be removed in January 2026 in favor of the new self-enrollment system. Instructors should transition to providing a direct link to their course instance or a self-enrollment code to students.
 
 ### Enrollment security
 
@@ -234,23 +217,11 @@ If you want to disable self-enrollment completely, you can set the `enabled` pro
 }
 ```
 
-#### Hiding the course instance from the enrollment page
-
-Some instructors may wish to hide their course from the list of available course instances. This may be done to provide a small level of control over which students get access to the course, or to avoid confusion in case of course instances that are not expected to be visible to students in general. For these instances, the following setting will hide the course instance from the list of instances on the add/remove courses page, even if the instance is available for enrollment.
-
-```json title="infoCourseInstance.json"
-{
-  "hideInEnrollPage": true
-}
-```
-
-!!! warning
-
-    **`hideInEnrollPage` is not a security setting**. Students may still enroll in the course instance if they get access to the URL, such as from a friend.
-
-    This feature will be removed in January 2026 in favor of the new self-enrollment system.
-
 ### Individual student management
+
+!!! warning "Not available with legacy access control"
+
+    Individual student management features are not available for courses using legacy access control (`allowAccess`). To use these features, you must [migrate to the new publishing system](#migrating-from-allowaccess).
 
 #### Inviting students
 

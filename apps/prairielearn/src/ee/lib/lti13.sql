@@ -107,8 +107,8 @@ WITH
     FROM
       assessment_instances AS ai
       JOIN assessments AS a ON (a.id = ai.assessment_id)
-      LEFT JOIN groups AS g ON (g.id = ai.group_id)
-      LEFT JOIN group_users AS gu ON (gu.group_id = g.id)
+      LEFT JOIN teams AS g ON (g.id = ai.team_id)
+      LEFT JOIN team_users AS gu ON (gu.team_id = g.id)
     WHERE
       ai.assessment_id = $assessment_id
       AND g.deleted_at IS NULL
@@ -125,7 +125,7 @@ SELECT DISTINCT
   to_jsonb(u) || jsonb_build_object('lti13_sub', lu.sub) AS user
 FROM
   course_assessment_instances AS cai
-  JOIN users AS u ON (u.user_id = cai.user_id)
+  JOIN users AS u ON (u.id = cai.user_id)
   LEFT JOIN lti13_users AS lu ON (lu.user_id = cai.user_id)
 ORDER BY
   cai.user_id ASC,

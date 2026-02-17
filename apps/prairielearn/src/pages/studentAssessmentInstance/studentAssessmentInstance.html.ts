@@ -3,6 +3,7 @@ import { z } from 'zod';
 import { EncodedData } from '@prairielearn/browser-utils';
 import { html, unsafeHtml } from '@prairielearn/html';
 import { run } from '@prairielearn/run';
+import { DateFromISOString, IdSchema } from '@prairielearn/zod';
 
 import {
   RegenerateInstanceAlert,
@@ -26,14 +27,12 @@ import { compiledScriptTag } from '../../lib/assets.js';
 import {
   type AssessmentInstance,
   AssessmentQuestionSchema,
-  DateFromISOString,
   type GroupConfig,
-  IdSchema,
   InstanceQuestionSchema,
 } from '../../lib/db-types.js';
 import { formatPoints } from '../../lib/format.js';
 import { type GroupInfo, getRoleNamesForUser } from '../../lib/groups.js';
-import type { UntypedResLocals } from '../../lib/res-locals.types.js';
+import type { ResLocalsForPage } from '../../lib/res-locals.js';
 import { SimpleVariantWithScoreSchema } from '../../models/variant.js';
 
 export const InstanceQuestionRowSchema = InstanceQuestionSchema.extend({
@@ -82,7 +81,11 @@ export function StudentAssessmentInstance({
   instance_question_rows: InstanceQuestionRow[];
   showTimeLimitExpiredModal: boolean;
   userCanDeleteAssessmentInstance: boolean;
-  resLocals: UntypedResLocals;
+  resLocals: ResLocalsForPage<'assessment-instance'> & {
+    has_manual_grading_question: boolean;
+    has_auto_grading_question: boolean;
+    assessment_text_templated: string | null;
+  };
 } & (
   | {
       groupConfig: GroupConfig;
@@ -152,6 +155,12 @@ export function StudentAssessmentInstance({
   const userGroupRoles = groupInfo
     ? getRoleNamesForUser(groupInfo, resLocals.authz_data.user).join(', ')
     : null;
+  const showExamFooterContent =
+    resLocals.assessment.type === 'Exam' &&
+    resLocals.assessment_instance.open &&
+    resLocals.authz_result.active;
+  const showUnauthorizedEditWarning = !resLocals.authz_result.authorized_edit;
+  const showCardFooter = showExamFooterContent || showUnauthorizedEditWarning;
 
   return PageLayout({
     resLocals,
@@ -197,7 +206,7 @@ export function StudentAssessmentInstance({
             ${resLocals.assessment_set.abbreviation}${resLocals.assessment.number}:
             ${resLocals.assessment.title}
           </h1>
-          ${resLocals.assessment.group_work ? html`&nbsp;<i class="fas fa-users"></i>` : ''}
+          ${resLocals.assessment.team_work ? html`&nbsp;<i class="fas fa-users"></i>` : ''}
         </div>
 
         <div class="card-body">
@@ -364,8 +373,9 @@ export function StudentAssessmentInstance({
                                   ${instance_question_row.max_auto_points
                                     ? ExamQuestionAvailablePoints({
                                         open:
-                                          resLocals.assessment_instance.open &&
-                                          instance_question_row.open,
+                                          (resLocals.assessment_instance.open &&
+                                            instance_question_row.open) ??
+                                          false,
                                         currentWeight:
                                           (instance_question_row.points_list_original?.[
                                             instance_question_row.number_attempts
@@ -489,79 +499,109 @@ export function StudentAssessmentInstance({
           </table>
         </div>
 
-        <div class="card-footer">
-          ${resLocals.assessment.type === 'Exam' &&
-          resLocals.assessment_instance.open &&
-          resLocals.authz_result.active
-            ? html`
-                ${someQuestionsAllowRealTimeGrading
+        ${showCardFooter
+          ? html`
+              <div class="card-footer d-flex flex-column gap-3">
+                ${showExamFooterContent
                   ? html`
-                      <form name="grade-form" method="POST">
-                        <input type="hidden" name="__action" value="grade" />
-                        <input
-                          type="hidden"
-                          name="__csrf_token"
-                          value="${resLocals.__csrf_token}"
-                        />
-                        ${savedAnswers > 0
-                          ? html`
-                              <button
-                                type="submit"
-                                class="btn btn-info my-2"
-                                ${!resLocals.authz_result.authorized_edit ? 'disabled' : ''}
-                              >
-                                Grade ${savedAnswers} saved
-                                ${savedAnswers !== 1 ? 'answers' : 'answer'}
-                              </button>
-                            `
-                          : html`
-                              <button type="submit" class="btn btn-info my-2" disabled>
-                                No saved answers to grade
-                              </button>
-                            `}
-                      </form>
-                      <ul class="my-1">
-                        ${suspendedSavedAnswers > 1
-                          ? html`
+                      ${someQuestionsAllowRealTimeGrading
+                        ? html`
+                            <form name="grade-form" method="POST">
+                              <input type="hidden" name="__action" value="grade" />
+                              <input
+                                type="hidden"
+                                name="__csrf_token"
+                                value="${resLocals.__csrf_token}"
+                              />
+                              ${savedAnswers > 0
+                                ? html`
+                                    <button
+                                      type="submit"
+                                      class="btn btn-info"
+                                      ${!resLocals.authz_result.authorized_edit ? 'disabled' : ''}
+                                    >
+                                      Grade ${savedAnswers} saved
+                                      ${savedAnswers !== 1 ? 'answers' : 'answer'}
+                                    </button>
+                                  `
+                                : html`
+                                    <button type="submit" class="btn btn-info" disabled>
+                                      No saved answers to grade
+                                    </button>
+                                  `}
+                            </form>
+                            <ul class="mb-0">
+                              ${suspendedSavedAnswers > 1
+                                ? html`
+                                    <li>
+                                      There are ${suspendedSavedAnswers} saved answers that cannot
+                                      be graded yet because their grade rate has not been reached.
+                                      They are marked with the
+                                      <i class="fa fa-hourglass-half"></i> icon above. Reload this
+                                      page to update this information.
+                                    </li>
+                                  `
+                                : suspendedSavedAnswers === 1
+                                  ? html`
+                                      <li>
+                                        There is one saved answer that cannot be graded yet because
+                                        its grade rate has not been reached. It is marked with the
+                                        <i class="fa fa-hourglass-half"></i> icon above. Reload this
+                                        page to update this information.
+                                      </li>
+                                    `
+                                  : ''}
                               <li>
-                                There are ${suspendedSavedAnswers} saved answers that cannot be
-                                graded yet because their grade rate has not been reached. They are
-                                marked with the
-                                <i class="fa fa-hourglass-half"></i> icon above. Reload this page to
-                                update this information.
+                                Submit your answer to each question with the
+                                <strong>Save & Grade</strong> or <strong>Save only</strong> buttons
+                                on the question page.
                               </li>
-                            `
-                          : suspendedSavedAnswers === 1
-                            ? html`
-                                <li>
-                                  There is one saved answer that cannot be graded yet because its
-                                  grade rate has not been reached. It is marked with the
-                                  <i class="fa fa-hourglass-half"></i> icon above. Reload this page
-                                  to update this information.
-                                </li>
-                              `
-                            : ''}
-                        <li>
-                          Submit your answer to each question with the
-                          <strong>Save & Grade</strong> or <strong>Save only</strong> buttons on the
-                          question page.
-                        </li>
-                        <li>
-                          Look at <strong>Status</strong> to confirm that each question has been
-                          ${someQuestionsForbidRealTimeGrading
-                            ? 'either saved or graded'
-                            : 'graded'}.
-                          Questions with <strong>Available points</strong> can be attempted again
-                          for more points. Attempting questions again will never reduce the points
-                          you already have.
-                        </li>
-                        ${resLocals.authz_result.password != null ||
-                        !resLocals.authz_result.show_closed_assessment ||
-                        // If this is true, this assessment has a mix of real-time-graded and
-                        // non-real-time-graded questions. We need to show the "Finish assessment"
-                        // button.
-                        someQuestionsForbidRealTimeGrading
-                          ? html`
+                              <li>
+                                Look at <strong>Status</strong> to confirm that each question has
+                                been
+                                ${someQuestionsForbidRealTimeGrading
+                                  ? 'either saved or graded'
+                                  : 'graded'}.
+                                Questions with <strong>Available points</strong> can be attempted
+                                again for more points. Attempting questions again will never reduce
+                                the points you already have.
+                              </li>
+                              ${resLocals.authz_result.password != null ||
+                              !resLocals.authz_result.show_closed_assessment ||
+                              // If this is true, this assessment has a mix of real-time-graded and
+                              // non-real-time-graded questions. We need to show the "Finish assessment"
+                              // button.
+                              someQuestionsForbidRealTimeGrading
+                                ? html`
+                                    <li>
+                                      After you have answered all the questions completely, click
+                                      here:
+                                      <button
+                                        class="btn btn-danger"
+                                        data-bs-toggle="modal"
+                                        data-bs-target="#confirmFinishModal"
+                                        ${!resLocals.authz_result.authorized_edit ? 'disabled' : ''}
+                                      >
+                                        Finish assessment
+                                      </button>
+                                    </li>
+                                  `
+                                : html`
+                                    <li>
+                                      When you are done, please logout and close your browser; there
+                                      is no need to do anything else. If you have any saved answers
+                                      when you leave, they will be automatically graded before your
+                                      final score is computed.
+                                    </li>
+                                  `}
+                            </ul>
+                          `
+                        : html`
+                            <ul class="mb-0">
+                              <li>
+                                Submit your answer to each question with the
+                                <strong>Save</strong> button on the question page.
+                              </li>
                               <li>
                                 After you have answered all the questions completely, click here:
                                 <button
@@ -573,47 +613,21 @@ export function StudentAssessmentInstance({
                                   Finish assessment
                                 </button>
                               </li>
-                            `
-                          : html`
-                              <li>
-                                When you are done, please logout and close your browser; there is no
-                                need to do anything else. If you have any saved answers when you
-                                leave, they will be automatically graded before your final score is
-                                computed.
-                              </li>
-                            `}
-                      </ul>
+                            </ul>
+                          `}
                     `
-                  : html`
-                      <ul class="my-1">
-                        <li>
-                          Submit your answer to each question with the
-                          <strong>Save</strong> button on the question page.
-                        </li>
-                        <li>
-                          After you have answered all the questions completely, click here:
-                          <button
-                            class="btn btn-danger"
-                            data-bs-toggle="modal"
-                            data-bs-target="#confirmFinishModal"
-                            ${!resLocals.authz_result.authorized_edit ? 'disabled' : ''}
-                          >
-                            Finish assessment
-                          </button>
-                        </li>
-                      </ul>
-                    `}
-              `
-            : ''}
-          ${!resLocals.authz_result.authorized_edit
-            ? html`
-                <div class="alert alert-warning mt-4" role="alert">
-                  You are viewing the assessment of a different user and so are not authorized to
-                  submit questions for grading or to mark the assessment as complete.
-                </div>
-              `
-            : ''}
-        </div>
+                  : ''}
+                ${showUnauthorizedEditWarning
+                  ? html`
+                      <div class="alert alert-warning mb-0" role="alert">
+                        You are viewing the assessment of a different user and so are not authorized
+                        to submit questions for grading or to mark the assessment as complete.
+                      </div>
+                    `
+                  : ''}
+              </div>
+            `
+          : ''}
       </div>
 
       ${resLocals.assessment.allow_personal_notes
@@ -699,7 +713,11 @@ function InstanceQuestionTableHeader({
   resLocals,
   someQuestionsAllowRealTimeGrading,
 }: {
-  resLocals: UntypedResLocals;
+  resLocals: ResLocalsForPage<'assessment-instance'> & {
+    has_manual_grading_question: boolean;
+    has_auto_grading_question: boolean;
+    assessment_text_templated: string | null;
+  };
   someQuestionsAllowRealTimeGrading: boolean;
 }) {
   const trailingColumns =

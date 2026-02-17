@@ -1,4 +1,12 @@
 version: 2
+
+# The Python strategy comes from this comment:
+# https://github.com/dependabot/dependabot-core/issues/12609#issuecomment-3407284321
+multi-ecosystem-groups:
+  python:
+    schedule:
+      interval: monthly
+
 updates:
   - package-ecosystem: docker
     directories:
@@ -40,11 +48,15 @@ updates:
       # https://github.com/faisalman/ua-parser-js/issues/680
       - dependency-name: 'ua-parser-js'
         versions: ['>=2']
-      # We use Yarn `resolutions` to point these to our Preact compat packages.
-      # We don't ever care about which version is actually listed in `package.json` files.
-      - dependency-name: 'preact' # https://github.com/PrairieLearn/PrairieLearn/pull/12763
-      - dependency-name: 'react'
-      - dependency-name: 'react-dom'
+      # Express 5 made significant breaking changes, and we are not yet
+      # ready to upgrade to it.
+      - dependency-name: 'express'
+        versions: ['>=5']
+      # JQuery 4 made significant breaking changes. We are migrating code to
+      # vanilla JS where possible and only keeping it for backwards
+      # compatibility, so we don't want to upgrade.
+      - dependency-name: 'jquery'
+        versions: ['>=4']
 
     groups:
       # Many OpenTelemetry packages are still pre-v1, so updates frequently won't
@@ -63,6 +75,8 @@ updates:
           - 'minor'
 
   - package-ecosystem: pip
+    multi-ecosystem-group: python
+    patterns: ['*']
     directories:
       - '/'
       - '/docs'
@@ -71,24 +85,16 @@ updates:
       - '/workspaces/jupyterlab-base'
       - '/workspaces/jupyterlab-python'
       - '/workspaces/vscode-python'
-    schedule:
-      interval: monthly
     rebase-strategy: disabled
-    ignore:
-      # We're not ready to jump to the latest version of `numpy` yet.
-      - dependency-name: 'numpy'
-        versions: ['>=2']
-      # The following dependencies have dropped support for Python 3.10 in their
-      # recent versions. Since PrairieLearn still uses Python 3.10 in the question
-      # runtime environment, we need to ignore these updates for now.
-      - dependency-name: 'networkx'
-        versions: ['>=3.5.0']
-      - dependency-name: 'Pint'
-        versions: ['>=0.25']
-      - dependency-name: 'scipy'
-        versions: ['>=1.16.0']
     groups:
       all-patch-minor:
         update-types:
           - 'patch'
           - 'minor'
+
+  - package-ecosystem: uv
+    multi-ecosystem-group: python
+    patterns: ['*']
+    # Currently we only have a `uv.lock` in the root directory.
+    directories:
+      - '/'

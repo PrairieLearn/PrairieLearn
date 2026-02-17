@@ -1,0 +1,1 @@
+This question demonstrates `<pl-checkbox>` with built-in randomization. `number-answers="6"` shows 6 of the available options, `min-correct="2"` ensures at least 2 correct answers are shown, and `max-correct="3"` caps the correct answers at 3. Each student sees a different subset of choices.

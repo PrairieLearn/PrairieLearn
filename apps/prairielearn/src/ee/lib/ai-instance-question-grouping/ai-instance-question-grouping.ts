@@ -4,8 +4,9 @@ import * as async from 'async';
 import { z } from 'zod';
 
 import { HttpStatusError } from '@prairielearn/error';
+import { assertNever } from '@prairielearn/utils';
 
-import { type OpenAIModelId, formatPrompt, logResponseUsage } from '../../../lib/ai.js';
+import { type OpenAIModelId, formatPrompt, logResponseUsage } from '../../../lib/ai-util.js';
 import { config } from '../../../lib/config.js';
 import type {
   AssessmentQuestion,
@@ -15,7 +16,6 @@ import type {
 } from '../../../lib/db-types.js';
 import { buildQuestionUrls } from '../../../lib/question-render.js';
 import { createServerJob } from '../../../lib/server-jobs.js';
-import { assertNever } from '../../../lib/types.js';
 import * as questionServers from '../../../question-servers/index.js';
 import {
   generateSubmissionMessage,
@@ -187,6 +187,13 @@ export async function aiInstanceQuestionGrouping({
     throw new HttpStatusError(403, 'Feature not available.');
   }
 
+  if (!assessment_question.max_manual_points) {
+    throw new HttpStatusError(
+      400,
+      'AI submission grouping is only available on assessment questions that use manual grading.',
+    );
+  }
+
   const openai = createOpenAI({
     apiKey: config.aiGradingOpenAiApiKey,
     organization: config.aiGradingOpenAiOrganization,
@@ -194,23 +201,18 @@ export async function aiInstanceQuestionGrouping({
   const model = openai(INSTANCE_QUESTION_GROUPING_OPENAI_MODEL);
 
   const serverJob = await createServerJob({
+    type: 'ai_instance_question_grouping',
+    description: 'Perform AI submission grouping',
+    userId: user_id,
+    authnUserId: authn_user_id,
     courseId: course.id,
     courseInstanceId: course_instance_id,
     assessmentId: assessment_question.assessment_id,
-    authnUserId: authn_user_id,
-    userId: user_id,
-    type: 'ai_instance_question_grouping',
-    description: 'Perform AI submission grouping',
   });
 
   const instanceQuestionIdsSet = new Set<string>(instance_question_ids);
 
   serverJob.executeInBackground(async (job) => {
-    if (!assessment_question.max_manual_points) {
-      job.fail('The assessment question has no manual grading');
-      return;
-    }
-
     const allInstanceQuestions = await selectInstanceQuestionsForAssessmentQuestion({
       assessment_question_id: assessment_question.id,
       closed_instance_questions_only,
@@ -310,7 +312,7 @@ export async function aiInstanceQuestionGrouping({
             instanceQuestion,
             logger,
           );
-        } catch (err) {
+        } catch (err: any) {
           logger.error(err);
         } finally {
           for (const log of logs) {

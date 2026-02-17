@@ -7,7 +7,7 @@ import { HttpStatusError } from '@prairielearn/error';
 import { hasRole } from '../../../lib/authz-data-lib.js';
 import { constructCourseOrInstanceContext } from '../../../lib/authz-data.js';
 import type { User } from '../../../lib/db-types.js';
-import { features } from '../../../lib/features/index.js';
+import { getEligibilityErrorMessage } from '../../../lib/enrollment-eligibility.js';
 import { selectOptionalCourseInstanceIdByEnrollmentCode } from '../../../models/course-instances.js';
 import { selectCourseById } from '../../../models/course.js';
 import { selectOptionalEnrollmentByUid } from '../../../models/enrollment.js';
@@ -29,14 +29,9 @@ router.get(
     // Parse and validate the code parameter
     const { code, course_instance_id: courseInstanceIdToCheck } = LookupCodeSchema.parse(req.query);
 
-    const enrollmentManagementEnabled = await features.enabledFromLocals(
-      'enrollment-management',
-      res.locals,
-    );
-
     // Look up the course instance by enrollment code
     const courseInstanceId = await selectOptionalCourseInstanceIdByEnrollmentCode({
-      enrollment_code: code,
+      enrollmentCode: code,
     });
     if (!courseInstanceId) {
       // User-facing terminology is to use "course" instead of "course instance"
@@ -73,10 +68,15 @@ router.get(
     });
 
     if (existingEnrollment) {
-      if (!['invited', 'rejected', 'joined', 'removed'].includes(existingEnrollment.status)) {
-        throw new HttpStatusError(403, 'You are blocked from accessing this course');
-      } else {
-        // If the user had some other prior enrollment state, return the course instance ID.
+      if (
+        !['invited', 'rejected', 'joined', 'left', 'removed'].includes(existingEnrollment.status)
+      ) {
+        throw new HttpStatusError(403, getEligibilityErrorMessage('blocked'));
+      }
+
+      // If the user was invited, joined, left, or removed, then they have access so we can return the course instance ID.
+      // This means that rejected users will fall through to the self-enrollment checks.
+      if (['invited', 'joined', 'left', 'removed'].includes(existingEnrollment.status)) {
         res.json({
           course_instance_id: courseInstance.id,
         });
@@ -86,11 +86,10 @@ router.get(
 
     // Check if self-enrollment is enabled for this course instance
     if (!courseInstance.self_enrollment_enabled) {
-      throw new HttpStatusError(403, 'Self-enrollment is disabled for this course');
+      throw new HttpStatusError(403, getEligibilityErrorMessage('self-enrollment-disabled'));
     }
 
     if (
-      enrollmentManagementEnabled &&
       courseInstance.self_enrollment_restrict_to_institution &&
       // The default value for self-enrollment restriction is true.
       // In the old system (before publishing was introduced), the default was false.
@@ -100,10 +99,7 @@ router.get(
       // Lookup the course
       const course = await selectCourseById(courseInstance.course_id);
       if (course.institution_id !== authnUser.institution_id) {
-        throw new HttpStatusError(
-          403,
-          'Self-enrollment is restricted to users from the same institution',
-        );
+        throw new HttpStatusError(403, getEligibilityErrorMessage('institution-restriction'));
       }
     }
 
@@ -111,7 +107,7 @@ router.get(
       courseInstance.self_enrollment_enabled_before_date &&
       new Date() >= courseInstance.self_enrollment_enabled_before_date
     ) {
-      throw new HttpStatusError(403, 'Self-enrollment is no longer allowed for this course');
+      throw new HttpStatusError(403, getEligibilityErrorMessage('self-enrollment-expired'));
     }
 
     // Return the course instance ID

@@ -4,7 +4,7 @@ This file documents the default Java autograder included in the `prairielearn/gr
 
 ## Overview
 
-The Java autograder is based on [JUnit 5](https://docs.junit.org/5.10.2/user-guide/). In essence, individual tests correspond to individual annotated methods that run testing code, such as ([source](https://docs.junit.org/5.10.2/user-guide/#writing-tests)):
+The Java autograder is based on [JUnit 5](https://docs.junit.org/5.14.1/user-guide/). In essence, individual tests correspond to individual annotated methods that run testing code, such as ([source](https://docs.junit.org/5.14.1/user-guide/#writing-tests)):
 
 ```java
 import static org.junit.jupiter.api.Assertions.assertEquals;
@@ -79,7 +79,7 @@ Inside the `tests/junit` directory, one or more classes can be provided with met
 
 Tests that are part of a package must be provided in an equivalent subdirectory. For example, if a test named `AppTest` is in package `com.example.myapp.test`, it must be saved in the file `tests/junit/com/example/myapp/test/AppTest.java`.
 
-Each test found by JUnit will be provided as an individual result to the student. The name of the test result is based on the test's [display name](https://docs.junit.org/5.10.2/user-guide/#writing-tests-display-names). By default, each test will be worth one point. To change this default, a [tag](https://docs.junit.org/5.10.2/user-guide/#writing-tests-tagging-and-filtering) in the format `@Tag("points=XX")` (replacing `XX` with a number of points) must be provided. For example:
+Each test found by JUnit will be provided as an individual result to the student. The name of the test result is based on the test's [display name](https://docs.junit.org/5.14.1/user-guide/#writing-tests-display-names). By default, each test will be worth one point. To change this default, a [tag](https://docs.junit.org/5.14.1/user-guide/#writing-tests-tagging-and-filtering) in the format `@Tag("points=XX")` (replacing `XX` with a number of points) must be provided. For example:
 
 ```java
     @Test
@@ -105,9 +105,9 @@ import org.prairielearn.autograder.AutograderInfo;
     }
 ```
 
-To change the order in which test results are shown to the user, you may use [the `@TestMethodOrder` annotation](https://docs.junit.org/5.10.2/user-guide/#writing-tests-test-execution-order).
+To change the order in which test results are shown to the user, you may use [the `@TestMethodOrder` annotation](https://docs.junit.org/5.14.1/user-guide/#writing-tests-test-execution-order).
 
-To produce output that will be visible to students, tests may be optionally declared with [an argument of type `TestReporter`](https://docs.junit.org/5.10.2/user-guide/#writing-tests-dependency-injection). Calling [the `publishEntry` method for the test reporter](https://docs.junit.org/5.10.2/api/org.junit.jupiter.api/org/junit/jupiter/api/TestReporter.html) will cause the provided entry to be printed as the output of the test. For example:
+To produce output that will be visible to students, tests may be optionally declared with [an argument of type `TestReporter`](https://docs.junit.org/5.14.1/user-guide/#writing-tests-dependency-injection). Calling [the `publishEntry` method for the test reporter](https://docs.junit.org/5.14.1/api/org.junit.jupiter.api/org/junit/jupiter/api/TestReporter.html) will cause the provided entry to be printed as the output of the test. For example:
 
 ```java
 @Test
@@ -127,7 +127,7 @@ The autograder will give a question points based on if a test passed or failed b
 
 ### Dynamic, parameterized and repeated tests
 
-JUnit 5 supports tests that are generated dynamically. These include [parameterized tests](https://docs.junit.org/5.10.2/user-guide/#writing-tests-parameterized-tests), [repeated tests](https://docs.junit.org/5.10.2/user-guide/#writing-tests-repeated-tests) and [test factories](https://docs.junit.org/5.10.2/user-guide/#writing-tests-dynamic-tests).
+JUnit 5 supports tests that are generated dynamically. These include [parameterized tests](https://docs.junit.org/5.14.1/user-guide/#writing-tests-parameterized-tests), [repeated tests](https://docs.junit.org/5.14.1/user-guide/#writing-tests-repeated-tests) and [test factories](https://docs.junit.org/5.14.1/user-guide/#writing-tests-dynamic-tests).
 
 While the autograder supports the execution of these types of tests, they may in rare instances cause inconsistencies in the total number of points assigned to each submission. In particular, if different submissions generate different sets of tests, the total number of tests assigned to one student (and consequentially the maximum number of points) may be different from other students, causing the score percentage to be inconsistent. Also, if the student's code causes the autograder to crash (e.g., in case of out-of-memory errors or thread exhaustion), some tests may not be registered on time to be considered in the grading process.
 
@@ -170,6 +170,7 @@ The example above disables the `static` warning (use of static fields applied to
 Similarly, you may set specific options to the `java` command line using the `JDK_JAVA_OPTIONS`. A list of valid options can be found in the [`java` documentation page](https://docs.oracle.com/en/java/javase/21/docs/specs/man/java.html#standard-options-for-java). Some options of interest may include:
 
 - `-Dproperty=value` to set system properties that may be retrieved with `System.getProperty(name)`;
+  - This may be useful to set JUnit configuration properties, as described in [the JUnit documentation](https://docs.junit.org/5.14.1/user-guide/#running-tests-config-params).
 - `-ea` to enable [Java assertions](https://docs.oracle.com/javase/8/docs/technotes/guides/language/assert.html).
 
 ### Libraries and instructor-provided classes
@@ -197,6 +198,6 @@ The libraries required to run JUnit 5 tests are already included as part of the 
 
 The JUnit tests, as well as the student code, are executed in a sandboxed environment as a non-root user. The code has the ability to create, modify or delete any files within the sandbox user's home directory (`/home/sbuser`), but cannot access most other directories in the environment. This is set up to deter students from creating code that manipulates the autograder or the grading results, since these can only be updated by the autograder script.
 
-The user directory is initially empty. Any files and directories that are required for testing must be created by the JUnit test class itself.
+If the question includes a `tests/studentFiles` directory, its contents are copied to the sandbox user's home directory before testing begins. This allows instructors to provide files that may be required for testing, such as input files or configuration files. If this directory is not provided, the sandbox user's home directory will be empty at the start of testing. The JUnit tests and fixtures, as well as student code, may also create, modify or delete files in this directory as needed during testing.
 
 The [instructor provided library files](index.md#libraries-and-instructor-provided-classes) are copied to the testing environment as they are to a directory called `/grade/classpath`. To ensure they can be used in the Java library, this directory and its contents are readable by the sandbox user. Instructors are warned that any file that should not be viewed by the student (e.g., the source code of test files or some libraries) should not be included in the question's `tests/libs` directory or in the course's `serverFilesCourse/java/libs` directory, as such files could be visible by a well-crafted malicious student submission.

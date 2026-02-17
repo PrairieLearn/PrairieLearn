@@ -4,7 +4,7 @@ SELECT
   to_jsonb(ia.*) AS institution_administrator
 FROM
   institution_administrators AS ia
-  JOIN users AS u ON (ia.user_id = u.user_id)
+  JOIN users AS u ON (ia.user_id = u.id)
 WHERE
   ia.institution_id = $institution_id
 ORDER BY

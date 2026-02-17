@@ -8,9 +8,9 @@ import type { TableName } from '../lib/db-types.js';
  */
 export const requiredTableFields = {
   course_instances: ['course_instance_id'],
-  pl_courses: ['course_id'],
+  courses: ['course_id'],
   users: ['subject_user_id'],
-  groups: ['group_id'],
+  teams: ['team_id'],
   assessment_instances: ['assessment_instance_id'],
   assessment_questions: ['assessment_question_id'],
   assessments: ['assessment_id'],
@@ -27,7 +27,7 @@ export type SupportedTableActionCombination =
       actionDetail?: null;
     }
   | {
-      tableName: 'pl_courses';
+      tableName: 'courses';
       actionDetail?: null;
     }
   | {
@@ -35,7 +35,7 @@ export type SupportedTableActionCombination =
       actionDetail?: null;
     }
   | {
-      tableName: 'groups';
+      tableName: 'teams';
       actionDetail?: null;
     }
   | {
@@ -58,14 +58,24 @@ export type SupportedTableActionCombination =
       tableName: 'enrollments';
       actionDetail?:
         | 'implicit_joined'
+        // NOTE: while we no longer write `explicit_joined` events, they exist
+        // in production, so we must keep supporting them here. We could consider
+        // migrating them to another type in the future.
         | 'explicit_joined'
         | 'invited'
+        | 'invited_by_manual_sync'
         | 'invitation_accepted'
         | 'invitation_rejected'
         | 'blocked'
         | 'unblocked'
+        | 'unblocked_by_manual_sync'
         | 'invitation_deleted'
+        | 'invitation_deleted_by_manual_sync'
+        | 'left'
         | 'removed'
+        | 'removed_by_manual_sync'
+        | 'reenrolled_by_manual_sync'
+        | 'reenrolled_by_instructor'
         | null;
     };
 export type SupportedActionsForTable<T extends TableName> = NonNullable<

@@ -1,36 +1,47 @@
 {
   "name": "@prairielearn/ui",
-  "version": "1.6.0",
+  "version": "3.1.4",
   "type": "module",
   "repository": {
     "type": "git",
     "url": "https://github.com/PrairieLearn/PrairieLearn.git",
     "directory": "packages/ui"
   },
+  "engines": {
+    "node": ">=24.0.0"
+  },
   "exports": {
     ".": "./dist/index.js",
     "./*.css": "./dist/*.css"
   },
   "scripts": {
-    "build": "tsc && tscp",
-    "dev": "tsc --watch --preserveWatchOutput & tscp --watch",
+    "build": "tsgo && tscp",
+    "dev": "tsgo --watch --preserveWatchOutput & tscp --watch",
     "test": "vitest run --coverage"
   },
   "dependencies": {
     "@prairielearn/browser-utils": "workspace:^",
-    "@prairielearn/preact-cjs": "workspace:^",
+    "@prairielearn/run": "workspace:^",
     "@tanstack/react-table": "^8.21.3",
-    "@tanstack/react-virtual": "^3.13.12",
+    "@tanstack/react-virtual": "^3.13.18",
     "@tanstack/table-core": "^8.21.3",
+    "@types/react": "^19.2.10",
+    "@types/react-dom": "^19.2.3",
     "clsx": "^2.1.1",
-    "nuqs": "^2.8.2",
-    "react-bootstrap": "3.0.0-beta.5"
+    "nuqs": "^2.8.8",
+    "react": "^19.2.4",
+    "react-aria": "^3.45.0",
+    "react-aria-components": "^1.14.0",
+    "react-bootstrap": "3.0.0-beta.5",
+    "react-dom": "^19.2.4",
+    "use-debounce": "^10.1.0"
   },
   "devDependencies": {
     "@prairielearn/tsconfig": "workspace:^",
-    "@types/node": "^22.19.1",
+    "@types/node": "^24.10.9",
+    "@typescript/native-preview": "^7.0.0-dev.20260203.1",
     "typescript": "^5.9.3",
     "typescript-cp": "^0.1.9",
-    "vitest": "^4.0.14"
+    "vitest": "^4.0.18"
   }
 }
