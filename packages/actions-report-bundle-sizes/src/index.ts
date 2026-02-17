@@ -104,7 +104,17 @@ function buildCommentSection(oldSizes: SizesJson | null, newSizes: SizesJson): s
   } else if (!biggestEntry || biggestEntry.absDiff < THRESHOLD_BYTES) {
     summaryLine = 'No significant size changes';
   } else {
-    summaryLine = `Largest change: ${formatBytes(biggestEntry.absDiff)} (\`${biggestEntry.name}\`)`;
+    const netDiff = newTotal - oldTotal;
+    const netSign = netDiff > 0 ? '+' : '';
+    const largestSign =
+      biggestEntry.kind === 'removed'
+        ? '-'
+        : biggestEntry.kind === 'new'
+          ? '+'
+          : biggestEntry.newGzip! >= biggestEntry.oldGzip!
+            ? '+'
+            : '-';
+    summaryLine = `Net: ${netSign}${formatBytes(netDiff)} (largest: ${largestSign}${formatBytes(biggestEntry.absDiff)})`;
   }
 
   const lines: string[] = [
