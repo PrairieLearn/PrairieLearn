@@ -1,1 +1,1 @@
-This question demonstrates how to create a question that randomly selects both a question and correct/incorrect answers.
+This question randomly selects both a prompt and the correct/incorrect answers from pre-defined lists.
