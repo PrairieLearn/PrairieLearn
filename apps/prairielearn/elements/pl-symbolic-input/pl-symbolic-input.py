@@ -171,6 +171,8 @@ def prepare(element_html: str, data: pl.QuestionData) -> None:
     initial_value = pl.get_string_attrib(
         element, "initial-value", INITIAL_VALUE_DEFAULT
     )
+    # Don't parse the initial value if it's not a formula editor, so that you can prefill
+    # partial inputs.
     if formula_editor and initial_value is not None and initial_value.strip() != "":
         try:
             psu.convert_string_to_sympy(
