@@ -1,0 +1,22 @@
+{
+  "prairielearn/executor": {
+    "linux/amd64": {
+      "digest": "sha256:77f579d1a7ae088ce5d7522c046711fe5fcaffe1f6acc1e6673b94e939aa4cb8",
+      "size": 1319800278
+    },
+    "linux/arm64": {
+      "digest": "sha256:afff74316ead984d6b713482032cab6da7173354f6e729fd27679cebe1eb36e5",
+      "size": 1286499527
+    }
+  },
+  "prairielearn/prairielearn": {
+    "linux/amd64": {
+      "digest": "sha256:c521ae084f087ce3854a3b7207e183a78f5353c3a5f148d3977051deecfdc8c2",
+      "size": 1319797450
+    },
+    "linux/arm64": {
+      "digest": "sha256:a59d18341d4e38f2c30720b05e27cccc76cc1c5e5d6d0df07d5ecb05bf39b2e3",
+      "size": 1286496701
+    }
+  }
+}
