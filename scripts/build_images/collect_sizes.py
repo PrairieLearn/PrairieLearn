@@ -2,7 +2,6 @@
 
 import json
 import os
-import sys
 
 
 def collect_sizes(metadata_dir: str) -> dict:
@@ -37,8 +36,7 @@ def collect_sizes(metadata_dir: str) -> dict:
         digest = metadata.get("containerimage.digest")
 
         if not image_name or not platform or image_size is None or not digest:
-            print(f"Error: {filename} is missing required fields")
-            sys.exit(1)
+            raise RuntimeError(f"{filename} is missing required fields")
 
         if image_name not in sizes:
             sizes[image_name] = {}
@@ -56,11 +54,9 @@ if __name__ == "__main__":
     output_path = os.environ.get("OUTPUT_PATH")
 
     if not metadata_dir:
-        print("METADATA_DIR environment variable is required")
-        sys.exit(1)
+        raise RuntimeError("METADATA_DIR environment variable is required")
     if not output_path:
-        print("OUTPUT_PATH environment variable is required")
-        sys.exit(1)
+        raise RuntimeError("OUTPUT_PATH environment variable is required")
 
     sizes = collect_sizes(metadata_dir)
 
