@@ -303,7 +303,7 @@
     },
     "cronIntervalFetchNewsItemsSec": {
       "type": "number",
-      "default": 10800
+      "default": 300
     },
     "cronDailySec": {
       "type": "number",
@@ -1138,6 +1138,10 @@
       "default": null
     },
     "newsFeedUrl": {
+      "type": ["string", "null"],
+      "default": null
+    },
+    "newsFeedBlogUrl": {
       "type": ["string", "null"],
       "default": null
     },
