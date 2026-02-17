@@ -163,6 +163,7 @@ export function InstructorIssues({
               <button
                 className="btn btn-med-light"
                 type="button"
+                aria-label="Filter help"
                 data-bs-toggle="modal tooltip"
                 data-bs-target="#filterHelpModal"
                 data-bs-title="Filter help"
@@ -227,12 +228,21 @@ function IssueRow({
   const assessmentInstanceUrl = `/pl/course_instance/${issue.course_instance_id}/instructor/assessment_instance/${issue.assessment_instance_id}`;
 
   return (
-    <div className="list-group-item issue-list-item d-flex flex-row align-items-center">
+    <div
+      className="list-group-item issue-list-item d-flex flex-row align-items-center"
+      data-testid="issue-list-item"
+    >
       <div style={{ minWidth: 0 }}>
         {issue.open ? (
-          <i className="fa fa-exclamation-circle text-danger issue-status-icon" />
+          <i
+            className="fa fa-exclamation-circle text-danger issue-status-icon"
+            data-testid="issue-status-open"
+          />
         ) : (
-          <i className="fa fa-check-circle text-success issue-status-icon" />
+          <i
+            className="fa fa-check-circle text-success issue-status-icon"
+            data-testid="issue-status-closed"
+          />
         )}
         <div className="d-block">
           <strong>{issue.question_qid}</strong>
