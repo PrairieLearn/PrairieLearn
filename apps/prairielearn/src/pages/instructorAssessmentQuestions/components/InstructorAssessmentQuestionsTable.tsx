@@ -65,6 +65,7 @@ interface EditingStateEdit {
   alternativeTrackingId?: string;
   question: ZoneQuestionBlockForm | QuestionAlternativeForm;
   zoneQuestionBlock?: ZoneQuestionBlockForm;
+  originalQuestionId?: string;
 }
 
 type EditingState = EditingStateCreate | EditingStateEdit;
@@ -233,7 +234,9 @@ function InstructorAssessmentQuestionsTableInner({
     setQuestionEditState({ status: 'picking', zoneTrackingId });
   };
 
-  const openPickerToChangeQid = () => {
+  const openPickerToChangeQid = (
+    currentFormValues: ZoneQuestionBlockForm | QuestionAlternativeForm,
+  ) => {
     if (questionEditState.status !== 'editing') return;
     const zoneTrackingId =
       questionEditState.mode === 'create'
@@ -241,10 +244,22 @@ function InstructorAssessmentQuestionsTableInner({
         : (zones.find((z) =>
             z.questions.some((q) => q.trackingId === questionEditState.questionTrackingId),
           )?.trackingId ?? '');
+    // Merge current form values into the original question to preserve unsaved
+    // edits (e.g. points/manual points) while keeping extra properties that
+    // aren't registered as form fields.
+    const questionWithFormValues = {
+      ...questionEditState.question,
+      ...currentFormValues,
+      trackingId: questionEditState.question.trackingId,
+    } as typeof questionEditState.question;
+    const returnToEdit: EditingState = {
+      ...questionEditState,
+      question: questionWithFormValues,
+    } as EditingState;
     setQuestionEditState({
       status: 'picking',
       zoneTrackingId,
-      returnToEdit: questionEditState,
+      returnToEdit,
     });
   };
 
@@ -266,6 +281,7 @@ function InstructorAssessmentQuestionsTableInner({
       alternativeTrackingId,
       question,
       zoneQuestionBlock,
+      originalQuestionId: question.id,
     });
   };
 
@@ -768,6 +784,7 @@ function InstructorAssessmentQuestionsTableInner({
                     type: 'edit' as const,
                     question: questionEditState.question,
                     zoneQuestionBlock: questionEditState.zoneQuestionBlock,
+                    originalQuestionId: questionEditState.originalQuestionId,
                   }
               : null
           }

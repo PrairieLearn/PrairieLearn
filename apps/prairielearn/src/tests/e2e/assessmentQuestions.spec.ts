@@ -202,4 +202,85 @@ test.describe('Assessment questions', () => {
       },
     ]);
   });
+
+  // Test assessment has 1 zone with 5 questions:
+  // partialCredit1 (points=1, maxPoints=5), partialCredit2, partialCredit3, partialCredit4_v2, partialCredit6_no_partial
+  test('can use question picker to change a question QID', async ({ page, testCoursePath }) => {
+    const assessmentTid = 'hw3-partialCredit';
+    const assessment = await selectAssessmentByTid({
+      course_instance_id: courseInstanceId,
+      tid: assessmentTid,
+    });
+
+    await enterEditMode(page, courseInstanceId, assessment.id);
+
+    // Click "Edit question" on the partialCredit1 row
+    const questionRow = page.locator('tr').filter({ hasText: 'partialCredit1' });
+    await questionRow.getByRole('button', { name: 'Edit question' }).click();
+
+    const modal = page.getByRole('dialog');
+    await expect(modal).toBeVisible();
+
+    // Change auto points from 1 to 7 (to verify form preservation after picker)
+    const autoPointsInput = modal.locator('#autoPointsInput');
+    await autoPointsInput.clear();
+    await autoPointsInput.fill('7');
+
+    // Click "Pick" to open the question picker
+    await modal.getByRole('button', { name: 'Pick' }).click();
+
+    // The picker modal replaces the edit modal
+    await expect(modal.getByText('Select question')).toBeVisible();
+
+    // Type search query
+    await modal.getByPlaceholder('Search by QID or title...').fill('differentiate');
+
+    // Open Topic filter and select Calculus
+    await modal.getByRole('button', { name: 'Filter by Topic' }).click();
+    await page.getByRole('option', { name: 'Calculus' }).click();
+
+    // Dismiss the filter popover (react-aria portal overlay blocks pointer events)
+    await modal.getByPlaceholder('Search by QID or title...').click({ force: true });
+
+    // Assert exactly 1 question found
+    await expect(modal.getByText(/1 question/)).toBeVisible();
+
+    // Click the differentiatePolynomial row
+    await modal.locator('[role="button"]').filter({ hasText: 'differentiatePolynomial' }).click();
+
+    // Back in edit modal: verify QID was updated and points were preserved
+    await expect(modal.getByText('Edit question')).toBeVisible();
+    await expect(modal.locator('#qidInput')).toHaveValue('differentiatePolynomial');
+    await expect(modal.locator('#autoPointsInput')).toHaveValue('7');
+
+    // Click "Update question"
+    await modal.getByRole('button', { name: 'Update question' }).click();
+    await expect(modal).not.toBeVisible();
+
+    // Save and sync
+    await page.getByRole('button', { name: 'Save and sync' }).click();
+    await expect(page.getByRole('button', { name: 'Edit questions' })).toBeVisible();
+
+    // Read the saved file and validate
+    const infoAssessmentPath = path.join(
+      testCoursePath,
+      'courseInstances/Sp15/assessments',
+      assessmentTid,
+      'infoAssessment.json',
+    );
+    const savedContent = await fs.readFile(infoAssessmentPath, 'utf-8');
+    const savedAssessment = JSON.parse(savedContent);
+
+    expect(savedAssessment.zones).toEqual([
+      {
+        questions: [
+          { id: 'differentiatePolynomial', points: 7, maxPoints: 5 },
+          { id: 'partialCredit2', autoPoints: 2, maxAutoPoints: 10, manualPoints: 3 },
+          { id: 'partialCredit3', points: 2, maxPoints: 10, triesPerVariant: 3 },
+          { id: 'partialCredit4_v2', points: 3, maxPoints: 10 },
+          { id: 'partialCredit6_no_partial', points: 3, maxPoints: 11 },
+        ],
+      },
+    ]);
+  });
 });

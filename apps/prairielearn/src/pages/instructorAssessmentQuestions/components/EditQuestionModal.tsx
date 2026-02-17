@@ -19,6 +19,7 @@ export type EditQuestionModalData =
       type: 'edit';
       question: ZoneQuestionBlockForm | QuestionAlternativeForm;
       zoneQuestionBlock?: ZoneQuestionBlockForm;
+      originalQuestionId?: string;
     };
 
 function isInherited(
@@ -68,13 +69,14 @@ export function EditQuestionModal({
     newQuestionData: StaffAssessmentQuestionRow | undefined,
   ) => void;
   assessmentType: 'Homework' | 'Exam';
-  onPickQuestion?: () => void;
+  onPickQuestion?: (currentFormValues: ZoneQuestionBlockForm | QuestionAlternativeForm) => void;
   onAddAndPickAnother?: () => void;
 }) {
   const type = data?.type ?? null;
   const question = data?.question ?? null;
   const zoneQuestionBlock = data?.zoneQuestionBlock;
   const existingQids = data?.type === 'create' ? data.existingQids : [];
+  const originalQuestionId = data?.type === 'edit' ? data.originalQuestionId : undefined;
   const isAlternative = !!zoneQuestionBlock;
 
   const manualPointsDisplayValue =
@@ -148,6 +150,7 @@ export function EditQuestionModal({
     register,
     handleSubmit,
     setError,
+    getValues,
     formState: { errors, isSubmitting },
   } = useForm<ZoneQuestionBlockForm | QuestionAlternativeForm>({
     mode: 'onSubmit',
@@ -165,7 +168,7 @@ export function EditQuestionModal({
           onSubmit={handleSubmit(async (formData) => {
             // Fetch question data if creating a new question or if QID changed
             let questionData: StaffAssessmentQuestionRow | undefined;
-            if (type === 'create' || formData.id !== question.id) {
+            if (type === 'create' || formData.id !== (originalQuestionId ?? question.id)) {
               const params = new URLSearchParams({ qid: formData.id! });
               const res = await fetch(`${window.location.pathname}/question.json?${params}`);
               if (!res.ok) {
@@ -253,7 +256,7 @@ export function EditQuestionModal({
                   <button
                     type="button"
                     className="btn btn-outline-secondary"
-                    onClick={onPickQuestion}
+                    onClick={() => onPickQuestion(getValues())}
                   >
                     Pick
                   </button>
