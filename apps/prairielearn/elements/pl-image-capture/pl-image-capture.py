@@ -17,6 +17,7 @@ from PIL import Image
 
 MOBILE_CAPTURE_ENABLED_DEFAULT = True
 MANUAL_UPLOAD_ENABLED_DEFAULT = False
+ALLOW_BLANK_DEFAULT = False
 
 
 def prepare(element_html: str, data: pl.QuestionData) -> None:
