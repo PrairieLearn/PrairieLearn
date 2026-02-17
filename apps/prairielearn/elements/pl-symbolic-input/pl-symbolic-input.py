@@ -621,7 +621,6 @@ def _build_known_tokens(
     ]
 
     # Add all parts of tokens with subscripts (e.g., "var" and "test" for "var_test")
-    # Also add all combinations if there are multiple underscores (e.g., "a", "b", "c", "a_b", "b_c" for "a_b_c")
     tokens += [part for token in tokens for part in token.split("_")]
 
     # Filter out single-letter tokens
