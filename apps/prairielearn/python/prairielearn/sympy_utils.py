@@ -422,8 +422,7 @@ def evaluate(
 
 
 def _normalize_expr(expr: str) -> str:
-    """Normalize a symbolic expression string by converting Greek unicode letters
-    to their spelled-out names and transliterating remaining unicode to ASCII."""
+    """Normalize a symbolic expression by converting Greek unicode and transliterating to ASCII."""
     return full_unidecode(greek_unicode_transform(expr))
 
 
