@@ -1,4 +1,6 @@
+import * as cheerio from 'cheerio';
 import fetch from 'node-fetch';
+import superjson from 'superjson';
 import { afterAll, assert, beforeAll, describe, it } from 'vitest';
 
 import * as sqldb from '@prairielearn/postgres';
@@ -67,6 +69,20 @@ describe('Instructor questions', { timeout: 60_000 }, function () {
 
   let questionData: { id: string; qid: string; title: string }[];
 
+  async function loadQuestionDataFromHydratedProps(url: string) {
+    const res = await fetch(url);
+    assert.equal(res.status, 200);
+    const pageHtml = await res.text();
+    const $ = cheerio.load(pageHtml);
+    const propsJson = $(
+      'script[data-component-props][data-component="InstructorQuestionsTable"]',
+    ).text();
+    const props = superjson.parse<{ questions: { id: string; qid: string; title: string }[] }>(
+      propsJson,
+    );
+    return props.questions;
+  }
+
   describe('the database', function () {
     let questions: Question[];
     it('should contain questions', async () => {
@@ -90,14 +106,8 @@ describe('Instructor questions', { timeout: 60_000 }, function () {
       const res = await fetch(questionsUrlCourse);
       assert.equal(res.status, 200);
     });
-    it('should contain question data via data.json endpoint', async () => {
-      const res = await fetch(`${questionsUrlCourse}/data.json`);
-      assert.equal(res.status, 200);
-      questionData = (await res.json()) as {
-        id: string;
-        qid: string;
-        title: string;
-      }[];
+    it('should contain question data via hydrated props', async () => {
+      questionData = await loadQuestionDataFromHydratedProps(questionsUrlCourse);
       assert.isArray(questionData);
       questionData.forEach((question) => assert.isObject(question));
     });
@@ -117,14 +127,8 @@ describe('Instructor questions', { timeout: 60_000 }, function () {
       const res = await fetch(questionsUrl);
       assert.equal(res.status, 200);
     });
-    it('should contain question data via data.json endpoint', async () => {
-      const res = await fetch(`${questionsUrl}/data.json`);
-      assert.equal(res.status, 200);
-      questionData = (await res.json()) as {
-        id: string;
-        qid: string;
-        title: string;
-      }[];
+    it('should contain question data via hydrated props', async () => {
+      questionData = await loadQuestionDataFromHydratedProps(questionsUrl);
       assert.isArray(questionData);
       questionData.forEach((question) => assert.isObject(question));
     });
