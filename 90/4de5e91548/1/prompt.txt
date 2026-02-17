@@ -1,0 +1,17 @@
+what vscode settings are available on reteps.htmlmustache-lsp
+
+---
+
+look at pl-code and pl-file-editor and markdown elements, and configure customCodeTags based on this
+
+---
+
+i don't see syntax highlighting
+
+---
+
+check embedded-languages.json again
+
+---
+
+i think pl-graph is missing highlighting
