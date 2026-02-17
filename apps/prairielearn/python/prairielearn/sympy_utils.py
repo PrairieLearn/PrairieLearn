@@ -421,12 +421,18 @@ def evaluate(
     return evaluate_with_source(expr, locals_for_eval, allow_complex=allow_complex)[0]
 
 
+def _normalize_expr(expr: str) -> str:
+    """Normalize a symbolic expression string by converting Greek unicode letters
+    to their spelled-out names and transliterating remaining unicode to ASCII."""
+    return full_unidecode(greek_unicode_transform(expr))
+
+
 def _normalize_expr_and_map_offsets(expr: str) -> tuple[str, list[int]]:
-    """Normalize expr the same way as parsing, and map normalized indices to original indices."""
+    """Normalize expr and build a mapping from normalized indices to original indices."""
     parts: list[str] = []
     offsets: list[int] = []
     for ind, char in enumerate(expr):
-        normalized_char = full_unidecode(greek_unicode_transform(char))
+        normalized_char = _normalize_expr(char)
         parts.append(normalized_char)
         offsets.extend([ind] * len(normalized_char))
     return "".join(parts), offsets
@@ -450,19 +456,11 @@ def evaluate_with_source(
         HasParseError: If the expression cannot be parsed.
         BaseSympyError: If the expression cannot be evaluated.
     """
-    # Check for escape and comment characters before any transformations, so
-    # that error offsets are relative to the original expression string.
-    ind = expr.find("\\")
-    if ind != -1:
-        raise HasEscapeError(ind)
-    ind = expr.find("#")
-    if ind != -1:
-        raise HasCommentError(ind)
-
     normalized_expr, normalized_offsets = _normalize_expr_and_map_offsets(expr)
 
-    # Also check after normalization. Some unicode characters normalize to "#"
-    # or "\\" and should be rejected with offsets into the original string.
+    # Check for escape and comment characters after normalization, since some
+    # unicode characters normalize to "#" or "\\". The offset map translates
+    # back to the original string position in all cases.
     ind = normalized_expr.find("\\")
     if ind != -1:
         raise HasEscapeError(normalized_offsets[ind])
