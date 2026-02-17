@@ -35,6 +35,7 @@ import minimist from 'minimist';
 import multer from 'multer';
 import onFinished from 'on-finished';
 import passport from 'passport';
+import pg from 'pg';
 import favicon from 'serve-favicon';
 
 import { cache } from '@prairielearn/cache';
@@ -2335,8 +2336,7 @@ if (shouldStartServer) {
     logger.verbose(`Connecting to ${pgConfig.user}@${pgConfig.host}:${pgConfig.database}`);
 
     if (config.devMode && pgConfig.database !== 'postgres') {
-      const pg = await import('pg');
-      const client = new pg.default.Client({
+      const client = new pg.Client({
         user: pgConfig.user,
         host: pgConfig.host,
         password: pgConfig.password,
@@ -2348,6 +2348,7 @@ if (shouldStartServer) {
         await client.query(`CREATE DATABASE ${client.escapeIdentifier(pgConfig.database)}`);
         logger.info(`Created database ${pgConfig.database}`);
       } catch (err: any) {
+        // 42P04 = duplicate_database: https://www.postgresql.org/docs/current/errcodes-appendix.html
         if (err?.code === '42P04') {
           logger.info(`Database ${pgConfig.database} already exists`);
         } else {

@@ -117,6 +117,7 @@ When working with assessment "groups" / "teams", see the [`groups-and-teams` ski
 - Always check for existing model functions in `apps/prairielearn/src/models/` or lib functions before writing one-off database queries.
 - Express request handlers must always either send a response (either by calling `res.send`/etc. or throwing an error) or explicitly pass control by calling `next(...)`.
 - Don't re-export functions or types from other modules just for convenience or backward compatibility (e.g. `export { bar } from 'foo'`).
+- Never use dynamic `import()` inside functions; always use top-level imports.
 
 ### User interface conventions
 
