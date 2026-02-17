@@ -16,7 +16,6 @@
     "reteps.htmlmustache-lsp",
     "supabase.postgrestools",
     "tamasfe.even-better-toml",
-    "tintinweb.graphviz-interactive-preview", // For our .dot files and <pl-graph> elements
     "vitest.explorer",
     "webpro.vscode-knip"
   ]
