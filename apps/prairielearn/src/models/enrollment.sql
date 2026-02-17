@@ -50,6 +50,15 @@ FROM
 WHERE
   id = $id;
 
+-- BLOCK select_enrollments_by_ids_in_course_instance
+SELECT
+  *
+FROM
+  enrollments
+WHERE
+  id = ANY ($ids::bigint[])
+  AND course_instance_id = $course_instance_id;
+
 -- BLOCK select_enrollment_by_uid
 SELECT
   to_jsonb(e) AS enrollment

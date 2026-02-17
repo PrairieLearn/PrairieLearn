@@ -1,3 +1,5 @@
+import * as crypto from 'node:crypto';
+
 import { TRPCClientError, createTRPCClient, httpLink } from '@trpc/client';
 import * as cheerio from 'cheerio';
 import fetch from 'node-fetch';
@@ -9,6 +11,7 @@ import { queryRows } from '@prairielearn/postgres';
 import { config } from '../lib/config.js';
 import { EnrollmentSchema, type StudentLabel } from '../lib/db-types.js';
 import { TEST_COURSE_PATH } from '../lib/paths.js';
+import { selectCourseInstanceById } from '../models/course-instances.js';
 import { generateAndEnrollUsers } from '../models/enrollment.js';
 import { createStudentLabel, selectEnrollmentsInStudentLabel } from '../models/student-label.js';
 import type { StudentLabelsRouter } from '../pages/instructorStudentsLabels/trpc.js';
@@ -68,7 +71,13 @@ describe('Student labels batch actions', () => {
     );
     enrollmentIds = enrollments.map((e) => e.id);
 
-    label = await createStudentLabel({ courseInstanceId: '1', name: 'Batch Test Label' });
+    const courseInstance = await selectCourseInstanceById('1');
+    label = await createStudentLabel({
+      courseInstance,
+      uuid: crypto.randomUUID(),
+      name: 'Batch Test Label',
+      color: 'blue1',
+    });
   });
 
   afterAll(helperServer.after);

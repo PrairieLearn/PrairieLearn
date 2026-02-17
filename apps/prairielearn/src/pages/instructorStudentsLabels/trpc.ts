@@ -1,3 +1,4 @@
+import * as crypto from 'node:crypto';
 import * as path from 'path';
 
 import { TRPCError, initTRPC } from '@trpc/server';
@@ -20,8 +21,8 @@ import {
   selectUsersAndEnrollmentsByUidsInCourseInstance,
 } from '../../models/enrollment.js';
 import {
-  addEnrollmentsToStudentLabel,
-  removeEnrollmentsFromStudentLabel,
+  addLabelToEnrollments,
+  removeLabelFromEnrollments,
   selectEnrollmentsInStudentLabel,
   selectStudentLabelById,
   selectStudentLabelsInCourseInstance,
@@ -165,7 +166,7 @@ const createLabelMutation = t.procedure
     }
 
     // Add new label
-    studentLabels.push({ name, color });
+    studentLabels.push({ uuid: crypto.randomUUID(), name, color });
     courseInstanceJson.studentLabels = studentLabels;
 
     // Save using FileModifyEditor
@@ -204,7 +205,7 @@ const createLabelMutation = t.procedure
           message: 'Label saved but not found in database',
         });
       }
-      await addEnrollmentsToStudentLabel({
+      await addLabelToEnrollments({
         enrollments: enrolledUsers.map((u) => u.enrollment),
         label: newLabel,
         authzData: authz_data,
@@ -263,7 +264,7 @@ const editLabelMutation = t.procedure
       });
     }
 
-    studentLabels[labelIndex] = { name, color };
+    studentLabels[labelIndex] = { uuid: studentLabels[labelIndex].uuid, name, color };
     courseInstanceJson.studentLabels = studentLabels;
 
     // Save using FileModifyEditor
@@ -316,7 +317,7 @@ const editLabelMutation = t.procedure
     // Add new enrollments
     const toAdd = desiredEnrollments.filter((e) => !currentEnrollmentIdSet.has(e.id));
     if (toAdd.length > 0) {
-      await addEnrollmentsToStudentLabel({
+      await addLabelToEnrollments({
         enrollments: toAdd,
         label: updatedLabel,
         authzData: authz_data,
@@ -326,7 +327,7 @@ const editLabelMutation = t.procedure
     // Remove old enrollments
     const toRemove = currentEnrollments.filter((e) => !desiredEnrollmentIdSet.has(e.id));
     if (toRemove.length > 0) {
-      await removeEnrollmentsFromStudentLabel({
+      await removeLabelFromEnrollments({
         enrollments: toRemove,
         label: updatedLabel,
         authzData: authz_data,
@@ -420,7 +421,7 @@ const batchAddLabelMutation = t.procedure
       authzData: authz_data,
     });
 
-    const addedEnrollments = await addEnrollmentsToStudentLabel({
+    const addedEnrollments = await addLabelToEnrollments({
       enrollments,
       label,
       authzData: authz_data,
@@ -452,7 +453,7 @@ const batchRemoveLabelMutation = t.procedure
       authzData: authz_data,
     });
 
-    const removed = await removeEnrollmentsFromStudentLabel({
+    const removed = await removeLabelFromEnrollments({
       enrollments,
       label,
       authzData: authz_data,
