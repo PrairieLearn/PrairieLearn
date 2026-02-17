@@ -39,6 +39,7 @@ Frequently used packages:
 
 - NEVER amend commits or force push unless specifically requested.
 - NEVER rebase unless specifically requested, always use merge commits.
+- ALWAYS create pull requests as drafts unless specifically requested.
 
 ## Building, type checking, and linting
 
