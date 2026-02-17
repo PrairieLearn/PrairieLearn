@@ -93,6 +93,11 @@ def prepare(element_html: str, data: pl.QuestionData) -> None:
     allow_trig = pl.get_boolean_attrib(
         element, "allow-trig-functions", ALLOW_TRIG_FUNCTIONS_DEFAULT
     )
+    simplify_expression = pl.get_boolean_attrib(
+        element,
+        "display-simplified-expression",
+        DISPLAY_SIMPLIFIED_EXPRESSION_DEFAULT,
+    )
     psu.validate_names_for_conflicts(
         name,
         variables,
@@ -123,11 +128,6 @@ def prepare(element_html: str, data: pl.QuestionData) -> None:
         )
         allow_blank = pl.get_boolean_attrib(element, "allow-blank", ALLOW_BLANK_DEFAULT)
         blank_value = pl.get_string_attrib(element, "blank-value", BLANK_VALUE_DEFAULT)
-        simplify_expression = pl.get_boolean_attrib(
-            element,
-            "display-simplified-expression",
-            DISPLAY_SIMPLIFIED_EXPRESSION_DEFAULT,
-        )
         # Validate that the answer can be parsed before storing
         if a_true.strip() != "":
             try:
@@ -151,6 +151,27 @@ def prepare(element_html: str, data: pl.QuestionData) -> None:
             )
 
         data["correct_answers"][name] = a_true
+
+    formula_editor = pl.get_boolean_attrib(
+        element, "formula-editor", SHOW_FORMULA_EDITOR_DEFAULT
+    )
+    initial_value = pl.get_string_attrib(
+        element, "initial-value", INITIAL_VALUE_DEFAULT
+    )
+    if formula_editor and initial_value is not None and initial_value.strip() != "":
+        try:
+            psu.convert_string_to_sympy(
+                initial_value,
+                variables,
+                allow_complex=allow_complex,
+                allow_trig_functions=allow_trig,
+                custom_functions=custom_functions,
+                simplify_expression=simplify_expression,
+            )
+        except psu.BaseSympyError as exc:
+            raise ValueError(
+                f'Parsing initial value "{initial_value}" for "{name}" failed.'
+            ) from exc
 
     imaginary_unit = pl.get_string_attrib(
         element, "imaginary-unit-for-display", IMAGINARY_UNIT_FOR_DISPLAY_DEFAULT
@@ -280,19 +301,20 @@ def render(element_html: str, data: pl.QuestionData) -> str:
     raw_submitted_answer = data["raw_submitted_answers"].get(name, None)
     if raw_submitted_answer is None:
         raw_submitted_answer = initial_value
-    if raw_submitted_answer_latex is None and initial_value is not None:
-        if formula_editor:
-            initial_parsed = psu.convert_string_to_sympy(
-                initial_value,
-                variables,
-                allow_complex=allow_complex,
-                custom_functions=custom_functions,
-                allow_trig_functions=allow_trig,
-                simplify_expression=simplify_expression,
-            )
-            raw_submitted_answer_latex = sympy.latex(initial_parsed)
-        else:
-            raw_submitted_answer_latex = initial_value
+    if (
+        raw_submitted_answer_latex is None
+        and initial_value is not None
+        and formula_editor
+    ):
+        initial_parsed = psu.convert_string_to_sympy(
+            initial_value,
+            variables,
+            allow_complex=allow_complex,
+            custom_functions=custom_functions,
+            allow_trig_functions=allow_trig,
+            simplify_expression=simplify_expression,
+        )
+        raw_submitted_answer_latex = sympy.latex(initial_parsed)
 
     score = data["partial_scores"].get(name, {}).get("score")
 
