@@ -241,39 +241,30 @@ function AIGradingExplanation({
             ? run(() => {
                 switch (rotationCorrectionStatus) {
                   case 'not-flagged':
-                    return html`<p>
-                        All student-submitted images were uploaded in an upright state.
-                      </p>
-                      <br />`;
+                    return html`<div class="alert alert-info mb-3" role="alert">
+                      All student-submitted images were uploaded in an upright state.
+                    </div>`;
                   case 'flagged-not-corrected':
-                    return html`<p>
-                        All student-submitted images were uploaded in an upright state.
-                      </p>
-
+                    return html`<div class="alert alert-info mb-3" role="alert">
+                      <p>All student-submitted images were uploaded in an upright state.</p>
                       <p>
                         The system initially flagged an image uploaded by the student as incorrectly
                         rotated.
                       </p>
-
-                      <p>
+                      <p class="mb-0">
                         After a second review, the system determined that the image was correctly
                         rotated.
                       </p>
-                      <br />`;
+                    </div>`;
                   case 'flagged-and-corrected':
-                    return html`<p>
+                    return html`<div class="alert alert-warning mb-3" role="alert">
+                      <p>
                         An image was uploaded in a rotated state by the student (this was an error
                         by the student). The system corrected its rotation prior to AI grading.
                       </p>
-
-                      <p>
-                        If there are rubric items associated with image rotation, then please note
-                        that this image was rotated.
-                      </p>
-
-                      <p>Counterclockwise rotation corrections, in degrees:</p>
-                      <pre>${rotationCorrectionDegrees}</pre>
-                      <br />`;
+                      <p class="mb-1">Counterclockwise rotation corrections, in degrees:</p>
+                      <pre class="mb-0">${rotationCorrectionDegrees}</pre>
+                    </div>`;
                   default:
                     return '';
                 }
