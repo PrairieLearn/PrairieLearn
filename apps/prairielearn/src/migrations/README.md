@@ -119,6 +119,7 @@ If you have no meaningful reads/writes to the old column, you can combine the fi
 - Third PR: Add `NOT NULL` constraint
   - Finalize the batched migration
   - Add `NOT NULL` constraint to the column
+  - Drop any `DEFAULT` on the column or in Zod schemas that is no longer needed
   - Update the Zod schema in `db-types.ts` to remove `.nullable()`
 
 ### Drop column
