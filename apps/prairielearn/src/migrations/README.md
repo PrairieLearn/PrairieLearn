@@ -111,7 +111,7 @@ If you have no meaningful reads/writes to the old column, you can combine the fi
 ### Make nullable column non-nullable
 
 - First PR: Eliminate all write paths that insert NULL
-  - Update application code to always write a non-NULL value (e.g. add `.default(false)` to the relevant Zod schema)
+  - Update application code to avoid writing explicit NULL values (e.g. add `.default(false)` to the relevant Zod schema)
 
 - Second PR: Backfill existing NULL values
   - Enqueue a batched migration to update all NULL rows to the desired default
