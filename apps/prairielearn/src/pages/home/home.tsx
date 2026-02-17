@@ -111,7 +111,7 @@ router.get(
 
     // Only show news alerts to instructors (users with instructor courses)
     const unreadNewsItems =
-      instructorCourses.length > 0
+      config.newsFeedUrl && instructorCourses.length > 0
         ? await selectUnreadNewsItemsForUser(res.locals.authn_user, 3)
         : [];
 
