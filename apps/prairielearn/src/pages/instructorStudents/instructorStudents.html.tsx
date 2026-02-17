@@ -262,8 +262,9 @@ function StudentsCard({
   csrfToken,
   selfEnrollLink,
   trpcCsrfToken,
-  origHash,
+  origHash: initialOrigHash,
 }: StudentsCardProps) {
+  const [origHash, setOrigHash] = useState(initialOrigHash);
   const [globalFilter, setGlobalFilter] = useQueryState('search', parseAsString.withDefault(''));
   const [sorting, setSorting] = useQueryState<SortingState>(
     'sort',
@@ -909,7 +910,8 @@ function StudentsCard({
           .filter((uid): uid is string => uid != null)
           .join('\n')}
         onHide={() => setShowCreateLabelModal(false)}
-        onSuccess={async () => {
+        onSuccess={async (newOrigHash) => {
+          setOrigHash(newOrigHash);
           await queryClient.invalidateQueries({ queryKey: ['enrollments', 'students'] });
           await queryClient.invalidateQueries({ queryKey: ['student-labels'] });
           setShowCreateLabelModal(false);

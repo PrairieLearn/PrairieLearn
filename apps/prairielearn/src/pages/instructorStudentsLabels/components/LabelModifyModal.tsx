@@ -3,7 +3,6 @@ import clsx from 'clsx';
 import { useState } from 'react';
 import { Alert, Modal } from 'react-bootstrap';
 import { useForm } from 'react-hook-form';
-import z from 'zod';
 
 import { run } from '@prairielearn/run';
 
@@ -89,12 +88,6 @@ export function LabelModifyModal({
       return true;
     }
 
-    const invalidEmails = uids.filter((uid) => !z.string().email().safeParse(uid).success);
-
-    if (invalidEmails.length > 0) {
-      return `The following UIDs were invalid: "${invalidEmails.join('", "')}"`;
-    }
-
     try {
       const result = await trpcClient.checkUids.query({ uids });
       if (result.invalidUids.length > 0) {
@@ -168,10 +161,10 @@ export function LabelModifyModal({
             type="button"
             className="btn btn-warning"
             disabled={saveMutation.isPending}
-            onClick={handleSubmit((formData, event) => {
-              event?.preventDefault();
+            onClick={() => {
+              const formData = watch();
               void saveMutation.mutate(formData);
-            })}
+            }}
           >
             {saveMutation.isPending ? 'Saving...' : 'Save anyway'}
           </button>
