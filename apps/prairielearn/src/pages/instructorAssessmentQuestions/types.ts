@@ -181,6 +181,7 @@ export type EditorAction =
   | {
       type: 'UPDATE_QUESTION_METADATA';
       questionId: string;
+      oldQuestionId?: string;
       questionData: StaffAssessmentQuestionRow;
     }
   | {

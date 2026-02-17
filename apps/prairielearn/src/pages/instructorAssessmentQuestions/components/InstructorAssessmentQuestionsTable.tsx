@@ -427,6 +427,7 @@ function InstructorAssessmentQuestionsTableInner({
         dispatch({
           type: 'UPDATE_QUESTION_METADATA',
           questionId: updatedQuestion.id,
+          oldQuestionId: questionEditState.originalQuestionId,
           questionData: {
             ...newQuestionData,
             assessment,
