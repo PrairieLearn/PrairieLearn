@@ -1,15 +1,21 @@
 import type { Page } from '@playwright/test';
 
+import * as sqldb from '@prairielearn/postgres';
+
 import { insertIssue } from '../../lib/issues.js';
 import { selectCourseByShortName } from '../../models/course.js';
-import { updateIssueOpenStatus } from '../../models/issue.js';
 import { selectQuestionByQid } from '../../models/question.js';
 import { insertTestVariant } from '../../models/variant.js';
 import { type AuthUser, getOrCreateUser } from '../utils/auth.js';
 
 import { expect, test } from './fixtures.js';
 
+const sql = sqldb.loadSqlEquiv(import.meta.url);
 const ISSUES_URL = '/pl/course/1/course_admin/issues';
+
+async function closeIssue(issueId: string) {
+  await sqldb.execute(sql.close_issue, { issue_id: issueId });
+}
 
 async function syncAllCourses(page: Page) {
   await page.goto('/pl/loadFromDisk');
@@ -106,7 +112,7 @@ async function createTestIssues() {
 
     // Close the issue if needed
     if (!issueData.open) {
-      await updateIssueOpenStatus({ issueId, open: false });
+      await closeIssue(issueId);
     }
   }
 }
