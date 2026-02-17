@@ -86,8 +86,8 @@
   "vitest.maximumConfigs": 100,
   // This conflicts with the Prettier formatter, so we disable it.
   "yaml.format.enable": false,
-  "htmlmustache.formatting.printWidth": 100,
-  "htmlmustache.formatting.customCodeTags": [
+  "htmlmustache.printWidth": 100,
+  "htmlmustache.customCodeTags": [
     {
       "name": "pl-code",
       "languageAttribute": "language"
