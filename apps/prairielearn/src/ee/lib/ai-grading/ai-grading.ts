@@ -109,36 +109,69 @@ export async function aiGrade({
   }
 
   const provider = AI_GRADING_MODEL_PROVIDERS[model_id];
-  const resolvedKeys = await resolveAiGradingKeys(course_instance);
+  const useCustomKeys = course_instance.ai_grading_use_custom_api_keys;
+  const resolvedKeys = useCustomKeys ? await resolveAiGradingKeys(course_instance) : null;
+
   const model = run(() => {
     if (provider === 'openai') {
-      if (!resolvedKeys.openai) {
+      if (useCustomKeys) {
+        if (!resolvedKeys?.openai) {
+          throw new error.HttpStatusError(
+            403,
+            'Model not available (custom OpenAI API key not provided)',
+          );
+        }
+        return createOpenAI({
+          apiKey: resolvedKeys.openai.apiKey,
+          organization: resolvedKeys.openai.organization ?? undefined,
+        })(model_id);
+      }
+      if (!config.aiGradingOpenAiApiKey || !config.aiGradingOpenAiOrganization) {
         throw new error.HttpStatusError(403, 'Model not available (OpenAI API key not provided)');
       }
-      const openai = createOpenAI({
-        apiKey: resolvedKeys.openai.apiKey,
-        organization: resolvedKeys.openai.organization ?? undefined,
-      });
-      return openai(model_id);
+      return createOpenAI({
+        apiKey: config.aiGradingOpenAiApiKey,
+        organization: config.aiGradingOpenAiOrganization,
+      })(model_id);
     } else if (provider === 'google') {
-      if (!resolvedKeys.google) {
+      if (useCustomKeys) {
+        if (!resolvedKeys?.google) {
+          throw new error.HttpStatusError(
+            403,
+            'Model not available (custom Google API key not provided)',
+          );
+        }
+        return createGoogleGenerativeAI({
+          apiKey: resolvedKeys.google.apiKey,
+        })(model_id);
+      }
+      if (!config.aiGradingGoogleApiKey) {
         throw new error.HttpStatusError(403, 'Model not available (Google API key not provided)');
       }
-      const google = createGoogleGenerativeAI({
-        apiKey: resolvedKeys.google.apiKey,
-      });
-      return google(model_id);
+      return createGoogleGenerativeAI({
+        apiKey: config.aiGradingGoogleApiKey,
+      })(model_id);
     } else {
-      if (!resolvedKeys.anthropic) {
+      if (useCustomKeys) {
+        if (!resolvedKeys?.anthropic) {
+          throw new error.HttpStatusError(
+            403,
+            'Model not available (custom Anthropic API key not provided)',
+          );
+        }
+        return createAnthropic({
+          apiKey: resolvedKeys.anthropic.apiKey,
+        })(model_id);
+      }
+      if (!config.aiGradingAnthropicApiKey) {
         throw new error.HttpStatusError(
           403,
           'Model not available (Anthropic API key not provided)',
         );
       }
-      const anthropic = createAnthropic({
-        apiKey: resolvedKeys.anthropic.apiKey,
-      });
-      return anthropic(model_id);
+      return createAnthropic({
+        apiKey: config.aiGradingAnthropicApiKey,
+      })(model_id);
     }
   });
 
