@@ -11,7 +11,7 @@ import {
 const sql = loadSqlEquiv(import.meta.url);
 
 export async function selectUnreadNewsItemsForUser(
-  user: Pick<User, 'id'>,
+  user: User,
   limit: number,
 ): Promise<NewsItem[]> {
   return await queryRows(
@@ -22,7 +22,7 @@ export async function selectUnreadNewsItemsForUser(
 }
 
 export async function markNewsItemsAsReadForUser(
-  user: Pick<User, 'id'>,
+  user: User,
 ): Promise<NewsItemReadState> {
   return await queryRow(
     sql.upsert_news_item_read_state,
