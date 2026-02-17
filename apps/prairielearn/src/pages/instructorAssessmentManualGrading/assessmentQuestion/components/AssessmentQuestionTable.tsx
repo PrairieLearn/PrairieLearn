@@ -754,10 +754,15 @@ export function AssessmentQuestionTable({
           hasCourseInstancePermissionEdit ? (
             aiGradingMode ? (
               <>
-                {useCustomApiKeys && effectiveAvailableProviders.length === 0 ? (
+                {useCustomApiKeys &&
+                (aiGradingModelSelectionEnabled
+                  ? effectiveAvailableProviders.length === 0
+                  : !effectiveAvailableProviders.includes('openai')) ? (
                   <OverlayTrigger
                     tooltip={{
-                      body: 'To AI grade, add a key or disable "Use custom API keys" in AI grading settings.',
+                      body: aiGradingModelSelectionEnabled
+                        ? 'To AI grade, add a key or disable "Use custom API keys" in AI grading settings.'
+                        : 'To AI grade, add an OpenAI key or disable "Use custom API keys" in AI grading settings.',
                       props: { id: 'ai-grading-no-keys-tooltip' },
                     }}
                   >

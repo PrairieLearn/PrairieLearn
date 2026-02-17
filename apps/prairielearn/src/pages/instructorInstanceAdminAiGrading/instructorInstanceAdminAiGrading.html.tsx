@@ -28,12 +28,14 @@ export function InstructorInstanceAdminAiGrading({
   initialApiKeyCredentials,
   canEdit,
   isDevMode,
+  aiGradingModelSelectionEnabled,
 }: {
   csrfToken: string;
   initialUseCustomApiKeys: boolean;
   initialApiKeyCredentials: AiGradingApiKeyCredential[];
   canEdit: boolean;
   isDevMode: boolean;
+  aiGradingModelSelectionEnabled: boolean;
 }) {
   const [queryClient] = useState(() => new QueryClient());
 
@@ -44,6 +46,7 @@ export function InstructorInstanceAdminAiGrading({
         initialUseCustomApiKeys={initialUseCustomApiKeys}
         initialApiKeyCredentials={initialApiKeyCredentials}
         canEdit={canEdit}
+        aiGradingModelSelectionEnabled={aiGradingModelSelectionEnabled}
       />
     </QueryClientProviderDebug>
   );
@@ -56,18 +59,24 @@ function AiGradingSettingsContent({
   initialUseCustomApiKeys,
   initialApiKeyCredentials,
   canEdit,
+  aiGradingModelSelectionEnabled,
 }: {
   csrfToken: string;
   initialUseCustomApiKeys: boolean;
   initialApiKeyCredentials: AiGradingApiKeyCredential[];
   canEdit: boolean;
+  aiGradingModelSelectionEnabled: boolean;
 }) {
   const [useCustomApiKeys, setUseCustomApiKeys] = useState(initialUseCustomApiKeys);
   const [credentials, setCredentials] = useState(initialApiKeyCredentials);
 
+  const providerOptions = aiGradingModelSelectionEnabled
+    ? AI_GRADING_PROVIDER_OPTIONS
+    : AI_GRADING_PROVIDER_OPTIONS.filter((p) => p.value === 'openai');
+
   // Add modal state
   const [showAddModal, setShowAddModal] = useState(false);
-  const [addProvider, setAddProvider] = useState<string>(AI_GRADING_PROVIDER_OPTIONS[0].value);
+  const [addProvider, setAddProvider] = useState<string>(providerOptions[0].value);
   const [addApiKey, setAddApiKey] = useState('');
 
   // Delete confirmation state
@@ -102,7 +111,7 @@ function AiGradingSettingsContent({
       });
       setShowAddModal(false);
       setAddApiKey('');
-      setAddProvider(AI_GRADING_PROVIDER_OPTIONS[0].value);
+      setAddProvider(providerOptions[0].value);
     },
   });
 
@@ -243,7 +252,7 @@ function AiGradingSettingsContent({
               value={addProvider}
               onChange={(e) => setAddProvider(e.target.value)}
             >
-              {AI_GRADING_PROVIDER_OPTIONS.map((p) => (
+              {providerOptions.map((p) => (
                 <option key={p.value} value={p.value}>
                   {p.label}
                 </option>
