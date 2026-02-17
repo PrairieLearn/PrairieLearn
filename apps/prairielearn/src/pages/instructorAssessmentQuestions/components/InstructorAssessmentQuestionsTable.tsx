@@ -13,15 +13,16 @@ import {
   sortableKeyboardCoordinates,
   verticalListSortingStrategy,
 } from '@dnd-kit/sortable';
+import { QueryClient, useQuery } from '@tanstack/react-query';
 import { useMemo, useRef, useState } from 'react';
 
 import { useModalState } from '@prairielearn/ui';
 
 import type { StaffAssessmentQuestionRow } from '../../../lib/assessment-question.js';
 import type { StaffAssessment, StaffCourse } from '../../../lib/client/safe-db-types.js';
+import { QueryClientProviderDebug } from '../../../lib/client/tanstackQuery.js';
 import type { ZoneAssessmentJson } from '../../../schemas/infoAssessment.js';
 import type {
-  CourseQuestionForPicker,
   QuestionAlternativeForm,
   ZoneAssessmentForm,
   ZoneQuestionBlockForm,
@@ -33,6 +34,8 @@ import {
   stripTrackingIds,
 } from '../utils/dataTransform.js';
 import { normalizeQuestionPoints, questionDisplayName } from '../utils/questions.js';
+import { createAssessmentQuestionsTrpcClient } from '../utils/trpc-client.js';
+import { TRPCProvider, useTRPC } from '../utils/trpc-context.js';
 import { useAssessmentEditor } from '../utils/useAssessmentEditor.js';
 
 import { AssessmentZone } from './AssessmentZone.js';
@@ -154,10 +157,9 @@ function EditModeButtons({
  *
  * Renders assessment zones with AssessmentZone.
  */
-export function InstructorAssessmentQuestionsTable({
+function InstructorAssessmentQuestionsTableInner({
   course,
   questionRows,
-  courseQuestions,
   jsonZones,
   urlPrefix,
   assessment,
@@ -169,7 +171,6 @@ export function InstructorAssessmentQuestionsTable({
 }: {
   course: StaffCourse;
   questionRows: StaffAssessmentQuestionRow[];
-  courseQuestions: CourseQuestionForPicker[];
   jsonZones: ZoneAssessmentJson[];
   assessment: StaffAssessment;
   assessmentSetName: string;
@@ -179,6 +180,7 @@ export function InstructorAssessmentQuestionsTable({
   csrfToken: string;
   origHash: string;
 }) {
+  const trpc = useTRPC();
   // Initialize editor state from JSON zones
   const initialZones = addTrackingIds(jsonZones);
 
@@ -209,6 +211,13 @@ export function InstructorAssessmentQuestionsTable({
   const [editMode, setEditMode] = useState(false);
   const resetModal = useModalState<string>(null);
   const editZoneModal = useModalState<EditZoneModalData>(null);
+
+  // Fetch course questions on-demand when edit mode is activated
+  const courseQuestionsQuery = useQuery({
+    ...trpc.courseQuestions.queryOptions(),
+    enabled: editMode,
+  });
+  const courseQuestions = courseQuestionsQuery.data ?? [];
 
   // Consolidated state for question picker and edit modal flow
   const [questionEditState, setQuestionEditState] = useState<QuestionEditState>({
@@ -774,6 +783,7 @@ export function InstructorAssessmentQuestionsTable({
         <QuestionPickerModal
           show={showPicker}
           courseQuestions={courseQuestions}
+          isLoading={courseQuestionsQuery.isLoading}
           questionsInAssessment={questionsInAssessment}
           urlPrefix={urlPrefix}
           currentQid={
@@ -787,6 +797,23 @@ export function InstructorAssessmentQuestionsTable({
         />
       )}
     </>
+  );
+}
+
+export function InstructorAssessmentQuestionsTable({
+  trpcCsrfToken,
+  ...innerProps
+}: Parameters<typeof InstructorAssessmentQuestionsTableInner>[0] & {
+  trpcCsrfToken: string;
+}) {
+  const [queryClient] = useState(() => new QueryClient());
+  const [trpcClient] = useState(() => createAssessmentQuestionsTrpcClient(trpcCsrfToken));
+  return (
+    <QueryClientProviderDebug client={queryClient}>
+      <TRPCProvider trpcClient={trpcClient} queryClient={queryClient}>
+        <InstructorAssessmentQuestionsTableInner {...innerProps} />
+      </TRPCProvider>
+    </QueryClientProviderDebug>
   );
 }
 

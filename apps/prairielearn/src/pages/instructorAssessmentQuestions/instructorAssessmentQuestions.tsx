@@ -1,5 +1,6 @@
 import * as path from 'path';
 
+import * as trpcExpress from '@trpc/server/adapters/express';
 import { Router } from 'express';
 import asyncHandler from 'express-async-handler';
 import fs from 'fs-extra';
@@ -9,6 +10,7 @@ import { HttpStatusError } from '@prairielearn/error';
 import { flash } from '@prairielearn/flash';
 import * as sqldb from '@prairielearn/postgres';
 import { Hydrate } from '@prairielearn/react/server';
+import { generatePrefixCsrfToken } from '@prairielearn/signed-token';
 
 import { PageLayout } from '../../components/PageLayout.js';
 import { selectAssessmentQuestions } from '../../lib/assessment-question.js';
@@ -20,17 +22,18 @@ import {
   StaffTagSchema,
   StaffTopicSchema,
 } from '../../lib/client/safe-db-types.js';
+import { config } from '../../lib/config.js';
 import { FileModifyEditor, getOriginalHash } from '../../lib/editors.js';
 import { features } from '../../lib/features/index.js';
 import { getPaths } from '../../lib/instructorFiles.js';
 import { formatJsonWithPrettier } from '../../lib/prettier.js';
-import { selectQuestionsForCourse } from '../../models/questions.js';
+import { handleTrpcError } from '../../lib/trpc.js';
 import { resetVariantsForAssessmentQuestion } from '../../models/variant.js';
 import { ZoneAssessmentJsonSchema } from '../../schemas/infoAssessment.js';
 
 import { InstructorAssessmentQuestionsTable } from './components/InstructorAssessmentQuestionsTable.js';
 import { InstructorAssessmentQuestionsTableLegacy } from './components/InstructorAssessmentQuestionsTableLegacy.js';
-import type { CourseQuestionForPicker } from './types.js';
+import { assessmentQuestionsRouter, createContext } from './trpc.js';
 import { serializeZonesForJson } from './utils/dataTransform.js';
 import { buildHierarchicalAssessment } from './utils/questions.js';
 
@@ -61,12 +64,9 @@ router.get(
       throw new HttpStatusError(403, 'Access denied (must be course previewer)');
     }
 
-    const [questionRows, courseQuestions] = await Promise.all([
-      selectAssessmentQuestions({
-        assessment_id: res.locals.assessment.id,
-      }),
-      selectQuestionsForCourse(res.locals.course.id, [res.locals.course_instance.id]),
-    ]);
+    const questionRows = await selectAssessmentQuestions({
+      assessment_id: res.locals.assessment.id,
+    });
 
     const assessmentPath = path.join(
       res.locals.course.path,
@@ -83,25 +83,6 @@ router.get(
     // for doing operations.
     const jsonZones = buildHierarchicalAssessment(res.locals.course, questionRows);
 
-    // Transform course questions to the simpler type needed for the picker
-    const courseQuestionsForPicker: CourseQuestionForPicker[] = courseQuestions.map((q) => ({
-      id: q.id,
-      qid: q.qid,
-      title: q.title,
-      topic: { id: String(q.topic.id), name: q.topic.name, color: q.topic.color },
-      tags: q.tags?.map((t) => ({ id: String(t.id), name: t.name, color: t.color })) ?? null,
-      assessments:
-        q.assessments?.map((a) => ({
-          assessment_id: String(a.assessment_id),
-          label: a.label,
-          color: a.color,
-          assessment_set_abbreviation: a.assessment_set_abbreviation,
-          assessment_set_name: a.assessment_set_name,
-          assessment_set_color: a.assessment_set_color,
-          assessment_number: a.assessment_number,
-        })) ?? null,
-    }));
-
     const editorEnabled = await features.enabledFromLocals(
       'assessment-questions-editor',
       res.locals,
@@ -115,6 +96,14 @@ router.get(
     const canEdit =
       pageContext.authz_data.has_course_instance_permission_edit &&
       !res.locals.course.example_course;
+
+    const trpcCsrfToken = generatePrefixCsrfToken(
+      {
+        url: req.originalUrl.split('?')[0] + '/trpc',
+        authn_user_id: res.locals.authn_user.id,
+      },
+      config.secretKey,
+    );
 
     res.send(
       PageLayout({
@@ -135,7 +124,6 @@ router.get(
               <InstructorAssessmentQuestionsTable
                 course={pageContext.course}
                 questionRows={questionRows}
-                courseQuestions={courseQuestionsForPicker}
                 jsonZones={jsonZones}
                 urlPrefix={pageContext.urlPrefix}
                 assessment={pageContext.assessment}
@@ -144,6 +132,7 @@ router.get(
                 canEdit={canEdit ?? false}
                 csrfToken={res.locals.__csrf_token}
                 origHash={origHash}
+                trpcCsrfToken={trpcCsrfToken}
               />
             ) : (
               <InstructorAssessmentQuestionsTableLegacy
@@ -194,6 +183,15 @@ router.get(
       }),
     );
     res.json(assessmentQuestion);
+  }),
+);
+
+router.use(
+  '/trpc',
+  trpcExpress.createExpressMiddleware({
+    router: assessmentQuestionsRouter,
+    createContext,
+    onError: handleTrpcError,
   }),
 );
 

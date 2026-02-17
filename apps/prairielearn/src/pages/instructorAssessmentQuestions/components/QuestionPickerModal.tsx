@@ -17,6 +17,7 @@ export interface QuestionPickerModalProps {
   onHide: () => void;
   onQuestionSelected: (qid: string) => void;
   courseQuestions: CourseQuestionForPicker[];
+  isLoading?: boolean;
   questionsInAssessment: Set<string>;
   urlPrefix: string;
   /** The QID of the currently selected question (when editing/changing a question) */
@@ -174,6 +175,7 @@ export function QuestionPickerModal({
   onHide,
   onQuestionSelected,
   courseQuestions,
+  isLoading,
   questionsInAssessment,
   urlPrefix,
   currentQid,
@@ -314,189 +316,207 @@ export function QuestionPickerModal({
         <Modal.Title>Select question</Modal.Title>
       </Modal.Header>
       <Modal.Body className="p-0">
-        <div className="p-3 border-bottom">
-          <div className="mb-2">
-            <input
-              type="text"
-              className="form-control"
-              placeholder="Search by QID or title..."
-              value={searchQuery}
-              onChange={(e) => setSearchQuery(e.target.value)}
-            />
-          </div>
-          <div className="d-flex gap-2 flex-wrap">
-            <FilterDropdown
-              label="Topic"
-              items={topics}
-              selectedIds={selectedTopics}
-              // 20 items, about 28px tall, plus space for clear
-              maxHeight={20 * 28 + 50}
-              onChange={setSelectedTopics}
-            />
-            <FilterDropdown
-              label="Tags"
-              items={tags}
-              selectedIds={selectedTags}
-              // 20 items, about 28px tall, plus space for clear
-              maxHeight={20 * 28 + 50}
-              onChange={setSelectedTags}
-            />
-            <FilterDropdown
-              label="Assessment"
-              items={assessments}
-              selectedIds={selectedAssessments}
-              // 20 items, about 28px tall, plus space for clear
-              maxHeight={20 * 28 + 50}
-              onChange={setSelectedAssessments}
-            />
-            {hasActiveFilters && (
-              <button
-                type="button"
-                className="btn btn-sm btn-link text-decoration-none"
-                onClick={() => {
-                  setSelectedTopics(new Set());
-                  setSelectedTags(new Set());
-                  setSelectedAssessments(new Set());
-                }}
-              >
-                Clear all filters
-              </button>
-            )}
-          </div>
-        </div>
-        <div className="px-3 py-2 bg-light border-bottom text-muted small">
-          {sortedQuestions.length} {sortedQuestions.length === 1 ? 'question' : 'questions'} found
-        </div>
-        <div ref={parentRef} style={{ height: '400px', overflow: 'auto' }}>
-          {sortedQuestions.length === 0 ? (
-            <div className="p-4 text-center text-muted">
-              <i className="bi bi-search display-6 mb-2" aria-hidden="true" />
-              <p>No questions match your search criteria.</p>
+        {isLoading ? (
+          <div className="d-flex flex-column align-items-center justify-content-center py-5">
+            <div className="spinner-border text-primary mb-3" role="status">
+              <span className="visually-hidden">Loading...</span>
             </div>
-          ) : (
-            <div
-              style={{
-                height: `${rowVirtualizer.getTotalSize()}px`,
-                width: '100%',
-                position: 'relative',
-              }}
-            >
-              {virtualRows.map((virtualRow) => {
-                const question = sortedQuestions[virtualRow.index];
-                const qid = question.qid;
-                const isCurrentSelection = qid === currentQid;
-                const isAlreadyAdded = questionsInAssessment.has(qid) && !isCurrentSelection;
-
-                // Filter out current assessment from badges
-                const assessmentsToShow =
-                  question.assessments?.filter((a) => a.assessment_id !== currentAssessmentId) ??
-                  [];
-
-                return (
-                  <div
-                    key={virtualRow.key}
-                    ref={rowVirtualizer.measureElement}
-                    data-index={virtualRow.index}
-                    role="button"
-                    tabIndex={isAlreadyAdded ? -1 : 0}
-                    className={clsx(
-                      'd-flex align-items-start gap-2 px-3 py-2 border-bottom',
-                      isAlreadyAdded ? 'bg-light text-muted' : 'cursor-pointer question-picker-row',
-                    )}
-                    style={{
-                      position: 'absolute',
-                      top: 0,
-                      left: 0,
-                      width: '100%',
-                      transform: `translateY(${virtualRow.start}px)`,
-                      cursor: isAlreadyAdded ? 'not-allowed' : 'pointer',
-                    }}
-                    aria-disabled={isAlreadyAdded}
-                    onClick={() => handleSelect(question)}
-                    onKeyDown={(e) => {
-                      if (e.key === 'Enter' || e.key === ' ') {
-                        e.preventDefault();
-                        handleSelect(question);
-                      }
+            <span className="text-muted">Loading questions...</span>
+          </div>
+        ) : (
+          <>
+            <div className="p-3 border-bottom">
+              <div className="mb-2">
+                <input
+                  type="text"
+                  className="form-control"
+                  placeholder="Search by QID or title..."
+                  value={searchQuery}
+                  onChange={(e) => setSearchQuery(e.target.value)}
+                />
+              </div>
+              <div className="d-flex gap-2 flex-wrap">
+                <FilterDropdown
+                  label="Topic"
+                  items={topics}
+                  selectedIds={selectedTopics}
+                  // 20 items, about 28px tall, plus space for clear
+                  maxHeight={20 * 28 + 50}
+                  onChange={setSelectedTopics}
+                />
+                <FilterDropdown
+                  label="Tags"
+                  items={tags}
+                  selectedIds={selectedTags}
+                  // 20 items, about 28px tall, plus space for clear
+                  maxHeight={20 * 28 + 50}
+                  onChange={setSelectedTags}
+                />
+                <FilterDropdown
+                  label="Assessment"
+                  items={assessments}
+                  selectedIds={selectedAssessments}
+                  // 20 items, about 28px tall, plus space for clear
+                  maxHeight={20 * 28 + 50}
+                  onChange={setSelectedAssessments}
+                />
+                {hasActiveFilters && (
+                  <button
+                    type="button"
+                    className="btn btn-sm btn-link text-decoration-none"
+                    onClick={() => {
+                      setSelectedTopics(new Set());
+                      setSelectedTags(new Set());
+                      setSelectedAssessments(new Set());
                     }}
                   >
-                    <div className="flex-grow-1 min-width-0">
-                      <div className="d-flex align-items-center gap-2">
-                        <a
-                          href={getQuestionUrl({ urlPrefix, questionId: question.id })}
-                          target="_blank"
-                          rel="noopener noreferrer"
-                          className="text-nowrap"
-                          onClick={(e) => e.stopPropagation()}
-                        >
-                          <code>{qid}</code>
-                        </a>
-                        {isCurrentSelection && (
-                          <span className="badge bg-primary">Current selection</span>
-                        )}
-                        {isAlreadyAdded && (
-                          <span className="badge bg-secondary">Already added</span>
-                        )}
-                      </div>
-                      <div className="text-truncate small">{question.title}</div>
-                      {assessmentsToShow.length > 0 && (
-                        <div className="d-flex flex-wrap gap-1 mt-1">
-                          <AssessmentBadges assessments={assessmentsToShow} urlPrefix={urlPrefix} />
-                        </div>
-                      )}
-                    </div>
-                    <div
-                      className="d-flex flex-wrap gap-1 justify-content-end"
-                      style={{ maxWidth: '40%' }}
-                    >
-                      <span className={`badge color-${question.topic.color}`}>
-                        {question.topic.name}
-                      </span>
-                      {(expandedTagsQids.has(qid)
-                        ? question.tags
-                        : question.tags?.slice(0, 3)
-                      )?.map((tag) => (
-                        <span key={tag.id} className={`badge color-${tag.color}`}>
-                          {tag.name}
-                        </span>
-                      ))}
-                      {(question.tags?.length ?? 0) > 3 &&
-                        (expandedTagsQids.has(qid) ? (
-                          <button
-                            type="button"
-                            className="badge bg-secondary border-0"
-                            onClick={(e) => {
-                              e.stopPropagation();
-                              setExpandedTagsQids((prev) => {
-                                const next = new Set(prev);
-                                next.delete(qid);
-                                return next;
-                              });
-                            }}
-                            onKeyDown={(e) => e.stopPropagation()}
-                          >
-                            Show less
-                          </button>
-                        ) : (
-                          <button
-                            type="button"
-                            className="badge bg-secondary border-0"
-                            onClick={(e) => {
-                              e.stopPropagation();
-                              setExpandedTagsQids((prev) => new Set(prev).add(qid));
-                            }}
-                            onKeyDown={(e) => e.stopPropagation()}
-                          >
-                            +{(question.tags?.length ?? 0) - 3}
-                          </button>
-                        ))}
-                    </div>
-                  </div>
-                );
-              })}
+                    Clear all filters
+                  </button>
+                )}
+              </div>
             </div>
-          )}
-        </div>
+            <div className="px-3 py-2 bg-light border-bottom text-muted small">
+              {sortedQuestions.length} {sortedQuestions.length === 1 ? 'question' : 'questions'}{' '}
+              found
+            </div>
+            <div ref={parentRef} style={{ height: '400px', overflow: 'auto' }}>
+              {sortedQuestions.length === 0 ? (
+                <div className="p-4 text-center text-muted">
+                  <i className="bi bi-search display-6 mb-2" aria-hidden="true" />
+                  <p>No questions match your search criteria.</p>
+                </div>
+              ) : (
+                <div
+                  style={{
+                    height: `${rowVirtualizer.getTotalSize()}px`,
+                    width: '100%',
+                    position: 'relative',
+                  }}
+                >
+                  {virtualRows.map((virtualRow) => {
+                    const question = sortedQuestions[virtualRow.index];
+                    const qid = question.qid;
+                    const isCurrentSelection = qid === currentQid;
+                    const isAlreadyAdded = questionsInAssessment.has(qid) && !isCurrentSelection;
+
+                    // Filter out current assessment from badges
+                    const assessmentsToShow =
+                      question.assessments?.filter(
+                        (a) => a.assessment_id !== currentAssessmentId,
+                      ) ?? [];
+
+                    return (
+                      <div
+                        key={virtualRow.key}
+                        ref={rowVirtualizer.measureElement}
+                        data-index={virtualRow.index}
+                        role="button"
+                        tabIndex={isAlreadyAdded ? -1 : 0}
+                        className={clsx(
+                          'd-flex align-items-start gap-2 px-3 py-2 border-bottom',
+                          isAlreadyAdded
+                            ? 'bg-light text-muted'
+                            : 'cursor-pointer question-picker-row',
+                        )}
+                        style={{
+                          position: 'absolute',
+                          top: 0,
+                          left: 0,
+                          width: '100%',
+                          transform: `translateY(${virtualRow.start}px)`,
+                          cursor: isAlreadyAdded ? 'not-allowed' : 'pointer',
+                        }}
+                        aria-disabled={isAlreadyAdded}
+                        onClick={() => handleSelect(question)}
+                        onKeyDown={(e) => {
+                          if (e.key === 'Enter' || e.key === ' ') {
+                            e.preventDefault();
+                            handleSelect(question);
+                          }
+                        }}
+                      >
+                        <div className="flex-grow-1 min-width-0">
+                          <div className="d-flex align-items-center gap-2">
+                            <a
+                              href={getQuestionUrl({ urlPrefix, questionId: question.id })}
+                              target="_blank"
+                              rel="noopener noreferrer"
+                              className="text-nowrap"
+                              onClick={(e) => e.stopPropagation()}
+                            >
+                              <code>{qid}</code>
+                            </a>
+                            {isCurrentSelection && (
+                              <span className="badge bg-primary">Current selection</span>
+                            )}
+                            {isAlreadyAdded && (
+                              <span className="badge bg-secondary">Already added</span>
+                            )}
+                          </div>
+                          <div className="text-truncate small">{question.title}</div>
+                          {assessmentsToShow.length > 0 && (
+                            <div className="d-flex flex-wrap gap-1 mt-1">
+                              <AssessmentBadges
+                                assessments={assessmentsToShow}
+                                urlPrefix={urlPrefix}
+                              />
+                            </div>
+                          )}
+                        </div>
+                        <div
+                          className="d-flex flex-wrap gap-1 justify-content-end"
+                          style={{ maxWidth: '40%' }}
+                        >
+                          <span className={`badge color-${question.topic.color}`}>
+                            {question.topic.name}
+                          </span>
+                          {(expandedTagsQids.has(qid)
+                            ? question.tags
+                            : question.tags?.slice(0, 3)
+                          )?.map((tag) => (
+                            <span key={tag.id} className={`badge color-${tag.color}`}>
+                              {tag.name}
+                            </span>
+                          ))}
+                          {(question.tags?.length ?? 0) > 3 &&
+                            (expandedTagsQids.has(qid) ? (
+                              <button
+                                type="button"
+                                className="badge bg-secondary border-0"
+                                onClick={(e) => {
+                                  e.stopPropagation();
+                                  setExpandedTagsQids((prev) => {
+                                    const next = new Set(prev);
+                                    next.delete(qid);
+                                    return next;
+                                  });
+                                }}
+                                onKeyDown={(e) => e.stopPropagation()}
+                              >
+                                Show less
+                              </button>
+                            ) : (
+                              <button
+                                type="button"
+                                className="badge bg-secondary border-0"
+                                onClick={(e) => {
+                                  e.stopPropagation();
+                                  setExpandedTagsQids((prev) => new Set(prev).add(qid));
+                                }}
+                                onKeyDown={(e) => e.stopPropagation()}
+                              >
+                                +{(question.tags?.length ?? 0) - 3}
+                              </button>
+                            ))}
+                        </div>
+                      </div>
+                    );
+                  })}
+                </div>
+              )}
+            </div>
+          </>
+        )}
       </Modal.Body>
       <Modal.Footer>
         <button type="button" className="btn btn-secondary" onClick={onHide}>
