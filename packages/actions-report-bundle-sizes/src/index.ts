@@ -3,7 +3,6 @@ import fs from 'node:fs';
 import * as core from '@actions/core';
 import * as github from '@actions/github';
 
-const CI_REPORT_MARKER = '<!-- ci-report -->';
 const SECTION_START = '<!-- bundle-sizes -->';
 const SECTION_END = '<!-- /bundle-sizes -->';
 const BASELINE_BRANCH = 'size-report';
@@ -149,25 +148,6 @@ function buildCommentSection(oldSizes: SizesJson | null, newSizes: SizesJson): s
   return lines.join('\n');
 }
 
-function upsertSection(existingBody: string | null, newSection: string): string {
-  if (!existingBody) {
-    return `${CI_REPORT_MARKER}\n${newSection}`;
-  }
-
-  const startIdx = existingBody.indexOf(SECTION_START);
-  const endIdx = existingBody.indexOf(SECTION_END);
-
-  if (startIdx !== -1 && endIdx !== -1) {
-    // Replace existing section.
-    return (
-      existingBody.slice(0, startIdx) + newSection + existingBody.slice(endIdx + SECTION_END.length)
-    );
-  }
-
-  // Append section.
-  return existingBody + '\n' + newSection;
-}
-
 async function fetchBaseline(
   octokit: ReturnType<typeof github.getOctokit>,
 ): Promise<SizesJson | null> {
@@ -264,53 +244,6 @@ async function pushBaseline(
   core.info('Pushed bundle size baseline to size-report branch');
 }
 
-async function commentOnPr(
-  octokit: ReturnType<typeof github.getOctokit>,
-  prNumber: number,
-  section: string,
-): Promise<void> {
-  try {
-    const comments = await octokit.paginate(
-      'GET /repos/{owner}/{repo}/issues/{issue_number}/comments',
-      {
-        owner: github.context.repo.owner,
-        repo: github.context.repo.repo,
-        issue_number: prNumber,
-      },
-    );
-
-    const existingComment = comments.find(
-      (comment) =>
-        comment.user?.login === 'github-actions[bot]' && comment.body?.includes(CI_REPORT_MARKER),
-    );
-
-    const body = upsertSection(existingComment?.body ?? null, section);
-
-    if (existingComment) {
-      await octokit.rest.issues.updateComment({
-        owner: github.context.repo.owner,
-        repo: github.context.repo.repo,
-        comment_id: existingComment.id,
-        body,
-      });
-    } else {
-      await octokit.rest.issues.createComment({
-        owner: github.context.repo.owner,
-        repo: github.context.repo.repo,
-        issue_number: prNumber,
-        body,
-      });
-    }
-  } catch (err: unknown) {
-    if (typeof err === 'object' && err !== null && 'status' in err && err.status === 403) {
-      core.warning('Could not comment on PR (token lacks write permissions). Bundle size summary:');
-      core.info(section);
-      return;
-    }
-    throw err;
-  }
-}
-
 async function main() {
   const sizesPath = core.getInput('sizes-path', { required: true });
   const token = core.getInput('token', { required: true });
@@ -342,10 +275,13 @@ async function main() {
     // Fetch baseline from size-report branch.
     const oldSizes = await fetchBaseline(octokit);
 
-    // Build the comment section and post it.
     const section = buildCommentSection(oldSizes, newSizes);
-    await commentOnPr(octokit, prNumber, section);
-    core.info('Posted bundle size comment on PR');
+    const reportPath = core.getInput('report-path');
+    if (reportPath) {
+      fs.writeFileSync(reportPath, section);
+      core.info(`Wrote report section to ${reportPath}`);
+    }
+    core.info(section);
   } else {
     core.info(`No action needed for event: ${eventName}`);
   }
