@@ -2334,6 +2334,30 @@ if (shouldStartServer) {
 
     logger.verbose(`Connecting to ${pgConfig.user}@${pgConfig.host}:${pgConfig.database}`);
 
+    if (config.devMode && pgConfig.database !== 'postgres') {
+      const pg = await import('pg');
+      const client = new pg.default.Client({
+        user: pgConfig.user,
+        host: pgConfig.host,
+        password: pgConfig.password,
+        database: 'postgres',
+        ssl: pgConfig.ssl,
+      });
+      try {
+        await client.connect();
+        await client.query(`CREATE DATABASE ${client.escapeIdentifier(pgConfig.database)}`);
+        logger.info(`Created database ${pgConfig.database}`);
+      } catch (err: any) {
+        if (err?.code === '42P04') {
+          logger.info(`Database ${pgConfig.database} already exists`);
+        } else {
+          throw err;
+        }
+      } finally {
+        await client.end();
+      }
+    }
+
     await sqldb.initAsync(pgConfig, idleErrorHandler);
 
     // Our named locks code maintains a separate pool of database connections.

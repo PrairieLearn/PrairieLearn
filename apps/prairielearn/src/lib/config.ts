@@ -5,6 +5,7 @@ import {
   makeEnvConfigSource,
   makeFileConfigSource,
   makeImdsConfigSource,
+  makeLiteralConfigSource,
   makeSecretsManagerConfigSource,
 } from '@prairielearn/config';
 import { logger } from '@prairielearn/logger';
@@ -643,7 +644,15 @@ export const config = loader.config;
  * @param paths Paths to JSON config files to try to load.
  */
 export async function loadConfig(paths: string[]) {
+  const workspaceName = process.env.CONDUCTOR_WORKSPACE_NAME;
+  const workspaceConfigSource = workspaceName
+    ? makeLiteralConfigSource({
+        postgresqlDatabase: `prairielearn_${workspaceName.toLowerCase().replaceAll(/[^a-z0-9_]/g, '_')}`,
+      })
+    : makeLiteralConfigSource({});
+
   await loader.loadAndValidate([
+    workspaceConfigSource,
     makeEnvConfigSource<typeof ConfigSchema>({
       serverPort: 'CONDUCTOR_PORT',
     }),

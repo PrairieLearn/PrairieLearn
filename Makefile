@@ -195,4 +195,11 @@ lint-d2:
 	@d2 fmt --check docs/**/*.d2
 
 
+dangerous-drop-all-dbs:
+	@echo "Dropping all databases matching 'prairielearn_%'..."
+	@psql -h localhost -U postgres -tAc "SELECT datname FROM pg_database WHERE datname LIKE 'prairielearn_%'" | while read db; do \
+		echo "Dropping $$db"; \
+		psql -h localhost -U postgres -c "DROP DATABASE \"$$db\""; \
+	done
+
 ci: lint typecheck check-dependencies test
