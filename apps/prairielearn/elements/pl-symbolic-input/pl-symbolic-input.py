@@ -304,6 +304,7 @@ def render(element_html: str, data: pl.QuestionData) -> str:
     if (
         raw_submitted_answer_latex is None
         and initial_value is not None
+        and initial_value.strip() != ""
         and formula_editor
     ):
         initial_parsed = psu.convert_string_to_sympy(
