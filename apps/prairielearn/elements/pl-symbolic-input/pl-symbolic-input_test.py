@@ -103,6 +103,8 @@ def test_format_submission_for_sympy_absolute_value(sub: str, expected: str) -> 
             [],
             "var_test var_test ",
         ),
+        ("v_(0_x)", True, ["v_0_x"], [], "v_0_x "),
+        ("v a r_(t e s t_(t e s t))", True, ["var_test_test"], [], "var_test_test "),
     ],
 )
 def test_format_formula_editor_submission_for_sympy(
