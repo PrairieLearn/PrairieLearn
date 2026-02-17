@@ -1,4 +1,4 @@
-import * as cheerio from 'cheerio';
+import { createTRPCClient, httpLink } from '@trpc/client';
 import fetch from 'node-fetch';
 import superjson from 'superjson';
 import { afterAll, assert, beforeAll, describe, it } from 'vitest';
@@ -8,6 +8,7 @@ import * as sqldb from '@prairielearn/postgres';
 import { config } from '../lib/config.js';
 import { type Question, QuestionSchema } from '../lib/db-types.js';
 import { idsEqual } from '../lib/id.js';
+import type { InstructorQuestionsRouter } from '../pages/instructorQuestions/trpc.js';
 
 import {
   testElementClientFiles,
@@ -69,18 +70,19 @@ describe('Instructor questions', { timeout: 60_000 }, function () {
 
   let questionData: { id: string; qid: string; title: string }[];
 
-  async function loadQuestionDataFromHydratedProps(url: string) {
-    const res = await fetch(url);
-    assert.equal(res.status, 200);
-    const pageHtml = await res.text();
-    const $ = cheerio.load(pageHtml);
-    const propsJson = $(
-      'script[data-component-props][data-component="InstructorQuestionsTable"]',
-    ).text();
-    const props = superjson.parse<{ questions: { id: string; qid: string; title: string }[] }>(
-      propsJson,
-    );
-    return props.questions;
+  async function loadQuestionDataFromTrpc(url: string) {
+    const trpcClient = createTRPCClient<InstructorQuestionsRouter>({
+      links: [
+        httpLink({
+          url: `${url}/trpc`,
+          headers: { 'X-TRPC': 'true' },
+          transformer: superjson,
+        }),
+      ],
+    });
+
+    const questions = await trpcClient.questions.query();
+    return questions.map(({ id, qid, title }) => ({ id, qid, title }));
   }
 
   describe('the database', function () {
@@ -106,8 +108,8 @@ describe('Instructor questions', { timeout: 60_000 }, function () {
       const res = await fetch(questionsUrlCourse);
       assert.equal(res.status, 200);
     });
-    it('should contain question data via hydrated props', async () => {
-      questionData = await loadQuestionDataFromHydratedProps(questionsUrlCourse);
+    it('should contain question data via trpc endpoint', async () => {
+      questionData = await loadQuestionDataFromTrpc(questionsUrlCourse);
       assert.isArray(questionData);
       questionData.forEach((question) => assert.isObject(question));
     });
@@ -127,8 +129,8 @@ describe('Instructor questions', { timeout: 60_000 }, function () {
       const res = await fetch(questionsUrl);
       assert.equal(res.status, 200);
     });
-    it('should contain question data via hydrated props', async () => {
-      questionData = await loadQuestionDataFromHydratedProps(questionsUrl);
+    it('should contain question data via trpc endpoint', async () => {
+      questionData = await loadQuestionDataFromTrpc(questionsUrl);
       assert.isArray(questionData);
       questionData.forEach((question) => assert.isObject(question));
     });
