@@ -1,6 +1,6 @@
 # syntax=docker/dockerfile:1.7-labs
 FROM ubuntu:24.04
-ARG CACHEBUST=2026-01-15-14-21-34
+ARG CACHEBUST=2026-02-15-14-23-34
 
 WORKDIR /PrairieLearn
 
