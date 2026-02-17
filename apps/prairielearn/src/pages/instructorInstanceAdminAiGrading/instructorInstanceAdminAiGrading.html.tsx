@@ -124,9 +124,14 @@ function AiGradingSettingsContent({
   return (
     <div className="card mb-4">
       <div className="card-header bg-primary text-white d-flex align-items-center">
-        <h1 className="h6 mb-0 fw-bold">AI grading settings</h1>
+        <h1 className="h6 mb-0">AI grading settings</h1>
       </div>
       <div className="card-body">
+        {toggleMutation.isError && (
+          <Alert variant="danger" dismissible onClose={() => toggleMutation.reset()}>
+            {toggleMutation.error.message}
+          </Alert>
+        )}
         <Form.Check>
           <Form.Check.Input
             type="checkbox"
@@ -245,13 +250,7 @@ function AiGradingSettingsContent({
               ))}
             </Form.Select>
           </Form.Group>
-          {existingProviderForAdd && (
-            <Alert variant="warning" className="mb-3">
-              A key for {existingProviderForAdd.provider} already exists. Saving will overwrite the
-              existing key.
-            </Alert>
-          )}
-          <Form.Group>
+          <Form.Group className="mb-3">
             <Form.Label htmlFor="add-key-value">API key</Form.Label>
             <Form.Control
               id="add-key-value"
@@ -262,6 +261,13 @@ function AiGradingSettingsContent({
               onChange={(e) => setAddApiKey(e.target.value)}
             />
           </Form.Group>
+          {existingProviderForAdd && (
+            <Alert variant="warning" className="mb-0">
+              <i className="bi bi-exclamation-triangle-fill me-2" aria-hidden="true" />A key for{' '}
+              <strong>{existingProviderForAdd.provider}</strong> already exists. Saving will
+              overwrite the existing key.
+            </Alert>
+          )}
         </Modal.Body>
         <Modal.Footer>
           <button

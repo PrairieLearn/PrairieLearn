@@ -85,6 +85,7 @@ export interface AssessmentQuestionTableProps {
   aiGradingStats: AiGradingGeneralStats | null;
   initialOngoingJobSequenceTokens: Record<string, string> | null;
   availableAiGradingProviders: string[];
+  useCustomApiKeys: boolean;
   onSetGroupInfoModalState: (modalState: GroupInfoModalState) => void;
   onSetConflictModalState: (modalState: ConflictModalState) => void;
   mutations: ReturnType<typeof useManualGradingActions>;
@@ -181,6 +182,7 @@ export function AssessmentQuestionTable({
   aiGradingStats,
   initialOngoingJobSequenceTokens,
   availableAiGradingProviders,
+  useCustomApiKeys,
   onSetGroupInfoModalState,
   onSetConflictModalState,
   mutations,
@@ -748,122 +750,158 @@ export function AssessmentQuestionTable({
           hasCourseInstancePermissionEdit ? (
             aiGradingMode ? (
               <>
-                <Dropdown>
-                  <Dropdown.Toggle key="ai-grading-dropdown" variant="light" size="sm">
-                    <i className="bi bi-stars" aria-hidden="true" />
-                    <span>AI grading</span>
-                  </Dropdown.Toggle>
-                  <Dropdown.Menu align="end">
-                    <AiGradingOption
-                      text="Grade all human-graded"
-                      numToGrade={aiGradingCounts.humanGraded}
-                      aiGradingModelSelectionEnabled={aiGradingModelSelectionEnabled}
-                      availableProviders={availableAiGradingProviders}
-                      onSelectModel={(modelId) => {
-                        gradeSubmissionsMutation.mutate(
-                          {
-                            selection: 'human_graded',
-                            model_id: modelId,
-                          },
-                          {
-                            onSuccess: (data) => {
-                              serverJobProgress.handleAddOngoingJobSequence(
-                                data.job_sequence_id,
-                                data.job_sequence_token,
-                              );
+                {useCustomApiKeys && availableAiGradingProviders.length === 0 ? (
+                  <OverlayTrigger
+                    tooltip={{
+                      body: 'You must add an API key in AI grading settings before using AI grading.',
+                      props: { id: 'ai-grading-no-keys-tooltip' },
+                    }}
+                  >
+                    <span>
+                      <Button variant="light" size="sm" disabled>
+                        <i className="bi bi-stars" aria-hidden="true" />
+                        <span>AI grading</span>
+                      </Button>
+                    </span>
+                  </OverlayTrigger>
+                ) : (
+                  <Dropdown>
+                    <Dropdown.Toggle key="ai-grading-dropdown" variant="light" size="sm">
+                      <i className="bi bi-stars" aria-hidden="true" />
+                      <span>AI grading</span>
+                    </Dropdown.Toggle>
+                    <Dropdown.Menu align="end">
+                      <AiGradingOption
+                        text="Grade all human-graded"
+                        numToGrade={aiGradingCounts.humanGraded}
+                        aiGradingModelSelectionEnabled={aiGradingModelSelectionEnabled}
+                        availableProviders={availableAiGradingProviders}
+                        onSelectModel={(modelId) => {
+                          gradeSubmissionsMutation.mutate(
+                            {
+                              selection: 'human_graded',
+                              model_id: modelId,
                             },
-                          },
-                        );
-                      }}
-                    />
-                    <AiGradingOption
-                      text="Grade selected"
-                      numToGrade={aiGradingCounts.selected}
-                      aiGradingModelSelectionEnabled={aiGradingModelSelectionEnabled}
-                      availableProviders={availableAiGradingProviders}
-                      onSelectModel={(modelId) => {
-                        gradeSubmissionsMutation.mutate(
-                          {
-                            selection: selectedIds,
-                            model_id: modelId,
-                          },
-                          {
-                            onSuccess: (data) => {
-                              serverJobProgress.handleAddOngoingJobSequence(
-                                data.job_sequence_id,
-                                data.job_sequence_token,
-                              );
-                              table.resetRowSelection();
+                            {
+                              onSuccess: (data) => {
+                                serverJobProgress.handleAddOngoingJobSequence(
+                                  data.job_sequence_id,
+                                  data.job_sequence_token,
+                                );
+                              },
                             },
-                          },
-                        );
-                      }}
-                    />
-                    <AiGradingOption
-                      text="Grade all"
-                      numToGrade={aiGradingCounts.all}
-                      aiGradingModelSelectionEnabled={aiGradingModelSelectionEnabled}
-                      availableProviders={availableAiGradingProviders}
-                      onSelectModel={(modelId) => {
-                        gradeSubmissionsMutation.mutate(
-                          {
-                            selection: 'all',
-                            model_id: modelId,
-                          },
-                          {
-                            onSuccess: (data) => {
-                              serverJobProgress.handleAddOngoingJobSequence(
-                                data.job_sequence_id,
-                                data.job_sequence_token,
-                              );
+                          );
+                        }}
+                      />
+                      <AiGradingOption
+                        text="Grade selected"
+                        numToGrade={aiGradingCounts.selected}
+                        aiGradingModelSelectionEnabled={aiGradingModelSelectionEnabled}
+                        availableProviders={availableAiGradingProviders}
+                        onSelectModel={(modelId) => {
+                          gradeSubmissionsMutation.mutate(
+                            {
+                              selection: selectedIds,
+                              model_id: modelId,
                             },
-                          },
-                        );
-                      }}
-                    />
-                    <Dropdown.Divider />
-                    <Dropdown.Item onClick={() => setShowDeleteAiGradingModal(true)}>
-                      Delete all AI grading results
-                    </Dropdown.Item>
-                  </Dropdown.Menu>
-                </Dropdown>
-                <Dropdown>
-                  <Dropdown.Toggle variant="light" size="sm">
-                    <i className="bi bi-stars" aria-hidden="true" />
-                    <span className="d-none d-sm-inline">AI submission grouping</span>
-                  </Dropdown.Toggle>
-                  <Dropdown.Menu align="end">
-                    <Dropdown.Item
-                      disabled={selectedIds.length === 0}
-                      onClick={() =>
-                        onSetGroupInfoModalState({ type: 'selected', ids: selectedIds })
-                      }
-                    >
-                      <div className="d-flex justify-content-between align-items-center w-100">
-                        <span>Group selected submissions</span>
-                        <span className="badge bg-secondary ms-2">{aiGroupingCounts.selected}</span>
-                      </div>
-                    </Dropdown.Item>
-                    <Dropdown.Item onClick={() => onSetGroupInfoModalState({ type: 'all' })}>
-                      <div className="d-flex justify-content-between align-items-center w-100">
-                        <span>Group all submissions</span>
-                        <span className="badge bg-secondary ms-2">{aiGroupingCounts.all}</span>
-                      </div>
-                    </Dropdown.Item>
-                    <Dropdown.Item onClick={() => onSetGroupInfoModalState({ type: 'ungrouped' })}>
-                      <div className="d-flex justify-content-between align-items-center w-100">
-                        <span>Group ungrouped submissions</span>
-                        <span className="badge bg-secondary ms-2">
-                          {aiGroupingCounts.ungrouped}
-                        </span>
-                      </div>
-                    </Dropdown.Item>
-                    <Dropdown.Divider />
-                    <Dropdown.Item onClick={() => setShowDeleteAiGroupingsModal(true)}>
-                      Delete all AI groupings
-                    </Dropdown.Item>
-                  </Dropdown.Menu>
-                </Dropdown>
+                            {
+                              onSuccess: (data) => {
+                                serverJobProgress.handleAddOngoingJobSequence(
+                                  data.job_sequence_id,
+                                  data.job_sequence_token,
+                                );
+                                table.resetRowSelection();
+                              },
+                            },
+                          );
+                        }}
+                      />
+                      <AiGradingOption
+                        text="Grade all"
+                        numToGrade={aiGradingCounts.all}
+                        aiGradingModelSelectionEnabled={aiGradingModelSelectionEnabled}
+                        availableProviders={availableAiGradingProviders}
+                        onSelectModel={(modelId) => {
+                          gradeSubmissionsMutation.mutate(
+                            {
+                              selection: 'all',
+                              model_id: modelId,
+                            },
+                            {
+                              onSuccess: (data) => {
+                                serverJobProgress.handleAddOngoingJobSequence(
+                                  data.job_sequence_id,
+                                  data.job_sequence_token,
+                                );
+                              },
+                            },
+                          );
+                        }}
+                      />
+                      <Dropdown.Divider />
+                      <Dropdown.Item onClick={() => setShowDeleteAiGradingModal(true)}>
+                        Delete all AI grading results
+                      </Dropdown.Item>
+                    </Dropdown.Menu>
+                  </Dropdown>
+                )}
+                {useCustomApiKeys && !availableAiGradingProviders.includes('openai') ? (
+                  <OverlayTrigger
+                    tooltip={{
+                      body: 'AI submission grouping requires an OpenAI API key. Add one in AI grading settings.',
+                      props: { id: 'ai-grouping-no-openai-tooltip' },
+                    }}
+                  >
+                    <span>
+                      <Button variant="light" size="sm" disabled>
+                        <i className="bi bi-stars" aria-hidden="true" />
+                        <span className="d-none d-sm-inline">AI submission grouping</span>
+                      </Button>
+                    </span>
+                  </OverlayTrigger>
+                ) : (
+                  <Dropdown>
+                    <Dropdown.Toggle variant="light" size="sm">
+                      <i className="bi bi-stars" aria-hidden="true" />
+                      <span className="d-none d-sm-inline">AI submission grouping</span>
+                    </Dropdown.Toggle>
+                    <Dropdown.Menu align="end">
+                      <Dropdown.Item
+                        disabled={selectedIds.length === 0}
+                        onClick={() =>
+                          onSetGroupInfoModalState({ type: 'selected', ids: selectedIds })
+                        }
+                      >
+                        <div className="d-flex justify-content-between align-items-center w-100">
+                          <span>Group selected submissions</span>
+                          <span className="badge bg-secondary ms-2">
+                            {aiGroupingCounts.selected}
+                          </span>
+                        </div>
+                      </Dropdown.Item>
+                      <Dropdown.Item onClick={() => onSetGroupInfoModalState({ type: 'all' })}>
+                        <div className="d-flex justify-content-between align-items-center w-100">
+                          <span>Group all submissions</span>
+                          <span className="badge bg-secondary ms-2">{aiGroupingCounts.all}</span>
+                        </div>
+                      </Dropdown.Item>
+                      <Dropdown.Item
+                        onClick={() => onSetGroupInfoModalState({ type: 'ungrouped' })}
+                      >
+                        <div className="d-flex justify-content-between align-items-center w-100">
+                          <span>Group ungrouped submissions</span>
+                          <span className="badge bg-secondary ms-2">
+                            {aiGroupingCounts.ungrouped}
+                          </span>
+                        </div>
+                      </Dropdown.Item>
+                      <Dropdown.Divider />
+                      <Dropdown.Item onClick={() => setShowDeleteAiGroupingsModal(true)}>
+                        Delete all AI groupings
+                      </Dropdown.Item>
+                    </Dropdown.Menu>
+                  </Dropdown>
+                )}
               </>
             ) : (
               <Dropdown>

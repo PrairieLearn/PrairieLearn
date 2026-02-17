@@ -188,6 +188,7 @@ router.get(
                 questionTitle={question.title ?? ''}
                 questionNumber={Number(number_in_alternative_group)}
                 availableAiGradingProviders={availableAiGradingProviders}
+                useCustomApiKeys={course_instance.ai_grading_use_custom_api_keys}
               />
             </Hydrate>
           </>
