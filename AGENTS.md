@@ -107,7 +107,7 @@ When working with assessment "groups" / "teams", see the [`groups-and-teams` ski
 
 ### Library usage conventions
 
-- Use `tRPC` (`@trpc/tanstack-react-query`) for API calls.
+- Use `tRPC + @trpc/tanstack-react-query` for new client/server communication. When interacting with existing REST APIs, use `@tanstack/react-query`.
 - Use `react-hook-form` for form handling.
 - Prefer `extractPageContext(res.locals, ...)` over accessing `res.locals` properties directly in route handlers. This provides better type safety and ensures consistent access patterns.
 - Use `nuqs` for URL query state in hydrated components. Use `NuqsAdapter` from `@prairielearn/ui` and pass the search string from the router. See `pages/home/` for an example.
