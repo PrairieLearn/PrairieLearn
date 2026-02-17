@@ -5,6 +5,7 @@
     "charliermarsh.ruff",
     "editorconfig.editorconfig",
     "esbenp.prettier-vscode",
+    "davidanson.vscode-markdownlint",
     "dbaeumer.vscode-eslint",
     // If you haven't run `make python-deps`, this is going to give you errors.
     "dorzey.vscode-sqlfluff",
@@ -15,6 +16,7 @@
     "reteps.htmlmustache-lsp",
     "supabase.postgrestools",
     "tamasfe.even-better-toml",
+    "tintinweb.graphviz-interactive-preview", // For our .dot files and <pl-graph> elements
     "vitest.explorer",
     "webpro.vscode-knip"
   ]
