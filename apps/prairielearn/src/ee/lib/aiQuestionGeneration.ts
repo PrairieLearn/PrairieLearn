@@ -8,6 +8,7 @@ import {
 } from 'ai';
 import { Redis } from 'ioredis';
 import * as parse5 from 'parse5';
+import stripAnsi from 'strip-ansi';
 
 import { logger } from '@prairielearn/logger';
 import {
@@ -143,7 +144,7 @@ export async function checkRender(
     .map((issue) => issue.system_data?.courseErrData?.outputBoth as string | undefined)
     .filter((output) => output !== undefined)
     .map((output) => {
-      return `When trying to render, your code created an error with the following output:\n\n\`\`\`${output}\`\`\`\n\nPlease fix it.`;
+      return `When trying to render, your code created an error with the following output:\n\n\`\`\`${stripAnsi(output)}\`\`\`\n\nPlease fix it.`;
     });
 }
 
