@@ -108,7 +108,7 @@ If you have no meaningful reads/writes to the old column, you can combine the fi
   - Remove the old column from the database
   - Remove the old column from the zod schema
 
-### Make nullable column non-nullable with a default
+### Make nullable column non-nullable
 
 - First PR: Eliminate all write paths that insert NULL
   - Update application code to always write a non-NULL value (e.g. add `.default(false)` to the relevant Zod schema)
@@ -119,7 +119,7 @@ If you have no meaningful reads/writes to the old column, you can combine the fi
 - Third PR: Add `NOT NULL` constraint
   - Finalize the batched migration
   - Add `NOT NULL` constraint to the column
-  - Drop any `DEFAULT` on the column or in Zod schemas that is no longer needed
+  - Drop any `DEFAULT` on the column
   - Update the Zod schema in `db-types.ts` to remove `.nullable()`
 
 ### Drop column
