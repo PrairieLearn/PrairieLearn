@@ -54,9 +54,21 @@ SELECT
         jsonb_agg(
           jsonb_build_object(
             'assessment',
-            to_jsonb(a),
+            jsonb_build_object(
+              'id',
+              a.id,
+              'course_instance_id',
+              a.course_instance_id,
+              'number',
+              a.number
+            ),
             'assessment_set',
-            to_jsonb(aset)
+            jsonb_build_object(
+              'abbreviation',
+              aset.abbreviation,
+              'color',
+              aset.color
+            )
           )
           ORDER BY
             aset.number,

@@ -1,14 +1,9 @@
 import { z } from 'zod';
 
 import * as sqldb from '@prairielearn/postgres';
+import { IdSchema } from '@prairielearn/zod';
 
-import {
-  AssessmentSchema,
-  AssessmentSetSchema,
-  SharingSetSchema,
-  TagSchema,
-  TopicSchema,
-} from '../lib/db-types.js';
+import { SharingSetSchema, TagSchema, TopicSchema } from '../lib/db-types.js';
 import { idsEqual } from '../lib/id.js';
 
 const QuestionsPageDataSchema = z.object({
@@ -28,7 +23,19 @@ const QuestionsPageDataSchema = z.object({
   share_source_publicly: z.boolean(),
   sharing_sets: z.array(SharingSetSchema).nullable().optional(),
   assessments: z
-    .array(z.object({ assessment: AssessmentSchema, assessment_set: AssessmentSetSchema }))
+    .array(
+      z.object({
+        assessment: z.object({
+          id: IdSchema,
+          course_instance_id: IdSchema,
+          number: z.string(),
+        }),
+        assessment_set: z.object({
+          abbreviation: z.string(),
+          color: z.string(),
+        }),
+      }),
+    )
     // The public questions endpoint does not have assessments, so we need to make this optional.
     .optional(),
 });
