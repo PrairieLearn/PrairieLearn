@@ -11,8 +11,3 @@ export function init() {
   client = new Redis(config.redisUrl);
   io = new Emitter(client);
 }
-
-export async function close() {
-  // If quitting fails, proceed anyways.
-  await client?.quit().catch(() => {});
-}
