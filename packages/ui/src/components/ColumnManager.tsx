@@ -1,6 +1,6 @@
 import { type Column, type Table } from '@tanstack/react-table';
 import clsx from 'clsx';
-import { type JSX, useEffect, useRef, useState } from 'react';
+import { type ReactNode, useEffect, useRef, useState } from 'react';
 import Button from 'react-bootstrap/Button';
 import Dropdown from 'react-bootstrap/Dropdown';
 
@@ -67,10 +67,12 @@ function ColumnLeafItem<RowDataModel>({
 
 function ColumnGroupItem<RowDataModel>({
   column,
+  table,
   onTogglePin,
   getIsOnPinningBoundary,
 }: {
   column: Column<RowDataModel>;
+  table: Table<RowDataModel>;
   onTogglePin: (columnId: string) => void;
   getIsOnPinningBoundary: (columnId: string) => boolean;
 }) {
@@ -93,10 +95,17 @@ function ColumnGroupItem<RowDataModel>({
     e.preventDefault();
     e.stopPropagation();
     const targetVisibility = !isAllVisible;
-    leafColumns.forEach((col) => {
-      if (col.getCanHide()) {
-        col.toggleVisibility(targetVisibility);
-      }
+    // Batch all visibility changes into a single update
+    // Doing rapid state updates caused the state updates to not be applied correctly.
+    // See https://github.com/PrairieLearn/PrairieLearn/pull/13989
+    table.setColumnVisibility((old) => {
+      const newVisibility = { ...old };
+      leafColumns.forEach((col) => {
+        if (col.getCanHide()) {
+          newVisibility[col.id] = targetVisibility;
+        }
+      });
+      return newVisibility;
     });
   };
 
@@ -143,6 +152,7 @@ function ColumnGroupItem<RowDataModel>({
             <ColumnItem
               key={childCol.id}
               column={childCol}
+              table={table}
               getIsOnPinningBoundary={getIsOnPinningBoundary}
               onTogglePin={onTogglePin}
             />
@@ -155,10 +165,12 @@ function ColumnGroupItem<RowDataModel>({
 
 function ColumnItem<RowDataModel>({
   column,
+  table,
   onTogglePin,
   getIsOnPinningBoundary,
 }: {
   column: Column<RowDataModel>;
+  table: Table<RowDataModel>;
   onTogglePin: (columnId: string) => void;
   getIsOnPinningBoundary: (columnId: string) => boolean;
 }) {
@@ -166,6 +178,7 @@ function ColumnItem<RowDataModel>({
     return (
       <ColumnGroupItem
         column={column}
+        table={table}
         getIsOnPinningBoundary={getIsOnPinningBoundary}
         onTogglePin={onTogglePin}
       />
@@ -182,7 +195,7 @@ function ColumnItem<RowDataModel>({
 
 interface ColumnManagerProps<RowDataModel> {
   table: Table<RowDataModel>;
-  topContent?: JSX.Element;
+  topContent?: ReactNode;
 }
 
 /**
@@ -357,6 +370,7 @@ export function ColumnManager<RowDataModel>({
                   <ColumnItem
                     key={column.id}
                     column={column}
+                    table={table}
                     getIsOnPinningBoundary={getIsOnPinningBoundary}
                     onTogglePin={handleTogglePin}
                   />

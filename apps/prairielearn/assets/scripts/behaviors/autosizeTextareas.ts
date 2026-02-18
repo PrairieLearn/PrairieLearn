@@ -2,7 +2,10 @@ import { observe } from 'selector-observer';
 
 function autosizeTextarea(textarea: HTMLTextAreaElement) {
   textarea.style.height = 'auto';
-  textarea.style.height = textarea.scrollHeight + 'px';
+  const computed = getComputedStyle(textarea);
+  const borderHeight =
+    Number.parseFloat(computed.borderTopWidth) + Number.parseFloat(computed.borderBottomWidth);
+  textarea.style.height = textarea.scrollHeight + borderHeight + 'px';
 }
 
 const observer = new IntersectionObserver((entries) => {

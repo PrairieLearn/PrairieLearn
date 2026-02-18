@@ -40,6 +40,7 @@ jobs:
           # We need the whole history so we can diff against `master` to determine
           # what images need to be built.
           fetch-depth: 0
+          show-progress: false
 
       # We won't try to push in this job, but we still authenticate if the
       # secrets are available so that we don't hit image pull rate limits.
@@ -71,7 +72,7 @@ jobs:
         # We have tests for external grading code, which relies on the Docker
         # socket being available, as well as a specific volume mount and
         # environment variable. See the docs for more details:
-        # https://prairielearn.readthedocs.io/en/latest/externalGrading/#running-locally-for-development
+        # https://docs.prairielearn.com/externalGrading/#running-locally-for-development
         #
         # We put the Postgres data on a tmpfs volume, which should be much faster.
         run: |
@@ -100,6 +101,8 @@ jobs:
         shardTotal: [4]
     steps:
       - uses: actions/checkout@v6
+        with:
+          show-progress: false
 
       # We uninstall `man-db` to speed up the installation of other packages
       # by avoiding building man pages for them. As this is a non-interactive
@@ -141,6 +144,11 @@ jobs:
         with:
           node-version: '24'
           cache: 'yarn'
+      - name: Cache node-gyp headers
+        uses: actions/cache@v5
+        with:
+          path: ~/.cache/node-gyp
+          key: node-gyp-${{ runner.os }}
       - name: Preinstall node-gyp headers
         run: yarn dlx node-gyp install
       - name: Install Node dependencies
@@ -217,6 +225,8 @@ jobs:
     runs-on: ubuntu-latest
     steps:
       - uses: actions/checkout@v6
+        with:
+          show-progress: false
       - name: Set up Node
         uses: actions/setup-node@v6
         with:

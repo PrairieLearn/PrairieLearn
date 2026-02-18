@@ -11,13 +11,14 @@ nbconvert==7.17.0
 nbformat==5.10.4
 networkx==3.6.1
 nltk==3.9.2
-numpy==2.4.1
+numpy==2.4.2
 openpyxl==3.1.5
 pandas==2.3.3
-Pillow==12.1.0
+pip==26.0.1
+Pillow==12.1.1
 PuLP==3.3.0
 Pygments==2.19.2
-pyarrow==22.0.0
+pyarrow==23.0.0
 pygraphviz==1.14
 requests==2.32.5
 scikit-image==0.26.0

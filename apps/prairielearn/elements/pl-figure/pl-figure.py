@@ -12,11 +12,17 @@ class FileType(Enum):
     DYNAMIC = 2
 
 
+class DisplayType(Enum):
+    INLINE = "inline"
+    BLOCK = "block"
+
+
 WIDTH_DEFAULT = None
 FILE_TYPE_DEFAULT = FileType.STATIC
 DIRECTORY_DEFAULT = "clientFilesQuestion"
-INLINE_DEFAULT = False
+DISPLAY_DEFAULT = DisplayType.BLOCK
 ALT_TEXT_DEFAULT = ""
+
 
 DIRECTORY_URL_DICT = {
     "clientFilesQuestion": "client_files_question_url",
@@ -29,12 +35,39 @@ DIRECTORY_PATH_DICT = {
 }
 
 
+def get_display_type(element: lxml.html.HtmlElement) -> DisplayType:
+    """Convert external display attribute to internal enum.
+
+    Supports backward compatibility with the deprecated boolean `inline` attribute.
+
+    Args:
+        element: The pl-figure HTML element
+
+    Returns:
+        DisplayType enum value
+
+    Raises:
+        ValueError: If both display and inline attributes are set
+    """
+    if pl.has_attrib(element, "display") and pl.has_attrib(element, "inline"):
+        raise ValueError(
+            "Cannot set both 'display' and 'inline' attributes. "
+            "Use only 'display'; the 'inline' attribute is deprecated."
+        )
+
+    inline_default = False
+    inline = pl.get_boolean_attrib(element, "inline", inline_default)
+    display_type_default = DisplayType.INLINE if inline else DISPLAY_DEFAULT
+
+    return pl.get_enum_attrib(element, "display", DisplayType, display_type_default)
+
+
 def prepare(element_html: str, data: pl.QuestionData) -> None:
     element = lxml.html.fragment_fromstring(element_html)
     pl.check_attribs(
         element,
         required_attribs=["file-name"],
-        optional_attribs=["width", "type", "directory", "inline", "alt"],
+        optional_attribs=["width", "type", "directory", "inline", "display", "alt"],
     )
 
     file_type = pl.get_enum_attrib(element, "type", FileType, FILE_TYPE_DEFAULT)
@@ -70,8 +103,9 @@ def render(element_html: str, data: pl.QuestionData) -> str:
     # Get type (default is static)
     file_type = pl.get_enum_attrib(element, "type", FileType, FILE_TYPE_DEFAULT)
 
-    # Get inline (default is false)
-    inline = pl.get_boolean_attrib(element, "inline", INLINE_DEFAULT)
+    # Get display type (default is block)
+    display_type = get_display_type(element)
+    inline = display_type is DisplayType.INLINE
 
     # Get alternate-text text (default is PrairieLearn Image)
     alt_text = pl.get_string_attrib(element, "alt", ALT_TEXT_DEFAULT)

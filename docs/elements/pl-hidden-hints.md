@@ -31,8 +31,8 @@ For the inner `pl-hint` tag:
 
 | Attribute               | Type   | Default | Description                                                                                                                                                                                                 |
 | ----------------------- | ------ | ------- | ----------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------- |
-| `show-after-submission` | int    | —       | Number of submissions on the current variant needed before the hint is accessible. If not set, hint is always accessible. **Should only be set for questions that allow multiple submissions per variant.** |
 | `hint-name`             | string | —       | Custom heading to display for the given hint. If not set, then displays a default heading including the hint number.                                                                                        |
+| `show-after-submission` | int    | —       | Number of submissions on the current variant needed before the hint is accessible. If not set, hint is always accessible. **Should only be set for questions that allow multiple submissions per variant.** |
 
 ## Details
 
