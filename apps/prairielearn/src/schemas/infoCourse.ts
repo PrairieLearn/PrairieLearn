@@ -146,7 +146,7 @@ export const CourseJsonSchema = z
           })
           .describe('A sharing set description.'),
       )
-      .describe('Sharing sets')
+      .describe('Sharing sets.')
       .optional(),
   })
   .strict()

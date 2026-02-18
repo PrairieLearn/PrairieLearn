@@ -1,6 +1,7 @@
 import { z } from 'zod';
 
 import { CommentJsonSchema } from './comment.js';
+import { ColorJsonSchema } from './infoCourse.js';
 
 const AccessRuleJsonSchema = z
   .object({
@@ -44,6 +45,20 @@ const PublishingJsonSchema = z.object({
     )
     .optional(),
 });
+
+export const StudentLabelJsonSchema = z
+  .object({
+    uuid: z
+      .string()
+      .regex(/^[0-9a-fA-F]{8}-[0-9a-fA-F]{4}-[0-9a-fA-F]{4}-[0-9a-fA-F]{4}-[0-9a-fA-F]{12}$/)
+      .describe('Unique identifier (UUID v4).'),
+    name: z.string().trim().min(1).max(255).describe('The name of the student label.'),
+    color: ColorJsonSchema,
+  })
+  .strict()
+  .describe('A single student label, can represent a collection of students (e.g. "Section A").');
+
+export type StudentLabelJson = z.infer<typeof StudentLabelJsonSchema>;
 
 export const CourseInstanceJsonSchema = z
   .object({
@@ -116,6 +131,7 @@ export const CourseInstanceJsonSchema = z
       )
       .optional()
       .default(false),
+    studentLabels: z.array(StudentLabelJsonSchema).describe('Student labels.').optional(),
   })
   .strict()
   .describe('The specification file for a course instance.');

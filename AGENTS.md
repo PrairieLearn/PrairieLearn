@@ -90,11 +90,13 @@ Reference the Makefile for commands to format/lint/typecheck other tools / langu
 
 All applications share a single Postgres database. See `database/` for descriptions of the database tables and enums. All tables have corresponding Zod types in `apps/prairielearn/src/lib/db-types.ts`.
 
-Migrations are stored in `apps/prairielearn/src/migrations`. See the [`README.md`](apps/prairielearn/src/migrations/README.md) file in that directory for details on how to create and run migrations.
+Migrations are stored in `apps/prairielearn/src/migrations`. See the [`README.md`](apps/prairielearn/src/migrations/README.md) file in that directory for details on how to create and run migrations. If a migration was created on the current feature branch (i.e., it has not been merged to master), modify it directly instead of creating a new migration.
 
 If you make a change to the database, make sure to update the database schema description in `database/` and the Zod types/table list in `apps/prairielearn/src/lib/db-types.ts`.
 
 Prefer interacting with the database using model functions in `apps/prairielearn/src/models/`.
+
+When inserting audit events (`insertAuditEvent`), always do so inside the same transaction as the action being audited. Use `runInTransactionAsync` to wrap the original database mutation and its corresponding audit log insertion together. This ensures that if either the action or the audit event fails, both are rolled back.
 
 Course content repositories use JSON files like `infoCourse.json`, `infoCourseInstance.json`, and `infoAssessment.json` to configure different parts of the course. The schemas for these files are stored as Zod schemas in `schemas/`. If you make a change to a schema file in `schemas/`, make sure to update the JSON schema with `make update-jsonschema`.
 
@@ -146,6 +148,7 @@ When writing tests:
 
 - Don't add assertion messages unless they provide information that isn't obvious from reading the assertion itself (e.g., `assert.isNull(linkRecord)` is clear without a message).
 - Don't use defensive checks in tests -- tests should fail fast if unexpected data exists.
+- Prefer using the existing test course and its course instances for testing. Don't create new courses or course instances just to get a clean slate; instead, use transaction rollbacks or wipe the state between tests.
 
 ### Rendering HTML
 

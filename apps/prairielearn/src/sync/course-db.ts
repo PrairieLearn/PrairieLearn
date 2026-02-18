@@ -30,6 +30,7 @@ import {
 } from '../schemas/index.js';
 import * as schemas from '../schemas/index.js';
 
+import { deduplicateByName } from './deduplicate.js';
 import * as infofile from './infofile.js';
 import { isDraftQid } from './question.js';
 
@@ -555,50 +556,24 @@ async function loadCourseInfo({
     );
   }
 
-  /**
-   * Used to retrieve fields such as "assessmentSets" and "topics".
-   * Adds a warning when syncing if duplicates are found.
-   * If defaults are provided, the entries from defaults not present in the resulting list are merged.
-   *
-   * Each entry must have a `name` property.
-   *
-   * @param fieldName The member of `info` to inspect
-   */
   function getFieldWithoutDuplicates<
     K extends 'tags' | 'topics' | 'assessmentSets' | 'assessmentModules' | 'sharingSets',
   >(fieldName: K, defaults?: CourseJson[K]): CourseJson[K] {
     type Entry = NonNullable<CourseJson[K]>[number];
-    const known = new Map<string, Entry>();
-    const duplicateEntryIds = new Set<string>();
+    const result = deduplicateByName<Entry>(
+      (info![fieldName] ?? []) as Entry[],
+      defaults as Entry[] | undefined,
+    );
 
-    (info![fieldName] ?? []).forEach((entry) => {
-      const entryId = entry.name;
-      if (known.has(entryId)) {
-        duplicateEntryIds.add(entryId);
-      }
-      known.set(entryId, entry);
-    });
-
-    if (duplicateEntryIds.size > 0) {
-      const duplicateIdsString = [...duplicateEntryIds.values()]
-        .map((name) => `"${name}"`)
-        .join(', ');
-      const warning = `Found duplicates in '${fieldName}': ${duplicateIdsString}. Only the last of each duplicate will be synced.`;
-      infofile.addWarning(loadedData, warning);
+    if (result.duplicates.size > 0) {
+      const duplicateIdsString = [...result.duplicates].map((name) => `"${name}"`).join(', ');
+      infofile.addWarning(
+        loadedData,
+        `Found duplicates in '${fieldName}': ${duplicateIdsString}. Only the last of each duplicate will be synced.`,
+      );
     }
 
-    if (defaults) {
-      defaults.forEach((defaultEntry) => {
-        const defaultEntryId = defaultEntry.name;
-        if (!known.has(defaultEntryId)) {
-          known.set(defaultEntryId, defaultEntry);
-        }
-      });
-    }
-
-    // Turn the map back into a list; the JS spec ensures that Maps remember
-    // insertion order, so the order is preserved.
-    return [...known.values()] as CourseJson[K];
+    return result.entries as CourseJson[K];
   }
 
   // Assessment sets in DEFAULT_ASSESSMENT_SETS may be in use but not present in the
@@ -1663,6 +1638,34 @@ function validateCourseInstance({
       warnings.push(
         '"hideInEnrollPage" should be deleted as the enrollment page has been removed.',
       );
+    }
+  }
+
+  if (courseInstance.studentLabels) {
+    const result = deduplicateByName(courseInstance.studentLabels);
+    if (result.duplicates.size > 0) {
+      const duplicateNamesString = [...result.duplicates].map((name) => `"${name}"`).join(', ');
+      warnings.push(
+        `Found duplicates in 'studentLabels': ${duplicateNamesString}. Only the last of each duplicate will be synced.`,
+      );
+      courseInstance.studentLabels = result.entries;
+    }
+
+    const uuidCounts = new Map<string, string[]>();
+    for (const label of courseInstance.studentLabels) {
+      const names = uuidCounts.get(label.uuid);
+      if (names) {
+        names.push(label.name);
+      } else {
+        uuidCounts.set(label.uuid, [label.name]);
+      }
+    }
+    for (const [uuid, names] of uuidCounts) {
+      if (names.length > 1) {
+        errors.push(
+          `Found duplicate UUID "${uuid}" in 'studentLabels' for labels: ${names.map((n) => `"${n}"`).join(', ')}.`,
+        );
+      }
     }
   }
 
