@@ -22,6 +22,7 @@ import type { StaffAssessmentQuestionRow } from '../../../lib/assessment-questio
 import type { StaffAssessment, StaffCourse } from '../../../lib/client/safe-db-types.js';
 import { QueryClientProviderDebug } from '../../../lib/client/tanstackQuery.js';
 import type { ZoneAssessmentJson } from '../../../schemas/infoAssessment.js';
+import type { QuestionByQidResult } from '../trpc.js';
 import type {
   QuestionAlternativeForm,
   ZoneAssessmentForm,
@@ -34,7 +35,10 @@ import {
   stripTrackingIds,
 } from '../utils/dataTransform.js';
 import { normalizeQuestionPoints, questionDisplayName } from '../utils/questions.js';
-import { createAssessmentQuestionsTrpcClient } from '../utils/trpc-client.js';
+import {
+  type AssessmentQuestionsTrpcClient,
+  createAssessmentQuestionsTrpcClient,
+} from '../utils/trpc-client.js';
 import { TRPCProvider, useTRPC } from '../utils/trpc-context.js';
 import { useAssessmentEditor } from '../utils/useAssessmentEditor.js';
 
@@ -169,6 +173,7 @@ function InstructorAssessmentQuestionsTableInner({
   canEdit,
   csrfToken,
   origHash,
+  trpcClient,
 }: {
   course: StaffCourse;
   questionRows: StaffAssessmentQuestionRow[];
@@ -180,6 +185,7 @@ function InstructorAssessmentQuestionsTableInner({
   canEdit: boolean;
   csrfToken: string;
   origHash: string;
+  trpcClient: AssessmentQuestionsTrpcClient;
 }) {
   const trpc = useTRPC();
   // Initialize editor state from JSON zones
@@ -381,10 +387,35 @@ function InstructorAssessmentQuestionsTableInner({
     setQuestionEditState({ status: 'picking', zoneTrackingId });
   };
 
+  const buildQuestionMetadata = (data: QuestionByQidResult): StaffAssessmentQuestionRow => {
+    return {
+      ...data,
+      assessment,
+      assessment_question: {
+        id: data.question.id,
+        effective_advance_score_perc: 0,
+        mean_question_score: null,
+        number_submissions_hist: null,
+        number: 0,
+        number_in_alternative_group: null,
+      } as StaffAssessmentQuestionRow['assessment_question'],
+      alternative_group: {
+        number: 0,
+      } as StaffAssessmentQuestionRow['alternative_group'],
+      zone: {} as StaffAssessmentQuestionRow['zone'],
+      course_instance: {} as StaffAssessmentQuestionRow['course_instance'],
+      course: {} as StaffAssessmentQuestionRow['course'],
+      other_assessments: null,
+      start_new_zone: false,
+      start_new_alternative_group: true,
+      alternative_group_size: 1,
+    } as StaffAssessmentQuestionRow;
+  };
+
   const handleUpdateQuestion = (
     updatedQuestion: ZoneQuestionBlockForm | QuestionAlternativeForm,
     // This will only be provided if the QID changed
-    newQuestionData: StaffAssessmentQuestionRow | undefined,
+    newQuestionData: QuestionByQidResult | undefined,
   ) => {
     if (!updatedQuestion.id) return;
     if (questionEditState.status !== 'editing') return;
@@ -393,25 +424,6 @@ function InstructorAssessmentQuestionsTableInner({
     const normalizedQuestion = normalizeQuestionPoints(updatedQuestion);
 
     if (questionEditState.mode === 'create') {
-      // Prepare question data for the map if provided
-      let preparedQuestionData: StaffAssessmentQuestionRow | undefined;
-      if (newQuestionData) {
-        preparedQuestionData = {
-          ...newQuestionData,
-          assessment,
-          assessment_question: {
-            ...newQuestionData.assessment_question,
-            number: 0, // Will be recalculated on save
-            number_in_alternative_group: null,
-          } as StaffAssessmentQuestionRow['assessment_question'],
-          alternative_group: {
-            ...newQuestionData.alternative_group,
-            number: 0, // Will be recalculated on save
-          },
-          alternative_group_size: 1,
-        };
-      }
-
       dispatch({
         type: 'ADD_QUESTION',
         zoneTrackingId: questionEditState.zoneTrackingId,
@@ -419,7 +431,7 @@ function InstructorAssessmentQuestionsTableInner({
           ...(normalizedQuestion as ZoneQuestionBlockForm),
           ...createQuestionWithTrackingId(),
         },
-        questionData: preparedQuestionData,
+        questionData: newQuestionData ? buildQuestionMetadata(newQuestionData) : undefined,
       });
     } else {
       // Update existing question
@@ -428,20 +440,7 @@ function InstructorAssessmentQuestionsTableInner({
           type: 'UPDATE_QUESTION_METADATA',
           questionId: updatedQuestion.id,
           oldQuestionId: questionEditState.originalQuestionId,
-          questionData: {
-            ...newQuestionData,
-            assessment,
-            assessment_question: {
-              ...newQuestionData.assessment_question,
-              number: 0, // Will be recalculated on save
-              number_in_alternative_group: null,
-            } as StaffAssessmentQuestionRow['assessment_question'],
-            alternative_group: {
-              ...newQuestionData.alternative_group,
-              number: 0, // Will be recalculated on save
-            },
-            alternative_group_size: 1,
-          },
+          questionData: buildQuestionMetadata(newQuestionData),
         });
       }
 
@@ -627,7 +626,9 @@ function InstructorAssessmentQuestionsTableInner({
 
   // If at least one question has a nonzero unlock score, display the Advance Score column
   const showAdvanceScorePercCol = Object.values(questionMetadata).some(
-    (q) => q.assessment_question.effective_advance_score_perc !== 0,
+    (q) =>
+      q.assessment_question.effective_advance_score_perc != null &&
+      q.assessment_question.effective_advance_score_perc !== 0,
   );
 
   return (
@@ -791,6 +792,7 @@ function InstructorAssessmentQuestionsTableInner({
           }
           assessmentType={assessmentType === 'Homework' ? 'Homework' : 'Exam'}
           handleUpdateQuestion={handleUpdateQuestion}
+          trpcClient={trpcClient}
           onHide={closeQuestionEditState}
           onPickQuestion={openPickerToChangeQid}
           onAddAndPickAnother={handleAddAndPickAnother}
@@ -821,7 +823,7 @@ function InstructorAssessmentQuestionsTableInner({
 export function InstructorAssessmentQuestionsTable({
   trpcCsrfToken,
   ...innerProps
-}: Parameters<typeof InstructorAssessmentQuestionsTableInner>[0] & {
+}: Omit<Parameters<typeof InstructorAssessmentQuestionsTableInner>[0], 'trpcClient'> & {
   trpcCsrfToken: string;
 }) {
   const [queryClient] = useState(() => new QueryClient());
@@ -829,7 +831,7 @@ export function InstructorAssessmentQuestionsTable({
   return (
     <QueryClientProviderDebug client={queryClient}>
       <TRPCProvider trpcClient={trpcClient} queryClient={queryClient}>
-        <InstructorAssessmentQuestionsTableInner {...innerProps} />
+        <InstructorAssessmentQuestionsTableInner {...innerProps} trpcClient={trpcClient} />
       </TRPCProvider>
     </QueryClientProviderDebug>
   );

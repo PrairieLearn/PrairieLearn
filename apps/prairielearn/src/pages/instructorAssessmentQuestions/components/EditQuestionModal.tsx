@@ -4,9 +4,10 @@ import { useForm } from 'react-hook-form';
 
 import { run } from '@prairielearn/run';
 
-import type { StaffAssessmentQuestionRow } from '../../../lib/assessment-question.js';
+import type { QuestionByQidResult } from '../trpc.js';
 import type { QuestionAlternativeForm, ZoneQuestionBlockForm } from '../types.js';
 import { validatePositiveInteger } from '../utils/questions.js';
+import type { AssessmentQuestionsTrpcClient } from '../utils/trpc-client.js';
 
 export type EditQuestionModalData =
   | {
@@ -59,6 +60,7 @@ export function EditQuestionModal({
   assessmentType,
   onPickQuestion,
   onAddAndPickAnother,
+  trpcClient,
 }: {
   show: boolean;
   data: EditQuestionModalData | null;
@@ -66,11 +68,12 @@ export function EditQuestionModal({
   onExited?: () => void;
   handleUpdateQuestion: (
     updatedQuestion: ZoneQuestionBlockForm | QuestionAlternativeForm,
-    newQuestionData: StaffAssessmentQuestionRow | undefined,
+    newQuestionData: QuestionByQidResult | undefined,
   ) => void;
   assessmentType: 'Homework' | 'Exam';
   onPickQuestion?: (currentFormValues: ZoneQuestionBlockForm | QuestionAlternativeForm) => void;
   onAddAndPickAnother?: () => void;
+  trpcClient: AssessmentQuestionsTrpcClient;
 }) {
   const type = data?.type ?? null;
   const question = data?.question ?? null;
@@ -167,21 +170,14 @@ export function EditQuestionModal({
         <form
           onSubmit={handleSubmit(async (formData) => {
             // Fetch question data if creating a new question or if QID changed
-            let questionData: StaffAssessmentQuestionRow | undefined;
+            let questionData: QuestionByQidResult | undefined;
             if (type === 'create' || formData.id !== (originalQuestionId ?? question.id)) {
-              const params = new URLSearchParams({ qid: formData.id! });
-              const res = await fetch(`${window.location.pathname}/question.json?${params}`);
-              if (!res.ok) {
-                const data = await res.json();
-                setError('id', { message: data.error ?? 'Failed to fetch question data' });
-                return;
-              }
-              const data = await res.json();
-              if (data === null) {
+              try {
+                questionData = await trpcClient.questionByQid.query({ qid: formData.id! });
+              } catch {
                 setError('id', { message: 'Question not found' });
                 return;
               }
-              questionData = data;
             }
 
             // Filter out inherited values that were not modified
@@ -543,19 +539,13 @@ export function EditQuestionModal({
                 disabled={isSubmitting}
                 onClick={handleSubmit(async (formData) => {
                   // Always fetch question data for new questions
-                  const params = new URLSearchParams({ qid: formData.id! });
-                  const res = await fetch(`${window.location.pathname}/question.json?${params}`);
-                  if (!res.ok) {
-                    const data = await res.json();
-                    setError('id', { message: data.error ?? 'Failed to fetch question data' });
-                    return;
-                  }
-                  const data = await res.json();
-                  if (data === null) {
+                  let questionData: QuestionByQidResult;
+                  try {
+                    questionData = await trpcClient.questionByQid.query({ qid: formData.id! });
+                  } catch {
                     setError('id', { message: 'Question not found' });
                     return;
                   }
-                  const questionData: StaffAssessmentQuestionRow = data;
 
                   // Filter out inherited values that were not modified
                   const filteredData = { ...formData };

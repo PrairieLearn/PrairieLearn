@@ -28,6 +28,8 @@ export interface FilterDropdownProps {
   'aria-label'?: string;
   /** Maximum height of the dropdown in pixels (default: 612) */
   maxHeight?: number;
+  /** Item IDs that should appear at the top of the list in their original order */
+  pinnedIds?: Set<string>;
 }
 
 function defaultRenderItem(item: FilterItem, _isSelected: boolean) {
@@ -51,14 +53,21 @@ export function FilterDropdown({
   disabled = false,
   'aria-label': ariaLabel,
   maxHeight,
+  pinnedIds,
 }: FilterDropdownProps) {
   const selectedCount = selectedIds.size;
 
-  // Sort items alphabetically for display
-  const sortedItems = useMemo(
-    () => [...items].sort((a, b) => a.name.localeCompare(b.name)),
-    [items],
-  );
+  // Sort items alphabetically for display, with pinned items first
+  const sortedItems = useMemo(() => {
+    if (!pinnedIds || pinnedIds.size === 0) {
+      return [...items].sort((a, b) => a.name.localeCompare(b.name));
+    }
+    const pinned = items.filter((item) => pinnedIds.has(item.id));
+    const rest = items
+      .filter((item) => !pinnedIds.has(item.id))
+      .sort((a, b) => a.name.localeCompare(b.name));
+    return [...pinned, ...rest];
+  }, [items, pinnedIds]);
 
   const handleSelectionChange = (selection: Selection) => {
     if (selection === 'all') {

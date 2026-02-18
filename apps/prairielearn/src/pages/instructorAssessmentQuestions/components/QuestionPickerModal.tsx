@@ -11,6 +11,7 @@ import type { AssessmentForPicker, CourseQuestionForPicker } from '../types.js';
 
 /** Special filter ID for questions not in any assessment */
 const NOT_IN_ANY_ASSESSMENT_ID = '__not_in_any_assessment__';
+const PINNED_ASSESSMENT_IDS = new Set([NOT_IN_ANY_ASSESSMENT_ID]);
 
 export interface QuestionPickerModalProps {
   show: boolean;
@@ -220,7 +221,7 @@ export function QuestionPickerModal({
 
     // Add special "Not in any assessment" option at the beginning
     const assessmentsWithSpecial: FilterItem[] = [
-      { id: NOT_IN_ANY_ASSESSMENT_ID, name: 'Not in any assessment', color: 'gray1' },
+      { id: NOT_IN_ANY_ASSESSMENT_ID, name: 'None' },
       ...sortedAssessments,
     ];
 
@@ -356,6 +357,7 @@ export function QuestionPickerModal({
                   label="Assessment"
                   items={assessments}
                   selectedIds={selectedAssessments}
+                  pinnedIds={PINNED_ASSESSMENT_IDS}
                   // 20 items, about 28px tall, plus space for clear
                   maxHeight={20 * 28 + 50}
                   onChange={setSelectedAssessments}
