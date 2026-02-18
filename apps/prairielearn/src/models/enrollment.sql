@@ -102,6 +102,17 @@ WHERE
   id = $id
 FOR NO KEY UPDATE;
 
+-- BLOCK select_and_lock_joined_enrollment_by_course_instance_and_user
+SELECT
+  *
+FROM
+  enrollments
+WHERE
+  course_instance_id = $course_instance_id
+  AND user_id = $user_id
+  AND status = 'joined'
+FOR NO KEY UPDATE;
+
 -- BLOCK set_enrollment_status
 UPDATE enrollments
 SET
@@ -117,3 +128,38 @@ WHERE
   id = $enrollment_id
 RETURNING
   *;
+
+-- BLOCK update_enrollments_to_removed_for_course_batch
+WITH
+  old_enrollments AS (
+    SELECT
+      e.*,
+      ci.course_id AS ci_course_id
+    FROM
+      enrollments AS e
+      JOIN course_instances AS ci ON (ci.id = e.course_instance_id)
+    WHERE
+      ci.course_id = $course_id
+      AND e.user_id = ANY ($user_ids::bigint[])
+      AND e.status = 'joined'
+    FOR NO KEY UPDATE OF
+      e
+  ),
+  updated_enrollments AS (
+    UPDATE enrollments AS e
+    SET
+      status = 'removed'
+    FROM
+      old_enrollments AS oe
+    WHERE
+      e.id = oe.id
+    RETURNING
+      e.*
+  )
+SELECT
+  to_jsonb(oe.*) AS old_enrollment,
+  to_jsonb(ue.*) AS new_enrollment,
+  oe.ci_course_id AS course_id
+FROM
+  old_enrollments AS oe
+  JOIN updated_enrollments AS ue ON (oe.id = ue.id);
