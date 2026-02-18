@@ -491,7 +491,7 @@ export function RubricSettings({
           const newSubmission = parseHTMLElement(document, data.submissionPanel);
           oldSubmission.replaceWith(newSubmission);
           executeScripts(newSubmission);
-          await window.mathjaxTypeset([newSubmission]);
+          await window.mathjaxTypeset();
         }
       }
 
