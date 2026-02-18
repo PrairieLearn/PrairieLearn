@@ -10,6 +10,7 @@ ignores:
   - ".claude/**"
   - ".venv/**"
   - ".agents/**"
+  - ".changeset/**"
   - ".context/**"
 
 config:
