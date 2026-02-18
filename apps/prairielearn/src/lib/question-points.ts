@@ -259,7 +259,8 @@ export async function updateInstanceQuestionStats({
       average_submission_score: null,
       submission_score_array: [],
       incremental_submission_score_array: [],
-      incremental_submission_points_array: [],
+      incremental_submission_points_array:
+        instanceQuestion.points_list_original === null ? null : [],
     });
     return;
   }
