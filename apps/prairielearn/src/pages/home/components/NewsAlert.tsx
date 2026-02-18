@@ -17,7 +17,8 @@ export function NewsAlert({ newsItems, csrfToken, blogUrl }: NewsAlertProps) {
 
   return (
     <div
-      className="card mb-4 border-start border-3 border-primary"
+      className="card mb-4"
+      style={{ borderLeft: '3px solid var(--bs-primary)' }}
       data-testid="news-alert"
     >
       <div className="card-body">
