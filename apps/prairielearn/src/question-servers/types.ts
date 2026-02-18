@@ -78,6 +78,7 @@ export interface QuestionServer {
     question: Question,
     course: Course,
     variant_seed: string,
+    preferences?: Record<string, string | number | boolean>,
   ) => QuestionServerReturnValue<Partial<GenerateResultData>>;
   prepare: (
     question: Question,

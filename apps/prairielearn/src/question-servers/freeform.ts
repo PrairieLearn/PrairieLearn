@@ -845,6 +845,7 @@ export async function generate(
   question: Question,
   course: Course,
   variant_seed: string,
+  preferences?: Record<string, string | number | boolean>,
 ): QuestionServerReturnValue<GenerateResultData> {
   return instrumented('freeform.generate', async () => {
     const context = await getContext(question, course);
@@ -855,6 +856,7 @@ export async function generate(
       variant_seed: Number.parseInt(variant_seed, 36),
       options: { ...course.options, ...question.options, ...getContextOptions(context) },
       preferences: getPreferences({
+        preferences,
         preferencesSchema: question.preferences_schema as Record<
           string,
           { default: string | number | boolean }
