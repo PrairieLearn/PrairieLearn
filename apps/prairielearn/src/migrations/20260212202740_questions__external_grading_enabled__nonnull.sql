@@ -1,3 +1,2 @@
 ALTER TABLE questions
-ALTER COLUMN external_grading_enabled
-SET NOT NULL;
+ADD CONSTRAINT questions_external_grading_enabled_not_null CHECK (external_grading_enabled IS NOT NULL) NOT VALID;
