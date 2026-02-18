@@ -42,10 +42,7 @@ export function NewsAlert({ newsItems, csrfToken, blogUrl }: NewsAlertProps) {
               rel="noopener noreferrer"
               className="d-flex align-items-start py-1 text-decoration-none"
             >
-              <i
-                className="bi bi-arrow-up-right me-2 mt-1 text-muted small"
-                aria-hidden="true"
-              />
+              <i className="bi bi-arrow-up-right me-2 mt-1 text-muted small" aria-hidden="true" />
               <div>
                 <span className="fw-semibold text-body">{item.title}</span>
                 <div className="text-muted small">{dateFormatter.format(item.pub_date)}</div>
