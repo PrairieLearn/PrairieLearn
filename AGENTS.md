@@ -89,19 +89,19 @@ Reference the Makefile for commands to format/lint/typecheck other tools / langu
 
 All applications share a single Postgres database. See `database/` for descriptions of the database tables and enums. All tables have corresponding Zod types in `apps/prairielearn/src/lib/db-types.ts`.
 
-Migrations are stored in `apps/prairielearn/src/migrations`. See the [`README.md`](apps/prairielearn/src/migrations/README.md) file in that directory for details on how to create and run migrations. If a migration was created on the current feature branch (i.e., it has not been merged to master), modify it directly instead of creating a new migration.
+Migrations are stored in `apps/prairielearn/src/migrations`. See the [`README.md`](apps/prairielearn/src/migrations/README.md) file in that directory for details on how to create and run migrations.
 
 If you make a change to the database, make sure to update the database schema description in `database/` and the Zod types/table list in `apps/prairielearn/src/lib/db-types.ts`.
 
 **Always prefer existing model functions over one-off raw SQL queries.** Check `apps/prairielearn/src/models/` for existing functions before writing any database queries. Model functions provide type safety, consistent patterns, and proper abstractions. Only write raw queries when no suitable model function exists.
 
-### SQL query conventions
-
-- Use `to_jsonb(table.*)` if you need to select all columns from a table as JSON. This is preferred over explicit `jsonb_build_object` calls because it automatically includes all columns and stays in sync with schema changes.
-
 Course content repositories use JSON files like `infoCourse.json`, `infoCourseInstance.json`, and `infoAssessment.json` to configure different parts of the course. The schemas for these files are stored as Zod schemas in `schemas/`. If you make a change to a schema file in `schemas/`, make sure to update the JSON schema with `make update-jsonschema`.
 
 When working with assessment "groups" / "teams", see the [`groups-and-teams` skill](./.agents/skills/groups-and-teams/SKILL.md).
+
+### SQL query conventions
+
+- Use `to_jsonb(table.*)` if you need to select all columns from a table as JSON. This is preferred over explicit `jsonb_build_object` calls because it automatically includes all columns and stays in sync with schema changes.
 
 ## TypeScript guidance
 
