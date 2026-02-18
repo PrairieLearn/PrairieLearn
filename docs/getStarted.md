@@ -36,9 +36,9 @@ A course instance corresponds to a single offering of a course, such as "Fall 20
 
 - Configure the title and QID for your new question:
   - For the sake of this tutorial, use "Find the area of a rectangle" as the title and `rectangle-area` as the QID.
-  - You can opt to start from an existing template question, or start from scratch with an empty question. Select "Empty question" for this tutorial.
+  - You can opt to start from a PrairieLearn template or start from scratch with an empty question. Select "Empty question" for this tutorial.
 
-- Click "Create".
+- Click "Create question".
 
 You're now ready to build your question.
 

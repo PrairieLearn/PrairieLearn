@@ -60,6 +60,8 @@ FROM
 WHERE
   v.instance_question_id = $instance_question_id
   AND s.gradable IS TRUE
+  AND s.graded_at IS NOT NULL -- Only consider submissions that have been graded
+  AND s.score IS NOT NULL -- Only consider submissions that have an autograded score
 ORDER BY
   s.date;
 

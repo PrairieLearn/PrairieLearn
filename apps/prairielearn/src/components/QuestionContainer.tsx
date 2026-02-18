@@ -252,7 +252,7 @@ Counterclockwise rotation corrections, in degrees: ${rotationCorrectionDegrees}
   `;
 }
 
-export function IssuePanel({
+function IssuePanel({
   issue,
   course_instance,
   authz_data,
@@ -522,7 +522,7 @@ export function QuestionFooterContent({
     }
 
     if (authz_result?.authorized_edit === false) {
-      return html`<div class="alert alert-warning mt-2" role="alert">
+      return html`<div class="alert alert-warning mb-0" role="alert">
         You are viewing the question instance of a different user and so are not authorized to save
         answers, to submit answers for grading, or to try a new variant of this same question.
       </div>`;

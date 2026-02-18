@@ -57,7 +57,7 @@ export async function insertCoursePermissionsByUserUid({
  * stepping up in permissions; if the user already has a higher role, the role
  * is not changed.
  */
-export async function insertCoursePermissionsByUserId({
+async function insertCoursePermissionsByUserId({
   course_id,
   user_id,
   course_role,
