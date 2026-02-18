@@ -83,7 +83,7 @@ WITH
       $repository,
       i.display_timezone,
       i.id,
-      ''
+      '' -- Placeholder: overwritten immediately by syncCourseInfo
     FROM
       institutions i
     WHERE
