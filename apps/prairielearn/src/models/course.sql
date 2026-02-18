@@ -74,14 +74,16 @@ WITH
         branch,
         repository,
         display_timezone,
-        institution_id
+        institution_id,
+        short_name
       )
     SELECT
       $path,
       $branch,
       $repository,
       i.display_timezone,
-      i.id
+      i.id,
+      ''
     FROM
       institutions i
     WHERE

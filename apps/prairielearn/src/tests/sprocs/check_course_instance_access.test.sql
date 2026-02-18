@@ -10,9 +10,9 @@ WITH
   ),
   setup_course AS (
     INSERT INTO
-      courses (id, display_timezone, path)
+      courses (id, short_name, display_timezone, path)
     VALUES
-      (1, 'UTC', '/path/to/course/1')
+      (1, 'TEST 101', 'UTC', '/path/to/course/1')
   ),
   setup_ci AS (
     INSERT INTO
@@ -20,6 +20,7 @@ WITH
         id,
         uuid,
         course_id,
+        short_name,
         display_timezone,
         enrollment_code
       )
@@ -28,6 +29,7 @@ WITH
         1,
         '5159a291-566f-4463-8f11-b07c931ad72a',
         1,
+        'CI 1',
         'UTC',
         'KN5Y4HNHXS'
       ),
@@ -35,6 +37,7 @@ WITH
         2,
         '5159a291-566f-4463-8f11-b07c931ad72b',
         1,
+        'CI 2',
         'UTC',
         'QDXM3P76AP'
       )
