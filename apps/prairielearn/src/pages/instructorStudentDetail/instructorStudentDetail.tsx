@@ -1,5 +1,6 @@
 import { Router } from 'express';
 import asyncHandler from 'express-async-handler';
+import { z } from 'zod';
 
 import { HttpStatusError } from '@prairielearn/error';
 import { loadSqlEquiv, queryOptionalRow } from '@prairielearn/postgres';
@@ -8,7 +9,7 @@ import { run } from '@prairielearn/run';
 
 import { PageLayout } from '../../components/PageLayout.js';
 import { extractPageContext } from '../../lib/client/page-context.js';
-import { StaffAuditEventSchema } from '../../lib/client/safe-db-types.js';
+import { StaffAuditEventSchema, StaffStudentLabelSchema } from '../../lib/client/safe-db-types.js';
 import { getGradebookRows } from '../../lib/gradebook.js';
 import { getCourseInstanceUrl } from '../../lib/url.js';
 import { selectAuditEventsByEnrollmentId } from '../../models/audit-event.js';
@@ -18,6 +19,13 @@ import {
   selectEnrollmentById,
   setEnrollmentStatus,
 } from '../../models/enrollment.js';
+import {
+  addLabelToEnrollment,
+  removeLabelFromEnrollment,
+  selectStudentLabelById,
+  selectStudentLabelsForEnrollment,
+  selectStudentLabelsInCourseInstance,
+} from '../../models/student-label.js';
 import { selectUserById } from '../../models/user.js';
 
 import { UserDetailSchema } from './components/OverviewCard.js';
@@ -57,15 +65,19 @@ router.get(
       throw new HttpStatusError(404, 'Student not found');
     }
 
-    const gradebookRows = student.user?.id
-      ? await getGradebookRows({
-          course_instance_id: courseInstance.id,
-          user_id: student.user.id,
-          authz_data: res.locals.authz_data,
-          req_date: res.locals.req_date,
-          auth: 'instructor',
-        })
-      : [];
+    const [gradebookRows, studentLabels, availableStudentLabels] = await Promise.all([
+      student.user?.id
+        ? getGradebookRows({
+            course_instance_id: courseInstance.id,
+            user_id: student.user.id,
+            authz_data: res.locals.authz_data,
+            req_date: res.locals.req_date,
+            auth: 'instructor',
+          })
+        : [],
+      selectStudentLabelsForEnrollment(student.enrollment),
+      selectStudentLabelsInCourseInstance(courseInstance),
+    ]);
 
     const pageTitle = run(() => {
       if (student.user) {
@@ -74,11 +86,20 @@ router.get(
       return `${student.enrollment.pending_uid}`;
     });
 
-    const rawAuditEvents = await selectAuditEventsByEnrollmentId({
-      enrollment_id: req.params.enrollment_id,
-      table_names: ['enrollments'],
-    });
-    const auditEvents = rawAuditEvents.map((event) => StaffAuditEventSchema.parse(event));
+    const [rawEnrollmentAuditEvents, rawLabelAuditEvents] = await Promise.all([
+      selectAuditEventsByEnrollmentId({
+        enrollment_id: req.params.enrollment_id,
+        table_names: ['enrollments'],
+      }),
+      selectAuditEventsByEnrollmentId({
+        enrollment_id: req.params.enrollment_id,
+        table_names: ['student_label_enrollments'],
+      }),
+    ]);
+    const enrollmentAuditEvents = rawEnrollmentAuditEvents.map((event) =>
+      StaffAuditEventSchema.parse(event),
+    );
+    const labelAuditEvents = rawLabelAuditEvents.map((event) => StaffAuditEventSchema.parse(event));
 
     res.send(
       PageLayout({
@@ -86,20 +107,25 @@ router.get(
         pageTitle,
         navContext: {
           type: 'instructor',
-          page: 'instance_admin',
-          subPage: 'students',
+          page: 'students',
+          subPage: 'detail',
         },
         content: (
           <Hydrate>
             <InstructorStudentDetail
-              auditEvents={auditEvents}
+              enrollmentAuditEvents={enrollmentAuditEvents}
+              labelAuditEvents={labelAuditEvents}
               gradebookRows={gradebookRows}
               student={student}
+              studentLabels={z.array(StaffStudentLabelSchema).parse(studentLabels)}
+              availableStudentLabels={z
+                .array(StaffStudentLabelSchema)
+                .parse(availableStudentLabels)}
               urlPrefix={urlPrefix}
               courseInstanceUrl={courseInstanceUrl}
               csrfToken={pageContext.__csrf_token}
               hasCourseInstancePermissionEdit={
-                pageContext.authz_data.has_course_instance_permission_edit
+                pageContext.authz_data.has_course_instance_permission_edit ?? false
               }
               hasModernPublishing={courseInstance.modern_publishing}
             />
@@ -201,6 +227,32 @@ router.post(
           pendingUid,
           authzData,
           requiredRole: ['Student Data Editor'],
+        });
+        res.redirect(req.originalUrl);
+        break;
+      }
+      case 'add_label': {
+        const { student_label_id } = z.object({ student_label_id: z.string() }).parse(req.body);
+
+        const label = await selectStudentLabelById({ id: student_label_id, courseInstance });
+
+        await addLabelToEnrollment({
+          enrollment,
+          label,
+          authzData,
+        });
+        res.redirect(req.originalUrl);
+        break;
+      }
+      case 'remove_label': {
+        const { student_label_id } = z.object({ student_label_id: z.string() }).parse(req.body);
+
+        const label = await selectStudentLabelById({ id: student_label_id, courseInstance });
+
+        await removeLabelFromEnrollment({
+          enrollment,
+          label,
+          authzData,
         });
         res.redirect(req.originalUrl);
         break;

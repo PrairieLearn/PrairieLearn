@@ -1,10 +1,13 @@
-import { QueryClient, useQuery, useQueryClient } from '@tanstack/react-query';
+import { QueryClient, useMutation, useQuery, useQueryClient } from '@tanstack/react-query';
 import {
+  type Column,
   type ColumnFiltersState,
   type ColumnPinningState,
   type ColumnSizingState,
   type Header,
+  type RowSelectionState,
   type SortingState,
+  type Table,
   type Updater,
   createColumnHelper,
   getCoreRowModel,
@@ -13,14 +16,15 @@ import {
   useReactTable,
 } from '@tanstack/react-table';
 import { parseAsArrayOf, parseAsString, parseAsStringLiteral, useQueryState } from 'nuqs';
-import { useMemo, useState } from 'react';
-import { Button, ButtonGroup, Dropdown, DropdownButton } from 'react-bootstrap';
+import { useEffect, useMemo, useRef, useState } from 'react';
+import { Alert, Button, ButtonGroup, Dropdown, DropdownButton } from 'react-bootstrap';
 import z from 'zod';
 
 import { formatDate } from '@prairielearn/formatter';
 import { run } from '@prairielearn/run';
 import {
   CategoricalColumnFilter,
+  MultiSelectColumnFilter,
   NuqsAdapter,
   OverlayTrigger,
   TanstackTableCard,
@@ -28,11 +32,14 @@ import {
   parseAsColumnPinningState,
   parseAsColumnVisibilityStateWithColumns,
   parseAsSortingState,
+  useShiftClickCheckbox,
 } from '@prairielearn/ui';
 
 import { EnrollmentStatusIcon } from '../../components/EnrollmentStatusIcon.js';
 import { FriendlyDate } from '../../components/FriendlyDate.js';
+import { StudentLabelBadge } from '../../components/StudentLabelBadge.js';
 import type { PageContext, PageContextWithAuthzData } from '../../lib/client/page-context.js';
+import type { StaffStudentLabel } from '../../lib/client/safe-db-types.js';
 import { QueryClientProviderDebug } from '../../lib/client/tanstackQuery.js';
 import {
   getCourseInstanceJobSequenceUrl,
@@ -43,16 +50,79 @@ import {
 } from '../../lib/client/url.js';
 import type { EnumEnrollmentStatus } from '../../lib/db-types.js';
 import { courseInstanceFilenamePrefix } from '../../lib/sanitize-name.js';
+import { LabelModifyModal } from '../instructorStudentsLabels/components/LabelModifyModal.js';
+import { createStudentLabelsTrpcClient } from '../instructorStudentsLabels/utils/trpc-client.js';
 
 import { InviteStudentsModal } from './components/InviteStudentsModal.js';
 import { SyncStudentsModal } from './components/SyncStudentsModal.js';
 import { STATUS_VALUES, type StudentRow, StudentRowSchema } from './instructorStudents.shared.js';
 
+/**
+ * A checkbox component that properly handles the indeterminate state using a ref and useEffect,
+ * since React doesn't support indeterminate as a native attribute.
+ */
+function SelectAllCheckbox({ table }: { table: Table<StudentRow> }) {
+  const checkboxRef = useRef<HTMLInputElement>(null);
+  const isIndeterminate = table.getIsSomeRowsSelected();
+
+  useEffect(() => {
+    if (checkboxRef.current) {
+      checkboxRef.current.indeterminate = isIndeterminate;
+    }
+  }, [isIndeterminate]);
+
+  return (
+    <input
+      ref={checkboxRef}
+      type="checkbox"
+      checked={table.getIsAllRowsSelected()}
+      aria-label="Select all students"
+      onChange={table.getToggleAllRowsSelectedHandler()}
+    />
+  );
+}
+
+/**
+ * A checkbox component for handling indeterminate state in label selection.
+ */
+function IndeterminateCheckbox({
+  checked,
+  indeterminate,
+  disabled,
+  onChange,
+  'aria-label': ariaLabel,
+}: {
+  checked: boolean;
+  indeterminate: boolean;
+  disabled?: boolean;
+  onChange: () => void;
+  'aria-label': string;
+}) {
+  const checkboxRef = useRef<HTMLInputElement>(null);
+
+  useEffect(() => {
+    if (checkboxRef.current) {
+      checkboxRef.current.indeterminate = indeterminate;
+    }
+  }, [indeterminate]);
+
+  return (
+    <input
+      ref={checkboxRef}
+      type="checkbox"
+      checked={checked}
+      disabled={disabled}
+      aria-label={ariaLabel}
+      onChange={onChange}
+    />
+  );
+}
+
 // This default must be declared outside the component to ensure referential
 // stability across renders, as `[] !== []` in JavaScript.
 const DEFAULT_SORT: SortingState = [{ id: 'user_uid', desc: false }];
 
-const DEFAULT_PINNING: ColumnPinningState = { left: ['user_uid'], right: [] };
+const DEFAULT_PINNING: ColumnPinningState = { left: ['select', 'user_uid'], right: [] };
 
 const DEFAULT_ENROLLMENT_STATUS_FILTER: EnumEnrollmentStatus[] = [];
 
@@ -130,38 +200,31 @@ function ManageEnrollmentsDropdown({
           }}
           show={copiedCode ? true : undefined}
         >
-          <Dropdown.Item
-            as="button"
-            type="button"
-            disabled={!courseInstance.self_enrollment_enabled}
-            onClick={handleCopyCode}
-          >
-            <i className="bi bi-key me-2" aria-hidden="true" />
+          <Dropdown.Item as="button" type="button" onClick={handleCopyCode}>
+            <i className="bi bi-key me-2" />
             Copy enrollment code
           </Dropdown.Item>
         </OverlayTrigger>
       )}
-      <OverlayTrigger
-        placement="right"
-        tooltip={{
-          body: copiedLink ? 'Copied!' : 'Copy',
-          props: { id: 'students-copy-link-tooltip' },
-        }}
-        show={copiedLink ? true : undefined}
-      >
-        <Dropdown.Item
-          as="button"
-          type="button"
-          disabled={!courseInstance.self_enrollment_enabled}
-          onClick={handleCopyLink}
+
+      {courseInstance.self_enrollment_enabled && (
+        <OverlayTrigger
+          placement="right"
+          tooltip={{
+            body: copiedLink ? 'Copied!' : 'Copy',
+            props: { id: 'students-copy-link-tooltip' },
+          }}
+          show={copiedLink ? true : undefined}
         >
-          <i className="bi bi-link-45deg me-2" aria-hidden="true" />
-          Copy enrollment link
-        </Dropdown.Item>
-      </OverlayTrigger>
+          <Dropdown.Item as="button" type="button" onClick={handleCopyLink}>
+            <i className="bi bi-link-45deg me-2" />
+            Copy enrollment link
+          </Dropdown.Item>
+        </OverlayTrigger>
+      )}
       <Dropdown.Item as="a" href={getSelfEnrollmentSettingsUrl(courseInstance.id)}>
-        <i className="bi bi-gear me-2" aria-hidden="true" />
-        Enrollment settings
+        <i className="bi bi-gear me-2" />
+        Manage settings
       </Dropdown.Item>
     </DropdownButton>
   );
@@ -173,26 +236,35 @@ interface StudentsCardProps {
   courseInstance: PageContext<'courseInstance', 'instructor'>['course_instance'];
   csrfToken: string;
   students: StudentRow[];
+  studentLabels: StaffStudentLabel[];
   timezone: string;
   selfEnrollLink: string;
+  trpcCsrfToken: string;
+  origHash: string | null;
 }
 
 type ColumnId =
+  | 'select'
   | 'user_uid'
   | 'user_name'
   | 'enrollment_status'
   | 'user_email'
-  | 'enrollment_first_joined_at';
+  | 'enrollment_first_joined_at'
+  | 'student_labels';
 
 function StudentsCard({
   authzData,
   course,
   courseInstance,
   students: initialStudents,
+  studentLabels: initialStudentLabels,
   timezone,
   csrfToken,
   selfEnrollLink,
+  trpcCsrfToken,
+  origHash: initialOrigHash,
 }: StudentsCardProps) {
+  const [origHash, setOrigHash] = useState(initialOrigHash);
   const [globalFilter, setGlobalFilter] = useQueryState('search', parseAsString.withDefault(''));
   const [sorting, setSorting] = useQueryState<SortingState>(
     'sort',
@@ -208,6 +280,28 @@ function StudentsCard({
       DEFAULT_ENROLLMENT_STATUS_FILTER,
     ),
   );
+  const [studentLabelsFilter, setStudentLabelsFilter] = useQueryState(
+    'student_labels',
+    parseAsArrayOf(parseAsString).withDefault([]),
+  );
+  const [rowSelection, setRowSelection] = useState<RowSelectionState>({});
+  const [showCreateLabelModal, setShowCreateLabelModal] = useState(false);
+
+  const { createCheckboxProps } = useShiftClickCheckbox<StudentRow>();
+
+  const queryClient = useQueryClient();
+  const [trpcClient] = useState(() => createStudentLabelsTrpcClient(trpcCsrfToken));
+
+  // Fetch student labels for batch actions
+  const { data: studentLabels = initialStudentLabels } = useQuery({
+    queryKey: ['student-labels', courseInstance.id],
+    queryFn: async () => {
+      const labels = await trpcClient.labels.query();
+      return labels.map((l) => l.student_label);
+    },
+    staleTime: Infinity,
+    initialData: initialStudentLabels,
+  });
 
   // The individual column filters are the source of truth, and this is derived from them.
   const columnFilters: { id: ColumnId; value: any }[] = useMemo(() => {
@@ -216,18 +310,24 @@ function StudentsCard({
         id: 'enrollment_status',
         value: enrollmentStatusFilter,
       },
+      {
+        id: 'student_labels',
+        value: studentLabelsFilter,
+      },
     ];
-  }, [enrollmentStatusFilter]);
+  }, [enrollmentStatusFilter, studentLabelsFilter]);
 
   const columnFilterSetters = useMemo<Record<ColumnId, Updater<any>>>(() => {
     return {
+      select: undefined,
       user_uid: undefined,
       user_name: undefined,
       enrollment_status: setEnrollmentStatusFilter,
       user_email: undefined,
       enrollment_first_joined_at: undefined,
+      student_labels: setStudentLabelsFilter,
     };
-  }, [setEnrollmentStatusFilter]);
+  }, [setEnrollmentStatusFilter, setStudentLabelsFilter]);
 
   // Sync TanStack column filter changes back to URL
   const handleColumnFiltersChange = useMemo(
@@ -260,8 +360,6 @@ function StudentsCard({
     staleTime: Infinity,
     initialData: initialStudents,
   });
-
-  const queryClient = useQueryClient();
 
   const [showInvite, setShowInvite] = useState(false);
   const [showSync, setShowSync] = useState(false);
@@ -327,8 +425,61 @@ function StudentsCard({
     window.location.href = getCourseInstanceJobSequenceUrl(courseInstance.id, job_sequence_id);
   };
 
+  // Batch action mutations
+  const batchAddLabelMutation = useMutation({
+    mutationFn: async ({
+      enrollmentIds,
+      labelId,
+    }: {
+      enrollmentIds: string[];
+      labelId: string;
+    }) => {
+      return await trpcClient.batchAddLabel.mutate({ enrollmentIds, labelId });
+    },
+    onSuccess: async () => {
+      await queryClient.invalidateQueries({ queryKey: ['enrollments', 'students'] });
+      await queryClient.invalidateQueries({ queryKey: ['student-labels'] });
+    },
+  });
+
+  const batchRemoveLabelMutation = useMutation({
+    mutationFn: async ({
+      enrollmentIds,
+      labelId,
+    }: {
+      enrollmentIds: string[];
+      labelId: string;
+    }) => {
+      return await trpcClient.batchRemoveLabel.mutate({ enrollmentIds, labelId });
+    },
+    onSuccess: async () => {
+      await queryClient.invalidateQueries({ queryKey: ['enrollments', 'students'] });
+      await queryClient.invalidateQueries({ queryKey: ['student-labels'] });
+    },
+  });
+
   const columns = useMemo(
     () => [
+      columnHelper.display({
+        id: 'select',
+        header: ({ table }) => <SelectAllCheckbox table={table} />,
+        cell: ({ row, table }) => {
+          const uid = row.original.user?.uid ?? row.original.enrollment.pending_uid ?? 'student';
+          return (
+            <input
+              type="checkbox"
+              aria-label={`Select ${uid}`}
+              {...createCheckboxProps(row, table)}
+            />
+          );
+        },
+        size: 40,
+        minSize: 40,
+        maxSize: 40,
+        enableSorting: false,
+        enableHiding: false,
+        enablePinning: true,
+      }),
       columnHelper.accessor((row) => row.user?.uid ?? row.enrollment.pending_uid, {
         id: 'user_uid',
         header: 'UID',
@@ -388,6 +539,37 @@ function StudentsCard({
           );
         },
       }),
+
+      columnHelper.accessor((row) => row.student_labels, {
+        id: 'student_labels',
+        meta: {
+          label: 'Student Labels',
+        },
+        header: 'Labels',
+        cell: (info) => {
+          const labels = info.getValue();
+          if (labels.length === 0) return '—';
+          const labelsUrl = `/pl/course_instance/${courseInstance.id}/instructor/instance_admin/students/labels`;
+          return (
+            <div className="d-flex flex-wrap gap-1">
+              {labels.map((label) => (
+                <StudentLabelBadge
+                  key={label.id}
+                  label={label}
+                  href={`${labelsUrl}?label=${encodeURIComponent(label.name)}`}
+                />
+              ))}
+            </div>
+          );
+        },
+        filterFn: (row, columnId, filterValues: string[]) => {
+          if (filterValues.length === 0) return true;
+          const studentLabelIds = new Set(
+            row.getValue<StudentRow['student_labels']>(columnId).map((l) => l.id),
+          );
+          return filterValues.some((filterId) => studentLabelIds.has(filterId));
+        },
+      }),
       columnHelper.accessor((row) => row.enrollment.first_joined_at, {
         id: 'enrollment_first_joined_at',
         header: 'Joined',
@@ -400,11 +582,16 @@ function StudentsCard({
         },
       }),
     ],
-    [timezone, courseInstance.id],
+    [timezone, courseInstance.id, createCheckboxProps],
   );
 
-  const allColumnIds = columns.map((col) => col.id).filter((id) => typeof id === 'string');
-  const defaultColumnVisibility = Object.fromEntries(allColumnIds.map((id) => [id, true]));
+  const allColumnIds = columns
+    .map((col) => col.id)
+    .filter((id): id is string => typeof id === 'string' && id !== 'select');
+  const hiddenByDefault = new Set(['user_email']);
+  const defaultColumnVisibility = Object.fromEntries(
+    allColumnIds.map((id) => [id, !hiddenByDefault.has(id)]),
+  );
   const [columnVisibility, setColumnVisibility] = useQueryState(
     'columns',
     parseAsColumnVisibilityStateWithColumns(allColumnIds).withDefault(defaultColumnVisibility),
@@ -415,6 +602,7 @@ function StudentsCard({
     columns,
     columnResizeMode: 'onChange',
     getRowId: (row) => row.enrollment.id,
+    enableRowSelection: true,
     state: {
       sorting,
       columnFilters,
@@ -422,6 +610,7 @@ function StudentsCard({
       columnSizing,
       columnVisibility,
       columnPinning,
+      rowSelection,
     },
     initialState: {
       columnPinning: DEFAULT_PINNING,
@@ -433,6 +622,7 @@ function StudentsCard({
     onColumnSizingChange: setColumnSizing,
     onColumnVisibilityChange: setColumnVisibility,
     onColumnPinningChange: setColumnPinning,
+    onRowSelectionChange: setRowSelection,
     getCoreRowModel: getCoreRowModel(),
     getSortedRowModel: getSortedRowModel(),
     getFilteredRowModel: getFilteredRowModel(),
@@ -446,6 +636,39 @@ function StudentsCard({
     },
   });
 
+  // Calculate selected enrollment IDs and common labels for batch actions
+  const selectedRows = table.getSelectedRowModel().rows;
+  const selectedEnrollmentIds = selectedRows.map((row) => row.original.enrollment.id);
+
+  // Calculate which labels are assigned to selected students: 'all', 'none', or 'some'
+  const labelAssignmentState = useMemo(() => {
+    const states = new Map<string, 'all' | 'none' | 'some'>();
+
+    if (selectedRows.length === 0) {
+      studentLabels.forEach((l) => states.set(l.id, 'none'));
+      return states;
+    }
+
+    studentLabels.forEach((label) => {
+      const studentsWithLabel = selectedRows.filter((row) =>
+        row.original.student_labels.some((l) => l.id === label.id),
+      ).length;
+
+      if (studentsWithLabel === 0) {
+        states.set(label.id, 'none');
+      } else if (studentsWithLabel === selectedRows.length) {
+        states.set(label.id, 'all');
+      } else {
+        states.set(label.id, 'some');
+      }
+    });
+
+    return states;
+  }, [selectedRows, studentLabels]);
+
+  // Check if any label mutation is pending
+  const isLabelMutationPending =
+    batchAddLabelMutation.isPending || batchRemoveLabelMutation.isPending;
   const emptyStateText = run(() => {
     const baseMessage = "This course doesn't have any students yet.";
     if (!courseInstance.modern_publishing) {
@@ -459,8 +682,25 @@ function StudentsCard({
     return `${baseMessage} Invite them to get started.`;
   });
 
+  // Combine mutation errors for display
+  const labelMutationError = batchAddLabelMutation.error ?? batchRemoveLabelMutation.error;
+
   return (
     <>
+      {labelMutationError && (
+        <Alert
+          variant="danger"
+          dismissible
+          onClose={() => {
+            batchAddLabelMutation.reset();
+            batchRemoveLabelMutation.reset();
+          }}
+        >
+          {labelMutationError instanceof Error
+            ? labelMutationError.message
+            : 'Failed to update labels'}
+        </Alert>
+      )}
       <TanstackTableCard
         table={table}
         title="Students"
@@ -488,19 +728,75 @@ function StudentsCard({
           hasSelection: false,
         }}
         headerButtons={
-          courseInstance.modern_publishing && (
-            <ManageEnrollmentsDropdown
-              courseInstance={courseInstance}
-              authzData={authzData}
-              onInvite={() => setShowInvite(true)}
-              onSync={() => {
-                // Reload the latest student data so that the preview of sync actions
-                // will be as accurate as possible.
-                void queryClient.invalidateQueries({ queryKey: ['enrollments', 'students'] });
-                setShowSync(true);
-              }}
-            />
-          )
+          <>
+            {authzData.has_course_instance_permission_edit && selectedEnrollmentIds.length > 0 && (
+              <Dropdown autoClose="outside">
+                <Dropdown.Toggle variant="light" size="sm">
+                  Labels
+                </Dropdown.Toggle>
+                <Dropdown.Menu style={{ minWidth: '220px' }}>
+                  {studentLabels.map((label) => {
+                    const state = labelAssignmentState.get(label.id);
+                    const isChecked = state === 'all';
+                    const isIndeterminate = state === 'some';
+
+                    return (
+                      <Dropdown.Item
+                        key={label.id}
+                        as="label"
+                        className="d-flex align-items-center gap-2"
+                        style={{ cursor: isLabelMutationPending ? 'wait' : 'pointer' }}
+                        onClick={(e) => e.stopPropagation()}
+                      >
+                        <IndeterminateCheckbox
+                          checked={isChecked}
+                          indeterminate={isIndeterminate}
+                          disabled={isLabelMutationPending}
+                          aria-label={`${isChecked ? 'Remove' : 'Add'} label "${label.name}" ${isChecked ? 'from' : 'to'} selected students`}
+                          onChange={() => {
+                            if (isChecked) {
+                              batchRemoveLabelMutation.mutate({
+                                enrollmentIds: selectedEnrollmentIds,
+                                labelId: label.id,
+                              });
+                            } else {
+                              batchAddLabelMutation.mutate({
+                                enrollmentIds: selectedEnrollmentIds,
+                                labelId: label.id,
+                              });
+                            }
+                          }}
+                        />
+                        <span>{label.name}</span>
+                      </Dropdown.Item>
+                    );
+                  })}
+                  {studentLabels.length > 0 && <Dropdown.Divider />}
+                  <Dropdown.Item
+                    as="button"
+                    type="button"
+                    onClick={() => setShowCreateLabelModal(true)}
+                  >
+                    <i className="bi bi-plus me-2" />
+                    Add to new label
+                  </Dropdown.Item>
+                </Dropdown.Menu>
+              </Dropdown>
+            )}
+            {courseInstance.modern_publishing && (
+              <ManageEnrollmentsDropdown
+                courseInstance={courseInstance}
+                authzData={authzData}
+                onInvite={() => setShowInvite(true)}
+                onSync={() => {
+                  // Reload the latest student data so that the preview of sync actions
+                  // will be as accurate as possible.
+                  void queryClient.invalidateQueries({ queryKey: ['enrollments', 'students'] });
+                  setShowSync(true);
+                }}
+              />
+            )}
+          </>
         }
         globalFilter={{
           placeholder: 'Search by UID, name, email...',
@@ -520,6 +816,24 @@ function StudentsCard({
                 )}
               />
             ),
+            student_labels: ({
+              header,
+            }: {
+              header: Header<StudentRow, StudentRow['student_labels']>;
+            }) => {
+              const labelIds = studentLabels.map((l) => l.id);
+              return (
+                <MultiSelectColumnFilter
+                  column={header.column as Column<StudentRow, unknown>}
+                  allColumnValues={labelIds}
+                  renderValueLabel={({ value }) => {
+                    const label = studentLabels.find((l) => l.id === String(value));
+                    if (!label) return <span>{String(value)}</span>;
+                    return <span>{label.name}</span>;
+                  }}
+                />
+              );
+            },
           },
           emptyState: (
             <TanstackTableEmptyState iconName="bi-person-plus">
@@ -586,6 +900,23 @@ function StudentsCard({
         onHide={() => setShowSync(false)}
         onSubmit={syncStudents}
       />
+      <LabelModifyModal
+        data={showCreateLabelModal ? { type: 'add', origHash } : null}
+        trpcClient={trpcClient}
+        courseInstanceId={courseInstance.id}
+        show={showCreateLabelModal}
+        initialUids={selectedRows
+          .map((row) => row.original.user?.uid ?? row.original.enrollment.pending_uid)
+          .filter((uid): uid is string => uid != null)
+          .join('\n')}
+        onHide={() => setShowCreateLabelModal(false)}
+        onSuccess={async (newOrigHash) => {
+          setOrigHash(newOrigHash);
+          await queryClient.invalidateQueries({ queryKey: ['enrollments', 'students'] });
+          await queryClient.invalidateQueries({ queryKey: ['student-labels'] });
+          setShowCreateLabelModal(false);
+        }}
+      />
     </>
   );
 }
@@ -599,11 +930,14 @@ export const InstructorStudents = ({
   selfEnrollLink,
   search,
   students,
+  studentLabels,
   timezone,
   courseInstance,
   course,
   csrfToken,
   isDevMode,
+  trpcCsrfToken,
+  origHash,
 }: {
   authzData: PageContextWithAuthzData['authz_data'];
   selfEnrollLink: string;
@@ -621,8 +955,11 @@ export const InstructorStudents = ({
           course={course}
           courseInstance={courseInstance}
           students={students}
+          studentLabels={studentLabels}
           timezone={timezone}
           csrfToken={csrfToken}
+          trpcCsrfToken={trpcCsrfToken}
+          origHash={origHash}
         />
       </QueryClientProviderDebug>
     </NuqsAdapter>

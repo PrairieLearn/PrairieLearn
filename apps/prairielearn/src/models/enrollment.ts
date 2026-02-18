@@ -392,6 +392,25 @@ export async function selectUsersAndEnrollmentsByUidsInCourseInstance({
   );
 }
 
+export async function selectEnrollmentsByIdsInCourseInstance({
+  ids,
+  courseInstance,
+  requiredRole,
+  authzData,
+}: {
+  ids: string[];
+  courseInstance: CourseInstanceContext;
+  requiredRole: ('System' | 'Student Data Viewer' | 'Student Data Editor')[];
+  authzData: AuthzData;
+}) {
+  assertHasRole(authzData, requiredRole);
+  return await queryRows(
+    sql.select_enrollments_by_ids_in_course_instance,
+    { ids, course_instance_id: courseInstance.id },
+    EnrollmentSchema,
+  );
+}
+
 export async function selectEnrollmentById({
   id,
   courseInstance,

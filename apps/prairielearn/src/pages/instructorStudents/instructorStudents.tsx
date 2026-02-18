@@ -1,3 +1,6 @@
+import * as path from 'path';
+
+import * as trpcExpress from '@trpc/server/adapters/express';
 import { Router } from 'express';
 import asyncHandler from 'express-async-handler';
 import z from 'zod';
@@ -5,6 +8,7 @@ import z from 'zod';
 import { HttpStatusError } from '@prairielearn/error';
 import { callRow, loadSqlEquiv, queryRows } from '@prairielearn/postgres';
 import { Hydrate } from '@prairielearn/react/server';
+import { generatePrefixCsrfToken } from '@prairielearn/signed-token';
 import { assertNever } from '@prairielearn/utils';
 import { UniqueUidsFromStringSchema } from '@prairielearn/zod';
 
@@ -12,12 +16,15 @@ import { InsufficientCoursePermissionsCardPage } from '../../components/Insuffic
 import { PageLayout } from '../../components/PageLayout.js';
 import type { AuthzDataWithEffectiveUser } from '../../lib/authz-data-lib.js';
 import { extractPageContext } from '../../lib/client/page-context.js';
-import { StaffEnrollmentSchema } from '../../lib/client/safe-db-types.js';
+import { StaffEnrollmentSchema, StaffStudentLabelSchema } from '../../lib/client/safe-db-types.js';
 import { getSelfEnrollmentLinkUrl, getStudentCourseInstanceUrl } from '../../lib/client/url.js';
 import { config } from '../../lib/config.js';
 import { getCourseOwners } from '../../lib/course.js';
+import { computeCourseInstanceJsonHash } from '../../lib/courseInstanceJson.js';
 import type { CourseInstance } from '../../lib/db-types.js';
+import { typedAsyncHandler } from '../../lib/res-locals.js';
 import { type ServerJobLogger, createServerJob } from '../../lib/server-jobs.js';
+import { handleTrpcError } from '../../lib/trpc.js';
 import { getCanonicalHost, getUrl } from '../../lib/url.js';
 import { createAuthzMiddleware } from '../../middlewares/authzHelper.js';
 import {
@@ -27,7 +34,9 @@ import {
   removeEnrollmentFromSync,
   selectOptionalEnrollmentByUid,
 } from '../../models/enrollment.js';
+import { selectStudentLabelsInCourseInstance } from '../../models/student-label.js';
 import { selectOptionalUserByUid } from '../../models/user.js';
+import { createTRPCContext, studentLabelsRouter } from '../instructorStudentsLabels/trpc.js';
 
 import { InstructorStudents } from './instructorStudents.html.js';
 import { StudentRowSchema } from './instructorStudents.shared.js';
@@ -235,7 +244,7 @@ async function processInvitations({
 
 router.post(
   '/',
-  asyncHandler(async (req, res) => {
+  typedAsyncHandler<'course-instance'>(async (req, res) => {
     if (req.accepts('html')) {
       throw new HttpStatusError(406, 'Not Acceptable');
     }
@@ -494,8 +503,8 @@ router.get(
           resLocals: res.locals,
           navContext: {
             type: 'instructor',
-            page: 'instance_admin',
-            subPage: 'students',
+            page: 'students',
+            subPage: 'overview',
           },
           courseOwners,
           pageTitle: 'Students',
@@ -505,11 +514,14 @@ router.get(
       return;
     }
 
-    const students = await queryRows(
-      sql.select_users_and_enrollments_for_course_instance,
-      { course_instance_id: courseInstance.id },
-      StudentRowSchema,
-    );
+    const [students, studentLabels] = await Promise.all([
+      queryRows(
+        sql.select_users_and_enrollments_for_course_instance,
+        { course_instance_id: courseInstance.id },
+        StudentRowSchema,
+      ),
+      selectStudentLabelsInCourseInstance(courseInstance),
+    ]);
 
     const host = getCanonicalHost(req);
     const selfEnrollLink = new URL(
@@ -522,14 +534,26 @@ router.get(
       host,
     ).href;
 
+    const courseInstancePath = path.join(course.path, 'courseInstances', courseInstance.short_name);
+    const courseInstanceJsonPath = path.join(courseInstancePath, 'infoCourseInstance.json');
+    const origHash = await computeCourseInstanceJsonHash(courseInstanceJsonPath);
+
+    const trpcCsrfToken = generatePrefixCsrfToken(
+      {
+        url: req.originalUrl.split('?')[0] + '/trpc',
+        authn_user_id: res.locals.authn_user.id,
+      },
+      config.secretKey,
+    );
+
     res.send(
       PageLayout({
         resLocals: res.locals,
         pageTitle: 'Students',
         navContext: {
           type: 'instructor',
-          page: 'instance_admin',
-          subPage: 'students',
+          page: 'students',
+          subPage: 'overview',
         },
         options: {
           fullWidth: true,
@@ -541,17 +565,29 @@ router.get(
               isDevMode={config.devMode}
               authzData={authz_data}
               students={students}
+              studentLabels={z.array(StaffStudentLabelSchema).parse(studentLabels)}
               search={search}
               timezone={course.display_timezone}
               courseInstance={courseInstance}
               course={course}
               csrfToken={csrfToken}
               selfEnrollLink={selfEnrollLink}
+              trpcCsrfToken={trpcCsrfToken}
+              origHash={origHash}
             />
           </Hydrate>
         ),
       }),
     );
+  }),
+);
+
+router.use(
+  '/trpc',
+  trpcExpress.createExpressMiddleware({
+    router: studentLabelsRouter,
+    createContext: createTRPCContext,
+    onError: handleTrpcError,
   }),
 );
 

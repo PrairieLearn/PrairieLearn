@@ -255,6 +255,27 @@ The default timezone for course instances is the timezone of the course. This ca
 
 Allowable timezones are those in the TZ column in the [list of tz database time zones](https://en.wikipedia.org/wiki/List_of_tz_database_time_zones), which is a display version of the [IANA Time Zone Database](https://www.iana.org/time-zones).
 
+## Student labels
+
+Student labels let you organize students with colored badges. Use them for sections, TA assignments, accommodations, or any other grouping.
+
+To manage labels, go to **Students → Labels**. You can create labels with custom names and colors, then assign students by entering their UIDs. You can also assign labels from the main Students page using batch actions, or from an individual student's page.
+
+Labels appear in the student roster, gradebook, and student detail pages.
+
+??? note "Defining labels in JSON"
+
+    Labels can be defined in `infoCourseInstance.json`. Students must still be assigned to labels through the UI.
+
+    ```json title="infoCourseInstance.json"
+    {
+      "studentLabels": [
+        { "uuid": "a1b2c3d4-e5f6-4a7b-8c9d-0e1f2a3b4c5d", "name": "Section A", "color": "blue1" },
+        { "uuid": "b2c3d4e5-f6a7-4b8c-9d0e-1f2a3b4c5d6e", "name": "Section B", "color": "green1" }
+      ]
+    }
+    ```
+
 ## LTI support
 
 !!! warning

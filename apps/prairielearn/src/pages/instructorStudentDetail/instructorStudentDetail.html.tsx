@@ -1,3 +1,4 @@
+import { useState } from 'react';
 import z from 'zod';
 
 import { TimezoneContext } from '../../components/FriendlyDate.js';
@@ -6,13 +7,17 @@ import {
   type StaffAuditEvent,
   StaffCourseInstanceSchema,
   StaffEnrollmentSchema,
+  type StaffStudentLabel,
   StaffUserSchema,
 } from '../../lib/client/safe-db-types.js';
 import { SprocUsersGetDisplayedRoleSchema } from '../../lib/db-types.js';
 import { type StaffGradebookRow } from '../../lib/gradebook.shared.js';
 
 import { OverviewCard } from './components/OverviewCard.js';
-import { StudentAuditEventsTable } from './components/StudentAuditEventsTable.js';
+import {
+  StudentEnrollmentAuditEventsTable,
+  StudentLabelAuditEventsTable,
+} from './components/StudentAuditEventsTable.js';
 import { StudentGradebookTable } from './components/StudentGradebookTable.js';
 
 export const UserDetailSchema = z.object({
@@ -25,9 +30,12 @@ export const UserDetailSchema = z.object({
 type UserDetail = z.infer<typeof UserDetailSchema>;
 
 interface StudentDetailProps {
-  auditEvents: StaffAuditEvent[];
+  enrollmentAuditEvents: StaffAuditEvent[];
+  labelAuditEvents: StaffAuditEvent[];
   gradebookRows: StaffGradebookRow[];
   student: UserDetail;
+  studentLabels: StaffStudentLabel[];
+  availableStudentLabels: StaffStudentLabel[];
   urlPrefix: string;
   courseInstanceUrl: string;
   csrfToken: string;
@@ -35,10 +43,15 @@ interface StudentDetailProps {
   hasModernPublishing: boolean;
 }
 
+type AuditTab = 'enrollment' | 'labels';
+
 export function InstructorStudentDetail({
-  auditEvents,
+  enrollmentAuditEvents,
+  labelAuditEvents,
   gradebookRows,
   student,
+  studentLabels,
+  availableStudentLabels,
   urlPrefix,
   courseInstanceUrl,
   csrfToken,
@@ -46,18 +59,7 @@ export function InstructorStudentDetail({
   hasModernPublishing,
 }: StudentDetailProps) {
   const { user, course_instance } = student;
-
-  const gradebookRowsBySet = new Map<string, StaffGradebookRow[]>();
-  gradebookRows.forEach((row) => {
-    const setHeading = row.assessment_set.heading;
-    if (!gradebookRowsBySet.has(setHeading)) {
-      gradebookRowsBySet.set(setHeading, []);
-    }
-    const setAssessments = gradebookRowsBySet.get(setHeading);
-    if (setAssessments) {
-      setAssessments.push(row);
-    }
-  });
+  const [activeTab, setActiveTab] = useState<AuditTab>('enrollment');
 
   const handleViewGradebookAsStudent = () => {
     if (!user) throw new Error('User is required');
@@ -70,6 +72,8 @@ export function InstructorStudentDetail({
     <TimezoneContext value={course_instance.display_timezone}>
       <OverviewCard
         student={student}
+        studentLabels={studentLabels}
+        availableStudentLabels={availableStudentLabels}
         courseInstanceUrl={courseInstanceUrl}
         csrfToken={csrfToken}
         hasCourseInstancePermissionEdit={hasCourseInstancePermissionEdit ?? false}
@@ -94,10 +98,36 @@ export function InstructorStudentDetail({
       </div>
 
       <div className="card mb-4">
-        <div className="card-header bg-primary text-white d-flex align-items-center justify-content-between">
-          <h2 className="mb-0">Enrollment events</h2>
+        <div className="card-header bg-primary text-white">
+          <h2 className="mb-0">Audit events</h2>
         </div>
-        <StudentAuditEventsTable events={auditEvents} />
+        <div className="card-header">
+          <ul className="nav nav-tabs card-header-tabs">
+            <li className="nav-item">
+              <button
+                type="button"
+                className={`nav-link ${activeTab === 'enrollment' ? 'active' : ''}`}
+                onClick={() => setActiveTab('enrollment')}
+              >
+                Enrollment
+              </button>
+            </li>
+            <li className="nav-item">
+              <button
+                type="button"
+                className={`nav-link ${activeTab === 'labels' ? 'active' : ''}`}
+                onClick={() => setActiveTab('labels')}
+              >
+                Labels
+              </button>
+            </li>
+          </ul>
+        </div>
+        {activeTab === 'enrollment' ? (
+          <StudentEnrollmentAuditEventsTable events={enrollmentAuditEvents} />
+        ) : (
+          <StudentLabelAuditEventsTable events={labelAuditEvents} />
+        )}
       </div>
     </TimezoneContext>
   );
