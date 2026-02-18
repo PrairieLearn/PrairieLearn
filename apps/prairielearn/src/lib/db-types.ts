@@ -9,6 +9,9 @@ import { DateFromISOString, IdSchema, IntervalSchema } from '@prairielearn/zod';
 // Enum schemas. These should be alphabetized by their corresponding enum name.
 // *******************************************************************************
 
+export const EnumAiGradingProviderSchema = z.enum(['openai', 'google', 'anthropic']);
+export type EnumAiGradingProvider = z.infer<typeof EnumAiGradingProviderSchema>;
+
 export const EnumAiQuestionGenerationMessageRoleSchema = z.enum(['user', 'assistant']);
 export type EnumAiQuestionGenerationMessageRole = z.infer<
   typeof EnumAiQuestionGenerationMessageRoleSchema
@@ -23,9 +26,6 @@ export const EnumAiQuestionGenerationMessageStatusSchema = z.enum([
 export type EnumAiQuestionGenerationMessageStatus = z.infer<
   typeof EnumAiQuestionGenerationMessageStatusSchema
 >;
-
-export const EnumAiGradingProviderSchema = z.enum(['openai', 'google', 'anthropic']);
-export type EnumAiGradingProvider = z.infer<typeof EnumAiGradingProviderSchema>;
 
 export const EnumAssessmentTypeSchema = z.enum(['Exam', 'RetryExam', 'Basic', 'Game', 'Homework']);
 export type EnumAssessmentType = z.infer<typeof EnumAssessmentTypeSchema>;
