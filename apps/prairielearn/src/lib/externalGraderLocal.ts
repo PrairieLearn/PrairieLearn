@@ -114,7 +114,7 @@ export class ExternalGraderLocal implements Grader {
             await docker.getImage(question.external_grading_image).inspect();
           } catch (err: any) {
             throw new Error(
-              `Failed to pull Docker image "${question.external_grading_image}" and no cached version is available locally. `,
+              `Failed to pull Docker image "${question.external_grading_image}" and no cached version is available locally.`,
               {
                 cause: err,
               },
