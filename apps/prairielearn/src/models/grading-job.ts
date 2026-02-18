@@ -58,7 +58,7 @@ export async function selectOptionalGradingJobById(
  * @param grading_job_id The grading job ID.
  * @returns The grading job.
  */
-export async function selectGradingJobById(grading_job_id: string): Promise<GradingJob> {
+async function selectGradingJobById(grading_job_id: string): Promise<GradingJob> {
   return await queryRow(sql.select_grading_job, { grading_job_id }, GradingJobSchema);
 }
 

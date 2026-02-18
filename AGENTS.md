@@ -57,6 +57,7 @@ Linting:
 
 - Individual files: `yarn eslint --fix path/to/file.ts`. Prefer using a skill / LSP / MCP for this to improve performance.
 - All files: `make lint-js`
+- Check for dead code with `make check-dependencies`.
 
 Formatting:
 
