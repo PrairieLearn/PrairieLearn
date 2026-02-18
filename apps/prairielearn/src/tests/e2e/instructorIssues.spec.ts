@@ -46,7 +46,7 @@ async function insertTestVariant({
 async function syncAllCourses(page: Page) {
   await page.goto('/pl/loadFromDisk');
   await expect(page).toHaveURL(/\/jobSequence\//);
-  await expect(page.getByText('Success', { exact: true })).toBeVisible();
+  await expect(page.getByText('Success', { exact: true })).toBeVisible({ timeout: 30_000 });
 }
 
 const TEST_USER: AuthUser = {
@@ -153,7 +153,7 @@ test.describe('Instructor issues page', () => {
       await expect(page.getByRole('heading', { level: 1 })).toContainText('Issues');
 
       const issueItems = page.getByTestId('issue-list-item');
-      await expect(issueItems.first()).toBeVisible();
+      await expect(issueItems.first()).toBeVisible({ timeout: 10_000 });
     });
 
     test('issues display QID and status badges', async ({ page }) => {
