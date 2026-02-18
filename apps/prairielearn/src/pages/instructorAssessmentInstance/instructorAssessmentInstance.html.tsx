@@ -336,9 +336,9 @@ export function InstructorAssessmentInstance({
                     instance_question.zone_has_max_points ||
                     instance_question.zone_has_best_questions;
 
-                  // Show a divider if this zone has info, or if the previous zone
-                  // had info (blank divider to visually separate).
-                  const showDivider =
+                  // Show zone info if this zone has info, or if the previous zone
+                  // had info (blank zone info to visually separate).
+                  const showZoneInfo =
                     instance_question.start_new_zone && (zoneHasInfo || previousZoneHadInfo);
 
                   if (instance_question.start_new_zone) {
@@ -346,7 +346,7 @@ export function InstructorAssessmentInstance({
                   }
 
                   return html`
-                    ${showDivider
+                    ${showZoneInfo
                       ? html`
                           <tr>
                             <th colspan="9">
