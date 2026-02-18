@@ -27,7 +27,7 @@
   ],
   "zones": [
     {
-      "title": "Zone 1: Unlimited question variants with one single attempt",
+      "title": "Unlimited question variants with one single attempt",
       "questions": [
         { "id": "template/checkbox/random-prompt", "points": 1, "maxPoints": 6 },
         { "id": "template/string-input/random", "points": 1, "maxPoints": 3 },
@@ -35,7 +35,7 @@
       ]
     },
     {
-      "title": "Zone 2: Unlimited question variants with prescribed number of attempts",
+      "title": "Unlimited question variants with prescribed number of attempts",
       "questions": [
         {
           "id": "demo/annotated/engVectorDrawing",
@@ -47,11 +47,11 @@
       ]
     },
     {
-      "title": "Zone 3: Single question variant with unlimited number of attempts",
+      "title": "Single question variant with unlimited number of attempts",
       "questions": [{ "id": "demo/annotated/engMarkovBrewing", "points": 8 }]
     },
     {
-      "title": "Zone 4: Manually graded questions",
+      "title": "Manually graded questions",
       "questions": [
         { "id": "demo/autograder/codeUpload", "autoPoints": 10, "manualPoints": 5 },
         { "id": "demo/fileDownloadUpload", "points": 10 },

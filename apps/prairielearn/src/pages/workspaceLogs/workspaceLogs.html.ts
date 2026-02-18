@@ -127,7 +127,7 @@ export function WorkspaceVersionLogs({
   });
 }
 
-export function WorkspaceLogsTable({
+function WorkspaceLogsTable({
   workspaceLogs,
   includeVersion = true,
 }: {
