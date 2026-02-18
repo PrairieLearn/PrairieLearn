@@ -16,9 +16,7 @@ export default defineConfig({
   forbidOnly: !!process.env.CI,
   retries: 0,
   workers: process.env.CI ? 1 : undefined,
-  reporter: process.env.CI
-    ? [['blob', { outputDir: 'test-results/blob-report' }]]
-    : 'list',
+  reporter: process.env.CI ? [['blob', { outputDir: 'test-results/blob-report' }]] : 'list',
   use: {
     trace: 'retain-on-failure',
   },
