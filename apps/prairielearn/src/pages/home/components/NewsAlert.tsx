@@ -6,7 +6,7 @@ const dateFormatter = new Intl.DateTimeFormat('en-US', {
   year: 'numeric',
 });
 
-export interface NewsAlertProps {
+interface NewsAlertProps {
   newsItems: NewsItem[];
   csrfToken: string;
   blogUrl: string | null;

@@ -2,8 +2,8 @@ columns
     fetched_at: timestamp with time zone not null default now()
     guid: text not null
     hidden_at: timestamp with time zone
-    managed_by: enum_news_item_managed_by
     id: bigint not null default nextval('news_items_id_seq'::regclass)
+    managed_by: enum_news_item_managed_by
     link: text not null
     pub_date: timestamp with time zone not null
     title: text not null
