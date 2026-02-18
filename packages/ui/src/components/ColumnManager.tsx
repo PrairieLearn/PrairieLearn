@@ -1,6 +1,6 @@
 import { type Column, type Table } from '@tanstack/react-table';
 import clsx from 'clsx';
-import { type ReactNode, useEffect, useRef, useState } from 'react';
+import { type ReactNode, useEffect, useLayoutEffect, useRef, useState } from 'react';
 import Button from 'react-bootstrap/Button';
 import Dropdown from 'react-bootstrap/Dropdown';
 
@@ -77,23 +77,25 @@ function ColumnGroupItem<RowDataModel>({
   getIsOnPinningBoundary: (columnId: string) => boolean;
 }) {
   const [isExpanded, setIsExpanded] = useState(false);
-  const checkboxRef = useRef<HTMLInputElement>(null);
 
   const leafColumns = column.getLeafColumns();
   const visibleLeafColumns = leafColumns.filter((c) => c.getIsVisible());
   const isAllVisible = visibleLeafColumns.length === leafColumns.length;
   const isSomeVisible = visibleLeafColumns.length > 0 && !isAllVisible;
 
-  // Set indeterminate state via ref since it's a DOM property, not an HTML attribute
-  useEffect(() => {
+  const checkboxRef = useRef<HTMLInputElement>(null);
+
+  // `indeterminate` is a DOM property with no HTML attribute equivalent, so
+  // React can't manage it declaratively. useLayoutEffect ensures it's applied
+  // synchronously after every commit (before paint) so the visual state never
+  // lags behind the derived `isSomeVisible` value.
+  useLayoutEffect(() => {
     if (checkboxRef.current) {
       checkboxRef.current.indeterminate = isSomeVisible;
     }
-  }, [isSomeVisible]);
+  });
 
-  const handleToggleVisibility = (e: React.ChangeEvent<HTMLInputElement>) => {
-    e.preventDefault();
-    e.stopPropagation();
+  const handleToggleVisibility = () => {
     const targetVisibility = !isAllVisible;
     // Batch all visibility changes into a single update
     // Doing rapid state updates caused the state updates to not be applied correctly.

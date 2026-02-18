@@ -10,7 +10,6 @@ import {
 } from '../../components/QuestionsTable.js';
 import { QueryClientProviderDebug } from '../../lib/client/tanstackQuery.js';
 
-import { CreateQuestionModal, type TemplateQuestion } from './CreateQuestionModal.js';
 import { createInstructorQuestionsTrpcClient } from './trpc-client.js';
 import { TRPCProvider, useTRPC } from './trpc-context.js';
 
@@ -25,8 +24,6 @@ export interface InstructorQuestionsTableProps {
   qidPrefix?: string;
   search: string;
   isDevMode: boolean;
-  templateQuestions: TemplateQuestion[];
-  csrfToken: string;
 }
 
 type InstructorQuestionsTableInnerProps = Omit<
@@ -43,35 +40,22 @@ function InstructorQuestionsTableInner({
   showSharingSets,
   urlPrefix,
   qidPrefix,
-  templateQuestions,
-  csrfToken,
 }: InstructorQuestionsTableInnerProps) {
-  const [showCreateModal, setShowCreateModal] = useState(false);
   const trpc = useTRPC();
 
   return (
-    <>
-      <QuestionsTable
-        questions={questions}
-        courseInstances={courseInstances}
-        currentCourseInstanceId={currentCourseInstanceId}
-        showAddQuestionButton={showAddQuestionButton}
-        showAiGenerateQuestionButton={showAiGenerateQuestionButton}
-        showSharingSets={showSharingSets}
-        urlPrefix={urlPrefix}
-        qidPrefix={qidPrefix}
-        questionsQueryOptions={trpc.questions.queryOptions()}
-        onAddQuestion={() => setShowCreateModal(true)}
-      />
-      {showAddQuestionButton && (
-        <CreateQuestionModal
-          show={showCreateModal}
-          templateQuestions={templateQuestions}
-          csrfToken={csrfToken}
-          onHide={() => setShowCreateModal(false)}
-        />
-      )}
-    </>
+    <QuestionsTable
+      questions={questions}
+      courseInstances={courseInstances}
+      currentCourseInstanceId={currentCourseInstanceId}
+      showAddQuestionButton={showAddQuestionButton}
+      showAiGenerateQuestionButton={showAiGenerateQuestionButton}
+      showSharingSets={showSharingSets}
+      urlPrefix={urlPrefix}
+      qidPrefix={qidPrefix}
+      questionsQueryOptions={trpc.questions.queryOptions()}
+      addQuestionUrl={`${urlPrefix}/course_admin/questions/create`}
+    />
   );
 }
 

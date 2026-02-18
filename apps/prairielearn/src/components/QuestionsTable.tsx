@@ -40,9 +40,6 @@ import { TopicBadge } from './TopicBadge.js';
 export type { CourseInstance, SafeQuestionsPageData } from './QuestionsTable.shared.js';
 
 declare module '@tanstack/react-table' {
-  interface FilterFns {
-    fuzzy: FilterFn<unknown>;
-  }
   interface FilterMeta {
     itemRank: RankingInfo;
   }
@@ -118,8 +115,8 @@ export interface QuestionsTableProps {
   showSharingSets: boolean;
   urlPrefix: string;
   qidPrefix?: string;
-  /** Required when showAddQuestionButton is true */
-  onAddQuestion?: () => void;
+  /** URL for the "Add question" page. Required when showAddQuestionButton is true. */
+  addQuestionUrl?: string;
   questionsQueryOptions: {
     queryKey: readonly unknown[];
 
@@ -136,7 +133,7 @@ export function QuestionsTable({
   showSharingSets,
   urlPrefix,
   qidPrefix,
-  onAddQuestion,
+  addQuestionUrl,
   questionsQueryOptions,
 }: QuestionsTableProps) {
   const [globalFilter, setGlobalFilter] = useQueryState('search', parseAsString.withDefault(''));
@@ -768,10 +765,7 @@ export function QuestionsTable({
     data: questions,
     columns,
     columnResizeMode: 'onChange',
-    filterFns: {
-      fuzzy: fuzzyFilter,
-    },
-    globalFilterFn: 'fuzzy',
+    globalFilterFn: fuzzyFilter,
     getRowId: (row) => row.id,
     state: {
       sorting,
@@ -822,7 +816,7 @@ export function QuestionsTable({
         headerButtons={
           showAddQuestionButton ? (
             <>
-              <Button variant="light" size="sm" onClick={onAddQuestion}>
+              <Button variant="light" size="sm" as="a" href={addQuestionUrl}>
                 <i className="fa fa-plus me-2" aria-hidden="true" />
                 Add question
               </Button>
@@ -863,7 +857,7 @@ export function QuestionsTable({
                 </div>
                 {showAddQuestionButton && (
                   <div className="d-flex gap-2">
-                    <Button variant="primary" onClick={onAddQuestion}>
+                    <Button variant="primary" as="a" href={addQuestionUrl}>
                       <i className="fa fa-plus me-2" aria-hidden="true" />
                       Add question
                     </Button>
