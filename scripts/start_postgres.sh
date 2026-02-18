@@ -19,17 +19,17 @@ fi
 mkdir -p $PGDATA
 chown -f postgres:postgres $PGDATA
 pg_status=0
-su postgres -c "PATH=$PATH pg_ctl status" > /dev/null 2>&1 || pg_status=$?
+su -w PATH postgres -c "pg_ctl status" > /dev/null 2>&1 || pg_status=$?
 if [[ $pg_status == 4 ]]; then
     echo "Making new postgres database at ${PGDATA}"
-    su postgres -c "PATH=$PATH initdb"
+    su -w PATH postgres -c "initdb"
     INIT_RESOLVE=true
     ACTION=start
 fi
 
 # Only locally start postgres if we weren't given a PGHOST environment variable
 if [[ -z "$PGHOST" ]]; then
-    su postgres -c "PATH=$PATH pg_ctl --silent --log=${PGDATA}/postgresql.log ${ACTION}"
+    su -w PATH postgres -c "pg_ctl --silent --log=${PGDATA}/postgresql.log ${ACTION}"
 fi
 
 if [[ "$ACTION" == "start" ]]; then
@@ -38,5 +38,5 @@ if [[ "$ACTION" == "start" ]]; then
 fi
 
 if [[ "${INIT_RESOLVE:-}" == "true" ]]; then
-    su postgres -c "PATH=$PATH createuser -s root"
+    su -w PATH postgres -c "createuser -s root"
 fi
