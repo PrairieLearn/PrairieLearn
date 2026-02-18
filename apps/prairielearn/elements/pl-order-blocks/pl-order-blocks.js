@@ -18,29 +18,18 @@ window.PLOrderBlocks = function (uuid, options) {
     return codeFontSize / dropzoneFontSize;
   })();
   const scaledTabSpaces = TAB_SPACES * indentScale;
-  let tabWidth = 0;
 
-  function updateTabWidth() {
+  function measureTabWidth() {
     const probe = document.createElement('span');
     probe.style.width = scaledTabSpaces + 'ch';
     probe.style.position = 'absolute';
     probe.style.visibility = 'hidden';
     dropzoneList.append(probe);
-    tabWidth = probe.getBoundingClientRect().width;
+    const width = probe.getBoundingClientRect().width;
     probe.remove();
+    return width;
   }
-
-  window.addEventListener('resize', updateTabWidth);
-  window.visualViewport?.addEventListener('resize', updateTabWidth);
-  document.fonts?.addEventListener?.('loadingdone', updateTabWidth);
-  if ('ResizeObserver' in window) {
-    const tabWidthResizeObserver = new ResizeObserver(updateTabWidth);
-    tabWidthResizeObserver.observe(dropzoneList);
-    if (codeText) {
-      tabWidthResizeObserver.observe(codeText);
-    }
-  }
-  updateTabWidth();
+  const tabWidth = measureTabWidth();
 
   function initializeKeyboardHandling() {
     const blocks = fullContainer.querySelectorAll('.pl-order-block');
@@ -274,9 +263,6 @@ window.PLOrderBlocks = function (uuid, options) {
       return 0;
     }
 
-    if (tabWidth === 0) {
-      updateTabWidth();
-    }
     let indent;
     if (dragStartedInDropzone) {
       const originalLeft = ui.originalPosition?.left ?? ui.position.left;
@@ -286,11 +272,6 @@ window.PLOrderBlocks = function (uuid, options) {
       const paddingLeft = Number.parseFloat(getComputedStyle(parentEl).paddingLeft) || 0;
       indent = Math.floor((ui.position.left - parent.position().left - paddingLeft) / tabWidth);
     }
-
-    // limit indentation to be in within the bounds of the drag and drop box
-    // that is, at least indented 0 times, or at most indented by MAX_INDENT times
-    indent = Math.min(indent, maxIndent);
-    indent = Math.max(indent, 0);
 
     return indent;
   }
