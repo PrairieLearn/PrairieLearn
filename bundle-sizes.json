@@ -320,9 +320,9 @@
     "brotli": 233400
   },
   "scripts/esm-bundles/hydrated-components/AssessmentSetsPage.ts": {
-    "raw": 655748,
+    "raw": 655760,
     "gzip": 198563,
-    "brotli": 173850
+    "brotli": 173836
   },
   "scripts/esm-bundles/hydrated-components/AuthzAccessMismatch.ts": {
     "raw": 258393,
