@@ -203,6 +203,104 @@ test.describe('Assessment questions', () => {
     ]);
   });
 
+  test('can create alternative group and drag question into it', async ({ page, testCoursePath }) => {
+    const assessmentTid = 'hw1-automaticTestSuite';
+    const assessment = await selectAssessmentByTid({
+      course_instance_id: courseInstanceId,
+      tid: assessmentTid,
+    });
+
+    await enterEditMode(page, courseInstanceId, assessment.id);
+
+    // Verify we have 11 questions initially
+    const dragHandles = page.locator('[aria-label="Drag to reorder"]');
+    await expect(dragHandles).toHaveCount(11);
+
+    // Click "Add alternative group" button in the zone
+    await page.getByRole('button', { name: 'Add alternative group' }).click();
+
+    // Wait for the modal to appear
+    const modal = page.getByRole('dialog');
+    await expect(modal).toBeVisible();
+    await expect(modal.getByText('Add alternative group')).toBeVisible();
+
+    // Just create the group with defaults (no points modification)
+    // Click Add button
+    const addButton = modal.getByRole('button', { name: 'Add group' });
+    await expect(addButton).toBeVisible();
+    await addButton.click();
+
+    // Wait for modal to close
+    await expect(modal).not.toBeVisible({ timeout: 10000 });
+
+    // Now we should see an empty alternative group warning
+    await expect(page.getByText('Empty alternative group')).toBeVisible({ timeout: 10000 });
+
+    // Find the group header row (shows "1 question from these 0:" for empty group with numberChoose=1)
+    // The group header row has the drop target, not the warning row
+    const groupHeader = page.locator('tr').filter({ hasText: /1 question from these 0/ });
+    await expect(groupHeader).toBeVisible({ timeout: 10000 });
+
+    // The first question should be addNumbers - get its drag handle
+    // The group header also has a drag handle, so we need to find the one for addNumbers
+    const addNumbersRow = page.locator('tr').filter({ hasText: 'addNumbers' });
+    await expect(addNumbersRow).toBeVisible();
+    const addNumbersDragHandle = addNumbersRow.locator('[aria-label="Drag to reorder"]');
+
+    // Scroll both elements into view
+    await groupHeader.scrollIntoViewIfNeeded();
+    await addNumbersDragHandle.scrollIntoViewIfNeeded();
+
+    // Drag the question onto the group header
+    await performDrag(page, addNumbersDragHandle, groupHeader);
+
+    // Wait for state update after drag
+    await page.waitForTimeout(500);
+
+    // The empty group warning should be gone
+    await expect(page.getByText('Empty alternative group')).not.toBeVisible();
+
+    // The group header should now show "1 question from these 1"
+    await expect(page.getByText(/1 question from these 1/)).toBeVisible();
+
+    // Click save
+    await page.getByRole('button', { name: 'Save and sync' }).click();
+
+    // Wait for the page to reload after save (may take longer due to git operations)
+    await expect(page.getByRole('button', { name: 'Edit questions' })).toBeVisible({
+      timeout: 30000,
+    });
+
+    // Read the saved file from disk
+    const infoAssessmentPath = path.join(
+      testCoursePath,
+      'courseInstances/Sp15/assessments',
+      assessmentTid,
+      'infoAssessment.json',
+    );
+    const savedContent = await fs.readFile(infoAssessmentPath, 'utf-8');
+    const savedAssessment = JSON.parse(savedContent);
+
+    // The group was added at the end of the questions array
+    // addNumbers was removed from index 0 and added to the group
+    // So now we have 10 standalone questions + 1 group = 11 items
+
+    // First question should now be addVectors (was index 1, now index 0)
+    expect(savedAssessment.zones[0].questions[0]).toEqual({
+      id: 'addVectors',
+      points: 2,
+      maxPoints: 11,
+    });
+
+    // The alternative group with addNumbers should be at the end
+    const lastQuestion = savedAssessment.zones[0].questions.at(-1);
+    // The group should have alternatives array with addNumbers
+    // The original question's points should be preserved in the alternative
+    expect(lastQuestion.alternatives).toBeDefined();
+    expect(lastQuestion.alternatives.length).toBe(1);
+    expect(lastQuestion.alternatives[0].id).toBe('addNumbers');
+  });
+
   // Test assessment has 1 zone with 5 questions:
   // partialCredit1 (points=1, maxPoints=5), partialCredit2, partialCredit3, partialCredit4_v2, partialCredit6_no_partial
   test('can use question picker to change a question QID', async ({ page, testCoursePath }) => {

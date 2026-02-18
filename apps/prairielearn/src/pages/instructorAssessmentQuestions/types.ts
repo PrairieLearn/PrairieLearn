@@ -195,6 +195,63 @@ export type EditorAction =
   | { type: 'EXPAND_ALL' }
   | { type: 'COLLAPSE_ALL' }
   | { type: 'RESET' }
+  | {
+      type: 'ADD_ALTERNATIVE_GROUP';
+      zoneTrackingId: string;
+      group: ZoneQuestionBlockForm;
+    }
+  | {
+      type: 'ADD_TO_ALTERNATIVE_GROUP';
+      questionTrackingId: string;
+      targetGroupTrackingId: string;
+    }
+  | {
+      type: 'EXTRACT_FROM_ALTERNATIVE_GROUP';
+      groupTrackingId: string;
+      alternativeTrackingId: string;
+      toZoneTrackingId: string;
+      beforeQuestionTrackingId: string | null;
+    }
   // Stubbed for future PR - will implement history tracking
   | { type: 'UNDO' }
   | { type: 'REDO' };
+
+/**
+ * Drag data types for dnd-kit drag-and-drop.
+ * Attached to draggable items via useSortable data prop.
+ */
+export interface ZoneDragData {
+  type: 'zone';
+}
+
+export interface QuestionDragData {
+  type: 'question';
+}
+
+export interface AlternativeDragData {
+  type: 'alternative';
+  groupTrackingId: string;
+}
+
+export interface GroupDropData {
+  type: 'group-drop';
+  groupTrackingId: string;
+}
+
+export type DragData = ZoneDragData | QuestionDragData | AlternativeDragData;
+export type DropData = DragData | GroupDropData;
+
+/**
+ * Parsed drag event context extracted from dnd-kit Active and Over objects.
+ * Provides typed access to drag/drop identifiers and type information.
+ */
+export interface ParsedDragEvent {
+  activeId: string;
+  overId: string;
+  activeType: 'zone' | 'question' | 'alternative' | undefined;
+  overType: 'zone' | 'question' | 'alternative' | 'group-drop' | undefined;
+  /** Set when activeType is 'alternative' */
+  activeGroupTrackingId?: string;
+  /** Set when overType is 'group-drop' */
+  overGroupTrackingId?: string;
+}

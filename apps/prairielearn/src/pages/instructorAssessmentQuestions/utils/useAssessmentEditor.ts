@@ -9,10 +9,33 @@ import type {
 } from '../types.js';
 
 /**
+ * Calculates the `beforeId` for reordering within a flat list.
+ * Used for both zone and question reordering to determine insertion point.
+ *
+ * @param items - The list of items with trackingId
+ * @param fromIndex - Current index of the item being moved
+ * @param toIndex - Target index the item is being moved to
+ * @returns trackingId of item to insert before, or null to append at end
+ */
+export function getInsertBeforeId<T extends { trackingId: string }>(
+  items: T[],
+  fromIndex: number,
+  toIndex: number,
+): string | null {
+  const isDraggingDown = fromIndex < toIndex;
+  if (isDraggingDown) {
+    // When dragging down, insert after the target (use next item's trackingId or null)
+    return items[toIndex + 1]?.trackingId ?? null;
+  }
+  // When dragging up, insert before the target
+  return items[toIndex].trackingId;
+}
+
+/**
  * Finds a zone by its trackingId.
  * Returns the zone and its index, or null if not found.
  */
-function findZoneByTrackingId(
+export function findZoneByTrackingId(
   zones: ZoneAssessmentForm[],
   trackingId: string,
 ): { zone: ZoneAssessmentForm; index: number } | null {
@@ -25,7 +48,7 @@ function findZoneByTrackingId(
  * Finds a question by its trackingId across all zones.
  * Returns the question, zone, and their indices, or null if not found.
  */
-function findQuestionByTrackingId(
+export function findQuestionByTrackingId(
   zones: ZoneAssessmentForm[],
   trackingId: string,
 ): {
@@ -139,8 +162,7 @@ function createEditorReducer(initialState: EditorState) {
           );
         }
 
-        let newQuestionMetadata = { ...state.questionMetadata };
-
+        const newQuestionMetadata = { ...state.questionMetadata };
         // Remove from question metadata
         delete newQuestionMetadata[questionId];
 
@@ -157,29 +179,6 @@ function createEditorReducer(initialState: EditorState) {
           }
 
           questionResult.question.alternatives!.splice(altResult.index, 1);
-
-          // If only one alternative remains, convert back to a regular question
-          if (questionResult.question.alternatives!.length === 1) {
-            const remainingAlternative = questionResult.question.alternatives![0];
-            const { alternatives: _alternatives, ...groupWithoutAlternatives } =
-              questionResult.question;
-            questionResult.zone.questions[questionResult.questionIndex] = {
-              ...groupWithoutAlternatives,
-              ...remainingAlternative,
-            };
-
-            // Update the question metadata for the remaining alternative
-            const alternativeId = remainingAlternative.id;
-            if (alternativeId && alternativeId in newQuestionMetadata) {
-              newQuestionMetadata = {
-                ...newQuestionMetadata,
-                [alternativeId]: {
-                  ...newQuestionMetadata[alternativeId],
-                  alternative_group_size: 1,
-                },
-              };
-            }
-          }
         } else {
           // Deleting a regular question or entire alternative group
           questionResult.zone.questions.splice(questionResult.questionIndex, 1);
@@ -382,6 +381,143 @@ function createEditorReducer(initialState: EditorState) {
 
       case 'RESET': {
         return initialState;
+      }
+
+      case 'ADD_ALTERNATIVE_GROUP': {
+        const { zoneTrackingId, group } = action;
+        const newZones = structuredClone(state.zones);
+
+        const zoneResult = findZoneByTrackingId(newZones, zoneTrackingId);
+        if (!zoneResult) {
+          throw new Error(
+            `ADD_ALTERNATIVE_GROUP: Zone with trackingId ${zoneTrackingId} not found`,
+          );
+        }
+
+        zoneResult.zone.questions.push(group);
+
+        return {
+          ...state,
+          zones: newZones,
+        };
+      }
+
+      case 'ADD_TO_ALTERNATIVE_GROUP': {
+        const { questionTrackingId, targetGroupTrackingId } = action;
+        const newZones = structuredClone(state.zones);
+
+        // Find source question (must be a single question, not a group)
+        const sourceResult = findQuestionByTrackingId(newZones, questionTrackingId);
+        if (!sourceResult) {
+          throw new Error(
+            `ADD_TO_ALTERNATIVE_GROUP: Source question with trackingId ${questionTrackingId} not found`,
+          );
+        }
+        if (sourceResult.question.alternatives) {
+          throw new Error(
+            'ADD_TO_ALTERNATIVE_GROUP: Source must be a single question, not a group',
+          );
+        }
+
+        // Find target group
+        const targetResult = findQuestionByTrackingId(newZones, targetGroupTrackingId);
+        if (!targetResult) {
+          throw new Error(
+            `ADD_TO_ALTERNATIVE_GROUP: Target group with trackingId ${targetGroupTrackingId} not found`,
+          );
+        }
+        if (!targetResult.question.alternatives) {
+          throw new Error('ADD_TO_ALTERNATIVE_GROUP: Target must be an alternative group');
+        }
+
+        // Remove from source zone
+        sourceResult.zone.questions.splice(sourceResult.questionIndex, 1);
+
+        // Convert to alternative and add to target group
+        const { trackingId, id, points, autoPoints, maxPoints, maxAutoPoints, manualPoints } =
+          sourceResult.question;
+        const newAlternative: QuestionAlternativeForm = {
+          id: id!,
+          trackingId,
+          points,
+          autoPoints,
+          maxPoints,
+          maxAutoPoints,
+          manualPoints,
+        };
+        targetResult.question.alternatives.push(newAlternative);
+
+        return {
+          ...state,
+          zones: newZones,
+        };
+      }
+
+      case 'EXTRACT_FROM_ALTERNATIVE_GROUP': {
+        const {
+          groupTrackingId,
+          alternativeTrackingId,
+          toZoneTrackingId,
+          beforeQuestionTrackingId,
+        } = action;
+        const newZones = structuredClone(state.zones);
+
+        // Find group and alternative
+        const groupResult = findQuestionByTrackingId(newZones, groupTrackingId);
+        if (!groupResult?.question.alternatives) {
+          throw new Error(
+            `EXTRACT_FROM_ALTERNATIVE_GROUP: Group with trackingId ${groupTrackingId} not found`,
+          );
+        }
+
+        const altIndex = groupResult.question.alternatives.findIndex(
+          (a) => a.trackingId === alternativeTrackingId,
+        );
+        if (altIndex === -1) {
+          throw new Error(
+            `EXTRACT_FROM_ALTERNATIVE_GROUP: Alternative with trackingId ${alternativeTrackingId} not found`,
+          );
+        }
+
+        // Remove from group
+        const [removed] = groupResult.question.alternatives.splice(altIndex, 1);
+
+        // Convert to standalone question
+        const newQuestion: ZoneQuestionBlockForm = {
+          id: removed.id,
+          trackingId: removed.trackingId,
+          points: removed.points,
+          autoPoints: removed.autoPoints,
+          maxPoints: removed.maxPoints,
+          maxAutoPoints: removed.maxAutoPoints,
+          manualPoints: removed.manualPoints,
+          canSubmit: [],
+          canView: [],
+        };
+
+        // Find target zone
+        const targetZone = findZoneByTrackingId(newZones, toZoneTrackingId);
+        if (!targetZone) {
+          throw new Error(
+            `EXTRACT_FROM_ALTERNATIVE_GROUP: Zone with trackingId ${toZoneTrackingId} not found`,
+          );
+        }
+
+        // Find insertion point - insert AFTER the hovered question for intuitive UX
+        let insertIndex = targetZone.zone.questions.length;
+        if (beforeQuestionTrackingId) {
+          const beforeResult = findQuestionByTrackingId(newZones, beforeQuestionTrackingId);
+          if (beforeResult?.zone.trackingId === toZoneTrackingId) {
+            // Insert after the hovered item, not before
+            insertIndex = beforeResult.questionIndex + 1;
+          }
+        }
+        targetZone.zone.questions.splice(insertIndex, 0, newQuestion);
+
+        return {
+          ...state,
+          zones: newZones,
+        };
       }
 
       case 'UNDO':
