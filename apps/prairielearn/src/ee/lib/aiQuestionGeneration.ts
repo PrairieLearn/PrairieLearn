@@ -11,15 +11,8 @@ import * as parse5 from 'parse5';
 import stripAnsi from 'strip-ansi';
 
 import { logger } from '@prairielearn/logger';
-import {
-  execute,
-  loadSqlEquiv,
-  queryOptionalRow,
-  queryRow,
-  queryRows,
-} from '@prairielearn/postgres';
+import { execute, loadSqlEquiv, queryOptionalRow, queryRows } from '@prairielearn/postgres';
 import * as Sentry from '@prairielearn/sentry';
-import { IdSchema } from '@prairielearn/zod';
 
 import {
   calculateResponseCost,
@@ -464,23 +457,19 @@ export async function generateQuestion({
       creator_id: authnUserId,
     });
 
-    const ai_question_generation_prompt_id = await queryRow(
-      sql.insert_ai_question_generation_prompt,
-      {
-        question_id: saveResults.question_id,
-        prompting_user_id: authnUserId,
-        prompt_type: 'initial',
-        user_prompt: prompt,
-        system_prompt: instructions,
-        response: response.text,
-        html: results.html,
-        python: results.python,
-        errors,
-        completion: response,
-        job_sequence_id: serverJob.jobSequenceId,
-      },
-      IdSchema,
-    );
+    await execute(sql.insert_ai_question_generation_prompt, {
+      question_id: saveResults.question_id,
+      prompting_user_id: authnUserId,
+      prompt_type: 'initial',
+      user_prompt: prompt,
+      system_prompt: instructions,
+      response: response.text,
+      html: results.html,
+      python: results.python,
+      errors,
+      completion: response,
+      job_sequence_id: serverJob.jobSequenceId,
+    });
 
     job.data.questionId = saveResults.question_id;
     job.data.questionQid = saveResults.question_qid;
@@ -489,7 +478,7 @@ export async function generateQuestion({
     usage = mergeUsage(usage, response.usage);
 
     await updateCourseInstanceUsagesForAiQuestionGeneration({
-      promptId: ai_question_generation_prompt_id,
+      courseId,
       authnUserId,
       model: QUESTION_GENERATION_OPENAI_MODEL,
       usage: response.usage,
@@ -663,23 +652,19 @@ async function regenInternal({
     errors = validateHTML(html, !!python);
   }
 
-  const ai_question_generation_prompt_id = await queryRow(
-    sql.insert_ai_question_generation_prompt,
-    {
-      question_id: questionId,
-      prompting_user_id: authnUserId,
-      prompt_type: isAutomated ? 'auto_revision' : 'human_revision',
-      user_prompt: revisionPrompt,
-      system_prompt: instructions,
-      response: response.text,
-      html,
-      python,
-      errors,
-      completion: response,
-      job_sequence_id: jobSequenceId,
-    },
-    IdSchema,
-  );
+  await execute(sql.insert_ai_question_generation_prompt, {
+    question_id: questionId,
+    prompting_user_id: authnUserId,
+    prompt_type: isAutomated ? 'auto_revision' : 'human_revision',
+    user_prompt: revisionPrompt,
+    system_prompt: instructions,
+    response: response.text,
+    html,
+    python,
+    errors,
+    completion: response,
+    job_sequence_id: jobSequenceId,
+  });
 
   const files: Record<string, string> = {};
   if (html) {
@@ -706,7 +691,7 @@ async function regenInternal({
   }
 
   await updateCourseInstanceUsagesForAiQuestionGeneration({
-    promptId: ai_question_generation_prompt_id,
+    courseId,
     authnUserId,
     model: QUESTION_GENERATION_OPENAI_MODEL,
     usage: response.usage,
