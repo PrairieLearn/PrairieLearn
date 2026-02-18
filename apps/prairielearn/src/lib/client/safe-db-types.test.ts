@@ -47,7 +47,7 @@ const minimalStaffCourse: z.input<typeof StaffCourseSchema> = {
   path: 'path',
   repository: null,
   sharing_name: null,
-  short_name: null,
+  short_name: 'CS 101',
   show_getting_started: false,
   sync_errors: null,
   sync_job_sequence_id: null,
@@ -64,7 +64,7 @@ const minimalStudentCourse: z.input<typeof StudentCourseSchema> = {
   example_course: false,
   id: '1',
   institution_id: '2',
-  short_name: null,
+  short_name: 'CS 101',
   template_course: false,
   title: null,
 };
@@ -87,7 +87,7 @@ const minimalStaffCourseInstance: z.input<typeof StaffCourseInstanceSchema> = {
   self_enrollment_restrict_to_institution: true,
   self_enrollment_use_enrollment_code: false,
   share_source_publicly: false,
-  short_name: null,
+  short_name: 'Fall 2024',
   sync_errors: null,
   sync_job_sequence_id: null,
   sync_warnings: null,
@@ -105,7 +105,7 @@ const minimalStudentCourseInstance: z.input<typeof StudentCourseInstanceSchema> 
   modern_publishing: false,
   publishing_end_date: null,
   publishing_start_date: null,
-  short_name: null,
+  short_name: 'Fall 2024',
 };
 
 const minimalStaffUser: z.input<typeof StaffUserSchema> = {

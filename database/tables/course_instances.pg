@@ -16,7 +16,7 @@ columns
     self_enrollment_restrict_to_institution: boolean default true
     self_enrollment_use_enrollment_code: boolean default false
     share_source_publicly: boolean not null default false
-    short_name: text
+    short_name: text not null
     sync_errors: text
     sync_job_sequence_id: bigint
     sync_warnings: text
