@@ -55,7 +55,7 @@ interface InstructorCourseAdminInstancesInnerProps {
   isAdministrator: boolean;
 }
 
-export function InstructorCourseAdminInstancesInner({
+function InstructorCourseAdminInstancesInner({
   courseInstances,
   course,
   canEditCourse,

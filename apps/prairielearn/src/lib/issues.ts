@@ -75,7 +75,7 @@ export async function insertIssue({
 /**
  * Inserts an issue for a thrown error.
  */
-export async function insertIssueForError(err: ErrorMaybeWithData, data: IssueForErrorData) {
+async function insertIssueForError(err: ErrorMaybeWithData, data: IssueForErrorData) {
   return insertIssue({
     ...data,
     manuallyReported: false,
