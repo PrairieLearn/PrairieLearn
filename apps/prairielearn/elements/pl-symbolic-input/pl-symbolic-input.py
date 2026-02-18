@@ -339,6 +339,8 @@ def render(element_html: str, data: pl.QuestionData) -> str:
             ),
             imaginary_unit,
         )
+        if display_log_as_ln:
+            initial_parsed = initial_parsed.replace(sympy.log, sympy.Function("ln"))
         raw_submitted_answer_latex = sympy.latex(initial_parsed)
 
     score = data["partial_scores"].get(name, {}).get("score")
