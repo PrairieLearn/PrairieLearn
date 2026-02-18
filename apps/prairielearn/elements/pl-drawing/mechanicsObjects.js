@@ -993,17 +993,26 @@ mechanicsObjects.LatexText = fabric.util.createClass(fabric.Object, {
     svg.setAttribute('width', width + 'px');
     svg.setAttribute('height', height + 'px');
 
-    // Use XMLSerializer instead of outerHTML so that the SVG is serialized
-    // as valid XML. outerHTML uses HTML serialization rules, which don't
-    // escape '<' and '>' inside attribute values. MathJax 4's Speech Rule
-    // Engine adds data-semantic-speech attributes containing SSML markup
-    // (e.g. <prosody>, <say-as>) that include these characters. When the
-    // SVG is later loaded as a data: URI image, it's parsed as XML, and
-    // the unescaped '<' causes Safari < 26.0 to reject
-    // the SVG as malformed (see https://developer.chrome.com/blog/escape-attributes).
-    // TODO: once https://github.com/mathjax/MathJax-src/pull/1432
-    // is merged, we can revert to using outerHTML.
-    const svgSource = new XMLSerializer().serializeToString(svg);
+    // Remove data-semantic-* attributes added by MathJax's Speech Rule
+    // Engine. These contain SSML markup with unescaped '<' and '>'
+    // characters (e.g. <mark>, <prosody>, <say-as>). Since outerHTML
+    // uses HTML serialization which doesn't escape these in attributes,
+    // and the SVG is later parsed as XML via a data: URI, older Safari
+    // versions (< 26) reject the SVG as malformed. These attributes are
+    // accessibility metadata not needed when the SVG is rendered as a
+    // canvas image, so removing them is safe.
+    for (const el of svg.querySelectorAll('*')) {
+      for (const attr of [...el.attributes]) {
+        if (attr.name.startsWith('data-semantic-')) {
+          el.removeAttribute(attr.name);
+        }
+      }
+    }
+
+    let svgSource = svg.outerHTML;
+
+    // Fix for Safari, https://stackoverflow.com/questions/30273775/namespace-prefix-ns1-for-href-on-tagelement-is-not-defined-setattributens
+    svgSource = svgSource.replaceAll(/NS\d+:href/gi, 'xlink:href');
 
     const base64svg = 'data:image/svg+xml;base64,' + btoa(unescape(encodeURIComponent(svgSource)));
 
