@@ -5,7 +5,9 @@ window.PLOrderBlocks = function (uuid, options) {
 
   const optionsElementId = '#order-blocks-options-' + uuid;
   const dropzoneElementId = '#order-blocks-dropzone-' + uuid;
+  const optionsList = $(optionsElementId)[0];
   const dropzoneList = $(dropzoneElementId)[0];
+  const dropzonePaddingLeft = Number.parseFloat(getComputedStyle(dropzoneList).paddingLeft) || 0;
   const fullContainer = document.querySelector('.pl-order-blocks-question-' + uuid);
   const codeText = fullContainer.querySelector(
     '.pl-order-blocks-code .pl-code td.code pre, .pl-order-blocks-code .pl-code pre',
@@ -14,11 +16,11 @@ window.PLOrderBlocks = function (uuid, options) {
   const tabWidth = measureTabWidth();
 
   function computeScaledIndent() {
-    if (!codeText) return 1;
+    if (!codeText) return TAB_SPACES;
     const dropzoneFontSize = Number.parseFloat(getComputedStyle(dropzoneList).fontSize) || 0;
     const codeFontSize = Number.parseFloat(getComputedStyle(codeText).fontSize) || dropzoneFontSize;
     if (dropzoneFontSize <= 0) return 1;
-    return TAB_SPACES * codeFontSize / dropzoneFontSize;
+    return (TAB_SPACES * codeFontSize) / dropzoneFontSize;
   }
 
   function measureTabWidth() {
@@ -91,10 +93,8 @@ window.PLOrderBlocks = function (uuid, options) {
     }
 
     function handleKeyPress(ev) {
-      const optionsBlocks = Array.from($(optionsElementId)[0].querySelectorAll('.pl-order-block'));
-      const dropzoneBlocks = Array.from(
-        $(dropzoneElementId)[0].querySelectorAll('.pl-order-block'),
-      );
+      const optionsBlocks = Array.from(optionsList.querySelectorAll('.pl-order-block'));
+      const dropzoneBlocks = Array.from(dropzoneList.querySelectorAll('.pl-order-block'));
       if (block.getAttribute('aria-selected') !== 'true') {
         const moveBetweenOptionsOrDropzone = (options) => {
           if (options && inDropzone(block) && optionsBlocks.length > 0) {
@@ -172,7 +172,7 @@ window.PLOrderBlocks = function (uuid, options) {
               if (inDropzone(block)) {
                 const level = getIndentation(block);
                 if (level === 0) {
-                  $(optionsElementId)[0].insertAdjacentElement('beforeend', block);
+                  optionsList.append(block);
                   return;
                 }
                 setIndentation(block, level - 1);
@@ -183,7 +183,7 @@ window.PLOrderBlocks = function (uuid, options) {
             handleKey(ev, block, () => {
               if (!inDropzone(block)) {
                 // Moving to the answer area
-                $(dropzoneElementId)[0].insertAdjacentElement('beforeend', block);
+                dropzoneList.append(block);
                 if (enableIndentation) {
                   // when inserting a block, default to the same indentation level as the previous block
                   if (block.previousElementSibling) {
@@ -232,10 +232,10 @@ window.PLOrderBlocks = function (uuid, options) {
   }
 
   function setAnswer() {
-    const answerObjs = $(dropzoneElementId).children();
+    const answerObjs = dropzoneList.children;
     const studentAnswers = [];
     for (const answerObj of answerObjs) {
-      if (!$(answerObj).hasClass('info-fixed')) {
+      if (!answerObj.classList.contains('info-fixed')) {
         const answerText = answerObj.getAttribute('string');
         const answerUuid = answerObj.getAttribute('uuid');
         const answerDistractorBin = answerObj.getAttribute('data-distractor-bin');
@@ -270,8 +270,9 @@ window.PLOrderBlocks = function (uuid, options) {
       const indentDelta = (ui.position.left - originalLeft) / tabWidth;
       indent = Math.floor(getIndentation(ui.item[0]) + indentDelta);
     } else {
-      const paddingLeft = Number.parseFloat(getComputedStyle(parentEl).paddingLeft) || 0;
-      indent = Math.floor((ui.position.left - parent.position().left - paddingLeft) / tabWidth);
+      indent = Math.floor(
+        (ui.position.left - parent.position().left - dropzonePaddingLeft) / tabWidth,
+      );
     }
 
     return indent;
@@ -289,16 +290,16 @@ window.PLOrderBlocks = function (uuid, options) {
       if (createAt) {
         createAt.before(indicator);
       } else {
-        $(optionsElementId)[0].insertAdjacentElement('beforeend', indicator);
+        optionsList.append(indicator);
       }
     }
     return indicator;
   }
 
   function placePairingIndicators() {
-    const answerObjs = Array.from($(optionsElementId)[0].getElementsByClassName('pl-order-block'));
+    const answerObjs = Array.from(optionsList.getElementsByClassName('pl-order-block'));
     const allAns = answerObjs.concat(
-      Array.from($(dropzoneElementId)[0].getElementsByClassName('pl-order-block')),
+      Array.from(dropzoneList.getElementsByClassName('pl-order-block')),
     );
 
     const getDistractorBin = (block) => block.getAttribute('data-distractor-bin');
@@ -336,18 +337,14 @@ window.PLOrderBlocks = function (uuid, options) {
     }
   }
 
-  function drawIndentLocationLines(dropzoneElementId) {
-    const paddingLeft = getComputedStyle($(dropzoneElementId)[0]).paddingLeft;
-    $(dropzoneElementId)[0].style.background = 'linear-gradient(#9E9E9E, #9E9E9E) no-repeat, '
+  function drawIndentLocationLines() {
+    dropzoneList.style.background = 'linear-gradient(#9E9E9E, #9E9E9E) no-repeat, '
       .repeat(maxIndent + 1)
       .slice(0, -2);
-    $(dropzoneElementId)[0].style.backgroundSize = '1px 100%, '.repeat(maxIndent + 1).slice(0, -2);
-    $(dropzoneElementId)[0].style.backgroundPosition = Array.from(
-      { length: maxIndent + 1 },
-      (_, index) => {
-        return `calc(${paddingLeft} + ${scaledTabSpaces * index}ch) 0`;
-      },
-    ).join(', ');
+    dropzoneList.style.backgroundSize = '1px 100%, '.repeat(maxIndent + 1).slice(0, -2);
+    dropzoneList.style.backgroundPosition = Array.from({ length: maxIndent + 1 }, (_, index) => {
+      return `calc(${dropzonePaddingLeft}px + ${scaledTabSpaces * index}ch) 0`;
+    }).join(', ');
   }
 
   let dragStartedInDropzone = false;
@@ -363,7 +360,7 @@ window.PLOrderBlocks = function (uuid, options) {
       placePairingIndicators();
       setAnswer();
       if (enableIndentation) {
-        drawIndentLocationLines(dropzoneElementId);
+        drawIndentLocationLines();
       }
     },
     start(_event, ui) {
@@ -391,5 +388,5 @@ window.PLOrderBlocks = function (uuid, options) {
       correctPairing(ui.item[0]);
     },
   });
-  initializeKeyboardHandling(optionsElementId, dropzoneElementId);
+  initializeKeyboardHandling();
 };
