@@ -52,9 +52,10 @@ const RawStaffAssessmentQuestionRowSchema = AssessmentQuestionRowMetaSchema.exte
   StaffAssessmentQuestionSqlSchema.shape,
 );
 
-const _StaffAssessmentQuestionRowSchema =
+// eslint-disable-next-line @typescript-eslint/no-unused-vars
+const StaffAssessmentQuestionRowSchema =
   RawStaffAssessmentQuestionRowSchema.brand<'StaffAssessmentQuestionRow'>();
-export type StaffAssessmentQuestionRow = z.infer<typeof _StaffAssessmentQuestionRowSchema>;
+export type StaffAssessmentQuestionRow = z.infer<typeof StaffAssessmentQuestionRowSchema>;
 
 export async function selectAssessmentQuestions({
   assessment_id,
