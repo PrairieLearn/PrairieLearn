@@ -994,6 +994,11 @@ mechanicsObjects.LatexText = fabric.util.createClass(fabric.Object, {
     svg.setAttribute('width', width + 'px');
     svg.setAttribute('height', height + 'px');
 
+    // Use XMLSerializer instead of outerHTML so that the SVG is serialized
+    // as valid XML. outerHTML uses HTML serialization rules, which don't
+    // escape '<' and '>' inside attribute values. MathJax 4's Speech Rule
+    // Engine adds data-semantic-speech attributes containing SSML markup
+    // (e.g. <prosody>, <say-as>) that include these characters.
     const svgSource = new XMLSerializer().serializeToString(svg);
 
     const base64svg = 'data:image/svg+xml;base64,' + btoa(unescape(encodeURIComponent(svgSource)));
