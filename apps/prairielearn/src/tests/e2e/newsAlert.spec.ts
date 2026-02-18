@@ -1,48 +1,11 @@
-/* eslint-disable react-hooks/rules-of-hooks */
-import path from 'node:path';
+import type { Page } from '@playwright/test';
 
-import { type Page, test as base } from '@playwright/test';
-import * as tmp from 'tmp-promise';
-
-import { TEST_COURSE_PATH } from '../../lib/paths.js';
 import { upsertNewsItem } from '../../models/news-items.js';
 
-import { expect } from './fixtures.js';
-import { setupWorkerServer } from './serverUtils.js';
+import { createTest, expect } from './fixtures.js';
 
-const { execSync } = await import('node:child_process');
-const fs = await import('node:fs/promises');
-
-const test = base.extend<{ baseURL: string }, { workerPort: number }>({
-  workerPort: [
-    // eslint-disable-next-line no-empty-pattern
-    async ({}, use, workerInfo) => {
-      const tempDir = await tmp.dir({ unsafeCleanup: true });
-      const tempTestCoursePath = path.join(tempDir.path, 'testCourse');
-      await fs.cp(TEST_COURSE_PATH, tempTestCoursePath, { recursive: true });
-
-      execSync('git init -b master', { cwd: tempTestCoursePath });
-      execSync('git add -A', { cwd: tempTestCoursePath });
-      execSync('git config user.name "Dev User"', { cwd: tempTestCoursePath });
-      execSync('git config user.email "dev@example.com"', { cwd: tempTestCoursePath });
-      execSync('git commit -m "Initial commit"', { cwd: tempTestCoursePath });
-
-      await setupWorkerServer(workerInfo, use, {
-        courseDirs: [tempTestCoursePath],
-        configOverrides: {
-          // Enable the news feed feature so the home page shows news alerts.
-          newsFeedUrl: 'https://example.com/feed.xml',
-        },
-      });
-
-      await tempDir.cleanup();
-    },
-    { scope: 'worker' },
-  ],
-
-  baseURL: async ({ workerPort }, use) => {
-    await use(`http://localhost:${workerPort}`);
-  },
+const test = createTest({
+  newsFeedUrl: 'https://example.com/feed.xml',
 });
 
 async function syncAllCourses(page: Page) {
