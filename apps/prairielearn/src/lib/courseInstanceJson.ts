@@ -2,6 +2,7 @@ import * as path from 'path';
 
 import fs from 'fs-extra';
 
+import type { AuthzData } from './authz-data-lib.js';
 import { b64EncodeUnicode } from './base64-util.js';
 import type { Course, User } from './db-types.js';
 import { FileModifyEditor, getOriginalHash } from './editors.js';
@@ -43,7 +44,7 @@ export async function saveCourseInstanceJson({
   courseInstanceJsonPath: string;
   paths: InstructorFilePaths;
   origHash: string;
-  locals: { authz_data: Record<string, any>; course: Course; user: User };
+  locals: { authz_data: AuthzData; course: Course; user: User };
 }): Promise<{ success: true } | { success: false; error: string; jobSequenceId: string }> {
   const formattedJson = await formatJsonWithPrettier(JSON.stringify(courseInstanceJson));
 

@@ -1,5 +1,4 @@
 import { useState } from 'react';
-
 import z from 'zod';
 
 import { TimezoneContext } from '../../components/FriendlyDate.js';
@@ -61,18 +60,6 @@ export function InstructorStudentDetail({
 }: StudentDetailProps) {
   const { user, course_instance } = student;
   const [activeTab, setActiveTab] = useState<AuditTab>('enrollment');
-
-  const gradebookRowsBySet = new Map<string, StaffGradebookRow[]>();
-  gradebookRows.forEach((row) => {
-    const setHeading = row.assessment_set.heading;
-    if (!gradebookRowsBySet.has(setHeading)) {
-      gradebookRowsBySet.set(setHeading, []);
-    }
-    const setAssessments = gradebookRowsBySet.get(setHeading);
-    if (setAssessments) {
-      setAssessments.push(row);
-    }
-  });
 
   const handleViewGradebookAsStudent = () => {
     if (!user) throw new Error('User is required');

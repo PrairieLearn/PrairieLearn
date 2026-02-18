@@ -31,10 +31,9 @@ export function LabelDeleteModal({
   onSuccess: (newOrigHash: string | null) => void;
 }) {
   const deleteMutation = useMutation({
-    mutationFn: async ({ labelId, labelName }: { labelId: string; labelName: string }) => {
+    mutationFn: async ({ labelId }: { labelId: string }) => {
       return await trpcClient.deleteLabel.mutate({
         labelId,
-        labelName,
         origHash,
       });
     },
@@ -94,9 +93,7 @@ export function LabelDeleteModal({
         <Button
           variant="danger"
           disabled={deleteMutation.isPending}
-          onClick={() =>
-            data && deleteMutation.mutate({ labelId: data.labelId, labelName: data.labelName })
-          }
+          onClick={() => data && deleteMutation.mutate({ labelId: data.labelId })}
         >
           {deleteMutation.isPending ? (
             <>

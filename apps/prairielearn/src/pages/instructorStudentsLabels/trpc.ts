@@ -37,6 +37,20 @@ const MAX_UIDS = 1000;
 
 const StudentLabelsArraySchema = z.array(StudentLabelJsonSchema);
 
+async function selectStudentLabelByIdOrNotFound(
+  ...args: Parameters<typeof selectStudentLabelById>
+) {
+  try {
+    return await selectStudentLabelById(...args);
+  } catch (error) {
+    throw new TRPCError({
+      code: 'NOT_FOUND',
+      message: 'Label not found',
+      cause: error,
+    });
+  }
+}
+
 function parseStudentLabels(courseInstanceJson: Record<string, unknown>): StudentLabelJson[] {
   const result = StudentLabelsArraySchema.safeParse(courseInstanceJson.studentLabels ?? []);
   if (!result.success) {
@@ -113,7 +127,7 @@ const labelsQuery = t.procedure
 
 const checkUidsQuery = t.procedure
   .use(requireCourseInstancePermissionView)
-  .input(z.object({ uids: z.array(z.string()) }))
+  .input(z.object({ uids: z.array(z.string()).max(MAX_UIDS) }))
   .output(z.object({ invalidUids: z.array(z.string()) }))
   .query(async (opts) => {
     const { uids } = opts.input;
@@ -223,7 +237,6 @@ const editLabelMutation = t.procedure
     z.object({
       labelId: IdSchema,
       name: z.string().min(1, 'Label name is required').max(255),
-      oldName: z.string(),
       color: ColorJsonSchema,
       uids: z.string().optional().default(''),
       origHash: z.string().nullable(),
@@ -231,7 +244,7 @@ const editLabelMutation = t.procedure
   )
   .mutation(async (opts) => {
     const { course, course_instance, authz_data, locals } = opts.ctx;
-    const { labelId, name, oldName, color, uids: uidsString, origHash } = opts.input;
+    const { labelId, name, color, uids: uidsString, origHash } = opts.input;
 
     const courseInstancePath = path.join(
       course.path,
@@ -241,14 +254,17 @@ const editLabelMutation = t.procedure
     const courseInstanceJsonPath = path.join(courseInstancePath, 'infoCourseInstance.json');
     const paths = getPaths(undefined, locals);
 
-    await selectStudentLabelById({ id: labelId, courseInstance: course_instance });
+    const label = await selectStudentLabelByIdOrNotFound({
+      id: labelId,
+      courseInstance: course_instance,
+    });
 
     // Read current JSON
     const courseInstanceJson = await readCourseInstanceJson(courseInstancePath);
     const studentLabels = parseStudentLabels(courseInstanceJson);
 
     // Find and update the label
-    const labelIndex = studentLabels.findIndex((l) => l.name === oldName);
+    const labelIndex = studentLabels.findIndex((l) => l.uuid === label.uuid);
     if (labelIndex === -1) {
       throw new TRPCError({
         code: 'BAD_REQUEST',
@@ -257,7 +273,7 @@ const editLabelMutation = t.procedure
     }
 
     // Check if new name conflicts with another label
-    if (name !== oldName && studentLabels.some((l) => l.name === name)) {
+    if (name !== label.name && studentLabels.some((l) => l.name === name)) {
       throw new TRPCError({
         code: 'BAD_REQUEST',
         message: 'A label with this name already exists',
@@ -344,13 +360,12 @@ const deleteLabelMutation = t.procedure
   .input(
     z.object({
       labelId: IdSchema,
-      labelName: z.string().min(1),
       origHash: z.string().nullable(),
     }),
   )
   .mutation(async (opts) => {
     const { course, course_instance, locals } = opts.ctx;
-    const { labelId, labelName, origHash } = opts.input;
+    const { labelId, origHash } = opts.input;
 
     const courseInstancePath = path.join(
       course.path,
@@ -360,14 +375,17 @@ const deleteLabelMutation = t.procedure
     const courseInstanceJsonPath = path.join(courseInstancePath, 'infoCourseInstance.json');
     const paths = getPaths(undefined, locals);
 
-    await selectStudentLabelById({ id: labelId, courseInstance: course_instance });
+    const label = await selectStudentLabelByIdOrNotFound({
+      id: labelId,
+      courseInstance: course_instance,
+    });
 
     // Read current JSON
     const courseInstanceJson = await readCourseInstanceJson(courseInstancePath);
     const studentLabels = parseStudentLabels(courseInstanceJson);
 
     // Remove the label
-    const labelIndex = studentLabels.findIndex((l) => l.name === labelName);
+    const labelIndex = studentLabels.findIndex((l) => l.uuid === label.uuid);
     if (labelIndex === -1) {
       throw new TRPCError({
         code: 'NOT_FOUND',
@@ -412,7 +430,10 @@ const batchAddLabelMutation = t.procedure
     const { course_instance, authz_data } = opts.ctx;
     const { enrollmentIds, labelId } = opts.input;
 
-    const label = await selectStudentLabelById({ id: labelId, courseInstance: course_instance });
+    const label = await selectStudentLabelByIdOrNotFound({
+      id: labelId,
+      courseInstance: course_instance,
+    });
 
     const enrollments = await selectEnrollmentsByIdsInCourseInstance({
       ids: enrollmentIds,
@@ -444,7 +465,10 @@ const batchRemoveLabelMutation = t.procedure
     const { course_instance, authz_data } = opts.ctx;
     const { enrollmentIds, labelId } = opts.input;
 
-    const label = await selectStudentLabelById({ id: labelId, courseInstance: course_instance });
+    const label = await selectStudentLabelByIdOrNotFound({
+      id: labelId,
+      courseInstance: course_instance,
+    });
 
     const enrollments = await selectEnrollmentsByIdsInCourseInstance({
       ids: enrollmentIds,

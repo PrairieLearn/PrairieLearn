@@ -107,7 +107,6 @@ export function LabelModifyModal({
         return await trpcClient.editLabel.mutate({
           labelId: data.labelId,
           name: formData.name.trim(),
-          oldName: data.name,
           color,
           uids: formData.uids.trim(),
           origHash: data.origHash,

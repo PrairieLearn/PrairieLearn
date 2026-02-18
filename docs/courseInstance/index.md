@@ -270,8 +270,8 @@ Labels appear in the student roster, gradebook, and student detail pages.
     ```json title="infoCourseInstance.json"
     {
       "studentLabels": [
-        { "name": "Section A", "color": "blue1" },
-        { "name": "Section B", "color": "green1" }
+        { "uuid": "a1b2c3d4-e5f6-4a7b-8c9d-0e1f2a3b4c5d", "name": "Section A", "color": "blue1" },
+        { "uuid": "b2c3d4e5-f6a7-4b8c-9d0e-1f2a3b4c5d6e", "name": "Section B", "color": "green1" }
       ]
     }
     ```
