@@ -3,10 +3,7 @@
   "title": "Randomized multiple-choice question with dynamic drawing and question parameters",
   "topic": "Gallery",
   "type": "v3",
-  "tags": [
-    "Sp26",
-    "mfsilva"
-  ],
+  "tags": ["Sp26", "mfsilva"],
   "preferences": {
     "gravitational_constant": {
       "type": "number",
@@ -14,10 +11,7 @@
     },
     "fired_object": {
       "type": "string",
-      "enum": [
-        "cannon ball",
-        "bowling ball"
-      ],
+      "enum": ["cannon ball", "bowling ball"],
       "default": "cannon ball"
     }
   }

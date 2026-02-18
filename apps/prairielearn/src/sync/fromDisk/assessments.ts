@@ -14,6 +14,7 @@ import {
   type QuestionAlternativeJson,
   type QuestionJson,
   type QuestionParameterJson,
+  QuestionParameterJsonSchema,
   type QuestionPointsJson,
   type QuestionPreferences,
   type ZoneQuestionBlockJson,
@@ -123,6 +124,7 @@ function getParamsForAssessment(
   assessmentInfoFile: AssessmentInfoFile,
   questionIds: Record<string, any>,
   questions: Record<string, InfoFile<QuestionJson>>,
+  sharedQuestionPreferences: Record<string, QuestionParameterJson>,
 ) {
   if (infofile.hasErrors(assessmentInfoFile)) return null;
   const assessment = assessmentInfoFile.data;
@@ -130,9 +132,9 @@ function getParamsForAssessment(
 
   // Helper to get preferences schema for a question
   const getPreferencesSchema = (qid: string): QuestionParameterJson | null => {
-    // Handle shared questions (starting with @) - they are resolved later
-    // and their schemas are not available at sync time
-    if (qid.startsWith('@')) return null;
+    if (qid.startsWith('@')) {
+      return sharedQuestionPreferences[qid] ?? null;
+    }
     const questionInfo = questions[qid];
     if (!questionInfo.data?.preferences) return null;
     return questionInfo.data.preferences;
@@ -527,6 +529,7 @@ export async function sync(
   courseInstanceData: CourseInstanceData,
   questionIds: Record<string, any>,
   questions: Record<string, InfoFile<QuestionJson>>,
+  sharedQuestionPreferences: Record<string, QuestionParameterJson>,
 ) {
   const assessments = courseInstanceData.assessments;
 
@@ -581,7 +584,7 @@ export async function sync(
       assessment.uuid,
       infofile.stringifyErrors(assessment),
       infofile.stringifyWarnings(assessment),
-      getParamsForAssessment(assessment, questionIds, questions),
+      getParamsForAssessment(assessment, questionIds, questions, sharedQuestionPreferences),
     ]);
   });
 
@@ -596,7 +599,7 @@ export async function validateAssessmentSharedQuestions(
   courseId: string,
   assessments: CourseInstanceData['assessments'],
   questionIds: Record<string, string>,
-) {
+): Promise<Record<string, QuestionParameterJson>> {
   // A set of all imported question IDs.
   const importedQids = new Set<string>();
 
@@ -659,10 +662,20 @@ export async function validateAssessmentSharedQuestions(
           Array.from(importedQids, parseSharedQuestionReference),
         ),
       },
-      z.object({ sharing_name: z.string(), qid: z.string(), id: IdSchema }),
+      z.object({
+        sharing_name: z.string(),
+        qid: z.string(),
+        id: IdSchema,
+        preferences_schema: QuestionParameterJsonSchema.nullable(),
+      }),
     );
+    const sharedQuestionPreferences: Record<string, QuestionParameterJson> = {};
     for (const row of importedQuestions) {
-      questionIds['@' + row.sharing_name + '/' + row.qid] = row.id;
+      const fullQid = '@' + row.sharing_name + '/' + row.qid;
+      questionIds[fullQid] = row.id;
+      if (row.preferences_schema) {
+        sharedQuestionPreferences[fullQid] = row.preferences_schema;
+      }
     }
     const missingQids = new Set(Array.from(importedQids).filter((qid) => !(qid in questionIds)));
     if (config.checkSharingOnSync) {
@@ -678,5 +691,7 @@ export async function validateAssessmentSharedQuestions(
         }
       }
     }
+    return sharedQuestionPreferences;
   }
+  return {};
 }

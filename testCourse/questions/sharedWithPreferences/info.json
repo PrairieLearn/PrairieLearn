@@ -1,0 +1,19 @@
+{
+  "uuid": "a1b2c3d4-e5f6-7890-abcd-ef1234567890",
+  "title": "Shared question with preferences",
+  "topic": "Test",
+  "sharePublicly": true,
+  "type": "v3",
+  "tags": ["v3"],
+  "preferences": {
+    "gravitational_constant": {
+      "type": "number",
+      "default": 9.8
+    },
+    "fired_object": {
+      "type": "string",
+      "enum": ["cannon ball", "bowling ball"],
+      "default": "cannon ball"
+    }
+  }
+}
