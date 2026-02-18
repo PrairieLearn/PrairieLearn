@@ -1,4 +1,4 @@
-import { loadSqlEquiv, queryRow, queryRows } from '@prairielearn/postgres';
+import { execute, loadSqlEquiv, queryRow, queryRows } from '@prairielearn/postgres';
 
 import {
   type NewsItem,
@@ -50,8 +50,8 @@ export async function selectAllNewsItems(): Promise<NewsItem[]> {
   return await queryRows(sql.select_all_news_items, NewsItemSchema);
 }
 
-export async function hideNewsItem(id: string): Promise<NewsItem> {
-  return await queryRow(sql.hide_news_item, { id }, NewsItemSchema);
+export async function setNewsItemHidden(id: string, hidden: boolean): Promise<NewsItem> {
+  return await queryRow(sql.set_news_item_hidden, { id, hidden }, NewsItemSchema);
 }
 
 export async function upsertNewsItems(items: NewsItemInput[]): Promise<NewsItem[]> {
@@ -61,4 +61,8 @@ export async function upsertNewsItems(items: NewsItemInput[]): Promise<NewsItem[
     results.push(result);
   }
   return results;
+}
+
+export async function hideNewsItemsNotInGuids(guids: string[]): Promise<void> {
+  await execute(sql.hide_news_items_not_in_guids, { guids });
 }

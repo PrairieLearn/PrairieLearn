@@ -33,7 +33,15 @@ SET
   title = EXCLUDED.title,
   link = EXCLUDED.link,
   pub_date = EXCLUDED.pub_date,
-  fetched_at = now()
+  fetched_at = now(),
+  hidden_at = CASE
+    WHEN news_items.managed_by = 'admin' THEN news_items.hidden_at
+    ELSE NULL
+  END,
+  managed_by = CASE
+    WHEN news_items.managed_by = 'admin' THEN 'admin'::enum_news_item_managed_by
+    ELSE NULL
+  END
 RETURNING
   *;
 
@@ -45,11 +53,24 @@ FROM
 ORDER BY
   ni.pub_date DESC;
 
--- BLOCK hide_news_item
+-- BLOCK set_news_item_hidden
 UPDATE news_items
 SET
-  hidden_at = now()
+  hidden_at = CASE
+    WHEN $hidden THEN now()
+    ELSE NULL
+  END,
+  managed_by = 'admin'
 WHERE
   id = $id
 RETURNING
   *;
+
+-- BLOCK hide_news_items_not_in_guids
+UPDATE news_items
+SET
+  hidden_at = now(),
+  managed_by = 'sync'
+WHERE
+  guid != ALL ($guids)
+  AND managed_by IS DISTINCT FROM 'admin';

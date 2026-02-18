@@ -1,3 +1,5 @@
+CREATE TYPE enum_news_item_managed_by AS ENUM('admin', 'sync');
+
 -- Create news_items table to store RSS feed items
 CREATE TABLE IF NOT EXISTS news_items (
   id BIGSERIAL PRIMARY KEY,
@@ -6,7 +8,8 @@ CREATE TABLE IF NOT EXISTS news_items (
   pub_date TIMESTAMPTZ NOT NULL,
   guid TEXT NOT NULL UNIQUE,
   fetched_at TIMESTAMPTZ NOT NULL DEFAULT now(),
-  hidden_at TIMESTAMPTZ
+  hidden_at TIMESTAMPTZ,
+  managed_by enum_news_item_managed_by
 );
 
 CREATE INDEX IF NOT EXISTS news_items_pub_date_idx ON news_items (pub_date DESC);

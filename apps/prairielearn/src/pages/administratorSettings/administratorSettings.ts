@@ -10,7 +10,7 @@ import * as chunks from '../../lib/chunks.js';
 import { config } from '../../lib/config.js';
 import { isEnterprise } from '../../lib/license.js';
 import { typedAsyncHandler } from '../../lib/res-locals.js';
-import { hideNewsItem, selectAllNewsItems } from '../../models/news-items.js';
+import { selectAllNewsItems, setNewsItemHidden } from '../../models/news-items.js';
 
 import { AdministratorSettings } from './administratorSettings.html.js';
 
@@ -94,7 +94,10 @@ router.post(
       await fetchAndCacheNewsItems();
       res.redirect(req.originalUrl);
     } else if (req.body.__action === 'hide_news_item') {
-      await hideNewsItem(IdSchema.parse(req.body.news_item_id));
+      await setNewsItemHidden(IdSchema.parse(req.body.news_item_id), true);
+      res.redirect(req.originalUrl);
+    } else if (req.body.__action === 'unhide_news_item') {
+      await setNewsItemHidden(IdSchema.parse(req.body.news_item_id), false);
       res.redirect(req.originalUrl);
     } else {
       throw new error.HttpStatusError(400, `unknown __action: ${req.body.__action}`);

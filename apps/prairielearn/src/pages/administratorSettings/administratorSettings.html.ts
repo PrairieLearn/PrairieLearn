@@ -1,3 +1,4 @@
+import { formatDate } from '@prairielearn/formatter';
 import { html } from '@prairielearn/html';
 
 import { PageLayout } from '../../components/PageLayout.js';
@@ -133,11 +134,15 @@ export function AdministratorSettings({
                               ${item.title}
                             </a>
                           </td>
-                          <td class="align-middle">${item.pub_date.toISOString().split('T')[0]}</td>
+                          <td class="align-middle">${formatDate(item.pub_date, 'UTC')}</td>
                           <td class="align-middle">
-                            ${item.hidden_at != null
-                              ? html`<span class="badge bg-secondary">Hidden</span>`
-                              : html`<span class="badge bg-success">Visible</span>`}
+                            ${item.managed_by === 'admin' && item.hidden_at != null
+                              ? html`<span class="badge bg-secondary">Hidden by admin</span>`
+                              : item.managed_by === 'admin'
+                                ? html`<span class="badge bg-info">Managed by admin</span>`
+                                : item.managed_by === 'sync'
+                                  ? html`<span class="badge bg-secondary">Hidden by sync</span>`
+                                  : html`<span class="badge bg-success">Visible</span>`}
                           </td>
                           <td class="align-middle">
                             ${item.hidden_at == null
@@ -155,7 +160,20 @@ export function AdministratorSettings({
                                     </button>
                                   </form>
                                 `
-                              : ''}
+                              : html`
+                                  <form method="POST" class="d-inline">
+                                    <input type="hidden" name="__action" value="unhide_news_item" />
+                                    <input
+                                      type="hidden"
+                                      name="__csrf_token"
+                                      value="${resLocals.__csrf_token}"
+                                    />
+                                    <input type="hidden" name="news_item_id" value="${item.id}" />
+                                    <button type="submit" class="btn btn-sm btn-outline-secondary">
+                                      Unhide
+                                    </button>
+                                  </form>
+                                `}
                           </td>
                         </tr>
                       `,

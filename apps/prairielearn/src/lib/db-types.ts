@@ -1224,12 +1224,15 @@ export const LtiOutcomeSchema = z.object({
 export const MigrationSchema = null;
 export const NamedLockSchema = null;
 
+export const EnumNewsItemManagedBySchema = z.enum(['admin', 'sync']);
+
 export const NewsItemSchema = z.object({
   fetched_at: DateFromISOString,
   guid: z.string(),
   hidden_at: DateFromISOString.nullable(),
   id: IdSchema,
   link: z.string(),
+  managed_by: EnumNewsItemManagedBySchema.nullable(),
   pub_date: DateFromISOString,
   title: z.string(),
 });

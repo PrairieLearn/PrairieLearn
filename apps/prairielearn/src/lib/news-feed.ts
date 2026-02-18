@@ -3,7 +3,11 @@ import Parser from 'rss-parser';
 import { logger } from '@prairielearn/logger';
 import * as Sentry from '@prairielearn/sentry';
 
-import { type NewsItemInput, upsertNewsItems } from '../models/news-items.js';
+import {
+  type NewsItemInput,
+  hideNewsItemsNotInGuids,
+  upsertNewsItems,
+} from '../models/news-items.js';
 
 import { config } from './config.js';
 
@@ -68,7 +72,8 @@ export async function fetchAndCacheNewsItems(): Promise<void> {
 
     if (newsItems.length > 0) {
       await upsertNewsItems(newsItems);
-      logger.verbose('news-feed: Cached news items', { count: newsItems.length });
+      await hideNewsItemsNotInGuids(newsItems.map((item) => item.guid));
+      logger.verbose('news-feed: Synced news items', { count: newsItems.length });
     }
   } catch (err) {
     Sentry.captureException(err);

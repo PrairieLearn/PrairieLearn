@@ -17,8 +17,7 @@ export function NewsAlert({ newsItems, csrfToken, blogUrl }: NewsAlertProps) {
 
   return (
     <div
-      className="card mb-4 mx-auto"
-      style={{ maxWidth: '720px', borderLeft: '3px solid #4A6FA5' }}
+      className="card mb-4 border-start border-3 border-primary"
       data-testid="news-alert"
     >
       <div className="card-body">
@@ -36,24 +35,21 @@ export function NewsAlert({ newsItems, csrfToken, blogUrl }: NewsAlertProps) {
         {newsItems.map((item, index) => (
           <div key={item.guid}>
             {index > 0 && <hr className="my-2" />}
-            <div className="d-flex align-items-start py-1">
+            <a
+              href={item.link}
+              target="_blank"
+              rel="noopener noreferrer"
+              className="d-flex align-items-start py-1 text-decoration-none"
+            >
               <i
-                className="bi bi-arrow-up-right me-2 mt-1 text-muted"
+                className="bi bi-arrow-up-right me-2 mt-1 text-muted small"
                 aria-hidden="true"
-                style={{ fontSize: '0.875rem' }}
               />
               <div>
-                <a
-                  href={item.link}
-                  target="_blank"
-                  rel="noopener noreferrer"
-                  className="text-decoration-none fw-semibold text-body"
-                >
-                  {item.title}
-                </a>
+                <span className="fw-semibold text-body">{item.title}</span>
                 <div className="text-muted small">{dateFormatter.format(item.pub_date)}</div>
               </div>
-            </div>
+            </a>
           </div>
         ))}
         {blogUrl && (
