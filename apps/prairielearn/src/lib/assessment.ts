@@ -543,7 +543,7 @@ export async function selectAssessmentInstanceLogCursor(
   );
 }
 
-export async function updateAssessmentQuestionStats(assessment_question_id: string): Promise<void> {
+async function updateAssessmentQuestionStats(assessment_question_id: string): Promise<void> {
   await sqldb.execute(sql.calculate_stats_for_assessment_question, { assessment_question_id });
 }
 
