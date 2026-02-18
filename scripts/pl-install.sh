@@ -22,6 +22,7 @@ apt-get install -y --no-install-recommends \
     curl \
     dvipng \
     git \
+    gosu \
     graphviz \
     libgraphviz-dev \
     imagemagick \
@@ -50,7 +51,7 @@ for f in /nvm/current/bin/*; do ln -s $f "/usr/local/bin/$(basename $f)"; done
 echo "setting up postgres..."
 mkdir -p /var/run/postgresql && chown postgres:postgres /var/run/postgresql
 mkdir /var/postgres && chown postgres:postgres /var/postgres
-su -w PATH postgres -c "initdb -D /var/postgres"
+gosu postgres initdb -D /var/postgres
 
 echo "installing pgvector..."
 apt-get install -y --no-install-recommends postgresql-server-dev-17

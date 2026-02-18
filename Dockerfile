@@ -59,7 +59,7 @@ RUN chmod +x /PrairieLearn/scripts/init.sh \
     && /PrairieLearn/scripts/start_postgres.sh \
     && make build \
     && node apps/prairielearn/dist/server.js --migrate-and-exit \
-    && su postgres -c "createuser -s root" \
+    && gosu postgres createuser -s root \
     && /PrairieLearn/scripts/start_postgres.sh stop \
     && /PrairieLearn/scripts/gen_ssl.sh \
     && git config --global user.email "dev@example.com" \
