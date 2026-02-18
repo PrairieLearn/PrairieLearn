@@ -1,8 +1,9 @@
 {
   "uuid": "31a69dd9-81a1-4b17-b578-2098d20fb57a",
   "longName": "Spring 2015",
-  "publishing": {
-    "startDate": "1900-01-19T00:00:01",
-    "endDate": "2400-05-13T23:59:59"
-  }
+  "publishing": { "startDate": "1900-01-19T00:00:01", "endDate": "2400-05-13T23:59:59" },
+  "studentLabels": [
+    { "uuid": "72d09468-259c-4c6a-bca1-77fe87fbeb14", "name": "Section A", "color": "red1" },
+    { "uuid": "5e9f4eeb-1a03-4af1-9e99-d42e24049ab4", "name": "Extra time", "color": "blue1" }
+  ]
 }
