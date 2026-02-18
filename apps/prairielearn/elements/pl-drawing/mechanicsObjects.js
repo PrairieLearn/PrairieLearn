@@ -994,12 +994,7 @@ mechanicsObjects.LatexText = fabric.util.createClass(fabric.Object, {
     svg.setAttribute('width', width + 'px');
     svg.setAttribute('height', height + 'px');
 
-    // Safari < 26.0 will reject the SVG if it is serialized with outerHTML
-    // because it outerHTML uses HTML serialization rules, which don't
-    // escape '<' and '>' inside attribute values. MathJax 4's Speech Rule
-    // Engine adds data-semantic-speech attributes containing SSML markup
-    // (e.g. <prosody>, <say-as>) that include these characters
-    const svgSource = MathJax.startup.adaptor.serializeXML(svg);
+    const svgSource = new XMLSerializer().serializeToString(svg);
 
     const base64svg = 'data:image/svg+xml;base64,' + btoa(unescape(encodeURIComponent(svgSource)));
 
@@ -1034,7 +1029,7 @@ mechanicsObjects.LatexText = fabric.util.createClass(fabric.Object, {
     this.label = text;
 
     if (text) {
-      this.gen_text(this.label, options).catch(console.error);
+      this.gen_text(this.label, options);
     }
 
     if (options.selectable) {
@@ -1045,7 +1040,7 @@ mechanicsObjects.LatexText = fabric.util.createClass(fabric.Object, {
         );
         if (new_text !== null) {
           this.label = new_text;
-          this.gen_text(this.parse(new_text), options).catch(console.error);
+          this.gen_text(this.parse(new_text), options);
 
           // Fire an event to ensure that the text is updated in the submission data.
           this.fire('modified');
