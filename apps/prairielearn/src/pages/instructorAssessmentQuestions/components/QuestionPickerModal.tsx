@@ -250,28 +250,38 @@ export function QuestionPickerModal({
       const matchesTags =
         selectedTags.size === 0 || q.tags?.some((tag) => selectedTags.has(String(tag.id)));
 
-      // Assessment filter (OR logic with special handling for "not in any")
+      // Assessment filter (OR logic with special handling for "not in any").
+      // Exclude currentAssessmentId so that questions only in the current
+      // assessment are treated as "not in any" — consistent with badge display.
       let matchesAssessment = selectedAssessments.size === 0;
       if (!matchesAssessment) {
-        const hasNoAssessments = !q.assessments || q.assessments.length === 0;
+        const filteredAssessments = (q.assessments ?? []).filter(
+          (a) => a.assessment_id !== currentAssessmentId,
+        );
+        const hasNoAssessments = filteredAssessments.length === 0;
         const notInAnySelected = selectedAssessments.has(NOT_IN_ANY_ASSESSMENT_ID);
 
         if (notInAnySelected && hasNoAssessments) {
           matchesAssessment = true;
         } else {
-          // Check if question is in any selected assessment (excluding the special option)
-          matchesAssessment =
-            q.assessments?.some(
-              (a) =>
-                selectedAssessments.has(a.assessment_id) &&
-                a.assessment_id !== NOT_IN_ANY_ASSESSMENT_ID,
-            ) ?? false;
+          matchesAssessment = filteredAssessments.some(
+            (a) =>
+              selectedAssessments.has(a.assessment_id) &&
+              a.assessment_id !== NOT_IN_ANY_ASSESSMENT_ID,
+          );
         }
       }
 
       return matchesSearch && matchesTopic && matchesTags && matchesAssessment;
     });
-  }, [courseQuestions, searchQuery, selectedTopics, selectedTags, selectedAssessments]);
+  }, [
+    courseQuestions,
+    searchQuery,
+    selectedTopics,
+    selectedTags,
+    selectedAssessments,
+    currentAssessmentId,
+  ]);
 
   // Sort filtered questions by QID
   const sortedQuestions = useMemo(

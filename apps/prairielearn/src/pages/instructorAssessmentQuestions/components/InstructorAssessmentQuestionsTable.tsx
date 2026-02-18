@@ -258,6 +258,25 @@ function InstructorAssessmentQuestionsTableInner({
       ...currentFormValues,
       trackingId: questionEditState.question.trackingId,
     } as typeof questionEditState.question;
+    // Restore inheritance for fields that were not explicitly set on the
+    // original question. `getValues()` includes inherited display values,
+    // so without this cleanup `isInherited()` would return false after the
+    // pick-and-return cycle.
+    const inheritableFields = [
+      'points',
+      'autoPoints',
+      'maxPoints',
+      'maxAutoPoints',
+      'manualPoints',
+    ] as const;
+    for (const field of inheritableFields) {
+      if (
+        !(field in questionEditState.question) ||
+        questionEditState.question[field as keyof typeof questionEditState.question] === undefined
+      ) {
+        delete questionWithFormValues[field as keyof typeof questionWithFormValues];
+      }
+    }
     const returnToEdit: EditingState = {
       ...questionEditState,
       question: questionWithFormValues,
@@ -387,6 +406,12 @@ function InstructorAssessmentQuestionsTableInner({
     setQuestionEditState({ status: 'picking', zoneTrackingId });
   };
 
+  // The `as` casts below are necessary because `StaffAssessmentQuestionRow`
+  // is a branded Zod-parsed type. When constructing metadata for a newly-
+  // picked question we don't have a full parsed row, so we build a stub with
+  // the fields that the UI actually reads. A discriminated union for saved vs.
+  // unsaved question metadata would eliminate these casts but would cascade
+  // through many components — better suited for a separate PR.
   const buildQuestionMetadata = (data: QuestionByQidResult): StaffAssessmentQuestionRow => {
     return {
       ...data,
