@@ -326,15 +326,20 @@ def render(element_html: str, data: pl.QuestionData) -> str:
 
         all_blocks = data["params"][answer_name]
         source_blocks = [
-            block for block in all_blocks if block["uuid"] not in submitted_block_ids
+            {**block, "indent_depth": 0}
+            for block in all_blocks
+            if block["uuid"] not in submitted_block_ids
         ]
 
         for option in student_previous_submission:
             submission_indent = option.get("indent", None)
 
             if submission_indent is not None:
-                submission_indent = int(submission_indent) * TAB_SPACES
-            option["indent"] = submission_indent
+                submission_indent = int(submission_indent)
+            option["indent_depth"] = submission_indent if submission_indent is not None else 0
+            option["indent"] = (
+                submission_indent * TAB_SPACES if submission_indent is not None else None
+            )
 
         help_text = (
             f"Move answer blocks from the options area to the {dropzone_layout.value}."

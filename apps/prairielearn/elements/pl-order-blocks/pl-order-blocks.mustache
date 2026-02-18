@@ -25,6 +25,7 @@ $(function() {
                     <li class="{{block_formatting}} shadow pl-order-block {{^editable}}nodrag{{/editable}}"
                         uuid="{{uuid}}"
                         string="{{inner_html}}"
+                        data-indent-depth="{{indent_depth}}"
                         {{#distractor_bin}}data-distractor-bin="{{distractor_bin}}"{{/distractor_bin}}
                         tabindex="0"
                         role="option"
@@ -43,6 +44,7 @@ $(function() {
                         style="margin-left: {{indent}}ch;"
                         uuid="{{uuid}}"
                         string="{{inner_html}}"
+                        data-indent-depth="{{indent_depth}}"
                         {{#distractor_bin}}data-distractor-bin="{{distractor_bin}}"{{/distractor_bin}}
                         role="option"
                         >

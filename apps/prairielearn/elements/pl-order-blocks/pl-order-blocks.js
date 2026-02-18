@@ -59,11 +59,12 @@ window.PLOrderBlocks = function (uuid, options) {
   }
 
   function getIndentation(block) {
-    return Math.round((Number.parseFloat(block.style.marginLeft) || 0) / scaledTabSpaces);
+    return Number.parseInt(block.getAttribute('data-indent-depth') || '0') || 0;
   }
 
   function setIndentation(block, indentation) {
     const clamped = Math.max(0, Math.min(indentation, maxIndent));
+    block.setAttribute('data-indent-depth', clamped.toString());
     block.style.marginLeft = clamped * scaledTabSpaces + 'ch';
     if (inDropzone(block)) {
       block.setAttribute('aria-description', 'indentation depth ' + clamped);
