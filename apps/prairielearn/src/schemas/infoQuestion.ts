@@ -142,7 +142,8 @@ const ExternalGradingOptionsJsonSchema = z
       .describe(
         'Whether the external grader is currently enabled. Useful if it is breaking, for example.',
       )
-      .optional(),
+      .optional()
+      .default(false),
     image: z
       .string()
       .describe(
