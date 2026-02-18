@@ -77,6 +77,7 @@ export async function generatePrompt({
   params,
   true_answer,
   model_id,
+  hasImage,
 }: {
   questionPrompt: string;
   questionAnswer: string;
@@ -87,6 +88,7 @@ export async function generatePrompt({
   params: Record<string, any>;
   true_answer: Record<string, any>;
   model_id: AiGradingModelId;
+  hasImage: boolean;
 }): Promise<ModelMessage[]> {
   const input: ModelMessage[] = [];
 
@@ -123,6 +125,12 @@ export async function generatePrompt({
             "You must grade the student's response by using the rubric and returning an object of rubric descriptions and whether or not that rubric item applies to the student's response.",
             'If no rubric items apply, do not select any.',
             'You must include an explanation on why you make these choices.',
+            'You MUST NOT infer, reconstruct, or assume student work based on the reference solution, rubric, or common solution patterns.',
+            ...(hasImage
+              ? [
+                  'If the image is blurry, unreadable, incomplete, or ambiguous, you must say so explicitly, and just not use that for grading.', // TRY IN CAPS
+                ]
+              : []),
             'Follow any special instructions given by the instructor in the question.',
           ],
         ]),
@@ -157,6 +165,7 @@ export async function generatePrompt({
           'You will assign a numeric score between 0 and 100 (inclusive) to the student response,',
           "Include feedback for the student, but omit the feedback if the student's response is entirely correct.",
           'You must include an explanation on why you made these choices.',
+          'You MUST NOT infer, reconstruct, or assume student work based on the reference solution or common solution patterns.',
           'Follow any special instructions given by the instructor in the question.',
         ]),
       },
@@ -175,15 +184,16 @@ export async function generatePrompt({
     },
   );
 
+  // test different version of this to see if it works
   if (questionAnswer.trim()) {
     input.push(
       {
         role: systemRoleAfterUserMessage,
-        content: 'The instructor has provided the following answer for this question:',
+        content: 'The instructor has provided the following reference solution for this question. Do not use this information when determining what the student wrote:',
       },
       {
         role: 'user',
-        content: questionAnswer.trim(),
+        content: '<reference-answer>\n' + questionAnswer.trim() + '\n</reference-answer>',
       },
     );
   }
