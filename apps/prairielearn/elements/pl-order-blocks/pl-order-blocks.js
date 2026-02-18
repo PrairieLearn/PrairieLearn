@@ -10,16 +10,15 @@ window.PLOrderBlocks = function (uuid, options) {
   const codeText = fullContainer.querySelector(
     '.pl-order-blocks-code .pl-code td.code pre, .pl-order-blocks-code .pl-code pre',
   );
-  const indentScale = computeIndentScale();
-  const scaledTabSpaces = TAB_SPACES * indentScale;
+  const scaledTabSpaces = computeScaledIndent();
   const tabWidth = measureTabWidth();
 
-  function computeIndentScale() {
+  function computeScaledIndent() {
     if (!codeText) return 1;
     const dropzoneFontSize = Number.parseFloat(getComputedStyle(dropzoneList).fontSize) || 0;
     const codeFontSize = Number.parseFloat(getComputedStyle(codeText).fontSize) || dropzoneFontSize;
     if (dropzoneFontSize <= 0) return 1;
-    return codeFontSize / dropzoneFontSize;
+    return TAB_SPACES * codeFontSize / dropzoneFontSize;
   }
 
   function measureTabWidth() {
