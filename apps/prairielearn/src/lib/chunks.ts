@@ -188,7 +188,7 @@ const RawCourseChunkSchema = z.object({
   assessment_uuid: AssessmentSchema.shape.uuid,
   assessment_name: AssessmentSchema.shape.tid,
   course_instance_uuid: CourseInstanceSchema.shape.uuid,
-  course_instance_name: CourseInstanceSchema.shape.short_name,
+  course_instance_name: CourseInstanceSchema.shape.short_name.nullable(),
 });
 export type RawCourseChunk = z.infer<typeof RawCourseChunkSchema>;
 
@@ -542,6 +542,7 @@ export async function diffChunks({
         break;
       case 'clientFilesCourseInstance': {
         const courseInstanceName = courseChunk.course_instance_name;
+        assert(courseInstanceName != null);
         existingCourseChunks.courseInstances.getOrCreate(
           courseInstanceName,
         ).clientFilesCourseInstance = true;
@@ -550,6 +551,7 @@ export async function diffChunks({
       case 'clientFilesAssessment': {
         const courseInstanceName = courseChunk.course_instance_name;
         const assessmentName = courseChunk.assessment_name;
+        assert(courseInstanceName != null);
         assert(assessmentName != null);
         existingCourseChunks.courseInstances
           .getOrCreate(courseInstanceName)
