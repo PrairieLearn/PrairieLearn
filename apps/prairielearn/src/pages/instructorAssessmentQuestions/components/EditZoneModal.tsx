@@ -3,7 +3,8 @@ import { useMemo } from 'react';
 import { Modal } from 'react-bootstrap';
 import { useForm } from 'react-hook-form';
 
-import type { ZoneAssessmentForm } from '../instructorAssessmentQuestions.shared.js';
+import type { ZoneAssessmentForm } from '../types.js';
+import { validatePositiveInteger } from '../utils/questions.js';
 
 export type EditZoneModalData =
   | { type: 'create' }
@@ -14,15 +15,6 @@ interface ZoneFormData {
   maxPoints?: number;
   numberChoose?: number;
   bestQuestions?: number;
-}
-
-function validatePositiveInteger(value: number | undefined, fieldName: string) {
-  if (value !== undefined && value < 1) {
-    return `${fieldName} must be at least 1.`;
-  }
-  if (value !== undefined && !Number.isInteger(value)) {
-    return `${fieldName} must be an integer.`;
-  }
 }
 
 export function EditZoneModal({

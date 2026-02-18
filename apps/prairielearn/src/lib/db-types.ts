@@ -9,6 +9,21 @@ import { DateFromISOString, IdSchema, IntervalSchema } from '@prairielearn/zod';
 // Enum schemas. These should be alphabetized by their corresponding enum name.
 // *******************************************************************************
 
+export const EnumAiQuestionGenerationMessageRoleSchema = z.enum(['user', 'assistant']);
+export type EnumAiQuestionGenerationMessageRole = z.infer<
+  typeof EnumAiQuestionGenerationMessageRoleSchema
+>;
+
+export const EnumAiQuestionGenerationMessageStatusSchema = z.enum([
+  'streaming',
+  'completed',
+  'errored',
+  'canceled',
+]);
+export type EnumAiQuestionGenerationMessageStatus = z.infer<
+  typeof EnumAiQuestionGenerationMessageStatusSchema
+>;
+
 export const EnumAssessmentTypeSchema = z.enum(['Exam', 'RetryExam', 'Basic', 'Game', 'Homework']);
 export type EnumAssessmentType = z.infer<typeof EnumAssessmentTypeSchema>;
 
@@ -81,13 +96,6 @@ export const JsonCommentSchema = z.union([z.string(), z.array(z.any()), z.record
 // Sproc schemas. These should be alphabetized by their corresponding sproc name.
 // *******************************************************************************
 
-// Result of assessment_instances_grade sproc
-export const SprocAssessmentInstancesGradeSchema = z.object({
-  new_points: z.number(),
-  new_score_perc: z.number(),
-  updated: z.boolean(),
-});
-
 // Result of assessments_format_for_question sproc
 export const SprocAssessmentsFormatForQuestionSchema = z.array(
   z.object({
@@ -96,6 +104,11 @@ export const SprocAssessmentsFormatForQuestionSchema = z.array(
     course_instance_id: IdSchema,
     label: z.string(),
     share_source_publicly: z.boolean(),
+    // Additional fields for grouping by assessment set (added for question picker)
+    assessment_number: z.string().optional(),
+    assessment_set_abbreviation: z.string().optional(),
+    assessment_set_color: z.string().optional(),
+    assessment_set_name: z.string().optional(),
   }),
 );
 
@@ -255,8 +268,29 @@ export const AiGradingJobSchema = z.object({
   model: z.string(),
   prompt: z.unknown(),
   prompt_tokens: z.number(),
+  rotation_correction_degrees: z.record(z.string(), z.number()).nullable(),
 });
 export type AiGradingJob = z.infer<typeof AiGradingJobSchema>;
+
+export const AiQuestionGenerationMessageSchema = z.object({
+  authn_user_id: IdSchema.nullable(),
+  created_at: DateFromISOString,
+  id: IdSchema,
+  include_in_context: z.boolean(),
+  job_sequence_id: IdSchema.nullable(),
+  model: z.string().nullable(),
+  parts: z.array(z.any()),
+  question_id: IdSchema,
+  role: EnumAiQuestionGenerationMessageRoleSchema,
+  status: EnumAiQuestionGenerationMessageStatusSchema,
+  updated_at: DateFromISOString,
+  usage_input_tokens: z.number(),
+  usage_input_tokens_cache_read: z.number(),
+  usage_input_tokens_cache_write: z.number(),
+  usage_output_tokens: z.number(),
+  usage_output_tokens_reasoning: z.number(),
+});
+export type AiQuestionGenerationMessage = z.infer<typeof AiQuestionGenerationMessageSchema>;
 
 export const AlternativeGroupSchema = z.object({
   advance_score_perc: z.number().nullable(),
@@ -311,7 +345,7 @@ export const AssessmentSchema = z.object({
   max_bonus_points: z.number().nullable(),
   max_points: z.number().nullable(),
   modern_access_control: z.boolean(),
-  multiple_instance: z.boolean().nullable(),
+  multiple_instance: z.boolean(),
   number: z.string(),
   obj: z.any().nullable(),
   order_by: z.number().nullable(),
@@ -338,7 +372,7 @@ export const AssessmentSchema = z.object({
   text: z.string().nullable(),
   tid: z.string().nullable(),
   title: z.string().nullable(),
-  type: EnumAssessmentTypeSchema.nullable(),
+  type: EnumAssessmentTypeSchema,
   uuid: z.string().nullable(),
 });
 export type Assessment = z.infer<typeof AssessmentSchema>;
@@ -691,6 +725,7 @@ export const CourseRequestSchema = z.object({
   id: IdSchema,
   institution: z.string().nullable(),
   last_name: z.string().nullable(),
+  note: z.string().nullable(),
   referral_source: z.string().nullable(),
   short_name: z.string(),
   title: z.string(),
@@ -849,6 +884,7 @@ export const GradingJobSchema = z.object({
 });
 export type GradingJob = z.infer<typeof GradingJobSchema>;
 
+/** @deprecated */
 export const TeamSchema = z.object({
   course_instance_id: IdSchema,
   date: DateFromISOString.nullable(),
@@ -858,8 +894,10 @@ export const TeamSchema = z.object({
   name: z.string(),
   team_config_id: IdSchema,
 });
+/** @deprecated */
 export type Team = z.infer<typeof TeamSchema>;
 
+/** @deprecated */
 export const TeamConfigSchema = z.object({
   assessment_id: IdSchema.nullable(),
   course_instance_id: IdSchema,
@@ -875,10 +913,13 @@ export const TeamConfigSchema = z.object({
   student_authz_join: z.boolean().nullable(),
   student_authz_leave: z.boolean().nullable(),
 });
+/** @deprecated */
 export type TeamConfig = z.infer<typeof TeamConfigSchema>;
 
+/** @deprecated */
 export const TeamLogSchema = null;
 
+/** @deprecated */
 export const TeamRoleSchema = z.object({
   assessment_id: IdSchema.nullable(),
   can_assign_roles: z.boolean().nullable(),
@@ -887,22 +928,47 @@ export const TeamRoleSchema = z.object({
   minimum: z.number().nullable(),
   role_name: z.string(),
 });
+/** @deprecated */
 export type TeamRole = z.infer<typeof TeamRoleSchema>;
 
+/** @deprecated */
 export const TeamUserSchema = z.object({
   team_config_id: IdSchema,
   team_id: IdSchema,
   user_id: IdSchema,
 });
+/** @deprecated */
 export type TeamUser = z.infer<typeof TeamUserSchema>;
 
+/** @deprecated */
 export const TeamUserRoleSchema = z.object({
   id: IdSchema,
   team_id: IdSchema,
   team_role_id: IdSchema,
   user_id: IdSchema,
 });
+/** @deprecated */
 export type TeamUserRole = z.infer<typeof TeamUserRoleSchema>;
+
+// Backwards compatibility aliases for renamed group/team tables
+// In early 2025, we'd planned to rename "groups" to "teams". We got halfway through
+// the migration before realizing that it was a poor idea. We were able to undo most
+// of the changes, with the exception of database table/column names.
+//
+// The "group" aliases below allow us to refer to "groups" throughout the codebase.
+// Once we undo the renaming, we can make these the primary types/schemas again and
+// remove the "team" versions.
+export const GroupSchema = TeamSchema;
+export type Group = Team;
+export const GroupConfigSchema = TeamConfigSchema;
+export type GroupConfig = TeamConfig;
+export const GroupRoleSchema = TeamRoleSchema;
+export type GroupRole = TeamRole;
+export const GroupUserSchema = TeamUserSchema;
+export type GroupUser = TeamUser;
+export const GroupUserRoleSchema = TeamUserRoleSchema;
+export type GroupUserRole = TeamUserRole;
+export const GroupLogSchema = TeamLogSchema;
 
 export const InstanceQuestionSchema = z.object({
   ai_instance_question_group_id: IdSchema.nullable(),
@@ -1164,19 +1230,6 @@ export const LtiOutcomeSchema = z.object({
 export const MigrationSchema = null;
 export const NamedLockSchema = null;
 
-export const NewsItemSchema = z.object({
-  author: z.string().nullable(),
-  date: DateFromISOString,
-  directory: z.string(),
-  id: IdSchema,
-  order_by: z.number(),
-  title: z.string(),
-  uuid: z.string(),
-  visible_to_students: z.boolean(),
-});
-export type NewsItem = z.infer<typeof NewsItemSchema>;
-
-export const NewsItemNotificationSchema = null;
 export const PageViewLogSchema = null;
 
 export const PlanGrantSchema = z.object({
@@ -1542,7 +1595,7 @@ export const ZoneSchema = z.object({
   json_comment: JsonCommentSchema.nullable(),
   json_grade_rate_minutes: z.number().nullable(),
   max_points: z.number().nullable(),
-  number: z.number().nullable(),
+  number: z.number(),
   number_choose: z.number().nullable(),
   title: z.string().nullable(),
 });
@@ -1557,6 +1610,7 @@ export const TableNames = [
   'access_tokens',
   'administrators',
   'ai_grading_jobs',
+  'ai_question_generation_messages',
   'ai_question_generation_prompts',
   'alternative_groups',
   'assessment_access_rules',
@@ -1620,8 +1674,6 @@ export const TableNames = [
   'lti_outcomes',
   'migrations',
   'named_locks',
-  'news_item_notifications',
-  'news_items',
   'page_view_logs',
   'courses',
   'plan_grants',

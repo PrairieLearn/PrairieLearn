@@ -100,6 +100,15 @@ async function cleanAndResetRepository(
   });
 }
 
+export async function getOriginalHash(path: string) {
+  try {
+    return sha256(b64EncodeUnicode(await fs.readFile(path, 'utf8'))).toString();
+  } catch (err: any) {
+    if (err.code === 'ENOENT') return null;
+    throw err;
+  }
+}
+
 interface BaseEditorOptions<ResLocals = object> {
   locals: {
     authz_data: Record<string, any>;
@@ -291,7 +300,7 @@ export abstract class Editor {
           const sharingConfigurationValid = await syncFromDisk.checkSharingConfigurationValid(
             this.course.id,
             possibleCourseData,
-            logger,
+            job,
           );
           if (!sharingConfigurationValid) {
             await cleanAndResetRepository(this.course, startGitHash, gitEnv, job);
@@ -743,12 +752,12 @@ export class AssessmentAddEditor extends Editor {
       allowAccess: [],
       zones: [],
     };
+    const formattedJson = await formatJsonWithPrettier(JSON.stringify(infoJson));
 
-    // We use outputJson to create the directory this.assessmentsPath if it
+    // We use outputFile to create the directory assessmentPath if it
     // does not exist (which it shouldn't). We use the file system flag 'wx'
     // to throw an error if `assessmentPath` already exists.
-    await fs.outputJson(path.join(assessmentPath, 'infoAssessment.json'), infoJson, {
-      spaces: 4,
+    await fs.outputFile(path.join(assessmentPath, 'infoAssessment.json'), formattedJson, {
       flag: 'wx',
     });
 
@@ -1154,12 +1163,12 @@ export class CourseInstanceAddEditor extends Editor {
       longName: this.long_name,
       ...this.metadataOverrides,
     };
+    const formattedJson = await formatJsonWithPrettier(JSON.stringify(infoJson));
 
-    // We use outputJson to create the directory this.courseInstancePath if it
+    // We use outputFile to create the directory courseInstancePath if it
     // does not exist (which it shouldn't). We use the file system flag 'wx' to
     // throw an error if this.courseInstancePath already exists.
-    await fs.outputJson(path.join(courseInstancePath, 'infoCourseInstance.json'), infoJson, {
-      spaces: 4,
+    await fs.outputFile(path.join(courseInstancePath, 'infoCourseInstance.json'), formattedJson, {
       flag: 'wx',
     });
 
@@ -1502,12 +1511,16 @@ export class QuestionDeleteEditor extends Editor {
 
 export class QuestionRenameEditor extends Editor {
   private qid_new: string;
+  private title_new: string | undefined;
   private question: Question;
 
-  constructor(params: BaseEditorOptions<{ question: Question }> & { qid_new: string }) {
+  constructor(
+    params: BaseEditorOptions<{ question: Question }> & { qid_new: string; title_new?: string },
+  ) {
     const {
       locals: { question },
       qid_new,
+      title_new,
     } = params;
 
     super({
@@ -1516,40 +1529,28 @@ export class QuestionRenameEditor extends Editor {
     });
 
     this.qid_new = qid_new;
+    this.title_new = title_new;
     this.question = question;
   }
 
-  async write() {
-    assert(this.question.qid, 'question.qid is required');
-
-    debug('QuestionRenameEditor: write()');
-
-    const questionsPath = path.join(this.course.path, 'questions');
-    const oldPath = path.join(questionsPath, this.question.qid);
-    const newPath = path.join(questionsPath, this.qid_new);
-
-    // Skip editing if the paths are the same.
-    if (oldPath === newPath) return null;
-
-    // Ensure that the updated question folder path is fully contained in the questions directory
-    if (!contains(questionsPath, newPath)) {
-      throw new AugmentedError('Invalid folder path', {
-        info: html`
-          <p>The updated path of the question folder</p>
-          <div class="container">
-            <pre class="bg-dark text-white rounded p-2">${newPath}</pre>
-          </div>
-          <p>must be inside the root directory</p>
-          <div class="container">
-            <pre class="bg-dark text-white rounded p-2">${questionsPath}</pre>
-          </div>
-        `,
-      });
-    }
+  private async moveQuestion({
+    oldPath,
+    newPath,
+    existingQid,
+    questionsPath,
+  }: {
+    oldPath: string;
+    newPath: string;
+    existingQid: string;
+    questionsPath: string;
+  }) {
+    const pathsToAdd: string[] = [];
 
     debug(`Move files from ${oldPath} to ${newPath}`);
     await fs.move(oldPath, newPath, { overwrite: false });
-    await this.removeEmptyPrecedingSubfolders(questionsPath, this.question.qid);
+    await this.removeEmptyPrecedingSubfolders(questionsPath, existingQid);
+
+    pathsToAdd.push(oldPath, newPath);
 
     debug(`Find all assessments (in all course instances) that contain ${this.question.qid}`);
     const assessments = await sqldb.queryRows(
@@ -1560,8 +1561,6 @@ export class QuestionRenameEditor extends Editor {
         assessment_directory: AssessmentSchema.shape.tid,
       }),
     );
-
-    const pathsToAdd = [oldPath, newPath];
 
     debug(
       `For each assessment, read/write infoAssessment.json to replace ${this.question.qid} with ${this.qid_new}`,
@@ -1610,9 +1609,162 @@ export class QuestionRenameEditor extends Editor {
       await fs.writeFile(infoPath, formattedJson);
     }
 
+    return pathsToAdd;
+  }
+
+  async write() {
+    assert(this.question.qid, 'question.qid is required');
+
+    debug('QuestionRenameEditor: write()');
+
+    const questionsPath = path.join(this.course.path, 'questions');
+    const oldPath = path.join(questionsPath, this.question.qid);
+    const newPath = path.join(questionsPath, this.qid_new);
+
+    const qidChanging = oldPath !== newPath;
+
+    // Skip editing if neither the QID nor the title is changing.
+    if (!qidChanging && !this.title_new) return null;
+
+    // Ensure that the updated question folder path is fully contained in the questions directory
+    if (qidChanging && !contains(questionsPath, newPath)) {
+      throw new AugmentedError('Invalid folder path', {
+        info: html`
+          <p>The updated path of the question folder</p>
+          <div class="container">
+            <pre class="bg-dark text-white rounded p-2">${newPath}</pre>
+          </div>
+          <p>must be inside the root directory</p>
+          <div class="container">
+            <pre class="bg-dark text-white rounded p-2">${questionsPath}</pre>
+          </div>
+        `,
+      });
+    }
+
+    const pathsToAdd: string[] = [];
+
+    if (qidChanging) {
+      pathsToAdd.push(
+        ...(await this.moveQuestion({
+          oldPath,
+          newPath,
+          questionsPath,
+          existingQid: this.question.qid,
+        })),
+      );
+    }
+
+    // Update the question title in info.json if a new title was provided.
+    if (this.title_new) {
+      // Use the new path if QID changed, otherwise use the old path.
+      const questionPath = qidChanging ? newPath : oldPath;
+      const questionInfoPath = path.join(questionPath, 'info.json');
+
+      debug(`Read ${questionInfoPath}`);
+      const questionInfoJson: any = await fs.readJson(questionInfoPath);
+
+      debug(`Update title in ${questionInfoPath}`);
+      questionInfoJson.title = this.title_new;
+
+      const formattedQuestionInfoJson = await formatJsonWithPrettier(
+        JSON.stringify(questionInfoJson),
+      );
+      await fs.writeFile(questionInfoPath, formattedQuestionInfoJson);
+
+      // Only add to pathsToAdd if we haven't already added the question path.
+      if (!qidChanging) {
+        pathsToAdd.push(questionPath);
+      }
+    }
+
+    const commitMessage = run(() => {
+      if (qidChanging) {
+        return `rename question ${this.question.qid} to ${this.qid_new}`;
+      }
+
+      return `update title of question ${this.question.qid}`;
+    });
+
     return {
       pathsToAdd,
-      commitMessage: `rename question ${this.question.qid} to ${this.qid_new}`,
+      commitMessage,
+    };
+  }
+}
+
+/**
+ * This rename editor is used to rename an assessment set referenced by assessments.
+ *
+ * It does not rename the assessment set at the course level (infoCourse.json).
+ */
+export class AssessmentSetRenameEditor extends Editor {
+  private oldName: string;
+  private newName: string;
+
+  constructor(
+    params: BaseEditorOptions & {
+      oldName: string;
+      newName: string;
+    },
+  ) {
+    super({
+      ...params,
+      description: `Rename assessment set ${params.oldName} to ${params.newName}`,
+    });
+    this.oldName = params.oldName;
+    this.newName = params.newName;
+  }
+
+  async write() {
+    if (this.oldName === this.newName) return null;
+
+    debug('AssessmentSetRenameEditor: write()');
+
+    const assessments = await sqldb.queryRows(
+      sql.select_assessments_with_assessment_set,
+      { assessment_set_name: this.oldName, course_id: this.course.id },
+      z.object({
+        course_instance_directory: CourseInstanceSchema.shape.short_name,
+        assessment_directory: AssessmentSchema.shape.tid,
+      }),
+    );
+
+    if (assessments.length === 0) return null;
+
+    const pathsToAdd: string[] = [];
+
+    for (const assessment of assessments) {
+      assert(
+        assessment.course_instance_directory !== null,
+        'course_instance_directory is required',
+      );
+      assert(assessment.assessment_directory !== null, 'assessment_directory is required');
+
+      const infoPath = path.join(
+        this.course.path,
+        'courseInstances',
+        assessment.course_instance_directory,
+        'assessments',
+        assessment.assessment_directory,
+        'infoAssessment.json',
+      );
+      pathsToAdd.push(infoPath);
+
+      debug(`Read ${infoPath}`);
+      const infoJson = await fs.readJson(infoPath);
+
+      debug(`Replace assessment set name in ${infoPath}`);
+      infoJson.set = this.newName;
+
+      debug(`Write ${infoPath}`);
+      const formattedJson = await formatJsonWithPrettier(JSON.stringify(infoJson));
+      await fs.writeFile(infoPath, formattedJson);
+    }
+
+    return {
+      pathsToAdd,
+      commitMessage: `rename assessment set ${this.oldName} to ${this.newName}`,
     };
   }
 }

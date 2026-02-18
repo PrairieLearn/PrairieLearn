@@ -14,10 +14,10 @@
     "test": "vitest run --coverage"
   },
   "dependencies": {
-    "@aws-sdk/client-ecr": "^3.969.0",
-    "@aws-sdk/client-s3": "^3.969.0",
-    "@aws-sdk/credential-providers": "^3.969.0",
-    "@aws-sdk/lib-storage": "^3.969.0",
+    "@aws-sdk/client-ecr": "^3.981.0",
+    "@aws-sdk/client-s3": "^3.981.0",
+    "@aws-sdk/credential-providers": "^3.981.0",
+    "@aws-sdk/lib-storage": "^3.981.0",
     "@prairielearn/aws": "workspace:^",
     "@prairielearn/cache": "workspace:^",
     "@prairielearn/config": "workspace:^",
@@ -38,24 +38,24 @@
     "dockerode": "^4.0.9",
     "express": "^4.22.1",
     "express-async-handler": "^1.2.0",
-    "ioredis": "^5.9.1",
-    "lodash": "^4.17.23",
+    "ioredis": "^5.9.2",
     "minimist": "^1.2.8",
     "node-fetch": "3.3.2",
     "shlex": "^3.0.0",
     "zod": "^3.25.76"
   },
   "devDependencies": {
+    "@prairielearn/tsconfig": "workspace:^",
     "@types/minimist": "^1.2.5",
     "@types/node": "^24.10.9",
-    "@typescript/native-preview": "^7.0.0-dev.20260106.1",
-    "@vitest/coverage-v8": "^4.0.17",
+    "@typescript/native-preview": "^7.0.0-dev.20260203.1",
+    "@vitest/coverage-v8": "^4.0.18",
     "fast-glob": "^3.3.3",
     "nodemon": "^3.1.11",
     "tsx": "^4.21.0",
     "typescript": "^5.9.3",
     "typescript-cp": "^0.1.9",
-    "vitest": "^4.0.17"
+    "vitest": "^4.0.18"
   },
   "nodemonConfig": {
     "ext": "js,jsx,ts,tsx,json,sql",

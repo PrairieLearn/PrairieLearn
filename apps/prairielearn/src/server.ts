@@ -21,6 +21,7 @@ import bodyParser from 'body-parser';
 import cookie from 'cookie';
 import cookieParser from 'cookie-parser';
 import esMain from 'es-main';
+import { sampleSize } from 'es-toolkit';
 import express, {
   type Express,
   type NextFunction,
@@ -85,7 +86,6 @@ import { enterpriseOnly } from './middlewares/enterpriseOnly.js';
 import staticNodeModules from './middlewares/staticNodeModules.js';
 import { makeWorkspaceProxyMiddleware } from './middlewares/workspaceProxy.js';
 import { selectCourseById } from './models/course.js';
-import * as news_items from './news_items/index.js';
 import * as freeformServer from './question-servers/freeform.js';
 import * as sprocs from './sprocs/index.js';
 
@@ -191,11 +191,11 @@ export async function initExpress(): Promise<Express> {
         '/pl/api/',
         // Static assets don't need to read from or write to sessions.
         //
-        // Note that the `/assets` route is configured to turn any missing files into 404
+        // Note that the assets route is configured to turn any missing files into 404
         // errors, not to fall through and allow other routes to try to serve them. If they
         // did fall through, we'd likely end up running code that does expect sessions to
         // be present, e.g. `middlewares/authn`.
-        '/assets',
+        config.assetsPrefix,
       ],
       sessionRouter,
     ),
@@ -527,8 +527,6 @@ export async function initExpress(): Promise<Express> {
   app.use('/pl/settings', (await import('./pages/userSettings/userSettings.js')).default);
   app.use('/pl/enroll', (await import('./pages/enroll/enroll.js')).default);
   app.use('/pl/password', (await import('./pages/authPassword/authPassword.js')).default);
-  app.use('/pl/news_items', (await import('./pages/newsItems/newsItems.js')).default);
-  app.use('/pl/news_item', (await import('./pages/newsItem/newsItem.js')).default);
   app.use('/pl/request_course', [
     // Users can post data to this page and then view it, so we'll block access to prevent
     // students from using to infiltrate or exfiltrate exam information.
@@ -666,16 +664,6 @@ export async function initExpress(): Promise<Express> {
     },
   ]);
 
-  // Some course instance student pages only require course instance authorization (already checked)
-  app.use(
-    '/pl/course_instance/:course_instance_id(\\d+)/news_items',
-    (await import('./pages/newsItems/newsItems.js')).default,
-  );
-  app.use(
-    '/pl/course_instance/:course_instance_id(\\d+)/news_item',
-    (await import('./pages/newsItem/newsItem.js')).default,
-  );
-
   // Some course instance student pages only require the authn user to have permissions
   app.use('/pl/course_instance/:course_instance_id(\\d+)/effectiveUser', [
     (await import('./middlewares/authzAuthnHasCoursePreviewOrInstanceView.js')).default,
@@ -699,14 +687,6 @@ export async function initExpress(): Promise<Express> {
   app.use(
     '/pl/course_instance/:course_instance_id(\\d+)/instructor/effectiveUser',
     (await import('./pages/instructorEffectiveUser/instructorEffectiveUser.js')).default,
-  );
-  app.use(
-    '/pl/course_instance/:course_instance_id(\\d+)/instructor/news_items',
-    (await import('./pages/newsItems/newsItems.js')).default,
-  );
-  app.use(
-    '/pl/course_instance/:course_instance_id(\\d+)/instructor/news_item',
-    (await import('./pages/newsItem/newsItem.js')).default,
   );
 
   // All other course instance student pages require the effective user to have permissions
@@ -892,7 +872,7 @@ export async function initExpress(): Promise<Express> {
         res.locals.navSubPage = 'groups';
         next();
       },
-      (await import('./pages/instructorAssessmentTeams/instructorAssessmentTeams.js')).default,
+      (await import('./pages/instructorAssessmentGroups/instructorAssessmentGroups.js')).default,
     ],
   );
   app.use(
@@ -1194,6 +1174,10 @@ export async function initExpress(): Promise<Express> {
   app.use(
     '/pl/course_instance/:course_instance_id(\\d+)/instructor/course_admin/issues',
     (await import('./pages/instructorIssues/instructorIssues.js')).default,
+  );
+  app.use(
+    '/pl/course_instance/:course_instance_id(\\d+)/instructor/course_admin/questions/create',
+    (await import('./pages/instructorQuestionCreate/instructorQuestionCreate.js')).default,
   );
   app.use(
     '/pl/course_instance/:course_instance_id(\\d+)/instructor/course_admin/questions',
@@ -1553,14 +1537,6 @@ export async function initExpress(): Promise<Express> {
     '/pl/course/:course_id(\\d+)/effectiveUser',
     (await import('./pages/instructorEffectiveUser/instructorEffectiveUser.js')).default,
   );
-  app.use(
-    '/pl/course/:course_id(\\d+)/news_items',
-    (await import('./pages/newsItems/newsItems.js')).default,
-  );
-  app.use(
-    '/pl/course/:course_id(\\d+)/news_item',
-    (await import('./pages/newsItem/newsItem.js')).default,
-  );
 
   // All other course pages require the effective user to have permission
   app.use(
@@ -1671,6 +1647,10 @@ export async function initExpress(): Promise<Express> {
   app.use(
     '/pl/course/:course_id(\\d+)/course_admin/issues',
     (await import('./pages/instructorIssues/instructorIssues.js')).default,
+  );
+  app.use(
+    '/pl/course/:course_id(\\d+)/course_admin/questions/create',
+    (await import('./pages/instructorQuestionCreate/instructorQuestionCreate.js')).default,
   );
   app.use(
     '/pl/course/:course_id(\\d+)/course_admin/questions',
@@ -2020,11 +2000,7 @@ export async function initExpress(): Promise<Express> {
   // This should come first so that both Sentry and our own error page can
   // read the error ID and any status code.
   app.use((err: any, req: Request, res: Response, next: NextFunction) => {
-    const chars = [...'0123456789ABCDEFGHIJKLMNOPQRSTUVWXYZ'];
-
-    res.locals.error_id = Array.from({ length: 12 })
-      .map(() => chars[Math.floor(Math.random() * chars.length)])
-      .join('');
+    res.locals.error_id = sampleSize([...'0123456789ABCDEFGHIJKLMNOPQRSTUVWXYZ'], 12).join('');
 
     err.status = err.status ?? maybeGetStatusCodeFromSqlError(err) ?? 500;
 
@@ -2538,15 +2514,6 @@ if (shouldStartServer) {
         logger.info(`Job ${job.id} finished with status '${job.status}'.\n${job.output}`);
       });
       process.exit(0);
-    }
-
-    if (config.initNewsItems) {
-      // We initialize news items asynchronously so that servers can boot up
-      // in production as quickly as possible.
-      void news_items.initInBackground({
-        // Always notify in production environments.
-        notifyIfPreviouslyEmpty: !config.devMode,
-      });
     }
 
     // We need to initialize these first, as the code callers require these

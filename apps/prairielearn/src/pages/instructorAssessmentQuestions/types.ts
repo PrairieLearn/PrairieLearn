@@ -1,21 +1,72 @@
+import { z } from 'zod';
+
 import type { StaffAssessmentQuestionRow } from '../../lib/assessment-question.js';
 import type { EnumAssessmentType } from '../../lib/db-types.js';
+import {
+  QuestionAlternativeJsonSchema,
+  ZoneAssessmentJsonSchema,
+  ZoneQuestionBlockJsonSchema,
+} from '../../schemas/infoAssessment.js';
 
-import type {
-  QuestionAlternativeForm,
-  ZoneAssessmentForm,
-  ZoneQuestionBlockForm,
-} from './instructorAssessmentQuestions.shared.js';
+/**
+ * Branded UUID type for stable drag-and-drop identity.
+ * Using a branded type prevents accidental confusion with question IDs (QIDs).
+ */
+export const TrackingIdSchema = z.string().uuid().brand<'TrackingId'>();
+export type TrackingId = z.infer<typeof TrackingIdSchema>;
+
+/**
+ * Form version of QuestionAlternativeJson - adds trackingId for stable drag-and-drop identity.
+ */
+export const QuestionAlternativeFormSchema = QuestionAlternativeJsonSchema.extend({
+  trackingId: TrackingIdSchema,
+});
+export type QuestionAlternativeForm = z.infer<typeof QuestionAlternativeFormSchema>;
+
+/**
+ * Form version of ZoneQuestionBlockJson - adds trackingId, updates alternatives type.
+ */
+export const ZoneQuestionBlockFormSchema = ZoneQuestionBlockJsonSchema.omit({
+  alternatives: true,
+}).extend({
+  trackingId: TrackingIdSchema,
+  alternatives: z.array(QuestionAlternativeFormSchema).min(1).optional(),
+});
+export type ZoneQuestionBlockForm = z.infer<typeof ZoneQuestionBlockFormSchema>;
+
+/**
+ * Form version of ZoneAssessmentJson - adds trackingId, updates questions type.
+ */
+export const ZoneAssessmentFormSchema = ZoneAssessmentJsonSchema.omit({ questions: true }).extend({
+  trackingId: TrackingIdSchema,
+  questions: z.array(ZoneQuestionBlockFormSchema),
+});
+export type ZoneAssessmentForm = z.infer<typeof ZoneAssessmentFormSchema>;
+
+/**
+ * Assessment data for the question picker, including fields needed for grouping.
+ */
+export interface AssessmentForPicker {
+  assessment_id: string;
+  label: string;
+  color: string;
+  assessment_set_abbreviation?: string;
+  assessment_set_name?: string;
+  assessment_set_color?: string;
+  assessment_number?: string;
+}
 
 /**
  * Simplified question data for the question picker modal.
  * Only includes fields needed for display and selection.
  */
 export interface CourseQuestionForPicker {
+  id: string;
   qid: string;
   title: string;
   topic: { id: string; name: string; color: string };
   tags: { id: string; name: string; color: string }[] | null;
+  assessments: AssessmentForPicker[] | null;
 }
 
 /**
@@ -130,6 +181,7 @@ export type EditorAction =
   | {
       type: 'UPDATE_QUESTION_METADATA';
       questionId: string;
+      oldQuestionId?: string;
       questionData: StaffAssessmentQuestionRow;
     }
   | {

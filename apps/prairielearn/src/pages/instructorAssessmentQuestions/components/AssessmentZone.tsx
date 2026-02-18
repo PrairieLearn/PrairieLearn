@@ -6,20 +6,18 @@ import {
 import { SortableContext, useSortable, verticalListSortingStrategy } from '@dnd-kit/sortable';
 import type { CSSProperties, Dispatch } from 'react';
 
+import { CommentPopover } from '../../../components/CommentPopover.js';
 import type { ZoneAssessmentJson } from '../../../schemas/infoAssessment.js';
-import type {
-  ZoneAssessmentForm,
-  ZoneQuestionBlockForm,
-} from '../instructorAssessmentQuestions.shared.js';
 import {
   type AssessmentState,
   type EditorAction,
   type HandleDeleteQuestion,
   type HandleEditQuestion,
+  type ZoneAssessmentForm,
+  type ZoneQuestionBlockForm,
   getTableColumnCount,
 } from '../types.js';
 
-import { CommentIcon } from './CommentIcon.js';
 import { ZoneQuestionBlock } from './ZoneQuestionBlock.js';
 
 /**
@@ -287,7 +285,7 @@ function AssessmentZoneHeader({
             : `(${zone.numberChoose} questions)`}
         {zone.maxPoints != null ? ` (maximum ${zone.maxPoints} points)` : ''}
         {zone.bestQuestions != null ? ` (best ${zone.bestQuestions} questions)` : ''}
-        <CommentIcon comment={zone.comment} />
+        <CommentPopover comment={zone.comment} />
       </th>
     </tr>
   );

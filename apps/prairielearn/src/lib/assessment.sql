@@ -19,7 +19,7 @@ WITH
       ai.assessment_id = $assessment_id
       AND (
         CASE
-          WHEN $team_id::bigint IS NOT NULL THEN ai.team_id = $team_id
+          WHEN $group_id::bigint IS NOT NULL THEN ai.team_id = $group_id
           ELSE ai.user_id = $user_id
         END
       )
@@ -46,9 +46,9 @@ WITH
       $authn_user_id,
       $assessment_id,
       CASE
-        WHEN $team_id::bigint IS NULL THEN $user_id
+        WHEN $group_id::bigint IS NULL THEN $user_id
       END,
-      $team_id,
+      $group_id,
       $mode,
       a.auto_close
       AND a.type = 'Exam',
@@ -90,26 +90,26 @@ WITH
   -- Use separate CTEs for last_access because Postgres does not support
   -- multiple ON CONFLICT clauses in a single INSERT statement. Only one of
   -- these CTEs will actually insert a row.
-  inserted_last_access_team AS (
+  inserted_last_access_group AS (
     INSERT INTO
       last_accesses (team_id, last_access)
     SELECT
-      $team_id,
+      $group_id,
       current_timestamp
     WHERE
-      $team_id::bigint IS NOT NULL
+      $group_id::bigint IS NOT NULL
     ON CONFLICT (team_id) DO UPDATE
     SET
       last_access = EXCLUDED.last_access
   ),
-  inserted_last_access_non_team AS (
+  inserted_last_access_non_group AS (
     INSERT INTO
       last_accesses (user_id, last_access)
     SELECT
       $user_id,
       current_timestamp
     WHERE
-      $team_id::bigint IS NULL
+      $group_id::bigint IS NULL
     ON CONFLICT (user_id) DO UPDATE
     SET
       last_access = EXCLUDED.last_access
@@ -303,12 +303,6 @@ FROM
 
 -- BLOCK update_assessment_instance_max_points
 WITH
-  zones_total_max_points AS (
-    SELECT
-      SUM(max_points) AS total_max_points
-    FROM
-      assessment_instances_points ($assessment_instance_id)
-  ),
   new_max_points AS (
     SELECT
       ai.max_points AS old_max_points,
@@ -316,7 +310,7 @@ WITH
       COALESCE(
         a.max_points,
         GREATEST(
-          ztmp.total_max_points - COALESCE(a.max_bonus_points, 0),
+          $total_points_zones - COALESCE(a.max_bonus_points, 0),
           0
         )
       ) AS new_max_points,
@@ -324,7 +318,6 @@ WITH
     FROM
       assessment_instances AS ai
       JOIN assessments AS a ON (a.id = ai.assessment_id)
-      LEFT JOIN zones_total_max_points ztmp ON TRUE
     WHERE
       ai.id = $assessment_instance_id
   ),
@@ -397,13 +390,13 @@ FROM
 SELECT
   ai.id AS assessment_instance_id,
   ai.number AS instance_number,
-  COALESCE(u.uid, 'group ' || t.name) AS username
+  COALESCE(u.uid, 'group ' || g.name) AS username
 FROM
   assessment_instances AS ai
   JOIN assessments AS a ON (a.id = ai.assessment_id)
-  LEFT JOIN teams AS t ON (
-    t.id = ai.team_id
-    AND t.deleted_at IS NULL
+  LEFT JOIN teams AS g ON (
+    g.id = ai.team_id
+    AND g.deleted_at IS NULL
   )
   LEFT JOIN users AS u ON (u.id = ai.user_id)
 WHERE
@@ -569,13 +562,13 @@ WITH
     FROM
       assessment_instances AS ai
       JOIN assessments AS a ON (a.id = ai.assessment_id)
-      -- Only select teams that are not soft-deleted
-      LEFT JOIN teams AS t ON (
-        t.id = ai.team_id
-        AND t.deleted_at IS NULL
+      -- Only select groups that are not soft-deleted
+      LEFT JOIN teams AS g ON (
+        g.id = ai.team_id
+        AND g.deleted_at IS NULL
       )
-      LEFT JOIN team_users AS tu ON (tu.team_id = t.id)
-      JOIN users AS u ON (u.id = COALESCE(ai.user_id, tu.user_id))
+      LEFT JOIN team_users AS gu ON (gu.team_id = g.id)
+      JOIN users AS u ON (u.id = COALESCE(ai.user_id, gu.user_id))
       JOIN enrollments AS e ON (
         e.user_id = u.id
         AND e.course_instance_id = a.course_instance_id
@@ -656,13 +649,13 @@ WITH
     FROM
       assessment_instances AS ai
       JOIN assessments AS a ON (a.id = ai.assessment_id)
-      -- Only select teams that are not soft-deleted
-      LEFT JOIN teams AS t ON (
-        t.id = ai.team_id
-        AND t.deleted_at IS NULL
+      -- Only select groups that are not soft-deleted
+      LEFT JOIN teams AS g ON (
+        g.id = ai.team_id
+        AND g.deleted_at IS NULL
       )
-      LEFT JOIN team_users AS tu ON (tu.team_id = t.id)
-      JOIN users AS u ON (u.id = COALESCE(ai.user_id, tu.user_id))
+      LEFT JOIN team_users AS gu ON (gu.team_id = g.id)
+      JOIN users AS u ON (u.id = COALESCE(ai.user_id, gu.user_id))
       JOIN enrollments AS e ON (
         e.user_id = u.id
         AND e.course_instance_id = a.course_instance_id
@@ -713,13 +706,13 @@ WITH
     FROM
       assessment_instances AS ai
       JOIN assessments AS a ON (a.id = ai.assessment_id)
-      -- Only select teams that are not soft-deleted
-      LEFT JOIN teams AS t ON (
-        t.id = ai.team_id
-        AND t.deleted_at IS NULL
+      -- Only select groups that are not soft-deleted
+      LEFT JOIN teams AS g ON (
+        g.id = ai.team_id
+        AND g.deleted_at IS NULL
       )
-      LEFT JOIN team_users AS tu ON (tu.team_id = t.id)
-      JOIN users AS u ON (u.id = COALESCE(ai.user_id, tu.user_id))
+      LEFT JOIN team_users AS gu ON (gu.team_id = g.id)
+      JOIN users AS u ON (u.id = COALESCE(ai.user_id, gu.user_id))
       JOIN enrollments AS e ON (
         e.user_id = u.id
         AND e.course_instance_id = a.course_instance_id
@@ -797,22 +790,22 @@ FROM
 
 -- BLOCK assessment_instance_log
 WITH
-  ai_team_users AS (
-    -- This selects not only all users who are currently in the team,
-    -- but all users who were EVER in the team at some point. We've
-    -- seen real-world examples of a user creating and joining a team,
-    -- completing the assessment, and then leaving the team. If we
-    -- didn't include past team members as well, we'd end up with an
+  ai_group_users AS (
+    -- This selects not only all users who are currently in the group,
+    -- but all users who were EVER in the group at some point. We've
+    -- seen real-world examples of a user creating and joining a group,
+    -- completing the assessment, and then leaving the group. If we
+    -- didn't include past group members as well, we'd end up with an
     -- assessment log that didn't include any `page_view_logs` events,
     -- which would be undesirable for the instructor.
     SELECT
-      tl.user_id
+      gl.user_id
     FROM
       assessment_instances AS ai
-      JOIN team_logs AS tl ON (tl.team_id = ai.team_id)
+      JOIN team_logs AS gl ON (gl.team_id = ai.team_id)
     WHERE
       ai.id = $assessment_instance_id
-      AND tl.action = 'join'
+      AND gl.action = 'join'
   ),
   user_page_view_logs AS (
     SELECT
@@ -823,15 +816,15 @@ WITH
     WHERE
       pvl.assessment_instance_id = $assessment_instance_id
       -- Include events for the assessment's owner and, in case of
-      -- team assessments, for any user that at some point was part
-      -- of the team.
+      -- group assessments, for any user that at some point was part
+      -- of the group.
       AND (
         pvl.authn_user_id = ai.user_id
         OR pvl.authn_user_id IN (
           SELECT
             *
           FROM
-            ai_team_users
+            ai_group_users
         )
       )
   ),
@@ -1379,9 +1372,9 @@ WITH
     (
       SELECT
         10 AS event_order,
-        ('Group ' || tl.action)::text AS event_name,
+        ('Group ' || gl.action)::text AS event_name,
         'gray2'::text AS event_color,
-        tl.date,
+        gl.date,
         u.id AS auth_user_id,
         u.uid AS auth_user_uid,
         NULL::text AS qid,
@@ -1390,16 +1383,16 @@ WITH
         NULL::integer AS variant_id,
         NULL::integer AS variant_number,
         NULL::integer AS submission_id,
-        tl.id AS log_id,
+        gl.id AS log_id,
         NULL::bigint AS client_fingerprint_id,
         jsonb_strip_nulls(
-          jsonb_build_object('user', tu.uid, 'roles', tl.roles)
+          jsonb_build_object('user', gu.uid, 'roles', gl.roles)
         ) AS data
       FROM
         assessment_instances AS ai
-        JOIN team_logs AS tl ON (tl.team_id = ai.team_id)
-        JOIN users AS u ON (u.id = tl.authn_user_id)
-        LEFT JOIN users AS tu ON (tu.id = tl.user_id)
+        JOIN team_logs AS gl ON (gl.team_id = ai.team_id)
+        JOIN users AS u ON (u.id = gl.authn_user_id)
+        LEFT JOIN users AS gu ON (gu.id = gl.user_id)
       WHERE
         ai.id = $assessment_instance_id
     )
@@ -1466,28 +1459,28 @@ WITH
   relevant_instance_questions AS (
     SELECT DISTINCT
       iq.*,
-      -- Determine a unique ID for each user or team by making team IDs
-      -- negative. Exactly one of user_id or team_id will be NULL, so this
+      -- Determine a unique ID for each user or group by making group IDs
+      -- negative. Exactly one of user_id or group_id will be NULL, so this
       -- results in a unqiue non-NULL ID for each assessment instance.
-      coalesce(ai.user_id, - ai.team_id) AS u_tm_id
+      coalesce(ai.user_id, - ai.team_id) AS u_gr_id
     FROM
       instance_questions AS iq
       JOIN relevant_assessment_instances AS ai ON (ai.id = iq.assessment_instance_id)
     WHERE
       iq.assessment_question_id = $assessment_question_id
   ),
-  assessment_scores_by_user_or_team AS (
+  assessment_scores_by_user_or_group AS (
     SELECT
-      coalesce(ai.user_id, - ai.team_id) AS u_tm_id,
+      coalesce(ai.user_id, - ai.team_id) AS u_gr_id,
       max(ai.score_perc) AS score_perc
     FROM
       relevant_assessment_instances AS ai
     GROUP BY
       coalesce(ai.user_id, - ai.team_id)
   ),
-  question_stats_by_user_or_team AS (
+  question_stats_by_user_or_group AS (
     SELECT
-      iq.u_tm_id,
+      iq.u_gr_id,
       avg(iq.score_perc) AS score_perc,
       100 * count(iq.id) FILTER (
         WHERE
@@ -1512,24 +1505,24 @@ WITH
     FROM
       relevant_instance_questions AS iq
     GROUP BY
-      iq.u_tm_id
+      iq.u_gr_id
   ),
   user_quintiles AS (
     SELECT
-      assessment_scores_by_user_or_team.u_tm_id,
+      assessment_scores_by_user_or_group.u_gr_id,
       ntile(5) OVER (
         ORDER BY
-          assessment_scores_by_user_or_team.score_perc
+          assessment_scores_by_user_or_group.score_perc
       ) AS quintile
     FROM
-      assessment_scores_by_user_or_team
+      assessment_scores_by_user_or_group
   ),
   quintile_scores AS (
     SELECT
-      avg(question_stats_by_user_or_team.score_perc) AS quintile_score
+      avg(question_stats_by_user_or_group.score_perc) AS quintile_score
     FROM
-      question_stats_by_user_or_team
-      JOIN user_quintiles USING (u_tm_id)
+      question_stats_by_user_or_group
+      JOIN user_quintiles USING (u_gr_id)
     GROUP BY
       user_quintiles.quintile
     ORDER BY
@@ -1545,119 +1538,126 @@ WITH
     SELECT
       least(
         100,
-        greatest(0, avg(question_stats_by_user_or_team.score_perc))
+        greatest(
+          0,
+          avg(question_stats_by_user_or_group.score_perc)
+        )
       ) AS mean_question_score,
       percentile_cont(0.5) WITHIN GROUP (
         ORDER BY
-          question_stats_by_user_or_team.score_perc
+          question_stats_by_user_or_group.score_perc
       ) AS median_question_score,
       sqrt(
-        var_pop(question_stats_by_user_or_team.score_perc)
+        var_pop(question_stats_by_user_or_group.score_perc)
       ) AS question_score_variance,
       coalesce(
         corr(
-          question_stats_by_user_or_team.score_perc,
-          assessment_scores_by_user_or_team.score_perc
+          question_stats_by_user_or_group.score_perc,
+          assessment_scores_by_user_or_group.score_perc
         ) * 100,
         CASE
-          WHEN count(question_stats_by_user_or_team.score_perc) > 0 THEN 0
+          WHEN count(question_stats_by_user_or_group.score_perc) > 0 THEN 0
           ELSE NULL
         END
       ) AS discrimination,
       avg(
-        question_stats_by_user_or_team.some_submission_perc
+        question_stats_by_user_or_group.some_submission_perc
       ) AS some_submission_perc,
       avg(
-        question_stats_by_user_or_team.some_perfect_submission_perc
+        question_stats_by_user_or_group.some_perfect_submission_perc
       ) AS some_perfect_submission_perc,
       avg(
-        question_stats_by_user_or_team.some_nonzero_submission_perc
+        question_stats_by_user_or_group.some_nonzero_submission_perc
       ) AS some_nonzero_submission_perc,
       avg(
-        question_stats_by_user_or_team.first_submission_score
+        question_stats_by_user_or_group.first_submission_score
       ) AS average_first_submission_score,
       sqrt(
         var_pop(
-          question_stats_by_user_or_team.first_submission_score
+          question_stats_by_user_or_group.first_submission_score
         )
       ) AS first_submission_score_variance,
       histogram (
-        question_stats_by_user_or_team.first_submission_score,
+        question_stats_by_user_or_group.first_submission_score,
         0,
         1,
         10
       ) AS first_submission_score_hist,
       avg(
-        question_stats_by_user_or_team.last_submission_score
+        question_stats_by_user_or_group.last_submission_score
       ) AS average_last_submission_score,
       sqrt(
         var_pop(
-          question_stats_by_user_or_team.last_submission_score
+          question_stats_by_user_or_group.last_submission_score
         )
       ) AS last_submission_score_variance,
       histogram (
-        question_stats_by_user_or_team.last_submission_score,
+        question_stats_by_user_or_group.last_submission_score,
         0,
         1,
         10
       ) AS last_submission_score_hist,
       avg(
-        question_stats_by_user_or_team.max_submission_score
+        question_stats_by_user_or_group.max_submission_score
       ) AS average_max_submission_score,
       sqrt(
         var_pop(
-          question_stats_by_user_or_team.max_submission_score
+          question_stats_by_user_or_group.max_submission_score
         )
       ) AS max_submission_score_variance,
       histogram (
-        question_stats_by_user_or_team.max_submission_score,
+        question_stats_by_user_or_group.max_submission_score,
         0,
         1,
         10
       ) AS max_submission_score_hist,
       avg(
-        question_stats_by_user_or_team.average_submission_score
+        question_stats_by_user_or_group.average_submission_score
       ) AS average_average_submission_score,
       sqrt(
         var_pop(
-          question_stats_by_user_or_team.average_submission_score
+          question_stats_by_user_or_group.average_submission_score
         )
       ) AS average_submission_score_variance,
       histogram (
-        question_stats_by_user_or_team.average_submission_score,
+        question_stats_by_user_or_group.average_submission_score,
         0,
         1,
         10
       ) AS average_submission_score_hist,
       array_avg (
-        question_stats_by_user_or_team.submission_score_array
+        question_stats_by_user_or_group.submission_score_array
       ) AS submission_score_array_averages,
       array_var (
-        question_stats_by_user_or_team.submission_score_array
+        question_stats_by_user_or_group.submission_score_array
       ) AS submission_score_array_variances,
       array_avg (
-        question_stats_by_user_or_team.incremental_submission_score_array
+        question_stats_by_user_or_group.incremental_submission_score_array
       ) AS incremental_submission_score_array_averages,
       array_var (
-        question_stats_by_user_or_team.incremental_submission_score_array
+        question_stats_by_user_or_group.incremental_submission_score_array
       ) AS incremental_submission_score_array_variances,
       array_avg (
-        question_stats_by_user_or_team.incremental_submission_points_array
+        question_stats_by_user_or_group.incremental_submission_points_array
       ) AS incremental_submission_points_array_averages,
       array_var (
-        question_stats_by_user_or_team.incremental_submission_points_array
+        question_stats_by_user_or_group.incremental_submission_points_array
       ) AS incremental_submission_points_array_variances,
-      avg(question_stats_by_user_or_team.number_submissions) AS average_number_submissions,
-      var_pop(question_stats_by_user_or_team.number_submissions) AS number_submissions_variance,
+      avg(
+        question_stats_by_user_or_group.number_submissions
+      ) AS average_number_submissions,
+      var_pop(
+        question_stats_by_user_or_group.number_submissions
+      ) AS number_submissions_variance,
       histogram (
-        question_stats_by_user_or_team.number_submissions,
+        question_stats_by_user_or_group.number_submissions,
         0,
         10,
         10
       ) AS number_submissions_hist
     FROM
-      question_stats_by_user_or_team
-      JOIN assessment_scores_by_user_or_team USING (u_tm_id)
+      question_stats_by_user_or_group
+      JOIN assessment_scores_by_user_or_group USING (u_gr_id)
   )
 UPDATE assessment_questions AS aq
 SET

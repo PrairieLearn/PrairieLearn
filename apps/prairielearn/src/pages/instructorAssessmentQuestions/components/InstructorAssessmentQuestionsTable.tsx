@@ -6,7 +6,7 @@ import {
   KeyboardSensor,
   type Over,
   PointerSensor,
-  pointerWithin,
+  closestCenter,
   useDndMonitor,
   useSensor,
   useSensors,
@@ -16,20 +16,21 @@ import {
   sortableKeyboardCoordinates,
   verticalListSortingStrategy,
 } from '@dnd-kit/sortable';
+import { QueryClient, useQuery } from '@tanstack/react-query';
 import { useMemo, useRef, useState } from 'react';
 
 import { useModalState } from '@prairielearn/ui';
 
 import type { StaffAssessmentQuestionRow } from '../../../lib/assessment-question.js';
 import type { StaffAssessment, StaffCourse } from '../../../lib/client/safe-db-types.js';
+import { QueryClientProviderDebug } from '../../../lib/client/tanstackQuery.js';
 import type { ZoneAssessmentJson } from '../../../schemas/infoAssessment.js';
 import type {
   QuestionAlternativeForm,
   ZoneAssessmentForm,
   ZoneQuestionBlockForm,
-} from '../instructorAssessmentQuestions.shared.js';
-import type { CourseQuestionForPicker, ParsedDragEvent } from '../types.js';
-import { normalizeQuestionPoints, questionDisplayName } from '../utils/questions.js';
+  ParsedDragEvent,
+} from '../types.js';
 import {
   addTrackingIds,
   createQuestionWithTrackingId,
@@ -37,8 +38,11 @@ import {
   findQuestionByTrackingId,
   getInsertBeforeId,
   stripTrackingIds,
-  useAssessmentEditor,
-} from '../utils/useAssessmentEditor.js';
+} from '../utils/dataTransform.js';
+import { normalizeQuestionPoints, questionDisplayName } from '../utils/questions.js';
+import { createAssessmentQuestionsTrpcClient } from '../utils/trpc-client.js';
+import { TRPCProvider, useTRPC } from '../utils/trpc-context.js';
+import { useAssessmentEditor } from '../utils/useAssessmentEditor.js';
 
 import { AssessmentZone } from './AssessmentZone.js';
 import { EditQuestionModal } from './EditQuestionModal.js';
@@ -67,6 +71,7 @@ interface EditingStateEdit {
   alternativeTrackingId?: string;
   question: ZoneQuestionBlockForm | QuestionAlternativeForm;
   zoneQuestionBlock?: ZoneQuestionBlockForm;
+  originalQuestionId?: string;
 }
 
 interface EditingStateCreateGroup {
@@ -321,10 +326,9 @@ function EditModeButtons({
  *
  * Renders assessment zones with AssessmentZone.
  */
-export function InstructorAssessmentQuestionsTable({
+function InstructorAssessmentQuestionsTableInner({
   course,
   questionRows,
-  courseQuestions,
   jsonZones,
   urlPrefix,
   assessment,
@@ -333,11 +337,9 @@ export function InstructorAssessmentQuestionsTable({
   canEdit,
   csrfToken,
   origHash,
-  editorEnabled,
 }: {
   course: StaffCourse;
   questionRows: StaffAssessmentQuestionRow[];
-  courseQuestions: CourseQuestionForPicker[];
   jsonZones: ZoneAssessmentJson[];
   assessment: StaffAssessment;
   assessmentSetName: string;
@@ -346,8 +348,8 @@ export function InstructorAssessmentQuestionsTable({
   canEdit: boolean;
   csrfToken: string;
   origHash: string;
-  editorEnabled: boolean;
 }) {
+  const trpc = useTRPC();
   // Initialize editor state from JSON zones
   const initialZones = addTrackingIds(jsonZones);
 
@@ -380,6 +382,13 @@ export function InstructorAssessmentQuestionsTable({
   const editZoneModal = useModalState<EditZoneModalData>(null);
   const [targetGroupTrackingId, setTargetGroupTrackingId] = useState<string | null>(null);
 
+  // Fetch course questions on-demand when edit mode is activated
+  const courseQuestionsQuery = useQuery({
+    ...trpc.courseQuestions.queryOptions(),
+    enabled: editMode,
+  });
+  const courseQuestions = courseQuestionsQuery.data ?? [];
+
   // Consolidated state for question picker and edit modal flow
   const [questionEditState, setQuestionEditState] = useState<QuestionEditState>({
     status: 'idle',
@@ -404,6 +413,7 @@ export function InstructorAssessmentQuestionsTable({
           type: 'edit' as const,
           question: questionEditState.question,
           zoneQuestionBlock: questionEditState.zoneQuestionBlock,
+          originalQuestionId: questionEditState.originalQuestionId,
         };
       case 'create-group':
         return {
@@ -423,7 +433,9 @@ export function InstructorAssessmentQuestionsTable({
     setQuestionEditState({ status: 'picking', zoneTrackingId });
   };
 
-  const openPickerToChangeQid = () => {
+  const openPickerToChangeQid = (
+    currentFormValues: ZoneQuestionBlockForm | QuestionAlternativeForm,
+  ) => {
     if (questionEditState.status !== 'editing') return;
     // Only allow changing QID for question modes, not group modes
     if (questionEditState.mode === 'create-group' || questionEditState.mode === 'edit-group') {
@@ -435,10 +447,22 @@ export function InstructorAssessmentQuestionsTable({
         : (zones.find((z) =>
             z.questions.some((q) => q.trackingId === questionEditState.questionTrackingId),
           )?.trackingId ?? '');
+    // Merge current form values into the original question to preserve unsaved
+    // edits (e.g. points/manual points) while keeping extra properties that
+    // aren't registered as form fields.
+    const questionWithFormValues = {
+      ...questionEditState.question,
+      ...currentFormValues,
+      trackingId: questionEditState.question.trackingId,
+    } as typeof questionEditState.question;
+    const returnToEdit: EditingState = {
+      ...questionEditState,
+      question: questionWithFormValues,
+    } as EditingState;
     setQuestionEditState({
       status: 'picking',
       zoneTrackingId,
-      returnToEdit: questionEditState,
+      returnToEdit,
     });
   };
 
@@ -460,6 +484,7 @@ export function InstructorAssessmentQuestionsTable({
       alternativeTrackingId,
       question,
       zoneQuestionBlock,
+      originalQuestionId: question.id,
     });
   };
 
@@ -524,7 +549,7 @@ export function InstructorAssessmentQuestionsTable({
     resetModal.showWithData(assessmentQuestionId);
   };
 
-  const assessmentType = assessment.type!;
+  const assessmentType = assessment.type;
 
   const handleAddAlternativeGroup = (zoneTrackingId: string) => {
     setQuestionEditState({
@@ -601,7 +626,8 @@ export function InstructorAssessmentQuestionsTable({
 
   const handleUpdateQuestion = (
     updatedQuestion: ZoneQuestionBlockForm | QuestionAlternativeForm,
-    newQuestionData?: StaffAssessmentQuestionRow,
+    // This will only be provided if the QID changed
+    newQuestionData: StaffAssessmentQuestionRow | undefined,
   ) => {
     if (!updatedQuestion.id) return;
     if (questionEditState.status !== 'editing') return;
@@ -632,7 +658,10 @@ export function InstructorAssessmentQuestionsTable({
       dispatch({
         type: 'ADD_QUESTION',
         zoneTrackingId: questionEditState.zoneTrackingId,
-        question: createQuestionWithTrackingId(normalizedQuestion as ZoneQuestionBlockForm),
+        question: {
+          ...(normalizedQuestion as ZoneQuestionBlockForm),
+          ...createQuestionWithTrackingId(),
+        },
         questionData: preparedQuestionData,
       });
     } else if (questionEditState.mode === 'edit') {
@@ -641,6 +670,7 @@ export function InstructorAssessmentQuestionsTable({
         dispatch({
           type: 'UPDATE_QUESTION_METADATA',
           questionId: updatedQuestion.id,
+          oldQuestionId: questionEditState.originalQuestionId,
           questionData: {
             ...newQuestionData,
             assessment,
@@ -944,7 +974,7 @@ export function InstructorAssessmentQuestionsTable({
             {assessmentSetName} {assessment.number}: Questions
           </h1>
           <div className="ms-auto">
-            {editorEnabled && canEdit && origHash ? (
+            {canEdit && origHash ? (
               <EditModeButtons
                 csrfToken={csrfToken}
                 origHash={origHash}
@@ -978,7 +1008,8 @@ export function InstructorAssessmentQuestionsTable({
         </div>
         <DndContext
           sensors={sensors}
-          collisionDetection={pointerWithin}
+          // TODO: Explore using pointerWithin instead of closestCenter
+          collisionDetection={closestCenter}
           autoScroll={false}
           onDragOver={handleDragOver}
           onDragEnd={handleDragEnd}
@@ -992,7 +1023,7 @@ export function InstructorAssessmentQuestionsTable({
             strategy={verticalListSortingStrategy}
           >
             <div style={{ overflowX: 'auto' }}>
-              <table className="table table-sm table-hover" aria-label="Assessment questions">
+              <table className="table table-sm table-hover mb-0" aria-label="Assessment questions">
                 <thead>
                   <tr>
                     {editMode && (
@@ -1099,17 +1130,37 @@ export function InstructorAssessmentQuestionsTable({
         <QuestionPickerModal
           show={showPicker}
           courseQuestions={courseQuestions}
+          isLoading={courseQuestionsQuery.isLoading}
           questionsInAssessment={questionsInAssessment}
+          urlPrefix={urlPrefix}
           currentQid={
             questionEditState.status === 'picking'
               ? (questionEditState.returnToEdit?.question.id ?? null)
               : null
           }
+          currentAssessmentId={assessment.id}
           onHide={handlePickerCancel}
           onQuestionSelected={handleQuestionPicked}
         />
       )}
     </>
+  );
+}
+
+export function InstructorAssessmentQuestionsTable({
+  trpcCsrfToken,
+  ...innerProps
+}: Parameters<typeof InstructorAssessmentQuestionsTableInner>[0] & {
+  trpcCsrfToken: string;
+}) {
+  const [queryClient] = useState(() => new QueryClient());
+  const [trpcClient] = useState(() => createAssessmentQuestionsTrpcClient(trpcCsrfToken));
+  return (
+    <QueryClientProviderDebug client={queryClient}>
+      <TRPCProvider trpcClient={trpcClient} queryClient={queryClient}>
+        <InstructorAssessmentQuestionsTableInner {...innerProps} />
+      </TRPCProvider>
+    </QueryClientProviderDebug>
   );
 }
 

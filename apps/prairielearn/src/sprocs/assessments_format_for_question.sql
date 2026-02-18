@@ -15,7 +15,11 @@ SELECT
         'assessment_id', a.id,
         'course_instance_id', a.course_instance_id,
         'share_source_publicly', a.share_source_publicly,
-        'color', aset.color
+        'color', aset.color,
+        'assessment_set_abbreviation', aset.abbreviation,
+        'assessment_set_name', aset.name,
+        'assessment_set_color', aset.color,
+        'assessment_number', a.number
     ) ORDER BY (aset.number, aset.id, a.number, a.id))
 FROM
     assessments AS a

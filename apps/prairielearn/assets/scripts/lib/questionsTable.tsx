@@ -8,6 +8,7 @@ import { type QuestionsTableData } from '../../../src/components/QuestionsTable.
 import { SyncProblemButtonHtml } from '../../../src/components/SyncProblemButton.js';
 import { TagBadgeList } from '../../../src/components/TagBadge.js';
 import { TopicBadgeHtml } from '../../../src/components/TopicBadge.js';
+import { getAiQuestionGenerationDraftsUrl } from '../../../src/lib/client/url.js';
 import { type Topic } from '../../../src/lib/db-types.js';
 import { type QuestionsPageData } from '../../../src/models/questions.js';
 
@@ -278,19 +279,19 @@ onDocumentReady(() => {
 
   if (showAddQuestionButton) {
     tableSettings.buttons.addQuestion = {
-      text: 'Add question',
-      icon: 'fa-plus',
-      attributes: { title: 'Create a new question' },
-      event: () => {
-        $('#createQuestionModal').modal('show');
-      },
+      html: html`
+        <a class="btn btn-secondary" href="${urlPrefix}/course_admin/questions/create">
+          <i class="fa fa-plus" aria-hidden="true"></i>
+          Add question
+        </a>
+      `.toString(),
     };
   }
 
   if (showAiGenerateQuestionButton) {
     tableSettings.buttons.aiGenerateQuestion = {
       html: html`
-        <a class="btn btn-secondary" href="${urlPrefix}/ai_generate_question_drafts">
+        <a class="btn btn-secondary" href="${getAiQuestionGenerationDraftsUrl({ urlPrefix })}">
           <i class="bi bi-stars" aria-hidden="true"></i>
           Generate question with AI
         </a>

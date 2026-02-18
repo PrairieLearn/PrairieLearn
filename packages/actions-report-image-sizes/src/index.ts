@@ -2,6 +2,10 @@ import * as core from '@actions/core';
 import * as github from '@actions/github';
 import { z } from 'zod';
 
+const CI_REPORT_MARKER = '<!-- ci-report -->';
+const SECTION_START = '<!-- image-sizes -->';
+const SECTION_END = '<!-- /image-sizes -->';
+
 interface ChangedImage {
   name: string;
   platform: string | null;
@@ -53,10 +57,34 @@ function getImages(): string[] {
   return images.split('\n').flatMap((line) => line.split(',').map((s) => s.trim()));
 }
 
-async function getDockerHubToken(image: string): Promise<string> {
+async function getDockerHubToken({
+  image,
+  username,
+  password,
+}: {
+  image: string;
+  username: string | null;
+  password: string | null;
+}): Promise<string> {
+  const headers: Record<string, string> = {};
+
+  // Use Basic auth if credentials are provided to increase rate limits.
+  if (username && password) {
+    const credentials = Buffer.from(`${username}:${password}`).toString('base64');
+    headers['Authorization'] = `Basic ${credentials}`;
+  }
+
   const tokenResponse = await fetch(
     `https://auth.docker.io/token?service=registry.docker.io&scope=repository:${image}:pull`,
+    { headers },
   );
+
+  if (!tokenResponse.ok) {
+    throw new Error(
+      `Failed to get Docker Hub token: ${tokenResponse.status} ${tokenResponse.statusText}`,
+    );
+  }
+
   const { token } = DockerApiTokenSchema.parse(await tokenResponse.json());
   return token;
 }
@@ -105,11 +133,22 @@ async function getImageManifest(
   return { manifest, digest };
 }
 
-async function getAllImagesFromRegistry(
-  image: string,
-  sha: string,
-): Promise<{ platform: string | null; digest: string; size: number }[] | null> {
-  const token = await getDockerHubToken(image);
+async function getAllImagesFromRegistry({
+  image,
+  sha,
+  dockerUsername,
+  dockerPassword,
+}: {
+  image: string;
+  sha: string;
+  dockerUsername: string | null;
+  dockerPassword: string | null;
+}): Promise<{ platform: string | null; digest: string; size: number }[] | null> {
+  const token = await getDockerHubToken({
+    image,
+    username: dockerUsername,
+    password: dockerPassword,
+  });
   const manifestResult = await getImageManifest(token, image, sha);
   if (!manifestResult) {
     return null;
@@ -162,6 +201,25 @@ async function getAllImagesFromRegistry(
   return sizes;
 }
 
+function upsertSection(existingBody: string | null, newSection: string): string {
+  if (!existingBody) {
+    return `${CI_REPORT_MARKER}\n${newSection}`;
+  }
+
+  const startIdx = existingBody.indexOf(SECTION_START);
+  const endIdx = existingBody.indexOf(SECTION_END);
+
+  if (startIdx !== -1 && endIdx !== -1) {
+    // Replace existing section.
+    return (
+      existingBody.slice(0, startIdx) + newSection + existingBody.slice(endIdx + SECTION_END.length)
+    );
+  }
+
+  // Append section.
+  return existingBody + '\n' + newSection;
+}
+
 async function commentSizeReport(title: string, changedImages: ChangedImage[]) {
   // Don't comment if there were no changed images.
   if (changedImages.length === 0) return;
@@ -185,11 +243,13 @@ async function commentSizeReport(title: string, changedImages: ChangedImage[]) {
     },
   );
 
+  // Look for the shared CI report comment, or fall back to the old format.
   const existingComment = comments.find(
     (comment) =>
-      (comment.body?.startsWith(`## ${title}`) /* Old format */ ||
-        comment.body?.startsWith(`<details><summary><b>${title}</b>`)) &&
-      comment.user?.login === 'github-actions[bot]',
+      comment.user?.login === 'github-actions[bot]' &&
+      (comment.body?.includes(CI_REPORT_MARKER) ||
+        comment.body?.startsWith(`## ${title}`) ||
+        comment.body?.startsWith(`<details><summary><b>${title}</b>`)),
   );
 
   // Sort images by name and platform.
@@ -221,11 +281,11 @@ async function commentSizeReport(title: string, changedImages: ChangedImage[]) {
     summaryLine = 'No significant size changes';
   }
 
-  // Generate new comment body with collapsible format.
+  // Generate section content.
   const lines = [
-    `<details><summary><b>${title}</b></summary>`,
+    SECTION_START,
+    `<details><summary><b>${title}</b> — ${summaryLine}</summary>`,
     '',
-    // Markdown table header
     '| Image | Platform | Old Size | New Size | Change |',
     '| --- | --- | --- | --- | --- |',
   ];
@@ -249,20 +309,26 @@ async function commentSizeReport(title: string, changedImages: ChangedImage[]) {
     );
   }
 
-  lines.push('', '</details>', '', summaryLine);
+  lines.push('', '</details>', SECTION_END);
 
-  const body = lines.join('\n');
+  const section = lines.join('\n');
+
+  // If migrating from old format (no CI_REPORT_MARKER), start fresh with the new format.
+  const existingBody = existingComment?.body?.includes(CI_REPORT_MARKER)
+    ? existingComment.body
+    : null;
+  const body = upsertSection(existingBody, section);
 
   // Update or create comment.
   if (existingComment) {
-    octokit.rest.issues.updateComment({
+    await octokit.rest.issues.updateComment({
       owner: github.context.repo.owner,
       repo: github.context.repo.repo,
       comment_id: existingComment.id,
       body,
     });
   } else {
-    octokit.rest.issues.createComment({
+    await octokit.rest.issues.createComment({
       owner: github.context.repo.owner,
       repo: github.context.repo.repo,
       issue_number: prNumber,
@@ -294,13 +360,23 @@ async function main() {
   const title = core.getInput('title');
   const sha = core.getInput('sha');
 
+  // Optional Docker Hub credentials for authenticated API requests.
+  // Authenticated requests have higher rate limits (200/6h vs 100/6h for anonymous).
+  const dockerUsername = core.getInput('docker_username') || null;
+  const dockerPassword = core.getInput('docker_password') || null;
+
   if (!title) throw new Error('Title is required');
   if (!sha) throw new Error('SHA is required');
 
   const changedImages: ChangedImage[] = [];
 
   for (const image of images) {
-    const newImages = await getAllImagesFromRegistry(image, sha);
+    const newImages = await getAllImagesFromRegistry({
+      image,
+      sha,
+      dockerUsername,
+      dockerPassword,
+    });
 
     // If there's no build for this SHA, there's nothing to compare against.
     if (!newImages) {
@@ -309,7 +385,12 @@ async function main() {
 
     // If there's no previous build, we can't compare sizes, but we can still
     // report the size of the new images.
-    const oldImages = await getAllImagesFromRegistry(image, 'latest');
+    const oldImages = await getAllImagesFromRegistry({
+      image,
+      sha: 'latest',
+      dockerUsername,
+      dockerPassword,
+    });
 
     for (const newImage of newImages) {
       // Find the old image with the same platform. If there isn't a match

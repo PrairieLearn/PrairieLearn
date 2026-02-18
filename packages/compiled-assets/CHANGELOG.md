@@ -1,5 +1,19 @@
 # @prairielearn/compiled-assets
 
+## 4.1.0
+
+### Minor Changes
+
+- a6b3d9d: Emit `sizes.json` with per-entry-point bundle sizes during build
+
+## 4.0.1
+
+### Patch Changes
+
+- 8bdf6ea: Upgrade all JavaScript dependencies
+- Updated dependencies [8bdf6ea]
+  - @prairielearn/html@5.0.1
+
 ## 4.0.0
 
 ### Major Changes

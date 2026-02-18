@@ -2,7 +2,7 @@ import { assert, describe, it } from 'vitest';
 
 import { getUniqueNames, propertyValueWithDefault } from './editorUtil.shared.js';
 
-describe('editors', () => {
+describe('editor utils', () => {
   describe('getNamesForAdd', () => {
     describe('No specified short_name and long_name', () => {
       it('should set short_name to New_1 and long_name to New (1)', () => {
@@ -175,6 +175,34 @@ describe('editors', () => {
 
         assert.equal(names.shortName, 'fa19_4');
         assert.equal(names.longName, 'Fall 2019 Section 2 (4)');
+      });
+    });
+
+    describe('Names containing regex special characters', () => {
+      it('should escape regex special characters in shortName', () => {
+        // Without escaping, "a.b" would incorrectly match "a1b", "a2b", etc.
+        const names = getUniqueNames({
+          shortNames: ['a1b', 'a2b', 'a.b'],
+          longNames: ['Test 1', 'Test 2', 'Test 3'],
+          shortName: 'a.b',
+          longName: 'Test 4',
+        });
+
+        assert.equal(names.shortName, 'a.b_2');
+        assert.equal(names.longName, 'Test 4 (2)');
+      });
+
+      it('should escape regex special characters in longName', () => {
+        // Without escaping, "Calc I + II" creates an invalid regex pattern
+        const names = getUniqueNames({
+          shortNames: ['CalcI', 'CalcI_2'],
+          longNames: ['Calc I + II', 'Calc I + II (2)'],
+          shortName: 'CalcII',
+          longName: 'Calc I + II',
+        });
+
+        assert.equal(names.shortName, 'CalcII_3');
+        assert.equal(names.longName, 'Calc I + II (3)');
       });
     });
   });

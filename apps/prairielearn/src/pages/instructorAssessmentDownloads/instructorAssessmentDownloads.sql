@@ -4,7 +4,7 @@ WITH
     SELECT DISTINCT
       ON (
         CASE
-          WHEN $team_work THEN ai.team_id
+          WHEN $group_work THEN ai.team_id
           ELSE u.id
         END,
         CASE
@@ -33,7 +33,7 @@ WITH
         AND ai.date_limit IS NOT NULL THEN greatest(
           0,
           floor(
-            DATE_PART('epoch', (ai.date_limit - current_timestamp)) / (60 * 1000)
+            DATE_PART('epoch', (ai.date_limit - current_timestamp)) / 60
           )
         )::text || ' min'
         WHEN ai.open THEN 'Open'
@@ -43,28 +43,28 @@ WITH
       format_interval (ai.duration) AS duration,
       DATE_PART('epoch', ai.duration) AS duration_secs,
       DATE_PART('epoch', ai.duration) / 60 AS duration_mins,
-      t.name AS group_name, -- user-facing
-      teams_uid_list (t.id) AS uid_list
+      g.name AS group_name,
+      teams_uid_list (g.id) AS uid_list
     FROM
       assessments AS a
       JOIN course_instances AS ci ON (ci.id = a.course_instance_id)
       JOIN assessment_sets AS aset ON (aset.id = a.assessment_set_id)
       JOIN assessment_instances AS ai ON (ai.assessment_id = a.id)
-      LEFT JOIN team_configs AS tc ON (tc.assessment_id = a.id)
-      LEFT JOIN teams AS t ON (
-        t.id = ai.team_id
-        AND t.team_config_id = tc.id
+      LEFT JOIN team_configs AS gc ON (gc.assessment_id = a.id)
+      LEFT JOIN teams AS g ON (
+        g.id = ai.team_id
+        AND g.team_config_id = gc.id
       )
-      LEFT JOIN team_users AS tu ON (tu.team_id = t.id)
+      LEFT JOIN team_users AS gu ON (gu.team_id = g.id)
       JOIN users AS u ON (
         u.id = ai.user_id
-        OR u.id = tu.user_id
+        OR u.id = gu.user_id
       )
     WHERE
       a.id = $assessment_id
     ORDER BY
       CASE
-        WHEN $team_work THEN ai.team_id
+        WHEN $group_work THEN ai.team_id
         ELSE u.id
       END,
       CASE
@@ -110,8 +110,8 @@ SELECT
   iq.last_submission_score,
   iq.number_attempts,
   DATE_PART('epoch', iq.duration) AS duration_seconds,
-  t.name AS group_name, -- user-facing
-  teams_uid_list (t.id) AS uid_list,
+  g.name AS group_name,
+  teams_uid_list (g.id) AS uid_list,
   agu.uid AS assigned_grader,
   lgu.uid AS last_grader
 FROM
@@ -122,10 +122,10 @@ FROM
   JOIN assessments AS a ON (a.id = ai.assessment_id)
   JOIN assessment_sets AS aset ON (aset.id = a.assessment_set_id)
   JOIN course_instances AS ci ON (ci.id = a.course_instance_id)
-  LEFT JOIN team_configs AS tc ON (tc.assessment_id = a.id)
-  LEFT JOIN teams AS t ON (
-    t.id = ai.team_id
-    AND t.team_config_id = tc.id
+  LEFT JOIN team_configs AS gc ON (gc.assessment_id = a.id)
+  LEFT JOIN teams AS g ON (
+    g.id = ai.team_id
+    AND g.team_config_id = gc.id
   )
   LEFT JOIN users AS u ON (u.id = ai.user_id)
   LEFT JOIN users AS agu ON (agu.id = iq.assigned_grader)
@@ -147,20 +147,20 @@ ORDER BY
 WITH
   final_assessment_instances AS (
     SELECT DISTINCT
-      ON (t.id, u.id) ai.id,
+      ON (g.id, u.id) ai.id,
       u.id AS user_id,
-      t.id AS team_id, -- Not user-facing, for joining only
+      g.id AS group_id,
       assessment_id,
-      t.name AS group_name, -- user-facing
-      teams_uid_list (t.id) AS uid_list
+      g.name AS team_name,
+      teams_uid_list (g.id) AS uid_list
     FROM
       assessment_instances AS ai
-      LEFT JOIN teams AS t ON (t.id = ai.team_id)
+      LEFT JOIN teams AS g ON (g.id = ai.team_id)
       LEFT JOIN users AS u ON (u.id = ai.user_id)
     WHERE
       ai.assessment_id = $assessment_id
     ORDER BY
-      t.id ASC,
+      g.id ASC,
       u.id ASC,
       ai.number DESC
   ),
@@ -186,7 +186,7 @@ WITH
         ELSE (s.submitted_answer - '_files')
       END AS submitted_answer,
       s.partial_scores AS old_partial_scores,
-      ai.group_name, -- user-facing
+      ai.team_name AS group_name,
       ai.uid_list
     FROM
       submissions AS s
@@ -308,8 +308,8 @@ WITH
             s.id DESC
         )
       ) = 1 AS best_submission_per_variant,
-      t.name AS group_name, -- user-facing
-      teams_uid_list (t.id) AS uid_list,
+      g.name AS group_name,
+      teams_uid_list (g.id) AS uid_list,
       su.uid AS submission_user,
       agu.uid AS assigned_grader,
       lgu.uid AS last_grader
@@ -318,10 +318,10 @@ WITH
       JOIN assessment_sets AS aset ON (aset.id = a.assessment_set_id)
       JOIN course_instances AS ci ON (ci.id = a.course_instance_id)
       JOIN assessment_instances AS ai ON (ai.assessment_id = a.id)
-      LEFT JOIN team_configs AS tc ON (tc.assessment_id = a.id)
-      LEFT JOIN teams AS t ON (
-        t.id = ai.team_id
-        AND t.team_config_id = tc.id
+      LEFT JOIN team_configs AS gc ON (gc.assessment_id = a.id)
+      LEFT JOIN teams AS g ON (
+        g.id = ai.team_id
+        AND g.team_config_id = gc.id
       )
       LEFT JOIN users AS u ON (u.id = ai.user_id)
       JOIN instance_questions AS iq ON (iq.assessment_instance_id = ai.id)
@@ -363,34 +363,34 @@ ORDER BY
   variant_number,
   date;
 
--- BLOCK team_configs
+-- BLOCK group_configs
 SELECT
-  t.name,
+  g.name,
   u.uid,
   COALESCE(
-    ARRAY_AGG(tr.role_name) FILTER (
+    ARRAY_AGG(gr.role_name) FILTER (
       WHERE
-        tr.role_name IS NOT NULL
+        gr.role_name IS NOT NULL
     ),
     '{}'::text[]
   ) AS roles
 FROM
-  team_configs AS tc
-  JOIN teams AS t ON tc.id = t.team_config_id
-  JOIN team_users AS tu ON t.id = tu.team_id
-  JOIN users AS u ON tu.user_id = u.id
-  LEFT JOIN team_user_roles AS tur ON (
-    tur.team_id = t.id
-    AND tur.user_id = u.id
+  team_configs AS gc
+  JOIN teams AS g ON gc.id = g.team_config_id
+  JOIN team_users AS gu ON g.id = gu.team_id
+  JOIN users AS u ON gu.user_id = u.id
+  LEFT JOIN team_user_roles AS gur ON (
+    gur.team_id = g.id
+    AND gur.user_id = u.id
   )
-  LEFT JOIN team_roles AS tr ON tur.team_role_id = tr.id
+  LEFT JOIN team_roles AS gr ON gur.team_role_id = gr.id
 WHERE
-  tc.assessment_id = $assessment_id
-  AND tc.deleted_at IS NULL
-  AND t.deleted_at IS NULL
+  gc.assessment_id = $assessment_id
+  AND gc.deleted_at IS NULL
+  AND g.deleted_at IS NULL
 GROUP BY
-  t.name,
+  g.name,
   u.uid
 ORDER BY
-  t.name,
+  g.name,
   u.uid;

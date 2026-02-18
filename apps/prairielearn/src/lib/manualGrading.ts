@@ -1,7 +1,7 @@
 import { setImmediate } from 'node:timers/promises';
 
 import * as async from 'async';
-import _ from 'lodash';
+import { omit, sum, sumBy } from 'es-toolkit';
 import mustache from 'mustache';
 import { z } from 'zod';
 
@@ -13,13 +13,13 @@ import { IdSchema } from '@prairielearn/zod';
 import type { SubmissionForRender } from '../components/SubmissionPanel.js';
 import { selectInstanceQuestionGroups } from '../ee/lib/ai-instance-question-grouping/ai-instance-question-grouping-util.js';
 
+import { updateAssessmentInstanceGrade } from './assessment-grading.js';
 import {
   type Assessment,
   type AssessmentQuestion,
   AssessmentQuestionSchema,
   RubricItemSchema,
   RubricSchema,
-  SprocAssessmentInstancesGradeSchema,
   type Submission,
 } from './db-types.js';
 import { idsEqual } from './id.js';
@@ -346,9 +346,9 @@ export async function updateAssessmentQuestionRubric(
           // Attempt to update the rubric item based on the ID. If the ID is not set or does not
           // exist, insert a new rubric item.
           if (item.id == null) {
-            await sqldb.execute(sql.insert_rubric_item, _.omit(item, ['order', 'id']));
+            await sqldb.execute(sql.insert_rubric_item, omit(item, ['order', 'id']));
           } else {
-            await sqldb.queryRow(sql.update_rubric_item, _.omit(item, ['order']), IdSchema);
+            await sqldb.queryRow(sql.update_rubric_item, omit(item, ['order']), IdSchema);
           }
         },
       );
@@ -420,7 +420,7 @@ export async function insertRubricGrading(
       z.object({ rubric_data: RubricSchema, rubric_item_data: z.array(RubricItemSchema) }),
     );
 
-    const sum_rubric_item_points = _.sum(
+    const sum_rubric_item_points = sum(
       rubric_items.map(
         (item) =>
           (item.score ?? 1) *
@@ -532,11 +532,11 @@ export async function updateInstanceQuestionScore(
       }
       new_auto_score_perc =
         (100 *
-          _.sumBy(
+          sumBy(
             Object.values(score.partial_scores),
             (value) => (value.score ?? 0) * (value.weight ?? 1),
           )) /
-        _.sumBy(Object.values(score.partial_scores), (value) => value.weight ?? 1);
+        sumBy(Object.values(score.partial_scores), (value) => value.weight ?? 1);
       new_auto_points = (new_auto_score_perc / 100) * (current_submission.max_auto_points ?? 0);
     }
 
@@ -693,17 +693,12 @@ export async function updateInstanceQuestionScore(
         is_ai_graded,
       });
 
-      await sqldb.callRow(
-        'assessment_instances_grade',
-        [
-          current_submission.assessment_instance_id,
-          authn_user_id,
-          100, // credit
-          false, // only_log_if_score_updated
-          true, // allow_decrease
-        ],
-        SprocAssessmentInstancesGradeSchema,
-      );
+      await updateAssessmentInstanceGrade({
+        assessment_instance_id: current_submission.assessment_instance_id,
+        authn_user_id,
+        credit: 100,
+        allowDecrease: true,
+      });
 
       // TODO: this ends up running inside a transaction. This is not good.
       await ltiOutcomes.updateScore(current_submission.assessment_instance_id);

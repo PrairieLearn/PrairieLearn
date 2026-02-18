@@ -116,7 +116,7 @@ function DevModeCard({ isDevMode }: { isDevMode: boolean }) {
           different page or if you reload the current page in your web browser.
         </p>
         <p className="mb-0">
-          See the <a href="https://prairielearn.readthedocs.io">PrairieLearn documentation</a> for
+          See the <a href="https://docs.prairielearn.com">PrairieLearn documentation</a> for
           information on creating questions and assessments.
         </p>
       </div>
@@ -162,7 +162,7 @@ function InstructorCoursesCard({ instructorCourses, urlPrefix }: InstructorCours
       <div className="card-header bg-primary text-white d-flex align-items-center">
         <h2>Courses with instructor access</h2>
         <a
-          href="https://prairielearn.readthedocs.io/en/latest"
+          href="https://docs.prairielearn.com"
           className="btn btn-light btn-sm ms-auto"
           target="_blank"
           rel="noopener noreferrer"

@@ -14,7 +14,11 @@ import { run } from '@prairielearn/run';
 import { assertNever } from '@prairielearn/utils';
 import { IdSchema } from '@prairielearn/zod';
 
-import { logResponseUsage } from '../../../lib/ai.js';
+import {
+  type AiImageGradingResponses,
+  logResponseUsage,
+  logResponsesUsage,
+} from '../../../lib/ai-util.js';
 import { config } from '../../../lib/config.js';
 import {
   type Assessment,
@@ -30,26 +34,36 @@ import { getQuestionCourse } from '../../../lib/question-variant.js';
 import { createServerJob } from '../../../lib/server-jobs.js';
 import { emitServerJobProgressUpdate } from '../../../lib/serverJobProgressSocket.js';
 import { JobItemStatus } from '../../../lib/serverJobProgressSocket.shared.js';
-import { updateCourseInstanceUsagesForAiGrading } from '../../../models/course-instance-usages.js';
+import { updateCourseInstanceUsagesForAiGradingResponses } from '../../../models/course-instance-usages.js';
 import { selectCompleteRubric } from '../../../models/rubrics.js';
 import * as questionServers from '../../../question-servers/index.js';
 
 import { AI_GRADING_MODEL_PROVIDERS, type AiGradingModelId } from './ai-grading-models.shared.js';
 import { selectGradingJobsInfo } from './ai-grading-stats.js';
 import {
+  addAiGradingCostToIntervalUsage,
   containsImageCapture,
   correctGeminiMalformedRubricGradingJson,
+  correctImagesOrientation,
+  extractSubmissionImages,
   generatePrompt,
+  getIntervalUsage,
   insertAiGradingJob,
+  insertAiGradingJobWithRotationCorrection,
   parseAiRubricItems,
   selectInstanceQuestionsForAssessmentQuestion,
   selectLastVariantAndSubmission,
 } from './ai-grading-util.js';
-import type { AIGradingLog, AIGradingLogger } from './types.js';
+import {
+  type AIGradingLog,
+  type AIGradingLogger,
+  HandwritingOrientationsOutputSchema,
+} from './types.js';
 
 const sql = loadSqlEquiv(import.meta.url);
 
 const PARALLEL_SUBMISSION_GRADING_LIMIT = 20;
+const HOURLY_USAGE_CAP_REACHED_MESSAGE = 'Hourly usage cap reached. Try again later.';
 
 /**
  * Grade instance questions using AI.
@@ -86,6 +100,13 @@ export async function aiGrade({
   instance_question_ids?: string[];
   model_id: AiGradingModelId;
 }): Promise<string> {
+  if (!assessment_question.max_manual_points) {
+    throw new error.HttpStatusError(
+      400,
+      'AI grading is only available on assessment questions that use manual grading.',
+    );
+  }
+
   const provider = AI_GRADING_MODEL_PROVIDERS[model_id];
   const model = run(() => {
     if (provider === 'openai') {
@@ -157,7 +178,7 @@ export async function aiGrade({
     }
   });
 
-  const item_statuses = instance_questions.reduce(
+  let item_statuses = instance_questions.reduce(
     (acc, instance_question) => {
       acc[instance_question.id] = JobItemStatus.queued;
       return acc;
@@ -174,8 +195,30 @@ export async function aiGrade({
   });
 
   serverJob.executeInBackground(async (job) => {
-    if (!assessment_question.max_manual_points) {
-      job.fail('The assessment question has no manual grading');
+    let rateLimitExceeded =
+      (await getIntervalUsage(course_instance)) > config.aiGradingRateLimitDollars;
+
+    // If the rate limit has already been exceeded, log it and exit early.
+    if (rateLimitExceeded) {
+      job.error("You've reached the hourly usage cap for AI grading. Please try again later.");
+
+      item_statuses = instance_questions.reduce(
+        (acc, instance_question) => {
+          acc[instance_question.id] = JobItemStatus.failed;
+          return acc;
+        },
+        {} as Record<string, JobItemStatus>,
+      );
+
+      await emitServerJobProgressUpdate({
+        job_sequence_id: serverJob.jobSequenceId,
+        num_complete: instance_questions.length,
+        num_failed: instance_questions.length,
+        num_total: instance_questions.length,
+        job_failure_message: HOURLY_USAGE_CAP_REACHED_MESSAGE,
+        item_statuses,
+      });
+      return;
     }
 
     job.info(`Using model ${model_id} for AI grading.`);
@@ -194,6 +237,28 @@ export async function aiGrade({
       instance_question: InstanceQuestion,
       logger: AIGradingLogger,
     ): Promise<boolean> => {
+      if (rateLimitExceeded) {
+        logger.error(
+          `Skipping instance question ${instance_question.id} since the rate limit has been exceeded.`,
+        );
+        return false;
+      }
+
+      // Since other jobs may be concurrently running, we could exceed the rate limit
+      // by 19 requests worth of usage. We are okay with this potential race condition.
+      const intervalCost = await getIntervalUsage(course_instance);
+
+      if (intervalCost > config.aiGradingRateLimitDollars) {
+        logger.error(
+          "You've reached the hourly usage cap for AI grading. Please try again later. AI grading jobs that are still in progress will continue to completion.",
+        );
+        logger.error(
+          `Skipping instance question ${instance_question.id} since the rate limit has been exceeded.`,
+        );
+        rateLimitExceeded = true;
+        return false;
+      }
+
       // eslint-disable-next-line @typescript-eslint/no-unnecessary-condition
       const shouldUpdateScore = !instanceQuestionGradingJobs[instance_question.id]?.some(
         (job) => job.grading_method === 'Manual',
@@ -254,7 +319,7 @@ export async function aiGrade({
           : null;
       }
 
-      const input = await generatePrompt({
+      let input = await generatePrompt({
         questionPrompt,
         questionAnswer,
         submission_text,
@@ -265,6 +330,13 @@ export async function aiGrade({
         true_answer: variant.true_answer ?? {},
         model_id,
       });
+
+      const submittedImages = submission.submitted_answer
+        ? extractSubmissionImages({
+            submission_text,
+            submitted_answer: submission.submitted_answer,
+          })
+        : {};
 
       // If the submission contains images, prompt the model to transcribe any relevant information
       // out of the image.
@@ -317,17 +389,20 @@ export async function aiGrade({
           rubric_items: RubricGradingItemsSchema,
         });
 
-        const response = await generateObject({
-          model,
-          schema: RubricGradingResultSchema,
-          messages: input,
-          providerOptions: {
-            openai: openaiProviderOptions,
-          },
-          experimental_repairText: async (options: {
+        const RubricImageGradingResultSchema = RubricGradingResultSchema.merge(
+          HandwritingOrientationsOutputSchema,
+        );
+
+        const {
+          gradingResponseWithRotationIssue,
+          rotationCorrections,
+          finalGradingResponse,
+          rotationCorrectionApplied,
+        } = (await run(async () => {
+          const experimental_repairText: (options: {
             text: string;
             error: JSONParseError | TypeValidationError;
-          }) => {
+          }) => Promise<string | null> = async (options) => {
             if (provider !== 'google' || options.error.name !== 'AI_JSONParseError') {
               return null;
             }
@@ -337,14 +412,123 @@ export async function aiGrade({
             // TODO: Remove this temporary fix once Google fixes the underlying issue.
             // Issue on the Google GenAI repository: https://github.com/googleapis/js-genai/issues/1226#issue-3783507624
             return correctGeminiMalformedRubricGradingJson(options.text);
-          },
-        });
+          };
 
-        logResponseUsage({ response, logger });
+          if (
+            !hasImage ||
+            !submission.submitted_answer ||
+            // Empirical testing demonstrated that rotation correction
+            // was highly effective only for Gemini models.
+            provider !== 'google'
+          ) {
+            return {
+              finalGradingResponse: await generateObject({
+                model,
+                schema: RubricGradingResultSchema,
+                messages: input,
+                experimental_repairText,
+                providerOptions: {
+                  openai: openaiProviderOptions,
+                },
+              }),
+              rotationCorrectionApplied: false,
+            };
+          }
 
-        logger.info(`Parsed response: ${JSON.stringify(response.object, null, 2)}`);
+          const initialResponse = await generateObject({
+            model,
+            schema: RubricImageGradingResultSchema,
+            messages: input,
+            experimental_repairText,
+            providerOptions: {
+              openai: openaiProviderOptions,
+            },
+          });
+
+          if (
+            initialResponse.object.handwriting_orientations.every(
+              (orientation) => orientation === 'Upright (0 degrees)',
+            )
+          ) {
+            // All images are upright, no rotation correction needed.
+            return { finalGradingResponse: initialResponse, rotationCorrectionApplied: false };
+          }
+          // Otherwise, correct all image orientations.
+
+          // Note: The LLM isn't aware of an identifier (e.g. filename) for each submitted image,
+          // so we assume all images might need correction. If an image is already upright, the
+          // correction process will keep the image the same.
+
+          const { rotatedSubmittedAnswer, rotationCorrections } = await correctImagesOrientation({
+            submittedAnswer: submission.submitted_answer,
+            submittedImages,
+            model,
+          });
+
+          // Regenerate the prompt with the rotation-corrected images.
+          input = await generatePrompt({
+            questionPrompt,
+            questionAnswer,
+            submission_text,
+            submitted_answer: rotatedSubmittedAnswer,
+            rubric_items,
+            grader_guidelines: rubric?.grader_guidelines ?? null,
+            params: variant.params ?? {},
+            true_answer: variant.true_answer ?? {},
+            model_id,
+          });
+
+          // Perform grading with the rotation-corrected images.
+          const finalResponse = await generateObject({
+            model,
+            schema: RubricImageGradingResultSchema,
+            messages: input,
+            experimental_repairText,
+            providerOptions: {
+              openai: openaiProviderOptions,
+            },
+          });
+
+          return {
+            rotationCorrectionApplied: true,
+            gradingResponseWithRotationIssue: initialResponse,
+            rotationCorrections,
+            finalGradingResponse: finalResponse,
+          };
+        })) satisfies AiImageGradingResponses;
+
+        if (rotationCorrectionApplied) {
+          logResponsesUsage({
+            responses: [
+              ...Object.values(rotationCorrections).map((r) => r.response),
+              gradingResponseWithRotationIssue,
+              finalGradingResponse,
+            ],
+            logger,
+          });
+          for (const response of [
+            ...Object.values(rotationCorrections).map((r) => r.response),
+            gradingResponseWithRotationIssue,
+            finalGradingResponse,
+          ]) {
+            await addAiGradingCostToIntervalUsage({
+              courseInstance: course_instance,
+              model: model_id,
+              usage: response.usage,
+            });
+          }
+        } else {
+          logResponseUsage({ response: finalGradingResponse, logger });
+          await addAiGradingCostToIntervalUsage({
+            courseInstance: course_instance,
+            model: model_id,
+            usage: finalGradingResponse.usage,
+          });
+        }
+
+        logger.info(`Parsed response: ${JSON.stringify(finalGradingResponse.object, null, 2)}`);
         const { appliedRubricItems, appliedRubricDescription } = parseAiRubricItems({
-          ai_rubric_items: response.object.rubric_items,
+          ai_rubric_items: finalGradingResponse.object.rubric_items,
           rubric_items,
         });
 
@@ -370,21 +554,36 @@ export async function aiGrade({
             );
             assert(grading_job_id);
 
-            await insertAiGradingJob({
+            const aiGradingJobParams = {
               grading_job_id,
               job_sequence_id: serverJob.jobSequenceId,
               model_id,
               prompt: input,
-              response,
               course_id: course.id,
               course_instance_id: course_instance.id,
-            });
+            };
 
-            await updateCourseInstanceUsagesForAiGrading({
+            if (rotationCorrectionApplied) {
+              await insertAiGradingJobWithRotationCorrection({
+                ...aiGradingJobParams,
+                gradingResponseWithRotationIssue,
+                rotationCorrections,
+                gradingResponseWithRotationCorrection: finalGradingResponse,
+              });
+            } else {
+              await insertAiGradingJob({
+                ...aiGradingJobParams,
+                response: finalGradingResponse,
+              });
+            }
+
+            await updateCourseInstanceUsagesForAiGradingResponses({
               gradingJobId: grading_job_id,
               authnUserId: authn_user_id,
               model: model_id,
-              usage: response.usage,
+              gradingResponseWithRotationIssue,
+              rotationCorrections,
+              finalGradingResponse,
             });
           });
         } else {
@@ -416,21 +615,36 @@ export async function aiGrade({
               IdSchema,
             );
 
-            await insertAiGradingJob({
+            const aiGradingJobParams = {
               grading_job_id,
               job_sequence_id: serverJob.jobSequenceId,
               model_id,
               prompt: input,
-              response,
               course_id: course.id,
               course_instance_id: course_instance.id,
-            });
+            };
 
-            await updateCourseInstanceUsagesForAiGrading({
+            if (rotationCorrectionApplied) {
+              await insertAiGradingJobWithRotationCorrection({
+                ...aiGradingJobParams,
+                gradingResponseWithRotationIssue,
+                rotationCorrections,
+                gradingResponseWithRotationCorrection: finalGradingResponse,
+              });
+            } else {
+              await insertAiGradingJob({
+                ...aiGradingJobParams,
+                response: finalGradingResponse,
+              });
+            }
+
+            await updateCourseInstanceUsagesForAiGradingResponses({
               gradingJobId: grading_job_id,
               authnUserId: authn_user_id,
               model: model_id,
-              usage: response.usage,
+              gradingResponseWithRotationIssue,
+              rotationCorrections,
+              finalGradingResponse,
             });
           });
         }
@@ -460,23 +674,126 @@ export async function aiGrade({
             ),
         });
 
-        const response = await generateObject({
-          model,
-          schema: GradingResultSchema,
-          messages: input,
-          providerOptions: {
-            openai: openaiProviderOptions,
-          },
-        });
+        const ImageGradingResultSchema = GradingResultSchema.merge(
+          HandwritingOrientationsOutputSchema,
+        );
 
-        logResponseUsage({ response, logger });
+        const {
+          rotationCorrectionApplied,
+          finalGradingResponse,
+          gradingResponseWithRotationIssue,
+          rotationCorrections,
+        } = (await run(async () => {
+          if (
+            !hasImage ||
+            !submission.submitted_answer ||
+            // Empirical testing demonstrated that rotation correction
+            // was highly effective only for Gemini models.
+            provider !== 'google'
+          ) {
+            return {
+              finalGradingResponse: await generateObject({
+                model,
+                schema: GradingResultSchema,
+                messages: input,
+                providerOptions: {
+                  openai: openaiProviderOptions,
+                },
+              }),
+              rotationCorrectionApplied: false,
+            };
+          }
 
-        logger.info(`Parsed response: ${JSON.stringify(response.object, null, 2)}`);
-        const score = response.object.score;
+          const initialResponse = await generateObject({
+            model,
+            schema: ImageGradingResultSchema,
+            messages: input,
+            providerOptions: {
+              openai: openaiProviderOptions,
+            },
+          });
+
+          if (
+            initialResponse.object.handwriting_orientations.every(
+              (orientation) => orientation === 'Upright (0 degrees)',
+            )
+          ) {
+            // All images are upright, no rotation correction needed.
+            return { finalGradingResponse: initialResponse, rotationCorrectionApplied: false };
+          }
+
+          const { rotatedSubmittedAnswer, rotationCorrections } = await correctImagesOrientation({
+            submittedAnswer: submission.submitted_answer,
+            submittedImages,
+            model,
+          });
+
+          // Regenerate the prompt with the rotation-corrected images.
+          input = await generatePrompt({
+            questionPrompt,
+            questionAnswer,
+            submission_text,
+            submitted_answer: rotatedSubmittedAnswer,
+            rubric_items,
+            grader_guidelines: rubric?.grader_guidelines ?? null,
+            params: variant.params ?? {},
+            true_answer: variant.true_answer ?? {},
+            model_id,
+          });
+
+          // Perform grading with the rotation-corrected images.
+          const finalResponse = await generateObject({
+            model,
+            schema: ImageGradingResultSchema,
+            messages: input,
+            providerOptions: {
+              openai: openaiProviderOptions,
+            },
+          });
+
+          return {
+            rotationCorrectionApplied: true,
+            gradingResponseWithRotationIssue: initialResponse,
+            rotationCorrections,
+            finalGradingResponse: finalResponse,
+          };
+        })) satisfies AiImageGradingResponses;
+
+        if (rotationCorrectionApplied) {
+          logResponsesUsage({
+            responses: [
+              ...Object.values(rotationCorrections).map((correction) => correction.response),
+              gradingResponseWithRotationIssue,
+              finalGradingResponse,
+            ],
+            logger,
+          });
+          for (const response of [
+            ...Object.values(rotationCorrections).map((r) => r.response),
+            gradingResponseWithRotationIssue,
+            finalGradingResponse,
+          ]) {
+            await addAiGradingCostToIntervalUsage({
+              courseInstance: course_instance,
+              model: model_id,
+              usage: response.usage,
+            });
+          }
+        } else {
+          logResponseUsage({ response: finalGradingResponse, logger });
+          await addAiGradingCostToIntervalUsage({
+            courseInstance: course_instance,
+            model: model_id,
+            usage: finalGradingResponse.usage,
+          });
+        }
+
+        logger.info(`Parsed response: ${JSON.stringify(finalGradingResponse.object, null, 2)}`);
+        const score = finalGradingResponse.object.score;
 
         if (shouldUpdateScore) {
           // Requires grading: update instance question score
-          const feedback = response.object.feedback;
+          const feedback = finalGradingResponse.object.feedback;
           await runInTransactionAsync(async () => {
             const { grading_job_id } = await manualGrading.updateInstanceQuestionScore(
               assessment,
@@ -492,14 +809,36 @@ export async function aiGrade({
             );
             assert(grading_job_id);
 
-            await insertAiGradingJob({
+            const aiGradingJobParams = {
               grading_job_id,
               job_sequence_id: serverJob.jobSequenceId,
               model_id,
               prompt: input,
-              response,
               course_id: course.id,
               course_instance_id: course_instance.id,
+            };
+
+            if (rotationCorrectionApplied) {
+              await insertAiGradingJobWithRotationCorrection({
+                ...aiGradingJobParams,
+                gradingResponseWithRotationIssue,
+                rotationCorrections,
+                gradingResponseWithRotationCorrection: finalGradingResponse,
+              });
+            } else {
+              await insertAiGradingJob({
+                ...aiGradingJobParams,
+                response: finalGradingResponse,
+              });
+            }
+
+            await updateCourseInstanceUsagesForAiGradingResponses({
+              gradingJobId: grading_job_id,
+              authnUserId: authn_user_id,
+              model: model_id,
+              gradingResponseWithRotationIssue,
+              rotationCorrections,
+              finalGradingResponse,
             });
           });
         } else {
@@ -521,19 +860,41 @@ export async function aiGrade({
               },
               IdSchema,
             );
-            await insertAiGradingJob({
+
+            const aiGradingJobParams = {
               grading_job_id,
               job_sequence_id: serverJob.jobSequenceId,
               model_id,
               prompt: input,
-              response,
               course_id: course.id,
               course_instance_id: course_instance.id,
+            };
+            if (rotationCorrectionApplied) {
+              await insertAiGradingJobWithRotationCorrection({
+                ...aiGradingJobParams,
+                gradingResponseWithRotationIssue,
+                rotationCorrections,
+                gradingResponseWithRotationCorrection: finalGradingResponse,
+              });
+            } else {
+              await insertAiGradingJob({
+                ...aiGradingJobParams,
+                response: finalGradingResponse,
+              });
+            }
+
+            await updateCourseInstanceUsagesForAiGradingResponses({
+              gradingJobId: grading_job_id,
+              authnUserId: authn_user_id,
+              model: model_id,
+              gradingResponseWithRotationIssue,
+              rotationCorrections,
+              finalGradingResponse,
             });
           });
         }
 
-        logger.info(`AI score: ${response.object.score}`);
+        logger.info(`AI score: ${finalGradingResponse.object.score}`);
       }
 
       return true;
@@ -572,6 +933,7 @@ export async function aiGrade({
             num_failed,
             num_total: instance_questions.length,
             item_statuses,
+            job_failure_message: rateLimitExceeded ? HOURLY_USAGE_CAP_REACHED_MESSAGE : undefined,
           });
 
           const gradingSuccessful = await gradeInstanceQuestion(instance_question, logger);
@@ -598,6 +960,7 @@ export async function aiGrade({
             num_failed,
             num_total: instance_questions.length,
             item_statuses,
+            job_failure_message: rateLimitExceeded ? HOURLY_USAGE_CAP_REACHED_MESSAGE : undefined,
           });
           for (const log of logs) {
             switch (log.messageType) {

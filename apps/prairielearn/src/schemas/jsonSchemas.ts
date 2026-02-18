@@ -15,13 +15,13 @@ import {
   type AssessmentJson,
   AssessmentJsonSchema,
   ForceMaxPointsJsonSchema,
-  GroupRoleJsonSchema,
+  GroupsRoleJsonSchema,
+  LegacyGroupRoleJsonSchema,
   PointsJsonSchema,
   PointsListJsonSchema,
   PointsSingleJsonSchema,
   QuestionAlternativeJsonSchema,
   QuestionIdJsonSchema,
-  TeamRoleJsonSchema,
   ZoneAssessmentJsonSchema,
   ZoneQuestionBlockJsonSchema,
 } from './infoAssessment.js';
@@ -30,7 +30,6 @@ import { type CourseInstanceJson, CourseInstanceJsonSchema } from './infoCourseI
 import { type ElementCoreJson, ElementCoreJsonSchema } from './infoElementCore.js';
 import { type ElementCourseJson, ElementCourseJsonSchema } from './infoElementCourse.js';
 import { type ElementExtensionJson, ElementExtensionJsonSchema } from './infoElementExtension.js';
-import { type NewsItemJson, NewsItemJsonSchema } from './infoNewsItem.js';
 import { type QuestionJson, QuestionJsonSchema } from './infoQuestion.js';
 import {
   type QuestionOptionsCalculationJson,
@@ -68,17 +67,17 @@ const schemaOverride = (
     const action = segment === 'canView' ? 'view' : 'submit';
     const inZone = refs.currentPath.includes('ZoneAssessmentJsonSchema');
     const inQuestion = refs.currentPath.includes('ZoneQuestionBlockJsonSchema');
-    const inTeams = refs.currentPath.includes('teams');
+    const inGroups = refs.currentPath.includes('groups');
 
-    // Skip fields inside teams.rolePermissions - let default handle them
-    if (inTeams) {
+    // Skip fields inside groups.rolePermissions - let default handle them
+    if (inGroups) {
       return ignoreOverride;
     }
 
     // Question level
     if (inQuestion) {
       return {
-        description: `A list of team role names that can ${action} the question. Only applicable for team assessments.`,
+        description: `A list of group role names that can ${action} the question. Only applicable for group assessments.`,
         type: 'array',
         items: {
           type: 'string',
@@ -91,7 +90,7 @@ const schemaOverride = (
     // Zone level
     if (inZone) {
       return {
-        description: `A list of team role names that can ${action} questions in this zone. Only applicable for team assessments.`,
+        description: `A list of group role names that can ${action} questions in this zone. Only applicable for group assessments.`,
         type: 'array',
         items: {
           type: 'string',
@@ -105,7 +104,7 @@ const schemaOverride = (
     // Note: `deprecated: true` is added automatically by the traverse function below
     // because the description contains "DEPRECATED"
     return {
-      description: `A list of group role names that can ${action} questions. Only applicable for group assessments. DEPRECATED -- prefer using teams instead.`,
+      description: `A list of group role names that can ${action} questions. Only applicable for group assessments. DEPRECATED -- prefer using the "groups" property instead.`,
       type: 'array',
       items: {
         type: 'string',
@@ -115,13 +114,13 @@ const schemaOverride = (
     };
   }
 
-  // Add uniqueItems to the roles array in teams
-  if (segment === 'roles' && refs.currentPath.includes('teams')) {
+  // Add uniqueItems to the roles array in groups
+  if (segment === 'roles' && refs.currentPath.includes('groups')) {
     return {
-      description: 'Array of custom user roles in a team.',
+      description: 'Array of custom user roles in a group.',
       type: 'array',
       items: {
-        $ref: '#/definitions/TeamRoleJsonSchema',
+        $ref: '#/definitions/GroupsRoleJsonSchema',
       },
       uniqueItems: true,
       default: [],
@@ -165,13 +164,6 @@ const prairielearnZodToJsonSchema = (
   return jsonSchema;
 };
 
-export const infoNewsItem = prairielearnZodToJsonSchema(NewsItemJsonSchema, {
-  name: 'News Item Info',
-  nameStrategy: 'title',
-  target: 'jsonSchema7',
-  definitions: { CommentJsonSchema },
-}) as JSONSchemaType<NewsItemJson>;
-
 export const infoAssessment = prairielearnZodToJsonSchema(AssessmentJsonSchema, {
   name: 'Assessment info',
   nameStrategy: 'title',
@@ -186,8 +178,8 @@ export const infoAssessment = prairielearnZodToJsonSchema(AssessmentJsonSchema, 
     QuestionAlternativeJsonSchema,
     ZoneAssessmentJsonSchema,
     ZoneQuestionBlockJsonSchema,
-    GroupRoleJsonSchema,
-    TeamRoleJsonSchema,
+    LegacyGroupRoleJsonSchema,
+    GroupsRoleJsonSchema,
     AdvanceScorePercJsonSchema,
     CommentJsonSchema,
   },
@@ -292,7 +284,6 @@ export const questionOptionsv3 = prairielearnZodToJsonSchema(QuestionOptionsv3Js
 }) as JSONSchemaType<QuestionOptionsv3Json>;
 
 export const ajvSchemas = {
-  infoNewsItem,
   infoAssessment,
   infoCourse,
   infoCourseInstance,

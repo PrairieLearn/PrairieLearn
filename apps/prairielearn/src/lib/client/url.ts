@@ -90,3 +90,17 @@ export function getCourseEditErrorUrl(courseId: string, jobSequenceId: string): 
 export function getCourseInstanceSettingsUrl(courseInstanceId: string): string {
   return `/pl/course_instance/${courseInstanceId}/instructor/instance_admin/settings`;
 }
+
+export function getAiQuestionGenerationDraftsUrl({ urlPrefix }: { urlPrefix: string }): string {
+  return `${urlPrefix}/ai_generate_question_drafts`;
+}
+
+export function getQuestionUrl({
+  urlPrefix,
+  questionId,
+}: {
+  urlPrefix: string;
+  questionId: string;
+}): string {
+  return `${urlPrefix}/question/${questionId}`;
+}

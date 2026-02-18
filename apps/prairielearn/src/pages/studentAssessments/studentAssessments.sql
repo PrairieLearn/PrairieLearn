@@ -101,22 +101,22 @@ WITH
       am.heading AS assessment_module_heading,
       am.number AS assessment_module_number
     FROM
-      -- JOIN team_users first to find all team assessments
-      team_configs AS tc
-      JOIN teams AS t ON (
-        t.team_config_id = tc.id
-        AND t.deleted_at IS NULL
+      -- JOIN team_users first to find all group assessments
+      team_configs AS gc
+      JOIN teams AS g ON (
+        g.team_config_id = gc.id
+        AND g.deleted_at IS NULL
       )
-      JOIN team_users AS tu ON (
-        tu.team_id = t.id
-        AND tu.user_id = $user_id
+      JOIN team_users AS gu ON (
+        gu.team_id = g.id
+        AND gu.user_id = $user_id
       )
-      FULL JOIN assessments AS a ON (tc.assessment_id = a.id)
+      FULL JOIN assessments AS a ON (gc.assessment_id = a.id)
       JOIN course_instances AS ci ON (ci.id = a.course_instance_id)
       JOIN assessment_sets AS aset ON (aset.id = a.assessment_set_id)
       -- We use a subquery to find assessment instances by either user_id or
       -- team_id. We use to do this with AND (ai.user_id = $user_id OR
-      -- ai.team_id = tu.team_id) but this was triggering a bad query plan for
+      -- ai.team_id = gu.team_id) but this was triggering a bad query plan for
       -- some course instances. Having separate SELECTs for user_id and team_id
       -- allows the query planner to utilize the two separate indexes we have
       -- for user_id and team_id.
@@ -135,7 +135,7 @@ WITH
           assessment_instances AS ai2
         WHERE
           ai2.assessment_id = a.id
-          AND ai2.team_id = tu.team_id
+          AND ai2.team_id = gu.team_id
       ) AS ai ON (TRUE)
       LEFT JOIN LATERAL authz_assessment (a.id, $authz_data, $req_date, ci.display_timezone) AS aa ON TRUE
       LEFT JOIN assessment_modules AS am ON (am.id = a.assessment_module_id)
@@ -143,7 +143,7 @@ WITH
       ci.id = $course_instance_id
       AND NOT a.multiple_instance
       AND a.deleted_at IS NULL
-      AND tc.deleted_at IS NULL
+      AND gc.deleted_at IS NULL
   ),
   all_rows AS (
     SELECT

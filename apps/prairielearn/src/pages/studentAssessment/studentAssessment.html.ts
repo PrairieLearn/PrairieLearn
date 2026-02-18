@@ -1,22 +1,22 @@
 import { compiledScriptTag } from '@prairielearn/compiled-assets';
 import { html, unsafeHtml } from '@prairielearn/html';
 
+import { GroupWorkInfoContainer } from '../../components/GroupWorkInfoContainer.js';
 import { PageLayout } from '../../components/PageLayout.js';
-import { TeamWorkInfoContainer } from '../../components/TeamWorkInfoContainer.js';
-import { type Assessment, type TeamConfig, type User } from '../../lib/db-types.js';
+import { type Assessment, type GroupConfig, type User } from '../../lib/db-types.js';
+import { type GroupInfo } from '../../lib/groups.js';
 import type { ResLocalsForPage } from '../../lib/res-locals.js';
-import { type TeamInfo } from '../../lib/teams.js';
 
 export function StudentAssessment({
   resLocals,
-  teamConfig,
-  teamInfo,
+  groupConfig,
+  groupInfo,
   userCanAssignRoles,
   customHonorCode,
 }: {
   resLocals: ResLocalsForPage<'assessment'>;
-  teamConfig?: TeamConfig;
-  teamInfo?: TeamInfo | null;
+  groupConfig?: GroupConfig;
+  groupInfo?: GroupInfo | null;
   userCanAssignRoles?: boolean;
   customHonorCode: string;
 }) {
@@ -69,7 +69,7 @@ export function StudentAssessment({
               `
             : ''}
           ${assessment.team_work
-            ? StudentTeamControls({ teamConfig, teamInfo, userCanAssignRoles, resLocals })
+            ? StudentGroupControls({ groupConfig, groupInfo, userCanAssignRoles, resLocals })
             : StartAssessmentForm({
                 assessment,
                 user,
@@ -100,7 +100,7 @@ function StartAssessmentForm({
     ${startAllowed && assessment.type === 'Exam' && assessment.require_honor_code
       ? HonorPledge({
           user,
-          teamWork: !!assessment.team_work,
+          groupWork: !!assessment.team_work,
           customHonorCode,
         })
       : ''}
@@ -128,11 +128,11 @@ function StartAssessmentForm({
 
 function HonorPledge({
   user,
-  teamWork,
+  groupWork,
   customHonorCode,
 }: {
   user: User;
-  teamWork: boolean;
+  groupWork: boolean;
   customHonorCode?: string;
 }) {
   return html`
@@ -141,13 +141,13 @@ function HonorPledge({
         ? html`<div class="px-3 py-2 honor-code">${unsafeHtml(customHonorCode)}</div>`
         : html`<ul class="list-group list-group-flush">
             <li class="list-group-item py-2">
-              I certify that I am ${user.name} and ${teamWork ? 'our group is' : 'I am'} allowed to
+              I certify that I am ${user.name} and ${groupWork ? 'our group is' : 'I am'} allowed to
               take this assessment.
             </li>
             <li class="list-group-item py-2">
-              ${teamWork ? 'We' : 'I'} pledge on ${teamWork ? 'our' : 'my'} honor that
-              ${teamWork ? 'we' : 'I'} will not give or receive any unauthorized assistance on this
-              assessment and that all work will be ${teamWork ? 'our' : 'my'} own.
+              ${groupWork ? 'We' : 'I'} pledge on ${groupWork ? 'our' : 'my'} honor that
+              ${groupWork ? 'we' : 'I'} will not give or receive any unauthorized assistance on this
+              assessment and that all work will be ${groupWork ? 'our' : 'my'} own.
             </li>
           </ul>`}
       <div class="card-footer d-flex justify-content-center">
@@ -162,51 +162,51 @@ function HonorPledge({
   `;
 }
 
-function StudentTeamControls({
-  teamConfig,
-  teamInfo,
+function StudentGroupControls({
+  groupConfig,
+  groupInfo,
   userCanAssignRoles = false,
   resLocals,
 }: {
   resLocals: ResLocalsForPage<'assessment'>;
-  teamConfig?: TeamConfig;
-  teamInfo?: TeamInfo | null;
+  groupConfig?: GroupConfig;
+  groupInfo?: GroupInfo | null;
   userCanAssignRoles?: boolean;
 }) {
-  if (teamConfig == null) return '';
+  if (groupConfig == null) return '';
 
   const { user, __csrf_token, assessment } = resLocals;
-  if (teamInfo == null) {
-    return TeamCreationJoinForm({ teamConfig, __csrf_token });
+  if (groupInfo == null) {
+    return GroupCreationJoinForm({ groupConfig, __csrf_token });
   }
 
   return html`
-    ${TeamWorkInfoContainer({
-      teamConfig,
-      teamInfo,
+    ${GroupWorkInfoContainer({
+      groupConfig,
+      groupInfo,
       userCanAssignRoles,
       csrfToken: __csrf_token,
     })}
-    ${StartAssessmentForm({ assessment, user, __csrf_token, startAllowed: teamInfo.start })}
-    ${teamConfig.minimum != null && teamConfig.minimum - teamInfo.teamSize > 0
+    ${StartAssessmentForm({ assessment, user, __csrf_token, startAllowed: groupInfo.start })}
+    ${groupConfig.minimum != null && groupConfig.minimum - groupInfo.groupSize > 0
       ? html`
           <p class="text-center">
-            * Minimum group size is ${teamConfig.minimum}. You need at least
-            ${teamConfig.minimum - teamInfo.teamSize} more group member(s) to start.
+            * Minimum group size is ${groupConfig.minimum}. You need at least
+            ${groupConfig.minimum - groupInfo.groupSize} more group member(s) to start.
           </p>
         `
       : ''}
   `;
 }
 
-function TeamCreationJoinForm({
-  teamConfig,
+function GroupCreationJoinForm({
+  groupConfig,
   __csrf_token,
 }: {
-  teamConfig: TeamConfig;
+  groupConfig: GroupConfig;
   __csrf_token: string;
 }) {
-  if (!teamConfig.student_authz_join && !teamConfig.student_authz_create) {
+  if (!groupConfig.student_authz_join && !groupConfig.student_authz_create) {
     return html`
       <p class="text-center">
         This is a group assessment. Please wait for the instructor to assign groups.
@@ -216,18 +216,18 @@ function TeamCreationJoinForm({
 
   return html`
     <p class="text-center">
-      ${(teamConfig.minimum ?? 0) > 1
+      ${(groupConfig.minimum ?? 0) > 1
         ? html`
             This is a group assessment. A group must have
-            ${teamConfig.maximum != null
-              ? `between ${teamConfig.minimum} and ${teamConfig.maximum}`
-              : `at least ${teamConfig.minimum}`}
+            ${groupConfig.maximum != null
+              ? `between ${groupConfig.minimum} and ${groupConfig.maximum}`
+              : `at least ${groupConfig.minimum}`}
             students.
           `
         : html`
             This assessment can be done individually or in groups.
-            ${teamConfig.maximum
-              ? `A group must have no more than ${teamConfig.maximum} students.`
+            ${groupConfig.maximum
+              ? `A group must have no more than ${groupConfig.maximum} students.`
               : ''}
             <br />To work individually, you must also create a group, but you don't need to share
             your join code.
@@ -235,25 +235,25 @@ function TeamCreationJoinForm({
     </p>
     <div class="container-fluid">
       <div class="row">
-        ${teamConfig.student_authz_create
+        ${groupConfig.student_authz_create
           ? html`
               <div class="col-sm bg-light py-4 px-4 border">
                 <form id="create-form" name="create-form" method="POST">
-                  ${teamConfig.student_authz_choose_name
+                  ${groupConfig.student_authz_choose_name
                     ? html`
-                        <label for="team-name-input">Group name</label>
+                        <label for="group-name-input">Group name</label>
                         <input
                           type="text"
                           class="form-control"
-                          id="team-name-input"
-                          name="team_name"
+                          id="group-name-input"
+                          name="group_name"
                           maxlength="30"
                           pattern="[a-zA-Z0-9]+"
                           placeholder="e.g. teamOne"
                           aria-label="Group name"
-                          aria-describedby="team-name-help"
+                          aria-describedby="group-name-help"
                         />
-                        <small id="team-name-help" class="form-text text-muted">
+                        <small id="group-name-help" class="form-text text-muted">
                           Group names can only contain letters and numbers, with maximum length of
                           30 characters. If you leave this blank, a group name will be generated for
                           you.
@@ -262,7 +262,7 @@ function TeamCreationJoinForm({
                     : ''}
                   <div class="mt-4 d-flex justify-content-center">
                     <div class="mb-3">
-                      <input type="hidden" name="__action" value="create_team" />
+                      <input type="hidden" name="__action" value="create_group" />
                       <input type="hidden" name="__csrf_token" value="${__csrf_token}" />
                       <button type="submit" class="btn btn-primary">Create new group</button>
                     </div>
@@ -271,10 +271,10 @@ function TeamCreationJoinForm({
               </div>
             `
           : ''}
-        ${teamConfig.student_authz_join
+        ${groupConfig.student_authz_join
           ? html`
               <div class="col-sm bg-light py-4 px-4 border">
-                <form id="jointeam-form" name="jointeam-form" method="POST">
+                <form id="joingroup-form" name="joingroup-form" method="POST">
                   <label for="join-code-input">Join code</label>
                   <input
                     type="text"
@@ -288,7 +288,7 @@ function TeamCreationJoinForm({
                   />
                   <div class="mt-4 d-flex justify-content-center">
                     <div class="mb-3">
-                      <input type="hidden" name="__action" value="join_team" />
+                      <input type="hidden" name="__action" value="join_group" />
                       <input type="hidden" name="__csrf_token" value="${__csrf_token}" />
                       <button type="submit" class="btn btn-primary">Join group</button>
                     </div>

@@ -1,6 +1,6 @@
 import * as path from 'path';
 
-import sha256 from 'crypto-js/sha256.js';
+import * as trpcExpress from '@trpc/server/adapters/express';
 import { Router } from 'express';
 import asyncHandler from 'express-async-handler';
 import fs from 'fs-extra';
@@ -10,6 +10,7 @@ import { HttpStatusError } from '@prairielearn/error';
 import { flash } from '@prairielearn/flash';
 import * as sqldb from '@prairielearn/postgres';
 import { Hydrate } from '@prairielearn/react/server';
+import { generatePrefixCsrfToken } from '@prairielearn/signed-token';
 
 import { PageLayout } from '../../components/PageLayout.js';
 import { selectAssessmentQuestions } from '../../lib/assessment-question.js';
@@ -21,17 +22,19 @@ import {
   StaffTagSchema,
   StaffTopicSchema,
 } from '../../lib/client/safe-db-types.js';
-import { FileModifyEditor } from '../../lib/editors.js';
+import { config } from '../../lib/config.js';
+import { FileModifyEditor, getOriginalHash } from '../../lib/editors.js';
 import { features } from '../../lib/features/index.js';
 import { getPaths } from '../../lib/instructorFiles.js';
 import { formatJsonWithPrettier } from '../../lib/prettier.js';
-import { selectQuestionsForCourse } from '../../models/questions.js';
+import { handleTrpcError } from '../../lib/trpc.js';
 import { resetVariantsForAssessmentQuestion } from '../../models/variant.js';
 import { ZoneAssessmentJsonSchema } from '../../schemas/infoAssessment.js';
 
 import { InstructorAssessmentQuestionsTable } from './components/InstructorAssessmentQuestionsTable.js';
-import type { CourseQuestionForPicker } from './types.js';
-import { stripZoneDefaults } from './utils/dataTransform.js';
+import { InstructorAssessmentQuestionsTableLegacy } from './components/InstructorAssessmentQuestionsTableLegacy.js';
+import { assessmentQuestionsRouter, createContext } from './trpc.js';
+import { serializeZonesForJson } from './utils/dataTransform.js';
 import { buildHierarchicalAssessment } from './utils/questions.js';
 
 const router = Router();
@@ -57,12 +60,13 @@ const SaveQuestionsSchema = z.object({
 router.get(
   '/',
   asyncHandler(async (req, res) => {
-    const [questionRows, courseQuestions] = await Promise.all([
-      selectAssessmentQuestions({
-        assessment_id: res.locals.assessment.id,
-      }),
-      selectQuestionsForCourse(res.locals.course.id, [res.locals.course_instance.id]),
-    ]);
+    if (!res.locals.authz_data.has_course_permission_preview) {
+      throw new HttpStatusError(403, 'Access denied (must be course previewer)');
+    }
+
+    const questionRows = await selectAssessmentQuestions({
+      assessment_id: res.locals.assessment.id,
+    });
 
     const assessmentPath = path.join(
       res.locals.course.path,
@@ -73,26 +77,11 @@ router.get(
       'infoAssessment.json',
     );
 
-    const assessmentPathExists = await fs.pathExists(assessmentPath);
-
-    let origHash = '';
-    if (assessmentPathExists) {
-      // TODO: Use helper once assessment sets PR lands
-      const assessmentFileContents = await fs.readFile(assessmentPath, 'utf8');
-      origHash = sha256(b64EncodeUnicode(assessmentFileContents)).toString();
-    }
+    const origHash = (await getOriginalHash(assessmentPath)) ?? '';
 
     // We use the database instead of the contents on disk as we want to consider the database as the 'source of truth'
     // for doing operations.
     const jsonZones = buildHierarchicalAssessment(res.locals.course, questionRows);
-
-    // Transform course questions to the simpler type needed for the picker
-    const courseQuestionsForPicker: CourseQuestionForPicker[] = courseQuestions.map((q) => ({
-      qid: q.qid,
-      title: q.title,
-      topic: { id: String(q.topic.id), name: q.topic.name, color: q.topic.color },
-      tags: q.tags?.map((t) => ({ id: String(t.id), name: t.name, color: t.color })) ?? null,
-    }));
 
     const editorEnabled = await features.enabledFromLocals(
       'assessment-questions-editor',
@@ -107,6 +96,14 @@ router.get(
     const canEdit =
       pageContext.authz_data.has_course_instance_permission_edit &&
       !res.locals.course.example_course;
+
+    const trpcCsrfToken = generatePrefixCsrfToken(
+      {
+        url: req.originalUrl.split('?')[0] + '/trpc',
+        authn_user_id: res.locals.authn_user.id,
+      },
+      config.secretKey,
+    );
 
     res.send(
       PageLayout({
@@ -123,20 +120,35 @@ router.get(
         },
         content: (
           <Hydrate>
-            <InstructorAssessmentQuestionsTable
-              course={pageContext.course}
-              questionRows={questionRows}
-              courseQuestions={courseQuestionsForPicker}
-              jsonZones={jsonZones}
-              urlPrefix={pageContext.urlPrefix}
-              assessment={pageContext.assessment}
-              assessmentSetName={pageContext.assessment_set.name}
-              hasCoursePermissionPreview={pageContext.authz_data.has_course_permission_preview}
-              canEdit={canEdit ?? false}
-              csrfToken={res.locals.__csrf_token}
-              origHash={origHash}
-              editorEnabled={editorEnabled}
-            />
+            {editorEnabled ? (
+              <InstructorAssessmentQuestionsTable
+                course={pageContext.course}
+                questionRows={questionRows}
+                jsonZones={jsonZones}
+                urlPrefix={pageContext.urlPrefix}
+                assessment={pageContext.assessment}
+                assessmentSetName={pageContext.assessment_set.name}
+                hasCoursePermissionPreview={pageContext.authz_data.has_course_permission_preview}
+                canEdit={canEdit ?? false}
+                csrfToken={res.locals.__csrf_token}
+                origHash={origHash}
+                trpcCsrfToken={trpcCsrfToken}
+              />
+            ) : (
+              <InstructorAssessmentQuestionsTableLegacy
+                course={pageContext.course}
+                questionRows={questionRows}
+                urlPrefix={pageContext.urlPrefix}
+                assessmentType={pageContext.assessment.type}
+                assessmentSetName={pageContext.assessment_set.name}
+                assessmentNumber={pageContext.assessment.number}
+                hasCoursePermissionPreview={pageContext.authz_data.has_course_permission_preview}
+                hasCourseInstancePermissionEdit={
+                  pageContext.authz_data.has_course_instance_permission_edit ?? false
+                }
+                csrfToken={res.locals.__csrf_token}
+              />
+            )}
           </Hydrate>
         ),
       }),
@@ -147,9 +159,8 @@ router.get(
 router.get(
   '/question.json',
   asyncHandler(async (req, res) => {
-    // TODO: Is this needed?
     if (!res.locals.authz_data.has_course_permission_preview) {
-      throw new HttpStatusError(403, 'Access denied');
+      throw new HttpStatusError(403, 'Access denied (must be course previewer)');
     }
 
     const parsedQuery = z
@@ -175,10 +186,21 @@ router.get(
   }),
 );
 
+router.use(
+  '/trpc',
+  trpcExpress.createExpressMiddleware({
+    router: assessmentQuestionsRouter,
+    createContext,
+    onError: handleTrpcError,
+  }),
+);
+
 router.post(
   '/',
   asyncHandler(async (req, res) => {
     if (req.body.__action === 'reset_question_variants') {
+      // TODO: What permission do we need to reset question variants?
+
       if (res.locals.assessment.type === 'Exam') {
         // See https://github.com/PrairieLearn/PrairieLearn/issues/12977
         throw new HttpStatusError(403, 'Cannot reset variants for Exam assessments');
@@ -197,6 +219,10 @@ router.post(
       );
       if (!editorEnabled) {
         throw new HttpStatusError(403, 'Assessment questions editor feature is not enabled');
+      }
+
+      if (!res.locals.authz_data.has_course_permission_edit) {
+        throw new HttpStatusError(403, 'Access denied (must be course editor)');
       }
 
       const body = SaveQuestionsSchema.parse(req.body);
@@ -218,7 +244,7 @@ router.post(
       const assessmentInfo = JSON.parse(await fs.readFile(assessmentPath, 'utf8'));
 
       // Strip default values from zones data.
-      const filteredZones = stripZoneDefaults(body.zones);
+      const filteredZones = serializeZonesForJson(body.zones);
 
       // Update the zones with the filtered data
       assessmentInfo.zones = filteredZones;

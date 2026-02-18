@@ -3,6 +3,7 @@ import clsx from 'clsx';
 import { type CSSProperties } from 'react';
 import { Dropdown } from 'react-bootstrap';
 
+import { CommentPopover } from '../../../components/CommentPopover.js';
 import { HistMini } from '../../../components/HistMini.js';
 import { IssueBadge } from '../../../components/IssueBadge.js';
 import { OtherAssessmentsBadges } from '../../../components/OtherAssessmentsBadges.js';
@@ -11,12 +12,13 @@ import { TagBadgeList } from '../../../components/TagBadge.js';
 import { TopicBadge } from '../../../components/TopicBadge.js';
 import type { EnumAssessmentType } from '../../../lib/db-types.js';
 import type {
+  AssessmentState,
+  HandleDeleteQuestion,
+  HandleEditQuestion,
   QuestionAlternativeForm,
   ZoneQuestionBlockForm,
-} from '../instructorAssessmentQuestions.shared.js';
-import type { AssessmentState, HandleDeleteQuestion, HandleEditQuestion } from '../types.js';
+} from '../types.js';
 
-import { CommentIcon } from './CommentIcon.js';
 import { QuestionNumberTitleCell } from './QuestionNumberTitleCell.js';
 
 /**
@@ -110,7 +112,8 @@ export function AssessmentQuestion({
     assessmentType,
   } = assessmentState;
 
-  if (questionId == null) throw new Error('Either ID or question is required');
+  // This should never happen, we should never be rendering a zone question block that has no ID
+  if (questionId == null) throw new Error('Zone question block has no ID');
 
   const questionData = questionMetadata[questionId];
 
@@ -131,8 +134,8 @@ export function AssessmentQuestion({
       <td key="grab-handle" className="align-content-center">
         {sortableListeners ? (
           <span
-            {...sortableListeners}
             {...sortableAttributes}
+            {...sortableListeners}
             style={{ cursor: 'grab', touchAction: 'none' }}
             aria-label="Drag to reorder"
           >
@@ -207,7 +210,7 @@ export function AssessmentQuestion({
               count={questionData.open_issue_count}
               issueQid={questionData.question.qid}
             />
-            <CommentIcon comment={question.comment} />
+            <CommentPopover comment={question.comment} />
           </>
         }
       />
@@ -239,7 +242,7 @@ export function AssessmentQuestion({
       </td>
     ) : null,
     <td key="mean-score">
-      {questionData.assessment_question.mean_question_score
+      {questionData.assessment_question.mean_question_score != null
         ? `${questionData.assessment_question.mean_question_score.toFixed(3)} %`
         : null}
     </td>,

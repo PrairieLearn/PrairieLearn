@@ -1,14 +1,12 @@
 import { EncodedData } from '@prairielearn/browser-utils';
 import { type HtmlSafeString, html } from '@prairielearn/html';
-import { hydrateHtml } from '@prairielearn/react/server';
 
 import { compiledScriptTag, compiledStylesheetTag, nodeModulesAssetPath } from '../lib/assets.js';
+import { getAiQuestionGenerationDraftsUrl } from '../lib/client/url.js';
 import { type CourseInstance } from '../lib/db-types.js';
 import { idsEqual } from '../lib/id.js';
 import { type QuestionsPageData } from '../models/questions.js';
 
-import { CreateQuestionModalContents } from './CreateQuestionModalContents.js';
-import { Modal } from './Modal.js';
 import type { QuestionsTableData } from './QuestionsTable.types.js';
 
 export function QuestionsTableHead() {
@@ -29,7 +27,6 @@ export function QuestionsTableHead() {
 
 export function QuestionsTable({
   questions,
-  templateQuestions = [],
   showAddQuestionButton = false,
   showAiGenerateQuestionButton = false,
   showSharingSets = false,
@@ -37,13 +34,8 @@ export function QuestionsTable({
   course_instances = [],
   qidPrefix,
   urlPrefix,
-  __csrf_token,
 }: {
   questions: QuestionsPageData[];
-  /**
-   * The template questions the user can select as a starting point when creating a new question.
-   */
-  templateQuestions?: { example_course: boolean; qid: string; title: string }[];
   showAddQuestionButton?: boolean;
   showAiGenerateQuestionButton?: boolean;
   showSharingSets?: boolean;
@@ -51,7 +43,6 @@ export function QuestionsTable({
   course_instances?: CourseInstance[];
   qidPrefix?: string;
   urlPrefix: string;
-  __csrf_token: string;
 }): HtmlSafeString {
   const has_legacy_questions = questions.some((row) => row.display_type !== 'v3');
   const course_instance_ids = course_instances.map((course_instance) => course_instance.id);
@@ -66,10 +57,6 @@ export function QuestionsTable({
       },
       'questions-table-data',
     )}
-    ${CreateQuestionModal({
-      csrfToken: __csrf_token,
-      templateQuestions,
-    })}
     <div class="card mb-4">
       <div class="card-header bg-primary text-white">
         <h1>Questions</h1>
@@ -242,30 +229,25 @@ export function QuestionsTable({
               </p>
               <p>
                 Learn more in the
-                <a
-                  href="https://prairielearn.readthedocs.io/en/latest/question/"
-                  target="_blank"
-                  rel="noreferrer"
+                <a href="https://docs.prairielearn.com/question/" target="_blank" rel="noreferrer"
                   >question documentation</a
                 >.
               </p>
               ${showAddQuestionButton
                 ? html`
                     <div class="d-flex flex-row flex-wrap justify-content-center gap-3">
-                      <button
-                        type="button"
+                      <a
                         class="btn btn-sm btn-primary"
-                        data-bs-toggle="modal"
-                        data-bs-target="#createQuestionModal"
+                        href="${urlPrefix}/course_admin/questions/create"
                       >
                         <i class="fa fa-plus" aria-hidden="true"></i>
                         Add question
-                      </button>
+                      </a>
                       ${showAiGenerateQuestionButton
                         ? html`
                             <a
                               class="btn btn-sm btn-primary"
-                              href="${urlPrefix}/ai_generate_question_drafts"
+                              href="${getAiQuestionGenerationDraftsUrl({ urlPrefix })}"
                             >
                               <i class="fa fa-wand-magic-sparkles" aria-hidden="true"></i>
                               Generate question with AI
@@ -279,25 +261,4 @@ export function QuestionsTable({
           `}
     </div>
   `;
-}
-
-function CreateQuestionModal({
-  csrfToken,
-  templateQuestions,
-}: {
-  csrfToken: string;
-  templateQuestions: { example_course: boolean; qid: string; title: string }[];
-}) {
-  return Modal({
-    id: 'createQuestionModal',
-    title: 'Create question',
-    formMethod: 'POST',
-    body: hydrateHtml(<CreateQuestionModalContents templateQuestions={templateQuestions} />),
-    footer: html`
-      <input type="hidden" name="__action" value="add_question" />
-      <input type="hidden" name="__csrf_token" value="${csrfToken}" />
-      <button type="button" class="btn btn-secondary" data-bs-dismiss="modal">Cancel</button>
-      <button type="submit" class="btn btn-primary">Create</button>
-    `,
-  });
 }

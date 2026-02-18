@@ -1,8 +1,14 @@
 {
   "extends": "@prairielearn/tsconfig/tsconfig.app.json",
   "compilerOptions": {
+    "lib": ["ES2022", "DOM", "DOM.Iterable"],
     "rootDir": "./",
     "outDir": "../dist",
+    "types": [
+      // This is necessary to augment the Express `Request` type with a
+      // `session` property.
+      "@prairielearn/session"
+    ],
     "jsx": "react-jsx"
   },
   "include": ["**/*"]

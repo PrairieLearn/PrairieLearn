@@ -40,7 +40,7 @@ const courseInstancesUrl = `${courseUrl}/course_admin/instances`;
 
 const courseInstanceUrl = baseUrl + '/course_instance/1/instructor';
 
-const questionsUrl = `${courseInstanceUrl}/course_admin/questions`;
+const questionCreateUrl = `${courseInstanceUrl}/course_admin/questions/create`;
 const assessmentsUrl = `${courseInstanceUrl}/instance_admin/assessments`;
 
 const newQuestionUrl = `${courseInstanceUrl}/question/2/settings`;
@@ -62,7 +62,7 @@ interface EditData {
   data?: Record<string, string | number | boolean>;
   dynamicPostInfo?: (form: cheerio.Cheerio<any>) => {
     csrfToken: string | undefined;
-    url: string | undefined;
+    url?: string;
   };
 }
 
@@ -77,8 +77,8 @@ function getCourseInstanceCreatePostInfo(page: cheerio.Cheerio<any>) {
 
 const testEditData: EditData[] = [
   {
-    url: questionsUrl,
-    formSelector: '#createQuestionModal',
+    url: questionCreateUrl,
+    formSelector: 'form[method="POST"]',
     action: 'add_question',
     info: 'questions/New_1/info.json',
     data: {
@@ -101,8 +101,8 @@ const testEditData: EditData[] = [
   },
   {
     // Create a question with a template question as the starting point
-    url: questionsUrl,
-    formSelector: '#createQuestionModal',
+    url: questionCreateUrl,
+    formSelector: 'form[method="POST"]',
     action: 'add_question',
     info: 'questions/custom_id/info.json',
     data: {
@@ -130,6 +130,7 @@ const testEditData: EditData[] = [
   {
     url: newQuestionUrl,
     formSelector: '#deleteQuestionModal',
+    dynamicPostInfo: getQuestion2DeletePostInfo,
     action: 'delete_question',
     files: new Set([
       'README.md',
@@ -148,6 +149,7 @@ const testEditData: EditData[] = [
     // Delete the question created from a template question
     url: newQuestionFromTemplateUrl,
     formSelector: '#deleteQuestionModal',
+    dynamicPostInfo: getQuestion3DeletePostInfo,
     action: 'delete_question',
     files: new Set([
       'README.md',
@@ -161,8 +163,8 @@ const testEditData: EditData[] = [
   },
   {
     url: `${courseInstanceUrl}/question/1/settings`,
-    button: '#copyQuestionButton',
     formSelector: 'form[name="copy-question-form"]',
+    dynamicPostInfo: getQuestionCopyPostInfo,
     data: {
       to_course_id: 1,
     },
@@ -183,6 +185,7 @@ const testEditData: EditData[] = [
   },
   {
     formSelector: '#deleteQuestionModal',
+    dynamicPostInfo: getQuestionDeleteFromCurrentUrlPostInfo,
     action: 'delete_question',
     files: new Set([
       'README.md',
@@ -357,6 +360,49 @@ function getCourseInstanceCopyPostInfo(_: cheerio.Cheerio<any>) {
   return {
     csrfToken,
     url: '/pl/course/1/copy_public_course_instance',
+  };
+}
+
+function getQuestionCopyPostInfo() {
+  // The copy question form is rendered as a React popover, so we generate
+  // the CSRF token directly instead of parsing it from data-bs-content.
+  return {
+    csrfToken: generateCsrfToken({
+      url: '/pl/course_instance/1/instructor/question/1/settings',
+      authnUserId: '1',
+    }),
+  };
+}
+
+function getQuestion2DeletePostInfo() {
+  // The delete modal is rendered by React and only contains content when shown.
+  return {
+    csrfToken: generateCsrfToken({
+      url: '/pl/course_instance/1/instructor/question/2/settings',
+      authnUserId: '1',
+    }),
+  };
+}
+
+function getQuestion3DeletePostInfo() {
+  // The delete modal is rendered by React and only contains content when shown.
+  return {
+    csrfToken: generateCsrfToken({
+      url: '/pl/course_instance/1/instructor/question/3/settings',
+      authnUserId: '1',
+    }),
+  };
+}
+
+function getQuestionDeleteFromCurrentUrlPostInfo() {
+  // The delete modal is rendered by React and only contains content when shown.
+  // Use currentUrl which was set by the previous test's POST response.
+  const url = new URL(currentUrl);
+  return {
+    csrfToken: generateCsrfToken({
+      url: url.pathname,
+      authnUserId: '1',
+    }),
   };
 }
 

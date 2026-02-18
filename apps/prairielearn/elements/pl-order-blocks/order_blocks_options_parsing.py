@@ -125,7 +125,7 @@ def get_multigraph_info(
 class AnswerOptions:
     """
     Collects and validates <pl-answer> tag options
-    For more information on the pl-order-blocks attributes see the [pl-order-block docs](https://prairielearn.readthedocs.io/en/latest/elements/pl-order-blocks)
+    For more information on the pl-order-blocks attributes see the [pl-order-block docs](https://docs.prairielearn.com/elements/pl-order-blocks)
     """
 
     tag: str
@@ -229,7 +229,7 @@ class AnswerOptions:
 class OrderBlocksOptions:
     """
     Collects and validates <pl-order-block> question options.
-    For more information on the pl-order-blocks attributes see the [pl-order-block docs](https://prairielearn.readthedocs.io/en/latest/elements/pl-order-blocks)
+    For more information on the pl-order-blocks attributes see the [pl-order-block docs](https://docs.prairielearn.com/elements/pl-order-blocks)
     """
 
     answers_name: str
@@ -366,14 +366,12 @@ class OrderBlocksOptions:
         if self.has_optional_blocks:
             has_final = False
             for options in self.answer_options:
-                if options.final and has_final:
-                    raise ValueError("Multiple 'final' attributes are not allowed.")
                 if options.final and not has_final:
                     has_final = True
 
             if not has_final:
                 raise ValueError(
-                    "Use of optional lines requires a singular 'final' attribute on the last true <pl-answer> block in the question."
+                    "Use of optional lines requires 'final' attributes on all true <pl-answer> blocks that appears at the end of a valid ordering."
                 )
 
     def _validate_order_blocks_options(self) -> None:
