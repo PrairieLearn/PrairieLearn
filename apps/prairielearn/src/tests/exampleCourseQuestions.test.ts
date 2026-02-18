@@ -5,8 +5,10 @@ import fg from 'fast-glob';
 import { afterAll, beforeAll, describe, it } from 'vitest';
 
 import { config } from '../lib/config.js';
-import { EXAMPLE_COURSE_PATH } from '../lib/paths.js';
+import { EXAMPLE_COURSE_PATH, TEST_COURSE_PATH } from '../lib/paths.js';
+import { selectOrInsertCourseByPath, updateCourseSharingName } from '../models/course.js';
 
+import * as helperCourse from './helperCourse.js';
 import * as helperQuestion from './helperQuestion.js';
 import * as helperServer from './helperServer.js';
 
@@ -76,7 +78,14 @@ describe('Auto-test questions in exampleCourse', () => {
   });
 
   describe('Auto-test questions in exampleCourse', { timeout: 60_000 }, function () {
-    beforeAll(helperServer.before(EXAMPLE_COURSE_PATH));
+    beforeAll(async () => {
+      await helperServer.before(EXAMPLE_COURSE_PATH)();
+      // Sync testCourse and assign it a sharing name
+      await helperCourse.syncCourse(TEST_COURSE_PATH);
+      const testCourse = await selectOrInsertCourseByPath(TEST_COURSE_PATH);
+      await updateCourseSharingName({ course_id: testCourse.id, sharing_name: 'testCourse' });
+      await helperCourse.syncCourse(EXAMPLE_COURSE_PATH);
+    });
 
     afterAll(helperServer.after);
 

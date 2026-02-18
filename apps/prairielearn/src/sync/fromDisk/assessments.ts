@@ -344,16 +344,18 @@ function getParamsForAssessment(
 
         // Validate preferences overrides against schema (if available)
         // We only store the overrides here; defaults are merged at runtime
-        const preferencesSchema = getPreferencesSchema(alternative.qid);
-        const { errors: preferenceErrors } = mergeAndValidatePreferences(
-          alternative.qid,
-          preferencesSchema,
-          alternative.preferences,
-        );
 
-        // Record any validation errors
-        for (const error of preferenceErrors) {
-          infofile.addError(assessmentInfoFile, error);
+        if (questionId !== undefined) {
+          const preferencesSchema = getPreferencesSchema(alternative.qid);
+          const { errors: preferenceErrors } = mergeAndValidatePreferences(
+            alternative.qid,
+            preferencesSchema,
+            alternative.preferences,
+          );
+          // Record any validation errors
+          for (const error of preferenceErrors) {
+            infofile.addError(assessmentInfoFile, error);
+          }
         }
 
         return {
