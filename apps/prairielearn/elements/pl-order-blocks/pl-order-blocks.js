@@ -10,14 +10,17 @@ window.PLOrderBlocks = function (uuid, options) {
   const codeText = fullContainer.querySelector(
     '.pl-order-blocks-code .pl-code td.code pre, .pl-order-blocks-code .pl-code pre',
   );
-  const indentScale = (() => {
+  const indentScale = computeIndentScale();
+  const scaledTabSpaces = TAB_SPACES * indentScale;
+  const tabWidth = measureTabWidth();
+
+  function computeIndentScale() {
     if (!codeText) return 1;
     const dropzoneFontSize = Number.parseFloat(getComputedStyle(dropzoneList).fontSize) || 0;
     const codeFontSize = Number.parseFloat(getComputedStyle(codeText).fontSize) || dropzoneFontSize;
     if (dropzoneFontSize <= 0) return 1;
     return codeFontSize / dropzoneFontSize;
-  })();
-  const scaledTabSpaces = TAB_SPACES * indentScale;
+  }
 
   function measureTabWidth() {
     const probe = document.createElement('span');
@@ -29,7 +32,6 @@ window.PLOrderBlocks = function (uuid, options) {
     probe.remove();
     return width;
   }
-  const tabWidth = measureTabWidth();
 
   function initializeKeyboardHandling() {
     const blocks = fullContainer.querySelectorAll('.pl-order-block');
@@ -63,7 +65,7 @@ window.PLOrderBlocks = function (uuid, options) {
     const clamped = Math.max(0, Math.min(indentation, maxIndent));
     block.style.marginLeft = clamped * scaledTabSpaces + 'ch';
     if (inDropzone(block)) {
-      block.setAttribute('aria-description', 'indentation depth ' + getIndentation(block));
+      block.setAttribute('aria-description', 'indentation depth ' + clamped);
     } else {
       block.removeAttribute('aria-description');
     }
