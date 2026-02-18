@@ -542,7 +542,6 @@ export async function diffChunks({
         break;
       case 'clientFilesCourseInstance': {
         const courseInstanceName = courseChunk.course_instance_name;
-        assert(courseInstanceName != null);
         existingCourseChunks.courseInstances.getOrCreate(
           courseInstanceName,
         ).clientFilesCourseInstance = true;
@@ -551,7 +550,6 @@ export async function diffChunks({
       case 'clientFilesAssessment': {
         const courseInstanceName = courseChunk.course_instance_name;
         const assessmentName = courseChunk.assessment_name;
-        assert(courseInstanceName != null);
         assert(assessmentName != null);
         existingCourseChunks.courseInstances
           .getOrCreate(courseInstanceName)

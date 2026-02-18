@@ -64,7 +64,7 @@ router.get(
     const infoAssessmentPath = encodePath(
       path.join(
         'courseInstances',
-        res.locals.course_instance.short_name!,
+        res.locals.course_instance.short_name,
         'assessments',
         res.locals.assessment.tid!,
         'infoAssessment.json',
@@ -139,7 +139,7 @@ router.post(
       const infoAssessmentPath = path.join(
         res.locals.course.path,
         'courseInstances',
-        res.locals.course_instance.short_name!,
+        res.locals.course_instance.short_name,
         'assessments',
         res.locals.assessment.tid!,
         'infoAssessment.json',
