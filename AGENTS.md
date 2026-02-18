@@ -39,6 +39,7 @@ Frequently used packages:
 
 - NEVER amend commits or force push unless specifically requested.
 - NEVER rebase unless specifically requested, always use merge commits.
+- ALWAYS create pull requests as drafts unless specifically requested.
 
 ## Building, type checking, and linting
 
@@ -57,6 +58,7 @@ Linting:
 
 - Individual files: `yarn eslint --fix path/to/file.ts`. Prefer using a skill / LSP / MCP for this to improve performance.
 - All files: `make lint-js`
+- Check for dead code with `make check-dependencies`.
 
 Formatting:
 
@@ -89,11 +91,13 @@ Reference the Makefile for commands to format/lint/typecheck other tools / langu
 
 All applications share a single Postgres database. See `database/` for descriptions of the database tables and enums. All tables have corresponding Zod types in `apps/prairielearn/src/lib/db-types.ts`.
 
-Migrations are stored in `apps/prairielearn/src/migrations`. See the [`README.md`](apps/prairielearn/src/migrations/README.md) file in that directory for details on how to create and run migrations. If a migration was created on the current feature branch (i.e., it has not been merged to master), modify it directly instead of creating a new migration.
+Migrations are stored in `apps/prairielearn/src/migrations`. When working with migrations, ALWAYS refer to the migration [`README.md`](apps/prairielearn/src/migrations/README.md) for details on how to create, run, and sequence migrations. Migrations are often a multi-step process that should be broken into multiple PRs.
+
+If a migration was created on the current feature branch (i.e., it has not been merged to master), modify it directly instead of creating a new migration.
 
 If you make a change to the database, make sure to update the database schema description in `database/` and the Zod types/table list in `apps/prairielearn/src/lib/db-types.ts`.
 
-Prefer interacting with the database using model functions in `apps/prairielearn/src/models/`.
+**Always prefer existing model functions over one-off raw SQL queries.** Check `apps/prairielearn/src/models/` for existing functions before writing any database queries. Model functions provide type safety, consistent patterns, and proper abstractions. Only write raw queries when no suitable model function exists.
 
 When inserting audit events (`insertAuditEvent`), always do so inside the same transaction as the action being audited. Use `runInTransactionAsync` to wrap the original database mutation and its corresponding audit log insertion together. This ensures that if either the action or the audit event fails, both are rolled back.
 
@@ -101,11 +105,15 @@ Course content repositories use JSON files like `infoCourse.json`, `infoCourseIn
 
 When working with assessment "groups" / "teams", see the [`groups-and-teams` skill](./.agents/skills/groups-and-teams/SKILL.md).
 
+### SQL query conventions
+
+- Use `to_jsonb(table.*)` if you need to select all columns from a table as JSON. This is preferred over explicit `jsonb_build_object` calls because it automatically includes all columns and stays in sync with schema changes.
+
 ## TypeScript guidance
 
 ### Library usage conventions
 
-- Use `@tanstack/react-query` for API calls.
+- Use `tRPC + @trpc/tanstack-react-query` for new client/server communication. When interacting with existing REST APIs, use `@tanstack/react-query`.
 - Use `react-hook-form` for form handling.
 - Prefer `extractPageContext(res.locals, ...)` over accessing `res.locals` properties directly in route handlers. This provides better type safety and ensures consistent access patterns.
 - Use `nuqs` for URL query state in hydrated components. Use `NuqsAdapter` from `@prairielearn/ui` and pass the search string from the router. See `pages/home/` for an example.
@@ -156,6 +164,8 @@ The PrairieLearn web application renders HTML in one of two ways:
 - Static HTML is rendered with an `html` tagged-template literal from the `@prairielearn/html` package. See [`packages/html/README.md`](packages/html/README.md) for details.
 - Interactive components are built and rendered with React and hydrated with utilities from the `@prairielearn/react` package. See [`packages/react/README.md`](packages/react/README.md) for details.
 
+Inline `PageLayout` directly in the Express route handler rather than creating wrapper components. See `pages/publicQuestions/publicQuestions.tsx` for an example.
+
 ### React guidance
 
 - A file at `./foo.tsx` should be imported as `./foo.js` from other files.
@@ -164,6 +174,7 @@ The PrairieLearn web application renders HTML in one of two ways:
 - Pass `res.locals` to `getPageContext` to get information about the course instance / authentication state.
 - If you hydrate a component with `Hydrate`, you must register the component with `registerHydratedComponent` in a file in `apps/prairielearn/assets/scripts/esm-bundles/hydrated-components`.
 - Don't use `useMemo` for cheap computations. Use `run` from `@prairielearn/run` instead (an IIFE helper that executes a function immediately).
+- Avoid unnecessary `useEffect` when using `react-hook-form`. The `watch()` function returns reactive values that trigger re-renders automatically, so derived state can be computed directly without `useEffect`.
 
 ## Python guidance
 

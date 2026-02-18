@@ -11,7 +11,7 @@ import { logger } from '@prairielearn/logger';
 
 import { EXAMPLE_COURSE_PATH, TEST_COURSE_PATH } from './paths.js';
 
-export const DEV_MODE = process.env.NODE_ENV !== 'production';
+const DEV_MODE = process.env.NODE_ENV !== 'production';
 
 // We don't compare against 'test' since we use the 'MODE' environment variable
 // for running a subset of our tests.
@@ -156,9 +156,9 @@ export const ConfigSchema = z.object({
    * more work is available.
    */
   batchedMigrationsSleepDurationMs: z.number().default(30_000),
-  sslCertificateFile: z.string().default('/etc/pki/tls/certs/localhost.crt'),
-  sslKeyFile: z.string().default('/etc/pki/tls/private/localhost.key'),
-  sslCAFile: z.string().default('/etc/pki/tls/certs/server-chain.crt'),
+  sslCertificateFile: z.string().default('/etc/ssl/certs/localhost.crt'),
+  sslKeyFile: z.string().default('/etc/ssl/private/localhost.key'),
+  sslCAFile: z.string().default('/etc/ssl/certs/server-chain.crt'),
   fileUploadMaxBytes: z.number().default(1e7),
   fileUploadMaxParts: z.number().default(1000),
   fileStoreS3Bucket: z.string().default('file-store'),

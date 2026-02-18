@@ -1,5 +1,5 @@
 import type { ColumnSizingState, Header, Table } from '@tanstack/react-table';
-import { type JSX, type RefObject, useEffect, useMemo, useRef, useState } from 'react';
+import { type ReactNode, type RefObject, useEffect, useMemo, useRef, useState } from 'react';
 import { flushSync } from 'react-dom';
 import { type Root, createRoot } from 'react-dom/client';
 
@@ -12,7 +12,7 @@ function HiddenMeasurementHeader<TData>({
 }: {
   table: Table<TData>;
   columnsToMeasure: { id: string }[];
-  filters?: Record<string, (props: { header: Header<TData, unknown> }) => JSX.Element>;
+  filters?: Record<string, (props: { header: Header<TData, unknown> }) => ReactNode>;
 }) {
   const headerGroups = table.getHeaderGroups();
   const leafHeaderGroup = headerGroups[headerGroups.length - 1];
@@ -64,7 +64,7 @@ function HiddenMeasurementHeader<TData>({
 export function useAutoSizeColumns<TData>(
   table: Table<TData>,
   tableRef: RefObject<HTMLDivElement | null>,
-  filters?: Record<string, (props: { header: Header<TData, unknown> }) => JSX.Element>,
+  filters?: Record<string, (props: { header: Header<TData, unknown> }) => ReactNode>,
 ): boolean {
   const measurementContainerRef = useRef<HTMLDivElement | null>(null);
   const measurementRootRef = useRef<Root | null>(null);

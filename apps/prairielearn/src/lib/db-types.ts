@@ -307,7 +307,7 @@ export const AlternativeGroupSchema = z.object({
   json_max_points: z.number().nullable(),
   json_points: z.union([z.number(), z.array(z.number())]).nullable(),
   json_tries_per_variant: z.number().nullable(),
-  number: z.number().nullable(),
+  number: z.number(),
   number_choose: z.number().nullable(),
   zone_id: IdSchema,
 });
@@ -412,7 +412,7 @@ export const AssessmentInstanceSchema = z.object({
   max_points: z.number().nullable(),
   mode: EnumModeSchema.nullable(),
   modified_at: DateFromISOString,
-  number: z.number().nullable(),
+  number: z.number(),
   open: z.boolean().nullable(),
   points: z.number().nullable(),
   score_perc: z.number().nullable(),
@@ -428,7 +428,7 @@ export const AssessmentModuleSchema = z.object({
   id: IdSchema,
   implicit: z.boolean(),
   name: z.string(),
-  number: z.number().nullable(),
+  number: z.number(),
 });
 export type AssessmentModule = z.infer<typeof AssessmentModuleSchema>;
 
@@ -665,7 +665,7 @@ export const CourseInstanceAccessRuleSchema = z.object({
   id: IdSchema,
   institution: z.string().nullable(),
   json_comment: JsonCommentSchema.nullable(),
-  number: z.number().nullable(),
+  number: z.number(),
   start_date: DateFromISOString.nullable(),
   uids: z.string().array().nullable(),
 });
@@ -1118,7 +1118,7 @@ export const JobSequenceSchema = z.object({
   finish_date: DateFromISOString.nullable(),
   id: IdSchema,
   legacy: z.boolean(),
-  number: z.number().nullable(),
+  number: z.number(),
   start_date: DateFromISOString.nullable(),
   status: EnumJobStatusSchema.nullable(),
   type: z.string().nullable(),
@@ -1482,7 +1482,7 @@ export const TagSchema = z.object({
   implicit: z.boolean(),
   json_comment: JsonCommentSchema.nullable(),
   name: z.string(),
-  number: z.number().nullable(),
+  number: z.number(),
 });
 export type Tag = z.infer<typeof TagSchema>;
 
@@ -1496,7 +1496,7 @@ export const TopicSchema = z.object({
   implicit: z.boolean(),
   json_comment: JsonCommentSchema.nullable(),
   name: z.string(),
-  number: z.number().nullable(),
+  number: z.number(),
 });
 export type Topic = z.infer<typeof TopicSchema>;
 

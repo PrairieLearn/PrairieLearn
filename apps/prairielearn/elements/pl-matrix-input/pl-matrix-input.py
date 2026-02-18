@@ -14,6 +14,7 @@ ATOL_DEFAULT = 1e-8
 DIGITS_DEFAULT = 2
 ALLOW_COMPLEX_DEFAULT = False
 SHOW_HELP_TEXT_DEFAULT = True
+INITIAL_VALUE_DEFAULT = None
 
 
 def prepare(element_html: str, data: pl.QuestionData) -> None:
@@ -29,6 +30,7 @@ def prepare(element_html: str, data: pl.QuestionData) -> None:
         "digits",
         "allow-complex",
         "show-help-text",
+        "initial-value",
     ]
     pl.check_attribs(element, required_attribs, optional_attribs)
     name = pl.get_string_attrib(element, "answers-name")
@@ -51,6 +53,10 @@ def render(element_html: str, data: pl.QuestionData) -> str:
     if data["panel"] == "question":
         editable = data["editable"]
         raw_submitted_answer = data["raw_submitted_answers"].get(name, None)
+        if raw_submitted_answer is None:
+            raw_submitted_answer = pl.get_string_attrib(
+                element, "initial-value", INITIAL_VALUE_DEFAULT
+            )
 
         # Get comparison parameters and info strings
         comparison = pl.get_string_attrib(element, "comparison", COMPARISON_DEFAULT)

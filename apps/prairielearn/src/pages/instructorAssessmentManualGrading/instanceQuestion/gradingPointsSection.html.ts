@@ -94,7 +94,7 @@ export function TotalPointsSection({
   `;
 }
 
-export function GradingPointsSection({
+function GradingPointsSection({
   type,
   type_label,
   context,
