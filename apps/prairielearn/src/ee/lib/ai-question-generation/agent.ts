@@ -44,6 +44,7 @@ import {
 import { DefaultMap } from '../../../lib/default-map.js';
 import { REPOSITORY_ROOT_PATH } from '../../../lib/paths.js';
 import { createServerJob } from '../../../lib/server-jobs.js';
+import { updateCourseInstanceUsagesForAiQuestionGeneration } from '../../../models/course-instance-usages.js';
 import { selectQuestionById } from '../../../models/question.js';
 import { selectAiQuestionGenerationContextMessages } from '../../models/ai-question-generation-message.js';
 import {
@@ -719,6 +720,13 @@ export async function editQuestionWithAgent({
       user,
       usage: totalUsage,
       model: modelId,
+    });
+
+    await updateCourseInstanceUsagesForAiQuestionGeneration({
+      courseId: course.id,
+      authnUserId: authnUser.id,
+      model: modelId,
+      usage: totalUsage,
     });
   });
 

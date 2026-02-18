@@ -29,7 +29,7 @@ import { execute, loadSqlEquiv } from '@prairielearn/postgres';
 
 import type { CounterClockwiseRotationDegrees } from '../ee/lib/ai-grading/types.js';
 import { calculateResponseCost } from '../lib/ai-util.js';
-import type { Config } from '../lib/config.js';
+import type { Config, config } from '../lib/config.js';
 
 const sql = loadSqlEquiv(import.meta.url);
 
@@ -65,6 +65,33 @@ export async function updateCourseInstanceUsagesForGradingJob({
 }) {
   await execute(sql.update_course_instance_usages_for_external_grading, {
     grading_job_id,
+  });
+}
+
+/**
+ * Update the course instance usages for an AI question generation prompt.
+ *
+ * @param param
+ * @param param.courseId The ID of the course.
+ * @param param.authnUserId The ID of the user who generated the prompt.
+ * @param param.model The model used for the prompt.
+ * @param param.usage The usage object returned by the model provider's API.
+ */
+export async function updateCourseInstanceUsagesForAiQuestionGeneration({
+  courseId,
+  authnUserId,
+  model,
+  usage,
+}: {
+  courseId: string;
+  authnUserId: string;
+  model: keyof (typeof config)['costPerMillionTokens'];
+  usage: LanguageModelUsage | undefined;
+}) {
+  await execute(sql.update_course_instance_usages_for_ai_question_generation, {
+    course_id: courseId,
+    authn_user_id: authnUserId,
+    cost_ai_question_generation: calculateResponseCost({ model, usage }),
   });
 }
 
