@@ -1,12 +1,46 @@
 window.PLOrderBlocks = function (uuid, options) {
-  const TABWIDTH = 50; // defines how many px the answer block is indented by, when the student
-  // drags and indents a block
+  const TAB_SPACES = 4;
   const maxIndent = options.maxIndent; // defines the maximum number of times an answer block can be indented
   const enableIndentation = options.enableIndentation;
 
   const optionsElementId = '#order-blocks-options-' + uuid;
   const dropzoneElementId = '#order-blocks-dropzone-' + uuid;
+  const dropzoneList = $(dropzoneElementId)[0];
   const fullContainer = document.querySelector('.pl-order-blocks-question-' + uuid);
+  const codeText = fullContainer.querySelector(
+    '.pl-order-blocks-code .pl-code td.code pre, .pl-order-blocks-code .pl-code pre',
+  );
+  const indentScale = (() => {
+    if (!codeText) return 1;
+    const dropzoneFontSize = Number.parseFloat(getComputedStyle(dropzoneList).fontSize) || 0;
+    const codeFontSize = Number.parseFloat(getComputedStyle(codeText).fontSize) || dropzoneFontSize;
+    if (dropzoneFontSize <= 0) return 1;
+    return codeFontSize / dropzoneFontSize;
+  })();
+  const scaledTabSpaces = TAB_SPACES * indentScale;
+  let tabWidth = 0;
+
+  function updateTabWidth() {
+    const probe = document.createElement('span');
+    probe.style.width = scaledTabSpaces + 'ch';
+    probe.style.position = 'absolute';
+    probe.style.visibility = 'hidden';
+    dropzoneList.append(probe);
+    tabWidth = probe.getBoundingClientRect().width;
+    probe.remove();
+  }
+
+  window.addEventListener('resize', updateTabWidth);
+  window.visualViewport?.addEventListener('resize', updateTabWidth);
+  document.fonts?.addEventListener?.('loadingdone', updateTabWidth);
+  if ('ResizeObserver' in window) {
+    const tabWidthResizeObserver = new ResizeObserver(updateTabWidth);
+    tabWidthResizeObserver.observe(dropzoneList);
+    if (codeText) {
+      tabWidthResizeObserver.observe(codeText);
+    }
+  }
+  updateTabWidth();
 
   function initializeKeyboardHandling() {
     const blocks = fullContainer.querySelectorAll('.pl-order-block');
@@ -14,7 +48,7 @@ window.PLOrderBlocks = function (uuid, options) {
     blocks.forEach((block) => {
       block.setAttribute('tabindex', '-1');
       if (enableIndentation) {
-        const existingIndent = Number.parseInt(block.style.marginLeft) || 0;
+        const existingIndent = getIndentation(block);
         setIndentation(block, existingIndent);
       }
       block.setAttribute('id', uuid + '-' + blockNum);
@@ -33,12 +67,12 @@ window.PLOrderBlocks = function (uuid, options) {
   }
 
   function getIndentation(block) {
-    return Math.round(Number.parseInt(block.style.marginLeft.replace('px', '') / TABWIDTH));
+    return Math.round((Number.parseFloat(block.style.marginLeft) || 0) / scaledTabSpaces);
   }
 
   function setIndentation(block, indentation) {
-    const clamped = Math.max(0, Math.min(indentation, maxIndent * TABWIDTH));
-    block.style.marginLeft = clamped + 'px';
+    const clamped = Math.max(0, Math.min(indentation, maxIndent));
+    block.style.marginLeft = clamped * scaledTabSpaces + 'ch';
     if (inDropzone(block)) {
       block.setAttribute('aria-description', 'indentation depth ' + getIndentation(block));
     } else {
@@ -151,7 +185,7 @@ window.PLOrderBlocks = function (uuid, options) {
                   $(optionsElementId)[0].insertAdjacentElement('beforeend', block);
                   return;
                 }
-                setIndentation(block, (level - 1) * TABWIDTH);
+                setIndentation(block, level - 1);
               }
             });
             break;
@@ -163,14 +197,14 @@ window.PLOrderBlocks = function (uuid, options) {
                 if (enableIndentation) {
                   // when inserting a block, default to the same indentation level as the previous block
                   if (block.previousElementSibling) {
-                    setIndentation(block, getIndentation(block.previousElementSibling) * TABWIDTH);
+                    setIndentation(block, getIndentation(block.previousElementSibling));
                   } else {
                     setIndentation(block, 0);
                   }
                 }
               } else if (enableIndentation) {
                 // Already in answer area
-                setIndentation(block, (getIndentation(block) + 1) * TABWIDTH);
+                setIndentation(block, getIndentation(block) + 1);
               }
             });
             break;
@@ -217,8 +251,7 @@ window.PLOrderBlocks = function (uuid, options) {
         const answerDistractorBin = answerObj.getAttribute('data-distractor-bin');
         let answerIndent = null;
         if (enableIndentation) {
-          answerIndent = Number.parseInt($(answerObj).css('marginLeft').replace('px', ''));
-          answerIndent = Math.round(answerIndent / TABWIDTH); // get how many times the answer is indented
+          answerIndent = getIndentation(answerObj);
         }
 
         studentAnswers.push({
@@ -235,24 +268,31 @@ window.PLOrderBlocks = function (uuid, options) {
   }
 
   function calculateIndent(ui, parent) {
-    if (!parent[0].classList.contains('dropzone') || !enableIndentation) {
+    const parentEl = parent[0];
+    if (!parentEl.classList.contains('dropzone') || !enableIndentation) {
       // don't indent on option panel or solution panel with indents explicitly disabled
       return 0;
     }
 
-    let leftDiff = ui.position.left - parent.position().left;
-    leftDiff = Math.round(leftDiff / TABWIDTH) * TABWIDTH;
-    const currentIndent = ui.item[0].style.marginLeft;
-    if (currentIndent !== '') {
-      leftDiff += Number.parseInt(currentIndent);
+    if (tabWidth === 0) {
+      updateTabWidth();
+    }
+    let indent;
+    if (dragStartedInDropzone) {
+      const originalLeft = ui.originalPosition?.left ?? ui.position.left;
+      const indentDelta = (ui.position.left - originalLeft) / tabWidth;
+      indent = Math.floor(getIndentation(ui.item[0]) + indentDelta);
+    } else {
+      const paddingLeft = Number.parseFloat(getComputedStyle(parentEl).paddingLeft) || 0;
+      indent = Math.floor((ui.position.left - parent.position().left - paddingLeft) / tabWidth);
     }
 
-    // limit leftDiff to be in within the bounds of the drag and drop box
+    // limit indentation to be in within the bounds of the drag and drop box
     // that is, at least indented 0 times, or at most indented by MAX_INDENT times
-    leftDiff = Math.min(leftDiff, TABWIDTH * maxIndent);
-    leftDiff = Math.max(leftDiff, 0);
+    indent = Math.min(indent, maxIndent);
+    indent = Math.max(indent, 0);
 
-    return leftDiff;
+    return indent;
   }
 
   function getOrCreateIndicator(uuid, createAt) {
@@ -315,6 +355,7 @@ window.PLOrderBlocks = function (uuid, options) {
   }
 
   function drawIndentLocationLines(dropzoneElementId) {
+    const paddingLeft = getComputedStyle($(dropzoneElementId)[0]).paddingLeft;
     $(dropzoneElementId)[0].style.background = 'linear-gradient(#9E9E9E, #9E9E9E) no-repeat, '
       .repeat(maxIndent + 1)
       .slice(0, -2);
@@ -322,11 +363,12 @@ window.PLOrderBlocks = function (uuid, options) {
     $(dropzoneElementId)[0].style.backgroundPosition = Array.from(
       { length: maxIndent + 1 },
       (_, index) => {
-        return `${+$(dropzoneElementId).css('padding-left').slice(0, -2) + TABWIDTH * index}px 0`;
+        return `calc(${paddingLeft} + ${scaledTabSpaces * index}ch) 0`;
       },
     ).join(', ');
   }
 
+  let dragStartedInDropzone = false;
   const sortables = optionsElementId + ', ' + dropzoneElementId;
   $(sortables).sortable({
     items: '.pl-order-block:not(.nodrag)',
@@ -342,30 +384,30 @@ window.PLOrderBlocks = function (uuid, options) {
         drawIndentLocationLines(dropzoneElementId);
       }
     },
-    sort(event, ui) {
+    start(_event, ui) {
+      dragStartedInDropzone = inDropzone(ui.item[0]);
+    },
+    sort(_event, ui) {
       // update the location of the placeholder as the item is dragged
       const placeholder = ui.placeholder;
-      const leftDiff = calculateIndent(ui, placeholder.parent());
+      const indentation = calculateIndent(ui, placeholder.parent());
       placeholder[0].style.height = ui.item[0].style.height;
-      setIndentation(placeholder[0], leftDiff);
+      setIndentation(placeholder[0], indentation);
 
       // Sets the width of the placeholder to match the width of the block being dragged
       if (options.inline) {
         placeholder[0].style.width = ui.item[0].style.width;
       }
     },
-    stop(event, ui) {
+    stop(_event, ui) {
       // when the user stops interacting with the list
-      const leftDiff = calculateIndent(ui, ui.item.parent());
-      setIndentation(ui.item[0], leftDiff);
+      const indentation = calculateIndent(ui, ui.item.parent());
+      setIndentation(ui.item[0], indentation);
+      dragStartedInDropzone = false;
       setAnswer();
 
       correctPairing(ui.item[0]);
     },
   });
   initializeKeyboardHandling(optionsElementId, dropzoneElementId);
-
-  if (enableIndentation) {
-    $(dropzoneElementId).sortable('option', 'grid', [TABWIDTH, 1]);
-  }
 };

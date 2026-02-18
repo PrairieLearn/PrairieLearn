@@ -59,7 +59,7 @@ FIRST_WRONG_TYPES = frozenset([
 ])
 
 
-TAB_SIZE_PX = 50
+TAB_SPACES = 4
 FIRST_WRONG_FEEDBACK = {
     "incomplete": "Your answer is correct so far, but it is incomplete.",
     "wrong-at-block": r"""Your answer is incorrect starting at <span style="color:red;">block number {}</span>.
@@ -333,7 +333,7 @@ def render(element_html: str, data: pl.QuestionData) -> str:
             submission_indent = option.get("indent", None)
 
             if submission_indent is not None:
-                submission_indent = int(submission_indent) * TAB_SIZE_PX
+                submission_indent = int(submission_indent) * TAB_SPACES
             option["indent"] = submission_indent
 
         help_text = (
@@ -393,7 +393,7 @@ def render(element_html: str, data: pl.QuestionData) -> str:
         student_submission = [
             {
                 "inner_html": attempt["inner_html"],
-                "indent": (attempt["indent"] or 0) * TAB_SIZE_PX,
+                "indent": (attempt["indent"] or 0) * TAB_SPACES,
                 "badge_type": attempt.get("badge_type", ""),
                 "icon": attempt.get("icon", ""),
                 # We intentionally don't include distractor_feedback and ordering_feedback here when
@@ -479,7 +479,7 @@ def render(element_html: str, data: pl.QuestionData) -> str:
         question_solution = [
             {
                 "inner_html": solution["inner_html"],
-                "indent": max(0, (solution["indent"] or 0) * TAB_SIZE_PX),
+                "indent": max(0, (solution["indent"] or 0) * TAB_SPACES),
             }
             for solution in (
                 solve_problem(correct_answers, grading_method, has_optional_blocks)
