@@ -26,6 +26,16 @@ describe('parseSubmission', () => {
     ]);
   });
 
+  it('should preserve inline styles in text content', () => {
+    const result = parseSubmission({
+      submission_text: '<p><span style="background-color: red">highlighted</span> text</p>',
+      submitted_answer: null,
+    });
+    expect(result).toEqual([
+      { type: 'text', text: '<p><span style="background-color: red">highlighted</span> text</p>' },
+    ]);
+  });
+
   it('should preserve nested HTML structure', () => {
     const result = parseSubmission({
       submission_text: '<div><p>Paragraph 1</p><p>Paragraph 2</p></div>',
