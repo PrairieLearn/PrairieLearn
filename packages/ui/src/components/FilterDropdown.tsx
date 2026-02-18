@@ -26,7 +26,7 @@ export interface FilterDropdownProps {
   renderItem?: (item: FilterItem, isSelected: boolean) => ReactNode;
   disabled?: boolean;
   'aria-label'?: string;
-  /** Maximum height of the dropdown in pixels (default: 612) */
+  /** Maximum height of the dropdown in pixels. */
   maxHeight?: number;
   /** Item IDs that should appear at the top of the list in their original order */
   pinnedIds?: Set<string>;
