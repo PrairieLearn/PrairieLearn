@@ -49,7 +49,7 @@ type ExportedRubricData = z.infer<typeof ExportedRubricDataSchema>;
 declare global {
   interface Window {
     resetInstructorGradingPanel: () => any;
-    mathjaxTypeset: () => Promise<any>;
+    mathjaxTypeset: (elements?: Element[]) => Promise<any>;
   }
 }
 
@@ -491,7 +491,7 @@ export function RubricSettings({
           const newSubmission = parseHTMLElement(document, data.submissionPanel);
           oldSubmission.replaceWith(newSubmission);
           executeScripts(newSubmission);
-          await window.mathjaxTypeset();
+          await window.mathjaxTypeset([newSubmission]);
         }
       }
 
