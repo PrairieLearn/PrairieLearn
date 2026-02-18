@@ -37,6 +37,8 @@ export const ColorJsonSchema = z
   ])
   .describe('A color name.');
 
+export type ColorJson = z.infer<typeof ColorJsonSchema>;
+
 export const TopicJsonSchema = z
   .object({
     comment: CommentJsonSchema.optional(),
