@@ -126,16 +126,50 @@ has become increasingly complex, with many different possible combinations of op
   <pl-answer correct="true" tag="5" depends="4">By definition $a|c.$</pl-answer>
 </pl-order-blocks>
 
-<pl-order-blocks answers-name="randomize-distractors-when-ordered" grading-method="dag" feedback="first-wrong-verbose" partial-credit="lcs" source-blocks-order="ordered" distractor-order="random">
+<pl-order-blocks answers-name="randomize-distractors-when-ordered" grading-method="dag" feedback="first-wrong-verbose" partial-credit="lcs" source-blocks-order="ordered" distractor-order="inherit">
   <pl-answer correct="true" tag="correct-block-no-distractors">Some correct block before the distractor group</pl-answer>
-  <pl-answer correct="true" tag="correct-block">Correct code</pl-answer>
-  <pl-answer correct="false" distractor-for="correct-block">Distractor 1</pl-answer>
-  <pl-answer correct="false" distractor-for="correct-block">Distractor 2</pl-answer>
+  <pl-answer correct="true" tag="correct-block1">Correct code 1</pl-answer>
+  <pl-answer correct="false" distractor-for="correct-block1">Distractor 1 for correct code 1</pl-answer>
+  <pl-answer correct="false" distractor-for="correct-block1">Distractor 2 for correct code 1</pl-answer>
+  <pl-answer correct="true" tag="correct-block-no-distractors2">Some correct block between the distractor group</pl-answer>
+  <pl-answer correct="true" tag="correct-block2">Correct code 2</pl-answer>
+  <pl-answer correct="false" distractor-for="correct-block2">Distractor 1 for correct code 2</pl-answer>
+  <pl-answer correct="false" distractor-for="correct-block2">Distractor 2 for correct code 2</pl-answer>
+  <pl-answer correct="true" tag="correct-block-no-distractors3">Some correct block after the distractor group</pl-answer>
 </pl-order-blocks>
 
-<pl-order-blocks answers-name="randomize-distractors-when-ordered-2" grading-method="dag" feedback="first-wrong-verbose" partial-credit="lcs" source-blocks-order="ordered" distractor-order="inherit">
+<pl-order-blocks answers-name="randomize-distractors-when-ordered-2" grading-method="dag" feedback="first-wrong-verbose" partial-credit="lcs" source-blocks-order="ordered" distractor-order="random">
   <pl-answer correct="true" tag="correct-block-no-distractors">Some correct block before the distractor group</pl-answer>
-  <pl-answer correct="true" tag="correct-block">Correct code</pl-answer>
-  <pl-answer correct="false" distractor-for="correct-block">Distractor 1</pl-answer>
-  <pl-answer correct="false" distractor-for="correct-block">Distractor 2</pl-answer>
+  <pl-answer correct="true" tag="correct-block1">Correct code 1</pl-answer>
+  <pl-answer correct="false" distractor-for="correct-block1">Distractor 1 for correct code 1</pl-answer>
+  <pl-answer correct="false" distractor-for="correct-block1">Distractor 2 for correct code 1</pl-answer>
+  <pl-answer correct="true" tag="correct-block-no-distractors2">Some correct block between the distractor group</pl-answer>
+  <pl-answer correct="true" tag="correct-block2">Correct code 2</pl-answer>
+  <pl-answer correct="false" distractor-for="correct-block2">Distractor 1 for correct code 2</pl-answer>
+  <pl-answer correct="false" distractor-for="correct-block2">Distractor 2 for correct code 2</pl-answer>
+  <pl-answer correct="true" tag="correct-block-no-distractors3">Some correct block after the distractor group</pl-answer>
+</pl-order-blocks>
+
+<pl-order-blocks answers-name="randomize-distractors-when-ordered-3" grading-method="dag" feedback="first-wrong-verbose" partial-credit="lcs" source-blocks-order="random-sections" distractor-order="inherit">
+  <pl-answer correct="true" tag="correct-block-no-distractors">Some correct block before the distractor group</pl-answer>
+  <pl-answer correct="true" tag="correct-block1">Correct code 1</pl-answer>
+  <pl-answer correct="false" distractor-for="correct-block1">Distractor 1 for correct code 1</pl-answer>
+  <pl-answer correct="false" distractor-for="correct-block1">Distractor 2 for correct code 1</pl-answer>
+  <pl-answer correct="true" tag="correct-block-no-distractors2">Some correct block between the distractor group</pl-answer>
+  <pl-answer correct="true" tag="correct-block2">Correct code 2</pl-answer>
+  <pl-answer correct="false" distractor-for="correct-block2">Distractor 1 for correct code 2</pl-answer>
+  <pl-answer correct="false" distractor-for="correct-block2">Distractor 2 for correct code 2</pl-answer>
+  <pl-answer correct="true" tag="correct-block-no-distractors3">Some correct block after the distractor group</pl-answer>
+</pl-order-blocks>
+
+<pl-order-blocks answers-name="randomize-distractors-when-ordered-4" grading-method="dag" feedback="first-wrong-verbose" partial-credit="lcs" source-blocks-order="random-sections" distractor-order="random">
+  <pl-answer correct="true" tag="correct-block-no-distractors">Some correct block before the distractor group</pl-answer>
+  <pl-answer correct="true" tag="correct-block1">Correct code 1</pl-answer>
+  <pl-answer correct="false" distractor-for="correct-block1">Distractor 1 for correct code 1</pl-answer>
+  <pl-answer correct="false" distractor-for="correct-block1">Distractor 2 for correct code 1</pl-answer>
+  <pl-answer correct="true" tag="correct-block-no-distractors2">Some correct block between the distractor group</pl-answer>
+  <pl-answer correct="true" tag="correct-block2">Correct code 2</pl-answer>
+  <pl-answer correct="false" distractor-for="correct-block2">Distractor 1 for correct code 2</pl-answer>
+  <pl-answer correct="false" distractor-for="correct-block2">Distractor 2 for correct code 2</pl-answer>
+  <pl-answer correct="true" tag="correct-block-no-distractors3">Some correct block after the distractor group</pl-answer>
 </pl-order-blocks>

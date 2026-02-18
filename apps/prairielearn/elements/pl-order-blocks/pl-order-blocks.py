@@ -126,6 +126,39 @@ def build_grading_dag(
         raise ValueError(f"Unsupported grading method: {grading_method}")
 
 
+def separate_distractor_groups(
+    all_blocks: list[OrderBlocksAnswerData],
+) -> list[OrderBlocksAnswerData]:
+    """Shuffle blocks, putting distraction blocks groups before all individual blocks"""
+    distractor_blocks = defaultdict(list)
+    individual_blocks = []
+    not_distractor_blocks = []
+
+    for block in all_blocks:
+        distractor_tag = block.get("distractor_for")
+        if distractor_tag:
+            distractor_blocks[distractor_tag].append(block)
+        else:
+            not_distractor_blocks.append(block)
+
+    for block in not_distractor_blocks:
+        tag = block.get("tag")
+        if tag in distractor_blocks:
+            distractor_blocks[tag].append(block)
+        else:
+            individual_blocks.append(block)
+
+    random.shuffle(individual_blocks)
+    random.shuffle(distractor_blocks)
+
+    new_block_ordering: list[OrderBlocksAnswerData] = individual_blocks
+    for group in distractor_blocks:
+        distractor_blocks[group].sort(key=lambda a: a["index"])
+        new_block_ordering.extend(distractor_blocks[group])
+
+    return new_block_ordering
+
+
 def shuffle_distractor_groups(
     all_blocks: list[OrderBlocksAnswerData],
 ) -> list[OrderBlocksAnswerData]:
@@ -229,6 +262,11 @@ def prepare(html: str, data: pl.QuestionData) -> None:
         all_blocks.sort(key=lambda a: a["index"])
     elif order_blocks_options.source_blocks_order == SourceBlocksOrderType.ALPHABETIZED:
         all_blocks.sort(key=lambda a: a["inner_html"])
+    elif (
+        order_blocks_options.source_blocks_order
+        == SourceBlocksOrderType.RANDOM_SECTIONS
+    ):
+        all_blocks = separate_distractor_groups(all_blocks)
     else:
         assert_never(order_blocks_options.source_blocks_order)
 
