@@ -5,4 +5,3 @@ export const CommentJsonSchema = z
   .describe('Arbitrary comment for reference purposes.');
 
 export type CommentJson = z.infer<typeof CommentJsonSchema>;
-export type CommentJsonInput = z.input<typeof CommentJsonSchema>;
