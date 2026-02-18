@@ -1,4 +1,4 @@
-# syntax=docker/dockerfile:1.7-labs
+# syntax=docker/dockerfile:1
 FROM ubuntu:24.04
 ARG CACHEBUST=2026-02-15-14-23-34
 
