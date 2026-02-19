@@ -76,7 +76,7 @@ SELECT
   users_get_displayed_role (u.id, ci.id) AS instance_role,
   to_jsonb(g) AS instance_group,
   teams_uid_list (g.id) AS instance_group_uid_list,
-  to_jsonb(iq) || to_jsonb(iqnag) AS instance_question,
+  to_jsonb(iq) AS instance_question,
   jsonb_build_object(
     'id',
     iqi.id,
@@ -120,7 +120,6 @@ FROM
     ci.display_timezone,
     a.team_work
   ) AS aai ON TRUE
-  JOIN LATERAL instance_questions_next_allowed_grade (iq.id) AS iqnag ON TRUE
   CROSS JOIN file_list AS fl
 WHERE
   iq.id = $instance_question_id

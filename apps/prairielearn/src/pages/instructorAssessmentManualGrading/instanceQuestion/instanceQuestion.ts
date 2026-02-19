@@ -21,11 +21,7 @@ import {
   selectInstanceQuestionGroups,
   updateManualInstanceQuestionGroup,
 } from '../../../ee/lib/ai-instance-question-grouping/ai-instance-question-grouping-util.js';
-import {
-  AiGradingJobSchema,
-  GradingJobSchema,
-  type InstanceQuestion,
-} from '../../../lib/db-types.js';
+import { AiGradingJobSchema, GradingJobSchema } from '../../../lib/db-types.js';
 import { features } from '../../../lib/features/index.js';
 import { idsEqual } from '../../../lib/id.js';
 import { reportIssueFromForm } from '../../../lib/issues.js';
@@ -106,7 +102,7 @@ router.get(
       ? await selectUserById(res.locals.instance_question.last_grader)
       : null;
 
-    const instance_question = res.locals.instance_question as InstanceQuestion;
+    const instance_question = res.locals.instance_question;
 
     const instanceQuestionGroup = await run(async () => {
       if (instance_question.manual_instance_question_group_id) {
