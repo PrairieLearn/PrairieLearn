@@ -1,12 +1,20 @@
 import { useState } from 'react';
+import type { z } from 'zod';
 
 import { OverlayTrigger } from '@prairielearn/ui';
 
 import { CourseRequestsTable } from '../../components/CourseRequestsTable.js';
-import type { AdminInstitution } from '../../lib/client/safe-db-types.js';
+import {
+  type AdminInstitution,
+  RawAdminCourseSchema,
+  RawAdminInstitutionSchema,
+} from '../../lib/client/safe-db-types.js';
 import type { CourseRequestRow } from '../../lib/course-request.js';
 
-import type { CourseWithInstitution } from './administratorCourses.shared.js';
+export const CourseWithInstitutionSchema = RawAdminCourseSchema.extend({
+  institution: RawAdminInstitutionSchema,
+});
+export type CourseWithInstitution = z.infer<typeof CourseWithInstitutionSchema>;
 
 export function AdministratorCourses({
   courseRequests,

@@ -5,7 +5,7 @@ import { formatDate } from '@prairielearn/formatter';
 import { escapeHtml, html } from '@prairielearn/html';
 import { IdSchema } from '@prairielearn/zod';
 
-import { JobStatusHTML } from '../../components/JobStatus.js';
+import { JobStatusHtml } from '../../components/JobStatus.js';
 import { PageLayout } from '../../components/PageLayout.js';
 import { config } from '../../lib/config.js';
 import { type Course, JobSequenceSchema, QuestionSchema, UserSchema } from '../../lib/db-types.js';
@@ -155,7 +155,7 @@ export function CourseSyncs({
                     </td>
                     <td>${jobSequence.description}</td>
                     <td>${jobSequence.user_uid ?? '(System)'}</td>
-                    <td>${JobStatusHTML({ status: jobSequence.status })}</td>
+                    <td>${JobStatusHtml({ status: jobSequence.status })}</td>
                     <td>
                       <a
                         href="${urlPrefix}/jobSequence/${jobSequence.id}"

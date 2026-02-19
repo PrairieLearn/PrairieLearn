@@ -17,8 +17,7 @@ import { typedAsyncHandler } from '../../lib/res-locals.js';
 import { deleteCourse, insertCourse, selectCourseById } from '../../models/course.js';
 import { selectAllInstitutions } from '../../models/institution.js';
 
-import { AdministratorCourses } from './administratorCourses.html.js';
-import { CourseWithInstitutionSchema } from './administratorCourses.shared.js';
+import { AdministratorCourses, CourseWithInstitutionSchema } from './administratorCourses.html.js';
 
 const router = Router();
 const sql = sqldb.loadSqlEquiv(import.meta.url);

@@ -6,7 +6,7 @@ import { ansiToHtml } from '../lib/chalk.js';
 import type { Course } from '../lib/db-types.js';
 import type { JobSequenceWithTokens, JobWithToken } from '../lib/server-jobs.types.js';
 
-import { JobStatusHTML } from './JobStatus.js';
+import { JobStatusHtml } from './JobStatus.js';
 
 export interface JobSequenceResultsData {
   jobSequenceId: string;
@@ -96,7 +96,7 @@ export function JobSequenceResults({
                   : ''}
               </p>
               <p class="mb-1">
-                ${JobStatusHTML({ status: job.status })}
+                ${JobStatusHtml({ status: job.status })}
                 ${job.status === 'Running' ? html`<i class="fa fa-sync fa-spin"></i>` : ''}
               </p>
               ${jobSequence.legacy
