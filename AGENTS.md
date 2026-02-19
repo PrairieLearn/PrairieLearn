@@ -39,6 +39,7 @@ Frequently used packages:
 
 - NEVER amend commits or force push unless specifically requested.
 - NEVER rebase unless specifically requested, always use merge commits.
+- ALWAYS create pull requests as drafts unless specifically requested.
 
 ## Building, type checking, and linting
 
@@ -90,7 +91,9 @@ Reference the Makefile for commands to format/lint/typecheck other tools / langu
 
 All applications share a single Postgres database. See `database/` for descriptions of the database tables and enums. All tables have corresponding Zod types in `apps/prairielearn/src/lib/db-types.ts`.
 
-Migrations are stored in `apps/prairielearn/src/migrations`. See the [`README.md`](apps/prairielearn/src/migrations/README.md) file in that directory for details on how to create and run migrations. If a migration was created on the current feature branch (i.e., it has not been merged to master), modify it directly instead of creating a new migration.
+Migrations are stored in `apps/prairielearn/src/migrations`. When working with migrations, ALWAYS refer to the migration [`README.md`](apps/prairielearn/src/migrations/README.md) for details on how to create, run, and sequence migrations. Migrations are often a multi-step process that should be broken into multiple PRs.
+
+If a migration was created on the current feature branch (i.e., it has not been merged to master), modify it directly instead of creating a new migration.
 
 If you make a change to the database, make sure to update the database schema description in `database/` and the Zod types/table list in `apps/prairielearn/src/lib/db-types.ts`.
 
