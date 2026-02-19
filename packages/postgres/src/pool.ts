@@ -31,6 +31,7 @@ function addDataToError(err: Error, data: Record<string, any>): Error {
   return err;
 }
 
+/** @knipignore */
 export class PostgresError extends Error {
   public data: Record<string, any>;
 
