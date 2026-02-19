@@ -42,6 +42,7 @@ const QuestionsPageDataSchema = QuestionSchema.pick({
         assessment_set: AssessmentSetSchema.pick({
           abbreviation: true,
           color: true,
+          name: true,
         }),
       }),
     )

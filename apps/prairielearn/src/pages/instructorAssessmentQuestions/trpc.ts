@@ -53,13 +53,13 @@ const courseQuestionsQuery = t.procedure.query(async (opts) => {
     tags: q.tags?.map((t) => ({ id: String(t.id), name: t.name, color: t.color })) ?? null,
     assessments:
       q.assessments?.map((a) => ({
-        assessment_id: String(a.assessment_id),
-        label: a.label,
-        color: a.color,
-        assessment_set_abbreviation: a.assessment_set_abbreviation,
-        assessment_set_name: a.assessment_set_name,
-        assessment_set_color: a.assessment_set_color,
-        assessment_number: a.assessment_number,
+        assessment_id: String(a.assessment.id),
+        label: a.assessment_set.abbreviation + a.assessment.number,
+        color: a.assessment_set.color,
+        assessment_set_abbreviation: a.assessment_set.abbreviation,
+        assessment_set_name: a.assessment_set.name,
+        assessment_set_color: a.assessment_set.color,
+        assessment_number: a.assessment.number,
       })) ?? null,
   }));
 
