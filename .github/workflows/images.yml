@@ -101,3 +101,12 @@ jobs:
           pushed: ${{ secrets.DOCKERHUB_USERNAME != '' }}
           token: ${{ secrets.GITHUB_TOKEN }}
           sizes-path: ${{ runner.temp }}/image-sizes.json
+          report-path: ${{ runner.temp }}/image-sizes-section.md
+
+      - name: Upload CI report artifact
+        if: github.event_name == 'pull_request'
+        uses: actions/upload-artifact@v4
+        with:
+          name: ci-report-image-sizes
+          path: ${{ runner.temp }}/image-sizes-section.md
+          retention-days: 1
