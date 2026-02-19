@@ -1,9 +1,24 @@
-import { type Ref, useCallback, useEffect, useImperativeHandle, useRef } from 'react';
+import { type Ref, useCallback, useEffect, useImperativeHandle, useMemo, useRef } from 'react';
 
 import { b64DecodeUnicode } from '../../../../lib/base64-util.js';
 import RichTextEditor from '../RichTextEditor/index.js';
 
 import { QuestionCodeEditors, type QuestionCodeEditorsHandle } from './QuestionCodeEditors.js';
+
+const DOC_LINKS = [
+  {
+    href: 'https://docs.prairielearn.com/question/overview/',
+    label: 'How questions are structured',
+  },
+  {
+    href: 'https://docs.prairielearn.com/elements/',
+    label: 'Available elements',
+  },
+  {
+    href: 'https://docs.prairielearn.com/question/template/',
+    label: 'Writing question HTML',
+  },
+];
 
 export interface NewVariantHandle {
   newVariant: () => void;
@@ -330,6 +345,11 @@ export function QuestionAndFilePreview({
     discardChanges: () => internalCodeEditorsRef.current?.discardChanges(),
   }));
 
+  const isQuestionEmpty = useMemo(
+    () => b64DecodeUnicode(questionFiles['question.html'] ?? '').trim() === '',
+    [questionFiles],
+  );
+
   return (
     <div className="tab-content" style={{ height: '100%' }}>
       <div
@@ -338,7 +358,47 @@ export function QuestionAndFilePreview({
         className="tab-pane active"
         style={{ height: '100%' }}
       >
-        <div ref={wrapperRef} className="question-wrapper mx-auto p-3">
+        {isQuestionEmpty && (
+          <div className="d-flex align-items-center justify-content-center h-100">
+            <div className="text-center px-4" style={{ maxWidth: '26rem' }}>
+              <h3 className="h5 mb-2">Create a question</h3>
+              <p className="text-muted mb-3" style={{ textWrap: 'balance' }}>
+                You can write code in the{' '}
+                <button
+                  type="button"
+                  className="btn btn-link p-0 align-baseline fw-bold"
+                  // TODO: Replace with controlled tab state when converting to react-bootstrap tabs.
+                  onClick={() => {
+                    const tab = document.querySelector<HTMLElement>('a[href="#question-code"]');
+                    tab?.click();
+                  }}
+                >
+                  Files
+                </button>{' '}
+                tab, or use the chat to create a question with AI.
+              </p>
+              <div className="card bg-light text-start small mt-4">
+                <div className="card-body py-2 px-3">
+                  <p className="fw-semibold mb-1">New to PrairieLearn?</p>
+                  <ul className="mb-0 ps-3">
+                    {DOC_LINKS.map((link) => (
+                      <li key={link.href}>
+                        <a href={link.href} target="_blank" rel="noopener noreferrer">
+                          {link.label}
+                        </a>
+                      </li>
+                    ))}
+                  </ul>
+                </div>
+              </div>
+            </div>
+          </div>
+        )}
+        <div
+          ref={wrapperRef}
+          className="question-wrapper mx-auto p-3"
+          style={isQuestionEmpty ? { display: 'none' } : undefined}
+        >
           <QuestionPreview questionContainerHtml={questionContainerHtml} />
         </div>
       </div>
