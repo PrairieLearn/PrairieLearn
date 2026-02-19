@@ -367,6 +367,26 @@ router.post(
       flash('success', `Your question is ready for use as ${updatedQuestion.qid}.`);
 
       res.redirect(res.locals.urlPrefix + '/question/' + res.locals.question.id + '/preview');
+    } else if (req.body.__action === 'rename_draft_question') {
+      const client = getCourseFilesClient();
+
+      const result = await client.renameQuestion.mutate({
+        course_id: res.locals.course.id,
+        user_id: res.locals.user.id,
+        authn_user_id: res.locals.authn_user.id,
+        has_course_permission_edit: res.locals.authz_data.has_course_permission_edit,
+        question_id: res.locals.question.id,
+        qid: req.body.qid,
+        title: req.body.title,
+      });
+
+      if (result.status === 'error') {
+        res.status(500).json({ error: 'Renaming question failed.' });
+        return;
+      }
+
+      const updatedQuestion = await selectQuestionById(res.locals.question.id);
+      res.json({ qid: updatedQuestion.qid, title: updatedQuestion.title });
     } else if (req.body.__action === 'submit_manual_revision') {
       await saveRevisedQuestion({
         course: res.locals.course,
