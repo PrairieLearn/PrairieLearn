@@ -14,7 +14,7 @@ import type { CourseRequestRow } from '../../lib/course-request.js';
 export const CourseWithInstitutionSchema = RawAdminCourseSchema.extend({
   institution: RawAdminInstitutionSchema,
 });
-export type CourseWithInstitution = z.infer<typeof CourseWithInstitutionSchema>;
+type CourseWithInstitution = z.infer<typeof CourseWithInstitutionSchema>;
 
 export function AdministratorCourses({
   courseRequests,

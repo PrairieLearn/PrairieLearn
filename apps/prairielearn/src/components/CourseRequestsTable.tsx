@@ -201,17 +201,17 @@ function CourseRequestTableRow({
           </Dropdown>
         </td>
       </tr>
-      <tr>
-        <td colSpan={showAll ? 11 : 10} className="p-0">
-          {noteOpen && (
+      {noteOpen && (
+        <tr>
+          <td colSpan={showAll ? 11 : 10} className="p-0">
             <CourseRequestEditNoteForm
               request={row}
               csrfToken={csrfToken}
               onCancel={() => setNoteOpen(false)}
             />
-          )}
-        </td>
-      </tr>
+          </td>
+        </tr>
+      )}
       {row.jobs.length > 0 && (
         <tr>
           <td colSpan={showAll ? 11 : 10} className="p-0">
@@ -369,7 +369,9 @@ function CourseRequestApproveForm({
         />
       </div>
       <div className="mb-3">
-        <label htmlFor="courseRequestAddInputGithubUser">GitHub username:</label>
+        <label className="form-label" htmlFor="courseRequestAddInputGithubUser">
+          GitHub username:
+        </label>
         <input
           type="text"
           className="form-control"
