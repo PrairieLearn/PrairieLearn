@@ -6,12 +6,12 @@ import * as sqldb from '@prairielearn/postgres';
 import { Hydrate } from '@prairielearn/react/server';
 
 import { PageLayout } from '../../components/PageLayout.js';
-import type { AiGradingProvider } from '../../ee/lib/ai-grading/ai-grading-models.shared.js';
 import { extractPageContext } from '../../lib/client/page-context.js';
 import { config } from '../../lib/config.js';
 import {
   CourseInstanceAiGradingCredentialSchema,
   CourseInstanceSchema,
+  type EnumAiGradingProvider,
   EnumAiGradingProviderSchema,
 } from '../../lib/db-types.js';
 import { features } from '../../lib/features/index.js';
@@ -38,7 +38,7 @@ function formatCredential(cred: {
   const decrypted = decryptFromStorage(cred.encrypted_secret_key);
   return {
     id: cred.id,
-    provider: cred.provider as AiGradingProvider,
+    provider: cred.provider as EnumAiGradingProvider,
     apiKeyMasked: maskApiKey(decrypted),
     dateAdded: cred.created_at.toLocaleDateString('en-US', {
       month: 'short',
