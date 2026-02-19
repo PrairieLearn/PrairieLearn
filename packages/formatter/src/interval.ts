@@ -26,7 +26,7 @@ export function makeInterval({
 }
 
 /**
- * Format an interval (in milliseconds) to a human-readable string like '3 h 40 m'.
+ * Format an interval (in milliseconds) to a human-readable string like '3 h 40 min'.
  *
  * @param interval Time interval in milliseconds.
  * @param options
