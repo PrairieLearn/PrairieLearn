@@ -1,6 +1,6 @@
+# check=skip=CopyIgnoredFile
 # TODO: remove once the following issue is fixed:
 # https://github.com/moby/buildkit/issues/6512
-# check=skip=CopyIgnoredFile
 
 FROM ubuntu:24.04
 ARG CACHEBUST=2026-02-15-14-23-34
