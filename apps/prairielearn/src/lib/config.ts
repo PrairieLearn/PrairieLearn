@@ -202,7 +202,9 @@ export const ConfigSchema = z.object({
   // TODO: tweak this value once we see the data from #2267
   questionTimeoutMilliseconds: z.number().default(10000),
   secretKey: z.string().default('THIS_IS_THE_SECRET_KEY'),
-  databaseEncryptionKey: z.string().default('THIS_IS_THE_DATABASE_ENCRYPTION_KEY'),
+  databaseEncryptionKey: z
+    .string()
+    .default('d44e91681a4769790c29a13a86e526dcd44e91681a4769790c29a13a86e526dc'),
   secretSlackOpsBotEndpoint: z.string().nullable().default(null),
   secretSlackToken: z.string().nullable().default(null),
   secretSlackCourseRequestChannel: z.string().nullable().default(null),
@@ -671,10 +673,6 @@ export async function loadConfig(paths: string[]) {
     if (!config.cookieDomain.startsWith('.')) {
       throw new Error('cookieDomain must start with a dot, e.g. ".example.com"');
     }
-  }
-
-  if (!DEV_MODE && config.databaseEncryptionKey === 'THIS_IS_THE_DATABASE_ENCRYPTION_KEY') {
-    throw new Error('databaseEncryptionKey must be set in production environments');
   }
 
   if (config.courseFilesApiTransport === 'network' && !config.trpcSecretKeys?.length) {

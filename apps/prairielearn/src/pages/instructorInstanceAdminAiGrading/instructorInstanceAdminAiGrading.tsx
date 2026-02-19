@@ -8,6 +8,7 @@ import { Hydrate } from '@prairielearn/react/server';
 import { PageLayout } from '../../components/PageLayout.js';
 import {
   AI_GRADING_PROVIDER_DISPLAY_NAMES,
+  type AiGradingApiKeyCredential,
   type AiGradingProvider,
 } from '../../ee/lib/ai-grading/ai-grading-models.shared.js';
 import { extractPageContext } from '../../lib/client/page-context.js';
@@ -22,7 +23,7 @@ import { typedAsyncHandler } from '../../lib/res-locals.js';
 import { decryptFromStorage, encryptForStorage } from '../../lib/storage-crypt.js';
 import { createAuthzMiddleware } from '../../middlewares/authzHelper.js';
 
-import { type AiGradingApiKeyCredential, InstructorInstanceAdminAiGrading } from './instructorInstanceAdminAiGrading.html.js';
+import { InstructorInstanceAdminAiGrading } from './instructorInstanceAdminAiGrading.html.js';
 
 const router = Router();
 const sql = sqldb.loadSqlEquiv(import.meta.url);

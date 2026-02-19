@@ -3,19 +3,10 @@ import { useState } from 'react';
 import { Alert, Form, Modal } from 'react-bootstrap';
 
 import {
-  AI_GRADING_PROVIDER_DISPLAY_NAMES,
   AI_GRADING_PROVIDER_OPTIONS,
-  type AiGradingProvider,
+  type AiGradingApiKeyCredential,
 } from '../../ee/lib/ai-grading/ai-grading-models.shared.js';
 import { QueryClientProviderDebug } from '../../lib/client/tanstackQuery.js';
-
-export interface AiGradingApiKeyCredential {
-  id: string;
-  provider: string;
-  providerValue: string;
-  apiKeyMasked: string;
-  dateAdded: string;
-}
 
 /**
  * Create a POST request to the current page with the given body and CSRF token, and handle errors uniformly.
@@ -94,7 +85,7 @@ function AiGradingSettingsContent({
   // Delete confirmation state
   const [deleteTarget, setDeleteTarget] = useState<AiGradingApiKeyCredential | null>(null);
 
-  const existingProviderForAdd = credentials.find((c) => c.provider === addProvider);
+  const existingProviderForAdd = credentials.find((c) => c.providerValue === addProvider);
 
   const toggleMutation = useMutation({
     mutationFn: async (newValue: boolean) => {
@@ -126,7 +117,7 @@ function AiGradingSettingsContent({
     },
     onSuccess: (data: { credential: AiGradingApiKeyCredential }) => {
       setCredentials((prev) => {
-        const filtered = prev.filter((c) => c.provider !== data.credential.provider);
+        const filtered = prev.filter((c) => c.providerValue !== data.credential.providerValue);
         return [...filtered, data.credential];
       });
       setShowAddModal(false);
@@ -222,9 +213,7 @@ function AiGradingSettingsContent({
                   ) : (
                     credentials.map((cred) => (
                       <tr key={cred.id}>
-                        <td className="align-middle fw-bold px-3 py-2">
-                          {AI_GRADING_PROVIDER_DISPLAY_NAMES[cred.provider as AiGradingProvider]}
-                        </td>
+                        <td className="align-middle fw-bold px-3 py-2">{cred.provider}</td>
                         <td className="align-middle font-monospace px-3 py-2">
                           {cred.apiKeyMasked}
                         </td>
@@ -234,7 +223,7 @@ function AiGradingSettingsContent({
                             <button
                               type="button"
                               className="btn btn-sm btn-outline-danger"
-                              aria-label={`Delete ${AI_GRADING_PROVIDER_DISPLAY_NAMES[cred.provider as AiGradingProvider]} API key`}
+                              aria-label={`Delete ${cred.provider} API key`}
                               onClick={() => setDeleteTarget(cred)}
                             >
                               <i className="bi-trash" aria-hidden="true" />
@@ -346,10 +335,8 @@ function AddApiKeyModal({
         {existingProvider && (
           <Alert variant="warning" className="mb-0">
             <i className="bi bi-exclamation-triangle-fill me-2" aria-hidden="true" />A key for{' '}
-            <strong>
-              {AI_GRADING_PROVIDER_DISPLAY_NAMES[existingProvider.provider as AiGradingProvider]}
-            </strong>{' '}
-            already exists. Saving will overwrite the existing key.
+            <strong>{existingProvider.provider}</strong> already exists. Saving will overwrite the
+            existing key.
           </Alert>
         )}
       </Modal.Body>
@@ -398,11 +385,8 @@ function DeleteApiKeyModal({
           </Alert>
         )}
         <p>
-          Are you sure you want to delete the{' '}
-          <strong>
-            {target ? AI_GRADING_PROVIDER_DISPLAY_NAMES[target.provider as AiGradingProvider] : ''}
-          </strong>{' '}
-          API key? This action cannot be undone.
+          Are you sure you want to delete the <strong>{target?.provider}</strong> API key? This
+          action cannot be undone.
         </p>
       </Modal.Body>
       <Modal.Footer>
