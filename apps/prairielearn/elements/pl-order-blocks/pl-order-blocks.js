@@ -20,7 +20,7 @@ window.PLOrderBlocks = function (uuid, options) {
     if (!codeText) return TAB_SPACES;
     const dropzoneFontSize = Number.parseFloat(getComputedStyle(dropzoneList).fontSize) || 0;
     const codeFontSize = Number.parseFloat(getComputedStyle(codeText).fontSize) || dropzoneFontSize;
-    if (dropzoneFontSize <= 0) return 1;
+    if (dropzoneFontSize <= 0) return TAB_SPACES;
     return (TAB_SPACES * codeFontSize) / dropzoneFontSize;
   }
 
@@ -266,6 +266,8 @@ window.PLOrderBlocks = function (uuid, options) {
       return 0;
     }
 
+    if (tabWidth <= 0) return 0;
+    
     let indent;
     if (dragStartedInDropzone) {
       const originalLeft = ui.originalPosition?.left ?? ui.position.left;
