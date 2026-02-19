@@ -128,7 +128,7 @@ lint-docs-links: build-docs
 lint-html:
 	@yarn htmlhint "testCourse/**/question.html" "exampleCourse/**/question.html" "site"
 lint-markdown:
-	@yarn markdownlint --ignore "**/node_modules/**" --ignore exampleCourse --ignore testCourse --ignore "**/dist/**" --ignore "**/test-results/**" --ignore .claude "**/*.md"
+	@yarn markdownlint-cli2
 lint-links:
 	@node scripts/validate-links.mjs
 lint-docker:
@@ -194,5 +194,10 @@ format-d2:
 lint-d2:
 	@d2 fmt --check docs/**/*.d2
 
+
+build-docker:
+	@docker build -t prairielearn/prairielearn .
+dev-docker:
+	@docker run -it --rm -p 3000:3000 -w /PrairieLearn -v .:/PrairieLearn prairielearn/prairielearn /bin/bash
 
 ci: lint typecheck check-dependencies test
