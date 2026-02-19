@@ -13,6 +13,7 @@ window.PLOrderBlocks = function (uuid, options) {
     '.pl-order-blocks-code .pl-code td.code pre, .pl-order-blocks-code .pl-code pre',
   );
   const scaledTabSpaces = computeScaledIndent();
+  fullContainer.style.setProperty('--pl-order-block-indent-ch', String(scaledTabSpaces));
   const tabWidth = measureTabWidth();
 
   function computeScaledIndent() {
