@@ -435,10 +435,11 @@ interface QuestionFooterResLocals {
   tryAgainUrl: string;
   question: Question;
   variant: Variant;
-  instance_question: (InstanceQuestion & { allow_grade_left_ms?: number }) | null;
+  instance_question: InstanceQuestion | null;
   assessment_question: AssessmentQuestion | null;
   instance_question_info: Record<string, any>;
   authz_result: Record<string, any> | null;
+  allowGradeLeftMs: number;
   group_config: GroupConfig | null;
   group_info: GroupInfo | null;
   group_role_permissions: {
@@ -510,6 +511,7 @@ export function QuestionFooterContent({
     assessment_question,
     instance_question_info,
     authz_result,
+    allowGradeLeftMs,
     group_config,
     group_info,
     group_role_permissions,
@@ -657,9 +659,8 @@ export function QuestionFooterContent({
       ${SubmitRateFooter({
         questionContext,
         showGradeButton,
-        disableGradeButton,
         assessment_question,
-        allowGradeLeftMs: instance_question?.allow_grade_left_ms ?? 0,
+        allowGradeLeftMs,
       })}
     `;
   });
@@ -670,13 +671,11 @@ export function QuestionFooterContent({
 function SubmitRateFooter({
   questionContext,
   showGradeButton,
-  disableGradeButton,
   assessment_question,
   allowGradeLeftMs,
 }: {
   questionContext: QuestionContext;
   showGradeButton: boolean;
-  disableGradeButton: boolean;
   assessment_question: AssessmentQuestion | null;
   allowGradeLeftMs: number;
 }) {
@@ -699,7 +698,7 @@ function SubmitRateFooter({
     <div class="row">
       <div class="col d-flex justify-content-between">
         <span class="d-flex">
-          ${disableGradeButton
+          ${allowGradeLeftMs > 0
             ? html`
                 <small class="fst-italic ms-2 mt-1 submission-suspended-msg">
                   Grading possible in <span id="submission-suspended-display"></span>
