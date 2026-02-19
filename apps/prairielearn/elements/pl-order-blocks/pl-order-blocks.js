@@ -269,9 +269,9 @@ window.PLOrderBlocks = function (uuid, options) {
     if (dragStartedInDropzone) {
       const originalLeft = ui.originalPosition?.left ?? ui.position.left;
       const indentDelta = (ui.position.left - originalLeft) / tabWidth;
-      indent = Math.floor(getIndentation(ui.item[0]) + indentDelta);
+      indent = getIndentation(ui.item[0]) + Math.round(indentDelta);
     } else {
-      indent = Math.floor(
+      indent = Math.round(
         (ui.position.left - parent.position().left - dropzonePaddingLeft) / tabWidth,
       );
     }
