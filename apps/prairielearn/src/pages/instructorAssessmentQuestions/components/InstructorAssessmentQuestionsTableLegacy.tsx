@@ -35,7 +35,7 @@ function Title({
     <>
       <AssessmentQuestionNumber
         alternativeGroupSize={alternative_group_size}
-        alternativeGroupNumber={alternative_group.number ?? 1}
+        alternativeGroupNumber={alternative_group.number}
         numberInAlternativeGroup={assessment_question.number_in_alternative_group}
       />
       {question.title}
