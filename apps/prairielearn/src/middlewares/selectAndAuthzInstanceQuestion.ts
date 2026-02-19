@@ -18,7 +18,6 @@ import {
   InstanceQuestionSchema,
   QuestionSchema,
   SprocAuthzAssessmentInstanceSchema,
-  SprocInstanceQuestionsNextAllowedGradeSchema,
   SprocUsersGetDisplayedRoleSchema,
   UserSchema,
 } from '../lib/db-types.js';
@@ -60,10 +59,7 @@ const SelectAndAuthzInstanceQuestionSchema = z.object({
   instance_role: SprocUsersGetDisplayedRoleSchema,
   instance_group: GroupSchema.nullable(),
   instance_group_uid_list: z.array(z.string()),
-  instance_question: z.object({
-    ...SprocInstanceQuestionsNextAllowedGradeSchema.shape,
-    ...InstanceQuestionSchema.shape,
-  }),
+  instance_question: InstanceQuestionSchema,
   instance_question_info: InstanceQuestionInfoSchema,
   assessment_question: AssessmentQuestionSchema,
   question: QuestionSchema,
