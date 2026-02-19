@@ -1,24 +1,10 @@
 import { type Ref, useCallback, useEffect, useImperativeHandle, useMemo, useRef } from 'react';
 
+import { NewToPrairieLearnCard } from '../../../../components/NewToPrairieLearnCard.js';
 import { b64DecodeUnicode } from '../../../../lib/base64-util.js';
 import RichTextEditor from '../RichTextEditor/index.js';
 
 import { QuestionCodeEditors, type QuestionCodeEditorsHandle } from './QuestionCodeEditors.js';
-
-const DOC_LINKS = [
-  {
-    href: 'https://docs.prairielearn.com/question/overview/',
-    label: 'How questions are structured',
-  },
-  {
-    href: 'https://docs.prairielearn.com/elements/',
-    label: 'Available elements',
-  },
-  {
-    href: 'https://docs.prairielearn.com/question/template/',
-    label: 'Writing question HTML',
-  },
-];
 
 export interface NewVariantHandle {
   newVariant: () => void;
@@ -389,19 +375,8 @@ export function QuestionAndFilePreview({
                   </button>{' '}
                   tab, or use the chat to create a question with AI.
                 </p>
-                <div className="card bg-light text-start small mt-4">
-                  <div className="card-body py-2 px-3">
-                    <p className="fw-semibold mb-1">New to PrairieLearn?</p>
-                    <ul className="mb-0 ps-3">
-                      {DOC_LINKS.map((link) => (
-                        <li key={link.href}>
-                          <a href={link.href} target="_blank" rel="noopener noreferrer">
-                            {link.label}
-                          </a>
-                        </li>
-                      ))}
-                    </ul>
-                  </div>
+                <div className="mt-4">
+                  <NewToPrairieLearnCard />
                 </div>
               </div>
             )}
