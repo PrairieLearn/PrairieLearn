@@ -6,8 +6,8 @@ import {
   AI_GRADING_PROVIDER_DISPLAY_NAMES,
   AI_GRADING_PROVIDER_OPTIONS,
 } from '../../ee/lib/ai-grading/ai-grading-models.shared.js';
-import type { EnumAiGradingProvider } from '../../lib/db-types.js';
 import { QueryClientProviderDebug } from '../../lib/client/tanstackQuery.js';
+import type { EnumAiGradingProvider } from '../../lib/db-types.js';
 
 export interface AiGradingApiKeyCredential {
   id: string;
