@@ -8,9 +8,9 @@ import { Hydrate } from '@prairielearn/react/server';
 import { PageLayout } from '../../components/PageLayout.js';
 import {
   AI_GRADING_PROVIDER_DISPLAY_NAMES,
-  type AiGradingApiKeyCredential,
   type AiGradingProvider,
 } from '../../ee/lib/ai-grading/ai-grading-models.shared.js';
+import type { AiGradingApiKeyCredential } from './instructorInstanceAdminAiGrading.html.js';
 import { extractPageContext } from '../../lib/client/page-context.js';
 import { config } from '../../lib/config.js';
 import {

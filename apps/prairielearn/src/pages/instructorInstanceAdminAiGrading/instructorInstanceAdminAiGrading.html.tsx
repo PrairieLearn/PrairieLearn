@@ -2,11 +2,16 @@ import { QueryClient, useMutation } from '@tanstack/react-query';
 import { useState } from 'react';
 import { Alert, Form, Modal } from 'react-bootstrap';
 
-import {
-  AI_GRADING_PROVIDER_OPTIONS,
-  type AiGradingApiKeyCredential,
-} from '../../ee/lib/ai-grading/ai-grading-models.shared.js';
+import { AI_GRADING_PROVIDER_OPTIONS } from '../../ee/lib/ai-grading/ai-grading-models.shared.js';
 import { QueryClientProviderDebug } from '../../lib/client/tanstackQuery.js';
+
+export interface AiGradingApiKeyCredential {
+  id: string;
+  provider: string;
+  providerValue: string;
+  apiKeyMasked: string;
+  dateAdded: string;
+}
 
 /**
  * Create a POST request to the current page with the given body and CSRF token, and handle errors uniformly.

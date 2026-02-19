@@ -48,11 +48,3 @@ export const AI_GRADING_PROVIDER_OPTIONS = AI_GRADING_PROVIDERS.map((provider) =
  * Users without the ai-grading-model-selection feature flag enabled must use the default model.
  */
 export const DEFAULT_AI_GRADING_MODEL = 'gpt-5-mini-2025-08-07' as const;
-
-export interface AiGradingApiKeyCredential {
-  id: string;
-  provider: string;
-  providerValue: string;
-  apiKeyMasked: string;
-  dateAdded: string;
-}
