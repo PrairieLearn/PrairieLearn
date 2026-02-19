@@ -1,5 +1,3 @@
-import mustache from 'mustache';
-
 import type { Assessment, AssessmentInstance, AssessmentSet } from './db-types.js';
 import type { UntypedResLocals } from './res-locals.types.js';
 
@@ -20,38 +18,6 @@ export function assessmentInstanceLabel(
     label += '#' + assessmentInstance.number;
   }
   return label;
-}
-
-/**
- * Render the "text" property of an assessment.
- *
- * @param assessment - The assessment to render the text for.
- * @param assessment.id - The assessment ID.
- * @param assessment.text - The assessment text.
- * @param urlPrefix - The current server urlPrefix.
- * @returns The rendered text.
- */
-export function renderText(
-  assessment: { id: string; text: string | null },
-  urlPrefix: string,
-): string | null {
-  if (!assessment.text) return null;
-
-  const assessmentUrlPrefix = urlPrefix + '/assessment/' + assessment.id;
-
-  const context = {
-    client_files_course: assessmentUrlPrefix + '/clientFilesCourse',
-    client_files_course_instance: assessmentUrlPrefix + '/clientFilesCourseInstance',
-    client_files_assessment: assessmentUrlPrefix + '/clientFilesAssessment',
-  };
-
-  // Convert all legacy EJS-style template variables to Mustache template variables.
-  const text = assessment.text
-    .replaceAll(/<%=\s*clientFilesCourse\s*%>/g, '{{ client_files_course }}')
-    .replaceAll(/<%=\s*clientFilesCourseInstance\s*%>/g, '{{ client_files_course_instance }}')
-    .replaceAll(/<%=\s*clientFilesAssessment\s*%>/g, '{{ client_files_assessment }}');
-
-  return mustache.render(text, context);
 }
 
 /**

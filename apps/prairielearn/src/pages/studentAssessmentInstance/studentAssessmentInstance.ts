@@ -4,8 +4,12 @@ import asyncHandler from 'express-async-handler';
 import { HttpStatusError } from '@prairielearn/error';
 import { loadSqlEquiv, queryRow, queryRows } from '@prairielearn/postgres';
 
-import { gradeAssessmentInstance, updateAssessmentInstance } from '../../lib/assessment.js';
-import { canDeleteAssessmentInstance, renderText } from '../../lib/assessment.shared.js';
+import {
+  gradeAssessmentInstance,
+  renderText,
+  updateAssessmentInstance,
+} from '../../lib/assessment.js';
+import { canDeleteAssessmentInstance } from '../../lib/assessment.shared.js';
 import { AssessmentInstanceSchema, type File } from '../../lib/db-types.js';
 import { deleteFile, uploadFile } from '../../lib/file-store.js';
 import {

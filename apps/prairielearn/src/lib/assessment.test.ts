@@ -1,7 +1,7 @@
 import { decode } from 'he';
 import { assert, describe, it } from 'vitest';
 
-import { renderText } from './assessment.shared.js';
+import { renderText } from './assessment.js';
 
 describe('renderText', () => {
   const urlPrefix = '/pl/course_instance/1';
