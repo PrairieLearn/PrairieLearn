@@ -1040,16 +1040,25 @@ async function renderPanel(
   };
 }
 
-async function renderPanelInstrumented(
-  panel: 'question' | 'answer' | 'submission',
-  codeCaller: CodeCaller,
-  submission: Submission | null,
-  variant: Variant,
-  question: Question,
-  course: Course,
-  locals: UntypedResLocals,
-  context: QuestionProcessingContext,
-): Promise<RenderPanelResult> {
+async function renderPanelInstrumented({
+  panel,
+  codeCaller,
+  submission,
+  variant,
+  question,
+  course,
+  locals,
+  context,
+}: {
+  panel: 'question' | 'answer' | 'submission';
+  codeCaller: CodeCaller;
+  submission: Submission | null;
+  variant: Variant;
+  question: Question;
+  course: Course;
+  locals: UntypedResLocals;
+  context: QuestionProcessingContext;
+}): Promise<RenderPanelResult> {
   return instrumented(`freeform.renderPanel:${panel}`, async (span) => {
     span.setAttributes({
       panel,
@@ -1098,8 +1107,8 @@ export async function render(
           courseIssues: newCourseIssues,
           html,
           renderedElementNames,
-        } = await renderPanelInstrumented(
-          'question',
+        } = await renderPanelInstrumented({
+          panel: 'question',
           codeCaller,
           submission,
           variant,
@@ -1107,7 +1116,7 @@ export async function render(
           course,
           locals,
           context,
-        );
+        });
 
         courseIssues.push(...newCourseIssues);
         htmls.questionHtml = html;
@@ -1122,8 +1131,8 @@ export async function render(
               courseIssues: newCourseIssues,
               html,
               renderedElementNames,
-            } = await renderPanelInstrumented(
-              'submission',
+            } = await renderPanelInstrumented({
+              panel: 'submission',
               codeCaller,
               submission,
               variant,
@@ -1131,7 +1140,7 @@ export async function render(
               course,
               locals,
               context,
-            );
+            });
 
             courseIssues.push(...newCourseIssues);
             allRenderedElementNames = union(allRenderedElementNames, renderedElementNames ?? []);
@@ -1145,8 +1154,8 @@ export async function render(
           courseIssues: newCourseIssues,
           html,
           renderedElementNames,
-        } = await renderPanelInstrumented(
-          'answer',
+        } = await renderPanelInstrumented({
+          panel: 'answer',
           codeCaller,
           submission,
           variant,
@@ -1154,7 +1163,7 @@ export async function render(
           course,
           locals,
           context,
-        );
+        });
 
         courseIssues.push(...newCourseIssues);
         htmls.answerHtml = html;

@@ -616,19 +616,19 @@ router.post(
       );
     } else if (body.__action === 'modify_rubric_settings') {
       try {
-        await manualGrading.updateAssessmentQuestionRubric(
-          res.locals.assessment,
-          res.locals.instance_question.assessment_question_id,
-          body.use_rubric,
-          body.replace_auto_points,
-          body.starting_points,
-          body.min_points,
-          body.max_extra_points,
-          body.rubric_items,
-          body.tag_for_manual_grading,
-          body.grader_guidelines,
-          res.locals.authn_user.id,
-        );
+        await manualGrading.updateAssessmentQuestionRubric({
+          assessment: res.locals.assessment,
+          assessment_question_id: res.locals.instance_question.assessment_question_id,
+          use_rubric: body.use_rubric,
+          replace_auto_points: body.replace_auto_points,
+          starting_points: body.starting_points,
+          min_points: body.min_points,
+          max_extra_points: body.max_extra_points,
+          rubric_items: body.rubric_items,
+          tag_for_manual_grading: body.tag_for_manual_grading,
+          grader_guidelines: body.grader_guidelines,
+          authn_user_id: res.locals.authn_user.id,
+        });
         res.redirect(req.baseUrl + '/grading_rubric_panels');
       } catch (err) {
         res.status(500).send({ err: String(err) });
