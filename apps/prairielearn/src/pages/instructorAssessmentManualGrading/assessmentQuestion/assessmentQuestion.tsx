@@ -256,19 +256,19 @@ router.post(
     }
 
     if (req.body.__action === 'edit_question_points') {
-      const result = await manualGrading.updateInstanceQuestionScore(
-        res.locals.assessment,
-        req.body.instance_question_id,
-        null, // submission_id
-        req.body.modified_at ? new Date(req.body.modified_at) : null, // check_modified_at
-        {
+      const result = await manualGrading.updateInstanceQuestionScore({
+        assessment: res.locals.assessment,
+        instance_question_id: req.body.instance_question_id,
+        submission_id: null,
+        check_modified_at: req.body.modified_at ? new Date(req.body.modified_at) : null,
+        score: {
           points: req.body.points,
           manual_points: req.body.manual_points,
           auto_points: req.body.auto_points,
           score_perc: req.body.score_perc,
         },
-        res.locals.authn_user.id,
-      );
+        authn_user_id: res.locals.authn_user.id,
+      });
       if (result.modified_at_conflict) {
         res.send({
           conflict_grading_job_id: result.grading_job_id,

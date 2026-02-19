@@ -396,15 +396,15 @@ async function recomputeInstanceQuestions(
     );
 
     await async.eachSeries(instance_questions, async (instance_question) => {
-      await updateInstanceQuestionScore(
+      await updateInstanceQuestionScore({
         assessment,
-        instance_question.instance_question_id,
-        instance_question.submission_id,
-        null, // check_modified_at,
-        { manual_rubric_data: instance_question },
+        instance_question_id: instance_question.instance_question_id,
+        submission_id: instance_question.submission_id,
+        check_modified_at: null,
+        score: { manual_rubric_data: instance_question },
         authn_user_id,
-        instance_question.is_ai_graded,
-      );
+        is_ai_graded: instance_question.is_ai_graded,
+      });
     });
   });
 }
@@ -497,24 +497,33 @@ export type InstanceQuestionScoreInput = z.infer<typeof InstanceQuestionScoreInp
 
 /**
  * Manually updates the score of an instance question.
- * @param assessment - The assessment associated with the instance question. Assumed to be safe.
- * @param instance_question_id - The ID of the instance question to be updated. May or may not be safe.
- * @param submission_id - The ID of the submission. Optional, if not provided the last submission if the instance question is used.
- * @param check_modified_at - The value of modified_at when the question was retrieved, optional. If provided, and the modified_at value does not match this value, a grading job is created but the score is not updated.
- * @param score - The score values to be used for update.
- * @param authn_user_id - The user_id of the logged in user.
- * @param is_ai_graded - Whether the score update is the result of AI grading or manual grading
+ * @param params
+ * @param params.assessment - The assessment associated with the instance question. Assumed to be safe.
+ * @param params.instance_question_id - The ID of the instance question to be updated. May or may not be safe.
+ * @param params.submission_id - The ID of the submission. Optional, if not provided the last submission if the instance question is used.
+ * @param params.check_modified_at - The value of modified_at when the question was retrieved, optional. If provided, and the modified_at value does not match this value, a grading job is created but the score is not updated.
+ * @param params.score - The score values to be used for update.
+ * @param params.authn_user_id - The user_id of the logged in user.
+ * @param params.is_ai_graded - Whether the score update is the result of AI grading or manual grading
  * @returns The ID of the grading job created, if any, and a flag indicating if the score was not updated due to a modified_at conflict.
  */
-export async function updateInstanceQuestionScore(
-  assessment: Assessment,
-  instance_question_id: string,
-  submission_id: string | null,
-  check_modified_at: Date | null,
-  score: InstanceQuestionScoreInput,
-  authn_user_id: string,
+export async function updateInstanceQuestionScore({
+  assessment,
+  instance_question_id,
+  submission_id,
+  check_modified_at,
+  score,
+  authn_user_id,
   is_ai_graded = false,
-): Promise<{ grading_job_id: string | null; modified_at_conflict: boolean }> {
+}: {
+  assessment: Assessment;
+  instance_question_id: string;
+  submission_id: string | null;
+  check_modified_at: Date | null;
+  score: InstanceQuestionScoreInput;
+  authn_user_id: string;
+  is_ai_graded?: boolean;
+}): Promise<{ grading_job_id: string | null; modified_at_conflict: boolean }> {
   return sqldb.runInTransactionAsync(async () => {
     const current_submission = await sqldb.queryRow(
       sql.select_submission_for_score_update,

@@ -896,15 +896,23 @@ interface RenderPanelResult {
   cacheHit?: boolean;
 }
 
-async function renderPanel(
-  panel: 'question' | 'answer' | 'submission',
-  codeCaller: CodeCaller,
-  variant: Variant,
-  submission: Submission | null,
-  course: Course,
-  locals: UntypedResLocals,
-  context: QuestionProcessingContext,
-): Promise<RenderPanelResult> {
+async function renderPanel({
+  panel,
+  codeCaller,
+  variant,
+  submission,
+  course,
+  locals,
+  context,
+}: {
+  panel: 'question' | 'answer' | 'submission';
+  codeCaller: CodeCaller;
+  variant: Variant;
+  submission: Submission | null;
+  course: Course;
+  locals: UntypedResLocals;
+  context: QuestionProcessingContext;
+}): Promise<RenderPanelResult> {
   debug(`renderPanel(${panel})`);
   // broken variant kills all rendering
   if (variant.broken_at) {
@@ -1066,7 +1074,7 @@ async function renderPanelInstrumented({
       'question.id': question.id,
       'course.id': course.id,
     });
-    const result = await renderPanel(
+    const result = await renderPanel({
       panel,
       codeCaller,
       variant,
@@ -1074,21 +1082,29 @@ async function renderPanelInstrumented({
       course,
       locals,
       context,
-    );
+    });
     span.setAttribute('cache.status', result.cacheHit ? 'hit' : 'miss');
     return result;
   });
 }
 
-export async function render(
-  renderSelection: RenderSelection,
-  variant: Variant,
-  question: Question,
-  submission: Submission | null,
-  submissions: Submission[],
-  course: Course,
-  locals: UntypedResLocals,
-): QuestionServerReturnValue<RenderResultData> {
+export async function render({
+  renderSelection,
+  variant,
+  question,
+  submission,
+  submissions,
+  course,
+  locals,
+}: {
+  renderSelection: RenderSelection;
+  variant: Variant;
+  question: Question;
+  submission: Submission | null;
+  submissions: Submission[];
+  course: Course;
+  locals: UntypedResLocals;
+}): QuestionServerReturnValue<RenderResultData> {
   return instrumented('freeform.render', async () => {
     debug('render()');
     const htmls = {

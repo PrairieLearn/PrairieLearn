@@ -132,15 +132,15 @@ async function render({
 }): Promise<questionServers.RenderResultData> {
   const questionModule = questionServers.getModule(question.type);
 
-  const { courseIssues, data } = await questionModule.render(
+  const { courseIssues, data } = await questionModule.render({
     renderSelection,
     variant,
     question,
     submission,
     submissions,
-    question_course,
+    course: question_course,
     locals,
-  );
+  });
 
   const studentMessage = 'Error rendering question';
   const courseData = { variant, question, submission, course: variant_course };

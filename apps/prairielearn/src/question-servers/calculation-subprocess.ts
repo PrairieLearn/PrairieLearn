@@ -146,15 +146,17 @@ export async function grade(
 // The following functions don't do anything for v2 questions; they're just
 // here to satisfy the question server interface.
 
-export async function render(
-  _renderSelection: RenderSelection,
-  _variant: Variant,
-  _question: Question,
-  _submission: Submission | null,
-  submissions: Submission[],
-  _course: Course,
-  _locals: UntypedResLocals,
-): QuestionServerReturnValue<RenderResultData> {
+export async function render({
+  submissions,
+}: {
+  renderSelection: RenderSelection;
+  variant: Variant;
+  question: Question;
+  submission: Submission | null;
+  submissions: Submission[];
+  course: Course;
+  locals: UntypedResLocals;
+}): QuestionServerReturnValue<RenderResultData> {
   const data = {
     extraHeadersHtml: '',
     questionHtml: '',
