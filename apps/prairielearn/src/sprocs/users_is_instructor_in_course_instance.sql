@@ -9,11 +9,6 @@ BEGIN
     -- returns TRUE if the user has either:
     --      (1) non-none course role for the course with the given course instance, or
     --      (2) non-none course instance role for the given course instance.
-    --
-    -- note: users_is_instructor_in_course_instance can return FALSE for some
-    -- course instances even when users_is_instructor_in_course returns TRUE,
-    -- because the latter function looks for a non-none course instance role
-    -- for ANY course instance, not for a particular course instance
 
     PERFORM
         *

@@ -15,15 +15,6 @@ WHERE
   c.short_name = $short_name
   AND c.deleted_at IS NULL;
 
--- BLOCK select_course_by_instance_id
-SELECT
-  c.*
-FROM
-  course_instances AS ci
-  JOIN courses AS c ON ci.course_id = c.id
-WHERE
-  ci.id = $course_instance_id;
-
 -- BLOCK update_course_commit_hash
 UPDATE courses
 SET
