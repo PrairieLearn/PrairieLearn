@@ -17,7 +17,7 @@ export function sanitizeString(s: string): string {
  * @param course.short_name - The short name of the course.
  * @returns The sanitized prefix string.
  */
-export function courseFilenamePrefix(course: Pick<Course, 'short_name'>): string {
+function courseFilenamePrefix(course: Pick<Course, 'short_name'>): string {
   const prefix = sanitizeString(course.short_name) + '_';
   return prefix;
 }
