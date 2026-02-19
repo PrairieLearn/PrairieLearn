@@ -130,10 +130,7 @@ router.get(
     );
 
     const useCustomApiKeys = course_instance.ai_grading_use_custom_api_keys;
-    const availableAiGradingProviders =
-      aiGradingEnabled && useCustomApiKeys
-        ? [...(await getAvailableAiGradingProviders(course_instance))]
-        : [];
+    const availableAiGradingProviders = aiGradingEnabled ? await getAvailableAiGradingProviders(course_instance) : [];
 
     res.send(
       PageLayout({

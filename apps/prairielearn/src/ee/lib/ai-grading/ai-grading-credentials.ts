@@ -8,8 +8,6 @@ import {
 } from '../../../lib/db-types.js';
 import { decryptFromStorage } from '../../../lib/storage-crypt.js';
 
-import { AI_GRADING_MODEL_PROVIDERS, type AiGradingModelId } from './ai-grading-models.shared.js';
-
 const sql = loadSqlEquiv(import.meta.url);
 
 export interface ResolvedProviderKeys {
@@ -75,24 +73,11 @@ export async function resolveAiGradingKeys(
  */
 export async function getAvailableAiGradingProviders(
   courseInstance: CourseInstance,
-): Promise<Set<EnumAiGradingProvider>> {
+): Promise<EnumAiGradingProvider[]> {
   const keys = await resolveAiGradingKeys(courseInstance);
-  const available = new Set<EnumAiGradingProvider>();
-  if (keys.openai) available.add('openai');
-  if (keys.google) available.add('google');
-  if (keys.anthropic) available.add('anthropic');
+  const available: EnumAiGradingProvider[] = [];
+  if (keys.openai) available.push('openai');
+  if (keys.google) available.push('google');
+  if (keys.anthropic) available.push('anthropic');
   return available;
-}
-
-/**
- * Check whether a specific model is available for a given course instance
- * based on whether the corresponding provider has API keys configured.
- */
-export async function isModelAvailable(
-  courseInstance: CourseInstance,
-  modelId: AiGradingModelId,
-): Promise<boolean> {
-  const provider = AI_GRADING_MODEL_PROVIDERS[modelId];
-  const availableProviders = await getAvailableAiGradingProviders(courseInstance);
-  return availableProviders.has(provider);
 }
