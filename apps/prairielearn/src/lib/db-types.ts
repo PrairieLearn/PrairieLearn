@@ -232,8 +232,6 @@ export const SprocInstanceQuestionsNextAllowedGradeSchema = z.object({
 // because `Team` comes before `TeamConfig` alphabetically.
 // *******************************************************************************
 
-export const AccessLogSchema = null;
-
 export const AccessTokenSchema = z.object({
   created_at: DateFromISOString,
   id: IdSchema,
@@ -1540,8 +1538,6 @@ export const VariantSchema = z.object({
 });
 export type Variant = z.infer<typeof VariantSchema>;
 
-export const VariantViewLogSchema = null;
-
 export const WorkspaceSchema = z.object({
   created_at: DateFromISOString,
   disk_usage_bytes: z.coerce.number().nullable(), // This is BIGINT, but always fits a number
@@ -1617,7 +1613,6 @@ export type Zone = z.infer<typeof ZoneSchema>;
 // *******************************************************************************
 
 export const TableNames = [
-  'access_logs',
   'access_tokens',
   'administrators',
   'ai_grading_jobs',
@@ -1712,7 +1707,6 @@ export const TableNames = [
   'topics',
   'user_sessions',
   'users',
-  'variant_view_logs',
   'variants',
   'workspace_host_logs',
   'workspace_hosts',
