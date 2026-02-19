@@ -1,4 +1,5 @@
 #!/bin/bash
+set -e
 
 export PGDATA=${PGDATA:=/var/postgres}
 
@@ -17,17 +18,18 @@ fi
 
 mkdir -p $PGDATA
 chown -f postgres:postgres $PGDATA
-su postgres -c 'pg_ctl status' > /dev/null 2>&1
-if [[ $? == 4 ]]; then
+pg_status=0
+gosu postgres pg_ctl status > /dev/null 2>&1 || pg_status=$?
+if [[ $pg_status == 4 ]]; then
     echo "Making new postgres database at ${PGDATA}"
-    su postgres -c "initdb" > /dev/null 2>&1
-    INIT_RESOLVE=0
+    gosu postgres initdb
+    INIT_RESOLVE=true
     ACTION=start
 fi
 
 # Only locally start postgres if we weren't given a PGHOST environment variable
 if [[ -z "$PGHOST" ]]; then
-    su postgres -c "pg_ctl --silent --log=${PGDATA}/postgresql.log ${ACTION}"
+    gosu postgres pg_ctl --silent --log=${PGDATA}/postgresql.log ${ACTION}
 fi
 
 if [[ "$ACTION" == "start" ]]; then
@@ -35,6 +37,6 @@ if [[ "$ACTION" == "start" ]]; then
     until pg_isready -q; do sleep 1; done
 fi
 
-if [[ $INIT_RESOLVE ]]; then
-    su postgres -c "createuser -s root"
+if [[ "${INIT_RESOLVE:-}" == "true" ]]; then
+    gosu postgres createuser -s root
 fi

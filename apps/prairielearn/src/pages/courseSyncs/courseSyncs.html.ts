@@ -21,7 +21,7 @@ export const ImageRowSchema = z.object({
   size: z.number().optional(),
   pushed_at: z.date().nullish(),
 });
-export type ImageRow = z.infer<typeof ImageRowSchema>;
+type ImageRow = z.infer<typeof ImageRowSchema>;
 
 export const JobSequenceRowSchema = JobSequenceSchema.extend({
   user_uid: UserSchema.shape.uid.nullable(),
