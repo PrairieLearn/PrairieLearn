@@ -436,6 +436,17 @@ export function RubricSettings({
 
     if (contentType.includes('application/json')) {
       const data = await res.json();
+
+      if (data.submissionPanel && data.submissionId) {
+        const oldSubmission = document.getElementById(`submission-${data.submissionId}`);
+        if (oldSubmission) {
+          const newSubmission = parseHTMLElement(document, data.submissionPanel);
+          oldSubmission.replaceWith(newSubmission);
+          executeScripts(newSubmission);
+          await window.mathjaxTypeset([newSubmission]);
+        }
+      }
+
       if (data.gradingPanel) {
         const gradingPanel = document.querySelector<HTMLElement>('.js-main-grading-panel');
         if (!gradingPanel) return;
@@ -482,17 +493,7 @@ export function RubricSettings({
           input.value = oldCsrfToken;
         });
         window.resetInstructorGradingPanel();
-        await window.mathjaxTypeset();
-      }
-
-      if (data.submissionPanel && data.submissionId) {
-        const oldSubmission = document.getElementById(`submission-${data.submissionId}`);
-        if (oldSubmission) {
-          const newSubmission = parseHTMLElement(document, data.submissionPanel);
-          oldSubmission.replaceWith(newSubmission);
-          executeScripts(newSubmission);
-          await window.mathjaxTypeset([newSubmission]);
-        }
+        await window.mathjaxTypeset([gradingPanel]);
       }
 
       // Since we are preserving the temporary rubric item selection in the instance question page, the page is not refreshed
