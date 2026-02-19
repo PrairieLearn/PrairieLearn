@@ -12,6 +12,7 @@ import {
   selectAllCourseRequests,
   updateCourseRequestNote,
 } from '../../lib/course-request.js';
+import { coursePathAvailability, courseRepositoryAvailability } from '../../lib/course.js';
 import { typedAsyncHandler } from '../../lib/res-locals.js';
 import { selectAllInstitutions } from '../../models/institution.js';
 
@@ -49,6 +50,24 @@ router.get(
         ),
       }),
     );
+  }),
+);
+
+router.get(
+  '/repository_name_availability.json',
+  typedAsyncHandler<'plain'>(async (req, res) => {
+    const repoName = req.query.repo_name as string;
+    const exists = await courseRepositoryAvailability(repoName);
+    res.json({ exists });
+  }),
+);
+
+router.get(
+  '/course_path_availability.json',
+  typedAsyncHandler<'plain'>(async (req, res) => {
+    const path = req.query.path as string;
+    const exists = await coursePathAvailability(path);
+    res.json({ exists });
   }),
 );
 

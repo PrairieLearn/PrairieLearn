@@ -1,4 +1,7 @@
+import { access } from 'fs/promises';
+
 import fs from 'fs-extra';
+import z from 'zod';
 
 import { HttpStatusError } from '@prairielearn/error';
 import * as namedLocks from '@prairielearn/named-locks';
@@ -203,4 +206,22 @@ export async function pullAndUpdateCourse({
   });
 
   return { jobSequenceId: serverJob.jobSequenceId, jobPromise };
+}
+
+export async function courseRepositoryAvailability(repoName: string) {
+  const result = await sqldb.queryRow(
+    sql.exists_by_course_request_repository_name,
+    { repoName },
+    z.boolean(),
+  );
+  return result;
+}
+
+export async function coursePathAvailability(path: string) {
+  try {
+    await access(path);
+    return true;
+  } catch {
+    return false;
+  }
 }

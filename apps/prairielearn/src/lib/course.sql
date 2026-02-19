@@ -17,3 +17,14 @@ FROM
 WHERE
   cp.course_role = 'Owner'
   AND cp.course_id = $course_id;
+
+-- BLOCK exists_by_course_request_repository_name
+SELECT
+  EXISTS (
+    SELECT
+      1
+    FROM
+      courses
+    WHERE
+      repository LIKE '%/' || $repoName || '.git'
+  ) as exists;

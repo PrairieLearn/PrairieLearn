@@ -1,10 +1,19 @@
+import { QueryClient, useQuery } from '@tanstack/react-query';
+import clsx from 'clsx';
 import { useState } from 'react';
-import { Dropdown } from 'react-bootstrap';
+import { Dropdown, Modal } from 'react-bootstrap';
+import { useDebouncedCallback } from 'use-debounce';
+import z from 'zod';
 
 import { OverlayTrigger } from '@prairielearn/ui';
 
 import type { AdminInstitution } from '../lib/client/safe-db-types.js';
-import { getAdministratorCourseRequestsUrl } from '../lib/client/url.js';
+import { QueryClientProviderDebug } from '../lib/client/tanstackQuery.js';
+import {
+  getAdministratorCourseRequestsUrl,
+  getCoursePathAvailabilityUrl,
+  getCourseRepositoryAvailabilityUrl,
+} from '../lib/client/url.js';
 import type { CourseRequestRow } from '../lib/course-request.js';
 
 import { JobStatus } from './JobStatus.js';
@@ -102,6 +111,7 @@ function CourseRequestTableRow({
   const [jobsOpen, setJobsOpen] = useState(false);
   const [showDenyPopover, setShowDenyPopover] = useState(false);
   const [showApprovePopover, setShowApprovePopover] = useState(false);
+  const [queryClient] = useState(() => new QueryClient());
 
   return (
     <>
@@ -152,29 +162,31 @@ function CourseRequestTableRow({
                   <i className="fa fa-times" aria-hidden="true" /> Deny
                 </button>
               </OverlayTrigger>
-              <OverlayTrigger
-                trigger="click"
-                placement="auto"
-                popover={{
-                  header: 'Approve course request',
-                  body: (
+              <button
+                type="button"
+                className="btn btn-sm btn-success text-nowrap"
+                onClick={() => setShowApprovePopover(true)}
+              >
+                <i className="fa fa-check" aria-hidden="true" /> Approve
+              </button>
+              <Modal
+                show={showApprovePopover}
+                backdrop="static"
+                onHide={() => setShowApprovePopover(false)}
+              >
+                <Modal.Body>
+                  <QueryClientProviderDebug client={queryClient}>
                     <CourseRequestApproveForm
                       request={row}
                       institutions={institutions}
                       coursesRoot={coursesRoot}
                       csrfToken={csrfToken}
+                      urlPrefix={urlPrefix}
                       onCancel={() => setShowApprovePopover(false)}
                     />
-                  ),
-                }}
-                show={showApprovePopover}
-                rootClose
-                onToggle={setShowApprovePopover}
-              >
-                <button type="button" className="btn btn-sm btn-success text-nowrap">
-                  <i className="fa fa-check" aria-hidden="true" /> Approve
-                </button>
-              </OverlayTrigger>
+                  </QueryClientProviderDebug>
+                </Modal.Body>
+              </Modal>
             </div>
           )}
         </td>
@@ -261,21 +273,78 @@ function CourseRequestTableRow({
   );
 }
 
+function useCheckCourseRepositoryAvailability(urlPrefix: string, repoName: string) {
+  return useQuery({
+    queryKey: ['checkCourseRepositoryAvailability', repoName, urlPrefix],
+    queryFn: async () => {
+      const response = await fetch(getCourseRepositoryAvailabilityUrl(urlPrefix, repoName));
+      const data = await response.json();
+      return z.object({ exists: z.boolean() }).parse(data).exists;
+    },
+  });
+}
+
+function useCheckCoursePathAvailability(urlPrefix: string, path: string) {
+  return useQuery({
+    queryKey: ['checkCoursePathAvailability', path, urlPrefix],
+    queryFn: async () => {
+      const response = await fetch(getCoursePathAvailabilityUrl(urlPrefix, path));
+      const data = await response.json();
+      return z.object({ exists: z.boolean() }).parse(data).exists;
+    },
+  });
+}
+
 function CourseRequestApproveForm({
   request,
   institutions,
   coursesRoot,
   csrfToken,
+  urlPrefix,
   onCancel,
 }: {
   request: CourseRequestRow;
   institutions: AdminInstitution[];
   coursesRoot: string;
   csrfToken: string;
+  urlPrefix: string;
   onCancel: () => void;
 }) {
-  const repo_name = 'pl-' + request.short_name.replaceAll(' ', '').toLowerCase();
+  const repoName = 'pl-' + request.short_name.replaceAll(' ', '').toLowerCase();
+  const path = coursesRoot + '/' + repoName;
+
+  const [selectedInstitutionId, setSelectedInstitutionId] = useState('');
+  const [repoNameValue, setRepoNameValue] = useState(repoName);
+  const [pathNameValue, setPathNameValue] = useState(path);
+  const [debouncedRepoName, setDebouncedRepoName] = useState(repoName);
+  const [debouncedPathName, setDebouncedPathName] = useState(path);
   const [timezone, setTimezone] = useState(institutions[0]?.display_timezone ?? '');
+
+  const debouncedSetRepoName = useDebouncedCallback((value: string) => {
+    setDebouncedRepoName(value);
+  }, 300);
+  const debouncedSetPathName = useDebouncedCallback((value: string) => {
+    setDebouncedPathName(value);
+  }, 300);
+
+  const { data: repoExists, isFetching: isFetchingRepo } = useCheckCourseRepositoryAvailability(
+    urlPrefix,
+    debouncedRepoName,
+  );
+  const { data: pathExists, isFetching: isFetchingPath } = useCheckCoursePathAvailability(
+    urlPrefix,
+    debouncedPathName,
+  );
+  const selectedInstitution = institutions.find((i) => i.id === selectedInstitutionId);
+  const isDefaultInstitution = selectedInstitution?.short_name === 'Default';
+  const isSubmitDisabled =
+    !selectedInstitutionId ||
+    repoExists === true ||
+    isFetchingRepo ||
+    repoNameValue !== debouncedRepoName ||
+    pathExists === true ||
+    isFetchingPath ||
+    pathNameValue !== debouncedPathName;
 
   return (
     <form name={`create-course-from-request-form-${request.id}`} method="POST">
@@ -290,20 +359,34 @@ function CourseRequestApproveForm({
         <select
           id="courseRequestAddInstitution"
           name="institution_id"
-          className="form-select"
+          className={clsx(
+            'form-select',
+            selectedInstitutionId && isDefaultInstitution && 'is-warning',
+          )}
+          value={selectedInstitutionId}
           onChange={({ currentTarget }) => {
+            setSelectedInstitutionId(currentTarget.value);
             const selected = institutions.find((i) => i.id === currentTarget.value);
             if (selected) {
               setTimezone(selected.display_timezone);
             }
           }}
         >
+          <option value="" disabled>
+            Select an institution...
+          </option>
           {institutions.map((i) => (
             <option key={i.id} value={i.id}>
               {i.short_name}
             </option>
           ))}
         </select>
+        {isDefaultInstitution && (
+          <div className="form-text text-warning">
+            <i className="fa fa-exclamation-triangle" aria-hidden="true" /> The "Default"
+            institution is typically not intended for new courses.
+          </div>
+        )}
       </div>
       <div className="mb-3">
         <label className="form-label" htmlFor="courseRequestAddInputShortName">
@@ -350,11 +433,19 @@ function CourseRequestApproveForm({
         </label>
         <input
           type="text"
-          className="form-control"
+          className={clsx('form-control', pathExists === true && 'is-invalid')}
           id="courseRequestAddInputPath"
           name="path"
-          defaultValue={coursesRoot + '/' + repo_name}
+          value={pathNameValue}
+          onChange={(e) => {
+            const value = e.currentTarget.value;
+            setPathNameValue(value);
+            debouncedSetPathName(value);
+          }}
         />
+        {pathExists && (
+          <div className="invalid-feedback">A course already exists at this path.</div>
+        )}
       </div>
       <div className="mb-3">
         <label className="form-label" htmlFor="courseRequestAddInputRepositoryName">
@@ -362,11 +453,19 @@ function CourseRequestApproveForm({
         </label>
         <input
           type="text"
-          className="form-control"
+          className={clsx('form-control', repoExists === true && 'is-invalid')}
           id="courseRequestAddInputRepositoryName"
           name="repository_short_name"
-          defaultValue={repo_name}
+          value={repoNameValue}
+          onChange={(e) => {
+            const value = e.currentTarget.value;
+            setRepoNameValue(value);
+            debouncedSetRepoName(value);
+          }}
         />
+        {repoExists && (
+          <div className="invalid-feedback">A course with this repository name already exists</div>
+        )}
       </div>
       <div className="mb-3">
         <label htmlFor="courseRequestAddInputGithubUser">GitHub username:</label>
@@ -383,7 +482,7 @@ function CourseRequestApproveForm({
         <button type="button" className="btn btn-secondary" onClick={onCancel}>
           Cancel
         </button>
-        <button type="submit" className="btn btn-primary">
+        <button type="submit" className="btn btn-primary" disabled={isSubmitDisabled}>
           Create course
         </button>
       </div>
