@@ -26,6 +26,12 @@ SELECT
   z.best_questions AS zone_best_questions,
   (z.best_questions IS NOT NULL) AS zone_has_best_questions,
   (
+    count(*) OVER (
+      PARTITION BY
+        z.id
+    )
+  )::int AS zone_question_count,
+  (
     SELECT
       count(*)
     FROM

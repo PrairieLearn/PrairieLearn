@@ -228,7 +228,7 @@ export function buildQuestionUrls(
   return urls;
 }
 
-export interface ResLocalsBuildLocals {
+interface ResLocalsBuildLocals {
   showGradeButton: boolean;
   showSaveButton: boolean;
   disableGradeButton: boolean;

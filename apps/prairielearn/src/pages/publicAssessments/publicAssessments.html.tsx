@@ -32,7 +32,7 @@ export const SafeAssessmentRowSchema = SafeAssessmentStatsRowSchema.extend({
   label: z.string(),
   open_issue_count: z.coerce.number(),
 });
-export type SafeAssessmentRow = z.infer<typeof SafeAssessmentRowSchema>;
+type SafeAssessmentRow = z.infer<typeof SafeAssessmentRowSchema>;
 
 export function PublicAssessments({
   rows,

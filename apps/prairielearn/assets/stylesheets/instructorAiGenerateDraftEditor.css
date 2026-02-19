@@ -110,10 +110,6 @@
   }
 }
 
-.markdown-body > :last-child {
-  margin-bottom: 0;
-}
-
 .markdown-body ul {
   padding-left: 1rem;
 }

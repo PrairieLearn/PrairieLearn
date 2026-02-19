@@ -98,7 +98,6 @@ SELECT
   to_jsonb(a) AS assessment,
   to_jsonb(aset) AS assessment_set,
   to_jsonb(aai) AS authz_result,
-  assessment_instance_label (ai, a, aset) AS assessment_instance_label,
   fl.list AS file_list
 FROM
   instance_questions AS iq
