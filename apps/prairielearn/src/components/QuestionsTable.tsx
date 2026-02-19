@@ -22,6 +22,7 @@ import {
   CategoricalColumnFilter,
   OverlayTrigger,
   TanstackTableCard,
+  type TanstackTableCsvCell,
   TanstackTableEmptyState,
   parseAsColumnPinningState,
   parseAsColumnVisibilityStateWithColumns,
@@ -813,6 +814,23 @@ export function QuestionsTable({
         className={isQuestionsError ? undefined : 'h-100'}
         singularLabel="question"
         pluralLabel="questions"
+        downloadButtonOptions={{
+          filenameBase: 'questions',
+          hasSelection: false,
+          mapRowToData: (row: SafeQuestionsPageData): TanstackTableCsvCell[] => [
+            { name: 'QID', value: row.qid },
+            { name: 'Title', value: row.title },
+            { name: 'Topic', value: row.topic?.name ?? null },
+            { name: 'Tags', value: row.tags?.map((t) => t.name).join(', ') ?? null },
+            { name: 'Type', value: row.display_type },
+            { name: 'Grading method', value: row.grading_method },
+            {
+              name: 'External grading image',
+              value: row.external_grading_image,
+            },
+            { name: 'Workspace image', value: row.workspace_image },
+          ],
+        }}
         headerButtons={
           showAddQuestionButton ? (
             <>
