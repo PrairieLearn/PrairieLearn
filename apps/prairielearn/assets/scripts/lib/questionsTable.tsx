@@ -8,6 +8,7 @@ import { type QuestionsTableData } from '../../../src/components/QuestionsTable.
 import { SyncProblemButtonHtml } from '../../../src/components/SyncProblemButton.js';
 import { TagBadgeList } from '../../../src/components/TagBadge.js';
 import { TopicBadgeHtml } from '../../../src/components/TopicBadge.js';
+import { assessmentLabel } from '../../../src/lib/assessment.shared.js';
 import { getAiQuestionGenerationDraftsUrl } from '../../../src/lib/client/url.js';
 import { type Topic } from '../../../src/lib/db-types.js';
 import { type QuestionsPageData } from '../../../src/models/questions.js';
@@ -211,7 +212,7 @@ onDocumentReady(() => {
           assessment: {
             assessment_id: a.assessment.id,
             color: a.assessment_set.color,
-            label: a.assessment_set.abbreviation + a.assessment.number,
+            label: assessmentLabel(a.assessment, a.assessment_set),
           },
         }).toString(),
       )
@@ -225,7 +226,7 @@ onDocumentReady(() => {
         data
           .flatMap((row) => row.assessments ?? [])
           .filter((a) => a.assessment.course_instance_id === ci_id)
-          .map((a) => a.assessment_set.abbreviation + a.assessment.number),
+          .map((a) => assessmentLabel(a.assessment, a.assessment_set)),
       ),
     ].sort((a, b) => a.localeCompare(b));
     return {
