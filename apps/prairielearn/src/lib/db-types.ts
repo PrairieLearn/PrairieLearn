@@ -96,17 +96,6 @@ export const JsonCommentSchema = z.union([z.string(), z.array(z.any()), z.record
 // Sproc schemas. These should be alphabetized by their corresponding sproc name.
 // *******************************************************************************
 
-// Result of assessments_format_for_question sproc
-export const SprocAssessmentsFormatForQuestionSchema = z.array(
-  z.object({
-    assessment_id: IdSchema,
-    color: z.string(),
-    course_instance_id: IdSchema,
-    label: z.string(),
-    share_source_publicly: z.boolean(),
-  }),
-);
-
 // Result of check_assessment_access sproc
 const SprocCheckAssessmentAccessSchema = z.object({
   active: z.boolean().nullable(),
