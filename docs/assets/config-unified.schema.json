@@ -580,7 +580,7 @@
     },
     "databaseEncryptionKey": {
       "type": "string",
-      "default": "d44e91681a4769790c29a13a86e526dcd44e91681a4769790c29a13a86e526dc"
+      "default": "THIS_IS_THE_DATABASE_ENCRYPTION_KEY"
     },
     "secretSlackOpsBotEndpoint": {
       "type": ["string", "null"],

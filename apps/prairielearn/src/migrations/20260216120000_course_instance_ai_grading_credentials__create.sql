@@ -1,3 +1,6 @@
+ALTER TABLE course_instances
+ADD COLUMN IF NOT EXISTS ai_grading_use_custom_api_keys BOOLEAN NOT NULL DEFAULT FALSE;
+
 CREATE TYPE enum_ai_grading_provider AS ENUM('openai', 'google', 'anthropic');
 
 CREATE TABLE IF NOT EXISTS course_instance_ai_grading_credentials (
