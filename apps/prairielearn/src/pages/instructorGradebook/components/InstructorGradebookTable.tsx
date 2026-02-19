@@ -397,7 +397,7 @@ function GradebookTable({
   const filters = useMemo(() => {
     const assessmentFilters: Record<
       string,
-      (props: { header: Header<GradebookRow, unknown> }) => React.JSX.Element
+      (props: { header: Header<GradebookRow, unknown> }) => React.ReactNode
     > = {};
 
     courseAssessments.forEach((assessment) => {

@@ -36,3 +36,4 @@ foreign-key constraints
 referenced by
     audit_events: FOREIGN KEY (enrollment_id) REFERENCES enrollments(id) ON UPDATE CASCADE ON DELETE SET NULL
     course_instance_publishing_extension_enrollments: FOREIGN KEY (enrollment_id) REFERENCES enrollments(id) ON UPDATE CASCADE ON DELETE CASCADE
+    student_label_enrollments: FOREIGN KEY (enrollment_id) REFERENCES enrollments(id) ON UPDATE CASCADE ON DELETE CASCADE
