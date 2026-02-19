@@ -128,7 +128,8 @@
         },
         "enabled": {
           "description": "Whether the external grader is currently enabled. Useful if it is breaking, for example.",
-          "type": "boolean"
+          "type": "boolean",
+          "default": false
         },
         "image": {
           "description": "The Docker image that will be used to grade this question. Should be specified as Dockerhub image.",

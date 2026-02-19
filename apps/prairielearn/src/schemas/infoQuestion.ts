@@ -3,7 +3,7 @@ import { z } from 'zod';
 import { CommentJsonSchema } from './comment.js';
 import { QuestionParameterJsonSchema } from './questionPreferences.js';
 
-export const QuestionDependencyJsonSchema = z
+const QuestionDependencyJsonSchema = z
   .object({
     comment: CommentJsonSchema.optional(),
     coreStyles: z
@@ -46,7 +46,7 @@ export const QuestionDependencyJsonSchema = z
   .strict()
   .describe("The question's client-side dependencies.");
 
-export const QuestionAuthorJsonSchema = z
+const QuestionAuthorJsonSchema = z
   .object({
     name: z
       .string()
@@ -75,7 +75,7 @@ export const QuestionAuthorJsonSchema = z
     'An author (individual person, or staff of a course of origin) credited with creating a question.',
   );
 
-export const WorkspaceOptionsJsonSchema = z
+const WorkspaceOptionsJsonSchema = z
   .object({
     comment: CommentJsonSchema.optional(),
     image: z
@@ -135,7 +135,7 @@ export const defaultWorkspaceOptions = WorkspaceOptionsJsonSchema.extend({
   home: WorkspaceOptionsJsonSchema.shape.home.optional(),
 }).parse({});
 
-export const ExternalGradingOptionsJsonSchema = z
+const ExternalGradingOptionsJsonSchema = z
   .object({
     comment: CommentJsonSchema.optional(),
     enabled: z
@@ -143,7 +143,8 @@ export const ExternalGradingOptionsJsonSchema = z
       .describe(
         'Whether the external grader is currently enabled. Useful if it is breaking, for example.',
       )
-      .optional(),
+      .optional()
+      .default(false),
     image: z
       .string()
       .describe(
@@ -186,8 +187,6 @@ export const ExternalGradingOptionsJsonSchema = z
   })
   .strict()
   .describe('Options for externally graded questions.');
-
-export type ExternalGradingOptionsJson = z.infer<typeof ExternalGradingOptionsJsonSchema>;
 
 export const defaultExternalGradingOptions = ExternalGradingOptionsJsonSchema.extend({
   image: ExternalGradingOptionsJsonSchema.shape.image.optional(),

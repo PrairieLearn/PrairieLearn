@@ -32,9 +32,6 @@ export const LegacyGroupRoleJsonSchema = z
     'A custom role for use in group assessments that allows control over certain permissions.',
   );
 
-export type LegacyGroupRoleJson = z.infer<typeof LegacyGroupRoleJsonSchema>;
-export type LegacyGroupRoleJsonInput = z.input<typeof LegacyGroupRoleJsonSchema>;
-
 export const GroupsRoleJsonSchema = z
   .object({
     name: z.string().describe("The group role's name (e.g., Manager, Recorder)."),
@@ -52,7 +49,7 @@ export const GroupsRoleJsonSchema = z
 
 export type GroupsRoleJson = z.infer<typeof GroupsRoleJsonSchema>;
 
-export const GroupsStudentPermissionsJsonSchema = z
+const GroupsStudentPermissionsJsonSchema = z
   .object({
     canCreateGroup: z
       .boolean()
@@ -77,9 +74,7 @@ export const GroupsStudentPermissionsJsonSchema = z
   })
   .describe('Student permissions for group management.');
 
-export type GroupsStudentPermissionsJson = z.infer<typeof GroupsStudentPermissionsJsonSchema>;
-
-export const GroupsRolePermissionsJsonSchema = z
+const GroupsRolePermissionsJsonSchema = z
   .object({
     canAssignRoles: uniqueArray(z.string())
       .describe('Role names that can assign other users to roles.')
@@ -95,8 +90,6 @@ export const GroupsRolePermissionsJsonSchema = z
       .default([]),
   })
   .describe('Role-based permissions for group assessments.');
-
-export type GroupsRolePermissionsJson = z.infer<typeof GroupsRolePermissionsJsonSchema>;
 
 export const GroupsJsonSchema = z
   .object({
@@ -181,8 +174,6 @@ export const AssessmentAccessRuleJsonSchema = z
     'An access rule that permits people to access this assessment. All restrictions in the rule must be satisfied for the rule to allow access.',
   );
 
-export type AssessmentAccessRuleJson = z.infer<typeof AssessmentAccessRuleJsonSchema>;
-
 export const PointsSingleJsonSchema = z
   .number()
   .gte(0)
@@ -225,7 +216,6 @@ const QuestionPointsJsonSchema = z.object({
 });
 
 export type QuestionPointsJson = z.infer<typeof QuestionPointsJsonSchema>;
-export type QuestionPointsJsonInput = z.input<typeof QuestionPointsJsonSchema>;
 
 export const QuestionAlternativeJsonSchema = QuestionPointsJsonSchema.extend({
   comment: CommentJsonSchema.optional(),
@@ -318,7 +308,6 @@ export const ZoneQuestionBlockJsonSchema = QuestionPointsJsonSchema.extend({
 });
 
 export type ZoneQuestionBlockJson = z.infer<typeof ZoneQuestionBlockJsonSchema>;
-export type ZoneQuestionBlockJsonInput = z.input<typeof ZoneQuestionBlockJsonSchema>;
 
 export const ZoneAssessmentJsonSchema = z.object({
   title: z

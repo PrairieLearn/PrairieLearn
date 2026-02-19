@@ -15,7 +15,7 @@ columns
     json_max_points: double precision
     json_points: jsonb
     json_tries_per_variant: integer
-    number: integer
+    number: integer not null
     number_choose: integer
     zone_id: bigint not null
 
