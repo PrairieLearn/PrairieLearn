@@ -6,11 +6,7 @@ import * as sqldb from '@prairielearn/postgres';
 import { Hydrate } from '@prairielearn/react/server';
 
 import { PageLayout } from '../../components/PageLayout.js';
-import {
-  AI_GRADING_PROVIDER_DISPLAY_NAMES,
-  type AiGradingProvider,
-} from '../../ee/lib/ai-grading/ai-grading-models.shared.js';
-import type { AiGradingApiKeyCredential } from './instructorInstanceAdminAiGrading.html.js';
+import type { AiGradingProvider } from '../../ee/lib/ai-grading/ai-grading-models.shared.js';
 import { extractPageContext } from '../../lib/client/page-context.js';
 import { config } from '../../lib/config.js';
 import {
@@ -23,7 +19,7 @@ import { typedAsyncHandler } from '../../lib/res-locals.js';
 import { decryptFromStorage, encryptForStorage } from '../../lib/storage-crypt.js';
 import { createAuthzMiddleware } from '../../middlewares/authzHelper.js';
 
-import { InstructorInstanceAdminAiGrading } from './instructorInstanceAdminAiGrading.html.js';
+import { type AiGradingApiKeyCredential, InstructorInstanceAdminAiGrading } from './instructorInstanceAdminAiGrading.html.js';
 
 const router = Router();
 const sql = sqldb.loadSqlEquiv(import.meta.url);
@@ -42,8 +38,7 @@ function formatCredential(cred: {
   const decrypted = decryptFromStorage(cred.encrypted_secret_key);
   return {
     id: cred.id,
-    provider: AI_GRADING_PROVIDER_DISPLAY_NAMES[cred.provider as AiGradingProvider],
-    providerValue: cred.provider,
+    provider: cred.provider as AiGradingProvider,
     apiKeyMasked: maskApiKey(decrypted),
     dateAdded: cred.created_at.toLocaleDateString('en-US', {
       month: 'short',
