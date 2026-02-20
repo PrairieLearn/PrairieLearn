@@ -139,9 +139,7 @@ const ExternalGradingOptionsJsonSchema = z
     comment: CommentJsonSchema.optional(),
     enabled: z
       .boolean()
-      .describe(
-        'Whether the external grader is currently enabled. Useful if it is breaking, for example.',
-      )
+      .describe('[DEPRECATED, DO NOT USE] Whether the external grader is currently enabled.')
       .optional()
       .default(false),
     image: z
