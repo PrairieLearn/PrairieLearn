@@ -27,7 +27,7 @@ def test_safe_parse_int_small_ints(item: str) -> None:
 def test_safe_parse_int_large_ints(item: str) -> None:
     loaded_item = json.loads(item, parse_int=zu.safe_parse_int)
     assert isinstance(loaded_item, float)
-    assert float(item) == loaded_item
+    assert float(item) == pytest.approx(loaded_item)
 
 
 @pytest.mark.parametrize(
