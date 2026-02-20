@@ -4,7 +4,6 @@ import {
   PublicSharingSetSchema,
   PublicTagSchema,
   PublicTopicSchema,
-  RawPublicCourseInstanceSchema,
 } from '../lib/client/safe-db-types.js';
 import { QuestionsPageDataSchema } from '../models/questions.types.js';
 
@@ -22,13 +21,3 @@ export const SafeQuestionsPageDataSchema = QuestionsPageDataSchema.omit({
 });
 
 export type SafeQuestionsPageData = z.infer<typeof SafeQuestionsPageDataSchema>;
-
-export const CourseInstanceSchema = RawPublicCourseInstanceSchema.pick({
-  id: true,
-  short_name: true,
-}).extend({
-  // Override short_name to be non-nullable since we only show course instances with names
-  short_name: z.string(),
-});
-
-export type CourseInstance = z.infer<typeof CourseInstanceSchema>;

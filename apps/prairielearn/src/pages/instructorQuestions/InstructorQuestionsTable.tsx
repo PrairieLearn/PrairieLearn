@@ -3,11 +3,8 @@ import { useState } from 'react';
 
 import { NuqsAdapter } from '@prairielearn/ui';
 
-import {
-  type CourseInstance,
-  QuestionsTable,
-  type SafeQuestionsPageData,
-} from '../../components/QuestionsTable.js';
+import { QuestionsTable, type SafeQuestionsPageData } from '../../components/QuestionsTable.js';
+import type { PublicCourseInstance } from '../../lib/client/safe-db-types.js';
 import { QueryClientProviderDebug } from '../../lib/client/tanstackQuery.js';
 
 import { createInstructorQuestionsTrpcClient } from './trpc-client.js';
@@ -15,7 +12,7 @@ import { TRPCProvider, useTRPC } from './trpc-context.js';
 
 export interface InstructorQuestionsTableProps {
   questions: SafeQuestionsPageData[];
-  courseInstances: CourseInstance[];
+  courseInstances: PublicCourseInstance[];
   currentCourseInstanceId?: string;
   showAddQuestionButton: boolean;
   showAiGenerateQuestionButton: boolean;

@@ -5362,6 +5362,7 @@ __metadata:
     "@prairielearn/browser-utils": "workspace:^"
     "@prairielearn/run": "workspace:^"
     "@prairielearn/tsconfig": "workspace:^"
+    "@tanstack/match-sorter-utils": "npm:^8.19.4"
     "@tanstack/react-table": "npm:^8.21.3"
     "@tanstack/react-virtual": "npm:^3.13.18"
     "@tanstack/table-core": "npm:^8.21.3"

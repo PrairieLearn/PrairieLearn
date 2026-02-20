@@ -3,6 +3,7 @@ import * as url from 'node:url';
 import * as trpcExpress from '@trpc/server/adapters/express';
 import { Router } from 'express';
 import fs from 'fs-extra';
+import z from 'zod';
 
 import * as error from '@prairielearn/error';
 import { Hydrate } from '@prairielearn/react/server';
@@ -11,6 +12,7 @@ import { InsufficientCoursePermissionsCardPage } from '../../components/Insuffic
 import { PageLayout } from '../../components/PageLayout.js';
 import { SafeQuestionsPageDataSchema } from '../../components/QuestionsTable.shared.js';
 import { extractPageContext } from '../../lib/client/page-context.js';
+import { PublicCourseInstanceSchema } from '../../lib/client/safe-db-types.js';
 import { config } from '../../lib/config.js';
 import { getCourseOwners } from '../../lib/course.js';
 import { features } from '../../lib/features/index.js';
@@ -84,10 +86,7 @@ router.get(
       isEnterprise() &&
       (await features.enabledFromLocals('ai-question-generation', res.locals));
 
-    const mappedCourseInstances = courseInstances.map((ci) => ({
-      id: ci.id,
-      short_name: ci.short_name ?? '',
-    }));
+    const mappedCourseInstances = z.array(PublicCourseInstanceSchema).parse(courseInstances);
 
     res.send(
       PageLayout({
