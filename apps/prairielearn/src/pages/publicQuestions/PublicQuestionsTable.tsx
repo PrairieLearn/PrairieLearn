@@ -3,16 +3,22 @@ import { useState } from 'react';
 
 import { NuqsAdapter } from '@prairielearn/ui';
 
-import { QuestionsTable, type QuestionsTableProps } from '../../components/QuestionsTable.js';
+import {
+  type CourseInstance,
+  QuestionsTable,
+  type SafeQuestionsPageData,
+} from '../../components/QuestionsTable.js';
 import { QueryClientProviderDebug } from '../../lib/client/tanstackQuery.js';
 
 import { createPublicQuestionsTrpcClient } from './trpc-client.js';
 import { TRPCProvider, useTRPC } from './trpc-context.js';
 
-export interface PublicQuestionsTableProps extends Omit<
-  QuestionsTableProps,
-  'questionsQueryOptions'
-> {
+export interface PublicQuestionsTableProps {
+  questions: SafeQuestionsPageData[];
+  courseInstances: CourseInstance[];
+  showSharingSets: boolean;
+  urlPrefix: string;
+  qidPrefix?: string;
   search: string;
   isDevMode: boolean;
 }
@@ -22,7 +28,13 @@ type PublicQuestionsTableInnerProps = Omit<PublicQuestionsTableProps, 'search' |
 function PublicQuestionsTableInner(props: PublicQuestionsTableInnerProps) {
   const trpc = useTRPC();
 
-  return <QuestionsTable questionsQueryOptions={trpc.questions.queryOptions()} {...props} />;
+  return (
+    <QuestionsTable
+      {...props}
+      questionsQueryOptions={trpc.questions.queryOptions()}
+      showAiGenerateQuestionButton={false}
+    />
+  );
 }
 
 export function PublicQuestionsTable({

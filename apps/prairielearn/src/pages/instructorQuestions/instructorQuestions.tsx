@@ -5,7 +5,6 @@ import { Router } from 'express';
 import fs from 'fs-extra';
 
 import * as error from '@prairielearn/error';
-import { renderHtml } from '@prairielearn/react';
 import { Hydrate } from '@prairielearn/react/server';
 
 import { InsufficientCoursePermissionsCardPage } from '../../components/InsufficientCoursePermissionsCard.js';
@@ -103,7 +102,7 @@ router.get(
           fullWidth: true,
           fullHeight: true,
         },
-        content: renderHtml(
+        content: (
           <Hydrate fullHeight>
             <InstructorQuestionsTable
               questions={questions}
@@ -116,7 +115,7 @@ router.get(
               search={search}
               isDevMode={config.devMode}
             />
-          </Hydrate>,
+          </Hydrate>
         ),
       }),
     );

@@ -45,8 +45,6 @@ router.get(
             <PublicQuestionsTable
               questions={questions}
               courseInstances={[]}
-              showAddQuestionButton={false}
-              showAiGenerateQuestionButton={false}
               showSharingSets={false}
               urlPrefix={res.locals.urlPrefix}
               qidPrefix={qidPrefix}

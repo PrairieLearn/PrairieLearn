@@ -111,16 +111,14 @@ export interface QuestionsTableProps {
   questions: SafeQuestionsPageData[];
   courseInstances: CourseInstance[];
   currentCourseInstanceId?: string;
-  showAddQuestionButton: boolean;
+  /** URL for the "Add question" page. If provided, an "Add question" button is shown. */
+  addQuestionUrl?: string;
   showAiGenerateQuestionButton: boolean;
   showSharingSets: boolean;
   urlPrefix: string;
   qidPrefix?: string;
-  /** URL for the "Add question" page. Required when showAddQuestionButton is true. */
-  addQuestionUrl?: string;
   questionsQueryOptions: {
     queryKey: readonly unknown[];
-
     queryFn?: (...args: any[]) => SafeQuestionsPageData[] | Promise<SafeQuestionsPageData[]>;
   };
 }
@@ -129,12 +127,11 @@ export function QuestionsTable({
   questions: initialQuestions,
   courseInstances,
   currentCourseInstanceId,
-  showAddQuestionButton,
+  addQuestionUrl,
   showAiGenerateQuestionButton,
   showSharingSets,
   urlPrefix,
   qidPrefix,
-  addQuestionUrl,
   questionsQueryOptions,
 }: QuestionsTableProps) {
   const [globalFilter, setGlobalFilter] = useQueryState('search', parseAsString.withDefault(''));
@@ -652,8 +649,9 @@ export function QuestionsTable({
       } else if (id === 'workspace_image') {
         visibility[id] = false;
       } else if (id.startsWith('ci_')) {
-        // Show assessment columns for current course instance
-        const ciId = id.split('_')[1];
+        // Show assessment columns for current course instance.
+        // Column IDs have the format `ci_${id}_assessments`.
+        const ciId = id.replace(/^ci_/, '').replace(/_assessments$/, '');
         visibility[id] = currentCourseInstanceId === ciId;
       } else {
         visibility[id] = true;
@@ -820,7 +818,7 @@ export function QuestionsTable({
           mapRowToData: (row: SafeQuestionsPageData): TanstackTableCsvCell[] => [
             { name: 'QID', value: row.qid },
             { name: 'Title', value: row.title },
-            { name: 'Topic', value: row.topic?.name ?? null },
+            { name: 'Topic', value: row.topic.name },
             { name: 'Tags', value: row.tags?.map((t) => t.name).join(', ') ?? null },
             { name: 'Type', value: row.display_type },
             { name: 'Grading method', value: row.grading_method },
@@ -832,7 +830,7 @@ export function QuestionsTable({
           ],
         }}
         headerButtons={
-          showAddQuestionButton ? (
+          addQuestionUrl ? (
             <>
               <Button variant="light" size="sm" as="a" href={addQuestionUrl}>
                 <i className="fa fa-plus me-2" aria-hidden="true" />
@@ -873,7 +871,7 @@ export function QuestionsTable({
                     .
                   </p>
                 </div>
-                {showAddQuestionButton && (
+                {addQuestionUrl && (
                   <div className="d-flex gap-2">
                     <Button variant="primary" as="a" href={addQuestionUrl}>
                       <i className="fa fa-plus me-2" aria-hidden="true" />

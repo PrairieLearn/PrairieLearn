@@ -48,13 +48,14 @@ function InstructorQuestionsTableInner({
       questions={questions}
       courseInstances={courseInstances}
       currentCourseInstanceId={currentCourseInstanceId}
-      showAddQuestionButton={showAddQuestionButton}
       showAiGenerateQuestionButton={showAiGenerateQuestionButton}
       showSharingSets={showSharingSets}
       urlPrefix={urlPrefix}
       qidPrefix={qidPrefix}
       questionsQueryOptions={trpc.questions.queryOptions()}
-      addQuestionUrl={`${urlPrefix}/course_admin/questions/create`}
+      addQuestionUrl={
+        showAddQuestionButton ? `${urlPrefix}/course_admin/questions/create` : undefined
+      }
     />
   );
 }

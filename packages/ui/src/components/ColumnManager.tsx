@@ -93,7 +93,7 @@ function ColumnGroupItem<RowDataModel>({
     if (checkboxRef.current) {
       checkboxRef.current.indeterminate = isSomeVisible;
     }
-  });
+  }, [isSomeVisible]);
 
   const handleToggleVisibility = () => {
     const targetVisibility = !isAllVisible;
