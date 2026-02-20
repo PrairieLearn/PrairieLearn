@@ -3,7 +3,7 @@ import { z } from 'zod';
 import { EncodedData } from '@prairielearn/browser-utils';
 import { html, unsafeHtml } from '@prairielearn/html';
 import { run } from '@prairielearn/run';
-import { DateFromISOString, IdSchema } from '@prairielearn/zod';
+import { IdSchema } from '@prairielearn/zod';
 
 import {
   RegenerateInstanceAlert,
@@ -44,6 +44,7 @@ export const InstanceQuestionRowSchema = InstanceQuestionSchema.extend({
   max_manual_points: z.number().nullable(),
   max_auto_points: z.number().nullable(),
   init_points: z.number().nullable(),
+  grade_rate_minutes: AssessmentQuestionSchema.shape.grade_rate_minutes,
   allow_real_time_grading: AssessmentQuestionSchema.shape.allow_real_time_grading,
   row_order: z.number(),
   question_number: z.string(),
@@ -57,9 +58,7 @@ export const InstanceQuestionRowSchema = InstanceQuestionSchema.extend({
   prev_advance_score_perc: z.number().nullable(),
   prev_title: z.string().nullable(),
   prev_sequence_locked: z.boolean().nullable(),
-  allow_grade_left_ms: z.coerce.number(),
-  allow_grade_date: DateFromISOString.nullable(),
-  allow_grade_interval: z.string(),
+  allowGradeLeftMs: z.number().default(0), // Computed after the query if needed, defaults to zero if grade_rate_minutes is null
   previous_variants: z.array(SimpleVariantWithScoreSchema).optional(),
   group_role_permissions: z
     .object({
@@ -115,7 +114,7 @@ export function StudentAssessmentInstance({
 
   instance_question_rows.forEach((question) => {
     if (question.status === 'saved') {
-      if (question.allow_grade_left_ms > 0) {
+      if (question.allowGradeLeftMs > 0) {
         suspendedSavedAnswers++;
       } else if (
         (question.max_auto_points || !question.max_manual_points) &&
@@ -395,6 +394,7 @@ export function StudentAssessmentInstance({
                                 realTimeGradingPartiallyDisabled:
                                   someQuestionsAllowRealTimeGrading &&
                                   someQuestionsForbidRealTimeGrading,
+                                allowGradeLeftMs: instance_question_row.allowGradeLeftMs,
                               })}
                             </td>
                             ${resLocals.has_auto_grading_question &&
