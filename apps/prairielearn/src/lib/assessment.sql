@@ -500,8 +500,8 @@ FROM
   JOIN assessment_instances AS ai ON (ai.id = $assessment_instance_id)
 WHERE
   z.id = $zone_id
-  AND ai.open = true
-  AND z.lockpoint = true
+  AND ai.open = TRUE
+  AND z.lockpoint = TRUE
   AND z.assessment_id = ai.assessment_id
   -- All earlier lockpoints must already be crossed (sequential enforcement).
   AND NOT EXISTS (
@@ -515,7 +515,7 @@ WHERE
       )
     WHERE
       z2.assessment_id = z.assessment_id
-      AND z2.lockpoint = true
+      AND z2.lockpoint = TRUE
       AND z2.number < z.number
       AND aicl.id IS NULL
   )

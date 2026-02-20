@@ -233,14 +233,14 @@ export function StudentAssessmentInstance({
           title: 'Proceed to next section?',
           body: html`
             <p>
-              Questions in previous sections will become read-only. You can review your previous submissions but
-              cannot make new ones.
+              Questions in previous sections will become read-only. You can review your previous
+              submissions but cannot make new ones.
             </p>
             ${groupConfig != null
               ? html`
                   <p class="fw-bold">
-                    This will affect all group members. Questions in previous sections will become read-only for
-                    everyone in your group.
+                    This will affect all group members. Questions in previous sections will become
+                    read-only for everyone in your group.
                   </p>
                 `
               : ''}
