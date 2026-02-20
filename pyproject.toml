@@ -226,7 +226,6 @@ convention = "google"
 "testCourse/**/*.py" = ["ANN", "D100", "D103", "DOC"]
 "exampleCourse/**/*.py" = ["ANN", "D", "DOC"]
 "apps/prairielearn/elements/pl-drawing/**/*.py" = ["ANN"]
-"apps/prairielearn/elements/pl-threejs/**/*.py" = ["ANN"]
 "apps/prairielearn/elements/pl-prairiedraw-figure/**/*.py" = ["ANN"]
 "apps/prairielearn/elements/pl-checkbox/**/*.py" = ["ANN"]
 "apps/prairielearn/python/test/**/*.py" = ["ANN", "D"]
@@ -258,7 +257,6 @@ include = [
 ignore = [
   "./apps/prairielearn/elements/pl-drawing",            # requires refactor
   "./apps/prairielearn/elements/pl-prairiedraw-figure", # deprecated
-  "./apps/prairielearn/elements/pl-threejs",            # deprecated
   "./exampleCourse/questions/**/tests",                 # autograder tests, use different dependencies
 ]
 extraPaths = ["./apps/prairielearn/python"]

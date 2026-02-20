@@ -59,8 +59,6 @@ When writing questions, there exists a core pool of elements that provides commo
   - **Deprecated**: use [`pl-multiple-choice`](pl-multiple-choice.md) with `display="dropdown"` for individual elements, or [`pl-matching`](pl-matching.md) for multiple dropdowns with the same set of options.
 - [`pl-prairiedraw-figure`](pl-prairiedraw-figure.md): Show a PrairieDraw figure.
   - **Deprecated**: use [`pl-drawing`](../pl-drawing/index.md) instead.
-- [`pl-threejs`](pl-threejs.md): Enables 3D scene display and problem submission.
-  - **Deprecated**: the features of required libraries are no longer maintained.
 - [`pl-variable-score`](pl-variable-score.md): Displays a partial score for a submitted element.
   - **Deprecated** as submission elements in `v3` all have score display options.
 
@@ -107,7 +105,6 @@ When writing questions, there exists a core pool of elements that provides commo
     'pl-submission-panel-element': 'pl-submission-panel/',
     'pl-symbolic-input-element': 'pl-symbolic-input/',
     'pl-template-element': 'pl-template/',
-    'pl-threejs-element': 'pl-threejs/',
     'pl-units-input-element': 'pl-units-input/',
     'pl-variable-output-element': 'pl-variable-output/',
     'pl-variable-score-element': 'pl-variable-score/',
