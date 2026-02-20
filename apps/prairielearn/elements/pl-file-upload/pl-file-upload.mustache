@@ -1,55 +1,57 @@
 <script>
-$(() => {
-  new window.PLFileUpload("{{uuid}}", {
-    requiredFiles: {{&file_names}},
-    requiredFilesRegex: {{&file_regex}},
-    optionalFiles: {{&optional_file_names}},
-    optionalFilesRegex: {{&optional_file_regex}},
-    submittedFileNames: {{&submitted_file_names}},
-    checkIconColor: "{{check_icon_color}}",
-  });
-});
+    $(() => {
+      new window.PLFileUpload("{{uuid}}", {
+        requiredFiles: {{&file_names}},
+        requiredFilesRegex: {{&file_regex}},
+        optionalFiles: {{&optional_file_names}},
+        optionalFilesRegex: {{&optional_file_regex}},
+        submittedFileNames: {{&submitted_file_names}},
+        checkIconColor: "{{check_icon_color}}",
+      });
+    });
 </script>
 
-<div id="file-upload-{{uuid}}" {{#submission_files_url}}data-submission-files-url="{{submission_files_url}}"{{/submission_files_url}}>
-  <input type="hidden" name="{{name}}" data-skip-unload-check="true">
-  {{#editable}}
-  <div class="upload-dropzone d-flex align-items-center justify-content-center p-3 mb-3 rounded">
-    <div class="text-center dz-message">
-      Drop files here or click to upload.
-      <br/>
-      <small>Only the files listed below will be accepted&mdash;others will be ignored.</small>
-      <br/>
-      <small>The combined size limit of all uploaded files is 5MB.</small>
-    </div>
-  </div>
-  {{/editable}}
-  <div class="messages">
-{{#parse_error}}
-    <span class="small" style="white-space: nowrap">
-        <span class="badge text-bg-danger">
-            Invalid <i class="fas fa-exclamation-triangle" aria-hidden="true"></i>
-        </span>
-        <a
-            class="link-primary"
-            tabindex="0"
-            role="button"
-            data-bs-placement="auto"
-            data-bs-toggle="popover"
-            data-bs-html="true"
-            title="File error"
-            data-bs-content="{{.}}"
+<div
+    id="file-upload-{{uuid}}"
+    {{#submission_files_url}}data-submission-files-url="{{submission_files_url}}"{{/submission_files_url}}
+>
+    <input type="hidden" name="{{name}}" data-skip-unload-check="true">
+    {{#editable}}
+        <div
+            class="upload-dropzone d-flex align-items-center justify-content-center p-3 mb-3 rounded"
         >
-           More info…
-        </a>
-    </span>
-{{/parse_error}}
-  </div>
-  <div class="file-upload-status mt-3">
-    <div class="card mb-4">
-      <div class="card-header">Files</div>
-      <ul class="list-group list-group-flush">
-      </ul>
+            <div class="text-center dz-message">
+                Drop files here or click to upload. <br />
+                <small>Only the files listed below will be accepted&mdash;others will be ignored.</small>
+                <br />
+                <small>The combined size limit of all uploaded files is 5MB.</small>
+            </div>
+        </div>
+    {{/editable}}
+    <div class="messages">
+        {{#parse_error}}
+            <span class="small" style="white-space: nowrap">
+                <span class="badge text-bg-danger">
+                    Invalid <i class="fas fa-exclamation-triangle" aria-hidden="true"></i>
+                </span>
+                <a
+                    class="link-primary"
+                    tabindex="0"
+                    role="button"
+                    data-bs-placement="auto"
+                    data-bs-toggle="popover"
+                    data-bs-html="true"
+                    title="File error"
+                    data-bs-content="{{.}}"
+                > More info…</a>
+            </span>
+        {{/parse_error}}
     </div>
-  </div>
+    <div class="file-upload-status mt-3">
+        <div class="card mb-4">
+            <div class="card-header">Files</div>
+            <ul class="list-group list-group-flush">
+            </ul>
+        </div>
+    </div>
 </div>
