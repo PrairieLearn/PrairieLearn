@@ -143,7 +143,7 @@ const ExternalGradingOptionsJsonSchema = z
         '[DEPRECATED, DO NOT USE] Whether the external grader is currently enabled. Useful if it is breaking, for example.',
       )
       .optional()
-      .default(false),
+      .default(true),
     image: z
       .string()
       .describe(
