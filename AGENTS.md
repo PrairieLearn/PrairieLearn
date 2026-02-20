@@ -189,13 +189,10 @@ When changing element properties or options, you MUST update the corresponding d
 
 ## Meta-management
 
-When you get corrected or discover a codebase convention through trial and error,
-consider whether adding a rule to this file would prevent the same mistake in future
-sessions. Only propose an addition if:
+When you get corrected or discover a codebase convention through trial and error, consider whether adding a rule to this file would prevent the same mistake in future sessions. Only propose an addition if:
 
 - The mistake stems from something non-obvious about this codebase (not general best practices).
 - It's likely to recur — another agent reading the current instructions would plausibly make the same error.
 - It can be stated as a direct rule ("Use X", "Don't do Y"), not a narrative about what happened.
 
-When proposing, suggest the specific text and which section it belongs in. Don't add
-it without user approval.
+When proposing, suggest the specific text and which section it belongs in. Don't add it without user approval.
