@@ -1,83 +1,68 @@
 {{#question}}
-{{#inline}}<span class="d-inline-block ms-2">{{/inline}}
-    <span class="input-group pl-integer-input">
-        {{#label}}
+{{#inline}}
+<span class="d-inline-block ms-2">
+{{/inline}}
+<span class="input-group pl-integer-input">
+    {{#label}}
         <span class="input-group-text" id="pl-integer-input-{{uuid}}-label">{{{label}}}</span>
-        {{/label}}
-        <input
-            name="{{name}}"
-            type="text"
-            inputmode="{{#use_numeric}}numeric{{/use_numeric}}{{^use_numeric}}text{{/use_numeric}}"
-            autocomplete="off"
-            autocorrect="off"
-            class="form-control pl-integer-input-input {{#parse_error}}has-validation is-invalid{{/parse_error}}"
-            {{#parse_error}}aria-invalid="true"{{/parse_error}}
-            size="{{size}}"
-            {{^editable}}disabled{{/editable}}
-            {{#raw_submitted_answer}}value="{{raw_submitted_answer}}"{{/raw_submitted_answer}}
-            placeholder="{{placeholder}}"
-            {{#suffix}}aria-describedby="pl-integer-input-{{uuid}}-suffix"{{/suffix}}
-            {{#aria_label}}aria-label="{{aria_label}}"{{/aria_label}}
-            {{^aria_label}}{{#label}}aria-labelledby="pl-integer-input-{{uuid}}-label"{{/label}}{{/aria_label}}
-        />
-        {{#suffix}}
+    {{/label}}
+    <input
+        name="{{name}}"
+        type="text"
+        inputmode="{{#use_numeric}}numeric{{/use_numeric}}{{^use_numeric}}text{{/use_numeric}}"
+        autocomplete="off"
+        autocorrect="off"
+        class="form-control pl-integer-input-input {{#parse_error}}has-validation is-invalid{{/parse_error}}"
+        {{#parse_error}}aria-invalid="true"{{/parse_error}}
+        size="{{size}}"
+        {{^editable}}disabled{{/editable}}
+        {{#raw_submitted_answer}}value="{{raw_submitted_answer}}"{{/raw_submitted_answer}}
+        placeholder="{{placeholder}}"
+        {{#suffix}}aria-describedby="pl-integer-input-{{uuid}}-suffix"{{/suffix}}
+        {{#aria_label}}aria-label="{{aria_label}}"{{/aria_label}}
+        {{^aria_label}}{{#label}}aria-labelledby="pl-integer-input-{{uuid}}-label"{{/label}}{{/aria_label}}
+    />
+    {{#suffix}}
         <span class="input-group-text" id="pl-integer-input-{{uuid}}-suffix">{{suffix}}</span>
-        {{/suffix}}
+    {{/suffix}}
 
-        {{#show_info}}
-        <button type="button" class="btn btn-light border d-flex align-items-center" data-bs-toggle="popover" data-bs-html="true" title="Integer" data-bs-content="{{info}}" data-bs-placement="auto">
+    {{#show_info}}
+        <button
+            type="button"
+            class="btn btn-light border d-flex align-items-center"
+            data-bs-toggle="popover"
+            data-bs-html="true"
+            title="Integer"
+            data-bs-content="{{info}}"
+            data-bs-placement="auto"
+        >
             <i class="fas fa-question-circle" aria-hidden="true"></i>
         </button>
-        {{/show_info}}
-        {{#correct}}
-            <span class="input-group-text">
-                <span class="badge text-bg-success"><i class="fas fa-check" aria-hidden="true"></i> 100%</span>
+    {{/show_info}}
+    {{#correct}}
+        <span class="input-group-text">
+            <span class="badge text-bg-success">
+                <i class="fas fa-check" aria-hidden="true"></i> 100%
             </span>
-        {{/correct}}
-        {{#partial}}
-            <span class="input-group-text">
-                <span class="badge text-bg-warning"><i class="far fa-circle" aria-hidden="true"></i> {{partial}}%</span>
-            </span>
-        {{/partial}}
-        {{#incorrect}}
-            <span class="input-group-text">
-                <span class="badge text-bg-danger"><i class="fas fa-times" aria-hidden="true"></i> 0%</span>
-            </span>
-        {{/incorrect}}
-    </span>
-    {{#parse_error}}
-        <span class="invalid-feedback d-block">
-            <span class="badge text-bg-danger">
-                Invalid 
-                <i class="fas fa-exclamation-triangle" aria-hidden="true"></i>
-            </span>
-            <a 
-                class="link-primary"
-                tabindex="0"
-                role="button"
-                data-bs-placement="auto" 
-                data-bs-toggle="popover"
-                data-bs-html="true"
-                title="Format error"
-                data-bs-content="{{parse_error}}"
-            >
-                More info…
-            </a>
         </span>
-    {{/parse_error}}
-{{#inline}}</span>{{/inline}}
-{{/question}}
-
-
-{{#submission}}
-{{#inline}}<span class="d-inline-block">{{/inline}}
-{{#error}}
-<span>
-
+    {{/correct}}
+    {{#partial}}
+        <span class="input-group-text">
+            <span class="badge text-bg-warning">
+                <i class="far fa-circle" aria-hidden="true"></i> {{partial}}%
+            </span>
+        </span>
+    {{/partial}}
+    {{#incorrect}}
+        <span class="input-group-text">
+            <span class="badge text-bg-danger">
+                <i class="fas fa-times" aria-hidden="true"></i> 0%
+            </span>
+        </span>
+    {{/incorrect}}
+</span>
 {{#parse_error}}
-    {{#label}}<span>{{{label}}}</span>{{/label}}
-    {{#raw_submitted_answer}}<code class="user-output-invalid">{{raw_submitted_answer}}</code>{{/raw_submitted_answer}}
-    <span class="small" style="white-space: nowrap">
+    <span class="invalid-feedback d-block">
         <span class="badge text-bg-danger">
             Invalid <i class="fas fa-exclamation-triangle" aria-hidden="true"></i>
         </span>
@@ -90,75 +75,130 @@
             data-bs-html="true"
             title="Format error"
             data-bs-content="{{parse_error}}"
-        >
-           More info…
-        </a>
+        > More info…</a>
     </span>
 {{/parse_error}}
-{{#missing_input}}
-    {{#label}}<span>{{{label}}}</span>{{/label}}
-    <span class="small" style="white-space: nowrap">
-        <span class="badge text-bg-dark border">
-            Missing input 
-            <i class="fas fa-exclamation-triangle" aria-hidden="true"></i>
-        </span>
-        <a 
-            class="link-primary"
-            tabindex="0"
-            role="button"
-            data-bs-placement="auto"
-            data-bs-toggle="popover"
-            data-bs-html="true"
-            title="Missing input"
-            data-bs-content="There is no submitted value for this field.  This may have happened because the question was changed by course staff after the answer was submitted."
-        >
-           More info…
-        </a>
+{{#inline}}</span>{{/inline}}
+{{/question}}
+
+{{#submission}}
+{{#inline}}
+<span class="d-inline-block">
+{{/inline}}
+{{#error}}
+    <span>
+        {{#parse_error}}
+            {{#label}}<span>{{{label}}}</span>{{/label}}
+            {{#raw_submitted_answer}}
+                <code class="user-output-invalid">{{raw_submitted_answer}}</code>
+            {{/raw_submitted_answer}}
+            <span class="small" style="white-space: nowrap">
+                <span class="badge text-bg-danger">
+                    Invalid <i class="fas fa-exclamation-triangle" aria-hidden="true"></i>
+                </span>
+                <a
+                    class="link-primary"
+                    tabindex="0"
+                    role="button"
+                    data-bs-placement="auto"
+                    data-bs-toggle="popover"
+                    data-bs-html="true"
+                    title="Format error"
+                    data-bs-content="{{parse_error}}"
+                > More info…</a>
+            </span>
+        {{/parse_error}}
+        {{#missing_input}}
+            {{#label}}<span>{{{label}}}</span>{{/label}}
+            <span class="small" style="white-space: nowrap">
+                <span class="badge text-bg-dark border">
+                    Missing input <i class="fas fa-exclamation-triangle" aria-hidden="true"></i>
+                </span>
+                <a
+                    class="link-primary"
+                    tabindex="0"
+                    role="button"
+                    data-bs-placement="auto"
+                    data-bs-toggle="popover"
+                    data-bs-html="true"
+                    title="Missing input"
+                    data-bs-content="There is no submitted value for this field.  This may have happened because the question was changed by course staff after the answer was submitted."
+                > More info…</a>
+            </span>
+        {{/missing_input}}
     </span>
-{{/missing_input}}
-
-</span>
-
 {{/error}}
 {{^error}}
-{{#label}}<span>{{{label}}}</span>{{/label}}
-<samp>{{a_sub}}</samp>
-{{#suffix}}<span>{{suffix}}</span>{{/suffix}}
-{{#correct}}<span class="badge text-bg-success"><i class="fas fa-check" aria-hidden="true"></i> 100%</span>{{/correct}}
-{{#partial}}<span class="badge text-bg-warning"><i class="far fa-circle" aria-hidden="true"></i> {{partial}}%</span>{{/partial}}
-{{#incorrect}}<span class="badge text-bg-danger"><i class="fas fa-times" aria-hidden="true"></i> 0%</span>{{/incorrect}}
+    {{#label}}<span>{{{label}}}</span>{{/label}}
+    <samp>{{a_sub}}</samp>
+    {{#suffix}}<span>{{suffix}}</span>{{/suffix}}
+    {{#correct}}
+        <span class="badge text-bg-success">
+            <i class="fas fa-check" aria-hidden="true"></i> 100%
+        </span>
+    {{/correct}}
+    {{#partial}}
+        <span class="badge text-bg-warning">
+            <i class="far fa-circle" aria-hidden="true"></i> {{partial}}%
+        </span>
+    {{/partial}}
+    {{#incorrect}}
+        <span class="badge text-bg-danger">
+            <i class="fas fa-times" aria-hidden="true"></i> 0%
+        </span>
+    {{/incorrect}}
 {{/error}}
 {{#inline}}</span>{{/inline}}
 {{/submission}}
 
 {{#answer}}
-{{#label}}<span>{{{label}}}</span>{{/label}}
-<samp>{{a_tru}}</samp>
-{{#suffix}}<span>{{suffix}}</span>{{/suffix}}
+    {{#label}}<span>{{{label}}}</span>{{/label}}
+    <samp>{{a_tru}}</samp>
+    {{#suffix}}<span>{{suffix}}</span>{{/suffix}}
 {{/answer}}
 
 {{#format}}
-<p>
-Your answer must be an integer{{^default_base}} in base {{base}}{{/default_base}}{{#zero_base}} in base 10. You may also use an integer in base 16 with the prefix <code>0x</code> (e.g., 0x1a), in base 2 with the prefix <code>0b</code> (e.g. 0b1101), or in base 8 with the prefix <code>0o</code> (e.g., 0o777){{/zero_base}}.
-It must not contain a decimal point, though it may contain underscores (which are ignored).
-No symbolic expressions (those that involve fractions, square roots, variables, etc.) will be accepted.
-Scientific notation is not accepted.
-</p>
+    <p>
+        Your answer must be an
+        integer{{^default_base}} in base {{base}}{{/default_base}}{{#zero_base}} in base 10. You may also use an integer in base 16 with the prefix <code>0x</code> (e.g., 0x1a), in base 2 with the prefix <code>0b</code> (e.g. 0b1101), or in base 8 with the prefix <code>0o</code> (e.g., 0o777){{/zero_base}}.
+        It must not contain a decimal point, though it may contain underscores (which are ignored).
+        No symbolic expressions (those that involve fractions, square roots, variables, etc.) will
+        be accepted. Scientific notation is not accepted.
+    </p>
 {{/format}}
 
 {{#format_error}}
-    <p> Invalid format:
-        {{#format_error_message}}
-            {{{ format_error_message }}}
+    <p>
+        Invalid format: {{#format_error_message}}
+        {{{format_error_message}}}
         {{/format_error_message}}
         {{^format_error_message}}
-            the submitted answer could not be interpreted as an integer{{^default_base}} in base {{base}}{{/default_base}}.  No symbolic input, fractions, or scientific notation are allowed.
+            the submitted answer could not be interpreted as an
+            integer{{^default_base}} in base {{base}}{{/default_base}}. No symbolic input,
+            fractions, or scientific notation are allowed.
         {{/format_error_message}}
     </p>
-    <p> Example <i>valid</i> inputs: <code class="me-2">1</code> <code class="me-2">-100</code>{{#zero_base}} <code class="me-2">0x1a</code> <code class="me-2">-0b0110</code>{{/zero_base}} </p>
-    <p> Example <i>invalid</i> inputs: <code class="me-2">6+9</code> <code class="me-2">3.7</code> <code class="me-2">3*pi</code> <code class="me-2">6e19</code>{{^zero_base}} <code class="me-2">0x1a</code> <code class="me-2">-0b0110</code>{{/zero_base}} </p>
+    <p>
+        Example <i>valid</i> inputs: <code class="me-2">1</code> <code class="me-2">-100</code>
+        {{#zero_base}}
+            <code class="me-2">0x1a</code>
+            <code class="me-2">-0b0110</code>
+        {{/zero_base}}
+    </p>
+    <p>
+        Example <i>invalid</i> inputs: <code class="me-2">6+9</code> <code class="me-2">3.7</code>
+        <code class="me-2">3*pi</code>
+        <code class="me-2">6e19</code>
+        {{^zero_base}}
+            <code class="me-2">0x1a</code>
+            <code class="me-2">-0b0110</code>
+        {{/zero_base}}
+    </p>
     <hr>
     <small>
-        <p> The submitted answer must be formatted as an integer{{^default_base}} in base {{base}}{{/default_base}}. </p>
+        <p>
+            The submitted answer must be formatted as an
+            integer{{^default_base}} in base {{base}}{{/default_base}}.
+        </p>
     </small>
 {{/format_error}}
