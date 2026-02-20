@@ -17,13 +17,19 @@
 
 ## Deviations from plan
 
-- Crossed-at timestamps shown in UI are formatted in SQL using course-instance timezone (`format_date_full_compact`), instead of formatting `Date` values in template code.
 - Integration testing coverage was implemented for core lockpoint lifecycle behavior in a dedicated test (`testLockpoints.test.ts`), but not every listed scenario from the draft plan was implemented in this pass.
 
 ## Notes
 
 - Cross-lockpoint requests are idempotent via `ON CONFLICT DO NOTHING` + follow-up existence check.
 - Non-submission actions (e.g., personal notes) remain unblocked for lockpoint read-only questions.
+- Crossed-at timestamps are formatted in TypeScript templates with `@prairielearn/formatter` using the course-instance timezone, and no lockpoint-specific DB date-formatting calls are used.
+
+## Easy, high-value test additions (implemented 2026-02-20)
+
+- Added `Finish` with uncrossed lockpoints coverage in `testLockpoints.test.ts` (`__action=finish` succeeds and closes the instance).
+- Added `advanceScorePerc` + lockpoint crossing coverage using `exam19-lockpoints-advance`.
+- Added homework parity smoke coverage using `hw14-lockpoints` with `blocked_lockpoint -> read_only_lockpoint` transition assertions.
 
 ## Architecture updates (2026-02-14)
 

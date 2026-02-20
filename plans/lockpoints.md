@@ -1139,7 +1139,6 @@ yarn test apps/prairielearn/src/tests/testLockpoints.test.ts
 
 ---
 
-## Implementation deviations (2026-02-14)
+## Implementation deviations (2026-02-14, updated 2026-02-20)
 
-- UI crossed-at display uses SQL-formatted timestamps (`format_date_full_compact` with course-instance timezone) rather than formatting JS `Date` objects in templates.
 - Test implementation currently focuses on core lockpoint lifecycle behavior in `testLockpoints.test.ts`, and does not yet cover every optional edge-case scenario listed in the Verification checklist.

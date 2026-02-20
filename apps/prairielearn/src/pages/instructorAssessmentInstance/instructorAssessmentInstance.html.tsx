@@ -1,6 +1,7 @@
 import { UAParser } from 'ua-parser-js';
 import { z } from 'zod';
 
+import { formatDate } from '@prairielearn/formatter';
 import { escapeHtml, html } from '@prairielearn/html';
 import { run } from '@prairielearn/run';
 import { IdSchema } from '@prairielearn/zod';
@@ -66,7 +67,6 @@ interface CrossedLockpoint {
   zone_title: string | null;
   lockpoint_crossed: boolean;
   crossed_at: Date | null;
-  crossed_at_formatted: string | null;
   authn_user_id: string | null;
   auth_user_uid: string | null;
 }
@@ -372,8 +372,12 @@ export function InstructorAssessmentInstance({
                                 ? html`
                                     Lockpoint crossed by
                                     ${crossedLockpoint.auth_user_uid ?? 'unknown user'}
-                                    ${crossedLockpoint.crossed_at_formatted
-                                      ? html`at ${crossedLockpoint.crossed_at_formatted}`
+                                    ${crossedLockpoint.crossed_at
+                                      ? html`at
+                                        ${formatDate(
+                                          crossedLockpoint.crossed_at,
+                                          resLocals.course_instance.display_timezone,
+                                        )}`
                                       : ''}
                                   `
                                 : html`Lockpoint not yet crossed`}

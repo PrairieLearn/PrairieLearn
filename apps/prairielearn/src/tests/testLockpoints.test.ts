@@ -1,4 +1,5 @@
 import { afterAll, assert, beforeAll, describe, test } from 'vitest';
+import { z } from 'zod';
 
 import * as sqldb from '@prairielearn/postgres';
 import { IdSchema } from '@prairielearn/zod';
@@ -11,25 +12,35 @@ import * as helperServer from './helperServer.js';
 
 const sql = sqldb.loadSqlEquiv(import.meta.url);
 
+interface QuestionState {
+  id: number;
+  question_access_mode:
+    | 'writable'
+    | 'blocked_sequence'
+    | 'blocked_lockpoint'
+    | 'read_only_lockpoint';
+  url: string;
+}
+
+const testUsers = [
+  { authUid: 'student1@example.com', authName: 'Student User 1', authUin: '00000001' },
+  { authUid: 'student2@example.com', authName: 'Student User 2', authUin: '00000002' },
+  { authUid: 'student3@example.com', authName: 'Student User 3', authUin: '00000003' },
+] as const;
+
 describe('Assessment lockpoints', { timeout: 60_000 }, function () {
   const context = { siteUrl: `http://localhost:${config.serverPort}` } as {
     siteUrl: string;
     baseUrl: string;
     courseInstanceBaseUrl: string;
     assessmentId: string;
+    lockpointAdvanceAssessmentId: string;
+    lockpointHomeworkAssessmentId: string;
     lockpointZoneIds: string[];
     assessmentUrl: string;
     assessmentInstanceId: string;
     assessmentInstanceUrl: string;
-    questionStates: {
-      id: number;
-      question_access_mode:
-        | 'writable'
-        | 'blocked_sequence'
-        | 'blocked_lockpoint'
-        | 'read_only_lockpoint';
-      url: string;
-    }[];
+    questionStates: QuestionState[];
     __csrf_token: string;
     __variant_id: string;
   };
@@ -39,6 +50,14 @@ describe('Assessment lockpoints', { timeout: 60_000 }, function () {
   beforeAll(async function () {
     await helperServer.before()();
     context.assessmentId = await sqldb.queryRow(sql.select_lockpoint_exam, IdSchema);
+    context.lockpointAdvanceAssessmentId = await sqldb.queryRow(
+      sql.select_lockpoint_advance_exam,
+      IdSchema,
+    );
+    context.lockpointHomeworkAssessmentId = await sqldb.queryRow(
+      sql.select_lockpoint_homework,
+      IdSchema,
+    );
     context.lockpointZoneIds = (
       await sqldb.queryRows(
         sql.select_lockpoint_zone_ids,
@@ -52,19 +71,89 @@ describe('Assessment lockpoints', { timeout: 60_000 }, function () {
 
   afterAll(helperServer.after);
 
-  async function refreshQuestionStates() {
+  async function selectQuestionStates(assessmentInstanceId: string): Promise<QuestionState[]> {
     const rows = await sqldb.callRows(
       'question_order',
-      [context.assessmentInstanceId],
+      [assessmentInstanceId],
       SprocQuestionOrderSchema,
     );
-    context.questionStates = rows
+    return rows
       .sort((a, b) => a.row_order - b.row_order)
       .map((row) => ({
         id: Number(row.instance_question_id),
         question_access_mode: row.question_access_mode,
         url: `${context.courseInstanceBaseUrl}/instance_question/${row.instance_question_id}/`,
       }));
+  }
+
+  async function refreshQuestionStates() {
+    context.questionStates = await selectQuestionStates(context.assessmentInstanceId);
+  }
+
+  async function createAssessmentInstance(assessmentId: string): Promise<{
+    assessmentUrl: string;
+    assessmentInstanceId: string;
+    assessmentInstanceUrl: string;
+  }> {
+    const assessmentUrl = `${context.courseInstanceBaseUrl}/assessment/${assessmentId}/`;
+    const assessmentCreateResponse = await helperClient.fetchCheerio(assessmentUrl);
+    assert.isTrue(assessmentCreateResponse.ok);
+    if (assessmentCreateResponse.url.includes('/assessment_instance/')) {
+      return {
+        assessmentUrl,
+        assessmentInstanceId: String(
+          helperClient.parseAssessmentInstanceId(assessmentCreateResponse.url),
+        ),
+        assessmentInstanceUrl: assessmentCreateResponse.url,
+      };
+    }
+
+    const csrfToken = helperClient.getCSRFToken(assessmentCreateResponse.$);
+    const newInstanceResponse = await helperClient.fetchCheerio(assessmentUrl, {
+      method: 'POST',
+      body: new URLSearchParams({
+        __action: 'new_instance',
+        __csrf_token: csrfToken,
+      }),
+    });
+    assert.isTrue(newInstanceResponse.ok);
+
+    return {
+      assessmentUrl,
+      assessmentInstanceId: String(helperClient.parseAssessmentInstanceId(newInstanceResponse.url)),
+      assessmentInstanceUrl: newInstanceResponse.url,
+    };
+  }
+
+  async function postCrossLockpointForInstance(assessmentInstanceUrl: string, zoneId: string) {
+    const assessmentInstanceResponse = await helperClient.fetchCheerio(assessmentInstanceUrl);
+    assert.isTrue(assessmentInstanceResponse.ok);
+    const csrfToken = helperClient.getCSRFToken(assessmentInstanceResponse.$);
+    return await helperClient.fetchCheerio(assessmentInstanceUrl, {
+      method: 'POST',
+      body: new URLSearchParams({
+        __action: 'cross_lockpoint',
+        __csrf_token: csrfToken,
+        zone_id: zoneId,
+      }),
+    });
+  }
+
+  async function gradeQuestionWithScore(questionUrl: string, score: number) {
+    const questionResponse = await helperClient.fetchCheerio(questionUrl);
+    assert.isTrue(questionResponse.ok);
+    const csrfToken = helperClient.getCSRFToken(questionResponse.$);
+    const variantId = questionResponse.$('.question-form input[name="__variant_id"]').attr('value');
+    if (variantId == null) throw new Error('Missing __variant_id');
+    return await helperClient.fetchCheerio(questionUrl, {
+      method: 'POST',
+      body: new URLSearchParams({
+        __action: 'grade',
+        __variant_id: variantId,
+        __csrf_token: csrfToken,
+        s: String(score),
+      }),
+    });
   }
 
   async function fetchAssessmentInstancePageWithLockpointModal() {
@@ -109,23 +198,11 @@ describe('Assessment lockpoints', { timeout: 60_000 }, function () {
   test.sequential(
     'creates an assessment instance and initializes lockpoint state',
     async function () {
-      const assessmentCreateResponse = await helperClient.fetchCheerio(context.assessmentUrl);
-      assert.isTrue(assessmentCreateResponse.ok);
-      helperClient.extractAndSaveCSRFToken(context, assessmentCreateResponse.$, 'form');
-
-      const response = await helperClient.fetchCheerio(context.assessmentUrl, {
-        method: 'POST',
-        body: new URLSearchParams({
-          __action: 'new_instance',
-          __csrf_token: context.__csrf_token,
-        }),
-      });
+      const created = await createAssessmentInstance(context.assessmentId);
+      context.assessmentInstanceUrl = created.assessmentInstanceUrl;
+      context.assessmentInstanceId = created.assessmentInstanceId;
+      const response = await helperClient.fetchCheerio(created.assessmentInstanceUrl);
       assert.isTrue(response.ok);
-
-      context.assessmentInstanceUrl = response.url;
-      const match = response.url.match(/assessment_instance\/(\d+)/);
-      if (match == null) throw new Error('Missing assessment_instance_id in redirect URL');
-      context.assessmentInstanceId = match[1];
 
       await refreshQuestionStates();
       assert.lengthOf(context.questionStates, 3);
@@ -236,6 +313,145 @@ describe('Assessment lockpoints', { timeout: 60_000 }, function () {
         context.questionStates.map((row) => row.question_access_mode),
         ['read_only_lockpoint', 'read_only_lockpoint', 'writable'],
       );
+    },
+  );
+
+  test.sequential('finish action is allowed with uncrossed lockpoints', async function () {
+    const previousUser = {
+      authUid: config.authUid,
+      authName: config.authName,
+      authUin: config.authUin,
+    };
+    helperClient.setUser(testUsers[0]);
+    try {
+      const created = await createAssessmentInstance(context.assessmentId);
+      const assessmentInstanceResponse = await helperClient.fetchCheerio(
+        created.assessmentInstanceUrl,
+      );
+      assert.isTrue(assessmentInstanceResponse.ok);
+      const csrfToken = helperClient.getCSRFToken(assessmentInstanceResponse.$);
+
+      const finishResponse = await helperClient.fetchCheerio(created.assessmentInstanceUrl, {
+        method: 'POST',
+        body: new URLSearchParams({
+          __action: 'finish',
+          __csrf_token: csrfToken,
+        }),
+      });
+      assert.isTrue(finishResponse.ok);
+
+      const isOpen = await sqldb.queryRow(
+        sql.select_assessment_instance_open,
+        { assessment_instance_id: created.assessmentInstanceId },
+        z.boolean(),
+      );
+      assert.isFalse(isOpen);
+    } finally {
+      helperClient.setUser(previousUser);
+    }
+  });
+
+  test.sequential(
+    'advanceScorePerc in prior zones blocks lockpoint crossing until satisfied',
+    async function () {
+      const previousUser = {
+        authUid: config.authUid,
+        authName: config.authName,
+        authUin: config.authUin,
+      };
+      helperClient.setUser(testUsers[1]);
+      try {
+        const advanceLockpointZoneIds = (
+          await sqldb.queryRows(
+            sql.select_lockpoint_zone_ids,
+            { assessment_id: context.lockpointAdvanceAssessmentId },
+            IdSchema,
+          )
+        ).map(String);
+        assert.lengthOf(advanceLockpointZoneIds, 1);
+
+        const created = await createAssessmentInstance(context.lockpointAdvanceAssessmentId);
+
+        let questionStates = await selectQuestionStates(created.assessmentInstanceId);
+        assert.deepEqual(
+          questionStates.map((row) => row.question_access_mode),
+          ['writable', 'blocked_sequence', 'blocked_sequence'],
+        );
+
+        const rejectedCrossResponse = await postCrossLockpointForInstance(
+          created.assessmentInstanceUrl,
+          advanceLockpointZoneIds[0],
+        );
+        assert.isFalse(rejectedCrossResponse.ok);
+        assert.equal(rejectedCrossResponse.status, 403);
+
+        const gradeResponse = await gradeQuestionWithScore(questionStates[0].url, 100);
+        assert.isTrue(gradeResponse.ok);
+
+        questionStates = await selectQuestionStates(created.assessmentInstanceId);
+        assert.deepEqual(
+          questionStates.map((row) => row.question_access_mode),
+          ['writable', 'writable', 'blocked_lockpoint'],
+        );
+
+        const acceptedCrossResponse = await postCrossLockpointForInstance(
+          created.assessmentInstanceUrl,
+          advanceLockpointZoneIds[0],
+        );
+        assert.isTrue(acceptedCrossResponse.ok);
+
+        questionStates = await selectQuestionStates(created.assessmentInstanceId);
+        assert.deepEqual(
+          questionStates.map((row) => row.question_access_mode),
+          ['read_only_lockpoint', 'read_only_lockpoint', 'writable'],
+        );
+      } finally {
+        helperClient.setUser(previousUser);
+      }
+    },
+  );
+
+  test.sequential(
+    'homework lockpoints transition from blocked to read-only after crossing',
+    async function () {
+      const previousUser = {
+        authUid: config.authUid,
+        authName: config.authName,
+        authUin: config.authUin,
+      };
+      helperClient.setUser(testUsers[2]);
+      try {
+        const homeworkLockpointZoneIds = (
+          await sqldb.queryRows(
+            sql.select_lockpoint_zone_ids,
+            { assessment_id: context.lockpointHomeworkAssessmentId },
+            IdSchema,
+          )
+        ).map(String);
+        assert.lengthOf(homeworkLockpointZoneIds, 1);
+
+        const created = await createAssessmentInstance(context.lockpointHomeworkAssessmentId);
+
+        let questionStates = await selectQuestionStates(created.assessmentInstanceId);
+        assert.deepEqual(
+          questionStates.map((row) => row.question_access_mode),
+          ['writable', 'blocked_lockpoint'],
+        );
+
+        const crossResponse = await postCrossLockpointForInstance(
+          created.assessmentInstanceUrl,
+          homeworkLockpointZoneIds[0],
+        );
+        assert.isTrue(crossResponse.ok);
+
+        questionStates = await selectQuestionStates(created.assessmentInstanceId);
+        assert.deepEqual(
+          questionStates.map((row) => row.question_access_mode),
+          ['read_only_lockpoint', 'writable'],
+        );
+      } finally {
+        helperClient.setUser(previousUser);
+      }
     },
   );
 });

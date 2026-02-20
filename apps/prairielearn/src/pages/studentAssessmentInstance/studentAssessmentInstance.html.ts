@@ -1,6 +1,7 @@
 import { z } from 'zod';
 
 import { EncodedData } from '@prairielearn/browser-utils';
+import { formatDate } from '@prairielearn/formatter';
 import { html, unsafeHtml } from '@prairielearn/html';
 import { run } from '@prairielearn/run';
 import { DateFromISOString, IdSchema } from '@prairielearn/zod';
@@ -44,7 +45,6 @@ export const InstanceQuestionRowSchema = InstanceQuestionSchema.extend({
   lockpoint: z.boolean(),
   lockpoint_crossed: z.boolean(),
   lockpoint_crossed_at: DateFromISOString.nullable(),
-  lockpoint_crossed_at_formatted: z.string().nullable(),
   lockpoint_crossed_auth_user_uid: z.string().nullable(),
   question_title: z.string(),
   max_points: z.number().nullable(),
@@ -435,7 +435,10 @@ export function StudentAssessmentInstance({
                                         ${instance_question_row.lockpoint_crossed_at
                                           ? html`
                                               at
-                                              ${instance_question_row.lockpoint_crossed_at_formatted}
+                                              ${formatDate(
+                                                instance_question_row.lockpoint_crossed_at,
+                                                resLocals.course_instance.display_timezone,
+                                              )}
                                             `
                                           : ''}
                                       </span>

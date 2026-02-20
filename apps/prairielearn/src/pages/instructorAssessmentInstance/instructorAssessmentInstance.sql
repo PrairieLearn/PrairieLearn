@@ -89,13 +89,11 @@ SELECT
   z.title AS zone_title,
   (aicl.id IS NOT NULL) AS lockpoint_crossed,
   aicl.crossed_at,
-  format_date_full_compact (aicl.crossed_at, ci.display_timezone) AS crossed_at_formatted,
   aicl.authn_user_id,
   u.uid AS auth_user_uid
 FROM
   assessment_instances AS ai
   JOIN assessments AS a ON (a.id = ai.assessment_id)
-  JOIN course_instances AS ci ON (ci.id = a.course_instance_id)
   JOIN zones AS z ON (
     z.assessment_id = ai.assessment_id
     AND z.lockpoint

@@ -42,7 +42,6 @@ const CrossedLockpointSchema = z.object({
   zone_title: z.string().nullable(),
   lockpoint_crossed: z.boolean(),
   crossed_at: DateFromISOString.nullable(),
-  crossed_at_formatted: z.string().nullable(),
   authn_user_id: IdSchema.nullable(),
   auth_user_uid: z.string().nullable(),
 });
