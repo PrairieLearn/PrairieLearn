@@ -290,10 +290,10 @@ export function QuestionTitleAndQid({
         displayClassName="fw-semibold"
         isPending={renameMutation.isPending}
         serverError={editingField === 'title' ? serverError : null}
-        onResetServerError={() => renameMutation.reset()}
         disabled={editingField !== null && editingField !== 'title'}
         isEditing={editingField === 'title'}
         disableSaveWhenEmpty
+        onResetServerError={() => renameMutation.reset()}
         onSave={handleSaveTitle}
         onEditStart={() => setEditingField('title')}
         onEditEnd={() => setEditingField(null)}
@@ -320,11 +320,11 @@ export function QuestionTitleAndQid({
         }
         isPending={renameMutation.isPending}
         serverError={editingField === 'qid' ? serverError : null}
-        onResetServerError={() => renameMutation.reset()}
         validate={validateQid}
         disabled={editingField !== null && editingField !== 'qid'}
         isEditing={editingField === 'qid'}
         truncateStart
+        onResetServerError={() => renameMutation.reset()}
         onSave={handleSaveQid}
         onEditStart={() => setEditingField('qid')}
         onEditEnd={() => setEditingField(null)}
