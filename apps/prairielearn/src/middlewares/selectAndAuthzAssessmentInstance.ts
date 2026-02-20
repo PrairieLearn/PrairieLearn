@@ -5,7 +5,7 @@ import z from 'zod';
 import * as error from '@prairielearn/error';
 import * as sqldb from '@prairielearn/postgres';
 
-import { assessmentInstanceLabel, assessmentLabel } from '../lib/assessment.js';
+import { assessmentInstanceLabel, assessmentLabel } from '../lib/assessment.shared.js';
 import {
   AssessmentInstanceSchema,
   AssessmentSchema,
