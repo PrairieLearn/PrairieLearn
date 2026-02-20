@@ -129,7 +129,7 @@ def build_grading_dag(
 def separate_distractor_groups(
     all_blocks: list[OrderBlocksAnswerData],
 ) -> list[OrderBlocksAnswerData]:
-    """Shuffle blocks, putting distraction blocks groups before all individual blocks"""
+    """Shuffle blocks, putting distractor groups after all individual blocks."""
     distractor_blocks = defaultdict(list)
     individual_blocks = []
     not_distractor_blocks = []
@@ -149,10 +149,11 @@ def separate_distractor_groups(
             individual_blocks.append(block)
 
     random.shuffle(individual_blocks)
-    random.shuffle(distractor_blocks)
+    distractor_group_keys = list(distractor_blocks.keys())
+    random.shuffle(distractor_group_keys)
 
     new_block_ordering: list[OrderBlocksAnswerData] = individual_blocks
-    for group in distractor_blocks:
+    for group in distractor_group_keys:
         distractor_blocks[group].sort(key=lambda a: a["index"])
         new_block_ordering.extend(distractor_blocks[group])
 
