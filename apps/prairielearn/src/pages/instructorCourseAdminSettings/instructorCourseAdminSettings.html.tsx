@@ -1,4 +1,5 @@
 import { GitHubButton } from '../../components/GitHubButton.js';
+import type { PageAuthzData } from '../../lib/authz-data-lib.js';
 import type { Course, Institution } from '../../lib/db-types.js';
 import { type Timezone, formatTimezone } from '../../lib/timezone.shared.js';
 
@@ -18,7 +19,7 @@ export function InstructorCourseAdminSettings({
 }: {
   aiQuestionGenerationEnabled: boolean;
   aiQuestionGenerationCourseToggleEnabled: boolean;
-  authzData: Record<string, any>;
+  authzData: PageAuthzData;
   availableTimezones: Timezone[];
   course: Course;
   courseGHLink: string | null;
@@ -120,7 +121,7 @@ export function InstructorCourseAdminSettings({
               ))}
             </select>
             <small className="form-text text-muted">
-              The allowable timezones are from the
+              The allowable timezones are from the{' '}
               <a
                 href="https://en.wikipedia.org/wiki/List_of_tz_database_time_zones"
                 target="_blank"
@@ -160,8 +161,7 @@ export function InstructorCourseAdminSettings({
               disabled
             />
             <small className="form-text text-muted">
-              {' '}
-              The path where course files can be found.{' '}
+              The path where course files can be found.
             </small>
           </div>
           <div className="mb-3">
@@ -321,10 +321,7 @@ function EditActions({
   if (!hasCoursePermissionEdit || exampleCourse) {
     return (
       <p className="mb-0">
-        <a href={`${urlPrefix}/${navPage}/file_view/infoCourse.json`}>
-          {' '}
-          View course configuration{' '}
-        </a>
+        <a href={`${urlPrefix}/${navPage}/file_view/infoCourse.json`}>View course configuration </a>
         in <code>infoCourse.json</code>
       </p>
     );
@@ -332,7 +329,7 @@ function EditActions({
 
   return (
     <div>
-      <div className="d-flex justify-content-end gap-2">
+      <div className="d-flex gap-2">
         <button
           id="save-button"
           type="submit"

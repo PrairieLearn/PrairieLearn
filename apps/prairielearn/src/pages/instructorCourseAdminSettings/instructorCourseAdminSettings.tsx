@@ -9,6 +9,7 @@ import { flash } from '@prairielearn/flash';
 
 import { PageLayout } from '../../components/PageLayout.js';
 import { b64EncodeUnicode } from '../../lib/base64-util.js';
+import { extractPageContext } from '../../lib/client/page-context.js';
 import { CourseInfoCreateEditor, FileModifyEditor, getOriginalHash } from '../../lib/editors.js';
 import { features } from '../../lib/features/index.js';
 import { courseRepoContentUrl } from '../../lib/github.js';
@@ -29,6 +30,11 @@ router.get(
       path.join(res.locals.course.path, 'infoCourse.json'),
     );
     const availableTimezones = await getCanonicalTimezones([res.locals.course.display_timezone]);
+
+    const { authz_data } = extractPageContext(res.locals, {
+      pageType: 'course',
+      accessType: 'instructor',
+    });
 
     const courseGHLink = courseRepoContentUrl(res.locals.course);
 
@@ -62,7 +68,7 @@ router.get(
           <InstructorCourseAdminSettings
             aiQuestionGenerationEnabled={aiQuestionGenerationEnabled}
             aiQuestionGenerationCourseToggleEnabled={aiQuestionGenerationCourseToggleEnabled}
-            authzData={res.locals.authz_data}
+            authzData={authz_data}
             availableTimezones={availableTimezones}
             course={res.locals.course}
             courseGHLink={courseGHLink}
