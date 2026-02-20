@@ -20,8 +20,8 @@ async function renameDraftQuestion({
 }): Promise<{ qid: string; title: string | null }> {
   const response = await fetch(window.location.href, {
     method: 'POST',
-    headers: { 'Content-Type': 'application/x-www-form-urlencoded' },
-    body: new URLSearchParams({
+    headers: { 'Content-Type': 'application/json', Accept: 'application/json' },
+    body: JSON.stringify({
       __action: 'rename_draft_question',
       __csrf_token: csrfToken,
       ...(qid != null ? { qid } : {}),

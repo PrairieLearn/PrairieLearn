@@ -369,16 +369,22 @@ router.post(
 
       res.redirect(res.locals.urlPrefix + '/question/' + res.locals.question.id + '/preview');
     } else if (req.body.__action === 'rename_draft_question') {
+      if (req.accepts('html')) {
+        throw new error.HttpStatusError(406, 'Not Acceptable');
+      }
+
       const qid =
         typeof req.body.qid === 'string' && req.body.qid.trim() !== ''
           ? req.body.qid
           : res.locals.question.qid;
-      const title = typeof req.body.title === 'string' ? req.body.title : res.locals.question.title;
+      const title =
+        typeof req.body.title === 'string' && req.body.title.trim() !== ''
+          ? req.body.title
+          : res.locals.question.title;
 
       const validation = validateShortName(qid);
       if (!validation.valid) {
-        res.status(400).json({ error: `Invalid QID: ${validation.lowercaseMessage}` });
-        return;
+        throw new error.HttpStatusError(400, `Invalid QID: ${validation.lowercaseMessage}`);
       }
 
       const client = getCourseFilesClient();
@@ -394,8 +400,7 @@ router.post(
       });
 
       if (result.status === 'error') {
-        res.status(500).json({ error: 'Renaming question failed.' });
-        return;
+        throw new Error('Renaming question failed.');
       }
 
       const updatedQuestion = await selectQuestionById(res.locals.question.id);
