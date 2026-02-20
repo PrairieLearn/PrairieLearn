@@ -157,16 +157,16 @@ An assessment is broken down in to a list of zones, like this:
 }
 ```
 
-| Zone Property          | Type    | Description                                                                                                                                           |
-| ---------------------- | ------- | ----------------------------------------------------------------------------------------------------------------------------------------------------- |
-| `title`                | string  | The title of the zone. (Optional; default: none)                                                                                                      |
-| `questions`            | array   | The list of slots for questions and question alternatives within the zone. (Required; no default)                                                     |
-| `numberChoose`         | integer | Number of questions to select for each student from this zone. (Optional; default: select all)                                                        |
-| `maxPoints`            | number  | Limit on the number of points that can be earned from this zone. (Optional; default: sum of question max points)                                      |
-| `bestQuestions`        | integer | Only this many questions in the zone will count towards the total points (highest-point questions will count). (Optional; default: use all questions) |
-| `lockpoint`            | boolean | Creates a one-way barrier at this zone; crossing it makes all earlier zones read-only. (Optional; default: `false`)                                   |
-| `allowRealTimeGrading` | boolean | Whether to grade questions in this zone in real time (Exams only). (Optional; default: `true`)                                                        |
-| `comment`              | string  | Free‑form comment for the zone. (Optional; default: none)                                                                                             |
+| Zone Property              | Type    | Description                                                                                                                                           |
+| -------------------------- | ------- | ----------------------------------------------------------------------------------------------------------------------------------------------------- |
+| `title`                    | string  | The title of the zone. (Optional; default: none)                                                                                                      |
+| `questions`                | array   | The list of slots for questions and question alternatives within the zone. (Required; no default)                                                     |
+| `numberChoose`             | integer | Number of questions to select for each student from this zone. (Optional; default: select all)                                                        |
+| `maxPoints`                | number  | Limit on the number of points that can be earned from this zone. (Optional; default: sum of question max points)                                      |
+| `bestQuestions`            | integer | Only this many questions in the zone will count towards the total points (highest-point questions will count). (Optional; default: use all questions) |
+| [`lockpoint`](#lockpoints) | boolean | Creates a one-way barrier at this zone; crossing it makes all earlier zones read-only. (Optional; default: `false`)                                   |
+| `allowRealTimeGrading`     | boolean | Whether to grade questions in this zone in real time (Exams only). (Optional; default: `true`)                                                        |
+| `comment`                  | string  | Free‑form comment for the zone. (Optional; default: none)                                                                                             |
 
 Zone specification details are in the [format specification for `infoAssessment.json`](../schemas/infoAssessment.md)
 
@@ -758,14 +758,14 @@ Lockpoints let you create one-way barriers between zones. Set `"lockpoint": true
       "questions": [{ "id": "addNumbers", "points": 10 }]
     },
     {
-      "title": "Coding questions",
+      "title": "Applied questions",
       "lockpoint": true,
-      "questions": [{ "id": "addVectors", "points": 10 }]
+      "questions": [{ "id": "partialCredit3", "points": 10 }]
     },
     {
       "title": "Advanced questions",
       "lockpoint": true,
-      "questions": [{ "id": "fossilFuelsRadio", "points": 10 }]
+      "questions": [{ "id": "orderBlocks", "points": 10 }]
     }
   ]
 }

@@ -179,7 +179,7 @@ export function StudentAssessmentInstance({
       (row) => row.zone_number < zoneNumber && row.question_access_mode === 'blocked_sequence',
     );
 
-  function isBarrierCrossable(row: InstanceQuestionRow) {
+  function isLockpointCrossable(row: InstanceQuestionRow) {
     return (
       resLocals.assessment_instance.open &&
       resLocals.authz_result.active &&
@@ -193,7 +193,7 @@ export function StudentAssessmentInstance({
 
   const crossableLockpointRows = instance_question_rows.filter(
     (row) =>
-      row.start_new_zone && row.lockpoint && !row.lockpoint_crossed && isBarrierCrossable(row),
+      row.start_new_zone && row.lockpoint && !row.lockpoint_crossed && isLockpointCrossable(row),
   );
 
   return PageLayout({
@@ -415,70 +415,12 @@ export function StudentAssessmentInstance({
 
                   return html`
                     ${instance_question_row.start_new_zone && instance_question_row.lockpoint
-                      ? html`
-                          <tr>
-                            <th colspan="${zoneTitleColspan}" class="align-middle">
-                              ${instance_question_row.lockpoint_crossed
-                                ? html`
-                                    <div
-                                      class="alert alert-success py-2 my-0 d-flex justify-content-between align-items-center"
-                                    >
-                                      <span>
-                                        <i class="fas fa-check-circle me-1" aria-hidden="true"></i>
-                                        Section completed
-                                        ${instance_question_row.lockpoint_crossed_auth_user_uid
-                                          ? html`
-                                              by
-                                              ${instance_question_row.lockpoint_crossed_auth_user_uid}
-                                            `
-                                          : ''}
-                                        ${instance_question_row.lockpoint_crossed_at
-                                          ? html`
-                                              at
-                                              ${formatDate(
-                                                instance_question_row.lockpoint_crossed_at,
-                                                resLocals.course_instance.display_timezone,
-                                              )}
-                                            `
-                                          : ''}
-                                      </span>
-                                    </div>
-                                  `
-                                : isBarrierCrossable(instance_question_row)
-                                  ? html`
-                                      <div
-                                        class="alert alert-warning py-2 my-0 d-flex justify-content-between align-items-center"
-                                      >
-                                        <span>
-                                          Crossing this lockpoint makes questions above read-only.
-                                        </span>
-                                        <button
-                                          type="button"
-                                          class="btn btn-warning btn-sm"
-                                          data-bs-toggle="modal"
-                                          data-bs-target="#crossLockpointModal-${instance_question_row.zone_id}"
-                                        >
-                                          Proceed to next section
-                                        </button>
-                                      </div>
-                                    `
-                                  : html`
-                                      <div
-                                        class="alert alert-light py-2 my-0 d-flex justify-content-between align-items-center"
-                                      >
-                                        <span>Complete previous sections first.</span>
-                                        <button
-                                          type="button"
-                                          class="btn btn-secondary btn-sm"
-                                          disabled
-                                        >
-                                          Proceed to next section
-                                        </button>
-                                      </div>
-                                    `}
-                            </th>
-                          </tr>
-                        `
+                      ? LockpointRow({
+                          row: instance_question_row,
+                          colspan: zoneTitleColspan,
+                          crossable: !!isLockpointCrossable(instance_question_row),
+                          displayTimezone: resLocals.course_instance.display_timezone,
+                        })
                       : ''}
                     ${showZoneInfo
                       ? html`
@@ -991,6 +933,72 @@ function ZoneInfoPopover({ label, content }: { label: string; content: string })
     >
       ${label}&nbsp;<i class="far fa-question-circle" aria-hidden="true"></i>
     </button>
+  `;
+}
+
+function LockpointRow({
+  row,
+  colspan,
+  crossable,
+  displayTimezone,
+}: {
+  row: InstanceQuestionRow;
+  colspan: number;
+  crossable: boolean;
+  displayTimezone: string;
+}) {
+  if (row.lockpoint_crossed) {
+    return html`
+      <tr class="table-success">
+        <td colspan="${colspan}" class="py-2">
+          <div class="d-flex justify-content-between align-items-center">
+            <span>
+              <i class="fas fa-check-circle me-1" aria-hidden="true"></i>
+              Section completed
+              ${row.lockpoint_crossed_auth_user_uid
+                ? html` by ${row.lockpoint_crossed_auth_user_uid}`
+                : ''}
+              ${row.lockpoint_crossed_at
+                ? html` at ${formatDate(row.lockpoint_crossed_at, displayTimezone)}`
+                : ''}
+            </span>
+          </div>
+        </td>
+      </tr>
+    `;
+  }
+
+  if (crossable) {
+    return html`
+      <tr class="table-warning">
+        <td colspan="${colspan}" class="py-2">
+          <div class="d-flex justify-content-between align-items-center">
+            <span>Crossing this lockpoint makes questions above read-only.</span>
+            <button
+              type="button"
+              class="btn btn-warning btn-sm"
+              data-bs-toggle="modal"
+              data-bs-target="#crossLockpointModal-${row.zone_id}"
+            >
+              Proceed to next section
+            </button>
+          </div>
+        </td>
+      </tr>
+    `;
+  }
+
+  return html`
+    <tr class="bg-light">
+      <td colspan="${colspan}" class="py-2">
+        <div class="d-flex justify-content-between align-items-center">
+          <span>Complete previous sections first.</span>
+          <button type="button" class="btn btn-secondary btn-sm" disabled>
+            Proceed to next section
+          </button>
+        </div>
+      </td>
+    </tr>
   `;
 }
 

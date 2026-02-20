@@ -487,6 +487,8 @@ FROM
   updated_assessment_instance;
 
 -- BLOCK cross_lockpoint
+-- Attempts to record a lockpoint crossing. Returns the new row ID on success,
+-- or nothing if conditions aren't met (handled by the caller).
 INSERT INTO
   assessment_instance_crossed_lockpoints (assessment_instance_id, zone_id, authn_user_id)
 SELECT
@@ -501,6 +503,7 @@ WHERE
   AND ai.open = true
   AND z.lockpoint = true
   AND z.assessment_id = ai.assessment_id
+  -- All earlier lockpoints must already be crossed (sequential enforcement).
   AND NOT EXISTS (
     SELECT
       1
@@ -516,6 +519,7 @@ WHERE
       AND z2.number < z.number
       AND aicl.id IS NULL
   )
+  -- No questions in prior zones can be blocked by advanceScorePerc gating.
   AND NOT EXISTS (
     SELECT
       1

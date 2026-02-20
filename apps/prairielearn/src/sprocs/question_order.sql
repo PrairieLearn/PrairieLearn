@@ -69,12 +69,11 @@ question_state AS (
             WHEN a.type = 'Exam' THEN (row_number() OVER w)::text
             ELSE aq.number::text
         END AS question_number,
-        -- Advancement locking rule 2:
-        ( -- Lock only if:
-            -- Not the first question in the assessment
+        -- Advancement locking rule 2: lock if not the first question and
+        -- any previous question locks all questions ahead of it.
+        (
             ((lag(aq.id) OVER w) IS NOT NULL)
-            AND -- Any previous question locks all questions ahead of it
-            (BOOL_OR(locks_next.locking) OVER (ROWS BETWEEN UNBOUNDED PRECEDING AND 1 PRECEDING))
+            AND (BOOL_OR(locks_next.locking) OVER (ROWS BETWEEN UNBOUNDED PRECEDING AND 1 PRECEDING))
         ) AS sequence_locked,
         COALESCE(z.number >= first_uncrossed_lockpoint.zone_number, false) AS lockpoint_not_yet_crossed,
         EXISTS (
@@ -123,7 +122,7 @@ SELECT
         WHEN sequence_locked THEN 'blocked_sequence'
         WHEN lockpoint_not_yet_crossed THEN 'blocked_lockpoint'
         WHEN lockpoint_read_only THEN 'read_only_lockpoint'
-        ELSE 'writable'
+        ELSE 'default'
     END AS question_access_mode
 FROM
     question_state;

@@ -1507,6 +1507,16 @@ function validateAssessment({
     });
   }
 
+  if (assessment.zones[0]?.lockpoint) {
+    errors.push('The first zone cannot have lockpoint: true');
+  }
+
+  assessment.zones.forEach((zone) => {
+    if (zone.lockpoint && zone.numberChoose === 0) {
+      errors.push('A lockpoint zone must include at least one selectable question');
+    }
+  });
+
   return { warnings, errors };
 }
 

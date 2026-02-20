@@ -8,11 +8,10 @@
   "zones": [
     {
       "title": "Sequential prerequisite",
-      "questions": [{ "id": "partialCredit1", "points": 1, "advanceScorePerc": 100 }]
-    },
-    {
-      "title": "Must be unlocked first",
-      "questions": [{ "id": "partialCredit2", "points": 1 }]
+      "questions": [
+        { "id": "partialCredit1", "points": 1, "advanceScorePerc": 100 },
+        { "id": "partialCredit2", "points": 1 }
+      ]
     },
     {
       "title": "Lockpoint zone",

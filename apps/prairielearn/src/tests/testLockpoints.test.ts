@@ -6,6 +6,7 @@ import { IdSchema } from '@prairielearn/zod';
 
 import { config } from '../lib/config.js';
 import { SprocQuestionOrderSchema } from '../lib/db-types.js';
+import { selectAssessmentByTid } from '../models/assessment.js';
 
 import * as helperClient from './helperClient.js';
 import * as helperServer from './helperServer.js';
@@ -15,7 +16,7 @@ const sql = sqldb.loadSqlEquiv(import.meta.url);
 interface QuestionState {
   id: number;
   question_access_mode:
-    | 'writable'
+    | 'default'
     | 'blocked_sequence'
     | 'blocked_lockpoint'
     | 'read_only_lockpoint';
@@ -49,15 +50,25 @@ describe('Assessment lockpoints', { timeout: 60_000 }, function () {
 
   beforeAll(async function () {
     await helperServer.before()();
-    context.assessmentId = await sqldb.queryRow(sql.select_lockpoint_exam, IdSchema);
-    context.lockpointAdvanceAssessmentId = await sqldb.queryRow(
-      sql.select_lockpoint_advance_exam,
-      IdSchema,
-    );
-    context.lockpointHomeworkAssessmentId = await sqldb.queryRow(
-      sql.select_lockpoint_homework,
-      IdSchema,
-    );
+    const courseInstanceId = '1';
+    context.assessmentId = (
+      await selectAssessmentByTid({
+        course_instance_id: courseInstanceId,
+        tid: 'exam18-lockpoints',
+      })
+    ).id;
+    context.lockpointAdvanceAssessmentId = (
+      await selectAssessmentByTid({
+        course_instance_id: courseInstanceId,
+        tid: 'exam19-lockpoints-advance',
+      })
+    ).id;
+    context.lockpointHomeworkAssessmentId = (
+      await selectAssessmentByTid({
+        course_instance_id: courseInstanceId,
+        tid: 'hw14-lockpoints',
+      })
+    ).id;
     context.lockpointZoneIds = (
       await sqldb.queryRows(
         sql.select_lockpoint_zone_ids,
@@ -208,7 +219,7 @@ describe('Assessment lockpoints', { timeout: 60_000 }, function () {
       assert.lengthOf(context.questionStates, 3);
       assert.deepEqual(
         context.questionStates.map((row) => row.question_access_mode),
-        ['writable', 'blocked_lockpoint', 'blocked_lockpoint'],
+        ['default', 'blocked_lockpoint', 'blocked_lockpoint'],
       );
 
       assert.equal(response.$('button[data-bs-target^="#crossLockpointModal-"]').length, 1);
@@ -228,7 +239,7 @@ describe('Assessment lockpoints', { timeout: 60_000 }, function () {
     await refreshQuestionStates();
     assert.deepEqual(
       context.questionStates.map((row) => row.question_access_mode),
-      ['writable', 'blocked_lockpoint', 'blocked_lockpoint'],
+      ['default', 'blocked_lockpoint', 'blocked_lockpoint'],
     );
   });
 
@@ -259,7 +270,7 @@ describe('Assessment lockpoints', { timeout: 60_000 }, function () {
 
       assert.deepEqual(
         context.questionStates.map((row) => row.question_access_mode),
-        ['read_only_lockpoint', 'writable', 'blocked_lockpoint'],
+        ['read_only_lockpoint', 'default', 'blocked_lockpoint'],
       );
 
       assert.include(response.$.html(), 'read-only because you have advanced past a lockpoint');
@@ -274,7 +285,7 @@ describe('Assessment lockpoints', { timeout: 60_000 }, function () {
     await refreshQuestionStates();
     assert.deepEqual(
       context.questionStates.map((row) => row.question_access_mode),
-      ['read_only_lockpoint', 'writable', 'blocked_lockpoint'],
+      ['read_only_lockpoint', 'default', 'blocked_lockpoint'],
     );
   });
 
@@ -311,7 +322,7 @@ describe('Assessment lockpoints', { timeout: 60_000 }, function () {
 
       assert.deepEqual(
         context.questionStates.map((row) => row.question_access_mode),
-        ['read_only_lockpoint', 'read_only_lockpoint', 'writable'],
+        ['read_only_lockpoint', 'read_only_lockpoint', 'default'],
       );
     },
   );
@@ -375,7 +386,7 @@ describe('Assessment lockpoints', { timeout: 60_000 }, function () {
         let questionStates = await selectQuestionStates(created.assessmentInstanceId);
         assert.deepEqual(
           questionStates.map((row) => row.question_access_mode),
-          ['writable', 'blocked_sequence', 'blocked_sequence'],
+          ['default', 'blocked_sequence', 'blocked_sequence'],
         );
 
         const rejectedCrossResponse = await postCrossLockpointForInstance(
@@ -391,7 +402,7 @@ describe('Assessment lockpoints', { timeout: 60_000 }, function () {
         questionStates = await selectQuestionStates(created.assessmentInstanceId);
         assert.deepEqual(
           questionStates.map((row) => row.question_access_mode),
-          ['writable', 'writable', 'blocked_lockpoint'],
+          ['default', 'default', 'blocked_lockpoint'],
         );
 
         const acceptedCrossResponse = await postCrossLockpointForInstance(
@@ -403,7 +414,7 @@ describe('Assessment lockpoints', { timeout: 60_000 }, function () {
         questionStates = await selectQuestionStates(created.assessmentInstanceId);
         assert.deepEqual(
           questionStates.map((row) => row.question_access_mode),
-          ['read_only_lockpoint', 'read_only_lockpoint', 'writable'],
+          ['read_only_lockpoint', 'read_only_lockpoint', 'default'],
         );
       } finally {
         helperClient.setUser(previousUser);
@@ -435,7 +446,7 @@ describe('Assessment lockpoints', { timeout: 60_000 }, function () {
         let questionStates = await selectQuestionStates(created.assessmentInstanceId);
         assert.deepEqual(
           questionStates.map((row) => row.question_access_mode),
-          ['writable', 'blocked_lockpoint'],
+          ['default', 'blocked_lockpoint'],
         );
 
         const crossResponse = await postCrossLockpointForInstance(
@@ -447,7 +458,7 @@ describe('Assessment lockpoints', { timeout: 60_000 }, function () {
         questionStates = await selectQuestionStates(created.assessmentInstanceId);
         assert.deepEqual(
           questionStates.map((row) => row.question_access_mode),
-          ['read_only_lockpoint', 'writable'],
+          ['read_only_lockpoint', 'default'],
         );
       } finally {
         helperClient.setUser(previousUser);

@@ -1,7 +1,7 @@
 import { type HtmlValue, html } from '@prairielearn/html';
 
 type QuestionAccessMode =
-  | 'writable'
+  | 'default'
   | 'blocked_sequence'
   | 'blocked_lockpoint'
   | 'read_only_lockpoint';

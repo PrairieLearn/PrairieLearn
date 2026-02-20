@@ -82,7 +82,7 @@ WINDOW
 ORDER BY
   qo.row_order;
 
--- BLOCK select_crossed_lockpoints
+-- BLOCK select_zone_lockpoints
 SELECT
   z.id AS zone_id,
   z.number AS zone_number,

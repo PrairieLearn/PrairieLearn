@@ -20,6 +20,7 @@ import {
   ClientFingerprintSchema,
   CourseSchema,
   QuestionSchema,
+  type User,
   VariantSchema,
 } from './db-types.js';
 import { gradeVariant } from './grading.js';
@@ -345,25 +346,27 @@ export async function gradeAssessmentInstance({
 }
 
 export async function crossLockpoint({
-  assessment_instance_id,
+  assessment_instance,
   zone_id,
-  authn_user_id,
+  authn_user,
 }: {
-  assessment_instance_id: string;
+  assessment_instance: AssessmentInstance;
   zone_id: string;
-  authn_user_id: string;
+  authn_user: User;
 }): Promise<void> {
   const crossedLockpointId = await sqldb.queryOptionalRow(
     sql.cross_lockpoint,
-    { assessment_instance_id, zone_id, authn_user_id },
+    { assessment_instance_id: assessment_instance.id, zone_id, authn_user_id: authn_user.id },
     IdSchema,
   );
-
   if (crossedLockpointId != null) return;
 
+  // The INSERT uses ON CONFLICT DO NOTHING, which returns nothing both when
+  // the conflict fires (already crossed) and when the WHERE conditions fail
+  // (not eligible to cross). This second query distinguishes those cases.
   const alreadyCrossed = await sqldb.queryOptionalRow(
     sql.check_lockpoint_crossed,
-    { assessment_instance_id, zone_id },
+    { assessment_instance_id: assessment_instance.id, zone_id },
     IdSchema,
   );
   if (alreadyCrossed != null) return;

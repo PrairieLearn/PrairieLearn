@@ -16,11 +16,11 @@
       ]
     },
     {
-      "title": "Coding questions",
+      "title": "Applied questions",
       "lockpoint": true,
       "questions": [
         {
-          "id": "addVectors",
+          "id": "partialCredit3",
           "points": 10
         }
       ]
@@ -30,7 +30,7 @@
       "lockpoint": true,
       "questions": [
         {
-          "id": "fossilFuelsRadio",
+          "id": "orderBlocks",
           "points": 10
         }
       ]

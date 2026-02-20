@@ -78,7 +78,7 @@ export const EnumPlanGrantTypeSchema = z.enum(['trial', 'stripe', 'invoice', 'gi
 export type EnumPlanGrantType = z.infer<typeof EnumPlanGrantTypeSchema>;
 
 export const EnumQuestionAccessModeSchema = z.enum([
-  'writable',
+  'default',
   'blocked_sequence',
   'blocked_lockpoint',
   'read_only_lockpoint',

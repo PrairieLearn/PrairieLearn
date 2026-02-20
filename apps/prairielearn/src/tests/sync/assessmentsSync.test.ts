@@ -3208,7 +3208,7 @@ describe('Assessment syncing', () => {
     assert.isTrue(syncedData.zones[1].lockpoint);
   });
 
-  it('records an error when the first zone has lockpoint enabled', async () => {
+  it('records an error when the first zone is a lockpoint', async () => {
     const courseData = util.getCourseData();
     const assessment = makeAssessment(courseData, 'Exam');
     assessment.zones = [

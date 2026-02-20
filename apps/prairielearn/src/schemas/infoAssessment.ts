@@ -548,26 +548,7 @@ export const AssessmentJsonSchema = z
       .default(false),
   })
   .strict()
-  .describe('Configuration data for an assessment.')
-  .superRefine((assessment, ctx) => {
-    if (assessment.zones[0]?.lockpoint) {
-      ctx.addIssue({
-        code: z.ZodIssueCode.custom,
-        message: 'The first zone cannot have lockpoint: true',
-        path: ['zones', 0, 'lockpoint'],
-      });
-    }
-
-    assessment.zones.forEach((zone, index) => {
-      if (zone.lockpoint && zone.numberChoose === 0) {
-        ctx.addIssue({
-          code: z.ZodIssueCode.custom,
-          message: 'A lockpoint zone must include at least one selectable question',
-          path: ['zones', index, 'numberChoose'],
-        });
-      }
-    });
-  });
+  .describe('Configuration data for an assessment.');
 
 export type AssessmentJson = z.infer<typeof AssessmentJsonSchema>;
 export type AssessmentJsonInput = z.input<typeof AssessmentJsonSchema>;
