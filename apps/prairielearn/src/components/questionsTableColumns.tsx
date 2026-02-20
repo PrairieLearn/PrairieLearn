@@ -4,7 +4,7 @@ import { CategoricalColumnFilter } from '@prairielearn/ui';
 
 import type { PublicCourseInstance } from '../lib/client/safe-db-types.js';
 
-import { AssessmentBadgeList } from './AssessmentBadge.js';
+import { AssessmentBadge } from './AssessmentBadge.js';
 import { CopyButton } from './CopyButton.js';
 import { IssueBadge } from './IssueBadge.js';
 import type { SafeQuestionsPageData } from './QuestionsTable.shared.js';
@@ -13,6 +13,13 @@ import { TagBadgeList } from './TagBadge.js';
 import { TopicBadge } from './TopicBadge.js';
 
 const columnHelper = createColumnHelper<SafeQuestionsPageData>();
+
+function getAssessmentLabel(a: {
+  assessment: { number: string };
+  assessment_set: { abbreviation: string };
+}) {
+  return `${a.assessment_set.abbreviation}${a.assessment.number}`;
+}
 
 export function createQuestionsTableColumns({
   courseInstances,
@@ -230,8 +237,8 @@ export function createQuestionsTableColumns({
               columnHelper.accessor(
                 (row) =>
                   row.assessments
-                    ?.filter((a) => a.course_instance_id === ci.id)
-                    .map((a) => a.label) ?? [],
+                    ?.filter((a) => a.assessment.course_instance_id === ci.id)
+                    .map((a) => getAssessmentLabel(a)) ?? [],
                 {
                   id: `ci_${ci.id}`,
                   // TODO: Make non-nullable once we update the database schema
@@ -240,14 +247,30 @@ export function createQuestionsTableColumns({
                   cell: (info) => {
                     const assessments =
                       info.row.original.assessments
-                        ?.filter((a) => a.course_instance_id === ci.id)
-                        .sort((a, b) =>
-                          a.label.localeCompare(b.label, undefined, { numeric: true }),
-                        ) ?? [];
+                        ?.filter((a) => a.assessment.course_instance_id === ci.id)
+                        .sort((a, b) => {
+                          return getAssessmentLabel(a).localeCompare(
+                            getAssessmentLabel(b),
+                            undefined,
+                            {
+                              numeric: true,
+                            },
+                          );
+                        }) ?? [];
                     if (assessments.length === 0) return null;
                     return (
                       <div className="d-flex flex-wrap gap-1">
-                        <AssessmentBadgeList assessments={assessments} courseInstanceId={ci.id} />
+                        {assessments.map((a) => (
+                          <AssessmentBadge
+                            key={a.assessment.id}
+                            assessment={{
+                              assessment_id: a.assessment.id,
+                              color: a.assessment_set.color,
+                              label: getAssessmentLabel(a),
+                            }}
+                            courseInstanceId={ci.id}
+                          />
+                        ))}
                       </div>
                     );
                   },
@@ -255,12 +278,14 @@ export function createQuestionsTableColumns({
                   filterFn: (row, _columnId, filterValues: string[]) => {
                     if (filterValues.length === 0) return true;
                     const assessments =
-                      row.original.assessments?.filter((a) => a.course_instance_id === ci.id) ?? [];
+                      row.original.assessments?.filter(
+                        (a) => a.assessment.course_instance_id === ci.id,
+                      ) ?? [];
                     if (assessments.length === 0) {
                       return filterValues.includes('(None)');
                     }
                     return filterValues.some((v) =>
-                      v === '(None)' ? false : assessments.some((a) => a.label === v),
+                      v === '(None)' ? false : assessments.some((a) => getAssessmentLabel(a) === v),
                     );
                   },
                   size: 500,
@@ -325,10 +350,11 @@ export function createQuestionsTableFilters({
     const map = new Map<string, Set<string>>();
     for (const q of questions) {
       for (const a of q.assessments ?? []) {
-        if (!map.has(a.course_instance_id)) {
-          map.set(a.course_instance_id, new Set());
+        const ciId = a.assessment.course_instance_id;
+        if (!map.has(ciId)) {
+          map.set(ciId, new Set());
         }
-        map.get(a.course_instance_id)?.add(a.label);
+        map.get(ciId)?.add(getAssessmentLabel(a));
       }
     }
     return map;

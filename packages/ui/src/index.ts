@@ -31,8 +31,10 @@ export {
   parseAsNumericFilter,
 } from './components/nuqs.js';
 
-export { extractLeafColumnIds } from './components/extractLeafColumnIds.js';
-export { createColumnFiltersChangeHandler } from './components/createColumnFiltersChangeHandler.js';
+export {
+  extractLeafColumnIds,
+  createColumnFiltersChangeHandler,
+} from './components/tanstack-table-utils.js';
 
 export { useModalState } from './hooks/use-modal-state.js';
 export {

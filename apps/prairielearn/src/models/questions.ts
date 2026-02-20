@@ -18,10 +18,9 @@ export async function selectQuestionsForCourse(
 
   const questions = rows.map((row) => ({
     ...row,
-    assessments:
-      row.assessments?.filter((assessment) =>
-        course_instance_ids.some((id) => idsEqual(id, assessment.course_instance_id)),
-      ) ?? null,
+    assessments: (row.assessments ?? []).filter((a) =>
+      course_instance_ids.some((id) => idsEqual(id, a.assessment.course_instance_id)),
+    ),
   }));
   return questions;
 }
