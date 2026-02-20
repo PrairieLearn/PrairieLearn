@@ -296,7 +296,7 @@ export function QuestionTitleAndQid({
       <InlineEditableField
         value={qidSuffix}
         displayValue={qid}
-        placeholder="e.g. topic/question_name"
+        placeholder="add-random-numbers"
         fieldLabel="Question QID"
         displayClassName="font-monospace small text-muted"
         inputClassName="font-monospace"
