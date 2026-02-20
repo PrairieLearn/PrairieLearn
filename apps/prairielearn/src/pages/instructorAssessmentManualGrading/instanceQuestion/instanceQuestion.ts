@@ -314,9 +314,28 @@ router.get(
         context: 'main',
       }).toString();
       const aiGradingEnabled = await features.enabledFromLocals('ai-grading', res.locals);
+
+      // `prepareLocalsForRender` guarantees a submission exists.
+      const submission = res.locals.submission!;
+      const panels = await renderPanelsForSubmission({
+        unsafe_submission_id: submission.id,
+        question: res.locals.question,
+        instance_question: res.locals.instance_question,
+        variant: res.locals.variant,
+        user: res.locals.user,
+        urlPrefix: res.locals.urlPrefix,
+        questionContext: 'manual_grading',
+        questionRenderContext: 'manual_grading',
+        authorizedEdit: false,
+        renderScorePanels: false,
+        groupRolePermissions: null,
+      });
+
       res.json({
         gradingPanel,
         rubric_data,
+        submissionPanel: panels.submissionPanel,
+        submissionId: submission.id,
         aiGradingStats:
           aiGradingEnabled && res.locals.assessment_question.ai_grading_mode
             ? await calculateAiGradingStats(res.locals.assessment_question)
