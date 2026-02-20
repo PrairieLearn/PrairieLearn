@@ -82,7 +82,7 @@ jobs:
 
       - name: Run the JavaScript linter
         run: make lint-js
-      - name: Run the Mustache formatter check
+      - name: Run the Mustache linter
         run: make lint-mustache
       - name: Run the links linter
         run: make lint-links
