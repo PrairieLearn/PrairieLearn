@@ -4,7 +4,7 @@ import { compiledScriptTag, compiledStylesheetTag } from '../lib/assets.js';
 
 export function CalculatorDrawerHeadScripts(): HtmlSafeString {
   return html`
-    ${compiledScriptTag('calculatorClient.js')} ${compiledStylesheetTag('calculator.css')}
+    ${compiledScriptTag('calculatorClient.ts')} ${compiledStylesheetTag('calculator.css')}
   `;
 }
 
@@ -149,7 +149,7 @@ export function CalculatorDrawer({ storageKey }: { storageKey: string }): HtmlSa
                 name="btnradio"
                 id="main-btn"
                 autocomplete="off"
-                onclick="showPanel('main')"
+                data-panel="main"
                 checked
               />
               <label class="btn btn-outline-secondary" for="main-btn">main</label>
@@ -160,7 +160,7 @@ export function CalculatorDrawer({ storageKey }: { storageKey: string }): HtmlSa
                 name="btnradio"
                 id="abc-btn"
                 autocomplete="off"
-                onclick="showPanel('abc')"
+                data-panel="abc"
               />
               <label class="btn btn-outline-secondary" for="abc-btn">abc</label>
 
@@ -170,7 +170,7 @@ export function CalculatorDrawer({ storageKey }: { storageKey: string }): HtmlSa
                 name="btnradio"
                 id="func-btn"
                 autocomplete="off"
-                onclick="showPanel('func')"
+                data-panel="func"
               />
               <label class="btn btn-outline-secondary" for="func-btn">func</label>
             </div>

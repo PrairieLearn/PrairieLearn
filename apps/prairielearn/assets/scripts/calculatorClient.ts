@@ -1,28 +1,36 @@
-// TODO: migrate to TypeScript/React
-
-import { ComputeEngine } from '@cortex-js/compute-engine';
-import 'mathlive';
+import { ComputeEngine, type Expression, type MathJsonExpression } from '@cortex-js/compute-engine';
+import { MathfieldElement } from 'mathlive';
 
 import { onDocumentReady } from '@prairielearn/browser-utils';
 
-/**
- * @param {string} storageKey
- */
-export function initCalculator(storageKey, { drawer, fab, fabClose }) {
+interface DrawerElements {
+  drawer: HTMLElement;
+  fab: HTMLElement;
+  fabClose: HTMLElement | null;
+}
+
+type DisplayMode = 'numeric' | 'symbolic';
+
+interface CalculatorLocalData {
+  ans: string | null;
+  variable: { name: string; value: string }[];
+  history: { input: string; displayed: string; numeric: number; angleMode: string }[];
+  temp_input: string | null;
+}
+
+export function initCalculator(storageKey: string, { drawer, fab, fabClose }: DrawerElements) {
   showPanel('main');
   initColumnNavigation();
   initDrawerUI(drawer, fab, fabClose);
   const ce = new ComputeEngine();
-  ce.context.timeLimit = 1;
+  ce.timeLimit = 1;
 
   ce.pushScope();
-  /** @type {import('mathlive').MathfieldElement} */
-  const calculatorInputElement = document.getElementById('calculator-input');
-  const calculatorInputContainer = calculatorInputElement.parentElement;
-  /** @type {import('mathlive').MathfieldElement} */
-  const calculatorOutput = document.getElementById('calculator-output');
+  const calculatorInputElement = document.getElementById('calculator-input') as MathfieldElement;
+  const calculatorInputContainer = calculatorInputElement.parentElement!;
+  const calculatorOutput = document.getElementById('calculator-output') as MathfieldElement;
 
-  const onExport = (_mf, latex) => {
+  const onExport = (_mf: unknown, latex: string) => {
     return ce.parse(latex).toString();
   };
   calculatorInputElement.onExport = onExport;
@@ -30,8 +38,8 @@ export function initCalculator(storageKey, { drawer, fab, fabClose }) {
 
   MathfieldElement.soundsDirectory = null;
   calculatorInputElement.menuItems = [];
-  calculatorOutput.dataset.displayMode = 'numeric'; // numeric or symbolic
-  calculatorOutput.dataset.angleMode = 'rad'; // rad or deg
+  calculatorOutput.dataset.displayMode = 'numeric';
+  calculatorOutput.dataset.angleMode = 'rad';
 
   document.getElementsByName('calculate').forEach((button) =>
     button.addEventListener('mousedown', (ev) => {
@@ -40,11 +48,10 @@ export function initCalculator(storageKey, { drawer, fab, fabClose }) {
     }),
   );
 
-  /** @type {number} */
-  let typingTimer; // Timer identifier
-  const delay = 500; // 0.5 second delay
+  let typingTimer: ReturnType<typeof setTimeout>;
+  const delay = 500;
   calculatorInputElement.addEventListener('input', () => {
-    clearTimeout(typingTimer); // Clear the previous timer
+    clearTimeout(typingTimer);
     typingTimer = setTimeout(() => {
       calculate(false);
     }, delay);
@@ -63,7 +70,7 @@ export function initCalculator(storageKey, { drawer, fab, fabClose }) {
       }),
     );
   } else {
-    const data = JSON.parse(calculatorLocalData);
+    const data: CalculatorLocalData = JSON.parse(calculatorLocalData);
     for (const historyItem of data.history) {
       addHistoryItem(
         historyItem.input,
@@ -80,19 +87,15 @@ export function initCalculator(storageKey, { drawer, fab, fabClose }) {
     }
     if (data.temp_input) {
       calculatorInputElement.value = data.temp_input;
-      // dispatch custom event is used to trigger the input event to recompute the output panel
       calculatorInputElement.dispatchEvent(new CustomEvent('input'));
     }
   }
 
-  /**
-   * Evaluate a LaTeX expression and return the result
-   * @param {string} input - LaTeX input string
-   * @param {string} angleMode - 'rad' or 'deg'
-   * @param {string} displayMode - 'symbolic' or 'numeric'
-   * @returns {{ displayed: string, numeric: number, evaluated: import("@cortex-js/compute-engine").BoxedExpression } | null} The evaluation result, or null if input is empty or invalid.
-   */
-  function evaluateExpression(input, angleMode = 'rad', displayMode = 'numeric') {
+  function evaluateExpression(
+    input: string,
+    angleMode = 'rad',
+    displayMode: DisplayMode = 'numeric',
+  ) {
     if (!input || input.length === 0) return null;
 
     let parsed = ce.parse(input, { parseNumbers: 'rational' });
@@ -101,7 +104,8 @@ export function initCalculator(storageKey, { drawer, fab, fabClose }) {
       parsed = ce.box(radianToDegree(parsed.json));
     }
 
-    if (parsed.json[0] === 'Assign' && parsed.json[1] === 'InvisibleOperator') {
+    const json = parsed.json;
+    if (Array.isArray(json) && json[0] === 'Assign' && json[1] === 'InvisibleOperator') {
       return null;
     }
 
@@ -111,7 +115,7 @@ export function initCalculator(storageKey, { drawer, fab, fabClose }) {
         displayMode === 'symbolic'
           ? evaluated.toLatex({ notation: 'auto' })
           : evaluated.N().toLatex({ notation: 'auto' });
-      const numeric = evaluated.N().value;
+      const numeric = Number(evaluated.N().value);
 
       return { displayed, numeric, evaluated };
     } catch (e) {
@@ -120,45 +124,43 @@ export function initCalculator(storageKey, { drawer, fab, fabClose }) {
     }
   }
 
-  // Initialize action for calculation
   function calculate(addToHistory = false) {
     const input = calculatorInputElement.value;
-    // When there is no input, clear the output panel
-    // instead of outputting "nothing"
     if (input.length === 0) {
       calculatorOutput.value = '';
-      const copyButton = document.getElementById('calculator-output-copy');
+      const copyButton = document.getElementById('calculator-output-copy')!;
       copyButton.onclick = function () {
-        navigator.clipboard.writeText('');
+        void copyToClipboard('');
       };
       return;
     }
-    /** @type {import("@cortex-js/compute-engine").BoxedExpression} */
-    let parsed = ce.parse(input, {
+    let parsed: Expression = ce.parse(input, {
       parseNumbers: 'rational',
     });
     if (calculatorOutput.dataset.angleMode === 'deg') {
       parsed = ce.box(radianToDegree(parsed.json));
     }
-    if (parsed.json[0] === 'Assign' && parsed.json[1] === 'InvisibleOperator') {
+    const json = parsed.json;
+    if (Array.isArray(json) && json[0] === 'Assign' && json[1] === 'InvisibleOperator') {
       parsed = ce.box([
         'Error',
         '',
         'Assignment operator can only be used on single-letter variables',
       ]);
     }
-    /** @type {import("@cortex-js/compute-engine").BoxedExpression} */
-    let evaluated;
+    let evaluated: Expression;
     try {
       evaluated = parsed.evaluate();
     } catch (e) {
-      if (e.name === 'CancellationError') {
+      if (e instanceof Error && e.name === 'CancellationError') {
         calculatorInputElement.value = '';
-        calculatorOutput.value = ce.box(['Error', '', 'Output is too large']);
+        calculatorOutput.value = ce.box(['Error', '', 'Output is too large']).toString();
       } else {
         evaluated = parsed.evaluate();
         calculatorInputElement.value = '';
-        calculatorOutput.value = ce.box(['Error', '', e.message]);
+        calculatorOutput.value = ce
+          .box(['Error', '', e instanceof Error ? e.message : String(e)])
+          .toString();
       }
       return;
     }
@@ -179,17 +181,18 @@ export function initCalculator(storageKey, { drawer, fab, fabClose }) {
     }
 
     // Update copy button
-    const copyButton = document.getElementById('calculator-output-copy');
+    const copyButton = document.getElementById('calculator-output-copy')!;
     copyButton.onclick = function () {
-      navigator.clipboard.writeText(evaluated.N().value);
+      void copyToClipboard(evaluated.toString());
     };
 
-    const data = JSON.parse(localStorage.getItem(storageKey));
+    const data: CalculatorLocalData = JSON.parse(localStorage.getItem(storageKey)!);
     // Add to history
     if (!error && addToHistory) {
-      if (parsed.json[0] === 'Assign') {
-        const varName = parsed.json[1];
-        const varVal = ce.box(parsed.json[2]).evaluate();
+      const parsedJson = parsed.json;
+      if (Array.isArray(parsedJson) && parsedJson[0] === 'Assign') {
+        const varName = parsedJson[1] as string;
+        const varVal = ce.box(parsedJson[2]).evaluate();
         data.variable.push({
           name: varName,
           value: varVal.toLatex({ notation: 'auto' }),
@@ -202,19 +205,17 @@ export function initCalculator(storageKey, { drawer, fab, fabClose }) {
         console.error('Failed to assign ans:', e);
       }
 
-      // Create item in history panel
-      const currentAngleMode = calculatorOutput.dataset.angleMode;
-      addHistoryItem(input, displayed, evaluated.N().value, currentAngleMode);
+      const currentAngleMode = calculatorOutput.dataset.angleMode ?? 'rad';
+      const numericValue = Number(evaluated.N().value);
+      addHistoryItem(input, displayed, numericValue, currentAngleMode);
 
-      // Add history data to localStorage
       data.history.push({
         input,
         displayed,
-        numeric: evaluated.N().value,
+        numeric: numericValue,
         angleMode: currentAngleMode,
       });
 
-      // Clear current input and output panels
       calculatorInputElement.value = '';
       calculatorOutput.value = '';
     }
@@ -225,30 +226,29 @@ export function initCalculator(storageKey, { drawer, fab, fabClose }) {
   ce.assign('ans', ce.parse('\\bot'));
 
   // Define custom functions
-  // n choose r
-  ce.assign('nCr', (args) => {
+  ce.assign('nCr', (args: readonly Expression[]) => {
     if (args.length !== 2) {
       return ce.box(['Error', '', 'nCr requires 2 inputs']);
     }
     if (args[1] > args[0]) {
       return ce.number(0);
     }
-    return ce.parse(`$$ \\frac{${args[0]}!}{(${args[1]})!*(${args[0]}-${args[1]})!} $$`).evaluate();
+    const [n, r] = [String(args[0]), String(args[1])];
+    return ce.parse(`$$ \\frac{${n}!}{(${r})!*(${n}-${r})!} $$`).evaluate();
   });
 
-  // n permute r
-  ce.assign('nPr', (args) => {
+  ce.assign('nPr', (args: readonly Expression[]) => {
     if (args.length !== 2) {
       return ce.box(['Error', '', 'nPr requires 2 inputs']);
     }
     if (args[1] > args[0]) {
       return ce.number(0);
     }
-    return ce.parse(`$$ \\frac{${args[0]}!}{(${args[0]}-${args[1]})!} $$`).evaluate();
+    const [n, r] = [String(args[0]), String(args[1])];
+    return ce.parse(`$$ \\frac{${n}!}{(${n}-${r})!} $$`).evaluate();
   });
 
-  // Sample standard deviation (divided by (n-1))
-  ce.assign('stdev', (args) => {
+  ce.assign('stdev', (args: readonly Expression[]) => {
     const nums = String(args[0]).slice(1, -1).split(',').map(Number);
     const n = nums.length;
     const mean = nums.reduce((a, b) => a + b) / n;
@@ -256,8 +256,7 @@ export function initCalculator(storageKey, { drawer, fab, fabClose }) {
     return ce.number(Math.sqrt(variance));
   });
 
-  // Population standard deviation (divided by n)
-  ce.assign('stdevp', (args) => {
+  ce.assign('stdevp', (args: readonly Expression[]) => {
     const nums = String(args[0]).slice(1, -1).split(',').map(Number);
     const n = nums.length;
     const mean = nums.reduce((a, b) => a + b) / n;
@@ -265,14 +264,13 @@ export function initCalculator(storageKey, { drawer, fab, fabClose }) {
     return ce.number(Math.sqrt(variance));
   });
 
-  // Round to nearest integer
-  ce.assign('round', (args) => {
-    return ce.number(Math.round(args[0]));
+  ce.assign('round', (args: readonly Expression[]) => {
+    return ce.number(Math.round(args[0] as unknown as number));
   });
 
   // Buttons for number inputs
   for (let i = 0; i < 10; ++i) {
-    const button = document.getElementById(`${i}`);
+    const button = document.getElementById(`${i}`)!;
     prepareButton(button);
     button.addEventListener('click', () => {
       calculatorInputElement.insert(`${i}`);
@@ -282,7 +280,7 @@ export function initCalculator(storageKey, { drawer, fab, fabClose }) {
   // Buttons for alphabet inputs
   for (let char = 'a'.charCodeAt(0); char <= 'z'.charCodeAt(0); ++char) {
     const letter = String.fromCharCode(char);
-    const button = document.getElementById(letter);
+    const button = document.getElementById(letter)!;
     prepareButton(button);
     button.addEventListener('click', () => {
       calculatorInputElement.insert(button.textContent);
@@ -296,11 +294,11 @@ export function initCalculator(storageKey, { drawer, fab, fabClose }) {
       button.classList.toggle('btn-secondary');
       for (let char = 'a'.charCodeAt(0); char <= 'z'.charCodeAt(0); ++char) {
         const letter = String.fromCharCode(char);
-        const button = document.getElementById(letter);
-        if (button.textContent <= 'Z') {
-          button.textContent = button.textContent.toLowerCase();
+        const letterBtn = document.getElementById(letter)!;
+        if (letterBtn.textContent <= 'Z') {
+          letterBtn.textContent = letterBtn.textContent.toLowerCase();
         } else {
-          button.textContent = button.textContent.toUpperCase();
+          letterBtn.textContent = letterBtn.textContent.toUpperCase();
         }
       }
     }),
@@ -337,7 +335,7 @@ export function initCalculator(storageKey, { drawer, fab, fabClose }) {
   });
 
   // Other panel buttons
-  const buttonActions = {
+  const buttonActions: Record<string, string> = {
     div: '\\frac{#@}{#?}',
     frac: '\\frac{#0}{#?}',
     deg: '#@\\degree',
@@ -372,9 +370,6 @@ export function initCalculator(storageKey, { drawer, fab, fabClose }) {
     log: '\\log_{#?}{#0}',
     lg: '\\lg(#0)',
     ln: '\\ln(#0)',
-    // TODO: add more name-latex insertion pair
-    // For difference between #@, #?, look at https://cortexjs.io/mathlive/guides/shortcuts/
-    // #0 is replaced with current selection, or placeholder if there is no selection
     sqr: '#@^2',
     perc: '\\%',
     lpar: '(',
@@ -391,9 +386,17 @@ export function initCalculator(storageKey, { drawer, fab, fabClose }) {
 
   setupButtonEvents(buttonActions);
 
+  // Panel switching (main / abc / func keyboards)
+  document.querySelectorAll<HTMLInputElement>('[data-panel]').forEach((radio) => {
+    radio.addEventListener('click', () => {
+      const panel = radio.dataset.panel;
+      if (panel) showPanel(panel);
+    });
+  });
+
   // Symbolic-numeric transformation
-  prepareButton(document.getElementById('displayModeSwitch'));
-  document.getElementById('displayModeSwitch').addEventListener('click', () => {
+  prepareButton(document.getElementById('displayModeSwitch')!);
+  document.getElementById('displayModeSwitch')?.addEventListener('click', () => {
     if (calculatorOutput.dataset.displayMode === 'numeric') {
       calculatorOutput.dataset.displayMode = 'symbolic';
     } else {
@@ -403,8 +406,8 @@ export function initCalculator(storageKey, { drawer, fab, fabClose }) {
   });
 
   // Degree-radian transformation
-  prepareButton(document.getElementById('angleModeSwitch'));
-  document.getElementById('angleModeSwitch').addEventListener('click', () => {
+  prepareButton(document.getElementById('angleModeSwitch')!);
+  document.getElementById('angleModeSwitch')!.addEventListener('click', () => {
     if (calculatorOutput.dataset.angleMode === 'deg') {
       calculatorOutput.dataset.angleMode = 'rad';
     } else {
@@ -413,8 +416,8 @@ export function initCalculator(storageKey, { drawer, fab, fabClose }) {
     calculate();
   });
 
-  // Keyboard handling
-  function handleKeyPress(ev) {
+  /** Keyboard handling */
+  function handleKeyPress(ev: KeyboardEvent) {
     switch (ev.key) {
       case 'Enter':
         calculate(true);
@@ -430,7 +433,7 @@ export function initCalculator(storageKey, { drawer, fab, fabClose }) {
 
   // Shortcuts
   calculatorInputElement.inlineShortcuts = {
-    ...calculatorInputElement.inlineShortcuts, // Preserve default shortcuts
+    ...calculatorInputElement.inlineShortcuts,
     ans: '\\operatorname{ans}',
     stdev: '\\operatorname{stdev}([#?])',
     stdevp: '\\operatorname{stdevp}([#?])',
@@ -444,10 +447,7 @@ export function initCalculator(storageKey, { drawer, fab, fabClose }) {
     '^': '#@^{(#?)}',
   };
 
-  /**
-   * @param {import('@cortex-js/compute-engine').SemiBoxedExpression} json
-   */
-  function hasError(json) {
+  function hasError(json: MathJsonExpression): boolean {
     if (!Array.isArray(json)) return false;
     if (json[0] === 'Error') return true;
 
@@ -457,10 +457,7 @@ export function initCalculator(storageKey, { drawer, fab, fabClose }) {
     return false;
   }
 
-  /**
-   * @param {import('@cortex-js/compute-engine').SemiBoxedExpression} json
-   */
-  function radianToDegree(json) {
+  function radianToDegree(json: MathJsonExpression): MathJsonExpression {
     if (!Array.isArray(json)) {
       return json;
     }
@@ -493,31 +490,25 @@ export function initCalculator(storageKey, { drawer, fab, fabClose }) {
       'Asech',
       'Acsch',
     ];
-    let parsedExpr;
+    // false positive
+    // eslint-disable-next-line @typescript-eslint/no-redundant-type-constituents
+    let parsedExpr: MathJsonExpression & any[];
     if (trigFunc.includes(json[0])) {
-      // If has a trig function, add a degree to the argument
       parsedExpr = [json[0], ['Degrees', radianToDegree(json[1])]];
     } else if (trigFuncInv.includes(json[0])) {
-      // If has an inv trig function, divide output by degree
       parsedExpr = ['Divide', [json[0], radianToDegree(json[1])], ['Degrees', 1]];
     } else {
-      // If no trig function, recursively check the children
-      parsedExpr = [json[0]];
-      json.slice(1).forEach((item) => {
-        parsedExpr.push(radianToDegree(item));
-      });
+      const [symbol, ...args] = json;
+      parsedExpr = [symbol, ...args.map(radianToDegree)];
     }
     return parsedExpr;
   }
 
   /**
-   * @param {HTMLButtonElement} button
-   *
    * Prepares a button to maintain focus on the calculator input when clicked.
    * This prevents the input border from blinking when buttons are clicked.
    */
-  function prepareButton(button) {
-    // if the calculator input is focused, prevent losing focus when clicking button
+  function prepareButton(button: Element) {
     button.addEventListener('mousedown', (ev) => {
       if (document.activeElement === calculatorInputElement) {
         ev.preventDefault();
@@ -525,8 +516,8 @@ export function initCalculator(storageKey, { drawer, fab, fabClose }) {
     });
   }
 
-  function setupButtonEvents(buttonActions) {
-    for (const [buttonName, action] of Object.entries(buttonActions)) {
+  function setupButtonEvents(actions: Record<string, string>) {
+    for (const [buttonName, action] of Object.entries(actions)) {
       document.getElementsByName(buttonName).forEach((button) => {
         prepareButton(button);
         button.addEventListener('click', () => {
@@ -536,88 +527,72 @@ export function initCalculator(storageKey, { drawer, fab, fabClose }) {
     }
   }
 
-  /**
-   * @param {string} input
-   * @param {string} displayed
-   * @param {number} numeric
-   * @param {string} angleMode
-   */
-  function addHistoryItem(input, displayed, numeric, angleMode = 'rad') {
-    const historyPanel = document.getElementById('history-panel');
+  function addHistoryItem(input: string, displayed: string, numeric: number, angleMode = 'rad') {
+    const historyPanel = document.getElementById('history-panel')!;
 
-    const template = document.getElementById('history-item-template');
-    /** @type {DocumentFragment} */
+    const template = document.getElementById('history-item-template') as HTMLTemplateElement;
     const clone = document.importNode(template.content, true);
 
-    // Store original input for recomputation
-    /** @type {import('mathlive').MathfieldElement} */
-    const historyItem = clone.querySelector('.history-item');
+    const historyItem = clone.querySelector<HTMLElement>('.history-item')!;
     historyItem.dataset.input = input;
     historyItem.dataset.angleMode = angleMode;
 
     // Set input text
-    const inputRow = clone.querySelector('.history-input');
-    /** @type {import('mathlive').MathfieldElement} */
-    const inputField = inputRow.querySelector('.history-text');
+    const inputRow = clone.querySelector('.history-input')!;
+    const inputField = inputRow.querySelector<MathfieldElement>('.history-text')!;
     inputField.innerHTML = input;
 
     // Set output text
-    const outputRow = clone.querySelector('.history-output');
-    /** @type {import('mathlive').MathfieldElement} */
-    const outputField = outputRow.querySelector('.history-text');
+    const outputRow = clone.querySelector('.history-output')!;
+    const outputField = outputRow.querySelector<MathfieldElement>('.history-text')!;
     outputField.innerHTML = `=${displayed}`;
 
     // Only show rad/deg toggle if expression contains trig functions
-    const modeSwitch = clone.querySelector('.history-mode-switch');
+    const modeSwitch = clone.querySelector<HTMLElement>('.history-mode-switch')!;
     const hasTrig = containsTrigFunction(input);
     if (!hasTrig) {
       modeSwitch.style.display = 'none';
     }
 
-    // Customize clipboard export to remove $$ wrapping
-    const historyOnExport = (_mf, latex) => {
-      return ce.parse(latex).toString();
-    };
+    const normalizeLatex = (latex: string) => ce.parse(latex).toString();
+    const historyOnExport: MathfieldElement['onExport'] = (_mf, latex) => normalizeLatex(latex);
     inputField.onExport = historyOnExport;
     outputField.onExport = historyOnExport;
 
-    // Copy buttons - copy to clipboard
-    const inputCopyBtn = clone.querySelector('.history-input .history-copy-btn');
-    const outputCopyBtn = clone.querySelector('.history-output .history-copy-btn');
-    // Input row copy button
+    // Copy buttons
+    const inputCopyBtn = clone.querySelector('.history-input .history-copy-btn')!;
+    const outputCopyBtn = clone.querySelector('.history-output .history-copy-btn')!;
     inputCopyBtn.addEventListener('click', () => {
-      navigator.clipboard.writeText(input);
+      void copyToClipboard(normalizeLatex(input));
     });
-    // Output row copy button
     outputCopyBtn.addEventListener('click', () => {
-      navigator.clipboard.writeText(String(numeric));
+      void copyToClipboard(normalizeLatex(displayed));
     });
 
-    // Insert buttons - insert into calculator input
-    const inputInsertBtn = clone.querySelector('.history-input .history-insert-btn');
-    const outputInsertBtn = clone.querySelector('.history-output .history-insert-btn');
-    // Input row insert button
+    // Insert buttons
+    const inputInsertBtn = clone.querySelector('.history-input .history-insert-btn')!;
+    const outputInsertBtn = clone.querySelector('.history-output .history-insert-btn')!;
     inputInsertBtn.addEventListener('click', () => {
       calculatorInputElement.insert(input);
       calculatorInputElement.dispatchEvent(new CustomEvent('input'));
     });
-    // Output row insert button
     outputInsertBtn.addEventListener('click', () => {
-      calculatorInputElement.insert(ce.parse(displayed).toString());
+      calculatorInputElement.insert(displayed);
       calculatorInputElement.dispatchEvent(new CustomEvent('input'));
     });
 
-    // Deg/rad mode switch (only active if trig functions present)
-    const modeSwitchInput = modeSwitch.querySelector('input');
+    // Deg/rad mode switch
+    const modeSwitchInput = modeSwitch.querySelector('input')!;
     modeSwitchInput.checked = angleMode === 'deg';
 
     modeSwitchInput.addEventListener('change', () => {
       const isDeg = modeSwitchInput.checked;
       const newMode = isDeg ? 'deg' : 'rad';
+      const displayMode = calculatorOutput.dataset.displayMode as DisplayMode;
       historyItem.dataset.angleMode = newMode;
 
-      // Recompute using the shared evaluateExpression function
-      const result = evaluateExpression(input, newMode, calculatorOutput.dataset.displayMode);
+      const result = evaluateExpression(input, newMode, displayMode);
+      // TODO: overwrite localStorage
       if (result) {
         outputField.innerHTML = `=${result.displayed}`;
         displayed = result.displayed;
@@ -625,37 +600,23 @@ export function initCalculator(storageKey, { drawer, fab, fabClose }) {
       }
     });
 
-    // Append to the history panel
     historyPanel.insertBefore(clone, historyPanel.firstChild);
   }
 }
 
-/**
- * @param {string} panelClass
- */
-function showPanel(panelClass) {
-  // Hide all panels
-  const panels = document.querySelectorAll('.keyboard');
+function showPanel(panelClass: string) {
+  const panels = document.querySelectorAll<HTMLElement>('.keyboard');
   panels.forEach((panel) => (panel.style.display = 'none'));
 
-  // Show the selected panel
-  const panelToShow = document.querySelectorAll(`.${panelClass}`);
+  const panelToShow = document.querySelectorAll<HTMLElement>(`.${panelClass}`);
   panelToShow.forEach((panel) => (panel.style.display = 'flex'));
 }
 
-// Expose showPanel globally for inline onclick handlers in the calculator HTML
-window.showPanel = showPanel;
-
-// Column navigation for responsive keyboards
 function initColumnNavigation() {
   setupKeyboardNav('main-keyboard', 'show-functions');
   setupKeyboardNav('func-keyboard', 'show-trig');
 
-  /**
-   * @param {string} keyboardId
-   * @param {string} toggleClass
-   */
-  function setupKeyboardNav(keyboardId, toggleClass) {
+  function setupKeyboardNav(keyboardId: string, toggleClass: string) {
     const keyboard = document.getElementById(keyboardId);
     if (!keyboard) return;
 
@@ -668,19 +629,11 @@ function initColumnNavigation() {
   }
 }
 
-/**
- * @param {string} input
- */
-export function containsTrigFunction(input) {
+export function containsTrigFunction(input: string): boolean {
   return /sin|cos|tan|cot|sec|csc/i.test(input);
 }
 
-/**
- * @param {HTMLElement} drawer
- * @param {HTMLElement} fab
- * @param {HTMLElement | null} fabClose
- */
-function initDrawerUI(drawer, fab, fabClose) {
+function initDrawerUI(drawer: HTMLElement, fab: HTMLElement, fabClose: HTMLElement | null) {
   function openDrawer() {
     fab.classList.remove('visible');
     drawer.classList.add('open');
@@ -696,13 +649,11 @@ function initDrawerUI(drawer, fab, fabClose) {
     fab.classList.remove('visible');
   }
 
-  // Floating button opens the drawer
   fab.addEventListener('click', (ev) => {
-    if (fabClose?.contains(ev.target)) return;
+    if (fabClose?.contains(ev.target as Node)) return;
     openDrawer();
   });
 
-  // X on floating button dismisses entirely
   if (fabClose) {
     fabClose.addEventListener('click', (ev) => {
       ev.stopPropagation();
@@ -710,7 +661,6 @@ function initDrawerUI(drawer, fab, fabClose) {
     });
   }
 
-  // Header close button collapses to fab
   const closeBtn = document.getElementById('calculatorDrawerClose');
   if (closeBtn) {
     closeBtn.addEventListener('click', collapseDrawer);
@@ -722,7 +672,7 @@ function initDrawerUI(drawer, fab, fabClose) {
     let startX = 0;
     let startWidth = 0;
 
-    function onPointerMove(ev) {
+    function onPointerMove(ev: PointerEvent) {
       const delta = startX - ev.clientX;
       drawer.style.width = `${Math.max(460, startWidth + delta)}px`;
     }
@@ -745,13 +695,67 @@ function initDrawerUI(drawer, fab, fabClose) {
   const header = drawer.querySelector('.calculator-drawer-header');
   if (header) {
     header.addEventListener('click', (ev) => {
-      if (ev.target === closeBtn || closeBtn?.contains(ev.target)) return;
+      if (ev.target === closeBtn || closeBtn?.contains(ev.target as Node)) return;
       if (drawer.classList.contains('open')) {
         collapseDrawer();
       } else {
         openDrawer();
       }
     });
+  }
+}
+
+/** based on https://github.com/vueuse/vueuse/blob/main/packages/core/useClipboard/index.ts */
+export async function copyToClipboard(text: string): Promise<void> {
+  // Guard against SSR or non-browser environments
+  // eslint-disable-next-line @typescript-eslint/no-unnecessary-condition
+  if (typeof window === 'undefined' || !navigator || !document) {
+    return;
+  }
+
+  let useLegacy = true;
+
+  // 1. Try Modern Async Clipboard API
+  // eslint-disable-next-line @typescript-eslint/no-unnecessary-condition
+  if (navigator.clipboard && typeof navigator.clipboard.writeText === 'function') {
+    try {
+      await navigator.clipboard.writeText(text);
+      useLegacy = false; // Success, no need for legacy
+    } catch {
+      // Permission denied or other error? Fallback to legacy.
+      useLegacy = true;
+    }
+  }
+
+  // 2. Fallback to legacy execCommand
+  if (useLegacy) {
+    legacyCopy(text);
+  }
+}
+
+function legacyCopy(value: string) {
+  const ta = document.createElement('textarea');
+  ta.value = value;
+
+  // Ensure the element is not visible but part of the DOM
+  ta.style.position = 'absolute';
+  ta.style.opacity = '0';
+  ta.style.left = '-9999px'; // Added safety to ensure it's off-screen
+  ta.style.top = '0';
+  ta.setAttribute('readonly', ''); // Prevent keyboard from popping up on mobile
+
+  document.body.append(ta);
+
+  ta.select();
+  // Additional selection range for mobile compatibility
+  ta.setSelectionRange(0, value.length);
+
+  try {
+    document.execCommand('copy');
+  } catch (err) {
+    throw new Error('Failed to copy text using legacy method.', { cause: err });
+  } finally {
+    ta.remove();
   }
 }
 
@@ -772,7 +776,7 @@ onDocumentReady(() => {
             drawer,
             fab,
             fabClose,
-          })
+          });
         } catch (e) {
           console.error('Failed to initialize calculator:', e);
         }
