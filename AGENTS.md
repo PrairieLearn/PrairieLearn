@@ -149,7 +149,7 @@ Avoid running the entire test suite unless necessary, as it can be time-consumin
 
 Tests expect Postgres, Redis, and an S3-compatible store to be running, and usually they already are. If you suspect that they're not, run `make start-support` from the root directory.
 
-To test UI code looks correct, you should try to connect to the development server and screenshot the page with `playwright`. The dev server usually runs at `http://localhost:3000`. If the `CONDUCTOR_PORT` environment variable is set, use that port instead. If you can't determine the port, ask the user.
+To test UI code looks correct, you should try to connect to the development server and screenshot the page with `playwright`. The dev server runs on the port specified by the `CONDUCTOR_PORT` environment variable (if set) or `3000`. If you can't determine the port, ask the user.
 
 When writing tests:
 
