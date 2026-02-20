@@ -65,8 +65,6 @@
                 {{^aria_label}}{{#label}}aria-labelledby="pl-string-input-{{uuid}}-label"{{/label}}{{/aria_label}}
                 {{#aria_label}}aria-label="{{aria_label}}"{{/aria_label}}
             />
-    {{/multiline}}
-    {{^multiline}}
         {{#suffix}}
         <span class="input-group-text" id="pl-string-input-{{uuid}}-suffix">{{suffix}}</span>
         {{/suffix}}
@@ -162,9 +160,8 @@
         </button>
         {{/a_sub}}
     </span>
+    <div class="mt-1">
 {{/multiline}}
-
-{{#multiline}}<div class="mt-1">{{/multiline}}
 {{#parse_error}}
     <span class="small" style="white-space: nowrap">
         <span class="badge text-bg-danger">
