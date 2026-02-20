@@ -10,7 +10,9 @@ ignores:
   - ".claude/**"
   - ".venv/**"
   - ".agents/**"
+  - ".changeset/**"
   - ".context/**"
+  - ".github/PULL_REQUEST_TEMPLATE.md"
 
 config:
   MD013: false # Line length

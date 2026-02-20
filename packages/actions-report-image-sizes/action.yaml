@@ -1,5 +1,5 @@
 name: 'Report image sizes'
-description: 'Comment image size changes on the PR and update the baseline on master pushes'
+description: 'Report image size changes for PRs and update the baseline on master pushes'
 inputs:
   sizes-path:
     description: 'Path to the image-sizes.json file produced by the build'
@@ -15,8 +15,11 @@ inputs:
     required: false
     default: 'false'
   token:
-    description: 'GitHub token for commenting and baseline branch operations'
+    description: 'GitHub token for baseline branch operations'
     required: true
+  report-path:
+    description: 'Path to write the report markdown (for workflow_run comment posting)'
+    required: false
 runs:
   using: 'node24'
   main: 'dist/index.js'
