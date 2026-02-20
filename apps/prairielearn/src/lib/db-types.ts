@@ -96,17 +96,6 @@ export const JsonCommentSchema = z.union([z.string(), z.array(z.any()), z.record
 // Sproc schemas. These should be alphabetized by their corresponding sproc name.
 // *******************************************************************************
 
-// Result of assessments_format_for_question sproc
-export const SprocAssessmentsFormatForQuestionSchema = z.array(
-  z.object({
-    assessment_id: IdSchema,
-    color: z.string(),
-    course_instance_id: IdSchema,
-    label: z.string(),
-    share_source_publicly: z.boolean(),
-  }),
-);
-
 // Result of check_assessment_access sproc
 const SprocCheckAssessmentAccessSchema = z.object({
   active: z.boolean().nullable(),
@@ -219,20 +208,11 @@ export const SprocAuthzCourseInstanceSchema = z.object({
 });
 export type SprocAuthzCourseInstance = z.infer<typeof SprocAuthzCourseInstanceSchema>;
 
-// Result of instance_questions_next_allowed_grade sproc
-export const SprocInstanceQuestionsNextAllowedGradeSchema = z.object({
-  allow_grade_date: DateFromISOString.nullable(),
-  allow_grade_interval: z.string(),
-  allow_grade_left_ms: z.coerce.number(),
-});
-
 // *******************************************************************************
 // Database table schemas. These should be alphabetized by their corresponding
 // table name. For instance, `TeamSchema` should come before `TeamConfigSchema`
 // because `Team` comes before `TeamConfig` alphabetically.
 // *******************************************************************************
-
-export const AccessLogSchema = null;
 
 export const AccessTokenSchema = z.object({
   created_at: DateFromISOString,
@@ -1540,8 +1520,6 @@ export const VariantSchema = z.object({
 });
 export type Variant = z.infer<typeof VariantSchema>;
 
-export const VariantViewLogSchema = null;
-
 export const WorkspaceSchema = z.object({
   created_at: DateFromISOString,
   disk_usage_bytes: z.coerce.number().nullable(), // This is BIGINT, but always fits a number
@@ -1617,7 +1595,6 @@ export type Zone = z.infer<typeof ZoneSchema>;
 // *******************************************************************************
 
 export const TableNames = [
-  'access_logs',
   'access_tokens',
   'administrators',
   'ai_grading_jobs',
@@ -1712,7 +1689,6 @@ export const TableNames = [
   'topics',
   'user_sessions',
   'users',
-  'variant_view_logs',
   'variants',
   'workspace_host_logs',
   'workspace_hosts',
