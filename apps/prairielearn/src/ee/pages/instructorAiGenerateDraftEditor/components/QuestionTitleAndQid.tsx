@@ -1,5 +1,6 @@
+import { useMutation } from '@tanstack/react-query';
 import clsx from 'clsx';
-import { type ReactNode, useCallback, useEffect, useId, useRef, useState } from 'react';
+import { type ReactNode, useEffect, useId, useRef, useState } from 'react';
 
 import { validateShortName } from '../../../../lib/short-name.js';
 
@@ -39,7 +40,10 @@ function InlineEditableField({
   value,
   displayValue,
   placeholder,
+  isPending,
+  serverError,
   onSave,
+  onResetServerError,
   fieldLabel,
   displayClassName,
   inputClassName,
@@ -57,7 +61,10 @@ function InlineEditableField({
   /** Text shown in display mode. Defaults to `value` if not provided. */
   displayValue?: string;
   placeholder: string;
-  onSave: (newValue: string) => Promise<void>;
+  isPending: boolean;
+  serverError: string | null;
+  onSave: (newValue: string) => void;
+  onResetServerError: () => void;
   /** Accessible label for both the edit trigger and the input field. */
   fieldLabel: string;
   displayClassName?: string;
@@ -74,16 +81,18 @@ function InlineEditableField({
   onEditEnd: () => void;
 }) {
   const [localValue, setLocalValue] = useState(value);
-  const [isSaving, setIsSaving] = useState(false);
-  const [error, setError] = useState<string | null>(null);
+  const [validationError, setValidationError] = useState<string | null>(null);
   const inputRef = useRef<HTMLInputElement>(null);
   const errorId = useId();
 
-  const handleEditStart = useCallback(() => {
+  const error = validationError ?? serverError;
+
+  function handleEditStart() {
     setLocalValue(value);
-    setError(null);
+    setValidationError(null);
+    onResetServerError();
     onEditStart();
-  }, [value, onEditStart]);
+  }
 
   // Focus and select the input when entering edit mode.
   useEffect(() => {
@@ -93,7 +102,7 @@ function InlineEditableField({
     }
   }, [isEditing]);
 
-  const handleSave = useCallback(async () => {
+  function handleSave() {
     const trimmed = localValue.trim();
 
     if (trimmed === value.trim()) {
@@ -106,40 +115,29 @@ function InlineEditableField({
     if (validate) {
       const validationError = validate(trimmed);
       if (validationError) {
-        setError(validationError);
+        setValidationError(validationError);
         return;
       }
     }
 
-    setIsSaving(true);
-    setError(null);
-    try {
-      await onSave(trimmed);
-      onEditEnd();
-    } catch (err) {
-      setError(err instanceof Error ? err.message : 'Could not save. Please try again.');
-    } finally {
-      setIsSaving(false);
-    }
-  }, [localValue, value, disableSaveWhenEmpty, validate, onSave, onEditEnd]);
+    setValidationError(null);
+    onSave(trimmed);
+  }
 
-  const handleCancel = useCallback(() => {
-    if (isSaving) return;
+  function handleCancel() {
+    if (isPending) return;
     onEditEnd();
-  }, [isSaving, onEditEnd]);
+  }
 
-  const handleKeyDown = useCallback(
-    (e: React.KeyboardEvent) => {
-      if (e.key === 'Enter') {
-        e.preventDefault();
-        void handleSave();
-      } else if (e.key === 'Escape') {
-        e.preventDefault();
-        handleCancel();
-      }
-    },
-    [handleSave, handleCancel],
-  );
+  function handleKeyDown(e: React.KeyboardEvent) {
+    if (e.key === 'Enter') {
+      e.preventDefault();
+      handleSave();
+    } else if (e.key === 'Escape') {
+      e.preventDefault();
+      handleCancel();
+    }
+  }
 
   if (!isEditing) {
     const shownValue = displayValue ?? value;
@@ -183,7 +181,7 @@ function InlineEditableField({
     );
   }
 
-  const isSaveDisabled = isSaving || (disableSaveWhenEmpty && localValue.trim() === '');
+  const isSaveDisabled = isPending || (disableSaveWhenEmpty && localValue.trim() === '');
 
   return (
     <div>
@@ -195,13 +193,14 @@ function InlineEditableField({
           className={clsx('form-control form-control-sm', inputClassName, error && 'is-invalid')}
           value={localValue}
           placeholder={placeholder}
-          disabled={isSaving}
+          disabled={isPending}
           aria-label={fieldLabel}
           aria-invalid={error ? true : undefined}
           aria-describedby={error ? errorId : undefined}
           onChange={(e) => {
             setLocalValue(e.target.value);
-            setError(null);
+            setValidationError(null);
+            onResetServerError();
           }}
           onKeyDown={handleKeyDown}
         />
@@ -210,9 +209,9 @@ function InlineEditableField({
           className="btn btn-sm btn-primary flex-shrink-0"
           aria-label="Save"
           disabled={isSaveDisabled}
-          onClick={() => void handleSave()}
+          onClick={handleSave}
         >
-          {isSaving ? (
+          {isPending ? (
             <span className="spinner-border spinner-border-text" role="status">
               <span className="visually-hidden">Saving...</span>
             </span>
@@ -224,7 +223,7 @@ function InlineEditableField({
           type="button"
           className="btn btn-sm btn-secondary flex-shrink-0"
           aria-label="Cancel"
-          disabled={isSaving}
+          disabled={isPending}
           onClick={handleCancel}
         >
           <i className="bi bi-x-lg" aria-hidden="true" />
@@ -256,38 +255,31 @@ export function QuestionTitleAndQid({
   const hasDraftPrefix = isDraftQid(qid);
   const qidSuffix = hasDraftPrefix ? qid.slice(DRAFT_QID_PREFIX.length) : qid;
 
-  const handleSaveTitle = useCallback(
-    async (newTitle: string) => {
-      const result = await renameDraftQuestion({
-        csrfToken,
-        title: newTitle || undefined,
-      });
+  const renameMutation = useMutation({
+    mutationFn: renameDraftQuestion,
+    onSuccess: (result) => {
       onSaved(result);
+      setEditingField(null);
     },
-    [csrfToken, onSaved],
-  );
+  });
 
-  const handleSaveQid = useCallback(
-    async (newQidSuffix: string) => {
-      const fullQid = hasDraftPrefix ? DRAFT_QID_PREFIX + newQidSuffix : newQidSuffix;
-      const result = await renameDraftQuestion({
-        csrfToken,
-        qid: fullQid,
-      });
-      onSaved(result);
-    },
-    [csrfToken, hasDraftPrefix, onSaved],
-  );
+  const serverError = renameMutation.isError ? renameMutation.error.message : null;
 
-  const validateQid = useCallback(
-    (newQidSuffix: string) => {
-      const fullQid = hasDraftPrefix ? DRAFT_QID_PREFIX + newQidSuffix : newQidSuffix;
-      const validation = validateShortName(fullQid, qid);
-      if (!validation.valid) return validation.message;
-      return null;
-    },
-    [hasDraftPrefix, qid],
-  );
+  function handleSaveTitle(newTitle: string) {
+    renameMutation.mutate({ csrfToken, title: newTitle || undefined });
+  }
+
+  function handleSaveQid(newQidSuffix: string) {
+    const fullQid = hasDraftPrefix ? DRAFT_QID_PREFIX + newQidSuffix : newQidSuffix;
+    renameMutation.mutate({ csrfToken, qid: fullQid });
+  }
+
+  function validateQid(newQidSuffix: string) {
+    const fullQid = hasDraftPrefix ? DRAFT_QID_PREFIX + newQidSuffix : newQidSuffix;
+    const validation = validateShortName(fullQid, qid);
+    if (!validation.valid) return validation.message;
+    return null;
+  }
 
   return (
     <div className="d-flex flex-wrap align-items-center gap-2 px-1 py-1 border-bottom bg-light question-title-bar">
@@ -296,6 +288,9 @@ export function QuestionTitleAndQid({
         placeholder="Untitled question"
         fieldLabel="Question title"
         displayClassName="fw-semibold"
+        isPending={renameMutation.isPending}
+        serverError={editingField === 'title' ? serverError : null}
+        onResetServerError={() => renameMutation.reset()}
         disabled={editingField !== null && editingField !== 'title'}
         isEditing={editingField === 'title'}
         disableSaveWhenEmpty
@@ -323,6 +318,9 @@ export function QuestionTitleAndQid({
             ) : null}
           </>
         }
+        isPending={renameMutation.isPending}
+        serverError={editingField === 'qid' ? serverError : null}
+        onResetServerError={() => renameMutation.reset()}
         validate={validateQid}
         disabled={editingField !== null && editingField !== 'qid'}
         isEditing={editingField === 'qid'}
