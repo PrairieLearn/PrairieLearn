@@ -1,10 +1,9 @@
 import clsx from 'clsx';
-import { type ReactNode, useCallback, useEffect, useRef, useState } from 'react';
+import { type ReactNode, useCallback, useEffect, useId, useRef, useState } from 'react';
 
-import type { StaffQuestion } from '../../../../lib/client/safe-db-types.js';
 import { validateShortName } from '../../../../lib/short-name.js';
 
-const DRAFT_QID_PREFIX = '__drafts__/';
+export const DRAFT_QID_PREFIX = '__drafts__/';
 
 function isDraftQid(qid: string): boolean {
   return qid.startsWith(DRAFT_QID_PREFIX);
@@ -78,7 +77,7 @@ function InlineEditableField({
   const [isSaving, setIsSaving] = useState(false);
   const [error, setError] = useState<string | null>(null);
   const inputRef = useRef<HTMLInputElement>(null);
-  const errorId = useRef(`inline-edit-error-${Math.random().toString(36).slice(2, 8)}`).current;
+  const errorId = useId();
 
   // Reset local state when entering edit mode (render-time state sync).
   const [wasEditing, setWasEditing] = useState(false);
@@ -241,16 +240,16 @@ function InlineEditableField({
 }
 
 export function QuestionTitleAndQid({
-  question,
+  currentQid,
+  currentTitle,
   csrfToken,
   onSaved,
 }: {
-  question: StaffQuestion;
+  currentQid: string | null;
+  currentTitle: string | null;
   csrfToken: string;
   onSaved: (update: { qid: string | null; title: string | null }) => void;
 }) {
-  const [currentQid, setCurrentQid] = useState(question.qid);
-  const [currentTitle, setCurrentTitle] = useState(question.title);
   const [editingField, setEditingField] = useState<'title' | 'qid' | null>(null);
 
   const qid = currentQid ?? '';
@@ -264,8 +263,6 @@ export function QuestionTitleAndQid({
         qid,
         title: newTitle || undefined,
       });
-      setCurrentQid(result.qid);
-      setCurrentTitle(result.title);
       onSaved(result);
     },
     [csrfToken, qid, onSaved],
@@ -279,8 +276,6 @@ export function QuestionTitleAndQid({
         qid: fullQid,
         title: currentTitle || undefined,
       });
-      setCurrentQid(result.qid);
-      setCurrentTitle(result.title);
       onSaved(result);
     },
     [csrfToken, currentTitle, hasDraftPrefix, onSaved],
@@ -331,9 +326,9 @@ export function QuestionTitleAndQid({
           </>
         }
         validate={validateQid}
-        truncateStart
         disabled={editingField !== null && editingField !== 'qid'}
         isEditing={editingField === 'qid'}
+        truncateStart
         onSave={handleSaveQid}
         onEditStart={() => setEditingField('qid')}
         onEditEnd={() => setEditingField(null)}

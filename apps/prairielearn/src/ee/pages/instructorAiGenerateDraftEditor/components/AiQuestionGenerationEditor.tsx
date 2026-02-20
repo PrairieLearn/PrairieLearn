@@ -14,7 +14,7 @@ import {
   type NewVariantHandle,
   QuestionAndFilePreview,
 } from './QuestionAndFilePreview.js';
-import { QuestionTitleAndQid } from './QuestionTitleAndQid.js';
+import { DRAFT_QID_PREFIX, QuestionTitleAndQid } from './QuestionTitleAndQid.js';
 
 async function fetchQuestionFiles(
   urlPrefix: string,
@@ -101,7 +101,8 @@ function AiQuestionGenerationEditorInner({
 
       <div className="app-preview-tabs z-1">
         <QuestionTitleAndQid
-          question={question}
+          currentQid={currentQid}
+          currentTitle={currentTitle}
           csrfToken={csrfToken}
           onSaved={handleTitleAndQidSaved}
         />
@@ -172,8 +173,8 @@ function AiQuestionGenerationEditorInner({
           currentTitle && !/^draft #\d+$/i.test(currentTitle) ? currentTitle : undefined
         }
         defaultQid={run(() => {
-          const suffix = currentQid?.startsWith('__drafts__/')
-            ? currentQid.slice('__drafts__/'.length)
+          const suffix = currentQid?.startsWith(DRAFT_QID_PREFIX)
+            ? currentQid.slice(DRAFT_QID_PREFIX.length)
             : (currentQid ?? undefined);
           if (suffix && /^draft_\d+$/.test(suffix)) return undefined;
           return suffix;

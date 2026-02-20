@@ -27,6 +27,7 @@ import { processSubmission } from '../../../lib/question-submission.js';
 import { HttpRedirect } from '../../../lib/redirect.js';
 import { typedAsyncHandler } from '../../../lib/res-locals.js';
 import type { UntypedResLocals } from '../../../lib/res-locals.types.js';
+import { validateShortName } from '../../../lib/short-name.js';
 import { logPageView } from '../../../middlewares/logPageView.js';
 import { selectOptionalQuestionById, selectQuestionById } from '../../../models/question.js';
 import {
@@ -368,6 +369,17 @@ router.post(
 
       res.redirect(res.locals.urlPrefix + '/question/' + res.locals.question.id + '/preview');
     } else if (req.body.__action === 'rename_draft_question') {
+      const qid = req.body.qid;
+      if (typeof qid !== 'string' || qid.trim() === '') {
+        res.status(400).json({ error: 'QID is required.' });
+        return;
+      }
+      const validation = validateShortName(qid);
+      if (!validation.valid) {
+        res.status(400).json({ error: `Invalid QID: ${validation.lowercaseMessage}` });
+        return;
+      }
+
       const client = getCourseFilesClient();
 
       const result = await client.renameQuestion.mutate({
@@ -376,7 +388,7 @@ router.post(
         authn_user_id: res.locals.authn_user.id,
         has_course_permission_edit: res.locals.authz_data.has_course_permission_edit,
         question_id: res.locals.question.id,
-        qid: req.body.qid,
+        qid,
         title: req.body.title,
       });
 
