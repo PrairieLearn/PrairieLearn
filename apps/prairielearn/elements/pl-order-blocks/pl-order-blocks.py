@@ -336,7 +336,7 @@ def render(element_html: str, data: pl.QuestionData) -> str:
 
             if submission_indent is not None:
                 submission_indent = int(submission_indent)
-            option["indent_depth"] = submission_indent if submission_indent is not None else 0
+            option["indent_depth"] = max(0, submission_indent) if submission_indent is not None else 0
 
         help_text = (
             f"Move answer blocks from the options area to the {dropzone_layout.value}."

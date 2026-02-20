@@ -270,6 +270,7 @@ window.PLOrderBlocks = function (uuid, options) {
     
     let indent;
     if (dragStartedInDropzone) {
+      // item's data-indent-depth is unchanged during drag; only the placeholder is updated
       const originalLeft = ui.originalPosition?.left ?? ui.position.left;
       const indentDelta = (ui.position.left - originalLeft) / tabWidth;
       indent = getIndentation(ui.item[0]) + Math.round(indentDelta);
