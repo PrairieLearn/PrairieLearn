@@ -10862,11 +10862,11 @@ __metadata:
   linkType: hard
 
 "baseline-browser-mapping@npm:^2.8.19":
-  version: 2.9.11
-  resolution: "baseline-browser-mapping@npm:2.9.11"
+  version: 2.8.21
+  resolution: "baseline-browser-mapping@npm:2.8.21"
   bin:
     baseline-browser-mapping: dist/cli.js
-  checksum: 10c0/eba49fcc1b33ab994aeeb73a4848f2670e06a0886dd5b903689ae6f60d47e7f1bea9262dbb2548c48179e858f7eda2b82ddf941ae783b862f4dcc51085a246f2
+  checksum: 10c0/61f69897e6c6f429991a08c2228ff5398eb2397124f9458ea3d1f1b09d79141cbe6bc11df55c12b3d95da7f25cae576dd17323509edcefd5e9373ecab0085808
   languageName: node
   linkType: hard
 
@@ -18349,7 +18349,6 @@ __metadata:
     prettier-plugin-sh: "npm:^0.18.0"
     prettier-plugin-sql: "npm:^0.19.2"
     prettier-plugin-toml: "npm:^2.0.6"
-    pyright: "npm:^1.1.408"
     react: "npm:^19.2.4"
     react-dom: "npm:^19.2.4"
     s3rver: "npm:^3.7.1"
@@ -18778,21 +18777,6 @@ __metadata:
   version: 2.3.1
   resolution: "punycode@npm:2.3.1"
   checksum: 10c0/14f76a8206bc3464f794fb2e3d3cc665ae416c01893ad7a02b23766eb07159144ee612ad67af5e84fa4479ccfe67678c4feb126b0485651b302babf66f04f9e9
-  languageName: node
-  linkType: hard
-
-"pyright@npm:^1.1.408":
-  version: 1.1.408
-  resolution: "pyright@npm:1.1.408"
-  dependencies:
-    fsevents: "npm:~2.3.3"
-  dependenciesMeta:
-    fsevents:
-      optional: true
-  bin:
-    pyright: index.js
-    pyright-langserver: langserver.index.js
-  checksum: 10c0/d6b66c7c697117f027e5ec2a25bf0dc030e93cc4a3460ae3ab52762e7758451cbb60e5f2246e74fdf2affc849efaef22331922d2dcccd40b1bb83573bb34506b
   languageName: node
   linkType: hard
 

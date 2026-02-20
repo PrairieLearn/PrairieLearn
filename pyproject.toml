@@ -53,6 +53,7 @@ dev = [
   "ruff==0.14.14",
   "sqlfluff==4.0.0",
   "squawk-cli==2.39.0",
+  "ty==0.0.17",
   "types-chevron==0.14.2.20250103",
   "types-lxml==2026.1.1",
   "types-pygments==2.19.0.20251121",
@@ -144,7 +145,7 @@ ignore = [
   "PLR0915", # too-many-statements
   "PLR0916", # too-many-boolean-expressions
   "PLR0917", # too-many-positional-arguments
-  "PLR6201", # literal-membership (pyright doesn't understand assert_never with sets)
+  "PLR6201", # literal-membership (pyright doesn't understand assert_never with sets. can we remove after migrating to ty?)
   "PLR2004", # magic-value-comparison
   "PLR6301", # no-self-use
   "PLW1514", # unspecified-encoding
@@ -247,6 +248,11 @@ exclude = [
 venvPath = "."
 venv = ".venv"
 typeCheckingMode = "strict"
+
+[tool.ty.environment]
+extra-paths = ["./apps/prairielearn/python"]
+
+[tool.ty.src]
 include = [
   "./apps/prairielearn/elements",
   "./apps/prairielearn/python",
@@ -255,36 +261,12 @@ include = [
   "./graders",
   "./scripts",
 ]
-ignore = [
+exclude = [
   "./apps/prairielearn/elements/pl-drawing",            # requires refactor
   "./apps/prairielearn/elements/pl-prairiedraw-figure", # deprecated
   "./apps/prairielearn/elements/pl-threejs",            # deprecated
   "./exampleCourse/questions/**/tests",                 # autograder tests, use different dependencies
 ]
-extraPaths = ["./apps/prairielearn/python"]
-pythonVersion = "3.13"
-executionEnvironments = [
-  # TODO: after https://github.com/tamasfe/taplo/issues/332, split with newlines
-  { root = "./graders/python", reportUntypedNamedTuple = "none", reportUntypedFunctionDecorator = "none", reportUnnecessaryComparison = "none", reportUnnecessaryIsInstance = "none", reportMissingTypeArgument = "none", extraPaths = [
-  ] },
-  { root = "./graders/c", reportArgumentType = "none", reportOperatorIssue = "none", reportAttributeAccessIssue = "none", reportIndexIssue = "none", reportCallIssue = "none", reportMissingTypeArgument = "none", extraPaths = [
-  ] },
-  { root = "./exampleCourse/questions", reportArgumentType = "none", reportUnknownParameterType = "none", reportMissingParameterType = "none", reportOperatorIssue = "none", reportCallIssue = "none", reportConstantRedefinition = "none" },
-]
-reportUnnecessaryTypeIgnoreComment = "error"
-# These rules would require significant changes
-reportUnknownMemberType = "none"
-reportUnknownArgumentType = "none"
-reportUnknownVariableType = "none"
-# These rules don't provide much value
-reportPrivateUsage = "none"
-reportUnnecessaryIsInstance = "none"
-reportUnknownLambdaType = "none"
-# These rules require improved upstream type annotations
-reportMissingTypeStubs = "none"
-reportMissingTypeArgument = "none"
-reportOperatorIssue = "information"
-reportUnknownParameterType = "information"
 
 [tool.pytest]
 pythonpath = ["apps/prairielearn/python"]

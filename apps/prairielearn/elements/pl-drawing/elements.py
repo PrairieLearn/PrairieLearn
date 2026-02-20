@@ -1,5 +1,3 @@
-# pyright: reportUnknownParameterType=false
-
 import json
 import math
 
