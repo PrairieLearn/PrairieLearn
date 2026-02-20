@@ -233,13 +233,13 @@ export function StudentAssessmentInstance({
           title: 'Proceed to next section?',
           body: html`
             <p>
-              Questions above will become read-only. You can review your previous submissions but
+              Questions in previous sections will become read-only. You can review your previous submissions but
               cannot make new ones.
             </p>
             ${groupConfig != null
               ? html`
                   <p class="fw-bold">
-                    This will affect all group members. Questions above will become read-only for
+                    This will affect all group members. Questions in previous sections will become read-only for
                     everyone in your group.
                   </p>
                 `
@@ -252,7 +252,7 @@ export function StudentAssessmentInstance({
                 onchange="document.getElementById('lockpoint-submit-${row.zone_id}').disabled = !this.checked"
               />
               <label class="form-check-label" for="lockpoint-confirm-${row.zone_id}">
-                I understand that questions above will become read-only
+                I understand that questions in previous sections will become read-only
               </label>
             </div>
           `,
