@@ -59,7 +59,6 @@ FIRST_WRONG_TYPES = frozenset([
 ])
 
 
-TAB_SPACES = 4
 FIRST_WRONG_FEEDBACK = {
     "incomplete": "Your answer is correct so far, but it is incomplete.",
     "wrong-at-block": r"""Your answer is incorrect starting at <span style="color:red;">block number {}</span>.
