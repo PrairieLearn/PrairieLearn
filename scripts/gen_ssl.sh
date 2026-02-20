@@ -1,9 +1,8 @@
 #! /bin/bash
-set -e
 
-KEY=/etc/ssl/private/localhost.key
-CERT=/etc/ssl/certs/localhost.crt
-CA_CHAIN=/etc/ssl/certs/server-chain.crt
+KEY=/etc/pki/tls/private/localhost.key
+CERT=/etc/pki/tls/certs/localhost.crt
+CA_CHAIN=/etc/pki/tls/certs/server-chain.crt
 
 if [ -e $KEY ]; then
     exit 0
