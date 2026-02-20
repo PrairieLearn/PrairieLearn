@@ -36,7 +36,7 @@
         "ace/mode/xml": "xml",
         "ace/mode/yaml": "yaml",
         "ace/mode/css": "css",
-        "ace/mode/sh": "shellscript"
+        "ace/mode/sh": "bash"
       },
     },
     {
