@@ -27,7 +27,7 @@ import { createManualGradingTrpcClient } from './utils/trpc-client.js';
 import { TRPCProvider, useTRPC } from './utils/trpc-context.js';
 import { useManualGradingActions } from './utils/useManualGradingActions.js';
 
-export interface AssessmentQuestionManualGradingProps {
+interface AssessmentQuestionManualGradingProps {
   hasCourseInstancePermissionEdit: boolean;
   course: PageContext<'assessmentQuestion', 'instructor'>['course'];
   courseInstance: PageContext<'assessmentQuestion', 'instructor'>['course_instance'];

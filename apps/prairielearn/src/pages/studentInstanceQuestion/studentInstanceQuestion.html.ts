@@ -179,6 +179,7 @@ export function StudentInstanceQuestion({
             authz_result: resLocals.authz_result,
             csrfToken: resLocals.__csrf_token,
             urlPrefix: resLocals.urlPrefix,
+            allowGradeLeftMs: resLocals.allowGradeLeftMs,
           })}
           ${QuestionNavSideGroup({
             urlPrefix: resLocals.urlPrefix,

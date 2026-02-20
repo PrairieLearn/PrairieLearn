@@ -5,7 +5,13 @@ import { HttpStatusError } from '@prairielearn/error';
 import { loadSqlEquiv, queryRow, queryRows } from '@prairielearn/postgres';
 import { IdSchema } from '@prairielearn/zod';
 
-import * as assessment from '../../lib/assessment.js';
+import {
+  crossLockpoint,
+  gradeAssessmentInstance,
+  renderText,
+  updateAssessmentInstance,
+} from '../../lib/assessment.js';
+import { canDeleteAssessmentInstance } from '../../lib/assessment.shared.js';
 import { AssessmentInstanceSchema, type File } from '../../lib/db-types.js';
 import { deleteFile, uploadFile } from '../../lib/file-store.js';
 import {
@@ -22,6 +28,7 @@ import clientFingerprint from '../../middlewares/clientFingerprint.js';
 import logPageView from '../../middlewares/logPageView.js';
 import selectAndAuthzAssessmentInstance from '../../middlewares/selectAndAuthzAssessmentInstance.js';
 import studentAssessmentAccess from '../../middlewares/studentAssessmentAccess.js';
+import { computeNextAllowedGradingTimeMs } from '../../models/instance-question.js';
 import { selectVariantsByInstanceQuestion } from '../../models/variant.js';
 
 import {
@@ -36,7 +43,7 @@ router.use(selectAndAuthzAssessmentInstance);
 router.use(studentAssessmentAccess);
 
 async function ensureUpToDate(locals: ResLocalsForPage<'assessment-instance'>) {
-  const updated = await assessment.updateAssessmentInstance(
+  const updated = await updateAssessmentInstance(
     locals.assessment_instance.id,
     locals.authn_user.id,
   );
@@ -161,7 +168,7 @@ router.post(
       }
 
       const isFinishing = ['finish', 'timeLimitFinish'].includes(req.body.__action);
-      await assessment.gradeAssessmentInstance({
+      await gradeAssessmentInstance({
         assessment_instance_id: res.locals.assessment_instance.id,
         user_id: res.locals.user.id,
         authn_user_id: res.locals.authn_user.id,
@@ -188,7 +195,7 @@ router.post(
         );
       }
       const zone_id = IdSchema.parse(req.body.zone_id);
-      await assessment.crossLockpoint({
+      await crossLockpoint({
         assessment_instance_id: res.locals.assessment_instance.id,
         zone_id,
         authn_user_id: res.locals.authn_user.id,
@@ -251,6 +258,11 @@ router.get(
       instance_question.previous_variants = allPreviousVariants.filter((variant) =>
         idsEqual(variant.instance_question_id, instance_question.id),
       );
+      if (instance_question.grade_rate_minutes) {
+        instance_question.allowGradeLeftMs = await computeNextAllowedGradingTimeMs({
+          instanceQuestionId: instance_question.id,
+        });
+      }
     }
 
     res.locals.has_manual_grading_question = instance_question_rows.some(
@@ -259,10 +271,7 @@ router.get(
     res.locals.has_auto_grading_question = instance_question_rows.some(
       (q) => q.max_auto_points || q.auto_points || !q.max_points,
     );
-    const assessment_text_templated = assessment.renderText(
-      res.locals.assessment,
-      res.locals.urlPrefix,
-    );
+    const assessment_text_templated = renderText(res.locals.assessment, res.locals.urlPrefix);
     res.locals.assessment_text_templated = assessment_text_templated;
 
     const showTimeLimitExpiredModal = req.query.timeLimitExpired === 'true';
@@ -272,7 +281,7 @@ router.get(
         StudentAssessmentInstance({
           instance_question_rows,
           showTimeLimitExpiredModal,
-          userCanDeleteAssessmentInstance: assessment.canDeleteAssessmentInstance(res.locals),
+          userCanDeleteAssessmentInstance: canDeleteAssessmentInstance(res.locals),
           resLocals: res.locals,
         }),
       );
@@ -308,7 +317,7 @@ router.get(
         groupConfig,
         groupInfo,
         userCanAssignRoles,
-        userCanDeleteAssessmentInstance: assessment.canDeleteAssessmentInstance(res.locals),
+        userCanDeleteAssessmentInstance: canDeleteAssessmentInstance(res.locals),
         resLocals: res.locals,
       }),
     );

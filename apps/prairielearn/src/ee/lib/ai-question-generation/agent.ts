@@ -25,7 +25,7 @@ import klaw from 'klaw';
 import memoize from 'p-memoize';
 import z from 'zod';
 
-import { execute, loadSql, loadSqlEquiv, queryOptionalRow, queryRow } from '@prairielearn/postgres';
+import { execute, loadSqlEquiv, queryOptionalRow, queryRow } from '@prairielearn/postgres';
 import { run } from '@prairielearn/run';
 import * as Sentry from '@prairielearn/sentry';
 
@@ -44,6 +44,7 @@ import {
 import { DefaultMap } from '../../../lib/default-map.js';
 import { REPOSITORY_ROOT_PATH } from '../../../lib/paths.js';
 import { createServerJob } from '../../../lib/server-jobs.js';
+import { updateCourseInstanceUsagesForAiQuestionGeneration } from '../../../models/course-instance-usages.js';
 import { selectQuestionById } from '../../../models/question.js';
 import { selectAiQuestionGenerationContextMessages } from '../../models/ai-question-generation-message.js';
 import {
@@ -67,7 +68,6 @@ import { trimContextIfNeeded } from './context.js';
 import { getAiQuestionGenerationStreamContext } from './redis.js';
 
 const sql = loadSqlEquiv(import.meta.url);
-const otherSql = loadSql(path.join(import.meta.dirname, '..', 'aiQuestionGeneration.sql'));
 
 interface QuestionGenerationUIMessageMetadata {
   job_sequence_id: string | null;
@@ -294,7 +294,7 @@ export function getAgenticModel(): { model: LanguageModel; modelId: QuestionGene
   return { model: openai(modelId), modelId };
 }
 
-export async function createQuestionGenerationAgent({
+async function createQuestionGenerationAgent({
   model,
   course,
   user,
@@ -559,7 +559,7 @@ export async function editQuestionWithAgent({
       throw new Error('Failed to create initial question for AI generation.');
     }
 
-    await execute(otherSql.insert_draft_question_metadata, {
+    await execute(sql.insert_draft_question_metadata, {
       question_id: saveResults.question_id,
       creator_id: authnUser.id,
     });
@@ -720,6 +720,13 @@ export async function editQuestionWithAgent({
       user,
       usage: totalUsage,
       model: modelId,
+    });
+
+    await updateCourseInstanceUsagesForAiQuestionGeneration({
+      courseId: course.id,
+      authnUserId: authnUser.id,
+      model: modelId,
+      usage: totalUsage,
     });
   });
 

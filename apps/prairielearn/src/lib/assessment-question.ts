@@ -52,7 +52,8 @@ const RawStaffAssessmentQuestionRowSchema = AssessmentQuestionRowMetaSchema.exte
   StaffAssessmentQuestionSqlSchema.shape,
 );
 
-export const StaffAssessmentQuestionRowSchema =
+// eslint-disable-next-line @typescript-eslint/no-unused-vars
+const StaffAssessmentQuestionRowSchema =
   RawStaffAssessmentQuestionRowSchema.brand<'StaffAssessmentQuestionRow'>();
 export type StaffAssessmentQuestionRow = z.infer<typeof StaffAssessmentQuestionRowSchema>;
 

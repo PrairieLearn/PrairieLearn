@@ -78,8 +78,6 @@ export function buildHierarchicalAssessment(
       canSubmit: row.zone.json_can_submit ?? [],
     };
 
-    if (row.alternative_group.number == null) throw new Error('Alternative group number required');
-
     const zoneNumber = row.zone.number;
     zoneAlternativeGroupCounts[zoneNumber] ??= -1;
 
