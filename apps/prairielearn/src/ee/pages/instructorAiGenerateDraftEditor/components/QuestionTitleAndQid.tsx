@@ -143,8 +143,8 @@ function InlineEditableField({
     const shownValue = displayValue ?? value;
     return (
       <div
-        role={disabled ? undefined : 'button'}
-        tabIndex={disabled ? undefined : 0}
+        role="button"
+        tabIndex={disabled ? -1 : 0}
         className={clsx(
           'd-inline-flex align-items-center gap-1 rounded px-1 inline-editable-display',
           disabled && 'disabled',
