@@ -1,5 +1,32 @@
+const TAB_SPACES = 4;
+const CODE_TEXT_SELECTOR =
+  '.pl-order-blocks-code .pl-code td.code pre, .pl-order-blocks-code .pl-code pre';
+
+function computeScaledIndent(container, list) {
+  const codeText = container.querySelector(CODE_TEXT_SELECTOR);
+  if (!codeText) return TAB_SPACES;
+  const listFontSize = Number.parseFloat(getComputedStyle(list).fontSize) || 0;
+  const codeFontSize = Number.parseFloat(getComputedStyle(codeText).fontSize) || listFontSize;
+  if (listFontSize <= 0) return TAB_SPACES;
+  return (TAB_SPACES * codeFontSize) / listFontSize;
+}
+
+function setContainerIndentScale(container, list) {
+  const scaledTabSpaces = computeScaledIndent(container, list);
+  container.style.setProperty('--pl-order-block-indent-ch', String(scaledTabSpaces));
+  return scaledTabSpaces;
+}
+
+$(function () {
+  document.querySelectorAll('.pl-order-blocks-answer-container').forEach((container) => {
+    const list = container.querySelector('.list-group');
+    if (list) {
+      setContainerIndentScale(container, list);
+    }
+  });
+});
+
 window.PLOrderBlocks = function (uuid, options) {
-  const TAB_SPACES = 4;
   const maxIndent = options.maxIndent; // defines the maximum number of times an answer block can be indented
   const enableIndentation = options.enableIndentation;
 
@@ -9,20 +36,8 @@ window.PLOrderBlocks = function (uuid, options) {
   const dropzoneList = $(dropzoneElementId)[0];
   const dropzonePaddingLeft = Number.parseFloat(getComputedStyle(dropzoneList).paddingLeft) || 0;
   const fullContainer = document.querySelector('.pl-order-blocks-question-' + uuid);
-  const codeText = fullContainer.querySelector(
-    '.pl-order-blocks-code .pl-code td.code pre, .pl-order-blocks-code .pl-code pre',
-  );
-  const scaledTabSpaces = computeScaledIndent();
-  fullContainer.style.setProperty('--pl-order-block-indent-ch', String(scaledTabSpaces));
+  const scaledTabSpaces = setContainerIndentScale(fullContainer, dropzoneList);
   const tabWidth = measureTabWidth();
-
-  function computeScaledIndent() {
-    if (!codeText) return TAB_SPACES;
-    const dropzoneFontSize = Number.parseFloat(getComputedStyle(dropzoneList).fontSize) || 0;
-    const codeFontSize = Number.parseFloat(getComputedStyle(codeText).fontSize) || dropzoneFontSize;
-    if (dropzoneFontSize <= 0) return TAB_SPACES;
-    return (TAB_SPACES * codeFontSize) / dropzoneFontSize;
-  }
 
   function measureTabWidth() {
     const probe = document.createElement('span');
@@ -267,7 +282,7 @@ window.PLOrderBlocks = function (uuid, options) {
     }
 
     if (tabWidth <= 0) return 0;
-    
+
     let indent;
     if (dragStartedInDropzone) {
       // item's data-indent-depth is unchanged during drag; only the placeholder is updated
