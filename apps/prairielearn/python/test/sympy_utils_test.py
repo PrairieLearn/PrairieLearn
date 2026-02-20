@@ -1,4 +1,5 @@
 import json
+import re
 from itertools import chain, repeat
 from typing import Any
 
@@ -6,6 +7,11 @@ import prairielearn as pl
 import prairielearn.sympy_utils as psu
 import pytest
 import sympy
+
+
+def _caret(text: str, caret: str) -> str:
+    """Join text and caret lines for readable caret-position test assertions."""
+    return f"{text}\n{caret}"
 
 
 def test_evaluate() -> None:
@@ -372,8 +378,8 @@ class TestExceptions:
     INVALID_VARIABLE_CASES = ("x", "exp(y)", "z*n")
     FUNCTION_NOT_CALLED_CASES = ("2+exp", "cos*n")
     INVALID_PARSE_CASES = ("(", "n**", "n**2+", "!")
-    INVALID_ESCAPE_CASES = ("\\", "n + 2 \\", "2 \\")
-    INVALID_COMMENT_CASES = ("#", "n + 2 # comment", "# x")
+    INVALID_ESCAPE_CASES = ("\\", "n + 2 \\", "2 \\", "1\uff3c2")
+    INVALID_COMMENT_CASES = ("#", "n + 2 # comment", "# x", "1\uff032")
 
     # Test exception cases
 
@@ -423,7 +429,7 @@ class TestExceptions:
 
     @pytest.mark.parametrize("a_sub", INVALID_ESCAPE_CASES)
     def test_escape_error(self, a_sub: str) -> None:
-        with pytest.raises(psu.HasParseError):
+        with pytest.raises(psu.HasEscapeError):
             psu.convert_string_to_sympy(a_sub, self.VARIABLES)
 
     @pytest.mark.parametrize("a_sub", INVALID_COMMENT_CASES)
@@ -441,7 +447,7 @@ class TestExceptions:
             (INVALID_FUNCTION_CASES, "invalid", ()),
             (INVALID_VARIABLE_CASES, "invalid symbol", ()),
             (INVALID_PARSE_CASES, "syntax error", ()),
-            (INVALID_ESCAPE_CASES, "syntax error", ()),
+            (INVALID_ESCAPE_CASES, 'must not contain the character "\\"', ()),
             (INVALID_COMMENT_CASES, 'must not contain the character "#"', ()),
             # TODO: not handled
             # (COMPLEX_CASES, "must be expressed as integers", ("i",)),
@@ -459,6 +465,109 @@ class TestExceptions:
             )
             assert format_error is not None
             assert target_string in format_error
+
+    @pytest.mark.parametrize(
+        ("expr", "expected_caret", "with_vars"),
+        [
+            # #14141: '#' after large integer — stringify_expr wraps it as Integer(1234567890),
+            # shifting the '#' offset. Caret must still point at '#' in the original input.
+            (
+                "1234567890 # abcdefghij",
+                _caret(
+                    "7890 # abc",
+                    "     ^     ",
+                ),
+                (),
+            ),
+            # '#' at the very start of the expression
+            (
+                "# x + 1",
+                _caret(
+                    "# x +",
+                    "^     ",
+                ),
+                (),
+            ),
+            # '#' after '^' which becomes '**' (offset shift from replacement)
+            (
+                "n^2 # comment",
+                _caret(
+                    "n^2 # com",
+                    "    ^     ",
+                ),
+                (),
+            ),
+            # #14141: '\\' at the start — previously misreported as generic "syntax error"
+            # because stringify_expr raised TokenError before ast_check_str ran
+            (
+                "\\n + 2",
+                _caret(
+                    "\\n + ",
+                    "^     ",
+                ),
+                (),
+            ),
+            # '\\' after a large integer
+            (
+                "1234567890 \\",
+                _caret(
+                    "7890 \\",
+                    "     ^ ",
+                ),
+                (),
+            ),
+            # #14142: invalid symbol — previously showed an empty caret pointing at nothing
+            # because point_to_error received ind=-1
+            (
+                "nlogn",
+                _caret(
+                    "nlogn",
+                    "  ^   ",
+                ),
+                (),
+            ),
+            # Invalid symbol in the middle of a valid expression
+            (
+                "n + abc",
+                _caret(
+                    " + abc",
+                    "     ^ ",
+                ),
+                (),
+            ),
+            # Invalid symbol at the start
+            (
+                "xyz * n",
+                _caret(
+                    "xyz * n",
+                    "  ^     ",
+                ),
+                (),
+            ),
+            # Invalid symbol after a valid symbol containing the same character
+            (
+                "ab + a",
+                _caret(
+                    "ab + a",
+                    "     ^ ",
+                ),
+                ("ab",),
+            ),
+        ],
+    )
+    def test_error_caret_output(
+        self, expr: str, expected_caret: str, with_vars: tuple[str, ...]
+    ) -> None:
+        """Regression tests for #14141 and #14142.
+
+        Verifies that the caret visualization in error messages points at the
+        correct character in the original input expression.
+        """
+        error_msg = psu.validate_string_as_sympy(expr, self.VARIABLES + with_vars)
+        assert error_msg is not None
+        match = re.search(r"<pre>(.*?)</pre>", error_msg, re.DOTALL)
+        assert match is not None
+        assert match.group(1) == expected_caret
 
     def test_invalid_function_with_simplify_false(self) -> None:
         """Test that invalid function calls are caught with simplify_expression=False.

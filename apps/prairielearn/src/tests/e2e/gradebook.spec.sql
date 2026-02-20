@@ -40,6 +40,7 @@ INSERT INTO
   assessment_instances (
     assessment_id,
     user_id,
+    number,
     score_perc,
     points,
     max_points
@@ -48,6 +49,7 @@ VALUES
   (
     $assessment_id,
     $user_id,
+    1,
     $score_perc,
     $score_perc,
     100
