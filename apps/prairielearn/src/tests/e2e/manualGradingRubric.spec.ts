@@ -1,6 +1,5 @@
-import { z } from 'zod';
-
-import { queryRow } from '@prairielearn/postgres';
+import * as sqldb from '@prairielearn/postgres';
+import { IdSchema } from '@prairielearn/zod';
 
 import { dangerousFullSystemAuthz } from '../../lib/authz-data-lib.js';
 import { selectAssessmentByTid } from '../../models/assessment.js';
@@ -10,6 +9,8 @@ import { syncCourse } from '../helperCourse.js';
 import { getOrCreateUser } from '../utils/auth.js';
 
 import { expect, test } from './fixtures.js';
+
+const sql = sqldb.loadSqlEquiv(import.meta.url);
 
 const STUDENT = { uid: 'e2e_rubric_student@test.com', name: 'E2E Rubric Student', uin: 'E2E001' };
 
@@ -76,19 +77,10 @@ test.describe('Manual grading rubric submission panel update', () => {
 
     await page.context().clearCookies();
 
-    const iqId = await queryRow(
-      `SELECT iq.id
-         FROM instance_questions AS iq
-         JOIN assessment_instances AS ai ON ai.id = iq.assessment_instance_id
-         JOIN assessment_questions AS aq ON aq.id = iq.assessment_question_id
-         JOIN questions AS q ON q.id = aq.question_id
-        WHERE ai.assessment_id = $assessment_id
-          AND q.qid = $qid
-          AND iq.requires_manual_grading = true
-        ORDER BY iq.id DESC
-        LIMIT 1`,
+    const iqId = await sqldb.queryRow(
+      sql.select_instance_question_for_manual_grading,
       { assessment_id: assessmentId, qid: 'manualGrade/codeUpload' },
-      z.string(),
+      IdSchema,
     );
 
     const manualGradingIQUrl = `/pl/course_instance/${courseInstanceId}/instructor/assessment/${assessmentId}/manual_grading/instance_question/${iqId}`;
@@ -129,7 +121,6 @@ test.describe('Manual grading rubric submission panel update', () => {
       document.body.setAttribute('data-e2e-no-reload', 'true');
     });
 
-    // Add a second rubric item and save.
     await page.locator('[aria-label="Toggle rubric settings"]').click();
     await expect(page.locator('#rubric-setting')).toBeVisible();
     await page.getByRole('button', { name: 'Add item' }).click();
