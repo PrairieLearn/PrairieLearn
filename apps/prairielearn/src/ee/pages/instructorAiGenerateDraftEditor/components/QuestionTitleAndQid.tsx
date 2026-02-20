@@ -151,30 +151,25 @@ function InlineEditableField({
         )}
         aria-label={`${fieldLabel}: ${shownValue || placeholder}. Click to edit.`}
         aria-disabled={disabled || undefined}
-        onClick={disabled ? undefined : handleEditStart}
-        onKeyDown={
-          disabled
-            ? undefined
-            : (e) => {
-                if (e.key === 'Enter' || e.key === ' ') {
-                  e.preventDefault();
-                  handleEditStart();
-                }
-              }
-        }
+        onClick={() => {
+          if (!disabled) handleEditStart();
+        }}
+        onKeyDown={(e) => {
+          if (disabled) return;
+          if (e.key === 'Enter' || e.key === ' ') {
+            e.preventDefault();
+            handleEditStart();
+          }
+        }}
       >
         {displayPrefix}
         <span
           className={clsx('text-truncate text-start', displayClassName)}
           dir={truncateStart ? 'rtl' : undefined}
         >
-          {truncateStart ? (
-            <span dir="auto">
-              {shownValue || <span className="text-muted fst-italic">{placeholder}</span>}
-            </span>
-          ) : (
-            shownValue || <span className="text-muted fst-italic">{placeholder}</span>
-          )}
+          <span dir="auto">
+            {shownValue || <span className="text-muted fst-italic">{placeholder}</span>}
+          </span>
         </span>
         <i className="bi bi-pencil text-muted small" aria-hidden="true" />
       </div>
