@@ -163,6 +163,9 @@ function AiQuestionGenerationEditorInner({
         />
       </div>
       <FinalizeModal
+        // Key on the current values so the uncontrolled inputs reset when the
+        // user edits the title/QID inline and reopens the modal.
+        key={`${currentTitle ?? ''}::${currentQid ?? ''}`}
         csrfToken={csrfToken}
         show={showFinalizeModal}
         // Don't pre-fill auto-generated placeholder values like "draft #3" or

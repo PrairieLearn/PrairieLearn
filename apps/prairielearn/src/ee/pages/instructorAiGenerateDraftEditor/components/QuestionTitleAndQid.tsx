@@ -15,7 +15,7 @@ async function renameDraftQuestion({
   title,
 }: {
   csrfToken: string;
-  qid: string;
+  qid?: string;
   title?: string;
 }): Promise<{ qid: string; title: string | null }> {
   const response = await fetch(window.location.href, {
@@ -24,7 +24,7 @@ async function renameDraftQuestion({
     body: new URLSearchParams({
       __action: 'rename_draft_question',
       __csrf_token: csrfToken,
-      qid,
+      ...(qid != null ? { qid } : {}),
       ...(title != null ? { title } : {}),
     }),
   });
@@ -100,6 +100,11 @@ function InlineEditableField({
   const handleSave = useCallback(async () => {
     const trimmed = localValue.trim();
 
+    if (trimmed === value.trim()) {
+      onEditEnd();
+      return;
+    }
+
     if (disableSaveWhenEmpty && trimmed === '') return;
 
     if (validate) {
@@ -120,7 +125,7 @@ function InlineEditableField({
     } finally {
       setIsSaving(false);
     }
-  }, [localValue, disableSaveWhenEmpty, validate, onSave, onEditEnd]);
+  }, [localValue, value, disableSaveWhenEmpty, validate, onSave, onEditEnd]);
 
   const handleCancel = useCallback(() => {
     if (isSaving) return;
@@ -231,7 +236,6 @@ function InlineEditableField({
       </div>
       {error ? (
         <div id={errorId} className="text-danger small mt-1" role="alert">
-          <i className="bi bi-exclamation-circle me-1" aria-hidden="true" />
           {error}
         </div>
       ) : null}
@@ -260,12 +264,11 @@ export function QuestionTitleAndQid({
     async (newTitle: string) => {
       const result = await renameDraftQuestion({
         csrfToken,
-        qid,
         title: newTitle || undefined,
       });
       onSaved(result);
     },
-    [csrfToken, qid, onSaved],
+    [csrfToken, onSaved],
   );
 
   const handleSaveQid = useCallback(
@@ -274,11 +277,10 @@ export function QuestionTitleAndQid({
       const result = await renameDraftQuestion({
         csrfToken,
         qid: fullQid,
-        title: currentTitle || undefined,
       });
       onSaved(result);
     },
-    [csrfToken, currentTitle, hasDraftPrefix, onSaved],
+    [csrfToken, hasDraftPrefix, onSaved],
   );
 
   const validateQid = useCallback(

@@ -369,11 +369,12 @@ router.post(
 
       res.redirect(res.locals.urlPrefix + '/question/' + res.locals.question.id + '/preview');
     } else if (req.body.__action === 'rename_draft_question') {
-      const qid = req.body.qid;
-      if (typeof qid !== 'string' || qid.trim() === '') {
-        res.status(400).json({ error: 'QID is required.' });
-        return;
-      }
+      const qid =
+        typeof req.body.qid === 'string' && req.body.qid.trim() !== ''
+          ? req.body.qid
+          : res.locals.question.qid;
+      const title = typeof req.body.title === 'string' ? req.body.title : res.locals.question.title;
+
       const validation = validateShortName(qid);
       if (!validation.valid) {
         res.status(400).json({ error: `Invalid QID: ${validation.lowercaseMessage}` });
@@ -389,7 +390,7 @@ router.post(
         has_course_permission_edit: res.locals.authz_data.has_course_permission_edit,
         question_id: res.locals.question.id,
         qid,
-        title: req.body.title,
+        title,
       });
 
       if (result.status === 'error') {
