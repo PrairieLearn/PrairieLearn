@@ -320,6 +320,7 @@ Then for each question in zone with number `z.number` (already available from th
 
 2. **`apps/prairielearn/src/pages/studentInstanceQuestion/studentInstanceQuestion.ts`** (line 172-188)
    - In `validateAndProcessSubmission`, add:
+
      ```typescript
      if (res.locals.instance_question_info.lockpoint_read_only) {
        throw new HttpStatusError(403, 'This question is read-only after crossing a lockpoint');
@@ -328,6 +329,7 @@ Then for each question in zone with number `z.number` (already available from th
 
 3. **`apps/prairielearn/src/lib/question-render.ts`** — `buildLocals` function (~line 254)
    - `buildLocals` currently takes a destructured options object with 9 named properties (`variant`, `question`, `instance_question`, `group_role_permissions`, `assessment`, `assessment_instance`, `assessment_question`, `group_config`, `authz_result`). Add `lockpoint_read_only?: boolean` to the existing options object:
+
      ```typescript
      function buildLocals({
        variant,
@@ -340,7 +342,9 @@ Then for each question in zone with number `z.number` (already available from th
        lockpoint_read_only?: boolean;
      });
      ```
+
    - Insert a new block **after** the `allow_grade_left_ms` check (~line 340) and **before** the `!variant.open` cascade (line 342). This placement is _outside_ the `if (!assessment || ...) / else` block (line 299-340), so it applies to both instructor and student paths. This is intentional: for instructor pages `lockpoint_read_only` will be falsy (undefined) so the block is a no-op. For student pages it correctly overrides button visibility. Placement is after all the assessment-type-specific logic and grade-rate limiting, but before the variant/question lifecycle checks:
+
      ```typescript
      if (lockpoint_read_only) {
        locals.showGradeButton = false;
@@ -355,6 +359,7 @@ Then for each question in zone with number `z.number` (already available from th
        // review their own previous submissions.
      }
      ```
+
    - This placement ensures lockpoint-read-only overrides Homework's default `showGradeButton = true` but does NOT trigger `showTryAgainButton` (which only activates in the `!variant.open` / `!iq.open` block later).
    - **Caller 1: `getAndRenderVariant`** — receives a `locals` parameter (which is `res.locals` passed by the page handler). `instance_question_info` exists at runtime but is not part of the current typed `locals` parameter. To avoid mutating `res.locals` with ad-hoc fields:
      1. Add `instance_question_info?: { lockpoint_read_only?: boolean }` to `getAndRenderVariant`'s typed `locals` parameter.
@@ -364,14 +369,18 @@ Then for each question in zone with number `z.number` (already available from th
 
 4. **`apps/prairielearn/src/middlewares/selectAndAuthzInstanceQuestion.ts`** — `InstanceQuestionInfoSchema`
    - Add to the schema:
+
      ```typescript
      lockpoint_not_yet_crossed: z.boolean(),
      lockpoint_read_only: z.boolean(),
      ```
+
    - Add to the `next_instance_question` sub-object:
+
      ```typescript
      lockpoint_not_yet_crossed: z.boolean().nullable(),
      ```
+
    - The corresponding SQL (`selectAndAuthzInstanceQuestion.sql`) must add `lockpoint_not_yet_crossed` to the `lead()` window function that populates `next_instance_question`, matching the existing `sequence_locked` pattern.
 
 5. **`apps/prairielearn/src/lib/question-render.sql` + `apps/prairielearn/src/lib/question-render.ts`**
@@ -383,6 +392,7 @@ Then for each question in zone with number `z.number` (already available from th
    - Use `COALESCE` because `renderPanelsForSubmission()` is also used by non-assessment pages (`publicQuestionPreview`, `instructorQuestionPreview`) where `assessment_instance` and `question_order()` are null.
    - Update `SubmissionInfoSchema` in `question-render.ts` with `lockpoint_read_only: z.boolean()`.
    - In `renderPanelsForSubmission`, destructure `lockpoint_read_only` from `submissionInfo` and pass it to `buildLocals`:
+
      ```typescript
      const { ..., lockpoint_read_only } = submissionInfo;
      // then in the buildLocals call:
@@ -394,6 +404,7 @@ Then for each question in zone with number `z.number` (already available from th
        lockpoint_read_only, // NEW
      }),
      ```
+
    - This ensures live-updated panels after a submission correctly hide Save/Grade buttons if the question became lockpoint-read-only (e.g., a group member crossed a lockpoint while this question was open).
 
    **b) `lockpoint_not_yet_crossed` for the next question navigation:**
@@ -580,7 +591,7 @@ The barrier renders even if `zone_title` is null (the `start_new_zone && lockpoi
 
 #### Barrier has three visual states
 
-1. **Already crossed** (`lockpoint_crossed = true`): Non-interactive "Section completed" indicator. Shows who crossed it and when (e.g., "Crossed by student@example.com at 2:30 PM"). Uses a muted/success style.
+1. **Already crossed** (`lockpoint_crossed = true`): Non-interactive "Section completed" indicator. Shows who crossed it and when (e.g., "Crossed by `student@example.com` at 2:30 PM"). Uses a muted/success style.
 
 2. **Next crossable** (`lockpoint_crossed = false` AND this is the first uncrossed lockpoint AND no `sequence_locked` questions in prior zones): Active "Proceed to next section" button that opens the confirmation modal. Warning-styled background.
 
@@ -697,7 +708,7 @@ Questions that are `lockpoint_not_yet_crossed`:
 
 The current `RowLabel` function has two rendering paths: locked (no link, `text-muted` + lock icon + popover) and unlocked (clickable link). Lockpoints introduce a third state: `lockpoint_read_only` (clickable link WITH lock icon + popover). This requires restructuring `RowLabel`:
 
-```
+```typescript
 if (sequence_locked) {
   // Existing: no link, text-muted, lock icon, "A previous question must be completed..."
 } else if (lockpoint_not_yet_crossed) {
