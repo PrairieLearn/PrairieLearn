@@ -1,31 +1,35 @@
 <pl-question-panel>
-<p>
-This question illustrates the <code>grading-method="ordered"</code> mode of
-<a href="https://docs.prairielearn.com/elements/pl-order-blocks"><code>pl-order-blocks</code></a>.
-</p>
-<hr>
-<p>
-Drag all the prime numbers below to the answer zone <strong>in ascending order</strong>.
-</p>
+    <p>
+        This question illustrates the <code>grading-method="ordered"</code> mode of
+        <a href="https://docs.prairielearn.com/elements/pl-order-blocks">
+            <code>pl-order-blocks</code>
+        </a>.
+    </p>
+    <hr>
+    <p>Drag all the prime numbers below to the answer zone <strong>in ascending order</strong>.</p>
 
-<p>
-This example uses the attributes <code>min-incorrect="2"</code> and
-<code>max-incorrect="4"</code> to display a minimum of 2 incorrect distractors and maximum of 4.
-The attribute <code>source-blocks-order="random"</code> shuffles the blocks in the source area.
-The default <code>grading-method="ordered"</code> requires that the correct answer follows
-the order defined by the <code>pl-answers</code>.
-</p>
-
+    <p>
+        This example uses the attributes <code>min-incorrect="2"</code> and
+        <code>max-incorrect="4"</code> to display a minimum of 2 incorrect distractors and maximum
+        of 4. The attribute <code>source-blocks-order="random"</code> shuffles the blocks in the
+        source area. The default <code>grading-method="ordered"</code> requires that the correct
+        answer follows the order defined by the <code>pl-answers</code>.
+    </p>
 </pl-question-panel>
-<pl-order-blocks answers-name="prime-numbers-ordered" source-blocks-order="random" min-incorrect="2" max-incorrect="4">
-  <pl-answer correct="false">1</pl-answer>
-  <pl-answer correct="true">2</pl-answer>
-  <pl-answer correct="true">3</pl-answer>
-  <pl-answer correct="false">4</pl-answer>
-  <pl-answer correct="true">5</pl-answer>
-  <pl-answer correct="false">6</pl-answer>
-  <pl-answer correct="true">7</pl-answer>
-  <pl-answer correct="false">8</pl-answer>
-  <pl-answer correct="false">9</pl-answer>
-  <pl-answer correct="false">10</pl-answer>
+<pl-order-blocks
+    answers-name="prime-numbers-ordered"
+    source-blocks-order="random"
+    min-incorrect="2"
+    max-incorrect="4"
+>
+    <pl-answer correct="false">1</pl-answer>
+    <pl-answer correct="true">2</pl-answer>
+    <pl-answer correct="true">3</pl-answer>
+    <pl-answer correct="false">4</pl-answer>
+    <pl-answer correct="true">5</pl-answer>
+    <pl-answer correct="false">6</pl-answer>
+    <pl-answer correct="true">7</pl-answer>
+    <pl-answer correct="false">8</pl-answer>
+    <pl-answer correct="false">9</pl-answer>
+    <pl-answer correct="false">10</pl-answer>
 </pl-order-blocks>

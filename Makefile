@@ -129,7 +129,7 @@ lint-html:
 	@yarn htmlhint "testCourse/**/question.html" "exampleCourse/**/question.html" "site"
 lint-mustache:
 	@yarn htmlmustache check
-# TODO: yarn htmlmustache format --check
+	@yarn htmlmustache format --check
 lint-markdown:
 	@yarn markdownlint-cli2
 lint-links:

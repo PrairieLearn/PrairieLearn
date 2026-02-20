@@ -1,7 +1,11 @@
 <pl-question-panel>
     <p>
         <i>
-            This question defines the files <code>leading_code.py</code> and <code>trailing_code.py</code> to automatically prepend/append code to the student's answer before grading.  Adding these files allows one to automatically handle imports, function definitions, etc.  The contents of the leading and trailing code files are displayed in the code blocks below.
+            This question defines the files <code>leading_code.py</code> and
+            <code>trailing_code.py</code> to automatically prepend/append code to the student's
+            answer before grading. Adding these files allows one to automatically handle imports,
+            function definitions, etc. The contents of the leading and trailing code files are
+            displayed in the code blocks below.
         </i>
     </p>
 
@@ -10,11 +14,11 @@
 
         $$ {\bf x}_{n+1} = {\bf x}_n - \alpha \nabla f\left({\bf x}_n\right) $$
 
-        Specifically, compute the value of <code>x_new</code> (${\bf x}_{n+1}$) given ${\bf x}_n$, $\alpha$, and $\nabla f\left({\bf x}_n\right)$.
+        Specifically, compute the value of <code>x_new</code> (${\bf x}_{n+1}$) given ${\bf x}_n$,
+        $\alpha$, and $\nabla f\left({\bf x}_n\right)$.
     </p>
 
     <hr>
-
     <pl-code source-file-name="tests/leading_code.py" language="python"></pl-code>
     <div class="mb-3 ps-5">
         <pl-string-input answers-name="answer" display="block" placeholder="x_new = ..."></pl-string-input>

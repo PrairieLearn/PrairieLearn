@@ -1,15 +1,13 @@
 <pl-question-panel>
-  <p>Select all of the following numbers that are {{params.concept}}.</p>
+    <p>Select all of the following numbers that are {{params.concept}}.</p>
 </pl-question-panel>
 
 <pl-checkbox
-  answers-name="numbers"
-  number-answers="7"
-  order="fixed"
-  partial-credit="net-correct"
-  min-correct="2"
+    answers-name="numbers"
+    number-answers="7"
+    order="fixed"
+    partial-credit="net-correct"
+    min-correct="2"
 >
-  {{#params.options}}
-    <pl-answer correct="{{correct}}">{{answer}}</pl-answer>
-  {{/params.options}}
+    {{#params.options}}<pl-answer correct="{{correct}}">{{answer}}</pl-answer>{{/params.options}}
 </pl-checkbox>
