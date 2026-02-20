@@ -79,15 +79,11 @@ function InlineEditableField({
   const inputRef = useRef<HTMLInputElement>(null);
   const errorId = useId();
 
-  // Reset local state when entering edit mode (render-time state sync).
-  const [wasEditing, setWasEditing] = useState(false);
-  if (isEditing && !wasEditing) {
-    setWasEditing(true);
+  const handleEditStart = useCallback(() => {
     setLocalValue(value);
     setError(null);
-  } else if (!isEditing && wasEditing) {
-    setWasEditing(false);
-  }
+    onEditStart();
+  }, [value, onEditStart]);
 
   // Focus and select the input when entering edit mode.
   useEffect(() => {
@@ -157,14 +153,14 @@ function InlineEditableField({
         )}
         aria-label={`${fieldLabel}: ${shownValue || placeholder}. Click to edit.`}
         aria-disabled={disabled || undefined}
-        onClick={disabled ? undefined : onEditStart}
+        onClick={disabled ? undefined : handleEditStart}
         onKeyDown={
           disabled
             ? undefined
             : (e) => {
                 if (e.key === 'Enter' || e.key === ' ') {
                   e.preventDefault();
-                  onEditStart();
+                  handleEditStart();
                 }
               }
         }
