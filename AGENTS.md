@@ -126,7 +126,7 @@ When working with assessment "groups" / "teams", see the [`groups-and-teams` ski
 - Don't add extra comments that a human wouldn't add or that are inconsistent with the rest of the file.
 - Always check for existing model functions in `apps/prairielearn/src/models/` or lib functions before writing one-off database queries.
 - Express request handlers must always either send a response (either by calling `res.send`/etc. or throwing an error) or explicitly pass control by calling `next(...)`.
-- Don't re-export functions or types from other modules just for convenience or backward compatibility (e.g. `export { bar } from 'foo'`).
+- DO NOT re-export functions or types from other modules for convenience or backward compatibility (e.g. `export { bar } from 'foo'`). When moving a function to a new module, update all callers to import from the new location directly.
 
 ### User interface conventions
 
@@ -186,3 +186,13 @@ When changing element properties or options, you MUST update the corresponding d
 
 - For Python tests, use `uv run pytest path/to/testfile.py` from the root directory.
 - To run all Python tests, use `make test-python` from the root directory.
+
+## Meta-management
+
+When you get corrected or discover a codebase convention through trial and error, consider whether adding a rule to this file would prevent the same mistake in future sessions. Only propose an addition if:
+
+- The mistake stems from something non-obvious about this codebase (not general best practices).
+- It's likely to recur — another agent reading the current instructions would plausibly make the same error.
+- It can be stated as a direct rule ("Use X", "Don't do Y"), not a narrative about what happened.
+
+When proposing, suggest the specific text and which section it belongs in. Don't add it without user approval.
