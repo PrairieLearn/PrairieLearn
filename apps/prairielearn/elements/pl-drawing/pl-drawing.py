@@ -147,7 +147,9 @@ def prepare(element_html: str, data: pl.QuestionData) -> None:
             if obj["gradingName"] == "vector":
                 if (
                     w_button is None
-                    and math.isclose(obj["width"], defaults.drawing_defaults["force-width"])
+                    and math.isclose(
+                        obj["width"], defaults.drawing_defaults["force-width"]
+                    )
                 ) or math.isclose(obj["width"], float(w_button)):
                     continue
                 raise RuntimeError(
