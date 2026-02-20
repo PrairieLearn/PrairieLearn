@@ -142,25 +142,12 @@ function InlineEditableField({
   if (!isEditing) {
     const shownValue = displayValue ?? value;
     return (
-      <div
-        role="button"
-        tabIndex={disabled ? -1 : 0}
-        className={clsx(
-          'd-inline-flex align-items-center gap-1 rounded px-1 inline-editable-display',
-          disabled && 'disabled',
-        )}
+      <button
+        type="button"
+        className="d-inline-flex align-items-center gap-1 rounded px-1 inline-editable-display"
         aria-label={`${fieldLabel}: ${shownValue || placeholder}. Click to edit.`}
-        aria-disabled={disabled || undefined}
-        onClick={() => {
-          if (!disabled) handleEditStart();
-        }}
-        onKeyDown={(e) => {
-          if (disabled) return;
-          if (e.key === 'Enter' || e.key === ' ') {
-            e.preventDefault();
-            handleEditStart();
-          }
-        }}
+        disabled={disabled}
+        onClick={handleEditStart}
       >
         {displayPrefix}
         <span
@@ -172,7 +159,7 @@ function InlineEditableField({
           </span>
         </span>
         <i className="bi bi-pencil text-muted small" aria-hidden="true" />
-      </div>
+      </button>
     );
   }
 

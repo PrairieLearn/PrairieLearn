@@ -51,6 +51,10 @@
 .inline-editable-display {
   border: none;
   background: transparent;
+  padding: 0;
+  font: inherit;
+  color: inherit;
+  text-align: inherit;
   cursor: pointer;
   overflow: hidden;
   /* Match the height of form-control-sm so the bar doesn't shift between display/edit modes. */
@@ -62,11 +66,11 @@
   min-height: calc(1.5em + 0.5rem + 2px);
 }
 
-.inline-editable-display.disabled {
+.inline-editable-display:disabled {
   cursor: default;
 }
 
-.inline-editable-display:hover:not(.disabled) {
+.inline-editable-display:hover:not(:disabled) {
   background-color: rgba(0, 0, 0, 0.04);
 }
 
@@ -75,7 +79,7 @@
   transition: opacity 0.15s;
 }
 
-.inline-editable-display:hover:not(.disabled) .bi-pencil,
+.inline-editable-display:hover:not(:disabled) .bi-pencil,
 .inline-editable-display:focus-visible .bi-pencil {
   opacity: 1;
 }
