@@ -24,3 +24,12 @@
 
 - Cross-lockpoint requests are idempotent via `ON CONFLICT DO NOTHING` + follow-up existence check.
 - Non-submission actions (e.g., personal notes) remain unblocked for lockpoint read-only questions.
+
+## Architecture updates (2026-02-14)
+
+- Replaced multiple lock-state booleans as the primary control path with one canonical `question_access_mode` value across SQL, middleware, and UI:
+  - `writable`
+  - `blocked_sequence`
+  - `blocked_lockpoint`
+  - `read_only_lockpoint`
+- Added a non-implementation design sketch in `plans/lockpoints.md` for moving lockpoint crossing to a dedicated transactional domain command boundary.

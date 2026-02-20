@@ -77,6 +77,14 @@ export type EnumModeReason = z.infer<typeof EnumModeReasonSchema>;
 export const EnumPlanGrantTypeSchema = z.enum(['trial', 'stripe', 'invoice', 'gift']);
 export type EnumPlanGrantType = z.infer<typeof EnumPlanGrantTypeSchema>;
 
+export const EnumQuestionAccessModeSchema = z.enum([
+  'writable',
+  'blocked_sequence',
+  'blocked_lockpoint',
+  'read_only_lockpoint',
+]);
+export type EnumQuestionAccessMode = z.infer<typeof EnumQuestionAccessModeSchema>;
+
 export const EnumQuestionTypeSchema = z.enum([
   'Calculation',
   'MultipleChoice',
@@ -191,11 +199,9 @@ export const SprocUsersSelectOrInsertSchema = z.object({
 // Result of question_order sproc
 export const SprocQuestionOrderSchema = z.object({
   instance_question_id: IdSchema,
-  lockpoint_not_yet_crossed: z.boolean(),
-  lockpoint_read_only: z.boolean(),
+  question_access_mode: EnumQuestionAccessModeSchema,
   question_number: z.string(),
   row_order: z.number().int(),
-  sequence_locked: z.boolean(),
 });
 
 // Result of server_loads_current sproc

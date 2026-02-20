@@ -27,6 +27,7 @@ import { compiledScriptTag } from '../../lib/assets.js';
 import {
   type AssessmentInstance,
   AssessmentQuestionSchema,
+  EnumQuestionAccessModeSchema,
   type GroupConfig,
   InstanceQuestionSchema,
 } from '../../lib/db-types.js';
@@ -58,12 +59,10 @@ export const InstanceQuestionRowSchema = InstanceQuestionSchema.extend({
   zone_best_questions: z.number().nullable(),
   zone_has_best_questions: z.boolean(),
   file_count: z.number(),
-  sequence_locked: z.boolean(),
-  lockpoint_not_yet_crossed: z.boolean(),
-  lockpoint_read_only: z.boolean(),
+  question_access_mode: EnumQuestionAccessModeSchema,
   prev_advance_score_perc: z.number().nullable(),
   prev_title: z.string().nullable(),
-  prev_sequence_locked: z.boolean().nullable(),
+  prev_question_access_mode: EnumQuestionAccessModeSchema.nullable(),
   allow_grade_left_ms: z.coerce.number(),
   allow_grade_date: DateFromISOString.nullable(),
   allow_grade_interval: z.string(),
@@ -176,7 +175,9 @@ export function StudentAssessmentInstance({
     .sort((a, b) => a - b)[0];
 
   const hasSequenceLockedInPriorZones = (zoneNumber: number) =>
-    instance_question_rows.some((row) => row.zone_number < zoneNumber && row.sequence_locked);
+    instance_question_rows.some(
+      (row) => row.zone_number < zoneNumber && row.question_access_mode === 'blocked_sequence',
+    );
 
   function isBarrierCrossable(row: InstanceQuestionRow) {
     return (
@@ -483,10 +484,10 @@ export function StudentAssessmentInstance({
                       `
                     : ''}
                   <tr
-                    class="${instance_question_row.sequence_locked ||
-                    instance_question_row.lockpoint_not_yet_crossed
+                    class="${instance_question_row.question_access_mode === 'blocked_sequence' ||
+                    instance_question_row.question_access_mode === 'blocked_lockpoint'
                       ? 'bg-light pl-sequence-locked'
-                      : instance_question_row.lockpoint_read_only
+                      : instance_question_row.question_access_mode === 'read_only_lockpoint'
                         ? 'table-warning pl-lockpoint-read-only'
                         : ''}"
                   >
@@ -969,18 +970,19 @@ function RowLabel({
   let lockMessage: string | null = null;
   let showLink = true;
 
-  if (instance_question_row.sequence_locked) {
+  if (instance_question_row.question_access_mode === 'blocked_sequence') {
     showLink = false;
-    lockMessage = instance_question_row.prev_sequence_locked
-      ? 'A previous question must be completed before you can access this one.'
-      : `You must score at least ${instance_question_row.prev_advance_score_perc}% on ${instance_question_row.prev_title} to unlock this question.`;
-  } else if (instance_question_row.lockpoint_not_yet_crossed) {
+    lockMessage =
+      instance_question_row.prev_question_access_mode === 'blocked_sequence'
+        ? 'A previous question must be completed before you can access this one.'
+        : `You must score at least ${instance_question_row.prev_advance_score_perc}% on ${instance_question_row.prev_title} to unlock this question.`;
+  } else if (instance_question_row.question_access_mode === 'blocked_lockpoint') {
     showLink = false;
     lockMessage = 'You must cross the lockpoint above to access this question.';
   } else if (!(instance_question_row.group_role_permissions?.can_view ?? true)) {
     showLink = false;
     lockMessage = `Your current group role (${userGroupRoles}) restricts access to this question.`;
-  } else if (instance_question_row.lockpoint_read_only) {
+  } else if (instance_question_row.question_access_mode === 'read_only_lockpoint') {
     lockMessage = 'This question is read-only because you have advanced past a lockpoint.';
   }
 

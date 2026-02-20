@@ -22,6 +22,58 @@ Key design decisions (from issue + user clarification):
 
 ---
 
+## Post-implementation follow-up (2026-02-14)
+
+After finishing the initial implementation, one gap stood out in automated coverage:
+
+- We verified lockpoint lifecycle behavior, but we did not explicitly test two important server-side invariants:
+  - lockpoints cannot be crossed out of order via forged POST requests
+  - crossing an already-crossed lockpoint is idempotent (safe on duplicate submissions)
+
+Follow-up action:
+
+- [x] Add integration tests in `testLockpoints.test.ts` for out-of-order rejection and idempotent recrossing behavior.
+
+- [x] Replace lock-state booleans in `question_order` with a canonical access mode:
+  - `writable`
+  - `blocked_sequence`
+  - `blocked_lockpoint`
+  - `read_only_lockpoint`
+    and update middleware/UI to consume the canonical mode as the source of truth.
+
+### Sketch: Dedicated Lockpoint Command Boundary (Not Implemented Yet)
+
+Goal: isolate lockpoint crossing into one transactional domain command instead of page-specific route logic.
+
+Proposed API:
+
+- `assessment.crossLockpointCommand({ assessment_instance_id, zone_id, authn_user_id, context })`
+  where `context` includes authz policy inputs and request metadata.
+
+Responsibilities inside the command:
+
+1. Acquire row-level lock on the target assessment instance (`FOR UPDATE`).
+2. Validate all invariants in one place:
+   - assessment instance is open
+   - caller has `authorized_edit`
+   - zone belongs to assessment and is a lockpoint
+   - lockpoints are crossed in order
+   - no unresolved sequence lock in prior zones
+3. Apply change idempotently (`INSERT ... ON CONFLICT DO NOTHING`).
+4. Emit event/audit row with normalized payload.
+5. Return typed result:
+   - `crossed`
+   - `already_crossed`
+   - `rejected` with machine-readable reason code.
+
+Usage model:
+
+- UI routes call only this command and map reason codes to user-facing errors.
+- Future undo/support tooling can reuse the same boundary.
+- Background jobs and API endpoints can reuse the same command path.
+
+---
+
 ## Phase 1: Database Schema
 
 ### Migration 1: Add `lockpoint` to `zones`

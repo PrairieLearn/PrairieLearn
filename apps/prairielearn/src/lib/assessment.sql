@@ -528,7 +528,7 @@ WHERE
     WHERE
       prior_zone.assessment_id = z.assessment_id
       AND prior_zone.number < z.number
-      AND qo.sequence_locked = true
+      AND qo.question_access_mode = 'blocked_sequence'
   )
 ON CONFLICT (assessment_instance_id, zone_id) DO NOTHING
 RETURNING

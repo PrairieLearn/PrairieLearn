@@ -39,15 +39,13 @@ SELECT
       f.instance_question_id = iq.id
       AND f.deleted_at IS NULL
   )::int AS file_count,
-  qo.sequence_locked,
-  qo.lockpoint_not_yet_crossed,
-  qo.lockpoint_read_only,
+  qo.question_access_mode,
   (lag(aq.effective_advance_score_perc) OVER w) AS prev_advance_score_perc,
   CASE
     WHEN a.type = 'Homework' THEN ''
     ELSE 'Question '
   END || (lag(qo.question_number) OVER w) AS prev_title,
-  (lag(qo.sequence_locked) OVER w) AS prev_sequence_locked,
+  (lag(qo.question_access_mode) OVER w) AS prev_question_access_mode,
   iqnag.*
 FROM
   instance_questions AS iq
