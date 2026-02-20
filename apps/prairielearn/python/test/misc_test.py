@@ -411,7 +411,7 @@ def test_grade_answer_parametrized_key_error_blank(
     question_data["format_errors"] = {}
     pl.grade_answer_parameterized(question_data, question_name, grading_function)
 
-    assert question_data["partial_scores"][question_name]["score"] == 0.0
+    assert question_data["partial_scores"][question_name]["score"] == pytest.approx(0.0)
 
 
 class TimeoutTestCase(NamedTuple):
