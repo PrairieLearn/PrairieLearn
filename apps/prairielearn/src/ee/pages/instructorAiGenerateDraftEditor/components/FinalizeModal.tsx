@@ -6,10 +6,14 @@ export function FinalizeModal({
   csrfToken,
   show,
   onHide,
+  defaultTitle,
+  defaultQid,
 }: {
   csrfToken: string;
   show: boolean;
   onHide: () => void;
+  defaultTitle?: string;
+  defaultQid?: string;
 }) {
   return (
     <Modal show={show} size="lg" backdrop="static" onHide={onHide}>
@@ -26,7 +30,14 @@ export function FinalizeModal({
             <label htmlFor="question-title" className="form-label">
               Title
             </label>
-            <input type="text" className="form-control" id="question-title" name="title" required />
+            <input
+              type="text"
+              className="form-control"
+              id="question-title"
+              name="title"
+              defaultValue={defaultTitle}
+              required
+            />
             <div className="form-text text-muted">
               The title of the question as it will appear in the question bank, e.g. "Add two random
               numbers".
@@ -41,6 +52,7 @@ export function FinalizeModal({
               className="form-control"
               id="question-qid"
               name="qid"
+              defaultValue={defaultQid}
               pattern={SHORT_NAME_PATTERN}
               required
             />
