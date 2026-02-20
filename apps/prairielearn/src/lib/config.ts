@@ -649,7 +649,7 @@ function makeConductorConfigSource(): ConfigSource {
       const workspaceName = process.env.CONDUCTOR_WORKSPACE_NAME;
       if (!workspaceName) return {};
 
-      const dbSuffix = workspaceName.toLowerCase().replaceAll(/[^a-z0-9_]/g, '_');
+      const dbSuffix = workspaceName.toLowerCase().replaceAll(/[^a-z0-9_]/g, '_').slice(0, 50);
       const port = parseInt(existingConfig.serverPort as string);
       // Redis supports DBs 0-15 by default. With CONDUCTOR_PORT allocated in
       // increments of 10, collisions occur after ~8 workspaces. This is acceptable
