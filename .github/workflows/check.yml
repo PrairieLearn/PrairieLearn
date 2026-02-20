@@ -74,7 +74,7 @@ jobs:
 
       - name: Upload CI report artifact
         if: github.event_name == 'pull_request'
-        uses: actions/upload-artifact@v4
+        uses: actions/upload-artifact@v6
         with:
           name: ci-report-bundle-sizes
           path: ${{ runner.temp }}/bundle-sizes-section.md
