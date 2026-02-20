@@ -7,10 +7,10 @@ import {
 } from '../../components/AssessmentRegenerate.js';
 import { AssessmentScorePanel } from '../../components/AssessmentScorePanel.js';
 import {
-  CalculatorModal,
-  CalculatorModalButton,
-  CalculatorModalHeadScripts,
-} from '../../components/CalculatorModal.js';
+  CalculatorDrawer,
+  CalculatorDrawerHeadScripts,
+  CalculatorDrawerToggle,
+} from '../../components/CalculatorDrawer.js';
 import { InstructorInfoPanel } from '../../components/InstructorInfoPanel.js';
 import { PageLayout } from '../../components/PageLayout.js';
 import { PersonalNotesPanel } from '../../components/PersonalNotesPanel.js';
@@ -55,7 +55,7 @@ export function StudentInstanceQuestion({
         name="mathjax-fonts-path"
         content="${nodeModulesAssetPath('@mathjax/mathjax-newcm-font')}"
       />
-      ${compiledScriptTag('question.ts')} ${hasCalculator ? CalculatorModalHeadScripts() : ''}
+      ${compiledScriptTag('question.ts')} ${hasCalculator ? CalculatorDrawerHeadScripts() : ''}
       ${resLocals.assessment.type === 'Exam'
         ? html`
             ${compiledScriptTag('examTimeLimitCountdown.ts')}
@@ -95,10 +95,10 @@ export function StudentInstanceQuestion({
       ${userCanDeleteAssessmentInstance
         ? RegenerateInstanceModal({ csrfToken: resLocals.__csrf_token })
         : ''}
-      ${hasCalculator ? CalculatorModal({
-          storageKey: `calculator-${resLocals.assessment.uuid}`
-        }) : ''}
     `,
+    postContent: hasCalculator
+      ? CalculatorDrawer({ storageKey: `calculator-${resLocals.assessment.uuid}` })
+      : '',
     content: html`
       ${userCanDeleteAssessmentInstance ? RegenerateInstanceAlert() : ''}
       <div class="row">
@@ -210,7 +210,7 @@ export function StudentInstanceQuestion({
                 csrfToken: resLocals.__csrf_token,
               })
             : ''}
-          ${hasCalculator ? CalculatorModalButton() : ''}
+          ${hasCalculator ? CalculatorDrawerToggle() : ''}
           ${InstructorInfoPanel({
             course: resLocals.course,
             course_instance: resLocals.course_instance,

@@ -14,6 +14,107 @@ math-field::part(virtual-keyboard-toggle) {
   pointer-events: none !important;
 }
 
+/* Drawer layout */
+.calculator-drawer {
+  position: fixed;
+  bottom: 0;
+  right: 16px;
+  z-index: 1040;
+  background: var(--bs-body-bg, #fff);
+  box-shadow: 0 -2px 10px rgba(0, 0, 0, 0.15);
+  transform: translateY(100%);
+  transition: transform 0.3s ease;
+  max-height: 80vh;
+  display: flex;
+  flex-direction: column;
+  min-width: 460px;
+  border-radius: 8px 8px 0 0;
+  overflow: hidden;
+}
+
+.calculator-resize-handle {
+  position: absolute;
+  left: -4px;
+  top: 0;
+  bottom: 0;
+  width: 8px;
+  cursor: col-resize;
+  touch-action: none;
+  z-index: 1;
+}
+
+.calculator-drawer.open {
+  transform: translateY(0);
+}
+
+.calculator-drawer-header {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  padding: 6px 12px;
+  background: var(--bs-secondary);
+  color: #fff;
+  flex-shrink: 0;
+  cursor: pointer;
+  user-select: none;
+}
+
+.calculator-drawer-title {
+  font-weight: 500;
+  font-size: 0.9rem;
+}
+
+.calculator-drawer-body {
+  overflow-y: auto;
+  flex: 1;
+  min-height: 0;
+}
+
+/* Floating action button */
+.calculator-fab {
+  position: fixed;
+  bottom: 16px;
+  right: 16px;
+  z-index: 1040;
+  display: none;
+  align-items: center;
+  gap: 4px;
+  padding: 8px 14px;
+  background: var(--bs-secondary);
+  color: #fff;
+  border: none;
+  border-radius: 24px;
+  box-shadow: 0 2px 8px rgba(0, 0, 0, 0.2);
+  cursor: pointer;
+  font-size: 0.9rem;
+  transition: opacity 0.2s ease;
+}
+
+.calculator-fab:hover {
+  opacity: 0.9;
+}
+
+.calculator-fab.visible {
+  display: flex;
+}
+
+.calculator-fab-close {
+  background: none;
+  border: none;
+  color: #fff;
+  width: 20px;
+  height: 20px;
+  cursor: pointer;
+  font-size: 0.8rem;
+  border-radius: 50%;
+  transition: all 0.2s ease;
+}
+
+.calculator-fab-close:hover {
+  background: var(--bs-gray-300);
+  color: var(--bs-secondary);
+}
+
 math-field.pl-calculator-input {
   height: auto;
   font-size: 1rem;
@@ -75,7 +176,7 @@ math-field.pl-calculator-output:focus {
 }
 
 .history-panel {
-  height: 270px;
+  height: 150px;
   border: 1px solid var(--bs-gray-400);
   border-bottom: none;
   background-color: var(--bs-gray-100);
@@ -168,25 +269,17 @@ math-field.history-text:focus {
   height: 1em;
 }
 
-.history-mode-switch .form-check-label {
-  color: var(--bs-gray-500);
-  cursor: pointer;
-  padding-left: 2px;
-}
-
-.history-mode-checkbox span {
-  white-space: nowrap;
-}
 
 #abc-keyboard .btn {
   width: 9%;
   max-width: 55px;
-  min-width: 30px;
+  min-width: 35px;
   display: inline-block;
   margin: 3px;
   box-sizing: border-box;
   font-size: 1rem;
   white-space: nowrap;
+  padding: unset;
 }
 
 #abc-keyboard .btn-wide {
@@ -239,12 +332,11 @@ math-field.history-text:focus {
 #abc-keyboard,
 #func-keyboard {
   display: none;
-  min-height: 180px;
+  min-height: 200px;
 }
 
-#abc-keyboard.keyboard {
+#abc-keyboard {
   flex-direction: column;
-  min-height: 180px;
 }
 
 #main-keyboard {
@@ -254,7 +346,7 @@ math-field.history-text:focus {
   justify-content: center;
   gap: 5px;
   padding: 5px;
-  min-height: 180px;
+  min-height: 200px;
 }
 
 /* Shared styles for all keyboards when shown */

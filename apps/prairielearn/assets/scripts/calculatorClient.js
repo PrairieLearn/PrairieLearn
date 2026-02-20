@@ -8,9 +8,10 @@ import { onDocumentReady } from '@prairielearn/browser-utils';
 /**
  * @param {string} storageKey
  */
-export async function initCalculator(storageKey) {
+export function initCalculator(storageKey, { drawer, fab, fabClose }) {
   showPanel('main');
   initColumnNavigation();
+  initDrawerUI(drawer, fab, fabClose);
   const ce = new ComputeEngine();
   ce.context.timeLimit = 1;
 
@@ -674,17 +675,110 @@ export function containsTrigFunction(input) {
   return /sin|cos|tan|cot|sec|csc/i.test(input);
 }
 
-onDocumentReady(() => {
-  let calculatorInitialized = false;
-  const modal = document.getElementById('calculatorModal');
-  if (modal) {
-    modal.addEventListener('shown.bs.modal', () => {
-      if (!calculatorInitialized) {
-        calculatorInitialized = true;
-        initCalculator(modal.dataset.storageKey ?? 'pl-calculator').catch((err) => {
-          console.error('Failed to initialize calculator:', err);
-        });
+/**
+ * @param {HTMLElement} drawer
+ * @param {HTMLElement} fab
+ * @param {HTMLElement | null} fabClose
+ */
+function initDrawerUI(drawer, fab, fabClose) {
+  function openDrawer() {
+    fab.classList.remove('visible');
+    drawer.classList.add('open');
+  }
+
+  function collapseDrawer() {
+    drawer.classList.remove('open');
+    fab.classList.add('visible');
+  }
+
+  function dismissCalculator() {
+    drawer.classList.remove('open');
+    fab.classList.remove('visible');
+  }
+
+  // Floating button opens the drawer
+  fab.addEventListener('click', (ev) => {
+    if (fabClose?.contains(ev.target)) return;
+    openDrawer();
+  });
+
+  // X on floating button dismisses entirely
+  if (fabClose) {
+    fabClose.addEventListener('click', (ev) => {
+      ev.stopPropagation();
+      dismissCalculator();
+    });
+  }
+
+  // Header close button collapses to fab
+  const closeBtn = document.getElementById('calculatorDrawerClose');
+  if (closeBtn) {
+    closeBtn.addEventListener('click', collapseDrawer);
+  }
+
+  // Left-edge resize handle
+  const resizeHandle = document.getElementById('calculatorResizeHandle');
+  if (resizeHandle) {
+    let startX = 0;
+    let startWidth = 0;
+
+    function onPointerMove(ev) {
+      const delta = startX - ev.clientX;
+      drawer.style.width = `${Math.max(460, startWidth + delta)}px`;
+    }
+
+    function onPointerUp() {
+      document.removeEventListener('pointermove', onPointerMove);
+      document.removeEventListener('pointerup', onPointerUp);
+    }
+
+    resizeHandle.addEventListener('pointerdown', (ev) => {
+      ev.preventDefault();
+      startX = ev.clientX;
+      startWidth = drawer.offsetWidth;
+      document.addEventListener('pointermove', onPointerMove);
+      document.addEventListener('pointerup', onPointerUp);
+    });
+  }
+
+  // Clicking the header bar toggles open/collapse
+  const header = drawer.querySelector('.calculator-drawer-header');
+  if (header) {
+    header.addEventListener('click', (ev) => {
+      if (ev.target === closeBtn || closeBtn?.contains(ev.target)) return;
+      if (drawer.classList.contains('open')) {
+        collapseDrawer();
+      } else {
+        openDrawer();
       }
+    });
+  }
+}
+
+onDocumentReady(() => {
+  const drawer = document.getElementById('calculatorDrawer');
+  const fab = document.getElementById('calculatorFab');
+  const fabClose = document.getElementById('calculatorFabClose');
+  if (!drawer || !fab) return;
+
+  let initialized = false;
+  const toggleBtn = document.getElementById('calculatorDrawerToggle');
+  if (toggleBtn) {
+    toggleBtn.addEventListener('click', () => {
+      if (!initialized) {
+        initialized = true;
+        try {
+          initCalculator(drawer.dataset.storageKey ?? 'pl-calculator', {
+            drawer,
+            fab,
+            fabClose,
+          })
+        } catch (e) {
+          console.error('Failed to initialize calculator:', e);
+        }
+      }
+      fab.classList.remove('visible');
+      drawer.classList.add('open');
     });
   }
 });
