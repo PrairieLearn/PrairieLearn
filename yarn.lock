@@ -5211,7 +5211,6 @@ __metadata:
     superjson: "npm:^2.2.6"
     tablesorter: "npm:^2.32.0"
     tar: "npm:^7.5.8"
-    three: "npm:0.160.1"
     tmp: "npm:^0.2.5"
     tmp-promise: "npm:^3.0.3"
     tom-select: "npm:^2.4.5"
@@ -20676,13 +20675,6 @@ __metadata:
   version: 1.0.0
   resolution: "text-hex@npm:1.0.0"
   checksum: 10c0/57d8d320d92c79d7c03ffb8339b825bb9637c2cbccf14304309f51d8950015c44464b6fd1b6820a3d4821241c68825634f09f5a2d9d501e84f7c6fd14376860d
-  languageName: node
-  linkType: hard
-
-"three@npm:0.160.1":
-  version: 0.160.1
-  resolution: "three@npm:0.160.1"
-  checksum: 10c0/b14b54a8b0799bc337ea2a841a1f01322dc50198d8a438ff4fbdf83ad95a15bd405ba43bd398c05b1ffc2e40a7685b73481a048c288389acb949cea5510269ea
   languageName: node
   linkType: hard
 
