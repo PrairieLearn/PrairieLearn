@@ -48,6 +48,7 @@ function InlineEditableField({
   inputPrefix,
   validate,
   disableSaveWhenEmpty,
+  truncateStart,
   disabled,
   isEditing,
   onEditStart,
@@ -66,6 +67,8 @@ function InlineEditableField({
   inputPrefix?: ReactNode;
   validate?: (value: string) => string | null;
   disableSaveWhenEmpty?: boolean;
+  /** Show ellipsis at the start of the text instead of the end. */
+  truncateStart?: boolean;
   disabled?: boolean;
   isEditing: boolean;
   onEditStart: () => void;
@@ -163,8 +166,17 @@ function InlineEditableField({
         }
       >
         {displayPrefix}
-        <span className={displayClassName}>
-          {shownValue || <span className="text-muted fst-italic">{placeholder}</span>}
+        <span
+          className={clsx('text-truncate text-start', displayClassName)}
+          dir={truncateStart ? 'rtl' : undefined}
+        >
+          {truncateStart ? (
+            <span dir="auto">
+              {shownValue || <span className="text-muted fst-italic">{placeholder}</span>}
+            </span>
+          ) : (
+            shownValue || <span className="text-muted fst-italic">{placeholder}</span>
+          )}
         </span>
         <i className="bi bi-pencil text-muted small" aria-hidden="true" />
       </div>
@@ -175,7 +187,7 @@ function InlineEditableField({
 
   return (
     <div>
-      <div className="d-flex align-items-center gap-1 px-1">
+      <div className="d-flex align-items-center gap-1 px-1 inline-editable-edit">
         {inputPrefix}
         <input
           ref={inputRef}
@@ -285,7 +297,7 @@ export function QuestionTitleAndQid({
   );
 
   return (
-    <div className="d-flex align-items-center gap-2 px-2 py-1 border-bottom bg-light question-title-bar">
+    <div className="d-flex flex-wrap align-items-center gap-2 px-2 py-1 border-bottom bg-light question-title-bar">
       <InlineEditableField
         value={currentTitle ?? ''}
         placeholder="Untitled question"
@@ -319,6 +331,7 @@ export function QuestionTitleAndQid({
           </>
         }
         validate={validateQid}
+        truncateStart
         disabled={editingField !== null && editingField !== 'qid'}
         isEditing={editingField === 'qid'}
         onSave={handleSaveQid}

@@ -52,7 +52,13 @@
   border: none;
   background: transparent;
   cursor: pointer;
+  overflow: hidden;
   /* Match the height of form-control-sm so the bar doesn't shift between display/edit modes. */
+  min-height: calc(1.5em + 0.5rem + 2px);
+}
+
+.inline-editable-edit {
+  /* Match the display mode height so the bar doesn't shift when toggling edit mode. */
   min-height: calc(1.5em + 0.5rem + 2px);
 }
 
