@@ -1,0 +1,51 @@
+{
+  "include": [
+    "apps/prairielearn/elements/**/*.mustache",
+    "exampleCourse/**/question.html",
+    "testCourse/**/question.html",
+    "apps/prairielearn/src/tests/**/question.html"
+  ],
+  "exclude": [
+    // Uses legacy v2 EJS syntax (<% %>) which cannot be parsed as mustache.
+    "testCourse/questions/addVectors/question.html"
+  ],
+  "printWidth": 100,
+  "indentSize": 4,
+  "customCodeTags": [
+    {
+      "name": "pl-code",
+      "languageAttribute": "language",
+      "indent": "attribute",
+      "indentAttribute": "normalize-whitespace"
+    },
+    {
+      "name": "pl-file-editor",
+      "languageAttribute": "ace-mode",
+      "languageMap": {
+        "ace/mode/python": "python",
+        "ace/mode/c_cpp": "c",
+        "ace/mode/java": "java",
+        "ace/mode/html": "html",
+        "ace/mode/markdown": "markdown",
+        "ace/mode/r": "r",
+        "ace/mode/dot": "dot",
+        "ace/mode/javascript": "javascript",
+        "ace/mode/typescript": "typescript",
+        "ace/mode/sql": "sql",
+        "ace/mode/json": "json",
+        "ace/mode/xml": "xml",
+        "ace/mode/yaml": "yaml",
+        "ace/mode/css": "css",
+        "ace/mode/sh": "bash"
+      },
+    },
+    {
+      "name": "markdown",
+      "languageDefault": "markdown"
+    },
+    {
+      "name": "pl-graph",
+      "languageDefault": "dot"
+    },
+  ],
+}
