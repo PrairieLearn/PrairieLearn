@@ -211,7 +211,7 @@ function InlineEditableField({
         />
         <button
           type="button"
-          className="btn btn-sm btn-ghost text-success flex-shrink-0"
+          className="btn btn-sm btn-primary flex-shrink-0"
           aria-label="Save"
           disabled={isSaveDisabled}
           onClick={() => void handleSave()}
@@ -221,12 +221,12 @@ function InlineEditableField({
               <span className="visually-hidden">Saving...</span>
             </span>
           ) : (
-            <i className="bi bi-check-lg" aria-hidden="true" />
+            <i className="bi bi-check2" aria-hidden="true" />
           )}
         </button>
         <button
           type="button"
-          className="btn btn-sm btn-ghost text-muted flex-shrink-0"
+          className="btn btn-sm btn-secondary flex-shrink-0"
           aria-label="Cancel"
           disabled={isSaving}
           onClick={handleCancel}
@@ -294,7 +294,7 @@ export function QuestionTitleAndQid({
   );
 
   return (
-    <div className="d-flex flex-wrap align-items-center gap-2 px-2 py-1 border-bottom bg-light question-title-bar">
+    <div className="d-flex flex-wrap align-items-center gap-2 px-1 py-1 border-bottom bg-light question-title-bar">
       <InlineEditableField
         value={currentTitle ?? ''}
         placeholder="Untitled question"
