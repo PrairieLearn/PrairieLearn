@@ -3542,6 +3542,13 @@ __metadata:
   languageName: node
   linkType: hard
 
+"@one-ini/wasm@npm:0.2.0":
+  version: 0.2.0
+  resolution: "@one-ini/wasm@npm:0.2.0"
+  checksum: 10c0/be3b8693230a4bd4c88bbf4679bcd5c9d9e4a26816dec2cf581453ce45aeaa6011fc310a056562549a1e1eb4f5a4b169aec9b6ae3636b8659a0b39049f07b672
+  languageName: node
+  linkType: hard
+
 "@opentelemetry/api-logs@npm:0.211.0":
   version: 0.211.0
   resolution: "@opentelemetry/api-logs@npm:0.211.0"
@@ -7334,6 +7341,32 @@ __metadata:
   version: 0.3.6
   resolution: "@reteps/dockerfmt@npm:0.3.6"
   checksum: 10c0/b6ca467ba97ea49071c44d0fbecf131fc8045165e950d0d01372c1834000c58d53f62bff42f09b851f7a9d91899047f071cd8fe57e1fc88fc27e2a3d2bdb214d
+  languageName: node
+  linkType: hard
+
+"@reteps/tree-sitter-htmlmustache@npm:0.0.39":
+  version: 0.0.39
+  resolution: "@reteps/tree-sitter-htmlmustache@npm:0.0.39"
+  dependencies:
+    chalk: "npm:^4.1.2"
+    editorconfig: "npm:^2.0.1"
+    node-gyp: "npm:latest"
+    vscode-languageserver-textdocument: "npm:^1.0.12"
+    web-tree-sitter: "npm:^0.25.0"
+  peerDependencies:
+    node-addon-api: ^8.2.2
+    node-gyp-build: ^4.8.2
+    tree-sitter: ^0.25.0
+  peerDependenciesMeta:
+    node-addon-api:
+      optional: true
+    node-gyp-build:
+      optional: true
+    tree-sitter:
+      optional: true
+  bin:
+    htmlmustache: cli/out/main.js
+  checksum: 10c0/ec125d7d640a3b4dcca2b46a09b1d05f6f07c53d204db73c8e26ef0d63fcf6289d4c8bc7fad3cb279ecebf4758f188307bfed395a8bda5836bb897670d610349
   languageName: node
   linkType: hard
 
@@ -11639,6 +11672,13 @@ __metadata:
   languageName: node
   linkType: hard
 
+"commander@npm:^13.1.0":
+  version: 13.1.0
+  resolution: "commander@npm:13.1.0"
+  checksum: 10c0/7b8c5544bba704fbe84b7cab2e043df8586d5c114a4c5b607f83ae5060708940ed0b5bd5838cf8ce27539cde265c1cbd59ce3c8c6b017ed3eec8943e3a415164
+  languageName: node
+  linkType: hard
+
 "commander@npm:^14.0.3":
   version: 14.0.3
   resolution: "commander@npm:14.0.3"
@@ -12750,6 +12790,20 @@ __metadata:
   dependencies:
     safe-buffer: "npm:^5.0.1"
   checksum: 10c0/ebfbf19d4b8be938f4dd4a83b8788385da353d63307ede301a9252f9f7f88672e76f2191618fd8edfc2f24679236064176fab0b78131b161ee73daa37125408c
+  languageName: node
+  linkType: hard
+
+"editorconfig@npm:^2.0.1":
+  version: 2.0.1
+  resolution: "editorconfig@npm:2.0.1"
+  dependencies:
+    "@one-ini/wasm": "npm:0.2.0"
+    commander: "npm:^13.1.0"
+    minimatch: "npm:10.0.1"
+    semver: "npm:^7.7.1"
+  bin:
+    editorconfig: bin/editorconfig
+  checksum: 10c0/2dfff7f9af6368a9ffd8f94de80bd35aa9cef4173c10c8f6e16985cea0364613f6879ab609492a26290faaef1e2b6918355e42cba3a2b7157ad7bc677981ccef
   languageName: node
   linkType: hard
 
@@ -17038,6 +17092,15 @@ __metadata:
   languageName: node
   linkType: hard
 
+"minimatch@npm:10.0.1":
+  version: 10.0.1
+  resolution: "minimatch@npm:10.0.1"
+  dependencies:
+    brace-expansion: "npm:^2.0.1"
+  checksum: 10c0/e6c29a81fe83e1877ad51348306be2e8aeca18c88fdee7a99df44322314279e15799e41d7cb274e4e8bb0b451a3bc622d6182e157dfa1717d6cda75e9cd8cd5d
+  languageName: node
+  linkType: hard
+
 "minimatch@npm:2 || 3, minimatch@npm:^3.1.2":
   version: 3.1.2
   resolution: "minimatch@npm:3.1.2"
@@ -18431,6 +18494,7 @@ __metadata:
     "@playwright/test": "npm:^1.58.1"
     "@postgres-language-server/cli": "npm:^0.19.0"
     "@prairielearn/eslint-config": "workspace:^"
+    "@reteps/tree-sitter-htmlmustache": "npm:0.0.39"
     "@types/tar-stream": "npm:^3.1.4"
     "@typescript/native-preview": "npm:^7.0.0-dev.20260203.1"
     "@vitest/coverage-v8": "npm:^4.0.18"
@@ -21746,6 +21810,13 @@ __metadata:
   languageName: node
   linkType: hard
 
+"vscode-languageserver-textdocument@npm:^1.0.12":
+  version: 1.0.12
+  resolution: "vscode-languageserver-textdocument@npm:1.0.12"
+  checksum: 10c0/534349894b059602c4d97615a1147b6c4c031141c2093e59657f54e38570f5989c21b376836f13b9375419869242e9efb4066643208b21ab1e1dee111a0f00fb
+  languageName: node
+  linkType: hard
+
 "w3c-keyname@npm:^2.2.0":
   version: 2.2.8
   resolution: "w3c-keyname@npm:2.2.8"
@@ -21791,6 +21862,18 @@ __metadata:
   version: 3.3.3
   resolution: "web-streams-polyfill@npm:3.3.3"
   checksum: 10c0/64e855c47f6c8330b5436147db1c75cb7e7474d924166800e8e2aab5eb6c76aac4981a84261dd2982b3e754490900b99791c80ae1407a9fa0dcff74f82ea3a7f
+  languageName: node
+  linkType: hard
+
+"web-tree-sitter@npm:^0.25.0":
+  version: 0.25.10
+  resolution: "web-tree-sitter@npm:0.25.10"
+  peerDependencies:
+    "@types/emscripten": ^1.40.0
+  peerDependenciesMeta:
+    "@types/emscripten":
+      optional: true
+  checksum: 10c0/8056263c75f59c8f992584386f85675fdce94f67eec506970f49d203a7d25effa96a4736eee5b06f06dc4d8f01339f68d9d4e97d713a6517d19db1f1c0954e06
   languageName: node
   linkType: hard
 
