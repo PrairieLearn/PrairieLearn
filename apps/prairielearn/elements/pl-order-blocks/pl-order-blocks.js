@@ -1,12 +1,15 @@
 window.PLOrderBlocks = function (uuid, options) {
-  const TABWIDTH = 50; // defines how many px the answer block is indented by, when the student
-  // drags and indents a block
   const maxIndent = options.maxIndent; // defines the maximum number of times an answer block can be indented
   const enableIndentation = options.enableIndentation;
 
   const optionsElementId = '#order-blocks-options-' + uuid;
   const dropzoneElementId = '#order-blocks-dropzone-' + uuid;
   const fullContainer = document.querySelector('.pl-order-blocks-question-' + uuid);
+
+  const TAB_SPACES = 4;
+  const TABWIDTH = calculateTabWidth(); // defines how many px the answer block is indented by, when the student
+    // drags and indents a block
+
 
   function initializeKeyboardHandling() {
     const blocks = fullContainer.querySelectorAll('.pl-order-block');
@@ -240,7 +243,12 @@ window.PLOrderBlocks = function (uuid, options) {
       return 0;
     }
 
+    // Align snapping origin with the dropzone content box (indent lines start at padding-left)
+    const paddingLeft = Number.parseFloat(parent.css('padding-left')) || 0;
+
     let leftDiff = ui.position.left - parent.position().left;
+    leftDiff -= paddingLeft;
+
     leftDiff = Math.round(leftDiff / TABWIDTH) * TABWIDTH;
     const currentIndent = ui.item[0].style.marginLeft;
     if (currentIndent !== '') {
@@ -367,5 +375,33 @@ window.PLOrderBlocks = function (uuid, options) {
 
   if (enableIndentation) {
     $(dropzoneElementId).sortable('option', 'grid', [TABWIDTH, 1]);
+  }
+
+  function calculateTabWidth() {
+    // Find the .pl-code td.code <pre> element where the monospace font is applied
+    const sourceElement = fullContainer.querySelector('.pl-code td.code pre');
+    if (!sourceElement) return 50;
+
+    // Create a temporary element to measure character width
+    const measureElement = document.createElement('span');
+    const computedStyle = window.getComputedStyle(sourceElement);
+    
+    // Copy font-related properties to ensure accurate measurement
+    measureElement.style.font = computedStyle.font;
+    measureElement.style.letterSpacing = computedStyle.letterSpacing;
+    
+    // Set visiblity and content
+    measureElement.style.position = 'absolute';
+    measureElement.style.visibility = 'hidden';
+    measureElement.style.whiteSpace = 'pre';
+    measureElement.style.width = `${TAB_SPACES}ch`;
+
+    //Create element, measure, and remove
+    document.body.append(measureElement);
+    const width = measureElement.getBoundingClientRect().width;
+    measureElement.remove();
+    
+    // fallback to 50 if measurement fails
+    return width > 0 ? width : 50; 
   }
 };
