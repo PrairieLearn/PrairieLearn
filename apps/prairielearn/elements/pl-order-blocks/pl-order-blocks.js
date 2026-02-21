@@ -399,8 +399,10 @@ window.PLOrderBlocks = function (uuid, options) {
 
   // If a user is on a touch device, we need to distinguish between
   // touch events that should trigger scrolling vs dragging.
+  let gateDragVsScroll = null;
+
   if (isTouchDevice) {
-    const gateDragVsScroll = (e) => {
+    gateDragVsScroll = (e) => {
       // Only care about touches inside a block's content area
       const content = e.target.closest('.pl-order-block-content');
       if (!content) return;
@@ -435,16 +437,25 @@ window.PLOrderBlocks = function (uuid, options) {
 
   const resizeHandler = () => markScrollableContent(fullContainer);
   window.addEventListener('resize', resizeHandler);
+
   // after addEventListener
   this.destroy = () => {
     window.removeEventListener('resize', resizeHandler);
     resize.disconnect();
+
+    if (gateDragVsScroll) {
+      fullContainer.removeEventListener('pointerdown', gateDragVsScroll, { capture: true });
+      fullContainer.removeEventListener('touchstart', gateDragVsScroll, { capture: true });
+      fullContainer.removeEventListener('mousedown', gateDragVsScroll, { capture: true });
+    }
+
     try {
       $(sortables).sortable('destroy');
     } catch {
       // sortable may already be destroyed or not yet initialized
     }
   };
+
   initializeKeyboardHandling();
 
   if (enableIndentation) {
