@@ -1,0 +1,45 @@
+name: CI Report
+
+on:
+  workflow_run:
+    workflows: ['Check', 'Images']
+    types: [completed]
+
+permissions:
+  actions: read
+  contents: read
+  pull-requests: write
+
+# Serialize per branch so concurrent Check + Images completions don't race on the comment.
+concurrency:
+  group: ci-report-${{ github.event.workflow_run.head_branch }}
+
+jobs:
+  comment:
+    name: Post CI report comment
+    runs-on: ubuntu-latest
+    if: github.event.workflow_run.event == 'pull_request'
+    steps:
+      - uses: actions/checkout@v6
+        with:
+          sparse-checkout: scripts/ci-report-comment.py
+          sparse-checkout-cone-mode: false
+
+      - name: Download artifacts
+        uses: actions/download-artifact@v7
+        continue-on-error: true
+        with:
+          pattern: ci-report-*
+          path: ${{ runner.temp }}/ci-report
+          merge-multiple: true
+          run-id: ${{ github.event.workflow_run.id }}
+          github-token: ${{ secrets.GITHUB_TOKEN }}
+
+      - name: Post or update PR comment
+        env:
+          GH_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+        run: >
+          python scripts/ci-report-comment.py
+          "${{ runner.temp }}/ci-report"
+          "${{ github.repository }}"
+          "${{ github.event.workflow_run.id }}"

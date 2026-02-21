@@ -1,14 +1,18 @@
-FROM ubuntu:24.04
+# check=skip=CopyIgnoredFile
+# TODO: remove once the following issue is fixed:
+# https://github.com/moby/buildkit/issues/6512
+
+FROM amazonlinux:2023
 ARG CACHEBUST=2026-02-15-14-23-34
 
 WORKDIR /PrairieLearn
 
 COPY --parents scripts/pl-install.sh /PrairieLearn/
 
-# Ensures that running Python in the container will use the correct Python version, and that PostgreSQL binaries are available.
-ENV PATH="/PrairieLearn/.venv/bin:/PrairieLearn/node_modules/.bin:/usr/lib/postgresql/17/bin:$PATH"
-
 RUN /bin/bash /PrairieLearn/scripts/pl-install.sh
+
+# Ensure that running Python in the container will use the correct Python version.
+ENV PATH="/PrairieLearn/.venv/bin:/PrairieLearn/node_modules/.bin:$PATH"
 
 # - Ensure that all `uv` commands compile Python source files to bytecode.
 # - Ensure that all `uv` commands do not use any caching.
@@ -28,7 +32,7 @@ RUN make python-deps-core
 #
 # Finally, we copy `packages/bind-mount/` since this package contains native
 # code that will be built during the install process.
-COPY --parents .yarn/ yarn.lock .yarnrc.yml **/package.json packages/bind-mount/ /PrairieLearn/
+COPY --parents .yarn/ yarn.lock .yarnrc.yml package.json apps/*/package.json packages/*/package.json packages/bind-mount/ /PrairieLearn/
 
 # Install Node dependencies.
 #
@@ -59,7 +63,7 @@ RUN chmod +x /PrairieLearn/scripts/init.sh \
     && /PrairieLearn/scripts/start_postgres.sh \
     && make build \
     && node apps/prairielearn/dist/server.js --migrate-and-exit \
-    && gosu postgres createuser -s root \
+    && su postgres -c "createuser -s root" \
     && /PrairieLearn/scripts/start_postgres.sh stop \
     && /PrairieLearn/scripts/gen_ssl.sh \
     && git config --global user.email "dev@example.com" \

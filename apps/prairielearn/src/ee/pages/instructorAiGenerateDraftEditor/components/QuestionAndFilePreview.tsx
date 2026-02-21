@@ -1,5 +1,6 @@
-import { type Ref, useCallback, useEffect, useImperativeHandle, useRef } from 'react';
+import { type Ref, useCallback, useEffect, useImperativeHandle, useMemo, useRef } from 'react';
 
+import { NewToPrairieLearnCard } from '../../../../components/NewToPrairieLearnCard.js';
 import { b64DecodeUnicode } from '../../../../lib/base64-util.js';
 import RichTextEditor from '../RichTextEditor/index.js';
 
@@ -330,6 +331,11 @@ export function QuestionAndFilePreview({
     discardChanges: () => internalCodeEditorsRef.current?.discardChanges(),
   }));
 
+  const isQuestionEmpty = useMemo(
+    () => b64DecodeUnicode(questionFiles['question.html'] ?? '').trim() === '',
+    [questionFiles],
+  );
+
   return (
     <div className="tab-content" style={{ height: '100%' }}>
       <div
@@ -338,7 +344,49 @@ export function QuestionAndFilePreview({
         className="tab-pane active"
         style={{ height: '100%' }}
       >
-        <div ref={wrapperRef} className="question-wrapper mx-auto p-3">
+        {isQuestionEmpty && (
+          <div className="d-flex align-items-center justify-content-center h-100">
+            {isGenerating ? (
+              <div className="text-center px-4">
+                <div
+                  className="spinner-border text-primary mb-2"
+                  role="status"
+                  style={{ width: '2rem', height: '2rem' }}
+                >
+                  <span className="visually-hidden">Generating...</span>
+                </div>
+                <p className="text-muted mb-0">Creating your question...</p>
+              </div>
+            ) : (
+              <div className="text-center px-4" style={{ maxWidth: '26rem' }}>
+                <h3 className="h5 mb-2">Create a question</h3>
+                <p className="text-muted mb-3" style={{ textWrap: 'balance' }}>
+                  You can write code in the{' '}
+                  <button
+                    type="button"
+                    className="btn btn-link p-0 align-baseline fw-bold"
+                    // TODO: Replace with controlled tab state when converting to react-bootstrap tabs.
+                    onClick={() => {
+                      const tab = document.querySelector<HTMLElement>('a[href="#question-code"]');
+                      tab?.click();
+                    }}
+                  >
+                    Files
+                  </button>{' '}
+                  tab, or use the chat to create a question with AI.
+                </p>
+                <div className="mt-4">
+                  <NewToPrairieLearnCard />
+                </div>
+              </div>
+            )}
+          </div>
+        )}
+        <div
+          ref={wrapperRef}
+          className="question-wrapper mx-auto p-3"
+          style={isQuestionEmpty ? { display: 'none' } : undefined}
+        >
           <QuestionPreview questionContainerHtml={questionContainerHtml} />
         </div>
       </div>
