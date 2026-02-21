@@ -1,5 +1,5 @@
 FROM ubuntu:24.04
-ARG CACHEBUST=2026-01-15-14-21-34
+ARG CACHEBUST=2026-02-15-14-23-34
 
 LABEL maintainer="jonatan@yorku.ca"
 
@@ -26,6 +26,9 @@ RUN apt-get update \
     # which would be the case if we installed libclang-dev, but since that
     # package is too large and mostly unnecessary, we add a symlink to the
     # existing libclang.so.1.
+    #
+    # See https://documentation.ubuntu.com/ubuntu-for-developers/reference/availability/llvm/
+    # for llvm version availability.
     && ln -s /usr/lib/llvm-18/lib/libclang.so.1 /usr/lib/libclang.so \
     && groupadd sbuser && useradd -g sbuser sbuser \
     # Install uv and Python

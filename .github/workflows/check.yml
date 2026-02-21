@@ -32,6 +32,8 @@ jobs:
         with:
           # This makes Actions fetch all Git history so that Changesets can generate changelogs with the correct commits
           fetch-depth: 0
+          fetch-tags: false
+          show-progress: false
 
       - name: Install additional dependencies
         run: |-
@@ -42,6 +44,11 @@ jobs:
         with:
           node-version: '24'
           cache: 'yarn'
+      - name: Cache node-gyp headers
+        uses: actions/cache@v5
+        with:
+          path: ~/.cache/node-gyp
+          key: node-gyp-${{ runner.os }}
       - name: Preinstall node-gyp headers
         run: yarn dlx node-gyp install
       - name: Install Node dependencies
@@ -57,6 +64,22 @@ jobs:
 
       - name: Build all code
         run: make build
+
+      - name: Report bundle sizes
+        uses: ./packages/actions-report-bundle-sizes
+        with:
+          sizes-path: apps/prairielearn/public/build/sizes.json
+          token: ${{ secrets.GITHUB_TOKEN }}
+          report-path: ${{ runner.temp }}/bundle-sizes-section.md
+
+      - name: Upload CI report artifact
+        if: github.event_name == 'pull_request'
+        uses: actions/upload-artifact@v6
+        with:
+          name: ci-report-bundle-sizes
+          path: ${{ runner.temp }}/bundle-sizes-section.md
+          retention-days: 1
+
       - name: Run the JavaScript linter
         run: make lint-js
       - name: Run the links linter
@@ -122,6 +145,8 @@ jobs:
     runs-on: ubuntu-latest
     steps:
       - uses: actions/checkout@v6
+        with:
+          show-progress: false
 
       - name: Install OS packages
         run: |-
@@ -183,6 +208,8 @@ jobs:
     runs-on: ubuntu-latest
     steps:
       - uses: actions/checkout@v6
+        with:
+          show-progress: false
       - name: Install additional dependencies
         run: |-
           sudo curl -fsSL https://github.com/hadolint/hadolint/releases/download/v2.14.0/hadolint-Linux-x86_64 -o /bin/hadolint && \

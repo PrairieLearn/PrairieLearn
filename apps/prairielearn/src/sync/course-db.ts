@@ -23,13 +23,14 @@ import {
   type AssessmentSetJson,
   type CourseInstanceJson,
   type CourseJson,
+  type GroupsJson,
   type QuestionJson,
   type QuestionPointsJson,
   type TagJson,
-  type TeamsJson,
 } from '../schemas/index.js';
 import * as schemas from '../schemas/index.js';
 
+import { deduplicateByName } from './deduplicate.js';
 import * as infofile from './infofile.js';
 import { isDraftQid } from './question.js';
 
@@ -514,7 +515,7 @@ export async function loadInfoFile<T extends { uuid: string }>({
   }
 }
 
-export async function loadCourseInfo({
+async function loadCourseInfo({
   courseId,
   coursePath,
   assessmentSetsInUse,
@@ -555,50 +556,24 @@ export async function loadCourseInfo({
     );
   }
 
-  /**
-   * Used to retrieve fields such as "assessmentSets" and "topics".
-   * Adds a warning when syncing if duplicates are found.
-   * If defaults are provided, the entries from defaults not present in the resulting list are merged.
-   *
-   * Each entry must have a `name` property.
-   *
-   * @param fieldName The member of `info` to inspect
-   */
   function getFieldWithoutDuplicates<
     K extends 'tags' | 'topics' | 'assessmentSets' | 'assessmentModules' | 'sharingSets',
   >(fieldName: K, defaults?: CourseJson[K]): CourseJson[K] {
     type Entry = NonNullable<CourseJson[K]>[number];
-    const known = new Map<string, Entry>();
-    const duplicateEntryIds = new Set<string>();
+    const result = deduplicateByName<Entry>(
+      (info![fieldName] ?? []) as Entry[],
+      defaults as Entry[] | undefined,
+    );
 
-    (info![fieldName] ?? []).forEach((entry) => {
-      const entryId = entry.name;
-      if (known.has(entryId)) {
-        duplicateEntryIds.add(entryId);
-      }
-      known.set(entryId, entry);
-    });
-
-    if (duplicateEntryIds.size > 0) {
-      const duplicateIdsString = [...duplicateEntryIds.values()]
-        .map((name) => `"${name}"`)
-        .join(', ');
-      const warning = `Found duplicates in '${fieldName}': ${duplicateIdsString}. Only the last of each duplicate will be synced.`;
-      infofile.addWarning(loadedData, warning);
+    if (result.duplicates.size > 0) {
+      const duplicateIdsString = [...result.duplicates].map((name) => `"${name}"`).join(', ');
+      infofile.addWarning(
+        loadedData,
+        `Found duplicates in '${fieldName}': ${duplicateIdsString}. Only the last of each duplicate will be synced.`,
+      );
     }
 
-    if (defaults) {
-      defaults.forEach((defaultEntry) => {
-        const defaultEntryId = defaultEntry.name;
-        if (!known.has(defaultEntryId)) {
-          known.set(defaultEntryId, defaultEntry);
-        }
-      });
-    }
-
-    // Turn the map back into a list; the JS spec ensures that Maps remember
-    // insertion order, so the order is preserved.
-    return [...known.values()] as CourseJson[K];
+    return result.entries as CourseJson[K];
   }
 
   // Assessment sets in DEFAULT_ASSESSMENT_SETS may be in use but not present in the
@@ -1120,9 +1095,9 @@ function formatValues(qids: Set<string> | string[]) {
 }
 
 /**
- * Converts legacy group properties to the new teams format for unified handling.
+ * Converts legacy group properties to the new groups format for unified handling.
  */
-export function convertLegacyGroupsToTeams(assessment: AssessmentJson): TeamsJson {
+export function convertLegacyGroupsToGroupsConfig(assessment: AssessmentJson): GroupsJson {
   const canAssignRoles = assessment.groupRoles
     .filter((role) => role.canAssignRoles)
     .map((role) => role.name);
@@ -1137,10 +1112,10 @@ export function convertLegacyGroupsToTeams(assessment: AssessmentJson): TeamsJso
       maxMembers: role.maximum,
     })),
     studentPermissions: {
-      canCreateTeam: assessment.studentGroupCreate,
-      canJoinTeam: assessment.studentGroupJoin,
-      canLeaveTeam: assessment.studentGroupLeave,
-      canNameTeam: assessment.studentGroupChooseName,
+      canCreateGroup: assessment.studentGroupCreate,
+      canJoinGroup: assessment.studentGroupJoin,
+      canLeaveGroup: assessment.studentGroupLeave,
+      canNameGroup: assessment.studentGroupChooseName,
     },
     rolePermissions: {
       canAssignRoles,
@@ -1172,8 +1147,8 @@ function validateAssessment({
     );
   }
 
-  // Check for conflict between legacy group properties and new teams schema
-  if (assessment.teams != null) {
+  // Check for conflict between legacy group properties and new groups schema
+  if (assessment.groups != null) {
     const usedLegacyProps: string[] = [];
 
     // We need to use `rawAssessment` here to check if the user specified any
@@ -1199,7 +1174,7 @@ function validateAssessment({
     if (usedLegacyProps.length > 0) {
       const stringifiedProps = usedLegacyProps.map((p) => `"${p}"`).join(', ');
       errors.push(
-        `Cannot use both "teams" and legacy group properties (${stringifiedProps}) in the same assessment.`,
+        `Cannot use both "groups" and legacy group properties (${stringifiedProps}) in the same assessment.`,
       );
     }
   }
@@ -1430,35 +1405,36 @@ function validateAssessment({
     );
   }
 
-  // Convert legacy group properties to teams format for unified validation
-  const teams = assessment.teams ?? convertLegacyGroupsToTeams(assessment);
-  // Use 'team' for new schema, 'group' for legacy properties (for error messages)
-  const teamType = assessment.teams != null ? 'team' : 'group';
+  // Convert legacy group properties to groups format for unified validation
+  const isLegacyGroups = assessment.groups == null;
+  const groups = assessment.groups ?? convertLegacyGroupsToGroupsConfig(assessment);
 
-  // Validate teams/groups if we have roles defined
-  if (teams.roles.length > 0) {
-    const rolePerms = teams.rolePermissions;
+  // Validate groups if we have roles defined
+  if (groups.roles.length > 0) {
+    const rolePerms = groups.rolePermissions;
 
     const canAssignRolesSet = new Set(rolePerms.canAssignRoles);
-    const hasAssigner = teams.roles.some(
+    const hasAssigner = groups.roles.some(
       (role) => canAssignRolesSet.has(role.name) && role.minMembers >= 1,
     );
     if (!hasAssigner) {
       errors.push('Could not find a role with minMembers >= 1 that can assign roles.');
     }
 
-    const validRoleNames = new Set(teams.roles.map((r) => r.name));
+    const validRoleNames = new Set(groups.roles.map((r) => r.name));
 
     rolePerms.canAssignRoles.forEach((roleName) => {
       if (!validRoleNames.has(roleName)) {
-        errors.push(`"canAssignRoles" contains non-existent role "${roleName}".`);
+        errors.push(
+          `${isLegacyGroups ? '"canAssignRoles"' : 'The "groups.rolePermissions.canAssignRoles" permission'} contains non-existent role "${roleName}".`,
+        );
       }
     });
 
     rolePerms.canView.forEach((roleName) => {
       if (!validRoleNames.has(roleName)) {
         errors.push(
-          `The assessment's "canView" permission contains non-existent role "${roleName}".`,
+          `${isLegacyGroups ? 'The assessment\'s "canView"' : 'The "groups.rolePermissions.canView"'} permission contains non-existent role "${roleName}".`,
         );
       }
     });
@@ -1466,29 +1442,27 @@ function validateAssessment({
     rolePerms.canSubmit.forEach((roleName) => {
       if (!validRoleNames.has(roleName)) {
         errors.push(
-          `The assessment's "canSubmit" permission contains non-existent role "${roleName}".`,
+          `${isLegacyGroups ? 'The assessment\'s "canSubmit"' : 'The "groups.rolePermissions.canSubmit"'} permission contains non-existent role "${roleName}".`,
         );
       }
     });
 
-    teams.roles.forEach((role) => {
-      if (teams.minMembers != null && role.minMembers > teams.minMembers) {
-        warnings.push(
-          `Role "${role.name}" has a minMembers greater than the ${teamType}'s minMembers.`,
-        );
+    groups.roles.forEach((role) => {
+      if (groups.minMembers != null && role.minMembers > groups.minMembers) {
+        warnings.push(`Role "${role.name}" has a minMembers greater than the group's minMembers.`);
       }
-      if (teams.maxMembers != null && role.minMembers > teams.maxMembers) {
+      if (groups.maxMembers != null && role.minMembers > groups.maxMembers) {
         errors.push(
-          `Role "${role.name}" contains an invalid minMembers. (Expected at most ${teams.maxMembers}, found ${role.minMembers}).`,
+          `Role "${role.name}" contains an invalid minMembers. (Expected at most ${groups.maxMembers}, found ${role.minMembers}).`,
         );
       }
       if (
         role.maxMembers != null &&
-        teams.maxMembers != null &&
-        role.maxMembers > teams.maxMembers
+        groups.maxMembers != null &&
+        role.maxMembers > groups.maxMembers
       ) {
         errors.push(
-          `Role "${role.name}" contains an invalid maxMembers. (Expected at most ${teams.maxMembers}, found ${role.maxMembers}).`,
+          `Role "${role.name}" contains an invalid maxMembers. (Expected at most ${groups.maxMembers}, found ${role.maxMembers}).`,
         );
       }
       if (role.maxMembers != null && role.minMembers > role.maxMembers) {
@@ -1667,6 +1641,34 @@ function validateCourseInstance({
     }
   }
 
+  if (courseInstance.studentLabels) {
+    const result = deduplicateByName(courseInstance.studentLabels);
+    if (result.duplicates.size > 0) {
+      const duplicateNamesString = [...result.duplicates].map((name) => `"${name}"`).join(', ');
+      warnings.push(
+        `Found duplicates in 'studentLabels': ${duplicateNamesString}. Only the last of each duplicate will be synced.`,
+      );
+      courseInstance.studentLabels = result.entries;
+    }
+
+    const uuidCounts = new Map<string, string[]>();
+    for (const label of courseInstance.studentLabels) {
+      const names = uuidCounts.get(label.uuid);
+      if (names) {
+        names.push(label.name);
+      } else {
+        uuidCounts.set(label.uuid, [label.name]);
+      }
+    }
+    for (const [uuid, names] of uuidCounts) {
+      if (names.length > 1) {
+        errors.push(
+          `Found duplicate UUID "${uuid}" in 'studentLabels' for labels: ${names.map((n) => `"${n}"`).join(', ')}.`,
+        );
+      }
+    }
+  }
+
   return { warnings, errors };
 }
 
@@ -1708,7 +1710,7 @@ export async function loadQuestions({
 /**
  * Loads all course instances in a course directory.
  */
-export async function loadCourseInstances({
+async function loadCourseInstances({
   coursePath,
   sharingEnabled,
 }: {
@@ -1735,7 +1737,7 @@ export async function loadCourseInstances({
 /**
  * Loads all assessments in a course instance.
  */
-export async function loadAssessments({
+async function loadAssessments({
   coursePath,
   courseInstanceDirectory,
   courseInstanceExpired,

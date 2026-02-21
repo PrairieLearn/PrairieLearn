@@ -1,343 +1,275 @@
+import fs from 'node:fs';
+
 import * as core from '@actions/core';
 import * as github from '@actions/github';
-import { z } from 'zod';
 
-interface ChangedImage {
-  name: string;
-  platform: string | null;
-  newTag: string;
-  newDigest: string;
+const SECTION_START = '<!-- image-sizes -->';
+const SECTION_END = '<!-- /image-sizes -->';
+const BASELINE_BRANCH = 'size-report';
+const BASELINE_PATH = 'image-sizes.json';
+
+interface PlatformSize {
+  size: number;
+  digest: string;
+}
+
+type ImageSizesJson = Record<string, Record<string, PlatformSize>>;
+
+function formatBytes(bytes: number): string {
+  const mb = bytes / 1024 / 1024;
+  return `${mb.toFixed(2)} MB`;
+}
+
+function formatChange(oldSize: number, newSize: number): string {
+  if (oldSize === 0) return 'N/A';
+  const pct = ((newSize / oldSize - 1) * 100).toFixed(2).replace('-0.00', '0.00');
+  return `${pct}%`;
+}
+
+interface DiffEntry {
+  image: string;
+  platform: string;
   oldSize: number | null;
   newSize: number;
 }
 
-const DockerApiTokenSchema = z.object({
-  token: z.string(),
-});
+function diffSizes(oldSizes: ImageSizesJson | null, newSizes: ImageSizesJson): DiffEntry[] {
+  const entries: DiffEntry[] = [];
 
-const DockerApiManifestListSchema = z.object({
-  mediaType: z.literal('application/vnd.oci.image.index.v1+json'),
-  manifests: z.array(
-    z.object({
-      digest: z.string(),
-      platform: z.object({
-        os: z.string(),
-        architecture: z.string(),
-      }),
-    }),
-  ),
-});
+  for (const [image, platforms] of Object.entries(newSizes)) {
+    for (const [platform, { size }] of Object.entries(platforms)) {
+      const oldSize = oldSizes?.[image]?.[platform]?.size ?? null;
+      entries.push({ image, platform, oldSize, newSize: size });
+    }
+  }
 
-const DockerApiManifestSchema = z.object({
-  mediaType: z.union([
-    z.literal('application/vnd.docker.distribution.manifest.v2+json'),
-    z.literal('application/vnd.oci.image.manifest.v1+json'),
-  ]),
-  layers: z.array(
-    z.object({
-      digest: z.string(),
-      size: z.number(),
-    }),
-  ),
-});
-
-const DockerApiImageManifestSchema = z.union([
-  DockerApiManifestListSchema,
-  DockerApiManifestSchema,
-]);
-type DockerApiImageManifest = z.infer<typeof DockerApiImageManifestSchema>;
-
-function getImages(): string[] {
-  const images = core.getInput('images');
-  // Allow for both comma and newline separated lists.
-  return images.split('\n').flatMap((line) => line.split(',').map((s) => s.trim()));
-}
-
-async function getDockerHubToken(image: string): Promise<string> {
-  const tokenResponse = await fetch(
-    `https://auth.docker.io/token?service=registry.docker.io&scope=repository:${image}:pull`,
-  );
-  const { token } = DockerApiTokenSchema.parse(await tokenResponse.json());
-  return token;
-}
-
-async function getImageManifest(
-  token: string,
-  image: string,
-  reference: string,
-): Promise<{ manifest: DockerApiImageManifest; digest: string } | null> {
-  const url = `https://registry-1.docker.io/v2/${image}/manifests/${reference}`;
-  const manifestResponse = await fetch(url, {
-    headers: {
-      Authorization: `Bearer ${token}`,
-      Accept:
-        'application/vnd.oci.image.index.v1+json, application/vnd.docker.distribution.manifest.v2+json, application/vnd.oci.image.manifest.v1+json',
-    },
+  // Sort by image name, then platform.
+  entries.sort((a, b) => {
+    if (a.image !== b.image) return a.image.localeCompare(b.image);
+    return a.platform.localeCompare(b.platform);
   });
 
-  if (manifestResponse.status === 404) {
-    core.info(`No manifest found for ${image}:${reference}`);
-    return null;
-  }
-
-  if (manifestResponse.status === 401) {
-    // This can happen if the image does not yet exist in the registry. When we
-    // request an auth token with pull permissions for a repository that does
-    // not exist, Docker Hub returns a token that silently doesn't include any
-    // access permissions at all, and when we go to read the manifest, it fails
-    // with an authorization error instead of a 404. We'll treat authorization
-    // errors as if the image does not exist.
-    core.info(`Authorization error when reading manifest for ${image}:${reference}, skipping...`);
-    return null;
-  }
-
-  if (!manifestResponse.ok) {
-    const status = `${manifestResponse.status} ${manifestResponse.statusText}`;
-    throw new Error(`Failed to fetch manifest for ${image}:${reference}: ${status}`);
-  }
-
-  const rawManifest = await manifestResponse.json();
-  const manifest = DockerApiImageManifestSchema.parse(rawManifest);
-  const digest = manifestResponse.headers.get('Docker-Content-Digest');
-  if (!digest) {
-    throw new Error(`Missing Docker-Content-Digest header for ${url}`);
-  }
-  return { manifest, digest };
+  return entries;
 }
 
-async function getAllImagesFromRegistry(
-  image: string,
+function buildCommentSection(
+  title: string,
   sha: string,
-): Promise<{ platform: string | null; digest: string; size: number }[] | null> {
-  const token = await getDockerHubToken(image);
-  const manifestResult = await getImageManifest(token, image, sha);
-  if (!manifestResult) {
-    return null;
-  }
-  const { manifest, digest } = manifestResult;
+  pushed: boolean,
+  oldSizes: ImageSizesJson | null,
+  newSizes: ImageSizesJson,
+): string {
+  const entries = diffSizes(oldSizes, newSizes);
 
-  // The manifest may correspond to a either a manifest list (for multi-platform images)
-  // or a single manifest. Handle the latter, simpler case first.
-  if (manifest.mediaType !== 'application/vnd.oci.image.index.v1+json') {
-    const totalSize = manifest.layers.reduce((acc, layer) => acc + layer.size, 0);
-    return [
-      {
-        platform: null,
-        digest,
-        size: totalSize,
-      },
-    ];
-  }
-
-  // This original manifest will have multiple manifests listed within it.
-  // We'll pick out only the ones we want to compare sizes for. Notably, this
-  // means excluding attestation manifests. We identify those by os/architecture
-  // being "unknown".
-  const imageManifests = manifest.manifests.filter(
-    (m) => m.platform.os !== 'unknown' && m.platform.architecture !== 'unknown',
-  );
-
-  const sizes: { platform: string; digest: string; size: number }[] = [];
-
-  for (const imageManifest of imageManifests) {
-    const platform = `${imageManifest.platform.os}/${imageManifest.platform.architecture}`;
-
-    // Get the manifest for this particular platform image.
-    const platformManifestResult = await getImageManifest(token, image, imageManifest.digest);
-    if (!platformManifestResult) {
-      throw new Error(`Could not fetch manifest for ${image}@${imageManifest.digest}`);
-    }
-    const { manifest: platformManifest } = platformManifestResult;
-    if (
-      platformManifest.mediaType !== 'application/vnd.docker.distribution.manifest.v2+json' &&
-      platformManifest.mediaType !== 'application/vnd.oci.image.manifest.v1+json'
-    ) {
-      throw new Error(`Unexpected manifest media type: ${platformManifest.mediaType}`);
-    }
-    const totalSize = platformManifest.layers.reduce((acc, layer) => acc + layer.size, 0);
-
-    sizes.push({ platform, digest: imageManifest.digest, size: totalSize });
-  }
-
-  return sizes;
-}
-
-async function commentSizeReport(title: string, changedImages: ChangedImage[]) {
-  // Don't comment if there were no changed images.
-  if (changedImages.length === 0) return;
-
-  // Don't comment if no token was provided.
-  const token = core.getInput('token');
-  if (!token) return;
-
-  // Don't comment if this was not a PR event.
-  const prNumber = github.context.payload.pull_request?.number;
-  if (!prNumber) return;
-
-  // Find existing comment to update; may or may not exist.
-  const octokit = github.getOctokit(token);
-  const comments = await octokit.paginate(
-    'GET /repos/{owner}/{repo}/issues/{issue_number}/comments',
-    {
-      owner: github.context.repo.owner,
-      repo: github.context.repo.repo,
-      issue_number: prNumber,
-    },
-  );
-
-  const existingComment = comments.find(
-    (comment) =>
-      (comment.body?.startsWith(`## ${title}`) /* Old format */ ||
-        comment.body?.startsWith(`<details><summary><b>${title}</b>`)) &&
-      comment.user?.login === 'github-actions[bot]',
-  );
-
-  // Sort images by name and platform.
-  const sortedImages = changedImages.sort((a, b) => {
-    if (a.name !== b.name) return a.name.localeCompare(b.name);
-    return a.newTag.localeCompare(b.newTag);
-  });
-
-  // Calculate summary statistics for images with comparable sizes.
-  const imagesWithChange = sortedImages.filter((img) => img.oldSize != null && img.oldSize > 0);
-  const changes = imagesWithChange.map((img) => (img.newSize / img.oldSize! - 1) * 100);
-
+  // Calculate summary statistics.
+  const THRESHOLD = 0.5;
+  const comparableEntries = entries.filter((e) => e.oldSize != null && e.oldSize > 0);
+  const changes = comparableEntries.map((e) => (e.newSize / e.oldSize! - 1) * 100);
   const biggestIncrease = Math.max(...changes, 0);
   const biggestDecrease = Math.min(...changes, 0);
-
-  // Filter out noise from the summary statistics.
-  const THRESHOLD = 0.5;
   const hasSignificantIncrease = biggestIncrease > THRESHOLD;
   const hasSignificantDecrease = biggestDecrease < -THRESHOLD;
 
   let summaryLine: string;
-  if (hasSignificantIncrease && hasSignificantDecrease) {
-    summaryLine = `Biggest increase: ${biggestIncrease.toFixed(2)}%, biggest decrease: ${biggestDecrease.toFixed(2)}%`;
+  if (!oldSizes) {
+    summaryLine = 'No baseline yet (first run)';
+  } else if (hasSignificantIncrease && hasSignificantDecrease) {
+    summaryLine = `Biggest increase: +${biggestIncrease.toFixed(2)}%, biggest decrease: ${biggestDecrease.toFixed(2)}%`;
   } else if (hasSignificantIncrease) {
-    summaryLine = `Biggest increase: ${biggestIncrease.toFixed(2)}%`;
+    summaryLine = `Biggest increase: +${biggestIncrease.toFixed(2)}%`;
   } else if (hasSignificantDecrease) {
     summaryLine = `Biggest decrease: ${biggestDecrease.toFixed(2)}%`;
   } else {
     summaryLine = 'No significant size changes';
   }
 
-  // Generate new comment body with collapsible format.
-  const lines = [
-    `<details><summary><b>${title}</b></summary>`,
+  const lines: string[] = [
+    SECTION_START,
+    `<details><summary><b>${title}</b> — ${summaryLine}</summary>`,
     '',
-    // Markdown table header
-    '| Image | Platform | Old Size | New Size | Change |',
-    '| --- | --- | --- | --- | --- |',
   ];
 
-  for (const image of sortedImages) {
-    // Remove the leading "sha256:" from the digest and construct a link to the
-    // image on Docker Hub.
-    const digest = image.newDigest.slice(7);
-    const imageLink = `https://hub.docker.com/layers/${image.name}/${image.newTag}/images/sha256-${digest}?context=explore`;
-
-    // Compute sizes and deltas
-    const oldSize = image.oldSize ? `${(image.oldSize / 1024 / 1024).toFixed(2)} MB` : 'N/A';
-    const newSize = `${(image.newSize / 1024 / 1024).toFixed(2)} MB`;
-    const change =
-      image.oldSize && image.oldSize > 0
-        ? `${((image.newSize / image.oldSize - 1) * 100).toFixed(2).replaceAll('-0.00', '0.00')}%`
-        : 'N/A';
-
+  if (entries.length > 0) {
     lines.push(
-      `| [${image.name}:${image.newTag}](${imageLink}) | ${image.platform} | ${oldSize} | ${newSize} | ${change} |`,
+      '| Image | Platform | Old Size | New Size | Change |',
+      '| --- | --- | ---: | ---: | ---: |',
     );
-  }
 
-  lines.push('', '</details>', '', summaryLine);
-
-  const body = lines.join('\n');
-
-  // Update or create comment.
-  if (existingComment) {
-    octokit.rest.issues.updateComment({
-      owner: github.context.repo.owner,
-      repo: github.context.repo.repo,
-      comment_id: existingComment.id,
-      body,
-    });
+    for (const entry of entries) {
+      const imageWithTag = `${entry.image}:${sha}`;
+      const imageName = pushed
+        ? `[\`${imageWithTag}\`](https://hub.docker.com/r/${entry.image}/tags?name=${sha})`
+        : `\`${imageWithTag}\``;
+      const oldSize = entry.oldSize != null ? formatBytes(entry.oldSize) : 'N/A';
+      const newSize = formatBytes(entry.newSize);
+      const change =
+        entry.oldSize != null && entry.oldSize > 0
+          ? formatChange(entry.oldSize, entry.newSize)
+          : 'N/A';
+      lines.push(`| ${imageName} | ${entry.platform} | ${oldSize} | ${newSize} | ${change} |`);
+    }
+  } else if (oldSizes) {
+    lines.push('No image size changes detected.');
   } else {
-    octokit.rest.issues.createComment({
-      owner: github.context.repo.owner,
-      repo: github.context.repo.repo,
-      issue_number: prNumber,
-      body,
-    });
+    lines.push('Baseline will be created when this is merged to master.');
   }
+
+  lines.push('', '</details>', SECTION_END);
+  return lines.join('\n');
 }
 
-function logSizeReport(changedImages: ChangedImage[]) {
-  changedImages.forEach((image) => {
-    const delta =
-      image.oldSize != null && image.oldSize > 0
-        ? ((image.newSize / image.oldSize - 1) * 100).toFixed(2)
-        : null;
-    const formattedOldSize = image.oldSize
-      ? `${(image.oldSize / 1024 / 1024).toFixed(2)} MB`
-      : null;
-    const formattedNewSize = `${(image.newSize / 1024 / 1024).toFixed(2)} MB`;
-    const formattedDelta = delta ? `${delta}%` : null;
-    const size = delta
-      ? `${formattedOldSize} -> ${formattedNewSize} (${formattedDelta})`
-      : formattedNewSize;
-    core.info(`${image.name}:${image.newTag} (${image.platform}): ${size}`);
+async function fetchBaseline(
+  octokit: ReturnType<typeof github.getOctokit>,
+): Promise<ImageSizesJson | null> {
+  try {
+    const response = await octokit.rest.repos.getContent({
+      owner: github.context.repo.owner,
+      repo: github.context.repo.repo,
+      path: BASELINE_PATH,
+      ref: BASELINE_BRANCH,
+    });
+
+    if ('content' in response.data && response.data.type === 'file') {
+      return JSON.parse(
+        Buffer.from(response.data.content, 'base64').toString('utf-8'),
+      ) as ImageSizesJson;
+    }
+  } catch (err: unknown) {
+    if (typeof err === 'object' && err !== null && 'status' in err && err.status === 404) {
+      core.info('No baseline found on size-report branch');
+      return null;
+    }
+    throw err;
+  }
+  return null;
+}
+
+async function isLatestMasterCommit(
+  octokit: ReturnType<typeof github.getOctokit>,
+): Promise<boolean> {
+  const { data: branch } = await octokit.rest.repos.getBranch({
+    owner: github.context.repo.owner,
+    repo: github.context.repo.repo,
+    branch: 'master',
   });
+  return branch.commit.sha === github.context.sha;
+}
+
+function mergeBaseline(existing: ImageSizesJson | null, newSizes: ImageSizesJson): ImageSizesJson {
+  const merged: ImageSizesJson = {};
+
+  // Copy existing entries.
+  if (existing) {
+    for (const [image, platforms] of Object.entries(existing)) {
+      merged[image] = { ...platforms };
+    }
+  }
+
+  // Merge in new entries, overwriting per-platform.
+  for (const [image, platforms] of Object.entries(newSizes)) {
+    merged[image] = { ...merged[image], ...platforms };
+  }
+
+  return merged;
+}
+
+async function pushBaseline(
+  octokit: ReturnType<typeof github.getOctokit>,
+  sizes: ImageSizesJson,
+): Promise<void> {
+  if (!(await isLatestMasterCommit(octokit))) {
+    core.warning('Skipping baseline update: a newer commit exists on master');
+    return;
+  }
+
+  const content = Buffer.from(JSON.stringify(sizes, null, 2) + '\n').toString('base64');
+
+  let existingSha: string | undefined;
+  try {
+    const response = await octokit.rest.repos.getContent({
+      owner: github.context.repo.owner,
+      repo: github.context.repo.repo,
+      path: BASELINE_PATH,
+      ref: BASELINE_BRANCH,
+    });
+    if ('sha' in response.data) {
+      existingSha = response.data.sha;
+    }
+  } catch (err: unknown) {
+    if (typeof err === 'object' && err !== null && 'status' in err && err.status === 404) {
+      // File doesn't exist yet, will be created. Note: the size-report
+      // branch must already exist; the Contents API cannot create branches.
+    } else {
+      throw err;
+    }
+  }
+
+  try {
+    await octokit.rest.repos.createOrUpdateFileContents({
+      owner: github.context.repo.owner,
+      repo: github.context.repo.repo,
+      path: BASELINE_PATH,
+      message: 'Update image size baseline',
+      content,
+      sha: existingSha,
+      branch: BASELINE_BRANCH,
+    });
+  } catch (err: unknown) {
+    if (typeof err === 'object' && err !== null && 'status' in err && err.status === 409) {
+      core.warning('Skipping baseline update: conflict (a newer build likely wrote first)');
+      return;
+    }
+    if (typeof err === 'object' && err !== null && 'status' in err && err.status === 422) {
+      core.warning('Skipping baseline update: SHA mismatch (a newer build likely wrote first)');
+      return;
+    }
+    throw err;
+  }
+
+  core.info('Pushed image size baseline to size-report branch');
 }
 
 async function main() {
-  const images = getImages();
-  const title = core.getInput('title');
-  const sha = core.getInput('sha');
+  const sizesPath = core.getInput('sizes-path', { required: true });
+  const title = core.getInput('title', { required: true });
+  const sha = core.getInput('sha', { required: true });
+  const pushed = core.getInput('pushed') === 'true';
+  const token = core.getInput('token', { required: true });
 
-  if (!title) throw new Error('Title is required');
-  if (!sha) throw new Error('SHA is required');
+  const eventName = github.context.eventName;
+  core.info(`Event: ${eventName}`);
 
-  const changedImages: ChangedImage[] = [];
+  const newSizes = JSON.parse(fs.readFileSync(sizesPath, 'utf-8')) as ImageSizesJson;
+  core.info(`Read sizes for ${Object.keys(newSizes).length} images from ${sizesPath}`);
 
-  for (const image of images) {
-    const newImages = await getAllImagesFromRegistry(image, sha);
+  const octokit = github.getOctokit(token);
 
-    // If there's no build for this SHA, there's nothing to compare against.
-    if (!newImages) {
-      continue;
+  if (eventName === 'push') {
+    const ref = github.context.ref;
+    if (ref === 'refs/heads/master') {
+      const existing = await fetchBaseline(octokit);
+      const merged = mergeBaseline(existing, newSizes);
+      await pushBaseline(octokit, merged);
+    } else {
+      core.info(`Skipping baseline update for non-master push (${ref})`);
+    }
+  } else if (eventName === 'pull_request') {
+    const prNumber = github.context.payload.pull_request?.number;
+    if (!prNumber) {
+      core.warning('No PR number found in event payload');
+      return;
     }
 
-    // If there's no previous build, we can't compare sizes, but we can still
-    // report the size of the new images.
-    const oldImages = await getAllImagesFromRegistry(image, 'latest');
-
-    for (const newImage of newImages) {
-      // Find the old image with the same platform. If there isn't a match
-      // and the new image doesn't have a platform, try to find an old image for
-      // `linux/amd64`. This handles the case of `prairielearn/prairielearn`
-      // (which is built during PR CI with a legacy builder that doesn't upload a manifest
-      // with an explicit platform).
-      //
-      // TODO: Build `prairielearn/prairielearn` with buildx and remove this hack.
-      let oldImage = oldImages?.find((image) => image.platform === newImage.platform);
-      if (!oldImage && newImage.platform === null) {
-        oldImage = oldImages?.find((image) => image.platform === 'linux/amd64');
-      }
-      changedImages.push({
-        name: image,
-        platform: newImage.platform ?? oldImage?.platform ?? null,
-        newTag: sha,
-        newDigest: newImage.digest,
-        oldSize: oldImage?.size ?? null,
-        newSize: newImage.size,
-      });
+    const oldSizes = await fetchBaseline(octokit);
+    const section = buildCommentSection(title, sha, pushed, oldSizes, newSizes);
+    const reportPath = core.getInput('report-path');
+    if (reportPath) {
+      fs.writeFileSync(reportPath, section);
+      core.info(`Wrote report section to ${reportPath}`);
     }
-  }
-
-  logSizeReport(changedImages);
-
-  if (changedImages.length > 0) {
-    await commentSizeReport(title, changedImages);
+    core.info(section);
+  } else {
+    core.info(`No action needed for event: ${eventName}`);
   }
 }
 

@@ -351,21 +351,7 @@ def ast_check_str(expr: str, locals_for_eval: LocalsForEval) -> None:
     """Check the AST of the expression for security, whitelisting only certain nodes.
 
     This prevents the user from executing arbitrary code through `eval_expr`.
-
-    Raises:
-        HasEscapeError: If the expression contains an escape character.
-        HasCommentError: If the expression contains a comment character.
     """
-    # Disallow escape character
-    ind = expr.find("\\")
-    if ind != -1:
-        raise HasEscapeError(ind)
-
-    # Disallow comment character
-    ind = expr.find("#")
-    if ind != -1:
-        raise HasCommentError(ind)
-
     # Disallow AST nodes that are not in whitelist
     #
     # Be very careful about adding to the list below. In particular,
@@ -435,6 +421,22 @@ def evaluate(
     return evaluate_with_source(expr, locals_for_eval, allow_complex=allow_complex)[0]
 
 
+def _normalize_expr(expr: str) -> str:
+    """Normalize a symbolic expression by converting Greek unicode and transliterating to ASCII."""
+    return full_unidecode(greek_unicode_transform(expr))
+
+
+def _normalize_expr_and_map_offsets(expr: str) -> tuple[str, list[int]]:
+    """Normalize expr and build a mapping from normalized indices to original indices."""
+    parts: list[str] = []
+    offsets: list[int] = []
+    for ind, char in enumerate(expr):
+        normalized_char = _normalize_expr(char)
+        parts.append(normalized_char)
+        offsets.extend([ind] * len(normalized_char))
+    return "".join(parts), offsets
+
+
 def evaluate_with_source(
     expr: str,
     locals_for_eval: LocalsForEval,
@@ -448,12 +450,26 @@ def evaluate_with_source(
         A tuple of the SymPy expression and the code that was used to generate it.
 
     Raises:
+        HasEscapeError: If the expression contains an escape character.
+        HasCommentError: If the expression contains a comment character.
         HasParseError: If the expression cannot be parsed.
         BaseSympyError: If the expression cannot be evaluated.
     """
+    normalized_expr, normalized_offsets = _normalize_expr_and_map_offsets(expr)
+
+    # Check for escape and comment characters after normalization, since some
+    # unicode characters normalize to "#" or "\\". The offset map translates
+    # back to the original string position in all cases.
+    ind = normalized_expr.find("\\")
+    if ind != -1:
+        raise HasEscapeError(normalized_offsets[ind])
+    ind = normalized_expr.find("#")
+    if ind != -1:
+        raise HasCommentError(normalized_offsets[ind])
+
     # Replace '^' with '**' wherever it appears. In MATLAB, either can be used
     # for exponentiation. In Python, only the latter can be used.
-    expr = full_unidecode(greek_unicode_transform(expr)).replace("^", "**")
+    expr = normalized_expr.replace("^", "**")
 
     # Prevent Python from interpreting patterns like "2e+3" or "2e-3" as scientific
     # notation floats. When users write "2e+3", they likely mean "2*e + 3" (2 times
@@ -676,15 +692,31 @@ def convert_string_to_sympy_with_source(
 
 
 def point_to_error(expr: str, ind: int, w: int = 5) -> str:
-    """Generate a string with a pointer to error in expr with index ind
+    """Generate a string with a pointer to error in expr with index ind.
+
+    If ind is -1, returns the full expression without a caret pointer.
 
     Returns:
         A string with the error location in the expression.
     """
+    if ind == -1:
+        return html.escape(expr)
+
     w_left: str = " " * (ind - max(0, ind - w))
     w_right: str = " " * (min(ind + w, len(expr)) - ind)
     initial: str = html.escape(expr[ind - len(w_left) : ind + len(w_right)])
     return f"{initial}\n{w_left}^{w_right}"
+
+
+def find_symbol_offset(expr: str, symbol: str) -> int:
+    """Return an approximate offset for symbol in expr for caret rendering."""
+    pattern = re.compile(rf"(?<!\w){re.escape(symbol)}(?!\w)")
+    ind = -1
+    for match in pattern.finditer(expr):
+        ind = match.start()
+    if ind != -1:
+        return ind
+    return expr.rfind(symbol)
 
 
 def sympy_to_json(
@@ -849,7 +881,7 @@ def validate_string_as_sympy(
     except HasInvalidSymbolError as exc:
         return (
             f'Your answer refers to an invalid symbol "{exc.symbol}". '
-            f"<br><br><pre>{point_to_error(expr, -1)}</pre>"
+            f"<br><br><pre>{point_to_error(expr, find_symbol_offset(expr, exc.symbol))}</pre>"
             "Note that the location of the syntax error is approximate."
         )
     except HasParseError as exc:
@@ -877,8 +909,22 @@ def validate_string_as_sympy(
             f"<br><br><pre>{point_to_error(expr, exc.offset)}</pre>"
             "Note that the location of the syntax error is approximate."
         )
-    except Exception:
-        return "Invalid format."
+    except HasConflictingVariableError as exc:
+        return (
+            f"Question configuration error: {exc}. "
+            "The variable list contains a name that conflicts with a built-in constant. "
+            "Please contact the course staff."
+        )
+    except HasConflictingFunctionError as exc:
+        return (
+            f"Question configuration error: {exc}. "
+            "The custom function list contains a name that conflicts with a built-in function. "
+            "Please contact the course staff."
+        )
+    except HasInvalidAssumptionError as exc:
+        return f"Question configuration error: {exc}. Please contact the course staff."
+    except Exception as exc:
+        return f"Unexpected error: {exc}. Please contact the course staff."
 
     # If complex numbers are not allowed, raise error if expression has the imaginary unit
     if (
@@ -901,6 +947,70 @@ def get_items_list(items_string: str | None) -> list[str]:
         return []
 
     return list(map(str.strip, items_string.split(",")))
+
+
+def get_builtin_constants(*, allow_complex: bool = False) -> set[str]:
+    """Return the set of built-in constant names.
+
+    Parameters:
+        allow_complex: Whether to include complex number constants (i, j).
+
+    Returns:
+        A set of built-in constant names.
+    """
+    const = _Constants()
+    names = set(const.variables.keys())
+    if allow_complex:
+        names |= const.complex_variables.keys()
+    return names
+
+
+def get_builtin_functions(*, allow_trig_functions: bool = True) -> set[str]:
+    """Return the set of built-in function names.
+
+    Parameters:
+        allow_trig_functions: Whether to include trigonometric functions.
+
+    Returns:
+        A set of built-in function names.
+    """
+    const = _Constants()
+    names = set(const.functions.keys())
+    if allow_trig_functions:
+        names |= const.trig_functions.keys()
+    return names
+
+
+def validate_names_for_conflicts(
+    element_name: str,
+    variables: list[str],
+    custom_functions: list[str],
+    *,
+    allow_complex: bool = False,
+    allow_trig_functions: bool = True,
+) -> None:
+    """Validate that user-specified names don't conflict with built-in constants or functions.
+
+    Parameters:
+        element_name: Name of the element (for error messages).
+        variables: User-specified variable names.
+        custom_functions: User-specified custom function names.
+        allow_complex: Whether complex constants (i, j) are available.
+        allow_trig_functions: Whether trig functions are available.
+
+    Raises:
+        ValueError: If any names conflict with built-ins.
+    """
+    builtins = get_builtin_constants(
+        allow_complex=allow_complex
+    ) | get_builtin_functions(allow_trig_functions=allow_trig_functions)
+
+    conflicts = [name for name in variables + custom_functions if name in builtins]
+    if conflicts:
+        raise ValueError(
+            f'Element "{element_name}" specifies names that conflict with built-ins: '
+            f"{', '.join(conflicts)}. These are automatically available and should not be listed."
+        )
 
 
 # From https://gist.github.com/beniwohli/765262, with a typo fix for lambda/Lambda

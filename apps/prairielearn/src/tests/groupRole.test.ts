@@ -19,15 +19,15 @@ import {
   GroupUserRoleSchema,
   type User,
 } from '../lib/db-types.js';
-import { TEST_COURSE_PATH } from '../lib/paths.js';
 import {
   type GroupInfo,
   type GroupRoleWithCount,
   type RoleAssignment,
   getGroupRoleReassignmentsAfterLeave,
-} from '../lib/teams.js';
+} from '../lib/groups.js';
+import { TEST_COURSE_PATH } from '../lib/paths.js';
 import { generateAndEnrollUsers } from '../models/enrollment.js';
-import { type GroupRoleJsonInput } from '../schemas/index.js';
+import { type GroupsRoleJson } from '../schemas/index.js';
 
 import { assertAlert } from './helperClient.js';
 import * as helperServer from './helperServer.js';
@@ -1209,7 +1209,11 @@ describe(
   },
 );
 
-const changeGroupRolesConfig = async (courseDir: string, groupRoles: GroupRoleJsonInput[]) => {
+const changeGroupRolesConfig = async (
+  courseDir: string,
+  groupRoles: GroupsRoleJson[],
+  canAssignRoles: string[],
+) => {
   const infoAssessmentPath = path.join(
     courseDir,
     'courseInstances',
@@ -1219,8 +1223,10 @@ const changeGroupRolesConfig = async (courseDir: string, groupRoles: GroupRoleJs
     'infoAssessment.json',
   );
   const infoAssessment = await fs.readJSON(infoAssessmentPath);
-  infoAssessment.groupRoles = groupRoles;
-
+  infoAssessment.groups ??= {};
+  infoAssessment.groups.roles = groupRoles;
+  infoAssessment.groups.rolePermissions ??= {};
+  infoAssessment.groups.rolePermissions.canAssignRoles = canAssignRoles;
   await fs.writeJSON(infoAssessmentPath, infoAssessment);
   await syncCourseData(courseDir);
 };
@@ -1268,13 +1274,13 @@ describe('Test group role reassignments with role of minimum > 1', function () {
   });
 
   test.sequential('change group config to include a role with minimum of two', async function () {
-    const groupRoles = [
-      { name: 'Manager', minimum: 1, maximum: 1, canAssignRoles: true },
-      { name: 'Recorder', minimum: 2, maximum: 2 },
-      { name: 'Reflector', minimum: 1, maximum: 1 },
-      { name: 'Contributor' },
+    const groupRoles: GroupsRoleJson[] = [
+      { name: 'Manager', minMembers: 1, maxMembers: 1 },
+      { name: 'Recorder', minMembers: 2, maxMembers: 2 },
+      { name: 'Reflector', minMembers: 1, maxMembers: 1 },
+      { name: 'Contributor', minMembers: 0 },
     ];
-    await changeGroupRolesConfig(tempTestCourseDir.path, groupRoles);
+    await changeGroupRolesConfig(tempTestCourseDir.path, groupRoles, ['Manager']);
     const groupRolesResult = await sqldb.queryRows(
       sql.select_assessment_group_roles,
       { assessment_id: assessmentId },

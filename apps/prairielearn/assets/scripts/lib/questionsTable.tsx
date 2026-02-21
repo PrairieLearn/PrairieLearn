@@ -8,6 +8,8 @@ import { type QuestionsTableData } from '../../../src/components/QuestionsTable.
 import { SyncProblemButtonHtml } from '../../../src/components/SyncProblemButton.js';
 import { TagBadgeList } from '../../../src/components/TagBadge.js';
 import { TopicBadgeHtml } from '../../../src/components/TopicBadge.js';
+import { assessmentLabel } from '../../../src/lib/assessment.shared.js';
+import { getAiQuestionGenerationDraftsUrl } from '../../../src/lib/client/url.js';
 import { type Topic } from '../../../src/lib/db-types.js';
 import { type QuestionsPageData } from '../../../src/models/questions.js';
 
@@ -203,13 +205,15 @@ onDocumentReady(() => {
     question: QuestionsPageData,
   ) {
     return (question.assessments ?? [])
-      .filter(
-        (assessment) => assessment.course_instance_id.toString() === course_instance_id.toString(),
-      )
-      .map((assessment) =>
+      .filter((a) => a.assessment.course_instance_id.toString() === course_instance_id.toString())
+      .map((a) =>
         AssessmentBadgeHtml({
           courseInstanceId: course_instance_id,
-          assessment,
+          assessment: {
+            assessment_id: a.assessment.id,
+            color: a.assessment_set.color,
+            label: assessmentLabel(a.assessment, a.assessment_set),
+          },
         }).toString(),
       )
       .join(' ');
@@ -221,8 +225,8 @@ onDocumentReady(() => {
       ...new Set(
         data
           .flatMap((row) => row.assessments ?? [])
-          .filter((row) => row.course_instance_id === ci_id)
-          .map(({ label }) => label),
+          .filter((a) => a.assessment.course_instance_id === ci_id)
+          .map((a) => assessmentLabel(a.assessment, a.assessment_set)),
       ),
     ].sort((a, b) => a.localeCompare(b));
     return {
@@ -278,19 +282,19 @@ onDocumentReady(() => {
 
   if (showAddQuestionButton) {
     tableSettings.buttons.addQuestion = {
-      text: 'Add question',
-      icon: 'fa-plus',
-      attributes: { title: 'Create a new question' },
-      event: () => {
-        $('#createQuestionModal').modal('show');
-      },
+      html: html`
+        <a class="btn btn-secondary" href="${urlPrefix}/course_admin/questions/create">
+          <i class="fa fa-plus" aria-hidden="true"></i>
+          Add question
+        </a>
+      `.toString(),
     };
   }
 
   if (showAiGenerateQuestionButton) {
     tableSettings.buttons.aiGenerateQuestion = {
       html: html`
-        <a class="btn btn-secondary" href="${urlPrefix}/ai_generate_question_drafts">
+        <a class="btn btn-secondary" href="${getAiQuestionGenerationDraftsUrl({ urlPrefix })}">
           <i class="bi bi-stars" aria-hidden="true"></i>
           Generate question with AI
         </a>

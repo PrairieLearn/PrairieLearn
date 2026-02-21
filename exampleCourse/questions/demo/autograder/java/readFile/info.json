@@ -1,0 +1,13 @@
+{
+  "uuid": "71c80228-df4f-49b6-8837-582d9090bd5e",
+  "type": "v3",
+  "title": "Autograder demo: Reading a file in Java",
+  "topic": "Autograder",
+  "tags": ["jonatan", "code"],
+  "singleVariant": true,
+  "gradingMethod": "External",
+  "externalGradingOptions": {
+    "enabled": true,
+    "image": "prairielearn/grader-java"
+  }
+}

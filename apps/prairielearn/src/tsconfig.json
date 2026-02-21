@@ -1,8 +1,19 @@
 {
   "extends": "@prairielearn/tsconfig/tsconfig.app.json",
   "compilerOptions": {
+    "lib": ["ES2022", "DOM", "DOM.Iterable"],
     "rootDir": "./",
     "outDir": "../dist",
+    "types": [
+      // This is necessary to augment the Express `Request` type with a
+      // `session` property.
+      "@prairielearn/session",
+      // Multer augments Express `Request` with a `file` property. In a
+      // full build this is pulled in transitively through the import
+      // graph, but listing it here ensures it's also available when
+      // typechecking individual files in isolation.
+      "multer"
+    ],
     "jsx": "react-jsx"
   },
   "include": ["**/*"]

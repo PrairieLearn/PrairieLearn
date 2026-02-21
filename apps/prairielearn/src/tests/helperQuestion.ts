@@ -5,7 +5,9 @@ import fetch, { FormData } from 'node-fetch';
 import { assert, describe, it } from 'vitest';
 import z from 'zod';
 
+import { withoutLogging } from '@prairielearn/logger';
 import * as sqldb from '@prairielearn/postgres';
+import { run } from '@prairielearn/run';
 
 import {
   AssessmentInstanceSchema,
@@ -20,7 +22,7 @@ import { selectQuestionByQid } from '../models/question.js';
 
 const sql = sqldb.loadSqlEquiv(import.meta.url);
 
-export function waitForJobSequence(locals: Record<string, any>) {
+function waitForJobSequence(locals: Record<string, any>) {
   describe('The job sequence', function () {
     it('should have an id', async function () {
       const jobSequence = await sqldb.queryRow(sql.select_last_job_sequence, JobSequenceSchema);
@@ -53,13 +55,21 @@ export function waitForJobSequence(locals: Record<string, any>) {
   });
 }
 
-export function getInstanceQuestion(locals: Record<string, any>) {
+export function getInstanceQuestion(
+  locals: Record<string, any>,
+  { errorExpected = false }: { errorExpected?: boolean } = {},
+) {
   describe('GET to instance_question URL', function () {
     it('should load successfully', async function () {
       assert(locals.question);
       const questionUrl =
         locals.questionBaseUrl + '/' + locals.question.id + (locals.questionPreviewTabUrl || '');
-      const response = await fetch(questionUrl);
+      const response = await run(async () => {
+        if (errorExpected) {
+          return await withoutLogging(() => fetch(questionUrl));
+        }
+        return await fetch(questionUrl);
+      });
       assert.equal(response.status, 200);
       const page = await response.text();
       locals.$ = cheerio.load(page);
@@ -603,8 +613,13 @@ export function autoTestQuestion(locals: Record<string, any>, qid: string) {
         assert.equal(locals.question?.type, 'Freeform');
       });
       it('should have submission data', function () {
-        locals.shouldHaveButtons = ['grade', 'save', 'newVariant'];
-        locals.postAction = 'grade';
+        if (locals.question?.grading_method === 'Manual') {
+          locals.shouldHaveButtons = ['save', 'newVariant'];
+          locals.postAction = 'save';
+        } else {
+          locals.shouldHaveButtons = ['grade', 'save', 'newVariant'];
+          locals.postAction = 'grade';
+        }
       });
     });
     getInstanceQuestion(locals);
@@ -643,8 +658,11 @@ export function autoTestQuestion(locals: Record<string, any>, qid: string) {
         assert.isString(locals.__csrf_token);
       });
     });
+    // Manually graded questions don't support the test_once action because
+    // their elements typically don't implement a test() function.
     describe('the test job sequence', function () {
       it('should start with POST to instructor question settings URL for test_once', async function () {
+        if (locals.question?.grading_method === 'Manual') return;
         assert(locals.question);
         assert(locals.__csrf_token);
         const questionUrl = locals.questionBaseUrl + '/' + locals.question.id + '/settings/test';
@@ -658,10 +676,12 @@ export function autoTestQuestion(locals: Record<string, any>, qid: string) {
         assert.equal(response.status, 200);
       });
       it('should have an id', async function () {
+        if (locals.question?.grading_method === 'Manual') return;
         const jobSequence = await sqldb.queryRow(sql.select_last_job_sequence, JobSequenceSchema);
         locals.job_sequence_id = jobSequence.id;
       });
       it('should complete', async function () {
+        if (locals.question?.grading_method === 'Manual') return;
         do {
           await sleep(10);
           locals.job_sequence = await sqldb.queryRow(
@@ -672,6 +692,7 @@ export function autoTestQuestion(locals: Record<string, any>, qid: string) {
         } while (locals.job_sequence.status === 'Running');
       });
       it('should be successful and produce no issues', async function () {
+        if (locals.question?.grading_method === 'Manual') return;
         assert(locals.job_sequence);
         const issues = await sqldb.queryRows(
           sql.select_issues_for_last_variant,

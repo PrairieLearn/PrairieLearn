@@ -16,7 +16,7 @@ interface HomeCardsProps {
   isDevMode: boolean;
 }
 
-export function HomeCardsInner({
+function HomeCardsInner({
   studentCourses,
   hasInstructorCourses,
   canAddCourses,

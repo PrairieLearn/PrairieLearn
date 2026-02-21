@@ -39,6 +39,12 @@ interface CreateServerJobOptionsBase {
   authnUserId: string | null;
   /** The course request ID */
   courseRequestId?: string;
+  /**
+   * Whether to report unexpected errors to Sentry. Defaults to false.
+   * When enabled, errors thrown during job execution (except those from
+   * `job.fail()`) will be captured and sent to Sentry with job context.
+   */
+  reportErrorsToSentry?: boolean;
 }
 
 type CreateServerJobOptions =
@@ -110,7 +116,7 @@ export type ServerJobExecutionFunction = (job: ServerJob) => Promise<void>;
  * to accumulate stderr/stdout, which are only written to the DB
  * once the job is finished.
  */
-export const liveJobs: Record<string, ServerJobImpl> = {};
+const liveJobs: Record<string, ServerJobImpl> = {};
 
 /********************************************************************/
 
@@ -127,6 +133,8 @@ class ServerJobAbortError extends Error {
 }
 
 class ServerJobImpl implements ServerJob, ServerJobExecutor {
+  private static readonly FLUSH_INTERVAL_MS = 500;
+
   public jobSequenceId: string;
   public jobId: string;
   public data: Record<string, unknown> = {};
@@ -134,10 +142,21 @@ class ServerJobImpl implements ServerJob, ServerJobExecutor {
   private finished = false;
   public output = '';
   private lastSent = Date.now();
+  private flushTimeoutId: ReturnType<typeof setTimeout> | null = null;
+  private reportErrorsToSentry: boolean;
+  private jobType: string;
+  private jobDescription: string;
 
-  constructor(jobSequenceId: string, jobId: string) {
+  constructor(
+    jobSequenceId: string,
+    jobId: string,
+    options: { reportErrorsToSentry: boolean; type: string; description: string },
+  ) {
     this.jobSequenceId = jobSequenceId;
     this.jobId = jobId;
+    this.reportErrorsToSentry = options.reportErrorsToSentry;
+    this.jobType = options.type;
+    this.jobDescription = options.description;
   }
 
   fail(msg: string): never {
@@ -245,6 +264,20 @@ class ServerJobImpl implements ServerJob, ServerJobExecutor {
       await fn(this);
       await this.finish();
     } catch (err) {
+      // Report unexpected errors to Sentry if enabled.
+      // ServerJobAbortError is expected (thrown by job.fail()) and should not be reported.
+      if (this.reportErrorsToSentry && !(err instanceof ServerJobAbortError)) {
+        Sentry.captureException(err, {
+          tags: {
+            'job_sequence.id': this.jobSequenceId,
+            'job_sequence.type': this.jobType,
+          },
+          extra: {
+            description: this.jobDescription,
+          },
+        });
+      }
+
       try {
         await this.finish(err);
       } catch (err) {
@@ -266,22 +299,38 @@ class ServerJobImpl implements ServerJob, ServerJobExecutor {
   }
 
   private flush(force = false) {
-    if (Date.now() - this.lastSent > 1000 || force) {
-      const ansifiedOutput = ansiToHtml(this.output);
-      socketServer.io
-        ?.to('job-' + this.jobId)
-        .emit('change:output', { job_id: this.jobId, output: ansifiedOutput });
-      this.lastSent = Date.now();
+    const elapsed = Date.now() - this.lastSent;
+
+    if (elapsed >= ServerJobImpl.FLUSH_INTERVAL_MS || force) {
+      // Clear any pending trailing flush since we're flushing now.
+      if (this.flushTimeoutId) {
+        clearTimeout(this.flushTimeoutId);
+        this.flushTimeoutId = null;
+      }
+
+      this.doFlush();
+    } else if (!this.flushTimeoutId) {
+      // Schedule a trailing flush to ensure buffered output is sent
+      // even if no more output arrives.
+      this.flushTimeoutId = setTimeout(() => {
+        this.flushTimeoutId = null;
+        this.doFlush();
+      }, ServerJobImpl.FLUSH_INTERVAL_MS - elapsed);
     }
+  }
+
+  private doFlush() {
+    const ansifiedOutput = ansiToHtml(this.output);
+    socketServer.io
+      ?.to('job-' + this.jobId)
+      .emit('change:output', { job_id: this.jobId, output: ansifiedOutput });
+    this.lastSent = Date.now();
   }
 
   private async finish(err: any = undefined) {
     // Guard against handling job finish more than once.
     if (this.finished) return;
     this.finished = true;
-
-    // Force a send on the current output to ensure all messages are shown.
-    this.flush(true);
 
     // A `ServerJobAbortError` is thrown by the `fail` method. We won't print
     // any details about the error object itself, as `fail` will have already
@@ -299,6 +348,14 @@ class ServerJobImpl implements ServerJob, ServerJobExecutor {
         this.verbose('\n' + JSON.stringify(err.data, null, 2));
       }
     }
+
+    // Cancel any pending trailing flush and force a final send to ensure all
+    // output (including error details above) is shown before cleanup.
+    if (this.flushTimeoutId) {
+      clearTimeout(this.flushTimeoutId);
+      this.flushTimeoutId = null;
+    }
+    this.flush(true);
 
     delete liveJobs[this.jobId];
 
@@ -346,7 +403,11 @@ export async function createServerJob(options: CreateServerJobOptions): Promise<
     );
   });
 
-  const serverJob = new ServerJobImpl(job_sequence_id, job_id);
+  const serverJob = new ServerJobImpl(job_sequence_id, job_id, {
+    reportErrorsToSentry: options.reportErrorsToSentry ?? false,
+    type: options.type,
+    description: options.description,
+  });
   liveJobs[job_id] = serverJob;
   return serverJob;
 }
@@ -417,7 +478,7 @@ export async function stop() {
   }
 }
 
-export function connection(socket: Socket) {
+function connection(socket: Socket) {
   socket.on(
     'joinJob',
     function (

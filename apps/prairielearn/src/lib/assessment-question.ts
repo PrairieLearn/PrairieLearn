@@ -25,6 +25,7 @@ const AssessmentQuestionRowMetaSchema = z.object({
 
 const OtherAssessmentSchema = z.object({
   assessment_set_abbreviation: AssessmentSetSchema.shape.abbreviation,
+  assessment_set_name: AssessmentSetSchema.shape.name,
   assessment_number: AssessmentSchema.shape.number,
   assessment_id: AssessmentSchema.shape.id,
   assessment_course_instance_id: AssessmentSchema.shape.course_instance_id,
@@ -51,7 +52,8 @@ const RawStaffAssessmentQuestionRowSchema = AssessmentQuestionRowMetaSchema.exte
   StaffAssessmentQuestionSqlSchema.shape,
 );
 
-export const StaffAssessmentQuestionRowSchema =
+// eslint-disable-next-line @typescript-eslint/no-unused-vars
+const StaffAssessmentQuestionRowSchema =
   RawStaffAssessmentQuestionRowSchema.brand<'StaffAssessmentQuestionRow'>();
 export type StaffAssessmentQuestionRow = z.infer<typeof StaffAssessmentQuestionRowSchema>;
 

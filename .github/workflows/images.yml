@@ -56,10 +56,27 @@ jobs:
       - build-workspace-images
       - build-grader-images
       - build-core-images
-    if: ${{ github.event_name == 'pull_request' && always() }}
+    if: ${{ !cancelled() }}
 
     steps:
       - uses: actions/checkout@v6
+
+      - name: Create directory for metadata
+        run: mkdir -p ${{ runner.temp }}/image-metadata
+
+      - name: Download metadata
+        uses: actions/download-artifact@v7
+        continue-on-error: true
+        with:
+          pattern: image-metadata-*-${{ env.COMMIT_SHA }}
+          path: ${{ runner.temp }}/image-metadata
+          merge-multiple: true
+
+      - name: Collect image sizes
+        run: python3 scripts/build_images/collect_sizes.py
+        env:
+          METADATA_DIR: ${{ runner.temp }}/image-metadata
+          OUTPUT_PATH: ${{ runner.temp }}/image-sizes.json
 
       - name: Set up Node
         uses: actions/setup-node@v6
@@ -81,21 +98,15 @@ jobs:
         with:
           title: All images
           sha: ${{ env.COMMIT_SHA }}
+          pushed: ${{ secrets.DOCKERHUB_USERNAME != '' }}
           token: ${{ secrets.GITHUB_TOKEN }}
-          images: |
-            prairielearn/workspace-desktop
-            prairielearn/workspace-jupyterlab-base
-            prairielearn/workspace-jupyterlab-python
-            prairielearn/workspace-jupyterlab-r
-            prairielearn/workspace-rstudio
-            prairielearn/workspace-vscode-base
-            prairielearn/workspace-vscode-cpp
-            prairielearn/workspace-vscode-java
-            prairielearn/workspace-vscode-python
-            prairielearn/workspace-xtermjs
-            prairielearn/grader-c
-            prairielearn/grader-java
-            prairielearn/grader-python
-            prairielearn/grader-r
-            prairielearn/prairielearn
-            prairielearn/executor
+          sizes-path: ${{ runner.temp }}/image-sizes.json
+          report-path: ${{ runner.temp }}/image-sizes-section.md
+
+      - name: Upload CI report artifact
+        if: github.event_name == 'pull_request'
+        uses: actions/upload-artifact@v6
+        with:
+          name: ci-report-image-sizes
+          path: ${{ runner.temp }}/image-sizes-section.md
+          retention-days: 1

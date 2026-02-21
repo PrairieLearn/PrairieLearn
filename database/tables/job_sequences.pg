@@ -9,7 +9,7 @@ columns
     finish_date: timestamp with time zone
     id: bigint not null default nextval('job_sequences_id_seq'::regclass)
     legacy: boolean not null default true
-    number: integer
+    number: integer not null
     start_date: timestamp with time zone default CURRENT_TIMESTAMP
     status: enum_job_status default 'Running'::enum_job_status
     type: text
@@ -33,6 +33,7 @@ foreign-key constraints
 
 referenced by
     ai_grading_jobs: FOREIGN KEY (job_sequence_id) REFERENCES job_sequences(id) ON UPDATE CASCADE ON DELETE SET NULL
+    ai_question_generation_messages: FOREIGN KEY (job_sequence_id) REFERENCES job_sequences(id) ON UPDATE CASCADE ON DELETE SET NULL
     ai_question_generation_prompts: FOREIGN KEY (job_sequence_id) REFERENCES job_sequences(id) ON UPDATE CASCADE ON DELETE SET NULL
     assessments: FOREIGN KEY (sync_job_sequence_id) REFERENCES job_sequences(id) ON UPDATE CASCADE ON DELETE SET NULL
     course_instances: FOREIGN KEY (sync_job_sequence_id) REFERENCES job_sequences(id) ON UPDATE CASCADE ON DELETE SET NULL

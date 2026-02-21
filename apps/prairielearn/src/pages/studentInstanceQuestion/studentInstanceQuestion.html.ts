@@ -15,8 +15,8 @@ import { QuestionScorePanel } from '../../components/QuestionScore.js';
 import { assetPath, compiledScriptTag, nodeModulesAssetPath } from '../../lib/assets.js';
 import { type CopyTarget } from '../../lib/copy-content.js';
 import type { User } from '../../lib/db-types.js';
+import { getRoleNamesForUser } from '../../lib/groups.js';
 import type { UntypedResLocals } from '../../lib/res-locals.types.js';
-import { getRoleNamesForUser } from '../../lib/teams.js';
 
 export function StudentInstanceQuestion({
   resLocals,
@@ -171,6 +171,7 @@ export function StudentInstanceQuestion({
             authz_result: resLocals.authz_result,
             csrfToken: resLocals.__csrf_token,
             urlPrefix: resLocals.urlPrefix,
+            allowGradeLeftMs: resLocals.allowGradeLeftMs,
           })}
           ${QuestionNavSideGroup({
             urlPrefix: resLocals.urlPrefix,

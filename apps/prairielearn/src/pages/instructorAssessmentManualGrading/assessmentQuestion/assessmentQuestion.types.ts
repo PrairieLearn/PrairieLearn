@@ -6,10 +6,8 @@ import { AIGradingStatsSchema } from '../../../ee/lib/ai-grading/types.js';
 import {
   RawStaffInstanceQuestionSchema,
   StaffAssessmentQuestionSchema,
-  type StaffInstanceQuestionGroup,
   StaffInstanceQuestionSchema,
 } from '../../../lib/client/safe-db-types.js';
-import type { RubricData } from '../../../lib/manualGrading.types.js';
 
 export const InstanceQuestionRowSchema = z.object({
   instance_question: StaffInstanceQuestionSchema,
@@ -23,8 +21,6 @@ export const InstanceQuestionRowSchema = z.object({
   rubric_grading_item_ids: z.array(IdSchema),
   enrollment_id: IdSchema.nullable(),
 });
-export type InstanceQuestionRow = z.infer<typeof InstanceQuestionRowSchema>;
-
 export const InstanceQuestionRowWithAIGradingStatsSchema = z.object({
   ...InstanceQuestionRowSchema.shape,
   instance_question: RawStaffInstanceQuestionSchema.extend(AIGradingStatsSchema.shape).brand(
@@ -35,19 +31,6 @@ export const InstanceQuestionRowWithAIGradingStatsSchema = z.object({
 export type InstanceQuestionRowWithAIGradingStats = z.infer<
   typeof InstanceQuestionRowWithAIGradingStatsSchema
 >;
-
-export interface InstanceQuestionTableData {
-  hasCourseInstancePermissionEdit: boolean;
-  urlPrefix: string;
-  instancesUrl: string;
-  groupWork: boolean;
-  maxPoints: number | null;
-  maxAutoPoints: number | null;
-  aiGradingMode: boolean;
-  csrfToken: string;
-  rubric_data: RubricData | null;
-  instanceQuestionGroups: StaffInstanceQuestionGroup[];
-}
 
 // Grading status values for filtering
 export const GRADING_STATUS_VALUES = ['Requires grading', 'Graded'] as const;

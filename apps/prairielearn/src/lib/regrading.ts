@@ -1,42 +1,43 @@
 import { z } from 'zod';
 
 import { logger } from '@prairielearn/logger';
-import {
-  callRow,
-  loadSqlEquiv,
-  queryRow,
-  queryRows,
-  runInTransactionAsync,
-} from '@prairielearn/postgres';
-import { IdSchema } from '@prairielearn/zod';
+import { loadSqlEquiv, queryRow, queryRows, runInTransactionAsync } from '@prairielearn/postgres';
 
 import { selectAssessmentInfoForJob } from '../models/assessment.js';
 
+import { updateAssessmentInstanceGrade } from './assessment-grading.js';
 import { updateAssessmentInstance } from './assessment.js';
-import { AssessmentInstanceSchema, AssessmentSchema, QuestionSchema } from './db-types.js';
+import { assessmentInstanceLabel } from './assessment.shared.js';
+import {
+  AssessmentInstanceSchema,
+  AssessmentSchema,
+  AssessmentSetSchema,
+  CourseInstanceSchema,
+  CourseSchema,
+  GroupSchema,
+  QuestionSchema,
+  UserSchema,
+} from './db-types.js';
 import * as ltiOutcomes from './ltiOutcomes.js';
 import { createServerJob } from './server-jobs.js';
 
 const sql = loadSqlEquiv(import.meta.url);
 
 const RegradeAssessmentInstanceInfoSchema = z.object({
-  assessment_instance_label: z.string(),
-  user_uid: z.string().nullable(),
-  group_name: z.string().nullable(),
-  assessment_id: IdSchema,
-  course_instance_id: IdSchema,
-  course_id: IdSchema,
+  assessment_instance: AssessmentInstanceSchema,
+  assessment: AssessmentSchema,
+  assessment_set: AssessmentSetSchema,
+  instance_user: UserSchema.nullable(),
+  instance_group: GroupSchema.nullable(),
+  course_instance: CourseInstanceSchema,
+  course: CourseSchema,
 });
 const RegradeAssessmentInstancesSchema = z.object({
-  assessment_instance_id: IdSchema,
-  assessment_instance_label: z.string(),
-  user_uid: z.string().nullable(),
-  group_name: z.string().nullable(),
-});
-const AssessmentInstancesGradeSchema = z.object({
-  updated: z.boolean(),
-  new_points: z.number(),
-  new_score_perc: z.number(),
+  assessment_instance: AssessmentInstanceSchema,
+  assessment: AssessmentSchema,
+  assessment_set: AssessmentSetSchema,
+  instance_user: UserSchema.nullable(),
+  instance_group: GroupSchema.nullable(),
 });
 
 /**
@@ -47,28 +48,32 @@ export async function regradeAssessmentInstance(
   user_id: string,
   authn_user_id: string,
 ): Promise<string> {
-  const assessmentInstance = await queryRow(
+  const row = await queryRow(
     sql.select_regrade_assessment_instance_info,
     { assessment_instance_id },
     RegradeAssessmentInstanceInfoSchema,
   );
-  const assessment_instance_label = assessmentInstance.assessment_instance_label;
-  const userOrGroup = assessmentInstance.user_uid || `group "${assessmentInstance.group_name}"`;
+  const label = assessmentInstanceLabel(
+    row.assessment_instance,
+    row.assessment,
+    row.assessment_set,
+  );
+  const userOrGroup = row.instance_user?.uid || `group "${row.instance_group?.name}"`;
   const serverJob = await createServerJob({
     type: 'regrade_assessment_instance',
-    description: 'Regrade ' + assessment_instance_label + ' for ' + userOrGroup,
+    description: 'Regrade ' + label + ' for ' + userOrGroup,
     userId: user_id,
     authnUserId: authn_user_id,
-    courseId: assessmentInstance.course_id,
-    courseInstanceId: assessmentInstance.course_instance_id,
-    assessmentId: assessmentInstance.assessment_id,
+    courseId: row.course.id,
+    courseInstanceId: row.course_instance.id,
+    assessmentId: row.assessment.id,
   });
 
   // We've now triggered the callback to our caller, but we
   // continue executing below to launch the jobs themselves.
 
   serverJob.executeInBackground(async (job) => {
-    job.info('Regrading ' + assessment_instance_label + ' for ' + userOrGroup);
+    job.info('Regrading ' + label + ' for ' + userOrGroup);
     const regrade = await regradeSingleAssessmentInstance({
       assessment_instance_id,
       authn_user_id,
@@ -131,13 +136,18 @@ export async function regradeAllAssessmentInstances(
     let output_count = 0;
     for (const row of assessment_instances) {
       let msg: string;
-      const userOrGroup = row.user_uid || `group "${row.group_name}"`;
+      const label = assessmentInstanceLabel(
+        row.assessment_instance,
+        row.assessment,
+        row.assessment_set,
+      );
+      const userOrGroup = row.instance_user?.uid || `group "${row.instance_group?.name}"`;
       try {
         const regrade = await regradeSingleAssessmentInstance({
-          assessment_instance_id: row.assessment_instance_id,
+          assessment_instance_id: row.assessment_instance.id,
           authn_user_id,
         });
-        msg = `Regraded ${row.assessment_instance_label} for ${userOrGroup}: `;
+        msg = `Regraded ${label} for ${userOrGroup}: `;
         if (regrade.updated) {
           updated_count++;
           msg += `New score: ${Math.floor(
@@ -146,11 +156,11 @@ export async function regradeAllAssessmentInstances(
         } else {
           msg += 'No changes made';
         }
-        await ltiOutcomes.updateScore(row.assessment_instance_id);
+        await ltiOutcomes.updateScore(row.assessment_instance.id);
       } catch (err) {
         logger.error('error while regrading', { row, err });
         error_count++;
-        msg = `ERROR updating ${row.assessment_instance_label} for ${userOrGroup}`;
+        msg = `ERROR updating ${label} for ${userOrGroup}`;
       }
       output = (output == null ? '' : `${output}\n`) + msg;
 
@@ -204,15 +214,12 @@ async function regradeSingleAssessmentInstance({
       QuestionSchema.shape.qid,
     );
 
-    const { updated: gradeUpdated, new_score_perc: newScorePerc } = await callRow(
-      'assessment_instances_grade',
-      [
+    const { updated: gradeUpdated, score_perc: newScorePerc } = await updateAssessmentInstanceGrade(
+      {
         assessment_instance_id,
         authn_user_id,
-        null, // credit
-        true, // only_log_if_score_updated
-      ],
-      AssessmentInstancesGradeSchema,
+        onlyLogIfScoreUpdated: true,
+      },
     );
 
     return {

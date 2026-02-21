@@ -3,16 +3,9 @@ import remarkParse from 'remark-parse';
 import remarkStringify from 'remark-stringify';
 import { unified } from 'unified';
 
-const DEPRECATED_ELEMENTS = new Set(['pl-prairiedraw-figure', 'pl-threejs', 'pl-variable-score']);
-const ALLOWED_ELEMENTS = new Set([
-  'pl-question-panel',
-  'pl-multiple-choice',
-  'pl-checkbox',
-  'pl-integer-input',
-  'pl-number-input',
-  'pl-string-input',
-  'pl-symbolic-input',
-]);
+import { SUPPORTED_ELEMENTS } from '../validateHTML.js';
+
+const DEPRECATED_ELEMENTS = new Set(['pl-prairiedraw-figure', 'pl-variable-score']);
 
 interface ElementSection {
   elementName: string;
@@ -127,10 +120,8 @@ export function buildContextForSingleElementDoc(
     return null;
   }
 
-  // Skip elements that are not in the allowed list.
-  if (!ALLOWED_ELEMENTS.has(elementName)) {
-    return null;
-  }
+  // Skip unsupported elements.
+  if (!SUPPORTED_ELEMENTS.has(elementName)) return null;
 
   const file = unified().use(remarkParse).use(remarkGfm).parse(rawMarkdown);
 

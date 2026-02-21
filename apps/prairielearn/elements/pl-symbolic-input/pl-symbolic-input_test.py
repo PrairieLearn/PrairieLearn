@@ -1,7 +1,11 @@
 import importlib
 import string
+from pathlib import Path
+from typing import Any
 
+import prairielearn.sympy_utils as psu
 import pytest
+import sympy
 
 symbolic_input = importlib.import_module("pl-symbolic-input")
 
@@ -102,3 +106,72 @@ def test_format_formula_editor_submission_for_sympy(
         sub, allow_trig, variables, custom_functions
     )
     assert out == expected
+
+
+def test_parse_without_variables_attribute_with_assumptions() -> None:
+    """Test that parse works when no variables attribute is specified but correct answer has assumptions.
+
+    This is a regression test for https://github.com/PrairieLearn/PrairieLearn/issues/12053
+    where using pl-symbolic-input without a variables attribute would fail with
+    HasInvalidAssumptionError when the correct answer had variable assumptions.
+    """
+    # Create a sympy expression with assumptions (like an instructor would in server.py)
+    x = sympy.Symbol("x", real=True)
+    y = sympy.Symbol("y", real=True)
+    correct_expr = x + y
+
+    # Convert to JSON (this is what gets stored and later retrieved)
+    correct_json = psu.sympy_to_json(correct_expr)
+
+    # Simulate element HTML without variables attribute
+    element_html = '<pl-symbolic-input answers-name="test"></pl-symbolic-input>'
+
+    # Create mock data structure (simulating what the system passes to parse)
+    data: dict[str, Any] = {
+        "submitted_answers": {"test": "x + y"},
+        "raw_submitted_answers": {"test": "x + y"},
+        "correct_answers": {"test": correct_json},
+        "format_errors": {},
+        "partial_scores": {},
+    }
+
+    # This should NOT raise HasInvalidAssumptionError
+    symbolic_input.parse(element_html, data)
+
+    # Verify the submission was parsed successfully
+    assert "test" not in data["format_errors"]
+    assert data["submitted_answers"]["test"] is not None
+    # The submitted answer should be a valid SympyJson dict
+    assert isinstance(data["submitted_answers"]["test"], dict)
+    assert data["submitted_answers"]["test"]["_type"] == "sympy"
+
+
+def test_formula_editor_initial_value_respects_display_log_as_ln(
+    monkeypatch: pytest.MonkeyPatch,
+) -> None:
+    monkeypatch.chdir(Path(__file__).parent)
+    element_html = """
+    <pl-symbolic-input
+        answers-name="test"
+        variables="x"
+        formula-editor="true"
+        display-log-as-ln="true"
+        initial-value="log(x)"
+    ></pl-symbolic-input>
+    """
+    data: dict[str, Any] = {
+        "submitted_answers": {},
+        "raw_submitted_answers": {},
+        "correct_answers": {},
+        "answers_names": {},
+        "format_errors": {},
+        "partial_scores": {},
+        "panel": "question",
+        "editable": True,
+    }
+
+    symbolic_input.prepare(element_html, data)
+    rendered = symbolic_input.render(element_html, data)
+
+    assert "\\ln{\\left(x \\right)}" in rendered
+    assert "\\log{\\left(x \\right)}" not in rendered

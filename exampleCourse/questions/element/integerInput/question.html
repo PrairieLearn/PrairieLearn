@@ -1,10 +1,10 @@
 <pl-question-panel>
   <p>
     Questions below were designed to showcase the different features of
-    <a href="https://prairielearn.readthedocs.io/en/latest/elements/pl-integer-input"
+    <a href="https://docs.prairielearn.com/elements/pl-integer-input"
       ><code>pl-integer-input</code></a
     >. The goal of
-    <a href="https://prairielearn.readthedocs.io/en/latest/elements/pl-integer-input"
+    <a href="https://docs.prairielearn.com/elements/pl-integer-input"
       ><code>pl-integer-input</code></a
     >
     is to allow users to enter only <b>integer values</b>. That is, users are only able to enter
@@ -17,7 +17,7 @@
   <pl-question-panel>
     <p>
       Within this question, you can observe the default behavior of the
-      <a href="https://prairielearn.readthedocs.io/en/latest/elements/pl-integer-input"
+      <a href="https://docs.prairielearn.com/elements/pl-integer-input"
         ><code>pl-integer-input</code></a
       >
       element. In particular, the default input field has help text of "integer" as a placeholder
@@ -32,22 +32,24 @@
   <pl-question-panel>
     <p>
       Under this variant, we opt to provide a label for
-      <a href="https://prairielearn.readthedocs.io/en/latest/elements/pl-integer-input"
+      <a href="https://docs.prairielearn.com/elements/pl-integer-input"
         ><code>pl-integer-input</code></a
       >
       In addition, we've opted to add a suffix or a unit classification to the input via
-      <code>suffix="units"</code>.
+      <code>suffix="units"</code>. The attribute <code>initial-value</code> pre-fills the input box
+      the first time it is rendered. Here the initial value is set to one of the addends rather than
+      the correct answer, so students still need to compute the sum themselves.
     </p>
     <p>Solve for the value of $c$ given $c = {{params.a}} + {{params.b}}$</p>
   </pl-question-panel>
-  <pl-integer-input answers-name="c_2" label="$c = $" suffix="units"></pl-integer-input>
+  <pl-integer-input answers-name="c_2" label="$c = $" suffix="units" initial-value="{{params.a}}"></pl-integer-input>
 </pl-card>
 
 <pl-card>
   <pl-question-panel>
     <p>
       Within this variant, the different display options for
-      <a href="https://prairielearn.readthedocs.io/en/latest/elements/pl-integer-input"
+      <a href="https://docs.prairielearn.com/elements/pl-integer-input"
         ><code>pl-integer-input</code></a
       >
       on the page are displayed. Specifically, this question uses the block option

@@ -21,11 +21,7 @@ import {
   selectInstanceQuestionGroups,
   updateManualInstanceQuestionGroup,
 } from '../../../ee/lib/ai-instance-question-grouping/ai-instance-question-grouping-util.js';
-import {
-  AiGradingJobSchema,
-  GradingJobSchema,
-  type InstanceQuestion,
-} from '../../../lib/db-types.js';
+import { AiGradingJobSchema, GradingJobSchema } from '../../../lib/db-types.js';
 import { features } from '../../../lib/features/index.js';
 import { idsEqual } from '../../../lib/id.js';
 import { reportIssueFromForm } from '../../../lib/issues.js';
@@ -106,7 +102,7 @@ router.get(
       ? await selectUserById(res.locals.instance_question.last_grader)
       : null;
 
-    const instance_question = res.locals.instance_question as InstanceQuestion;
+    const instance_question = res.locals.instance_question;
 
     const instanceQuestionGroup = await run(async () => {
       if (instance_question.manual_instance_question_group_id) {
@@ -143,6 +139,7 @@ router.get(
           manual_rubric_grading_id: GradingJobSchema.shape.manual_rubric_grading_id,
           prompt: AiGradingJobSchema.shape.prompt,
           completion: AiGradingJobSchema.shape.completion,
+          rotation_correction_degrees: AiGradingJobSchema.shape.rotation_correction_degrees,
         }),
       );
 
@@ -211,6 +208,9 @@ router.get(
           prompt: formattedPrompt,
           selectedRubricItemIds: selectedRubricItems.map((item) => item.id),
           explanation,
+          rotationCorrectionDegrees: ai_grading_job_data.rotation_correction_degrees
+            ? JSON.stringify(ai_grading_job_data.rotation_correction_degrees)
+            : null,
         };
       }
     }

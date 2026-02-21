@@ -16,7 +16,7 @@ export enum JobItemStatus {
   complete,
 }
 
-export const JobItemStatusEnum = z.nativeEnum(JobItemStatus);
+const JobItemStatusEnum = z.nativeEnum(JobItemStatus);
 
 /**
  * Describes the overall progress of a server job.
@@ -29,6 +29,11 @@ export const JobProgressSchema = z.object({
   num_complete: z.number().int().nonnegative(),
   num_failed: z.number().int().nonnegative(),
   num_total: z.number().int().nonnegative(),
+  /**
+   * Optional failure message for the job as a whole.
+   * Displayed if num_failed > 0.
+   */
+  job_failure_message: z.string().optional(),
   item_statuses: z.record(z.string(), JobItemStatusEnum).optional(),
 });
 
