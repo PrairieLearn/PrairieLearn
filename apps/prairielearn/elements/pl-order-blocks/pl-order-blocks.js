@@ -342,7 +342,7 @@ window.PLOrderBlocks = function (uuid, options) {
       const scrollTarget = el.querySelector('.pl-code > div') || el;
       const canScrollX = scrollTarget.scrollWidth > scrollTarget.clientWidth;
       const canScrollY = scrollTarget.scrollHeight > scrollTarget.clientHeight;
-      
+
       el.classList.toggle('is-scrollable', canScrollX || canScrollY);
     });
   }
