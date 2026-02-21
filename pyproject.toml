@@ -36,6 +36,7 @@ dependencies = [
   "scikit-learn==1.8.0",
   "scipy==1.17.0",
   "seaborn==0.13.2",
+  "sketchresponse==0.0.3",
   "statsmodels==0.14.6",
   "sympy==1.14.0",
   "text-unidecode==1.3",

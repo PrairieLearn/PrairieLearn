@@ -1,0 +1,341 @@
+<div class="card my-2">
+  <div class="card-header">match &#9989; </div>
+  <div class="card-body">
+    <pl-question-panel>
+      This should produce 100% correct.
+    </pl-question-panel>
+    <pl-sketch answers-name="pm-correct">
+      <pl-sketch-tool id="fd" type="free-draw"></pl-sketch-tool>
+      <pl-sketch-tool id="pg" type="polygon"></pl-sketch-tool>
+      <pl-sketch-tool id="pt" type="point"></pl-sketch-tool>
+      <pl-sketch-tool id="line" type="line"></pl-sketch-tool>
+      <pl-sketch-initial toolid="fd" coordinates="0,0,1,1.1,2,0"></pl-sketch-initial>
+      <pl-sketch-initial toolid="pg" coordinates="-1,1,-2,1,-2,2,-1,2"></pl-sketch-initial>
+      <pl-sketch-initial toolid="pt" coordinates="-1,-1.5"></pl-sketch-initial>
+      <pl-sketch-initial toolid="line" coordinates="-1,-3, -3, -1"></pl-sketch-initial>
+      <pl-sketch-grade type="match" toolid="fd" x="1" y="1" debug="true" feedback="FDT"></pl-sketch-grade> 
+      <pl-sketch-grade type="match" toolid="pg" x="-1.5" debug="true" feedback="PGT-xonly"></pl-sketch-grade> 
+      <pl-sketch-grade type="match" toolid="pt" y="-1.5" debug="true" feedback="PT-yonly"></pl-sketch-grade> 
+      <pl-sketch-grade type="match" toolid="line" y="-2" debug="true" feedback="AT-yonly"></pl-sketch-grade> 
+    </pl-sketch>
+  </div>
+</div> 
+
+<div class="card my-2">
+  <div class="card-header"> match &#10060; </div>
+  <div class="card-body">
+    <pl-question-panel>
+      This should produce 0% correct.
+    </pl-question-panel>
+    <pl-sketch answers-name="pm-incorrect">
+      <pl-sketch-tool id="fd" type="free-draw"></pl-sketch-tool>
+      <pl-sketch-tool id="line" type="line"></pl-sketch-tool>
+      <pl-sketch-tool id="vl" type="vertical-line"></pl-sketch-tool>
+      <pl-sketch-initial toolid="fd" coordinates="0,0,1,0,2,0"></pl-sketch-initial>
+      <pl-sketch-initial toolid="line" coordinates="0,5,-2,7"></pl-sketch-initial>
+      <pl-sketch-initial toolid="vl" coordinates="2"></pl-sketch-initial>
+      <pl-sketch-grade type="match" toolid="fd" x="1" y="1" debug="true" feedback="FDT"></pl-sketch-grade> 
+      <pl-sketch-grade type="match" toolid="line" x="-1" debug="true" feedback="LT-oob"></pl-sketch-grade> 
+      <pl-sketch-grade type="match" toolid="vl" x="1" debug="true" feedback="VLT"></pl-sketch-grade> 
+    </pl-sketch>
+  </div>
+</div> 
+
+<div class="card my-2"> 
+  <div class="card-header">match-fun &#9989; </div>
+  <div class="card-body">
+    <pl-question-panel>
+      This should produce 100% correct.
+    </pl-question-panel>
+    <pl-sketch answers-name="mf-correct">
+      <pl-sketch-tool id="fd" type="free-draw"></pl-sketch-tool>
+      <pl-sketch-tool type="free-draw" id="swap" color="purple"></pl-sketch-tool>
+      <pl-sketch-initial toolid="fd" fun="x**2"></pl-sketch-initial>
+      <pl-sketch-initial toolid="swap" fun="sqrt(x)"></pl-sketch-initial>
+      <pl-sketch-initial toolid="swap" fun="-sqrt(x)"></pl-sketch-initial>
+      <pl-sketch-grade type="match-fun" toolid="fd" fun="x**2" allow-undefined="false" debug="true" feedback="FDT-au"></pl-sketch-grade> 
+      <pl-sketch-grade type="match-fun" toolid="swap" fun="y**2" xyflip="True" debug="true" feedback="SPT-swap"></pl-sketch-grade> 
+    </pl-sketch>
+  </div>
+</div> 
+
+<div class="card my-2">
+  <div class="card-header"> match-fun &#10060; </div>
+  <div class="card-body">
+    <pl-question-panel>
+      This should produce 0% correct.
+    </pl-question-panel>
+    <pl-sketch answers-name="mf-incorrect">
+      <pl-sketch-tool id="fd" type="free-draw"></pl-sketch-tool>
+      <pl-sketch-tool id="pg" type="polygon"></pl-sketch-tool>
+      <pl-sketch-initial toolid="fd" fun="x**2 - 1" xrange="-4.5,0"></pl-sketch-initial>
+      <pl-sketch-initial toolid="fd" fun="sin(x) - 1" xrange="0,1"></pl-sketch-initial>
+      <pl-sketch-grade type="match-fun" toolid="fd" fun="x**2" xrange=",0" debug="true" feedback="FDT"></pl-sketch-grade> 
+      <pl-sketch-grade type="match-fun" toolid="fd" allow-undefined="false" fun="sin(x) - 1" xrange="0," debug="true" feedback="FDT-au"></pl-sketch-grade> 
+    </pl-sketch>
+  </div>
+</div>
+
+<div class="card my-2">
+  <div class="card-header">count &#9989; </div>
+  <div class="card-body">
+    <pl-question-panel>
+      This should produce 100% correct.
+    </pl-question-panel>
+    <pl-sketch answers-name="c-correct">
+      <pl-sketch-tool id="hl" type="horizontal-line"></pl-sketch-tool>
+      <pl-sketch-tool id="vl" type="vertical-line"></pl-sketch-tool>
+      <pl-sketch-tool id="pt" type="point"></pl-sketch-tool>
+      <pl-sketch-tool id="fd" type="free-draw"></pl-sketch-tool>
+      <pl-sketch-tool id="pg" type="polygon"></pl-sketch-tool>
+      <pl-sketch-initial toolid="hl" coordinates="-1"></pl-sketch-initial>
+      <pl-sketch-initial toolid="vl" coordinates="-3"></pl-sketch-initial>
+      <pl-sketch-initial toolid="vl" coordinates="3"></pl-sketch-initial>
+      <pl-sketch-initial toolid="fd" fun="x**2" xrange="0,2"></pl-sketch-initial>
+      <pl-sketch-initial toolid="fd" fun="x**2" xrange="-2,0"></pl-sketch-initial>
+      <pl-sketch-initial toolid="pt" coordinates="1,1"></pl-sketch-initial>
+      <pl-sketch-initial toolid="pt" coordinates="2,4"></pl-sketch-initial>
+      <pl-sketch-initial toolid="pg" coordinates="-1,-2,-3,-4,-1,-3"></pl-sketch-initial>
+      <pl-sketch-grade type="count" toolid="hl" count="1" debug="true" feedback="HLT-exact"></pl-sketch-grade> 
+      <pl-sketch-grade type="count" toolid="vl" count="2" debug="true" feedback="VLT-exact"></pl-sketch-grade> 
+      <pl-sketch-grade type="count" toolid="pt" count="2" mode="at-least" debug="true" feedback="PT-atleast"></pl-sketch-grade> 
+      <pl-sketch-grade type="count" toolid="fd" count="3" mode="at-most" debug="true" feedback="FDT-atmost"></pl-sketch-grade> 
+      <pl-sketch-grade type="count" toolid="pg" count="1" mode="exact" debug="true" feedback="PGT-exact"></pl-sketch-grade> 
+    </pl-sketch>
+  </div>
+</div>
+
+<div class="card my-2">
+  <div class="card-header"> count &#10060; </div>
+  <div class="card-body">
+    <pl-question-panel>
+      This should produce 0% correct.
+    </pl-question-panel>
+    <pl-sketch answers-name="c-incorrect">
+      <pl-sketch-tool id="hl" type="horizontal-line"></pl-sketch-tool>
+      <pl-sketch-tool id="pt" type="point"></pl-sketch-tool>
+      <pl-sketch-tool id="fd" type="free-draw"></pl-sketch-tool>
+      <pl-sketch-initial toolid="fd" fun="x**2" xrange="-2,-1.1"></pl-sketch-initial>
+      <pl-sketch-initial toolid="fd" fun="x**2" xrange="-1,0"></pl-sketch-initial>
+      <pl-sketch-initial toolid="fd" fun="x**2" xrange="0.1,1"></pl-sketch-initial>
+      <pl-sketch-initial toolid="fd" fun="x**2" xrange="1.1,2"></pl-sketch-initial>
+      <pl-sketch-initial toolid="pt" coordinates="1,1"></pl-sketch-initial>
+      <pl-sketch-initial toolid="pt" coordinates="2,4"></pl-sketch-initial>
+      <pl-sketch-grade type="count" toolid="hl" count="1" xrange="1,2" debug="true" feedback="HL-exact"></pl-sketch-grade> 
+      <pl-sketch-grade type="count" toolid="pt" count="2" mode="at-least" xrange="1.5,3" debug="true" feedback="PT-atleast"></pl-sketch-grade> 
+      <pl-sketch-grade type="count" toolid="fd" count="3" mode="at-most" debug="true" feedback="FDT-atmost"></pl-sketch-grade> 
+    </pl-sketch>
+  </div>
+</div>
+
+<div class="card my-2">
+  <div class="card-header"> monot-increasing/monot-decreasing &#9989; </div>
+  <div class="card-body">
+    <pl-question-panel>
+      This should produce 100% correct.
+    </pl-question-panel>
+    <pl-sketch answers-name="mimd-correct">
+      <pl-sketch-tool id="fd" type="free-draw"></pl-sketch-tool>
+      <pl-sketch-tool id="line" type="line"></pl-sketch-tool>
+      <pl-sketch-initial toolid="fd" coordinates="0,0,1,1,2,0"></pl-sketch-initial>
+      <pl-sketch-initial toolid="line" coordinates="-3,2,-1,0"></pl-sketch-initial>
+      <pl-sketch-grade type="monot-increasing" toolid="fd" xrange="0,1" debug="true" feedback="FDT-increase"></pl-sketch-grade> 
+      <pl-sketch-grade type="monot-decreasing" toolid="fd" xrange="1,2" debug="true" feedback="FDT-decrease"></pl-sketch-grade> 
+      <pl-sketch-grade type="monot-decreasing" toolid="line" xrange="-4,0" debug="true" feedback="LT-decrease"></pl-sketch-grade> 
+
+    </pl-sketch>
+  </div>
+</div>
+
+<div class="card my-2">
+  <div class="card-header"> monot-increasing/monot-decreasing &#10060; </div>
+  <div class="card-body">
+    <pl-question-panel>
+      This should produce 0% correct.
+    </pl-question-panel>
+    <pl-sketch answers-name="mimd-incorrect">
+      <pl-sketch-tool id="fd" type="free-draw"></pl-sketch-tool>
+      <pl-sketch-tool id="line" type="line"></pl-sketch-tool>
+      <pl-sketch-initial toolid="fd" coordinates="0,0,0.5,2,1,1,1.5,2,2,0"></pl-sketch-initial>
+      <pl-sketch-initial toolid="fd" coordinates="-2,0,-1.5,-1,-1,0"></pl-sketch-initial>
+      <pl-sketch-initial toolid="line" coordinates="-2,3,-1,2"></pl-sketch-initial>
+      <pl-sketch-grade type="monot-increasing" toolid="fd" xrange="0,1" debug="true" feedback="FDT-increase"></pl-sketch-grade> 
+      <pl-sketch-grade type="monot-decreasing" toolid="fd" xrange="1,2" debug="true" feedback="FDT-decrease"></pl-sketch-grade> 
+      <pl-sketch-grade type="monot-decreasing" toolid="line, fd" xrange="-2,-1" debug="true" feedback="FDT-LT-overlap"></pl-sketch-grade> 
+    </pl-sketch>
+  </div>
+</div>
+
+ <div class="card my-2">
+  <div class="card-header"> defined-in &#9989; </div>
+  <div class="card-body">
+    <pl-question-panel>
+      This should produce 100% correct.
+    </pl-question-panel>
+    <pl-sketch answers-name="di-correct">
+      <pl-sketch-tool id="fd" type="free-draw"></pl-sketch-tool>
+      <pl-sketch-tool id="sp" type="spline"></pl-sketch-tool>
+      <pl-sketch-initial toolid="fd" coordinates="0,0,1,1"></pl-sketch-initial>
+      <pl-sketch-initial toolid="fd" coordinates="0.9,0,2,0"></pl-sketch-initial>
+      <pl-sketch-initial toolid="sp" coordinates="2.05,1,3,0,2.1,-2"></pl-sketch-initial>
+      <pl-sketch-grade type="defined-in" toolid="fd" xrange="0,1" debug="true" feedback="FDT-two"></pl-sketch-grade>
+      <pl-sketch-grade type="defined-in" toolid="fd,sp" xrange="1,3" debug="true" feedback="FDT-SPT-overlap"></pl-sketch-grade> 
+    </pl-sketch>
+  </div>
+</div> 
+
+ <div class="card my-2">
+  <div class="card-header"> defined-in &#10060; </div>
+  <div class="card-body">
+    <pl-question-panel>
+      This should produce 0% correct.
+    </pl-question-panel>
+    <pl-sketch answers-name="di-incorrect">
+      <pl-sketch-tool id="fd" type="free-draw"></pl-sketch-tool>
+      <pl-sketch-tool id="pg" type="polygon"></pl-sketch-tool>
+      <pl-sketch-initial toolid="fd" coordinates="-1,0,0.1,0"></pl-sketch-initial>
+      <pl-sketch-initial toolid="fd" coordinates="0.8,1,2,1"></pl-sketch-initial>
+      <pl-sketch-initial toolid="pg" coordinates="2,-4,3,-4,3,-6,4,-6,4,-4,5,-4,5,-6.5,2,-6.5"></pl-sketch-initial>
+      <pl-sketch-initial toolid="pg" coordinates="-3,0,-3.5,0,-3.5,1,-3,1"></pl-sketch-initial>
+      <pl-sketch-grade type="defined-in" toolid="fd" xrange="0,1" debug="true" feedback="FDT-two"></pl-sketch-grade> 
+      <pl-sketch-grade type="defined-in" toolid="pg" xrange="3,4" debug="true" feedback="PGT-oob"></pl-sketch-grade> 
+      <pl-sketch-grade type="defined-in" toolid="pg" xrange="-4,-3" debug="true" feedback="PGT-half"></pl-sketch-grade> 
+    </pl-sketch>
+  </div>
+</div>
+
+<div class="card my-2">
+  <div class="card-header"> undefined-in &#9989; </div>
+  <div class="card-body">
+    <pl-question-panel>
+      This should produce 100% correct.
+    </pl-question-panel>
+    <pl-sketch answers-name="ui-correct">
+      <pl-sketch-tool id="fd" type="free-draw"></pl-sketch-tool>
+      <pl-sketch-tool id="pg" type="polygon"></pl-sketch-tool>
+      <pl-sketch-initial toolid="fd" coordinates="-1,0,0.05,0"></pl-sketch-initial>
+      <pl-sketch-initial toolid="fd" coordinates="0.95,1,2,1"></pl-sketch-initial>
+      <pl-sketch-initial toolid="pg" coordinates="-1,-4,-0.2,-4,-0.2,-6,-1.2,-6,-1.2,-4,-2,-4,-2,-6.2,-1,-6.2"></pl-sketch-initial>
+      <pl-sketch-grade type="undefined-in" toolid="fd" xrange="0, 1" debug="true" feedback="FDT-two"></pl-sketch-grade> 
+      <pl-sketch-grade type="undefined-in" toolid="pg" xrange="0, 1" debug="true" feedback="PGT-oob"></pl-sketch-grade> 
+
+    </pl-sketch>
+  </div>
+</div>
+
+<div class="card my-2">
+  <div class="card-header"> undefined-in &#10060; </div>
+  <div class="card-body">
+    <pl-question-panel>
+      This should produce 0% correct.
+    </pl-question-panel>
+    <pl-sketch answers-name="ui-incorrect">
+      <pl-sketch-tool id="fd" type="free-draw"></pl-sketch-tool>
+      <pl-sketch-tool id="pt" type="point"></pl-sketch-tool>
+      <pl-sketch-tool id="vl" type="vertical-line"></pl-sketch-tool>
+      <pl-sketch-initial toolid="fd" coordinates="0,0,0.4,1"></pl-sketch-initial>
+      <pl-sketch-initial toolid="fd" coordinates="0.8,0,2,0"></pl-sketch-initial>
+      <pl-sketch-initial toolid="pt" coordinates="-1.5,1"></pl-sketch-initial>
+      <pl-sketch-initial toolid="vl" coordinates="-1.5"></pl-sketch-initial>
+      <pl-sketch-grade type="undefined-in" toolid="fd" xrange="0, 1" debug="true" feedback="FDT-two"></pl-sketch-grade> 
+      <pl-sketch-grade type="undefined-in" toolid="fd,pt,vl" xrange="-2,-1" debug="true" feedback="PT-VLT-all"></pl-sketch-grade> 
+    </pl-sketch>
+  </div>
+</div>
+
+<div class="card my-2">
+  <div class="card-header"> concave-up/concave-down &#9989; </div>
+  <div class="card-body">
+    <pl-question-panel>
+      This should produce 100% correct.
+    </pl-question-panel>
+    <pl-sketch answers-name="cucd-correct">
+      <pl-sketch-tool id="fd" type="free-draw"></pl-sketch-tool>
+      <pl-sketch-tool id="sp" type="spline"></pl-sketch-tool>
+      <pl-sketch-initial toolid="fd" fun="x**3" xrange="-1,0"></pl-sketch-initial>
+      <pl-sketch-initial toolid="sp" fun="x**3" xrange="0,1"></pl-sketch-initial>
+      <pl-sketch-grade type="concave-up" toolid="sp" xrange="0,1" debug="true" feedback="SPT-up"></pl-sketch-grade> 
+      <pl-sketch-grade type="concave-down" toolid="fd" xrange="-1,0" debug="true" feedback="FDT-down"></pl-sketch-grade> 
+    </pl-sketch>
+  </div>
+</div>
+
+<div class="card my-2">
+  <div class="card-header"> concave-up/concave-down &#10060; </div>
+  <div class="card-body">
+    <pl-question-panel>
+      This should produce 0% correct.
+    </pl-question-panel>
+    <pl-sketch answers-name="cucd-incorrect">
+      <pl-sketch-tool id="fd" type="free-draw"></pl-sketch-tool>
+      <pl-sketch-tool id="pline" type="polyline"></pl-sketch-tool>
+      <pl-sketch-tool id="sp" type="spline"></pl-sketch-tool>
+
+      <pl-sketch-initial toolid="fd" fun="-x**3" xrange="-1,1"></pl-sketch-initial>
+      <pl-sketch-initial toolid="pline" coordinates="2,1,3,2"></pl-sketch-initial>
+      <pl-sketch-initial toolid="sp" coordinates="3,2,3.7,2.6,4,4"></pl-sketch-initial>
+      <pl-sketch-grade type="concave-up" toolid="fd" xrange="0,1" debug="true" feedback="FDT-up"></pl-sketch-grade> 
+      <pl-sketch-grade type="concave-down" toolid="fd" xrange="-1,0" debug="true" feedback="FDT-down"></pl-sketch-grade> 
+      <pl-sketch-grade type="concave-up" toolid="pline, sp" xrange="2,4" debug="true" feedback="SPT-PLT-up"></pl-sketch-grade>
+    </pl-sketch>
+  </div>
+</div>
+
+<div class="card my-2">
+  <div class="card-header"> less-than/greater-than &#9989; </div>
+  <div class="card-body">
+    <pl-question-panel>
+      This should produce 100% correct.
+    </pl-question-panel>
+    <pl-sketch answers-name="ltgt-correct">
+      <pl-sketch-tool id="fd" type="free-draw"></pl-sketch-tool>
+      <pl-sketch-tool id="pg" type="polygon"></pl-sketch-tool>
+      <pl-sketch-tool id="pt" type="point"></pl-sketch-tool>
+      <pl-sketch-tool id="pg-2" type="polygon" fill-color="purple"></pl-sketch-tool>
+      <pl-sketch-tool id="hl" type="horizontal-line"></pl-sketch-tool>
+      <pl-sketch-initial toolid="fd" fun="-x"></pl-sketch-initial>
+      <pl-sketch-initial toolid="pg" coordinates="-0.5,-0.5, 0,0,1,0,1.5,-0.5,1,1.5,0,1.5"></pl-sketch-initial>
+      <pl-sketch-initial toolid="pt" coordinates="1,1.5"></pl-sketch-initial>
+      <pl-sketch-initial toolid="pt" coordinates="2,2.5"></pl-sketch-initial>
+      <pl-sketch-initial toolid="pt" coordinates="3,3.5"></pl-sketch-initial>
+      <pl-sketch-initial toolid="pt" coordinates="-4,-3.5"></pl-sketch-initial>
+      <pl-sketch-initial toolid="pg-2" coordinates="-2.5,-2, -2.9,-5,-4,-3"></pl-sketch-initial>
+      <pl-sketch-initial toolid="hl" coordinates="1"></pl-sketch-initial>
+      <pl-sketch-grade type="greater-than" toolid="pt" fun="x" debug="true" feedback="PT-gt-x"></pl-sketch-grade> 
+      <pl-sketch-grade type="less-than" toolid="pg-2" fun="-x" xrange="-3,-2" debug="true" feedback="PGT-lt--x-cut"></pl-sketch-grade>  
+      <pl-sketch-grade type="less-than" y="0" toolid="fd" xrange="0,1" debug="true" feedback="FDT-less"></pl-sketch-grade> 
+      <pl-sketch-grade type="greater-than" y="0" toolid="fd" xrange="-1,0" debug="true" feedback="FDT-greater"></pl-sketch-grade> 
+      <pl-sketch-grade type="greater-than" y="0" toolid="pg" xrange="0,1" debug="true" feedback="PGT-greater-range"></pl-sketch-grade> 
+      <pl-sketch-grade type="greater-than" y="0" toolid="hl" xrange="0,1" debug="true" feedback="HL-greater"></pl-sketch-grade> 
+      <pl-sketch-grade type="less-than" y="2" toolid="hl" xrange="0,1" debug="true" feedback="HL-less"></pl-sketch-grade> 
+    </pl-sketch>
+  </div>
+</div>
+
+<div class="card my-2">
+  <div class="card-header"> less-than/greater-than &#10060; </div>
+  <div class="card-body">
+    <pl-question-panel>
+      This should produce 0% correct.
+    </pl-question-panel>
+    <pl-sketch answers-name="ltgt-incorrect">
+      <pl-sketch-tool id="fd" type="free-draw"></pl-sketch-tool>
+      <pl-sketch-tool id="pg" type="polygon"></pl-sketch-tool>
+      <pl-sketch-tool id="pg-2" type="polygon" fill-color="purple"></pl-sketch-tool>
+      <pl-sketch-tool id="hl" type="horizontal-line"></pl-sketch-tool>
+      <pl-sketch-initial toolid="fd" fun="x"></pl-sketch-initial>
+      <pl-sketch-initial toolid="pg" coordinates="(1.2,4),(1.4,4),(1.4,5.5),(3.2,5.5),(3.2,4),(3.4,4),(3.4,6),(1.2,6)"></pl-sketch-initial>
+      <pl-sketch-initial toolid="pg" coordinates="(-1,-4),(-0.2,-4),(-0.2,-5.5),(1.2,-5.5),(1.2,-4),(1.8,-4),(1.8,-6),(-1,-6)"></pl-sketch-initial>
+      <pl-sketch-initial toolid="pg-2" coordinates="1.2,0.5,1.8,0.5,1.5,1"></pl-sketch-initial>
+      <pl-sketch-initial toolid="pg-2" coordinates="0.2,-0.5,0.8,-0.5,0.5,-1"></pl-sketch-initial>
+      <pl-sketch-initial toolid="hl" coordinates="1"></pl-sketch-initial>
+      <pl-sketch-initial toolid="hl" coordinates="3"></pl-sketch-initial>
+      <pl-sketch-grade type="greater-than" toolid="pg-2" fun="0" xrange="0,1" debug="true" feedback="PGT-less-0"></pl-sketch-grade> 
+      <pl-sketch-grade type="less-than" toolid="pg-2" fun="0" xrange="1,2" debug="true" feedback="PGT-greater-0"></pl-sketch-grade> 
+      <pl-sketch-grade type="less-than" y="0" toolid="fd" xrange="0,1" debug="true" feedback="FDT-less"></pl-sketch-grade> 
+      <pl-sketch-grade type="greater-than" y="0" toolid="fd" xrange="-1,0" debug="true" feedback="FDT-greater"></pl-sketch-grade>
+      <pl-sketch-grade type="greater-than" y="2" toolid="hl" xrange="0,1" debug="true" feedback="HL-greater"></pl-sketch-grade> 
+      <pl-sketch-grade type="less-than" y="2" toolid="hl" xrange="0,1" debug="true" feedback="HL-less"></pl-sketch-grade>  
+    </pl-sketch>
+  </div>
+</div>
