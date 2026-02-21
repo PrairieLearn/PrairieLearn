@@ -5,6 +5,7 @@
   "title": "Exam with lockpoints and advance score threshold",
   "set": "Exam",
   "number": "19",
+  "shuffleQuestions": false,
   "zones": [
     {
       "title": "Sequential prerequisite",
