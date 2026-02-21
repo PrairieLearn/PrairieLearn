@@ -1244,6 +1244,7 @@ export async function initExpress(): Promise<Express> {
         res.locals,
       );
       res.locals.billing_enabled = hasCourseInstanceBilling && isEnterprise();
+      res.locals.ai_grading_enabled = await features.enabledFromLocals('ai-grading', res.locals);
       next();
     }),
   );
@@ -1255,6 +1256,11 @@ export async function initExpress(): Promise<Express> {
   app.use(
     '/pl/course_instance/:course_instance_id(\\d+)/instructor/instance_admin/publishing',
     (await import('./pages/instructorInstanceAdminPublishing/instructorInstanceAdminPublishing.js'))
+      .default,
+  );
+  app.use(
+    '/pl/course_instance/:course_instance_id(\\d+)/instructor/instance_admin/ai_grading',
+    (await import('./pages/instructorInstanceAdminAiGrading/instructorInstanceAdminAiGrading.js'))
       .default,
   );
   app.use(

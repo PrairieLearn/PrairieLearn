@@ -325,6 +325,10 @@
       "type": "string",
       "default": "THIS_IS_THE_SECRET_KEY"
     },
+    "databaseEncryptionKey": {
+      "type": "string",
+      "default": "d44e91681a4769790c29a13a86e526dcd44e91681a4769790c29a13a86e526dc"
+    },
     "secretSlackOpsBotEndpoint": {
       "type": ["string", "null"],
       "default": null

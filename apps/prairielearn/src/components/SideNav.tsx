@@ -151,7 +151,7 @@ const sideNavPagesTabs = {
     },
     {
       activePages: ['instance_admin'],
-      activeSubPages: ['settings', 'publishing', 'lti', 'billing'],
+      activeSubPages: ['settings', 'publishing', 'ai_grading', 'lti', 'billing'],
       urlSuffix: '/instance_admin/settings',
       iconClasses: 'fas fa-cog',
       tabLabel: 'Instance settings',

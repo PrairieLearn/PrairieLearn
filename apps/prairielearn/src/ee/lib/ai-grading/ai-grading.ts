@@ -38,6 +38,7 @@ import { updateCourseInstanceUsagesForAiGradingResponses } from '../../../models
 import { selectCompleteRubric } from '../../../models/rubrics.js';
 import * as questionServers from '../../../question-servers/index.js';
 
+import { resolveAiGradingKeys } from './ai-grading-credentials.js';
 import { AI_GRADING_MODEL_PROVIDERS, type AiGradingModelId } from './ai-grading-models.shared.js';
 import { selectGradingJobsInfo } from './ai-grading-stats.js';
 import {
@@ -108,38 +109,34 @@ export async function aiGrade({
   }
 
   const provider = AI_GRADING_MODEL_PROVIDERS[model_id];
+  const resolvedKeys = await resolveAiGradingKeys(course_instance);
+
   const model = run(() => {
     if (provider === 'openai') {
-      // If an OpenAI API Key and Organization are not provided, throw an error
-      if (!config.aiGradingOpenAiApiKey || !config.aiGradingOpenAiOrganization) {
+      if (!resolvedKeys.openai) {
         throw new error.HttpStatusError(403, 'Model not available (OpenAI API key not provided)');
       }
-      const openai = createOpenAI({
-        apiKey: config.aiGradingOpenAiApiKey,
-        organization: config.aiGradingOpenAiOrganization,
-      });
-      return openai(model_id);
+      return createOpenAI({
+        apiKey: resolvedKeys.openai.apiKey,
+        organization: resolvedKeys.openai.organization ?? undefined,
+      })(model_id);
     } else if (provider === 'google') {
-      // If a Google API Key is not provided, throw an error
-      if (!config.aiGradingGoogleApiKey) {
+      if (!resolvedKeys.google) {
         throw new error.HttpStatusError(403, 'Model not available (Google API key not provided)');
       }
-      const google = createGoogleGenerativeAI({
-        apiKey: config.aiGradingGoogleApiKey,
-      });
-      return google(model_id);
+      return createGoogleGenerativeAI({
+        apiKey: resolvedKeys.google.apiKey,
+      })(model_id);
     } else {
-      // If an Anthropic API Key is not provided, throw an error
-      if (!config.aiGradingAnthropicApiKey) {
+      if (!resolvedKeys.anthropic) {
         throw new error.HttpStatusError(
           403,
           'Model not available (Anthropic API key not provided)',
         );
       }
-      const anthropic = createAnthropic({
-        apiKey: config.aiGradingAnthropicApiKey,
-      });
-      return anthropic(model_id);
+      return createAnthropic({
+        apiKey: resolvedKeys.anthropic.apiKey,
+      })(model_id);
     }
   });
 
@@ -195,7 +192,11 @@ export async function aiGrade({
   });
 
   serverJob.executeInBackground(async (job) => {
+    // Skip rate limiting and cost tracking when using custom API keys, since the
+    // course instance is paying for their own usage and platform limits don't apply.
+    const skipRateLimitAndCostTracking = course_instance.ai_grading_use_custom_api_keys;
     let rateLimitExceeded =
+      !skipRateLimitAndCostTracking &&
       (await getIntervalUsage(course_instance)) > config.aiGradingRateLimitDollars;
 
     // If the rate limit has already been exceeded, log it and exit early.
@@ -246,9 +247,10 @@ export async function aiGrade({
 
       // Since other jobs may be concurrently running, we could exceed the rate limit
       // by 19 requests worth of usage. We are okay with this potential race condition.
-      const intervalCost = await getIntervalUsage(course_instance);
-
-      if (intervalCost > config.aiGradingRateLimitDollars) {
+      if (
+        !skipRateLimitAndCostTracking &&
+        (await getIntervalUsage(course_instance)) > config.aiGradingRateLimitDollars
+      ) {
         logger.error(
           "You've reached the hourly usage cap for AI grading. Please try again later. AI grading jobs that are still in progress will continue to completion.",
         );
@@ -506,24 +508,28 @@ export async function aiGrade({
             ],
             logger,
           });
-          for (const response of [
-            ...Object.values(rotationCorrections).map((r) => r.response),
-            gradingResponseWithRotationIssue,
-            finalGradingResponse,
-          ]) {
-            await addAiGradingCostToIntervalUsage({
-              courseInstance: course_instance,
-              model: model_id,
-              usage: response.usage,
-            });
+          if (!skipRateLimitAndCostTracking) {
+            for (const response of [
+              ...Object.values(rotationCorrections).map((r) => r.response),
+              gradingResponseWithRotationIssue,
+              finalGradingResponse,
+            ]) {
+              await addAiGradingCostToIntervalUsage({
+                courseInstance: course_instance,
+                model: model_id,
+                usage: response.usage,
+              });
+            }
           }
         } else {
           logResponseUsage({ response: finalGradingResponse, logger });
-          await addAiGradingCostToIntervalUsage({
-            courseInstance: course_instance,
-            model: model_id,
-            usage: finalGradingResponse.usage,
-          });
+          if (!skipRateLimitAndCostTracking) {
+            await addAiGradingCostToIntervalUsage({
+              courseInstance: course_instance,
+              model: model_id,
+              usage: finalGradingResponse.usage,
+            });
+          }
         }
 
         logger.info(`Parsed response: ${JSON.stringify(finalGradingResponse.object, null, 2)}`);
@@ -768,24 +774,28 @@ export async function aiGrade({
             ],
             logger,
           });
-          for (const response of [
-            ...Object.values(rotationCorrections).map((r) => r.response),
-            gradingResponseWithRotationIssue,
-            finalGradingResponse,
-          ]) {
-            await addAiGradingCostToIntervalUsage({
-              courseInstance: course_instance,
-              model: model_id,
-              usage: response.usage,
-            });
+          if (!skipRateLimitAndCostTracking) {
+            for (const response of [
+              ...Object.values(rotationCorrections).map((r) => r.response),
+              gradingResponseWithRotationIssue,
+              finalGradingResponse,
+            ]) {
+              await addAiGradingCostToIntervalUsage({
+                courseInstance: course_instance,
+                model: model_id,
+                usage: response.usage,
+              });
+            }
           }
         } else {
           logResponseUsage({ response: finalGradingResponse, logger });
-          await addAiGradingCostToIntervalUsage({
-            courseInstance: course_instance,
-            model: model_id,
-            usage: finalGradingResponse.usage,
-          });
+          if (!skipRateLimitAndCostTracking) {
+            await addAiGradingCostToIntervalUsage({
+              courseInstance: course_instance,
+              model: model_id,
+              usage: finalGradingResponse.usage,
+            });
+          }
         }
 
         logger.info(`Parsed response: ${JSON.stringify(finalGradingResponse.object, null, 2)}`);

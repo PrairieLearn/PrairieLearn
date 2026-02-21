@@ -9,6 +9,7 @@ import { generatePrefixCsrfToken } from '@prairielearn/signed-token';
 
 import { AssessmentOpenInstancesAlert } from '../../../components/AssessmentOpenInstancesAlert.js';
 import { PageLayout } from '../../../components/PageLayout.js';
+import { getAvailableAiGradingProviders } from '../../../ee/lib/ai-grading/ai-grading-credentials.js';
 import {
   calculateAiGradingStats,
   fillInstanceQuestionColumnEntries,
@@ -128,6 +129,9 @@ router.get(
       config.secretKey,
     );
 
+    const useCustomApiKeys = course_instance.ai_grading_use_custom_api_keys;
+    const availableAiGradingProviders = aiGradingEnabled ? await getAvailableAiGradingProviders(course_instance) : [];
+
     res.send(
       PageLayout({
         resLocals: res.locals,
@@ -182,6 +186,8 @@ router.get(
                 isDevMode={process.env.NODE_ENV === 'development'}
                 questionTitle={question.title ?? ''}
                 questionNumber={Number(number_in_alternative_group)}
+                availableAiGradingProviders={availableAiGradingProviders}
+                useCustomApiKeys={useCustomApiKeys}
               />
             </Hydrate>
           </>

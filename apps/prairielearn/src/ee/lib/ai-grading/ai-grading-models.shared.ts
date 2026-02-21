@@ -1,3 +1,5 @@
+import type { EnumAiGradingProvider } from '../../../lib/db-types.js';
+
 export const AI_GRADING_MODELS = [
   { provider: 'openai', modelId: 'gpt-5-mini-2025-08-07', name: 'OpenAI GPT 5-mini' },
   { provider: 'openai', modelId: 'gpt-5.1-2025-11-13', name: 'OpenAI GPT 5.1' },
@@ -25,6 +27,22 @@ export const AI_GRADING_MODEL_PROVIDERS = {
   'claude-sonnet-4-5': 'anthropic',
   'claude-opus-4-5': 'anthropic',
 } as const;
+
+/**
+ * The unique set of provider identifiers derived from the models list.
+ */
+export const AI_GRADING_PROVIDERS = [...new Set(AI_GRADING_MODELS.map((m) => m.provider))] as const;
+
+export const AI_GRADING_PROVIDER_DISPLAY_NAMES: Record<EnumAiGradingProvider, string> = {
+  openai: 'OpenAI',
+  google: 'Google',
+  anthropic: 'Anthropic',
+};
+
+export const AI_GRADING_PROVIDER_OPTIONS = AI_GRADING_PROVIDERS.map((provider) => ({
+  value: provider,
+  label: AI_GRADING_PROVIDER_DISPLAY_NAMES[provider],
+}));
 
 /**
  * Users without the ai-grading-model-selection feature flag enabled must use the default model.

@@ -9,6 +9,9 @@ import { DateFromISOString, IdSchema, IntervalSchema } from '@prairielearn/zod';
 // Enum schemas. These should be alphabetized by their corresponding enum name.
 // *******************************************************************************
 
+export const EnumAiGradingProviderSchema = z.enum(['openai', 'google', 'anthropic']);
+export type EnumAiGradingProvider = z.infer<typeof EnumAiGradingProviderSchema>;
+
 export const EnumAiQuestionGenerationMessageRoleSchema = z.enum(['user', 'assistant']);
 export type EnumAiQuestionGenerationMessageRole = z.infer<
   typeof EnumAiQuestionGenerationMessageRoleSchema
@@ -610,6 +613,7 @@ export const CourseSchema = z.object({
 export type Course = z.infer<typeof CourseSchema>;
 
 export const CourseInstanceSchema = z.object({
+  ai_grading_use_custom_api_keys: z.boolean(),
   assessments_group_by: z.enum(['Set', 'Module']),
   course_id: IdSchema,
   deleted_at: DateFromISOString.nullable(),
@@ -646,6 +650,18 @@ export const CourseInstanceAccessRuleSchema = z.object({
   uids: z.string().array().nullable(),
 });
 export type CourseInstanceAccessRule = z.infer<typeof CourseInstanceAccessRuleSchema>;
+
+export const CourseInstanceAiGradingCredentialSchema = z.object({
+  course_instance_id: IdSchema,
+  created_at: DateFromISOString,
+  encrypted_secret_key: z.string(),
+  id: IdSchema,
+  provider: EnumAiGradingProviderSchema,
+  updated_at: DateFromISOString,
+});
+export type CourseInstanceAiGradingCredential = z.infer<
+  typeof CourseInstanceAiGradingCredentialSchema
+>;
 
 export const CourseInstancePublishingExtensionSchema = z.object({
   course_instance_id: IdSchema,
@@ -1619,6 +1635,7 @@ export const TableNames = [
   'chunks',
   'client_fingerprints',
   'course_instance_access_rules',
+  'course_instance_ai_grading_credentials',
   'course_instance_permissions',
   'course_instance_publishing_extension_enrollments',
   'course_instance_publishing_extensions',
