@@ -117,13 +117,13 @@ question_state AS (
         )
 )
 SELECT
-    instance_question_id,
-    row_order,
-    question_number,
+    question_state.instance_question_id,
+    question_state.row_order,
+    question_state.question_number,
     CASE
-        WHEN sequence_locked THEN 'blocked_sequence'
-        WHEN lockpoint_not_yet_crossed THEN 'blocked_lockpoint'
-        WHEN lockpoint_read_only THEN 'read_only_lockpoint'
+        WHEN question_state.sequence_locked THEN 'blocked_sequence'
+        WHEN question_state.lockpoint_not_yet_crossed THEN 'blocked_lockpoint'
+        WHEN question_state.lockpoint_read_only THEN 'read_only_lockpoint'
         ELSE 'default'
     END AS question_access_mode
 FROM
