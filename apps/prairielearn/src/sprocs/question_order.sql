@@ -8,6 +8,8 @@ CREATE FUNCTION
         question_access_mode text
     )
 AS $$
+BEGIN
+RETURN QUERY
 -- Used to determine if an instance question should block
 -- access to further questions when advanceScorePerc is set.
 WITH locks_next AS (
@@ -126,4 +128,5 @@ SELECT
     END AS question_access_mode
 FROM
     question_state;
-$$ LANGUAGE SQL STABLE;
+END;
+$$ LANGUAGE plpgsql STABLE;

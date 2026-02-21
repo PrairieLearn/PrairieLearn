@@ -23,3 +23,4 @@ foreign-key constraints
 
 referenced by
     alternative_groups: FOREIGN KEY (zone_id) REFERENCES zones(id) ON UPDATE CASCADE ON DELETE CASCADE
+    assessment_instance_crossed_lockpoints: FOREIGN KEY (zone_id) REFERENCES zones(id) ON UPDATE CASCADE ON DELETE CASCADE
