@@ -337,8 +337,11 @@ window.PLOrderBlocks = function (uuid, options) {
   // We want the user to be able to scroll these areas without triggering drag-and-drop.
   function markScrollableContent(container) {
     container.querySelectorAll('.pl-order-block-content').forEach((el) => {
-      const canScrollX = el.scrollWidth > el.clientWidth;
-      const canScrollY = el.scrollHeight > el.clientHeight;
+      // For code blocks, check the inner scroll container. Otherwise, check the element itself.
+      const scrollTarget = el.querySelector('.pl-code > div') || el;
+      const canScrollX = scrollTarget.scrollWidth > scrollTarget.clientWidth;
+      const canScrollY = scrollTarget.scrollHeight > scrollTarget.clientHeight;
+      
       el.classList.toggle('is-scrollable', canScrollX || canScrollY);
     });
   }
