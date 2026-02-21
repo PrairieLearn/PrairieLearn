@@ -113,6 +113,8 @@ export function QuestionContainer({
       ${['instructor', 'manual_grading'].includes(questionContext) && aiGradingInfo
         ? AIGradingExplanation({
             explanation: aiGradingInfo.explanation,
+            hasImage: aiGradingInfo.hasImage,
+            rotationCorrectionStatus: aiGradingInfo.rotationCorrectionStatus,
             rotationCorrectionDegrees: aiGradingInfo.rotationCorrectionDegrees,
           })
         : ''}
@@ -200,9 +202,17 @@ function AIGradingPrompt({ prompt }: { prompt: string }) {
 
 function AIGradingExplanation({
   explanation,
+  hasImage,
+  rotationCorrectionStatus,
   rotationCorrectionDegrees,
 }: {
   explanation: string | null;
+  hasImage: boolean;
+  rotationCorrectionStatus:
+    | 'not-flagged'
+    | 'flagged-not-corrected'
+    | 'flagged-and-corrected'
+    | null;
   rotationCorrectionDegrees: string | null;
 }) {
   return html`
@@ -227,6 +237,39 @@ function AIGradingExplanation({
         id="ai-grading-explanation-body"
       >
         <div class="card-body">
+          ${hasImage
+            ? run(() => {
+                switch (rotationCorrectionStatus) {
+                  case 'not-flagged':
+                    return html`<div class="alert alert-info mb-3" role="alert">
+                      All student-submitted images were uploaded in an upright state.
+                    </div>`;
+                  case 'flagged-not-corrected':
+                    return html`<div class="alert alert-info mb-3" role="alert">
+                      <p>All student-submitted images were uploaded in an upright state.</p>
+                      <p>
+                        The system initially flagged an image uploaded by the student as incorrectly
+                        rotated.
+                      </p>
+                      <p class="mb-0">
+                        After a second review, the system determined that the image was correctly
+                        rotated.
+                      </p>
+                    </div>`;
+                  case 'flagged-and-corrected':
+                    return html`<div class="alert alert-warning mb-3" role="alert">
+                      <p>
+                        An image was uploaded in a rotated state by the student (this was an error
+                        by the student). The system corrected its rotation prior to AI grading.
+                      </p>
+                      <p class="mb-1">Counterclockwise rotation corrections, in degrees:</p>
+                      <pre class="mb-0">${rotationCorrectionDegrees}</pre>
+                    </div>`;
+                  default:
+                    return '';
+                }
+              })
+            : ''}
           ${explanation
             ? html`
                 <pre class="mb-0 overflow-visible mathjax_process" style="white-space: pre-wrap;">
@@ -234,18 +277,6 @@ ${explanation}
 </pre>
               `
             : ''}
-          ${rotationCorrectionDegrees
-            ? html`
-                <br />
-                <pre>
-Not all images were upright
-Counterclockwise rotation corrections, in degrees: ${rotationCorrectionDegrees}
-</pre>
-              `
-            : html`
-                <br />
-                <pre>All images were upright</pre>
-              `}
         </div>
       </div>
     </div>

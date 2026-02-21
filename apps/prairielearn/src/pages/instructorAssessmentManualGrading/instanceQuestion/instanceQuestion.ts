@@ -10,11 +10,15 @@ import { DateFromISOString, IdSchema } from '@prairielearn/zod';
 
 import { calculateAiGradingStats } from '../../../ee/lib/ai-grading/ai-grading-stats.js';
 import {
+  containsImageCapture,
   selectLastSubmissionId,
   selectRubricGradingItems,
   toggleAiGradingMode,
 } from '../../../ee/lib/ai-grading/ai-grading-util.js';
-import type { InstanceQuestionAIGradingInfo } from '../../../ee/lib/ai-grading/types.js';
+import type {
+  InstanceQuestionAIGradingInfo,
+  InstanceQuestionAIGradingInfoBase,
+} from '../../../ee/lib/ai-grading/types.js';
 import {
   selectAssessmentQuestionHasInstanceQuestionGroups,
   selectInstanceQuestionGroup,
@@ -127,6 +131,8 @@ router.get(
      */
     let aiGradingInfo: InstanceQuestionAIGradingInfo | undefined = undefined;
 
+    const localsForRender = await prepareLocalsForRender(req.query, res.locals);
+
     if (aiGradingEnabled) {
       const submission_id = await selectLastSubmissionId(instance_question.id);
       const ai_grading_job_data = await sqldb.queryOptionalRow(
@@ -203,15 +209,54 @@ router.get(
           return null;
         });
 
-        aiGradingInfo = {
+        const hasImage = run(() => {
+          if (localsForRender.resLocals.submissionHtmls.length > 0) {
+            return containsImageCapture(localsForRender.resLocals.submissionHtmls[0]);
+          }
+          return false;
+        });
+
+        const aiGradingInfoBase: InstanceQuestionAIGradingInfoBase = {
           submissionManuallyGraded,
           prompt: formattedPrompt,
           selectedRubricItemIds: selectedRubricItems.map((item) => item.id),
           explanation,
-          rotationCorrectionDegrees: ai_grading_job_data.rotation_correction_degrees
-            ? JSON.stringify(ai_grading_job_data.rotation_correction_degrees)
-            : null,
         };
+
+        if (hasImage) {
+          const rotationCorrectionDegrees = ai_grading_job_data.rotation_correction_degrees
+            ? JSON.stringify(ai_grading_job_data.rotation_correction_degrees)
+            : null;
+
+          const rotationCorrectionStatus = run(() => {
+            if (
+              !ai_grading_job_data.rotation_correction_degrees ||
+              Object.keys(ai_grading_job_data.rotation_correction_degrees).length === 0
+            ) {
+              return 'not-flagged' as const;
+            }
+            const hasNonZeroRotations = Object.values(
+              ai_grading_job_data.rotation_correction_degrees,
+            ).some((degrees) => degrees !== 0);
+            return hasNonZeroRotations
+              ? ('flagged-and-corrected' as const)
+              : ('flagged-not-corrected' as const);
+          });
+
+          aiGradingInfo = {
+            ...aiGradingInfoBase,
+            hasImage: true,
+            rotationCorrectionStatus,
+            rotationCorrectionDegrees,
+          };
+        } else {
+          aiGradingInfo = {
+            ...aiGradingInfoBase,
+            hasImage: false,
+            rotationCorrectionStatus: null,
+            rotationCorrectionDegrees: null,
+          };
+        }
       }
     }
 
@@ -227,7 +272,7 @@ router.get(
 
     res.send(
       InstanceQuestionPage({
-        ...(await prepareLocalsForRender(req.query, res.locals)),
+        ...localsForRender,
         assignedGrader,
         lastGrader,
         selectedInstanceQuestionGroup: instanceQuestionGroup,

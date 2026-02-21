@@ -465,10 +465,16 @@ export async function aiGrade({
             model,
           });
 
+          const rotationCorrected = Object.values(rotationCorrections).some(
+            (correction) => correction.degreesRotated !== 0,
+          );
+          // TODO: Return initialResponse if rotationCorrected = false, and modify corresponding cost tracking/rate limiting logic.
+
           // Regenerate the prompt with the rotation-corrected images.
           input = await generatePrompt({
             questionPrompt,
             questionAnswer,
+            rotationCorrected,
             submission_text,
             submitted_answer: rotatedSubmittedAnswer,
             rubric_items,
