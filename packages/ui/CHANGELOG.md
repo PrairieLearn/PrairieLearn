@@ -1,5 +1,13 @@
 # @prairielearn/ui
 
+## 3.1.5
+
+### Patch Changes
+
+- e28f2e2: Replace `JSX.Element` with `ReactNode` in component type definitions
+- Updated dependencies [7b937fb]
+  - @prairielearn/browser-utils@2.6.4
+
 ## 3.1.4
 
 ### Patch Changes
