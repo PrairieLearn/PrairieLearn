@@ -85,13 +85,32 @@ def prepare(element_html: str, data: pl.QuestionData) -> None:
             raise ValueError(f"duplicate correct_answers variable name: {name}")
 
         a_true = pl.get_string_attrib(element, "correct-answer")
-        # Validate that the answer can be parsed before storing
+        # Validate that the answer can be parsed and that the variable attribute
+        # includes all variables needed by the correct answer
         if len(a_true) > 0:
             try:
                 psu.convert_string_to_sympy(
                     a_true, variables, allow_complex=False, allow_trig_functions=False
                 )
             except psu.BaseSympyError as exc:
+                # Check if the error is due to undefined variables and give a clearer message
+                try:
+                    # Parse without variable restrictions to find what variables are used
+                    a_true_unrestricted = sympy.sympify(a_true)
+                    answer_vars = {str(s) for s in a_true_unrestricted.free_symbols}
+                    # Filter out known constants
+                    constants = set(psu._Constants().variables.keys())
+                    answer_vars -= constants
+                    specified_vars = set(variables)
+                    missing_vars = answer_vars - specified_vars
+                    if missing_vars:
+                        raise ValueError(
+                            f'Correct answer "{a_true}" for "{name}" uses variable(s) '
+                            f"{sorted(missing_vars)} not specified in the variable attribute. "
+                            f"The correct answer uses the variable(s) {','.join(sorted(answer_vars))}."
+                        ) from exc
+                except (sympy.SympifyError, TypeError):
+                    pass
                 raise ValueError(
                     f'Parsing correct answer "{a_true}" for "{name}" failed.'
                 ) from exc
@@ -240,6 +259,7 @@ def render(element_html: str, data: pl.QuestionData) -> str:
             "answer": True,
             "a_tru": sympy.latex(a_tru),
             "type": bigo_type,
+            display.value: True,
         }
 
         return chevron.render(template, html_params).strip()

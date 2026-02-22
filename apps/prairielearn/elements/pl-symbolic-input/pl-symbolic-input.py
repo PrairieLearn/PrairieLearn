@@ -442,6 +442,7 @@ def render(element_html: str, data: pl.QuestionData) -> str:
             "label": label,
             "suffix": suffix,
             "a_tru": sympy.latex(a_tru),
+            display.value: True,
         }
         return chevron.render(template, html_params).strip()
 
