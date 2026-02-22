@@ -13,13 +13,16 @@ import {
   sortableKeyboardCoordinates,
   verticalListSortingStrategy,
 } from '@dnd-kit/sortable';
+import { QueryClient, useQuery } from '@tanstack/react-query';
 import { useMemo, useRef, useState } from 'react';
 
 import { useModalState } from '@prairielearn/ui';
 
 import type { StaffAssessmentQuestionRow } from '../../../lib/assessment-question.js';
 import type { StaffAssessment, StaffCourse } from '../../../lib/client/safe-db-types.js';
+import { QueryClientProviderDebug } from '../../../lib/client/tanstackQuery.js';
 import type { ZoneAssessmentJson } from '../../../schemas/infoAssessment.js';
+import type { QuestionByQidResult } from '../trpc.js';
 import type {
   QuestionAlternativeForm,
   ZoneAssessmentForm,
@@ -32,13 +35,54 @@ import {
   stripTrackingIds,
 } from '../utils/dataTransform.js';
 import { normalizeQuestionPoints, questionDisplayName } from '../utils/questions.js';
+import {
+  type AssessmentQuestionsTrpcClient,
+  createAssessmentQuestionsTrpcClient,
+} from '../utils/trpc-client.js';
+import { TRPCProvider, useTRPC } from '../utils/trpc-context.js';
 import { useAssessmentEditor } from '../utils/useAssessmentEditor.js';
 
 import { AssessmentZone } from './AssessmentZone.js';
-import { EditQuestionModal, type EditQuestionModalData } from './EditQuestionModal.js';
+import { EditQuestionModal } from './EditQuestionModal.js';
 import { EditZoneModal, type EditZoneModalData } from './EditZoneModal.js';
 import { ExamResetNotSupportedModal } from './ExamResetNotSupportedModal.js';
+import { QuestionPickerModal } from './QuestionPickerModal.js';
 import { ResetQuestionVariantsModal } from './ResetQuestionVariantsModal.js';
+
+/**
+ * Consolidated state for the question picker and edit modal flow.
+ * This replaces the previously scattered state pieces (selectedQuestionIds,
+ * editQuestionModal, questionPickerModal, pickerContext).
+ */
+interface EditingStateCreate {
+  status: 'editing';
+  mode: 'create';
+  zoneTrackingId: string;
+  question: ZoneQuestionBlockForm;
+  existingQids: string[];
+}
+
+interface EditingStateEdit {
+  status: 'editing';
+  mode: 'edit';
+  questionTrackingId: string;
+  alternativeTrackingId?: string;
+  question: ZoneQuestionBlockForm | QuestionAlternativeForm;
+  zoneQuestionBlock?: ZoneQuestionBlockForm;
+  originalQuestionId?: string;
+}
+
+type EditingState = EditingStateCreate | EditingStateEdit;
+
+type QuestionEditState =
+  | { status: 'idle' }
+  | {
+      status: 'picking';
+      zoneTrackingId: string;
+      /** If returning to edit modal after picking, preserve that context */
+      returnToEdit?: EditingState;
+    }
+  | EditingState;
 
 function EditModeButtons({
   csrfToken,
@@ -118,7 +162,7 @@ function EditModeButtons({
  *
  * Renders assessment zones with AssessmentZone.
  */
-export function InstructorAssessmentQuestionsTable({
+function InstructorAssessmentQuestionsTableInner({
   course,
   questionRows,
   jsonZones,
@@ -129,6 +173,7 @@ export function InstructorAssessmentQuestionsTable({
   canEdit,
   csrfToken,
   origHash,
+  trpcClient,
 }: {
   course: StaffCourse;
   questionRows: StaffAssessmentQuestionRow[];
@@ -140,7 +185,9 @@ export function InstructorAssessmentQuestionsTable({
   canEdit: boolean;
   csrfToken: string;
   origHash: string;
+  trpcClient: AssessmentQuestionsTrpcClient;
 }) {
+  const trpc = useTRPC();
   // Initialize editor state from JSON zones
   const initialZones = addTrackingIds(jsonZones);
 
@@ -168,19 +215,119 @@ export function InstructorAssessmentQuestionsTable({
   const initialZonesRef = useRef(JSON.stringify(initialState.zones));
 
   // UI-only state
-  const [resetAssessmentQuestionId, setResetAssessmentQuestionId] = useState<string>('');
-  const [showResetModal, setShowResetModal] = useState(false);
   const [editMode, setEditMode] = useState(false);
-  // Discriminated union: only store what's needed for each operation
-  // - edit: questionTrackingId (and optionally alternativeTrackingId) - zone is found via findQuestionByTrackingId
-  // - create: zoneTrackingId - we need to know which zone to add the question to
-  const [selectedQuestionIds, setSelectedQuestionIds] = useState<
-    | { type: 'edit'; questionTrackingId: string; alternativeTrackingId?: string }
-    | { type: 'create'; zoneTrackingId: string }
-    | null
-  >(null);
-  const editQuestionModal = useModalState<EditQuestionModalData>(null);
+  const resetModal = useModalState<string>(null);
   const editZoneModal = useModalState<EditZoneModalData>(null);
+
+  // Fetch course questions on-demand when edit mode is activated
+  const courseQuestionsQuery = useQuery({
+    ...trpc.courseQuestions.queryOptions(),
+    enabled: editMode,
+  });
+  const courseQuestions = courseQuestionsQuery.data ?? [];
+
+  // Consolidated state for question picker and edit modal flow
+  const [questionEditState, setQuestionEditState] = useState<QuestionEditState>({
+    status: 'idle',
+  });
+
+  // Derived modal visibility
+  const showPicker = questionEditState.status === 'picking';
+  const showEditModal = questionEditState.status === 'editing';
+
+  // Helper functions for state transitions
+  const openPickerForNew = (zoneTrackingId: string) => {
+    setQuestionEditState({ status: 'picking', zoneTrackingId });
+  };
+
+  const openPickerToChangeQid = (
+    currentFormValues: ZoneQuestionBlockForm | QuestionAlternativeForm,
+  ) => {
+    if (questionEditState.status !== 'editing') return;
+    const zoneTrackingId =
+      questionEditState.mode === 'create'
+        ? questionEditState.zoneTrackingId
+        : (zones.find((z) =>
+            z.questions.some((q) => q.trackingId === questionEditState.questionTrackingId),
+          )?.trackingId ?? '');
+    // Merge current form values into the original question to preserve unsaved
+    // edits (e.g. points/manual points) while keeping extra properties that
+    // aren't registered as form fields.
+    const questionWithFormValues = {
+      ...questionEditState.question,
+      ...currentFormValues,
+      trackingId: questionEditState.question.trackingId,
+    } as typeof questionEditState.question;
+    // Restore inheritance for fields that were not explicitly set on the
+    // original question. `getValues()` includes inherited display values,
+    // so without this cleanup `isInherited()` would return false after the
+    // pick-and-return cycle.
+    const inheritableFields = [
+      'points',
+      'autoPoints',
+      'maxPoints',
+      'maxAutoPoints',
+      'manualPoints',
+    ] as const;
+    for (const field of inheritableFields) {
+      if (
+        !(field in questionEditState.question) ||
+        questionEditState.question[field as keyof typeof questionEditState.question] === undefined
+      ) {
+        delete questionWithFormValues[field as keyof typeof questionWithFormValues];
+      }
+    }
+    const returnToEdit: EditingState = {
+      ...questionEditState,
+      question: questionWithFormValues,
+    } as EditingState;
+    setQuestionEditState({
+      status: 'picking',
+      zoneTrackingId,
+      returnToEdit,
+    });
+  };
+
+  const openEditForExisting = ({
+    question,
+    zoneQuestionBlock,
+    questionTrackingId,
+    alternativeTrackingId,
+  }: {
+    question: ZoneQuestionBlockForm | QuestionAlternativeForm;
+    zoneQuestionBlock?: ZoneQuestionBlockForm;
+    questionTrackingId: string;
+    alternativeTrackingId?: string;
+  }) => {
+    setQuestionEditState({
+      status: 'editing',
+      mode: 'edit',
+      questionTrackingId,
+      alternativeTrackingId,
+      question,
+      zoneQuestionBlock,
+      originalQuestionId: question.id,
+    });
+  };
+
+  const closeQuestionEditState = () => {
+    setQuestionEditState({ status: 'idle' });
+  };
+
+  const handlePickerCancel = () => {
+    if (questionEditState.status === 'picking' && questionEditState.returnToEdit) {
+      // Return to the edit modal without changing the QID
+      setQuestionEditState(questionEditState.returnToEdit);
+    } else {
+      closeQuestionEditState();
+    }
+  };
+
+  // Questions already in the assessment are those with metadata
+  const questionsInAssessment = useMemo(
+    () => new Set(Object.keys(questionMetadata)),
+    [questionMetadata],
+  );
 
   // dnd-kit sensors for drag and drop
   const sensors = useSensors(
@@ -212,83 +359,104 @@ export function InstructorAssessmentQuestionsTable({
   }, [zones]);
 
   const handleResetButtonClick = (assessmentQuestionId: string) => {
-    setResetAssessmentQuestionId(assessmentQuestionId);
-    setShowResetModal(true);
+    resetModal.showWithData(assessmentQuestionId);
   };
 
   const assessmentType = assessment.type;
 
-  const handleEditQuestion = ({
-    question,
-    zoneQuestionBlock,
-    questionTrackingId,
-    alternativeTrackingId,
-  }: {
-    question: ZoneQuestionBlockForm | QuestionAlternativeForm;
-    zoneQuestionBlock?: ZoneQuestionBlockForm;
-    questionTrackingId: string;
-    alternativeTrackingId?: string;
-  }) => {
-    editQuestionModal.showWithData({
-      type: 'edit',
-      question,
-      zoneQuestionBlock,
-    });
-    setSelectedQuestionIds({
-      type: 'edit',
-      questionTrackingId,
-      alternativeTrackingId,
-    });
+  const handleAddQuestion = (zoneTrackingId: string) => {
+    openPickerForNew(zoneTrackingId);
   };
 
-  const handleAddQuestion = (zoneTrackingId: string) => {
-    editQuestionModal.showWithData({
-      type: 'create',
-      question: createQuestionWithTrackingId(),
-      existingQids: Object.keys(questionMetadata),
-    });
-    setSelectedQuestionIds({
-      type: 'create',
-      zoneTrackingId,
-    });
+  const handleQuestionPicked = (qid: string) => {
+    if (questionEditState.status !== 'picking') return;
+
+    if (questionEditState.returnToEdit) {
+      // Return to edit modal with new QID while preserving other form values
+      const returnState = questionEditState.returnToEdit;
+      // Type discrimination needed for TypeScript to narrow the union type
+      if (returnState.mode === 'create') {
+        setQuestionEditState({
+          ...returnState,
+          question: { ...returnState.question, id: qid },
+        });
+      } else {
+        setQuestionEditState({
+          ...returnState,
+          question: { ...returnState.question, id: qid },
+        });
+      }
+    } else {
+      // Open edit modal for new question
+      setQuestionEditState({
+        status: 'editing',
+        mode: 'create',
+        zoneTrackingId: questionEditState.zoneTrackingId,
+        question: { id: qid, trackingId: '' } as ZoneQuestionBlockForm,
+        existingQids: Object.keys(questionMetadata),
+      });
+    }
+  };
+
+  // Handler for "Add & pick another" button - adds question and reopens picker for same zone
+  const handleAddAndPickAnother = () => {
+    if (questionEditState.status !== 'editing' || questionEditState.mode !== 'create') return;
+    const zoneTrackingId = questionEditState.zoneTrackingId;
+    // Will transition to picker after handleUpdateQuestion processes the save
+    setQuestionEditState({ status: 'picking', zoneTrackingId });
+  };
+
+  // The `as` casts below are necessary because `StaffAssessmentQuestionRow`
+  // is a branded Zod-parsed type. When constructing metadata for a newly-
+  // picked question we don't have a full parsed row, so we build a stub with
+  // the fields that the UI actually reads. A discriminated union for saved vs.
+  // unsaved question metadata would eliminate these casts but would cascade
+  // through many components — better suited for a separate PR.
+  const buildQuestionMetadata = (data: QuestionByQidResult): StaffAssessmentQuestionRow => {
+    return {
+      ...data,
+      assessment,
+      assessment_question: {
+        id: data.question.id,
+        effective_advance_score_perc: 0,
+        mean_question_score: null,
+        number_submissions_hist: null,
+        number: 0,
+        number_in_alternative_group: null,
+      } as StaffAssessmentQuestionRow['assessment_question'],
+      alternative_group: {
+        number: 0,
+      } as StaffAssessmentQuestionRow['alternative_group'],
+      zone: {} as StaffAssessmentQuestionRow['zone'],
+      course_instance: {} as StaffAssessmentQuestionRow['course_instance'],
+      course: {} as StaffAssessmentQuestionRow['course'],
+      other_assessments: null,
+      start_new_zone: false,
+      start_new_alternative_group: true,
+      alternative_group_size: 1,
+    } as StaffAssessmentQuestionRow;
   };
 
   const handleUpdateQuestion = (
     updatedQuestion: ZoneQuestionBlockForm | QuestionAlternativeForm,
     // This will only be provided if the QID changed
-    newQuestionData: StaffAssessmentQuestionRow | undefined,
+    newQuestionData: QuestionByQidResult | undefined,
   ) => {
     if (!updatedQuestion.id) return;
-    if (!selectedQuestionIds) return;
+    if (questionEditState.status !== 'editing') return;
 
     // Normalize point fields
     const normalizedQuestion = normalizeQuestionPoints(updatedQuestion);
 
-    if (selectedQuestionIds.type === 'create') {
-      // Prepare question data for the map if provided
-      let preparedQuestionData: StaffAssessmentQuestionRow | undefined;
-      if (newQuestionData) {
-        preparedQuestionData = {
-          ...newQuestionData,
-          assessment,
-          assessment_question: {
-            ...newQuestionData.assessment_question,
-            number: 0, // Will be recalculated on save
-            number_in_alternative_group: null,
-          } as StaffAssessmentQuestionRow['assessment_question'],
-          alternative_group: {
-            ...newQuestionData.alternative_group,
-            number: 0, // Will be recalculated on save
-          },
-          alternative_group_size: 1,
-        };
-      }
-
+    if (questionEditState.mode === 'create') {
       dispatch({
         type: 'ADD_QUESTION',
-        zoneTrackingId: selectedQuestionIds.zoneTrackingId,
-        question: normalizedQuestion as ZoneQuestionBlockForm,
-        questionData: preparedQuestionData,
+        zoneTrackingId: questionEditState.zoneTrackingId,
+        question: {
+          ...(normalizedQuestion as ZoneQuestionBlockForm),
+          ...createQuestionWithTrackingId(),
+        },
+        questionData: newQuestionData ? buildQuestionMetadata(newQuestionData) : undefined,
       });
     } else {
       // Update existing question
@@ -296,20 +464,8 @@ export function InstructorAssessmentQuestionsTable({
         dispatch({
           type: 'UPDATE_QUESTION_METADATA',
           questionId: updatedQuestion.id,
-          questionData: {
-            ...newQuestionData,
-            assessment,
-            assessment_question: {
-              ...newQuestionData.assessment_question,
-              number: 0, // Will be recalculated on save
-              number_in_alternative_group: null,
-            } as StaffAssessmentQuestionRow['assessment_question'],
-            alternative_group: {
-              ...newQuestionData.alternative_group,
-              number: 0, // Will be recalculated on save
-            },
-            alternative_group_size: 1,
-          },
+          oldQuestionId: questionEditState.originalQuestionId,
+          questionData: buildQuestionMetadata(newQuestionData),
         });
       }
 
@@ -323,13 +479,13 @@ export function InstructorAssessmentQuestionsTable({
 
       dispatch({
         type: 'UPDATE_QUESTION',
-        questionTrackingId: selectedQuestionIds.questionTrackingId,
+        questionTrackingId: questionEditState.questionTrackingId,
         question: questionWithNormalizedPoints,
-        alternativeTrackingId: selectedQuestionIds.alternativeTrackingId,
+        alternativeTrackingId: questionEditState.alternativeTrackingId,
       });
     }
 
-    editQuestionModal.hide();
+    closeQuestionEditState();
   };
 
   const handleDeleteQuestion = (
@@ -495,7 +651,9 @@ export function InstructorAssessmentQuestionsTable({
 
   // If at least one question has a nonzero unlock score, display the Advance Score column
   const showAdvanceScorePercCol = Object.values(questionMetadata).some(
-    (q) => q.assessment_question.effective_advance_score_perc !== 0,
+    (q) =>
+      q.assessment_question.effective_advance_score_perc != null &&
+      q.assessment_question.effective_advance_score_perc !== 0,
   );
 
   return (
@@ -598,7 +756,7 @@ export function InstructorAssessmentQuestionsTable({
                           assessmentType,
                         }}
                         handleAddQuestion={handleAddQuestion}
-                        handleEditQuestion={handleEditQuestion}
+                        handleEditQuestion={openEditForExisting}
                         handleDeleteQuestion={handleDeleteQuestion}
                         handleResetButtonClick={handleResetButtonClick}
                         handleEditZone={handleEditZone}
@@ -626,22 +784,81 @@ export function InstructorAssessmentQuestionsTable({
       {assessmentType === 'Homework' ? (
         <ResetQuestionVariantsModal
           csrfToken={csrfToken}
-          assessmentQuestionId={resetAssessmentQuestionId}
-          show={showResetModal}
-          onHide={() => setShowResetModal(false)}
+          assessmentQuestionId={resetModal.data ?? ''}
+          show={resetModal.show}
+          onHide={resetModal.onHide}
+          onExited={resetModal.onExited}
         />
       ) : (
-        <ExamResetNotSupportedModal show={showResetModal} onHide={() => setShowResetModal(false)} />
+        <ExamResetNotSupportedModal
+          show={resetModal.show}
+          onHide={resetModal.onHide}
+          onExited={resetModal.onExited}
+        />
       )}
       {editMode && (
         <EditQuestionModal
-          {...editQuestionModal}
+          show={showEditModal}
+          data={
+            questionEditState.status === 'editing'
+              ? questionEditState.mode === 'create'
+                ? {
+                    type: 'create' as const,
+                    question: questionEditState.question,
+                    existingQids: questionEditState.existingQids,
+                  }
+                : {
+                    type: 'edit' as const,
+                    question: questionEditState.question,
+                    zoneQuestionBlock: questionEditState.zoneQuestionBlock,
+                    originalQuestionId: questionEditState.originalQuestionId,
+                  }
+              : null
+          }
           assessmentType={assessmentType === 'Homework' ? 'Homework' : 'Exam'}
           handleUpdateQuestion={handleUpdateQuestion}
+          trpcClient={trpcClient}
+          onHide={closeQuestionEditState}
+          onPickQuestion={openPickerToChangeQid}
+          onAddAndPickAnother={handleAddAndPickAnother}
         />
       )}
       {editMode && <EditZoneModal {...editZoneModal} handleSaveZone={handleSaveZone} />}
+      {editMode && (
+        <QuestionPickerModal
+          show={showPicker}
+          courseQuestions={courseQuestions}
+          isLoading={courseQuestionsQuery.isLoading}
+          questionsInAssessment={questionsInAssessment}
+          urlPrefix={urlPrefix}
+          currentQid={
+            questionEditState.status === 'picking'
+              ? (questionEditState.returnToEdit?.question.id ?? null)
+              : null
+          }
+          currentAssessmentId={assessment.id}
+          onHide={handlePickerCancel}
+          onQuestionSelected={handleQuestionPicked}
+        />
+      )}
     </>
+  );
+}
+
+export function InstructorAssessmentQuestionsTable({
+  trpcCsrfToken,
+  ...innerProps
+}: Omit<Parameters<typeof InstructorAssessmentQuestionsTableInner>[0], 'trpcClient'> & {
+  trpcCsrfToken: string;
+}) {
+  const [queryClient] = useState(() => new QueryClient());
+  const [trpcClient] = useState(() => createAssessmentQuestionsTrpcClient(trpcCsrfToken));
+  return (
+    <QueryClientProviderDebug client={queryClient}>
+      <TRPCProvider trpcClient={trpcClient} queryClient={queryClient}>
+        <InstructorAssessmentQuestionsTableInner {...innerProps} trpcClient={trpcClient} />
+      </TRPCProvider>
+    </QueryClientProviderDebug>
   );
 }
 

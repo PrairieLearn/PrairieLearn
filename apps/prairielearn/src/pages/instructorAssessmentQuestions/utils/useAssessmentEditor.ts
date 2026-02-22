@@ -320,13 +320,15 @@ function createEditorReducer(initialState: EditorState) {
       }
 
       case 'UPDATE_QUESTION_METADATA': {
-        const { questionId, questionData } = action;
+        const { questionId, oldQuestionId, questionData } = action;
+        const newQuestionMetadata = { ...state.questionMetadata };
+        if (oldQuestionId && oldQuestionId !== questionId) {
+          delete newQuestionMetadata[oldQuestionId];
+        }
+        newQuestionMetadata[questionId] = questionData;
         return {
           ...state,
-          questionMetadata: {
-            ...state.questionMetadata,
-            [questionId]: questionData,
-          },
+          questionMetadata: newQuestionMetadata,
         };
       }
 
