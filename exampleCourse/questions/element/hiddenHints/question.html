@@ -1,12 +1,10 @@
 <pl-question-panel>
     <p>
         Questions below were designed to showcase the different features of
-        <a href="https://docs.prairielearn.com/elements/pl-hidden-hints">
-            <code>pl-hidden-hints</code>
-        </a>. The goal of
-        <a href="https://docs.prairielearn.com/elements/pl-hidden-hints">
-            <code>pl-hidden-hints</code>
-        </a> is to progressively show hints as students submit incorrect (but not invalid) answers.
+        <a href="https://docs.prairielearn.com/elements/pl-hidden-hints"><code>pl-hidden-hints</code></a>.
+        The goal of
+        <a href="https://docs.prairielearn.com/elements/pl-hidden-hints"><code>pl-hidden-hints</code></a>
+        is to progressively show hints as students submit incorrect (but not invalid) answers.
         Submit incorrect answers to see more hints. Newly revealed hints are first shown as open.
         Try 10 to get a special hint.
     </p>
@@ -17,7 +15,7 @@
 <pl-question-panel>
     <pl-hidden-hints>
         {{! Hints with the same show-after-submission appear in the order they're written. }}
-        <pl-hint hint-name="Starting Hint"> Beginning of the hints to be shown.</pl-hint>
+        <pl-hint hint-name="Starting Hint">Beginning of the hints to be shown.</pl-hint>
 
         <pl-hint> Another hint that will be shown immediately.</pl-hint>
 
@@ -34,7 +32,10 @@
         {{! To show hints conditionally based on previous answers, you may use mustache conditionals. Note that this requires a related computation in server.py as well. }}
 
         {{#feedback.show_hint_10}}
-            <pl-hint hint-name="Answer 10">10 would be right if you are thinking in binary, you should instead think in decimal.</pl-hint>
+            <pl-hint hint-name="Answer 10">
+                10 would be right if you are thinking in binary, you should instead think in
+                decimal.
+            </pl-hint>
         {{/feedback.show_hint_10}}
     </pl-hidden-hints>
 </pl-question-panel>

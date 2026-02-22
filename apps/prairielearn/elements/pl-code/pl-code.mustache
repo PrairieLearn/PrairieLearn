@@ -18,7 +18,9 @@
         onmousedown="return false;"
         oncontextmenu="return false;"
         {{/prevent_select}}
-    >{{{code}}}</div>
+    >
+        {{{code}}}
+    </div>
 
     {{#copy_code_button}}
         <button
@@ -26,6 +28,8 @@
             type="button"
             class="btn btn-secondary btn-sm copy-button"
             data-clipboard-target="#pl-code-{{uuid}} td.code"
-        > copy this text</button>
+        >
+            copy this text
+        </button>
     {{/copy_code_button}}
 </div>

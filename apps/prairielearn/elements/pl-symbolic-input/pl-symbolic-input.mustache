@@ -25,9 +25,11 @@
             {{#imaginary_unit}}imaginary-unit="{{imaginary_unit}}"{{/imaginary_unit}}
             {{#allow_trig}}allow-trig="allow-trig"{{/allow_trig}}
             {{#suffix}}aria-describedby="pl-symbolic-input-{{uuid}}-suffix"{{/suffix}}
-        > {{#raw_submitted_answer_latex}}
-            {{raw_submitted_answer_latex}}
-        {{/raw_submitted_answer_latex}}</math-field>
+        >
+            {{#raw_submitted_answer_latex}}
+                {{raw_submitted_answer_latex}}
+            {{/raw_submitted_answer_latex}}
+        </math-field>
     {{/formula_editor}}
     {{^formula_editor}}
         <input
@@ -98,10 +100,14 @@
             data-bs-html="true"
             title="Format error"
             data-bs-content="{{parse_error}}"
-        > More info…</a>
+        >
+            More info…
+        </a>
     </span>
 {{/parse_error}}
-{{#inline}}</span>{{/inline}}
+{{#inline}}
+</span>
+{{/inline}}
 {{/question}}
 
 {{#submission}}
@@ -125,7 +131,9 @@
                         custom-functions="{{custom_functions}}"
                         {{#allow_trig}}allow-trig="allow-trig"{{/allow_trig}}
                         class="read-only"
-                    >{{raw_submitted_answer_latex}}</math-field>
+                    >
+                        {{raw_submitted_answer_latex}}
+                    </math-field>
                 {{/raw_submitted_answer_latex}}
             {{/formula_editor}}
             {{^formula_editor}}
@@ -147,7 +155,9 @@
                     data-bs-html="true"
                     title="Format error"
                     data-bs-content="{{parse_error}}"
-                > More info…</a>
+                >
+                    More info…
+                </a>
             </span>
         {{/parse_error}}
         {{#missing_input}}
@@ -165,7 +175,9 @@
                     data-bs-html="true"
                     title="Missing input"
                     data-bs-content="There is no submitted value for this field.  This may have happened because the question was changed by course staff after the answer was submitted."
-                > More info…</a>
+                >
+                    More info…
+                </a>
             </span>
             {{#suffix}}<span>{{suffix}}</span>{{/suffix}}
         {{/missing_input}}
@@ -224,7 +236,9 @@
         </span>
     {{/incorrect}}
 {{/error}}
-{{#inline}}</span>{{/inline}}
+{{#inline}}
+</span>
+{{/inline}}
 {{/submission}}
 
 {{#answer}}

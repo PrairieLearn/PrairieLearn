@@ -27,18 +27,20 @@
 </div>
 
 {{#show_python}}
-    </div>
+            </div>
 
-    <div id="code-{{uuid}}" role="tabpanel" class="tab-pane">
-        <!-- Don't unindent this, will cause formatting issues -->
-        <pl-code language="python" copy-code-button="True">
+            <div id="code-{{uuid}}" role="tabpanel" class="tab-pane">
+                <!-- Don't unindent this, will cause formatting issues -->
+                <pl-code language="python" copy-code-button="True">
 from pandas import DataFrame, Timestamp
 from numpy import nan
 
 {{{varname}}} = DataFrame(
 {{{code_string}}}
 )
-        </pl-code>
+                </pl-code>
+            </div>
+        </div>
     </div>
-    </div> </div> </div>
+</div>
 {{/show_python}}

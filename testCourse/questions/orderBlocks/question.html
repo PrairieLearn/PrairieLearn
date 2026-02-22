@@ -1,10 +1,9 @@
 <pl-question-panel>
     <p>
         This
-        <a href="https://docs.prairielearn.com/elements/pl-order-blocks">
-            <code>pl-order-blocks</code>
-        </a> has become increasingly complex, with many different possible combinations of options.
-        Here we test a bunch of these different configurations.
+        <a href="https://docs.prairielearn.com/elements/pl-order-blocks"><code>pl-order-blocks</code></a>
+        has become increasingly complex, with many different possible combinations of options. Here
+        we test a bunch of these different configurations.
     </p>
 </pl-question-panel>
 
@@ -39,10 +38,12 @@
     partial-credit="none"
     feedback="none"
 >
-    <pl-answer correct="true" tag="1" depends=""> Assume $A \land B \land C$.</pl-answer>
-    <pl-answer correct="true" tag="2" depends="1"> Then $A$ is true.</pl-answer>
-    <pl-answer correct="true" tag="3" depends="1"> Then $C$ is true.</pl-answer>
-    <pl-answer correct="true" tag="4" depends="2,3"> Since $A$ and $C$, we know $A \land C$</pl-answer>
+    <pl-answer correct="true" tag="1" depends="">Assume $A \land B \land C$.</pl-answer>
+    <pl-answer correct="true" tag="2" depends="1">Then $A$ is true.</pl-answer>
+    <pl-answer correct="true" tag="3" depends="1">Then $C$ is true.</pl-answer>
+    <pl-answer correct="true" tag="4" depends="2,3">
+        Since $A$ and $C$, we know $A \land C$
+    </pl-answer>
 </pl-order-blocks>
 
 <pl-order-blocks
@@ -52,10 +53,12 @@
     partial-credit="none"
     feedback="first-wrong"
 >
-    <pl-answer correct="true" tag="1" depends=""> Assume $A \land B \land C$.</pl-answer>
-    <pl-answer correct="true" tag="2" depends="1"> Then $A$ is true.</pl-answer>
-    <pl-answer correct="true" tag="3" depends="1"> Then $C$ is true.</pl-answer>
-    <pl-answer correct="true" tag="4" depends="2,3"> Since $A$ and $C$, we know $A \land C$</pl-answer>
+    <pl-answer correct="true" tag="1" depends="">Assume $A \land B \land C$.</pl-answer>
+    <pl-answer correct="true" tag="2" depends="1">Then $A$ is true.</pl-answer>
+    <pl-answer correct="true" tag="3" depends="1">Then $C$ is true.</pl-answer>
+    <pl-answer correct="true" tag="4" depends="2,3">
+        Since $A$ and $C$, we know $A \land C$
+    </pl-answer>
 </pl-order-blocks>
 
 <pl-order-blocks answers-name="test-solving-1" grading-method="ranking" indentation="true">
@@ -69,22 +72,22 @@
 </pl-order-blocks>
 
 <pl-order-blocks answers-name="test-solving-2" source-blocks-order="random" grading-method="dag">
-    <pl-answer correct="true" tag="1"> 1</pl-answer>
+    <pl-answer correct="true" tag="1">1</pl-answer>
     <pl-block-group tag="g3" depends="1, g2">
         <!-- Comments can be inside block group tags -->
         <pl-answer correct="true" tag="10">10</pl-answer>
     </pl-block-group>
     <pl-block-group tag="g1" depends="1">
-        <pl-answer correct="true" tag="5" depends="3,4"> 5</pl-answer>
+        <pl-answer correct="true" tag="5" depends="3,4">5</pl-answer>
         <pl-answer correct="true" tag="4">4</pl-answer>
-        <pl-answer correct="true" tag="3" depends="2"> 3</pl-answer>
-        <pl-answer correct="true" tag="2"> 2</pl-answer>
+        <pl-answer correct="true" tag="3" depends="2">3</pl-answer>
+        <pl-answer correct="true" tag="2">2</pl-answer>
     </pl-block-group>
     <pl-block-group tag="g2" depends="1">
-        <pl-answer correct="true" tag="6"> 6</pl-answer>
-        <pl-answer correct="true" tag="7" depends="8"> 7</pl-answer>
-        <pl-answer correct="true" tag="8"> 8</pl-answer>
-        <pl-answer correct="true" tag="9" depends="7"> 9</pl-answer>
+        <pl-answer correct="true" tag="6">6</pl-answer>
+        <pl-answer correct="true" tag="7" depends="8">7</pl-answer>
+        <pl-answer correct="true" tag="8">8</pl-answer>
+        <pl-answer correct="true" tag="9" depends="7">9</pl-answer>
     </pl-block-group>
     <pl-answer correct="true" tag="11" depends="g1,g2,g3">11</pl-answer>
 </pl-order-blocks>
@@ -131,15 +134,24 @@
     partial-credit="lcs"
     solution-placement="bottom"
 >
-    <pl-answer correct="true" tag="1" depends="">Let $a, b, c$ be arbitrary positive integers.</pl-answer>
+    <pl-answer correct="true" tag="1" depends="">
+        Let $a, b, c$ be arbitrary positive integers.
+    </pl-answer>
     <pl-answer
         correct="true"
         tag="2"
         depends="1"
         ordering-feedback="This step should come after introducing the variables and before applying the definition of divisibility."
-    >Assume that $a|b$ and $b|c.$</pl-answer>
-    <pl-answer correct="true" tag="3" depends="2">By definition, there exists $q_1$ such that $b=a\cdot q_1$ and there exists $q_2$ such that $c = b\cdot q_2.$</pl-answer>
-    <pl-answer correct="true" tag="4" depends="3">We can see that $c = b\cdot q_2 = (a\cdot q_1)\cdot q_2 = a \cdot (q_1\cdot q_2).$</pl-answer>
+    >
+        Assume that $a|b$ and $b|c.$
+    </pl-answer>
+    <pl-answer correct="true" tag="3" depends="2">
+        By definition, there exists $q_1$ such that $b=a\cdot q_1$ and there exists $q_2$ such that
+        $c = b\cdot q_2.$
+    </pl-answer>
+    <pl-answer correct="true" tag="4" depends="3">
+        We can see that $c = b\cdot q_2 = (a\cdot q_1)\cdot q_2 = a \cdot (q_1\cdot q_2).$
+    </pl-answer>
     <pl-answer correct="true" tag="5" depends="4">By definition $a|c.$</pl-answer>
 </pl-order-blocks>
 
@@ -151,7 +163,9 @@
     source-blocks-order="ordered"
     distractor-order="random"
 >
-    <pl-answer correct="true" tag="correct-block-no-distractors">Some correct block before the distractor group</pl-answer>
+    <pl-answer correct="true" tag="correct-block-no-distractors">
+        Some correct block before the distractor group
+    </pl-answer>
     <pl-answer correct="true" tag="correct-block">Correct code</pl-answer>
     <pl-answer correct="false" distractor-for="correct-block">Distractor 1</pl-answer>
     <pl-answer correct="false" distractor-for="correct-block">Distractor 2</pl-answer>
@@ -165,7 +179,9 @@
     source-blocks-order="ordered"
     distractor-order="inherit"
 >
-    <pl-answer correct="true" tag="correct-block-no-distractors">Some correct block before the distractor group</pl-answer>
+    <pl-answer correct="true" tag="correct-block-no-distractors">
+        Some correct block before the distractor group
+    </pl-answer>
     <pl-answer correct="true" tag="correct-block">Correct code</pl-answer>
     <pl-answer correct="false" distractor-for="correct-block">Distractor 1</pl-answer>
     <pl-answer correct="false" distractor-for="correct-block">Distractor 2</pl-answer>

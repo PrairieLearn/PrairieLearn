@@ -56,7 +56,9 @@
             data-name="{{name}}"
             aria-label="Clear multiple choice selection"
             onclick="window.PLMultipleChoiceClearRadio(this)"
-        >Clear</button>
+        >
+            Clear
+        </button>
     {{/allow_blank}}
 {{/editable}}
 
@@ -78,7 +80,9 @@
     {{/partial}}
 {{/display_score_badge}}
 
-{{#inline}}</span>{{/inline}}
+{{#inline}}
+</span>
+{{/inline}}
 {{/radio}}
 {{^radio}}
     <!-- Weirdly enough putting this in a div causes it to display without the inline -->
@@ -112,7 +116,7 @@
         </select>
 
         {{#feedback}}
-            <span class="d-inline pl-multiple-choice-feedback"> {{{feedback}}}</span>
+            <span class="d-inline pl-multiple-choice-feedback">{{{feedback}}}</span>
         {{/feedback}}
 
         {{#display_score_badge}}
@@ -150,7 +154,9 @@
             data-bs-html="true"
             title="Format error"
             data-bs-content="{{parse_error}}"
-        > More info…</a>
+        >
+            More info…
+        </a>
     </span>
 {{/parse_error}}
 {{^parse_error}}
@@ -164,7 +170,7 @@
 <span>{{^hide_letter_keys}}({{submitted_key}}){{/hide_letter_keys}} {{{submitted_answer.html}}}</span>
 
 {{#display_feedback}}
-    <span class="d-inline pl-multiple-choice-feedback"> {{{feedback}}}</span>
+    <span class="d-inline pl-multiple-choice-feedback">{{{feedback}}}</span>
 {{/display_feedback}}
 
 {{#display_score_badge}}
@@ -185,8 +191,12 @@
     {{/partial}}
 {{/display_score_badge}}
 
-{{#inline}}</span>{{/inline}}
-{{^inline}}</div>{{/inline}}
+{{#inline}}
+</span>
+{{/inline}}
+{{^inline}}
+</div>
+{{/inline}}
 {{/parse_error}}
 {{/submission}}
 {{#answer}}
@@ -205,8 +215,14 @@
         {{{html}}}
     </li>
 {{/answers}}
-{{#inline}}</ul></span>{{/inline}}
-{{^inline}}</ul></div>{{/inline}}
+{{#inline}}
+    </ul>
+</span>
+{{/inline}}
+{{^inline}}
+    </ul>
+</div>
+{{/inline}}
 {{/radio}}
 {{^radio}}
     {{#answers}}

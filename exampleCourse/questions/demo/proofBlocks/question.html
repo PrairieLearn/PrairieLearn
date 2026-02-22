@@ -23,22 +23,30 @@
     partial-credit="lcs"
     solution-placement="bottom"
 >
-    <pl-answer correct="true" tag="1" depends=""> Proof by Contrapositive:</pl-answer>
-    <pl-answer correct="true" tag="2" depends="1"> Take some $m \in \mathbb{Z}$</pl-answer>
-    <pl-answer correct="true" tag="3" depends="1"> Take some $n \in \mathbb{Z}$</pl-answer>
-    <pl-answer correct="true" tag="4" depends="2"> Assume $m$ is even</pl-answer>
-    <pl-answer correct="true" tag="5" depends="3"> Assume $n$ is even</pl-answer>
-    <pl-answer correct="true" tag="6" depends="4"> $\exists l \in \mathbb{Z}$ such that $m = 2l$</pl-answer>
-    <pl-answer correct="true" tag="7" depends="5"> $\exists k \in \mathbb{Z}$ such that $n = 2k$</pl-answer>
-    <pl-answer correct="true" tag="8" depends="6,7"> $2m^2 + n + 1 = 2(2l)^2 + 2k + 1 = 2(4l^2 + k) + 1$</pl-answer>
-    <pl-answer correct="true" tag="9" depends="8"> Then since $2(4l^2 + k)$ is even, $2(4l^2 + k) + 1$ is odd.</pl-answer>
+    <pl-answer correct="true" tag="1" depends="">Proof by Contrapositive:</pl-answer>
+    <pl-answer correct="true" tag="2" depends="1">Take some $m \in \mathbb{Z}$</pl-answer>
+    <pl-answer correct="true" tag="3" depends="1">Take some $n \in \mathbb{Z}$</pl-answer>
+    <pl-answer correct="true" tag="4" depends="2">Assume $m$ is even</pl-answer>
+    <pl-answer correct="true" tag="5" depends="3">Assume $n$ is even</pl-answer>
+    <pl-answer correct="true" tag="6" depends="4">
+        $\exists l \in \mathbb{Z}$ such that $m = 2l$
+    </pl-answer>
+    <pl-answer correct="true" tag="7" depends="5">
+        $\exists k \in \mathbb{Z}$ such that $n = 2k$
+    </pl-answer>
+    <pl-answer correct="true" tag="8" depends="6,7">
+        $2m^2 + n + 1 = 2(2l)^2 + 2k + 1 = 2(4l^2 + k) + 1$
+    </pl-answer>
+    <pl-answer correct="true" tag="9" depends="8">
+        Then since $2(4l^2 + k)$ is even, $2(4l^2 + k) + 1$ is odd.
+    </pl-answer>
 </pl-order-blocks>
 
 <hr>
 <pl-question-panel>
     <p>
-        <strong>Example 2:</strong>Let $A, B,$ and $C$ be propositions. Prove that $(A \land C) \lor
-        (A \land B) \rightarrow A $
+        <strong>Example 2:</strong>Let $A, B,$ and $C$ be propositions. Prove that
+        $(A \land C) \lor (A \land B) \rightarrow A $
     </p>
 
     <p>
@@ -51,14 +59,18 @@
 </pl-question-panel>
 
 <pl-order-blocks answers-name="proof-by-cases" source-blocks-order="random" grading-method="dag">
-    <pl-answer correct="true" tag="1"> Proof by Cases:</pl-answer>
+    <pl-answer correct="true" tag="1">Proof by Cases:</pl-answer>
     <pl-block-group tag="g1" depends="1">
-        <pl-answer correct="true" tag="2"> Case $A \land C$:</pl-answer>
-        <pl-answer correct="true" tag="3" depends="2"> Since $A \land C$ is true, we know $A$ is true.</pl-answer>
+        <pl-answer correct="true" tag="2">Case $A \land C$:</pl-answer>
+        <pl-answer correct="true" tag="3" depends="2">
+            Since $A \land C$ is true, we know $A$ is true.
+        </pl-answer>
     </pl-block-group>
     <pl-block-group tag="g2" depends="1">
-        <pl-answer correct="true" tag="4"> Case $A \land B$:</pl-answer>
-        <pl-answer correct="true" tag="5" depends="4"> Since $A \land B$ is true, we know $A$ is true.</pl-answer>
+        <pl-answer correct="true" tag="4">Case $A \land B$:</pl-answer>
+        <pl-answer correct="true" tag="5" depends="4">
+            Since $A \land B$ is true, we know $A$ is true.
+        </pl-answer>
     </pl-block-group>
     <pl-answer correct="true" tag="6" depends="g1,g2">This completes the proof.</pl-answer>
 </pl-order-blocks>

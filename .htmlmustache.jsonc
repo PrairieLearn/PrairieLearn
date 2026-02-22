@@ -55,6 +55,22 @@
       "name": "pl-graph",
       "display": "block",
       "languageDefault": "dot"
+    },
+    {
+      "name": "pl-multiple-choice",
+      "display": "block"
+    },
+    {
+      "name": "pl-question-panel",
+      "display": "block"
+    },
+    {
+      "name": "pl-submission-panel",
+      "display": "block"
+    },
+    {
+      "name": "pl-answer-panel",
+      "display": "block"
     }
   ]
 }
