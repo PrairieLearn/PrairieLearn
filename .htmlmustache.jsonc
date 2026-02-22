@@ -11,15 +11,18 @@
   ],
   "printWidth": 100,
   "indentSize": 4,
-  "customCodeTags": [
+  "noBreakDelimiters": ["$", "$$"],
+  "customTags": [
     {
       "name": "pl-code",
+      "display": "block",
       "languageAttribute": "language",
       "indent": "attribute",
       "indentAttribute": "normalize-whitespace"
     },
     {
       "name": "pl-file-editor",
+      "display": "block",
       "languageAttribute": "ace-mode",
       "languageMap": {
         "ace/mode/python": "python",
@@ -37,15 +40,21 @@
         "ace/mode/yaml": "yaml",
         "ace/mode/css": "css",
         "ace/mode/sh": "bash"
-      },
+      }
+    },
+    {
+      "name": "pl-rich-text-editor",
+      "languageAttribute": "format"
     },
     {
       "name": "markdown",
+      "display": "block",
       "languageDefault": "markdown"
     },
     {
       "name": "pl-graph",
+      "display": "block",
       "languageDefault": "dot"
-    },
-  ],
+    }
+  ]
 }
