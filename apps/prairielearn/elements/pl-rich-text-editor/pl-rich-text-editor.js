@@ -179,6 +179,15 @@
   class MathFormula extends Embed {
     static create(value) {
       const node = super.create(value);
+      node.addEventListener('dblclick', () => {
+        // On double click, allow editing the formula by showing the formula popover with the current formula value.
+        const formulaBlot = Quill.find(node);
+        const quill = Quill.find(formulaBlot?.scroll?.domNode?.parentElement);
+        const formulaButton = quill?.getModule('toolbar')?.container?.querySelector('.ql-formula');
+        if (!quill || !formulaButton) return;
+        quill.setSelection(quill.getIndex(formulaBlot), 1, 'silent');
+        formulaButton?.click();
+      });
       if (typeof value === 'string') {
         this.updateNode(node, value);
       }
@@ -268,8 +277,11 @@ function initializeFormulaPopover(quill, uuid) {
   quill.getModule('toolbar').addHandler('formula', (enabled) => {
     if (!enabled) return;
     const range = quill.getSelection(true);
-    // If there is a selection, set the input value to the selected text
-    input.value = range?.length ? quill.getText(range.index, range.length) : '';
+    // If there is a selection, set the input value to the selected text or existing formula.
+    input.value = quill
+      .getContents(range.index, range.length)
+      .map((op) => (typeof op.insert === 'string' ? op.insert : (op.insert?.formula ?? '')))
+      .join('');
     // Trigger input event to show initial preview or clear previous preview
     input.dispatchEvent(new InputEvent('input'));
     popover.show();
