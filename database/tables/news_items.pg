@@ -1,0 +1,14 @@
+columns
+    fetched_at: timestamp with time zone not null default now()
+    guid: text not null
+    hidden_at: timestamp with time zone
+    id: bigint not null default nextval('news_items_id_seq'::regclass)
+    link: text not null
+    managed_by: enum_news_item_managed_by
+    pub_date: timestamp with time zone not null
+    title: text not null
+
+indexes
+    news_items_pkey: PRIMARY KEY (id) USING btree (id)
+    news_items_guid_key: UNIQUE (guid) USING btree (guid)
+    news_items_pub_date_idx: USING btree (pub_date DESC)

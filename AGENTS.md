@@ -156,6 +156,7 @@ When writing tests:
 - Don't add assertion messages unless they provide information that isn't obvious from reading the assertion itself (e.g., `assert.isNull(linkRecord)` is clear without a message).
 - Don't use defensive checks in tests -- tests should fail fast if unexpected data exists.
 - Prefer using the existing test course and its course instances for testing. Don't create new courses or course instances just to get a clean slate; instead, use transaction rollbacks or wipe the state between tests.
+- Avoid duplicating test setup code. Extract repeated blocks into shared helpers.
 
 ### Rendering HTML
 

@@ -1,11 +1,19 @@
+import { formatDate } from '@prairielearn/formatter';
 import { html } from '@prairielearn/html';
 
 import { PageLayout } from '../../components/PageLayout.js';
 import { config } from '../../lib/config.js';
+import { type NewsItem } from '../../lib/db-types.js';
 import { isEnterprise } from '../../lib/license.js';
 import type { ResLocalsForPage } from '../../lib/res-locals.js';
 
-export function AdministratorSettings({ resLocals }: { resLocals: ResLocalsForPage<'plain'> }) {
+export function AdministratorSettings({
+  resLocals,
+  newsItems,
+}: {
+  resLocals: ResLocalsForPage<'plain'>;
+  newsItems: NewsItem[];
+}) {
   const showAiSettings =
     isEnterprise() &&
     config.aiQuestionGenerationOpenAiApiKey &&
@@ -88,9 +96,94 @@ export function AdministratorSettings({ resLocals }: { resLocals: ResLocalsForPa
               });
             });
           </script>
+          ${config.newsFeedUrl
+            ? html`
+                <hr />
+                <form method="POST" class="d-inline">
+                  <input type="hidden" name="__action" value="sync_news_feed" />
+                  <input type="hidden" name="__csrf_token" value="${resLocals.__csrf_token}" />
+                  <button type="submit" class="btn btn-primary">Sync news feed</button>
+                </form>
+              `
+            : ''}
         </div>
       </div>
 
+      ${newsItems.length > 0
+        ? html`
+            <div class="card mb-4">
+              <div class="card-header bg-primary text-white d-flex align-items-center">
+                <h2>News items</h2>
+              </div>
+              <div class="table-responsive">
+                <table class="table table-sm table-hover table-striped" aria-label="News items">
+                  <thead>
+                    <tr>
+                      <th>Title</th>
+                      <th>Published</th>
+                      <th>Status</th>
+                      <th>Actions</th>
+                    </tr>
+                  </thead>
+                  <tbody>
+                    ${newsItems.map(
+                      (item) => html`
+                        <tr>
+                          <td class="align-middle">
+                            <a href="${item.link}" target="_blank" rel="noopener noreferrer">
+                              ${item.title}
+                            </a>
+                          </td>
+                          <td class="align-middle">${formatDate(item.pub_date, 'UTC')}</td>
+                          <td class="align-middle">
+                            ${item.managed_by === 'admin' && item.hidden_at != null
+                              ? html`<span class="badge bg-secondary">Hidden by admin</span>`
+                              : item.managed_by === 'admin'
+                                ? html`<span class="badge bg-info">Managed by admin</span>`
+                                : item.managed_by === 'sync'
+                                  ? html`<span class="badge bg-secondary">Hidden by sync</span>`
+                                  : html`<span class="badge bg-success">Visible</span>`}
+                          </td>
+                          <td class="align-middle">
+                            ${item.hidden_at == null
+                              ? html`
+                                  <form method="POST" class="d-inline">
+                                    <input type="hidden" name="__action" value="hide_news_item" />
+                                    <input
+                                      type="hidden"
+                                      name="__csrf_token"
+                                      value="${resLocals.__csrf_token}"
+                                    />
+                                    <input type="hidden" name="news_item_id" value="${item.id}" />
+                                    <button type="submit" class="btn btn-sm btn-outline-danger">
+                                      Hide
+                                    </button>
+                                  </form>
+                                `
+                              : html`
+                                  <form method="POST" class="d-inline">
+                                    <input type="hidden" name="__action" value="unhide_news_item" />
+                                    <input
+                                      type="hidden"
+                                      name="__csrf_token"
+                                      value="${resLocals.__csrf_token}"
+                                    />
+                                    <input type="hidden" name="news_item_id" value="${item.id}" />
+                                    <button type="submit" class="btn btn-sm btn-outline-secondary">
+                                      Unhide
+                                    </button>
+                                  </form>
+                                `}
+                          </td>
+                        </tr>
+                      `,
+                    )}
+                  </tbody>
+                </table>
+              </div>
+            </div>
+          `
+        : ''}
       ${showAiSettings
         ? html`
             <div class="card mb-4">

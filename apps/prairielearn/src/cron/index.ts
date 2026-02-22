@@ -116,6 +116,14 @@ export async function init() {
     },
   ];
 
+  if (config.newsFeedUrl) {
+    jobs.push({
+      name: 'fetchNewsItems',
+      module: await import('./fetchNewsItems.js'),
+      intervalSec: config.cronOverrideAllIntervalsSec || config.cronIntervalFetchNewsItemsSec,
+    });
+  }
+
   if (isEnterprise()) {
     jobs.push(
       {

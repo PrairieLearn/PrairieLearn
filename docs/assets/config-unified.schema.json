@@ -554,6 +554,10 @@
       "type": "number",
       "default": 600
     },
+    "cronIntervalFetchNewsItemsSec": {
+      "type": "number",
+      "default": 300
+    },
     "cronDailySec": {
       "type": "number",
       "default": 28800
@@ -1320,6 +1324,21 @@
     "courseFilesApiUrl": {
       "type": ["string", "null"],
       "default": null
+    },
+    "newsFeedUrl": {
+      "type": ["string", "null"],
+      "default": null
+    },
+    "newsFeedBlogUrl": {
+      "type": ["string", "null"],
+      "default": null
+    },
+    "newsFeedCategories": {
+      "type": "array",
+      "items": {
+        "type": "string"
+      },
+      "default": []
     },
     "costPerMillionTokens": {
       "type": "object",
