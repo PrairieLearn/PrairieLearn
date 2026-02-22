@@ -190,7 +190,7 @@
     window.PLSymbolicInputPopover("{{uuid}}");
     });
     </script>
-    {{/raw_submitted_answer_latex}} <!-- Show submitted answer submission was parsed from -->
+    {{/raw_submitted_answer_latex}} {{! Show submitted answer submission was parsed from }}
     <button
         type="button"
         id="pl-symbolic-input-{{uuid}}-button"
@@ -252,7 +252,7 @@
         All numbers must be rational - so, <code>1/2</code> instead of <code>0.5</code>.
         {{^allow_complex}}Complex numbers are not allowed.{{/allow_complex}}
     </p>
-    <!-- From https://stackoverflow.com/a/14417521/2923069 -->
+    {{! From https://stackoverflow.com/a/14417521/2923069 }}
     {{#variables.0}}
         <p>
             <strong>Allowable variables:</strong>

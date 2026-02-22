@@ -9,6 +9,9 @@
     // Uses legacy v2 EJS syntax (<% %>) which cannot be parsed as mustache.
     "testCourse/questions/addVectors/question.html"
   ],
+  "rules": {
+    "preferMustacheComments": "warning"
+  },
   "printWidth": 100,
   "indentSize": 4,
   "noBreakDelimiters": ["$", "$$"],

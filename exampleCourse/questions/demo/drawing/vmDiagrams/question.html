@@ -34,7 +34,7 @@
             offsety2="-60"
         ></pl-distributed-load>
 
-        <!-- Drawing the shear diagram -->
+        {{! Drawing the shear diagram }}
         <pl-axes
             origin="{{params.V_origin}}"
             grid-label="{{params.label_V}}"
@@ -44,7 +44,7 @@
         <pl-graph-line origin="{{params.V_origin}}" end-points="{{params.V1}}"></pl-graph-line>
         <pl-graph-line origin="{{params.V_origin}}" end-points="{{params.V2}}"></pl-graph-line>
 
-        <!-- Drawing the moment diagram -->
+        {{! Drawing the moment diagram }}
         <pl-axes
             origin="{{params.M_origin}}"
             grid-label="{{params.label_M}}"

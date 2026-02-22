@@ -44,7 +44,7 @@ The colors cycle, but that's just a visual aid (delete any vector to also remove
     height="{{params.height_canvas}}"
 >
     <pl-drawing-answer draw-error-box="true">
-        <!--external forces-->
+        {{! external forces }}
         <pl-vector
             x1="{{params.x2exp}}"
             y1="{{params.y1}}"
@@ -116,7 +116,7 @@ The colors cycle, but that's just a visual aid (delete any vector to also remove
             arrow-head-length="{{params.arrowhead_length}}"
         ></pl-vector>
 
-        <!--internal forces-->
+        {{! internal forces }}
         <pl-paired-vector
             x1="{{params.x5exp}}"
             y1="{{params.y3}}"

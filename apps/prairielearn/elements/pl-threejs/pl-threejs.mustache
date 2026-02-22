@@ -68,14 +68,14 @@
         </div>
     {{/show_feedback}}
 
-    <!-- div in which to put the WebGLRenderer canvas -->
+    {{! div in which to put the WebGLRenderer canvas }}
     <div id="pl-threejs-{{uuid}}">
-        <!-- hidden input element to transfer data from client to server -->
+        {{! hidden input element to transfer data from client to server }}
         <input type="hidden" name="{{answer_name}}" id="hidden-input-{{uuid}}">
-        <!-- <div id="info" style="position: absolute; top: 10px; width: 100%; z-index: 100; display:block;">1.2 3.4 5.6</div> -->
+        {{! <div id="info" style="position: absolute; top: 10px; width: 100%; z-index: 100; display:block;">1.2 3.4 5.6</div> }}
     </div>
 
-    <!-- button toolbar -->
+    {{! button toolbar }}
     <div class="btn-toolbar" role="toolbar">
         {{#show_reset}}
             <div class="btn-group btn-group-sm me-2 mb-2" role="group">
@@ -170,7 +170,7 @@
     </div>
 
     {{#show_pose}}
-        <!-- state -->
+        {{! state }}
         <div id="pl-threejs-output-{{uuid}}" class="card mb-4">
             <div class="card-header">
                 <ul class="nav nav-tabs card-header-tabs" role="tablist">

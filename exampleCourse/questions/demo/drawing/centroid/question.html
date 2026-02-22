@@ -10,13 +10,13 @@
     height="{{params.height_canvas}}"
     hide-answer-panel="false"
 >
-    <!-- Answer -->
+    {{! Answer }}
     <pl-drawing-answer draw-error-box="true">
         <pl-point x1="{{params.xD}}" y1="{{params.yD}}"></pl-point>
         <pl-point x1="{{params.xO}}" y1="{{params.yO}}"></pl-point>
     </pl-drawing-answer>
 
-    <!-- Initial drawing state -->
+    {{! Initial drawing state }}
     <pl-drawing-initial>
         <pl-triangle
             x1="{{params.xA}}"

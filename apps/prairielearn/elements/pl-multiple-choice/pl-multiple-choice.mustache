@@ -85,12 +85,14 @@
 {{/inline}}
 {{/radio}}
 {{^radio}}
-    <!-- Weirdly enough putting this in a div causes it to display without the inline -->
+    {{! Weirdly enough putting this in a div causes it to display without the inline }}
     <span
         class="py-1 d-inline align-items-center pl-multiple-choice-dropdown"
         {{#size}}style="--pl-multiple-choice-dropdown-width: {{size}}px"{{/size}}
     >
-        <script>$(() => new window.PLMultipleChoice("{{uuid}}"));</script>
+        <script>
+            $(() => new window.PLMultipleChoice("{{uuid}}"));
+        </script>
         <select
             name="{{name}}"
             id="pl-multiple-choice-select-{{uuid}}"
