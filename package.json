@@ -40,7 +40,7 @@
     "@playwright/test": "^1.58.1",
     "@postgres-language-server/cli": "^0.19.0",
     "@prairielearn/eslint-config": "workspace:^",
-    "@reteps/tree-sitter-htmlmustache": "0.4.0",
+    "@reteps/tree-sitter-htmlmustache": "0.4.1",
     "@typescript/native-preview": "^7.0.0-dev.20260203.1",
     "@vitest/coverage-v8": "^4.0.18",
     "dependency-cruiser": "^17.3.7",
