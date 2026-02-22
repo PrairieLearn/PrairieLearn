@@ -34,7 +34,7 @@
     width="{{params.width_canvas}}" height="{{params.height_canvas}}">
 
     <pl-drawing-answer draw-error-box="true">
-        <!--external forces-->
+        {{! external forces }}
         <pl-vector x1="{{params.x2exp}}" y1="{{params.y1}}" angle="{{params.neg_theta2}}" width="{{params.width_arrow}}" arrow-head-width="{{params.arrowhead_width}}" arrow-head-length="{{params.arrowhead_length}}"></pl-vector>
         <pl-vector x1="{{params.x5exp}}" y1="{{params.y1}}" angle="{{params.neg_theta2}}" width="{{params.width_arrow}}" arrow-head-width="{{params.arrowhead_width}}" arrow-head-length="{{params.arrowhead_length}}"></pl-vector>
         <pl-vector x1="{{params.x2exp}}" y1="{{params.y4}}" angle="0" anchor-is-tail="false" disregard-sense="true" width="{{params.width_arrow}}" arrow-head-width="{{params.arrowhead_width}}" arrow-head-length="{{params.arrowhead_length}}"></pl-vector>
@@ -44,7 +44,7 @@
         <pl-vector x1="{{params.x4exp}}" y1="{{params.y2}}" angle="90" width="{{params.width_arrow}}" arrow-head-width="{{params.arrowhead_width}}" arrow-head-length="{{params.arrowhead_length}}"></pl-vector>
         <pl-vector x1="{{params.x9exp}}" y1="{{params.y7}}" angle="90" width="{{params.width_arrow}}" arrow-head-width="{{params.arrowhead_width}}" arrow-head-length="{{params.arrowhead_length}}"></pl-vector>
 
-        <!--internal forces-->
+        {{! internal forces }}
         <pl-paired-vector x1="{{params.x5exp}}" y1="{{params.y3}}" x2="{{params.x7exp}}" y2="{{params.y6}}" 
             angle1="{{params.neg_theta1}}" angle2="{{params.theta1}}" disregard-sense="true"
             width="{{params.width_arrow}}" arrow-head-width="{{params.arrowhead_width}}" arrow-head-length="{{params.arrowhead_length}}"></pl-paired-vector>

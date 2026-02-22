@@ -7344,9 +7344,9 @@ __metadata:
   languageName: node
   linkType: hard
 
-"@reteps/tree-sitter-htmlmustache@npm:0.4.1":
-  version: 0.4.1
-  resolution: "@reteps/tree-sitter-htmlmustache@npm:0.4.1"
+"@reteps/tree-sitter-htmlmustache@npm:0.5.0":
+  version: 0.5.0
+  resolution: "@reteps/tree-sitter-htmlmustache@npm:0.5.0"
   dependencies:
     chalk: "npm:^5.6.2"
     editorconfig: "npm:^3.0.1"
@@ -7366,7 +7366,7 @@ __metadata:
       optional: true
   bin:
     htmlmustache: cli/out/main.js
-  checksum: 10c0/f6e8bcc78a597c75c0cb4eea33f0cf720780925a8f486c4c053b3684528eca6212dc34135ed3f530bf933768039bc60a67eacf12a5ef98e24099b804a34f7ee6
+  checksum: 10c0/39e9302b0ae3789b5951c89b30ff14cb190ea4ecec821f54a331215f452828af52df7a20aad807028be99caf212ed092b2c6b4d7f6815c3e309f317455e8b504
   languageName: node
   linkType: hard
 
@@ -18387,7 +18387,7 @@ __metadata:
     "@playwright/test": "npm:^1.58.1"
     "@postgres-language-server/cli": "npm:^0.19.0"
     "@prairielearn/eslint-config": "workspace:^"
-    "@reteps/tree-sitter-htmlmustache": "npm:0.4.1"
+    "@reteps/tree-sitter-htmlmustache": "npm:0.5.0"
     "@types/tar-stream": "npm:^3.1.4"
     "@typescript/native-preview": "npm:^7.0.0-dev.20260203.1"
     "@vitest/coverage-v8": "npm:^4.0.18"
