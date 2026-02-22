@@ -97,6 +97,9 @@ async function checkPage(url: string) {
       'attribute-empty-style': 'off',
       deprecated: ['error', { exclude: ['tt'] }],
       'doctype-style': 'off',
+      // Multiple form controls with the same name is valid HTML for array submission.
+      // This is used by multi-select comboboxes to submit arrays of values.
+      'form-dup-name': 'off',
       // This rule is mostly relevant for SEO, which doesn't matter since our
       // pages aren't ever crawled by search engines.
       'long-title': 'off',

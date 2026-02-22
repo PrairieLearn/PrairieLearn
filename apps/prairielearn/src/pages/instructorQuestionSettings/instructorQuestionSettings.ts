@@ -1,7 +1,6 @@
 import * as path from 'path';
 
 import { Router } from 'express';
-import asyncHandler from 'express-async-handler';
 import fs from 'fs-extra';
 import * as shlex from 'shlex';
 import { z } from 'zod';
@@ -74,7 +73,7 @@ const ArgumentsSchema = z
 
 router.post(
   '/test',
-  asyncHandler(async (req, res) => {
+  typedAsyncHandler<'instructor-question'>(async (req, res) => {
     if (res.locals.question.course_id !== res.locals.course.id) {
       throw new error.HttpStatusError(403, 'Access denied');
     }
@@ -90,7 +89,7 @@ router.post(
         count: 1,
         showDetails: true,
         question: res.locals.question,
-        course_instance: res.locals.course_instance,
+        course_instance: res.locals.course_instance ?? null,
         course: res.locals.course,
         user_id: res.locals.user.id,
         authn_user_id: res.locals.authn_user.id,
@@ -108,7 +107,7 @@ router.post(
           count: 100,
           showDetails: false,
           question: res.locals.question,
-          course_instance: res.locals.course_instance,
+          course_instance: res.locals.course_instance ?? null,
           course: res.locals.course,
           user_id: res.locals.user.id,
           authn_user_id: res.locals.authn_user.id,
@@ -161,7 +160,6 @@ router.post(
           workspace_graded_files: GradedFilesSchema,
           workspace_enable_networking: BooleanFromCheckboxSchema,
           workspace_environment: z.string().optional(),
-          external_grading_enabled: BooleanFromCheckboxSchema,
           external_grading_image: z.string().optional(),
           external_grading_files: GradedFilesSchema,
           external_grading_entrypoint: ArgumentsSchema,
@@ -277,11 +275,8 @@ router.post(
 
       const externalGradingOptions = {
         comment: questionInfo.externalGradingOptions?.comment ?? undefined,
-        enabled: propertyValueWithDefault(
-          questionInfo.externalGradingOptions?.enabled,
-          body.external_grading_enabled,
-          false,
-        ),
+        // We always clear enabled, and fall back to the default value of 'true'.
+        // Since the options are only set if there are explicit values, this will be true if there is an image set.
         image: propertyValueWithDefault(
           questionInfo.externalGradingOptions?.image,
           body.external_grading_image,
