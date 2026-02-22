@@ -16,7 +16,9 @@
                                     value="{{index}}"
                                     {{#blank}}aria-label="Blank"{{/blank}}
                                     {{^no_counters}}{{^blank}}aria-labelledby="pl-matching-{{uuid}}-option-{{value}}-content"{{/blank}}{{/no_counters}}
-                                > {{value}}</option>
+                                >
+                                    {{value}}
+                                </option>
                             {{/options}}
                         </select>
                     </div>
@@ -48,7 +50,9 @@
                             class="pl-matching-option"
                             style="--pl-matching-counter-type: {{counter_type}}"
                         >
-                            <span id="pl-matching-{{uuid}}-option-{{counter}}-content">{{{html}}}</span>
+                            <span id="pl-matching-{{uuid}}-option-{{counter}}-content">
+                                {{{html}}}
+                            </span>
                         </li>
                     {{/options}}
                 </ol>
@@ -94,7 +98,9 @@
                                 data-bs-html="true"
                                 title="Format error"
                                 data-bs-content="{{parse_error}}"
-                            > More info…</a>
+                            >
+                                More info…
+                            </a>
                         </span>
                     {{/parse_error}}
                     {{#display_score_badge}}

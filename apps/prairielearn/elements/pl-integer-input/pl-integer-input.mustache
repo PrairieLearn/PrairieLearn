@@ -75,10 +75,14 @@
             data-bs-html="true"
             title="Format error"
             data-bs-content="{{parse_error}}"
-        > More info…</a>
+        >
+            More info…
+        </a>
     </span>
 {{/parse_error}}
-{{#inline}}</span>{{/inline}}
+{{#inline}}
+</span>
+{{/inline}}
 {{/question}}
 
 {{#submission}}
@@ -105,7 +109,9 @@
                     data-bs-html="true"
                     title="Format error"
                     data-bs-content="{{parse_error}}"
-                > More info…</a>
+                >
+                    More info…
+                </a>
             </span>
         {{/parse_error}}
         {{#missing_input}}
@@ -123,7 +129,9 @@
                     data-bs-html="true"
                     title="Missing input"
                     data-bs-content="There is no submitted value for this field.  This may have happened because the question was changed by course staff after the answer was submitted."
-                > More info…</a>
+                >
+                    More info…
+                </a>
             </span>
         {{/missing_input}}
     </span>
@@ -148,7 +156,9 @@
         </span>
     {{/incorrect}}
 {{/error}}
-{{#inline}}</span>{{/inline}}
+{{#inline}}
+</span>
+{{/inline}}
 {{/submission}}
 
 {{#answer}}

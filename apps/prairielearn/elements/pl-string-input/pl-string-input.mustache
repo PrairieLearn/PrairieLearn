@@ -120,7 +120,9 @@
             data-bs-html="true"
             title="Format error"
             data-bs-content="{{parse_error}}"
-        > More info…</a>
+        >
+            More info…
+        </a>
     </span>
 {{/parse_error}}
 {{#multiline}}
@@ -128,7 +130,9 @@
         <div id="pl-string-input-{{uuid}}-suffix" class="form-text">{{{suffix}}}</div>
     {{/suffix}}
 {{/multiline}}
-{{#inline}}</span>{{/inline}}
+{{#inline}}
+</span>
+{{/inline}}
 {{/question}}
 
 {{#submission}}
@@ -190,10 +194,14 @@
             data-bs-html="true"
             title="Format error"
             data-bs-content="{{parse_error}}"
-        > More info…</a>
+        >
+            More info…
+        </a>
     </span>
 {{/parse_error}}
-{{#multiline}}</div>{{/multiline}}
+{{#multiline}}
+</div>
+{{/multiline}}
 
 {{#missing_input}}
     <span class="small" style="white-space: nowrap">
@@ -209,7 +217,9 @@
             data-bs-html="true"
             title="Missing input"
             data-bs-content="There is no submitted value for this field.  This may have happened because the question was changed by course staff after the answer was submitted."
-        > More info…</a>
+        >
+            More info…
+        </a>
     </span>
 {{/missing_input}}
 
@@ -256,8 +266,12 @@
     {{/incorrect}}
 </span>
 
-{{#inline}}</span>{{/inline}}
-{{#block}}</div>{{/block}}
+{{#inline}}
+</span>
+{{/inline}}
+{{#block}}
+</div>
+{{/block}}
 {{/submission}}
 
 {{#answer}}
@@ -323,6 +337,10 @@
         <i class="fas fa-question-circle" aria-hidden="true"></i>
     </button>
 {{/multiline}}
-{{#inline}}</span>{{/inline}}
-{{#block}}</div>{{/block}}
+{{#inline}}
+</span>
+{{/inline}}
+{{#block}}
+</div>
+{{/block}}
 {{/answer}}

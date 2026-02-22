@@ -1,9 +1,8 @@
 <pl-question-panel>
     <p>
         Questions below were designed to showcase the different features of
-        <a href="https://docs.prairielearn.com/elements/pl-xss-safe">
-            <code>pl-xss-safe</code>
-        </a>. The goal of <code>pl-xss-safe</code> is to allow instructors to display to students
+        <a href="https://docs.prairielearn.com/elements/pl-xss-safe"><code>pl-xss-safe</code></a>.
+        The goal of <code>pl-xss-safe</code> is to allow instructors to display to students
         formatted HTML with potentially malicious source, such as student-submitted content.
     </p>
 </pl-question-panel>
@@ -22,9 +21,7 @@
         <pl-file-editor file-name="ans1.html" ace-mode="ace/mode/html">
         </pl-file-editor>
     </pl-question-panel>
-    <pl-submission-panel>
-        <pl-xss-safe submitted-file-name="ans1.html"></pl-xss-safe>
-    </pl-submission-panel>
+    <pl-submission-panel><pl-xss-safe submitted-file-name="ans1.html"></pl-xss-safe></pl-submission-panel>
 
     <hr>
     <pl-question-panel>

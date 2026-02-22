@@ -79,8 +79,12 @@
     </span>
 {{/incorrect}}
 
-{{#inline}}</span>{{/inline}}
-{{^inline}}</fieldset>{{/inline}}
+{{#inline}}
+</span>
+{{/inline}}
+{{^inline}}
+</fieldset>
+{{/inline}}
 {{/question}}
 
 {{#format}}
@@ -133,10 +137,16 @@
         data-bs-html="true"
         title="Format error"
         data-bs-content="{{parse_error}}"
-    > More info…</a>
+    >
+        More info…
+    </a>
 </span>
-{{#inline}}</span>{{/inline}}
-{{^inline}}</div>{{/inline}}
+{{#inline}}
+</span>
+{{/inline}}
+{{^inline}}
+</div>
+{{/inline}}
 {{/parse_error}}
 {{^parse_error}}
 {{#inline}}
@@ -153,7 +163,9 @@
         <div class="d-inline-flex align-items-center">
             <span>{{^hide_letter_keys}}({{key}}){{/hide_letter_keys}} {{{html}}}</span>
             {{#display_feedback}}
-                <div class="pl-checkbox-feedback pl-checkbox-submission-feedback">{{{feedback}}}</div>
+                <div class="pl-checkbox-feedback pl-checkbox-submission-feedback">
+                    {{{feedback}}}
+                </div>
             {{/display_feedback}}
             {{#display_score_badge}}
                 {{#correct}}
@@ -191,8 +203,12 @@
     {{/partial}}
 {{/display_score_badge}}
 
-{{#inline}}</span>{{/inline}}
-{{^inline}}</div>{{/inline}}
+{{#inline}}
+</span>
+{{/inline}}
+{{^inline}}
+</div>
+{{/inline}}
 {{/parse_error}}
 {{/submission}}
 
@@ -211,6 +227,12 @@
         {{{html}}}
     </li>
 {{/answers}}
-{{#inline}}</ul></span>{{/inline}}
-{{^inline}}</ul></div>{{/inline}}
+{{#inline}}
+    </ul>
+</span>
+{{/inline}}
+{{^inline}}
+    </ul>
+</div>
+{{/inline}}
 {{/answer}}

@@ -7,8 +7,11 @@
     </p>
 
     <p>
-        ${\bf A} =
-        <pl-matrix-latex params-name="U" digits="{{params.sf}}" presentation-type="sigfig"></pl-matrix-latex>$
+        ${\bf A} = <pl-matrix-latex
+            params-name="U"
+            digits="{{params.sf}}"
+            presentation-type="sigfig"
+        ></pl-matrix-latex>$
     </p>
 
     <p>
@@ -19,8 +22,7 @@
     </p>
 
     <p>
-        ${\bf b} =
-        <pl-matrix-latex params-name="b" digits="{{params.sf}}" presentation-type="f"></pl-matrix-latex>$
+        ${\bf b} = <pl-matrix-latex params-name="b" digits="{{params.sf}}" presentation-type="f"></pl-matrix-latex>$
     </p>
     <p>${\bf c} = <pl-matrix-latex params-name="c" digits="4"></pl-matrix-latex>$</p>
 
@@ -32,9 +34,11 @@
     <p>We can write systems of linear equations ${\bf A}^T{\bf x} = {\bf c}$ as such:</p>
 
     <p>
-        $$ <pl-matrix-latex params-name="U" presentation-type="f" digits="3"></pl-matrix-latex>^T
-        \begin{bmatrix} x \\ y \\ z \end{bmatrix}
-        <pl-matrix-latex params-name="c" presentation-type="f" digits="4"></pl-matrix-latex>$$
+        $$ <pl-matrix-latex params-name="U" presentation-type="f" digits="3"></pl-matrix-latex>^T \begin{bmatrix} x \\ y \\ z \end{bmatrix} <pl-matrix-latex
+            params-name="c"
+            presentation-type="f"
+            digits="4"
+        ></pl-matrix-latex>$$
     </p>
 
     <p>
@@ -43,7 +47,10 @@
     </p>
 
     <p>
-        $x =
-        <pl-matrix-latex params-name="myNumber" digits="{{params.sf}}" presentation-type="sigfig"></pl-matrix-latex>$
+        $x = <pl-matrix-latex
+            params-name="myNumber"
+            digits="{{params.sf}}"
+            presentation-type="sigfig"
+        ></pl-matrix-latex>$
     </p>
 </pl-question-panel>
