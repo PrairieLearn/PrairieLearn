@@ -495,6 +495,7 @@ export function AiQuestionGenerationChat({
   onGenerationComplete,
   hasUnsavedChanges,
   discardUnsavedChanges,
+  isQuestionEmpty,
 }: {
   chatCsrfToken: string;
   initialMessages: QuestionGenerationUIMessage[];
@@ -506,6 +507,7 @@ export function AiQuestionGenerationChat({
   onGenerationComplete?: () => void;
   hasUnsavedChanges: boolean;
   discardUnsavedChanges: () => void;
+  isQuestionEmpty: boolean;
 }) {
   const [refreshQuestionPreviewAfterChanges, setRefreshQuestionPreviewAfterChanges] =
     useState(true);
@@ -684,9 +686,16 @@ export function AiQuestionGenerationChat({
               </div>
             </div>
           ) : (
-            // If this is an old draft question that was using `ai_question_generation_prompts`,
-            // we won't have any messages to display. That's fine, just warn the user.
-            <div className="text-muted my-5">Message history unavailable.</div>
+            <div
+              className="d-inline-flex align-items-center justify-content-center rounded-circle bg-primary bg-opacity-10"
+              style={{ width: '3rem', height: '3rem' }}
+            >
+              <i
+                className="bi bi-stars text-primary"
+                style={{ fontSize: '1.1rem' }}
+                aria-hidden="true"
+              />
+            </div>
           )}
 
           <ScrollToBottomButton
@@ -712,6 +721,9 @@ export function AiQuestionGenerationChat({
             isGenerating={isGenerating}
             refreshQuestionPreviewAfterChanges={refreshQuestionPreviewAfterChanges}
             setRefreshQuestionPreviewAfterChanges={setRefreshQuestionPreviewAfterChanges}
+            placeholder={
+              isQuestionEmpty ? 'Describe the question you want to create...' : 'Ask anything...'
+            }
             onChange={setPromptInput}
             onSubmit={(text) => {
               if (hasUnsavedChanges) {

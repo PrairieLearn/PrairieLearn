@@ -38,6 +38,7 @@
             class="{{block_formatting}} shadow pl-order-block {{^editable}}nodrag{{/editable}}"
             uuid="{{uuid}}"
             string="{{inner_html}}"
+            data-indent-depth="{{indent_depth}}"
             {{#distractor_bin}}data-distractor-bin="{{distractor_bin}}"{{/distractor_bin}}
             tabindex="0"
             role="option"
@@ -61,9 +62,10 @@
         {{#submission_dict}}
           <li
             class="{{block_formatting}} shadow pl-order-block {{^editable}}nodrag{{/editable}}"
-            style="margin-left: {{indent}}px;"
+            style="margin-left: calc(var(--pl-order-block-indent-ch, 4) * {{indent_depth}} * 1ch);"
             uuid="{{uuid}}"
             string="{{inner_html}}"
+            data-indent-depth="{{indent_depth}}"
             {{#distractor_bin}}data-distractor-bin="{{distractor_bin}}"{{/distractor_bin}}
             role="option"
           >
@@ -108,7 +110,7 @@
                     {{/allow_feedback_badges}}
                     <div
                       class="{{block_formatting}} pl-order-block"
-                      style="margin-left: {{indent}}px;flex-grow:1;"
+                      style="margin-left: calc(var(--pl-order-block-indent-ch, 4) * {{indent_depth}} * 1ch);flex-grow:1;"
                     >
                       {{{inner_html}}}
                     </div>
@@ -135,7 +137,7 @@
                       {{/allow_feedback_badges}}
                       <div
                         class="{{block_formatting}} pl-order-block"
-                        style="margin-left: {{indent}}px;flex-grow:1;"
+                        style="margin-left: calc(var(--pl-order-block-indent-ch, 4) * {{indent_depth}} * 1ch);flex-grow:1;"
                       >
                         {{{inner_html}}}
                       </div>
@@ -159,7 +161,7 @@
                   {{/allow_feedback_badges}}
                   <div
                     class="{{block_formatting}} pl-order-block"
-                    style="margin-left: {{indent}}px;flex-grow:1;"
+                    style="margin-left: calc(var(--pl-order-block-indent-ch, 4) * {{indent_depth}} * 1ch);flex-grow:1;"
                   >
                     {{{inner_html}}}
                   </div>
@@ -202,7 +204,10 @@
     </div>
     <ul class="card-body list-group">
       {{#question_solution}}
-        <li class="{{block_formatting}} pl-order-block" style="margin-left: {{indent}}px">
+        <li
+          class="{{block_formatting}} pl-order-block"
+          style="margin-left: calc(var(--pl-order-block-indent-ch, 4) * {{indent_depth}} * 1ch)"
+        >
           {{{inner_html}}}
         </li>
       {{/question_solution}}

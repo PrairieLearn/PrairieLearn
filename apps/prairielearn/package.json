@@ -247,7 +247,6 @@
     "superjson": "^2.2.6",
     "tablesorter": "^2.32.0",
     "tar": "^7.5.8",
-    "three": "0.160.1",
     "tmp": "^0.2.5",
     "tmp-promise": "^3.0.3",
     "tom-select": "^2.4.5",

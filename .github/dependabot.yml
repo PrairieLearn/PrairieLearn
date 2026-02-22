@@ -39,8 +39,6 @@ updates:
       # We're putting off this upgrade for now:
       # https://github.com/PrairieLearn/PrairieLearn/pull/6835
       - dependency-name: 'fabric'
-      # Recent versions of `threejs` don't include the pre-bundled file we rely on.
-      - dependency-name: 'three'
       # novnc 1.5.0+ no longer publishes ESM files:
       # https://github.com/novnc/noVNC/issues/1792
       - dependency-name: '@novnc/novnc'
