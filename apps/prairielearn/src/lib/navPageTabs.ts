@@ -38,7 +38,12 @@ export function getNavPageTabs() {
         iconClasses: 'far fa-calendar-alt',
         tabLabel: 'Publishing',
       },
-
+      {
+        activeSubPage: 'ai_grading',
+        urlSuffix: '/instance_admin/ai_grading',
+        iconClasses: 'bi bi-stars',
+        tabLabel: 'AI grading',
+      },
       {
         activeSubPage: 'lti',
         urlSuffix: '/instance_admin/lti',

@@ -1258,6 +1258,11 @@ export async function initExpress(): Promise<Express> {
       .default,
   );
   app.use(
+    '/pl/course_instance/:course_instance_id(\\d+)/instructor/instance_admin/ai_grading',
+    (await import('./pages/instructorInstanceAdminAiGrading/instructorInstanceAdminAiGrading.js'))
+      .default,
+  );
+  app.use(
     '/pl/course_instance/:course_instance_id(\\d+)/instructor/instance_admin/assessments',
     (await import('./pages/instructorAssessments/instructorAssessments.js')).default,
   );
