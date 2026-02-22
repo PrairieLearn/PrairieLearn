@@ -49,7 +49,7 @@ export function initCalculator(storageKey: string, { drawer, fab, fabClose }: Dr
   );
 
   let typingTimer: ReturnType<typeof setTimeout>;
-  const delay = 500;
+  const delay = 200;
   calculatorInputElement.addEventListener('input', () => {
     clearTimeout(typingTimer);
     typingTimer = setTimeout(() => {
@@ -132,6 +132,7 @@ export function initCalculator(storageKey: string, { drawer, fab, fabClose }: Dr
       copyButton.onclick = function () {
         void copyToClipboard('');
       };
+      calculatorInputContainer.classList.remove('error');
       return;
     }
     let parsed: Expression = ce.parse(input, {
@@ -331,6 +332,7 @@ export function initCalculator(storageKey: string, { drawer, fab, fabClose }: Dr
     prepareButton(button);
     button.addEventListener('click', () => {
       calculatorInputElement.executeCommand(['deleteAll']);
+      calculatorInputElement.dispatchEvent(new CustomEvent('input'));
     });
   });
 
