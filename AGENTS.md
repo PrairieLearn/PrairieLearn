@@ -126,7 +126,8 @@ When working with assessment "groups" / "teams", see the [`groups-and-teams` ski
 - Don't add extra comments that a human wouldn't add or that are inconsistent with the rest of the file.
 - Always check for existing model functions in `apps/prairielearn/src/models/` or lib functions before writing one-off database queries.
 - Express request handlers must always either send a response (either by calling `res.send`/etc. or throwing an error) or explicitly pass control by calling `next(...)`.
-- DO NOT re-export functions or types from other modules for convenience or backward compatibility (e.g. `export { bar } from 'foo'`). When moving a function to a new module, update all callers to import from the new location directly.
+- Don't re-export functions or types from other modules just for convenience or backward compatibility (e.g. `export { bar } from 'foo'`). When moving a function to a new module, update all callers to import from the new location directly.
+- Don't use dynamic `import()` inside functions; always prefer top-level imports (except for `server.ts`, where pages are dynamically imported).
 
 ### User interface conventions
 
