@@ -13,9 +13,9 @@
 <pl-card header="Part 1">
   <pl-question-panel>
     <p>
-      Here, you can observe the default behavior of the <code>pl-multiple-choice</code> element.
-      In particular, all options are presented in a randomized form. Only one option may be
-      selected from the list.
+      Here, you can observe the default behavior of the <code>pl-multiple-choice</code> element. In
+      particular, all options are presented in a randomized form. Only one option may be selected
+      from the list.
     </p>
     <p>What is the color of the sky?</p>
   </pl-question-panel>
@@ -34,16 +34,21 @@
 <pl-card header="Part 2">
   <pl-question-panel>
     <p>
-      Here, the <code>pl-multiple-choice</code> element is restricted to displaying
-      <b>4</b> choices with one of the choices being the correct answer. In addition, the choices
-      are placed "inline" instead of being displayed within a list. We also set
-      <code>hide-score-badge="True"</code> to hide the partial score percentage and badge.
+      Here, the <code>pl-multiple-choice</code> element is restricted to displaying <b>4</b> choices
+      with one of the choices being the correct answer. In addition, the choices are placed "inline"
+      instead of being displayed within a list. We also set <code>hide-score-badge="True"</code> to
+      hide the partial score percentage and badge.
     </p>
 
     <p>What is the color of the sky?</p>
   </pl-question-panel>
 
-  <pl-multiple-choice answers-name="sky-color2" number-answers="4" display="inline" hide-score-badge="True">
+  <pl-multiple-choice
+    answers-name="sky-color2"
+    number-answers="4"
+    display="inline"
+    hide-score-badge="True"
+  >
     <pl-answer correct="true">Blue</pl-answer>
     <pl-answer>Pink</pl-answer>
     <pl-answer>Purple</pl-answer>
@@ -57,10 +62,10 @@
 <pl-card header="Part 3">
   <pl-question-panel>
     <p>
-      Here, the <code>pl-multiple-choice</code> element displays options as they were written,
-      e.g. <code>order="fixed"</code>, which means there is no randomization of choices.
-      Moreover, the weight of this question has also been increased meaning it will contribute
-      more to the overall score than other elements.
+      Here, the <code>pl-multiple-choice</code> element displays options as they were written, e.g.
+      <code>order="fixed"</code>, which means there is no randomization of choices. Moreover, the
+      weight of this question has also been increased meaning it will contribute more to the overall
+      score than other elements.
     </p>
     <p>What is the color of the sky?</p>
   </pl-question-panel>
@@ -100,18 +105,21 @@
 <pl-card header="Part 5">
   <pl-question-panel>
     <p>
-      Here, the <code>pl-multiple-choice</code> element displays "All of the above" and "None of
-      the above" as options below the correct and incorrect options provided. By setting these
-      options to <code>"random"</code>, the options could be correct with the same probability as
-      all of the individual correct options. The number of options displayed is also consistent
-      across all variants, and is determined automatically if <code>number-answers</code> is not
-      set.
+      Here, the <code>pl-multiple-choice</code> element displays "All of the above" and "None of the
+      above" as options below the correct and incorrect options provided. By setting these options
+      to <code>"random"</code>, the options could be correct with the same probability as all of the
+      individual correct options. The number of options displayed is also consistent across all
+      variants, and is determined automatically if <code>number-answers</code> is not set.
     </p>
 
     <p>What is the color of the sky?</p>
   </pl-question-panel>
 
-  <pl-multiple-choice answers-name="sky-color5" none-of-the-above="random" all-of-the-above="random">
+  <pl-multiple-choice
+    answers-name="sky-color5"
+    none-of-the-above="random"
+    all-of-the-above="random"
+  >
     <pl-answer correct="true">Blue</pl-answer>
     <pl-answer correct="true">Dark Blue</pl-answer>
     <pl-answer correct="true">Light Blue</pl-answer>
@@ -135,7 +143,11 @@
     <p>What is the color of the sky?</p>
   </pl-question-panel>
 
-  <pl-multiple-choice answers-name="sky-color6" none-of-the-above="incorrect" all-of-the-above="incorrect">
+  <pl-multiple-choice
+    answers-name="sky-color6"
+    none-of-the-above="incorrect"
+    all-of-the-above="incorrect"
+  >
     <pl-answer correct="true">Blue</pl-answer>
     <pl-answer correct="true">Dark Blue</pl-answer>
     <pl-answer correct="true">Light Blue</pl-answer>
@@ -174,11 +186,13 @@
 
 <pl-card header="Part 8">
   <pl-question-panel>
-    <p>Here, you can observe the behavior of the <code>score</code> attribute in <code>pl-answer</code>.
-      The score for a question the percentage of points given to it if selected (default is 0 for
-      incorrect answers and 1 for correct ones). This also allows no submission by the student, done by
-      setting <code>allow-blank="true"</code>.</p>
-    <p> What is the color of the sky? </p>
+    <p>
+      Here, you can observe the behavior of the <code>score</code> attribute in
+      <code>pl-answer</code>. The score for a question the percentage of points given to it if
+      selected (default is 0 for incorrect answers and 1 for correct ones). This also allows no
+      submission by the student, done by setting <code>allow-blank="true"</code>.
+    </p>
+    <p>What is the color of the sky?</p>
   </pl-question-panel>
 
   <pl-multiple-choice answers-name="sky-color9" allow-blank="true">
@@ -196,9 +210,9 @@
   <pl-question-panel>
     <p>
       Here, we observe the dropdown display option. This lets students input an answer from a
-      dropdown list instead of choosing from multiple choice radio buttons. Note that the
-      dropdown list supports $\LaTeX$ rendering. We have set <code>size="25"</code> to
-      keep the display a fixed size. The default text has also been changed by setting
+      dropdown list instead of choosing from multiple choice radio buttons. Note that the dropdown
+      list supports $\LaTeX$ rendering. We have set <code>size="25"</code> to keep the display a
+      fixed size. The default text has also been changed by setting
       <code>placeholder="Select a color"</code>.
     </p>
 
@@ -207,16 +221,28 @@
 
   <p>
     The sky is
-    <pl-multiple-choice answers-name="sky-color10" display="dropdown" allow-blank="true" order="random" size="25" placeholder="Select a color">
-      <pl-answer correct="true" feedback="Correct! The sky is indeed blue.">Blue ($470nm$)</pl-answer>
+    <pl-multiple-choice
+      answers-name="sky-color10"
+      display="dropdown"
+      allow-blank="true"
+      order="random"
+      size="25"
+      placeholder="Select a color"
+    >
+      <pl-answer correct="true" feedback="Correct! The sky is indeed blue.">
+        Blue ($470nm$)
+      </pl-answer>
       <pl-answer score="0.5">Purple ($400nm$)</pl-answer>
-      <pl-answer feedback="Hint: The correct answer is a complementary color to this one." score="0.1">
+      <pl-answer
+        feedback="Hint: The correct answer is a complementary color to this one."
+        score="0.1"
+      >
         Orange ($600nm$)
       </pl-answer>
       <pl-answer>Yellow ($580nm$)</pl-answer>
       <pl-answer score="0.3">Green ($520nm$)</pl-answer>
       <pl-answer score="0.2">Red ($700nm$)</pl-answer>
-    </pl-multiple-choice>.
-    This is because of the way that light is scattered in the earth's atmosphere.
+    </pl-multiple-choice>
+    . This is because of the way that light is scattered in the earth's atmosphere.
   </p>
 </pl-card>

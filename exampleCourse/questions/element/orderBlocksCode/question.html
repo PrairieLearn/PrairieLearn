@@ -1,20 +1,21 @@
 <pl-question-panel>
-<p>
-This question illustrates the <code>grading-method="ranking"</code> mode of
-<a href="https://docs.prairielearn.com/elements/pl-order-blocks"><code>pl-order-blocks</code></a>,
-which is useful for Parsons-style coding problems.
-</p>
-<hr>
-<p>
-Implement the Python function <code>my_sum</code>, which takes 2 numbers, <code>first</code> and <code>second</code>,
-and returns their sum. Note that the ordering of instantiation, computation, and returning of the value must be correct.
-Remember to indent your code!
-</p>
-<p>
-This example uses <code>grading-method="ranking"</code> to control how the correct solution is ordered,
-the <code>indent</code> attribute in <code>pl-answer</code> to define expected code indentation, and
-the <code>distractor-for</code> attribute to visually pair blocks with their distractors.
-</p>
+  <p>
+    This question illustrates the <code>grading-method="ranking"</code> mode of
+    <a href="https://docs.prairielearn.com/elements/pl-order-blocks"><code>pl-order-blocks</code></a>,
+    which is useful for Parsons-style coding problems.
+  </p>
+  <hr>
+  <p>
+    Implement the Python function <code>my_sum</code>, which takes 2 numbers, <code>first</code> and
+    <code>second</code>, and returns their sum. Note that the ordering of instantiation,
+    computation, and returning of the value must be correct. Remember to indent your code!
+  </p>
+  <p>
+    This example uses <code>grading-method="ranking"</code> to control how the correct solution is
+    ordered, the <code>indent</code> attribute in <code>pl-answer</code> to define expected code
+    indentation, and the <code>distractor-for</code> attribute to visually pair blocks with their
+    distractors.
+  </p>
 </pl-question-panel>
 
 <pl-order-blocks
@@ -31,7 +32,19 @@ the <code>distractor-for</code> attribute to visually pair blocks with their dis
   <pl-answer correct="true" ranking="3" indent="1" tag="addfirst">sum += first</pl-answer>
   <pl-answer correct="true" ranking="3" indent="1" tag="addsecond">sum += second</pl-answer>
   <pl-answer correct="true" ranking="4" indent="1">return sum</pl-answer>
-  <pl-answer correct="false" distractor-for="addfirst" distractor-feedback="You need to store the result of the sum in a variable!">sum + first</pl-answer>
+  <pl-answer
+    correct="false"
+    distractor-for="addfirst"
+    distractor-feedback="You need to store the result of the sum in a variable!"
+  >
+    sum + first
+  </pl-answer>
   <pl-answer correct="false" distractor-for="addfirst">sum &amp;= first</pl-answer>
-  <pl-answer correct="false" distractor-for="addsecond" distractor-feedback="You need to store the result of the sum in a variable!">sum + second</pl-answer>
+  <pl-answer
+    correct="false"
+    distractor-for="addsecond"
+    distractor-feedback="You need to store the result of the sum in a variable!"
+  >
+    sum + second
+  </pl-answer>
 </pl-order-blocks>

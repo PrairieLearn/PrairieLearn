@@ -7344,7 +7344,7 @@ __metadata:
   languageName: node
   linkType: hard
 
-"@reteps/tree-sitter-htmlmustache@npm:0.5.0":
+"@reteps/tree-sitter-htmlmustache@npm:^0.5.0":
   version: 0.5.0
   resolution: "@reteps/tree-sitter-htmlmustache@npm:0.5.0"
   dependencies:
@@ -18387,7 +18387,7 @@ __metadata:
     "@playwright/test": "npm:^1.58.1"
     "@postgres-language-server/cli": "npm:^0.19.0"
     "@prairielearn/eslint-config": "workspace:^"
-    "@reteps/tree-sitter-htmlmustache": "npm:0.5.0"
+    "@reteps/tree-sitter-htmlmustache": "npm:^0.5.0"
     "@types/tar-stream": "npm:^3.1.4"
     "@typescript/native-preview": "npm:^7.0.0-dev.20260203.1"
     "@vitest/coverage-v8": "npm:^4.0.18"
