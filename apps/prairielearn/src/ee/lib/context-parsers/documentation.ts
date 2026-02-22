@@ -5,7 +5,7 @@ import { unified } from 'unified';
 
 import { SUPPORTED_ELEMENTS } from '../validateHTML.js';
 
-const DEPRECATED_ELEMENTS = new Set(['pl-prairiedraw-figure', 'pl-threejs', 'pl-variable-score']);
+const DEPRECATED_ELEMENTS = new Set(['pl-prairiedraw-figure', 'pl-variable-score']);
 
 interface ElementSection {
   elementName: string;
