@@ -617,7 +617,8 @@ def format_formula_editor_submission_for_sympy(
     The formula editor outputs text with several quirks that need correction:
     1. Invisible "{:" and ":}" operators from LaTeX copy-paste
     2. Multi-character names are space-separated: "s i n" instead of "sin"
-    3. Numbers after variables need spacing: "x2" should be "x 2" for multiplication
+    3. Parens around subscripts (e.g., "var_(test)") are removed to restore variable names with underscores
+    4. Numbers after variables need spacing: "x2" should be "x 2" for multiplication
 
     Args:
         sub: Raw text from the formula editor
@@ -642,6 +643,10 @@ def format_formula_editor_submission_for_sympy(
 
     # Merge space-separated characters into proper tokens (e.g., "s i n" -> "sin")
     text = _merge_spaced_tokens(text, known_tokens)
+
+    # Recursively remove parens around subscript, e.g., "var_(test )" -> "var_test "
+    while re.search(r"_\(\s*([_a-zA-Z0-9]+)\s*\)", text):
+        text = re.sub(r"_\(\s*([_a-zA-Z0-9]+)\s*\)", r"_\1 ", text)
 
     # Add spaces between letters and numbers for implicit multiplication,
     # but preserve tokens like "f2" that are custom function names
@@ -679,6 +684,9 @@ def _build_known_tokens(
         for token in tokens
         if psu.greek_unicode_transform(token) != token
     ]
+
+    # Add all parts of tokens with subscripts (e.g., "var" and "test" for "var_test")
+    tokens += [part for token in tokens for part in token.split("_")]
 
     # Filter out single-letter tokens
     tokens = [token for token in tokens if len(token) > 1]
