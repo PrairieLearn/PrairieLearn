@@ -59,7 +59,6 @@ FIRST_WRONG_TYPES = frozenset([
 ])
 
 
-TAB_SIZE_PX = 50
 FIRST_WRONG_FEEDBACK = {
     "incomplete": "Your answer is correct so far, but it is incomplete.",
     "wrong-at-block": r"""Your answer is incorrect starting at <span style="color:red;">block number {}</span>.
@@ -317,8 +316,8 @@ def render(element_html: str, data: pl.QuestionData) -> str:
         editable = data["editable"]
 
         # We aren't allowed to mutate the `data` object during render, so we'll
-        # make a deep copy of the submitted answer so we can update the `indent`
-        # to a value suitable for rendering.
+        # make a deep copy of the submitted answer so we can update indentation
+        # fields to values suitable for rendering.
         student_previous_submission = deepcopy(
             data["submitted_answers"].get(answer_name, [])
         )
@@ -326,15 +325,19 @@ def render(element_html: str, data: pl.QuestionData) -> str:
 
         all_blocks = data["params"][answer_name]
         source_blocks = [
-            block for block in all_blocks if block["uuid"] not in submitted_block_ids
+            {**block, "indent_depth": 0}
+            for block in all_blocks
+            if block["uuid"] not in submitted_block_ids
         ]
 
         for option in student_previous_submission:
             submission_indent = option.get("indent", None)
 
             if submission_indent is not None:
-                submission_indent = int(submission_indent) * TAB_SIZE_PX
-            option["indent"] = submission_indent
+                submission_indent = int(submission_indent)
+            option["indent_depth"] = (
+                max(0, submission_indent) if submission_indent is not None else 0
+            )
 
         help_text = (
             f"Move answer blocks from the options area to the {dropzone_layout.value}."
@@ -393,7 +396,7 @@ def render(element_html: str, data: pl.QuestionData) -> str:
         student_submission = [
             {
                 "inner_html": attempt["inner_html"],
-                "indent": (attempt["indent"] or 0) * TAB_SIZE_PX,
+                "indent_depth": max(0, int(attempt.get("indent") or 0)),
                 "badge_type": attempt.get("badge_type", ""),
                 "icon": attempt.get("icon", ""),
                 # We intentionally don't include distractor_feedback and ordering_feedback here when
@@ -479,7 +482,7 @@ def render(element_html: str, data: pl.QuestionData) -> str:
         question_solution = [
             {
                 "inner_html": solution["inner_html"],
-                "indent": max(0, (solution["indent"] or 0) * TAB_SIZE_PX),
+                "indent_depth": max(0, int(solution["indent"] or 0)),
             }
             for solution in (
                 solve_problem(correct_answers, grading_method, has_optional_blocks)
