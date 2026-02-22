@@ -22,14 +22,14 @@
 </pl-question-panel>
 
 <pl-drawing grid-size="20" gradable="true" answers-name="box" hide-answer-panel="false" width="640" height="{{params.height_canvas}}">
-    <!-- Answer -->
+    {{! Answer }}
     <pl-drawing-answer draw-error-box="true">
       <pl-vector x1="{{params.x3}}" y1="{{params.y3}}" angle="{{params.end_angle}}" offset-forward="{{params.off2}}" offset-backward="{{params.off1}}"></pl-vector>
       <pl-vector x1="{{params.x3}}" y1="{{params.y3}}" angle="90" offset-forward="{{params.off2}}" offset-backward="{{params.off1}}"></pl-vector>
       <pl-vector x1="{{params.x3}}" y1="{{params.y3}}" angle="{{params.normal_angle}}" offset-forward="{{params.off2}}" offset-backward="{{params.off1}}" anchor-is-tail="false"></pl-vector>
     </pl-drawing-answer>
 
-    <!-- Initial drawing state -->
+    {{! Initial drawing state }}
     <pl-drawing-initial>
       <pl-coordinates x1="{{params.xcoord}}" y1="{{params.ycoord}}" width="60" angle="{{params.angle_plane}}"></pl-coordinates>
       <pl-rectangle x1="{{params.x3}}" y1="{{params.y3}}" width="{{params.wbox}}" height="{{params.hbox}}" color="green1" angle="{{params.angle_plane}}"></pl-rectangle>

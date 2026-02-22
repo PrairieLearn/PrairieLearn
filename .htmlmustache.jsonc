@@ -9,6 +9,9 @@
     // Uses legacy v2 EJS syntax (<% %>) which cannot be parsed as mustache.
     "testCourse/questions/addVectors/question.html"
   ],
+  "rules": {
+    "preferMustacheComments": "warning"
+  },
   "printWidth": 100,
   "indentSize": 4,
   "noBreakDelimiters": ["$", "$$"],
@@ -55,6 +58,22 @@
       "name": "pl-graph",
       "display": "block",
       "languageDefault": "dot"
+    },
+    {
+      "name": "pl-multiple-choice",
+      "display": "block"
+    },
+    {
+      "name": "pl-question-panel",
+      "display": "block"
+    },
+    {
+      "name": "pl-submission-panel",
+      "display": "block"
+    },
+    {
+      "name": "pl-answer-panel",
+      "display": "block"
     }
   ]
 }
