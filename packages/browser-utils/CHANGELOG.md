@@ -1,5 +1,11 @@
 # @prairielearn/browser-utils
 
+## 2.6.4
+
+### Patch Changes
+
+- 7b937fb: Remove unused exports, add `@knipignore` for intentionally public exports, and re-export newly used symbols from `@prairielearn/formatter`.
+
 ## 2.6.3
 
 ### Patch Changes
