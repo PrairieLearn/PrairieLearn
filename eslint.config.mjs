@@ -187,6 +187,7 @@ export default [
     languageOptions: {
       parser: htmlParser,
       parserOptions: {
+        rawContentTags: ['markdown'],
         templateEngineSyntax: htmlParser.TEMPLATE_ENGINE_SYNTAX.HANDLEBAR,
       },
     },
