@@ -6,7 +6,7 @@ import { assertNever } from '@prairielearn/utils';
 import { IdSchema } from '@prairielearn/zod';
 
 import { config } from '../../lib/config.js';
-import { SprocSyncAssessmentsSchema } from '../../lib/db-types.js';
+import { type AssessmentTool, SprocSyncAssessmentsSchema } from '../../lib/db-types.js';
 import { features } from '../../lib/features/index.js';
 import {
   type AssessmentJson,
@@ -486,11 +486,39 @@ export async function sync(
     ]);
   });
 
-  await sqldb.callRow(
+  const nameToIdMap = await sqldb.callRow(
     'sync_assessments',
     [assessmentParams, courseId, courseInstanceId, config.checkSharingOnSync],
     SprocSyncAssessmentsSchema,
   );
+
+  const toolRows: Partial<AssessmentTool>[] = [];
+  const assessmentIds: string[] = [];
+
+  for (const [tid, assessment] of Object.entries(assessments)) {
+    const assessmentId = nameToIdMap?.[tid];
+    if (!assessmentId) continue;
+
+    assessmentIds.push(assessmentId);
+
+    if (assessment.data?.tools) {
+      for (const [toolName, { enabled, ...settings }] of Object.entries(assessment.data.tools)) {
+        toolRows.push({
+          assessment_id: assessmentId,
+          tool: toolName,
+          enabled,
+          settings,
+        });
+      }
+    }
+  }
+
+  if (assessmentIds.length > 0) {
+    await sqldb.execute(sql.sync_assessment_tools, {
+      tools: JSON.stringify(toolRows),
+      assessment_ids: assessmentIds,
+    });
+  }
 }
 
 export async function validateAssessmentSharedQuestions(

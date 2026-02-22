@@ -6,6 +6,11 @@ import {
   RegenerateInstanceModal,
 } from '../../components/AssessmentRegenerate.js';
 import { AssessmentScorePanel } from '../../components/AssessmentScorePanel.js';
+import {
+  CalculatorDrawer,
+  CalculatorDrawerHeadScripts,
+  CalculatorDrawerToggle,
+} from '../../components/CalculatorDrawer.js';
 import { InstructorInfoPanel } from '../../components/InstructorInfoPanel.js';
 import { PageLayout } from '../../components/PageLayout.js';
 import { PersonalNotesPanel } from '../../components/PersonalNotesPanel.js';
@@ -24,15 +29,19 @@ export function StudentInstanceQuestion({
   assignedGrader,
   lastGrader,
   questionCopyTargets,
+  enabledTools = [],
 }: {
   resLocals: UntypedResLocals;
   userCanDeleteAssessmentInstance: boolean;
   assignedGrader?: User | null;
   lastGrader?: User | null;
   questionCopyTargets?: CopyTarget[] | null;
+  enabledTools?: string[];
 }) {
   const questionContext =
     resLocals.assessment.type === 'Exam' ? 'student_exam' : 'student_homework';
+  // TODO: support more tools
+  const hasCalculator = enabledTools.includes('calculator');
 
   return PageLayout({
     resLocals,
@@ -46,7 +55,7 @@ export function StudentInstanceQuestion({
         name="mathjax-fonts-path"
         content="${nodeModulesAssetPath('@mathjax/mathjax-newcm-font')}"
       />
-      ${compiledScriptTag('question.ts')}
+      ${compiledScriptTag('question.ts')} ${hasCalculator ? CalculatorDrawerHeadScripts() : ''}
       ${resLocals.assessment.type === 'Exam'
         ? html`
             ${compiledScriptTag('examTimeLimitCountdown.ts')}
@@ -82,9 +91,14 @@ export function StudentInstanceQuestion({
             ${unsafeHtml(resLocals.extraHeadersHtml)}
           `}
     `,
-    preContent: userCanDeleteAssessmentInstance
-      ? RegenerateInstanceModal({ csrfToken: resLocals.__csrf_token })
-      : undefined,
+    preContent: html`
+      ${userCanDeleteAssessmentInstance
+        ? RegenerateInstanceModal({ csrfToken: resLocals.__csrf_token })
+        : ''}
+    `,
+    postContent: hasCalculator
+      ? CalculatorDrawer({ storageKey: `calculator-${resLocals.assessment.uuid}` })
+      : '',
     content: html`
       ${userCanDeleteAssessmentInstance ? RegenerateInstanceAlert() : ''}
       <div class="row">
@@ -197,6 +211,7 @@ export function StudentInstanceQuestion({
                 csrfToken: resLocals.__csrf_token,
               })
             : ''}
+          ${hasCalculator ? CalculatorDrawerToggle() : ''}
           ${InstructorInfoPanel({
             course: resLocals.course,
             course_instance: resLocals.course_instance,

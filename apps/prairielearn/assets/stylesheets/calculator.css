@@ -1,0 +1,472 @@
+math-field::part(menu-toggle) {
+  display: none;
+}
+
+math-field::part(virtual-keyboard-toggle) {
+  display: none;
+}
+
+/* Disable MathJax click activation on calculator buttons while keeping keyboard a11y
+ * TODO: Investigate if we can further improve this behavior.
+ * See https://docs.mathjax.org/en/v4.0/upgrading/whats-new-4.0/explorer.html#exploring-expressions
+*/
+.calculator-main mjx-container {
+  pointer-events: none !important;
+}
+
+/* Drawer layout */
+.calculator-drawer {
+  position: fixed;
+  bottom: 0;
+  right: 16px;
+  z-index: 1040;
+  background: var(--bs-body-bg, #fff);
+  box-shadow: 0 -2px 10px rgba(0, 0, 0, 0.15);
+  transform: translateY(100%);
+  transition: transform 0.3s ease;
+  max-height: 80vh;
+  display: flex;
+  flex-direction: column;
+  min-width: 460px;
+  border-radius: 8px 8px 0 0;
+  overflow: hidden;
+}
+
+.calculator-resize-handle {
+  position: absolute;
+  left: -4px;
+  top: 0;
+  bottom: 0;
+  width: 8px;
+  cursor: col-resize;
+  touch-action: none;
+  z-index: 1;
+}
+
+.calculator-drawer.open {
+  transform: translateY(0);
+}
+
+.calculator-drawer-header {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  padding: 6px 12px;
+  background: var(--bs-secondary);
+  color: #fff;
+  flex-shrink: 0;
+  cursor: pointer;
+  user-select: none;
+}
+
+.calculator-drawer-title {
+  font-weight: 500;
+  font-size: 0.9rem;
+}
+
+.calculator-drawer-body {
+  overflow-y: auto;
+  flex: 1;
+  min-height: 0;
+}
+
+/* Floating action button */
+.calculator-fab {
+  position: fixed;
+  bottom: 16px;
+  right: 16px;
+  z-index: 1040;
+  display: none;
+  align-items: center;
+  gap: 4px;
+  padding: 8px 14px;
+  background: var(--bs-secondary);
+  color: #fff;
+  border: none;
+  border-radius: 24px;
+  box-shadow: 0 2px 8px rgba(0, 0, 0, 0.2);
+  cursor: pointer;
+  font-size: 0.9rem;
+  transition: opacity 0.2s ease;
+}
+
+.calculator-fab:hover {
+  opacity: 0.9;
+}
+
+.calculator-fab.visible {
+  display: flex;
+}
+
+.calculator-fab-close {
+  background: none;
+  border: none;
+  color: #fff;
+  width: 20px;
+  height: 20px;
+  cursor: pointer;
+  font-size: 0.8rem;
+  border-radius: 50%;
+  transition: all 0.2s ease;
+}
+
+.calculator-fab-close:hover {
+  background: var(--bs-gray-300);
+  color: var(--bs-secondary);
+}
+
+math-field.pl-calculator-input {
+  height: auto;
+  font-size: 1rem;
+  display: block;
+  border-radius: unset;
+  outline: none;
+  border-color: var(--bs-gray-400);
+}
+
+math-field.pl-calculator-input:focus {
+  outline: none;
+  border: 1px solid var(--bs-primary);
+}
+
+.input-container.error {
+  outline: 1px solid var(--bs-danger);
+}
+
+.input-container {
+  display: flex;
+  align-items: center;
+  border: 1px solid var(--bs-gray-400);
+  padding-inline: 5px;
+  min-height: 38px;
+}
+
+.input-container math-field.pl-calculator-input {
+  border: none;
+  flex: 1;
+}
+
+.input-container .calculator-action-btn:hover {
+  color: var(--bs-danger);
+}
+
+.output-panel {
+  display: flex;
+  align-items: center;
+  gap: 10px;
+  min-height: 38px;
+  border: 1px solid var(--bs-gray-400);
+  border-top: none;
+  border-bottom: none;
+  padding-inline: 5px;
+}
+
+math-field.pl-calculator-output {
+  height: auto;
+  font-size: 1rem;
+  display: block;
+  border: 0;
+  flex-grow: 1;
+  max-width: 100%;
+  overflow: hidden;
+}
+
+math-field.pl-calculator-output:focus {
+  outline: none;
+}
+
+.history-panel {
+  height: 150px;
+  border: 1px solid var(--bs-gray-400);
+  border-bottom: none;
+  background-color: var(--bs-gray-100);
+  overflow-y: auto;
+  padding: 0;
+  box-sizing: border-box;
+  display: flex;
+  flex-direction: column-reverse;
+}
+
+.history-panel:empty::before {
+  content: 'History will appear here';
+  color: var(--bs-gray-500);
+  margin: auto;
+}
+
+.history-item {
+  display: flex;
+  align-items: stretch;
+  border-bottom: 1px solid var(--bs-gray-300);
+}
+
+.history-content {
+  flex: 1;
+  min-width: 0;
+  display: flex;
+  flex-direction: column;
+}
+
+.history-row {
+  display: flex;
+  align-items: center;
+  border-top: 1px solid var(--bs-gray-300);
+  gap: 8px;
+  padding: 2px 6px;
+  transition: background-color 0.15s;
+}
+
+.history-row:hover {
+  background-color: var(--bs-gray-200);
+}
+
+math-field.history-text {
+  height: auto;
+  font-size: inherit;
+  border: 0;
+  flex: 1;
+  min-width: 0;
+  display: block;
+  background: transparent;
+  pointer-events: none;
+}
+
+math-field.history-text:focus {
+  outline: none;
+}
+
+.calculator-action-btn {
+  border: none;
+  background: transparent;
+  color: var(--bs-gray-500);
+  padding: 2px 6px;
+  border-radius: 4px;
+  cursor: pointer;
+}
+
+.calculator-action-btn:hover {
+  background-color: var(--bs-gray-300);
+  color: var(--bs-gray-700);
+}
+
+.history-mode-switch {
+  display: flex;
+  align-items: center;
+  gap: 2px;
+  margin: 0;
+  padding: 0;
+  font-size: 0.65rem;
+  white-space: nowrap;
+}
+
+.history-mode-switch .toggle-label {
+  color: var(--bs-gray-500);
+}
+
+.history-mode-switch .form-check-input {
+  margin: 0;
+  cursor: pointer;
+  width: 1.8em;
+  height: 1em;
+}
+
+
+#abc-keyboard .btn {
+  width: 9%;
+  max-width: 55px;
+  min-width: 35px;
+  display: inline-block;
+  margin: 3px;
+  box-sizing: border-box;
+  font-size: 1rem;
+  white-space: nowrap;
+  padding: unset;
+}
+
+#abc-keyboard .btn-wide {
+  width: 11%;
+  max-width: 70px;
+}
+
+#abc-keyboard .d-flex {
+  flex-wrap: nowrap;
+}
+
+.calculator-main {
+  container-type: inline-size;
+  container-name: calculator;
+  border: 1px solid var(--bs-gray-400);
+  overflow: hidden;
+}
+
+.calculator-controls {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 12px;
+  flex-wrap: nowrap;
+  margin-bottom: 10px;
+  padding: 0 5px;
+}
+
+.calculator-toggles {
+  display: flex;
+  align-items: center;
+  gap: 12px;
+}
+
+.calculator-toggles .form-check {
+  white-space: nowrap;
+  font-size: 0.85rem;
+  padding-left: 0;
+}
+
+.calculator-toggles .form-check-input {
+  cursor: pointer;
+}
+
+.toggle-label {
+  font-size: 0.85rem;
+}
+
+/* Hide abc and func keyboards by default, show only main */
+#abc-keyboard,
+#func-keyboard {
+  display: none;
+  min-height: 200px;
+}
+
+#abc-keyboard {
+  flex-direction: column;
+}
+
+#main-keyboard {
+  display: flex;
+  flex-direction: row;
+  align-items: stretch;
+  justify-content: center;
+  gap: 5px;
+  padding: 5px;
+  min-height: 200px;
+}
+
+/* Shared styles for all keyboards when shown */
+.keyboard {
+  flex-direction: row;
+  align-items: stretch;
+  justify-content: center;
+  gap: 5px;
+  padding: 5px;
+  min-height: 180px;
+}
+
+/* Keyboard button base styles */
+#main-keyboard .btn,
+#func-keyboard .btn {
+  min-width: 50px;
+  flex: 1;
+  margin: 3px;
+  font-size: 1rem;
+  white-space: nowrap;
+}
+
+/* Chevron navigation buttons */
+.col-nav {
+  display: none;
+  width: 24px;
+  flex-shrink: 0;
+  background-color: rgba(from var(--bs-gray-300) r g b / 0.5);
+  color: rgba(from var(--bs-gray-600) r g b / 0.8);
+  border: none;
+  border-radius: 4px;
+  cursor: pointer;
+  align-items: center;
+  justify-content: center;
+}
+
+.col-nav svg {
+  transform: scaleX(0.5);
+}
+
+.col-nav:hover {
+  background: var(--bs-gray-400);
+  color: var(--bs-gray-900);
+}
+
+#main-keyboard .col-functions,
+#main-keyboard .col-numbers {
+  width: 280px;
+  flex-shrink: 0;
+}
+
+#main-keyboard .col-extras {
+  width: 130px;
+  flex-shrink: 0;
+}
+
+/* Breakpoint: hide functions column, show chevron to toggle */
+@container calculator (max-width: 740px) {
+  #main-keyboard .col-functions {
+    display: none !important;
+  }
+
+  #main-keyboard .col-nav-left {
+    display: flex;
+  }
+
+  #main-keyboard.show-functions .col-functions {
+    display: flex !important;
+  }
+  #main-keyboard.show-functions .col-numbers {
+    display: none !important;
+  }
+  #main-keyboard.show-functions .col-nav-left {
+    display: none;
+  }
+  #main-keyboard.show-functions .col-nav-right {
+    display: flex;
+  }
+}
+
+#func-keyboard .col-switchable {
+  display: flex;
+  flex-direction: row;
+}
+
+#func-keyboard .col-trig,
+#func-keyboard .col-math {
+  width: 240px;
+  flex-shrink: 0;
+}
+
+#func-keyboard .col-action {
+  width: 80px;
+  flex-shrink: 0;
+}
+
+#func-keyboard .btn {
+  min-width: 60px;
+}
+
+/* Breakpoint: hide trig column, show chevron to toggle */
+@container calculator (max-width: 560px) {
+  #func-keyboard .col-trig {
+    display: none !important;
+  }
+
+  #func-keyboard .col-nav-left {
+    display: flex;
+  }
+
+  #func-keyboard.show-trig .col-trig {
+    display: flex !important;
+  }
+  #func-keyboard.show-trig .col-math {
+    display: none !important;
+  }
+  #func-keyboard.show-trig .col-nav-left {
+    display: none;
+  }
+  #func-keyboard.show-trig .col-nav-right {
+    display: flex;
+  }
+}
