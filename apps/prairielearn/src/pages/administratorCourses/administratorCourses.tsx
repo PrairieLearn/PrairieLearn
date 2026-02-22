@@ -2,7 +2,10 @@ import { Router } from 'express';
 
 import * as error from '@prairielearn/error';
 import * as sqldb from '@prairielearn/postgres';
+import { Hydrate } from '@prairielearn/react/server';
 
+import { PageLayout } from '../../components/PageLayout.js';
+import { AdminInstitutionSchema } from '../../lib/client/safe-db-types.js';
 import { config } from '../../lib/config.js';
 import {
   createCourseFromRequest,
@@ -26,12 +29,30 @@ router.get(
     const institutions = await selectAllInstitutions();
     const courses = await sqldb.queryRows(sql.select_courses, CourseWithInstitutionSchema);
     res.send(
-      AdministratorCourses({
-        course_requests,
-        institutions,
-        courses,
-        coursesRoot: config.coursesRoot,
+      PageLayout({
         resLocals: res.locals,
+        pageTitle: 'Courses',
+        navContext: {
+          type: 'administrator',
+          page: 'admin',
+          subPage: 'courses',
+        },
+        options: {
+          fullWidth: true,
+        },
+        content: (
+          <Hydrate>
+            <AdministratorCourses
+              courseRequests={course_requests}
+              institutions={AdminInstitutionSchema.array().parse(institutions)}
+              courses={courses}
+              coursesRoot={config.coursesRoot}
+              csrfToken={res.locals.__csrf_token}
+              urlPrefix={res.locals.urlPrefix}
+              courseRepoDefaultBranch={config.courseRepoDefaultBranch}
+            />
+          </Hydrate>
+        ),
       }),
     );
   }),

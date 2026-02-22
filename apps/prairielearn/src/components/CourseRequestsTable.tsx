@@ -1,9 +1,11 @@
-import clsx from 'clsx';
+import { useState } from 'react';
+import { Dropdown } from 'react-bootstrap';
 
-import { escapeHtml, html } from '@prairielearn/html';
+import { OverlayTrigger } from '@prairielearn/ui';
 
-import { type CourseRequestRow } from '../lib/course-request.js';
-import { type Institution } from '../lib/db-types.js';
+import type { AdminInstitution } from '../lib/client/safe-db-types.js';
+import { getAdministratorCourseRequestsUrl } from '../lib/client/url.js';
+import type { CourseRequestRow } from '../lib/course-request.js';
 
 import { JobStatus } from './JobStatus.js';
 
@@ -16,31 +18,29 @@ export function CourseRequestsTable({
   urlPrefix,
 }: {
   rows: CourseRequestRow[];
-  institutions: Institution[];
+  institutions: AdminInstitution[];
   coursesRoot: string;
   showAll: boolean;
   csrfToken: string;
   urlPrefix: string;
 }) {
   const headerPrefix = showAll ? 'All' : 'Pending';
-  return html`
-    <div class="card mb-4">
-      <div class="card-header bg-primary text-white d-flex align-items-center">
-        <h2>${headerPrefix} course requests</h2>
-        ${showAll
-          ? ''
-          : html`
-              <a
-                class="btn btn-sm btn-light ms-auto"
-                href="${urlPrefix}/administrator/courseRequests"
-              >
-                <i class="fa fa-search" aria-hidden="true"></i>
-                <span class="d-none d-sm-inline">View All</span>
-              </a>
-            `}
+  return (
+    <div className="card mb-4">
+      <div className="card-header bg-primary text-white d-flex align-items-center">
+        <h2>{headerPrefix} course requests</h2>
+        {!showAll && (
+          <a
+            className="btn btn-sm btn-light ms-auto"
+            href={getAdministratorCourseRequestsUrl({ urlPrefix })}
+          >
+            <i className="fa fa-search" aria-hidden="true" />
+            <span className="d-none d-sm-inline">View all</span>
+          </a>
+        )}
       </div>
-      <div class="table-responsive">
-        <table class="table table-sm" aria-label="Course requests">
+      <div className="table-responsive">
+        <table className="table table-sm" aria-label="Course requests">
           <thead>
             <tr>
               <th>Created At</th>
@@ -51,190 +51,214 @@ export function CourseRequestsTable({
               <th>GitHub Username</th>
               <th>Referral Source</th>
               <th>Status</th>
-              ${showAll ? html`<th>Updated By</th>` : ''}
+              {showAll && <th>Updated By</th>}
               <th>Actions</th>
               <th>Details</th>
             </tr>
           </thead>
           <tbody>
-            ${rows.map((row) => {
-              return html`
-                <tr>
-                  <td class="align-middle">${row.created_at.toISOString()}</td>
-                  <td class="align-middle">${row.short_name}: ${row.title}</td>
-                  <td class="align-middle">${row.institution}</td>
-                  <td class="align-middle">
-                    ${row.first_name} ${row.last_name} (${row.work_email})
-                  </td>
-                  <td class="align-middle">${row.user_name} (${row.user_uid})</td>
-                  <td class="align-middle">${row.github_user}</td>
-                  <td class="align-middle">${row.referral_source}</td>
-                  <td class="align-middle">
-                    ${CourseRequestStatusIcon({ status: row.approved_status })}
-                  </td>
-                  ${showAll
-                    ? html`
-                        <td class="align-middle">
-                          ${row.approved_status !== 'pending'
-                            ? (row.approved_by_name ?? 'Automatically Approved')
-                            : ''}
-                        </td>
-                      `
-                    : ''}
-                  <td class="align-middle">
-                    ${row.approved_status !== 'approved'
-                      ? html`
-                          <button
-                            type="button"
-                            class="btn btn-sm btn-danger text-nowrap me-2"
-                            data-bs-toggle="popover"
-                            data-bs-container="body"
-                            data-bs-html="true"
-                            data-bs-placement="auto"
-                            data-bs-title="Deny course request"
-                            data-bs-content="${escapeHtml(
-                              CourseRequestDenyForm({
-                                request: row,
-                                csrfToken,
-                              }),
-                            )}"
-                          >
-                            <i class="fa fa-times" aria-hidden="true"></i> Deny
-                          </button>
-                          <button
-                            type="button"
-                            class="btn btn-sm btn-success text-nowrap"
-                            data-bs-toggle="popover"
-                            data-bs-container="body"
-                            data-bs-html="true"
-                            data-bs-placement="auto"
-                            data-bs-title="Approve course request"
-                            data-bs-content="${escapeHtml(
-                              CourseRequestApproveForm({
-                                request: row,
-                                institutions,
-                                coursesRoot,
-                                csrfToken,
-                              }),
-                            )}"
-                          >
-                            <i class="fa fa-check" aria-hidden="true"></i> Approve
-                          </button>
-                        `
-                      : ''}
-                  </td>
-                  <td class="align-middle">
-                    <div class="dropdown">
-                      <button
-                        class="btn btn-secondary btn-xs dropdown-toggle"
-                        type="button"
-                        data-bs-toggle="dropdown"
-                        aria-expanded="false"
-                      >
-                        Show Details
-                      </button>
-                      <ul class="dropdown-menu">
-                        <li>
-                          <button
-                            class="${clsx('dropdown-item', 'show-hide-btn', {
-                              collapsed: !row.note,
-                            })}"
-                            data-bs-toggle="collapse"
-                            data-bs-target="#course-requests-note-${row.id}"
-                            aria-expanded="${row.note ? 'true' : 'false'}"
-                            aria-controls="course-requests-note-${row.id}"
-                          >
-                            <span class="show-when-collapsed">Edit Note</span>
-                            <span class="show-when-expanded">Close Note</span>
-                          </button>
-                        </li>
-                        ${row.jobs.length > 0
-                          ? html`
-                              <li>
-                                <button
-                                  class="dropdown-item show-hide-btn collapsed"
-                                  data-bs-toggle="collapse"
-                                  data-bs-target="#course-requests-job-list-${row.id}"
-                                  aria-expanded="false"
-                                  aria-controls="course-requests-job-list-${row.id}"
-                                >
-                                  Show jobs
-                                </button>
-                              </li>
-                            `
-                          : ''}
-                      </ul>
-                    </div>
-                  </td>
-                </tr>
-                <tr>
-                  <td colspan="${showAll ? 11 : 10}" class="p-0">
-                    <div
-                      id="course-requests-note-${row.id}"
-                      class="${clsx('collapse', { show: row.note })}"
-                    >
-                      ${CourseRequestEditNoteForm({
-                        request: row,
-                        csrfToken,
-                      })}
-                    </div>
-                  </td>
-                </tr>
-                ${row.jobs.length > 0
-                  ? html`
-                      <tr>
-                        <td colspan="${showAll ? 11 : 10}" class="p-0">
-                          <div id="course-requests-job-list-${row.id}" class="collapse">
-                            <table
-                              class="table table-sm table-active mb-0"
-                              aria-label="Course request jobs"
-                            >
-                              <thead>
-                                <th>Number</th>
-                                <th>Start Date</th>
-                                <th>End Date</th>
-                                <th>User</th>
-                                <th>Status</th>
-                                <th></th>
-                              </thead>
-                              ${[...row.jobs].reverse().map((job) => {
-                                return html`
-                                  <tr>
-                                    <td>${job.number}</td>
-                                    <td>${job.start_date.toISOString()}</td>
-                                    <td>${job.finish_date?.toISOString()}</td>
-                                    <td>${job.authn_user_name}</td>
-                                    <td>${JobStatus({ status: job.status })}</td>
-                                    <td>
-                                      <a
-                                        href="${urlPrefix}/administrator/jobSequence/${job.id}"
-                                        class="btn btn-xs btn-info float-end"
-                                      >
-                                        Details
-                                      </a>
-                                    </td>
-                                  </tr>
-                                `;
-                              })}
-                            </table>
-                          </div>
-                        </td>
-                      </tr>
-                    `
-                  : ''}
-              `;
-            })}
+            {rows.map((row) => (
+              <CourseRequestTableRow
+                key={row.id}
+                row={row}
+                institutions={institutions}
+                coursesRoot={coursesRoot}
+                showAll={showAll}
+                csrfToken={csrfToken}
+                urlPrefix={urlPrefix}
+              />
+            ))}
           </tbody>
         </table>
       </div>
-      <div class="card-footer">
+      <div className="card-footer">
         <small>
           Accepting a course request will automatically create a new GitHub repository and add the
           course to the database.
         </small>
       </div>
     </div>
-  `;
+  );
+}
+
+CourseRequestsTable.displayName = 'CourseRequestsTable';
+
+function CourseRequestTableRow({
+  row,
+  institutions,
+  coursesRoot,
+  showAll,
+  csrfToken,
+  urlPrefix,
+}: {
+  row: CourseRequestRow;
+  institutions: AdminInstitution[];
+  coursesRoot: string;
+  showAll: boolean;
+  csrfToken: string;
+  urlPrefix: string;
+}) {
+  const [noteOpen, setNoteOpen] = useState(Boolean(row.note));
+  const [jobsOpen, setJobsOpen] = useState(false);
+  const [showDenyPopover, setShowDenyPopover] = useState(false);
+  const [showApprovePopover, setShowApprovePopover] = useState(false);
+
+  return (
+    <>
+      <tr>
+        <td className="align-middle">{row.created_at.toISOString()}</td>
+        <td className="align-middle">
+          {row.short_name}: {row.title}
+        </td>
+        <td className="align-middle">{row.institution}</td>
+        <td className="align-middle">
+          {row.first_name} {row.last_name} ({row.work_email})
+        </td>
+        <td className="align-middle">
+          {row.user_name} ({row.user_uid})
+        </td>
+        <td className="align-middle">{row.github_user}</td>
+        <td className="align-middle">{row.referral_source}</td>
+        <td className="align-middle">
+          <CourseRequestStatusIcon status={row.approved_status} />
+        </td>
+        {showAll && (
+          <td className="align-middle">
+            {row.approved_status !== 'pending' &&
+              (row.approved_by_name ?? 'Automatically Approved')}
+          </td>
+        )}
+        <td className="align-middle py-1">
+          {row.approved_status !== 'approved' && (
+            <div className="d-flex flex-wrap gap-1">
+              <OverlayTrigger
+                trigger="click"
+                placement="auto"
+                popover={{
+                  header: 'Deny course request',
+                  body: (
+                    <CourseRequestDenyForm
+                      request={row}
+                      csrfToken={csrfToken}
+                      onCancel={() => setShowDenyPopover(false)}
+                    />
+                  ),
+                }}
+                show={showDenyPopover}
+                rootClose
+                onToggle={setShowDenyPopover}
+              >
+                <button type="button" className="btn btn-sm btn-danger text-nowrap">
+                  <i className="fa fa-times" aria-hidden="true" /> Deny
+                </button>
+              </OverlayTrigger>
+              <OverlayTrigger
+                trigger="click"
+                placement="auto"
+                popover={{
+                  header: 'Approve course request',
+                  body: (
+                    <CourseRequestApproveForm
+                      request={row}
+                      institutions={institutions}
+                      coursesRoot={coursesRoot}
+                      csrfToken={csrfToken}
+                      onCancel={() => setShowApprovePopover(false)}
+                    />
+                  ),
+                }}
+                show={showApprovePopover}
+                rootClose
+                onToggle={setShowApprovePopover}
+              >
+                <button type="button" className="btn btn-sm btn-success text-nowrap">
+                  <i className="fa fa-check" aria-hidden="true" /> Approve
+                </button>
+              </OverlayTrigger>
+            </div>
+          )}
+        </td>
+        <td className="align-middle">
+          <Dropdown>
+            <Dropdown.Toggle
+              variant="secondary"
+              size="sm"
+              className="btn-xs"
+              aria-label={`Show details for ${row.short_name}`}
+            >
+              Show details
+            </Dropdown.Toggle>
+            <Dropdown.Menu popperConfig={{ strategy: 'fixed' }} renderOnMount>
+              <Dropdown.Item as="button" onClick={() => setNoteOpen(!noteOpen)}>
+                {noteOpen ? 'Close note' : 'Edit note'}
+              </Dropdown.Item>
+              {row.jobs.length > 0 && (
+                <Dropdown.Item as="button" onClick={() => setJobsOpen(!jobsOpen)}>
+                  {jobsOpen ? 'Hide jobs' : 'Show jobs'}
+                </Dropdown.Item>
+              )}
+            </Dropdown.Menu>
+          </Dropdown>
+        </td>
+      </tr>
+      {noteOpen && (
+        <tr>
+          <td colSpan={showAll ? 11 : 10} className="p-0">
+            <CourseRequestEditNoteForm
+              request={row}
+              csrfToken={csrfToken}
+              onCancel={() => setNoteOpen(false)}
+            />
+          </td>
+        </tr>
+      )}
+      {row.jobs.length > 0 && (
+        <tr>
+          <td colSpan={showAll ? 11 : 10} className="p-0">
+            {jobsOpen && (
+              <table className="table table-sm table-active mb-0" aria-label="Course request jobs">
+                <thead>
+                  <tr>
+                    <th>Number</th>
+                    <th>Start Date</th>
+                    <th>End Date</th>
+                    <th>User</th>
+                    <th>Status</th>
+                    <th>
+                      <span className="visually-hidden">Details</span>
+                    </th>
+                  </tr>
+                </thead>
+                <tbody>
+                  {[...row.jobs].reverse().map((job) => {
+                    return (
+                      <tr key={job.id}>
+                        <td>{job.number}</td>
+                        <td>{job.start_date.toISOString()}</td>
+                        <td>{job.finish_date?.toISOString()}</td>
+                        <td>{job.authn_user_name}</td>
+                        <td>
+                          <JobStatus status={job.status} />
+                        </td>
+                        <td>
+                          <a
+                            href={`${urlPrefix}/administrator/jobSequence/${job.id}`}
+                            className="btn btn-xs btn-info float-end"
+                          >
+                            Details
+                          </a>
+                        </td>
+                      </tr>
+                    );
+                  })}
+                </tbody>
+              </table>
+            )}
+          </td>
+        </tr>
+      )}
+    </>
+  );
 }
 
 function CourseRequestApproveForm({
@@ -242,178 +266,227 @@ function CourseRequestApproveForm({
   institutions,
   coursesRoot,
   csrfToken,
+  onCancel,
 }: {
   request: CourseRequestRow;
-  institutions: Institution[];
+  institutions: AdminInstitution[];
   coursesRoot: string;
   csrfToken: string;
+  onCancel: () => void;
 }) {
   const repo_name = 'pl-' + request.short_name.replaceAll(' ', '').toLowerCase();
-  return html`
-    <form name="create-course-from-request-form-${request.id}" method="POST">
-      <input type="hidden" name="__csrf_token" value="${csrfToken}" />
-      <input type="hidden" name="__action" value="create_course_from_request" />
-      <input type="hidden" name="request_id" value="${request.id}" />
+  const [timezone, setTimezone] = useState(institutions[0]?.display_timezone ?? '');
 
-      <div class="mb-3">
-        <label class="form-label">Institution:</label>
+  return (
+    <form name={`create-course-from-request-form-${request.id}`} method="POST">
+      <input type="hidden" name="__csrf_token" value={csrfToken} />
+      <input type="hidden" name="__action" value="create_course_from_request" />
+      <input type="hidden" name="request_id" value={request.id} />
+
+      <div className="mb-3">
+        <label className="form-label" htmlFor="courseRequestAddInstitution">
+          Institution:
+        </label>
         <select
+          id="courseRequestAddInstitution"
           name="institution_id"
-          class="form-select"
-          onchange="this.closest('form').querySelector('[name=display_timezone]').value = this.querySelector('option:checked').dataset.timezone;"
+          className="form-select"
+          onChange={({ currentTarget }) => {
+            const selected = institutions.find((i) => i.id === currentTarget.value);
+            if (selected) {
+              setTimezone(selected.display_timezone);
+            }
+          }}
         >
-          ${institutions.map((i) => {
-            return html`
-              <option value="${i.id}" data-timezone="${i.display_timezone}">${i.short_name}</option>
-            `;
-          })}
+          {institutions.map((i) => (
+            <option key={i.id} value={i.id}>
+              {i.short_name}
+            </option>
+          ))}
         </select>
       </div>
-      <div class="mb-3">
-        <label class="form-label" for="courseRequestAddInputShortName">Short name:</label>
+      <div className="mb-3">
+        <label className="form-label" htmlFor="courseRequestAddInputShortName">
+          Short name:
+        </label>
         <input
           type="text"
-          class="form-control"
+          className="form-control"
           id="courseRequestAddInputShortName"
           name="short_name"
           placeholder="XC 101"
-          value="${request.short_name}"
+          defaultValue={request.short_name}
         />
       </div>
-      <div class="mb-3">
-        <label class="form-label" for="courseRequestAddInputTitle">Title:</label>
+      <div className="mb-3">
+        <label className="form-label" htmlFor="courseRequestAddInputTitle">
+          Title:
+        </label>
         <input
           type="text"
-          class="form-control"
+          className="form-control"
           id="courseRequestAddInputTitle"
           name="title"
           placeholder="Template course title"
-          value="${request.title}"
+          defaultValue={request.title}
         />
       </div>
-      <div class="mb-3">
-        <label class="form-label" for="courseRequestAddInputTimezone">Timezone:</label>
+      <div className="mb-3">
+        <label className="form-label" htmlFor="courseRequestAddInputTimezone">
+          Timezone:
+        </label>
         <input
           type="text"
-          class="form-control"
+          className="form-control"
           id="courseRequestAddInputTimezone"
           name="display_timezone"
-          value="${institutions[0]?.display_timezone}"
+          value={timezone}
+          onChange={(e) => setTimezone(e.currentTarget.value)}
         />
       </div>
-      <div class="mb-3">
-        <label class="form-label" for="courseRequestAddInputPath">Path:</label>
+      <div className="mb-3">
+        <label className="form-label" htmlFor="courseRequestAddInputPath">
+          Path:
+        </label>
         <input
           type="text"
-          class="form-control"
+          className="form-control"
           id="courseRequestAddInputPath"
           name="path"
-          value="${coursesRoot + '/' + repo_name}"
+          defaultValue={coursesRoot + '/' + repo_name}
         />
       </div>
-      <div class="mb-3">
-        <label class="form-label" for="courseRequestAddInputRepositoryName">Repository Name:</label>
+      <div className="mb-3">
+        <label className="form-label" htmlFor="courseRequestAddInputRepositoryName">
+          Repository name:
+        </label>
         <input
           type="text"
-          class="form-control"
-          id="courseRequestAddInputRepository"
+          className="form-control"
+          id="courseRequestAddInputRepositoryName"
           name="repository_short_name"
-          value="${repo_name}"
+          defaultValue={repo_name}
         />
       </div>
-      <div class="mb-3">
-        <label for="courseRequestAddInputGithubUser">GitHub Username:</label>
+      <div className="mb-3">
+        <label className="form-label" htmlFor="courseRequestAddInputGithubUser">
+          GitHub username:
+        </label>
         <input
           type="text"
-          class="form-control"
+          className="form-control"
           id="courseRequestAddInputGithubUser"
           name="github_user"
-          value="${request.github_user}"
+          defaultValue={request.github_user ?? ''}
         />
       </div>
 
-      <div class="text-end">
-        <button type="button" class="btn btn-secondary" data-bs-dismiss="popover">Cancel</button>
-        <button type="submit" class="btn btn-primary">Create course</button>
+      <div className="d-flex justify-content-end gap-2">
+        <button type="button" className="btn btn-secondary" onClick={onCancel}>
+          Cancel
+        </button>
+        <button type="submit" className="btn btn-primary">
+          Create course
+        </button>
       </div>
     </form>
-  `;
+  );
 }
 
 function CourseRequestDenyForm({
   request,
   csrfToken,
+  onCancel,
 }: {
   request: CourseRequestRow;
   csrfToken: string;
+  onCancel: () => void;
 }) {
-  return html`
-    <form method="POST">
-      <input type="hidden" name="__csrf_token" value="${csrfToken}" />
+  return (
+    <form method="POST" className="d-flex justify-content-end gap-2">
+      <input type="hidden" name="__csrf_token" value={csrfToken} />
       <input type="hidden" name="__action" value="deny_course_request" />
       <input type="hidden" name="approve_deny_action" value="deny" />
-      <input type="hidden" name="request_id" value="${request.id}" />
-      <button type="button" class="btn btn-secondary" data-bs-dismiss="popover">Cancel</button>
-      <button type="submit" class="btn btn-danger">Deny</button>
+      <input type="hidden" name="request_id" value={request.id} />
+      <button type="button" className="btn btn-secondary" onClick={onCancel}>
+        Cancel
+      </button>
+      <button type="submit" className="btn btn-danger">
+        Deny
+      </button>
     </form>
-  `;
+  );
 }
 
 function CourseRequestStatusIcon({ status }: { status: CourseRequestRow['approved_status'] }) {
   switch (status) {
     case 'pending':
-      return html`<span class="badge text-bg-secondary"><i class="fa fa-clock"></i> Pending</span>`;
+      return (
+        <span className="badge text-bg-secondary">
+          <i className="fa fa-clock" aria-hidden="true" /> Pending
+        </span>
+      );
     case 'creating':
-      return html`<span class="badge text-bg-info"
-        ><i class="fa fa-sync"></i> Job in progress</span
-      >`;
+      return (
+        <span className="badge text-bg-info">
+          <i className="fa fa-sync" aria-hidden="true" /> Job in progress
+        </span>
+      );
     case 'failed':
-      return html`<span class="badge text-bg-danger"><i class="fa fa-times"></i> Job failed</span>`;
+      return (
+        <span className="badge text-bg-danger">
+          <i className="fa fa-times" aria-hidden="true" /> Job failed
+        </span>
+      );
     case 'approved':
-      return html`<span class="badge text-bg-success"><i class="fa fa-check"></i> Approved</span>`;
+      return (
+        <span className="badge text-bg-success">
+          <i className="fa fa-check" aria-hidden="true" /> Approved
+        </span>
+      );
     case 'denied':
-      return html`<span class="badge text-bg-danger"><i class="fa fa-times"></i> Denied</span>`;
+      return (
+        <span className="badge text-bg-danger">
+          <i className="fa fa-times" aria-hidden="true" /> Denied
+        </span>
+      );
   }
 }
 
 function CourseRequestEditNoteForm({
   request,
   csrfToken,
+  onCancel,
 }: {
   request: CourseRequestRow;
   csrfToken: string;
+  onCancel: () => void;
 }) {
-  return html`
+  return (
     <form method="POST">
-      <input type="hidden" name="__csrf_token" value="${csrfToken}" />
+      <input type="hidden" name="__csrf_token" value={csrfToken} />
       <input type="hidden" name="__action" value="update_course_request_note" />
-      <input type="hidden" name="request_id" value="${request.id}" />
-      <div class="d-flex gap-2 align-items-center py-2 px-2">
-        <label class="visually-hidden" for="course-request-note-${request.id}">
-          Note for course request ${request.short_name}
+      <input type="hidden" name="request_id" value={request.id} />
+      <div className="d-flex gap-2 align-items-center py-2 px-2">
+        <label className="visually-hidden" htmlFor={`course-request-note-${request.id}`}>
+          Note for course request {request.short_name}
         </label>
         <textarea
-          class="form-control flex-grow-1"
-          id="course-request-note-${request.id}"
+          className="form-control flex-grow-1"
+          id={`course-request-note-${request.id}`}
           name="note"
-          rows="1"
-          maxlength="10000"
+          rows={1}
+          maxLength={10000}
           placeholder="Add a note about this course request..."
-        >
-${request.note ?? ''}</textarea
-        >
-        <button
-          type="button"
-          class="btn btn-secondary"
-          data-bs-toggle="collapse"
-          data-bs-target="#course-requests-note-${request.id}"
-        >
+          defaultValue={request.note ?? ''}
+        />
+        <button type="button" className="btn btn-secondary" onClick={onCancel}>
           Cancel
         </button>
-        <button type="submit" class="btn btn-primary text-nowrap">
-          <i class="fa fa-save" aria-hidden="true"></i> Save note
+        <button type="submit" className="btn btn-primary text-nowrap">
+          <i className="fa fa-save" aria-hidden="true" /> Save note
         </button>
       </div>
     </form>
-  `;
+  );
 }

@@ -1,78 +1,81 @@
-import { type z } from 'zod';
+import { useState } from 'react';
+import type { z } from 'zod';
 
-import { escapeHtml, html } from '@prairielearn/html';
+import { OverlayTrigger } from '@prairielearn/ui';
 
 import { CourseRequestsTable } from '../../components/CourseRequestsTable.js';
-import { PageLayout } from '../../components/PageLayout.js';
-import { config } from '../../lib/config.js';
-import { type CourseRequestRow } from '../../lib/course-request.js';
-import { CourseSchema, type Institution, InstitutionSchema } from '../../lib/db-types.js';
-import type { ResLocalsForPage } from '../../lib/res-locals.js';
+import {
+  type AdminInstitution,
+  RawAdminCourseSchema,
+  RawAdminInstitutionSchema,
+} from '../../lib/client/safe-db-types.js';
+import type { CourseRequestRow } from '../../lib/course-request.js';
 
-export const CourseWithInstitutionSchema = CourseSchema.extend({
-  institution: InstitutionSchema,
+export const CourseWithInstitutionSchema = RawAdminCourseSchema.extend({
+  institution: RawAdminInstitutionSchema,
 });
 type CourseWithInstitution = z.infer<typeof CourseWithInstitutionSchema>;
 
 export function AdministratorCourses({
-  course_requests,
+  courseRequests,
   institutions,
   courses,
   coursesRoot,
-  resLocals,
+  csrfToken,
+  urlPrefix,
+  courseRepoDefaultBranch,
 }: {
-  course_requests: CourseRequestRow[];
-  institutions: Institution[];
+  courseRequests: CourseRequestRow[];
+  institutions: AdminInstitution[];
   courses: CourseWithInstitution[];
   coursesRoot: string;
-  resLocals: ResLocalsForPage<'plain'>;
+  csrfToken: string;
+  urlPrefix: string;
+  courseRepoDefaultBranch: string;
 }) {
-  return PageLayout({
-    resLocals,
-    pageTitle: 'Courses',
-    navContext: {
-      type: 'administrator',
-      page: 'admin',
-      subPage: 'courses',
-    },
-    options: {
-      fullWidth: true,
-    },
-    content: html`
-      <h1 class="visually-hidden">Courses</h1>
-      ${CourseRequestsTable({
-        rows: course_requests,
-        institutions,
-        coursesRoot,
-        csrfToken: resLocals.__csrf_token,
-        urlPrefix: resLocals.urlPrefix,
-        showAll: false,
-      })}
+  const [showInsertCoursePopover, setShowInsertCoursePopover] = useState(false);
+  const [deleteCourseId, setDeleteCourseId] = useState<string | null>(null);
 
-      <div id="courses" class="card mb-4">
-        <div class="card-header bg-primary text-white d-flex align-items-center">
+  return (
+    <>
+      <h1 className="visually-hidden">Courses</h1>
+      <CourseRequestsTable
+        rows={courseRequests}
+        institutions={institutions}
+        coursesRoot={coursesRoot}
+        csrfToken={csrfToken}
+        urlPrefix={urlPrefix}
+        showAll={false}
+      />
+      <div id="courses" className="card mb-4">
+        <div className="card-header bg-primary text-white d-flex align-items-center">
           <h2>Courses</h2>
-          <button
-            type="button"
-            class="btn btn-sm btn-light ms-auto"
-            data-bs-toggle="popover"
-            data-bs-container="body"
-            data-bs-html="true"
-            data-bs-placement="auto"
-            data-bs-title="Add new course"
-            data-bs-content="${escapeHtml(
-              CourseInsertForm({
-                institutions,
-                csrfToken: resLocals.__csrf_token,
-              }),
-            )}"
+          <OverlayTrigger
+            trigger="click"
+            placement="auto"
+            popover={{
+              header: 'Add new course',
+              body: (
+                <CourseInsertForm
+                  institutions={institutions}
+                  csrfToken={csrfToken}
+                  courseRepoDefaultBranch={courseRepoDefaultBranch}
+                  onCancel={() => setShowInsertCoursePopover(false)}
+                />
+              ),
+            }}
+            show={showInsertCoursePopover}
+            rootClose
+            onToggle={setShowInsertCoursePopover}
           >
-            <i class="fa fa-plus" aria-hidden="true"></i>
-            <span class="d-none d-sm-inline">Add course</span>
-          </button>
+            <button type="button" className="btn btn-sm btn-light ms-auto">
+              <i className="fa fa-plus" aria-hidden="true" />
+              <span className="d-none d-sm-inline">Add course</span>
+            </button>
+          </OverlayTrigger>
         </div>
-        <div class="table-responsive">
-          <table class="table table-sm table-hover table-striped" aria-label="Courses">
+        <div className="table-responsive">
+          <table className="table table-sm table-hover table-striped" aria-label="Courses">
             <thead>
               <tr>
                 <th>Institution</th>
@@ -86,79 +89,82 @@ export function AdministratorCourses({
               </tr>
             </thead>
             <tbody>
-              ${courses.map((course) => {
-                return html`
-                  <tr>
+              {courses.map((course) => {
+                return (
+                  <tr key={course.id}>
                     <td>
-                      <a href="/pl/administrator/institution/${course.institution.id}">
-                        ${course.institution.short_name}
+                      <a href={`/pl/administrator/institution/${course.institution.id}`}>
+                        {course.institution.short_name}
                       </a>
                     </td>
-                    ${CourseUpdateColumn({
-                      course,
-                      column_name: 'short_name',
-                      label: 'short name',
-                      href: `/pl/course/${course.id}`,
-                      csrfToken: resLocals.__csrf_token,
-                    })}
-                    ${CourseUpdateColumn({
-                      course,
-                      column_name: 'title',
-                      label: 'title',
-                      csrfToken: resLocals.__csrf_token,
-                    })}
-                    ${CourseUpdateColumn({
-                      course,
-                      column_name: 'display_timezone',
-                      label: 'timezone',
-                      csrfToken: resLocals.__csrf_token,
-                    })}
-                    ${CourseUpdateColumn({
-                      course,
-                      column_name: 'path',
-                      label: 'path',
-                      csrfToken: resLocals.__csrf_token,
-                    })}
-                    ${CourseUpdateColumn({
-                      course,
-                      column_name: 'repository',
-                      label: 'repository',
-                      csrfToken: resLocals.__csrf_token,
-                    })}
-                    ${CourseUpdateColumn({
-                      course,
-                      column_name: 'branch',
-                      label: 'branch',
-                      csrfToken: resLocals.__csrf_token,
-                    })}
-                    <td class="align-middle">
-                      <button
-                        type="button"
-                        class="btn btn-sm btn-danger text-nowrap"
-                        id="courseDeleteButton${course.id}"
-                        data-bs-toggle="popover"
-                        data-bs-container="body"
-                        data-bs-html="true"
-                        data-bs-placement="auto"
-                        data-bs-title="Confirm deletion of ${course.short_name}"
-                        data-bs-content="${escapeHtml(
-                          CourseDeleteForm({
-                            id: `courseDeleteButton${course.id}`,
-                            course,
-                            csrfToken: resLocals.__csrf_token,
-                          }),
-                        )}"
+                    <CourseUpdateColumn
+                      course={course}
+                      columnName="short_name"
+                      label="short name"
+                      href={`/pl/course/${course.id}`}
+                      csrfToken={csrfToken}
+                    />
+                    <CourseUpdateColumn
+                      course={course}
+                      columnName="title"
+                      label="title"
+                      csrfToken={csrfToken}
+                    />
+                    <CourseUpdateColumn
+                      course={course}
+                      columnName="display_timezone"
+                      label="timezone"
+                      csrfToken={csrfToken}
+                    />
+                    <CourseUpdateColumn
+                      course={course}
+                      columnName="path"
+                      label="path"
+                      csrfToken={csrfToken}
+                    />
+                    <CourseUpdateColumn
+                      course={course}
+                      columnName="repository"
+                      label="repository"
+                      csrfToken={csrfToken}
+                    />
+                    <CourseUpdateColumn
+                      course={course}
+                      columnName="branch"
+                      label="branch"
+                      csrfToken={csrfToken}
+                    />
+                    <td className="align-middle">
+                      <OverlayTrigger
+                        trigger="click"
+                        placement="auto"
+                        popover={{
+                          header: `Confirm deletion of ${course.short_name}`,
+                          body: (
+                            <CourseDeleteForm
+                              id={`courseDeleteButton${course.id}`}
+                              course={course}
+                              csrfToken={csrfToken}
+                              onCancel={() => setDeleteCourseId(null)}
+                            />
+                          ),
+                        }}
+                        show={deleteCourseId === course.id}
+                        rootClose
+                        onToggle={(open) => setDeleteCourseId(open ? course.id : null)}
                       >
-                        <i class="fa fa-times" aria-hidden="true"></i> Delete course
-                      </button>
+                        <button type="button" className="btn btn-sm btn-danger text-nowrap">
+                          <i className="fa fa-times" aria-hidden="true" /> Delete course
+                        </button>
+                      </OverlayTrigger>
                     </td>
                   </tr>
-                `;
+                );
               })}
             </tbody>
           </table>
         </div>
-        <div class="card-footer">
+        <div className="card-footer">
           <small>
             When a course is synced, if the <strong>path</strong> does not exist on disk then a
             <code>git clone</code> is performed from the <strong>repository</strong>, otherwise a
@@ -168,202 +174,260 @@ export function AdministratorCourses({
           </small>
         </div>
       </div>
-    `,
-  });
+    </>
+  );
 }
+
+AdministratorCourses.displayName = 'AdministratorCourses';
 
 function CourseDeleteForm({
   id,
   course,
   csrfToken,
+  onCancel,
 }: {
   id: string;
   course: CourseWithInstitution;
   csrfToken: string;
+  onCancel: () => void;
 }) {
-  return html`
-    <form name="add-user-form" method="POST">
+  return (
+    <form name="course-delete-form" method="POST">
       <input type="hidden" name="__action" value="courses_delete" />
-      <input type="hidden" name="__csrf_token" value="${csrfToken}" />
-      <input type="hidden" name="course_id" value="${course.id}" />
-      <div class="mb-3">
-        <label class="form-label" for="inputConfirm${id}">
-          Type "${course.short_name}" to confirm:
+      <input type="hidden" name="__csrf_token" value={csrfToken} />
+      <input type="hidden" name="course_id" value={course.id} />
+      <div className="mb-3">
+        <label className="form-label" htmlFor={`inputConfirm${id}`}>
+          Type "{course.short_name}" to confirm:
         </label>
-        <input type="text" class="form-control" id="inputConfirm${id}" name="confirm_short_name" />
+        <input
+          type="text"
+          className="form-control"
+          id={`inputConfirm${id}`}
+          name="confirm_short_name"
+        />
       </div>
-      <div class="text-end">
-        <button type="button" class="btn btn-secondary" data-bs-dismiss="popover">Cancel</button>
-        <button type="submit" class="btn btn-danger">Delete course</button>
+      <div className="d-flex justify-content-end gap-2">
+        <button type="button" className="btn btn-secondary gap-2" onClick={onCancel}>
+          Cancel
+        </button>
+        <button type="submit" className="btn btn-danger">
+          Delete course
+        </button>
       </div>
     </form>
-  `;
+  );
 }
 
 function CourseInsertForm({
   institutions,
   csrfToken,
+  courseRepoDefaultBranch,
+  onCancel,
 }: {
-  institutions: Institution[];
+  institutions: AdminInstitution[];
   csrfToken: string;
+  courseRepoDefaultBranch: string;
+  onCancel: () => void;
 }) {
-  return html`
+  const [timezone, setTimezone] = useState(institutions[0]?.display_timezone ?? '');
+
+  return (
     <form name="add-course-form" method="POST">
       <input type="hidden" name="__action" value="courses_insert" />
-      <input type="hidden" name="__csrf_token" value="${csrfToken}" />
-      <div class="mb-3">
-        <label class="form-label">Institution:</label>
+      <input type="hidden" name="__csrf_token" value={csrfToken} />
+      <div className="mb-3">
+        <label className="form-label" htmlFor="courseAddInstitution">
+          Institution:
+        </label>
         <select
+          id="courseAddInstitution"
           name="institution_id"
-          class="form-select"
-          onchange="this.closest('form').querySelector('[name=display_timezone]').value = this.querySelector('option:checked').dataset.timezone;"
+          className="form-select"
+          onChange={({ currentTarget }) => {
+            const selected = institutions.find((i) => i.id === currentTarget.value);
+            if (selected) {
+              setTimezone(selected.display_timezone);
+            }
+          }}
         >
-          ${institutions.map((i) => {
-            return html`
-              <option value="${i.id}" data-timezone="${i.display_timezone}">${i.short_name}</option>
-            `;
-          })}
+          {institutions.map((i) => (
+            <option key={i.id} value={i.id}>
+              {i.short_name}
+            </option>
+          ))}
         </select>
       </div>
-      <div class="mb-3">
-        <label class="form-label" for="courseAddInputShortName">Short name:</label>
+      <div className="mb-3">
+        <label className="form-label" htmlFor="courseAddInputShortName">
+          Short name:
+        </label>
         <input
           type="text"
-          class="form-control"
+          className="form-control"
           id="courseAddInputShortName"
           name="short_name"
           placeholder="XC 101"
         />
       </div>
-      <div class="mb-3">
-        <label class="form-label" for="courseAddInputTitle">Title:</label>
+      <div className="mb-3">
+        <label className="form-label" htmlFor="courseAddInputTitle">
+          Title:
+        </label>
         <input
           type="text"
-          class="form-control"
+          className="form-control"
           id="courseAddInputTitle"
           name="title"
           placeholder="Template course title"
         />
       </div>
-      <div class="mb-3">
-        <label class="form-label" for="courseAddInputTimezone">Timezone:</label>
+      <div className="mb-3">
+        <label className="form-label" htmlFor="courseAddInputTimezone">
+          Timezone:
+        </label>
         <input
           type="text"
-          class="form-control"
+          className="form-control"
           id="courseAddInputTimezone"
           name="display_timezone"
-          value="${institutions[0]?.display_timezone}"
+          value={timezone}
+          onChange={(e) => setTimezone(e.currentTarget.value)}
         />
       </div>
-      <div class="mb-3">
-        <label class="form-label" for="courseAddInputPath">Path:</label>
+      <div className="mb-3">
+        <label className="form-label" htmlFor="courseAddInputPath">
+          Path:
+        </label>
         <input
           type="text"
-          class="form-control"
+          className="form-control"
           id="courseAddInputPath"
           name="path"
-          value="/data1/courses/pl-XXX"
+          defaultValue="/data1/courses/pl-XXX"
         />
       </div>
-      <div class="mb-3">
-        <label class="form-label" for="courseAddInputRepository">Repository:</label>
+      <div className="mb-3">
+        <label className="form-label" htmlFor="courseAddInputRepository">
+          Repository:
+        </label>
         <input
           type="text"
-          class="form-control"
+          className="form-control"
           id="courseAddInputRepository"
           name="repository"
-          value="git@github.com:PrairieLearn/pl-XXX.git"
+          defaultValue="git@github.com:PrairieLearn/pl-XXX.git"
         />
       </div>
-      <div class="mb-3">
-        <label class="form-label" for="courseAddInputBranch">Branch:</label>
+      <div className="mb-3">
+        <label className="form-label" htmlFor="courseAddInputBranch">
+          Branch:
+        </label>
         <input
           type="text"
-          class="form-control"
+          className="form-control"
           id="courseAddInputBranch"
           name="branch"
-          value="${config.courseRepoDefaultBranch}"
+          defaultValue={courseRepoDefaultBranch}
         />
       </div>
-      <div class="text-end">
-        <button type="button" class="btn btn-secondary" data-bs-dismiss="popover">Cancel</button>
-        <button type="submit" class="btn btn-primary">Add course</button>
+      <div className="d-flex flex-wrap gap-1">
+        <button type="button" className="btn btn-secondary" onClick={onCancel}>
+          Cancel
+        </button>
+        <button type="submit" className="btn btn-primary">
+          Add course
+        </button>
       </div>
     </form>
-  `;
+  );
 }
 
 function CourseUpdateColumn({
   course,
-  column_name,
+  columnName,
   label,
   href,
   csrfToken,
 }: {
   course: CourseWithInstitution;
-  column_name: keyof CourseWithInstitution;
+  columnName: keyof CourseWithInstitution;
   label: string;
   href?: string;
   csrfToken: string;
 }) {
-  return html`
-    <td class="align-middle">
-      ${href !== undefined
-        ? html`<a href="${href}">${course[column_name]}</a>`
-        : course[column_name]}
-      <button
-        type="button"
-        class="btn btn-xs btn-secondary"
-        data-bs-toggle="popover"
-        data-bs-container="body"
-        data-bs-html="true"
-        data-bs-placement="auto"
-        data-bs-title="Change ${label}"
-        data-bs-content="${escapeHtml(
-          CourseUpdateColumnForm({
-            course,
-            column_name,
-            csrfToken,
-            label,
-          }),
-        )}"
+  const [showPopover, setShowPopover] = useState(false);
+
+  return (
+    <td className="align-middle">
+      {href !== undefined ? <a href={href}>{course[columnName]}</a> : course[columnName]}
+      <OverlayTrigger
+        trigger="click"
+        placement="auto"
+        popover={{
+          header: `Change ${label}`,
+          body: (
+            <CourseUpdateColumnForm
+              course={course}
+              columnName={columnName}
+              csrfToken={csrfToken}
+              label={label}
+              onCancel={() => setShowPopover(false)}
+            />
+          ),
+        }}
+        show={showPopover}
+        rootClose
+        onToggle={setShowPopover}
       >
-        <i class="fa fa-edit" aria-hidden="true"></i>
-      </button>
+        <button
+          type="button"
+          className="btn btn-xs btn-secondary ms-1"
+          aria-label={`Edit ${label}`}
+        >
+          <i className="fa fa-edit" aria-hidden="true" />
+        </button>
+      </OverlayTrigger>
     </td>
-  `;
+  );
 }
 
 function CourseUpdateColumnForm({
   course,
-  column_name,
+  columnName,
   csrfToken,
   label,
+  onCancel,
 }: {
   course: CourseWithInstitution;
-  column_name: keyof CourseWithInstitution;
+  columnName: keyof CourseWithInstitution;
   csrfToken: string;
   label: string;
+  onCancel: () => void;
 }) {
-  return html`
+  return (
     <form name="edit-course-column-form" method="POST">
       <input type="hidden" name="__action" value="courses_update_column" />
-      <input type="hidden" name="__csrf_token" value="${csrfToken}" />
-      <input type="hidden" name="course_id" value="${course.id}" />
-      <input type="hidden" name="column_name" value="${column_name}" />
-      <div class="mb-3">
+      <input type="hidden" name="__csrf_token" value={csrfToken} />
+      <input type="hidden" name="course_id" value={course.id} />
+      <input type="hidden" name="column_name" value={columnName} />
+      <div className="mb-3">
         <input
           type="text"
-          class="form-control"
+          className="form-control"
           name="value"
-          value="${course[column_name]}"
-          aria-label="${label}"
+          defaultValue={course[columnName]}
+          aria-label={label}
         />
       </div>
-      <div class="text-end">
-        <button type="button" class="btn btn-secondary" data-bs-dismiss="popover">Cancel</button>
-        <button type="submit" class="btn btn-primary">Change</button>
+      <div className="d-flex justify-content-end gap-2">
+        <button type="button" className="btn btn-secondary" onClick={onCancel}>
+          Cancel
+        </button>
+        <button type="submit" className="btn btn-primary">
+          Change
+        </button>
       </div>
     </form>
-  `;
+  );
 }

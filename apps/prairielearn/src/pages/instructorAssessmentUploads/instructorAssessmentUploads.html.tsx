@@ -2,7 +2,7 @@ import { z } from 'zod';
 
 import { html } from '@prairielearn/html';
 
-import { JobStatus } from '../../components/JobStatus.js';
+import { JobStatusHtml } from '../../components/JobStatus.js';
 import { Modal } from '../../components/Modal.js';
 import { PageLayout } from '../../components/PageLayout.js';
 import { config } from '../../lib/config.js';
@@ -184,7 +184,7 @@ function AssessmentUploadCard({
                       <td>${job_sequence.start_date_formatted}</td>
                       <td>${job_sequence.job_sequence.description}</td>
                       <td>${job_sequence.user_uid}</td>
-                      <td>${JobStatus({ status: job_sequence.job_sequence.status })}</td>
+                      <td>${JobStatusHtml({ status: job_sequence.job_sequence.status })}</td>
                       <td>
                         <a
                           href="${urlPrefix}/jobSequence/${job_sequence.job_sequence.id}"
