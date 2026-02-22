@@ -13,7 +13,6 @@
     "preferMustacheComments": "warning"
   },
   "printWidth": 100,
-  "indentSize": 4,
   "noBreakDelimiters": ["$", "$$"],
   "customTags": [
     {

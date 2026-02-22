@@ -1,137 +1,131 @@
 {{#question}}
-    <div class="pl-matching-container pl-matching-container-{{options_placement}}">
-        <div class="pl-matching-statements">
-            {{#statements}}
-                <div class="pl-matching-statement">
-                    <div class="pl-matching-statement-select">
-                        <select
-                            name="{{name}}"
-                            class="form-select"
-                            {{^editable}}disabled{{/editable}}
-                            aria-labelledby="statement-label-{{statement_id}}"
-                        >
-                            {{#options}}
-                                <option
-                                    {{selected}}
-                                    value="{{index}}"
-                                    {{#blank}}aria-label="Blank"{{/blank}}
-                                    {{^no_counters}}{{^blank}}aria-labelledby="pl-matching-{{uuid}}-option-{{value}}-content"{{/blank}}{{/no_counters}}
-                                >
-                                    {{value}}
-                                </option>
-                            {{/options}}
-                        </select>
-                    </div>
-                    <div class="pl-matching-statement-text" id="statement-label-{{statement_id}}">
-                        {{{html}}}
-                    </div>
-                    {{#display_score_badge}}
-                        <div>
-                            {{#correct}}
-                                <span class="badge text-bg-success">
-                                    <i class="fas fa-check" aria-hidden="true"></i>
-                                </span>
-                            {{/correct}}
-                            {{^correct}}
-                                <span class="badge text-bg-danger">
-                                    <i class="fas fa-times" aria-hidden="true"></i>
-                                </span>
-                            {{/correct}}
-                        </div>
-                    {{/display_score_badge}}
-                </div>
-            {{/statements}}
-        </div>
-        {{^no_counters}}
-            <div class="pl-matching-options">
-                <ol>
-                    {{#options}}
-                        <li
-                            class="pl-matching-option"
-                            style="--pl-matching-counter-type: {{counter_type}}"
-                        >
-                            <span id="pl-matching-{{uuid}}-option-{{counter}}-content">
-                                {{{html}}}
-                            </span>
-                        </li>
-                    {{/options}}
-                </ol>
+  <div class="pl-matching-container pl-matching-container-{{options_placement}}">
+    <div class="pl-matching-statements">
+      {{#statements}}
+        <div class="pl-matching-statement">
+          <div class="pl-matching-statement-select">
+            <select
+              name="{{name}}"
+              class="form-select"
+              {{^editable}}disabled{{/editable}}
+              aria-labelledby="statement-label-{{statement_id}}"
+            >
+              {{#options}}
+                <option
+                  {{selected}}
+                  value="{{index}}"
+                  {{#blank}}aria-label="Blank"{{/blank}}
+                  {{^no_counters}}{{^blank}}aria-labelledby="pl-matching-{{uuid}}-option-{{value}}-content"{{/blank}}{{/no_counters}}
+                >
+                  {{value}}
+                </option>
+              {{/options}}
+            </select>
+          </div>
+          <div class="pl-matching-statement-text" id="statement-label-{{statement_id}}">
+            {{{html}}}
+          </div>
+          {{#display_score_badge}}
+            <div>
+              {{#correct}}
+                <span class="badge text-bg-success">
+                  <i class="fas fa-check" aria-hidden="true"></i>
+                </span>
+              {{/correct}}
+              {{^correct}}
+                <span class="badge text-bg-danger">
+                  <i class="fas fa-times" aria-hidden="true"></i>
+                </span>
+              {{/correct}}
             </div>
-        {{/no_counters}}
+          {{/display_score_badge}}
+        </div>
+      {{/statements}}
     </div>
-    {{#correct}}
-        <span class="badge text-bg-success">
-            <i class="fas fa-check" aria-hidden="true"></i> 100%
-        </span>
-    {{/correct}}
-    {{#partial}}
-        <span class="badge text-bg-warning">
-            <i class="far fa-circle" aria-hidden="true"></i> {{partial}}%
-        </span>
-    {{/partial}}
-    {{#incorrect}}
-        <span class="badge text-bg-danger">
-            <i class="fas fa-times" aria-hidden="true"></i> 0%
-        </span>
-    {{/incorrect}}
+    {{^no_counters}}
+      <div class="pl-matching-options">
+        <ol>
+          {{#options}}
+            <li class="pl-matching-option" style="--pl-matching-counter-type: {{counter_type}}">
+              <span id="pl-matching-{{uuid}}-option-{{counter}}-content">{{{html}}}</span>
+            </li>
+          {{/options}}
+        </ol>
+      </div>
+    {{/no_counters}}
+  </div>
+  {{#correct}}
+    <span class="badge text-bg-success">
+      <i class="fas fa-check" aria-hidden="true"></i> 100%
+    </span>
+  {{/correct}}
+  {{#partial}}
+    <span class="badge text-bg-warning">
+      <i class="far fa-circle" aria-hidden="true"></i> {{partial}}%
+    </span>
+  {{/partial}}
+  {{#incorrect}}
+    <span class="badge text-bg-danger">
+      <i class="fas fa-times" aria-hidden="true"></i> 0%
+    </span>
+  {{/incorrect}}
 {{/question}}
 
 {{#submission}}
-    <div class="d-flex">
-        <div class="pl-matching-statements">
-            {{#statements}}
-                <div class="pl-matching-statement">
-                    <div class="pl-matching-answer"><strong>{{counter}}</strong> {{{option}}}</div>
-                    <div class="pl-matching-statement-text">{{{statement}}}</div>
-                    {{#parse_error}}
-                        <span class="small" style="white-space: nowrap">
-                            <span class="badge text-bg-danger">
-                                Invalid
-                                <i class="fas fa-exclamation-triangle" aria-hidden="true"></i>
-                            </span>
-                            <a
-                                class="link-primary"
-                                tabindex="0"
-                                role="button"
-                                data-bs-placement="auto"
-                                data-bs-toggle="popover"
-                                data-bs-html="true"
-                                title="Format error"
-                                data-bs-content="{{parse_error}}"
-                            >
-                                More info…
-                            </a>
-                        </span>
-                    {{/parse_error}}
-                    {{#display_score_badge}}
-                        <div>
-                            {{#correct}}
-                                <span class="badge text-bg-success">
-                                    <i class="fas fa-check" aria-hidden="true"></i>
-                                </span>
-                            {{/correct}}
-                            {{^correct}}
-                                <span class="badge text-bg-danger">
-                                    <i class="fas fa-times" aria-hidden="true"></i>
-                                </span>
-                            {{/correct}}
-                        </div>
-                    {{/display_score_badge}}
-                </div>
-            {{/statements}}
+  <div class="d-flex">
+    <div class="pl-matching-statements">
+      {{#statements}}
+        <div class="pl-matching-statement">
+          <div class="pl-matching-answer"><strong>{{counter}}</strong> {{{option}}}</div>
+          <div class="pl-matching-statement-text">{{{statement}}}</div>
+          {{#parse_error}}
+            <span class="small" style="white-space: nowrap">
+              <span class="badge text-bg-danger">
+                Invalid <i class="fas fa-exclamation-triangle" aria-hidden="true"></i>
+              </span>
+              <a
+                class="link-primary"
+                tabindex="0"
+                role="button"
+                data-bs-placement="auto"
+                data-bs-toggle="popover"
+                data-bs-html="true"
+                title="Format error"
+                data-bs-content="{{parse_error}}"
+              >
+                More info…
+              </a>
+            </span>
+          {{/parse_error}}
+          {{#display_score_badge}}
+            <div>
+              {{#correct}}
+                <span class="badge text-bg-success">
+                  <i class="fas fa-check" aria-hidden="true"></i>
+                </span>
+              {{/correct}}
+              {{^correct}}
+                <span class="badge text-bg-danger">
+                  <i class="fas fa-times" aria-hidden="true"></i>
+                </span>
+              {{/correct}}
+            </div>
+          {{/display_score_badge}}
         </div>
+      {{/statements}}
     </div>
+  </div>
 {{/submission}}
 
 {{#answer}}
-    <div class="d-flex">
-        <div class="pl-matching-statements">
-            {{#statements}}
-                <div class="pl-matching-statement">
-                    <div class="pl-matching-answer"><strong>{{counter}}</strong> {{{option}}}</div>
-                    <div class="pl-matching-statement-text">{{{statement}}}</div>
-                </div>
-            {{/statements}}
+  <div class="d-flex">
+    <div class="pl-matching-statements">
+      {{#statements}}
+        <div class="pl-matching-statement">
+          <div class="pl-matching-answer"><strong>{{counter}}</strong> {{{option}}}</div>
+          <div class="pl-matching-statement-text">{{{statement}}}</div>
         </div>
+      {{/statements}}
     </div>
+  </div>
 {{/answer}}
