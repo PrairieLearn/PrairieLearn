@@ -93,6 +93,7 @@ function getParamsForAssessment(
       number_choose: zone.numberChoose ?? null,
       max_points: zone.maxPoints,
       best_questions: zone.bestQuestions,
+      lockpoint: zone.lockpoint,
       advance_score_perc: zone.advanceScorePerc,
       allow_real_time_grading: zone.allowRealTimeGrading,
       grade_rate_minutes: zone.gradeRateMinutes,

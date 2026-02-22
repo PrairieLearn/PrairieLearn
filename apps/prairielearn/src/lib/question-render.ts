@@ -39,6 +39,8 @@ import {
   type CourseInstance,
   CourseInstanceSchema,
   CourseSchema,
+  type EnumQuestionAccessMode,
+  EnumQuestionAccessModeSchema,
   GradingJobSchema,
   type GroupConfig,
   GroupConfigSchema,
@@ -74,9 +76,10 @@ const SubmissionInfoSchema = z.object({
   grading_job: GradingJobSchema.nullable(),
   submission: SubmissionSchema,
   question_number: z.string().nullable(),
+  question_access_mode: EnumQuestionAccessModeSchema.nullable(),
   next_instance_question: z.object({
     id: IdSchema.nullable(),
-    sequence_locked: z.boolean().nullable(),
+    question_access_mode: EnumQuestionAccessModeSchema.nullable(),
   }),
   assessment_question: AssessmentQuestionSchema.nullable(),
   assessment_instance: AssessmentInstanceSchema.nullable(),
@@ -257,6 +260,7 @@ function buildLocals({
   group_config,
   allowGradeLeftMs,
   authz_result,
+  question_access_mode,
 }: {
   variant: Variant;
   question: Question;
@@ -271,6 +275,7 @@ function buildLocals({
   group_config?: GroupConfig | null;
   allowGradeLeftMs: number;
   authz_result?: any;
+  question_access_mode?: EnumQuestionAccessMode | null;
 }) {
   const locals: ResLocalsBuildLocals = {
     showGradeButton: false,
@@ -334,6 +339,12 @@ function buildLocals({
     if (allowGradeLeftMs > 0) {
       locals.disableGradeButton = true;
     }
+  }
+
+  if (question_access_mode === 'read_only_lockpoint') {
+    locals.showGradeButton = false;
+    locals.showSaveButton = false;
+    locals.allowAnswerEditing = false;
   }
 
   if (
@@ -415,6 +426,7 @@ export async function getAndRenderVariant(
     group_config?: GroupConfig;
     group_role_permissions?: QuestionGroupPermissions;
     instance_question?: InstanceQuestion;
+    instance_question_info?: { question_access_mode?: EnumQuestionAccessMode | null };
     authz_data?: Record<string, any>;
     authz_result?: Record<string, any>;
     client_fingerprint_id?: string | null;
@@ -524,6 +536,7 @@ export async function getAndRenderVariant(
     allowGradeLeftMs,
     group_config,
     authz_result,
+    question_access_mode: locals.instance_question_info?.question_access_mode,
   });
   if (
     (locals.questionRenderContext === 'manual_grading' ||
@@ -709,6 +722,7 @@ export async function renderPanelsForSubmission({
     user_uid,
     question_number,
     group_config,
+    question_access_mode,
   } = submissionInfo;
   const previous_variants =
     variant.instance_question_id == null || assessment_instance == null
@@ -742,6 +756,7 @@ export async function renderPanelsForSubmission({
       allowGradeLeftMs,
       group_config,
       authz_result,
+      question_access_mode,
     }),
   };
 
@@ -886,7 +901,7 @@ export async function renderPanelsForSubmission({
 
       panels.questionNavNextButton = QuestionNavSideButton({
         instanceQuestionId: next_instance_question.id,
-        sequenceLocked: next_instance_question.sequence_locked,
+        nextQuestionAccessMode: next_instance_question.question_access_mode,
         urlPrefix,
         whichButton: 'next',
         groupRolePermissions: nextQuestionGroupRolePermissions,

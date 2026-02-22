@@ -2,6 +2,7 @@ import { propertyValueWithDefault } from '../../../lib/editorUtil.shared.js';
 import type {
   QuestionAlternativeJson,
   ZoneAssessmentJson,
+  ZoneAssessmentJsonInput,
   ZoneQuestionBlockJson,
 } from '../../../schemas/infoAssessment.js';
 import type {
@@ -148,10 +149,11 @@ function serializeQuestionBlock(question: ZoneQuestionBlockJson) {
 }
 
 /** Serializes zones for JSON output, stripping default values where appropriate. */
-export function serializeZonesForJson(zones: ZoneAssessmentJson[]): ZoneAssessmentJson[] {
+export function serializeZonesForJson(zones: ZoneAssessmentJson[]): ZoneAssessmentJsonInput[] {
   return zones.map((zone) => {
     return omitUndefined({
       title: zone.title,
+      lockpoint: zone.lockpoint ? true : undefined,
       maxPoints: zone.maxPoints,
       numberChoose: zone.numberChoose,
       bestQuestions: zone.bestQuestions,

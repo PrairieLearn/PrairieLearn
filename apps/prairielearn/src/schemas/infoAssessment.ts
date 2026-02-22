@@ -325,6 +325,13 @@ export const ZoneAssessmentJsonSchema = z.object({
       'Only this many of the questions in this zone, with the highest number of awarded points, will count toward the total points.',
     )
     .optional(),
+  lockpoint: z
+    .boolean()
+    .describe(
+      'If true, students must explicitly acknowledge advancing past this point. All questions in previous zones become read-only after crossing.',
+    )
+    .optional()
+    .default(false),
   questions: z
     .array(ZoneQuestionBlockJsonSchema)
     .min(1)
@@ -358,6 +365,7 @@ export const ZoneAssessmentJsonSchema = z.object({
 });
 
 export type ZoneAssessmentJson = z.infer<typeof ZoneAssessmentJsonSchema>;
+export type ZoneAssessmentJsonInput = z.input<typeof ZoneAssessmentJsonSchema>;
 
 export const AssessmentJsonSchema = z
   .object({

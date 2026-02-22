@@ -1,9 +1,10 @@
 import { UAParser } from 'ua-parser-js';
 import { z } from 'zod';
 
+import { formatDate } from '@prairielearn/formatter';
 import { escapeHtml, html } from '@prairielearn/html';
 import { run } from '@prairielearn/run';
-import { IdSchema } from '@prairielearn/zod';
+import { DateFromISOString, IdSchema } from '@prairielearn/zod';
 
 import { EditQuestionPointsScoreButtonHtml } from '../../components/EditQuestionPointsScore.js';
 import { Modal } from '../../components/Modal.js';
@@ -60,6 +61,17 @@ export const InstanceQuestionRowSchema = InstanceQuestionSchema.extend({
 });
 type InstanceQuestionRow = z.infer<typeof InstanceQuestionRowSchema>;
 
+export const ZoneLockpointSchema = z.object({
+  zone_id: IdSchema,
+  zone_number: z.number(),
+  zone_title: z.string().nullable(),
+  lockpoint_crossed: z.boolean(),
+  crossed_at: DateFromISOString.nullable(),
+  authn_user_id: IdSchema.nullable(),
+  auth_user_uid: z.string().nullable(),
+});
+type ZoneLockpoint = z.infer<typeof ZoneLockpointSchema>;
+
 const FINGERPRINT_COLORS = ['red2', 'orange2', 'green2', 'blue2', 'turquoise2', 'purple2'];
 
 export function InstructorAssessmentInstance({
@@ -69,6 +81,7 @@ export function InstructorAssessmentInstance({
   assessment_instance_date_formatted,
   assessment_instance_duration,
   instance_questions,
+  zoneLockpoints,
   assessmentInstanceLog,
 }: {
   resLocals: ResLocalsForPage<'assessment-instance'>;
@@ -77,8 +90,13 @@ export function InstructorAssessmentInstance({
   assessment_instance_date_formatted: string;
   assessment_instance_duration: string;
   instance_questions: InstanceQuestionRow[];
+  zoneLockpoints: ZoneLockpoint[];
   assessmentInstanceLog: InstanceLogEntry[];
 }) {
+  const zoneLockpointsByZoneId = new Map(
+    zoneLockpoints.map((lockpoint) => [lockpoint.zone_id, lockpoint]),
+  );
+
   return PageLayout({
     resLocals,
     pageTitle: resLocals.instance_group?.name ?? resLocals.instance_user?.uid ?? '',
@@ -331,6 +349,7 @@ export function InstructorAssessmentInstance({
                 let previousZoneHadInfo = false;
 
                 return instance_questions.map((instance_question) => {
+                  const zoneLockpoint = zoneLockpointsByZoneId.get(instance_question.zone_id);
                   const zoneHasInfo =
                     instance_question.zone_title != null ||
                     instance_question.zone_has_max_points ||
@@ -346,6 +365,27 @@ export function InstructorAssessmentInstance({
                   }
 
                   return html`
+                    ${instance_question.start_new_zone && zoneLockpoint
+                      ? html`
+                          <tr>
+                            <th colspan="9" class="bg-light fw-normal">
+                              ${zoneLockpoint.lockpoint_crossed
+                                ? html`
+                                    Lockpoint crossed by
+                                    ${zoneLockpoint.auth_user_uid ?? 'unknown user'}
+                                    ${zoneLockpoint.crossed_at
+                                      ? html`at
+                                        ${formatDate(
+                                          zoneLockpoint.crossed_at,
+                                          resLocals.course_instance.display_timezone,
+                                        )}`
+                                      : ''}
+                                  `
+                                : html`Lockpoint not yet crossed`}
+                            </th>
+                          </tr>
+                        `
+                      : ''}
                     ${showZoneInfo
                       ? html`
                           <tr>

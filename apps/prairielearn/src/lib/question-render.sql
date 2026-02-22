@@ -125,7 +125,7 @@ WITH
     SELECT
       iq.id AS current_id,
       (lead(iq.id) OVER w) AS id,
-      (lead(qo.sequence_locked) OVER w) AS sequence_locked
+      (lead(qo.question_access_mode) OVER w) AS question_access_mode
     FROM
       instance_questions AS iq
       JOIN assessment_instances AS ai ON (ai.id = iq.assessment_instance_id)
@@ -168,11 +168,12 @@ SELECT
   to_jsonb(lgj) AS grading_job,
   to_jsonb(s) AS submission,
   qo.question_number,
+  qo.question_access_mode,
   jsonb_build_object(
     'id',
     next_iq.id,
-    'sequence_locked',
-    next_iq.sequence_locked
+    'question_access_mode',
+    next_iq.question_access_mode
   ) AS next_instance_question,
   to_jsonb(aq) AS assessment_question,
   to_jsonb(ai) AS assessment_instance,

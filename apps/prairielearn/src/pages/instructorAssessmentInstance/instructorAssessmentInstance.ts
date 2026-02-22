@@ -25,6 +25,7 @@ import {
   AssessmentInstanceStatsSchema,
   InstanceQuestionRowSchema,
   InstructorAssessmentInstance,
+  ZoneLockpointSchema,
 } from './instructorAssessmentInstance.html.js';
 
 const router = Router();
@@ -79,6 +80,11 @@ router.get(
       { assessment_instance_id: res.locals.assessment_instance.id },
       InstanceQuestionRowSchema,
     );
+    const zoneLockpoints = await sqldb.queryRows(
+      sql.select_zone_lockpoints,
+      { assessment_instance_id: res.locals.assessment_instance.id },
+      ZoneLockpointSchema,
+    );
 
     const assessmentInstanceLog = await selectAssessmentInstanceLog(
       res.locals.assessment_instance.id,
@@ -93,6 +99,7 @@ router.get(
         assessment_instance_date_formatted,
         assessment_instance_duration,
         instance_questions,
+        zoneLockpoints,
         assessmentInstanceLog,
       }),
     );
