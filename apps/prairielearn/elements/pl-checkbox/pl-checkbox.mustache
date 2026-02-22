@@ -4,79 +4,79 @@
 {{/inline}}
 {{^inline}}
 <fieldset class="d-block">
-    <legend class="visually-hidden">Checkbox options</legend>
+  <legend class="visually-hidden">Checkbox options</legend>
 {{/inline}}
 
 {{#answers}}
-    <div
-        class="form-check {{#inline}}form-check-inline d-inline-flex{{/inline}}{{^inline}}d-flex{{/inline}} align-items-center py-1 gap-2"
+  <div
+    class="form-check {{#inline}}form-check-inline d-inline-flex{{/inline}}{{^inline}}d-flex{{/inline}} align-items-center py-1 gap-2"
+  >
+    <input
+      class="form-check-input mt-0 flex-shrink-0"
+      type="checkbox"
+      name="{{name}}"
+      value="{{key}}"
+      {{^editable}}disabled{{/editable}}
+      {{#checked}}checked{{/checked}}
+      id="{{name}}-{{key}}"
     >
-        <input
-            class="form-check-input mt-0 flex-shrink-0"
-            type="checkbox"
-            name="{{name}}"
-            value="{{key}}"
-            {{^editable}}disabled{{/editable}}
-            {{#checked}}checked{{/checked}}
-            id="{{name}}-{{key}}"
-        >
-        <label class="form-check-label d-flex align-items-center" for="{{name}}-{{key}}">
-            {{^hide_letter_keys}}
-                <div class="pl-checkbox-key-label">({{key}})</div>
-            {{/hide_letter_keys}}
-            <div class="ms-1 me-1 pl-checkbox-answer">{{{html}}}</div>
-        </label>
+    <label class="form-check-label d-flex align-items-center" for="{{name}}-{{key}}">
+      {{^hide_letter_keys}}
+        <div class="pl-checkbox-key-label">({{key}})</div>
+      {{/hide_letter_keys}}
+      <div class="ms-1 me-1 pl-checkbox-answer">{{{html}}}</div>
+    </label>
 
-        {{#display_feedback}}
-            <div class="pl-checkbox-feedback">{{{feedback}}}</div>
-        {{/display_feedback}}
+    {{#display_feedback}}
+      <div class="pl-checkbox-feedback">{{{feedback}}}</div>
+    {{/display_feedback}}
 
-        {{#display_score_badge}}
-            {{#correct}}
-                <span class="badge text-bg-success">
-                    <i class="fas fa-check" aria-hidden="true"></i>
-                </span>
-            {{/correct}}
-            {{#incorrect}}
-                <span class="badge text-bg-danger">
-                    <i class="fas fa-times" aria-hidden="true"></i>
-                </span>
-            {{/incorrect}}
-        {{/display_score_badge}}
-    </div>
+    {{#display_score_badge}}
+      {{#correct}}
+        <span class="badge text-bg-success">
+          <i class="fas fa-check" aria-hidden="true"></i>
+        </span>
+      {{/correct}}
+      {{#incorrect}}
+        <span class="badge text-bg-danger">
+          <i class="fas fa-times" aria-hidden="true"></i>
+        </span>
+      {{/incorrect}}
+    {{/display_score_badge}}
+  </div>
 {{/answers}}
 
 {{#helptext}}
-    <div class="d-flex align-items-center gap-2">
-        <span>{{{helptext}}}</span>
-        <button
-            type="button"
-            class="btn btn-light btn-sm"
-            data-bs-toggle="popover"
-            data-bs-html="true"
-            title="Checkbox"
-            data-bs-content="{{info}}"
-            data-bs-placement="auto"
-        >
-            <i class="fas fa-question-circle" aria-hidden="true"></i>
-        </button>
-    </div>
+  <div class="d-flex align-items-center gap-2">
+    <span>{{{helptext}}}</span>
+    <button
+      type="button"
+      class="btn btn-light btn-sm"
+      data-bs-toggle="popover"
+      data-bs-html="true"
+      title="Checkbox"
+      data-bs-content="{{info}}"
+      data-bs-placement="auto"
+    >
+      <i class="fas fa-question-circle" aria-hidden="true"></i>
+    </button>
+  </div>
 {{/helptext}}
 
 {{#correct}}
-    <span class="badge text-bg-success">
-        <i class="fas fa-check" aria-hidden="true"></i> 100%
-    </span>
+  <span class="badge text-bg-success">
+    <i class="fas fa-check" aria-hidden="true"></i> 100%
+  </span>
 {{/correct}}
 {{#partial}}
-    <span class="badge text-bg-warning">
-        <i class="far fa-circle" aria-hidden="true"></i> {{partial}}%
-    </span>
+  <span class="badge text-bg-warning">
+    <i class="far fa-circle" aria-hidden="true"></i> {{partial}}%
+  </span>
 {{/partial}}
 {{#incorrect}}
-    <span class="badge text-bg-danger">
-        <i class="fas fa-times" aria-hidden="true"></i> 0%
-    </span>
+  <span class="badge text-bg-danger">
+    <i class="fas fa-times" aria-hidden="true"></i> 0%
+  </span>
 {{/incorrect}}
 
 {{#inline}}
@@ -88,32 +88,32 @@
 {{/question}}
 
 {{#format}}
-    {{! Include descriptions for each grading method }}
-    {{#net-correct}}
-        You must select {{{insert_text}}} You will receive a score of
-        <code>100% * (t - f) / n</code>, where <code>t</code> is the number of true options that you
-        select, <code>f</code> is the number of false options that you select, and <code>n</code> is
-        the total number of true options. At minimum, you will receive a score of 0%.
-    {{/net-correct}}
+  {{! Include descriptions for each grading method }}
+  {{#net-correct}}
+    You must select {{{insert_text}}} You will receive a score of <code>100% * (t - f) / n</code>,
+    where <code>t</code> is the number of true options that you select, <code>f</code> is the number
+    of false options that you select, and <code>n</code> is the total number of true options. At
+    minimum, you will receive a score of 0%.
+  {{/net-correct}}
 
-    {{#each-answer}}
-        You must select {{{insert_text}}} You will receive a score of
-        <code>100% * (t + f) / {{num_display_answers}}</code>, where <code>t</code> is the number of
-        true options that you select and <code>f</code> is the number of false options that you do
-        not select.
-    {{/each-answer}}
+  {{#each-answer}}
+    You must select {{{insert_text}}} You will receive a score of
+    <code>100% * (t + f) / {{num_display_answers}}</code>, where <code>t</code> is the number of
+    true options that you select and <code>f</code> is the number of false options that you do not
+    select.
+  {{/each-answer}}
 
-    {{#coverage}}
-        You must select {{{insert_text}}} You will receive a score of
-        <code>100% * (t / c) * (t / n)</code>, where <code>t</code> is the number of true options
-        that you select, <code>c</code> is the total number of true options, and <code>n</code> is
-        the total number of options you select.
-    {{/coverage}}
+  {{#coverage}}
+    You must select {{{insert_text}}} You will receive a score of
+    <code>100% * (t / c) * (t / n)</code>, where <code>t</code> is the number of true options that
+    you select, <code>c</code> is the total number of true options, and <code>n</code> is the total
+    number of options you select.
+  {{/coverage}}
 
-    {{#off}}
-        You must select {{{insert_text}}} You will receive a score of 100% if you select all options
-        that are true and no options that are false. Otherwise, you will receive a score of 0%.
-    {{/off}}
+  {{#off}}
+    You must select {{{insert_text}}} You will receive a score of 100% if you select all options
+    that are true and no options that are false. Otherwise, you will receive a score of 0%.
+  {{/off}}
 {{/format}}
 
 {{#submission}}
@@ -125,21 +125,21 @@
 <div class="d-block">
 {{/inline}}
 <span class="small" style="white-space: nowrap">
-    <span class="badge text-bg-danger">
-        Invalid <i class="fas fa-exclamation-triangle" aria-hidden="true"></i>
-    </span>
-    <a
-        class="link-primary"
-        tabindex="0"
-        role="button"
-        data-bs-placement="auto"
-        data-bs-toggle="popover"
-        data-bs-html="true"
-        title="Format error"
-        data-bs-content="{{parse_error}}"
-    >
-        More info…
-    </a>
+  <span class="badge text-bg-danger">
+    Invalid <i class="fas fa-exclamation-triangle" aria-hidden="true"></i>
+  </span>
+  <a
+    class="link-primary"
+    tabindex="0"
+    role="button"
+    data-bs-placement="auto"
+    data-bs-toggle="popover"
+    data-bs-html="true"
+    title="Format error"
+    data-bs-content="{{parse_error}}"
+  >
+    More info…
+  </a>
 </span>
 {{#inline}}
 </span>
@@ -151,56 +151,54 @@
 {{^parse_error}}
 {{#inline}}
 <span class="d-inline-block">
-    <ul class="list-inline mb-0">
+  <ul class="list-inline mb-0">
 {{/inline}}
 {{^inline}}
 <div class="d-block">
-    <ul class="list-unstyled mb-0">
+  <ul class="list-unstyled mb-0">
 {{/inline}}
 
 {{#answers}}
-    <li {{#inline}}class="list-inline-item"{{/inline}}>
-        <div class="d-inline-flex align-items-center">
-            <span>{{^hide_letter_keys}}({{key}}){{/hide_letter_keys}} {{{html}}}</span>
-            {{#display_feedback}}
-                <div class="pl-checkbox-feedback pl-checkbox-submission-feedback">
-                    {{{feedback}}}
-                </div>
-            {{/display_feedback}}
-            {{#display_score_badge}}
-                {{#correct}}
-                    <span class="ms-1 badge text-bg-success">
-                        <i class="fas fa-check" aria-hidden="true"></i>
-                    </span>
-                {{/correct}}
-                {{#incorrect}}
-                    <span class="ms-1 badge text-bg-danger">
-                        <i class="fas fa-times" aria-hidden="true"></i>
-                    </span>
-                {{/incorrect}}
-            {{/display_score_badge}}
-        </div>
-    </li>
+  <li {{#inline}}class="list-inline-item"{{/inline}}>
+    <div class="d-inline-flex align-items-center">
+      <span>{{^hide_letter_keys}}({{key}}){{/hide_letter_keys}} {{{html}}}</span>
+      {{#display_feedback}}
+        <div class="pl-checkbox-feedback pl-checkbox-submission-feedback">{{{feedback}}}</div>
+      {{/display_feedback}}
+      {{#display_score_badge}}
+        {{#correct}}
+          <span class="ms-1 badge text-bg-success">
+            <i class="fas fa-check" aria-hidden="true"></i>
+          </span>
+        {{/correct}}
+        {{#incorrect}}
+          <span class="ms-1 badge text-bg-danger">
+            <i class="fas fa-times" aria-hidden="true"></i>
+          </span>
+        {{/incorrect}}
+      {{/display_score_badge}}
+    </div>
+  </li>
 {{/answers}}
 
 </ul>
 
 {{#display_score_badge}}
-    {{#correct}}
-        <span class="badge text-bg-success">
-            <i class="fas fa-check" aria-hidden="true"></i> 100%
-        </span>
-    {{/correct}}
-    {{#incorrect}}
-        <span class="badge text-bg-danger">
-            <i class="fas fa-times" aria-hidden="true"></i> 0%
-        </span>
-    {{/incorrect}}
-    {{#partial}}
-        <span class="badge text-bg-warning">
-            <i class="far fa-circle" aria-hidden="true"></i> {{partial}}%
-        </span>
-    {{/partial}}
+  {{#correct}}
+    <span class="badge text-bg-success">
+      <i class="fas fa-check" aria-hidden="true"></i> 100%
+    </span>
+  {{/correct}}
+  {{#incorrect}}
+    <span class="badge text-bg-danger">
+      <i class="fas fa-times" aria-hidden="true"></i> 0%
+    </span>
+  {{/incorrect}}
+  {{#partial}}
+    <span class="badge text-bg-warning">
+      <i class="far fa-circle" aria-hidden="true"></i> {{partial}}%
+    </span>
+  {{/partial}}
 {{/display_score_badge}}
 
 {{#inline}}
@@ -215,24 +213,24 @@
 {{#answer}}
 {{#inline}}
 <span class="d-inline-block">
-    <ul class="list-inline mb-0">
+  <ul class="list-inline mb-0">
 {{/inline}}
 {{^inline}}
 <div class="d-block">
-    <ul class="list-unstyled mb-0">
+  <ul class="list-unstyled mb-0">
 {{/inline}}
 {{#answers}}
-    <li {{#inline}}class="list-inline-item"{{/inline}}>
-        {{^hide_letter_keys}}({{key}}){{/hide_letter_keys}}
-        {{{html}}}
-    </li>
+  <li {{#inline}}class="list-inline-item"{{/inline}}>
+    {{^hide_letter_keys}}({{key}}){{/hide_letter_keys}}
+    {{{html}}}
+  </li>
 {{/answers}}
 {{#inline}}
-    </ul>
+  </ul>
 </span>
 {{/inline}}
 {{^inline}}
-    </ul>
+  </ul>
 </div>
 {{/inline}}
 {{/answer}}
