@@ -17,7 +17,7 @@ columns
     repository: text
     sharing_name: text
     sharing_token: text not null default gen_random_uuid()
-    short_name: text
+    short_name: text not null
     show_getting_started: boolean not null default false
     sync_errors: text
     sync_job_sequence_id: bigint

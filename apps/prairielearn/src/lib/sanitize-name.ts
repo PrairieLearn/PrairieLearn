@@ -18,8 +18,7 @@ export function sanitizeString(s: string): string {
  * @returns The sanitized prefix string.
  */
 function courseFilenamePrefix(course: Pick<Course, 'short_name'>): string {
-  // In practice, course.short_name should never be null.
-  const prefix = sanitizeString(course.short_name!) + '_';
+  const prefix = sanitizeString(course.short_name) + '_';
   return prefix;
 }
 
@@ -36,8 +35,7 @@ export function courseInstanceFilenamePrefix(
   course_instance: Pick<CourseInstance, 'short_name'>,
   course: Pick<Course, 'short_name'>,
 ): string {
-  // In practice, course_instance.short_name should never be null.
-  const prefix = courseFilenamePrefix(course) + sanitizeString(course_instance.short_name!) + '_';
+  const prefix = courseFilenamePrefix(course) + sanitizeString(course_instance.short_name) + '_';
   return prefix;
 }
 

@@ -80,7 +80,7 @@ function DeleteQuestionModal({
               {assessmentsWithQuestion.map((aWithQ) => (
                 <li key={aWithQ.course_instance_id} className="list-group-item">
                   <div className="h6">
-                    {aWithQ.short_name ?? <i>Unknown</i>} ({aWithQ.long_name ?? <i>Unknown</i>})
+                    {aWithQ.short_name} ({aWithQ.long_name ?? <i>Unknown</i>})
                   </div>
                   {aWithQ.assessments.map((assessment) => (
                     <AssessmentBadge
