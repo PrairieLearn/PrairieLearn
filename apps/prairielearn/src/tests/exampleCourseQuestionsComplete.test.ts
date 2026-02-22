@@ -290,10 +290,20 @@ describe('Internally graded question lifecycle tests', { timeout: 60_000 }, func
         context.skip();
       }
       const question = {
-        options: info.options ?? {}, // Use options from info.json if available
+        options: info.options ?? {},
+        preferences_schema: info.preferences ?? null,
         directory: relativePath,
         type: 'Freeform',
       } as unknown as Question;
+
+      // Extract default preferences from info.json preferences schema
+      const preferences: Record<string, string | number | boolean> = {};
+      if (info.preferences) {
+        for (const [key, prop] of Object.entries(info.preferences)) {
+          const p = prop as { default: string | number | boolean };
+          preferences[key] = p.default!;
+        }
+      }
 
       // Prepare and generate
       const { courseIssues: prepareGenerateIssues, variant: rawVariant } = await makeVariant(
@@ -302,8 +312,8 @@ describe('Internally graded question lifecycle tests', { timeout: 60_000 }, func
         {
           variant_seed: null,
         },
+        preferences,
       );
-
       assert.isEmpty(prepareGenerateIssues, 'Prepare/Generate should not produce any issues');
 
       const variant = rawVariant as Variant;

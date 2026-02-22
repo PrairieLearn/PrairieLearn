@@ -25,7 +25,8 @@ WITH
 SELECT
   q.qid,
   q.id,
-  c.sharing_name
+  c.sharing_name,
+  q.preferences_schema
 FROM
   questions AS q
   JOIN sharing_set_questions AS ssq ON q.id = ssq.question_id
@@ -43,7 +44,8 @@ UNION
 SELECT
   q.qid,
   q.id,
-  c.sharing_name
+  c.sharing_name,
+  q.preferences_schema
 FROM
   questions AS q
   JOIN courses AS c ON c.id = q.course_id

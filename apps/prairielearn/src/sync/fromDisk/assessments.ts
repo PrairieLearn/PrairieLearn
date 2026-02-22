@@ -1,3 +1,4 @@
+import { Ajv } from 'ajv';
 import { z } from 'zod';
 
 import * as sqldb from '@prairielearn/postgres';
@@ -11,16 +12,85 @@ import { features } from '../../lib/features/index.js';
 import {
   type AssessmentJson,
   type QuestionAlternativeJson,
+  type QuestionJson,
+  type QuestionParameterJson,
+  QuestionParameterJsonSchema,
   type QuestionPointsJson,
+  type QuestionPreferences,
   type ZoneQuestionBlockJson,
 } from '../../schemas/index.js';
 import { type CourseInstanceData, convertLegacyGroupsToGroupsConfig } from '../course-db.js';
 import { isDateInFuture } from '../dates.js';
 import * as infofile from '../infofile.js';
+import { type InfoFile } from '../infofile.js';
+
+// We use a single global instance so that schemas aren't recompiled every time they're used
+const ajv = new Ajv({ allErrors: true, allowUnionTypes: true });
 
 const sql = sqldb.loadSqlEquiv(import.meta.url);
 
 type AssessmentInfoFile = infofile.InfoFile<AssessmentJson>;
+
+interface MergePreferencesResult {
+  preferences: QuestionPreferences;
+  errors: string[];
+}
+
+/**
+ * Merges instructor-provided preferences with question defaults and validates against schema.
+ *
+ * @param qid - The question ID (for error messages)
+ * @param schema - The question's preferences schema (from info.json)
+ * @param overrides - The instructor's preferences overrides (from infoAssessment.json)
+ * @returns The merged preferences and any validation errors
+ */
+function mergeAndValidatePreferences(
+  qid: string,
+  schema: QuestionParameterJson | null | undefined,
+  overrides: QuestionPreferences | undefined,
+): MergePreferencesResult {
+  const errors: string[] = [];
+  // If the question has no preferences schema
+  if (!schema) {
+    // If overrides were provided but the question doesn't support preferences, that's an error
+    if (overrides && Object.keys(overrides).length > 0) {
+      errors.push(
+        `Question "${qid}" does not define a preferences schema, but preferences were provided in the assessment`,
+      );
+    }
+    return { preferences: {}, errors };
+  }
+
+  // Extract defaults from schema
+  const merged: QuestionPreferences = {};
+  for (const [key, prop] of Object.entries(schema)) {
+    merged[key] = prop.default;
+  }
+
+  // Merge overrides into defaults
+  if (overrides) {
+    Object.assign(merged, overrides);
+  }
+
+  // Validate merged preferences against the JSON schema using AJV
+  const validate = ajv.compile({ type: 'object', properties: schema });
+  const valid = validate(merged);
+
+  if (!valid && validate.errors) {
+    for (const error of validate.errors) {
+      const path = error.instancePath || '/';
+      let message = `Question "${qid}": preferences${path} ${error.message}`;
+
+      if (error.keyword === 'enum' && error.params.allowedValues) {
+        message += `: ${error.params.allowedValues.join(', ')}`;
+      }
+
+      errors.push(message);
+    }
+  }
+
+  return { preferences: merged, errors };
+}
 
 /**
  * SYNCING PROCESS:
@@ -53,10 +123,22 @@ type AssessmentInfoFile = infofile.InfoFile<AssessmentJson>;
 function getParamsForAssessment(
   assessmentInfoFile: AssessmentInfoFile,
   questionIds: Record<string, any>,
+  questions: Record<string, InfoFile<QuestionJson>>,
+  sharedQuestionPreferences: Record<string, QuestionParameterJson>,
 ) {
   if (infofile.hasErrors(assessmentInfoFile)) return null;
   const assessment = assessmentInfoFile.data;
   if (!assessment) throw new Error(`Missing assessment data for ${assessmentInfoFile.uuid}`);
+
+  // Helper to get preferences schema for a question
+  const getPreferencesSchema = (qid: string): QuestionParameterJson | null => {
+    if (qid.startsWith('@')) {
+      return sharedQuestionPreferences[qid] ?? null;
+    }
+    const questionInfo = questions[qid];
+    if (!questionInfo.data?.preferences) return null;
+    return questionInfo.data.preferences;
+  };
 
   // It used to be the case that assessment access rules could be associated with a
   // particular user role, e.g., Student, TA, or Instructor. Now, all access rules
@@ -176,6 +258,7 @@ function getParamsForAssessment(
             jsonMaxPoints: alternative.maxPoints ?? null,
             jsonPoints: alternative.points ?? null,
             jsonTriesPerVariant: alternative.triesPerVariant ?? null,
+            preferences: alternative.preferences,
           };
         });
       } else if (question.id) {
@@ -208,6 +291,7 @@ function getParamsForAssessment(
             jsonMaxAutoPoints: question.maxAutoPoints ?? null,
             jsonPoints: question.points ?? null,
             jsonTriesPerVariant: question.triesPerVariant ?? null,
+            preferences: question.preferences,
           },
         ];
       }
@@ -257,6 +341,23 @@ function getParamsForAssessment(
       const questions = normalizedAlternatives.map((alternative, alternativeIndex) => {
         assessmentQuestionNumber++;
         const questionId = questionIds[alternative.qid];
+
+        // Validate preferences overrides against schema (if available)
+        // We only store the overrides here; defaults are merged at runtime
+
+        if (questionId !== undefined) {
+          const preferencesSchema = getPreferencesSchema(alternative.qid);
+          const { errors: preferenceErrors } = mergeAndValidatePreferences(
+            alternative.qid,
+            preferencesSchema,
+            alternative.preferences,
+          );
+          // Record any validation errors
+          for (const error of preferenceErrors) {
+            infofile.addError(assessmentInfoFile, error);
+          }
+        }
+
         return {
           number: assessmentQuestionNumber,
           has_split_points: alternative.hasSplitPoints,
@@ -292,6 +393,7 @@ function getParamsForAssessment(
           json_max_points: alternative.jsonMaxPoints,
           json_max_auto_points: alternative.jsonMaxAutoPoints,
           json_tries_per_variant: alternative.jsonTriesPerVariant,
+          preferences: alternative.preferences ?? {},
         };
       });
 
@@ -428,6 +530,8 @@ export async function sync(
   courseInstanceId: string,
   courseInstanceData: CourseInstanceData,
   questionIds: Record<string, any>,
+  questions: Record<string, InfoFile<QuestionJson>>,
+  sharedQuestionPreferences: Record<string, QuestionParameterJson>,
 ) {
   const assessments = courseInstanceData.assessments;
 
@@ -482,7 +586,7 @@ export async function sync(
       assessment.uuid,
       infofile.stringifyErrors(assessment),
       infofile.stringifyWarnings(assessment),
-      getParamsForAssessment(assessment, questionIds),
+      getParamsForAssessment(assessment, questionIds, questions, sharedQuestionPreferences),
     ]);
   });
 
@@ -497,7 +601,7 @@ export async function validateAssessmentSharedQuestions(
   courseId: string,
   assessments: CourseInstanceData['assessments'],
   questionIds: Record<string, string>,
-) {
+): Promise<Record<string, QuestionParameterJson>> {
   // A set of all imported question IDs.
   const importedQids = new Set<string>();
 
@@ -560,10 +664,20 @@ export async function validateAssessmentSharedQuestions(
           Array.from(importedQids, parseSharedQuestionReference),
         ),
       },
-      z.object({ sharing_name: z.string(), qid: z.string(), id: IdSchema }),
+      z.object({
+        sharing_name: z.string(),
+        qid: z.string(),
+        id: IdSchema,
+        preferences_schema: QuestionParameterJsonSchema.nullable(),
+      }),
     );
+    const sharedQuestionPreferences: Record<string, QuestionParameterJson> = {};
     for (const row of importedQuestions) {
-      questionIds['@' + row.sharing_name + '/' + row.qid] = row.id;
+      const fullQid = '@' + row.sharing_name + '/' + row.qid;
+      questionIds[fullQid] = row.id;
+      if (row.preferences_schema) {
+        sharedQuestionPreferences[fullQid] = row.preferences_schema;
+      }
     }
     const missingQids = new Set(Array.from(importedQids).filter((qid) => !(qid in questionIds)));
     if (config.checkSharingOnSync) {
@@ -579,5 +693,7 @@ export async function validateAssessmentSharedQuestions(
         }
       }
     }
+    return sharedQuestionPreferences;
   }
+  return {};
 }

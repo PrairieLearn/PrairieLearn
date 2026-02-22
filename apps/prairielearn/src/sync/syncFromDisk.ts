@@ -17,6 +17,7 @@ import {
 } from '../models/course.js';
 import { selectInstitutionForCourse } from '../models/institution.js';
 import { flushElementCache } from '../question-servers/freeform.js';
+import type { QuestionParameterJson } from '../schemas/questionPreferences.js';
 
 import * as courseDB from './course-db.js';
 import * as syncAssessmentModules from './fromDisk/assessmentModules.js';
@@ -177,13 +178,15 @@ export async function syncDiskToSqlWithLock(
     // populate any shared questions in that dictionary. We also need to do it before
     // syncing the assessment sets, as the presence of errors that this validation
     // could produce influences whether the "Unknown" assessment set is created.
+    const sharedQuestionPreferencesByCi = new Map<string, Record<string, QuestionParameterJson>>();
     await timed('Check sharing validity', async () => {
-      await async.eachLimit(Object.values(courseData.courseInstances), 3, async (ci) => {
-        await syncAssessments.validateAssessmentSharedQuestions(
+      await async.eachLimit(Object.entries(courseData.courseInstances), 3, async ([ciid, ci]) => {
+        const prefs = await syncAssessments.validateAssessmentSharedQuestions(
           courseId,
           ci.assessments,
           questionIds,
         );
+        sharedQuestionPreferencesByCi.set(ciid, prefs);
       });
     });
 
@@ -204,7 +207,14 @@ export async function syncDiskToSqlWithLock(
         async ([ciid, courseInstanceData]) => {
           const courseInstanceId = courseInstanceIds[ciid];
           await timed(`Synced assessments for ${ciid}`, () =>
-            syncAssessments.sync(courseId, courseInstanceId, courseInstanceData, questionIds),
+            syncAssessments.sync(
+              courseId,
+              courseInstanceId,
+              courseInstanceData,
+              questionIds,
+              courseData.questions,
+              sharedQuestionPreferencesByCi.get(ciid) ?? {},
+            ),
           );
         },
       );
