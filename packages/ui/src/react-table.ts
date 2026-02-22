@@ -1,3 +1,4 @@
+import type { RankingInfo } from '@tanstack/match-sorter-utils';
 import type { RowData } from '@tanstack/react-table';
 
 declare module '@tanstack/react-table' {
@@ -10,6 +11,10 @@ declare module '@tanstack/react-table' {
     label?: string;
     /** If true, the column will be automatically sized based on the header content. */
     autoSize?: boolean;
+  }
+
+  interface FilterMeta {
+    itemRank?: RankingInfo;
   }
 }
 

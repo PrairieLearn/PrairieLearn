@@ -1,23 +1,32 @@
 import * as url from 'node:url';
 
+import * as trpcExpress from '@trpc/server/adapters/express';
 import { Router } from 'express';
 import fs from 'fs-extra';
+import z from 'zod';
 
 import * as error from '@prairielearn/error';
+import { Hydrate } from '@prairielearn/react/server';
 
 import { InsufficientCoursePermissionsCardPage } from '../../components/InsufficientCoursePermissionsCard.js';
+import { PageLayout } from '../../components/PageLayout.js';
+import { SafeQuestionsPageDataSchema } from '../../components/QuestionsTable.shared.js';
 import { extractPageContext } from '../../lib/client/page-context.js';
+import { PublicCourseInstanceSchema } from '../../lib/client/safe-db-types.js';
+import { config } from '../../lib/config.js';
 import { getCourseOwners } from '../../lib/course.js';
 import { features } from '../../lib/features/index.js';
 import { isEnterprise } from '../../lib/license.js';
 import { typedAsyncHandler } from '../../lib/res-locals.js';
-import { getSearchParams } from '../../lib/url.js';
+import { handleTrpcError } from '../../lib/trpc.js';
+import { getSearchParams, getUrl } from '../../lib/url.js';
 import { createAuthzMiddleware } from '../../middlewares/authzHelper.js';
 import { selectCourseInstancesWithStaffAccess } from '../../models/course-instances.js';
 import { selectOptionalQuestionByQid } from '../../models/question.js';
 import { selectQuestionsForCourse } from '../../models/questions.js';
 
-import { QuestionsPage } from './instructorQuestions.html.js';
+import { InstructorQuestionsTable } from './InstructorQuestionsTable.js';
+import { createContext, instructorQuestionsRouter } from './trpc.js';
 
 const router = Router();
 
@@ -59,24 +68,54 @@ router.get(
       requiredRole: ['Previewer'],
     });
 
-    const questions = await selectQuestionsForCourse(
+    const rawQuestions = await selectQuestionsForCourse(
       course.id,
       courseInstances.map((ci) => ci.id),
     );
 
+    const questions = rawQuestions.map((q) => SafeQuestionsPageDataSchema.parse(q));
+
     const courseDirExists = await fs.pathExists(course.path);
+    const search = getUrl(req).search;
+
+    const showAddQuestionButton =
+      authzData.has_course_permission_edit && !course.example_course && courseDirExists;
+    const showAiGenerateQuestionButton =
+      authzData.has_course_permission_edit &&
+      !course.example_course &&
+      isEnterprise() &&
+      (await features.enabledFromLocals('ai-question-generation', res.locals));
+
+    const mappedCourseInstances = z.array(PublicCourseInstanceSchema).parse(courseInstances);
+
     res.send(
-      QuestionsPage({
-        questions,
-        course_instances: courseInstances,
-        showAddQuestionButton:
-          authzData.has_course_permission_edit && !course.example_course && courseDirExists,
-        showAiGenerateQuestionButton:
-          authzData.has_course_permission_edit &&
-          !course.example_course &&
-          isEnterprise() &&
-          (await features.enabledFromLocals('ai-question-generation', res.locals)),
+      PageLayout({
         resLocals: res.locals,
+        pageTitle: 'Questions',
+        navContext: {
+          type: 'instructor',
+          page: 'course_admin',
+          subPage: 'questions',
+        },
+        options: {
+          fullWidth: true,
+          fullHeight: true,
+        },
+        content: (
+          <Hydrate fullHeight>
+            <InstructorQuestionsTable
+              questions={questions}
+              courseInstances={mappedCourseInstances}
+              currentCourseInstanceId={res.locals.course_instance?.id}
+              showAddQuestionButton={showAddQuestionButton}
+              showAiGenerateQuestionButton={showAiGenerateQuestionButton}
+              showSharingSets={res.locals.question_sharing_enabled}
+              urlPrefix={res.locals.urlPrefix}
+              search={search}
+              isDevMode={config.devMode}
+            />
+          </Hydrate>
+        ),
       }),
     );
   }),
@@ -136,6 +175,15 @@ router.get(
         search: searchParams.toString(),
       }),
     );
+  }),
+);
+
+router.use(
+  '/trpc',
+  trpcExpress.createExpressMiddleware({
+    router: instructorQuestionsRouter,
+    createContext,
+    onError: handleTrpcError,
   }),
 );
 
