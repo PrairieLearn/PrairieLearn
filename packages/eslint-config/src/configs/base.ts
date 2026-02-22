@@ -47,7 +47,7 @@ export function baseConfig(): TSESLint.FlatConfig.ConfigArray {
         'max-depth': 'off',
         'max-lines': 'off',
         'max-lines-per-function': 'off',
-        'max-params': 'off',
+        'max-params': ['error', { max: 6 }],
         'max-statements': 'off',
         'new-cap': 'off',
         'no-await-in-loop': 'off',

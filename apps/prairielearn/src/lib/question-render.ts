@@ -101,36 +101,46 @@ const MAX_RECENT_SUBMISSIONS = 3;
 /**
  * Renders the HTML for a variant.
  *
- * @param variant_course The course for the variant.
- * @param renderSelection Specify which panels should be rendered.
- * @param variant The variant to submit to.
- * @param question The question for the variant.
- * @param submission The current submission to the variant.
- * @param submissions The full list of submissions to the variant.
- * @param question_course The course for the question.
- * @param locals The current locals for the page response.
+ * @param params
+ * @param params.variant_course The course for the variant.
+ * @param params.renderSelection Specify which panels should be rendered.
+ * @param params.variant The variant to submit to.
+ * @param params.question The question for the variant.
+ * @param params.submission The current submission to the variant.
+ * @param params.submissions The full list of submissions to the variant.
+ * @param params.question_course The course for the question.
+ * @param params.locals The current locals for the page response.
  */
-async function render(
-  variant_course: Course,
-  renderSelection: questionServers.RenderSelection,
-  variant: Variant,
-  question: Question,
-  submission: Submission | null,
-  submissions: Submission[],
-  question_course: Course,
-  locals: UntypedResLocals,
-): Promise<questionServers.RenderResultData> {
+async function render({
+  variant_course,
+  renderSelection,
+  variant,
+  question,
+  submission,
+  submissions,
+  question_course,
+  locals,
+}: {
+  variant_course: Course;
+  renderSelection: questionServers.RenderSelection;
+  variant: Variant;
+  question: Question;
+  submission: Submission | null;
+  submissions: Submission[];
+  question_course: Course;
+  locals: UntypedResLocals;
+}): Promise<questionServers.RenderResultData> {
   const questionModule = questionServers.getModule(question.type);
 
-  const { courseIssues, data } = await questionModule.render(
+  const { courseIssues, data } = await questionModule.render({
     renderSelection,
     variant,
     question,
     submission,
     submissions,
-    question_course,
+    course: question_course,
     locals,
-  );
+  });
 
   const studentMessage = 'Error rendering question';
   const courseData = { variant, question, submission, course: variant_course };
@@ -466,18 +476,18 @@ export async function getAndRenderVariant(
       const require_open = !!locals.assessment && locals.assessment.type !== 'Exam';
       const instance_question_id = locals.instance_question?.id ?? null;
       const options = { variant_seed };
-      return await ensureVariant(
-        locals.question.id,
+      return await ensureVariant({
+        question_id: locals.question.id,
         instance_question_id,
-        locals.user.id,
-        locals.authn_user.id,
-        locals.course_instance ?? null,
-        locals.course,
+        user_id: locals.user.id,
+        authn_user_id: locals.authn_user.id,
+        course_instance: locals.course_instance ?? null,
+        variant_course: locals.course,
         question_course,
         options,
         require_open,
-        locals.client_fingerprint_id ?? null,
-      );
+        client_fingerprint_id: locals.client_fingerprint_id ?? null,
+      });
     }
   });
 
@@ -592,16 +602,16 @@ export async function getAndRenderVariant(
     submissions: submissions.length > 0,
     answer: locals.showTrueAnswer ?? false,
   };
-  const htmls = await render(
-    course,
+  const htmls = await render({
+    variant_course: course,
     renderSelection,
     variant,
     question,
-    submission as Submission,
-    submissions.slice(0, MAX_RECENT_SUBMISSIONS) as Submission[],
+    submission: submission as Submission,
+    submissions: submissions.slice(0, MAX_RECENT_SUBMISSIONS) as Submission[],
     question_course,
     locals,
-  );
+  });
   locals.extraHeadersHtml = htmls.extraHeadersHtml;
   locals.questionHtml = htmls.questionHtml;
   locals.submissionHtmls = htmls.submissionHtmls;
@@ -750,16 +760,20 @@ export async function renderPanelsForSubmission({
       // Render the submission panel
       const submissions = [submission];
 
-      const htmls = await render(
+      const htmls = await render({
         variant_course,
-        { answer: renderScorePanels && locals.showTrueAnswer, submissions: true, question: false },
+        renderSelection: {
+          answer: renderScorePanels && locals.showTrueAnswer,
+          submissions: true,
+          question: false,
+        },
         variant,
         question,
         submission,
         submissions,
         question_course,
         locals,
-      );
+      });
 
       panels.answerPanel = locals.showTrueAnswer ? htmls.answerHtml : null;
       panels.extraHeadersHtml = htmls.extraHeadersHtml;

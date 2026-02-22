@@ -256,19 +256,19 @@ router.post(
     }
 
     if (req.body.__action === 'edit_question_points') {
-      const result = await manualGrading.updateInstanceQuestionScore(
-        res.locals.assessment,
-        req.body.instance_question_id,
-        null, // submission_id
-        req.body.modified_at ? new Date(req.body.modified_at) : null, // check_modified_at
-        {
+      const result = await manualGrading.updateInstanceQuestionScore({
+        assessment: res.locals.assessment,
+        instance_question_id: req.body.instance_question_id,
+        submission_id: null,
+        check_modified_at: req.body.modified_at ? new Date(req.body.modified_at) : null,
+        score: {
           points: req.body.points,
           manual_points: req.body.manual_points,
           auto_points: req.body.auto_points,
           score_perc: req.body.score_perc,
         },
-        res.locals.authn_user.id,
-      );
+        authn_user_id: res.locals.authn_user.id,
+      });
       if (result.modified_at_conflict) {
         res.send({
           conflict_grading_job_id: result.grading_job_id,
@@ -279,19 +279,19 @@ router.post(
       }
     } else if (req.body.__action === 'modify_rubric_settings') {
       try {
-        await manualGrading.updateAssessmentQuestionRubric(
-          res.locals.assessment,
-          res.locals.assessment_question.id,
-          req.body.use_rubric,
-          req.body.replace_auto_points,
-          req.body.starting_points,
-          req.body.min_points,
-          req.body.max_extra_points,
-          req.body.rubric_items,
-          req.body.tag_for_manual_grading,
-          req.body.grader_guidelines,
-          res.locals.authn_user.id,
-        );
+        await manualGrading.updateAssessmentQuestionRubric({
+          assessment: res.locals.assessment,
+          assessment_question_id: res.locals.assessment_question.id,
+          use_rubric: req.body.use_rubric,
+          replace_auto_points: req.body.replace_auto_points,
+          starting_points: req.body.starting_points,
+          min_points: req.body.min_points,
+          max_extra_points: req.body.max_extra_points,
+          rubric_items: req.body.rubric_items,
+          tag_for_manual_grading: req.body.tag_for_manual_grading,
+          grader_guidelines: req.body.grader_guidelines,
+          authn_user_id: res.locals.authn_user.id,
+        });
         res.redirect(req.originalUrl);
       } catch (err) {
         res.status(500).send({ err: String(err) });

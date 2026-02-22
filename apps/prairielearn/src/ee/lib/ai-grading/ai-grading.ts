@@ -272,15 +272,15 @@ export async function aiGrade({
       };
       // Get question html
       const questionModule = questionServers.getModule(question.type);
-      const render_question_results = await questionModule.render(
-        { question: true, submissions: false, answer: true },
+      const render_question_results = await questionModule.render({
+        renderSelection: { question: true, submissions: false, answer: true },
         variant,
         question,
-        null,
-        [],
-        question_course,
+        submission: null,
+        submissions: [],
+        course: question_course,
         locals,
-      );
+      });
       if (render_question_results.courseIssues.length > 0) {
         logger.error(render_question_results.courseIssues.toString());
         logger.error('Errors occurred while AI grading, see output for details');
@@ -289,15 +289,15 @@ export async function aiGrade({
       const questionPrompt = render_question_results.data.questionHtml;
       const questionAnswer = render_question_results.data.answerHtml;
 
-      const render_submission_results = await questionModule.render(
-        { question: false, submissions: true, answer: false },
+      const render_submission_results = await questionModule.render({
+        renderSelection: { question: false, submissions: true, answer: false },
         variant,
         question,
         submission,
-        [submission],
-        question_course,
+        submissions: [submission],
+        course: question_course,
         locals,
-      );
+      });
       const submission_text = render_submission_results.data.submissionHtmls[0];
 
       const hasImage = containsImageCapture(submission_text);
@@ -539,19 +539,19 @@ export async function aiGrade({
             applied_rubric_items: appliedRubricItems,
           };
           await runInTransactionAsync(async () => {
-            const { grading_job_id } = await manualGrading.updateInstanceQuestionScore(
+            const { grading_job_id } = await manualGrading.updateInstanceQuestionScore({
               assessment,
-              instance_question.id,
-              submission.id,
-              null, // check_modified_at
-              {
+              instance_question_id: instance_question.id,
+              submission_id: submission.id,
+              check_modified_at: null,
+              score: {
                 // TODO: consider asking for and recording freeform feedback.
                 manual_rubric_data,
                 feedback: { manual: '' },
               },
-              user_id,
-              true, // is_ai_graded
-            );
+              authn_user_id: user_id,
+              is_ai_graded: true,
+            });
             assert(grading_job_id);
 
             const aiGradingJobParams = {
@@ -795,18 +795,18 @@ export async function aiGrade({
           // Requires grading: update instance question score
           const feedback = finalGradingResponse.object.feedback;
           await runInTransactionAsync(async () => {
-            const { grading_job_id } = await manualGrading.updateInstanceQuestionScore(
+            const { grading_job_id } = await manualGrading.updateInstanceQuestionScore({
               assessment,
-              instance_question.id,
-              submission.id,
-              null, // check_modified_at
-              {
+              instance_question_id: instance_question.id,
+              submission_id: submission.id,
+              check_modified_at: null,
+              score: {
                 manual_score_perc: score,
                 feedback: { manual: feedback },
               },
-              user_id,
-              true, // is_ai_graded
-            );
+              authn_user_id: user_id,
+              is_ai_graded: true,
+            });
             assert(grading_job_id);
 
             const aiGradingJobParams = {

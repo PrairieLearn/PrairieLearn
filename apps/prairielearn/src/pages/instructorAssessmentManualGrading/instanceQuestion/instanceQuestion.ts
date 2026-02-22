@@ -423,12 +423,12 @@ router.post(
           }
         : undefined;
       const { modified_at_conflict, grading_job_id } =
-        await manualGrading.updateInstanceQuestionScore(
-          res.locals.assessment,
-          res.locals.instance_question.id,
-          body.submission_id,
-          body.modified_at, // check_modified_at
-          {
+        await manualGrading.updateInstanceQuestionScore({
+          assessment: res.locals.assessment,
+          instance_question_id: res.locals.instance_question.id,
+          submission_id: body.submission_id,
+          check_modified_at: body.modified_at,
+          score: {
             manual_score_perc: body.use_score_perc ? body.score_manual_percent : null,
             manual_points: body.use_score_perc ? null : body.score_manual_points,
             auto_score_perc: body.use_score_perc ? body.score_auto_percent : null,
@@ -436,8 +436,8 @@ router.post(
             feedback: { manual: body.submission_note },
             manual_rubric_data,
           },
-          res.locals.authn_user.id,
-        );
+          authn_user_id: res.locals.authn_user.id,
+        });
 
       if (modified_at_conflict) {
         return res.redirect(req.baseUrl + `?conflict_grading_job_id=${grading_job_id}`);
@@ -575,12 +575,12 @@ router.post(
         : undefined;
 
       for (const instanceQuestion of instanceQuestionsInGroup) {
-        const { modified_at_conflict } = await manualGrading.updateInstanceQuestionScore(
-          res.locals.assessment,
-          instanceQuestion.instance_question_id,
-          instanceQuestion.submission_id,
-          null,
-          {
+        const { modified_at_conflict } = await manualGrading.updateInstanceQuestionScore({
+          assessment: res.locals.assessment,
+          instance_question_id: instanceQuestion.instance_question_id,
+          submission_id: instanceQuestion.submission_id,
+          check_modified_at: null,
+          score: {
             manual_score_perc: body.use_score_perc ? body.score_manual_percent : null,
             manual_points: body.use_score_perc ? null : body.score_manual_points,
             auto_score_perc: body.use_score_perc ? body.score_auto_percent : null,
@@ -588,8 +588,8 @@ router.post(
             feedback: { manual: body.submission_note },
             manual_rubric_data,
           },
-          res.locals.authn_user.id,
-        );
+          authn_user_id: res.locals.authn_user.id,
+        });
 
         if (modified_at_conflict) {
           flash('error', 'A conflict occurred while grading the submission. Please try again.');
@@ -616,19 +616,19 @@ router.post(
       );
     } else if (body.__action === 'modify_rubric_settings') {
       try {
-        await manualGrading.updateAssessmentQuestionRubric(
-          res.locals.assessment,
-          res.locals.instance_question.assessment_question_id,
-          body.use_rubric,
-          body.replace_auto_points,
-          body.starting_points,
-          body.min_points,
-          body.max_extra_points,
-          body.rubric_items,
-          body.tag_for_manual_grading,
-          body.grader_guidelines,
-          res.locals.authn_user.id,
-        );
+        await manualGrading.updateAssessmentQuestionRubric({
+          assessment: res.locals.assessment,
+          assessment_question_id: res.locals.instance_question.assessment_question_id,
+          use_rubric: body.use_rubric,
+          replace_auto_points: body.replace_auto_points,
+          starting_points: body.starting_points,
+          min_points: body.min_points,
+          max_extra_points: body.max_extra_points,
+          rubric_items: body.rubric_items,
+          tag_for_manual_grading: body.tag_for_manual_grading,
+          grader_guidelines: body.grader_guidelines,
+          authn_user_id: res.locals.authn_user.id,
+        });
         res.redirect(req.baseUrl + '/grading_rubric_panels');
       } catch (err) {
         res.status(500).send({ err: String(err) });
