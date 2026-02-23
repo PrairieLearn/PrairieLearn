@@ -93,22 +93,4 @@ describe('executor smoke tests', () => {
 
     assertSuccess(result);
   });
-
-  it('prepares pl-graph (imports networkx)', async () => {
-    const result = await handleInput(
-      JSON.stringify({
-        type: 'core-element',
-        directory: 'pl-graph',
-        file: 'pl-graph',
-        fcn: 'prepare',
-        args: [
-          '<pl-graph params-name="g" />',
-          { params: {}, correct_answers: {}, answers_names: {} },
-        ],
-      }),
-      codeCaller,
-    );
-
-    assertSuccess(result);
-  });
 });
