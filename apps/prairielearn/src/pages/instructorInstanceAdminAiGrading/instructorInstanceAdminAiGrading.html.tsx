@@ -13,15 +13,9 @@ import {
 import { QueryClientProviderDebug } from '../../lib/client/tanstackQuery.js';
 import type { EnumAiGradingProvider } from '../../lib/db-types.js';
 
+import type { AiGradingApiKeyCredential } from './queries.js';
 import { createAiGradingSettingsTrpcClient } from './utils/trpc-client.js';
 import { TRPCProvider, useTRPC } from './utils/trpc-context.js';
-
-export interface AiGradingApiKeyCredential {
-  id: string;
-  provider: EnumAiGradingProvider;
-  apiKeyMasked: string;
-  dateAdded: string;
-}
 
 function AddApiKeyModal({
   show,

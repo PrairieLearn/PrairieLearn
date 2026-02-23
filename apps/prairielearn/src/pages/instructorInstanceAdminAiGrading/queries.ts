@@ -8,7 +8,12 @@ import {
 } from '../../lib/db-types.js';
 import { decryptFromStorage } from '../../lib/storage-crypt.js';
 
-import type { AiGradingApiKeyCredential } from './instructorInstanceAdminAiGrading.html.js';
+export interface AiGradingApiKeyCredential {
+  id: string;
+  provider: EnumAiGradingProvider;
+  apiKeyMasked: string;
+  dateAdded: string;
+}
 
 const sql = loadSqlEquiv(import.meta.url);
 
