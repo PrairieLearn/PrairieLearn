@@ -1,5 +1,6 @@
 import { type Header, createColumnHelper } from '@tanstack/react-table';
 
+import { run } from '@prairielearn/run';
 import { CategoricalColumnFilter } from '@prairielearn/ui';
 
 import { assessmentLabel } from '../lib/assessment.shared.js';
@@ -51,11 +52,15 @@ export function createQuestionsTableColumns({
               tooltipId={`copy-qid-${question.qid}`}
               ariaLabel="Copy QID"
             />
-            {question.sync_errors ? (
-              <SyncProblemButton type="error" output={question.sync_errors} />
-            ) : question.sync_warnings ? (
-              <SyncProblemButton type="warning" output={question.sync_warnings} />
-            ) : null}
+            {run(() => {
+              if (question.sync_errors) {
+                return <SyncProblemButton type="error" output={question.sync_errors} />;
+              }
+              if (question.sync_warnings) {
+                return <SyncProblemButton type="warning" output={question.sync_warnings} />;
+              }
+              return null;
+            })}
             <a
               href={getQuestionPreviewUrl({
                 courseId,
@@ -131,31 +136,21 @@ export function createQuestionsTableColumns({
             header: 'Sharing',
             cell: (info) => {
               const question = info.row.original;
-              const items: React.ReactNode[] = [];
-
-              if (question.share_publicly) {
-                items.push(
-                  <span key="public" className="badge color-green3 me-1">
-                    Public
-                  </span>,
-                );
-              }
-              if (question.share_source_publicly) {
-                items.push(
-                  <span key="public-source" className="badge color-green3 me-1">
-                    Public source
-                  </span>,
-                );
-              }
-              question.sharing_sets?.forEach((s) =>
-                items.push(
-                  <span key={s.name} className="badge color-gray1 me-1">
-                    {s.name}
-                  </span>,
-                ),
+              return (
+                <span className="text-nowrap">
+                  {question.share_publicly && (
+                    <span className="badge color-green3 me-1">Public</span>
+                  )}
+                  {question.share_source_publicly && (
+                    <span className="badge color-green3 me-1">Public source</span>
+                  )}
+                  {question.sharing_sets?.map((s) => (
+                    <span key={s.name} className="badge color-gray1 me-1">
+                      {s.name}
+                    </span>
+                  ))}
+                </span>
               );
-
-              return <span className="text-nowrap">{items}</span>;
             },
             enableSorting: false,
             filterFn: (row, _columnId, filterValues: string[]) => {
@@ -290,11 +285,9 @@ export function createQuestionsTableColumns({
                       return filterValues.includes('(None)');
                     }
                     return filterValues.some((v) =>
-                      v === '(None)'
-                        ? false
-                        : assessments.some(
-                            (a) => assessmentLabel(a.assessment, a.assessment_set) === v,
-                          ),
+                      assessments.some(
+                        (a) => assessmentLabel(a.assessment, a.assessment_set) === v,
+                      ),
                     );
                   },
                   size: 500,
@@ -329,18 +322,18 @@ export function createQuestionsTableFilters({
 
   const allExternalGradingImages = [
     '(None)',
-    ...[
-      ...new Set(
+    ...Array.from(
+      new Set(
         questions.map((q) => q.external_grading_image).filter((v): v is string => v != null),
       ),
-    ].sort(),
+    ).sort(),
   ];
 
   const allWorkspaceImages = [
     '(None)',
-    ...[
-      ...new Set(questions.map((q) => q.workspace_image).filter((v): v is string => v != null)),
-    ].sort(),
+    ...Array.from(
+      new Set(questions.map((q) => q.workspace_image).filter((v): v is string => v != null)),
+    ).sort(),
   ];
 
   const allSharingSets = (() => {

@@ -141,19 +141,15 @@ export function QuestionsTable({
 
   const hasLegacyQuestions = initialQuestions.some((q) => q.display_type !== 'v3');
 
+  const hiddenByDefault = new Set(['sharing_sets', 'grading_method', 'external_grading_image', 'workspace_image']);
+
   const defaultColumnVisibility = useMemo(() => {
     const visibility: Record<string, boolean> = {};
     for (const id of allColumnIds) {
-      if (id === 'sharing_sets') {
+      if (hiddenByDefault.has(id)) {
         visibility[id] = false;
       } else if (id === 'display_type') {
         visibility[id] = hasLegacyQuestions;
-      } else if (id === 'grading_method') {
-        visibility[id] = false;
-      } else if (id === 'external_grading_image') {
-        visibility[id] = false;
-      } else if (id === 'workspace_image') {
-        visibility[id] = false;
       } else if (id.startsWith('ci_')) {
         const ciId = id.replace(/^ci_/, '');
         visibility[id] = currentCourseInstanceId === ciId;
