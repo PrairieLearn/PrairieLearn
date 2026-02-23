@@ -761,9 +761,9 @@ export function AssessmentQuestionTable({
                       props: { id: 'ai-grading-no-keys-tooltip' },
                     }}
                   >
-                    {/* Wrap in a span so the tooltip triggers on hover despite the button being disabled */}
-                    <span>
-                      <Button variant="light" size="sm" disabled>
+                    {/* Wrap in an inline-block span so the tooltip triggers despite the button being disabled */}
+                    <span style={{ display: 'inline-block' }}>
+                      <Button variant="light" size="sm" disabled style={{ pointerEvents: 'none' }}>
                         <i className="bi bi-stars" aria-hidden="true" />
                         <span>AI grading</span>
                       </Button>
@@ -857,10 +857,17 @@ export function AssessmentQuestionTable({
                       props: { id: 'ai-grouping-no-openai-tooltip' },
                     }}
                   >
-                    <Button variant="light" size="sm" disabled>
-                      <i className="bi bi-stars" aria-hidden="true" />
-                      <span className="d-none d-sm-inline">AI submission grouping</span>
-                    </Button>
+                    <span style={{ display: 'inline-block' }}>
+                      <Button
+                        variant="light"
+                        size="sm"
+                        disabled
+                        style={{ pointerEvents: 'none' }}
+                      >
+                        <i className="bi bi-stars" aria-hidden="true" />
+                        <span className="d-none d-sm-inline">AI submission grouping</span>
+                      </Button>
+                    </span>
                   </OverlayTrigger>
                 ) : (
                   <Dropdown>
