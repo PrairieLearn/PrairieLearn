@@ -96,12 +96,23 @@ export function getAiQuestionGenerationDraftsUrl({ urlPrefix }: { urlPrefix: str
   return `${urlPrefix}/ai_generate_question_drafts`;
 }
 
+export type QuestionUrlParts =
+  | { urlPrefix: string; courseInstanceId?: undefined; courseId?: undefined }
+  | { urlPrefix?: undefined; courseInstanceId: string; courseId?: undefined }
+  | { urlPrefix?: undefined; courseInstanceId?: undefined; courseId: string };
+
 export function getQuestionUrl({
   urlPrefix,
+  courseInstanceId,
+  courseId,
   questionId,
-}: {
-  urlPrefix: string;
-  questionId: string;
-}): string {
+}: { questionId: string } & QuestionUrlParts): string {
+  if (urlPrefix === undefined) {
+    if (courseInstanceId) {
+      urlPrefix = `/pl/course_instance/${courseInstanceId}/instructor`;
+    } else {
+      urlPrefix = `/pl/course/${courseId}`;
+    }
+  }
   return `${urlPrefix}/question/${questionId}`;
 }

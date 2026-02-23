@@ -1,22 +1,23 @@
 import { OverlayTrigger } from '@prairielearn/ui';
 
-import type { OtherAssessment } from '../lib/assessment-question-schema.js';
-
-import { AssessmentBadge } from './AssessmentBadge.js';
-
-interface OtherAssessmentsBadgesProps {
-  assessments: OtherAssessment[];
-  urlPrefix: string;
-}
+import { AssessmentBadge } from '../../../components/AssessmentBadge.js';
+import type { AssessmentForPicker } from '../types.js';
 
 /**
- * Groups assessments by their set abbreviation and returns them sorted alphabetically.
+ * Groups assessments by their set abbreviation and returns them sorted.
+ * Returns null if abbreviation data is not available.
  */
-function groupByAbbreviation(assessments: OtherAssessment[]): Map<string, OtherAssessment[]> {
-  const grouped = new Map<string, OtherAssessment[]>();
+function groupByAbbreviation(
+  assessments: AssessmentForPicker[],
+): Map<string, AssessmentForPicker[]> | null {
+  if (!assessments.every((a) => a.assessment_set_abbreviation && a.assessment_number)) {
+    return null;
+  }
+
+  const grouped = new Map<string, AssessmentForPicker[]>();
 
   for (const assessment of assessments) {
-    const abbrev = assessment.assessment_set_abbreviation;
+    const abbrev = assessment.assessment_set_abbreviation!;
     const existing = grouped.get(abbrev) ?? [];
     existing.push(assessment);
     grouped.set(abbrev, existing);
@@ -25,34 +26,58 @@ function groupByAbbreviation(assessments: OtherAssessment[]): Map<string, OtherA
   // Sort items within each group by assessment number
   for (const items of grouped.values()) {
     items.sort((a, b) => {
-      const numA = Number.parseInt(a.assessment_number) || 0;
-      const numB = Number.parseInt(b.assessment_number) || 0;
+      const numA = Number.parseInt(a.assessment_number!) || 0;
+      const numB = Number.parseInt(b.assessment_number!) || 0;
       return numA - numB;
     });
   }
 
-  // Return sorted by abbreviation
   return new Map([...grouped.entries()].sort(([a], [b]) => a.localeCompare(b)));
 }
 
 /**
- * Renders a compact view of other assessments that use a question.
- *
- * For assessment types with fewer than 3 assessments, individual badges are shown.
- * For types with 3+ assessments, a summary badge (e.g., "L ×20") is shown with a
- * popover containing all the individual badges.
+ * Renders assessment badges with grouping for compact display.
+ * Groups of 3+ assessments with the same abbreviation are collapsed.
  */
-export function OtherAssessmentsBadges({ assessments, urlPrefix }: OtherAssessmentsBadgesProps) {
+export function AssessmentBadges({
+  assessments,
+  urlPrefix,
+}: {
+  assessments: AssessmentForPicker[];
+  urlPrefix: string;
+}) {
   if (assessments.length === 0) {
     return null;
   }
 
   const grouped = groupByAbbreviation(assessments);
+
+  if (!grouped) {
+    return (
+      <>
+        {assessments.slice(0, 3).map((assessment) => (
+          <span key={assessment.assessment_id} className="d-inline-block me-1">
+            <AssessmentBadge
+              urlPrefix={urlPrefix}
+              assessment={{
+                assessment_id: assessment.assessment_id,
+                color: assessment.color,
+                label: assessment.label,
+              }}
+            />
+          </span>
+        ))}
+        {assessments.length > 3 && (
+          <span className="badge bg-secondary">+{assessments.length - 3}</span>
+        )}
+      </>
+    );
+  }
+
   const elements: React.ReactNode[] = [];
 
   for (const [abbrev, items] of grouped) {
     if (items.length < 3) {
-      // Render individual badges
       for (const assessment of items) {
         elements.push(
           <span key={assessment.assessment_id} className="d-inline-block me-1">
@@ -60,24 +85,23 @@ export function OtherAssessmentsBadges({ assessments, urlPrefix }: OtherAssessme
               urlPrefix={urlPrefix}
               assessment={{
                 assessment_id: assessment.assessment_id,
-                color: assessment.assessment_set_color,
-                label: `${assessment.assessment_set_abbreviation}${assessment.assessment_number}`,
+                color: assessment.assessment_set_color ?? assessment.color,
+                label: assessment.label,
               }}
             />
           </span>,
         );
       }
     } else {
-      // Render a grouped badge with popover
-      const color = items[0].assessment_set_color;
-      const name = items[0].assessment_set_name;
+      const color = items[0].assessment_set_color ?? items[0].color;
+      const name = items[0].assessment_set_name ?? abbrev;
       elements.push(
         <span key={`group-${abbrev}`} className="d-inline-block me-1">
           <OverlayTrigger
             trigger="click"
             placement="auto"
             popover={{
-              props: { id: `other-assessments-popover-${abbrev}` },
+              props: { id: `picker-assessments-popover-${abbrev}` },
               header: `${name} (${items.length})`,
               body: (
                 <div className="d-flex flex-wrap gap-1">
@@ -87,8 +111,8 @@ export function OtherAssessmentsBadges({ assessments, urlPrefix }: OtherAssessme
                       urlPrefix={urlPrefix}
                       assessment={{
                         assessment_id: assessment.assessment_id,
-                        color: assessment.assessment_set_color,
-                        label: `${assessment.assessment_set_abbreviation}${assessment.assessment_number}`,
+                        color: assessment.assessment_set_color ?? assessment.color,
+                        label: assessment.label,
                       }}
                     />
                   ))}
@@ -101,6 +125,7 @@ export function OtherAssessmentsBadges({ assessments, urlPrefix }: OtherAssessme
               type="button"
               className={`btn btn-badge color-${color}`}
               aria-label={`${abbrev}: ${items.length} assessments`}
+              onClick={(e) => e.stopPropagation()}
             >
               {abbrev} ×{items.length}
             </button>

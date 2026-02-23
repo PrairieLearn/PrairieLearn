@@ -322,6 +322,8 @@ function createEditorReducer(initialState: EditorState) {
       case 'UPDATE_QUESTION_METADATA': {
         const { questionId, oldQuestionId, questionData } = action;
         const newQuestionMetadata = { ...state.questionMetadata };
+        // When a question's QID changes (e.g., via the picker), remove the
+        // metadata entry keyed by the old QID so it doesn't linger as stale.
         if (oldQuestionId && oldQuestionId !== questionId) {
           delete newQuestionMetadata[oldQuestionId];
         }

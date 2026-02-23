@@ -32,6 +32,10 @@ export interface FilterDropdownProps {
   pinnedIds?: Set<string>;
 }
 
+function compareItemsByName(a: FilterItem, b: FilterItem) {
+  return a.name.localeCompare(b.name, undefined, { numeric: true });
+}
+
 function defaultRenderItem(item: FilterItem, _isSelected: boolean) {
   return item.color ? (
     <span className={`badge color-${item.color}`}>{item.name}</span>
@@ -60,12 +64,10 @@ export function FilterDropdown({
   // Sort items alphabetically for display, with pinned items first
   const sortedItems = useMemo(() => {
     if (!pinnedIds || pinnedIds.size === 0) {
-      return [...items].sort((a, b) => a.name.localeCompare(b.name));
+      return [...items].sort(compareItemsByName);
     }
     const pinned = items.filter((item) => pinnedIds.has(item.id));
-    const rest = items
-      .filter((item) => !pinnedIds.has(item.id))
-      .sort((a, b) => a.name.localeCompare(b.name));
+    const rest = items.filter((item) => !pinnedIds.has(item.id)).sort(compareItemsByName);
     return [...pinned, ...rest];
   }, [items, pinnedIds]);
 

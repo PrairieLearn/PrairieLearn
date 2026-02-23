@@ -3,11 +3,12 @@ import clsx from 'clsx';
 import { useMemo, useRef, useState } from 'react';
 import { Modal } from 'react-bootstrap';
 
-import { FilterDropdown, type FilterItem, OverlayTrigger } from '@prairielearn/ui';
+import { FilterDropdown, type FilterItem } from '@prairielearn/ui';
 
-import { AssessmentBadge } from '../../../components/AssessmentBadge.js';
 import { getQuestionUrl } from '../../../lib/client/url.js';
-import type { AssessmentForPicker, CourseQuestionForPicker } from '../types.js';
+import type { CourseQuestionForPicker } from '../types.js';
+
+import { AssessmentBadges } from './AssessmentBadges.js';
 
 /** Special filter ID for questions not in any assessment */
 const NOT_IN_ANY_ASSESSMENT_ID = '__not_in_any_assessment__';
@@ -25,146 +26,6 @@ export interface QuestionPickerModalProps {
   currentQid?: string | null;
   /** The ID of the current assessment being edited (to exclude from badges) */
   currentAssessmentId?: string;
-}
-
-/**
- * Groups assessments by their set abbreviation and returns them sorted.
- * Returns null if abbreviation data is not available.
- */
-function groupByAbbreviation(
-  assessments: AssessmentForPicker[],
-): Map<string, AssessmentForPicker[]> | null {
-  // Check if we have abbreviation data (needed for grouping)
-  if (!assessments.every((a) => a.assessment_set_abbreviation && a.assessment_number)) {
-    return null;
-  }
-
-  const grouped = new Map<string, AssessmentForPicker[]>();
-
-  for (const assessment of assessments) {
-    const abbrev = assessment.assessment_set_abbreviation!;
-    const existing = grouped.get(abbrev) ?? [];
-    existing.push(assessment);
-    grouped.set(abbrev, existing);
-  }
-
-  // Sort items within each group by assessment number
-  for (const items of grouped.values()) {
-    items.sort((a, b) => {
-      const numA = Number.parseInt(a.assessment_number!) || 0;
-      const numB = Number.parseInt(b.assessment_number!) || 0;
-      return numA - numB;
-    });
-  }
-
-  // Return sorted by abbreviation
-  return new Map([...grouped.entries()].sort(([a], [b]) => a.localeCompare(b)));
-}
-
-/**
- * Renders assessment badges with grouping for compact display.
- * Groups of 3+ assessments with the same abbreviation are collapsed.
- */
-function AssessmentBadges({
-  assessments,
-  urlPrefix,
-}: {
-  assessments: AssessmentForPicker[];
-  urlPrefix: string;
-}) {
-  if (assessments.length === 0) {
-    return null;
-  }
-
-  const grouped = groupByAbbreviation(assessments);
-
-  // Fallback to simple badges if grouping data isn't available
-  if (!grouped) {
-    return (
-      <>
-        {assessments.slice(0, 3).map((assessment) => (
-          <span key={assessment.assessment_id} className="d-inline-block me-1">
-            <AssessmentBadge
-              urlPrefix={urlPrefix}
-              assessment={{
-                assessment_id: assessment.assessment_id,
-                color: assessment.color,
-                label: assessment.label,
-              }}
-            />
-          </span>
-        ))}
-        {assessments.length > 3 && (
-          <span className="badge bg-secondary">+{assessments.length - 3}</span>
-        )}
-      </>
-    );
-  }
-
-  const elements: React.ReactNode[] = [];
-
-  for (const [abbrev, items] of grouped) {
-    if (items.length < 3) {
-      // Render individual badges
-      for (const assessment of items) {
-        elements.push(
-          <span key={assessment.assessment_id} className="d-inline-block me-1">
-            <AssessmentBadge
-              urlPrefix={urlPrefix}
-              assessment={{
-                assessment_id: assessment.assessment_id,
-                color: assessment.assessment_set_color ?? assessment.color,
-                label: assessment.label,
-              }}
-            />
-          </span>,
-        );
-      }
-    } else {
-      // Render a grouped badge with popover
-      const color = items[0].assessment_set_color ?? items[0].color;
-      const name = items[0].assessment_set_name ?? abbrev;
-      elements.push(
-        <span key={`group-${abbrev}`} className="d-inline-block me-1">
-          <OverlayTrigger
-            trigger="click"
-            placement="auto"
-            popover={{
-              props: { id: `picker-assessments-popover-${abbrev}` },
-              header: `${name} (${items.length})`,
-              body: (
-                <div className="d-flex flex-wrap gap-1">
-                  {items.map((assessment) => (
-                    <AssessmentBadge
-                      key={assessment.assessment_id}
-                      urlPrefix={urlPrefix}
-                      assessment={{
-                        assessment_id: assessment.assessment_id,
-                        color: assessment.assessment_set_color ?? assessment.color,
-                        label: assessment.label,
-                      }}
-                    />
-                  ))}
-                </div>
-              ),
-            }}
-            rootClose
-          >
-            <button
-              type="button"
-              className={`btn btn-badge color-${color}`}
-              aria-label={`${abbrev}: ${items.length} assessments`}
-              onClick={(e) => e.stopPropagation()}
-            >
-              {abbrev} ×{items.length}
-            </button>
-          </OverlayTrigger>
-        </span>,
-      );
-    }
-  }
-
-  return <>{elements}</>;
 }
 
 /**
@@ -190,7 +51,6 @@ export function QuestionPickerModal({
 
   const parentRef = useRef<HTMLDivElement>(null);
 
-  // Extract unique topics, tags, and assessments from course questions
   const { topics, tags, assessments } = useMemo(() => {
     const topicMap = new Map<string, FilterItem>();
     const tagMap = new Map<string, FilterItem>();
@@ -203,7 +63,6 @@ export function QuestionPickerModal({
         tagMap.set(String(tag.id), { id: String(tag.id), name: tag.name, color: tag.color });
       });
       q.assessments?.forEach((assessment) => {
-        // Exclude current assessment from filter options
         if (assessment.assessment_id !== currentAssessmentId) {
           assessmentMap.set(assessment.assessment_id, {
             id: assessment.assessment_id,
@@ -214,12 +73,10 @@ export function QuestionPickerModal({
       });
     });
 
-    // Sort assessments by label (which includes number)
     const sortedAssessments = Array.from(assessmentMap.values()).sort((a, b) =>
       a.name.localeCompare(b.name, undefined, { numeric: true }),
     );
 
-    // Add special "Not in any assessment" option at the beginning
     const assessmentsWithSpecial: FilterItem[] = [
       { id: NOT_IN_ANY_ASSESSMENT_ID, name: 'None' },
       ...sortedAssessments,
@@ -232,25 +89,20 @@ export function QuestionPickerModal({
     };
   }, [courseQuestions, currentAssessmentId]);
 
-  // Filter questions based on search and filters
   const filteredQuestions = useMemo(() => {
     return courseQuestions.filter((q) => {
       const searchLower = searchQuery.toLowerCase().trim();
 
-      // Search: QID + title (case-insensitive substring)
       const matchesSearch =
         !searchLower ||
         q.qid.toLowerCase().includes(searchLower) ||
         q.title.toLowerCase().includes(searchLower);
 
-      // Topic filter (OR logic)
       const matchesTopic = selectedTopics.size === 0 || selectedTopics.has(String(q.topic.id));
 
-      // Tags filter (OR logic - matches if ANY tag is selected)
       const matchesTags =
         selectedTags.size === 0 || q.tags?.some((tag) => selectedTags.has(String(tag.id)));
 
-      // Assessment filter (OR logic with special handling for "not in any").
       // Exclude currentAssessmentId so that questions only in the current
       // assessment are treated as "not in any" — consistent with badge display.
       let matchesAssessment = selectedAssessments.size === 0;
@@ -283,26 +135,23 @@ export function QuestionPickerModal({
     currentAssessmentId,
   ]);
 
-  // Sort filtered questions by QID
   const sortedQuestions = useMemo(
     () => [...filteredQuestions].sort((a, b) => a.qid.localeCompare(b.qid)),
     [filteredQuestions],
   );
 
-  // Virtual scrolling setup with dynamic measurement for variable height rows
   const rowVirtualizer = useVirtualizer({
     count: sortedQuestions.length,
     getScrollElement: () => parentRef.current,
-    estimateSize: () => 80, // Increased to account for assessment badges row
+    estimateSize: () => 80,
     overscan: 10,
     getItemKey: (index) => sortedQuestions[index].qid,
   });
 
   const handleSelect = (question: CourseQuestionForPicker) => {
     const qid = question.qid;
-    // Allow selecting the current question (when changing selection) but not other already-added questions
     if (questionsInAssessment.has(qid) && qid !== currentQid) {
-      return; // Don't allow selecting already-added questions
+      return;
     }
     onQuestionSelected(qid);
     resetFilters();
@@ -351,7 +200,6 @@ export function QuestionPickerModal({
                   label="Topic"
                   items={topics}
                   selectedIds={selectedTopics}
-                  // 20 items, about 28px tall, plus space for clear
                   maxHeight={20 * 28 + 50}
                   onChange={setSelectedTopics}
                 />
@@ -359,7 +207,6 @@ export function QuestionPickerModal({
                   label="Tags"
                   items={tags}
                   selectedIds={selectedTags}
-                  // 20 items, about 28px tall, plus space for clear
                   maxHeight={20 * 28 + 50}
                   onChange={setSelectedTags}
                 />
@@ -368,7 +215,6 @@ export function QuestionPickerModal({
                   items={assessments}
                   selectedIds={selectedAssessments}
                   pinnedIds={PINNED_ASSESSMENT_IDS}
-                  // 20 items, about 28px tall, plus space for clear
                   maxHeight={20 * 28 + 50}
                   onChange={setSelectedAssessments}
                 />
@@ -411,7 +257,6 @@ export function QuestionPickerModal({
                     const isCurrentSelection = qid === currentQid;
                     const isAlreadyAdded = questionsInAssessment.has(qid) && !isCurrentSelection;
 
-                    // Filter out current assessment from badges
                     const assessmentsToShow =
                       question.assessments?.filter(
                         (a) => a.assessment_id !== currentAssessmentId,

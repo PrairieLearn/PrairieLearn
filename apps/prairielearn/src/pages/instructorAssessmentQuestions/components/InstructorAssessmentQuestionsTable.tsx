@@ -16,9 +16,13 @@ import {
 import { QueryClient, useQuery } from '@tanstack/react-query';
 import { useMemo, useRef, useState } from 'react';
 
+import { run } from '@prairielearn/run';
 import { useModalState } from '@prairielearn/ui';
 
-import type { StaffAssessmentQuestionRow } from '../../../lib/assessment-question.js';
+import {
+  type StaffAssessmentQuestionRow,
+  parseStaffAssessmentQuestionRow,
+} from '../../../lib/assessment-question-schema.js';
 import type { StaffAssessment, StaffCourse } from '../../../lib/client/safe-db-types.js';
 import { QueryClientProviderDebug } from '../../../lib/client/tanstackQuery.js';
 import type { ZoneAssessmentJson } from '../../../schemas/infoAssessment.js';
@@ -35,10 +39,7 @@ import {
   stripTrackingIds,
 } from '../utils/dataTransform.js';
 import { normalizeQuestionPoints, questionDisplayName } from '../utils/questions.js';
-import {
-  type AssessmentQuestionsTrpcClient,
-  createAssessmentQuestionsTrpcClient,
-} from '../utils/trpc-client.js';
+import { createAssessmentQuestionsTrpcClient } from '../utils/trpc-client.js';
 import { TRPCProvider, useTRPC } from '../utils/trpc-context.js';
 import { useAssessmentEditor } from '../utils/useAssessmentEditor.js';
 
@@ -49,11 +50,16 @@ import { ExamResetNotSupportedModal } from './ExamResetNotSupportedModal.js';
 import { QuestionPickerModal } from './QuestionPickerModal.js';
 import { ResetQuestionVariantsModal } from './ResetQuestionVariantsModal.js';
 
-/**
- * Consolidated state for the question picker and edit modal flow.
- * This replaces the previously scattered state pieces (selectedQuestionIds,
- * editQuestionModal, questionPickerModal, pickerContext).
- */
+/** Fields that can be inherited from a zone question block by its alternatives. */
+const INHERITABLE_FIELDS = [
+  'points',
+  'autoPoints',
+  'maxPoints',
+  'maxAutoPoints',
+  'manualPoints',
+] as const;
+
+/** State for the question picker and edit modal flow. */
 interface EditingStateCreate {
   status: 'editing';
   mode: 'create';
@@ -69,6 +75,7 @@ interface EditingStateEdit {
   alternativeTrackingId?: string;
   question: ZoneQuestionBlockForm | QuestionAlternativeForm;
   zoneQuestionBlock?: ZoneQuestionBlockForm;
+  /** The question's QID before editing, used to detect QID changes. */
   originalQuestionId?: string;
 }
 
@@ -157,6 +164,19 @@ function EditModeButtons({
   );
 }
 
+interface InstructorAssessmentQuestionsTableInnerProps {
+  course: StaffCourse;
+  questionRows: StaffAssessmentQuestionRow[];
+  jsonZones: ZoneAssessmentJson[];
+  assessment: StaffAssessment;
+  assessmentSetName: string;
+  urlPrefix: string;
+  hasCoursePermissionPreview: boolean;
+  canEdit: boolean;
+  csrfToken: string;
+  origHash: string;
+}
+
 /**
  * The full table and form, and handles state management and modals.
  *
@@ -173,25 +193,11 @@ function InstructorAssessmentQuestionsTableInner({
   canEdit,
   csrfToken,
   origHash,
-  trpcClient,
-}: {
-  course: StaffCourse;
-  questionRows: StaffAssessmentQuestionRow[];
-  jsonZones: ZoneAssessmentJson[];
-  assessment: StaffAssessment;
-  assessmentSetName: string;
-  urlPrefix: string;
-  hasCoursePermissionPreview: boolean;
-  canEdit: boolean;
-  csrfToken: string;
-  origHash: string;
-  trpcClient: AssessmentQuestionsTrpcClient;
-}) {
+}: InstructorAssessmentQuestionsTableInnerProps) {
   const trpc = useTRPC();
-  // Initialize editor state from JSON zones
   const initialZones = addTrackingIds(jsonZones);
 
-  // Initially collapse alternative groups with multiple alternatives (not in edit mode)
+  // Initially collapse alternative groups with multiple alternatives
   const initialCollapsedGroups = new Set<string>();
   for (const zone of initialZones) {
     for (const question of zone.questions) {
@@ -207,14 +213,13 @@ function InstructorAssessmentQuestionsTableInner({
       questionRows.map((r) => [questionDisplayName(course, r), r]),
     ),
     collapsedGroups: initialCollapsedGroups,
-    collapsedZones: new Set<string>(), // Zones start expanded
+    collapsedZones: new Set<string>(),
   };
 
   const { zones, questionMetadata, collapsedGroups, collapsedZones, dispatch } =
     useAssessmentEditor(initialState);
   const initialZonesRef = useRef(JSON.stringify(initialState.zones));
 
-  // UI-only state
   const [editMode, setEditMode] = useState(false);
   const resetModal = useModalState<string>(null);
   const editZoneModal = useModalState<EditZoneModalData>(null);
@@ -226,16 +231,13 @@ function InstructorAssessmentQuestionsTableInner({
   });
   const courseQuestions = courseQuestionsQuery.data ?? [];
 
-  // Consolidated state for question picker and edit modal flow
   const [questionEditState, setQuestionEditState] = useState<QuestionEditState>({
     status: 'idle',
   });
 
-  // Derived modal visibility
   const showPicker = questionEditState.status === 'picking';
   const showEditModal = questionEditState.status === 'editing';
 
-  // Helper functions for state transitions
   const openPickerForNew = (zoneTrackingId: string) => {
     setQuestionEditState({ status: 'picking', zoneTrackingId });
   };
@@ -244,32 +246,29 @@ function InstructorAssessmentQuestionsTableInner({
     currentFormValues: ZoneQuestionBlockForm | QuestionAlternativeForm,
   ) => {
     if (questionEditState.status !== 'editing') return;
-    const zoneTrackingId =
-      questionEditState.mode === 'create'
-        ? questionEditState.zoneTrackingId
-        : (zones.find((z) =>
-            z.questions.some((q) => q.trackingId === questionEditState.questionTrackingId),
-          )?.trackingId ?? '');
+    const zoneTrackingId = run(() => {
+      if (questionEditState.mode === 'create') {
+        return questionEditState.zoneTrackingId;
+      }
+      return (
+        zones.find((z) =>
+          z.questions.some((q) => q.trackingId === questionEditState.questionTrackingId),
+        )?.trackingId ?? ''
+      );
+    });
     // Merge current form values into the original question to preserve unsaved
     // edits (e.g. points/manual points) while keeping extra properties that
     // aren't registered as form fields.
-    const questionWithFormValues = {
+    const questionWithFormValues: typeof questionEditState.question = {
       ...questionEditState.question,
       ...currentFormValues,
       trackingId: questionEditState.question.trackingId,
-    } as typeof questionEditState.question;
+    };
     // Restore inheritance for fields that were not explicitly set on the
     // original question. `getValues()` includes inherited display values,
     // so without this cleanup `isInherited()` would return false after the
     // pick-and-return cycle.
-    const inheritableFields = [
-      'points',
-      'autoPoints',
-      'maxPoints',
-      'maxAutoPoints',
-      'manualPoints',
-    ] as const;
-    for (const field of inheritableFields) {
+    for (const field of INHERITABLE_FIELDS) {
       if (
         !(field in questionEditState.question) ||
         questionEditState.question[field as keyof typeof questionEditState.question] === undefined
@@ -310,33 +309,24 @@ function InstructorAssessmentQuestionsTableInner({
     });
   };
 
-  const closeQuestionEditState = () => {
-    setQuestionEditState({ status: 'idle' });
-  };
-
   const handlePickerCancel = () => {
     if (questionEditState.status === 'picking' && questionEditState.returnToEdit) {
-      // Return to the edit modal without changing the QID
       setQuestionEditState(questionEditState.returnToEdit);
     } else {
-      closeQuestionEditState();
+      setQuestionEditState({ status: 'idle' });
     }
   };
 
-  // Questions already in the assessment are those with metadata
   const questionsInAssessment = useMemo(
     () => new Set(Object.keys(questionMetadata)),
     [questionMetadata],
   );
 
-  // dnd-kit sensors for drag and drop
   const sensors = useSensors(
     useSensor(PointerSensor, { activationConstraint: { distance: 6 } }),
     useSensor(KeyboardSensor, { coordinateGetter: sortableKeyboardCoordinates }),
   );
 
-  // Map from trackingId to its current position {zoneIndex, questionIndex}
-  // This is recomputed when zones change and used by drag handlers
   const positionByStableId = useMemo(() => {
     const map: Record<string, { zoneIndex: number; questionIndex: number }> = {};
     zones.forEach((zone, zoneIndex) => {
@@ -347,7 +337,6 @@ function InstructorAssessmentQuestionsTableInner({
     return map;
   }, [zones]);
 
-  // Pre-calculate the starting question number for each zone
   const zoneStartNumbers = useMemo(() => {
     const starts: number[] = [];
     let count = 0;
@@ -362,19 +351,11 @@ function InstructorAssessmentQuestionsTableInner({
     resetModal.showWithData(assessmentQuestionId);
   };
 
-  const assessmentType = assessment.type;
-
-  const handleAddQuestion = (zoneTrackingId: string) => {
-    openPickerForNew(zoneTrackingId);
-  };
-
   const handleQuestionPicked = (qid: string) => {
     if (questionEditState.status !== 'picking') return;
 
     if (questionEditState.returnToEdit) {
-      // Return to edit modal with new QID while preserving other form values
       const returnState = questionEditState.returnToEdit;
-      // Type discrimination needed for TypeScript to narrow the union type
       if (returnState.mode === 'create') {
         setQuestionEditState({
           ...returnState,
@@ -387,7 +368,6 @@ function InstructorAssessmentQuestionsTableInner({
         });
       }
     } else {
-      // Open edit modal for new question
       setQuestionEditState({
         status: 'editing',
         mode: 'create',
@@ -398,43 +378,42 @@ function InstructorAssessmentQuestionsTableInner({
     }
   };
 
-  // Handler for "Add & pick another" button - adds question and reopens picker for same zone
   const handleAddAndPickAnother = () => {
     if (questionEditState.status !== 'editing' || questionEditState.mode !== 'create') return;
-    const zoneTrackingId = questionEditState.zoneTrackingId;
-    // Will transition to picker after handleUpdateQuestion processes the save
-    setQuestionEditState({ status: 'picking', zoneTrackingId });
+    setQuestionEditState({ status: 'picking', zoneTrackingId: questionEditState.zoneTrackingId });
   };
 
-  // The `as` casts below are necessary because `StaffAssessmentQuestionRow`
-  // is a branded Zod-parsed type. When constructing metadata for a newly-
-  // picked question we don't have a full parsed row, so we build a stub with
-  // the fields that the UI actually reads. A discriminated union for saved vs.
-  // unsaved question metadata would eliminate these casts but would cascade
-  // through many components — better suited for a separate PR.
   const buildQuestionMetadata = (data: QuestionByQidResult): StaffAssessmentQuestionRow => {
-    return {
-      ...data,
+    const templateRow = Object.values(questionMetadata).at(0);
+    if (!templateRow) {
+      throw new Error('Cannot build question metadata without an existing question template');
+    }
+
+    return parseStaffAssessmentQuestionRow({
+      ...templateRow,
+      question: data.question,
+      topic: data.topic,
+      open_issue_count: data.open_issue_count,
+      tags: data.tags,
+      other_assessments: null,
       assessment,
       assessment_question: {
+        ...templateRow.assessment_question,
         id: data.question.id,
         effective_advance_score_perc: 0,
         mean_question_score: null,
         number_submissions_hist: null,
         number: 0,
         number_in_alternative_group: null,
-      } as StaffAssessmentQuestionRow['assessment_question'],
+      },
       alternative_group: {
+        ...templateRow.alternative_group,
         number: 0,
-      } as StaffAssessmentQuestionRow['alternative_group'],
-      zone: {} as StaffAssessmentQuestionRow['zone'],
-      course_instance: {} as StaffAssessmentQuestionRow['course_instance'],
-      course: {} as StaffAssessmentQuestionRow['course'],
-      other_assessments: null,
+      },
       start_new_zone: false,
       start_new_alternative_group: true,
       alternative_group_size: 1,
-    } as StaffAssessmentQuestionRow;
+    });
   };
 
   const handleUpdateQuestion = (
@@ -445,7 +424,6 @@ function InstructorAssessmentQuestionsTableInner({
     if (!updatedQuestion.id) return;
     if (questionEditState.status !== 'editing') return;
 
-    // Normalize point fields
     const normalizedQuestion = normalizeQuestionPoints(updatedQuestion);
 
     if (questionEditState.mode === 'create') {
@@ -459,7 +437,6 @@ function InstructorAssessmentQuestionsTableInner({
         questionData: newQuestionData ? buildQuestionMetadata(newQuestionData) : undefined,
       });
     } else {
-      // Update existing question
       if (newQuestionData) {
         dispatch({
           type: 'UPDATE_QUESTION_METADATA',
@@ -469,7 +446,6 @@ function InstructorAssessmentQuestionsTableInner({
         });
       }
 
-      // Apply point normalization for the update
       const questionWithNormalizedPoints = {
         ...normalizedQuestion,
         points: normalizedQuestion.manualPoints != null ? undefined : normalizedQuestion.points,
@@ -485,7 +461,7 @@ function InstructorAssessmentQuestionsTableInner({
       });
     }
 
-    closeQuestionEditState();
+    setQuestionEditState({ status: 'idle' });
   };
 
   const handleDeleteQuestion = (
@@ -524,7 +500,6 @@ function InstructorAssessmentQuestionsTableInner({
 
   const handleSaveZone = (zone: Partial<ZoneAssessmentForm>, zoneTrackingId?: string) => {
     if (zoneTrackingId === undefined) {
-      // Adding a new zone
       dispatch({
         type: 'ADD_ZONE',
         zone: createZoneWithTrackingId({
@@ -533,7 +508,6 @@ function InstructorAssessmentQuestionsTableInner({
         } as Omit<ZoneAssessmentForm, 'trackingId'>),
       });
     } else {
-      // Updating an existing zone
       dispatch({
         type: 'UPDATE_ZONE',
         zoneTrackingId,
@@ -555,11 +529,9 @@ function InstructorAssessmentQuestionsTableInner({
       const fromZoneIndex = zones.findIndex((z) => z.trackingId === activeIdStr);
       if (fromZoneIndex === -1) return;
 
-      // Find the target zone index
       const toZoneIndex = zones.findIndex((z) => z.trackingId === overIdStr);
       if (toZoneIndex === -1 || fromZoneIndex === toZoneIndex) return;
 
-      // Determine insertion point based on drag direction
       const isDraggingDown = fromZoneIndex < toZoneIndex;
       let beforeZoneTrackingId: string | null;
 
@@ -649,7 +621,8 @@ function InstructorAssessmentQuestionsTableInner({
     }
   };
 
-  // If at least one question has a nonzero unlock score, display the Advance Score column
+  // `effective_advance_score_perc` is null for newly added questions that
+  // haven't been saved yet and don't have assessment_question rows.
   const showAdvanceScorePercCol = Object.values(questionMetadata).some(
     (q) =>
       q.assessment_question.effective_advance_score_perc != null &&
@@ -753,9 +726,9 @@ function InstructorAssessmentQuestionsTableInner({
                           hasCoursePermissionPreview,
                           canEdit,
                           showAdvanceScorePercCol,
-                          assessmentType,
+                          assessmentType: assessment.type,
                         }}
-                        handleAddQuestion={handleAddQuestion}
+                        handleAddQuestion={openPickerForNew}
                         handleEditQuestion={openEditForExisting}
                         handleDeleteQuestion={handleDeleteQuestion}
                         handleResetButtonClick={handleResetButtonClick}
@@ -781,7 +754,7 @@ function InstructorAssessmentQuestionsTableInner({
           </div>
         )}
       </div>
-      {assessmentType === 'Homework' ? (
+      {assessment.type === 'Homework' ? (
         <ResetQuestionVariantsModal
           csrfToken={csrfToken}
           assessmentQuestionId={resetModal.data ?? ''}
@@ -799,26 +772,25 @@ function InstructorAssessmentQuestionsTableInner({
       {editMode && (
         <EditQuestionModal
           show={showEditModal}
-          data={
-            questionEditState.status === 'editing'
-              ? questionEditState.mode === 'create'
-                ? {
-                    type: 'create' as const,
-                    question: questionEditState.question,
-                    existingQids: questionEditState.existingQids,
-                  }
-                : {
-                    type: 'edit' as const,
-                    question: questionEditState.question,
-                    zoneQuestionBlock: questionEditState.zoneQuestionBlock,
-                    originalQuestionId: questionEditState.originalQuestionId,
-                  }
-              : null
-          }
-          assessmentType={assessmentType === 'Homework' ? 'Homework' : 'Exam'}
+          data={run(() => {
+            if (questionEditState.status !== 'editing') return null;
+            if (questionEditState.mode === 'create') {
+              return {
+                type: 'create' as const,
+                question: questionEditState.question,
+                existingQids: questionEditState.existingQids,
+              };
+            }
+            return {
+              type: 'edit' as const,
+              question: questionEditState.question,
+              zoneQuestionBlock: questionEditState.zoneQuestionBlock,
+              originalQuestionId: questionEditState.originalQuestionId,
+            };
+          })}
+          assessmentType={assessment.type === 'Homework' ? 'Homework' : 'Exam'}
           handleUpdateQuestion={handleUpdateQuestion}
-          trpcClient={trpcClient}
-          onHide={closeQuestionEditState}
+          onHide={() => setQuestionEditState({ status: 'idle' })}
           onPickQuestion={openPickerToChangeQid}
           onAddAndPickAnother={handleAddAndPickAnother}
         />
@@ -845,18 +817,20 @@ function InstructorAssessmentQuestionsTableInner({
   );
 }
 
+export interface InstructorAssessmentQuestionsTableProps extends InstructorAssessmentQuestionsTableInnerProps {
+  trpcCsrfToken: string;
+}
+
 export function InstructorAssessmentQuestionsTable({
   trpcCsrfToken,
   ...innerProps
-}: Omit<Parameters<typeof InstructorAssessmentQuestionsTableInner>[0], 'trpcClient'> & {
-  trpcCsrfToken: string;
-}) {
+}: InstructorAssessmentQuestionsTableProps) {
   const [queryClient] = useState(() => new QueryClient());
   const [trpcClient] = useState(() => createAssessmentQuestionsTrpcClient(trpcCsrfToken));
   return (
     <QueryClientProviderDebug client={queryClient}>
       <TRPCProvider trpcClient={trpcClient} queryClient={queryClient}>
-        <InstructorAssessmentQuestionsTableInner {...innerProps} trpcClient={trpcClient} />
+        <InstructorAssessmentQuestionsTableInner {...innerProps} />
       </TRPCProvider>
     </QueryClientProviderDebug>
   );
