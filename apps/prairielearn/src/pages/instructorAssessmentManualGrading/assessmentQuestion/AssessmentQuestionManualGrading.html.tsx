@@ -7,6 +7,7 @@ import { NuqsAdapter } from '@prairielearn/ui';
 import type { AiGradingGeneralStats } from '../../../ee/lib/ai-grading/types.js';
 import type { PageContext } from '../../../lib/client/page-context.js';
 import type {
+  EnumAiGradingProvider,
   StaffAssessment,
   StaffAssessmentQuestion,
   StaffInstanceQuestionGroup,
@@ -51,8 +52,7 @@ interface AssessmentQuestionManualGradingProps {
   isDevMode: boolean;
   questionTitle: string;
   questionNumber: number;
-  availableAiGradingProviders: string[];
-  useCustomApiKeys: boolean;
+  availableAiGradingProviders: EnumAiGradingProvider[];
 }
 
 type AssessmentQuestionManualGradingInnerProps = Omit<
@@ -82,7 +82,6 @@ function AssessmentQuestionManualGradingInner({
   questionTitle,
   questionNumber,
   availableAiGradingProviders,
-  useCustomApiKeys,
 }: AssessmentQuestionManualGradingInnerProps) {
   const trpc = useTRPC();
   const queryClient = useQueryClient();
@@ -174,7 +173,6 @@ function AssessmentQuestionManualGradingInner({
         mutations={mutations}
         initialOngoingJobSequenceTokens={initialOngoingJobSequenceTokens}
         availableAiGradingProviders={availableAiGradingProviders}
-        useCustomApiKeys={useCustomApiKeys}
         onSetGroupInfoModalState={setGroupInfoModalState}
         onSetConflictModalState={setConflictModalState}
       />

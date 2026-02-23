@@ -7,11 +7,11 @@ import { decrypt, encrypt } from './symmetric-crypto.js';
  * @param plaintext The plaintext to encrypt (utf8).
  * @returns The ciphertext (utf8).
  */
-export async function encryptForStorage(plaintext: string): Promise<string> {
+export function encryptForStorage(plaintext: string): string {
   if (!config.devMode && config.databaseEncryptionKey.startsWith('d44e91681a476979')) {
     throw new Error('Database encryption key must be changed in production');
   }
-  return await encrypt(plaintext, config.databaseEncryptionKey);
+  return encrypt(plaintext, config.databaseEncryptionKey);
 }
 
 /**

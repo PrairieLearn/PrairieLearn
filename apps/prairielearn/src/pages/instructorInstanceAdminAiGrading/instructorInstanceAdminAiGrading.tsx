@@ -2,6 +2,7 @@ import { Router } from 'express';
 import { z } from 'zod';
 
 import * as error from '@prairielearn/error';
+import { formatDateYMD } from '@prairielearn/formatter';
 import * as sqldb from '@prairielearn/postgres';
 import { Hydrate } from '@prairielearn/react/server';
 
@@ -19,7 +20,10 @@ import { typedAsyncHandler } from '../../lib/res-locals.js';
 import { decryptFromStorage, encryptForStorage } from '../../lib/storage-crypt.js';
 import { createAuthzMiddleware } from '../../middlewares/authzHelper.js';
 
-import { type AiGradingApiKeyCredential, InstructorInstanceAdminAiGrading } from './instructorInstanceAdminAiGrading.html.js';
+import {
+  type AiGradingApiKeyCredential,
+  InstructorInstanceAdminAiGrading,
+} from './instructorInstanceAdminAiGrading.html.js';
 
 const router = Router();
 const sql = sqldb.loadSqlEquiv(import.meta.url);
@@ -29,22 +33,21 @@ function maskApiKey(key: string): string {
   return `${key.slice(0, 3)}...${key.slice(-4)}`;
 }
 
-function formatCredential(cred: {
-  id: string;
-  provider: string;
-  encrypted_secret_key: string;
-  created_at: Date;
-}): AiGradingApiKeyCredential {
+function formatCredential(
+  cred: {
+    id: string;
+    provider: string;
+    encrypted_secret_key: string;
+    created_at: Date;
+  },
+  displayTimezone: string,
+): AiGradingApiKeyCredential {
   const decrypted = decryptFromStorage(cred.encrypted_secret_key);
   return {
     id: cred.id,
     provider: cred.provider as EnumAiGradingProvider,
     apiKeyMasked: maskApiKey(decrypted),
-    dateAdded: cred.created_at.toLocaleDateString('en-US', {
-      month: 'short',
-      day: 'numeric',
-      year: 'numeric',
-    }),
+    dateAdded: formatDateYMD(cred.created_at, displayTimezone),
   };
 }
 
@@ -87,7 +90,9 @@ router.get(
       CourseInstanceAiGradingCredentialSchema,
     );
 
-    const credentials = dbCredentials.map(formatCredential);
+    const credentials = dbCredentials.map((c) =>
+      formatCredential(c, courseInstance.display_timezone),
+    );
 
     res.send(
       PageLayout({
@@ -162,7 +167,7 @@ router.post(
         })
         .parse(req.body);
 
-      const encrypted = await encryptForStorage(secret_key);
+      const encrypted = encryptForStorage(secret_key);
 
       const row = await sqldb.queryRow(
         sql.upsert_credential,
@@ -174,7 +179,7 @@ router.post(
         CourseInstanceAiGradingCredentialSchema,
       );
 
-      res.json({ credential: formatCredential(row) });
+      res.json({ credential: formatCredential(row, courseInstance.display_timezone) });
     } else if (req.body.__action === 'delete_credential') {
       const { credential_id } = z.object({ credential_id: z.string() }).parse(req.body);
 

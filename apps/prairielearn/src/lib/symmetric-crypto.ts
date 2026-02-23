@@ -11,7 +11,7 @@ const AUTH_TAG_LENGTH = 16;
  * @param key A 32-byte hex-encoded key.
  * @returns A base64 string containing IV + ciphertext + auth tag.
  */
-export async function encrypt(plaintext: string, key: string): Promise<string> {
+export function encrypt(plaintext: string, key: string): string {
   const keyBuffer = Buffer.from(key, 'hex');
   const iv = crypto.randomBytes(IV_LENGTH);
   const cipher = crypto.createCipheriv(ALGORITHM, keyBuffer, iv, {

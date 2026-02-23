@@ -368,9 +368,6 @@ const SKIP_ROUTES = [
   '/pl/course/:course_id/ai_generate_editor/:question_id',
   '/pl/course_instance/:course_instance_id/instructor/ai_generate_question_drafts/:job_id',
 
-  // TODO: create a test course with AI grading feature flag enabled to test page
-  '/pl/course_instance/:course_instance_id/instructor/instance_admin/ai_grading',
-
   // API routes.
   '/pl/course_instance/lookup',
   '/pl/course_instance/:course_instance_id/instructor/instance_admin/publishing/extension/check',
@@ -433,6 +430,7 @@ describe('accessibility', () => {
     assert.isNotNull(enrollment);
 
     await features.enable('question-sharing');
+    await features.enable('ai-grading');
 
     routeParams = {
       ...STATIC_ROUTE_PARAMS,

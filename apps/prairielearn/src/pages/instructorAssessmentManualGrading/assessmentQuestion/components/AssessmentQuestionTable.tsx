@@ -31,11 +31,12 @@ import { useServerJobProgress } from '../../../../components/ServerJobProgress/u
 import {
   AI_GRADING_MODELS,
   type AiGradingModelId,
-  DEFAULT_AI_GRADING_MODEL
+  DEFAULT_AI_GRADING_MODEL,
 } from '../../../../ee/lib/ai-grading/ai-grading-models.shared.js';
 import type { AiGradingGeneralStats } from '../../../../ee/lib/ai-grading/types.js';
 import type { PageContext } from '../../../../lib/client/page-context.js';
 import type {
+  EnumAiGradingProvider,
   StaffAssessment,
   StaffAssessmentQuestion,
   StaffInstanceQuestionGroup,
@@ -84,8 +85,7 @@ interface AssessmentQuestionTableProps {
   courseStaff: StaffUser[];
   aiGradingStats: AiGradingGeneralStats | null;
   initialOngoingJobSequenceTokens: Record<string, string> | null;
-  availableAiGradingProviders: string[];
-  useCustomApiKeys: boolean;
+  availableAiGradingProviders: EnumAiGradingProvider[];
   onSetGroupInfoModalState: (modalState: GroupInfoModalState) => void;
   onSetConflictModalState: (modalState: ConflictModalState) => void;
   mutations: ReturnType<typeof useManualGradingActions>;
@@ -110,7 +110,7 @@ function AiGradingOption({
   text: string;
   numToGrade: number;
   aiGradingModelSelectionEnabled: boolean;
-  availableProviders: string[];
+  availableProviders: EnumAiGradingProvider[];
   onSelectModel: (modelId: AiGradingModelId) => void;
 }) {
   const isDefaultModelAvailable = availableProviders.includes(
@@ -178,7 +178,6 @@ export function AssessmentQuestionTable({
   aiGradingStats,
   initialOngoingJobSequenceTokens,
   availableAiGradingProviders,
-  useCustomApiKeys,
   onSetGroupInfoModalState,
   onSetConflictModalState,
   mutations,
@@ -630,17 +629,13 @@ export function AssessmentQuestionTable({
     groupSubmissionMutation,
   } = mutations;
 
-  // When using custom API keys:
-  //
   // If model selection is disabled, grading will use an OpenAI model, so we
   // specifically check for an OpenAI key.
   //
   // If model selection is enabled, we check key availability across all providers.
-  const aiGradingDisabledNoKeys =
-    useCustomApiKeys &&
-    (aiGradingModelSelectionEnabled
-      ? availableAiGradingProviders.length === 0
-      : !availableAiGradingProviders.includes('openai'));
+  const aiGradingDisabledNoKeys = aiGradingModelSelectionEnabled
+    ? availableAiGradingProviders.length === 0
+    : !availableAiGradingProviders.includes('openai');
 
   const columnFiltersComponents = createColumnFilters({
     allGraders,
@@ -761,8 +756,8 @@ export function AssessmentQuestionTable({
                   <OverlayTrigger
                     tooltip={{
                       body: aiGradingModelSelectionEnabled
-                        ? 'To AI grade, add a key or disable "Use custom API keys" in AI grading settings.'
-                        : 'To AI grade, add an OpenAI key or disable "Use custom API keys" in AI grading settings.',
+                        ? 'No AI grading API keys are configured. Add a key in AI grading settings.'
+                        : 'No OpenAI API key is configured. Add a key in AI grading settings.',
                       props: { id: 'ai-grading-no-keys-tooltip' },
                     }}
                   >
@@ -852,19 +847,17 @@ export function AssessmentQuestionTable({
                     </Dropdown.Menu>
                   </Dropdown>
                 )}
-                {useCustomApiKeys && !availableAiGradingProviders.includes('openai') ? (
+                {!availableAiGradingProviders.includes('openai') ? (
                   <OverlayTrigger
                     tooltip={{
-                      body: 'To use submission grouping, add an OpenAI key or disable "Use custom API keys" in AI grading settings.',
+                      body: 'No OpenAI API key is configured. Add a key in AI grading settings to use submission grouping.',
                       props: { id: 'ai-grouping-no-openai-tooltip' },
                     }}
                   >
-                    <span>
-                      <Button variant="light" size="sm" disabled>
-                        <i className="bi bi-stars" aria-hidden="true" />
-                        <span className="d-none d-sm-inline">AI submission grouping</span>
-                      </Button>
-                    </span>
+                    <Button variant="light" size="sm" disabled>
+                      <i className="bi bi-stars" aria-hidden="true" />
+                      <span className="d-none d-sm-inline">AI submission grouping</span>
+                    </Button>
                   </OverlayTrigger>
                 ) : (
                   <Dropdown>

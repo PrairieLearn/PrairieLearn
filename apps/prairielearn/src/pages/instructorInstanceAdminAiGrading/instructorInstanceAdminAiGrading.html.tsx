@@ -6,8 +6,8 @@ import {
   AI_GRADING_PROVIDER_DISPLAY_NAMES,
   AI_GRADING_PROVIDER_OPTIONS,
 } from '../../ee/lib/ai-grading/ai-grading-models.shared.js';
+import type { EnumAiGradingProvider } from '../../lib/client/safe-db-types.js';
 import { QueryClientProviderDebug } from '../../lib/client/tanstackQuery.js';
-import type { EnumAiGradingProvider } from '../../lib/db-types.js';
 
 export interface AiGradingApiKeyCredential {
   id: string;
@@ -307,7 +307,7 @@ function AddApiKeyModal({
   onSubmit: () => void;
 }) {
   return (
-    <Modal show={show} backdrop="static" onHide={() => !mutation.isPending && onHide()}>
+    <Modal show={show} backdrop="static" onHide={onHide}>
       <Modal.Header closeButton>
         <Modal.Title>Add API key</Modal.Title>
       </Modal.Header>
@@ -384,7 +384,7 @@ function DeleteApiKeyModal({
   onConfirm: () => void;
 }) {
   return (
-    <Modal show={target !== null} onHide={() => !mutation.isPending && onHide()}>
+    <Modal show={target !== null} onHide={onHide}>
       <Modal.Header closeButton>
         <Modal.Title>Delete API key</Modal.Title>
       </Modal.Header>
