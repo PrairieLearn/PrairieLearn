@@ -202,9 +202,7 @@ export const ConfigSchema = z.object({
   // TODO: tweak this value once we see the data from #2267
   questionTimeoutMilliseconds: z.number().default(10000),
   secretKey: z.string().default('THIS_IS_THE_SECRET_KEY'),
-  databaseEncryptionKey: z
-    .string()
-    .default('0'.repeat(64)),
+  databaseEncryptionKey: z.string().default('0'.repeat(64)),
   secretSlackOpsBotEndpoint: z.string().nullable().default(null),
   secretSlackToken: z.string().nullable().default(null),
   secretSlackCourseRequestChannel: z.string().nullable().default(null),
@@ -675,7 +673,9 @@ export async function loadConfig(paths: string[]) {
     }
 
     if (config.databaseEncryptionKey === '0'.repeat(64)) {
-      throw new Error('databaseEncryptionKey must be set to a secure value in production environments');
+      throw new Error(
+        'databaseEncryptionKey must be set to a secure value in production environments',
+      );
     }
   }
 
