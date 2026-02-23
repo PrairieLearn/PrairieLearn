@@ -15,7 +15,7 @@ import type { ResLocalsAssessmentQuestion } from '../middlewares/selectAndAuthzA
 import type { ResLocalsInstanceQuestion } from '../middlewares/selectAndAuthzInstanceQuestion.js';
 import type {
   ResLocalsInstructorQuestion,
-  ResLocalsInstructorQuestionWithCourseInstance,
+  ResLocalsInstructorQuestionSchema,
 } from '../middlewares/selectAndAuthzInstructorQuestion.js';
 import type { ResLocalsCourseIssueCount } from '../middlewares/selectOpenIssueCount.js';
 
@@ -43,7 +43,7 @@ interface ResLocalsForPageLookup {
   'instructor-instance-question': ResLocals &
     ResLocalsCourseIssueCount &
     ResLocalsCourseInstance &
-    ResLocalsInstructorQuestionWithCourseInstance &
+    ResLocalsInstructorQuestionSchema &
     ResLocalsInstanceQuestion &
     ResLocalsInstanceQuestionRender &
     ResLocalsQuestionRender & {
