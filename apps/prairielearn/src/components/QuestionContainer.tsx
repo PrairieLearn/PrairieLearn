@@ -240,24 +240,26 @@ function AIGradingExplanation({
                     An image was uploaded in a rotated state by the student (this was an error by
                     the student). The system corrected its rotation prior to AI grading.
                   </p>
-                  <table class="table table-sm table-bordered mb-0">
-                    <thead>
-                      <tr>
-                        <th>Image</th>
-                        <th>Correction (counterclockwise)</th>
-                      </tr>
-                    </thead>
-                    <tbody>
-                      ${Object.entries(rotationCorrectionDegrees).map(
-                        ([filename, degrees]) => html`
-                          <tr>
-                            <td>${filename}</td>
-                            <td>${degrees}&deg;</td>
-                          </tr>
-                        `,
-                      )}
-                    </tbody>
-                  </table>
+                  <div class="card table-responsive mb-0" style="max-width: 800px;">
+                    <table class="table table-sm mb-0">
+                      <thead class="table-light">
+                        <tr>
+                          <th class="text-nowrap">Filename</th>
+                          <th class="text-nowrap">Correction (counterclockwise)</th>
+                        </tr>
+                      </thead>
+                      <tbody>
+                        ${Object.entries(rotationCorrectionDegrees).map(
+                          ([filename, degrees]) => html`
+                            <tr>
+                              <td class="text-nowrap"><code>${filename}</code></td>
+                              <td>${degrees}&deg;</td>
+                            </tr>
+                          `,
+                        )}
+                      </tbody>
+                    </table>
+                  </div>
                 </div>`
               : html`<div class="alert alert-info mb-3" role="alert">
                   All student-submitted images were uploaded in an upright state.
