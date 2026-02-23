@@ -1,6 +1,10 @@
 import { QueryClient, useMutation } from '@tanstack/react-query';
+import clsx from 'clsx';
 import { useState } from 'react';
 import { Alert, Form, Modal } from 'react-bootstrap';
+import { useForm } from 'react-hook-form';
+
+import { useModalState } from '@prairielearn/ui';
 
 import {
   AI_GRADING_PROVIDER_DISPLAY_NAMES,
@@ -9,6 +13,9 @@ import {
 import type { EnumAiGradingProvider } from '../../lib/client/safe-db-types.js';
 import { QueryClientProviderDebug } from '../../lib/client/tanstackQuery.js';
 
+import { createAiGradingSettingsTrpcClient } from './utils/trpc-client.js';
+import { TRPCProvider, useTRPC } from './utils/trpc-context.js';
+
 export interface AiGradingApiKeyCredential {
   id: string;
   provider: EnumAiGradingProvider;
@@ -16,32 +23,15 @@ export interface AiGradingApiKeyCredential {
   dateAdded: string;
 }
 
-/**
- * Create a POST request to the current page with the given body and CSRF token, and handle errors uniformly.
- * Assumes that the server will respond with JSON containing an 'error' field in case of an error, and that successful responses are also JSON.
- */
-async function postAction(csrfToken: string, body: Record<string, unknown>, errorMessage: string) {
-  const resp = await fetch(window.location.pathname, {
-    method: 'POST',
-    headers: { 'Content-Type': 'application/json' },
-    body: JSON.stringify({ __csrf_token: csrfToken, ...body }),
-  });
-  if (!resp.ok) {
-    const result = await resp.json();
-    throw new Error(result?.error ?? errorMessage);
-  }
-  return resp.json();
-}
-
 export function InstructorInstanceAdminAiGrading({
-  csrfToken,
+  trpcCsrfToken,
   initialUseCustomApiKeys,
   initialApiKeyCredentials,
   canEdit,
   isDevMode,
   aiGradingModelSelectionEnabled,
 }: {
-  csrfToken: string;
+  trpcCsrfToken: string;
   initialUseCustomApiKeys: boolean;
   initialApiKeyCredentials: AiGradingApiKeyCredential[];
   canEdit: boolean;
@@ -49,16 +39,18 @@ export function InstructorInstanceAdminAiGrading({
   aiGradingModelSelectionEnabled: boolean;
 }) {
   const [queryClient] = useState(() => new QueryClient());
+  const [trpcClient] = useState(() => createAiGradingSettingsTrpcClient(trpcCsrfToken));
 
   return (
     <QueryClientProviderDebug client={queryClient} isDevMode={isDevMode}>
-      <AiGradingSettingsContent
-        csrfToken={csrfToken}
-        initialUseCustomApiKeys={initialUseCustomApiKeys}
-        initialApiKeyCredentials={initialApiKeyCredentials}
-        canEdit={canEdit}
-        aiGradingModelSelectionEnabled={aiGradingModelSelectionEnabled}
-      />
+      <TRPCProvider trpcClient={trpcClient} queryClient={queryClient}>
+        <AiGradingSettingsContent
+          initialUseCustomApiKeys={initialUseCustomApiKeys}
+          initialApiKeyCredentials={initialApiKeyCredentials}
+          canEdit={canEdit}
+          aiGradingModelSelectionEnabled={aiGradingModelSelectionEnabled}
+        />
+      </TRPCProvider>
     </QueryClientProviderDebug>
   );
 }
@@ -66,18 +58,18 @@ export function InstructorInstanceAdminAiGrading({
 InstructorInstanceAdminAiGrading.displayName = 'InstructorInstanceAdminAiGrading';
 
 function AiGradingSettingsContent({
-  csrfToken,
   initialUseCustomApiKeys,
   initialApiKeyCredentials,
   canEdit,
   aiGradingModelSelectionEnabled,
 }: {
-  csrfToken: string;
   initialUseCustomApiKeys: boolean;
   initialApiKeyCredentials: AiGradingApiKeyCredential[];
   canEdit: boolean;
   aiGradingModelSelectionEnabled: boolean;
 }) {
+  const trpc = useTRPC();
+
   const [useCustomApiKeys, setUseCustomApiKeys] = useState(initialUseCustomApiKeys);
   const [credentials, setCredentials] = useState(initialApiKeyCredentials);
 
@@ -85,71 +77,13 @@ function AiGradingSettingsContent({
     ? AI_GRADING_PROVIDER_OPTIONS
     : AI_GRADING_PROVIDER_OPTIONS.filter((p) => p.value === 'openai');
 
-  // Add modal state
-  const [showAddModal, setShowAddModal] = useState(false);
-  const [addProvider, setAddProvider] = useState<string>(providerOptions[0].value);
-  const [addApiKey, setAddApiKey] = useState('');
-
-  // Delete confirmation state
-  const [deleteTarget, setDeleteTarget] = useState<AiGradingApiKeyCredential | null>(null);
-
-  const existingProviderForAdd = credentials.find((c) => c.provider === addProvider);
+  const addModalState = useModalState();
+  const deleteModalState = useModalState<AiGradingApiKeyCredential>();
 
   const toggleMutation = useMutation({
-    mutationFn: async (newValue: boolean) => {
-      return postAction(
-        csrfToken,
-        {
-          __action: 'update_use_custom_api_keys',
-          ai_grading_use_custom_api_keys: newValue,
-        },
-        'Failed to toggle the custom API key setting',
-      );
-    },
-    onSuccess: (_data, newValue) => {
-      setUseCustomApiKeys(newValue);
-    },
-  });
-
-  const addMutation = useMutation({
-    mutationFn: async ({ provider, secretKey }: { provider: string; secretKey: string }) => {
-      return postAction(
-        csrfToken,
-        {
-          __action: 'add_credential',
-          provider,
-          secret_key: secretKey,
-        },
-        'Failed to save API key',
-      );
-    },
-    onSuccess: (data: { credential: AiGradingApiKeyCredential }) => {
-      setCredentials((prev) => {
-        const filtered = prev.filter((c) => c.provider !== data.credential.provider);
-        return [...filtered, data.credential];
-      });
-      setShowAddModal(false);
-      setAddApiKey('');
-      setAddProvider(providerOptions[0].value);
-    },
-  });
-
-  const deleteMutation = useMutation({
-    mutationFn: async (credentialId: string) => {
-      return postAction(
-        csrfToken,
-        {
-          __action: 'delete_credential',
-          credential_id: credentialId,
-        },
-        'Failed to delete API key',
-      );
-    },
-    onSuccess: () => {
-      if (deleteTarget) {
-        setCredentials((prev) => prev.filter((c) => c.id !== deleteTarget.id));
-      }
-      setDeleteTarget(null);
+    ...trpc.updateUseCustomApiKeys.mutationOptions(),
+    onSuccess: (data) => {
+      setUseCustomApiKeys(data.useCustomApiKeys);
     },
   });
 
@@ -170,7 +104,7 @@ function AiGradingSettingsContent({
             id="use-custom-api-keys"
             checked={useCustomApiKeys}
             disabled={!canEdit || toggleMutation.isPending}
-            onChange={() => toggleMutation.mutate(!useCustomApiKeys)}
+            onChange={() => toggleMutation.mutate({ enabled: !useCustomApiKeys })}
           />
           <Form.Check.Label htmlFor="use-custom-api-keys">Use custom API keys</Form.Check.Label>
           <div className="small text-muted">
@@ -189,7 +123,7 @@ function AiGradingSettingsContent({
                 <button
                   type="button"
                   className="btn btn-sm btn-primary d-flex align-items-center gap-2"
-                  onClick={() => setShowAddModal(true)}
+                  onClick={() => addModalState.showWithData(null)}
                 >
                   <i className="bi-plus" aria-hidden="true" />
                   Add key
@@ -234,7 +168,7 @@ function AiGradingSettingsContent({
                               type="button"
                               className="btn btn-sm btn-outline-danger"
                               aria-label={`Delete ${AI_GRADING_PROVIDER_DISPLAY_NAMES[cred.provider]} API key`}
-                              onClick={() => setDeleteTarget(cred)}
+                              onClick={() => deleteModalState.showWithData(cred)}
                             >
                               <i className="bi-trash" aria-hidden="true" />
                             </button>
@@ -251,32 +185,26 @@ function AiGradingSettingsContent({
       </div>
 
       <AddApiKeyModal
-        show={showAddModal}
+        {...addModalState}
         providerOptions={providerOptions}
-        provider={addProvider}
-        apiKey={addApiKey}
-        existingProvider={existingProviderForAdd}
-        mutation={addMutation}
-        onProviderChange={setAddProvider}
-        onApiKeyChange={setAddApiKey}
-        onHide={() => {
-          setShowAddModal(false);
-          addMutation.reset();
+        credentials={credentials}
+        onSuccess={(credential) => {
+          setCredentials((prev) => {
+            const filtered = prev.filter((c) => c.provider !== credential.provider);
+            return [...filtered, credential];
+          });
+          addModalState.hide();
         }}
-        onSubmit={() => addMutation.mutate({ provider: addProvider, secretKey: addApiKey.trim() })}
       />
 
       <DeleteApiKeyModal
-        target={deleteTarget}
-        mutation={deleteMutation}
-        onHide={() => {
-          setDeleteTarget(null);
-          deleteMutation.reset();
-        }}
-        onConfirm={() => {
-          if (deleteTarget) {
-            deleteMutation.mutate(deleteTarget.id);
+        {...deleteModalState}
+        onSuccess={() => {
+          const target = deleteModalState.data;
+          if (target) {
+            setCredentials((prev) => prev.filter((c) => c.id !== target.id));
           }
+          deleteModalState.hide();
         }}
       />
     </div>
@@ -286,125 +214,168 @@ function AiGradingSettingsContent({
 function AddApiKeyModal({
   show,
   providerOptions,
-  provider,
-  apiKey,
-  existingProvider,
-  mutation,
-  onProviderChange,
-  onApiKeyChange,
+  credentials,
   onHide,
-  onSubmit,
+  onExited,
+  onSuccess,
 }: {
   show: boolean;
+  data: unknown;
   providerOptions: readonly { value: string; label: string }[];
-  provider: string;
-  apiKey: string;
-  existingProvider: AiGradingApiKeyCredential | undefined;
-  mutation: { isPending: boolean; isError: boolean; error: Error | null; reset: () => void };
-  onProviderChange: (value: string) => void;
-  onApiKeyChange: (value: string) => void;
+  credentials: AiGradingApiKeyCredential[];
   onHide: () => void;
-  onSubmit: () => void;
+  onExited: () => void;
+  onSuccess: (credential: AiGradingApiKeyCredential) => void;
 }) {
+  const trpc = useTRPC();
+
+  const addMutation = useMutation({
+    ...trpc.addCredential.mutationOptions(),
+    onSuccess: (data) => {
+      onSuccess(data.credential);
+    },
+  });
+
+  const {
+    register,
+    handleSubmit,
+    watch,
+    reset,
+    formState: { errors },
+  } = useForm<{ provider: string; apiKey: string }>({
+    defaultValues: {
+      provider: providerOptions[0].value,
+      apiKey: '',
+    },
+  });
+
+  const selectedProvider = watch('provider');
+  const existingProvider = credentials.find((c) => c.provider === selectedProvider);
+
   return (
-    <Modal show={show} backdrop="static" onHide={onHide}>
+    <Modal
+      show={show}
+      backdrop="static"
+      onHide={onHide}
+      onExited={() => {
+        reset();
+        addMutation.reset();
+        onExited();
+      }}
+    >
       <Modal.Header closeButton>
         <Modal.Title>Add API key</Modal.Title>
       </Modal.Header>
-      <Modal.Body>
-        {mutation.isError && (
-          <Alert variant="danger" dismissible onClose={() => mutation.reset()}>
-            {mutation.error?.message}
-          </Alert>
+      <form
+        onSubmit={handleSubmit((data) =>
+          addMutation.mutate({
+            provider: data.provider as EnumAiGradingProvider,
+            secret_key: data.apiKey.trim(),
+          }),
         )}
-        <Form.Group className="mb-3">
-          <Form.Label htmlFor="add-key-provider">Provider</Form.Label>
-          <Form.Select
-            id="add-key-provider"
-            value={provider}
-            onChange={(e) => onProviderChange(e.target.value)}
+      >
+        <Modal.Body>
+          {addMutation.isError && (
+            <Alert variant="danger" dismissible onClose={() => addMutation.reset()}>
+              {addMutation.error.message}
+            </Alert>
+          )}
+          <Form.Group className="mb-3">
+            <Form.Label htmlFor="add-key-provider">Provider</Form.Label>
+            <Form.Select id="add-key-provider" {...register('provider')}>
+              {providerOptions.map((p) => (
+                <option key={p.value} value={p.value}>
+                  {p.label}
+                </option>
+              ))}
+            </Form.Select>
+          </Form.Group>
+          <Form.Group className="mb-3">
+            <Form.Label htmlFor="add-key-value">API key</Form.Label>
+            <Form.Control
+              id="add-key-value"
+              type="password"
+              placeholder="Enter your API key"
+              autoComplete="off"
+              className={clsx(errors.apiKey && 'is-invalid')}
+              aria-invalid={!!errors.apiKey}
+              aria-errormessage={errors.apiKey ? 'add-key-value-error' : undefined}
+              {...register('apiKey', { required: 'API key is required' })}
+            />
+            {errors.apiKey && (
+              <div className="invalid-feedback" id="add-key-value-error">
+                {errors.apiKey.message}
+              </div>
+            )}
+          </Form.Group>
+          {existingProvider && (
+            <Alert variant="warning" className="mb-0">
+              <i className="bi bi-exclamation-triangle-fill me-2" aria-hidden="true" />A key for{' '}
+              <strong>{AI_GRADING_PROVIDER_DISPLAY_NAMES[existingProvider.provider]}</strong>{' '}
+              already exists. Saving will overwrite the existing key.
+            </Alert>
+          )}
+        </Modal.Body>
+        <Modal.Footer>
+          <button
+            type="button"
+            className="btn btn-outline-secondary"
+            disabled={addMutation.isPending}
+            onClick={onHide}
           >
-            {providerOptions.map((p) => (
-              <option key={p.value} value={p.value}>
-                {p.label}
-              </option>
-            ))}
-          </Form.Select>
-        </Form.Group>
-        <Form.Group className="mb-3">
-          <Form.Label htmlFor="add-key-value">API key</Form.Label>
-          <Form.Control
-            id="add-key-value"
-            type="password"
-            value={apiKey}
-            placeholder="Enter your API key"
-            autoComplete="off"
-            onChange={(e) => onApiKeyChange(e.target.value)}
-          />
-        </Form.Group>
-        {existingProvider && (
-          <Alert variant="warning" className="mb-0">
-            <i className="bi bi-exclamation-triangle-fill me-2" aria-hidden="true" />A key for{' '}
-            <strong>{AI_GRADING_PROVIDER_DISPLAY_NAMES[existingProvider.provider]}</strong> already
-            exists. Saving will overwrite the existing key.
-          </Alert>
-        )}
-      </Modal.Body>
-      <Modal.Footer>
-        <button
-          type="button"
-          className="btn btn-outline-secondary"
-          disabled={mutation.isPending}
-          onClick={onHide}
-        >
-          Cancel
-        </button>
-        <button
-          type="button"
-          className="btn btn-primary"
-          disabled={!apiKey.trim() || mutation.isPending}
-          onClick={onSubmit}
-        >
-          {mutation.isPending ? 'Saving...' : 'Save key'}
-        </button>
-      </Modal.Footer>
+            Cancel
+          </button>
+          <button type="submit" className="btn btn-primary" disabled={addMutation.isPending}>
+            {addMutation.isPending ? 'Saving...' : 'Save key'}
+          </button>
+        </Modal.Footer>
+      </form>
     </Modal>
   );
 }
 
 function DeleteApiKeyModal({
-  target,
-  mutation,
+  data,
+  show,
   onHide,
-  onConfirm,
+  onExited,
+  onSuccess,
 }: {
-  target: AiGradingApiKeyCredential | null;
-  mutation: { isPending: boolean; isError: boolean; error: Error | null; reset: () => void };
+  data: AiGradingApiKeyCredential | null;
+  show: boolean;
   onHide: () => void;
-  onConfirm: () => void;
+  onExited: () => void;
+  onSuccess: () => void;
 }) {
+  const trpc = useTRPC();
+
+  const deleteMutation = useMutation({
+    ...trpc.deleteCredential.mutationOptions(),
+    onSuccess,
+  });
+
   return (
-    <Modal show={target !== null} onHide={onHide}>
+    <Modal show={show} onHide={onHide} onExited={onExited}>
       <Modal.Header closeButton>
         <Modal.Title>Delete API key</Modal.Title>
       </Modal.Header>
       <Modal.Body>
-        {mutation.isError && (
-          <Alert variant="danger" dismissible onClose={() => mutation.reset()}>
-            {mutation.error?.message}
+        {deleteMutation.isError && (
+          <Alert variant="danger" dismissible onClose={() => deleteMutation.reset()}>
+            {deleteMutation.error.message}
           </Alert>
         )}
         <p>
           Are you sure you want to delete the{' '}
-          <strong>{target ? AI_GRADING_PROVIDER_DISPLAY_NAMES[target.provider] : ''}</strong> API
-          key? This action cannot be undone.
+          <strong>{data ? AI_GRADING_PROVIDER_DISPLAY_NAMES[data.provider] : ''}</strong> API key?
+          This action cannot be undone.
         </p>
       </Modal.Body>
       <Modal.Footer>
         <button
           type="button"
           className="btn btn-outline-secondary"
-          disabled={mutation.isPending}
+          disabled={deleteMutation.isPending}
           onClick={onHide}
         >
           Cancel
@@ -412,10 +383,13 @@ function DeleteApiKeyModal({
         <button
           type="button"
           className="btn btn-danger"
-          disabled={mutation.isPending}
-          onClick={onConfirm}
+          disabled={deleteMutation.isPending}
+          onClick={() => {
+            if (!data) return;
+            deleteMutation.mutate({ credential_id: data.id });
+          }}
         >
-          {mutation.isPending ? 'Deleting...' : 'Delete'}
+          {deleteMutation.isPending ? 'Deleting...' : 'Delete'}
         </button>
       </Modal.Footer>
     </Modal>
