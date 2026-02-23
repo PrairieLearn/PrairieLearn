@@ -13,6 +13,7 @@ WITH
     GROUP BY
       i.instance_question_id
   ),
+  latest_submissions AS (
     SELECT DISTINCT
       ON (iq.id) iq.id AS instance_question_id,
       s.id AS submission_id,
