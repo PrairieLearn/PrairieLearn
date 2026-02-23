@@ -192,11 +192,11 @@ export async function aiGrade({
   });
 
   serverJob.executeInBackground(async (job) => {
-    // Skip rate limiting and cost tracking when using custom API keys, since the
-    // course instance is paying for their own usage and platform limits don't apply.
-    const skipRateLimitAndCostTracking = course_instance.ai_grading_use_custom_api_keys;
+    // Track rate limiting and cost only when using platform API keys, since custom
+    // API key users are paying for their own usage and platform limits don't apply.
+    const trackRateLimitAndCost = !course_instance.ai_grading_use_custom_api_keys;
     let rateLimitExceeded =
-      !skipRateLimitAndCostTracking &&
+      trackRateLimitAndCost &&
       (await getIntervalUsage(course_instance)) > config.aiGradingRateLimitDollars;
 
     // If the rate limit has already been exceeded, log it and exit early.
@@ -248,7 +248,7 @@ export async function aiGrade({
       // Since other jobs may be concurrently running, we could exceed the rate limit
       // by 19 requests worth of usage. We are okay with this potential race condition.
       if (
-        !skipRateLimitAndCostTracking &&
+        trackRateLimitAndCost &&
         (await getIntervalUsage(course_instance)) > config.aiGradingRateLimitDollars
       ) {
         logger.error(
@@ -508,7 +508,7 @@ export async function aiGrade({
             ],
             logger,
           });
-          if (!skipRateLimitAndCostTracking) {
+          if (trackRateLimitAndCost) {
             for (const response of [
               ...Object.values(rotationCorrections).map((r) => r.response),
               gradingResponseWithRotationIssue,
@@ -523,7 +523,7 @@ export async function aiGrade({
           }
         } else {
           logResponseUsage({ response: finalGradingResponse, logger });
-          if (!skipRateLimitAndCostTracking) {
+          if (trackRateLimitAndCost) {
             await addAiGradingCostToIntervalUsage({
               courseInstance: course_instance,
               model: model_id,
@@ -774,7 +774,7 @@ export async function aiGrade({
             ],
             logger,
           });
-          if (!skipRateLimitAndCostTracking) {
+          if (trackRateLimitAndCost) {
             for (const response of [
               ...Object.values(rotationCorrections).map((r) => r.response),
               gradingResponseWithRotationIssue,
@@ -789,7 +789,7 @@ export async function aiGrade({
           }
         } else {
           logResponseUsage({ response: finalGradingResponse, logger });
-          if (!skipRateLimitAndCostTracking) {
+          if (trackRateLimitAndCost) {
             await addAiGradingCostToIntervalUsage({
               courseInstance: course_instance,
               model: model_id,

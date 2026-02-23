@@ -11,6 +11,7 @@ import {
   getSortedRowModel,
   useReactTable,
 } from '@tanstack/react-table';
+import clsx from 'clsx';
 import { parseAsArrayOf, parseAsString, parseAsStringLiteral, useQueryState } from 'nuqs';
 import { useCallback, useEffect, useMemo, useRef, useState } from 'react';
 import { Alert, Button, Dropdown, Modal } from 'react-bootstrap';
@@ -36,12 +37,12 @@ import {
 import type { AiGradingGeneralStats } from '../../../../ee/lib/ai-grading/types.js';
 import type { PageContext } from '../../../../lib/client/page-context.js';
 import type {
-  EnumAiGradingProvider,
   StaffAssessment,
   StaffAssessmentQuestion,
   StaffInstanceQuestionGroup,
   StaffUser,
 } from '../../../../lib/client/safe-db-types.js';
+import type { EnumAiGradingProvider } from '../../../../lib/db-types.js';
 import type { RubricData } from '../../../../lib/manualGrading.types.js';
 import {
   GRADING_STATUS_VALUES,
@@ -135,7 +136,7 @@ function AiGradingOption({
   return (
     <Dropdown drop="end">
       <Dropdown.Toggle
-        className={`dropdown-item ${numToGrade > 0 && hasAnyAvailableModel ? '' : 'disabled'}`}
+        className={clsx('dropdown-item', !(numToGrade > 0 && hasAnyAvailableModel) && 'disabled')}
       >
         <AiGradingOptionContent text={text} numToGrade={numToGrade} />
       </Dropdown.Toggle>

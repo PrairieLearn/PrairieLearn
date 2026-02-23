@@ -31,7 +31,6 @@ import {
   CourseInstanceSchema as RawCourseInstanceSchema,
   CourseSchema as RawCourseSchema,
   EnrollmentSchema as RawEnrollmentSchema,
-  EnumAiGradingProviderSchema as RawEnumAiGradingProviderSchema,
   InstanceQuestionGroupSchema as RawInstanceQuestionGroupSchema,
   InstanceQuestionSchema as RawInstanceQuestionSchema,
   InstitutionSchema as RawInstitutionSchema,
@@ -43,10 +42,6 @@ import {
   UserSchema as RawUserSchema,
   ZoneSchema as RawZoneSchema,
 } from '../db-types.js';
-
-/** Enums */
-export const EnumAiGradingProviderSchema = RawEnumAiGradingProviderSchema;
-export type EnumAiGradingProvider = z.infer<typeof EnumAiGradingProviderSchema>;
 
 /** Access Tokens */
 export const RawUserAccessTokenSchema = RawAccessTokenSchema.pick({

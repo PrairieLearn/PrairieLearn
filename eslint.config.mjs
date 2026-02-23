@@ -35,6 +35,9 @@ export default [
         'SprocUsersGetDisplayedRoleSchema',
         // This is also just an enum.
         'EnumAiQuestionGenerationMessageStatus',
+        // This is also just an enum.
+        'EnumAiGradingProviderSchema',
+        'EnumAiGradingProvider',
       ],
     },
     tsconfigRootDir: path.join(import.meta.dirname, 'apps', 'prairielearn'),
