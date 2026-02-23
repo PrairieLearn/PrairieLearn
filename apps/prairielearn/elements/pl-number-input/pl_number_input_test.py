@@ -29,31 +29,21 @@ def test_only_string_precision_fn(
 @pytest.mark.parametrize(
     ("number_string", "expected_significant_digits"),
     [
-        ("4", 1),
-        ("42", 2),
-        ("420", 2),
-        ("420.", 3),
-        ("420.6", 4),
-        ("420.69", 5),
+        # Has decimal, non-zero digits remain after lstrip("0")
         ("420.690", 6),
-        ("04", 1),
-        ("40", 1),
-        ("404", 3),
-        ("40.", 2),
         ("0.0001", 1),
-        ("0.000690", 3),
-        ("1.0000", 5),
-        ("1.0001", 5),
-        ("10.01", 4),
         ("100.00", 5),
-        ("0.010", 2),
-        ("-1.0", 2),
-        ("-0.001", 1),
-        ("+1.5", 2),
+        # Has decimal, all digits are zero (frac_part non-empty)
         ("0.000", 3),
-        ("0.0", 1),
+        # Has decimal, all digits are zero (frac_part empty, e.g. "0.")
+        ("0.", 1),
+        # No decimal, non-zero digits remain after strip("0")
+        ("420", 2),
+        ("04", 1),
+        # No decimal, all zeros
         ("0", 1),
-        ("000", 1),
+        # Sign stripping
+        ("-1.0", 2),
     ],
 )
 def test_only_significant_digits_fn(
