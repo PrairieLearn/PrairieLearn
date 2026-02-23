@@ -20,7 +20,6 @@ const isRunningOnDist = process.argv
   .some((arg) => arg.startsWith('dist/') || arg.includes('/dist/'));
 
 const dockerSmokeTests = ['src/tests/exampleCourseQuestions.test.ts'];
-const executorSmokeTests = ['src/tests/executor.test.ts'];
 
 export default defineConfig(({ mode }) => {
   // For CI, we want to run a subset of tests natively, and a subset of tests only in Docker.
@@ -41,11 +40,7 @@ export default defineConfig(({ mode }) => {
       test: {
         name: '@prairielearn/prairielearn',
         dir: isRunningOnDist ? `${import.meta.dirname}/dist` : `${import.meta.dirname}/src`,
-        include: isExecutorSmokeTest
-          ? executorSmokeTests
-          : mode === 'docker-smoke-tests'
-            ? dockerSmokeTests
-            : undefined,
+        include: mode === 'docker-smoke-tests' ? dockerSmokeTests : undefined,
         exclude: ['**/e2e/**'],
         globalSetup: isExecutorSmokeTest
           ? []
