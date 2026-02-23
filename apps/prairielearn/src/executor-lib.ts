@@ -15,7 +15,7 @@ interface ExecutorRequest {
   forbidden_modules: string[];
 }
 
-interface ExecutorResults {
+export interface ExecutorResults {
   error?: string;
   errorData?: ErrorData;
   data?: any;

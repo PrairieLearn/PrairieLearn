@@ -1,6 +1,6 @@
 import { afterAll, beforeAll, describe, expect, it } from 'vitest';
 
-import { handleInput } from '../executor-lib.js';
+import { type ExecutorResults, handleInput } from '../executor-lib.js';
 import { CodeCallerNative } from '../lib/code-caller/code-caller-native.js';
 
 /**
@@ -16,6 +16,12 @@ import { CodeCallerNative } from '../lib/code-caller/code-caller-native.js';
  * These tests are designed to run inside the prairielearn/executor Docker
  * container where the `executor` user exists and `dropPrivileges` works.
  */
+
+function assertSuccess(result: ExecutorResults) {
+  expect(result.error).toBeUndefined();
+  expect(result.functionMissing).toBe(false);
+}
+
 describe('executor smoke tests', () => {
   let codeCaller: CodeCallerNative;
 
@@ -33,70 +39,70 @@ describe('executor smoke tests', () => {
   });
 
   it('prepares pl-checkbox (pre-loaded modules only)', async () => {
-    const request = JSON.stringify({
-      type: 'core-element',
-      directory: 'pl-checkbox',
-      file: 'pl-checkbox',
-      fcn: 'prepare',
-      args: [
-        '<pl-checkbox answers-name="ans"><pl-answer correct="true">correct</pl-answer></pl-checkbox>',
-        { params: {}, correct_answers: {} },
-      ],
-    });
+    const result = await handleInput(
+      JSON.stringify({
+        type: 'core-element',
+        directory: 'pl-checkbox',
+        file: 'pl-checkbox',
+        fcn: 'prepare',
+        args: [
+          '<pl-checkbox answers-name="ans"><pl-answer correct="true">correct</pl-answer></pl-checkbox>',
+          { params: {}, correct_answers: {} },
+        ],
+      }),
+      codeCaller,
+    );
 
-    const result = await handleInput(request, codeCaller);
-
-    expect(result.error).toBeUndefined();
-    expect(result.functionMissing).toBe(false);
+    assertSuccess(result);
     expect(result.data.params.ans).toBeDefined();
     expect(result.data.correct_answers.ans).toBeDefined();
   });
 
   it('prepares pl-symbolic-input (imports sympy)', async () => {
-    const request = JSON.stringify({
-      type: 'core-element',
-      directory: 'pl-symbolic-input',
-      file: 'pl-symbolic-input',
-      fcn: 'prepare',
-      args: [
-        '<pl-symbolic-input answers-name="ans" variables="x" />',
-        { params: {}, correct_answers: {} },
-      ],
-    });
+    const result = await handleInput(
+      JSON.stringify({
+        type: 'core-element',
+        directory: 'pl-symbolic-input',
+        file: 'pl-symbolic-input',
+        fcn: 'prepare',
+        args: [
+          '<pl-symbolic-input answers-name="ans" variables="x" />',
+          { params: {}, correct_answers: {} },
+        ],
+      }),
+      codeCaller,
+    );
 
-    const result = await handleInput(request, codeCaller);
-
-    expect(result.error).toBeUndefined();
-    expect(result.functionMissing).toBe(false);
+    assertSuccess(result);
   });
 
   it('prepares pl-dataframe (imports pandas)', async () => {
-    const request = JSON.stringify({
-      type: 'core-element',
-      directory: 'pl-dataframe',
-      file: 'pl-dataframe',
-      fcn: 'prepare',
-      args: ['<pl-dataframe params-name="df" />', { params: {}, correct_answers: {} }],
-    });
+    const result = await handleInput(
+      JSON.stringify({
+        type: 'core-element',
+        directory: 'pl-dataframe',
+        file: 'pl-dataframe',
+        fcn: 'prepare',
+        args: ['<pl-dataframe params-name="df" />', { params: {}, correct_answers: {} }],
+      }),
+      codeCaller,
+    );
 
-    const result = await handleInput(request, codeCaller);
-
-    expect(result.error).toBeUndefined();
-    expect(result.functionMissing).toBe(false);
+    assertSuccess(result);
   });
 
   it('prepares pl-graph (imports networkx)', async () => {
-    const request = JSON.stringify({
-      type: 'core-element',
-      directory: 'pl-graph',
-      file: 'pl-graph',
-      fcn: 'prepare',
-      args: ['<pl-graph params-name="g" />', { params: {}, correct_answers: {} }],
-    });
+    const result = await handleInput(
+      JSON.stringify({
+        type: 'core-element',
+        directory: 'pl-graph',
+        file: 'pl-graph',
+        fcn: 'prepare',
+        args: ['<pl-graph params-name="g" />', { params: {}, correct_answers: {} }],
+      }),
+      codeCaller,
+    );
 
-    const result = await handleInput(request, codeCaller);
-
-    expect(result.error).toBeUndefined();
-    expect(result.functionMissing).toBe(false);
+    assertSuccess(result);
   });
 });
