@@ -204,7 +204,7 @@ export const ConfigSchema = z.object({
   secretKey: z.string().default('THIS_IS_THE_SECRET_KEY'),
   databaseEncryptionKey: z
     .string()
-    .default('THIS_IS_THE_SECRET_KEY'),
+    .default('0'.repeat(64)),
   secretSlackOpsBotEndpoint: z.string().nullable().default(null),
   secretSlackToken: z.string().nullable().default(null),
   secretSlackCourseRequestChannel: z.string().nullable().default(null),
@@ -674,7 +674,7 @@ export async function loadConfig(paths: string[]) {
       throw new Error('cookieDomain must start with a dot, e.g. ".example.com"');
     }
 
-    if (config.databaseEncryptionKey === 'THIS_IS_THE_SECRET_KEY') {
+    if (config.databaseEncryptionKey === '0'.repeat(64)) {
       throw new Error('databaseEncryptionKey must be set to a secure value in production environments');
     }
   }
