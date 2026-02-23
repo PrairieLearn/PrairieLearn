@@ -1,0 +1,26 @@
+globs:
+  - "**/*.md"
+
+ignores:
+  - "**/node_modules/**"
+  - "exampleCourse/**"
+  - "testCourse/**"
+  - "**/dist/**"
+  - "**/test-results/**"
+  - ".claude/**"
+  - ".venv/**"
+  - ".agents/**"
+  - ".changeset/**"
+  - ".context/**"
+  - ".github/PULL_REQUEST_TEMPLATE.md"
+
+config:
+  MD013: false # Line length
+  MD024: false # Multiple headings with the same content
+  MD046: false # indented / fenced code blocks (false positives)
+  MD026:
+    punctuation: ".,;:"
+  MD033: # No inline HTML
+    allowed_elements:
+      - div
+      - code # workaround to allow pipe in table, see https://github.com/PrairieLearn/PrairieLearn/pull/12927#discussion_r2500732378

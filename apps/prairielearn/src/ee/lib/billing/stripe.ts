@@ -64,7 +64,7 @@ function stripeProductCacheKey(id: string): string {
  * Gets the Stripe product with the given ID. Products are cached for up to
  * 10 minutes.
  */
-export async function getStripeProduct(id: string): Promise<Stripe.Product> {
+async function getStripeProduct(id: string): Promise<Stripe.Product> {
   const cacheKey = stripeProductCacheKey(id);
   let product = await cache.get<Stripe.Product>(cacheKey);
   if (!product) {
@@ -80,7 +80,7 @@ export async function clearStripeProductCache(id: string) {
   await cache.del(cacheKey);
 }
 
-export async function getDefaultPriceForStripeProduct(id: string): Promise<Stripe.Price> {
+async function getDefaultPriceForStripeProduct(id: string): Promise<Stripe.Price> {
   const product = await getStripeProduct(id);
 
   // We instructed Stripe to expand the `default_price` field, so this should

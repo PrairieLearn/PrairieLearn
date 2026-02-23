@@ -244,7 +244,7 @@ function rubricListIncludes(items: RubricItem[], itemToCheck: RubricItem): boole
   return items.some((item) => item.id === itemToCheck.id);
 }
 
-export function rubricItemDisagreementCount(
+function rubricItemDisagreementCount(
   testRubricResults: {
     reference_items: Set<string>;
     ai_items: Set<string>;
@@ -263,7 +263,7 @@ export function rubricItemDisagreementCount(
   return disagreement;
 }
 
-export function meanError(actual: number[], predicted: number[]): number {
+function meanError(actual: number[], predicted: number[]): number {
   if (actual.length !== predicted.length || actual.length === 0) {
     throw new Error('Both arrays must have the same nonzero length.');
   }

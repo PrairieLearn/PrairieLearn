@@ -170,7 +170,7 @@
       }
     },
     "sharingSets": {
-      "description": "Sharing sets",
+      "description": "Sharing sets.",
       "type": "array",
       "items": {
         "description": "A sharing set description.",

@@ -28,7 +28,7 @@ export const DraftMetadataWithQidSchema = z.object({
   qid: z.string(),
   uid: z.string().nullable(),
 });
-export type DraftMetadataWithQid = z.infer<typeof DraftMetadataWithQidSchema>;
+type DraftMetadataWithQid = z.infer<typeof DraftMetadataWithQidSchema>;
 
 export function InstructorAIGenerateDrafts({
   resLocals,
@@ -188,23 +188,6 @@ export function InstructorAIGenerateDrafts({
       ${DeleteQuestionsModal({ csrfToken: resLocals.__csrf_token })}
     `,
   });
-}
-
-export function GenerationFailure({
-  urlPrefix,
-  jobSequenceId,
-}: {
-  urlPrefix: string;
-  jobSequenceId: string;
-}): string {
-  return html`
-    <div id="generation-results">
-      <h3>Generation Failed</h3>
-
-      <p>The LLM did not generate any question file.</p>
-      <a href="${urlPrefix + '/jobSequence/' + jobSequenceId}">See job logs</a>
-    </div>
-  `.toString();
 }
 
 export function RateLimitExceeded(): string {
