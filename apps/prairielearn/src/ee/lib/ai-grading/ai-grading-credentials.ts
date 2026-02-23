@@ -10,7 +10,7 @@ import { decryptFromStorage } from '../../../lib/storage-crypt.js';
 
 const sql = loadSqlEquiv(import.meta.url);
 
-export interface ResolvedProviderKeys {
+interface ResolvedProviderKeys {
   openai: { apiKey: string; organization: string | null } | null;
   google: { apiKey: string } | null;
   anthropic: { apiKey: string } | null;

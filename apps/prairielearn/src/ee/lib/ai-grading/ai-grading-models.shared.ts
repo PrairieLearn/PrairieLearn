@@ -31,7 +31,7 @@ export const AI_GRADING_MODEL_PROVIDERS = {
 /**
  * The unique set of provider identifiers derived from the models list.
  */
-export const AI_GRADING_PROVIDERS = [...new Set(AI_GRADING_MODELS.map((m) => m.provider))] as const;
+const AI_GRADING_PROVIDERS = [...new Set(AI_GRADING_MODELS.map((m) => m.provider))] as const;
 
 export const AI_GRADING_PROVIDER_DISPLAY_NAMES: Record<EnumAiGradingProvider, string> = {
   openai: 'OpenAI',
