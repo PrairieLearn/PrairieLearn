@@ -48,10 +48,10 @@ router.get(
               courseId={res.locals.course.id}
               showSharingSets={false}
               urlPrefix={res.locals.urlPrefix}
-              isPublic
               qidPrefix={qidPrefix}
               search={search}
               isDevMode={config.devMode}
+              isPublic
             />
           </Hydrate>
         ),

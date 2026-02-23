@@ -13,7 +13,7 @@ import {
 } from '@tanstack/react-table';
 import { parseAsArrayOf, parseAsString, useQueryState, useQueryStates } from 'nuqs';
 import { useMemo, useState } from 'react';
-import { Alert, Button } from 'react-bootstrap';
+import { Alert } from 'react-bootstrap';
 
 import { run } from '@prairielearn/run';
 import {
@@ -287,15 +287,15 @@ export function QuestionsTable({
         headerButtons={
           addQuestionUrl ? (
             <>
-              <Button variant="light" size="sm" as="a" href={addQuestionUrl}>
+              <a className="btn btn-light btn-sm" href={addQuestionUrl}>
                 <i className="fa fa-plus me-2" aria-hidden="true" />
                 Add question
-              </Button>
+              </a>
               {showAiGenerateQuestionButton && (
-                <Button variant="light" size="sm" as="a" href={aiGenerateUrl}>
+                <a className="btn btn-light btn-sm" href={aiGenerateUrl}>
                   <i className="bi bi-stars me-2" aria-hidden="true" />
                   Generate with AI
-                </Button>
+                </a>
               )}
             </>
           ) : undefined
@@ -328,15 +328,15 @@ export function QuestionsTable({
                 </div>
                 {addQuestionUrl && (
                   <div className="d-flex gap-2">
-                    <Button variant="primary" as="a" href={addQuestionUrl}>
+                    <a className="btn btn-primary" href={addQuestionUrl}>
                       <i className="fa fa-plus me-2" aria-hidden="true" />
                       Add question
-                    </Button>
+                    </a>
                     {showAiGenerateQuestionButton && (
-                      <Button variant="outline-primary" as="a" href={aiGenerateUrl}>
+                      <a className="btn btn-outline-primary" href={aiGenerateUrl}>
                         <i className="bi bi-stars me-2" aria-hidden="true" />
                         Generate with AI
-                      </Button>
+                      </a>
                     )}
                   </div>
                 )}
