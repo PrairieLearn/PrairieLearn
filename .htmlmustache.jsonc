@@ -13,7 +13,12 @@
     "preferMustacheComments": "warning"
   },
   "printWidth": 100,
-  "noBreakDelimiters": ["$", "$$", "\\(", "\\["],
+  "noBreakDelimiters": [
+    {"start": "$", "end": "$"},
+    {"start": "$$", "end": "$$"},
+    {"start": "\\(", "end": "\\)"},
+    {"start": "\\[", "end": "\\]"}
+  ],
   "customTags": [
     {
       "name": "pl-code",
@@ -46,6 +51,7 @@
     },
     {
       "name": "pl-rich-text-editor",
+      "display": "block",
       "languageAttribute": "format"
     },
     {
@@ -119,7 +125,7 @@
     { "name": "pl-dropdown" },
     { "name": "pl-prairiedraw-figure" },
     { "name": "pl-variable-score" },
-    { "name": "pl-github-link" }, // TODO: This element no longer exists
+    { "name": "pl-github-link" }, // TODO: This element no longer exists https://github.com/PrairieLearn/PrairieLearn/issues/14201
     // pl-drawing
     { "name": "pl-drawing" },
     { "name": "pl-drawing-answer" },
