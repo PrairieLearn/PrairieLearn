@@ -48,13 +48,11 @@ export type InstanceQuestionAIGradingInfo = InstanceQuestionAIGradingInfoBase &
   (
     | {
         hasImage: true;
-        rotationCorrectionStatus: 'not-flagged' | 'flagged-not-corrected' | 'flagged-and-corrected';
-        /** Stringified JSON of rotation degrees for each image, by filename. */
-        rotationCorrectionDegrees: string | null;
+        /** Mapping from filename to counterclockwise rotation degrees. Only includes corrected images. Empty if no correction occurred. */
+        rotationCorrectionDegrees: Record<string, CounterClockwiseRotationDegrees>;
       }
     | {
         hasImage: false;
-        rotationCorrectionStatus: null;
         rotationCorrectionDegrees: null;
       }
   );

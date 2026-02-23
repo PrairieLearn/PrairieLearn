@@ -2,7 +2,10 @@ import { EncodedData } from '@prairielearn/browser-utils';
 import { escapeHtml, html, unsafeHtml } from '@prairielearn/html';
 import { run } from '@prairielearn/run';
 
-import type { InstanceQuestionAIGradingInfo } from '../ee/lib/ai-grading/types.js';
+import type {
+  CounterClockwiseRotationDegrees,
+  InstanceQuestionAIGradingInfo,
+} from '../ee/lib/ai-grading/types.js';
 import { ansiToHtml } from '../lib/chalk.js';
 import { config } from '../lib/config.js';
 import { type CopyTarget } from '../lib/copy-content.js';
@@ -114,7 +117,6 @@ export function QuestionContainer({
         ? AIGradingExplanation({
             explanation: aiGradingInfo.explanation,
             hasImage: aiGradingInfo.hasImage,
-            rotationCorrectionStatus: aiGradingInfo.rotationCorrectionStatus,
             rotationCorrectionDegrees: aiGradingInfo.rotationCorrectionDegrees,
           })
         : ''}
@@ -203,17 +205,11 @@ function AIGradingPrompt({ prompt }: { prompt: string }) {
 function AIGradingExplanation({
   explanation,
   hasImage,
-  rotationCorrectionStatus,
   rotationCorrectionDegrees,
 }: {
   explanation: string | null;
   hasImage: boolean;
-  rotationCorrectionStatus:
-    | 'not-flagged'
-    | 'flagged-not-corrected'
-    | 'flagged-and-corrected'
-    | null;
-  rotationCorrectionDegrees: string | null;
+  rotationCorrectionDegrees: Record<string, CounterClockwiseRotationDegrees> | null;
 }) {
   return html`
     <div class="card mb-3 grading-block">
@@ -237,38 +233,35 @@ function AIGradingExplanation({
         id="ai-grading-explanation-body"
       >
         <div class="card-body">
-          ${hasImage
-            ? run(() => {
-                switch (rotationCorrectionStatus) {
-                  case 'not-flagged':
-                    return html`<div class="alert alert-info mb-3" role="alert">
-                      All student-submitted images were uploaded in an upright state.
-                    </div>`;
-                  case 'flagged-not-corrected':
-                    return html`<div class="alert alert-info mb-3" role="alert">
-                      <p>All student-submitted images were uploaded in an upright state.</p>
-                      <p>
-                        The system initially flagged an image uploaded by the student as incorrectly
-                        rotated.
-                      </p>
-                      <p class="mb-0">
-                        After a second review, the system determined that the image was correctly
-                        rotated.
-                      </p>
-                    </div>`;
-                  case 'flagged-and-corrected':
-                    return html`<div class="alert alert-warning mb-3" role="alert">
-                      <p>
-                        An image was uploaded in a rotated state by the student (this was an error
-                        by the student). The system corrected its rotation prior to AI grading.
-                      </p>
-                      <p class="mb-1">Counterclockwise rotation corrections, in degrees:</p>
-                      <pre class="mb-0">${rotationCorrectionDegrees}</pre>
-                    </div>`;
-                  default:
-                    return '';
-                }
-              })
+          ${hasImage && rotationCorrectionDegrees
+            ? Object.keys(rotationCorrectionDegrees).length > 0
+              ? html`<div class="alert alert-warning mb-3" role="alert">
+                  <p>
+                    An image was uploaded in a rotated state by the student (this was an error by
+                    the student). The system corrected its rotation prior to AI grading.
+                  </p>
+                  <table class="table table-sm table-bordered mb-0">
+                    <thead>
+                      <tr>
+                        <th>Image</th>
+                        <th>Correction (counterclockwise)</th>
+                      </tr>
+                    </thead>
+                    <tbody>
+                      ${Object.entries(rotationCorrectionDegrees).map(
+                        ([filename, degrees]) => html`
+                          <tr>
+                            <td>${filename}</td>
+                            <td>${degrees}&deg;</td>
+                          </tr>
+                        `,
+                      )}
+                    </tbody>
+                  </table>
+                </div>`
+              : html`<div class="alert alert-info mb-3" role="alert">
+                  All student-submitted images were uploaded in an upright state.
+                </div>`
             : ''}
           ${explanation
             ? html`

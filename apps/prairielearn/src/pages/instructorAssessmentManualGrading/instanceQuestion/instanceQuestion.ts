@@ -16,6 +16,7 @@ import {
   toggleAiGradingMode,
 } from '../../../ee/lib/ai-grading/ai-grading-util.js';
 import type {
+  CounterClockwiseRotationDegrees,
   InstanceQuestionAIGradingInfo,
   InstanceQuestionAIGradingInfoBase,
 } from '../../../ee/lib/ai-grading/types.js';
@@ -224,36 +225,20 @@ router.get(
         };
 
         if (hasImage) {
-          const rotationCorrectionDegrees = ai_grading_job_data.rotation_correction_degrees
-            ? JSON.stringify(ai_grading_job_data.rotation_correction_degrees)
-            : null;
-
-          const rotationCorrectionStatus = run(() => {
-            if (
-              !ai_grading_job_data.rotation_correction_degrees ||
-              Object.keys(ai_grading_job_data.rotation_correction_degrees).length === 0
-            ) {
-              return 'not-flagged' as const;
-            }
-            const hasNonZeroRotations = Object.values(
-              ai_grading_job_data.rotation_correction_degrees,
-            ).some((degrees) => degrees !== 0);
-            return hasNonZeroRotations
-              ? ('flagged-and-corrected' as const)
-              : ('flagged-not-corrected' as const);
-          });
+          const correctedDegrees = ai_grading_job_data.rotation_correction_degrees ?? {};
+          const rotationCorrectionDegrees = Object.fromEntries(
+            Object.entries(correctedDegrees).filter(([, degrees]) => degrees !== 0),
+          ) as Record<string, CounterClockwiseRotationDegrees>;
 
           aiGradingInfo = {
             ...aiGradingInfoBase,
             hasImage: true,
-            rotationCorrectionStatus,
             rotationCorrectionDegrees,
           };
         } else {
           aiGradingInfo = {
             ...aiGradingInfoBase,
             hasImage: false,
-            rotationCorrectionStatus: null,
             rotationCorrectionDegrees: null,
           };
         }
