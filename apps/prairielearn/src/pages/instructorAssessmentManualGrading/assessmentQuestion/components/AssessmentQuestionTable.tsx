@@ -763,7 +763,7 @@ export function AssessmentQuestionTable({
                   >
                     {/* Wrap in an inline-block span so the tooltip triggers despite the button being disabled */}
                     <span style={{ display: 'inline-block' }}>
-                      <Button variant="light" size="sm" disabled style={{ pointerEvents: 'none' }}>
+                      <Button variant="light" size="sm" style={{ pointerEvents: 'none' }} disabled>
                         <i className="bi bi-stars" aria-hidden="true" />
                         <span>AI grading</span>
                       </Button>
@@ -858,12 +858,7 @@ export function AssessmentQuestionTable({
                     }}
                   >
                     <span style={{ display: 'inline-block' }}>
-                      <Button
-                        variant="light"
-                        size="sm"
-                        disabled
-                        style={{ pointerEvents: 'none' }}
-                      >
+                      <Button variant="light" size="sm" style={{ pointerEvents: 'none' }} disabled>
                         <i className="bi bi-stars" aria-hidden="true" />
                         <span className="d-none d-sm-inline">AI submission grouping</span>
                       </Button>
