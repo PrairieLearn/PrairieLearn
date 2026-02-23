@@ -14,7 +14,7 @@ import { AssessmentBadges } from './AssessmentBadges.js';
 const NOT_IN_ANY_ASSESSMENT_ID = '__not_in_any_assessment__';
 const PINNED_ASSESSMENT_IDS = new Set([NOT_IN_ANY_ASSESSMENT_ID]);
 
-export interface QuestionPickerModalProps {
+interface QuestionPickerModalProps {
   show: boolean;
   onHide: () => void;
   onQuestionSelected: (qid: string) => void;

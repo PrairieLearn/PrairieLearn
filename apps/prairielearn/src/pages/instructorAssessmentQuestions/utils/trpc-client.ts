@@ -3,8 +3,6 @@ import superjson from 'superjson';
 
 import type { AssessmentQuestionsRouter } from '../trpc.js';
 
-export type AssessmentQuestionsTrpcClient = ReturnType<typeof createAssessmentQuestionsTrpcClient>;
-
 export function createAssessmentQuestionsTrpcClient(csrfToken: string) {
   return createTRPCClient<AssessmentQuestionsRouter>({
     links: [

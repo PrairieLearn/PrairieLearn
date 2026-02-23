@@ -96,7 +96,7 @@ export function getAiQuestionGenerationDraftsUrl({ urlPrefix }: { urlPrefix: str
   return `${urlPrefix}/ai_generate_question_drafts`;
 }
 
-export type QuestionUrlParts =
+type QuestionUrlParts =
   | { urlPrefix: string; courseInstanceId?: undefined; courseId?: undefined }
   | { urlPrefix?: undefined; courseInstanceId: string; courseId?: undefined }
   | { urlPrefix?: undefined; courseInstanceId?: undefined; courseId: string };

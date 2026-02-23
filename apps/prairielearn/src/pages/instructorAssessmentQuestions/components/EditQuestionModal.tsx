@@ -10,7 +10,7 @@ import type { QuestionAlternativeForm, ZoneQuestionBlockForm } from '../types.js
 import { validatePositiveInteger } from '../utils/questions.js';
 import { useTRPCClient } from '../utils/trpc-context.js';
 
-export type EditQuestionModalData =
+type EditQuestionModalData =
   | {
       type: 'create';
       question: ZoneQuestionBlockForm | QuestionAlternativeForm;

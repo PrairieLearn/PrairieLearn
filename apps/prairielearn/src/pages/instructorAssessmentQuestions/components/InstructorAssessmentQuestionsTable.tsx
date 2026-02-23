@@ -817,7 +817,7 @@ function InstructorAssessmentQuestionsTableInner({
   );
 }
 
-export interface InstructorAssessmentQuestionsTableProps extends InstructorAssessmentQuestionsTableInnerProps {
+interface InstructorAssessmentQuestionsTableProps extends InstructorAssessmentQuestionsTableInnerProps {
   trpcCsrfToken: string;
 }
 
