@@ -76,7 +76,7 @@ jobs:
       - name: Run executor smoke test
         run: |
           docker run --rm prairielearn/executor:latest \
-            yarn vitest run --mode executor-smoke-test --project @prairielearn/prairielearn
+            yarn workspace @prairielearn/prairielearn run test:executor-smoke-test
         timeout-minutes: 5
 
       - name: Create a temporary directory for host files
