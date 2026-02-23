@@ -238,10 +238,6 @@ function InstructorAssessmentQuestionsTableInner({
   const showPicker = questionEditState.status === 'picking';
   const showEditModal = questionEditState.status === 'editing';
 
-  const openPickerForNew = (zoneTrackingId: string) => {
-    setQuestionEditState({ status: 'picking', zoneTrackingId });
-  };
-
   const openPickerToChangeQid = (
     currentFormValues: ZoneQuestionBlockForm | QuestionAlternativeForm,
   ) => {
@@ -347,26 +343,15 @@ function InstructorAssessmentQuestionsTableInner({
     return starts;
   }, [zones]);
 
-  const handleResetButtonClick = (assessmentQuestionId: string) => {
-    resetModal.showWithData(assessmentQuestionId);
-  };
-
   const handleQuestionPicked = (qid: string) => {
     if (questionEditState.status !== 'picking') return;
 
     if (questionEditState.returnToEdit) {
-      const returnState = questionEditState.returnToEdit;
-      if (returnState.mode === 'create') {
-        setQuestionEditState({
-          ...returnState,
-          question: { ...returnState.question, id: qid },
-        });
-      } else {
-        setQuestionEditState({
-          ...returnState,
-          question: { ...returnState.question, id: qid },
-        });
-      }
+      // Spread of discriminated union requires assertion to preserve narrowing
+      setQuestionEditState({
+        ...questionEditState.returnToEdit,
+        question: { ...questionEditState.returnToEdit.question, id: qid },
+      } as EditingState);
     } else {
       setQuestionEditState({
         status: 'editing',
@@ -621,12 +606,8 @@ function InstructorAssessmentQuestionsTableInner({
     }
   };
 
-  // `effective_advance_score_perc` is null for newly added questions that
-  // haven't been saved yet and don't have assessment_question rows.
   const showAdvanceScorePercCol = Object.values(questionMetadata).some(
-    (q) =>
-      q.assessment_question.effective_advance_score_perc != null &&
-      q.assessment_question.effective_advance_score_perc !== 0,
+    (q) => q.assessment_question.effective_advance_score_perc !== 0,
   );
 
   return (
@@ -728,10 +709,12 @@ function InstructorAssessmentQuestionsTableInner({
                           showAdvanceScorePercCol,
                           assessmentType: assessment.type,
                         }}
-                        handleAddQuestion={openPickerForNew}
+                        handleAddQuestion={(zoneTrackingId) =>
+                          setQuestionEditState({ status: 'picking', zoneTrackingId })
+                        }
                         handleEditQuestion={openEditForExisting}
                         handleDeleteQuestion={handleDeleteQuestion}
-                        handleResetButtonClick={handleResetButtonClick}
+                        handleResetButtonClick={resetModal.showWithData}
                         handleEditZone={handleEditZone}
                         handleDeleteZone={handleDeleteZone}
                         startingQuestionNumber={zoneStartNumbers[index]}
