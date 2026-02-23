@@ -9,13 +9,10 @@ dependencies = [
   "ansi2html==1.9.2",
   "automata-lib==9.2.0",
   "chevron==0.14.0",
-  "coloraide==8.0",
-  "faker==40.1.2",
+  "coloraide==8.3",
+  "faker==40.4.0",
   "jinja2==3.1.6",
   "lxml==6.0.2",
-  # NOTE: matplotlib 3.11.0+ no longer `\usepackage{type1cm}` directly, but `type1cm.sty`
-  # must still be installed on the system. This means `texlive-latex-extra` is still required
-  # in our Docker image. See: https://github.com/matplotlib/matplotlib/pull/30100
   "matplotlib==3.10.8",
   "networkx==3.6.1",
   "nltk==3.9.2",
@@ -26,15 +23,15 @@ dependencies = [
   "pint==0.25.2",
   "psutil==7.2.2",
   "pulp==3.3.0",
-  "pyarrow==23.0.0",
+  "pyarrow==23.0.1",
   "pycryptodome==3.23.0",
   "pygments==2.19.2",
   "pygments-ansi-color==0.3.0",
   "pygraphviz==1.14",
   "pyquaternion==0.9.9",
-  "regex==2026.1.15",
+  "regex==2026.2.19",
   "requests==2.32.5",
-  "rich==14.3.2",
+  "rich==14.3.3",
   "schemdraw==0.22",
   "scikit-learn==1.8.0",
   "scipy==1.17.0",
@@ -53,11 +50,11 @@ dev = [
   "pytest-cov==7.0.0",
   "pytest-github-actions-annotate-failures==0.3.0",
   "pytest-repeat==0.9.4",
-  "ruff==0.14.14",
-  "sqlfluff==4.0.0",
-  "squawk-cli==2.39.0",
+  "ruff==0.15.2",
+  "sqlfluff==4.0.4",
+  "squawk-cli==2.40.1",
   "types-chevron==0.14.2.20250103",
-  "types-lxml==2026.1.1",
+  "types-lxml==2026.2.16",
   "types-pygments==2.19.0.20251121",
 ]
 
@@ -69,13 +66,13 @@ docs = [
   "mkdocs-exclude==1.0.2",
   "mkdocs-gen-files==0.6.0",
   "mkdocs-literate-nav==0.6.2",
-  "mkdocs-material==9.7.1",
-  "mkdocstrings==1.0.2",
-  "mkdocstrings-python==2.0.1",
-  "pymdown-extensions==10.20.1",
+  "mkdocs-material==9.7.2",
+  "mkdocstrings==1.0.3",
+  "mkdocstrings-python==2.0.3",
+  "pymdown-extensions==10.21",
   # mkdocstrings-python will format the docstrings using ruff
   # https://mkdocstrings.github.io/python/usage/configuration/signatures/#line_length
-  "ruff==0.14.14",
+  "ruff==0.15.2",
 ]
 
 # We only use pyproject.toml for the Python dependencies, so we don't need to
@@ -229,7 +226,6 @@ convention = "google"
 "testCourse/**/*.py" = ["ANN", "D100", "D103", "DOC"]
 "exampleCourse/**/*.py" = ["ANN", "D", "DOC"]
 "apps/prairielearn/elements/pl-drawing/**/*.py" = ["ANN"]
-"apps/prairielearn/elements/pl-threejs/**/*.py" = ["ANN"]
 "apps/prairielearn/elements/pl-prairiedraw-figure/**/*.py" = ["ANN"]
 "apps/prairielearn/elements/pl-checkbox/**/*.py" = ["ANN"]
 "apps/prairielearn/python/test/**/*.py" = ["ANN", "D"]
@@ -261,7 +257,6 @@ include = [
 ignore = [
   "./apps/prairielearn/elements/pl-drawing",            # requires refactor
   "./apps/prairielearn/elements/pl-prairiedraw-figure", # deprecated
-  "./apps/prairielearn/elements/pl-threejs",            # deprecated
   "./exampleCourse/questions/**/tests",                 # autograder tests, use different dependencies
 ]
 extraPaths = ["./apps/prairielearn/python"]

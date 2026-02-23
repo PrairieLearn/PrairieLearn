@@ -30,7 +30,7 @@ class TestBigOInput:
     ) -> None:
         score, feedback = grading_fn(a_true, a_sub, VARIABLES)
 
-        assert score == 1.0
+        assert score == pytest.approx(1.0)
         assert feedback == bou.CORRECT_UNCONDITIONAL_FEEDBACK
 
     @pytest.mark.parametrize(
@@ -52,7 +52,7 @@ class TestBigOInput:
     ) -> None:
         score, feedback = grading_fn(a_true, a_sub, VARIABLES)
 
-        assert score == 1.0
+        assert score == pytest.approx(1.0)
         assert feedback == bou.CORRECT_COMPLEX_FEEDBACK
 
     @pytest.mark.parametrize(
@@ -119,7 +119,7 @@ class TestBigOInput:
     ) -> None:
         score, feedback = grading_fn(a_true, a_sub, VARIABLES)
 
-        assert score == 0.0
+        assert score == pytest.approx(0.0)
         assert feedback == bou.NEGATIVE_FEEDBACK
 
     @pytest.mark.parametrize(
@@ -195,7 +195,7 @@ class TestBigOInput:
     ) -> None:
         score, feedback = grading_fn(a_true, a_sub, VARIABLES)
 
-        assert score == 0.0
+        assert score == pytest.approx(0.0)
         assert feedback == bou.INCORRECT_FEEDBACK
 
     @pytest.mark.parametrize(
@@ -223,7 +223,7 @@ class TestBigOInput:
     ) -> None:
         score, feedback = grading_fn(a_true, a_sub, VARIABLES)
 
-        assert score == 0.0
+        assert score == pytest.approx(0.0)
         assert feedback == bou.INCORRECT_FEEDBACK
 
     @pytest.mark.parametrize("a_true", ["1", "log(n)", "n", "n**2"])
@@ -236,7 +236,7 @@ class TestBigOInput:
     ) -> None:
         score, feedback = grading_fn(a_true, a_sub, VARIABLES)
 
-        assert score == 0.0
+        assert score == pytest.approx(0.0)
         assert feedback == bou.TYPE_ERROR_FEEDBACK
 
 
