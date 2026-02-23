@@ -13,7 +13,7 @@
     "preferMustacheComments": "warning"
   },
   "printWidth": 100,
-  "noBreakDelimiters": ["$", "$$"],
+  "noBreakDelimiters": ["$", "$$", "\\(", "\\["],
   "customTags": [
     {
       "name": "pl-code",
