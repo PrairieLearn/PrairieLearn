@@ -88,7 +88,7 @@ function AssessmentQuestionsTable({
                     ${renderHtml(
                       <AssessmentQuestionNumber
                         alternativeGroupSize={question.alternative_group_size}
-                        alternativeGroupNumber={question.alternative_group.number ?? 1}
+                        alternativeGroupNumber={question.alternative_group.number}
                         numberInAlternativeGroup={
                           question.assessment_question.number_in_alternative_group
                         }

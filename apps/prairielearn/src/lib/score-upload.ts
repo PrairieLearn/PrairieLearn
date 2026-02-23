@@ -284,14 +284,14 @@ async function updateInstanceQuestionFromCsvRow(
       partial_scores: getPartialScoresOrNull(record),
     };
     if (Object.values(new_score).some((value) => value != null)) {
-      await manualGrading.updateInstanceQuestionScore(
+      await manualGrading.updateInstanceQuestionScore({
         assessment,
-        submission_data.instance_question_id,
-        submission_data.submission_id,
-        null, // check_modified_at
-        new_score,
+        instance_question_id: submission_data.instance_question_id,
+        submission_id: submission_data.submission_id,
+        check_modified_at: null,
+        score: new_score,
         authn_user_id,
-      );
+      });
       return true;
     } else {
       return false;

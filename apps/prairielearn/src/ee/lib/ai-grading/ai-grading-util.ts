@@ -50,7 +50,7 @@ import { type CounterClockwiseRotationDegrees, RotationCorrectionOutputSchema } 
 
 const sql = loadSqlEquiv(import.meta.url);
 
-export const SubmissionVariantSchema = z.object({
+const SubmissionVariantSchema = z.object({
   variant: VariantSchema,
   submission: SubmissionSchema,
 });
