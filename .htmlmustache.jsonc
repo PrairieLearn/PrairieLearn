@@ -13,8 +13,12 @@
     "preferMustacheComments": "warning"
   },
   "printWidth": 100,
-  "indentSize": 4,
-  "noBreakDelimiters": ["$", "$$"],
+  "noBreakDelimiters": [
+    {"start": "$", "end": "$"},
+    {"start": "$$", "end": "$$"},
+    {"start": "\\(", "end": "\\)"},
+    {"start": "\\[", "end": "\\]"}
+  ],
   "customTags": [
     {
       "name": "pl-code",
@@ -47,6 +51,7 @@
     },
     {
       "name": "pl-rich-text-editor",
+      "display": "block",
       "languageAttribute": "format"
     },
     {
@@ -60,10 +65,6 @@
       "languageDefault": "dot"
     },
     {
-      "name": "pl-multiple-choice",
-      "display": "block"
-    },
-    {
       "name": "pl-question-panel",
       "display": "block"
     },
@@ -74,6 +75,104 @@
     {
       "name": "pl-answer-panel",
       "display": "block"
-    }
+    },
+    // Submission
+    { "name": "pl-big-o-input" },
+    { "name": "pl-excalidraw" },
+    { "name": "pl-file-upload" },
+    { "name": "pl-image-capture" },
+    { "name": "pl-integer-input" },
+    { "name": "pl-matching" },
+    { "name": "pl-statement" }, // pl-matching
+    { "name": "pl-option" }, // pl-matching
+    { "name": "pl-matrix-component-input" },
+    { "name": "pl-matrix-input" },
+    { "name": "pl-checkbox" },
+    { "name": "pl-multiple-choice" },
+    { "name": "pl-order-blocks" },
+    { "name": "pl-block-group" }, // pl-order-blocks
+    { "name": "pl-answer" }, // pl-multiple-choice / pl-checkbox / pl-order-blocks
+    { "name": "pl-number-input" },
+    { "name": "pl-string-input" },
+    { "name": "pl-symbolic-input" },
+    { "name": "pl-units-input" },
+    // Decorative
+    { "name": "pl-card" },
+    { "name": "pl-dataframe" },
+    { "name": "pl-external-grader-variables" },
+    { "name": "pl-figure" },
+    { "name": "pl-file-download" },
+    { "name": "pl-file-preview" },
+    { "name": "pl-matrix-latex" },
+    { "name": "pl-python-variable" },
+    { "name": "pl-template" },
+    { "name": "pl-variable-output" },
+    { "name": "pl-variable" }, // pl-variable-output
+    { "name": "pl-xss-safe" },
+    { "name": "pl-overlay" },
+    { "name": "pl-background" }, // pl-overlay
+    { "name": "pl-location" }, // pl-overlay
+    // Conditional elements
+    { "name": "pl-external-grader-results" },
+    { "name": "pl-hidden-hints" },
+    { "name": "pl-hint" }, // pl-hidden-hints
+    { "name": "pl-hide-in-manual-grading" },
+    { "name": "pl-manual-grading-only" },
+    { "name": "pl-hide-in-answer-panel" },
+    { "name": "pl-workspace" },
+    { "name": "pl-hide-in-panel" },
+    // Deprecated elements
+    { "name": "pl-dropdown" },
+    { "name": "pl-prairiedraw-figure" },
+    { "name": "pl-variable-score" },
+    { "name": "pl-github-link" }, // TODO: This element no longer exists https://github.com/PrairieLearn/PrairieLearn/issues/14201
+    // pl-drawing
+    { "name": "pl-drawing" },
+    { "name": "pl-drawing-answer" },
+    { "name": "pl-drawing-button" },
+    { "name": "pl-drawing-group" },
+    { "name": "pl-drawing-initial" },
+    { "name": "pl-controls" },
+    { "name": "pl-controls-group" },
+    { "name": "pl-3pointrod" },
+    { "name": "pl-4pointrod" },
+    { "name": "pl-arc" },
+    { "name": "pl-arc-dimensions" },
+    { "name": "pl-arc-vector" },
+    { "name": "pl-axes" },
+    { "name": "pl-battery" },
+    { "name": "pl-capacitor" },
+    { "name": "pl-circle" },
+    { "name": "pl-clamped" },
+    { "name": "pl-coil" },
+    { "name": "pl-collar-rod" },
+    { "name": "pl-controlled-curved-line" },
+    { "name": "pl-controlled-line" },
+    { "name": "pl-coordinates" },
+    { "name": "pl-dimensions" },
+    { "name": "pl-distributed-load" },
+    { "name": "pl-double-headed-vector" },
+    { "name": "pl-fixed-pin" },
+    { "name": "pl-graph-line" },
+    { "name": "pl-inductor" },
+    { "name": "pl-line" },
+    { "name": "pl-paired-vector" },
+    { "name": "pl-point" },
+    { "name": "pl-polygon" },
+    { "name": "pl-pulley" },
+    { "name": "pl-rectangle" },
+    { "name": "pl-resistor" },
+    { "name": "pl-rod" },
+    { "name": "pl-roller" },
+    { "name": "pl-spring" },
+    { "name": "pl-switch" },
+    { "name": "pl-text" },
+    { "name": "pl-triangle" },
+    { "name": "pl-vector" },
+    // Non-PL custom elements
+    { "name": "clickable-image" },
+    { "name": "course-element" },
+    { "name": "extendable-element" },
+    { "name": "math-field" }
   ]
 }
