@@ -18,7 +18,7 @@ export const CourseRolesSchema = z.object({
     .array(),
   available_uids: UserSchema.shape.uid.array().nullable(),
 });
-export type CourseRoles = z.infer<typeof CourseRolesSchema>;
+type CourseRoles = z.infer<typeof CourseRolesSchema>;
 
 export function InstructorEffectiveUser({
   resLocals,
