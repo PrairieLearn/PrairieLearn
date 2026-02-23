@@ -47,7 +47,7 @@ describe('executor smoke tests', () => {
         fcn: 'prepare',
         args: [
           '<pl-checkbox answers-name="ans"><pl-answer correct="true">correct</pl-answer></pl-checkbox>',
-          { params: {}, correct_answers: {} },
+          { params: {}, correct_answers: {}, answers_names: {} },
         ],
       }),
       codeCaller,
@@ -67,7 +67,7 @@ describe('executor smoke tests', () => {
         fcn: 'prepare',
         args: [
           '<pl-symbolic-input answers-name="ans" variables="x" />',
-          { params: {}, correct_answers: {} },
+          { params: {}, correct_answers: {}, answers_names: {} },
         ],
       }),
       codeCaller,
@@ -83,7 +83,10 @@ describe('executor smoke tests', () => {
         directory: 'pl-dataframe',
         file: 'pl-dataframe',
         fcn: 'prepare',
-        args: ['<pl-dataframe params-name="df" />', { params: {}, correct_answers: {} }],
+        args: [
+          '<pl-dataframe params-name="df" />',
+          { params: {}, correct_answers: {}, answers_names: {} },
+        ],
       }),
       codeCaller,
     );
@@ -98,7 +101,10 @@ describe('executor smoke tests', () => {
         directory: 'pl-graph',
         file: 'pl-graph',
         fcn: 'prepare',
-        args: ['<pl-graph params-name="g" />', { params: {}, correct_answers: {} }],
+        args: [
+          '<pl-graph params-name="g" />',
+          { params: {}, correct_answers: {}, answers_names: {} },
+        ],
       }),
       codeCaller,
     );
