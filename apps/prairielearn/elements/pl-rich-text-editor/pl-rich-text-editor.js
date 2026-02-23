@@ -186,7 +186,7 @@
         const formulaButton = quill?.getModule('toolbar')?.container?.querySelector('.ql-formula');
         if (!quill || !formulaButton) return;
         quill.setSelection(quill.getIndex(formulaBlot), 1, 'silent');
-        formulaButton?.click();
+        formulaButton.click();
       });
       if (typeof value === 'string') {
         this.updateNode(node, value);
@@ -222,12 +222,17 @@
   // value.
   document.addEventListener('selectionchange', () => {
     const selection = document.getSelection();
-    document.querySelectorAll('.ql-formula').forEach((formula) => {
-      formula.classList.toggle(
-        'ql-formula-selected',
-        selection && selection.containsNode(formula, false),
-      );
+    // Clear stale highlights first, then mark only those in the active selection.
+    document.querySelectorAll('.ql-formula-selected').forEach((el) => {
+      el.classList.remove('ql-formula-selected');
     });
+    if (selection && !selection.isCollapsed) {
+      document.querySelectorAll('.ql-formula').forEach((formula) => {
+        if (selection.containsNode(formula, false)) {
+          formula.classList.add('ql-formula-selected');
+        }
+      });
+    }
   });
 })();
 
