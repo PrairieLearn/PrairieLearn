@@ -116,10 +116,8 @@ export function QuestionPickerModal({
         if (notInAnySelected && hasNoAssessments) {
           matchesAssessment = true;
         } else {
-          matchesAssessment = filteredAssessments.some(
-            (a) =>
-              selectedAssessments.has(a.assessment_id) &&
-              a.assessment_id !== NOT_IN_ANY_ASSESSMENT_ID,
+          matchesAssessment = filteredAssessments.some((a) =>
+            selectedAssessments.has(a.assessment_id),
           );
         }
       }
@@ -149,19 +147,21 @@ export function QuestionPickerModal({
   });
 
   const handleSelect = (question: CourseQuestionForPicker) => {
-    const qid = question.qid;
-    if (questionsInAssessment.has(qid) && qid !== currentQid) {
+    if (questionsInAssessment.has(question.qid) && question.qid !== currentQid) {
       return;
     }
-    onQuestionSelected(qid);
-    resetFilters();
+    onQuestionSelected(question.qid);
+  };
+
+  const clearFilters = () => {
+    setSelectedTopics(new Set());
+    setSelectedTags(new Set());
+    setSelectedAssessments(new Set());
   };
 
   const resetFilters = () => {
     setSearchQuery('');
-    setSelectedTopics(new Set());
-    setSelectedTags(new Set());
-    setSelectedAssessments(new Set());
+    clearFilters();
     setExpandedTagsQids(new Set());
   };
 
@@ -222,11 +222,7 @@ export function QuestionPickerModal({
                   <button
                     type="button"
                     className="btn btn-sm btn-link text-decoration-none"
-                    onClick={() => {
-                      setSelectedTopics(new Set());
-                      setSelectedTags(new Set());
-                      setSelectedAssessments(new Set());
-                    }}
+                    onClick={clearFilters}
                   >
                     Clear all filters
                   </button>
@@ -324,47 +320,48 @@ export function QuestionPickerModal({
                           className="d-flex flex-wrap gap-1 justify-content-end"
                           style={{ maxWidth: '40%' }}
                         >
-                          <span className={`badge color-${question.topic.color}`}>
-                            {question.topic.name}
-                          </span>
-                          {(expandedTagsQids.has(qid)
-                            ? question.tags
-                            : question.tags?.slice(0, 3)
-                          )?.map((tag) => (
-                            <span key={tag.id} className={`badge color-${tag.color}`}>
-                              {tag.name}
-                            </span>
-                          ))}
-                          {(question.tags?.length ?? 0) > 3 &&
-                            (expandedTagsQids.has(qid) ? (
-                              <button
-                                type="button"
-                                className="badge bg-secondary border-0"
-                                onClick={(e) => {
-                                  e.stopPropagation();
-                                  setExpandedTagsQids((prev) => {
-                                    const next = new Set(prev);
-                                    next.delete(qid);
-                                    return next;
-                                  });
-                                }}
-                                onKeyDown={(e) => e.stopPropagation()}
-                              >
-                                Show less
-                              </button>
-                            ) : (
-                              <button
-                                type="button"
-                                className="badge bg-secondary border-0"
-                                onClick={(e) => {
-                                  e.stopPropagation();
-                                  setExpandedTagsQids((prev) => new Set(prev).add(qid));
-                                }}
-                                onKeyDown={(e) => e.stopPropagation()}
-                              >
-                                +{(question.tags?.length ?? 0) - 3}
-                              </button>
-                            ))}
+                          {(() => {
+                            const isExpanded = expandedTagsQids.has(qid);
+                            const visibleTags = isExpanded
+                              ? question.tags
+                              : question.tags?.slice(0, 3);
+                            const hasMoreTags = (question.tags?.length ?? 0) > 3;
+                            return (
+                              <>
+                                <span className={`badge color-${question.topic.color}`}>
+                                  {question.topic.name}
+                                </span>
+                                {visibleTags?.map((tag) => (
+                                  <span key={tag.id} className={`badge color-${tag.color}`}>
+                                    {tag.name}
+                                  </span>
+                                ))}
+                                {hasMoreTags && (
+                                  <button
+                                    type="button"
+                                    className="badge bg-secondary border-0"
+                                    onClick={(e) => {
+                                      e.stopPropagation();
+                                      setExpandedTagsQids((prev) => {
+                                        const next = new Set(prev);
+                                        if (isExpanded) {
+                                          next.delete(qid);
+                                        } else {
+                                          next.add(qid);
+                                        }
+                                        return next;
+                                      });
+                                    }}
+                                    onKeyDown={(e) => e.stopPropagation()}
+                                  >
+                                    {isExpanded
+                                      ? 'Show less'
+                                      : `+${(question.tags?.length ?? 0) - 3}`}
+                                  </button>
+                                )}
+                              </>
+                            );
+                          })()}
                         </div>
                       </div>
                     );

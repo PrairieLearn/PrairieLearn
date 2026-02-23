@@ -3,6 +3,14 @@ import { OverlayTrigger } from '@prairielearn/ui';
 import { AssessmentBadge } from '../../../components/AssessmentBadge.js';
 import type { AssessmentForPicker } from '../types.js';
 
+function toBadgeProps(assessment: AssessmentForPicker, useSetColor = true) {
+  return {
+    assessment_id: assessment.assessment_id,
+    color: useSetColor ? (assessment.assessment_set_color ?? assessment.color) : assessment.color,
+    label: assessment.label,
+  };
+}
+
 /**
  * Groups assessments by their set abbreviation and returns them sorted.
  * Returns null if abbreviation data is not available.
@@ -57,14 +65,7 @@ export function AssessmentBadges({
       <>
         {assessments.slice(0, 3).map((assessment) => (
           <span key={assessment.assessment_id} className="d-inline-block me-1">
-            <AssessmentBadge
-              urlPrefix={urlPrefix}
-              assessment={{
-                assessment_id: assessment.assessment_id,
-                color: assessment.color,
-                label: assessment.label,
-              }}
-            />
+            <AssessmentBadge urlPrefix={urlPrefix} assessment={toBadgeProps(assessment, false)} />
           </span>
         ))}
         {assessments.length > 3 && (
@@ -81,14 +82,7 @@ export function AssessmentBadges({
       for (const assessment of items) {
         elements.push(
           <span key={assessment.assessment_id} className="d-inline-block me-1">
-            <AssessmentBadge
-              urlPrefix={urlPrefix}
-              assessment={{
-                assessment_id: assessment.assessment_id,
-                color: assessment.assessment_set_color ?? assessment.color,
-                label: assessment.label,
-              }}
-            />
+            <AssessmentBadge urlPrefix={urlPrefix} assessment={toBadgeProps(assessment)} />
           </span>,
         );
       }
@@ -109,11 +103,7 @@ export function AssessmentBadges({
                     <AssessmentBadge
                       key={assessment.assessment_id}
                       urlPrefix={urlPrefix}
-                      assessment={{
-                        assessment_id: assessment.assessment_id,
-                        color: assessment.assessment_set_color ?? assessment.color,
-                        label: assessment.label,
-                      }}
+                      assessment={toBadgeProps(assessment)}
                     />
                   ))}
                 </div>
