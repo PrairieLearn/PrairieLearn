@@ -25,7 +25,11 @@
   text-align: right;
 }
 
-.ql-formula-selected {
+.pl-rich-text-editor-container .ql-formula {
+  cursor: pointer;
+}
+
+.pl-rich-text-editor-container .ql-formula-selected {
   background: rgba(0, 123, 255, 0.25);
   color: black;
 }

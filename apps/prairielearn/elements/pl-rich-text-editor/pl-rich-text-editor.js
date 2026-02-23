@@ -179,8 +179,8 @@
   class MathFormula extends Embed {
     static create(value) {
       const node = super.create(value);
-      node.addEventListener('dblclick', () => {
-        // On double click, allow editing the formula by showing the formula popover with the current formula value.
+      node.addEventListener('click', () => {
+        // On click, allow editing the formula by showing the formula popover with the current formula value.
         const formulaBlot = Quill.find(node);
         const quill = Quill.find(formulaBlot?.scroll?.domNode?.parentElement);
         const formulaButton = quill?.getModule('toolbar')?.container?.querySelector('.ql-formula');
