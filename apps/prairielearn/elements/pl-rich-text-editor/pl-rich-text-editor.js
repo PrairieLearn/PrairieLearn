@@ -212,6 +212,23 @@
   MathFormula.tagName = 'SPAN';
 
   Quill.register('formats/formula', MathFormula, true);
+
+  // MathJax SVG formulas can be selected by the user, but by default they don't
+  // have any visual indication that they are selected. This code adds a CSS
+  // class to formulas that are selected, which allows us to style them with a
+  // background color to indicate selection. This is important to allow users to
+  // select and modify existing formulas, since the formula popover relies on
+  // the current selection to populate the input with the existing formula
+  // value.
+  document.addEventListener('selectionchange', () => {
+    const selection = document.getSelection();
+    document.querySelectorAll('.ql-formula').forEach((formula) => {
+      formula.classList.toggle(
+        'ql-formula-selected',
+        selection && selection.containsNode(formula, false),
+      );
+    });
+  });
 })();
 
 function initializeFormulaPopover(quill, uuid) {
@@ -266,8 +283,13 @@ function initializeFormulaPopover(quill, uuid) {
     // Without trailing whitespace, cursor will not appear at end of text if
     // LaTeX is at end. Also done by original handler:
     // https://github.com/slab/quill/blob/ebe16ca24724ac4f52505628ac2c4934f0a98b85/packages/quill/src/themes/base.ts#L315
-    quill.insertText(range.index + 1, ' ', 'user');
-    quill.setSelection(range.index + 2, 0, 'user');
+    // We only add the trailing whitespace when the formula is at the end of a line, to avoid creating unnecessary spaces in the middle of the content.
+    let nextPosition = range.index + 1;
+    if (quill.getText(nextPosition, 1) === '\n') {
+      quill.insertText(nextPosition, ' ', 'user');
+      nextPosition++;
+    }
+    quill.setSelection(nextPosition, 0, 'user');
   });
 
   formulaButton.addEventListener('hide.bs.popover', () => {

@@ -24,3 +24,8 @@
   padding: 5px 15px;
   text-align: right;
 }
+
+.ql-formula-selected {
+  background: rgba(0, 123, 255, 0.25);
+  color: black;
+}
