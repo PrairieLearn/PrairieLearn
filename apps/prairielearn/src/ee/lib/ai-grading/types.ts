@@ -57,7 +57,7 @@ export type InstanceQuestionAIGradingInfo = InstanceQuestionAIGradingInfoBase &
       }
   );
 
-export const AIGradingOrientationSchema = z.enum([
+const AIGradingOrientationSchema = z.enum([
   'Upright (0 degrees)',
   'Upside-down (180 degrees)',
   'Rotated Counterclockwise 90 degrees',

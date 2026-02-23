@@ -211,6 +211,9 @@ function AIGradingExplanation({
   hasImage: boolean;
   rotationCorrectionDegrees: Record<string, CounterClockwiseRotationDegrees> | null;
 }) {
+  const rotationCorrectionApplied =
+    rotationCorrectionDegrees && Object.keys(rotationCorrectionDegrees).length > 0;
+
   return html`
     <div class="card mb-3 grading-block">
       <div
@@ -233,8 +236,8 @@ function AIGradingExplanation({
         id="ai-grading-explanation-body"
       >
         <div class="card-body">
-          ${hasImage && rotationCorrectionDegrees
-            ? Object.keys(rotationCorrectionDegrees).length > 0
+          ${hasImage
+            ? rotationCorrectionApplied
               ? html`<div class="alert alert-warning mb-3" role="alert">
                   <p>
                     An image was uploaded in a rotated state by the student (this was an error by
