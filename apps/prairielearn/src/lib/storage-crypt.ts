@@ -8,9 +8,6 @@ import { decrypt, encrypt } from './symmetric-crypto.js';
  * @returns The ciphertext (utf8).
  */
 export function encryptForStorage(plaintext: string): string {
-  if (!config.devMode && config.databaseEncryptionKey.startsWith('d44e91681a476979')) {
-    throw new Error('Database encryption key must be changed in production');
-  }
   return encrypt(plaintext, config.databaseEncryptionKey);
 }
 
