@@ -108,16 +108,6 @@ const requireCourseInstancePermissionEdit = t.middleware(async (opts) => {
   return opts.next();
 });
 
-function requireShortName(shortName: string | null): string {
-  if (shortName == null) {
-    throw new TRPCError({
-      code: 'BAD_REQUEST',
-      message: 'Course instance short_name is not available',
-    });
-  }
-  return shortName;
-}
-
 const labelsQuery = t.procedure
   .use(requireCourseInstancePermissionView)
   .output(z.array(StudentLabelWithUserDataSchema))
@@ -162,7 +152,7 @@ const createLabelMutation = t.procedure
     const courseInstancePath = path.join(
       course.path,
       'courseInstances',
-      requireShortName(course_instance.short_name),
+      course_instance.short_name!,
     );
     const courseInstanceJsonPath = path.join(courseInstancePath, 'infoCourseInstance.json');
     const paths = getPaths(undefined, locals);
@@ -249,7 +239,7 @@ const editLabelMutation = t.procedure
     const courseInstancePath = path.join(
       course.path,
       'courseInstances',
-      requireShortName(course_instance.short_name),
+      course_instance.short_name!,
     );
     const courseInstanceJsonPath = path.join(courseInstancePath, 'infoCourseInstance.json');
     const paths = getPaths(undefined, locals);
@@ -370,7 +360,7 @@ const deleteLabelMutation = t.procedure
     const courseInstancePath = path.join(
       course.path,
       'courseInstances',
-      requireShortName(course_instance.short_name),
+      course_instance.short_name!,
     );
     const courseInstanceJsonPath = path.join(courseInstancePath, 'infoCourseInstance.json');
     const paths = getPaths(undefined, locals);
