@@ -77,13 +77,12 @@ function ColumnGroupItem<RowDataModel>({
   getIsOnPinningBoundary: (columnId: string) => boolean;
 }) {
   const [isExpanded, setIsExpanded] = useState(false);
+  const checkboxRef = useRef<HTMLInputElement>(null);
 
   const leafColumns = column.getLeafColumns();
   const visibleLeafColumns = leafColumns.filter((c) => c.getIsVisible());
   const isAllVisible = visibleLeafColumns.length === leafColumns.length;
   const isSomeVisible = visibleLeafColumns.length > 0 && !isAllVisible;
-
-  const checkboxRef = useRef<HTMLInputElement>(null);
 
   // `indeterminate` is a DOM property with no HTML attribute equivalent, so
   // React can't manage it declaratively. useLayoutEffect ensures it's applied

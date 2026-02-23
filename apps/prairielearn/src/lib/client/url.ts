@@ -92,6 +92,26 @@ export function getCourseInstanceSettingsUrl(courseInstanceId: string): string {
   return `/pl/course_instance/${courseInstanceId}/instructor/instance_admin/settings`;
 }
 
+export function getQuestionPreviewUrl({
+  courseId,
+  courseInstanceId,
+  questionId,
+  isPublic = false,
+}: {
+  courseId: string;
+  courseInstanceId?: string;
+  questionId: string;
+  isPublic?: boolean;
+}): string {
+  if (courseInstanceId) {
+    return `/pl/course_instance/${courseInstanceId}/instructor/question/${questionId}/preview`;
+  }
+  if (isPublic) {
+    return `/pl/public/course/${courseId}/question/${questionId}/preview`;
+  }
+  return `/pl/course/${courseId}/question/${questionId}/preview`;
+}
+
 export function getAiQuestionGenerationDraftsUrl({ urlPrefix }: { urlPrefix: string }): string {
   return `${urlPrefix}/ai_generate_question_drafts`;
 }

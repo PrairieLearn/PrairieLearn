@@ -1,5 +1,5 @@
 import { rankItem } from '@tanstack/match-sorter-utils';
-import { useQuery } from '@tanstack/react-query';
+import { type QueryKey, useQuery } from '@tanstack/react-query';
 import {
   type ColumnFiltersState,
   type ColumnPinningState,
@@ -15,6 +15,7 @@ import { parseAsArrayOf, parseAsString, useQueryState, useQueryStates } from 'nu
 import { useMemo, useState } from 'react';
 import { Alert, Button } from 'react-bootstrap';
 
+import { run } from '@prairielearn/run';
 import {
   TanstackTableCard,
   type TanstackTableCsvCell,
@@ -46,18 +47,30 @@ const fuzzyFilter: FilterFn<any> = (row, columnId, value, addMeta) => {
 const DEFAULT_SORT: SortingState = [];
 const DEFAULT_PINNING: ColumnPinningState = { left: ['qid'], right: [] };
 
+/** Maps column ID to URL query parameter key for categorical filters. */
+const FILTER_COLUMN_URL_KEYS: Record<string, string> = {
+  topic: 'topic',
+  tags: 'tags',
+  sharing_sets: 'sharing',
+  display_type: 'version',
+  grading_method: 'grading',
+  external_grading_image: 'extImage',
+  workspace_image: 'wsImage',
+};
+
 export interface QuestionsTableProps {
   questions: SafeQuestionsPageData[];
   courseInstances: PublicCourseInstance[];
+  courseId: string;
   currentCourseInstanceId?: string;
-  /** URL for the "Add question" page. If provided, an "Add question" button is shown. */
   addQuestionUrl?: string;
   showAiGenerateQuestionButton: boolean;
   showSharingSets: boolean;
   urlPrefix: string;
+  isPublic?: boolean;
   qidPrefix?: string;
   questionsQueryOptions: {
-    queryKey: readonly unknown[];
+    queryKey: QueryKey;
     queryFn?: (...args: any[]) => SafeQuestionsPageData[] | Promise<SafeQuestionsPageData[]>;
   };
 }
@@ -65,11 +78,13 @@ export interface QuestionsTableProps {
 export function QuestionsTable({
   questions: initialQuestions,
   courseInstances,
+  courseId,
   currentCourseInstanceId,
   addQuestionUrl,
   showAiGenerateQuestionButton,
   showSharingSets,
   urlPrefix,
+  isPublic,
   qidPrefix,
   questionsQueryOptions,
 }: QuestionsTableProps) {
@@ -83,44 +98,19 @@ export function QuestionsTable({
     parseAsColumnPinningState.withDefault(DEFAULT_PINNING),
   );
 
-  const [topicFilter, setTopicFilter] = useQueryState(
-    'topic',
-    parseAsArrayOf(parseAsString).withDefault([]),
-  );
-  const [tagsFilter, setTagsFilter] = useQueryState(
-    'tags',
-    parseAsArrayOf(parseAsString).withDefault([]),
-  );
-  const [sharingSetsFilter, setSharingSetsFilter] = useQueryState(
-    'sharing',
-    parseAsArrayOf(parseAsString).withDefault([]),
-  );
-  const [versionFilter, setVersionFilter] = useQueryState(
-    'version',
-    parseAsArrayOf(parseAsString).withDefault([]),
-  );
-  const [gradingMethodFilter, setGradingMethodFilter] = useQueryState(
-    'grading',
-    parseAsArrayOf(parseAsString).withDefault([]),
-  );
-  const [externalGradingImageFilter, setExternalGradingImageFilter] = useQueryState(
-    'extImage',
-    parseAsArrayOf(parseAsString).withDefault([]),
-  );
-  const [workspaceImageFilter, setWorkspaceImageFilter] = useQueryState(
-    'wsImage',
-    parseAsArrayOf(parseAsString).withDefault([]),
+  const courseInstanceIds = courseInstances.map((ci) => ci.id);
+
+  const filterParsers = run(() =>
+    Object.fromEntries([
+      ...Object.values(FILTER_COLUMN_URL_KEYS).map((urlKey) => [
+        urlKey,
+        parseAsArrayOf(parseAsString).withDefault([]),
+      ]),
+      ...courseInstanceIds.map((id) => [`ci_${id}`, parseAsArrayOf(parseAsString).withDefault([])]),
+    ]),
   );
 
-  const courseInstanceIds = useMemo(() => courseInstances.map((ci) => ci.id), [courseInstances]);
-
-  const defaultAssessmentFilterParsers = useMemo(() => {
-    return Object.fromEntries(
-      courseInstanceIds.map((id) => [`ci_${id}`, parseAsArrayOf(parseAsString).withDefault([])]),
-    );
-  }, [courseInstanceIds]);
-
-  const [assessmentFilters, setAssessmentFilters] = useQueryStates(defaultAssessmentFilterParsers);
+  const [filterValues, setFilterValues] = useQueryStates(filterParsers);
 
   const [columnSizing, setColumnSizing] = useState<ColumnSizingState>({});
 
@@ -135,15 +125,21 @@ export function QuestionsTable({
   });
 
   const columns = useMemo(
-    () => createQuestionsTableColumns({ courseInstances, qidPrefix, showSharingSets, urlPrefix }),
-    [courseInstances, qidPrefix, showSharingSets, urlPrefix],
+    () =>
+      createQuestionsTableColumns({
+        courseInstances,
+        qidPrefix,
+        showSharingSets,
+        courseId,
+        courseInstanceId: currentCourseInstanceId,
+        isPublic,
+      }),
+    [courseInstances, qidPrefix, showSharingSets, courseId, currentCourseInstanceId, isPublic],
   );
 
   const allColumnIds = extractLeafColumnIds(columns);
 
-  const hasLegacyQuestions = useMemo(() => {
-    return initialQuestions.some((q) => q.display_type !== 'v3');
-  }, [initialQuestions]);
+  const hasLegacyQuestions = initialQuestions.some((q) => q.display_type !== 'v3');
 
   const defaultColumnVisibility = useMemo(() => {
     const visibility: Record<string, boolean> = {};
@@ -173,96 +169,50 @@ export function QuestionsTable({
     parseAsColumnVisibilityStateWithColumns(allColumnIds).withDefault(defaultColumnVisibility),
   );
 
-  const columnFilters = useMemo<ColumnFiltersState>(() => {
+  const columnFilters: ColumnFiltersState = run(() => {
     const filters: ColumnFiltersState = [];
-
-    if (topicFilter.length > 0) {
-      filters.push({ id: 'topic', value: topicFilter });
-    }
-    if (tagsFilter.length > 0) {
-      filters.push({ id: 'tags', value: tagsFilter });
-    }
-    if (sharingSetsFilter.length > 0) {
-      filters.push({ id: 'sharing_sets', value: sharingSetsFilter });
-    }
-    if (versionFilter.length > 0) {
-      filters.push({ id: 'display_type', value: versionFilter });
-    }
-    if (gradingMethodFilter.length > 0) {
-      filters.push({ id: 'grading_method', value: gradingMethodFilter });
-    }
-    if (externalGradingImageFilter.length > 0) {
-      filters.push({ id: 'external_grading_image', value: externalGradingImageFilter });
-    }
-    if (workspaceImageFilter.length > 0) {
-      filters.push({ id: 'workspace_image', value: workspaceImageFilter });
-    }
-
-    for (const [urlKey, values] of Object.entries(assessmentFilters)) {
+    for (const [columnId, urlKey] of Object.entries(FILTER_COLUMN_URL_KEYS)) {
+      const values = filterValues[urlKey] ?? [];
       if (values.length > 0) {
-        filters.push({ id: urlKey, value: values });
+        filters.push({ id: columnId, value: values });
       }
     }
-
+    for (const id of courseInstanceIds) {
+      const values = filterValues[`ci_${id}`] ?? [];
+      if (values.length > 0) {
+        filters.push({ id: `ci_${id}`, value: values });
+      }
+    }
     return filters;
-  }, [
-    topicFilter,
-    tagsFilter,
-    sharingSetsFilter,
-    versionFilter,
-    gradingMethodFilter,
-    externalGradingImageFilter,
-    workspaceImageFilter,
-    assessmentFilters,
-  ]);
+  });
 
-  const columnFilterSetters = useMemo<
-    Record<string, ((_columnId: string, value: string[]) => void) | undefined>
-  >(() => {
-    return {
-      qid: undefined,
-      title: undefined,
-      topic: (_columnId: string, value: string[]) => void setTopicFilter(value),
-      tags: (_columnId: string, value: string[]) => void setTagsFilter(value),
-      sharing_sets: (_columnId: string, value: string[]) => void setSharingSetsFilter(value),
-      display_type: (_columnId: string, value: string[]) => void setVersionFilter(value),
-      grading_method: (_columnId: string, value: string[]) => void setGradingMethodFilter(value),
-      external_grading_image: (_columnId: string, value: string[]) =>
-        void setExternalGradingImageFilter(value),
-      workspace_image: (_columnId: string, value: string[]) => void setWorkspaceImageFilter(value),
-      ...Object.fromEntries(
-        courseInstanceIds.map((id) => [
-          `ci_${id}`,
-          (_columnId: string, value: string[]) =>
-            void setAssessmentFilters({ [`ci_${id}`]: value }),
-        ]),
-      ),
-    };
-  }, [
-    setTopicFilter,
-    setTagsFilter,
-    setSharingSetsFilter,
-    setVersionFilter,
-    setGradingMethodFilter,
-    setExternalGradingImageFilter,
-    setWorkspaceImageFilter,
-    courseInstanceIds,
-    setAssessmentFilters,
-  ]);
+  const columnFilterSetters: Record<
+    string,
+    ((_columnId: string, value: string[]) => void) | undefined
+  > = run(() => ({
+    ...Object.fromEntries(
+      Object.entries(FILTER_COLUMN_URL_KEYS).map(([columnId, urlKey]) => [
+        columnId,
+        (_: string, value: string[]) => void setFilterValues({ [urlKey]: value }),
+      ]),
+    ),
+    ...Object.fromEntries(
+      courseInstanceIds.map((id) => [
+        `ci_${id}`,
+        (_: string, value: string[]) => void setFilterValues({ [`ci_${id}`]: value }),
+      ]),
+    ),
+  }));
 
-  const handleColumnFiltersChange = useMemo(
-    () => createColumnFiltersChangeHandler(columnFilters, columnFilterSetters),
-    [columnFilters, columnFilterSetters],
+  const handleColumnFiltersChange = run(() =>
+    createColumnFiltersChangeHandler(columnFilters, columnFilterSetters),
   );
 
-  const filters = useMemo(
-    () =>
-      createQuestionsTableFilters({
-        questions: initialQuestions,
-        courseInstances,
-        showSharingSets,
-      }),
-    [initialQuestions, courseInstances, showSharingSets],
+  const filters = run(() =>
+    createQuestionsTableFilters({
+      questions: initialQuestions,
+      courseInstances,
+    }),
   );
 
   const table = useReactTable({

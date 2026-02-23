@@ -13,6 +13,7 @@ import { TRPCProvider, useTRPC } from './trpc-context.js';
 export interface InstructorQuestionsTableProps {
   questions: SafeQuestionsPageData[];
   courseInstances: PublicCourseInstance[];
+  courseId: string;
   currentCourseInstanceId?: string;
   showAddQuestionButton: boolean;
   showAiGenerateQuestionButton: boolean;
@@ -31,6 +32,7 @@ type InstructorQuestionsTableInnerProps = Omit<
 function InstructorQuestionsTableInner({
   questions,
   courseInstances,
+  courseId,
   currentCourseInstanceId,
   showAddQuestionButton,
   showAiGenerateQuestionButton,
@@ -44,6 +46,7 @@ function InstructorQuestionsTableInner({
     <QuestionsTable
       questions={questions}
       courseInstances={courseInstances}
+      courseId={courseId}
       currentCourseInstanceId={currentCourseInstanceId}
       showAiGenerateQuestionButton={showAiGenerateQuestionButton}
       showSharingSets={showSharingSets}

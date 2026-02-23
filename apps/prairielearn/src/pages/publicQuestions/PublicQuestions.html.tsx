@@ -13,8 +13,10 @@ import { TRPCProvider, useTRPC } from './trpc-context.js';
 export interface PublicQuestionsTableProps {
   questions: SafeQuestionsPageData[];
   courseInstances: PublicCourseInstance[];
+  courseId: string;
   showSharingSets: boolean;
   urlPrefix: string;
+  isPublic: boolean;
   qidPrefix?: string;
   search: string;
   isDevMode: boolean;

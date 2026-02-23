@@ -13,6 +13,7 @@ declare module '@tanstack/react-table' {
     autoSize?: boolean;
   }
 
+  /** Extends the default FilterMeta to include ranking information from `@tanstack/match-sorter-utils` for fuzzy filtering. */
   interface FilterMeta {
     itemRank?: RankingInfo;
   }

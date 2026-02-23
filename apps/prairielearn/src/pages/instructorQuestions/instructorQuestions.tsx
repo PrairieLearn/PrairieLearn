@@ -25,7 +25,7 @@ import { selectCourseInstancesWithStaffAccess } from '../../models/course-instan
 import { selectOptionalQuestionByQid } from '../../models/question.js';
 import { selectQuestionsForCourse } from '../../models/questions.js';
 
-import { InstructorQuestionsTable } from './InstructorQuestionsTable.js';
+import { InstructorQuestionsTable } from './instructorQuestions.html.js';
 import { createContext, instructorQuestionsRouter } from './trpc.js';
 
 const router = Router();
@@ -106,6 +106,7 @@ router.get(
             <InstructorQuestionsTable
               questions={questions}
               courseInstances={mappedCourseInstances}
+              courseId={course.id}
               currentCourseInstanceId={res.locals.course_instance?.id}
               showAddQuestionButton={showAddQuestionButton}
               showAiGenerateQuestionButton={showAiGenerateQuestionButton}

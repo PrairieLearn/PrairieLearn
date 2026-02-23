@@ -2,7 +2,9 @@ import { type Header, createColumnHelper } from '@tanstack/react-table';
 
 import { CategoricalColumnFilter } from '@prairielearn/ui';
 
+import { assessmentLabel } from '../lib/assessment.shared.js';
 import type { PublicCourseInstance } from '../lib/client/safe-db-types.js';
+import { getQuestionPreviewUrl } from '../lib/client/url.js';
 
 import { AssessmentBadge } from './AssessmentBadge.js';
 import { CopyButton } from './CopyButton.js';
@@ -14,24 +16,26 @@ import { TopicBadge } from './TopicBadge.js';
 
 const columnHelper = createColumnHelper<SafeQuestionsPageData>();
 
-function getAssessmentLabel(a: {
-  assessment: { number: string };
-  assessment_set: { abbreviation: string };
-}) {
-  return `${a.assessment_set.abbreviation}${a.assessment.number}`;
-}
-
 export function createQuestionsTableColumns({
   courseInstances,
   qidPrefix,
   showSharingSets,
-  urlPrefix,
+  courseId,
+  courseInstanceId,
+  isPublic,
 }: {
   courseInstances: PublicCourseInstance[];
   qidPrefix?: string;
   showSharingSets: boolean;
-  urlPrefix: string;
+  courseId: string;
+  courseInstanceId?: string;
+  isPublic?: boolean;
 }) {
+  // Derive URL prefix for components that still need it (e.g., IssueBadge).
+  const urlPrefix = courseInstanceId
+    ? `/pl/course_instance/${courseInstanceId}/instructor`
+    : `/pl/course/${courseId}`;
+
   return [
     columnHelper.accessor('qid', {
       id: 'qid',
@@ -52,7 +56,14 @@ export function createQuestionsTableColumns({
             ) : question.sync_warnings ? (
               <SyncProblemButton type="warning" output={question.sync_warnings} />
             ) : null}
-            <a href={`${urlPrefix}/question/${question.id}/preview`}>
+            <a
+              href={getQuestionPreviewUrl({
+                courseId,
+                courseInstanceId,
+                questionId: question.id,
+                isPublic,
+              })}
+            >
               {prefix}
               {question.qid}
             </a>
@@ -83,12 +94,15 @@ export function createQuestionsTableColumns({
       id: 'topic',
       header: 'Topic',
       cell: (info) => <TopicBadge topic={info.getValue()} />,
-      sortingFn: (rowA, rowB) => {
-        return rowA.original.topic.name.localeCompare(rowB.original.topic.name);
+      sortingFn: (rowA, rowB, columnId) => {
+        const topicA = rowA.getValue<SafeQuestionsPageData['topic']>(columnId);
+        const topicB = rowB.getValue<SafeQuestionsPageData['topic']>(columnId);
+        return topicA.name.localeCompare(topicB.name);
       },
-      filterFn: (row, _columnId, filterValues: string[]) => {
+      filterFn: (row, columnId, filterValues: string[]) => {
         if (filterValues.length === 0) return true;
-        return filterValues.includes(row.original.topic.name);
+        const topic = row.getValue<SafeQuestionsPageData['topic']>(columnId);
+        return filterValues.includes(topic.name);
       },
       size: 150,
     }),
@@ -102,9 +116,9 @@ export function createQuestionsTableColumns({
         </div>
       ),
       enableSorting: false,
-      filterFn: (row, _columnId, filterValues: string[]) => {
+      filterFn: (row, columnId, filterValues: string[]) => {
         if (filterValues.length === 0) return true;
-        const tags = row.original.tags ?? [];
+        const tags = row.getValue<SafeQuestionsPageData['tags']>(columnId) ?? [];
         return filterValues.some((v) => tags.some((t) => t.name === v));
       },
       size: 200,
@@ -112,61 +126,50 @@ export function createQuestionsTableColumns({
 
     ...(showSharingSets
       ? [
-          columnHelper.accessor(
-            (row) => {
+          columnHelper.display({
+            id: 'sharing_sets',
+            header: 'Sharing',
+            cell: (info) => {
+              const question = info.row.original;
+              const items: React.ReactNode[] = [];
+
+              if (question.share_publicly) {
+                items.push(
+                  <span key="public" className="badge color-green3 me-1">
+                    Public
+                  </span>,
+                );
+              }
+              if (question.share_source_publicly) {
+                items.push(
+                  <span key="public-source" className="badge color-green3 me-1">
+                    Public source
+                  </span>,
+                );
+              }
+              question.sharing_sets?.forEach((s) =>
+                items.push(
+                  <span key={s.name} className="badge color-gray1 me-1">
+                    {s.name}
+                  </span>,
+                ),
+              );
+
+              return <span className="text-nowrap">{items}</span>;
+            },
+            enableSorting: false,
+            filterFn: (row, _columnId, filterValues: string[]) => {
+              if (filterValues.length === 0) return true;
               const items: string[] = [];
-              if (row.share_publicly) items.push('Public');
-              if (row.share_source_publicly) items.push('Public source');
-              row.sharing_sets?.forEach((s) => {
+              if (row.original.share_publicly) items.push('Public');
+              if (row.original.share_source_publicly) items.push('Public source');
+              row.original.sharing_sets?.forEach((s) => {
                 if (s.name) items.push(s.name);
               });
-              return items;
+              return filterValues.some((v) => items.includes(v));
             },
-            {
-              id: 'sharing_sets',
-              header: 'Sharing',
-              cell: (info) => {
-                const question = info.row.original;
-                const items: React.ReactNode[] = [];
-
-                if (question.share_publicly) {
-                  items.push(
-                    <span key="public" className="badge color-green3 me-1">
-                      Public
-                    </span>,
-                  );
-                }
-                if (question.share_source_publicly) {
-                  items.push(
-                    <span key="public-source" className="badge color-green3 me-1">
-                      Public source
-                    </span>,
-                  );
-                }
-                question.sharing_sets?.forEach((s) =>
-                  items.push(
-                    <span key={s.name} className="badge color-gray1 me-1">
-                      {s.name}
-                    </span>,
-                  ),
-                );
-
-                return <span className="text-nowrap">{items}</span>;
-              },
-              enableSorting: false,
-              filterFn: (row, _columnId, filterValues: string[]) => {
-                if (filterValues.length === 0) return true;
-                const items: string[] = [];
-                if (row.original.share_publicly) items.push('Public');
-                if (row.original.share_source_publicly) items.push('Public source');
-                row.original.sharing_sets?.forEach((s) => {
-                  if (s.name) items.push(s.name);
-                });
-                return filterValues.some((v) => items.includes(v));
-              },
-              size: 150,
-            },
-          ),
+            size: 150,
+          }),
         ]
       : []),
 
@@ -177,9 +180,9 @@ export function createQuestionsTableColumns({
         const value = info.getValue();
         return <span className={`badge color-${value === 'v3' ? 'green1' : 'red1'}`}>{value}</span>;
       },
-      filterFn: (row, _columnId, filterValues: string[]) => {
+      filterFn: (row, columnId, filterValues: string[]) => {
         if (filterValues.length === 0) return true;
-        return filterValues.includes(row.original.display_type);
+        return filterValues.includes(row.getValue<SafeQuestionsPageData['display_type']>(columnId));
       },
       size: 200,
     }),
@@ -188,9 +191,11 @@ export function createQuestionsTableColumns({
       id: 'grading_method',
       header: 'Grading Method',
       cell: (info) => info.getValue(),
-      filterFn: (row, _columnId, filterValues: string[]) => {
+      filterFn: (row, columnId, filterValues: string[]) => {
         if (filterValues.length === 0) return true;
-        return filterValues.includes(row.original.grading_method);
+        return filterValues.includes(
+          row.getValue<SafeQuestionsPageData['grading_method']>(columnId),
+        );
       },
       size: 150,
     }),
@@ -202,9 +207,9 @@ export function createQuestionsTableColumns({
         const value = info.getValue();
         return value ? <code>{value}</code> : '—';
       },
-      filterFn: (row, _columnId, filterValues: string[]) => {
+      filterFn: (row, columnId, filterValues: string[]) => {
         if (filterValues.length === 0) return true;
-        const value = row.original.external_grading_image;
+        const value = row.getValue<SafeQuestionsPageData['external_grading_image']>(columnId);
         if (!value) return filterValues.includes('(None)');
         return filterValues.includes(value);
       },
@@ -218,9 +223,9 @@ export function createQuestionsTableColumns({
         const value = info.getValue();
         return value ? <code>{value}</code> : '—';
       },
-      filterFn: (row, _columnId, filterValues: string[]) => {
+      filterFn: (row, columnId, filterValues: string[]) => {
         if (filterValues.length === 0) return true;
-        const value = row.original.workspace_image;
+        const value = row.getValue<SafeQuestionsPageData['workspace_image']>(columnId);
         if (!value) return filterValues.includes('(None)');
         return filterValues.includes(value);
       },
@@ -238,7 +243,7 @@ export function createQuestionsTableColumns({
                 (row) =>
                   row.assessments
                     ?.filter((a) => a.assessment.course_instance_id === ci.id)
-                    .map((a) => getAssessmentLabel(a)) ?? [],
+                    .map((a) => assessmentLabel(a.assessment, a.assessment_set)) ?? [],
                 {
                   id: `ci_${ci.id}`,
                   // TODO: Make non-nullable once we update the database schema
@@ -249,8 +254,8 @@ export function createQuestionsTableColumns({
                       info.row.original.assessments
                         ?.filter((a) => a.assessment.course_instance_id === ci.id)
                         .sort((a, b) => {
-                          return getAssessmentLabel(a).localeCompare(
-                            getAssessmentLabel(b),
+                          return assessmentLabel(a.assessment, a.assessment_set).localeCompare(
+                            assessmentLabel(b.assessment, b.assessment_set),
                             undefined,
                             {
                               numeric: true,
@@ -266,7 +271,7 @@ export function createQuestionsTableColumns({
                             assessment={{
                               assessment_id: a.assessment.id,
                               color: a.assessment_set.color,
-                              label: getAssessmentLabel(a),
+                              label: assessmentLabel(a.assessment, a.assessment_set),
                             }}
                             courseInstanceId={ci.id}
                           />
@@ -285,7 +290,11 @@ export function createQuestionsTableColumns({
                       return filterValues.includes('(None)');
                     }
                     return filterValues.some((v) =>
-                      v === '(None)' ? false : assessments.some((a) => getAssessmentLabel(a) === v),
+                      v === '(None)'
+                        ? false
+                        : assessments.some(
+                            (a) => assessmentLabel(a.assessment, a.assessment_set) === v,
+                          ),
                     );
                   },
                   size: 500,
@@ -302,11 +311,9 @@ export function createQuestionsTableColumns({
 export function createQuestionsTableFilters({
   questions,
   courseInstances,
-  showSharingSets,
 }: {
   questions: SafeQuestionsPageData[];
   courseInstances: PublicCourseInstance[];
-  showSharingSets: boolean;
 }) {
   const allTopics = [...new Set(questions.map((q) => q.topic.name))].sort((a, b) =>
     a.localeCompare(b),
@@ -354,7 +361,7 @@ export function createQuestionsTableFilters({
         if (!map.has(ciId)) {
           map.set(ciId, new Set());
         }
-        map.get(ciId)?.add(getAssessmentLabel(a));
+        map.get(ciId)?.add(assessmentLabel(a.assessment, a.assessment_set));
       }
     }
     return map;
@@ -362,7 +369,7 @@ export function createQuestionsTableFilters({
 
   const filterMap: Record<
     string,
-    (props: { header: Header<SafeQuestionsPageData, unknown> }) => React.JSX.Element
+    (props: { header: Header<SafeQuestionsPageData, unknown> }) => React.ReactNode
   > = {
     topic: ({ header }) => (
       <CategoricalColumnFilter
@@ -406,17 +413,14 @@ export function createQuestionsTableFilters({
         renderValueLabel={({ value }) => <span>{value}</span>}
       />
     ),
-  };
-
-  if (showSharingSets) {
-    filterMap.sharing_sets = ({ header }) => (
+    sharing_sets: ({ header }) => (
       <CategoricalColumnFilter
         column={header.column}
         allColumnValues={allSharingSets}
         renderValueLabel={({ value }) => <span>{value}</span>}
       />
-    );
-  }
+    ),
+  };
 
   courseInstances.forEach((ci) => {
     const assessments = assessmentsByCourseInstance.get(ci.id) ?? new Set();

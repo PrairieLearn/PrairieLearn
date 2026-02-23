@@ -11,7 +11,7 @@ import { handleTrpcError } from '../../lib/trpc.js';
 import { getUrl } from '../../lib/url.js';
 import { selectPublicQuestionsForCourse } from '../../models/questions.js';
 
-import { PublicQuestionsTable } from './PublicQuestionsTable.js';
+import { PublicQuestionsTable } from './PublicQuestions.html.js';
 import { createContext, publicQuestionsRouter } from './trpc.js';
 
 const router = Router({ mergeParams: true });
@@ -45,8 +45,10 @@ router.get(
             <PublicQuestionsTable
               questions={questions}
               courseInstances={[]}
+              courseId={res.locals.course.id}
               showSharingSets={false}
               urlPrefix={res.locals.urlPrefix}
+              isPublic
               qidPrefix={qidPrefix}
               search={search}
               isDevMode={config.devMode}
