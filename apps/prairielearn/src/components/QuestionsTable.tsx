@@ -1,5 +1,5 @@
 import { rankItem } from '@tanstack/match-sorter-utils';
-import { type QueryKey, useQuery } from '@tanstack/react-query';
+import { type QueryFunction, type QueryKey, useQuery } from '@tanstack/react-query';
 import {
   type ColumnFiltersState,
   type ColumnPinningState,
@@ -12,7 +12,7 @@ import {
   useReactTable,
 } from '@tanstack/react-table';
 import { parseAsArrayOf, parseAsString, useQueryState, useQueryStates } from 'nuqs';
-import { useMemo, useState } from 'react';
+import { useState } from 'react';
 import { Alert } from 'react-bootstrap';
 
 import { run } from '@prairielearn/run';
@@ -46,8 +46,13 @@ const fuzzyFilter: FilterFn<any> = (row, columnId, value, addMeta) => {
 
 const DEFAULT_SORT: SortingState = [];
 const DEFAULT_PINNING: ColumnPinningState = { left: ['qid'], right: [] };
+const HIDDEN_BY_DEFAULT = new Set([
+  'sharing_sets',
+  'grading_method',
+  'external_grading_image',
+  'workspace_image',
+]);
 
-/** Maps column ID to URL query parameter key for categorical filters. */
 const FILTER_COLUMN_URL_KEYS: Record<string, string> = {
   topic: 'topic',
   tags: 'tags',
@@ -71,7 +76,7 @@ export interface QuestionsTableProps {
   qidPrefix?: string;
   questionsQueryOptions: {
     queryKey: QueryKey;
-    queryFn?: (...args: any[]) => SafeQuestionsPageData[] | Promise<SafeQuestionsPageData[]>;
+    queryFn?: QueryFunction<SafeQuestionsPageData[]>;
   };
 }
 
@@ -124,29 +129,23 @@ export function QuestionsTable({
     initialData: initialQuestions,
   });
 
-  const columns = useMemo(
-    () =>
-      createQuestionsTableColumns({
-        courseInstances,
-        qidPrefix,
-        showSharingSets,
-        courseId,
-        courseInstanceId: currentCourseInstanceId,
-        isPublic,
-      }),
-    [courseInstances, qidPrefix, showSharingSets, courseId, currentCourseInstanceId, isPublic],
-  );
+  const columns = createQuestionsTableColumns({
+    courseInstances,
+    qidPrefix,
+    showSharingSets,
+    courseId,
+    courseInstanceId: currentCourseInstanceId,
+    isPublic,
+  });
 
   const allColumnIds = extractLeafColumnIds(columns);
 
   const hasLegacyQuestions = initialQuestions.some((q) => q.display_type !== 'v3');
 
-  const hiddenByDefault = new Set(['sharing_sets', 'grading_method', 'external_grading_image', 'workspace_image']);
-
-  const defaultColumnVisibility = useMemo(() => {
+  const defaultColumnVisibility = run(() => {
     const visibility: Record<string, boolean> = {};
     for (const id of allColumnIds) {
-      if (hiddenByDefault.has(id)) {
+      if (HIDDEN_BY_DEFAULT.has(id)) {
         visibility[id] = false;
       } else if (id === 'display_type') {
         visibility[id] = hasLegacyQuestions;
@@ -158,7 +157,7 @@ export function QuestionsTable({
       }
     }
     return visibility;
-  }, [allColumnIds, currentCourseInstanceId, hasLegacyQuestions]);
+  });
 
   const [columnVisibility, setColumnVisibility] = useQueryState(
     'columns',

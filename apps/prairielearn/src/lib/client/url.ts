@@ -112,6 +112,19 @@ export function getQuestionPreviewUrl({
   return `/pl/course/${courseId}/question/${questionId}/preview`;
 }
 
+export function getInstructorUrlPrefix({
+  courseId,
+  courseInstanceId,
+}: {
+  courseId: string;
+  courseInstanceId?: string;
+}): string {
+  if (courseInstanceId) {
+    return `/pl/course_instance/${courseInstanceId}/instructor`;
+  }
+  return `/pl/course/${courseId}`;
+}
+
 export function getAiQuestionGenerationDraftsUrl({ urlPrefix }: { urlPrefix: string }): string {
   return `${urlPrefix}/ai_generate_question_drafts`;
 }

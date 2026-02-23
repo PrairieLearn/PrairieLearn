@@ -5,7 +5,7 @@ import { CategoricalColumnFilter } from '@prairielearn/ui';
 
 import { assessmentLabel } from '../lib/assessment.shared.js';
 import type { PublicCourseInstance } from '../lib/client/safe-db-types.js';
-import { getQuestionPreviewUrl } from '../lib/client/url.js';
+import { getInstructorUrlPrefix, getQuestionPreviewUrl } from '../lib/client/url.js';
 
 import { AssessmentBadge } from './AssessmentBadge.js';
 import { CopyButton } from './CopyButton.js';
@@ -32,10 +32,7 @@ export function createQuestionsTableColumns({
   courseInstanceId?: string;
   isPublic?: boolean;
 }) {
-  // Derive URL prefix for components that still need it (e.g., IssueBadge).
-  const urlPrefix = courseInstanceId
-    ? `/pl/course_instance/${courseInstanceId}/instructor`
-    : `/pl/course/${courseId}`;
+  const urlPrefix = getInstructorUrlPrefix({ courseId, courseInstanceId });
 
   return [
     columnHelper.accessor('qid', {
@@ -323,9 +320,7 @@ export function createQuestionsTableFilters({
   const allExternalGradingImages = [
     '(None)',
     ...Array.from(
-      new Set(
-        questions.map((q) => q.external_grading_image).filter((v): v is string => v != null),
-      ),
+      new Set(questions.map((q) => q.external_grading_image).filter((v): v is string => v != null)),
     ).sort(),
   ];
 
@@ -336,7 +331,7 @@ export function createQuestionsTableFilters({
     ).sort(),
   ];
 
-  const allSharingSets = (() => {
+  const allSharingSets = run(() => {
     const sets = new Set<string>(['Public', 'Public source']);
     questions.forEach((q) => {
       q.sharing_sets?.forEach((s) => {
@@ -344,9 +339,9 @@ export function createQuestionsTableFilters({
       });
     });
     return [...sets];
-  })();
+  });
 
-  const assessmentsByCourseInstance = (() => {
+  const assessmentsByCourseInstance = run(() => {
     const map = new Map<string, Set<string>>();
     for (const q of questions) {
       for (const a of q.assessments ?? []) {
@@ -358,7 +353,7 @@ export function createQuestionsTableFilters({
       }
     }
     return map;
-  })();
+  });
 
   const filterMap: Record<
     string,
