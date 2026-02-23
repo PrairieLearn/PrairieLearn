@@ -51,4 +51,5 @@ VALUES
     $score_perc,
     $score_perc,
     100
-  );
+  )
+ON CONFLICT DO NOTHING;
