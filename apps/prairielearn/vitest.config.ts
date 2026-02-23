@@ -41,7 +41,7 @@ export default defineConfig(({ mode }) => {
         name: '@prairielearn/prairielearn',
         dir: isRunningOnDist ? `${import.meta.dirname}/dist` : `${import.meta.dirname}/src`,
         include: mode === 'docker-smoke-tests' ? dockerSmokeTests : undefined,
-        exclude: ['**/e2e/**'],
+        exclude: isExecutorSmokeTest ? ['**/e2e/**'] : ['**/e2e/**', '**/executor.test.*'],
         globalSetup: isExecutorSmokeTest
           ? []
           : isRunningOnDist
