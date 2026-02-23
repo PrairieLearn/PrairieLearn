@@ -142,12 +142,17 @@ def get_string_precision(number_string: str) -> float:
 
 
 def get_string_significant_digits(number_string: str) -> int:
-    if "." in number_string:
-        number_string_partition = number_string.partition(".")
-        all_digits = number_string_partition[0] + number_string_partition[2]
-        return len(all_digits.lstrip("0"))
+    normalized = number_string.lstrip("+-")
+    if "." in normalized:
+        int_part, _, frac_part = normalized.partition(".")
+        all_digits = int_part + frac_part
+        stripped = all_digits.lstrip("0")
+        if stripped == "":
+            return len(frac_part) if frac_part else 1
+        return len(stripped)
 
-    return len(number_string.strip("0"))
+    stripped = normalized.strip("0")
+    return len(stripped) if stripped else 1
 
 
 def get_string_decimal_digits(number_string: str) -> int:
