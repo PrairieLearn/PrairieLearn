@@ -12,11 +12,13 @@ import type { AiGradingApiKeyCredential } from './instructorInstanceAdminAiGradi
 
 const sql = loadSqlEquiv(import.meta.url);
 
+/** Masks an API key for display, showing only the first 3 and last 4 characters. */
 export function maskApiKey(key: string): string {
   if (key.length <= 7) return '.'.repeat(7);
   return `${key.slice(0, 3)}...${key.slice(-4)}`;
 }
 
+/** Decrypts and formats a stored credential row for client-side display. */
 export function formatCredential(
   cred: {
     id: string;

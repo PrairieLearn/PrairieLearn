@@ -55,6 +55,7 @@ router.get(
       formatCredential(c, courseInstance.display_timezone),
     );
 
+    // Generate a prefix-based CSRF token scoped to the tRPC endpoint for this page.
     const trpcCsrfToken = generatePrefixCsrfToken(
       {
         url: req.originalUrl.split('?')[0] + '/trpc',

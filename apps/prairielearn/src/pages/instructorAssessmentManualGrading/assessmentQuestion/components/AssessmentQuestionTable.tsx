@@ -761,10 +761,13 @@ export function AssessmentQuestionTable({
                       props: { id: 'ai-grading-no-keys-tooltip' },
                     }}
                   >
-                    <Button variant="light" size="sm" disabled>
-                      <i className="bi bi-stars" aria-hidden="true" />
-                      <span>AI grading</span>
-                    </Button>
+                    {/* Wrap in a span so the tooltip triggers on hover despite the button being disabled */}
+                    <span>
+                      <Button variant="light" size="sm" disabled>
+                        <i className="bi bi-stars" aria-hidden="true" />
+                        <span>AI grading</span>
+                      </Button>
+                    </span>
                   </OverlayTrigger>
                 ) : (
                   <Dropdown>

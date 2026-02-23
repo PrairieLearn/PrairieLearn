@@ -23,194 +23,6 @@ export interface AiGradingApiKeyCredential {
   dateAdded: string;
 }
 
-export function InstructorInstanceAdminAiGrading({
-  trpcCsrfToken,
-  initialUseCustomApiKeys,
-  initialApiKeyCredentials,
-  canEdit,
-  isDevMode,
-  aiGradingModelSelectionEnabled,
-}: {
-  trpcCsrfToken: string;
-  initialUseCustomApiKeys: boolean;
-  initialApiKeyCredentials: AiGradingApiKeyCredential[];
-  canEdit: boolean;
-  isDevMode: boolean;
-  aiGradingModelSelectionEnabled: boolean;
-}) {
-  const [queryClient] = useState(() => new QueryClient());
-  const [trpcClient] = useState(() => createAiGradingSettingsTrpcClient(trpcCsrfToken));
-
-  return (
-    <QueryClientProviderDebug client={queryClient} isDevMode={isDevMode}>
-      <TRPCProvider trpcClient={trpcClient} queryClient={queryClient}>
-        <AiGradingSettingsContent
-          initialUseCustomApiKeys={initialUseCustomApiKeys}
-          initialApiKeyCredentials={initialApiKeyCredentials}
-          canEdit={canEdit}
-          aiGradingModelSelectionEnabled={aiGradingModelSelectionEnabled}
-        />
-      </TRPCProvider>
-    </QueryClientProviderDebug>
-  );
-}
-
-InstructorInstanceAdminAiGrading.displayName = 'InstructorInstanceAdminAiGrading';
-
-function AiGradingSettingsContent({
-  initialUseCustomApiKeys,
-  initialApiKeyCredentials,
-  canEdit,
-  aiGradingModelSelectionEnabled,
-}: {
-  initialUseCustomApiKeys: boolean;
-  initialApiKeyCredentials: AiGradingApiKeyCredential[];
-  canEdit: boolean;
-  aiGradingModelSelectionEnabled: boolean;
-}) {
-  const trpc = useTRPC();
-
-  const [useCustomApiKeys, setUseCustomApiKeys] = useState(initialUseCustomApiKeys);
-  const [credentials, setCredentials] = useState(initialApiKeyCredentials);
-
-  const providerOptions = aiGradingModelSelectionEnabled
-    ? AI_GRADING_PROVIDER_OPTIONS
-    : AI_GRADING_PROVIDER_OPTIONS.filter((p) => p.value === 'openai');
-
-  const addModalState = useModalState();
-  const deleteModalState = useModalState<AiGradingApiKeyCredential>();
-
-  const toggleMutation = useMutation({
-    ...trpc.updateUseCustomApiKeys.mutationOptions(),
-    onSuccess: (data) => {
-      setUseCustomApiKeys(data.useCustomApiKeys);
-    },
-  });
-
-  return (
-    <div className="card mb-4">
-      <div className="card-header bg-primary text-white d-flex align-items-center">
-        <h1 className="h6 mb-0">AI grading settings</h1>
-      </div>
-      <div className="card-body">
-        {toggleMutation.isError && (
-          <Alert variant="danger" dismissible onClose={() => toggleMutation.reset()}>
-            {toggleMutation.error.message}
-          </Alert>
-        )}
-        <Form.Check>
-          <Form.Check.Input
-            type="checkbox"
-            id="use-custom-api-keys"
-            checked={useCustomApiKeys}
-            disabled={!canEdit || toggleMutation.isPending}
-            onChange={() => toggleMutation.mutate({ enabled: !useCustomApiKeys })}
-          />
-          <Form.Check.Label htmlFor="use-custom-api-keys">Use custom API keys</Form.Check.Label>
-          <div className="small text-muted">
-            Provide your own API keys instead of using the platform defaults.
-          </div>
-        </Form.Check>
-
-        {useCustomApiKeys && (
-          <div className="border-top pt-3 mt-3">
-            <div className="d-flex justify-content-between align-items-start flex-wrap gap-2 mb-3">
-              <div>
-                <h2 className="h5 mb-1">API key credentials</h2>
-                <p className="text-muted small mb-0">Manage your provider API keys.</p>
-              </div>
-              {canEdit && (
-                <button
-                  type="button"
-                  className="btn btn-sm btn-primary d-flex align-items-center gap-2"
-                  onClick={() => addModalState.showWithData(null)}
-                >
-                  <i className="bi-plus" aria-hidden="true" />
-                  Add key
-                </button>
-              )}
-            </div>
-
-            <div className="table-responsive border rounded overflow-hidden">
-              <table className="table table-sm table-hover mb-0" aria-label="API key credentials">
-                <thead>
-                  <tr>
-                    <th className="px-3 py-2">Provider</th>
-                    <th className="px-3 py-2">API key</th>
-                    <th className="px-3 py-2">Date added</th>
-                    {canEdit && (
-                      <th className="px-3 py-2" style={{ width: '1%' }}>
-                        <span className="visually-hidden">Actions</span>
-                      </th>
-                    )}
-                  </tr>
-                </thead>
-                <tbody>
-                  {credentials.length === 0 ? (
-                    <tr>
-                      <td colSpan={canEdit ? 4 : 3} className="text-muted text-center py-4 px-3">
-                        No API keys added yet.
-                      </td>
-                    </tr>
-                  ) : (
-                    credentials.map((cred) => (
-                      <tr key={cred.id}>
-                        <td className="align-middle fw-bold px-3 py-2">
-                          {AI_GRADING_PROVIDER_DISPLAY_NAMES[cred.provider]}
-                        </td>
-                        <td className="align-middle font-monospace px-3 py-2">
-                          {cred.apiKeyMasked}
-                        </td>
-                        <td className="align-middle px-3 py-2">{cred.dateAdded}</td>
-                        {canEdit && (
-                          <td className="align-middle px-3 py-2">
-                            <button
-                              type="button"
-                              className="btn btn-sm btn-outline-danger"
-                              aria-label={`Delete ${AI_GRADING_PROVIDER_DISPLAY_NAMES[cred.provider]} API key`}
-                              onClick={() => deleteModalState.showWithData(cred)}
-                            >
-                              <i className="bi-trash" aria-hidden="true" />
-                            </button>
-                          </td>
-                        )}
-                      </tr>
-                    ))
-                  )}
-                </tbody>
-              </table>
-            </div>
-          </div>
-        )}
-      </div>
-
-      <AddApiKeyModal
-        {...addModalState}
-        providerOptions={providerOptions}
-        credentials={credentials}
-        onSuccess={(credential) => {
-          setCredentials((prev) => {
-            const filtered = prev.filter((c) => c.provider !== credential.provider);
-            return [...filtered, credential];
-          });
-          addModalState.hide();
-        }}
-      />
-
-      <DeleteApiKeyModal
-        {...deleteModalState}
-        onSuccess={() => {
-          const target = deleteModalState.data;
-          if (target) {
-            setCredentials((prev) => prev.filter((c) => c.id !== target.id));
-          }
-          deleteModalState.hide();
-        }}
-      />
-    </div>
-  );
-}
-
 function AddApiKeyModal({
   show,
   providerOptions,
@@ -393,5 +205,196 @@ function DeleteApiKeyModal({
         </button>
       </Modal.Footer>
     </Modal>
+  );
+}
+
+export function InstructorInstanceAdminAiGrading({
+  trpcCsrfToken,
+  initialUseCustomApiKeys,
+  initialApiKeyCredentials,
+  canEdit,
+  isDevMode,
+  aiGradingModelSelectionEnabled,
+}: {
+  trpcCsrfToken: string;
+  initialUseCustomApiKeys: boolean;
+  initialApiKeyCredentials: AiGradingApiKeyCredential[];
+  canEdit: boolean;
+  isDevMode: boolean;
+  aiGradingModelSelectionEnabled: boolean;
+}) {
+  const [queryClient] = useState(() => new QueryClient());
+  const [trpcClient] = useState(() => createAiGradingSettingsTrpcClient(trpcCsrfToken));
+
+  return (
+    <QueryClientProviderDebug client={queryClient} isDevMode={isDevMode}>
+      <TRPCProvider trpcClient={trpcClient} queryClient={queryClient}>
+        <AiGradingSettingsContent
+          initialUseCustomApiKeys={initialUseCustomApiKeys}
+          initialApiKeyCredentials={initialApiKeyCredentials}
+          canEdit={canEdit}
+          aiGradingModelSelectionEnabled={aiGradingModelSelectionEnabled}
+        />
+      </TRPCProvider>
+    </QueryClientProviderDebug>
+  );
+}
+
+InstructorInstanceAdminAiGrading.displayName = 'InstructorInstanceAdminAiGrading';
+
+function AiGradingSettingsContent({
+  initialUseCustomApiKeys,
+  initialApiKeyCredentials,
+  canEdit,
+  aiGradingModelSelectionEnabled,
+}: {
+  initialUseCustomApiKeys: boolean;
+  initialApiKeyCredentials: AiGradingApiKeyCredential[];
+  canEdit: boolean;
+  aiGradingModelSelectionEnabled: boolean;
+}) {
+  const trpc = useTRPC();
+
+  const [useCustomApiKeys, setUseCustomApiKeys] = useState(initialUseCustomApiKeys);
+  const [credentials, setCredentials] = useState(initialApiKeyCredentials);
+
+  const providerOptions = aiGradingModelSelectionEnabled
+    ? AI_GRADING_PROVIDER_OPTIONS
+    : AI_GRADING_PROVIDER_OPTIONS.filter((p) => p.value === 'openai');
+
+  const addModalState = useModalState();
+  const deleteModalState = useModalState<AiGradingApiKeyCredential>();
+
+  const toggleMutation = useMutation({
+    ...trpc.updateUseCustomApiKeys.mutationOptions(),
+    onSuccess: (data) => {
+      setUseCustomApiKeys(data.useCustomApiKeys);
+    },
+  });
+
+  return (
+    <div className="card mb-4">
+      <div className="card-header bg-primary text-white d-flex align-items-center">
+        <h1 className="h6 mb-0">AI grading settings</h1>
+      </div>
+      <div className="card-body">
+        {toggleMutation.isError && (
+          <Alert variant="danger" dismissible onClose={() => toggleMutation.reset()}>
+            {toggleMutation.error.message}
+          </Alert>
+        )}
+        <Form.Check>
+          <Form.Check.Input
+            type="checkbox"
+            id="use-custom-api-keys"
+            checked={useCustomApiKeys}
+            disabled={!canEdit || toggleMutation.isPending}
+            onChange={() => toggleMutation.mutate({ enabled: !useCustomApiKeys })}
+          />
+          <Form.Check.Label htmlFor="use-custom-api-keys">Use custom API keys</Form.Check.Label>
+          <div className="small text-muted">
+            Provide your own API keys instead of using the platform defaults.
+          </div>
+        </Form.Check>
+
+        {useCustomApiKeys && (
+          <div className="border-top pt-3 mt-3">
+            <div className="d-flex justify-content-between align-items-start flex-wrap gap-2 mb-3">
+              <div>
+                <h2 className="h5 mb-1">API key credentials</h2>
+                <p className="text-muted small mb-0">Manage your provider API keys.</p>
+              </div>
+              {canEdit && (
+                <button
+                  type="button"
+                  className="btn btn-sm btn-primary d-flex align-items-center gap-2"
+                  onClick={() => addModalState.showWithData(null)}
+                >
+                  <i className="bi-plus" aria-hidden="true" />
+                  Add key
+                </button>
+              )}
+            </div>
+
+            <div className="table-responsive border rounded overflow-hidden">
+              <table className="table table-sm table-hover mb-0" aria-label="API key credentials">
+                <thead>
+                  <tr>
+                    <th className="px-3 py-2">Provider</th>
+                    <th className="px-3 py-2">API key</th>
+                    <th className="px-3 py-2">Date added</th>
+                    {canEdit && (
+                      <th className="px-3 py-2" style={{ width: '1%' }}>
+                        <span className="visually-hidden">Actions</span>
+                      </th>
+                    )}
+                  </tr>
+                </thead>
+                <tbody>
+                  {credentials.length === 0 ? (
+                    <tr>
+                      <td colSpan={canEdit ? 4 : 3} className="text-muted text-center py-4 px-3">
+                        No API keys added yet.
+                      </td>
+                    </tr>
+                  ) : (
+                    credentials.map((cred) => (
+                      <tr key={cred.id}>
+                        <td className="align-middle fw-bold px-3 py-2">
+                          {AI_GRADING_PROVIDER_DISPLAY_NAMES[cred.provider]}
+                        </td>
+                        <td className="align-middle font-monospace px-3 py-2">
+                          {cred.apiKeyMasked}
+                        </td>
+                        <td className="align-middle px-3 py-2">{cred.dateAdded}</td>
+                        {canEdit && (
+                          <td className="align-middle px-3 py-2">
+                            <button
+                              type="button"
+                              className="btn btn-sm btn-outline-danger"
+                              aria-label={`Delete ${AI_GRADING_PROVIDER_DISPLAY_NAMES[cred.provider]} API key`}
+                              onClick={() => deleteModalState.showWithData(cred)}
+                            >
+                              <i className="bi-trash" aria-hidden="true" />
+                            </button>
+                          </td>
+                        )}
+                      </tr>
+                    ))
+                  )}
+                </tbody>
+              </table>
+            </div>
+          </div>
+        )}
+      </div>
+
+      <AddApiKeyModal
+        {...addModalState}
+        providerOptions={providerOptions}
+        credentials={credentials}
+        onSuccess={(credential) => {
+          // The server upserts by provider, so replace any existing credential
+          // for the same provider with the newly returned one.
+          setCredentials((prev) => {
+            const filtered = prev.filter((c) => c.provider !== credential.provider);
+            return [...filtered, credential];
+          });
+          addModalState.hide();
+        }}
+      />
+
+      <DeleteApiKeyModal
+        {...deleteModalState}
+        onSuccess={() => {
+          // Read the target from modal state before hiding, since hide() clears it.
+          const target = deleteModalState.data;
+          if (target) {
+            setCredentials((prev) => prev.filter((c) => c.id !== target.id));
+          }
+          deleteModalState.hide();
+        }}
+      />
+    </div>
   );
 }
