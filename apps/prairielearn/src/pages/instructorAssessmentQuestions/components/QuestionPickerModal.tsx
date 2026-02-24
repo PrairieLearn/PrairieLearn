@@ -248,7 +248,7 @@ export function QuestionPickerModal({
             </div>
             <div ref={scrollParentRef} style={{ height: '400px', overflow: 'auto' }}>
               {sortedQuestions.length === 0 ? (
-                <div className="p-4 text-center text-muted">
+                <div className="d-flex flex-column align-items-center justify-content-center text-muted h-100">
                   <i className="bi bi-search display-6 mb-2" aria-hidden="true" />
                   <p>No questions match your search criteria.</p>
                 </div>
