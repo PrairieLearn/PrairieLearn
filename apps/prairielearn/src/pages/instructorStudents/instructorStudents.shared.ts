@@ -15,10 +15,4 @@ export const StudentRowSchema = z.object({
   role: SprocUsersGetDisplayedRoleSchema,
 });
 
-export const StudentRowSchemaWithUser = StudentRowSchema.extend({
-  user: StaffUserSchema,
-});
-
 export type StudentRow = z.infer<typeof StudentRowSchema>;
-
-export type StudentRowWithUser = z.infer<typeof StudentRowSchemaWithUser>;

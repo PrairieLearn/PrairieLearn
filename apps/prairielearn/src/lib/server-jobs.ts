@@ -116,7 +116,7 @@ export type ServerJobExecutionFunction = (job: ServerJob) => Promise<void>;
  * to accumulate stderr/stdout, which are only written to the DB
  * once the job is finished.
  */
-export const liveJobs: Record<string, ServerJobImpl> = {};
+const liveJobs: Record<string, ServerJobImpl> = {};
 
 /********************************************************************/
 
@@ -478,7 +478,7 @@ export async function stop() {
   }
 }
 
-export function connection(socket: Socket) {
+function connection(socket: Socket) {
   socket.on(
     'joinJob',
     function (

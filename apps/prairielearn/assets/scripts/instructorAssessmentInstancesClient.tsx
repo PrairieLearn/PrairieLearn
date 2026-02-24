@@ -474,7 +474,7 @@ onDocumentReady(() => {
     // instance number, then by instance ID.
     let compare = nameA?.localeCompare(nameB ?? '');
     if (!compare) compare = Number.parseInt(idA) - Number.parseInt(idB);
-    if (!compare) compare = (rowA.number ?? 0) - (rowB.number ?? 0);
+    if (!compare) compare = rowA.number - rowB.number;
     if (!compare) compare = valueA - valueB;
     return compare;
   }

@@ -2,7 +2,7 @@ import { useMemo, useRef, useState } from 'react';
 import { Modal, Overlay, Popover } from 'react-bootstrap';
 import { z } from 'zod';
 
-import { downloadAsJSON } from '@prairielearn/browser-utils';
+import { downloadAsJSON, executeScripts, parseHTMLElement } from '@prairielearn/browser-utils';
 
 import type { AiGradingGeneralStats } from '../ee/lib/ai-grading/types.js';
 import { b64EncodeUnicode } from '../lib/base64-util.js';
@@ -49,7 +49,7 @@ type ExportedRubricData = z.infer<typeof ExportedRubricDataSchema>;
 declare global {
   interface Window {
     resetInstructorGradingPanel: () => any;
-    mathjaxTypeset: () => Promise<any>;
+    mathjaxTypeset: (elements?: Element[]) => Promise<any>;
   }
 }
 
@@ -436,6 +436,17 @@ export function RubricSettings({
 
     if (contentType.includes('application/json')) {
       const data = await res.json();
+
+      if (data.submissionPanel && data.submissionId) {
+        const oldSubmission = document.getElementById(`submission-${data.submissionId}`);
+        if (oldSubmission) {
+          const newSubmission = parseHTMLElement(document, data.submissionPanel);
+          oldSubmission.replaceWith(newSubmission);
+          executeScripts(newSubmission);
+          await window.mathjaxTypeset([newSubmission]);
+        }
+      }
+
       if (data.gradingPanel) {
         const gradingPanel = document.querySelector<HTMLElement>('.js-main-grading-panel');
         if (!gradingPanel) return;
@@ -482,7 +493,7 @@ export function RubricSettings({
           input.value = oldCsrfToken;
         });
         window.resetInstructorGradingPanel();
-        await window.mathjaxTypeset();
+        await window.mathjaxTypeset([gradingPanel]);
       }
 
       // Since we are preserving the temporary rubric item selection in the instance question page, the page is not refreshed

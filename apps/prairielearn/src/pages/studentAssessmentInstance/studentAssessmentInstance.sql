@@ -17,6 +17,7 @@ SELECT
   aq.max_manual_points,
   aq.max_auto_points,
   aq.init_points,
+  aq.grade_rate_minutes,
   aq.allow_real_time_grading,
   qo.row_order,
   qo.question_number,
@@ -24,6 +25,12 @@ SELECT
   (z.max_points IS NOT NULL) AS zone_has_max_points,
   z.best_questions AS zone_best_questions,
   (z.best_questions IS NOT NULL) AS zone_has_best_questions,
+  (
+    count(*) OVER (
+      PARTITION BY
+        z.id
+    )
+  )::int AS zone_question_count,
   (
     SELECT
       count(*)
@@ -39,8 +46,7 @@ SELECT
     WHEN a.type = 'Homework' THEN ''
     ELSE 'Question '
   END || (lag(qo.question_number) OVER w) AS prev_title,
-  (lag(qo.sequence_locked) OVER w) AS prev_sequence_locked,
-  iqnag.*
+  (lag(qo.sequence_locked) OVER w) AS prev_sequence_locked
 FROM
   instance_questions AS iq
   JOIN assessment_instances AS ai ON (ai.id = iq.assessment_instance_id)
@@ -50,7 +56,6 @@ FROM
   JOIN zones AS z ON (z.id = ag.zone_id)
   JOIN questions AS q ON (q.id = aq.question_id)
   JOIN question_order (ai.id) AS qo ON (qo.instance_question_id = iq.id)
-  JOIN instance_questions_next_allowed_grade (iq.id) AS iqnag ON TRUE
 WHERE
   ai.id = $assessment_instance_id
   AND (
