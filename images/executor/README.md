@@ -62,7 +62,7 @@ You should see the following printed to the console:
 
 ## Automated testing
 
-`apps/prairielearn/src/tests/executor.test.ts` contains smoke tests that verify the executor works correctly with privilege dropping enabled. These tests call core elements that import third-party packages not in the zygote pre-load list, catching regressions like [#14197](https://github.com/PrairieLearn/PrairieLearn/issues/14197). They run automatically in CI as part of the Docker job.
+`apps/prairielearn/src/tests/executor.test.ts` contains smoke tests that verify the executor works correctly with privilege dropping enabled.
 
 To run locally, first build both images (see above), then:
 

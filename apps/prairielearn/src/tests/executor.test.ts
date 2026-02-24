@@ -38,77 +38,53 @@ describe('executor smoke tests', () => {
     codeCaller.done();
   });
 
-  it('prepares pl-checkbox (pre-loaded modules only)', async () => {
-    const result = await handleInput(
-      JSON.stringify({
-        type: 'core-element',
-        directory: 'pl-checkbox',
-        file: 'pl-checkbox',
-        fcn: 'prepare',
-        args: [
-          '<pl-checkbox answers-name="ans"><pl-answer correct="true">correct</pl-answer></pl-checkbox>',
-          { params: {}, correct_answers: {}, answers_names: {} },
-        ],
-      }),
-      codeCaller,
-    );
+  const testCases = [
+    {
+      element: 'pl-checkbox',
+      note: 'pre-loaded modules only',
+      html: '<pl-checkbox answers-name="ans"><pl-answer correct="true">correct</pl-answer></pl-checkbox>',
+      data: { params: {}, correct_answers: {}, answers_names: {} },
+      extraAssertions: (result: ExecutorResults) => {
+        expect(result.data.params.ans).toBeDefined();
+        expect(result.data.correct_answers.ans).toBeDefined();
+      },
+    },
+    {
+      element: 'pl-symbolic-input',
+      note: 'imports sympy',
+      html: '<pl-symbolic-input answers-name="ans" variables="x" />',
+      data: { params: {}, correct_answers: {}, answers_names: {} },
+    },
+    {
+      element: 'pl-dataframe',
+      note: 'imports pandas',
+      html: '<pl-dataframe params-name="df" />',
+      data: { params: {}, correct_answers: {}, answers_names: {} },
+    },
+    {
+      element: 'pl-graph',
+      note: 'imports pygraphviz',
+      html: '<pl-graph params-name="g" />',
+      data: { params: {}, correct_answers: {}, answers_names: {}, extensions: {} },
+    },
+  ];
 
-    assertSuccess(result);
-    expect(result.data.params.ans).toBeDefined();
-    expect(result.data.correct_answers.ans).toBeDefined();
-  });
+  it.each(testCases)(
+    'prepares $element ($note)',
+    async ({ element, html, data, extraAssertions }) => {
+      const result = await handleInput(
+        JSON.stringify({
+          type: 'core-element',
+          directory: element,
+          file: element,
+          fcn: 'prepare',
+          args: [html, data],
+        }),
+        codeCaller,
+      );
 
-  it('prepares pl-symbolic-input (imports sympy)', async () => {
-    const result = await handleInput(
-      JSON.stringify({
-        type: 'core-element',
-        directory: 'pl-symbolic-input',
-        file: 'pl-symbolic-input',
-        fcn: 'prepare',
-        args: [
-          '<pl-symbolic-input answers-name="ans" variables="x" />',
-          { params: {}, correct_answers: {}, answers_names: {} },
-        ],
-      }),
-      codeCaller,
-    );
-
-    assertSuccess(result);
-  });
-
-  it('prepares pl-dataframe (imports pandas)', async () => {
-    const result = await handleInput(
-      JSON.stringify({
-        type: 'core-element',
-        directory: 'pl-dataframe',
-        file: 'pl-dataframe',
-        fcn: 'prepare',
-        args: [
-          '<pl-dataframe params-name="df" />',
-          { params: {}, correct_answers: {}, answers_names: {} },
-        ],
-      }),
-      codeCaller,
-    );
-
-    assertSuccess(result);
-  });
-
-  it('prepares pl-graph (imports pygraphviz)', async () => {
-    const result = await handleInput(
-      JSON.stringify({
-        type: 'core-element',
-        directory: 'pl-graph',
-        file: 'pl-graph',
-        fcn: 'prepare',
-        args: [
-          '<pl-graph params-name="g" />',
-          { params: {}, correct_answers: {}, answers_names: {}, extensions: {} },
-        ],
-      }),
-      codeCaller,
-    );
-
-    assertSuccess(result);
-  });
+      assertSuccess(result);
+      extraAssertions?.(result);
+    },
+  );
 });
