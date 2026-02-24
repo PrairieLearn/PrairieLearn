@@ -319,7 +319,7 @@ router.get(
         assessment_id: res.locals.assessment.id,
         instance_question_id: res.locals.instance_question.id,
       },
-      AssessmentToolSchema.pick({ tool: true, settings: true }),
+      AssessmentToolSchema,
     );
 
     if (variant_id === null && !isAssessmentAvailable) {

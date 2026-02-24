@@ -25,8 +25,7 @@ WITH
       iq.id = $instance_question_id
   )
 SELECT
-  tool,
-  settings
+  *
 FROM
   assessment_tools
 WHERE
