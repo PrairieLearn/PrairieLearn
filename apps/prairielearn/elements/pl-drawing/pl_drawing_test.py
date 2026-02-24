@@ -1,5 +1,6 @@
 import importlib
 import json
+import math
 
 pl_drawing = importlib.import_module("pl-drawing")
 
@@ -104,7 +105,7 @@ def test_grade_blank_submission_with_allow_blank_scores_zero() -> None:
 
     assert "test" not in data["format_errors"]
     assert "test" in data["partial_scores"]
-    assert data["partial_scores"]["test"]["score"] == 0.0
+    assert math.isclose(data["partial_scores"]["test"]["score"], 0.0)
 
 
 def test_grade_blank_submission_with_allow_blank_uses_weight() -> None:
@@ -228,4 +229,4 @@ def test_grade_only_initial_objects_with_allow_blank_scores_zero() -> None:
 
     assert "test" not in data["format_errors"]
     assert "test" in data["partial_scores"]
-    assert data["partial_scores"]["test"]["score"] == 0.0
+    assert math.isclose(data["partial_scores"]["test"]["score"], 0.0)
