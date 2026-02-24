@@ -185,9 +185,6 @@ const ExternalGradingOptionsJsonSchema = z
   .strict()
   .describe('Options for externally graded questions.');
 
-export const defaultExternalGradingOptions = ExternalGradingOptionsJsonSchema.extend({
-  image: ExternalGradingOptionsJsonSchema.shape.image.optional(),
-}).parse({});
 
 export const QuestionJsonSchema = z
   .object({
