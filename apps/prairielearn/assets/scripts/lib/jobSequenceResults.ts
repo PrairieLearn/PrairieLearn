@@ -15,7 +15,7 @@ onDocumentReady(() => {
 
   socket.on('update', function () {
     const redirectUrl = new URL(window.location.href);
-    if (redirectUrl.searchParams.get('referrer')) {
+    if (redirectUrl.searchParams.has('referrer')) {
       // If referrer is already in the URL, then we likely just got redirected
       // here. In this case, just reload the page to get the latest data.
       window.location.reload();

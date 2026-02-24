@@ -53,13 +53,23 @@ router.get(
       }
     }
 
-    res.send(
-      JobSequence({
-        resLocals: res.locals,
-        job_sequence,
-        referrer: req.query.referrer?.toString() || req.get('Referrer') || null,
-      }),
-    );
+    let referrer =
+      typeof req.query.referrer === 'string' ? req.query.referrer : req.get('Referrer') || null;
+    if (referrer) {
+      // Validate that the referrer is an HTTP or HTTPS URL. We don't validate
+      // the host because the server may be running behind a reverse proxy that
+      // changes the host, and we just want to ensure that it's a safe URL to
+      // redirect to.
+      try {
+        const referrerUrl = new URL(referrer);
+        if (referrerUrl.protocol !== 'http:' && referrerUrl.protocol !== 'https:') {
+          referrer = null;
+        }
+      } catch {
+        referrer = null;
+      }
+    }
+    res.send(JobSequence({ resLocals: res.locals, job_sequence, referrer }));
   }),
 );
 
