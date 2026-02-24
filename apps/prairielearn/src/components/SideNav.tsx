@@ -14,11 +14,17 @@ import { ProgressCircle } from './ProgressCircle.js';
  * Truncates a string in the middle with an ellipsis if it exceeds the max length.
  */
 function truncateMiddle(str: string, maxLength: number): string {
-  if (str.length <= maxLength) return str;
-  const charsToShow = maxLength - 1; // account for the ellipsis character
-  const frontChars = Math.ceil(charsToShow / 2);
-  const backChars = Math.floor(charsToShow / 2);
-  return `${str.slice(0, frontChars)}\u2026${str.slice(-backChars)}`;
+  if (str.length <= maxLength) {
+    return str;
+  }
+  const ellipsis = '...';
+  const remaining = Math.max(0, maxLength - ellipsis.length);
+  const startLength = Math.ceil(remaining * 0.6);
+  const endLength = remaining - startLength;
+  if (endLength <= 0) {
+    return str.slice(0, remaining) + ellipsis;
+  }
+  return str.slice(0, startLength) + ellipsis + str.slice(str.length - endLength);
 }
 
 interface SideNavTabInfo {
@@ -266,8 +272,8 @@ function CourseNav({
           hx-trigger="mouseover once, focus once, show.bs.dropdown once delay:200ms"
           hx-target="#sideNavCourseDropdownContent"
         >
-          <span class="text-truncate" title="${resLocals.course.short_name}">
-            ${truncateMiddle(resLocals.course.short_name, 24)}
+          <span title="${resLocals.course.short_name}">
+            ${truncateMiddle(resLocals.course.short_name, 22)}
           </span>
         </button>
         <div class="dropdown-menu py-0 overflow-hidden">
@@ -332,9 +338,9 @@ function CourseInstanceNav({
             hx-trigger="mouseover once, focus once, show.bs.dropdown once delay:200ms"
             hx-target="#sideNavCourseInstancesDropdownContent"
           >
-            <span class="text-truncate" title="${resLocals.course_instance?.short_name ?? ''}">
+            <span title="${resLocals.course_instance?.short_name ?? ''}">
               ${resLocals.course_instance
-                ? truncateMiddle(resLocals.course_instance.short_name, 24)
+                ? truncateMiddle(resLocals.course_instance.short_name, 22)
                 : 'Select a course instance...'}
             </span>
           </button>
