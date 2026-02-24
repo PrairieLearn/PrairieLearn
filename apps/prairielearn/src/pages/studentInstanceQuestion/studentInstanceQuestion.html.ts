@@ -19,7 +19,7 @@ import { QuestionNavSideGroup } from '../../components/QuestionNavigation.js';
 import { QuestionScorePanel } from '../../components/QuestionScore.js';
 import { assetPath, compiledScriptTag, nodeModulesAssetPath } from '../../lib/assets.js';
 import { type CopyTarget } from '../../lib/copy-content.js';
-import type { User } from '../../lib/db-types.js';
+import type { AssessmentTool, User } from '../../lib/db-types.js';
 import { getRoleNamesForUser } from '../../lib/groups.js';
 import type { UntypedResLocals } from '../../lib/res-locals.types.js';
 
@@ -36,10 +36,7 @@ export function StudentInstanceQuestion({
   assignedGrader?: User | null;
   lastGrader?: User | null;
   questionCopyTargets?: CopyTarget[] | null;
-  enabledTools?: {
-    tool: string,
-    settings: unknown
-  }[];
+  enabledTools?: Pick<AssessmentTool, 'tool' | 'settings'>[];
 }) {
   const questionContext =
     resLocals.assessment.type === 'Exam' ? 'student_exam' : 'student_homework';
