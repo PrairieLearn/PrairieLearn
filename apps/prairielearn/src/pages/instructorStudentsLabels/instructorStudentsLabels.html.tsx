@@ -18,6 +18,7 @@ import {
 interface StudentLabelsPageProps {
   csrfToken: string;
   trpcCsrfToken: string;
+  trpcUrl: string;
   courseInstanceId: string;
   initialLabels: StudentLabelWithUserData[];
   canEdit: boolean;
@@ -28,7 +29,7 @@ interface StudentLabelsPageProps {
 
 type StudentLabelsCardProps = Omit<
   StudentLabelsPageProps,
-  'isDevMode' | 'search' | 'trpcCsrfToken'
+  'isDevMode' | 'search' | 'trpcCsrfToken' | 'trpcUrl'
 > & {
   trpcClient: StudentLabelsTrpcClient;
 };
@@ -195,10 +196,11 @@ export function InstructorStudentsLabels({
   search,
   isDevMode,
   trpcCsrfToken,
+  trpcUrl,
   ...innerProps
 }: StudentLabelsPageProps) {
   const [queryClient] = useState(() => new QueryClient());
-  const [trpcClient] = useState(() => createStudentLabelsTrpcClient(trpcCsrfToken));
+  const [trpcClient] = useState(() => createStudentLabelsTrpcClient(trpcCsrfToken, trpcUrl));
 
   return (
     <NuqsAdapter search={search}>

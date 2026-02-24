@@ -11,6 +11,7 @@ import { extractJobSequenceId } from '../../../lib/client/errors.js';
 import { getCourseInstanceJobSequenceUrl } from '../../../lib/client/url.js';
 import { parseUniqueValuesFromString } from '../../../lib/string-util.js';
 import { ColorJsonSchema } from '../../../schemas/infoCourse.js';
+import { MAX_LABEL_UIDS } from '../instructorStudentsLabels.types.js';
 import type { StudentLabelsTrpcClient } from '../utils/trpc-client.js';
 
 export type LabelModifyModalData =
@@ -29,8 +30,6 @@ interface LabelFormValues {
   color: string;
   uids: string;
 }
-
-const MAX_UIDS = 1000;
 
 export function LabelModifyModal({
   data,
@@ -78,7 +77,7 @@ export function LabelModifyModal({
   const validateUids = async (value: string) => {
     let uids: string[] = [];
     try {
-      uids = parseUniqueValuesFromString(value, MAX_UIDS);
+      uids = parseUniqueValuesFromString(value, MAX_LABEL_UIDS);
     } catch (error) {
       return error instanceof Error ? error.message : 'Failed to parse UIDs';
     }

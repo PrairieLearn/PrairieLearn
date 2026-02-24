@@ -1,6 +1,5 @@
 import * as path from 'path';
 
-import * as trpcExpress from '@trpc/server/adapters/express';
 import { Router } from 'express';
 import asyncHandler from 'express-async-handler';
 import z from 'zod';
@@ -24,7 +23,6 @@ import { computeCourseInstanceJsonHash } from '../../lib/courseInstanceJson.js';
 import type { CourseInstance } from '../../lib/db-types.js';
 import { typedAsyncHandler } from '../../lib/res-locals.js';
 import { type ServerJobLogger, createServerJob } from '../../lib/server-jobs.js';
-import { handleTrpcError } from '../../lib/trpc.js';
 import { getCanonicalHost, getUrl } from '../../lib/url.js';
 import { createAuthzMiddleware } from '../../middlewares/authzHelper.js';
 import {
@@ -36,7 +34,6 @@ import {
 } from '../../models/enrollment.js';
 import { selectStudentLabelsInCourseInstance } from '../../models/student-label.js';
 import { selectOptionalUserByUid } from '../../models/user.js';
-import { createTRPCContext, studentLabelsRouter } from '../instructorStudentsLabels/trpc.js';
 
 import { InstructorStudents } from './instructorStudents.html.js';
 import { StudentRowSchema } from './instructorStudents.shared.js';
@@ -538,9 +535,11 @@ router.get(
     const courseInstanceJsonPath = path.join(courseInstancePath, 'infoCourseInstance.json');
     const origHash = await computeCourseInstanceJsonHash(courseInstanceJsonPath);
 
+    const trpcUrl = `/pl/course_instance/${courseInstance.id}/instructor/instance_admin/trpc/student_labels`;
+
     const trpcCsrfToken = generatePrefixCsrfToken(
       {
-        url: req.originalUrl.split('?')[0] + '/trpc',
+        url: trpcUrl,
         authn_user_id: res.locals.authn_user.id,
       },
       config.secretKey,
@@ -573,21 +572,13 @@ router.get(
               csrfToken={csrfToken}
               selfEnrollLink={selfEnrollLink}
               trpcCsrfToken={trpcCsrfToken}
+              trpcUrl={trpcUrl}
               origHash={origHash}
             />
           </Hydrate>
         ),
       }),
     );
-  }),
-);
-
-router.use(
-  '/trpc',
-  trpcExpress.createExpressMiddleware({
-    router: studentLabelsRouter,
-    createContext: createTRPCContext,
-    onError: handleTrpcError,
   }),
 );
 

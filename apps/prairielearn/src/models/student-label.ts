@@ -88,6 +88,23 @@ export async function selectStudentLabelById({
 }
 
 /**
+ * Selects a student label by its UUID within a course instance.
+ */
+export async function selectStudentLabelByUuid({
+  uuid,
+  courseInstance,
+}: {
+  uuid: string;
+  courseInstance: CourseInstance;
+}): Promise<StudentLabel> {
+  return await queryRow(
+    sql.select_student_label_by_uuid,
+    { uuid, course_instance_id: courseInstance.id },
+    StudentLabelSchema,
+  );
+}
+
+/**
  * Deletes a student label.
  *
  * Should only be called by sync code and tests.

@@ -6,6 +6,7 @@ import type { CreateExpressContextOptions } from '@trpc/server/adapters/express'
 import superjson from 'superjson';
 import { z } from 'zod';
 
+import { HttpStatusError } from '@prairielearn/error';
 import { IdSchema } from '@prairielearn/zod';
 
 import {
@@ -25,15 +26,15 @@ import {
   removeLabelFromEnrollments,
   selectEnrollmentsInStudentLabel,
   selectStudentLabelById,
-  selectStudentLabelsInCourseInstance,
+  selectStudentLabelByUuid,
 } from '../../models/student-label.js';
 import { ColorJsonSchema } from '../../schemas/infoCourse.js';
 import { type StudentLabelJson, StudentLabelJsonSchema } from '../../schemas/infoCourseInstance.js';
-
-import { StudentLabelWithUserDataSchema } from './instructorStudentsLabels.types.js';
-import { getStudentLabelsWithUserData } from './queries.js';
-
-const MAX_UIDS = 1000;
+import {
+  MAX_LABEL_UIDS,
+  StudentLabelWithUserDataSchema,
+} from '../instructorStudentsLabels/instructorStudentsLabels.types.js';
+import { getStudentLabelsWithUserData } from '../instructorStudentsLabels/queries.js';
 
 const StudentLabelsArraySchema = z.array(StudentLabelJsonSchema);
 
@@ -43,6 +44,13 @@ async function selectStudentLabelByIdOrNotFound(
   try {
     return await selectStudentLabelById(...args);
   } catch (error) {
+    if (error instanceof HttpStatusError) {
+      throw new TRPCError({
+        code: 'FORBIDDEN',
+        message: error.message,
+        cause: error,
+      });
+    }
     throw new TRPCError({
       code: 'NOT_FOUND',
       message: 'Label not found',
@@ -70,7 +78,6 @@ export function createTRPCContext({ res }: CreateExpressContextOptions) {
     course: locals.course,
     course_instance: locals.course_instance,
     authz_data: locals.authz_data,
-    // Store full locals for saveCourseInstanceJson which needs authz_data, course, and user
     locals,
   };
 }
@@ -117,7 +124,7 @@ const labelsQuery = t.procedure
 
 const checkUidsQuery = t.procedure
   .use(requireCourseInstancePermissionView)
-  .input(z.object({ uids: z.array(z.string()).max(MAX_UIDS) }))
+  .input(z.object({ uids: z.array(z.string()).max(MAX_LABEL_UIDS) }))
   .output(z.object({ invalidUids: z.array(z.string()) }))
   .query(async (opts) => {
     const { uids } = opts.input;
@@ -157,11 +164,9 @@ const createLabelMutation = t.procedure
     const courseInstanceJsonPath = path.join(courseInstancePath, 'infoCourseInstance.json');
     const paths = getPaths(undefined, locals);
 
-    // Read current JSON
     const courseInstanceJson = await readCourseInstanceJson(courseInstancePath);
     const studentLabels = parseStudentLabels(courseInstanceJson);
 
-    // Check if label name already exists
     if (studentLabels.some((l) => l.name === name)) {
       throw new TRPCError({
         code: 'BAD_REQUEST',
@@ -169,11 +174,10 @@ const createLabelMutation = t.procedure
       });
     }
 
-    // Add new label
-    studentLabels.push({ uuid: crypto.randomUUID(), name, color });
+    const newUuid = crypto.randomUUID();
+    studentLabels.push({ uuid: newUuid, name, color });
     courseInstanceJson.studentLabels = studentLabels;
 
-    // Save using FileModifyEditor
     const saveResult = await saveCourseInstanceJson({
       courseInstanceJson,
       courseInstanceJsonPath,
@@ -190,8 +194,9 @@ const createLabelMutation = t.procedure
       });
     }
 
-    // After sync, add enrollments
-    const uids = parseUniqueValuesFromString(uidsString, MAX_UIDS);
+    // If enrollment assignment fails below, the label will exist (from the sync)
+    // but without the requested student assignments. The user will see the error.
+    const uids = parseUniqueValuesFromString(uidsString, MAX_LABEL_UIDS);
     if (uids.length > 0) {
       const enrolledUsers = await selectUsersAndEnrollmentsByUidsInCourseInstance({
         uids,
@@ -200,15 +205,10 @@ const createLabelMutation = t.procedure
         authzData: authz_data,
       });
 
-      // Get the newly created label from database
-      const labels = await selectStudentLabelsInCourseInstance(course_instance);
-      const newLabel = labels.find((l) => l.name === name);
-      if (!newLabel) {
-        throw new TRPCError({
-          code: 'INTERNAL_SERVER_ERROR',
-          message: 'Label saved but not found in database',
-        });
-      }
+      const newLabel = await selectStudentLabelByUuid({
+        uuid: newUuid,
+        courseInstance: course_instance,
+      });
       await addLabelToEnrollments({
         enrollments: enrolledUsers.map((u) => u.enrollment),
         label: newLabel,
@@ -216,7 +216,6 @@ const createLabelMutation = t.procedure
       });
     }
 
-    // Return the new origHash for the next operation
     const newHash = await computeCourseInstanceJsonHash(courseInstanceJsonPath);
     return { origHash: newHash };
   });
@@ -249,11 +248,9 @@ const editLabelMutation = t.procedure
       courseInstance: course_instance,
     });
 
-    // Read current JSON
     const courseInstanceJson = await readCourseInstanceJson(courseInstancePath);
     const studentLabels = parseStudentLabels(courseInstanceJson);
 
-    // Find and update the label
     const labelIndex = studentLabels.findIndex((l) => l.uuid === label.uuid);
     if (labelIndex === -1) {
       throw new TRPCError({
@@ -262,7 +259,6 @@ const editLabelMutation = t.procedure
       });
     }
 
-    // Check if new name conflicts with another label
     if (name !== label.name && studentLabels.some((l) => l.name === name)) {
       throw new TRPCError({
         code: 'BAD_REQUEST',
@@ -273,7 +269,6 @@ const editLabelMutation = t.procedure
     studentLabels[labelIndex] = { uuid: studentLabels[labelIndex].uuid, name, color };
     courseInstanceJson.studentLabels = studentLabels;
 
-    // Save using FileModifyEditor
     const saveResult = await saveCourseInstanceJson({
       courseInstanceJson,
       courseInstanceJsonPath,
@@ -290,23 +285,16 @@ const editLabelMutation = t.procedure
       });
     }
 
-    // Update enrollments - get the label by new name after sync
-    const labels = await selectStudentLabelsInCourseInstance(course_instance);
-    const updatedLabel = labels.find((l) => l.name === name);
+    const updatedLabel = await selectStudentLabelByUuid({
+      uuid: label.uuid,
+      courseInstance: course_instance,
+    });
 
-    if (!updatedLabel) {
-      throw new TRPCError({
-        code: 'INTERNAL_SERVER_ERROR',
-        message: 'Label saved but not found in database',
-      });
-    }
-
-    // Get current enrollments
     const currentEnrollments = await selectEnrollmentsInStudentLabel(updatedLabel);
     const currentEnrollmentIdSet = new Set(currentEnrollments.map((e) => e.id));
 
-    // Parse UIDs and get desired enrollments
-    const uids = parseUniqueValuesFromString(uidsString, MAX_UIDS);
+    // Full reconciliation: the provided UIDs become the complete enrollment set.
+    const uids = parseUniqueValuesFromString(uidsString, MAX_LABEL_UIDS);
     const desiredEnrollments =
       uids.length > 0
         ? (
@@ -320,7 +308,6 @@ const editLabelMutation = t.procedure
         : [];
     const desiredEnrollmentIdSet = new Set(desiredEnrollments.map((e) => e.id));
 
-    // Add new enrollments
     const toAdd = desiredEnrollments.filter((e) => !currentEnrollmentIdSet.has(e.id));
     if (toAdd.length > 0) {
       await addLabelToEnrollments({
@@ -330,7 +317,6 @@ const editLabelMutation = t.procedure
       });
     }
 
-    // Remove old enrollments
     const toRemove = currentEnrollments.filter((e) => !desiredEnrollmentIdSet.has(e.id));
     if (toRemove.length > 0) {
       await removeLabelFromEnrollments({
@@ -340,7 +326,6 @@ const editLabelMutation = t.procedure
       });
     }
 
-    // Return the new origHash for the next operation
     const newHash = await computeCourseInstanceJsonHash(courseInstanceJsonPath);
     return { origHash: newHash };
   });
@@ -370,11 +355,9 @@ const deleteLabelMutation = t.procedure
       courseInstance: course_instance,
     });
 
-    // Read current JSON
     const courseInstanceJson = await readCourseInstanceJson(courseInstancePath);
     const studentLabels = parseStudentLabels(courseInstanceJson);
 
-    // Remove the label
     const labelIndex = studentLabels.findIndex((l) => l.uuid === label.uuid);
     if (labelIndex === -1) {
       throw new TRPCError({
@@ -386,7 +369,6 @@ const deleteLabelMutation = t.procedure
     studentLabels.splice(labelIndex, 1);
     courseInstanceJson.studentLabels = studentLabels;
 
-    // Save using FileModifyEditor
     const saveResult = await saveCourseInstanceJson({
       courseInstanceJson,
       courseInstanceJsonPath,
@@ -403,7 +385,6 @@ const deleteLabelMutation = t.procedure
       });
     }
 
-    // Return the new origHash for the next operation
     const newHash = await computeCourseInstanceJsonHash(courseInstanceJsonPath);
     return { origHash: newHash };
   });
@@ -412,7 +393,7 @@ const batchAddLabelMutation = t.procedure
   .use(requireCourseInstancePermissionEdit)
   .input(
     z.object({
-      enrollmentIds: z.array(IdSchema).max(MAX_UIDS),
+      enrollmentIds: z.array(IdSchema).max(MAX_LABEL_UIDS),
       labelId: IdSchema,
     }),
   )
@@ -447,7 +428,7 @@ const batchRemoveLabelMutation = t.procedure
   .use(requireCourseInstancePermissionEdit)
   .input(
     z.object({
-      enrollmentIds: z.array(IdSchema).max(MAX_UIDS),
+      enrollmentIds: z.array(IdSchema).max(MAX_LABEL_UIDS),
       labelId: IdSchema,
     }),
   )
@@ -467,13 +448,15 @@ const batchRemoveLabelMutation = t.procedure
       authzData: authz_data,
     });
 
-    const removed = await removeLabelFromEnrollments({
+    const removedEnrollments = await removeLabelFromEnrollments({
       enrollments,
       label,
       authzData: authz_data,
     });
+    const removed = removedEnrollments.length;
+    const didNotHaveLabel = enrollments.length - removed;
 
-    return { removed };
+    return { removed, didNotHaveLabel };
   });
 
 export const studentLabelsRouter = t.router({

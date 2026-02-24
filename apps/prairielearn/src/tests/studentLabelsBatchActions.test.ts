@@ -14,7 +14,7 @@ import { TEST_COURSE_PATH } from '../lib/paths.js';
 import { selectCourseInstanceById } from '../models/course-instances.js';
 import { generateAndEnrollUsers } from '../models/enrollment.js';
 import { createStudentLabel, selectEnrollmentsInStudentLabel } from '../models/student-label.js';
-import type { StudentLabelsRouter } from '../pages/instructorStudentsLabels/trpc.js';
+import type { StudentLabelsRouter } from '../pages/instructorInstanceAdminTrpc/trpc.js';
 
 import {
   type CourseRepoFixture,
@@ -41,7 +41,7 @@ async function createTrpcClient() {
   return createTRPCClient<StudentLabelsRouter>({
     links: [
       httpLink({
-        url: studentsUrl + '/trpc',
+        url: `${siteUrl}/pl/course_instance/1/instructor/instance_admin/trpc/student_labels`,
         headers: {
           'X-TRPC': 'true',
           'X-CSRF-Token': trpcCsrfToken,

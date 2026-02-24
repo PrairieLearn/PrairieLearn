@@ -4,6 +4,8 @@ import { IdSchema } from '@prairielearn/zod';
 
 import { StaffStudentLabelSchema } from '../../lib/client/safe-db-types.js';
 
+export const MAX_LABEL_UIDS = 1000;
+
 export const StudentLabelUserDataSchema = z.object({
   uid: z.string(),
   name: z.string().nullable(),

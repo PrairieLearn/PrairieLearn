@@ -57,34 +57,6 @@ import { InviteStudentsModal } from './components/InviteStudentsModal.js';
 import { SyncStudentsModal } from './components/SyncStudentsModal.js';
 import { STATUS_VALUES, type StudentRow, StudentRowSchema } from './instructorStudents.shared.js';
 
-/**
- * A checkbox component that properly handles the indeterminate state using a ref and useEffect,
- * since React doesn't support indeterminate as a native attribute.
- */
-function SelectAllCheckbox({ table }: { table: Table<StudentRow> }) {
-  const checkboxRef = useRef<HTMLInputElement>(null);
-  const isIndeterminate = table.getIsSomeRowsSelected();
-
-  useEffect(() => {
-    if (checkboxRef.current) {
-      checkboxRef.current.indeterminate = isIndeterminate;
-    }
-  }, [isIndeterminate]);
-
-  return (
-    <input
-      ref={checkboxRef}
-      type="checkbox"
-      checked={table.getIsAllRowsSelected()}
-      aria-label="Select all students"
-      onChange={table.getToggleAllRowsSelectedHandler()}
-    />
-  );
-}
-
-/**
- * A checkbox component for handling indeterminate state in label selection.
- */
 function IndeterminateCheckbox({
   checked,
   indeterminate,
@@ -114,6 +86,18 @@ function IndeterminateCheckbox({
       disabled={disabled}
       aria-label={ariaLabel}
       onChange={onChange}
+    />
+  );
+}
+
+function SelectAllCheckbox({ table }: { table: Table<StudentRow> }) {
+  const handler = table.getToggleAllRowsSelectedHandler();
+  return (
+    <IndeterminateCheckbox
+      checked={table.getIsAllRowsSelected()}
+      indeterminate={table.getIsSomeRowsSelected()}
+      aria-label="Select all students"
+      onChange={() => handler(undefined)}
     />
   );
 }
@@ -240,6 +224,7 @@ interface StudentsCardProps {
   timezone: string;
   selfEnrollLink: string;
   trpcCsrfToken: string;
+  trpcUrl: string;
   origHash: string | null;
 }
 
@@ -262,6 +247,7 @@ function StudentsCard({
   csrfToken,
   selfEnrollLink,
   trpcCsrfToken,
+  trpcUrl,
   origHash: initialOrigHash,
 }: StudentsCardProps) {
   const [origHash, setOrigHash] = useState(initialOrigHash);
@@ -290,9 +276,8 @@ function StudentsCard({
   const { createCheckboxProps } = useShiftClickCheckbox<StudentRow>();
 
   const queryClient = useQueryClient();
-  const [trpcClient] = useState(() => createStudentLabelsTrpcClient(trpcCsrfToken));
+  const [trpcClient] = useState(() => createStudentLabelsTrpcClient(trpcCsrfToken, trpcUrl));
 
-  // Fetch student labels for batch actions
   const { data: studentLabels = initialStudentLabels } = useQuery({
     queryKey: ['student-labels', courseInstance.id],
     queryFn: async () => {
@@ -425,7 +410,6 @@ function StudentsCard({
     window.location.href = getCourseInstanceJobSequenceUrl(courseInstance.id, job_sequence_id);
   };
 
-  // Batch action mutations
   const batchAddLabelMutation = useMutation({
     mutationFn: async ({
       enrollmentIds,
@@ -636,7 +620,6 @@ function StudentsCard({
     },
   });
 
-  // Calculate selected enrollment IDs and common labels for batch actions
   const selectedRows = table.getSelectedRowModel().rows;
   const selectedEnrollmentIds = selectedRows.map((row) => row.original.enrollment.id);
 
@@ -666,7 +649,6 @@ function StudentsCard({
     return states;
   }, [selectedRows, studentLabels]);
 
-  // Check if any label mutation is pending
   const isLabelMutationPending =
     batchAddLabelMutation.isPending || batchRemoveLabelMutation.isPending;
   const emptyStateText = run(() => {
@@ -682,7 +664,6 @@ function StudentsCard({
     return `${baseMessage} Invite them to get started.`;
   });
 
-  // Combine mutation errors for display
   const labelMutationError = batchAddLabelMutation.error ?? batchRemoveLabelMutation.error;
 
   return (
@@ -937,6 +918,7 @@ export const InstructorStudents = ({
   csrfToken,
   isDevMode,
   trpcCsrfToken,
+  trpcUrl,
   origHash,
 }: {
   authzData: PageContextWithAuthzData['authz_data'];
@@ -959,6 +941,7 @@ export const InstructorStudents = ({
           timezone={timezone}
           csrfToken={csrfToken}
           trpcCsrfToken={trpcCsrfToken}
+          trpcUrl={trpcUrl}
           origHash={origHash}
         />
       </QueryClientProviderDebug>

@@ -23,7 +23,7 @@ import {
   selectEnrollmentsInStudentLabel,
   selectStudentLabelsInCourseInstance,
 } from '../models/student-label.js';
-import type { StudentLabelsRouter } from '../pages/instructorStudentsLabels/trpc.js';
+import type { StudentLabelsRouter } from '../pages/instructorInstanceAdminTrpc/trpc.js';
 
 import {
   type CourseRepoFixture,
@@ -60,7 +60,7 @@ async function createTrpcClient() {
   return createTRPCClient<StudentLabelsRouter>({
     links: [
       httpLink({
-        url: labelsUrl + '/trpc',
+        url: `${siteUrl}/pl/course_instance/1/instructor/instance_admin/trpc/student_labels`,
         headers: {
           'X-TRPC': 'true',
           'X-CSRF-Token': trpcCsrfToken,
@@ -209,7 +209,6 @@ describe('Instructor student labels page', () => {
     await trpcClient.editLabel.mutate({
       labelId: labelA.id,
       name: 'Test Label A Renamed',
-      oldName: 'Test Label A',
       color: 'blue1',
       uids: '',
       origHash,
@@ -227,7 +226,6 @@ describe('Instructor student labels page', () => {
     await trpcClient.editLabel.mutate({
       labelId: labelA.id,
       name: 'Test Label A Renamed',
-      oldName: 'Test Label A Renamed',
       color: 'purple3',
       uids: '',
       origHash,
@@ -245,7 +243,6 @@ describe('Instructor student labels page', () => {
     await trpcClient.editLabel.mutate({
       labelId: labelA.id,
       name: 'Test Label A Renamed',
-      oldName: 'Test Label A Renamed',
       color: 'purple3',
       uids: studentUids[2],
       origHash,
@@ -262,7 +259,6 @@ describe('Instructor student labels page', () => {
     await trpcClient.editLabel.mutate({
       labelId: labelA.id,
       name: 'Test Label A Renamed',
-      oldName: 'Test Label A Renamed',
       color: 'purple3',
       uids: '',
       origHash,
@@ -282,7 +278,6 @@ describe('Instructor student labels page', () => {
       await trpcClient.editLabel.mutate({
         labelId: labelA.id,
         name: 'Test Label B',
-        oldName: 'Test Label A Renamed',
         color: 'purple3',
         uids: '',
         origHash,
@@ -303,10 +298,8 @@ describe('Instructor student labels page', () => {
     const labelA = labels.find((l) => l.name === 'Test Label A Renamed');
     assert.isDefined(labelA);
 
-    // Delete existing label
     await trpcClient.deleteLabel.mutate({
       labelId: labelA.id,
-      labelName: 'Test Label A Renamed',
       origHash,
     });
 
@@ -318,23 +311,15 @@ describe('Instructor student labels page', () => {
     // Refresh origHash after the mutation
     origHash = await getOrigHash(courseRepo.courseLiveDir, courseInstanceShortName);
 
-    // Attempt to delete with wrong label name - should fail with NOT_FOUND
-    const labelB = labels.find((l) => l.name === 'Test Label B');
-    assert.isDefined(labelB);
-
+    // Attempt to delete non-existent label - should fail with NOT_FOUND
     try {
       await trpcClient.deleteLabel.mutate({
-        labelId: labelB.id,
-        labelName: 'Wrong Name',
+        labelId: '999999',
         origHash,
       });
-      assert.fail('Expected error for wrong label name');
+      assert.fail('Expected error for non-existent label');
     } catch (err) {
       assert.instanceOf(err, TRPCClientError);
-      assert.include(
-        (err as TRPCClientErrorLike<StudentLabelsRouter>).message,
-        'not found in course configuration',
-      );
     }
   });
 });

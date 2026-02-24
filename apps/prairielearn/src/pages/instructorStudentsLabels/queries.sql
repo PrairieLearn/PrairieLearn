@@ -2,8 +2,8 @@
 SELECT
   to_jsonb(sl.*) AS student_label,
   COALESCE(
-    json_agg(
-      json_build_object(
+    jsonb_agg(
+      jsonb_build_object(
         'uid',
         u.uid,
         'name',
@@ -17,7 +17,7 @@ SELECT
       WHERE
         u.uid IS NOT NULL
     ),
-    '[]'::json
+    '[]'::jsonb
   ) AS user_data
 FROM
   student_labels AS sl

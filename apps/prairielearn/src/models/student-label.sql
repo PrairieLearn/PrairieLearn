@@ -24,6 +24,15 @@ FROM
 WHERE
   id = $id;
 
+-- BLOCK select_student_label_by_uuid
+SELECT
+  *
+FROM
+  student_labels
+WHERE
+  uuid = $uuid
+  AND course_instance_id = $course_instance_id;
+
 -- BLOCK delete_student_label
 DELETE FROM student_labels
 WHERE
