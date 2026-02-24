@@ -493,8 +493,6 @@ export async function sync(
     SprocSyncAssessmentsSchema,
   );
 
-  console.log('nameToIdMap', nameToIdMap);
-
   await syncAssessmentTools(assessments, nameToIdMap);
 }
 
