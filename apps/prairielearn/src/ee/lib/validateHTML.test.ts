@@ -295,3 +295,63 @@ describe('validateHTML float attributes', () => {
     assert.isTrue(errors2.some((e) => e.includes('must be an floating-point number')));
   });
 });
+
+describe('validateHTML panel nesting', () => {
+  it('rejects input element inside pl-submission-panel', () => {
+    const errors = validateHTML(
+      '<pl-submission-panel><pl-string-input answers-name="ans" correct-answer="x"></pl-string-input></pl-submission-panel>',
+      true,
+    );
+    assert.isTrue(
+      errors.some((e) => e.includes('pl-string-input') && e.includes('pl-submission-panel')),
+    );
+  });
+
+  it('rejects input element inside pl-answer-panel', () => {
+    const errors = validateHTML(
+      '<pl-answer-panel><pl-number-input answers-name="ans"></pl-number-input></pl-answer-panel>',
+      true,
+    );
+    assert.isTrue(
+      errors.some((e) => e.includes('pl-number-input') && e.includes('pl-answer-panel')),
+    );
+  });
+
+  it('rejects input element inside pl-question-panel', () => {
+    const errors = validateHTML(
+      '<pl-question-panel><pl-integer-input answers-name="ans" correct-answer="42"></pl-integer-input></pl-question-panel>',
+      true,
+    );
+    assert.isTrue(
+      errors.some((e) => e.includes('pl-integer-input') && e.includes('pl-question-panel')),
+    );
+  });
+
+  it('accepts input element at top level', () => {
+    const errors = validateHTML(
+      '<pl-question-panel><p>Question</p></pl-question-panel>' +
+        '<pl-string-input answers-name="ans" correct-answer="x"></pl-string-input>',
+      true,
+    );
+    assert.deepEqual(errors, []);
+  });
+
+  it('rejects input element deeply nested inside panel', () => {
+    const errors = validateHTML(
+      '<pl-submission-panel><div><pl-string-input answers-name="ans" correct-answer="x"></pl-string-input></div></pl-submission-panel>',
+      true,
+    );
+    assert.isTrue(
+      errors.some((e) => e.includes('pl-string-input') && e.includes('pl-submission-panel')),
+    );
+  });
+
+  it('accepts non-input content inside pl-submission-panel', () => {
+    const errors = validateHTML(
+      '<pl-string-input answers-name="ans" correct-answer="x"></pl-string-input>' +
+        '<pl-submission-panel><p>Your answer was submitted.</p></pl-submission-panel>',
+      true,
+    );
+    assert.deepEqual(errors, []);
+  });
+});

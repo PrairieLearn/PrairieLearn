@@ -217,6 +217,20 @@ function makeSystemPrompt({ isExistingQuestion }: { isExistingQuestion: boolean 
     Array.from(SUPPORTED_ELEMENTS)
       .map((el) => `- \`<${el}>\``)
       .join('\n'),
+    '## Panel elements',
+    [
+      'Panel elements control when content is visible.',
+      'Use them to wrap text and directions, never input elements.',
+    ],
+    '- `<pl-question-panel>`: Content only shown in the question view. Use for question text and directions.',
+    '- `<pl-submission-panel>`: Content only shown after the student submits. Use for submission feedback.',
+    '- `<pl-answer-panel>`: Content only shown after the correct answer is available. Use for solutions and explanations.',
+    [
+      'IMPORTANT: Input elements (such as `<pl-string-input>`, `<pl-multiple-choice>`, etc.) MUST NOT be placed inside any panel element.',
+      'Input elements automatically adapt their rendering for each panel (editable input in the question panel,',
+      'submitted answer display in the submission panel, correct answer display in the answer panel).',
+      'Wrapping them in a panel element breaks this behavior.',
+    ],
     [
       'A question may also have a `server.py` file that can randomly generate unique parameters and answers,',
       'and which can also assign grades to student submissions.',

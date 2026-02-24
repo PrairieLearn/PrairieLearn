@@ -4,13 +4,13 @@ import * as parse5 from 'parse5';
 type DocumentFragment = parse5.DefaultTreeAdapterMap['documentFragment'];
 type ChildNode = parse5.DefaultTreeAdapterMap['childNode'];
 
-export const SUPPORTED_ELEMENTS = new Set([
-  // Decorative elements
-  'pl-question-panel',
-  'pl-answer-panel',
-  'pl-submission-panel',
+const PANEL_ELEMENTS = new Set(['pl-question-panel', 'pl-answer-panel', 'pl-submission-panel']);
 
-  // Submission elements
+// Note: all elements here are purely input-oriented. If a dual-purpose element is
+// added (e.g. `pl-drawing`, which can be either input or display depending on its
+// attributes), the nesting validation in `dfsCheckParseTree` may need to be made
+// attribute-aware for that element rather than adding it here unconditionally.
+const INPUT_ELEMENTS = new Set([
   'pl-multiple-choice',
   'pl-checkbox',
   'pl-integer-input',
@@ -18,6 +18,8 @@ export const SUPPORTED_ELEMENTS = new Set([
   'pl-string-input',
   'pl-symbolic-input',
 ]);
+
+export const SUPPORTED_ELEMENTS = new Set([...PANEL_ELEMENTS, ...INPUT_ELEMENTS]);
 
 const BOOLEAN_TRUE_VALUES = ['true', 't', '1', 'True', 'T', 'TRUE', 'yes', 'y', 'Yes', 'Y', 'YES'];
 const BOOLEAN_FALSE_VALUES = ['false', 'f', '0', 'False', 'F', 'FALSE', 'no', 'n', 'No', 'N', 'NO'];
@@ -799,14 +801,27 @@ function checkCheckbox(ast: DocumentFragment | ChildNode): ValidationResult {
 /**
  * Checks the entire parse tree for errors in common PL tags recursively.
  * @param ast The tree to consider.
+ * @param enclosingPanel The name of the enclosing panel element (e.g. 'pl-submission-panel'), if any.
  * @returns A list of human-readable error messages, if any.
  */
-function dfsCheckParseTree(ast: DocumentFragment | ChildNode) {
+function dfsCheckParseTree(ast: DocumentFragment | ChildNode, enclosingPanel?: string) {
   let { errors, mandatoryPythonCorrectAnswers = new Set<string>() } = checkTag(ast);
+
+  if ('tagName' in ast && INPUT_ELEMENTS.has(ast.tagName) && enclosingPanel) {
+    errors.push(
+      `<${ast.tagName}> must not be placed inside <${enclosingPanel}>. ` +
+        'Input elements must be placed at the top level of question.html (outside any panel element) ' +
+        'so they render correctly in the question, submission, and answer panels. ' +
+        `Move <${ast.tagName}> outside of <${enclosingPanel}>.`,
+    );
+  }
+
+  const childPanel =
+    'tagName' in ast && PANEL_ELEMENTS.has(ast.tagName) ? ast.tagName : enclosingPanel;
 
   if ('childNodes' in ast) {
     for (const child of ast.childNodes) {
-      const childResult = dfsCheckParseTree(child);
+      const childResult = dfsCheckParseTree(child, childPanel);
       errors = errors.concat(childResult.errors);
       childResult.mandatoryPythonCorrectAnswers.forEach((x) =>
         mandatoryPythonCorrectAnswers.add(x),
