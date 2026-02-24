@@ -16,7 +16,7 @@ export function createContext({ res }: CreateExpressContextOptions) {
   return { course, authz_data };
 }
 
-export type TRPCContext = Awaited<ReturnType<typeof createContext>>;
+type TRPCContext = Awaited<ReturnType<typeof createContext>>;
 
 const t = initTRPC.context<TRPCContext>().create({
   transformer: superjson,

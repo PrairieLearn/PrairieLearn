@@ -10,7 +10,7 @@ import { QueryClientProviderDebug } from '../../lib/client/tanstackQuery.js';
 import { createInstructorQuestionsTrpcClient } from './trpc-client.js';
 import { TRPCProvider, useTRPC } from './trpc-context.js';
 
-export interface InstructorQuestionsTableProps {
+interface InstructorQuestionsTableProps {
   questions: SafeQuestionsPageData[];
   courseInstances: PublicCourseInstance[];
   courseId: string;

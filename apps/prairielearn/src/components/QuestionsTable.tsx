@@ -63,7 +63,7 @@ const FILTER_COLUMN_URL_KEYS: Record<string, string> = {
   workspace_image: 'wsImage',
 };
 
-export interface QuestionsTableProps<TQueryKey extends readonly unknown[] = readonly unknown[]> {
+interface QuestionsTableProps<TQueryKey extends readonly unknown[] = readonly unknown[]> {
   questions: SafeQuestionsPageData[];
   courseInstances: PublicCourseInstance[];
   courseId: string;
