@@ -265,25 +265,25 @@ export function CalculatorDrawer({ storageKey }: { storageKey: string }): HtmlSa
             </div>
             <div class="col-numbers d-flex flex-column flex-shrink-0">
               <div class="btn-row d-flex">
-                <button id="7" type="button" class="btn btn-secondary">7</button
-                ><button id="8" type="button" class="btn btn-secondary">8</button
-                ><button id="9" type="button" class="btn btn-secondary">9</button
+                <button data-key="7" type="button" class="btn btn-secondary btn-key">7</button
+                ><button data-key="8" type="button" class="btn btn-secondary btn-key">8</button
+                ><button data-key="9" type="button" class="btn btn-secondary btn-key">9</button
                 ><button name="div" type="button" class="btn btn-light">$\\div$</button>
               </div>
               <div class="btn-row d-flex">
-                <button id="4" type="button" class="btn btn-secondary">4</button
-                ><button id="5" type="button" class="btn btn-secondary">5</button
-                ><button id="6" type="button" class="btn btn-secondary">6</button
+                <button data-key="4" type="button" class="btn btn-secondary btn-key">4</button
+                ><button data-key="5" type="button" class="btn btn-secondary btn-key">5</button
+                ><button data-key="6" type="button" class="btn btn-secondary btn-key">6</button
                 ><button name="mul" type="button" class="btn btn-light">$\\times$</button>
               </div>
               <div class="btn-row d-flex">
-                <button id="1" type="button" class="btn btn-secondary">1</button
-                ><button id="2" type="button" class="btn btn-secondary">2</button
-                ><button id="3" type="button" class="btn btn-secondary">3</button
+                <button data-key="1" type="button" class="btn btn-secondary btn-key">1</button
+                ><button data-key="2" type="button" class="btn btn-secondary btn-key">2</button
+                ><button data-key="3" type="button" class="btn btn-secondary btn-key">3</button
                 ><button name="minus" type="button" class="btn btn-light">$-$</button>
               </div>
               <div class="btn-row d-flex">
-                <button id="0" type="button" class="btn btn-secondary">0</button
+                <button data-key="0" type="button" class="btn btn-secondary btn-key">0</button
                 ><button name="dec-point" type="button" class="btn btn-secondary">.</button
                 ><button name="ans" type="button" class="btn btn-light">ans</button
                 ><button name="plus" type="button" class="btn btn-light">$+$</button>
@@ -326,37 +326,37 @@ export function CalculatorDrawer({ storageKey }: { storageKey: string }): HtmlSa
             class="keyboard abc flex-column align-items-stretch justify-content-center"
           >
             <div id="abc-row-1" class="btn-row d-flex justify-content-center">
-              <button id="q" type="button" class="btn btn-light">q</button>
-              <button id="w" type="button" class="btn btn-light">w</button>
-              <button id="e" type="button" class="btn btn-light">e</button>
-              <button id="r" type="button" class="btn btn-light">r</button>
-              <button id="t" type="button" class="btn btn-light">t</button>
-              <button id="y" type="button" class="btn btn-light">y</button>
-              <button id="u" type="button" class="btn btn-light">u</button>
-              <button id="i" type="button" class="btn btn-light">i</button>
-              <button id="o" type="button" class="btn btn-light">o</button>
-              <button id="p" type="button" class="btn btn-light">p</button>
+              <button data-key="q" type="button" class="btn btn-light btn-key">q</button>
+              <button data-key="w" type="button" class="btn btn-light btn-key">w</button>
+              <button data-key="e" type="button" class="btn btn-light btn-key">e</button>
+              <button data-key="r" type="button" class="btn btn-light btn-key">r</button>
+              <button data-key="t" type="button" class="btn btn-light btn-key">t</button>
+              <button data-key="y" type="button" class="btn btn-light btn-key">y</button>
+              <button data-key="u" type="button" class="btn btn-light btn-key">u</button>
+              <button data-key="i" type="button" class="btn btn-light btn-key">i</button>
+              <button data-key="o" type="button" class="btn btn-light btn-key">o</button>
+              <button data-key="p" type="button" class="btn btn-light btn-key">p</button>
             </div>
             <div id="abc-row-2" class="btn-row d-flex justify-content-center">
-              <button id="a" type="button" class="btn btn-light">a</button>
-              <button id="s" type="button" class="btn btn-light">s</button>
-              <button id="d" type="button" class="btn btn-light">d</button>
-              <button id="f" type="button" class="btn btn-light">f</button>
-              <button id="g" type="button" class="btn btn-light">g</button>
-              <button id="h" type="button" class="btn btn-light">h</button>
-              <button id="j" type="button" class="btn btn-light">j</button>
-              <button id="k" type="button" class="btn btn-light">k</button>
-              <button id="l" type="button" class="btn btn-light">l</button>
+              <button data-key="a" type="button" class="btn btn-light btn-key">a</button>
+              <button data-key="s" type="button" class="btn btn-light btn-key">s</button>
+              <button data-key="d" type="button" class="btn btn-light btn-key">d</button>
+              <button data-key="f" type="button" class="btn btn-light btn-key">f</button>
+              <button data-key="g" type="button" class="btn btn-light btn-key">g</button>
+              <button data-key="h" type="button" class="btn btn-light btn-key">h</button>
+              <button data-key="j" type="button" class="btn btn-light btn-key">j</button>
+              <button data-key="k" type="button" class="btn btn-light btn-key">k</button>
+              <button data-key="l" type="button" class="btn btn-light btn-key">l</button>
             </div>
             <div id="abc-row-3" class="btn-row d-flex justify-content-center">
               <button name="eq" type="button" class="btn btn-light">=</button>
-              <button id="z" type="button" class="btn btn-light">z</button>
-              <button id="x" type="button" class="btn btn-light">x</button>
-              <button id="c" type="button" class="btn btn-light">c</button>
-              <button id="v" type="button" class="btn btn-light">v</button>
-              <button id="b" type="button" class="btn btn-light">b</button>
-              <button id="n" type="button" class="btn btn-light">n</button>
-              <button id="m" type="button" class="btn btn-light">m</button>
+              <button data-key="z" type="button" class="btn btn-light btn-key">z</button>
+              <button data-key="x" type="button" class="btn btn-light btn-key">x</button>
+              <button data-key="c" type="button" class="btn btn-light btn-key">c</button>
+              <button data-key="v" type="button" class="btn btn-light btn-key">v</button>
+              <button data-key="b" type="button" class="btn btn-light btn-key">b</button>
+              <button data-key="n" type="button" class="btn btn-light btn-key">n</button>
+              <button data-key="m" type="button" class="btn btn-light btn-key">m</button>
               <button name="assign" type="button" class="btn btn-light">$:=$</button>
               <button name="backspace" type="button" class="btn btn-light">
                 <i class="fa-solid fa-delete-left"></i>

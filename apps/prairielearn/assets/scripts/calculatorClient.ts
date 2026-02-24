@@ -269,39 +269,28 @@ export function initCalculator(storageKey: string, { drawer, fab, fabClose }: Dr
     return ce.number(Math.round(args[0] as unknown as number));
   });
 
-  // Buttons for number inputs
-  for (let i = 0; i < 10; ++i) {
-    const button = document.getElementById(`${i}`)!;
-    prepareButton(button);
-    button.addEventListener('click', () => {
-      calculatorInputElement.insert(`${i}`);
-    });
-  }
-
-  // Buttons for alphabet inputs
-  for (let char = 'a'.charCodeAt(0); char <= 'z'.charCodeAt(0); ++char) {
-    const letter = String.fromCharCode(char);
-    const button = document.getElementById(letter)!;
+  // Buttons for number and letter inputs
+  document.querySelectorAll<HTMLButtonElement>('.btn-key').forEach((button) => {
     prepareButton(button);
     button.addEventListener('click', () => {
       calculatorInputElement.insert(button.textContent);
     });
-  }
+  });
 
   // Upper/lowercase switch
   document.getElementsByName('shift').forEach((button) =>
     button.addEventListener('click', () => {
       button.classList.toggle('btn-light');
       button.classList.toggle('btn-secondary');
-      for (let char = 'a'.charCodeAt(0); char <= 'z'.charCodeAt(0); ++char) {
-        const letter = String.fromCharCode(char);
-        const letterBtn = document.getElementById(letter)!;
-        if (letterBtn.textContent <= 'Z') {
-          letterBtn.textContent = letterBtn.textContent.toLowerCase();
-        } else {
-          letterBtn.textContent = letterBtn.textContent.toUpperCase();
+      document.querySelectorAll<HTMLButtonElement>('.btn-key[data-key]').forEach((btn) => {
+        const key = btn.dataset.key!;
+        if (key >= 'a' && key <= 'z') {
+          btn.textContent =
+            btn.textContent.toUpperCase() === btn.textContent
+              ? btn.textContent.toLowerCase()
+              : btn.textContent.toUpperCase();
         }
-      }
+      });
     }),
   );
 
