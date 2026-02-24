@@ -488,9 +488,7 @@ export function initCalculator(storageKey: string, { drawer, fab, fabClose }: Dr
       'Asech',
       'Acsch',
     ];
-    // false positive
-    // eslint-disable-next-line @typescript-eslint/no-redundant-type-constituents
-    let parsedExpr: MathJsonExpression & any[];
+    let parsedExpr: MathJsonExpression;
     if (trigFunc.includes(json[0])) {
       parsedExpr = [json[0], ['Degrees', radianToDegree(json[1])]];
     } else if (trigFuncInv.includes(json[0])) {
