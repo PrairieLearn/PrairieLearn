@@ -157,7 +157,6 @@ export function initCalculator(storageKey: string, { drawer, fab, fabClose }: Dr
         calculatorInputElement.value = '';
         calculatorOutput.value = ce.box(['Error', '', 'Output is too large']).toString();
       } else {
-        evaluated = parsed.evaluate();
         calculatorInputElement.value = '';
         calculatorOutput.value = ce
           .box(['Error', '', e instanceof Error ? e.message : String(e)])
