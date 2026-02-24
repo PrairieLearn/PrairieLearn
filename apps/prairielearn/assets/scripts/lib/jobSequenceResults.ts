@@ -21,6 +21,9 @@ onDocumentReady(() => {
       window.location.reload();
       return;
     }
+    // Some browsers replace the referrer on reload
+    // (https://issues.chromium.org/issues/41306076), so we use a query
+    // parameter to preserve the original referrer across reloads.
     redirectUrl.searchParams.set('referrer', document.referrer);
     window.location.replace(redirectUrl.toString());
   });
