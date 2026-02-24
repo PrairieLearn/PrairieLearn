@@ -1,3 +1,5 @@
+import { encodeSearchString } from '../uri-util.shared.js';
+
 export function getStudentCourseInstanceUrl(courseInstanceId: string): string {
   return `/pl/course_instance/${courseInstanceId}`;
 }
@@ -112,17 +114,22 @@ export function getQuestionPreviewUrl({
   return `/pl/course/${courseId}/question/${questionId}/preview`;
 }
 
-export function getInstructorUrlPrefix({
+export function getCourseIssuesUrl({
   courseId,
   courseInstanceId,
+  qid,
+  assessment,
 }: {
   courseId: string;
   courseInstanceId?: string;
+  qid?: string | null;
+  assessment?: string | null;
 }): string {
-  if (courseInstanceId) {
-    return `/pl/course_instance/${courseInstanceId}/instructor`;
-  }
-  return `/pl/course/${courseId}`;
+  const urlPrefix = courseInstanceId
+    ? `/pl/course_instance/${courseInstanceId}/instructor`
+    : `/pl/course/${courseId}`;
+  const query = encodeSearchString({ is: 'open', qid, assessment });
+  return `${urlPrefix}/course_admin/issues?q=${query}`;
 }
 
 export function getAiQuestionGenerationDraftsUrl({ urlPrefix }: { urlPrefix: string }): string {

@@ -5,7 +5,7 @@ import { CategoricalColumnFilter } from '@prairielearn/ui';
 
 import { assessmentLabel } from '../lib/assessment.shared.js';
 import type { PublicCourseInstance } from '../lib/client/safe-db-types.js';
-import { getInstructorUrlPrefix, getQuestionPreviewUrl } from '../lib/client/url.js';
+import { getQuestionPreviewUrl } from '../lib/client/url.js';
 
 import { AssessmentBadge } from './AssessmentBadge.js';
 import { CopyButton } from './CopyButton.js';
@@ -32,8 +32,6 @@ export function createQuestionsTableColumns({
   courseInstanceId?: string;
   isPublic?: boolean;
 }) {
-  const urlPrefix = getInstructorUrlPrefix({ courseId, courseInstanceId });
-
   return [
     columnHelper.accessor('qid', {
       id: 'qid',
@@ -74,7 +72,8 @@ export function createQuestionsTableColumns({
                 count={question.open_issue_count}
                 className="ms-1"
                 issueQid={question.qid}
-                urlPrefix={urlPrefix}
+                courseId={courseId}
+                courseInstanceId={courseInstanceId}
               />
             )}
           </span>

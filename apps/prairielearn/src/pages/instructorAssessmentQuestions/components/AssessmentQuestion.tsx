@@ -106,6 +106,8 @@ export function AssessmentQuestion({
     questionMetadata,
     editMode,
     urlPrefix,
+    courseId,
+    courseInstanceId,
     hasCoursePermissionPreview,
     canEdit,
     showAdvanceScorePercCol,
@@ -209,7 +211,8 @@ export function AssessmentQuestion({
         badges={
           <>
             <IssueBadge
-              urlPrefix={urlPrefix}
+              courseId={courseId}
+              courseInstanceId={courseInstanceId}
               count={questionData.open_issue_count}
               issueQid={questionData.question.qid}
             />

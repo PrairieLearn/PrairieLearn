@@ -32,6 +32,7 @@ router.get(
         assessmentRows,
         assessmentsGroupBy: res.locals.course_instance.assessments_group_by,
         currentAssessmentId: req.params.assessment_id,
+        courseId: res.locals.course.id,
         courseInstanceId: res.locals.course_instance.id,
 
         targetSubPage,

@@ -50,6 +50,8 @@ export interface AssessmentState {
   questionMetadata: Record<string, StaffAssessmentQuestionRow>;
   editMode: boolean;
   urlPrefix: string;
+  courseId: string;
+  courseInstanceId?: string;
   hasCoursePermissionPreview: boolean;
   canEdit: boolean;
   showAdvanceScorePercCol: boolean;

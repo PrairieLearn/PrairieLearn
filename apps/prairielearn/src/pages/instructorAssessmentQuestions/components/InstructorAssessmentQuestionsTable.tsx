@@ -123,6 +123,7 @@ export function InstructorAssessmentQuestionsTable({
   questionRows,
   jsonZones,
   urlPrefix,
+  courseInstanceId,
   assessment,
   assessmentSetName,
   hasCoursePermissionPreview,
@@ -136,6 +137,7 @@ export function InstructorAssessmentQuestionsTable({
   assessment: StaffAssessment;
   assessmentSetName: string;
   urlPrefix: string;
+  courseInstanceId?: string;
   hasCoursePermissionPreview: boolean;
   canEdit: boolean;
   csrfToken: string;
@@ -592,6 +594,8 @@ export function InstructorAssessmentQuestionsTable({
                           questionMetadata,
                           editMode,
                           urlPrefix,
+                          courseId: course.id,
+                          courseInstanceId,
                           hasCoursePermissionPreview,
                           canEdit,
                           showAdvanceScorePercCol,

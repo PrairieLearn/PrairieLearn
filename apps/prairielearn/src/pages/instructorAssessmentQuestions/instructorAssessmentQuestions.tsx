@@ -113,6 +113,7 @@ router.get(
                 questionRows={questionRows}
                 jsonZones={jsonZones}
                 urlPrefix={pageContext.urlPrefix}
+                courseInstanceId={pageContext.course_instance.id}
                 assessment={pageContext.assessment}
                 assessmentSetName={pageContext.assessment_set.name}
                 hasCoursePermissionPreview={pageContext.authz_data.has_course_permission_preview}
@@ -125,6 +126,7 @@ router.get(
                 course={pageContext.course}
                 questionRows={questionRows}
                 urlPrefix={pageContext.urlPrefix}
+                courseInstanceId={pageContext.course_instance.id}
                 assessmentType={pageContext.assessment.type}
                 assessmentSetName={pageContext.assessment_set.name}
                 assessmentNumber={pageContext.assessment.number}
