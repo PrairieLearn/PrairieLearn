@@ -1,3 +1,5 @@
+/* #region Math field overrides */
+
 math-field::part(menu-toggle) {
   display: none;
 }
@@ -14,7 +16,10 @@ math-field::part(virtual-keyboard-toggle) {
   pointer-events: none !important;
 }
 
-/* Drawer layout */
+/* #endregion */
+
+/* #region Drawer */
+
 .calculator-drawer {
   position: fixed;
   bottom: 0;
@@ -29,6 +34,10 @@ math-field::part(virtual-keyboard-toggle) {
   border-radius: 8px 8px 0 0;
 }
 
+.calculator-drawer.open {
+  transform: translateY(0);
+}
+
 .calculator-resize-handle {
   position: absolute;
   left: -4px;
@@ -40,10 +49,6 @@ math-field::part(virtual-keyboard-toggle) {
   z-index: 1;
 }
 
-.calculator-drawer.open {
-  transform: translateY(0);
-}
-
 .calculator-drawer-header {
   padding: 6px 12px;
   cursor: pointer;
@@ -53,8 +58,10 @@ math-field::part(virtual-keyboard-toggle) {
   min-height: 0;
 }
 
-/* Floating action button — avoid BS display utilities (d-flex/d-none)
-   because the .visible toggle pattern conflicts with !important */
+/* #endregion */
+
+/* #region Floating action button */
+
 .calculator-fab {
   position: fixed;
   bottom: 0;
@@ -89,6 +96,10 @@ math-field::part(virtual-keyboard-toggle) {
 .calculator-fab-close:hover {
   background: rgba(255, 255, 255, 0.3);
 }
+
+/* #endregion */
+
+/* #region Input & output fields */
 
 math-field.pl-calculator-input {
   height: auto;
@@ -135,6 +146,10 @@ math-field.pl-calculator-output {
 math-field.pl-calculator-output:focus {
   outline: none;
 }
+
+/* #endregion */
+
+/* #region History panel */
 
 .history-panel {
   height: 150px;
@@ -196,6 +211,61 @@ math-field.history-text:focus {
   height: 1em;
 }
 
+/* #endregion */
+
+/* #region Keyboard layout */
+
+.calculator-main {
+  container-type: inline-size;
+  container-name: calculator;
+}
+
+.toggle-label {
+  font-size: 0.85rem;
+}
+
+/* Hide abc and func keyboards by default, show only main */
+#abc-keyboard,
+#func-keyboard {
+  display: none;
+}
+
+#main-keyboard {
+  display: flex;
+}
+
+/* Shared keyboard dimensions */
+#main-keyboard,
+#abc-keyboard,
+#func-keyboard {
+  height: 200px;
+  gap: 5px;
+  padding: 5px;
+}
+
+/* Make button rows stretch to fill available height */
+.btn-row {
+  flex: 1;
+}
+
+/* Don't stretch action column buttons in func keyboard */
+#func-keyboard .col-action {
+  align-self: start;
+}
+
+/* #endregion */
+
+/* #region Keyboard buttons */
+
+#main-keyboard .btn,
+#func-keyboard .btn {
+  min-width: 50px;
+  flex: 1;
+  margin: 3px;
+  font-size: 1rem;
+  white-space: nowrap;
+}
+
 #abc-keyboard .btn {
   width: 9%;
   max-width: 55px;
@@ -217,54 +287,6 @@ math-field.history-text:focus {
   align-items: stretch;
 }
 
-.calculator-main {
-  container-type: inline-size;
-  container-name: calculator;
-}
-
-.toggle-label {
-  font-size: 0.85rem;
-}
-
-/* Hide abc and func keyboards by default, show only main */
-#abc-keyboard,
-#func-keyboard {
-  display: none;
-}
-
-/* Shared keyboard layout: when shown via JS (display: flex), these apply */
-#main-keyboard,
-#abc-keyboard,
-#func-keyboard {
-  height: 200px;
-  gap: 5px;
-  padding: 5px;
-}
-
-#main-keyboard {
-  display: flex;
-}
-
-/* Make button rows stretch to fill available height */
-.btn-row {
-  flex: 1;
-}
-
-/* Don't stretch action column buttons in func keyboard */
-#func-keyboard .col-action {
-  align-self: start;
-}
-
-/* Keyboard button base styles */
-#main-keyboard .btn,
-#func-keyboard .btn {
-  min-width: 50px;
-  flex: 1;
-  margin: 3px;
-  font-size: 1rem;
-  white-space: nowrap;
-}
-
 /* Chevron navigation buttons */
 .col-nav {
   display: none;
@@ -284,6 +306,10 @@ math-field.history-text:focus {
   background: var(--bs-secondary-bg);
   color: var(--bs-body-color);
 }
+
+/* #endregion */
+
+/* #region Keyboard column sizing & responsive breakpoints */
 
 #main-keyboard .col-functions,
 #main-keyboard .col-numbers {
@@ -354,3 +380,5 @@ math-field.history-text:focus {
     display: flex;
   }
 }
+
+/* #endregion */
