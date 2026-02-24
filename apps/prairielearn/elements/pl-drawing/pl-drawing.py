@@ -16,6 +16,21 @@ ALLOW_BLANK_DEFAULT = False
 SHOW_SCORE_DEFAULT = False
 
 
+def _blank_score(weight: int) -> dict:
+    """Build a partial_scores entry for a blank submission (score 0)."""
+    return {
+        "score": 0.0,
+        "weight": weight,
+        "feedback": {
+            "correct": False,
+            "partial": False,
+            "incorrect": True,
+            "missing": {},
+            "matches": {},
+        },
+    }
+
+
 def union_drawing_items(e1: list[dict] | None, e2: list[dict] | None) -> list[dict]:
     # Union two sets of drawing items, prioritizing e2 in cases of duplicates.
 
@@ -30,9 +45,9 @@ def union_drawing_items(e1: list[dict] | None, e2: list[dict] | None) -> list[di
         obj2 = []
 
     if len(obj1) == 0:
-        return e2
+        return obj2
     if len(obj2) == 0:
-        return e1
+        return obj1
 
     new_ids = [item["id"] for item in obj2]
 
@@ -74,14 +89,14 @@ def prepare(element_html: str, data: pl.QuestionData) -> None:
         element, "gradable", defaults.element_defaults["gradable"]
     )
 
-    weight = pl.get_integer_attrib(element, "weight", WEIGHT_DEFAULT)
-    if weight < 0:
-        raise ValueError('Attribute "weight" must be a non-negative integer')
-
     load_extensions(data)
 
     # Some preparation for elements with grading component
     if gradable:
+        weight = pl.get_integer_attrib(element, "weight", WEIGHT_DEFAULT)
+        if weight < 0:
+            raise ValueError('Attribute "weight" must be a non-negative integer')
+
         name = pl.get_string_attrib(element, "answers-name", None)
         if name is None:
             raise ValueError("answers-name is required if gradable mode is enabled")
@@ -369,9 +384,7 @@ def render(element_html: str, data: pl.QuestionData) -> str:
     elif data["panel"] == "answer" and name in data["correct_answers"]:
         html_params["input_answer"] = json.dumps(data["correct_answers"].get(name, []))
     else:
-        sub = []
-        if name in data["submitted_answers"]:
-            sub = data["submitted_answers"][name]
+        sub = data["submitted_answers"].get(name) or []
         items = union_drawing_items(init, sub)
         html_params["input_answer"] = json.dumps(items)
 
@@ -385,6 +398,7 @@ def render(element_html: str, data: pl.QuestionData) -> str:
             if score is not None:
                 score_type, score_value = pl.determine_score_params(score)
                 html_params[score_type] = score_value
+
     return chevron.render(template, html_params).strip()
 
 
@@ -427,7 +441,6 @@ def parse(element_html: str, data: pl.QuestionData) -> None:
     except (json.JSONDecodeError, KeyError, TypeError):
         data["submitted_answers"][name] = None
 
-        # This shouldn't happen, but we will handle it just in case
         if allow_blank:
             return
 
@@ -467,17 +480,7 @@ def grade(element_html: str, data: pl.QuestionData) -> None:
 
     if not isinstance(student, list) or len(student) == 0:
         if allow_blank:
-            data["partial_scores"][name] = {
-                "score": 0.0,
-                "weight": weight,
-                "feedback": {
-                    "correct": False,
-                    "partial": False,
-                    "incorrect": True,
-                    "missing": {},
-                    "matches": {},
-                },
-            }
+            data["partial_scores"][name] = _blank_score(weight)
             return
         else:
             data["format_errors"][name] = defaults.no_submission_error
@@ -547,17 +550,7 @@ def grade(element_html: str, data: pl.QuestionData) -> None:
     # expect at least one graded reference object.
     if num_total_st == 0 and num_total_ref > 0:
         if allow_blank:
-            data["partial_scores"][name] = {
-                "score": 0.0,
-                "weight": weight,
-                "feedback": {
-                    "correct": False,
-                    "partial": False,
-                    "incorrect": True,
-                    "missing": {},
-                    "matches": {},
-                },
-            }
+            data["partial_scores"][name] = _blank_score(weight)
             return
         else:
             data["format_errors"][name] = defaults.no_submission_error
@@ -576,14 +569,14 @@ def grade(element_html: str, data: pl.QuestionData) -> None:
         else:
             score = percent_correct
 
-    score_type, score_value = pl.determine_score_params(score)
+    score_type, _ = pl.determine_score_params(score)
     data["partial_scores"][name] = {
         "score": score,
         "weight": weight,
         "feedback": {
             "correct": score_type == "correct",
+            "partial": score_type == "partial",
             "incorrect": score_type == "incorrect",
-            "partial": score_value if score_type == "partial" else False,
             "missing": {},
             "matches": matches,
         },
@@ -706,19 +699,8 @@ def test(element_html: str, data: pl.ElementTestData) -> None:
     elif result == "invalid":
         allow_blank = pl.get_boolean_attrib(element, "allow-blank", ALLOW_BLANK_DEFAULT)
         if allow_blank:
-            # When allow-blank is true, blank submissions score 0 instead of format error
             data["raw_submitted_answers"][name] = "[]"
-            data["partial_scores"][name] = {
-                "score": 0,
-                "weight": weight,
-                "feedback": {
-                    "correct": False,
-                    "partial": False,
-                    "incorrect": True,
-                    "missing": {},
-                    "matches": {},
-                },
-            }
+            data["partial_scores"][name] = _blank_score(weight)
         else:
             data["format_errors"][name] = ""
             data["raw_submitted_answers"][name] = "invalid submission"

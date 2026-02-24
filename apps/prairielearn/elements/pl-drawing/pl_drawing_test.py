@@ -59,31 +59,19 @@ def test_weight_validation_negative_raises_error() -> None:
         pl_drawing.prepare(element_html, data)
 
 
-def test_weight_validation_zero_is_valid() -> None:
-    """Zero weight should be valid (no error)."""
-    element_html = build_element_html(weight=0)
+@pytest.mark.parametrize("weight", [0, 1, 5])
+def test_weight_validation_valid_values(weight: int) -> None:
+    """Non-negative weight values should not raise a weight validation error."""
+    element_html = build_element_html(weight=weight)
     data = make_question_data()
 
-    # Should not raise - prepare needs more setup to fully work,
-    # but weight validation happens early
+    # prepare() will raise other errors (missing answer elements, etc.)
+    # but should not raise a weight validation error
     try:
         pl_drawing.prepare(element_html, data)
     except ValueError as e:
         if "non-negative" in str(e):
-            pytest.fail("weight=0 should be valid")
-        # Other errors are OK (missing answer elements, etc.)
-
-
-def test_weight_validation_positive_is_valid() -> None:
-    """Positive weight should be valid."""
-    element_html = build_element_html(weight=5)
-    data = make_question_data()
-
-    try:
-        pl_drawing.prepare(element_html, data)
-    except ValueError as e:
-        if "non-negative" in str(e):
-            pytest.fail("weight=5 should be valid")
+            pytest.fail(f"weight={weight} should be valid")
 
 
 # =============================================================================
