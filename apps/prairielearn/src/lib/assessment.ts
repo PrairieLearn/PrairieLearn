@@ -7,10 +7,7 @@ import * as error from '@prairielearn/error';
 import * as sqldb from '@prairielearn/postgres';
 import { DateFromISOString, IdSchema } from '@prairielearn/zod';
 
-import {
-  flagSelfModifiedAssessmentInstance,
-  selectAndLockAssessmentInstance,
-} from '../models/assessment-instance.js';
+import { selectAndLockAssessmentInstance } from '../models/assessment-instance.js';
 import { selectAssessmentInfoForJob } from '../models/assessment.js';
 
 import {
@@ -466,21 +463,13 @@ export async function setAssessmentInstanceScore(
     if (result == null) {
       throw new error.HttpStatusError(404, 'Assessment instance not found');
     }
-    const { assessment_instance: assessmentInstance, assessment } = result;
+    const { assessment_instance: assessmentInstance } = result;
     const points = (score_perc * (assessmentInstance.max_points ?? 0)) / 100;
     await sqldb.execute(sql.update_assessment_instance_score, {
       assessment_instance_id,
       score_perc,
       points,
       authn_user_id,
-    });
-
-    await flagSelfModifiedAssessmentInstance({
-      assessmentInstanceId: assessment_instance_id,
-      assessmentInstanceUserId: assessmentInstance.user_id,
-      assessmentInstanceGroupId: assessmentInstance.team_id,
-      courseInstanceId: assessment.course_instance_id,
-      authnUserId: authn_user_id,
     });
   });
 }
@@ -495,7 +484,7 @@ export async function setAssessmentInstancePoints(
     if (result == null) {
       throw new error.HttpStatusError(404, 'Assessment instance not found');
     }
-    const { assessment_instance: assessmentInstance, assessment } = result;
+    const { assessment_instance: assessmentInstance } = result;
     const score_perc =
       (points /
         (assessmentInstance.max_points != null && assessmentInstance.max_points > 0
@@ -507,14 +496,6 @@ export async function setAssessmentInstancePoints(
       score_perc,
       points,
       authn_user_id,
-    });
-
-    await flagSelfModifiedAssessmentInstance({
-      assessmentInstanceId: assessment_instance_id,
-      assessmentInstanceUserId: assessmentInstance.user_id,
-      assessmentInstanceGroupId: assessmentInstance.team_id,
-      courseInstanceId: assessment.course_instance_id,
-      authnUserId: authn_user_id,
     });
   });
 }

@@ -102,15 +102,25 @@ WHERE
   id = $id
 FOR NO KEY UPDATE;
 
--- BLOCK select_and_lock_joined_enrollment_by_course_instance_and_user
+-- BLOCK select_and_lock_enrollment_for_staff_permissions
 SELECT
-  *
+  e.*
 FROM
-  enrollments
+  enrollments AS e
 WHERE
-  course_instance_id = $course_instance_id
-  AND user_id = $user_id
-  AND status = 'joined'
+  e.course_instance_id = $course_instance_id
+  AND (
+    e.user_id = $user_id
+    OR e.pending_uid = (
+      SELECT
+        u.uid
+      FROM
+        users AS u
+      WHERE
+        u.id = $user_id
+    )
+  )
+  AND e.status IN ('joined', 'blocked', 'invited', 'rejected')
 FOR NO KEY UPDATE;
 
 -- BLOCK set_enrollment_status
@@ -141,7 +151,7 @@ WITH
     WHERE
       ci.course_id = $course_id
       AND e.user_id = ANY ($user_ids::bigint[])
-      AND e.status = 'joined'
+      AND e.status IN ('joined', 'blocked')
     FOR NO KEY UPDATE OF
       e
   ),
@@ -163,3 +173,45 @@ SELECT
 FROM
   old_enrollments AS oe
   JOIN updated_enrollments AS ue ON (oe.id = ue.id);
+
+-- BLOCK delete_enrollments_for_course_batch
+WITH
+  enrollments_to_delete AS (
+    SELECT
+      e.*,
+      ci.course_id AS ci_course_id
+    FROM
+      enrollments AS e
+      JOIN course_instances AS ci ON (ci.id = e.course_instance_id)
+    WHERE
+      ci.course_id = $course_id
+      AND (
+        e.user_id = ANY ($user_ids::bigint[])
+        OR e.pending_uid IN (
+          SELECT
+            u.uid
+          FROM
+            users AS u
+          WHERE
+            u.id = ANY ($user_ids::bigint[])
+        )
+      )
+      AND e.status IN ('invited', 'rejected')
+    FOR NO KEY UPDATE OF
+      e
+  ),
+  deleted_enrollments AS (
+    DELETE FROM enrollments AS e USING enrollments_to_delete AS etd
+    WHERE
+      e.id = etd.id
+    RETURNING
+      e.*
+  )
+SELECT
+  to_jsonb(etd.*) AS old_enrollment,
+  etd.ci_course_id AS course_id,
+  COALESCE(etd.user_id, u.id)::bigint AS resolved_user_id
+FROM
+  enrollments_to_delete AS etd
+  JOIN deleted_enrollments AS de ON (etd.id = de.id)
+  LEFT JOIN users AS u ON (u.uid = etd.pending_uid);
