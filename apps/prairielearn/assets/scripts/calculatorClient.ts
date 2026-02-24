@@ -186,7 +186,15 @@ export function initCalculator(storageKey: string, { drawer, fab, fabClose }: Dr
       void copyToClipboard(evaluated.toString());
     };
 
-    const data: CalculatorLocalData = JSON.parse(localStorage.getItem(storageKey)!);
+    const data: CalculatorLocalData = JSON.parse(
+      localStorage.getItem(storageKey) ??
+        JSON.stringify({
+          ans: null,
+          variable: [],
+          history: [],
+          temp_input: null,
+        }),
+    );
     // Add to history
     if (!error && addToHistory) {
       const parsedJson = parsed.json;
