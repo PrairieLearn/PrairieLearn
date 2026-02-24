@@ -1,8 +1,6 @@
 import importlib
 import json
 
-import pytest
-
 pl_drawing = importlib.import_module("pl-drawing")
 
 
@@ -41,28 +39,6 @@ def make_question_data(
         "partial_scores": partial_scores or {},
         "extensions": {},
     }
-
-
-def test_weight_validation_negative_raises_error() -> None:
-    element_html = build_element_html(weight=-1)
-    data = make_question_data()
-
-    with pytest.raises(ValueError, match="non-negative integer"):
-        pl_drawing.prepare(element_html, data)
-
-
-@pytest.mark.parametrize("weight", [0, 1, 5])
-def test_weight_validation_valid_values(weight: int) -> None:
-    element_html = build_element_html(weight=weight)
-    data = make_question_data()
-
-    # prepare() will raise other errors (missing answer elements, etc.)
-    # but should not raise a weight validation error
-    try:
-        pl_drawing.prepare(element_html, data)
-    except ValueError as e:
-        if "non-negative" in str(e):
-            pytest.fail(f"weight={weight} should be valid")
 
 
 def test_parse_blank_submission_without_allow_blank_sets_error() -> None:

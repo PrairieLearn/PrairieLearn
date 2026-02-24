@@ -90,10 +90,6 @@ def prepare(element_html: str, data: pl.QuestionData) -> None:
 
     # Some preparation for elements with grading component
     if gradable:
-        weight = pl.get_integer_attrib(element, "weight", WEIGHT_DEFAULT)
-        if weight < 0:
-            raise ValueError('Attribute "weight" must be a non-negative integer')
-
         name = pl.get_string_attrib(element, "answers-name", None)
         if name is None:
             raise ValueError("answers-name is required if gradable mode is enabled")
