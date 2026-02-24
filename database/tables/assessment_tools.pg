@@ -1,5 +1,5 @@
 columns
-    assessment_id: bigint
+    assessment_id: bigint not null
     enabled: boolean not null default true
     id: bigint not null default nextval('assessment_tools_id_seq'::regclass)
     settings: jsonb not null default '{}'::jsonb
