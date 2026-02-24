@@ -6,14 +6,20 @@ import { ZodError, z } from 'zod';
 
 import {
   callOptionalRow,
+  callOptionalScalar,
   callRow,
   callRows,
+  callScalar,
+  callScalars,
   execute,
   queryAsync,
   queryCursor,
   queryOptionalRow,
+  queryOptionalScalar,
   queryRow,
   queryRows,
+  queryScalar,
+  queryScalars,
 } from './default-pool.js';
 import { makePostgresTestUtils } from './test-utils.js';
 
@@ -82,9 +88,12 @@ describe('@prairielearn/postgres', function () {
 
   describe('queryRows', () => {
     it('handles single column', async () => {
-      const rows = await queryRows('SELECT id FROM workspaces WHERE id <= 10;', z.string());
+      const rows = await queryRows(
+        'SELECT id FROM workspaces WHERE id <= 10;',
+        z.object({ id: z.string() }),
+      );
       assert.lengthOf(rows, 10);
-      assert.equal(rows[0], '1');
+      assert.equal(rows[0].id, '1');
     });
 
     it('handles multiple columns', async () => {
@@ -106,8 +115,11 @@ describe('@prairielearn/postgres', function () {
 
   describe('queryRow', () => {
     it('handles single column', async () => {
-      const row = await queryRow('SELECT id FROM workspaces WHERE id = 1;', z.string());
-      assert.equal(row, '1');
+      const row = await queryRow(
+        'SELECT id FROM workspaces WHERE id = 1;',
+        z.object({ id: z.string() }),
+      );
+      assert.equal(row.id, '1');
     });
 
     it('handles multiple columns', async () => {
@@ -134,8 +146,11 @@ describe('@prairielearn/postgres', function () {
 
   describe('queryOptionalRow', () => {
     it('handles single column', async () => {
-      const row = await queryRow('SELECT id FROM workspaces WHERE id = 1;', z.string());
-      assert.equal(row, '1');
+      const row = await queryRow(
+        'SELECT id FROM workspaces WHERE id = 1;',
+        z.object({ id: z.string() }),
+      );
+      assert.equal(row.id, '1');
     });
 
     it('handles multiple columns', async () => {
@@ -171,15 +186,15 @@ describe('@prairielearn/postgres', function () {
 
   describe('callRows', () => {
     it('handles single column', async () => {
-      const rows = await callRows('test_sproc_one_column_ten_rows', z.string());
+      const rows = await callRows('test_sproc_one_column_ten_rows', z.object({ id: z.string() }));
       assert.lengthOf(rows, 10);
-      assert.equal(rows[0], '1');
+      assert.equal(rows[0].id, '1');
     });
 
     it('handles parameters', async () => {
-      const rows = await callRows('test_sproc_one_column', [10], z.string());
+      const rows = await callRows('test_sproc_one_column', [10], z.object({ id: z.string() }));
       assert.lengthOf(rows, 10);
-      assert.equal(rows[0], '1');
+      assert.equal(rows[0].id, '1');
     });
 
     it('handles multiple columns', async () => {
@@ -194,13 +209,13 @@ describe('@prairielearn/postgres', function () {
 
   describe('callRow', () => {
     it('handles single column', async () => {
-      const row = await callRow('test_sproc_one_column_one_row', z.string());
-      assert.equal(row, '1');
+      const row = await callRow('test_sproc_one_column_one_row', z.object({ id: z.string() }));
+      assert.equal(row.id, '1');
     });
 
     it('handles parameters', async () => {
-      const row = await callRow('test_sproc_one_column', [1], z.string());
-      assert.equal(row, '1');
+      const row = await callRow('test_sproc_one_column', [1], z.object({ id: z.string() }));
+      assert.equal(row.id, '1');
     });
 
     it('handles multiple columns', async () => {
@@ -222,13 +237,16 @@ describe('@prairielearn/postgres', function () {
 
   describe('callOptionalRow', () => {
     it('handles single column', async () => {
-      const row = await callOptionalRow('test_sproc_one_column_one_row', z.string());
-      assert.equal(row, '1');
+      const row = await callOptionalRow(
+        'test_sproc_one_column_one_row',
+        z.object({ id: z.string() }),
+      );
+      assert.equal(row?.id, '1');
     });
 
     it('handles parameters', async () => {
-      const row = await callOptionalRow('test_sproc_one_column', [1], z.string());
-      assert.equal(row, '1');
+      const row = await callOptionalRow('test_sproc_one_column', [1], z.object({ id: z.string() }));
+      assert.equal(row?.id, '1');
     });
 
     it('handles multiple columns', async () => {
@@ -249,14 +267,173 @@ describe('@prairielearn/postgres', function () {
     });
   });
 
+  describe('queryScalars', () => {
+    it('returns all scalar values', async () => {
+      const ids = await queryScalars(
+        'SELECT id FROM workspaces WHERE id <= 10 ORDER BY id ASC;',
+        z.string(),
+      );
+      assert.lengthOf(ids, 10);
+      assert.equal(ids[0], '1');
+      assert.equal(ids[9], '10');
+    });
+
+    it('handles parameters', async () => {
+      const ids = await queryScalars(
+        'SELECT id FROM workspaces WHERE id <= $1 ORDER BY id ASC;',
+        [5],
+        z.string(),
+      );
+      assert.lengthOf(ids, 5);
+    });
+
+    it('rejects multi-column queries', async () => {
+      const result = queryScalars('SELECT * FROM workspaces WHERE id <= 10;', z.string());
+      await expect(result).rejects.toThrow('Expected exactly one column');
+    });
+  });
+
+  describe('queryScalar', () => {
+    it('returns a single scalar value', async () => {
+      const id = await queryScalar('SELECT id FROM workspaces WHERE id = 1;', z.string());
+      assert.equal(id, '1');
+    });
+
+    it('handles parameters', async () => {
+      const id = await queryScalar('SELECT id FROM workspaces WHERE id = $1;', [1], z.string());
+      assert.equal(id, '1');
+    });
+
+    it('rejects results with zero rows', async () => {
+      const result = queryScalar('SELECT id FROM workspaces WHERE id = -1;', z.string());
+      await expect(result).rejects.toThrow('Incorrect rowCount: 0');
+    });
+
+    it('rejects results with multiple rows', async () => {
+      const result = queryScalar('SELECT id FROM workspaces;', z.string());
+      await expect(result).rejects.toThrow('Incorrect rowCount: 100');
+    });
+
+    it('rejects multi-column queries', async () => {
+      const result = queryScalar('SELECT * FROM workspaces WHERE id = 1;', z.string());
+      await expect(result).rejects.toThrow('Expected exactly one column');
+    });
+  });
+
+  describe('queryOptionalScalar', () => {
+    it('returns a scalar value when present', async () => {
+      const id = await queryOptionalScalar('SELECT id FROM workspaces WHERE id = 1;', z.string());
+      assert.equal(id, '1');
+    });
+
+    it('handles parameters', async () => {
+      const id = await queryOptionalScalar(
+        'SELECT id FROM workspaces WHERE id = $1;',
+        [1],
+        z.string(),
+      );
+      assert.equal(id, '1');
+    });
+
+    it('returns null for zero rows', async () => {
+      const id = await queryOptionalScalar('SELECT id FROM workspaces WHERE id = -1;', z.string());
+      assert.isNull(id);
+    });
+
+    it('rejects results with multiple rows', async () => {
+      const result = queryOptionalScalar('SELECT id FROM workspaces;', z.string());
+      await expect(result).rejects.toThrow('Incorrect rowCount: 100');
+    });
+
+    it('rejects multi-column queries', async () => {
+      const result = queryOptionalScalar('SELECT * FROM workspaces WHERE id = 1;', z.string());
+      await expect(result).rejects.toThrow('Expected exactly one column');
+    });
+  });
+
+  describe('callScalars', () => {
+    it('returns all scalar values', async () => {
+      const ids = await callScalars('test_sproc_one_column', [10], z.string());
+      assert.lengthOf(ids, 10);
+      assert.equal(ids[0], '1');
+    });
+
+    it('handles no parameters', async () => {
+      const ids = await callScalars('test_sproc_one_column_ten_rows', z.string());
+      assert.lengthOf(ids, 10);
+    });
+
+    it('rejects multi-column sprocs', async () => {
+      const result = callScalars('test_sproc_two_columns', [10], z.string());
+      await expect(result).rejects.toThrow('Expected exactly one column');
+    });
+  });
+
+  describe('callScalar', () => {
+    it('returns a single scalar value', async () => {
+      const id = await callScalar('test_sproc_one_column_one_row', z.string());
+      assert.equal(id, '1');
+    });
+
+    it('handles parameters', async () => {
+      const id = await callScalar('test_sproc_one_column', [1], z.string());
+      assert.equal(id, '1');
+    });
+
+    it('rejects results with zero rows', async () => {
+      const result = callScalar('test_sproc_one_column', [0], z.string());
+      await expect(result).rejects.toThrow('Incorrect rowCount: 0');
+    });
+
+    it('rejects results with multiple rows', async () => {
+      const result = callScalar('test_sproc_one_column', [100], z.string());
+      await expect(result).rejects.toThrow('Incorrect rowCount: 100');
+    });
+
+    it('rejects multi-column sprocs', async () => {
+      const result = callScalar('test_sproc_two_columns', [1], z.string());
+      await expect(result).rejects.toThrow('Expected exactly one column');
+    });
+  });
+
+  describe('callOptionalScalar', () => {
+    it('returns a scalar value when present', async () => {
+      const id = await callOptionalScalar('test_sproc_one_column_one_row', z.string());
+      assert.equal(id, '1');
+    });
+
+    it('handles parameters', async () => {
+      const id = await callOptionalScalar('test_sproc_one_column', [1], z.string());
+      assert.equal(id, '1');
+    });
+
+    it('returns null for zero rows', async () => {
+      const id = await callOptionalScalar('test_sproc_one_column', [0], z.string());
+      assert.isNull(id);
+    });
+
+    it('rejects results with multiple rows', async () => {
+      const result = callOptionalScalar('test_sproc_one_column', [100], z.string());
+      await expect(result).rejects.toThrow('Incorrect rowCount: 100');
+    });
+
+    it('rejects multi-column sprocs', async () => {
+      const result = callOptionalScalar('test_sproc_two_columns', [1], z.string());
+      await expect(result).rejects.toThrow('Expected exactly one column');
+    });
+  });
+
   describe('queryCursor', () => {
     it('handles single column', async () => {
-      const cursor = await queryCursor('SELECT id FROM workspaces WHERE id = 1;', z.string());
-      const allRows: string[] = [];
+      const cursor = await queryCursor(
+        'SELECT id FROM workspaces WHERE id = 1;',
+        z.object({ id: z.string() }),
+      );
+      const allRows: { id: string }[] = [];
       for await (const rows of cursor.iterate(10)) {
         allRows.push(...rows);
       }
-      assert.equal(allRows[0], '1');
+      assert.equal(allRows[0].id, '1');
     });
 
     it('handles multiple columns', async () => {
@@ -269,7 +446,10 @@ describe('@prairielearn/postgres', function () {
       assert.isNotNull(allRows[0].created_at);
     });
     it('returns zero rows', async () => {
-      const cursor = await queryCursor('SELECT * FROM workspaces WHERE id = 10000;', z.unknown());
+      const cursor = await queryCursor(
+        'SELECT * FROM workspaces WHERE id = 10000;',
+        z.object({}).passthrough(),
+      );
       const rowBatches = [];
       for await (const rows of cursor.iterate(10)) {
         rowBatches.push(rows);
@@ -278,7 +458,10 @@ describe('@prairielearn/postgres', function () {
     });
 
     it('returns one row at a time', async () => {
-      const cursor = await queryCursor('SELECT * FROM workspaces WHERE id <= 2;', z.unknown());
+      const cursor = await queryCursor(
+        'SELECT * FROM workspaces WHERE id <= 2;',
+        z.object({}).passthrough(),
+      );
       const rowBatches = [];
       for await (const rows of cursor.iterate(1)) {
         rowBatches.push(rows);
@@ -289,7 +472,10 @@ describe('@prairielearn/postgres', function () {
     });
 
     it('returns all rows at once', async () => {
-      const cursor = queryCursor('SELECT * FROM workspaces WHERE id <= 10;', z.unknown());
+      const cursor = queryCursor(
+        'SELECT * FROM workspaces WHERE id <= 10;',
+        z.object({}).passthrough(),
+      );
       const rowBatches = [];
       for await (const rows of (await cursor).iterate(10)) {
         rowBatches.push(rows);
@@ -299,7 +485,7 @@ describe('@prairielearn/postgres', function () {
     });
 
     it('handles errors', async () => {
-      const cursor = await queryCursor('NOT VALID SQL', z.unknown());
+      const cursor = await queryCursor('NOT VALID SQL', z.object({}).passthrough());
 
       async function readAllRows() {
         const allRows = [];

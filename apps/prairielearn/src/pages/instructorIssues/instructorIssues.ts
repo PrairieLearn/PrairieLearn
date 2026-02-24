@@ -6,7 +6,13 @@ import { z } from 'zod';
 
 import { HttpStatusError } from '@prairielearn/error';
 import { flash } from '@prairielearn/flash';
-import { loadSqlEquiv, queryOptionalRow, queryRow, queryRows } from '@prairielearn/postgres';
+import {
+  loadSqlEquiv,
+  queryOptionalScalar,
+  queryRows,
+  queryScalar,
+  queryScalars,
+} from '@prairielearn/postgres';
 import { IdSchema } from '@prairielearn/zod';
 
 import { extractPageContext } from '../../lib/client/page-context.js';
@@ -107,12 +113,12 @@ async function updateIssueOpen(
   course_id: string,
   authn_user_id: string,
 ) {
-  const updated_issue_id = await queryOptionalRow(
+  const result = await queryOptionalScalar(
     sql.update_issue_open,
     { issue_id, new_open, course_id, authn_user_id },
     IdSchema,
   );
-  if (!updated_issue_id) {
+  if (!result) {
     throw new HttpStatusError(
       403,
       `Unable to ${new_open ? 'open' : 'close'} issue ${issue_id}: issue does not exist in this course.`,
@@ -130,7 +136,7 @@ router.get(
       accessType: 'instructor',
     });
 
-    const [closedCount, openCount] = await queryRows(
+    const [closedCount, openCount] = await queryScalars(
       sql.issues_count,
       { course_id: course.id },
       z.number(),
@@ -248,7 +254,7 @@ router.post(
       res.redirect(req.originalUrl);
     } else if (req.body.__action === 'close_matching') {
       const issueIds = req.body.unsafe_issue_ids.split(',').filter((id: string) => id !== '');
-      const closedCount = await queryRow(
+      const closedCount = await queryScalar(
         sql.close_issues,
         {
           issue_ids: issueIds,

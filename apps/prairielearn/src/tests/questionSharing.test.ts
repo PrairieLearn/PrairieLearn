@@ -169,7 +169,7 @@ describe('Question Sharing', function () {
       repository: courseRepo.courseOriginDir,
     });
     sharingCourse = await selectCourseById(syncResults.courseId);
-    sharingCourseInstanceId = await sqldb.queryRow(
+    sharingCourseInstanceId = await sqldb.queryScalar(
       sql.select_course_instance,
       { short_name: syncUtil.COURSE_INSTANCE_ID, course_id: sharingCourse.id },
       IdSchema,
@@ -195,7 +195,7 @@ describe('Question Sharing', function () {
     ];
     const consumingCourseResults = await syncUtil.writeAndSyncCourseData(consumingCourseData);
     consumingCourse = await selectCourseById(consumingCourseResults.syncResults.courseId);
-    consumingCourseInstanceId = await sqldb.queryRow(
+    consumingCourseInstanceId = await sqldb.queryScalar(
       sql.select_course_instance,
       { short_name: syncUtil.COURSE_INSTANCE_ID, course_id: consumingCourse.id },
       IdSchema,
@@ -242,7 +242,7 @@ describe('Question Sharing', function () {
         assert(!(await res.text()).includes(SHARING_QUESTION_QID));
 
         // Question can be accessed through the owning course
-        const questionId = await sqldb.queryRow(
+        const questionId = await sqldb.queryScalar(
           sql.get_question_id,
           {
             course_id: sharingCourse.id,
@@ -349,7 +349,7 @@ describe('Question Sharing', function () {
       const sharingUrl = sharingPageUrl(sharingCourse.id);
       const response = await fetchCheerio(sharingUrl);
       const token = response.$('#test_csrf_token').text();
-      const sharingSetId = await sqldb.queryRow(
+      const sharingSetId = await sqldb.queryScalar(
         sql.select_sharing_set,
         { sharing_set_name: SHARING_SET_NAME },
         IdSchema,
@@ -428,7 +428,7 @@ describe('Question Sharing', function () {
     let publiclySharedQuestionId: string;
 
     beforeAll(async () => {
-      publiclySharedQuestionId = await sqldb.queryRow(
+      publiclySharedQuestionId = await sqldb.queryScalar(
         sql.get_question_id,
         {
           course_id: sharingCourse.id,
@@ -509,7 +509,7 @@ describe('Question Sharing', function () {
         'sync should not complete when attempting sync after moving shared question',
       );
 
-      const question_id = await sqldb.queryOptionalRow(
+      const questionId = await sqldb.queryOptionalScalar(
         sql.get_question_id,
         {
           course_id: sharingCourse.id,
@@ -518,7 +518,7 @@ describe('Question Sharing', function () {
         IdSchema,
       );
       assert(
-        question_id !== null,
+        questionId !== null,
         'Sync of consuming course should not allow renaming a shared question.',
       );
       await fs.rename(questionTempPath, questionPath);
@@ -737,7 +737,7 @@ describe('Question Sharing', function () {
     test.sequential(
       'Successfully access publicly shared assessment page for the shared assessment',
       async () => {
-        const sharedAssessmentId = await sqldb.queryRow(
+        const sharedAssessmentId = await sqldb.queryScalar(
           sql.select_assessment,
           { tid: 'test', course_instance_id: sharingCourseInstanceId },
           IdSchema,

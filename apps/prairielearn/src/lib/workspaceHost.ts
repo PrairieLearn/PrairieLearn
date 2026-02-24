@@ -3,9 +3,10 @@ import { z } from 'zod';
 import {
   execute,
   loadSqlEquiv,
-  queryOptionalRow,
+  queryOptionalScalar,
   queryRow,
   queryRows,
+  queryScalar,
 } from '@prairielearn/postgres';
 
 import {
@@ -53,13 +54,15 @@ export async function assignWorkspaceToHost(
   workspace_id: string,
   capacity: number,
 ): Promise<string | null> {
-  return await queryOptionalRow(
-    sql.assign_workspace_to_host,
-    {
-      workspace_id,
-      capacity,
-    },
-    z.string(),
+  return (
+    (await queryOptionalScalar(
+      sql.assign_workspace_to_host,
+      {
+        workspace_id,
+        capacity,
+      },
+      z.string(),
+    )) ?? null
   );
 }
 
@@ -70,7 +73,8 @@ export async function assignWorkspaceToHost(
  * @returns The number of hosts that were recaptured
  */
 export async function recaptureDrainingWorkspaceHosts(needed_hosts: number) {
-  return await queryRow(sql.recapture_draining_hosts, { needed_hosts }, z.number());
+  const result = await queryScalar(sql.recapture_draining_hosts, { needed_hosts }, z.number());
+  return result;
 }
 
 export async function drainExtraWorkspaceHosts(surplus: number) {

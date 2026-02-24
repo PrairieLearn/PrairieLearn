@@ -5,7 +5,7 @@ import z from 'zod';
 
 import { DockerName } from '@prairielearn/docker-utils';
 import { HttpStatusError } from '@prairielearn/error';
-import { loadSqlEquiv, queryOptionalRow, queryRow, queryRows } from '@prairielearn/postgres';
+import { loadSqlEquiv, queryOptionalScalar, queryRows, queryScalar } from '@prairielearn/postgres';
 import { IdSchema } from '@prairielearn/zod';
 
 import { makeAwsClientConfig } from '../../lib/aws.js';
@@ -39,7 +39,7 @@ router.get(
       JobSequenceRowSchema,
     );
 
-    const jobSequenceCount = await queryRow(
+    const jobSequenceCount = await queryScalar(
       sql.count_sync_job_sequences,
       { course_id: res.locals.course.id },
       z.number(),
@@ -127,12 +127,12 @@ router.post(
       const jobSequenceId = await syncHelpers.gitStatus(res.locals);
       res.redirect(`${res.locals.urlPrefix}/jobSequence/${jobSequenceId}`);
     } else if (req.body.__action === 'syncImage') {
-      const questionId = await queryOptionalRow(
+      const result = await queryOptionalScalar(
         sql.check_question_with_image,
         { course_id: res.locals.course.id, image: req.body.single_image },
         IdSchema,
       );
-      if (questionId == null) {
+      if (result == null) {
         throw new HttpStatusError(400, 'Image not found in any question for this course');
       }
       const jobSequenceId = await syncHelpers.ecrUpdate(

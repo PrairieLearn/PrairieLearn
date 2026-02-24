@@ -47,7 +47,7 @@ async function createTestData(): Promise<string> {
   const assessment = await sqldb.queryRow(sql.select_first_assessment, {}, AssessmentInfoSchema);
 
   for (const student of TEST_STUDENTS) {
-    const userId = await sqldb.queryRow(
+    const userId = await sqldb.queryScalar(
       sql.insert_or_update_user,
       { uid: student.uid, name: student.name },
       z.string(),

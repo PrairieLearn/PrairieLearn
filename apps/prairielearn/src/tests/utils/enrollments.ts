@@ -1,7 +1,7 @@
 import fetch from 'node-fetch';
 import { z } from 'zod';
 
-import { queryRow } from '@prairielearn/postgres';
+import { queryScalar } from '@prairielearn/postgres';
 
 // Must be imported so that `config.serverPort` is set.
 import '../helperServer';
@@ -68,8 +68,8 @@ export async function unenrollUser(courseInstanceId: string, user: AuthUser) {
 
 export async function enrollRandomUsers(courseInstanceId: string, count: number) {
   // Get current number of enrolled students.
-  const currentCount = await queryRow(
-    'SELECT COUNT(*)::integer FROM enrollments WHERE course_instance_id = $id',
+  const currentCount = await queryScalar(
+    'SELECT COUNT(*)::integer AS count FROM enrollments WHERE course_instance_id = $id',
     { id: courseInstanceId },
     z.number(),
   );

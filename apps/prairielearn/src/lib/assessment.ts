@@ -63,7 +63,7 @@ export async function checkBelongs(
   assessment_id: string,
 ): Promise<void> {
   if (
-    (await sqldb.queryOptionalRow(
+    (await sqldb.queryOptionalScalar(
       sql.check_belongs,
       { assessment_instance_id, assessment_id },
       IdSchema,
@@ -195,7 +195,7 @@ export async function updateAssessmentInstance(
     }
 
     // Insert any new questions not previously in the assessment instance
-    const newInstanceQuestionIds = await sqldb.queryRows(
+    const newInstanceQuestionIds = await sqldb.queryScalars(
       sql.insert_instance_questions,
       { assessment_instance_id, assessment_id: assessmentInstance.assessment_id, authn_user_id },
       IdSchema,
@@ -427,12 +427,12 @@ export async function gradeAllAssessmentInstances({
 export async function updateAssessmentStatisticsForCourseInstance(
   course_instance_id: string,
 ): Promise<void> {
-  const rows = await sqldb.queryRows(
+  const assessment_ids = await sqldb.queryScalars(
     sql.select_assessments_for_statistics_update,
     { course_instance_id },
     IdSchema,
   );
-  await async.eachLimit(rows, 3, updateAssessmentStatistics);
+  await async.eachLimit(assessment_ids, 3, updateAssessmentStatistics);
 }
 
 /**
@@ -446,7 +446,7 @@ export async function updateAssessmentStatistics(assessment_id: string): Promise
     await sqldb.executeRow(sql.select_assessment_lock, { assessment_id });
 
     // check whether we need to update the statistics
-    const needs_statistics_update = await sqldb.queryRow(
+    const needs_statistics_update = await sqldb.queryScalar(
       sql.select_assessment_needs_statistics_update,
       { assessment_id },
       z.boolean(),
@@ -550,12 +550,12 @@ export async function updateAssessmentQuestionStatsForAssessment(
   assessment_id: string,
 ): Promise<void> {
   await sqldb.runInTransactionAsync(async () => {
-    const assessment_questions = await sqldb.queryRows(
+    const assessment_question_ids = await sqldb.queryScalars(
       sql.select_assessment_questions,
       { assessment_id },
       IdSchema,
     );
-    await async.eachLimit(assessment_questions, 3, updateAssessmentQuestionStats);
+    await async.eachLimit(assessment_question_ids, 3, updateAssessmentQuestionStats);
     await sqldb.execute(sql.update_assessment_stats_last_updated, { assessment_id });
   });
 }
@@ -565,7 +565,7 @@ export async function deleteAssessmentInstance(
   assessment_instance_id: string,
   authn_user_id: string,
 ): Promise<void> {
-  const deleted_id = await sqldb.queryOptionalRow(
+  const deleted_id = await sqldb.queryOptionalScalar(
     sql.delete_assessment_instance,
     { assessment_id, assessment_instance_id, authn_user_id },
     IdSchema,
@@ -589,9 +589,10 @@ export async function deleteAllAssessmentInstancesForAssessment(
 }
 
 export async function selectAssessmentInstanceLastSubmissionDate(assessment_instance_id: string) {
-  return await sqldb.queryRow(
+  const max = await sqldb.queryScalar(
     sql.select_assessment_instance_last_submission_date,
     { assessment_instance_id },
     DateFromISOString.nullable(),
   );
+  return max;
 }

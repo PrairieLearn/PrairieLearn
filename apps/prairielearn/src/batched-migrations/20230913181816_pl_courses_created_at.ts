@@ -3,7 +3,7 @@ import fs from 'fs-extra';
 import { z } from 'zod';
 
 import { makeBatchedMigration } from '@prairielearn/migrations';
-import { executeRow, loadSqlEquiv, queryOptionalRow, queryRow } from '@prairielearn/postgres';
+import { executeRow, loadSqlEquiv, queryOptionalRow, queryScalar } from '@prairielearn/postgres';
 import { DateFromISOString, IdSchema } from '@prairielearn/zod';
 
 const sql = loadSqlEquiv(import.meta.url);
@@ -22,13 +22,13 @@ async function getEarliestCommitDateForCourse(coursePath: string | null): Promis
 }
 
 async function getEarliestJobSequenceDateForCourse(courseId: string): Promise<Date | null> {
-  const result = await queryRow(
+  const min = await queryScalar(
     sql.select_earliest_job_sequence_for_course,
     { course_id: courseId },
     DateFromISOString.nullable(),
   );
 
-  return result;
+  return min;
 }
 
 function smallestDate(first: Date | null, second: Date | null): Date | null {
@@ -43,7 +43,7 @@ function smallestDate(first: Date | null, second: Date | null): Date | null {
 
 export default makeBatchedMigration({
   async getParameters() {
-    const max = await queryRow(
+    const max = await queryScalar(
       'SELECT MAX(id) as max from pl_courses;',
       z.bigint({ coerce: true }).nullable(),
     );

@@ -16,7 +16,7 @@ const sql = sqldb.loadSqlEquiv(import.meta.url);
 router.get(
   '/',
   typedAsyncHandler<'plain'>(async (req, res) => {
-    const networks = await sqldb.queryRow(sql.select, z.array(AdministratorNetworksRowSchema));
+    const networks = await sqldb.queryScalar(sql.select, z.array(AdministratorNetworksRowSchema));
     res.send(AdministratorNetworks({ resLocals: res.locals, networks }));
   }),
 );

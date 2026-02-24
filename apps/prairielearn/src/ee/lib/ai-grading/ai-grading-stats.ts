@@ -2,7 +2,7 @@ import assert from 'node:assert';
 
 import { z } from 'zod';
 
-import { loadSqlEquiv, queryOptionalRow, queryRows } from '@prairielearn/postgres';
+import { loadSqlEquiv, queryOptionalScalar, queryRows } from '@prairielearn/postgres';
 import { DateFromISOString, IdSchema } from '@prairielearn/zod';
 
 import { selectAssessmentQuestions } from '../../../lib/assessment-question.js';
@@ -59,11 +59,12 @@ export async function fillInstanceQuestionColumnEntries<
   rows: T[],
   assessment_question: AssessmentQuestion,
 ): Promise<FillInstanceQuestionColumnEntriesResultType<T>[]> {
-  const rubric_modify_time = await queryOptionalRow(
-    sql.select_rubric_time,
-    { rubric_id: assessment_question.manual_rubric_id },
-    DateFromISOString,
-  );
+  const rubric_modify_time =
+    (await queryOptionalScalar(
+      sql.select_rubric_time,
+      { rubric_id: assessment_question.manual_rubric_id },
+      DateFromISOString,
+    )) ?? null;
 
   const gradingJobMapping = await selectGradingJobsInfo(rows.map((row) => row.instance_question));
 

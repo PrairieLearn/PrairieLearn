@@ -1,7 +1,7 @@
 import { z } from 'zod';
 
 import { logger } from '@prairielearn/logger';
-import { execute, executeRow, loadSqlEquiv, queryRow, queryRows } from '@prairielearn/postgres';
+import { execute, executeRow, loadSqlEquiv, queryRows, queryScalar } from '@prairielearn/postgres';
 import * as Sentry from '@prairielearn/sentry';
 import { DateFromISOString, IdSchema } from '@prairielearn/zod';
 
@@ -144,7 +144,7 @@ export async function insertCourseRequest({
   institution: string | null;
   referral_source: string | null;
 }): Promise<string> {
-  return await queryRow(
+  const id = await queryScalar(
     sql.insert_course_request,
     {
       short_name,
@@ -159,6 +159,7 @@ export async function insertCourseRequest({
     },
     IdSchema,
   );
+  return id;
 }
 
 export async function updateCourseRequestNote({

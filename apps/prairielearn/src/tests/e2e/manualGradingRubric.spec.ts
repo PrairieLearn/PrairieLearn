@@ -77,7 +77,7 @@ test.describe('Manual grading rubric submission panel update', () => {
 
     await page.context().clearCookies();
 
-    const iqId = await sqldb.queryRow(
+    const iqId = await sqldb.queryScalar(
       sql.select_instance_question_for_manual_grading,
       { assessment_id: assessmentId, qid: 'manualGrade/codeUpload' },
       IdSchema,

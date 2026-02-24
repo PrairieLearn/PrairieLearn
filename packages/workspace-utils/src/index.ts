@@ -8,7 +8,7 @@ import { filesize } from 'filesize';
 import type { Server as SocketIOServer } from 'socket.io';
 
 import { contains } from '@prairielearn/path-utils';
-import { execute, loadSqlEquiv, queryOneRowAsync, queryRow } from '@prairielearn/postgres';
+import { execute, loadSqlEquiv, queryOneRowAsync, queryScalar } from '@prairielearn/postgres';
 import { IntervalSchema } from '@prairielearn/zod';
 
 const sql = loadSqlEquiv(import.meta.url);
@@ -66,7 +66,7 @@ export async function updateWorkspaceState(
   message = '',
 ): Promise<void> {
   // TODO: add locking
-  const duration_milliseconds = await queryRow(
+  const duration_milliseconds = await queryScalar(
     sql.update_workspace_state,
     { workspace_id, state, message },
     IntervalSchema,

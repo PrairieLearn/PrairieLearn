@@ -303,28 +303,30 @@ async function getAssessmentInstanceId(record: Record<string, any>, assessment_i
   if (record.uid != null) {
     return {
       id: record.uid,
-      assessment_instance_id: await sqldb.queryOptionalRow(
-        sql.select_assessment_instance_uid,
-        {
-          assessment_id,
-          uid: record.uid,
-          instance_number: record.instance,
-        },
-        IdSchema,
-      ),
+      assessment_instance_id:
+        (await sqldb.queryOptionalScalar(
+          sql.select_assessment_instance_uid,
+          {
+            assessment_id,
+            uid: record.uid,
+            instance_number: record.instance,
+          },
+          IdSchema,
+        )) ?? null,
     };
   } else if (record.group_name != null) {
     return {
       id: record.group_name,
-      assessment_instance_id: await sqldb.queryOptionalRow(
-        sql.select_assessment_instance_group,
-        {
-          assessment_id,
-          group_name: record.group_name,
-          instance_number: record.instance,
-        },
-        IdSchema,
-      ),
+      assessment_instance_id:
+        (await sqldb.queryOptionalScalar(
+          sql.select_assessment_instance_group,
+          {
+            assessment_id,
+            group_name: record.group_name,
+            instance_number: record.instance,
+          },
+          IdSchema,
+        )) ?? null,
     };
   } else {
     throw new Error('"uid" or "group_name" not found');

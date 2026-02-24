@@ -55,7 +55,7 @@ export default function (options = { publicEndpoint: false }) {
 
       const fileName = req.params[0];
 
-      const unsafe_variant_id = await sqldb.queryOptionalRow(
+      const unsafe_variant_id = await sqldb.queryOptionalScalar(
         sql.select_variant_id_by_submission_id,
         { submission_id: req.params.unsafe_submission_id },
         IdSchema,
@@ -82,7 +82,7 @@ export default function (options = { publicEndpoint: false }) {
         publicQuestionPreview: options.publicEndpoint,
       });
 
-      const contents = await sqldb.queryOptionalRow(
+      const fileResult = await sqldb.queryOptionalScalar(
         sql.select_submission_file,
         {
           // We used the submission ID to get and authorize the variant, so the
@@ -93,6 +93,7 @@ export default function (options = { publicEndpoint: false }) {
         z.string().nullable(),
       );
 
+      const contents = fileResult ?? null;
       if (!contents) {
         res.sendStatus(404);
         return;

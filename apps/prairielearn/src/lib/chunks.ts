@@ -136,43 +136,25 @@ export type Chunk =
   | ClientFilesAssessmentChunk
   | QuestionChunk;
 
-const DatabaseChunkSchema = z.intersection(
-  z.object({
-    id: ChunkSchema.shape.id.nullable(),
-    uuid: ChunkSchema.shape.uuid.nullable(),
-  }),
-  z.discriminatedUnion('type', [
-    z.object({
-      type: z.literal('elements'),
-    }),
-    z.object({
-      type: z.literal('elementExtensions'),
-    }),
-    z.object({
-      type: z.literal('clientFilesCourse'),
-    }),
-    z.object({
-      type: z.literal('serverFilesCourse'),
-    }),
-    z.object({
-      type: z.literal('clientFilesCourseInstance'),
-      course_instance_id: IdSchema.nullable(),
-      course_instance_name: z.string(),
-    }),
-    z.object({
-      type: z.literal('clientFilesAssessment'),
-      assessment_id: IdSchema.nullable(),
-      assessment_name: z.string(),
-      course_instance_id: IdSchema.nullable(),
-      course_instance_name: z.string(),
-    }),
-    z.object({
-      type: z.literal('question'),
-      question_id: IdSchema.nullable(),
-      question_name: z.string(),
-    }),
+const DatabaseChunkSchema = z.object({
+  id: ChunkSchema.shape.id.nullable(),
+  uuid: ChunkSchema.shape.uuid.nullable(),
+  type: z.enum([
+    'elements',
+    'elementExtensions',
+    'clientFilesCourse',
+    'serverFilesCourse',
+    'clientFilesCourseInstance',
+    'clientFilesAssessment',
+    'question',
   ]),
-);
+  course_instance_id: IdSchema.nullable().optional(),
+  course_instance_name: z.string().nullable().optional(),
+  assessment_id: IdSchema.nullable().optional(),
+  assessment_name: z.string().nullable().optional(),
+  question_id: IdSchema.nullable().optional(),
+  question_name: z.string().nullable().optional(),
+});
 
 /**
  * {@link DatabaseChunk} objects represent chunks that we've fetched from the
@@ -930,7 +912,7 @@ export async function generateAllChunksForCourseList(course_ids: string[], authn
  */
 async function _generateAllChunksForCourseWithJob(course_id: string, job: ServerJob) {
   job.info(chalk.bold('Looking up course directory'));
-  let courseDir = await sqldb.queryRow(
+  let courseDir = await sqldb.queryScalar(
     sql.select_course_dir,
     { course_id },
     CourseSchema.shape.path,
@@ -980,6 +962,7 @@ const ensureChunk = async (courseId: string, chunk: DatabaseChunk) => {
       relativeTargetPath = chunk.type;
       break;
     case 'clientFilesCourseInstance':
+      assert(chunk.course_instance_name != null);
       relativeTargetPath = path.join(
         'courseInstances',
         chunk.course_instance_name,
@@ -987,6 +970,8 @@ const ensureChunk = async (courseId: string, chunk: DatabaseChunk) => {
       );
       break;
     case 'clientFilesAssessment':
+      assert(chunk.course_instance_name != null);
+      assert(chunk.assessment_name != null);
       relativeTargetPath = path.join(
         'courseInstances',
         chunk.course_instance_name,
@@ -996,6 +981,7 @@ const ensureChunk = async (courseId: string, chunk: DatabaseChunk) => {
       );
       break;
     case 'question':
+      assert(chunk.question_name != null);
       relativeTargetPath = path.join('questions', chunk.question_name);
       break;
     default:
@@ -1195,12 +1181,11 @@ export async function getTemplateQuestionIds(
   question: QuestionWithTemplateDirectory,
 ): Promise<string[]> {
   if (!question.template_directory) return [];
-  const questionIds = await sqldb.queryRows(
+  return await sqldb.queryScalars(
     sql.select_template_question_ids,
     { question_id: question.id },
     IdSchema,
   );
-  return questionIds;
 }
 
 /**

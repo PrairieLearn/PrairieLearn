@@ -177,12 +177,12 @@ async function selectQuestion(
 async function lockAssessmentInstanceForInstanceQuestion(
   instance_question_id: string,
 ): Promise<void> {
-  const assessment_instance_id = await sqldb.queryOptionalRow(
+  const locked_id = await sqldb.queryOptionalScalar(
     sql.select_and_lock_assessment_instance_for_instance_question,
     { instance_question_id },
     IdSchema,
   );
-  if (assessment_instance_id == null) {
+  if (locked_id == null) {
     throw new error.HttpStatusError(404, 'Instance question not found');
   }
 }
@@ -286,11 +286,12 @@ async function makeAndInsertVariant({
       real_user_id = instance_question.user_id;
       real_group_id = instance_question.team_id;
 
-      new_number = await sqldb.queryOptionalRow(
-        sql.next_variant_number,
-        { instance_question_id },
-        z.number().nullable(),
-      );
+      new_number =
+        (await sqldb.queryOptionalScalar(
+          sql.next_variant_number,
+          { instance_question_id },
+          z.number().nullable(),
+        )) ?? null;
     } else {
       if (question_id == null) {
         throw new Error(
@@ -306,7 +307,7 @@ async function makeAndInsertVariant({
     const question = await selectQuestionById(question_id);
     let workspace_id: string | null = null;
     if (question.workspace_image !== null) {
-      workspace_id = await sqldb.queryOptionalRow(sql.insert_workspace, IdSchema);
+      workspace_id = (await sqldb.queryOptionalScalar(sql.insert_workspace, IdSchema)) ?? null;
     }
 
     return await sqldb.queryRow(

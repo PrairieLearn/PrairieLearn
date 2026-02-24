@@ -306,7 +306,7 @@ async function sendInstancesCsv(
       highest_score: options.only_highest,
       group_work: options.group_work,
     },
-    z.unknown(),
+    z.object({}).passthrough(),
   );
 
   res.attachment(req.params.filename);
@@ -397,7 +397,7 @@ router.get(
       const cursor = await sqldb.queryCursor(
         sql.select_instance_questions,
         { assessment_id: res.locals.assessment.id },
-        z.unknown(),
+        z.object({}).passthrough(),
       );
 
       const columns = identityColumn.concat([

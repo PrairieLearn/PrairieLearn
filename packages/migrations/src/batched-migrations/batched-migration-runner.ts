@@ -2,7 +2,13 @@ import { serializeError } from 'serialize-error';
 import { z } from 'zod';
 
 import { logger } from '@prairielearn/logger';
-import { execute, loadSqlEquiv, queryOptionalRow, queryRow } from '@prairielearn/postgres';
+import {
+  execute,
+  loadSqlEquiv,
+  queryOptionalRow,
+  queryRow,
+  queryScalar,
+} from '@prairielearn/postgres';
 
 import {
   type BatchedMigrationJobRow,
@@ -47,27 +53,30 @@ export class BatchedMigrationRunner {
   }
 
   private async hasIncompleteJobs(migration: BatchedMigrationRow): Promise<boolean> {
-    return await queryRow(
+    const exists = await queryScalar(
       sql.batched_migration_has_incomplete_jobs,
       { batched_migration_id: migration.id },
       z.boolean(),
     );
+    return exists;
   }
 
   private async hasFailedJobs(migration: BatchedMigrationRow): Promise<boolean> {
-    return await queryRow(
+    const exists = await queryScalar(
       sql.batched_migration_has_failed_jobs,
       { batched_migration_id: migration.id },
       z.boolean(),
     );
+    return exists;
   }
 
   private async refreshMigrationStatus(migration: BatchedMigrationRow) {
-    this.migrationStatus = await queryRow(
+    const status = await queryScalar(
       sql.get_migration_status,
       { id: migration.id },
       BatchedMigrationStatusSchema,
     );
+    this.migrationStatus = status;
   }
 
   private async finishRunningMigration(migration: BatchedMigrationRow) {

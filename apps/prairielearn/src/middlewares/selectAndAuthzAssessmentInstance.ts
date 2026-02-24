@@ -34,17 +34,11 @@ const SelectAndAuthzAssessmentInstanceBaseSchema = z.object({
   instance_group_uid_list: z.array(z.string()),
 });
 
-// See `user_team_xor` constraint
-const SelectAndAuthzAssessmentInstanceSchema = z.union([
-  SelectAndAuthzAssessmentInstanceBaseSchema.extend({
-    instance_user: UserSchema,
-    instance_group: z.null(),
-  }),
-  SelectAndAuthzAssessmentInstanceBaseSchema.extend({
-    instance_user: z.null(),
-    instance_group: GroupSchema,
-  }),
-]);
+// See `user_team_xor` constraint — one of instance_user/instance_group is always null.
+const SelectAndAuthzAssessmentInstanceSchema = SelectAndAuthzAssessmentInstanceBaseSchema.extend({
+  instance_user: UserSchema.nullable(),
+  instance_group: GroupSchema.nullable(),
+});
 
 export type ResLocalsAssessmentInstance = z.infer<typeof SelectAndAuthzAssessmentInstanceSchema> & {
   assessment_instance_label: string;

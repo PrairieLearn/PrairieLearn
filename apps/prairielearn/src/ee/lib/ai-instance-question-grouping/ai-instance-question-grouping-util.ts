@@ -5,6 +5,7 @@ import {
   loadSqlEquiv,
   queryRow,
   queryRows,
+  queryScalar,
   runInTransactionAsync,
 } from '@prairielearn/postgres';
 
@@ -109,13 +110,14 @@ export async function selectAssessmentQuestionHasInstanceQuestionGroups({
 }: {
   assessmentQuestionId: string;
 }) {
-  return await queryRow(
+  const exists = await queryScalar(
     sql.select_assessment_question_has_instance_question_groups,
     {
       assessment_question_id: assessmentQuestionId,
     },
     z.boolean(),
   );
+  return exists;
 }
 
 export async function selectInstanceQuestionGroups({
@@ -137,11 +139,12 @@ export async function deleteAiInstanceQuestionGroups({
 }: {
   assessment_question_id: string;
 }) {
-  return await queryRow(
+  const count = await queryScalar(
     sql.delete_ai_instance_question_groups,
     {
       assessment_question_id,
     },
     z.number(),
   );
+  return count;
 }

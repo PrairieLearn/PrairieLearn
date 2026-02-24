@@ -76,12 +76,14 @@ export async function nextInstanceQuestionUrl({
       return null;
     }
     if (prior_instance_question_id) {
-      return await sqldb.queryOptionalRow(
-        sql.instance_question_group_id_for_instance_question,
-        {
-          instance_question_id: prior_instance_question_id,
-        },
-        IdSchema.nullable(),
+      return (
+        (await sqldb.queryOptionalScalar(
+          sql.instance_question_group_id_for_instance_question,
+          {
+            instance_question_id: prior_instance_question_id,
+          },
+          IdSchema.nullable(),
+        )) ?? null
       );
     } else {
       const instanceQuestionGroups = await selectInstanceQuestionGroups({
@@ -91,50 +93,53 @@ export async function nextInstanceQuestionUrl({
     }
   });
 
-  let next_instance_question_id = await sqldb.queryOptionalRow(
-    sql.select_next_instance_question,
-    {
-      assessment_id,
-      assessment_question_id,
-      user_id,
-      prior_instance_question_id,
-      prior_instance_question_group_id,
-      skip_graded_submissions,
-      show_submissions_assigned_to_me_only,
-      use_instance_question_groups,
-    },
-    IdSchema.nullable(),
-  );
+  let next_instance_question_id =
+    (await sqldb.queryOptionalScalar(
+      sql.select_next_instance_question,
+      {
+        assessment_id,
+        assessment_question_id,
+        user_id,
+        prior_instance_question_id,
+        prior_instance_question_group_id,
+        skip_graded_submissions,
+        show_submissions_assigned_to_me_only,
+        use_instance_question_groups,
+      },
+      IdSchema.nullable(),
+    )) ?? null;
 
   if (
     use_instance_question_groups &&
     next_instance_question_id == null &&
     prior_instance_question_group_id != null
   ) {
-    const next_instance_question_group_id = await sqldb.queryOptionalRow(
-      sql.select_next_instance_question_group_id,
-      {
-        assessment_question_id,
-        prior_instance_question_group_id,
-      },
-      IdSchema.nullable(),
-    );
+    const next_instance_question_group_id =
+      (await sqldb.queryOptionalScalar(
+        sql.select_next_instance_question_group_id,
+        {
+          assessment_question_id,
+          prior_instance_question_group_id,
+        },
+        IdSchema.nullable(),
+      )) ?? null;
 
     // Check if there exists another instance question in the next instance question group
-    next_instance_question_id = await sqldb.queryOptionalRow(
-      sql.select_next_instance_question,
-      {
-        assessment_id,
-        assessment_question_id,
-        user_id,
-        prior_instance_question_id: null,
-        prior_instance_question_group_id: next_instance_question_group_id,
-        skip_graded_submissions,
-        show_submissions_assigned_to_me_only,
-        use_instance_question_groups,
-      },
-      IdSchema,
-    );
+    next_instance_question_id =
+      (await sqldb.queryOptionalScalar(
+        sql.select_next_instance_question,
+        {
+          assessment_id,
+          assessment_question_id,
+          user_id,
+          prior_instance_question_id: null,
+          prior_instance_question_group_id: next_instance_question_group_id,
+          skip_graded_submissions,
+          show_submissions_assigned_to_me_only,
+          use_instance_question_groups,
+        },
+        IdSchema,
+      )) ?? null;
   }
 
   if (next_instance_question_id !== null) {
@@ -312,7 +317,7 @@ export async function updateAssessmentQuestionRubric({
       new_rubric_id = null;
     } else if (current_rubric_id === null) {
       // Rubric does not exist yet, but should, insert new rubric
-      new_rubric_id = await sqldb.queryRow(
+      new_rubric_id = await sqldb.queryScalar(
         sql.insert_rubric,
         { starting_points, min_points, max_extra_points, replace_auto_points, grader_guidelines },
         IdSchema,
@@ -361,7 +366,7 @@ export async function updateAssessmentQuestionRubric({
           if (item.id == null) {
             await sqldb.execute(sql.insert_rubric_item, omit(item, ['order', 'id']));
           } else {
-            await sqldb.queryRow(sql.update_rubric_item, omit(item, ['order']), IdSchema);
+            await sqldb.queryScalar(sql.update_rubric_item, omit(item, ['order']), IdSchema);
           }
         },
       );
@@ -448,7 +453,7 @@ export async function insertRubricGrading(
           rubric_data.max_extra_points,
       ) + Number(adjust_points || 0);
 
-    const rubric_grading_id = await sqldb.queryRow(
+    const rubric_grading_id = await sqldb.queryScalar(
       sql.insert_rubric_grading,
       {
         rubric_id,
@@ -668,7 +673,7 @@ export async function updateInstanceQuestionScore({
         score.feedback ||
         score.partial_scores)
     ) {
-      grading_job_id = await sqldb.queryRow(
+      grading_job_id = await sqldb.queryScalar(
         sql.insert_grading_job,
         {
           submission_id: current_submission.submission_id,

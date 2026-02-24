@@ -229,10 +229,8 @@ describe(
     });
 
     test.sequential('contains a group-based homework assessment with roles', async function () {
-      locals.assessment_id = await sqldb.queryRow(
-        sql.select_group_work_assessment_with_roles,
-        IdSchema,
-      );
+      const id = await sqldb.queryScalar(sql.select_group_work_assessment_with_roles, IdSchema);
+      locals.assessment_id = id;
       locals.assessmentUrl = locals.courseInstanceUrl + '/assessment/' + locals.assessment_id;
     });
 
@@ -1252,7 +1250,7 @@ describe('Test group role reassignments with role of minimum > 1', function () {
     await helperServer.before(tempTestCourseDir.path)();
 
     // Find the ID of an assessment that has group roles
-    assessmentId = await sqldb.queryRow(
+    assessmentId = await sqldb.queryScalar(
       sql.select_assessment,
       { tid: 'hw5-templateGroupWork' },
       IdSchema,
@@ -1791,7 +1789,7 @@ describe('Test group role reassignment logic when user leaves', { timeout: 20_00
   });
 
   test.sequential('should contain a group-based homework assessment with roles', async function () {
-    const assessment_id = await sqldb.queryRow(
+    const assessment_id = await sqldb.queryScalar(
       sql.select_group_work_assessment_with_roles,
       IdSchema,
     );

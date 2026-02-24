@@ -108,7 +108,7 @@ export function InstructorAssessmentInstance({
         ${resLocals.assessment_instance_label} instance for
         ${resLocals.instance_group
           ? html`${resLocals.instance_group.name}`
-          : html`${resLocals.instance_user.name}`}
+          : html`${resLocals.instance_user!.name}`}
       </h1>
       ${ResetQuestionVariantsModal({
         assessment: resLocals.assessment,
@@ -121,7 +121,7 @@ export function InstructorAssessmentInstance({
             ${resLocals.assessment_instance_label} Summary:
             ${resLocals.instance_group
               ? html`${resLocals.instance_group.name} <i class="fas fa-users"></i>`
-              : html`${resLocals.instance_user.name} (${resLocals.instance_user.uid})`}
+              : html`${resLocals.instance_user!.name} (${resLocals.instance_user!.uid})`}
           </h2>
         </div>
         <div class="table-responsive">
@@ -144,11 +144,11 @@ export function InstructorAssessmentInstance({
                 : html`
                     <tr>
                       <th>UID</th>
-                      <td colspan="2">${resLocals.instance_user.uid}</td>
+                      <td colspan="2">${resLocals.instance_user!.uid}</td>
                     </tr>
                     <tr>
                       <th>Name</th>
-                      <td colspan="2">${resLocals.instance_user.name}</td>
+                      <td colspan="2">${resLocals.instance_user!.name}</td>
                     </tr>
                     <tr>
                       <th>Role</th>
@@ -304,7 +304,7 @@ export function InstructorAssessmentInstance({
             ${resLocals.assessment_instance_label} Questions:
             ${resLocals.instance_group
               ? html`${resLocals.instance_group.name} <i class="fas fa-users"></i>`
-              : html`${resLocals.instance_user.name} (${resLocals.instance_user.uid})`}
+              : html`${resLocals.instance_user!.name} (${resLocals.instance_user!.uid})`}
           </h2>
         </div>
 
@@ -519,7 +519,7 @@ export function InstructorAssessmentInstance({
             ${resLocals.assessment_instance_label} Statistics:
             ${resLocals.instance_group
               ? html`${resLocals.instance_group.name} <i class="fas fa-users"></i>`
-              : html`${resLocals.instance_user.name} (${resLocals.instance_user.uid})`}
+              : html`${resLocals.instance_user!.name} (${resLocals.instance_user!.uid})`}
           </h2>
         </div>
         <div class="table-responsive">
@@ -585,7 +585,7 @@ export function InstructorAssessmentInstance({
             ${resLocals.assessment_instance_label} Log:
             ${resLocals.instance_group
               ? html`${resLocals.instance_group.name} <i class="fas fa-users"></i>`
-              : html`${resLocals.instance_user.name} (${resLocals.instance_user.uid})`}
+              : html`${resLocals.instance_user!.name} (${resLocals.instance_user!.uid})`}
           </h2>
         </div>
         <div class="card-body">
