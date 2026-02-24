@@ -130,34 +130,22 @@ def separate_distractor_groups(
     all_blocks: list[OrderBlocksAnswerData],
 ) -> list[OrderBlocksAnswerData]:
     """Shuffle blocks, putting distractor groups after all individual blocks."""
-    distractor_blocks = defaultdict(list)
-    individual_blocks = []
-    not_distractor_blocks = []
+    random.shuffle(all_blocks)
+    distractor_tags = [
+        tag for block in all_blocks if (tag := block.get("distractor_for"))
+    ]
+    distractor_group_blocks = [
+        block
+        for block in all_blocks
+        if block.get("distractor_for") or block.get("tag") in distractor_tags
+    ]
+    individual_blocks = [
+        block
+        for block in all_blocks
+        if not block.get("distractor_for") and block.get("tag") not in distractor_tags
+    ]
 
-    for block in all_blocks:
-        distractor_tag = block.get("distractor_for")
-        if distractor_tag:
-            distractor_blocks[distractor_tag].append(block)
-        else:
-            not_distractor_blocks.append(block)
-
-    for block in not_distractor_blocks:
-        tag = block.get("tag")
-        if tag in distractor_blocks:
-            distractor_blocks[tag].append(block)
-        else:
-            individual_blocks.append(block)
-
-    random.shuffle(individual_blocks)
-    distractor_group_keys = list(distractor_blocks.keys())
-    random.shuffle(distractor_group_keys)
-
-    new_block_ordering: list[OrderBlocksAnswerData] = individual_blocks
-    for group in distractor_group_keys:
-        distractor_blocks[group].sort(key=lambda a: a["index"])
-        new_block_ordering.extend(distractor_blocks[group])
-
-    return new_block_ordering
+    return individual_blocks + distractor_group_blocks
 
 
 def shuffle_distractor_groups(
