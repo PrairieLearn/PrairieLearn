@@ -588,11 +588,10 @@ export async function deleteAllAssessmentInstancesForAssessment(
   });
 }
 
-export async function selectAssessmentInstanceLastSubmissionDate(assessment_instance_id: string) {
-  const max = await sqldb.queryScalar(
+export function selectAssessmentInstanceLastSubmissionDate(assessment_instance_id: string) {
+  return sqldb.queryScalar(
     sql.select_assessment_instance_last_submission_date,
     { assessment_instance_id },
     DateFromISOString.nullable(),
   );
-  return max;
 }

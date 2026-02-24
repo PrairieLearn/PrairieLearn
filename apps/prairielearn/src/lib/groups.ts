@@ -88,13 +88,11 @@ export async function getGroupConfig(assessmentId: string): Promise<GroupConfig>
  * Returns the group id for the user's current group in an assessment, if it exists.
  * Used in checking whether the user is in a group or not.
  */
-export async function getGroupId(assessmentId: string, userId: string): Promise<string | null> {
-  return (
-    (await sqldb.queryOptionalScalar(
-      sql.get_group_id,
-      { assessment_id: assessmentId, user_id: userId },
-      IdSchema,
-    )) ?? null
+export function getGroupId(assessmentId: string, userId: string): Promise<string | null> {
+  return sqldb.queryOptionalScalar(
+    sql.get_group_id,
+    { assessment_id: assessmentId, user_id: userId },
+    IdSchema,
   );
 }
 
@@ -298,11 +296,11 @@ export async function addUserToGroup({
 
     // Find a group role. If none of the roles can be assigned, assign no role.
     const groupRoleId = group.has_roles
-      ? ((await sqldb.queryOptionalScalar(
+      ? await sqldb.queryOptionalScalar(
           sql.select_suitable_group_role,
           { assessment_id: assessment.id, group_id: group.id, cur_size: group.cur_size },
           IdSchema,
-        )) ?? null)
+        )
       : null;
 
     await sqldb.execute(sql.insert_group_user, {

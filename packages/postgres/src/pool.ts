@@ -14,7 +14,7 @@ export type QueryParams = Record<string, any> | any[];
  * Type constraint for row schemas accepted by query functions.
  * Accepts `z.object(...)` and branded variants like `MySchema.brand("Foo")`.
  */
-export type AnyRowSchema = z.AnyZodObject | z.ZodBranded<z.ZodTypeAny, any>;
+export type AnyRowSchema = z.AnyZodObject | z.ZodBranded<z.AnyZodObject, any>;
 
 export interface CursorIterator<T> {
   iterate: (batchSize: number) => AsyncGenerator<T[]>;

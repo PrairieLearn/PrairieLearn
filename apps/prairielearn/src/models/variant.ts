@@ -102,12 +102,7 @@ async function selectUserOwnsVariant({
   user_id: string;
   variant_id: string;
 }): Promise<boolean> {
-  const result = await queryScalar(
-    sql.select_user_owns_variant,
-    { user_id, variant_id },
-    z.boolean(),
-  );
-  return result;
+  return queryScalar(sql.select_user_owns_variant, { user_id, variant_id }, z.boolean());
 }
 
 export async function selectAndAuthzVariant(options: {
@@ -233,21 +228,21 @@ export async function selectAndAuthzVariant(options: {
       const authnUserPermissions = await callScalar(
         'authz_course_instance',
         [authn_user.id, variant.course_instance_id, new Date()],
-        EnumCourseInstanceRoleSchema,
+        z.object({ course_instance_role: EnumCourseInstanceRoleSchema }),
       );
 
       const userPermissions = await callScalar(
         'authz_course_instance',
         [user.id, variant.course_instance_id, new Date()],
-        EnumCourseInstanceRoleSchema,
+        z.object({ course_instance_role: EnumCourseInstanceRoleSchema }),
       );
 
-      authnHasCourseInstancePermissionView =
-        calculateCourseInstanceRolePermissions(
-          authnUserPermissions,
-        ).has_course_instance_permission_view;
-      hasCourseInstancePermissionView =
-        calculateCourseInstanceRolePermissions(userPermissions).has_course_instance_permission_view;
+      authnHasCourseInstancePermissionView = calculateCourseInstanceRolePermissions(
+        authnUserPermissions.course_instance_role,
+      ).has_course_instance_permission_view;
+      hasCourseInstancePermissionView = calculateCourseInstanceRolePermissions(
+        userPermissions.course_instance_role,
+      ).has_course_instance_permission_view;
     }
 
     // We'll only permit access if both the authenticated user and the

@@ -452,12 +452,11 @@ export async function getAndRenderVariant(
   } = {},
 ) {
   const question_course = await getQuestionCourse(locals.question, locals.course);
-  const is_shared = await sqldb.queryScalar(
+  locals.question_is_shared = await sqldb.queryScalar(
     sql.select_is_shared,
     { question_id: locals.question.id },
     z.boolean(),
   );
-  locals.question_is_shared = is_shared;
 
   const variant = await run(async () => {
     if (variant_id != null) {

@@ -53,30 +53,27 @@ export class BatchedMigrationRunner {
   }
 
   private async hasIncompleteJobs(migration: BatchedMigrationRow): Promise<boolean> {
-    const exists = await queryScalar(
+    return queryScalar(
       sql.batched_migration_has_incomplete_jobs,
       { batched_migration_id: migration.id },
       z.boolean(),
     );
-    return exists;
   }
 
   private async hasFailedJobs(migration: BatchedMigrationRow): Promise<boolean> {
-    const exists = await queryScalar(
+    return queryScalar(
       sql.batched_migration_has_failed_jobs,
       { batched_migration_id: migration.id },
       z.boolean(),
     );
-    return exists;
   }
 
   private async refreshMigrationStatus(migration: BatchedMigrationRow) {
-    const status = await queryScalar(
+    this.migrationStatus = await queryScalar(
       sql.get_migration_status,
       { id: migration.id },
       BatchedMigrationStatusSchema,
     );
-    this.migrationStatus = status;
   }
 
   private async finishRunningMigration(migration: BatchedMigrationRow) {

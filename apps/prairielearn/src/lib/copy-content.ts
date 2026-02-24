@@ -183,8 +183,7 @@ async function initiateFileTransfer({
     });
   }
 
-  const id = await sqldb.queryScalar(sql.insert_file_transfer, params, z.string());
-  return id;
+  return sqldb.queryScalar(sql.insert_file_transfer, params, z.string());
 }
 
 export async function copyQuestionBetweenCourses(

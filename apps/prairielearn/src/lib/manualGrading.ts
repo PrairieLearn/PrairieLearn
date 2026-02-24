@@ -76,14 +76,12 @@ export async function nextInstanceQuestionUrl({
       return null;
     }
     if (prior_instance_question_id) {
-      return (
-        (await sqldb.queryOptionalScalar(
-          sql.instance_question_group_id_for_instance_question,
-          {
-            instance_question_id: prior_instance_question_id,
-          },
-          IdSchema.nullable(),
-        )) ?? null
+      return sqldb.queryOptionalScalar(
+        sql.instance_question_group_id_for_instance_question,
+        {
+          instance_question_id: prior_instance_question_id,
+        },
+        IdSchema.nullable(),
       );
     } else {
       const instanceQuestionGroups = await selectInstanceQuestionGroups({
@@ -93,53 +91,50 @@ export async function nextInstanceQuestionUrl({
     }
   });
 
-  let next_instance_question_id =
-    (await sqldb.queryOptionalScalar(
-      sql.select_next_instance_question,
-      {
-        assessment_id,
-        assessment_question_id,
-        user_id,
-        prior_instance_question_id,
-        prior_instance_question_group_id,
-        skip_graded_submissions,
-        show_submissions_assigned_to_me_only,
-        use_instance_question_groups,
-      },
-      IdSchema.nullable(),
-    )) ?? null;
+  let next_instance_question_id = await sqldb.queryOptionalScalar(
+    sql.select_next_instance_question,
+    {
+      assessment_id,
+      assessment_question_id,
+      user_id,
+      prior_instance_question_id,
+      prior_instance_question_group_id,
+      skip_graded_submissions,
+      show_submissions_assigned_to_me_only,
+      use_instance_question_groups,
+    },
+    IdSchema.nullable(),
+  );
 
   if (
     use_instance_question_groups &&
     next_instance_question_id == null &&
     prior_instance_question_group_id != null
   ) {
-    const next_instance_question_group_id =
-      (await sqldb.queryOptionalScalar(
-        sql.select_next_instance_question_group_id,
-        {
-          assessment_question_id,
-          prior_instance_question_group_id,
-        },
-        IdSchema.nullable(),
-      )) ?? null;
+    const next_instance_question_group_id = await sqldb.queryOptionalScalar(
+      sql.select_next_instance_question_group_id,
+      {
+        assessment_question_id,
+        prior_instance_question_group_id,
+      },
+      IdSchema.nullable(),
+    );
 
     // Check if there exists another instance question in the next instance question group
-    next_instance_question_id =
-      (await sqldb.queryOptionalScalar(
-        sql.select_next_instance_question,
-        {
-          assessment_id,
-          assessment_question_id,
-          user_id,
-          prior_instance_question_id: null,
-          prior_instance_question_group_id: next_instance_question_group_id,
-          skip_graded_submissions,
-          show_submissions_assigned_to_me_only,
-          use_instance_question_groups,
-        },
-        IdSchema,
-      )) ?? null;
+    next_instance_question_id = await sqldb.queryOptionalScalar(
+      sql.select_next_instance_question,
+      {
+        assessment_id,
+        assessment_question_id,
+        user_id,
+        prior_instance_question_id: null,
+        prior_instance_question_group_id: next_instance_question_group_id,
+        skip_graded_submissions,
+        show_submissions_assigned_to_me_only,
+        use_instance_question_groups,
+      },
+      IdSchema,
+    );
   }
 
   if (next_instance_question_id !== null) {

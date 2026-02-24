@@ -144,7 +144,7 @@ export async function insertCourseRequest({
   institution: string | null;
   referral_source: string | null;
 }): Promise<string> {
-  const id = await queryScalar(
+  return queryScalar(
     sql.insert_course_request,
     {
       short_name,
@@ -159,7 +159,6 @@ export async function insertCourseRequest({
     },
     IdSchema,
   );
-  return id;
 }
 
 export async function updateCourseRequestNote({

@@ -19,7 +19,7 @@ async function checkAssessmentAccess(params: {
   date: string;
   display_timezone: string;
 }): Promise<boolean> {
-  return sqldb.callScalar(
+  const result = await sqldb.callRow(
     'check_assessment_access',
     [
       params.assessment_id,
@@ -32,8 +32,9 @@ async function checkAssessmentAccess(params: {
       params.date,
       params.display_timezone,
     ],
-    z.boolean(),
+    z.object({ authorized: z.boolean() }),
   );
+  return result.authorized;
 }
 
 describe('sproc check_assessment_access* tests', function () {

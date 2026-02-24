@@ -126,12 +126,11 @@ async function insertSubmission({
       });
     }
 
-    const deltaRow = await sqldb.queryOptionalScalar(
+    const delta = await sqldb.queryOptionalScalar(
       sql.select_and_update_last_access,
       { user_id: variant.user_id, group_id: variant.team_id },
       IntervalSchema.nullable(),
     );
-    const delta = deltaRow ?? null;
 
     const submission_id = await sqldb.queryScalar(
       sql.insert_submission,
@@ -198,12 +197,11 @@ export async function saveSubmission(
 
   // if workspace, get workspace_id
   if (question.workspace_image != null) {
-    const workspaceRow = await sqldb.queryOptionalScalar(
+    const workspace_id = await sqldb.queryOptionalScalar(
       sql.select_workspace_id,
       { variant_id: submission.variant_id },
       IdSchema,
     );
-    const workspace_id = workspaceRow ?? null;
     // if we have a workspace and any files to be graded, get the files
     if (workspace_id != null && question.workspace_graded_files?.length) {
       try {

@@ -110,14 +110,13 @@ export async function selectAssessmentQuestionHasInstanceQuestionGroups({
 }: {
   assessmentQuestionId: string;
 }) {
-  const exists = await queryScalar(
+  return queryScalar(
     sql.select_assessment_question_has_instance_question_groups,
     {
       assessment_question_id: assessmentQuestionId,
     },
     z.boolean(),
   );
-  return exists;
 }
 
 export async function selectInstanceQuestionGroups({
@@ -139,12 +138,11 @@ export async function deleteAiInstanceQuestionGroups({
 }: {
   assessment_question_id: string;
 }) {
-  const count = await queryScalar(
+  return queryScalar(
     sql.delete_ai_instance_question_groups,
     {
       assessment_question_id,
     },
     z.number(),
   );
-  return count;
 }
