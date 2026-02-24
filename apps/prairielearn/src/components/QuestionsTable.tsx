@@ -1,5 +1,5 @@
 import { rankItem } from '@tanstack/match-sorter-utils';
-import { type QueryFunction, type QueryKey, useQuery } from '@tanstack/react-query';
+import { type QueryFunction, useQuery } from '@tanstack/react-query';
 import {
   type ColumnFiltersState,
   type ColumnPinningState,
@@ -63,7 +63,7 @@ const FILTER_COLUMN_URL_KEYS: Record<string, string> = {
   workspace_image: 'wsImage',
 };
 
-export interface QuestionsTableProps {
+export interface QuestionsTableProps<TQueryKey extends readonly unknown[] = readonly unknown[]> {
   questions: SafeQuestionsPageData[];
   courseInstances: PublicCourseInstance[];
   courseId: string;
@@ -75,12 +75,12 @@ export interface QuestionsTableProps {
   isPublic?: boolean;
   qidPrefix?: string;
   questionsQueryOptions: {
-    queryKey: QueryKey;
-    queryFn?: QueryFunction<SafeQuestionsPageData[]>;
+    queryKey: TQueryKey;
+    queryFn?: QueryFunction<SafeQuestionsPageData[], TQueryKey>;
   };
 }
 
-export function QuestionsTable({
+export function QuestionsTable<TQueryKey extends readonly unknown[]>({
   questions: initialQuestions,
   courseInstances,
   courseId,
@@ -92,7 +92,7 @@ export function QuestionsTable({
   isPublic,
   qidPrefix,
   questionsQueryOptions,
-}: QuestionsTableProps) {
+}: QuestionsTableProps<TQueryKey>) {
   const [globalFilter, setGlobalFilter] = useQueryState('search', parseAsString.withDefault(''));
   const [sorting, setSorting] = useQueryState<SortingState>(
     'sort',
