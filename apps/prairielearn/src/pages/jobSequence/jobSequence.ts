@@ -53,7 +53,13 @@ router.get(
       }
     }
 
-    res.send(JobSequence({ resLocals: res.locals, job_sequence }));
+    res.send(
+      JobSequence({
+        resLocals: res.locals,
+        job_sequence,
+        referrer: req.query.referrer?.toString() || req.get('Referrer') || null,
+      }),
+    );
   }),
 );
 

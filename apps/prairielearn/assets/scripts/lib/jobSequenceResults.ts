@@ -14,7 +14,15 @@ onDocumentReady(() => {
   );
 
   socket.on('update', function () {
-    window.location.reload();
+    const redirectUrl = new URL(window.location.href);
+    if (redirectUrl.searchParams.get('referrer')) {
+      // If referrer is already in the URL, then we likely just got redirected
+      // here. In this case, just reload the page to get the latest data.
+      window.location.reload();
+      return;
+    }
+    redirectUrl.searchParams.set('referrer', document.referrer);
+    window.location.replace(redirectUrl.toString());
   });
   socket.on('change:output', function (msg) {
     const jobOutputElement = document.getElementById(`output-${msg.job_id}`);
