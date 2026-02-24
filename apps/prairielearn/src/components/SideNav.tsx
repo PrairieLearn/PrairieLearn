@@ -333,7 +333,9 @@ function CourseInstanceNav({
             hx-target="#sideNavCourseInstancesDropdownContent"
           >
             <span class="text-truncate" title="${resLocals.course_instance?.short_name ?? ''}">
-              ${resLocals.course_instance ? truncateMiddle(resLocals.course_instance.short_name, 24) : 'Select a course instance...'}
+              ${resLocals.course_instance
+                ? truncateMiddle(resLocals.course_instance.short_name, 24)
+                : 'Select a course instance...'}
             </span>
           </button>
           <div class="dropdown-menu py-0 overflow-hidden">
