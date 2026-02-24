@@ -29,7 +29,7 @@ interface ShortNameValidationFailure {
   lowercaseMessage: string;
 }
 
-export type ShortNameValidationResult = ShortNameValidationSuccess | ShortNameValidationFailure;
+type ShortNameValidationResult = ShortNameValidationSuccess | ShortNameValidationFailure;
 
 function buildValidationError(message: string): ShortNameValidationFailure {
   // Client message starts with capital, server message starts with lowercase

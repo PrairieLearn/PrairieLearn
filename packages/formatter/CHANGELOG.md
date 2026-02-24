@@ -1,5 +1,12 @@
 # @prairielearn/formatter
 
+## 2.1.0
+
+### Minor Changes
+
+- 9c91665: Add options for full part names and first only in formatInterval
+- 7b937fb: Remove unused exports, add `@knipignore` for intentionally public exports, and re-export newly used symbols from `@prairielearn/formatter`.
+
 ## 2.0.2
 
 ### Patch Changes

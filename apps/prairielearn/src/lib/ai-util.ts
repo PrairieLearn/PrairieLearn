@@ -138,6 +138,7 @@ export function emptyUsage(): LanguageModelUsage {
   };
 }
 
+/** @knipignore */
 export function mergeUsage(
   a: LanguageModelUsage | undefined,
   b: LanguageModelUsage | undefined,

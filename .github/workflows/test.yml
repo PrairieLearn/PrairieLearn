@@ -40,6 +40,7 @@ jobs:
           # We need the whole history so we can diff against `master` to determine
           # what images need to be built.
           fetch-depth: 0
+          fetch-tags: false
           show-progress: false
 
       # We won't try to push in this job, but we still authenticate if the
@@ -99,10 +100,23 @@ jobs:
       matrix:
         shardIndex: [1, 2, 3, 4]
         shardTotal: [4]
+
+    env:
+      CAN_LOGIN_TO_DOCKERHUB: ${{ secrets.DOCKERHUB_USERNAME != '' }}
+
     steps:
       - uses: actions/checkout@v6
         with:
           show-progress: false
+
+      # Authenticate with Docker Hub to avoid image pull rate limits
+      # during external grading tests.
+      - name: Login to DockerHub
+        if: ${{ env.CAN_LOGIN_TO_DOCKERHUB == 'true' }}
+        uses: docker/login-action@v3
+        with:
+          username: ${{ secrets.DOCKERHUB_USERNAME }}
+          password: ${{ secrets.DOCKERHUB_TOKEN }}
 
       # We uninstall `man-db` to speed up the installation of other packages
       # by avoiding building man pages for them. As this is a non-interactive

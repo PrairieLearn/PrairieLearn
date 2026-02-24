@@ -3554,19 +3554,19 @@ const middleNameList = [
 
 const exampleDomainList = ['example.com', 'example.org', 'example.net'];
 
-export function fakeFirstName() {
+function fakeFirstName() {
   return firstNameList[Math.floor(Math.random() * firstNameList.length)];
 }
 
-export function fakeLastName() {
+function fakeLastName() {
   return lastNameList[Math.floor(Math.random() * lastNameList.length)];
 }
 
-export function fakeMiddleName() {
+function fakeMiddleName() {
   return middleNameList[Math.floor(Math.random() * middleNameList.length)];
 }
 
-export function fakeExampleEmail({ firstName, lastName }: { firstName: string; lastName: string }) {
+function fakeExampleEmail({ firstName, lastName }: { firstName: string; lastName: string }) {
   const domain = exampleDomainList[Math.floor(Math.random() * exampleDomainList.length)];
   firstName = firstName.toLowerCase().replaceAll(/[^a-z]/g, '');
   lastName = lastName.toLowerCase().replaceAll(/[^a-z]/g, '');

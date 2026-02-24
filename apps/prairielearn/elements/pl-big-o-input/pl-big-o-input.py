@@ -43,6 +43,7 @@ PLACEHOLDER_DEFAULT = "asymptotic expression"
 SHOW_SCORE_DEFAULT = True
 ALLOW_BLANK_DEFAULT = False
 BLANK_VALUE_DEFAULT = "1"
+INITIAL_VALUE_DEFAULT = None
 BIG_O_INPUT_MUSTACHE_TEMPLATE_NAME = "pl-big-o-input.mustache"
 # This timeout is chosen to allow multiple sympy-based elements to grade on one page,
 # while not exceeding the global timeout enforced for Python execution.
@@ -65,6 +66,7 @@ def prepare(element_html: str, data: pl.QuestionData) -> None:
         "show-score",
         "allow-blank",
         "blank-value",
+        "initial-value",
     ]
     pl.check_attribs(element, required_attribs, optional_attribs)
 
@@ -168,6 +170,10 @@ def render(element_html: str, data: pl.QuestionData) -> str:
 
     # Next, get some attributes we will use in multiple places
     raw_submitted_answer = data["raw_submitted_answers"].get(name)
+    if raw_submitted_answer is None:
+        raw_submitted_answer = pl.get_string_attrib(
+            element, "initial-value", INITIAL_VALUE_DEFAULT
+        )
     score = data["partial_scores"].get(name, {}).get("score")
 
     # Finally, render each panel

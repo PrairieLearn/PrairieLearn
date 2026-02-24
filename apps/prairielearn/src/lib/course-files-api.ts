@@ -7,7 +7,7 @@ import { type CourseFilesRouter, courseFilesRouter } from '../api/trpc/index.js'
 
 import { config } from './config.js';
 
-export type CourseFilesClient = ReturnType<typeof createTRPCProxyClient<CourseFilesRouter>>;
+type CourseFilesClient = ReturnType<typeof createTRPCProxyClient<CourseFilesRouter>>;
 
 function getCourseFilesLink() {
   if (config.courseFilesApiTransport === 'process') {

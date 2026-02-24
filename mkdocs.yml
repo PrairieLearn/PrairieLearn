@@ -340,7 +340,6 @@ not_in_nav: |
   schemas/questionOptionsv3.md
   elements/pl-prairiedraw-figure.md
   elements/pl-dropdown.md
-  elements/pl-threejs.md
   elements/pl-variable-score.md
   dev-guide/contrib/*
 

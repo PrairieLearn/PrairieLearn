@@ -65,7 +65,7 @@ export async function insertCoursePermissionsByUserUid({
  * When granting non-'None' permissions, also updates any existing enrollments
  * for this user in instances of this course to 'removed' status.
  */
-export async function insertCoursePermissionsByUserId({
+async function insertCoursePermissionsByUserId({
   course_id,
   user_id,
   course_role,

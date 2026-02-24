@@ -15,7 +15,7 @@ columns
     max_points: double precision
     mode: enum_mode
     modified_at: timestamp with time zone not null default CURRENT_TIMESTAMP
-    number: integer
+    number: integer not null
     open: boolean default true
     points: double precision default 0
     score_perc: double precision default 0

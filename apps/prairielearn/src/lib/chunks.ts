@@ -179,7 +179,7 @@ const DatabaseChunkSchema = z.intersection(
  * database. They're sort of a superset of {@link Chunk} and {@link ChunkMetadata}
  * objects that contain both the IDs and human-readable names of the chunks.
  */
-export type DatabaseChunk = z.infer<typeof DatabaseChunkSchema>;
+type DatabaseChunk = z.infer<typeof DatabaseChunkSchema>;
 
 const RawCourseChunkSchema = z.object({
   ...ChunkSchema.shape,
@@ -190,7 +190,6 @@ const RawCourseChunkSchema = z.object({
   course_instance_uuid: CourseInstanceSchema.shape.uuid,
   course_instance_name: CourseInstanceSchema.shape.short_name,
 });
-export type RawCourseChunk = z.infer<typeof RawCourseChunkSchema>;
 
 interface CourseInstanceChunks {
   clientFilesCourseInstance: boolean;
@@ -210,7 +209,7 @@ interface CourseChunks {
  * Constructs a {@link ChunkMetadata} object from the given {@link DatabaseChunk}
  * object.
  */
-export function chunkMetadataFromDatabaseChunk(chunk: DatabaseChunk): ChunkMetadata {
+function chunkMetadataFromDatabaseChunk(chunk: DatabaseChunk): ChunkMetadata {
   switch (chunk.type) {
     case 'elements':
     case 'elementExtensions':
@@ -253,7 +252,7 @@ export function chunkMetadataFromDatabaseChunk(chunk: DatabaseChunk): ChunkMetad
 /**
  * Returns the path for a given chunk relative to the course's root directory.
  */
-export function pathForChunk(chunkMetadata: ChunkMetadata): string {
+function pathForChunk(chunkMetadata: ChunkMetadata): string {
   switch (chunkMetadata.type) {
     case 'elements':
     case 'elementExtensions':
@@ -295,7 +294,7 @@ export function coursePathForChunk(coursePath: string, chunkMetadata: ChunkMetad
  * @param newHash The new (current) hash for the diff
  * @returns List of changed files
  */
-export async function identifyChangedFiles(
+async function identifyChangedFiles(
   coursePath: string,
   oldHash: string,
   newHash: string,
@@ -455,7 +454,7 @@ export function identifyChunksFromChangedFiles(
 /**
  * Returns all the chunks the are currently stored for the given course.
  */
-export async function getAllChunksForCourse(courseId: string) {
+async function getAllChunksForCourse(courseId: string) {
   const result = await sqldb.queryRows(
     sql.select_course_chunks,
     { course_id: courseId },
@@ -480,7 +479,7 @@ interface ChunksDiff {
  * Given a course ID, computes a list of all chunks that need to be
  * (re)generated.
  */
-export async function diffChunks({
+async function diffChunks({
   coursePath,
   courseId,
   courseData,
@@ -736,7 +735,7 @@ export async function diffChunks({
   return { updatedChunks, deletedChunks };
 }
 
-export async function createAndUploadChunks(
+async function createAndUploadChunks(
   coursePath: string,
   courseId: string,
   chunksToGenerate: ChunkMetadata[],
@@ -792,7 +791,7 @@ export async function createAndUploadChunks(
  * Deletes the specified chunks from the database. Note that they are not
  * deleted from S3 at this time.
  */
-export async function deleteChunks(courseId: string, chunksToDelete: ChunkMetadata[]) {
+async function deleteChunks(courseId: string, chunksToDelete: ChunkMetadata[]) {
   if (chunksToDelete.length === 0) {
     // Avoid a round-trip to the DB if there's nothing to delete.
     return;
@@ -825,7 +824,7 @@ export async function deleteChunks(courseId: string, chunksToDelete: ChunkMetada
  *
  * @param courseId The ID of the course in question
  */
-export function getChunksDirectoriesForCourseId(courseId: string) {
+function getChunksDirectoriesForCourseId(courseId: string) {
   const baseDirectory = path.join(config.chunksConsumerDirectory, `course-${courseId}`);
   return {
     base: baseDirectory,

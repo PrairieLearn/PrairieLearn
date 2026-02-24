@@ -1,8 +1,9 @@
 <pl-card header="An example in which complex numbers are not allowed (&lt;code&gt;allow-complex=&quot;false&quot;&lt;/code&gt;)">
     <pl-question-panel>
         <p>Suppose $$y = a x + b.$$ Assuming that $a \neq 0$, solve for $x$.</p>
+        <p>The attribute <code>initial-value</code> pre-fills the input the first time it is rendered so students can begin from a suggested expression.</p>
     </pl-question-panel>
-    <pl-symbolic-input aria-label="Symbolic expression for x" answers-name="x" variables="a, b, y" label="$x=$"></pl-symbolic-input>
+    <pl-symbolic-input aria-label="Symbolic expression for x" answers-name="x" variables="a, b, y" label="$x=$" initial-value="(y - b)/a"></pl-symbolic-input>
 </pl-card>
 
 <pl-card header="An example in which complex numbers are allowed (&lt;code&gt;allow-complex=&quot;true&quot;&lt;/code&gt;)">
@@ -38,6 +39,14 @@
         <p>Submit $\displaystyle {\rm test}\left(\sqrt{\frac{e^x}{x^2}}\right)$</p>
     </pl-question-panel>
     <pl-symbolic-input label="$y = $" aria-label="Function expression" formula-editor="true" answers-name="formula_editor" variables="x" show-score="false" custom-functions="test"></pl-symbolic-input>
+</pl-card>
+
+<pl-card header="An example that uses the formula editor with an initial value">
+    <pl-question-panel>
+        <p>Suppose $$y = a x + b.$$ Assuming that $a \neq 0$, solve for $x$.</p>
+        <p>The <code>initial-value</code> attribute works with the formula editor. The sympy expression is automatically converted to LaTeX for the editor display.</p>
+    </pl-question-panel>
+    <pl-symbolic-input aria-label="Symbolic expression for x" formula-editor="true" answers-name="formula_editor_initial" variables="a, b, y" label="$x=$" initial-value="(y - b)/a"></pl-symbolic-input>
 </pl-card>
 
 <pl-card header="An example in which we disable the display of simplified student submissions (&lt;code&gt;display-simplified-expression=&quot;false&quot;&lt;/code&gt;)">

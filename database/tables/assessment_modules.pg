@@ -4,7 +4,7 @@ columns
     id: bigint not null default nextval('assessment_modules_id_seq'::regclass)
     implicit: boolean not null default false
     name: text not null default 'Default'::text
-    number: integer
+    number: integer not null
 
 indexes
     assessment_modules_pkey: PRIMARY KEY (id) USING btree (id)

@@ -7,6 +7,7 @@ export function PromptInput({
   onStop,
   refreshQuestionPreviewAfterChanges,
   setRefreshQuestionPreviewAfterChanges,
+  placeholder = 'Ask anything...',
 }: {
   value: string;
   onChange: (value: string) => void;
@@ -16,6 +17,7 @@ export function PromptInput({
   onStop: () => void;
   refreshQuestionPreviewAfterChanges: boolean;
   setRefreshQuestionPreviewAfterChanges?: (value: boolean) => void;
+  placeholder?: string;
 }) {
   return (
     <form
@@ -35,7 +37,7 @@ export function PromptInput({
       <textarea
         id="user-prompt-llm"
         className="form-control mb-2"
-        placeholder="Ask anything..."
+        placeholder={placeholder}
         aria-label="Modification instructions"
         value={value}
         required

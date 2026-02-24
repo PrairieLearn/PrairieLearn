@@ -5,11 +5,7 @@ import z from 'zod';
 import * as error from '@prairielearn/error';
 import * as sqldb from '@prairielearn/postgres';
 
-import {
-  QuestionSchema,
-  SprocAssessmentsFormatForQuestionSchema,
-  TopicSchema,
-} from '../lib/db-types.js';
+import { QuestionSchema, TopicSchema } from '../lib/db-types.js';
 
 const sql = sqldb.loadSqlEquiv(import.meta.url);
 
@@ -19,18 +15,9 @@ const SelectAndAuthSchema = z.object({
   open_issue_count: z.coerce.number(),
 });
 
-const SelectAndAuthWithCourseInstanceSchema = z.object({
-  question: QuestionSchema,
-  topic: TopicSchema,
-  assessments: SprocAssessmentsFormatForQuestionSchema.nullable(),
-  open_issue_count: z.coerce.number(),
-});
+export type ResLocalsInstructorQuestionSchema = z.infer<typeof SelectAndAuthSchema>;
 
-export type ResLocalsInstructorQuestionWithCourseInstance = z.infer<
-  typeof SelectAndAuthWithCourseInstanceSchema
->;
-
-export type ResLocalsInstructorQuestion = z.infer<typeof SelectAndAuthSchema> & {
+export type ResLocalsInstructorQuestion = ResLocalsInstructorQuestionSchema & {
   questionRenderContext?: 'manual_grading' | 'ai_grading';
 };
 
@@ -42,7 +29,7 @@ export async function selectAndAuthzInstructorQuestion(req: Request, res: Respon
         question_id: req.params.question_id,
         course_instance_id: res.locals.course_instance.id,
       },
-      SelectAndAuthWithCourseInstanceSchema,
+      SelectAndAuthSchema,
     );
     if (row === null) throw new error.HttpStatusError(403, 'Access denied');
     Object.assign(res.locals, row);

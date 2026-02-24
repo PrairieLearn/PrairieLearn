@@ -3,7 +3,6 @@ import fs from 'node:fs';
 import * as core from '@actions/core';
 import * as github from '@actions/github';
 
-const CI_REPORT_MARKER = '<!-- ci-report -->';
 const SECTION_START = '<!-- bundle-sizes -->';
 const SECTION_END = '<!-- /bundle-sizes -->';
 const BASELINE_BRANCH = 'size-report';
@@ -53,7 +52,7 @@ function diffSizes(oldSizes: SizesJson | null, newSizes: SizesJson): DiffEntry[]
 
     if (oldEntry && newEntry) {
       const diff = newEntry.gzip - oldEntry.gzip;
-      if (diff !== 0) {
+      if (Math.abs(diff) >= 16) {
         entries.push({
           name: key,
           kind: 'changed',
@@ -96,31 +95,26 @@ function buildCommentSection(oldSizes: SizesJson | null, newSizes: SizesJson): s
   const newTotal = allNewKeys.reduce((sum, k) => sum + newSizes[k].gzip, 0);
 
   // Build summary line.
-  const THRESHOLD = 0.5; // percent
-  const changedEntries = entries.filter(
-    (e) => e.kind === 'changed' && e.oldGzip != null && e.oldGzip > 0,
-  );
-  const pctChanges = changedEntries.map((e) => ((e.newGzip! - e.oldGzip!) / e.oldGzip!) * 100);
-  const totalPct = oldTotal > 0 ? ((newTotal - oldTotal) / oldTotal) * 100 : 0;
-  const biggestIncrease = Math.max(...pctChanges, 0);
-  const biggestDecrease = Math.min(...pctChanges, 0);
-  const hasSignificantChange =
-    Math.abs(totalPct) > THRESHOLD || biggestIncrease > THRESHOLD || biggestDecrease < -THRESHOLD;
+  const THRESHOLD_BYTES = 25 * 1024; // 25 kB
+  const biggestEntry = entries.length > 0 ? entries[0] : null; // already sorted by absDiff desc
 
   let summaryLine: string;
   if (!oldSizes) {
     summaryLine = 'No baseline yet (first run)';
-  } else if (!hasSignificantChange) {
+  } else if (!biggestEntry || biggestEntry.absDiff < THRESHOLD_BYTES) {
     summaryLine = 'No significant size changes';
   } else {
-    const parts: string[] = [`Total change: ${totalPct > 0 ? '+' : ''}${totalPct.toFixed(2)}%`];
-    if (biggestIncrease > THRESHOLD) {
-      parts.push(`Biggest increase: +${biggestIncrease.toFixed(2)}%`);
-    }
-    if (biggestDecrease < -THRESHOLD) {
-      parts.push(`Biggest decrease: ${biggestDecrease.toFixed(2)}%`);
-    }
-    summaryLine = parts.join(', ');
+    const netDiff = newTotal - oldTotal;
+    const netSign = netDiff > 0 ? '+' : '';
+    const largestSign =
+      biggestEntry.kind === 'removed'
+        ? '-'
+        : biggestEntry.kind === 'new'
+          ? '+'
+          : biggestEntry.newGzip! >= biggestEntry.oldGzip!
+            ? '+'
+            : '-';
+    summaryLine = `Net: ${netSign}${formatBytes(netDiff)} (largest: ${largestSign}${formatBytes(biggestEntry.absDiff)})`;
   }
 
   const lines: string[] = [
@@ -162,25 +156,6 @@ function buildCommentSection(oldSizes: SizesJson | null, newSizes: SizesJson): s
 
   lines.push('', '</details>', SECTION_END);
   return lines.join('\n');
-}
-
-function upsertSection(existingBody: string | null, newSection: string): string {
-  if (!existingBody) {
-    return `${CI_REPORT_MARKER}\n${newSection}`;
-  }
-
-  const startIdx = existingBody.indexOf(SECTION_START);
-  const endIdx = existingBody.indexOf(SECTION_END);
-
-  if (startIdx !== -1 && endIdx !== -1) {
-    // Replace existing section.
-    return (
-      existingBody.slice(0, startIdx) + newSection + existingBody.slice(endIdx + SECTION_END.length)
-    );
-  }
-
-  // Append section.
-  return existingBody + '\n' + newSection;
 }
 
 async function fetchBaseline(
@@ -279,44 +254,6 @@ async function pushBaseline(
   core.info('Pushed bundle size baseline to size-report branch');
 }
 
-async function commentOnPr(
-  octokit: ReturnType<typeof github.getOctokit>,
-  prNumber: number,
-  section: string,
-): Promise<void> {
-  const comments = await octokit.paginate(
-    'GET /repos/{owner}/{repo}/issues/{issue_number}/comments',
-    {
-      owner: github.context.repo.owner,
-      repo: github.context.repo.repo,
-      issue_number: prNumber,
-    },
-  );
-
-  const existingComment = comments.find(
-    (comment) =>
-      comment.user?.login === 'github-actions[bot]' && comment.body?.includes(CI_REPORT_MARKER),
-  );
-
-  const body = upsertSection(existingComment?.body ?? null, section);
-
-  if (existingComment) {
-    await octokit.rest.issues.updateComment({
-      owner: github.context.repo.owner,
-      repo: github.context.repo.repo,
-      comment_id: existingComment.id,
-      body,
-    });
-  } else {
-    await octokit.rest.issues.createComment({
-      owner: github.context.repo.owner,
-      repo: github.context.repo.repo,
-      issue_number: prNumber,
-      body,
-    });
-  }
-}
-
 async function main() {
   const sizesPath = core.getInput('sizes-path', { required: true });
   const token = core.getInput('token', { required: true });
@@ -348,10 +285,13 @@ async function main() {
     // Fetch baseline from size-report branch.
     const oldSizes = await fetchBaseline(octokit);
 
-    // Build the comment section and post it.
     const section = buildCommentSection(oldSizes, newSizes);
-    await commentOnPr(octokit, prNumber, section);
-    core.info('Posted bundle size comment on PR');
+    const reportPath = core.getInput('report-path');
+    if (reportPath) {
+      fs.writeFileSync(reportPath, section);
+      core.info(`Wrote report section to ${reportPath}`);
+    }
+    core.info(section);
   } else {
     core.info(`No action needed for event: ${eventName}`);
   }

@@ -204,7 +204,7 @@ interface OpenTelemetryConfigDisabled extends Partial<OpenTelemetryConfigEnabled
   openTelemetryEnabled: false;
 }
 
-export type OpenTelemetryConfig = OpenTelemetryConfigEnabled | OpenTelemetryConfigDisabled;
+type OpenTelemetryConfig = OpenTelemetryConfigEnabled | OpenTelemetryConfigDisabled;
 
 function getHoneycombMetadata(config: OpenTelemetryConfig, datasetSuffix = ''): Metadata {
   if (!config.honeycombApiKey) throw new Error('Missing Honeycomb API key');

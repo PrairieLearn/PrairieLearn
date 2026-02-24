@@ -5,6 +5,7 @@ import os
 import subprocess
 import sys
 import tempfile
+import urllib.request
 from typing import Literal, cast, get_args
 
 from utils import (
@@ -84,7 +85,11 @@ def check_path_modified(path: str) -> bool:
     #
     # In the case of stacked PRs, this will rebuild images if any of the downstack
     # PRs changed the image.
-    diff_branch = "HEAD^1" if branch == "master" else "remotes/origin/master"
+    diff_branch = (
+        os.environ.get("DIFF_BASE") or "HEAD^1"
+        if branch == "master"
+        else "remotes/origin/master"
+    )
 
     diff_result = subprocess.run(
         ["git", "diff", "--exit-code", f"{diff_branch}..HEAD", "--", path],
@@ -202,6 +207,45 @@ def build_image(
     print(f"Metadata: {metadata.strip()}")
     digest = json.loads(metadata)["containerimage.digest"]
 
+    # Query local registry for image size. The image is pushed as an OCI image
+    # index, so we first fetch the index, then fetch the platform-specific
+    # manifest to get the layer sizes.
+    registry_base = f"http://localhost:5000/v2/{image}/manifests"
+    index_req = urllib.request.Request(
+        f"{registry_base}/{digest}",
+        headers={"Accept": "application/vnd.oci.image.index.v1+json"},
+    )
+    with urllib.request.urlopen(index_req) as resp:
+        index_data = json.loads(resp.read())
+
+    # Find the manifest for the target platform.
+    # Note: we only support platforms without variants (e.g., linux/amd64,
+    # linux/arm64). Platforms with variants (e.g., linux/arm/v7) are not supported.
+    target_os, target_arch = platform.split("/", 1)
+    manifest_digest = None
+    for manifest in index_data.get("manifests", []):
+        p = manifest.get("platform", {})
+        if p.get("os") == target_os and p.get("architecture") == target_arch:
+            manifest_digest = manifest["digest"]
+            break
+
+    if not manifest_digest:
+        raise RuntimeError(
+            f"Could not find manifest for platform {platform} in image index for {image}@{digest}"
+        )
+
+    manifest_req = urllib.request.Request(
+        f"{registry_base}/{manifest_digest}",
+        headers={"Accept": "application/vnd.oci.image.manifest.v1+json"},
+    )
+    with urllib.request.urlopen(manifest_req) as resp:
+        manifest_data = json.loads(resp.read())
+    image_size = sum(layer["size"] for layer in manifest_data.get("layers", []))
+    if image_size == 0:
+        raise RuntimeError(
+            f"Image size is 0 for {image}@{digest} ({platform}), this likely indicates broken assumptions"
+        )
+
     # Write metadata to the metadata directory
     if metadata_dir:
         metadata = json.loads(metadata)
@@ -210,6 +254,8 @@ def build_image(
         # If pushing is enabled, the image name will be a comma-separated list of image names.
         # We'll replace it with just the plain image name.
         metadata["image.name"] = image
+        metadata["image.platform"] = platform
+        metadata["image.size"] = image_size
 
         # We need a unique name for the metadata file. We'll use the part of the
         # image name after the last slash, and a hash of the build ref.

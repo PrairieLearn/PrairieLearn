@@ -30,7 +30,7 @@ export interface TemplateQuestionZone {
   questions: TemplateQuestion[];
 }
 
-export interface TemplateQuestionsData {
+interface TemplateQuestionsData {
   exampleCourseZones: TemplateQuestionZone[];
   courseTemplates: { qid: string; title: string }[];
 }

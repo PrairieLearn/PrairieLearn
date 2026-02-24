@@ -37,7 +37,7 @@ interface InstructorInstanceAdminBillingState {
   computeAlert: AlertProps | null;
 }
 
-export interface InstructorInstanceAdminBillingFormProps extends InstructorInstanceAdminBillingInput {
+interface InstructorInstanceAdminBillingFormProps extends InstructorInstanceAdminBillingInput {
   enrollmentLimitSource: 'course_instance' | 'institution';
   externalGradingQuestionCount: number;
   workspaceQuestionCount: number;

@@ -35,7 +35,7 @@ interface PermissionData extends PermissionMeta {
   authnValue: boolean | string;
 }
 
-export const PERMISSIONS_META = [
+const PERMISSIONS_META = [
   {
     label: 'Administrator',
     key: 'is_administrator',

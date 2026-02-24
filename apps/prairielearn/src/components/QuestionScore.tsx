@@ -1,3 +1,4 @@
+import { formatInterval } from '@prairielearn/formatter';
 import { type HtmlValue, escapeHtml, html, joinHtml } from '@prairielearn/html';
 import { run } from '@prairielearn/run';
 
@@ -14,10 +15,7 @@ import { idsEqual } from '../lib/id.js';
 import type { SimpleVariantWithScore } from '../models/variant.js';
 
 interface QuestionScorePanelContentProps {
-  instance_question: InstanceQuestion & {
-    allow_grade_left_ms?: number;
-    allow_grade_interval?: string;
-  };
+  instance_question: InstanceQuestion;
   assessment: Assessment;
   assessment_question: AssessmentQuestion;
   question: Question;
@@ -27,6 +25,7 @@ interface QuestionScorePanelContentProps {
     question_number: string | null;
     previous_variants: SimpleVariantWithScore[] | null;
   };
+  allowGradeLeftMs: number;
   urlPrefix: string;
 }
 
@@ -71,6 +70,7 @@ export function QuestionScorePanelContent({
   instance_question_info,
   variant,
   urlPrefix,
+  allowGradeLeftMs,
 }: QuestionScorePanelContentProps) {
   const hasAutoAndManualPoints =
     assessment_question.max_auto_points &&
@@ -89,7 +89,13 @@ export function QuestionScorePanelContent({
           ? html`
               <tr>
                 <td>Status:</td>
-                <td>${ExamQuestionStatus({ instance_question, assessment_question })}</td>
+                <td>
+                  ${ExamQuestionStatus({
+                    instance_question,
+                    assessment_question,
+                    allowGradeLeftMs,
+                  })}
+                </td>
               </tr>
             `
           : ''}
@@ -247,11 +253,9 @@ export function ExamQuestionStatus({
   instance_question,
   assessment_question,
   realTimeGradingPartiallyDisabled,
+  allowGradeLeftMs,
 }: {
-  instance_question: InstanceQuestion & {
-    allow_grade_left_ms?: number;
-    allow_grade_interval?: string;
-  };
+  instance_question: InstanceQuestion;
   assessment_question: Pick<
     AssessmentQuestion,
     'max_auto_points' | 'max_manual_points' | 'allow_real_time_grading'
@@ -263,6 +267,7 @@ export function ExamQuestionStatus({
    * (because real-time grading is disabled).
    */
   realTimeGradingPartiallyDisabled?: boolean;
+  allowGradeLeftMs: number;
 }) {
   // Special case: if this is a manually graded question in the "saved" state,
   // we want to differentiate it from saved auto-graded questions which can
@@ -312,7 +317,7 @@ export function ExamQuestionStatus({
     <span class="align-middle">
       <span class="badge text-bg-${badgeColor}">${badgeText}</span>
 
-      ${(instance_question.allow_grade_left_ms ?? 0) > 0
+      ${allowGradeLeftMs > 0
         ? html`
             <button
               type="button"
@@ -320,7 +325,10 @@ export function ExamQuestionStatus({
               data-bs-toggle="popover"
               data-bs-container="body"
               data-bs-html="true"
-              data-bs-content="This question limits the rate of submissions. Further grade allowed ${instance_question.allow_grade_interval} (as of the loading of this page)."
+              data-bs-content="This question limits the rate of submissions. Further grade allowed in ${formatInterval(
+                allowGradeLeftMs,
+                { fullPartNames: true, firstOnly: true },
+              )} (as of the loading of this page)."
               data-bs-placement="auto"
             >
               <i class="fa fa-hourglass-half" aria-hidden="true"></i>

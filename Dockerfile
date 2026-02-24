@@ -1,5 +1,9 @@
+# check=skip=CopyIgnoredFile
+# TODO: remove once the following issue is fixed:
+# https://github.com/moby/buildkit/issues/6512
+
 FROM amazonlinux:2023
-ARG CACHEBUST=2026-01-15-14-21-34
+ARG CACHEBUST=2026-02-15-14-23-34
 
 WORKDIR /PrairieLearn
 
@@ -28,7 +32,7 @@ RUN make python-deps-core
 #
 # Finally, we copy `packages/bind-mount/` since this package contains native
 # code that will be built during the install process.
-COPY --parents .yarn/ yarn.lock .yarnrc.yml **/package.json packages/bind-mount/ /PrairieLearn/
+COPY --parents .yarn/ yarn.lock .yarnrc.yml package.json apps/*/package.json packages/*/package.json packages/bind-mount/ /PrairieLearn/
 
 # Install Node dependencies.
 #

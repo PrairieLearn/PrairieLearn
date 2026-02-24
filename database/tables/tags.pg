@@ -6,7 +6,7 @@ columns
     implicit: boolean not null default false
     json_comment: jsonb
     name: text not null
-    number: integer
+    number: integer not null
 
 indexes
     tags_pkey: PRIMARY KEY (id) USING btree (id)

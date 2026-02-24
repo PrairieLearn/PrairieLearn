@@ -8,7 +8,8 @@ import { loadSqlEquiv, queryOptionalRow } from '@prairielearn/postgres';
 import { IdSchema } from '@prairielearn/zod';
 
 import checkPlanGrantsForQuestion from '../../ee/middlewares/checkPlanGrantsForQuestion.js';
-import { canDeleteAssessmentInstance, gradeAssessmentInstance } from '../../lib/assessment.js';
+import { gradeAssessmentInstance } from '../../lib/assessment.js';
+import { canDeleteAssessmentInstance } from '../../lib/assessment.shared.js';
 import { getQuestionCopyTargets } from '../../lib/copy-content.js';
 import { type File } from '../../lib/db-types.js';
 import { deleteFile, uploadFile } from '../../lib/file-store.js';

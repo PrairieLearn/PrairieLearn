@@ -1,28 +1,11 @@
-import z from 'zod';
-
 import { TimezoneContext } from '../../components/FriendlyDate.js';
 import { setCookieClient } from '../../lib/client/cookie.js';
-import {
-  type StaffAuditEvent,
-  StaffCourseInstanceSchema,
-  StaffEnrollmentSchema,
-  StaffUserSchema,
-} from '../../lib/client/safe-db-types.js';
-import { SprocUsersGetDisplayedRoleSchema } from '../../lib/db-types.js';
+import { type StaffAuditEvent } from '../../lib/client/safe-db-types.js';
 import { type StaffGradebookRow } from '../../lib/gradebook.shared.js';
 
-import { OverviewCard } from './components/OverviewCard.js';
+import { OverviewCard, type UserDetail } from './components/OverviewCard.js';
 import { StudentAuditEventsTable } from './components/StudentAuditEventsTable.js';
 import { StudentGradebookTable } from './components/StudentGradebookTable.js';
-
-export const UserDetailSchema = z.object({
-  user: StaffUserSchema.nullable(),
-  course_instance: StaffCourseInstanceSchema,
-  enrollment: StaffEnrollmentSchema,
-  role: SprocUsersGetDisplayedRoleSchema,
-});
-
-type UserDetail = z.infer<typeof UserDetailSchema>;
 
 interface StudentDetailProps {
   auditEvents: StaffAuditEvent[];

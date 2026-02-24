@@ -38,6 +38,7 @@ ALLOW_BLANK_DEFAULT = False
 BLANK_VALUE_DEFAULT = "0"
 CUSTOM_FORMAT_DEFAULT = ".12g"
 SHOW_SCORE_DEFAULT = True
+INITIAL_VALUE_DEFAULT = None
 ANSWER_INSUFFICIENT_PRECISION_WARNING = (
     "Your answer does not have precision within the specified relative tolerance."
 )
@@ -70,6 +71,7 @@ def prepare(element_html: str, data: pl.QuestionData) -> None:
         "custom-format",
         "placeholder",
         "show-score",
+        "initial-value",
     ]
     pl.check_attribs(element, required_attribs, optional_attribs)
     name = pl.get_string_attrib(element, "answers-name")
@@ -180,6 +182,10 @@ def render(element_html: str, data: pl.QuestionData) -> str:
         element, "show-help-text", SHOW_HELP_TEXT_DEFAULT
     )
     raw_submitted_answer = data["raw_submitted_answers"].get(name)
+    if raw_submitted_answer is None:
+        raw_submitted_answer = pl.get_string_attrib(
+            element, "initial-value", INITIAL_VALUE_DEFAULT
+        )
     partial_score = data["partial_scores"].get(name, {"score": None})
     score = partial_score.get("score", None)
     with open(NUMBER_INPUT_MUSTACHE_TEMPLATE_NAME, encoding="utf-8") as f:

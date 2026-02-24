@@ -61,6 +61,7 @@ export interface ResLocalsQuestionRenderAdded extends QuestionUrls {
 
 export interface ResLocalsInstanceQuestionRenderAdded {
   rubric_data: RubricData | null;
+  allowGradeLeftMs: number;
 }
 
 export interface ResLocalsBuildLocals {

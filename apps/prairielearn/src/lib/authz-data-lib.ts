@@ -150,8 +150,6 @@ export type StudentCourseInstanceRole = 'Student';
 
 export type InstructorCourseInstanceRole = 'Student Data Viewer' | 'Student Data Editor';
 
-export type CourseInstanceRole = StudentCourseInstanceRole | InstructorCourseInstanceRole;
-
 export type CourseRole = 'Previewer' | 'Viewer' | 'Editor' | 'Owner';
 
 export type Role =

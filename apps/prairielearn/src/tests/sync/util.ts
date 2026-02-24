@@ -274,7 +274,7 @@ export function getCourseData() {
   });
 }
 
-export function getFakeLogger() {
+function getFakeLogger() {
   return {
     verbose: () => {},
     debug: () => {},

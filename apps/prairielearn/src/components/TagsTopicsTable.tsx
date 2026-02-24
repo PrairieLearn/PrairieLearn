@@ -17,7 +17,7 @@ const emptyEntity = {
   implicit: false,
   json_comment: '',
   name: '',
-  number: null,
+  number: 0,
 };
 
 export function TagsTopicsTable<Entity extends StaffTag | StaffTopic>({

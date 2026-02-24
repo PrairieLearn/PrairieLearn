@@ -5,7 +5,7 @@ import { type Timezone } from '../../../lib/timezone.shared.js';
 
 import { AddInstitutionModal } from './AddInstitutionModal.js';
 
-export interface InstitutionRow {
+interface InstitutionRow {
   institution: AdminInstitution;
   authn_providers: StaffAuthnProvider['name'][];
 }

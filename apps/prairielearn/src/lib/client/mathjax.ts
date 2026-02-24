@@ -121,11 +121,3 @@ export async function mathjaxTypeset(elements?: Element[]) {
   await mathjaxPromise;
   return window.MathJax.typesetPromise(elements);
 }
-
-export async function mathjaxConvert(value: string) {
-  // No-op on the server.
-  if (typeof window === 'undefined') return;
-
-  await mathjaxPromise;
-  return (window.MathJax.tex2chtmlPromise || window.MathJax.tex2svgPromise)(value);
-}

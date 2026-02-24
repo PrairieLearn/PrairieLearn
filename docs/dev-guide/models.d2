@@ -46,7 +46,6 @@ jobs.style.fill: lavender
 assessment_state_logs.style.fill: white
 assessment_score_logs.style.fill: white
 question_score_logs.style.fill: white
-variant_view_logs.style.fill: white
 assessment_view_logs.style.fill: white
 
 # Connections
@@ -103,7 +102,6 @@ question_score_logs -> instance_questions
 question_score_logs -> grading_jobs: {
   style.stroke-dash: 5
 }
-variant_view_logs -> variants
 assessment_view_logs -> assessment_instances
 
 legend: "Legend" {

@@ -3,30 +3,17 @@ import { z } from 'zod';
 import { formatDate } from '@prairielearn/formatter';
 import { html } from '@prairielearn/html';
 
-import {
-  AdministratorQueryResultSchema,
-  type AdministratorQuerySpecs,
-} from '../../admin_queries/lib/util.js';
+import { type AdministratorQuerySpecs } from '../../admin_queries/lib/util.js';
 import { PageLayout } from '../../components/PageLayout.js';
 import { nodeModulesAssetPath } from '../../lib/assets.js';
 import { type QueryRun, QueryRunSchema } from '../../lib/db-types.js';
 import type { ResLocalsForPage } from '../../lib/res-locals.js';
 
-export const AdministratorQueryRunParamsSchema = z.object({
-  name: z.string(),
-  sql: z.string(),
-  params: z.record(z.any()),
-  authn_user_id: z.string(),
-  error: z.string().optional().nullable(),
-  result: AdministratorQueryResultSchema.nullable(),
-  formatted_date: z.string().optional().nullable(),
-});
-
 export const QueryRunRowSchema = QueryRunSchema.extend({
   user_name: z.string().nullable(),
   user_uid: z.string().nullable(),
 });
-export type QueryRunRow = z.infer<typeof QueryRunRowSchema>;
+type QueryRunRow = z.infer<typeof QueryRunRowSchema>;
 
 export function AdministratorQuery({
   resLocals,
@@ -250,9 +237,6 @@ function shouldRenderColumn(columns: string[], col: string) {
   ) {
     return false;
   }
-  if (col.startsWith('_sortval_')) {
-    return false;
-  }
   return true;
 }
 
@@ -263,23 +247,22 @@ function renderHeader(columns: string[], col: string) {
 
 function renderCell(row: any, col: string, columns: string[], info: AdministratorQuerySpecs) {
   if (!shouldRenderColumn(columns, col)) return '';
-  const tdAttributes = `_sortval_${col}` in row ? html`data-text="${row[`_sortval_${col}`]}"` : '';
 
   if (col === 'course' && 'course_id' in row) {
     return html`
-      <td ${tdAttributes}>
+      <td>
         <a href="/pl/course/${row.course_id}">${row[col]}</a>
       </td>
     `;
   } else if (col === 'course_instance' && 'course_instance_id' in row) {
     return html`
-      <td ${tdAttributes}>
+      <td>
         <a href="/pl/course_instance/${row.course_instance_id}">${row[col]}</a>
       </td>
     `;
   } else if (col === 'assessment' && 'assessment_id' in row && 'course_instance_id' in row) {
     return html`
-      <td ${tdAttributes}>
+      <td>
         <a
           href="/pl/course_instance/${row.course_instance_id}/instructor/assessment/${row.assessment_id}"
         >
@@ -290,22 +273,22 @@ function renderCell(row: any, col: string, columns: string[], info: Administrato
   }
 
   if (row[col] == null) {
-    return html`<td ${tdAttributes}></td>`;
+    return html`<td></td>`;
   }
 
   if (info.resultFormats?.[col] === 'pre') {
     return html`
-      <td ${tdAttributes}>
+      <td>
         <pre>${row[col]}</pre>
       </td>
     `;
   } else if (typeof row[col] === 'object') {
     return html`
-      <td ${tdAttributes}>
+      <td>
         <code>${JSON.stringify(row[col])}</code>
       </td>
     `;
   }
 
-  return html`<td ${tdAttributes}>${row[col]}</td>`;
+  return html`<td>${row[col]}</td>`;
 }

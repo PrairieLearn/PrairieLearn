@@ -18,10 +18,10 @@
 
 <pl-card>
   <pl-question-panel>
-    <p>This question modifies the default relative tolerance (of <code>1e-3</code>) and absolute tolerance (of <code>1e-8</code>) underneath <a href="https://docs.prairielearn.com/elements/pl-number-input"><code>pl-number-input</code></a> element. Furthermore, we add a label to the front of the input field to specify what the field should receive. </p>
+    <p>This question modifies the default relative tolerance (of <code>1e-3</code>) and absolute tolerance (of <code>1e-8</code>) underneath <a href="https://docs.prairielearn.com/elements/pl-number-input"><code>pl-number-input</code></a> element. Furthermore, we add a label to the front of the input field to specify what the field should receive. The attribute <code>initial-value</code> pre-fills the input box the first time it is rendered. Here the initial value is set to one of the given values rather than the correct answer, so students still need to compute the result themselves.</p>
     <p> Solve for the value of $c$ given $c^2 = {{params.a}}^2 + {{params.b}}^2$ </p>
   </pl-question-panel>
-  <pl-number-input answers-name="c_2" label="$c = $" rtol="1e-3" atol="1e-10"></pl-number-input>
+  <pl-number-input answers-name="c_2" label="$c = $" rtol="1e-3" atol="1e-10" initial-value="{{params.a}}"></pl-number-input>
 </pl-card>
 
 <pl-card>

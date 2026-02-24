@@ -94,7 +94,7 @@ export async function selectVariantsByInstanceQuestion({
  * - For non-group work, a user is considered to own a variant if they are the
  *   user that created the variant, as tracked in `variants.user_id`.
  */
-export async function selectUserOwnsVariant({
+async function selectUserOwnsVariant({
   user_id,
   variant_id,
 }: {

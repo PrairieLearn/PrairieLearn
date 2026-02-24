@@ -2,13 +2,13 @@ import { assertNever } from '@prairielearn/utils';
 
 import type { Course, CourseInstance, Enrollment, User } from './db-types.js';
 
-export type EnrollmentIneligibilityReason =
+type EnrollmentIneligibilityReason =
   | 'blocked'
   | 'self-enrollment-disabled'
   | 'self-enrollment-expired'
   | 'institution-restriction';
 
-export type EnrollmentEligibilityResult =
+type EnrollmentEligibilityResult =
   | { eligible: true }
   | { eligible: false; reason: EnrollmentIneligibilityReason };
 

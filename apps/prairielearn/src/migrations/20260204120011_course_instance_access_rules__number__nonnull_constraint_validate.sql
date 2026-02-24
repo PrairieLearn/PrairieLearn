@@ -1,0 +1,8 @@
+ALTER TABLE course_instance_access_rules VALIDATE CONSTRAINT course_instance_access_rules_number_not_null;
+
+ALTER TABLE course_instance_access_rules
+ALTER COLUMN number
+SET NOT NULL;
+
+ALTER TABLE course_instance_access_rules
+DROP CONSTRAINT course_instance_access_rules_number_not_null;

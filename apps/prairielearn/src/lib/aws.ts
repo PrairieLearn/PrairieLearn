@@ -126,6 +126,7 @@ export async function downloadFromS3(s3Bucket: string, s3Path: string, localPath
 /**
  * Delete a file or directory from S3.
  *
+ * @knipignore
  * @param s3Bucket - The S3 bucket name.
  * @param s3Path - The S3 target path.
  * @param isDirectory - Whether the deletion target is a directory (defaults to false).

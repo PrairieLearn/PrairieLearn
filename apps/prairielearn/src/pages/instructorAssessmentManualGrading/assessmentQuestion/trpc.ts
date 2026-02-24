@@ -43,9 +43,9 @@ export function createContext({ res }: CreateExpressContextOptions) {
   };
 }
 
-export type TRPCContext = Awaited<ReturnType<typeof createContext>>;
+type TRPCContext = Awaited<ReturnType<typeof createContext>>;
 
-export const t = initTRPC.context<TRPCContext>().create({
+const t = initTRPC.context<TRPCContext>().create({
   transformer: superjson,
 });
 

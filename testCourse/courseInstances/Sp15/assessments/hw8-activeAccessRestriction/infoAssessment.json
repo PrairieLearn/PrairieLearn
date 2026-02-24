@@ -17,7 +17,7 @@
   ],
   "zones": [
     {
-      "title": "Zone 1",
+      "title": "Main zone",
       "questions": [
         { "id": "partialCredit1", "points": 10 },
         { "id": "fossilFuelsRadio", "points": 2, "maxPoints": 10 },

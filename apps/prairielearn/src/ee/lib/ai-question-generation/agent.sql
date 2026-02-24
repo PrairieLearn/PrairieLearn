@@ -48,6 +48,12 @@ FROM
 WHERE
   id = $id;
 
+-- BLOCK insert_draft_question_metadata
+INSERT INTO
+  draft_question_metadata (question_id, created_by, updated_by)
+VALUES
+  ($question_id, $creator_id, $creator_id);
+
 -- BLOCK finalize_assistant_message
 UPDATE ai_question_generation_messages
 SET
