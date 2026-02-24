@@ -53,22 +53,11 @@ router.get(
       }
     }
 
-    let referrer =
-      typeof req.query.referrer === 'string' ? req.query.referrer : req.get('Referrer') || null;
-    if (referrer) {
-      // Validate that the referrer is an HTTP or HTTPS URL. We don't validate
-      // the host because the server may be running behind a reverse proxy that
-      // changes the host, and we just want to ensure that it's a safe URL to
-      // redirect to.
-      try {
-        const referrerUrl = new URL(referrer);
-        if (referrerUrl.protocol !== 'http:' && referrerUrl.protocol !== 'https:') {
-          referrer = null;
-        }
-      } catch {
-        referrer = null;
-      }
-    }
+    // Only accept a referrer query parameter if it's a relative path, to prevent open redirect vulnerabilities. If the referrer query parameter is not present or not valid, fall back to the Referrer header. If neither is valid, set referrer to null.
+    const referrer =
+      typeof req.query.referrer === 'string' && req.query.referrer.startsWith('/')
+        ? req.query.referrer
+        : req.get('Referrer') || null;
     res.send(JobSequence({ resLocals: res.locals, job_sequence, referrer }));
   }),
 );
