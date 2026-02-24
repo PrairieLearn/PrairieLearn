@@ -47,7 +47,7 @@ Interactive `pl-drawing` elements are currently not accessible. For interactive 
 
 #### Example implementations
 
-- [element/drawingOptions]: Example demonstrating `weight`, `allow-blank`, and `show-score` options
+- [demo/drawing/centroid]: Gradable drawing with `weight`, `allow-blank`, and `show-score`
 - [element/drawingGallery]: Image gallery with drawing objects
 
 ### `pl-drawing-initial` element
@@ -2117,4 +2117,4 @@ These button icons can then be attached to your elements by setting the `get_but
 [demo/drawing/customizedbuttons]: https://github.com/PrairieLearn/PrairieLearn/tree/master/exampleCourse/questions/demo/drawing/customizedButtons
 [demo/drawing/inclinedplane-reaction]: https://github.com/PrairieLearn/PrairieLearn/tree/master/exampleCourse/questions/demo/drawing/inclinedPlane-reaction
 [demo/drawing/frame-exploded]: https://github.com/PrairieLearn/PrairieLearn/tree/master/exampleCourse/questions/demo/drawing/frame-exploded
-[element/drawingOptions]: https://github.com/PrairieLearn/PrairieLearn/tree/master/exampleCourse/questions/element/drawingOptions
+[demo/drawing/centroid]: https://github.com/PrairieLearn/PrairieLearn/tree/master/exampleCourse/questions/demo/drawing/centroid

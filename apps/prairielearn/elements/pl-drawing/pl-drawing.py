@@ -17,7 +17,6 @@ SHOW_SCORE_DEFAULT = False
 
 
 def _blank_score(weight: int) -> dict:
-    """Build a partial_scores entry for a blank submission (score 0)."""
     return {
         "score": 0.0,
         "weight": weight,
@@ -698,7 +697,6 @@ def test(element_html: str, data: pl.ElementTestData) -> None:
         allow_blank = pl.get_boolean_attrib(element, "allow-blank", ALLOW_BLANK_DEFAULT)
         if allow_blank:
             data["raw_submitted_answers"][name] = "[]"
-            data["partial_scores"][name] = _blank_score(weight)
         else:
             data["format_errors"][name] = ""
             data["raw_submitted_answers"][name] = "invalid submission"
