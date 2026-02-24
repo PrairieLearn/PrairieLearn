@@ -500,7 +500,10 @@ async function syncAssessmentTools(
   assessments: CourseInstanceData['assessments'],
   nameToIdMap: Record<string, string> | null,
 ) {
-  const toolRows: Partial<AssessmentTool>[] = [];
+  const toolRows: (
+    | Pick<AssessmentTool, 'assessment_id' | 'tool' | 'enabled' | 'settings'>
+    | Pick<AssessmentTool, 'zone_id' | 'tool' | 'enabled' | 'settings'>
+  )[] = [];
   const assessmentIds: string[] = [];
   const assessmentsWithZoneTools: { assessmentId: string; zones: AssessmentJson['zones'] }[] = [];
 
@@ -540,7 +543,6 @@ async function syncAssessmentTools(
         `Number of zones in the database (${zoneRows.length}) does not match number of zones in the info files (${zones.length}) for assessment ID ${assessmentId}.`,
       );
     }
-
 
     for (const [index, zone] of zones.entries()) {
       if (!zone.tools) continue;
