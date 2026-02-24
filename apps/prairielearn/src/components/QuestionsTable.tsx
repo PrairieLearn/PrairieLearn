@@ -12,7 +12,7 @@ import {
   useReactTable,
 } from '@tanstack/react-table';
 import { parseAsArrayOf, parseAsString, useQueryState, useQueryStates } from 'nuqs';
-import { useState } from 'react';
+import { useMemo, useRef, useState } from 'react';
 import { Alert } from 'react-bootstrap';
 
 import { run } from '@prairielearn/run';
@@ -103,16 +103,21 @@ export function QuestionsTable<TQueryKey extends readonly unknown[]>({
     parseAsColumnPinningState.withDefault(DEFAULT_PINNING),
   );
 
-  const courseInstanceIds = courseInstances.map((ci) => ci.id);
+  const courseInstanceIds = useMemo(() => courseInstances.map((ci) => ci.id), [courseInstances]);
 
-  const filterParsers = run(() =>
-    Object.fromEntries([
-      ...Object.values(FILTER_COLUMN_URL_KEYS).map((urlKey) => [
-        urlKey,
-        parseAsArrayOf(parseAsString).withDefault([]),
+  const filterParsers = useMemo(
+    () =>
+      Object.fromEntries([
+        ...Object.values(FILTER_COLUMN_URL_KEYS).map((urlKey) => [
+          urlKey,
+          parseAsArrayOf(parseAsString).withDefault([]),
+        ]),
+        ...courseInstanceIds.map((id) => [
+          `ci_${id}`,
+          parseAsArrayOf(parseAsString).withDefault([]),
+        ]),
       ]),
-      ...courseInstanceIds.map((id) => [`ci_${id}`, parseAsArrayOf(parseAsString).withDefault([])]),
-    ]),
+    [courseInstanceIds],
   );
 
   const [filterValues, setFilterValues] = useQueryStates(filterParsers);
@@ -129,20 +134,25 @@ export function QuestionsTable<TQueryKey extends readonly unknown[]>({
     initialData: initialQuestions,
   });
 
-  const columns = createQuestionsTableColumns({
-    courseInstances,
-    qidPrefix,
-    showSharingSets,
-    courseId,
-    courseInstanceId: currentCourseInstanceId,
-    isPublic,
-  });
+  const columns = useMemo(
+    () =>
+      createQuestionsTableColumns({
+        courseInstances,
+        qidPrefix,
+        showSharingSets,
+        courseId,
+        courseInstanceId: currentCourseInstanceId,
+        isPublic,
+      }),
+    [courseInstances, qidPrefix, showSharingSets, courseId, currentCourseInstanceId, isPublic],
+  );
 
-  const allColumnIds = extractLeafColumnIds(columns);
+  const allColumnIds = useMemo(() => extractLeafColumnIds(columns), [columns]);
 
   const hasLegacyQuestions = initialQuestions.some((q) => q.display_type !== 'v3');
 
-  const defaultColumnVisibility = run(() => {
+  const defaultColumnVisibilityRef = useRef<Record<string, boolean>>({});
+  defaultColumnVisibilityRef.current = run(() => {
     const visibility: Record<string, boolean> = {};
     for (const id of allColumnIds) {
       if (HIDDEN_BY_DEFAULT.has(id)) {
@@ -159,12 +169,17 @@ export function QuestionsTable<TQueryKey extends readonly unknown[]>({
     return visibility;
   });
 
-  const [columnVisibility, setColumnVisibility] = useQueryState(
-    'columns',
-    parseAsColumnVisibilityStateWithColumns(allColumnIds).withDefault(defaultColumnVisibility),
+  const columnVisibilityParser = useMemo(
+    () =>
+      parseAsColumnVisibilityStateWithColumns(allColumnIds, defaultColumnVisibilityRef).withDefault(
+        defaultColumnVisibilityRef.current,
+      ),
+    [allColumnIds],
   );
 
-  const columnFilters: ColumnFiltersState = run(() => {
+  const [columnVisibility, setColumnVisibility] = useQueryState('columns', columnVisibilityParser);
+
+  const columnFilters = useMemo<ColumnFiltersState>(() => {
     const filters: ColumnFiltersState = [];
     for (const [columnId, urlKey] of Object.entries(FILTER_COLUMN_URL_KEYS)) {
       const values = filterValues[urlKey] ?? [];
@@ -179,35 +194,40 @@ export function QuestionsTable<TQueryKey extends readonly unknown[]>({
       }
     }
     return filters;
-  });
+  }, [filterValues, courseInstanceIds]);
 
-  const columnFilterSetters: Record<
-    string,
-    ((_columnId: string, value: string[]) => void) | undefined
-  > = run(() => ({
-    ...Object.fromEntries(
-      Object.entries(FILTER_COLUMN_URL_KEYS).map(([columnId, urlKey]) => [
-        columnId,
-        (_: string, value: string[]) => void setFilterValues({ [urlKey]: value }),
-      ]),
-    ),
-    ...Object.fromEntries(
-      courseInstanceIds.map((id) => [
-        `ci_${id}`,
-        (_: string, value: string[]) => void setFilterValues({ [`ci_${id}`]: value }),
-      ]),
-    ),
-  }));
-
-  const handleColumnFiltersChange = run(() =>
-    createColumnFiltersChangeHandler(columnFilters, columnFilterSetters),
+  const columnFilterSetters = useMemo<
+    Record<string, ((_columnId: string, value: string[]) => void) | undefined>
+  >(
+    () => ({
+      ...Object.fromEntries(
+        Object.entries(FILTER_COLUMN_URL_KEYS).map(([columnId, urlKey]) => [
+          columnId,
+          (_: string, value: string[]) => void setFilterValues({ [urlKey]: value }),
+        ]),
+      ),
+      ...Object.fromEntries(
+        courseInstanceIds.map((id) => [
+          `ci_${id}`,
+          (_: string, value: string[]) => void setFilterValues({ [`ci_${id}`]: value }),
+        ]),
+      ),
+    }),
+    [courseInstanceIds, setFilterValues],
   );
 
-  const filters = run(() =>
-    createQuestionsTableFilters({
-      questions: initialQuestions,
-      courseInstances,
-    }),
+  const handleColumnFiltersChange = useMemo(
+    () => createColumnFiltersChangeHandler(columnFilters, columnFilterSetters),
+    [columnFilters, columnFilterSetters],
+  );
+
+  const filters = useMemo(
+    () =>
+      createQuestionsTableFilters({
+        questions: initialQuestions,
+        courseInstances,
+      }),
+    [initialQuestions, courseInstances],
   );
 
   const table = useReactTable({
@@ -226,7 +246,7 @@ export function QuestionsTable<TQueryKey extends readonly unknown[]>({
     },
     initialState: {
       columnPinning: DEFAULT_PINNING,
-      columnVisibility: defaultColumnVisibility,
+      columnVisibility: defaultColumnVisibilityRef.current,
     },
     onSortingChange: setSorting,
     onColumnFiltersChange: handleColumnFiltersChange,
