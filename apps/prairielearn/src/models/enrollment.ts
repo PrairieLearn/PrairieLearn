@@ -937,8 +937,16 @@ const UpdatedEnrollmentRowSchema = z.object({
   course_id: z.string().optional(),
 });
 
+const DeletedEnrollmentRowSchema = z.object({
+  old_enrollment: EnrollmentSchema,
+  course_id: z.string().optional(),
+  resolved_user_id: z.string().nullable(),
+});
+
 /**
- * Updates enrollment for a user in a specific course instance to 'removed' status.
+ * Updates or deletes enrollment for a user in a specific course instance when staff permissions change.
+ * - Joined/blocked enrollments are transitioned to 'removed'.
+ * - Invited/rejected enrollments are hard deleted.
  * Used when staff permissions are granted at the course instance level.
  * Must be called within a transaction.
  */
@@ -956,7 +964,7 @@ export async function updateEnrollmentToRemovedForStaffPermissions({
   agentAuthnUserId: string;
 }): Promise<void> {
   const lockedEnrollment = await queryOptionalRow(
-    sql.select_and_lock_joined_enrollment_by_course_instance_and_user,
+    sql.select_and_lock_enrollment_for_staff_permissions,
     { course_instance_id: courseInstanceId, user_id: userId },
     EnrollmentSchema,
   );
@@ -967,13 +975,34 @@ export async function updateEnrollmentToRemovedForStaffPermissions({
 
   await selectAndLockUser(userId);
 
-  await _updateEnrollmentStatus({
-    lockedEnrollment,
-    status: 'removed',
-    actionDetail,
-    agentUserId,
-    agentAuthnUserId,
-  });
+  if (lockedEnrollment.status === 'invited' || lockedEnrollment.status === 'rejected') {
+    await queryRow(
+      sql.delete_enrollment_by_id,
+      { enrollment_id: lockedEnrollment.id },
+      EnrollmentSchema,
+    );
+
+    await insertAuditEvent({
+      tableName: 'enrollments',
+      action: 'delete',
+      actionDetail,
+      rowId: lockedEnrollment.id,
+      oldRow: lockedEnrollment,
+      newRow: null,
+      courseInstanceId: lockedEnrollment.course_instance_id,
+      subjectUserId: userId,
+      agentUserId,
+      agentAuthnUserId,
+    });
+  } else {
+    await _updateEnrollmentStatus({
+      lockedEnrollment,
+      status: 'removed',
+      actionDetail,
+      agentUserId,
+      agentAuthnUserId,
+    });
+  }
 }
 
 /**
@@ -1004,8 +1033,10 @@ export async function updateEnrollmentsToRemovedForCourse({
 }
 
 /**
- * Updates all enrollments for multiple users in all instances of a course to 'removed' status.
- * Used when staff permissions are removed for multiple users.
+ * Updates or deletes all enrollments for multiple users in all instances of a course.
+ * - Joined/blocked enrollments are transitioned to 'removed'.
+ * - Invited/rejected enrollments are hard deleted.
+ * Used when staff permissions are granted or removed for multiple users.
  * Must be called within a transaction.
  */
 export async function updateEnrollmentsToRemovedForCourseBatch({
@@ -1023,13 +1054,13 @@ export async function updateEnrollmentsToRemovedForCourseBatch({
 }): Promise<void> {
   if (userIds.length === 0) return;
 
-  const rows = await queryRows(
+  const updatedRows = await queryRows(
     sql.update_enrollments_to_removed_for_course_batch,
     { course_id: courseId, user_ids: userIds },
     UpdatedEnrollmentRowSchema,
   );
 
-  for (const row of rows) {
+  for (const row of updatedRows) {
     await insertAuditEvent({
       tableName: 'enrollments',
       action: 'update',
@@ -1037,6 +1068,27 @@ export async function updateEnrollmentsToRemovedForCourseBatch({
       rowId: row.new_enrollment.id,
       oldRow: row.old_enrollment,
       newRow: row.new_enrollment,
+      agentUserId,
+      agentAuthnUserId,
+    });
+  }
+
+  const deletedRows = await queryRows(
+    sql.delete_enrollments_for_course_batch,
+    { course_id: courseId, user_ids: userIds },
+    DeletedEnrollmentRowSchema,
+  );
+
+  for (const row of deletedRows) {
+    await insertAuditEvent({
+      tableName: 'enrollments',
+      action: 'delete',
+      actionDetail,
+      rowId: row.old_enrollment.id,
+      oldRow: row.old_enrollment,
+      newRow: null,
+      courseInstanceId: row.old_enrollment.course_instance_id,
+      subjectUserId: row.resolved_user_id,
       agentUserId,
       agentAuthnUserId,
     });

@@ -3,10 +3,7 @@ import { z } from 'zod';
 import { logger } from '@prairielearn/logger';
 import { loadSqlEquiv, queryRow, queryRows, runInTransactionAsync } from '@prairielearn/postgres';
 
-import {
-  flagSelfModifiedAssessmentInstance,
-  selectAndLockAssessmentInstance,
-} from '../models/assessment-instance.js';
+import { selectAndLockAssessmentInstance } from '../models/assessment-instance.js';
 import { selectAssessmentInfoForJob } from '../models/assessment.js';
 
 import { updateAssessmentInstanceGrade } from './assessment-grading.js';
@@ -225,14 +222,6 @@ async function regradeSingleAssessmentInstance({
         onlyLogIfScoreUpdated: true,
       },
     );
-
-    await flagSelfModifiedAssessmentInstance({
-      assessmentInstanceId: assessment_instance_id,
-      assessmentInstanceUserId: assessmentInstance.user_id,
-      assessmentInstanceGroupId: assessmentInstance.team_id,
-      courseInstanceId: assessment.course_instance_id,
-      authnUserId: authn_user_id,
-    });
 
     return {
       updated: assessmentUpdated || updatedQuestionQids.length > 0 || gradeUpdated,
