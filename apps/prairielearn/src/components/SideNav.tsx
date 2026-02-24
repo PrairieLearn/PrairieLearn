@@ -197,15 +197,13 @@ export function SideNav({
       sideNavExpanded,
       persistToggleState,
     })}
-    ${resLocals.course_instance
-      ? CourseInstanceNav({
-          resLocals,
-          page,
-          subPage,
-          urlPrefix,
-          sideNavExpanded,
-        })
-      : ''}
+    ${CourseInstanceNav({
+      resLocals,
+      page,
+      subPage,
+      urlPrefix,
+      sideNavExpanded,
+    })}
   `;
 }
 

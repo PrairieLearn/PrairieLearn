@@ -11,6 +11,17 @@ import type { NavPage, NavSubPage, NavbarType } from './Navbar.types.js';
 import { ContextNavigation } from './NavbarContext.js';
 import { ProgressCircle } from './ProgressCircle.js';
 
+/**
+ * Truncates a string in the middle with an ellipsis if it exceeds the max length.
+ */
+function truncateMiddle(str: string, maxLength: number): string {
+  if (str.length <= maxLength) return str;
+  const charsToShow = maxLength - 1; // account for the ellipsis character
+  const frontChars = Math.ceil(charsToShow / 2);
+  const backChars = Math.floor(charsToShow / 2);
+  return `${str.slice(0, frontChars)}\u2026${str.slice(-backChars)}`;
+}
+
 export function Navbar({
   resLocals,
   navPage,
@@ -796,9 +807,10 @@ function NavbarInstructor({
         !(navSubPage === 'issues' || navSubPage === 'questions' || navSubPage === 'syncs')
           ? 'active'
           : ''} ${!authz_data.has_course_permission_view ? 'disabled' : ''}"
+        title="${course.short_name}"
         href="${urlPrefix}/course_admin"
       >
-        ${course.short_name}
+        ${truncateMiddle(course.short_name, 24)}
       </a>
       <a
         class="nav-link dropdown-toggle dropdown-toggle-split"
@@ -879,9 +891,10 @@ function NavbarInstructor({
               !(navSubPage === 'assessments' || navSubPage === 'gradebook')
                 ? 'active'
                 : ''}"
+              title="${course_instance.short_name}"
               href="/pl/course_instance/${course_instance.id}/instructor/instance_admin"
             >
-              ${course_instance.short_name}
+              ${truncateMiddle(course_instance.short_name, 24)}
             </a>
             <a
               class="nav-link dropdown-toggle dropdown-toggle-split"
