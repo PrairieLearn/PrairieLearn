@@ -30,7 +30,7 @@ In addition to those properties, the following properties can be used to further
 | `maxPoints`                                                    | number  | The maximum points that can be earned. (default: sum of zone max points)                                                    |
 | [`maxBonusPoints`](#assessment-points)                         | number  | The maximum number of additional points that can be earned beyond `maxPoints`. (default: 0)                                 |
 | [`shuffleQuestions`](#question-order-randomization)            | boolean | Whether to randomize the question order. (default: `false` for Homework-type assessments, `true` for Exam-type assessments) |
-| `autoClose`                                                    | boolean | Whether to automatically close the assessment after 6 hours of inactivity (Exams only). (default: `true`)                   |
+| `autoClose`                                                    | boolean | Whether to automatically close the assessment after 15 minutes of inactivity (Exams only). (default: `true`)                |
 | `allowIssueReporting`                                          | boolean | Whether to allow students to report question issues. (default: `true`)                                                      |
 | `allowPersonalNotes`                                           | boolean | Whether to allow students to add personal notes. (default: `true`)                                                          |
 | `constantQuestionValue`                                        | boolean | Whether to disable the question value boost on correct solutions (Homework only). (default: `false`)                        |
@@ -84,7 +84,7 @@ A detailed comparison of the two types is shown below.
 | **Passwords**            | Not supported                                                                                       | [Supported](../assessment/accessControl.md#passwords)                                      |
 | **Multiple instances**   | Not supported                                                                                       | [Supported](#multiple-instance-versus-single-instance-assessments)                         |
 | **Assessment updates**   | Updated if assessment changes                                                                       | Assessment is fixed on creation                                                            |
-| **Closing assessments**  | Assessments remain open                                                                             | [By default, idle assessments are closed after 6 hours](#auto-closing-exam-assessments)    |
+| **Closing assessments**  | Assessments remain open                                                                             | [By default, idle assessments are closed after 15 minutes](#auto-closing-exam-assessments) |
 | **Honor pledge**         | Not supported                                                                                       | [Enabled by default](#honor-code)                                                          |
 | **Real-time grading**    | Always enabled                                                                                      | [Can be disabled](#disabling-real-time-grading)                                            |
 
@@ -742,7 +742,7 @@ The `advanceScorePerc` attribute is intended to be used in [group work](#enablin
 
 ## Auto-closing Exam assessments
 
-By default, Exam assessments will auto-close after six hours of inactivity by the student. This generally means that you don't need to explicitly close exams that students accidentally did not close when they were done. If you want to prevent auto-closing then you can set `"autoClose": false` as a top-level option in the `infoAssessment.json` file.
+By default, Exam assessments will auto-close after 15 minutes of inactivity by the student. This value is derived from the external grading timeout (`externalGradingMaximumTimeout`) plus 5 minutes, and can be overridden with the `autoFinishAgeMins` server config option. This generally means that you don't need to explicitly close exams that students accidentally did not close when they were done. If you want to prevent auto-closing then you can set `"autoClose": false` as a top-level option in the `infoAssessment.json` file.
 
 ## Issue reporting
 

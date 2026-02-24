@@ -114,7 +114,7 @@ statistics.
 
 ## Why is the exam closed if it is not past the end date?
 
-As a built-in security measure, assessments are automatically closed after 6 hours
+As a built-in security measure, assessments are automatically closed after 15 minutes
 of inactivity by the student. Once an assessment is closed, the student is
 unable to provide new submissions. This is regardless of whether the end date
 specified in an access control is reached. If the examination is a take-home exam,

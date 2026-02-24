@@ -18,9 +18,12 @@ const sql = sqldb.loadSqlEquiv(import.meta.url);
  * @see assessment.gradeAssessmentInstance
  */
 export async function run() {
+  // If not configured, use the external grading maximum timeout plus 5 minutes.
+  const age_minutes =
+    config.autoFinishAgeMins ?? Math.ceil(config.externalGradingMaximumTimeout / 60) + 5;
   const assessment_instances = await sqldb.queryRows(
     sql.select_assessments_to_auto_close,
-    { age_minutes: config.autoFinishAgeMins },
+    { age_minutes },
     AssessmentInstanceSchema.pick({ id: true, open: true, assessment_id: true }),
   );
 

@@ -314,8 +314,8 @@
       "default": 5
     },
     "autoFinishAgeMins": {
-      "type": "number",
-      "default": 360
+      "type": ["number", "null"],
+      "default": null
     },
     "questionTimeoutMilliseconds": {
       "type": "number",

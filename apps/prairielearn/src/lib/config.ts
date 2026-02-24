@@ -198,7 +198,11 @@ export const ConfigSchema = z.object({
    * Set to `null` to disable Node metric reporting.
    */
   nodeMetricsIntervalSec: z.number().default(5),
-  autoFinishAgeMins: z.number().default(6 * 60),
+  /**
+   * The number of minutes after an exam is created that it will be automatically finished.
+   * If not configured, it will be based on the external grading maximum timeout.
+   */
+  autoFinishAgeMins: z.number().nullable().default(null),
   // TODO: tweak this value once we see the data from #2267
   questionTimeoutMilliseconds: z.number().default(10000),
   secretKey: z.string().default('THIS_IS_THE_SECRET_KEY'),

@@ -8,6 +8,7 @@ import { PageLayout } from '../../components/PageLayout.js';
 import { QRCodeModalHtml } from '../../components/QRCodeModal.js';
 import { AssessmentShortNameDescription } from '../../components/ShortNameDescriptions.js';
 import { compiledScriptTag } from '../../lib/assets.js';
+import { config } from '../../lib/config.js';
 import { type AssessmentModule, type AssessmentSet } from '../../lib/db-types.js';
 import type { ResLocalsForPage } from '../../lib/res-locals.js';
 import { SHORT_NAME_PATTERN } from '../../lib/short-name.js';
@@ -254,7 +255,10 @@ ${resLocals.assessment.text}</textarea
                     />
                     <label class="form-check-label" for="auto_close">Auto close</label>
                     <div class="small text-muted">
-                      Whether to automatically close the assessment after 6 hours of inactivity.
+                      Whether to automatically close the assessment after
+                      ${config.autoFinishAgeMins ??
+                      Math.ceil(config.externalGradingMaximumTimeout / 60) + 5}
+                      minutes of inactivity.
                     </div>
                   </div>
                 `
