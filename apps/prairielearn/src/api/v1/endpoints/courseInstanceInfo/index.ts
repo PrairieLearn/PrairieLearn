@@ -27,9 +27,7 @@ router.get(
   asyncHandler(async (req, res) => {
     const data = await sqldb.queryRow(
       sql.select_course_instance_info,
-      {
-        course_instance_id: res.locals.course_instance.id,
-      },
+      { course_instance_id: res.locals.course_instance.id },
       CourseInstanceInfoDataSchema,
     );
     res.status(200).send(data);

@@ -206,7 +206,7 @@ function TerminologyModal() {
 
       <p>
         For more, see the
-        <a href="https://prairielearn.readthedocs.io/" target="_blank" rel="noreferrer"
+        <a href="https://docs.prairielearn.com/" target="_blank" rel="noreferrer"
           >PrairieLearn User Guide</a
         >
       </p>

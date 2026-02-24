@@ -3,6 +3,7 @@ import { escapeHtml, html, unsafeHtml } from '@prairielearn/html';
 import { run } from '@prairielearn/run';
 
 import type { InstanceQuestionAIGradingInfo } from '../ee/lib/ai-grading/types.js';
+import { ansiToHtml } from '../lib/chalk.js';
 import { config } from '../lib/config.js';
 import { type CopyTarget } from '../lib/copy-content.js';
 import type {
@@ -14,10 +15,10 @@ import type {
   User,
   Variant,
 } from '../lib/db-types.js';
+import { type GroupInfo, getRoleNamesForUser } from '../lib/groups.js';
 import { idsEqual } from '../lib/id.js';
 import type { IssueRenderData } from '../lib/question-render.types.js';
 import type { UntypedResLocals } from '../lib/res-locals.types.js';
-import { type GroupInfo, getRoleNamesForUser } from '../lib/teams.js';
 import type { SimpleVariantWithScore } from '../models/variant.js';
 
 import { AiGradingHtmlPreview } from './AiGradingHtmlPreview.js';
@@ -109,10 +110,10 @@ export function QuestionContainer({
             `
           : ''
       }
-      ${(questionContext === 'instructor' || questionContext === 'manual_grading') &&
-      aiGradingInfo?.explanation
+      ${['instructor', 'manual_grading'].includes(questionContext) && aiGradingInfo
         ? AIGradingExplanation({
             explanation: aiGradingInfo.explanation,
+            rotationCorrectionDegrees: aiGradingInfo.rotationCorrectionDegrees,
           })
         : ''}
       ${(questionContext === 'instructor' || questionContext === 'manual_grading') &&
@@ -197,7 +198,13 @@ function AIGradingPrompt({ prompt }: { prompt: string }) {
   `;
 }
 
-function AIGradingExplanation({ explanation }: { explanation: string }) {
+function AIGradingExplanation({
+  explanation,
+  rotationCorrectionDegrees,
+}: {
+  explanation: string | null;
+  rotationCorrectionDegrees: string | null;
+}) {
   return html`
     <div class="card mb-3 grading-block">
       <div
@@ -220,16 +227,32 @@ function AIGradingExplanation({ explanation }: { explanation: string }) {
         id="ai-grading-explanation-body"
       >
         <div class="card-body">
-          <pre class="mb-0 overflow-visible mathjax_process" style="white-space: pre-wrap;">
-${explanation}</pre
-          >
+          ${explanation
+            ? html`
+                <pre class="mb-0 overflow-visible mathjax_process" style="white-space: pre-wrap;">
+${explanation}
+</pre>
+              `
+            : ''}
+          ${rotationCorrectionDegrees
+            ? html`
+                <br />
+                <pre>
+Not all images were upright
+Counterclockwise rotation corrections, in degrees: ${rotationCorrectionDegrees}
+</pre>
+              `
+            : html`
+                <br />
+                <pre>All images were upright</pre>
+              `}
         </div>
       </div>
     </div>
   `;
 }
 
-export function IssuePanel({
+function IssuePanel({
   issue,
   course_instance,
   authz_data,
@@ -329,7 +352,7 @@ export function IssuePanel({
                 ? html`
                     <p><strong>Console log:</strong></p>
                     <pre class="bg-dark text-white rounded p-3">
-${issue.system_data.courseErrData.outputBoth}</pre
+${unsafeHtml(ansiToHtml(issue.system_data.courseErrData.outputBoth))}</pre
                     >
                   `
                 : ''}
@@ -412,10 +435,11 @@ interface QuestionFooterResLocals {
   tryAgainUrl: string;
   question: Question;
   variant: Variant;
-  instance_question: (InstanceQuestion & { allow_grade_left_ms?: number }) | null;
+  instance_question: InstanceQuestion | null;
   assessment_question: AssessmentQuestion | null;
   instance_question_info: Record<string, any>;
   authz_result: Record<string, any> | null;
+  allowGradeLeftMs: number;
   group_config: GroupConfig | null;
   group_info: GroupInfo | null;
   group_role_permissions: {
@@ -487,6 +511,7 @@ export function QuestionFooterContent({
     assessment_question,
     instance_question_info,
     authz_result,
+    allowGradeLeftMs,
     group_config,
     group_info,
     group_role_permissions,
@@ -499,7 +524,7 @@ export function QuestionFooterContent({
     }
 
     if (authz_result?.authorized_edit === false) {
-      return html`<div class="alert alert-warning mt-2" role="alert">
+      return html`<div class="alert alert-warning mb-0" role="alert">
         You are viewing the question instance of a different user and so are not authorized to save
         answers, to submit answers for grading, or to try a new variant of this same question.
       </div>`;
@@ -580,7 +605,10 @@ export function QuestionFooterContent({
                 `}
             ${showNewVariantButton
               ? html`
-                  <a href="${newVariantUrl}" class="btn btn-primary disable-on-click ms-1">
+                  <a
+                    href="${newVariantUrl}"
+                    class="btn btn-primary disable-on-click ms-1 js-new-variant-button"
+                  >
                     New variant
                   </a>
                 `
@@ -631,9 +659,8 @@ export function QuestionFooterContent({
       ${SubmitRateFooter({
         questionContext,
         showGradeButton,
-        disableGradeButton,
         assessment_question,
-        allowGradeLeftMs: instance_question?.allow_grade_left_ms ?? 0,
+        allowGradeLeftMs,
       })}
     `;
   });
@@ -644,13 +671,11 @@ export function QuestionFooterContent({
 function SubmitRateFooter({
   questionContext,
   showGradeButton,
-  disableGradeButton,
   assessment_question,
   allowGradeLeftMs,
 }: {
   questionContext: QuestionContext;
   showGradeButton: boolean;
-  disableGradeButton: boolean;
   assessment_question: AssessmentQuestion | null;
   allowGradeLeftMs: number;
 }) {
@@ -673,7 +698,7 @@ function SubmitRateFooter({
     <div class="row">
       <div class="col d-flex justify-content-between">
         <span class="d-flex">
-          ${disableGradeButton
+          ${allowGradeLeftMs > 0
             ? html`
                 <small class="fst-italic ms-2 mt-1 submission-suspended-msg">
                   Grading possible in <span id="submission-suspended-display"></span>

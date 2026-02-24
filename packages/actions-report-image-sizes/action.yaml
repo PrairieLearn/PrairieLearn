@@ -1,17 +1,25 @@
 name: 'Report image sizes'
-description: 'Comment any changes in image sizes on the PR'
+description: 'Report image size changes for PRs and update the baseline on master pushes'
 inputs:
-  images:
-    description: 'Which images to check'
+  sizes-path:
+    description: 'Path to the image-sizes.json file produced by the build'
     required: true
   sha:
-    description: 'SHA of the commit'
+    description: 'SHA of the commit (used for Docker Hub links)'
     required: true
   title:
-    description: 'Title of the comment'
+    description: 'Title of the comment section'
     required: true
+  pushed:
+    description: 'Whether images were pushed to Docker Hub (used to determine if links should be shown)'
+    required: false
+    default: 'false'
   token:
-    description: 'GitHub token to use for commenting'
+    description: 'GitHub token for baseline branch operations'
+    required: true
+  report-path:
+    description: 'Path to write the report markdown (for workflow_run comment posting)'
+    required: false
 runs:
-  using: 'node20'
+  using: 'node24'
   main: 'dist/index.js'

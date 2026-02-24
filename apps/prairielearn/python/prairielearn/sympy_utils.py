@@ -351,21 +351,7 @@ def ast_check_str(expr: str, locals_for_eval: LocalsForEval) -> None:
     """Check the AST of the expression for security, whitelisting only certain nodes.
 
     This prevents the user from executing arbitrary code through `eval_expr`.
-
-    Raises:
-        HasEscapeError: If the expression contains an escape character.
-        HasCommentError: If the expression contains a comment character.
     """
-    # Disallow escape character
-    ind = expr.find("\\")
-    if ind != -1:
-        raise HasEscapeError(ind)
-
-    # Disallow comment character
-    ind = expr.find("#")
-    if ind != -1:
-        raise HasCommentError(ind)
-
     # Disallow AST nodes that are not in whitelist
     #
     # Be very careful about adding to the list below. In particular,
@@ -435,6 +421,22 @@ def evaluate(
     return evaluate_with_source(expr, locals_for_eval, allow_complex=allow_complex)[0]
 
 
+def _normalize_expr(expr: str) -> str:
+    """Normalize a symbolic expression by converting Greek unicode and transliterating to ASCII."""
+    return full_unidecode(greek_unicode_transform(expr))
+
+
+def _normalize_expr_and_map_offsets(expr: str) -> tuple[str, list[int]]:
+    """Normalize expr and build a mapping from normalized indices to original indices."""
+    parts: list[str] = []
+    offsets: list[int] = []
+    for ind, char in enumerate(expr):
+        normalized_char = _normalize_expr(char)
+        parts.append(normalized_char)
+        offsets.extend([ind] * len(normalized_char))
+    return "".join(parts), offsets
+
+
 def evaluate_with_source(
     expr: str,
     locals_for_eval: LocalsForEval,
@@ -448,12 +450,26 @@ def evaluate_with_source(
         A tuple of the SymPy expression and the code that was used to generate it.
 
     Raises:
+        HasEscapeError: If the expression contains an escape character.
+        HasCommentError: If the expression contains a comment character.
         HasParseError: If the expression cannot be parsed.
         BaseSympyError: If the expression cannot be evaluated.
     """
+    normalized_expr, normalized_offsets = _normalize_expr_and_map_offsets(expr)
+
+    # Check for escape and comment characters after normalization, since some
+    # unicode characters normalize to "#" or "\\". The offset map translates
+    # back to the original string position in all cases.
+    ind = normalized_expr.find("\\")
+    if ind != -1:
+        raise HasEscapeError(normalized_offsets[ind])
+    ind = normalized_expr.find("#")
+    if ind != -1:
+        raise HasCommentError(normalized_offsets[ind])
+
     # Replace '^' with '**' wherever it appears. In MATLAB, either can be used
     # for exponentiation. In Python, only the latter can be used.
-    expr = full_unidecode(greek_unicode_transform(expr)).replace("^", "**")
+    expr = normalized_expr.replace("^", "**")
 
     # Prevent Python from interpreting patterns like "2e+3" or "2e-3" as scientific
     # notation floats. When users write "2e+3", they likely mean "2*e + 3" (2 times
@@ -676,15 +692,31 @@ def convert_string_to_sympy_with_source(
 
 
 def point_to_error(expr: str, ind: int, w: int = 5) -> str:
-    """Generate a string with a pointer to error in expr with index ind
+    """Generate a string with a pointer to error in expr with index ind.
+
+    If ind is -1, returns the full expression without a caret pointer.
 
     Returns:
         A string with the error location in the expression.
     """
+    if ind == -1:
+        return html.escape(expr)
+
     w_left: str = " " * (ind - max(0, ind - w))
     w_right: str = " " * (min(ind + w, len(expr)) - ind)
     initial: str = html.escape(expr[ind - len(w_left) : ind + len(w_right)])
     return f"{initial}\n{w_left}^{w_right}"
+
+
+def find_symbol_offset(expr: str, symbol: str) -> int:
+    """Return an approximate offset for symbol in expr for caret rendering."""
+    pattern = re.compile(rf"(?<!\w){re.escape(symbol)}(?!\w)")
+    ind = -1
+    for match in pattern.finditer(expr):
+        ind = match.start()
+    if ind != -1:
+        return ind
+    return expr.rfind(symbol)
 
 
 def sympy_to_json(
@@ -849,7 +881,7 @@ def validate_string_as_sympy(
     except HasInvalidSymbolError as exc:
         return (
             f'Your answer refers to an invalid symbol "{exc.symbol}". '
-            f"<br><br><pre>{point_to_error(expr, -1)}</pre>"
+            f"<br><br><pre>{point_to_error(expr, find_symbol_offset(expr, exc.symbol))}</pre>"
             "Note that the location of the syntax error is approximate."
         )
     except HasParseError as exc:

@@ -1,3 +1,3 @@
 # `prairielearn/grader-java`
 
-View documentation at <https://prairielearn.readthedocs.io/en/latest/java-grader>.
+View documentation at <https://docs.prairielearn.com/java-grader>.

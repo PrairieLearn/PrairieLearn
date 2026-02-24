@@ -6,8 +6,9 @@ import * as sqldb from '@prairielearn/postgres';
 import { config } from '../../lib/config.js';
 import {
   createCourseFromRequest,
+  denyCourseRequest,
   selectPendingCourseRequests,
-  updateCourseRequest,
+  updateCourseRequestNote,
 } from '../../lib/course-request.js';
 import { typedAsyncHandler } from '../../lib/res-locals.js';
 import { deleteCourse, insertCourse, selectCourseById } from '../../models/course.js';
@@ -50,7 +51,6 @@ router.post(
         branch: req.body.branch,
         authn_user_id: res.locals.authn_user.id,
       });
-      res.redirect(req.originalUrl);
     } else if (req.body.__action === 'courses_update_column') {
       await sqldb.callAsync('courses_update_column', [
         req.body.course_id,
@@ -58,7 +58,6 @@ router.post(
         req.body.value,
         res.locals.authn_user.id,
       ]);
-      res.redirect(req.originalUrl);
     } else if (req.body.__action === 'courses_delete') {
       const course = await selectCourseById(req.body.course_id);
       if (req.body.confirm_short_name !== course.short_name) {
@@ -71,14 +70,33 @@ router.post(
         course_id: req.body.course_id,
         authn_user_id: res.locals.authn_user.id,
       });
-      res.redirect(req.originalUrl);
-    } else if (req.body.__action === 'approve_deny_course_request') {
-      await updateCourseRequest(req, res);
+    } else if (req.body.__action === 'deny_course_request') {
+      await denyCourseRequest({
+        courseRequestId: req.body.request_id,
+        authnUser: res.locals.authn_user,
+      });
     } else if (req.body.__action === 'create_course_from_request') {
-      await createCourseFromRequest(req, res);
+      const jobSequenceId = await createCourseFromRequest({
+        courseRequestId: req.body.request_id,
+        shortName: req.body.short_name,
+        title: req.body.title,
+        institutionId: req.body.institution_id,
+        displayTimezone: req.body.display_timezone,
+        path: req.body.path,
+        repoShortName: req.body.repository_short_name,
+        githubUser: req.body.github_user?.length > 0 ? req.body.github_user : null,
+        authnUser: res.locals.authn_user,
+      });
+      return res.redirect(`/pl/administrator/jobSequence/${jobSequenceId}/`);
+    } else if (req.body.__action === 'update_course_request_note') {
+      await updateCourseRequestNote({
+        courseRequestId: req.body.request_id,
+        note: req.body.note,
+      });
     } else {
       throw new error.HttpStatusError(400, `unknown __action: ${req.body.__action}`);
     }
+    res.redirect(req.originalUrl);
   }),
 );
 

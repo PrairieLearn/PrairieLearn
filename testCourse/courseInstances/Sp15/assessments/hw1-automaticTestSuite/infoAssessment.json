@@ -15,7 +15,13 @@
         { "id": "downloadFile", "points": 5, "maxPoints": 17 },
         { "id": "partialCredit1", "points": 1, "maxPoints": 6 },
         { "id": "partialCredit2", "points": 2, "maxPoints": 7, "triesPerVariant": 3 },
-        { "id": "partialCredit3", "points": 3, "maxPoints": 11, "triesPerVariant": 5 },
+        {
+          "id": "partialCredit3",
+          "autoPoints": 3,
+          "maxAutoPoints": 11,
+          "manualPoints": 4,
+          "triesPerVariant": 5
+        },
         { "id": "partialCredit4_v2", "points": 4, "maxPoints": 13 },
         { "id": "partialCredit5_v2_partial", "points": 5, "maxPoints": 12 },
         { "id": "partialCredit6_no_partial", "points": 3, "maxPoints": 8 },

@@ -1,4 +1,4 @@
-import { useLayoutEffect, useRef, useState } from 'react';
+import { type ReactNode, useLayoutEffect, useRef, useState } from 'react';
 import Button from 'react-bootstrap/Button';
 import Card from 'react-bootstrap/Card';
 import CardBody from 'react-bootstrap/CardBody';
@@ -15,13 +15,24 @@ import { mathjaxTypeset } from '../../../lib/client/mathjax.js';
 
 import {
   type ExamplePromptWithId,
+  type SampleQuestionVariant,
   type VariantOption,
   generateSampleQuestionVariant,
   variantOptionToString,
 } from './aiGeneratedQuestionSamples.js';
 
-export function SampleQuestionDemo({ prompt }: { prompt: ExamplePromptWithId }) {
-  const [variant, setVariant] = useState(() => generateSampleQuestionVariant(prompt.id));
+export function SampleQuestionDemo({
+  prompt,
+  initialVariant,
+  header,
+}: {
+  prompt: ExamplePromptWithId;
+  initialVariant?: SampleQuestionVariant;
+  header?: ReactNode;
+}) {
+  const [variant, setVariant] = useState(
+    () => initialVariant ?? generateSampleQuestionVariant(prompt.id),
+  );
 
   // Used if the question receives a number or string response
   const [userInputResponse, setUserInputResponse] = useState('');
@@ -162,13 +173,8 @@ export function SampleQuestionDemo({ prompt }: { prompt: ExamplePromptWithId }) 
   });
 
   return (
-    <Card ref={cardRef} className="shadow">
-      <CardHeader>
-        <div className="d-flex align-items-center gap-2">
-          <p className="mb-0">{prompt.name}</p>
-          <span className="badge rounded-pill bg-success me-3">Try me!</span>
-        </div>
-      </CardHeader>
+    <Card ref={cardRef}>
+      {header && <CardHeader>{header}</CardHeader>}
       <CardBody>
         {variant.question
           .split(/(\$\$[\s\S]+?\$\$|\$[\s\S]+?\$|\*\*[\s\S]+?\*\*)/g)

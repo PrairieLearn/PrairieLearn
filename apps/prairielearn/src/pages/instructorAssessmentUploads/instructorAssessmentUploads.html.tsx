@@ -224,7 +224,7 @@ ${groupWork ? 'group2' : 'student2@example.com'},1,matrixMultiply,100,Great job!
       Additional information, including instructions on how to update points instead of percentage
       or to update the auto/manual portions of the score, can be found in the
       <a
-        href="https://prairielearn.readthedocs.io/en/latest/manualGrading/#manual-grading-using-file-uploads"
+        href="https://docs.prairielearn.com/manualGrading/#manual-grading-using-file-uploads"
         target="_blank"
         rel="noopener noreferrer"
         >Manual Grading documentation</a

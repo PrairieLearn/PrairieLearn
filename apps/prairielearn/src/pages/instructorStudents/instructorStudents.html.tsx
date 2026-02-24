@@ -1,4 +1,4 @@
-import { QueryClient, useQuery } from '@tanstack/react-query';
+import { QueryClient, useQuery, useQueryClient } from '@tanstack/react-query';
 import {
   type ColumnFiltersState,
   type ColumnPinningState,
@@ -45,6 +45,7 @@ import type { EnumEnrollmentStatus } from '../../lib/db-types.js';
 import { courseInstanceFilenamePrefix } from '../../lib/sanitize-name.js';
 
 import { InviteStudentsModal } from './components/InviteStudentsModal.js';
+import { SyncStudentsModal } from './components/SyncStudentsModal.js';
 import { STATUS_VALUES, type StudentRow, StudentRowSchema } from './instructorStudents.shared.js';
 
 // This default must be declared outside the component to ensure referential
@@ -61,10 +62,16 @@ async function copyToClipboard(text: string) {
   await navigator.clipboard.writeText(text);
 }
 
-function CopyEnrollmentLinkButton({
+function ManageEnrollmentsDropdown({
   courseInstance,
+  authzData,
+  onInvite,
+  onSync,
 }: {
   courseInstance: PageContext<'courseInstance', 'instructor'>['course_instance'];
+  authzData: PageContextWithAuthzData['authz_data'];
+  onInvite: () => void;
+  onSync: () => void;
 }) {
   const [copiedCode, setCopiedCode] = useState(false);
   const [copiedLink, setCopiedLink] = useState(false);
@@ -100,14 +107,20 @@ function CopyEnrollmentLinkButton({
     setTimeout(() => setCopiedCode(false), 2000);
   };
 
+  const canEdit = authzData.has_course_instance_permission_edit;
+
   return (
-    <DropdownButton
-      as={ButtonGroup}
-      title="Enrollment details"
-      size="sm"
-      disabled={!courseInstance.self_enrollment_enabled}
-      variant="light"
-    >
+    <DropdownButton as={ButtonGroup} title="Manage enrollments" size="sm" variant="light">
+      <Dropdown.Item as="button" type="button" disabled={!canEdit} onClick={onInvite}>
+        <i className="bi bi-person-plus me-2" aria-hidden="true" />
+        Invite students
+      </Dropdown.Item>
+      <Dropdown.Item as="button" type="button" disabled={!canEdit} onClick={onSync}>
+        <i className="bi bi-arrow-left-right me-2" aria-hidden="true" />
+        Synchronize student list
+      </Dropdown.Item>
+
+      <Dropdown.Divider />
       {courseInstance.self_enrollment_use_enrollment_code && (
         <OverlayTrigger
           placement="right"
@@ -117,31 +130,38 @@ function CopyEnrollmentLinkButton({
           }}
           show={copiedCode ? true : undefined}
         >
-          <Dropdown.Item as="button" type="button" onClick={handleCopyCode}>
-            <i className="bi bi-key me-2" />
+          <Dropdown.Item
+            as="button"
+            type="button"
+            disabled={!courseInstance.self_enrollment_enabled}
+            onClick={handleCopyCode}
+          >
+            <i className="bi bi-key me-2" aria-hidden="true" />
             Copy enrollment code
           </Dropdown.Item>
         </OverlayTrigger>
       )}
-
-      {courseInstance.self_enrollment_enabled && (
-        <OverlayTrigger
-          placement="right"
-          tooltip={{
-            body: copiedLink ? 'Copied!' : 'Copy',
-            props: { id: 'students-copy-link-tooltip' },
-          }}
-          show={copiedLink ? true : undefined}
+      <OverlayTrigger
+        placement="right"
+        tooltip={{
+          body: copiedLink ? 'Copied!' : 'Copy',
+          props: { id: 'students-copy-link-tooltip' },
+        }}
+        show={copiedLink ? true : undefined}
+      >
+        <Dropdown.Item
+          as="button"
+          type="button"
+          disabled={!courseInstance.self_enrollment_enabled}
+          onClick={handleCopyLink}
         >
-          <Dropdown.Item as="button" type="button" onClick={handleCopyLink}>
-            <i className="bi bi-link-45deg me-2" />
-            Copy enrollment link
-          </Dropdown.Item>
-        </OverlayTrigger>
-      )}
+          <i className="bi bi-link-45deg me-2" aria-hidden="true" />
+          Copy enrollment link
+        </Dropdown.Item>
+      </OverlayTrigger>
       <Dropdown.Item as="a" href={getSelfEnrollmentSettingsUrl(courseInstance.id)}>
-        <i className="bi bi-gear me-2" />
-        Manage settings
+        <i className="bi bi-gear me-2" aria-hidden="true" />
+        Enrollment settings
       </Dropdown.Item>
     </DropdownButton>
   );
@@ -241,13 +261,46 @@ function StudentsCard({
     initialData: initialStudents,
   });
 
+  const queryClient = useQueryClient();
+
   const [showInvite, setShowInvite] = useState(false);
+  const [showSync, setShowSync] = useState(false);
   const [copiedEnrollLink, setCopiedEnrollLink] = useState(false);
 
   const handleCopyEnrollLink = async () => {
     await copyToClipboard(selfEnrollLink);
     setCopiedEnrollLink(true);
     setTimeout(() => setCopiedEnrollLink(false), 2000);
+  };
+
+  const syncStudents = async (
+    toInvite: string[],
+    toCancelInvitation: string[],
+    toRemove: string[],
+  ): Promise<void> => {
+    const body = {
+      __action: 'sync_students',
+      __csrf_token: csrfToken,
+      toInvite,
+      toCancelInvitation,
+      toRemove,
+    };
+    const res = await fetch(window.location.href, {
+      method: 'POST',
+      body: JSON.stringify(body),
+      headers: { 'Content-Type': 'application/json', Accept: 'application/json' },
+    });
+    const json = await res.json();
+    if (!res.ok) {
+      throw new Error(json.error);
+    }
+    const { job_sequence_id } = z
+      .object({
+        job_sequence_id: z.string(),
+      })
+      .parse(json);
+
+    window.location.href = getCourseInstanceJobSequenceUrl(courseInstance.id, job_sequence_id);
   };
 
   const inviteStudents = async (uids: string[]): Promise<void> => {
@@ -435,22 +488,19 @@ function StudentsCard({
           hasSelection: false,
         }}
         headerButtons={
-          <>
-            {courseInstance.modern_publishing && (
-              <>
-                <Button
-                  variant="light"
-                  size="sm"
-                  disabled={!authzData.has_course_instance_permission_edit}
-                  onClick={() => setShowInvite(true)}
-                >
-                  <i className="bi bi-person-plus me-2" aria-hidden="true" />
-                  Invite students
-                </Button>
-                <CopyEnrollmentLinkButton courseInstance={courseInstance} />
-              </>
-            )}
-          </>
+          courseInstance.modern_publishing && (
+            <ManageEnrollmentsDropdown
+              courseInstance={courseInstance}
+              authzData={authzData}
+              onInvite={() => setShowInvite(true)}
+              onSync={() => {
+                // Reload the latest student data so that the preview of sync actions
+                // will be as accurate as possible.
+                void queryClient.invalidateQueries({ queryKey: ['enrollments', 'students'] });
+                setShowSync(true);
+              }}
+            />
+          )
         }
         globalFilter={{
           placeholder: 'Search by UID, name, email...',
@@ -528,6 +578,13 @@ function StudentsCard({
         courseInstance={courseInstance}
         onHide={() => setShowInvite(false)}
         onSubmit={inviteStudents}
+      />
+      <SyncStudentsModal
+        show={showSync}
+        courseInstance={courseInstance}
+        students={students}
+        onHide={() => setShowSync(false)}
+        onSubmit={syncStudents}
       />
     </>
   );

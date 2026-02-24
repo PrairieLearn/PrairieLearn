@@ -26,20 +26,21 @@ def generate(data):
 
 | Attribute        | Type                    | Default         | Description                                                                                                                                                          |
 | ---------------- | ----------------------- | --------------- | -------------------------------------------------------------------------------------------------------------------------------------------------------------------- |
-| `answers-name`   | string                  | —               | Variable name to store data in. Note that this attribute has to be unique within a question, i.e., no value for this attribute should be repeated within a question. |
-| `weight`         | integer                 | 1               | Weight to use when computing a weighted average score over elements.                                                                                                 |
-| `correct-answer` | string                  | See description | Correct answer for grading. Defaults to `data["correct_answers"][answers-name]`. If `base` is provided, then this answer must be given in the provided base.         |
 | `allow-blank`    | boolean                 | false           | Whether an empty input box is allowed. By default, empty input boxes will not be graded (invalid format).                                                            |
-| `blank-value`    | string                  | 0 (zero)        | Value to be used as an answer if element is left blank. Only applied if `allow-blank` is `true`. Must be `""` (empty string) or an integer.                          |
-| `label`          | string                  | —               | A prefix to display before the input box (e.g., `label="$x =$"`).                                                                                                    |
+| `answers-name`   | string                  | —               | Variable name to store data in. Note that this attribute has to be unique within a question, i.e., no value for this attribute should be repeated within a question. |
 | `aria-label`     | string                  | —               | An accessible label for the element.                                                                                                                                 |
-| `suffix`         | string                  | —               | A suffix to display after the input box (e.g., `suffix="items"`).                                                                                                    |
 | `base`           | integer                 | 10              | The base used to parse and represent the answer, or the special value 0 (see below).                                                                                 |
+| `blank-value`    | string                  | 0 (zero)        | Value to be used as an answer if element is left blank. Only applied if `allow-blank` is `true`. Must be `""` (empty string) or an integer.                          |
+| `correct-answer` | string                  | See description | Correct answer for grading. Defaults to `data["correct_answers"][answers-name]`. If `base` is provided, then this answer must be given in the provided base.         |
 | `display`        | `"block"` or `"inline"` | `"inline"`      | How to display the input field.                                                                                                                                      |
-| `size`           | integer                 | 35              | Size of the input box.                                                                                                                                               |
-| `show-help-text` | boolean                 | true            | Show the question mark at the end of the input displaying required input parameters.                                                                                 |
+| `initial-value`  | string                  | —               | Initial value to prefill the input box the first time it is rendered.                                                                                                |
+| `label`          | string                  | —               | A prefix to display before the input box (e.g., `label="$x =$"`).                                                                                                    |
 | `placeholder`    | string                  | See description | Custom placeholder text. If not set, defaults to `"integer"` if `base` is 10, otherwise `"integer in base <base>"`.                                                  |
+| `show-help-text` | boolean                 | true            | Show the question mark at the end of the input displaying required input parameters.                                                                                 |
 | `show-score`     | boolean                 | true            | Whether to show the score badge next to this element.                                                                                                                |
+| `size`           | integer                 | 35              | Size of the input box.                                                                                                                                               |
+| `suffix`         | string                  | —               | A suffix to display after the input box (e.g., `suffix="items"`).                                                                                                    |
+| `weight`         | integer                 | 1               | Weight to use when computing a weighted average score over elements.                                                                                                 |
 
 ## Specifying a non-trivial base
 

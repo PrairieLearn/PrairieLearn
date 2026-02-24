@@ -1,7 +1,7 @@
 <!--
 
 Etiquette and expectations for contributions can be found here:
-https://prairielearn.readthedocs.io/en/latest/contributing
+https://docs.prairielearn.com/contributing
 
 -->
 
@@ -11,6 +11,7 @@ https://prairielearn.readthedocs.io/en/latest/contributing
 
 - Summarize your changes and explain the rationale for making them.
 - Include any relevant context from Slack, meetings, or other discussions.
+- If there were discussions about key decisions, alternative designs, or implementation choices, summarize the alternatives considered, the pros/cons of each, and the reasons for the eventual choices.
 - If this change is resolving a specific issue, include a link to the issue (e.g. "closes #1234").
 - If applicable, include screenshots and/or videos.
 - Note the level of AI assistance used (i.e. none, specific portions, majority of implementation).

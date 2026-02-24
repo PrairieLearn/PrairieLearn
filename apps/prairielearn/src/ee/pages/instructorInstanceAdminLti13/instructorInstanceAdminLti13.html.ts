@@ -53,10 +53,7 @@ export function InstructorInstanceAdminLti13NoInstances({
                   No learning management systems (LMSes) at your institution are available for
                   integration with PrairieLearn. Please contact your IT administrators to set up an
                   integration. You can refer them to the
-                  <a
-                    target="_blank"
-                    href="https://prairielearn.readthedocs.io/en/latest/lti13/"
-                    rel="noreferrer"
+                  <a target="_blank" href="https://docs.prairielearn.com/lti13/" rel="noreferrer"
                     >documentation</a
                   >.
                 </p>
@@ -75,7 +72,7 @@ export function InstructorInstanceAdminLti13NoInstances({
                 <p>
                   <a
                     target="_blank"
-                    href="https://prairielearn.readthedocs.io/en/latest/lmsIntegrationInstructor/"
+                    href="https://docs.prairielearn.com/lmsIntegrationInstructor/"
                     rel="noreferrer"
                   >
                     How can I integrate my course with an LMS?

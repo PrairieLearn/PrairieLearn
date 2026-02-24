@@ -7,7 +7,7 @@ import { IdSchema } from '@prairielearn/zod';
 
 import { selectAssessmentInfoForJob } from '../models/assessment.js';
 
-import { updateAssessmentInstancePoints, updateAssessmentInstanceScore } from './assessment.js';
+import { setAssessmentInstancePoints, setAssessmentInstanceScore } from './assessment.js';
 import { createCsvParser } from './csv.js';
 import { type Assessment } from './db-types.js';
 import * as manualGrading from './manualGrading.js';
@@ -284,14 +284,14 @@ async function updateInstanceQuestionFromCsvRow(
       partial_scores: getPartialScoresOrNull(record),
     };
     if (Object.values(new_score).some((value) => value != null)) {
-      await manualGrading.updateInstanceQuestionScore(
+      await manualGrading.updateInstanceQuestionScore({
         assessment,
-        submission_data.instance_question_id,
-        submission_data.submission_id,
-        null, // check_modified_at
-        new_score,
+        instance_question_id: submission_data.instance_question_id,
+        submission_id: submission_data.submission_id,
+        check_modified_at: null,
+        score: new_score,
         authn_user_id,
-      );
+      });
       return true;
     } else {
       return false;
@@ -348,9 +348,9 @@ async function updateAssessmentInstanceFromCsvRow(
     const scorePerc = validateNumericColumn(record, 'score_perc');
     const points = validateNumericColumn(record, 'points');
     if (scorePerc != null) {
-      await updateAssessmentInstanceScore(assessment_instance_id, scorePerc, authn_user_id);
+      await setAssessmentInstanceScore(assessment_instance_id, scorePerc, authn_user_id);
     } else if (points != null) {
-      await updateAssessmentInstancePoints(assessment_instance_id, points, authn_user_id);
+      await setAssessmentInstancePoints(assessment_instance_id, points, authn_user_id);
     } else {
       throw new Error('must specify either "score_perc" or "points"');
     }

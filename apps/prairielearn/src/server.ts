@@ -86,7 +86,6 @@ import { enterpriseOnly } from './middlewares/enterpriseOnly.js';
 import staticNodeModules from './middlewares/staticNodeModules.js';
 import { makeWorkspaceProxyMiddleware } from './middlewares/workspaceProxy.js';
 import { selectCourseById } from './models/course.js';
-import * as news_items from './news_items/index.js';
 import * as freeformServer from './question-servers/freeform.js';
 import * as sprocs from './sprocs/index.js';
 
@@ -528,8 +527,6 @@ export async function initExpress(): Promise<Express> {
   app.use('/pl/settings', (await import('./pages/userSettings/userSettings.js')).default);
   app.use('/pl/enroll', (await import('./pages/enroll/enroll.js')).default);
   app.use('/pl/password', (await import('./pages/authPassword/authPassword.js')).default);
-  app.use('/pl/news_items', (await import('./pages/newsItems/newsItems.js')).default);
-  app.use('/pl/news_item', (await import('./pages/newsItem/newsItem.js')).default);
   app.use('/pl/request_course', [
     // Users can post data to this page and then view it, so we'll block access to prevent
     // students from using to infiltrate or exfiltrate exam information.
@@ -667,16 +664,6 @@ export async function initExpress(): Promise<Express> {
     },
   ]);
 
-  // Some course instance student pages only require course instance authorization (already checked)
-  app.use(
-    '/pl/course_instance/:course_instance_id(\\d+)/news_items',
-    (await import('./pages/newsItems/newsItems.js')).default,
-  );
-  app.use(
-    '/pl/course_instance/:course_instance_id(\\d+)/news_item',
-    (await import('./pages/newsItem/newsItem.js')).default,
-  );
-
   // Some course instance student pages only require the authn user to have permissions
   app.use('/pl/course_instance/:course_instance_id(\\d+)/effectiveUser', [
     (await import('./middlewares/authzAuthnHasCoursePreviewOrInstanceView.js')).default,
@@ -700,14 +687,6 @@ export async function initExpress(): Promise<Express> {
   app.use(
     '/pl/course_instance/:course_instance_id(\\d+)/instructor/effectiveUser',
     (await import('./pages/instructorEffectiveUser/instructorEffectiveUser.js')).default,
-  );
-  app.use(
-    '/pl/course_instance/:course_instance_id(\\d+)/instructor/news_items',
-    (await import('./pages/newsItems/newsItems.js')).default,
-  );
-  app.use(
-    '/pl/course_instance/:course_instance_id(\\d+)/instructor/news_item',
-    (await import('./pages/newsItem/newsItem.js')).default,
   );
 
   // All other course instance student pages require the effective user to have permissions
@@ -893,7 +872,7 @@ export async function initExpress(): Promise<Express> {
         res.locals.navSubPage = 'groups';
         next();
       },
-      (await import('./pages/instructorAssessmentTeams/instructorAssessmentTeams.js')).default,
+      (await import('./pages/instructorAssessmentGroups/instructorAssessmentGroups.js')).default,
     ],
   );
   app.use(
@@ -1195,6 +1174,10 @@ export async function initExpress(): Promise<Express> {
   app.use(
     '/pl/course_instance/:course_instance_id(\\d+)/instructor/course_admin/issues',
     (await import('./pages/instructorIssues/instructorIssues.js')).default,
+  );
+  app.use(
+    '/pl/course_instance/:course_instance_id(\\d+)/instructor/course_admin/questions/create',
+    (await import('./pages/instructorQuestionCreate/instructorQuestionCreate.js')).default,
   );
   app.use(
     '/pl/course_instance/:course_instance_id(\\d+)/instructor/course_admin/questions',
@@ -1554,14 +1537,6 @@ export async function initExpress(): Promise<Express> {
     '/pl/course/:course_id(\\d+)/effectiveUser',
     (await import('./pages/instructorEffectiveUser/instructorEffectiveUser.js')).default,
   );
-  app.use(
-    '/pl/course/:course_id(\\d+)/news_items',
-    (await import('./pages/newsItems/newsItems.js')).default,
-  );
-  app.use(
-    '/pl/course/:course_id(\\d+)/news_item',
-    (await import('./pages/newsItem/newsItem.js')).default,
-  );
 
   // All other course pages require the effective user to have permission
   app.use(
@@ -1672,6 +1647,10 @@ export async function initExpress(): Promise<Express> {
   app.use(
     '/pl/course/:course_id(\\d+)/course_admin/issues',
     (await import('./pages/instructorIssues/instructorIssues.js')).default,
+  );
+  app.use(
+    '/pl/course/:course_id(\\d+)/course_admin/questions/create',
+    (await import('./pages/instructorQuestionCreate/instructorQuestionCreate.js')).default,
   );
   app.use(
     '/pl/course/:course_id(\\d+)/course_admin/questions',
@@ -2535,15 +2514,6 @@ if (shouldStartServer) {
         logger.info(`Job ${job.id} finished with status '${job.status}'.\n${job.output}`);
       });
       process.exit(0);
-    }
-
-    if (config.initNewsItems) {
-      // We initialize news items asynchronously so that servers can boot up
-      // in production as quickly as possible.
-      void news_items.initInBackground({
-        // Always notify in production environments.
-        notifyIfPreviouslyEmpty: !config.devMode,
-      });
     }
 
     // We need to initialize these first, as the code callers require these

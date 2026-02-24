@@ -42,16 +42,8 @@ const {
       ],
     },
     svg: {
-      // Using local instead of global prevents a MathJax bug if the user
-      // tries to switch the renderer with the pop-up menu. The bug will
-      // supposedly be fixed in MathJax 4, and then this could be changed
-      // back to global.
-      // Refer to issues on MathJax:
-      // https://github.com/mathjax/MathJax/issues/2924
-      // https://github.com/mathjax/MathJax/issues/2956
-      // This PR was merged but won't be released until MathJax v4:
-      // https://github.com/mathjax/MathJax-src/pull/859
-      fontCache: 'local',
+      // Improve accessibility by making math font rendering slightly bolder.
+      blacker: 13,
 
       // Because of the functionality inherited from MathJax v3, instructors
       // expect Math expressions not to line-break. MathJax v4 changed the
@@ -128,12 +120,4 @@ export async function mathjaxTypeset(elements?: Element[]) {
 
   await mathjaxPromise;
   return window.MathJax.typesetPromise(elements);
-}
-
-export async function mathjaxConvert(value: string) {
-  // No-op on the server.
-  if (typeof window === 'undefined') return;
-
-  await mathjaxPromise;
-  return (window.MathJax.tex2chtmlPromise || window.MathJax.tex2svgPromise)(value);
 }

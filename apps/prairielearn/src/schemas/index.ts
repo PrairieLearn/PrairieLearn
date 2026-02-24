@@ -15,7 +15,6 @@ export * from './infoCourseInstance.js';
 export * from './infoElementCore.js';
 export * from './infoElementCourse.js';
 export * from './infoElementExtension.js';
-export * from './infoNewsItem.js';
 export * from './infoQuestion.js';
 export * from './questionOptionsCalculation.js';
 export * from './questionOptionsCheckbox.js';

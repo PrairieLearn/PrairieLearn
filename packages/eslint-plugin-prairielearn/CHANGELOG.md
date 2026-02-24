@@ -1,5 +1,23 @@
 # @prairielearn/eslint-plugin
 
+## 3.1.1
+
+### Patch Changes
+
+- 7b937fb: Remove unused exports, add `@knipignore` for intentionally public exports, and re-export newly used symbols from `@prairielearn/formatter`.
+
+## 3.1.0
+
+### Minor Changes
+
+- 174fbb4: Add `no-current-target-in-callback` lint rule to detect when `event.currentTarget` is accessed inside a nested callback within a React event handler. This pattern is problematic because React may execute callbacks asynchronously, at which point `currentTarget` may already be nullified.
+
+## 3.0.1
+
+### Patch Changes
+
+- 8bdf6ea: Upgrade all JavaScript dependencies
+
 ## 3.0.0
 
 ### Major Changes

@@ -6,7 +6,7 @@ import { z } from 'zod';
 import { HttpStatusError } from '@prairielearn/error';
 import { assertNever } from '@prairielearn/utils';
 
-import { type OpenAIModelId, formatPrompt, logResponseUsage } from '../../../lib/ai.js';
+import { type OpenAIModelId, formatPrompt, logResponseUsage } from '../../../lib/ai-util.js';
 import { config } from '../../../lib/config.js';
 import type {
   AssessmentQuestion,
@@ -62,15 +62,15 @@ async function aiEvaluateStudentResponse({
     questionRenderContext: 'ai_grading',
   };
   const questionModule = questionServers.getModule(question.type);
-  const render_submission_results = await questionModule.render(
-    { question: false, submissions: true, answer: true },
+  const render_submission_results = await questionModule.render({
+    renderSelection: { question: false, submissions: true, answer: true },
     variant,
     question,
     submission,
-    [submission],
+    submissions: [submission],
     course,
     locals,
-  );
+  });
 
   const answer_text = render_submission_results.data.answerHtml;
   const submission_text = render_submission_results.data.submissionHtmls[0];
@@ -187,6 +187,13 @@ export async function aiInstanceQuestionGrouping({
     throw new HttpStatusError(403, 'Feature not available.');
   }
 
+  if (!assessment_question.max_manual_points) {
+    throw new HttpStatusError(
+      400,
+      'AI submission grouping is only available on assessment questions that use manual grading.',
+    );
+  }
+
   const openai = createOpenAI({
     apiKey: config.aiGradingOpenAiApiKey,
     organization: config.aiGradingOpenAiOrganization,
@@ -206,11 +213,6 @@ export async function aiInstanceQuestionGrouping({
   const instanceQuestionIdsSet = new Set<string>(instance_question_ids);
 
   serverJob.executeInBackground(async (job) => {
-    if (!assessment_question.max_manual_points) {
-      job.fail('The assessment question has no manual grading');
-      return;
-    }
-
     const allInstanceQuestions = await selectInstanceQuestionsForAssessmentQuestion({
       assessment_question_id: assessment_question.id,
       closed_instance_questions_only,

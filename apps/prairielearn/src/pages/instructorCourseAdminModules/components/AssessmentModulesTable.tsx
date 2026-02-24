@@ -37,7 +37,7 @@ export function AssessmentModulesTable({
         <small>
           Modules can be used to group assessments by topic, chapter, section, or other category.
           More information on modules can be found in the{' '}
-          <a href="https://prairielearn.readthedocs.io/en/latest/course/#assessment-modules">
+          <a href="https://docs.prairielearn.com/course/#assessment-modules">
             PrairieLearn documentation
           </a>
           .

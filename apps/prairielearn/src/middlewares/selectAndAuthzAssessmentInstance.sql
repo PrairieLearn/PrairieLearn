@@ -54,8 +54,6 @@ SELECT
   to_jsonb(a) AS assessment,
   to_jsonb(aset) AS assessment_set,
   to_jsonb(aai) AS authz_result,
-  assessment_instance_label (ai, a, aset) AS assessment_instance_label,
-  aset.abbreviation || a.number AS assessment_label,
   fl.list AS file_list,
   to_jsonb(g) AS instance_group,
   teams_uid_list (g.id) AS instance_group_uid_list

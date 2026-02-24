@@ -21,10 +21,10 @@ Create and display a prairiedraw image.
 
 | Attribute     | Type    | Default | Description                                                          |
 | ------------- | ------- | ------- | -------------------------------------------------------------------- |
-| `script-name` | string  | —       | Name of PrairieDraw script.                                          |
-| `param-names` | string  | —       | Comma-separated list of parameters to make available to PrairieDraw. |
-| `width`       | integer | 500     | Width of the drawing element.                                        |
 | `height`      | integer | 300     | Height of the drawing element.                                       |
+| `param-names` | string  | —       | Comma-separated list of parameters to make available to PrairieDraw. |
+| `script-name` | string  | —       | Name of PrairieDraw script.                                          |
+| `width`       | integer | 500     | Width of the drawing element.                                        |
 
 ## Details
 

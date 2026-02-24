@@ -122,11 +122,12 @@ export function StudentAssessments({
           </table>
         </div>
       </div>
-      ${authz_data.mode === 'Exam'
+      ${authz_data.mode === 'Exam' && authz_data.mode_reason === 'PrairieTest'
         ? html`
             <p>
               Don't see your exam? Exams for this course are only made available to students with
-              checked-in exam reservations. See a proctor for assistance.
+              checked-in exam reservations who have clicked the "Start exam" button in PrairieTest.
+              See a proctor for assistance.
             </p>
           `
         : ''}

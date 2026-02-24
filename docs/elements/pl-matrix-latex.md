@@ -27,9 +27,9 @@ def generate(data):
 
 | Attribute           | Type    | Default | Description                                                                                                                                                                                                                        |
 | ------------------- | ------- | ------- | ---------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------- |
+| `digits`            | integer | 2       | Number of digits to display according to the choice of `presentation-type`                                                                                                                                                         |
 | `params-name`       | string  | —       | Name of variable in `data["params"]` to display.                                                                                                                                                                                   |
 | `presentation-type` | string  | `"f"`   | Number display format. If `presentation-type` is `"sigfig"`, each number is formatted using the `to_precision` module to `digits` significant figures. Otherwise, each number is formatted as `'{:.{digits}{presentation-type}}'`. |
-| `digits`            | integer | 2       | Number of digits to display according to the choice of `presentation-type`                                                                                                                                                         |
 
 ## Details
 

@@ -224,7 +224,7 @@ export function SelfEnrollmentSettings({
         <div className="alert alert-warning">
           You are using access rules to control who can access the course instance.{' '}
           <a
-            href="https://prairielearn.readthedocs.io/en/latest/courseInstance/#migrating-from-allowaccess"
+            href="https://docs.prairielearn.com/courseInstance/#migrating-from-allowaccess"
             className="alert-link"
           >
             Migrate to publishing

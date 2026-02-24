@@ -236,6 +236,23 @@ mjx-container {
   transform: rotateX(180deg);
 }
 
+/* Allows for conditional behaviour based on the status of a collapsed component */
+.show-hide-btn .show-when-collapsed {
+  display: none;
+}
+
+.show-hide-btn.collapsed .show-when-collapsed {
+  display: inline;
+}
+
+.show-hide-btn .show-when-expanded {
+  display: inline;
+}
+
+.show-hide-btn.collapsed .show-when-expanded {
+  display: none;
+}
+
 /* Button in submission header context prepends "hide" or "show" automatically */
 .collapsible-card-header .expand-icon {
   transition: transform 400ms;
@@ -471,4 +488,8 @@ input.form-check-input {
 input.form-check-input:disabled {
   --bs-border-color: #aaaaaa;
   --bs-form-check-bg: var(--bs-secondary-bg);
+}
+
+.markdown-body > :last-child {
+  margin-bottom: 0;
 }
