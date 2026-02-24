@@ -286,12 +286,11 @@ async function makeAndInsertVariant({
       real_user_id = instance_question.user_id;
       real_group_id = instance_question.team_id;
 
-      new_number =
-        (await sqldb.queryOptionalScalar(
-          sql.next_variant_number,
-          { instance_question_id },
-          z.number().nullable(),
-        )) ?? null;
+      new_number = await sqldb.queryOptionalScalar(
+        sql.next_variant_number,
+        { instance_question_id },
+        z.number().nullable(),
+      );
     } else {
       if (question_id == null) {
         throw new Error(
@@ -307,7 +306,7 @@ async function makeAndInsertVariant({
     const question = await selectQuestionById(question_id);
     let workspace_id: string | null = null;
     if (question.workspace_image !== null) {
-      workspace_id = (await sqldb.queryOptionalScalar(sql.insert_workspace, IdSchema)) ?? null;
+      workspace_id = await sqldb.queryOptionalScalar(sql.insert_workspace, IdSchema);
     }
 
     return await sqldb.queryRow(

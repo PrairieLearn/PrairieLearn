@@ -332,12 +332,11 @@ async function writeDraftEdit({
     authn_user_id,
   });
 
-  const editID = await queryScalar(
+  return queryScalar(
     sql.insert_file_edit,
     { user_id, course_id, dir_name, file_name, orig_hash, file_id },
     IdSchema,
   );
-  return editID;
 }
 
 export default router;
