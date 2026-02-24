@@ -657,7 +657,7 @@ function makeConductorConfigSource(): ConfigSource {
       // Redis supports DBs 0-15 by default. With CONDUCTOR_PORT allocated in
       // increments of 10, collisions occur after ~8 workspaces. This is acceptable
       // since Redis stores transient data while Postgres databases remain fully isolated.
-      const redisDb = (port - 4000) % 16;
+      const redisDb = (port - 3000) % 16;
 
       return {
         postgresqlDatabase: `prairielearn_${dbSuffix}`,
