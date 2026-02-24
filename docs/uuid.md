@@ -15,6 +15,7 @@ UUIDs must be unique within the scope of their enclosing context:
 - **Questions** must have unique UUIDs within the same **course**.
 - **Course instances** must have unique UUIDs within the same **course**.
 - **Assessments** must have unique UUIDs within the same **course instance**.
+- **Student labels** must have unique UUIDs within the same **course instance**.
 
 Different courses can reuse the same UUIDs without issue, and assessments in different course instances can share UUIDs.
 
