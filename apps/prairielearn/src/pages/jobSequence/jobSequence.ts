@@ -58,7 +58,9 @@ router.get(
       // Only accept a referrer query parameter if it's a relative path, to
       // prevent open redirect vulnerabilities.
       if (typeof req.query.referrer === 'string') {
-        return req.query.referrer.startsWith('/') ? req.query.referrer : null;
+        return req.query.referrer.startsWith('/') && !req.query.referrer.startsWith('//')
+          ? req.query.referrer
+          : null;
       }
       // If the referrer query parameter is not present, fall back to the
       // Referrer header.
