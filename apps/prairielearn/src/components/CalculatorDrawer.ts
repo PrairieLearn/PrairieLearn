@@ -1,10 +1,12 @@
 import { type HtmlSafeString, html } from '@prairielearn/html';
 
-import { compiledScriptTag, compiledStylesheetTag } from '../lib/assets.js';
+import { compiledScriptTag, compiledStylesheetTag, nodeModulesAssetPath } from '../lib/assets.js';
 
 export function CalculatorDrawerHeadScripts(): HtmlSafeString {
   return html`
-    ${compiledScriptTag('calculatorClient.ts')} ${compiledStylesheetTag('calculator.css')}
+    <script src="${nodeModulesAssetPath('mathlive/mathlive.min.js')}"></script>
+    ${compiledScriptTag('calculatorClient.ts')}
+    ${compiledStylesheetTag('calculator.css')}
   `;
 }
 
