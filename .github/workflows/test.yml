@@ -40,6 +40,7 @@ jobs:
           # We need the whole history so we can diff against `master` to determine
           # what images need to be built.
           fetch-depth: 0
+          fetch-tags: false
           show-progress: false
 
       # We won't try to push in this job, but we still authenticate if the

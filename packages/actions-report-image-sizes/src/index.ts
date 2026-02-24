@@ -3,7 +3,6 @@ import fs from 'node:fs';
 import * as core from '@actions/core';
 import * as github from '@actions/github';
 
-const CI_REPORT_MARKER = '<!-- ci-report -->';
 const SECTION_START = '<!-- image-sizes -->';
 const SECTION_END = '<!-- /image-sizes -->';
 const BASELINE_BRANCH = 'size-report';
@@ -119,23 +118,6 @@ function buildCommentSection(
   return lines.join('\n');
 }
 
-function upsertSection(existingBody: string | null, newSection: string): string {
-  if (!existingBody) {
-    return `${CI_REPORT_MARKER}\n${newSection}`;
-  }
-
-  const startIdx = existingBody.indexOf(SECTION_START);
-  const endIdx = existingBody.indexOf(SECTION_END);
-
-  if (startIdx !== -1 && endIdx !== -1) {
-    return (
-      existingBody.slice(0, startIdx) + newSection + existingBody.slice(endIdx + SECTION_END.length)
-    );
-  }
-
-  return existingBody + '\n' + newSection;
-}
-
 async function fetchBaseline(
   octokit: ReturnType<typeof github.getOctokit>,
 ): Promise<ImageSizesJson | null> {
@@ -247,62 +229,6 @@ async function pushBaseline(
   core.info('Pushed image size baseline to size-report branch');
 }
 
-async function commentOnPr(
-  octokit: ReturnType<typeof github.getOctokit>,
-  prNumber: number,
-  title: string,
-  section: string,
-): Promise<void> {
-  try {
-    const comments = await octokit.paginate(
-      'GET /repos/{owner}/{repo}/issues/{issue_number}/comments',
-      {
-        owner: github.context.repo.owner,
-        repo: github.context.repo.repo,
-        issue_number: prNumber,
-      },
-    );
-
-    // Look for the shared CI report comment, or fall back to the old format.
-    const existingComment = comments.find(
-      (comment) =>
-        comment.user?.login === 'github-actions[bot]' &&
-        (comment.body?.includes(CI_REPORT_MARKER) ||
-          comment.body?.startsWith(`## ${title}`) ||
-          comment.body?.startsWith(`<details><summary><b>${title}</b>`)),
-    );
-
-    // If migrating from old format (no CI_REPORT_MARKER), start fresh with the new format.
-    const existingBody = existingComment?.body?.includes(CI_REPORT_MARKER)
-      ? existingComment.body
-      : null;
-    const body = upsertSection(existingBody, section);
-
-    if (existingComment) {
-      await octokit.rest.issues.updateComment({
-        owner: github.context.repo.owner,
-        repo: github.context.repo.repo,
-        comment_id: existingComment.id,
-        body,
-      });
-    } else {
-      await octokit.rest.issues.createComment({
-        owner: github.context.repo.owner,
-        repo: github.context.repo.repo,
-        issue_number: prNumber,
-        body,
-      });
-    }
-  } catch (err: unknown) {
-    if (typeof err === 'object' && err !== null && 'status' in err && err.status === 403) {
-      core.warning('Could not comment on PR (token lacks write permissions). Image size summary:');
-      core.info(section);
-      return;
-    }
-    throw err;
-  }
-}
-
 async function main() {
   const sizesPath = core.getInput('sizes-path', { required: true });
   const title = core.getInput('title', { required: true });
@@ -336,8 +262,12 @@ async function main() {
 
     const oldSizes = await fetchBaseline(octokit);
     const section = buildCommentSection(title, sha, pushed, oldSizes, newSizes);
-    await commentOnPr(octokit, prNumber, title, section);
-    core.info('Posted image size comment on PR');
+    const reportPath = core.getInput('report-path');
+    if (reportPath) {
+      fs.writeFileSync(reportPath, section);
+      core.info(`Wrote report section to ${reportPath}`);
+    }
+    core.info(section);
   } else {
     core.info(`No action needed for event: ${eventName}`);
   }

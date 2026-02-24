@@ -48,7 +48,7 @@ export function Pager({
   `;
 }
 
-export function pages(chosenPage: number, count: number, pageSize: number) {
+function pages(chosenPage: number, count: number, pageSize: number) {
   const lastPage = Math.max(1, Math.ceil(count / pageSize));
 
   let currPage = Number(chosenPage);

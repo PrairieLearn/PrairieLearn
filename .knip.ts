@@ -79,10 +79,11 @@ for (const dep of REFERENCED_NODE_MODULES_DEPS) {
 }
 
 const config: KnipConfig = {
+  tags: ['-knipignore'],
   workspaces: {
     '.': {
-      entry: [],
-      project: [],
+      entry: ['scripts/*.{mts,mjs}'],
+      project: ['scripts/*.{mts,mjs}'],
       // https://knip.dev/guides/configuring-project-files#ignore-issues-in-specific-files
       ignore: ['vitest.config.ts', 'eslint.config.mjs'],
     },
@@ -112,6 +113,9 @@ const config: KnipConfig = {
     'apps/grader-host': {
       project: ['**/*.{ts,cts,mts,tsx}'],
     },
+    'packages/*': {
+      project: ['**/*.{ts,cts,mts,tsx}'],
+    },
     'packages/migrations': {
       entry: ['src/{batched-migrations,migrations}/fixtures/*.ts'],
       project: ['**/*.{ts,cts,mts,tsx}'],
@@ -136,7 +140,7 @@ const config: KnipConfig = {
     // ...FALSE_NEGATIVE_CLI_DEPS,
   ],
   // TODO: enable these features
-  exclude: ['binaries', 'dependencies', 'exports', 'types'],
+  exclude: ['binaries', 'dependencies', 'unlisted'],
 };
 
 export default config;

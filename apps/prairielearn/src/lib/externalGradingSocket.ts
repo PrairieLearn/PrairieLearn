@@ -38,7 +38,7 @@ export function init() {
   namespace.on('connection', connection);
 }
 
-export function connection(socket: Socket) {
+function connection(socket: Socket) {
   socket.on('init', (msg, callback) => {
     if (
       !ensureProps({
@@ -74,7 +74,7 @@ export function connection(socket: Socket) {
   });
 }
 
-export async function getVariantSubmissionsStatus(variant_id: string) {
+async function getVariantSubmissionsStatus(variant_id: string) {
   return await sqldb.queryRows(
     sql.select_submissions_for_variant,
     { variant_id },

@@ -1,5 +1,6 @@
 import importlib
 import string
+from pathlib import Path
 from typing import Any
 
 import prairielearn.sympy_utils as psu
@@ -143,3 +144,34 @@ def test_parse_without_variables_attribute_with_assumptions() -> None:
     # The submitted answer should be a valid SympyJson dict
     assert isinstance(data["submitted_answers"]["test"], dict)
     assert data["submitted_answers"]["test"]["_type"] == "sympy"
+
+
+def test_formula_editor_initial_value_respects_display_log_as_ln(
+    monkeypatch: pytest.MonkeyPatch,
+) -> None:
+    monkeypatch.chdir(Path(__file__).parent)
+    element_html = """
+    <pl-symbolic-input
+        answers-name="test"
+        variables="x"
+        formula-editor="true"
+        display-log-as-ln="true"
+        initial-value="log(x)"
+    ></pl-symbolic-input>
+    """
+    data: dict[str, Any] = {
+        "submitted_answers": {},
+        "raw_submitted_answers": {},
+        "correct_answers": {},
+        "answers_names": {},
+        "format_errors": {},
+        "partial_scores": {},
+        "panel": "question",
+        "editable": True,
+    }
+
+    symbolic_input.prepare(element_html, data)
+    rendered = symbolic_input.render(element_html, data)
+
+    assert "\\ln{\\left(x \\right)}" in rendered
+    assert "\\log{\\left(x \\right)}" not in rendered
