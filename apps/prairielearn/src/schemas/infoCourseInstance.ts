@@ -60,20 +60,6 @@ export const StudentLabelJsonSchema = z
 
 export type StudentLabelJson = z.infer<typeof StudentLabelJsonSchema>;
 
-export const StudentLabelJsonSchema = z
-  .object({
-    uuid: z
-      .string()
-      .regex(/^[0-9a-fA-F]{8}-[0-9a-fA-F]{4}-[0-9a-fA-F]{4}-[0-9a-fA-F]{4}-[0-9a-fA-F]{12}$/)
-      .describe('Unique identifier (UUID v4).'),
-    name: z.string().trim().min(1).max(255).describe('The name of the student label.'),
-    color: ColorJsonSchema,
-  })
-  .strict()
-  .describe('A single student label, can represent a collection of students (e.g. "Section A").');
-
-export type StudentLabelJson = z.infer<typeof StudentLabelJsonSchema>;
-
 export const CourseInstanceJsonSchema = z
   .object({
     comment: CommentJsonSchema.optional(),
