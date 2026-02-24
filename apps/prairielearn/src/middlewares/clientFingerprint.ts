@@ -61,7 +61,11 @@ export async function getClientFingerprintId(req: Request, res: Response) {
   );
 
   if (!client_fingerprint_id) {
-    client_fingerprint_id = await sqldb.queryScalar(sql.insert_client_fingerprint, params, IdSchema);
+    client_fingerprint_id = await sqldb.queryScalar(
+      sql.insert_client_fingerprint,
+      params,
+      IdSchema,
+    );
   }
 
   return client_fingerprint_id;

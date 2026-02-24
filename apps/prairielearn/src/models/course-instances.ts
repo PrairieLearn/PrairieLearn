@@ -194,11 +194,7 @@ export function selectCourseHasCourseInstances({
 }: {
   course: CourseContext;
 }): Promise<boolean> {
-  return queryScalar(
-    sql.select_course_has_course_instances,
-    { course_id: course.id },
-    z.boolean(),
-  );
+  return queryScalar(sql.select_course_has_course_instances, { course_id: course.id }, z.boolean());
 }
 
 export async function selectCourseInstanceByUuid({
