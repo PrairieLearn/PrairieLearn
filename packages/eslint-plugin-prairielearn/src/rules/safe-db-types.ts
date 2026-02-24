@@ -332,19 +332,27 @@ function isTypeInAllowlist(typeName: string, allowlist: (string | RegExp)[]): bo
 /**
  * Check the props of a component for unsafe types from db-types.ts
  */
-function checkComponentProps(
+function checkComponentProps({
+  context,
+  typeChecker,
+  componentSymbol,
+  tsComponentNode,
+  jsxElement,
+  reportNode,
+  allowlist,
+}: {
   context: ReturnType<typeof ESLintUtils.RuleCreator.withoutDocs>['create'] extends (
     context: infer C,
   ) => any
     ? C
-    : never,
-  typeChecker: ts.TypeChecker,
-  componentSymbol: ts.Symbol,
-  tsComponentNode: ts.Node,
-  jsxElement: TSESTree.JSXElement,
-  reportNode: TSESTree.Node,
-  allowlist: (string | RegExp)[],
-): void {
+    : never;
+  typeChecker: ts.TypeChecker;
+  componentSymbol: ts.Symbol;
+  tsComponentNode: ts.Node;
+  jsxElement: TSESTree.JSXElement;
+  reportNode: TSESTree.Node;
+  allowlist: (string | RegExp)[];
+}): void {
   const childOpeningElement = jsxElement.openingElement;
 
   // Get the component's type (function or class component)
@@ -543,15 +551,15 @@ export default ESLintUtils.RuleCreator.withoutDocs<
 
         if (!componentSymbol) return;
 
-        checkComponentProps(
+        checkComponentProps({
           context,
           typeChecker,
           componentSymbol,
-          tsChildNode,
-          child,
-          child,
+          tsComponentNode: tsChildNode,
+          jsxElement: child,
+          reportNode: child,
           allowlist,
-        );
+        });
       },
 
       CallExpression(node) {
@@ -578,15 +586,15 @@ export default ESLintUtils.RuleCreator.withoutDocs<
 
         if (!componentSymbol) return;
 
-        checkComponentProps(
+        checkComponentProps({
           context,
           typeChecker,
           componentSymbol,
-          tsElementNode,
+          tsComponentNode: tsElementNode,
           jsxElement,
-          node,
+          reportNode: node,
           allowlist,
-        );
+        });
       },
     };
   },
