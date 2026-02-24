@@ -12,9 +12,11 @@ export type QueryParams = Record<string, any> | any[];
 
 /**
  * Type constraint for row schemas accepted by query functions.
- * Accepts `z.object(...)` and branded variants like `MySchema.brand("Foo")`.
+ * Accepts `z.object(...)`, transforms of objects like `z.object(...).transform(...)`,
+ * and branded variants of either.
  */
-export type AnyRowSchema = z.AnyZodObject | z.ZodBranded<z.AnyZodObject, any>;
+type AnyObjectLikeSchema = z.AnyZodObject | z.ZodEffects<z.AnyZodObject, any, any>;
+export type AnyRowSchema = AnyObjectLikeSchema | z.ZodBranded<AnyObjectLikeSchema, any>;
 
 export interface CursorIterator<T> {
   iterate: (batchSize: number) => AsyncGenerator<T[]>;
