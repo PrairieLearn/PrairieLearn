@@ -1,3 +1,5 @@
+import * as crypto from 'node:crypto';
+
 import { afterAll, assert, beforeAll, describe, test } from 'vitest';
 
 import { execute } from '@prairielearn/postgres';
@@ -68,7 +70,12 @@ describe('Student labels batch actions', () => {
     );
     enrollmentIds = enrollments.map((e) => e!.id);
 
-    label = await createStudentLabel({ courseInstanceId: '1', name: 'Batch Test Label' });
+    label = await createStudentLabel({
+      courseInstance,
+      uuid: crypto.randomUUID(),
+      name: 'Batch Test Label',
+      color: 'blue1',
+    });
   });
 
   afterAll(async () => {
@@ -77,7 +84,7 @@ describe('Student labels batch actions', () => {
     const labels = await selectStudentLabelsInCourseInstance(courseInstance);
     for (const l of labels) {
       try {
-        await deleteStudentLabel(l.id);
+        await deleteStudentLabel(l);
       } catch {
         // ignore
       }

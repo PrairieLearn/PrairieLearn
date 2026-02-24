@@ -1,3 +1,5 @@
+import * as crypto from 'node:crypto';
+
 import { afterAll, assert, beforeAll, beforeEach, describe, it } from 'vitest';
 
 import { execute, queryRow } from '@prairielearn/postgres';
@@ -63,7 +65,11 @@ function addStudentLabelToConfig(
   if (!ci.courseInstance.studentLabels) {
     ci.courseInstance.studentLabels = [];
   }
-  ci.courseInstance.studentLabels.push({ name: groupName, color: 'blue1' });
+  ci.courseInstance.studentLabels.push({
+    uuid: crypto.randomUUID(),
+    name: groupName,
+    color: 'blue1',
+  });
 }
 
 describe('Access control syncing', () => {

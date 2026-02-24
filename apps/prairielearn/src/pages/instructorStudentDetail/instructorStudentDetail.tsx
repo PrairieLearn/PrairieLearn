@@ -20,8 +20,8 @@ import {
   setEnrollmentStatus,
 } from '../../models/enrollment.js';
 import {
-  addEnrollmentToStudentLabel,
-  removeEnrollmentFromStudentLabel,
+  addLabelToEnrollment,
+  removeLabelFromEnrollment,
   selectStudentLabelById,
   selectStudentLabelsForEnrollment,
   selectStudentLabelsInCourseInstance,
@@ -226,9 +226,10 @@ router.post(
 
         const label = await selectStudentLabelById({ id: student_label_id, courseInstance });
 
-        await addEnrollmentToStudentLabel({
+        await addLabelToEnrollment({
           enrollment,
           label,
+          authzData,
         });
         res.redirect(req.originalUrl);
         break;
@@ -238,9 +239,10 @@ router.post(
 
         const label = await selectStudentLabelById({ id: student_label_id, courseInstance });
 
-        await removeEnrollmentFromStudentLabel({
+        await removeLabelFromEnrollment({
           enrollment,
           label,
+          authzData,
         });
         res.redirect(req.originalUrl);
         break;

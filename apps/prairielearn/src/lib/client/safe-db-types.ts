@@ -433,7 +433,6 @@ export type StaffRubricItem = z.infer<typeof StaffRubricItemSchema>;
 export const RawStaffStudentLabelSchema = RawStudentLabelSchema.pick({
   color: true,
   course_instance_id: true,
-  deleted_at: true,
   id: true,
   name: true,
 });
