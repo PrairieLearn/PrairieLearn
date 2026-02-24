@@ -313,14 +313,14 @@ router.get(
     const isAssessmentAvailable =
       res.locals.assessment_instance.open && res.locals.authz_result.active;
 
-    const assessmentTools = await queryRows(
+    const enabledTools = await queryRows(
       sql.select_assessment_tools,
-      { assessment_id: res.locals.assessment.id },
-      AssessmentToolSchema.pick({ tool: true, enabled: true, settings: true }),
+      {
+        assessment_id: res.locals.assessment.id,
+        instance_question_id: res.locals.instance_question.id,
+      },
+      AssessmentToolSchema.pick({ tool: true, settings: true }),
     );
-    const enabledTools = assessmentTools
-      .filter((t) => t.enabled)
-      .map((t) => t.tool);
 
     if (variant_id === null && !isAssessmentAvailable) {
       // We can't generate a new variant in this case, so we

@@ -308,6 +308,13 @@ export const ZoneQuestionBlockJsonSchema = QuestionPointsJsonSchema.extend({
 export type ZoneQuestionBlockJson = z.infer<typeof ZoneQuestionBlockJsonSchema>;
 export type ZoneQuestionBlockJsonInput = z.input<typeof ZoneQuestionBlockJsonSchema>;
 
+export const AssessmentToolsJsonSchema = z.object({
+  enabled: z.boolean().describe('Whether this assessment tool is enabled.'),
+  // leave room for additional keys in the future
+}).catchall(z.unknown());
+
+export type AssessmentToolsJson = z.infer<typeof AssessmentToolsJsonSchema>;
+
 export const ZoneAssessmentJsonSchema = z.object({
   title: z
     .string()
@@ -366,16 +373,13 @@ export const ZoneAssessmentJsonSchema = z.object({
     )
     .optional()
     .default([]),
+  tools: z
+    .record(z.string(), AssessmentToolsJsonSchema)
+    .describe('Tools available for questions in this zone. Overrides assessment-level tools.')
+    .optional(),
 });
 
 export type ZoneAssessmentJson = z.infer<typeof ZoneAssessmentJsonSchema>;
-
-export const AssessmentToolsJsonSchema = z.object({
-  enabled: z.boolean().describe('Whether this assessment tool is enabled.'),
-  // leave room for additional keys in the future
-});
-
-export type AssessmentToolsJson = z.infer<typeof AssessmentToolsJsonSchema>;
 
 export const AssessmentJsonSchema = z
   .object({

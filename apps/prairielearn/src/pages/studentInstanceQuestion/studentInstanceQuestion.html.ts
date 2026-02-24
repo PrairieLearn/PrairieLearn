@@ -36,12 +36,15 @@ export function StudentInstanceQuestion({
   assignedGrader?: User | null;
   lastGrader?: User | null;
   questionCopyTargets?: CopyTarget[] | null;
-  enabledTools?: string[];
+  enabledTools?: {
+    tool: string,
+    settings: unknown
+  }[];
 }) {
   const questionContext =
     resLocals.assessment.type === 'Exam' ? 'student_exam' : 'student_homework';
   // TODO: support more tools
-  const hasCalculator = enabledTools.includes('calculator');
+  const hasCalculator = enabledTools.some((t) => t.tool === 'calculator');
 
   return PageLayout({
     resLocals,

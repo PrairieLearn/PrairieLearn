@@ -71,12 +71,14 @@ WITH
     FROM
       jsonb_to_recordset($tools::jsonb) AS (
         assessment_id bigint,
+        zone_id bigint,
         tool text,
         enabled boolean,
         settings jsonb
       )
   ),
-  upserted AS (
+  -- Upsert assessment-level tools (assessment_id is set, zone_id is null)
+  upserted_assessment AS (
     INSERT INTO
       assessment_tools (assessment_id, tool, enabled, settings)
     SELECT
@@ -86,21 +88,78 @@ WITH
       settings
     FROM
       desired_tools
+    WHERE
+      assessment_id IS NOT NULL
     ON CONFLICT (assessment_id, tool) DO UPDATE
     SET
       enabled = EXCLUDED.enabled,
       settings = EXCLUDED.settings
-  )
--- set enabled = false for any tools that are enabled in the database for this assessment, but not present in the incoming list of tools
-UPDATE assessment_tools
-SET
-  enabled = FALSE
-WHERE
-  assessment_id = ANY ($assessment_ids::bigint[])
-  AND (assessment_id, tool) NOT IN (
+  ),
+  -- Upsert zone-level tools (zone_id is set, assessment_id is null)
+  upserted_zone AS (
+    INSERT INTO
+      assessment_tools (zone_id, tool, enabled, settings)
     SELECT
-      assessment_id,
-      tool
+      zone_id,
+      tool,
+      enabled,
+      settings
     FROM
       desired_tools
+    WHERE
+      zone_id IS NOT NULL
+    ON CONFLICT (zone_id, tool) DO UPDATE
+    SET
+      enabled = EXCLUDED.enabled,
+      settings = EXCLUDED.settings
+  )
+  -- Delete tools not in the desired set for these assessments and their zones
+DELETE FROM assessment_tools
+WHERE
+  (
+    -- Assessment-level tools for these assessments
+    (
+      assessment_id = ANY ($assessment_ids::bigint[])
+      AND (assessment_id, tool) NOT IN (
+        SELECT
+          assessment_id,
+          tool
+        FROM
+          desired_tools
+        WHERE
+          assessment_id IS NOT NULL
+      )
+    )
+    OR
+    -- Zone-level tools for zones belonging to these assessments
+    (
+      zone_id IN (
+        SELECT
+          id
+        FROM
+          zones
+        WHERE
+          assessment_id = ANY ($assessment_ids::bigint[])
+      )
+      AND (zone_id, tool) NOT IN (
+        SELECT
+          zone_id,
+          tool
+        FROM
+          desired_tools
+        WHERE
+          zone_id IS NOT NULL
+      )
+    )
   );
+
+-- BLOCK select_zone_ids
+SELECT
+  id,
+  number
+FROM
+  zones
+WHERE
+  assessment_id = $assessment_id
+ORDER BY
+  number;

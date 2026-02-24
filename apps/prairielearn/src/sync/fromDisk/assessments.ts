@@ -48,6 +48,7 @@ type AssessmentInfoFile = infofile.InfoFile<AssessmentJson>;
  *   j) Soft-delete unused assessment questions (from deleted assessments)
  *   k) Delete unused assessment access rules (from deleted assessments)
  *   l) Delete unused zones (from deletes assessments)
+ * 5. Sync assessment tools (assessment-level and zone-level)
  */
 
 function getParamsForAssessment(
@@ -492,8 +493,18 @@ export async function sync(
     SprocSyncAssessmentsSchema,
   );
 
+  console.log('nameToIdMap', nameToIdMap);
+
+  await syncAssessmentTools(assessments, nameToIdMap);
+}
+
+async function syncAssessmentTools(
+  assessments: CourseInstanceData['assessments'],
+  nameToIdMap: Record<string, string> | null,
+) {
   const toolRows: Partial<AssessmentTool>[] = [];
   const assessmentIds: string[] = [];
+  const assessmentsWithZoneTools: { assessmentId: string; zones: AssessmentJson['zones'] }[] = [];
 
   for (const [tid, assessment] of Object.entries(assessments)) {
     const assessmentId = nameToIdMap?.[tid];
@@ -505,6 +516,42 @@ export async function sync(
       for (const [toolName, { enabled, ...settings }] of Object.entries(assessment.data.tools)) {
         toolRows.push({
           assessment_id: assessmentId,
+          tool: toolName,
+          enabled,
+          settings,
+        });
+      }
+    }
+
+    const zones = assessment.data?.zones;
+    if (zones?.some((zone) => zone.tools)) {
+      assessmentsWithZoneTools.push({ assessmentId, zones });
+    }
+  }
+
+  for (const { assessmentId, zones } of assessmentsWithZoneTools) {
+    const zoneRows = await sqldb.queryRows(
+      sql.select_zone_ids,
+      { assessment_id: assessmentId },
+      z.object({ id: IdSchema, number: z.number() }),
+    );
+
+    if (zoneRows.length !== zones.length) {
+      // This should never happen
+      throw new Error(
+        `Number of zones in the database (${zoneRows.length}) does not match number of zones in the info files (${zones.length}) for assessment ID ${assessmentId}.`,
+      );
+    }
+
+
+    for (const [index, zone] of zones.entries()) {
+      if (!zone.tools) continue;
+
+      const zoneRow = zoneRows[index];
+
+      for (const [toolName, { enabled, ...settings }] of Object.entries(zone.tools)) {
+        toolRows.push({
+          zone_id: zoneRow.id,
           tool: toolName,
           enabled,
           settings,

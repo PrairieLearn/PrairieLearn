@@ -279,14 +279,7 @@
       "description": "Configuration for assessment tools.",
       "type": "object",
       "additionalProperties": {
-        "type": "object",
-        "required": ["enabled"],
-        "properties": {
-          "enabled": {
-            "description": "Whether this assessment tool is enabled.",
-            "type": "boolean"
-          }
-        }
+        "$ref": "#/definitions/ZoneAssessmentJsonSchema/properties/tools/additionalProperties"
       }
     }
   },
@@ -431,6 +424,20 @@
           },
           "uniqueItems": true,
           "default": []
+        },
+        "tools": {
+          "description": "Tools available for questions in this zone. Overrides assessment-level tools.",
+          "type": "object",
+          "additionalProperties": {
+            "type": "object",
+            "required": ["enabled"],
+            "properties": {
+              "enabled": {
+                "description": "Whether this assessment tool is enabled.",
+                "type": "boolean"
+              }
+            }
+          }
         }
       }
     },
