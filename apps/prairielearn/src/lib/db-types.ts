@@ -502,13 +502,15 @@ export type AssessmentQuestionRolePermission = z.infer<
   typeof AssessmentQuestionRolePermissionSchema
 >;
 
+export const EnumAssessmentToolSchema = z.enum(['calculator']);
+export type EnumAssessmentTool = z.infer<typeof EnumAssessmentToolSchema>;
+
 export const AssessmentToolSchema = z.object({
   assessment_id: IdSchema.nullable(),
   enabled: z.boolean(),
   id: IdSchema,
   settings: z.record(z.unknown()),
-  // or enum?
-  tool: z.string(),
+  tool: EnumAssessmentToolSchema,
   zone_id: IdSchema.nullable(),
 });
 export type AssessmentTool = z.infer<typeof AssessmentToolSchema>;

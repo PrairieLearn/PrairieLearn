@@ -280,6 +280,9 @@
       "type": "object",
       "additionalProperties": {
         "$ref": "#/definitions/ZoneAssessmentJsonSchema/properties/tools/additionalProperties"
+      },
+      "propertyNames": {
+        "enum": ["calculator"]
       }
     }
   },
@@ -430,6 +433,7 @@
           "type": "object",
           "additionalProperties": {
             "type": "object",
+            "additionalProperties": {},
             "required": ["enabled"],
             "properties": {
               "enabled": {
@@ -437,6 +441,9 @@
                 "type": "boolean"
               }
             }
+          },
+          "propertyNames": {
+            "enum": ["calculator"]
           }
         }
       }

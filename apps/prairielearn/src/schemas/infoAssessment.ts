@@ -1,5 +1,7 @@
 import { type ZodSchema, z } from 'zod';
 
+import { EnumAssessmentToolSchema } from '../lib/db-types.js';
+
 import { CommentJsonSchema } from './comment.js';
 
 function uniqueArray<T extends ZodSchema>(schema: T) {
@@ -374,7 +376,7 @@ export const ZoneAssessmentJsonSchema = z.object({
     .optional()
     .default([]),
   tools: z
-    .record(z.string(), AssessmentToolsJsonSchema)
+    .record(EnumAssessmentToolSchema, AssessmentToolsJsonSchema)
     .describe('Tools available for questions in this zone. Overrides assessment-level tools.')
     .optional(),
 });
@@ -561,7 +563,7 @@ export const AssessmentJsonSchema = z
       .optional()
       .default(false),
     tools: z
-      .record(z.string(), AssessmentToolsJsonSchema)
+      .record(EnumAssessmentToolSchema, AssessmentToolsJsonSchema)
       .describe('Configuration for assessment tools.')
       .optional(),
   })
