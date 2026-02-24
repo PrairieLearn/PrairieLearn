@@ -488,7 +488,6 @@ with open(4, "w", encoding="utf-8") as exitf:
                 import pwd
 
                 user = pwd.getpwnam("executor")
-                os.setgroups([user.pw_gid])
                 os.setgid(user.pw_gid)
                 os.setuid(user.pw_uid)
 
