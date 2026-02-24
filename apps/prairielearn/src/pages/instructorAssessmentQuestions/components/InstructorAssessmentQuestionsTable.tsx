@@ -21,8 +21,8 @@ import { useModalState } from '@prairielearn/ui';
 
 import {
   type StaffAssessmentQuestionRow,
-  parseStaffAssessmentQuestionRow,
-} from '../../../lib/assessment-question-schema.js';
+  StaffAssessmentQuestionRowSchema,
+} from '../../../lib/assessment-question.shared.js';
 import type { StaffAssessment, StaffCourse } from '../../../lib/client/safe-db-types.js';
 import { QueryClientProviderDebug } from '../../../lib/client/tanstackQuery.js';
 import type { ZoneAssessmentJson } from '../../../schemas/infoAssessment.js';
@@ -374,7 +374,7 @@ function InstructorAssessmentQuestionsTableInner({
       throw new Error('Cannot build question metadata without an existing question template');
     }
 
-    return parseStaffAssessmentQuestionRow({
+    return StaffAssessmentQuestionRowSchema.parse({
       ...templateRow,
       question: data.question,
       topic: data.topic,
@@ -785,6 +785,7 @@ function InstructorAssessmentQuestionsTableInner({
           courseQuestions={courseQuestions}
           isLoading={courseQuestionsQuery.isLoading}
           questionsInAssessment={questionsInAssessment}
+          courseId={course.id}
           urlPrefix={urlPrefix}
           currentQid={
             questionEditState.status === 'picking'

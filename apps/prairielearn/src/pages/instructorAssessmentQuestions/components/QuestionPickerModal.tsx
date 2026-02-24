@@ -9,6 +9,7 @@ import { getQuestionUrl } from '../../../lib/client/url.js';
 import type { CourseQuestionForPicker } from '../types.js';
 
 import { AssessmentBadges } from './AssessmentBadges.js';
+import { QuestionTopicTagBadges } from './QuestionTopicTagBadges.js';
 
 /** Special filter ID for questions not in any assessment */
 const NOT_IN_ANY_ASSESSMENT_ID = '__not_in_any_assessment__';
@@ -21,6 +22,7 @@ interface QuestionPickerModalProps {
   courseQuestions: CourseQuestionForPicker[];
   isLoading?: boolean;
   questionsInAssessment: Set<string>;
+  courseId: string;
   urlPrefix: string;
   /** The QID of the currently selected question (when editing/changing a question) */
   currentQid?: string | null;
@@ -39,6 +41,7 @@ export function QuestionPickerModal({
   courseQuestions,
   isLoading,
   questionsInAssessment,
+  courseId,
   urlPrefix,
   currentQid,
   currentAssessmentId,
@@ -49,7 +52,7 @@ export function QuestionPickerModal({
   const [selectedAssessments, setSelectedAssessments] = useState<Set<string>>(() => new Set());
   const [expandedTagsQids, setExpandedTagsQids] = useState<Set<string>>(() => new Set());
 
-  const parentRef = useRef<HTMLDivElement>(null);
+  const scrollParentRef = useRef<HTMLDivElement>(null);
 
   const { topics, tags, assessments } = useMemo(() => {
     const topicMap = new Map<string, FilterItem>();
@@ -134,13 +137,16 @@ export function QuestionPickerModal({
   ]);
 
   const sortedQuestions = useMemo(
-    () => [...filteredQuestions].sort((a, b) => a.qid.localeCompare(b.qid)),
+    () =>
+      [...filteredQuestions].sort((a, b) =>
+        a.qid.localeCompare(b.qid, undefined, { numeric: true }),
+      ),
     [filteredQuestions],
   );
 
   const rowVirtualizer = useVirtualizer({
     count: sortedQuestions.length,
-    getScrollElement: () => parentRef.current,
+    getScrollElement: () => scrollParentRef.current,
     estimateSize: () => 80,
     overscan: 10,
     getItemKey: (index) => sortedQuestions[index].qid,
@@ -233,7 +239,7 @@ export function QuestionPickerModal({
               {sortedQuestions.length} {sortedQuestions.length === 1 ? 'question' : 'questions'}{' '}
               found
             </div>
-            <div ref={parentRef} style={{ height: '400px', overflow: 'auto' }}>
+            <div ref={scrollParentRef} style={{ height: '400px', overflow: 'auto' }}>
               {sortedQuestions.length === 0 ? (
                 <div className="p-4 text-center text-muted">
                   <i className="bi bi-search display-6 mb-2" aria-hidden="true" />
@@ -291,7 +297,7 @@ export function QuestionPickerModal({
                         <div className="flex-grow-1 min-width-0">
                           <div className="d-flex align-items-center gap-2">
                             <a
-                              href={getQuestionUrl({ urlPrefix, questionId: question.id })}
+                              href={getQuestionUrl({ courseId, questionId: question.id })}
                               target="_blank"
                               rel="noopener noreferrer"
                               className="text-nowrap"
@@ -320,48 +326,13 @@ export function QuestionPickerModal({
                           className="d-flex flex-wrap gap-1 justify-content-end"
                           style={{ maxWidth: '40%' }}
                         >
-                          {(() => {
-                            const isExpanded = expandedTagsQids.has(qid);
-                            const visibleTags = isExpanded
-                              ? question.tags
-                              : question.tags?.slice(0, 3);
-                            const hasMoreTags = (question.tags?.length ?? 0) > 3;
-                            return (
-                              <>
-                                <span className={`badge color-${question.topic.color}`}>
-                                  {question.topic.name}
-                                </span>
-                                {visibleTags?.map((tag) => (
-                                  <span key={tag.id} className={`badge color-${tag.color}`}>
-                                    {tag.name}
-                                  </span>
-                                ))}
-                                {hasMoreTags && (
-                                  <button
-                                    type="button"
-                                    className="badge bg-secondary border-0"
-                                    onClick={(e) => {
-                                      e.stopPropagation();
-                                      setExpandedTagsQids((prev) => {
-                                        const next = new Set(prev);
-                                        if (isExpanded) {
-                                          next.delete(qid);
-                                        } else {
-                                          next.add(qid);
-                                        }
-                                        return next;
-                                      });
-                                    }}
-                                    onKeyDown={(e) => e.stopPropagation()}
-                                  >
-                                    {isExpanded
-                                      ? 'Show less'
-                                      : `+${(question.tags?.length ?? 0) - 3}`}
-                                  </button>
-                                )}
-                              </>
-                            );
-                          })()}
+                          <QuestionTopicTagBadges
+                            topic={question.topic}
+                            tags={question.tags}
+                            qid={qid}
+                            isExpanded={expandedTagsQids.has(qid)}
+                            setExpandedQids={setExpandedTagsQids}
+                          />
                         </div>
                       </div>
                     );

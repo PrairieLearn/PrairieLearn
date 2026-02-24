@@ -1,6 +1,6 @@
 import { OverlayTrigger } from '@prairielearn/ui';
 
-import type { OtherAssessment } from '../lib/assessment-question-schema.js';
+import type { OtherAssessment } from '../lib/assessment-question.shared.js';
 
 import { AssessmentBadge } from './AssessmentBadge.js';
 

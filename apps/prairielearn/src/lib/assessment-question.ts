@@ -2,9 +2,9 @@ import * as sqldb from '@prairielearn/postgres';
 
 import {
   type StaffAssessmentQuestionRow,
+  StaffAssessmentQuestionRowSchema,
   StaffAssessmentQuestionSqlSchema,
-  parseStaffAssessmentQuestionRow,
-} from './assessment-question-schema.js';
+} from './assessment-question.shared.js';
 
 const sql = sqldb.loadSqlEquiv(import.meta.url);
 
@@ -33,7 +33,7 @@ export async function selectAssessmentQuestions({
     const start_new_alternative_group = row.alternative_group.id !== prevAltGroupId;
     const alternative_group_size = groupCounts[row.alternative_group.id];
     result.push(
-      parseStaffAssessmentQuestionRow({
+      StaffAssessmentQuestionRowSchema.parse({
         ...row,
         start_new_zone,
         start_new_alternative_group,
