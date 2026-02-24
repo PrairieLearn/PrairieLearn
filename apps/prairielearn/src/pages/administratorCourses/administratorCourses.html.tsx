@@ -14,6 +14,7 @@ export function AdministratorCourses({
   courses,
   coursesRoot,
   csrfToken,
+  trpcCsrfToken,
   urlPrefix,
   courseRepoDefaultBranch,
 }: {
@@ -22,6 +23,7 @@ export function AdministratorCourses({
   courses: CourseWithInstitution[];
   coursesRoot: string;
   csrfToken: string;
+  trpcCsrfToken: string;
   urlPrefix: string;
   courseRepoDefaultBranch: string;
 }) {
@@ -36,6 +38,7 @@ export function AdministratorCourses({
         institutions={institutions}
         coursesRoot={coursesRoot}
         csrfToken={csrfToken}
+        trpcCsrfToken={trpcCsrfToken}
         urlPrefix={urlPrefix}
         showAll={false}
       />

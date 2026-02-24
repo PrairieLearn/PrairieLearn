@@ -1,22 +1,29 @@
-import { QueryClient, useQuery } from '@tanstack/react-query';
+import { QueryClient, useMutation, useQuery } from '@tanstack/react-query';
 import clsx from 'clsx';
 import { useState } from 'react';
 import { Dropdown, Modal } from 'react-bootstrap';
-import { useDebouncedCallback } from 'use-debounce';
-import z from 'zod';
+import { useForm } from 'react-hook-form';
 
 import { OverlayTrigger } from '@prairielearn/ui';
 
 import type { AdminInstitution } from '../lib/client/safe-db-types.js';
 import { QueryClientProviderDebug } from '../lib/client/tanstackQuery.js';
-import {
-  getAdministratorCourseRequestsUrl,
-  getCoursePathAvailabilityUrl,
-  getCourseRepositoryAvailabilityUrl,
-} from '../lib/client/url.js';
+import { getAdministratorCourseRequestsUrl } from '../lib/client/url.js';
 import type { CourseRequestRow } from '../lib/course-request.js';
 
+import { createCourseRequestsTrpcClient } from './CourseRequestsTable/trpc-client.js';
+import { TRPCProvider, useTRPC } from './CourseRequestsTable/trpc-context.js';
 import { JobStatus } from './JobStatus.js';
+
+interface CourseRequestApproveFormData {
+  institution_id: string;
+  short_name: string;
+  title: string;
+  display_timezone: string;
+  path: string;
+  repository_short_name: string;
+  github_user: string;
+}
 
 export function CourseRequestsTable({
   rows,
@@ -24,6 +31,7 @@ export function CourseRequestsTable({
   coursesRoot,
   showAll,
   csrfToken,
+  trpcCsrfToken,
   urlPrefix,
 }: {
   rows: CourseRequestRow[];
@@ -31,6 +39,7 @@ export function CourseRequestsTable({
   coursesRoot: string;
   showAll: boolean;
   csrfToken: string;
+  trpcCsrfToken: string;
   urlPrefix: string;
 }) {
   const headerPrefix = showAll ? 'All' : 'Pending';
@@ -74,6 +83,7 @@ export function CourseRequestsTable({
                 coursesRoot={coursesRoot}
                 showAll={showAll}
                 csrfToken={csrfToken}
+                trpcCsrfToken={trpcCsrfToken}
                 urlPrefix={urlPrefix}
               />
             ))}
@@ -97,7 +107,7 @@ function CourseRequestTableRow({
   institutions,
   coursesRoot,
   showAll,
-  csrfToken,
+  trpcCsrfToken,
   urlPrefix,
 }: {
   row: CourseRequestRow;
@@ -105,272 +115,287 @@ function CourseRequestTableRow({
   coursesRoot: string;
   showAll: boolean;
   csrfToken: string;
+  trpcCsrfToken: string;
   urlPrefix: string;
 }) {
   const [noteOpen, setNoteOpen] = useState(Boolean(row.note));
   const [jobsOpen, setJobsOpen] = useState(false);
   const [showDenyPopover, setShowDenyPopover] = useState(false);
   const [showApprovePopover, setShowApprovePopover] = useState(false);
+
   const [queryClient] = useState(() => new QueryClient());
+  const [trpcClient] = useState(() => createCourseRequestsTrpcClient(trpcCsrfToken, urlPrefix));
 
   return (
-    <>
-      <tr>
-        <td className="align-middle">{row.created_at.toISOString()}</td>
-        <td className="align-middle">
-          {row.short_name}: {row.title}
-        </td>
-        <td className="align-middle">{row.institution}</td>
-        <td className="align-middle">
-          {row.first_name} {row.last_name} ({row.work_email})
-        </td>
-        <td className="align-middle">
-          {row.user_name} ({row.user_uid})
-        </td>
-        <td className="align-middle">{row.github_user}</td>
-        <td className="align-middle">{row.referral_source}</td>
-        <td className="align-middle">
-          <CourseRequestStatusIcon status={row.approved_status} />
-        </td>
-        {showAll && (
-          <td className="align-middle">
-            {row.approved_status !== 'pending' &&
-              (row.approved_by_name ?? 'Automatically Approved')}
-          </td>
-        )}
-        <td className="align-middle py-1">
-          {row.approved_status !== 'approved' && (
-            <div className="d-flex flex-wrap gap-1">
-              <OverlayTrigger
-                trigger="click"
-                placement="auto"
-                popover={{
-                  header: 'Deny course request',
-                  body: (
-                    <CourseRequestDenyForm
-                      request={row}
-                      csrfToken={csrfToken}
-                      onCancel={() => setShowDenyPopover(false)}
-                    />
-                  ),
-                }}
-                show={showDenyPopover}
-                rootClose
-                onToggle={setShowDenyPopover}
-              >
-                <button type="button" className="btn btn-sm btn-danger text-nowrap">
-                  <i className="fa fa-times" aria-hidden="true" /> Deny
-                </button>
-              </OverlayTrigger>
-              <button
-                type="button"
-                className="btn btn-sm btn-success text-nowrap"
-                onClick={() => setShowApprovePopover(true)}
-              >
-                <i className="fa fa-check" aria-hidden="true" /> Approve
-              </button>
-              <Modal
-                show={showApprovePopover}
-                backdrop="static"
-                onHide={() => setShowApprovePopover(false)}
-              >
-                <Modal.Body>
-                  <QueryClientProviderDebug client={queryClient}>
-                    <CourseRequestApproveForm
-                      request={row}
-                      institutions={institutions}
-                      coursesRoot={coursesRoot}
-                      csrfToken={csrfToken}
-                      urlPrefix={urlPrefix}
-                      onCancel={() => setShowApprovePopover(false)}
-                    />
-                  </QueryClientProviderDebug>
-                </Modal.Body>
-              </Modal>
-            </div>
-          )}
-        </td>
-        <td className="align-middle">
-          <Dropdown>
-            <Dropdown.Toggle
-              variant="secondary"
-              size="sm"
-              className="btn-xs"
-              aria-label={`Show details for ${row.short_name}`}
-            >
-              Show details
-            </Dropdown.Toggle>
-            <Dropdown.Menu popperConfig={{ strategy: 'fixed' }} renderOnMount>
-              <Dropdown.Item as="button" onClick={() => setNoteOpen(!noteOpen)}>
-                {noteOpen ? 'Close note' : 'Edit note'}
-              </Dropdown.Item>
-              {row.jobs.length > 0 && (
-                <Dropdown.Item as="button" onClick={() => setJobsOpen(!jobsOpen)}>
-                  {jobsOpen ? 'Hide jobs' : 'Show jobs'}
-                </Dropdown.Item>
-              )}
-            </Dropdown.Menu>
-          </Dropdown>
-        </td>
-      </tr>
-      <tr>
-        <td colSpan={showAll ? 11 : 10} className="p-0">
-          {noteOpen && (
-            <CourseRequestEditNoteForm
-              request={row}
-              csrfToken={csrfToken}
-              onCancel={() => setNoteOpen(false)}
-            />
-          )}
-        </td>
-      </tr>
-      {row.jobs.length > 0 && (
-        <tr>
-          <td colSpan={showAll ? 11 : 10} className="p-0">
-            {jobsOpen && (
-              <table className="table table-sm table-active mb-0" aria-label="Course request jobs">
-                <thead>
-                  <tr>
-                    <th>Number</th>
-                    <th>Start Date</th>
-                    <th>End Date</th>
-                    <th>User</th>
-                    <th>Status</th>
-                    <th>
-                      <span className="visually-hidden">Details</span>
-                    </th>
-                  </tr>
-                </thead>
-                <tbody>
-                  {[...row.jobs].reverse().map((job) => {
-                    return (
-                      <tr key={job.id}>
-                        <td>{job.number}</td>
-                        <td>{job.start_date.toISOString()}</td>
-                        <td>{job.finish_date?.toISOString()}</td>
-                        <td>{job.authn_user_name}</td>
-                        <td>
-                          <JobStatus status={job.status} />
-                        </td>
-                        <td>
-                          <a
-                            href={`${urlPrefix}/administrator/jobSequence/${job.id}`}
-                            className="btn btn-xs btn-info float-end"
-                          >
-                            Details
-                          </a>
-                        </td>
-                      </tr>
-                    );
-                  })}
-                </tbody>
-              </table>
+    <QueryClientProviderDebug client={queryClient}>
+      <TRPCProvider trpcClient={trpcClient} queryClient={queryClient}>
+        <>
+          <tr>
+            <td className="align-middle">{row.created_at.toISOString()}</td>
+            <td className="align-middle">
+              {row.short_name}: {row.title}
+            </td>
+            <td className="align-middle">{row.institution}</td>
+            <td className="align-middle">
+              {row.first_name} {row.last_name} ({row.work_email})
+            </td>
+            <td className="align-middle">
+              {row.user_name} ({row.user_uid})
+            </td>
+            <td className="align-middle">{row.github_user}</td>
+            <td className="align-middle">{row.referral_source}</td>
+            <td className="align-middle">
+              <CourseRequestStatusIcon status={row.approved_status} />
+            </td>
+            {showAll && (
+              <td className="align-middle">
+                {row.approved_status !== 'pending' &&
+                  (row.approved_by_name ?? 'Automatically Approved')}
+              </td>
             )}
-          </td>
-        </tr>
-      )}
-    </>
+            <td className="align-middle py-1">
+              {row.approved_status !== 'approved' && (
+                <div className="d-flex flex-wrap gap-1">
+                  <OverlayTrigger
+                    trigger="click"
+                    placement="auto"
+                    popover={{
+                      header: 'Deny course request',
+                      body: (
+                        <CourseRequestDenyForm
+                          request={row}
+                          onCancel={() => setShowDenyPopover(false)}
+                        />
+                      ),
+                    }}
+                    show={showDenyPopover}
+                    rootClose
+                    onToggle={setShowDenyPopover}
+                  >
+                    <button type="button" className="btn btn-sm btn-danger text-nowrap">
+                      <i className="fa fa-times" aria-hidden="true" /> Deny
+                    </button>
+                  </OverlayTrigger>
+                  <button
+                    type="button"
+                    className="btn btn-sm btn-success text-nowrap"
+                    onClick={() => setShowApprovePopover(true)}
+                  >
+                    <i className="fa fa-check" aria-hidden="true" /> Approve
+                  </button>
+                  <Modal
+                    show={showApprovePopover}
+                    backdrop="static"
+                    onHide={() => setShowApprovePopover(false)}
+                  >
+                    <Modal.Body>
+                      <CourseRequestApproveForm
+                        request={row}
+                        institutions={institutions}
+                        coursesRoot={coursesRoot}
+                        urlPrefix={urlPrefix}
+                        onCancel={() => setShowApprovePopover(false)}
+                      />
+                    </Modal.Body>
+                  </Modal>
+                </div>
+              )}
+            </td>
+            <td className="align-middle">
+              <Dropdown>
+                <Dropdown.Toggle
+                  variant="secondary"
+                  size="sm"
+                  className="btn-xs"
+                  aria-label={`Show details for ${row.short_name}`}
+                >
+                  Show details
+                </Dropdown.Toggle>
+                <Dropdown.Menu popperConfig={{ strategy: 'fixed' }} renderOnMount>
+                  <Dropdown.Item as="button" onClick={() => setNoteOpen(!noteOpen)}>
+                    {noteOpen ? 'Close note' : 'Edit note'}
+                  </Dropdown.Item>
+                  {row.jobs.length > 0 && (
+                    <Dropdown.Item as="button" onClick={() => setJobsOpen(!jobsOpen)}>
+                      {jobsOpen ? 'Hide jobs' : 'Show jobs'}
+                    </Dropdown.Item>
+                  )}
+                </Dropdown.Menu>
+              </Dropdown>
+            </td>
+          </tr>
+          <tr>
+            <td colSpan={showAll ? 11 : 10} className="p-0">
+              {noteOpen && (
+                <CourseRequestEditNoteForm request={row} onCancel={() => setNoteOpen(false)} />
+              )}
+            </td>
+          </tr>
+          {row.jobs.length > 0 && (
+            <tr>
+              <td colSpan={showAll ? 11 : 10} className="p-0">
+                {jobsOpen && (
+                  <table
+                    className="table table-sm table-active mb-0"
+                    aria-label="Course request jobs"
+                  >
+                    <thead>
+                      <tr>
+                        <th>Number</th>
+                        <th>Start Date</th>
+                        <th>End Date</th>
+                        <th>User</th>
+                        <th>Status</th>
+                        <th>
+                          <span className="visually-hidden">Details</span>
+                        </th>
+                      </tr>
+                    </thead>
+                    <tbody>
+                      {[...row.jobs].reverse().map((job) => {
+                        return (
+                          <tr key={job.id}>
+                            <td>{job.number}</td>
+                            <td>{job.start_date.toISOString()}</td>
+                            <td>{job.finish_date?.toISOString()}</td>
+                            <td>{job.authn_user_name}</td>
+                            <td>
+                              <JobStatus status={job.status} />
+                            </td>
+                            <td>
+                              <a
+                                href={`${urlPrefix}/administrator/jobSequence/${job.id}`}
+                                className="btn btn-xs btn-info float-end"
+                              >
+                                Details
+                              </a>
+                            </td>
+                          </tr>
+                        );
+                      })}
+                    </tbody>
+                  </table>
+                )}
+              </td>
+            </tr>
+          )}
+        </>
+      </TRPCProvider>
+    </QueryClientProviderDebug>
   );
-}
-
-function useCheckCourseRepositoryAvailability(urlPrefix: string, repoName: string) {
-  return useQuery({
-    queryKey: ['checkCourseRepositoryAvailability', repoName, urlPrefix],
-    queryFn: async () => {
-      const response = await fetch(getCourseRepositoryAvailabilityUrl(urlPrefix, repoName));
-      const data = await response.json();
-      return z.object({ exists: z.boolean() }).parse(data).exists;
-    },
-  });
-}
-
-function useCheckCoursePathAvailability(urlPrefix: string, path: string) {
-  return useQuery({
-    queryKey: ['checkCoursePathAvailability', path, urlPrefix],
-    queryFn: async () => {
-      const response = await fetch(getCoursePathAvailabilityUrl(urlPrefix, path));
-      const data = await response.json();
-      return z.object({ exists: z.boolean() }).parse(data).exists;
-    },
-  });
 }
 
 function CourseRequestApproveForm({
   request,
   institutions,
   coursesRoot,
-  csrfToken,
   urlPrefix,
   onCancel,
 }: {
   request: CourseRequestRow;
   institutions: AdminInstitution[];
   coursesRoot: string;
-  csrfToken: string;
   urlPrefix: string;
   onCancel: () => void;
 }) {
+  const trpc = useTRPC();
+  const mutation = useMutation(trpc.createCourseMutation.mutationOptions());
+
   const repoName = 'pl-' + request.short_name.replaceAll(' ', '').toLowerCase();
   const path = coursesRoot + '/' + repoName;
 
-  const [selectedInstitutionId, setSelectedInstitutionId] = useState('');
-  const [repoNameValue, setRepoNameValue] = useState(repoName);
-  const [pathNameValue, setPathNameValue] = useState(path);
-  const [debouncedRepoName, setDebouncedRepoName] = useState(repoName);
-  const [debouncedPathName, setDebouncedPathName] = useState(path);
-  const [timezone, setTimezone] = useState(institutions[0]?.display_timezone ?? '');
+  const {
+    register,
+    handleSubmit,
+    watch,
+    setValue,
+    setError,
+    formState: { errors, isSubmitting },
+  } = useForm<CourseRequestApproveFormData>({
+    mode: 'onSubmit',
+    defaultValues: {
+      institution_id: '',
+      short_name: request.short_name,
+      title: request.title,
+      display_timezone: institutions[0]?.display_timezone ?? '',
+      path,
+      repository_short_name: repoName,
+      github_user: request.github_user ?? '',
+    },
+  });
+  const institutionId = watch('institution_id');
+  const repoNameValue = watch('repository_short_name');
+  const pathNameValue = watch('path');
 
-  const debouncedSetRepoName = useDebouncedCallback((value: string) => {
-    setDebouncedRepoName(value);
-  }, 300);
-  const debouncedSetPathName = useDebouncedCallback((value: string) => {
-    setDebouncedPathName(value);
-  }, 300);
+  const { refetch: refetchRepo } = useQuery({
+    ...trpc.checkRepoAvailability.queryOptions({ repoName: repoNameValue }),
+    enabled: false,
+  });
 
-  const { data: repoExists, isFetching: isFetchingRepo } = useCheckCourseRepositoryAvailability(
-    urlPrefix,
-    debouncedRepoName,
-  );
-  const { data: pathExists, isFetching: isFetchingPath } = useCheckCoursePathAvailability(
-    urlPrefix,
-    debouncedPathName,
-  );
-  const selectedInstitution = institutions.find((i) => i.id === selectedInstitutionId);
+  const { refetch: refetchPath } = useQuery({
+    ...trpc.checkPathAvailability.queryOptions({ path: pathNameValue }),
+    enabled: false,
+  });
+
+  const selectedInstitution = institutions.find((i) => i.id === institutionId);
   const isDefaultInstitution = selectedInstitution?.short_name === 'Default';
-  const isSubmitDisabled =
-    !selectedInstitutionId ||
-    repoExists === true ||
-    isFetchingRepo ||
-    repoNameValue !== debouncedRepoName ||
-    pathExists === true ||
-    isFetchingPath ||
-    pathNameValue !== debouncedPathName;
+
+  const onSubmit = async (data: CourseRequestApproveFormData) => {
+    const [repoResult, pathResult] = await Promise.all([refetchRepo(), refetchPath()]);
+
+    if (repoResult.data?.exists) {
+      setError('repository_short_name', {
+        message: 'A course with this repository name already exists',
+      });
+    }
+    if (pathResult.data?.exists) {
+      setError('path', { message: 'A course already exists at this path' });
+    }
+    if (repoResult.data?.exists || pathResult.data?.exists) {
+      return;
+    }
+
+    mutation.mutate(
+      {
+        courseRequestId: request.id,
+        shortName: data.short_name,
+        title: data.title,
+        institutionId: data.institution_id,
+        displayTimezone: data.display_timezone,
+        path: data.path,
+        repoShortName: data.repository_short_name,
+        githubUser: data.github_user,
+      },
+      {
+        onSuccess: ({ jobSequenceId }) => {
+          window.location.href = `${urlPrefix}/administrator/jobSequence/${jobSequenceId}/`;
+        },
+      },
+    );
+  };
 
   return (
-    <form name={`create-course-from-request-form-${request.id}`} method="POST">
-      <input type="hidden" name="__csrf_token" value={csrfToken} />
-      <input type="hidden" name="__action" value="create_course_from_request" />
-      <input type="hidden" name="request_id" value={request.id} />
-
+    <form name={`create-course-from-request-form-${request.id}`} onSubmit={handleSubmit(onSubmit)}>
       <div className="mb-3">
         <label className="form-label" htmlFor="courseRequestAddInstitution">
           Institution:
         </label>
         <select
           id="courseRequestAddInstitution"
-          name="institution_id"
           className={clsx(
             'form-select',
-            selectedInstitutionId && isDefaultInstitution && 'is-warning',
+            selectedInstitution && isDefaultInstitution && 'is-warning',
+            errors.institution_id && 'is-invalid',
           )}
-          value={selectedInstitutionId}
-          onChange={({ currentTarget }) => {
-            setSelectedInstitutionId(currentTarget.value);
-            const selected = institutions.find((i) => i.id === currentTarget.value);
-            if (selected) {
-              setTimezone(selected.display_timezone);
-            }
-          }}
+          {...register('institution_id', {
+            required: 'Select an institution',
+            onChange: (e) => {
+              const selected = institutions.find((i) => i.id === e.target.value);
+              if (selected) {
+                setValue('display_timezone', selected.display_timezone);
+              }
+            },
+          })}
         >
           <option value="" disabled>
             Select an institution...
@@ -381,6 +406,9 @@ function CourseRequestApproveForm({
             </option>
           ))}
         </select>
+        {errors.institution_id && (
+          <div className="invalid-feedback">{errors.institution_id.message}</div>
+        )}
         {isDefaultInstitution && (
           <div className="form-text text-warning">
             <i className="fa fa-exclamation-triangle" aria-hidden="true" /> The "Default"
@@ -396,9 +424,8 @@ function CourseRequestApproveForm({
           type="text"
           className="form-control"
           id="courseRequestAddInputShortName"
-          name="short_name"
           placeholder="XC 101"
-          defaultValue={request.short_name}
+          {...register('short_name')}
         />
       </div>
       <div className="mb-3">
@@ -409,9 +436,8 @@ function CourseRequestApproveForm({
           type="text"
           className="form-control"
           id="courseRequestAddInputTitle"
-          name="title"
           placeholder="Template course title"
-          defaultValue={request.title}
+          {...register('title')}
         />
       </div>
       <div className="mb-3">
@@ -422,9 +448,7 @@ function CourseRequestApproveForm({
           type="text"
           className="form-control"
           id="courseRequestAddInputTimezone"
-          name="display_timezone"
-          value={timezone}
-          onChange={(e) => setTimezone(e.currentTarget.value)}
+          {...register('display_timezone')}
         />
       </div>
       <div className="mb-3">
@@ -433,17 +457,11 @@ function CourseRequestApproveForm({
         </label>
         <input
           type="text"
-          className={clsx('form-control', pathExists === true && 'is-invalid')}
+          className={clsx('form-control', errors.path && 'is-invalid')}
           id="courseRequestAddInputPath"
-          name="path"
-          value={pathNameValue}
-          onChange={(e) => {
-            const value = e.currentTarget.value;
-            setPathNameValue(value);
-            debouncedSetPathName(value);
-          }}
+          {...register('path')}
         />
-        {pathExists && (
+        {errors.path && (
           <div className="invalid-feedback">A course already exists at this path.</div>
         )}
       </div>
@@ -453,17 +471,11 @@ function CourseRequestApproveForm({
         </label>
         <input
           type="text"
-          className={clsx('form-control', repoExists === true && 'is-invalid')}
+          className={clsx('form-control', errors.repository_short_name && 'is-invalid')}
           id="courseRequestAddInputRepositoryName"
-          name="repository_short_name"
-          value={repoNameValue}
-          onChange={(e) => {
-            const value = e.currentTarget.value;
-            setRepoNameValue(value);
-            debouncedSetRepoName(value);
-          }}
+          {...register('repository_short_name')}
         />
-        {repoExists && (
+        {errors.repository_short_name && (
           <div className="invalid-feedback">A course with this repository name already exists</div>
         )}
       </div>
@@ -473,8 +485,7 @@ function CourseRequestApproveForm({
           type="text"
           className="form-control"
           id="courseRequestAddInputGithubUser"
-          name="github_user"
-          defaultValue={request.github_user ?? ''}
+          {...register('github_user')}
         />
       </div>
 
@@ -482,7 +493,11 @@ function CourseRequestApproveForm({
         <button type="button" className="btn btn-secondary" onClick={onCancel}>
           Cancel
         </button>
-        <button type="submit" className="btn btn-primary" disabled={isSubmitDisabled}>
+        <button
+          type="submit"
+          className="btn btn-primary"
+          disabled={isSubmitting || mutation.isPending}
+        >
           Create course
         </button>
       </div>
@@ -492,26 +507,33 @@ function CourseRequestApproveForm({
 
 function CourseRequestDenyForm({
   request,
-  csrfToken,
   onCancel,
 }: {
   request: CourseRequestRow;
-  csrfToken: string;
   onCancel: () => void;
 }) {
+  const trpc = useTRPC();
+  const mutation = useMutation(trpc.denyCourseRequestMutation.mutationOptions());
+
   return (
-    <form method="POST" className="d-flex justify-content-end gap-2">
-      <input type="hidden" name="__csrf_token" value={csrfToken} />
-      <input type="hidden" name="__action" value="deny_course_request" />
-      <input type="hidden" name="approve_deny_action" value="deny" />
-      <input type="hidden" name="request_id" value={request.id} />
+    <div className="d-flex justify-content-end gap-2">
       <button type="button" className="btn btn-secondary" onClick={onCancel}>
         Cancel
       </button>
-      <button type="submit" className="btn btn-danger">
+      <button
+        type="submit"
+        className="btn btn-danger"
+        disabled={mutation.isPending}
+        onClick={() =>
+          mutation.mutate(
+            { courseRequestId: request.id },
+            { onSuccess: () => window.location.reload() },
+          )
+        }
+      >
         Deny
       </button>
-    </form>
+    </div>
   );
 }
 
@@ -552,18 +574,18 @@ function CourseRequestStatusIcon({ status }: { status: CourseRequestRow['approve
 
 function CourseRequestEditNoteForm({
   request,
-  csrfToken,
   onCancel,
 }: {
   request: CourseRequestRow;
-  csrfToken: string;
   onCancel: () => void;
 }) {
+  const trpc = useTRPC();
+  const mutation = useMutation(trpc.updateCourseRequestNoteMutation.mutationOptions());
+
+  const [note, setNoteValue] = useState(request.note ?? '');
+
   return (
-    <form method="POST">
-      <input type="hidden" name="__csrf_token" value={csrfToken} />
-      <input type="hidden" name="__action" value="update_course_request_note" />
-      <input type="hidden" name="request_id" value={request.id} />
+    <div>
       <div className="d-flex gap-2 align-items-center py-2 px-2">
         <label className="visually-hidden" htmlFor={`course-request-note-${request.id}`}>
           Note for course request {request.short_name}
@@ -576,14 +598,20 @@ function CourseRequestEditNoteForm({
           maxLength={10000}
           placeholder="Add a note about this course request..."
           defaultValue={request.note ?? ''}
+          onChange={(e) => setNoteValue(e.target.value)}
         />
         <button type="button" className="btn btn-secondary" onClick={onCancel}>
           Cancel
         </button>
-        <button type="submit" className="btn btn-primary text-nowrap">
+        <button
+          type="submit"
+          className="btn btn-primary text-nowrap"
+          disabled={mutation.isPending}
+          onClick={() => mutation.mutate({ courseRequestId: request.id, note })}
+        >
           <i className="fa fa-save" aria-hidden="true" /> Save note
         </button>
       </div>
-    </form>
+    </div>
   );
 }
