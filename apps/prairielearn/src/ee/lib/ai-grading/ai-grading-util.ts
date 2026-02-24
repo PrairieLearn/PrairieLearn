@@ -50,7 +50,7 @@ import { type CounterClockwiseRotationDegrees, RotationCorrectionOutputSchema } 
 
 const sql = loadSqlEquiv(import.meta.url);
 
-export const SubmissionVariantSchema = z.object({
+const SubmissionVariantSchema = z.object({
   variant: VariantSchema,
   submission: SubmissionSchema,
 });
@@ -282,77 +282,87 @@ type SubmissionHTMLSegment =
 
 /**
  * Helper function that returns parsed text and image segments from the HTML of a student submission.
+ *
+ * The submission HTML is expected to have already been processed by `stripHtmlForAiGrading`
+ * (this happens in `freeform.ts` when `questionRenderContext === 'ai_grading'`). This function
+ * preserves the full HTML structure for text segments, ensuring the prompt matches what the
+ * instructor sees on the AI grading preview page. Images (identified by `data-image-capture-uuid`
+ * attributes) are extracted and returned as separate segments.
  */
-function parseSubmission({
+export function parseSubmission({
   submission_text,
   submitted_answer,
 }: {
   submission_text: string;
   submitted_answer: Record<string, any> | null;
 }): SubmissionHTMLSegment[] {
-  const segments: SubmissionHTMLSegment[] = [];
+  const $ = cheerio.load(submission_text);
+  const imageElements = $('[data-image-capture-uuid]');
 
-  const $submission_html = cheerio.load(submission_text);
-  let submissionTextSegment = '';
+  // If there are no images, return the full HTML as a single text segment.
+  if (imageElements.length === 0) {
+    const text = $('body').html()?.trim();
+    if (!text) return [];
+    return [{ type: 'text', text }];
+  }
 
-  // Walk through the submitted HTML from top to bottom, appending alternating text and image segments.
-  $submission_html
-    .root()
-    .find('body')
-    .contents()
-    .each((_, node) => {
-      const imageCaptureUUID = $submission_html(node).data('image-capture-uuid');
-      if (imageCaptureUUID) {
-        if (submissionTextSegment) {
-          // Push and reset the current text segment before adding the image.
-          segments.push({
-            type: 'text',
-            text: submissionTextSegment.trim(),
-          });
-          submissionTextSegment = '';
-        }
+  // Extract image data and replace each image element with a unique marker
+  // so we can split the HTML into alternating text/image segments.
+  // The nonce prevents students from injecting markers into their submissions.
+  const nonce = crypto.randomUUID();
+  const imageDataByMarker = new Map<string, { fileName: string; fileData: string | null }>();
 
-        const fileName = run(() => {
-          // New style, where `<pl-image-capture>` has been specialized for AI grading rendering.
-          const submittedFileName = $submission_html(node).data('file-name');
-          if (submittedFileName && typeof submittedFileName === 'string') {
-            return submittedFileName.trim();
-          }
+  imageElements.each((i, el) => {
+    const marker = `__AI_GRADING_IMAGE_${nonce}_${i}__`;
 
-          // Old style, where we have to pick the filename out of the `data-options` attribute.
-          const options = $submission_html(node).data('options') as Record<string, string> | null;
-
-          return options?.submitted_file_name;
-        });
-
-        if (!submitted_answer) {
-          throw new Error('No submitted answers found.');
-        }
-
-        if (!fileName) {
-          throw new Error('No file name found.');
-        }
-
-        const fileData = submitted_answer._files?.find(
-          (file: { name: string; contents: string }) => file.name === fileName,
-        );
-
-        if (fileData) {
-          segments.push({
-            type: 'image',
-            fileName: fileData.name,
-            fileData: fileData.contents,
-          });
-        }
-      } else {
-        submissionTextSegment += $submission_html(node).text();
+    const fileName = run(() => {
+      // New style, where `<pl-image-capture>` has been specialized for AI grading rendering.
+      const submittedFileName = $(el).data('file-name');
+      if (submittedFileName && typeof submittedFileName === 'string') {
+        return submittedFileName.trim();
       }
+
+      // Old style, where we have to pick the filename out of the `data-options` attribute.
+      const options = $(el).data('options') as Record<string, string> | null;
+      return options?.submitted_file_name;
     });
-  if (submissionTextSegment) {
-    segments.push({
-      type: 'text',
-      text: submissionTextSegment.trim(),
-    });
+
+    if (!submitted_answer) {
+      throw new Error('No submitted answers found.');
+    }
+
+    if (!fileName) {
+      throw new Error('No file name found.');
+    }
+
+    const fileData =
+      submitted_answer._files?.find(
+        (file: { name: string; contents: string }) => file.name === fileName,
+      )?.contents ?? null;
+
+    imageDataByMarker.set(marker, { fileName, fileData });
+    $(el).replaceWith(marker);
+  });
+
+  // Get the HTML with markers in place of images, then split on them.
+  const htmlWithMarkers = $('body').html() ?? '';
+  const parts = htmlWithMarkers.split(new RegExp(`(__AI_GRADING_IMAGE_${nonce}_\\d+__)`));
+
+  const segments: SubmissionHTMLSegment[] = [];
+  for (const part of parts) {
+    const imageData = imageDataByMarker.get(part);
+    if (imageData) {
+      segments.push({
+        type: 'image',
+        fileName: imageData.fileName,
+        fileData: imageData.fileData,
+      });
+    } else {
+      const text = part.trim();
+      if (text) {
+        segments.push({ type: 'text', text });
+      }
+    }
   }
 
   return segments;

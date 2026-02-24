@@ -15,7 +15,7 @@ import { selectCourseInstancesWithStaffAccess } from '../../models/course-instan
 import { selectQuestionsForCourse } from '../../models/questions.js';
 import { getTemplateQuestions } from '../instructorQuestions/templateQuestions.js';
 
-import { CreateQuestionForm } from './CreateQuestionForm.js';
+import { CreateQuestionForm } from './components/CreateQuestionForm.js';
 
 const router = Router();
 
@@ -46,7 +46,7 @@ router.get(
       courseInstances.map((ci) => ci.id),
     );
 
-    const templateQuestions = await getTemplateQuestions(questions);
+    const { exampleCourseZones, courseTemplates } = await getTemplateQuestions(questions);
 
     res.send(
       PageLayout({
@@ -57,10 +57,15 @@ router.get(
           page: 'course_admin',
           subPage: 'questions',
         },
+        options: {
+          contentPadding: false,
+          contentContainerClassName: 'bg-light',
+        },
         content: (
           <Hydrate>
             <CreateQuestionForm
-              templateQuestions={templateQuestions}
+              exampleCourseZones={exampleCourseZones}
+              courseTemplates={courseTemplates}
               csrfToken={res.locals.__csrf_token}
               questionsUrl={`${res.locals.urlPrefix}/course_admin/questions`}
             />

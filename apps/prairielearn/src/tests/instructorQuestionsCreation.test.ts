@@ -29,7 +29,8 @@ describe('Creating a question', () => {
   afterAll(helperServer.after);
 
   test.sequential('create a new empty question', async () => {
-    // Fetch the questions page for the course instance
+    // Fetch the questions page for the course instance. This will fail loudly
+    // if any of the template questions are misconfigured.
     const questionsResponse = await fetchCheerio(
       `${siteUrl}/pl/course_instance/1/instructor/course_admin/questions/create`,
     );

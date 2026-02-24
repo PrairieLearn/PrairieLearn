@@ -14,7 +14,7 @@ export const AdministratorNetworksRowSchema = z.object({
   purpose: ExamModeNetworkSchema.shape.purpose,
 });
 
-export type AdministratorNetworksRow = z.infer<typeof AdministratorNetworksRowSchema>;
+type AdministratorNetworksRow = z.infer<typeof AdministratorNetworksRowSchema>;
 
 export function AdministratorNetworks({
   resLocals,

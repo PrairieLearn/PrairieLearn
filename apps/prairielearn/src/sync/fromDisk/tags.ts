@@ -1,10 +1,4 @@
-import {
-  callAsync,
-  execute,
-  loadSqlEquiv,
-  queryRows,
-  runInTransactionAsync,
-} from '@prairielearn/postgres';
+import { execute, loadSqlEquiv, queryRows, runInTransactionAsync } from '@prairielearn/postgres';
 import { run } from '@prairielearn/run';
 
 import { type Tag, TagSchema } from '../../lib/db-types.js';
@@ -116,22 +110,21 @@ export async function sync(
     tagIdsByName.set(tag.name, tag);
   }
 
-  const questionTagsParam: string[] = [];
-  Object.entries(courseData.questions).forEach(([qid, question]) => {
-    if (infofile.hasErrors(question)) return;
-    const dedupedQuestionTagNames = new Set<string>();
-    (question.data?.tags ?? []).forEach((t) => dedupedQuestionTagNames.add(t));
-    const questionTagIds = [...dedupedQuestionTagNames].map((t) => {
-      const tag = tagIdsByName.get(t);
+  const new_question_tags = Object.entries(courseData.questions)
+    .filter(([_qid, question]) => !infofile.hasErrors(question))
+    .map(([qid, question]) => {
+      const dedupedQuestionTagNames = new Set<string>(question.data?.tags);
+      const questionTagIds = [...dedupedQuestionTagNames].map((t) => {
+        const tag = tagIdsByName.get(t);
 
-      // This should never happen in practice, but this keeps the type checker
-      // happy, and if it does happen, we want it to fail obviously and loudly.
-      if (!tag) throw new Error(`Tag ${t} not found`);
+        // This should never happen in practice, but this keeps the type checker
+        // happy, and if it does happen, we want it to fail obviously and loudly.
+        if (!tag) throw new Error(`Tag ${t} not found`);
 
-      return tag.id;
+        return tag.id;
+      });
+      return JSON.stringify([questionIds[qid], questionTagIds]);
     });
-    questionTagsParam.push(JSON.stringify([questionIds[qid], questionTagIds]));
-  });
 
-  await callAsync('sync_question_tags', [questionTagsParam]);
+  await execute(sql.sync_question_tags, { new_question_tags });
 }

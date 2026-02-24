@@ -515,7 +515,7 @@ export async function loadInfoFile<T extends { uuid: string }>({
   }
 }
 
-export async function loadCourseInfo({
+async function loadCourseInfo({
   courseId,
   coursePath,
   assessmentSetsInUse,
@@ -1710,7 +1710,7 @@ export async function loadQuestions({
 /**
  * Loads all course instances in a course directory.
  */
-export async function loadCourseInstances({
+async function loadCourseInstances({
   coursePath,
   sharingEnabled,
 }: {
@@ -1737,7 +1737,7 @@ export async function loadCourseInstances({
 /**
  * Loads all assessments in a course instance.
  */
-export async function loadAssessments({
+async function loadAssessments({
   coursePath,
   courseInstanceDirectory,
   courseInstanceExpired,

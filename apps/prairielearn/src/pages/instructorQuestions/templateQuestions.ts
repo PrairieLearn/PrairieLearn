@@ -1,16 +1,47 @@
+import path from 'node:path';
+
+import fs from 'fs-extra';
+
 import { config } from '../../lib/config.js';
 import { EXAMPLE_COURSE_PATH } from '../../lib/paths.js';
 import { type QuestionsPageData } from '../../models/questions.js';
+import { AssessmentJsonSchema, type ZoneAssessmentJson } from '../../schemas/index.js';
 import { loadQuestions } from '../../sync/course-db.js';
+import { hasWireframePreview } from '../instructorQuestionCreate/components/WireframePreview.js';
 
 const TEMPLATE_QID_PREFIX = 'template/';
 
-let cachedTemplateQuestionExampleCourse: { qid: string; title: string }[] | null = null;
+const TEMPLATE_ASSESSMENT_PATH = path.join(
+  'courseInstances',
+  'SectionA',
+  'assessments',
+  'questionTemplates',
+  'infoAssessment.json',
+);
+
+export interface TemplateQuestion {
+  qid: string;
+  title: string;
+  readme: string | null;
+}
+
+export interface TemplateQuestionZone {
+  title: string;
+  questions: TemplateQuestion[];
+}
+
+interface TemplateQuestionsData {
+  exampleCourseZones: TemplateQuestionZone[];
+  courseTemplates: { qid: string; title: string }[];
+}
+
+let cachedExampleCourseZones: TemplateQuestionZone[] | null = null;
 
 /**
- * Get a list of template question from the example course. While it should
- * typically be possible to retrieve these from the database, these are
- * retrieved from the filesystem for the following reasons:
+ * Get template questions from the example course, categorized into zones
+ * based on the `questionTemplates` assessment. While it should typically be
+ * possible to retrieve these from the database, these are retrieved from
+ * the filesystem for the following reasons:
  * 1. There is no guarantee that the example course will actually be synced in
  *    the current environment. The local installation (dev or prod) may have
  *    removed it from the sync process.
@@ -21,9 +52,9 @@ let cachedTemplateQuestionExampleCourse: { qid: string; title: string }[] | null
  *    info file, which could lead to a security vulnerability if we were to rely
  *    on the database.
  */
-async function getTemplateQuestionsExampleCourse() {
-  if (!config.devMode && cachedTemplateQuestionExampleCourse) {
-    return cachedTemplateQuestionExampleCourse;
+async function getExampleCourseZones(): Promise<TemplateQuestionZone[]> {
+  if (!config.devMode && cachedExampleCourseZones) {
+    return cachedExampleCourseZones;
   }
 
   const questions = await loadQuestions({
@@ -33,36 +64,107 @@ async function getTemplateQuestionsExampleCourse() {
     sharingEnabled: true,
   });
 
-  const templateQuestions = Object.entries(questions)
-    .map(([qid, question]) => ({ qid, title: question.data?.title }))
-    .filter(({ qid, title }) => qid.startsWith(TEMPLATE_QID_PREFIX) && title !== undefined) as {
-    qid: string;
-    title: string;
-  }[];
-
-  const sortedTemplateQuestionOptions = templateQuestions.sort((a, b) =>
-    a.title.localeCompare(b.title),
-  );
-
-  if (!config.devMode) {
-    cachedTemplateQuestionExampleCourse = sortedTemplateQuestionOptions;
+  // Build a lookup map of qid → title for template questions.
+  const questionTitleMap = new Map<string, string>();
+  for (const [qid, question] of Object.entries(questions)) {
+    if (qid.startsWith(TEMPLATE_QID_PREFIX) && question.data?.title) {
+      questionTitleMap.set(qid, question.data.title);
+    }
   }
 
-  return sortedTemplateQuestionOptions;
+  // Read the assessment file for zone categorization.
+  const assessmentPath = path.join(EXAMPLE_COURSE_PATH, TEMPLATE_ASSESSMENT_PATH);
+  const assessmentData = AssessmentJsonSchema.parse(await fs.readJson(assessmentPath));
+  const zones = await buildZonesFromAssessment(assessmentData.zones, questionTitleMap);
+
+  // The first zone contains basic questions that are displayed with wireframe
+  // preview cards. Every question in that zone must have a dedicated preview.
+  if (zones.length > 0) {
+    const basicZone = zones[0];
+    const missingPreviews = basicZone.questions.filter((q) => !hasWireframePreview(q.qid));
+
+    if (missingPreviews.length > 0) {
+      const missingQids = missingPreviews.map((q) => q.qid).join(', ');
+      throw new Error(`Basic template questions are missing wireframe previews: ${missingQids}`);
+    }
+  }
+
+  if (!config.devMode) {
+    cachedExampleCourseZones = zones;
+  }
+
+  return zones;
+}
+
+async function buildZonesFromAssessment(
+  assessmentZones: ZoneAssessmentJson[],
+  questionTitleMap: Map<string, string>,
+): Promise<TemplateQuestionZone[]> {
+  if (assessmentZones.length === 0) {
+    return buildFlatZone(questionTitleMap);
+  }
+
+  const zones: TemplateQuestionZone[] = [];
+
+  for (const zone of assessmentZones) {
+    const questions: TemplateQuestion[] = [];
+
+    for (const question of zone.questions) {
+      if (!question.id) continue;
+      const title = questionTitleMap.get(question.id);
+      if (!title) continue;
+
+      const readme = await readTemplateReadme(question.id);
+      questions.push({ qid: question.id, title, readme });
+    }
+
+    if (questions.length > 0) {
+      zones.push({ title: zone.title ?? '', questions });
+    }
+  }
+
+  return zones;
+}
+
+async function buildFlatZone(
+  questionTitleMap: Map<string, string>,
+): Promise<TemplateQuestionZone[]> {
+  const questions: TemplateQuestion[] = [];
+
+  for (const [qid, title] of questionTitleMap) {
+    const readme = await readTemplateReadme(qid);
+    questions.push({ qid, title, readme });
+  }
+
+  questions.sort((a, b) => a.title.localeCompare(b.title));
+
+  if (questions.length === 0) return [];
+
+  return [{ title: 'Templates', questions }];
+}
+
+async function readTemplateReadme(qid: string): Promise<string | null> {
+  const readmePath = path.join(EXAMPLE_COURSE_PATH, 'questions', qid, 'README.md');
+  try {
+    return await fs.readFile(readmePath, 'utf-8');
+  } catch (err: any) {
+    if (err.code === 'ENOENT') return null;
+    throw err;
+  }
 }
 
 /**
- * Get a list of template question qids and titles that can be used as starting
- * points for new questions, both from the example course and course-specific
- * templates.
+ * Get template questions that can be used as starting points for new
+ * questions, from both the example course (categorized into zones) and
+ * course-specific templates (flat list).
  */
-export async function getTemplateQuestions(questions: QuestionsPageData[]) {
-  const exampleCourseTemplateQuestions = await getTemplateQuestionsExampleCourse();
-  const courseTemplateQuestions = questions
+export async function getTemplateQuestions(
+  questions: QuestionsPageData[],
+): Promise<TemplateQuestionsData> {
+  const exampleCourseZones = await getExampleCourseZones();
+  const courseTemplates = questions
     .filter(({ qid }) => qid.startsWith(TEMPLATE_QID_PREFIX))
-    .map(({ qid, title }) => ({ example_course: false, qid, title }));
-  return [
-    ...exampleCourseTemplateQuestions.map((q) => ({ example_course: true, ...q })),
-    ...courseTemplateQuestions,
-  ];
+    .map(({ qid, title }) => ({ qid, title }));
+
+  return { exampleCourseZones, courseTemplates };
 }

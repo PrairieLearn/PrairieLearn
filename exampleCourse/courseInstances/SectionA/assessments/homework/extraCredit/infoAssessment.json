@@ -29,7 +29,7 @@
   "maxBonusPoints": 3,
   "zones": [
     {
-      "title": "Zone 1: Fundamental questions",
+      "title": "Fundamental questions",
       "bestQuestions": 2,
       "questions": [
         { "id": "demo/calculation", "points": 1, "maxPoints": 3 },
@@ -40,7 +40,7 @@
       ]
     },
     {
-      "title": "Zone 2: Intermediate questions",
+      "title": "Intermediate questions",
       "maxPoints": 6,
       "questions": [
         { "id": "demo/annotated/engCentroid", "points": 1, "maxPoints": 3 },
@@ -49,7 +49,7 @@
       ]
     },
     {
-      "title": "Zone 3: Advanced questions",
+      "title": "Advanced questions",
       "questions": [
         { "id": "demo/annotated/mathProof", "points": 3, "maxPoints": 3 },
         { "id": "demo/computeNumber-fromDataFrame", "points": 1, "maxPoints": 6 },
@@ -58,5 +58,5 @@
       ]
     }
   ],
-  "text": "<p><strong>Comments about this assessment:</strong></p> <p>This assessment organizes questions into zones with varying degrees of difficulty. Instructors may find it helpful to use zones to organize questions by topic, difficulty or other categories. However, zones are not required. </p> <p>Here is the breakdown of points for this assessment:</p><p><ul><li>In zone 1, only the two questions with the highest scores will count towards the total points. Since each question in this zone has maximum points equal to 2, the maximum points for this zone is equal to 6.</li><li>Zone 2 has 9 points available, but the maximum points is set to 6.</li><li>Zone 3 has 21 points available.</li></ul></p><p> Note that the overall assignment has maximum of 24 points, hence students will only need to get 12 out of the 21 points in zone 3 to achieve 100% credit.</p><p>In addition, this assessment allows students to get 3 bonus points. If they get 15 points for zone 3, they will have a total of 27/24 points, giving them 112% credit.</p> <p> All questions included in this assessment are designed as <i>drilling for mastery</i>. Read more <a href='https://github.com/PrairieLearn/PrairieLearn/blob/master/exampleCourse/courseInstances/SectionA/assessments/homework/template/__docs/docs.md' target='_blank'>here</a>.</small> </p>"
+  "text": "<p><strong>Comments about this assessment:</strong></p> <p>This assessment organizes questions into zones with varying degrees of difficulty. Instructors may find it helpful to use zones to organize questions by topic, difficulty or other categories. However, zones are not required. </p> <p>Here is the breakdown of points for this assessment:</p><p><ul><li>In the first zone (Fundamental questions), only the two questions with the highest scores will count towards the total points. Since each question in this zone has maximum points equal to 2, the maximum points for this zone is equal to 6.</li><li>The second zone (Intermediate questions) has 9 points available, but the maximum points is set to 6.</li><li>The third zone (Advanced questions) has 21 points available.</li></ul></p><p> Note that the overall assignment has maximum of 24 points, hence students will only need to get 12 out of the 21 points in the third zone to achieve 100% credit.</p><p>In addition, this assessment allows students to get 3 bonus points. If they get 15 points for the third zone, they will have a total of 27/24 points, giving them 112% credit.</p> <p> All questions included in this assessment are designed as <i>drilling for mastery</i>. Read more <a href='https://github.com/PrairieLearn/PrairieLearn/blob/master/exampleCourse/courseInstances/SectionA/assessments/homework/template/__docs/docs.md' target='_blank'>here</a>.</small> </p>"
 }

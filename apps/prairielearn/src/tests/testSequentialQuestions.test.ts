@@ -116,6 +116,7 @@ describe(
 
         const computedLocks = response
           .$('table[data-testid="assessment-questions"] tbody tr')
+          .filter((i, elem) => response.$(elem).find('td').length > 0)
           .map((i, elem) => {
             return response.$(elem).hasClass('pl-sequence-locked');
           })
@@ -123,7 +124,11 @@ describe(
         assert.deepEqual(computedLocks, initialExpectedLocks);
 
         assert.include(
-          response.$('table[data-testid="assessment-questions"] tbody tr:nth-child(3)').html(),
+          response
+            .$('table[data-testid="assessment-questions"] tbody tr')
+            .filter((i, elem) => response.$(elem).find('td').length > 0)
+            .eq(2)
+            .html(),
           '60% on Question 2',
         );
       },

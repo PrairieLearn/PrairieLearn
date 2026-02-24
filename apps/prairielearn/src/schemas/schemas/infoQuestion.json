@@ -127,8 +127,10 @@
           "$ref": "#/definitions/CommentJsonSchema"
         },
         "enabled": {
-          "description": "Whether the external grader is currently enabled. Useful if it is breaking, for example.",
-          "type": "boolean"
+          "description": "[DEPRECATED, DO NOT USE] Whether the external grader is currently enabled.",
+          "type": "boolean",
+          "default": false,
+          "deprecated": true
         },
         "image": {
           "description": "The Docker image that will be used to grade this question. Should be specified as Dockerhub image.",

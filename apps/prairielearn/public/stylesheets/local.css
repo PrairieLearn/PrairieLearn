@@ -489,3 +489,7 @@ input.form-check-input:disabled {
   --bs-border-color: #aaaaaa;
   --bs-form-check-bg: var(--bs-secondary-bg);
 }
+
+.markdown-body > :last-child {
+  margin-bottom: 0;
+}
