@@ -1,7 +1,7 @@
 {
   "name": "XC 101",
   "title": "Example Course",
-  "comment": "Add additional assessment sets here. Default ones are listed here: https://prairielearn.readthedocs.io/en/latest/course/#assessment-sets.",
+  "comment": "Add additional assessment sets here. Default ones are listed here: https://docs.prairielearn.com/course/#assessment-sets.",
   "assessmentSets": [
     {
       "abbreviation": "W",

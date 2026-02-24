@@ -73,7 +73,7 @@
 
 
 {{#submission}}
-{{#inline}}<span class="d-inline-block">{{/inline}}
+{{#block}}<div>{{/block}}{{#inline}}<span class="d-inline-block">{{/inline}}
 {{#error}}
 <span>
 
@@ -151,13 +151,15 @@
 {{/show_score}}
 
 {{/error}}
-{{#inline}}</span>{{/inline}}
+{{#inline}}</span>{{/inline}}{{#block}}</div>{{/block}}
 {{/submission}}
 
 {{#answer}}
+{{#block}}<div>{{/block}}{{#inline}}<span class="d-inline-block">{{/inline}}
 {{#label}}<span>{{{label}}}</span>{{/label}}
 <samp>{{correct_answer}}</samp>
 {{#suffix}}<span>{{suffix}}</span>{{/suffix}}
+{{#inline}}</span>{{/inline}}{{#block}}</div>{{/block}}
 {{/answer}}
 
 

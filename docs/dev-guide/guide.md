@@ -390,7 +390,7 @@ FOR NO KEY UPDATE;
     id = ANY ($id_list::BIGINT[]);
   ```
 
-- To pass a lot of data to SQL a useful pattern is to send a JSON object array and unpack it in SQL to the equivalent of a table. This is the pattern used by the "sync" code, such as [sprocs/sync_news_items.sql](https://github.com/PrairieLearn/PrairieLearn/blob/master/apps/prairielearn/src/sprocs/sync_news_items.sql). For example:
+- To pass a lot of data to SQL a useful pattern is to send a JSON object array and unpack it in SQL to the equivalent of a table. This is the pattern used by the "sync" code, such as [sprocs/sync_questions.sql](https://github.com/PrairieLearn/PrairieLearn/blob/master/apps/prairielearn/src/sprocs/sync_questions.sql). For example:
 
   ```javascript
   let data = [

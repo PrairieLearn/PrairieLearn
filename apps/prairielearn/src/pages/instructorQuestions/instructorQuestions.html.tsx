@@ -6,14 +6,12 @@ import { type QuestionsPageData } from '../../models/questions.js';
 
 export const QuestionsPage = ({
   questions,
-  templateQuestions = [],
   course_instances,
   showAddQuestionButton,
   showAiGenerateQuestionButton,
   resLocals,
 }: {
   questions: QuestionsPageData[];
-  templateQuestions?: { example_course: boolean; qid: string; title: string }[];
   course_instances: CourseInstance[];
   showAddQuestionButton: boolean;
   showAiGenerateQuestionButton: boolean;
@@ -33,14 +31,12 @@ export const QuestionsPage = ({
     headContent: QuestionsTableHead(),
     content: QuestionsTable({
       questions,
-      templateQuestions,
       course_instances,
       showAddQuestionButton,
       showAiGenerateQuestionButton,
       showSharingSets: resLocals.question_sharing_enabled,
       current_course_instance: resLocals.course_instance,
       urlPrefix: resLocals.urlPrefix,
-      __csrf_token: resLocals.__csrf_token,
     }),
   });
 };

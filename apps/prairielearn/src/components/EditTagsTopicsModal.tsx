@@ -3,8 +3,9 @@ import { useState } from 'react';
 import { Modal } from 'react-bootstrap';
 
 import { type StaffTag, type StaffTopic } from '../lib/client/safe-db-types.js';
+import { ColorJsonSchema } from '../schemas/infoCourse.js';
 
-import { ColorPicker } from './ColorPicker.js';
+import { ColorSwatch } from './ColorSwatch.js';
 import { TagBadge } from './TagBadge.js';
 import { TopicBadge } from './TopicBadge.js';
 
@@ -125,14 +126,28 @@ export function EditTagsTopicsModal<Entity extends StaffTopic | StaffTag>({
               <label className="form-label" htmlFor="color">
                 Color
               </label>
-              <ColorPicker
-                id="color"
-                value={entity.color}
-                invalid={invalidColor}
-                onChange={(color) => setEntity({ ...entity, color })}
-              />
+              <div className="d-flex gap-2 align-items-center">
+                <select
+                  className={clsx('form-select', invalidColor && 'is-invalid')}
+                  id="color"
+                  value={entity.color}
+                  onChange={(e) =>
+                    setEntity({
+                      ...entity,
+                      color: e.currentTarget.value,
+                    })
+                  }
+                >
+                  {ColorJsonSchema.options.map((color) => (
+                    <option key={color} value={color}>
+                      {color}
+                    </option>
+                  ))}
+                </select>
+                <ColorSwatch color={entity.color} />
+              </div>
               {invalidColor && (
-                <div className="invalid-feedback d-block">
+                <div className="invalid-feedback">
                   {state.type !== 'closed' && state.entityType === 'topic' ? 'Topic' : 'Tag'} color
                   is required
                 </div>

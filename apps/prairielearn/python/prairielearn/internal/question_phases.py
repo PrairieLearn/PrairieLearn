@@ -11,7 +11,11 @@ import lxml.html
 from typing_extensions import assert_never
 
 from prairielearn.internal.check_data import Phase, check_data
-from prairielearn.internal.traverse import traverse_and_execute, traverse_and_replace
+from prairielearn.internal.traverse import (
+    get_source_definition,
+    traverse_and_execute,
+    traverse_and_replace,
+)
 from prairielearn.internal.zygote_utils import get_module_function
 
 PYTHON_PATH = pathlib.Path(__file__).parent.parent.parent.resolve()
@@ -196,7 +200,20 @@ def process(
                     + "In the future, returning a different object will trigger a fatal error."
                 )
         except Exception as exc:
-            raise RuntimeError(f"Error processing element {element.tag}") from exc
+            source = get_source_definition(
+                element,
+                # Only display attributes that are useful for locating the element in the source code.
+                attribute_filter=(
+                    "answers-name",
+                    "file-name",
+                    "params-name",
+                    "submitted-file-name",
+                ),
+            )
+            # We can't easily show the line number because
+            # the line-number is in the post-mustache processed HTML.
+            exc.add_note(f"Error occurred while processing element {source}")
+            raise
 
     def process_element_return_none(element: lxml.html.HtmlElement) -> None:
         process_element(element)

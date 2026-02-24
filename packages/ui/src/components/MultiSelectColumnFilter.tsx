@@ -1,6 +1,6 @@
 import type { Column } from '@tanstack/table-core';
 import clsx from 'clsx';
-import { type JSX, useMemo } from 'react';
+import { type ReactNode, useMemo } from 'react';
 import Dropdown from 'react-bootstrap/Dropdown';
 
 function defaultRenderValueLabel({ value }: { value: string }) {
@@ -27,7 +27,7 @@ export function MultiSelectColumnFilter<TData, TValue extends string = string>({
 }: {
   column: Column<TData, unknown>;
   allColumnValues: TValue[];
-  renderValueLabel?: (props: { value: TValue; isSelected: boolean }) => JSX.Element;
+  renderValueLabel?: (props: { value: TValue; isSelected: boolean }) => ReactNode;
 }) {
   const columnId = column.id;
 

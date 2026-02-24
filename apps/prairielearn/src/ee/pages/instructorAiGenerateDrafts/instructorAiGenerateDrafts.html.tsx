@@ -9,10 +9,15 @@ import { IdSchema } from '@prairielearn/zod';
 import { Modal } from '../../../components/Modal.js';
 import { PageLayout } from '../../../components/PageLayout.js';
 import { nodeModulesAssetPath } from '../../../lib/assets.js';
+import { getAiQuestionGenerationDraftsUrl } from '../../../lib/client/url.js';
 import { DraftQuestionMetadataSchema } from '../../../lib/db-types.js';
 import type { UntypedResLocals } from '../../../lib/res-locals.types.js';
 
 import { SampleQuestions } from './SampleQuestions.js';
+import {
+  examplePromptsArray,
+  generateSampleQuestionVariant,
+} from './aiGeneratedQuestionSamples.js';
 
 // We show all draft questions, even those without associated metadata, because we
 // won't have metadata for a draft question if it was created on and synced from
@@ -23,7 +28,7 @@ export const DraftMetadataWithQidSchema = z.object({
   qid: z.string(),
   uid: z.string().nullable(),
 });
-export type DraftMetadataWithQid = z.infer<typeof DraftMetadataWithQidSchema>;
+type DraftMetadataWithQid = z.infer<typeof DraftMetadataWithQidSchema>;
 
 export function InstructorAIGenerateDrafts({
   resLocals,
@@ -72,13 +77,13 @@ export function InstructorAIGenerateDrafts({
           Back to all questions
         </a>
       </div>
-      <div class="card mb-5 mx-auto" style="max-width: 700px">
+      <div class="card mb-3 mx-auto" style="max-width: 700px">
         <div class="card-body position-relative">
           <h1 class="h3 text-center">Generate a new question with AI</h1>
           <form
             id="add-question-form"
             name="add-question-form"
-            hx-post="${resLocals.urlPrefix}/ai_generate_question_drafts"
+            hx-post="${getAiQuestionGenerationDraftsUrl({ urlPrefix: resLocals.urlPrefix })}"
             hx-target="#generation-results"
             hx-swap="outerHTML"
             hx-disabled-elt="button"
@@ -113,9 +118,17 @@ export function InstructorAIGenerateDrafts({
               AI can make mistakes. Review the generated question.
             </div>
             <div id="generation-results"></div>
-            <div class="mt-2">${hydrateHtml(<SampleQuestions />)}</div>
           </form>
         </div>
+      </div>
+      <div class="mb-5 mx-auto" style="max-width: 700px">
+        ${hydrateHtml(
+          <SampleQuestions
+            // Since variants are randomly generated, we need to generate the initial one
+            // on the server to ensure that we don't get a hydration mismatch.
+            initialVariant={generateSampleQuestionVariant(examplePromptsArray[0].id)}
+          />,
+        )}
       </div>
       ${hasDrafts
         ? html`
@@ -177,37 +190,11 @@ export function InstructorAIGenerateDrafts({
   });
 }
 
-export function GenerationFailure({
-  urlPrefix,
-  jobSequenceId,
-}: {
-  urlPrefix: string;
-  jobSequenceId: string;
-}): string {
-  return html`
-    <div id="generation-results">
-      <h3>Generation Failed</h3>
-
-      <p>The LLM did not generate any question file.</p>
-      <a href="${urlPrefix + '/jobSequence/' + jobSequenceId}">See job logs</a>
-    </div>
-  `.toString();
-}
-
-export function RateLimitExceeded({
-  canShortenMessage = false,
-}: {
-  /**
-   * If true, shows that the user should shorten their message to stay under the rate limit.
-   */
-  canShortenMessage: boolean;
-}): string {
+export function RateLimitExceeded(): string {
   return html`
     <div id="generation-results">
       <div class="alert alert-danger mt-2 mb-0">
-        ${canShortenMessage
-          ? 'Your prompt is too long. Please shorten it and try again.'
-          : "You've reached the hourly usage cap for AI question generation. Please try again later."}
+        You've reached the hourly usage cap for AI question generation. Please try again later.
       </div>
     </div>
   `.toString();

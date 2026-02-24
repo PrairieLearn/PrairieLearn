@@ -39,8 +39,6 @@ updates:
       # We're putting off this upgrade for now:
       # https://github.com/PrairieLearn/PrairieLearn/pull/6835
       - dependency-name: 'fabric'
-      # Recent versions of `threejs` don't include the pre-bundled file we rely on.
-      - dependency-name: 'three'
       # novnc 1.5.0+ no longer publishes ESM files:
       # https://github.com/novnc/noVNC/issues/1792
       - dependency-name: '@novnc/novnc'
@@ -52,6 +50,11 @@ updates:
       # ready to upgrade to it.
       - dependency-name: 'express'
         versions: ['>=5']
+      # JQuery 4 made significant breaking changes. We are migrating code to
+      # vanilla JS where possible and only keeping it for backwards
+      # compatibility, so we don't want to upgrade.
+      - dependency-name: 'jquery'
+        versions: ['>=4']
 
     groups:
       # Many OpenTelemetry packages are still pre-v1, so updates frequently won't

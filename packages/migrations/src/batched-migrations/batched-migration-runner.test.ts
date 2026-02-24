@@ -1,6 +1,7 @@
 import { afterAll, assert, beforeAll, beforeEach, describe, it } from 'vitest';
 
 import * as error from '@prairielearn/error';
+import { withoutLogging } from '@prairielearn/logger';
 import * as namedLocks from '@prairielearn/named-locks';
 import { execute, makePostgresTestUtils, queryRow, queryRows } from '@prairielearn/postgres';
 
@@ -151,7 +152,7 @@ describe('BatchedMigrationExecutor', () => {
     const migrationImplementation = makeTestBatchMigration();
     migrationImplementation.setFailingIds([1n, 5010n]);
     const runner = new BatchedMigrationRunner(migration, migrationImplementation);
-    await runner.run();
+    await withoutLogging(() => runner.run());
 
     const jobs = await getBatchedMigrationJobs(migration.id);
     const failedJobs = jobs.filter((job) => job.status === 'failed');
@@ -168,8 +169,9 @@ describe('BatchedMigrationExecutor', () => {
       assert.hasAllKeys(jobData.error, ['name', 'message', 'stack', 'data', 'status']);
       assert.equal(jobData.error.name, 'Error');
       assert.equal(jobData.error.message, 'Execution failure');
-      assert.equal(jobData.error.data.start, job.min_value.toString());
-      assert.equal(jobData.error.data.end, job.max_value.toString());
+      // serialize-error converts BigInts to strings with 'n' suffix
+      assert.equal(jobData.error.data.start, `${job.min_value}n`);
+      assert.equal(jobData.error.data.end, `${job.max_value}n`);
     });
 
     const failedMigration = await getBatchedMigration(migration.id);

@@ -8,7 +8,7 @@ import { Hydrate } from '@prairielearn/react/server';
 
 import { InsufficientCoursePermissionsCardPage } from '../../components/InsufficientCoursePermissionsCard.js';
 import { PageLayout } from '../../components/PageLayout.js';
-import { updateAssessmentInstanceScore } from '../../lib/assessment.js';
+import { setAssessmentInstanceScore } from '../../lib/assessment.js';
 import { extractPageContext } from '../../lib/client/page-context.js';
 import { StaffStudentLabelSchema } from '../../lib/client/safe-db-types.js';
 import {
@@ -151,7 +151,7 @@ router.post(
         req.body.assessment_instance_id,
         course_instance.id,
       );
-      await updateAssessmentInstanceScore(
+      await setAssessmentInstanceScore(
         req.body.assessment_instance_id,
         req.body.score_perc,
         authn_user.id,

@@ -2,7 +2,7 @@ import { useMemo, useRef, useState } from 'react';
 import { Modal, Overlay, Popover } from 'react-bootstrap';
 import { z } from 'zod';
 
-import { downloadAsJSON } from '@prairielearn/browser-utils';
+import { downloadAsJSON, executeScripts, parseHTMLElement } from '@prairielearn/browser-utils';
 
 import type { AiGradingGeneralStats } from '../ee/lib/ai-grading/types.js';
 import { b64EncodeUnicode } from '../lib/base64-util.js';
@@ -11,7 +11,10 @@ import type { RubricItem } from '../lib/db-types.js';
 import type { RenderedRubricItem, RubricData } from '../lib/manualGrading.types.js';
 
 type RubricItemData = Omit<RenderedRubricItem, 'rubric_item' | 'num_submissions'> & {
-  rubric_item: Omit<RubricItem, 'rubric_id' | 'id' | 'number'> & { id?: string };
+  rubric_item: Omit<RubricItem, 'rubric_id' | 'id' | 'number' | 'points'> & {
+    id?: string;
+    points: number | null;
+  };
   disagreement_count: number | null;
   num_submissions: number | null;
 };
@@ -46,7 +49,7 @@ type ExportedRubricData = z.infer<typeof ExportedRubricDataSchema>;
 declare global {
   interface Window {
     resetInstructorGradingPanel: () => any;
-    mathjaxTypeset: () => Promise<any>;
+    mathjaxTypeset: (elements?: Element[]) => Promise<any>;
   }
 }
 
@@ -93,7 +96,7 @@ export function RubricSettings({
   const [startingPoints, setStartingPoints] = useState<number>(
     rubricData?.rubric.starting_points ?? 0,
   );
-  const [minPoints, setMinPoints] = useState<number>(rubricData?.rubric.min_points ?? 0);
+  const [minPoints, setMinPoints] = useState<number | null>(rubricData?.rubric.min_points ?? 0);
   const [maxExtraPoints, setMaxExtraPoints] = useState<number>(
     rubricData?.rubric.max_extra_points ?? 0,
   );
@@ -124,10 +127,12 @@ export function RubricSettings({
   // Derived totals/warnings
   const { totalPositive, totalNegative } = useMemo(() => {
     const [pos, neg] = rubricItems
-      .map((item) => item.rubric_item.points)
-      .reduce<
-        [number, number]
-      >(([p, n], v) => (v > 0 ? [p + v, n] : [p, n + v]), [startingPoints, startingPoints]);
+      .map((item) => item.rubric_item.points ?? 0)
+      // For null (empty or unfinished floats), calculate points as if it doesn't exist
+      .reduce<[number, number]>(
+        ([p, n], v) => (v > 0 ? [p + v, n] : [p, n + v]),
+        [startingPoints, startingPoints],
+      );
     return { totalPositive: roundPoints(pos), totalNegative: roundPoints(neg) };
   }, [rubricItems, startingPoints]);
 
@@ -146,7 +151,7 @@ export function RubricSettings({
         )} left to reach maximum.`,
       );
     }
-    if (totalNegative > minPoints) {
+    if (totalNegative > (minPoints ?? 0)) {
       warnings.push(`Minimum grade from rubric item penalties is ${totalNegative} points.`);
     }
     return warnings;
@@ -212,7 +217,7 @@ export function RubricSettings({
     });
   };
 
-  const updateRubricItem = (idx: number, patch: Partial<RubricItem>) => {
+  const updateRubricItem = (idx: number, patch: Partial<RubricItemData['rubric_item']>) => {
     setRubricItems((prev) => {
       const next = prev.slice();
       next[idx] = {
@@ -237,9 +242,13 @@ export function RubricSettings({
   };
 
   const exportRubric = () => {
+    // Need to check for validity since we don't want to export a rubric when it's not completed
+    if (!reportInputValidity()) {
+      return;
+    }
     const rubricData: ExportedRubricData = {
       max_extra_points: maxExtraPoints,
-      min_points: minPoints,
+      min_points: minPoints ?? 0,
       replace_auto_points: replaceAutoPoints,
       starting_points: startingPoints,
       max_points: assessmentQuestion.max_points,
@@ -248,7 +257,7 @@ export function RubricSettings({
       grader_guidelines: graderGuidelines,
       rubric_items: rubricItems.map((it, idx) => ({
         order: idx,
-        points: it.rubric_item.points,
+        points: it.rubric_item.points ?? 0,
         description: it.rubric_item.description,
         explanation: it.rubric_item.explanation ?? '',
         grader_note: it.rubric_item.grader_note ?? '',
@@ -373,16 +382,15 @@ export function RubricSettings({
     setTimeout(() => setCopyPopoverTarget(null), 1000);
   };
 
-  const submitSettings = async (use_rubric: boolean) => {
+  const reportInputValidity = () => {
     // Performs validation on the required inputs
-    if (use_rubric) {
-      const required = document.querySelectorAll<HTMLInputElement>(
-        '#rubric-editor input[required]',
-      );
-      const isValid = Array.from(required).every((input) => input.reportValidity());
-      if (!isValid) {
-        return;
-      }
+    const required = document.querySelectorAll<HTMLInputElement>('#rubric-editor input[required]');
+    return Array.from(required).every((input) => input.reportValidity());
+  };
+
+  const submitSettings = async (use_rubric: boolean) => {
+    if (use_rubric && !reportInputValidity()) {
+      return;
     }
 
     const payload = {
@@ -428,6 +436,17 @@ export function RubricSettings({
 
     if (contentType.includes('application/json')) {
       const data = await res.json();
+
+      if (data.submissionPanel && data.submissionId) {
+        const oldSubmission = document.getElementById(`submission-${data.submissionId}`);
+        if (oldSubmission) {
+          const newSubmission = parseHTMLElement(document, data.submissionPanel);
+          oldSubmission.replaceWith(newSubmission);
+          executeScripts(newSubmission);
+          await window.mathjaxTypeset([newSubmission]);
+        }
+      }
+
       if (data.gradingPanel) {
         const gradingPanel = document.querySelector<HTMLElement>('.js-main-grading-panel');
         if (!gradingPanel) return;
@@ -474,7 +493,7 @@ export function RubricSettings({
           input.value = oldCsrfToken;
         });
         window.resetInstructorGradingPanel();
-        await window.mathjaxTypeset();
+        await window.mathjaxTypeset([gradingPanel]);
       }
 
       // Since we are preserving the temporary rubric item selection in the instance question page, the page is not refreshed
@@ -514,7 +533,7 @@ export function RubricSettings({
       <input type="hidden" name="modified_at" value={modifiedAt?.toISOString() ?? ''} />
       <input type="hidden" name="starting_points" value={startingPoints} />
       <input type="hidden" name="max_extra_points" value={maxExtraPoints} />
-      <input type="hidden" name="min_points" value={minPoints} />
+      <input type="hidden" name="min_points" value={minPoints ?? ''} />
       <div className="card-header collapsible-card-header d-flex align-items-center">
         <h2>Rubric settings</h2>
         <button
@@ -666,9 +685,13 @@ export function RubricSettings({
                     <input
                       className="form-control"
                       type="number"
-                      value={minPoints}
+                      value={minPoints ?? ''}
                       disabled={!hasCourseInstancePermissionEdit}
-                      onInput={(e: any) => setMinPoints(Number(e.target.value))}
+                      onInput={({ currentTarget }) =>
+                        setMinPoints(
+                          currentTarget.value.length > 0 ? Number(currentTarget.value) : null,
+                        )
+                      }
                     />
                   </label>
                 </div>
@@ -707,7 +730,7 @@ export function RubricSettings({
                 rows={5}
                 value={graderGuidelines}
                 disabled={!hasCourseInstancePermissionEdit}
-                onChange={(e) => setGraderGuidelines((e.target as HTMLTextAreaElement).value)}
+                onChange={(e) => setGraderGuidelines(e.currentTarget.value)}
               />
             </div>
           </div>
@@ -974,7 +997,7 @@ function RubricRow({
   deleteRow: () => void;
   moveUp: () => void;
   moveDown: () => void;
-  updateRubricItem: (patch: Partial<RubricItem>) => void;
+  updateRubricItem: (patch: Partial<RubricItemData['rubric_item']>) => void;
   onDragStart: () => void;
   onDragOver: () => void;
   hasCourseInstancePermissionEdit: boolean;
@@ -1031,7 +1054,7 @@ function RubricRow({
             <input
               type="hidden"
               name={`rubric_item[${item.rubric_item.id}][points]`}
-              value={item.rubric_item.points}
+              value={item.rubric_item.points ?? ''}
             />
             <input
               type="hidden"
@@ -1063,11 +1086,17 @@ function RubricRow({
           className="form-control"
           style={{ width: '5rem' }}
           step="any"
-          value={item.rubric_item.points}
+          value={item.rubric_item.points ?? ''}
           aria-label="Points"
           disabled={!hasCourseInstancePermissionEdit}
           required
-          onInput={(e) => updateRubricItem({ points: Number(e.currentTarget.value) })}
+          onInput={({ currentTarget }) =>
+            updateRubricItem({
+              // currentTarget.value will be an empty string if the input is not valid yet
+              // so we can use this to check for partially done inputs such as just a "-" as well
+              points: currentTarget.value.length > 0 ? Number(currentTarget.value) : null,
+            })
+          }
         />
       </td>
 

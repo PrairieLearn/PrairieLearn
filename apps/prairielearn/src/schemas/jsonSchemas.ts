@@ -26,14 +26,13 @@ import {
   QuestionAlternativeJsonSchema,
   QuestionIdJsonSchema,
   ZoneAssessmentJsonSchema,
-  ZoneQuestionJsonSchema,
+  ZoneQuestionBlockJsonSchema,
 } from './infoAssessment.js';
 import { ColorJsonSchema, type CourseJson, CourseJsonSchema } from './infoCourse.js';
 import { type CourseInstanceJson, CourseInstanceJsonSchema } from './infoCourseInstance.js';
 import { type ElementCoreJson, ElementCoreJsonSchema } from './infoElementCore.js';
 import { type ElementCourseJson, ElementCourseJsonSchema } from './infoElementCourse.js';
 import { type ElementExtensionJson, ElementExtensionJsonSchema } from './infoElementExtension.js';
-import { type NewsItemJson, NewsItemJsonSchema } from './infoNewsItem.js';
 import { type QuestionJson, QuestionJsonSchema } from './infoQuestion.js';
 import {
   type QuestionOptionsCalculationJson,
@@ -70,7 +69,7 @@ const schemaOverride = (
   if (['canView', 'canSubmit'].includes(segment)) {
     const action = segment === 'canView' ? 'view' : 'submit';
     const inZone = refs.currentPath.includes('ZoneAssessmentJsonSchema');
-    const inQuestion = refs.currentPath.includes('ZoneQuestionJsonSchema');
+    const inQuestion = refs.currentPath.includes('ZoneQuestionBlockJsonSchema');
     const inGroups = refs.currentPath.includes('groups');
 
     // Skip fields inside groups.rolePermissions - let default handle them
@@ -168,13 +167,6 @@ const prairielearnZodToJsonSchema = (
   return jsonSchema;
 };
 
-export const infoNewsItem = prairielearnZodToJsonSchema(NewsItemJsonSchema, {
-  name: 'News Item Info',
-  nameStrategy: 'title',
-  target: 'jsonSchema7',
-  definitions: { CommentJsonSchema },
-}) as JSONSchemaType<NewsItemJson>;
-
 export const infoAssessment = prairielearnZodToJsonSchema(AssessmentJsonSchema, {
   name: 'Assessment info',
   nameStrategy: 'title',
@@ -188,7 +180,7 @@ export const infoAssessment = prairielearnZodToJsonSchema(AssessmentJsonSchema, 
     AssessmentAccessRuleJsonSchema,
     QuestionAlternativeJsonSchema,
     ZoneAssessmentJsonSchema,
-    ZoneQuestionJsonSchema,
+    ZoneQuestionBlockJsonSchema,
     LegacyGroupRoleJsonSchema,
     GroupsRoleJsonSchema,
     AdvanceScorePercJsonSchema,
@@ -210,24 +202,24 @@ export const infoCourseInstance = prairielearnZodToJsonSchema(CourseInstanceJson
   name: 'Course instance information',
   nameStrategy: 'title',
   target: 'jsonSchema7',
-  definitions: { CommentJsonSchema },
+  definitions: { ColorJsonSchema, CommentJsonSchema },
 }) as JSONSchemaType<CourseInstanceJson>;
 
-export const infoElementCore = prairielearnZodToJsonSchema(ElementCoreJsonSchema, {
+const infoElementCore = prairielearnZodToJsonSchema(ElementCoreJsonSchema, {
   name: 'Element Info',
   nameStrategy: 'title',
   target: 'jsonSchema7',
   definitions: { CommentJsonSchema },
 }) as JSONSchemaType<ElementCoreJson>;
 
-export const infoElementCourse = prairielearnZodToJsonSchema(ElementCourseJsonSchema, {
+const infoElementCourse = prairielearnZodToJsonSchema(ElementCourseJsonSchema, {
   name: 'Element Info',
   nameStrategy: 'title',
   target: 'jsonSchema7',
   definitions: { CommentJsonSchema },
 }) as JSONSchemaType<ElementCourseJson>;
 
-export const infoElementExtension = prairielearnZodToJsonSchema(ElementExtensionJsonSchema, {
+const infoElementExtension = prairielearnZodToJsonSchema(ElementExtensionJsonSchema, {
   name: 'Element Extension Info',
   nameStrategy: 'title',
   target: 'jsonSchema7',
@@ -243,7 +235,7 @@ export const infoQuestion = prairielearnZodToJsonSchema(QuestionJsonSchema, {
   },
 }) as JSONSchemaType<QuestionJson>;
 
-export const questionOptionsCalculation = prairielearnZodToJsonSchema(
+const questionOptionsCalculation = prairielearnZodToJsonSchema(
   QuestionOptionsCalculationJsonSchema,
   {
     name: 'Calculation question options',
@@ -253,24 +245,21 @@ export const questionOptionsCalculation = prairielearnZodToJsonSchema(
   },
 ) as JSONSchemaType<QuestionOptionsCalculationJson>;
 
-export const questionOptionsCheckbox = prairielearnZodToJsonSchema(
-  QuestionOptionsCheckboxJsonSchema,
-  {
-    name: 'Checkbox question options',
-    nameStrategy: 'title',
-    target: 'jsonSchema7',
-    definitions: { CommentJsonSchema },
-  },
-) as JSONSchemaType<QuestionOptionsCheckboxJson>;
+const questionOptionsCheckbox = prairielearnZodToJsonSchema(QuestionOptionsCheckboxJsonSchema, {
+  name: 'Checkbox question options',
+  nameStrategy: 'title',
+  target: 'jsonSchema7',
+  definitions: { CommentJsonSchema },
+}) as JSONSchemaType<QuestionOptionsCheckboxJson>;
 
-export const questionOptionsFile = prairielearnZodToJsonSchema(QuestionOptionsFileJsonSchema, {
+const questionOptionsFile = prairielearnZodToJsonSchema(QuestionOptionsFileJsonSchema, {
   name: 'File question options',
   nameStrategy: 'title',
   target: 'jsonSchema7',
   definitions: { CommentJsonSchema },
 }) as JSONSchemaType<QuestionOptionsFileJson>;
 
-export const questionOptionsMultipleChoice = prairielearnZodToJsonSchema(
+const questionOptionsMultipleChoice = prairielearnZodToJsonSchema(
   QuestionOptionsMultipleChoiceJsonSchema,
   {
     name: 'MultipleChoice question options',
@@ -280,7 +269,7 @@ export const questionOptionsMultipleChoice = prairielearnZodToJsonSchema(
   },
 ) as JSONSchemaType<QuestionOptionsMultipleChoiceJson>;
 
-export const questionOptionsMultipleTrueFalse = prairielearnZodToJsonSchema(
+const questionOptionsMultipleTrueFalse = prairielearnZodToJsonSchema(
   QuestionOptionsMultipleTrueFalseJsonSchema,
   {
     name: 'MultipleTrueFalse question options',
@@ -290,7 +279,7 @@ export const questionOptionsMultipleTrueFalse = prairielearnZodToJsonSchema(
   },
 ) as JSONSchemaType<QuestionOptionsMultipleTrueFalseJson>;
 
-export const questionOptionsv3 = prairielearnZodToJsonSchema(QuestionOptionsv3JsonSchema, {
+const questionOptionsv3 = prairielearnZodToJsonSchema(QuestionOptionsv3JsonSchema, {
   name: 'v3 question options',
   nameStrategy: 'title',
   target: 'jsonSchema7',
@@ -298,7 +287,6 @@ export const questionOptionsv3 = prairielearnZodToJsonSchema(QuestionOptionsv3Js
 }) as JSONSchemaType<QuestionOptionsv3Json>;
 
 export const ajvSchemas = {
-  infoNewsItem,
   infoAssessment,
   infoCourse,
   infoCourseInstance,

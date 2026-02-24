@@ -1,6 +1,6 @@
 {
   "name": "@prairielearn/csv",
-  "version": "3.0.0",
+  "version": "3.0.1",
   "type": "module",
   "repository": {
     "type": "git",
@@ -25,10 +25,10 @@
     "@prairielearn/tsconfig": "workspace:^",
     "@types/multipipe": "^3.0.5",
     "@types/node": "^24.10.9",
-    "@typescript/native-preview": "^7.0.0-dev.20260106.1",
-    "@vitest/coverage-v8": "^4.0.17",
+    "@typescript/native-preview": "^7.0.0-dev.20260203.1",
+    "@vitest/coverage-v8": "^4.0.18",
     "tsx": "^4.21.0",
     "typescript": "^5.9.3",
-    "vitest": "^4.0.17"
+    "vitest": "^4.0.18"
   }
 }

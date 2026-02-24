@@ -31,7 +31,6 @@ const BasePageContextSchema = z.object({
   access_as_administrator: z.boolean(),
   is_administrator: z.boolean(),
   is_institution_administrator: z.boolean(),
-  news_item_notification_count: SelectUserSchema.shape.news_item_notification_count,
   navPage: NavPageSchema,
   /** You should prefer to set the navbarType instead of using this value. */
   navbarType: NavbarTypeSchema,
@@ -183,7 +182,6 @@ export type PageContext<
   ? PageTypeReturnMap[AccessType][PageType] & AuthzDataPageContext
   : PageTypeReturnMap[AccessType][PageType];
 
-export type PlainPageContext = PageContext<'plain', 'student' | 'instructor', false>;
 export type PageContextWithAuthzData = PageContext<'plain', 'student' | 'instructor', true>;
 
 /**

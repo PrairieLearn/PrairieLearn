@@ -35,9 +35,6 @@ router.get(
           page: 'course_admin',
           subPage: 'modules',
         },
-        options: {
-          fullWidth: true,
-        },
         content: <AssessmentModulesTable assessmentModules={assessmentModules} />,
       }),
     );

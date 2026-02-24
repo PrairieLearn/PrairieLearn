@@ -1,6 +1,6 @@
 import type { Column } from '@tanstack/react-table';
 import clsx from 'clsx';
-import { type JSX, useMemo, useState } from 'react';
+import { type ReactNode, useMemo, useState } from 'react';
 import Dropdown from 'react-bootstrap/Dropdown';
 
 function computeSelected<TValue extends string>(
@@ -38,7 +38,7 @@ export function CategoricalColumnFilter<TData, TValue extends string = string>({
 }: {
   column: Column<TData, unknown>;
   allColumnValues: TValue[] | readonly TValue[];
-  renderValueLabel?: (props: { value: TValue; isSelected: boolean }) => JSX.Element;
+  renderValueLabel?: (props: { value: TValue; isSelected: boolean }) => ReactNode;
 }) {
   const [mode, setMode] = useState<'include' | 'exclude'>('include');
 

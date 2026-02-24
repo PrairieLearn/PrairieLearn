@@ -12,7 +12,7 @@ if [ -S /var/run/docker.sock ]; then
 else
     echo "Running PrairieLearn without support for external graders and workspaces." 1>&2
     echo "To enable external graders and workspaces, follow the instructions here:" 1>&2
-    echo "https://prairielearn.readthedocs.io/en/latest/installing/#support-for-external-graders-and-workspaces" 1>&2
+    echo "https://docs.prairielearn.com/installing/#support-for-external-graders-and-workspaces" 1>&2
 fi
 
 if [[ $NODEMON == "true" || $DEV == "true" ]]; then

@@ -1,5 +1,41 @@
 # @prairielearn/ui
 
+## 3.1.5
+
+### Patch Changes
+
+- e28f2e2: Replace `JSX.Element` with `ReactNode` in component type definitions
+- Updated dependencies [ad329f9]
+- Updated dependencies [7b937fb]
+  - @prairielearn/browser-utils@2.7.0
+
+## 3.1.4
+
+### Patch Changes
+
+- 5381771: Use `ReactNode` instead of `JSX.Element` for `TanstackTableCard` and `ColumnManager` props
+
+## 3.1.3
+
+### Patch Changes
+
+- c34d474: Add @prairielearn/run as dep
+
+## 3.1.2
+
+### Patch Changes
+
+- cde69c1: Upgrade all JavaScript dependencies
+- aae8ad7: Fix ColumnManager not properly unchecking a group of columns
+
+## 3.1.1
+
+### Patch Changes
+
+- 8bdf6ea: Upgrade all JavaScript dependencies
+- Updated dependencies [8bdf6ea]
+  - @prairielearn/browser-utils@2.6.3
+
 ## 3.1.0
 
 ### Minor Changes

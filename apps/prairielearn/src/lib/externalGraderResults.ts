@@ -159,7 +159,7 @@ async function processMessage(data: {
     return;
   } else if (data.event === 'grading_result') {
     // Figure out where we can fetch results from.
-    const { s3_bucket: s3Bucket, s3_root_key: s3RootKey } = await sqldb.queryRow(
+    const details = await sqldb.queryOptionalRow(
       sql.get_job_details,
       { grading_job_id: jobId },
       z.object({
@@ -167,6 +167,21 @@ async function processMessage(data: {
         s3_root_key: GradingJobSchema.shape.s3_root_key,
       }),
     );
+
+    if (!details) {
+      // The grading job may have already been hard deleted; in that case,
+      // we can just ignore the result.
+
+      // Grading jobs are hard deleted when an instructor deletes
+      // an assessment instance: either individually, or in bulk,
+      // or because they regenerated their own assessment instance.
+
+      // The ON DELETE CASCADE chain is:
+      // assessment_instances → instance_questions → variants → submissions → grading_jobs
+      return;
+    }
+
+    const { s3_bucket: s3Bucket, s3_root_key: s3RootKey } = details;
 
     if (!s3Bucket || !s3RootKey) {
       throw new error.HttpStatusError(

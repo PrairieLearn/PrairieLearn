@@ -1,5 +1,23 @@
 # @prairielearn/browser-utils
 
+## 2.7.0
+
+### Minor Changes
+
+- ad329f9: Add `executeScripts` helper to re-execute script tags after innerHTML insertion
+
+### Patch Changes
+
+- 7b937fb: Remove unused exports, add `@knipignore` for intentionally public exports, and re-export newly used symbols from `@prairielearn/formatter`.
+
+## 2.6.3
+
+### Patch Changes
+
+- 8bdf6ea: Upgrade all JavaScript dependencies
+- Updated dependencies [8bdf6ea]
+  - @prairielearn/html@5.0.1
+
 ## 2.6.2
 
 ### Patch Changes

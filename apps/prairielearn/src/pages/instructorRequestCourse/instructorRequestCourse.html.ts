@@ -211,7 +211,7 @@ function CourseNewRequestCard({ csrfToken }: { csrfToken: string }): HtmlValue {
               Providing your GitHub username will grant you access to your course's GitHub
               repository. This access allows you to edit your code in a
               <a
-                href="https://prairielearn.readthedocs.io/en/latest/installing/"
+                href="https://docs.prairielearn.com/installing/"
                 target="_blank"
                 rel="noopener noreferrer"
                 >local installation of PrairieLearn</a
@@ -219,14 +219,14 @@ function CourseNewRequestCard({ csrfToken }: { csrfToken: string }): HtmlValue {
               provide this if you would like to exclusively use the online web editor. You are
               encouraged to provide it if you are planning complex questions such as those using
               <a
-                href="https://prairielearn.readthedocs.io/en/latest/externalGrading/"
+                href="https://docs.prairielearn.com/externalGrading/"
                 target="_blank"
                 rel="noopener noreferrer"
                 >code autograding</a
               >
               or
               <a
-                href="https://prairielearn.readthedocs.io/en/latest/workspaces/"
+                href="https://docs.prairielearn.com/workspaces/"
                 target="_blank"
                 rel="noopener noreferrer"
                 >workspaces</a

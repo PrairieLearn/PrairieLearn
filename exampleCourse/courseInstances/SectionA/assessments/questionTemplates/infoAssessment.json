@@ -6,47 +6,52 @@
   "number": "6",
   "zones": [
     {
-      "title": "Template: copy, paste and edit to start creating questions",
+      "title": "Basic questions: no randomization",
       "questions": [
-        { "id": "demo/multipleChoiceSingleCorrect", "points": 1 },
-        { "id": "template/multiple-choice/random", "points": 1, "maxPoints": 2 },
-        { "id": "template/multiple-choice/random-prompt", "points": 1, "maxPoints": 4 },
-        { "id": "template/multiple-choice/numeric", "points": 1, "maxPoints": 4 },
-        { "id": "template/multiple-choice/random-prompt-true-false", "points": 1, "maxPoints": 2 },
-        { "id": "template/multiple-choice/images", "points": 1, "maxPoints": 4 },
-        { "id": "demo/multiAnswerMC", "points": 2, "maxPoints": 10 },
-        { "id": "template/integer-input/random", "points": 1, "maxPoints": 2 },
-        { "id": "template/number-input/random", "points": 1, "maxPoints": 2 },
-        { "id": "demo/matrixAlgebra", "points": 2, "maxPoints": 10 },
-        { "id": "template/symbolic-input/random", "points": 2, "maxPoints": 10 },
-        { "id": "template/figure/dynamic", "points": 1, "maxPoints": 4 }
+        { "id": "template/multiple-choice/fixed", "points": 1 },
+        { "id": "template/multiple-choice/all-of-the-above", "points": 1 },
+        { "id": "template/multiple-choice/none-of-the-above", "points": 1 },
+        { "id": "template/multiple-choice/true-false", "points": 1 },
+        { "id": "template/multiple-choice/dropdown", "points": 1 },
+        { "id": "template/checkbox/fixed", "points": 1 },
+        { "id": "template/integer-input/fixed", "points": 1 },
+        { "id": "template/number-input/fixed", "points": 1 },
+        { "id": "template/string-input/fixed", "points": 1 },
+        { "id": "template/symbolic-input/fixed", "points": 1 },
+        { "id": "template/matching/fixed", "points": 1 },
+        { "id": "template/order-blocks/fixed", "points": 1 },
+        { "id": "template/rich-text-editor/basic", "points": 1 },
+        { "id": "template/file-editor/fixed", "points": 1 },
+        { "id": "template/file-upload/fixed", "points": 1 },
+        { "id": "template/image-capture/static", "points": 1 }
       ]
     },
     {
-      "title": "More question examples and tips",
+      "title": "Intermediate questions: randomization without Python",
       "questions": [
-        { "id": "demo/numberInputGradingMethod", "points": 1, "maxPoints": 2 },
-        { "id": "demo/numberInputTips", "points": 1, "maxPoints": 2 },
-        { "id": "demo/randomDataFrame", "points": 2, "maxPoints": 6 },
-        { "id": "demo/overlayTriangle", "points": 2, "maxPoints": 4 },
-        { "id": "demo/overlayDropdown", "points": 1, "maxPoints": 5 },
-        { "id": "demo/proofBlocks", "points": 1, "maxPoints": 5 },
-        { "id": "demo/markdownEditorLivePreview", "points": 2 },
-        { "id": "demo/graphvizEditorPreview", "points": 2 },
-        { "id": "demo/addHTMLtable", "points": 2, "maxPoints": 4 },
-        { "id": "demo/insertEmbeddedVideo", "points": 2, "maxPoints": 4 },
-        { "id": "element/markdown", "points": 2, "maxPoints": 10 },
-        { "id": "demo/survey", "points": 1, "maxPoints": 1 }
+        { "id": "template/multiple-choice/distractor-pool", "points": 1, "maxPoints": 3 },
+        { "id": "template/multiple-choice/multi-correct-pool", "points": 1, "maxPoints": 3 },
+        { "id": "template/multiple-choice/images", "points": 1, "maxPoints": 3 },
+        { "id": "template/checkbox/random-subset", "points": 1, "maxPoints": 3 }
       ]
     },
     {
-      "title": "Questions using additional customization (elements or grading function)",
+      "title": "Advanced questions: randomization with Python",
       "questions": [
-        { "id": "demo/custom/element", "points": 1, "maxPoints": 1 },
-        { "id": "demo/custom/gradeFunction", "points": 1, "maxPoints": 1 },
-        { "id": "demo/custom/extension", "points": 1, "maxPoints": 1 },
-        { "id": "demo/custom/elementHiddenTag", "points": 1, "maxPoints": 1 },
-        { "id": "demo/custom/stylingScripts", "points": 1, "maxPoints": 1 }
+        { "id": "template/multiple-choice/random-prompt", "points": 1, "maxPoints": 3 },
+        { "id": "template/multiple-choice/numeric", "points": 1, "maxPoints": 3 },
+        { "id": "template/multiple-choice/random-prompt-true-false", "points": 1, "maxPoints": 3 },
+        { "id": "template/checkbox/random-prompt", "points": 1, "maxPoints": 3 },
+        { "id": "template/checkbox/feedback", "points": 1, "maxPoints": 3 },
+        { "id": "template/integer-input/random", "points": 1, "maxPoints": 3 },
+        { "id": "template/number-input/random", "points": 1, "maxPoints": 3 },
+        { "id": "template/number-input/random-prompt", "points": 1, "maxPoints": 3 },
+        { "id": "template/number-input/multiple-answer-inputs", "points": 1, "maxPoints": 3 },
+        { "id": "template/string-input/random", "points": 1, "maxPoints": 3 },
+        { "id": "template/symbolic-input/random", "points": 1, "maxPoints": 3 },
+        { "id": "template/matrix-input/random", "points": 1, "maxPoints": 3 },
+        { "id": "template/matrix-component-input/random-graph", "points": 1, "maxPoints": 3 },
+        { "id": "template/figure/dynamic", "points": 1, "maxPoints": 3 }
       ]
     }
   ]

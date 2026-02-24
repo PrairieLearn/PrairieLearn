@@ -15,7 +15,7 @@ from typing_extensions import NotRequired
 class PartialScore(TypedDict):
     """A class with type signatures for the partial scores dict.
 
-    For more information see the [element developer guide](https://prairielearn.readthedocs.io/en/latest/devElements/).
+    For more information see the [element developer guide](https://docs.prairielearn.com/devElements/).
 
     Attributes:
         score: The score for the partial score.
@@ -38,7 +38,7 @@ class PartialScore(TypedDict):
 class QuestionData(TypedDict):
     """The data dictionary passed to the question element throughout the lifecycle of the question.
 
-    For more information see the [element developer guide](https://prairielearn.readthedocs.io/en/latest/devElements/).
+    For more information see the [element developer guide](https://docs.prairielearn.com/devElements/).
 
     Attributes:
         params: Parameters that describe the question variant.

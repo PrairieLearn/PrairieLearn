@@ -5,32 +5,11 @@ import { getCourseInstanceStudentsUrl } from '../../lib/client/url.js';
 import { selectCourseInstanceByShortName } from '../../models/course-instances.js';
 import { selectCourseByShortName } from '../../models/course.js';
 import { ensureUncheckedEnrollment, inviteStudentByUid } from '../../models/enrollment.js';
+import { syncCourse } from '../helperCourse.js';
 import { type AuthUser, getOrCreateUser } from '../utils/auth.js';
 
 import { expect, test } from './fixtures.js';
-
-async function syncAllCourses(page: Page) {
-  await page.goto('/pl/loadFromDisk');
-  await expect(page).toHaveURL(/\/jobSequence\//);
-  await expect(page.locator('.badge', { hasText: 'Success' })).toBeVisible();
-}
-
-/**
- * Waits for the job sequence page to show completion and checks for expected text in the job output.
- */
-async function waitForJobAndCheckOutput(page: Page, expectedTexts: string[]) {
-  // Should be redirected to the job sequence page
-  await expect(page).toHaveURL(/\/jobSequence\//);
-
-  // Wait for job to complete (status badge shows Success)
-  await expect(page.locator('.badge', { hasText: 'Success' })).toBeVisible();
-
-  // Check for expected text in the job output (rendered in a <pre> element)
-  const jobOutput = page.locator('pre');
-  for (const text of expectedTexts) {
-    await expect(jobOutput.getByText(text)).toBeVisible();
-  }
-}
+import { waitForJobAndCheckOutput } from './jobSequenceUtils.js';
 
 // Test users for various scenarios
 const VALID_STUDENT: AuthUser = { uid: 'valid_student@test.com', uin: null, name: 'Valid Student' };
@@ -94,11 +73,14 @@ async function createTestData() {
   });
 }
 
+async function openInviteModal(page: Page) {
+  await page.getByRole('button', { name: 'Manage enrollments' }).click();
+  await page.locator('.dropdown-menu').getByText('Invite students').click();
+}
+
 test.describe('Bulk invite students', () => {
-  test.beforeAll(async ({ browser, workerPort }) => {
-    const page = await browser.newPage({ baseURL: `http://localhost:${workerPort}` });
-    await syncAllCourses(page);
-    await page.close();
+  test.beforeAll(async () => {
+    await syncCourse();
     await createTestData();
   });
 
@@ -106,8 +88,8 @@ test.describe('Bulk invite students', () => {
     await page.goto(getCourseInstanceStudentsUrl(courseInstanceId));
     await expect(page).toHaveTitle(/Students/);
 
-    // Click the invite button
-    await page.getByRole('button', { name: 'Invite students' }).click();
+    // Open the invite modal from the dropdown
+    await openInviteModal(page);
 
     // Modal should open
     await expect(page.getByRole('dialog')).toBeVisible();
@@ -131,7 +113,7 @@ test.describe('Bulk invite students', () => {
   test('can invite multiple valid students', async ({ page }) => {
     await page.goto(getCourseInstanceStudentsUrl(courseInstanceId));
 
-    await page.getByRole('button', { name: 'Invite students' }).click();
+    await openInviteModal(page);
     await expect(page.getByRole('dialog')).toBeVisible();
 
     // Enter multiple UIDs
@@ -155,7 +137,7 @@ test.describe('Bulk invite students', () => {
 
     await page.goto(getCourseInstanceStudentsUrl(courseInstanceId));
 
-    await page.getByRole('button', { name: 'Invite students' }).click();
+    await openInviteModal(page);
     await expect(page.getByRole('dialog')).toBeVisible();
 
     // Enter mix of valid and already enrolled UIDs
@@ -177,7 +159,7 @@ test.describe('Bulk invite students', () => {
   test('shows error for invalid email format', async ({ page }) => {
     await page.goto(getCourseInstanceStudentsUrl(courseInstanceId));
 
-    await page.getByRole('button', { name: 'Invite students' }).click();
+    await openInviteModal(page);
     await expect(page.getByRole('dialog')).toBeVisible();
 
     await page.getByRole('textbox', { name: 'UIDs' }).fill('not-an-email');

@@ -1,25 +1,24 @@
 import path from 'node:path';
 
 import type { OpenAIResponsesProviderOptions } from '@ai-sdk/openai';
-import { type EmbeddingModel, type LanguageModel, generateObject } from 'ai';
+import { type LanguageModel, generateObject } from 'ai';
 import { execa } from 'execa';
 import fs from 'fs-extra';
 import * as tmp from 'tmp-promise';
 import { z } from 'zod';
 
-import { loadSqlEquiv, queryRows } from '@prairielearn/postgres';
-
-import type { OpenAIModelId } from '../../lib/ai.js';
+import { type OpenAIModelId, formatPrompt } from '../../lib/ai-util.js';
+import { b64DecodeUnicode } from '../../lib/base64-util.js';
 import { config } from '../../lib/config.js';
-import { AiQuestionGenerationPromptSchema, type User } from '../../lib/db-types.js';
+import { getCourseFilesClient } from '../../lib/course-files-api.js';
+import { type User } from '../../lib/db-types.js';
 import { features } from '../../lib/features/index.js';
-import { createServerJob } from '../../lib/server-jobs.js';
+import { createServerJob, getJobSequence } from '../../lib/server-jobs.js';
 import { insertCourse } from '../../models/course.js';
 import { syncDiskToSql } from '../../sync/syncFromDisk.js';
+import { selectAiQuestionGenerationMessages } from '../models/ai-question-generation-message.js';
 
-import { generateQuestion } from './aiQuestionGeneration.js';
-
-const sql = loadSqlEquiv(import.meta.filename);
+import { editQuestionWithAgent, getAgenticModel } from './ai-question-generation/agent.js';
 
 interface Benchmark {
   prompt: string;
@@ -167,13 +166,9 @@ const QuestionGenerationEvaluationSchema = z.object({
 type QuestionGenerationEvaluation = z.infer<typeof QuestionGenerationEvaluationSchema>;
 
 export async function benchmarkAiQuestionGeneration({
-  embeddingModel,
-  generationModel,
   evaluationModel,
   user,
 }: {
-  embeddingModel: EmbeddingModel;
-  generationModel: LanguageModel;
   evaluationModel: LanguageModel;
   user: User;
 }): Promise<string> {
@@ -243,50 +238,73 @@ export async function benchmarkAiQuestionGeneration({
 
     for (const benchmark of BENCHMARKS) {
       // Generate a single question.
-      const result = await generateQuestion({
-        model: generationModel,
-        embeddingModel,
-        courseId: course.id,
-        authnUserId: user.id,
-        prompt: benchmark.prompt,
-        userId: user.id,
+      const { model, modelId } = getAgenticModel();
+      const result = await editQuestionWithAgent({
+        model,
+        modelId,
+        course,
+        user,
+        authnUser: user,
         hasCoursePermissionEdit: true,
+        prompt: benchmark.prompt,
       });
 
-      const prompts = await queryRows(
-        sql.select_ai_question_generation_prompts,
-        { question_id: result.questionId },
-        AiQuestionGenerationPromptSchema,
-      );
+      // Wait for the job sequence to complete.
+      await result.promise;
 
-      // Log the prompts, responses, and errors for debugging.
-      for (const prompt of prompts) {
-        job.info('User prompt');
-        job.info('===========');
-        job.info(prompt.user_prompt.trimEnd());
-        job.info('\n');
+      const messages = await selectAiQuestionGenerationMessages(result.question);
 
-        job.info('Response');
-        job.info('========');
-        job.info(prompt.response.trimEnd());
-        job.info('\n');
-
-        if (prompt.errors.length > 0) {
-          job.error('Errors');
-          job.error('======');
-          job.error(JSON.stringify(prompt.errors, null, 2));
-        } else {
-          job.info('No errors detected automatically');
-        }
-        job.error('\n');
+      if (messages.length !== 2) {
+        job.error(
+          `Expected exactly two messages for question ${result.question.id}, got ${messages.length}`,
+        );
+        continue;
       }
+
+      const userMessage = messages[0];
+      const assistantMessage = messages[1];
+
+      if (userMessage.role !== 'user') {
+        job.error(`No user message found for question ${result.question.id}`);
+        continue;
+      }
+
+      if (assistantMessage.role !== 'assistant') {
+        job.error(`No assistant message found for question ${result.question.id}`);
+        continue;
+      }
+
+      // Log the assistant message for debugging.
+      job.info('Assistant message');
+      job.info('=================');
+      job.info(JSON.stringify(assistantMessage, null, 2));
+      job.info('\n');
+
+      const jobSequence = await getJobSequence(result.jobSequenceId, course.id);
+      if (jobSequence.status === 'Error') {
+        job.error(`Job sequence ${result.jobSequenceId} failed`);
+      }
+
+      // Fetch the generated question files.
+      const client = getCourseFilesClient();
+      const questionFilesResult = await client.getQuestionFiles.query({
+        course_id: course.id,
+        question_id: result.question.id,
+      });
+
+      const html = questionFilesResult.files['question.html']
+        ? b64DecodeUnicode(questionFilesResult.files['question.html'])
+        : '';
+      const python = questionFilesResult.files['server.py']
+        ? b64DecodeUnicode(questionFilesResult.files['server.py'])
+        : '';
 
       const evaluationResult = await evaluateGeneratedQuestion({
         model: evaluationModel,
-        originalSystemPrompt: prompts[0].system_prompt,
-        userPrompt: prompts[0].user_prompt,
-        html: result.htmlResult ?? '',
-        python: result.pythonResult ?? '',
+        assistantMessageContents: JSON.stringify(assistantMessage.parts, null, 2),
+        userMessageContents: JSON.stringify(userMessage.parts, null, 2),
+        html,
+        python,
       });
       job.info('Evaluation result');
       job.info('=================');
@@ -323,56 +341,43 @@ export async function benchmarkAiQuestionGeneration({
 
 async function evaluateGeneratedQuestion({
   model,
-  originalSystemPrompt,
-  userPrompt,
+  assistantMessageContents,
+  userMessageContents,
   html,
   python,
 }: {
   model: LanguageModel;
-  originalSystemPrompt: string | null;
-  userPrompt: string;
+  userMessageContents: string;
+  assistantMessageContents: string;
   html: string;
   python: string;
 }): Promise<QuestionGenerationEvaluation | null> {
-  const systemPrompt = [
+  const systemPrompt = formatPrompt([
     'Another LLM has generated a PrairieLearn question from the following prompt:',
-    '',
-    '<prompt>',
-    userPrompt
-      .split('\n')
-      .map((line) => line.trim())
-      .join('\n'),
-    '</prompt>',
-    '',
-    'Please evaluate it for correctness and clarity.',
-    'If anything is incorrect or could be improved, please provide feedback.',
-    'If the question looks fine, please indicate that as well.',
-    '',
-    'Do not suggest ways the original prompt could have been improved.',
-    'You should evaluate the question based on the prompt as it is written.',
-    '',
-    'Remember that for pedagogical reasons, instructors may include extra information or distractors.',
-    'They may also choose to make students carefully consider unit conversions without explicitly prompting for them.',
-    'These are not considered errors unless they are factually incorrect or egregiously misleading; do not factor them into your evaluation.',
-    '',
+    `<prompt>\n${userMessageContents.trim()}\n</prompt>`,
+    [
+      'Please evaluate it for correctness and clarity.',
+      'If anything is incorrect or could be improved, please provide feedback.',
+      'If the question looks fine, please indicate that as well.',
+    ],
+    [
+      'Do not suggest ways the original prompt could have been improved.',
+      'You should evaluate the question based on the prompt as it is written.',
+    ],
+    [
+      'Remember that for pedagogical reasons, instructors may include extra information or distractors.',
+      'They may also choose to make students carefully consider unit conversions without explicitly prompting for them.',
+      'These are not considered errors unless they are factually incorrect or egregiously misleading; do not factor them into your evaluation.',
+    ],
     // This should include relevant documentation for the elements used in the
     // generated question, as well as our baseline context about how PrairieLearn
     // works and some example questions. This is a lot of tokens, but it's
     // important for accurate evaluation since it'll tell the LLM about which
     // elements/attributes are available and how elements behave.
-    originalSystemPrompt
-      ? [
-          'The following context was provided to the LLM when it was asked to generate the question:',
-          '<context>',
-          originalSystemPrompt,
-          '</context>',
-          '',
-        ]
-      : [],
+    'The assistant generated the following response:',
+    `<response>\n${assistantMessageContents.trim()}\n</response>`,
     'The user will now provide the question HTML and Python files that the LLM generated for this prompt.',
-  ]
-    .flat()
-    .join('\n');
+  ]);
 
   const generatedQuestion: string[] = ['```html', html.trim(), '```'];
   if (python) {
@@ -388,8 +393,8 @@ async function evaluateGeneratedQuestion({
     schema: QuestionGenerationEvaluationSchema,
     providerOptions: {
       openai: {
-        reasoningEffort: 'low',
         strictJsonSchema: true,
+        reasoningEffort: 'low',
       } satisfies OpenAIResponsesProviderOptions,
     },
   });

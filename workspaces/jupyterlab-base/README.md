@@ -17,4 +17,4 @@ To automatically open a file when the workspace is started, set the `LAUNCH_FILE
 }
 ```
 
-Replace `some_file.ext` with your file. It is expected that this file exists inside of the `workspace/` directory of the question. See the [workspaces documentation](https://prairielearn.readthedocs.io/en/latest/workspaces/) for more details on environment variable usage.
+Replace `some_file.ext` with your file. It is expected that this file exists inside of the `workspace/` directory of the question. See the [workspaces documentation](https://docs.prairielearn.com/workspaces/) for more details on environment variable usage.

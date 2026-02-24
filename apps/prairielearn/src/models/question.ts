@@ -1,5 +1,3 @@
-import { z } from 'zod';
-
 import { loadSqlEquiv, queryOptionalRow, queryRow, queryRows } from '@prairielearn/postgres';
 
 import { type Question, QuestionSchema } from '../lib/db-types.js';
@@ -8,6 +6,10 @@ const sql = loadSqlEquiv(import.meta.url);
 
 export async function selectQuestionById(question_id: string): Promise<Question> {
   return await queryRow(sql.select_question_by_id, { question_id }, QuestionSchema);
+}
+
+export async function selectOptionalQuestionById(question_id: string): Promise<Question | null> {
+  return await queryOptionalRow(sql.select_question_by_id, { question_id }, QuestionSchema);
 }
 
 export async function selectQuestionByQid({
@@ -50,10 +52,7 @@ export async function selectQuestionByInstanceQuestionId(
   );
 }
 
-export const QuestionForCopySchema = QuestionSchema.extend({
-  should_copy: z.boolean().optional(),
-});
-export type QuestionForCopy = z.infer<typeof QuestionForCopySchema>;
+type QuestionForCopy = Question & { should_copy?: boolean };
 
 export async function selectQuestionsForCourseInstanceCopy(
   course_instance_id: string,

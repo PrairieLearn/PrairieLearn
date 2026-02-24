@@ -1,22 +1,42 @@
+# This workflow uses `pull_request_target` to run in the base repository context,
+# which grants access to secrets needed for the GitHub App token. This is necessary
+# because Dependabot-triggered workflows have restricted secret access.
+#
+# Security considerations:
+# - Only runs when github.actor is dependabot[bot], preventing abuse from forks
+# - Uses YARN_ENABLE_SCRIPTS=0 to disable postinstall scripts, preventing any
+#   untrusted code execution from dependencies
+
 name: 'Dedupe Dependabot PRs'
 
 on:
-  push:
+  pull_request_target:
     branches:
-      - 'dependabot/**'
+      - master
+    paths:
+      - 'yarn.lock'
 
 jobs:
   dedupe:
     name: 'Dedupe dependencies'
     runs-on: ubuntu-latest
-    permissions:
-      contents: write
+    if: github.actor == 'dependabot[bot]'
     steps:
-      - uses: actions/checkout@v4
-
-      - uses: actions/setup-node@v4
+      - name: Generate token
+        id: generate-token
+        uses: actions/create-github-app-token@v2
         with:
-          node-version: '20'
+          app-id: ${{ secrets.CI_BOT_APP_ID }}
+          private-key: ${{ secrets.CI_BOT_APP_PRIVATE_KEY }}
+
+      - uses: actions/checkout@v6
+        with:
+          token: ${{ steps.generate-token.outputs.token }}
+          ref: ${{ github.head_ref }}
+
+      - uses: actions/setup-node@v6
+        with:
+          node-version: '24'
 
       - run: corepack enable
 
@@ -28,7 +48,7 @@ jobs:
       - name: 'Dedupe dependencies'
         run: yarn dedupe
         env:
-          HUSKY: 0
+          YARN_ENABLE_SCRIPTS: 0
 
       - name: 'Commit and push changes'
         run: |

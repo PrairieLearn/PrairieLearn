@@ -6,7 +6,7 @@ import { isRenderableComment } from '../lib/comments.js';
 export function CommentPopover({
   comment,
 }: {
-  comment: string | string[] | Record<string, any> | null;
+  comment: string | string[] | Record<string, any> | null | undefined;
 }) {
   if (!isRenderableComment(comment)) {
     return null;
@@ -24,7 +24,7 @@ export function CommentPopover({
       data-bs-html="true"
       data-bs-content={escapeHtml(html`${content}`).toString()}
     >
-      <i className="fa fa-comment" />
+      <i className="bi bi-chat-left-text" />
     </button>
   );
 }

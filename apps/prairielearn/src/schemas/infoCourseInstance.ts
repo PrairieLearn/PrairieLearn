@@ -25,8 +25,6 @@ const AccessRuleJsonSchema = z
     'An access rule that permits people to access this course instance. All restrictions present in the rule must be satisfied for the rule to allow access.',
   );
 
-export type AccessRuleJson = z.infer<typeof AccessRuleJsonSchema>;
-
 const AllowAccessJsonSchema = z
   .array(AccessRuleJsonSchema)
   .describe(
@@ -48,15 +46,17 @@ const PublishingJsonSchema = z.object({
     .optional(),
 });
 
-export type PublishingJson = z.infer<typeof PublishingJsonSchema>;
-
-const StudentLabelJsonSchema = z
+export const StudentLabelJsonSchema = z
   .object({
-    name: z.string().min(1).max(255).describe('The name of the student label.'),
-    color: ColorJsonSchema.describe('The color to display for this label.'),
+    uuid: z
+      .string()
+      .regex(/^[0-9a-fA-F]{8}-[0-9a-fA-F]{4}-[0-9a-fA-F]{4}-[0-9a-fA-F]{4}-[0-9a-fA-F]{12}$/)
+      .describe('Unique identifier (UUID v4).'),
+    name: z.string().trim().min(1).max(255).describe('The name of the student label.'),
+    color: ColorJsonSchema,
   })
   .strict()
-  .describe('A student label definition.');
+  .describe('A single student label, can represent a collection of students (e.g. "Section A").');
 
 export type StudentLabelJson = z.infer<typeof StudentLabelJsonSchema>;
 
@@ -131,10 +131,7 @@ export const CourseInstanceJsonSchema = z
       )
       .optional()
       .default(false),
-    studentLabels: z
-      .array(StudentLabelJsonSchema)
-      .describe('Student label definitions for this course instance.')
-      .optional(),
+    studentLabels: z.array(StudentLabelJsonSchema).describe('Student labels.').optional(),
   })
   .strict()
   .describe('The specification file for a course instance.');

@@ -16,7 +16,7 @@ export enum JobItemStatus {
   complete,
 }
 
-export const JobItemStatusEnum = z.nativeEnum(JobItemStatus);
+const JobItemStatusEnum = z.nativeEnum(JobItemStatus);
 
 /**
  * Describes the overall progress of a server job.

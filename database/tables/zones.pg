@@ -9,7 +9,7 @@ columns
     json_comment: jsonb
     json_grade_rate_minutes: double precision
     max_points: double precision
-    number: integer
+    number: integer not null
     number_choose: integer
     title: text
 

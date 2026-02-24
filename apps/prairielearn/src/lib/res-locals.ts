@@ -15,7 +15,7 @@ import type { ResLocalsAssessmentQuestion } from '../middlewares/selectAndAuthzA
 import type { ResLocalsInstanceQuestion } from '../middlewares/selectAndAuthzInstanceQuestion.js';
 import type {
   ResLocalsInstructorQuestion,
-  ResLocalsInstructorQuestionWithCourseInstance,
+  ResLocalsInstructorQuestionSchema,
 } from '../middlewares/selectAndAuthzInstructorQuestion.js';
 import type { ResLocalsCourseIssueCount } from '../middlewares/selectOpenIssueCount.js';
 
@@ -27,7 +27,7 @@ import type {
   ResLocalsQuestionRender,
 } from './question-render.types.js';
 
-export interface ResLocals extends ResLocalsAuthnUser, ResLocalsConfig, ResLocalsDate {
+interface ResLocals extends ResLocalsAuthnUser, ResLocalsConfig, ResLocalsDate {
   __csrf_token: string;
 }
 
@@ -41,8 +41,9 @@ interface ResLocalsForPageLookup {
     course_instance: CourseInstance;
   };
   'instructor-instance-question': ResLocals &
+    ResLocalsCourseIssueCount &
     ResLocalsCourseInstance &
-    ResLocalsInstructorQuestionWithCourseInstance &
+    ResLocalsInstructorQuestionSchema &
     ResLocalsInstanceQuestion &
     ResLocalsInstanceQuestionRender &
     ResLocalsQuestionRender & {
@@ -51,10 +52,12 @@ interface ResLocalsForPageLookup {
     };
   'instructor-question': ResLocals &
     ResLocalsCourse &
+    ResLocalsCourseIssueCount &
     Partial<ResLocalsCourseInstance> &
     ResLocalsInstructorQuestion &
     ResLocalsQuestionRender;
   'instructor-assessment-question': ResLocals &
+    ResLocalsCourseIssueCount &
     ResLocalsCourseInstance &
     ResLocalsInstructorQuestion &
     ResLocalsQuestionRender &
@@ -79,7 +82,7 @@ interface ResLocalsForPageLookup {
 export type ResLocalsForPage<T extends keyof ResLocalsForPageLookup> =
   true extends IsUnion<T> ? MergeUnion<ResLocalsForPageLookup[T]> : ResLocalsForPageLookup[T];
 
-export type PageType = keyof ResLocalsForPageLookup;
+type PageType = keyof ResLocalsForPageLookup;
 
 /**
  * A wrapper around {@link asyncHandler} that ensures that the locals

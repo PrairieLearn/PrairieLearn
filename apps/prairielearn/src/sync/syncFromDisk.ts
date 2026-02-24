@@ -8,6 +8,7 @@ import { chalk } from '../lib/chalk.js';
 import { config } from '../lib/config.js';
 import { features } from '../lib/features/index.js';
 import { type ServerJobLogger } from '../lib/server-jobs.js';
+import { selectCourseInstanceById } from '../models/course-instances.js';
 import {
   getGitDefaultBranch,
   getGitRemoteUrl,
@@ -30,6 +31,7 @@ import { syncAccessControl } from './fromDisk/accessControl.js';
 import { syncStudentLabels } from './fromDisk/studentLabels.js';
 import * as syncTags from './fromDisk/tags.js';
 import * as syncTopics from './fromDisk/topics.js';
+import * as infofile from './infofile.js';
 import {
   checkInvalidDraftQuestionSharing,
   checkInvalidPublicSharingRemovals,
@@ -152,13 +154,18 @@ export async function syncDiskToSqlWithLock(
       syncCourseInstances.sync(courseId, courseData),
     );
     await timed('Synced student labels', async () => {
-      for (const [ciid, courseInstanceData] of Object.entries(courseData.courseInstances)) {
-        const courseInstanceId = courseInstanceIds[ciid];
-        if (courseInstanceId) {
+      await async.eachLimit(
+        Object.entries(courseData.courseInstances),
+        3,
+        async ([ciid, courseInstanceData]) => {
+          // Every course instance id should be in this lookup.
+          const courseInstanceId = courseInstanceIds[ciid];
+          if (infofile.hasErrors(courseInstanceData.courseInstance)) return;
+          const courseInstance = await selectCourseInstanceById(courseInstanceId);
           const studentLabels = courseInstanceData.courseInstance.data?.studentLabels;
-          await syncStudentLabels(courseInstanceId, studentLabels);
-        }
-      }
+          await syncStudentLabels(courseInstance, studentLabels);
+        },
+      );
     });
     await timed('Synced topics', () => syncTopics.sync(courseId, courseData));
     const questionIds = await timed('Synced questions', () =>

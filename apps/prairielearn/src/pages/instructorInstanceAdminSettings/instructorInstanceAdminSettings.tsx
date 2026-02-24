@@ -1,7 +1,6 @@
 import * as path from 'path';
 
 import { Temporal } from '@js-temporal/polyfill';
-import sha256 from 'crypto-js/sha256.js';
 import { Router } from 'express';
 import fs from 'fs-extra';
 import { z } from 'zod';
@@ -18,13 +17,14 @@ import { extractPageContext } from '../../lib/client/page-context.js';
 import { getSelfEnrollmentLinkUrl } from '../../lib/client/url.js';
 import { config } from '../../lib/config.js';
 import { EnumCourseInstanceRoleSchema } from '../../lib/db-types.js';
+import { propertyValueWithDefault } from '../../lib/editorUtil.shared.js';
 import {
   CourseInstanceCopyEditor,
   CourseInstanceDeleteEditor,
   CourseInstanceRenameEditor,
   FileModifyEditor,
   MultiEditor,
-  propertyValueWithDefault,
+  getOriginalHash,
 } from '../../lib/editors.js';
 import { courseRepoContentUrl } from '../../lib/github.js';
 import { getPaths } from '../../lib/instructorFiles.js';
@@ -91,13 +91,7 @@ router.get(
       'infoCourseInstance.json',
     );
     const fullInfoCourseInstancePath = path.join(course.path, infoCourseInstancePath);
-    const infoCourseInfoPathExists = await fs.pathExists(fullInfoCourseInstancePath);
-    let origHash = '';
-    if (infoCourseInfoPathExists) {
-      origHash = sha256(
-        b64EncodeUnicode(await fs.readFile(fullInfoCourseInstancePath, 'utf8')),
-      ).toString();
-    }
+    const origHash = (await getOriginalHash(fullInfoCourseInstancePath)) ?? '';
 
     const instanceGHLink = courseRepoContentUrl(
       course,

@@ -31,7 +31,7 @@
           "points": 5,
           "alternatives": [
             { "id": "template/checkbox/random-prompt" },
-            { "id": "template/multiple-choice/random" }
+            { "id": "template/multiple-choice/multi-correct-pool" }
           ]
         },
         {

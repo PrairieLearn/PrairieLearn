@@ -165,7 +165,10 @@ def get_display_type(element: lxml.html.HtmlElement) -> DisplayType:
         ValueError: If both display and inline attributes are set
     """
     if pl.has_attrib(element, "display") and pl.has_attrib(element, "inline"):
-        raise ValueError('Setting display should be done with the "display" attribute.')
+        raise ValueError(
+            "Cannot set both 'display' and 'inline' attributes. "
+            "Use only 'display'; the 'inline' attribute is deprecated."
+        )
 
     inline_default = False
     inline = pl.get_boolean_attrib(element, "inline", inline_default)
@@ -393,14 +396,23 @@ def prepare(element_html: str, data: pl.QuestionData) -> None:
     if len_correct == 0:
         raise ValueError("At least one option must be true.")
 
-    number_answers = pl.get_integer_attrib(element, "number-answers", len_total)
     min_correct = pl.get_integer_attrib(element, "min-correct", MIN_CORRECT_DEFAULT)
-    max_correct = pl.get_integer_attrib(element, "max-correct", len(correct_answers))
+    max_correct = pl.get_integer_attrib(element, "max-correct", len_correct)
 
     if min_correct < 1:
         raise ValueError(
             f"The attribute min-correct is {min_correct:d} but must be at least 1"
         )
+
+    # Calculate number_answers based on what attributes are explicitly specified.
+    # When max-correct is specified but number-answers is not, we should honor
+    # max-correct by adjusting the total number of answers shown.
+    if pl.has_attrib(element, "number-answers"):
+        number_answers = pl.get_integer_attrib(element, "number-answers")
+    elif pl.has_attrib(element, "max-correct"):
+        number_answers = min(len_total, max_correct + len_incorrect)
+    else:
+        number_answers = len_total
 
     number_answers = max(0, min(len_total, number_answers))
     min_correct = min(

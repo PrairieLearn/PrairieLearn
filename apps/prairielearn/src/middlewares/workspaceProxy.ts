@@ -54,7 +54,7 @@ function isSocketLike(obj: any): obj is Socket {
  * Adapted from the following file in `http-proxy-middleware`:
  * https://github.com/chimurai/http-proxy-middleware/blob/e94087e8d072c0c54a6c3a6b050c590a92921482/src/status-code.ts
  */
-export function getStatusCode(err: any): number {
+function getStatusCode(err: any): number {
   if (err?.status) return err.status;
 
   if (/HPE_INVALID/.test(err?.code)) {

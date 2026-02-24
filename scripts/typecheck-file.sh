@@ -42,6 +42,10 @@ find_module_augmentation_files() {
 # Build list of "tsconfig|file" pairs
 pairs=""
 for file in "$@"; do
+    # Convert absolute paths to relative paths from the current directory
+    if [[ "$file" == /* ]]; then
+        file="${file#$PWD/}"
+    fi
     tsconfig=$(find_tsconfig "$file")
     pairs="$pairs$tsconfig|$file"$'\n'
 done

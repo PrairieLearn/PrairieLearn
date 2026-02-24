@@ -124,12 +124,11 @@ export function EnrollmentCodeForm({
   // Handle paste event
   const handlePaste = (e: React.ClipboardEvent<HTMLInputElement>) => {
     e.preventDefault();
-    const target = e.target as HTMLInputElement;
     const pastedText = e.clipboardData.getData('text') || '';
     const formatted = formatInput(pastedText);
-    const currentField = fields.find((f) => f.field === target.name);
+    const currentField = fields.find((f) => f.field === e.currentTarget.name);
     const cursorPosition = run(() => {
-      const cursorPosition = target.selectionStart ?? 0;
+      const cursorPosition = e.currentTarget.selectionStart ?? 0;
       if (!currentField) {
         return cursorPosition;
       }
@@ -174,9 +173,8 @@ export function EnrollmentCodeForm({
     e: React.KeyboardEvent<HTMLInputElement>,
     field: keyof EnrollmentCodeFormData,
   ) => {
-    const target = e.target as HTMLInputElement;
-    const cursorPosition = target.selectionStart ?? 0;
-    const valueLength = target.value.length;
+    const cursorPosition = e.currentTarget.selectionStart ?? 0;
+    const valueLength = e.currentTarget.value.length;
 
     const fieldIndex = fields.findIndex((f) => f.field === field);
     const prevField = fieldIndex > 0 ? fields[fieldIndex - 1] : null;

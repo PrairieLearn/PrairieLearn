@@ -1,6 +1,5 @@
 import * as path from 'path';
 
-import sha256 from 'crypto-js/sha256.js';
 import { Router } from 'express';
 import fs from 'fs-extra';
 import { z } from 'zod';
@@ -15,7 +14,8 @@ import { b64EncodeUnicode } from '../../lib/base64-util.js';
 import { extractPageContext } from '../../lib/client/page-context.js';
 import { StaffTopicSchema } from '../../lib/client/safe-db-types.js';
 import { TopicSchema } from '../../lib/db-types.js';
-import { FileModifyEditor, propertyValueWithDefault } from '../../lib/editors.js';
+import { propertyValueWithDefault } from '../../lib/editorUtil.shared.js';
+import { FileModifyEditor, getOriginalHash } from '../../lib/editors.js';
 import { getPaths } from '../../lib/instructorFiles.js';
 import { formatJsonWithPrettier } from '../../lib/prettier.js';
 import { typedAsyncHandler } from '../../lib/res-locals.js';
@@ -33,17 +33,7 @@ router.get(
 
     const topics = await selectTopicsByCourseId(pageContext.course.id);
 
-    const courseInfoExists = await fs.pathExists(
-      path.join(pageContext.course.path, 'infoCourse.json'),
-    );
-    let origHash: string | null = null;
-    if (courseInfoExists) {
-      origHash = sha256(
-        b64EncodeUnicode(
-          await fs.readFile(path.join(pageContext.course.path, 'infoCourse.json'), 'utf8'),
-        ),
-      ).toString();
-    }
+    const origHash = await getOriginalHash(path.join(pageContext.course.path, 'infoCourse.json'));
 
     const allowEdit =
       pageContext.authz_data.has_course_permission_edit && !pageContext.course.example_course;
@@ -56,9 +46,6 @@ router.get(
           type: 'instructor',
           page: 'course_admin',
           subPage: 'topics',
-        },
-        options: {
-          fullWidth: true,
         },
         content: (
           <Hydrate>

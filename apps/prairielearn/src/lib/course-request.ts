@@ -1,12 +1,11 @@
-import type { Request, Response } from 'express';
 import { z } from 'zod';
 
 import { logger } from '@prairielearn/logger';
-import { execute, loadSqlEquiv, queryRows } from '@prairielearn/postgres';
+import { execute, executeRow, loadSqlEquiv, queryRow, queryRows } from '@prairielearn/postgres';
 import * as Sentry from '@prairielearn/sentry';
 import { DateFromISOString, IdSchema } from '@prairielearn/zod';
 
-import { JobSequenceSchema } from '../lib/db-types.js';
+import { JobSequenceSchema, type User } from '../lib/db-types.js';
 import { createCourseRepoJob } from '../lib/github.js';
 import { sendCourseRequestMessage } from '../lib/opsbot.js';
 
@@ -32,6 +31,7 @@ const CourseRequestRowSchema = z.object({
   institution: z.string().nullable(),
   jobs: z.array(JobsRowSchema),
   last_name: z.string().nullable(),
+  note: z.string().nullable(),
   referral_source: z.string().nullable(),
   short_name: z.string(),
   title: z.string(),
@@ -53,57 +53,120 @@ export async function selectPendingCourseRequests() {
   return await selectCourseRequests(false);
 }
 
-export async function updateCourseRequest(req: Request, res: Response) {
-  let action = req.body.approve_deny_action;
-  if (action === 'deny') {
-    action = 'denied';
-  } else {
-    throw new Error(`Unknown course request action "${action}"`);
-  }
-
+export async function denyCourseRequest({
+  courseRequestId,
+  authnUser,
+}: {
+  courseRequestId: string;
+  authnUser: User;
+}) {
   await execute(sql.update_course_request, {
-    id: req.body.request_id,
-    user_id: res.locals.authn_user.id,
-    action,
+    id: courseRequestId,
+    user_id: authnUser.id,
+    action: 'denied',
   });
-  res.redirect(req.originalUrl);
 }
 
-export async function createCourseFromRequest(req: Request, res: Response) {
+export async function createCourseFromRequest({
+  courseRequestId,
+  shortName,
+  title,
+  institutionId,
+  displayTimezone,
+  path,
+  repoShortName,
+  githubUser,
+  authnUser,
+}: {
+  courseRequestId: string;
+  shortName: string;
+  title: string;
+  institutionId: string;
+  displayTimezone: string;
+  path: string;
+  repoShortName: string;
+  githubUser: string | null;
+  authnUser: User;
+}): Promise<string> {
   await execute(sql.update_course_request, {
-    id: req.body.request_id,
-    user_id: res.locals.authn_user.id,
+    id: courseRequestId,
+    user_id: authnUser.id,
     action: 'creating',
   });
 
   // Create the course in the background
   const jobSequenceId = await createCourseRepoJob(
     {
-      short_name: req.body.short_name,
-      title: req.body.title,
-      institution_id: req.body.institution_id,
-      display_timezone: req.body.display_timezone,
-      path: req.body.path,
-      repo_short_name: req.body.repository_short_name,
-      github_user: req.body.github_user.length > 0 ? req.body.github_user : null,
-      course_request_id: req.body.request_id,
+      short_name: shortName,
+      title,
+      institution_id: institutionId,
+      display_timezone: displayTimezone,
+      path,
+      repo_short_name: repoShortName,
+      github_user: githubUser,
+      course_request_id: courseRequestId,
     },
-    res.locals.authn_user,
+    authnUser,
   );
 
-  res.redirect(`/pl/administrator/jobSequence/${jobSequenceId}/`);
-
-  // Do this in the background once we've redirected the response.
-
-  try {
-    await sendCourseRequestMessage(
-      '*Creating course*\n' +
-        `Course rubric: ${req.body.repository_short_name}\n` +
-        `Course title: ${req.body.title}\n` +
-        `Approved by: ${res.locals.authn_user.name}`,
-    );
-  } catch (err) {
+  // Send the Slack message in the background without blocking the response.
+  sendCourseRequestMessage(
+    '*Creating course*\n' +
+      `Course rubric: ${repoShortName}\n` +
+      `Course title: ${title}\n` +
+      `Approved by: ${authnUser.name}`,
+  ).catch((err) => {
     logger.error('Error sending course request message to Slack', err);
     Sentry.captureException(err);
-  }
+  });
+
+  return jobSequenceId;
+}
+
+export async function insertCourseRequest({
+  short_name,
+  title,
+  user_id,
+  github_user,
+  first_name,
+  last_name,
+  work_email,
+  institution,
+  referral_source,
+}: {
+  short_name: string;
+  title: string;
+  user_id: string;
+  github_user: string | null;
+  first_name: string | null;
+  last_name: string | null;
+  work_email: string | null;
+  institution: string | null;
+  referral_source: string | null;
+}): Promise<string> {
+  return await queryRow(
+    sql.insert_course_request,
+    {
+      short_name,
+      title,
+      user_id,
+      github_user,
+      first_name,
+      last_name,
+      work_email,
+      institution,
+      referral_source,
+    },
+    IdSchema,
+  );
+}
+
+export async function updateCourseRequestNote({
+  courseRequestId,
+  note,
+}: {
+  courseRequestId: string;
+  note: string;
+}) {
+  await executeRow(sql.update_course_request_note, { id: courseRequestId, note });
 }

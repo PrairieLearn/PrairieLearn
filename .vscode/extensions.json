@@ -5,6 +5,7 @@
     "charliermarsh.ruff",
     "editorconfig.editorconfig",
     "esbenp.prettier-vscode",
+    "davidanson.vscode-markdownlint",
     "dbaeumer.vscode-eslint",
     // If you haven't run `make python-deps`, this is going to give you errors.
     "dorzey.vscode-sqlfluff",
@@ -12,8 +13,10 @@
     "ms-python.python",
     "ms-python.vscode-pylance",
     "redhat.vscode-yaml",
+    "reteps.htmlmustache-lsp",
     "supabase.postgrestools",
     "tamasfe.even-better-toml",
-    "vitest.explorer"
+    "vitest.explorer",
+    "webpro.vscode-knip"
   ]
 }

@@ -1,6 +1,6 @@
 # PrairieLearn workspace images
 
-This directory contains source files for Docker images that are intended to be used as [PrairieLearn workspaces](https://prairielearn.readthedocs.io/en/latest/workspaces/).
+This directory contains source files for Docker images that are intended to be used as [PrairieLearn workspaces](https://docs.prairielearn.com/workspaces/).
 
 ## Maintained images
 

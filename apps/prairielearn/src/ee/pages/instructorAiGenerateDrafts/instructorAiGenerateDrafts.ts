@@ -1,4 +1,3 @@
-import { createOpenAI } from '@ai-sdk/openai';
 import { Router } from 'express';
 import asyncHandler from 'express-async-handler';
 
@@ -11,17 +10,11 @@ import { getCourseFilesClient } from '../../../lib/course-files-api.js';
 import { AiQuestionGenerationPromptSchema } from '../../../lib/db-types.js';
 import { features } from '../../../lib/features/index.js';
 import type { UntypedResLocals } from '../../../lib/res-locals.types.js';
-import {
-  QUESTION_GENERATION_OPENAI_MODEL,
-  addCompletionCostToIntervalUsage,
-  approximatePromptCost,
-  generateQuestion,
-  getIntervalUsage,
-} from '../../lib/aiQuestionGeneration.js';
+import { editQuestionWithAgent, getAgenticModel } from '../../lib/ai-question-generation/agent.js';
+import { getIntervalUsage } from '../../lib/aiQuestionGeneration.js';
 
 import {
   DraftMetadataWithQidSchema,
-  GenerationFailure,
   InstructorAIGenerateDrafts,
   RateLimitExceeded,
 } from './instructorAiGenerateDrafts.html.js';
@@ -98,61 +91,31 @@ router.post(
       throw new error.HttpStatusError(403, 'Not implemented (feature not available)');
     }
 
-    const openai = createOpenAI({
-      apiKey: config.aiQuestionGenerationOpenAiApiKey,
-      organization: config.aiQuestionGenerationOpenAiOrganization,
-    });
-
     if (req.body.__action === 'generate_question') {
       const intervalCost = await getIntervalUsage(res.locals.authn_user);
 
-      const approxPromptCost = approximatePromptCost({
-        model: QUESTION_GENERATION_OPENAI_MODEL,
-        prompt: req.body.prompt,
-      });
-
-      if (intervalCost + approxPromptCost > config.aiQuestionGenerationRateLimitDollars) {
-        const modelPricing = config.costPerMillionTokens[QUESTION_GENERATION_OPENAI_MODEL];
-
-        res.send(
-          RateLimitExceeded({
-            // If the user has more tokens than the threshold of 100 tokens,
-            // they can shorten their message to avoid exceeding the rate limit.
-            canShortenMessage:
-              config.aiQuestionGenerationRateLimitDollars - intervalCost > modelPricing.input * 100,
-          }),
-        );
+      // Note: we only check current interval usage here, not the prompt's estimated cost.
+      // A large prompt can exceed the limit, but estimating cost up front is unreliable.
+      if (intervalCost > config.aiQuestionGenerationRateLimitDollars) {
+        res.send(RateLimitExceeded());
         return;
       }
 
-      const result = await generateQuestion({
-        model: openai(QUESTION_GENERATION_OPENAI_MODEL),
-        embeddingModel: openai.textEmbeddingModel('text-embedding-3-small'),
-        courseId: res.locals.course.id,
-        authnUserId: res.locals.authn_user.id,
-        prompt: req.body.prompt,
-        userId: res.locals.authn_user.id,
-        hasCoursePermissionEdit: res.locals.authz_data.has_course_permission_edit,
-      });
-
-      await addCompletionCostToIntervalUsage({
+      const { model, modelId } = getAgenticModel();
+      const result = await editQuestionWithAgent({
+        model,
+        modelId,
+        course: res.locals.course,
         user: res.locals.authn_user,
-        usage: result.usage,
+        authnUser: res.locals.authn_user,
+        hasCoursePermissionEdit: res.locals.authz_data.has_course_permission_edit,
+        prompt: req.body.prompt,
       });
 
-      if (result.htmlResult) {
-        res.set({
-          'HX-Redirect': `${res.locals.urlPrefix}/ai_generate_editor/${result.questionId}`,
-        });
-        res.send();
-      } else {
-        res.send(
-          GenerationFailure({
-            urlPrefix: res.locals.urlPrefix,
-            jobSequenceId: result.jobSequenceId,
-          }),
-        );
-      }
+      res.set({
+        'HX-Redirect': `${res.locals.urlPrefix}/ai_generate_editor/${result.question.id}`,
+      });
+      res.send();
     } else if (req.body.__action === 'delete_drafts') {
       const questions = await queryRows(
         sql.select_draft_questions_by_course_id,

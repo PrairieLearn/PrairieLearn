@@ -1,9 +1,4 @@
 import type { StaffAssessmentQuestionRow } from '../lib/assessment-question.js';
-import type {
-  StaffAlternativeGroup,
-  StaffAssessmentQuestion,
-} from '../lib/client/safe-db-types.js';
-import type { AlternativeGroup, AssessmentQuestion } from '../lib/db-types.js';
 
 export function AssessmentQuestionHeaders({
   question,
@@ -52,20 +47,22 @@ export function AssessmentQuestionHeaders({
   );
 }
 
+/**
+ * Renders the question number badge for public assessment questions.
+ */
 export function AssessmentQuestionNumber({
-  alternativeGroup,
   alternativeGroupSize,
-  assessmentQuestion,
+  alternativeGroupNumber,
+  numberInAlternativeGroup,
 }: {
-  alternativeGroup: AlternativeGroup | StaffAlternativeGroup;
   alternativeGroupSize: number;
-  assessmentQuestion: AssessmentQuestion | StaffAssessmentQuestion;
+  alternativeGroupNumber: number;
+  numberInAlternativeGroup: number | null;
 }) {
-  return alternativeGroupSize === 1 ? (
-    `${alternativeGroup.number}. `
-  ) : (
-    <span className="ms-3">
-      {alternativeGroup.number}.{assessmentQuestion.number_in_alternative_group}.{' '}
-    </span>
-  );
+  const numberText =
+    alternativeGroupSize === 1
+      ? `${alternativeGroupNumber}.`
+      : `${alternativeGroupNumber}.${numberInAlternativeGroup}.`;
+
+  return <span className="badge color-gray1 me-2">{numberText} </span>;
 }

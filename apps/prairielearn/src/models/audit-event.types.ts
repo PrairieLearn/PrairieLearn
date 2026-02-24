@@ -16,6 +16,7 @@ export const requiredTableFields = {
   assessments: ['assessment_id'],
   institutions: ['institution_id'],
   enrollments: ['course_instance_id', 'subject_user_id', 'action_detail'],
+  student_label_enrollments: ['enrollment_id', 'action_detail'],
 } as const satisfies Partial<Record<TableName, readonly string[]>>;
 
 /**
@@ -63,15 +64,24 @@ export type SupportedTableActionCombination =
         // migrating them to another type in the future.
         | 'explicit_joined'
         | 'invited'
+        | 'invited_by_manual_sync'
         | 'invitation_accepted'
         | 'invitation_rejected'
         | 'blocked'
         | 'unblocked'
+        | 'unblocked_by_manual_sync'
         | 'invitation_deleted'
+        | 'invitation_deleted_by_manual_sync'
         | 'left'
         | 'removed'
+        | 'removed_by_manual_sync'
+        | 'reenrolled_by_manual_sync'
         | 'reenrolled_by_instructor'
         | null;
+    }
+  | {
+      tableName: 'student_label_enrollments';
+      actionDetail?: 'enrollment_added' | 'enrollment_removed' | null;
     };
 export type SupportedActionsForTable<T extends TableName> = NonNullable<
   Exclude<Extract<SupportedTableActionCombination, { tableName: T }>['actionDetail'], null>

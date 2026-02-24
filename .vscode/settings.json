@@ -30,8 +30,16 @@
   "[json]": {
     "files.insertFinalNewline": true
   },
-  "typescript.preferences.autoImportSpecifierExcludeRegexes": ["^react$"],
-  "typescript.tsdk": "node_modules/typescript/lib",
+  "files.associations": {
+    "**/exampleCourse/questions/**/question.html": "htmlmustache",
+    "**/testCourse/questions/**/question.html": "htmlmustache"
+  },
+  "knip.configFilePath": ".knip.ts",
+  "knip.requireConfig": true,
+  "knip.codeLens.enabled": false,
+  "java.project.resourceFilters": ["node_modules", "\\.git", "exampleCourse"],
+  "java.project.referencedLibraries": ["graders/java/libs/*.jar"],
+  "java.project.sourcePaths": ["graders/java"],
   "json.schemaDownload.enable": true,
   "json.schemas": [
     {
@@ -75,10 +83,44 @@
   "python.testing.unittestEnabled": false,
   "python.testing.pytestEnabled": true,
   "sqlfluff.executablePath": "${workspaceFolder}/.venv/bin/sqlfluff",
+  "typescript.tsdk": "node_modules/typescript/lib",
   "vitest.maximumConfigs": 100,
   // This conflicts with the Prettier formatter, so we disable it.
   "yaml.format.enable": false,
-  "java.project.resourceFilters": ["node_modules", "\\.git", "exampleCourse"],
-  "java.project.referencedLibraries": ["graders/java/libs/*.jar"],
-  "java.project.sourcePaths": ["graders/java"]
+  "htmlmustache.printWidth": 100,
+  "htmlmustache.customCodeTags": [
+    {
+      "name": "pl-code",
+      "languageAttribute": "language"
+    },
+    {
+      "name": "pl-file-editor",
+      "languageAttribute": "ace-mode",
+      "languageMap": {
+        "ace/mode/python": "python",
+        "ace/mode/c_cpp": "c",
+        "ace/mode/java": "java",
+        "ace/mode/html": "html",
+        "ace/mode/markdown": "markdown",
+        "ace/mode/r": "r",
+        "ace/mode/dot": "dot",
+        "ace/mode/javascript": "javascript",
+        "ace/mode/typescript": "typescript",
+        "ace/mode/sql": "sql",
+        "ace/mode/json": "json",
+        "ace/mode/xml": "xml",
+        "ace/mode/yaml": "yaml",
+        "ace/mode/css": "css",
+        "ace/mode/sh": "shellscript"
+      }
+    },
+    {
+      "name": "markdown",
+      "languageDefault": "markdown"
+    },
+    {
+      "name": "pl-graph",
+      "languageDefault": "dot"
+    }
+  ]
 }

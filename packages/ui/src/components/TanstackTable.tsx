@@ -2,15 +2,7 @@ import { flexRender } from '@tanstack/react-table';
 import { useVirtualizer } from '@tanstack/react-virtual';
 import type { Cell, Header, Row, Table } from '@tanstack/table-core';
 import clsx from 'clsx';
-import {
-  type ComponentProps,
-  type JSX,
-  type ReactNode,
-  useEffect,
-  useMemo,
-  useRef,
-  useState,
-} from 'react';
+import { type ComponentProps, type ReactNode, useEffect, useMemo, useRef, useState } from 'react';
 import OverlayTrigger from 'react-bootstrap/OverlayTrigger';
 import Tooltip from 'react-bootstrap/Tooltip';
 import { useDebouncedCallback } from 'use-debounce';
@@ -92,10 +84,10 @@ const DefaultEmptyState = (
 interface TanstackTableProps<RowDataModel> {
   table: Table<RowDataModel>;
   title: string;
-  filters?: Record<string, (props: { header: Header<RowDataModel, unknown> }) => JSX.Element>;
+  filters?: Record<string, (props: { header: Header<RowDataModel, unknown> }) => ReactNode>;
   rowHeight?: number;
-  noResultsState?: JSX.Element;
-  emptyState?: JSX.Element;
+  noResultsState?: ReactNode;
+  emptyState?: ReactNode;
   scrollRef?: React.RefObject<HTMLDivElement | null> | null;
 }
 
@@ -521,10 +513,10 @@ export function TanstackTableCard<RowDataModel>({
   title: string;
   singularLabel: string;
   pluralLabel: string;
-  headerButtons?: JSX.Element;
+  headerButtons?: ReactNode;
   columnManager?: {
-    buttons?: JSX.Element;
-    topContent?: JSX.Element;
+    buttons?: ReactNode;
+    topContent?: ReactNode;
   };
   globalFilter: {
     placeholder: string;

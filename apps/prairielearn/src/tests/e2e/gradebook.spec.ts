@@ -67,6 +67,41 @@ async function createTestData(): Promise<string> {
   return assessment.label;
 }
 
+test.describe('Gradebook column visibility', () => {
+  test.beforeAll(async () => {
+    await syncCourse(EXAMPLE_COURSE_PATH);
+    await createTestData();
+  });
+
+  test('unchecking assessment set properly unchecks the set checkbox', async ({ page }) => {
+    await page.goto('/pl/course_instance/1/instructor/instance_admin/gradebook');
+    await expect(page).toHaveTitle(/Gradebook/);
+
+    // Open the View dropdown
+    const viewButton = page.locator('#column-manager');
+    await viewButton.click();
+
+    // Find the Homeworks group checkbox (it should be an input with aria-label containing "Homeworks")
+    const homeworksCheckbox = page.locator('input[aria-label*="Homeworks"]');
+    await expect(homeworksCheckbox).toBeVisible();
+
+    // Verify it's initially checked
+    await expect(homeworksCheckbox).toBeChecked();
+
+    // Uncheck the Homeworks group
+    await homeworksCheckbox.click();
+
+    // Verify the checkbox is now unchecked (this was the bug - it stayed checked before the fix)
+    await expect(homeworksCheckbox).not.toBeChecked();
+
+    // Check it again
+    await homeworksCheckbox.click();
+
+    // Verify the checkbox is now checked again
+    await expect(homeworksCheckbox).toBeChecked();
+  });
+});
+
 test.describe('Gradebook numeric filter', () => {
   // Request baseURL to ensure the worker fixture (and database) is initialized
   test.beforeAll(async () => {

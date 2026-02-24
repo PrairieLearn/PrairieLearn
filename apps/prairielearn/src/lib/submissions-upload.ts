@@ -25,9 +25,9 @@ import {
   type Group,
   RubricItemSchema,
 } from './db-types.js';
+import { createOrAddToGroup, deleteAllGroups } from './groups.js';
 import { type InstanceQuestionScoreInput, updateInstanceQuestionScore } from './manualGrading.js';
 import { createServerJob } from './server-jobs.js';
-import { createOrAddToGroup, deleteAllGroups } from './teams.js';
 
 const sql = sqldb.loadSqlEquiv(import.meta.url);
 
@@ -339,12 +339,12 @@ export async function uploadSubmissions(
           };
         }
 
-        await updateInstanceQuestionScore(
+        await updateInstanceQuestionScore({
           assessment,
           instance_question_id,
           submission_id,
-          null,
-          {
+          check_modified_at: null,
+          score: {
             manual_score_perc: null,
             manual_points: run(() => {
               if (assessmentQuestion.manual_rubric_id) {
@@ -359,7 +359,7 @@ export async function uploadSubmissions(
             manual_rubric_data,
           },
           authn_user_id,
-        );
+        });
 
         successCount++;
       } catch (err) {
