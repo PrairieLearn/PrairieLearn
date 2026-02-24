@@ -235,6 +235,13 @@ export function QuestionPickerModal({
                 )}
               </div>
             </div>
+            {searchQuery.trimStart().startsWith('@') && (
+              <div className="alert alert-warning small m-3 mb-0" role="alert">
+                <i className="bi bi-info-circle me-1" aria-hidden="true" />
+                Shared questions from other courses are not yet searchable here. You can still add
+                them by editing the assessment's <code>infoAssessment.json</code> directly.
+              </div>
+            )}
             <div className="px-3 py-2 bg-light border-bottom text-muted small">
               {sortedQuestions.length} {sortedQuestions.length === 1 ? 'question' : 'questions'}{' '}
               found
