@@ -10,10 +10,8 @@ if [ -n "$CONDUCTOR_WORKSPACE_NAME" ]; then
     DB_SUFFIX="$(echo "$CONDUCTOR_WORKSPACE_NAME" | tr '[:upper:]' '[:lower:]' | sed 's/[^a-z0-9_]/_/g' | cut -c1-50)"
     DB_NAME="prairielearn_${DB_SUFFIX}"
 
-    if ! psql -U postgres -lqt | cut -d \| -f 1 | grep -qw "$DB_NAME"; then
-        echo "Creating database: $DB_NAME"
-        createdb -U postgres "$DB_NAME"
-    else
-        echo "Database $DB_NAME already exists"
-    fi
+    # Always recreate the workspace DB to guarantee a clean starting state.
+    echo "Recreating database: $DB_NAME"
+    dropdb -U postgres --if-exists --force "$DB_NAME"
+    createdb -U postgres "$DB_NAME"
 fi
