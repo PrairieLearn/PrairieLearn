@@ -1,6 +1,6 @@
 import { z } from 'zod';
 
-import type { StaffAssessmentQuestionRow } from '../../lib/assessment-question.js';
+import type { StaffAssessmentQuestionRow } from '../../lib/assessment-question.shared.js';
 import type { EnumAssessmentType } from '../../lib/db-types.js';
 import {
   QuestionAlternativeJsonSchema,

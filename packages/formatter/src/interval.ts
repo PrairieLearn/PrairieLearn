@@ -26,12 +26,18 @@ export function makeInterval({
 }
 
 /**
- * Format an interval (in milliseconds) to a human-readable string like '3 h 40 m'.
+ * Format an interval (in milliseconds) to a human-readable string like '3 h 40 min'.
  *
  * @param interval Time interval in milliseconds.
+ * @param options
+ * @param options.fullPartNames Whether to use full part names (e.g. '3 hours 40 minutes' instead of '3 h 40 m'). Default is false.
+ * @param options.firstOnly Whether to return only the first non-zero part of the interval (e.g. '3 h' instead of '3 h 40 m'). Default is false.
  * @returns Human-readable string representing the interval.
  */
-export function formatInterval(interval: number): string {
+export function formatInterval(
+  interval: number,
+  { fullPartNames = false, firstOnly = false } = {},
+): string {
   const sign = interval < 0 ? '-' : '';
 
   const days = Math.floor(Math.abs(interval) / DAY_IN_MILLISECONDS);
@@ -42,22 +48,22 @@ export function formatInterval(interval: number): string {
   const parts: string[] = [];
 
   if (days > 0) {
-    parts.push(`${sign}${days} d`);
+    parts.push(`${sign}${days} ${fullPartNames ? (days === 1 ? 'day' : 'days') : 'd'}`);
   }
   if (hours > 0) {
-    parts.push(`${sign}${hours} h`);
+    parts.push(`${sign}${hours} ${fullPartNames ? (hours === 1 ? 'hour' : 'hours') : 'h'}`);
   }
   if (mins > 0) {
-    parts.push(`${sign}${mins} min`);
+    parts.push(`${sign}${mins} ${fullPartNames ? (mins === 1 ? 'minute' : 'minutes') : 'min'}`);
   }
   if (secs > 0) {
-    parts.push(`${sign}${secs} s`);
+    parts.push(`${sign}${secs} ${fullPartNames ? (secs === 1 ? 'second' : 'seconds') : 's'}`);
   }
   if (parts.length === 0) {
-    parts.push('0 s');
+    parts.push(`0 ${fullPartNames ? 'seconds' : 's'}`);
   }
 
-  return parts.join(' ');
+  return firstOnly ? parts[0] : parts.join(' ');
 }
 
 /**

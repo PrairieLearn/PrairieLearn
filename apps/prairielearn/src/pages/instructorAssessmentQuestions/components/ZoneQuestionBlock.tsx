@@ -11,7 +11,7 @@ import { run } from '@prairielearn/run';
 
 import { CommentPopover } from '../../../components/CommentPopover.js';
 import { TopicBadge } from '../../../components/TopicBadge.js';
-import type { StaffAssessmentQuestionRow } from '../../../lib/assessment-question.js';
+import type { StaffAssessmentQuestionRow } from '../../../lib/assessment-question.shared.js';
 import type {
   QuestionAlternativeJson,
   ZoneQuestionBlockJson,

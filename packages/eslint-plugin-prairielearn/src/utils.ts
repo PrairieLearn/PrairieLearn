@@ -2,7 +2,7 @@
  * Determines if the given identifier name corresponds to a client from the
  * given package.
  */
-export function isIdentifierClient(identifierName: string, packageName: string): boolean {
+function isIdentifierClient(identifierName: string, packageName: string): boolean {
   // If the identifier ends with "Client", include it in the set.
   if (identifierName.endsWith('Client')) {
     return true;

@@ -21,7 +21,7 @@ export function init() {
   namespace.on('connection', connection);
 }
 
-export function connection(socket: Socket) {
+function connection(socket: Socket) {
   socket.on('joinExternalImageCapture', (msg: StatusMessage, callback) => {
     if (
       !ensureProps({

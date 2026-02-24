@@ -8,7 +8,6 @@ import { z } from 'zod';
 
 import { HttpStatusError } from '@prairielearn/error';
 import { flash } from '@prairielearn/flash';
-import * as sqldb from '@prairielearn/postgres';
 import { Hydrate } from '@prairielearn/react/server';
 import { generatePrefixCsrfToken } from '@prairielearn/signed-token';
 
@@ -17,11 +16,6 @@ import { selectAssessmentQuestions } from '../../lib/assessment-question.js';
 import { compiledScriptTag } from '../../lib/assets.js';
 import { b64EncodeUnicode } from '../../lib/base64-util.js';
 import { extractPageContext } from '../../lib/client/page-context.js';
-import {
-  StaffQuestionSchema,
-  StaffTagSchema,
-  StaffTopicSchema,
-} from '../../lib/client/safe-db-types.js';
 import { config } from '../../lib/config.js';
 import { FileModifyEditor, getOriginalHash } from '../../lib/editors.js';
 import { features } from '../../lib/features/index.js';
@@ -38,7 +32,6 @@ import { serializeZonesForJson } from './utils/dataTransform.js';
 import { buildHierarchicalAssessment } from './utils/questions.js';
 
 const router = Router();
-const sql = sqldb.loadSqlEquiv(import.meta.url);
 
 const SaveQuestionsZonesSchema = z
   .string()
@@ -153,36 +146,6 @@ router.get(
         ),
       }),
     );
-  }),
-);
-
-router.get(
-  '/question.json',
-  asyncHandler(async (req, res) => {
-    if (!res.locals.authz_data.has_course_permission_preview) {
-      throw new HttpStatusError(403, 'Access denied (must be course previewer)');
-    }
-
-    const parsedQuery = z
-      .object({
-        qid: z.string(),
-      })
-      .parse(req.query);
-
-    const assessmentQuestion = await sqldb.queryOptionalRow(
-      sql.select_assessment_question,
-      {
-        qid: parsedQuery.qid,
-        course_id: res.locals.course.id,
-      },
-      z.object({
-        question: StaffQuestionSchema,
-        topic: StaffTopicSchema,
-        open_issue_count: z.number(),
-        tags: z.array(StaffTagSchema),
-      }),
-    );
-    res.json(assessmentQuestion);
   }),
 );
 

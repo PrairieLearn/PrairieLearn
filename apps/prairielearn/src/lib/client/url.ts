@@ -65,6 +65,7 @@ export function getSelfEnrollmentLookupUrl(
   return `/pl/course_instance/lookup?${params.toString()}`;
 }
 
+/** @knipignore */
 export function getCourseInstanceSyncUrl(courseInstanceId: string): string {
   return `/pl/course_instance/${courseInstanceId}/instructor/syncs`;
 }
@@ -95,12 +96,17 @@ export function getAiQuestionGenerationDraftsUrl({ urlPrefix }: { urlPrefix: str
   return `${urlPrefix}/ai_generate_question_drafts`;
 }
 
+type QuestionUrlParts =
+  | { courseInstanceId: string; courseId?: undefined }
+  | { courseInstanceId?: undefined; courseId: string };
+
 export function getQuestionUrl({
-  urlPrefix,
+  courseInstanceId,
+  courseId,
   questionId,
-}: {
-  urlPrefix: string;
-  questionId: string;
-}): string {
+}: { questionId: string } & QuestionUrlParts): string {
+  const urlPrefix = courseInstanceId
+    ? `/pl/course_instance/${courseInstanceId}/instructor`
+    : `/pl/course/${courseId}`;
   return `${urlPrefix}/question/${questionId}`;
 }
