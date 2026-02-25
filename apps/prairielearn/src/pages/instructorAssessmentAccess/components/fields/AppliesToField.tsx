@@ -1,6 +1,8 @@
 import { useMemo } from 'react';
-import { Badge, Button, Card, CloseButton, Form } from 'react-bootstrap';
+import { Button, Card, Form } from 'react-bootstrap';
 import { type Control, type UseFormSetValue, useFieldArray, useWatch } from 'react-hook-form';
+
+import { ChipGroup } from '@prairielearn/ui';
 
 import type {
   AccessControlFormData,
@@ -104,6 +106,26 @@ export function AppliesToField({
   const individuals = useMemo(() => typedAppliesTo?.individuals ?? [], [typedAppliesTo]);
   const groups = useMemo(() => typedAppliesTo?.groups ?? [], [typedAppliesTo]);
 
+  // Map data to ChipGroup items
+  const individualChipItems = useMemo(
+    () => individuals.map((s) => ({ id: s.uid, label: s.name ?? s.uid })),
+    [individuals],
+  );
+  const groupChipItems = useMemo(
+    () => groups.map((g) => ({ id: g.groupId, label: g.name })),
+    [groups],
+  );
+
+  // Remove by id (used by ChipGroup's onRemove which provides the item id)
+  const handleRemoveIndividualByUid = (uid: string) => {
+    const index = individuals.findIndex((s) => s.uid === uid);
+    if (index !== -1) removeIndividual(index);
+  };
+  const handleRemoveGroupById = (groupId: string) => {
+    const index = groups.findIndex((g) => g.groupId === groupId);
+    if (index !== -1) removeGroup(index);
+  };
+
   // Create sets for excluded IDs
   const excludedGroupIds = useMemo(() => new Set(groups.map((g) => g.groupId)), [groups]);
 
@@ -138,52 +160,21 @@ export function AppliesToField({
         {/* Selected items display */}
         <div className="d-flex flex-wrap align-items-center gap-1">
           {currentTargetType === 'individual' ? (
-            <>
-              {individuals.length === 0 ? (
-                <span className="text-muted small">No students selected</span>
-              ) : (
-                individuals.map((student, index) => (
-                  <Badge
-                    key={individualFields[index]?.id ?? student.uid}
-                    bg="secondary"
-                    className="d-inline-flex align-items-center py-1 px-2"
-                  >
-                    <span className="me-1">{student.name ?? student.uid}</span>
-                    <CloseButton
-                      aria-label={`Remove ${student.name ?? student.uid}`}
-                      style={{ fontSize: '0.5rem' }}
-                      variant="white"
-                      onClick={() => removeIndividual(index)}
-                    />
-                  </Badge>
-                ))
-              )}
-            </>
+            <ChipGroup
+              items={individualChipItems}
+              label="Selected students"
+              emptyMessage="No students selected"
+              onRemove={handleRemoveIndividualByUid}
+            />
           ) : (
-            <>
-              {groups.length === 0 ? (
-                <span className="text-muted small">No groups selected</span>
-              ) : (
-                groups.map((group, index) => (
-                  <Badge
-                    key={groupFields[index]?.id ?? group.groupId}
-                    bg="secondary"
-                    className="d-inline-flex align-items-center py-1 px-2"
-                  >
-                    <span className="me-1">{group.name}</span>
-                    <CloseButton
-                      aria-label={`Remove ${group.name}`}
-                      style={{ fontSize: '0.5rem' }}
-                      variant="white"
-                      onClick={() => removeGroup(index)}
-                    />
-                  </Badge>
-                ))
-              )}
-            </>
+            <ChipGroup
+              items={groupChipItems}
+              label="Selected groups"
+              emptyMessage="No groups selected"
+              onRemove={handleRemoveGroupById}
+            />
           )}
 
-          {/* Add button with popover */}
           <AddTargetPopover
             targetType={currentTargetType}
             urlPrefix={urlPrefix}
@@ -194,7 +185,6 @@ export function AppliesToField({
             onSelectStudents={handleAddStudents}
           />
 
-          {/* Remove all button */}
           {currentTargetType === 'individual' && individuals.length > 0 && (
             <Button variant="outline-secondary" size="sm" onClick={handleRemoveAllIndividuals}>
               Remove all

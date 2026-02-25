@@ -1,6 +1,6 @@
 import { TimezoneContext } from '../../components/FriendlyDate.js';
 import { setCookieClient } from '../../lib/client/cookie.js';
-import { type StaffAuditEvent, type StaffStudentLabel } from '../../lib/client/safe-db-types.js';
+import { type StaffAuditEvent } from '../../lib/client/safe-db-types.js';
 import { type StaffGradebookRow } from '../../lib/gradebook.shared.js';
 
 import { OverviewCard, type UserDetail } from './components/OverviewCard.js';
@@ -11,8 +11,6 @@ interface StudentDetailProps {
   auditEvents: StaffAuditEvent[];
   gradebookRows: StaffGradebookRow[];
   student: UserDetail;
-  studentLabels: StaffStudentLabel[];
-  availableStudentLabels: StaffStudentLabel[];
   urlPrefix: string;
   courseInstanceUrl: string;
   csrfToken: string;
@@ -24,8 +22,6 @@ export function InstructorStudentDetail({
   auditEvents,
   gradebookRows,
   student,
-  studentLabels,
-  availableStudentLabels,
   urlPrefix,
   courseInstanceUrl,
   csrfToken,
@@ -57,8 +53,6 @@ export function InstructorStudentDetail({
     <TimezoneContext value={course_instance.display_timezone}>
       <OverviewCard
         student={student}
-        studentLabels={studentLabels}
-        availableStudentLabels={availableStudentLabels}
         courseInstanceUrl={courseInstanceUrl}
         csrfToken={csrfToken}
         hasCourseInstancePermissionEdit={hasCourseInstancePermissionEdit ?? false}

@@ -1,6 +1,5 @@
 import { Router } from 'express';
 import asyncHandler from 'express-async-handler';
-import { z } from 'zod';
 
 import { HttpStatusError } from '@prairielearn/error';
 import { loadSqlEquiv, queryOptionalRow } from '@prairielearn/postgres';
@@ -9,7 +8,7 @@ import { run } from '@prairielearn/run';
 
 import { PageLayout } from '../../components/PageLayout.js';
 import { extractPageContext } from '../../lib/client/page-context.js';
-import { StaffAuditEventSchema, StaffStudentLabelSchema } from '../../lib/client/safe-db-types.js';
+import { StaffAuditEventSchema } from '../../lib/client/safe-db-types.js';
 import { getGradebookRows } from '../../lib/gradebook.js';
 import { getCourseInstanceUrl } from '../../lib/url.js';
 import { selectAuditEventsByEnrollmentId } from '../../models/audit-event.js';
@@ -19,13 +18,6 @@ import {
   selectEnrollmentById,
   setEnrollmentStatus,
 } from '../../models/enrollment.js';
-import {
-  addLabelToEnrollment,
-  removeLabelFromEnrollment,
-  selectStudentLabelById,
-  selectStudentLabelsForEnrollment,
-  selectStudentLabelsInCourseInstance,
-} from '../../models/student-label.js';
 import { selectUserById } from '../../models/user.js';
 
 import { UserDetailSchema } from './components/OverviewCard.js';
@@ -65,19 +57,15 @@ router.get(
       throw new HttpStatusError(404, 'Student not found');
     }
 
-    const [gradebookRows, studentLabels, availableStudentLabels] = await Promise.all([
-      student.user?.id
-        ? getGradebookRows({
-            course_instance_id: courseInstance.id,
-            user_id: student.user.id,
-            authz_data: res.locals.authz_data,
-            req_date: res.locals.req_date,
-            auth: 'instructor',
-          })
-        : [],
-      selectStudentLabelsForEnrollment(student.enrollment),
-      selectStudentLabelsInCourseInstance(courseInstance),
-    ]);
+    const gradebookRows = student.user?.id
+      ? await getGradebookRows({
+          course_instance_id: courseInstance.id,
+          user_id: student.user.id,
+          authz_data: res.locals.authz_data,
+          req_date: res.locals.req_date,
+          auth: 'instructor',
+        })
+      : [];
 
     const pageTitle = run(() => {
       if (student.user) {
@@ -98,8 +86,8 @@ router.get(
         pageTitle,
         navContext: {
           type: 'instructor',
-          page: 'students',
-          subPage: 'detail',
+          page: 'instance_admin',
+          subPage: 'students',
         },
         content: (
           <Hydrate>
@@ -107,15 +95,11 @@ router.get(
               auditEvents={auditEvents}
               gradebookRows={gradebookRows}
               student={student}
-              studentLabels={z.array(StaffStudentLabelSchema).parse(studentLabels)}
-              availableStudentLabels={z
-                .array(StaffStudentLabelSchema)
-                .parse(availableStudentLabels)}
               urlPrefix={urlPrefix}
               courseInstanceUrl={courseInstanceUrl}
               csrfToken={pageContext.__csrf_token}
               hasCourseInstancePermissionEdit={
-                pageContext.authz_data.has_course_instance_permission_edit ?? false
+                pageContext.authz_data.has_course_instance_permission_edit
               }
               hasModernPublishing={courseInstance.modern_publishing}
             />
@@ -217,32 +201,6 @@ router.post(
           pendingUid,
           authzData,
           requiredRole: ['Student Data Editor'],
-        });
-        res.redirect(req.originalUrl);
-        break;
-      }
-      case 'add_to_label': {
-        const { student_label_id } = z.object({ student_label_id: z.string() }).parse(req.body);
-
-        const label = await selectStudentLabelById({ id: student_label_id, courseInstance });
-
-        await addLabelToEnrollment({
-          enrollment,
-          label,
-          authzData,
-        });
-        res.redirect(req.originalUrl);
-        break;
-      }
-      case 'remove_from_label': {
-        const { student_label_id } = z.object({ student_label_id: z.string() }).parse(req.body);
-
-        const label = await selectStudentLabelById({ id: student_label_id, courseInstance });
-
-        await removeLabelFromEnrollment({
-          enrollment,
-          label,
-          authzData,
         });
         res.redirect(req.originalUrl);
         break;

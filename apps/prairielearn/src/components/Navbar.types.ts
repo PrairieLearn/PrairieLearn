@@ -40,7 +40,6 @@ export const NavPageSchema = z
     'enroll',
     'request_course',
     'home',
-    'students',
     'upgrade',
     'user_settings',
     'password',

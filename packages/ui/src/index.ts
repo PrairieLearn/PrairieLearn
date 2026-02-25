@@ -39,3 +39,4 @@ export {
   type ComboBoxProps,
   type TagPickerProps,
 } from './components/ComboBox.js';
+export { ChipGroup, type ChipItem, type ChipGroupProps } from './components/ChipGroup.js';

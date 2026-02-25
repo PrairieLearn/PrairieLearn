@@ -1,9 +1,8 @@
-import { Badge, Button, CloseButton } from 'react-bootstrap';
+import { Button } from 'react-bootstrap';
 
-export interface ChipItem {
-  id: string;
-  label: string;
-}
+import { ChipGroup, type ChipItem } from '@prairielearn/ui';
+
+export type { ChipItem };
 
 interface TargetChipsProps {
   items: ChipItem[];
@@ -26,25 +25,12 @@ export function TargetChips({
 }: TargetChipsProps) {
   return (
     <div className="d-flex flex-wrap align-items-center gap-1">
-      {items.length === 0 ? (
-        <span className="text-muted small">{emptyMessage}</span>
-      ) : (
-        items.map((item) => (
-          <Badge
-            key={item.id}
-            bg="secondary"
-            className="d-inline-flex align-items-center py-1 px-2"
-          >
-            <span className="me-1">{item.label}</span>
-            <CloseButton
-              aria-label={`Remove ${item.label}`}
-              style={{ fontSize: '0.5rem' }}
-              variant="white"
-              onClick={() => onRemove(item.id)}
-            />
-          </Badge>
-        ))
-      )}
+      <ChipGroup
+        items={items}
+        label={addButtonLabel}
+        emptyMessage={emptyMessage}
+        onRemove={onRemove}
+      />
 
       <Button variant="outline-primary" size="sm" onClick={onAddClick}>
         {addButtonLabel}

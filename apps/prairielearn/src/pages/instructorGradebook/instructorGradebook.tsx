@@ -1,6 +1,5 @@
 import { Router } from 'express';
 import asyncHandler from 'express-async-handler';
-import z from 'zod';
 
 import { HttpStatusError } from '@prairielearn/error';
 import { loadSqlEquiv, queryRows } from '@prairielearn/postgres';
@@ -10,7 +9,6 @@ import { InsufficientCoursePermissionsCardPage } from '../../components/Insuffic
 import { PageLayout } from '../../components/PageLayout.js';
 import { setAssessmentInstanceScore } from '../../lib/assessment.js';
 import { extractPageContext } from '../../lib/client/page-context.js';
-import { StaffStudentLabelSchema } from '../../lib/client/safe-db-types.js';
 import {
   checkAssessmentInstanceBelongsToCourseInstance,
   getCourseOwners,
@@ -18,7 +16,6 @@ import {
 import { courseInstanceFilenamePrefix } from '../../lib/sanitize-name.js';
 import { getUrl } from '../../lib/url.js';
 import { createAuthzMiddleware } from '../../middlewares/authzHelper.js';
-import { selectStudentLabelsInCourseInstance } from '../../models/student-label.js';
 
 import { InstructorGradebookTable } from './components/InstructorGradebookTable.js';
 import { RoleDescriptionModal } from './components/RoleDescriptionModal.js';
@@ -80,7 +77,6 @@ router.get(
       { course_id: course.id, course_instance_id: course_instance.id },
       GradebookRowSchema,
     );
-    const studentLabels = await selectStudentLabelsInCourseInstance(course_instance);
 
     res.send(
       PageLayout({
@@ -101,7 +97,6 @@ router.get(
               csrfToken={__csrf_token}
               courseAssessments={courseAssessments}
               gradebookRows={gradebookRows}
-              studentLabels={z.array(StaffStudentLabelSchema).parse(studentLabels)}
               urlPrefix={urlPrefix}
               filenameBase={filenameBase}
               courseInstanceId={course_instance.id}
@@ -118,17 +113,13 @@ router.get(
 
 router.get(
   '/raw_data.json',
-  asyncHandler(async (_req, res) => {
-    const { course, course_instance, authz_data } = extractPageContext(res.locals, {
-      pageType: 'courseInstance',
-      accessType: 'instructor',
-    });
-    if (!authz_data.has_course_instance_permission_view) {
+  asyncHandler(async (req, res) => {
+    if (!res.locals.authz_data.has_course_instance_permission_view) {
       throw new HttpStatusError(403, 'Access denied (must be a student data viewer)');
     }
     const userScores = await queryRows(
       sql.user_scores,
-      { course_id: course.id, course_instance_id: course_instance.id },
+      { course_id: res.locals.course.id, course_instance_id: res.locals.course_instance.id },
       GradebookRowSchema,
     );
     res.json(userScores);
@@ -138,23 +129,19 @@ router.get(
 router.post(
   '/',
   asyncHandler(async (req, res) => {
-    const { course_instance, authz_data, authn_user } = extractPageContext(res.locals, {
-      pageType: 'courseInstance',
-      accessType: 'instructor',
-    });
-    if (!authz_data.has_course_instance_permission_edit) {
+    if (!res.locals.authz_data.has_course_instance_permission_edit) {
       throw new HttpStatusError(403, 'Access denied (must be a student data editor)');
     }
 
     if (req.body.__action === 'edit_total_score_perc') {
       await checkAssessmentInstanceBelongsToCourseInstance(
         req.body.assessment_instance_id,
-        course_instance.id,
+        res.locals.course_instance.id,
       );
       await setAssessmentInstanceScore(
         req.body.assessment_instance_id,
         req.body.score_perc,
-        authn_user.id,
+        res.locals.authn_user.id,
       );
 
       const updatedScores = await queryRows(

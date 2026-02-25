@@ -2,12 +2,10 @@ import { z } from 'zod';
 
 import { EnrollmentStatusIcon } from '../../../components/EnrollmentStatusIcon.js';
 import { FriendlyDate } from '../../../components/FriendlyDate.js';
-import { StudentLabelBadge } from '../../../components/StudentLabelBadge.js';
 import { setCookieClient } from '../../../lib/client/cookie.js';
 import {
   StaffCourseInstanceSchema,
   StaffEnrollmentSchema,
-  type StaffStudentLabel,
   StaffUserSchema,
 } from '../../../lib/client/safe-db-types.js';
 
@@ -22,16 +20,12 @@ export type UserDetail = z.infer<typeof UserDetailSchema>;
 
 export function OverviewCard({
   student,
-  studentLabels,
-  availableStudentLabels,
   courseInstanceUrl,
   csrfToken,
   hasCourseInstancePermissionEdit,
   hasModernPublishing,
 }: {
   student: UserDetail;
-  studentLabels: StaffStudentLabel[];
-  availableStudentLabels: StaffStudentLabel[];
   courseInstanceUrl: string;
   csrfToken: string;
   hasCourseInstancePermissionEdit: boolean;
@@ -165,72 +159,6 @@ export function OverviewCard({
           <div className="d-flex">
             <div className="fw-bold me-1">First joined:</div>
             <FriendlyDate date={enrollment.first_joined_at} />
-          </div>
-        )}
-
-        {/* Student Labels Section */}
-        {(studentLabels.length > 0 || availableStudentLabels.length > 0) && (
-          <div className="mt-3">
-            <div className="fw-bold mb-2">Student labels:</div>
-            <div className="d-flex flex-wrap align-items-center gap-2">
-              {studentLabels.map((label) => (
-                <StudentLabelBadge key={label.id} label={label}>
-                  {hasCourseInstancePermissionEdit && (
-                    <form method="POST" className="d-inline">
-                      <input type="hidden" name="__csrf_token" value={csrfToken} />
-                      <input type="hidden" name="__action" value="remove_from_label" />
-                      <input type="hidden" name="student_label_id" value={label.id} />
-                      <button
-                        type="submit"
-                        className="btn p-0 lh-1"
-                        aria-label={`Remove label "${label.name}"`}
-                      >
-                        <i className="bi bi-x text-danger" aria-hidden="true" />
-                      </button>
-                    </form>
-                  )}
-                </StudentLabelBadge>
-              ))}
-              {studentLabels.length === 0 && (
-                <span className="text-muted fst-italic">No labels</span>
-              )}
-              {hasCourseInstancePermissionEdit && availableStudentLabels.length > 0 && (
-                <div className="dropdown">
-                  <button
-                    className="btn btn-sm btn-outline-secondary dropdown-toggle"
-                    type="button"
-                    data-bs-toggle="dropdown"
-                    aria-expanded="false"
-                  >
-                    <i className="bi bi-plus me-1" aria-hidden="true" />
-                    Add label
-                  </button>
-                  <ul className="dropdown-menu">
-                    {availableStudentLabels
-                      .filter((l) => !studentLabels.some((sl) => sl.id === l.id))
-                      .map((label) => (
-                        <li key={label.id}>
-                          <form method="POST">
-                            <input type="hidden" name="__csrf_token" value={csrfToken} />
-                            <input type="hidden" name="__action" value="add_to_label" />
-                            <input type="hidden" name="student_label_id" value={label.id} />
-                            <button type="submit" className="dropdown-item">
-                              {label.name}
-                            </button>
-                          </form>
-                        </li>
-                      ))}
-                    {availableStudentLabels.filter(
-                      (l) => !studentLabels.some((sl) => sl.id === l.id),
-                    ).length === 0 && (
-                      <li>
-                        <span className="dropdown-item text-muted">Already in all labels</span>
-                      </li>
-                    )}
-                  </ul>
-                </div>
-              )}
-            </div>
           </div>
         )}
       </div>
