@@ -179,6 +179,15 @@
   class MathFormula extends Embed {
     static create(value) {
       const node = super.create(value);
+      node.addEventListener('click', () => {
+        // On click, allow editing the formula by showing the formula popover with the current formula value.
+        const formulaBlot = Quill.find(node);
+        const quill = Quill.find(formulaBlot?.scroll?.domNode?.parentElement);
+        const formulaButton = quill?.getModule('toolbar')?.container?.querySelector('.ql-formula');
+        if (!quill || !formulaButton) return;
+        quill.setSelection(quill.getIndex(formulaBlot), 1, 'silent');
+        formulaButton.click();
+      });
       if (typeof value === 'string') {
         this.updateNode(node, value);
       }
@@ -203,6 +212,28 @@
   MathFormula.tagName = 'SPAN';
 
   Quill.register('formats/formula', MathFormula, true);
+
+  // MathJax SVG formulas can be selected by the user, but by default they don't
+  // have any visual indication that they are selected. This code adds a CSS
+  // class to formulas that are selected, which allows us to style them with a
+  // background color to indicate selection. This is important to allow users to
+  // select and modify existing formulas, since the formula popover relies on
+  // the current selection to populate the input with the existing formula
+  // value.
+  document.addEventListener('selectionchange', () => {
+    const selection = document.getSelection();
+    // Clear stale highlights first, then mark only those in the active selection.
+    document.querySelectorAll('.ql-formula-selected').forEach((el) => {
+      el.classList.remove('ql-formula-selected');
+    });
+    if (selection && !selection.isCollapsed) {
+      document.querySelectorAll('.ql-formula').forEach((formula) => {
+        if (selection.containsNode(formula, false)) {
+          formula.classList.add('ql-formula-selected');
+        }
+      });
+    }
+  });
 })();
 
 function initializeFormulaPopover(quill, uuid) {
@@ -257,8 +288,13 @@ function initializeFormulaPopover(quill, uuid) {
     // Without trailing whitespace, cursor will not appear at end of text if
     // LaTeX is at end. Also done by original handler:
     // https://github.com/slab/quill/blob/ebe16ca24724ac4f52505628ac2c4934f0a98b85/packages/quill/src/themes/base.ts#L315
-    quill.insertText(range.index + 1, ' ', 'user');
-    quill.setSelection(range.index + 2, 0, 'user');
+    // We only add the trailing whitespace when the formula is at the end of a line, to avoid creating unnecessary spaces in the middle of the content.
+    let nextPosition = range.index + 1;
+    if (quill.getText(nextPosition, 1) === '\n') {
+      quill.insertText(nextPosition, ' ', 'user');
+      nextPosition++;
+    }
+    quill.setSelection(nextPosition, 0, 'user');
   });
 
   formulaButton.addEventListener('hide.bs.popover', () => {
@@ -268,8 +304,11 @@ function initializeFormulaPopover(quill, uuid) {
   quill.getModule('toolbar').addHandler('formula', (enabled) => {
     if (!enabled) return;
     const range = quill.getSelection(true);
-    // If there is a selection, set the input value to the selected text
-    input.value = range?.length ? quill.getText(range.index, range.length) : '';
+    // If there is a selection, set the input value to the selected text or existing formula.
+    input.value = quill
+      .getContents(range.index, range.length)
+      .map((op) => (typeof op.insert === 'string' ? op.insert : (op.insert?.formula ?? '')))
+      .join('');
     // Trigger input event to show initial preview or clear previous preview
     input.dispatchEvent(new InputEvent('input'));
     popover.show();
