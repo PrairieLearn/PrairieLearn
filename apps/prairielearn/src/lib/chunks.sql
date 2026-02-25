@@ -130,7 +130,7 @@ SELECT
   a.id AS assessment_id,
   (chunk ->> 'uuid')::uuid
 FROM
-  JSONB_ARRAY_ELEMENTS($chunks) AS chunk (jsonb)
+  JSONB_ARRAY_ELEMENTS($chunks::jsonb) AS chunk
   LEFT JOIN questions AS q ON (
     q.qid = (chunk ->> 'questionName')
     AND q.deleted_at IS NULL
@@ -170,7 +170,7 @@ WITH
       a.id AS assessment_id,
       (cm ->> 'uuid')::uuid AS uuid
     FROM
-      JSONB_ARRAY_ELEMENTS($chunks) AS cm
+      JSONB_ARRAY_ELEMENTS($chunks::jsonb) AS cm
       LEFT JOIN questions AS q ON (
         q.qid = (cm ->> 'questionName')
         AND q.course_id = $course_id
