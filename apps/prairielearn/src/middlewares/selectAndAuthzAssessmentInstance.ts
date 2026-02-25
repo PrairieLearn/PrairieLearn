@@ -34,18 +34,17 @@ const SelectAndAuthzAssessmentInstanceBaseSchema = z.object({
   instance_group_uid_list: z.array(z.string()),
 });
 
-// See `user_team_xor` constraint — exactly one of instance_user/instance_group is null.
-const SelectAndAuthzAssessmentInstanceSchema = SelectAndAuthzAssessmentInstanceBaseSchema.extend({
-  instance_user: UserSchema.nullable(),
-  instance_group: GroupSchema.nullable(),
-}).superRefine((row, ctx) => {
-  if ((row.instance_user === null) === (row.instance_group === null)) {
-    ctx.addIssue({
-      code: z.ZodIssueCode.custom,
-      message: 'Exactly one of instance_user and instance_group must be null',
-    });
-  }
-});
+// See `user_team_xor` constraint
+const SelectAndAuthzAssessmentInstanceSchema = z.union([
+  SelectAndAuthzAssessmentInstanceBaseSchema.extend({
+    instance_user: UserSchema,
+    instance_group: z.null(),
+  }),
+  SelectAndAuthzAssessmentInstanceBaseSchema.extend({
+    instance_user: z.null(),
+    instance_group: GroupSchema,
+  }),
+]);
 
 export type ResLocalsAssessmentInstance = z.infer<typeof SelectAndAuthzAssessmentInstanceSchema> & {
   assessment_instance_label: string;

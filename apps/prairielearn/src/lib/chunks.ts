@@ -136,66 +136,43 @@ export type Chunk =
   | ClientFilesAssessmentChunk
   | QuestionChunk;
 
-const DatabaseChunkBaseSchema = z.object({
-  id: ChunkSchema.shape.id.nullable(),
-  uuid: ChunkSchema.shape.uuid.nullable(),
-  type: z.enum([
-    'elements',
-    'elementExtensions',
-    'clientFilesCourse',
-    'serverFilesCourse',
-    'clientFilesCourseInstance',
-    'clientFilesAssessment',
-    'question',
+const DatabaseChunkSchema = z.intersection(
+  z.object({
+    id: ChunkSchema.shape.id.nullable(),
+    uuid: ChunkSchema.shape.uuid.nullable(),
+  }),
+  z.discriminatedUnion('type', [
+    z.object({
+      type: z.literal('elements'),
+    }),
+    z.object({
+      type: z.literal('elementExtensions'),
+    }),
+    z.object({
+      type: z.literal('clientFilesCourse'),
+    }),
+    z.object({
+      type: z.literal('serverFilesCourse'),
+    }),
+    z.object({
+      type: z.literal('clientFilesCourseInstance'),
+      course_instance_id: IdSchema.nullable(),
+      course_instance_name: z.string(),
+    }),
+    z.object({
+      type: z.literal('clientFilesAssessment'),
+      assessment_id: IdSchema.nullable(),
+      assessment_name: z.string(),
+      course_instance_id: IdSchema.nullable(),
+      course_instance_name: z.string(),
+    }),
+    z.object({
+      type: z.literal('question'),
+      question_id: IdSchema.nullable(),
+      question_name: z.string(),
+    }),
   ]),
-  course_instance_id: IdSchema.nullable(),
-  course_instance_name: z.string().nullable(),
-  assessment_id: IdSchema.nullable(),
-  assessment_name: z.string().nullable(),
-  question_id: IdSchema.nullable(),
-  question_name: z.string().nullable(),
-});
-
-const DatabaseChunkSchema = DatabaseChunkBaseSchema.superRefine((chunk, ctx) => {
-  switch (chunk.type) {
-    case 'clientFilesCourseInstance':
-      if (chunk.course_instance_name === null) {
-        ctx.addIssue({
-          code: z.ZodIssueCode.custom,
-          path: ['course_instance_name'],
-          message: 'course_instance_name is required for clientFilesCourseInstance chunks',
-        });
-      }
-      break;
-    case 'clientFilesAssessment':
-      if (chunk.course_instance_name === null) {
-        ctx.addIssue({
-          code: z.ZodIssueCode.custom,
-          path: ['course_instance_name'],
-          message: 'course_instance_name is required for clientFilesAssessment chunks',
-        });
-      }
-      if (chunk.assessment_name === null) {
-        ctx.addIssue({
-          code: z.ZodIssueCode.custom,
-          path: ['assessment_name'],
-          message: 'assessment_name is required for clientFilesAssessment chunks',
-        });
-      }
-      break;
-    case 'question':
-      if (chunk.question_name === null) {
-        ctx.addIssue({
-          code: z.ZodIssueCode.custom,
-          path: ['question_name'],
-          message: 'question_name is required for question chunks',
-        });
-      }
-      break;
-    default:
-      break;
-  }
-});
+);
 
 /**
  * {@link DatabaseChunk} objects represent chunks that we've fetched from the
@@ -1003,7 +980,6 @@ const ensureChunk = async (courseId: string, chunk: DatabaseChunk) => {
       relativeTargetPath = chunk.type;
       break;
     case 'clientFilesCourseInstance':
-      assert(chunk.course_instance_name != null);
       relativeTargetPath = path.join(
         'courseInstances',
         chunk.course_instance_name,
@@ -1011,8 +987,6 @@ const ensureChunk = async (courseId: string, chunk: DatabaseChunk) => {
       );
       break;
     case 'clientFilesAssessment':
-      assert(chunk.course_instance_name != null);
-      assert(chunk.assessment_name != null);
       relativeTargetPath = path.join(
         'courseInstances',
         chunk.course_instance_name,
@@ -1022,7 +996,6 @@ const ensureChunk = async (courseId: string, chunk: DatabaseChunk) => {
       );
       break;
     case 'question':
-      assert(chunk.question_name != null);
       relativeTargetPath = path.join('questions', chunk.question_name);
       break;
     default:

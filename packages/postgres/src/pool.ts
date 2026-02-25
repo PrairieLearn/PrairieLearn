@@ -12,10 +12,16 @@ export type QueryParams = Record<string, any> | any[];
 
 /**
  * Type constraint for row schemas accepted by query functions.
- * Accepts `z.object(...)`, transforms of objects like `z.object(...).transform(...)`,
- * branded variants of either, and `z.unknown()` as an escape hatch.
+ * Accepts `z.object(...)`, unions/intersections/discriminated unions of objects,
+ * transforms/refinements of any of those, branded variants, and `z.unknown()`
+ * as an escape hatch.
  */
-type AnyObjectLikeSchema = z.AnyZodObject | z.ZodEffects<z.AnyZodObject, any, any>;
+type AnyObjectLikeSchema =
+  | z.AnyZodObject
+  | z.ZodEffects<AnyObjectLikeSchema, any, any>
+  | z.ZodIntersection<AnyObjectLikeSchema, AnyObjectLikeSchema>
+  | z.ZodUnion<Readonly<[AnyObjectLikeSchema, ...AnyObjectLikeSchema[]]>>
+  | z.ZodDiscriminatedUnion<string, z.AnyZodObject[]>;
 export type AnyRowSchema =
   | AnyObjectLikeSchema
   | z.ZodBranded<AnyObjectLikeSchema, any>
