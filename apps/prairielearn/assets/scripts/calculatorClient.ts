@@ -547,7 +547,9 @@ export function initCalculator(storageKey: string, { drawer, fab, fabClose }: Dr
     const modeSwitch = clone.querySelector<HTMLElement>('.history-mode-switch')!;
     const hasTrig = containsTrigFunction(input);
     if (!hasTrig) {
-      modeSwitch.style.display = 'none';
+      modeSwitch.classList.remove('d-flex');
+      modeSwitch.classList.add('d-none');
+      modeSwitch.setAttribute('aria-hidden', 'true');
     }
 
     const normalizeLatex = (latex: string) => ce.parse(latex).toString();
@@ -633,15 +635,18 @@ function initDrawerUI(drawer: HTMLElement, fab: HTMLElement, fabClose: HTMLEleme
   function openDrawer() {
     fab.classList.remove('visible');
     drawer.classList.add('open');
+    drawer.setAttribute('aria-hidden', 'false');
   }
 
   function collapseDrawer() {
     drawer.classList.remove('open');
+    drawer.setAttribute('aria-hidden', 'true');
     fab.classList.add('visible');
   }
 
   function dismissCalculator() {
     drawer.classList.remove('open');
+    drawer.setAttribute('aria-hidden', 'true');
     fab.classList.remove('visible');
   }
 

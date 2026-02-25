@@ -41,6 +41,7 @@ export function CalculatorDrawer({ storageKey }: { storageKey: string }): HtmlSa
     <div
       class="calculator-drawer d-flex flex-column overflow-hidden"
       id="calculatorDrawer"
+      aria-hidden="true"
       data-storage-key="${storageKey}"
     >
       <div class="calculator-resize-handle" id="calculatorResizeHandle"></div>
