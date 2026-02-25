@@ -4,7 +4,7 @@ import { z } from 'zod';
 
 import { AugmentedError } from '@prairielearn/error';
 import {
-  callScalar,
+  callRow,
   execute,
   loadSqlEquiv,
   queryOptionalRow,
@@ -225,13 +225,13 @@ export async function selectAndAuthzVariant(options: {
       course_instance_id == null ||
       !idsEqual(course_instance_id, variant.course_instance_id)
     ) {
-      const authnUserPermissions = await callScalar(
+      const authnUserPermissions = await callRow(
         'authz_course_instance',
         [authn_user.id, variant.course_instance_id, new Date()],
         z.object({ course_instance_role: EnumCourseInstanceRoleSchema }),
       );
 
-      const userPermissions = await callScalar(
+      const userPermissions = await callRow(
         'authz_course_instance',
         [user.id, variant.course_instance_id, new Date()],
         z.object({ course_instance_role: EnumCourseInstanceRoleSchema }),
@@ -269,7 +269,7 @@ export async function lockVariant({ variant_id }: { variant_id: string }) {
     { variant_id },
     z.boolean(),
   );
-  if (locked == null) {
+  if (!locked) {
     throw new Error('Variant or assessment instance could not be locked.');
   }
 }

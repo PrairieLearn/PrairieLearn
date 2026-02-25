@@ -84,16 +84,16 @@ router.post(
         throw new error.HttpStatusError(400, 'Failed to regenerate sharing token.');
       }
     } else if (req.body.__action === 'course_sharing_set_add') {
-      const result = await sqldb.queryOptionalRow(
+      const consuming_course_id = await sqldb.queryOptionalScalar(
         sql.course_sharing_set_add,
         {
           sharing_course_id: res.locals.course.id,
           unsafe_sharing_set_id: req.body.unsafe_sharing_set_id,
           unsafe_course_sharing_token: req.body.unsafe_course_sharing_token,
         },
-        z.object({ course_id: z.string().nullable() }),
+        z.string().nullable(),
       );
-      if (result === null) {
+      if (consuming_course_id === null) {
         throw new error.HttpStatusError(400, 'Failed to add course to sharing set.');
       }
     } else if (req.body.__action === 'choose_sharing_name') {
