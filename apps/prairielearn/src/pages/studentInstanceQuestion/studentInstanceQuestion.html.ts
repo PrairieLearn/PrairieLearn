@@ -41,6 +41,7 @@ export function StudentInstanceQuestion({
   const questionContext =
     resLocals.assessment.type === 'Exam' ? 'student_exam' : 'student_homework';
   // TODO: support more tools
+  // eslint-disable-next-line @typescript-eslint/no-unnecessary-condition
   const hasCalculator = enabledTools.some((t) => t.tool === 'calculator');
 
   return PageLayout({
