@@ -235,13 +235,20 @@ export function QuestionPickerModal({
                 )}
               </div>
             </div>
+            {searchQuery.trimStart().startsWith('@') && (
+              <div className="alert alert-warning small m-3 mb-0" role="alert">
+                <i className="bi bi-info-circle me-1" aria-hidden="true" />
+                Shared questions from other courses are not yet searchable here. You can still add
+                them by editing the assessment's <code>infoAssessment.json</code> directly.
+              </div>
+            )}
             <div className="px-3 py-2 bg-light border-bottom text-muted small">
               {sortedQuestions.length} {sortedQuestions.length === 1 ? 'question' : 'questions'}{' '}
               found
             </div>
             <div ref={scrollParentRef} style={{ height: '400px', overflow: 'auto' }}>
               {sortedQuestions.length === 0 ? (
-                <div className="p-4 text-center text-muted">
+                <div className="d-flex flex-column align-items-center justify-content-center text-muted h-100">
                   <i className="bi bi-search display-6 mb-2" aria-hidden="true" />
                   <p>No questions match your search criteria.</p>
                 </div>
