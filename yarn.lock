@@ -16981,11 +16981,11 @@ __metadata:
   linkType: hard
 
 "minimatch@npm:^8.0.2":
-  version: 8.0.4
-  resolution: "minimatch@npm:8.0.4"
+  version: 8.0.6
+  resolution: "minimatch@npm:8.0.6"
   dependencies:
     brace-expansion: "npm:^2.0.1"
-  checksum: 10c0/a0a394c356dd5b4cb7f821720841a82fa6f07c9c562c5b716909d1b6ec5e56a7e4c4b5029da26dd256b7d2b3a3f38cbf9ddd8680e887b9b5282b09c05501c1ca
+  checksum: 10c0/5dc968066d00133bf80732d2c85fb20717392b25f94cf76f8408e1a77e2ec8ab24ec748823ddd71d53c520e9ddc16a4c878463e6ceb4a5037b2e847e8058c0eb
   languageName: node
   linkType: hard
 
