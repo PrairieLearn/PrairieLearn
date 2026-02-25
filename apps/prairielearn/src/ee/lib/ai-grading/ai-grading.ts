@@ -74,7 +74,7 @@ import {
   type AIGradingLog,
   type AIGradingLogger,
   type CounterClockwiseRotationDegrees,
-  HandwritingOrientationsOutputSchema,
+  createHandwritingOrientationsOutputSchema,
 } from './types.js';
 
 const sql = loadSqlEquiv(import.meta.url);
@@ -640,7 +640,7 @@ export async function aiGrade({
         });
 
         const RubricImageGradingResultSchema = RubricGradingResultSchema.merge(
-          HandwritingOrientationsOutputSchema,
+          createHandwritingOrientationsOutputSchema(Object.keys(submittedImages)),
         );
 
         const {
@@ -695,25 +695,34 @@ export async function aiGrade({
             },
           });
 
+          const orientations = initialResponse.object.handwriting_orientations;
+
+          logger.info(`Orientations: ${JSON.stringify(orientations)}`);
+
           if (
-            initialResponse.object.handwriting_orientations.every(
+            Object.values(orientations).every(
               (orientation) => orientation === 'Upright (0 degrees)',
             )
           ) {
             // All images are upright, no rotation correction needed.
             return { finalGradingResponse: initialResponse, rotationCorrectionApplied: false };
           }
-          // Otherwise, correct all image orientations.
 
-          // Note: The LLM isn't aware of an identifier (e.g. filename) for each submitted image,
-          // so we assume all images might need correction. If an image is already upright, the
-          // correction process will keep the image the same.
+          // Only correct images that were flagged as non-upright.
+          const { rotatedSubmittedAnswer, rotationCorrections, anyImageRotated } =
+            await correctImagesOrientation({
+              submittedAnswer: submission.submitted_answer,
+              submittedImages,
+              orientations,
+              model,
+            });
 
-          const { rotatedSubmittedAnswer, rotationCorrections } = await correctImagesOrientation({
-            submittedAnswer: submission.submitted_answer,
-            submittedImages,
-            model,
-          });
+          logger.info(`rotationCorrections: ${JSON.stringify(rotationCorrections)}`)
+
+          if (!anyImageRotated) {
+            // Rotation correction ran but no images were actually rotated.
+            return { finalGradingResponse: initialResponse, rotationCorrectionApplied: false };
+          }
 
           const rotationCorrected = Object.values(rotationCorrections).some(
             (correction) => correction.degreesRotated !== 0,
@@ -754,9 +763,12 @@ export async function aiGrade({
         })) satisfies AiImageGradingResponses;
 
         if (rotationCorrectionApplied) {
+          const correctionResponses = Object.values(rotationCorrections)
+            .map((r) => r.response)
+            .filter((r) => r != null);
           logResponsesUsage({
             responses: [
-              ...Object.values(rotationCorrections).map((r) => r.response),
+              ...correctionResponses,
               gradingResponseWithRotationIssue,
               finalGradingResponse,
             ],
@@ -764,7 +776,7 @@ export async function aiGrade({
           });
           if (trackRateLimitAndCost) {
             for (const response of [
-              ...Object.values(rotationCorrections).map((r) => r.response),
+              ...correctionResponses,
               gradingResponseWithRotationIssue,
               finalGradingResponse,
             ]) {
@@ -885,7 +897,7 @@ export async function aiGrade({
         });
 
         const ImageGradingResultSchema = GradingResultSchema.merge(
-          HandwritingOrientationsOutputSchema,
+          createHandwritingOrientationsOutputSchema(Object.keys(submittedImages)),
         );
 
         const {
@@ -923,8 +935,12 @@ export async function aiGrade({
             },
           });
 
+          const orientations = initialResponse.object.handwriting_orientations;
+
+          logger.info(`Orientations: ${JSON.stringify(orientations)}`);
+
           if (
-            initialResponse.object.handwriting_orientations.every(
+            Object.values(orientations).every(
               (orientation) => orientation === 'Upright (0 degrees)',
             )
           ) {
@@ -932,11 +948,21 @@ export async function aiGrade({
             return { finalGradingResponse: initialResponse, rotationCorrectionApplied: false };
           }
 
-          const { rotatedSubmittedAnswer, rotationCorrections } = await correctImagesOrientation({
-            submittedAnswer: submission.submitted_answer,
-            submittedImages,
-            model,
-          });
+          // Only correct images that were flagged as non-upright.
+          const { rotatedSubmittedAnswer, rotationCorrections, anyImageRotated } =
+            await correctImagesOrientation({
+              submittedAnswer: submission.submitted_answer,
+              submittedImages,
+              orientations,
+              model,
+            });
+
+          logger.info(`rotationCorrections: ${JSON.stringify(rotationCorrections)}`);
+
+          if (!anyImageRotated) {
+            // Rotation correction ran but no images were actually rotated.
+            return { finalGradingResponse: initialResponse, rotationCorrectionApplied: false };
+          }
 
           // Regenerate the prompt with the rotation-corrected images.
           input = await generatePrompt({
@@ -970,9 +996,12 @@ export async function aiGrade({
         })) satisfies AiImageGradingResponses;
 
         if (rotationCorrectionApplied) {
+          const correctionResponses = Object.values(rotationCorrections)
+            .map((r) => r.response)
+            .filter((r) => r != null);
           logResponsesUsage({
             responses: [
-              ...Object.values(rotationCorrections).map((correction) => correction.response),
+              ...correctionResponses,
               gradingResponseWithRotationIssue,
               finalGradingResponse,
             ],
@@ -980,7 +1009,7 @@ export async function aiGrade({
           });
           if (trackRateLimitAndCost) {
             for (const response of [
-              ...Object.values(rotationCorrections).map((r) => r.response),
+              ...correctionResponses,
               gradingResponseWithRotationIssue,
               finalGradingResponse,
             ]) {
