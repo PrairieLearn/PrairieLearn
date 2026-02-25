@@ -28,18 +28,18 @@ export function JobSequence({
     headContent: compiledScriptTag('jobSequenceClient.ts'),
     content: html`
       <h1 class="visually-hidden">Job Sequence</h1>
-      <div class="row">
-        <div class="col-12">
-          <a
-            class="btn btn-primary mb-4"
-            href="${referrer || // eslint-disable-next-line no-script-url
-            'javascript:history.back();'}"
-          >
-            <i class="fa fa-arrow-left" aria-hidden="true"></i>
-            Back to previous page
-          </a>
-        </div>
-      </div>
+      ${referrer
+        ? html`
+            <div class="row">
+              <div class="col-12">
+                <a class="btn btn-primary mb-4" href="${referrer}">
+                  <i class="fa fa-arrow-left" aria-hidden="true"></i>
+                  Back to previous page
+                </a>
+              </div>
+            </div>
+          `
+        : ''}
       ${JobSequenceResults({ course: resLocals.course, jobSequence: job_sequence })}
     `,
   });
