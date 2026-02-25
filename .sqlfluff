@@ -50,3 +50,6 @@ offset = 'offset'
 embedding = 'embedding'
 enabled_authn_provider_ids = []
 limit = 1000
+
+[sqlfluff:rules:convention.blocked_words]
+blocked_words = JSON, TO_JSON, JSON_AGG, JSON_OBJECT_AGG, JSON_BUILD_OBJECT, JSON_BUILD_ARRAY, JSON_SET, JSON_ARRAY_ELEMENTS
