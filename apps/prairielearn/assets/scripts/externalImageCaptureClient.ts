@@ -141,10 +141,7 @@ onDocumentReady(() => {
       state !== 'connection-failed',
     );
 
-    externalImageCaptureUploadFailedContainer.classList.toggle(
-      'd-none',
-      state !== 'upload-failed',
-    );
+    externalImageCaptureUploadFailedContainer.classList.toggle('d-none', state !== 'upload-failed');
 
     if (isFailed) {
       externalImageCaptureFormContainer.classList.remove('d-none');
