@@ -17,7 +17,7 @@ WHERE
 
 -- BLOCK next_variant_number
 SELECT
-  max(v.number) + 1 AS next_number
+  max(v.number) + 1
 FROM
   variants AS v
 WHERE
