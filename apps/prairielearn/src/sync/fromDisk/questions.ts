@@ -24,8 +24,7 @@ function getParamsForQuestion(qid: string, q: QuestionJson | null | undefined) {
   }
 
   const workspaceOptions = q.workspaceOptions ?? defaultWorkspaceOptions;
-  const externalGradingOptions = q.externalGradingOptions;
-  let external_grading_entrypoint = externalGradingOptions?.entrypoint;
+  let external_grading_entrypoint = q.externalGradingOptions?.entrypoint;
   if (Array.isArray(external_grading_entrypoint)) {
     external_grading_entrypoint = shlex.join(external_grading_entrypoint);
   }
@@ -46,14 +45,14 @@ function getParamsForQuestion(qid: string, q: QuestionJson | null | undefined) {
     single_variant: q.singleVariant,
     show_correct_answer: q.showCorrectAnswer,
     comment: q.comment,
-    external_grading_enabled: externalGradingOptions?.enabled ?? false,
-    external_grading_image: externalGradingOptions?.image,
-    external_grading_files: externalGradingOptions?.serverFilesCourse,
+    external_grading_enabled: q.externalGradingOptions?.enabled ?? false,
+    external_grading_image: q.externalGradingOptions?.image,
+    external_grading_files: q.externalGradingOptions?.serverFilesCourse,
     external_grading_entrypoint,
-    external_grading_timeout: externalGradingOptions?.timeout,
-    external_grading_enable_networking: externalGradingOptions?.enableNetworking,
-    external_grading_environment: externalGradingOptions?.environment ?? {},
-    external_grading_comment: externalGradingOptions?.comment,
+    external_grading_timeout: q.externalGradingOptions?.timeout,
+    external_grading_enable_networking: q.externalGradingOptions?.enableNetworking,
+    external_grading_environment: q.externalGradingOptions?.environment ?? {},
+    external_grading_comment: q.externalGradingOptions?.comment,
     dependencies: q.dependencies,
     workspace_image: workspaceOptions.image,
     workspace_port: workspaceOptions.port,
