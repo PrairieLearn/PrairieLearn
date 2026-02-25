@@ -4,29 +4,62 @@
 // Checks that all non-private packages in `packages/` exist on npm. This is
 // needed because trusted publishing can only update existing packages, not
 // create new ones.
+//
+// Uses the npm registry API directly instead of `npm view` to avoid spawning
+// a separate process per package. This enables HTTP connection reuse and
+// avoids rate limiting that occurs with many sequential `npm view` calls.
 
-import { execSync } from 'node:child_process';
 import { readFile, readdir } from 'node:fs/promises';
 import { join } from 'node:path';
+import { setTimeout as sleep } from 'node:timers/promises';
 
 const PACKAGES_DIR = 'packages';
+const REGISTRY_URL = 'https://registry.npmjs.org';
+const MAX_RETRIES = 3;
 
 /**
- * Check if a package exists on npm using `npm view`.
- * This handles authentication and retries automatically.
+ * Check if a package exists on npm by querying the registry API directly.
+ * Retries on transient errors (429, 5xx) with exponential backoff.
  * @param {string} packageName
- * @returns {boolean}
+ * @returns {Promise<boolean>}
  */
-function packageExistsOnNpm(packageName) {
-  try {
-    execSync(`npm view ${packageName} version`, {
-      stdio: 'pipe',
-      timeout: 30000,
-    });
-    return true;
-  } catch {
-    return false;
+async function packageExistsOnNpm(packageName) {
+  const url = `${REGISTRY_URL}/${packageName}/latest`;
+
+  for (let attempt = 0; attempt <= MAX_RETRIES; attempt++) {
+    if (attempt > 0) {
+      const delay = 1000 * 2 ** (attempt - 1);
+      console.log(
+        `  Retrying ${packageName} in ${delay}ms (attempt ${attempt + 1}/${MAX_RETRIES + 1})...`,
+      );
+      await sleep(delay);
+    }
+
+    const response = await fetch(url);
+
+    if (response.ok) {
+      return true;
+    }
+
+    if (response.status === 404) {
+      return false;
+    }
+
+    // Retry on rate limiting or server errors.
+    if (response.status === 429 || response.status >= 500) {
+      if (attempt === MAX_RETRIES) {
+        throw new Error(
+          `Failed to check ${packageName} after ${MAX_RETRIES + 1} attempts: HTTP ${response.status}`,
+        );
+      }
+      continue;
+    }
+
+    throw new Error(`Unexpected response for ${packageName}: HTTP ${response.status}`);
   }
+
+  // Should be unreachable, but satisfy TypeScript.
+  return false;
 }
 
 /**
@@ -59,7 +92,7 @@ for (const pkg of packages) {
     continue;
   }
 
-  const exists = packageExistsOnNpm(packageJson.name);
+  const exists = await packageExistsOnNpm(packageJson.name);
   console.log(`${packageJson.name}: ${exists ? 'found' : 'MISSING'}`);
   if (!exists) {
     missingPackages.push({ name: packageJson.name, path: packagePath });
