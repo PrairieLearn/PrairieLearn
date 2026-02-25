@@ -4,7 +4,7 @@ import { z } from 'zod';
 
 import { AugmentedError } from '@prairielearn/error';
 import {
-  callRow,
+  callScalar,
   execute,
   loadSqlEquiv,
   queryOptionalRow,
@@ -225,23 +225,23 @@ export async function selectAndAuthzVariant(options: {
       course_instance_id == null ||
       !idsEqual(course_instance_id, variant.course_instance_id)
     ) {
-      const authnUserPermissions = await callRow(
+      const authnUserPermissions = await callScalar(
         'authz_course_instance',
         [authn_user.id, variant.course_instance_id, new Date()],
-        z.object({ authz_course_instance: SprocAuthzCourseInstanceSchema }),
+        SprocAuthzCourseInstanceSchema,
       );
 
-      const userPermissions = await callRow(
+      const userPermissions = await callScalar(
         'authz_course_instance',
         [user.id, variant.course_instance_id, new Date()],
-        z.object({ authz_course_instance: SprocAuthzCourseInstanceSchema }),
+        SprocAuthzCourseInstanceSchema,
       );
 
       authnHasCourseInstancePermissionView = calculateCourseInstanceRolePermissions(
-        authnUserPermissions.authz_course_instance.course_instance_role,
+        authnUserPermissions.course_instance_role,
       ).has_course_instance_permission_view;
       hasCourseInstancePermissionView = calculateCourseInstanceRolePermissions(
-        userPermissions.authz_course_instance.course_instance_role,
+        userPermissions.course_instance_role,
       ).has_course_instance_permission_view;
     }
 
