@@ -135,9 +135,9 @@
     "brotli": 1332
   },
   "scripts/jobSequenceClient.ts": {
-    "raw": 44177,
-    "gzip": 14153,
-    "brotli": 12733
+    "raw": 44455,
+    "gzip": 14251,
+    "brotli": 12813
   },
   "scripts/mathjaxSetup.ts": {
     "raw": 1282,
