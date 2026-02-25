@@ -3,31 +3,39 @@ import { assert, describe, it } from 'vitest';
 import { truncateMiddle } from './string.js';
 
 describe('truncateMiddle', () => {
-  it('does not truncate when string fits', () => {
-    assert.equal(truncateMiddle('hello', 10), 'hello');
+  it('should not truncate a string that fits within maxLength', () => {
+    assert.equal(truncateMiddle('ECE-GY 6913', 20), 'ECE-GY 6913');
   });
 
-  it('does not truncate when string exactly matches maxLength', () => {
-    assert.equal(truncateMiddle('hello', 5), 'hello');
+  it('should not truncate a string that exactly matches maxLength', () => {
+    assert.equal(truncateMiddle('ECE-GY 6913', 11), 'ECE-GY 6913');
   });
 
-  it('truncates with 60/40 split', () => {
+  it('should truncate in the middle preserving start and end', () => {
     assert.equal(truncateMiddle('Introduction to Computing', 20), 'Introductio...puting');
   });
 
-  it('favors the start of the string', () => {
+  it('should favor the start of the string', () => {
+    assert.equal(truncateMiddle('ABCDEFGHIJKLMNOPQRSTUVWXYZ', 15), 'ABCDEFGH...WXYZ');
+  });
+
+  it('should handle realistic course names at limit 16', () => {
     assert.equal(truncateMiddle('CS 101 Proficiency Exam', 16), 'CS 101 P... Exam');
   });
 
-  it('handles very short maxLength', () => {
+  it('should handle realistic term that is one char too long', () => {
+    assert.equal(truncateMiddle('Spring 2023', 10), 'Sprin...23');
+  });
+
+  it('should handle a very short maxLength', () => {
     assert.equal(truncateMiddle('hello world', 4), 'h...');
   });
 
-  it('handles maxLength equal to ellipsis length', () => {
+  it('should handle maxLength of 3', () => {
     assert.equal(truncateMiddle('hello world', 3), '...');
   });
 
-  it('handles empty string', () => {
+  it('should handle an empty string', () => {
     assert.equal(truncateMiddle('', 10), '');
   });
 });
