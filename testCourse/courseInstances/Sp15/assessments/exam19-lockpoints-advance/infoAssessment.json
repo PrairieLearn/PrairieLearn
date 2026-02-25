@@ -11,7 +11,8 @@
       "title": "Sequential prerequisite",
       "questions": [
         { "id": "partialCredit1", "points": 1, "advanceScorePerc": 100 },
-        { "id": "partialCredit2", "points": 1 }
+        { "id": "partialCredit2", "points": 1 },
+        { "id": "partialCredit3", "points": 1, "advanceScorePerc": 100 }
       ]
     },
     {

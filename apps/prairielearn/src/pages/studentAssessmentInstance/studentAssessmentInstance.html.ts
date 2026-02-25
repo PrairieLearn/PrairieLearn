@@ -174,9 +174,17 @@ export function StudentAssessmentInstance({
     .map((row) => row.zone_number)
     .sort((a, b) => a - b)[0];
 
-  const hasSequenceLockedInPriorZones = (zoneNumber: number) =>
+  // Check whether an unmet advanceScorePerc in a prior zone should block
+  // crossing this lockpoint. We check for blocked_sequence in prior zones,
+  // but also the first question of the lockpoint zone itself: when
+  // advanceScorePerc is on the last question of the preceding zone, the
+  // blocked_sequence state propagates into the lockpoint zone's first
+  // question via the question_order window function.
+  const hasUnmetAdvanceScorePercBeforeLockpoint = (zoneNumber: number) =>
     instance_question_rows.some(
-      (row) => row.zone_number < zoneNumber && row.question_access_mode === 'blocked_sequence',
+      (row) =>
+        row.question_access_mode === 'blocked_sequence' &&
+        (row.zone_number < zoneNumber || (row.zone_number === zoneNumber && row.start_new_zone)),
     );
 
   function isLockpointCrossable(row: InstanceQuestionRow) {
@@ -187,7 +195,7 @@ export function StudentAssessmentInstance({
       row.lockpoint &&
       !row.lockpoint_crossed &&
       row.zone_number === firstUncrossedLockpointZoneNumber &&
-      !hasSequenceLockedInPriorZones(row.zone_number)
+      !hasUnmetAdvanceScorePercBeforeLockpoint(row.zone_number)
     );
   }
 

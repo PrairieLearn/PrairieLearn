@@ -382,7 +382,7 @@ export type AssessmentAccessRule = z.infer<typeof AssessmentAccessRuleSchema>;
 
 export const AssessmentInstanceCrossedLockpointSchema = z.object({
   assessment_instance_id: IdSchema,
-  authn_user_id: IdSchema.nullable(),
+  authn_user_id: IdSchema,
   crossed_at: DateFromISOString,
   id: IdSchema,
   zone_id: IdSchema,

@@ -268,6 +268,12 @@ function AssessmentZoneHeader({
             : `(${zone.numberChoose} questions)`}
         {zone.maxPoints != null ? ` (maximum ${zone.maxPoints} points)` : ''}
         {zone.bestQuestions != null ? ` (best ${zone.bestQuestions} questions)` : ''}
+        {zone.lockpoint && (
+          <span className="badge text-bg-warning ms-2">
+            <i className="bi bi-lock-fill me-1" aria-hidden="true" />
+            Lockpoint
+          </span>
+        )}
         <CommentPopover comment={zone.comment} />
       </th>
     </tr>

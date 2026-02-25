@@ -155,12 +155,12 @@ describe('Assessment lockpoints', { timeout: 60_000 }, function () {
     assert.isTrue(questionResponse.ok);
     const csrfToken = helperClient.getCSRFToken(questionResponse.$);
     const variantId = questionResponse.$('.question-form input[name="__variant_id"]').attr('value');
-    if (variantId == null) throw new Error('Missing __variant_id');
+    assert.isString(variantId);
     return await helperClient.fetchCheerio(questionUrl, {
       method: 'POST',
       body: new URLSearchParams({
         __action: 'grade',
-        __variant_id: variantId,
+        __variant_id: variantId!,
         __csrf_token: csrfToken,
         s: String(score),
       }),
@@ -174,11 +174,11 @@ describe('Assessment lockpoints', { timeout: 60_000 }, function () {
     assert.isTrue(assessmentInstanceResponse.ok);
 
     const lockpointModal = assessmentInstanceResponse.$('[id^="crossLockpointModal-"]').first();
-    if (lockpointModal.length === 0) throw new Error('No crossable lockpoint found');
+    assert.lengthOf(lockpointModal, 1);
 
     const csrfToken = lockpointModal.find('input[name="__csrf_token"]').attr('value');
-    if (csrfToken == null) throw new Error('Missing lockpoint CSRF token');
-    context.__csrf_token = csrfToken;
+    assert.isString(csrfToken);
+    context.__csrf_token = csrfToken!;
 
     return assessmentInstanceResponse;
   }
@@ -199,9 +199,9 @@ describe('Assessment lockpoints', { timeout: 60_000 }, function () {
     const lockpointModal = assessmentInstanceResponse.$('[id^="crossLockpointModal-"]').first();
 
     const zoneId = lockpointModal.find('input[name="zone_id"]').attr('value');
-    if (zoneId == null) throw new Error('Missing lockpoint zone_id');
+    assert.isString(zoneId);
 
-    const response = await postCrossLockpoint(zoneId);
+    const response = await postCrossLockpoint(zoneId!);
     assert.isTrue(response.ok);
     return response;
   }
@@ -384,11 +384,13 @@ describe('Assessment lockpoints', { timeout: 60_000 }, function () {
         const created = await createAssessmentInstance(context.lockpointAdvanceAssessmentId);
 
         let questionStates = await selectQuestionStates(created.assessmentInstanceId);
+        // Q0 has advanceScorePerc, so Q1-Q3 are all blocked_sequence.
         assert.deepEqual(
           questionStates.map((row) => row.question_access_mode),
-          ['default', 'blocked_sequence', 'blocked_sequence'],
+          ['default', 'blocked_sequence', 'blocked_sequence', 'blocked_sequence'],
         );
 
+        // Crossing should be rejected because the first advanceScorePerc is unmet.
         const rejectedCrossResponse = await postCrossLockpointForInstance(
           created.assessmentInstanceUrl,
           advanceLockpointZoneIds[0],
@@ -396,15 +398,37 @@ describe('Assessment lockpoints', { timeout: 60_000 }, function () {
         assert.isFalse(rejectedCrossResponse.ok);
         assert.equal(rejectedCrossResponse.status, 403);
 
+        // Satisfy Q0's advanceScorePerc.
         const gradeResponse = await gradeQuestionWithScore(questionStates[0].url, 100);
         assert.isTrue(gradeResponse.ok);
 
         questionStates = await selectQuestionStates(created.assessmentInstanceId);
+        // Q0 and Q1 are now accessible. Q2 has advanceScorePerc (last in zone 1),
+        // so its blocked_sequence propagates into the lockpoint zone (Q3).
         assert.deepEqual(
           questionStates.map((row) => row.question_access_mode),
-          ['default', 'default', 'blocked_lockpoint'],
+          ['default', 'default', 'default', 'blocked_sequence'],
         );
 
+        // Crossing should still be rejected because Q2's advanceScorePerc is unmet.
+        const stillRejectedResponse = await postCrossLockpointForInstance(
+          created.assessmentInstanceUrl,
+          advanceLockpointZoneIds[0],
+        );
+        assert.isFalse(stillRejectedResponse.ok);
+        assert.equal(stillRejectedResponse.status, 403);
+
+        // Satisfy Q2's advanceScorePerc.
+        const gradeResponse2 = await gradeQuestionWithScore(questionStates[2].url, 100);
+        assert.isTrue(gradeResponse2.ok);
+
+        questionStates = await selectQuestionStates(created.assessmentInstanceId);
+        assert.deepEqual(
+          questionStates.map((row) => row.question_access_mode),
+          ['default', 'default', 'default', 'blocked_lockpoint'],
+        );
+
+        // Now crossing should succeed.
         const acceptedCrossResponse = await postCrossLockpointForInstance(
           created.assessmentInstanceUrl,
           advanceLockpointZoneIds[0],
@@ -414,7 +438,7 @@ describe('Assessment lockpoints', { timeout: 60_000 }, function () {
         questionStates = await selectQuestionStates(created.assessmentInstanceId);
         assert.deepEqual(
           questionStates.map((row) => row.question_access_mode),
-          ['read_only_lockpoint', 'read_only_lockpoint', 'default'],
+          ['read_only_lockpoint', 'read_only_lockpoint', 'read_only_lockpoint', 'default'],
         );
       } finally {
         helperClient.setUser(previousUser);

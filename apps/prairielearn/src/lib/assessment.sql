@@ -519,20 +519,27 @@ WHERE
       AND z2.number < z.number
       AND aicl.id IS NULL
   )
-  -- No questions in prior zones can be blocked by advanceScorePerc gating.
+  -- No questions in prior zones have an unmet advanceScorePerc threshold.
+  -- We check the source (locking flag) rather than the downstream effect
+  -- (blocked_sequence), because blocked_sequence can propagate into the
+  -- lockpoint zone itself when advanceScorePerc is on the last question
+  -- of the preceding zone.
   AND NOT EXISTS (
     SELECT
       1
     FROM
-      question_order ($assessment_instance_id) AS qo
-      JOIN instance_questions AS iq ON (iq.id = qo.instance_question_id)
+      instance_questions AS iq
       JOIN assessment_questions AS aq ON (aq.id = iq.assessment_question_id)
       JOIN alternative_groups AS ag ON (ag.id = aq.alternative_group_id)
       JOIN zones AS prior_zone ON (prior_zone.id = ag.zone_id)
     WHERE
-      prior_zone.assessment_id = z.assessment_id
+      iq.assessment_instance_id = $assessment_instance_id
+      AND aq.deleted_at IS NULL
+      AND prior_zone.assessment_id = z.assessment_id
       AND prior_zone.number < z.number
-      AND qo.question_access_mode = 'blocked_sequence'
+      AND aq.effective_advance_score_perc IS NOT NULL
+      AND iq.open = TRUE
+      AND 100 * COALESCE(iq.highest_submission_score, 0) < aq.effective_advance_score_perc
   )
 ON CONFLICT (assessment_instance_id, zone_id) DO NOTHING
 RETURNING
