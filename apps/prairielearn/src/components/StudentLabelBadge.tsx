@@ -28,9 +28,9 @@ export function StudentLabelBadge({
   }
 
   return (
-    <span className={className}>
+    <div className={className}>
       {label.name}
       {children}
-    </span>
+    </div>
   );
 }

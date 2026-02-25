@@ -1,5 +1,3 @@
-import * as path from 'path';
-
 import { Router } from 'express';
 import asyncHandler from 'express-async-handler';
 import z from 'zod';
@@ -7,7 +5,6 @@ import z from 'zod';
 import { HttpStatusError } from '@prairielearn/error';
 import { callRow, loadSqlEquiv, queryRows } from '@prairielearn/postgres';
 import { Hydrate } from '@prairielearn/react/server';
-import { generatePrefixCsrfToken } from '@prairielearn/signed-token';
 import { assertNever } from '@prairielearn/utils';
 import { UniqueUidsFromStringSchema } from '@prairielearn/zod';
 
@@ -19,7 +16,6 @@ import { StaffEnrollmentSchema, StaffStudentLabelSchema } from '../../lib/client
 import { getSelfEnrollmentLinkUrl, getStudentCourseInstanceUrl } from '../../lib/client/url.js';
 import { config } from '../../lib/config.js';
 import { getCourseOwners } from '../../lib/course.js';
-import { computeCourseInstanceJsonHash } from '../../lib/courseInstanceJson.js';
 import type { CourseInstance } from '../../lib/db-types.js';
 import { typedAsyncHandler } from '../../lib/res-locals.js';
 import { type ServerJobLogger, createServerJob } from '../../lib/server-jobs.js';
@@ -34,6 +30,7 @@ import {
 } from '../../models/enrollment.js';
 import { selectStudentLabelsInCourseInstance } from '../../models/student-label.js';
 import { selectOptionalUserByUid } from '../../models/user.js';
+import { getStudentLabelsTrpcProps } from '../instructorStudentsLabels/utils/trpc-setup.js';
 
 import { InstructorStudents } from './instructorStudents.html.js';
 import { StudentRowSchema } from './instructorStudents.shared.js';
@@ -41,7 +38,6 @@ import { StudentRowSchema } from './instructorStudents.shared.js';
 const router = Router();
 const sql = loadSqlEquiv(import.meta.url);
 
-// Supports a client-side table refresh.
 router.get(
   '/data.json',
   asyncHandler(async (req, res) => {
@@ -119,9 +115,6 @@ interface InviteCounts {
   errors: number;
 }
 
-/**
- * Process invitations for a list of UIDs.
- */
 async function processInvitations({
   uids,
   courseInstance,
@@ -301,7 +294,6 @@ router.post(
             allowReenroll: false,
           });
 
-          // Log summary at the end
           job.info('\nSummary:');
           job.info(`  Successfully invited: ${counts.invited}`);
           const summaryLines: [number, string][] = [
@@ -353,7 +345,6 @@ router.post(
           let removed = 0;
           let removeErrors = 0;
 
-          // Process invitations
           if (toInvite.length > 0) {
             job.info('Processing invitations...');
             await processInvitations({
@@ -368,7 +359,6 @@ router.post(
             });
           }
 
-          // Process invitation cancellations
           if (toCancelInvitation.length > 0) {
             job.info('\nCancelling invitations...');
             for (const uid of toCancelInvitation) {
@@ -405,7 +395,6 @@ router.post(
             }
           }
 
-          // Process removals
           if (toRemove.length > 0) {
             job.info('\nProcessing removals...');
             for (const uid of toRemove) {
@@ -441,7 +430,6 @@ router.post(
             }
           }
 
-          // Log summary at the end
           job.info('\nSummary:');
           job.info(`  Invited: ${syncCounts.invited}`);
           job.info(`  Invitations cancelled: ${cancelled}`);
@@ -531,19 +519,11 @@ router.get(
       host,
     ).href;
 
-    const courseInstancePath = path.join(course.path, 'courseInstances', courseInstance.short_name);
-    const courseInstanceJsonPath = path.join(courseInstancePath, 'infoCourseInstance.json');
-    const origHash = await computeCourseInstanceJsonHash(courseInstanceJsonPath);
-
-    const trpcUrl = `/pl/course_instance/${courseInstance.id}/instructor/instance_admin/trpc/student_labels`;
-
-    const trpcCsrfToken = generatePrefixCsrfToken(
-      {
-        url: trpcUrl,
-        authn_user_id: res.locals.authn_user.id,
-      },
-      config.secretKey,
-    );
+    const { trpcUrl, trpcCsrfToken, origHash } = await getStudentLabelsTrpcProps({
+      course,
+      courseInstance,
+      authnUserId: res.locals.authn_user.id,
+    });
 
     res.send(
       PageLayout({

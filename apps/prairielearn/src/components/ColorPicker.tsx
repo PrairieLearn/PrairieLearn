@@ -36,10 +36,10 @@ export function ColorPicker({
         <rect
           width="32"
           height="32"
+          rx="4"
+          ry="4"
           style={{
             fill: `var(--color-${value})`,
-            rx: 'var(--bs-border-radius)',
-            ry: 'var(--bs-border-radius)',
           }}
         />
       </svg>

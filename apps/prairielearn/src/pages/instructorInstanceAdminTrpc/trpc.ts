@@ -1,5 +1,5 @@
 import * as crypto from 'node:crypto';
-import * as path from 'path';
+import * as path from 'node:path';
 
 import { TRPCError, initTRPC } from '@trpc/server';
 import type { CreateExpressContextOptions } from '@trpc/server/adapters/express';
@@ -16,16 +16,15 @@ import {
 } from '../../lib/courseInstanceJson.js';
 import { getPaths } from '../../lib/instructorFiles.js';
 import type { ResLocalsForPage } from '../../lib/res-locals.js';
-import { parseUniqueValuesFromString } from '../../lib/string-util.js';
 import {
   selectEnrollmentsByIdsInCourseInstance,
-  selectUsersAndEnrollmentsByUidsInCourseInstance,
+  selectEnrollmentsByUidsOrPendingUidsInCourseInstance,
 } from '../../models/enrollment.js';
 import {
   addLabelToEnrollments,
   removeLabelFromEnrollments,
   selectEnrollmentsInStudentLabel,
-  selectStudentLabelById,
+  selectOptionalStudentLabelById,
   selectStudentLabelByUuid,
 } from '../../models/student-label.js';
 import { ColorJsonSchema } from '../../schemas/infoCourse.js';
@@ -39,11 +38,19 @@ import { getStudentLabelsWithUserData } from '../instructorStudentsLabels/querie
 const StudentLabelsArraySchema = z.array(StudentLabelJsonSchema);
 
 async function selectStudentLabelByIdOrNotFound(
-  ...args: Parameters<typeof selectStudentLabelById>
+  ...args: Parameters<typeof selectOptionalStudentLabelById>
 ) {
   try {
-    return await selectStudentLabelById(...args);
+    const label = await selectOptionalStudentLabelById(...args);
+    if (label == null) {
+      throw new TRPCError({
+        code: 'NOT_FOUND',
+        message: 'Label not found',
+      });
+    }
+    return label;
   } catch (error) {
+    if (error instanceof TRPCError) throw error;
     if (error instanceof HttpStatusError) {
       throw new TRPCError({
         code: 'FORBIDDEN',
@@ -52,8 +59,8 @@ async function selectStudentLabelByIdOrNotFound(
       });
     }
     throw new TRPCError({
-      code: 'NOT_FOUND',
-      message: 'Label not found',
+      code: 'INTERNAL_SERVER_ERROR',
+      message: 'Failed to look up label',
       cause: error,
     });
   }
@@ -84,13 +91,28 @@ export function createTRPCContext({ res }: CreateExpressContextOptions) {
 
 export type TRPCContext = Awaited<ReturnType<typeof createTRPCContext>>;
 
+class SaveJobError extends Error {
+  readonly jobSequenceId: string;
+
+  constructor(message: string, jobSequenceId: string) {
+    super(message);
+    this.jobSequenceId = jobSequenceId;
+  }
+}
+
 export const t = initTRPC.context<TRPCContext>().create({
   transformer: superjson,
+  errorFormatter({ shape, error }) {
+    return {
+      ...shape,
+      data: {
+        ...shape.data,
+        jobSequenceId: error.cause instanceof SaveJobError ? error.cause.jobSequenceId : undefined,
+      },
+    };
+  },
 });
 
-/**
- * Middleware that checks if the user has course instance view permission.
- */
 const requireCourseInstancePermissionView = t.middleware(async (opts) => {
   if (!opts.ctx.authz_data.has_course_instance_permission_view) {
     throw new TRPCError({
@@ -101,10 +123,6 @@ const requireCourseInstancePermissionView = t.middleware(async (opts) => {
   return opts.next();
 });
 
-/**
- * Middleware that checks if the user has course instance edit permission.
- * Required for all mutations that modify data.
- */
 const requireCourseInstancePermissionEdit = t.middleware(async (opts) => {
   if (!opts.ctx.authz_data.has_course_instance_permission_edit) {
     throw new TRPCError({
@@ -117,9 +135,25 @@ const requireCourseInstancePermissionEdit = t.middleware(async (opts) => {
 
 const labelsQuery = t.procedure
   .use(requireCourseInstancePermissionView)
-  .output(z.array(StudentLabelWithUserDataSchema))
+  .output(
+    z.object({
+      labels: z.array(StudentLabelWithUserDataSchema),
+      origHash: z.string().nullable(),
+    }),
+  )
   .query(async (opts) => {
-    return await getStudentLabelsWithUserData(opts.ctx.course_instance.id);
+    const { course, course_instance } = opts.ctx;
+    const labels = await getStudentLabelsWithUserData(course_instance.id);
+
+    const courseInstancePath = path.join(
+      course.path,
+      'courseInstances',
+      course_instance.short_name!,
+    );
+    const courseInstanceJsonPath = path.join(courseInstancePath, 'infoCourseInstance.json');
+    const origHash = await computeCourseInstanceJsonHash(courseInstanceJsonPath);
+
+    return { labels, origHash };
   });
 
 const checkUidsQuery = t.procedure
@@ -129,14 +163,14 @@ const checkUidsQuery = t.procedure
   .query(async (opts) => {
     const { uids } = opts.input;
 
-    const enrolledUsers = await selectUsersAndEnrollmentsByUidsInCourseInstance({
+    const enrolledRecords = await selectEnrollmentsByUidsOrPendingUidsInCourseInstance({
       uids,
       courseInstance: opts.ctx.course_instance,
       requiredRole: ['Student Data Viewer'],
       authzData: opts.ctx.authz_data,
     });
 
-    const enrolledUidSet = new Set(enrolledUsers.map((e) => e.user.uid));
+    const enrolledUidSet = new Set(enrolledRecords.map((e) => e.uid));
     const invalidUids = uids.filter((uid) => !enrolledUidSet.has(uid));
 
     return { invalidUids };
@@ -148,13 +182,13 @@ const createLabelMutation = t.procedure
     z.object({
       name: z.string().min(1, 'Label name is required').max(255),
       color: ColorJsonSchema,
-      uids: z.string().optional().default(''),
+      uids: z.array(z.string()).max(MAX_LABEL_UIDS).default([]),
       origHash: z.string().nullable(),
     }),
   )
   .mutation(async (opts) => {
     const { course, course_instance, authz_data, locals } = opts.ctx;
-    const { name, color, uids: uidsString, origHash } = opts.input;
+    const { name, color, uids: rawUids, origHash } = opts.input;
 
     const courseInstancePath = path.join(
       course.path,
@@ -190,15 +224,15 @@ const createLabelMutation = t.procedure
       throw new TRPCError({
         code: 'INTERNAL_SERVER_ERROR',
         message: saveResult.error,
-        cause: { jobSequenceId: saveResult.jobSequenceId },
+        cause: new SaveJobError(saveResult.error, saveResult.jobSequenceId),
       });
     }
 
     // If enrollment assignment fails below, the label will exist (from the sync)
-    // but without the requested student assignments. The user will see the error.
-    const uids = parseUniqueValuesFromString(uidsString, MAX_LABEL_UIDS);
+    // but without the requested student assignments.
+    const uids = [...new Set(rawUids)];
     if (uids.length > 0) {
-      const enrolledUsers = await selectUsersAndEnrollmentsByUidsInCourseInstance({
+      const enrolledRecords = await selectEnrollmentsByUidsOrPendingUidsInCourseInstance({
         uids,
         courseInstance: course_instance,
         requiredRole: ['Student Data Editor'],
@@ -210,7 +244,7 @@ const createLabelMutation = t.procedure
         courseInstance: course_instance,
       });
       await addLabelToEnrollments({
-        enrollments: enrolledUsers.map((u) => u.enrollment),
+        enrollments: enrolledRecords.map((r) => r.enrollment),
         label: newLabel,
         authzData: authz_data,
       });
@@ -227,13 +261,13 @@ const editLabelMutation = t.procedure
       labelId: IdSchema,
       name: z.string().min(1, 'Label name is required').max(255),
       color: ColorJsonSchema,
-      uids: z.string().optional().default(''),
+      uids: z.array(z.string()).max(MAX_LABEL_UIDS).default([]),
       origHash: z.string().nullable(),
     }),
   )
   .mutation(async (opts) => {
     const { course, course_instance, authz_data, locals } = opts.ctx;
-    const { labelId, name, color, uids: uidsString, origHash } = opts.input;
+    const { labelId, name, color, uids: rawUids, origHash } = opts.input;
 
     const courseInstancePath = path.join(
       course.path,
@@ -281,7 +315,7 @@ const editLabelMutation = t.procedure
       throw new TRPCError({
         code: 'INTERNAL_SERVER_ERROR',
         message: saveResult.error,
-        cause: { jobSequenceId: saveResult.jobSequenceId },
+        cause: new SaveJobError(saveResult.error, saveResult.jobSequenceId),
       });
     }
 
@@ -293,18 +327,17 @@ const editLabelMutation = t.procedure
     const currentEnrollments = await selectEnrollmentsInStudentLabel(updatedLabel);
     const currentEnrollmentIdSet = new Set(currentEnrollments.map((e) => e.id));
 
-    // Full reconciliation: the provided UIDs become the complete enrollment set.
-    const uids = parseUniqueValuesFromString(uidsString, MAX_LABEL_UIDS);
+    const uids = [...new Set(rawUids)];
     const desiredEnrollments =
       uids.length > 0
         ? (
-            await selectUsersAndEnrollmentsByUidsInCourseInstance({
+            await selectEnrollmentsByUidsOrPendingUidsInCourseInstance({
               uids,
               courseInstance: course_instance,
               requiredRole: ['Student Data Editor'],
               authzData: authz_data,
             })
-          ).map((u) => u.enrollment)
+          ).map((r) => r.enrollment)
         : [];
     const desiredEnrollmentIdSet = new Set(desiredEnrollments.map((e) => e.id));
 
@@ -381,7 +414,7 @@ const deleteLabelMutation = t.procedure
       throw new TRPCError({
         code: 'INTERNAL_SERVER_ERROR',
         message: saveResult.error,
-        cause: { jobSequenceId: saveResult.jobSequenceId },
+        cause: new SaveJobError(saveResult.error, saveResult.jobSequenceId),
       });
     }
 

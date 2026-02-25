@@ -11,6 +11,7 @@ import { PageLayout } from '../../components/PageLayout.js';
 import { setAssessmentInstanceScore } from '../../lib/assessment.js';
 import { extractPageContext } from '../../lib/client/page-context.js';
 import { StaffStudentLabelSchema } from '../../lib/client/safe-db-types.js';
+import { config } from '../../lib/config.js';
 import {
   checkAssessmentInstanceBelongsToCourseInstance,
   getCourseOwners,
@@ -106,7 +107,7 @@ router.get(
               filenameBase={filenameBase}
               courseInstanceId={course_instance.id}
               search={getUrl(req).search}
-              isDevMode={process.env.NODE_ENV === 'development'}
+              isDevMode={config.devMode}
             />
           </Hydrate>
         ),

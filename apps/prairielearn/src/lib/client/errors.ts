@@ -1,14 +1,14 @@
 import { TRPCClientError } from '@trpc/client';
 
 /**
- * Extracts a job sequence ID from a tRPC error's cause, if present.
- * Used in client-side components to display links to job logs.
+ * Extracts a job sequence ID from a tRPC error, if present.
+ * The server attaches it via `errorFormatter` on `error.data.jobSequenceId`.
  */
 export function extractJobSequenceId(error: unknown): string | undefined {
   if (error instanceof TRPCClientError) {
-    const cause = error.data?.cause;
-    if (cause && typeof cause === 'object' && 'jobSequenceId' in cause) {
-      return (cause as { jobSequenceId?: string }).jobSequenceId;
+    const jobSequenceId = (error.data as Record<string, unknown> | undefined)?.jobSequenceId;
+    if (typeof jobSequenceId === 'string') {
+      return jobSequenceId;
     }
   }
   return undefined;

@@ -5,17 +5,17 @@ SELECT
     jsonb_agg(
       jsonb_build_object(
         'uid',
-        u.uid,
+        COALESCE(u.uid, e.pending_uid),
         'name',
         u.name,
         'enrollment_id',
         e.id
       )
       ORDER BY
-        u.uid
+        COALESCE(u.uid, e.pending_uid)
     ) FILTER (
       WHERE
-        u.uid IS NOT NULL
+        e.id IS NOT NULL
     ),
     '[]'::jsonb
   ) AS user_data

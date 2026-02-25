@@ -392,6 +392,29 @@ export async function selectUsersAndEnrollmentsByUidsInCourseInstance({
   );
 }
 
+/**
+ * Gets enrollments for the given UIDs in a course instance, matching against
+ * both user UIDs and pending UIDs (for invited/rejected students).
+ */
+export async function selectEnrollmentsByUidsOrPendingUidsInCourseInstance({
+  uids,
+  courseInstance,
+  requiredRole,
+  authzData,
+}: {
+  uids: string[];
+  courseInstance: CourseInstanceContext;
+  requiredRole: ('System' | 'Student Data Viewer' | 'Student Data Editor')[];
+  authzData: AuthzData;
+}) {
+  assertHasRole(authzData, requiredRole);
+  return await queryRows(
+    sql.select_enrollments_by_uids_or_pending_uids,
+    { uids, course_instance_id: courseInstance.id },
+    z.object({ enrollment: EnrollmentSchema, uid: z.string() }),
+  );
+}
+
 export async function selectEnrollmentsByIdsInCourseInstance({
   ids,
   courseInstance,

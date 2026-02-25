@@ -76,7 +76,7 @@ export function LabelDeleteModal({
             This label has {data?.userData.length} student
             {data?.userData.length !== 1 ? 's' : ''}. They will be removed from this label.
             <details className="mt-2">
-              <summary className="cursor-pointer">Show affected students</summary>
+              <summary style={{ cursor: 'pointer' }}>Show affected students</summary>
               <div className="mt-2 p-2 bg-light border rounded">
                 {data?.userData.map((user) => (
                   <div key={user.uid}>{user.name || user.uid}</div>
@@ -97,7 +97,11 @@ export function LabelDeleteModal({
         >
           {deleteMutation.isPending ? (
             <>
-              <i className="fas fa-spinner fa-spin me-1" />
+              <span
+                className="spinner-border spinner-border-sm me-1"
+                role="status"
+                aria-hidden="true"
+              />
               Deleting...
             </>
           ) : (

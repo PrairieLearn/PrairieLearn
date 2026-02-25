@@ -48,12 +48,12 @@ function StudentLabelsCard({
   const [origHash, setOrigHash] = useState(initialOrigHash);
 
   const fetchLabels = async () => {
-    const newLabels = await trpcClient.labels.query();
-    setLabels(newLabels);
-    return newLabels;
+    const result = await trpcClient.labels.query();
+    setLabels(result.labels);
+    setOrigHash(result.origHash);
+    return result.labels;
   };
 
-  // Derive modal state from URL parameter (edit) or local state (add)
   const modifyModalData = useMemo((): LabelModifyModalData | null => {
     if (!canEdit) return null;
 
@@ -69,7 +69,7 @@ function StudentLabelsCard({
           labelId: label.student_label.id,
           name: label.student_label.name,
           color: label.student_label.color,
-          uids: label.user_data.map((u) => u.uid).join('\n'),
+          uids: label.user_data.map((u) => u.uid),
           origHash,
         };
       }

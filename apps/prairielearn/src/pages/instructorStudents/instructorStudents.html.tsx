@@ -43,6 +43,7 @@ import type { StaffStudentLabel } from '../../lib/client/safe-db-types.js';
 import { QueryClientProviderDebug } from '../../lib/client/tanstackQuery.js';
 import {
   getCourseInstanceJobSequenceUrl,
+  getCourseInstanceStudentLabelsUrl,
   getSelfEnrollmentLinkUrl,
   getSelfEnrollmentSettingsUrl,
   getStudentCourseInstanceUrl,
@@ -91,19 +92,16 @@ function IndeterminateCheckbox({
 }
 
 function SelectAllCheckbox({ table }: { table: Table<StudentRow> }) {
-  const handler = table.getToggleAllRowsSelectedHandler();
   return (
     <IndeterminateCheckbox
-      checked={table.getIsAllRowsSelected()}
-      indeterminate={table.getIsSomeRowsSelected()}
+      checked={table.getIsAllPageRowsSelected()}
+      indeterminate={table.getIsSomePageRowsSelected()}
       aria-label="Select all students"
-      onChange={() => handler(undefined)}
+      onChange={() => table.toggleAllPageRowsSelected()}
     />
   );
 }
 
-// This default must be declared outside the component to ensure referential
-// stability across renders, as `[] !== []` in JavaScript.
 const DEFAULT_SORT: SortingState = [{ id: 'user_uid', desc: false }];
 
 const DEFAULT_PINNING: ColumnPinningState = { left: ['select', 'user_uid'], right: [] };
@@ -175,21 +173,22 @@ function ManageEnrollmentsDropdown({
       </Dropdown.Item>
 
       <Dropdown.Divider />
-      {courseInstance.self_enrollment_use_enrollment_code && (
-        <OverlayTrigger
-          placement="right"
-          tooltip={{
-            body: copiedCode ? 'Copied!' : 'Copy',
-            props: { id: 'students-copy-code-tooltip' },
-          }}
-          show={copiedCode ? true : undefined}
-        >
-          <Dropdown.Item as="button" type="button" onClick={handleCopyCode}>
-            <i className="bi bi-key me-2" />
-            Copy enrollment code
-          </Dropdown.Item>
-        </OverlayTrigger>
-      )}
+      {courseInstance.self_enrollment_enabled &&
+        courseInstance.self_enrollment_use_enrollment_code && (
+          <OverlayTrigger
+            placement="right"
+            tooltip={{
+              body: copiedCode ? 'Copied!' : 'Copy',
+              props: { id: 'students-copy-code-tooltip' },
+            }}
+            show={copiedCode ? true : undefined}
+          >
+            <Dropdown.Item as="button" type="button" onClick={handleCopyCode}>
+              <i className="bi bi-key me-2" />
+              Copy enrollment code
+            </Dropdown.Item>
+          </OverlayTrigger>
+        )}
 
       {courseInstance.self_enrollment_enabled && (
         <OverlayTrigger
@@ -281,14 +280,14 @@ function StudentsCard({
   const { data: studentLabels = initialStudentLabels } = useQuery({
     queryKey: ['student-labels', courseInstance.id],
     queryFn: async () => {
-      const labels = await trpcClient.labels.query();
-      return labels.map((l) => l.student_label);
+      const result = await trpcClient.labels.query();
+      setOrigHash(result.origHash);
+      return result.labels.map((l) => l.student_label);
     },
     staleTime: Infinity,
     initialData: initialStudentLabels,
   });
 
-  // The individual column filters are the source of truth, and this is derived from them.
   const columnFilters: { id: ColumnId; value: any }[] = useMemo(() => {
     return [
       {
@@ -314,7 +313,6 @@ function StudentsCard({
     };
   }, [setEnrollmentStatusFilter, setStudentLabelsFilter]);
 
-  // Sync TanStack column filter changes back to URL
   const handleColumnFiltersChange = useMemo(
     () => (updaterOrValue: Updater<ColumnFiltersState>) => {
       const newFilters =
@@ -533,7 +531,7 @@ function StudentsCard({
         cell: (info) => {
           const labels = info.getValue();
           if (labels.length === 0) return '—';
-          const labelsUrl = `/pl/course_instance/${courseInstance.id}/instructor/instance_admin/students/labels`;
+          const labelsUrl = getCourseInstanceStudentLabelsUrl(courseInstance.id);
           return (
             <div className="d-flex flex-wrap gap-1">
               {labels.map((label) => (
@@ -620,10 +618,9 @@ function StudentsCard({
     },
   });
 
-  const selectedRows = table.getSelectedRowModel().rows;
+  const selectedRows = table.getFilteredSelectedRowModel().rows;
   const selectedEnrollmentIds = selectedRows.map((row) => row.original.enrollment.id);
 
-  // Calculate which labels are assigned to selected students: 'all', 'none', or 'some'
   const labelAssignmentState = useMemo(() => {
     const states = new Map<string, 'all' | 'none' | 'some'>();
 
@@ -888,8 +885,7 @@ function StudentsCard({
         show={showCreateLabelModal}
         initialUids={selectedRows
           .map((row) => row.original.user?.uid ?? row.original.enrollment.pending_uid)
-          .filter((uid): uid is string => uid != null)
-          .join('\n')}
+          .filter((uid): uid is string => uid != null)}
         onHide={() => setShowCreateLabelModal(false)}
         onSuccess={async (newOrigHash) => {
           setOrigHash(newOrigHash);
@@ -901,10 +897,6 @@ function StudentsCard({
     </>
   );
 }
-
-/**
- * This needs to be a wrapper component because we need to use the `NuqsAdapter`.
- */
 
 export const InstructorStudents = ({
   authzData,

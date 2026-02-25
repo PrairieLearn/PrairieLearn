@@ -21,7 +21,7 @@ export type LabelModifyModalData =
       labelId: string;
       name: string;
       color: string;
-      uids: string;
+      uids: string[];
       origHash: string | null;
     };
 
@@ -48,21 +48,25 @@ export function LabelModifyModal({
   onHide: () => void;
   onExited?: () => void;
   onSuccess: (newOrigHash: string | null) => void;
-  initialUids?: string;
+  initialUids?: string[];
 }) {
   const [stage, setStage] = useState<
-    { type: 'editing' } | { type: 'confirming'; unenrolledUids: string[] }
+    { type: 'editing' } | { type: 'confirming'; unknownUids: string[] }
   >({ type: 'editing' });
 
   const defaultValues = run(() => {
     if (data === null) return { name: '', color: 'blue1', uids: '' };
-    if (data.type === 'add') return { name: '', color: 'blue1', uids: initialUids ?? '' };
-    return { name: data.name, color: data.color, uids: data.uids };
+    if (data.type === 'add') {
+      return { name: '', color: 'blue1', uids: initialUids?.join('\n') ?? '' };
+    }
+    return { name: data.name, color: data.color, uids: data.uids.join('\n') };
   });
 
   const {
     register,
     handleSubmit,
+    trigger,
+    setError,
     formState: { errors },
     watch,
     setValue,
@@ -74,47 +78,23 @@ export function LabelModifyModal({
 
   const selectedColor = watch('color');
 
-  const validateUids = async (value: string) => {
-    let uids: string[] = [];
-    try {
-      uids = parseUniqueValuesFromString(value, MAX_LABEL_UIDS);
-    } catch (error) {
-      return error instanceof Error ? error.message : 'Failed to parse UIDs';
-    }
-
-    // UIDs are optional - empty is valid
-    if (uids.length === 0) {
-      return true;
-    }
-
-    try {
-      const result = await trpcClient.checkUids.query({ uids });
-      if (result.invalidUids.length > 0) {
-        setStage({ type: 'confirming', unenrolledUids: result.invalidUids });
-        return 'Some UIDs are not enrolled in this course instance';
-      }
-      return true;
-    } catch {
-      return 'Failed to validate UIDs.';
-    }
-  };
-
   const saveMutation = useMutation({
     mutationFn: async (formData: LabelFormValues) => {
       const color = ColorJsonSchema.parse(formData.color);
+      const uids = parseUniqueValuesFromString(formData.uids.trim(), MAX_LABEL_UIDS);
       if (data?.type === 'edit') {
         return await trpcClient.editLabel.mutate({
           labelId: data.labelId,
           name: formData.name.trim(),
           color,
-          uids: formData.uids.trim(),
+          uids,
           origHash: data.origHash,
         });
       } else {
         return await trpcClient.createLabel.mutate({
           name: formData.name.trim(),
           color,
-          uids: formData.uids.trim(),
+          uids,
           origHash: data?.origHash ?? null,
         });
       }
@@ -123,7 +103,29 @@ export function LabelModifyModal({
   });
 
   const onFormSubmit = async (formData: LabelFormValues) => {
-    void saveMutation.mutate(formData);
+    let uids: string[] = [];
+    try {
+      uids = parseUniqueValuesFromString(formData.uids, MAX_LABEL_UIDS);
+    } catch (err) {
+      setError('uids', {
+        message: err instanceof Error ? err.message : 'Invalid UIDs',
+      });
+      return;
+    }
+
+    if (uids.length > 0) {
+      try {
+        const result = await trpcClient.checkUids.query({ uids });
+        if (result.invalidUids.length > 0) {
+          setStage({ type: 'confirming', unknownUids: result.invalidUids });
+          return;
+        }
+      } catch {
+        // If the check fails, proceed with the save anyway.
+      }
+    }
+
+    saveMutation.mutate(formData);
   };
 
   const jobSequenceId = extractJobSequenceId(saveMutation.error);
@@ -132,18 +134,30 @@ export function LabelModifyModal({
     return (
       <Modal show={show} backdrop="static" onHide={() => setStage({ type: 'editing' })}>
         <Modal.Header closeButton>
-          <Modal.Title>Confirm unenrolled students</Modal.Title>
+          <Modal.Title>Confirm unknown UIDs</Modal.Title>
         </Modal.Header>
         <Modal.Body>
-          <p>The following UIDs are not enrolled in this course instance:</p>
+          {saveMutation.isError && (
+            <Alert variant="danger" dismissible onClose={() => saveMutation.reset()}>
+              {saveMutation.error.message}
+              {jobSequenceId && (
+                <>
+                  {' '}
+                  <a href={getCourseInstanceJobSequenceUrl(courseInstanceId, jobSequenceId)}>
+                    View job logs
+                  </a>
+                </>
+              )}
+            </Alert>
+          )}
+          <p>The following UIDs are not found in this course instance:</p>
           <div className="mb-3 p-3 bg-light border rounded">
-            {stage.unenrolledUids.map((uid) => (
+            {stage.unknownUids.map((uid) => (
               <div key={uid}>{uid}</div>
             ))}
           </div>
           <p>
-            Do you want to continue editing, or save the label anyway? Unenrolled students will be
-            ignored.
+            Do you want to continue editing, or save the label anyway? Unknown UIDs will be ignored.
           </p>
         </Modal.Body>
         <Modal.Footer>
@@ -159,9 +173,13 @@ export function LabelModifyModal({
             type="button"
             className="btn btn-warning"
             disabled={saveMutation.isPending}
-            onClick={() => {
-              const formData = watch();
-              void saveMutation.mutate(formData);
+            onClick={async () => {
+              const isValid = await trigger('name');
+              if (!isValid) {
+                setStage({ type: 'editing' });
+                return;
+              }
+              saveMutation.mutate(watch());
             }}
           >
             {saveMutation.isPending ? 'Saving...' : 'Save anyway'}
@@ -239,9 +257,7 @@ export function LabelModifyModal({
               aria-describedby="label-uids-help"
               aria-errormessage={errors.uids ? 'label-uids-error' : undefined}
               rows={5}
-              {...register('uids', {
-                validate: validateUids,
-              })}
+              {...register('uids')}
             />
             {errors.uids && (
               <div id="label-uids-error" className="invalid-feedback d-block">

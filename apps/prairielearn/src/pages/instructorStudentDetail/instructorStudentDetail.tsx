@@ -65,7 +65,13 @@ router.get(
       throw new HttpStatusError(404, 'Student not found');
     }
 
-    const [gradebookRows, studentLabels, availableStudentLabels] = await Promise.all([
+    const [
+      gradebookRows,
+      studentLabels,
+      availableStudentLabels,
+      rawEnrollmentAuditEvents,
+      rawLabelAuditEvents,
+    ] = await Promise.all([
       student.user?.id
         ? getGradebookRows({
             course_instance_id: courseInstance.id,
@@ -77,16 +83,6 @@ router.get(
         : [],
       selectStudentLabelsForEnrollment(student.enrollment),
       selectStudentLabelsInCourseInstance(courseInstance),
-    ]);
-
-    const pageTitle = run(() => {
-      if (student.user) {
-        return `${student.user.name} (${student.user.uid})`;
-      }
-      return `${student.enrollment.pending_uid}`;
-    });
-
-    const [rawEnrollmentAuditEvents, rawLabelAuditEvents] = await Promise.all([
       selectAuditEventsByEnrollmentId({
         enrollment_id: req.params.enrollment_id,
         table_names: ['enrollments'],
@@ -96,6 +92,14 @@ router.get(
         table_names: ['student_label_enrollments'],
       }),
     ]);
+
+    const pageTitle = run(() => {
+      if (student.user) {
+        return `${student.user.name} (${student.user.uid})`;
+      }
+      return `${student.enrollment.pending_uid}`;
+    });
+
     const enrollmentAuditEvents = rawEnrollmentAuditEvents.map((event) =>
       StaffAuditEventSchema.parse(event),
     );

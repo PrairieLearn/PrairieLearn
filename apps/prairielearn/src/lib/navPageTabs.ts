@@ -3,10 +3,6 @@ import type { NavPage, TabInfo } from '../components/Navbar.types.js';
 
 import { encodeSearchString } from './uri-util.shared.js';
 
-/**
- * Retrieves horizontal navigation tab info for ContextNavigation.
- * @returns Navigation page tabs and their configurations
- */
 export function getNavPageTabs() {
   const navPagesTabs = {
     public_question: [

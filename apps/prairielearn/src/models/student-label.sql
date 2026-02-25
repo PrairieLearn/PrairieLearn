@@ -47,7 +47,9 @@ FROM
   enrollments e
   JOIN student_label_enrollments sle ON e.id = sle.enrollment_id
 WHERE
-  sle.student_label_id = $student_label_id;
+  sle.student_label_id = $student_label_id
+ORDER BY
+  e.id;
 
 -- BLOCK select_student_labels_for_enrollment
 SELECT

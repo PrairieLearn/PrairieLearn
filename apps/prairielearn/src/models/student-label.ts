@@ -1,7 +1,13 @@
 import assert from 'node:assert';
 
 import { HttpStatusError } from '@prairielearn/error';
-import { loadSqlEquiv, queryRow, queryRows, runInTransactionAsync } from '@prairielearn/postgres';
+import {
+  loadSqlEquiv,
+  queryOptionalRow,
+  queryRow,
+  queryRows,
+  runInTransactionAsync,
+} from '@prairielearn/postgres';
 
 import { type AuthzData } from '../lib/authz-data-lib.js';
 import {
@@ -37,10 +43,7 @@ function assertEnrollmentMatchesLabel(enrollment: Enrollment, label: StudentLabe
   }
 }
 
-/**
- * Creates a new student label in the given course instance.
- * Should only be called by sync code and tests.
- */
+/** Should only be called by sync code and tests. */
 export async function createStudentLabel({
   courseInstance,
   uuid,
@@ -59,9 +62,6 @@ export async function createStudentLabel({
   );
 }
 
-/**
- * Selects all student labels for a given course instance.
- */
 export async function selectStudentLabelsInCourseInstance(
   courseInstance: CourseInstance,
 ): Promise<StudentLabel[]> {
@@ -72,9 +72,6 @@ export async function selectStudentLabelsInCourseInstance(
   );
 }
 
-/**
- * Selects a student label by its ID.
- */
 export async function selectStudentLabelById({
   id,
   courseInstance,
@@ -87,9 +84,19 @@ export async function selectStudentLabelById({
   return label;
 }
 
-/**
- * Selects a student label by its UUID within a course instance.
- */
+export async function selectOptionalStudentLabelById({
+  id,
+  courseInstance,
+}: {
+  id: string;
+  courseInstance: CourseInstance;
+}): Promise<StudentLabel | null> {
+  const label = await queryOptionalRow(sql.select_student_label_by_id, { id }, StudentLabelSchema);
+  if (label == null) return null;
+  assertLabelMatchesCourseInstance(label, courseInstance);
+  return label;
+}
+
 export async function selectStudentLabelByUuid({
   uuid,
   courseInstance,
@@ -104,11 +111,7 @@ export async function selectStudentLabelByUuid({
   );
 }
 
-/**
- * Deletes a student label.
- *
- * Should only be called by sync code and tests.
- */
+/** Should only be called by sync code and tests. */
 export async function deleteStudentLabel(label: StudentLabel): Promise<StudentLabel> {
   return await queryRow(sql.delete_student_label, { id: label.id }, StudentLabelSchema);
 }
@@ -134,9 +137,6 @@ export async function addLabelToEnrollment({
   return results[0] ?? null;
 }
 
-/**
- * Removes a label from an enrollment.
- */
 export async function removeLabelFromEnrollment({
   enrollment,
   label,
@@ -155,8 +155,7 @@ export async function removeLabelFromEnrollment({
 }
 
 /**
- * Adds a label to multiple enrollments in a single operation.
- * Returns the enrollments that received the label (those that didn't already have it).
+ * Returns only the enrollments that received the label (those that didn't already have it).
  */
 export async function addLabelToEnrollments({
   enrollments,
@@ -207,8 +206,7 @@ export async function addLabelToEnrollments({
 }
 
 /**
- * Removes a label from multiple enrollments in a single operation.
- * Returns the enrollments that had the label removed.
+ * Returns only the enrollments that had the label removed.
  */
 export async function removeLabelFromEnrollments({
   enrollments,
@@ -258,9 +256,6 @@ export async function removeLabelFromEnrollments({
   });
 }
 
-/**
- * Selects all enrollments that have a given student label.
- */
 export async function selectEnrollmentsInStudentLabel(label: StudentLabel): Promise<Enrollment[]> {
   return await queryRows(
     sql.select_enrollments_in_student_label,
@@ -269,9 +264,6 @@ export async function selectEnrollmentsInStudentLabel(label: StudentLabel): Prom
   );
 }
 
-/**
- * Selects all student labels that an enrollment has.
- */
 export async function selectStudentLabelsForEnrollment(
   enrollment: Enrollment,
 ): Promise<StudentLabel[]> {
@@ -282,11 +274,7 @@ export async function selectStudentLabelsForEnrollment(
   );
 }
 
-/**
- * Updates the name and color of a student label.
- *
- * Should only be called by sync code and tests.
- */
+/** Should only be called by sync code and tests. */
 export async function updateStudentLabel({
   label,
   name,
@@ -303,9 +291,6 @@ export async function updateStudentLabel({
   );
 }
 
-/**
- * Selects all student_label_enrollments rows for a given label.
- */
 export async function selectStudentLabelEnrollmentsForLabel(
   label: StudentLabel,
 ): Promise<StudentLabelEnrollment[]> {

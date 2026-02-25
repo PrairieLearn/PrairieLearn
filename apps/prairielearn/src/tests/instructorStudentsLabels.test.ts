@@ -11,7 +11,7 @@ import fetch from 'node-fetch';
 import superjson from 'superjson';
 import { afterAll, assert, beforeAll, describe, test } from 'vitest';
 
-import { queryRows } from '@prairielearn/postgres';
+import { queryOptionalRow, queryRows } from '@prairielearn/postgres';
 
 import { config } from '../lib/config.js';
 import { computeCourseInstanceJsonHash } from '../lib/courseInstanceJson.js';
@@ -24,6 +24,7 @@ import {
   selectStudentLabelsInCourseInstance,
 } from '../models/student-label.js';
 import type { StudentLabelsRouter } from '../pages/instructorInstanceAdminTrpc/trpc.js';
+import { getStudentLabelsWithUserData } from '../pages/instructorStudentsLabels/queries.js';
 
 import {
   type CourseRepoFixture,
@@ -107,9 +108,10 @@ describe('Instructor student labels page', () => {
     // Get tRPC client
     const trpcClient = await createTrpcClient();
 
-    // Test labels query returns array of labels
-    const labels = await trpcClient.labels.query();
-    assert.isArray(labels);
+    // Test labels query returns object with labels array and origHash
+    const result = await trpcClient.labels.query();
+    assert.isArray(result.labels);
+    assert.isNotNull(result.origHash);
 
     // Test checkUids with valid enrolled UIDs
     const validCheckResult = await trpcClient.checkUids.query({ uids: [studentUids[0]] });
@@ -135,7 +137,7 @@ describe('Instructor student labels page', () => {
     await trpcClient.createLabel.mutate({
       name: 'Test Label A',
       color: 'blue1',
-      uids: '',
+      uids: [],
       origHash,
     });
 
@@ -153,7 +155,7 @@ describe('Instructor student labels page', () => {
     await trpcClient.createLabel.mutate({
       name: 'Test Label B',
       color: 'green2',
-      uids: `${studentUids[0]}\n${studentUids[1]}`,
+      uids: [studentUids[0], studentUids[1]],
       origHash,
     });
 
@@ -173,7 +175,7 @@ describe('Instructor student labels page', () => {
       await trpcClient.createLabel.mutate({
         name: 'Test Label A',
         color: 'red1',
-        uids: '',
+        uids: [],
         origHash,
       });
       assert.fail('Expected error for duplicate name');
@@ -187,7 +189,7 @@ describe('Instructor student labels page', () => {
       await trpcClient.createLabel.mutate({
         name: '',
         color: 'gray1',
-        uids: '',
+        uids: [],
         origHash,
       });
       assert.fail('Expected error for empty name');
@@ -210,7 +212,7 @@ describe('Instructor student labels page', () => {
       labelId: labelA.id,
       name: 'Test Label A Renamed',
       color: 'blue1',
-      uids: '',
+      uids: [],
       origHash,
     });
 
@@ -227,7 +229,7 @@ describe('Instructor student labels page', () => {
       labelId: labelA.id,
       name: 'Test Label A Renamed',
       color: 'purple3',
-      uids: '',
+      uids: [],
       origHash,
     });
 
@@ -244,7 +246,7 @@ describe('Instructor student labels page', () => {
       labelId: labelA.id,
       name: 'Test Label A Renamed',
       color: 'purple3',
-      uids: studentUids[2],
+      uids: [studentUids[2]],
       origHash,
     });
 
@@ -260,7 +262,7 @@ describe('Instructor student labels page', () => {
       labelId: labelA.id,
       name: 'Test Label A Renamed',
       color: 'purple3',
-      uids: '',
+      uids: [],
       origHash,
     });
 
@@ -279,7 +281,7 @@ describe('Instructor student labels page', () => {
         labelId: labelA.id,
         name: 'Test Label B',
         color: 'purple3',
-        uids: '',
+        uids: [],
         origHash,
       });
       assert.fail('Expected error for duplicate name');
@@ -321,5 +323,56 @@ describe('Instructor student labels page', () => {
     } catch (err) {
       assert.instanceOf(err, TRPCClientError);
     }
+  });
+
+  test.sequential('should support invited (pending) students in labels', async () => {
+    const trpcClient = await createTrpcClient();
+    const invitedUid = 'invited-student@example.com';
+
+    // Create an invited enrollment (pending_uid, no user_id)
+    await queryOptionalRow(
+      `INSERT INTO enrollments (course_instance_id, status, pending_uid)
+       VALUES ($1, 'invited', $2)
+       ON CONFLICT DO NOTHING
+       RETURNING *`,
+      ['1', invitedUid],
+      EnrollmentSchema,
+    );
+
+    // checkUids should recognize the invited student's UID as valid
+    const checkResult = await trpcClient.checkUids.query({ uids: [invitedUid] });
+    assert.deepEqual(checkResult.invalidUids, []);
+
+    // checkUids should still flag truly unknown UIDs
+    const unknownUid = 'totally-unknown@example.com';
+    const mixedResult = await trpcClient.checkUids.query({
+      uids: [invitedUid, studentUids[0], unknownUid],
+    });
+    assert.deepEqual(mixedResult.invalidUids, [unknownUid]);
+
+    // Create a label with the invited student
+    const origHash = await getOrigHash(courseRepo.courseLiveDir, courseInstanceShortName);
+    await trpcClient.createLabel.mutate({
+      name: 'Invited Label',
+      color: 'red1',
+      uids: [invitedUid, studentUids[0]],
+      origHash,
+    });
+
+    // Verify the label has both enrollments
+    const courseInstance = await selectCourseInstanceById('1');
+    const labels = await selectStudentLabelsInCourseInstance(courseInstance);
+    const invitedLabel = labels.find((l) => l.name === 'Invited Label');
+    assert.isDefined(invitedLabel);
+    const enrollmentsInLabel = await selectEnrollmentsInStudentLabel(invitedLabel);
+    assert.equal(enrollmentsInLabel.length, 2);
+
+    // Verify the display query includes the invited student
+    const labelsWithUserData = await getStudentLabelsWithUserData('1');
+    const labelData = labelsWithUserData.find((l) => l.student_label.name === 'Invited Label');
+    assert.isDefined(labelData);
+    const uidsInLabel = labelData.user_data.map((u) => u.uid);
+    assert.include(uidsInLabel, invitedUid);
+    assert.include(uidsInLabel, studentUids[0]);
   });
 });

@@ -428,6 +428,7 @@ export const RawStaffStudentLabelSchema = RawStudentLabelSchema.pick({
   course_instance_id: true,
   id: true,
   name: true,
+  uuid: true,
 });
 export const StaffStudentLabelSchema = RawStaffStudentLabelSchema.brand<'StaffStudentLabel'>();
 export type StaffStudentLabel = z.infer<typeof StaffStudentLabelSchema>;

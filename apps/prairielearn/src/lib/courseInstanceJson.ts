@@ -9,19 +9,12 @@ import { FileModifyEditor, getOriginalHash } from './editors.js';
 import type { InstructorFilePaths } from './instructorFiles.js';
 import { formatJsonWithPrettier } from './prettier.js';
 
-/**
- * Computes a hash of the infoCourseInstance.json file for optimistic concurrency.
- * Returns null if the file does not exist.
- */
 export async function computeCourseInstanceJsonHash(
   courseInstanceJsonPath: string,
 ): Promise<string | null> {
   return await getOriginalHash(courseInstanceJsonPath);
 }
 
-/**
- * Reads and parses the infoCourseInstance.json file from a course instance directory.
- */
 export async function readCourseInstanceJson(
   courseInstancePath: string,
 ): Promise<Record<string, unknown>> {
@@ -29,10 +22,6 @@ export async function readCourseInstanceJson(
   return (await fs.readJson(jsonPath)) as Record<string, unknown>;
 }
 
-/**
- * Saves a modified infoCourseInstance.json file using the FileModifyEditor,
- * which handles git operations and sync.
- */
 export async function saveCourseInstanceJson({
   courseInstanceJson,
   courseInstanceJsonPath,

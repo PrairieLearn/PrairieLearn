@@ -1,5 +1,7 @@
 import { z } from 'zod';
 
+import { run } from '@prairielearn/run';
+
 import { EnrollmentStatusIcon } from '../../../components/EnrollmentStatusIcon.js';
 import { FriendlyDate } from '../../../components/FriendlyDate.js';
 import { StudentLabelBadge } from '../../../components/StudentLabelBadge.js';
@@ -10,6 +12,7 @@ import {
   type StaffStudentLabel,
   StaffUserSchema,
 } from '../../../lib/client/safe-db-types.js';
+import { getCourseInstanceStudentLabelsUrl } from '../../../lib/client/url.js';
 
 export const UserDetailSchema = z.object({
   user: StaffUserSchema.nullable(),
@@ -155,7 +158,7 @@ export function OverviewCard({
           <>
             <div className="d-flex">
               <div className="me-1">
-                <i className="bi bi-warning" aria-hidden="true" />
+                <i className="bi bi-exclamation-triangle" aria-hidden="true" />
                 User information not available if the student has not accepted the invitation.
               </div>
             </div>
@@ -168,7 +171,6 @@ export function OverviewCard({
           </div>
         )}
 
-        {/* Student Labels Section */}
         <div className="mt-3">
           <div className="fw-bold mb-2">Student labels</div>
           <div className="d-flex flex-wrap align-items-center gap-2">
@@ -194,7 +196,7 @@ export function OverviewCard({
               <span className="text-muted fst-italic">
                 No labels configured.{' '}
                 {hasCourseInstancePermissionEdit && (
-                  <a href={`${courseInstanceUrl}/instructor/instance_admin/students/labels`}>
+                  <a href={getCourseInstanceStudentLabelsUrl(student.course_instance.id)}>
                     Manage labels
                   </a>
                 )}
@@ -203,53 +205,57 @@ export function OverviewCard({
             {studentLabels.length === 0 && availableStudentLabels.length > 0 && (
               <span className="text-muted fst-italic">No labels</span>
             )}
-            {hasCourseInstancePermissionEdit && availableStudentLabels.length > 0 && (
-              <div className="dropdown">
-                <button
-                  className="btn btn-sm btn-outline-secondary dropdown-toggle"
-                  type="button"
-                  data-bs-toggle="dropdown"
-                  aria-expanded="false"
-                >
-                  <i className="bi bi-plus me-1" aria-hidden="true" />
-                  Add label
-                </button>
-                <ul className="dropdown-menu">
-                  {availableStudentLabels
-                    .filter((l) => !studentLabels.some((sl) => sl.id === l.id))
-                    .map((label) => (
-                      <li key={label.id}>
-                        <form method="POST">
-                          <input type="hidden" name="__csrf_token" value={csrfToken} />
-                          <input type="hidden" name="__action" value="add_label" />
-                          <input type="hidden" name="student_label_id" value={label.id} />
-                          <button type="submit" className="dropdown-item">
-                            {label.name}
-                          </button>
-                        </form>
-                      </li>
-                    ))}
-                  {availableStudentLabels.filter((l) => !studentLabels.some((sl) => sl.id === l.id))
-                    .length === 0 && (
-                    <li>
-                      <span className="dropdown-item text-muted">All labels assigned</span>
-                    </li>
-                  )}
-                  <li>
-                    <hr className="dropdown-divider" />
-                  </li>
-                  <li>
-                    <a
-                      className="dropdown-item"
-                      href={`${courseInstanceUrl}/instructor/instance_admin/students/labels`}
+            {hasCourseInstancePermissionEdit &&
+              availableStudentLabels.length > 0 &&
+              run(() => {
+                const unassignedLabels = availableStudentLabels.filter(
+                  (l) => !studentLabels.some((sl) => sl.id === l.id),
+                );
+                return (
+                  <div className="dropdown">
+                    <button
+                      className="btn btn-sm btn-outline-secondary dropdown-toggle"
+                      type="button"
+                      data-bs-toggle="dropdown"
+                      aria-expanded="false"
                     >
-                      <i className="bi bi-gear me-1" aria-hidden="true" />
-                      Manage labels
-                    </a>
-                  </li>
-                </ul>
-              </div>
-            )}
+                      <i className="bi bi-plus me-1" aria-hidden="true" />
+                      Add label
+                    </button>
+                    <ul className="dropdown-menu">
+                      {unassignedLabels.map((label) => (
+                        <li key={label.id}>
+                          <form method="POST">
+                            <input type="hidden" name="__csrf_token" value={csrfToken} />
+                            <input type="hidden" name="__action" value="add_label" />
+                            <input type="hidden" name="student_label_id" value={label.id} />
+                            <button type="submit" className="dropdown-item">
+                              {label.name}
+                            </button>
+                          </form>
+                        </li>
+                      ))}
+                      {unassignedLabels.length === 0 && (
+                        <li>
+                          <span className="dropdown-item text-muted">All labels assigned</span>
+                        </li>
+                      )}
+                      <li>
+                        <hr className="dropdown-divider" />
+                      </li>
+                      <li>
+                        <a
+                          className="dropdown-item"
+                          href={getCourseInstanceStudentLabelsUrl(student.course_instance.id)}
+                        >
+                          <i className="bi bi-gear me-1" aria-hidden="true" />
+                          Manage labels
+                        </a>
+                      </li>
+                    </ul>
+                  </div>
+                );
+              })}
           </div>
         </div>
       </div>

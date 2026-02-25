@@ -32,7 +32,7 @@ export function ExpandableUserList({
 
   return (
     <div className="d-flex flex-wrap align-items-center gap-2">
-      {usersToShow.map((user, index) => (
+      {usersToShow.map((user) => (
         <span key={user.uid}>
           <a
             href={getStudentEnrollmentUrl(courseInstanceId, user.enrollment_id)}
@@ -40,7 +40,6 @@ export function ExpandableUserList({
           >
             {user.name || (nameFallback === 'uid' ? user.uid : '—')}
           </a>
-          {index < usersToShow.length - 1 && ', '}
         </span>
       ))}
       {hasMore && (
@@ -51,11 +50,11 @@ export function ExpandableUserList({
         >
           {expanded ? (
             <>
-              <i className="fas fa-chevron-up" aria-hidden="true" /> Show less
+              <i className="bi bi-chevron-up" aria-hidden="true" /> Show less
             </>
           ) : (
             <>
-              <i className="fas fa-chevron-down" aria-hidden="true" /> +{remaining} more
+              <i className="bi bi-chevron-down" aria-hidden="true" /> +{remaining} more
             </>
           )}
         </button>
