@@ -219,7 +219,6 @@ export function EditQuestionModal({
             if (submitActionRef.current === 'save-and-pick') {
               onAddAndPickAnother?.();
             }
-            submitActionRef.current = 'save';
           })}
         >
           <Modal.Body>
@@ -543,7 +542,14 @@ export function EditQuestionModal({
                 {isSubmitting ? 'Adding...' : 'Add & pick another'}
               </button>
             )}
-            <button type="submit" className="btn btn-primary" disabled={isSubmitting}>
+            <button
+              type="submit"
+              className="btn btn-primary"
+              disabled={isSubmitting}
+              onClick={() => {
+                submitActionRef.current = 'save';
+              }}
+            >
               {isSubmitting
                 ? type === 'create'
                   ? 'Adding...'

@@ -37,7 +37,12 @@ export function QuestionTopicTagBadges({
       {hasMoreTags && (
         <button
           type="button"
-          className="badge bg-secondary border-0"
+          className="btn btn-badge bg-secondary"
+          aria-label={
+            isExpanded
+              ? 'Show fewer tags'
+              : `Show ${(tags?.length ?? 0) - 3} more ${(tags?.length ?? 0) - 3 === 1 ? 'tag' : 'tags'}`
+          }
           onClick={(e) => {
             e.stopPropagation();
             setExpandedQids((prev) => {

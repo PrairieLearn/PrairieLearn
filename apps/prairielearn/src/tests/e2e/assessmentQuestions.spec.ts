@@ -109,11 +109,11 @@ test.describe('Assessment questions', () => {
     await expect(modal).toBeVisible();
     await expect(modal.getByText('Edit question')).toBeVisible();
 
-    const pointsInput = modal.locator('#auto-points-input');
+    const pointsInput = modal.getByLabel('Auto points');
     await pointsInput.clear();
     await pointsInput.fill('10');
 
-    const triesPerVariantInput = modal.locator('#tries-per-variant-input');
+    const triesPerVariantInput = modal.getByLabel('Tries Per Variant');
     await triesPerVariantInput.clear();
     await triesPerVariantInput.fill('2');
 
@@ -126,7 +126,7 @@ test.describe('Assessment questions', () => {
     await expect(modal).toBeVisible();
     await expect(modal.getByText('Edit zone')).toBeVisible();
 
-    const bestQuestionsInput = modal.locator('#bestQuestionsInput');
+    const bestQuestionsInput = modal.getByLabel('Best questions');
     await bestQuestionsInput.clear();
     await bestQuestionsInput.fill('2');
 
@@ -178,7 +178,7 @@ test.describe('Assessment questions', () => {
     const modal = page.getByRole('dialog');
     await expect(modal).toBeVisible();
 
-    const autoPointsInput = modal.locator('#auto-points-input');
+    const autoPointsInput = modal.getByLabel('Auto points');
     await autoPointsInput.clear();
     await autoPointsInput.fill('7');
 
@@ -196,8 +196,8 @@ test.describe('Assessment questions', () => {
     await modal.locator('[role="button"]').filter({ hasText: 'differentiatePolynomial' }).click();
 
     await expect(modal.getByText('Edit question')).toBeVisible();
-    await expect(modal.locator('#qid-input')).toHaveValue('differentiatePolynomial');
-    await expect(modal.locator('#auto-points-input')).toHaveValue('7');
+    await expect(modal.getByLabel('QID')).toHaveValue('differentiatePolynomial');
+    await expect(modal.getByLabel('Auto points')).toHaveValue('7');
 
     await modal.getByRole('button', { name: 'Update question' }).click();
     await expect(modal).not.toBeVisible();
@@ -223,6 +223,69 @@ test.describe('Assessment questions', () => {
           { id: 'partialCredit4_v2', points: 3, maxPoints: 10 },
           { id: 'partialCredit6_no_partial', points: 3, maxPoints: 11 },
         ],
+      },
+    ]);
+  });
+
+  test('can add a question to an empty assessment via zone and picker', async ({
+    page,
+    testCoursePath,
+  }) => {
+    const assessmentTid = 'hw14-emptyForEditor';
+    const assessment = await selectAssessmentByTid({
+      course_instance_id: courseInstanceId,
+      tid: assessmentTid,
+    });
+
+    await page.goto(
+      `/pl/course_instance/${courseInstanceId}/instructor/assessment/${assessment.id}/questions`,
+    );
+    await page.getByRole('button', { name: 'Edit questions' }).click();
+
+    // Add a new zone
+    await page.getByRole('button', { name: 'Add zone' }).click();
+    const modal = page.getByRole('dialog');
+    await expect(modal).toBeVisible();
+    await modal.getByRole('button', { name: 'Add zone' }).click();
+    await expect(modal).not.toBeVisible();
+
+    // Click "Add question in zone 1" to open the picker
+    await page.getByRole('button', { name: 'Add question in zone 1' }).click();
+    await expect(modal).toBeVisible();
+    await expect(modal.getByText('Select question')).toBeVisible();
+
+    // Search and select a question
+    await modal.getByPlaceholder('Search by QID or title...').fill('partialCredit1');
+    await modal.locator('[role="button"]').filter({ hasText: 'partialCredit1' }).first().click();
+
+    // The edit modal should appear with the selected question
+    await expect(modal.getByText('Add question')).toBeVisible();
+    await expect(modal.getByLabel('QID')).toHaveValue('partialCredit1');
+
+    // Set auto points
+    const autoPointsInput = modal.getByLabel('Auto points');
+    await autoPointsInput.clear();
+    await autoPointsInput.fill('5');
+
+    await modal.getByRole('button', { name: 'Add question' }).click();
+    await expect(modal).not.toBeVisible();
+
+    // Save and verify
+    await page.getByRole('button', { name: 'Save and sync' }).click();
+    await expect(page.getByRole('button', { name: 'Edit questions' })).toBeVisible();
+
+    const infoAssessmentPath = path.join(
+      testCoursePath,
+      'courseInstances/Sp15/assessments',
+      assessmentTid,
+      'infoAssessment.json',
+    );
+    const savedContent = await fs.readFile(infoAssessmentPath, 'utf-8');
+    const savedAssessment = JSON.parse(savedContent);
+
+    expect(savedAssessment.zones).toEqual([
+      {
+        questions: [{ id: 'partialCredit1', points: 5 }],
       },
     ]);
   });
