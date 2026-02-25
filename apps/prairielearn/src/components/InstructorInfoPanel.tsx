@@ -296,7 +296,11 @@ function AssessmentInstanceInfo({
       <div>${formatInterval(duration)}</div>
     </div>
 
-    <div class="pb-2">
+    <div class="pb-2 d-flex flex-wrap gap-2">
+      <a
+        href="/pl/course_instance/${assessment.course_instance_id}/assessment_instance/${assessment_instance.id}"
+        >Student view</a
+      >
       <a href="${instructorUrlPrefix}/assessment_instance/${assessment_instance.id}">View log</a>
     </div>
   `;
