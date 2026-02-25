@@ -31,7 +31,7 @@ onDocumentReady(() => {
 
   const socket = io('/external-image-capture');
   const timeout = setTimeout(() => {
-    changeState('failed');
+    changeState('connection-failed');
     socket.disconnect();
   }, SOCKET_TIMEOUT_MS);
 
@@ -44,7 +44,7 @@ onDocumentReady(() => {
     },
     (msg: StatusMessage | null) => {
       if (!msg) {
-        changeState('failed');
+        changeState('connection-failed');
         throw new Error('Failed to join external image capture room');
       }
       clearTimeout(timeout);
@@ -52,7 +52,9 @@ onDocumentReady(() => {
     },
   );
 
-  function changeState(state: 'loading' | 'form' | 'uploading' | 'success' | 'failed') {
+  function changeState(
+    state: 'loading' | 'form' | 'uploading' | 'success' | 'connection-failed' | 'upload-failed',
+  ) {
     const externalImageCaptureLoadingContainer = document.querySelector<HTMLDivElement>(
       '#external-image-capture-loading-container',
     );
@@ -67,8 +69,11 @@ onDocumentReady(() => {
     const externalImageCaptureSuccessContainer = document.querySelector<HTMLDivElement>(
       '#external-image-capture-success-container',
     );
-    const externalImageCaptureFailedContainer = document.querySelector<HTMLDivElement>(
-      '#external-image-capture-failed-container',
+    const externalImageCaptureConnectionFailedContainer = document.querySelector<HTMLDivElement>(
+      '#external-image-capture-connection-failed-container',
+    );
+    const externalImageCaptureUploadFailedContainer = document.querySelector<HTMLDivElement>(
+      '#external-image-capture-upload-failed-container',
     );
     const uploadButton = document.querySelector<HTMLButtonElement>('#upload-button');
     const uploadButtonSpan = document.querySelector<HTMLButtonElement>('#upload-button span');
@@ -76,13 +81,16 @@ onDocumentReady(() => {
     // Button that opens the user's camera, allowing them to capture an image.
     const cameraInputLabel = document.querySelector<HTMLLabelElement>('label[for="camera-input"]');
 
+    const isFailed = state === 'connection-failed' || state === 'upload-failed';
+
     if (
       !externalImageCaptureLoadingContainer ||
       !externalImageCaptureUploadingContainer ||
       !externalImageCaptureFormContainer ||
       !formItems ||
       !externalImageCaptureSuccessContainer ||
-      !externalImageCaptureFailedContainer ||
+      !externalImageCaptureConnectionFailedContainer ||
+      !externalImageCaptureUploadFailedContainer ||
       !tryAgainButton ||
       !uploadButtonSpan ||
       !uploadButton ||
@@ -128,8 +136,17 @@ onDocumentReady(() => {
       externalImageCaptureSuccessContainer.classList.add('d-none');
     }
 
-    if (state === 'failed') {
-      externalImageCaptureFailedContainer.classList.remove('d-none');
+    externalImageCaptureConnectionFailedContainer.classList.toggle(
+      'd-none',
+      state !== 'connection-failed',
+    );
+
+    externalImageCaptureUploadFailedContainer.classList.toggle(
+      'd-none',
+      state !== 'upload-failed',
+    );
+
+    if (isFailed) {
       externalImageCaptureFormContainer.classList.remove('d-none');
       formItems.classList.add('d-none');
 
@@ -140,7 +157,6 @@ onDocumentReady(() => {
 
       cameraInputLabel.classList.add('d-none');
     } else {
-      externalImageCaptureFailedContainer.classList.add('d-none');
       tryAgainButton.classList.add('d-none');
       if (state !== 'success') {
         formItems.classList.remove('d-none');
@@ -168,7 +184,7 @@ onDocumentReady(() => {
     }
 
     const timeout = setTimeout(() => {
-      changeState('failed');
+      changeState('upload-failed');
       socket.disconnect();
     }, SOCKET_TIMEOUT_MS);
 
@@ -176,7 +192,7 @@ onDocumentReady(() => {
       clearTimeout(timeout);
 
       if (!msg) {
-        changeState('failed');
+        changeState('upload-failed');
         throw new Error('Failed to receive external image capture acknowledgement');
       }
 
