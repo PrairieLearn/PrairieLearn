@@ -38,13 +38,34 @@ const MAX_IMAGE_SIDE_LENGTH = 2000;
       this.external_image_capture_url = options.external_image_capture_url;
       this.external_image_capture_available = options.external_image_capture_available;
       this.submitted_file_name = options.submitted_file_name;
+      this.submitted_file_names = options.submitted_file_names || [];
       this.submission_files_url = options.submission_files_url;
       this.mobile_capture_enabled = options.mobile_capture_enabled;
       this.manual_upload_enabled = options.manual_upload_enabled;
 
+      this.max_images = options.max_images || 1;
+      this.multiMode = this.max_images > 1;
+
+      /** Array of image objects for multi-mode: { dataUrl, originalDataUrl } */
+      this.images = [];
+      this.activeImageIndex = null;
+
+      /** Index of the currently displayed image in the carousel */
+      this.currentViewIndex = 0;
+
+      /** Panzoom instance for the non-editable gallery viewer */
+      this.galleryPanzoom = null;
+      /** Current rotation angle in the non-editable gallery viewer */
+      this.galleryRotation = 0;
+      /** Whether handwriting enhancement is active in the gallery viewer */
+      this.galleryHandwritingEnhanced = false;
+
       /** Flag representing the current state of the capture before entering crop/zoom */
       this.previousCaptureChangedFlag = false;
       this.previousCropRotateState = null;
+
+      /** Snapshot of the image dataUrl before multi-mode crop/rotate editing begins */
+      this.preEditImageDataUrl = null;
       this.selectedContainerName = 'capture-preview';
       this.handwritingEnhanced = false;
 
@@ -60,7 +81,12 @@ const MAX_IMAGE_SIDE_LENGTH = 2000;
         // If the image capture is not editable, only load the most recent submitted image
         // without initializing the image capture functionality.
         this.loadSubmission();
-        this.handwritingEnhancementListeners();
+        if (this.multiMode) {
+          this.createGalleryNavigationListeners();
+          this.initGalleryViewerControls();
+        } else {
+          this.handwritingEnhancementListeners();
+        }
         return;
       }
 
@@ -72,6 +98,9 @@ const MAX_IMAGE_SIDE_LENGTH = 2000;
 
       this.loadSubmission();
       this.createDeletionListeners();
+      if (this.multiMode) {
+        this.createGalleryNavigationListeners();
+      }
 
       if (this.mobile_capture_enabled) {
         this.listenForExternalImageCapture();
@@ -159,12 +188,18 @@ const MAX_IMAGE_SIDE_LENGTH = 2000;
         const reader = new FileReader();
 
         reader.onload = () => {
-          this.loadCapturePreviewFromDataUrl({
-            dataUrl: reader.result,
-          });
+          if (this.multiMode) {
+            this.addImageToGallery(reader.result);
+          } else {
+            this.loadCapturePreviewFromDataUrl({
+              dataUrl: reader.result,
+            });
+          }
         };
 
         reader.readAsDataURL(file);
+        // Reset the input so the same file can be uploaded again if needed
+        manualUploadInput.value = '';
       });
     }
 
@@ -279,7 +314,11 @@ const MAX_IMAGE_SIDE_LENGTH = 2000;
       });
 
       cropRotateButton.addEventListener('click', () => {
-        this.startCropRotate();
+        if (this.multiMode) {
+          this.startCropRotateForImage(this.currentViewIndex);
+        } else {
+          this.startCropRotate();
+        }
       });
 
       rotationSlider.addEventListener('input', (event) => {
@@ -346,6 +385,25 @@ const MAX_IMAGE_SIDE_LENGTH = 2000;
       this.setCaptureChangedFlag(true);
     }
 
+    /**
+     * Get the HTML content for the delete confirmation popover.
+     * In multi-mode, references the specific image number.
+     */
+    getDeletePopoverContent() {
+      const imageLabel = this.multiMode ? `image ${this.currentViewIndex + 1}` : 'your image';
+      return `
+        <div class="w-100">
+          <p class="text-muted">
+            Are you sure? This will delete ${imageLabel} permanently.
+          </p>
+          <div class="d-flex justify-content-end gap-2">
+            <button id="confirm-delete-${this.uuid}" class="btn btn-danger btn-sm" data-bs-dismiss="popover">Delete</button>
+            <button class="btn btn-secondary btn-sm" data-bs-dismiss="popover">Cancel</button>
+          </div>
+        </div>
+      `;
+    }
+
     createDeletionListeners() {
       const deleteCapturedImageButton = this.imageCaptureDiv.querySelector(
         '.js-delete-captured-image-button',
@@ -359,17 +417,37 @@ const MAX_IMAGE_SIDE_LENGTH = 2000;
         uploadedImageContainer,
       });
 
-      const confirmDeletion = () => {
-        this.loadCapturePreviewFromDataUrl({
-          dataUrl: null,
-          originalCapture: true,
+      // In multi-mode, re-initialize the popover with dynamic content
+      // so it references the current image number.
+      if (this.multiMode) {
+        const existingPopover = bootstrap.Popover.getInstance(deleteCapturedImageButton);
+        if (existingPopover) {
+          existingPopover.dispose();
+        }
+        new bootstrap.Popover(deleteCapturedImageButton, {
+          container: 'body',
+          html: true,
+          placement: 'auto',
+          title: 'Confirm deletion',
+          content: () => this.getDeletePopoverContent(),
         });
+      }
 
-        this.setNoCaptureAvailableYetState(uploadedImageContainer);
+      const confirmDeletion = () => {
+        if (this.multiMode) {
+          this.deleteImageFromGallery(this.currentViewIndex);
+        } else {
+          this.loadCapturePreviewFromDataUrl({
+            dataUrl: null,
+            originalCapture: true,
+          });
 
-        this.setShowDeletionButton(false);
+          this.setNoCaptureAvailableYetState(uploadedImageContainer);
 
-        this.setCaptureChangedFlag(true);
+          this.setShowDeletionButton(false);
+
+          this.setCaptureChangedFlag(true);
+        }
       };
 
       deleteCapturedImageButton.addEventListener('shown.bs.popover', () => {
@@ -387,6 +465,77 @@ const MAX_IMAGE_SIDE_LENGTH = 2000;
         });
         confirmDeletionButton.removeEventListener('click', confirmDeletion);
       });
+    }
+
+    /**
+     * Set up click listeners for the gallery navigation (prev/next) buttons.
+     */
+    createGalleryNavigationListeners() {
+      const prevButton = this.imageCaptureDiv.querySelector('.js-gallery-prev-button');
+      const nextButton = this.imageCaptureDiv.querySelector('.js-gallery-next-button');
+      this.ensureElementsExist({ prevButton, nextButton });
+      prevButton.addEventListener('click', () => this.navigateGallery(-1));
+      nextButton.addEventListener('click', () => this.navigateGallery(1));
+    }
+
+    /**
+     * Navigate the gallery carousel by the given delta (-1 for previous, +1 for next).
+     * @param {number} delta The direction to navigate.
+     */
+    navigateGallery(delta) {
+      const newIndex = this.currentViewIndex + delta;
+      if (newIndex < 0 || newIndex >= this.images.length) return;
+      this.currentViewIndex = newIndex;
+      this.renderGallery();
+    }
+
+    /**
+     * Update the gallery navigation buttons and counter badge to reflect
+     * the current view index and image count.
+     */
+    updateGalleryNavState() {
+      const counter = this.imageCaptureDiv.querySelector('.js-image-counter');
+      const prevButton = this.imageCaptureDiv.querySelector('.js-gallery-prev-button');
+      const nextButton = this.imageCaptureDiv.querySelector('.js-gallery-next-button');
+      const hasImages = this.images.length > 0;
+
+      if (counter) {
+        counter.classList.toggle('d-none', !hasImages);
+        if (hasImages) {
+          counter.textContent = `${this.currentViewIndex + 1}/${this.images.length}`;
+        }
+        // In non-editable mode, move counter to top-left to avoid overlapping
+        // with the zoom/enhance buttons at top-right.
+        if (!this.editable) {
+          counter.classList.remove('end-0');
+          counter.classList.add('start-0');
+        }
+      }
+      if (prevButton) {
+        prevButton.classList.toggle('d-none', !hasImages);
+        prevButton.disabled = this.currentViewIndex <= 0;
+      }
+      if (nextButton) {
+        nextButton.classList.toggle('d-none', !hasImages);
+        nextButton.disabled = this.currentViewIndex >= this.images.length - 1;
+      }
+
+      // Update the delete button label and popover to indicate which image will be deleted
+      if (this.editable) {
+        const deleteButton = this.imageCaptureDiv.querySelector('.js-delete-captured-image-button');
+        const deleteButtonSpan = deleteButton?.querySelector('span');
+        if (deleteButtonSpan && hasImages) {
+          deleteButtonSpan.textContent = `Delete #${this.currentViewIndex + 1}`;
+        }
+
+        // Update the popover confirmation text to reference the current image number
+        if (deleteButton && hasImages) {
+          const popover = bootstrap.Popover.getInstance(deleteButton);
+          if (popover) {
+            popover._config.content = this.getDeletePopoverContent();
+          }
+        }
+      }
     }
 
     /**
@@ -505,14 +654,44 @@ const MAX_IMAGE_SIDE_LENGTH = 2000;
       );
 
       socket.on('externalImageCapture', (msg) => {
-        if (this.selectedContainerName === 'crop-rotate') {
-          this.removeCropperChangeListeners();
+        if (this.multiMode) {
+          // Cancel any in-progress crop/rotate editing
+          if (this.activeImageIndex !== null && this.cropper) {
+            this.removeCropperChangeListeners();
+            clearTimeout(this.timeoutId);
+            this.timeoutId = null;
+            if (this.preEditImageDataUrl !== null) {
+              this.images[this.activeImageIndex].dataUrl = this.preEditImageDataUrl;
+              this.preEditImageDataUrl = null;
+            }
+            this.revertToPreviousCropRotateState();
+            this.activeImageIndex = null;
+            this.setCaptureChangedFlag(this.previousCaptureChangedFlag);
+          }
+          const dataUrl = `data:image/jpeg;base64,${msg.file_content}`;
+          this.addImageToGallery(dataUrl);
+          if (this.selectedContainerName !== 'capture-preview') {
+            this.openContainer('capture-preview');
+          }
+        } else {
+          if (this.selectedContainerName === 'crop-rotate') {
+            this.removeCropperChangeListeners();
+          }
+          this.loadCapturePreview({
+            data: msg.file_content,
+            type: 'image/jpeg',
+          });
+          this.setCaptureChangedFlag(true);
+
+          if (this.selectedContainerName !== 'capture-preview') {
+            if (this.selectedContainerName === 'crop-rotate') {
+              // We discard any pending changes or captured images and show the capture preview, since
+              // the user's most recent action was to capture an image externally.
+              this.revertToPreviousCropRotateState();
+            }
+            this.openContainer('capture-preview');
+          }
         }
-        this.loadCapturePreview({
-          data: msg.file_content,
-          type: 'image/jpeg',
-        });
-        this.setCaptureChangedFlag(true);
 
         // Acknowledge that the external image capture was received.
         socket.emit(
@@ -537,15 +716,6 @@ const MAX_IMAGE_SIDE_LENGTH = 2000;
           if (popover) {
             popover.hide();
           }
-        }
-
-        if (this.selectedContainerName !== 'capture-preview') {
-          if (this.selectedContainerName === 'crop-rotate') {
-            // We discard any pending changes or captured images and show the capture preview, since
-            // the user's most recent action was to capture an image externally.
-            this.revertToPreviousCropRotateState();
-          }
-          this.openContainer('capture-preview');
         }
       });
     }
@@ -602,6 +772,11 @@ const MAX_IMAGE_SIDE_LENGTH = 2000;
      * Loads the most recent submission or external image capture.
      */
     async loadSubmission() {
+      if (this.multiMode) {
+        await this.loadMultiSubmission();
+        return;
+      }
+
       const uploadedImageContainer = this.imageCaptureDiv.querySelector(
         '.js-uploaded-image-container',
       );
@@ -1081,11 +1256,19 @@ const MAX_IMAGE_SIDE_LENGTH = 2000;
         );
 
       this.deactivateVideoStream();
-      this.loadCapturePreviewFromDataUrl({
-        dataUrl: localCameraImagePreviewCanvas.toDataURL('image/jpeg'),
-      });
-      this.setCaptureChangedFlag(true);
-      this.openContainer('capture-preview');
+
+      const capturedDataUrl = localCameraImagePreviewCanvas.toDataURL('image/jpeg');
+
+      if (this.multiMode) {
+        this.addImageToGallery(capturedDataUrl);
+        this.openContainer('capture-preview');
+      } else {
+        this.loadCapturePreviewFromDataUrl({
+          dataUrl: capturedDataUrl,
+        });
+        this.setCaptureChangedFlag(true);
+        this.openContainer('capture-preview');
+      }
     }
 
     async cancelLocalCameraCapture() {
@@ -1464,11 +1647,22 @@ const MAX_IMAGE_SIDE_LENGTH = 2000;
       clearTimeout(this.timeoutId);
       this.timeoutId = setTimeout(async () => {
         const { dataUrl } = await this.getCropperSelection();
-        await this.setHiddenCaptureInputValue(dataUrl);
+        if (this.multiMode && this.activeImageIndex !== null) {
+          // In multi-mode, update the specific image and re-serialize
+          this.images[this.activeImageIndex].dataUrl = dataUrl;
+          await this.updateMultiHiddenInput();
+        } else {
+          await this.setHiddenCaptureInputValue(dataUrl);
+        }
       }, 200);
     }
 
     async confirmCropRotateChanges() {
+      if (this.multiMode && this.activeImageIndex !== null) {
+        await this.confirmCropRotateChangesMulti();
+        return;
+      }
+
       this.ensureCropperExists();
 
       const { dataUrl, cropperSelection } = await this.getCropperSelection();
@@ -1544,7 +1738,17 @@ const MAX_IMAGE_SIDE_LENGTH = 2000;
       this.revertToPreviousCropRotateState();
 
       this.openContainer('capture-preview');
-      if (revertToLastImage) {
+
+      if (this.multiMode && this.activeImageIndex !== null) {
+        // Revert the image data to its state before editing
+        if (this.preEditImageDataUrl !== null) {
+          this.images[this.activeImageIndex].dataUrl = this.preEditImageDataUrl;
+          this.preEditImageDataUrl = null;
+        }
+        this.activeImageIndex = null;
+        this.renderGallery();
+        await this.updateMultiHiddenInput();
+      } else if (revertToLastImage) {
         await this.setHiddenCaptureInputToCapturePreview();
       }
 
@@ -1576,6 +1780,445 @@ const MAX_IMAGE_SIDE_LENGTH = 2000;
         capturePreview.style.filter = 'grayscale(1) contrast(2)';
         this.handwritingEnhanced = true;
       }
+    }
+
+    // ---- Multi-image gallery methods ----
+
+    /**
+     * Load previously submitted images in multi-mode.
+     */
+    async loadMultiSubmission() {
+      const uploadedImageContainer = this.imageCaptureDiv.querySelector(
+        '.js-uploaded-image-container',
+      );
+
+      this.ensureElementsExist({
+        uploadedImageContainer,
+      });
+
+      // Hide the single-image container, show the gallery
+      uploadedImageContainer.classList.add('d-none');
+      const galleryContainer = this.imageCaptureDiv.querySelector('.js-image-gallery-container');
+      this.ensureElementsExist({ galleryContainer });
+      galleryContainer.classList.remove('d-none');
+
+      if (this.submitted_file_names.length > 0 && this.submission_files_url) {
+        for (const fileName of this.submitted_file_names) {
+          try {
+            const response = await fetch(`${this.submission_files_url}/${fileName}`);
+            if (!response.ok) continue;
+
+            const blob = await response.blob();
+            const dataUrl = await new Promise((resolve) => {
+              const reader = new FileReader();
+              reader.onload = (e) => resolve(e.target.result);
+              reader.readAsDataURL(blob);
+            });
+
+            this.images.push({ dataUrl, originalDataUrl: dataUrl });
+          } catch {
+            // Skip images that fail to load
+          }
+        }
+      }
+
+      this.renderGallery();
+
+      if (this.editable) {
+        this.updateMultiHiddenInput();
+        this.updateMultiCaptureButtons();
+      }
+    }
+
+    /**
+     * Add an image to the gallery in multi-mode.
+     * @param {string} dataUrl The data URL of the image to add.
+     */
+    addImageToGallery(dataUrl) {
+      if (this.images.length >= this.max_images) return;
+
+      this.images.push({ dataUrl, originalDataUrl: dataUrl });
+      this.currentViewIndex = this.images.length - 1;
+      this.renderGallery();
+      this.updateMultiHiddenInput();
+      this.updateMultiCaptureButtons();
+      this.setCaptureChangedFlag(true);
+    }
+
+    /**
+     * Delete an image from the gallery by index.
+     * @param {number} index The index of the image to delete.
+     */
+    deleteImageFromGallery(index) {
+      this.images.splice(index, 1);
+      this.activeImageIndex = null;
+
+      if (this.currentViewIndex >= this.images.length) {
+        this.currentViewIndex = Math.max(0, this.images.length - 1);
+      }
+
+      this.renderGallery();
+      this.updateMultiHiddenInput();
+      this.updateMultiCaptureButtons();
+      this.setCaptureChangedFlag(this.images.length > 0);
+
+      // Dismiss the delete confirmation popover
+      const deleteButton = this.imageCaptureDiv.querySelector('.js-delete-captured-image-button');
+      if (deleteButton) {
+        const popover = bootstrap.Popover.getInstance(deleteButton);
+        if (popover) popover.hide();
+      }
+    }
+
+    /**
+     * Serialize the images array to the hidden input as a JSON array of data URLs.
+     */
+    async updateMultiHiddenInput() {
+      const hiddenCaptureInput = this.imageCaptureDiv.querySelector('.js-hidden-capture-input');
+      this.ensureElementsExist({ hiddenCaptureInput });
+
+      if (this.images.length > 0) {
+        // Scale each image before serializing
+        const scaledDataUrls = [];
+        for (const img of this.images) {
+          scaledDataUrls.push(await this.scaleImageDataUrl(img.dataUrl));
+        }
+        hiddenCaptureInput.value = JSON.stringify(scaledDataUrls);
+      } else {
+        hiddenCaptureInput.removeAttribute('value');
+      }
+    }
+
+    /**
+     * Scale an image data URL to ensure it doesn't exceed MAX_IMAGE_SIDE_LENGTH.
+     * @param {string} dataUrl The data URL to scale.
+     * @returns {Promise<string>} The scaled data URL.
+     */
+    async scaleImageDataUrl(dataUrl) {
+      const image = new Image();
+      image.src = dataUrl;
+
+      try {
+        await image.decode();
+      } catch (error) {
+        throw new Error('Failed to decode image', { cause: error });
+      }
+
+      const imageScaleFactor = MAX_IMAGE_SIDE_LENGTH / Math.max(image.width, image.height);
+      if (imageScaleFactor >= 1) {
+        return dataUrl;
+      }
+
+      const targetWidth = Math.round(image.width * imageScaleFactor);
+      const targetHeight = Math.round(image.height * imageScaleFactor);
+
+      if (!this.resizingCanvas) {
+        this.resizingCanvas = document.createElement('canvas');
+      }
+      if (!this.resizingCtx) {
+        this.resizingCtx = this.resizingCanvas.getContext('2d');
+        if (!this.resizingCtx) {
+          throw new Error('Failed to get canvas context');
+        }
+      }
+
+      this.resizingCanvas.width = targetWidth;
+      this.resizingCanvas.height = targetHeight;
+      this.resizingCtx.drawImage(image, 0, 0, targetWidth, targetHeight);
+
+      return this.resizingCanvas.toDataURL('image/jpeg');
+    }
+
+    /**
+     * Update the visibility of capture buttons in multi-mode based on capacity.
+     */
+    updateMultiCaptureButtons() {
+      const atCapacity = this.images.length >= this.max_images;
+      const hasImages = this.images.length > 0;
+
+      const captureButtonsHorizontalDiv = this.imageCaptureDiv.querySelector(
+        '.js-capture-buttons-horizontal',
+      );
+      const captureButtonsDropdownDiv = this.imageCaptureDiv.querySelector(
+        '.js-capture-buttons-dropdown',
+      );
+
+      // Before any images: show horizontal buttons (like single-image initial state).
+      // Once images exist: hide horizontal, show "Capture..." dropdown (like "Retake...").
+      // At capacity: hide both.
+      if (captureButtonsHorizontalDiv) {
+        if (hasImages || atCapacity) {
+          captureButtonsHorizontalDiv.classList.add('d-none');
+          captureButtonsHorizontalDiv.classList.remove('d-flex');
+        } else {
+          captureButtonsHorizontalDiv.classList.remove('d-none');
+          captureButtonsHorizontalDiv.classList.add('d-flex');
+        }
+      }
+
+      if (captureButtonsDropdownDiv) {
+        captureButtonsDropdownDiv.classList.toggle('d-none', !hasImages || atCapacity);
+
+        // Label the dropdown "Capture..." for multi-mode
+        const dropdownButton = captureButtonsDropdownDiv.querySelector('.dropdown-toggle');
+        if (dropdownButton) {
+          dropdownButton.textContent = 'Capture...';
+        }
+      }
+
+      // Show delete and crop/rotate buttons when images exist
+      this.setShowDeletionButton(hasImages);
+      this.setShowCropRotateButton(hasImages);
+    }
+
+    /**
+     * Render the carousel gallery for multi-mode, showing a single full-size image
+     * at currentViewIndex with navigation controls.
+     */
+    renderGallery() {
+      const gallery = this.imageCaptureDiv.querySelector('.js-image-gallery');
+
+      this.ensureElementsExist({ gallery });
+
+      // Clamp currentViewIndex to valid range
+      if (this.images.length > 0) {
+        this.currentViewIndex = Math.max(
+          0,
+          Math.min(this.currentViewIndex, this.images.length - 1),
+        );
+      }
+
+      gallery.innerHTML = '';
+
+      if (this.editable) {
+        this.renderEditableGallery(gallery);
+      } else {
+        this.renderNonEditableGallery(gallery);
+      }
+
+      this.updateGalleryNavState();
+    }
+
+    /**
+     * Render the editable carousel gallery showing a single full-size image.
+     * @param {HTMLElement} gallery The gallery container element.
+     */
+    renderEditableGallery(gallery) {
+      if (this.images.length === 0) {
+        const placeholder = document.createElement('div');
+        placeholder.className =
+          'bg-body-secondary d-flex justify-content-center align-items-center w-100';
+        placeholder.style.height = '200px';
+        placeholder.innerHTML = `
+          <span class="small text-muted text-center">
+            No images captured yet.<br/>Use a clean sheet of paper.
+          </span>
+        `;
+        gallery.append(placeholder);
+        return;
+      }
+
+      const img = this.images[this.currentViewIndex];
+      const imgEl = document.createElement('img');
+      imgEl.src = img.dataUrl;
+      imgEl.alt = `Image ${this.currentViewIndex + 1}`;
+      imgEl.className = 'pl-image-capture-preview img-fluid bg-body-secondary w-100';
+      gallery.append(imgEl);
+    }
+
+    /**
+     * Render the non-editable carousel gallery showing a single full-size image.
+     * Uses the template's js-zoom-buttons for enhance/rotate/zoom controls
+     * and initializes Panzoom for pan and zoom.
+     * @param {HTMLElement} gallery The gallery container element.
+     */
+    renderNonEditableGallery(gallery) {
+      // Clean up previous Panzoom instance when navigating between images
+      if (this.galleryPanzoom) {
+        this.galleryPanzoom.destroy();
+        this.galleryPanzoom = null;
+      }
+      this.galleryRotation = 0;
+      this.galleryHandwritingEnhanced = false;
+
+      const zoomButtonsContainer = this.imageCaptureDiv.querySelector('.js-zoom-buttons');
+
+      if (this.images.length === 0) {
+        const placeholder = document.createElement('div');
+        placeholder.className =
+          'bg-body-secondary d-flex justify-content-center align-items-center w-100';
+        placeholder.style.height = '200px';
+        placeholder.innerHTML =
+          '<span class="small text-muted text-center">No images submitted.</span>';
+        gallery.append(placeholder);
+        if (zoomButtonsContainer) zoomButtonsContainer.classList.add('d-none');
+        return;
+      }
+
+      const img = this.images[this.currentViewIndex];
+
+      const capturePreviewParent = document.createElement('div');
+      capturePreviewParent.className = 'js-gallery-preview-div bg-body-secondary';
+
+      const imgEl = document.createElement('img');
+      imgEl.src = img.dataUrl;
+      imgEl.alt = `Image ${this.currentViewIndex + 1}`;
+      imgEl.className = 'pl-image-capture-preview img-fluid bg-body-secondary w-100';
+
+      capturePreviewParent.append(imgEl);
+      gallery.append(capturePreviewParent);
+
+      // Show the zoom/enhance buttons from the template
+      if (zoomButtonsContainer) zoomButtonsContainer.classList.remove('d-none');
+
+      // Initialize Panzoom on the image's parent container
+      this.galleryPanzoom = Panzoom(capturePreviewParent, {
+        contain: 'outside',
+        minScale: MIN_ZOOM_SCALE,
+        maxScale: MAX_ZOOM_SCALE,
+      });
+
+      // Update zoom button states on zoom events
+      const zoomInButton = this.imageCaptureDiv.querySelector('.js-zoom-in-button');
+      const zoomOutButton = this.imageCaptureDiv.querySelector('.js-zoom-out-button');
+
+      let panEnabled = false;
+      capturePreviewParent.addEventListener('panzoomzoom', (e) => {
+        const scale = e.detail.scale;
+        panEnabled = scale > 1;
+        imgEl.style.cursor = panEnabled ? 'grab' : 'default';
+
+        if (zoomOutButton) {
+          zoomOutButton.classList.toggle('disabled', scale === MIN_ZOOM_SCALE);
+          zoomOutButton.classList.toggle('opacity-10', scale === MIN_ZOOM_SCALE);
+        }
+        if (zoomInButton) {
+          zoomInButton.classList.toggle('disabled', scale >= MAX_ZOOM_SCALE);
+          zoomInButton.classList.toggle('opacity-10', scale >= MAX_ZOOM_SCALE);
+        }
+      });
+
+      capturePreviewParent.addEventListener('panzoomstart', () => {
+        if (panEnabled) imgEl.style.cursor = 'grabbing';
+      });
+
+      capturePreviewParent.addEventListener('panzoomend', () => {
+        if (panEnabled) imgEl.style.cursor = 'grab';
+      });
+    }
+
+    /**
+     * Initialize event listeners for the gallery zoom/enhance/rotate buttons.
+     * Called once during construction for non-editable multi-mode.
+     */
+    initGalleryViewerControls() {
+      const zoomInButton = this.imageCaptureDiv.querySelector('.js-zoom-in-button');
+      const zoomOutButton = this.imageCaptureDiv.querySelector('.js-zoom-out-button');
+      const rotateButton = this.imageCaptureDiv.querySelector('.js-viewer-rotate-clockwise-button');
+      const enhanceButton = this.imageCaptureDiv.querySelector('.js-enhance-handwriting-button');
+
+      this.ensureElementsExist({
+        zoomInButton,
+        zoomOutButton,
+        rotateButton,
+        enhanceButton,
+      });
+
+      zoomInButton.addEventListener('click', () => {
+        if (this.galleryPanzoom) this.galleryPanzoom.zoomIn();
+      });
+
+      zoomOutButton.addEventListener('click', () => {
+        if (this.galleryPanzoom) this.galleryPanzoom.zoomOut();
+      });
+
+      rotateButton.addEventListener('click', () => {
+        const imgEl = this.imageCaptureDiv.querySelector(
+          '.js-image-gallery .pl-image-capture-preview',
+        );
+        if (!imgEl) return;
+
+        const photoHeight = imgEl.clientHeight;
+        const photoWidth = photoHeight * (imgEl.naturalWidth / imgEl.naturalHeight);
+        const clientHeight = imgEl.clientHeight;
+        const clientWidth = imgEl.clientWidth;
+
+        this.galleryRotation = (this.galleryRotation || 0) + 90;
+
+        const scaleFactor =
+          this.galleryRotation % 180 === 0
+            ? 1
+            : Math.min(clientHeight / photoWidth, clientWidth / photoHeight);
+
+        imgEl.style.transform = `rotate(${this.galleryRotation}deg) scale(${scaleFactor})`;
+
+        if (this.galleryPanzoom) this.galleryPanzoom.reset({ animate: true });
+      });
+
+      enhanceButton.addEventListener('click', () => {
+        const imgEl = this.imageCaptureDiv.querySelector(
+          '.js-image-gallery .pl-image-capture-preview',
+        );
+        if (!imgEl) return;
+
+        this.galleryHandwritingEnhanced = !this.galleryHandwritingEnhanced;
+        imgEl.style.filter = this.galleryHandwritingEnhanced ? 'grayscale(1) contrast(2)' : '';
+      });
+    }
+
+    /**
+     * Start crop/rotate for a specific image in multi-mode.
+     * @param {number} index The index of the image to edit.
+     */
+    startCropRotateForImage(index) {
+      if (index < 0 || index >= this.images.length) return;
+
+      this.activeImageIndex = index;
+      const img = this.images[index];
+
+      // Save a snapshot so cancel can restore the original state
+      this.preEditImageDataUrl = img.dataUrl;
+
+      // Set the original capture input to this image's original so crop/rotate works
+      const hiddenOriginalCaptureInput = this.imageCaptureDiv.querySelector(
+        '.js-hidden-original-capture-input',
+      );
+      if (hiddenOriginalCaptureInput) {
+        hiddenOriginalCaptureInput.value = img.originalDataUrl;
+      }
+
+      // Set the preview so crop/rotate can read the current state
+      const previewImg = new Image();
+      previewImg.src = img.originalDataUrl;
+      previewImg.onload = () => {
+        this.originalImageWidth = previewImg.naturalWidth;
+        this.originalImageHeight = previewImg.naturalHeight;
+        this.capturePreviewHeight = Math.min(previewImg.naturalHeight, 600);
+        this.startCropRotate();
+      };
+    }
+
+    /**
+     * Override for confirmCropRotateChanges in multi-mode:
+     * saves the cropped image back to this.images[activeImageIndex].
+     */
+    async confirmCropRotateChangesMulti() {
+      this.ensureCropperExists();
+
+      const { dataUrl } = await this.getCropperSelection();
+
+      this.images[this.activeImageIndex].dataUrl = dataUrl;
+      // Update originalDataUrl so future edits start from the confirmed state
+      this.images[this.activeImageIndex].originalDataUrl = dataUrl;
+
+      this.preEditImageDataUrl = null;
+
+      this.removeCropperChangeListeners();
+      this.openContainer('capture-preview');
+      this.activeImageIndex = null;
+
+      this.renderGallery();
+      this.updateMultiHiddenInput();
     }
 
     handwritingEnhancementListeners() {

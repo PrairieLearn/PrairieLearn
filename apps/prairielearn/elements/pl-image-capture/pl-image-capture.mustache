@@ -53,6 +53,18 @@ $(function() {
           </div>
         </div>
       </div>
+      <div class="js-image-gallery-container d-none">
+        <div class="position-relative">
+          <div class="js-image-gallery"></div>
+          <span class="js-image-counter position-absolute top-0 end-0 m-2 badge bg-dark bg-opacity-75 d-none"></span>
+          <button type="button" class="js-gallery-prev-button pl-image-capture-gallery-nav btn btn-light border rounded-circle shadow-sm position-absolute start-0 top-50 translate-middle-y ms-2 d-none" aria-label="Previous image">
+            <i class="bi bi-chevron-left"></i>
+          </button>
+          <button type="button" class="js-gallery-next-button pl-image-capture-gallery-nav btn btn-light border rounded-circle shadow-sm position-absolute end-0 top-50 translate-middle-y me-2 d-none" aria-label="Next image">
+            <i class="bi bi-chevron-right"></i>
+          </button>
+        </div>
+      </div>
       {{^editable}}
       <div class="js-zoom-buttons position-absolute top-0 end-0 m-2 d-none">
         <button 
