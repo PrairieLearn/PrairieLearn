@@ -24,7 +24,7 @@ export type AiImageGradingResponses =
         string,
         {
           degreesRotated: CounterClockwiseRotationDegrees;
-          response: GenerateObjectResult<any>;
+          response?: GenerateObjectResult<any>;
         }
       >;
       gradingResponseWithRotationIssue: GenerateObjectResult<any>;

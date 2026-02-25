@@ -138,7 +138,7 @@ export async function updateCourseInstanceUsagesForAiGradingResponses({
     string,
     {
       degreesRotated: CounterClockwiseRotationDegrees;
-      response: GenerateObjectResult<any>;
+      response?: GenerateObjectResult<any>;
     }
   >;
   finalGradingResponse: GenerateObjectResult<any>;
@@ -146,7 +146,9 @@ export async function updateCourseInstanceUsagesForAiGradingResponses({
   const responses = [
     ...(gradingResponseWithRotationIssue ? [gradingResponseWithRotationIssue] : []),
     ...(rotationCorrections
-      ? Object.values(rotationCorrections).map((correction) => correction.response)
+      ? Object.values(rotationCorrections).flatMap((correction) =>
+          correction.response ? [correction.response] : [],
+        )
       : []),
     finalGradingResponse,
   ];
