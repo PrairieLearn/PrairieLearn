@@ -235,6 +235,7 @@ interface ArchiveFile {
 
 async function pipeCursorToArchive<T>(
   res: Response,
+  filename: string,
   cursor: sqldb.CursorIterator<T>,
   extractFiles: (row: T) => ArchiveFile[] | null,
 ) {
@@ -244,8 +245,8 @@ async function pipeCursorToArchive<T>(
     '',
   );
   const prefix = `${dirname}/`;
-  archive.append('', { name: prefix });
-  archive.pipe(res);
+
+  let hasFiles = false;
 
   for await (const rows of cursor.iterate(100)) {
     for (const row of rows) {
@@ -262,10 +263,25 @@ async function pipeCursorToArchive<T>(
         // We allow empty files, so we specifically check for null, not truthiness.
         if (!file.filename || file.contents == null) continue;
 
+        if (!hasFiles) {
+          res.attachment(filename);
+          archive.append('', { name: prefix });
+          archive.pipe(res);
+          hasFiles = true;
+        }
+
         archive.append(file.contents, { name: prefix + file.filename });
       }
     }
   }
+
+  if (!hasFiles) {
+    throw new error.HttpStatusError(
+      404,
+      'No file submissions to include in the zip. Only File-type questions generate downloadable files.',
+    );
+  }
+
   await archive.finalize();
 }
 
@@ -529,8 +545,7 @@ router.get(
         ManualGradingSubmissionRowSchema,
       );
 
-      res.attachment(req.params.filename);
-      await pipeCursorToArchive(res, cursor, extractFilesForManualGrading);
+      await pipeCursorToArchive(res, req.params.filename, cursor, extractFilesForManualGrading);
     } else if (
       req.params.filename === filenames.allFilesZipFilename ||
       req.params.filename === filenames.finalFilesZipFilename ||
@@ -546,8 +561,7 @@ router.get(
         AssessmentInstanceSubmissionRowSchema,
       );
 
-      res.attachment(req.params.filename);
-      await pipeCursorToArchive(res, cursor, extractFilesForSubmissions);
+      await pipeCursorToArchive(res, req.params.filename, cursor, extractFilesForSubmissions);
     } else if (req.params.filename === filenames.groupsCsvFilename) {
       const groupConfig = await getGroupConfig(res.locals.assessment.id);
       const cursor = await sqldb.queryCursor(
