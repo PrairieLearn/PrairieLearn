@@ -40,7 +40,7 @@ export function MainRuleForm({
   // Watch PrairieTest exams
   const prairieTestExams = useWatch({
     control,
-    name: 'mainRule.prairieTestControl.exams',
+    name: 'mainRule.integrations.prairieTest.exams',
     defaultValue: [],
   });
 

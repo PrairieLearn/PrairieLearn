@@ -1,3 +1,5 @@
+import * as crypto from 'node:crypto';
+
 import { Router } from 'express';
 import asyncHandler from 'express-async-handler';
 import z from 'zod';
@@ -25,8 +27,16 @@ import {
   inviteStudentByUid,
   reenrollEnrollmentFromSync,
   removeEnrollmentFromSync,
+  selectEnrollmentsByIdsInCourseInstance,
   selectOptionalEnrollmentByUid,
 } from '../../models/enrollment.js';
+import {
+  addLabelToEnrollments,
+  createStudentLabel,
+  removeLabelFromEnrollments,
+  selectStudentLabelById,
+  selectStudentLabelsInCourseInstance,
+} from '../../models/student-label.js';
 import { selectOptionalUserByUid } from '../../models/user.js';
 
 import { InstructorStudents } from './instructorStudents.html.js';
@@ -98,7 +108,31 @@ const SyncStudentsBodySchema = z.object({
   toRemove: z.array(z.string().email()).max(5000),
 });
 
-const BodySchema = z.discriminatedUnion('__action', [InviteUidsBodySchema, SyncStudentsBodySchema]);
+const BatchAddToLabelBodySchema = z.object({
+  __action: z.literal('batch_add_to_label'),
+  enrollment_ids: z.array(z.string()),
+  student_label_id: z.string(),
+});
+
+const BatchRemoveFromLabelBodySchema = z.object({
+  __action: z.literal('batch_remove_from_label'),
+  enrollment_ids: z.array(z.string()),
+  student_label_id: z.string(),
+});
+
+const CreateLabelAndAddStudentsBodySchema = z.object({
+  __action: z.literal('create_label_and_add_students'),
+  enrollment_ids: z.array(z.string()),
+  name: z.string().min(1).max(255),
+});
+
+const BodySchema = z.discriminatedUnion('__action', [
+  InviteUidsBodySchema,
+  SyncStudentsBodySchema,
+  BatchAddToLabelBodySchema,
+  BatchRemoveFromLabelBodySchema,
+  CreateLabelAndAddStudentsBodySchema,
+]);
 
 interface InviteCounts {
   invited: number;
@@ -458,6 +492,63 @@ router.post(
         });
 
         res.json({ job_sequence_id: serverJob.jobSequenceId });
+        break;
+      }
+      case 'batch_add_to_label': {
+        const label = await selectStudentLabelById({
+          id: body.student_label_id,
+          courseInstance,
+        });
+        const enrollments = await selectEnrollmentsByIdsInCourseInstance({
+          ids: body.enrollment_ids,
+          courseInstance,
+          requiredRole: ['Student Data Editor'],
+          authzData,
+        });
+        await addLabelToEnrollments({ enrollments, label, authzData });
+        res.json({ success: true });
+        break;
+      }
+      case 'batch_remove_from_label': {
+        const label = await selectStudentLabelById({
+          id: body.student_label_id,
+          courseInstance,
+        });
+        const enrollments = await selectEnrollmentsByIdsInCourseInstance({
+          ids: body.enrollment_ids,
+          courseInstance,
+          requiredRole: ['Student Data Editor'],
+          authzData,
+        });
+        await removeLabelFromEnrollments({ enrollments, label, authzData });
+        res.json({ success: true });
+        break;
+      }
+      case 'create_label_and_add_students': {
+        // Check for duplicate name
+        const existingLabels = await selectStudentLabelsInCourseInstance(courseInstance);
+        if (existingLabels.some((l) => l.name === body.name)) {
+          throw new HttpStatusError(400, 'A label with this name already exists');
+        }
+
+        const newLabel = await createStudentLabel({
+          courseInstance,
+          uuid: crypto.randomUUID(),
+          name: body.name,
+          color: 'blue1',
+        });
+
+        if (body.enrollment_ids.length > 0) {
+          const enrollments = await selectEnrollmentsByIdsInCourseInstance({
+            ids: body.enrollment_ids,
+            courseInstance,
+            requiredRole: ['Student Data Editor'],
+            authzData,
+          });
+          await addLabelToEnrollments({ enrollments, label: newLabel, authzData });
+        }
+
+        res.json({ success: true });
         break;
       }
       default: {

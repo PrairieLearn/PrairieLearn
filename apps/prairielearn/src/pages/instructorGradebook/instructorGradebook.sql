@@ -159,7 +159,6 @@ SELECT
       FROM
         student_label_enrollments sle
         JOIN student_labels sl ON sl.id = sle.student_label_id
-        AND sl.deleted_at IS NULL
       WHERE
         sle.enrollment_id = e.id
     ),

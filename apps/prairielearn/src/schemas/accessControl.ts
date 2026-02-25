@@ -45,13 +45,19 @@ const ExamJsonSchema = z.object({
   readOnly: z.boolean().optional().describe('Whether the exam is read-only for students'),
 });
 
-const PrairieTestControlJsonSchema = z
+const PrairieTestJsonSchema = z
   .object({
-    enabled: z.boolean().optional().describe('Whether praireTestControl is enabled or not'), // convenience flag for saying everything is overriden and disabled
+    enabled: z.boolean().optional().describe('Whether PrairieTest integration is enabled'),
     exams: z
       .array(ExamJsonSchema)
       .optional()
       .describe('Array of associated PrairieTest exam configs'),
+  })
+  .optional();
+
+const IntegrationsJsonSchema = z
+  .object({
+    prairieTest: PrairieTestJsonSchema,
   })
   .optional();
 
@@ -97,7 +103,7 @@ export const AccessControlJsonSchema = z.object({
     .describe('Whether students can see the title and click into the assessment before release'),
 
   dateControl: DateControlJsonSchema,
-  prairieTestControl: PrairieTestControlJsonSchema,
+  integrations: IntegrationsJsonSchema,
   afterComplete: AfterCompleteJsonSchema,
 });
 

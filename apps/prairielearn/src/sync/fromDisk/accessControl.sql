@@ -4,8 +4,7 @@ SELECT
 FROM
   student_labels
 WHERE
-  course_instance_id = $course_instance_id
-  AND deleted_at IS NULL;
+  course_instance_id = $course_instance_id;
 
 -- BLOCK check_exam_uuids_exist
 -- Validate that exam UUIDs exist in pt_exams table

@@ -1150,29 +1150,31 @@ describe('Access control syncing', () => {
       assert.equal(syncedRules.length, 0, 'Rule with invalid date should not be synced');
     });
 
-    it('rejects sync when non-assignment-level rule specifies prairieTestControl', async () => {
+    it('rejects sync when non-assignment-level rule specifies integrations', async () => {
       const courseData = util.getCourseData();
       const groupName = 'Test Group';
 
       // Add student label to config
       addStudentLabelToConfig(courseData, util.COURSE_INSTANCE_ID, groupName);
 
-      // create an assignment-level rule without prairieTestControl
-      // and a group-level rule WITH prairieTestControl (which should be invalid)
+      // create an assignment-level rule without integrations
+      // and a group-level rule WITH integrations (which should be invalid)
       const assignmentRule = makeAccessControlRule({
         dateControl: { durationMinutes: 60 },
       });
-      const groupRuleWithPrairieTest = makeAccessControlRule({
+      const groupRuleWithIntegrations = makeAccessControlRule({
         labels: [groupName],
         dateControl: { durationMinutes: 90 },
-        prairieTestControl: {
-          exams: [{ examUuid: '11e89892-3eff-4d7f-90a2-221372f14e5c' }],
+        integrations: {
+          prairieTest: {
+            exams: [{ examUuid: '11e89892-3eff-4d7f-90a2-221372f14e5c' }],
+          },
         },
       });
 
       courseData.courseInstances[util.COURSE_INSTANCE_ID].assessments[
         util.ASSESSMENT_ID
-      ].accessControl = [assignmentRule, groupRuleWithPrairieTest];
+      ].accessControl = [assignmentRule, groupRuleWithIntegrations];
 
       const courseDir = await util.writeCourseToTempDirectory(courseData);
       const syncResults = await util.syncCourseData(courseDir);
@@ -1182,7 +1184,7 @@ describe('Access control syncing', () => {
       if (syncResults.status === 'complete') {
         assert.isTrue(
           syncResults.hadJsonErrors,
-          'Sync should have JSON errors when non-assignment-level rule specifies prairieTestControl',
+          'Sync should have JSON errors when non-assignment-level rule specifies integrations',
         );
 
         // verify the specific error message on the assessment InfoFile
@@ -1193,14 +1195,14 @@ describe('Access control syncing', () => {
         assert.isOk(assessment, 'Assessment should exist in courseData');
         assert.isOk(assessment.errors, 'Assessment should have errors');
 
-        // The error about prairieTestControl should be on the assessment
+        // The error about integrations should be on the assessment
         assert.isTrue(
           assessment.errors.some((error) =>
             error.includes(
-              'Only the assignment-level rule (without groups) is allowed to specify prairieTestControl',
+              'integrations can only be specified on assignment-level rules (rules without labels)',
             ),
           ),
-          'Should have specific error about prairieTestControl on non-assignment-level rule',
+          'Should have specific error about integrations on non-assignment-level rule',
         );
       }
 
@@ -1209,23 +1211,25 @@ describe('Access control syncing', () => {
       assert.equal(
         syncedRules.length,
         0,
-        'Should not sync any rules when a non-assignment-level rule specifies prairieTestControl',
+        'Should not sync any rules when a non-assignment-level rule specifies integrations',
       );
     });
 
-    it('allows assignment-level rule to specify prairieTestControl', async () => {
+    it('allows assignment-level rule to specify integrations', async () => {
       const courseData = util.getCourseData();
       const groupName = 'Test Group';
 
       // Add student label to config
       addStudentLabelToConfig(courseData, util.COURSE_INSTANCE_ID, groupName);
 
-      // create an assignment-level rule WITH prairieTestControl (should be valid)
-      // and a group-level rule WITHOUT prairieTestControl
-      const assignmentRuleWithPrairieTest = makeAccessControlRule({
+      // create an assignment-level rule WITH integrations (should be valid)
+      // and a group-level rule WITHOUT integrations
+      const assignmentRuleWithIntegrations = makeAccessControlRule({
         dateControl: { durationMinutes: 60 },
-        prairieTestControl: {
-          exams: [{ examUuid: '11e89892-3eff-4d7f-90a2-221372f14e5c' }],
+        integrations: {
+          prairieTest: {
+            exams: [{ examUuid: '11e89892-3eff-4d7f-90a2-221372f14e5c' }],
+          },
         },
       });
       const groupRule = makeAccessControlRule({
@@ -1235,7 +1239,7 @@ describe('Access control syncing', () => {
 
       courseData.courseInstances[util.COURSE_INSTANCE_ID].assessments[
         util.ASSESSMENT_ID
-      ].accessControl = [assignmentRuleWithPrairieTest, groupRule];
+      ].accessControl = [assignmentRuleWithIntegrations, groupRule];
 
       await util.writeAndSyncCourseData(courseData);
 
@@ -1244,7 +1248,7 @@ describe('Access control syncing', () => {
       assert.equal(
         syncedRules.length,
         2,
-        'Should sync all rules when only assignment-level rule has prairieTestControl',
+        'Should sync all rules when only assignment-level rule has integrations',
       );
     });
   });

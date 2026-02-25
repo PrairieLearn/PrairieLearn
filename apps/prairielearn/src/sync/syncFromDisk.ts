@@ -19,6 +19,7 @@ import { selectInstitutionForCourse } from '../models/institution.js';
 import { flushElementCache } from '../question-servers/freeform.js';
 
 import * as courseDB from './course-db.js';
+import { syncAccessControl, validateAccessControlRules } from './fromDisk/accessControl.js';
 import * as syncAssessmentModules from './fromDisk/assessmentModules.js';
 import * as syncAssessmentSets from './fromDisk/assessmentSets.js';
 import * as syncAssessments from './fromDisk/assessments.js';
@@ -27,7 +28,6 @@ import * as syncCourseInfo from './fromDisk/courseInfo.js';
 import * as syncCourseInstances from './fromDisk/courseInstances.js';
 import * as syncQuestions from './fromDisk/questions.js';
 import * as syncSharingSets from './fromDisk/sharing.js';
-import { syncAccessControl } from './fromDisk/accessControl.js';
 import { syncStudentLabels } from './fromDisk/studentLabels.js';
 import * as syncTags from './fromDisk/tags.js';
 import * as syncTopics from './fromDisk/topics.js';
@@ -215,7 +215,14 @@ export async function syncDiskToSqlWithLock(
                 const assessmentId = assessmentIds[tid];
                 const accessControlRules = assessment.data?.accessControl;
                 if (assessmentId && accessControlRules) {
-                  await syncAccessControl(courseInstanceId, assessmentId, accessControlRules);
+                  const validationErrors = validateAccessControlRules(accessControlRules);
+                  if (validationErrors.length > 0) {
+                    infofile.addErrors(assessment, validationErrors);
+                    // Sync empty rules to clear any existing rules
+                    await syncAccessControl(courseInstanceId, assessmentId, []);
+                  } else {
+                    await syncAccessControl(courseInstanceId, assessmentId, accessControlRules);
+                  }
                 }
               }
             });

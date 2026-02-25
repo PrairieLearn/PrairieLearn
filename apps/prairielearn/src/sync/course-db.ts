@@ -1130,12 +1130,12 @@ export function validateAccessControlArray({
     );
   }
 
-  // Check for prairieTestControl on non-assignment-level rules
+  // Check for integrations on non-assignment-level rules
   accessControlJsonArray.forEach((rule, index) => {
     const isAssignmentLevel = rule.labels == null || rule.labels.length === 0;
-    if (!isAssignmentLevel && rule.prairieTestControl != null) {
+    if (!isAssignmentLevel && rule.integrations != null) {
       results[index].errors.push(
-        'prairieTestControl can only be specified on assignment-level rules (rules without labels).',
+        'integrations can only be specified on assignment-level rules (rules without labels).',
       );
     }
   });

@@ -13,7 +13,7 @@
         "enabled": true,
         "afterLastDeadline": { "allowSubmissions": true, "credit": 52 }
       },
-      "prairieTestControl": { "enabled": false },
+      "integrations": { "prairieTest": { "enabled": false } },
       "afterComplete": { "hideQuestions": false, "hideScore": false }
     },
     {

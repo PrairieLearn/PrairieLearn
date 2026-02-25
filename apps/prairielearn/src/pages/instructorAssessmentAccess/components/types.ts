@@ -57,8 +57,8 @@ export const DateControlFormDataSchema = z.object({
   password: OverridableFieldSchema(z.string()),
 });
 
-/** Schema for PrairieTest control form data */
-export const PrairieTestControlFormDataSchema = z.object({
+/** Schema for PrairieTest integration form data */
+export const PrairieTestFormDataSchema = z.object({
   enabled: z.boolean(),
   exams: z
     .array(
@@ -68,6 +68,11 @@ export const PrairieTestControlFormDataSchema = z.object({
       }),
     )
     .optional(),
+});
+
+/** Schema for integrations form data */
+export const IntegrationsFormDataSchema = z.object({
+  prairieTest: PrairieTestFormDataSchema,
 });
 
 /** Schema for question visibility settings */
@@ -117,7 +122,7 @@ export const AccessControlRuleFormDataSchema = z.object({
   listBeforeRelease: z.boolean().optional(),
   appliesTo: AppliesToSchema,
   dateControl: DateControlFormDataSchema,
-  prairieTestControl: PrairieTestControlFormDataSchema,
+  integrations: IntegrationsFormDataSchema,
   afterComplete: AfterCompleteFormDataSchema,
 });
 
@@ -150,8 +155,11 @@ export type AfterLastDeadlineValue = z.infer<typeof AfterLastDeadlineValueSchema
 /** Date control form data */
 export type DateControlFormData = z.infer<typeof DateControlFormDataSchema>;
 
-/** PrairieTest control form data */
-export type PrairieTestControlFormData = z.infer<typeof PrairieTestControlFormDataSchema>;
+/** PrairieTest integration form data */
+export type PrairieTestFormData = z.infer<typeof PrairieTestFormDataSchema>;
+
+/** Integrations form data */
+export type IntegrationsFormData = z.infer<typeof IntegrationsFormDataSchema>;
 
 /** Question visibility settings after completion */
 export type QuestionVisibilityValue = z.infer<typeof QuestionVisibilityValueSchema>;
@@ -226,7 +234,7 @@ export function formDataToJson(formData: AccessControlFormData): AccessControlJs
  * This function is shared between client-side summary saves and server-side individual rule saves.
  *
  * @param rule The form data for the rule
- * @param isMainRule If true, includes prairieTestControl in the output (only main rules support this)
+ * @param isMainRule If true, includes integrations in the output (only main rules support this)
  */
 export function formRuleToJson(
   rule: AccessControlRuleFormData,
@@ -289,13 +297,14 @@ export function formRuleToJson(
   }
 
   if (isMainRule) {
-    if (rule.prairieTestControl.enabled) {
-      output.prairieTestControl = {
+    output.integrations = {};
+    if (rule.integrations.prairieTest.enabled) {
+      output.integrations.prairieTest = {
         enabled: true,
-        exams: rule.prairieTestControl.exams || [],
+        exams: rule.integrations.prairieTest.exams || [],
       };
     } else {
-      output.prairieTestControl = { enabled: false };
+      output.integrations.prairieTest = { enabled: false };
     }
   }
 
@@ -412,9 +421,11 @@ export function jsonToFormData(
         dc?.password ?? '',
       ),
     },
-    prairieTestControl: {
-      enabled: json.prairieTestControl?.enabled ?? false,
-      exams: json.prairieTestControl?.exams,
+    integrations: {
+      prairieTest: {
+        enabled: json.integrations?.prairieTest?.enabled ?? false,
+        exams: json.integrations?.prairieTest?.exams,
+      },
     },
     afterComplete: {
       questionVisibility: makeOverridable(isMainRule, hasQuestionVisibility, true, {
@@ -451,8 +462,10 @@ export function createDefaultOverrideFormData(): AccessControlRuleFormData {
       durationMinutes: { isOverridden: false, isEnabled: false, value: 60 },
       password: { isOverridden: false, isEnabled: false, value: '' },
     },
-    prairieTestControl: {
-      enabled: false,
+    integrations: {
+      prairieTest: {
+        enabled: false,
+      },
     },
     afterComplete: {
       questionVisibility: {

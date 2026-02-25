@@ -790,27 +790,32 @@
             }
           }
         },
-        "prairieTestControl": {
+        "integrations": {
           "type": "object",
           "properties": {
-            "enabled": {
-              "description": "Whether praireTestControl is enabled or not",
-              "type": "boolean"
-            },
-            "exams": {
-              "description": "Array of associated PrairieTest exam configs",
-              "type": "array",
-              "items": {
-                "type": "object",
-                "required": ["examUuid"],
-                "properties": {
-                  "examUuid": {
-                    "description": "UUID of associated PrairieTest exam",
-                    "type": "string"
-                  },
-                  "readOnly": {
-                    "description": "Whether the exam is read-only for students",
-                    "type": "boolean"
+            "prairieTest": {
+              "type": "object",
+              "properties": {
+                "enabled": {
+                  "description": "Whether PrairieTest integration is enabled",
+                  "type": "boolean"
+                },
+                "exams": {
+                  "description": "Array of associated PrairieTest exam configs",
+                  "type": "array",
+                  "items": {
+                    "type": "object",
+                    "required": ["examUuid"],
+                    "properties": {
+                      "examUuid": {
+                        "description": "UUID of associated PrairieTest exam",
+                        "type": "string"
+                      },
+                      "readOnly": {
+                        "description": "Whether the exam is read-only for students",
+                        "type": "boolean"
+                      }
+                    }
                   }
                 }
               }

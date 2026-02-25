@@ -6,7 +6,16 @@ SELECT
     (
       SELECT
         jsonb_agg(
-          jsonb_build_object('id', sl.id, 'name', sl.name, 'color', sl.color)
+          jsonb_build_object(
+            'id',
+            sl.id,
+            'name',
+            sl.name,
+            'color',
+            sl.color,
+            'course_instance_id',
+            sl.course_instance_id
+          )
           ORDER BY
             sl.name
         )
@@ -15,7 +24,6 @@ SELECT
         JOIN student_labels AS sl ON sl.id = sle.student_label_id
       WHERE
         sle.enrollment_id = e.id
-        AND sl.deleted_at IS NULL
     ),
     '[]'::jsonb
   ) AS student_labels

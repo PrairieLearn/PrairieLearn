@@ -28,7 +28,7 @@ columns
     id: bigint not null default nextval('assessment_access_control_id_seq'::regclass)
     list_before_release: boolean
     number: integer
-    prairietest_control_overridden: boolean
+    integrations_prairietest_overridden: boolean
     target_type: text not null
 
 indexes

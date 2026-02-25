@@ -49,8 +49,10 @@ describe('Valid configs', () => {
     // Example 3: PrairieTest Exam with afterComplete
     [
       {
-        prairieTestControl: {
-          exams: [{ examUuid: '11e89892-3eff-4d7f-90a2-221372f14e5c' }],
+        integrations: {
+          prairieTest: {
+            exams: [{ examUuid: '11e89892-3eff-4d7f-90a2-221372f14e5c' }],
+          },
         },
         afterComplete: {
           hideQuestions: true,
@@ -61,46 +63,13 @@ describe('Valid configs', () => {
       },
     ],
 
-    // TODO: remove because we aren't allowing PT overrides?
-    // // Example 4: PrairieTest exam with individual override
-    // [
-    //   {
-    //     // Assignment-level (no targets)
-    //     dateControl: {
-    //       releaseDate: '2024-03-14T00:01:00',
-    //       dueDate: '2024-03-21T23:59:00',
-    //     },
-    //   },
-    //   {
-    //     // Individual override
-    //     groups: ['student1'],
-    //     prairieTestControl: {},
-    //   },
-    // ],
-
-    // // Example 5: In-class with PrairieTest override
-    // [
-    //   {
-    //     // Assignment-level (no targets)
-    //     dateControl: {
-    //       releaseDate: '2024-03-14T00:01:00',
-    //       dueDate: '2024-03-21T23:59:00',
-    //     },
-    //   },
-    //   {
-    //     // Individual override
-    //     groups: ['student2'],
-    //     prairieTestControl: {
-    //       exams: [{ examUuid: '2' }],
-    //     },
-    //   },
-    // ],
-
     // Example 6: PrairieTest review session
     [
       {
-        prairieTestControl: {
-          exams: [{ examUuid: '1' }, { examUuid: '2', readOnly: true }],
+        integrations: {
+          prairieTest: {
+            exams: [{ examUuid: '1' }, { examUuid: '2', readOnly: true }],
+          },
         },
       },
     ],
@@ -131,8 +100,10 @@ describe('Valid configs', () => {
           releaseDate: '2024-03-14T00:01:00',
           dueDate: '2024-03-21T23:59:00',
         },
-        prairieTestControl: {
-          exams: [{ examUuid: '1', readOnly: true }],
+        integrations: {
+          prairieTest: {
+            exams: [{ examUuid: '1', readOnly: true }],
+          },
         },
       },
     ],

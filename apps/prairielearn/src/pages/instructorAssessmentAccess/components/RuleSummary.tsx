@@ -230,8 +230,8 @@ export function generateRuleSummary(
   }
 
   // PrairieTest control
-  if (rule.prairieTestControl.enabled && rule.prairieTestControl.exams?.length) {
-    lines.push(`${rule.prairieTestControl.exams.length} PrairieTest exam(s)`);
+  if (rule.integrations.prairieTest.enabled && rule.integrations.prairieTest.exams?.length) {
+    lines.push(`${rule.integrations.prairieTest.exams.length} PrairieTest exam(s)`);
   }
 
   // After complete settings (only if not already shown in table via afterLastDeadline)

@@ -135,15 +135,17 @@ function dbRowToFormData(
     ),
   };
 
-  // Build prairieTestControl from database row
+  // Build integrations from database row
   const prairieTestExams =
     row.prairietest_exams ?? ([] as { examUuid: string; readOnly: boolean | null }[]);
-  const prairieTestControl = {
-    enabled: row.prairietest_control_overridden !== false,
-    exams: prairieTestExams.map((e) => ({
-      examUuid: e.examUuid,
-      readOnly: e.readOnly ?? undefined,
-    })),
+  const integrations = {
+    prairieTest: {
+      enabled: row.integrations_prairietest_overridden !== false,
+      exams: prairieTestExams.map((e) => ({
+        examUuid: e.examUuid,
+        readOnly: e.readOnly ?? undefined,
+      })),
+    },
   };
 
   // Build afterComplete from database row
@@ -180,7 +182,7 @@ function dbRowToFormData(
     listBeforeRelease: row.list_before_release ?? undefined,
     appliesTo,
     dateControl,
-    prairieTestControl,
+    integrations,
     afterComplete,
   };
 }

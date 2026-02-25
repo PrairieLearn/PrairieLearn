@@ -22,7 +22,7 @@ export interface EnrollmentAccessControlRuleData {
   durationMinutes: number | null;
   passwordOverridden: boolean;
   password: string | null;
-  prairietestControlOverridden: boolean;
+  integrationsPrairietestOverridden: boolean;
   hideQuestions: boolean | null;
   showQuestionsAgainDateOverridden: boolean;
   showQuestionsAgainDate: string | null;
@@ -70,7 +70,7 @@ export async function syncEnrollmentAccessControl(
     date_control_duration_minutes: ruleData.durationMinutes,
     date_control_password_overridden: ruleData.passwordOverridden,
     date_control_password: ruleData.password,
-    prairietest_control_overridden: ruleData.prairietestControlOverridden,
+    integrations_prairietest_overridden: ruleData.integrationsPrairietestOverridden,
     after_complete_hide_questions: ruleData.hideQuestions,
     after_complete_show_questions_again_date_overridden: ruleData.showQuestionsAgainDateOverridden,
     after_complete_show_questions_again_date: ruleData.showQuestionsAgainDate,

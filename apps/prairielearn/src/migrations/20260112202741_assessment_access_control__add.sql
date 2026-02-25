@@ -38,7 +38,7 @@ CREATE TABLE assessment_access_control (
   date_control_duration_minutes int,
   date_control_password_overridden boolean,
   date_control_password text,
-  prairietest_control_overridden boolean,
+  integrations_prairietest_overridden boolean,
   after_complete_hide_questions boolean,
   after_complete_show_questions_again_date_overridden boolean,
   after_complete_show_questions_again_date TIMESTAMP WITH TIME ZONE,

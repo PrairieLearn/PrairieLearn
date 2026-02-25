@@ -21,25 +21,25 @@ export function PrairieTestControlForm({
     remove: removeExam,
   } = useFieldArray({
     control,
-    name: `${namePrefix}.prairieTestControl.exams`,
+    name: `${namePrefix}.integrations.prairieTest.exams`,
   });
 
   // Watch exams array
   const exams = useWatch({
     control,
-    name: `${namePrefix}.prairieTestControl.exams`,
+    name: `${namePrefix}.integrations.prairieTest.exams`,
   });
 
-  // Watch prairieTestControl.enabled state
+  // Watch integrations.prairieTest.enabled state
   const prairieTestEnabled = useWatch({
     control,
-    name: `${namePrefix}.prairieTestControl.enabled`,
+    name: `${namePrefix}.integrations.prairieTest.enabled`,
   });
 
   const addExam = () => {
     // Initialize exams array if it doesn't exist
     if (exams === undefined) {
-      setValue(getFieldName(namePrefix, 'prairieTestControl.exams'), []);
+      setValue(getFieldName(namePrefix, 'integrations.prairieTest.exams'), []);
     }
     appendExam({ examUuid: '', readOnly: false });
   };
@@ -52,13 +52,13 @@ export function PrairieTestControlForm({
             <Form.Check
               type="checkbox"
               className="me-2"
-              {...control.register(getFieldName(namePrefix, 'prairieTestControl.enabled'), {
+              {...control.register(getFieldName(namePrefix, 'integrations.prairieTest.enabled'), {
                 onChange: (e) => {
                   e.stopPropagation();
                   const { checked } = e.currentTarget;
                   // Just toggle enabled state, don't clear other fields
                   // The data remains in the form state for when they re-enable
-                  setValue(getFieldName(namePrefix, 'prairieTestControl.enabled'), checked);
+                  setValue(getFieldName(namePrefix, 'integrations.prairieTest.enabled'), checked);
                 },
               })}
               onClick={(e) => e.stopPropagation()}
@@ -107,7 +107,7 @@ export function PrairieTestControlForm({
                             {...control.register(
                               getFieldName(
                                 namePrefix,
-                                `prairieTestControl.exams.${index}.examUuid`,
+                                `integrations.prairieTest.exams.${index}.examUuid`,
                               ),
                               {
                                 required: prairieTestEnabled ? 'Exam UUID is required' : false,
@@ -134,7 +134,7 @@ export function PrairieTestControlForm({
                             {...control.register(
                               getFieldName(
                                 namePrefix,
-                                `prairieTestControl.exams.${index}.readOnly`,
+                                `integrations.prairieTest.exams.${index}.readOnly`,
                               ),
                             )}
                           />

@@ -26,7 +26,6 @@ FROM
   LEFT JOIN users AS u ON u.id = e.user_id
 WHERE
   sl.course_instance_id = $course_instance_id
-  AND sl.deleted_at IS NULL
 GROUP BY
   sl.id
 ORDER BY

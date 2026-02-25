@@ -46,7 +46,7 @@ interface PreparedRule {
   durationMinutes: number | null;
   passwordOverridden: boolean;
   password: string | null;
-  prairietestControlOverridden: boolean;
+  integrationsPrairietestOverridden: boolean;
   hideQuestions: boolean | null;
   showQuestionsAgainDateOverridden: boolean;
   showQuestionsAgainDate: string | null;
@@ -63,6 +63,41 @@ interface PreparedRule {
   lateDeadlines: { date: string; credit: number }[];
   /** PrairieTest exam references for this rule */
   prairietestExams: { uuid: string; readOnly: boolean }[];
+}
+
+/**
+ * Validates access control rules before syncing. Returns an array of error messages.
+ */
+export function validateAccessControlRules(accessControlRules: AccessControlJson[]): string[] {
+  const errors: string[] = [];
+
+  // Determine which rules are assignment-level (no labels) vs group-level (has labels)
+  const assignmentLevelRules = accessControlRules.filter(
+    (rule) => !rule.labels || rule.labels.length === 0,
+  );
+
+  if (accessControlRules.length > 0 && assignmentLevelRules.length === 0) {
+    errors.push(
+      'Access control must include exactly one assignment-level rule (a rule without groups). Found none.',
+    );
+  } else if (assignmentLevelRules.length > 1) {
+    errors.push(
+      `Access control must include exactly one assignment-level rule (a rule without groups). Found ${assignmentLevelRules.length}.`,
+    );
+  }
+
+  // Integrations are only allowed on assignment-level rules
+  for (const rule of accessControlRules) {
+    const hasLabels = rule.labels && rule.labels.length > 0;
+    if (hasLabels && rule.integrations) {
+      errors.push(
+        'Only the assignment-level rule (without groups) is allowed to specify integrations.',
+      );
+      break;
+    }
+  }
+
+  return errors;
 }
 
 /**
@@ -94,8 +129,10 @@ export async function syncAccessControl(
   // Collect all exam UUIDs for bulk validation
   const allExamUuids = new Set<string>();
   for (const rule of accessControlRules) {
-    const exams = rule.prairieTestControl?.exams ?? [];
-    exams.forEach((e) => allExamUuids.add(e.examUuid));
+    const exams = rule.integrations?.prairieTest?.exams ?? [];
+    for (const e of exams) {
+      allExamUuids.add(e.examUuid);
+    }
   }
 
   // Validate exam UUIDs in bulk
@@ -166,8 +203,8 @@ export async function syncAccessControl(
       afterLastDeadlineAllowSubmissionsField.overridden ||
       afterLastDeadlineCreditField.overridden;
 
-    // prairietestControlOverridden is true if exams are defined
-    const prairietestControlOverridden = rule.prairieTestControl?.exams !== undefined;
+    // integrationsPrairietestOverridden is true if exams are defined
+    const integrationsPrairietestOverridden = rule.integrations?.prairieTest?.exams !== undefined;
 
     // Get valid student label IDs for this rule
     const ruleLabels = rule.labels ?? [];
@@ -175,12 +212,13 @@ export async function syncAccessControl(
       .map((label) => validLabelIds.get(label))
       .filter((id): id is string => id !== undefined);
 
-    // Determine target_type: 'none' for main rule (number 0), 'student_label' for all others
+    // Determine target_type based on whether the rule has labels
     const ruleNumber = JSON_RULE_START + i;
-    const targetType: 'none' | 'student_label' = ruleNumber === 0 ? 'none' : 'student_label';
+    const targetType: 'none' | 'student_label' =
+      studentLabelIds.length > 0 ? 'student_label' : 'none';
 
     // Filter to valid exam UUIDs only
-    const validExams = (rule.prairieTestControl?.exams ?? []).filter((e) =>
+    const validExams = (rule.integrations?.prairieTest?.exams ?? []).filter((e) =>
       validExamUuids.has(e.examUuid),
     );
 
@@ -204,7 +242,7 @@ export async function syncAccessControl(
       durationMinutes: durationMinutesField.value,
       passwordOverridden: passwordField.overridden,
       password: passwordField.value,
-      prairietestControlOverridden,
+      integrationsPrairietestOverridden,
       hideQuestions: hideQuestionsField.value,
       showQuestionsAgainDateOverridden: showQuestionsAgainDateField.overridden,
       showQuestionsAgainDate: showQuestionsAgainDateField.value,
@@ -245,7 +283,7 @@ export async function syncAccessControl(
       date_control_duration_minutes: r.durationMinutes,
       date_control_password_overridden: r.passwordOverridden,
       date_control_password: r.password,
-      prairietest_control_overridden: r.prairietestControlOverridden,
+      integrations_prairietest_overridden: r.integrationsPrairietestOverridden,
       after_complete_hide_questions: r.hideQuestions,
       after_complete_show_questions_again_date_overridden: r.showQuestionsAgainDateOverridden,
       after_complete_show_questions_again_date: r.showQuestionsAgainDate,
