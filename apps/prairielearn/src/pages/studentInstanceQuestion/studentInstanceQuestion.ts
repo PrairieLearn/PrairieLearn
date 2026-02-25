@@ -319,12 +319,11 @@ router.get(
       // fetch and display the most recent non-broken variant.
       // If no such variant exists, we tell the user that a new variant
       // cannot be generated.
-      const result = await queryOptionalScalar(
+      const last_variant_id = await queryOptionalScalar(
         sql.select_last_variant_id,
         { instance_question_id: res.locals.instance_question.id },
         IdSchema,
       );
-      const last_variant_id = result ?? null;
       if (last_variant_id == null) {
         res.status(403).send(
           StudentInstanceQuestion({

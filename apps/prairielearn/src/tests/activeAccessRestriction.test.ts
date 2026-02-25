@@ -212,12 +212,11 @@ describe(
     });
 
     test.sequential('count number of variants generated', async () => {
-      const count = await sqldb.queryScalar(
+      context.numberOfVariants = await sqldb.queryScalar(
         sql.count_variants,
         { assessment_instance_id: helperClient.parseAssessmentInstanceId(context.examInstanceUrl) },
         z.number(),
       );
-      context.numberOfVariants = count;
       assert.equal(context.numberOfVariants, 2);
     });
 
@@ -437,12 +436,11 @@ describe(
     });
 
     test.sequential('count number of variants generated', async () => {
-      const count = await sqldb.queryScalar(
+      context.numberOfVariants = await sqldb.queryScalar(
         sql.count_variants,
         { assessment_instance_id: helperClient.parseAssessmentInstanceId(context.hwInstanceUrl) },
         z.number(),
       );
-      context.numberOfVariants = count;
       assert.equal(context.numberOfVariants, 1);
     });
 

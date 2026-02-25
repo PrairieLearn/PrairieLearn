@@ -1222,11 +1222,12 @@ export async function getTemplateQuestionIds(
   question: QuestionWithTemplateDirectory,
 ): Promise<string[]> {
   if (!question.template_directory) return [];
-  return await sqldb.queryScalars(
+  const questionIds = await sqldb.queryScalars(
     sql.select_template_question_ids,
     { question_id: question.id },
     IdSchema,
   );
+  return questionIds;
 }
 
 /**

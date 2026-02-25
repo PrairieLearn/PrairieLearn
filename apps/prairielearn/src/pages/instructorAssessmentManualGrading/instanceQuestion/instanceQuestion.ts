@@ -52,12 +52,11 @@ async function prepareLocalsForRender(
   // question has multiple variants, by default getAndRenderVariant may select a variant without
   // submissions or even create a new one. We don't want that behavior, so we select the last
   // submission and pass it along to getAndRenderVariant explicitly.
-  const variant_with_submission_id =
-    (await sqldb.queryOptionalScalar(
-      sql.select_variant_with_last_submission,
-      { instance_question_id: resLocals.instance_question.id },
-      IdSchema,
-    )) ?? null;
+  const variant_with_submission_id = await sqldb.queryOptionalScalar(
+    sql.select_variant_with_last_submission,
+    { instance_question_id: resLocals.instance_question.id },
+    IdSchema,
+  );
 
   // If student never loaded question or never submitted anything (submission is null)
   if (variant_with_submission_id == null) {

@@ -294,12 +294,10 @@ export async function selectCourseInstancePermissionForUser({
   course_instance_id: string;
   user_id: string;
 }) {
-  return (
-    (await queryOptionalScalar(
-      sql.select_course_instance_permission_for_user,
-      { course_instance_id, user_id },
-      EnumCourseInstanceRoleSchema,
-    )) ?? null
+  return await queryOptionalScalar(
+    sql.select_course_instance_permission_for_user,
+    { course_instance_id, user_id },
+    EnumCourseInstanceRoleSchema,
   );
 }
 
@@ -314,12 +312,10 @@ export async function selectCoursePermissionForUser({
   course_id: string;
   user_id: string;
 }) {
-  return (
-    (await queryOptionalScalar(
-      sql.select_course_permission_for_user,
-      { course_id, user_id },
-      EnumCourseRoleSchema,
-    )) ?? null
+  return await queryOptionalScalar(
+    sql.select_course_permission_for_user,
+    { course_id, user_id },
+    EnumCourseRoleSchema,
   );
 }
 

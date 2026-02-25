@@ -59,12 +59,11 @@ export async function fillInstanceQuestionColumnEntries<
   rows: T[],
   assessment_question: AssessmentQuestion,
 ): Promise<FillInstanceQuestionColumnEntriesResultType<T>[]> {
-  const rubric_modify_time =
-    (await queryOptionalScalar(
-      sql.select_rubric_time,
-      { rubric_id: assessment_question.manual_rubric_id },
-      DateFromISOString,
-    )) ?? null;
+  const rubric_modify_time = await queryOptionalScalar(
+    sql.select_rubric_time,
+    { rubric_id: assessment_question.manual_rubric_id },
+    DateFromISOString,
+  );
 
   const gradingJobMapping = await selectGradingJobsInfo(rows.map((row) => row.instance_question));
 
