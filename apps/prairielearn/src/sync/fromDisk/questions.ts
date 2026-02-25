@@ -52,7 +52,7 @@ function getParamsForQuestion(qid: string, q: QuestionJson | null | undefined) {
     external_grading_entrypoint,
     external_grading_timeout: externalGradingOptions?.timeout,
     external_grading_enable_networking: externalGradingOptions?.enableNetworking,
-    external_grading_environment: externalGradingOptions?.environment,
+    external_grading_environment: externalGradingOptions?.environment ?? {},
     external_grading_comment: externalGradingOptions?.comment,
     dependencies: q.dependencies,
     workspace_image: workspaceOptions.image,

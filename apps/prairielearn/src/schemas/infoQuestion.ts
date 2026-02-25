@@ -185,7 +185,6 @@ const ExternalGradingOptionsJsonSchema = z
   .strict()
   .describe('Options for externally graded questions.');
 
-
 export const QuestionJsonSchema = z
   .object({
     comment: CommentJsonSchema.optional(),
