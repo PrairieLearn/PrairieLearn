@@ -17,7 +17,7 @@ import { IdSchema } from '@prairielearn/zod';
 import { calculateCourseInstanceRolePermissions } from '../lib/authz-data-lib.js';
 import {
   type Course,
-  EnumCourseInstanceRoleSchema,
+  SprocAuthzCourseInstanceSchema,
   SubmissionSchema,
   type User,
   type Variant,
@@ -228,20 +228,20 @@ export async function selectAndAuthzVariant(options: {
       const authnUserPermissions = await callRow(
         'authz_course_instance',
         [authn_user.id, variant.course_instance_id, new Date()],
-        z.object({ course_instance_role: EnumCourseInstanceRoleSchema }),
+        z.object({ authz_course_instance: SprocAuthzCourseInstanceSchema }),
       );
 
       const userPermissions = await callRow(
         'authz_course_instance',
         [user.id, variant.course_instance_id, new Date()],
-        z.object({ course_instance_role: EnumCourseInstanceRoleSchema }),
+        z.object({ authz_course_instance: SprocAuthzCourseInstanceSchema }),
       );
 
       authnHasCourseInstancePermissionView = calculateCourseInstanceRolePermissions(
-        authnUserPermissions.course_instance_role,
+        authnUserPermissions.authz_course_instance.course_instance_role,
       ).has_course_instance_permission_view;
       hasCourseInstancePermissionView = calculateCourseInstanceRolePermissions(
-        userPermissions.course_instance_role,
+        userPermissions.authz_course_instance.course_instance_role,
       ).has_course_instance_permission_view;
     }
 

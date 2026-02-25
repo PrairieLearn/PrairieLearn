@@ -509,9 +509,7 @@ export function InstructorAssessmentInstance({
 
       <div class="card mb-4">
         <div class="card-header bg-primary text-white">
-          <h2>
-            ${resLocals.assessment_instance_label} Statistics: ${headingLabel}
-          </h2>
+          <h2>${resLocals.assessment_instance_label} Statistics: ${headingLabel}</h2>
         </div>
         <div class="table-responsive">
           <table
