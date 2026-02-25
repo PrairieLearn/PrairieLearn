@@ -55,28 +55,27 @@ router.get(
     }
 
     const referrer = run(() => {
-      // Only accept a referrer query parameter if it's a relative path, to
-      // prevent open redirect vulnerabilities.
+      // Only accept a referrer query parameter if it's parseable and is a
+      // relative path, to prevent open redirect vulnerabilities.
       if (typeof req.query.referrer === 'string') {
-        return req.query.referrer.startsWith('/') && !req.query.referrer.startsWith('//')
-          ? req.query.referrer
-          : null;
+        const base = 'https://placeholder.invalid';
+        const resolved = URL.parse(req.query.referrer, base);
+        if (resolved?.origin === base) {
+          return resolved.pathname + resolved.search;
+        }
+        return null;
       }
       // If the referrer query parameter is not present, fall back to the
       // Referrer header.
       const referrerHeader = req.get('Referrer');
       if (!referrerHeader) return null;
-      try {
-        const referrerUrl = new URL(referrerHeader);
-        // Block referrers using non-http(s) protocols for security reasons. To
-        // avoid problems with reverse proxy setups, we only check the protocol
-        // of the referrer URL and not the origin.
-        if (referrerUrl.protocol === 'http:' || referrerUrl.protocol === 'https:') {
-          return referrerHeader;
-        }
-      } catch {
-        // If there's an error parsing the Referrer header (which can happen if
-        // it's not a valid URL), just ignore it and return null.
+      const referrerUrl = URL.parse(referrerHeader);
+      // Block referrers using non-http(s) protocols for security reasons. To
+      // avoid problems with reverse proxy setups, we only check the protocol of
+      // the referrer URL and not the origin. If the URL is null (i.e., it
+      // couldn't be parsed), then we ignore it and return null.
+      if (referrerUrl?.protocol === 'http:' || referrerUrl?.protocol === 'https:') {
+        return referrerHeader;
       }
       return null;
     });
