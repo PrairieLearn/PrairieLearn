@@ -69,7 +69,7 @@ export async function unenrollUser(courseInstanceId: string, user: AuthUser) {
 export async function enrollRandomUsers(courseInstanceId: string, count: number) {
   // Get current number of enrolled students.
   const currentCount = await queryScalar(
-    'SELECT COUNT(*)::integer AS count FROM enrollments WHERE course_instance_id = $id',
+    'SELECT COUNT(*)::integer FROM enrollments WHERE course_instance_id = $id',
     { id: courseInstanceId },
     z.number(),
   );

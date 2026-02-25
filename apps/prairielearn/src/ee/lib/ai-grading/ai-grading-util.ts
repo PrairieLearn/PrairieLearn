@@ -583,8 +583,8 @@ export async function selectLastVariantAndSubmission(
   );
 }
 
-export function selectLastSubmissionId(instance_question_id: string): Promise<string> {
-  return queryScalar(sql.select_last_submission_id, { instance_question_id }, IdSchema);
+export async function selectLastSubmissionId(instance_question_id: string): Promise<string> {
+  return await queryScalar(sql.select_last_submission_id, { instance_question_id }, IdSchema);
 }
 
 export async function deleteAiGradingJobs({

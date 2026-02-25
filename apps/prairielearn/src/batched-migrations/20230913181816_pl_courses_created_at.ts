@@ -22,13 +22,13 @@ async function getEarliestCommitDateForCourse(coursePath: string | null): Promis
 }
 
 async function getEarliestJobSequenceDateForCourse(courseId: string): Promise<Date | null> {
-  const min = await queryScalar(
+  const result = await queryScalar(
     sql.select_earliest_job_sequence_for_course,
     { course_id: courseId },
     DateFromISOString.nullable(),
   );
 
-  return min;
+  return result;
 }
 
 function smallestDate(first: Date | null, second: Date | null): Date | null {

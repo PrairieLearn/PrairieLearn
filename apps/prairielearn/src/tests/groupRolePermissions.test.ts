@@ -133,7 +133,7 @@ async function getQuestionUrl(
   assessmentInstanceId: string,
   questionId: string,
 ): Promise<string> {
-  const id = await queryScalar(
+  const result = await queryScalar(
     sql.select_instance_questions,
     {
       assessment_instance_id: assessmentInstanceId,
@@ -141,8 +141,8 @@ async function getQuestionUrl(
     },
     IdSchema,
   );
-  assert.isDefined(id);
-  return courseInstanceUrl + '/instance_question/' + id;
+  assert.isDefined(result);
+  return courseInstanceUrl + '/instance_question/' + result;
 }
 
 /**

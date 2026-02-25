@@ -189,12 +189,16 @@ export async function selectCourseInstanceGraderStaff({
 /**
  * Returns if the course has any non-deleted course instances.
  */
-export function selectCourseHasCourseInstances({
+export async function selectCourseHasCourseInstances({
   course,
 }: {
   course: CourseContext;
 }): Promise<boolean> {
-  return queryScalar(sql.select_course_has_course_instances, { course_id: course.id }, z.boolean());
+  return await queryScalar(
+    sql.select_course_has_course_instances,
+    { course_id: course.id },
+    z.boolean(),
+  );
 }
 
 export async function selectCourseInstanceByUuid({

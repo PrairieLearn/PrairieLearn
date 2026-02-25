@@ -113,12 +113,12 @@ async function updateIssueOpen(
   course_id: string,
   authn_user_id: string,
 ) {
-  const result = await queryOptionalScalar(
+  const updated_issue_id = await queryOptionalScalar(
     sql.update_issue_open,
     { issue_id, new_open, course_id, authn_user_id },
     IdSchema,
   );
-  if (!result) {
+  if (!updated_issue_id) {
     throw new HttpStatusError(
       403,
       `Unable to ${new_open ? 'open' : 'close'} issue ${issue_id}: issue does not exist in this course.`,

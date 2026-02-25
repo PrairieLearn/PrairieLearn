@@ -81,7 +81,7 @@ export async function checkInvalidSharingSetDeletions(
   courseData: CourseData,
   logger: ServerJobLogger,
 ): Promise<boolean> {
-  const sharingSetsNames_db = await sqldb.queryScalars(
+  const sharingSets = await sqldb.queryScalars(
     sql.select_sharing_sets,
     { course_id: courseId },
     z.string(),
@@ -89,7 +89,7 @@ export async function checkInvalidSharingSetDeletions(
 
   const invalidSharingSetDeletions: string[] = [];
   const sharingSetNames = new Set((courseData.course.data?.sharingSets || []).map((ss) => ss.name));
-  sharingSetsNames_db.forEach((sharingSet) => {
+  sharingSets.forEach((sharingSet) => {
     if (!sharingSetNames.has(sharingSet)) {
       invalidSharingSetDeletions.push(sharingSet);
     }

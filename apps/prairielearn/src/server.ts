@@ -40,13 +40,13 @@ import favicon from 'serve-favicon';
 import { cache } from '@prairielearn/cache';
 import { flashMiddleware } from '@prairielearn/flash';
 import { addFileLogging, logger } from '@prairielearn/logger';
+import * as migrations from '@prairielearn/migrations';
 import {
   SCHEMA_MIGRATIONS_PATH,
   initBatchedMigrations,
   startBatchedMigrations,
   stopBatchedMigrations,
 } from '@prairielearn/migrations';
-import * as migrations from '@prairielearn/migrations';
 import * as namedLocks from '@prairielearn/named-locks';
 import * as nodeMetrics from '@prairielearn/node-metrics';
 import * as sqldb from '@prairielearn/postgres';

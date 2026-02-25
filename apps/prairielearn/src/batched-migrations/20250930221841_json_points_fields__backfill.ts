@@ -11,13 +11,13 @@ import { syncDiskToSqlWithLock } from '../sync/syncFromDisk.js';
 
 export default makeBatchedMigration({
   async getParameters() {
-    const max = await queryScalar(
+    const result = await queryScalar(
       'SELECT MAX(id) as max from pl_courses;',
       z.coerce.bigint().nullable(),
     );
     return {
       min: 1n,
-      max,
+      max: result,
       batchSize: 10,
     };
   },

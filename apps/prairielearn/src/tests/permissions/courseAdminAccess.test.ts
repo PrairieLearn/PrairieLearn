@@ -143,8 +143,8 @@ function runTest(context: TestContext) {
       course_role: 'Owner',
       authn_user_id: '1',
     });
-    const uid = await sqldb.queryOptionalScalar(sql.select_non_existent_user, z.string());
-    if (uid) new_user = uid;
+    const new_user_uid = await sqldb.queryOptionalScalar(sql.select_non_existent_user, z.string());
+    if (new_user_uid) new_user = new_user_uid;
   });
 
   afterAll(helperServer.after);

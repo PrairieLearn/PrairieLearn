@@ -53,7 +53,7 @@ export class BatchedMigrationRunner {
   }
 
   private async hasIncompleteJobs(migration: BatchedMigrationRow): Promise<boolean> {
-    return queryScalar(
+    return await queryScalar(
       sql.batched_migration_has_incomplete_jobs,
       { batched_migration_id: migration.id },
       z.boolean(),
@@ -61,7 +61,7 @@ export class BatchedMigrationRunner {
   }
 
   private async hasFailedJobs(migration: BatchedMigrationRow): Promise<boolean> {
-    return queryScalar(
+    return await queryScalar(
       sql.batched_migration_has_failed_jobs,
       { batched_migration_id: migration.id },
       z.boolean(),

@@ -127,12 +127,12 @@ router.post(
       const jobSequenceId = await syncHelpers.gitStatus(res.locals);
       res.redirect(`${res.locals.urlPrefix}/jobSequence/${jobSequenceId}`);
     } else if (req.body.__action === 'syncImage') {
-      const result = await queryOptionalScalar(
+      const questionId = await queryOptionalScalar(
         sql.check_question_with_image,
         { course_id: res.locals.course.id, image: req.body.single_image },
         IdSchema,
       );
-      if (result == null) {
+      if (questionId == null) {
         throw new HttpStatusError(400, 'Image not found in any question for this course');
       }
       const jobSequenceId = await syncHelpers.ecrUpdate(

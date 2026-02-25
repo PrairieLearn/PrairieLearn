@@ -110,7 +110,7 @@ export async function selectAssessmentQuestionHasInstanceQuestionGroups({
 }: {
   assessmentQuestionId: string;
 }) {
-  return queryScalar(
+  return await queryScalar(
     sql.select_assessment_question_has_instance_question_groups,
     {
       assessment_question_id: assessmentQuestionId,
@@ -138,7 +138,7 @@ export async function deleteAiInstanceQuestionGroups({
 }: {
   assessment_question_id: string;
 }) {
-  return queryScalar(
+  return await queryScalar(
     sql.delete_ai_instance_question_groups,
     {
       assessment_question_id,

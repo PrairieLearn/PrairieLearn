@@ -177,12 +177,12 @@ async function selectQuestion(
 async function lockAssessmentInstanceForInstanceQuestion(
   instance_question_id: string,
 ): Promise<void> {
-  const locked_id = await sqldb.queryOptionalScalar(
+  const assessment_instance_id = await sqldb.queryOptionalScalar(
     sql.select_and_lock_assessment_instance_for_instance_question,
     { instance_question_id },
     IdSchema,
   );
-  if (locked_id == null) {
+  if (assessment_instance_id == null) {
     throw new error.HttpStatusError(404, 'Instance question not found');
   }
 }

@@ -340,12 +340,12 @@ async function createQuestionGenerationAgent({
 
   // Create a cancellation check function that queries the database
   const checkCancellation = async () => {
-    const row = await queryOptionalScalar(
+    const status = await queryOptionalScalar(
       sql.select_message_status,
       { id: messageId },
       EnumAiQuestionGenerationMessageStatusSchema,
     );
-    if (row === 'canceled') {
+    if (status === 'canceled') {
       cancellationState.wasCanceled = true;
       return true;
     }

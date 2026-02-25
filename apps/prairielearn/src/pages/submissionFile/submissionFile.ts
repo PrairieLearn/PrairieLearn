@@ -82,7 +82,7 @@ export default function (options = { publicEndpoint: false }) {
         publicQuestionPreview: options.publicEndpoint,
       });
 
-      const fileResult = await sqldb.queryOptionalScalar(
+      const contents = await sqldb.queryOptionalScalar(
         sql.select_submission_file,
         {
           // We used the submission ID to get and authorize the variant, so the
@@ -93,7 +93,6 @@ export default function (options = { publicEndpoint: false }) {
         z.string().nullable(),
       );
 
-      const contents = fileResult ?? null;
       if (!contents) {
         res.sendStatus(404);
         return;

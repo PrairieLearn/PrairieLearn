@@ -88,8 +88,8 @@ export async function getGroupConfig(assessmentId: string): Promise<GroupConfig>
  * Returns the group id for the user's current group in an assessment, if it exists.
  * Used in checking whether the user is in a group or not.
  */
-export function getGroupId(assessmentId: string, userId: string): Promise<string | null> {
-  return sqldb.queryOptionalScalar(
+export async function getGroupId(assessmentId: string, userId: string): Promise<string | null> {
+  return await sqldb.queryOptionalScalar(
     sql.get_group_id,
     { assessment_id: assessmentId, user_id: userId },
     IdSchema,
@@ -715,12 +715,12 @@ export async function updateGroupRoles(
 }
 
 export async function deleteGroup(assessment_id: string, group_id: string, authn_user_id: string) {
-  const deleted_id = await sqldb.queryOptionalScalar(
+  const deleted_group_id = await sqldb.queryOptionalScalar(
     sql.delete_group,
     { assessment_id, group_id, authn_user_id },
     IdSchema,
   );
-  if (deleted_id == null) {
+  if (deleted_group_id == null) {
     throw new error.HttpStatusError(404, 'Group does not exist.');
   }
 }

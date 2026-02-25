@@ -144,7 +144,7 @@ export async function insertCourseRequest({
   institution: string | null;
   referral_source: string | null;
 }): Promise<string> {
-  return queryScalar(
+  return await queryScalar(
     sql.insert_course_request,
     {
       short_name,

@@ -101,7 +101,7 @@ export class FeatureManager<FeatureName extends string> {
     // Allow config to globally override a feature.
     if (name in config.features) return config.features[name];
 
-    const enabled = await queryOptionalScalar(
+    const featureIsEnabled = await queryOptionalScalar(
       sql.is_feature_enabled,
       {
         name,
@@ -111,7 +111,7 @@ export class FeatureManager<FeatureName extends string> {
       z.boolean(),
     );
 
-    if (enabled) return true;
+    if (featureIsEnabled) return true;
 
     // Allow features to be enabled in dev mode via `options.devModeFeatures`
     // in `infoCourse.json`.

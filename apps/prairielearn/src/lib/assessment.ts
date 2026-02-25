@@ -427,12 +427,12 @@ export async function gradeAllAssessmentInstances({
 export async function updateAssessmentStatisticsForCourseInstance(
   course_instance_id: string,
 ): Promise<void> {
-  const assessment_ids = await sqldb.queryScalars(
+  const rows = await sqldb.queryScalars(
     sql.select_assessments_for_statistics_update,
     { course_instance_id },
     IdSchema,
   );
-  await async.eachLimit(assessment_ids, 3, updateAssessmentStatistics);
+  await async.eachLimit(rows, 3, updateAssessmentStatistics);
 }
 
 /**
@@ -550,12 +550,12 @@ export async function updateAssessmentQuestionStatsForAssessment(
   assessment_id: string,
 ): Promise<void> {
   await sqldb.runInTransactionAsync(async () => {
-    const assessment_question_ids = await sqldb.queryScalars(
+    const assessment_questions = await sqldb.queryScalars(
       sql.select_assessment_questions,
       { assessment_id },
       IdSchema,
     );
-    await async.eachLimit(assessment_question_ids, 3, updateAssessmentQuestionStats);
+    await async.eachLimit(assessment_questions, 3, updateAssessmentQuestionStats);
     await sqldb.execute(sql.update_assessment_stats_last_updated, { assessment_id });
   });
 }
@@ -588,8 +588,8 @@ export async function deleteAllAssessmentInstancesForAssessment(
   });
 }
 
-export function selectAssessmentInstanceLastSubmissionDate(assessment_instance_id: string) {
-  return sqldb.queryScalar(
+export async function selectAssessmentInstanceLastSubmissionDate(assessment_instance_id: string) {
+  return await sqldb.queryScalar(
     sql.select_assessment_instance_last_submission_date,
     { assessment_instance_id },
     DateFromISOString.nullable(),

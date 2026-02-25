@@ -102,7 +102,7 @@ async function selectUserOwnsVariant({
   user_id: string;
   variant_id: string;
 }): Promise<boolean> {
-  return queryScalar(sql.select_user_owns_variant, { user_id, variant_id }, z.boolean());
+  return await queryScalar(sql.select_user_owns_variant, { user_id, variant_id }, z.boolean());
 }
 
 export async function selectAndAuthzVariant(options: {

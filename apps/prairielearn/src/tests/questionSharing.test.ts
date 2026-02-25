@@ -509,7 +509,7 @@ describe('Question Sharing', function () {
         'sync should not complete when attempting sync after moving shared question',
       );
 
-      const questionId = await sqldb.queryOptionalScalar(
+      const question_id = await sqldb.queryOptionalScalar(
         sql.get_question_id,
         {
           course_id: sharingCourse.id,
@@ -518,7 +518,7 @@ describe('Question Sharing', function () {
         IdSchema,
       );
       assert(
-        questionId !== null,
+        question_id !== null,
         'Sync of consuming course should not allow renaming a shared question.',
       );
       await fs.rename(questionTempPath, questionPath);

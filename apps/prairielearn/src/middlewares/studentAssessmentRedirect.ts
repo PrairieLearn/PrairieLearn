@@ -9,7 +9,7 @@ export default asyncHandler(async (req, res, next) => {
   if (!res.locals.assessment.multiple_instance) {
     // If the assessment is single-instance, check if the user already has an
     // instance. If so, redirect to it.
-    const assessmentInstanceId = await queryOptionalScalar(
+    const assessment_instance_id = await queryOptionalScalar(
       sql.select_single_assessment_instance,
       {
         assessment_id: res.locals.assessment.id,
@@ -17,8 +17,8 @@ export default asyncHandler(async (req, res, next) => {
       },
       IdSchema,
     );
-    if (assessmentInstanceId != null) {
-      res.redirect(`${res.locals.urlPrefix}/assessment_instance/${assessmentInstanceId}`);
+    if (assessment_instance_id != null) {
+      res.redirect(`${res.locals.urlPrefix}/assessment_instance/${assessment_instance_id}`);
       return;
     }
   }

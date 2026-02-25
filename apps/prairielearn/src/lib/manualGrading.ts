@@ -76,7 +76,7 @@ export async function nextInstanceQuestionUrl({
       return null;
     }
     if (prior_instance_question_id) {
-      return sqldb.queryOptionalScalar(
+      return await sqldb.queryOptionalScalar(
         sql.instance_question_group_id_for_instance_question,
         {
           instance_question_id: prior_instance_question_id,

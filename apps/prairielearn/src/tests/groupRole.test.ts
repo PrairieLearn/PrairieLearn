@@ -229,8 +229,10 @@ describe(
     });
 
     test.sequential('contains a group-based homework assessment with roles', async function () {
-      const id = await sqldb.queryScalar(sql.select_group_work_assessment_with_roles, IdSchema);
-      locals.assessment_id = id;
+      locals.assessment_id = await sqldb.queryScalar(
+        sql.select_group_work_assessment_with_roles,
+        IdSchema,
+      );
       locals.assessmentUrl = locals.courseInstanceUrl + '/assessment/' + locals.assessment_id;
     });
 

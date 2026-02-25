@@ -588,9 +588,9 @@ export async function errorAbandonedJobs() {
     }
   }
 
-  const abandonedJobSequenceIds = await queryScalars(sql.error_abandoned_job_sequences, IdSchema);
-  abandonedJobSequenceIds.forEach(function (id) {
-    socketServer.io!.to('jobSequence-' + id).emit('update');
+  const abandonedJobSequences = await queryScalars(sql.error_abandoned_job_sequences, IdSchema);
+  abandonedJobSequences.forEach(function (job_sequence_id) {
+    socketServer.io!.to('jobSequence-' + job_sequence_id).emit('update');
   });
 }
 

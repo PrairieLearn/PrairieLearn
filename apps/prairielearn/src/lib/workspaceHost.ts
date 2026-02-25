@@ -50,11 +50,11 @@ export async function markAllWorkspaceHostsUnhealthy(reason: string): Promise<Wo
   );
 }
 
-export function assignWorkspaceToHost(
+export async function assignWorkspaceToHost(
   workspace_id: string,
   capacity: number,
 ): Promise<string | null> {
-  return queryOptionalScalar(
+  return await queryOptionalScalar(
     sql.assign_workspace_to_host,
     {
       workspace_id,
@@ -70,8 +70,8 @@ export function assignWorkspaceToHost(
  * @param needed_hosts How many hosts are needed
  * @returns The number of hosts that were recaptured
  */
-export function recaptureDrainingWorkspaceHosts(needed_hosts: number) {
-  return queryScalar(sql.recapture_draining_hosts, { needed_hosts }, z.number());
+export async function recaptureDrainingWorkspaceHosts(needed_hosts: number) {
+  return await queryScalar(sql.recapture_draining_hosts, { needed_hosts }, z.number());
 }
 
 export async function drainExtraWorkspaceHosts(surplus: number) {
