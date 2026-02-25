@@ -143,6 +143,12 @@ Passing an object or array with parameters is optional.
 
 The schema passed to these functions must be a `z.object(...)` schema. Each row from the query result will be validated against the schema.
 
+If you don't need to parse and validate each row with Zod, you can use `z.unknown()` as the schema:
+
+```ts
+const cursor = await queryCursor(sql.select_all_users, z.unknown());
+```
+
 ### Scalar queries
 
 For queries that return a single column, you can use the scalar variants. These accept any Zod schema (not just `z.object(...)`) and validate the individual column value.
