@@ -136,7 +136,7 @@ export type Chunk =
   | ClientFilesAssessmentChunk
   | QuestionChunk;
 
-const DatabaseChunkSchema = z.object({
+const DatabaseChunkBaseSchema = z.object({
   id: ChunkSchema.shape.id.nullable(),
   uuid: ChunkSchema.shape.uuid.nullable(),
   type: z.enum([
@@ -148,12 +148,53 @@ const DatabaseChunkSchema = z.object({
     'clientFilesAssessment',
     'question',
   ]),
-  course_instance_id: IdSchema.nullable().optional(),
-  course_instance_name: z.string().nullable().optional(),
-  assessment_id: IdSchema.nullable().optional(),
-  assessment_name: z.string().nullable().optional(),
-  question_id: IdSchema.nullable().optional(),
-  question_name: z.string().nullable().optional(),
+  course_instance_id: IdSchema.nullable(),
+  course_instance_name: z.string().nullable(),
+  assessment_id: IdSchema.nullable(),
+  assessment_name: z.string().nullable(),
+  question_id: IdSchema.nullable(),
+  question_name: z.string().nullable(),
+});
+
+const DatabaseChunkSchema = DatabaseChunkBaseSchema.superRefine((chunk, ctx) => {
+  switch (chunk.type) {
+    case 'clientFilesCourseInstance':
+      if (chunk.course_instance_name === null) {
+        ctx.addIssue({
+          code: z.ZodIssueCode.custom,
+          path: ['course_instance_name'],
+          message: 'course_instance_name is required for clientFilesCourseInstance chunks',
+        });
+      }
+      break;
+    case 'clientFilesAssessment':
+      if (chunk.course_instance_name === null) {
+        ctx.addIssue({
+          code: z.ZodIssueCode.custom,
+          path: ['course_instance_name'],
+          message: 'course_instance_name is required for clientFilesAssessment chunks',
+        });
+      }
+      if (chunk.assessment_name === null) {
+        ctx.addIssue({
+          code: z.ZodIssueCode.custom,
+          path: ['assessment_name'],
+          message: 'assessment_name is required for clientFilesAssessment chunks',
+        });
+      }
+      break;
+    case 'question':
+      if (chunk.question_name === null) {
+        ctx.addIssue({
+          code: z.ZodIssueCode.custom,
+          path: ['question_name'],
+          message: 'question_name is required for question chunks',
+        });
+      }
+      break;
+    default:
+      break;
+  }
 });
 
 /**

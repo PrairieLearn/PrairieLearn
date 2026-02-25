@@ -79,9 +79,53 @@ export function InstructorAssessmentInstance({
   instance_questions: InstanceQuestionRow[];
   assessmentInstanceLog: InstanceLogEntry[];
 }) {
+  const instanceContext = run(() => {
+    if (resLocals.instance_group != null) {
+      return {
+        pageTitle: resLocals.instance_group.name,
+        headingName: html`${resLocals.instance_group.name}`,
+        headingLabel: html`${resLocals.instance_group.name} <i class="fas fa-users"></i>`,
+        summaryRows: html`
+          <tr>
+            <th>Name</th>
+            <td colspan="2">${resLocals.instance_group.name}</td>
+          </tr>
+          <tr>
+            <th>Group Members</th>
+            <td colspan="2">${resLocals.instance_group_uid_list.join(', ')}</td>
+          </tr>
+        `,
+        showFingerprintData: false,
+      };
+    }
+    if (resLocals.instance_user == null) {
+      throw new Error('Expected instance_user for individual assessment instance');
+    }
+    return {
+      pageTitle: resLocals.instance_user.uid,
+      headingName: html`${resLocals.instance_user.name}`,
+      headingLabel: html`${resLocals.instance_user.name} (${resLocals.instance_user.uid})`,
+      summaryRows: html`
+        <tr>
+          <th>UID</th>
+          <td colspan="2">${resLocals.instance_user.uid}</td>
+        </tr>
+        <tr>
+          <th>Name</th>
+          <td colspan="2">${resLocals.instance_user.name}</td>
+        </tr>
+        <tr>
+          <th>Role</th>
+          <td colspan="2">${resLocals.instance_role}</td>
+        </tr>
+      `,
+      showFingerprintData: true,
+    };
+  });
+
   return PageLayout({
     resLocals,
-    pageTitle: resLocals.instance_group?.name ?? resLocals.instance_user?.uid ?? '',
+    pageTitle: instanceContext.pageTitle,
     navContext: {
       type: 'instructor',
       page: 'assessment',
@@ -105,10 +149,7 @@ export function InstructorAssessmentInstance({
     `,
     content: html`
       <h1 class="visually-hidden">
-        ${resLocals.assessment_instance_label} instance for
-        ${resLocals.instance_group
-          ? html`${resLocals.instance_group.name}`
-          : html`${resLocals.instance_user!.name}`}
+        ${resLocals.assessment_instance_label} instance for ${instanceContext.headingName}
       </h1>
       ${ResetQuestionVariantsModal({
         assessment: resLocals.assessment,
@@ -117,12 +158,7 @@ export function InstructorAssessmentInstance({
       ${ExamResetNotSupportedModal({ assessment: resLocals.assessment })}
       <div class="card mb-4">
         <div class="card-header bg-primary text-white">
-          <h2>
-            ${resLocals.assessment_instance_label} Summary:
-            ${resLocals.instance_group
-              ? html`${resLocals.instance_group.name} <i class="fas fa-users"></i>`
-              : html`${resLocals.instance_user!.name} (${resLocals.instance_user!.uid})`}
-          </h2>
+          <h2>${resLocals.assessment_instance_label} Summary: ${instanceContext.headingLabel}</h2>
         </div>
         <div class="table-responsive">
           <table
@@ -130,31 +166,7 @@ export function InstructorAssessmentInstance({
             aria-label="Assessment instance summary"
           >
             <tbody>
-              ${resLocals.instance_group
-                ? html`
-                    <tr>
-                      <th>Name</th>
-                      <td colspan="2">${resLocals.instance_group.name}</td>
-                    </tr>
-                    <tr>
-                      <th>Group Members</th>
-                      <td colspan="2">${resLocals.instance_group_uid_list.join(', ')}</td>
-                    </tr>
-                  `
-                : html`
-                    <tr>
-                      <th>UID</th>
-                      <td colspan="2">${resLocals.instance_user!.uid}</td>
-                    </tr>
-                    <tr>
-                      <th>Name</th>
-                      <td colspan="2">${resLocals.instance_user!.name}</td>
-                    </tr>
-                    <tr>
-                      <th>Role</th>
-                      <td colspan="2">${resLocals.instance_role}</td>
-                    </tr>
-                  `}
+              ${instanceContext.summaryRows}
               <tr>
                 <th>Instance</th>
                 <td colspan="2">
@@ -165,7 +177,7 @@ export function InstructorAssessmentInstance({
                   >)
                 </td>
               </tr>
-              ${resLocals.instance_user
+              ${instanceContext.showFingerprintData
                 ? html`
                     <tr>
                       <th>Fingerprint Changes</th>
@@ -300,12 +312,7 @@ export function InstructorAssessmentInstance({
 
       <div class="card mb-4">
         <div class="card-header bg-primary text-white">
-          <h2>
-            ${resLocals.assessment_instance_label} Questions:
-            ${resLocals.instance_group
-              ? html`${resLocals.instance_group.name} <i class="fas fa-users"></i>`
-              : html`${resLocals.instance_user!.name} (${resLocals.instance_user!.uid})`}
-          </h2>
+          <h2>${resLocals.assessment_instance_label} Questions: ${instanceContext.headingLabel}</h2>
         </div>
 
         <div class="table-responsive">
@@ -516,10 +523,7 @@ export function InstructorAssessmentInstance({
       <div class="card mb-4">
         <div class="card-header bg-primary text-white">
           <h2>
-            ${resLocals.assessment_instance_label} Statistics:
-            ${resLocals.instance_group
-              ? html`${resLocals.instance_group.name} <i class="fas fa-users"></i>`
-              : html`${resLocals.instance_user!.name} (${resLocals.instance_user!.uid})`}
+            ${resLocals.assessment_instance_label} Statistics: ${instanceContext.headingLabel}
           </h2>
         </div>
         <div class="table-responsive">
@@ -581,12 +585,7 @@ export function InstructorAssessmentInstance({
 
       <div class="card mb-4">
         <div class="card-header bg-primary text-white">
-          <h2>
-            ${resLocals.assessment_instance_label} Log:
-            ${resLocals.instance_group
-              ? html`${resLocals.instance_group.name} <i class="fas fa-users"></i>`
-              : html`${resLocals.instance_user!.name} (${resLocals.instance_user!.uid})`}
-          </h2>
+          <h2>${resLocals.assessment_instance_label} Log: ${instanceContext.headingLabel}</h2>
         </div>
         <div class="card-body">
           <small>
@@ -614,7 +613,7 @@ export function InstructorAssessmentInstance({
               <tr>
                 <th>Time</th>
                 <th>User</th>
-                ${resLocals.instance_user ? html`<th>Fingerprint</th>` : ''}
+                ${instanceContext.showFingerprintData ? html`<th>Fingerprint</th>` : ''}
                 <th>Event</th>
                 <th>Instructor question</th>
                 <th>Student question</th>
@@ -627,7 +626,7 @@ export function InstructorAssessmentInstance({
                   <tr>
                     <td class="text-nowrap">${row.formatted_date}</td>
                     <td>${row.auth_user_uid ?? html`&mdash;`}</td>
-                    ${resLocals.instance_user
+                    ${instanceContext.showFingerprintData
                       ? row.client_fingerprint && row.client_fingerprint_number !== null
                         ? html`
                             <td>
