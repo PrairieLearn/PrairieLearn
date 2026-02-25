@@ -16,7 +16,7 @@ SELECT
   COALESCE(
     manual_instance_question_group_id,
     ai_instance_question_group_id
-  ) AS instance_question_group_id
+  )
 FROM
   instance_questions AS iq
 WHERE

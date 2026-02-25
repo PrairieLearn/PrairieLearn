@@ -251,4 +251,4 @@ SELECT
     WHERE
       id = $question_id
       AND share_publicly
-  ) AS is_shared;
+  );
