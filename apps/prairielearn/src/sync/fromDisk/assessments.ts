@@ -6,7 +6,7 @@ import { assertNever } from '@prairielearn/utils';
 import { IdSchema } from '@prairielearn/zod';
 
 import { config } from '../../lib/config.js';
-import { type AssessmentTool, SprocSyncAssessmentsSchema } from '../../lib/db-types.js';
+import { type AssessmentTool, EnumAssessmentToolSchema, SprocSyncAssessmentsSchema } from '../../lib/db-types.js';
 import { features } from '../../lib/features/index.js';
 import {
   type AssessmentJson,
@@ -515,9 +515,10 @@ async function syncAssessmentTools(
 
     if (assessment.data?.tools) {
       for (const [toolName, { enabled, ...settings }] of Object.entries(assessment.data.tools)) {
+        const tool = EnumAssessmentToolSchema.parse(toolName);
         toolRows.push({
           assessment_id: assessmentId,
-          tool: toolName,
+          tool,
           enabled,
           settings,
         });
@@ -550,9 +551,10 @@ async function syncAssessmentTools(
       const zoneRow = zoneRows[index];
 
       for (const [toolName, { enabled, ...settings }] of Object.entries(zone.tools)) {
+        const tool = EnumAssessmentToolSchema.parse(toolName);
         toolRows.push({
           zone_id: zoneRow.id,
-          tool: toolName,
+          tool,
           enabled,
           settings,
         });
