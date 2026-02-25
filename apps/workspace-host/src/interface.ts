@@ -44,7 +44,39 @@ interface WorkspaceServerSettings {
   port?: number;
 }
 
-interface WorkspaceSettings {
+/**
+ * These schemas are somewhat duplicated from db-types.ts in apps/prairielearn.
+ * TODO: break out types into a shared package.
+ */
+const WorkspaceRowSchema = z.object({
+  id: z.coerce.string(),
+  state: z.enum(['uninitialized', 'stopped', 'launching', 'running']),
+  launch_uuid: z.string().nullable(),
+  launch_port: z.coerce.number(),
+  version: z.coerce.string(),
+});
+
+const SelectWorkspaceSchema = z.object({
+  version: z.coerce.string(),
+  course_id: z.coerce.string(),
+  institution_id: z.coerce.string(),
+});
+
+const PortOccupiedSchema = z.object({
+  port_used: z.boolean(),
+});
+
+const WorkspaceSettingsRowSchema = z.object({
+  workspace_image: z.string(),
+  workspace_port: z.coerce.number(),
+  workspace_home: z.string(),
+  workspace_graded_files: z.array(z.string()),
+  workspace_args: z.string().nullable(),
+  workspace_enable_networking: z.boolean().nullable(),
+  workspace_environment: z.record(z.string(), z.any()).nullable(),
+});
+
+type WorkspaceSettings = {
   workspace_image: string;
   workspace_port: number;
   workspace_home: string;
@@ -52,21 +84,17 @@ interface WorkspaceSettings {
   workspace_args: string;
   workspace_enable_networking: boolean;
   workspace_environment: string[];
-}
+};
 
-/**
- * These types are somewhat duplicated from WorkspaceSchema in apps/prairielearn.
- * TODO: break out types into a shared package.
- */
 interface Workspace {
-  local_name: string;
-  launch_uuid: string;
-  remote_name: string;
   id: string | number;
   version: string;
+  launch_uuid: string;
+  launch_port: number;
+  local_name: string;
+  remote_name: string;
   course_id: string;
   institution_id: string;
-  launch_port: number;
   settings: WorkspaceSettings;
 }
 
@@ -250,10 +278,12 @@ async
     async () => {
       // If we have any running workspaces, we're probably recovering from a
       // crash and we should sync files to S3
-      const result = await sqldb.queryAsync(sql.recover_crash_workspaces, {
-        instance_id: workspace_server_settings.instance_id,
-      });
-      await async.eachSeries(result.rows, async (ws) => {
+      const workspaces = await sqldb.queryRows(
+        sql.recover_crash_workspaces,
+        { instance_id: workspace_server_settings.instance_id },
+        WorkspaceRowSchema,
+      );
+      await async.eachSeries(workspaces, async (ws) => {
         if (ws.state === 'launching') {
           // We don't know what state the container is in, kill it and let the
           // user retry initializing it.
@@ -263,7 +293,7 @@ async
             instance_id: workspace_server_settings.instance_id,
           });
           try {
-            const container = await _getDockerContainerByLaunchUuid(ws.launch_uuid);
+            const container = await _getDockerContainerByLaunchUuid(ws.launch_uuid!);
             await killAndRemoveWorkspace(ws.id, container);
           } catch (err) {
             debug(`Couldn't find container: ${err}`);
@@ -279,7 +309,7 @@ async
       });
       for (const container of allContainers) {
         const containerWorkspaceId = container.Labels['prairielearn.workspace-id'];
-        if (result.rows.some((ws) => ws.id === containerWorkspaceId)) continue;
+        if (workspaces.some((ws) => ws.id === containerWorkspaceId)) continue;
 
         logger.info(
           `Killing dangling container ${container.Id} for workspace ${containerWorkspaceId}`,
@@ -311,14 +341,16 @@ async
  */
 async function pruneStoppedContainers() {
   const instance_id = workspace_server_settings.instance_id;
-  const recently_stopped = await sqldb.queryAsync(sql.get_stopped_workspaces, {
-    instance_id,
-  });
-  await async.each(recently_stopped.rows, async (ws) => {
+  const recently_stopped = await sqldb.queryRows(
+    sql.get_stopped_workspaces,
+    { instance_id },
+    WorkspaceRowSchema,
+  );
+  await async.each(recently_stopped, async (ws) => {
     let container;
     try {
       // Try to grab the container, but don't care if it doesn't exist
-      container = await _getDockerContainerByLaunchUuid(ws.launch_uuid);
+      container = await _getDockerContainerByLaunchUuid(ws.launch_uuid!);
     } catch {
       // No container
       await sqldb.execute(sql.clear_workspace_on_shutdown, {
@@ -340,12 +372,14 @@ async function pruneStoppedContainers() {
  */
 async function pruneRunawayContainers() {
   const instance_id = workspace_server_settings.instance_id;
-  const db_workspaces = await sqldb.queryAsync(sql.get_running_workspaces, {
-    instance_id,
-  });
+  const db_workspaces = await sqldb.queryRows(
+    sql.get_running_workspaces,
+    { instance_id },
+    WorkspaceRowSchema,
+  );
 
   const db_workspaces_uuid_set = new Set(
-    db_workspaces.rows.map((ws) => `workspace-${ws.launch_uuid}`),
+    db_workspaces.map((ws) => `workspace-${ws.launch_uuid}`),
   );
   let running_workspaces: Docker.ContainerInfo[] | undefined;
   try {
@@ -463,16 +497,17 @@ async function markSelfUnhealthy(reason: Error | string) {
  * @param workspace_id Workspace ID to search by.
  * @returns Workspace object, as described above.
  */
-async function _getWorkspace(workspace_id: string | number): Promise<Workspace> {
-  const result = await sqldb.queryOneRowAsync(sql.get_workspace, {
-    workspace_id,
-    instance_id: workspace_server_settings.instance_id,
-  });
-  const workspace = result.rows[0];
-  workspace.local_name = `workspace-${workspace.launch_uuid}`;
-  workspace.remote_name = `workspace-${workspace.id}-${workspace.version}`;
-
-  return workspace;
+async function _getWorkspace(workspace_id: string | number) {
+  const row = await sqldb.queryRow(
+    sql.get_workspace,
+    { workspace_id, instance_id: workspace_server_settings.instance_id },
+    WorkspaceRowSchema,
+  );
+  return {
+    ...row,
+    local_name: `workspace-${row.launch_uuid}`,
+    remote_name: `workspace-${row.id}-${row.version}`,
+  };
 }
 
 const _allocateContainerPortMutex = new Mutex();
@@ -488,8 +523,8 @@ async function _allocateContainerPort(workspace_id: string | number): Promise<nu
       instance_id: workspace_server_settings.instance_id,
       port,
     };
-    const result = await sqldb.queryOneRowAsync(sql.get_is_port_occupied, params);
-    return !result.rows[0].port_used;
+    const { port_used } = await sqldb.queryRow(sql.get_is_port_occupied, params, PortOccupiedSchema);
+    return !port_used;
   }
 
   /** Spin up a server to check if a port is free */
@@ -585,21 +620,23 @@ function _checkServer(workspace: Workspace): Promise<void> {
  * @returns Workspace launch settings.
  */
 async function _getWorkspaceSettings(workspace_id: string | number): Promise<WorkspaceSettings> {
-  const result = await sqldb.queryOneRowAsync(sql.select_workspace_settings, {
-    workspace_id,
-  });
-  const workspace_environment = result.rows[0].workspace_environment || {};
+  const row = await sqldb.queryRow(
+    sql.select_workspace_settings,
+    { workspace_id },
+    WorkspaceSettingsRowSchema,
+  );
+  const workspace_environment: Record<string, any> = row.workspace_environment || {};
 
   // Set base URL needed by certain workspaces (e.g., jupyterlab, rstudio)
   workspace_environment['WORKSPACE_BASE_URL'] = `/pl/workspace/${workspace_id}/container/`;
 
   const settings = {
-    workspace_image: result.rows[0].workspace_image,
-    workspace_port: result.rows[0].workspace_port,
-    workspace_home: result.rows[0].workspace_home,
-    workspace_graded_files: result.rows[0].workspace_graded_files,
-    workspace_args: result.rows[0].workspace_args || '',
-    workspace_enable_networking: !!result.rows[0].workspace_enable_networking,
+    workspace_image: row.workspace_image,
+    workspace_port: row.workspace_port,
+    workspace_home: row.workspace_home,
+    workspace_graded_files: row.workspace_graded_files,
+    workspace_args: row.workspace_args || '',
+    workspace_enable_networking: !!row.workspace_enable_networking,
     // Convert {key: 'value'} to ['key=value'] and {key: null} to ['key'] for Docker API
     workspace_environment: Object.entries(workspace_environment).map(([k, v]) =>
       v === null ? k : `${k}=${v}`,
@@ -902,9 +939,11 @@ async function initSequence(workspace_id: string | number, useInitialZip: boolea
   };
   await sqldb.execute(sql.set_workspace_launch_uuid, params);
 
-  const { version, course_id, institution_id } = (
-    await sqldb.queryOneRowAsync(sql.select_workspace, { workspace_id })
-  ).rows[0];
+  const { version, course_id, institution_id } = await sqldb.queryRow(
+    sql.select_workspace,
+    { workspace_id },
+    SelectWorkspaceSchema,
+  );
 
   logger.info(`Launching workspace-${workspace_id}-${version} (useInitialZip=${useInitialZip})`);
   try {
@@ -982,11 +1021,13 @@ async function initSequence(workspace_id: string | number, useInitialZip: boolea
       // background maintenance processes will soon notice that this container
       // should not be running on this host and kill it.
       const hostname = await sqldb.runInTransactionAsync(async () => {
-        const currentWorkspace = await sqldb.queryOneRowAsync(sql.select_and_lock_workspace, {
-          workspace_id: workspace.id,
-        });
-        const current_launch_uuid = currentWorkspace.rows[0].launch_uuid;
-        const current_version = currentWorkspace.rows[0].version;
+        const currentWorkspace = await sqldb.queryRow(
+          sql.select_and_lock_workspace,
+          { workspace_id: workspace.id },
+          WorkspaceRowSchema,
+        );
+        const current_launch_uuid = currentWorkspace.launch_uuid;
+        const current_version = currentWorkspace.version;
 
         // Check if the launch_uuid has changed (workspace was rebooted)
         if (current_launch_uuid !== workspace.launch_uuid) {
@@ -1097,7 +1138,7 @@ async function sendGradedFilesArchive(workspace_id: string | number, res: Respon
 async function sendLogs(workspaceId: string | number, res: Response) {
   try {
     const workspace = await _getWorkspace(workspaceId);
-    const container = await _getDockerContainerByLaunchUuid(workspace.launch_uuid);
+    const container = await _getDockerContainerByLaunchUuid(workspace.launch_uuid!);
     const logs = await container.logs({
       stdout: true,
       stderr: true,
