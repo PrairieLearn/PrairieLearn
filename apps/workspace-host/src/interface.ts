@@ -52,7 +52,7 @@ const WorkspaceRowSchema = z.object({
   id: z.coerce.string(),
   state: z.enum(['uninitialized', 'stopped', 'launching', 'running']),
   launch_uuid: z.string().nullable(),
-  launch_port: z.coerce.number(),
+  launch_port: z.coerce.number().nullable(),
   version: z.coerce.string(),
 });
 
