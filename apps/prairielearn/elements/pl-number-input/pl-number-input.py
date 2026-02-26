@@ -1,4 +1,5 @@
 import random
+from decimal import Decimal, InvalidOperation
 from enum import Enum
 from typing import Any
 
@@ -136,75 +137,61 @@ def format_true_ans(
     return correct_answer
 
 
-def _split_scientific(normalized: str) -> tuple[str, int]:
-    """Split a normalized number string into (mantissa, exponent).
+def _normalize_number_string(number_string: str) -> str | None:
+    """Normalize a raw answer string for precision analysis.
 
-    For plain numbers like ``"42.5"``, returns ``("42.5", 0)``.
-    For scientific notation like ``"1.5e-3"``, returns ``("1.5", -3)``.
+    Strips whitespace, signs, and unicode minus. Expands scientific notation
+    to its decimal form (e.g. ``"1.5e-3"`` becomes ``"0.0015"``).
 
     Returns:
-        A tuple of (mantissa, exponent).
+        A plain decimal string, or ``None`` for fractions.
     """
-    lower = normalized.lower()
-    if "e" in lower:
-        idx = lower.index("e")
-        return (normalized[:idx], int(normalized[idx + 1 :]))
-    return (normalized, 0)
+    s = number_string.strip().lstrip("+-\u2212")
+    if "/" in s:
+        return None
+    if "e" in s.lower():
+        try:
+            return format(Decimal(s), "f")
+        except InvalidOperation:
+            return s
+    return s
 
 
 def get_string_precision(number_string: str) -> float:
-    normalized = number_string.lstrip("+-")
-
-    # Fractions don't have a meaningful string precision;
-    # return 0 (highest precision) to avoid spurious warnings.
-    if "/" in normalized:
+    normalized = _normalize_number_string(number_string)
+    if normalized is None:
         return 0.0
 
-    # For scientific notation, analyze the mantissa and apply the exponent.
-    mantissa, exponent = _split_scientific(normalized)
+    if "." in normalized:
+        return 10 ** -len(normalized.partition(".")[2])
 
-    if "." in mantissa:
-        return 10 ** (-len(mantissa.partition(".")[2]) + exponent)
-
-    return 10 ** (len(mantissa) - len(mantissa.rstrip("0")) + exponent)
+    return 10 ** (len(normalized) - len(normalized.rstrip("0")))
 
 
 def get_string_significant_digits(number_string: str) -> int:
-    normalized = number_string.lstrip("+-")
-
-    # Fractions don't have meaningful significant figures;
-    # return a large value to avoid spurious precision warnings.
-    if "/" in normalized:
+    normalized = _normalize_number_string(number_string)
+    if normalized is None:
         return 1000
 
-    # For scientific notation, only the mantissa determines sig figs.
-    mantissa = _split_scientific(normalized)[0]
-
-    if "." in mantissa:
-        int_part, _, frac_part = mantissa.partition(".")
+    if "." in normalized:
+        int_part, _, frac_part = normalized.partition(".")
         all_digits = int_part + frac_part
         stripped = all_digits.lstrip("0")
         if stripped == "":
             return len(frac_part) if frac_part else 1
         return len(stripped)
 
-    stripped = mantissa.strip("0")
+    stripped = normalized.strip("0")
     return len(stripped) if stripped else 1
 
 
 def get_string_decimal_digits(number_string: str) -> int:
-    normalized = number_string.lstrip("+-")
-
-    # Fractions don't have meaningful decimal digits;
-    # return a large value to avoid spurious precision warnings.
-    if "/" in normalized:
+    normalized = _normalize_number_string(number_string)
+    if normalized is None:
         return 1000
 
-    # For scientific notation, only the mantissa determines decimal digits.
-    mantissa = _split_scientific(normalized)[0]
-
-    if "." in mantissa:
-        decimal_part = len(mantissa.partition(".")[2].lstrip("0"))
+    if "." in normalized:
+        decimal_part = len(normalized.partition(".")[2].lstrip("0"))
         return decimal_part
     return 0  # no decimal separator means there are no decimal digits
 
