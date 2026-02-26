@@ -76,7 +76,7 @@ const WorkspaceSettingsRowSchema = z.object({
   workspace_environment: z.record(z.string(), z.any()).nullable(),
 });
 
-type WorkspaceSettings = {
+interface WorkspaceSettings {
   workspace_image: string;
   workspace_port: number;
   workspace_home: string;
@@ -84,7 +84,7 @@ type WorkspaceSettings = {
   workspace_args: string;
   workspace_enable_networking: boolean;
   workspace_environment: string[];
-};
+}
 
 interface Workspace {
   id: string | number;
@@ -378,9 +378,7 @@ async function pruneRunawayContainers() {
     WorkspaceRowSchema,
   );
 
-  const db_workspaces_uuid_set = new Set(
-    db_workspaces.map((ws) => `workspace-${ws.launch_uuid}`),
-  );
+  const db_workspaces_uuid_set = new Set(db_workspaces.map((ws) => `workspace-${ws.launch_uuid}`));
   let running_workspaces: Docker.ContainerInfo[] | undefined;
   try {
     running_workspaces = await docker.listContainers({ all: true });
@@ -523,7 +521,11 @@ async function _allocateContainerPort(workspace_id: string | number): Promise<nu
       instance_id: workspace_server_settings.instance_id,
       port,
     };
-    const { port_used } = await sqldb.queryRow(sql.get_is_port_occupied, params, PortOccupiedSchema);
+    const { port_used } = await sqldb.queryRow(
+      sql.get_is_port_occupied,
+      params,
+      PortOccupiedSchema,
+    );
     return !port_used;
   }
 
