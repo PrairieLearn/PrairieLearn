@@ -135,7 +135,7 @@ export function ZoneQuestionBlock({
   );
 }
 
-export function ZoneQuestionBlockHeader({
+function ZoneQuestionBlockHeader({
   zoneQuestionBlock,
   zoneQuestionBlockNumber,
   nTableCols,

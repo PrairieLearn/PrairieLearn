@@ -140,11 +140,10 @@ function createEditorReducer(initialState: EditorState) {
         }
 
         const newQuestionMetadata = { ...state.questionMetadata };
-        // Remove from question metadata
-        delete newQuestionMetadata[questionId];
 
         if (alternativeTrackingId !== undefined) {
           // Deleting an alternative from an alternative group
+          delete newQuestionMetadata[questionId];
           const altResult = findAlternativeByTrackingId(
             questionResult.question,
             alternativeTrackingId,
@@ -158,6 +157,13 @@ function createEditorReducer(initialState: EditorState) {
           questionResult.question.alternatives!.splice(altResult.index, 1);
         } else {
           // Deleting a regular question or entire alternative group
+          if (questionResult.question.alternatives) {
+            for (const alt of questionResult.question.alternatives) {
+              if (alt.id) delete newQuestionMetadata[alt.id];
+            }
+          } else if (questionId) {
+            delete newQuestionMetadata[questionId];
+          }
           questionResult.zone.questions.splice(questionResult.questionIndex, 1);
         }
 

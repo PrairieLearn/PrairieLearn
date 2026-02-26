@@ -163,8 +163,6 @@ test.describe('Assessment questions', () => {
     ]);
   });
 
-  // Test assessment has 1 zone with 5 questions:
-  // partialCredit1 (points=1, maxPoints=5), partialCredit2, partialCredit3, partialCredit4_v2, partialCredit6_no_partial
   test('can use question picker to change a question QID', async ({ page, testCoursePath }) => {
     const assessmentTid = 'hw3-partialCredit';
     const assessment = await selectAssessmentByTid({

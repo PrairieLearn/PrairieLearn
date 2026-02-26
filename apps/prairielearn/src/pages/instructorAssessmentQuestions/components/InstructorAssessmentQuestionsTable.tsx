@@ -550,7 +550,6 @@ function InstructorAssessmentQuestionsTableInner({
         questionData: newQuestionData ? buildQuestionMetadata(newQuestionData) : undefined,
       });
     } else if (questionEditState.mode === 'edit') {
-      // Update existing question
       if (newQuestionData) {
         dispatch({
           type: 'UPDATE_QUESTION_METADATA',

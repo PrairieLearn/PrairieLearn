@@ -180,10 +180,7 @@ export function AssessmentQuestion({
     <td key="title" style={{ whiteSpace: 'nowrap' }}>
       <QuestionNumberTitleCell
         questionNumber={questionNumber}
-        alternativeNumber={
-          // Use live state (alternative prop) rather than questionData which may be stale
-          alternative != null ? alternativeIndex + 1 : null
-        }
+        alternativeNumber={alternative != null ? alternativeIndex + 1 : null}
         titleContent={
           hasCoursePermissionPreview ? (
             <a href={`${urlPrefix}/question/${questionData.question.id}/`}>

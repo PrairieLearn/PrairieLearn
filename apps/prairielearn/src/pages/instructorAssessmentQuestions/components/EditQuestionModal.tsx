@@ -1,5 +1,5 @@
 import clsx from 'clsx';
-import { useMemo, useRef } from 'react';
+import { useRef } from 'react';
 import { Modal } from 'react-bootstrap';
 import { useForm } from 'react-hook-form';
 
@@ -78,7 +78,7 @@ export function EditQuestionModal({
     updatedQuestion: ZoneQuestionBlockForm | QuestionAlternativeForm,
     newQuestionData: QuestionByQidResult | undefined,
   ) => void;
-  handleUpdateGroup?: (group: ZoneQuestionBlockForm) => void;
+  handleUpdateGroup: (group: ZoneQuestionBlockForm) => void;
   assessmentType: 'Homework' | 'Exam';
   onPickQuestion?: (currentFormValues: ZoneQuestionBlockForm | QuestionAlternativeForm) => void;
   onAddAndPickAnother?: () => void;
@@ -173,14 +173,13 @@ export function EditQuestionModal({
     values: formValues,
   });
 
-  // If in group mode, render the group editing form
-  if (isGroupMode && group) {
+  if (isGroupMode && group && (type === 'create-group' || type === 'edit-group')) {
     return (
       <EditAlternativeGroupForm
         show={show}
         type={type}
         group={group}
-        handleUpdateGroup={handleUpdateGroup!}
+        handleUpdateGroup={handleUpdateGroup}
         assessmentType={assessmentType}
         onHide={onHide}
       />
@@ -612,21 +611,17 @@ function EditAlternativeGroupForm({
   handleUpdateGroup: (group: ZoneQuestionBlockForm) => void;
   assessmentType: 'Homework' | 'Exam';
 }) {
-  const formValues = useMemo<ZoneQuestionBlockForm>(() => group, [group]);
-
-  // Determine which property was originally set (points vs autoPoints)
-  const originalPointsProperty = useMemo<'points' | 'autoPoints'>(() => {
+  const originalPointsProperty = run((): 'points' | 'autoPoints' => {
     if (group.points != null) return 'points';
     if (group.autoPoints != null) return 'autoPoints';
     return 'autoPoints';
-  }, [group]);
+  });
 
-  // Determine which property was originally set (maxPoints vs maxAutoPoints)
-  const originalMaxProperty = useMemo<'maxPoints' | 'maxAutoPoints'>(() => {
+  const originalMaxProperty = run((): 'maxPoints' | 'maxAutoPoints' => {
     if (group.maxAutoPoints != null) return 'maxAutoPoints';
     if (group.maxPoints != null) return 'maxPoints';
     return originalPointsProperty === 'points' ? 'maxPoints' : 'maxAutoPoints';
-  }, [group, originalPointsProperty]);
+  });
 
   const autoPointsDisplayValue = group[originalPointsProperty] ?? undefined;
   const maxAutoPointsDisplayValue = group[originalMaxProperty] ?? undefined;
@@ -638,7 +633,7 @@ function EditAlternativeGroupForm({
   } = useForm<ZoneQuestionBlockForm>({
     mode: 'onSubmit',
     reValidateMode: 'onChange',
-    values: formValues,
+    values: group,
   });
 
   const modalTitle = type === 'create-group' ? 'Add alternative group' : 'Edit alternative group';
