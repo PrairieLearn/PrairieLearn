@@ -13,7 +13,10 @@ WITH
     GROUP BY
       i.instance_question_id
   ),
-  latest_submissions AS (
+  -- MATERIALIZED forces these CTEs to be computed once instead of being
+  -- inlined into the outer query's nested loop join, where they would be
+  -- re-executed once per outer row.
+  latest_submissions AS MATERIALIZED (
     SELECT DISTINCT
       ON (iq.id) iq.id AS instance_question_id,
       s.id AS submission_id,
@@ -28,7 +31,7 @@ WITH
       iq.id ASC,
       s.date DESC
   ),
-  rubric_items_agg AS (
+  rubric_items_agg AS MATERIALIZED (
     SELECT
       ls.instance_question_id,
       COALESCE(
