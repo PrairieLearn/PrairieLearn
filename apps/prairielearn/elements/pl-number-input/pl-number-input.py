@@ -137,10 +137,11 @@ def format_true_ans(
 
 
 def get_string_precision(number_string: str) -> float:
-    if "." in number_string:
-        return 10 ** -len(number_string.partition(".")[2])
+    normalized = number_string.lstrip("+-")
+    if "." in normalized:
+        return 10 ** -len(normalized.partition(".")[2])
 
-    return 10 ** (len(number_string) - len(number_string.rstrip("0")))
+    return 10 ** (len(normalized) - len(normalized.rstrip("0")))
 
 
 def get_string_significant_digits(number_string: str) -> int:
@@ -158,11 +159,11 @@ def get_string_significant_digits(number_string: str) -> int:
 
 
 def get_string_decimal_digits(number_string: str) -> int:
-    if "." in number_string:
-        number_string_partition = number_string.partition(".")
-        decimal_part = len(number_string_partition[2].lstrip("0"))
+    normalized = number_string.lstrip("+-")
+    if "." in normalized:
+        decimal_part = len(normalized.partition(".")[2].lstrip("0"))
         return decimal_part
-    return 0  # no decimal seperator means there are no decimal digits
+    return 0  # no decimal separator means there are no decimal digits
 
 
 def render(element_html: str, data: pl.QuestionData) -> str:
@@ -489,7 +490,12 @@ def grade(element_html: str, data: pl.QuestionData) -> None:
             rtol = pl.get_float_attrib(element, "rtol", RTOL_DEFAULT)
             atol = pl.get_float_attrib(element, "atol", ATOL_DEFAULT)
 
-            submitted_answer_precision = get_string_precision(str(submitted_answer))
+            raw_answer = (
+                raw_submitted_answer
+                if raw_submitted_answer is not None
+                else str(submitted_answer)
+            )
+            submitted_answer_precision = get_string_precision(str(raw_answer))
             is_correct = pl.is_correct_scalar_ra(
                 submitted_answer_converted, correct_answer_converted, rtol, atol
             )

@@ -7,7 +7,7 @@ from prairielearn import ...
 
 import math
 from collections.abc import Callable
-from typing import Any, Literal
+from typing import Any, Literal, overload
 
 import numpy as np
 import numpy.typing as npt
@@ -166,10 +166,37 @@ def check_answers_names(data: QuestionData, name: str) -> None:
     data["answers_names"][name] = True
 
 
+_GradeResult = tuple[bool | float, str | None]
+
+
+@overload
 def grade_answer_parameterized(
     data: QuestionData,
     name: str,
-    grade_function: Callable[..., tuple[bool | float, str | None]],
+    grade_function: Callable[[Any, str | None], _GradeResult],
+    weight: int = ...,
+    timeout: float | None = ...,
+    timeout_format_error: str | None = ...,
+    *,
+    pass_raw_submitted_answer: Literal[True],
+) -> None: ...
+
+
+@overload
+def grade_answer_parameterized(
+    data: QuestionData,
+    name: str,
+    grade_function: Callable[[Any], _GradeResult],
+    weight: int = ...,
+    timeout: float | None = ...,
+    timeout_format_error: str | None = ...,
+) -> None: ...
+
+
+def grade_answer_parameterized(
+    data: QuestionData,
+    name: str,
+    grade_function: Callable[..., _GradeResult],
     weight: int = 1,
     timeout: float | None = None,
     timeout_format_error: str | None = None,
