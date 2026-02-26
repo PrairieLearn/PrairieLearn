@@ -1,4 +1,4 @@
-import type { StaffAssessmentQuestionRow } from '../lib/assessment-question.js';
+import type { StaffAssessmentQuestionRow } from '../lib/assessment-question.shared.js';
 
 export function AssessmentQuestionHeaders({
   question,
