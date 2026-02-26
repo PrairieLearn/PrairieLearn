@@ -49,11 +49,11 @@ const courseQuestionsQuery = t.procedure.query(async (opts) => {
     id: q.id,
     qid: q.qid,
     title: q.title,
-    topic: { id: String(q.topic.id), name: q.topic.name, color: q.topic.color },
-    tags: q.tags?.map((t) => ({ id: String(t.id), name: t.name, color: t.color })) ?? null,
+    topic: { id: q.topic.id, name: q.topic.name, color: q.topic.color },
+    tags: q.tags?.map((t) => ({ id: t.id, name: t.name, color: t.color })) ?? null,
     assessments:
       q.assessments?.map((a) => ({
-        assessment_id: String(a.assessment.id),
+        assessment_id: a.assessment.id,
         label: a.assessment_set.abbreviation + a.assessment.number,
         color: a.assessment_set.color,
         assessment_set_abbreviation: a.assessment_set.abbreviation,

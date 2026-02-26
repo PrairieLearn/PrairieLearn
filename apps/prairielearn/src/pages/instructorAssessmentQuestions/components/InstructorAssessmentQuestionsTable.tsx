@@ -16,13 +16,18 @@ import {
 import { QueryClient, useQuery } from '@tanstack/react-query';
 import { useMemo, useRef, useState } from 'react';
 
+import { run } from '@prairielearn/run';
 import { useModalState } from '@prairielearn/ui';
 
 import {
   type StaffAssessmentQuestionRow,
   StaffAssessmentQuestionRowSchema,
 } from '../../../lib/assessment-question.shared.js';
-import type { StaffAssessment, StaffCourse } from '../../../lib/client/safe-db-types.js';
+import type {
+  StaffAssessment,
+  StaffCourse,
+  StaffCourseInstance,
+} from '../../../lib/client/safe-db-types.js';
 import { QueryClientProviderDebug } from '../../../lib/client/tanstackQuery.js';
 import type { ZoneAssessmentJson } from '../../../schemas/infoAssessment.js';
 import type { QuestionByQidResult } from '../trpc.js';
@@ -183,6 +188,7 @@ function EditModeButtons({
 
 interface InstructorAssessmentQuestionsTableInnerProps {
   course: StaffCourse;
+  courseInstance: StaffCourseInstance;
   questionRows: StaffAssessmentQuestionRow[];
   jsonZones: ZoneAssessmentJson[];
   assessment: StaffAssessment;
@@ -201,6 +207,7 @@ interface InstructorAssessmentQuestionsTableInnerProps {
  */
 function InstructorAssessmentQuestionsTableInner({
   course,
+  courseInstance,
   questionRows,
   jsonZones,
   urlPrefix,
@@ -241,9 +248,9 @@ function InstructorAssessmentQuestionsTableInner({
   const resetModal = useModalState<string>(null);
   const editZoneModal = useModalState<EditZoneModalData>(null);
 
-  // Fetch course questions on-demand when edit mode is activated
   const courseQuestionsQuery = useQuery({
     ...trpc.courseQuestions.queryOptions(),
+    // Fetch course questions on-demand when edit mode is activated
     enabled: editMode,
   });
   const courseQuestions = courseQuestionsQuery.data ?? [];
@@ -298,12 +305,15 @@ function InstructorAssessmentQuestionsTableInner({
     if (questionEditState.mode === 'create-group' || questionEditState.mode === 'edit-group') {
       return;
     }
-    const zoneTrackingId =
-      questionEditState.mode === 'create'
-        ? questionEditState.zoneTrackingId
-        : (zones.find((z) =>
-            z.questions.some((q) => q.trackingId === questionEditState.questionTrackingId),
-          )?.trackingId ?? '');
+    const zoneTrackingId = run(() => {
+      if (questionEditState.mode === 'create') {
+        return questionEditState.zoneTrackingId;
+      }
+      return zones.find((z) =>
+        z.questions.some((q) => q.trackingId === questionEditState.questionTrackingId),
+      )?.trackingId;
+    });
+    if (!zoneTrackingId) return;
     // Merge current form values into the original question to preserve unsaved
     // edits (e.g. points/manual points) while keeping extra properties that
     // aren't registered as form fields.
@@ -432,7 +442,7 @@ function InstructorAssessmentQuestionsTableInner({
       dispatch({
         type: 'ADD_ALTERNATIVE_GROUP',
         zoneTrackingId: questionEditState.zoneTrackingId,
-        group: createQuestionWithTrackingId(updatedGroup),
+        group: { ...updatedGroup, ...createQuestionWithTrackingId() },
       });
     } else if (questionEditState.mode === 'edit-group') {
       dispatch({
@@ -472,12 +482,28 @@ function InstructorAssessmentQuestionsTableInner({
 
   const buildQuestionMetadata = (data: QuestionByQidResult): StaffAssessmentQuestionRow => {
     const templateRow = Object.values(questionMetadata).at(0);
-    if (!templateRow) {
-      throw new Error('Cannot build question metadata without an existing question template');
-    }
+
+    const baseAssessmentQuestion = templateRow?.assessment_question ?? {
+      ai_grading_mode: false,
+      allow_real_time_grading: true,
+      assessment_id: assessment.id,
+      question_id: data.question.id,
+    };
+
+    const baseAlternativeGroup = templateRow?.alternative_group ?? {
+      assessment_id: assessment.id,
+      id: '0',
+      zone_id: '0',
+    };
 
     return StaffAssessmentQuestionRowSchema.parse({
-      ...templateRow,
+      zone: templateRow?.zone ?? {
+        assessment_id: assessment.id,
+        id: '0',
+        number: 0,
+      },
+      course_instance: templateRow?.course_instance ?? courseInstance,
+      course: templateRow?.course ?? course,
       question: data.question,
       topic: data.topic,
       open_issue_count: data.open_issue_count,
@@ -485,7 +511,7 @@ function InstructorAssessmentQuestionsTableInner({
       other_assessments: null,
       assessment,
       assessment_question: {
-        ...templateRow.assessment_question,
+        ...baseAssessmentQuestion,
         id: data.question.id,
         effective_advance_score_perc: 0,
         mean_question_score: null,
@@ -494,7 +520,7 @@ function InstructorAssessmentQuestionsTableInner({
         number_in_alternative_group: null,
       },
       alternative_group: {
-        ...templateRow.alternative_group,
+        ...baseAlternativeGroup,
         number: 0,
       },
       start_new_zone: false,

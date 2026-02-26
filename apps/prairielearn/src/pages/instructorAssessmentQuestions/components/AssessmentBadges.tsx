@@ -31,13 +31,9 @@ function groupByAbbreviation(
     grouped.set(abbrev, existing);
   }
 
-  // Sort items within each group by assessment number
+  const collator = new Intl.Collator(undefined, { numeric: true, sensitivity: 'base' });
   for (const items of grouped.values()) {
-    items.sort((a, b) => {
-      const numA = Number.parseInt(a.assessment_number!) || 0;
-      const numB = Number.parseInt(b.assessment_number!) || 0;
-      return numA - numB;
-    });
+    items.sort((a, b) => collator.compare(a.assessment_number!, b.assessment_number!));
   }
 
   return new Map([...grouped.entries()].sort(([a], [b]) => a.localeCompare(b)));

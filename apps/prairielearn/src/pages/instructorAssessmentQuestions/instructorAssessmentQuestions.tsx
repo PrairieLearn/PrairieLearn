@@ -90,6 +90,9 @@ router.get(
       pageContext.authz_data.has_course_instance_permission_edit &&
       !res.locals.course.example_course;
 
+    // TODO: The CSRF token URL is constructed manually here and in trpc-client.ts.
+    // Consider a shared `buildTrpcUrl` abstraction to keep them in sync.
+    // See also: https://github.com/PrairieLearn/PrairieLearn/issues/XXXX
     const trpcCsrfToken = generatePrefixCsrfToken(
       {
         url: req.originalUrl.split('?')[0] + '/trpc',
@@ -116,6 +119,7 @@ router.get(
             {editorEnabled ? (
               <InstructorAssessmentQuestionsTable
                 course={pageContext.course}
+                courseInstance={pageContext.course_instance}
                 questionRows={questionRows}
                 jsonZones={jsonZones}
                 urlPrefix={pageContext.urlPrefix}

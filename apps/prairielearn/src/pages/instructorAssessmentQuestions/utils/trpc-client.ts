@@ -7,6 +7,8 @@ export function createAssessmentQuestionsTrpcClient(csrfToken: string) {
   return createTRPCClient<AssessmentQuestionsRouter>({
     links: [
       httpLink({
+        // TODO: This URL construction must match the server-side CSRF token URL.
+        // Consider a shared `buildTrpcUrl` helper to keep them in sync.
         url: typeof window === 'undefined' ? '' : window.location.pathname + '/trpc',
         headers: {
           'X-TRPC': 'true',

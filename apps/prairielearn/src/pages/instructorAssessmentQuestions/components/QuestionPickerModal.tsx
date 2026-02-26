@@ -278,11 +278,10 @@ export function QuestionPickerModal({
                         data-index={virtualRow.index}
                         role="button"
                         tabIndex={isAlreadyAdded ? -1 : 0}
+                        aria-label={`${qid}: ${question.title}${isAlreadyAdded ? ' (already added)' : ''}${isCurrentSelection ? ' (current selection)' : ''}`}
                         className={clsx(
                           'd-flex align-items-start gap-2 px-3 py-2 border-bottom',
-                          isAlreadyAdded
-                            ? 'bg-light text-muted'
-                            : 'cursor-pointer question-picker-row',
+                          isAlreadyAdded ? 'bg-light text-muted' : 'list-group-item-action',
                         )}
                         style={{
                           position: 'absolute',
@@ -301,7 +300,7 @@ export function QuestionPickerModal({
                           }
                         }}
                       >
-                        <div className="flex-grow-1 min-width-0">
+                        <div className="flex-grow-1" style={{ minWidth: 0 }}>
                           <div className="d-flex align-items-center gap-2">
                             <a
                               href={getQuestionUrl({ courseId, questionId: question.id })}
