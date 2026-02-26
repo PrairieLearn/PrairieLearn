@@ -3,13 +3,13 @@ import superjson from 'superjson';
 
 import type { AssessmentQuestionsRouter } from '../trpc.js';
 
+import { buildTrpcUrl } from './trpc-url.js';
+
 export function createAssessmentQuestionsTrpcClient(csrfToken: string) {
   return createTRPCClient<AssessmentQuestionsRouter>({
     links: [
       httpLink({
-        // TODO: This URL construction must match the server-side CSRF token URL.
-        // Consider a shared `buildTrpcUrl` helper to keep them in sync.
-        url: typeof window === 'undefined' ? '' : window.location.pathname + '/trpc',
+        url: typeof window === 'undefined' ? '' : buildTrpcUrl(window.location.pathname),
         headers: {
           'X-TRPC': 'true',
           'X-CSRF-Token': csrfToken,

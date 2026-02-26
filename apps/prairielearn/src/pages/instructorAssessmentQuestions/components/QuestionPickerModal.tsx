@@ -197,6 +197,7 @@ export function QuestionPickerModal({
                   type="text"
                   className="form-control"
                   placeholder="Search by QID or title..."
+                  aria-label="Search by QID or title"
                   value={searchQuery}
                   onChange={(e) => setSearchQuery(e.target.value)}
                 />

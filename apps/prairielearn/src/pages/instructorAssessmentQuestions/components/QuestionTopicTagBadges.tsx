@@ -26,6 +26,8 @@ export function QuestionTopicTagBadges({
   const visibleTags = isExpanded ? tags : tags?.slice(0, 3);
   const hasMoreTags = (tags?.length ?? 0) > 3;
 
+  const hiddenTagCount = (tags?.length ?? 0) - 3;
+
   return (
     <>
       <span className={`badge color-${topic.color}`}>{topic.name}</span>
@@ -37,11 +39,11 @@ export function QuestionTopicTagBadges({
       {hasMoreTags && (
         <button
           type="button"
-          className="btn btn-badge bg-secondary"
+          className="btn btn-badge color-gray2"
           aria-label={
             isExpanded
               ? 'Show fewer tags'
-              : `Show ${(tags?.length ?? 0) - 3} more ${(tags?.length ?? 0) - 3 === 1 ? 'tag' : 'tags'}`
+              : `Show ${hiddenTagCount} more ${hiddenTagCount === 1 ? 'tag' : 'tags'}`
           }
           onClick={(e) => {
             e.stopPropagation();
@@ -55,9 +57,13 @@ export function QuestionTopicTagBadges({
               return next;
             });
           }}
-          onKeyDown={(e) => e.stopPropagation()}
+          onKeyDown={(e) => {
+            if (e.key === 'Enter' || e.key === ' ') {
+              e.stopPropagation();
+            }
+          }}
         >
-          {isExpanded ? 'Show less' : `+${(tags?.length ?? 0) - 3}`}
+          <span aria-hidden="true">{isExpanded ? 'Show less' : `+${hiddenTagCount}`}</span>
         </button>
       )}
     </>

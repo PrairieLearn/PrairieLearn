@@ -194,6 +194,9 @@ export function EditQuestionModal({
       {question && (
         <form
           onSubmit={handleSubmit(async (formData) => {
+            const action: 'save' | 'save-and-pick' = submitActionRef.current;
+            submitActionRef.current = 'save';
+
             let questionData: QuestionByQidResult | undefined;
             if (type === 'create' || formData.id !== (originalQuestionId ?? question.id)) {
               try {
@@ -243,7 +246,7 @@ export function EditQuestionModal({
               questionData,
             );
 
-            if (submitActionRef.current === 'save-and-pick') {
+            if (action === 'save-and-pick') {
               onAddAndPickAnother?.();
             }
           })}
