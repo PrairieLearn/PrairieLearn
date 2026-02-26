@@ -163,7 +163,7 @@ const labelsQuery = t.procedure
 const checkUidsQuery = t.procedure
   .use(requireCourseInstancePermissionView)
   .input(z.object({ uids: z.array(z.string()).max(MAX_LABEL_UIDS) }))
-  .output(z.object({ invalidUids: z.array(z.string()) }))
+  .output(z.object({ unenrolledUids: z.array(z.string()) }))
   .query(async (opts) => {
     const { uids } = opts.input;
 
@@ -175,9 +175,9 @@ const checkUidsQuery = t.procedure
     });
 
     const enrolledUidSet = new Set(enrolledRecords.map((e) => e.uid));
-    const invalidUids = uids.filter((uid) => !enrolledUidSet.has(uid));
+    const unenrolledUids = uids.filter((uid) => !enrolledUidSet.has(uid));
 
-    return { invalidUids };
+    return { unenrolledUids };
   });
 
 const createLabelMutation = t.procedure
@@ -450,6 +450,8 @@ const batchAddLabelMutation = t.procedure
       authzData: authz_data,
     });
 
+    const notFound = enrollmentIds.length - enrollments.length;
+
     const addedEnrollments = await addLabelToEnrollments({
       enrollments,
       label,
@@ -458,7 +460,7 @@ const batchAddLabelMutation = t.procedure
     const added = addedEnrollments.length;
     const alreadyHaveLabel = enrollments.length - added;
 
-    return { added, alreadyHaveLabel };
+    return { added, alreadyHaveLabel, notFound };
   });
 
 const batchRemoveLabelMutation = t.procedure
@@ -485,6 +487,8 @@ const batchRemoveLabelMutation = t.procedure
       authzData: authz_data,
     });
 
+    const notFound = enrollmentIds.length - enrollments.length;
+
     const removedEnrollments = await removeLabelFromEnrollments({
       enrollments,
       label,
@@ -493,7 +497,7 @@ const batchRemoveLabelMutation = t.procedure
     const removed = removedEnrollments.length;
     const didNotHaveLabel = enrollments.length - removed;
 
-    return { removed, didNotHaveLabel };
+    return { removed, didNotHaveLabel, notFound };
   });
 
 export const studentLabelsRouter = t.router({

@@ -37,7 +37,7 @@ function assertLabelMatchesCourseInstance(
 function assertEnrollmentMatchesLabel(enrollment: Enrollment, label: StudentLabel): void {
   if (enrollment.course_instance_id !== label.course_instance_id) {
     throw new HttpStatusError(
-      400,
+      403,
       'Enrollment does not belong to the same course instance as the label',
     );
   }

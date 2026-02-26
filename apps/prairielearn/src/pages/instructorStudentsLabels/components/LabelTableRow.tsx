@@ -34,6 +34,7 @@ export function LabelTableRow({
             <button
               type="button"
               className="btn btn-sm btn-outline-primary"
+              aria-label={`Edit ${label.student_label.name}`}
               onClick={() => onEdit(label)}
             >
               Edit
@@ -41,6 +42,7 @@ export function LabelTableRow({
             <button
               type="button"
               className="btn btn-sm btn-outline-danger"
+              aria-label={`Delete ${label.student_label.name}`}
               onClick={() => onDelete(label)}
             >
               Delete

@@ -46,6 +46,7 @@ export function ExpandableUserList({
         <button
           type="button"
           className="btn btn-sm btn-outline-secondary"
+          aria-expanded={expanded}
           onClick={() => setExpanded(!expanded)}
         >
           {expanded ? (

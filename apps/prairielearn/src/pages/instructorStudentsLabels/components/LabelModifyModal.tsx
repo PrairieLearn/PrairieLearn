@@ -116,8 +116,8 @@ export function LabelModifyModal({
     if (uids.length > 0) {
       try {
         const result = await trpcClient.checkUids.query({ uids });
-        if (result.invalidUids.length > 0) {
-          setStage({ type: 'confirming', unknownUids: result.invalidUids });
+        if (result.unenrolledUids.length > 0) {
+          setStage({ type: 'confirming', unknownUids: result.unenrolledUids });
           return;
         }
       } catch {

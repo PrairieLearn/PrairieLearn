@@ -86,7 +86,6 @@ describe('Instructor student labels page', () => {
     const courseInstance = await selectCourseInstanceById('1');
     courseInstanceShortName = courseInstance.short_name!;
 
-    // Create and enroll test students
     const users = await generateAndEnrollUsers({ count: 3, course_instance_id: '1' });
     studentUids = users.map((u) => u.uid);
     const userIds = users.map((u) => u.id);
@@ -108,25 +107,21 @@ describe('Instructor student labels page', () => {
     // Get tRPC client
     const trpcClient = await createTrpcClient();
 
-    // Test labels query returns object with labels array and origHash
     const result = await trpcClient.labels.query();
     assert.isArray(result.labels);
     assert.isNotNull(result.origHash);
 
-    // Test checkUids with valid enrolled UIDs
     const validCheckResult = await trpcClient.checkUids.query({ uids: [studentUids[0]] });
-    assert.deepEqual(validCheckResult.invalidUids, []);
+    assert.deepEqual(validCheckResult.unenrolledUids, []);
 
-    // Test checkUids with invalid UIDs
     const invalidUid = 'nonexistent@example.com';
     const invalidCheckResult = await trpcClient.checkUids.query({ uids: [invalidUid] });
-    assert.deepEqual(invalidCheckResult.invalidUids, [invalidUid]);
+    assert.deepEqual(invalidCheckResult.unenrolledUids, [invalidUid]);
 
-    // Test checkUids with mixed valid and invalid UIDs
     const mixedCheckResult = await trpcClient.checkUids.query({
       uids: [studentUids[0], invalidUid],
     });
-    assert.deepEqual(mixedCheckResult.invalidUids, [invalidUid]);
+    assert.deepEqual(mixedCheckResult.unenrolledUids, [invalidUid]);
   });
 
   test.sequential('should handle create label operations', async () => {
@@ -144,7 +139,7 @@ describe('Instructor student labels page', () => {
     // Verify label exists in database
     const courseInstance = await selectCourseInstanceById('1');
     let labels = await selectStudentLabelsInCourseInstance(courseInstance);
-    const labelA = labels.find((l: (typeof labels)[number]) => l.name === 'Test Label A');
+    const labelA = labels.find((l) => l.name === 'Test Label A');
     assert.isDefined(labelA);
     assert.equal(labelA.color, 'blue1');
 
@@ -161,7 +156,7 @@ describe('Instructor student labels page', () => {
 
     // Verify label exists with enrollments
     labels = await selectStudentLabelsInCourseInstance(courseInstance);
-    const labelB = labels.find((l: (typeof labels)[number]) => l.name === 'Test Label B');
+    const labelB = labels.find((l) => l.name === 'Test Label B');
     assert.isDefined(labelB);
     const studentsWithLabelB = (await selectEnrollmentsInStudentLabel(labelB)).map((e) => e.id);
     assert.equal(studentsWithLabelB.length, 2);
@@ -341,14 +336,14 @@ describe('Instructor student labels page', () => {
 
     // checkUids should recognize the invited student's UID as valid
     const checkResult = await trpcClient.checkUids.query({ uids: [invitedUid] });
-    assert.deepEqual(checkResult.invalidUids, []);
+    assert.deepEqual(checkResult.unenrolledUids, []);
 
     // checkUids should still flag truly unknown UIDs
     const unknownUid = 'totally-unknown@example.com';
     const mixedResult = await trpcClient.checkUids.query({
       uids: [invitedUid, studentUids[0], unknownUid],
     });
-    assert.deepEqual(mixedResult.invalidUids, [unknownUid]);
+    assert.deepEqual(mixedResult.unenrolledUids, [unknownUid]);
 
     // Create a label with the invited student
     const origHash = await getOrigHash(courseRepo.courseLiveDir, courseInstanceShortName);
