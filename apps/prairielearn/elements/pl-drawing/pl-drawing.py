@@ -1,6 +1,7 @@
 import copy
 import html
 import json
+import math
 import random
 import warnings
 
@@ -146,8 +147,10 @@ def prepare(element_html: str, data: pl.QuestionData) -> None:
             if obj["gradingName"] == "vector":
                 if (
                     w_button is None
-                    and obj["width"] == defaults.drawing_defaults["force-width"]
-                ) or obj["width"] == float(w_button):
+                    and math.isclose(
+                        obj["width"], defaults.drawing_defaults["force-width"]
+                    )
+                ) or math.isclose(obj["width"], float(w_button)):
                     continue
                 raise RuntimeError(
                     "Width is not consistent! pl-vector in pl-drawing-answers needs to have the same width of pl-vector in pl-drawing-button."
@@ -308,7 +311,7 @@ def render(element_html: str, data: pl.QuestionData) -> str:
 
     show_btn = data["panel"] == "question" and not preview_mode
 
-    if tol == grid_size / 2:
+    if math.isclose(tol, grid_size / 2):
         message_default = (
             "The expected tolerance is 1/2 square grid for position and "
             + str(angle_tol)
