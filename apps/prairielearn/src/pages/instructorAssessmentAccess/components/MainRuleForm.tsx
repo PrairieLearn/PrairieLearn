@@ -5,7 +5,7 @@ import type { PageContext } from '../../../lib/client/page-context.js';
 
 import { AfterCompleteForm } from './AfterCompleteForm.js';
 import { DateControlForm } from './DateControlForm.js';
-import { PrairieTestControlForm } from './PrairieTestControlForm.js';
+import { IntegrationsSection } from './IntegrationsSection.js';
 import type { AccessControlFormData, OverridableField } from './types.js';
 
 interface MainRuleFormProps {
@@ -82,7 +82,7 @@ export function MainRuleForm({
           )}
 
           <DateControlForm control={control} setValue={setValue} />
-          <PrairieTestControlForm control={control} namePrefix="mainRule" setValue={setValue} />
+          <IntegrationsSection control={control} setValue={setValue} />
 
           <AfterCompleteForm control={control} namePrefix="mainRule" setValue={setValue} />
         </>

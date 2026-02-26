@@ -8,12 +8,14 @@ interface PrairieTestControlFormProps {
   control: Control<AccessControlFormData>;
   namePrefix: NamePrefix;
   setValue: UseFormSetValue<AccessControlFormData>;
+  onRemove?: () => void;
 }
 
 export function PrairieTestControlForm({
   control,
   namePrefix,
   setValue,
+  onRemove,
 }: PrairieTestControlFormProps) {
   const {
     fields: examFields,
@@ -30,12 +32,6 @@ export function PrairieTestControlForm({
     name: `${namePrefix}.integrations.prairieTest.exams`,
   });
 
-  // Watch integrations.prairieTest.enabled state
-  const prairieTestEnabled = useWatch({
-    control,
-    name: `${namePrefix}.integrations.prairieTest.enabled`,
-  });
-
   const addExam = () => {
     // Initialize exams array if it doesn't exist
     if (exams === undefined) {
@@ -48,34 +44,20 @@ export function PrairieTestControlForm({
     <Card className="mb-4">
       <Card.Header className="d-flex justify-content-between align-items-center">
         <div>
-          <div className="d-flex align-items-center">
-            <Form.Check
-              type="checkbox"
-              className="me-2"
-              {...control.register(getFieldName(namePrefix, 'integrations.prairieTest.enabled'), {
-                onChange: (e) => {
-                  e.stopPropagation();
-                  const { checked } = e.currentTarget;
-                  // Just toggle enabled state, don't clear other fields
-                  // The data remains in the form state for when they re-enable
-                  setValue(getFieldName(namePrefix, 'integrations.prairieTest.enabled'), checked);
-                },
-              })}
-              onClick={(e) => e.stopPropagation()}
-            />
-            <span>PrairieTest Integration</span>
-          </div>
+          <span>PrairieTest</span>
+          <br />
           <Form.Text className="text-muted">
             Integrate with PrairieTest exams for access control
           </Form.Text>
         </div>
+        {onRemove && (
+          <Button size="sm" variant="outline-danger" onClick={onRemove}>
+            <i className="bi bi-x-lg me-1" aria-hidden="true" />
+            Remove
+          </Button>
+        )}
       </Card.Header>
-      <Card.Body
-        style={{
-          opacity: prairieTestEnabled ? 1 : 0.5,
-          pointerEvents: prairieTestEnabled ? 'auto' : 'none',
-        }}
-      >
+      <Card.Body>
         <div>
           <div className="d-flex justify-content-between align-items-center mb-3">
             <strong>PrairieTest Exams</strong>
@@ -86,12 +68,10 @@ export function PrairieTestControlForm({
           </div>
 
           {examFields.length === 0 ? (
-            prairieTestEnabled && (
-              <div className="alert alert-info">
-                <i className="bi bi-info-circle me-2" aria-hidden="true" />
-                No PrairieTest exams configured. Click "Add Exam" to link an exam.
-              </div>
-            )
+            <div className="alert alert-info">
+              <i className="bi bi-info-circle me-2" aria-hidden="true" />
+              No PrairieTest exams configured. Click "Add Exam" to link an exam.
+            </div>
           ) : (
             <div>
               {examFields.map((field, index) => (
@@ -110,14 +90,12 @@ export function PrairieTestControlForm({
                                 `integrations.prairieTest.exams.${index}.examUuid`,
                               ),
                               {
-                                required: prairieTestEnabled ? 'Exam UUID is required' : false,
-                                pattern: prairieTestEnabled
-                                  ? {
-                                      value:
-                                        /^[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12}$/i,
-                                      message: 'Invalid UUID format',
-                                    }
-                                  : undefined,
+                                required: 'Exam UUID is required',
+                                pattern: {
+                                  value:
+                                    /^[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12}$/i,
+                                  message: 'Invalid UUID format',
+                                },
                               },
                             )}
                           />
@@ -159,13 +137,11 @@ export function PrairieTestControlForm({
             </div>
           )}
 
-          {prairieTestEnabled && (
-            <div className="alert alert-warning">
-              <i className="bi bi-exclamation-triangle me-2" aria-hidden="true" />
-              <strong>Important:</strong> Make sure the exam UUIDs are correct. Invalid UUIDs will
-              be ignored during sync. You can find exam UUIDs in your PrairieTest course settings.
-            </div>
-          )}
+          <div className="alert alert-warning">
+            <i className="bi bi-exclamation-triangle me-2" aria-hidden="true" />
+            <strong>Important:</strong> Make sure the exam UUIDs are correct. Invalid UUIDs will be
+            ignored during sync. You can find exam UUIDs in your PrairieTest course settings.
+          </div>
         </div>
       </Card.Body>
     </Card>
