@@ -242,8 +242,9 @@ ${samlProvider?.certificate ?? '-----BEGIN CERTIFICATE-----\n-----END CERTIFICAT
           <small id="nameAttributeHelp" class="form-text text-muted">
             This attribute should contain the full name of the user, like "Jasmine Wang". If your
             Identity Provider cannot provide a full name, you can instead configure separate given
-            name and family name attributes below. If both are configured, the given/family name
-            attributes take precedence.
+            name and family name attributes below. If both given name and family name mappings are
+            configured and both values are present in a SAML response, they take precedence. If one
+            is missing, PrairieLearn falls back to this name attribute.
           </small>
         </div>
 
@@ -260,8 +261,8 @@ ${samlProvider?.certificate ?? '-----BEGIN CERTIFICATE-----\n-----END CERTIFICAT
           <small id="givenNameAttributeHelp" class="form-text text-muted">
             Optional. The given (first) name of the user. Often named <code>givenName</code> or
             <code>urn:oid:2.5.4.42</code>. When both given name and family name attributes are
-            configured, they will be combined as "Given Family" and used instead of the name
-            attribute above.
+            configured and present, they will be combined as "Given Family" and used instead of the
+            name attribute above. If one is missing, PrairieLearn falls back to the name attribute.
           </small>
         </div>
 

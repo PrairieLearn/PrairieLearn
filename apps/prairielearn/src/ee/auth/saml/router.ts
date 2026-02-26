@@ -83,17 +83,26 @@ router.post(
     const authnEmail = emailAttribute ? user.attributes[emailAttribute]?.trim() : null;
 
     // The name can come from either a single name attribute or from separate
-    // given name and family name attributes. If both given and family name
-    // attributes are configured and present, they take precedence.
+    // given name and family name attributes. If both split-name mappings are
+    // configured and present, they take precedence; otherwise we fall back to
+    // the single name attribute.
     const authnNameDirect = nameAttribute ? user.attributes[nameAttribute]?.trim() : null;
     const authnGivenName = givenNameAttribute ? user.attributes[givenNameAttribute]?.trim() : null;
     const authnFamilyName = familyNameAttribute
       ? user.attributes[familyNameAttribute]?.trim()
       : null;
+    const authnNameFromParts =
+      [authnGivenName, authnFamilyName]
+        .filter((value): value is string => !!value)
+        .join(' ')
+        .trim() || null;
+    const hasSplitNameMapping = !!givenNameAttribute && !!familyNameAttribute;
     const authnName =
-      authnGivenName && authnFamilyName ? `${authnGivenName} ${authnFamilyName}` : authnNameDirect;
+      hasSplitNameMapping && authnGivenName && authnFamilyName
+        ? authnNameFromParts
+        : authnNameDirect;
 
-    const hasNameMapping = nameAttribute || (givenNameAttribute && familyNameAttribute);
+    const hasNameMapping = !!nameAttribute || hasSplitNameMapping;
 
     if (req.body.RelayState === 'test') {
       res.send(

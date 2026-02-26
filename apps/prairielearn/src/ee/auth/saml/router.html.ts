@@ -39,7 +39,8 @@ export const SamlTest = ({
   const hasNameAttribute = !!nameAttribute;
   const hasGivenNameAttribute = !!givenNameAttribute;
   const hasFamilyNameAttribute = !!familyNameAttribute;
-  const hasNameMapping = hasNameAttribute || (hasGivenNameAttribute && hasFamilyNameAttribute);
+  const hasSplitNameMapping = hasGivenNameAttribute && hasFamilyNameAttribute;
+  const hasNameMapping = hasNameAttribute || hasSplitNameMapping;
   const hasEmailAttribute = !!emailAttribute;
 
   const hasUid = !!uid;
@@ -47,7 +48,10 @@ export const SamlTest = ({
   const hasName = !!name;
   const hasGivenName = !!givenName;
   const hasFamilyName = !!familyName;
+  const hasSplitNameValues = hasGivenName && hasFamilyName;
   const hasEmail = !!email;
+  const usedNameFallback =
+    hasSplitNameMapping && !hasSplitNameValues && hasNameAttribute && hasName;
 
   // Note that even though the normal login flow doesn't yet validate the
   // presence of an email, we want to make it obvious during all future SAML
@@ -71,6 +75,18 @@ export const SamlTest = ({
       </head>
       <body>
         <main id="content" class="container mb-4">
+          ${usedNameFallback
+            ? html`
+                <div class="alert alert-warning">
+                  <h2 class="h4">Using fallback name attribute</h2>
+                  <p class="mb-0">
+                    Given name and family name mappings are configured, but one or more values were
+                    missing in this SAML response. PrairieLearn used the configured name attribute
+                    (<code>${nameAttribute}</code>) as a fallback.
+                  </p>
+                </div>
+              `
+            : ''}
           ${hasError
             ? html`
                 <div class="alert alert-danger">
@@ -141,10 +157,12 @@ export const SamlTest = ({
                   ${hasName
                     ? html`<li>
                         <strong>Name:</strong> ${name}
-                        ${hasGivenName && hasFamilyName
+                        ${hasSplitNameValues
                           ? html`(<code>${givenNameAttribute}</code> +
                               <code>${familyNameAttribute}</code>)`
-                          : html`(<code>${nameAttribute}</code>)`}
+                          : usedNameFallback
+                            ? html`(<code>${nameAttribute}</code>, fallback)`
+                            : html`(<code>${nameAttribute}</code>)`}
                       </li>`
                     : ''}
                   ${hasEmail
