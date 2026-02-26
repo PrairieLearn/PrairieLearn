@@ -7,7 +7,7 @@ from prairielearn import ...
 
 import math
 from collections.abc import Callable
-from typing import Any, Literal, overload
+from typing import Any, Literal
 
 import numpy as np
 import numpy.typing as npt
@@ -166,42 +166,13 @@ def check_answers_names(data: QuestionData, name: str) -> None:
     data["answers_names"][name] = True
 
 
-_GradeResult = tuple[bool | float, str | None]
-
-
-@overload
 def grade_answer_parameterized(
     data: QuestionData,
     name: str,
-    grade_function: Callable[[Any, str | None], _GradeResult],
-    weight: int = ...,
-    timeout: float | None = ...,
-    timeout_format_error: str | None = ...,
-    *,
-    pass_raw_submitted_answer: Literal[True],
-) -> None: ...
-
-
-@overload
-def grade_answer_parameterized(
-    data: QuestionData,
-    name: str,
-    grade_function: Callable[[Any], _GradeResult],
-    weight: int = ...,
-    timeout: float | None = ...,
-    timeout_format_error: str | None = ...,
-) -> None: ...
-
-
-def grade_answer_parameterized(
-    data: QuestionData,
-    name: str,
-    grade_function: Callable[..., _GradeResult],
+    grade_function: Callable[[Any], tuple[bool | float, str | None]],
     weight: int = 1,
     timeout: float | None = None,
     timeout_format_error: str | None = None,
-    *,
-    pass_raw_submitted_answer: bool = False,
 ) -> None:
     """
     Grade the answer for the input `name` using the provided `grade_function`.
@@ -209,8 +180,6 @@ def grade_answer_parameterized(
     Updates the `data` dictionary with the partial score and feedback for the question.
 
     `grade_function` should take in a single parameter (which will be the submitted answer) and return a 2-tuple.
-    If `pass_raw_submitted_answer` is True, the grade function will be called with a second argument containing the
-    raw submitted answer string from `data["raw_submitted_answers"]` (or None if not available).
 
     The first element of the 2-tuple should either be:
 
@@ -267,10 +236,6 @@ def grade_answer_parameterized(
 
     submitted_answer = data["submitted_answers"][name]
 
-    raw_submitted_answer: str | None = None
-    if pass_raw_submitted_answer:
-        raw_submitted_answer = data.get("raw_submitted_answers", {}).get(name)
-
     # Execute the grading function, with optional timeout
     timed_out = False
     result: bool | float = False
@@ -278,17 +243,8 @@ def grade_answer_parameterized(
 
     if timeout is not None:
         with ThreadingTimeout(timeout) as ctx:
-            if pass_raw_submitted_answer:
-                result, feedback_content = grade_function(
-                    submitted_answer, raw_submitted_answer
-                )
-            else:
-                result, feedback_content = grade_function(submitted_answer)
+            result, feedback_content = grade_function(submitted_answer)
         timed_out = ctx.state == TimeoutState.TIMED_OUT
-    elif pass_raw_submitted_answer:
-        result, feedback_content = grade_function(
-            submitted_answer, raw_submitted_answer
-        )
     else:
         result, feedback_content = grade_function(submitted_answer)
 
