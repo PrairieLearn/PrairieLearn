@@ -443,15 +443,15 @@
     },
     "sslCertificateFile": {
       "type": "string",
-      "default": "/etc/pki/tls/certs/localhost.crt"
+      "default": "/etc/ssl/certs/localhost.crt"
     },
     "sslKeyFile": {
       "type": "string",
-      "default": "/etc/pki/tls/private/localhost.key"
+      "default": "/etc/ssl/private/localhost.key"
     },
     "sslCAFile": {
       "type": "string",
-      "default": "/etc/pki/tls/certs/server-chain.crt"
+      "default": "/etc/ssl/certs/server-chain.crt"
     },
     "fileUploadMaxBytes": {
       "type": "number",
