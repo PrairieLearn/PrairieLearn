@@ -95,7 +95,7 @@ router.get(
     // See also: https://github.com/PrairieLearn/PrairieLearn/issues/XXXX
     const trpcCsrfToken = generatePrefixCsrfToken(
       {
-        url: req.originalUrl.split('?')[0] + '/trpc',
+        url: req.originalUrl.split('?')[0].replace(/\/$/, '') + '/trpc',
         authn_user_id: res.locals.authn_user.id,
       },
       config.secretKey,

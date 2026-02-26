@@ -28,7 +28,16 @@ export function QuestionTopicTagBadges({
 
   return (
     <>
-      <span className={`badge color-${topic.color}`}>{topic.name}</span>
+      <span
+        className="badge border"
+        style={{
+          backgroundColor: 'transparent',
+          color: `var(--color-${topic.color})`,
+          borderColor: `var(--color-${topic.color})`,
+        }}
+      >
+        {topic.name}
+      </span>
       {visibleTags?.map((tag) => (
         <span key={tag.id} className={`badge color-${tag.color}`}>
           {tag.name}
@@ -37,7 +46,7 @@ export function QuestionTopicTagBadges({
       {hasMoreTags && (
         <button
           type="button"
-          className="btn btn-badge bg-secondary"
+          className="btn btn-badge color-gray2"
           aria-label={
             isExpanded
               ? 'Show fewer tags'
