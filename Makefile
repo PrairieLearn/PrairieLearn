@@ -194,10 +194,16 @@ format-d2:
 lint-d2:
 	@d2 fmt --check docs/**/*.d2
 
-
 build-docker:
 	@docker build -t prairielearn/prairielearn .
 dev-docker:
 	@docker run -it --rm -p 3000:3000 -w /PrairieLearn -v .:/PrairieLearn prairielearn/prairielearn /bin/bash
+
+dangerous-drop-all-dbs:
+	@echo "Dropping all databases matching 'prairielearn_%'..."
+	@psql -h localhost -U postgres -tAc "SELECT datname FROM pg_database WHERE datname LIKE 'prairielearn_%'" | while read db; do \
+		echo "Dropping $$db"; \
+		psql -h localhost -U postgres -c "DROP DATABASE \"$$db\""; \
+	done
 
 ci: lint typecheck check-dependencies test
