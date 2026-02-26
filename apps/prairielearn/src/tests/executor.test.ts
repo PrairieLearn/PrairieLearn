@@ -4,13 +4,15 @@ import { type ExecutorResults, handleInput } from '../executor-lib.js';
 import { CodeCallerNative } from '../lib/code-caller/code-caller-native.js';
 
 /**
- * Smoke tests for the executor image. These exercise the full production
- * code path with privilege dropping: Node -> Python zygote -> privilege
+ * Smoke tests for the executor image. This code path is similar to the
+ * production code path with privilege dropping: Node -> Python zygote -> privilege
  * drop -> element code -> response.
  *
+ * TODO: consider creating `CodeCallerContainer` and interacting via that path.
+ *
  * Elements are chosen specifically because they import third-party packages
- * NOT in the zygote pre-load list (zygote.py:107-119). This is the exact
- * class of failure from #14197 where lazy imports failed because the
+ * NOT in the zygote pre-load list. This is the exact
+ * class of failure from https://github.com/PrairieLearn/PrairieLearn/issues/14197 where lazy imports failed because the
  * Python installation was inaccessible after dropping privileges.
  *
  * These tests are designed to run inside the prairielearn/executor Docker

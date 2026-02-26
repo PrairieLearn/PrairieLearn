@@ -349,7 +349,7 @@ WITH
       gu.team_id,
       (role_assignment ->> 'team_role_id')::bigint AS team_role_id
     FROM
-      JSON_ARRAY_ELEMENTS($role_assignments::json) AS role_assignment
+      JSONB_ARRAY_ELEMENTS($role_assignments::jsonb) AS role_assignment
       JOIN team_users AS gu ON gu.team_id = $group_id
       AND gu.user_id = (role_assignment ->> 'user_id')::bigint
   ),
