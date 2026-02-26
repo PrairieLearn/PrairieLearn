@@ -44,7 +44,9 @@ function renderEnrollmentEventText(event: StaffAuditEvent): string {
 
 function renderLabelEventText(event: StaffAuditEvent): string {
   const { action_detail, context } = event;
-  const labelName = (context as Record<string, unknown> | null)?.label_name ?? 'Unknown label';
+  const labelName = String(
+    (context as Record<string, unknown> | null)?.label_name ?? 'Unknown label',
+  );
 
   if (!action_detail) {
     return 'Label event';
