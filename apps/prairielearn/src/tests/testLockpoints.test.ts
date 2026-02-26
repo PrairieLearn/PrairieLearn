@@ -273,7 +273,10 @@ describe('Assessment lockpoints', { timeout: 60_000 }, function () {
         ['read_only_lockpoint', 'default', 'blocked_lockpoint'],
       );
 
-      assert.include(response.$.html(), 'read-only because you have advanced past a lockpoint');
+      assert.include(
+        response.$.html(),
+        'You can no longer submit answers to this question because you have advanced past a lockpoint',
+      );
     },
   );
 
