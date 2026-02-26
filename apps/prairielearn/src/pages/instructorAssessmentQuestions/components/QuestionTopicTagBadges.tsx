@@ -26,18 +26,11 @@ export function QuestionTopicTagBadges({
   const visibleTags = isExpanded ? tags : tags?.slice(0, 3);
   const hasMoreTags = (tags?.length ?? 0) > 3;
 
+  const hiddenTagCount = (tags?.length ?? 0) - 3;
+
   return (
     <>
-      <span
-        className="badge border"
-        style={{
-          backgroundColor: 'transparent',
-          color: `var(--color-${topic.color})`,
-          borderColor: `var(--color-${topic.color})`,
-        }}
-      >
-        {topic.name}
-      </span>
+      <span className={`badge color-${topic.color}`}>{topic.name}</span>
       {visibleTags?.map((tag) => (
         <span key={tag.id} className={`badge color-${tag.color}`}>
           {tag.name}
@@ -50,7 +43,7 @@ export function QuestionTopicTagBadges({
           aria-label={
             isExpanded
               ? 'Show fewer tags'
-              : `Show ${(tags?.length ?? 0) - 3} more ${(tags?.length ?? 0) - 3 === 1 ? 'tag' : 'tags'}`
+              : `Show ${hiddenTagCount} more ${hiddenTagCount === 1 ? 'tag' : 'tags'}`
           }
           onClick={(e) => {
             e.stopPropagation();
@@ -66,7 +59,7 @@ export function QuestionTopicTagBadges({
           }}
           onKeyDown={(e) => e.stopPropagation()}
         >
-          {isExpanded ? 'Show less' : `+${(tags?.length ?? 0) - 3}`}
+          <span aria-hidden="true">{isExpanded ? 'Show less' : `+${hiddenTagCount}`}</span>
         </button>
       )}
     </>

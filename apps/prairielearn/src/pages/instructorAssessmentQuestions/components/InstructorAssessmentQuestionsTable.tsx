@@ -189,7 +189,6 @@ interface InstructorAssessmentQuestionsTableInnerProps {
  */
 function InstructorAssessmentQuestionsTableInner({
   course,
-  courseInstance,
   questionRows,
   jsonZones,
   urlPrefix,
@@ -373,30 +372,21 @@ function InstructorAssessmentQuestionsTableInner({
     setQuestionEditState({ status: 'picking', zoneTrackingId: questionEditState.zoneTrackingId });
   };
 
-  const buildQuestionMetadata = (data: QuestionByQidResult): StaffAssessmentQuestionRow => {
+  const buildQuestionMetadata = (
+    data: QuestionByQidResult,
+  ): StaffAssessmentQuestionRow | undefined => {
     const templateRow = Object.values(questionMetadata).at(0);
 
-    const baseAssessmentQuestion = templateRow?.assessment_question ?? {
-      ai_grading_mode: false,
-      allow_real_time_grading: true,
-      assessment_id: assessment.id,
-      question_id: data.question.id,
-    };
-
-    const baseAlternativeGroup = templateRow?.alternative_group ?? {
-      assessment_id: assessment.id,
-      id: '0',
-      zone_id: '0',
-    };
+    if (!templateRow) {
+      // No existing questions to use as a template. The metadata will be
+      // populated after saving and reloading from the database.
+      return undefined;
+    }
 
     return StaffAssessmentQuestionRowSchema.parse({
-      zone: templateRow?.zone ?? {
-        assessment_id: assessment.id,
-        id: '0',
-        number: 0,
-      },
-      course_instance: templateRow?.course_instance ?? courseInstance,
-      course: templateRow?.course ?? course,
+      zone: templateRow.zone,
+      course_instance: templateRow.course_instance,
+      course: templateRow.course,
       question: data.question,
       topic: data.topic,
       open_issue_count: data.open_issue_count,
@@ -404,8 +394,9 @@ function InstructorAssessmentQuestionsTableInner({
       other_assessments: null,
       assessment,
       assessment_question: {
-        ...baseAssessmentQuestion,
-        id: data.question.id,
+        ...templateRow.assessment_question,
+        id: '0',
+        question_id: data.question.id,
         effective_advance_score_perc: 0,
         mean_question_score: null,
         number_submissions_hist: null,
@@ -413,7 +404,7 @@ function InstructorAssessmentQuestionsTableInner({
         number_in_alternative_group: null,
       },
       alternative_group: {
-        ...baseAlternativeGroup,
+        ...templateRow.alternative_group,
         number: 0,
       },
       start_new_zone: false,
@@ -444,12 +435,15 @@ function InstructorAssessmentQuestionsTableInner({
       });
     } else {
       if (newQuestionData) {
-        dispatch({
-          type: 'UPDATE_QUESTION_METADATA',
-          questionId: updatedQuestion.id,
-          oldQuestionId: questionEditState.originalQuestionId,
-          questionData: buildQuestionMetadata(newQuestionData),
-        });
+        const metadata = buildQuestionMetadata(newQuestionData);
+        if (metadata) {
+          dispatch({
+            type: 'UPDATE_QUESTION_METADATA',
+            questionId: updatedQuestion.id,
+            oldQuestionId: questionEditState.originalQuestionId,
+            questionData: metadata,
+          });
+        }
       }
 
       const questionWithNormalizedPoints = {

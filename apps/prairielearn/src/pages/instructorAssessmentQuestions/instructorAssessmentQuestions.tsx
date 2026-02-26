@@ -30,6 +30,7 @@ import { InstructorAssessmentQuestionsTableLegacy } from './components/Instructo
 import { assessmentQuestionsRouter, createContext } from './trpc.js';
 import { serializeZonesForJson } from './utils/dataTransform.js';
 import { buildHierarchicalAssessment } from './utils/questions.js';
+import { buildTrpcUrl } from './utils/trpc-url.js';
 
 const router = Router();
 
@@ -90,12 +91,9 @@ router.get(
       pageContext.authz_data.has_course_instance_permission_edit &&
       !res.locals.course.example_course;
 
-    // TODO: The CSRF token URL is constructed manually here and in trpc-client.ts.
-    // Consider a shared `buildTrpcUrl` abstraction to keep them in sync.
-    // See also: https://github.com/PrairieLearn/PrairieLearn/issues/XXXX
     const trpcCsrfToken = generatePrefixCsrfToken(
       {
-        url: req.originalUrl.split('?')[0].replace(/\/$/, '') + '/trpc',
+        url: buildTrpcUrl(req.originalUrl),
         authn_user_id: res.locals.authn_user.id,
       },
       config.secretKey,

@@ -185,11 +185,11 @@ test.describe('Assessment questions', () => {
     await modal.getByRole('button', { name: 'Pick' }).click();
     await expect(modal.getByText('Select question')).toBeVisible();
 
-    await modal.getByPlaceholder('Search by QID or title...').fill('differentiate');
+    await modal.getByLabel('Search by QID or title').fill('differentiate');
 
     await modal.getByRole('button', { name: 'Filter by Topic' }).click();
     await page.getByRole('option', { name: 'Calculus' }).click();
-    await modal.getByPlaceholder('Search by QID or title...').click({ force: true });
+    await page.keyboard.press('Escape');
 
     await expect(modal.getByText(/1 question/)).toBeVisible();
 
@@ -242,35 +242,28 @@ test.describe('Assessment questions', () => {
     );
     await page.getByRole('button', { name: 'Edit questions' }).click();
 
-    // Add a new zone
     await page.getByRole('button', { name: 'Add zone' }).click();
     const modal = page.getByRole('dialog');
     await expect(modal).toBeVisible();
     await modal.getByRole('button', { name: 'Add zone' }).click();
     await expect(modal).not.toBeVisible();
 
-    // Click "Add question in zone 1" to open the picker
     await page.getByRole('button', { name: 'Add question in zone 1' }).click();
     await expect(modal).toBeVisible();
     await expect(modal.getByText('Select question')).toBeVisible();
 
-    // Search and select a question
-    await modal.getByPlaceholder('Search by QID or title...').fill('partialCredit1');
+    await modal.getByLabel('Search by QID or title').fill('partialCredit1');
     await modal.locator('[role="button"]').filter({ hasText: 'partialCredit1' }).first().click();
 
-    // The edit modal should appear with the selected question
     await expect(modal.getByRole('heading', { name: 'Add question' })).toBeVisible();
     await expect(modal.getByLabel('QID')).toHaveValue('partialCredit1');
 
-    // Set auto points
     const autoPointsInput = modal.getByLabel('Auto points', { exact: true });
     await autoPointsInput.clear();
     await autoPointsInput.fill('5');
 
     await modal.getByRole('button', { name: 'Add question' }).click();
     await expect(modal).not.toBeVisible();
-
-    // Save and verify
     await page.getByRole('button', { name: 'Save and sync' }).click();
     await expect(page.getByRole('button', { name: 'Edit questions' })).toBeVisible();
 
