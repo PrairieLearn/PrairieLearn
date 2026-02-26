@@ -52,12 +52,12 @@ const WorkspaceRowSchema = z.object({
   id: z.coerce.string(),
   state: z.enum(['uninitialized', 'stopped', 'launching', 'running']),
   launch_uuid: z.string().nullable(),
-  launch_port: z.coerce.number().nullable(),
-  version: z.coerce.string(),
+  launch_port: z.coerce.number().nullable(), // BIGINT, but always fits a number
+  version: z.coerce.number(), // BIGINT, but always fits a number
 });
 
 const SelectWorkspaceSchema = z.object({
-  version: z.coerce.string(),
+  version: z.coerce.number(), // BIGINT, but always fits a number
   course_id: z.coerce.string(),
   institution_id: z.coerce.string(),
 });
@@ -68,7 +68,7 @@ const PortOccupiedSchema = z.object({
 
 const WorkspaceSettingsRowSchema = z.object({
   workspace_image: z.string(),
-  workspace_port: z.coerce.number(),
+  workspace_port: z.number(),
   workspace_home: z.string(),
   workspace_graded_files: z.array(z.string()),
   workspace_args: z.string().nullable(),
@@ -88,7 +88,7 @@ interface WorkspaceSettings {
 
 interface Workspace {
   id: string | number;
-  version: string;
+  version: number;
   launch_uuid: string;
   launch_port: number;
   local_name: string;

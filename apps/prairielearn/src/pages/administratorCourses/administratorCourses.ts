@@ -1,4 +1,5 @@
 import { Router } from 'express';
+import { z } from 'zod';
 
 import * as error from '@prairielearn/error';
 import * as sqldb from '@prairielearn/postgres';
@@ -52,12 +53,11 @@ router.post(
         authn_user_id: res.locals.authn_user.id,
       });
     } else if (req.body.__action === 'courses_update_column') {
-      await sqldb.execute(sql.courses_update_column, {
-        course_id: req.body.course_id,
-        column_name: req.body.column_name,
-        value: req.body.value,
-        authn_user_id: res.locals.authn_user.id,
-      });
+      await sqldb.callRows(
+        'courses_update_column',
+        [req.body.course_id, req.body.column_name, req.body.value, res.locals.authn_user.id],
+        z.any(),
+      );
     } else if (req.body.__action === 'courses_delete') {
       const course = await selectCourseById(req.body.course_id);
       if (req.body.confirm_short_name !== course.short_name) {
