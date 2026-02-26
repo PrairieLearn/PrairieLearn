@@ -317,10 +317,20 @@ function InstructorAssessmentQuestionsTableInner({
     }
   };
 
-  const questionsInAssessment = useMemo(
-    () => new Set(Object.keys(questionMetadata)),
-    [questionMetadata],
-  );
+  const questionsInAssessment = useMemo(() => {
+    const qids = new Set<string>();
+    for (const zone of zones) {
+      for (const question of zone.questions) {
+        if (question.id) qids.add(question.id);
+        if (question.alternatives) {
+          for (const alt of question.alternatives) {
+            if (alt.id) qids.add(alt.id);
+          }
+        }
+      }
+    }
+    return qids;
+  }, [zones]);
 
   const sensors = useSensors(
     useSensor(PointerSensor, { activationConstraint: { distance: 6 } }),
@@ -362,7 +372,7 @@ function InstructorAssessmentQuestionsTableInner({
         mode: 'create',
         zoneTrackingId: questionEditState.zoneTrackingId,
         question: { id: qid, trackingId: '' } as ZoneQuestionBlockForm,
-        existingQids: Object.keys(questionMetadata),
+        existingQids: [...questionsInAssessment],
       });
     }
   };

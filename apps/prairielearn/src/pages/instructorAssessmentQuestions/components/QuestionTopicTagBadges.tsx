@@ -57,7 +57,11 @@ export function QuestionTopicTagBadges({
               return next;
             });
           }}
-          onKeyDown={(e) => e.stopPropagation()}
+          onKeyDown={(e) => {
+            if (e.key === 'Enter' || e.key === ' ') {
+              e.stopPropagation();
+            }
+          }}
         >
           <span aria-hidden="true">{isExpanded ? 'Show less' : `+${hiddenTagCount}`}</span>
         </button>
