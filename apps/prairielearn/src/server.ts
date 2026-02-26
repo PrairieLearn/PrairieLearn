@@ -1126,10 +1126,6 @@ export async function initExpress(): Promise<Express> {
     (await import('./pages/jobSequence/jobSequence.js')).default,
   );
   app.use(
-    '/pl/course_instance/:course_instance_id(\\d+)/instructor/loadFromDisk',
-    (await import('./pages/instructorLoadFromDisk/instructorLoadFromDisk.js')).default,
-  );
-  app.use(
     '/pl/course_instance/:course_instance_id(\\d+)/instructor/edit_error',
     (await import('./pages/editError/editError.js')).default,
   );
@@ -1504,10 +1500,6 @@ export async function initExpress(): Promise<Express> {
 
   if (config.devMode) {
     app.use(
-      '/pl/course_instance/:course_instance_id(\\d+)/loadFromDisk',
-      (await import('./pages/instructorLoadFromDisk/instructorLoadFromDisk.js')).default,
-    );
-    app.use(
       '/pl/course_instance/:course_instance_id(\\d+)/jobSequence',
       (await import('./pages/jobSequence/jobSequence.js')).default,
     );
@@ -1693,10 +1685,6 @@ export async function initExpress(): Promise<Express> {
     (await import('./pages/instructorFileDownload/instructorFileDownload.js')).default,
   );
 
-  app.use(
-    '/pl/course/:course_id(\\d+)/loadFromDisk',
-    (await import('./pages/instructorLoadFromDisk/instructorLoadFromDisk.js')).default,
-  );
   app.use(
     '/pl/course/:course_id(\\d+)/jobSequence',
     (await import('./pages/jobSequence/jobSequence.js')).default,
