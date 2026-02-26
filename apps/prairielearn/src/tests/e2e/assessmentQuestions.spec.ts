@@ -109,7 +109,7 @@ test.describe('Assessment questions', () => {
     await expect(modal).toBeVisible();
     await expect(modal.getByText('Edit question')).toBeVisible();
 
-    const pointsInput = modal.getByLabel('Auto points');
+    const pointsInput = modal.getByLabel('Auto points', { exact: true });
     await pointsInput.clear();
     await pointsInput.fill('10');
 
@@ -178,7 +178,7 @@ test.describe('Assessment questions', () => {
     const modal = page.getByRole('dialog');
     await expect(modal).toBeVisible();
 
-    const autoPointsInput = modal.getByLabel('Auto points');
+    const autoPointsInput = modal.getByLabel('Auto points', { exact: true });
     await autoPointsInput.clear();
     await autoPointsInput.fill('7');
 
@@ -197,7 +197,7 @@ test.describe('Assessment questions', () => {
 
     await expect(modal.getByText('Edit question')).toBeVisible();
     await expect(modal.getByLabel('QID')).toHaveValue('differentiatePolynomial');
-    await expect(modal.getByLabel('Auto points')).toHaveValue('7');
+    await expect(modal.getByLabel('Auto points', { exact: true })).toHaveValue('7');
 
     await modal.getByRole('button', { name: 'Update question' }).click();
     await expect(modal).not.toBeVisible();
@@ -259,11 +259,11 @@ test.describe('Assessment questions', () => {
     await modal.locator('[role="button"]').filter({ hasText: 'partialCredit1' }).first().click();
 
     // The edit modal should appear with the selected question
-    await expect(modal.getByText('Add question')).toBeVisible();
+    await expect(modal.getByRole('heading', { name: 'Add question' })).toBeVisible();
     await expect(modal.getByLabel('QID')).toHaveValue('partialCredit1');
 
     // Set auto points
-    const autoPointsInput = modal.getByLabel('Auto points');
+    const autoPointsInput = modal.getByLabel('Auto points', { exact: true });
     await autoPointsInput.clear();
     await autoPointsInput.fill('5');
 
