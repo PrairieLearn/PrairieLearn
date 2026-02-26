@@ -106,7 +106,6 @@ WITH
       JOIN users AS u ON (u.id = user_ids.user_id)
   ),
   -- Pre-compute team member UIDs to avoid a correlated subquery in user_scores
-  -- that was being executed once per row (~41K times).
   team_member_uids AS (
     SELECT
       s.assessment_instance_id,
