@@ -114,7 +114,20 @@ export function ZoneQuestionBlock({
           }
 
           // Sortable props are on ZoneQuestionBlockHeader, not on individual questions
-          return zoneQuestionBlock.alternatives?.map((alternative, alternativeIndex) => {
+          if (!zoneQuestionBlock.alternatives?.length) {
+            return (
+              <tr>
+                <td
+                  colSpan={getTableColumnCount(assessmentState)}
+                  className="text-center text-muted py-3"
+                >
+                  No alternatives in this group. Use the question picker to add questions.
+                </td>
+              </tr>
+            );
+          }
+
+          return zoneQuestionBlock.alternatives.map((alternative, alternativeIndex) => {
             return (
               <AssessmentQuestion
                 key={alternative.trackingId}
