@@ -394,6 +394,7 @@ function InstructorAssessmentQuestionsTableInner({
         best_questions: null,
         number_choose: null,
         advance_score_perc: null,
+        lockpoint: false,
         json_allow_real_time_grading: null,
         json_can_submit: null,
         json_can_view: null,
