@@ -427,6 +427,9 @@ export function StudentAssessmentInstance({
                           row: instance_question_row,
                           colspan: zoneTitleColspan,
                           crossable: !!isLockpointCrossable(instance_question_row),
+                          blockedByAdvanceScorePerc: hasUnmetAdvanceScorePercBeforeLockpoint(
+                            instance_question_row.zone_number,
+                          ),
                           displayTimezone: resLocals.course_instance.display_timezone,
                         })
                       : ''}
@@ -955,11 +958,13 @@ function LockpointRow({
   row,
   colspan,
   crossable,
+  blockedByAdvanceScorePerc,
   displayTimezone,
 }: {
   row: InstanceQuestionRow;
   colspan: number;
   crossable: boolean;
+  blockedByAdvanceScorePerc: boolean;
   displayTimezone: string;
 }) {
   if (row.lockpoint_crossed) {
@@ -1022,7 +1027,11 @@ function LockpointRow({
           <i class="fas fa-lock text-secondary me-2 mt-1" aria-hidden="true"></i>
           <div>
             <span class="fw-bold text-muted">Lockpoint</span>
-            <small class="text-muted d-block"> Complete previous questions to unlock. </small>
+            <small class="text-muted d-block">
+              ${blockedByAdvanceScorePerc
+                ? 'A previous question requires a higher score before you can proceed past this lockpoint.'
+                : 'Complete previous questions to unlock.'}
+            </small>
           </div>
         </div>
       </td>
