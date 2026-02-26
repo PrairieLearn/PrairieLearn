@@ -111,8 +111,8 @@ WITH
     SELECT
       s.assessment_instance_id,
       s.user_id,
-      json_agg(
-        json_build_object('uid', ou.uid, 'enrollment_id', e.id)
+      jsonb_agg(
+        jsonb_build_object('uid', ou.uid, 'enrollment_id', e.id)
       ) AS uid_other_users_group
     FROM
       course_scores AS s
@@ -137,13 +137,13 @@ WITH
       u.id AS user_id,
       JSONB_OBJECT_AGG(
         s.assessment_id,
-        json_build_object(
+        jsonb_build_object(
           'score_perc',
           s.score_perc,
           'assessment_instance_id',
           s.assessment_instance_id,
           'uid_other_users_group',
-          COALESCE(tmu.uid_other_users_group, '[]'::json)
+          COALESCE(tmu.uid_other_users_group, '[]'::jsonb)
         )
       ) AS scores
     FROM
