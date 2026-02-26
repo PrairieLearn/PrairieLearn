@@ -430,6 +430,7 @@ export function StudentAssessmentInstance({
                           blockedByAdvanceScorePerc: hasUnmetAdvanceScorePercBeforeLockpoint(
                             instance_question_row.zone_number,
                           ),
+                          isGroupAssessment: groupConfig != null,
                           displayTimezone: resLocals.course_instance.display_timezone,
                         })
                       : ''}
@@ -959,12 +960,14 @@ function LockpointRow({
   colspan,
   crossable,
   blockedByAdvanceScorePerc,
+  isGroupAssessment,
   displayTimezone,
 }: {
   row: InstanceQuestionRow;
   colspan: number;
   crossable: boolean;
   blockedByAdvanceScorePerc: boolean;
+  isGroupAssessment: boolean;
   displayTimezone: string;
 }) {
   if (row.lockpoint_crossed) {
@@ -977,7 +980,7 @@ function LockpointRow({
               <span class="fw-bold">Lockpoint</span>
               <small class="text-muted d-block">
                 Previous questions
-                locked${row.lockpoint_crossed_authn_user_uid
+                locked${isGroupAssessment && row.lockpoint_crossed_authn_user_uid
                   ? html` by ${row.lockpoint_crossed_authn_user_uid}`
                   : ''}${row.lockpoint_crossed_at
                   ? html` at ${formatDate(row.lockpoint_crossed_at, displayTimezone)}`
