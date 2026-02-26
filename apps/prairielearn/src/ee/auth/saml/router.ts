@@ -108,8 +108,15 @@ router.post(
     if (!uidAttribute || !uinAttribute || !nameAttribute) {
       throw new Error('Missing one or more SAML attribute mappings');
     }
-    if (!authnUid || !authnUin || !authnName) {
-      throw new Error('Missing one or more SAML attributes');
+    const missingAttributes = [
+      ...(!authnUid ? [`uid (${uidAttribute})`] : []),
+      ...(!authnUin ? [`uin (${uinAttribute})`] : []),
+      ...(!authnName ? [`name (${nameAttribute})`] : []),
+    ];
+    if (missingAttributes.length > 0) {
+      throw new Error(
+        `Missing values for the following SAML attributes: ${missingAttributes.join(', ')}`,
+      );
     }
 
     const authnParams = {
