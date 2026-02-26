@@ -214,8 +214,6 @@ export type SprocAuthzCourseInstance = z.infer<typeof SprocAuthzCourseInstanceSc
 // because `Team` comes before `TeamConfig` alphabetically.
 // *******************************************************************************
 
-export const AccessLogSchema = null;
-
 export const AssessmentAccessControlSchema = z.object({
   // After complete fields
   after_complete_hide_questions: z.boolean().nullable(),

@@ -925,4 +925,3 @@ export async function selectEnrollmentsByIdsInCourseInstance({
     EnrollmentSchema,
   );
 }
-

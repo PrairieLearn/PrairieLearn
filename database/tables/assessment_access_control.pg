@@ -26,9 +26,9 @@ columns
     date_control_release_date_overridden: boolean
     enabled: boolean
     id: bigint not null default nextval('assessment_access_control_id_seq'::regclass)
+    integrations_prairietest_overridden: boolean
     list_before_release: boolean
     number: integer
-    integrations_prairietest_overridden: boolean
     target_type: text not null
 
 indexes
