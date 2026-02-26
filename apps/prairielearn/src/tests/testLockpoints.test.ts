@@ -66,7 +66,7 @@ describe('Assessment lockpoints', { timeout: 60_000 }, function () {
     context.lockpointHomeworkAssessmentId = (
       await selectAssessmentByTid({
         course_instance_id: courseInstanceId,
-        tid: 'hw14-lockpoints',
+        tid: 'hw15-lockpoints',
       })
     ).id;
     context.lockpointZoneIds = (
