@@ -189,7 +189,9 @@ test.describe('Assessment questions', () => {
 
     await modal.getByRole('button', { name: 'Filter by Topic' }).click();
     await page.getByRole('option', { name: 'Calculus' }).click();
-    await page.keyboard.press('Escape');
+    // Click the search input to dismiss the react-aria Popover via light dismiss.
+    // Escape doesn't work here because the react-bootstrap Modal captures it first.
+    await modal.getByLabel('Search by QID or title').click({ force: true });
 
     await expect(modal.getByText(/1 question/)).toBeVisible();
 
@@ -255,7 +257,7 @@ test.describe('Assessment questions', () => {
     await modal.getByLabel('Search by QID or title').fill('partialCredit1');
     await modal.locator('[role="button"]').filter({ hasText: 'partialCredit1' }).first().click();
 
-    await expect(modal.getByRole('heading', { name: 'Add question' })).toBeVisible();
+    await expect(modal.locator('.modal-title', { hasText: 'Add question' })).toBeVisible();
     await expect(modal.getByLabel('QID')).toHaveValue('partialCredit1');
 
     const autoPointsInput = modal.getByLabel('Auto points', { exact: true });
@@ -278,7 +280,7 @@ test.describe('Assessment questions', () => {
 
     expect(savedAssessment.zones).toEqual([
       {
-        questions: [{ id: 'partialCredit1', points: 5 }],
+        questions: [{ id: 'partialCredit1', autoPoints: 5 }],
       },
     ]);
   });

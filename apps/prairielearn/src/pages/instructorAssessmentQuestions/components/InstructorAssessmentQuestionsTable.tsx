@@ -189,6 +189,7 @@ interface InstructorAssessmentQuestionsTableInnerProps {
  */
 function InstructorAssessmentQuestionsTableInner({
   course,
+  courseInstance,
   questionRows,
   jsonZones,
   urlPrefix,
@@ -382,21 +383,25 @@ function InstructorAssessmentQuestionsTableInner({
     setQuestionEditState({ status: 'picking', zoneTrackingId: questionEditState.zoneTrackingId });
   };
 
-  const buildQuestionMetadata = (
-    data: QuestionByQidResult,
-  ): StaffAssessmentQuestionRow | undefined => {
-    const templateRow = Object.values(questionMetadata).at(0);
-
-    if (!templateRow) {
-      // No existing questions to use as a template. The metadata will be
-      // populated after saving and reloading from the database.
-      return undefined;
-    }
-
+  const buildQuestionMetadata = (data: QuestionByQidResult): StaffAssessmentQuestionRow => {
     return StaffAssessmentQuestionRowSchema.parse({
-      zone: templateRow.zone,
-      course_instance: templateRow.course_instance,
-      course: templateRow.course,
+      zone: {
+        id: '0',
+        assessment_id: assessment.id,
+        number: 0,
+        title: null,
+        max_points: null,
+        best_questions: null,
+        number_choose: null,
+        advance_score_perc: null,
+        json_allow_real_time_grading: null,
+        json_can_submit: null,
+        json_can_view: null,
+        json_comment: null,
+        json_grade_rate_minutes: null,
+      },
+      course_instance: courseInstance,
+      course,
       question: data.question,
       topic: data.topic,
       open_issue_count: data.open_issue_count,
@@ -404,18 +409,86 @@ function InstructorAssessmentQuestionsTableInner({
       other_assessments: null,
       assessment,
       assessment_question: {
-        ...templateRow.assessment_question,
         id: '0',
         question_id: data.question.id,
+        assessment_id: assessment.id,
+        ai_grading_mode: false,
+        allow_real_time_grading: true,
+        alternative_group_id: null,
+        advance_score_perc: null,
+        average_average_submission_score: null,
+        average_first_submission_score: null,
+        average_last_submission_score: null,
+        average_max_submission_score: null,
+        average_number_submissions: null,
+        average_submission_score_hist: null,
+        average_submission_score_variance: null,
+        deleted_at: null,
+        discrimination: null,
         effective_advance_score_perc: 0,
+        first_submission_score_hist: null,
+        first_submission_score_variance: null,
+        force_max_points: null,
+        grade_rate_minutes: null,
+        incremental_submission_points_array_averages: null,
+        incremental_submission_points_array_variances: null,
+        incremental_submission_score_array_averages: null,
+        incremental_submission_score_array_variances: null,
+        init_points: null,
+        json_allow_real_time_grading: null,
+        json_auto_points: null,
+        json_comment: null,
+        json_force_max_points: null,
+        json_grade_rate_minutes: null,
+        json_manual_points: null,
+        json_max_auto_points: null,
+        json_max_points: null,
+        json_points: null,
+        json_tries_per_variant: null,
+        last_submission_score_hist: null,
+        last_submission_score_variance: null,
+        manual_rubric_id: null,
+        max_auto_points: null,
+        max_manual_points: null,
+        max_points: null,
+        max_submission_score_hist: null,
+        max_submission_score_variance: null,
         mean_question_score: null,
-        number_submissions_hist: null,
+        median_question_score: null,
         number: 0,
         number_in_alternative_group: null,
+        number_submissions_hist: null,
+        number_submissions_variance: null,
+        points_list: null,
+        question_score_variance: null,
+        quintile_question_scores: null,
+        some_nonzero_submission_perc: null,
+        some_perfect_submission_perc: null,
+        some_submission_perc: null,
+        submission_score_array_averages: null,
+        submission_score_array_variances: null,
+        tries_per_variant: null,
       },
       alternative_group: {
-        ...templateRow.alternative_group,
+        id: '0',
+        assessment_id: assessment.id,
         number: 0,
+        zone_id: '0',
+        advance_score_perc: null,
+        json_allow_real_time_grading: null,
+        json_auto_points: null,
+        json_can_submit: null,
+        json_can_view: null,
+        json_comment: null,
+        json_force_max_points: null,
+        json_grade_rate_minutes: null,
+        json_has_alternatives: null,
+        json_manual_points: null,
+        json_max_auto_points: null,
+        json_max_points: null,
+        json_points: null,
+        json_tries_per_variant: null,
+        number_choose: null,
       },
       start_new_zone: false,
       start_new_alternative_group: true,
@@ -445,15 +518,12 @@ function InstructorAssessmentQuestionsTableInner({
       });
     } else {
       if (newQuestionData) {
-        const metadata = buildQuestionMetadata(newQuestionData);
-        if (metadata) {
-          dispatch({
-            type: 'UPDATE_QUESTION_METADATA',
-            questionId: updatedQuestion.id,
-            oldQuestionId: questionEditState.originalQuestionId,
-            questionData: metadata,
-          });
-        }
+        dispatch({
+          type: 'UPDATE_QUESTION_METADATA',
+          questionId: updatedQuestion.id,
+          oldQuestionId: questionEditState.originalQuestionId,
+          questionData: buildQuestionMetadata(newQuestionData),
+        });
       }
 
       const questionWithNormalizedPoints = {
