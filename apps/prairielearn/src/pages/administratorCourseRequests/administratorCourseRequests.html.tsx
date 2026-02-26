@@ -6,14 +6,12 @@ export function AdministratorCourseRequests({
   rows,
   institutions,
   coursesRoot,
-  csrfToken,
   trpcCsrfToken,
   urlPrefix,
 }: {
   rows: CourseRequestRow[];
   institutions: AdminInstitution[];
   coursesRoot: string;
-  csrfToken: string;
   trpcCsrfToken: string;
   urlPrefix: string;
 }) {
@@ -24,7 +22,6 @@ export function AdministratorCourseRequests({
         rows={rows}
         institutions={institutions}
         coursesRoot={coursesRoot}
-        csrfToken={csrfToken}
         trpcCsrfToken={trpcCsrfToken}
         urlPrefix={urlPrefix}
         showAll

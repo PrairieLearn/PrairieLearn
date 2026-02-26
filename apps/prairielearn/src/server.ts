@@ -1902,6 +1902,21 @@ export async function initExpress(): Promise<Express> {
 
   app.use('/pl/administrator', (await import('./middlewares/authzIsAdministrator.js')).default);
 
+  {
+    const { createExpressMiddleware } = await import('@trpc/server/adapters/express');
+    const { administratorRouter } = await import('./trpc/administrator/index.js');
+    const { createContext } = await import('./trpc/trpc.js');
+    const { handleTrpcError } = await import('./lib/trpc.js');
+    app.use(
+      '/pl/administrator/trpc',
+      createExpressMiddleware({
+        router: administratorRouter,
+        createContext,
+        onError: handleTrpcError,
+      }),
+    );
+  }
+
   app.use(
     '/pl/administrator/admins',
     (await import('./pages/administratorAdmins/administratorAdmins.js')).default,

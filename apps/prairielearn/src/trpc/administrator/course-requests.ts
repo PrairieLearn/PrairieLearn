@@ -1,6 +1,4 @@
-import { TRPCError, initTRPC } from '@trpc/server';
-import type { CreateExpressContextOptions } from '@trpc/server/adapters/express';
-import superjson from 'superjson';
+import { TRPCError } from '@trpc/server';
 import { z } from 'zod';
 
 import {
@@ -9,28 +7,7 @@ import {
   updateCourseRequestNote,
 } from '../../lib/course-request.js';
 import { coursePathAvailability, courseRepositoryAvailability } from '../../lib/course.js';
-import type { ResLocalsForPage } from '../../lib/res-locals.js';
-
-export function createContext({ res }: CreateExpressContextOptions) {
-  const locals = res.locals as ResLocalsForPage<'plain'>;
-  return {
-    authn_user: locals.authn_user,
-    is_administrator: locals.is_administrator,
-  };
-}
-
-type TRPCContext = Awaited<ReturnType<typeof createContext>>;
-
-const t = initTRPC.context<TRPCContext>().create({
-  transformer: superjson,
-});
-
-const requireAdministrator = t.middleware((opts) => {
-  if (!opts.ctx.is_administrator) {
-    throw new TRPCError({ code: 'FORBIDDEN', message: 'Access denied (must be an administrator)' });
-  }
-  return opts.next();
-});
+import { requireAdministrator, t } from '../trpc.js';
 
 const checkRepoAvailability = t.procedure
   .use(requireAdministrator)
@@ -74,18 +51,34 @@ const createCourseMutation = t.procedure
   .use(requireAdministrator)
   .input(
     z.object({
-      courseRequestId: z.string(),
-      shortName: z.string(),
-      title: z.string(),
-      institutionId: z.string(),
-      displayTimezone: z.string(),
-      path: z.string(),
-      repoShortName: z.string(),
+      courseRequestId: z.string().min(1),
+      shortName: z.string().min(1, 'Short name is required'),
+      title: z.string().min(1, 'Title is required'),
+      institutionId: z.string().min(1, 'Institution is required'),
+      displayTimezone: z.string().min(1, 'Timezone is required'),
+      path: z.string().min(1, 'Path is required'),
+      repoShortName: z.string().min(1, 'Repository name is required'),
       githubUser: z.string(),
     }),
   )
   .output(z.object({ jobSequenceId: z.string() }))
   .mutation(async ({ input, ctx }) => {
+    const repoExists = await courseRepositoryAvailability(input.repoShortName);
+    if (repoExists) {
+      throw new TRPCError({
+        code: 'BAD_REQUEST',
+        message: 'A course with this repository already exists.',
+      });
+    }
+
+    const pathExists = await coursePathAvailability(input.path);
+    if (pathExists) {
+      throw new TRPCError({
+        code: 'BAD_REQUEST',
+        message: 'A course with this path already exists.',
+      });
+    }
+
     const jobSequenceId = await createCourseFromRequest({
       courseRequestId: input.courseRequestId,
       shortName: input.shortName,
@@ -100,7 +93,7 @@ const createCourseMutation = t.procedure
     return { jobSequenceId };
   });
 
-export const courseRequestsRouter = t.router({
+export const administratorCourseRequestsRouter = t.router({
   checkRepoAvailability,
   checkPathAvailability,
   denyCourseRequestMutation,
@@ -108,4 +101,4 @@ export const courseRequestsRouter = t.router({
   createCourseMutation,
 });
 
-export type CourseRequestsRouter = typeof courseRequestsRouter;
+export type AdministratorCourseRequestsRouter = typeof administratorCourseRequestsRouter;

@@ -30,7 +30,6 @@ export function CourseRequestsTable({
   institutions,
   coursesRoot,
   showAll,
-  csrfToken,
   trpcCsrfToken,
   urlPrefix,
 }: {
@@ -38,7 +37,6 @@ export function CourseRequestsTable({
   institutions: AdminInstitution[];
   coursesRoot: string;
   showAll: boolean;
-  csrfToken: string;
   trpcCsrfToken: string;
   urlPrefix: string;
 }) {
@@ -82,7 +80,6 @@ export function CourseRequestsTable({
                 institutions={institutions}
                 coursesRoot={coursesRoot}
                 showAll={showAll}
-                csrfToken={csrfToken}
                 trpcCsrfToken={trpcCsrfToken}
                 urlPrefix={urlPrefix}
               />
@@ -114,7 +111,6 @@ function CourseRequestTableRow({
   institutions: AdminInstitution[];
   coursesRoot: string;
   showAll: boolean;
-  csrfToken: string;
   trpcCsrfToken: string;
   urlPrefix: string;
 }) {
@@ -299,7 +295,7 @@ function CourseRequestApproveForm({
   onCancel: () => void;
 }) {
   const trpc = useTRPC();
-  const mutation = useMutation(trpc.createCourseMutation.mutationOptions());
+  const mutation = useMutation(trpc.courseRequests.createCourseMutation.mutationOptions());
 
   const repoName = 'pl-' + request.short_name.replaceAll(' ', '').toLowerCase();
   const path = coursesRoot + '/' + repoName;
@@ -328,12 +324,16 @@ function CourseRequestApproveForm({
   const pathNameValue = watch('path');
 
   const { refetch: refetchRepo } = useQuery({
-    ...trpc.checkRepoAvailability.queryOptions({ repoName: repoNameValue }),
+    ...trpc.courseRequests.checkRepoAvailability.queryOptions({
+      repoName: repoNameValue,
+    }),
     enabled: false,
   });
 
   const { refetch: refetchPath } = useQuery({
-    ...trpc.checkPathAvailability.queryOptions({ path: pathNameValue }),
+    ...trpc.courseRequests.checkPathAvailability.queryOptions({
+      path: pathNameValue,
+    }),
     enabled: false,
   });
 
@@ -422,11 +422,12 @@ function CourseRequestApproveForm({
         </label>
         <input
           type="text"
-          className="form-control"
+          className={clsx('form-control', errors.short_name && 'is-invalid')}
           id="courseRequestAddInputShortName"
           placeholder="XC 101"
-          {...register('short_name')}
+          {...register('short_name', { required: 'Enter a short name' })}
         />
+        {errors.short_name && <div className="invalid-feedback">{errors.short_name.message}</div>}
       </div>
       <div className="mb-3">
         <label className="form-label" htmlFor="courseRequestAddInputTitle">
@@ -434,11 +435,12 @@ function CourseRequestApproveForm({
         </label>
         <input
           type="text"
-          className="form-control"
+          className={clsx('form-control', errors.title && 'is-invalid')}
           id="courseRequestAddInputTitle"
           placeholder="Template course title"
-          {...register('title')}
+          {...register('title', { required: 'Enter a title' })}
         />
+        {errors.title && <div className="invalid-feedback">{errors.title.message}</div>}
       </div>
       <div className="mb-3">
         <label className="form-label" htmlFor="courseRequestAddInputTimezone">
@@ -446,10 +448,13 @@ function CourseRequestApproveForm({
         </label>
         <input
           type="text"
-          className="form-control"
+          className={clsx('form-control', errors.display_timezone && 'is-invalid')}
           id="courseRequestAddInputTimezone"
-          {...register('display_timezone')}
+          {...register('display_timezone', { required: 'Enter a timezone' })}
         />
+        {errors.display_timezone && (
+          <div className="invalid-feedback">{errors.display_timezone.message}</div>
+        )}
       </div>
       <div className="mb-3">
         <label className="form-label" htmlFor="courseRequestAddInputPath">
@@ -459,11 +464,9 @@ function CourseRequestApproveForm({
           type="text"
           className={clsx('form-control', errors.path && 'is-invalid')}
           id="courseRequestAddInputPath"
-          {...register('path')}
+          {...register('path', { required: 'Enter a path' })}
         />
-        {errors.path && (
-          <div className="invalid-feedback">A course already exists at this path.</div>
-        )}
+        {errors.path && <div className="invalid-feedback">{errors.path.message}</div>}
       </div>
       <div className="mb-3">
         <label className="form-label" htmlFor="courseRequestAddInputRepositoryName">
@@ -473,14 +476,16 @@ function CourseRequestApproveForm({
           type="text"
           className={clsx('form-control', errors.repository_short_name && 'is-invalid')}
           id="courseRequestAddInputRepositoryName"
-          {...register('repository_short_name')}
+          {...register('repository_short_name', { required: 'Enter a repository name' })}
         />
         {errors.repository_short_name && (
-          <div className="invalid-feedback">A course with this repository name already exists</div>
+          <div className="invalid-feedback">{errors.repository_short_name.message}</div>
         )}
       </div>
       <div className="mb-3">
-        <label htmlFor="courseRequestAddInputGithubUser">GitHub username:</label>
+        <label className="form-label" htmlFor="courseRequestAddInputGithubUser">
+          GitHub username:
+        </label>
         <input
           type="text"
           className="form-control"
@@ -489,6 +494,11 @@ function CourseRequestApproveForm({
         />
       </div>
 
+      {mutation.error && (
+        <div className="alert alert-danger" role="alert">
+          {mutation.error.message}
+        </div>
+      )}
       <div className="d-flex justify-content-end gap-2">
         <button type="button" className="btn btn-secondary" onClick={onCancel}>
           Cancel
@@ -513,27 +523,34 @@ function CourseRequestDenyForm({
   onCancel: () => void;
 }) {
   const trpc = useTRPC();
-  const mutation = useMutation(trpc.denyCourseRequestMutation.mutationOptions());
+  const mutation = useMutation(trpc.courseRequests.denyCourseRequestMutation.mutationOptions());
 
   return (
-    <div className="d-flex justify-content-end gap-2">
-      <button type="button" className="btn btn-secondary" onClick={onCancel}>
-        Cancel
-      </button>
-      <button
-        type="submit"
-        className="btn btn-danger"
-        disabled={mutation.isPending}
-        onClick={() =>
-          mutation.mutate(
-            { courseRequestId: request.id },
-            { onSuccess: () => window.location.reload() },
-          )
-        }
-      >
-        Deny
-      </button>
-    </div>
+    <>
+      {mutation.error && (
+        <div className="alert alert-danger" role="alert">
+          {mutation.error.message}
+        </div>
+      )}
+      <div className="d-flex justify-content-end gap-2">
+        <button type="button" className="btn btn-secondary" onClick={onCancel}>
+          Cancel
+        </button>
+        <button
+          type="submit"
+          className="btn btn-danger"
+          disabled={mutation.isPending}
+          onClick={() =>
+            mutation.mutate(
+              { courseRequestId: request.id },
+              { onSuccess: () => window.location.reload() },
+            )
+          }
+        >
+          Deny
+        </button>
+      </div>
+    </>
   );
 }
 
@@ -580,7 +597,9 @@ function CourseRequestEditNoteForm({
   onCancel: () => void;
 }) {
   const trpc = useTRPC();
-  const mutation = useMutation(trpc.updateCourseRequestNoteMutation.mutationOptions());
+  const mutation = useMutation(
+    trpc.courseRequests.updateCourseRequestNoteMutation.mutationOptions(),
+  );
 
   const [note, setNoteValue] = useState(request.note ?? '');
 
@@ -612,6 +631,11 @@ function CourseRequestEditNoteForm({
           <i className="fa fa-save" aria-hidden="true" /> Save note
         </button>
       </div>
+      {mutation.error && (
+        <div className="alert alert-danger mx-2 mb-2" role="alert">
+          {mutation.error.message}
+        </div>
+      )}
     </div>
   );
 }
