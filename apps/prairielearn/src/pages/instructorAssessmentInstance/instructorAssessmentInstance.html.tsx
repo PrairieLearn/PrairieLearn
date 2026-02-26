@@ -46,6 +46,10 @@ type AssessmentInstanceStats = z.infer<typeof AssessmentInstanceStatsSchema>;
 export const InstanceQuestionRowSchema = InstanceQuestionSchema.extend({
   instructor_question_number: z.string(),
   assessment_question: AssessmentQuestionSchema,
+  lockpoint: z.boolean(),
+  lockpoint_crossed: z.boolean(),
+  lockpoint_crossed_at: DateFromISOString.nullable(),
+  lockpoint_crossed_authn_user_uid: z.string().nullable(),
   qid: z.string().nullable(),
   question_id: IdSchema,
   question_number: z.string(),
@@ -61,17 +65,6 @@ export const InstanceQuestionRowSchema = InstanceQuestionSchema.extend({
 });
 type InstanceQuestionRow = z.infer<typeof InstanceQuestionRowSchema>;
 
-export const ZoneLockpointSchema = z.object({
-  zone_id: IdSchema,
-  zone_number: z.number(),
-  zone_title: z.string().nullable(),
-  lockpoint_crossed: z.boolean(),
-  crossed_at: DateFromISOString.nullable(),
-  authn_user_id: IdSchema.nullable(),
-  authn_user_uid: z.string().nullable(),
-});
-type ZoneLockpoint = z.infer<typeof ZoneLockpointSchema>;
-
 const FINGERPRINT_COLORS = ['red2', 'orange2', 'green2', 'blue2', 'turquoise2', 'purple2'];
 
 export function InstructorAssessmentInstance({
@@ -81,7 +74,6 @@ export function InstructorAssessmentInstance({
   assessment_instance_date_formatted,
   assessment_instance_duration,
   instance_questions,
-  zoneLockpoints,
   assessmentInstanceLog,
 }: {
   resLocals: ResLocalsForPage<'assessment-instance'>;
@@ -90,13 +82,8 @@ export function InstructorAssessmentInstance({
   assessment_instance_date_formatted: string;
   assessment_instance_duration: string;
   instance_questions: InstanceQuestionRow[];
-  zoneLockpoints: ZoneLockpoint[];
   assessmentInstanceLog: InstanceLogEntry[];
 }) {
-  const zoneLockpointsByZoneId = new Map(
-    zoneLockpoints.map((lockpoint) => [lockpoint.zone_id, lockpoint]),
-  );
-
   return PageLayout({
     resLocals,
     pageTitle: resLocals.instance_group?.name ?? resLocals.instance_user?.uid ?? '',
@@ -349,7 +336,6 @@ export function InstructorAssessmentInstance({
                 let previousZoneHadInfo = false;
 
                 return instance_questions.map((instance_question) => {
-                  const zoneLockpoint = zoneLockpointsByZoneId.get(instance_question.zone_id);
                   const zoneHasInfo =
                     instance_question.zone_title != null ||
                     instance_question.zone_has_max_points ||
@@ -365,18 +351,19 @@ export function InstructorAssessmentInstance({
                   }
 
                   return html`
-                    ${instance_question.start_new_zone && zoneLockpoint
+                    ${instance_question.start_new_zone && instance_question.lockpoint
                       ? html`
                           <tr>
                             <th colspan="9" class="bg-light fw-normal">
-                              ${zoneLockpoint.lockpoint_crossed
+                              ${instance_question.lockpoint_crossed
                                 ? html`
                                     Lockpoint crossed by
-                                    ${zoneLockpoint.authn_user_uid ?? 'unknown user'}
-                                    ${zoneLockpoint.crossed_at
+                                    ${instance_question.lockpoint_crossed_authn_user_uid ??
+                                    'unknown user'}
+                                    ${instance_question.lockpoint_crossed_at
                                       ? html`at
                                         ${formatDate(
-                                          zoneLockpoint.crossed_at,
+                                          instance_question.lockpoint_crossed_at,
                                           resLocals.course_instance.display_timezone,
                                         )}`
                                       : ''}
