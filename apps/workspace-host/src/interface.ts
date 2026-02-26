@@ -62,9 +62,7 @@ const SelectWorkspaceSchema = z.object({
   institution_id: z.coerce.string(),
 });
 
-const PortOccupiedSchema = z.object({
-  port_used: z.boolean(),
-});
+const PortOccupiedSchema = z.boolean();
 
 const WorkspaceSettingsRowSchema = z.object({
   workspace_image: z.string(),
@@ -521,7 +519,7 @@ async function _allocateContainerPort(workspace_id: string | number): Promise<nu
       instance_id: workspace_server_settings.instance_id,
       port,
     };
-    const { port_used } = await sqldb.queryRow(
+    const port_used = await sqldb.queryRow(
       sql.get_is_port_occupied,
       params,
       PortOccupiedSchema,
