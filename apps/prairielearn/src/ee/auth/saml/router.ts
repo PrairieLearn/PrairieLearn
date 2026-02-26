@@ -91,15 +91,10 @@ router.post(
     const authnFamilyName = familyNameAttribute
       ? user.attributes[familyNameAttribute]?.trim()
       : null;
-    const authnNameFromParts =
-      [authnGivenName, authnFamilyName]
-        .filter((value): value is string => !!value)
-        .join(' ')
-        .trim() || null;
     const hasSplitNameMapping = !!givenNameAttribute && !!familyNameAttribute;
     const authnName =
       hasSplitNameMapping && authnGivenName && authnFamilyName
-        ? authnNameFromParts
+        ? `${authnGivenName} ${authnFamilyName}`.trim()
         : authnNameDirect;
 
     const hasNameMapping = !!nameAttribute || hasSplitNameMapping;

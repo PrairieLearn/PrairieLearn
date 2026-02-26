@@ -24,6 +24,8 @@ export function AdministratorInstitutionSaml({
   const hasNameMapping =
     !!samlProvider?.name_attribute ||
     (!!samlProvider?.given_name_attribute && !!samlProvider.family_name_attribute);
+  const hasPartialSplitNameMapping =
+    !!samlProvider?.given_name_attribute !== !!samlProvider?.family_name_attribute;
   const missingAttributeMappings =
     !samlProvider?.uid_attribute || !samlProvider.uin_attribute || !hasNameMapping;
 
@@ -65,6 +67,17 @@ export function AdministratorInstitutionSaml({
               <p class="mb-0">
                 One or more attribute mappings are missing. These are necessary for authentication
                 to work correctly.
+              </p>
+            </div>
+          `
+        : ''}
+      ${hasSamlProvider && hasPartialSplitNameMapping
+        ? html`
+            <div class="alert alert-warning">
+              <h2 class="h5">Incomplete split name configuration</h2>
+              <p class="mb-0">
+                Only one of the given name and family name attributes is configured. Both must be
+                configured together for split name mapping to take effect.
               </p>
             </div>
           `
