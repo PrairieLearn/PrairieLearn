@@ -68,7 +68,7 @@ export const ZoneLockpointSchema = z.object({
   lockpoint_crossed: z.boolean(),
   crossed_at: DateFromISOString.nullable(),
   authn_user_id: IdSchema.nullable(),
-  auth_user_uid: z.string().nullable(),
+  authn_user_uid: z.string().nullable(),
 });
 type ZoneLockpoint = z.infer<typeof ZoneLockpointSchema>;
 
@@ -372,7 +372,7 @@ export function InstructorAssessmentInstance({
                               ${zoneLockpoint.lockpoint_crossed
                                 ? html`
                                     Lockpoint crossed by
-                                    ${zoneLockpoint.auth_user_uid ?? 'unknown user'}
+                                    ${zoneLockpoint.authn_user_uid ?? 'unknown user'}
                                     ${zoneLockpoint.crossed_at
                                       ? html`at
                                         ${formatDate(

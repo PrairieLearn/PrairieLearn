@@ -90,7 +90,7 @@ SELECT
   (aicl.id IS NOT NULL) AS lockpoint_crossed,
   aicl.crossed_at,
   aicl.authn_user_id,
-  u.uid AS auth_user_uid
+  u.uid AS authn_user_uid
 FROM
   assessment_instances AS ai
   JOIN assessments AS a ON (a.id = ai.assessment_id)

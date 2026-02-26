@@ -45,7 +45,7 @@ export const InstanceQuestionRowSchema = InstanceQuestionSchema.extend({
   lockpoint: z.boolean(),
   lockpoint_crossed: z.boolean(),
   lockpoint_crossed_at: DateFromISOString.nullable(),
-  lockpoint_crossed_auth_user_uid: z.string().nullable(),
+  lockpoint_crossed_authn_user_uid: z.string().nullable(),
   question_title: z.string(),
   max_points: z.number().nullable(),
   max_manual_points: z.number().nullable(),
@@ -972,8 +972,8 @@ function LockpointRow({
               <span class="fw-bold">Lockpoint</span>
               <small class="text-muted d-block">
                 Previous questions
-                locked${row.lockpoint_crossed_auth_user_uid
-                  ? html` by ${row.lockpoint_crossed_auth_user_uid}`
+                locked${row.lockpoint_crossed_authn_user_uid
+                  ? html` by ${row.lockpoint_crossed_authn_user_uid}`
                   : ''}${row.lockpoint_crossed_at
                   ? html` at ${formatDate(row.lockpoint_crossed_at, displayTimezone)}`
                   : ''}

@@ -487,8 +487,6 @@ FROM
   updated_assessment_instance;
 
 -- BLOCK cross_lockpoint
--- Attempts to record a lockpoint crossing. Returns the new row ID on success,
--- or nothing if conditions aren't met (handled by the caller).
 INSERT INTO
   assessment_instance_crossed_lockpoints (assessment_instance_id, zone_id, authn_user_id)
 SELECT

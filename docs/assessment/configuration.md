@@ -771,7 +771,9 @@ Lockpoints let you create one-way barriers between zones. Set `"lockpoint": true
 }
 ```
 
-Lockpoints are crossed sequentially. If multiple lockpoints are configured, students must cross them in zone order.
+In this configuration, students initially have access only to "Conceptual questions." After working through them, they can cross the first lockpoint to unlock "Applied questions," which makes "Conceptual questions" read-only. A second lockpoint then gates "Advanced questions" the same way.
+
+Lockpoints are crossed sequentially. If multiple lockpoints are configured, students must cross them in zone order. Zones without `"lockpoint": true` between lockpoint zones become accessible as soon as the preceding lockpoint is crossed. For example, if zones 2 and 4 have lockpoints but zone 3 does not, crossing the zone 2 lockpoint unlocks both zone 2 and zone 3.
 
 Lockpoints and `advanceScorePerc` work together: students still must satisfy any in-order gating before they can cross the next lockpoint.
 
@@ -781,7 +783,9 @@ Students can finish the assessment at any time, even if some lockpoints are not 
 
 Lockpoints do not make workspaces read-only. They control question submission access, not workspace container access.
 
-To avoid surprising students, configure lockpoints before students begin an assessment. Adding lockpoints after students have already started may lock zones they were previously working in until they cross the new lockpoint.
+!!! warning "Adding lockpoints to active assessments"
+
+    To avoid surprising students, configure lockpoints before students begin an assessment. Adding lockpoints after students have already started may lock zones they were previously working in until they cross the new lockpoint.
 
 ## Auto-closing Exam assessments
 

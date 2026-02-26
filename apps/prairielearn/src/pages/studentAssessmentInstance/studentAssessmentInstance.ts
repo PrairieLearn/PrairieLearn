@@ -194,11 +194,11 @@ router.post(
           'This assessment is not accepting submissions at this time.',
         );
       }
-      const zone_id = IdSchema.parse(req.body.zone_id);
+      const zoneId = IdSchema.parse(req.body.zone_id);
       await crossLockpoint({
-        assessment_instance: res.locals.assessment_instance,
-        zone_id,
-        authn_user: res.locals.authn_user,
+        assessmentInstance: res.locals.assessment_instance,
+        zoneId,
+        authnUser: res.locals.authn_user,
       });
       res.redirect(req.originalUrl);
     } else if (req.body.__action === 'leave_group') {

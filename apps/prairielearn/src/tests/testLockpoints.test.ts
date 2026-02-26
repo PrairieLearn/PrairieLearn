@@ -1,11 +1,11 @@
 import { afterAll, assert, beforeAll, describe, test } from 'vitest';
-import { z } from 'zod';
 
 import * as sqldb from '@prairielearn/postgres';
 import { IdSchema } from '@prairielearn/zod';
 
 import { config } from '../lib/config.js';
 import { SprocQuestionOrderSchema } from '../lib/db-types.js';
+import { selectAssessmentInstanceById } from '../models/assessment-instance.js';
 import { selectAssessmentByTid } from '../models/assessment.js';
 
 import * as helperClient from './helperClient.js';
@@ -354,12 +354,8 @@ describe('Assessment lockpoints', { timeout: 60_000 }, function () {
       });
       assert.isTrue(finishResponse.ok);
 
-      const isOpen = await sqldb.queryRow(
-        sql.select_assessment_instance_open,
-        { assessment_instance_id: created.assessmentInstanceId },
-        z.boolean(),
-      );
-      assert.isFalse(isOpen);
+      const assessmentInstance = await selectAssessmentInstanceById(created.assessmentInstanceId);
+      assert.isFalse(assessmentInstance.open);
     } finally {
       helperClient.setUser(previousUser);
     }

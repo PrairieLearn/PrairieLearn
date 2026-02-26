@@ -16,7 +16,7 @@ SELECT
   z.lockpoint,
   (aicl.id IS NOT NULL) AS lockpoint_crossed,
   aicl.crossed_at AS lockpoint_crossed_at,
-  lockpoint_user.uid AS lockpoint_crossed_auth_user_uid,
+  lockpoint_user.uid AS lockpoint_crossed_authn_user_uid,
   q.title AS question_title,
   aq.max_points,
   aq.max_manual_points,

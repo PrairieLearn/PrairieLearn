@@ -346,17 +346,17 @@ export async function gradeAssessmentInstance({
 }
 
 export async function crossLockpoint({
-  assessment_instance,
-  zone_id,
-  authn_user,
+  assessmentInstance,
+  zoneId,
+  authnUser,
 }: {
-  assessment_instance: AssessmentInstance;
-  zone_id: string;
-  authn_user: User;
+  assessmentInstance: AssessmentInstance;
+  zoneId: string;
+  authnUser: User;
 }): Promise<void> {
   const crossedLockpointId = await sqldb.queryOptionalRow(
     sql.cross_lockpoint,
-    { assessment_instance_id: assessment_instance.id, zone_id, authn_user_id: authn_user.id },
+    { assessment_instance_id: assessmentInstance.id, zone_id: zoneId, authn_user_id: authnUser.id },
     IdSchema,
   );
   if (crossedLockpointId != null) return;
@@ -366,7 +366,7 @@ export async function crossLockpoint({
   // (not eligible to cross). This second query distinguishes those cases.
   const alreadyCrossed = await sqldb.queryOptionalRow(
     sql.check_lockpoint_crossed,
-    { assessment_instance_id: assessment_instance.id, zone_id },
+    { assessment_instance_id: assessmentInstance.id, zone_id: zoneId },
     IdSchema,
   );
   if (alreadyCrossed != null) return;

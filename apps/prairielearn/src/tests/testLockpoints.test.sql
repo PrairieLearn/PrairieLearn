@@ -8,11 +8,3 @@ WHERE
   AND lockpoint = true
 ORDER BY
   number;
-
--- BLOCK select_assessment_instance_open
-SELECT
-  open
-FROM
-  assessment_instances
-WHERE
-  id = $assessment_instance_id;
