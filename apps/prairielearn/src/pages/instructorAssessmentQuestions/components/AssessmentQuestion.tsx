@@ -64,10 +64,10 @@ interface AssessmentQuestionAlternativeRow extends AssessmentQuestionBaseProps {
   alternativeIndex: number;
   zoneQuestionBlockAutoPoints: number | number[] | null;
 
-  sortableRef?: (node: HTMLElement | null) => void;
-  sortableStyle?: CSSProperties;
-  sortableAttributes?: DraggableAttributes;
-  sortableListeners?: DraggableSyntheticListeners;
+  sortableRef?: never;
+  sortableStyle?: never;
+  sortableAttributes?: never;
+  sortableListeners?: never;
 }
 
 interface AssessmentQuestionIndividualRow extends AssessmentQuestionBaseProps {

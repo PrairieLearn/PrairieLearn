@@ -41,7 +41,6 @@ export function AssessmentZone({
   collapsedGroups,
   collapsedZones,
   dispatch,
-  targetGroupTrackingId,
 }: {
   zone: ZoneAssessmentForm;
   zoneNumber: number;
@@ -58,7 +57,6 @@ export function AssessmentZone({
   collapsedGroups: Set<string>;
   collapsedZones: Set<string>;
   dispatch: Dispatch<EditorAction>;
-  targetGroupTrackingId: string | null;
 }) {
   const { editMode } = assessmentState;
   const nTableCols = getTableColumnCount(assessmentState);
@@ -128,7 +126,6 @@ export function AssessmentZone({
               sortableId={zoneQuestionBlock.trackingId}
               collapsedGroups={collapsedGroups}
               dispatch={dispatch}
-              isTargetGroup={targetGroupTrackingId === zoneQuestionBlock.trackingId}
             />
           ))}
           {/* Empty zone warning - now also serves as a droppable target */}
