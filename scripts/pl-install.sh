@@ -77,7 +77,7 @@ cd /
 curl -fLO https://astral.sh/uv/install.sh
 env UV_INSTALL_DIR=/usr/local/bin sh /install.sh && rm /install.sh
 
-# /PrairieLearn/.venv/bin/python3 -> /usr/local/bin/python3 -> /usr/share/uv/python/*/bin/python3.13
+# /PrairieLearn/.venv/bin/python3 -> /usr/local/bin/python3 -> /root/.local/share/uv/python/*/bin/python3.13
 UV_PYTHON_BIN_DIR=/usr/local/bin uv python install python3.13
 
 # Clear various caches to minimize the final image size.
