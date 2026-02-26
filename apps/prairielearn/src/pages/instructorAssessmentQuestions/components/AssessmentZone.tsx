@@ -260,7 +260,10 @@ function AssessmentZoneHeader({
       )}
       <th colSpan={nTableCols - (editMode ? 3 : 0)}>
         <div className="d-flex align-items-center">
-          <i className={`fa fa-chevron-${isCollapsed ? 'right' : 'down'} me-2`} aria-hidden="true" />
+          <i
+            className={`fa fa-chevron-${isCollapsed ? 'right' : 'down'} me-2`}
+            aria-hidden="true"
+          />
           Zone {zoneNumber}. {zone.title}{' '}
           {zone.numberChoose == null
             ? '(All questions)'
