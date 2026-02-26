@@ -17,6 +17,18 @@ number_input = importlib.import_module("pl-number-input")
         ("420.6913", 0.0001),
         ("420.69133", 0.00001),
         ("420.691337", 0.000001),
+        # Scientific notation
+        ("1e-3", 0.001),
+        ("1.5e-3", 0.0001),
+        ("1.50e-3", 0.00001),
+        ("1e2", 100),
+        ("1.0e2", 10),
+        # Sign + scientific notation
+        ("+1.5e-3", 0.0001),
+        ("-1.5e-3", 0.0001),
+        # Fractions
+        ("1/3", 0.0),
+        ("2/7", 0.0),
     ],
 )
 def test_only_string_precision_fn(
@@ -44,6 +56,15 @@ def test_only_string_precision_fn(
         ("0", 1),
         # Sign stripping
         ("-1.0", 2),
+        # Scientific notation (sig figs come from mantissa only)
+        ("1e-3", 1),
+        ("1.5e+2", 2),
+        ("1.50e-3", 3),
+        ("1.00e5", 3),
+        ("-2.5e3", 2),
+        # Fractions (return large value to avoid precision warnings)
+        ("1/3", 1000),
+        ("2/7", 1000),
     ],
 )
 def test_only_significant_digits_fn(
@@ -68,6 +89,14 @@ def test_only_significant_digits_fn(
         ("404", 0),
         ("0.0001", 1),
         ("0.000690", 3),
+        # Scientific notation (decimal digits come from mantissa only)
+        ("1e-3", 0),
+        ("1.5e-3", 1),
+        ("1.50e-3", 2),
+        ("-1.50e-3", 2),
+        # Fractions (return large value to avoid precision warnings)
+        ("1/3", 1000),
+        ("2/7", 1000),
     ],
 )
 def test_only_decimal_digits_fn(
