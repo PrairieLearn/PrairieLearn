@@ -21,8 +21,11 @@ export function AdministratorInstitutionSaml({
   const hasSamlProvider = !!samlProvider;
   const hasEnabledSaml = institutionAuthenticationProviders.some((p) => p.name === 'SAML');
 
+  const hasNameMapping =
+    !!samlProvider?.name_attribute ||
+    (!!samlProvider?.given_name_attribute && !!samlProvider.family_name_attribute);
   const missingAttributeMappings =
-    !samlProvider?.uid_attribute || !samlProvider.uin_attribute || !samlProvider.name_attribute;
+    !samlProvider?.uid_attribute || !samlProvider.uin_attribute || !hasNameMapping;
 
   const issuer = `https://${host}/saml/institution/${institution.id}`;
   const metadataUrl = `https://${host}/pl/auth/institution/${institution.id}/saml/metadata`;
@@ -237,7 +240,44 @@ ${samlProvider?.certificate ?? '-----BEGIN CERTIFICATE-----\n-----END CERTIFICAT
             aria-describedby="nameAttributeHelp"
           />
           <small id="nameAttributeHelp" class="form-text text-muted">
-            This attribute should contain the full name of the user, like "Jasmine Wang".
+            This attribute should contain the full name of the user, like "Jasmine Wang". If your
+            Identity Provider cannot provide a full name, you can instead configure separate given
+            name and family name attributes below. If both are configured, the given/family name
+            attributes take precedence.
+          </small>
+        </div>
+
+        <div class="mb-3">
+          <label class="form-label" for="given_name_attribute">Given name attribute</label>
+          <input
+            type="text"
+            class="form-control"
+            name="given_name_attribute"
+            id="given_name_attribute"
+            value="${samlProvider?.given_name_attribute ?? ''}"
+            aria-describedby="givenNameAttributeHelp"
+          />
+          <small id="givenNameAttributeHelp" class="form-text text-muted">
+            Optional. The given (first) name of the user. Often named <code>givenName</code> or
+            <code>urn:oid:2.5.4.42</code>. When both given name and family name attributes are
+            configured, they will be combined as "Given Family" and used instead of the name
+            attribute above.
+          </small>
+        </div>
+
+        <div class="mb-3">
+          <label class="form-label" for="family_name_attribute">Family name attribute</label>
+          <input
+            type="text"
+            class="form-control"
+            name="family_name_attribute"
+            id="family_name_attribute"
+            value="${samlProvider?.family_name_attribute ?? ''}"
+            aria-describedby="familyNameAttributeHelp"
+          />
+          <small id="familyNameAttributeHelp" class="form-text text-muted">
+            Optional. The family (last) name of the user. Often named <code>sn</code> or
+            <code>urn:oid:2.5.4.4</code>.
           </small>
         </div>
 

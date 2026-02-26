@@ -7,10 +7,14 @@ export const SamlTest = ({
   uid,
   uin,
   name,
+  givenName,
+  familyName,
   email,
   uidAttribute,
   uinAttribute,
   nameAttribute,
+  givenNameAttribute,
+  familyNameAttribute,
   emailAttribute,
   attributes,
   resLocals,
@@ -18,10 +22,14 @@ export const SamlTest = ({
   uid: string | null;
   uin: string | null;
   name: string | null;
+  givenName: string | null;
+  familyName: string | null;
   email: string | null;
   uidAttribute: string | null;
   uinAttribute: string | null;
   nameAttribute: string | null;
+  givenNameAttribute: string | null;
+  familyNameAttribute: string | null;
   emailAttribute: string | null;
   attributes: Record<string, any>;
   resLocals: UntypedResLocals;
@@ -29,11 +37,16 @@ export const SamlTest = ({
   const hasUidAttribute = !!uidAttribute;
   const hasUinAttribute = !!uinAttribute;
   const hasNameAttribute = !!nameAttribute;
+  const hasGivenNameAttribute = !!givenNameAttribute;
+  const hasFamilyNameAttribute = !!familyNameAttribute;
+  const hasNameMapping = hasNameAttribute || (hasGivenNameAttribute && hasFamilyNameAttribute);
   const hasEmailAttribute = !!emailAttribute;
 
   const hasUid = !!uid;
   const hasUin = !!uin;
   const hasName = !!name;
+  const hasGivenName = !!givenName;
+  const hasFamilyName = !!familyName;
   const hasEmail = !!email;
 
   // Note that even though the normal login flow doesn't yet validate the
@@ -43,7 +56,7 @@ export const SamlTest = ({
   const hasError =
     !hasUidAttribute ||
     !hasUinAttribute ||
-    !hasNameAttribute ||
+    !hasNameMapping ||
     !hasEmailAttribute ||
     !hasUid ||
     !hasUin ||
@@ -71,7 +84,7 @@ export const SamlTest = ({
                     ${!hasUinAttribute
                       ? html`<li>No UIN attribute mapping is configured for this institution</li>`
                       : ''}
-                    ${!hasNameAttribute
+                    ${!hasNameMapping
                       ? html`<li>No name attribute mapping is configured for this institution</li>`
                       : ''}
                     ${!hasEmailAttribute
@@ -79,7 +92,7 @@ export const SamlTest = ({
                       : ''}
                     ${hasUidAttribute && !hasUid
                       ? html`<li>
-                          No value fond for configured UID attribute (<code>${uidAttribute}</code>)
+                          No value found for configured UID attribute (<code>${uidAttribute}</code>)
                         </li>`
                       : ''}
                     ${hasUinAttribute && !hasUin
@@ -91,6 +104,18 @@ export const SamlTest = ({
                       ? html`<li>
                           No value found for configured name attribute
                           (<code>${nameAttribute}</code>)
+                        </li>`
+                      : ''}
+                    ${hasGivenNameAttribute && !hasGivenName
+                      ? html`<li>
+                          No value found for configured given name attribute
+                          (<code>${givenNameAttribute}</code>)
+                        </li>`
+                      : ''}
+                    ${hasFamilyNameAttribute && !hasFamilyName
+                      ? html`<li>
+                          No value found for configured family name attribute
+                          (<code>${familyNameAttribute}</code>)
                         </li>`
                       : ''}
                     ${hasEmailAttribute && !hasEmail
@@ -114,7 +139,13 @@ export const SamlTest = ({
                     ? html`<li><strong>UIN:</strong> ${uin} (<code>${uinAttribute}</code>)</li>`
                     : ''}
                   ${hasName
-                    ? html`<li><strong>Name:</strong> ${name} (<code>${nameAttribute}</code>)</li>`
+                    ? html`<li>
+                        <strong>Name:</strong> ${name}
+                        ${hasGivenName && hasFamilyName
+                          ? html`(<code>${givenNameAttribute}</code> +
+                              <code>${familyNameAttribute}</code>)`
+                          : html`(<code>${nameAttribute}</code>)`}
+                      </li>`
                     : ''}
                   ${hasEmail
                     ? html`<li>

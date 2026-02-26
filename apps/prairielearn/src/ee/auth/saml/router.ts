@@ -73,13 +73,27 @@ router.post(
     const uidAttribute = institutionSamlProvider.uid_attribute;
     const uinAttribute = institutionSamlProvider.uin_attribute;
     const nameAttribute = institutionSamlProvider.name_attribute;
+    const givenNameAttribute = institutionSamlProvider.given_name_attribute;
+    const familyNameAttribute = institutionSamlProvider.family_name_attribute;
     const emailAttribute = institutionSamlProvider.email_attribute;
 
     // Read the appropriate attributes.
     const authnUid = uidAttribute ? user.attributes[uidAttribute]?.trim() : null;
     const authnUin = uinAttribute ? user.attributes[uinAttribute]?.trim() : null;
-    const authnName = nameAttribute ? user.attributes[nameAttribute]?.trim() : null;
     const authnEmail = emailAttribute ? user.attributes[emailAttribute]?.trim() : null;
+
+    // The name can come from either a single name attribute or from separate
+    // given name and family name attributes. If both given and family name
+    // attributes are configured and present, they take precedence.
+    const authnNameDirect = nameAttribute ? user.attributes[nameAttribute]?.trim() : null;
+    const authnGivenName = givenNameAttribute ? user.attributes[givenNameAttribute]?.trim() : null;
+    const authnFamilyName = familyNameAttribute
+      ? user.attributes[familyNameAttribute]?.trim()
+      : null;
+    const authnName =
+      authnGivenName && authnFamilyName ? `${authnGivenName} ${authnFamilyName}` : authnNameDirect;
+
+    const hasNameMapping = nameAttribute || (givenNameAttribute && familyNameAttribute);
 
     if (req.body.RelayState === 'test') {
       res.send(
@@ -87,10 +101,14 @@ router.post(
           uid: authnUid,
           uin: authnUin,
           name: authnName,
+          givenName: authnGivenName,
+          familyName: authnFamilyName,
           email: authnEmail,
           uidAttribute,
           uinAttribute,
           nameAttribute,
+          givenNameAttribute,
+          familyNameAttribute,
           emailAttribute,
           attributes: user.attributes,
           resLocals: res.locals,
@@ -105,7 +123,7 @@ router.post(
     // such as FERPA-suppressed students, an IdP may not pass an email address.
     // So even if an email attribute is configured and we get it for the vast
     // majority of users, there may be some for which it is not present.
-    if (!uidAttribute || !uinAttribute || !nameAttribute) {
+    if (!uidAttribute || !uinAttribute || !hasNameMapping) {
       throw new Error('Missing one or more SAML attribute mappings');
     }
     if (!authnUid || !authnUin || !authnName) {
