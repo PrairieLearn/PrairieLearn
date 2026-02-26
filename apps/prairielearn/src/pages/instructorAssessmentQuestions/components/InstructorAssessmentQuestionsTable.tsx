@@ -436,11 +436,8 @@ function InstructorAssessmentQuestionsTableInner({
       mode: 'create-group',
       zoneTrackingId,
       group: {
-        trackingId: '' as ZoneQuestionBlockForm['trackingId'],
-        alternatives: [],
+        ...createQuestionWithTrackingId(),
         numberChoose: 1,
-        canSubmit: [],
-        canView: [],
       } as ZoneQuestionBlockForm,
     });
   };
@@ -452,7 +449,7 @@ function InstructorAssessmentQuestionsTableInner({
       dispatch({
         type: 'ADD_ALTERNATIVE_GROUP',
         zoneTrackingId: questionEditState.zoneTrackingId,
-        group: { ...updatedGroup, ...createQuestionWithTrackingId() },
+        group: updatedGroup,
       });
     } else if (questionEditState.mode === 'edit-group') {
       dispatch({

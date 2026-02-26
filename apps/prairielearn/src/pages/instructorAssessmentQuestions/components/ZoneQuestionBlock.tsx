@@ -64,6 +64,7 @@ export function ZoneQuestionBlock({
 
   const sortableStyle: CSSProperties = {
     opacity: isDragging ? 0.6 : 1,
+    background: isDragging ? 'rgba(0,0,0,0.04)' : undefined,
     // For table rows, only apply Y translation to prevent squishing
     transform: transform ? `translateY(${transform.y}px)` : undefined,
     transition,
@@ -87,6 +88,7 @@ export function ZoneQuestionBlock({
           sortableListeners={listeners}
           onToggle={toggleCollapse}
           onEditGroup={() => handleEditGroup(zoneQuestionBlock)}
+          // Groups always have null `id`; the reducer skips metadata deletion for falsy values.
           onDeleteGroup={() =>
             handleDeleteQuestion(zoneQuestionBlock.trackingId, zoneQuestionBlock.id ?? '')
           }
@@ -250,7 +252,9 @@ function ZoneQuestionBlockHeader({
           questionNumber={zoneQuestionBlockNumber}
           alternativeNumber={null}
           titleContent={
-            zoneQuestionBlock.numberChoose == null ? (
+            alternativeCount === 0 ? (
+              <>Empty alternative group</>
+            ) : zoneQuestionBlock.numberChoose == null ? (
               <>All questions from these {alternativeCount}:</>
             ) : zoneQuestionBlock.numberChoose === 1 ? (
               <>1 question from these {alternativeCount}:</>

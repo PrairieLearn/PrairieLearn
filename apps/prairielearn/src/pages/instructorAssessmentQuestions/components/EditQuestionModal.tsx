@@ -173,7 +173,7 @@ export function EditQuestionModal({
     values: formValues,
   });
 
-  if (isGroupMode && group && (type === 'create-group' || type === 'edit-group')) {
+  if (isGroupMode && group) {
     return (
       <EditAlternativeGroupForm
         show={show}
@@ -595,10 +595,6 @@ export function EditQuestionModal({
   );
 }
 
-/**
- * Form component for editing alternative groups.
- * Shows numberChoose and shared defaults (points, maxPoints).
- */
 function EditAlternativeGroupForm({
   show,
   type,
@@ -659,8 +655,7 @@ function EditAlternativeGroupForm({
           const updatedGroup: ZoneQuestionBlockForm = {
             ...formData,
             trackingId: group.trackingId,
-            // Ensure alternatives array exists (may be empty for new groups)
-            alternatives: group.alternatives ?? [],
+            alternatives: group.alternatives,
           };
           handleUpdateGroup(updatedGroup);
         })}
@@ -698,8 +693,9 @@ function EditAlternativeGroupForm({
               </div>
             )}
             <small id="numberChooseHelp" className="form-text text-muted">
-              The number of questions to choose from this group. Leave empty or set to the total
-              number of alternatives to include all.
+              The number of questions to choose from this group. Must not exceed the number of
+              alternatives in the group. Leave empty or set to the total number of alternatives to
+              include all.
             </small>
           </div>
 

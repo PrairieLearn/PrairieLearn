@@ -355,7 +355,7 @@ function createEditorReducer(initialState: EditorState) {
       case 'COLLAPSE_ALL': {
         const zoneTrackingIds = state.zones.map((z) => z.trackingId);
         const groupTrackingIds = state.zones.flatMap((z) =>
-          z.questions.filter((q) => (q.alternatives?.length ?? 0) > 1).map((q) => q.trackingId),
+          z.questions.filter((q) => (q.alternatives?.length ?? 0) > 0).map((q) => q.trackingId),
         );
         return {
           ...state,
