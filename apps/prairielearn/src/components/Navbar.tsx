@@ -24,7 +24,7 @@ export function Navbar({
    */
   sideNavEnabled?: boolean;
 }) {
-  const { __csrf_token, course, urlPrefix } = resLocals;
+  const { __csrf_token, course } = resLocals;
   navPage ??= resLocals.navPage;
   navSubPage ??= resLocals.navSubPage;
   navbarType ??= resLocals.navbarType;
@@ -112,7 +112,7 @@ export function Navbar({
                 <a
                   id="navbar-load-from-disk"
                   class="btn btn-success btn-sm"
-                  href="${urlPrefix}/loadFromDisk"
+                  href="/pl/loadFromDisk"
                 >
                   Load from disk
                 </a>
