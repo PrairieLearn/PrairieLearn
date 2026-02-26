@@ -175,9 +175,9 @@
     "brotli": 12316
   },
   "stylesheets/instructorAiGenerateDraftEditor.css": {
-    "raw": 1803,
-    "gzip": 664,
-    "brotli": 538
+    "raw": 2401,
+    "gzip": 848,
+    "brotli": 689
   },
   "stylesheets/instructorAiGenerateDrafts.css": {
     "raw": 106,
@@ -310,9 +310,9 @@
     "brotli": 112897
   },
   "scripts/esm-bundles/hydrated-components/AiQuestionGenerationEditor.ts": {
-    "raw": 2309901,
-    "gzip": 666419,
-    "brotli": 567746
+    "raw": 2314955,
+    "gzip": 667927,
+    "brotli": 569209
   },
   "scripts/esm-bundles/hydrated-components/AssessmentQuestionManualGrading.ts": {
     "raw": 960037,
@@ -336,7 +336,7 @@
   },
   "scripts/esm-bundles/hydrated-components/CourseInstancePublishing.ts": {
     "raw": 832648,
-    "gzip": 250988,
-    "brotli": 219796
+    "gzip": 250987,
+    "brotli": 219794
   }
 }
