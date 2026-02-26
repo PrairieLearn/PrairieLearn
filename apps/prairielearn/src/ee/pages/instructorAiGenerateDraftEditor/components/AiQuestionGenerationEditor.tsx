@@ -1,8 +1,9 @@
 import { QueryClient, useQuery } from '@tanstack/react-query';
-import { useCallback, useRef, useState } from 'react';
+import { useCallback, useMemo, useRef, useState } from 'react';
 
 import { run } from '@prairielearn/run';
 
+import { b64DecodeUnicode } from '../../../../lib/base64-util.js';
 import type { StaffQuestion } from '../../../../lib/client/safe-db-types.js';
 import { QueryClientProviderDebug } from '../../../../lib/client/tanstackQuery.js';
 import type { QuestionGenerationUIMessage } from '../../../lib/ai-question-generation/agent.js';
@@ -84,6 +85,11 @@ function AiQuestionGenerationEditorInner({
     retryDelay: (attemptIndex) => Math.min(1000 * 2 ** attemptIndex, 5000),
   });
 
+  const isQuestionEmpty = useMemo(
+    () => b64DecodeUnicode(questionFiles['question.html'] ?? '').trim() === '',
+    [questionFiles],
+  );
+
   return (
     <div className="app-content">
       <AiQuestionGenerationChat
@@ -95,6 +101,7 @@ function AiQuestionGenerationEditorInner({
         refreshQuestionPreview={() => newVariantRef.current?.newVariant()}
         hasUnsavedChanges={hasUnsavedChanges}
         discardUnsavedChanges={() => codeEditorsRef.current?.discardChanges()}
+        isQuestionEmpty={isQuestionEmpty}
         onGeneratingChange={setIsGenerating}
         onGenerationComplete={() => refetchFiles()}
       />
@@ -132,17 +139,19 @@ function AiQuestionGenerationEditorInner({
             ) : null}
           </ul>
           <div className="d-flex align-items-center justify-content-end flex-grow-1 border-bottom pe-2">
-            <button
-              type="button"
-              className="btn btn-sm btn-primary"
-              data-bs-toggle="tooltip"
-              data-bs-title="Finalize a question to use it on assessments and make manual edits"
-              disabled={isGenerating}
-              onClick={() => setShowFinalizeModal(true)}
-            >
-              <i className="fa fa-check" aria-hidden="true" />
-              Finalize question
-            </button>
+            {!isQuestionEmpty && (
+              <button
+                type="button"
+                className="btn btn-sm btn-primary"
+                data-bs-toggle="tooltip"
+                data-bs-title="Finalize a question to use it on assessments and make manual edits"
+                disabled={isGenerating}
+                onClick={() => setShowFinalizeModal(true)}
+              >
+                <i className="fa fa-check" aria-hidden="true" />
+                Finalize question
+              </button>
+            )}
           </div>
         </div>
       </div>

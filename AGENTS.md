@@ -126,7 +126,7 @@ When working with assessment "groups" / "teams", see the [`groups-and-teams` ski
 - Don't add extra comments that a human wouldn't add or that are inconsistent with the rest of the file.
 - Always check for existing model functions in `apps/prairielearn/src/models/` or lib functions before writing one-off database queries.
 - Express request handlers must always either send a response (either by calling `res.send`/etc. or throwing an error) or explicitly pass control by calling `next(...)`.
-- DO NOT re-export functions or types from other modules for convenience or backward compatibility (e.g. `export { bar } from 'foo'`). When moving a function to a new module, update all callers to import from the new location directly.
+- DO NOT re-export functions or types from other modules for convenience or backward compatibility within applications (e.g. `export { bar } from 'foo'` in `apps/*`). When moving a function to a new module, update all callers to import from the new location directly. Package-level barrel exports in `packages/*/src/index.ts` are expected and should be used to provide a clean public API.
 
 ### User interface conventions
 
@@ -149,12 +149,13 @@ Avoid running the entire test suite unless necessary, as it can be time-consumin
 
 Tests expect Postgres, Redis, and an S3-compatible store to be running, and usually they already are. If you suspect that they're not, run `make start-support` from the root directory.
 
-To test UI code looks correct, you should try to connect to the development server at `http://localhost:3000` and screenshot the page with `playwright`. A development server can be started with `make dev`, but the developer has typically already started one up.
+To test UI code looks correct, you should try to connect to the development server and screenshot the page with `playwright`. The dev server runs on the port specified by the `CONDUCTOR_PORT` environment variable (if set) or `3000`. If you can't determine the port, ask the user.
 
 When writing tests:
 
 - Don't add assertion messages unless they provide information that isn't obvious from reading the assertion itself (e.g., `assert.isNull(linkRecord)` is clear without a message).
 - Don't use defensive checks in tests -- tests should fail fast if unexpected data exists.
+- Don't add comments that narrate what the code already says (e.g., `// Click the button` before a `.click()` call). Only add comments when the intent isn't obvious from reading the code.
 - Prefer using the existing test course and its course instances for testing. Don't create new courses or course instances just to get a clean slate; instead, use transaction rollbacks or wipe the state between tests.
 
 ### Rendering HTML

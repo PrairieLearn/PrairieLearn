@@ -24,3 +24,12 @@
   padding: 5px 15px;
   text-align: right;
 }
+
+.pl-rich-text-editor-container .ql-container:not(.ql-disabled) .ql-formula {
+  cursor: pointer;
+}
+
+.pl-rich-text-editor-container .ql-formula-selected {
+  background: rgba(0, 123, 255, 0.25);
+  color: black;
+}
