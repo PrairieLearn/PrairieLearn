@@ -155,7 +155,7 @@ export async function updateWorkspaceDiskUsage(
   // to separately store the size for each version.
   let totalSize = 0;
   for (let i = 1; i <= version; i++) {
-    const workspaceVersionPath = path.join(workspacesRoot, `workspace-${id}-${version}`);
+    const workspaceVersionPath = path.join(workspacesRoot, `workspace-${id}-${i}`);
     const size = await getDirectoryDiskUsage(workspaceVersionPath);
     totalSize += size ?? 0;
   }
