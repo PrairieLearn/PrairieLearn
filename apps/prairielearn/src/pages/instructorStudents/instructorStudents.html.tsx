@@ -707,7 +707,9 @@ function StudentsCard({
         }}
         headerButtons={
           <>
-            {authzData.has_course_instance_permission_edit && selectedEnrollmentIds.length > 0 && (
+            {authzData.has_course_instance_permission_edit &&
+              origHash !== null &&
+              selectedEnrollmentIds.length > 0 && (
               <Dropdown autoClose="outside">
                 <Dropdown.Toggle variant="light" size="sm">
                   Labels

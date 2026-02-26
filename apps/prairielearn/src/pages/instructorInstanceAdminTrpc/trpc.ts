@@ -91,13 +91,17 @@ export function createTRPCContext({ res }: CreateExpressContextOptions) {
 
 export type TRPCContext = Awaited<ReturnType<typeof createTRPCContext>>;
 
-class SaveJobError extends Error {
-  readonly jobSequenceId: string;
+interface SaveJobErrorCause {
+  jobSequenceId: string;
+}
 
-  constructor(message: string, jobSequenceId: string) {
-    super(message);
-    this.jobSequenceId = jobSequenceId;
-  }
+function isSaveJobErrorCause(cause: unknown): cause is SaveJobErrorCause {
+  return (
+    typeof cause === 'object' &&
+    cause !== null &&
+    'jobSequenceId' in cause &&
+    typeof (cause as SaveJobErrorCause).jobSequenceId === 'string'
+  );
 }
 
 export const t = initTRPC.context<TRPCContext>().create({
@@ -107,7 +111,7 @@ export const t = initTRPC.context<TRPCContext>().create({
       ...shape,
       data: {
         ...shape.data,
-        jobSequenceId: error.cause instanceof SaveJobError ? error.cause.jobSequenceId : undefined,
+        jobSequenceId: isSaveJobErrorCause(error.cause) ? error.cause.jobSequenceId : undefined,
       },
     };
   },
@@ -224,7 +228,7 @@ const createLabelMutation = t.procedure
       throw new TRPCError({
         code: 'INTERNAL_SERVER_ERROR',
         message: saveResult.error,
-        cause: new SaveJobError(saveResult.error, saveResult.jobSequenceId),
+        cause: { jobSequenceId: saveResult.jobSequenceId },
       });
     }
 
@@ -315,7 +319,7 @@ const editLabelMutation = t.procedure
       throw new TRPCError({
         code: 'INTERNAL_SERVER_ERROR',
         message: saveResult.error,
-        cause: new SaveJobError(saveResult.error, saveResult.jobSequenceId),
+        cause: { jobSequenceId: saveResult.jobSequenceId },
       });
     }
 
@@ -414,7 +418,7 @@ const deleteLabelMutation = t.procedure
       throw new TRPCError({
         code: 'INTERNAL_SERVER_ERROR',
         message: saveResult.error,
-        cause: new SaveJobError(saveResult.error, saveResult.jobSequenceId),
+        cause: { jobSequenceId: saveResult.jobSequenceId },
       });
     }
 

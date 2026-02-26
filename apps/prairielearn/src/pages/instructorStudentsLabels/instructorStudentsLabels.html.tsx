@@ -38,7 +38,7 @@ function StudentLabelsCard({
   trpcClient,
   courseInstanceId,
   initialLabels,
-  canEdit,
+  canEdit: canEditProp,
   origHash: initialOrigHash,
 }: Omit<StudentLabelsCardProps, 'csrfToken'>) {
   const [labelParam, setLabelParam] = useQueryState('label', parseAsString.withDefault(''));
@@ -46,6 +46,8 @@ function StudentLabelsCard({
   const deleteModal = useModalState<LabelDeleteModalData>();
   const [labels, setLabels] = useState<StudentLabelWithUserData[]>(initialLabels);
   const [origHash, setOrigHash] = useState(initialOrigHash);
+
+  const canEdit = canEditProp && origHash !== null;
 
   const fetchLabels = async () => {
     const result = await trpcClient.labels.query();
@@ -138,6 +140,13 @@ function StudentLabelsCard({
           accommodations, or any custom categorization. Labels are not visible to students.
         </small>
       </div>
+
+      {canEditProp && origHash === null && (
+        <div className="alert alert-info" role="alert">
+          You cannot edit student labels because the <code>infoCourseInstance.json</code> file does
+          not exist.
+        </div>
+      )}
 
       {labels.length === 0 ? (
         <div className="text-center text-muted mb-3">
