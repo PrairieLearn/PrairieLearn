@@ -1,5 +1,6 @@
 import clsx from 'clsx';
 
+import { truncateMiddle } from '@prairielearn/formatter';
 import { type HtmlValue, html } from '@prairielearn/html';
 import { run } from '@prairielearn/run';
 
@@ -9,23 +10,6 @@ import type { UntypedResLocals } from '../lib/res-locals.types.js';
 import { IssueBadgeHtml } from './IssueBadge.js';
 import type { NavPage, NavSubPage } from './Navbar.types.js';
 import { ProgressCircle } from './ProgressCircle.js';
-
-/**
- * Truncates a string in the middle with an ellipsis if it exceeds the max length.
- */
-function truncateMiddle(str: string, maxLength: number): string {
-  if (str.length <= maxLength) {
-    return str;
-  }
-  const ellipsis = '...';
-  const remaining = Math.max(0, maxLength - ellipsis.length);
-  const startLength = Math.ceil(remaining * 0.6);
-  const endLength = remaining - startLength;
-  if (endLength <= 0) {
-    return str.slice(0, remaining) + ellipsis;
-  }
-  return str.slice(0, startLength) + ellipsis + str.slice(str.length - endLength);
-}
 
 interface SideNavTabInfo {
   /** For the side nav tab to be active, the current navPage must be in activePages. */
