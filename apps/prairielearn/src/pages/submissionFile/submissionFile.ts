@@ -15,6 +15,10 @@ import { selectAndAuthzVariant } from '../../models/variant.js';
 const sql = sqldb.loadSqlEquiv(import.meta.url);
 
 const MEDIA_PREFIXES = ['image/', 'audio/', 'video/', 'application/pdf'];
+// The video/mp2t mime uses a .ts extension, which conflicts with Typescript files.
+// In such cases we fallback to a verification if a file is binary or not
+// instead of a blindly trusting the mimetype from the name.
+const MEDIA_PREFIX_EXCEPTIONS = ['video/mp2t'];
 
 /**
  * Guesses the mime type for a file based on its name and contents.
@@ -25,7 +29,11 @@ const MEDIA_PREFIXES = ['image/', 'audio/', 'video/', 'application/pdf'];
  */
 async function guessMimeType(name: string, buffer: Buffer): Promise<string> {
   const mimeType = mime.getType(name);
-  if (mimeType && MEDIA_PREFIXES.some((p) => mimeType.startsWith(p))) {
+  if (
+    mimeType &&
+    MEDIA_PREFIXES.some((p) => mimeType.startsWith(p)) &&
+    !MEDIA_PREFIX_EXCEPTIONS.some((p) => mimeType.startsWith(p))
+  ) {
     return mimeType;
   }
 
