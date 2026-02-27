@@ -4,6 +4,7 @@ import ReactMarkdown from 'react-markdown';
 
 import { run } from '@prairielearn/run';
 
+import { NewToPrairieLearnCard } from '../../../components/NewToPrairieLearnCard.js';
 import { QuestionShortNameDescription } from '../../../components/ShortNameDescriptions.js';
 import { SHORT_NAME_PATTERN } from '../../../lib/short-name.js';
 import type {
@@ -665,42 +666,13 @@ function EmptyCourseTemplatesState() {
   );
 }
 
-const DOC_LINKS = [
-  {
-    href: 'https://docs.prairielearn.com/question/overview/',
-    label: 'How questions are structured',
-  },
-  {
-    href: 'https://docs.prairielearn.com/elements/',
-    label: 'Available elements',
-  },
-  {
-    href: 'https://docs.prairielearn.com/question/template/',
-    label: 'Writing question HTML',
-  },
-];
-
 function StartFromScratchState() {
   return (
     <div className="d-grid gap-3">
       <p className="mb-0">
         You'll start with empty <code>question.html</code> and <code>server.py</code> files.
       </p>
-      <div className="card card-body bg-light">
-        <h3 className="h6 fw-semibold mb-1">New to PrairieLearn?</h3>
-        <p className="text-muted small mb-1">
-          Check out these resources to understand the basics before you begin.
-        </p>
-        <ul className="small mb-0" style={{ listStyleType: "'– '", marginInlineStart: '-0.5rem' }}>
-          {DOC_LINKS.map((link) => (
-            <li key={link.href}>
-              <a href={link.href} target="_blank" rel="noopener noreferrer">
-                {link.label}
-              </a>
-            </li>
-          ))}
-        </ul>
-      </div>
+      <NewToPrairieLearnCard />
       <button type="submit" className="btn btn-primary text-nowrap">
         Create question <i className="fa fa-arrow-right ms-1" aria-hidden="true" />
       </button>

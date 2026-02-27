@@ -107,3 +107,18 @@ export function getCourseRepositoryAvailabilityUrl(urlPrefix: string, repoName: 
 export function getCoursePathAvailabilityUrl(urlPrefix: string, path: string): string {
   return `${urlPrefix}/administrator/courseRequests/course_path_availability.json?path=${path}`;
 }
+
+type QuestionUrlParts =
+  | { courseInstanceId: string; courseId?: undefined }
+  | { courseInstanceId?: undefined; courseId: string };
+
+export function getQuestionUrl({
+  courseInstanceId,
+  courseId,
+  questionId,
+}: { questionId: string } & QuestionUrlParts): string {
+  const urlPrefix = courseInstanceId
+    ? `/pl/course_instance/${courseInstanceId}/instructor`
+    : `/pl/course/${courseId}`;
+  return `${urlPrefix}/question/${questionId}`;
+}

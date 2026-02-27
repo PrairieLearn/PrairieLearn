@@ -27,6 +27,7 @@ referenced by
     administrators: FOREIGN KEY (user_id) REFERENCES users(id) ON UPDATE CASCADE ON DELETE CASCADE
     ai_question_generation_messages: FOREIGN KEY (authn_user_id) REFERENCES users(id) ON UPDATE CASCADE ON DELETE CASCADE
     ai_question_generation_prompts: FOREIGN KEY (prompting_user_id) REFERENCES users(id) ON UPDATE CASCADE ON DELETE SET NULL
+    assessment_instance_crossed_lockpoints: FOREIGN KEY (authn_user_id) REFERENCES users(id) ON UPDATE CASCADE ON DELETE CASCADE
     assessment_instances: FOREIGN KEY (auth_user_id) REFERENCES users(id) ON UPDATE CASCADE ON DELETE CASCADE
     assessment_instances: FOREIGN KEY (user_id) REFERENCES users(id) ON UPDATE CASCADE ON DELETE CASCADE
     assessment_score_logs: FOREIGN KEY (auth_user_id) REFERENCES users(id) ON UPDATE CASCADE ON DELETE CASCADE

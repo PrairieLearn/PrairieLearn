@@ -111,7 +111,7 @@ WITH
       u.id AS user_id,
       JSONB_OBJECT_AGG(
         s.assessment_id,
-        json_build_object(
+        jsonb_build_object(
           'score_perc',
           s.score_perc,
           'assessment_instance_id',
@@ -120,8 +120,8 @@ WITH
           COALESCE(
             (
               SELECT
-                json_agg(
-                  json_build_object('uid', ou.uid, 'enrollment_id', e.id)
+                jsonb_agg(
+                  jsonb_build_object('uid', ou.uid, 'enrollment_id', e.id)
                 )
               FROM
                 team_users AS ogu
@@ -134,7 +134,7 @@ WITH
                 ogu.team_id = s.team_id
                 AND ogu.user_id != u.id
             ),
-            '[]'::json
+            '[]'::jsonb
           )
         )
       ) AS scores
