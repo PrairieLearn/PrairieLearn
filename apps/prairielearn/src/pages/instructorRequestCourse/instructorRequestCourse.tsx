@@ -9,7 +9,9 @@ import { loadSqlEquiv, queryRow, queryRows } from '@prairielearn/postgres';
 import * as Sentry from '@prairielearn/sentry';
 import { IdSchema } from '@prairielearn/zod';
 
+import { PageLayout } from '../../components/PageLayout.js';
 import { Lti13Claim } from '../../ee/lib/lti13.js';
+import { compiledScriptTag } from '../../lib/assets.js';
 import { config } from '../../lib/config.js';
 import { insertCourseRequest } from '../../lib/course-request.js';
 import * as github from '../../lib/github.js';
@@ -57,7 +59,18 @@ router.get(
       }
     }
 
-    res.send(RequestCourse({ rows, lti13Info, resLocals: res.locals }));
+    res.send(
+      PageLayout({
+        pageTitle: 'Request a Course',
+        resLocals: res.locals,
+        navContext: {
+          type: 'plain',
+          page: 'request_course',
+        },
+        headContent: compiledScriptTag('instructorRequestCourseClient.ts'),
+        content: <RequestCourse rows={rows} lti13Info={lti13Info} resLocals={res.locals} />,
+      }),
+    );
   }),
 );
 
