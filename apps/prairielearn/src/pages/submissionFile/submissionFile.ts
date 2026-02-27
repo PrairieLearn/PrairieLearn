@@ -27,7 +27,7 @@ const MEDIA_PREFIX_EXCEPTIONS = ['video/mp2t'];
  * @param buffer The file's contents
  * @returns The guessed mime type
  */
-async function guessMimeType(name: string, buffer: Buffer): Promise<string> {
+export async function guessMimeType(name: string, buffer: Buffer): Promise<string> {
   const mimeType = mime.getType(name);
   if (
     mimeType &&
