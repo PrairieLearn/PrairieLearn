@@ -281,11 +281,7 @@ export function ExamQuestionStatus({
     !assessment_question.max_auto_points &&
     assessment_question.max_manual_points
   ) {
-    return html`
-      <span class="align-middle">
-        <span class="badge text-bg-success">saved for manual grading</span>
-      </span>
-    `;
+    return html`<span class="badge text-bg-success">saved for manual grading</span>`;
   }
 
   const badge_color: Record<NonNullable<InstanceQuestion['status']>, string> = {
@@ -314,28 +310,25 @@ export function ExamQuestionStatus({
   });
 
   return html`
-    <span class="align-middle">
-      <span class="badge text-bg-${badgeColor}">${badgeText}</span>
-
-      ${allowGradeLeftMs > 0
-        ? html`
-            <button
-              type="button"
-              class="grade-rate-limit-popover btn btn-xs"
-              data-bs-toggle="popover"
-              data-bs-container="body"
-              data-bs-html="true"
-              data-bs-content="This question limits the rate of submissions. Further grade allowed in ${formatInterval(
-                allowGradeLeftMs,
-                { fullPartNames: true, firstOnly: true },
-              )} (as of the loading of this page)."
-              data-bs-placement="auto"
-            >
-              <i class="fa fa-hourglass-half" aria-hidden="true"></i>
-            </button>
-          `
-        : ''}
-    </span>
+    <span class="badge text-bg-${badgeColor}">${badgeText}</span>
+    ${allowGradeLeftMs > 0
+      ? html`
+          <button
+            type="button"
+            class="grade-rate-limit-popover btn btn-xs"
+            data-bs-toggle="popover"
+            data-bs-container="body"
+            data-bs-html="true"
+            data-bs-content="This question limits the rate of submissions. Further grade allowed in ${formatInterval(
+              allowGradeLeftMs,
+              { fullPartNames: true, firstOnly: true },
+            )} (as of the loading of this page)."
+            data-bs-placement="auto"
+          >
+            <i class="fa fa-hourglass-half" aria-hidden="true"></i>
+          </button>
+        `
+      : ''}
   `;
 }
 

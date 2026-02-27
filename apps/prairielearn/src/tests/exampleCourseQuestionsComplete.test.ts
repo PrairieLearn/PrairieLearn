@@ -324,19 +324,19 @@ describe('Internally graded question lifecycle tests', { timeout: 60_000 }, func
       const {
         courseIssues: renderIssues,
         data: { questionHtml },
-      } = await questionModule.render(
-        {
+      } = await questionModule.render({
+        renderSelection: {
           question: true,
           submissions: false,
           answer: false,
         },
         variant,
         question,
-        null /* submission */,
-        [] /* submissions */,
+        submission: null,
+        submissions: [],
         course,
         locals,
-      );
+      });
       assert.isEmpty(renderIssues, 'Render should not produce any issues');
 
       // Validate HTML

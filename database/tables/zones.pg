@@ -8,6 +8,7 @@ columns
     json_can_view: text[]
     json_comment: jsonb
     json_grade_rate_minutes: double precision
+    lockpoint: boolean not null default false
     max_points: double precision
     number: integer not null
     number_choose: integer
@@ -22,3 +23,4 @@ foreign-key constraints
 
 referenced by
     alternative_groups: FOREIGN KEY (zone_id) REFERENCES zones(id) ON UPDATE CASCADE ON DELETE CASCADE
+    assessment_instance_crossed_lockpoints: FOREIGN KEY (zone_id) REFERENCES zones(id) ON UPDATE CASCADE ON DELETE CASCADE

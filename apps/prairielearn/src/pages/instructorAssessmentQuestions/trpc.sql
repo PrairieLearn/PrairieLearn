@@ -1,4 +1,4 @@
--- BLOCK select_assessment_question
+-- BLOCK select_question_by_qid
 WITH
   issue_count AS (
     SELECT

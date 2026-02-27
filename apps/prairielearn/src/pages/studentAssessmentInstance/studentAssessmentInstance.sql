@@ -11,7 +11,12 @@ SELECT
   iq.*,
   ((lag(z.id) OVER w) IS DISTINCT FROM z.id) AS start_new_zone,
   z.id AS zone_id,
+  z.number AS zone_number,
   z.title AS zone_title,
+  z.lockpoint,
+  (aicl.id IS NOT NULL) AS lockpoint_crossed,
+  aicl.crossed_at AS lockpoint_crossed_at,
+  lockpoint_user.uid AS lockpoint_crossed_authn_user_uid,
   q.title AS question_title,
   aq.max_points,
   aq.max_manual_points,
@@ -40,13 +45,13 @@ SELECT
       f.instance_question_id = iq.id
       AND f.deleted_at IS NULL
   )::int AS file_count,
-  qo.sequence_locked,
+  qo.question_access_mode,
   (lag(aq.effective_advance_score_perc) OVER w) AS prev_advance_score_perc,
   CASE
     WHEN a.type = 'Homework' THEN ''
     ELSE 'Question '
   END || (lag(qo.question_number) OVER w) AS prev_title,
-  (lag(qo.sequence_locked) OVER w) AS prev_sequence_locked
+  (lag(qo.question_access_mode) OVER w) AS prev_question_access_mode
 FROM
   instance_questions AS iq
   JOIN assessment_instances AS ai ON (ai.id = iq.assessment_instance_id)
@@ -54,6 +59,11 @@ FROM
   JOIN alternative_groups AS ag ON (ag.id = aq.alternative_group_id)
   JOIN assessments AS a ON (a.id = ai.assessment_id)
   JOIN zones AS z ON (z.id = ag.zone_id)
+  LEFT JOIN assessment_instance_crossed_lockpoints AS aicl ON (
+    aicl.zone_id = z.id
+    AND aicl.assessment_instance_id = ai.id
+  )
+  LEFT JOIN users AS lockpoint_user ON (lockpoint_user.id = aicl.authn_user_id)
   JOIN questions AS q ON (q.id = aq.question_id)
   JOIN question_order (ai.id) AS qo ON (qo.instance_question_id = iq.id)
 WHERE

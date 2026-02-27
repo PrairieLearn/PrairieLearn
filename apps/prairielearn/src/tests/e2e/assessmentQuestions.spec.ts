@@ -38,9 +38,6 @@ test.describe('Assessment questions', () => {
     }
   });
 
-  // Test assessment has 2 zones:
-  // Zone 1: "Questions to test maxPoints" - 1 question (partialCredit1)
-  // Zone 2: "Questions to test maxPoints and bestQuestions together" - 3 questions (partialCredit2, partialCredit3, partialCredit4_v2)
   test('can drag a question between zones and save', async ({ page, testCoursePath }) => {
     const assessmentTid = 'exam5-perZoneGrading';
     const assessment = await selectAssessmentByTid({
@@ -53,9 +50,6 @@ test.describe('Assessment questions', () => {
     const dragHandles = page.locator('[aria-label="Drag to reorder"]');
     await expect(dragHandles).toHaveCount(4);
 
-    // Move third question (partialCredit3) up within zone 2
-    // Zone 2 has: partialCredit2 (index 1), partialCredit3 (index 2), partialCredit4_v2 (index 3)
-    // Using keyboard: focus element, Space to pick up, Arrow to move, Space to drop
     const dragHandle = dragHandles.nth(2);
     await dragHandle.focus();
     await expect(dragHandle).toBeFocused();
@@ -66,16 +60,11 @@ test.describe('Assessment questions', () => {
     await page.keyboard.press('Space');
     await page.waitForTimeout(100);
 
-    // Verify all questions still present after reorder
     await expect(dragHandles).toHaveCount(4);
 
-    // Click save
     await page.getByRole('button', { name: 'Save and sync' }).click();
-
-    // Wait for the page to reload after save (edit mode button reappears)
     await expect(page.getByRole('button', { name: 'Edit questions' })).toBeVisible();
 
-    // Read the saved file from disk
     const infoAssessmentPath = path.join(
       testCoursePath,
       'courseInstances/Sp15/assessments',
@@ -85,22 +74,17 @@ test.describe('Assessment questions', () => {
     const savedContent = await fs.readFile(infoAssessmentPath, 'utf-8');
     const savedAssessment = JSON.parse(savedContent);
 
-    // Validate the saved zones structure
     expect(savedAssessment.zones).toEqual([
       {
         title: 'Questions to test maxPoints',
         maxPoints: 5,
-        questions: [
-          // Zone 1 unchanged
-          { id: 'partialCredit1', points: [10, 5, 1] },
-        ],
+        questions: [{ id: 'partialCredit1', points: [10, 5, 1] }],
       },
       {
         title: 'Questions to test maxPoints and bestQuestions together',
         bestQuestions: 2,
         maxPoints: 15,
         questions: [
-          // partialCredit3 moved up above partialCredit2 within zone 2
           { id: 'partialCredit3', points: [15, 10, 5, 1] },
           { id: 'partialCredit2', points: [10, 5, 1] },
           { id: 'partialCredit4_v2', points: [20, 15, 10, 5, 1] },
@@ -109,9 +93,6 @@ test.describe('Assessment questions', () => {
     ]);
   });
 
-  // Test assessment has 2 zones:
-  // Zone 1: "Questions to test maxPoints" - 1 question (partialCredit4_v2)
-  // Zone 2: "Questions to test bestQuestions" - 3 questions (partialCredit1, partialCredit2, partialCredit3)
   test('can edit question points and zone settings', async ({ page, testCoursePath }) => {
     const assessmentTid = 'hw4-perzonegrading';
     const assessment = await selectAssessmentByTid({
@@ -121,58 +102,40 @@ test.describe('Assessment questions', () => {
 
     await enterEditMode(page, courseInstanceId, assessment.id);
 
-    // Find the row containing partialCredit1 and click its edit button
     const questionRow = page.locator('tr').filter({ hasText: 'partialCredit1' });
     await questionRow.getByRole('button', { name: 'Edit question' }).click();
 
-    // Wait for the edit modal to appear
     const modal = page.getByRole('dialog');
     await expect(modal).toBeVisible();
     await expect(modal.getByText('Edit question')).toBeVisible();
 
-    // Edit the points - change from "5" to "10"
-    const pointsInput = modal.locator('#autoPointsInput');
+    const pointsInput = modal.getByLabel('Auto points', { exact: true });
     await pointsInput.clear();
     await pointsInput.fill('10');
 
-    // Set tries per variant to a non-default value
-    const triesPerVariantInput = modal.locator('#triesPerVariantInput');
+    const triesPerVariantInput = modal.getByLabel('Tries Per Variant');
     await triesPerVariantInput.clear();
     await triesPerVariantInput.fill('2');
 
-    // Click update
     await modal.getByRole('button', { name: 'Update question' }).click();
-
-    // Wait for modal to close
     await expect(modal).not.toBeVisible();
 
-    // Now edit the zone's bestQuestions setting
-    // Find zone 2 header row and click its edit button
     const zoneRow = page.locator('tr').filter({ hasText: 'Zone 2' });
     await zoneRow.getByRole('button', { name: 'Edit zone' }).click();
 
-    // Wait for zone edit modal to appear
     await expect(modal).toBeVisible();
     await expect(modal.getByText('Edit zone')).toBeVisible();
 
-    // Change bestQuestions from 1 to 2
-    const bestQuestionsInput = modal.locator('#bestQuestionsInput');
+    const bestQuestionsInput = modal.getByLabel('Best questions');
     await bestQuestionsInput.clear();
     await bestQuestionsInput.fill('2');
 
-    // Click update
     await modal.getByRole('button', { name: 'Update zone' }).click();
-
-    // Wait for modal to close
     await expect(modal).not.toBeVisible();
 
-    // Click save
     await page.getByRole('button', { name: 'Save and sync' }).click();
-
-    // Wait for the page to reload after save
     await expect(page.getByRole('button', { name: 'Edit questions' })).toBeVisible();
 
-    // Read the saved file from disk
     const infoAssessmentPath = path.join(
       testCoursePath,
       'courseInstances/Sp15/assessments',
@@ -182,7 +145,6 @@ test.describe('Assessment questions', () => {
     const savedContent = await fs.readFile(infoAssessmentPath, 'utf-8');
     const savedAssessment = JSON.parse(savedContent);
 
-    // Validate the saved zones structure
     expect(savedAssessment.zones).toEqual([
       {
         title: 'Questions to test maxPoints',
@@ -191,14 +153,134 @@ test.describe('Assessment questions', () => {
       },
       {
         title: 'Questions to test bestQuestions',
-        // bestQuestions changed from 1 to 2
         bestQuestions: 2,
         questions: [
-          // partialCredit1 now has updated points and triesPerVariant
           { id: 'partialCredit1', points: 10, maxPoints: 30, triesPerVariant: 2 },
           { id: 'partialCredit2', points: 5, maxPoints: 40 },
           { id: 'partialCredit3', points: 5, maxPoints: 50 },
         ],
+      },
+    ]);
+  });
+
+  test('can use question picker to change a question QID', async ({ page, testCoursePath }) => {
+    const assessmentTid = 'hw3-partialCredit';
+    const assessment = await selectAssessmentByTid({
+      course_instance_id: courseInstanceId,
+      tid: assessmentTid,
+    });
+
+    await enterEditMode(page, courseInstanceId, assessment.id);
+
+    const questionRow = page.locator('tr').filter({ hasText: 'partialCredit1' });
+    await questionRow.getByRole('button', { name: 'Edit question' }).click();
+
+    const modal = page.getByRole('dialog');
+    await expect(modal).toBeVisible();
+
+    const autoPointsInput = modal.getByLabel('Auto points', { exact: true });
+    await autoPointsInput.clear();
+    await autoPointsInput.fill('7');
+
+    await modal.getByRole('button', { name: 'Pick' }).click();
+    await expect(modal.getByText('Select question')).toBeVisible();
+
+    await modal.getByLabel('Search by QID or title').fill('differentiate');
+
+    await modal.getByRole('button', { name: 'Filter by Topic' }).click();
+    await page.getByRole('option', { name: 'Calculus' }).click();
+    // Click the search input to dismiss the react-aria Popover via light dismiss.
+    // Escape doesn't work here because the react-bootstrap Modal captures it first.
+    await modal.getByLabel('Search by QID or title').click({ force: true });
+
+    await expect(modal.getByText(/1 question/)).toBeVisible();
+
+    await modal.locator('[role="button"]').filter({ hasText: 'differentiatePolynomial' }).click();
+
+    await expect(modal.getByText('Edit question')).toBeVisible();
+    await expect(modal.getByLabel('QID')).toHaveValue('differentiatePolynomial');
+    await expect(modal.getByLabel('Auto points', { exact: true })).toHaveValue('7');
+
+    await modal.getByRole('button', { name: 'Update question' }).click();
+    await expect(modal).not.toBeVisible();
+
+    await page.getByRole('button', { name: 'Save and sync' }).click();
+    await expect(page.getByRole('button', { name: 'Edit questions' })).toBeVisible();
+
+    const infoAssessmentPath = path.join(
+      testCoursePath,
+      'courseInstances/Sp15/assessments',
+      assessmentTid,
+      'infoAssessment.json',
+    );
+    const savedContent = await fs.readFile(infoAssessmentPath, 'utf-8');
+    const savedAssessment = JSON.parse(savedContent);
+
+    expect(savedAssessment.zones).toEqual([
+      {
+        questions: [
+          { id: 'differentiatePolynomial', points: 7, maxPoints: 5 },
+          { id: 'partialCredit2', autoPoints: 2, maxAutoPoints: 10, manualPoints: 3 },
+          { id: 'partialCredit3', points: 2, maxPoints: 10, triesPerVariant: 3 },
+          { id: 'partialCredit4_v2', points: 3, maxPoints: 10 },
+          { id: 'partialCredit6_no_partial', points: 3, maxPoints: 11 },
+        ],
+      },
+    ]);
+  });
+
+  test('can add a question to an empty assessment via zone and picker', async ({
+    page,
+    testCoursePath,
+  }) => {
+    const assessmentTid = 'hw14-emptyForEditor';
+    const assessment = await selectAssessmentByTid({
+      course_instance_id: courseInstanceId,
+      tid: assessmentTid,
+    });
+
+    await page.goto(
+      `/pl/course_instance/${courseInstanceId}/instructor/assessment/${assessment.id}/questions`,
+    );
+    await page.getByRole('button', { name: 'Edit questions' }).click();
+
+    await page.getByRole('button', { name: 'Add zone' }).click();
+    const modal = page.getByRole('dialog');
+    await expect(modal).toBeVisible();
+    await modal.getByRole('button', { name: 'Add zone' }).click();
+    await expect(modal).not.toBeVisible();
+
+    await page.getByRole('button', { name: 'Add question in zone 1' }).click();
+    await expect(modal).toBeVisible();
+    await expect(modal.getByText('Select question')).toBeVisible();
+
+    await modal.getByLabel('Search by QID or title').fill('partialCredit1');
+    await modal.locator('[role="button"]').filter({ hasText: 'partialCredit1' }).first().click();
+
+    await expect(modal.locator('.modal-title', { hasText: 'Add question' })).toBeVisible();
+    await expect(modal.getByLabel('QID')).toHaveValue('partialCredit1');
+
+    const autoPointsInput = modal.getByLabel('Auto points', { exact: true });
+    await autoPointsInput.clear();
+    await autoPointsInput.fill('5');
+
+    await modal.getByRole('button', { name: 'Add question' }).click();
+    await expect(modal).not.toBeVisible();
+    await page.getByRole('button', { name: 'Save and sync' }).click();
+    await expect(page.getByRole('button', { name: 'Edit questions' })).toBeVisible();
+
+    const infoAssessmentPath = path.join(
+      testCoursePath,
+      'courseInstances/Sp15/assessments',
+      assessmentTid,
+      'infoAssessment.json',
+    );
+    const savedContent = await fs.readFile(infoAssessmentPath, 'utf-8');
+    const savedAssessment = JSON.parse(savedContent);
+
+    expect(savedAssessment.zones).toEqual([
+      {
+        questions: [{ id: 'partialCredit1', autoPoints: 5 }],
       },
     ]);
   });
