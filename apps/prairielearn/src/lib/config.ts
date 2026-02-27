@@ -2,6 +2,7 @@ import { z } from 'zod';
 
 import {
   ConfigLoader,
+  type ConfigSource,
   makeEnvConfigSource,
   makeFileConfigSource,
   makeImdsConfigSource,
@@ -638,15 +639,40 @@ const loader = new ConfigLoader(ConfigSchema);
 export const config = loader.config;
 
 /**
- * Attempts to load config from all our sources, including the given paths.
- *
- * @param paths Paths to JSON config files to try to load.
+ * Creates a config source that derives database and Redis settings from
+ * CONDUCTOR_WORKSPACE_NAME and CONDUCTOR_PORT.
+ * This enables isolated databases per Conductor workspace.
  */
+function makeConductorConfigSource(): ConfigSource {
+  return {
+    load: async (existingConfig) => {
+      const workspaceName = process.env.CONDUCTOR_WORKSPACE_NAME;
+      if (!workspaceName) return {};
+
+      const dbSuffix = workspaceName
+        .toLowerCase()
+        .replaceAll(/[^a-z0-9_]/g, '_')
+        .slice(0, 50);
+      const port = Number.parseInt(existingConfig.serverPort as string);
+      // Redis supports DBs 0-15 by default. With CONDUCTOR_PORT allocated in
+      // increments of 10, collisions occur after ~8 workspaces. This is acceptable
+      // since Redis stores transient data while Postgres databases remain fully isolated.
+      const redisDb = (port - 3000) % 16;
+
+      return {
+        postgresqlDatabase: `prairielearn_${dbSuffix}`,
+        redisUrl: `redis://localhost:6379/${redisDb}`,
+      };
+    },
+  };
+}
+
 export async function loadConfig(paths: string[]) {
   await loader.loadAndValidate([
     makeEnvConfigSource<typeof ConfigSchema>({
       serverPort: 'CONDUCTOR_PORT',
     }),
+    makeConductorConfigSource(),
     ...paths.map((path) => makeFileConfigSource(path)),
     makeImdsConfigSource(),
     makeSecretsManagerConfigSource('ConfSecret'),

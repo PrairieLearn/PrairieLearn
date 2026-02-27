@@ -86,7 +86,7 @@ router.get(
   asyncHandler(async (req, res, next) => {
     if (!config.devMode) return next();
     const jobSequenceId = await update(res.locals);
-    res.redirect(res.locals.urlPrefix + '/jobSequence/' + jobSequenceId);
+    res.redirect(`/pl/jobSequence/${jobSequenceId}`);
   }),
 );
 

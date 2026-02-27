@@ -1,0 +1,15 @@
+{
+  "uuid": "a7e1f3b2-4c5d-4e8f-9a0b-1c2d3e4f5a6b",
+  "type": "Homework",
+  "title": "Empty assessment for editor testing",
+  "set": "Homework",
+  "number": "14",
+  "allowAccess": [
+    {
+      "credit": 100,
+      "startDate": "2014-07-07T00:00:01",
+      "endDate": "2034-07-10T23:59:59"
+    }
+  ],
+  "zones": []
+}

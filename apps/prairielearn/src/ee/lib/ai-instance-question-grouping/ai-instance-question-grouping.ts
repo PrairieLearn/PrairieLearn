@@ -62,15 +62,15 @@ async function aiEvaluateStudentResponse({
     questionRenderContext: 'ai_grading',
   };
   const questionModule = questionServers.getModule(question.type);
-  const render_submission_results = await questionModule.render(
-    { question: false, submissions: true, answer: true },
+  const render_submission_results = await questionModule.render({
+    renderSelection: { question: false, submissions: true, answer: true },
     variant,
     question,
     submission,
-    [submission],
+    submissions: [submission],
     course,
     locals,
-  );
+  });
 
   const answer_text = render_submission_results.data.answerHtml;
   const submission_text = render_submission_results.data.submissionHtmls[0];

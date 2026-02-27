@@ -54,6 +54,10 @@ jobs:
           CACHE_STRATEGY: ${{ github.ref == 'refs/heads/master' && 'update' || 'pull' }}
           METADATA_DIR: ${{ runner.temp }}/image-metadata-${{ inputs.group }}
           ONLY_CHANGED: true
+          # The SHA of the previous branch tip before this push. Used to diff
+          # against on master so that we catch all changes when the merge queue
+          # pushes multiple commits in a single ref update.
+          DIFF_BASE: ${{ github.event.before || '' }}
 
       - name: Upload metadata
         uses: actions/upload-artifact@v6

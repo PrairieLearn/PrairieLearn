@@ -1359,7 +1359,7 @@ mechanicsObjects.arcVector = fabric.util.createClass(fabric.Object, {
     uvec = uvec.add(et.multiply(r * Math.sin(alpha)));
     return uvec;
   },
-  make_arrow_head(ctx, theta, alpha, beta, r, l, c, h) {
+  make_arrow_head(ctx, { theta, alpha, beta, r, l, c, h }) {
     const er = $V([Math.cos(theta), Math.sin(theta)]);
     const et = $V([-Math.sin(theta), Math.cos(theta)]);
     const uE = er.multiply(r);
@@ -1399,7 +1399,7 @@ mechanicsObjects.arcVector = fabric.util.createClass(fabric.Object, {
     if (this.drawStartArrow) {
       const alpha = Math.acos(1 - (e * e) / (2 * r * r));
       const beta = Math.acos(1 - (c * c) / (2 * r * r));
-      const start_line = this.make_arrow_head(ctx, thetai, alpha, beta, r, l, c, h);
+      const start_line = this.make_arrow_head(ctx, { theta: thetai, alpha, beta, r, l, c, h });
       start_line_angle = Math.atan2(start_line.e(2), start_line.e(1));
     } else {
       start_line_angle = thetai;
@@ -1408,7 +1408,7 @@ mechanicsObjects.arcVector = fabric.util.createClass(fabric.Object, {
     if (this.drawEndArrow) {
       const alpha = -Math.acos(1 - (e * e) / (2 * r * r));
       const beta = -Math.acos(1 - (c * c) / (2 * r * r));
-      const end_line = this.make_arrow_head(ctx, thetaf, alpha, beta, r, l, c, h);
+      const end_line = this.make_arrow_head(ctx, { theta: thetaf, alpha, beta, r, l, c, h });
       end_line_angle = Math.atan2(end_line.e(2), end_line.e(1));
     } else {
       end_line_angle = thetaf;
@@ -1503,7 +1503,7 @@ mechanicsObjects.makeControlStraightLine = function (x1, y1, x2, y2, options) {
   return line;
 };
 
-mechanicsObjects.makeControlCurvedLine = function (x1, y1, x2, y2, x3, y3, options) {
+mechanicsObjects.makeControlCurvedLine = function ({ x1, y1, x2, y2, x3, y3, options }) {
   const line = new fabric.Path('M 0 0 Q 1, 1, 3, 0', {
     fill: '',
     stroke: options.stroke,
@@ -3587,15 +3587,15 @@ mechanicsObjects.byType['pl-controlled-line'] = class extends PLDrawingBaseEleme
 
 mechanicsObjects.byType['pl-controlled-curved-line'] = class extends PLDrawingBaseElement {
   static generate(canvas, options, submittedAnswer) {
-    const line = mechanicsObjects.makeControlCurvedLine(
-      options.x1,
-      options.y1,
-      options.x2,
-      options.y2,
-      options.x3,
-      options.y3,
+    const line = mechanicsObjects.makeControlCurvedLine({
+      x1: options.x1,
+      y1: options.y1,
+      x2: options.x2,
+      y2: options.y2,
+      x3: options.x3,
+      y3: options.y3,
       options,
-    );
+    });
     line.objectCaching = false;
     const c1 = mechanicsObjects.makeControlHandle(
       options.x1,

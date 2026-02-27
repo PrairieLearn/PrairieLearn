@@ -1507,6 +1507,19 @@ function validateAssessment({
     });
   }
 
+  if (assessment.zones[0]?.lockpoint) {
+    errors.push('The first zone cannot have lockpoint: true');
+  }
+
+  assessment.zones.forEach((zone) => {
+    // A lockpoint zone with no questions would create a pointless barrier -
+    // the student would have to cross a lockpoint with nothing to work on
+    // in the zone, which is almost certainly a configuration mistake.
+    if (zone.lockpoint && zone.numberChoose === 0) {
+      errors.push('A lockpoint zone must include at least one selectable question');
+    }
+  });
+
   return { warnings, errors };
 }
 

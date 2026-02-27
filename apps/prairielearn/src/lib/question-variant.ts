@@ -200,30 +200,42 @@ async function selectVariantForInstanceQuestion(
 
 /**
  * Internal function, do not call directly. Create a variant object, and write it to the DB.
- * @param question_id - The question for the new variant. Can be null if instance_question_id is provided.
- * @param instance_question_id - The instance question for the new variant, or null for a floating variant.
- * @param user_id - The user for the new variant.
- * @param authn_user_id - The current authenticated user.
- * @param course_instance - The course instance for this variant. Can be null for instructor questions.
- * @param variant_course - The course for the variant.
- * @param question_course - The course for the question.
- * @param options - Options controlling the creation.
- * @param options.variant_seed - The seed for the variant.
- * @param require_open - If true, only use an existing variant if it is open.
- * @param client_fingerprint_id - The client fingerprint for this variant.
+ * @param params
+ * @param params.question_id - The question for the new variant. Can be null if instance_question_id is provided.
+ * @param params.instance_question_id - The instance question for the new variant, or null for a floating variant.
+ * @param params.user_id - The user for the new variant.
+ * @param params.authn_user_id - The current authenticated user.
+ * @param params.course_instance - The course instance for this variant. Can be null for instructor questions.
+ * @param params.variant_course - The course for the variant.
+ * @param params.question_course - The course for the question.
+ * @param params.options - Options controlling the creation.
+ * @param params.options.variant_seed - The seed for the variant.
+ * @param params.require_open - If true, only use an existing variant if it is open.
+ * @param params.client_fingerprint_id - The client fingerprint for this variant.
  */
-async function makeAndInsertVariant(
-  question_id: string | null,
-  instance_question_id: string | null,
-  user_id: string,
-  authn_user_id: string,
-  course_instance: CourseInstance | null,
-  variant_course: Course,
-  question_course: Course,
-  options: { variant_seed?: string | null },
-  require_open: boolean,
-  client_fingerprint_id: string | null,
-): Promise<VariantWithFormattedDate> {
+async function makeAndInsertVariant({
+  question_id,
+  instance_question_id,
+  user_id,
+  authn_user_id,
+  course_instance,
+  variant_course,
+  question_course,
+  options,
+  require_open,
+  client_fingerprint_id,
+}: {
+  question_id: string | null;
+  instance_question_id: string | null;
+  user_id: string;
+  authn_user_id: string;
+  course_instance: CourseInstance | null;
+  variant_course: Course;
+  question_course: Course;
+  options: { variant_seed?: string | null };
+  require_open: boolean;
+  client_fingerprint_id: string | null;
+}): Promise<VariantWithFormattedDate> {
   const question = await selectQuestion(question_id, instance_question_id);
   const { courseIssues, variant: variantData } = await makeVariant(
     question,
@@ -332,30 +344,42 @@ async function makeAndInsertVariant(
 /**
  * Ensure that there is a variant for the given instance question.
  *
- * @param question_id - The question for the new variant. Can be null if instance_question_id is provided.
- * @param instance_question_id - The instance question for the new variant, or null for a floating variant.
- * @param user_id - The user for the new variant.
- * @param authn_user_id - The current authenticated user.
- * @param course_instance - The course instance for this variant. Can be null for instructor questions.
- * @param variant_course - The course for the variant.
- * @param question_course - The course for the question.
- * @param options - Options controlling the creation.
- * @param options.variant_seed - The seed for the variant.
- * @param require_open - If true, only use an existing variant if it is open.
- * @param client_fingerprint_id - The client fingerprint for this variant. Can be null.
+ * @param params
+ * @param params.question_id - The question for the new variant. Can be null if instance_question_id is provided.
+ * @param params.instance_question_id - The instance question for the new variant, or null for a floating variant.
+ * @param params.user_id - The user for the new variant.
+ * @param params.authn_user_id - The current authenticated user.
+ * @param params.course_instance - The course instance for this variant. Can be null for instructor questions.
+ * @param params.variant_course - The course for the variant.
+ * @param params.question_course - The course for the question.
+ * @param params.options - Options controlling the creation.
+ * @param params.options.variant_seed - The seed for the variant.
+ * @param params.require_open - If true, only use an existing variant if it is open.
+ * @param params.client_fingerprint_id - The client fingerprint for this variant. Can be null.
  */
-export async function ensureVariant(
-  question_id: string | null,
-  instance_question_id: string | null,
-  user_id: string,
-  authn_user_id: string,
-  course_instance: CourseInstance | null,
-  variant_course: Course,
-  question_course: Course,
-  options: { variant_seed?: string | null },
-  require_open: boolean,
-  client_fingerprint_id: string | null,
-): Promise<VariantWithFormattedDate> {
+export async function ensureVariant({
+  question_id,
+  instance_question_id,
+  user_id,
+  authn_user_id,
+  course_instance,
+  variant_course,
+  question_course,
+  options,
+  require_open,
+  client_fingerprint_id,
+}: {
+  question_id: string | null;
+  instance_question_id: string | null;
+  user_id: string;
+  authn_user_id: string;
+  course_instance: CourseInstance | null;
+  variant_course: Course;
+  question_course: Course;
+  options: { variant_seed?: string | null };
+  require_open: boolean;
+  client_fingerprint_id: string | null;
+}): Promise<VariantWithFormattedDate> {
   if (instance_question_id != null) {
     // See if we have a useable existing variant, otherwise make a new one. This
     // test is also performed in makeAndInsertVariant inside a transaction to
@@ -367,7 +391,7 @@ export async function ensureVariant(
     }
   }
   // if we don't have instance_question_id or if it's not open, just make a new variant
-  return await makeAndInsertVariant(
+  return await makeAndInsertVariant({
     question_id,
     instance_question_id,
     user_id,
@@ -378,7 +402,7 @@ export async function ensureVariant(
     options,
     require_open,
     client_fingerprint_id,
-  );
+  });
 }
 
 /**

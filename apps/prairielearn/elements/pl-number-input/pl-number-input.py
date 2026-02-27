@@ -1,4 +1,5 @@
 import random
+from decimal import Decimal, InvalidOperation
 from enum import Enum
 from typing import Any
 
@@ -136,29 +137,63 @@ def format_true_ans(
     return correct_answer
 
 
-def get_string_precision(number_string: str) -> float:
-    if "." in number_string:
-        return 10 ** -len(number_string.partition(".")[2])
+def _normalize_number_string(number_string: str) -> str | None:
+    """Normalize a raw answer string for precision analysis.
 
-    return 10 ** (len(number_string) - len(number_string.rstrip("0")))
+    Strips whitespace, signs, and unicode minus. Expands scientific notation
+    to its decimal form (e.g. ``"1.5e-3"`` becomes ``"0.0015"``).
+
+    Returns:
+        A plain decimal string, or ``None`` for fractions.
+    """
+    s = number_string.strip().lstrip("+-\u2212")
+    if "/" in s:
+        return None
+    if "e" in s.lower():
+        try:
+            return format(Decimal(s), "f")
+        except InvalidOperation:
+            return s
+    return s
+
+
+def get_string_precision(number_string: str) -> float:
+    normalized = _normalize_number_string(number_string)
+    if normalized is None:
+        return 0.0
+
+    if "." in normalized:
+        return 10 ** -len(normalized.partition(".")[2])
+
+    return 10 ** (len(normalized) - len(normalized.rstrip("0")))
 
 
 def get_string_significant_digits(number_string: str) -> int:
-    if "." in number_string:
-        number_string_partition = number_string.partition(".")
-        integer_part = len(number_string_partition[0].lstrip("0"))
-        decimal_part = len(number_string_partition[2].lstrip("0"))
-        return integer_part + decimal_part
+    normalized = _normalize_number_string(number_string)
+    if normalized is None:
+        return 1000
 
-    return len(number_string.strip("0"))
+    if "." in normalized:
+        int_part, _, frac_part = normalized.partition(".")
+        all_digits = int_part + frac_part
+        stripped = all_digits.lstrip("0")
+        if stripped == "":
+            return len(frac_part) if frac_part else 1
+        return len(stripped)
+
+    stripped = normalized.strip("0")
+    return len(stripped) if stripped else 1
 
 
 def get_string_decimal_digits(number_string: str) -> int:
-    if "." in number_string:
-        number_string_partition = number_string.partition(".")
-        decimal_part = len(number_string_partition[2].lstrip("0"))
+    normalized = _normalize_number_string(number_string)
+    if normalized is None:
+        return 1000
+
+    if "." in normalized:
+        decimal_part = len(normalized.partition(".")[2].lstrip("0"))
         return decimal_part
-    return 0  # no decimal seperator means there are no decimal digits
+    return 0  # no decimal separator means there are no decimal digits
 
 
 def render(element_html: str, data: pl.QuestionData) -> str:
@@ -423,6 +458,8 @@ def grade(element_html: str, data: pl.QuestionData) -> None:
         element, "comparison", ComparisonType, COMPARISON_DEFAULT
     )
 
+    raw_submitted_answer: str | None = data.get("raw_submitted_answers", {}).get(name)
+
     def grade_function(
         submitted_answer: str | dict[str, Any],
     ) -> tuple[bool, str | None]:
@@ -484,7 +521,12 @@ def grade(element_html: str, data: pl.QuestionData) -> None:
             rtol = pl.get_float_attrib(element, "rtol", RTOL_DEFAULT)
             atol = pl.get_float_attrib(element, "atol", ATOL_DEFAULT)
 
-            submitted_answer_precision = get_string_precision(str(submitted_answer))
+            raw_answer = (
+                raw_submitted_answer
+                if raw_submitted_answer is not None
+                else str(submitted_answer)
+            )
+            submitted_answer_precision = get_string_precision(str(raw_answer))
             is_correct = pl.is_correct_scalar_ra(
                 submitted_answer_converted, correct_answer_converted, rtol, atol
             )
@@ -494,9 +536,12 @@ def grade(element_html: str, data: pl.QuestionData) -> None:
         elif comparison is ComparisonType.SIGFIG:
             digits = pl.get_integer_attrib(element, "digits", DIGITS_DEFAULT)
 
-            submitted_answer_precision = get_string_significant_digits(
-                str(submitted_answer)
+            raw_answer = (
+                raw_submitted_answer
+                if raw_submitted_answer is not None
+                else str(submitted_answer)
             )
+            submitted_answer_precision = get_string_significant_digits(str(raw_answer))
             is_correct = pl.is_correct_scalar_sf(
                 submitted_answer_converted, correct_answer_converted, digits
             )
@@ -504,9 +549,12 @@ def grade(element_html: str, data: pl.QuestionData) -> None:
                 feedback = ANSWER_INSUFFICIENT_PRECISION_WARNING
         elif comparison is ComparisonType.DECDIG:
             digits = pl.get_integer_attrib(element, "digits", DIGITS_DEFAULT)
-            submitted_answer_precision = get_string_decimal_digits(
-                str(submitted_answer)
+            raw_answer = (
+                raw_submitted_answer
+                if raw_submitted_answer is not None
+                else str(submitted_answer)
             )
+            submitted_answer_precision = get_string_decimal_digits(str(raw_answer))
             is_correct = pl.is_correct_scalar_dd(
                 submitted_answer_converted, correct_answer_converted, digits
             )

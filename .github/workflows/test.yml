@@ -67,6 +67,18 @@ jobs:
       # We run the following steps in this job instead of separately to avoid the
       # overhead of pulling the image another time.
 
+      - name: Tag prairielearn image as latest for executor build
+        run: docker tag prairielearn/prairielearn:${{ env.COMMIT_SHA }} prairielearn/prairielearn:latest
+
+      - name: Build the executor docker image
+        run: docker build -t prairielearn/executor:latest ./images/executor
+
+      - name: Run executor smoke test
+        run: |
+          docker run --rm prairielearn/executor:latest \
+            yarn workspace @prairielearn/prairielearn run test:executor-smoke-test
+        timeout-minutes: 5
+
       - name: Create a temporary directory for host files
         run: mkdir -p /tmp/prairielearn
       - name: Start the container

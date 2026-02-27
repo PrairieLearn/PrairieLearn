@@ -130,6 +130,32 @@ const [selectedIds, setSelectedIds] = useState<string[]>([]);
 
 Items can include `searchableText` for filtering on text different from the label, and `data` for custom data passed to `renderItem`.
 
+### FilterDropdown
+
+A multi-select filter dropdown built on [React Aria](https://react-spectrum.adobe.com/react-aria/).
+
+```tsx
+import { FilterDropdown, type FilterItem } from '@prairielearn/ui';
+import { useState } from 'react';
+
+const items: FilterItem[] = [
+  { id: '1', name: 'JavaScript', color: 'blue1' },
+  { id: '2', name: 'TypeScript', color: 'blue2' },
+  { id: '3', name: 'Python', color: 'green1' },
+];
+
+const [selectedIds, setSelectedIds] = useState<Set<string>>(new Set());
+
+<FilterDropdown
+  label="Language"
+  items={items}
+  selectedIds={selectedIds}
+  onChange={setSelectedIds}
+/>;
+```
+
+The `color` property maps to PrairieLearn's badge color classes (e.g., `color-blue1`). Custom rendering can be provided via `renderItem`.
+
 ## nuqs Utilities
 
 This package provides utilities for integrating [nuqs](https://nuqs.47ng.com/) (type-safe URL query state management) with server-side rendering and TanStack Table.

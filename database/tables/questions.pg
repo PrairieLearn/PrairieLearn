@@ -44,7 +44,6 @@ columns
 
 indexes
     questions_pkey: PRIMARY KEY (id) USING btree (id)
-    questions_course_id_number_nondeleted_key: UNIQUE USING btree (course_id, uuid) WHERE deleted_at IS NULL
     questions_course_id_uuid_key: UNIQUE USING btree (course_id, uuid)
     questions_course_id_publicly_shared_idx: USING btree (course_id) WHERE deleted_at IS NULL AND (share_publicly = true OR share_source_publicly = true)
     questions_template_directory_idx: USING btree (template_directory)

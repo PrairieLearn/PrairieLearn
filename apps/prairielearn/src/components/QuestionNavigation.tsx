@@ -1,10 +1,16 @@
 import { type HtmlValue, html } from '@prairielearn/html';
 
+type QuestionAccessMode =
+  | 'default'
+  | 'blocked_sequence'
+  | 'blocked_lockpoint'
+  | 'read_only_lockpoint';
+
 export function QuestionNavSideGroup({
   urlPrefix,
   prevInstanceQuestionId,
   nextInstanceQuestionId,
-  sequenceLocked,
+  nextQuestionAccessMode,
   prevGroupRolePermissions,
   nextGroupRolePermissions,
   advanceScorePerc,
@@ -13,7 +19,7 @@ export function QuestionNavSideGroup({
   urlPrefix: string;
   prevInstanceQuestionId: string;
   nextInstanceQuestionId: string;
-  sequenceLocked: boolean | null;
+  nextQuestionAccessMode: QuestionAccessMode | null;
   prevGroupRolePermissions: { can_view?: boolean } | null;
   nextGroupRolePermissions: { can_view?: boolean } | null;
   advanceScorePerc: number | null;
@@ -30,7 +36,7 @@ export function QuestionNavSideGroup({
       })}
       ${QuestionNavSideButton({
         instanceQuestionId: nextInstanceQuestionId,
-        sequenceLocked,
+        nextQuestionAccessMode,
         urlPrefix,
         whichButton: 'next',
         groupRolePermissions: nextGroupRolePermissions,
@@ -43,7 +49,7 @@ export function QuestionNavSideGroup({
 
 export function QuestionNavSideButton({
   instanceQuestionId,
-  sequenceLocked,
+  nextQuestionAccessMode,
   urlPrefix,
   whichButton,
   groupRolePermissions,
@@ -51,7 +57,7 @@ export function QuestionNavSideButton({
   userGroupRoles,
 }: {
   instanceQuestionId: string | null;
-  sequenceLocked?: boolean | null;
+  nextQuestionAccessMode?: QuestionAccessMode | null;
   groupRolePermissions: { can_view?: boolean } | null;
   whichButton: 'next' | 'previous';
   urlPrefix: string;
@@ -75,10 +81,13 @@ export function QuestionNavSideButton({
   if (groupRolePermissions?.can_view === false) {
     disabledExplanation = html`Your current group role (${userGroupRoles}) restricts access to the
     ${buttonLabel.toLowerCase()}.`;
-  } else if (sequenceLocked) {
+  } else if (nextQuestionAccessMode === 'blocked_sequence') {
     disabledExplanation = html`You must score at least <b>${advanceScorePerc}%</b> on a submission
       to this question in order to unlock the next. If you run out of attempts, the next question
       will unlock automatically.`;
+  } else if (nextQuestionAccessMode === 'blocked_lockpoint') {
+    disabledExplanation = html`You must cross the lockpoint on the assessment overview page before
+    you can proceed to the next question.`;
   }
 
   if (disabledExplanation != null) {

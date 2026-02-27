@@ -1,5 +1,11 @@
 # @prairielearn/opentelemetry
 
+## 4.0.2
+
+### Patch Changes
+
+- 7b937fb: Remove unused exports, add `@knipignore` for intentionally public exports, and re-export newly used symbols from `@prairielearn/formatter`.
+
 ## 4.0.1
 
 ### Patch Changes

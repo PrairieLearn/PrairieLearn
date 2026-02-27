@@ -3,8 +3,10 @@ import asyncHandler from 'express-async-handler';
 
 import { HttpStatusError } from '@prairielearn/error';
 import { loadSqlEquiv, queryRow, queryRows } from '@prairielearn/postgres';
+import { IdSchema } from '@prairielearn/zod';
 
 import {
+  crossLockpoint,
   gradeAssessmentInstance,
   renderText,
   updateAssessmentInstance,
@@ -182,6 +184,23 @@ router.post(
       } else {
         res.redirect(req.originalUrl);
       }
+    } else if (req.body.__action === 'cross_lockpoint') {
+      if (!res.locals.authz_result.authorized_edit) {
+        throw new HttpStatusError(403, 'Action is only permitted to the assessment owner');
+      }
+      if (!res.locals.assessment_instance.open || !res.locals.authz_result.active) {
+        throw new HttpStatusError(
+          403,
+          'This assessment is not accepting submissions at this time.',
+        );
+      }
+      const zoneId = IdSchema.parse(req.body.zone_id);
+      await crossLockpoint({
+        assessmentInstance: res.locals.assessment_instance,
+        zoneId,
+        authnUser: res.locals.authn_user,
+      });
+      res.redirect(req.originalUrl);
     } else if (req.body.__action === 'leave_group') {
       if (!res.locals.authz_result.active) {
         throw new HttpStatusError(400, 'Unauthorized request.');

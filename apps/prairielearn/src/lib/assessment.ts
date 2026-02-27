@@ -20,6 +20,7 @@ import {
   ClientFingerprintSchema,
   CourseSchema,
   QuestionSchema,
+  type User,
   VariantSchema,
 } from './db-types.js';
 import { gradeVariant } from './grading.js';
@@ -342,6 +343,38 @@ export async function gradeAssessmentInstance({
   // only bad thing that will happen is that we'll have wasted some work, but
   // that's acceptable.
   await sqldb.execute(sql.unset_grading_needed, { assessment_instance_id });
+}
+
+export async function crossLockpoint({
+  assessmentInstance,
+  zoneId,
+  authnUser,
+}: {
+  assessmentInstance: AssessmentInstance;
+  zoneId: string;
+  authnUser: User;
+}): Promise<void> {
+  const crossedLockpointId = await sqldb.queryOptionalRow(
+    sql.cross_lockpoint,
+    { assessment_instance_id: assessmentInstance.id, zone_id: zoneId, authn_user_id: authnUser.id },
+    IdSchema,
+  );
+  if (crossedLockpointId != null) return;
+
+  // The INSERT uses ON CONFLICT DO NOTHING, which returns nothing both when
+  // the conflict fires (already crossed) and when the WHERE conditions fail
+  // (not eligible to cross). This second query distinguishes those cases.
+  const alreadyCrossed = await sqldb.queryOptionalRow(
+    sql.check_lockpoint_crossed,
+    { assessment_instance_id: assessmentInstance.id, zone_id: zoneId },
+    IdSchema,
+  );
+  if (alreadyCrossed != null) return;
+
+  throw new error.HttpStatusError(
+    403,
+    'Unable to cross this lockpoint. Please return to the assessment overview and try again.',
+  );
 }
 
 const InstancesToGradeSchema = z.object({

@@ -5,14 +5,16 @@ export function ResetQuestionVariantsModal({
   assessmentQuestionId,
   show,
   onHide,
+  onExited,
 }: {
   csrfToken: string;
   assessmentQuestionId: string;
   show: boolean;
   onHide: () => void;
+  onExited?: () => void;
 }) {
   return (
-    <Modal show={show} size="lg" backdrop="static" onHide={onHide}>
+    <Modal show={show} size="lg" backdrop="static" onHide={onHide} onExited={onExited}>
       <Modal.Header closeButton>
         <Modal.Title>Confirm reset question variants</Modal.Title>
       </Modal.Header>

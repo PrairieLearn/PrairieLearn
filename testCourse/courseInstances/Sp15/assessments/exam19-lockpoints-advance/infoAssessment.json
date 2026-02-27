@@ -1,0 +1,24 @@
+{
+  "uuid": "c6c9d4e0-cf20-4e8c-b6ed-29f6fd0f4a3e",
+  "allowAccess": [{ "credit": 100 }],
+  "type": "Exam",
+  "title": "Exam with lockpoints and advance score threshold",
+  "set": "Exam",
+  "number": "19",
+  "shuffleQuestions": false,
+  "zones": [
+    {
+      "title": "Sequential prerequisite",
+      "questions": [
+        { "id": "partialCredit1", "points": 1, "advanceScorePerc": 100 },
+        { "id": "partialCredit2", "points": 1 },
+        { "id": "partialCredit3", "points": 1, "advanceScorePerc": 100 }
+      ]
+    },
+    {
+      "title": "Lockpoint zone",
+      "lockpoint": true,
+      "questions": [{ "id": "addNumbers", "points": 1 }]
+    }
+  ]
+}

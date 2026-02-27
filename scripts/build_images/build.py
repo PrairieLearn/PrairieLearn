@@ -85,7 +85,11 @@ def check_path_modified(path: str) -> bool:
     #
     # In the case of stacked PRs, this will rebuild images if any of the downstack
     # PRs changed the image.
-    diff_branch = "HEAD^1" if branch == "master" else "remotes/origin/master"
+    diff_branch = (
+        os.environ.get("DIFF_BASE") or "HEAD^1"
+        if branch == "master"
+        else "remotes/origin/master"
+    )
 
     diff_result = subprocess.run(
         ["git", "diff", "--exit-code", f"{diff_branch}..HEAD", "--", path],

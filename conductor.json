@@ -1,6 +1,6 @@
 {
   "scripts": {
-    "setup": "make deps && make e2e-deps",
+    "setup": "./scripts/conductor-setup.sh",
     "run": "make dev"
   }
 }

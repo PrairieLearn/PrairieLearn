@@ -1,0 +1,19 @@
+{
+  "uuid": "5cc9b27d-7068-4a08-ab17-5eaefe0f8d3b",
+  "allowAccess": [{ "credit": 100 }],
+  "type": "Homework",
+  "title": "Homework with lockpoints",
+  "set": "Homework",
+  "number": "15",
+  "zones": [
+    {
+      "title": "Warmup",
+      "questions": [{ "id": "partialCredit1", "points": 1 }]
+    },
+    {
+      "title": "Main questions",
+      "lockpoint": true,
+      "questions": [{ "id": "partialCredit2", "points": 1 }]
+    }
+  ]
+}

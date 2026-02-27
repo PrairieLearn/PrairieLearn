@@ -17,7 +17,8 @@
     "test": "vitest run --coverage",
     "test:dist": "vitest run --coverage dist/**/*.test.js",
     "test:docker-smoke-tests": "vitest run --coverage --mode=docker-smoke-tests",
-    "test:e2e": "playwright test"
+    "test:e2e": "playwright test",
+    "test:executor-smoke-test": "vitest run --mode=executor-smoke-test src/tests/executor.test.ts"
   },
   "dependencies": {
     "@ai-sdk/anthropic": "^3.0.36",

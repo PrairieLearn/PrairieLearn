@@ -9,11 +9,11 @@ WITH
       jsonb_build_object(
         'id',
         (lead(iq.id) OVER w),
-        'sequence_locked',
-        (lead(qo.sequence_locked) OVER w)
+        'question_access_mode',
+        (lead(qo.question_access_mode) OVER w)
       ) AS next_instance_question,
       qo.question_number,
-      qo.sequence_locked
+      qo.question_access_mode
     FROM
       instance_questions AS this_iq
       JOIN assessment_instances AS ai ON (ai.id = this_iq.assessment_instance_id)
@@ -88,8 +88,8 @@ SELECT
     iqi.question_number,
     'advance_score_perc',
     aq.effective_advance_score_perc,
-    'sequence_locked',
-    iqi.sequence_locked,
+    'question_access_mode',
+    iqi.question_access_mode,
     'instructor_question_number',
     admin_assessment_question_number (aq.id)
   ) AS instance_question_info,
@@ -130,4 +130,4 @@ WHERE
   )
   AND q.deleted_at IS NULL
   AND a.deleted_at IS NULL
-  AND NOT iqi.sequence_locked;
+  AND iqi.question_access_mode NOT IN ('blocked_sequence', 'blocked_lockpoint');

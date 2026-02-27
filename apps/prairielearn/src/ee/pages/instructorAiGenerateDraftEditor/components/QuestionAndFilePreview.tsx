@@ -1,5 +1,7 @@
 import { type Ref, useCallback, useEffect, useImperativeHandle, useMemo, useRef } from 'react';
 
+import { executeScripts } from '@prairielearn/browser-utils';
+
 import { NewToPrairieLearnCard } from '../../../../components/NewToPrairieLearnCard.js';
 import { b64DecodeUnicode } from '../../../../lib/base64-util.js';
 import RichTextEditor from '../RichTextEditor/index.js';
@@ -39,21 +41,6 @@ function replaceQuestionContainer(wrapper: HTMLDivElement, htmlResponse: string)
   oldQuestionContainer.replaceWith(container);
 
   executeScripts(container);
-}
-
-function executeScripts(container: Element) {
-  const scripts = container.querySelectorAll('script');
-  scripts.forEach((oldScript) => {
-    const newScript = document.createElement('script');
-
-    copyAttributes(oldScript, newScript);
-
-    // Copy script content
-    newScript.textContent = oldScript.textContent;
-
-    // Replace the old script with the new one to trigger execution
-    oldScript.replaceWith(newScript);
-  });
 }
 
 function copyAttributes(source: Element, target: Element) {
