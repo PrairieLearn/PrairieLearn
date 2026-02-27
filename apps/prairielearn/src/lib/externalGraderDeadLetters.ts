@@ -211,13 +211,7 @@ export async function processDeadLetterMessage(
   // assessment instance (or regenerates their own). In that case there's
   // nothing left to mark as failed, so we should acknowledge the message.
   const gradingJob = await selectGradingJob(jobId);
-  if (!gradingJob) {
-    logger.verbose('Skipping dead letter message for deleted grading job', {
-      grading_job_id: jobId,
-      queueName,
-    });
-    return true;
-  }
+  if (!gradingJob) return true;
 
   try {
     await markJobFailed({
