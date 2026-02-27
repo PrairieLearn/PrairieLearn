@@ -93,6 +93,7 @@ async function pollQueue(
         );
         messages = data.Messages;
       } catch (err) {
+        // eslint-disable-next-line @typescript-eslint/no-unnecessary-condition -- aborted from another context
         if (abortController.signal.aborted) return;
         logger.error(`Error receiving messages from dead letter queue ${queueName}`, err);
         Sentry.captureException(err);
@@ -142,7 +143,7 @@ async function processQueueMessage(
     return;
   }
 
-  const receiveCount = parseInt(message.Attributes?.ApproximateReceiveCount ?? '1', 10);
+  const receiveCount = Number.parseInt(message.Attributes?.ApproximateReceiveCount ?? '1');
   const shouldDelete = await processDeadLetterMessage(parsedMessage, {
     queueName,
     queueType,
