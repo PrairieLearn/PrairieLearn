@@ -23,7 +23,8 @@ export async function buildContextForQuestion(dir: string): Promise<QuestionCont
 
   const context: string[] = [];
 
-  if (validateHTML(html, hasPython).errors.length > 0) {
+  const { errors, warnings } = validateHTML(html, hasPython);
+  if (errors.length > 0 || warnings.length > 0) {
     return undefined;
   }
 
