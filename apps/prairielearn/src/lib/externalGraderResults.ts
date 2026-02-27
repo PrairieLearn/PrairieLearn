@@ -58,9 +58,14 @@ export async function init() {
               QueueUrl: queueUrl,
               WaitTimeSeconds: 20,
             }),
+            { abortSignal: abortController.signal },
           );
           messages = data.Messages;
         } catch (err) {
+          if (abortController.signal.aborted) {
+            processingFinished.resolve(null);
+            return;
+          }
           logger.error('Error receiving messages from SQS', err);
           Sentry.captureException(err);
           continue;

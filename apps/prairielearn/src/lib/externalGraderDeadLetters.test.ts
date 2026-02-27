@@ -71,7 +71,7 @@ describe('externalGraderDeadLetters', () => {
     expect(markJobFailed).toHaveBeenCalledOnce();
   });
 
-  it('keeps message in queue when marking failed throws', async () => {
+  it('retries message when marking failed throws and receive count is low', async () => {
     const markJobFailed = vi.fn().mockRejectedValue(new Error('database unavailable'));
     const selectGradingJob = vi.fn().mockResolvedValue({ id: '1' });
 
@@ -80,6 +80,7 @@ describe('externalGraderDeadLetters', () => {
       {
         queueName: 'jobs-dead-letter-queue',
         queueType: 'jobs',
+        receiveCount: 1,
         markJobFailed,
         selectGradingJob,
       },
@@ -87,6 +88,44 @@ describe('externalGraderDeadLetters', () => {
 
     assert.isFalse(shouldDelete);
     expect(markJobFailed).toHaveBeenCalledOnce();
+  });
+
+  it('deletes message when marking failed throws and receive count exceeds max', async () => {
+    const markJobFailed = vi.fn().mockRejectedValue(new Error('database unavailable'));
+    const selectGradingJob = vi.fn().mockResolvedValue({ id: '1' });
+
+    const shouldDelete = await processDeadLetterMessage(
+      { jobId: '1' },
+      {
+        queueName: 'jobs-dead-letter-queue',
+        queueType: 'jobs',
+        receiveCount: 3,
+        markJobFailed,
+        selectGradingJob,
+      },
+    );
+
+    assert.isTrue(shouldDelete);
+    expect(markJobFailed).toHaveBeenCalledOnce();
+  });
+
+  it('logs error for unrecognized event type in results dead letter queue', async () => {
+    const markJobFailed = vi.fn().mockResolvedValue(undefined);
+    const selectGradingJob = vi.fn().mockResolvedValue({ id: '1' });
+
+    const shouldDelete = await processDeadLetterMessage(
+      { jobId: '1', event: 'unknown_event' },
+      {
+        queueName: 'results-dead-letter-queue',
+        queueType: 'results',
+        markJobFailed,
+        selectGradingJob,
+      },
+    );
+
+    assert.isTrue(shouldDelete);
+    expect(markJobFailed).not.toHaveBeenCalled();
+    expect(selectGradingJob).not.toHaveBeenCalled();
   });
 
   it('deletes message with invalid jobId', async () => {

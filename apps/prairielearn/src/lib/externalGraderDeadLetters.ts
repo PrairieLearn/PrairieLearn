@@ -87,10 +87,13 @@ async function pollQueue(
             MaxNumberOfMessages: 10,
             QueueUrl: queueUrl,
             WaitTimeSeconds: 20,
+            MessageSystemAttributeNames: ['ApproximateReceiveCount'],
           }),
+          { abortSignal: abortController.signal },
         );
         messages = data.Messages;
       } catch (err) {
+        if (abortController.signal.aborted) return;
         logger.error(`Error receiving messages from dead letter queue ${queueName}`, err);
         Sentry.captureException(err);
         // Back off briefly to avoid tight-looping during sustained AWS failures.
@@ -139,7 +142,12 @@ async function processQueueMessage(
     return;
   }
 
-  const shouldDelete = await processDeadLetterMessage(parsedMessage, { queueName, queueType });
+  const receiveCount = parseInt(message.Attributes?.ApproximateReceiveCount ?? '1', 10);
+  const shouldDelete = await processDeadLetterMessage(parsedMessage, {
+    queueName,
+    queueType,
+    receiveCount,
+  });
   if (!shouldDelete) return;
   await deleteMessage(sqs, queueUrl, message.ReceiptHandle);
 }
@@ -153,16 +161,21 @@ async function deleteMessage(sqs: SQSClient, queueUrl: string, receiptHandle: st
   );
 }
 
+/** Maximum number of times we'll attempt to process a DLQ message before giving up. */
+const MAX_RECEIVE_COUNT = 3;
+
 export async function processDeadLetterMessage(
   data: Record<string, unknown>,
   {
     queueName,
     queueType,
+    receiveCount = 1,
     markJobFailed = processGradingResult,
     selectGradingJob = selectOptionalGradingJobById,
   }: {
     queueName: string;
     queueType: DeadLetterQueueType;
+    receiveCount?: number;
     markJobFailed?: typeof processGradingResult;
     selectGradingJob?: typeof selectOptionalGradingJobById;
   },
@@ -178,6 +191,9 @@ export async function processDeadLetterMessage(
     return true;
   }
 
+  // Only grading_result events from the results DLQ need to be marked as
+  // failed. job_received events are expected and silently discarded; any
+  // other event type is logged as an error.
   if (queueType === 'results') {
     if (data.event !== 'grading_result') {
       if (data.event !== 'job_received') {
@@ -234,10 +250,14 @@ export async function processDeadLetterMessage(
   } catch (err) {
     logger.error('Error marking dead letter grading job as failed', {
       grading_job_id: jobId,
+      receiveCount,
       err,
     });
     Sentry.captureException(err);
-    return false;
+    // Retry up to MAX_RECEIVE_COUNT times for transient failures (e.g. DB
+    // unavailable). After that, delete the message to avoid a poison pill
+    // that tight-loops forever — the Sentry alert gives ops visibility.
+    return receiveCount >= MAX_RECEIVE_COUNT;
   }
 
   return true;
