@@ -802,7 +802,6 @@ function InstructorAssessmentQuestionsTableInner({
                           editMode,
                           urlPrefix,
                           courseId: course.id,
-                          courseInstance,
                           hasCoursePermissionPreview,
                           canEdit,
                           showAdvanceScorePercCol,
