@@ -44,3 +44,8 @@ export {
   type ComboBoxProps,
   type TagPickerProps,
 } from './components/ComboBox.js';
+export {
+  FilterDropdown,
+  type FilterItem,
+  type FilterDropdownProps,
+} from './components/FilterDropdown.js';

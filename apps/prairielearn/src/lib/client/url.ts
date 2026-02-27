@@ -135,3 +135,18 @@ export function getCourseIssuesUrl({
 export function getAiQuestionGenerationDraftsUrl({ urlPrefix }: { urlPrefix: string }): string {
   return `${urlPrefix}/ai_generate_question_drafts`;
 }
+
+type QuestionUrlParts =
+  | { courseInstanceId: string; courseId?: undefined }
+  | { courseInstanceId?: undefined; courseId: string };
+
+export function getQuestionUrl({
+  courseInstanceId,
+  courseId,
+  questionId,
+}: { questionId: string } & QuestionUrlParts): string {
+  const urlPrefix = courseInstanceId
+    ? `/pl/course_instance/${courseInstanceId}/instructor`
+    : `/pl/course/${courseId}`;
+  return `${urlPrefix}/question/${questionId}`;
+}
