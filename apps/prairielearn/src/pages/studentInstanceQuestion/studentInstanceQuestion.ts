@@ -180,6 +180,9 @@ async function validateAndProcessSubmission(req: Request, res: Response) {
   if (!res.locals.authz_result.active) {
     throw new HttpStatusError(400, 'This assessment is not accepting submissions at this time.');
   }
+  if (res.locals.instance_question_info.question_access_mode === 'read_only_lockpoint') {
+    throw new HttpStatusError(403, 'This question is read-only after crossing a lockpoint');
+  }
   if (res.locals.group_config?.has_roles && !res.locals.group_role_permissions.can_submit) {
     throw new HttpStatusError(
       403,
