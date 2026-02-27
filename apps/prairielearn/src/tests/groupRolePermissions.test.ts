@@ -301,7 +301,7 @@ describe('Assessment instance with group roles & permissions - Homework', functi
       assert.lengthOf(lockedRows, 2);
 
       lockedRows.each((_, element) => {
-        const rowLabelText = $(element).parent('td').find('span').text();
+        const rowLabelText = $(element).closest('td').find('span').text();
         assert.match(rowLabelText, /HW5\.[23]\./);
         const popoverText = $(element).attr('data-bs-content');
         assert.strictEqual(
