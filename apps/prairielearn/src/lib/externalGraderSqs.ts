@@ -2,7 +2,7 @@ import { EventEmitter } from 'events';
 import { PassThrough } from 'stream';
 
 import { S3 } from '@aws-sdk/client-s3';
-import { GetQueueUrlCommand, SQSClient, SendMessageCommand } from '@aws-sdk/client-sqs';
+import { SQSClient, SendMessageCommand } from '@aws-sdk/client-sqs';
 import { Upload } from '@aws-sdk/lib-storage';
 import * as async from 'async';
 import fs from 'fs-extra';
@@ -22,6 +22,7 @@ import {
   type Variant,
 } from './db-types.js';
 import { type Grader, buildDirectory, getJobDirectory } from './externalGraderCommon.js';
+import { getQueueUrl } from './sqs.js';
 
 const sql = sqldb.loadSqlEquiv(import.meta.url);
 
@@ -103,12 +104,7 @@ async function sendJobToQueue(jobId: string, question: Question, config: Config)
     async () => {
       if (QUEUE_URL) return;
 
-      const data = await sqs.send(
-        new GetQueueUrlCommand({
-          QueueName: config.externalGradingJobsQueueName,
-        }),
-      );
-      QUEUE_URL = data.QueueUrl;
+      QUEUE_URL = await getQueueUrl(sqs, config.externalGradingJobsQueueName);
     },
     async () => {
       const messageBody = {

@@ -1,6 +1,5 @@
 import {
   DeleteMessageCommand,
-  GetQueueUrlCommand,
   ReceiveMessageCommand,
   type ReceiveMessageResult,
   SQSClient,
@@ -14,6 +13,7 @@ import { IdSchema } from '@prairielearn/zod';
 import { makeAwsClientConfig } from './aws.js';
 import { config } from './config.js';
 import { processGradingResult } from './externalGrader.js';
+import { getQueueUrl } from './sqs.js';
 
 const abortController = new AbortController();
 const processingFinished = withResolvers();
@@ -29,8 +29,8 @@ export async function init() {
   enabled = true;
 
   const sqs = new SQSClient(makeAwsClientConfig());
-  const jobsQueueUrl = await loadQueueUrl(sqs, jobsDLQName);
-  const resultsQueueUrl = await loadQueueUrl(sqs, resultsDLQName);
+  const jobsQueueUrl = await getQueueUrl(sqs, jobsDLQName);
+  const resultsQueueUrl = await getQueueUrl(sqs, resultsDLQName);
 
   // Start both polling loops concurrently in the background.
   void Promise.all([
@@ -53,17 +53,6 @@ export async function stop() {
   // The polling loops will resolve this deferred promise when they're
   // both finished with any current processing.
   await processingFinished.promise;
-}
-
-async function loadQueueUrl(sqs: SQSClient, queueName: string): Promise<string> {
-  logger.verbose(`Dead letter queue ${queueName}: getting URL...`);
-  const data = await sqs.send(new GetQueueUrlCommand({ QueueName: queueName }));
-  const queueUrl = data.QueueUrl;
-  if (!queueUrl) {
-    throw new Error(`Could not get URL for queue ${queueName}`);
-  }
-  logger.verbose(`Dead letter queue ${queueName}: got URL ${queueUrl}`);
-  return queueUrl;
 }
 
 async function pollQueue(sqs: SQSClient, queueUrl: string, queueName: string) {
