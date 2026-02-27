@@ -1,5 +1,8 @@
+import { setTimeout as sleep } from 'node:timers/promises';
+
 import {
   DeleteMessageCommand,
+  type Message,
   ReceiveMessageCommand,
   type ReceiveMessageResult,
   SQSClient,
@@ -10,6 +13,8 @@ import * as Sentry from '@prairielearn/sentry';
 import { withResolvers } from '@prairielearn/utils';
 import { IdSchema } from '@prairielearn/zod';
 
+import { selectOptionalGradingJobById } from '../models/grading-job.js';
+
 import { makeAwsClientConfig } from './aws.js';
 import { config } from './config.js';
 import { processGradingResult } from './externalGrader.js';
@@ -18,6 +23,7 @@ import { getQueueUrl } from './sqs.js';
 const abortController = new AbortController();
 const processingFinished = withResolvers();
 let enabled = false;
+type DeadLetterQueueType = 'jobs' | 'results';
 
 export async function init() {
   if (!config.externalGradingUseAws) return;
@@ -34,11 +40,16 @@ export async function init() {
 
   // Start both polling loops concurrently in the background.
   void Promise.all([
-    pollQueue(sqs, jobsQueueUrl, jobsDLQName),
-    pollQueue(sqs, resultsQueueUrl, resultsDLQName),
-  ]).then(() => {
-    processingFinished.resolve(null);
-  });
+    pollQueue(sqs, jobsQueueUrl, jobsDLQName, 'jobs'),
+    pollQueue(sqs, resultsQueueUrl, resultsDLQName, 'results'),
+  ])
+    .catch((err) => {
+      logger.error('Dead letter queue polling stopped unexpectedly', err);
+      Sentry.captureException(err);
+    })
+    .finally(() => {
+      processingFinished.resolve(null);
+    });
 }
 
 export async function stop() {
@@ -55,7 +66,12 @@ export async function stop() {
   await processingFinished.promise;
 }
 
-async function pollQueue(sqs: SQSClient, queueUrl: string, queueName: string) {
+async function pollQueue(
+  sqs: SQSClient,
+  queueUrl: string,
+  queueName: string,
+  queueType: DeadLetterQueueType,
+) {
   while (true) {
     // Spin until we can get at least one message from the queue.
     let messages: ReceiveMessageResult['Messages'];
@@ -77,7 +93,9 @@ async function pollQueue(sqs: SQSClient, queueUrl: string, queueName: string) {
       } catch (err) {
         logger.error(`Error receiving messages from dead letter queue ${queueName}`, err);
         Sentry.captureException(err);
-        continue;
+        // Back off briefly to avoid tight-looping during sustained AWS failures.
+        // Resolve early if a shutdown is requested so we don't block stop().
+        await sleep(5000, undefined, { signal: abortController.signal }).catch(() => {});
       }
     }
 
@@ -85,20 +103,7 @@ async function pollQueue(sqs: SQSClient, queueUrl: string, queueName: string) {
     await Promise.all(
       messages.map(async (message) => {
         try {
-          if (!message.Body) throw new Error('Message is missing Body');
-          if (!message.ReceiptHandle) throw new Error('Message is missing ReceiptHandle');
-
-          const parsedMessage = JSON.parse(message.Body);
-          const receiptHandle = message.ReceiptHandle;
-
-          await processDeadLetterMessage(parsedMessage, queueName);
-
-          await sqs.send(
-            new DeleteMessageCommand({
-              QueueUrl: queueUrl,
-              ReceiptHandle: receiptHandle,
-            }),
-          );
+          await processQueueMessage(sqs, queueUrl, message, queueName, queueType);
         } catch (err) {
           logger.error(`Error processing dead letter message from ${queueName}`, err);
           Sentry.captureException(err);
@@ -108,7 +113,60 @@ async function pollQueue(sqs: SQSClient, queueUrl: string, queueName: string) {
   }
 }
 
-async function processDeadLetterMessage(data: Record<string, unknown>, queueName: string) {
+async function processQueueMessage(
+  sqs: SQSClient,
+  queueUrl: string,
+  message: Message,
+  queueName: string,
+  queueType: DeadLetterQueueType,
+) {
+  if (!message.ReceiptHandle) {
+    throw new Error('Message is missing ReceiptHandle');
+  }
+  if (!message.Body) {
+    logger.error('Dead letter message is missing body', { queueName });
+    await deleteMessage(sqs, queueUrl, message.ReceiptHandle);
+    return;
+  }
+
+  let parsedMessage: Record<string, unknown>;
+  try {
+    parsedMessage = JSON.parse(message.Body);
+  } catch (err) {
+    logger.error('Dead letter message body is not valid JSON', { queueName });
+    Sentry.captureException(err, { extra: { queueName, body: message.Body } });
+    await deleteMessage(sqs, queueUrl, message.ReceiptHandle);
+    return;
+  }
+
+  const shouldDelete = await processDeadLetterMessage(parsedMessage, { queueName, queueType });
+  if (!shouldDelete) return;
+  await deleteMessage(sqs, queueUrl, message.ReceiptHandle);
+}
+
+async function deleteMessage(sqs: SQSClient, queueUrl: string, receiptHandle: string) {
+  await sqs.send(
+    new DeleteMessageCommand({
+      QueueUrl: queueUrl,
+      ReceiptHandle: receiptHandle,
+    }),
+  );
+}
+
+export async function processDeadLetterMessage(
+  data: Record<string, unknown>,
+  {
+    queueName,
+    queueType,
+    markJobFailed = processGradingResult,
+    selectGradingJob = selectOptionalGradingJobById,
+  }: {
+    queueName: string;
+    queueType: DeadLetterQueueType;
+    markJobFailed?: typeof processGradingResult;
+    selectGradingJob?: typeof selectOptionalGradingJobById;
+  },
+): Promise<boolean> {
   let jobId: string;
   try {
     jobId = IdSchema.parse(data.jobId);
@@ -117,7 +175,23 @@ async function processDeadLetterMessage(data: Record<string, unknown>, queueName
     Sentry.captureException(new Error('Dead letter message does not contain a valid job id'), {
       extra: { queueName, data },
     });
-    return;
+    return true;
+  }
+
+  if (queueType === 'results') {
+    if (data.event !== 'grading_result') {
+      if (data.event !== 'job_received') {
+        logger.error('Results dead letter message has an invalid event', {
+          grading_job_id: jobId,
+          queueName,
+          data,
+        });
+        Sentry.captureException(new Error('Results dead letter message has an invalid event'), {
+          extra: { grading_job_id: jobId, queueName, data },
+        });
+      }
+      return true;
+    }
   }
 
   logger.error('Grading job found in dead letter queue', {
@@ -129,8 +203,20 @@ async function processDeadLetterMessage(data: Record<string, unknown>, queueName
     extra: { grading_job_id: jobId, queueName, data },
   });
 
+  // Grading jobs can be hard-deleted when an instructor deletes an
+  // assessment instance (or regenerates their own). In that case there's
+  // nothing left to mark as failed, so we should acknowledge the message.
+  const gradingJob = await selectGradingJob(jobId);
+  if (!gradingJob) {
+    logger.verbose('Skipping dead letter message for deleted grading job', {
+      grading_job_id: jobId,
+      queueName,
+    });
+    return true;
+  }
+
   try {
-    await processGradingResult({
+    await markJobFailed({
       gradingId: jobId,
       grading: {
         receivedTime: null,
@@ -151,5 +237,8 @@ async function processDeadLetterMessage(data: Record<string, unknown>, queueName
       err,
     });
     Sentry.captureException(err);
+    return false;
   }
+
+  return true;
 }
