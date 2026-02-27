@@ -91,6 +91,18 @@ interface ValidationResult {
   mandatoryPythonCorrectAnswers?: Set<string>;
 }
 
+export interface HTMLValidationResult {
+  /** Hard errors that must be fixed before saving. */
+  errors: string[];
+  /**
+   * Warnings about likely issues. Unlike errors, warnings do not block
+   * saving — they are included in the response so the LLM is informed,
+   * but the question can still be saved. Callers may choose to promote
+   * warnings to errors based on context (e.g. when creating a new question).
+   */
+  warnings: string[];
+}
+
 /**
  * Checks that the required attribute is an int (or mustache template) or adds an error to the provided list.
  * @param tag The name of the tag being checked.
@@ -798,17 +810,23 @@ function checkCheckbox(ast: DocumentFragment | ChildNode): ValidationResult {
   return { errors: errors.concat(errorsChildren) };
 }
 
+interface DfsResult extends ValidationResult {
+  warnings: string[];
+  mandatoryPythonCorrectAnswers: Set<string>;
+}
+
 /**
  * Checks the entire parse tree for errors in common PL tags recursively.
  * @param ast The tree to consider.
  * @param enclosingPanel The name of the enclosing panel element (e.g. 'pl-submission-panel'), if any.
- * @returns A list of human-readable error messages, if any.
+ * @returns Errors, warnings, and mandatory correct answers.
  */
-function dfsCheckParseTree(ast: DocumentFragment | ChildNode, enclosingPanel?: string) {
+function dfsCheckParseTree(ast: DocumentFragment | ChildNode, enclosingPanel?: string): DfsResult {
   let { errors, mandatoryPythonCorrectAnswers = new Set<string>() } = checkTag(ast);
+  let warnings: string[] = [];
 
   if ('tagName' in ast && INPUT_ELEMENTS.has(ast.tagName) && enclosingPanel) {
-    errors.push(
+    warnings.push(
       `<${ast.tagName}> must not be placed inside <${enclosingPanel}>. ` +
         'Input elements must be placed at the top level of question.html (outside any panel element) ' +
         'so they render correctly in the question, submission, and answer panels. ' +
@@ -823,37 +841,44 @@ function dfsCheckParseTree(ast: DocumentFragment | ChildNode, enclosingPanel?: s
     for (const child of ast.childNodes) {
       const childResult = dfsCheckParseTree(child, childPanel);
       errors = errors.concat(childResult.errors);
+      warnings = warnings.concat(childResult.warnings);
       childResult.mandatoryPythonCorrectAnswers.forEach((x) =>
         mandatoryPythonCorrectAnswers.add(x),
       );
     }
   }
 
-  return { errors, mandatoryPythonCorrectAnswers } satisfies ValidationResult;
+  return { errors, warnings, mandatoryPythonCorrectAnswers };
 }
 
 /**
- * Checks for errors in common PL elements in an index.html file.
+ * Checks for errors and warnings in common PL elements in a question.html file.
  * @param file The raw text of the file to use.
  * @param hasServerPy True if a server.py file is present, else false.
- * @returns A list of human-readable render error messages, if any.
+ * @returns Errors that must be fixed and warnings about likely issues.
  */
-export function validateHTML(file: string, hasServerPy: boolean): string[] {
+export function validateHTML(file: string, hasServerPy: boolean): HTMLValidationResult {
   const forbiddenTagMatch = file.match(/^\s*<(!doctype|html|body|head)[\s>]/i);
   if (forbiddenTagMatch) {
     const tag = forbiddenTagMatch[1].toLowerCase();
     if (tag === '!doctype') {
-      return [
-        'The <!DOCTYPE> declaration must not be included. Only generate the inner content that would go inside the <body> tag.',
-      ];
+      return {
+        errors: [
+          'The <!DOCTYPE> declaration must not be included. Only generate the inner content that would go inside the <body> tag.',
+        ],
+        warnings: [],
+      };
     }
-    return [
-      `The <${tag}> tag must not be included. Only generate the inner content that would go inside the <body> tag.`,
-    ];
+    return {
+      errors: [
+        `The <${tag}> tag must not be included. Only generate the inner content that would go inside the <body> tag.`,
+      ],
+      warnings: [],
+    };
   }
 
   const tree = parse5.parseFragment(file);
-  const { errors, mandatoryPythonCorrectAnswers } = dfsCheckParseTree(tree);
+  const { errors, warnings, mandatoryPythonCorrectAnswers } = dfsCheckParseTree(tree);
 
   const usedTemplateNames = extractMustacheTemplateNames(file);
   const templates = [
@@ -873,5 +898,5 @@ export function validateHTML(file: string, hasServerPy: boolean): string[] {
     }
   }
 
-  return errors;
+  return { errors, warnings };
 }
