@@ -74,15 +74,7 @@ const WorkspaceSettingsRowSchema = z.object({
   workspace_environment: z.record(z.string(), z.any()).nullable(),
 });
 
-interface WorkspaceSettings {
-  workspace_image: string;
-  workspace_port: number;
-  workspace_home: string;
-  workspace_graded_files: string[];
-  workspace_args: string;
-  workspace_enable_networking: boolean;
-  workspace_environment: string[];
-}
+type WorkspaceSettings = z.infer<typeof WorkspaceSettingsRowSchema>;
 
 interface Workspace {
   id: string | number;
@@ -817,7 +809,7 @@ async function _createContainer(workspace: Workspace): Promise<Docker.Container>
   const workspaceJobPath = path.join(jobDirectory, remote_name, 'current');
 
   const containerPath = settings.workspace_home;
-  const args = settings.workspace_args.trim();
+  const args = settings.workspace_args!.trim();
 
   let networkMode = 'bridge';
   if (!settings.workspace_enable_networking) {
@@ -856,7 +848,8 @@ async function _createContainer(workspace: Workspace): Promise<Docker.Container>
     ExposedPorts: {
       [`${settings.workspace_port}/tcp`]: {},
     },
-    Env: settings.workspace_environment,
+    // FIXME: Env expects an array, but we're passing a record.
+    Env: settings.workspace_environment! as string[],
     User: `${config.workspaceJobsDirectoryOwnerUid}:${config.workspaceJobsDirectoryOwnerGid}`,
     HostConfig: {
       PortBindings: {

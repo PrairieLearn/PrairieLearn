@@ -35,6 +35,7 @@ export async function runLegacySqlAdminQuery(
   const sql = await readFile(new URL(metaUrl.replace(/\.[jt]s$/, '.sql')).pathname, {
     encoding: 'utf8',
   });
+  // We wanted to discourage the use of queryAsync, but it is still needed here.
   const result = await defaultPool.queryAsync(sql, params);
   return { rows: result.rows, columns: result.fields.map((field: { name: string }) => field.name) };
 }

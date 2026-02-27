@@ -17,6 +17,13 @@ import {
 
 const sql = sqldb.loadSqlEquiv(import.meta.filename);
 
+const MigrationRowSchema = z.object({
+  id: z.coerce.string(),
+  filename: z.string(),
+  index: z.number().nullable(),
+  timestamp: z.string().nullable(),
+});
+
 interface InitOptions {
   directories: string[];
   project: string;
@@ -130,13 +137,6 @@ export async function initWithLock({ directories, project, migrationFilters = {}
         throw err;
       }
     }
-
-    const MigrationRowSchema = z.object({
-      id: z.coerce.string(),
-      filename: z.string(),
-      index: z.number().nullable(),
-      timestamp: z.string().nullable(),
-    });
 
     let allMigrations = await sqldb.queryRows(sql.get_migrations, { project }, MigrationRowSchema);
     const migrationFiles = await readAndValidateMigrationsFromDirectories(directories, [
