@@ -4,9 +4,9 @@ import { guessMimeType } from './submissionFile.js';
 
 describe('guessMimeType', () => {
   it('returns media mime types for typical image, video, and PDF extensions', async () => {
-    assert.equal(await guessMimeType('photo.png', Buffer.from('not-real-image')), 'image/png');
+    assert.equal(await guessMimeType('image.png', Buffer.from('not-real-image')), 'image/png');
     assert.equal(await guessMimeType('photo.jpeg', Buffer.from('not-real-image')), 'image/jpeg');
-    assert.equal(await guessMimeType('video.mp3', Buffer.from('not-real-audio')), 'audio/mpeg');
+    assert.equal(await guessMimeType('music.mp3', Buffer.from('not-real-audio')), 'audio/mpeg');
     assert.equal(await guessMimeType('video.mp4', Buffer.from('not-real-video')), 'video/mp4');
     assert.equal(
       await guessMimeType('document.pdf', Buffer.from('not-real-pdf')),
