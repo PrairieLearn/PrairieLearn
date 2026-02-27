@@ -12,18 +12,26 @@ export function AssessmentQuestionHeaders({
       {question.start_new_zone ? (
         <tr>
           <th colSpan={nTableCols}>
-            Zone {question.zone.number}. {question.zone.title}{' '}
-            {question.zone.number_choose == null
-              ? '(Choose all questions)'
-              : question.zone.number_choose === 1
-                ? '(Choose 1 question)'
-                : `(Choose ${question.zone.number_choose} questions)`}
-            {question.zone.max_points != null
-              ? ` (maximum ${question.zone.max_points} points)`
-              : ''}
-            {question.zone.best_questions != null
-              ? ` (best ${question.zone.best_questions} questions)`
-              : ''}
+            <div className="d-flex align-items-center">
+              Zone {question.zone.number}. {question.zone.title}{' '}
+              {question.zone.number_choose == null
+                ? '(Choose all questions)'
+                : question.zone.number_choose === 1
+                  ? '(Choose 1 question)'
+                  : `(Choose ${question.zone.number_choose} questions)`}
+              {question.zone.max_points != null
+                ? ` (maximum ${question.zone.max_points} points)`
+                : ''}
+              {question.zone.best_questions != null
+                ? ` (best ${question.zone.best_questions} questions)`
+                : ''}
+              {question.zone.lockpoint ? (
+                <span className="badge text-bg-warning ms-2">
+                  <i className="bi bi-lock-fill me-1" aria-hidden="true" />
+                  Lockpoint
+                </span>
+              ) : null}
+            </div>
           </th>
         </tr>
       ) : (
