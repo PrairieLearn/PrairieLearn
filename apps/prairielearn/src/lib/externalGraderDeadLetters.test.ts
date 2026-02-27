@@ -109,25 +109,6 @@ describe('externalGraderDeadLetters', () => {
     expect(markJobFailed).toHaveBeenCalledOnce();
   });
 
-  it('logs error for unrecognized event type in results dead letter queue', async () => {
-    const markJobFailed = vi.fn().mockResolvedValue(undefined);
-    const selectGradingJob = vi.fn().mockResolvedValue({ id: '1' });
-
-    const shouldDelete = await processDeadLetterMessage(
-      { jobId: '1', event: 'unknown_event' },
-      {
-        queueName: 'results-dead-letter-queue',
-        queueType: 'results',
-        markJobFailed,
-        selectGradingJob,
-      },
-    );
-
-    assert.isTrue(shouldDelete);
-    expect(markJobFailed).not.toHaveBeenCalled();
-    expect(selectGradingJob).not.toHaveBeenCalled();
-  });
-
   it('deletes message with invalid jobId', async () => {
     const markJobFailed = vi.fn().mockResolvedValue(undefined);
     const selectGradingJob = vi.fn().mockResolvedValue(null);

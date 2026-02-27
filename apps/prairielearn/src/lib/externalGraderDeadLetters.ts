@@ -192,22 +192,10 @@ export async function processDeadLetterMessage(
   }
 
   // Only grading_result events from the results DLQ need to be marked as
-  // failed. job_received events are expected and silently discarded; any
-  // other event type is logged as an error.
-  if (queueType === 'results') {
-    if (data.event !== 'grading_result') {
-      if (data.event !== 'job_received') {
-        logger.error('Results dead letter message has an invalid event', {
-          grading_job_id: jobId,
-          queueName,
-          data,
-        });
-        Sentry.captureException(new Error('Results dead letter message has an invalid event'), {
-          extra: { grading_job_id: jobId, queueName, data },
-        });
-      }
-      return true;
-    }
+  // failed. Other events (e.g. job_received) are informational and can be
+  // safely discarded.
+  if (queueType === 'results' && data.event !== 'grading_result') {
+    return true;
   }
 
   logger.error('Grading job found in dead letter queue', {
