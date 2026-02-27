@@ -91,7 +91,7 @@ interface ValidationResult {
   mandatoryPythonCorrectAnswers?: Set<string>;
 }
 
-export interface HTMLValidationResult {
+interface HTMLValidationResult {
   /** Hard errors that must be fixed before saving. */
   errors: string[];
   /**
