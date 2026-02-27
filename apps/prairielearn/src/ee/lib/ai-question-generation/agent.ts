@@ -464,8 +464,6 @@ async function createQuestionGenerationAgent({
             return { errors: ['You must generate a question.html file.'], warnings: [] };
           }
 
-          // TODO: we could possibly speed up the iteration loop by skipping the save if
-          // this detected any errors in the HTML.
           const { errors, warnings } = validateHTML(files['question.html'], !!files['server.py']);
 
           // When creating a new question, treat warnings as errors — the AI
