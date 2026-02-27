@@ -408,6 +408,8 @@ function StudentsCard({
     window.location.href = getCourseInstanceJobSequenceUrl(courseInstance.id, job_sequence_id);
   };
 
+  const [labelMutationSuccess, setLabelMutationSuccess] = useState<string | null>(null);
+
   const batchAddLabelMutation = useMutation({
     mutationFn: async ({
       enrollmentIds,
@@ -418,7 +420,17 @@ function StudentsCard({
     }) => {
       return await trpcClient.batchAddLabel.mutate({ enrollmentIds, labelId });
     },
-    onSuccess: async () => {
+    onSuccess: async (result) => {
+      const parts: string[] = [
+        `Added label to ${result.added} student${result.added !== 1 ? 's' : ''}.`,
+      ];
+      if (result.alreadyHaveLabel > 0) {
+        parts.push(`${result.alreadyHaveLabel} already had the label.`);
+      }
+      if (result.notFound > 0) {
+        parts.push(`${result.notFound} not found.`);
+      }
+      setLabelMutationSuccess(parts.join(' '));
       await queryClient.invalidateQueries({ queryKey: ['enrollments', 'students'] });
       await queryClient.invalidateQueries({ queryKey: ['student-labels'] });
     },
@@ -434,7 +446,17 @@ function StudentsCard({
     }) => {
       return await trpcClient.batchRemoveLabel.mutate({ enrollmentIds, labelId });
     },
-    onSuccess: async () => {
+    onSuccess: async (result) => {
+      const parts: string[] = [
+        `Removed label from ${result.removed} student${result.removed !== 1 ? 's' : ''}.`,
+      ];
+      if (result.didNotHaveLabel > 0) {
+        parts.push(`${result.didNotHaveLabel} did not have the label.`);
+      }
+      if (result.notFound > 0) {
+        parts.push(`${result.notFound} not found.`);
+      }
+      setLabelMutationSuccess(parts.join(' '));
       await queryClient.invalidateQueries({ queryKey: ['enrollments', 'students'] });
       await queryClient.invalidateQueries({ queryKey: ['student-labels'] });
     },
@@ -665,6 +687,11 @@ function StudentsCard({
 
   return (
     <>
+      {labelMutationSuccess && (
+        <Alert variant="success" dismissible onClose={() => setLabelMutationSuccess(null)}>
+          {labelMutationSuccess}
+        </Alert>
+      )}
       {labelMutationError && (
         <Alert
           variant="danger"
@@ -710,59 +737,59 @@ function StudentsCard({
             {authzData.has_course_instance_permission_edit &&
               origHash !== null &&
               selectedEnrollmentIds.length > 0 && (
-              <Dropdown autoClose="outside">
-                <Dropdown.Toggle variant="light" size="sm">
-                  Labels
-                </Dropdown.Toggle>
-                <Dropdown.Menu style={{ minWidth: '220px' }}>
-                  {studentLabels.map((label) => {
-                    const state = labelAssignmentState.get(label.id);
-                    const isChecked = state === 'all';
-                    const isIndeterminate = state === 'some';
+                <Dropdown autoClose="outside">
+                  <Dropdown.Toggle variant="light" size="sm">
+                    Labels
+                  </Dropdown.Toggle>
+                  <Dropdown.Menu style={{ minWidth: '220px' }}>
+                    {studentLabels.map((label) => {
+                      const state = labelAssignmentState.get(label.id);
+                      const isChecked = state === 'all';
+                      const isIndeterminate = state === 'some';
 
-                    return (
-                      <Dropdown.Item
-                        key={label.id}
-                        as="label"
-                        className="d-flex align-items-center gap-2"
-                        style={{ cursor: isLabelMutationPending ? 'wait' : 'pointer' }}
-                        onClick={(e) => e.stopPropagation()}
-                      >
-                        <IndeterminateCheckbox
-                          checked={isChecked}
-                          indeterminate={isIndeterminate}
-                          disabled={isLabelMutationPending}
-                          aria-label={`${isChecked ? 'Remove' : 'Add'} label "${label.name}" ${isChecked ? 'from' : 'to'} selected students`}
-                          onChange={() => {
-                            if (isChecked) {
-                              batchRemoveLabelMutation.mutate({
-                                enrollmentIds: selectedEnrollmentIds,
-                                labelId: label.id,
-                              });
-                            } else {
-                              batchAddLabelMutation.mutate({
-                                enrollmentIds: selectedEnrollmentIds,
-                                labelId: label.id,
-                              });
-                            }
-                          }}
-                        />
-                        <span>{label.name}</span>
-                      </Dropdown.Item>
-                    );
-                  })}
-                  {studentLabels.length > 0 && <Dropdown.Divider />}
-                  <Dropdown.Item
-                    as="button"
-                    type="button"
-                    onClick={() => setShowCreateLabelModal(true)}
-                  >
-                    <i className="bi bi-plus me-2" />
-                    Add to new label
-                  </Dropdown.Item>
-                </Dropdown.Menu>
-              </Dropdown>
-            )}
+                      return (
+                        <Dropdown.Item
+                          key={label.id}
+                          as="label"
+                          className="d-flex align-items-center gap-2"
+                          style={{ cursor: isLabelMutationPending ? 'wait' : 'pointer' }}
+                          onClick={(e) => e.stopPropagation()}
+                        >
+                          <IndeterminateCheckbox
+                            checked={isChecked}
+                            indeterminate={isIndeterminate}
+                            disabled={isLabelMutationPending}
+                            aria-label={`${isChecked ? 'Remove' : 'Add'} label "${label.name}" ${isChecked ? 'from' : 'to'} selected students`}
+                            onChange={() => {
+                              if (isChecked) {
+                                batchRemoveLabelMutation.mutate({
+                                  enrollmentIds: selectedEnrollmentIds,
+                                  labelId: label.id,
+                                });
+                              } else {
+                                batchAddLabelMutation.mutate({
+                                  enrollmentIds: selectedEnrollmentIds,
+                                  labelId: label.id,
+                                });
+                              }
+                            }}
+                          />
+                          <span>{label.name}</span>
+                        </Dropdown.Item>
+                      );
+                    })}
+                    {studentLabels.length > 0 && <Dropdown.Divider />}
+                    <Dropdown.Item
+                      as="button"
+                      type="button"
+                      onClick={() => setShowCreateLabelModal(true)}
+                    >
+                      <i className="bi bi-plus me-2" />
+                      Add to new label
+                    </Dropdown.Item>
+                  </Dropdown.Menu>
+                </Dropdown>
+              )}
             {courseInstance.modern_publishing && (
               <ManageEnrollmentsDropdown
                 courseInstance={courseInstance}

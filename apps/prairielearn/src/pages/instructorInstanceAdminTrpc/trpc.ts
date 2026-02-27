@@ -9,12 +9,9 @@ import { z } from 'zod';
 import { HttpStatusError } from '@prairielearn/error';
 import { IdSchema } from '@prairielearn/zod';
 
-import {
-  computeCourseInstanceJsonHash,
-  readCourseInstanceJson,
-  saveCourseInstanceJson,
-} from '../../lib/courseInstanceJson.js';
-import { getPaths } from '../../lib/instructorFiles.js';
+import type { CourseInstance, StudentLabel } from '../../lib/db-types.js';
+import { saveJsonFile } from '../../lib/editorUtil.js';
+import { getOriginalHash } from '../../lib/editors.js';
 import type { ResLocalsForPage } from '../../lib/res-locals.js';
 import {
   selectEnrollmentsByIdsInCourseInstance,
@@ -28,20 +25,22 @@ import {
   selectStudentLabelByUuid,
 } from '../../models/student-label.js';
 import { ColorJsonSchema } from '../../schemas/infoCourse.js';
-import { type StudentLabelJson, StudentLabelJsonSchema } from '../../schemas/infoCourseInstance.js';
+import { type CourseInstanceJsonInput } from '../../schemas/infoCourseInstance.js';
 import {
   MAX_LABEL_UIDS,
   StudentLabelWithUserDataSchema,
 } from '../instructorStudentsLabels/instructorStudentsLabels.types.js';
 import { getStudentLabelsWithUserData } from '../instructorStudentsLabels/queries.js';
 
-const StudentLabelsArraySchema = z.array(StudentLabelJsonSchema);
-
-async function selectStudentLabelByIdOrNotFound(
-  ...args: Parameters<typeof selectOptionalStudentLabelById>
-) {
+async function selectStudentLabelByIdOrNotFound({
+  id,
+  courseInstance,
+}: {
+  id: string;
+  courseInstance: CourseInstance;
+}): Promise<StudentLabel> {
   try {
-    const label = await selectOptionalStudentLabelById(...args);
+    const label = await selectOptionalStudentLabelById({ id, courseInstance });
     if (label == null) {
       throw new TRPCError({
         code: 'NOT_FOUND',
@@ -66,18 +65,6 @@ async function selectStudentLabelByIdOrNotFound(
   }
 }
 
-function parseStudentLabels(courseInstanceJson: Record<string, unknown>): StudentLabelJson[] {
-  const result = StudentLabelsArraySchema.safeParse(courseInstanceJson.studentLabels ?? []);
-  if (!result.success) {
-    throw new TRPCError({
-      code: 'INTERNAL_SERVER_ERROR',
-      message: 'Invalid studentLabels in infoCourseInstance.json',
-      cause: result.error,
-    });
-  }
-  return result.data;
-}
-
 export function createTRPCContext({ res }: CreateExpressContextOptions) {
   const locals = res.locals as ResLocalsForPage<'course-instance'>;
 
@@ -89,7 +76,7 @@ export function createTRPCContext({ res }: CreateExpressContextOptions) {
   };
 }
 
-export type TRPCContext = Awaited<ReturnType<typeof createTRPCContext>>;
+type TRPCContext = Awaited<ReturnType<typeof createTRPCContext>>;
 
 interface SaveJobErrorCause {
   jobSequenceId: string;
@@ -104,7 +91,7 @@ function isSaveJobErrorCause(cause: unknown): cause is SaveJobErrorCause {
   );
 }
 
-export const t = initTRPC.context<TRPCContext>().create({
+const t = initTRPC.context<TRPCContext>().create({
   transformer: superjson,
   errorFormatter({ shape, error }) {
     return {
@@ -155,7 +142,7 @@ const labelsQuery = t.procedure
       course_instance.short_name!,
     );
     const courseInstanceJsonPath = path.join(courseInstancePath, 'infoCourseInstance.json');
-    const origHash = await computeCourseInstanceJsonHash(courseInstanceJsonPath);
+    const origHash = await getOriginalHash(courseInstanceJsonPath);
 
     return { labels, origHash };
   });
@@ -194,32 +181,28 @@ const createLabelMutation = t.procedure
     const { course, course_instance, authz_data, locals } = opts.ctx;
     const { name, color, uids: rawUids, origHash } = opts.input;
 
-    const courseInstancePath = path.join(
-      course.path,
-      'courseInstances',
-      course_instance.short_name!,
-    );
-    const courseInstanceJsonPath = path.join(courseInstancePath, 'infoCourseInstance.json');
-    const paths = getPaths(undefined, locals);
-
-    const courseInstanceJson = await readCourseInstanceJson(courseInstancePath);
-    const studentLabels = parseStudentLabels(courseInstanceJson);
-
-    if (studentLabels.some((l) => l.name === name)) {
-      throw new TRPCError({
-        code: 'BAD_REQUEST',
-        message: 'A label with this name already exists',
-      });
-    }
-
     const newUuid = crypto.randomUUID();
-    studentLabels.push({ uuid: newUuid, name, color });
-    courseInstanceJson.studentLabels = studentLabels;
 
-    const saveResult = await saveCourseInstanceJson({
-      courseInstanceJson,
-      courseInstanceJsonPath,
-      paths,
+    const saveResult = await saveJsonFile<CourseInstanceJsonInput>({
+      applyChanges: (jsonContents) => {
+        const studentLabels = jsonContents.studentLabels ?? [];
+        if (studentLabels.some((l) => l.name === name)) {
+          throw new TRPCError({
+            code: 'BAD_REQUEST',
+            message: 'A label with this name already exists',
+          });
+        }
+        studentLabels.push({ uuid: newUuid, name, color });
+        jsonContents.studentLabels = studentLabels;
+        return jsonContents;
+      },
+      jsonPath: path.join(
+        course.path,
+        'courseInstances',
+        course_instance.short_name!,
+        'infoCourseInstance.json',
+      ),
+      errorMessage: 'Failed to save course instance configuration',
       origHash: origHash ?? '',
       locals,
     });
@@ -254,8 +237,7 @@ const createLabelMutation = t.procedure
       });
     }
 
-    const newHash = await computeCourseInstanceJsonHash(courseInstanceJsonPath);
-    return { origHash: newHash };
+    return { origHash: saveResult.origHash };
   });
 
 const editLabelMutation = t.procedure
@@ -273,44 +255,32 @@ const editLabelMutation = t.procedure
     const { course, course_instance, authz_data, locals } = opts.ctx;
     const { labelId, name, color, uids: rawUids, origHash } = opts.input;
 
-    const courseInstancePath = path.join(
-      course.path,
-      'courseInstances',
-      course_instance.short_name!,
-    );
-    const courseInstanceJsonPath = path.join(courseInstancePath, 'infoCourseInstance.json');
-    const paths = getPaths(undefined, locals);
-
     const label = await selectStudentLabelByIdOrNotFound({
       id: labelId,
       courseInstance: course_instance,
     });
 
-    const courseInstanceJson = await readCourseInstanceJson(courseInstancePath);
-    const studentLabels = parseStudentLabels(courseInstanceJson);
-
-    const labelIndex = studentLabels.findIndex((l) => l.uuid === label.uuid);
-    if (labelIndex === -1) {
-      throw new TRPCError({
-        code: 'BAD_REQUEST',
-        message: 'Label not found in JSON configuration',
-      });
-    }
-
-    if (name !== label.name && studentLabels.some((l) => l.name === name)) {
-      throw new TRPCError({
-        code: 'BAD_REQUEST',
-        message: 'A label with this name already exists',
-      });
-    }
-
-    studentLabels[labelIndex] = { uuid: studentLabels[labelIndex].uuid, name, color };
-    courseInstanceJson.studentLabels = studentLabels;
-
-    const saveResult = await saveCourseInstanceJson({
-      courseInstanceJson,
-      courseInstanceJsonPath,
-      paths,
+    const saveResult = await saveJsonFile<CourseInstanceJsonInput>({
+      applyChanges: (jsonContents) => {
+        const studentLabels = jsonContents.studentLabels ?? [];
+        const labelIndex = studentLabels.findIndex((l) => l.uuid === label.uuid);
+        if (labelIndex === -1) {
+          throw new TRPCError({
+            code: 'NOT_FOUND',
+            message: 'Label not found in course configuration',
+          });
+        }
+        studentLabels[labelIndex] = { uuid: studentLabels[labelIndex].uuid, name, color };
+        jsonContents.studentLabels = studentLabels;
+        return jsonContents;
+      },
+      jsonPath: path.join(
+        course.path,
+        'courseInstances',
+        course_instance.short_name!,
+        'infoCourseInstance.json',
+      ),
+      errorMessage: 'Failed to save course instance configuration',
       origHash: origHash ?? '',
       locals,
     });
@@ -363,8 +333,7 @@ const editLabelMutation = t.procedure
       });
     }
 
-    const newHash = await computeCourseInstanceJsonHash(courseInstanceJsonPath);
-    return { origHash: newHash };
+    return { origHash: saveResult.origHash };
   });
 
 const deleteLabelMutation = t.procedure
@@ -379,37 +348,32 @@ const deleteLabelMutation = t.procedure
     const { course, course_instance, locals } = opts.ctx;
     const { labelId, origHash } = opts.input;
 
-    const courseInstancePath = path.join(
-      course.path,
-      'courseInstances',
-      course_instance.short_name!,
-    );
-    const courseInstanceJsonPath = path.join(courseInstancePath, 'infoCourseInstance.json');
-    const paths = getPaths(undefined, locals);
-
     const label = await selectStudentLabelByIdOrNotFound({
       id: labelId,
       courseInstance: course_instance,
     });
 
-    const courseInstanceJson = await readCourseInstanceJson(courseInstancePath);
-    const studentLabels = parseStudentLabels(courseInstanceJson);
-
-    const labelIndex = studentLabels.findIndex((l) => l.uuid === label.uuid);
-    if (labelIndex === -1) {
-      throw new TRPCError({
-        code: 'NOT_FOUND',
-        message: 'Label not found in course configuration',
-      });
-    }
-
-    studentLabels.splice(labelIndex, 1);
-    courseInstanceJson.studentLabels = studentLabels;
-
-    const saveResult = await saveCourseInstanceJson({
-      courseInstanceJson,
-      courseInstanceJsonPath,
-      paths,
+    const saveResult = await saveJsonFile<CourseInstanceJsonInput>({
+      applyChanges: (jsonContents) => {
+        const studentLabels = jsonContents.studentLabels ?? [];
+        const labelIndex = studentLabels.findIndex((l) => l.uuid === label.uuid);
+        if (labelIndex === -1) {
+          throw new TRPCError({
+            code: 'NOT_FOUND',
+            message: 'Label not found in course configuration',
+          });
+        }
+        studentLabels.splice(labelIndex, 1);
+        jsonContents.studentLabels = studentLabels;
+        return jsonContents;
+      },
+      jsonPath: path.join(
+        course.path,
+        'courseInstances',
+        course_instance.short_name!,
+        'infoCourseInstance.json',
+      ),
+      errorMessage: 'Failed to save course instance configuration',
       origHash: origHash ?? '',
       locals,
     });
@@ -422,8 +386,7 @@ const deleteLabelMutation = t.procedure
       });
     }
 
-    const newHash = await computeCourseInstanceJsonHash(courseInstanceJsonPath);
-    return { origHash: newHash };
+    return { origHash: saveResult.origHash };
   });
 
 const batchAddLabelMutation = t.procedure

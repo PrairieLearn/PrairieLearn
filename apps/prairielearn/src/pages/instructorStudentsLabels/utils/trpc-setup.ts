@@ -3,7 +3,7 @@ import * as path from 'path';
 import { generatePrefixCsrfToken } from '@prairielearn/signed-token';
 
 import { config } from '../../../lib/config.js';
-import { computeCourseInstanceJsonHash } from '../../../lib/courseInstanceJson.js';
+import { getOriginalHash } from '../../../lib/editors.js';
 
 export async function getStudentLabelsTrpcProps({
   course,
@@ -26,7 +26,7 @@ export async function getStudentLabelsTrpcProps({
 
   const courseInstancePath = path.join(course.path, 'courseInstances', courseInstance.short_name!);
   const courseInstanceJsonPath = path.join(courseInstancePath, 'infoCourseInstance.json');
-  const origHash = await computeCourseInstanceJsonHash(courseInstanceJsonPath);
+  const origHash = await getOriginalHash(courseInstanceJsonPath);
 
   return { trpcUrl, trpcCsrfToken, origHash };
 }

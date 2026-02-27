@@ -6,13 +6,16 @@ import fetch from 'node-fetch';
 import superjson from 'superjson';
 import { afterAll, assert, beforeAll, describe, test } from 'vitest';
 
-import { queryRows } from '@prairielearn/postgres';
-
+import { dangerousFullSystemAuthz } from '../lib/authz-data-lib.js';
 import { config } from '../lib/config.js';
-import { EnrollmentSchema, type StudentLabel } from '../lib/db-types.js';
+import type { CourseInstance, StudentLabel } from '../lib/db-types.js';
 import { TEST_COURSE_PATH } from '../lib/paths.js';
 import { selectCourseInstanceById } from '../models/course-instances.js';
-import { generateAndEnrollUsers } from '../models/enrollment.js';
+import {
+  generateAndEnrollUsers,
+  selectEnrollmentsByIdsInCourseInstance,
+  selectEnrollmentsByUidsOrPendingUidsInCourseInstance,
+} from '../models/enrollment.js';
 import { createStudentLabel, selectEnrollmentsInStudentLabel } from '../models/student-label.js';
 import type { StudentLabelsRouter } from '../pages/instructorInstanceAdminTrpc/trpc.js';
 
@@ -53,6 +56,7 @@ async function createTrpcClient() {
 }
 
 describe('Student labels batch actions', () => {
+  let courseInstance: CourseInstance;
   let label: StudentLabel;
   let enrollmentIds: string[];
   let courseRepo: CourseRepoFixture;
@@ -62,16 +66,16 @@ describe('Student labels batch actions', () => {
     await helperServer.before(courseRepo.courseLiveDir)();
     await updateCourseRepository({ courseId: '1', repository: courseRepo.courseOriginDir });
 
+    courseInstance = await selectCourseInstanceById('1');
     const users = await generateAndEnrollUsers({ count: 3, course_instance_id: '1' });
-    const userIds = users.map((u) => u.id);
-    const enrollments = await queryRows(
-      'SELECT * FROM enrollments WHERE user_id = ANY($1::bigint[])',
-      [userIds],
-      EnrollmentSchema,
-    );
-    enrollmentIds = enrollments.map((e) => e.id);
+    const uidEnrollments = await selectEnrollmentsByUidsOrPendingUidsInCourseInstance({
+      uids: users.map((u) => u.uid),
+      courseInstance,
+      requiredRole: ['System'],
+      authzData: dangerousFullSystemAuthz(),
+    });
+    enrollmentIds = uidEnrollments.map((e) => e.enrollment.id);
 
-    const courseInstance = await selectCourseInstanceById('1');
     label = await createStudentLabel({
       courseInstance,
       uuid: crypto.randomUUID(),
@@ -93,6 +97,14 @@ describe('Student labels batch actions', () => {
       enrollmentIds,
       labelId: label.id,
     });
+
+    const enrollments = await selectEnrollmentsByIdsInCourseInstance({
+      ids: enrollmentIds,
+      courseInstance,
+      requiredRole: ['System'],
+      authzData: dangerousFullSystemAuthz(),
+    });
+    assert.equal(enrollments.length, 3);
 
     const studentsWithLabel = (await selectEnrollmentsInStudentLabel(label)).map((e) => e.id);
     assert.equal(studentsWithLabel.length, 3);

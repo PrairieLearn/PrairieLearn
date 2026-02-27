@@ -14,8 +14,8 @@ import { afterAll, assert, beforeAll, describe, test } from 'vitest';
 import { queryOptionalRow, queryRows } from '@prairielearn/postgres';
 
 import { config } from '../lib/config.js';
-import { computeCourseInstanceJsonHash } from '../lib/courseInstanceJson.js';
 import { EnrollmentSchema } from '../lib/db-types.js';
+import { getOriginalHash } from '../lib/editors.js';
 import { TEST_COURSE_PATH } from '../lib/paths.js';
 import { selectCourseInstanceById } from '../models/course-instances.js';
 import { generateAndEnrollUsers } from '../models/enrollment.js';
@@ -36,14 +36,13 @@ import * as helperServer from './helperServer.js';
 const siteUrl = `http://localhost:${config.serverPort}`;
 const labelsUrl = `${siteUrl}/pl/course_instance/1/instructor/instance_admin/students/labels`;
 
-async function getOrigHash(courseLiveDir: string, courseInstanceShortName: string) {
-  const courseInstanceJsonPath = path.join(
+function getCourseInstanceJsonPath(courseLiveDir: string, courseInstanceShortName: string) {
+  return path.join(
     courseLiveDir,
     'courseInstances',
     courseInstanceShortName,
     'infoCourseInstance.json',
   );
-  return await computeCourseInstanceJsonHash(courseInstanceJsonPath);
 }
 
 async function createTrpcClient() {
@@ -126,7 +125,9 @@ describe('Instructor student labels page', () => {
 
   test.sequential('should handle create label operations', async () => {
     const trpcClient = await createTrpcClient();
-    let origHash = await getOrigHash(courseRepo.courseLiveDir, courseInstanceShortName);
+    let origHash = await getOriginalHash(
+      getCourseInstanceJsonPath(courseRepo.courseLiveDir, courseInstanceShortName),
+    );
 
     // Create label without students
     await trpcClient.createLabel.mutate({
@@ -144,7 +145,9 @@ describe('Instructor student labels page', () => {
     assert.equal(labelA.color, 'blue1');
 
     // Refresh origHash after the first mutation
-    origHash = await getOrigHash(courseRepo.courseLiveDir, courseInstanceShortName);
+    origHash = await getOriginalHash(
+      getCourseInstanceJsonPath(courseRepo.courseLiveDir, courseInstanceShortName),
+    );
 
     // Create label with students
     await trpcClient.createLabel.mutate({
@@ -163,7 +166,9 @@ describe('Instructor student labels page', () => {
     assert.includeMembers(studentsWithLabelB, [enrollmentIds[0], enrollmentIds[1]]);
 
     // Refresh origHash after the second mutation
-    origHash = await getOrigHash(courseRepo.courseLiveDir, courseInstanceShortName);
+    origHash = await getOriginalHash(
+      getCourseInstanceJsonPath(courseRepo.courseLiveDir, courseInstanceShortName),
+    );
 
     // Attempt to create label with duplicate name - should fail
     try {
@@ -195,7 +200,9 @@ describe('Instructor student labels page', () => {
 
   test.sequential('should handle edit label operations', async () => {
     const trpcClient = await createTrpcClient();
-    let origHash = await getOrigHash(courseRepo.courseLiveDir, courseInstanceShortName);
+    let origHash = await getOriginalHash(
+      getCourseInstanceJsonPath(courseRepo.courseLiveDir, courseInstanceShortName),
+    );
 
     // Get current labels
     let labels = await selectStudentLabelsInCourseInstance(await selectCourseInstanceById('1'));
@@ -217,7 +224,9 @@ describe('Instructor student labels page', () => {
     assert.isDefined(labelA);
 
     // Refresh origHash after the mutation
-    origHash = await getOrigHash(courseRepo.courseLiveDir, courseInstanceShortName);
+    origHash = await getOriginalHash(
+      getCourseInstanceJsonPath(courseRepo.courseLiveDir, courseInstanceShortName),
+    );
 
     // Edit label color
     await trpcClient.editLabel.mutate({
@@ -234,7 +243,9 @@ describe('Instructor student labels page', () => {
     assert.equal(labelA.color, 'purple3');
 
     // Refresh origHash after the mutation
-    origHash = await getOrigHash(courseRepo.courseLiveDir, courseInstanceShortName);
+    origHash = await getOriginalHash(
+      getCourseInstanceJsonPath(courseRepo.courseLiveDir, courseInstanceShortName),
+    );
 
     // Add students to label via edit
     await trpcClient.editLabel.mutate({
@@ -250,7 +261,9 @@ describe('Instructor student labels page', () => {
     assert.include(studentsWithLabel, enrollmentIds[2]);
 
     // Refresh origHash after the mutation
-    origHash = await getOrigHash(courseRepo.courseLiveDir, courseInstanceShortName);
+    origHash = await getOriginalHash(
+      getCourseInstanceJsonPath(courseRepo.courseLiveDir, courseInstanceShortName),
+    );
 
     // Remove students via edit (set empty uids)
     await trpcClient.editLabel.mutate({
@@ -265,7 +278,9 @@ describe('Instructor student labels page', () => {
     assert.equal(studentsWithLabel.length, 0);
 
     // Refresh origHash after the mutation
-    origHash = await getOrigHash(courseRepo.courseLiveDir, courseInstanceShortName);
+    origHash = await getOriginalHash(
+      getCourseInstanceJsonPath(courseRepo.courseLiveDir, courseInstanceShortName),
+    );
 
     // Attempt to rename to existing label name - should fail
     const labelB = labels.find((l) => l.name === 'Test Label B');
@@ -288,7 +303,9 @@ describe('Instructor student labels page', () => {
 
   test.sequential('should handle delete label operations', async () => {
     const trpcClient = await createTrpcClient();
-    let origHash = await getOrigHash(courseRepo.courseLiveDir, courseInstanceShortName);
+    let origHash = await getOriginalHash(
+      getCourseInstanceJsonPath(courseRepo.courseLiveDir, courseInstanceShortName),
+    );
 
     // Get current labels
     let labels = await selectStudentLabelsInCourseInstance(await selectCourseInstanceById('1'));
@@ -306,7 +323,9 @@ describe('Instructor student labels page', () => {
     assert.isUndefined(deletedLabel);
 
     // Refresh origHash after the mutation
-    origHash = await getOrigHash(courseRepo.courseLiveDir, courseInstanceShortName);
+    origHash = await getOriginalHash(
+      getCourseInstanceJsonPath(courseRepo.courseLiveDir, courseInstanceShortName),
+    );
 
     // Attempt to delete non-existent label - should fail with NOT_FOUND
     try {
@@ -346,7 +365,9 @@ describe('Instructor student labels page', () => {
     assert.deepEqual(mixedResult.unenrolledUids, [unknownUid]);
 
     // Create a label with the invited student
-    const origHash = await getOrigHash(courseRepo.courseLiveDir, courseInstanceShortName);
+    const origHash = await getOriginalHash(
+      getCourseInstanceJsonPath(courseRepo.courseLiveDir, courseInstanceShortName),
+    );
     await trpcClient.createLabel.mutate({
       name: 'Invited Label',
       color: 'red1',
