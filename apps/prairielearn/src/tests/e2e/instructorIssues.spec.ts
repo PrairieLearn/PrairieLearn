@@ -385,7 +385,7 @@ test.describe('Instructor issues page', () => {
       });
       const assessment = await selectAssessmentByTid({
         course_instance_id: courseInstance.id,
-        tid: 'exam1-automaticTestSuite',
+        tid: 'exam2-miscProblems',
       });
 
       const variantId = await insertTestVariant({
@@ -415,7 +415,7 @@ test.describe('Instructor issues page', () => {
       await page.goto(ISSUES_URL);
 
       await expect(
-        page.getByText('Deleted assessment: exam1-automaticTestSuite').first(),
+        page.getByText('Deleted assessment: exam2-miscProblems').first(),
       ).toBeVisible();
     });
   });
