@@ -1,5 +1,11 @@
 # @prairielearn/formatter
 
+## 2.2.0
+
+### Minor Changes
+
+- 3d31293: Add `truncateMiddle` function that truncates a string in the middle, preserving both the start and end to maintain recognizability
+
 ## 2.1.0
 
 ### Minor Changes
