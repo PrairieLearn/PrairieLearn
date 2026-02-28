@@ -5,6 +5,27 @@ SET
 WHERE
   id = $issue_id;
 
+-- BLOCK update_assessment_deleted_at
+UPDATE assessments
+SET
+  deleted_at = $deleted_at::timestamptz
+WHERE
+  id = $assessment_id;
+
+-- BLOCK set_issue_assessment
+UPDATE issues
+SET
+  assessment_id = $assessment_id
+WHERE
+  id = $issue_id;
+
+-- BLOCK update_assessment_set_id
+UPDATE assessments
+SET
+  assessment_set_id = $assessment_set_id
+WHERE
+  id = $assessment_id;
+
 -- BLOCK insert_test_variant
 INSERT INTO
   variants (

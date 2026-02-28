@@ -121,6 +121,17 @@ When testing [docker images](../dockerImages.md) locally, you may want to force 
 }
 ```
 
+## File storage
+
+By default, PrairieLearn stores uploaded files (such as file editor drafts) in S3. If [s3rver](https://github.com/jamhall/s3rver) is not running or port 5000 is unavailable, you may see `NoSuchBucket` errors. To use the local filesystem instead of S3, set `fileStoreStorageTypeDefault` to `"FileSystem"`:
+
+```json title="config.json"
+{
+  "fileStoreStorageTypeDefault": "FileSystem",
+  "filesRoot": "/tmp/pl-files"
+}
+```
+
 ## Enterprise
 
 Some features of PrairieLearn are only available in the Enterprise Edition. Note that you must adhere to the [PrairieLearn license](https://github.com/PrairieLearn/PrairieLearn/blob/master/LICENSE) when setting this option.

@@ -2,7 +2,7 @@ import { formatDistance } from 'date-fns';
 import { z } from 'zod';
 
 import { formatDate } from '@prairielearn/formatter';
-import { IdSchema } from '@prairielearn/zod';
+import { DateFromISOString, IdSchema } from '@prairielearn/zod';
 
 import { AssessmentBadge } from '../../components/AssessmentBadge.js';
 import { Pager } from '../../components/Pager.js';
@@ -24,7 +24,12 @@ export const IssueRowSchema = IssueSchema.extend({
   display_timezone: CourseInstanceSchema.shape.display_timezone,
   assessment_id: IdSchema.nullable(),
   assessment: z
-    .object({ label: z.string(), assessment_id: IdSchema, color: AssessmentSetSchema.shape.color })
+    .object({
+      label: z.string(),
+      assessment_id: IdSchema,
+      color: AssessmentSetSchema.shape.color,
+      deleted_at: DateFromISOString.nullable(),
+    })
     .nullable(),
   assessment_instance_id: IdSchema.nullable(),
   question_qid: QuestionSchema.shape.qid.nullable(),
@@ -252,6 +257,32 @@ function IssueRow({
               {' '}
               (<a href={`${questionPreviewUrl}?variant_id=${issue.variant_id}`}>instructor view</a>)
             </>
+          ) : !issue.assessment || issue.assessment.deleted_at ? (
+            // Assessment is deleted or has a missing assessment set
+            <>
+              {' '}
+              (
+              <a
+                href={`${questionPreviewUrl}?variant_${issue.showUser ? `id=${issue.variant_id}` : `seed=${issue.variant_seed}`}`}
+              >
+                instructor view
+              </a>
+              )
+              {!issue.showUser && (
+                <>
+                  {' '}
+                  <button
+                    type="button"
+                    className="badge text-bg-warning badge-sm"
+                    data-bs-toggle="tooltip"
+                    data-bs-html="true"
+                    title={`This issue was raised in course instance <strong>${issue.course_instance_short_name}</strong>. You do not have student data access for ${issue.course_instance_short_name}, so you can't view some of the issue details. Student data access can be granted by a course owner on the Staff page.`}
+                  >
+                    No student data access
+                  </button>
+                </>
+              )}
+            </>
           ) : issue.showUser ? (
             <>
               {' '}
@@ -298,21 +329,36 @@ function IssueRow({
             </>
           )}
         </small>
-        {issue.manually_reported ? (
-          <span className="badge text-bg-info">Manually reported</span>
-        ) : (
-          <span className="badge text-bg-warning">Automatically reported</span>
-        )}
-        {issue.assessment && issue.course_instance_id && (
-          <AssessmentBadge
-            courseInstanceId={issue.course_instance_id}
-            hideLink={issue.hideAssessmentLink}
-            assessment={issue.assessment}
-          />
-        )}
-        {issue.course_instance_short_name && (
-          <span className="badge text-bg-dark">{issue.course_instance_short_name}</span>
-        )}
+        <span className="d-inline-flex gap-1 align-items-center">
+          {issue.manually_reported ? (
+            <span className="badge text-bg-info">Manually reported</span>
+          ) : (
+            <span className="badge text-bg-warning">Automatically reported</span>
+          )}
+          {issue.assessment && !issue.assessment.deleted_at && issue.course_instance_id ? (
+            <AssessmentBadge
+              courseInstanceId={issue.course_instance_id}
+              hideLink={issue.hideAssessmentLink}
+              assessment={issue.assessment}
+            />
+          ) : (
+            issue.assessment_id &&
+            (issue.assessment ? (
+              <AssessmentBadge
+                assessment={{
+                  ...issue.assessment,
+                  label: `Deleted assessment: ${issue.assessment.label}`,
+                }}
+                hideLink
+              />
+            ) : (
+              <span className="badge text-bg-danger">Deleted assessment</span>
+            ))
+          )}
+          {issue.course_instance_short_name && (
+            <span className="badge text-bg-dark">{issue.course_instance_short_name}</span>
+          )}
+        </span>
       </div>
       {hasCoursePermissionEdit && (
         <div className="ms-auto ps-4">
