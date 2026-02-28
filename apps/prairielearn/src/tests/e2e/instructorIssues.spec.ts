@@ -1,11 +1,10 @@
-import type { Page } from '@playwright/test';
-
 import * as sqldb from '@prairielearn/postgres';
 import { IdSchema } from '@prairielearn/zod';
 
 import { insertIssue } from '../../lib/issues.js';
 import { selectCourseByShortName } from '../../models/course.js';
 import { selectQuestionByQid } from '../../models/question.js';
+import { syncCourse } from '../helperCourse.js';
 import { type AuthUser, getOrCreateUser } from '../utils/auth.js';
 
 import { expect, test } from './fixtures.js';
@@ -41,12 +40,6 @@ async function insertTestVariant({
     },
     IdSchema,
   );
-}
-
-async function syncAllCourses(page: Page) {
-  await page.goto('/pl/loadFromDisk');
-  await expect(page).toHaveURL(/\/jobSequence\//);
-  await expect(page.getByText('Success', { exact: true })).toBeVisible({ timeout: 30_000 });
 }
 
 const TEST_USER: AuthUser = {
@@ -138,10 +131,10 @@ async function createTestIssues() {
 }
 
 test.describe('Instructor issues page', () => {
-  test.beforeAll(async ({ browser, workerPort }) => {
-    const page = await browser.newPage({ baseURL: `http://localhost:${workerPort}` });
-    await syncAllCourses(page);
-    await page.close();
+  test.describe.configure({ mode: 'serial' });
+
+  test.beforeAll(async ({ testCoursePath }) => {
+    await syncCourse(testCoursePath);
     await createTestIssues();
   });
 
