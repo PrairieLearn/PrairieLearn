@@ -3,8 +3,8 @@ import { IdSchema } from '@prairielearn/zod';
 
 import { insertIssue } from '../../lib/issues.js';
 import { selectAssessmentByTid } from '../../models/assessment.js';
-import { selectCourseByShortName } from '../../models/course.js';
 import { selectCourseInstanceByShortName } from '../../models/course-instances.js';
+import { selectCourseByShortName } from '../../models/course.js';
 import { selectQuestionByQid } from '../../models/question.js';
 import { syncCourse } from '../helperCourse.js';
 import { type AuthUser, getOrCreateUser } from '../utils/auth.js';
