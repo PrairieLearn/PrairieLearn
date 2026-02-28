@@ -335,6 +335,7 @@ BEGIN
                 max_points,
                 number_choose,
                 best_questions,
+                lockpoint,
                 advance_score_perc,
                 json_allow_real_time_grading,
                 json_grade_rate_minutes,
@@ -349,6 +350,7 @@ BEGIN
                 (zone->>'max_points')::double precision,
                 (zone->>'number_choose')::integer,
                 (zone->>'best_questions')::integer,
+                (zone->>'lockpoint')::boolean,
                 (zone->>'advance_score_perc')::double precision,
                 (zone->>'allow_real_time_grading')::boolean,
                 (zone->>'grade_rate_minutes')::double precision,
@@ -362,6 +364,7 @@ BEGIN
                 max_points = EXCLUDED.max_points,
                 number_choose = EXCLUDED.number_choose,
                 best_questions = EXCLUDED.best_questions,
+                lockpoint = EXCLUDED.lockpoint,
                 advance_score_perc = EXCLUDED.advance_score_perc,
                 json_allow_real_time_grading = EXCLUDED.json_allow_real_time_grading,
                 json_grade_rate_minutes = EXCLUDED.json_grade_rate_minutes,
@@ -457,8 +460,8 @@ BEGIN
                             RAISE EXCEPTION 'Question ID should not be null';
                         END IF;
 
-                        INSERT INTO questions AS dest (course_id, qid, uuid, deleted_at, external_grading_enabled)
-                        VALUES (syncing_course_id, null, null, null, false) RETURNING dest.id INTO new_question_id;
+                        INSERT INTO questions AS dest (course_id, qid, uuid, deleted_at)
+                        VALUES (syncing_course_id, null, null, null) RETURNING dest.id INTO new_question_id;
                     ELSE
                         new_question_id := (assessment_question->>'question_id')::bigint;
                     END IF;
