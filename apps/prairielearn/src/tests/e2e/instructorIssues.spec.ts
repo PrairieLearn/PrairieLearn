@@ -414,9 +414,7 @@ test.describe('Instructor issues page', () => {
 
       await page.goto(ISSUES_URL);
 
-      await expect(
-        page.getByText('Deleted assessment: exam2-miscProblems').first(),
-      ).toBeVisible();
+      await expect(page.getByText('Deleted assessment: exam2-miscProblems').first()).toBeVisible();
     });
   });
 });
