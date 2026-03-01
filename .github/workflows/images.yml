@@ -65,7 +65,7 @@ jobs:
         run: mkdir -p ${{ runner.temp }}/image-metadata
 
       - name: Download metadata
-        uses: actions/download-artifact@v7
+        uses: actions/download-artifact@v8
         continue-on-error: true
         with:
           pattern: image-metadata-*-${{ env.COMMIT_SHA }}
