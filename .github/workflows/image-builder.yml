@@ -60,7 +60,7 @@ jobs:
           DIFF_BASE: ${{ github.event.before || '' }}
 
       - name: Upload metadata
-        uses: actions/upload-artifact@v6
+        uses: actions/upload-artifact@v7
         with:
           name: image-metadata-${{ inputs.group }}-${{ matrix.os }}-${{ env.COMMIT_SHA }}
           path: ${{ runner.temp }}/image-metadata-${{ inputs.group }}
