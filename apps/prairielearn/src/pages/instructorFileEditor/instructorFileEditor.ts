@@ -159,13 +159,17 @@ router.get(
             // be true. Note that the cause of sync failure could be a file
             // other than the one being edited.
             //
+            // We also check for `hadJsonErrors`, which means the sync ran
+            // to completion but some entities had invalid JSON (see editors.ts)
+            // In this case, the job failed, but the sync succeeded overall.
+
             // By "the sync" we mean "the sync after a successfully saved
             // edit." Remember that, if using git, we pull before we push.
             // So, if we error on save, then we still try to sync whatever
             // was pulled from the remote repository, even though changes
             // made by the edit will have been discarded. We ignore this
             // in the UI for now.
-            if (job.data.syncSucceeded) {
+            if (job.data.syncSucceeded || job.data.hadJsonErrors) {
               draftEdit.didSync = true;
             }
             // A sync can succeed overall while individual entities have
