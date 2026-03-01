@@ -168,6 +168,13 @@ router.get(
             if (job.data.syncSucceeded) {
               draftEdit.didSync = true;
             }
+            // A sync can succeed overall while individual entities have
+            // JSON errors. We track this separately so the file editor can
+            // distinguish "this file has errors" (per-entity sync_errors)
+            // from "some other file in the course has errors."
+            if (job.data.hadJsonErrors) {
+              draftEdit.hadJsonErrors = true;
+            }
           }
         }
 

@@ -608,8 +608,8 @@ function doEdits(data: {
 
     if (data.isJson) {
       editPost('save_and_sync', data.contentsX, data.url, true, false, null);
-      waitForJobSequence(locals, 'Error');
-      // (X, X, C*, X) <- successful push but failed sync because of bad json
+      waitForJobSequence(locals, 'Success');
+      // (X, X, C*, X) <- successful push, sync completed with per-entity errors
 
       pullAndVerifyFileInDev(data.path, data.contentsX);
       // (X, X, X, X)

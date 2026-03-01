@@ -80,8 +80,13 @@ async function syncCourseFromDisk(
 
   await updateCourseCommitHash(course);
 
+  // JSON errors mean individual entities failed to sync (e.g., a question has
+  // invalid JSON), but the sync as a whole completed. We signal this via
+  // job.data rather than throwing so that the job finishes with status
+  // 'Success' — the file editor uses per-entity sync_errors from the database
+  // to show the user whether *their* file has errors vs. unrelated files.
   if (syncResult.hadJsonErrors) {
-    throw new Error('One or more JSON files contained errors and were unable to be synced');
+    job.data.hadJsonErrors = true;
   }
 }
 
