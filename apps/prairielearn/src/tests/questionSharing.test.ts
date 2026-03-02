@@ -4,7 +4,7 @@ import * as path from 'node:path';
 import { execa } from 'execa';
 import fs from 'fs-extra';
 import fetch from 'node-fetch';
-import { afterAll, assert, beforeAll, describe, test } from 'vitest';
+import { afterAll, assert, beforeAll, describe, expect, test } from 'vitest';
 
 import * as sqldb from '@prairielearn/postgres';
 import { IdSchema } from '@prairielearn/zod';
@@ -25,6 +25,7 @@ import {
 import * as helperServer from './helperServer.js';
 import { makeMockLogger } from './mockLogger.js';
 import * as syncUtil from './sync/util.js';
+import { withConfig } from './utils/config.js';
 import { getCsrfToken } from './utils/csrf.js';
 
 const sql = sqldb.loadSqlEquiv(import.meta.url);
@@ -806,6 +807,56 @@ describe('Question Sharing', function () {
         );
 
         await ensureInvalidSharingOperationFailsToSync();
+      },
+    );
+  });
+
+  describe('Test that deleted shared questions are excluded from imports', function () {
+    test.sequential(
+      'Soft-delete a sharing-set question, ensure consuming course sync reports errors',
+      async () => {
+        await withConfig({ checkSharingOnSync: true }, async () => {
+          await sqldb.execute(sql.set_question_deleted_at, {
+            deleted_at: new Date(),
+            course_id: sharingCourse.id,
+            qid: SHARING_QUESTION_QID,
+          });
+
+          const syncResult = await syncFromDisk.syncOrCreateDiskToSql(consumingCourse.path, logger);
+          expect(
+            syncResult.status !== 'complete' || syncResult.hadJsonErrorsOrWarnings,
+          ).toBeTruthy();
+
+          await sqldb.execute(sql.set_question_deleted_at, {
+            deleted_at: null,
+            course_id: sharingCourse.id,
+            qid: SHARING_QUESTION_QID,
+          });
+        });
+      },
+    );
+
+    test.sequential(
+      'Soft-delete a publicly shared question, ensure consuming course sync reports errors',
+      async () => {
+        await withConfig({ checkSharingOnSync: true }, async () => {
+          await sqldb.execute(sql.set_question_deleted_at, {
+            deleted_at: new Date(),
+            course_id: sharingCourse.id,
+            qid: PUBLICLY_SHARED_QUESTION_QID,
+          });
+
+          const syncResult = await syncFromDisk.syncOrCreateDiskToSql(consumingCourse.path, logger);
+          expect(
+            syncResult.status !== 'complete' || syncResult.hadJsonErrorsOrWarnings,
+          ).toBeTruthy();
+
+          await sqldb.execute(sql.set_question_deleted_at, {
+            deleted_at: null,
+            course_id: sharingCourse.id,
+            qid: PUBLICLY_SHARED_QUESTION_QID,
+          });
+        });
       },
     );
   });

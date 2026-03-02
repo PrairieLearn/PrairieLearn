@@ -179,16 +179,22 @@
       reader.onload = (e) => {
         const dataUrl = e.target.result;
 
+        // Extract base64 data from the data URL. The data URL format is
+        // "data:<mime>;base64,<data>". For empty files, some browsers (e.g.
+        // Chrome) return just "data:" with no comma, while others (e.g.
+        // Firefox) return "data:...;base64," with an empty string after
+        // the comma. We check for both cases.
         const commaSplitIdx = dataUrl.indexOf(',');
-        if (commaSplitIdx === -1) {
+        const base64FileData = commaSplitIdx === -1 ? '' : dataUrl.slice(commaSplitIdx + 1);
+
+        if (!base64FileData) {
           this.addWarningMessage(
             `<strong>${escapeFileName(name)}</strong> is empty, ignoring file.`,
           );
+          this.renderFileList();
           return;
         }
 
-        // Store the file as base-64 encoded data
-        const base64FileData = dataUrl.slice(commaSplitIdx + 1);
         this.saveSubmittedFile(name, size, isFromDownload ? null : new Date(), base64FileData);
         this.refreshRequiredRegex();
         this.renderFileList();
