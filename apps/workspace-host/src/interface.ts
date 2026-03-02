@@ -498,6 +498,7 @@ async function _getWorkspace(workspace_id: string | number) {
     { workspace_id, instance_id: workspace_server_settings.instance_id },
     // Safety check. In production, this should never happen
     // (the query above hasn't returned a null launch_uuid since 2022).
+    // https://github.com/PrairieLearn/PrairieLearn/pull/14232#discussion_r2873015226
     WorkspaceRowSchema.extend({ launch_uuid: z.string() }),
   );
 
