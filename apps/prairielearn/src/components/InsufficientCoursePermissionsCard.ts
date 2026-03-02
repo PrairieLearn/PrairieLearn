@@ -47,12 +47,14 @@ function InsufficientCoursePermissionsCard({
   urlPrefix: string;
 }) {
   return html`<div class="card mb-4">
-    <div class="card-header bg-danger text-white">
+    <div class="card-header bg-primary text-white">
       <h1>${pageTitle}</h1>
     </div>
     <div class="card-body">
-      <h2>Insufficient permissions</h2>
-      <p>You must have at least &quot;${requiredPermissions}&quot; permissions for this course.</p>
+      <p>
+        You don't have permission to view this page. It requires at least
+        &quot;${requiredPermissions}&quot; permissions for this course.
+      </p>
       ${hasCoursePermissionOwn
         ? html`<p>
             You can grant yourself the necessary permissions on the course's
