@@ -4990,7 +4990,7 @@ __metadata:
     body-parser: "npm:^2.2.2"
     bootstrap: "npm:^5.3.8"
     bootstrap-icons: "npm:^1.13.1"
-    bootstrap-table: "npm:1.27.0"
+    bootstrap-table: "npm:1.21.2"
     byline: "npm:^5.0.0"
     chalk: "npm:^5.6.2"
     cheerio: "npm:^1.2.0"
@@ -5119,7 +5119,7 @@ __metadata:
     tsx: "npm:^4.21.0"
     typescript: "npm:^5.9.3"
     typescript-cp: "npm:^0.1.9"
-    ua-parser-js: "npm:^2.0.9"
+    ua-parser-js: "npm:^1.0.41 <2.0.0"
     unified: "npm:^11.0.5"
     unzipper: "npm:^0.12.3"
     use-stick-to-bottom: "npm:^1.1.3"
@@ -11091,12 +11091,12 @@ __metadata:
   languageName: node
   linkType: hard
 
-"bootstrap-table@npm:1.27.0":
-  version: 1.27.0
-  resolution: "bootstrap-table@npm:1.27.0"
+"bootstrap-table@npm:1.21.2":
+  version: 1.21.2
+  resolution: "bootstrap-table@npm:1.21.2"
   peerDependencies:
-    jquery: 3 || 4
-  checksum: 10c0/aa42da371d3b0ed285946ba7569d2c5b2b3408326b2ca734b9bd69dc3729733b08d1c16aef7bf2b5a7841eddba9d420ec33cec59aef63e934ee3bb08bc1892bc
+    jquery: 1.9.1 - 3
+  checksum: 10c0/374e3376ab666a7b4e516cdd23a25431564c74ede1f0f41c55dbfe6a3c51372e4a8da4dca19e0f4ea14ead1cfe6258bd598ea214835e926e72dbfbff24175c67
   languageName: node
   linkType: hard
 
@@ -12616,13 +12616,6 @@ __metadata:
   version: 1.2.0
   resolution: "destroy@npm:1.2.0"
   checksum: 10c0/bd7633942f57418f5a3b80d5cb53898127bcf53e24cdf5d5f4396be471417671f0fee48a4ebe9a1e9defbde2a31280011af58a57e090ff822f589b443ed4e643
-  languageName: node
-  linkType: hard
-
-"detect-europe-js@npm:^0.1.2":
-  version: 0.1.2
-  resolution: "detect-europe-js@npm:0.1.2"
-  checksum: 10c0/46fccf2a9ddeec8ecb7a369be1452f84856cbd0ccdeb3c47e41fe6c9d69f63d6bd75f91b5aa1ae310e56d8fbcbff0e802b1504cdcc3a92f3327c94408e6d07a2
   languageName: node
   linkType: hard
 
@@ -15410,13 +15403,6 @@ __metadata:
   version: 1.0.1
   resolution: "is-potential-custom-element-name@npm:1.0.1"
   checksum: 10c0/b73e2f22bc863b0939941d369486d308b43d7aef1f9439705e3582bfccaa4516406865e32c968a35f97a99396dac84e2624e67b0a16b0a15086a785e16ce7db9
-  languageName: node
-  linkType: hard
-
-"is-standalone-pwa@npm:^0.1.1":
-  version: 0.1.1
-  resolution: "is-standalone-pwa@npm:0.1.1"
-  checksum: 10c0/af1a11edef4a8f00c24014576285070fb73eebb3583cae790c0a825e338e19f05048a26e5fd5ef10f6056032d6a4520054ff824532c15df784933c0fcc5e13fd
   languageName: node
   linkType: hard
 
@@ -21404,23 +21390,12 @@ __metadata:
   languageName: node
   linkType: hard
 
-"ua-is-frozen@npm:^0.1.2":
-  version: 0.1.2
-  resolution: "ua-is-frozen@npm:0.1.2"
-  checksum: 10c0/fb41929bd4924c9676391e6d7197d30580749a96697a83c8b6e77fb137e3ff8492dcd1e6f871f6a9517848651a93af37bfefb25385f16d90e19678ade22d30b7
-  languageName: node
-  linkType: hard
-
-"ua-parser-js@npm:^2.0.9":
-  version: 2.0.9
-  resolution: "ua-parser-js@npm:2.0.9"
-  dependencies:
-    detect-europe-js: "npm:^0.1.2"
-    is-standalone-pwa: "npm:^0.1.1"
-    ua-is-frozen: "npm:^0.1.2"
+"ua-parser-js@npm:^1.0.41 <2.0.0":
+  version: 1.0.41
+  resolution: "ua-parser-js@npm:1.0.41"
   bin:
     ua-parser-js: script/cli.js
-  checksum: 10c0/6287fb9e0d332b139bd039cbd606f909bdc3337681b7e6ec2ce9c427d1f39a040a65e03620b82bd3bc4a7d7681be70dd2fa75125fd8c72c01bd9cedb729e5683
+  checksum: 10c0/45dc1f7f3ce8248e0e64640d2e29c65c0ea1fc9cb105594de84af80e2a57bba4f718b9376098ca7a5b0ffe240f8995b0fa3714afa9d36861c41370a378f1a274
   languageName: node
   linkType: hard
 
