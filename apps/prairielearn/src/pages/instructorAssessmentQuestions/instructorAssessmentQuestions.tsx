@@ -25,7 +25,7 @@ import { handleTrpcError } from '../../lib/trpc.js';
 import { resetVariantsForAssessmentQuestion } from '../../models/variant.js';
 import { ZoneAssessmentJsonSchema } from '../../schemas/infoAssessment.js';
 
-import { InstructorAssessmentQuestionsTable } from './components/InstructorAssessmentQuestionsTable.js';
+import { AssessmentEditor } from './components/AssessmentEditor.js';
 import { InstructorAssessmentQuestionsTableLegacy } from './components/InstructorAssessmentQuestionsTableLegacy.js';
 import { assessmentQuestionsRouter, createContext } from './trpc.js';
 import { serializeZonesForJson } from './utils/dataTransform.js';
@@ -115,7 +115,7 @@ router.get(
         content: (
           <Hydrate>
             {editorEnabled ? (
-              <InstructorAssessmentQuestionsTable
+              <AssessmentEditor
                 course={pageContext.course}
                 courseInstance={pageContext.course_instance}
                 questionRows={questionRows}

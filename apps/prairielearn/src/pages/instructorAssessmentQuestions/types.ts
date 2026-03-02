@@ -198,3 +198,17 @@ export type EditorAction =
   // Stubbed for future PR - will implement history tracking
   | { type: 'UNDO' }
   | { type: 'REDO' };
+
+/**
+ * Represents the currently selected item in the split-pane editor.
+ * The detail panel renders based on this selection.
+ */
+export type SelectedItem =
+  | { type: 'zone'; zoneTrackingId: string }
+  | { type: 'question'; questionTrackingId: string }
+  | { type: 'alternative'; questionTrackingId: string; alternativeTrackingId: string }
+  | { type: 'altGroup'; questionTrackingId: string }
+  | { type: 'picker'; zoneTrackingId: string; returnToSelection?: SelectedItem }
+  | null;
+
+export type ViewType = 'simple' | 'detailed';

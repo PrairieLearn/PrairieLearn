@@ -1,0 +1,87 @@
+import { SortableContext, verticalListSortingStrategy } from '@dnd-kit/sortable';
+import type { Dispatch } from 'react';
+
+import type { StaffAssessmentQuestionRow } from '../../../../lib/assessment-question.shared.js';
+import type { EnumAssessmentType } from '../../../../lib/db-types.js';
+import type { EditorAction, SelectedItem, ViewType, ZoneAssessmentForm } from '../../types.js';
+
+import { TreeZoneNode } from './TreeZoneNode.js';
+
+export function AssessmentTree({
+  zones,
+  questionMetadata,
+  editMode,
+  viewType,
+  selectedItem,
+  setSelectedItem,
+  collapsedGroups,
+  collapsedZones,
+  urlPrefix,
+  hasCoursePermissionPreview,
+  assessmentType,
+  zoneStartNumbers,
+  dispatch,
+  onAddQuestion,
+  onAddZone,
+  onDeleteQuestion,
+  onDeleteZone,
+}: {
+  zones: ZoneAssessmentForm[];
+  questionMetadata: Record<string, StaffAssessmentQuestionRow>;
+  editMode: boolean;
+  viewType: ViewType;
+  selectedItem: SelectedItem;
+  setSelectedItem: (item: SelectedItem) => void;
+  collapsedGroups: Set<string>;
+  collapsedZones: Set<string>;
+  urlPrefix: string;
+  hasCoursePermissionPreview: boolean;
+  assessmentType: EnumAssessmentType;
+  zoneStartNumbers: number[];
+  dispatch: Dispatch<EditorAction>;
+  onAddQuestion: (zoneTrackingId: string) => void;
+  onAddZone: () => void;
+  onDeleteQuestion: (
+    questionTrackingId: string,
+    questionId: string,
+    alternativeTrackingId?: string,
+  ) => void;
+  onDeleteZone: (zoneTrackingId: string) => void;
+}) {
+  return (
+    <SortableContext items={zones.map((z) => z.trackingId)} strategy={verticalListSortingStrategy}>
+      <div className="list-group list-group-flush">
+        {zones.map((zone, index) => (
+          <TreeZoneNode
+            key={zone.trackingId}
+            zone={zone}
+            zoneNumber={index + 1}
+            editMode={editMode}
+            viewType={viewType}
+            selectedItem={selectedItem}
+            setSelectedItem={setSelectedItem}
+            questionMetadata={questionMetadata}
+            collapsedGroups={collapsedGroups}
+            collapsedZones={collapsedZones}
+            urlPrefix={urlPrefix}
+            hasCoursePermissionPreview={hasCoursePermissionPreview}
+            assessmentType={assessmentType}
+            startingQuestionNumber={zoneStartNumbers[index]}
+            dispatch={dispatch}
+            onAddQuestion={onAddQuestion}
+            onDeleteQuestion={onDeleteQuestion}
+            onDeleteZone={onDeleteZone}
+          />
+        ))}
+        {editMode && (
+          <div className="p-2">
+            <button className="btn btn-sm btn-outline-primary" type="button" onClick={onAddZone}>
+              <i className="fa fa-plus me-1" aria-hidden="true" />
+              Add zone
+            </button>
+          </div>
+        )}
+      </div>
+    </SortableContext>
+  );
+}
