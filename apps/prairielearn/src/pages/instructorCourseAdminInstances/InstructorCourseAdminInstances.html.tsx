@@ -15,12 +15,11 @@ import type { InstructorCourseAdminInstanceRow } from './instructorCourseAdminIn
 
 const accessRuleRecommendation = (
   <p>
-    It is recommended that you define at least one <code>accessRule</code> that makes the course
-    instance accessible to students only during the semester or other time period in which that
-    particular course instance is offered. You can do so by editing the{' '}
-    <code>infoCourseInstance.json</code> file for the course instance. For more information, see the{' '}
-    <a href="https://docs.prairielearn.com/assessment/accessControl/">
-      documentation on access control
+    Course instance access rules are deprecated. It is recommended that you switch to the new
+    publishing system. You can do so by editing the <code>infoCourseInstance.json</code> file for
+    the course instance. For more information, see the{' '}
+    <a href="https://docs.prairielearn.com/courseInstance/#migrating-from-allowaccess">
+      documentation on migrating to publishing
     </a>
     .
   </p>
