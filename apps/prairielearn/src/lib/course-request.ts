@@ -41,6 +41,11 @@ const CourseRequestRowSchema = z.object({
 });
 export type CourseRequestRow = z.infer<typeof CourseRequestRowSchema>;
 
+const ExistingOwnerCourseSettingsSchema = z.object({
+  institution_id: IdSchema,
+  display_timezone: z.string(),
+});
+
 async function selectCourseRequests(show_all: boolean) {
   return await queryRows(sql.select_course_requests, { show_all }, CourseRequestRowSchema);
 }
@@ -124,38 +129,38 @@ export async function createCourseFromRequest({
 }
 
 export async function insertCourseRequest({
-  short_name,
+  shortName,
   title,
-  user_id,
-  github_user,
-  first_name,
-  last_name,
-  work_email,
+  userId,
+  githubUser,
+  firstName,
+  lastName,
+  workEmail,
   institution,
-  referral_source,
+  referralSource,
 }: {
-  short_name: string;
+  shortName: string;
   title: string;
-  user_id: string;
-  github_user: string | null;
-  first_name: string | null;
-  last_name: string | null;
-  work_email: string | null;
+  userId: string;
+  githubUser: string | null;
+  firstName: string | null;
+  lastName: string | null;
+  workEmail: string | null;
   institution: string | null;
-  referral_source: string | null;
+  referralSource: string | null;
 }): Promise<string> {
   return await queryRow(
     sql.insert_course_request,
     {
-      short_name,
+      short_name: shortName,
       title,
-      user_id,
-      github_user,
-      first_name,
-      last_name,
-      work_email,
+      user_id: userId,
+      github_user: githubUser,
+      first_name: firstName,
+      last_name: lastName,
+      work_email: workEmail,
       institution,
-      referral_source,
+      referral_source: referralSource,
     },
     IdSchema,
   );
@@ -169,4 +174,37 @@ export async function updateCourseRequestNote({
   note: string;
 }) {
   await executeRow(sql.update_course_request_note, { id: courseRequestId, note });
+}
+
+export async function checkExistingCourseRequest({
+  userId,
+  shortName,
+}: {
+  userId: string;
+  shortName: string;
+}): Promise<boolean> {
+  return await queryRow(
+    sql.get_existing_course_requests,
+    {
+      user_id: userId,
+      short_name: shortName,
+    },
+    z.boolean(),
+  );
+}
+
+export async function canAutoCreateCourse({ userId }: { userId: string }): Promise<boolean> {
+  return await queryRow(sql.can_auto_create_course, { user_id: userId }, z.boolean());
+}
+
+export async function getExistingOwnerCourseSettings({
+  userId,
+}: {
+  userId: string;
+}): Promise<z.infer<typeof ExistingOwnerCourseSettingsSchema>> {
+  return await queryRow(
+    sql.get_existing_owner_course_settings,
+    { user_id: userId },
+    ExistingOwnerCourseSettingsSchema,
+  );
 }

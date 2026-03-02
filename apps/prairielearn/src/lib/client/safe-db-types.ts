@@ -29,6 +29,7 @@ import {
   AuthnProviderSchema as RawAuthnProviderSchema,
   CourseInstancePublishingExtensionSchema as RawCourseInstancePublishingExtensionSchema,
   CourseInstanceSchema as RawCourseInstanceSchema,
+  CourseRequestSchema as RawCourseRequestSchema,
   CourseSchema as RawCourseSchema,
   EnrollmentSchema as RawEnrollmentSchema,
   InstanceQuestionGroupSchema as RawInstanceQuestionGroupSchema,
@@ -292,6 +293,16 @@ export const RawPublicCourseInstanceSchema = RawStaffCourseInstanceSchema.pick({
 export const PublicCourseInstanceSchema =
   RawPublicCourseInstanceSchema.brand<'PublicCourseInstance'>();
 export type PublicCourseInstance = z.infer<typeof PublicCourseInstanceSchema>;
+
+/** Course Requests */
+export const RawStaffCourseRequestSchema = RawCourseRequestSchema.pick({
+  approved_status: true,
+  id: true,
+  short_name: true,
+  title: true,
+});
+export const StaffCourseRequestSchema = RawStaffCourseRequestSchema.brand<'StaffCourseRequest'>();
+export type StaffCourseRequest = z.infer<typeof StaffCourseRequestSchema>;
 
 /** Enrollments */
 export const RawStaffEnrollmentSchema = RawEnrollmentSchema.pick({

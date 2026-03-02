@@ -47,15 +47,15 @@ describe('Course request note', { timeout: 60_000 }, function () {
   describe('create course request note', () => {
     test.sequential('insert a course request', async () => {
       courseRequestId = await insertCourseRequest({
-        short_name: shortName,
+        shortName,
         title: 'Test Course',
-        user_id: '1',
-        github_user: 'EduardoMVAz',
-        first_name: 'Test',
-        last_name: 'User',
-        work_email: 'test@example.com',
+        userId: '1',
+        githubUser: 'EduardoMVAz',
+        firstName: 'Test',
+        lastName: 'User',
+        workEmail: 'test@example.com',
         institution: 'Test Institution',
-        referral_source: null,
+        referralSource: null,
       });
     });
 

@@ -43,15 +43,15 @@ describe('Course requests', { timeout: 60_000 }, function () {
 
   test.sequential('insert a course request', async () => {
     courseRequestId = await insertCourseRequest({
-      short_name: shortName,
+      shortName,
       title,
-      user_id: '1',
-      github_user: 'EduardoMVAz',
-      first_name: 'Test',
-      last_name: 'User',
-      work_email: 'test@example.com',
+      userId: '1',
+      githubUser: 'EduardoMVAz',
+      firstName: 'Test',
+      lastName: 'User',
+      workEmail: 'test@example.com',
       institution: 'Test Institution',
-      referral_source: null,
+      referralSource: null,
     });
   });
 
@@ -117,15 +117,15 @@ describe('Course requests', { timeout: 60_000 }, function () {
 
     test.sequential('insert a new pending course request', async () => {
       secondRequestId = await insertCourseRequest({
-        short_name: secondShortName,
+        shortName: secondShortName,
         title: 'Second Test Course',
-        user_id: '1',
-        github_user: 'EduardoMVAz',
-        first_name: 'Test',
-        last_name: 'User',
-        work_email: 'test2@example.com',
+        userId: '1',
+        githubUser: 'EduardoMVAz',
+        firstName: 'Test',
+        lastName: 'User',
+        workEmail: 'test2@example.com',
         institution: 'Test Institution',
-        referral_source: null,
+        referralSource: null,
       });
     });
 
@@ -165,15 +165,15 @@ describe('Course requests', { timeout: 60_000 }, function () {
 
     test.sequential('insert a pending course request', async () => {
       pendingRequestId = await insertCourseRequest({
-        short_name: pendingShortName,
+        shortName: pendingShortName,
         title: 'Pending Test Course',
-        user_id: '1',
-        github_user: 'EduardoMVAz',
-        first_name: 'Test',
-        last_name: 'User',
-        work_email: 'test3@example.com',
+        userId: '1',
+        githubUser: 'EduardoMVAz',
+        firstName: 'Test',
+        lastName: 'User',
+        workEmail: 'test3@example.com',
         institution: 'Test Institution',
-        referral_source: null,
+        referralSource: null,
       });
     });
 

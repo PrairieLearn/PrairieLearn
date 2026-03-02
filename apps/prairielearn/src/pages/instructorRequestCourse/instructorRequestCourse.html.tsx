@@ -1,13 +1,17 @@
+import { QueryClient, useMutation } from '@tanstack/react-query';
+import clsx from 'clsx';
 import { useState } from 'react';
 import { Modal } from 'react-bootstrap';
 import { useForm } from 'react-hook-form';
 
 import { assertNever } from '@prairielearn/utils';
 
-import { type CourseRequest } from '../../lib/db-types.js';
-import type { ResLocalsForPage } from '../../lib/res-locals.js';
+import type { StaffCourseRequest } from '../../lib/client/safe-db-types.js';
+import { QueryClientProviderDebug } from '../../lib/client/tanstackQuery.js';
 
 import type { CourseRequestRow, Lti13CourseRequestInput } from './instructorRequestCourse.types.js';
+import { createInstructorRequestCourseTrpcClient } from './utils/trpc-client.js';
+import { TRPCProvider, useTRPC } from './utils/trpc-context.js';
 
 interface CourseRequestFormData {
   'cr-firstname': string;
@@ -24,20 +28,33 @@ interface CourseRequestFormData {
 export function RequestCourse({
   rows,
   lti13Info,
-  resLocals,
+  trpcCsrfToken,
+  urlPrefix,
 }: {
   rows: CourseRequestRow[];
   lti13Info: Lti13CourseRequestInput;
-  resLocals: ResLocalsForPage<'plain'>;
+  trpcCsrfToken: string;
+  urlPrefix: string;
 }) {
+  const [queryClient] = useState(() => new QueryClient());
+  const [trpcClient] = useState(() =>
+    createInstructorRequestCourseTrpcClient(trpcCsrfToken, urlPrefix),
+  );
+
   return (
     <>
       <h1 className="visually-hidden">Request a Course</h1>
       <CourseRequestsCard rows={rows} />
-      <CourseRequestForm lti13Info={lti13Info} />
+      <QueryClientProviderDebug client={queryClient}>
+        <TRPCProvider trpcClient={trpcClient} queryClient={queryClient}>
+          <CourseRequestForm lti13Info={lti13Info} />
+        </TRPCProvider>
+      </QueryClientProviderDebug>
     </>
   );
 }
+
+RequestCourse.displayName = 'RequestCourse';
 
 function CourseRequestsCard({ rows }: { rows: CourseRequestRow[] }) {
   if (rows.length === 0) {
@@ -94,8 +111,17 @@ function CourseRequestsCard({ rows }: { rows: CourseRequestRow[] }) {
 }
 
 function CourseRequestForm({ lti13Info }: { lti13Info: Lti13CourseRequestInput }) {
+  const trpc = useTRPC();
+  const mutation = useMutation(trpc.submitCourseRequest.mutationOptions());
+
   const [showModal, setShowModal] = useState(lti13Info != null);
-  const { register, handleSubmit, setValue, watch, setError } = useForm<CourseRequestFormData>({
+  const {
+    register,
+    handleSubmit,
+    setValue,
+    watch,
+    formState: { errors },
+  } = useForm<CourseRequestFormData>({
     mode: 'onSubmit',
   });
   const courseRequestRole = watch('cr-role');
@@ -108,6 +134,24 @@ function CourseRequestForm({ lti13Info }: { lti13Info: Lti13CourseRequestInput }
   };
 
   const onHideLti13Modal = () => setShowModal(false);
+
+  const onSubmit = async (data: CourseRequestFormData) => {
+    mutation.mutate(
+      {
+        institution: data['cr-institution'],
+        shortName: data['cr-shortname'],
+        title: data['cr-title'],
+        firstName: data['cr-firstname'],
+        lastName: data['cr-lastname'],
+        workEmail: data['cr-email'],
+        githubUser: data['cr-ghuser'] || null,
+        referralSource: data['cr-referral-source'],
+      },
+      {
+        onSuccess: () => window.location.reload(),
+      },
+    );
+  };
 
   return (
     <>
@@ -135,7 +179,12 @@ function CourseRequestForm({ lti13Info }: { lti13Info: Lti13CourseRequestInput }
         <div className="card-header bg-primary text-white d-flex align-items-center">
           <h2>Request a New Course</h2>
         </div>
-        <form className="question-form" name="course-request" method="POST">
+        <form
+          className="question-form"
+          name="course-request"
+          noValidate
+          onSubmit={handleSubmit(onSubmit)}
+        >
           <div className="card-body">
             <p>
               This form is for instructors who want to create a new course on PrairieLearn. Students
@@ -152,12 +201,13 @@ function CourseRequestForm({ lti13Info }: { lti13Info: Lti13CourseRequestInput }
                 </label>
                 <input
                   type="text"
-                  className="form-control"
-                  name="cr-firstname"
+                  className={clsx('form-control', errors['cr-firstname'] && 'is-invalid')}
                   id="cr-firstname"
-                  minLength={1}
-                  required
+                  {...register('cr-firstname', { required: 'Enter your first name' })}
                 />
+                {errors['cr-firstname'] && (
+                  <div className="invalid-feedback">{errors['cr-firstname'].message}</div>
+                )}
               </div>
               <div className="mb-3 col-md-6">
                 <label className="form-label" htmlFor="cr-lastname">
@@ -165,12 +215,13 @@ function CourseRequestForm({ lti13Info }: { lti13Info: Lti13CourseRequestInput }
                 </label>
                 <input
                   type="text"
-                  className="form-control"
-                  name="cr-lastname"
+                  className={clsx('form-control', errors['cr-lastname'] && 'is-invalid')}
                   id="cr-lastname"
-                  minLength={1}
-                  required
+                  {...register('cr-lastname', { required: 'Enter your last name' })}
                 />
+                {errors['cr-lastname'] && (
+                  <div className="invalid-feedback">{errors['cr-lastname'].message}</div>
+                )}
               </div>
             </div>
             <div className="row">
@@ -180,15 +231,17 @@ function CourseRequestForm({ lti13Info }: { lti13Info: Lti13CourseRequestInput }
                 </label>
                 <input
                   type="text"
-                  className="form-control"
-                  name="cr-institution"
+                  className={clsx('form-control', errors['cr-institution'] && 'is-invalid')}
                   id="cr-institution"
-                  minLength={1}
-                  required
+                  {...register('cr-institution', { required: 'Enter your institution' })}
                 />
-                <small className="form-text text-muted">
-                  This is your academic institution (e.g., "University of Illinois").
-                </small>
+                {errors['cr-institution'] ? (
+                  <div className="invalid-feedback">{errors['cr-institution'].message}</div>
+                ) : (
+                  <small className="form-text text-muted">
+                    This is your academic institution (e.g., "University of Illinois").
+                  </small>
+                )}
               </div>
               <div className="mb-3 col-md-6">
                 <label className="form-label" htmlFor="cr-email">
@@ -196,17 +249,25 @@ function CourseRequestForm({ lti13Info }: { lti13Info: Lti13CourseRequestInput }
                 </label>
                 <input
                   type="email"
-                  className="form-control"
-                  name="cr-email"
+                  className={clsx('form-control', errors['cr-email'] && 'is-invalid')}
                   id="cr-email"
                   placeholder="login@yourinstitution.edu"
-                  minLength={1}
-                  required
+                  {...register('cr-email', {
+                    required: 'Enter your work email',
+                    pattern: {
+                      value: /^[^\s@]+@[^\s@]+\.[^\s@]+$/,
+                      message: 'Enter a valid email address',
+                    },
+                  })}
                 />
-                <small className="form-text text-muted">
-                  {' '}
-                  Use your official work email address.{' '}
-                </small>
+                {errors['cr-email'] ? (
+                  <div className="invalid-feedback">{errors['cr-email'].message}</div>
+                ) : (
+                  <small className="form-text text-muted">
+                    {' '}
+                    Use your official work email address.{' '}
+                  </small>
+                )}
               </div>
             </div>
             <div className="mb-3">
@@ -215,14 +276,22 @@ function CourseRequestForm({ lti13Info }: { lti13Info: Lti13CourseRequestInput }
               </label>
               <input
                 type="text"
-                className="form-control"
-                name="cr-shortname"
+                className={clsx('form-control', errors['cr-shortname'] && 'is-invalid')}
                 id="cr-shortname"
                 placeholder="MATH 101"
-                pattern="[a-zA-Z]+ [a-zA-Z0-9]+"
-                required
+                {...register('cr-shortname', {
+                  required: 'Enter the course rubric and number',
+                  pattern: {
+                    value: /[a-zA-Z]+ [a-zA-Z0-9]+/,
+                    message: 'Enter a valid format (e.g., MATH 101)',
+                  },
+                })}
               />
-              <small className="form-text text-muted"> Examples: MATH 101, PHYS 440. </small>
+              {errors['cr-shortname'] ? (
+                <div className="invalid-feedback">{errors['cr-shortname'].message}</div>
+              ) : (
+                <small className="form-text text-muted"> Examples: MATH 101, PHYS 440. </small>
+              )}
             </div>
             <div className="mb-3">
               <label className="form-label" htmlFor="cr-title">
@@ -230,22 +299,29 @@ function CourseRequestForm({ lti13Info }: { lti13Info: Lti13CourseRequestInput }
               </label>
               <input
                 type="text"
-                className="form-control"
-                name="cr-title"
+                className={clsx('form-control', errors['cr-title'] && 'is-invalid')}
                 id="cr-title"
                 placeholder="Elementary Mathematics"
-                minLength={1}
-                required
+                {...register('cr-title', { required: 'Enter the course title' })}
               />
-              <small className="form-text text-muted">
-                This is the official title of the course, as given in the course catalog.
-              </small>
+              {errors['cr-title'] ? (
+                <div className="invalid-feedback">{errors['cr-title'].message}</div>
+              ) : (
+                <small className="form-text text-muted">
+                  This is the official title of the course, as given in the course catalog.
+                </small>
+              )}
             </div>
             <div className="mb-3">
               <label className="form-label" htmlFor="cr-ghuser">
                 GitHub Username (optional)
               </label>
-              <input type="text" className="form-control" name="cr-ghuser" id="cr-ghuser" />
+              <input
+                type="text"
+                className="form-control"
+                id="cr-ghuser"
+                {...register('cr-ghuser')}
+              />
               <small className="form-text text-muted">
                 Providing your GitHub username will grant you access to your course's GitHub
                 repository. This access allows you to edit your code in a
@@ -286,12 +362,12 @@ function CourseRequestForm({ lti13Info }: { lti13Info: Lti13CourseRequestInput }
                 How did you hear about PrairieLearn?
               </label>
               <select
-                className="form-select"
-                name="cr-referral-source"
+                className={clsx('form-select', errors['cr-referral-source'] && 'is-invalid')}
                 id="cr-referral-source"
                 aria-labelledby="cr-referral-source-label"
-                required
+                {...register('cr-referral-source', { required: 'Select an option' })}
               >
+                <option value="">Select an option</option>
                 <option value="I've used PrairieLearn before">I've used PrairieLearn before</option>
                 <option value="Colleague">Colleague</option>
                 <option value="Conference or Workshop">Conference or Workshop</option>
@@ -300,19 +376,18 @@ function CourseRequestForm({ lti13Info }: { lti13Info: Lti13CourseRequestInput }
                 <option value="Institutional Adoption">Institutional Adoption</option>
                 <option value="Web Search">Web Search</option>
                 <option value="AI/LLM Referral">AI/LLM Referral</option>
-                <option value="other">other</option>
+                <option value="Other">Other</option>
               </select>
-              <input
-                type="text"
-                className="form-control mt-2 d-none"
-                name="cr-referral-source-other"
-                id="cr-referral-source-other"
-                aria-labelledby="cr-referral-source-label"
-              />
-              <small className="form-text text-muted">
-                This information helps us understand how people find out about PrairieLearn. Thank
-                you for sharing!
-              </small>
+              {errors['cr-referral-source'] ? (
+                <div className="invalid-feedback d-block">
+                  {errors['cr-referral-source'].message}
+                </div>
+              ) : (
+                <small className="form-text text-muted">
+                  This information helps us understand how people find out about PrairieLearn. Thank
+                  you for sharing!
+                </small>
+              )}
             </div>
             <div className="mb-3">
               <label className="form-label" htmlFor="role-instructor">
@@ -320,49 +395,86 @@ function CourseRequestForm({ lti13Info }: { lti13Info: Lti13CourseRequestInput }
               </label>
               <ul className="list-group">
                 <li className="list-group-item">
-                  <input type="radio" id="role-instructor" name="cr-role" value="instructor" />
+                  <input
+                    type="radio"
+                    className="form-check-input me-2"
+                    id="role-instructor"
+                    value="instructor"
+                    {...register('cr-role', { required: 'Select your role' })}
+                  />
                   <label htmlFor="role-instructor" className="mb-0 form-check-label">
                     Official Course Instructor
                   </label>
                 </li>
                 <li className="list-group-item">
-                  <input type="radio" id="role-ta" name="cr-role" value="ta" />
+                  <input
+                    type="radio"
+                    className="form-check-input me-2"
+                    id="role-ta"
+                    value="ta"
+                    {...register('cr-role')}
+                  />
                   <label htmlFor="role-ta" className="mb-0 form-check-label">
                     Teaching Assistant or other course staff
                   </label>
                 </li>
                 <li className="list-group-item">
-                  <input type="radio" id="role-admin" name="cr-role" value="admin" />
+                  <input
+                    type="radio"
+                    className="form-check-input me-2"
+                    id="role-admin"
+                    value="admin"
+                    {...register('cr-role')}
+                  />
                   <label htmlFor="role-admin" className="mb-0 form-check-label">
                     Institution Administrative Staff
                   </label>
                 </li>
                 <li className="list-group-item">
-                  <input type="radio" id="role-student" name="cr-role" value="student" />
+                  <input
+                    type="radio"
+                    className="form-check-input me-2"
+                    id="role-student"
+                    value="student"
+                    {...register('cr-role')}
+                  />
                   <label htmlFor="role-student" className="mb-0 form-check-label">
                     Student
                   </label>
                 </li>
               </ul>
-              <div
-                className="d-none role-comment role-comment-ta role-comment-admin alert alert-warning mt-3 mb-0"
-                role="alert"
-              >
-                <strong>A new course instance must be requested by the instructor.</strong> Please
-                ask the official course instructor to submit this form.
-              </div>
-              <div
-                className="d-none role-comment role-comment-student alert alert-warning mt-3 mb-0"
-                role="alert"
-              >
-                <strong>This is the wrong form for you.</strong> Contact your instructor for
-                instructions on how to access your assessments.
-              </div>
+              {errors['cr-role'] && !courseRequestRole && (
+                <div className="invalid-feedback d-block">{errors['cr-role'].message}</div>
+              )}
+              {(courseRequestRole === 'ta' || courseRequestRole === 'admin') && (
+                <div
+                  className="role-comment role-comment-ta role-comment-admin alert alert-warning mt-3 mb-0"
+                  role="alert"
+                >
+                  <strong>A new course instance must be requested by the instructor.</strong> Please
+                  ask the official course instructor to submit this form.
+                </div>
+              )}
+              {courseRequestRole === 'student' && (
+                <div
+                  className="role-comment role-comment-student alert alert-warning mt-3 mb-0"
+                  role="alert"
+                >
+                  <strong>This is the wrong form for you.</strong> Contact your instructor for
+                  instructions on how to access your assessments.
+                </div>
+              )}
             </div>
           </div>
           <div className="card-footer">
-            <input type="hidden" name="__csrf_token" value={csrfToken} />
-            <button className="btn btn-primary" type="submit" disabled>
+            {mutation.isError && <div className="alert alert-danger">{mutation.error.message}</div>}
+            <button
+              className="btn btn-primary"
+              type="submit"
+              disabled={
+                !courseRequestRole || courseRequestRole !== 'instructor' || mutation.isPending
+              }
+            >
               Submit Request
             </button>
           </div>
@@ -372,7 +484,7 @@ function CourseRequestForm({ lti13Info }: { lti13Info: Lti13CourseRequestInput }
   );
 }
 
-function ApprovalStatusIcon({ status }: { status: CourseRequest['approved_status'] }) {
+function ApprovalStatusIcon({ status }: { status: StaffCourseRequest['approved_status'] }) {
   switch (status) {
     case 'pending':
     case 'creating':

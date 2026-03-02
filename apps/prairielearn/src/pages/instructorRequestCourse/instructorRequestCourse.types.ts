@@ -1,10 +1,10 @@
 import z from 'zod';
 
-import { CourseRequestSchema, UserSchema } from '../../lib/db-types.js';
+import { StaffCourseRequestSchema, StaffUserSchema } from '../../lib/client/safe-db-types.js';
 
 export const CourseRequestRowSchema = z.object({
-  course_request: CourseRequestSchema,
-  approved_by_user: UserSchema.nullable(),
+  course_request: StaffCourseRequestSchema,
+  approved_by_user: StaffUserSchema.nullable(),
 });
 export type CourseRequestRow = z.infer<typeof CourseRequestRowSchema>;
 
