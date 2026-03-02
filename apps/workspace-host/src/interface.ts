@@ -64,7 +64,7 @@ const SelectWorkspaceSchema = z.object({
 
 const PortOccupiedSchema = z.boolean();
 
-const WorkspaceSettingsRowSchema = z.object({
+const WorkspaceSettingsSchema = z.object({
   workspace_image: z.string(),
   workspace_port: z.number(),
   workspace_home: z.string(),
@@ -74,7 +74,7 @@ const WorkspaceSettingsRowSchema = z.object({
   workspace_environment: z.record(z.string(), z.any()).nullable(),
 });
 
-type WorkspaceSettings = z.infer<typeof WorkspaceSettingsRowSchema>;
+type WorkspaceSettings = z.infer<typeof WorkspaceSettingsSchema>;
 
 interface Workspace {
   id: string | number;
@@ -622,9 +622,9 @@ async function _getWorkspaceSettings(workspace_id: string | number): Promise<Wor
   const row = await sqldb.queryRow(
     sql.select_workspace_settings,
     { workspace_id },
-    WorkspaceSettingsRowSchema,
+    WorkspaceSettingsSchema,
   );
-  const workspace_environment: Record<string, any> = row.workspace_environment || {};
+  const workspace_environment = row.workspace_environment || {};
 
   // Set base URL needed by certain workspaces (e.g., jupyterlab, rstudio)
   workspace_environment['WORKSPACE_BASE_URL'] = `/pl/workspace/${workspace_id}/container/`;
