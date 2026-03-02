@@ -1,0 +1,69 @@
+{
+  "enabledPlugins": {
+    "playwright-skill@playwright-skill": true,
+    "ralph-wiggum@claude-plugins-official": true
+  },
+  "hooks": {
+    "SessionStart": [
+      {
+        "hooks": [
+          {
+            "type": "command",
+            "command": "$CLAUDE_PROJECT_DIR/.claude/hooks/session-start.sh"
+          }
+        ]
+      }
+    ],
+    "PreToolUse": [
+      {
+        "matcher": "Write",
+        "hooks": [
+          {
+            "type": "command",
+            "command": "echo \"Creating file: $(echo $TOOL_PARAMETERS | jq -r '.file_path // empty')\""
+          }
+        ]
+      }
+    ],
+    "PostToolUse": [
+      {
+        "matcher": "Edit",
+        "hooks": [
+          {
+            "type": "command",
+            "command": "file=$(echo $TOOL_PARAMETERS | jq -r '.file_path'); if [[ \"$file\" == *.ts || \"$file\" == *.tsx ]]; then yarn prettier --write \"$file\" 2\u003e\u00261 || true; fi"
+          }
+        ]
+      },
+      {
+        "matcher": "Write",
+        "hooks": [
+          {
+            "type": "command",
+            "command": "file=$(echo $TOOL_PARAMETERS | jq -r '.file_path'); if [[ \"$file\" == *.ts || \"$file\" == *.tsx ]]; then yarn prettier --write \"$file\" 2\u003e\u00261 || true; elif [[ \"$file\" == *.py ]]; then ruff format \"$file\" 2\u003e\u00261 || true; fi"
+          }
+        ]
+      }
+    ]
+  },
+  "permissions": {
+    "allow": [
+      "Read(*)",
+      "Write(*)",
+      "Edit(*)",
+      "WebSearch",
+      "WebFetch",
+      "Bash(make:*)",
+      "Bash(node:*)",
+      "Bash(python3:*)",
+      "Bash(git:*)",
+      "Bash(pytest:*)",
+      "Bash(ruff:*)",
+      "Bash(yarn:*)",
+      "Bash(gh:*)"
+    ],
+    "deny": [
+      "Bash(rm:-rf:*)"
+    ]
+  }
+}
