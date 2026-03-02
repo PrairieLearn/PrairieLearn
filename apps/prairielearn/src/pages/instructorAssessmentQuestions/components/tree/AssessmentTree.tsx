@@ -19,7 +19,6 @@ export function AssessmentTree({
   urlPrefix,
   hasCoursePermissionPreview,
   assessmentType,
-  zoneStartNumbers,
   dispatch,
   onAddQuestion,
   onAddZone,
@@ -37,7 +36,6 @@ export function AssessmentTree({
   urlPrefix: string;
   hasCoursePermissionPreview: boolean;
   assessmentType: EnumAssessmentType;
-  zoneStartNumbers: number[];
   dispatch: Dispatch<EditorAction>;
   onAddQuestion: (zoneTrackingId: string) => void;
   onAddZone: () => void;
@@ -50,12 +48,13 @@ export function AssessmentTree({
 }) {
   return (
     <SortableContext items={zones.map((z) => z.trackingId)} strategy={verticalListSortingStrategy}>
+      {/* eslint-disable-next-line react/no-unknown-property */}
+      <style>{`.tree-delete-btn:hover { color: var(--bs-danger) !important; }`}</style>
       <div className="list-group list-group-flush">
-        {zones.map((zone, index) => (
+        {zones.map((zone) => (
           <TreeZoneNode
             key={zone.trackingId}
             zone={zone}
-            zoneNumber={index + 1}
             editMode={editMode}
             viewType={viewType}
             selectedItem={selectedItem}
@@ -66,7 +65,6 @@ export function AssessmentTree({
             urlPrefix={urlPrefix}
             hasCoursePermissionPreview={hasCoursePermissionPreview}
             assessmentType={assessmentType}
-            startingQuestionNumber={zoneStartNumbers[index]}
             dispatch={dispatch}
             onAddQuestion={onAddQuestion}
             onDeleteQuestion={onDeleteQuestion}

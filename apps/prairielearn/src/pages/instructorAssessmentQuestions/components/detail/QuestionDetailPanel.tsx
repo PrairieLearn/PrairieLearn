@@ -1,14 +1,14 @@
 import clsx from 'clsx';
-import { useState } from 'react';
 import { useForm } from 'react-hook-form';
 
 import { run } from '@prairielearn/run';
 
-import { TagBadgeList } from '../../../../components/TagBadge.js';
-import { TopicBadge } from '../../../../components/TopicBadge.js';
+import { CopyButton } from '../../../../components/CopyButton.js';
+import { HistMini } from '../../../../components/HistMini.js';
 import type { StaffAssessmentQuestionRow } from '../../../../lib/assessment-question.shared.js';
 import type { EnumAssessmentType } from '../../../../lib/db-types.js';
 import type { QuestionAlternativeForm, SelectedItem, ZoneQuestionBlockForm } from '../../types.js';
+import { SubtleBadge } from '../SubtleBadge.js';
 import { validatePositiveInteger } from '../../utils/questions.js';
 
 interface QuestionFormData {
@@ -59,7 +59,6 @@ export function QuestionDetailPanel({
   onPickQuestion: (currentSelection: SelectedItem) => void;
   onResetButtonClick: (assessmentQuestionId: string) => void;
 }) {
-  const [showAdvanced, setShowAdvanced] = useState(false);
   const isAlternative = !!zoneQuestionBlock;
 
   const originalPointsProperty = run(() => {
@@ -133,10 +132,17 @@ export function QuestionDetailPanel({
                 questionData.question.title
               )}
             </div>
-            <code className="text-muted small">{question.id}</code>
+            <span className="d-inline-flex align-items-center">
+              <code className="text-muted small">{question.id}</code>
+              {question.id && (
+                <CopyButton text={question.id} tooltipId="copy-qid" ariaLabel="Copy QID" />
+              )}
+            </span>
             <div className="d-flex flex-wrap gap-1 mt-2">
-              <TopicBadge topic={questionData.topic} />
-              <TagBadgeList tags={questionData.tags} />
+              <SubtleBadge color={questionData.topic.color} label={questionData.topic.name} />
+              {questionData.tags?.map((tag) => (
+                <SubtleBadge key={tag.name} color={tag.color} label={tag.name} />
+              ))}
             </div>
           </div>
         )}
@@ -175,6 +181,21 @@ export function QuestionDetailPanel({
           )}
           {/* TODO: Display inherited values from zone/alt group */}
         </dl>
+        {questionData?.assessment_question.mean_question_score != null && (
+          <dl className="mb-0">
+            <dt>Mean score</dt>
+            <dd>{questionData.assessment_question.mean_question_score.toFixed(1)}%</dd>
+          </dl>
+        )}
+        {questionData?.assessment_question.number_submissions_hist && (
+          <div className="mb-3">
+            <div className="text-muted small mb-1">Submissions</div>
+            <HistMini
+              data={questionData.assessment_question.number_submissions_hist}
+              options={{ width: 100, height: 40 }}
+            />
+          </div>
+        )}
         {questionData && (
           <div className="mt-3">
             <button
@@ -254,6 +275,9 @@ export function QuestionDetailPanel({
             {errors[originalPointsProperty] && (
               <div className="invalid-feedback">{errors[originalPointsProperty].message}</div>
             )}
+            <small className="form-text text-muted">
+              Points awarded for the auto-graded component.
+            </small>
           </div>
           <div className="mb-3">
             <label htmlFor="question-maxAutoPoints" className="form-label">
@@ -267,6 +291,9 @@ export function QuestionDetailPanel({
                 setValueAs: (v: string) => (v === '' ? undefined : Number(v)),
               })}
             />
+            <small className="form-text text-muted">
+              Maximum total auto-graded points achievable across all attempts.
+            </small>
           </div>
           <div className="mb-3">
             <label htmlFor="question-manualPoints" className="form-label">
@@ -288,6 +315,9 @@ export function QuestionDetailPanel({
             {errors.manualPoints && (
               <div className="invalid-feedback">{errors.manualPoints.message}</div>
             )}
+            <small className="form-text text-muted">
+              Points awarded for the manually graded component.
+            </small>
           </div>
           <div className="mb-3">
             <label htmlFor="question-triesPerVariant" className="form-label">
@@ -308,6 +338,9 @@ export function QuestionDetailPanel({
             {errors.triesPerVariant && (
               <div className="invalid-feedback">{errors.triesPerVariant.message}</div>
             )}
+            <small className="form-text text-muted">
+              Number of submission attempts allowed per question variant.
+            </small>
           </div>
         </>
       ) : (
@@ -349,6 +382,9 @@ export function QuestionDetailPanel({
             {errors[originalPointsProperty] && (
               <div className="invalid-feedback">{errors[originalPointsProperty].message}</div>
             )}
+            <small className="form-text text-muted">
+              Points for each attempt, as a comma-separated list (e.g. "10, 5, 2, 1").
+            </small>
           </div>
           <div className="mb-3">
             <label htmlFor="question-manualPoints" className="form-label">
@@ -370,6 +406,9 @@ export function QuestionDetailPanel({
             {errors.manualPoints && (
               <div className="invalid-feedback">{errors.manualPoints.message}</div>
             )}
+            <small className="form-text text-muted">
+              Points awarded for the manually graded component.
+            </small>
           </div>
         </>
       )}
@@ -384,70 +423,74 @@ export function QuestionDetailPanel({
           rows={2}
           {...register('comment')}
         />
+        <small className="form-text text-muted">
+          Internal note, not shown to students.
+        </small>
       </div>
 
-      <button
-        type="button"
-        className="btn btn-sm btn-link p-0 mb-2"
-        onClick={() => setShowAdvanced(!showAdvanced)}
-      >
-        <i className={`fa fa-chevron-${showAdvanced ? 'down' : 'right'} me-1`} aria-hidden="true" />
-        Advanced
-      </button>
+      <h6 className="text-muted text-uppercase small mb-3 mt-4">Advanced</h6>
 
-      {showAdvanced && (
-        <>
-          <div className="mb-3">
-            <label htmlFor="question-advanceScorePerc" className="form-label">
-              Advance score %
-            </label>
-            <input
-              type="number"
-              className="form-control form-control-sm"
-              id="question-advanceScorePerc"
-              {...register('advanceScorePerc', {
-                setValueAs: (v: string) => (v === '' ? undefined : Number(v)),
-              })}
-            />
-          </div>
-          <div className="mb-3">
-            <label htmlFor="question-gradeRateMinutes" className="form-label">
-              Grade rate (minutes)
-            </label>
-            <input
-              type="number"
-              className="form-control form-control-sm"
-              id="question-gradeRateMinutes"
-              step="any"
-              {...register('gradeRateMinutes', {
-                setValueAs: (v: string) => (v === '' ? undefined : Number(v)),
-              })}
-            />
-          </div>
-          <div className="mb-3 form-check">
-            <input
-              type="checkbox"
-              className="form-check-input"
-              id="question-forceMaxPoints"
-              {...register('forceMaxPoints')}
-            />
-            <label htmlFor="question-forceMaxPoints" className="form-check-label">
-              Force max points
-            </label>
-          </div>
-          <div className="mb-3 form-check">
-            <input
-              type="checkbox"
-              className="form-check-input"
-              id="question-allowRealTimeGrading"
-              {...register('allowRealTimeGrading')}
-            />
-            <label htmlFor="question-allowRealTimeGrading" className="form-check-label">
-              Allow real-time grading
-            </label>
-          </div>
-        </>
-      )}
+      <div className="mb-3">
+        <label htmlFor="question-advanceScorePerc" className="form-label">
+          Advance score %
+        </label>
+        <input
+          type="number"
+          className="form-control form-control-sm"
+          id="question-advanceScorePerc"
+          {...register('advanceScorePerc', {
+            setValueAs: (v: string) => (v === '' ? undefined : Number(v)),
+          })}
+        />
+        <small className="form-text text-muted">
+          Minimum score percentage required to unlock the next question.
+        </small>
+      </div>
+      <div className="mb-3">
+        <label htmlFor="question-gradeRateMinutes" className="form-label">
+          Grade rate (minutes)
+        </label>
+        <input
+          type="number"
+          className="form-control form-control-sm"
+          id="question-gradeRateMinutes"
+          step="any"
+          {...register('gradeRateMinutes', {
+            setValueAs: (v: string) => (v === '' ? undefined : Number(v)),
+          })}
+        />
+        <small className="form-text text-muted">
+          Minimum time between grading attempts.
+        </small>
+      </div>
+      <div className="mb-3 form-check">
+        <input
+          type="checkbox"
+          className="form-check-input"
+          id="question-forceMaxPoints"
+          {...register('forceMaxPoints')}
+        />
+        <label htmlFor="question-forceMaxPoints" className="form-check-label">
+          Force max points
+        </label>
+        <small className="form-text text-muted d-block">
+          Award full points after enough attempts, regardless of correctness.
+        </small>
+      </div>
+      <div className="mb-3 form-check">
+        <input
+          type="checkbox"
+          className="form-check-input"
+          id="question-allowRealTimeGrading"
+          {...register('allowRealTimeGrading')}
+        />
+        <label htmlFor="question-allowRealTimeGrading" className="form-check-label">
+          Allow real-time grading
+        </label>
+        <small className="form-text text-muted d-block">
+          Let students see grading results immediately after submission.
+        </small>
+      </div>
 
       <div className="d-flex gap-2">
         <button type="submit" className="btn btn-sm btn-primary" disabled={!isDirty}>

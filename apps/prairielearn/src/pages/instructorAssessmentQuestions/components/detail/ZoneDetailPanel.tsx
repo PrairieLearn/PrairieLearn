@@ -1,5 +1,4 @@
 import clsx from 'clsx';
-import { useState } from 'react';
 import { useForm } from 'react-hook-form';
 
 import type { ZoneAssessmentForm } from '../../types.js';
@@ -28,8 +27,6 @@ export function ZoneDetailPanel({
   onUpdate: (zoneTrackingId: string, zone: Partial<ZoneAssessmentForm>) => void;
   onDelete: (zoneTrackingId: string) => void;
 }) {
-  const [showAdvanced, setShowAdvanced] = useState(false);
-
   const formValues: ZoneFormData = {
     title: zone.title ?? '',
     maxPoints: zone.maxPoints ?? undefined,
@@ -144,6 +141,7 @@ export function ZoneDetailPanel({
           id="zone-title"
           {...register('title')}
         />
+        <small className="form-text text-muted">Display name shown to students.</small>
       </div>
 
       <div className="mb-3">
@@ -158,6 +156,9 @@ export function ZoneDetailPanel({
             setValueAs: (v: string) => (v === '' ? undefined : Number(v)),
           })}
         />
+        <small className="form-text text-muted">
+          Maximum total points from this zone that count toward the assessment.
+        </small>
       </div>
 
       <div className="mb-3">
@@ -176,6 +177,9 @@ export function ZoneDetailPanel({
         {errors.numberChoose && (
           <div className="invalid-feedback">{errors.numberChoose.message}</div>
         )}
+        <small className="form-text text-muted">
+          How many questions from this zone to present (leave empty for all).
+        </small>
       </div>
 
       <div className="mb-3">
@@ -194,6 +198,9 @@ export function ZoneDetailPanel({
         {errors.bestQuestions && (
           <div className="invalid-feedback">{errors.bestQuestions.message}</div>
         )}
+        <small className="form-text text-muted">
+          Grade only the best N questions from this zone (leave empty for all).
+        </small>
       </div>
 
       <div className="mb-3 form-check">
@@ -206,6 +213,9 @@ export function ZoneDetailPanel({
         <label htmlFor="zone-lockpoint" className="form-check-label">
           Lockpoint
         </label>
+        <small className="form-text text-muted d-block">
+          Students must complete this zone before proceeding to the next.
+        </small>
       </div>
 
       <div className="mb-3">
@@ -218,59 +228,58 @@ export function ZoneDetailPanel({
           rows={2}
           {...register('comment')}
         />
+        <small className="form-text text-muted">Internal note, not shown to students.</small>
       </div>
 
-      <button
-        type="button"
-        className="btn btn-sm btn-link p-0 mb-2"
-        onClick={() => setShowAdvanced(!showAdvanced)}
-      >
-        <i className={`fa fa-chevron-${showAdvanced ? 'down' : 'right'} me-1`} aria-hidden="true" />
-        Advanced
-      </button>
+      <h6 className="text-muted text-uppercase small mb-3 mt-4">Advanced</h6>
 
-      {showAdvanced && (
-        <>
-          <div className="mb-3">
-            <label htmlFor="zone-advanceScorePerc" className="form-label">
-              Advance score %
-            </label>
-            <input
-              type="number"
-              className="form-control form-control-sm"
-              id="zone-advanceScorePerc"
-              {...register('advanceScorePerc', {
-                setValueAs: (v: string) => (v === '' ? undefined : Number(v)),
-              })}
-            />
-          </div>
-          <div className="mb-3">
-            <label htmlFor="zone-gradeRateMinutes" className="form-label">
-              Grade rate (minutes)
-            </label>
-            <input
-              type="number"
-              className="form-control form-control-sm"
-              id="zone-gradeRateMinutes"
-              step="any"
-              {...register('gradeRateMinutes', {
-                setValueAs: (v: string) => (v === '' ? undefined : Number(v)),
-              })}
-            />
-          </div>
-          <div className="mb-3 form-check">
-            <input
-              type="checkbox"
-              className="form-check-input"
-              id="zone-allowRealTimeGrading"
-              {...register('allowRealTimeGrading')}
-            />
-            <label htmlFor="zone-allowRealTimeGrading" className="form-check-label">
-              Allow real-time grading
-            </label>
-          </div>
-        </>
-      )}
+      <div className="mb-3">
+        <label htmlFor="zone-advanceScorePerc" className="form-label">
+          Advance score %
+        </label>
+        <input
+          type="number"
+          className="form-control form-control-sm"
+          id="zone-advanceScorePerc"
+          {...register('advanceScorePerc', {
+            setValueAs: (v: string) => (v === '' ? undefined : Number(v)),
+          })}
+        />
+        <small className="form-text text-muted">
+          Minimum score percentage required to advance past this zone.
+        </small>
+      </div>
+      <div className="mb-3">
+        <label htmlFor="zone-gradeRateMinutes" className="form-label">
+          Grade rate (minutes)
+        </label>
+        <input
+          type="number"
+          className="form-control form-control-sm"
+          id="zone-gradeRateMinutes"
+          step="any"
+          {...register('gradeRateMinutes', {
+            setValueAs: (v: string) => (v === '' ? undefined : Number(v)),
+          })}
+        />
+        <small className="form-text text-muted">
+          Minimum time between grading attempts for questions in this zone.
+        </small>
+      </div>
+      <div className="mb-3 form-check">
+        <input
+          type="checkbox"
+          className="form-check-input"
+          id="zone-allowRealTimeGrading"
+          {...register('allowRealTimeGrading')}
+        />
+        <label htmlFor="zone-allowRealTimeGrading" className="form-check-label">
+          Allow real-time grading
+        </label>
+        <small className="form-text text-muted d-block">
+          Let students see grading results immediately for questions in this zone.
+        </small>
+      </div>
 
       <div className="d-flex gap-2">
         <button type="submit" className="btn btn-sm btn-primary" disabled={!isDirty}>

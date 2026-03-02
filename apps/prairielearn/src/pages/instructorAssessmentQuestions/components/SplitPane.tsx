@@ -1,4 +1,4 @@
-import { type ReactNode, useCallback, useRef, useState, useSyncExternalStore } from 'react';
+import { type ReactNode, useCallback, useEffect, useRef, useState, useSyncExternalStore } from 'react';
 
 const DEFAULT_RIGHT_WIDTH = 360;
 const MIN_RIGHT_WIDTH = 280;
@@ -21,15 +21,23 @@ export function SplitPane({
   left,
   right,
   rightCollapsed: rightCollapsedProp,
+  forceOpen,
 }: {
   left: ReactNode;
   right: ReactNode;
   rightCollapsed?: boolean;
+  /** When this value changes (and is truthy), re-open a manually collapsed panel. */
+  forceOpen?: unknown;
 }) {
   const [rightWidth, setRightWidth] = useState(DEFAULT_RIGHT_WIDTH);
   const autoCollapsed = useNarrowViewport();
   const [manualCollapsed, setManualCollapsed] = useState(false);
   const isDraggingRef = useRef(false);
+
+  // Re-open panel when forceOpen changes (e.g. user selects a tree item)
+  useEffect(() => {
+    if (forceOpen) setManualCollapsed(false);
+  }, [forceOpen]);
 
   const isCollapsed = rightCollapsedProp ?? (manualCollapsed || autoCollapsed);
 
@@ -60,7 +68,7 @@ export function SplitPane({
   );
 
   return (
-    <div className="d-flex position-relative" style={{ minHeight: 400 }}>
+    <div className="d-flex position-relative" style={{ minHeight: 400, maxHeight: 'calc(100vh - 200px)' }}>
       <div className="flex-grow-1" style={{ minWidth: 0, overflow: 'auto' }}>
         {left}
       </div>
@@ -87,8 +95,18 @@ export function SplitPane({
               width: rightWidth,
               flexShrink: 0,
               overflow: 'auto',
+              position: 'relative',
             }}
           >
+            <button
+              type="button"
+              className="btn btn-sm btn-outline-secondary border-0 position-absolute"
+              style={{ right: 4, top: 4, zIndex: 1 }}
+              aria-label="Close detail panel"
+              onClick={() => setManualCollapsed(true)}
+            >
+              <i className="bi bi-x-lg" aria-hidden="true" />
+            </button>
             {right}
           </div>
         </>

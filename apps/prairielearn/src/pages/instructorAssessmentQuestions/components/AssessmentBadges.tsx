@@ -3,6 +3,8 @@ import { OverlayTrigger } from '@prairielearn/ui';
 import { AssessmentBadge } from '../../../components/AssessmentBadge.js';
 import type { AssessmentForPicker } from '../types.js';
 
+import { SubtleBadge, getSubtleColor } from './SubtleBadge.js';
+
 function toBadgeProps(assessment: AssessmentForPicker, useSetColor = true) {
   return {
     assessment_id: assessment.assessment_id,
@@ -39,16 +41,25 @@ function groupByAbbreviation(
   return new Map([...grouped.entries()].sort(([a], [b]) => a.localeCompare(b)));
 }
 
+function getColor(assessment: AssessmentForPicker, useSetColor = true) {
+  return useSetColor ? (assessment.assessment_set_color ?? assessment.color) : assessment.color;
+}
+
 /**
  * Renders assessment badges with grouping for compact display.
  * Groups of 3+ assessments with the same abbreviation are collapsed.
+ *
+ * When `subtle` is true, renders with muted pastel backgrounds instead of
+ * the full-color badge style.
  */
 export function AssessmentBadges({
   assessments,
   urlPrefix,
+  subtle = false,
 }: {
   assessments: AssessmentForPicker[];
   urlPrefix: string;
+  subtle?: boolean;
 }) {
   if (assessments.length === 0) {
     return null;
@@ -59,11 +70,19 @@ export function AssessmentBadges({
   if (!grouped) {
     return (
       <>
-        {assessments.slice(0, 3).map((assessment) => (
-          <span key={assessment.assessment_id} className="d-inline-block me-1">
-            <AssessmentBadge urlPrefix={urlPrefix} assessment={toBadgeProps(assessment, false)} />
-          </span>
-        ))}
+        {assessments.slice(0, 3).map((assessment) =>
+          subtle ? (
+            <SubtleBadge
+              key={assessment.assessment_id}
+              color={getColor(assessment, false)}
+              label={assessment.label}
+            />
+          ) : (
+            <span key={assessment.assessment_id} className="d-inline-block me-1">
+              <AssessmentBadge urlPrefix={urlPrefix} assessment={toBadgeProps(assessment, false)} />
+            </span>
+          ),
+        )}
         {assessments.length > 3 && (
           <span className="badge bg-secondary">+{assessments.length - 3}</span>
         )}
@@ -77,14 +96,23 @@ export function AssessmentBadges({
     if (items.length < 3) {
       for (const assessment of items) {
         elements.push(
-          <span key={assessment.assessment_id} className="d-inline-block me-1">
-            <AssessmentBadge urlPrefix={urlPrefix} assessment={toBadgeProps(assessment)} />
-          </span>,
+          subtle ? (
+            <SubtleBadge
+              key={assessment.assessment_id}
+              color={getColor(assessment)}
+              label={assessment.label}
+            />
+          ) : (
+            <span key={assessment.assessment_id} className="d-inline-block me-1">
+              <AssessmentBadge urlPrefix={urlPrefix} assessment={toBadgeProps(assessment)} />
+            </span>
+          ),
         );
       }
     } else {
       const color = items[0].assessment_set_color ?? items[0].color;
       const name = items[0].assessment_set_name ?? abbrev;
+      const subtleStyle = getSubtleColor(color);
       elements.push(
         <span key={`group-${abbrev}`} className="d-inline-block me-1">
           <OverlayTrigger
@@ -109,7 +137,12 @@ export function AssessmentBadges({
           >
             <button
               type="button"
-              className={`btn btn-badge color-${color}`}
+              className={subtle ? 'btn btn-badge' : `btn btn-badge color-${color}`}
+              style={
+                subtle
+                  ? { backgroundColor: subtleStyle.bg, color: subtleStyle.text, fontWeight: 600 }
+                  : undefined
+              }
               aria-label={`${abbrev}: ${items.length} assessments`}
               onClick={(e) => e.stopPropagation()}
             >

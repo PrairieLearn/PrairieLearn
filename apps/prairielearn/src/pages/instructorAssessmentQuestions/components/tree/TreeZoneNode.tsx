@@ -5,14 +5,49 @@ import type { CSSProperties, Dispatch } from 'react';
 
 import type { StaffAssessmentQuestionRow } from '../../../../lib/assessment-question.shared.js';
 import type { EnumAssessmentType } from '../../../../lib/db-types.js';
-import type { EditorAction, SelectedItem, ViewType, ZoneAssessmentForm } from '../../types.js';
+import type {
+  EditorAction,
+  SelectedItem,
+  ViewType,
+  ZoneAssessmentForm,
+  ZoneQuestionBlockForm,
+} from '../../types.js';
 
 import { TreeEmptyDropZone } from './TreeEmptyDropZone.js';
 import { TreeQuestionBlockNode } from './TreeQuestionBlockNode.js';
 
+function firstPoints(value: number | number[] | null | undefined): number {
+  if (value == null) return 0;
+  return Array.isArray(value) ? (value[0] ?? 0) : value;
+}
+
+function computeZoneQuestionCount(questions: ZoneQuestionBlockForm[]): number {
+  let count = 0;
+  for (const q of questions) {
+    if (q.alternatives) {
+      count += q.numberChoose ?? q.alternatives.length;
+    } else {
+      count += 1;
+    }
+  }
+  return count;
+}
+
+function computeZonePointTotals(questions: ZoneQuestionBlockForm[]): {
+  autoPoints: number;
+  manualPoints: number;
+} {
+  let autoPoints = 0;
+  let manualPoints = 0;
+  for (const q of questions) {
+    autoPoints += firstPoints(q.points ?? q.autoPoints);
+    manualPoints += q.manualPoints ?? 0;
+  }
+  return { autoPoints, manualPoints };
+}
+
 export function TreeZoneNode({
   zone,
-  zoneNumber,
   editMode,
   viewType,
   selectedItem,
@@ -23,14 +58,12 @@ export function TreeZoneNode({
   urlPrefix,
   hasCoursePermissionPreview,
   assessmentType,
-  startingQuestionNumber,
   dispatch,
   onAddQuestion,
   onDeleteQuestion,
   onDeleteZone,
 }: {
   zone: ZoneAssessmentForm;
-  zoneNumber: number;
   editMode: boolean;
   viewType: ViewType;
   selectedItem: SelectedItem;
@@ -41,7 +74,6 @@ export function TreeZoneNode({
   urlPrefix: string;
   hasCoursePermissionPreview: boolean;
   assessmentType: EnumAssessmentType;
-  startingQuestionNumber: number;
   dispatch: Dispatch<EditorAction>;
   onAddQuestion: (zoneTrackingId: string) => void;
   onDeleteQuestion: (
@@ -144,33 +176,39 @@ export function TreeZoneNode({
             <i className={`fa fa-chevron-${isCollapsed ? 'right' : 'down'}`} aria-hidden="true" />
           </button>
           <span className="fw-semibold flex-grow-1">
-            Zone {zoneNumber}
-            {zone.title ? `: ${zone.title}` : ''}
+            {zone.title || 'Zone'}
           </span>
-          <span className="text-muted small me-2">
-            {zone.numberChoose == null
-              ? `${zone.questions.length} questions`
-              : `Choose ${zone.numberChoose}`}
-            {zone.maxPoints != null ? ` · max ${zone.maxPoints} pts` : ''}
-            {zone.bestQuestions != null ? ` · best ${zone.bestQuestions}` : ''}
-          </span>
-          {zone.lockpoint && (
-            <span className="badge text-bg-warning me-1">
-              <i className="bi bi-lock-fill me-1" aria-hidden="true" />
-              Lockpoint
+          <span className="d-inline-flex align-items-center gap-1 flex-wrap">
+            <span className="badge text-bg-light text-muted">
+              {zone.numberChoose == null
+                ? `${computeZoneQuestionCount(zone.questions)} question${computeZoneQuestionCount(zone.questions) !== 1 ? 's' : ''}`
+                : `Choose ${zone.numberChoose}`}
             </span>
-          )}
+            <ZonePointsBadge zone={zone} assessmentType={assessmentType} />
+            {zone.maxPoints != null && (
+              <span className="badge text-bg-secondary">Max {zone.maxPoints} pts</span>
+            )}
+            {zone.bestQuestions != null && (
+              <span className="badge text-bg-secondary">Best {zone.bestQuestions}</span>
+            )}
+            {zone.lockpoint && (
+              <span className="badge text-bg-warning">
+                <i className="bi bi-lock-fill me-1" aria-hidden="true" />
+                Lockpoint
+              </span>
+            )}
+          </span>
           {editMode && (
             <button
               type="button"
-              className="btn btn-sm btn-outline-danger border-0 ms-1"
+              className="btn btn-sm border-0 text-muted ms-1 tree-delete-btn"
               title="Delete zone"
               onClick={(e) => {
                 e.stopPropagation();
                 onDeleteZone(zone.trackingId);
               }}
             >
-              <i className="fa fa-trash" aria-hidden="true" />
+              <i className="bi bi-trash3" aria-hidden="true" />
             </button>
           )}
         </div>
@@ -178,11 +216,10 @@ export function TreeZoneNode({
         {/* Zone content */}
         {!isCollapsed && (
           <>
-            {zone.questions.map((zoneQuestionBlock, index) => (
+            {zone.questions.map((zoneQuestionBlock) => (
               <TreeQuestionBlockNode
                 key={zoneQuestionBlock.trackingId}
                 zoneQuestionBlock={zoneQuestionBlock}
-                questionNumber={startingQuestionNumber + index}
                 editMode={editMode}
                 viewType={viewType}
                 selectedItem={selectedItem}
@@ -200,7 +237,7 @@ export function TreeZoneNode({
               <TreeEmptyDropZone dropRef={emptyDropRef} isOver={isOverEmpty} />
             )}
             {editMode && (
-              <div className="px-3 py-2 border-bottom">
+              <div className="py-2 border-bottom" style={{ paddingLeft: '2.5rem', paddingRight: '1rem' }}>
                 <button
                   className="btn btn-sm btn-outline-primary"
                   type="button"
@@ -216,4 +253,30 @@ export function TreeZoneNode({
       </div>
     </SortableContext>
   );
+}
+
+function ZonePointsBadge({
+  zone,
+  assessmentType,
+}: {
+  zone: ZoneAssessmentForm;
+  assessmentType: EnumAssessmentType;
+}) {
+  const { autoPoints, manualPoints } = computeZonePointTotals(zone.questions);
+  const totalPoints = autoPoints + manualPoints;
+
+  if (totalPoints === 0 && zone.questions.length === 0) {
+    return <span className="badge text-bg-light text-muted">No questions</span>;
+  }
+
+  if (assessmentType === 'Exam') {
+    return <span className="badge text-bg-info">{totalPoints} pts</span>;
+  }
+
+  const parts: string[] = [];
+  if (autoPoints > 0) parts.push(`${autoPoints} auto`);
+  if (manualPoints > 0) parts.push(`${manualPoints} manual`);
+  if (parts.length === 0) parts.push('0 pts');
+
+  return <span className="badge text-bg-info">{parts.join(' + ')}</span>;
 }

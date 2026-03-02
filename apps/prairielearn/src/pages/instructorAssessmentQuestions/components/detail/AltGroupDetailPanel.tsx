@@ -1,5 +1,4 @@
 import clsx from 'clsx';
-import { useState } from 'react';
 import { useForm } from 'react-hook-form';
 
 import type { EnumAssessmentType } from '../../../../lib/db-types.js';
@@ -34,7 +33,6 @@ export function AltGroupDetailPanel({
   onUpdate: (questionTrackingId: string, question: Partial<ZoneQuestionBlockForm>) => void;
   onDelete: (questionTrackingId: string, questionId: string) => void;
 }) {
-  const [showAdvanced, setShowAdvanced] = useState(false);
   const alternativeCount = zoneQuestionBlock.alternatives?.length ?? 0;
 
   const {
@@ -152,7 +150,7 @@ export function AltGroupDetailPanel({
               })}
             />
             <small className="form-text text-muted">
-              Inherited by alternatives unless overridden.
+              Default auto points inherited by alternatives unless overridden.
             </small>
           </div>
           <div className="mb-3">
@@ -167,6 +165,9 @@ export function AltGroupDetailPanel({
                 setValueAs: (v: string) => (v === '' ? undefined : Number(v)),
               })}
             />
+            <small className="form-text text-muted">
+              Default max auto points inherited by alternatives unless overridden.
+            </small>
           </div>
           <div className="mb-3">
             <label htmlFor="altgroup-manualPoints" className="form-label">
@@ -180,6 +181,9 @@ export function AltGroupDetailPanel({
                 setValueAs: (v: string) => (v === '' ? undefined : Number(v)),
               })}
             />
+            <small className="form-text text-muted">
+              Default manual points inherited by alternatives unless overridden.
+            </small>
           </div>
         </>
       ) : (
@@ -206,6 +210,9 @@ export function AltGroupDetailPanel({
                 },
               })}
             />
+            <small className="form-text text-muted">
+              Default points list inherited by alternatives unless overridden.
+            </small>
           </div>
           <div className="mb-3">
             <label htmlFor="altgroup-manualPoints" className="form-label">
@@ -219,6 +226,9 @@ export function AltGroupDetailPanel({
                 setValueAs: (v: string) => (v === '' ? undefined : Number(v)),
               })}
             />
+            <small className="form-text text-muted">
+              Default manual points inherited by alternatives unless overridden.
+            </small>
           </div>
         </>
       )}
@@ -233,70 +243,72 @@ export function AltGroupDetailPanel({
           rows={2}
           {...register('comment')}
         />
+        <small className="form-text text-muted">Internal note, not shown to students.</small>
       </div>
 
-      <button
-        type="button"
-        className="btn btn-sm btn-link p-0 mb-2"
-        onClick={() => setShowAdvanced(!showAdvanced)}
-      >
-        <i className={`fa fa-chevron-${showAdvanced ? 'down' : 'right'} me-1`} aria-hidden="true" />
-        Advanced
-      </button>
+      <h6 className="text-muted text-uppercase small mb-3 mt-4">Advanced</h6>
 
-      {showAdvanced && (
-        <>
-          <div className="mb-3">
-            <label htmlFor="altgroup-advanceScorePerc" className="form-label">
-              Advance score %
-            </label>
-            <input
-              type="number"
-              className="form-control form-control-sm"
-              id="altgroup-advanceScorePerc"
-              {...register('advanceScorePerc', {
-                setValueAs: (v: string) => (v === '' ? undefined : Number(v)),
-              })}
-            />
-          </div>
-          <div className="mb-3">
-            <label htmlFor="altgroup-gradeRateMinutes" className="form-label">
-              Grade rate (minutes)
-            </label>
-            <input
-              type="number"
-              className="form-control form-control-sm"
-              id="altgroup-gradeRateMinutes"
-              step="any"
-              {...register('gradeRateMinutes', {
-                setValueAs: (v: string) => (v === '' ? undefined : Number(v)),
-              })}
-            />
-          </div>
-          <div className="mb-3 form-check">
-            <input
-              type="checkbox"
-              className="form-check-input"
-              id="altgroup-forceMaxPoints"
-              {...register('forceMaxPoints')}
-            />
-            <label htmlFor="altgroup-forceMaxPoints" className="form-check-label">
-              Force max points
-            </label>
-          </div>
-          <div className="mb-3 form-check">
-            <input
-              type="checkbox"
-              className="form-check-input"
-              id="altgroup-allowRealTimeGrading"
-              {...register('allowRealTimeGrading')}
-            />
-            <label htmlFor="altgroup-allowRealTimeGrading" className="form-check-label">
-              Allow real-time grading
-            </label>
-          </div>
-        </>
-      )}
+      <div className="mb-3">
+        <label htmlFor="altgroup-advanceScorePerc" className="form-label">
+          Advance score %
+        </label>
+        <input
+          type="number"
+          className="form-control form-control-sm"
+          id="altgroup-advanceScorePerc"
+          {...register('advanceScorePerc', {
+            setValueAs: (v: string) => (v === '' ? undefined : Number(v)),
+          })}
+        />
+        <small className="form-text text-muted">
+          Minimum score percentage required to advance past this group.
+        </small>
+      </div>
+      <div className="mb-3">
+        <label htmlFor="altgroup-gradeRateMinutes" className="form-label">
+          Grade rate (minutes)
+        </label>
+        <input
+          type="number"
+          className="form-control form-control-sm"
+          id="altgroup-gradeRateMinutes"
+          step="any"
+          {...register('gradeRateMinutes', {
+            setValueAs: (v: string) => (v === '' ? undefined : Number(v)),
+          })}
+        />
+        <small className="form-text text-muted">
+          Minimum time between grading attempts for questions in this group.
+        </small>
+      </div>
+      <div className="mb-3 form-check">
+        <input
+          type="checkbox"
+          className="form-check-input"
+          id="altgroup-forceMaxPoints"
+          {...register('forceMaxPoints')}
+        />
+        <label htmlFor="altgroup-forceMaxPoints" className="form-check-label">
+          Force max points
+        </label>
+        <small className="form-text text-muted d-block">
+          Award full points after enough attempts, regardless of correctness.
+        </small>
+      </div>
+      <div className="mb-3 form-check">
+        <input
+          type="checkbox"
+          className="form-check-input"
+          id="altgroup-allowRealTimeGrading"
+          {...register('allowRealTimeGrading')}
+        />
+        <label htmlFor="altgroup-allowRealTimeGrading" className="form-check-label">
+          Allow real-time grading
+        </label>
+        <small className="form-text text-muted d-block">
+          Let students see grading results immediately after submission.
+        </small>
+      </div>
 
       <div className="d-flex gap-2">
         <button type="submit" className="btn btn-sm btn-primary" disabled={!isDirty}>

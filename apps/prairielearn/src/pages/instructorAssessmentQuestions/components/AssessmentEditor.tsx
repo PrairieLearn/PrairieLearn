@@ -83,21 +83,12 @@ function AssessmentEditorInner({
   const trpcClient = useTRPCClient();
   const initialZones = addTrackingIds(jsonZones);
 
-  const initialCollapsedGroups = new Set<string>();
-  for (const zone of initialZones) {
-    for (const question of zone.questions) {
-      if ((question.alternatives?.length ?? 0) > 1) {
-        initialCollapsedGroups.add(question.trackingId);
-      }
-    }
-  }
-
   const initialState = {
     zones: initialZones,
     questionMetadata: Object.fromEntries(
       questionRows.map((r) => [questionDisplayName(course, r), r]),
     ),
-    collapsedGroups: initialCollapsedGroups,
+    collapsedGroups: new Set<string>(),
     collapsedZones: new Set<string>(),
   };
 
@@ -144,16 +135,6 @@ function AssessmentEditorInner({
       });
     });
     return map;
-  }, [zones]);
-
-  const zoneStartNumbers = useMemo(() => {
-    const starts: number[] = [];
-    let count = 0;
-    zones.forEach((zone) => {
-      starts.push(count + 1);
-      count += zone.questions.length;
-    });
-    return starts;
   }, [zones]);
 
   const buildQuestionMetadata = (data: QuestionByQidResult): StaffAssessmentQuestionRow => {
@@ -553,47 +534,47 @@ function AssessmentEditorInner({
 
   return (
     <>
-      <div className="card mb-4">
-        <div className="card-header bg-primary text-white d-flex align-items-center">
-          <h1>
-            {assessmentSetName} {assessment.number}: Questions
-          </h1>
-          <div className="ms-auto">
-            <EditModeToolbar
-              csrfToken={csrfToken}
-              origHash={origHash}
-              zones={zonesForSave}
-              editMode={editMode}
-              canEdit={canEdit && !!origHash}
-              setEditMode={setEditMode}
-              saveButtonDisabled={saveButtonDisabled}
-              saveButtonDisabledReason={saveButtonDisabledReason}
-              isAllExpanded={isAllExpanded}
-              viewType={viewType}
-              onViewTypeChange={setViewType}
-              onToggleExpandCollapse={() => {
-                if (isAllExpanded) {
-                  dispatch({ type: 'COLLAPSE_ALL' });
-                } else {
-                  dispatch({ type: 'EXPAND_ALL' });
-                }
-              }}
-              onCancel={() => {
-                dispatch({ type: 'RESET' });
-                setEditMode(false);
-                setSelectedItem(null);
-              }}
-            />
-          </div>
+      <div className="d-flex align-items-center mb-3">
+        <h1 className="h3 mb-0">
+          {assessmentSetName} {assessment.number}: Questions
+        </h1>
+        <div className="ms-auto">
+          <EditModeToolbar
+            csrfToken={csrfToken}
+            origHash={origHash}
+            zones={zonesForSave}
+            editMode={editMode}
+            canEdit={canEdit && !!origHash}
+            setEditMode={setEditMode}
+            saveButtonDisabled={saveButtonDisabled}
+            saveButtonDisabledReason={saveButtonDisabledReason}
+            isAllExpanded={isAllExpanded}
+            viewType={viewType}
+            onViewTypeChange={setViewType}
+            onToggleExpandCollapse={() => {
+              if (isAllExpanded) {
+                dispatch({ type: 'COLLAPSE_ALL' });
+              } else {
+                dispatch({ type: 'EXPAND_ALL' });
+              }
+            }}
+            onCancel={() => {
+              dispatch({ type: 'RESET' });
+              setEditMode(false);
+            }}
+          />
         </div>
-        <DndContext
-          sensors={sensors}
-          collisionDetection={closestCenter}
-          autoScroll={false}
-          onDragOver={handleDragOver}
-          onDragEnd={handleDragEnd}
-        >
+      </div>
+      <DndContext
+        sensors={sensors}
+        collisionDetection={closestCenter}
+        autoScroll={false}
+        onDragOver={handleDragOver}
+        onDragEnd={handleDragEnd}
+      >
+        <div className="border rounded" style={{ minHeight: 400 }}>
           <SplitPane
+            forceOpen={selectedItem}
             left={
               <AssessmentTree
                 zones={zones}
@@ -607,7 +588,6 @@ function AssessmentEditorInner({
                 urlPrefix={urlPrefix}
                 hasCoursePermissionPreview={hasCoursePermissionPreview}
                 assessmentType={assessment.type}
-                zoneStartNumbers={zoneStartNumbers}
                 dispatch={dispatch}
                 onAddQuestion={handleAddQuestion}
                 onAddZone={handleAddZone}
@@ -640,15 +620,8 @@ function AssessmentEditorInner({
               />
             }
           />
-        </DndContext>
-        {editMode && (
-          <div className="card-footer">
-            <button className="btn btn-sm btn-primary" type="button" onClick={handleAddZone}>
-              <i className="fa fa-plus" aria-hidden="true" /> Add zone
-            </button>
-          </div>
-        )}
-      </div>
+        </div>
+      </DndContext>
       {assessment.type === 'Homework' ? (
         <ResetQuestionVariantsModal
           csrfToken={csrfToken}

@@ -12,7 +12,6 @@ import { TreeQuestionRow } from './TreeQuestionRow.js';
 
 export function TreeQuestionBlockNode({
   zoneQuestionBlock,
-  questionNumber,
   editMode,
   viewType,
   selectedItem,
@@ -26,7 +25,6 @@ export function TreeQuestionBlockNode({
   onDeleteQuestion,
 }: {
   zoneQuestionBlock: ZoneQuestionBlockForm;
-  questionNumber: number;
   editMode: boolean;
   viewType: ViewType;
   selectedItem: SelectedItem;
@@ -79,8 +77,7 @@ export function TreeQuestionBlockNode({
         <TreeQuestionRow
           question={zoneQuestionBlock}
           zoneQuestionBlock={zoneQuestionBlock}
-          questionNumber={questionNumber}
-          alternativeNumber={null}
+          isAlternative={false}
           questionData={questionData}
           editMode={editMode}
           viewType={viewType}
@@ -117,10 +114,10 @@ export function TreeQuestionBlockNode({
         role="button"
         tabIndex={0}
         className={clsx(
-          'd-flex align-items-center px-2 py-1 border-bottom user-select-none',
+          'd-flex align-items-center py-1 border-bottom user-select-none',
           isAltGroupSelected ? 'bg-primary-subtle' : '',
         )}
-        style={{ paddingLeft: '1.5rem', cursor: 'pointer' }}
+        style={{ paddingLeft: '2.5rem', paddingRight: '0.5rem', cursor: 'pointer' }}
         onClick={(e) => {
           e.stopPropagation();
           setSelectedItem({
@@ -168,35 +165,32 @@ export function TreeQuestionBlockNode({
         >
           <i className={`fa fa-chevron-${isCollapsed ? 'right' : 'down'}`} aria-hidden="true" />
         </button>
-        <span className="badge color-gray1 me-2" style={{ minWidth: '2.5em' }}>
-          {questionNumber}.
-        </span>
-        <span className="flex-grow-1 text-muted small">
+        <i className="bi bi-stack text-primary me-1" aria-hidden="true" />
+        <span className="flex-grow-1 text-primary">
           {run(() => {
             const choose = zoneQuestionBlock.numberChoose;
-            if (choose == null) return `All from ${alternativeCount} alternatives`;
-            if (choose === 1) return `1 of ${alternativeCount} alternatives`;
-            return `${choose} of ${alternativeCount} alternatives`;
+            if (choose == null) return `Choose ${alternativeCount} of ${alternativeCount}`;
+            return `Choose ${choose} of ${alternativeCount}`;
           })}
         </span>
         {editMode && (
           <button
             type="button"
-            className="btn btn-sm btn-outline-danger border-0 ms-1"
+            className="btn btn-sm border-0 text-muted ms-1 tree-delete-btn"
             title="Delete alternative group"
             onClick={(e) => {
               e.stopPropagation();
               onDeleteQuestion(zoneQuestionBlock.trackingId, '');
             }}
           >
-            <i className="fa fa-trash" aria-hidden="true" />
+            <i className="bi bi-trash3" aria-hidden="true" />
           </button>
         )}
       </div>
 
       {/* Alternatives */}
       {!isCollapsed &&
-        alternatives.map((alternative, altIndex) => {
+        alternatives.map((alternative) => {
           const altQuestionData = alternative.id ? questionMetadata[alternative.id] : null;
           const isAltSelected =
             selectedItem?.type === 'alternative' &&
@@ -208,8 +202,7 @@ export function TreeQuestionBlockNode({
               key={alternative.trackingId}
               question={alternative}
               zoneQuestionBlock={zoneQuestionBlock}
-              questionNumber={questionNumber}
-              alternativeNumber={altIndex + 1}
+              isAlternative
               questionData={altQuestionData}
               editMode={editMode}
               viewType={viewType}

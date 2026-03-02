@@ -1,17 +1,39 @@
 import type { DraggableAttributes, DraggableSyntheticListeners } from '@dnd-kit/core';
 import clsx from 'clsx';
+import { type ReactElement, useId } from 'react';
 
-import { TagBadgeList } from '../../../../components/TagBadge.js';
-import { TopicBadge } from '../../../../components/TopicBadge.js';
-import type { StaffAssessmentQuestionRow } from '../../../../lib/assessment-question.shared.js';
+import { OverlayTrigger } from '@prairielearn/ui';
+
+import { CopyButton } from '../../../../components/CopyButton.js';
+import { HistMini } from '../../../../components/HistMini.js';
+import type { OtherAssessment, StaffAssessmentQuestionRow } from '../../../../lib/assessment-question.shared.js';
 import type { EnumAssessmentType } from '../../../../lib/db-types.js';
-import type { QuestionAlternativeForm, ViewType, ZoneQuestionBlockForm } from '../../types.js';
+import type { AssessmentForPicker, QuestionAlternativeForm, ViewType, ZoneQuestionBlockForm } from '../../types.js';
+import { AssessmentBadges } from '../AssessmentBadges.js';
+import { SubtleBadge } from '../SubtleBadge.js';
 
-function formatPoints(
-  question: ZoneQuestionBlockForm | QuestionAlternativeForm,
-  zoneQuestionBlock: ZoneQuestionBlockForm,
-  assessmentType: EnumAssessmentType,
-): string {
+function toAssessmentForPicker(assessments: OtherAssessment[]): AssessmentForPicker[] {
+  return assessments.map((a) => ({
+    assessment_id: String(a.assessment_id),
+    label: `${a.assessment_set_abbreviation}${a.assessment_number}`,
+    color: a.assessment_set_color,
+    assessment_set_abbreviation: a.assessment_set_abbreviation ?? undefined,
+    assessment_set_name: a.assessment_set_name ?? undefined,
+    assessment_set_color: a.assessment_set_color,
+    assessment_number: a.assessment_number ?? undefined,
+  }));
+}
+
+function PointsBadge({
+  question,
+  zoneQuestionBlock,
+  assessmentType,
+}: {
+  question: ZoneQuestionBlockForm | QuestionAlternativeForm;
+  zoneQuestionBlock: ZoneQuestionBlockForm;
+  assessmentType: EnumAssessmentType;
+}): ReactElement | null {
+  const tooltipId = useId();
   const autoPoints =
     question.points ??
     question.autoPoints ??
@@ -20,12 +42,44 @@ function formatPoints(
   const manualPoints = question.manualPoints ?? zoneQuestionBlock.manualPoints;
 
   if (assessmentType === 'Exam') {
+    if (autoPoints == null && manualPoints == null) return null;
+
+    const compactParts: ReactElement[] = [];
+    const tooltipParts: string[] = [];
+
     if (autoPoints != null) {
       const pts = Array.isArray(autoPoints) ? autoPoints : [autoPoints];
-      return pts.join(', ') + ' pts';
+      compactParts.push(
+        <span key="auto">
+          <i className="bi bi-lightning-fill me-1" aria-hidden="true" />
+          {pts.join(', ')}
+        </span>,
+      );
+      tooltipParts.push(
+        pts.length > 1
+          ? `Auto-graded: ${pts.join(', ')} pts (per variant)`
+          : `Auto-graded: ${pts[0]} pts`,
+      );
     }
-    if (manualPoints != null) return `${manualPoints} pts (manual)`;
-    return '';
+
+    if (manualPoints != null) {
+      if (compactParts.length > 0) {
+        compactParts.push(<span key="sep"> + </span>);
+      }
+      compactParts.push(
+        <span key="manual">
+          <i className="bi bi-pencil-fill me-1" aria-hidden="true" />
+          {manualPoints}
+        </span>,
+      );
+      tooltipParts.push(`Manual grading: ${manualPoints} pts`);
+    }
+
+    return (
+      <OverlayTrigger placement="top" tooltip={{ props: { id: tooltipId }, body: tooltipParts.join(' · ') }}>
+        <span className="text-muted small text-nowrap ms-2">{compactParts}</span>
+      </OverlayTrigger>
+    );
   }
 
   // Homework
@@ -37,21 +91,47 @@ function formatPoints(
     zoneQuestionBlock.maxAutoPoints;
   const maxAuto = Array.isArray(maxAutoPoints) ? maxAutoPoints[0] : maxAutoPoints;
 
-  const parts: string[] = [];
+  if (initPoints == null && maxAuto == null && manualPoints == null) return null;
+
+  const compactParts: ReactElement[] = [];
+  const tooltipParts: string[] = [];
+
   if (initPoints != null || maxAuto != null) {
-    parts.push(`${initPoints ?? 0}/${maxAuto ?? 0}`);
+    compactParts.push(
+      <span key="auto">
+        <i className="bi bi-lightning-fill me-1" aria-hidden="true" />
+        {initPoints ?? 0}/{maxAuto ?? 0}
+      </span>,
+    );
+    tooltipParts.push(
+      `Auto-graded: ${initPoints ?? 0} pts initial, ${maxAuto ?? 0} pts max`,
+    );
   }
+
   if (manualPoints != null) {
-    parts.push(`+${manualPoints} manual`);
+    if (compactParts.length > 0) {
+      compactParts.push(<span key="sep"> + </span>);
+    }
+    compactParts.push(
+      <span key="manual">
+        <i className="bi bi-pencil-fill me-1" aria-hidden="true" />
+        {manualPoints}
+      </span>,
+    );
+    tooltipParts.push(`Manual grading: ${manualPoints} pts`);
   }
-  return parts.join(' ') || '';
+
+  return (
+    <OverlayTrigger placement="top" tooltip={{ props: { id: tooltipId }, body: tooltipParts.join(' · ') }}>
+      <span className="text-muted small text-nowrap ms-2">{compactParts}</span>
+    </OverlayTrigger>
+  );
 }
 
 export function TreeQuestionRow({
   question,
   zoneQuestionBlock,
-  questionNumber,
-  alternativeNumber,
+  isAlternative,
   questionData,
   editMode,
   viewType,
@@ -66,8 +146,7 @@ export function TreeQuestionRow({
 }: {
   question: ZoneQuestionBlockForm | QuestionAlternativeForm;
   zoneQuestionBlock: ZoneQuestionBlockForm;
-  questionNumber: number;
-  alternativeNumber: number | null;
+  isAlternative: boolean;
   questionData: StaffAssessmentQuestionRow | null;
   editMode: boolean;
   viewType: ViewType;
@@ -80,21 +159,17 @@ export function TreeQuestionRow({
   onClick: () => void;
   onDelete?: () => void;
 }) {
-  const numberText =
-    alternativeNumber != null ? `${questionNumber}.${alternativeNumber}.` : `${questionNumber}.`;
-
-  const indent = alternativeNumber != null ? '3rem' : '1.5rem';
-  const pointsText = formatPoints(question, zoneQuestionBlock, assessmentType);
+  const indent = isAlternative ? '4.5rem' : '2.5rem';
 
   return (
     <div
       role="button"
       tabIndex={0}
       className={clsx(
-        'd-flex align-items-center px-2 py-1 border-bottom',
+        'd-flex align-items-center py-1 border-bottom',
         isSelected ? 'bg-primary-subtle' : 'list-group-item-action',
       )}
-      style={{ paddingLeft: indent, cursor: 'pointer' }}
+      style={{ paddingLeft: indent, paddingRight: '0.5rem', cursor: 'pointer' }}
       onClick={(e) => {
         e.stopPropagation();
         onClick();
@@ -125,53 +200,80 @@ export function TreeQuestionRow({
           <i className="fa fa-grip-vertical text-muted" aria-hidden="true" />
         </span>
       )}
-      <span className="badge color-gray1 me-2" style={{ minWidth: '2.5em' }}>
-        {numberText}
-      </span>
+      <i className="bi bi-file-earmark-text text-muted me-2" aria-hidden="true" />
       <div className="flex-grow-1" style={{ minWidth: 0 }}>
-        <div className="d-flex align-items-center gap-2">
-          <span className="text-truncate">
-            {questionData ? (
-              hasCoursePermissionPreview ? (
-                <a
-                  href={`${urlPrefix}/question/${questionData.question.id}/`}
-                  onClick={(e) => e.stopPropagation()}
-                >
-                  {questionData.question.title}
-                </a>
-              ) : (
-                questionData.question.title
-              )
+        <div className="text-truncate">
+          {questionData ? (
+            hasCoursePermissionPreview ? (
+              <a
+                href={`${urlPrefix}/question/${questionData.question.id}/`}
+                className="text-decoration-underline text-body"
+                onClick={(e) => e.stopPropagation()}
+              >
+                {questionData.question.title}
+              </a>
             ) : (
-              <code>{question.id}</code>
-            )}
-          </span>
-          {questionData && <code className="text-muted small text-nowrap">{question.id}</code>}
+              questionData.question.title
+            )
+          ) : (
+            <span className="text-muted small">{question.id}</span>
+          )}
         </div>
-        {viewType === 'detailed' && questionData && (
-          <div className="d-flex flex-wrap gap-1 mt-1">
-            <TopicBadge topic={questionData.topic} />
-            <TagBadgeList tags={questionData.tags} />
+        {question.id && (
+          <div className="d-flex align-items-center text-muted" style={{ fontSize: '0.8rem' }}>
+            <span className="text-truncate">{question.id}</span>
+            <span onClick={(e) => e.stopPropagation()}>
+              <CopyButton text={question.id} tooltipId={`copy-qid-${question.id}`} ariaLabel="Copy QID" />
+            </span>
           </div>
         )}
+        {viewType === 'detailed' && questionData && (
+          <>
+            <div className="d-flex flex-wrap align-items-center gap-1 mt-1">
+              <SubtleBadge color={questionData.topic.color} label={questionData.topic.name} />
+              {questionData.tags?.map((tag) => (
+                <SubtleBadge key={tag.name} color={tag.color} label={tag.name} />
+              ))}
+              {questionData.assessment_question.number_submissions_hist && (
+                <HistMini
+                  data={questionData.assessment_question.number_submissions_hist}
+                  options={{ width: 60, height: 20 }}
+                />
+              )}
+            </div>
+            {questionData.other_assessments && questionData.other_assessments.length > 0 && (
+              <div className="d-flex flex-wrap align-items-center gap-1 mt-1">
+                <AssessmentBadges
+                  assessments={toAssessmentForPicker(questionData.other_assessments)}
+                  urlPrefix={urlPrefix}
+                  subtle
+                />
+              </div>
+            )}
+          </>
+        )}
       </div>
-      {questionData && viewType === 'simple' && (
+      {viewType === 'simple' && questionData && (
         <div className="ms-2 me-2">
-          <TopicBadge topic={questionData.topic} />
+          <SubtleBadge color={questionData.topic.color} label={questionData.topic.name} />
         </div>
       )}
-      {pointsText && <span className="text-muted small text-nowrap ms-2">{pointsText}</span>}
+      <PointsBadge
+        question={question}
+        zoneQuestionBlock={zoneQuestionBlock}
+        assessmentType={assessmentType}
+      />
       {editMode && onDelete && (
         <button
           type="button"
-          className="btn btn-sm btn-outline-danger border-0 ms-1"
+          className="btn btn-sm border-0 text-muted ms-1 tree-delete-btn"
           title="Delete question"
           onClick={(e) => {
             e.stopPropagation();
             onDelete();
           }}
         >
-          <i className="fa fa-trash" aria-hidden="true" />
+          <i className="bi bi-trash3" aria-hidden="true" />
         </button>
       )}
     </div>

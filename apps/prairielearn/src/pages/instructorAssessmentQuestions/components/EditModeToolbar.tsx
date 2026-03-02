@@ -36,20 +36,24 @@ export function EditModeToolbar({
         <div className="btn-group btn-group-sm" role="group" aria-label="View type">
           <button
             type="button"
-            className={`btn ${viewType === 'simple' ? 'btn-light' : 'btn-outline-light'}`}
+            className={`btn ${viewType === 'simple' ? 'btn-secondary' : 'btn-outline-secondary'}`}
             onClick={() => onViewTypeChange('simple')}
           >
             Simple
           </button>
           <button
             type="button"
-            className={`btn ${viewType === 'detailed' ? 'btn-light' : 'btn-outline-light'}`}
+            className={`btn ${viewType === 'detailed' ? 'btn-secondary' : 'btn-outline-secondary'}`}
             onClick={() => onViewTypeChange('detailed')}
           >
             Detailed
           </button>
         </div>
-        <button className="btn btn-sm btn-light" type="button" onClick={onToggleExpandCollapse}>
+        <button
+          className="btn btn-sm btn-outline-secondary"
+          type="button"
+          onClick={onToggleExpandCollapse}
+        >
           {isAllExpanded ? (
             <>
               <i className="bi bi-chevron-contract" aria-hidden="true" /> Collapse all
@@ -61,7 +65,11 @@ export function EditModeToolbar({
           )}
         </button>
         {canEdit && (
-          <button className="btn btn-sm btn-light" type="button" onClick={() => setEditMode(true)}>
+          <button
+            className="btn btn-sm btn-outline-secondary"
+            type="button"
+            onClick={() => setEditMode(true)}
+          >
             <i className="fa fa-edit" aria-hidden="true" /> Edit questions
           </button>
         )}
@@ -70,7 +78,11 @@ export function EditModeToolbar({
   }
 
   const saveButton = (
-    <button className="btn btn-sm btn-light mx-1" type="submit" disabled={saveButtonDisabled}>
+    <button
+      className="btn btn-sm btn-outline-secondary mx-1"
+      type="submit"
+      disabled={saveButtonDisabled}
+    >
       <i className="fa fa-save" aria-hidden="true" /> Save and sync
     </button>
   );
@@ -84,20 +96,24 @@ export function EditModeToolbar({
       <div className="btn-group btn-group-sm" role="group" aria-label="View type">
         <button
           type="button"
-          className={`btn ${viewType === 'simple' ? 'btn-light' : 'btn-outline-light'}`}
+          className={`btn ${viewType === 'simple' ? 'btn-secondary' : 'btn-outline-secondary'}`}
           onClick={() => onViewTypeChange('simple')}
         >
           Simple
         </button>
         <button
           type="button"
-          className={`btn ${viewType === 'detailed' ? 'btn-light' : 'btn-outline-light'}`}
+          className={`btn ${viewType === 'detailed' ? 'btn-secondary' : 'btn-outline-secondary'}`}
           onClick={() => onViewTypeChange('detailed')}
         >
           Detailed
         </button>
       </div>
-      <button className="btn btn-sm btn-light" type="button" onClick={onToggleExpandCollapse}>
+      <button
+        className="btn btn-sm btn-outline-secondary"
+        type="button"
+        onClick={onToggleExpandCollapse}
+      >
         {isAllExpanded ? (
           <>
             <i className="bi bi-chevron-contract" aria-hidden="true" /> Collapse all
@@ -115,7 +131,7 @@ export function EditModeToolbar({
       ) : (
         saveButton
       )}
-      <button className="btn btn-sm btn-light" type="button" onClick={onCancel}>
+      <button className="btn btn-sm btn-outline-secondary" type="button" onClick={onCancel}>
         Cancel
       </button>
     </form>
