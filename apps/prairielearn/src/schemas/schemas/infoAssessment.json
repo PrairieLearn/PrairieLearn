@@ -379,6 +379,11 @@
           "type": "integer",
           "minimum": 0
         },
+        "lockpoint": {
+          "description": "If true, students must explicitly acknowledge advancing past this point. All questions in previous zones become read-only after crossing.",
+          "type": "boolean",
+          "default": false
+        },
         "questions": {
           "description": "Array of questions in the zone.",
           "type": "array",

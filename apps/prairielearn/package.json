@@ -17,7 +17,8 @@
     "test": "vitest run --coverage",
     "test:dist": "vitest run --coverage dist/**/*.test.js",
     "test:docker-smoke-tests": "vitest run --coverage --mode=docker-smoke-tests",
-    "test:e2e": "playwright test"
+    "test:e2e": "playwright test",
+    "test:executor-smoke-test": "vitest run --mode=executor-smoke-test src/tests/executor.test.ts"
   },
   "dependencies": {
     "@ai-sdk/anthropic": "^3.0.36",
@@ -195,7 +196,7 @@
     "mime": "^4.1.0",
     "minimist": "^1.2.8",
     "morphdom": "^2.7.8",
-    "multer": "^2.0.2",
+    "multer": "^2.1.0",
     "mustache": "^4.2.0",
     "node-fetch": "^3.3.2",
     "node-jose": "^2.2.0",

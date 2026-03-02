@@ -1,5 +1,7 @@
 import { QueryClient, useQuery } from '@tanstack/react-query';
-import { useMemo, useRef, useState } from 'react';
+import { useCallback, useMemo, useRef, useState } from 'react';
+
+import { run } from '@prairielearn/run';
 
 import { b64DecodeUnicode } from '../../../../lib/base64-util.js';
 import type { StaffQuestion } from '../../../../lib/client/safe-db-types.js';
@@ -13,6 +15,7 @@ import {
   type NewVariantHandle,
   QuestionAndFilePreview,
 } from './QuestionAndFilePreview.js';
+import { DRAFT_QID_PREFIX, QuestionTitleAndQid } from './QuestionTitleAndQid.js';
 
 async function fetchQuestionFiles(
   urlPrefix: string,
@@ -56,8 +59,18 @@ function AiQuestionGenerationEditorInner({
   const [showFinalizeModal, setShowFinalizeModal] = useState(false);
   const [isGenerating, setIsGenerating] = useState(false);
   const [hasUnsavedChanges, setHasUnsavedChanges] = useState(false);
+  const [currentTitle, setCurrentTitle] = useState(question.title);
+  const [currentQid, setCurrentQid] = useState(question.qid);
   const newVariantRef = useRef<NewVariantHandle>(null);
   const codeEditorsRef = useRef<CodeEditorsHandle>(null);
+
+  const handleTitleAndQidSaved = useCallback(
+    (update: { qid: string | null; title: string | null }) => {
+      setCurrentQid(update.qid);
+      setCurrentTitle(update.title);
+    },
+    [],
+  );
 
   const {
     data: questionFiles,
@@ -93,45 +106,53 @@ function AiQuestionGenerationEditorInner({
         onGenerationComplete={() => refetchFiles()}
       />
 
-      <div className="d-flex flex-row align-items-stretch bg-light app-preview-tabs z-1">
-        <ul className="nav nav-tabs me-auto ps-2 pt-2">
-          <li className="nav-item">
-            <a
-              className="nav-link active"
-              data-bs-toggle="tab"
-              aria-current="page"
-              href="#question-preview"
-            >
-              Preview
-            </a>
-          </li>
-          <li className="nav-item">
-            <a className="nav-link" data-bs-toggle="tab" href="#question-code">
-              Files
-            </a>
-          </li>
-          {richTextEditorEnabled ? (
+      <div className="app-preview-tabs z-1">
+        <QuestionTitleAndQid
+          currentQid={currentQid}
+          currentTitle={currentTitle}
+          csrfToken={csrfToken}
+          onSaved={handleTitleAndQidSaved}
+        />
+        <div className="d-flex flex-row align-items-stretch bg-light">
+          <ul className="nav nav-tabs me-auto ps-2 pt-2">
             <li className="nav-item">
-              <a className="nav-link" data-bs-toggle="tab" href="#question-rich-text-editor">
-                Rich text editor
+              <a
+                className="nav-link active"
+                data-bs-toggle="tab"
+                aria-current="page"
+                href="#question-preview"
+              >
+                Preview
               </a>
             </li>
-          ) : null}
-        </ul>
-        <div className="d-flex align-items-center justify-content-end flex-grow-1 border-bottom pe-2">
-          {!isQuestionEmpty && (
-            <button
-              type="button"
-              className="btn btn-sm btn-primary"
-              data-bs-toggle="tooltip"
-              data-bs-title="Finalize a question to use it on assessments and make manual edits"
-              disabled={isGenerating}
-              onClick={() => setShowFinalizeModal(true)}
-            >
-              <i className="fa fa-check" aria-hidden="true" />
-              Finalize question
-            </button>
-          )}
+            <li className="nav-item">
+              <a className="nav-link" data-bs-toggle="tab" href="#question-code">
+                Files
+              </a>
+            </li>
+            {richTextEditorEnabled ? (
+              <li className="nav-item">
+                <a className="nav-link" data-bs-toggle="tab" href="#question-rich-text-editor">
+                  Rich text editor
+                </a>
+              </li>
+            ) : null}
+          </ul>
+          <div className="d-flex align-items-center justify-content-end flex-grow-1 border-bottom pe-2">
+            {!isQuestionEmpty && (
+              <button
+                type="button"
+                className="btn btn-sm btn-primary"
+                data-bs-toggle="tooltip"
+                data-bs-title="Finalize a question to use it on assessments and make manual edits"
+                disabled={isGenerating}
+                onClick={() => setShowFinalizeModal(true)}
+              >
+                <i className="fa fa-check" aria-hidden="true" />
+                Finalize question
+              </button>
+            )}
+          </div>
         </div>
       </div>
       <div className="app-preview">
@@ -151,8 +172,25 @@ function AiQuestionGenerationEditorInner({
         />
       </div>
       <FinalizeModal
+        // Key on the current values so the uncontrolled inputs reset when the
+        // user edits the title/QID inline and reopens the modal.
+        key={`${currentTitle ?? ''}::${currentQid ?? ''}`}
         csrfToken={csrfToken}
         show={showFinalizeModal}
+        // Don't pre-fill auto-generated placeholder values like "draft #3" or
+        // "draft_3" — these are system defaults that users almost certainly
+        // want to replace when finalizing, so showing them would just force
+        // the user to clear the field before typing a real value.
+        defaultTitle={
+          currentTitle && !/^draft #\d+$/i.test(currentTitle) ? currentTitle : undefined
+        }
+        defaultQid={run(() => {
+          const suffix = currentQid?.startsWith(DRAFT_QID_PREFIX)
+            ? currentQid.slice(DRAFT_QID_PREFIX.length)
+            : (currentQid ?? undefined);
+          if (suffix && /^draft_\d+$/.test(suffix)) return undefined;
+          return suffix;
+        })}
         onHide={() => setShowFinalizeModal(false)}
       />
     </div>
