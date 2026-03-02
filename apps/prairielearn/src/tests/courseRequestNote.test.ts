@@ -12,11 +12,27 @@ import * as helperServer from './helperServer.js';
 const siteUrl = `http://localhost:${config.serverPort}`;
 const baseUrl = `${siteUrl}/pl`;
 const coursesAdminUrl = `${baseUrl}/administrator/courses`;
+const administratorTrpcUrl = `${baseUrl}/administrator/trpc`;
 
-function extractCsrfToken($: CheerioAPI, component: string): string {
+function extractTrpcCsrfToken($: CheerioAPI, component: string): string {
   const dataScript = $(`script[data-component-props][data-component="${component}"]`);
-  const props = superjson.parse<{ csrfToken: string }>(dataScript.text());
-  return props.csrfToken;
+  const props = superjson.parse<{ trpcCsrfToken: string }>(dataScript.text());
+  return props.trpcCsrfToken;
+}
+
+async function updateCourseRequestNoteViaTrpc(
+  trpcCsrfToken: string,
+  courseRequestId: string,
+  note: string,
+) {
+  return fetch(`${administratorTrpcUrl}/courseRequests.updateCourseRequestNoteMutation`, {
+    method: 'POST',
+    headers: {
+      'Content-Type': 'application/json',
+      'X-CSRF-Token': trpcCsrfToken,
+    },
+    body: JSON.stringify({ json: { courseRequestId, note } }),
+  });
 }
 
 describe('Course request note', { timeout: 60_000 }, function () {
@@ -47,7 +63,7 @@ describe('Course request note', { timeout: 60_000 }, function () {
       const response = await helperClient.fetchCheerio(coursesAdminUrl);
       assert.isTrue(response.ok);
 
-      csrfToken = extractCsrfToken(response.$, 'AdministratorCourses');
+      csrfToken = extractTrpcCsrfToken(response.$, 'AdministratorCourses');
       assert.isString(csrfToken);
 
       // Verify if the information from the course request has already populated the page
@@ -56,15 +72,7 @@ describe('Course request note', { timeout: 60_000 }, function () {
     });
 
     test.sequential('POST the note to the course request', async () => {
-      const response = await fetch(coursesAdminUrl, {
-        method: 'POST',
-        body: new URLSearchParams({
-          __action: 'update_course_request_note',
-          __csrf_token: csrfToken,
-          request_id: courseRequestId,
-          note,
-        }),
-      });
+      const response = await updateCourseRequestNoteViaTrpc(csrfToken, courseRequestId, note);
       assert.isTrue(response.ok);
     });
 
@@ -86,19 +94,11 @@ describe('Course request note', { timeout: 60_000 }, function () {
     test.sequential('extract CSRF token from courses page', async () => {
       const response = await helperClient.fetchCheerio(coursesAdminUrl);
       assert.isTrue(response.ok);
-      csrfToken = extractCsrfToken(response.$, 'AdministratorCourses');
+      csrfToken = extractTrpcCsrfToken(response.$, 'AdministratorCourses');
     });
 
     test.sequential('POST first note', async () => {
-      const response = await fetch(coursesAdminUrl, {
-        method: 'POST',
-        body: new URLSearchParams({
-          __action: 'update_course_request_note',
-          __csrf_token: csrfToken,
-          request_id: courseRequestId,
-          note: firstNote,
-        }),
-      });
+      const response = await updateCourseRequestNoteViaTrpc(csrfToken, courseRequestId, firstNote);
       assert.isTrue(response.ok);
     });
 
@@ -111,19 +111,11 @@ describe('Course request note', { timeout: 60_000 }, function () {
     test.sequential('extract fresh CSRF token', async () => {
       const response = await helperClient.fetchCheerio(coursesAdminUrl);
       assert.isTrue(response.ok);
-      csrfToken = extractCsrfToken(response.$, 'AdministratorCourses');
+      csrfToken = extractTrpcCsrfToken(response.$, 'AdministratorCourses');
     });
 
     test.sequential('POST second note overwrites first', async () => {
-      const response = await fetch(coursesAdminUrl, {
-        method: 'POST',
-        body: new URLSearchParams({
-          __action: 'update_course_request_note',
-          __csrf_token: csrfToken,
-          request_id: courseRequestId,
-          note: secondNote,
-        }),
-      });
+      const response = await updateCourseRequestNoteViaTrpc(csrfToken, courseRequestId, secondNote);
       assert.isTrue(response.ok);
     });
 
