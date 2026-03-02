@@ -1,6 +1,6 @@
 ---
-'@prairielearn/eslint-plugin': minor
-'@prairielearn/eslint-config': minor
+'@prairielearn/eslint-plugin': major
+'@prairielearn/eslint-config': major
 ---
 
 Bump to eslint v10
