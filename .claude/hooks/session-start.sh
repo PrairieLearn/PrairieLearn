@@ -8,9 +8,22 @@ fi
 
 cd "$CLAUDE_PROJECT_DIR"
 
-uv self update
+# Make PostgreSQL binaries available system-wide (needed by start_postgres.sh
+# which runs commands as the postgres user via su).
+# TODO: Once start_postgres.sh is updated to use `gosu`, we can remove this.
 # The default Claude Code environment is still on PostgreSQL 16, which shouldn't cause issues for now.
-echo 'export PATH="/usr/lib/postgresql/16/bin:$PATH"' >> "$CLAUDE_ENV_FILE"
+for bin in /usr/lib/postgresql/16/bin/*; do
+    ln -sf "$bin" /usr/local/bin/
+done
+
+apt-get update -qq && apt-get install -y -qq graphviz libgraphviz-dev 2>&1
+
+# nvm is already installed in the default Claude Code environment, but we need to install Node.js 24.
+nvm install 24
+nvm alias default 24
+
+# uv is already installed in the default Claude Code environment, but we need to update it to the latest version.
+uv self update
 
 make deps
 make start-support
