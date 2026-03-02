@@ -7,11 +7,54 @@ import passport from 'passport';
 import { HttpStatusError } from '@prairielearn/error';
 
 import * as authnLib from '../../../lib/authn.js';
+import type { SamlProvider } from '../../../lib/db-types.js';
 import { getInstitutionSamlProvider } from '../../lib/institution.js';
 
 import { SamlTest } from './router.html.js';
 
 import { strategy } from './index.js';
+
+/**
+ * Resolves SAML user attributes from the raw SAML response attributes based
+ * on the institution's configured attribute mappings.
+ */
+export function resolveSamlAttributes(
+  provider: Pick<
+    SamlProvider,
+    | 'uid_attribute'
+    | 'uin_attribute'
+    | 'name_attribute'
+    | 'given_name_attribute'
+    | 'family_name_attribute'
+    | 'email_attribute'
+  >,
+  attributes: Record<string, string | undefined>,
+) {
+  const uid = provider.uid_attribute ? attributes[provider.uid_attribute]?.trim() || null : null;
+  const uin = provider.uin_attribute ? attributes[provider.uin_attribute]?.trim() || null : null;
+  const email = provider.email_attribute
+    ? attributes[provider.email_attribute]?.trim() || null
+    : null;
+
+  const nameDirect = provider.name_attribute
+    ? attributes[provider.name_attribute]?.trim() || null
+    : null;
+  const givenName = provider.given_name_attribute
+    ? attributes[provider.given_name_attribute]?.trim() || null
+    : null;
+  const familyName = provider.family_name_attribute
+    ? attributes[provider.family_name_attribute]?.trim() || null
+    : null;
+
+  const hasSplitNameMapping = !!provider.given_name_attribute && !!provider.family_name_attribute;
+  const name =
+    hasSplitNameMapping && givenName && familyName
+      ? `${givenName} ${familyName}`.trim()
+      : nameDirect;
+  const hasNameMapping = !!provider.name_attribute || hasSplitNameMapping;
+
+  return { uid, uin, name, givenName, familyName, email, hasNameMapping };
+}
 
 const router = Router({ mergeParams: true });
 
@@ -70,28 +113,23 @@ router.post(
       throw new HttpStatusError(404, 'Institution does not support SAML authentication');
     }
 
-    const uidAttribute = institutionSamlProvider.uid_attribute;
-    const uinAttribute = institutionSamlProvider.uin_attribute;
-    const nameAttribute = institutionSamlProvider.name_attribute;
-    const emailAttribute = institutionSamlProvider.email_attribute;
-
-    // Read the appropriate attributes.
-    const authnUid = uidAttribute ? user.attributes[uidAttribute]?.trim() : null;
-    const authnUin = uinAttribute ? user.attributes[uinAttribute]?.trim() : null;
-    const authnName = nameAttribute ? user.attributes[nameAttribute]?.trim() : null;
-    const authnEmail = emailAttribute ? user.attributes[emailAttribute]?.trim() : null;
+    const resolved = resolveSamlAttributes(institutionSamlProvider, user.attributes);
 
     if (req.body.RelayState === 'test') {
       res.send(
         SamlTest({
-          uid: authnUid,
-          uin: authnUin,
-          name: authnName,
-          email: authnEmail,
-          uidAttribute,
-          uinAttribute,
-          nameAttribute,
-          emailAttribute,
+          uid: resolved.uid,
+          uin: resolved.uin,
+          name: resolved.name,
+          givenName: resolved.givenName,
+          familyName: resolved.familyName,
+          email: resolved.email,
+          uidAttribute: institutionSamlProvider.uid_attribute,
+          uinAttribute: institutionSamlProvider.uin_attribute,
+          nameAttribute: institutionSamlProvider.name_attribute,
+          givenNameAttribute: institutionSamlProvider.given_name_attribute,
+          familyNameAttribute: institutionSamlProvider.family_name_attribute,
+          emailAttribute: institutionSamlProvider.email_attribute,
           attributes: user.attributes,
           resLocals: res.locals,
         }),
@@ -105,13 +143,20 @@ router.post(
     // such as FERPA-suppressed students, an IdP may not pass an email address.
     // So even if an email attribute is configured and we get it for the vast
     // majority of users, there may be some for which it is not present.
-    if (!uidAttribute || !uinAttribute || !nameAttribute) {
+    if (
+      !institutionSamlProvider.uid_attribute ||
+      !institutionSamlProvider.uin_attribute ||
+      !resolved.hasNameMapping
+    ) {
       throw new Error('Missing one or more SAML attribute mappings');
     }
+    const nameAttributeDescription = institutionSamlProvider.name_attribute
+      ? institutionSamlProvider.name_attribute
+      : `${institutionSamlProvider.given_name_attribute} + ${institutionSamlProvider.family_name_attribute}`;
     const missingAttributes = [
-      ...(!authnUid ? [`uid (${uidAttribute})`] : []),
-      ...(!authnUin ? [`uin (${uinAttribute})`] : []),
-      ...(!authnName ? [`name (${nameAttribute})`] : []),
+      ...(!resolved.uid ? [`uid (${institutionSamlProvider.uid_attribute})`] : []),
+      ...(!resolved.uin ? [`uin (${institutionSamlProvider.uin_attribute})`] : []),
+      ...(!resolved.name ? [`name (${nameAttributeDescription})`] : []),
     ];
     if (missingAttributes.length > 0) {
       throw new Error(
@@ -120,10 +165,10 @@ router.post(
     }
 
     const authnParams = {
-      uid: authnUid,
-      name: authnName,
-      uin: authnUin,
-      email: authnEmail,
+      uid: resolved.uid,
+      name: resolved.name,
+      uin: resolved.uin,
+      email: resolved.email,
       provider: 'SAML',
       institution_id: institutionId,
     };
