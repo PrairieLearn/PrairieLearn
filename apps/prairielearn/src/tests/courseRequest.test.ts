@@ -21,10 +21,7 @@ function extractTrpcCsrfToken($: CheerioAPI, component: string): string {
   return props.trpcCsrfToken;
 }
 
-async function denyCourseRequestViaTrpc(
-  trpcCsrfToken: string,
-  courseRequestId: string,
-): Promise<Response> {
+async function denyCourseRequestViaTrpc(trpcCsrfToken: string, courseRequestId: string) {
   return fetch(`${administratorTrpcUrl}/courseRequests.denyCourseRequestMutation`, {
     method: 'POST',
     headers: {
