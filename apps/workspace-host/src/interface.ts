@@ -482,15 +482,25 @@ async function markSelfUnhealthy(reason: Error | string) {
  * This object contains all columns in the 'workspaces' table as well as:
  * - local_name (container name)
  * - remote_name (subdirectory name on disk)
+ *
+ * Throws an error if the workspace has no launch_uuid.
+ *
  * @param workspace_id Workspace ID to search by.
  * @returns Workspace object, as described above.
  */
 async function _getWorkspace(workspace_id: string | number) {
+  if (workspace_server_settings.instance_id === undefined) {
+    throw new Error('Workspace server settings are not initialized');
+  }
+
   const row = await sqldb.queryRow(
     sql.get_workspace,
     { workspace_id, instance_id: workspace_server_settings.instance_id },
-    WorkspaceRowSchema,
+    // Safety check. In production, this should never happen
+    // (the query above hasn't returned a null launch_uuid since 2022).
+    WorkspaceRowSchema.extend({ launch_uuid: z.string() }),
   );
+
   return {
     ...row,
     local_name: `workspace-${row.launch_uuid}`,
@@ -1127,7 +1137,7 @@ async function sendGradedFilesArchive(workspace_id: string | number, res: Respon
 async function sendLogs(workspaceId: string | number, res: Response) {
   try {
     const workspace = await _getWorkspace(workspaceId);
-    const container = await _getDockerContainerByLaunchUuid(workspace.launch_uuid!);
+    const container = await _getDockerContainerByLaunchUuid(workspace.launch_uuid);
     const logs = await container.logs({
       stdout: true,
       stderr: true,
