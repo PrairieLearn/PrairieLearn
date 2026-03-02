@@ -89,6 +89,15 @@ updates:
         update-types:
           - 'patch'
           - 'minor'
+    ignore:
+      # clang needs to match the version of clang installed on the graders, so we want to avoid automatic updates here.
+      - dependency-name: 'clang'
+        versions: ['>=19']
+      # We are not yet ready to upgrade to pandas 3.0, which has some breaking changes.
+      - dependency-name: 'pandas'
+        versions: ['>=3.0']
+      - dependency-name: 'pandas-stubs'
+        versions: ['>=3.0']
 
   - package-ecosystem: uv
     multi-ecosystem-group: python
@@ -96,3 +105,8 @@ updates:
     # Currently we only have a `uv.lock` in the root directory.
     directories:
       - '/'
+    ignore:
+      - dependency-name: 'pandas'
+        versions: ['>=3.0']
+      - dependency-name: 'pandas-stubs'
+        versions: ['>=3.0']
