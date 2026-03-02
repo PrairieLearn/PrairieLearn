@@ -30,24 +30,20 @@ export function resolveSamlAttributes(
   >,
   attributes: Record<string, string | undefined>,
 ) {
-  const uid = provider.uid_attribute
-    ? (attributes[provider.uid_attribute]?.trim() || null)
-    : null;
-  const uin = provider.uin_attribute
-    ? (attributes[provider.uin_attribute]?.trim() || null)
-    : null;
+  const uid = provider.uid_attribute ? attributes[provider.uid_attribute]?.trim() || null : null;
+  const uin = provider.uin_attribute ? attributes[provider.uin_attribute]?.trim() || null : null;
   const email = provider.email_attribute
-    ? (attributes[provider.email_attribute]?.trim() || null)
+    ? attributes[provider.email_attribute]?.trim() || null
     : null;
 
   const nameDirect = provider.name_attribute
-    ? (attributes[provider.name_attribute]?.trim() || null)
+    ? attributes[provider.name_attribute]?.trim() || null
     : null;
   const givenName = provider.given_name_attribute
-    ? (attributes[provider.given_name_attribute]?.trim() || null)
+    ? attributes[provider.given_name_attribute]?.trim() || null
     : null;
   const familyName = provider.family_name_attribute
-    ? (attributes[provider.family_name_attribute]?.trim() || null)
+    ? attributes[provider.family_name_attribute]?.trim() || null
     : null;
 
   const hasSplitNameMapping = !!provider.given_name_attribute && !!provider.family_name_attribute;

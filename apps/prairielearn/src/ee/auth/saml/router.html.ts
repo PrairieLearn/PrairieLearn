@@ -19,8 +19,9 @@ export const SamlTest = ({
   attributes,
   resLocals,
 }: {
-  // Resolved attribute values from the SAML response.
+  /** Resolved UID value from the SAML response. */
   uid: string | null;
+  /** Resolved UIN value from the SAML response. */
   uin: string | null;
   /** The assembled display name (from either `name_attribute` or `given_name + family_name`). */
   name: string | null;
@@ -29,8 +30,9 @@ export const SamlTest = ({
   /** The raw family name value, if a split name mapping is configured. */
   familyName: string | null;
   email: string | null;
-  // Configured attribute mapping names from the SAML provider.
+  /** Configured UID attribute mapping name from the SAML provider. */
   uidAttribute: string | null;
+  /** Configured UIN attribute mapping name from the SAML provider. */
   uinAttribute: string | null;
   nameAttribute: string | null;
   /** Configured together with `familyNameAttribute` as an alternative to `nameAttribute`. */
