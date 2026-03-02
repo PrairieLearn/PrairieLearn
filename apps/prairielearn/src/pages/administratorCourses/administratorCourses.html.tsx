@@ -9,10 +9,10 @@ import { CourseRequestsTable } from '../../components/CourseRequestsTable.js';
 import type { AdminInstitution } from '../../lib/client/safe-db-types.js';
 import { QueryClientProviderDebug } from '../../lib/client/tanstackQuery.js';
 import type { CourseRequestRow } from '../../lib/course-request.js';
+import { createAdministratorTrpcClient } from '../../trpc/administrator/trpc-client.js';
+import { TRPCProvider, useTRPC } from '../../trpc/administrator/trpc-context.js';
 
 import type { CourseWithInstitution } from './administratorCourses.shared.js';
-import { createAdministratorCoursesTrpcClient } from './utils/trpc-client.js';
-import { TRPCProvider, useTRPC } from './utils/trpc-context.js';
 
 interface InsertCourseFormData {
   institution_id: string;
@@ -58,9 +58,7 @@ export function AdministratorCourses({
   courseRepoDefaultBranch: string;
 }) {
   const [queryClient] = useState(() => new QueryClient());
-  const [trpcClient] = useState(() =>
-    createAdministratorCoursesTrpcClient(trpcCsrfToken, urlPrefix),
-  );
+  const [trpcClient] = useState(() => createAdministratorTrpcClient(trpcCsrfToken, urlPrefix));
 
   const [showInsertCoursePopover, setShowInsertCoursePopover] = useState(false);
   const [deleteCourseId, setDeleteCourseId] = useState<string | null>(null);

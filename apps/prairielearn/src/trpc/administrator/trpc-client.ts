@@ -1,9 +1,9 @@
 import { createTRPCClient, httpLink } from '@trpc/client';
 import superjson from 'superjson';
 
-import type { AdministratorRouter } from '../../../trpc/administrator/index.js';
+import type { AdministratorRouter } from '../../trpc/administrator/index.js';
 
-export function createAdministratorCoursesTrpcClient(csrfToken: string, urlPrefix: string) {
+export function createAdministratorTrpcClient(csrfToken: string, urlPrefix: string) {
   return createTRPCClient<AdministratorRouter>({
     links: [
       httpLink({

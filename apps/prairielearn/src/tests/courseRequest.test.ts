@@ -13,11 +13,26 @@ const siteUrl = `http://localhost:${config.serverPort}`;
 const baseUrl = `${siteUrl}/pl`;
 const coursesAdminUrl = `${baseUrl}/administrator/courses`;
 const courseRequestsAdminUrl = `${baseUrl}/administrator/courseRequests`;
+const administratorTrpcUrl = `${baseUrl}/administrator/trpc`;
 
-function extractCsrfToken($: CheerioAPI, component: string): string {
+function extractTrpcCsrfToken($: CheerioAPI, component: string): string {
   const dataScript = $(`script[data-component-props][data-component="${component}"]`);
-  const props = superjson.parse<{ csrfToken: string }>(dataScript.text());
-  return props.csrfToken;
+  const props = superjson.parse<{ trpcCsrfToken: string }>(dataScript.text());
+  return props.trpcCsrfToken;
+}
+
+async function denyCourseRequestViaTrpc(
+  trpcCsrfToken: string,
+  courseRequestId: string,
+): Promise<Response> {
+  return fetch(`${administratorTrpcUrl}/courseRequests.denyCourseRequestMutation`, {
+    method: 'POST',
+    headers: {
+      'Content-Type': 'application/json',
+      'X-CSRF-Token': trpcCsrfToken,
+    },
+    body: JSON.stringify({ json: { courseRequestId } }),
+  });
 }
 
 describe('Course requests', { timeout: 60_000 }, function () {
@@ -47,19 +62,12 @@ describe('Course requests', { timeout: 60_000 }, function () {
     test.sequential('load admin courses page and extract CSRF token', async () => {
       const response = await helperClient.fetchCheerio(coursesAdminUrl);
       assert.isTrue(response.ok);
-      csrfToken = extractCsrfToken(response.$, 'AdministratorCourses');
+      csrfToken = extractTrpcCsrfToken(response.$, 'AdministratorCourses');
       assert.isString(csrfToken);
     });
 
     test.sequential('POST deny action', async () => {
-      const response = await fetch(coursesAdminUrl, {
-        method: 'POST',
-        body: new URLSearchParams({
-          __action: 'deny_course_request',
-          __csrf_token: csrfToken,
-          request_id: courseRequestId,
-        }),
-      });
+      const response = await denyCourseRequestViaTrpc(csrfToken, courseRequestId);
       assert.isTrue(response.ok);
     });
 
@@ -136,16 +144,9 @@ describe('Course requests', { timeout: 60_000 }, function () {
 
     test.sequential('deny the second request', async () => {
       const response = await helperClient.fetchCheerio(courseRequestsAdminUrl);
-      csrfToken = extractCsrfToken(response.$, 'AdministratorCourseRequests');
+      csrfToken = extractTrpcCsrfToken(response.$, 'AdministratorCourseRequests');
 
-      const denyResponse = await fetch(courseRequestsAdminUrl, {
-        method: 'POST',
-        body: new URLSearchParams({
-          __action: 'deny_course_request',
-          __csrf_token: csrfToken,
-          request_id: secondRequestId,
-        }),
-      });
+      const denyResponse = await denyCourseRequestViaTrpc(csrfToken, secondRequestId);
       assert.isTrue(denyResponse.ok);
     });
 
@@ -197,16 +198,9 @@ describe('Course requests', { timeout: 60_000 }, function () {
 
     test.sequential('deny the pending request', async () => {
       const response = await helperClient.fetchCheerio(coursesAdminUrl);
-      csrfToken = extractCsrfToken(response.$, 'AdministratorCourses');
+      csrfToken = extractTrpcCsrfToken(response.$, 'AdministratorCourses');
 
-      const denyResponse = await fetch(coursesAdminUrl, {
-        method: 'POST',
-        body: new URLSearchParams({
-          __action: 'deny_course_request',
-          __csrf_token: csrfToken,
-          request_id: pendingRequestId,
-        }),
-      });
+      const denyResponse = await denyCourseRequestViaTrpc(csrfToken, pendingRequestId);
       assert.isTrue(denyResponse.ok);
     });
 

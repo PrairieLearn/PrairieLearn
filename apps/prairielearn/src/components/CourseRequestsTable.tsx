@@ -10,9 +10,9 @@ import type { AdminInstitution } from '../lib/client/safe-db-types.js';
 import { QueryClientProviderDebug } from '../lib/client/tanstackQuery.js';
 import { getAdministratorCourseRequestsUrl } from '../lib/client/url.js';
 import type { CourseRequestRow } from '../lib/course-request.js';
+import { createAdministratorTrpcClient } from '../trpc/administrator/trpc-client.js';
+import { TRPCProvider, useTRPC } from '../trpc/administrator/trpc-context.js';
 
-import { createCourseRequestsTrpcClient } from './CourseRequestsTable/trpc-client.js';
-import { TRPCProvider, useTRPC } from './CourseRequestsTable/trpc-context.js';
 import { JobStatus } from './JobStatus.js';
 
 interface CourseRequestApproveFormData {
@@ -120,7 +120,7 @@ function CourseRequestTableRow({
   const [showApprovePopover, setShowApprovePopover] = useState(false);
 
   const [queryClient] = useState(() => new QueryClient());
-  const [trpcClient] = useState(() => createCourseRequestsTrpcClient(trpcCsrfToken, urlPrefix));
+  const [trpcClient] = useState(() => createAdministratorTrpcClient(trpcCsrfToken, urlPrefix));
 
   return (
     <QueryClientProviderDebug client={queryClient}>

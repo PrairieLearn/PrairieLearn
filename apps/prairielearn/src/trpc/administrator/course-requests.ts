@@ -100,5 +100,3 @@ export const administratorCourseRequestsRouter = t.router({
   updateCourseRequestNoteMutation,
   createCourseMutation,
 });
-
-export type AdministratorCourseRequestsRouter = typeof administratorCourseRequestsRouter;
