@@ -16,6 +16,7 @@ for bin in /usr/lib/postgresql/16/bin/*; do
     ln -sf "$bin" /usr/local/bin/
 done
 
+# We need graphviz for the python dependencies.
 apt-get update -qq && apt-get install -y -qq graphviz libgraphviz-dev 2>&1
 
 # nvm is already installed in the default Claude Code environment, but we need to install Node.js 24.
