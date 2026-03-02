@@ -60,6 +60,8 @@ updates:
         versions: ['>=1']
       - dependency-name: '@types/cookie'
         versions: ['>=1']
+      - dependency-name: 'express-static-gzip'
+        versions: ['>=3']
       # JQuery 4 made significant breaking changes. We are migrating code to
       # vanilla JS where possible and only keeping it for backwards
       # compatibility, so we don't want to upgrade.

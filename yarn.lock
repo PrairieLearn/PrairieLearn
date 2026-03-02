@@ -4443,7 +4443,7 @@ __metadata:
     commander: "npm:^14.0.3"
     esbuild: "npm:^0.27.2"
     express: "npm:^4.22.1"
-    express-static-gzip: "npm:^2.2.0"
+    express-static-gzip: "npm:^2.2.0 <3"
     fs-extra: "npm:^11.3.3"
     get-port: "npm:^7.1.0"
     globby: "npm:^16.1.0"
@@ -13720,7 +13720,7 @@ __metadata:
   languageName: node
   linkType: hard
 
-"express-static-gzip@npm:^2.2.0":
+"express-static-gzip@npm:^2.2.0 <3":
   version: 2.2.0
   resolution: "express-static-gzip@npm:2.2.0"
   dependencies:
