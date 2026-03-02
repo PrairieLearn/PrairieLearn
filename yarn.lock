@@ -5010,7 +5010,7 @@ __metadata:
     "@types/async": "npm:^3.2.25"
     "@types/blocked": "npm:^1.3.5"
     "@types/blocked-at": "npm:^1.0.4"
-    "@types/body-parser": "npm:^1.19.6"
+    "@types/body-parser": "npm:>=1.19.6 <2"
     "@types/bootstrap": "npm:^5.2.10"
     "@types/byline": "npm:^4.2.36"
     "@types/cookie-parser": "npm:^1.4.10"
@@ -5072,7 +5072,7 @@ __metadata:
     better-ajv-errors: "npm:^2.0.3"
     blocked: "npm:^1.3.0"
     blocked-at: "npm:^1.2.0"
-    body-parser: "npm:^1.20.4"
+    body-parser: "npm:>=1.20.4 <2"
     bootstrap: "npm:^5.3.8"
     bootstrap-icons: "npm:^1.13.1"
     bootstrap-table: "npm:1.21.2"
@@ -5081,7 +5081,7 @@ __metadata:
     cheerio: "npm:^1.2.0"
     clipboard: "npm:^2.0.11"
     clsx: "npm:^2.1.1"
-    cookie: "npm:^0.7.2"
+    cookie: "npm:>=0.7.2 <1"
     cookie-parser: "npm:^1.4.7"
     cropperjs: "npm:^2.1.0"
     crypto-js: "npm:^4.2.0"
@@ -5289,7 +5289,7 @@ __metadata:
   dependencies:
     "@prairielearn/express-test-utils": "workspace:^"
     "@prairielearn/tsconfig": "workspace:^"
-    "@types/cookie": "npm:^0.6.0"
+    "@types/cookie": "npm:>=0.6.0 <1"
     "@types/cookie-signature": "npm:^1.1.2"
     "@types/express": "npm:^4.17.25"
     "@types/node": "npm:^24.10.9"
@@ -5299,7 +5299,7 @@ __metadata:
     "@types/uid-safe": "npm:^2.1.5"
     "@typescript/native-preview": "npm:^7.0.0-dev.20260203.1"
     "@vitest/coverage-v8": "npm:^4.0.18"
-    cookie: "npm:^0.7.2"
+    cookie: "npm:>=0.7.2 <1"
     cookie-signature: "npm:^1.2.2"
     express: "npm:^4.22.1"
     express-async-handler: "npm:^1.2.0"
@@ -5424,7 +5424,7 @@ __metadata:
     archiver: "npm:^7.0.1"
     async: "npm:^3.2.6"
     async-mutex: "npm:^0.5.0"
-    body-parser: "npm:^1.20.4"
+    body-parser: "npm:>=1.20.4 <2"
     debug: "npm:^4.4.3"
     dockerode: "npm:^4.0.9"
     express: "npm:^4.22.1"
@@ -8816,7 +8816,7 @@ __metadata:
   languageName: node
   linkType: hard
 
-"@types/body-parser@npm:*, @types/body-parser@npm:^1.19.6":
+"@types/body-parser@npm:*, @types/body-parser@npm:>=1.19.6 <2":
   version: 1.19.6
   resolution: "@types/body-parser@npm:1.19.6"
   dependencies:
@@ -8880,17 +8880,17 @@ __metadata:
   languageName: node
   linkType: hard
 
+"@types/cookie@npm:>=0.6.0 <1":
+  version: 0.6.0
+  resolution: "@types/cookie@npm:0.6.0"
+  checksum: 10c0/5b326bd0188120fb32c0be086b141b1481fec9941b76ad537f9110e10d61ee2636beac145463319c71e4be67a17e85b81ca9e13ceb6e3bb63b93d16824d6c149
+  languageName: node
+  linkType: hard
+
 "@types/cookie@npm:^0.4.1":
   version: 0.4.1
   resolution: "@types/cookie@npm:0.4.1"
   checksum: 10c0/f96afe12bd51be1ec61410b0641243d93fa3a494702407c787a4c872b5c8bcd39b224471452055e44a9ce42af1a636e87d161994226eaf4c2be9c30f60418409
-  languageName: node
-  linkType: hard
-
-"@types/cookie@npm:^0.6.0":
-  version: 0.6.0
-  resolution: "@types/cookie@npm:0.6.0"
-  checksum: 10c0/5b326bd0188120fb32c0be086b141b1481fec9941b76ad537f9110e10d61ee2636beac145463319c71e4be67a17e85b81ca9e13ceb6e3bb63b93d16824d6c149
   languageName: node
   linkType: hard
 
@@ -11006,7 +11006,7 @@ __metadata:
   languageName: node
   linkType: hard
 
-"body-parser@npm:^1.20.4, body-parser@npm:~1.20.3":
+"body-parser@npm:>=1.20.4 <2, body-parser@npm:~1.20.3":
   version: 1.20.4
   resolution: "body-parser@npm:1.20.4"
   dependencies:
@@ -11801,7 +11801,7 @@ __metadata:
   languageName: node
   linkType: hard
 
-"cookie@npm:0.7.2, cookie@npm:^0.7.2, cookie@npm:~0.7.1, cookie@npm:~0.7.2":
+"cookie@npm:0.7.2, cookie@npm:>=0.7.2 <1, cookie@npm:~0.7.1, cookie@npm:~0.7.2":
   version: 0.7.2
   resolution: "cookie@npm:0.7.2"
   checksum: 10c0/9596e8ccdbf1a3a88ae02cf5ee80c1c50959423e1022e4e60b91dd87c622af1da309253d8abdb258fb5e3eacb4f08e579dc58b4897b8087574eee0fd35dfa5d2
