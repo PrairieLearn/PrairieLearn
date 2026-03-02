@@ -19,7 +19,10 @@ const accessRuleRecommendation = (
     instance accessible to students only during the semester or other time period in which that
     particular course instance is offered. You can do so by editing the{' '}
     <code>infoCourseInstance.json</code> file for the course instance. For more information, see the{' '}
-    <a href="https://docs.prairielearn.com/accessControl/">documentation on access control</a>.
+    <a href="https://docs.prairielearn.com/assessment/accessControl/">
+      documentation on access control
+    </a>
+    .
   </p>
 );
 
