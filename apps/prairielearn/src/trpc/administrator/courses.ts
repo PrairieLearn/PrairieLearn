@@ -105,5 +105,3 @@ export const administratorCoursesRouter = t.router({
   deleteCourseMutation,
   updateCourseColumnMutation,
 });
-
-export type AdministratorCoursesRouter = typeof administratorCoursesRouter;

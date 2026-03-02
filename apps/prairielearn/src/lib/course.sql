@@ -27,4 +27,4 @@ SELECT
       courses
     WHERE
       repository LIKE '%/' || $repoName || '.git'
-  ) as exists;
+  ) AS exists;

@@ -229,7 +229,7 @@ jobs:
 
       - name: Upload Vitest blob report to GitHub Actions Artifacts
         if: ${{ !cancelled() }}
-        uses: actions/upload-artifact@v6
+        uses: actions/upload-artifact@v7
         with:
           name: blob-report-${{ matrix.shardIndex }}
           path: .vitest-reports/*
@@ -237,7 +237,7 @@ jobs:
           retention-days: 1
       - name: Upload Playwright blob report to GitHub Actions Artifacts
         if: ${{ !cancelled() }}
-        uses: actions/upload-artifact@v6
+        uses: actions/upload-artifact@v7
         with:
           name: playwright-blob-report-${{ matrix.shardIndex }}
           path: apps/prairielearn/test-results/blob-report/*
@@ -264,7 +264,7 @@ jobs:
         # Note that this means playwright is installed in the root workspace, not the prairielearn workspace.
         run: yarn workspaces focus prairielearn
       - name: Download Vitest blob reports from GitHub Actions Artifacts
-        uses: actions/download-artifact@v7
+        uses: actions/download-artifact@v8
         with:
           path: .vitest-reports
           pattern: blob-report-*
@@ -273,7 +273,7 @@ jobs:
       - name: Merge Vitest reports
         run: yarn vitest --watch=false --merge-reports --coverage
       - name: Download Playwright blob reports from GitHub Actions Artifacts
-        uses: actions/download-artifact@v7
+        uses: actions/download-artifact@v8
         with:
           path: apps/prairielearn/test-results/blob-report
           pattern: playwright-blob-report-*
@@ -286,7 +286,7 @@ jobs:
           token: ${{ secrets.CODECOV_TOKEN }}
           flags: javascript
       - name: Upload HTML report
-        uses: actions/upload-artifact@v6
+        uses: actions/upload-artifact@v7
         with:
           name: html-report--attempt-${{ github.run_attempt }}
           path: playwright-report

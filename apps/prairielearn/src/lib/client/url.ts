@@ -100,14 +100,6 @@ export function getAdministratorCourseRequestsUrl({ urlPrefix }: { urlPrefix: st
   return `${urlPrefix}/administrator/courseRequests`;
 }
 
-export function getCourseRepositoryAvailabilityUrl(urlPrefix: string, repoName: string): string {
-  return `${urlPrefix}/administrator/courseRequests/repository_name_availability.json?repo_name=${repoName}`;
-}
-
-export function getCoursePathAvailabilityUrl(urlPrefix: string, path: string): string {
-  return `${urlPrefix}/administrator/courseRequests/course_path_availability.json?path=${path}`;
-}
-
 type QuestionUrlParts =
   | { courseInstanceId: string; courseId?: undefined }
   | { courseInstanceId?: undefined; courseId: string };
