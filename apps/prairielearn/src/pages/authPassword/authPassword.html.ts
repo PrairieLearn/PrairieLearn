@@ -35,7 +35,14 @@ export function AuthPassword({
             <input type="hidden" name="__csrf_token" value="${resLocals.__csrf_token}" />
             <div class="mb-3">
               <label class="form-label" for="password">Password</label>
-              <input type="password" class="form-control" id="password" name="password" />
+              <input
+                type="password"
+                class="form-control"
+                id="password"
+                name="password"
+                autocomplete="new-password"
+                required
+              />
             </div>
             <button type="submit" class="btn btn-primary">Submit</button>
           </form>
