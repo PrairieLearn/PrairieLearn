@@ -252,7 +252,7 @@ export function QuestionDetailPanel({
               })}
             />
             {errors[originalPointsProperty] && (
-              <div className="invalid-feedback">{errors[originalPointsProperty]?.message}</div>
+              <div className="invalid-feedback">{errors[originalPointsProperty].message}</div>
             )}
           </div>
           <div className="mb-3">
@@ -347,7 +347,7 @@ export function QuestionDetailPanel({
               })}
             />
             {errors[originalPointsProperty] && (
-              <div className="invalid-feedback">{errors[originalPointsProperty]?.message}</div>
+              <div className="invalid-feedback">{errors[originalPointsProperty].message}</div>
             )}
           </div>
           <div className="mb-3">

@@ -284,7 +284,7 @@ function AssessmentEditorInner({
         const questionTrackingId =
           returnTo.type === 'question' ? returnTo.questionTrackingId : returnTo.questionTrackingId;
 
-        let questionData: QuestionByQidResult | undefined;
+        let questionData: QuestionByQidResult;
         try {
           questionData = await trpcClient.questionByQid.query({ qid });
         } catch {
@@ -300,14 +300,12 @@ function AssessmentEditorInner({
                   ? q.alternatives?.find((a) => a.trackingId === returnTo.alternativeTrackingId)?.id
                   : q.id;
 
-              if (questionData) {
-                dispatch({
-                  type: 'UPDATE_QUESTION_METADATA',
-                  questionId: qid,
-                  oldQuestionId: oldId,
-                  questionData: buildQuestionMetadata(questionData),
-                });
-              }
+              dispatch({
+                type: 'UPDATE_QUESTION_METADATA',
+                questionId: qid,
+                oldQuestionId: oldId,
+                questionData: buildQuestionMetadata(questionData),
+              });
 
               if (returnTo.type === 'alternative') {
                 dispatch({
@@ -334,7 +332,7 @@ function AssessmentEditorInner({
     }
 
     // Adding a new question to a zone
-    let questionData: QuestionByQidResult | undefined;
+    let questionData: QuestionByQidResult;
     try {
       questionData = await trpcClient.questionByQid.query({ qid });
     } catch {
@@ -350,7 +348,7 @@ function AssessmentEditorInner({
       type: 'ADD_QUESTION',
       zoneTrackingId: selectedItem.zoneTrackingId,
       question: newQuestion,
-      questionData: questionData ? buildQuestionMetadata(questionData) : undefined,
+      questionData: buildQuestionMetadata(questionData),
     });
 
     // Stay in picker for "add another" behavior

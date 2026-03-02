@@ -1,9 +1,21 @@
-import { type ReactNode, useCallback, useEffect, useRef, useState } from 'react';
+import { type ReactNode, useCallback, useRef, useState, useSyncExternalStore } from 'react';
 
 const DEFAULT_RIGHT_WIDTH = 360;
 const MIN_RIGHT_WIDTH = 280;
 const MAX_RIGHT_WIDTH = 600;
 const COLLAPSE_BREAKPOINT = 768;
+
+function useNarrowViewport(): boolean {
+  return useSyncExternalStore(
+    (callback) => {
+      const mq = window.matchMedia(`(max-width: ${COLLAPSE_BREAKPOINT}px)`);
+      mq.addEventListener('change', callback);
+      return () => mq.removeEventListener('change', callback);
+    },
+    () => window.matchMedia(`(max-width: ${COLLAPSE_BREAKPOINT}px)`).matches,
+    () => false,
+  );
+}
 
 export function SplitPane({
   left,
@@ -15,36 +27,28 @@ export function SplitPane({
   rightCollapsed?: boolean;
 }) {
   const [rightWidth, setRightWidth] = useState(DEFAULT_RIGHT_WIDTH);
-  const [autoCollapsed, setAutoCollapsed] = useState(false);
+  const autoCollapsed = useNarrowViewport();
   const [manualCollapsed, setManualCollapsed] = useState(false);
-  const isDragging = useRef(false);
+  const isDraggingRef = useRef(false);
 
   const isCollapsed = rightCollapsedProp ?? (manualCollapsed || autoCollapsed);
-
-  useEffect(() => {
-    const mq = window.matchMedia(`(max-width: ${COLLAPSE_BREAKPOINT}px)`);
-    const handler = (e: MediaQueryListEvent | MediaQueryList) => setAutoCollapsed(e.matches);
-    handler(mq);
-    mq.addEventListener('change', handler);
-    return () => mq.removeEventListener('change', handler);
-  }, []);
 
   const handleMouseDown = useCallback(
     (e: React.MouseEvent) => {
       e.preventDefault();
-      isDragging.current = true;
+      isDraggingRef.current = true;
       const startX = e.clientX;
       const startWidth = rightWidth;
 
       const onMouseMove = (ev: MouseEvent) => {
-        if (!isDragging.current) return;
+        if (!isDraggingRef.current) return;
         const delta = startX - ev.clientX;
         const newWidth = Math.min(MAX_RIGHT_WIDTH, Math.max(MIN_RIGHT_WIDTH, startWidth + delta));
         setRightWidth(newWidth);
       };
 
       const onMouseUp = () => {
-        isDragging.current = false;
+        isDraggingRef.current = false;
         document.removeEventListener('mousemove', onMouseMove);
         document.removeEventListener('mouseup', onMouseUp);
       };
@@ -62,9 +66,13 @@ export function SplitPane({
       </div>
       {!isCollapsed && (
         <>
+          {/* Separator is interactive (resizable) but uses role="separator" which jsx-a11y considers non-interactive */}
+          {/* eslint-disable jsx-a11y-x/no-noninteractive-element-interactions, jsx-a11y-x/no-noninteractive-tabindex */}
           <div
             role="separator"
+            tabIndex={0}
             aria-orientation="vertical"
+            aria-label="Resize panel"
             style={{
               width: 4,
               cursor: 'col-resize',
@@ -73,6 +81,7 @@ export function SplitPane({
             }}
             onMouseDown={handleMouseDown}
           />
+          {/* eslint-enable jsx-a11y-x/no-noninteractive-element-interactions, jsx-a11y-x/no-noninteractive-tabindex */}
           <div
             style={{
               width: rightWidth,

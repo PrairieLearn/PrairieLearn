@@ -141,25 +141,21 @@ export function DetailPanel({
     );
   }
 
-  if (selectedItem.type === 'picker') {
-    const zone = zones.find((z) => z.trackingId === selectedItem.zoneTrackingId);
-    const zoneName = zone?.title ? `Zone: ${zone.title}` : 'this zone';
-    return (
-      <QuestionPickerPanel
-        courseQuestions={courseQuestions}
-        isLoading={courseQuestionsLoading}
-        questionsInAssessment={questionsInAssessment}
-        courseId={courseId}
-        urlPrefix={urlPrefix}
-        currentAssessmentId={currentAssessmentId}
-        zoneName={zoneName}
-        onQuestionSelected={onQuestionPicked}
-        onDone={onPickerDone}
-      />
-    );
-  }
-
-  return <EmptyDetailPanel />;
+  const zone = zones.find((z) => z.trackingId === selectedItem.zoneTrackingId);
+  const zoneName = zone?.title ? `Zone: ${zone.title}` : 'this zone';
+  return (
+    <QuestionPickerPanel
+      courseQuestions={courseQuestions}
+      isLoading={courseQuestionsLoading}
+      questionsInAssessment={questionsInAssessment}
+      courseId={courseId}
+      urlPrefix={urlPrefix}
+      currentAssessmentId={currentAssessmentId}
+      zoneName={zoneName}
+      onQuestionSelected={onQuestionPicked}
+      onDone={onPickerDone}
+    />
+  );
 }
 
 function findQuestion(

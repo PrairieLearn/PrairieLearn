@@ -229,7 +229,7 @@ export function TreeQuestionBlockNode({
                   ? () =>
                       onDeleteQuestion(
                         zoneQuestionBlock.trackingId,
-                        alternative.id ?? '',
+                        alternative.id,
                         alternative.trackingId,
                       )
                   : undefined

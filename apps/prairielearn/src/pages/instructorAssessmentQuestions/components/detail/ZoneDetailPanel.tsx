@@ -35,7 +35,7 @@ export function ZoneDetailPanel({
     maxPoints: zone.maxPoints ?? undefined,
     numberChoose: zone.numberChoose ?? undefined,
     bestQuestions: zone.bestQuestions ?? undefined,
-    lockpoint: zone.lockpoint ?? false,
+    lockpoint: zone.lockpoint,
     comment: typeof zone.comment === 'string' ? zone.comment : undefined,
     advanceScorePerc: zone.advanceScorePerc ?? undefined,
     gradeRateMinutes: zone.gradeRateMinutes ?? undefined,
