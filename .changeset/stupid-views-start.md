@@ -3,4 +3,4 @@
 '@prairielearn/eslint-config': major
 ---
 
-Bump to eslint v10
+Upgrade to ESLint v10
