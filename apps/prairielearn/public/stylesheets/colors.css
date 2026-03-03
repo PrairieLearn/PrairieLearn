@@ -66,11 +66,6 @@
   outline-offset: 1px;
 }
 
-.color-red1 {
-  color: #000;
-  background-color: #ffccbc;
-}
-
 .badge.color-red1 {
   color: #c73000;
   background-color: #fff0eb;
@@ -81,11 +76,6 @@
   --pl-badge-text: #c73000;
   --pl-badge-bg: #fff0eb;
   --pl-badge-border: #ffb9a4;
-}
-
-.color-red2 {
-  color: #000;
-  background-color: #ff6c5c;
 }
 
 .badge.color-red2 {
@@ -100,11 +90,6 @@
   --pl-badge-border: #ff9387;
 }
 
-.color-red3 {
-  color: #fff;
-  background-color: #c72c1c;
-}
-
 .badge.color-red3 {
   color: #5a140d;
   background-color: #f5bbb5;
@@ -115,11 +100,6 @@
   --pl-badge-text: #5a140d;
   --pl-badge-bg: #f5bbb5;
   --pl-badge-border: #ec8176;
-}
-
-.color-pink1 {
-  color: #000;
-  background-color: #ffbcd8;
 }
 
 .badge.color-pink1 {
@@ -134,11 +114,6 @@
   --pl-badge-border: #ffa4ca;
 }
 
-.color-pink2 {
-  color: #000;
-  background-color: #fa5c98;
-}
-
 .badge.color-pink2 {
   color: #95053c;
   background-color: #fecee0;
@@ -149,11 +124,6 @@
   --pl-badge-text: #95053c;
   --pl-badge-bg: #fecee0;
   --pl-badge-border: #fb89b4;
-}
-
-.color-pink3 {
-  color: #fff;
-  background-color: #ba1c58;
 }
 
 .badge.color-pink3 {
@@ -168,11 +138,6 @@
   --pl-badge-border: #ea74a1;
 }
 
-.color-purple1 {
-  color: #000;
-  background-color: #dcc6e0;
-}
-
 .badge.color-purple1 {
   color: #72437b;
   background-color: #f4eef6;
@@ -183,11 +148,6 @@
   --pl-badge-text: #72437b;
   --pl-badge-bg: #f4eef6;
   --pl-badge-border: #d8c0dd;
-}
-
-.color-purple2 {
-  color: #fff;
-  background-color: #9b59b6;
 }
 
 .badge.color-purple2 {
@@ -202,11 +162,6 @@
   --pl-badge-border: #c39cd3;
 }
 
-.color-purple3 {
-  color: #fff;
-  background-color: #5e147d;
-}
-
 .badge.color-purple3 {
   color: #2a0938;
   background-color: #d8a1f0;
@@ -217,11 +172,6 @@
   --pl-badge-text: #2a0938;
   --pl-badge-bg: #d8a1f0;
   --pl-badge-border: #bf63e6;
-}
-
-.color-blue1 {
-  color: #000;
-  background-color: #39d5ff;
 }
 
 .badge.color-blue1 {
@@ -236,11 +186,6 @@
   --pl-badge-border: #7ce3ff;
 }
 
-.color-blue2 {
-  color: #000;
-  background-color: #1297e0;
-}
-
 .badge.color-blue2 {
   color: #084465;
   background-color: #b5e1f9;
@@ -251,11 +196,6 @@
   --pl-badge-text: #084465;
   --pl-badge-bg: #b5e1f9;
   --pl-badge-border: #72c6f4;
-}
-
-.color-blue3 {
-  color: #fff;
-  background-color: #0057a0;
 }
 
 .badge.color-blue3 {
@@ -270,11 +210,6 @@
   --pl-badge-border: #4fafff;
 }
 
-.color-turquoise1 {
-  color: #000;
-  background-color: #5efaf7;
-}
-
 .badge.color-turquoise1 {
   color: #047573;
   background-color: #cffefd;
@@ -285,11 +220,6 @@
   --pl-badge-text: #047573;
   --pl-badge-bg: #cffefd;
   --pl-badge-border: #89fbf9;
-}
-
-.color-turquoise2 {
-  color: #000;
-  background-color: #27cbc0;
 }
 
 .badge.color-turquoise2 {
@@ -304,11 +234,6 @@
   --pl-badge-border: #80e7e0;
 }
 
-.color-turquoise3 {
-  color: #fff;
-  background-color: #008b80;
-}
-
 .badge.color-turquoise3 {
   color: #003f3a;
   background-color: #90fff6;
@@ -319,11 +244,6 @@
   --pl-badge-text: #003f3a;
   --pl-badge-bg: #90fff6;
   --pl-badge-border: #48fff1;
-}
-
-.color-green1 {
-  color: #000;
-  background-color: #8effc1;
 }
 
 .badge.color-green1 {
@@ -338,11 +258,6 @@
   --pl-badge-border: #96ffc5;
 }
 
-.color-green2 {
-  color: #000;
-  background-color: #2ecc71;
-}
-
 .badge.color-green2 {
   color: #155c33;
   background-color: #bff1d4;
@@ -353,11 +268,6 @@
   --pl-badge-text: #155c33;
   --pl-badge-bg: #bff1d4;
   --pl-badge-border: #85e4ad;
-}
-
-.color-green3 {
-  color: #fff;
-  background-color: #008c31;
 }
 
 .badge.color-green3 {
@@ -372,11 +282,6 @@
   --pl-badge-border: #49ff88;
 }
 
-.color-yellow1 {
-  color: #000;
-  background-color: #fde3a7;
-}
-
 .badge.color-yellow1 {
   color: #906503;
   background-color: #fef7e5;
@@ -387,11 +292,6 @@
   --pl-badge-text: #906503;
   --pl-badge-bg: #fef7e5;
   --pl-badge-border: #fde09f;
-}
-
-.color-yellow2 {
-  color: #000;
-  background-color: #f5ab35;
 }
 
 .badge.color-yellow2 {
@@ -406,11 +306,6 @@
   --pl-badge-border: #f9ca7e;
 }
 
-.color-yellow3 {
-  color: #fff;
-  background-color: #d87400;
-}
-
 .badge.color-yellow3 {
   color: #613400;
   background-color: #ffd6a7;
@@ -421,11 +316,6 @@
   --pl-badge-text: #613400;
   --pl-badge-bg: #ffd6a7;
   --pl-badge-border: #ffb55f;
-}
-
-.color-orange1 {
-  color: #000;
-  background-color: #ffdcb5;
 }
 
 .badge.color-orange1 {
@@ -440,11 +330,6 @@
   --pl-badge-border: #ffd3a1;
 }
 
-.color-orange2 {
-  color: #000;
-  background-color: #ff926b;
-}
-
 .badge.color-orange2 {
   color: #a32b00;
   background-color: #ffded3;
@@ -455,11 +340,6 @@
   --pl-badge-text: #a32b00;
   --pl-badge-bg: #ffded3;
   --pl-badge-border: #ffaa8b;
-}
-
-.color-orange3 {
-  color: #fff;
-  background-color: #c3522b;
 }
 
 .badge.color-orange3 {
@@ -474,11 +354,6 @@
   --pl-badge-border: #e39b82;
 }
 
-.color-brown1 {
-  color: #000;
-  background-color: #f6c4a3;
-}
-
 .badge.color-brown1 {
   color: #a84d10;
   background-color: #fcede3;
@@ -489,11 +364,6 @@
   --pl-badge-text: #a84d10;
   --pl-badge-bg: #fcede3;
   --pl-badge-border: #f6c4a2;
-}
-
-.color-brown2 {
-  color: #000;
-  background-color: #ce9c7b;
 }
 
 .badge.color-brown2 {
@@ -508,11 +378,6 @@
   --pl-badge-border: #ddbaa3;
 }
 
-.color-brown3 {
-  color: #fff;
-  background-color: #8e5c3b;
-}
-
 .badge.color-brown3 {
   color: #40291b;
   background-color: #e4cdbe;
@@ -523,11 +388,6 @@
   --pl-badge-text: #40291b;
   --pl-badge-bg: #e4cdbe;
   --pl-badge-border: #cfa68b;
-}
-
-.color-gray1 {
-  color: #000;
-  background-color: #e0e0e0;
 }
 
 .badge.color-gray1 {
@@ -542,11 +402,6 @@
   --pl-badge-border: #d2d2d2;
 }
 
-.color-gray2 {
-  color: #000;
-  background-color: #909090;
-}
-
 .badge.color-gray2 {
   color: #414141;
   background-color: #dedede;
@@ -557,11 +412,6 @@
   --pl-badge-text: #414141;
   --pl-badge-bg: #dedede;
   --pl-badge-border: #bababa;
-}
-
-.color-gray3 {
-  color: #fff;
-  background-color: #505050;
 }
 
 .badge.color-gray3 {

@@ -42,16 +42,6 @@ $custom-colors: (
   'gray3': #505050,
 );
 
-$color-contrast-overrides: (
-  // Override foreground colors for specific entries in `$custom-colors` when
-  // the automatically generated `color-contrast()` value isn't desirable.
-  // Keys must match the color names above; anything not listed falls back to
-  // the contrast function.
-  'turquoise3': #fff,
-  'green3': #fff,
-  'yellow3': #fff
-);
-
 :root {
   @each $color, $value in $custom-colors {
     --color-#{$color}: #{$value};
@@ -131,13 +121,6 @@ $color-contrast-overrides: (
 }
 
 @each $color, $value in $custom-colors {
-  $has-override: map-has-key($color-contrast-overrides, $color);
-  $text-color: if(
-    $has-override,
-    map-get($color-contrast-overrides, $color),
-    color-contrast($value)
-  );
-
   // GitHub-style badge colors: light tinted background, saturated border & text.
   // `scale-color` adjusts lightness *relative* to the current value, so darker
   // colors (level 3) produce noticeably darker badge backgrounds than lighter
@@ -154,13 +137,7 @@ $color-contrast-overrides: (
   $badge-border: to-hex($badge-border);
   $badge-text: to-hex($badge-text);
 
-  // Base class: solid background with contrast text.
-  .color-#{$color} {
-    color: $text-color;
-    background-color: $value;
-  }
-
-  // Badge override: GitHub-style with light bg, saturated border & text.
+  // Badge: GitHub-style with light bg, saturated border & text.
   .badge.color-#{$color} {
     color: $badge-text;
     background-color: $badge-bg;
