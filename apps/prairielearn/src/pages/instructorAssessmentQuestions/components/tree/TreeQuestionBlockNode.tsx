@@ -14,7 +14,7 @@ import type { ChangeTrackingResult } from '../../utils/modifiedTracking.js';
 import { CollapseToggleButton } from './CollapseToggleButton.js';
 import { DragHandle } from './DragHandle.js';
 import { SortableAlternativeRow } from './SortableAlternativeRow.js';
-import { TreeQuestionRow } from './TreeQuestionRow.js';
+import { PointsBadge, TreeQuestionRow } from './TreeQuestionRow.js';
 import { makeSortableStyle } from './sortableUtils.js';
 
 export function TreeQuestionBlockNode({
@@ -215,17 +215,24 @@ export function TreeQuestionBlockNode({
             </OverlayTrigger>
           )}
         </span>
+        <div className="flex-shrink-0 text-end" style={{ minWidth: '6rem' }}>
+          <PointsBadge
+            question={zoneQuestionBlock}
+            zoneQuestionBlock={zoneQuestionBlock}
+            assessmentType={assessmentType}
+          />
+        </div>
         {editMode && onAddToAltGroup && (
           <button
             type="button"
-            className="btn btn-sm border-0 text-muted ms-1 tree-hover-show"
-            title="Add question to alternative group"
+            className="btn btn-sm btn-outline-primary ms-1"
             onClick={(e) => {
               e.stopPropagation();
               onAddToAltGroup(zoneQuestionBlock.trackingId);
             }}
           >
-            <i className="bi bi-plus-lg" aria-hidden="true" />
+            <i className="bi bi-plus-lg me-1" aria-hidden="true" />
+            Add alternative
           </button>
         )}
         {editMode && (
@@ -246,7 +253,7 @@ export function TreeQuestionBlockNode({
       {/* Alternatives */}
       {!isCollapsed && alternativeCount === 0 && editMode && (
         <div className="text-muted fst-italic border-bottom py-2" style={{ paddingLeft: '3.5rem' }}>
-          No alternatives yet. Use <i className="bi bi-plus-lg" /> to add questions.
+          No alternatives yet. Use "Add alternative" to add questions.
         </div>
       )}
       {!isCollapsed && (

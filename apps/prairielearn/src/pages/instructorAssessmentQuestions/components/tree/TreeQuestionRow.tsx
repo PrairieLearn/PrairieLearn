@@ -15,7 +15,7 @@ import { AssessmentBadges } from '../AssessmentBadges.js';
 
 import { DragHandle } from './DragHandle.js';
 
-function PointsBadge({
+export function PointsBadge({
   question,
   zoneQuestionBlock,
   assessmentType,
