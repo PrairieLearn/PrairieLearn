@@ -5068,7 +5068,6 @@ __metadata:
     archiver: "npm:^7.0.1"
     async: "npm:^3.2.6"
     axe-core: "npm:^4.11.1"
-    backbone: "npm:^1.6.1"
     better-ajv-errors: "npm:^2.0.3"
     blocked: "npm:^1.3.0"
     blocked-at: "npm:^1.2.0"
@@ -5139,7 +5138,6 @@ __metadata:
     mathjax: "npm:^4.1.0"
     mathlive: "npm:^0.108.2"
     memorystream: "npm:^0.3.1"
-    mersenne: "npm:0.0.4"
     mime: "npm:^4.1.0"
     minimist: "npm:^1.2.8"
     morphdom: "npm:^2.7.8"
@@ -5149,7 +5147,6 @@ __metadata:
     node-jose: "npm:^2.2.0"
     nodemon: "npm:^3.1.11"
     notebookjs: "npm:^0.8.3"
-    numeric: "npm:^1.2.6"
     nuqs: "npm:^2.8.8"
     oauth-signature: "npm:^1.5.0"
     object-hash: "npm:^3.0.0"
@@ -10825,15 +10822,6 @@ __metadata:
   version: 1.6.4
   resolution: "b4a@npm:1.6.4"
   checksum: 10c0/a0af707430c3643fd8d9418c732849d3626f1c9281489e021fcad969fb4808fb9f67b224de36b59c9c3b5a13d853482fee0c0eb53f7aec12d540fa67f63648b6
-  languageName: node
-  linkType: hard
-
-"backbone@npm:^1.6.1":
-  version: 1.6.1
-  resolution: "backbone@npm:1.6.1"
-  dependencies:
-    underscore: "npm:>=1.8.3"
-  checksum: 10c0/de59ea1f81c72f18cebecf9bd9ecfc30ea5dcd7633e18aea820c5236cbdd1d807777a0d4f76d63d38c3c47647eddcbe1f739d797c3043de473c2469aa13f304a
   languageName: node
   linkType: hard
 
@@ -16548,13 +16536,6 @@ __metadata:
   languageName: node
   linkType: hard
 
-"mersenne@npm:0.0.4":
-  version: 0.0.4
-  resolution: "mersenne@npm:0.0.4"
-  checksum: 10c0/334dd7ef9eb6ceaf0d486ce8080d338cbb7f41f24fc32e0794e1758848794bb0da152c12ff7c3d8d5ddbf82542ddb3753ae069dba303002d1c55d5b6661f6d00
-  languageName: node
-  linkType: hard
-
 "methods@npm:^1.1.2, methods@npm:~1.1.2":
   version: 1.1.2
   resolution: "methods@npm:1.1.2"
@@ -17504,13 +17485,6 @@ __metadata:
   dependencies:
     boolbase: "npm:^1.0.0"
   checksum: 10c0/5fee7ff309727763689cfad844d979aedd2204a817fbaaf0e1603794a7c20db28548d7b024692f953557df6ce4a0ee4ae46cd8ebd9b36cfb300b9226b567c479
-  languageName: node
-  linkType: hard
-
-"numeric@npm:^1.2.6":
-  version: 1.2.6
-  resolution: "numeric@npm:1.2.6"
-  checksum: 10c0/5bf9b303975b46be73525858da9326f325e2ffd9a89869fa97eb4367b4d62588a32920c1c41e656df6cac26526e4645ba909e756ce79d644c0ab1f015dbcd27e
   languageName: node
   linkType: hard
 
@@ -21205,13 +21179,6 @@ __metadata:
   version: 2.0.5
   resolution: "undefsafe@npm:2.0.5"
   checksum: 10c0/96c0466a5fbf395917974a921d5d4eee67bca4b30d3a31ce7e621e0228c479cf893e783a109af6e14329b52fe2f0cb4108665fad2b87b0018c0df6ac771261d5
-  languageName: node
-  linkType: hard
-
-"underscore@npm:>=1.8.3":
-  version: 1.13.6
-  resolution: "underscore@npm:1.13.6"
-  checksum: 10c0/5f57047f47273044c045fddeb8b141dafa703aa487afd84b319c2495de2e685cecd0b74abec098292320d518b267c0c4598e45aa47d4c3628d0d4020966ba521
   languageName: node
   linkType: hard
 
