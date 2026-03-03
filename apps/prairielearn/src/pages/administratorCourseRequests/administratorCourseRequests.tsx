@@ -1,7 +1,10 @@
 import { Router } from 'express';
 
 import * as error from '@prairielearn/error';
+import { Hydrate } from '@prairielearn/react/server';
 
+import { PageLayout } from '../../components/PageLayout.js';
+import { AdminInstitutionSchema } from '../../lib/client/safe-db-types.js';
 import { config } from '../../lib/config.js';
 import {
   createCourseFromRequest,
@@ -22,11 +25,28 @@ router.get(
     const rows = await selectAllCourseRequests();
     const institutions = await selectAllInstitutions();
     res.send(
-      AdministratorCourseRequests({
-        rows,
-        institutions,
-        coursesRoot: config.coursesRoot,
+      PageLayout({
         resLocals: res.locals,
+        pageTitle: 'Course Requests',
+        navContext: {
+          type: 'administrator',
+          page: 'admin',
+          subPage: 'courses',
+        },
+        options: {
+          fullWidth: true,
+        },
+        content: (
+          <Hydrate>
+            <AdministratorCourseRequests
+              rows={rows}
+              institutions={AdminInstitutionSchema.array().parse(institutions)}
+              coursesRoot={config.coursesRoot}
+              csrfToken={res.locals.__csrf_token}
+              urlPrefix={res.locals.urlPrefix}
+            />
+          </Hydrate>
+        ),
       }),
     );
   }),
@@ -49,7 +69,7 @@ router.post(
         displayTimezone: req.body.display_timezone,
         path: req.body.path,
         repoShortName: req.body.repository_short_name,
-        githubUser: req.body.github_user.length > 0 ? req.body.github_user : null,
+        githubUser: req.body.github_user?.length > 0 ? req.body.github_user : null,
         authnUser: res.locals.authn_user,
       });
       return res.redirect(`/pl/administrator/jobSequence/${jobSequenceId}/`);
