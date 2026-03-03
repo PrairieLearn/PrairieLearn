@@ -40,9 +40,9 @@
     "brotli": 2612
   },
   "scripts/externalImageCaptureClient.ts": {
-    "raw": 44590,
-    "gzip": 13860,
-    "brotli": 12512
+    "raw": 44804,
+    "gzip": 13917,
+    "brotli": 12567
   },
   "scripts/institutionAdminAdminsClient.ts": {
     "raw": 1201,
