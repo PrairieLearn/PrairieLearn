@@ -36,6 +36,7 @@ referenced by
     audit_events: FOREIGN KEY (agent_user_id) REFERENCES users(id) ON UPDATE CASCADE ON DELETE SET NULL
     audit_events: FOREIGN KEY (subject_user_id) REFERENCES users(id) ON UPDATE CASCADE ON DELETE SET NULL
     client_fingerprints: FOREIGN KEY (user_id) REFERENCES users(id)
+    course_instance_ai_grading_credentials: FOREIGN KEY (created_by) REFERENCES users(id) ON UPDATE CASCADE ON DELETE SET NULL
     course_instance_usages: FOREIGN KEY (user_id) REFERENCES users(id) ON UPDATE CASCADE ON DELETE CASCADE
     course_permissions: FOREIGN KEY (user_id) REFERENCES users(id) ON UPDATE CASCADE ON DELETE CASCADE
     course_requests: FOREIGN KEY (approved_by) REFERENCES users(id) ON UPDATE CASCADE ON DELETE CASCADE
