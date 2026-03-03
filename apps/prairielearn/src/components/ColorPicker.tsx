@@ -6,11 +6,13 @@ export function ColorPicker({
   value,
   onChange,
   invalid,
+  required,
   id,
 }: {
   value: string;
   onChange: (color: ColorJson) => void;
   invalid?: boolean;
+  required?: boolean;
   id?: string;
 }) {
   return (
@@ -19,6 +21,7 @@ export function ColorPicker({
         className={clsx('form-select', invalid && 'is-invalid')}
         id={id}
         value={value}
+        required={required}
         onChange={(e) => onChange(e.currentTarget.value as ColorJson)}
       >
         {ColorJsonSchema.options.map((color) => (
@@ -36,10 +39,10 @@ export function ColorPicker({
         <rect
           width="32"
           height="32"
-          rx="4"
-          ry="4"
           style={{
             fill: `var(--color-${value})`,
+            rx: 'var(--bs-border-radius)',
+            ry: 'var(--bs-border-radius)',
           }}
         />
       </svg>

@@ -125,6 +125,28 @@ def build_grading_dag(
         raise ValueError(f"Unsupported grading method: {grading_method}")
 
 
+def separate_distractor_groups(
+    all_blocks: list[OrderBlocksAnswerData],
+) -> list[OrderBlocksAnswerData]:
+    """Shuffle blocks, putting distractor groups after all individual blocks."""
+    random.shuffle(all_blocks)
+    distractor_tags = [
+        tag for block in all_blocks if (tag := block.get("distractor_for"))
+    ]
+    distractor_group_blocks = [
+        block
+        for block in all_blocks
+        if block.get("distractor_for") or block.get("tag") in distractor_tags
+    ]
+    individual_blocks = [
+        block
+        for block in all_blocks
+        if not block.get("distractor_for") and block.get("tag") not in distractor_tags
+    ]
+
+    return individual_blocks + distractor_group_blocks
+
+
 def shuffle_distractor_groups(
     all_blocks: list[OrderBlocksAnswerData],
 ) -> list[OrderBlocksAnswerData]:
@@ -228,6 +250,11 @@ def prepare(html: str, data: pl.QuestionData) -> None:
         all_blocks.sort(key=lambda a: a["index"])
     elif order_blocks_options.source_blocks_order == SourceBlocksOrderType.ALPHABETIZED:
         all_blocks.sort(key=lambda a: a["inner_html"])
+    elif (
+        order_blocks_options.source_blocks_order
+        == SourceBlocksOrderType.RANDOM_SECTIONS
+    ):
+        all_blocks = separate_distractor_groups(all_blocks)
     else:
         assert_never(order_blocks_options.source_blocks_order)
 

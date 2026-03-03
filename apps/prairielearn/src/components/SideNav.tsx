@@ -1,5 +1,6 @@
 import clsx from 'clsx';
 
+import { truncateMiddle } from '@prairielearn/formatter';
 import { type HtmlValue, html } from '@prairielearn/html';
 import { run } from '@prairielearn/run';
 
@@ -197,15 +198,13 @@ export function SideNav({
       sideNavExpanded,
       persistToggleState,
     })}
-    ${resLocals.course_instance
-      ? CourseInstanceNav({
-          resLocals,
-          page,
-          subPage,
-          urlPrefix,
-          sideNavExpanded,
-        })
-      : ''}
+    ${CourseInstanceNav({
+      resLocals,
+      page,
+      subPage,
+      urlPrefix,
+      sideNavExpanded,
+    })}
   `;
 }
 
@@ -257,7 +256,9 @@ function CourseNav({
           hx-trigger="mouseover once, focus once, show.bs.dropdown once delay:200ms"
           hx-target="#sideNavCourseDropdownContent"
         >
-          <span> ${resLocals.course.short_name} </span>
+          <span title="${resLocals.course.short_name}">
+            ${truncateMiddle(resLocals.course.short_name, 22)}
+          </span>
         </button>
         <div class="dropdown-menu py-0 overflow-hidden">
           <div
@@ -321,7 +322,11 @@ function CourseInstanceNav({
             hx-trigger="mouseover once, focus once, show.bs.dropdown once delay:200ms"
             hx-target="#sideNavCourseInstancesDropdownContent"
           >
-            <span> ${resLocals.course_instance?.short_name ?? 'Select a course instance...'} </span>
+            <span title="${resLocals.course_instance?.short_name ?? ''}">
+              ${resLocals.course_instance
+                ? truncateMiddle(resLocals.course_instance.short_name, 22)
+                : 'Select a course instance...'}
+            </span>
           </button>
           <div class="dropdown-menu py-0 overflow-hidden">
             <div
