@@ -15,7 +15,6 @@ import {
   validateAtLeastOnePointsField,
 } from '../../utils/formHelpers.js';
 import { validatePositiveInteger } from '../../utils/questions.js';
-import { SubtleBadge } from '../SubtleBadge.js';
 
 import { AdvancedFields } from './AdvancedFields.js';
 
@@ -146,9 +145,13 @@ export function QuestionDetailPanel({
               )}
             </span>
             <div className="d-flex flex-wrap gap-1 mt-2">
-              <SubtleBadge color={questionData.topic.color} label={questionData.topic.name} />
+              <span className={`badge color-${questionData.topic.color}`}>
+                {questionData.topic.name}
+              </span>
               {questionData.tags?.map((tag) => (
-                <SubtleBadge key={tag.name} color={tag.color} label={tag.name} />
+                <span key={tag.name} className={`badge color-${tag.color}`}>
+                  {tag.name}
+                </span>
               ))}
             </div>
           </div>

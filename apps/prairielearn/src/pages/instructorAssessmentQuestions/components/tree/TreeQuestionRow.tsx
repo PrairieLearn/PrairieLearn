@@ -11,7 +11,6 @@ import type { EnumAssessmentType } from '../../../../lib/db-types.js';
 import type { QuestionAlternativeForm, ViewType, ZoneQuestionBlockForm } from '../../types.js';
 import { toAssessmentForPicker } from '../../utils/questions.js';
 import { AssessmentBadges } from '../AssessmentBadges.js';
-import { SubtleBadge } from '../SubtleBadge.js';
 
 import { DragHandle } from './DragHandle.js';
 
@@ -222,7 +221,9 @@ export function TreeQuestionRow({
               questionData.assessment_question.number_submissions_hist) && (
               <div className="d-flex flex-wrap align-items-center gap-1 mt-1">
                 {questionData.tags?.map((tag) => (
-                  <SubtleBadge key={tag.name} color={tag.color} label={tag.name} />
+                  <span key={tag.name} className={`badge color-${tag.color}`}>
+                    {tag.name}
+                  </span>
                 ))}
                 {questionData.assessment_question.number_submissions_hist && (
                   <HistMini
@@ -237,7 +238,6 @@ export function TreeQuestionRow({
                 <AssessmentBadges
                   assessments={toAssessmentForPicker(questionData.other_assessments)}
                   urlPrefix={urlPrefix}
-                  subtle
                 />
               </div>
             )}
@@ -246,7 +246,9 @@ export function TreeQuestionRow({
       </div>
       {questionData && (
         <div className="ms-2 me-2">
-          <SubtleBadge color={questionData.topic.color} label={questionData.topic.name} />
+          <span className={`badge color-${questionData.topic.color}`}>
+            {questionData.topic.name}
+          </span>
         </div>
       )}
       <PointsBadge
