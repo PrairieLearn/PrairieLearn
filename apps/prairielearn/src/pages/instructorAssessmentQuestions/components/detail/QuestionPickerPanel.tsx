@@ -19,7 +19,7 @@ export function QuestionPickerPanel({
   courseId,
   urlPrefix,
   currentAssessmentId,
-  zoneName,
+  headerText,
   onQuestionSelected,
   onDone,
 }: {
@@ -29,7 +29,7 @@ export function QuestionPickerPanel({
   courseId: string;
   urlPrefix: string;
   currentAssessmentId?: string;
-  zoneName?: string;
+  headerText?: string;
   onQuestionSelected: (qid: string) => void;
   onDone: () => void;
 }) {
@@ -166,7 +166,7 @@ export function QuestionPickerPanel({
     <div className="d-flex flex-column h-100">
       <div className="p-2 border-bottom">
         <div className="d-flex align-items-center justify-content-between mb-2">
-          <h6 className="mb-0">{zoneName ? `Adding to ${zoneName}` : 'Select question'}</h6>
+          <h6 className="mb-0">{headerText ?? 'Select question'}</h6>
           <button type="button" className="btn btn-sm btn-outline-secondary" onClick={onDone}>
             Done
           </button>

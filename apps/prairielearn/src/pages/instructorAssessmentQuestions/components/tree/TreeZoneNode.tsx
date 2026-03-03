@@ -30,6 +30,8 @@ export function TreeZoneNode({
   assessmentType,
   dispatch,
   onAddQuestion,
+  onAddAltGroup,
+  onAddToAltGroup,
   onDeleteQuestion,
   onDeleteZone,
 }: {
@@ -46,6 +48,8 @@ export function TreeZoneNode({
   assessmentType: EnumAssessmentType;
   dispatch: Dispatch<EditorAction>;
   onAddQuestion: (zoneTrackingId: string) => void;
+  onAddAltGroup: (zoneTrackingId: string) => void;
+  onAddToAltGroup: (altGroupTrackingId: string) => void;
   onDeleteQuestion: (
     questionTrackingId: string,
     questionId: string,
@@ -182,6 +186,7 @@ export function TreeZoneNode({
                 hasCoursePermissionPreview={hasCoursePermissionPreview}
                 assessmentType={assessmentType}
                 dispatch={dispatch}
+                onAddToAltGroup={onAddToAltGroup}
                 onDeleteQuestion={onDeleteQuestion}
               />
             ))}
@@ -190,7 +195,7 @@ export function TreeZoneNode({
             )}
             {editMode && (
               <div
-                className="py-2 border-bottom"
+                className="d-flex gap-2 py-2 border-bottom"
                 style={{ paddingLeft: '2.5rem', paddingRight: '1rem' }}
               >
                 <button
@@ -200,6 +205,14 @@ export function TreeZoneNode({
                 >
                   <i className="bi bi-plus me-1" aria-hidden="true" />
                   Add question
+                </button>
+                <button
+                  className="btn btn-sm btn-outline-primary"
+                  type="button"
+                  onClick={() => onAddAltGroup(zone.trackingId)}
+                >
+                  <i className="bi bi-stack me-1" aria-hidden="true" />
+                  Add alternative group
                 </button>
               </div>
             )}

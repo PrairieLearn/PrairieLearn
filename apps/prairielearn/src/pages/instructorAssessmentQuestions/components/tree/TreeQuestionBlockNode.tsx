@@ -1,4 +1,4 @@
-import { useSortable } from '@dnd-kit/sortable';
+import { SortableContext, useSortable, verticalListSortingStrategy } from '@dnd-kit/sortable';
 import clsx from 'clsx';
 import { type Dispatch } from 'react';
 
@@ -10,6 +10,7 @@ import type { EditorAction, SelectedItem, ViewType, ZoneQuestionBlockForm } from
 
 import { CollapseToggleButton } from './CollapseToggleButton.js';
 import { DragHandle } from './DragHandle.js';
+import { SortableAlternativeRow } from './SortableAlternativeRow.js';
 import { TreeQuestionRow } from './TreeQuestionRow.js';
 import { makeSortableStyle } from './sortableUtils.js';
 
@@ -25,6 +26,7 @@ export function TreeQuestionBlockNode({
   hasCoursePermissionPreview,
   assessmentType,
   dispatch,
+  onAddToAltGroup,
   onDeleteQuestion,
 }: {
   zoneQuestionBlock: ZoneQuestionBlockForm;
@@ -38,6 +40,7 @@ export function TreeQuestionBlockNode({
   hasCoursePermissionPreview: boolean;
   assessmentType: EnumAssessmentType;
   dispatch: Dispatch<EditorAction>;
+  onAddToAltGroup?: (altGroupTrackingId: string) => void;
   onDeleteQuestion: (
     questionTrackingId: string,
     questionId: string,
@@ -145,6 +148,19 @@ export function TreeQuestionBlockNode({
             return `Choose ${choose} of ${alternativeCount}`;
           })}
         </span>
+        {editMode && onAddToAltGroup && (
+          <button
+            type="button"
+            className="btn btn-sm border-0 text-muted ms-1 tree-hover-show"
+            title="Add question to alternative group"
+            onClick={(e) => {
+              e.stopPropagation();
+              onAddToAltGroup(zoneQuestionBlock.trackingId);
+            }}
+          >
+            <i className="bi bi-plus-lg" aria-hidden="true" />
+          </button>
+        )}
         {editMode && (
           <button
             type="button"
@@ -161,47 +177,52 @@ export function TreeQuestionBlockNode({
       </div>
 
       {/* Alternatives */}
-      {!isCollapsed &&
-        alternatives.map((alternative) => {
-          const altQuestionData = alternative.id ? questionMetadata[alternative.id] : null;
-          const isAltSelected =
-            selectedItem?.type === 'alternative' &&
-            selectedItem.questionTrackingId === zoneQuestionBlock.trackingId &&
-            selectedItem.alternativeTrackingId === alternative.trackingId;
+      {!isCollapsed && (
+        <SortableContext
+          items={alternatives.map((a) => a.trackingId)}
+          strategy={verticalListSortingStrategy}
+        >
+          {alternatives.map((alternative) => {
+            const altQuestionData = alternative.id ? questionMetadata[alternative.id] : null;
+            const isAltSelected =
+              selectedItem?.type === 'alternative' &&
+              selectedItem.questionTrackingId === zoneQuestionBlock.trackingId &&
+              selectedItem.alternativeTrackingId === alternative.trackingId;
 
-          return (
-            <TreeQuestionRow
-              key={alternative.trackingId}
-              question={alternative}
-              zoneQuestionBlock={zoneQuestionBlock}
-              questionData={altQuestionData}
-              editMode={editMode}
-              viewType={viewType}
-              isSelected={isAltSelected}
-              urlPrefix={urlPrefix}
-              hasCoursePermissionPreview={hasCoursePermissionPreview}
-              assessmentType={assessmentType}
-              isAlternative
-              onClick={() =>
-                setSelectedItem({
-                  type: 'alternative',
-                  questionTrackingId: zoneQuestionBlock.trackingId,
-                  alternativeTrackingId: alternative.trackingId,
-                })
-              }
-              onDelete={
-                editMode
-                  ? () =>
-                      onDeleteQuestion(
-                        zoneQuestionBlock.trackingId,
-                        alternative.id,
-                        alternative.trackingId,
-                      )
-                  : undefined
-              }
-            />
-          );
-        })}
+            return (
+              <SortableAlternativeRow
+                key={alternative.trackingId}
+                alternative={alternative}
+                zoneQuestionBlock={zoneQuestionBlock}
+                questionData={altQuestionData}
+                editMode={editMode}
+                viewType={viewType}
+                isSelected={isAltSelected}
+                urlPrefix={urlPrefix}
+                hasCoursePermissionPreview={hasCoursePermissionPreview}
+                assessmentType={assessmentType}
+                onClick={() =>
+                  setSelectedItem({
+                    type: 'alternative',
+                    questionTrackingId: zoneQuestionBlock.trackingId,
+                    alternativeTrackingId: alternative.trackingId,
+                  })
+                }
+                onDelete={
+                  editMode
+                    ? () =>
+                        onDeleteQuestion(
+                          zoneQuestionBlock.trackingId,
+                          alternative.id,
+                          alternative.trackingId,
+                        )
+                    : undefined
+                }
+              />
+            );
+          })}
+        </SortableContext>
+      )}
     </div>
   );
 }

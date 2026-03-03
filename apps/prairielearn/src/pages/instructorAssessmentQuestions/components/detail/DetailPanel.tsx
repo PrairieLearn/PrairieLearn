@@ -145,6 +145,28 @@ export function DetailPanel({
     );
   }
 
+  if (selectedItem.type === 'altGroupPicker') {
+    const zone = zones.find((z) => z.trackingId === selectedItem.zoneTrackingId);
+    const zoneName = zone?.title || 'Zone';
+    const headerText = selectedItem.altGroupTrackingId
+      ? `Adding to alternative group in ${zoneName}`
+      : `Creating alternative group in ${zoneName}`;
+    return (
+      <QuestionPickerPanel
+        courseQuestions={courseQuestions}
+        isLoading={courseQuestionsLoading}
+        questionsInAssessment={questionsInAssessment}
+        courseId={courseId}
+        urlPrefix={urlPrefix}
+        currentAssessmentId={currentAssessmentId}
+        headerText={headerText}
+        onQuestionSelected={onQuestionPicked}
+        onDone={onPickerDone}
+      />
+    );
+  }
+
+  // selectedItem.type === 'picker'
   const zone = zones.find((z) => z.trackingId === selectedItem.zoneTrackingId);
   const zoneName = zone?.title ? `Zone: ${zone.title}` : 'this zone';
   return (
@@ -155,7 +177,7 @@ export function DetailPanel({
       courseId={courseId}
       urlPrefix={urlPrefix}
       currentAssessmentId={currentAssessmentId}
-      zoneName={zoneName}
+      headerText={`Adding to ${zoneName}`}
       onQuestionSelected={onQuestionPicked}
       onDone={onPickerDone}
     />

@@ -150,6 +150,33 @@ export type EditorAction =
   | { type: 'EXPAND_ALL' }
   | { type: 'COLLAPSE_ALL' }
   | { type: 'RESET' }
+  | {
+      type: 'ADD_ALTERNATIVE';
+      altGroupTrackingId: string;
+      alternative: QuestionAlternativeForm;
+      questionData?: StaffAssessmentQuestionRow;
+    }
+  | {
+      type: 'REORDER_ALTERNATIVE';
+      alternativeTrackingId: string;
+      toAltGroupTrackingId: string;
+      /** trackingId of the alternative to insert before, or null to append at end */
+      beforeAlternativeTrackingId: string | null;
+    }
+  | {
+      type: 'EXTRACT_ALTERNATIVE_TO_QUESTION';
+      alternativeTrackingId: string;
+      toZoneTrackingId: string;
+      /** trackingId of the question to insert before, or null to append at end */
+      beforeQuestionTrackingId: string | null;
+    }
+  | {
+      type: 'MERGE_QUESTION_INTO_ALT_GROUP';
+      questionTrackingId: string;
+      toAltGroupTrackingId: string;
+      /** trackingId of the alternative to insert before, or null to append at end */
+      beforeAlternativeTrackingId: string | null;
+    }
   // Stubbed for future PR - will implement history tracking
   | { type: 'UNDO' }
   | { type: 'REDO' };
@@ -164,6 +191,7 @@ export type SelectedItem =
   | { type: 'alternative'; questionTrackingId: string; alternativeTrackingId: string }
   | { type: 'altGroup'; questionTrackingId: string }
   | { type: 'picker'; zoneTrackingId: string; returnToSelection?: SelectedItem }
+  | { type: 'altGroupPicker'; zoneTrackingId: string; altGroupTrackingId?: string }
   | null;
 
 export type ViewType = 'simple' | 'detailed';

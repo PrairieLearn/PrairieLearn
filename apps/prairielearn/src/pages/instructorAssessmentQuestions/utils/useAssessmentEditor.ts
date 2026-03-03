@@ -8,6 +8,8 @@ import type {
   ZoneQuestionBlockForm,
 } from '../types.js';
 
+import { alternativeToQuestionBlock, questionBlockToAlternative } from './dataTransform.js';
+
 /**
  * Finds a zone by its trackingId.
  * Returns the zone and its index, or null if not found.
@@ -56,6 +58,67 @@ function findAlternativeByTrackingId(
   const index = question.alternatives.findIndex((a) => a.trackingId === trackingId);
   if (index === -1) return null;
   return { alternative: question.alternatives[index], index };
+}
+
+/**
+ * Finds an alternative by its trackingId across all zones and question blocks.
+ */
+function findAlternativeAcrossZones(
+  zones: ZoneAssessmentForm[],
+  alternativeTrackingId: string,
+): {
+  alternative: QuestionAlternativeForm;
+  alternativeIndex: number;
+  question: ZoneQuestionBlockForm;
+  questionIndex: number;
+  zone: ZoneAssessmentForm;
+  zoneIndex: number;
+} | null {
+  for (let zoneIndex = 0; zoneIndex < zones.length; zoneIndex++) {
+    const zone = zones[zoneIndex];
+    for (let questionIndex = 0; questionIndex < zone.questions.length; questionIndex++) {
+      const question = zone.questions[questionIndex];
+      if (!question.alternatives) continue;
+      const alternativeIndex = question.alternatives.findIndex(
+        (a) => a.trackingId === alternativeTrackingId,
+      );
+      if (alternativeIndex !== -1) {
+        return {
+          alternative: question.alternatives[alternativeIndex],
+          alternativeIndex,
+          question,
+          questionIndex,
+          zone,
+          zoneIndex,
+        };
+      }
+    }
+  }
+  return null;
+}
+
+/**
+ * Handles alt group shrinkage after an alternative is removed.
+ * If 1 alternative remains, auto-converts to standalone question.
+ * If 0 alternatives remain, removes the block entirely.
+ */
+function handleAltGroupShrinkage(
+  zone: ZoneAssessmentForm,
+  questionIndex: number,
+  question: ZoneQuestionBlockForm,
+): void {
+  if (!question.alternatives) return;
+
+  if (question.alternatives.length === 1) {
+    const remainingAlternative = question.alternatives[0];
+    const { alternatives: _alternatives, ...groupWithoutAlternatives } = question;
+    zone.questions[questionIndex] = {
+      ...groupWithoutAlternatives,
+      ...remainingAlternative,
+    };
+  } else if (question.alternatives.length === 0) {
+    zone.questions.splice(questionIndex, 1);
+  }
 }
 
 /**
@@ -139,7 +202,7 @@ function createEditorReducer(initialState: EditorState) {
           );
         }
 
-        let newQuestionMetadata = { ...state.questionMetadata };
+        const newQuestionMetadata = { ...state.questionMetadata };
 
         // Remove from question metadata
         delete newQuestionMetadata[questionId];
@@ -158,28 +221,11 @@ function createEditorReducer(initialState: EditorState) {
 
           questionResult.question.alternatives!.splice(altResult.index, 1);
 
-          // If only one alternative remains, convert back to a regular question
-          if (questionResult.question.alternatives!.length === 1) {
-            const remainingAlternative = questionResult.question.alternatives![0];
-            const { alternatives: _alternatives, ...groupWithoutAlternatives } =
-              questionResult.question;
-            questionResult.zone.questions[questionResult.questionIndex] = {
-              ...groupWithoutAlternatives,
-              ...remainingAlternative,
-            };
-
-            // Update the question metadata for the remaining alternative
-            const alternativeId = remainingAlternative.id;
-            if (alternativeId && alternativeId in newQuestionMetadata) {
-              newQuestionMetadata = {
-                ...newQuestionMetadata,
-                [alternativeId]: {
-                  ...newQuestionMetadata[alternativeId],
-                  alternative_group_size: 1,
-                },
-              };
-            }
-          }
+          handleAltGroupShrinkage(
+            questionResult.zone,
+            questionResult.questionIndex,
+            questionResult.question,
+          );
         } else {
           // Deleting a regular question or entire alternative group
           questionResult.zone.questions.splice(questionResult.questionIndex, 1);
@@ -379,6 +425,185 @@ function createEditorReducer(initialState: EditorState) {
           ...state,
           collapsedZones: new Set<string>(zoneTrackingIds),
           collapsedGroups: new Set<string>(groupTrackingIds),
+        };
+      }
+
+      case 'ADD_ALTERNATIVE': {
+        const { altGroupTrackingId, alternative, questionData } = action;
+        const newZones = structuredClone(state.zones);
+
+        const groupResult = findQuestionByTrackingId(newZones, altGroupTrackingId);
+        if (!groupResult) {
+          throw new Error(
+            `ADD_ALTERNATIVE: Alt group with trackingId ${altGroupTrackingId} not found`,
+          );
+        }
+
+        if (!groupResult.question.alternatives) {
+          groupResult.question.alternatives = [];
+        }
+        groupResult.question.alternatives.push(alternative);
+
+        const newQuestionMetadata =
+          questionData && alternative.id
+            ? { ...state.questionMetadata, [alternative.id]: questionData }
+            : state.questionMetadata;
+
+        return {
+          ...state,
+          zones: newZones,
+          questionMetadata: newQuestionMetadata,
+        };
+      }
+
+      case 'REORDER_ALTERNATIVE': {
+        const { alternativeTrackingId, toAltGroupTrackingId, beforeAlternativeTrackingId } = action;
+        const newZones = structuredClone(state.zones);
+
+        // Find the alternative being moved
+        const fromResult = findAlternativeAcrossZones(newZones, alternativeTrackingId);
+        if (!fromResult) {
+          throw new Error(
+            `REORDER_ALTERNATIVE: Alternative with trackingId ${alternativeTrackingId} not found`,
+          );
+        }
+
+        // Find the destination alt group
+        const toGroupResult = findQuestionByTrackingId(newZones, toAltGroupTrackingId);
+        if (!toGroupResult) {
+          throw new Error(
+            `REORDER_ALTERNATIVE: Alt group with trackingId ${toAltGroupTrackingId} not found`,
+          );
+        }
+
+        if (!toGroupResult.question.alternatives) {
+          toGroupResult.question.alternatives = [];
+        }
+
+        // Remove alternative from source
+        const [movedAlt] = fromResult.question.alternatives!.splice(fromResult.alternativeIndex, 1);
+
+        // Find insertion point
+        let insertIndex: number;
+        if (beforeAlternativeTrackingId === null) {
+          insertIndex = toGroupResult.question.alternatives.length;
+        } else {
+          const beforeIdx = toGroupResult.question.alternatives.findIndex(
+            (a) => a.trackingId === beforeAlternativeTrackingId,
+          );
+          insertIndex = beforeIdx === -1 ? toGroupResult.question.alternatives.length : beforeIdx;
+        }
+
+        toGroupResult.question.alternatives.splice(insertIndex, 0, movedAlt);
+
+        // Handle source group shrinkage
+        handleAltGroupShrinkage(fromResult.zone, fromResult.questionIndex, fromResult.question);
+
+        return {
+          ...state,
+          zones: newZones,
+        };
+      }
+
+      case 'EXTRACT_ALTERNATIVE_TO_QUESTION': {
+        const { alternativeTrackingId, toZoneTrackingId, beforeQuestionTrackingId } = action;
+        const newZones = structuredClone(state.zones);
+
+        // Find the alternative being extracted
+        const fromResult = findAlternativeAcrossZones(newZones, alternativeTrackingId);
+        if (!fromResult) {
+          throw new Error(
+            `EXTRACT_ALTERNATIVE_TO_QUESTION: Alternative with trackingId ${alternativeTrackingId} not found`,
+          );
+        }
+
+        // Find the destination zone
+        const toZoneResult = findZoneByTrackingId(newZones, toZoneTrackingId);
+        if (!toZoneResult) {
+          throw new Error(
+            `EXTRACT_ALTERNATIVE_TO_QUESTION: Zone with trackingId ${toZoneTrackingId} not found`,
+          );
+        }
+
+        // Remove alternative from source group
+        const [removedAlt] = fromResult.question.alternatives!.splice(
+          fromResult.alternativeIndex,
+          1,
+        );
+
+        // Convert to standalone question block
+        const newQuestion = alternativeToQuestionBlock(removedAlt);
+
+        // Find insertion point
+        let insertIndex: number;
+        if (beforeQuestionTrackingId === null) {
+          insertIndex = toZoneResult.zone.questions.length;
+        } else {
+          const beforeResult = findQuestionByTrackingId(newZones, beforeQuestionTrackingId);
+          if (beforeResult?.zone.trackingId !== toZoneTrackingId) {
+            insertIndex = toZoneResult.zone.questions.length;
+          } else {
+            insertIndex = beforeResult.questionIndex;
+          }
+        }
+
+        toZoneResult.zone.questions.splice(insertIndex, 0, newQuestion);
+
+        // Handle source group shrinkage
+        handleAltGroupShrinkage(fromResult.zone, fromResult.questionIndex, fromResult.question);
+
+        return {
+          ...state,
+          zones: newZones,
+        };
+      }
+
+      case 'MERGE_QUESTION_INTO_ALT_GROUP': {
+        const { questionTrackingId, toAltGroupTrackingId, beforeAlternativeTrackingId } = action;
+        const newZones = structuredClone(state.zones);
+
+        // Find the standalone question being merged
+        const fromResult = findQuestionByTrackingId(newZones, questionTrackingId);
+        if (!fromResult) {
+          throw new Error(
+            `MERGE_QUESTION_INTO_ALT_GROUP: Question with trackingId ${questionTrackingId} not found`,
+          );
+        }
+
+        // Find the destination alt group
+        const toGroupResult = findQuestionByTrackingId(newZones, toAltGroupTrackingId);
+        if (!toGroupResult) {
+          throw new Error(
+            `MERGE_QUESTION_INTO_ALT_GROUP: Alt group with trackingId ${toAltGroupTrackingId} not found`,
+          );
+        }
+
+        if (!toGroupResult.question.alternatives) {
+          toGroupResult.question.alternatives = [];
+        }
+
+        // Remove question from source zone
+        const [removedQuestion] = fromResult.zone.questions.splice(fromResult.questionIndex, 1);
+
+        // Convert to alternative
+        const newAlt = questionBlockToAlternative(removedQuestion);
+
+        // Find insertion point
+        let insertIndex: number;
+        if (beforeAlternativeTrackingId === null) {
+          insertIndex = toGroupResult.question.alternatives.length;
+        } else {
+          const beforeIdx = toGroupResult.question.alternatives.findIndex(
+            (a) => a.trackingId === beforeAlternativeTrackingId,
+          );
+          insertIndex = beforeIdx === -1 ? toGroupResult.question.alternatives.length : beforeIdx;
+        }
+
+        toGroupResult.question.alternatives.splice(insertIndex, 0, newAlt);
+
+        return {
+          ...state,
+          zones: newZones,
         };
       }
 

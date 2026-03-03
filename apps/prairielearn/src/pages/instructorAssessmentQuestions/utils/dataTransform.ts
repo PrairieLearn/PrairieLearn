@@ -88,6 +88,45 @@ export function createQuestionWithTrackingId(): ZoneQuestionBlockForm {
   } as ZoneQuestionBlockForm;
 }
 
+/**
+ * Creates a new alternative with a trackingId.
+ */
+export function createAlternativeWithTrackingId(): QuestionAlternativeForm {
+  return {
+    trackingId: createTrackingId(),
+  } as QuestionAlternativeForm;
+}
+
+/**
+ * Creates a new alternative group with a trackingId and empty alternatives.
+ */
+export function createAltGroupWithTrackingId(): ZoneQuestionBlockForm {
+  return {
+    trackingId: createTrackingId(),
+    alternatives: [],
+    numberChoose: 1,
+    canSubmit: [],
+    canView: [],
+  } as ZoneQuestionBlockForm;
+}
+
+/**
+ * Converts an alternative to a standalone question block.
+ * Preserves trackingId so dnd-kit can track the item mid-drag.
+ */
+export function alternativeToQuestionBlock(alt: QuestionAlternativeForm): ZoneQuestionBlockForm {
+  return { ...alt } as ZoneQuestionBlockForm;
+}
+
+/**
+ * Converts a standalone question block to an alternative.
+ * Preserves trackingId so dnd-kit can track the item mid-drag.
+ */
+export function questionBlockToAlternative(block: ZoneQuestionBlockForm): QuestionAlternativeForm {
+  const { alternatives: _alternatives, numberChoose: _numberChoose, ...rest } = block;
+  return { ...rest } as QuestionAlternativeForm;
+}
+
 /** Removes keys with undefined values from an object. */
 function omitUndefined<T extends Record<string, unknown>>(obj: T): T {
   return Object.fromEntries(Object.entries(obj).filter(([, v]) => v !== undefined)) as T;

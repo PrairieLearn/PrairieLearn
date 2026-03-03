@@ -22,6 +22,8 @@ export function AssessmentTree({
   assessmentType,
   dispatch,
   onAddQuestion,
+  onAddAltGroup,
+  onAddToAltGroup,
   onAddZone,
   onDeleteQuestion,
   onDeleteZone,
@@ -43,6 +45,8 @@ export function AssessmentTree({
   assessmentType: EnumAssessmentType;
   dispatch: Dispatch<EditorAction>;
   onAddQuestion: (zoneTrackingId: string) => void;
+  onAddAltGroup: (zoneTrackingId: string) => void;
+  onAddToAltGroup: (altGroupTrackingId: string) => void;
   onAddZone: () => void;
   onDeleteQuestion: (
     questionTrackingId: string,
@@ -94,6 +98,8 @@ export function AssessmentTree({
             assessmentType={assessmentType}
             dispatch={dispatch}
             onAddQuestion={onAddQuestion}
+            onAddAltGroup={onAddAltGroup}
+            onAddToAltGroup={onAddToAltGroup}
             onDeleteQuestion={onDeleteQuestion}
             onDeleteZone={onDeleteZone}
           />

@@ -33,6 +33,8 @@ import type {
 } from '../types.js';
 import {
   addTrackingIds,
+  createAltGroupWithTrackingId,
+  createAlternativeWithTrackingId,
   createQuestionWithTrackingId,
   createZoneWithTrackingId,
   stripTrackingIds,
@@ -126,10 +128,16 @@ function AssessmentEditorInner({
   );
 
   const positionByStableId = useMemo(() => {
-    const map: Record<string, { zoneIndex: number; questionIndex: number }> = {};
+    const map: Record<
+      string,
+      { zoneIndex: number; questionIndex: number; alternativeIndex?: number }
+    > = {};
     zones.forEach((zone, zoneIndex) => {
       zone.questions.forEach((question, questionIndex) => {
         map[question.trackingId] = { zoneIndex, questionIndex };
+        question.alternatives?.forEach((alt, alternativeIndex) => {
+          map[alt.trackingId] = { zoneIndex, questionIndex, alternativeIndex };
+        });
       });
     });
     return map;
@@ -140,6 +148,63 @@ function AssessmentEditorInner({
   };
 
   const handleQuestionPicked = async (qid: string) => {
+    if (selectedItem?.type === 'altGroupPicker') {
+      let questionData: QuestionByQidResult;
+      try {
+        questionData = await trpcClient.questionByQid.query({ qid });
+      } catch {
+        return;
+      }
+
+      const metadata = buildQuestionMetadata({
+        data: questionData,
+        assessment,
+        courseInstance,
+        course,
+      });
+
+      if (selectedItem.altGroupTrackingId) {
+        // Adding to existing alt group
+        const newAlt = { ...createAlternativeWithTrackingId(), id: qid } as QuestionAlternativeForm;
+        dispatch({
+          type: 'ADD_ALTERNATIVE',
+          altGroupTrackingId: selectedItem.altGroupTrackingId,
+          alternative: newAlt,
+          questionData: metadata,
+        });
+      } else {
+        // Creating new alt group: first question picked creates the group
+        const newAltGroup = createAltGroupWithTrackingId();
+        const firstAlt = {
+          ...createAlternativeWithTrackingId(),
+          id: qid,
+        } as QuestionAlternativeForm;
+        newAltGroup.alternatives = [firstAlt];
+
+        // Don't pass questionData to ADD_QUESTION — it stores metadata under
+        // question.id, which is undefined for alt groups. Store it separately.
+        dispatch({
+          type: 'ADD_QUESTION',
+          zoneTrackingId: selectedItem.zoneTrackingId,
+          question: newAltGroup,
+        });
+        dispatch({
+          type: 'UPDATE_QUESTION_METADATA',
+          questionId: qid,
+          questionData: metadata,
+        });
+
+        // Update selection so subsequent picks add to this group
+        setSelectedItem({
+          type: 'altGroupPicker',
+          zoneTrackingId: selectedItem.zoneTrackingId,
+          altGroupTrackingId: newAltGroup.trackingId,
+        });
+      }
+      // Stay in picker for "add another" behavior
+      return;
+    }
+
     if (selectedItem?.type !== 'picker') return;
 
     if (selectedItem.returnToSelection) {
@@ -226,6 +291,14 @@ function AssessmentEditorInner({
   };
 
   const handlePickerDone = () => {
+    if (selectedItem?.type === 'altGroupPicker' && selectedItem.altGroupTrackingId) {
+      // After adding to an alt group, select the alt group detail panel
+      setSelectedItem({
+        type: 'altGroup',
+        questionTrackingId: selectedItem.altGroupTrackingId,
+      });
+      return;
+    }
     setSelectedItem(null);
   };
 
@@ -309,13 +382,26 @@ function AssessmentEditorInner({
     dispatch({ type: 'DELETE_ZONE', zoneTrackingId });
   };
 
+  const handleAddAltGroup = (zoneTrackingId: string) => {
+    setSelectedItem({ type: 'altGroupPicker', zoneTrackingId });
+  };
+
+  const handleAddToAltGroup = (altGroupTrackingId: string) => {
+    const zoneTrackingId = zones.find((z) =>
+      z.questions.some((q) => q.trackingId === altGroupTrackingId),
+    )?.trackingId;
+    if (!zoneTrackingId) return;
+    setSelectedItem({ type: 'altGroupPicker', zoneTrackingId, altGroupTrackingId });
+  };
+
   const handleDragEnd = ({ active, over }: DragEndEvent) => {
     if (!over) return;
 
     const activeIdStr = String(active.id);
     const overIdStr = String(over.id);
-    const activeType = active.data.current?.type as 'zone' | 'question' | undefined;
+    const activeType = active.data.current?.type as 'zone' | 'question' | 'alternative' | undefined;
 
+    // Zone reorder
     if (activeType === 'zone') {
       const fromZoneIndex = zones.findIndex((z) => z.trackingId === activeIdStr);
       if (fromZoneIndex === -1) return;
@@ -341,6 +427,36 @@ function AssessmentEditorInner({
       return;
     }
 
+    // Alternative reorder within same group
+    if (activeType === 'alternative') {
+      const fromPos = positionByStableId[activeIdStr];
+      const toPos = positionByStableId[overIdStr];
+      // eslint-disable-next-line @typescript-eslint/no-unnecessary-condition
+      if (!fromPos || !toPos) return;
+      if (fromPos.alternativeIndex == null || toPos.alternativeIndex == null) return;
+
+      // Only handle within-group reorder here; cross-group is handled in handleDragOver
+      const fromBlock = zones[fromPos.zoneIndex].questions[fromPos.questionIndex];
+      const toBlock = zones[toPos.zoneIndex].questions[toPos.questionIndex];
+      if (fromBlock.trackingId !== toBlock.trackingId) return;
+      if (fromPos.alternativeIndex === toPos.alternativeIndex) return;
+
+      const alts = fromBlock.alternatives!;
+      const isDraggingDown = fromPos.alternativeIndex < toPos.alternativeIndex;
+      const beforeAlternativeTrackingId = isDraggingDown
+        ? (alts[toPos.alternativeIndex + 1]?.trackingId ?? null)
+        : alts[toPos.alternativeIndex].trackingId;
+
+      dispatch({
+        type: 'REORDER_ALTERNATIVE',
+        alternativeTrackingId: activeIdStr,
+        toAltGroupTrackingId: fromBlock.trackingId,
+        beforeAlternativeTrackingId,
+      });
+      return;
+    }
+
+    // Question block reorder within same zone
     const fromPosition = positionByStableId[activeIdStr];
     const toPosition = positionByStableId[overIdStr];
     // eslint-disable-next-line @typescript-eslint/no-unnecessary-condition
@@ -368,40 +484,111 @@ function AssessmentEditorInner({
   const handleDragOver = ({ active, over }: DragOverEvent) => {
     if (!over) return;
 
-    const activeType = active.data.current?.type as 'zone' | 'question' | undefined;
-    if (activeType !== 'question') return;
-
+    const activeType = active.data.current?.type as 'zone' | 'question' | 'alternative' | undefined;
+    const overType = over.data.current?.type as 'zone' | 'question' | 'alternative' | undefined;
     const activeIdStr = String(active.id);
     const overIdStr = String(over.id);
 
-    const fromPosition = positionByStableId[activeIdStr];
-    // eslint-disable-next-line @typescript-eslint/no-unnecessary-condition
-    if (!fromPosition) return;
+    if (activeType === 'alternative') {
+      const fromPos = positionByStableId[activeIdStr];
+      // eslint-disable-next-line @typescript-eslint/no-unnecessary-condition
+      if (!fromPos) return;
+      const fromBlock = zones[fromPos.zoneIndex].questions[fromPos.questionIndex];
 
-    const fromZone = zones[fromPosition.zoneIndex];
+      // Alternative dragged over empty zone drop target → extract to zone
+      const targetZone = zones.find((z) => `${z.trackingId}-empty-drop` === overIdStr);
+      if (targetZone) {
+        dispatch({
+          type: 'EXTRACT_ALTERNATIVE_TO_QUESTION',
+          alternativeTrackingId: activeIdStr,
+          toZoneTrackingId: targetZone.trackingId,
+          beforeQuestionTrackingId: null,
+        });
+        setSelectedItem(null);
+        return;
+      }
 
-    const targetZone = zones.find((z) => `${z.trackingId}-empty-drop` === overIdStr);
-    if (targetZone && fromZone.trackingId !== targetZone.trackingId) {
-      dispatch({
-        type: 'REORDER_QUESTION',
-        questionTrackingId: activeIdStr,
-        toZoneTrackingId: targetZone.trackingId,
-        beforeQuestionTrackingId: null,
-      });
+      const toPos = positionByStableId[overIdStr];
+      // eslint-disable-next-line @typescript-eslint/no-unnecessary-condition
+      if (!toPos) return;
+
+      if (overType === 'alternative' && toPos.alternativeIndex != null) {
+        // Alternative dragged over alternative in different group → cross-group move
+        const toBlock = zones[toPos.zoneIndex].questions[toPos.questionIndex];
+        if (fromBlock.trackingId !== toBlock.trackingId) {
+          dispatch({
+            type: 'REORDER_ALTERNATIVE',
+            alternativeTrackingId: activeIdStr,
+            toAltGroupTrackingId: toBlock.trackingId,
+            beforeAlternativeTrackingId: toBlock.alternatives![toPos.alternativeIndex].trackingId,
+          });
+        }
+        return;
+      }
+
+      if (overType === 'question') {
+        // Alternative dragged over a question block → extract to zone
+        const toZone = zones[toPos.zoneIndex];
+        dispatch({
+          type: 'EXTRACT_ALTERNATIVE_TO_QUESTION',
+          alternativeTrackingId: activeIdStr,
+          toZoneTrackingId: toZone.trackingId,
+          beforeQuestionTrackingId: toZone.questions[toPos.questionIndex].trackingId,
+        });
+        setSelectedItem(null);
+      }
       return;
     }
 
-    const toPosition = positionByStableId[overIdStr];
-    // eslint-disable-next-line @typescript-eslint/no-unnecessary-condition
-    if (!toPosition) return;
-    const toZone = zones[toPosition.zoneIndex];
-    if (fromZone.trackingId !== toZone.trackingId) {
-      dispatch({
-        type: 'REORDER_QUESTION',
-        questionTrackingId: activeIdStr,
-        toZoneTrackingId: toZone.trackingId,
-        beforeQuestionTrackingId: toZone.questions[toPosition.questionIndex].trackingId,
-      });
+    if (activeType === 'question') {
+      const fromPosition = positionByStableId[activeIdStr];
+      // eslint-disable-next-line @typescript-eslint/no-unnecessary-condition
+      if (!fromPosition) return;
+      const fromZone = zones[fromPosition.zoneIndex];
+      const fromBlock = fromZone.questions[fromPosition.questionIndex];
+
+      // Don't allow merging alt groups into other alt groups
+      const isStandalone = fromBlock.id != null;
+
+      // Question dragged over empty zone drop target → cross-zone move
+      const targetZone = zones.find((z) => `${z.trackingId}-empty-drop` === overIdStr);
+      if (targetZone && fromZone.trackingId !== targetZone.trackingId) {
+        dispatch({
+          type: 'REORDER_QUESTION',
+          questionTrackingId: activeIdStr,
+          toZoneTrackingId: targetZone.trackingId,
+          beforeQuestionTrackingId: null,
+        });
+        return;
+      }
+
+      const toPos = positionByStableId[overIdStr];
+      // eslint-disable-next-line @typescript-eslint/no-unnecessary-condition
+      if (!toPos) return;
+
+      if (overType === 'alternative' && isStandalone && toPos.alternativeIndex != null) {
+        // Standalone question dragged over an alternative → merge into that alt group
+        const toBlock = zones[toPos.zoneIndex].questions[toPos.questionIndex];
+        dispatch({
+          type: 'MERGE_QUESTION_INTO_ALT_GROUP',
+          questionTrackingId: activeIdStr,
+          toAltGroupTrackingId: toBlock.trackingId,
+          beforeAlternativeTrackingId: toBlock.alternatives![toPos.alternativeIndex].trackingId,
+        });
+        setSelectedItem(null);
+        return;
+      }
+
+      // Cross-zone question reorder
+      const toZone = zones[toPos.zoneIndex];
+      if (fromZone.trackingId !== toZone.trackingId) {
+        dispatch({
+          type: 'REORDER_QUESTION',
+          questionTrackingId: activeIdStr,
+          toZoneTrackingId: toZone.trackingId,
+          beforeQuestionTrackingId: toZone.questions[toPos.questionIndex].trackingId,
+        });
+      }
     }
   };
 
@@ -468,6 +655,8 @@ function AssessmentEditorInner({
                   />
                 }
                 onAddQuestion={handleAddQuestion}
+                onAddAltGroup={handleAddAltGroup}
+                onAddToAltGroup={handleAddToAltGroup}
                 onAddZone={handleAddZone}
                 onDeleteQuestion={handleDeleteQuestion}
                 onDeleteZone={handleDeleteZone}
