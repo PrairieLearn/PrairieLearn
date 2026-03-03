@@ -95,13 +95,9 @@ describe('executor smoke tests', () => {
     const testCoursePath = `${REPOSITORY_ROOT_PATH}/testCourse`;
     await codeCaller.prepareForCourse({ coursePath: testCoursePath, forbiddenModules: [] });
 
-    const { result } = await codeCaller.call(
-      'question',
-      'stdlibImport',
-      'server',
-      'generate',
-      [{ params: {}, correct_answers: {}, answers_names: {} }],
-    );
+    const { result } = await codeCaller.call('question', 'stdlibImport', 'server', 'generate', [
+      { params: {}, correct_answers: {}, answers_names: {} },
+    ]);
 
     expect(result.params.stdlib_accessible).toBe(true);
   });
