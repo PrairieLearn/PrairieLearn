@@ -698,7 +698,7 @@ export async function loadConfig(paths: string[]) {
       throw new Error('cookieDomain must start with a dot, e.g. ".example.com"');
     }
 
-    const defaultKey = ConfigSchema.parse({}).databaseEncryptionKey; 
+    const defaultKey = ConfigSchema.parse({}).databaseEncryptionKey;
     if (config.databaseEncryptionKey === defaultKey) {
       throw new Error(
         'databaseEncryptionKey must be set to a secure value in production environments',

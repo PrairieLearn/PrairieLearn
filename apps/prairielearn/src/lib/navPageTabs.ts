@@ -43,8 +43,7 @@ export function getNavPageTabs() {
         urlSuffix: '/instance_admin/ai_grading',
         iconClasses: 'bi bi-stars',
         tabLabel: 'AI grading',
-        renderCondition: (resLocals) =>
-          resLocals.ai_grading_enabled && resLocals.authz_data.has_course_permission_own,
+        renderCondition: (resLocals) => resLocals.authz_data.has_course_permission_preview,
       },
       {
         activeSubPage: 'lti',
@@ -54,7 +53,6 @@ export function getNavPageTabs() {
         renderCondition: (resLocals) =>
           resLocals.lti11_enabled && resLocals.authz_data.has_course_permission_edit,
       },
-
       {
         activeSubPage: 'billing',
         urlSuffix: '/instance_admin/billing',

@@ -358,6 +358,11 @@ function AiGradingSettingsContent({
                 </tbody>
               </table>
             </div>
+            {!canEdit && (
+              <Alert variant="warning" className="mt-3 mb-0">
+                You must be a course owner to edit provider API keys.
+              </Alert>
+            )}
           </div>
         )}
       </div>

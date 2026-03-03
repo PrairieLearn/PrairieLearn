@@ -34,3 +34,20 @@ export function formatCredential(
     dateAdded: formatDateYMD(cred.created_at, displayTimezone),
   };
 }
+
+/** Formats a stored credential with a fully redacted key (no partial reveal). */
+export function formatCredentialRedacted(
+  cred: {
+    id: string;
+    provider: string;
+    created_at: Date;
+  },
+  displayTimezone: string,
+): AiGradingApiKeyCredential {
+  return {
+    id: cred.id,
+    provider: cred.provider as EnumAiGradingProvider,
+    apiKeyMasked: '\u2022\u2022\u2022\u2022\u2022\u2022\u2022\u2022',
+    dateAdded: formatDateYMD(cred.created_at, displayTimezone),
+  };
+}

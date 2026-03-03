@@ -16,14 +16,14 @@ import { selectCredentials } from '../../../models/ai-grading-credentials.js';
 
 import { InstructorInstanceAdminAiGrading } from './instructorInstanceAdminAiGrading.html.js';
 import { aiGradingSettingsRouter, createContext } from './trpc.js';
-import { formatCredential } from './utils/format.js';
+import { formatCredential, formatCredentialRedacted } from './utils/format.js';
 
 const router = Router();
 
 router.get(
   '/',
   createAuthzMiddleware({
-    oneOfPermissions: ['has_course_permission_own'],
+    oneOfPermissions: ['has_course_permission_preview'],
     unauthorizedUsers: 'block',
   }),
   typedAsyncHandler<'course-instance'>(async (req, res) => {
@@ -53,7 +53,9 @@ router.get(
 
     const dbCredentials = await selectCredentials(courseInstance.id);
     const credentials = dbCredentials.map((c) =>
-      formatCredential(c, courseInstance.display_timezone),
+      canEdit
+        ? formatCredential(c, courseInstance.display_timezone)
+        : formatCredentialRedacted(c, courseInstance.display_timezone),
     );
 
     // Generate a prefix-based CSRF token scoped to the tRPC endpoint for this page.

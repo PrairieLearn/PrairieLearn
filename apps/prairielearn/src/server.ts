@@ -1240,8 +1240,9 @@ export async function initExpress(): Promise<Express> {
         res.locals,
       );
       res.locals.billing_enabled = hasCourseInstanceBilling && isEnterprise();
-      res.locals.ai_grading_enabled =
-        (await features.enabledFromLocals('ai-grading', res.locals)) && isEnterprise();
+
+      const aiGradingEnabled = await features.enabledFromLocals('ai-grading', res.locals);
+      res.locals.ai_grading_enabled = aiGradingEnabled && isEnterprise();
       next();
     }),
   );
