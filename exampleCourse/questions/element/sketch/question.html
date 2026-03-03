@@ -1,0 +1,142 @@
+<pl-question-panel>
+  <p>
+    Questions below were designed to showcase the different features of
+    <a href="https://prairielearn.readthedocs.io/en/latest/elements/pl-sketch"><code>pl-sketch</code></a>.
+  </p>
+</pl-question-panel>
+
+<pl-card>
+  <pl-question-panel>
+    <p>This question is the example from the 
+      <a href="https://prairielearn.readthedocs.io/en/latest/elements/pl-sketch">documentation of 
+        <code>pl-sketch</code></a>. It illustrates the basic functionalities of the element,
+      including the use of different drawing tools, initial drawings, and grading criteria.
+    </p>
+    <p>For full marks, draw the function $f(x) = 2^x$ (connecting the provided helper points) and mark 
+      the horizontal asymptote at $y = 0$.</p>
+  </pl-question-panel>
+  <pl-sketch answers-name="sketch-example" xrange="-1,2" yrange="-1,5">
+    <pl-sketch-tool id="fd" type="free-draw"></pl-sketch-tool>
+    <pl-sketch-tool id="hl" type="horizontal-line"></pl-sketch-tool>
+    <pl-sketch-tool id="pt" type="point" read-only="true"></pl-sketch-tool>
+    <pl-sketch-initial toolid="pt" coordinates="-1,0.5"></pl-sketch-initial>
+    <pl-sketch-initial toolid="pt" coordinates="0,1"></pl-sketch-initial>
+    <pl-sketch-initial toolid="pt" coordinates="1,2"></pl-sketch-initial>
+    <pl-sketch-initial toolid="pt" coordinates="2,4"></pl-sketch-initial>
+    <pl-sketch-grade type="match" toolid="hl" y="0"></pl-sketch-grade> 
+    <pl-sketch-grade type="count" toolid="hl" count="1"></pl-sketch-grade> 
+    <pl-sketch-grade type="match-fun"  toolid="fd" fun="2**x"></pl-sketch-grade> 
+  </pl-sketch>
+</pl-card>
+
+<pl-card>
+  <pl-question-panel>
+    <p>The element supports a variety of drawing tool types that can be added as needed for specific questions. 
+      See the element documentation for more details on the how each tool type can be used an graded.</p>
+    <p>Due to space limitations, a maximum of 7 tools (in addition to default buttons) can be placed in the 
+      element's toolbar. To organize elements or add more than 7 for the same question, dropdown groups can be used.</p>
+    <p>This question has no grading criteria, so any non-empty submission is considered correct.</p>
+  </pl-question-panel>
+  <pl-sketch answers-name="sketch-tools">
+    <pl-sketch-tool id="pt" type="point"></pl-sketch-tool>
+    <pl-sketch-tool id="hl" type="horizontal-line" group="Asymptote lines"></pl-sketch-tool>
+    <pl-sketch-tool id="vl" type="vertical-line" group="Asymptote lines"></pl-sketch-tool>
+    <pl-sketch-tool id="li" type="line"></pl-sketch-tool>
+    <pl-sketch-tool id="fd" type="free-draw"></pl-sketch-tool>
+    <pl-sketch-tool id="sp" type="spline"></pl-sketch-tool>
+    <pl-sketch-tool id="pl" type="polyline"></pl-sketch-tool>
+    <pl-sketch-tool id="pg" type="polygon"></pl-sketch-tool>
+  </pl-sketch>
+</pl-card>
+
+<pl-card>
+  <pl-question-panel>
+    <p>The drawing canvas itself can be customized by changing its display size and the visible x- and y-ranges inside 
+      the canvas. All drawings and the grid lines are scaled automatically. If no grading tools are specified, the 
+      element will default to a single free-hand function drawing tool.</p>
+    <p>This question also illustrates two other customizations: it is set up to allows blank submissions, and it prevents 
+      drawn objects from being dragged off-canvas. The latter setting is recommended when using object counts as grading 
+      criteria, because if students drag objects partially off-canvas, they might become hard to see for the human 
+      eye and can cause confusion.</p>
+  </pl-question-panel>
+  <pl-sketch answers-name="sketch-size" xrange="-5,50" yrange="-100,100" width="500" height="200" allow-blank="true" enforce-bounds="true">
+  </pl-sketch>
+</pl-card>
+
+<pl-card>
+  <pl-question-panel>
+    <p>Drawings can be auto-graded based on different grading criteria, some of which are specific to certain drawing tool 
+      types. For tools like points and asymptote lines, common grading criteria are the number of placed objects per type 
+      and their position.</p>
+    <p>Note that unlike most other auto-graded elements, <code>pl-sketch</code> does not provide a sample solution in the 
+      answer panel as there might exist a wide range of solutions for a single question. We recommend using an image
+      that is specific to that panel if a sample solution is needed.</p>
+    <p>This question requires exactly 3 points to be placed, of which 2 must be at the locations $(0,0)$ and $(1,1)$. 
+      The last point can be placed anywhere as long as its x-coordinate is less than 2 and its y-coordinate is in the 
+      interval $[-3,3]$.
+    </p>
+  </pl-question-panel>
+  <pl-sketch answers-name="sketch-grade" allow-blank="true">
+    <pl-sketch-tool id="pt" type="point"></pl-sketch-tool>
+    <pl-sketch-grade type="match" toolid="pt" x="0" y="0"></pl-sketch-grade> 
+    <pl-sketch-grade type="match" toolid="pt" x="1" y="1"></pl-sketch-grade> 
+    <pl-sketch-grade type="count" toolid="pt" count="3"></pl-sketch-grade> 
+    <pl-sketch-grade type="undefined-in" toolid="pt" xrange="2,"></pl-sketch-grade> 
+    <pl-sketch-grade type="less-than" toolid="pt" y="3"></pl-sketch-grade> 
+    <pl-sketch-grade type="greater-than" toolid="pt" y="-3"></pl-sketch-grade> 
+  </pl-sketch>
+</pl-card>
+
+<pl-card>
+  <pl-question-panel>
+    <p>A common use case for the element is to draw and grade function sketches. The freehand drawing, spline and poly-line
+      tool types are specifically designed for function sketching. Drawings as a single function, even if they consist of 
+      distinct segments or have small gaps. Submissions where multiple y-values exist for the same x-coordinate are marked 
+      as invalid to prevent ambiguities.
+    </p>
+    <p>For this question, a function needs to to be drawn that is defined anywhere right of $x=-1$ and that matches 
+      $f(x) = x$ in the interval $x=[-1,1]$. It also must be monotonously increasing right of $x=1$. 
+    </p>
+    <p>All grading criteria can be customized, both to adjust tolerances, and to determine how special cases like 
+      definition gaps are handled. Furthermore, grading criteria can be weighted, and also staged to establish 
+      dependencies between grading criteria. The documentation describes the available settings and also lists 
+      more types of criteria, such as concavity checks or length-based grading.
+    </p>
+  </pl-question-panel>
+  <pl-sketch answers-name="sketch-grade-fun" allow-blank="true">
+    <pl-sketch-tool id="fd" type="free-draw"></pl-sketch-tool>
+    <pl-sketch-grade type="defined-in" toolid="fd" xrange="-1," stage="1"></pl-sketch-grade> 
+    <pl-sketch-grade type="match-fun" toolid="fd" fun="x" xrange="-1,1" stage="2" weight="3"></pl-sketch-grade> 
+    <pl-sketch-grade type="monot-increasing" toolid="fd" xrange="1," stage="2"></pl-sketch-grade> 
+  </pl-sketch>
+</pl-card>
+
+<pl-card>
+  <pl-question-panel>
+    <p>The element also supports drawing and auto-grading polygons, for example to shade regions of a graph. In this 
+      question, a triangular polygon should be drawn that covers the gap between the given functions in the interval $[0,2]$.</p>
+    <p>Note that polygon grading is computationally expensive and also somewhat limited. For example, it is not possible to 
+      directly compare a polygon's sides to functions. We recommend using approximations, such as a set of reference points
+      that need to be covered by the polygon, instead.</p>
+    <p>Also note that students might draw overly complex shapes in an attempt to create a pixel-perfect solution, which is 
+      counter-productive as it slows down grading to the point where a submission becomes invalid. We strongly recommend giving 
+      students a low-stakes opportunity to practice all available drawing tools before using them in exams.</p>
+  </pl-question-panel>
+  <pl-sketch answers-name="sketch-grade-poly" xrange="-1,5" allow-blank="true">
+    <pl-sketch-tool id="pl" type="polygon"></pl-sketch-tool>
+    <pl-sketch-grade type="defined-in" toolid="pl" xrange="0,2"></pl-sketch-grade> 
+    <pl-sketch-grade type="greater-than" toolid="pl" fun="-x" xrange="0,2"></pl-sketch-grade> 
+    <pl-sketch-grade type="less-than" toolid="pl" fun="x" xrange="0,2"></pl-sketch-grade> 
+    <pl-sketch-grade type="match" toolid="pl" x="0" y="0"></pl-sketch-grade> 
+    <pl-sketch-grade type="match" toolid="pl" x="1" y="-1"></pl-sketch-grade> 
+    <pl-sketch-grade type="match" toolid="pl" x="1" y="1"></pl-sketch-grade> 
+    <pl-sketch-grade type="match" toolid="pl" x="2" y="-2"></pl-sketch-grade> 
+    <pl-sketch-grade type="match" toolid="pl" x="2" y="2"></pl-sketch-grade> 
+
+    <!-- Ungraded helper lines for easier shading -->
+    <pl-sketch-tool id="sp1" type="spline" read-only="true"></pl-sketch-tool>
+    <pl-sketch-tool id="sp2" type="spline" read-only="true"></pl-sketch-tool>
+    <pl-sketch-initial toolid="sp1" fun="-x" xrange="0,2"></pl-sketch-initial> 
+    <pl-sketch-initial toolid="sp2" fun="x" xrange="0,2"></pl-sketch-initial> 
+  </pl-sketch>
+</pl-card>
