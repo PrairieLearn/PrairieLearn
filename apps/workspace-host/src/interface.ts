@@ -64,7 +64,7 @@ const SelectWorkspaceSchema = z.object({
 
 const PortOccupiedSchema = z.boolean();
 
-const WorkspaceSettingsSchema = z.object({
+const WorkspaceSettingsRowSchema = z.object({
   workspace_image: z.string(),
   workspace_port: z.number(),
   workspace_home: z.string(),
@@ -74,7 +74,12 @@ const WorkspaceSettingsSchema = z.object({
   workspace_environment: z.record(z.string(), z.any()).nullable(),
 });
 
-type WorkspaceSettings = z.infer<typeof WorkspaceSettingsSchema>;
+// _getWorkspaceSettings transforms WorkspaceSettingsRowSchema into this shape.
+type WorkspaceSettings = z.infer<typeof WorkspaceSettingsRowSchema> & {
+  workspace_args: string;
+  workspace_enable_networking: boolean;
+  workspace_environment: string[];
+};
 
 interface Workspace {
   id: string | number;
@@ -622,7 +627,7 @@ async function _getWorkspaceSettings(workspace_id: string | number): Promise<Wor
   const row = await sqldb.queryRow(
     sql.select_workspace_settings,
     { workspace_id },
-    WorkspaceSettingsSchema,
+    WorkspaceSettingsRowSchema,
   );
   const workspace_environment = row.workspace_environment || {};
 
@@ -820,7 +825,7 @@ async function _createContainer(workspace: Workspace): Promise<Docker.Container>
   const workspaceJobPath = path.join(jobDirectory, remote_name, 'current');
 
   const containerPath = settings.workspace_home;
-  const args = settings.workspace_args!.trim();
+  const args = settings.workspace_args.trim();
 
   let networkMode = 'bridge';
   if (!settings.workspace_enable_networking) {
@@ -859,8 +864,7 @@ async function _createContainer(workspace: Workspace): Promise<Docker.Container>
     ExposedPorts: {
       [`${settings.workspace_port}/tcp`]: {},
     },
-    // FIXME: Env expects an array, but we're passing a record.
-    Env: settings.workspace_environment! as string[],
+    Env: settings.workspace_environment,
     User: `${config.workspaceJobsDirectoryOwnerUid}:${config.workspaceJobsDirectoryOwnerGid}`,
     HostConfig: {
       PortBindings: {
