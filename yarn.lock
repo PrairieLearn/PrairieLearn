@@ -3379,13 +3379,6 @@ __metadata:
   languageName: node
   linkType: hard
 
-"@one-ini/wasm@npm:0.2.1":
-  version: 0.2.1
-  resolution: "@one-ini/wasm@npm:0.2.1"
-  checksum: 10c0/6bc49c43b757bc53786f655845b3af0676348ca910d07d1adb1b56e174faf9149fb3453f3e3fed02b3de4c400367e597cb58b6b7d3590a52289e97faf99fc37f
-  languageName: node
-  linkType: hard
-
 "@opentelemetry/api-logs@npm:0.212.0":
   version: 0.212.0
   resolution: "@opentelemetry/api-logs@npm:0.212.0"
@@ -7173,32 +7166,6 @@ __metadata:
   version: 0.3.6
   resolution: "@reteps/dockerfmt@npm:0.3.6"
   checksum: 10c0/b6ca467ba97ea49071c44d0fbecf131fc8045165e950d0d01372c1834000c58d53f62bff42f09b851f7a9d91899047f071cd8fe57e1fc88fc27e2a3d2bdb214d
-  languageName: node
-  linkType: hard
-
-"@reteps/tree-sitter-htmlmustache@npm:^0.7.1":
-  version: 0.7.1
-  resolution: "@reteps/tree-sitter-htmlmustache@npm:0.7.1"
-  dependencies:
-    chalk: "npm:^5.6.2"
-    editorconfig: "npm:^3.0.1"
-    node-gyp: "npm:latest"
-    vscode-languageserver-textdocument: "npm:^1.0.12"
-    web-tree-sitter: "npm:^0.26.5"
-  peerDependencies:
-    node-addon-api: ^8.2.2
-    node-gyp-build: ^4.8.2
-    tree-sitter: ^0.25.0
-  peerDependenciesMeta:
-    node-addon-api:
-      optional: true
-    node-gyp-build:
-      optional: true
-    tree-sitter:
-      optional: true
-  bin:
-    htmlmustache: cli/out/main.js
-  checksum: 10c0/8692598d59d40b4d7b87a2b55f99a0499a72dbae1e884bc84776ca2c88f6d37578097490f26be20b7f758e7ae592efe48aaded8420db02772ad87222177b8451
   languageName: node
   linkType: hard
 
@@ -12669,20 +12636,6 @@ __metadata:
   languageName: node
   linkType: hard
 
-"editorconfig@npm:^3.0.1":
-  version: 3.0.2
-  resolution: "editorconfig@npm:3.0.2"
-  dependencies:
-    "@one-ini/wasm": "npm:0.2.1"
-    commander: "npm:^14.0.3"
-    minimatch: "npm:~10.2.4"
-    semver: "npm:^7.7.4"
-  bin:
-    editorconfig: bin/editorconfig
-  checksum: 10c0/22b4594adc4e5832c88c0926adb1dcd289351edb9c2b0bd68ecf56ad107bf3741ab407aa44999e503889d62e38519d42ca38aae183e4ffc0b5fd94cebdd73d08
-  languageName: node
-  linkType: hard
-
 "ee-first@npm:1.1.1":
   version: 1.1.1
   resolution: "ee-first@npm:1.1.1"
@@ -16918,7 +16871,7 @@ __metadata:
   languageName: node
   linkType: hard
 
-"minimatch@npm:^10.1.1, minimatch@npm:^10.2.1, minimatch@npm:^10.2.2, minimatch@npm:^9.0.3 || ^10.0.1, minimatch@npm:~10.2.4":
+"minimatch@npm:^10.1.1, minimatch@npm:^10.2.1, minimatch@npm:^10.2.2, minimatch@npm:^9.0.3 || ^10.0.1":
   version: 10.2.4
   resolution: "minimatch@npm:10.2.4"
   dependencies:
@@ -18283,7 +18236,6 @@ __metadata:
     "@playwright/test": "npm:^1.58.1"
     "@postgres-language-server/cli": "npm:^0.19.0"
     "@prairielearn/eslint-config": "workspace:^"
-    "@reteps/tree-sitter-htmlmustache": "npm:^0.7.1"
     "@types/tar-stream": "npm:^3.1.4"
     "@typescript/native-preview": "npm:^7.0.0-dev.20260203.1"
     "@vitest/coverage-v8": "npm:^4.0.18"
@@ -21623,13 +21575,6 @@ __metadata:
   languageName: node
   linkType: hard
 
-"vscode-languageserver-textdocument@npm:^1.0.12":
-  version: 1.0.12
-  resolution: "vscode-languageserver-textdocument@npm:1.0.12"
-  checksum: 10c0/534349894b059602c4d97615a1147b6c4c031141c2093e59657f54e38570f5989c21b376836f13b9375419869242e9efb4066643208b21ab1e1dee111a0f00fb
-  languageName: node
-  linkType: hard
-
 "w3c-keyname@npm:^2.2.0":
   version: 2.2.8
   resolution: "w3c-keyname@npm:2.2.8"
@@ -21675,13 +21620,6 @@ __metadata:
   version: 3.3.3
   resolution: "web-streams-polyfill@npm:3.3.3"
   checksum: 10c0/64e855c47f6c8330b5436147db1c75cb7e7474d924166800e8e2aab5eb6c76aac4981a84261dd2982b3e754490900b99791c80ae1407a9fa0dcff74f82ea3a7f
-  languageName: node
-  linkType: hard
-
-"web-tree-sitter@npm:^0.26.5":
-  version: 0.26.6
-  resolution: "web-tree-sitter@npm:0.26.6"
-  checksum: 10c0/877359f2988809d8799de3ce06f526355decd7634464bf2519ba92be6b68f4ec15bd57e4691d47a57b129cf09c2f80347322702113ba8fdb80c1b1c78ede641a
   languageName: node
   linkType: hard
 
