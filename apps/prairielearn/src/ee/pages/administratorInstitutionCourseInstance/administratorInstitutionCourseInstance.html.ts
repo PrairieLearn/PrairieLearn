@@ -1,6 +1,7 @@
 import { html } from '@prairielearn/html';
 
 import { PageLayout } from '../../../components/PageLayout.js';
+import { formatMilliDollars } from '../../../lib/ai-grading-credits.js';
 import { compiledScriptTag } from '../../../lib/assets.js';
 import {
   type Course,
@@ -132,6 +133,71 @@ export function AdministratorInstitutionCourseInstance({
         csrfToken: resLocals.__csrf_token,
         disabled: isDeleted,
       })}
+
+      <h2 class="h4 mt-4">AI grading credits</h2>
+      <p>
+        Total:
+        <strong>
+          ${formatMilliDollars(
+            course_instance.credit_transferable_milli_dollars +
+              course_instance.credit_non_transferable_milli_dollars,
+          )}
+        </strong>
+        (${formatMilliDollars(course_instance.credit_transferable_milli_dollars)} transferable,
+        ${formatMilliDollars(course_instance.credit_non_transferable_milli_dollars)}
+        non-transferable)
+      </p>
+      <form method="POST" class="mb-3">
+        <div class="mb-3">
+          <label class="form-label" for="credit_transferable_milli_dollars">
+            Transferable credits (milli-dollars)
+          </label>
+          <input
+            type="number"
+            class="form-control"
+            id="credit_transferable_milli_dollars"
+            name="credit_transferable_milli_dollars"
+            value="${course_instance.credit_transferable_milli_dollars}"
+            min="0"
+            ${isDeleted ? 'disabled' : ''}
+          />
+          <small class="form-text text-muted">
+            Credits from purchases that can be transferred between course instances. Current:
+            ${formatMilliDollars(course_instance.credit_transferable_milli_dollars)}
+          </small>
+        </div>
+        <div class="mb-3">
+          <label class="form-label" for="credit_non_transferable_milli_dollars">
+            Non-transferable credits (milli-dollars)
+          </label>
+          <input
+            type="number"
+            class="form-control"
+            id="credit_non_transferable_milli_dollars"
+            name="credit_non_transferable_milli_dollars"
+            value="${course_instance.credit_non_transferable_milli_dollars}"
+            min="0"
+            ${isDeleted ? 'disabled' : ''}
+          />
+          <small class="form-text text-muted">
+            Credits from plan grants that cannot be transferred. Current:
+            ${formatMilliDollars(course_instance.credit_non_transferable_milli_dollars)}
+          </small>
+        </div>
+        ${isDeleted
+          ? ''
+          : html`
+              <input type="hidden" name="__csrf_token" value="${resLocals.__csrf_token}" />
+              <button
+                type="submit"
+                name="__action"
+                value="update_credit_pool"
+                class="btn btn-primary"
+              >
+                Save credits
+              </button>
+            `}
+      </form>
     `,
   });
 }

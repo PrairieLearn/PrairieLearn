@@ -7,6 +7,7 @@ import { execute, loadSqlEquiv, queryRow } from '@prairielearn/postgres';
 
 import { CourseInstanceSchema, CourseSchema } from '../../../lib/db-types.js';
 import { typedAsyncHandler } from '../../../lib/res-locals.js';
+import { updateCreditPool } from '../../../models/ai-grading-credit-pool.js';
 import { parseDesiredPlanGrants } from '../../lib/billing/components/PlanGrantsEditor.js';
 import {
   getPlanGrantsForCourseInstance,
@@ -95,6 +96,31 @@ router.post(
         res.locals.authn_user.id,
       );
       flash('success', 'Successfully updated institution plan grants.');
+      res.redirect(req.originalUrl);
+    } else if (req.body.__action === 'update_credit_pool') {
+      const creditTransferable = Number(req.body.credit_transferable_milli_dollars);
+      const creditNonTransferable = Number(req.body.credit_non_transferable_milli_dollars);
+
+      if (
+        !Number.isInteger(creditTransferable) ||
+        !Number.isInteger(creditNonTransferable) ||
+        creditTransferable < 0 ||
+        creditNonTransferable < 0
+      ) {
+        throw new error.HttpStatusError(
+          400,
+          'Credit amounts must be non-negative integers (milli-dollars).',
+        );
+      }
+
+      await updateCreditPool({
+        course_instance_id: course_instance.id,
+        credit_transferable_milli_dollars: creditTransferable,
+        credit_non_transferable_milli_dollars: creditNonTransferable,
+        user_id: res.locals.authn_user.id,
+        reason: 'Admin update',
+      });
+      flash('success', 'Successfully updated AI grading credits.');
       res.redirect(req.originalUrl);
     } else {
       throw new error.HttpStatusError(400, `Unknown action: ${req.body.__action}`);
