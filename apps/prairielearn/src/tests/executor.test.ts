@@ -2,6 +2,7 @@ import { afterAll, beforeAll, describe, expect, it } from 'vitest';
 
 import { type ExecutorResults, handleInput } from '../executor-lib.js';
 import { CodeCallerNative } from '../lib/code-caller/code-caller-native.js';
+import { REPOSITORY_ROOT_PATH } from '../lib/paths.js';
 
 /**
  * Smoke tests for the executor image. This code path is similar to the
@@ -89,4 +90,19 @@ describe('executor smoke tests', () => {
       extraAssertions?.(result);
     },
   );
+
+  it('generates question that imports non-preloaded stdlib modules', async () => {
+    const testCoursePath = `${REPOSITORY_ROOT_PATH}/testCourse`;
+    await codeCaller.prepareForCourse({ coursePath: testCoursePath, forbiddenModules: [] });
+
+    const { result } = await codeCaller.call(
+      'question',
+      'stdlibImport',
+      'server',
+      'generate',
+      [{ params: {}, correct_answers: {}, answers_names: {} }],
+    );
+
+    expect(result.params.stdlib_accessible).toBe(true);
+  });
 });
