@@ -23,20 +23,37 @@ export function parsePointsListValue(v: string): number | number[] | string | un
 
 /**
  * Validates that at least one points field (auto points or manual points) is set.
+ * When `parentValues` is provided (e.g. for alternatives inheriting from an alt group),
+ * the parent's values also satisfy the requirement.
  * Returns an error message if all are undefined, or undefined if valid.
  */
-export function validateAtLeastOnePointsField(values: {
-  autoPoints?: number | number[];
-  points?: number | number[];
-  manualPoints?: number;
-}): string | undefined {
+export function validateAtLeastOnePointsField(
+  values: {
+    autoPoints?: number | number[];
+    points?: number | number[];
+    manualPoints?: number;
+  },
+  parentValues?: {
+    autoPoints?: number | number[];
+    points?: number | number[];
+    manualPoints?: number;
+  },
+): string | undefined {
   if (
-    values.points === undefined &&
-    values.autoPoints === undefined &&
-    values.manualPoints === undefined
+    values.points !== undefined ||
+    values.autoPoints !== undefined ||
+    values.manualPoints !== undefined
   ) {
-    return 'At least one of auto points or manual points must be set.';
+    return;
   }
+  if (
+    parentValues?.points !== undefined ||
+    parentValues?.autoPoints !== undefined ||
+    parentValues?.manualPoints !== undefined
+  ) {
+    return;
+  }
+  return 'At least one of auto points or manual points must be set.';
 }
 
 /**

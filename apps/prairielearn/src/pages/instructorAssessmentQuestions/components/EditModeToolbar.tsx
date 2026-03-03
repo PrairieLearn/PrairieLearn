@@ -1,3 +1,5 @@
+import clsx from 'clsx';
+
 import type { ZoneAssessmentJson } from '../../../schemas/infoAssessment.js';
 import type { ViewType } from '../types.js';
 
@@ -85,7 +87,10 @@ export function EditModeToolbar({
 
   const saveButton = (
     <button
-      className="btn btn-sm btn-outline-secondary mx-1"
+      className={clsx(
+        'btn btn-sm mx-1',
+        saveButtonDisabled ? 'btn-outline-secondary' : 'btn-primary',
+      )}
       type="submit"
       disabled={saveButtonDisabled}
     >

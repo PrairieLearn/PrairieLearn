@@ -12,6 +12,7 @@ import type { ZoneAssessmentJson } from '../../../schemas/infoAssessment.js';
 import type { QuestionByQidResult } from '../trpc.js';
 import type {
   AssessmentForPicker,
+  CourseQuestionForPicker,
   QuestionAlternativeForm,
   ZoneQuestionBlockForm,
 } from '../types.js';
@@ -173,8 +174,22 @@ export function computeZonePointTotals(questions: ZoneQuestionBlockForm[]): {
   let autoPoints = 0;
   let manualPoints = 0;
   for (const q of questions) {
-    autoPoints += firstPoints(q.points ?? q.autoPoints);
-    manualPoints += q.manualPoints ?? 0;
+    if (q.alternatives) {
+      // Resolve each alternative's effective points (alternative-level ?? group-level)
+      const resolved = q.alternatives.map((alt) => ({
+        auto: firstPoints(alt.points ?? alt.autoPoints ?? q.points ?? q.autoPoints),
+        manual: alt.manualPoints ?? q.manualPoints ?? 0,
+      }));
+      // Sort by total descending and take the best numberChoose alternatives
+      resolved.sort((a, b) => b.auto + b.manual - (a.auto + a.manual));
+      const count = q.numberChoose ?? resolved.length;
+      const selected = resolved.slice(0, count);
+      autoPoints += selected.reduce((sum, r) => sum + r.auto, 0);
+      manualPoints += selected.reduce((sum, r) => sum + r.manual, 0);
+    } else {
+      autoPoints += firstPoints(q.points ?? q.autoPoints);
+      manualPoints += q.manualPoints ?? 0;
+    }
   }
   return { autoPoints, manualPoints };
 }
@@ -196,8 +211,30 @@ export function buildQuestionMetadata(opts: {
   assessment: StaffAssessment;
   courseInstance: StaffCourseInstance;
   course: StaffCourse;
+  courseQuestions?: CourseQuestionForPicker[];
 }): StaffAssessmentQuestionRow {
-  const { data, assessment, courseInstance, course } = opts;
+  const { data, assessment, courseInstance, course, courseQuestions } = opts;
+
+  const otherAssessments: OtherAssessment[] | null = (() => {
+    if (!courseQuestions) return null;
+    const courseQuestion = courseQuestions.find((q) => q.qid === data.question.qid);
+    if (!courseQuestion?.assessments?.length) return null;
+    const filtered = courseQuestion.assessments
+      .filter((a) => a.assessment_id !== assessment.id)
+      .map(
+        (a): OtherAssessment => ({
+          assessment_id: a.assessment_id,
+          assessment_set_abbreviation: a.assessment_set_abbreviation ?? '',
+          assessment_set_name: a.assessment_set_name ?? '',
+          assessment_number: a.assessment_number ?? '',
+          assessment_set_color: a.assessment_set_color ?? '',
+          assessment_course_instance_id: courseInstance.id,
+          assessment_share_source_publicly: false,
+        }),
+      );
+    return filtered.length > 0 ? filtered : null;
+  })();
+
   return StaffAssessmentQuestionRowSchema.parse({
     zone: {
       id: '0',
@@ -221,7 +258,7 @@ export function buildQuestionMetadata(opts: {
     topic: data.topic,
     open_issue_count: data.open_issue_count,
     tags: data.tags,
-    other_assessments: null,
+    other_assessments: otherAssessments,
     assessment,
     assessment_question: {
       id: '0',

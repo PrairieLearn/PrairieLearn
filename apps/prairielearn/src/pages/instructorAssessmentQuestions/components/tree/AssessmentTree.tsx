@@ -4,6 +4,7 @@ import type { Dispatch, ReactNode } from 'react';
 import type { StaffAssessmentQuestionRow } from '../../../../lib/assessment-question.shared.js';
 import type { EnumAssessmentType } from '../../../../lib/db-types.js';
 import type { EditorAction, SelectedItem, ViewType, ZoneAssessmentForm } from '../../types.js';
+import type { ChangeTrackingResult } from '../../utils/modifiedTracking.js';
 import { ViewToggle } from '../EditModeToolbar.js';
 
 import { TreeZoneNode } from './TreeZoneNode.js';
@@ -17,6 +18,7 @@ export function AssessmentTree({
   setSelectedItem,
   collapsedGroups,
   collapsedZones,
+  changeTracking,
   urlPrefix,
   hasCoursePermissionPreview,
   assessmentType,
@@ -40,6 +42,7 @@ export function AssessmentTree({
   setSelectedItem: (item: SelectedItem) => void;
   collapsedGroups: Set<string>;
   collapsedZones: Set<string>;
+  changeTracking: ChangeTrackingResult;
   urlPrefix: string;
   hasCoursePermissionPreview: boolean;
   assessmentType: EnumAssessmentType;
@@ -65,8 +68,12 @@ export function AssessmentTree({
         .tree-delete-btn:hover { color: var(--bs-danger) !important; }
         .tree-hover-show { opacity: 0; transition: opacity 0.15s; }
         .tree-row:hover .tree-hover-show { opacity: 1; }
+        [data-dragging] .tree-hover-show { opacity: 0 !important; pointer-events: none; }
         .tree-row.list-group-item-action:has(a:hover, .tree-interactive-badge:hover) {
           background-color: transparent;
+        }
+        .tree-row.list-group-item-action:active:has(.tree-hover-show:active) {
+          background-color: var(--bs-list-group-action-hover-bg);
         }
       `}</style>
       <div
@@ -82,10 +89,11 @@ export function AssessmentTree({
         {editControls && <div className="ms-auto">{editControls}</div>}
       </div>
       <div className="list-group list-group-flush">
-        {zones.map((zone) => (
+        {zones.map((zone, zoneIndex) => (
           <TreeZoneNode
             key={zone.trackingId}
             zone={zone}
+            zoneNumber={zoneIndex + 1}
             editMode={editMode}
             viewType={viewType}
             selectedItem={selectedItem}
@@ -93,6 +101,7 @@ export function AssessmentTree({
             questionMetadata={questionMetadata}
             collapsedGroups={collapsedGroups}
             collapsedZones={collapsedZones}
+            changeTracking={changeTracking}
             urlPrefix={urlPrefix}
             hasCoursePermissionPreview={hasCoursePermissionPreview}
             assessmentType={assessmentType}

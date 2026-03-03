@@ -124,7 +124,9 @@ export function SplitPane({
                 </button>
               )}
             </div>
-            <div style={{ overflow: 'auto', flex: 1 }}>{right}</div>
+            <div style={{ overflow: 'auto', flex: 1, display: 'flex', flexDirection: 'column' }}>
+              {right}
+            </div>
           </div>
         </>
       )}

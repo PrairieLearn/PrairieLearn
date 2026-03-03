@@ -11,10 +11,11 @@ import {
 } from '@dnd-kit/core';
 import { sortableKeyboardCoordinates } from '@dnd-kit/sortable';
 import { QueryClient, useQuery } from '@tanstack/react-query';
+import { parseAsStringLiteral, useQueryState } from 'nuqs';
 import { useMemo, useState } from 'react';
 
 import { run } from '@prairielearn/run';
-import { useModalState } from '@prairielearn/ui';
+import { NuqsAdapter, useModalState } from '@prairielearn/ui';
 
 import type { StaffAssessmentQuestionRow } from '../../../lib/assessment-question.shared.js';
 import type {
@@ -28,7 +29,6 @@ import type { QuestionByQidResult } from '../trpc.js';
 import type {
   QuestionAlternativeForm,
   SelectedItem,
-  ViewType,
   ZoneAssessmentForm,
   ZoneQuestionBlockForm,
 } from '../types.js';
@@ -40,6 +40,7 @@ import {
   createZoneWithTrackingId,
   stripTrackingIds,
 } from '../utils/dataTransform.js';
+import { computeChangeTracking } from '../utils/modifiedTracking.js';
 import {
   buildQuestionMetadata,
   normalizeQuestionPoints,
@@ -96,10 +97,18 @@ function AssessmentEditorInner({
   const { zones, questionMetadata, collapsedGroups, collapsedZones, dispatch } =
     useAssessmentEditor(initialState);
   const initialZonesJson = useMemo(() => JSON.stringify(initialState.zones), [initialState.zones]);
+  const changeTracking = useMemo(
+    () => computeChangeTracking(initialState.zones, zones),
+    [initialState.zones, zones],
+  );
 
   const [editMode, setEditMode] = useState(false);
+  const [isDragging, setIsDragging] = useState(false);
   const [selectedItem, setSelectedItem] = useState<SelectedItem>(null);
-  const [viewType, setViewType] = useState<ViewType>('simple');
+  const [viewType, setViewType] = useQueryState(
+    'view',
+    parseAsStringLiteral(['simple', 'detailed']).withDefault('simple'),
+  );
   const resetModal = useModalState<string>(null);
 
   const courseQuestionsQuery = useQuery({
@@ -204,6 +213,7 @@ function AssessmentEditorInner({
         assessment,
         courseInstance,
         course,
+        courseQuestions,
       });
 
       if (selectedItem.altGroupTrackingId) {
@@ -281,6 +291,7 @@ function AssessmentEditorInner({
               assessment,
               courseInstance,
               course,
+              courseQuestions,
             }),
           });
 
@@ -327,6 +338,7 @@ function AssessmentEditorInner({
         assessment,
         courseInstance,
         course,
+        courseQuestions,
       }),
     });
 
@@ -430,7 +442,16 @@ function AssessmentEditorInner({
   };
 
   const handleAddAltGroup = (zoneTrackingId: string) => {
-    setSelectedItem({ type: 'altGroupPicker', zoneTrackingId });
+    const newAltGroup = createAltGroupWithTrackingId();
+    dispatch({
+      type: 'ADD_QUESTION',
+      zoneTrackingId,
+      question: newAltGroup,
+    });
+    setSelectedItem({
+      type: 'altGroup',
+      questionTrackingId: newAltGroup.trackingId,
+    });
   };
 
   const handleAddToAltGroup = (altGroupTrackingId: string) => {
@@ -561,6 +582,9 @@ function AssessmentEditorInner({
       const fromPos = positionByStableId[activeIdStr];
       // eslint-disable-next-line @typescript-eslint/no-unnecessary-condition
       if (!fromPos) return;
+      // After extraction, the item becomes a question block (no alternativeIndex).
+      // dnd-kit's active.data.current.type stays frozen as 'alternative', so guard here.
+      if (fromPos.alternativeIndex == null) return;
       const fromBlock = zones[fromPos.zoneIndex].questions[fromPos.questionIndex];
 
       // Alternative dragged over empty zone drop target → extract to zone
@@ -662,11 +686,19 @@ function AssessmentEditorInner({
     }
   };
 
+  const zoneDisplayName = (trackingId: string) => {
+    const index = zones.findIndex((z) => z.trackingId === trackingId);
+    if (index === -1) return 'Zone';
+    return zones[index].title || `Zone ${index + 1}`;
+  };
+
   const rightTitle = run(() => {
     if (!selectedItem) return undefined;
     switch (selectedItem.type) {
-      case 'zone':
-        return editMode ? 'Edit zone' : 'Zone';
+      case 'zone': {
+        const name = zoneDisplayName(selectedItem.zoneTrackingId);
+        return editMode ? `Edit ${name.toLowerCase()}` : name;
+      }
       case 'question':
         return editMode ? 'Edit question' : 'Question';
       case 'alternative':
@@ -674,15 +706,14 @@ function AssessmentEditorInner({
       case 'altGroup':
         return editMode ? 'Edit alternative group' : 'Alternative group';
       case 'picker': {
-        const zone = zones.find((z) => z.trackingId === selectedItem.zoneTrackingId);
-        return `Adding to ${zone?.title ? `Zone: ${zone.title}` : 'this zone'}`;
+        const name = zoneDisplayName(selectedItem.zoneTrackingId);
+        return `Adding to ${name}`;
       }
       case 'altGroupPicker': {
-        const zone = zones.find((z) => z.trackingId === selectedItem.zoneTrackingId);
-        const zoneName = zone?.title || 'Zone';
+        const name = zoneDisplayName(selectedItem.zoneTrackingId);
         return selectedItem.altGroupTrackingId
-          ? `Adding to alternative group in ${zoneName}`
-          : `Creating alternative group in ${zoneName}`;
+          ? `Adding to alternative group in ${name}`
+          : `Creating alternative group in ${name}`;
       }
     }
   });
@@ -708,10 +739,15 @@ function AssessmentEditorInner({
         sensors={sensors}
         collisionDetection={collisionDetection}
         autoScroll={false}
+        onDragStart={() => setIsDragging(true)}
         onDragOver={handleDragOver}
-        onDragEnd={handleDragEnd}
+        onDragEnd={(event: DragEndEvent) => {
+          setIsDragging(false);
+          handleDragEnd(event);
+        }}
+        onDragCancel={() => setIsDragging(false)}
       >
-        <div>
+        <div data-dragging={isDragging || undefined}>
           <SplitPane
             forceOpen={selectedItem}
             rightTitle={rightTitle}
@@ -726,6 +762,7 @@ function AssessmentEditorInner({
                 setSelectedItem={setSelectedItem}
                 collapsedGroups={collapsedGroups}
                 collapsedZones={collapsedZones}
+                changeTracking={changeTracking}
                 urlPrefix={urlPrefix}
                 hasCoursePermissionPreview={hasCoursePermissionPreview}
                 assessmentType={assessment.type}
@@ -804,17 +841,20 @@ function AssessmentEditorInner({
 
 interface AssessmentEditorProps extends AssessmentEditorInnerProps {
   trpcCsrfToken: string;
+  search: string;
 }
 
-export function AssessmentEditor({ trpcCsrfToken, ...innerProps }: AssessmentEditorProps) {
+export function AssessmentEditor({ trpcCsrfToken, search, ...innerProps }: AssessmentEditorProps) {
   const [queryClient] = useState(() => new QueryClient());
   const [trpcClient] = useState(() => createAssessmentQuestionsTrpcClient(trpcCsrfToken));
   return (
-    <QueryClientProviderDebug client={queryClient}>
-      <TRPCProvider trpcClient={trpcClient} queryClient={queryClient}>
-        <AssessmentEditorInner {...innerProps} />
-      </TRPCProvider>
-    </QueryClientProviderDebug>
+    <NuqsAdapter search={search}>
+      <QueryClientProviderDebug client={queryClient}>
+        <TRPCProvider trpcClient={trpcClient} queryClient={queryClient}>
+          <AssessmentEditorInner {...innerProps} />
+        </TRPCProvider>
+      </QueryClientProviderDebug>
+    </NuqsAdapter>
   );
 }
 

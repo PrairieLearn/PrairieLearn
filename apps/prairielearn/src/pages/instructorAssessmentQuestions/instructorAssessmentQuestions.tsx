@@ -22,6 +22,7 @@ import { features } from '../../lib/features/index.js';
 import { getPaths } from '../../lib/instructorFiles.js';
 import { formatJsonWithPrettier } from '../../lib/prettier.js';
 import { handleTrpcError } from '../../lib/trpc.js';
+import { getUrl } from '../../lib/url.js';
 import { resetVariantsForAssessmentQuestion } from '../../models/variant.js';
 import { ZoneAssessmentJsonSchema } from '../../schemas/infoAssessment.js';
 
@@ -99,6 +100,8 @@ router.get(
       config.secretKey,
     );
 
+    const search = getUrl(req).search;
+
     res.send(
       PageLayout({
         resLocals: res.locals,
@@ -128,6 +131,7 @@ router.get(
                 csrfToken={res.locals.__csrf_token}
                 origHash={origHash}
                 trpcCsrfToken={trpcCsrfToken}
+                search={search}
               />
             ) : (
               <InstructorAssessmentQuestionsTableLegacy

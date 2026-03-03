@@ -1,13 +1,15 @@
 import { useDroppable } from '@dnd-kit/core';
 import { SortableContext, useSortable, verticalListSortingStrategy } from '@dnd-kit/sortable';
 import clsx from 'clsx';
-import { type Dispatch, useMemo } from 'react';
+import { type Dispatch, useId, useMemo } from 'react';
 
 import { run } from '@prairielearn/run';
+import { OverlayTrigger } from '@prairielearn/ui';
 
 import type { StaffAssessmentQuestionRow } from '../../../../lib/assessment-question.shared.js';
 import type { EnumAssessmentType } from '../../../../lib/db-types.js';
 import type { EditorAction, SelectedItem, ViewType, ZoneQuestionBlockForm } from '../../types.js';
+import type { ChangeTrackingResult } from '../../utils/modifiedTracking.js';
 
 import { CollapseToggleButton } from './CollapseToggleButton.js';
 import { DragHandle } from './DragHandle.js';
@@ -23,6 +25,7 @@ export function TreeQuestionBlockNode({
   setSelectedItem,
   questionMetadata,
   collapsedGroups,
+  changeTracking,
   urlPrefix,
   hasCoursePermissionPreview,
   assessmentType,
@@ -37,6 +40,7 @@ export function TreeQuestionBlockNode({
   setSelectedItem: (item: SelectedItem) => void;
   questionMetadata: Record<string, StaffAssessmentQuestionRow>;
   collapsedGroups: Set<string>;
+  changeTracking: ChangeTrackingResult;
   urlPrefix: string;
   hasCoursePermissionPreview: boolean;
   assessmentType: EnumAssessmentType;
@@ -48,6 +52,7 @@ export function TreeQuestionBlockNode({
     alternativeTrackingId?: string,
   ) => void;
 }) {
+  const changeTooltipId = useId();
   const hasAlternatives = zoneQuestionBlock.id == null;
   const isCollapsed = collapsedGroups.has(zoneQuestionBlock.trackingId);
   const toggleCollapse = () =>
@@ -94,6 +99,7 @@ export function TreeQuestionBlockNode({
           editMode={editMode}
           viewType={viewType}
           isSelected={isSelected}
+          changeTracking={changeTracking}
           urlPrefix={urlPrefix}
           hasCoursePermissionPreview={hasCoursePermissionPreview}
           assessmentType={assessmentType}
@@ -118,8 +124,34 @@ export function TreeQuestionBlockNode({
   // Alternative group
   const alternativeCount = alternatives?.length ?? 0;
 
+  const pointsMismatch = run(() => {
+    if (!alternatives || alternatives.length <= 1) return false;
+
+    const getEffectivePoints = (alt: (typeof alternatives)[0]) =>
+      JSON.stringify({
+        autoPoints:
+          alt.points ?? alt.autoPoints ?? zoneQuestionBlock.points ?? zoneQuestionBlock.autoPoints,
+        manualPoints: alt.manualPoints ?? zoneQuestionBlock.manualPoints,
+        maxAutoPoints:
+          alt.maxPoints ??
+          alt.maxAutoPoints ??
+          zoneQuestionBlock.maxPoints ??
+          zoneQuestionBlock.maxAutoPoints,
+      });
+
+    const first = getEffectivePoints(alternatives[0]);
+    return alternatives.some((alt) => getEffectivePoints(alt) !== first);
+  });
+
   return (
-    <div ref={setNodeRef} style={sortableStyle}>
+    <div
+      ref={(node: HTMLDivElement | null) => {
+        setNodeRef(node);
+        mergeDropRef(node);
+      }}
+      style={sortableStyle}
+      className={clsx(isMergeOver && 'border border-primary rounded bg-primary-subtle')}
+    >
       {/* Alt group header */}
       <div
         role="button"
@@ -159,6 +191,29 @@ export function TreeQuestionBlockNode({
             if (choose == null) return `Choose ${alternativeCount} of ${alternativeCount}`;
             return `Choose ${choose} of ${alternativeCount}`;
           })}
+          {pointsMismatch && (
+            <i
+              className="bi bi-exclamation-triangle-fill text-warning ms-1"
+              aria-hidden="true"
+              title="Alternatives have different point values"
+            />
+          )}
+          {editMode && changeTracking.newIds.has(zoneQuestionBlock.trackingId) && (
+            <OverlayTrigger
+              placement="top"
+              tooltip={{ props: { id: changeTooltipId }, body: 'New' }}
+            >
+              <span className="text-primary ms-1">●</span>
+            </OverlayTrigger>
+          )}
+          {editMode && changeTracking.modifiedIds.has(zoneQuestionBlock.trackingId) && (
+            <OverlayTrigger
+              placement="top"
+              tooltip={{ props: { id: changeTooltipId }, body: 'Modified' }}
+            >
+              <span className="text-warning ms-1">●</span>
+            </OverlayTrigger>
+          )}
         </span>
         {editMode && onAddToAltGroup && (
           <button
@@ -189,54 +244,54 @@ export function TreeQuestionBlockNode({
       </div>
 
       {/* Alternatives */}
-      {!isCollapsed && (
-        <div
-          ref={mergeDropRef}
-          className={clsx(isMergeOver && 'border border-primary rounded bg-primary-subtle')}
-          style={isMergeOver ? { opacity: 0.85 } : undefined}
-        >
-          <SortableContext items={alternativeIds} strategy={verticalListSortingStrategy}>
-            {alternatives?.map((alternative) => {
-              const altQuestionData = alternative.id ? questionMetadata[alternative.id] : null;
-              const isAltSelected =
-                selectedItem?.type === 'alternative' &&
-                selectedItem.questionTrackingId === zoneQuestionBlock.trackingId &&
-                selectedItem.alternativeTrackingId === alternative.trackingId;
-
-              return (
-                <SortableAlternativeRow
-                  key={alternative.trackingId}
-                  alternative={alternative}
-                  zoneQuestionBlock={zoneQuestionBlock}
-                  questionData={altQuestionData}
-                  editMode={editMode}
-                  viewType={viewType}
-                  isSelected={isAltSelected}
-                  urlPrefix={urlPrefix}
-                  hasCoursePermissionPreview={hasCoursePermissionPreview}
-                  assessmentType={assessmentType}
-                  onClick={() =>
-                    setSelectedItem({
-                      type: 'alternative',
-                      questionTrackingId: zoneQuestionBlock.trackingId,
-                      alternativeTrackingId: alternative.trackingId,
-                    })
-                  }
-                  onDelete={
-                    editMode
-                      ? () =>
-                          onDeleteQuestion(
-                            zoneQuestionBlock.trackingId,
-                            alternative.id,
-                            alternative.trackingId,
-                          )
-                      : undefined
-                  }
-                />
-              );
-            })}
-          </SortableContext>
+      {!isCollapsed && alternativeCount === 0 && editMode && (
+        <div className="text-muted fst-italic border-bottom py-2" style={{ paddingLeft: '3.5rem' }}>
+          No alternatives yet. Use <i className="bi bi-plus-lg" /> to add questions.
         </div>
+      )}
+      {!isCollapsed && (
+        <SortableContext items={alternativeIds} strategy={verticalListSortingStrategy}>
+          {alternatives?.map((alternative) => {
+            const altQuestionData = alternative.id ? questionMetadata[alternative.id] : null;
+            const isAltSelected =
+              selectedItem?.type === 'alternative' &&
+              selectedItem.questionTrackingId === zoneQuestionBlock.trackingId &&
+              selectedItem.alternativeTrackingId === alternative.trackingId;
+
+            return (
+              <SortableAlternativeRow
+                key={alternative.trackingId}
+                alternative={alternative}
+                zoneQuestionBlock={zoneQuestionBlock}
+                questionData={altQuestionData}
+                editMode={editMode}
+                viewType={viewType}
+                isSelected={isAltSelected}
+                changeTracking={changeTracking}
+                urlPrefix={urlPrefix}
+                hasCoursePermissionPreview={hasCoursePermissionPreview}
+                assessmentType={assessmentType}
+                onClick={() =>
+                  setSelectedItem({
+                    type: 'alternative',
+                    questionTrackingId: zoneQuestionBlock.trackingId,
+                    alternativeTrackingId: alternative.trackingId,
+                  })
+                }
+                onDelete={
+                  editMode
+                    ? () =>
+                        onDeleteQuestion(
+                          zoneQuestionBlock.trackingId,
+                          alternative.id,
+                          alternative.trackingId,
+                        )
+                    : undefined
+                }
+              />
+            );
+          })}
+        </SortableContext>
       )}
     </div>
   );

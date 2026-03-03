@@ -1,9 +1,11 @@
 import clsx from 'clsx';
+import { useCallback } from 'react';
 import { useForm } from 'react-hook-form';
 
 import type { ZoneAssessmentForm } from '../../types.js';
 import { coerceToNumber, extractStringComment } from '../../utils/formHelpers.js';
 import { validatePositiveInteger } from '../../utils/questions.js';
+import { useAutoSave } from '../../utils/useAutoSave.js';
 
 import { AdvancedFields } from './AdvancedFields.js';
 
@@ -44,27 +46,31 @@ export function ZoneDetailPanel({
 
   const {
     register,
-    handleSubmit,
-    formState: { errors, isDirty },
+    getValues,
+    formState: { errors, isDirty, isValid },
   } = useForm<ZoneFormData>({
-    mode: 'onSubmit',
-    reValidateMode: 'onChange',
+    mode: 'onChange',
     values: formValues,
   });
 
-  const onSubmit = (data: ZoneFormData) => {
-    onUpdate(zone.trackingId, {
-      title: data.title || undefined,
-      maxPoints: data.maxPoints,
-      numberChoose: data.numberChoose,
-      bestQuestions: data.bestQuestions,
-      lockpoint: data.lockpoint,
-      comment: data.comment || undefined,
-      advanceScorePerc: data.advanceScorePerc,
-      gradeRateMinutes: data.gradeRateMinutes,
-      allowRealTimeGrading: data.allowRealTimeGrading,
-    });
-  };
+  const handleSave = useCallback(
+    (data: ZoneFormData) => {
+      onUpdate(zone.trackingId, {
+        title: data.title || undefined,
+        maxPoints: data.maxPoints,
+        numberChoose: data.numberChoose,
+        bestQuestions: data.bestQuestions,
+        lockpoint: data.lockpoint,
+        comment: data.comment || undefined,
+        advanceScorePerc: data.advanceScorePerc,
+        gradeRateMinutes: data.gradeRateMinutes,
+        allowRealTimeGrading: data.allowRealTimeGrading,
+      });
+    },
+    [onUpdate, zone.trackingId],
+  );
+
+  useAutoSave({ isDirty, isValid, getValues, onSave: handleSave });
 
   if (!editMode) {
     return (
@@ -130,7 +136,7 @@ export function ZoneDetailPanel({
   }
 
   return (
-    <form className="p-3" onSubmit={handleSubmit(onSubmit)}>
+    <div className="p-3">
       <div className="mb-3">
         <label htmlFor="zone-title" className="form-label">
           Title
@@ -234,9 +240,6 @@ export function ZoneDetailPanel({
       <AdvancedFields register={register} idPrefix="zone" variant="zone" />
 
       <div className="d-flex gap-2">
-        <button type="submit" className="btn btn-sm btn-primary" disabled={!isDirty}>
-          Apply
-        </button>
         <button
           type="button"
           className="btn btn-sm btn-outline-danger"
@@ -245,6 +248,6 @@ export function ZoneDetailPanel({
           Delete zone
         </button>
       </div>
-    </form>
+    </div>
   );
 }

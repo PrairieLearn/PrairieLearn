@@ -1,4 +1,5 @@
 import clsx from 'clsx';
+import { useCallback } from 'react';
 import { useForm } from 'react-hook-form';
 
 import type { EnumAssessmentType } from '../../../../lib/db-types.js';
@@ -9,6 +10,7 @@ import {
   parsePointsListValue,
 } from '../../utils/formHelpers.js';
 import { validatePositiveInteger } from '../../utils/questions.js';
+import { useAutoSave } from '../../utils/useAutoSave.js';
 
 import { AdvancedFields } from './AdvancedFields.js';
 
@@ -44,11 +46,10 @@ export function AltGroupDetailPanel({
 
   const {
     register,
-    handleSubmit,
-    formState: { errors, isDirty },
+    getValues,
+    formState: { errors, isDirty, isValid },
   } = useForm<AltGroupFormData>({
-    mode: 'onSubmit',
-    reValidateMode: 'onChange',
+    mode: 'onChange',
     values: {
       numberChoose: zoneQuestionBlock.numberChoose ?? undefined,
       comment: extractStringComment(zoneQuestionBlock.comment),
@@ -65,9 +66,12 @@ export function AltGroupDetailPanel({
     },
   });
 
-  const onSubmit = (data: AltGroupFormData) => {
-    onUpdate(zoneQuestionBlock.trackingId, data);
-  };
+  const handleSave = useCallback(
+    (data: AltGroupFormData) => onUpdate(zoneQuestionBlock.trackingId, data),
+    [onUpdate, zoneQuestionBlock.trackingId],
+  );
+
+  useAutoSave({ isDirty, isValid, getValues, onSave: handleSave });
 
   if (!editMode) {
     return (
@@ -115,7 +119,7 @@ export function AltGroupDetailPanel({
   }
 
   return (
-    <form className="p-3" onSubmit={handleSubmit(onSubmit)}>
+    <div className="p-3">
       <div className="mb-3">
         <label htmlFor="altgroup-numberChoose" className="form-label">
           Number to choose
@@ -242,9 +246,6 @@ export function AltGroupDetailPanel({
       <AdvancedFields register={register} idPrefix="altgroup" variant="altGroup" />
 
       <div className="d-flex gap-2">
-        <button type="submit" className="btn btn-sm btn-primary" disabled={!isDirty}>
-          Apply
-        </button>
         <button
           type="button"
           className="btn btn-sm btn-outline-danger"
@@ -253,6 +254,6 @@ export function AltGroupDetailPanel({
           Delete alternative group
         </button>
       </div>
-    </form>
+    </div>
   );
 }

@@ -1,13 +1,15 @@
 import { useDroppable } from '@dnd-kit/core';
 import { SortableContext, useSortable, verticalListSortingStrategy } from '@dnd-kit/sortable';
 import clsx from 'clsx';
-import type { Dispatch } from 'react';
+import { type Dispatch, useId } from 'react';
 
 import { run } from '@prairielearn/run';
+import { OverlayTrigger } from '@prairielearn/ui';
 
 import type { StaffAssessmentQuestionRow } from '../../../../lib/assessment-question.shared.js';
 import type { EnumAssessmentType } from '../../../../lib/db-types.js';
 import type { EditorAction, SelectedItem, ViewType, ZoneAssessmentForm } from '../../types.js';
+import type { ChangeTrackingResult } from '../../utils/modifiedTracking.js';
 import { computeZonePointTotals, computeZoneQuestionCount } from '../../utils/questions.js';
 
 import { CollapseToggleButton } from './CollapseToggleButton.js';
@@ -18,6 +20,7 @@ import { makeSortableStyle } from './sortableUtils.js';
 
 export function TreeZoneNode({
   zone,
+  zoneNumber,
   editMode,
   viewType,
   selectedItem,
@@ -25,6 +28,7 @@ export function TreeZoneNode({
   questionMetadata,
   collapsedGroups,
   collapsedZones,
+  changeTracking,
   urlPrefix,
   hasCoursePermissionPreview,
   assessmentType,
@@ -36,6 +40,7 @@ export function TreeZoneNode({
   onDeleteZone,
 }: {
   zone: ZoneAssessmentForm;
+  zoneNumber: number;
   editMode: boolean;
   viewType: ViewType;
   selectedItem: SelectedItem;
@@ -43,6 +48,7 @@ export function TreeZoneNode({
   questionMetadata: Record<string, StaffAssessmentQuestionRow>;
   collapsedGroups: Set<string>;
   collapsedZones: Set<string>;
+  changeTracking: ChangeTrackingResult;
   urlPrefix: string;
   hasCoursePermissionPreview: boolean;
   assessmentType: EnumAssessmentType;
@@ -57,6 +63,7 @@ export function TreeZoneNode({
   ) => void;
   onDeleteZone: (zoneTrackingId: string) => void;
 }) {
+  const changeTooltipId = useId();
   const isCollapsed = collapsedZones.has(zone.trackingId);
   const isSelected =
     selectedItem?.type === 'zone' && selectedItem.zoneTrackingId === zone.trackingId;
@@ -130,7 +137,25 @@ export function TreeZoneNode({
             ariaLabel={isCollapsed ? 'Expand zone' : 'Collapse zone'}
             onToggle={toggleCollapse}
           />
-          <span className="fw-semibold flex-grow-1">{zone.title || 'Zone'}</span>
+          <span className="fw-semibold flex-grow-1">
+            {zone.title || `Zone ${zoneNumber}`}
+            {editMode && changeTracking.newIds.has(zone.trackingId) && (
+              <OverlayTrigger
+                placement="top"
+                tooltip={{ props: { id: changeTooltipId }, body: 'New' }}
+              >
+                <span className="text-primary ms-1">●</span>
+              </OverlayTrigger>
+            )}
+            {editMode && changeTracking.modifiedIds.has(zone.trackingId) && (
+              <OverlayTrigger
+                placement="top"
+                tooltip={{ props: { id: changeTooltipId }, body: 'Modified' }}
+              >
+                <span className="text-warning ms-1">●</span>
+              </OverlayTrigger>
+            )}
+          </span>
           <span className="d-inline-flex align-items-center gap-1 flex-wrap">
             <span className="badge text-bg-light text-muted">
               {zone.numberChoose == null
@@ -182,6 +207,7 @@ export function TreeZoneNode({
                 setSelectedItem={setSelectedItem}
                 questionMetadata={questionMetadata}
                 collapsedGroups={collapsedGroups}
+                changeTracking={changeTracking}
                 urlPrefix={urlPrefix}
                 hasCoursePermissionPreview={hasCoursePermissionPreview}
                 assessmentType={assessmentType}
@@ -190,9 +216,15 @@ export function TreeZoneNode({
                 onDeleteQuestion={onDeleteQuestion}
               />
             ))}
-            {editMode && zone.questions.length === 0 && (
-              <TreeEmptyDropZone dropRef={emptyDropRef} isOver={isOverEmpty} />
-            )}
+            {zone.questions.length === 0 &&
+              (editMode ? (
+                <TreeEmptyDropZone dropRef={emptyDropRef} isOver={isOverEmpty} />
+              ) : (
+                <div className="text-center text-muted py-3 border-bottom">
+                  <i className="bi bi-info-circle me-1" aria-hidden="true" />
+                  No questions in this zone
+                </div>
+              ))}
             {editMode && (
               <div
                 className="d-flex gap-2 py-2 border-bottom"

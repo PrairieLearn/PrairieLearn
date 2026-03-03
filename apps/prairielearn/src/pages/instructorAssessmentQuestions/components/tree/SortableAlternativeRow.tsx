@@ -3,6 +3,7 @@ import { useSortable } from '@dnd-kit/sortable';
 import type { StaffAssessmentQuestionRow } from '../../../../lib/assessment-question.shared.js';
 import type { EnumAssessmentType } from '../../../../lib/db-types.js';
 import type { QuestionAlternativeForm, ViewType, ZoneQuestionBlockForm } from '../../types.js';
+import type { ChangeTrackingResult } from '../../utils/modifiedTracking.js';
 
 import { TreeQuestionRow } from './TreeQuestionRow.js';
 import { makeSortableStyle } from './sortableUtils.js';
@@ -14,6 +15,7 @@ export function SortableAlternativeRow({
   editMode,
   viewType,
   isSelected,
+  changeTracking,
   urlPrefix,
   hasCoursePermissionPreview,
   assessmentType,
@@ -26,6 +28,7 @@ export function SortableAlternativeRow({
   editMode: boolean;
   viewType: ViewType;
   isSelected: boolean;
+  changeTracking: ChangeTrackingResult;
   urlPrefix: string;
   hasCoursePermissionPreview: boolean;
   assessmentType: EnumAssessmentType;
@@ -49,6 +52,7 @@ export function SortableAlternativeRow({
         editMode={editMode}
         viewType={viewType}
         isSelected={isSelected}
+        changeTracking={changeTracking}
         urlPrefix={urlPrefix}
         hasCoursePermissionPreview={hasCoursePermissionPreview}
         assessmentType={assessmentType}

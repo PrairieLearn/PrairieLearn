@@ -1,4 +1,5 @@
 import clsx from 'clsx';
+import { useCallback } from 'react';
 import { useForm } from 'react-hook-form';
 
 import { run } from '@prairielearn/run';
@@ -15,8 +16,10 @@ import {
   validateAtLeastOnePointsField,
 } from '../../utils/formHelpers.js';
 import { validatePositiveInteger } from '../../utils/questions.js';
+import { useAutoSave } from '../../utils/useAutoSave.js';
 
 import { AdvancedFields } from './AdvancedFields.js';
+import { InheritableField } from './InheritableField.js';
 
 interface QuestionFormData {
   id?: string;
@@ -31,6 +34,11 @@ interface QuestionFormData {
   gradeRateMinutes?: number;
   forceMaxPoints?: boolean;
   allowRealTimeGrading?: boolean;
+}
+
+function formatPointsValue(value: number | number[] | undefined | null): string {
+  if (value == null) return '';
+  return Array.isArray(value) ? value.join(', ') : String(value);
 }
 
 export function QuestionDetailPanel({
@@ -90,25 +98,45 @@ export function QuestionDetailPanel({
       : ('maxAutoPoints' as const);
   });
 
+  // For read-only display, use merged values (own ?? inherited)
   const autoPointsValue =
     question[originalPointsProperty] ?? zoneQuestionBlock?.[originalPointsProperty];
   const maxAutoPointsValue =
     question[originalMaxProperty] ?? zoneQuestionBlock?.[originalMaxProperty];
   const manualPointsValue = question.manualPoints ?? zoneQuestionBlock?.manualPoints;
 
+  // Alternative's own values (may be undefined = inheriting from group)
+  const ownPointsValue = question[originalPointsProperty] ?? undefined;
+  const ownMaxValue = question[originalMaxProperty] ?? undefined;
+  const ownManualPoints = question.manualPoints ?? undefined;
+
+  // Group's values (what would be inherited)
+  const inheritedPointsValue = zoneQuestionBlock?.[originalPointsProperty] ?? undefined;
+  const inheritedMaxValue = zoneQuestionBlock?.[originalMaxProperty] ?? undefined;
+  const inheritedManualPoints = zoneQuestionBlock?.manualPoints ?? undefined;
+
+  const parentValues = isAlternative
+    ? {
+        [originalPointsProperty]: inheritedPointsValue,
+        [originalMaxProperty]: inheritedMaxValue,
+        manualPoints: inheritedManualPoints,
+      }
+    : undefined;
+
   const {
     register,
-    handleSubmit,
-    formState: { errors, isDirty },
+    getValues,
+    watch,
+    setValue,
+    formState: { errors, isDirty, isValid },
   } = useForm<QuestionFormData>({
-    mode: 'onSubmit',
-    reValidateMode: 'onChange',
+    mode: 'onChange',
     values: {
       id: question.id ?? undefined,
       comment: extractStringComment(question.comment),
-      [originalPointsProperty]: autoPointsValue ?? undefined,
-      [originalMaxProperty]: maxAutoPointsValue ?? undefined,
-      manualPoints: manualPointsValue ?? undefined,
+      [originalPointsProperty]: isAlternative ? ownPointsValue : (autoPointsValue ?? undefined),
+      [originalMaxProperty]: isAlternative ? ownMaxValue : (maxAutoPointsValue ?? undefined),
+      manualPoints: isAlternative ? ownManualPoints : (manualPointsValue ?? undefined),
       triesPerVariant: question.triesPerVariant ?? undefined,
       advanceScorePerc: question.advanceScorePerc ?? undefined,
       gradeRateMinutes: question.gradeRateMinutes ?? undefined,
@@ -117,12 +145,25 @@ export function QuestionDetailPanel({
     },
   });
 
+  const watchedPoints = watch(originalPointsProperty);
+  const watchedMax = watch(originalMaxProperty);
+  const watchedManualPoints = watch('manualPoints');
+
+  const isPointsInherited =
+    isAlternative && watchedPoints === undefined && inheritedPointsValue != null;
+  const isMaxInherited = isAlternative && watchedMax === undefined && inheritedMaxValue != null;
+  const isManualPointsInherited =
+    isAlternative && watchedManualPoints === undefined && inheritedManualPoints != null;
+
   const questionTrackingId = isAlternative ? zoneQuestionBlock.trackingId : question.trackingId;
   const alternativeTrackingId = isAlternative ? question.trackingId : undefined;
 
-  const onSubmit = (data: QuestionFormData) => {
-    onUpdate(questionTrackingId, data, alternativeTrackingId);
-  };
+  const handleSave = useCallback(
+    (data: QuestionFormData) => onUpdate(questionTrackingId, data, alternativeTrackingId),
+    [onUpdate, questionTrackingId, alternativeTrackingId],
+  );
+
+  useAutoSave({ isDirty, isValid, getValues, onSave: handleSave });
 
   if (!editMode) {
     return (
@@ -221,8 +262,11 @@ export function QuestionDetailPanel({
     );
   }
 
+  const pointsValidation = (_value: unknown, formValues: QuestionFormData) =>
+    validateAtLeastOnePointsField(formValues, parentValues);
+
   return (
-    <form className="p-3" onSubmit={handleSubmit(onSubmit)}>
+    <div className="p-3">
       <div className="mb-3">
         <label htmlFor="question-id" className="form-label">
           QID
@@ -257,66 +301,159 @@ export function QuestionDetailPanel({
 
       {assessmentType === 'Homework' ? (
         <>
-          <div className="mb-3">
-            <label htmlFor="question-autoPoints" className="form-label">
-              Auto points
-            </label>
-            <input
-              type="number"
-              className={clsx(
-                'form-control form-control-sm',
-                errors[originalPointsProperty] && 'is-invalid',
-              )}
+          {isAlternative ? (
+            <InheritableField
               id="question-autoPoints"
+              label="Auto points"
+              inputType="number"
               step="any"
-              {...register(originalPointsProperty, {
+              isInherited={isPointsInherited}
+              inheritedDisplayValue={formatPointsValue(inheritedPointsValue)}
+              registerProps={register(originalPointsProperty, {
                 setValueAs: coerceToNumber,
-                validate: (_value, formValues) => validateAtLeastOnePointsField(formValues),
+                validate: pointsValidation,
               })}
+              error={errors[originalPointsProperty]}
+              helpText="Points awarded for the auto-graded component."
+              inheritedValueLabel={formatPointsValue(inheritedPointsValue)}
+              showResetButton={inheritedPointsValue != null}
+              onOverride={() =>
+                setValue(originalPointsProperty, inheritedPointsValue, {
+                  shouldDirty: true,
+                  shouldValidate: true,
+                })
+              }
+              onReset={() =>
+                setValue(originalPointsProperty, undefined, {
+                  shouldDirty: true,
+                  shouldValidate: true,
+                })
+              }
             />
-            {errors[originalPointsProperty] && (
-              <div className="invalid-feedback">{errors[originalPointsProperty].message}</div>
-            )}
-            <small className="form-text text-muted">
-              Points awarded for the auto-graded component.
-            </small>
-          </div>
-          <div className="mb-3">
-            <label htmlFor="question-maxAutoPoints" className="form-label">
-              Max auto points
-            </label>
-            <input
-              type="number"
-              className="form-control form-control-sm"
+          ) : (
+            <div className="mb-3">
+              <label htmlFor="question-autoPoints" className="form-label">
+                Auto points
+              </label>
+              <input
+                type="number"
+                className={clsx(
+                  'form-control form-control-sm',
+                  errors[originalPointsProperty] && 'is-invalid',
+                )}
+                id="question-autoPoints"
+                step="any"
+                {...register(originalPointsProperty, {
+                  setValueAs: coerceToNumber,
+                  validate: pointsValidation,
+                })}
+              />
+              {errors[originalPointsProperty] && (
+                <div className="invalid-feedback">{errors[originalPointsProperty].message}</div>
+              )}
+              <small className="form-text text-muted">
+                Points awarded for the auto-graded component.
+              </small>
+            </div>
+          )}
+          {isAlternative ? (
+            <InheritableField
               id="question-maxAutoPoints"
-              {...register(originalMaxProperty, {
+              label="Max auto points"
+              inputType="number"
+              isInherited={isMaxInherited}
+              inheritedDisplayValue={String(inheritedMaxValue ?? '')}
+              registerProps={register(originalMaxProperty, {
                 setValueAs: coerceToNumber,
               })}
+              error={errors[originalMaxProperty]}
+              helpText="Maximum total auto-graded points achievable across all attempts."
+              inheritedValueLabel={String(inheritedMaxValue ?? '')}
+              showResetButton={inheritedMaxValue != null}
+              onOverride={() =>
+                setValue(originalMaxProperty, inheritedMaxValue, {
+                  shouldDirty: true,
+                  shouldValidate: true,
+                })
+              }
+              onReset={() =>
+                setValue(originalMaxProperty, undefined, {
+                  shouldDirty: true,
+                  shouldValidate: true,
+                })
+              }
             />
-            <small className="form-text text-muted">
-              Maximum total auto-graded points achievable across all attempts.
-            </small>
-          </div>
-          <div className="mb-3">
-            <label htmlFor="question-manualPoints" className="form-label">
-              Manual points
-            </label>
-            <input
-              type="number"
-              className={clsx('form-control form-control-sm', errors.manualPoints && 'is-invalid')}
+          ) : (
+            <div className="mb-3">
+              <label htmlFor="question-maxAutoPoints" className="form-label">
+                Max auto points
+              </label>
+              <input
+                type="number"
+                className="form-control form-control-sm"
+                id="question-maxAutoPoints"
+                {...register(originalMaxProperty, {
+                  setValueAs: coerceToNumber,
+                })}
+              />
+              <small className="form-text text-muted">
+                Maximum total auto-graded points achievable across all attempts.
+              </small>
+            </div>
+          )}
+          {isAlternative ? (
+            <InheritableField
               id="question-manualPoints"
-              {...register('manualPoints', {
+              label="Manual points"
+              inputType="number"
+              isInherited={isManualPointsInherited}
+              inheritedDisplayValue={String(inheritedManualPoints ?? '')}
+              registerProps={register('manualPoints', {
                 setValueAs: coerceToNumber,
-                validate: (_value, formValues) => validateAtLeastOnePointsField(formValues),
+                validate: pointsValidation,
               })}
+              error={errors.manualPoints}
+              helpText="Points awarded for the manually graded component."
+              inheritedValueLabel={String(inheritedManualPoints ?? '')}
+              showResetButton={inheritedManualPoints != null}
+              onOverride={() =>
+                setValue('manualPoints', inheritedManualPoints, {
+                  shouldDirty: true,
+                  shouldValidate: true,
+                })
+              }
+              onReset={() =>
+                setValue('manualPoints', undefined, {
+                  shouldDirty: true,
+                  shouldValidate: true,
+                })
+              }
             />
-            {errors.manualPoints && (
-              <div className="invalid-feedback">{errors.manualPoints.message}</div>
-            )}
-            <small className="form-text text-muted">
-              Points awarded for the manually graded component.
-            </small>
-          </div>
+          ) : (
+            <div className="mb-3">
+              <label htmlFor="question-manualPoints" className="form-label">
+                Manual points
+              </label>
+              <input
+                type="number"
+                className={clsx(
+                  'form-control form-control-sm',
+                  errors.manualPoints && 'is-invalid',
+                )}
+                id="question-manualPoints"
+                {...register('manualPoints', {
+                  setValueAs: coerceToNumber,
+                  validate: pointsValidation,
+                })}
+              />
+              {errors.manualPoints && (
+                <div className="invalid-feedback">{errors.manualPoints.message}</div>
+              )}
+              <small className="form-text text-muted">
+                Points awarded for the manually graded component.
+              </small>
+            </div>
+          )}
           <div className="mb-3">
             <label htmlFor="question-triesPerVariant" className="form-label">
               Tries per variant
@@ -343,53 +480,120 @@ export function QuestionDetailPanel({
         </>
       ) : (
         <>
-          <div className="mb-3">
-            <label htmlFor="question-pointsList" className="form-label">
-              Points list
-            </label>
-            <input
-              type="text"
-              className={clsx(
-                'form-control form-control-sm',
-                errors[originalPointsProperty] && 'is-invalid',
-              )}
+          {isAlternative ? (
+            <InheritableField
               id="question-pointsList"
-              {...register(originalPointsProperty, {
+              label="Points list"
+              inputType="text"
+              isInherited={isPointsInherited}
+              inheritedDisplayValue={formatPointsValue(inheritedPointsValue)}
+              registerProps={register(originalPointsProperty, {
                 pattern: {
                   value: /^[0-9, ]*$/,
                   message: 'Points must be a number or a comma-separated list of numbers.',
                 },
                 setValueAs: parsePointsListValue,
-                validate: (_value, formValues) => validateAtLeastOnePointsField(formValues),
+                validate: pointsValidation,
               })}
+              error={errors[originalPointsProperty]}
+              helpText='Points for each attempt, as a comma-separated list (e.g. "10, 5, 2, 1").'
+              inheritedValueLabel={formatPointsValue(inheritedPointsValue)}
+              showResetButton={inheritedPointsValue != null}
+              onOverride={() =>
+                setValue(originalPointsProperty, inheritedPointsValue, {
+                  shouldDirty: true,
+                  shouldValidate: true,
+                })
+              }
+              onReset={() =>
+                setValue(originalPointsProperty, undefined, {
+                  shouldDirty: true,
+                  shouldValidate: true,
+                })
+              }
             />
-            {errors[originalPointsProperty] && (
-              <div className="invalid-feedback">{errors[originalPointsProperty].message}</div>
-            )}
-            <small className="form-text text-muted">
-              Points for each attempt, as a comma-separated list (e.g. "10, 5, 2, 1").
-            </small>
-          </div>
-          <div className="mb-3">
-            <label htmlFor="question-manualPoints" className="form-label">
-              Manual points
-            </label>
-            <input
-              type="number"
-              className={clsx('form-control form-control-sm', errors.manualPoints && 'is-invalid')}
+          ) : (
+            <div className="mb-3">
+              <label htmlFor="question-pointsList" className="form-label">
+                Points list
+              </label>
+              <input
+                type="text"
+                className={clsx(
+                  'form-control form-control-sm',
+                  errors[originalPointsProperty] && 'is-invalid',
+                )}
+                id="question-pointsList"
+                {...register(originalPointsProperty, {
+                  pattern: {
+                    value: /^[0-9, ]*$/,
+                    message: 'Points must be a number or a comma-separated list of numbers.',
+                  },
+                  setValueAs: parsePointsListValue,
+                  validate: pointsValidation,
+                })}
+              />
+              {errors[originalPointsProperty] && (
+                <div className="invalid-feedback">{errors[originalPointsProperty].message}</div>
+              )}
+              <small className="form-text text-muted">
+                Points for each attempt, as a comma-separated list (e.g. "10, 5, 2, 1").
+              </small>
+            </div>
+          )}
+          {isAlternative ? (
+            <InheritableField
               id="question-manualPoints"
-              {...register('manualPoints', {
+              label="Manual points"
+              inputType="number"
+              isInherited={isManualPointsInherited}
+              inheritedDisplayValue={String(inheritedManualPoints ?? '')}
+              registerProps={register('manualPoints', {
                 setValueAs: coerceToNumber,
-                validate: (_value, formValues) => validateAtLeastOnePointsField(formValues),
+                validate: pointsValidation,
               })}
+              error={errors.manualPoints}
+              helpText="Points awarded for the manually graded component."
+              inheritedValueLabel={String(inheritedManualPoints ?? '')}
+              showResetButton={inheritedManualPoints != null}
+              onOverride={() =>
+                setValue('manualPoints', inheritedManualPoints, {
+                  shouldDirty: true,
+                  shouldValidate: true,
+                })
+              }
+              onReset={() =>
+                setValue('manualPoints', undefined, {
+                  shouldDirty: true,
+                  shouldValidate: true,
+                })
+              }
             />
-            {errors.manualPoints && (
-              <div className="invalid-feedback">{errors.manualPoints.message}</div>
-            )}
-            <small className="form-text text-muted">
-              Points awarded for the manually graded component.
-            </small>
-          </div>
+          ) : (
+            <div className="mb-3">
+              <label htmlFor="question-manualPoints" className="form-label">
+                Manual points
+              </label>
+              <input
+                type="number"
+                className={clsx(
+                  'form-control form-control-sm',
+                  errors.manualPoints && 'is-invalid',
+                )}
+                id="question-manualPoints"
+                {...register('manualPoints', {
+                  setValueAs: coerceToNumber,
+                  validate: pointsValidation,
+                })}
+              />
+              {errors.manualPoints && (
+                <div className="invalid-feedback">{errors.manualPoints.message}</div>
+              )}
+              <small className="form-text text-muted">
+                Points awarded for the manually graded component.
+              </small>
+            </div>
+          )}
         </>
       )}
 
@@ -409,9 +613,6 @@ export function QuestionDetailPanel({
       <AdvancedFields register={register} idPrefix="question" variant="question" />
 
       <div className="d-flex gap-2">
-        <button type="submit" className="btn btn-sm btn-primary" disabled={!isDirty}>
-          Apply
-        </button>
         <button
           type="button"
           className="btn btn-sm btn-outline-danger"
@@ -420,6 +621,6 @@ export function QuestionDetailPanel({
           Delete
         </button>
       </div>
-    </form>
+    </div>
   );
 }

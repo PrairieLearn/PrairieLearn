@@ -9,6 +9,7 @@ import { HistMini } from '../../../../components/HistMini.js';
 import type { StaffAssessmentQuestionRow } from '../../../../lib/assessment-question.shared.js';
 import type { EnumAssessmentType } from '../../../../lib/db-types.js';
 import type { QuestionAlternativeForm, ViewType, ZoneQuestionBlockForm } from '../../types.js';
+import type { ChangeTrackingResult } from '../../utils/modifiedTracking.js';
 import { toAssessmentForPicker } from '../../utils/questions.js';
 import { AssessmentBadges } from '../AssessmentBadges.js';
 
@@ -37,8 +38,21 @@ function PointsBadge({
     const compactParts: ReactElement[] = [];
     const tooltipParts: string[] = [];
 
+    if (manualPoints != null) {
+      compactParts.push(
+        <span key="manual">
+          <i className="bi bi-pencil-fill me-1" aria-hidden="true" />
+          {manualPoints}
+        </span>,
+      );
+      tooltipParts.push(`Manual grading: ${manualPoints} pts`);
+    }
+
     if (autoPoints != null) {
       const pts = Array.isArray(autoPoints) ? autoPoints : [autoPoints];
+      if (compactParts.length > 0) {
+        compactParts.push(<span key="sep"> + </span>);
+      }
       compactParts.push(
         <span key="auto">
           <i className="bi bi-lightning-fill me-1" aria-hidden="true" />
@@ -50,19 +64,6 @@ function PointsBadge({
           ? `Auto-graded: ${pts.join(', ')} pts (per variant)`
           : `Auto-graded: ${pts[0]} pts`,
       );
-    }
-
-    if (manualPoints != null) {
-      if (compactParts.length > 0) {
-        compactParts.push(<span key="sep"> + </span>);
-      }
-      compactParts.push(
-        <span key="manual">
-          <i className="bi bi-pencil-fill me-1" aria-hidden="true" />
-          {manualPoints}
-        </span>,
-      );
-      tooltipParts.push(`Manual grading: ${manualPoints} pts`);
     }
 
     return (
@@ -89,20 +90,7 @@ function PointsBadge({
   const compactParts: ReactElement[] = [];
   const tooltipParts: string[] = [];
 
-  if (initPoints != null || maxAuto != null) {
-    compactParts.push(
-      <span key="auto">
-        <i className="bi bi-lightning-fill me-1" aria-hidden="true" />
-        {initPoints ?? 0}/{maxAuto ?? 0}
-      </span>,
-    );
-    tooltipParts.push(`Auto-graded: ${initPoints ?? 0} pts initial, ${maxAuto ?? 0} pts max`);
-  }
-
   if (manualPoints != null) {
-    if (compactParts.length > 0) {
-      compactParts.push(<span key="sep"> + </span>);
-    }
     compactParts.push(
       <span key="manual">
         <i className="bi bi-pencil-fill me-1" aria-hidden="true" />
@@ -110,6 +98,19 @@ function PointsBadge({
       </span>,
     );
     tooltipParts.push(`Manual grading: ${manualPoints} pts`);
+  }
+
+  if (initPoints != null || maxAuto != null) {
+    if (compactParts.length > 0) {
+      compactParts.push(<span key="sep"> + </span>);
+    }
+    compactParts.push(
+      <span key="auto">
+        <i className="bi bi-lightning-fill me-1" aria-hidden="true" />
+        {initPoints ?? 0}/{maxAuto ?? 0}
+      </span>,
+    );
+    tooltipParts.push(`Auto-graded: ${initPoints ?? 0} pts initial, ${maxAuto ?? 0} pts max`);
   }
 
   return (
@@ -130,6 +131,7 @@ export function TreeQuestionRow({
   editMode,
   viewType,
   isSelected,
+  changeTracking,
   urlPrefix,
   hasCoursePermissionPreview,
   assessmentType,
@@ -145,6 +147,7 @@ export function TreeQuestionRow({
   editMode: boolean;
   viewType: ViewType;
   isSelected: boolean;
+  changeTracking: ChangeTrackingResult;
   urlPrefix: string;
   hasCoursePermissionPreview: boolean;
   assessmentType: EnumAssessmentType;
@@ -153,6 +156,7 @@ export function TreeQuestionRow({
   onClick: () => void;
   onDelete?: () => void;
 }) {
+  const changeTooltipId = useId();
   const indent = isAlternative ? '4.5rem' : '2.5rem';
 
   return (
@@ -190,10 +194,6 @@ export function TreeQuestionRow({
                 >
                   {questionData.question.title}
                 </a>
-                <i
-                  className="bi bi-box-arrow-up-right text-muted small ms-1 tree-hover-show"
-                  aria-hidden="true"
-                />
               </>
             ) : (
               questionData.question.title
@@ -201,9 +201,28 @@ export function TreeQuestionRow({
           ) : (
             <span className="text-muted small">{question.id}</span>
           )}
+          {editMode && changeTracking.newIds.has(question.trackingId) && (
+            <OverlayTrigger
+              placement="top"
+              tooltip={{ props: { id: changeTooltipId }, body: 'New' }}
+            >
+              <span className="text-primary ms-1">●</span>
+            </OverlayTrigger>
+          )}
+          {editMode && changeTracking.modifiedIds.has(question.trackingId) && (
+            <OverlayTrigger
+              placement="top"
+              tooltip={{ props: { id: changeTooltipId }, body: 'Modified' }}
+            >
+              <span className="text-warning ms-1">●</span>
+            </OverlayTrigger>
+          )}
         </div>
         {question.id && (
-          <div className="d-flex align-items-center text-muted font-monospace" style={{ fontSize: '0.75rem' }}>
+          <div
+            className="d-flex align-items-center text-muted font-monospace"
+            style={{ fontSize: '0.75rem' }}
+          >
             <span className="text-truncate">{question.id}</span>
             {/* eslint-disable-next-line jsx-a11y-x/click-events-have-key-events, jsx-a11y-x/no-static-element-interactions -- wrapper only stops propagation to prevent row click */}
             <span className="tree-hover-show ms-1" onClick={(e) => e.stopPropagation()}>
@@ -251,11 +270,13 @@ export function TreeQuestionRow({
           </span>
         </div>
       )}
-      <PointsBadge
-        question={question}
-        zoneQuestionBlock={zoneQuestionBlock}
-        assessmentType={assessmentType}
-      />
+      <div className="flex-shrink-0 text-end" style={{ minWidth: '6rem' }}>
+        <PointsBadge
+          question={question}
+          zoneQuestionBlock={zoneQuestionBlock}
+          assessmentType={assessmentType}
+        />
+      </div>
       {editMode && onDelete && (
         <button
           type="button"

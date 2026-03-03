@@ -100,7 +100,6 @@ function findAlternativeAcrossZones(
 /**
  * Handles alt group shrinkage after an alternative is removed.
  * If 1 alternative remains, auto-converts to standalone question.
- * If 0 alternatives remain, removes the block entirely.
  */
 function handleAltGroupShrinkage(
   zone: ZoneAssessmentForm,
@@ -116,8 +115,6 @@ function handleAltGroupShrinkage(
       ...groupWithoutAlternatives,
       ...remainingAlternative,
     };
-  } else if (question.alternatives.length === 0) {
-    zone.questions.splice(questionIndex, 1);
   }
 }
 
@@ -531,10 +528,15 @@ function createEditorReducer(initialState: EditorState) {
           1,
         );
 
+        // Handle source group shrinkage before inserting the new question block.
+        // This must happen first because inserting before the alt group in the
+        // same zone would shift indices and make fromResult.questionIndex stale.
+        handleAltGroupShrinkage(fromResult.zone, fromResult.questionIndex, fromResult.question);
+
         // Convert to standalone question block
         const newQuestion = alternativeToQuestionBlock(removedAlt);
 
-        // Find insertion point
+        // Find insertion point (uses trackingIds, so unaffected by shrinkage)
         let insertIndex: number;
         if (beforeQuestionTrackingId === null) {
           insertIndex = toZoneResult.zone.questions.length;
@@ -548,9 +550,6 @@ function createEditorReducer(initialState: EditorState) {
         }
 
         toZoneResult.zone.questions.splice(insertIndex, 0, newQuestion);
-
-        // Handle source group shrinkage
-        handleAltGroupShrinkage(fromResult.zone, fromResult.questionIndex, fromResult.question);
 
         return {
           ...state,
