@@ -10,6 +10,6 @@ CREATE TABLE IF NOT EXISTS course_instance_ai_grading_credentials (
   -- Stored as AES-encrypted ciphertext, not plaintext.
   encrypted_secret_key TEXT NOT NULL,
   created_at TIMESTAMPTZ NOT NULL DEFAULT CURRENT_TIMESTAMP,
-  updated_at TIMESTAMPTZ NOT NULL DEFAULT CURRENT_TIMESTAMP,
+  created_by BIGINT REFERENCES users (id) ON UPDATE CASCADE ON DELETE SET NULL,
   CONSTRAINT ci_ai_grading_credentials_ci_id_provider_key UNIQUE (course_instance_id, provider)
 );

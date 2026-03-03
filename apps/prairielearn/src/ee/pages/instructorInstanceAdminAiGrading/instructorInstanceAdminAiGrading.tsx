@@ -5,13 +5,13 @@ import * as error from '@prairielearn/error';
 import { Hydrate } from '@prairielearn/react/server';
 import { generatePrefixCsrfToken } from '@prairielearn/signed-token';
 
-import { PageLayout } from '../../components/PageLayout.js';
-import { extractPageContext } from '../../lib/client/page-context.js';
-import { config } from '../../lib/config.js';
-import { features } from '../../lib/features/index.js';
-import { typedAsyncHandler } from '../../lib/res-locals.js';
-import { handleTrpcError } from '../../lib/trpc.js';
-import { createAuthzMiddleware } from '../../middlewares/authzHelper.js';
+import { PageLayout } from '../../../components/PageLayout.js';
+import { extractPageContext } from '../../../lib/client/page-context.js';
+import { config } from '../../../lib/config.js';
+import { features } from '../../../lib/features/index.js';
+import { typedAsyncHandler } from '../../../lib/res-locals.js';
+import { handleTrpcError } from '../../../lib/trpc.js';
+import { createAuthzMiddleware } from '../../../middlewares/authzHelper.js';
 
 import { InstructorInstanceAdminAiGrading } from './instructorInstanceAdminAiGrading.html.js';
 import { formatCredential, selectCredentials } from './queries.js';

@@ -13,18 +13,21 @@ INSERT INTO
   course_instance_ai_grading_credentials (
     course_instance_id,
     provider,
-    encrypted_secret_key
+    encrypted_secret_key,
+    created_by
   )
 VALUES
   (
     $course_instance_id,
     $provider,
-    $encrypted_secret_key
+    $encrypted_secret_key,
+    $created_by
   )
 ON CONFLICT (course_instance_id, provider) DO UPDATE
 SET
   encrypted_secret_key = EXCLUDED.encrypted_secret_key,
-  updated_at = NOW()
+  created_at = NOW(),
+  created_by = EXCLUDED.created_by
 RETURNING
   *;
 

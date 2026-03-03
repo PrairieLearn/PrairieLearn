@@ -5,8 +5,8 @@ import {
   CourseInstanceAiGradingCredentialSchema,
   CourseInstanceSchema,
   type EnumAiGradingProvider,
-} from '../../lib/db-types.js';
-import { decryptFromStorage } from '../../lib/storage-crypt.js';
+} from '../../../lib/db-types.js';
+import { decryptFromStorage } from '../../../lib/storage-crypt.js';
 
 export interface AiGradingApiKeyCredential {
   id: string;
@@ -54,14 +54,16 @@ export async function upsertCredential({
   course_instance_id,
   provider,
   encrypted_secret_key,
+  created_by,
 }: {
   course_instance_id: string;
   provider: EnumAiGradingProvider;
   encrypted_secret_key: string;
+  created_by: string;
 }) {
   return await queryRow(
     sql.upsert_credential,
-    { course_instance_id, provider, encrypted_secret_key },
+    { course_instance_id, provider, encrypted_secret_key, created_by },
     CourseInstanceAiGradingCredentialSchema,
   );
 }

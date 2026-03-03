@@ -3,10 +3,10 @@ import type { CreateExpressContextOptions } from '@trpc/server/adapters/express'
 import superjson from 'superjson';
 import { z } from 'zod';
 
-import { EnumAiGradingProviderSchema } from '../../lib/db-types.js';
-import { features } from '../../lib/features/index.js';
-import type { ResLocalsForPage } from '../../lib/res-locals.js';
-import { encryptForStorage } from '../../lib/storage-crypt.js';
+import { EnumAiGradingProviderSchema } from '../../../lib/db-types.js';
+import { features } from '../../../lib/features/index.js';
+import type { ResLocalsForPage } from '../../../lib/res-locals.js';
+import { encryptForStorage } from '../../../lib/storage-crypt.js';
 
 import {
   deleteCredential,
@@ -86,6 +86,7 @@ const addCredentialMutation = t.procedure
       course_instance_id: opts.ctx.course_instance.id,
       provider: opts.input.provider,
       encrypted_secret_key: encrypted,
+      created_by: opts.ctx.authn_user.id,
     });
     return {
       credential: formatCredential(row, opts.ctx.course_instance.display_timezone),
