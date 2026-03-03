@@ -33,13 +33,15 @@ export interface DraftEdit {
   hadJsonErrors?: boolean;
 }
 
-// Determines the alert style and message for the save/sync result banner.
-//
-// A "save and sync" writes the file to disk (and pushes to git in production),
-// then syncs the *entire course* from disk to the database. The sync sets
-// per-entity `sync_errors` in the database, so we can tell whether THIS file
-// caused errors vs. some unrelated file. We use that to show a more specific
-/** message instead of a blanket "sync failed." */
+/**
+ * Determines the alert style and message for the save/sync result banner.
+ *
+ * A "save and sync" writes the file to disk (and pushes to git in production),
+ * then syncs the *entire course* from disk to the database. The sync sets
+ * per-entity `sync_errors` in the database, so we can tell whether THIS file
+ * caused errors vs. some unrelated file. We use that to show a more specific
+ * message instead of a blanket "sync failed" message.
+ */
 function getSyncAlert(
   draftEdit: DraftEdit,
   fileMetadata?: FileMetadata,
@@ -234,7 +236,11 @@ export function InstructorFileEditor({
                       editorData.fileMetadata,
                     );
                     return html`
-                      <div class="alert ${alertClass} alert-dismissible fade show m-2" role="alert">
+                      <div
+                        class="alert ${alertClass} alert-dismissible fade show m-2"
+                        role="alert"
+                        data-testid="save-sync-alert"
+                      >
                         <div class="row align-items-center">
                           <div class="col-auto">${message}</div>
                           ${draftEdit.jobSequence != null

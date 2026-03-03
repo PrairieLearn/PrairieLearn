@@ -31,6 +31,7 @@ router.get(
     }
 
     let failedSync = false;
+    let hadJsonErrors = false;
 
     if (jobSequence.legacy) {
       // Legacy job sequences should no longer exist.
@@ -40,12 +41,18 @@ router.get(
     } else {
       const job = jobSequence.jobs[0];
 
-      if (job.data.saveSucceeded && !job.data.syncSucceeded) {
+      if (job.data.saveSucceeded && !job.data.syncSucceeded && !job.data.hadJsonErrors) {
+        // The save succeeded but the sync itself failed. Show the "failed
+        // sync" message with a "Pull from remote" button.
         failedSync = true;
+      } else if (job.data.hadJsonErrors) {
+        // The sync ran to completion, but individual entities had invalid
+        // JSON. The save and push succeeded.
+        hadJsonErrors = true;
       }
     }
 
-    res.send(EditError({ resLocals: res.locals, jobSequence, failedSync }));
+    res.send(EditError({ resLocals: res.locals, jobSequence, failedSync, hadJsonErrors }));
   }),
 );
 

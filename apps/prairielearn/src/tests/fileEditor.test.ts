@@ -287,6 +287,40 @@ describe('test file editor', { timeout: 20_000 }, function () {
       });
     });
 
+    describe('hadJsonErrors warning when another file has errors', function () {
+      // Break the question JSON by committing garbage directly in the live repo.
+      // Then save a valid edit to question.html. The sync will complete with
+      // hadJsonErrors (because of the broken question JSON), but question.html
+      // is not a JSON entity file, so fileMetadata.syncErrors will be null.
+      // The alert should be a warning, not an error.
+      writeAndCommitFileInLive(questionJsonPath, 'garbage');
+
+      editGet(courseInstanceQuestionHtmlEditUrl, false, false, questionHtmlB, null);
+      editPost(
+        'save_and_sync',
+        questionHtmlC,
+        courseInstanceQuestionHtmlEditUrl,
+        true,
+        false,
+        null,
+      );
+      waitForJobSequence(locals, 'Error');
+
+      verifyAlert('alert-warning', 'Other files in this course have sync errors');
+
+      // Cleanup: fix the broken question JSON through the editor.
+      editGet(courseInstanceQuestionJsonEditUrl, false, false, 'garbage', null);
+      editPost(
+        'save_and_sync',
+        jsonToContents(questionJsonA),
+        courseInstanceQuestionJsonEditUrl,
+        true,
+        false,
+        null,
+      );
+      waitForJobSequence(locals, 'Success');
+    });
+
     describe('disallow edits outside course directory', function () {
       badGet(badPathUrl, 500, false);
     });
@@ -543,6 +577,8 @@ function doEdits(data: {
     waitForJobSequence(locals, 'Success');
     // (B, B, A, B)
 
+    verifyAlert('alert-success', 'File was saved and synced successfully.');
+
     pullAndVerifyFileInDev(data.path, data.contentsB);
     // (B, B, B, B)
 
@@ -610,6 +646,11 @@ function doEdits(data: {
       editPost('save_and_sync', data.contentsX, data.url, true, false, null);
       waitForJobSequence(locals, 'Error');
       // (X, X, C*, X) <- successful push, sync completed with per-entity errors
+
+      verifyAlert(
+        'alert-danger',
+        'File was saved, but it contains errors that prevented it from syncing.',
+      );
 
       pullAndVerifyFileInDev(data.path, data.contentsX);
       // (X, X, X, X)
@@ -697,6 +738,17 @@ function writeAndPushFileInDev(fileName: string, fileContents: string) {
         cwd: courseRepo.courseDevDir,
         env: process.env,
       });
+    });
+  });
+}
+
+function verifyAlert(expectedClass: string, expectedMessage: string) {
+  describe('verify alert banner', function () {
+    it(`should show ${expectedClass}`, function () {
+      const alert = locals.$('[data-testid="save-sync-alert"]');
+      assert.lengthOf(alert, 1);
+      assert.isTrue(alert.hasClass(expectedClass));
+      assert.include(alert.text(), expectedMessage);
     });
   });
 }
