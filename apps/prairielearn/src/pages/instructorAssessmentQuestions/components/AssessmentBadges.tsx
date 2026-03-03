@@ -3,7 +3,7 @@ import { OverlayTrigger } from '@prairielearn/ui';
 import { AssessmentBadge } from '../../../components/AssessmentBadge.js';
 import type { AssessmentForPicker } from '../types.js';
 
-import { SubtleBadge, getSubtleColor } from './SubtleBadge.js';
+import { SubtleBadge, getSubtleOutlineStyle } from './SubtleBadge.js';
 
 function toBadgeProps(assessment: AssessmentForPicker, useSetColor = true) {
   return {
@@ -112,7 +112,6 @@ export function AssessmentBadges({
     } else {
       const color = items[0].assessment_set_color ?? items[0].color;
       const name = items[0].assessment_set_name ?? abbrev;
-      const subtleStyle = getSubtleColor(color);
       elements.push(
         <span key={`group-${abbrev}`} className="d-inline-block me-1">
           <OverlayTrigger
@@ -137,16 +136,17 @@ export function AssessmentBadges({
           >
             <button
               type="button"
-              className={subtle ? 'btn btn-badge' : `btn btn-badge color-${color}`}
-              style={
-                subtle
-                  ? { backgroundColor: subtleStyle.bg, color: subtleStyle.text, fontWeight: 600 }
-                  : undefined
-              }
+              className="btn btn-badge tree-interactive-badge"
+              style={{ ...getSubtleOutlineStyle(color), fontWeight: 600 }}
               aria-label={`${abbrev}: ${items.length} assessments`}
               onClick={(e) => e.stopPropagation()}
             >
-              {abbrev} ×{items.length}
+              {abbrev} ×{items.length}{' '}
+              <i
+                className="bi bi-caret-down-fill"
+                style={{ fontSize: '0.6em' }}
+                aria-hidden="true"
+              />
             </button>
           </OverlayTrigger>
         </span>,

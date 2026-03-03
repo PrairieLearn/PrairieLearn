@@ -1,52 +1,20 @@
 import { useDroppable } from '@dnd-kit/core';
 import { SortableContext, useSortable, verticalListSortingStrategy } from '@dnd-kit/sortable';
 import clsx from 'clsx';
-import type { CSSProperties, Dispatch } from 'react';
+import type { Dispatch } from 'react';
 
 import { run } from '@prairielearn/run';
 
 import type { StaffAssessmentQuestionRow } from '../../../../lib/assessment-question.shared.js';
 import type { EnumAssessmentType } from '../../../../lib/db-types.js';
-import type {
-  EditorAction,
-  SelectedItem,
-  ViewType,
-  ZoneAssessmentForm,
-  ZoneQuestionBlockForm,
-} from '../../types.js';
+import type { EditorAction, SelectedItem, ViewType, ZoneAssessmentForm } from '../../types.js';
+import { computeZonePointTotals, computeZoneQuestionCount } from '../../utils/questions.js';
 
+import { CollapseToggleButton } from './CollapseToggleButton.js';
+import { DragHandle } from './DragHandle.js';
 import { TreeEmptyDropZone } from './TreeEmptyDropZone.js';
 import { TreeQuestionBlockNode } from './TreeQuestionBlockNode.js';
-
-function firstPoints(value: number | number[] | null | undefined): number {
-  if (value == null) return 0;
-  return Array.isArray(value) ? (value[0] ?? 0) : value;
-}
-
-function computeZoneQuestionCount(questions: ZoneQuestionBlockForm[]): number {
-  let count = 0;
-  for (const q of questions) {
-    if (q.alternatives) {
-      count += q.numberChoose ?? q.alternatives.length;
-    } else {
-      count += 1;
-    }
-  }
-  return count;
-}
-
-function computeZonePointTotals(questions: ZoneQuestionBlockForm[]): {
-  autoPoints: number;
-  manualPoints: number;
-} {
-  let autoPoints = 0;
-  let manualPoints = 0;
-  for (const q of questions) {
-    autoPoints += firstPoints(q.points ?? q.autoPoints);
-    manualPoints += q.manualPoints ?? 0;
-  }
-  return { autoPoints, manualPoints };
-}
+import { makeSortableStyle } from './sortableUtils.js';
 
 export function TreeZoneNode({
   zone,
@@ -110,14 +78,11 @@ export function TreeZoneNode({
     disabled: !editMode,
   });
 
-  const sortableStyle: CSSProperties = {
-    opacity: isSortableDragging ? 0.6 : 1,
-    transform: sortableTransform ? `translateY(${sortableTransform.y}px)` : undefined,
+  const sortableStyle = makeSortableStyle({
+    isDragging: isSortableDragging,
+    transform: sortableTransform,
     transition: sortableTransition,
-    background: isSortableDragging ? 'rgba(0,0,0,0.04)' : undefined,
-    position: isSortableDragging ? 'relative' : undefined,
-    zIndex: isSortableDragging ? 2 : undefined,
-  };
+  });
 
   const selectZone = () => {
     setSelectedItem({ type: 'zone', zoneTrackingId: zone.trackingId });
@@ -134,7 +99,7 @@ export function TreeZoneNode({
           role="button"
           tabIndex={0}
           className={clsx(
-            'd-flex align-items-center px-2 py-2 border-bottom user-select-none',
+            'tree-row d-flex align-items-center px-2 py-2 border-bottom user-select-none',
             isSelected ? 'bg-primary-subtle' : 'bg-body-secondary',
           )}
           style={{ cursor: 'pointer', position: 'sticky', top: 0, zIndex: 10 }}
@@ -149,36 +114,18 @@ export function TreeZoneNode({
             }
           }}
         >
-          {editMode && sortableListeners && (
-            // eslint-disable-next-line jsx-a11y-x/no-static-element-interactions
-            <span
-              {...sortableListeners}
-              {...sortableAttributes}
-              className="me-2"
-              style={{ cursor: 'grab', touchAction: 'none' }}
-              aria-label="Drag to reorder zone"
-              onClick={(e) => e.stopPropagation()}
-              onKeyDown={(e) => {
-                sortableListeners.onKeyDown(e);
-                if (e.key === 'Enter' || e.key === ' ') {
-                  e.stopPropagation();
-                }
-              }}
-            >
-              <i className="bi bi-grip-vertical text-muted" aria-hidden="true" />
-            </span>
+          {editMode && (
+            <DragHandle
+              attributes={sortableAttributes}
+              listeners={sortableListeners}
+              ariaLabel="Drag to reorder zone"
+            />
           )}
-          <button
-            type="button"
-            className="btn btn-sm p-0 border-0 me-1"
-            aria-label={isCollapsed ? 'Expand zone' : 'Collapse zone'}
-            onClick={(e) => {
-              e.stopPropagation();
-              toggleCollapse();
-            }}
-          >
-            <i className={`bi bi-chevron-${isCollapsed ? 'right' : 'down'}`} aria-hidden="true" />
-          </button>
+          <CollapseToggleButton
+            isCollapsed={isCollapsed}
+            ariaLabel={isCollapsed ? 'Expand zone' : 'Collapse zone'}
+            onToggle={toggleCollapse}
+          />
           <span className="fw-semibold flex-grow-1">{zone.title || 'Zone'}</span>
           <span className="d-inline-flex align-items-center gap-1 flex-wrap">
             <span className="badge text-bg-light text-muted">
@@ -206,7 +153,7 @@ export function TreeZoneNode({
           {editMode && (
             <button
               type="button"
-              className="btn btn-sm border-0 text-muted ms-1 tree-delete-btn"
+              className="btn btn-sm border-0 text-muted ms-1 tree-delete-btn tree-hover-show"
               title="Delete zone"
               onClick={(e) => {
                 e.stopPropagation();

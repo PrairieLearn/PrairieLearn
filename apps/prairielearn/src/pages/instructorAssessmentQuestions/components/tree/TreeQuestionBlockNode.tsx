@@ -1,6 +1,6 @@
 import { useSortable } from '@dnd-kit/sortable';
 import clsx from 'clsx';
-import { type CSSProperties, type Dispatch } from 'react';
+import { type Dispatch } from 'react';
 
 import { run } from '@prairielearn/run';
 
@@ -8,7 +8,10 @@ import type { StaffAssessmentQuestionRow } from '../../../../lib/assessment-ques
 import type { EnumAssessmentType } from '../../../../lib/db-types.js';
 import type { EditorAction, SelectedItem, ViewType, ZoneQuestionBlockForm } from '../../types.js';
 
+import { CollapseToggleButton } from './CollapseToggleButton.js';
+import { DragHandle } from './DragHandle.js';
 import { TreeQuestionRow } from './TreeQuestionRow.js';
+import { makeSortableStyle } from './sortableUtils.js';
 
 export function TreeQuestionBlockNode({
   zoneQuestionBlock,
@@ -52,14 +55,7 @@ export function TreeQuestionBlockNode({
     disabled: !editMode,
   });
 
-  const sortableStyle: CSSProperties = {
-    opacity: isDragging ? 0.6 : 1,
-    transform: transform ? `translateY(${transform.y}px)` : undefined,
-    transition,
-    background: isDragging ? 'rgba(0,0,0,0.04)' : undefined,
-    position: isDragging ? 'relative' : undefined,
-    zIndex: isDragging ? 2 : undefined,
-  };
+  const sortableStyle = makeSortableStyle({ isDragging, transform, transition });
 
   const isAltGroupSelected =
     selectedItem?.type === 'altGroup' &&
@@ -114,7 +110,7 @@ export function TreeQuestionBlockNode({
         role="button"
         tabIndex={0}
         className={clsx(
-          'd-flex align-items-center py-1 border-bottom user-select-none',
+          'tree-row d-flex align-items-center py-1 border-bottom user-select-none',
           isAltGroupSelected ? 'bg-primary-subtle' : '',
         )}
         style={{ paddingLeft: '2.5rem', paddingRight: '0.5rem', cursor: 'pointer' }}
@@ -135,36 +131,12 @@ export function TreeQuestionBlockNode({
           }
         }}
       >
-        {editMode && listeners && (
-          // eslint-disable-next-line jsx-a11y-x/no-static-element-interactions
-          <span
-            {...attributes}
-            {...listeners}
-            className="me-2"
-            style={{ cursor: 'grab', touchAction: 'none' }}
-            aria-label="Drag to reorder"
-            onClick={(e) => e.stopPropagation()}
-            onKeyDown={(e) => {
-              listeners.onKeyDown(e);
-              if (e.key === 'Enter' || e.key === ' ') {
-                e.stopPropagation();
-              }
-            }}
-          >
-            <i className="bi bi-grip-vertical text-muted" aria-hidden="true" />
-          </span>
-        )}
-        <button
-          type="button"
-          className="btn btn-sm p-0 border-0 me-1"
-          aria-label={isCollapsed ? 'Expand alternatives' : 'Collapse alternatives'}
-          onClick={(e) => {
-            e.stopPropagation();
-            toggleCollapse();
-          }}
-        >
-          <i className={`bi bi-chevron-${isCollapsed ? 'right' : 'down'}`} aria-hidden="true" />
-        </button>
+        {editMode && <DragHandle attributes={attributes} listeners={listeners} />}
+        <CollapseToggleButton
+          isCollapsed={isCollapsed}
+          ariaLabel={isCollapsed ? 'Expand alternatives' : 'Collapse alternatives'}
+          onToggle={toggleCollapse}
+        />
         <i className="bi bi-stack text-primary me-1" aria-hidden="true" />
         <span className="flex-grow-1 text-primary">
           {run(() => {
@@ -176,7 +148,7 @@ export function TreeQuestionBlockNode({
         {editMode && (
           <button
             type="button"
-            className="btn btn-sm border-0 text-muted ms-1 tree-delete-btn"
+            className="btn btn-sm border-0 text-muted ms-1 tree-delete-btn tree-hover-show"
             title="Delete alternative group"
             onClick={(e) => {
               e.stopPropagation();
