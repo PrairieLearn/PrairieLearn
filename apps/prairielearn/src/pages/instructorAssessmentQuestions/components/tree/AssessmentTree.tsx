@@ -48,8 +48,7 @@ export function AssessmentTree({
 }) {
   return (
     <SortableContext items={zones.map((z) => z.trackingId)} strategy={verticalListSortingStrategy}>
-      {/* eslint-disable-next-line react/no-unknown-property */}
-      <style>{`.tree-delete-btn:hover { color: var(--bs-danger) !important; }`}</style>
+      <style>{'.tree-delete-btn:hover { color: var(--bs-danger) !important; }'}</style>
       <div className="list-group list-group-flush">
         {zones.map((zone) => (
           <TreeZoneNode
@@ -74,7 +73,7 @@ export function AssessmentTree({
         {editMode && (
           <div className="p-2">
             <button className="btn btn-sm btn-outline-primary" type="button" onClick={onAddZone}>
-              <i className="fa fa-plus me-1" aria-hidden="true" />
+              <i className="bi bi-plus me-1" aria-hidden="true" />
               Add zone
             </button>
           </div>

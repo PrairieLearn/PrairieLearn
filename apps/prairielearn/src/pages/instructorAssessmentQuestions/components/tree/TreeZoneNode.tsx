@@ -3,6 +3,8 @@ import { SortableContext, useSortable, verticalListSortingStrategy } from '@dnd-
 import clsx from 'clsx';
 import type { CSSProperties, Dispatch } from 'react';
 
+import { run } from '@prairielearn/run';
+
 import type { StaffAssessmentQuestionRow } from '../../../../lib/assessment-question.shared.js';
 import type { EnumAssessmentType } from '../../../../lib/db-types.js';
 import type {
@@ -117,8 +119,7 @@ export function TreeZoneNode({
     zIndex: isSortableDragging ? 2 : undefined,
   };
 
-  const handleZoneClick = (e: React.MouseEvent) => {
-    e.stopPropagation();
+  const selectZone = () => {
     setSelectedItem({ type: 'zone', zoneTrackingId: zone.trackingId });
   };
 
@@ -137,11 +138,14 @@ export function TreeZoneNode({
             isSelected ? 'bg-primary-subtle' : 'bg-body-secondary',
           )}
           style={{ cursor: 'pointer', position: 'sticky', top: 0, zIndex: 10 }}
-          onClick={handleZoneClick}
+          onClick={(e) => {
+            e.stopPropagation();
+            selectZone();
+          }}
           onKeyDown={(e) => {
             if (e.key === 'Enter' || e.key === ' ') {
               e.preventDefault();
-              handleZoneClick(e as unknown as React.MouseEvent);
+              selectZone();
             }
           }}
         >
@@ -161,7 +165,7 @@ export function TreeZoneNode({
                 }
               }}
             >
-              <i className="fa fa-grip-vertical text-muted" aria-hidden="true" />
+              <i className="bi bi-grip-vertical text-muted" aria-hidden="true" />
             </span>
           )}
           <button
@@ -173,15 +177,16 @@ export function TreeZoneNode({
               toggleCollapse();
             }}
           >
-            <i className={`fa fa-chevron-${isCollapsed ? 'right' : 'down'}`} aria-hidden="true" />
+            <i className={`bi bi-chevron-${isCollapsed ? 'right' : 'down'}`} aria-hidden="true" />
           </button>
-          <span className="fw-semibold flex-grow-1">
-            {zone.title || 'Zone'}
-          </span>
+          <span className="fw-semibold flex-grow-1">{zone.title || 'Zone'}</span>
           <span className="d-inline-flex align-items-center gap-1 flex-wrap">
             <span className="badge text-bg-light text-muted">
               {zone.numberChoose == null
-                ? `${computeZoneQuestionCount(zone.questions)} question${computeZoneQuestionCount(zone.questions) !== 1 ? 's' : ''}`
+                ? run(() => {
+                    const count = computeZoneQuestionCount(zone.questions);
+                    return `${count} question${count !== 1 ? 's' : ''}`;
+                  })
                 : `Choose ${zone.numberChoose}`}
             </span>
             <ZonePointsBadge zone={zone} assessmentType={assessmentType} />
@@ -237,13 +242,16 @@ export function TreeZoneNode({
               <TreeEmptyDropZone dropRef={emptyDropRef} isOver={isOverEmpty} />
             )}
             {editMode && (
-              <div className="py-2 border-bottom" style={{ paddingLeft: '2.5rem', paddingRight: '1rem' }}>
+              <div
+                className="py-2 border-bottom"
+                style={{ paddingLeft: '2.5rem', paddingRight: '1rem' }}
+              >
                 <button
                   className="btn btn-sm btn-outline-primary"
                   type="button"
                   onClick={() => onAddQuestion(zone.trackingId)}
                 >
-                  <i className="fa fa-plus me-1" aria-hidden="true" />
+                  <i className="bi bi-plus me-1" aria-hidden="true" />
                   Add question
                 </button>
               </div>

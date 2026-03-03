@@ -151,7 +151,7 @@ export function TreeQuestionBlockNode({
               }
             }}
           >
-            <i className="fa fa-grip-vertical text-muted" aria-hidden="true" />
+            <i className="bi bi-grip-vertical text-muted" aria-hidden="true" />
           </span>
         )}
         <button
@@ -163,7 +163,7 @@ export function TreeQuestionBlockNode({
             toggleCollapse();
           }}
         >
-          <i className={`fa fa-chevron-${isCollapsed ? 'right' : 'down'}`} aria-hidden="true" />
+          <i className={`bi bi-chevron-${isCollapsed ? 'right' : 'down'}`} aria-hidden="true" />
         </button>
         <i className="bi bi-stack text-primary me-1" aria-hidden="true" />
         <span className="flex-grow-1 text-primary">
@@ -202,7 +202,6 @@ export function TreeQuestionBlockNode({
               key={alternative.trackingId}
               question={alternative}
               zoneQuestionBlock={zoneQuestionBlock}
-              isAlternative
               questionData={altQuestionData}
               editMode={editMode}
               viewType={viewType}
@@ -210,6 +209,7 @@ export function TreeQuestionBlockNode({
               urlPrefix={urlPrefix}
               hasCoursePermissionPreview={hasCoursePermissionPreview}
               assessmentType={assessmentType}
+              isAlternative
               onClick={() =>
                 setSelectedItem({
                   type: 'alternative',

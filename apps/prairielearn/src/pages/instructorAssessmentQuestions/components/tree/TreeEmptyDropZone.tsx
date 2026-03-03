@@ -13,12 +13,12 @@ export function TreeEmptyDropZone({
     >
       {isOver ? (
         <span className="text-primary">
-          <i className="fa fa-plus-circle me-2" aria-hidden="true" />
+          <i className="bi bi-plus-circle me-2" aria-hidden="true" />
           Drop here to add to this zone
         </span>
       ) : (
         <>
-          <i className="fa fa-exclamation-triangle text-warning me-2" aria-hidden="true" />
+          <i className="bi bi-exclamation-triangle text-warning me-2" aria-hidden="true" />
           This zone has no questions. Add questions or delete this zone before saving.
         </>
       )}

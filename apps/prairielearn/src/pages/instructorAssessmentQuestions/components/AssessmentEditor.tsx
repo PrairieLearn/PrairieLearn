@@ -10,7 +10,7 @@ import {
 } from '@dnd-kit/core';
 import { sortableKeyboardCoordinates } from '@dnd-kit/sortable';
 import { QueryClient, useQuery } from '@tanstack/react-query';
-import { useMemo, useRef, useState } from 'react';
+import { useMemo, useState } from 'react';
 
 import { run } from '@prairielearn/run';
 import { useModalState } from '@prairielearn/ui';
@@ -81,20 +81,19 @@ function AssessmentEditorInner({
 }: AssessmentEditorInnerProps) {
   const trpc = useTRPC();
   const trpcClient = useTRPCClient();
-  const initialZones = addTrackingIds(jsonZones);
 
-  const initialState = {
-    zones: initialZones,
+  const [initialState] = useState(() => ({
+    zones: addTrackingIds(jsonZones),
     questionMetadata: Object.fromEntries(
       questionRows.map((r) => [questionDisplayName(course, r), r]),
     ),
     collapsedGroups: new Set<string>(),
     collapsedZones: new Set<string>(),
-  };
+  }));
 
   const { zones, questionMetadata, collapsedGroups, collapsedZones, dispatch } =
     useAssessmentEditor(initialState);
-  const initialZonesRef = useRef(JSON.stringify(initialState.zones));
+  const initialZonesJson = useMemo(() => JSON.stringify(initialState.zones), [initialState.zones]);
 
   const [editMode, setEditMode] = useState(false);
   const [selectedItem, setSelectedItem] = useState<SelectedItem>(null);
@@ -262,8 +261,7 @@ function AssessmentEditorInner({
       // Returning to a question detail panel after picking a new QID
       const returnTo = selectedItem.returnToSelection;
       if (returnTo.type === 'question' || returnTo.type === 'alternative') {
-        const questionTrackingId =
-          returnTo.type === 'question' ? returnTo.questionTrackingId : returnTo.questionTrackingId;
+        const questionTrackingId = returnTo.questionTrackingId;
 
         let questionData: QuestionByQidResult;
         try {
@@ -342,12 +340,7 @@ function AssessmentEditorInner({
   const handlePickQuestion = (currentSelection: SelectedItem) => {
     if (!currentSelection) return;
     const zoneTrackingId = run(() => {
-      if (currentSelection.type === 'question') {
-        return zones.find((z) =>
-          z.questions.some((q) => q.trackingId === currentSelection.questionTrackingId),
-        )?.trackingId;
-      }
-      if (currentSelection.type === 'alternative') {
+      if (currentSelection.type === 'question' || currentSelection.type === 'alternative') {
         return zones.find((z) =>
           z.questions.some((q) => q.trackingId === currentSelection.questionTrackingId),
         )?.trackingId;
@@ -523,14 +516,13 @@ function AssessmentEditorInner({
   const isAllExpanded = collapsedZones.size === 0 && collapsedGroups.size === 0;
 
   const saveButtonDisabled =
-    JSON.stringify(zones) === initialZonesRef.current ||
-    zones.some((zone) => zone.questions.length === 0);
+    JSON.stringify(zones) === initialZonesJson || zones.some((zone) => zone.questions.length === 0);
 
   const saveButtonDisabledReason = zones.some((zone) => zone.questions.length === 0)
     ? 'Cannot save: one or more zones have no questions'
     : undefined;
 
-  const zonesForSave = stripTrackingIds(zones);
+  const zonesForSave = useMemo(() => stripTrackingIds(zones), [zones]);
 
   return (
     <>

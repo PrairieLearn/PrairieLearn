@@ -6,9 +6,17 @@ import { OverlayTrigger } from '@prairielearn/ui';
 
 import { CopyButton } from '../../../../components/CopyButton.js';
 import { HistMini } from '../../../../components/HistMini.js';
-import type { OtherAssessment, StaffAssessmentQuestionRow } from '../../../../lib/assessment-question.shared.js';
+import type {
+  OtherAssessment,
+  StaffAssessmentQuestionRow,
+} from '../../../../lib/assessment-question.shared.js';
 import type { EnumAssessmentType } from '../../../../lib/db-types.js';
-import type { AssessmentForPicker, QuestionAlternativeForm, ViewType, ZoneQuestionBlockForm } from '../../types.js';
+import type {
+  AssessmentForPicker,
+  QuestionAlternativeForm,
+  ViewType,
+  ZoneQuestionBlockForm,
+} from '../../types.js';
 import { AssessmentBadges } from '../AssessmentBadges.js';
 import { SubtleBadge } from '../SubtleBadge.js';
 
@@ -17,10 +25,10 @@ function toAssessmentForPicker(assessments: OtherAssessment[]): AssessmentForPic
     assessment_id: String(a.assessment_id),
     label: `${a.assessment_set_abbreviation}${a.assessment_number}`,
     color: a.assessment_set_color,
-    assessment_set_abbreviation: a.assessment_set_abbreviation ?? undefined,
-    assessment_set_name: a.assessment_set_name ?? undefined,
+    assessment_set_abbreviation: a.assessment_set_abbreviation,
+    assessment_set_name: a.assessment_set_name,
     assessment_set_color: a.assessment_set_color,
-    assessment_number: a.assessment_number ?? undefined,
+    assessment_number: a.assessment_number,
   }));
 }
 
@@ -76,7 +84,10 @@ function PointsBadge({
     }
 
     return (
-      <OverlayTrigger placement="top" tooltip={{ props: { id: tooltipId }, body: tooltipParts.join(' · ') }}>
+      <OverlayTrigger
+        placement="top"
+        tooltip={{ props: { id: tooltipId }, body: tooltipParts.join(' · ') }}
+      >
         <span className="text-muted small text-nowrap ms-2">{compactParts}</span>
       </OverlayTrigger>
     );
@@ -103,9 +114,7 @@ function PointsBadge({
         {initPoints ?? 0}/{maxAuto ?? 0}
       </span>,
     );
-    tooltipParts.push(
-      `Auto-graded: ${initPoints ?? 0} pts initial, ${maxAuto ?? 0} pts max`,
-    );
+    tooltipParts.push(`Auto-graded: ${initPoints ?? 0} pts initial, ${maxAuto ?? 0} pts max`);
   }
 
   if (manualPoints != null) {
@@ -122,7 +131,10 @@ function PointsBadge({
   }
 
   return (
-    <OverlayTrigger placement="top" tooltip={{ props: { id: tooltipId }, body: tooltipParts.join(' · ') }}>
+    <OverlayTrigger
+      placement="top"
+      tooltip={{ props: { id: tooltipId }, body: tooltipParts.join(' · ') }}
+    >
       <span className="text-muted small text-nowrap ms-2">{compactParts}</span>
     </OverlayTrigger>
   );
@@ -197,7 +209,7 @@ export function TreeQuestionRow({
             }
           }}
         >
-          <i className="fa fa-grip-vertical text-muted" aria-hidden="true" />
+          <i className="bi bi-grip-vertical text-muted" aria-hidden="true" />
         </span>
       )}
       <i className="bi bi-file-earmark-text text-muted me-2" aria-hidden="true" />
@@ -222,8 +234,13 @@ export function TreeQuestionRow({
         {question.id && (
           <div className="d-flex align-items-center text-muted" style={{ fontSize: '0.8rem' }}>
             <span className="text-truncate">{question.id}</span>
+            {/* eslint-disable-next-line jsx-a11y-x/click-events-have-key-events, jsx-a11y-x/no-static-element-interactions -- wrapper only stops propagation to prevent row click */}
             <span onClick={(e) => e.stopPropagation()}>
-              <CopyButton text={question.id} tooltipId={`copy-qid-${question.id}`} ariaLabel="Copy QID" />
+              <CopyButton
+                text={question.id}
+                tooltipId={`copy-qid-${question.id}`}
+                ariaLabel="Copy QID"
+              />
             </span>
           </div>
         )}

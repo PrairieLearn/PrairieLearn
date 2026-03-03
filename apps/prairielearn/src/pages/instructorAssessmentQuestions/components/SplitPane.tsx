@@ -1,4 +1,4 @@
-import { type ReactNode, useCallback, useEffect, useRef, useState, useSyncExternalStore } from 'react';
+import { type ReactNode, useCallback, useRef, useState, useSyncExternalStore } from 'react';
 
 const DEFAULT_RIGHT_WIDTH = 360;
 const MIN_RIGHT_WIDTH = 280;
@@ -33,11 +33,13 @@ export function SplitPane({
   const autoCollapsed = useNarrowViewport();
   const [manualCollapsed, setManualCollapsed] = useState(false);
   const isDraggingRef = useRef(false);
+  const prevForceOpenRef = useRef(forceOpen);
 
   // Re-open panel when forceOpen changes (e.g. user selects a tree item)
-  useEffect(() => {
-    if (forceOpen) setManualCollapsed(false);
-  }, [forceOpen]);
+  if (forceOpen && forceOpen !== prevForceOpenRef.current) {
+    setManualCollapsed(false);
+  }
+  prevForceOpenRef.current = forceOpen;
 
   const isCollapsed = rightCollapsedProp ?? (manualCollapsed || autoCollapsed);
 
@@ -68,7 +70,10 @@ export function SplitPane({
   );
 
   return (
-    <div className="d-flex position-relative" style={{ minHeight: 400, maxHeight: 'calc(100vh - 200px)' }}>
+    <div
+      className="d-flex position-relative"
+      style={{ minHeight: 400, maxHeight: 'calc(100vh - 200px)' }}
+    >
       <div className="flex-grow-1" style={{ minWidth: 0, overflow: 'auto' }}>
         {left}
       </div>

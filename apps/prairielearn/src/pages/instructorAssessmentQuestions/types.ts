@@ -1,7 +1,6 @@
 import { z } from 'zod';
 
 import type { StaffAssessmentQuestionRow } from '../../lib/assessment-question.shared.js';
-import type { EnumAssessmentType } from '../../lib/db-types.js';
 import {
   QuestionAlternativeJsonSchema,
   ZoneAssessmentJsonSchema,
@@ -70,30 +69,6 @@ export interface CourseQuestionForPicker {
 }
 
 /**
- * Shared state passed down through the assessment questions table component tree.
- */
-export interface AssessmentState {
-  questionMetadata: Record<string, StaffAssessmentQuestionRow>;
-  editMode: boolean;
-  urlPrefix: string;
-  hasCoursePermissionPreview: boolean;
-  canEdit: boolean;
-  showAdvanceScorePercCol: boolean;
-  assessmentType: EnumAssessmentType;
-}
-
-/**
- * Computes the number of table columns based on UI state.
- * This is derived from editMode and showAdvanceScorePercCol to avoid synchronization issues.
- */
-export function getTableColumnCount(
-  state: Pick<AssessmentState, 'editMode' | 'showAdvanceScorePercCol'>,
-): number {
-  const baseCols = state.showAdvanceScorePercCol ? 10 : 9;
-  return baseCols + (state.editMode ? 3 : 0);
-}
-
-/**
  * The core editor state containing zones and question metadata.
  * Uses form types with trackingId for stable drag-and-drop identity.
  */
@@ -105,26 +80,6 @@ export interface EditorState {
   /** Tracks which zones are collapsed by their trackingId */
   collapsedZones: Set<string>;
 }
-
-/**
- * Handler for editing a question or alternative in the assessment editor.
- */
-export type HandleEditQuestion = (params: {
-  question: ZoneQuestionBlockForm | QuestionAlternativeForm;
-  zoneQuestionBlock?: ZoneQuestionBlockForm;
-  questionTrackingId: string;
-  /** Only set when editing an alternative within a zone question block */
-  alternativeTrackingId?: string;
-}) => void;
-
-/**
- * Handler for deleting a question or alternative from the assessment.
- */
-export type HandleDeleteQuestion = (
-  questionTrackingId: string,
-  questionId: string,
-  alternativeTrackingId?: string,
-) => void;
 
 /**
  * All possible actions that can modify the editor state.
