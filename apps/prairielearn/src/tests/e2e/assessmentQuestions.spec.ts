@@ -50,18 +50,8 @@ test.describe('Assessment questions', () => {
     const dragHandles = page.locator('[aria-label="Drag to reorder"]');
     await expect(dragHandles).toHaveCount(4);
 
-    // Move partialCredit3 (index 2 in flat question list) up one position
-    const dragHandle = dragHandles.nth(2);
-    await dragHandle.focus();
-    await expect(dragHandle).toBeFocused();
-    await page.keyboard.press('Space');
-    await page.waitForTimeout(100);
-    await page.keyboard.press('ArrowUp');
-    await page.waitForTimeout(100);
-    await page.keyboard.press('Space');
-    await page.waitForTimeout(100);
-
-    await expect(dragHandles).toHaveCount(4);
+    // Drag partialCredit3 (index 2) above partialCredit2 (index 1) using pointer DnD
+    await dragHandles.nth(2).dragTo(dragHandles.nth(1));
 
     await page.getByRole('button', { name: 'Save and sync' }).click();
     await expect(page.getByRole('button', { name: 'Edit questions' })).toBeVisible();
@@ -104,11 +94,7 @@ test.describe('Assessment questions', () => {
     await enterEditMode(page, courseInstanceId, assessment.id);
 
     // Click partialCredit1 in the tree to open its detail panel
-    await page
-      .getByRole('button')
-      .filter({ hasText: 'partialCredit1' })
-      .first()
-      .click();
+    await page.getByRole('button').filter({ hasText: 'partialCredit1' }).first().click();
 
     const autoPointsInput = page.getByLabel('Auto points', { exact: true });
     await autoPointsInput.clear();
@@ -173,11 +159,7 @@ test.describe('Assessment questions', () => {
     await enterEditMode(page, courseInstanceId, assessment.id);
 
     // Click partialCredit1 in the tree
-    await page
-      .getByRole('button')
-      .filter({ hasText: 'partialCredit1' })
-      .first()
-      .click();
+    await page.getByRole('button').filter({ hasText: 'partialCredit1' }).first().click();
 
     // Apply the points change first (form state is lost when picker opens)
     const autoPointsInput = page.getByLabel('Auto points', { exact: true });
@@ -193,8 +175,8 @@ test.describe('Assessment questions', () => {
 
     await page.getByRole('button', { name: 'Filter by Topic' }).click();
     await page.getByRole('option', { name: 'Calculus' }).click();
-    // Dismiss the filter popover
-    await page.getByLabel('Search by QID or title').click({ force: true });
+    // Dismiss the filter popover (Escape works since there's no modal to capture it)
+    await page.keyboard.press('Escape');
 
     await expect(page.getByText(/1 question/)).toBeVisible();
 
@@ -260,11 +242,7 @@ test.describe('Assessment questions', () => {
     await page.getByRole('button', { name: 'Done' }).click();
 
     // Select the added question in the tree to edit its points
-    await page
-      .getByRole('button')
-      .filter({ hasText: 'partialCredit1' })
-      .first()
-      .click();
+    await page.getByRole('button').filter({ hasText: 'partialCredit1' }).first().click();
 
     const autoPointsInput = page.getByLabel('Auto points', { exact: true });
     await autoPointsInput.clear();
