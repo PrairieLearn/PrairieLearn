@@ -161,7 +161,7 @@ export function TreeQuestionRow({
       role="button"
       tabIndex={0}
       className={clsx(
-        'd-flex align-items-center py-1 border-bottom',
+        'tree-row d-flex align-items-center py-1 border-bottom',
         isSelected ? 'bg-primary-subtle' : 'list-group-item-action',
       )}
       style={{ paddingLeft: indent, paddingRight: '0.5rem', cursor: 'pointer' }}
@@ -184,13 +184,19 @@ export function TreeQuestionRow({
         <div className="text-truncate">
           {questionData ? (
             hasCoursePermissionPreview ? (
-              <a
-                href={`${urlPrefix}/question/${questionData.question.id}/`}
-                className="text-decoration-underline text-body"
-                onClick={(e) => e.stopPropagation()}
-              >
-                {questionData.question.title}
-              </a>
+              <>
+                <a
+                  href={`${urlPrefix}/question/${questionData.question.id}/`}
+                  className="link-underline-opacity-0 link-underline-opacity-100-hover text-primary-emphasis"
+                  onClick={(e) => e.stopPropagation()}
+                >
+                  {questionData.question.title}
+                </a>
+                <i
+                  className="bi bi-box-arrow-up-right text-muted small ms-1 tree-hover-show"
+                  aria-hidden="true"
+                />
+              </>
             ) : (
               questionData.question.title
             )
@@ -202,7 +208,7 @@ export function TreeQuestionRow({
           <div className="d-flex align-items-center text-muted" style={{ fontSize: '0.8rem' }}>
             <span className="text-truncate">{question.id}</span>
             {/* eslint-disable-next-line jsx-a11y-x/click-events-have-key-events, jsx-a11y-x/no-static-element-interactions -- wrapper only stops propagation to prevent row click */}
-            <span onClick={(e) => e.stopPropagation()}>
+            <span className="tree-hover-show" onClick={(e) => e.stopPropagation()}>
               <CopyButton
                 text={question.id}
                 tooltipId={`copy-qid-${question.id}`}
@@ -250,7 +256,7 @@ export function TreeQuestionRow({
       {editMode && onDelete && (
         <button
           type="button"
-          className="btn btn-sm border-0 text-muted ms-1 tree-delete-btn"
+          className="btn btn-sm border-0 text-muted ms-1 tree-delete-btn tree-hover-show"
           title="Delete question"
           onClick={(e) => {
             e.stopPropagation();
@@ -260,6 +266,7 @@ export function TreeQuestionRow({
           <i className="bi bi-trash3" aria-hidden="true" />
         </button>
       )}
+      {!editMode && <i className="bi bi-chevron-right text-muted small ms-1" aria-hidden="true" />}
     </div>
   );
 }

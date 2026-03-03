@@ -54,6 +54,19 @@ export function getSubtleColor(color: string): { bg: string; text: string } {
   return subtleColorMap[color] ?? defaultSubtle;
 }
 
+export function getSubtleOutlineStyle(color: string): {
+  border: string;
+  color: string;
+  backgroundColor: string;
+} {
+  const { text } = getSubtleColor(color);
+  return {
+    border: `1px solid ${text}`,
+    color: text,
+    backgroundColor: 'transparent',
+  };
+}
+
 export function SubtleBadge({ color, label }: { color: string; label: string }) {
   const { bg, text } = getSubtleColor(color);
   return (

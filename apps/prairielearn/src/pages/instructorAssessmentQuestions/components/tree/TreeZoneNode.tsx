@@ -99,7 +99,7 @@ export function TreeZoneNode({
           role="button"
           tabIndex={0}
           className={clsx(
-            'd-flex align-items-center px-2 py-2 border-bottom user-select-none',
+            'tree-row d-flex align-items-center px-2 py-2 border-bottom user-select-none',
             isSelected ? 'bg-primary-subtle' : 'bg-body-secondary',
           )}
           style={{ cursor: 'pointer', position: 'sticky', top: 0, zIndex: 10 }}
@@ -153,7 +153,7 @@ export function TreeZoneNode({
           {editMode && (
             <button
               type="button"
-              className="btn btn-sm border-0 text-muted ms-1 tree-delete-btn"
+              className="btn btn-sm border-0 text-muted ms-1 tree-delete-btn tree-hover-show"
               title="Delete zone"
               onClick={(e) => {
                 e.stopPropagation();

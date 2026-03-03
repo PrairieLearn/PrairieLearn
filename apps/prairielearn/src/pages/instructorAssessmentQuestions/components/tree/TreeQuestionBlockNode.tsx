@@ -110,7 +110,7 @@ export function TreeQuestionBlockNode({
         role="button"
         tabIndex={0}
         className={clsx(
-          'd-flex align-items-center py-1 border-bottom user-select-none',
+          'tree-row d-flex align-items-center py-1 border-bottom user-select-none',
           isAltGroupSelected ? 'bg-primary-subtle' : '',
         )}
         style={{ paddingLeft: '2.5rem', paddingRight: '0.5rem', cursor: 'pointer' }}
@@ -148,7 +148,7 @@ export function TreeQuestionBlockNode({
         {editMode && (
           <button
             type="button"
-            className="btn btn-sm border-0 text-muted ms-1 tree-delete-btn"
+            className="btn btn-sm border-0 text-muted ms-1 tree-delete-btn tree-hover-show"
             title="Delete alternative group"
             onClick={(e) => {
               e.stopPropagation();

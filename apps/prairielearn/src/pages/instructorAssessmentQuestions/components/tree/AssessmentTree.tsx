@@ -48,7 +48,14 @@ export function AssessmentTree({
 }) {
   return (
     <SortableContext items={zones.map((z) => z.trackingId)} strategy={verticalListSortingStrategy}>
-      <style>{'.tree-delete-btn:hover { color: var(--bs-danger) !important; }'}</style>
+      <style>{`
+        .tree-delete-btn:hover { color: var(--bs-danger) !important; }
+        .tree-hover-show { opacity: 0; transition: opacity 0.15s; }
+        .tree-row:hover .tree-hover-show { opacity: 1; }
+        .tree-row.list-group-item-action:has(a:hover, .tree-interactive-badge:hover) {
+          background-color: transparent;
+        }
+      `}</style>
       <div className="list-group list-group-flush">
         {zones.map((zone) => (
           <TreeZoneNode
