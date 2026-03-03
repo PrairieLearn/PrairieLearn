@@ -219,7 +219,7 @@ export default [
     'docs/*',
     'node_modules/*',
     'testCourse',
-    'exampleCourse/**/*.{js,html}',
+    'exampleCourse/**/*.js',
     'coverage/*',
     'out/*',
     'workspaces/*',

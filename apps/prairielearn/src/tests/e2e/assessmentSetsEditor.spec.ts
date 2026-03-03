@@ -1,4 +1,6 @@
-import type { Locator, Page } from '@playwright/test';
+import type { Locator } from '@playwright/test';
+
+import { syncCourse } from '../helperCourse.js';
 
 import { expect, test } from './fixtures.js';
 
@@ -8,19 +10,11 @@ function getRowIndex(row: Locator) {
   );
 }
 
-async function syncAllCourses(page: Page) {
-  await page.goto('/pl/loadFromDisk');
-  await expect(page).toHaveURL(/\/jobSequence\//);
-  await expect(page.locator('.badge', { hasText: 'Success' })).toBeVisible();
-}
-
 const courseId = '1';
 
 test.describe('Assessment sets editor', () => {
-  test.beforeAll(async ({ browser, workerPort }) => {
-    const page = await browser.newPage({ baseURL: `http://localhost:${workerPort}` });
-    await syncAllCourses(page);
-    await page.close();
+  test.beforeAll(async ({ testCoursePath }) => {
+    await syncCourse(testCoursePath);
   });
 
   test('can create assessment sets and persist changes after save', async ({ page }) => {

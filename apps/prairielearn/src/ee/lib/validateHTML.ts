@@ -4,13 +4,13 @@ import * as parse5 from 'parse5';
 type DocumentFragment = parse5.DefaultTreeAdapterMap['documentFragment'];
 type ChildNode = parse5.DefaultTreeAdapterMap['childNode'];
 
-export const SUPPORTED_ELEMENTS = new Set([
-  // Decorative elements
-  'pl-question-panel',
-  'pl-answer-panel',
-  'pl-submission-panel',
+const PANEL_ELEMENTS = new Set(['pl-question-panel', 'pl-answer-panel', 'pl-submission-panel']);
 
-  // Submission elements
+// Note: all elements here are purely input-oriented. If a dual-purpose element is
+// added (e.g. `pl-drawing`, which can be either input or display depending on its
+// attributes), the nesting validation in `dfsCheckParseTree` may need to be made
+// attribute-aware for that element rather than adding it here unconditionally.
+const INPUT_ELEMENTS = new Set([
   'pl-multiple-choice',
   'pl-checkbox',
   'pl-integer-input',
@@ -18,6 +18,8 @@ export const SUPPORTED_ELEMENTS = new Set([
   'pl-string-input',
   'pl-symbolic-input',
 ]);
+
+export const SUPPORTED_ELEMENTS = new Set([...PANEL_ELEMENTS, ...INPUT_ELEMENTS]);
 
 const BOOLEAN_TRUE_VALUES = ['true', 't', '1', 'True', 'T', 'TRUE', 'yes', 'y', 'Yes', 'Y', 'YES'];
 const BOOLEAN_FALSE_VALUES = ['false', 'f', '0', 'False', 'F', 'FALSE', 'no', 'n', 'No', 'N', 'NO'];
@@ -87,6 +89,18 @@ interface ValidationResult {
    * Should be set even if there are other errors.
    */
   mandatoryPythonCorrectAnswers?: Set<string>;
+}
+
+interface HTMLValidationResult {
+  /** Hard errors that must be fixed before saving. */
+  errors: string[];
+  /**
+   * Warnings about likely issues. Unlike errors, warnings do not block
+   * saving — they are included in the response so the LLM is informed,
+   * but the question can still be saved. Callers may choose to promote
+   * warnings to errors based on context (e.g. when creating a new question).
+   */
+  warnings: string[];
 }
 
 /**
@@ -796,49 +810,75 @@ function checkCheckbox(ast: DocumentFragment | ChildNode): ValidationResult {
   return { errors: errors.concat(errorsChildren) };
 }
 
+interface DfsResult extends ValidationResult {
+  warnings: string[];
+  mandatoryPythonCorrectAnswers: Set<string>;
+}
+
 /**
  * Checks the entire parse tree for errors in common PL tags recursively.
  * @param ast The tree to consider.
- * @returns A list of human-readable error messages, if any.
+ * @param enclosingPanel The name of the enclosing panel element (e.g. 'pl-submission-panel'), if any.
+ * @returns Errors, warnings, and mandatory correct answers.
  */
-function dfsCheckParseTree(ast: DocumentFragment | ChildNode) {
+function dfsCheckParseTree(ast: DocumentFragment | ChildNode, enclosingPanel?: string): DfsResult {
   let { errors, mandatoryPythonCorrectAnswers = new Set<string>() } = checkTag(ast);
+  let warnings: string[] = [];
+
+  if ('tagName' in ast && INPUT_ELEMENTS.has(ast.tagName) && enclosingPanel) {
+    warnings.push(
+      `<${ast.tagName}> must not be placed inside <${enclosingPanel}>. ` +
+        'Input elements must be placed at the top level of question.html (outside any panel element) ' +
+        'so they render correctly in the question, submission, and answer panels. ' +
+        `Move <${ast.tagName}> outside of <${enclosingPanel}>.`,
+    );
+  }
+
+  const childPanel =
+    'tagName' in ast && PANEL_ELEMENTS.has(ast.tagName) ? ast.tagName : enclosingPanel;
 
   if ('childNodes' in ast) {
     for (const child of ast.childNodes) {
-      const childResult = dfsCheckParseTree(child);
+      const childResult = dfsCheckParseTree(child, childPanel);
       errors = errors.concat(childResult.errors);
+      warnings = warnings.concat(childResult.warnings);
       childResult.mandatoryPythonCorrectAnswers.forEach((x) =>
         mandatoryPythonCorrectAnswers.add(x),
       );
     }
   }
 
-  return { errors, mandatoryPythonCorrectAnswers } satisfies ValidationResult;
+  return { errors, warnings, mandatoryPythonCorrectAnswers };
 }
 
 /**
- * Checks for errors in common PL elements in an index.html file.
+ * Checks for errors and warnings in common PL elements in a question.html file.
  * @param file The raw text of the file to use.
  * @param hasServerPy True if a server.py file is present, else false.
- * @returns A list of human-readable render error messages, if any.
+ * @returns Errors that must be fixed and warnings about likely issues.
  */
-export function validateHTML(file: string, hasServerPy: boolean): string[] {
+export function validateHTML(file: string, hasServerPy: boolean): HTMLValidationResult {
   const forbiddenTagMatch = file.match(/^\s*<(!doctype|html|body|head)[\s>]/i);
   if (forbiddenTagMatch) {
     const tag = forbiddenTagMatch[1].toLowerCase();
     if (tag === '!doctype') {
-      return [
-        'The <!DOCTYPE> declaration must not be included. Only generate the inner content that would go inside the <body> tag.',
-      ];
+      return {
+        errors: [
+          'The <!DOCTYPE> declaration must not be included. Only generate the inner content that would go inside the <body> tag.',
+        ],
+        warnings: [],
+      };
     }
-    return [
-      `The <${tag}> tag must not be included. Only generate the inner content that would go inside the <body> tag.`,
-    ];
+    return {
+      errors: [
+        `The <${tag}> tag must not be included. Only generate the inner content that would go inside the <body> tag.`,
+      ],
+      warnings: [],
+    };
   }
 
   const tree = parse5.parseFragment(file);
-  const { errors, mandatoryPythonCorrectAnswers } = dfsCheckParseTree(tree);
+  const { errors, warnings, mandatoryPythonCorrectAnswers } = dfsCheckParseTree(tree);
 
   const usedTemplateNames = extractMustacheTemplateNames(file);
   const templates = [
@@ -858,5 +898,5 @@ export function validateHTML(file: string, hasServerPy: boolean): string[] {
     }
   }
 
-  return errors;
+  return { errors, warnings };
 }
