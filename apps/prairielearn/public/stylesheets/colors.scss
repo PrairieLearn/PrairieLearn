@@ -76,6 +76,20 @@ $color-contrast-overrides: (
   border-radius: var(--bs-badge-border-radius);
 }
 
+// Converts a Sass color to a hex string with rounded RGB channels.
+// Modern Dart Sass outputs fractional `rgb()` values from color functions;
+// this forces clean hex codes like `#c73000` in the compiled CSS.
+@function _hex-byte($n) {
+  $hex: '0123456789abcdef';
+  $n: round($n);
+  @return str-slice($hex, floor($n / 16) + 1, floor($n / 16) + 1) +
+    str-slice($hex, ($n % 16) + 1, ($n % 16) + 1);
+}
+
+@function to-hex($c) {
+  @return unquote('#' + _hex-byte(red($c)) + _hex-byte(green($c)) + _hex-byte(blue($c)));
+}
+
 // Returns a text color derived from `$base` that is dark enough for
 // sufficient contrast against the badge background `$bg`.
 // Uses Bootstrap's `contrast-ratio()` to ensure WCAG AA compliance (4.5:1).
@@ -111,6 +125,15 @@ $color-contrast-overrides: (
   $badge-hover-border: adjust-color($badge-border, $lightness: -8%);
   $badge-active-bg: adjust-color($badge-bg, $lightness: -8%);
   $badge-active-border: adjust-color($badge-border, $lightness: -14%);
+
+  // Convert all computed colors to hex for clean CSS output.
+  $badge-bg: to-hex($badge-bg);
+  $badge-border: to-hex($badge-border);
+  $badge-text: to-hex($badge-text);
+  $badge-hover-bg: to-hex($badge-hover-bg);
+  $badge-hover-border: to-hex($badge-hover-border);
+  $badge-active-bg: to-hex($badge-active-bg);
+  $badge-active-border: to-hex($badge-active-border);
 
   // Base class: solid background with contrast text.
   // Used by non-badge elements (e.g. fingerprint buttons).
