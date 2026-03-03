@@ -18,7 +18,8 @@ export function JobStatus({ status }: { status: Job['status'] }) {
 // than a wrapper around the React `JobStatus` component. Using `renderHtml()` to
 // wrap a React component is orders of magnitude slower than simple string
 // interpolation, which matters on pages that render thousands of badges (e.g.,
-/** the course syncs page). */
+// the course syncs page).
+
 export function JobStatusHtml({ status }: { status: Job['status'] }): HtmlSafeString {
   if (status === 'Running') {
     return html`<span class="badge text-bg-primary">Running</span>`;

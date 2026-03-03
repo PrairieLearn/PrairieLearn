@@ -20,7 +20,7 @@ function extractCsrfToken($: CheerioAPI, component: string): string {
   return props.csrfToken;
 }
 
-describe('Course requests', { timeout: 60_000 }, function () {
+describe('Course requests', { timeout: 30_000 }, function () {
   beforeAll(helperServer.before());
   afterAll(helperServer.after);
 

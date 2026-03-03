@@ -208,7 +208,7 @@ function CourseDeleteForm({
         />
       </div>
       <div className="d-flex justify-content-end gap-2">
-        <button type="button" className="btn btn-secondary gap-2" onClick={onCancel}>
+        <button type="button" className="btn btn-secondary" onClick={onCancel}>
           Cancel
         </button>
         <button type="submit" className="btn btn-danger">
@@ -331,7 +331,7 @@ function CourseInsertForm({
           defaultValue={courseRepoDefaultBranch}
         />
       </div>
-      <div className="d-flex flex-wrap gap-1">
+      <div className="d-flex flex-wrap justify-content-end gap-1">
         <button type="button" className="btn btn-secondary" onClick={onCancel}>
           Cancel
         </button>
