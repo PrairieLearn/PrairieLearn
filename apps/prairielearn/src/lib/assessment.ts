@@ -354,7 +354,7 @@ export async function crossLockpoint({
   zoneId: string;
   authnUser: User;
 }): Promise<void> {
-  const crossedLockpointId = await sqldb.queryOptionalRow(
+  const crossedLockpointId = await sqldb.queryOptionalScalar(
     sql.cross_lockpoint,
     { assessment_instance_id: assessmentInstance.id, zone_id: zoneId, authn_user_id: authnUser.id },
     IdSchema,
@@ -364,7 +364,7 @@ export async function crossLockpoint({
   // The INSERT uses ON CONFLICT DO NOTHING, which returns nothing both when
   // the conflict fires (already crossed) and when the WHERE conditions fail
   // (not eligible to cross). This second query distinguishes those cases.
-  const alreadyCrossed = await sqldb.queryOptionalRow(
+  const alreadyCrossed = await sqldb.queryOptionalScalar(
     sql.check_lockpoint_crossed,
     { assessment_instance_id: assessmentInstance.id, zone_id: zoneId },
     IdSchema,
