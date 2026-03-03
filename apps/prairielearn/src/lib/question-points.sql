@@ -1,8 +1,8 @@
 -- BLOCK select_info_for_instance_question_grade
 SELECT
-  to_json(a) AS assessment,
-  to_json(aq) AS assessment_question,
-  to_json(iq) AS instance_question
+  to_jsonb(a) AS assessment,
+  to_jsonb(aq) AS assessment_question,
+  to_jsonb(iq) AS instance_question
 FROM
   instance_questions AS iq
   JOIN assessment_questions AS aq ON (aq.id = iq.assessment_question_id)
