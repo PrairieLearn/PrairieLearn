@@ -99,15 +99,18 @@ $color-contrast-overrides: (
   );
 
   // GitHub-style badge colors: light tinted background, saturated border & text.
-  // Using `change-color` to set lightness preserves the hue and saturation,
-  // producing richer backgrounds than `mix()` which desaturates.
-  $badge-bg: change-color($value, $lightness: 92%);
-  $badge-border: change-color($value, $lightness: 78%);
+  // `scale-color` adjusts lightness *relative* to the current value, so darker
+  // colors (level 3) produce noticeably darker badge backgrounds than lighter
+  // colors (level 1), preserving the visual progression between levels.
+  // Border/hover/active states are derived from the background with fixed offsets
+  // to ensure consistent border visibility regardless of the base color.
+  $badge-bg: scale-color($value, $lightness: 70%);
+  $badge-border: adjust-color($badge-bg, $lightness: -14%);
   $badge-text: badge-text-color($value, $badge-bg);
-  $badge-hover-bg: change-color($value, $lightness: 88%);
-  $badge-hover-border: change-color($value, $lightness: 70%);
-  $badge-active-bg: change-color($value, $lightness: 84%);
-  $badge-active-border: change-color($value, $lightness: 64%);
+  $badge-hover-bg: adjust-color($badge-bg, $lightness: -4%);
+  $badge-hover-border: adjust-color($badge-border, $lightness: -8%);
+  $badge-active-bg: adjust-color($badge-bg, $lightness: -8%);
+  $badge-active-border: adjust-color($badge-border, $lightness: -14%);
 
   // Base class: solid background with contrast text.
   // Used by non-badge elements (e.g. fingerprint buttons).
