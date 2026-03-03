@@ -1,4 +1,4 @@
-import { access } from 'fs/promises';
+import { stat } from 'node:fs/promises';
 
 import fs from 'fs-extra';
 import z from 'zod';
@@ -219,9 +219,12 @@ export async function courseRepositoryAvailability(repoName: string) {
 
 export async function coursePathAvailability(path: string) {
   try {
-    await access(path);
+    await stat(path);
     return true;
-  } catch {
-    return false;
+  } catch (err) {
+    if ((err as { code?: string }).code === 'ENOENT') {
+      return false;
+    }
+    throw err;
   }
 }

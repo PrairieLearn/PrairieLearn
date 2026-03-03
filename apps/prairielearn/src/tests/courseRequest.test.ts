@@ -134,7 +134,9 @@ describe('Course requests', { timeout: 60_000 }, function () {
       assert.isTrue(response.ok);
 
       const requestRow = response.$(`td:contains("${secondShortName}")`).closest('tr');
-      const rowHtml = requestRow.html() ?? '';
+      assert.equal(requestRow.length, 1);
+      const rowHtml = requestRow.html();
+      assert.isString(rowHtml);
       assert.include(rowHtml, 'Deny');
       assert.include(rowHtml, 'Approve');
     });
@@ -153,7 +155,9 @@ describe('Course requests', { timeout: 60_000 }, function () {
 
       // denied !== 'approved', so Deny and Approve buttons should still render
       const requestRow = response.$(`td:contains("${secondShortName}")`).closest('tr');
-      const rowHtml = requestRow.html() ?? '';
+      assert.equal(requestRow.length, 1);
+      const rowHtml = requestRow.html();
+      assert.isString(rowHtml);
       assert.include(rowHtml, 'Deny');
       assert.include(rowHtml, 'Approve');
     });

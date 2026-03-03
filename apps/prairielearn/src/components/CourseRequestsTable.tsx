@@ -626,7 +626,12 @@ function CourseRequestEditNoteForm({
           type="submit"
           className="btn btn-primary text-nowrap"
           disabled={mutation.isPending}
-          onClick={() => mutation.mutate({ courseRequestId: request.id, note })}
+          onClick={() =>
+            mutation.mutate(
+              { courseRequestId: request.id, note },
+              { onSuccess: () => window.location.reload() },
+            )
+          }
         >
           <i className="fa fa-save" aria-hidden="true" /> Save note
         </button>
