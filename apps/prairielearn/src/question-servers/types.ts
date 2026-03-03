@@ -84,15 +84,15 @@ export interface QuestionServer {
     course: Course,
     variant: PrepareVariant,
   ) => QuestionServerReturnValue<PrepareResultData>;
-  render: (
-    renderSelection: RenderSelection,
-    variant: Variant,
-    question: Question,
-    submission: Submission | null,
-    submissions: Submission[],
-    course: Course,
-    locals: UntypedResLocals,
-  ) => QuestionServerReturnValue<RenderResultData>;
+  render: (params: {
+    renderSelection: RenderSelection;
+    variant: Variant;
+    question: Question;
+    submission: Submission | null;
+    submissions: Submission[];
+    course: Course;
+    locals: UntypedResLocals;
+  }) => QuestionServerReturnValue<RenderResultData>;
   parse: (
     submission: ParseSubmission,
     variant: Variant,

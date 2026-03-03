@@ -10,6 +10,8 @@ PrairieLearn requires that SAML identity providers (IdPs) make three attributes 
 
 The full name of the user, e.g. "Joe Smith". This attribute is often named `displayName` or `urn:oid:2.16.840.1.113730.3.1.241`.
 
+Alternatively, if your Identity Provider cannot provide a single full name attribute, you can configure separate **given name** and **family name** attributes. When both are configured and both values are present in a SAML response, PrairieLearn will combine them as "Given Family" (e.g. "Joe Smith") and use that value. If either value is missing, PrairieLearn falls back to the full-name attribute. The given name attribute is often named `givenName` or `urn:oid:2.5.4.42`, and the family name attribute is often named `sn` or `urn:oid:2.5.4.4`.
+
 ### UID
 
 An identifier with an institution-specific suffix, e.g. `jsmith@example.com`. This attribute is often named `eppn`, `eduPersonPrincipalName`, or `urn:oid:1.3.6.1.4.1.5923.1.1.1.6`.
