@@ -47,7 +47,7 @@ export function formatCredentialRedacted(
   return {
     id: cred.id,
     provider: cred.provider as EnumAiGradingProvider,
-    apiKeyMasked: '\u2022\u2022\u2022\u2022\u2022\u2022\u2022\u2022',
+    apiKeyMasked: '........',
     dateAdded: formatDateYMD(cred.created_at, displayTimezone),
   };
 }

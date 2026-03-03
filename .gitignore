@@ -126,6 +126,3 @@ isolate-*-v8.log
 
 ## ESLint cache
 .eslintcache
-
-## Redis
-dump.rdb
