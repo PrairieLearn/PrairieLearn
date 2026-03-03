@@ -1,4 +1,5 @@
 import {
+  type CollisionDetection,
   DndContext,
   type DragEndEvent,
   type DragOverEvent,
@@ -126,6 +127,22 @@ function AssessmentEditorInner({
     useSensor(PointerSensor, { activationConstraint: { distance: 6 } }),
     useSensor(KeyboardSensor, { coordinateGetter: sortableKeyboardCoordinates }),
   );
+
+  // When dragging a question, ignore alternative droppables so collision
+  // detection resolves to the alt group block itself (not its children).
+  // This lets the question-level SortableContext provide correct visual feedback.
+  const collisionDetection: CollisionDetection = (args) => {
+    const activeType = args.active.data.current?.type;
+    if (activeType === 'question') {
+      return closestCenter({
+        ...args,
+        droppableContainers: args.droppableContainers.filter(
+          (c) => c.data.current?.type !== 'alternative',
+        ),
+      });
+    }
+    return closestCenter(args);
+  };
 
   const positionByStableId = useMemo(() => {
     const map: Record<
@@ -299,6 +316,10 @@ function AssessmentEditorInner({
       });
       return;
     }
+    if (selectedItem?.type === 'picker' && selectedItem.returnToSelection) {
+      setSelectedItem(selectedItem.returnToSelection);
+      return;
+    }
     setSelectedItem(null);
   };
 
@@ -458,9 +479,15 @@ function AssessmentEditorInner({
 
     // Question block reorder within same zone
     const fromPosition = positionByStableId[activeIdStr];
-    const toPosition = positionByStableId[overIdStr];
+    const rawToPosition = positionByStableId[overIdStr];
     // eslint-disable-next-line @typescript-eslint/no-unnecessary-condition
-    if (!fromPosition || !toPosition) return;
+    if (!fromPosition || !rawToPosition) return;
+
+    // If "over" resolved to an alternative inside an alt group, use the alt group's position
+    const toPosition =
+      rawToPosition.alternativeIndex != null
+        ? { zoneIndex: rawToPosition.zoneIndex, questionIndex: rawToPosition.questionIndex }
+        : rawToPosition;
 
     const fromZone = zones[fromPosition.zoneIndex];
     const toZone = zones[toPosition.zoneIndex];
@@ -545,10 +572,6 @@ function AssessmentEditorInner({
       // eslint-disable-next-line @typescript-eslint/no-unnecessary-condition
       if (!fromPosition) return;
       const fromZone = zones[fromPosition.zoneIndex];
-      const fromBlock = fromZone.questions[fromPosition.questionIndex];
-
-      // Don't allow merging alt groups into other alt groups
-      const isStandalone = fromBlock.id != null;
 
       // Question dragged over empty zone drop target → cross-zone move
       const targetZone = zones.find((z) => `${z.trackingId}-empty-drop` === overIdStr);
@@ -565,19 +588,6 @@ function AssessmentEditorInner({
       const toPos = positionByStableId[overIdStr];
       // eslint-disable-next-line @typescript-eslint/no-unnecessary-condition
       if (!toPos) return;
-
-      if (overType === 'alternative' && isStandalone && toPos.alternativeIndex != null) {
-        // Standalone question dragged over an alternative → merge into that alt group
-        const toBlock = zones[toPos.zoneIndex].questions[toPos.questionIndex];
-        dispatch({
-          type: 'MERGE_QUESTION_INTO_ALT_GROUP',
-          questionTrackingId: activeIdStr,
-          toAltGroupTrackingId: toBlock.trackingId,
-          beforeAlternativeTrackingId: toBlock.alternatives![toPos.alternativeIndex].trackingId,
-        });
-        setSelectedItem(null);
-        return;
-      }
 
       // Cross-zone question reorder
       const toZone = zones[toPos.zoneIndex];
@@ -611,11 +621,51 @@ function AssessmentEditorInner({
     }
   };
 
+  const rightTitle = run(() => {
+    if (!selectedItem) return undefined;
+    switch (selectedItem.type) {
+      case 'zone':
+        return editMode ? 'Edit zone' : 'Zone';
+      case 'question':
+        return editMode ? 'Edit question' : 'Question';
+      case 'alternative':
+        return editMode ? 'Edit alternative' : 'Alternative';
+      case 'altGroup':
+        return editMode ? 'Edit alternative group' : 'Alternative group';
+      case 'picker': {
+        const zone = zones.find((z) => z.trackingId === selectedItem.zoneTrackingId);
+        return `Adding to ${zone?.title ? `Zone: ${zone.title}` : 'this zone'}`;
+      }
+      case 'altGroupPicker': {
+        const zone = zones.find((z) => z.trackingId === selectedItem.zoneTrackingId);
+        const zoneName = zone?.title || 'Zone';
+        return selectedItem.altGroupTrackingId
+          ? `Adding to alternative group in ${zoneName}`
+          : `Creating alternative group in ${zoneName}`;
+      }
+    }
+  });
+
+  const rightHeaderAction = run(() => {
+    if (selectedItem?.type === 'picker' || selectedItem?.type === 'altGroupPicker') {
+      return (
+        <button
+          type="button"
+          className="btn btn-sm btn-outline-secondary"
+          onClick={handlePickerDone}
+        >
+          Done
+        </button>
+      );
+    }
+    return undefined;
+  });
+
   return (
     <>
       <DndContext
         sensors={sensors}
-        collisionDetection={closestCenter}
+        collisionDetection={collisionDetection}
         autoScroll={false}
         onDragOver={handleDragOver}
         onDragEnd={handleDragEnd}
@@ -623,6 +673,8 @@ function AssessmentEditorInner({
         <div>
           <SplitPane
             forceOpen={selectedItem}
+            rightTitle={rightTitle}
+            rightHeaderAction={rightHeaderAction}
             left={
               <AssessmentTree
                 zones={zones}
@@ -683,7 +735,6 @@ function AssessmentEditorInner({
                 onDeleteQuestion={handleDeleteQuestion}
                 onDeleteZone={handleDeleteZone}
                 onQuestionPicked={handleQuestionPicked}
-                onPickerDone={handlePickerDone}
                 onPickQuestion={handlePickQuestion}
                 onResetButtonClick={resetModal.showWithData}
               />

@@ -85,6 +85,7 @@ export function createQuestionWithTrackingId(): ZoneQuestionBlockForm {
   // Cast needed for TypeScript spread inference with union types
   return {
     trackingId: createTrackingId(),
+    points: 1,
   } as ZoneQuestionBlockForm;
 }
 
@@ -105,6 +106,7 @@ export function createAltGroupWithTrackingId(): ZoneQuestionBlockForm {
     trackingId: createTrackingId(),
     alternatives: [],
     numberChoose: 1,
+    points: 1,
     canSubmit: [],
     canView: [],
   } as ZoneQuestionBlockForm;

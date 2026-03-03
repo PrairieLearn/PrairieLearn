@@ -128,7 +128,6 @@ export function QuestionDetailPanel({
   if (!editMode) {
     return (
       <div className="p-3">
-        <h6 className="text-muted text-uppercase small mb-3">Question properties</h6>
         {questionData && (
           <div className="mb-3">
             <div className="fw-semibold mb-1">
@@ -221,10 +220,6 @@ export function QuestionDetailPanel({
 
   return (
     <form className="p-3" onSubmit={handleSubmit(onSubmit)}>
-      <h6 className="text-muted text-uppercase small mb-3">
-        {isAlternative ? 'Edit alternative' : 'Edit question'}
-      </h6>
-
       <div className="mb-3">
         <label htmlFor="question-id" className="form-label">
           QID

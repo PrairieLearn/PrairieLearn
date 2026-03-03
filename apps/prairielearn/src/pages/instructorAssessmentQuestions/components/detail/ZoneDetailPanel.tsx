@@ -69,7 +69,6 @@ export function ZoneDetailPanel({
   if (!editMode) {
     return (
       <div className="p-3">
-        <h6 className="text-muted text-uppercase small mb-3">Zone properties</h6>
         <dl className="mb-0">
           <dt>Title</dt>
           <dd>{zone.title || <span className="text-muted">No title</span>}</dd>
@@ -132,8 +131,6 @@ export function ZoneDetailPanel({
 
   return (
     <form className="p-3" onSubmit={handleSubmit(onSubmit)}>
-      <h6 className="text-muted text-uppercase small mb-3">Edit zone</h6>
-
       <div className="mb-3">
         <label htmlFor="zone-title" className="form-label">
           Title

@@ -19,9 +19,7 @@ export function QuestionPickerPanel({
   courseId,
   urlPrefix,
   currentAssessmentId,
-  headerText,
   onQuestionSelected,
-  onDone,
 }: {
   courseQuestions: CourseQuestionForPicker[];
   isLoading?: boolean;
@@ -29,9 +27,7 @@ export function QuestionPickerPanel({
   courseId: string;
   urlPrefix: string;
   currentAssessmentId?: string;
-  headerText?: string;
   onQuestionSelected: (qid: string) => void;
-  onDone: () => void;
 }) {
   const [searchQuery, setSearchQuery] = useState('');
   const [selectedTopics, setSelectedTopics] = useState<Set<string>>(() => new Set());
@@ -165,12 +161,6 @@ export function QuestionPickerPanel({
   return (
     <div className="d-flex flex-column h-100">
       <div className="p-2 border-bottom">
-        <div className="d-flex align-items-center justify-content-between mb-2">
-          <h6 className="mb-0">{headerText ?? 'Select question'}</h6>
-          <button type="button" className="btn btn-sm btn-outline-secondary" onClick={onDone}>
-            Done
-          </button>
-        </div>
         <input
           type="text"
           className="form-control form-control-sm mb-2"

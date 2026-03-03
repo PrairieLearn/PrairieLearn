@@ -72,7 +72,6 @@ export function AltGroupDetailPanel({
   if (!editMode) {
     return (
       <div className="p-3">
-        <h6 className="text-muted text-uppercase small mb-3">Alternative group properties</h6>
         <dl className="mb-0">
           <dt>Alternatives</dt>
           <dd>{alternativeCount}</dd>
@@ -117,8 +116,6 @@ export function AltGroupDetailPanel({
 
   return (
     <form className="p-3" onSubmit={handleSubmit(onSubmit)}>
-      <h6 className="text-muted text-uppercase small mb-3">Edit alternative group</h6>
-
       <div className="mb-3">
         <label htmlFor="altgroup-numberChoose" className="form-label">
           Number to choose

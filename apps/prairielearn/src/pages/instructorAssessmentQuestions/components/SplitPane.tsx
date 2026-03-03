@@ -20,11 +20,16 @@ function useNarrowViewport(): boolean {
 export function SplitPane({
   left,
   right,
+  rightTitle,
+  rightHeaderAction,
   rightCollapsed: rightCollapsedProp,
   forceOpen,
 }: {
   left: ReactNode;
   right: ReactNode;
+  rightTitle?: string;
+  /** If provided, replaces the default close "X" button in the header. */
+  rightHeaderAction?: ReactNode;
   rightCollapsed?: boolean;
   /** When this value changes (and is truthy), re-open a manually collapsed panel. */
   forceOpen?: unknown;
@@ -99,20 +104,27 @@ export function SplitPane({
             style={{
               width: rightWidth,
               flexShrink: 0,
-              overflow: 'auto',
-              position: 'relative',
+              display: 'flex',
+              flexDirection: 'column',
             }}
           >
-            <button
-              type="button"
-              className="btn btn-sm btn-outline-secondary border-0 position-absolute"
-              style={{ right: 4, top: 4, zIndex: 1 }}
-              aria-label="Close detail panel"
-              onClick={() => setManualCollapsed(true)}
+            <div
+              className="d-flex align-items-center justify-content-between px-3 py-2 border-bottom"
+              style={{ flexShrink: 0 }}
             >
-              <i className="bi bi-x-lg" aria-hidden="true" />
-            </button>
-            {right}
+              <span className="fw-semibold small">{rightTitle}</span>
+              {rightHeaderAction ?? (
+                <button
+                  type="button"
+                  className="btn btn-sm btn-outline-secondary border-0"
+                  aria-label="Close detail panel"
+                  onClick={() => setManualCollapsed(true)}
+                >
+                  <i className="bi bi-x-lg" aria-hidden="true" />
+                </button>
+              )}
+            </div>
+            <div style={{ overflow: 'auto', flex: 1 }}>{right}</div>
           </div>
         </>
       )}

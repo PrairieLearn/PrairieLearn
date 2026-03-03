@@ -1,6 +1,6 @@
 import { SortableContext, useSortable, verticalListSortingStrategy } from '@dnd-kit/sortable';
 import clsx from 'clsx';
-import { type Dispatch } from 'react';
+import { type Dispatch, useMemo } from 'react';
 
 import { run } from '@prairielearn/run';
 
@@ -105,6 +105,7 @@ export function TreeQuestionBlockNode({
   // Alternative group
   const alternatives = zoneQuestionBlock.alternatives ?? [];
   const alternativeCount = alternatives.length;
+  const alternativeIds = useMemo(() => alternatives.map((a) => a.trackingId), [alternatives]);
 
   return (
     <div ref={setNodeRef} style={sortableStyle}>
@@ -178,10 +179,7 @@ export function TreeQuestionBlockNode({
 
       {/* Alternatives */}
       {!isCollapsed && (
-        <SortableContext
-          items={alternatives.map((a) => a.trackingId)}
-          strategy={verticalListSortingStrategy}
-        >
+        <SortableContext items={alternativeIds} strategy={verticalListSortingStrategy}>
           {alternatives.map((alternative) => {
             const altQuestionData = alternative.id ? questionMetadata[alternative.id] : null;
             const isAltSelected =

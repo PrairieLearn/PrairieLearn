@@ -33,7 +33,6 @@ export function DetailPanel({
   onDeleteQuestion,
   onDeleteZone,
   onQuestionPicked,
-  onPickerDone,
   onPickQuestion,
   onResetButtonClick,
 }: {
@@ -62,7 +61,6 @@ export function DetailPanel({
   ) => void;
   onDeleteZone: (zoneTrackingId: string) => void;
   onQuestionPicked: (qid: string) => void;
-  onPickerDone: () => void;
   onPickQuestion: (currentSelection: SelectedItem) => void;
   onResetButtonClick: (assessmentQuestionId: string) => void;
 }) {
@@ -146,11 +144,6 @@ export function DetailPanel({
   }
 
   if (selectedItem.type === 'altGroupPicker') {
-    const zone = zones.find((z) => z.trackingId === selectedItem.zoneTrackingId);
-    const zoneName = zone?.title || 'Zone';
-    const headerText = selectedItem.altGroupTrackingId
-      ? `Adding to alternative group in ${zoneName}`
-      : `Creating alternative group in ${zoneName}`;
     return (
       <QuestionPickerPanel
         courseQuestions={courseQuestions}
@@ -159,16 +152,12 @@ export function DetailPanel({
         courseId={courseId}
         urlPrefix={urlPrefix}
         currentAssessmentId={currentAssessmentId}
-        headerText={headerText}
         onQuestionSelected={onQuestionPicked}
-        onDone={onPickerDone}
       />
     );
   }
 
   // selectedItem.type === 'picker'
-  const zone = zones.find((z) => z.trackingId === selectedItem.zoneTrackingId);
-  const zoneName = zone?.title ? `Zone: ${zone.title}` : 'this zone';
   return (
     <QuestionPickerPanel
       courseQuestions={courseQuestions}
@@ -177,9 +166,7 @@ export function DetailPanel({
       courseId={courseId}
       urlPrefix={urlPrefix}
       currentAssessmentId={currentAssessmentId}
-      headerText={`Adding to ${zoneName}`}
       onQuestionSelected={onQuestionPicked}
-      onDone={onPickerDone}
     />
   );
 }
