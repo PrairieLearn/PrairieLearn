@@ -50,6 +50,18 @@ updates:
       # ready to upgrade to it.
       - dependency-name: 'express'
         versions: ['>=5']
+      # body-parser 2.x and cookie 1.x are intended for Express 5, which
+      # we are not yet ready to upgrade to.
+      - dependency-name: 'body-parser'
+        versions: ['>=2']
+      - dependency-name: '@types/body-parser'
+        versions: ['>=2']
+      - dependency-name: 'cookie'
+        versions: ['>=1']
+      - dependency-name: '@types/cookie'
+        versions: ['>=1']
+      - dependency-name: 'express-static-gzip'
+        versions: ['>=3']
       # JQuery 4 made significant breaking changes. We are migrating code to
       # vanilla JS where possible and only keeping it for backwards
       # compatibility, so we don't want to upgrade.

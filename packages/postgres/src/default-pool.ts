@@ -70,49 +70,6 @@ export const endTransactionAsync = defaultPool.endTransactionAsync.bind(defaultP
  */
 export const runInTransactionAsync = defaultPool.runInTransactionAsync.bind(defaultPool);
 /**
- * Executes a query with the specified parameters.
- *
- * @deprecated Use {@link execute} instead.
- *
- * Using the return value of this function directly is not recommended. Instead, use
- * {@link queryRows}, {@link queryRow}, or {@link queryOptionalRow}.
- */
-export const queryAsync = defaultPool.queryAsync.bind(defaultPool);
-/**
- * Executes a query with the specified parameters. Errors if the query does
- * not return exactly one row.
- *
- * @deprecated Use {@link executeRow} or {@link queryRow} instead.
- */
-export const queryOneRowAsync = defaultPool.queryOneRowAsync.bind(defaultPool);
-/**
- * Executes a query with the specified parameters. Errors if the query
- * returns more than one row.
- *
- * @deprecated Use {@link queryOptionalRow} instead.
- */
-export const queryZeroOrOneRowAsync = defaultPool.queryZeroOrOneRowAsync.bind(defaultPool);
-/**
- * Calls the given sproc with the specified parameters.
- *
- * @deprecated Use {@link callRows} instead.
- */
-export const callAsync = defaultPool.callAsync.bind(defaultPool);
-/**
- * Calls the given sproc with the specified parameters. Errors if the
- * sproc does not return exactly one row.
- *
- * @deprecated Use {@link callRow} instead.
- */
-export const callOneRowAsync = defaultPool.callOneRowAsync.bind(defaultPool);
-/**
- * Calls the given sproc with the specified parameters. Errors if the
- * sproc returns more than one row.
- *
- * @deprecated Use {@link callOptionalRow} instead.
- */
-export const callZeroOrOneRowAsync = defaultPool.callZeroOrOneRowAsync.bind(defaultPool);
-/**
  * Calls a sproc with the specified parameters using a specific client.
  */
 export const callWithClientAsync = defaultPool.callWithClientAsync.bind(defaultPool);
