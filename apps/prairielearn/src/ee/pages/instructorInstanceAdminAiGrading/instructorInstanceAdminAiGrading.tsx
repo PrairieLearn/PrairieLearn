@@ -12,10 +12,11 @@ import { features } from '../../../lib/features/index.js';
 import { typedAsyncHandler } from '../../../lib/res-locals.js';
 import { handleTrpcError } from '../../../lib/trpc.js';
 import { createAuthzMiddleware } from '../../../middlewares/authzHelper.js';
+import { selectCredentials } from '../../../models/ai-grading-credentials.js';
 
 import { InstructorInstanceAdminAiGrading } from './instructorInstanceAdminAiGrading.html.js';
-import { formatCredential, selectCredentials } from './queries.js';
 import { aiGradingSettingsRouter, createContext } from './trpc.js';
+import { formatCredential } from './utils/format.js';
 
 const router = Router();
 

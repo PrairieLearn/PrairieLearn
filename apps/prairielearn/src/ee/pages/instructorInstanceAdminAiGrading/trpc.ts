@@ -7,13 +7,13 @@ import { EnumAiGradingProviderSchema } from '../../../lib/db-types.js';
 import { features } from '../../../lib/features/index.js';
 import type { ResLocalsForPage } from '../../../lib/res-locals.js';
 import { encryptForStorage } from '../../../lib/storage-crypt.js';
-
 import {
   deleteCredential,
-  formatCredential,
   updateUseCustomApiKeys,
   upsertCredential,
-} from './queries.js';
+} from '../../../models/ai-grading-credentials.js';
+
+import { formatCredential } from './utils/format.js';
 
 export function createContext({ res }: CreateExpressContextOptions) {
   const locals = res.locals as ResLocalsForPage<'course-instance'>;

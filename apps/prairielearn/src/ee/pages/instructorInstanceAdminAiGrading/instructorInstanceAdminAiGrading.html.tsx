@@ -13,7 +13,7 @@ import {
   AI_GRADING_PROVIDER_OPTIONS,
 } from '../../lib/ai-grading/ai-grading-models.shared.js';
 
-import type { AiGradingApiKeyCredential } from './queries.js';
+import type { AiGradingApiKeyCredential } from './utils/format.js';
 import { createAiGradingSettingsTrpcClient } from './utils/trpc-client.js';
 import { TRPCProvider, useTRPC } from './utils/trpc-context.js';
 
