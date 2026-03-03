@@ -185,14 +185,21 @@ changeset:
 lint-docs: lint-d2 lint-links lint-markdown lint-docs-links
 
 build-docs:
-	@uv run mkdocs build --strict
+	@NO_MKDOCS_2_WARNING=1 uv run mkdocs build --strict
 dev-docs:
-	@uv run mkdocs serve --livereload
+	@NO_MKDOCS_2_WARNING=1 uv run mkdocs serve --livereload
 
 format-d2:
 	@d2 fmt docs/**/*.d2
 lint-d2:
 	@d2 fmt --check docs/**/*.d2
 
+
+dangerous-drop-all-dbs:
+	@echo "Dropping all databases matching 'prairielearn_%'..."
+	@psql -h localhost -U postgres -tAc "SELECT datname FROM pg_database WHERE datname LIKE 'prairielearn_%'" | while read db; do \
+		echo "Dropping $$db"; \
+		psql -h localhost -U postgres -c "DROP DATABASE \"$$db\""; \
+	done
 
 ci: lint typecheck check-dependencies test
