@@ -40,7 +40,7 @@ export function AuthPassword({
                 class="form-control"
                 id="password"
                 name="password"
-                autocomplete="new-password"
+                autocomplete="off"
                 required
               />
             </div>
