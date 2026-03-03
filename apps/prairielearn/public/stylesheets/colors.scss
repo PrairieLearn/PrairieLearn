@@ -11,7 +11,7 @@
 // no matter the background color on which the button is situated.
 //
 // Install `sass` with `npm install -g sass`.
-// Run `sass --sourcemap=none colors.scss colors.css` to compile this file.
+// Run `sass --no-source-map colors.scss colors.css` to compile this file.
 
 $custom-colors: (
   'red1': #ffccbc,
@@ -74,9 +74,20 @@ $color-contrast-overrides: (
   font-weight: var(--bs-badge-font-weight);
   line-height: 1;
   border-radius: var(--bs-badge-border-radius);
+}
 
-  // Ensures consistent sizing with badges, which don't have a border.
-  border: none;
+// Returns a text color derived from `$base` that is dark enough for
+// sufficient contrast against the badge background `$bg`.
+// Uses Bootstrap's `contrast-ratio()` to ensure WCAG AA compliance (4.5:1).
+@function badge-text-color($base, $bg) {
+  @each $amount in -55%, -65%, -75%, -85%, -95% {
+    $candidate: scale-color($base, $lightness: $amount);
+    @if contrast-ratio($candidate, $bg) >= 4.5 {
+      @return $candidate;
+    }
+  }
+  // Last resort: near-black will always have sufficient contrast.
+  @return #1a1a1a;
 }
 
 @each $color, $value in $custom-colors {
@@ -87,14 +98,31 @@ $color-contrast-overrides: (
     color-contrast($value)
   );
 
+  // GitHub-style badge colors: light tinted background, saturated border & text.
+  $badge-bg: mix($value, #fff, 15%);
+  $badge-border: mix($value, #fff, 40%);
+  $badge-text: badge-text-color($value, $badge-bg);
+  $badge-hover-bg: mix($value, #fff, 22%);
+  $badge-hover-border: mix($value, #fff, 50%);
+  $badge-active-bg: mix($value, #fff, 28%);
+  $badge-active-border: mix($value, #fff, 55%);
+
+  // Base class: solid background with contrast text.
+  // Used by non-badge elements (e.g. fingerprint buttons).
   .color-#{$color} {
     color: $text-color;
     background-color: $value;
   }
 
+  // Badge override: GitHub-style with light bg, saturated border & text.
+  .badge.color-#{$color} {
+    color: $badge-text;
+    background-color: $badge-bg;
+    border: 1px solid $badge-border;
+  }
+
+  // Full button variant (solid background). Used by non-badge buttons.
   .btn.color-#{$color} {
-    // Ensure button foregrounds (default, hover, active, disabled) respect the
-    // same override/fallback color.
     @if $has-override {
       @include button-variant(
         $value,
@@ -114,5 +142,42 @@ $color-contrast-overrides: (
     outline-color: var(--bs-btn-hover-color);
     outline-width: 2px !important;
     outline-offset: -2px !important;
+  }
+
+  // Badge button override: GitHub-style with hover/focus/active states.
+  // Direct property overrides are needed because `.color-*` sets `color` and
+  // `background-color` directly, which would otherwise win over Bootstrap's
+  // CSS-variable-based approach. We must also set explicit hover/active states
+  // because the direct properties here have higher specificity than Bootstrap's
+  // `.btn:hover` rule.
+  .btn.btn-badge.color-#{$color} {
+    color: $badge-text;
+    background-color: $badge-bg;
+    border-color: $badge-border;
+
+    &:hover {
+      color: $badge-text;
+      background-color: $badge-hover-bg;
+      border-color: $badge-hover-border;
+    }
+
+    &:active,
+    &.active {
+      color: $badge-text;
+      background-color: $badge-active-bg;
+      border-color: $badge-active-border;
+    }
+
+    &:disabled,
+    &.disabled {
+      color: $badge-text;
+      background-color: $badge-bg;
+      border-color: $badge-border;
+    }
+
+    &:focus-visible {
+      outline: 2px solid $badge-text;
+      outline-offset: 1px;
+    }
   }
 }
