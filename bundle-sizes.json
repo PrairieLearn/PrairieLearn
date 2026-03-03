@@ -95,9 +95,9 @@
     "brotli": 22931
   },
   "scripts/instructorCourseAdminSettingsClient.ts": {
-    "raw": 11745,
-    "gzip": 4275,
-    "brotli": 3820
+    "raw": 11867,
+    "gzip": 4310,
+    "brotli": 3857
   },
   "scripts/instructorCourseAdminSharingClient.ts": {
     "raw": 10608,
