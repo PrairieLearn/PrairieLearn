@@ -270,6 +270,7 @@ function AiGradingSettingsContent({
       <div className="card-header bg-primary text-white d-flex align-items-center">
         <h1 className="h6 mb-0">AI grading settings</h1>
       </div>
+      <p>Billing</p>
       <div className="card-body">
         {toggleMutation.isError && (
           <Alert variant="danger" dismissible onClose={() => toggleMutation.reset()}>
