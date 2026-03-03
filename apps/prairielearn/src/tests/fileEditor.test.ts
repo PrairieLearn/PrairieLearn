@@ -288,12 +288,15 @@ describe('test file editor', { timeout: 20_000 }, function () {
     });
 
     describe('hadJsonErrors warning when another file has errors', function () {
-      // Break the question JSON by committing garbage directly in the live repo.
-      // Then save a valid edit to question.html. The sync will complete with
-      // hadJsonErrors (because of the broken question JSON), but question.html
-      // is not a JSON entity file, so fileMetadata.syncErrors will be null.
-      // The alert should be a warning, not an error.
+      // Break the question JSON by committing garbage directly in the live repo
+      // and pushing it to origin. The push is necessary because in git mode, the
+      // editor resets to origin before syncing, which would discard a local-only
+      // commit. Then save a valid edit to question.html. The sync will complete
+      // with hadJsonErrors (because of the broken question JSON), but
+      // question.html is not a JSON entity file, so fileMetadata.syncErrors will
+      // be null. The alert should be a warning, not an error.
       writeAndCommitFileInLive(questionJsonPath, 'garbage');
+      pushFromLive();
 
       editGet(courseInstanceQuestionHtmlEditUrl, false, false, questionHtmlB, null);
       editPost(
@@ -678,6 +681,17 @@ function writeAndCommitFileInLive(fileName: string, fileContents: string) {
     });
     it('should commit', async () => {
       await execa('git', ['commit', '-m', 'commit from writeFile'], {
+        cwd: courseRepo.courseLiveDir,
+        env: process.env,
+      });
+    });
+  });
+}
+
+function pushFromLive() {
+  describe('push live repo to origin', function () {
+    it('should push', async () => {
+      await execa('git', ['push'], {
         cwd: courseRepo.courseLiveDir,
         env: process.env,
       });
