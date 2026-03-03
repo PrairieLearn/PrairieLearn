@@ -121,6 +121,12 @@ $color-contrast-overrides: (
   @return unquote('#' + _hex-byte(red($c)) + _hex-byte(green($c)) + _hex-byte(blue($c)));
 }
 
+// Like to-hex, but returns comma-separated rounded RGB integers (e.g. "217, 173, 160")
+// for use in --bs-btn-focus-shadow-rgb.
+@function to-rgb-rounded($c) {
+  @return #{round(red($c))}, #{round(green($c))}, #{round(blue($c))};
+}
+
 // Returns a text color derived from `$base` that is dark enough for
 // sufficient contrast against the badge background `$bg`.
 // Uses Bootstrap's `contrast-ratio()` to ensure WCAG AA compliance (4.5:1).
@@ -174,19 +180,41 @@ $color-contrast-overrides: (
   }
 
   // Full button variant (solid background). Used by non-badge buttons.
+  // We replicate Bootstrap's `button-variant` output directly so that all
+  // computed colors pass through `to-hex()` for clean hex output. The mixin's
+  // internal `shade-color`/`tint-color` calls produce fractional rgb values
+  // in modern Dart Sass, which we want to avoid.
+  $is-light-text: $text-color == $color-contrast-light;
+  $btn-hover-bg: if($is-light-text,
+    shade-color($value, $btn-hover-bg-shade-amount),
+    tint-color($value, $btn-hover-bg-tint-amount));
+  $btn-hover-border: if($is-light-text,
+    shade-color($value, $btn-hover-border-shade-amount),
+    tint-color($value, $btn-hover-border-tint-amount));
+  $btn-hover-color: if($has-override, $text-color, color-contrast($btn-hover-bg));
+  $btn-active-bg: if($is-light-text,
+    shade-color($value, $btn-active-bg-shade-amount),
+    tint-color($value, $btn-active-bg-tint-amount));
+  $btn-active-border: if($is-light-text,
+    shade-color($value, $btn-active-border-shade-amount),
+    tint-color($value, $btn-active-border-tint-amount));
+  $btn-active-color: if($has-override, $text-color, color-contrast($btn-active-bg));
+
   .btn.color-#{$color} {
-    @if $has-override {
-      @include button-variant(
-        $value,
-        $value,
-        $color: $text-color,
-        $hover-color: $text-color,
-        $active-color: $text-color,
-        $disabled-color: $text-color
-      );
-    } @else {
-      @include button-variant($value, $value);
-    }
+    --#{$prefix}btn-color: #{$text-color};
+    --#{$prefix}btn-bg: #{$value};
+    --#{$prefix}btn-border-color: #{$value};
+    --#{$prefix}btn-hover-color: #{$btn-hover-color};
+    --#{$prefix}btn-hover-bg: #{to-hex($btn-hover-bg)};
+    --#{$prefix}btn-hover-border-color: #{to-hex($btn-hover-border)};
+    --#{$prefix}btn-focus-shadow-rgb: #{to-rgb-rounded(mix($text-color, $value, 15%))};
+    --#{$prefix}btn-active-color: #{$btn-active-color};
+    --#{$prefix}btn-active-bg: #{to-hex($btn-active-bg)};
+    --#{$prefix}btn-active-border-color: #{to-hex($btn-active-border)};
+    --#{$prefix}btn-active-shadow: #{$btn-active-box-shadow};
+    --#{$prefix}btn-disabled-color: #{$text-color};
+    --#{$prefix}btn-disabled-bg: #{$value};
+    --#{$prefix}btn-disabled-border-color: #{$value};
   }
 
   .btn.color-#{$color}:focus:focus-visible {
