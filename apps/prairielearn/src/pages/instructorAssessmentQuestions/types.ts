@@ -1,6 +1,6 @@
 import { z } from 'zod';
 
-import type { StaffAssessmentQuestionRow } from '../../lib/assessment-question.js';
+import type { StaffAssessmentQuestionRow } from '../../lib/assessment-question.shared.js';
 import type { EnumAssessmentType } from '../../lib/db-types.js';
 import {
   QuestionAlternativeJsonSchema,
@@ -42,6 +42,32 @@ export const ZoneAssessmentFormSchema = ZoneAssessmentJsonSchema.omit({ question
   questions: z.array(ZoneQuestionBlockFormSchema),
 });
 export type ZoneAssessmentForm = z.infer<typeof ZoneAssessmentFormSchema>;
+
+/**
+ * Assessment data for the question picker, including fields needed for grouping.
+ */
+export interface AssessmentForPicker {
+  assessment_id: string;
+  label: string;
+  color: string;
+  assessment_set_abbreviation?: string;
+  assessment_set_name?: string;
+  assessment_set_color?: string;
+  assessment_number?: string;
+}
+
+/**
+ * Simplified question data for the question picker modal.
+ * Only includes fields needed for display and selection.
+ */
+export interface CourseQuestionForPicker {
+  id: string;
+  qid: string;
+  title: string;
+  topic: { id: string; name: string; color: string };
+  tags: { id: string; name: string; color: string }[] | null;
+  assessments: AssessmentForPicker[] | null;
+}
 
 /**
  * Shared state passed down through the assessment questions table component tree.
@@ -155,6 +181,7 @@ export type EditorAction =
   | {
       type: 'UPDATE_QUESTION_METADATA';
       questionId: string;
+      oldQuestionId?: string;
       questionData: StaffAssessmentQuestionRow;
     }
   | {
