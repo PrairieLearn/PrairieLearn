@@ -5377,6 +5377,7 @@ __metadata:
     socket.io: "npm:^4.8.3"
     typescript: "npm:^5.9.3"
     typescript-cp: "npm:^0.1.9"
+    zod: "npm:^3.25.76"
   languageName: unknown
   linkType: soft
 
