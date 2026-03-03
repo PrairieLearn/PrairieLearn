@@ -38,7 +38,7 @@ test.describe('Assessment questions', () => {
     }
   });
 
-  test('can drag a question between zones and save', async ({ page, testCoursePath }) => {
+  test('can reorder a question within a zone and save', async ({ page, testCoursePath }) => {
     const assessmentTid = 'exam5-perZoneGrading';
     const assessment = await selectAssessmentByTid({
       course_instance_id: courseInstanceId,
@@ -50,6 +50,7 @@ test.describe('Assessment questions', () => {
     const dragHandles = page.locator('[aria-label="Drag to reorder"]');
     await expect(dragHandles).toHaveCount(4);
 
+    // Move partialCredit3 (index 2 in flat question list) up one position
     const dragHandle = dragHandles.nth(2);
     await dragHandle.focus();
     await expect(dragHandle).toBeFocused();
@@ -102,36 +103,35 @@ test.describe('Assessment questions', () => {
 
     await enterEditMode(page, courseInstanceId, assessment.id);
 
-    const questionRow = page.locator('tr').filter({ hasText: 'partialCredit1' });
-    await questionRow.getByRole('button', { name: 'Edit question' }).click();
+    // Click partialCredit1 in the tree to open its detail panel
+    await page
+      .getByRole('button')
+      .filter({ hasText: 'partialCredit1' })
+      .first()
+      .click();
 
-    const modal = page.getByRole('dialog');
-    await expect(modal).toBeVisible();
-    await expect(modal.getByText('Edit question')).toBeVisible();
+    const autoPointsInput = page.getByLabel('Auto points', { exact: true });
+    await autoPointsInput.clear();
+    await autoPointsInput.fill('10');
 
-    const pointsInput = modal.getByLabel('Auto points', { exact: true });
-    await pointsInput.clear();
-    await pointsInput.fill('10');
-
-    const triesPerVariantInput = modal.getByLabel('Tries Per Variant');
+    const triesPerVariantInput = page.getByLabel('Tries per variant');
     await triesPerVariantInput.clear();
     await triesPerVariantInput.fill('2');
 
-    await modal.getByRole('button', { name: 'Update question' }).click();
-    await expect(modal).not.toBeVisible();
+    await page.getByRole('button', { name: 'Apply' }).click();
 
-    const zoneRow = page.locator('tr').filter({ hasText: 'Zone 2' });
-    await zoneRow.getByRole('button', { name: 'Edit zone' }).click();
+    // Click zone header to open zone detail panel
+    await page
+      .getByRole('button')
+      .filter({ hasText: 'Questions to test bestQuestions' })
+      .first()
+      .click();
 
-    await expect(modal).toBeVisible();
-    await expect(modal.getByText('Edit zone')).toBeVisible();
-
-    const bestQuestionsInput = modal.getByLabel('Best questions');
+    const bestQuestionsInput = page.getByLabel('Best questions');
     await bestQuestionsInput.clear();
     await bestQuestionsInput.fill('2');
 
-    await modal.getByRole('button', { name: 'Update zone' }).click();
-    await expect(modal).not.toBeVisible();
+    await page.getByRole('button', { name: 'Apply' }).click();
 
     await page.getByRole('button', { name: 'Save and sync' }).click();
     await expect(page.getByRole('button', { name: 'Edit questions' })).toBeVisible();
@@ -172,37 +172,38 @@ test.describe('Assessment questions', () => {
 
     await enterEditMode(page, courseInstanceId, assessment.id);
 
-    const questionRow = page.locator('tr').filter({ hasText: 'partialCredit1' });
-    await questionRow.getByRole('button', { name: 'Edit question' }).click();
+    // Click partialCredit1 in the tree
+    await page
+      .getByRole('button')
+      .filter({ hasText: 'partialCredit1' })
+      .first()
+      .click();
 
-    const modal = page.getByRole('dialog');
-    await expect(modal).toBeVisible();
-
-    const autoPointsInput = modal.getByLabel('Auto points', { exact: true });
+    // Apply the points change first (form state is lost when picker opens)
+    const autoPointsInput = page.getByLabel('Auto points', { exact: true });
     await autoPointsInput.clear();
     await autoPointsInput.fill('7');
+    await page.getByRole('button', { name: 'Apply' }).click();
 
-    await modal.getByRole('button', { name: 'Pick' }).click();
-    await expect(modal.getByText('Select question')).toBeVisible();
+    // Open picker to change QID
+    await page.getByRole('button', { name: 'Pick' }).click();
+    await expect(page.getByLabel('Search by QID or title')).toBeVisible();
 
-    await modal.getByLabel('Search by QID or title').fill('differentiate');
+    await page.getByLabel('Search by QID or title').fill('differentiate');
 
-    await modal.getByRole('button', { name: 'Filter by Topic' }).click();
+    await page.getByRole('button', { name: 'Filter by Topic' }).click();
     await page.getByRole('option', { name: 'Calculus' }).click();
-    // Click the search input to dismiss the react-aria Popover via light dismiss.
-    // Escape doesn't work here because the react-bootstrap Modal captures it first.
-    await modal.getByLabel('Search by QID or title').click({ force: true });
+    // Dismiss the filter popover
+    await page.getByLabel('Search by QID or title').click({ force: true });
 
-    await expect(modal.getByText(/1 question/)).toBeVisible();
+    await expect(page.getByText(/1 question/)).toBeVisible();
 
-    await modal.locator('[role="button"]').filter({ hasText: 'differentiatePolynomial' }).click();
+    // Select differentiatePolynomial from picker (aria-label format: "qid: title")
+    await page.getByRole('button', { name: /^differentiatePolynomial:/ }).click();
 
-    await expect(modal.getByText('Edit question')).toBeVisible();
-    await expect(modal.getByLabel('QID')).toHaveValue('differentiatePolynomial');
-    await expect(modal.getByLabel('Auto points', { exact: true })).toHaveValue('7');
-
-    await modal.getByRole('button', { name: 'Update question' }).click();
-    await expect(modal).not.toBeVisible();
+    // Verify QID was updated in the detail panel
+    await expect(page.getByLabel('QID')).toHaveValue('differentiatePolynomial');
+    await expect(page.getByLabel('Auto points', { exact: true })).toHaveValue('7');
 
     await page.getByRole('button', { name: 'Save and sync' }).click();
     await expect(page.getByRole('button', { name: 'Edit questions' })).toBeVisible();
@@ -244,28 +245,32 @@ test.describe('Assessment questions', () => {
     );
     await page.getByRole('button', { name: 'Edit questions' }).click();
 
+    // Add a new zone (directly creates, no modal)
     await page.getByRole('button', { name: 'Add zone' }).click();
-    const modal = page.getByRole('dialog');
-    await expect(modal).toBeVisible();
-    await modal.getByRole('button', { name: 'Add zone' }).click();
-    await expect(modal).not.toBeVisible();
 
-    await page.getByRole('button', { name: 'Add question in zone 1' }).click();
-    await expect(modal).toBeVisible();
-    await expect(modal.getByText('Select question')).toBeVisible();
+    // Open picker via "Add question" button in the zone
+    await page.getByRole('button', { name: 'Add question' }).click();
+    await expect(page.getByLabel('Search by QID or title')).toBeVisible();
 
-    await modal.getByLabel('Search by QID or title').fill('partialCredit1');
-    await modal.locator('[role="button"]').filter({ hasText: 'partialCredit1' }).first().click();
+    await page.getByLabel('Search by QID or title').fill('partialCredit1');
+    // Select from picker (aria-label format: "qid: title")
+    await page.getByRole('button', { name: /^partialCredit1:/ }).click();
 
-    await expect(modal.locator('.modal-title', { hasText: 'Add question' })).toBeVisible();
-    await expect(modal.getByLabel('QID')).toHaveValue('partialCredit1');
+    // Close picker
+    await page.getByRole('button', { name: 'Done' }).click();
 
-    const autoPointsInput = modal.getByLabel('Auto points', { exact: true });
+    // Select the added question in the tree to edit its points
+    await page
+      .getByRole('button')
+      .filter({ hasText: 'partialCredit1' })
+      .first()
+      .click();
+
+    const autoPointsInput = page.getByLabel('Auto points', { exact: true });
     await autoPointsInput.clear();
     await autoPointsInput.fill('5');
+    await page.getByRole('button', { name: 'Apply' }).click();
 
-    await modal.getByRole('button', { name: 'Add question' }).click();
-    await expect(modal).not.toBeVisible();
     await page.getByRole('button', { name: 'Save and sync' }).click();
     await expect(page.getByRole('button', { name: 'Edit questions' })).toBeVisible();
 

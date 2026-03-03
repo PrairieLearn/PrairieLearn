@@ -423,9 +423,7 @@ export function QuestionDetailPanel({
           rows={2}
           {...register('comment')}
         />
-        <small className="form-text text-muted">
-          Internal note, not shown to students.
-        </small>
+        <small className="form-text text-muted">Internal note, not shown to students.</small>
       </div>
 
       <h6 className="text-muted text-uppercase small mb-3 mt-4">Advanced</h6>
@@ -459,9 +457,7 @@ export function QuestionDetailPanel({
             setValueAs: (v: string) => (v === '' ? undefined : Number(v)),
           })}
         />
-        <small className="form-text text-muted">
-          Minimum time between grading attempts.
-        </small>
+        <small className="form-text text-muted">Minimum time between grading attempts.</small>
       </div>
       <div className="mb-3 form-check">
         <input

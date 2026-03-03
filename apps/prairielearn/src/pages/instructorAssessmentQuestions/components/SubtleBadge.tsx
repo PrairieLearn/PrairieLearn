@@ -57,10 +57,7 @@ export function getSubtleColor(color: string): { bg: string; text: string } {
 export function SubtleBadge({ color, label }: { color: string; label: string }) {
   const { bg, text } = getSubtleColor(color);
   return (
-    <span
-      className="badge"
-      style={{ backgroundColor: bg, color: text, fontWeight: 600 }}
-    >
+    <span className="badge" style={{ backgroundColor: bg, color: text, fontWeight: 600 }}>
       {label}
     </span>
   );
