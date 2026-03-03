@@ -136,6 +136,10 @@ export function getAiQuestionGenerationDraftsUrl({ urlPrefix }: { urlPrefix: str
   return `${urlPrefix}/ai_generate_question_drafts`;
 }
 
+export function getAdministratorCourseRequestsUrl({ urlPrefix }: { urlPrefix: string }): string {
+  return `${urlPrefix}/administrator/courseRequests`;
+}
+
 type QuestionUrlParts =
   | { courseInstanceId: string; courseId?: undefined }
   | { courseInstanceId?: undefined; courseId: string };

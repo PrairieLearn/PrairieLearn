@@ -167,7 +167,7 @@ export function InstructorAssessments({
                 <p>
                   Learn more in the
                   <a
-                    href="https://docs.prairielearn.com/assessment/"
+                    href="https://docs.prairielearn.com/assessment/overview/"
                     target="_blank"
                     rel="noreferrer"
                     >assessments documentation</a
