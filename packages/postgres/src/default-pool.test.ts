@@ -22,6 +22,13 @@ const HIDDEN_PROPERTIES = new Set([
   'idleCount',
   'waitingCount',
   'queryCount',
+  // Deprecated methods not re-exported from the default pool
+  'queryAsync',
+  'queryOneRowAsync',
+  'queryZeroOrOneRowAsync',
+  'callAsync',
+  'callOneRowAsync',
+  'callZeroOrOneRowAsync',
 ]);
 
 describe('sqldb', () => {
