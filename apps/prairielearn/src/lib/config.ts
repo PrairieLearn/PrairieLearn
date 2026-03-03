@@ -608,7 +608,7 @@ export const ConfigSchema = z.object({
     })
     .default({
       // Prices current as of 2025-11-26. Values obtained from
-      // https://platform.openai.com/docs/pricing
+      // https://developers.openai.com/api/docs/pricing
       // OpenAI does not charge for cache writes.
       'gpt-4o-2024-11-20': { input: 2.5, cachedInput: 1.25, cacheWrite: 0, output: 10 },
       'gpt-5-mini-2025-08-07': { input: 0.25, cachedInput: 0.025, cacheWrite: 0, output: 2 },

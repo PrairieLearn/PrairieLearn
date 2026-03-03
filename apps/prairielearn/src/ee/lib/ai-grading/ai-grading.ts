@@ -381,7 +381,7 @@ export async function aiGrade({
         }
 
         // OpenAI will take the property descriptions into account. See the
-        // examples here: https://platform.openai.com/docs/guides/structured-outputs
+        // examples here: https://developers.openai.com/api/docs/guides/structured-outputs
         const RubricGradingResultSchema = z.object({
           explanation: z.string().describe(explanationDescription),
           // rubric_items must be the last property in the schema.
