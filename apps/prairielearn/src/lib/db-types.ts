@@ -764,11 +764,11 @@ export const EnrollmentSchema = z.object({
 export type Enrollment = z.infer<typeof EnrollmentSchema>;
 
 export const ExamModeNetworkSchema = z.object({
-  created_at: DateFromISOString,
-  during: z.unknown(), // https://github.com/PrairieLearn/PrairieLearn/pull/12437#discussion_r2219773815
+  created_at: DateFromISOString.nullable(),
+  during: z.unknown().nullable(), // https://github.com/PrairieLearn/PrairieLearn/pull/12437#discussion_r2219773815
   id: IdSchema,
   location: z.string().nullable(),
-  network: z.string().cidr(),
+  network: z.string().cidr().nullable(),
   purpose: z.string().nullable(),
 });
 export type ExamModeNetwork = z.infer<typeof ExamModeNetworkSchema>;
