@@ -212,7 +212,6 @@ export function TreeQuestionRow({
           <i className="bi bi-grip-vertical text-muted" aria-hidden="true" />
         </span>
       )}
-      <i className="bi bi-file-earmark-text text-muted me-2" aria-hidden="true" />
       <div className="flex-grow-1" style={{ minWidth: 0 }}>
         <div className="text-truncate">
           {questionData ? (
@@ -246,18 +245,20 @@ export function TreeQuestionRow({
         )}
         {viewType === 'detailed' && questionData && (
           <>
-            <div className="d-flex flex-wrap align-items-center gap-1 mt-1">
-              <SubtleBadge color={questionData.topic.color} label={questionData.topic.name} />
-              {questionData.tags?.map((tag) => (
-                <SubtleBadge key={tag.name} color={tag.color} label={tag.name} />
-              ))}
-              {questionData.assessment_question.number_submissions_hist && (
-                <HistMini
-                  data={questionData.assessment_question.number_submissions_hist}
-                  options={{ width: 60, height: 20 }}
-                />
-              )}
-            </div>
+            {(questionData.tags?.length ||
+              questionData.assessment_question.number_submissions_hist) && (
+              <div className="d-flex flex-wrap align-items-center gap-1 mt-1">
+                {questionData.tags?.map((tag) => (
+                  <SubtleBadge key={tag.name} color={tag.color} label={tag.name} />
+                ))}
+                {questionData.assessment_question.number_submissions_hist && (
+                  <HistMini
+                    data={questionData.assessment_question.number_submissions_hist}
+                    options={{ width: 60, height: 20 }}
+                  />
+                )}
+              </div>
+            )}
             {questionData.other_assessments && questionData.other_assessments.length > 0 && (
               <div className="d-flex flex-wrap align-items-center gap-1 mt-1">
                 <AssessmentBadges
@@ -270,7 +271,7 @@ export function TreeQuestionRow({
           </>
         )}
       </div>
-      {viewType === 'simple' && questionData && (
+      {questionData && (
         <div className="ms-2 me-2">
           <SubtleBadge color={questionData.topic.color} label={questionData.topic.name} />
         </div>

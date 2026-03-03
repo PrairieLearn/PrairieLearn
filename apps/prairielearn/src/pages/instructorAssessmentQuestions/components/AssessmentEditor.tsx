@@ -58,7 +58,6 @@ interface AssessmentEditorInnerProps {
   questionRows: StaffAssessmentQuestionRow[];
   jsonZones: ZoneAssessmentJson[];
   assessment: StaffAssessment;
-  assessmentSetName: string;
   urlPrefix: string;
   hasCoursePermissionPreview: boolean;
   canEdit: boolean;
@@ -73,7 +72,6 @@ function AssessmentEditorInner({
   jsonZones,
   urlPrefix,
   assessment,
-  assessmentSetName,
   hasCoursePermissionPreview,
   canEdit,
   csrfToken,
@@ -524,39 +522,16 @@ function AssessmentEditorInner({
 
   const zonesForSave = useMemo(() => stripTrackingIds(zones), [zones]);
 
+  const toggleExpandCollapse = () => {
+    if (isAllExpanded) {
+      dispatch({ type: 'COLLAPSE_ALL' });
+    } else {
+      dispatch({ type: 'EXPAND_ALL' });
+    }
+  };
+
   return (
     <>
-      <div className="d-flex align-items-center mb-3">
-        <h1 className="h3 mb-0">
-          {assessmentSetName} {assessment.number}: Questions
-        </h1>
-        <div className="ms-auto">
-          <EditModeToolbar
-            csrfToken={csrfToken}
-            origHash={origHash}
-            zones={zonesForSave}
-            editMode={editMode}
-            canEdit={canEdit && !!origHash}
-            setEditMode={setEditMode}
-            saveButtonDisabled={saveButtonDisabled}
-            saveButtonDisabledReason={saveButtonDisabledReason}
-            isAllExpanded={isAllExpanded}
-            viewType={viewType}
-            onViewTypeChange={setViewType}
-            onToggleExpandCollapse={() => {
-              if (isAllExpanded) {
-                dispatch({ type: 'COLLAPSE_ALL' });
-              } else {
-                dispatch({ type: 'EXPAND_ALL' });
-              }
-            }}
-            onCancel={() => {
-              dispatch({ type: 'RESET' });
-              setEditMode(false);
-            }}
-          />
-        </div>
-      </div>
       <DndContext
         sensors={sensors}
         collisionDetection={closestCenter}
@@ -564,7 +539,7 @@ function AssessmentEditorInner({
         onDragOver={handleDragOver}
         onDragEnd={handleDragEnd}
       >
-        <div className="border rounded" style={{ minHeight: 400 }}>
+        <div>
           <SplitPane
             forceOpen={selectedItem}
             left={
@@ -581,10 +556,29 @@ function AssessmentEditorInner({
                 hasCoursePermissionPreview={hasCoursePermissionPreview}
                 assessmentType={assessment.type}
                 dispatch={dispatch}
+                isAllExpanded={isAllExpanded}
+                editControls={
+                  <EditModeToolbar
+                    csrfToken={csrfToken}
+                    origHash={origHash}
+                    zones={zonesForSave}
+                    editMode={editMode}
+                    canEdit={canEdit && !!origHash}
+                    setEditMode={setEditMode}
+                    saveButtonDisabled={saveButtonDisabled}
+                    saveButtonDisabledReason={saveButtonDisabledReason}
+                    onCancel={() => {
+                      dispatch({ type: 'RESET' });
+                      setEditMode(false);
+                    }}
+                  />
+                }
                 onAddQuestion={handleAddQuestion}
                 onAddZone={handleAddZone}
                 onDeleteQuestion={handleDeleteQuestion}
                 onDeleteZone={handleDeleteZone}
+                onViewTypeChange={setViewType}
+                onToggleExpandCollapse={toggleExpandCollapse}
               />
             }
             right={

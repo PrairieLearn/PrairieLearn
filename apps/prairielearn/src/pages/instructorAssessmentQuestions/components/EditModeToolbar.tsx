@@ -1,7 +1,7 @@
 import type { ZoneAssessmentJson } from '../../../schemas/infoAssessment.js';
 import type { ViewType } from '../types.js';
 
-function ViewToggle({
+export function ViewToggle({
   viewType,
   onViewTypeChange,
   isAllExpanded,
@@ -13,7 +13,7 @@ function ViewToggle({
   onToggleExpandCollapse: () => void;
 }) {
   return (
-    <>
+    <div className="d-flex gap-2">
       <div className="btn-group btn-group-sm" role="group" aria-label="View type">
         <button
           type="button"
@@ -45,7 +45,7 @@ function ViewToggle({
           </>
         )}
       </button>
-    </>
+    </div>
   );
 }
 
@@ -58,10 +58,6 @@ export function EditModeToolbar({
   setEditMode,
   saveButtonDisabled,
   saveButtonDisabledReason,
-  isAllExpanded,
-  viewType,
-  onViewTypeChange,
-  onToggleExpandCollapse,
   onCancel,
 }: {
   csrfToken: string;
@@ -72,28 +68,18 @@ export function EditModeToolbar({
   setEditMode: (editMode: boolean) => void;
   saveButtonDisabled: boolean;
   saveButtonDisabledReason?: string;
-  isAllExpanded: boolean;
-  viewType: ViewType;
-  onViewTypeChange: (viewType: ViewType) => void;
-  onToggleExpandCollapse: () => void;
   onCancel: () => void;
 }) {
-  const viewToggleProps = { viewType, onViewTypeChange, isAllExpanded, onToggleExpandCollapse };
-
   if (!editMode) {
+    if (!canEdit) return null;
     return (
-      <div className="d-flex gap-2">
-        <ViewToggle {...viewToggleProps} />
-        {canEdit && (
-          <button
-            className="btn btn-sm btn-outline-secondary"
-            type="button"
-            onClick={() => setEditMode(true)}
-          >
-            <i className="bi bi-pencil" aria-hidden="true" /> Edit questions
-          </button>
-        )}
-      </div>
+      <button
+        className="btn btn-sm btn-outline-secondary"
+        type="button"
+        onClick={() => setEditMode(true)}
+      >
+        <i className="bi bi-pencil" aria-hidden="true" /> Edit questions
+      </button>
     );
   }
 
@@ -113,7 +99,6 @@ export function EditModeToolbar({
       <input type="hidden" name="__csrf_token" value={csrfToken} />
       <input type="hidden" name="orig_hash" value={origHash} />
       <input type="hidden" name="zones" value={JSON.stringify(zones)} />
-      <ViewToggle {...viewToggleProps} />
       {saveButtonDisabledReason ? (
         <span title={saveButtonDisabledReason} style={{ cursor: 'not-allowed' }}>
           {saveButton}

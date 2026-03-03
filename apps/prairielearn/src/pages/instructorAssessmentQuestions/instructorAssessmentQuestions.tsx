@@ -122,7 +122,6 @@ router.get(
                 jsonZones={jsonZones}
                 urlPrefix={pageContext.urlPrefix}
                 assessment={pageContext.assessment}
-                assessmentSetName={pageContext.assessment_set.name}
                 hasCoursePermissionPreview={pageContext.authz_data.has_course_permission_preview}
                 canEdit={canEdit ?? false}
                 csrfToken={res.locals.__csrf_token}

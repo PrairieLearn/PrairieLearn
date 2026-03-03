@@ -1,9 +1,10 @@
 import { SortableContext, verticalListSortingStrategy } from '@dnd-kit/sortable';
-import type { Dispatch } from 'react';
+import type { Dispatch, ReactNode } from 'react';
 
 import type { StaffAssessmentQuestionRow } from '../../../../lib/assessment-question.shared.js';
 import type { EnumAssessmentType } from '../../../../lib/db-types.js';
 import type { EditorAction, SelectedItem, ViewType, ZoneAssessmentForm } from '../../types.js';
+import { ViewToggle } from '../EditModeToolbar.js';
 
 import { TreeZoneNode } from './TreeZoneNode.js';
 
@@ -24,6 +25,10 @@ export function AssessmentTree({
   onAddZone,
   onDeleteQuestion,
   onDeleteZone,
+  isAllExpanded,
+  onViewTypeChange,
+  onToggleExpandCollapse,
+  editControls,
 }: {
   zones: ZoneAssessmentForm[];
   questionMetadata: Record<string, StaffAssessmentQuestionRow>;
@@ -45,10 +50,26 @@ export function AssessmentTree({
     alternativeTrackingId?: string,
   ) => void;
   onDeleteZone: (zoneTrackingId: string) => void;
+  isAllExpanded: boolean;
+  onViewTypeChange: (viewType: ViewType) => void;
+  onToggleExpandCollapse: () => void;
+  editControls?: ReactNode;
 }) {
   return (
     <SortableContext items={zones.map((z) => z.trackingId)} strategy={verticalListSortingStrategy}>
       <style>{'.tree-delete-btn:hover { color: var(--bs-danger) !important; }'}</style>
+      <div
+        className="d-flex align-items-center px-2 py-2 border-bottom bg-body"
+        style={{ position: 'sticky', top: 0, zIndex: 11 }}
+      >
+        <ViewToggle
+          viewType={viewType}
+          isAllExpanded={isAllExpanded}
+          onViewTypeChange={onViewTypeChange}
+          onToggleExpandCollapse={onToggleExpandCollapse}
+        />
+        {editControls && <div className="ms-auto">{editControls}</div>}
+      </div>
       <div className="list-group list-group-flush">
         {zones.map((zone) => (
           <TreeZoneNode

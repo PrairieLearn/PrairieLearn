@@ -31,7 +31,7 @@ export function SplitPane({
 }) {
   const [rightWidth, setRightWidth] = useState(DEFAULT_RIGHT_WIDTH);
   const autoCollapsed = useNarrowViewport();
-  const [manualCollapsed, setManualCollapsed] = useState(false);
+  const [manualCollapsed, setManualCollapsed] = useState(true);
   const isDraggingRef = useRef(false);
   const prevForceOpenRef = useRef(forceOpen);
 
