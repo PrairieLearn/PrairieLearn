@@ -2,7 +2,10 @@ import clsx from 'clsx';
 import { useForm } from 'react-hook-form';
 
 import type { ZoneAssessmentForm } from '../../types.js';
+import { coerceToNumber, extractStringComment } from '../../utils/formHelpers.js';
 import { validatePositiveInteger } from '../../utils/questions.js';
+
+import { AdvancedFields } from './AdvancedFields.js';
 
 interface ZoneFormData {
   title: string;
@@ -33,7 +36,7 @@ export function ZoneDetailPanel({
     numberChoose: zone.numberChoose ?? undefined,
     bestQuestions: zone.bestQuestions ?? undefined,
     lockpoint: zone.lockpoint,
-    comment: typeof zone.comment === 'string' ? zone.comment : undefined,
+    comment: extractStringComment(zone.comment),
     advanceScorePerc: zone.advanceScorePerc ?? undefined,
     gradeRateMinutes: zone.gradeRateMinutes ?? undefined,
     allowRealTimeGrading: zone.allowRealTimeGrading ?? undefined,
@@ -153,7 +156,7 @@ export function ZoneDetailPanel({
           className="form-control form-control-sm"
           id="zone-maxPoints"
           {...register('maxPoints', {
-            setValueAs: (v: string) => (v === '' ? undefined : Number(v)),
+            setValueAs: coerceToNumber,
           })}
         />
         <small className="form-text text-muted">
@@ -170,7 +173,7 @@ export function ZoneDetailPanel({
           className={clsx('form-control form-control-sm', errors.numberChoose && 'is-invalid')}
           id="zone-numberChoose"
           {...register('numberChoose', {
-            setValueAs: (v: string) => (v === '' ? undefined : Number(v)),
+            setValueAs: coerceToNumber,
             validate: (v) => validatePositiveInteger(v, 'Number to choose'),
           })}
         />
@@ -191,7 +194,7 @@ export function ZoneDetailPanel({
           className={clsx('form-control form-control-sm', errors.bestQuestions && 'is-invalid')}
           id="zone-bestQuestions"
           {...register('bestQuestions', {
-            setValueAs: (v: string) => (v === '' ? undefined : Number(v)),
+            setValueAs: coerceToNumber,
             validate: (v) => validatePositiveInteger(v, 'Best questions'),
           })}
         />
@@ -231,55 +234,7 @@ export function ZoneDetailPanel({
         <small className="form-text text-muted">Internal note, not shown to students.</small>
       </div>
 
-      <h6 className="text-muted text-uppercase small mb-3 mt-4">Advanced</h6>
-
-      <div className="mb-3">
-        <label htmlFor="zone-advanceScorePerc" className="form-label">
-          Advance score %
-        </label>
-        <input
-          type="number"
-          className="form-control form-control-sm"
-          id="zone-advanceScorePerc"
-          {...register('advanceScorePerc', {
-            setValueAs: (v: string) => (v === '' ? undefined : Number(v)),
-          })}
-        />
-        <small className="form-text text-muted">
-          Minimum score percentage required to advance past this zone.
-        </small>
-      </div>
-      <div className="mb-3">
-        <label htmlFor="zone-gradeRateMinutes" className="form-label">
-          Grade rate (minutes)
-        </label>
-        <input
-          type="number"
-          className="form-control form-control-sm"
-          id="zone-gradeRateMinutes"
-          step="any"
-          {...register('gradeRateMinutes', {
-            setValueAs: (v: string) => (v === '' ? undefined : Number(v)),
-          })}
-        />
-        <small className="form-text text-muted">
-          Minimum time between grading attempts for questions in this zone.
-        </small>
-      </div>
-      <div className="mb-3 form-check">
-        <input
-          type="checkbox"
-          className="form-check-input"
-          id="zone-allowRealTimeGrading"
-          {...register('allowRealTimeGrading')}
-        />
-        <label htmlFor="zone-allowRealTimeGrading" className="form-check-label">
-          Allow real-time grading
-        </label>
-        <small className="form-text text-muted d-block">
-          Let students see grading results immediately for questions in this zone.
-        </small>
-      </div>
+      <AdvancedFields register={register} idPrefix="zone" variant="zone" />
 
       <div className="d-flex gap-2">
         <button type="submit" className="btn btn-sm btn-primary" disabled={!isDirty}>

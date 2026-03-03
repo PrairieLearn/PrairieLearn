@@ -7,6 +7,7 @@ import type {
   ZoneAssessmentForm,
   ZoneQuestionBlockForm,
 } from '../../types.js';
+import { findQuestionByTrackingId } from '../../utils/useAssessmentEditor.js';
 
 import { AltGroupDetailPanel } from './AltGroupDetailPanel.js';
 import { EmptyDetailPanel } from './EmptyDetailPanel.js';
@@ -83,8 +84,9 @@ export function DetailPanel({
   }
 
   if (selectedItem.type === 'question') {
-    const { question, zone } = findQuestion(zones, selectedItem.questionTrackingId);
-    if (!question || !zone) return <EmptyDetailPanel />;
+    const result = findQuestionByTrackingId(zones, selectedItem.questionTrackingId);
+    if (!result) return <EmptyDetailPanel />;
+    const { question } = result;
     const questionData = question.id ? questionMetadata[question.id] : null;
     return (
       <QuestionDetailPanel
@@ -103,8 +105,9 @@ export function DetailPanel({
   }
 
   if (selectedItem.type === 'alternative') {
-    const { question: block } = findQuestion(zones, selectedItem.questionTrackingId);
-    if (!block) return <EmptyDetailPanel />;
+    const blockResult = findQuestionByTrackingId(zones, selectedItem.questionTrackingId);
+    if (!blockResult) return <EmptyDetailPanel />;
+    const block = blockResult.question;
     const alternative = block.alternatives?.find(
       (a) => a.trackingId === selectedItem.alternativeTrackingId,
     );
@@ -128,8 +131,9 @@ export function DetailPanel({
   }
 
   if (selectedItem.type === 'altGroup') {
-    const { question: block } = findQuestion(zones, selectedItem.questionTrackingId);
-    if (!block) return <EmptyDetailPanel />;
+    const altGroupResult = findQuestionByTrackingId(zones, selectedItem.questionTrackingId);
+    if (!altGroupResult) return <EmptyDetailPanel />;
+    const block = altGroupResult.question;
     return (
       <AltGroupDetailPanel
         zoneQuestionBlock={block}
@@ -156,18 +160,4 @@ export function DetailPanel({
       onDone={onPickerDone}
     />
   );
-}
-
-function findQuestion(
-  zones: ZoneAssessmentForm[],
-  questionTrackingId: string,
-): { question: ZoneQuestionBlockForm | null; zone: ZoneAssessmentForm | null } {
-  for (const zone of zones) {
-    for (const question of zone.questions) {
-      if (question.trackingId === questionTrackingId) {
-        return { question, zone };
-      }
-    }
-  }
-  return { question: null, zone: null };
 }

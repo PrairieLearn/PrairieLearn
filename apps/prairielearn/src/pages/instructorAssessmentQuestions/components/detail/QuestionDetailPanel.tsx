@@ -8,8 +8,16 @@ import { HistMini } from '../../../../components/HistMini.js';
 import type { StaffAssessmentQuestionRow } from '../../../../lib/assessment-question.shared.js';
 import type { EnumAssessmentType } from '../../../../lib/db-types.js';
 import type { QuestionAlternativeForm, SelectedItem, ZoneQuestionBlockForm } from '../../types.js';
+import {
+  coerceToNumber,
+  extractStringComment,
+  parsePointsListValue,
+  validateAtLeastOnePointsField,
+} from '../../utils/formHelpers.js';
 import { validatePositiveInteger } from '../../utils/questions.js';
 import { SubtleBadge } from '../SubtleBadge.js';
+
+import { AdvancedFields } from './AdvancedFields.js';
 
 interface QuestionFormData {
   id?: string;
@@ -98,7 +106,7 @@ export function QuestionDetailPanel({
     reValidateMode: 'onChange',
     values: {
       id: question.id ?? undefined,
-      comment: typeof question.comment === 'string' ? question.comment : undefined,
+      comment: extractStringComment(question.comment),
       [originalPointsProperty]: autoPointsValue ?? undefined,
       [originalMaxProperty]: maxAutoPointsValue ?? undefined,
       manualPoints: manualPointsValue ?? undefined,
@@ -264,12 +272,8 @@ export function QuestionDetailPanel({
               id="question-autoPoints"
               step="any"
               {...register(originalPointsProperty, {
-                setValueAs: (v: string) => (v === '' ? undefined : Number(v)),
-                validate: (_value, { manualPoints }) => {
-                  if (manualPoints === undefined && _value === undefined) {
-                    return 'At least one of auto points or manual points must be set.';
-                  }
-                },
+                setValueAs: coerceToNumber,
+                validate: (_value, formValues) => validateAtLeastOnePointsField(formValues),
               })}
             />
             {errors[originalPointsProperty] && (
@@ -288,7 +292,7 @@ export function QuestionDetailPanel({
               className="form-control form-control-sm"
               id="question-maxAutoPoints"
               {...register(originalMaxProperty, {
-                setValueAs: (v: string) => (v === '' ? undefined : Number(v)),
+                setValueAs: coerceToNumber,
               })}
             />
             <small className="form-text text-muted">
@@ -304,12 +308,8 @@ export function QuestionDetailPanel({
               className={clsx('form-control form-control-sm', errors.manualPoints && 'is-invalid')}
               id="question-manualPoints"
               {...register('manualPoints', {
-                setValueAs: (v: string) => (v === '' ? undefined : Number(v)),
-                validate: (value, { autoPoints, points }) => {
-                  if (points === undefined && autoPoints === undefined && value === undefined) {
-                    return 'At least one of auto points or manual points must be set.';
-                  }
-                },
+                setValueAs: coerceToNumber,
+                validate: (_value, formValues) => validateAtLeastOnePointsField(formValues),
               })}
             />
             {errors.manualPoints && (
@@ -331,7 +331,7 @@ export function QuestionDetailPanel({
               )}
               id="question-triesPerVariant"
               {...register('triesPerVariant', {
-                setValueAs: (v: string) => (v === '' ? undefined : Number(v)),
+                setValueAs: coerceToNumber,
                 validate: (v) => validatePositiveInteger(v, 'Tries per variant'),
               })}
             />
@@ -361,22 +361,8 @@ export function QuestionDetailPanel({
                   value: /^[0-9, ]*$/,
                   message: 'Points must be a number or a comma-separated list of numbers.',
                 },
-                setValueAs: (v: string) => {
-                  if (v === '') return undefined;
-                  if (!Number.isNaN(Number(v))) return Number(v);
-                  if (v.includes(',')) {
-                    return v
-                      .split(',')
-                      .map((s: string) => Number(s.trim()))
-                      .filter((n: number) => !Number.isNaN(n));
-                  }
-                  return v;
-                },
-                validate: (_value, { manualPoints }) => {
-                  if (_value === undefined && manualPoints === undefined) {
-                    return 'At least one of points or manual points must be set.';
-                  }
-                },
+                setValueAs: parsePointsListValue,
+                validate: (_value, formValues) => validateAtLeastOnePointsField(formValues),
               })}
             />
             {errors[originalPointsProperty] && (
@@ -395,12 +381,8 @@ export function QuestionDetailPanel({
               className={clsx('form-control form-control-sm', errors.manualPoints && 'is-invalid')}
               id="question-manualPoints"
               {...register('manualPoints', {
-                setValueAs: (v: string) => (v === '' ? undefined : Number(v)),
-                validate: (value, { autoPoints, points }) => {
-                  if (points === undefined && autoPoints === undefined && value === undefined) {
-                    return 'At least one of points or manual points must be set.';
-                  }
-                },
+                setValueAs: coerceToNumber,
+                validate: (_value, formValues) => validateAtLeastOnePointsField(formValues),
               })}
             />
             {errors.manualPoints && (
@@ -426,67 +408,7 @@ export function QuestionDetailPanel({
         <small className="form-text text-muted">Internal note, not shown to students.</small>
       </div>
 
-      <h6 className="text-muted text-uppercase small mb-3 mt-4">Advanced</h6>
-
-      <div className="mb-3">
-        <label htmlFor="question-advanceScorePerc" className="form-label">
-          Advance score %
-        </label>
-        <input
-          type="number"
-          className="form-control form-control-sm"
-          id="question-advanceScorePerc"
-          {...register('advanceScorePerc', {
-            setValueAs: (v: string) => (v === '' ? undefined : Number(v)),
-          })}
-        />
-        <small className="form-text text-muted">
-          Minimum score percentage required to unlock the next question.
-        </small>
-      </div>
-      <div className="mb-3">
-        <label htmlFor="question-gradeRateMinutes" className="form-label">
-          Grade rate (minutes)
-        </label>
-        <input
-          type="number"
-          className="form-control form-control-sm"
-          id="question-gradeRateMinutes"
-          step="any"
-          {...register('gradeRateMinutes', {
-            setValueAs: (v: string) => (v === '' ? undefined : Number(v)),
-          })}
-        />
-        <small className="form-text text-muted">Minimum time between grading attempts.</small>
-      </div>
-      <div className="mb-3 form-check">
-        <input
-          type="checkbox"
-          className="form-check-input"
-          id="question-forceMaxPoints"
-          {...register('forceMaxPoints')}
-        />
-        <label htmlFor="question-forceMaxPoints" className="form-check-label">
-          Force max points
-        </label>
-        <small className="form-text text-muted d-block">
-          Award full points after enough attempts, regardless of correctness.
-        </small>
-      </div>
-      <div className="mb-3 form-check">
-        <input
-          type="checkbox"
-          className="form-check-input"
-          id="question-allowRealTimeGrading"
-          {...register('allowRealTimeGrading')}
-        />
-        <label htmlFor="question-allowRealTimeGrading" className="form-check-label">
-          Allow real-time grading
-        </label>
-        <small className="form-text text-muted d-block">
-          Let students see grading results immediately after submission.
-        </small>
-      </div>
+      <AdvancedFields register={register} idPrefix="question" variant="question" />
 
       <div className="d-flex gap-2">
         <button type="submit" className="btn btn-sm btn-primary" disabled={!isDirty}>

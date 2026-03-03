@@ -25,7 +25,7 @@ function findZoneByTrackingId(
  * Finds a question by its trackingId across all zones.
  * Returns the question, zone, and their indices, or null if not found.
  */
-function findQuestionByTrackingId(
+export function findQuestionByTrackingId(
   zones: ZoneAssessmentForm[],
   trackingId: string,
 ): {

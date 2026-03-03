@@ -6,31 +6,14 @@ import { OverlayTrigger } from '@prairielearn/ui';
 
 import { CopyButton } from '../../../../components/CopyButton.js';
 import { HistMini } from '../../../../components/HistMini.js';
-import type {
-  OtherAssessment,
-  StaffAssessmentQuestionRow,
-} from '../../../../lib/assessment-question.shared.js';
+import type { StaffAssessmentQuestionRow } from '../../../../lib/assessment-question.shared.js';
 import type { EnumAssessmentType } from '../../../../lib/db-types.js';
-import type {
-  AssessmentForPicker,
-  QuestionAlternativeForm,
-  ViewType,
-  ZoneQuestionBlockForm,
-} from '../../types.js';
+import type { QuestionAlternativeForm, ViewType, ZoneQuestionBlockForm } from '../../types.js';
+import { toAssessmentForPicker } from '../../utils/questions.js';
 import { AssessmentBadges } from '../AssessmentBadges.js';
 import { SubtleBadge } from '../SubtleBadge.js';
 
-function toAssessmentForPicker(assessments: OtherAssessment[]): AssessmentForPicker[] {
-  return assessments.map((a) => ({
-    assessment_id: String(a.assessment_id),
-    label: `${a.assessment_set_abbreviation}${a.assessment_number}`,
-    color: a.assessment_set_color,
-    assessment_set_abbreviation: a.assessment_set_abbreviation,
-    assessment_set_name: a.assessment_set_name,
-    assessment_set_color: a.assessment_set_color,
-    assessment_number: a.assessment_number,
-  }));
-}
+import { DragHandle } from './DragHandle.js';
 
 function PointsBadge({
   question,
@@ -193,24 +176,8 @@ export function TreeQuestionRow({
         }
       }}
     >
-      {editMode && sortableListeners && (
-        // eslint-disable-next-line jsx-a11y-x/no-static-element-interactions
-        <span
-          {...sortableAttributes}
-          {...sortableListeners}
-          className="me-2"
-          style={{ cursor: 'grab', touchAction: 'none' }}
-          aria-label="Drag to reorder"
-          onClick={(e) => e.stopPropagation()}
-          onKeyDown={(e) => {
-            sortableListeners.onKeyDown(e);
-            if (e.key === 'Enter' || e.key === ' ') {
-              e.stopPropagation();
-            }
-          }}
-        >
-          <i className="bi bi-grip-vertical text-muted" aria-hidden="true" />
-        </span>
+      {editMode && sortableListeners && sortableAttributes && (
+        <DragHandle attributes={sortableAttributes} listeners={sortableListeners} />
       )}
       <i className="bi bi-file-earmark-text text-muted me-2" aria-hidden="true" />
       <div className="flex-grow-1" style={{ minWidth: 0 }}>
