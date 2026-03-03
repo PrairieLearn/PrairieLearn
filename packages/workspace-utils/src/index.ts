@@ -6,10 +6,16 @@ import type { Emitter as SocketIOEmitter } from '@socket.io/redis-emitter';
 import fg, { type Entry } from 'fast-glob';
 import { filesize } from 'filesize';
 import type { Server as SocketIOServer } from 'socket.io';
+import { z } from 'zod';
 
 import { contains } from '@prairielearn/path-utils';
-import { execute, loadSqlEquiv, queryOneRowAsync, queryScalar } from '@prairielearn/postgres';
-import { IntervalSchema } from '@prairielearn/zod';
+import { execute, loadSqlEquiv, queryRow, queryScalar } from '@prairielearn/postgres';
+import { IdSchema, IntervalSchema } from '@prairielearn/zod';
+
+const WorkspaceVersionSchema = z.object({
+  id: IdSchema,
+  version: z.coerce.number(), // This is BIGINT, but always fits a number
+});
 
 const sql = loadSqlEquiv(import.meta.url);
 
@@ -139,19 +145,17 @@ export async function updateWorkspaceDiskUsage(
   workspace_id: string,
   workspacesRoot: string,
 ): Promise<number> {
-  const result = await queryOneRowAsync(sql.select_workspace, { workspace_id });
-  const workspace = result.rows[0];
+  const { version, id } = await queryRow(
+    sql.select_workspace,
+    { workspace_id },
+    WorkspaceVersionSchema,
+  );
 
   // We'll compute the size for all versions of the workspace so that we don't need
   // to separately store the size for each version.
-  const version = Number.parseInt(workspace.version);
-
   let totalSize = 0;
   for (let i = 1; i <= version; i++) {
-    const workspaceVersionPath = path.join(
-      workspacesRoot,
-      `workspace-${workspace.id}-${workspace.version}`,
-    );
+    const workspaceVersionPath = path.join(workspacesRoot, `workspace-${id}-${i}`);
     const size = await getDirectoryDiskUsage(workspaceVersionPath);
     totalSize += size ?? 0;
   }

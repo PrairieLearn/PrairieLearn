@@ -1,5 +1,12 @@
 # @prairielearn/ui
 
+## 3.2.0
+
+### Minor Changes
+
+- c078fcb: Add `pinnedIds` prop to `FilterDropdown` to pin specific items at the top of the list
+- c078fcb: Add `FilterDropdown` component
+
 ## 3.1.5
 
 ### Patch Changes

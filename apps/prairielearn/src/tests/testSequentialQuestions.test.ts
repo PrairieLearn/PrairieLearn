@@ -76,7 +76,7 @@ describe(
       context.instanceQuestions = results.map((e) => {
         return {
           id: Number(e.instance_question_id),
-          locked: Boolean(e.sequence_locked),
+          locked: e.question_access_mode === 'blocked_sequence',
           url: `${context.courseInstanceBaseUrl}/instance_question/${e.instance_question_id}/`,
         };
       });
