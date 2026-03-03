@@ -177,7 +177,7 @@ export function AdministratorCourses({
               <small>
                 When a course is synced, if the <strong>path</strong> does not exist on disk then a
                 <code>git clone</code> is performed from the <strong>repository</strong>, otherwise
-                a<code>git pull</code> is run in the <strong>path</strong> directory. The
+                a <code>git pull</code> is run in the <strong>path</strong> directory. The
                 <strong>short name</strong> and <strong>title</strong> are updated from the JSON
                 configuration file in the repository during the sync.
               </small>
@@ -341,7 +341,11 @@ function CourseInsertForm({
         </label>
         <select
           id="courseAddInstitution"
-          className={clsx('form-select', errors.institution_id && 'is-invalid')}
+          className={clsx(
+            'form-select',
+            selectedInstitution && isDefaultInstitution && 'is-warning',
+            errors.institution_id && 'is-invalid',
+          )}
           {...register('institution_id', {
             required: 'Select an institution',
             onChange: (e) => {

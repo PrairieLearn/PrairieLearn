@@ -105,7 +105,8 @@ describe('Course request note', { timeout: 60_000 }, function () {
     test.sequential('verify first note is saved', async () => {
       const allRequests = await selectAllCourseRequests();
       const request = allRequests.find((r) => r.id === courseRequestId);
-      assert.equal(request?.note, firstNote);
+      assert.isDefined(request);
+      assert.equal(request.note, firstNote);
     });
 
     test.sequential('extract fresh CSRF token', async () => {
@@ -122,8 +123,9 @@ describe('Course request note', { timeout: 60_000 }, function () {
     test.sequential('verify note was overwritten, not appended', async () => {
       const allRequests = await selectAllCourseRequests();
       const request = allRequests.find((r) => r.id === courseRequestId);
-      assert.equal(request?.note, secondNote);
-      assert.notInclude(request?.note ?? '', firstNote);
+      assert.isDefined(request);
+      assert.equal(request.note, secondNote);
+      assert.notInclude(request.note ?? '', firstNote);
     });
   });
 });
