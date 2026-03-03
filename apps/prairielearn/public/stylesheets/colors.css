@@ -51,9 +51,9 @@
 }
 
 .badge.color-red1 {
-  color: rgb(199.35, 47.6059701493, 0);
-  background-color: rgb(255, 247.35, 244.95);
-  border: 1px solid rgb(255, 234.6, 228.2);
+  color: rgb(155.05, 37.0268656716, 0);
+  background-color: rgb(255, 223.9432835821, 214.2);
+  border: 1px solid rgb(255, 169.5940298507, 142.8);
 }
 
 .btn.color-red1 {
@@ -81,29 +81,29 @@
 }
 
 .btn.btn-badge.color-red1 {
-  color: rgb(199.35, 47.6059701493, 0);
-  background-color: rgb(255, 247.35, 244.95);
-  border-color: rgb(255, 234.6, 228.2);
+  color: rgb(155.05, 37.0268656716, 0);
+  background-color: rgb(255, 223.9432835821, 214.2);
+  border-color: rgb(255, 169.5940298507, 142.8);
 }
 .btn.btn-badge.color-red1:hover {
-  color: rgb(199.35, 47.6059701493, 0);
-  background-color: rgb(255, 243.78, 240.26);
-  border-color: rgb(255, 229.5, 221.5);
+  color: rgb(155.05, 37.0268656716, 0);
+  background-color: rgb(255, 208.4149253731, 193.8);
+  border-color: rgb(255, 138.5373134328, 102);
 }
 .btn.btn-badge.color-red1:active,
 .btn.btn-badge.color-red1.active {
-  color: rgb(199.35, 47.6059701493, 0);
-  background-color: rgb(255, 240.72, 236.24);
-  border-color: rgb(255, 226.95, 218.15);
+  color: rgb(155.05, 37.0268656716, 0);
+  background-color: rgb(255, 192.8865671642, 173.4);
+  border-color: rgb(255, 115.2447761194, 71.4);
 }
 .btn.btn-badge.color-red1:disabled,
 .btn.btn-badge.color-red1.disabled {
-  color: rgb(199.35, 47.6059701493, 0);
-  background-color: rgb(255, 247.35, 244.95);
-  border-color: rgb(255, 234.6, 228.2);
+  color: rgb(155.05, 37.0268656716, 0);
+  background-color: rgb(255, 223.9432835821, 214.2);
+  border-color: rgb(255, 169.5940298507, 142.8);
 }
 .btn.btn-badge.color-red1:focus-visible {
-  outline: 2px solid rgb(199.35, 47.6059701493, 0);
+  outline: 2px solid rgb(155.05, 37.0268656716, 0);
   outline-offset: 1px;
 }
 
@@ -114,8 +114,8 @@
 
 .badge.color-red2 {
   color: rgb(156.15, 15.327607362, 0);
-  background-color: rgb(255, 232.95, 230.55);
-  border: 1px solid rgb(255, 196.2, 189.8);
+  background-color: rgb(255, 218.2049079755, 214.2);
+  border: 1px solid rgb(255, 153.8134969325, 142.8);
 }
 
 .btn.color-red2 {
@@ -144,25 +144,25 @@
 
 .btn.btn-badge.color-red2 {
   color: rgb(156.15, 15.327607362, 0);
-  background-color: rgb(255, 232.95, 230.55);
-  border-color: rgb(255, 196.2, 189.8);
+  background-color: rgb(255, 218.2049079755, 214.2);
+  border-color: rgb(255, 153.8134969325, 142.8);
 }
 .btn.btn-badge.color-red2:hover {
   color: rgb(156.15, 15.327607362, 0);
-  background-color: rgb(255, 222.66, 219.14);
-  border-color: rgb(255, 181.5, 173.5);
+  background-color: rgb(255, 199.8073619632, 193.8);
+  border-color: rgb(255, 117.018404908, 102);
 }
 .btn.btn-badge.color-red2:active,
 .btn.btn-badge.color-red2.active {
   color: rgb(156.15, 15.327607362, 0);
-  background-color: rgb(255, 213.84, 209.36);
-  border-color: rgb(255, 174.15, 165.35);
+  background-color: rgb(255, 181.4098159509, 173.4);
+  border-color: rgb(255, 89.4220858896, 71.4);
 }
 .btn.btn-badge.color-red2:disabled,
 .btn.btn-badge.color-red2.disabled {
   color: rgb(156.15, 15.327607362, 0);
-  background-color: rgb(255, 232.95, 230.55);
-  border-color: rgb(255, 196.2, 189.8);
+  background-color: rgb(255, 218.2049079755, 214.2);
+  border-color: rgb(255, 153.8134969325, 142.8);
 }
 .btn.btn-badge.color-red2:focus-visible {
   outline: 2px solid rgb(156.15, 15.327607362, 0);
@@ -176,8 +176,8 @@
 
 .badge.color-red3 {
   color: rgb(89.55, 19.8, 12.6);
-  background-color: rgb(246.6, 223.35, 220.95);
-  border: 1px solid rgb(232.6, 170.6, 164.2);
+  background-color: rgb(249.9674008811, 222.1083700441, 219.2325991189);
+  border: 1px solid rgb(241.1603524229, 164.5480176211, 156.6396475771);
 }
 
 .btn.color-red3 {
@@ -206,25 +206,25 @@
 
 .btn.btn-badge.color-red3 {
   color: rgb(89.55, 19.8, 12.6);
-  background-color: rgb(246.6, 223.35, 220.95);
-  border-color: rgb(232.6, 170.6, 164.2);
+  background-color: rgb(249.9674008811, 222.1083700441, 219.2325991189);
+  border-color: rgb(241.1603524229, 164.5480176211, 156.6396475771);
 }
 .btn.btn-badge.color-red3:hover {
   color: rgb(89.55, 19.8, 12.6);
-  background-color: rgb(242.68, 208.58, 205.06);
-  border-color: rgb(227, 149.5, 141.5);
+  background-color: rgb(247.4511013216, 205.6625550661, 201.3488986784);
+  border-color: rgb(236.127753304, 131.6563876652, 120.872246696);
 }
 .btn.btn-badge.color-red3:active,
 .btn.btn-badge.color-red3.active {
   color: rgb(89.55, 19.8, 12.6);
-  background-color: rgb(239.32, 195.92, 191.44);
-  border-color: rgb(224.2, 138.95, 130.15);
+  background-color: rgb(244.9348017621, 189.2167400881, 183.4651982379);
+  border-color: rgb(232.3533039648, 106.9876651982, 94.0466960352);
 }
 .btn.btn-badge.color-red3:disabled,
 .btn.btn-badge.color-red3.disabled {
   color: rgb(89.55, 19.8, 12.6);
-  background-color: rgb(246.6, 223.35, 220.95);
-  border-color: rgb(232.6, 170.6, 164.2);
+  background-color: rgb(249.9674008811, 222.1083700441, 219.2325991189);
+  border-color: rgb(241.1603524229, 164.5480176211, 156.6396475771);
 }
 .btn.btn-badge.color-red3:focus-visible {
   outline: 2px solid rgb(89.55, 19.8, 12.6);
@@ -238,8 +238,8 @@
 
 .badge.color-pink1 {
   color: rgb(199.35, 0, 83.3104477612);
-  background-color: rgb(255, 244.95, 249.15);
-  border: 1px solid rgb(255, 228.2, 239.4);
+  background-color: rgb(255, 214.2, 231.2507462687);
+  border: 1px solid rgb(255, 142.8, 189.6895522388);
 }
 
 .btn.color-pink1 {
@@ -268,25 +268,25 @@
 
 .btn.btn-badge.color-pink1 {
   color: rgb(199.35, 0, 83.3104477612);
-  background-color: rgb(255, 244.95, 249.15);
-  border-color: rgb(255, 228.2, 239.4);
+  background-color: rgb(255, 214.2, 231.2507462687);
+  border-color: rgb(255, 142.8, 189.6895522388);
 }
 .btn.btn-badge.color-pink1:hover {
   color: rgb(199.35, 0, 83.3104477612);
-  background-color: rgb(255, 240.26, 246.42);
-  border-color: rgb(255, 221.5, 235.5);
+  background-color: rgb(255, 193.8, 219.376119403);
+  border-color: rgb(255, 102, 165.9402985075);
 }
 .btn.btn-badge.color-pink1:active,
 .btn.btn-badge.color-pink1.active {
   color: rgb(199.35, 0, 83.3104477612);
-  background-color: rgb(255, 236.24, 244.08);
-  border-color: rgb(255, 218.15, 233.55);
+  background-color: rgb(255, 173.4, 207.5014925373);
+  border-color: rgb(255, 71.4, 148.128358209);
 }
 .btn.btn-badge.color-pink1:disabled,
 .btn.btn-badge.color-pink1.disabled {
   color: rgb(199.35, 0, 83.3104477612);
-  background-color: rgb(255, 244.95, 249.15);
-  border-color: rgb(255, 228.2, 239.4);
+  background-color: rgb(255, 214.2, 231.2507462687);
+  border-color: rgb(255, 142.8, 189.6895522388);
 }
 .btn.btn-badge.color-pink1:focus-visible {
   outline: 2px solid rgb(199.35, 0, 83.3104477612);
@@ -300,8 +300,8 @@
 
 .badge.color-pink2 {
   color: rgb(149.3196428571, 4.5803571429, 59.5446428571);
-  background-color: rgb(254.25, 230.55, 239.55);
-  border: 1px solid rgb(253, 189.8, 213.8);
+  background-color: rgb(253.7857142857, 215.4142857143, 229.9857142857);
+  border: 1px solid rgb(251.6607142857, 146.1392857143, 186.2107142857);
 }
 
 .btn.color-pink2 {
@@ -330,25 +330,25 @@
 
 .btn.btn-badge.color-pink2 {
   color: rgb(149.3196428571, 4.5803571429, 59.5446428571);
-  background-color: rgb(254.25, 230.55, 239.55);
-  border-color: rgb(253, 189.8, 213.8);
+  background-color: rgb(253.7857142857, 215.4142857143, 229.9857142857);
+  border-color: rgb(251.6607142857, 146.1392857143, 186.2107142857);
 }
 .btn.btn-badge.color-pink2:hover {
   color: rgb(149.3196428571, 4.5803571429, 59.5446428571);
-  background-color: rgb(253.9, 219.14, 232.34);
-  border-color: rgb(252.5, 173.5, 203.5);
+  background-color: rgb(253.1785714286, 195.6214285714, 217.4785714286);
+  border-color: rgb(250.4464285714, 106.5535714286, 161.1964285714);
 }
 .btn.btn-badge.color-pink2:active,
 .btn.btn-badge.color-pink2.active {
   color: rgb(149.3196428571, 4.5803571429, 59.5446428571);
-  background-color: rgb(253.6, 209.36, 226.16);
-  border-color: rgb(252.25, 165.35, 198.35);
+  background-color: rgb(252.5714285714, 175.8285714286, 204.9714285714);
+  border-color: rgb(249.5357142857, 76.8642857143, 142.4357142857);
 }
 .btn.btn-badge.color-pink2:disabled,
 .btn.btn-badge.color-pink2.disabled {
   color: rgb(149.3196428571, 4.5803571429, 59.5446428571);
-  background-color: rgb(254.25, 230.55, 239.55);
-  border-color: rgb(253, 189.8, 213.8);
+  background-color: rgb(253.7857142857, 215.4142857143, 229.9857142857);
+  border-color: rgb(251.6607142857, 146.1392857143, 186.2107142857);
 }
 .btn.btn-badge.color-pink2:focus-visible {
   outline: 2px solid rgb(149.3196428571, 4.5803571429, 59.5446428571);
@@ -362,8 +362,8 @@
 
 .badge.color-pink3 {
   color: rgb(83.7, 12.6, 39.6);
-  background-color: rgb(244.65, 220.95, 229.95);
-  border: 1px solid rgb(227.4, 164.2, 188.2);
+  background-color: rgb(249.661682243, 219.538317757, 230.9775700935);
+  border: 1px solid rgb(240.3196261682, 157.4803738318, 188.938317757);
 }
 
 .btn.color-pink3 {
@@ -392,25 +392,25 @@
 
 .btn.btn-badge.color-pink3 {
   color: rgb(83.7, 12.6, 39.6);
-  background-color: rgb(244.65, 220.95, 229.95);
-  border-color: rgb(227.4, 164.2, 188.2);
+  background-color: rgb(249.661682243, 219.538317757, 230.9775700935);
+  border-color: rgb(240.3196261682, 157.4803738318, 188.938317757);
 }
 .btn.btn-badge.color-pink3:hover {
   color: rgb(83.7, 12.6, 39.6);
-  background-color: rgb(239.82, 205.06, 218.26);
-  border-color: rgb(220.5, 141.5, 171.5);
+  background-color: rgb(246.9925233645, 201.8074766355, 218.9663551402);
+  border-color: rgb(234.9813084112, 122.0186915888, 164.9158878505);
 }
 .btn.btn-badge.color-pink3:active,
 .btn.btn-badge.color-pink3.active {
   color: rgb(83.7, 12.6, 39.6);
-  background-color: rgb(235.68, 191.44, 208.24);
-  border-color: rgb(217.05, 130.15, 163.15);
+  background-color: rgb(244.323364486, 184.076635514, 206.9551401869);
+  border-color: rgb(230.9775700935, 95.4224299065, 146.8990654206);
 }
 .btn.btn-badge.color-pink3:disabled,
 .btn.btn-badge.color-pink3.disabled {
   color: rgb(83.7, 12.6, 39.6);
-  background-color: rgb(244.65, 220.95, 229.95);
-  border-color: rgb(227.4, 164.2, 188.2);
+  background-color: rgb(249.661682243, 219.538317757, 230.9775700935);
+  border-color: rgb(240.3196261682, 157.4803738318, 188.938317757);
 }
 .btn.btn-badge.color-pink3:focus-visible {
   outline: 2px solid rgb(83.7, 12.6, 39.6);
@@ -424,8 +424,8 @@
 
 .badge.color-purple1 {
   color: rgb(114.3715909091, 66.8965909091, 123.0034090909);
-  background-color: rgb(249.75, 246.45, 250.35);
-  border: 1px solid rgb(241, 232.2, 242.6);
+  background-color: rgb(238.7727272727, 228.5727272727, 240.6272727273);
+  border: 1px solid rgb(210.375, 182.325, 215.475);
 }
 
 .btn.color-purple1 {
@@ -454,25 +454,25 @@
 
 .btn.btn-badge.color-purple1 {
   color: rgb(114.3715909091, 66.8965909091, 123.0034090909);
-  background-color: rgb(249.75, 246.45, 250.35);
-  border-color: rgb(241, 232.2, 242.6);
+  background-color: rgb(238.7727272727, 228.5727272727, 240.6272727273);
+  border-color: rgb(210.375, 182.325, 215.475);
 }
 .btn.btn-badge.color-purple1:hover {
   color: rgb(114.3715909091, 66.8965909091, 123.0034090909);
-  background-color: rgb(247.3, 242.46, 248.18);
-  border-color: rgb(237.5, 226.5, 239.5);
+  background-color: rgb(230.6590909091, 215.3590909091, 233.4409090909);
+  border-color: rgb(194.1477272727, 155.8977272727, 201.1022727273);
 }
 .btn.btn-badge.color-purple1:active,
 .btn.btn-badge.color-purple1.active {
   color: rgb(114.3715909091, 66.8965909091, 123.0034090909);
-  background-color: rgb(245.2, 239.04, 246.32);
-  border-color: rgb(235.75, 223.65, 237.95);
+  background-color: rgb(222.5454545455, 202.1454545455, 226.2545454545);
+  border-color: rgb(181.9772727273, 136.0772727273, 190.3227272727);
 }
 .btn.btn-badge.color-purple1:disabled,
 .btn.btn-badge.color-purple1.disabled {
   color: rgb(114.3715909091, 66.8965909091, 123.0034090909);
-  background-color: rgb(249.75, 246.45, 250.35);
-  border-color: rgb(241, 232.2, 242.6);
+  background-color: rgb(238.7727272727, 228.5727272727, 240.6272727273);
+  border-color: rgb(210.375, 182.325, 215.475);
 }
 .btn.btn-badge.color-purple1:focus-visible {
   outline: 2px solid rgb(114.3715909091, 66.8965909091, 123.0034090909);
@@ -486,8 +486,8 @@
 
 .badge.color-purple2 {
   color: rgb(70.9248953975, 37.2483263598, 84.7016736402);
-  background-color: rgb(240, 230.1, 244.05);
-  border: 1px solid rgb(215, 188.6, 225.8);
+  background-color: rgb(237.9288702929, 226.6619246862, 242.5380753138);
+  border: 1px solid rgb(208.0543933054, 177.070292887, 220.729707113);
 }
 
 .btn.color-purple2 {
@@ -516,25 +516,25 @@
 
 .btn.btn-badge.color-purple2 {
   color: rgb(70.9248953975, 37.2483263598, 84.7016736402);
-  background-color: rgb(240, 230.1, 244.05);
-  border-color: rgb(215, 188.6, 225.8);
+  background-color: rgb(237.9288702929, 226.6619246862, 242.5380753138);
+  border-color: rgb(208.0543933054, 177.070292887, 220.729707113);
 }
 .btn.btn-badge.color-purple2:hover {
   color: rgb(70.9248953975, 37.2483263598, 84.7016736402);
-  background-color: rgb(233, 218.48, 238.94);
-  border-color: rgb(205, 172, 218.5);
+  background-color: rgb(229.3933054393, 212.4928870293, 236.3071129707);
+  border-color: rgb(190.9832635983, 148.7322175732, 208.2677824268);
 }
 .btn.btn-badge.color-purple2:active,
 .btn.btn-badge.color-purple2.active {
   color: rgb(70.9248953975, 37.2483263598, 84.7016736402);
-  background-color: rgb(227, 208.52, 234.56);
-  border-color: rgb(200, 163.7, 214.85);
+  background-color: rgb(220.8577405858, 198.3238493724, 230.0761506276);
+  border-color: rgb(178.179916318, 127.4786610879, 198.9213389121);
 }
 .btn.btn-badge.color-purple2:disabled,
 .btn.btn-badge.color-purple2.disabled {
   color: rgb(70.9248953975, 37.2483263598, 84.7016736402);
-  background-color: rgb(240, 230.1, 244.05);
-  border-color: rgb(215, 188.6, 225.8);
+  background-color: rgb(237.9288702929, 226.6619246862, 242.5380753138);
+  border-color: rgb(208.0543933054, 177.070292887, 220.729707113);
 }
 .btn.btn-badge.color-purple2:focus-visible {
   outline: 2px solid rgb(70.9248953975, 37.2483263598, 84.7016736402);
@@ -548,8 +548,8 @@
 
 .badge.color-purple3 {
   color: rgb(42.3, 9, 56.25);
-  background-color: rgb(230.85, 219.75, 235.5);
-  border: 1px solid rgb(190.6, 161, 203);
+  background-color: rgb(240.6496551724, 219.8275862069, 249.3724137931);
+  border: 1px solid rgb(215.5365517241, 158.275862069, 239.524137931);
 }
 
 .btn.color-purple3 {
@@ -578,25 +578,25 @@
 
 .btn.btn-badge.color-purple3 {
   color: rgb(42.3, 9, 56.25);
-  background-color: rgb(230.85, 219.75, 235.5);
-  border-color: rgb(190.6, 161, 203);
+  background-color: rgb(240.6496551724, 219.8275862069, 249.3724137931);
+  border-color: rgb(215.5365517241, 158.275862069, 239.524137931);
 }
 .btn.btn-badge.color-purple3:hover {
   color: rgb(42.3, 9, 56.25);
-  background-color: rgb(219.58, 203.3, 226.4);
-  border-color: rgb(174.5, 137.5, 190);
+  background-color: rgb(233.4744827586, 202.2413793103, 246.5586206897);
+  border-color: rgb(201.1862068966, 123.1034482759, 233.8965517241);
 }
 .btn.btn-badge.color-purple3:active,
 .btn.btn-badge.color-purple3.active {
   color: rgb(42.3, 9, 56.25);
-  background-color: rgb(209.92, 189.2, 218.6);
-  border-color: rgb(166.45, 125.75, 183.5);
+  background-color: rgb(226.2993103448, 184.6551724138, 243.7448275862);
+  border-color: rgb(190.4234482759, 96.724137931, 229.675862069);
 }
 .btn.btn-badge.color-purple3:disabled,
 .btn.btn-badge.color-purple3.disabled {
   color: rgb(42.3, 9, 56.25);
-  background-color: rgb(230.85, 219.75, 235.5);
-  border-color: rgb(190.6, 161, 203);
+  background-color: rgb(240.6496551724, 219.8275862069, 249.3724137931);
+  border-color: rgb(215.5365517241, 158.275862069, 239.524137931);
 }
 .btn.btn-badge.color-purple3:focus-visible {
   outline: 2px solid rgb(42.3, 9, 56.25);
@@ -610,8 +610,8 @@
 
 .badge.color-blue1 {
   color: rgb(0, 110.6181818182, 140.4);
-  background-color: rgb(225.3, 248.7, 255);
-  border: 1px solid rgb(175.8, 238.2, 255);
+  background-color: rgb(214.2, 246.3454545455, 255);
+  border: 1px solid rgb(142.8, 231.2, 255);
 }
 
 .btn.color-blue1 {
@@ -640,25 +640,25 @@
 
 .btn.btn-badge.color-blue1 {
   color: rgb(0, 110.6181818182, 140.4);
-  background-color: rgb(225.3, 248.7, 255);
-  border-color: rgb(175.8, 238.2, 255);
+  background-color: rgb(214.2, 246.3454545455, 255);
+  border-color: rgb(142.8, 231.2, 255);
 }
 .btn.btn-badge.color-blue1:hover {
   color: rgb(0, 110.6181818182, 140.4);
-  background-color: rgb(211.44, 245.76, 255);
-  border-color: #9ceaff;
+  background-color: rgb(193.8, 242.0181818182, 255);
+  border-color: rgb(102, 222.5454545455, 255);
 }
 .btn.btn-badge.color-blue1:active,
 .btn.btn-badge.color-blue1.active {
   color: rgb(0, 110.6181818182, 140.4);
-  background-color: rgb(199.56, 243.24, 255);
-  border-color: rgb(146.1, 231.9, 255);
+  background-color: rgb(173.4, 237.6909090909, 255);
+  border-color: rgb(71.4, 216.0545454545, 255);
 }
 .btn.btn-badge.color-blue1:disabled,
 .btn.btn-badge.color-blue1.disabled {
   color: rgb(0, 110.6181818182, 140.4);
-  background-color: rgb(225.3, 248.7, 255);
-  border-color: rgb(175.8, 238.2, 255);
+  background-color: rgb(214.2, 246.3454545455, 255);
+  border-color: rgb(142.8, 231.2, 255);
 }
 .btn.btn-badge.color-blue1:focus-visible {
   outline: 2px solid rgb(0, 110.6181818182, 140.4);
@@ -672,8 +672,8 @@
 
 .badge.color-blue2 {
   color: rgb(8.1, 67.95, 100.8);
-  background-color: rgb(219.45, 239.4, 250.35);
-  border: 1px solid rgb(160.2, 213.4, 242.6);
+  background-color: rgb(217.2347107438, 239.6578512397, 251.9652892562);
+  border: 1px solid rgb(151.1454545455, 212.8090909091, 246.6545454545);
 }
 
 .btn.color-blue2 {
@@ -702,25 +702,25 @@
 
 .btn.btn-badge.color-blue2 {
   color: rgb(8.1, 67.95, 100.8);
-  background-color: rgb(219.45, 239.4, 250.35);
-  border-color: rgb(160.2, 213.4, 242.6);
+  background-color: rgb(217.2347107438, 239.6578512397, 251.9652892562);
+  border-color: rgb(151.1454545455, 212.8090909091, 246.6545454545);
 }
 .btn.btn-badge.color-blue2:hover {
   color: rgb(8.1, 67.95, 100.8);
-  background-color: rgb(202.86, 232.12, 248.18);
-  border-color: rgb(136.5, 203, 239.5);
+  background-color: rgb(198.3520661157, 231.9867768595, 250.4479338843);
+  border-color: rgb(113.3801652893, 197.4669421488, 243.6198347107);
 }
 .btn.btn-badge.color-blue2:active,
 .btn.btn-badge.color-blue2.active {
   color: rgb(8.1, 67.95, 100.8);
-  background-color: rgb(188.64, 225.88, 246.32);
-  border-color: rgb(124.65, 197.8, 237.95);
+  background-color: rgb(179.4694214876, 224.3157024793, 248.9305785124);
+  border-color: rgb(85.0561983471, 185.9603305785, 241.3438016529);
 }
 .btn.btn-badge.color-blue2:disabled,
 .btn.btn-badge.color-blue2.disabled {
   color: rgb(8.1, 67.95, 100.8);
-  background-color: rgb(219.45, 239.4, 250.35);
-  border-color: rgb(160.2, 213.4, 242.6);
+  background-color: rgb(217.2347107438, 239.6578512397, 251.9652892562);
+  border-color: rgb(151.1454545455, 212.8090909091, 246.6545454545);
 }
 .btn.btn-badge.color-blue2:focus-visible {
   outline: 2px solid rgb(8.1, 67.95, 100.8);
@@ -734,8 +734,8 @@
 
 .badge.color-blue3 {
   color: rgb(0, 39.15, 72);
-  background-color: rgb(216.75, 229.8, 240.75);
-  border: 1px solid rgb(153, 187.8, 217);
+  background-color: rgb(214.2, 236.385, 255);
+  border: 1px solid rgb(142.8, 203.80875, 255);
 }
 
 .btn.color-blue3 {
@@ -764,25 +764,25 @@
 
 .btn.btn-badge.color-blue3 {
   color: rgb(0, 39.15, 72);
-  background-color: rgb(216.75, 229.8, 240.75);
-  border-color: rgb(153, 187.8, 217);
+  background-color: rgb(214.2, 236.385, 255);
+  border-color: rgb(142.8, 203.80875, 255);
 }
 .btn.btn-badge.color-blue3:hover {
   color: rgb(0, 39.15, 72);
-  background-color: rgb(198.9, 218.04, 234.1);
-  border-color: rgb(127.5, 171, 207.5);
+  background-color: rgb(193.8, 227.0775, 255);
+  border-color: rgb(102, 185.19375, 255);
 }
 .btn.btn-badge.color-blue3:active,
 .btn.btn-badge.color-blue3.active {
   color: rgb(0, 39.15, 72);
-  background-color: rgb(183.6, 207.96, 228.4);
-  border-color: rgb(114.75, 162.6, 202.75);
+  background-color: rgb(173.4, 217.77, 255);
+  border-color: rgb(71.4, 171.2325, 255);
 }
 .btn.btn-badge.color-blue3:disabled,
 .btn.btn-badge.color-blue3.disabled {
   color: rgb(0, 39.15, 72);
-  background-color: rgb(216.75, 229.8, 240.75);
-  border-color: rgb(153, 187.8, 217);
+  background-color: rgb(214.2, 236.385, 255);
+  border-color: rgb(142.8, 203.80875, 255);
 }
 .btn.btn-badge.color-blue3:focus-visible {
   outline: 2px solid rgb(0, 39.15, 72);
@@ -796,8 +796,8 @@
 
 .badge.color-turquoise1 {
   color: rgb(3.6265060241, 116.7734939759, 114.5975903614);
-  background-color: rgb(230.85, 254.25, 253.8);
-  border: 1px solid rgb(190.6, 253, 251.8);
+  background-color: rgb(215.4289156627, 253.7710843373, 253.0337349398);
+  border: 1px solid rgb(146.1795180723, 251.6204819277, 249.5927710843);
 }
 
 .btn.color-turquoise1 {
@@ -826,25 +826,25 @@
 
 .btn.btn-badge.color-turquoise1 {
   color: rgb(3.6265060241, 116.7734939759, 114.5975903614);
-  background-color: rgb(230.85, 254.25, 253.8);
-  border-color: rgb(190.6, 253, 251.8);
+  background-color: rgb(215.4289156627, 253.7710843373, 253.0337349398);
+  border-color: rgb(146.1795180723, 251.6204819277, 249.5927710843);
 }
 .btn.btn-badge.color-turquoise1:hover {
   color: rgb(3.6265060241, 116.7734939759, 114.5975903614);
-  background-color: rgb(219.58, 253.9, 253.24);
-  border-color: rgb(174.5, 252.5, 251);
+  background-color: rgb(195.643373494, 253.156626506, 252.0506024096);
+  border-color: rgb(106.6084337349, 250.3915662651, 247.6265060241);
 }
 .btn.btn-badge.color-turquoise1:active,
 .btn.btn-badge.color-turquoise1.active {
   color: rgb(3.6265060241, 116.7734939759, 114.5975903614);
-  background-color: rgb(209.92, 253.6, 252.76);
-  border-color: rgb(166.45, 252.25, 250.6);
+  background-color: rgb(175.8578313253, 252.5421686747, 251.0674698795);
+  border-color: rgb(76.9301204819, 249.4698795181, 246.1518072289);
 }
 .btn.btn-badge.color-turquoise1:disabled,
 .btn.btn-badge.color-turquoise1.disabled {
   color: rgb(3.6265060241, 116.7734939759, 114.5975903614);
-  background-color: rgb(230.85, 254.25, 253.8);
-  border-color: rgb(190.6, 253, 251.8);
+  background-color: rgb(215.4289156627, 253.7710843373, 253.0337349398);
+  border-color: rgb(146.1795180723, 251.6204819277, 249.5927710843);
 }
 .btn.btn-badge.color-turquoise1:focus-visible {
   outline: 2px solid rgb(3.6265060241, 116.7734939759, 114.5975903614);
@@ -858,8 +858,8 @@
 
 .badge.color-turquoise2 {
   color: rgb(17.55, 91.35, 86.4);
-  background-color: rgb(222.6, 247.2, 245.55);
-  border: 1px solid rgb(168.6, 234.2, 229.8);
+  background-color: rgb(220.7752066116, 248.4247933884, 246.5702479339);
+  border: 1px solid rgb(160.8818181818, 236.9181818182, 231.8181818182);
 }
 
 .btn.color-turquoise2 {
@@ -888,25 +888,25 @@
 
 .btn.btn-badge.color-turquoise2 {
   color: rgb(17.55, 91.35, 86.4);
-  background-color: rgb(222.6, 247.2, 245.55);
-  border-color: rgb(168.6, 234.2, 229.8);
+  background-color: rgb(220.7752066116, 248.4247933884, 246.5702479339);
+  border-color: rgb(160.8818181818, 236.9181818182, 231.8181818182);
 }
 .btn.btn-badge.color-turquoise2:hover {
   color: rgb(17.55, 91.35, 86.4);
-  background-color: rgb(207.48, 243.56, 241.14);
-  border-color: rgb(147, 229, 223.5);
+  background-color: rgb(203.6628099174, 245.1371900826, 242.3553719008);
+  border-color: rgb(126.6570247934, 230.3429752066, 223.3884297521);
 }
 .btn.btn-badge.color-turquoise2:active,
 .btn.btn-badge.color-turquoise2.active {
   color: rgb(17.55, 91.35, 86.4);
-  background-color: rgb(194.52, 240.44, 237.36);
-  border-color: rgb(136.2, 226.4, 220.35);
+  background-color: rgb(186.5504132231, 241.8495867769, 238.1404958678);
+  border-color: rgb(100.9884297521, 225.4115702479, 217.0661157025);
 }
 .btn.btn-badge.color-turquoise2:disabled,
 .btn.btn-badge.color-turquoise2.disabled {
   color: rgb(17.55, 91.35, 86.4);
-  background-color: rgb(222.6, 247.2, 245.55);
-  border-color: rgb(168.6, 234.2, 229.8);
+  background-color: rgb(220.7752066116, 248.4247933884, 246.5702479339);
+  border-color: rgb(160.8818181818, 236.9181818182, 231.8181818182);
 }
 .btn.btn-badge.color-turquoise2:focus-visible {
   outline: 2px solid rgb(17.55, 91.35, 86.4);
@@ -920,8 +920,8 @@
 
 .badge.color-turquoise3 {
   color: rgb(0, 62.55, 57.6);
-  background-color: rgb(216.75, 237.6, 235.95);
-  border: 1px solid rgb(153, 208.6, 204.2);
+  background-color: rgb(214.2, 255, 251.7712230216);
+  border: 1px solid rgb(142.8, 255, 246.1208633094);
 }
 
 .btn.color-turquoise3 {
@@ -950,25 +950,25 @@
 
 .btn.btn-badge.color-turquoise3 {
   color: rgb(0, 62.55, 57.6);
-  background-color: rgb(216.75, 237.6, 235.95);
-  border-color: rgb(153, 208.6, 204.2);
+  background-color: rgb(214.2, 255, 251.7712230216);
+  border-color: rgb(142.8, 255, 246.1208633094);
 }
 .btn.btn-badge.color-turquoise3:hover {
   color: rgb(0, 62.55, 57.6);
-  background-color: rgb(198.9, 229.48, 227.06);
-  border-color: rgb(127.5, 197, 191.5);
+  background-color: rgb(193.8, 255, 250.1568345324);
+  border-color: rgb(102, 255, 242.8920863309);
 }
 .btn.btn-badge.color-turquoise3:active,
 .btn.btn-badge.color-turquoise3.active {
   color: rgb(0, 62.55, 57.6);
-  background-color: rgb(183.6, 222.52, 219.44);
-  border-color: rgb(114.75, 191.2, 185.15);
+  background-color: rgb(173.4, 255, 248.5424460432);
+  border-color: rgb(71.4, 255, 240.4705035971);
 }
 .btn.btn-badge.color-turquoise3:disabled,
 .btn.btn-badge.color-turquoise3.disabled {
   color: rgb(0, 62.55, 57.6);
-  background-color: rgb(216.75, 237.6, 235.95);
-  border-color: rgb(153, 208.6, 204.2);
+  background-color: rgb(214.2, 255, 251.7712230216);
+  border-color: rgb(142.8, 255, 246.1208633094);
 }
 .btn.btn-badge.color-turquoise3:focus-visible {
   outline: 2px solid rgb(0, 62.55, 57.6);
@@ -982,8 +982,8 @@
 
 .badge.color-green1 {
   color: rgb(0, 99.25, 44.7942477876);
-  background-color: rgb(238.05, 255, 245.7);
-  border: 1px solid rgb(209.8, 255, 230.2);
+  background-color: rgb(214.2, 255, 232.614159292);
+  border: 1px solid rgb(142.8, 255, 193.4389380531);
 }
 
 .btn.color-green1 {
@@ -1012,25 +1012,25 @@
 
 .btn.btn-badge.color-green1 {
   color: rgb(0, 99.25, 44.7942477876);
-  background-color: rgb(238.05, 255, 245.7);
-  border-color: rgb(209.8, 255, 230.2);
+  background-color: rgb(214.2, 255, 232.614159292);
+  border-color: rgb(142.8, 255, 193.4389380531);
 }
 .btn.btn-badge.color-green1:hover {
   color: rgb(0, 99.25, 44.7942477876);
-  background-color: rgb(230.14, 255, 241.36);
-  border-color: rgb(198.5, 255, 224);
+  background-color: rgb(193.8, 255, 221.4212389381);
+  border-color: rgb(102, 255, 171.0530973451);
 }
 .btn.btn-badge.color-green1:active,
 .btn.btn-badge.color-green1.active {
   color: rgb(0, 99.25, 44.7942477876);
-  background-color: rgb(223.36, 255, 237.64);
-  border-color: rgb(192.85, 255, 220.9);
+  background-color: rgb(173.4, 255, 210.2283185841);
+  border-color: rgb(71.4, 255, 154.2637168142);
 }
 .btn.btn-badge.color-green1:disabled,
 .btn.btn-badge.color-green1.disabled {
   color: rgb(0, 99.25, 44.7942477876);
-  background-color: rgb(238.05, 255, 245.7);
-  border-color: rgb(209.8, 255, 230.2);
+  background-color: rgb(214.2, 255, 232.614159292);
+  border-color: rgb(142.8, 255, 193.4389380531);
 }
 .btn.btn-badge.color-green1:focus-visible {
   outline: 2px solid rgb(0, 99.25, 44.7942477876);
@@ -1044,8 +1044,8 @@
 
 .badge.color-green2 {
   color: rgb(20.7, 91.8, 50.85);
-  background-color: rgb(223.65, 247.35, 233.7);
-  border: 1px solid rgb(171.4, 234.6, 198.2);
+  background-color: rgb(221.7072, 247.4928, 232.6416);
+  border: 1px solid rgb(163.4448, 234.3552, 193.5144);
 }
 
 .btn.color-green2 {
@@ -1074,25 +1074,25 @@
 
 .btn.btn-badge.color-green2 {
   color: rgb(20.7, 91.8, 50.85);
-  background-color: rgb(223.65, 247.35, 233.7);
-  border-color: rgb(171.4, 234.6, 198.2);
+  background-color: rgb(221.7072, 247.4928, 232.6416);
+  border-color: rgb(163.4448, 234.3552, 193.5144);
 }
 .btn.btn-badge.color-green2:hover {
   color: rgb(20.7, 91.8, 50.85);
-  background-color: rgb(209.02, 243.78, 223.76);
-  border-color: rgb(150.5, 229.5, 184);
+  background-color: rgb(205.0608, 243.7392, 221.4624);
+  border-color: rgb(130.152, 226.848, 171.156);
 }
 .btn.btn-badge.color-green2:active,
 .btn.btn-badge.color-green2.active {
   color: rgb(20.7, 91.8, 50.85);
-  background-color: rgb(196.48, 240.72, 215.24);
-  border-color: rgb(140.05, 226.95, 176.9);
+  background-color: rgb(188.4144, 239.9856, 210.2832);
+  border-color: rgb(105.1824, 221.2176, 154.3872);
 }
 .btn.btn-badge.color-green2:disabled,
 .btn.btn-badge.color-green2.disabled {
   color: rgb(20.7, 91.8, 50.85);
-  background-color: rgb(223.65, 247.35, 233.7);
-  border-color: rgb(171.4, 234.6, 198.2);
+  background-color: rgb(221.7072, 247.4928, 232.6416);
+  border-color: rgb(163.4448, 234.3552, 193.5144);
 }
 .btn.btn-badge.color-green2:focus-visible {
   outline: 2px solid rgb(20.7, 91.8, 50.85);
@@ -1106,8 +1106,8 @@
 
 .badge.color-green3 {
   color: rgb(0, 63, 22.05);
-  background-color: rgb(216.75, 237.75, 224.1);
-  border: 1px solid rgb(153, 209, 172.6);
+  background-color: rgb(214.2, 255, 228.48);
+  border: 1px solid rgb(142.8, 255, 182.07);
 }
 
 .btn.color-green3 {
@@ -1136,25 +1136,25 @@
 
 .btn.btn-badge.color-green3 {
   color: rgb(0, 63, 22.05);
-  background-color: rgb(216.75, 237.75, 224.1);
-  border-color: rgb(153, 209, 172.6);
+  background-color: rgb(214.2, 255, 228.48);
+  border-color: rgb(142.8, 255, 182.07);
 }
 .btn.btn-badge.color-green3:hover {
   color: rgb(0, 63, 22.05);
-  background-color: rgb(198.9, 229.7, 209.68);
-  border-color: rgb(127.5, 197.5, 152);
+  background-color: rgb(193.8, 255, 215.22);
+  border-color: rgb(102, 255, 155.55);
 }
 .btn.btn-badge.color-green3:active,
 .btn.btn-badge.color-green3.active {
   color: rgb(0, 63, 22.05);
-  background-color: rgb(183.6, 222.8, 197.32);
-  border-color: rgb(114.75, 191.75, 141.7);
+  background-color: rgb(173.4, 255, 201.96);
+  border-color: rgb(71.4, 255, 135.66);
 }
 .btn.btn-badge.color-green3:disabled,
 .btn.btn-badge.color-green3.disabled {
   color: rgb(0, 63, 22.05);
-  background-color: rgb(216.75, 237.75, 224.1);
-  border-color: rgb(153, 209, 172.6);
+  background-color: rgb(214.2, 255, 228.48);
+  border-color: rgb(142.8, 255, 182.07);
 }
 .btn.btn-badge.color-green3:focus-visible {
   outline: 2px solid rgb(0, 63, 22.05);
@@ -1168,8 +1168,8 @@
 
 .badge.color-yellow1 {
   color: rgb(143.7333333333, 101.2666666667, 3.2666666667);
-  background-color: rgb(254.7, 250.8, 241.8);
-  border: 1px solid rgb(254.2, 243.8, 219.8);
+  background-color: rgb(254.0933333333, 242.3066666667, 215.1066666667);
+  border: 1px solid rgb(252.5066666667, 220.0933333333, 145.2933333333);
 }
 
 .btn.color-yellow1 {
@@ -1198,25 +1198,25 @@
 
 .btn.btn-badge.color-yellow1 {
   color: rgb(143.7333333333, 101.2666666667, 3.2666666667);
-  background-color: rgb(254.7, 250.8, 241.8);
-  border-color: rgb(254.2, 243.8, 219.8);
+  background-color: rgb(254.0933333333, 242.3066666667, 215.1066666667);
+  border-color: rgb(252.5066666667, 220.0933333333, 145.2933333333);
 }
 .btn.btn-badge.color-yellow1:hover {
   color: rgb(143.7333333333, 101.2666666667, 3.2666666667);
-  background-color: rgb(254.56, 248.84, 235.64);
-  border-color: #fef1d3;
+  background-color: rgb(253.64, 235.96, 195.16);
+  border-color: rgb(251.6, 207.4, 105.4);
 }
 .btn.btn-badge.color-yellow1:active,
 .btn.btn-badge.color-yellow1.active {
   color: rgb(143.7333333333, 101.2666666667, 3.2666666667);
-  background-color: rgb(254.44, 247.16, 230.36);
-  border-color: rgb(253.9, 239.6, 206.6);
+  background-color: rgb(253.1866666667, 229.6133333333, 175.2133333333);
+  border-color: rgb(250.92, 197.88, 75.48);
 }
 .btn.btn-badge.color-yellow1:disabled,
 .btn.btn-badge.color-yellow1.disabled {
   color: rgb(143.7333333333, 101.2666666667, 3.2666666667);
-  background-color: rgb(254.7, 250.8, 241.8);
-  border-color: rgb(254.2, 243.8, 219.8);
+  background-color: rgb(254.0933333333, 242.3066666667, 215.1066666667);
+  border-color: rgb(252.5066666667, 220.0933333333, 145.2933333333);
 }
 .btn.btn-badge.color-yellow1:focus-visible {
   outline: 2px solid rgb(143.7333333333, 101.2666666667, 3.2666666667);
@@ -1230,8 +1230,8 @@
 
 .badge.color-yellow2 {
   color: rgb(127.7745283019, 80.9660377358, 6.3254716981);
-  background-color: rgb(253.5, 242.4, 224.7);
-  border: 1px solid rgb(251, 221.4, 174.2);
+  background-color: rgb(253.0754716981, 238.8339622642, 216.1245283019);
+  border: 1px solid rgb(249.7075471698, 210.5433962264, 148.0924528302);
 }
 
 .btn.color-yellow2 {
@@ -1260,25 +1260,25 @@
 
 .btn.btn-badge.color-yellow2 {
   color: rgb(127.7745283019, 80.9660377358, 6.3254716981);
-  background-color: rgb(253.5, 242.4, 224.7);
-  border-color: rgb(251, 221.4, 174.2);
+  background-color: rgb(253.0754716981, 238.8339622642, 216.1245283019);
+  border-color: rgb(249.7075471698, 210.5433962264, 148.0924528302);
 }
 .btn.btn-badge.color-yellow2:hover {
   color: rgb(127.7745283019, 80.9660377358, 6.3254716981);
-  background-color: rgb(252.8, 236.52, 210.56);
-  border-color: #fad59a;
+  background-color: rgb(252.1132075472, 230.7509433962, 196.6867924528);
+  border-color: rgb(247.7830188679, 194.3773584906, 109.2169811321);
 }
 .btn.btn-badge.color-yellow2:active,
 .btn.btn-badge.color-yellow2.active {
   color: rgb(127.7745283019, 80.9660377358, 6.3254716981);
-  background-color: rgb(252.2, 231.48, 198.44);
-  border-color: rgb(249.5, 208.8, 143.9);
+  background-color: rgb(251.1509433962, 222.6679245283, 177.2490566038);
+  border-color: rgb(246.3396226415, 182.2528301887, 80.0603773585);
 }
 .btn.btn-badge.color-yellow2:disabled,
 .btn.btn-badge.color-yellow2.disabled {
   color: rgb(127.7745283019, 80.9660377358, 6.3254716981);
-  background-color: rgb(253.5, 242.4, 224.7);
-  border-color: rgb(251, 221.4, 174.2);
+  background-color: rgb(253.0754716981, 238.8339622642, 216.1245283019);
+  border-color: rgb(249.7075471698, 210.5433962264, 148.0924528302);
 }
 .btn.btn-badge.color-yellow2:focus-visible {
   outline: 2px solid rgb(127.7745283019, 80.9660377358, 6.3254716981);
@@ -1292,8 +1292,8 @@
 
 .badge.color-yellow3 {
   color: rgb(97.2, 52.2, 0);
-  background-color: rgb(249.15, 234.15, 216.75);
-  border: 1px solid rgb(239.4, 199.4, 153);
+  background-color: rgb(255, 236.1111111111, 214.2);
+  border: 1px solid rgb(255, 203.0555555556, 142.8);
 }
 
 .btn.color-yellow3 {
@@ -1322,25 +1322,25 @@
 
 .btn.btn-badge.color-yellow3 {
   color: rgb(97.2, 52.2, 0);
-  background-color: rgb(249.15, 234.15, 216.75);
-  border-color: rgb(239.4, 199.4, 153);
+  background-color: rgb(255, 236.1111111111, 214.2);
+  border-color: rgb(255, 203.0555555556, 142.8);
 }
 .btn.btn-badge.color-yellow3:hover {
   color: rgb(97.2, 52.2, 0);
-  background-color: rgb(246.42, 224.42, 198.9);
-  border-color: rgb(235.5, 185.5, 127.5);
+  background-color: rgb(255, 226.6666666667, 193.8);
+  border-color: rgb(255, 184.1666666667, 102);
 }
 .btn.btn-badge.color-yellow3:active,
 .btn.btn-badge.color-yellow3.active {
   color: rgb(97.2, 52.2, 0);
-  background-color: rgb(244.08, 216.08, 183.6);
-  border-color: rgb(233.55, 178.55, 114.75);
+  background-color: rgb(255, 217.2222222222, 173.4);
+  border-color: rgb(255, 170, 71.4);
 }
 .btn.btn-badge.color-yellow3:disabled,
 .btn.btn-badge.color-yellow3.disabled {
   color: rgb(97.2, 52.2, 0);
-  background-color: rgb(249.15, 234.15, 216.75);
-  border-color: rgb(239.4, 199.4, 153);
+  background-color: rgb(255, 236.1111111111, 214.2);
+  border-color: rgb(255, 203.0555555556, 142.8);
 }
 .btn.btn-badge.color-yellow3:focus-visible {
   outline: 2px solid rgb(97.2, 52.2, 0);
@@ -1354,8 +1354,8 @@
 
 .badge.color-orange1 {
   color: rgb(152.6, 80.4243243243, 0);
-  background-color: rgb(255, 249.75, 243.9);
-  border: 1px solid rgb(255, 241, 225.4);
+  background-color: rgb(255, 235.7027027027, 214.2);
+  border: 1px solid rgb(255, 201.9324324324, 142.8);
 }
 
 .btn.color-orange1 {
@@ -1384,25 +1384,25 @@
 
 .btn.btn-badge.color-orange1 {
   color: rgb(152.6, 80.4243243243, 0);
-  background-color: rgb(255, 249.75, 243.9);
-  border-color: rgb(255, 241, 225.4);
+  background-color: rgb(255, 235.7027027027, 214.2);
+  border-color: rgb(255, 201.9324324324, 142.8);
 }
 .btn.btn-badge.color-orange1:hover {
   color: rgb(152.6, 80.4243243243, 0);
-  background-color: rgb(255, 247.3, 238.72);
-  border-color: rgb(255, 237.5, 218);
+  background-color: rgb(255, 226.0540540541, 193.8);
+  border-color: rgb(255, 182.6351351351, 102);
 }
 .btn.btn-badge.color-orange1:active,
 .btn.btn-badge.color-orange1.active {
   color: rgb(152.6, 80.4243243243, 0);
-  background-color: rgb(255, 245.2, 234.28);
-  border-color: rgb(255, 235.75, 214.3);
+  background-color: rgb(255, 216.4054054054, 173.4);
+  border-color: rgb(255, 168.1621621622, 71.4);
 }
 .btn.btn-badge.color-orange1:disabled,
 .btn.btn-badge.color-orange1.disabled {
   color: rgb(152.6, 80.4243243243, 0);
-  background-color: rgb(255, 249.75, 243.9);
-  border-color: rgb(255, 241, 225.4);
+  background-color: rgb(255, 235.7027027027, 214.2);
+  border-color: rgb(255, 201.9324324324, 142.8);
 }
 .btn.btn-badge.color-orange1:focus-visible {
   outline: 2px solid rgb(152.6, 80.4243243243, 0);
@@ -1416,8 +1416,8 @@
 
 .badge.color-orange2 {
   color: rgb(162.9, 42.9263513514, 0);
-  background-color: rgb(255, 238.65, 232.8);
-  border: 1px solid rgb(255, 211.4, 195.8);
+  background-color: rgb(255, 224.9513513514, 214.2);
+  border: 1px solid rgb(255, 172.3662162162, 142.8);
 }
 
 .btn.color-orange2 {
@@ -1446,25 +1446,25 @@
 
 .btn.btn-badge.color-orange2 {
   color: rgb(162.9, 42.9263513514, 0);
-  background-color: rgb(255, 238.65, 232.8);
-  border-color: rgb(255, 211.4, 195.8);
+  background-color: rgb(255, 224.9513513514, 214.2);
+  border-color: rgb(255, 172.3662162162, 142.8);
 }
 .btn.btn-badge.color-orange2:hover {
   color: rgb(162.9, 42.9263513514, 0);
-  background-color: rgb(255, 231.02, 222.44);
-  border-color: rgb(255, 200.5, 181);
+  background-color: rgb(255, 209.927027027, 193.8);
+  border-color: rgb(255, 142.3175675676, 102);
 }
 .btn.btn-badge.color-orange2:active,
 .btn.btn-badge.color-orange2.active {
   color: rgb(162.9, 42.9263513514, 0);
-  background-color: rgb(255, 224.48, 213.56);
-  border-color: rgb(255, 195.05, 173.6);
+  background-color: rgb(255, 194.9027027027, 173.4);
+  border-color: rgb(255, 119.7810810811, 71.4);
 }
 .btn.btn-badge.color-orange2:disabled,
 .btn.btn-badge.color-orange2.disabled {
   color: rgb(162.9, 42.9263513514, 0);
-  background-color: rgb(255, 238.65, 232.8);
-  border-color: rgb(255, 211.4, 195.8);
+  background-color: rgb(255, 224.9513513514, 214.2);
+  border-color: rgb(255, 172.3662162162, 142.8);
 }
 .btn.btn-badge.color-orange2:focus-visible {
   outline: 2px solid rgb(162.9, 42.9263513514, 0);
@@ -1478,8 +1478,8 @@
 
 .badge.color-orange3 {
   color: rgb(87.75, 36.9, 19.35);
-  background-color: rgb(246, 229.05, 223.2);
-  border: 1px solid rgb(231, 185.8, 170.2);
+  background-color: rgb(247.6285714286, 228.2571428571, 221.5714285714);
+  border: 1px solid rgb(234.7285714286, 181.4571428571, 163.0714285714);
 }
 
 .btn.color-orange3 {
@@ -1508,25 +1508,25 @@
 
 .btn.btn-badge.color-orange3 {
   color: rgb(87.75, 36.9, 19.35);
-  background-color: rgb(246, 229.05, 223.2);
-  border-color: rgb(231, 185.8, 170.2);
+  background-color: rgb(247.6285714286, 228.2571428571, 221.5714285714);
+  border-color: rgb(234.7285714286, 181.4571428571, 163.0714285714);
 }
 .btn.btn-badge.color-orange3:hover {
   color: rgb(87.75, 36.9, 19.35);
-  background-color: rgb(241.8, 216.94, 208.36);
-  border-color: rgb(225, 168.5, 149);
+  background-color: rgb(243.9428571429, 214.8857142857, 204.8571428571);
+  border-color: rgb(227.3571428571, 154.7142857143, 129.6428571429);
 }
 .btn.btn-badge.color-orange3:active,
 .btn.btn-badge.color-orange3.active {
   color: rgb(87.75, 36.9, 19.35);
-  background-color: rgb(238.2, 206.56, 195.64);
-  border-color: rgb(222, 159.85, 138.4);
+  background-color: rgb(240.2571428571, 201.5142857143, 188.1428571429);
+  border-color: rgb(221.8285714286, 134.6571428571, 104.5714285714);
 }
 .btn.btn-badge.color-orange3:disabled,
 .btn.btn-badge.color-orange3.disabled {
   color: rgb(87.75, 36.9, 19.35);
-  background-color: rgb(246, 229.05, 223.2);
-  border-color: rgb(231, 185.8, 170.2);
+  background-color: rgb(247.6285714286, 228.2571428571, 221.5714285714);
+  border-color: rgb(234.7285714286, 181.4571428571, 163.0714285714);
 }
 .btn.btn-badge.color-orange3:focus-visible {
   outline: 2px solid rgb(87.75, 36.9, 19.35);
@@ -1540,8 +1540,8 @@
 
 .badge.color-brown1 {
   color: rgb(167.6495049505, 76.5356435644, 16.4004950495);
-  background-color: rgb(253.65, 246.15, 241.2);
-  border: 1px solid rgb(251.4, 231.4, 218.2);
+  background-color: rgb(251.3643564356, 231.1663366337, 217.8356435644);
+  border: 1px solid rgb(245.001980198, 189.4574257426, 152.798019802);
 }
 
 .btn.color-brown1 {
@@ -1570,25 +1570,25 @@
 
 .btn.btn-badge.color-brown1 {
   color: rgb(167.6495049505, 76.5356435644, 16.4004950495);
-  background-color: rgb(253.65, 246.15, 241.2);
-  border-color: rgb(251.4, 231.4, 218.2);
+  background-color: rgb(251.3643564356, 231.1663366337, 217.8356435644);
+  border-color: rgb(245.001980198, 189.4574257426, 152.798019802);
 }
 .btn.btn-badge.color-brown1:hover {
   color: rgb(167.6495049505, 76.5356435644, 16.4004950495);
-  background-color: rgb(253.02, 242.02, 234.76);
-  border-color: rgb(250.5, 225.5, 209);
+  background-color: rgb(249.5465346535, 219.2495049505, 199.2534653465);
+  border-color: rgb(241.3663366337, 165.6237623762, 115.6336633663);
 }
 .btn.btn-badge.color-brown1:active,
 .btn.btn-badge.color-brown1.active {
   color: rgb(167.6495049505, 76.5356435644, 16.4004950495);
-  background-color: rgb(252.48, 238.48, 229.24);
-  border-color: rgb(250.05, 222.55, 204.4);
+  background-color: rgb(247.7287128713, 207.3326732673, 180.6712871287);
+  border-color: rgb(238.6396039604, 147.7485148515, 87.7603960396);
 }
 .btn.btn-badge.color-brown1:disabled,
 .btn.btn-badge.color-brown1.disabled {
   color: rgb(167.6495049505, 76.5356435644, 16.4004950495);
-  background-color: rgb(253.65, 246.15, 241.2);
-  border-color: rgb(251.4, 231.4, 218.2);
+  background-color: rgb(251.3643564356, 231.1663366337, 217.8356435644);
+  border-color: rgb(245.001980198, 189.4574257426, 152.798019802);
 }
 .btn.btn-badge.color-brown1:focus-visible {
   outline: 2px solid rgb(167.6495049505, 76.5356435644, 16.4004950495);
@@ -1602,8 +1602,8 @@
 
 .badge.color-brown2 {
   color: rgb(107.9701657459, 67.0723756906, 40.0798342541);
-  background-color: rgb(247.65, 240.15, 235.2);
-  border: 1px solid rgb(235.4, 215.4, 202.2);
+  background-color: rgb(243.9546961326, 232.6839779006, 225.2453038674);
+  border: 1px solid rgb(224.6254143646, 193.6309392265, 173.1745856354);
 }
 
 .btn.color-brown2 {
@@ -1632,25 +1632,25 @@
 
 .btn.btn-badge.color-brown2 {
   color: rgb(107.9701657459, 67.0723756906, 40.0798342541);
-  background-color: rgb(247.65, 240.15, 235.2);
-  border-color: rgb(235.4, 215.4, 202.2);
+  background-color: rgb(243.9546961326, 232.6839779006, 225.2453038674);
+  border-color: rgb(224.6254143646, 193.6309392265, 173.1745856354);
 }
 .btn.btn-badge.color-brown2:hover {
   color: rgb(107.9701657459, 67.0723756906, 40.0798342541);
-  background-color: rgb(244.22, 233.22, 225.96);
-  border-color: rgb(230.5, 205.5, 189);
+  background-color: rgb(238.4320441989, 221.5259668508, 210.3679558011);
+  border-color: rgb(213.5801104972, 171.3149171271, 143.4198895028);
 }
 .btn.btn-badge.color-brown2:active,
 .btn.btn-badge.color-brown2.active {
   color: rgb(107.9701657459, 67.0723756906, 40.0798342541);
-  background-color: rgb(241.28, 227.28, 218.04);
-  border-color: rgb(228.05, 200.55, 182.4);
+  background-color: rgb(232.9093922652, 210.3679558011, 195.4906077348);
+  border-color: rgb(205.2961325967, 154.5779005525, 121.1038674033);
 }
 .btn.btn-badge.color-brown2:disabled,
 .btn.btn-badge.color-brown2.disabled {
   color: rgb(107.9701657459, 67.0723756906, 40.0798342541);
-  background-color: rgb(247.65, 240.15, 235.2);
-  border-color: rgb(235.4, 215.4, 202.2);
+  background-color: rgb(243.9546961326, 232.6839779006, 225.2453038674);
+  border-color: rgb(224.6254143646, 193.6309392265, 173.1745856354);
 }
 .btn.btn-badge.color-brown2:focus-visible {
   outline: 2px solid rgb(107.9701657459, 67.0723756906, 40.0798342541);
@@ -1664,8 +1664,8 @@
 
 .badge.color-brown3 {
   color: rgb(63.9, 41.4, 26.55);
-  background-color: rgb(238.05, 230.55, 225.6);
-  border: 1px solid rgb(209.8, 189.8, 176.6);
+  background-color: rgb(243.023880597, 232.8746268657, 226.176119403);
+  border: 1px solid rgb(222.0656716418, 194.1552238806, 175.7343283582);
 }
 
 .btn.color-brown3 {
@@ -1694,25 +1694,25 @@
 
 .btn.btn-badge.color-brown3 {
   color: rgb(63.9, 41.4, 26.55);
-  background-color: rgb(238.05, 230.55, 225.6);
-  border-color: rgb(209.8, 189.8, 176.6);
+  background-color: rgb(243.023880597, 232.8746268657, 226.176119403);
+  border-color: rgb(222.0656716418, 194.1552238806, 175.7343283582);
 }
 .btn.btn-badge.color-brown3:hover {
   color: rgb(63.9, 41.4, 26.55);
-  background-color: rgb(230.14, 219.14, 211.88);
-  border-color: rgb(198.5, 173.5, 157);
+  background-color: rgb(237.0358208955, 221.8119402985, 211.7641791045);
+  border-color: rgb(210.0895522388, 172.0298507463, 146.9104477612);
 }
 .btn.btn-badge.color-brown3:active,
 .btn.btn-badge.color-brown3.active {
   color: rgb(63.9, 41.4, 26.55);
-  background-color: rgb(223.36, 209.36, 200.12);
-  border-color: rgb(192.85, 165.35, 147.2);
+  background-color: rgb(231.047761194, 210.7492537313, 197.352238806);
+  border-color: rgb(201.1074626866, 155.4358208955, 125.2925373134);
 }
 .btn.btn-badge.color-brown3:disabled,
 .btn.btn-badge.color-brown3.disabled {
   color: rgb(63.9, 41.4, 26.55);
-  background-color: rgb(238.05, 230.55, 225.6);
-  border-color: rgb(209.8, 189.8, 176.6);
+  background-color: rgb(243.023880597, 232.8746268657, 226.176119403);
+  border-color: rgb(222.0656716418, 194.1552238806, 175.7343283582);
 }
 .btn.btn-badge.color-brown3:focus-visible {
   outline: 2px solid rgb(63.9, 41.4, 26.55);
@@ -1726,8 +1726,8 @@
 
 .badge.color-gray1 {
   color: rgb(100.8, 100.8, 100.8);
-  background-color: rgb(250.35, 250.35, 250.35);
-  border: 1px solid rgb(242.6, 242.6, 242.6);
+  background-color: rgb(234.6, 234.6, 234.6);
+  border: 1px solid rgb(198.9, 198.9, 198.9);
 }
 
 .btn.color-gray1 {
@@ -1756,25 +1756,25 @@
 
 .btn.btn-badge.color-gray1 {
   color: rgb(100.8, 100.8, 100.8);
-  background-color: rgb(250.35, 250.35, 250.35);
-  border-color: rgb(242.6, 242.6, 242.6);
+  background-color: rgb(234.6, 234.6, 234.6);
+  border-color: rgb(198.9, 198.9, 198.9);
 }
 .btn.btn-badge.color-gray1:hover {
   color: rgb(100.8, 100.8, 100.8);
-  background-color: rgb(248.18, 248.18, 248.18);
-  border-color: rgb(239.5, 239.5, 239.5);
+  background-color: rgb(224.4, 224.4, 224.4);
+  border-color: rgb(178.5, 178.5, 178.5);
 }
 .btn.btn-badge.color-gray1:active,
 .btn.btn-badge.color-gray1.active {
   color: rgb(100.8, 100.8, 100.8);
-  background-color: rgb(246.32, 246.32, 246.32);
-  border-color: rgb(237.95, 237.95, 237.95);
+  background-color: rgb(214.2, 214.2, 214.2);
+  border-color: rgb(163.2, 163.2, 163.2);
 }
 .btn.btn-badge.color-gray1:disabled,
 .btn.btn-badge.color-gray1.disabled {
   color: rgb(100.8, 100.8, 100.8);
-  background-color: rgb(250.35, 250.35, 250.35);
-  border-color: rgb(242.6, 242.6, 242.6);
+  background-color: rgb(234.6, 234.6, 234.6);
+  border-color: rgb(198.9, 198.9, 198.9);
 }
 .btn.btn-badge.color-gray1:focus-visible {
   outline: 2px solid rgb(100.8, 100.8, 100.8);
@@ -1788,8 +1788,8 @@
 
 .badge.color-gray2 {
   color: rgb(64.8, 64.8, 64.8);
-  background-color: rgb(238.35, 238.35, 238.35);
-  border: 1px solid rgb(210.6, 210.6, 210.6);
+  background-color: rgb(234.6, 234.6, 234.6);
+  border: 1px solid rgb(198.9, 198.9, 198.9);
 }
 
 .btn.color-gray2 {
@@ -1818,25 +1818,25 @@
 
 .btn.btn-badge.color-gray2 {
   color: rgb(64.8, 64.8, 64.8);
-  background-color: rgb(238.35, 238.35, 238.35);
-  border-color: rgb(210.6, 210.6, 210.6);
+  background-color: rgb(234.6, 234.6, 234.6);
+  border-color: rgb(198.9, 198.9, 198.9);
 }
 .btn.btn-badge.color-gray2:hover {
   color: rgb(64.8, 64.8, 64.8);
-  background-color: rgb(230.58, 230.58, 230.58);
-  border-color: rgb(199.5, 199.5, 199.5);
+  background-color: rgb(224.4, 224.4, 224.4);
+  border-color: rgb(178.5, 178.5, 178.5);
 }
 .btn.btn-badge.color-gray2:active,
 .btn.btn-badge.color-gray2.active {
   color: rgb(64.8, 64.8, 64.8);
-  background-color: rgb(223.92, 223.92, 223.92);
-  border-color: rgb(193.95, 193.95, 193.95);
+  background-color: rgb(214.2, 214.2, 214.2);
+  border-color: rgb(163.2, 163.2, 163.2);
 }
 .btn.btn-badge.color-gray2:disabled,
 .btn.btn-badge.color-gray2.disabled {
   color: rgb(64.8, 64.8, 64.8);
-  background-color: rgb(238.35, 238.35, 238.35);
-  border-color: rgb(210.6, 210.6, 210.6);
+  background-color: rgb(234.6, 234.6, 234.6);
+  border-color: rgb(198.9, 198.9, 198.9);
 }
 .btn.btn-badge.color-gray2:focus-visible {
   outline: 2px solid rgb(64.8, 64.8, 64.8);
@@ -1850,8 +1850,8 @@
 
 .badge.color-gray3 {
   color: #242424;
-  background-color: rgb(228.75, 228.75, 228.75);
-  border: 1px solid #b9b9b9;
+  background-color: rgb(234.6, 234.6, 234.6);
+  border: 1px solid rgb(198.9, 198.9, 198.9);
 }
 
 .btn.color-gray3 {
@@ -1880,25 +1880,25 @@
 
 .btn.btn-badge.color-gray3 {
   color: #242424;
-  background-color: rgb(228.75, 228.75, 228.75);
-  border-color: #b9b9b9;
+  background-color: rgb(234.6, 234.6, 234.6);
+  border-color: rgb(198.9, 198.9, 198.9);
 }
 .btn.btn-badge.color-gray3:hover {
   color: #242424;
-  background-color: rgb(216.5, 216.5, 216.5);
-  border-color: rgb(167.5, 167.5, 167.5);
+  background-color: rgb(224.4, 224.4, 224.4);
+  border-color: rgb(178.5, 178.5, 178.5);
 }
 .btn.btn-badge.color-gray3:active,
 .btn.btn-badge.color-gray3.active {
   color: #242424;
-  background-color: #cecece;
-  border-color: rgb(158.75, 158.75, 158.75);
+  background-color: rgb(214.2, 214.2, 214.2);
+  border-color: rgb(163.2, 163.2, 163.2);
 }
 .btn.btn-badge.color-gray3:disabled,
 .btn.btn-badge.color-gray3.disabled {
   color: #242424;
-  background-color: rgb(228.75, 228.75, 228.75);
-  border-color: #b9b9b9;
+  background-color: rgb(234.6, 234.6, 234.6);
+  border-color: rgb(198.9, 198.9, 198.9);
 }
 .btn.btn-badge.color-gray3:focus-visible {
   outline: 2px solid #242424;
