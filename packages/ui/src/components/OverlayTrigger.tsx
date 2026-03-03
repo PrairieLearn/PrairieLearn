@@ -131,8 +131,10 @@ export function OverlayTrigger({
       focusTrapRef.current = null;
     }
 
-    // Return focus to the trigger element
-    if (returnFocus && triggerElementRef.current) {
+    // Return focus to the trigger element (only for click-triggered overlays;
+    // for focus-triggered tooltips this would create an infinite loop since
+    // refocusing the trigger re-shows the tooltip).
+    if (returnFocus && triggerElementRef.current && props.trigger === 'click') {
       triggerElementRef.current.focus();
       triggerElementRef.current = null;
     }
