@@ -1,6 +1,3 @@
-/* eslint-disable @html-eslint/no-ineffective-attrs */
-// @html-eslint/no-ineffective-attrs is a false positive since htmx modifies the form element.
-
 import { html } from '@prairielearn/html';
 
 import { PageLayout } from '../../components/PageLayout.js';
@@ -27,6 +24,7 @@ export function ExternalImageCapture({
     content: html`
       <form
         id="external-image-capture-form"
+        method="POST"
         hx-post
         hx-trigger="submit"
         hx-swap="none"
