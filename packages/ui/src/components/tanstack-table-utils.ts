@@ -44,10 +44,12 @@ export function createColumnFiltersChangeHandler(
       columnFilterSetters[filter.id]?.(filter.id, filter.value);
     }
 
-    // Clear filters that were removed
+    // Clear filters that were removed. We use `null` rather than a type-specific
+    // empty value (e.g. `[]`) so that callers backed by nuqs will remove the URL
+    // parameter and fall back to the parser's default.
     for (const id of currentFilterIds) {
       if (!newFilterIds.has(id)) {
-        columnFilterSetters[id]?.(id, []);
+        columnFilterSetters[id]?.(id, null);
       }
     }
   };
