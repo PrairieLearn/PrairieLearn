@@ -128,20 +128,46 @@ function AssessmentEditorInner({
     useSensor(KeyboardSensor, { coordinateGetter: sortableKeyboardCoordinates }),
   );
 
-  // When dragging a question, ignore alternative droppables so collision
-  // detection resolves to the alt group block itself (not its children).
-  // This lets the question-level SortableContext provide correct visual feedback.
+  // Custom collision detection with two strategies:
+  // 1. For standalone question drags: use rect containment to detect if the dragged
+  //    item is inside an alt group's merge zone (body area). If yes, return the merge
+  //    zone so the question can be merged into the group on drop. If no, fall through
+  //    to closestCenter for normal reorder.
+  // 2. For all question drags: filter alternatives (so SortableContext provides smooth
+  //    visual reorder) and filter merge zones (handled by #1 above).
+  // 3. For other drags (alternatives, zones): filter merge zones only.
   const collisionDetection: CollisionDetection = (args) => {
-    const activeType = args.active.data.current?.type;
-    if (activeType === 'question') {
-      return closestCenter({
-        ...args,
-        droppableContainers: args.droppableContainers.filter(
-          (c) => c.data.current?.type !== 'alternative',
-        ),
-      });
+    const activeData = args.active.data.current;
+    const activeType = activeData?.type;
+
+    // For standalone questions, check merge zones via rect containment first.
+    // closestCenter doesn't work here because the merge zone overlaps with the
+    // question-level sortable and the sortable's center often wins.
+    if (activeType === 'question' && !activeData?.hasAlternatives) {
+      const dragCenterY = args.collisionRect.top + args.collisionRect.height / 2;
+      for (const container of args.droppableContainers) {
+        if (container.data.current?.type !== 'merge-zone') continue;
+        const rect = args.droppableRects.get(container.id);
+        if (!rect) continue;
+        // Inset the merge zone so the edges of the alt group body still resolve
+        // to reorder. This gives the user room to drag past the group without
+        // accidentally triggering a merge.
+        const inset = Math.min(20, (rect.bottom - rect.top) / 4);
+        if (dragCenterY >= rect.top + inset && dragCenterY <= rect.bottom - inset) {
+          return [{ id: container.id }];
+        }
+      }
     }
-    return closestCenter(args);
+
+    // Filter alternatives and merge zones for question drags; only merge zones for others.
+    const filtered = args.droppableContainers.filter((c) => {
+      const type = c.data.current?.type;
+      if (activeType === 'question' && type === 'alternative') return false;
+      if (type === 'merge-zone') return false;
+      return true;
+    });
+
+    return closestCenter({ ...args, droppableContainers: filtered });
   };
 
   const positionByStableId = useMemo(() => {
@@ -477,6 +503,18 @@ function AssessmentEditorInner({
       return;
     }
 
+    // Merge standalone question into alt group via merge zone
+    if (over.data.current?.type === 'merge-zone') {
+      const altGroupTrackingId = over.data.current.altGroupTrackingId as string;
+      dispatch({
+        type: 'MERGE_QUESTION_INTO_ALT_GROUP',
+        questionTrackingId: activeIdStr,
+        toAltGroupTrackingId: altGroupTrackingId,
+        beforeAlternativeTrackingId: null,
+      });
+      return;
+    }
+
     // Question block reorder within same zone
     const fromPosition = positionByStableId[activeIdStr];
     const rawToPosition = positionByStableId[overIdStr];
@@ -512,9 +550,12 @@ function AssessmentEditorInner({
     if (!over) return;
 
     const activeType = active.data.current?.type as 'zone' | 'question' | 'alternative' | undefined;
-    const overType = over.data.current?.type as 'zone' | 'question' | 'alternative' | undefined;
+    const overType = over.data.current?.type as string | undefined;
     const activeIdStr = String(active.id);
     const overIdStr = String(over.id);
+
+    // Merge zone — handled in handleDragEnd, ignore during dragOver
+    if (overType === 'merge-zone') return;
 
     if (activeType === 'alternative') {
       const fromPos = positionByStableId[activeIdStr];

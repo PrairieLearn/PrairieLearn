@@ -1,3 +1,4 @@
+import { useDroppable } from '@dnd-kit/core';
 import { SortableContext, useSortable, verticalListSortingStrategy } from '@dnd-kit/sortable';
 import clsx from 'clsx';
 import { type Dispatch, useMemo } from 'react';
@@ -54,11 +55,23 @@ export function TreeQuestionBlockNode({
 
   const { attributes, listeners, setNodeRef, transform, transition, isDragging } = useSortable({
     id: zoneQuestionBlock.trackingId,
-    data: { type: 'question' },
+    data: { type: 'question', hasAlternatives },
     disabled: !editMode,
   });
 
+  const { setNodeRef: mergeDropRef, isOver: isMergeOver } = useDroppable({
+    id: `${zoneQuestionBlock.trackingId}-merge`,
+    data: { type: 'merge-zone', altGroupTrackingId: zoneQuestionBlock.trackingId },
+    disabled: !editMode || !hasAlternatives || isCollapsed,
+  });
+
   const sortableStyle = makeSortableStyle({ isDragging, transform, transition });
+
+  const alternatives = zoneQuestionBlock.alternatives;
+  const alternativeIds = useMemo(
+    () => (alternatives ?? []).map((a) => a.trackingId),
+    [alternatives],
+  );
 
   const isAltGroupSelected =
     selectedItem?.type === 'altGroup' &&
@@ -103,9 +116,7 @@ export function TreeQuestionBlockNode({
   }
 
   // Alternative group
-  const alternatives = zoneQuestionBlock.alternatives ?? [];
-  const alternativeCount = alternatives.length;
-  const alternativeIds = useMemo(() => alternatives.map((a) => a.trackingId), [alternatives]);
+  const alternativeCount = alternatives?.length ?? 0;
 
   return (
     <div ref={setNodeRef} style={sortableStyle}>
@@ -179,47 +190,53 @@ export function TreeQuestionBlockNode({
 
       {/* Alternatives */}
       {!isCollapsed && (
-        <SortableContext items={alternativeIds} strategy={verticalListSortingStrategy}>
-          {alternatives.map((alternative) => {
-            const altQuestionData = alternative.id ? questionMetadata[alternative.id] : null;
-            const isAltSelected =
-              selectedItem?.type === 'alternative' &&
-              selectedItem.questionTrackingId === zoneQuestionBlock.trackingId &&
-              selectedItem.alternativeTrackingId === alternative.trackingId;
+        <div
+          ref={mergeDropRef}
+          className={clsx(isMergeOver && 'border border-primary rounded bg-primary-subtle')}
+          style={isMergeOver ? { opacity: 0.85 } : undefined}
+        >
+          <SortableContext items={alternativeIds} strategy={verticalListSortingStrategy}>
+            {alternatives?.map((alternative) => {
+              const altQuestionData = alternative.id ? questionMetadata[alternative.id] : null;
+              const isAltSelected =
+                selectedItem?.type === 'alternative' &&
+                selectedItem.questionTrackingId === zoneQuestionBlock.trackingId &&
+                selectedItem.alternativeTrackingId === alternative.trackingId;
 
-            return (
-              <SortableAlternativeRow
-                key={alternative.trackingId}
-                alternative={alternative}
-                zoneQuestionBlock={zoneQuestionBlock}
-                questionData={altQuestionData}
-                editMode={editMode}
-                viewType={viewType}
-                isSelected={isAltSelected}
-                urlPrefix={urlPrefix}
-                hasCoursePermissionPreview={hasCoursePermissionPreview}
-                assessmentType={assessmentType}
-                onClick={() =>
-                  setSelectedItem({
-                    type: 'alternative',
-                    questionTrackingId: zoneQuestionBlock.trackingId,
-                    alternativeTrackingId: alternative.trackingId,
-                  })
-                }
-                onDelete={
-                  editMode
-                    ? () =>
-                        onDeleteQuestion(
-                          zoneQuestionBlock.trackingId,
-                          alternative.id,
-                          alternative.trackingId,
-                        )
-                    : undefined
-                }
-              />
-            );
-          })}
-        </SortableContext>
+              return (
+                <SortableAlternativeRow
+                  key={alternative.trackingId}
+                  alternative={alternative}
+                  zoneQuestionBlock={zoneQuestionBlock}
+                  questionData={altQuestionData}
+                  editMode={editMode}
+                  viewType={viewType}
+                  isSelected={isAltSelected}
+                  urlPrefix={urlPrefix}
+                  hasCoursePermissionPreview={hasCoursePermissionPreview}
+                  assessmentType={assessmentType}
+                  onClick={() =>
+                    setSelectedItem({
+                      type: 'alternative',
+                      questionTrackingId: zoneQuestionBlock.trackingId,
+                      alternativeTrackingId: alternative.trackingId,
+                    })
+                  }
+                  onDelete={
+                    editMode
+                      ? () =>
+                          onDeleteQuestion(
+                            zoneQuestionBlock.trackingId,
+                            alternative.id,
+                            alternative.trackingId,
+                          )
+                      : undefined
+                  }
+                />
+              );
+            })}
+          </SortableContext>
+        </div>
       )}
     </div>
   );
