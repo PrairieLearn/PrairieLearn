@@ -723,7 +723,7 @@ describe('Question syncing', () => {
     assert.equal(newQuestionRow2.uuid, '0e3097ba-b554-4908-9eac-d46a78d6c249');
   });
 
-  it('defaults external_grading_enabled to false', async () => {
+  it('defaults external_grading_enabled based on presence of externalGradingOptions', async () => {
     const courseData = util.getCourseData();
 
     // Question with no externalGradingOptions at all
@@ -746,7 +746,7 @@ describe('Question syncing', () => {
     assert.isFalse(syncedWithout?.external_grading_enabled);
 
     const syncedWith = syncedQuestions.find((q) => q.qid === 'extGradingNoEnabled');
-    assert.isFalse(syncedWith?.external_grading_enabled);
+    assert.isTrue(syncedWith?.external_grading_enabled);
   });
 
   it('syncs draft questions', async () => {
