@@ -341,7 +341,11 @@ function CourseInsertForm({
         </label>
         <select
           id="courseAddInstitution"
-          className={clsx('form-select', errors.institution_id && 'is-invalid')}
+          className={clsx(
+            'form-select',
+            selectedInstitution && isDefaultInstitution && 'is-warning',
+            errors.institution_id && 'is-invalid',
+          )}
           {...register('institution_id', {
             required: 'Select an institution',
             onChange: (e) => {
