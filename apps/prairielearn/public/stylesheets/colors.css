@@ -90,12 +90,14 @@
   background-color: #ffe0d7;
   border-color: #ff9a7b;
 }
-.btn.btn-badge.color-red1:active, .btn.btn-badge.color-red1.active {
+.btn.btn-badge.color-red1:active,
+.btn.btn-badge.color-red1.active {
   color: #c73000;
   background-color: #ffd1c2;
   border-color: #ff835c;
 }
-.btn.btn-badge.color-red1:disabled, .btn.btn-badge.color-red1.disabled {
+.btn.btn-badge.color-red1:disabled,
+.btn.btn-badge.color-red1.disabled {
   color: #c73000;
   background-color: #fff0eb;
   border-color: #ffb9a4;
@@ -150,12 +152,14 @@
   background-color: #ffc1ba;
   border-color: #ff6e5e;
 }
-.btn.btn-badge.color-red2:active, .btn.btn-badge.color-red2.active {
+.btn.btn-badge.color-red2:active,
+.btn.btn-badge.color-red2.active {
   color: #9c0f00;
   background-color: #ffaea5;
   border-color: #ff523f;
 }
-.btn.btn-badge.color-red2:disabled, .btn.btn-badge.color-red2.disabled {
+.btn.btn-badge.color-red2:disabled,
+.btn.btn-badge.color-red2.disabled {
   color: #9c0f00;
   background-color: #ffd3ce;
   border-color: #ff9387;
@@ -210,12 +214,14 @@
   background-color: #f2aaa3;
   border-color: #e76052;
 }
-.btn.btn-badge.color-red3:active, .btn.btn-badge.color-red3.active {
+.btn.btn-badge.color-red3:active,
+.btn.btn-badge.color-red3.active {
   color: #5a140d;
   background-color: #ef9a91;
   border-color: #e34737;
 }
-.btn.btn-badge.color-red3:disabled, .btn.btn-badge.color-red3.disabled {
+.btn.btn-badge.color-red3:disabled,
+.btn.btn-badge.color-red3.disabled {
   color: #5a140d;
   background-color: #f5bbb5;
   border-color: #ec8176;
@@ -270,12 +276,14 @@
   background-color: #ffd7e7;
   border-color: #ff7bb2;
 }
-.btn.btn-badge.color-pink1:active, .btn.btn-badge.color-pink1.active {
+.btn.btn-badge.color-pink1:active,
+.btn.btn-badge.color-pink1.active {
   color: #c70053;
   background-color: #ffc2dc;
   border-color: #ff5ca0;
 }
-.btn.btn-badge.color-pink1:disabled, .btn.btn-badge.color-pink1.disabled {
+.btn.btn-badge.color-pink1:disabled,
+.btn.btn-badge.color-pink1.disabled {
   color: #c70053;
   background-color: #ffebf3;
   border-color: #ffa4ca;
@@ -330,12 +338,14 @@
   background-color: #fdbad4;
   border-color: #fa619b;
 }
-.btn.btn-badge.color-pink2:active, .btn.btn-badge.color-pink2.active {
+.btn.btn-badge.color-pink2:active,
+.btn.btn-badge.color-pink2.active {
   color: #95053c;
   background-color: #fca7c7;
   border-color: #f94489;
 }
-.btn.btn-badge.color-pink2:disabled, .btn.btn-badge.color-pink2.disabled {
+.btn.btn-badge.color-pink2:disabled,
+.btn.btn-badge.color-pink2.disabled {
   color: #95053c;
   background-color: #fecee0;
   border-color: #fb89b4;
@@ -390,12 +400,14 @@
   background-color: #f1a0bf;
   border-color: #e55089;
 }
-.btn.btn-badge.color-pink3:active, .btn.btn-badge.color-pink3.active {
+.btn.btn-badge.color-pink3:active,
+.btn.btn-badge.color-pink3.active {
   color: #540d28;
   background-color: #ee8eb3;
   border-color: #e13677;
 }
-.btn.btn-badge.color-pink3:disabled, .btn.btn-badge.color-pink3.disabled {
+.btn.btn-badge.color-pink3:disabled,
+.btn.btn-badge.color-pink3.disabled {
   color: #540d28;
   background-color: #f3b2cb;
   border-color: #ea74a1;
@@ -450,12 +462,14 @@
   background-color: #ece1ef;
   border-color: #c8a5ce;
 }
-.btn.btn-badge.color-purple1:active, .btn.btn-badge.color-purple1.active {
+.btn.btn-badge.color-purple1:active,
+.btn.btn-badge.color-purple1.active {
   color: #72437b;
   background-color: #e4d3e7;
   border-color: #bc91c3;
 }
-.btn.btn-badge.color-purple1:disabled, .btn.btn-badge.color-purple1.disabled {
+.btn.btn-badge.color-purple1:disabled,
+.btn.btn-badge.color-purple1.disabled {
   color: #72437b;
   background-color: #f4eef6;
   border-color: #d8c0dd;
@@ -510,12 +524,14 @@
   background-color: #d8bfe3;
   border-color: #b27fc7;
 }
-.btn.btn-badge.color-purple2:active, .btn.btn-badge.color-purple2.active {
+.btn.btn-badge.color-purple2:active,
+.btn.btn-badge.color-purple2.active {
   color: #472555;
   background-color: #d0b1dd;
   border-color: #a56abd;
 }
-.btn.btn-badge.color-purple2:disabled, .btn.btn-badge.color-purple2.disabled {
+.btn.btn-badge.color-purple2:disabled,
+.btn.btn-badge.color-purple2.disabled {
   color: #472555;
   background-color: #e1cde9;
   border-color: #c39cd3;
@@ -570,12 +586,14 @@
   background-color: #d18fed;
   border-color: #b140e0;
 }
-.btn.btn-badge.color-purple3:active, .btn.btn-badge.color-purple3.active {
+.btn.btn-badge.color-purple3:active,
+.btn.btn-badge.color-purple3.active {
   color: #2a0938;
   background-color: #ca7dea;
   border-color: #a626dc;
 }
-.btn.btn-badge.color-purple3:disabled, .btn.btn-badge.color-purple3.disabled {
+.btn.btn-badge.color-purple3:disabled,
+.btn.btn-badge.color-purple3.disabled {
   color: #2a0938;
   background-color: #d8a1f0;
   border-color: #bf63e6;
@@ -630,12 +648,14 @@
   background-color: #afeeff;
   border-color: #53dbff;
 }
-.btn.btn-badge.color-blue1:active, .btn.btn-badge.color-blue1.active {
+.btn.btn-badge.color-blue1:active,
+.btn.btn-badge.color-blue1.active {
   color: #006f8c;
   background-color: #9beaff;
   border-color: #35d4ff;
 }
-.btn.btn-badge.color-blue1:disabled, .btn.btn-badge.color-blue1.disabled {
+.btn.btn-badge.color-blue1:disabled,
+.btn.btn-badge.color-blue1.disabled {
   color: #006f8c;
   background-color: #c4f2ff;
   border-color: #7ce3ff;
@@ -690,12 +710,14 @@
   background-color: #a2d9f8;
   border-color: #4db7f1;
 }
-.btn.btn-badge.color-blue2:active, .btn.btn-badge.color-blue2.active {
+.btn.btn-badge.color-blue2:active,
+.btn.btn-badge.color-blue2.active {
   color: #084465;
   background-color: #8fd1f6;
   border-color: #30abee;
 }
-.btn.btn-badge.color-blue2:disabled, .btn.btn-badge.color-blue2.disabled {
+.btn.btn-badge.color-blue2:disabled,
+.btn.btn-badge.color-blue2.disabled {
   color: #084465;
   background-color: #b5e1f9;
   border-color: #72c6f4;
@@ -750,12 +772,14 @@
   background-color: #82c6ff;
   border-color: #269cff;
 }
-.btn.btn-badge.color-blue3:active, .btn.btn-badge.color-blue3.active {
+.btn.btn-badge.color-blue3:active,
+.btn.btn-badge.color-blue3.active {
   color: #002748;
   background-color: #6dbcff;
   border-color: #078eff;
 }
-.btn.btn-badge.color-blue3:disabled, .btn.btn-badge.color-blue3.disabled {
+.btn.btn-badge.color-blue3:disabled,
+.btn.btn-badge.color-blue3.disabled {
   color: #002748;
   background-color: #96cfff;
   border-color: #4fafff;
@@ -810,12 +834,14 @@
   background-color: #bbfdfc;
   border-color: #62faf7;
 }
-.btn.btn-badge.color-turquoise1:active, .btn.btn-badge.color-turquoise1.active {
+.btn.btn-badge.color-turquoise1:active,
+.btn.btn-badge.color-turquoise1.active {
   color: #047573;
   background-color: #a7fcfb;
   border-color: #44f9f6;
 }
-.btn.btn-badge.color-turquoise1:disabled, .btn.btn-badge.color-turquoise1.disabled {
+.btn.btn-badge.color-turquoise1:disabled,
+.btn.btn-badge.color-turquoise1.disabled {
   color: #047573;
   background-color: #cffefd;
   border-color: #89fbf9;
@@ -870,12 +896,14 @@
   background-color: #aaefea;
   border-color: #5de0d7;
 }
-.btn.btn-badge.color-turquoise2:active, .btn.btn-badge.color-turquoise2.active {
+.btn.btn-badge.color-turquoise2:active,
+.btn.btn-badge.color-turquoise2.active {
   color: #125b56;
   background-color: #99ebe6;
   border-color: #44dbd1;
 }
-.btn.btn-badge.color-turquoise2:disabled, .btn.btn-badge.color-turquoise2.disabled {
+.btn.btn-badge.color-turquoise2:disabled,
+.btn.btn-badge.color-turquoise2.disabled {
   color: #125b56;
   background-color: #bcf2ee;
   border-color: #80e7e0;
@@ -930,12 +958,14 @@
   background-color: #7bfff5;
   border-color: #1fffed;
 }
-.btn.btn-badge.color-turquoise3:active, .btn.btn-badge.color-turquoise3.active {
+.btn.btn-badge.color-turquoise3:active,
+.btn.btn-badge.color-turquoise3.active {
   color: #003f3a;
   background-color: #67fff3;
   border-color: #01ffeb;
 }
-.btn.btn-badge.color-turquoise3:disabled, .btn.btn-badge.color-turquoise3.disabled {
+.btn.btn-badge.color-turquoise3:disabled,
+.btn.btn-badge.color-turquoise3.disabled {
   color: #003f3a;
   background-color: #90fff6;
   border-color: #48fff1;
@@ -990,12 +1020,14 @@
   background-color: #c9ffe1;
   border-color: #6dffaf;
 }
-.btn.btn-badge.color-green1:active, .btn.btn-badge.color-green1.active {
+.btn.btn-badge.color-green1:active,
+.btn.btn-badge.color-green1.active {
   color: #00632d;
   background-color: #b4ffd6;
   border-color: #4eff9e;
 }
-.btn.btn-badge.color-green1:disabled, .btn.btn-badge.color-green1.disabled {
+.btn.btn-badge.color-green1:disabled,
+.btn.btn-badge.color-green1.disabled {
   color: #00632d;
   background-color: #ddffec;
   border-color: #96ffc5;
@@ -1050,12 +1082,14 @@
   background-color: #afedc9;
   border-color: #64dc97;
 }
-.btn.btn-badge.color-green2:active, .btn.btn-badge.color-green2.active {
+.btn.btn-badge.color-green2:active,
+.btn.btn-badge.color-green2.active {
   color: #155c33;
   background-color: #9ee9be;
   border-color: #4bd686;
 }
-.btn.btn-badge.color-green2:disabled, .btn.btn-badge.color-green2.disabled {
+.btn.btn-badge.color-green2:disabled,
+.btn.btn-badge.color-green2.disabled {
   color: #155c33;
   background-color: #bff1d4;
   border-color: #85e4ad;
@@ -1110,12 +1144,14 @@
   background-color: #7cffaa;
   border-color: #20ff6e;
 }
-.btn.btn-badge.color-green3:active, .btn.btn-badge.color-green3.active {
+.btn.btn-badge.color-green3:active,
+.btn.btn-badge.color-green3.active {
   color: #003f16;
   background-color: #67ff9c;
   border-color: #01ff5a;
 }
-.btn.btn-badge.color-green3:disabled, .btn.btn-badge.color-green3.disabled {
+.btn.btn-badge.color-green3:disabled,
+.btn.btn-badge.color-green3.disabled {
   color: #003f16;
   background-color: #90ffb7;
   border-color: #49ff88;
@@ -1170,12 +1206,14 @@
   background-color: #fef0d1;
   border-color: #fcd477;
 }
-.btn.btn-badge.color-yellow1:active, .btn.btn-badge.color-yellow1.active {
+.btn.btn-badge.color-yellow1:active,
+.btn.btn-badge.color-yellow1.active {
   color: #906503;
   background-color: #fdeabd;
   border-color: #fbca59;
 }
-.btn.btn-badge.color-yellow1:disabled, .btn.btn-badge.color-yellow1.disabled {
+.btn.btn-badge.color-yellow1:disabled,
+.btn.btn-badge.color-yellow1.disabled {
   color: #906503;
   background-color: #fef7e5;
   border-color: #fde09f;
@@ -1230,12 +1268,14 @@
   background-color: #fbdeaf;
   border-color: #f7b957;
 }
-.btn.btn-badge.color-yellow2:active, .btn.btn-badge.color-yellow2.active {
+.btn.btn-badge.color-yellow2:active,
+.btn.btn-badge.color-yellow2.active {
   color: #805106;
   background-color: #fad69c;
   border-color: #f5ad3a;
 }
-.btn.btn-badge.color-yellow2:disabled, .btn.btn-badge.color-yellow2.disabled {
+.btn.btn-badge.color-yellow2:disabled,
+.btn.btn-badge.color-yellow2.disabled {
   color: #805106;
   background-color: #fce6c2;
   border-color: #f9ca7e;
@@ -1290,12 +1330,14 @@
   background-color: #ffcd92;
   border-color: #ffa237;
 }
-.btn.btn-badge.color-yellow3:active, .btn.btn-badge.color-yellow3.active {
+.btn.btn-badge.color-yellow3:active,
+.btn.btn-badge.color-yellow3.active {
   color: #613400;
   background-color: #ffc37e;
   border-color: #ff9418;
 }
-.btn.btn-badge.color-yellow3:disabled, .btn.btn-badge.color-yellow3.disabled {
+.btn.btn-badge.color-yellow3:disabled,
+.btn.btn-badge.color-yellow3.disabled {
   color: #613400;
   background-color: #ffd6a7;
   border-color: #ffb55f;
@@ -1350,12 +1392,14 @@
   background-color: #ffebd4;
   border-color: #ffbf79;
 }
-.btn.btn-badge.color-orange1:active, .btn.btn-badge.color-orange1.active {
+.btn.btn-badge.color-orange1:active,
+.btn.btn-badge.color-orange1.active {
   color: #995000;
   background-color: #ffe1c0;
   border-color: #ffb15a;
 }
-.btn.btn-badge.color-orange1:disabled, .btn.btn-badge.color-orange1.disabled {
+.btn.btn-badge.color-orange1:disabled,
+.btn.btn-badge.color-orange1.disabled {
   color: #995000;
   background-color: #fff5e9;
   border-color: #ffd3a1;
@@ -1410,12 +1454,14 @@
   background-color: #ffcfbe;
   border-color: #ff8c62;
 }
-.btn.btn-badge.color-orange2:active, .btn.btn-badge.color-orange2.active {
+.btn.btn-badge.color-orange2:active,
+.btn.btn-badge.color-orange2.active {
   color: #a32b00;
   background-color: #ffc0aa;
   border-color: #ff7544;
 }
-.btn.btn-badge.color-orange2:disabled, .btn.btn-badge.color-orange2.disabled {
+.btn.btn-badge.color-orange2:disabled,
+.btn.btn-badge.color-orange2.disabled {
   color: #a32b00;
   background-color: #ffded3;
   border-color: #ffaa8b;
@@ -1470,12 +1516,14 @@
   background-color: #edbcab;
   border-color: #dc8060;
 }
-.btn.btn-badge.color-orange3:active, .btn.btn-badge.color-orange3.active {
+.btn.btn-badge.color-orange3:active,
+.btn.btn-badge.color-orange3.active {
   color: #582513;
   background-color: #e9af9b;
   border-color: #d66c47;
 }
-.btn.btn-badge.color-orange3:disabled, .btn.btn-badge.color-orange3.disabled {
+.btn.btn-badge.color-orange3:disabled,
+.btn.btn-badge.color-orange3.disabled {
   color: #582513;
   background-color: #f0cabc;
   border-color: #e39b82;
@@ -1530,12 +1578,14 @@
   background-color: #fae1d1;
   border-color: #f2ac7d;
 }
-.btn.btn-badge.color-brown1:active, .btn.btn-badge.color-brown1.active {
+.btn.btn-badge.color-brown1:active,
+.btn.btn-badge.color-brown1.active {
   color: #a84d10;
   background-color: #f9d5be;
   border-color: #f09a61;
 }
-.btn.btn-badge.color-brown1:disabled, .btn.btn-badge.color-brown1.disabled {
+.btn.btn-badge.color-brown1:disabled,
+.btn.btn-badge.color-brown1.disabled {
   color: #a84d10;
   background-color: #fcede3;
   border-color: #f6c4a2;
@@ -1590,12 +1640,14 @@
   background-color: #ebd6c9;
   border-color: #d2a486;
 }
-.btn.btn-badge.color-brown2:active, .btn.btn-badge.color-brown2.active {
+.btn.btn-badge.color-brown2:active,
+.btn.btn-badge.color-brown2.active {
   color: #6c4328;
   background-color: #e5cbba;
   border-color: #ca936f;
 }
-.btn.btn-badge.color-brown2:disabled, .btn.btn-badge.color-brown2.disabled {
+.btn.btn-badge.color-brown2:disabled,
+.btn.btn-badge.color-brown2.disabled {
   color: #6c4328;
   background-color: #f0e1d7;
   border-color: #ddbaa3;
@@ -1650,12 +1702,14 @@
   background-color: #dec2af;
   border-color: #c3906e;
 }
-.btn.btn-badge.color-brown3:active, .btn.btn-badge.color-brown3.active {
+.btn.btn-badge.color-brown3:active,
+.btn.btn-badge.color-brown3.active {
   color: #40291b;
   background-color: #d8b7a1;
   border-color: #ba7f59;
 }
-.btn.btn-badge.color-brown3:disabled, .btn.btn-badge.color-brown3.disabled {
+.btn.btn-badge.color-brown3:disabled,
+.btn.btn-badge.color-brown3.disabled {
   color: #40291b;
   background-color: #e4cdbe;
   border-color: #cfa68b;
@@ -1710,12 +1764,14 @@
   background-color: #ebebeb;
   border-color: #bebebe;
 }
-.btn.btn-badge.color-gray1:active, .btn.btn-badge.color-gray1.active {
+.btn.btn-badge.color-gray1:active,
+.btn.btn-badge.color-gray1.active {
   color: #656565;
   background-color: #e1e1e1;
   border-color: #aeaeae;
 }
-.btn.btn-badge.color-gray1:disabled, .btn.btn-badge.color-gray1.disabled {
+.btn.btn-badge.color-gray1:disabled,
+.btn.btn-badge.color-gray1.disabled {
   color: #656565;
   background-color: #f6f6f6;
   border-color: #d2d2d2;
@@ -1770,12 +1826,14 @@
   background-color: #d3d3d3;
   border-color: #a6a6a6;
 }
-.btn.btn-badge.color-gray2:active, .btn.btn-badge.color-gray2.active {
+.btn.btn-badge.color-gray2:active,
+.btn.btn-badge.color-gray2.active {
   color: #414141;
   background-color: #c9c9c9;
   border-color: #969696;
 }
-.btn.btn-badge.color-gray2:disabled, .btn.btn-badge.color-gray2.disabled {
+.btn.btn-badge.color-gray2:disabled,
+.btn.btn-badge.color-gray2.disabled {
   color: #414141;
   background-color: #dedede;
   border-color: #bababa;
@@ -1830,12 +1888,14 @@
   background-color: #c0c0c0;
   border-color: #929292;
 }
-.btn.btn-badge.color-gray3:active, .btn.btn-badge.color-gray3.active {
+.btn.btn-badge.color-gray3:active,
+.btn.btn-badge.color-gray3.active {
   color: #242424;
   background-color: #b6b6b6;
   border-color: #838383;
 }
-.btn.btn-badge.color-gray3:disabled, .btn.btn-badge.color-gray3.disabled {
+.btn.btn-badge.color-gray3:disabled,
+.btn.btn-badge.color-gray3.disabled {
   color: #242424;
   background-color: #cbcbcb;
   border-color: #a7a7a7;
