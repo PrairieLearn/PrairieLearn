@@ -1,43 +1,33 @@
-import { html } from '@prairielearn/html';
-
 import { CourseRequestsTable } from '../../components/CourseRequestsTable.js';
-import { PageLayout } from '../../components/PageLayout.js';
-import { type CourseRequestRow } from '../../lib/course-request.js';
-import { type Institution } from '../../lib/db-types.js';
-import type { ResLocalsForPage } from '../../lib/res-locals.js';
+import type { AdminInstitution } from '../../lib/client/safe-db-types.js';
+import type { CourseRequestRow } from '../../lib/course-request.js';
 
 export function AdministratorCourseRequests({
   rows,
   institutions,
   coursesRoot,
-  resLocals,
+  csrfToken,
+  urlPrefix,
 }: {
   rows: CourseRequestRow[];
-  institutions: Institution[];
+  institutions: AdminInstitution[];
   coursesRoot: string;
-  resLocals: ResLocalsForPage<'plain'>;
+  csrfToken: string;
+  urlPrefix: string;
 }) {
-  return PageLayout({
-    resLocals,
-    pageTitle: 'Course Requests',
-    navContext: {
-      type: 'administrator',
-      page: 'admin',
-      subPage: 'courses',
-    },
-    options: {
-      fullWidth: true,
-    },
-    content: html`
-      <h1 class="visually-hidden">All Course Requests</h1>
-      ${CourseRequestsTable({
-        rows,
-        institutions,
-        coursesRoot,
-        showAll: true,
-        csrfToken: resLocals.__csrf_token,
-        urlPrefix: resLocals.urlPrefix,
-      })}
-    `,
-  });
+  return (
+    <>
+      <h1 className="visually-hidden">All course requests</h1>
+      <CourseRequestsTable
+        rows={rows}
+        institutions={institutions}
+        coursesRoot={coursesRoot}
+        csrfToken={csrfToken}
+        urlPrefix={urlPrefix}
+        showAll
+      />
+    </>
+  );
 }
+
+AdministratorCourseRequests.displayName = 'AdministratorCourseRequests';
