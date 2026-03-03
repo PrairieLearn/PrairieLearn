@@ -111,6 +111,7 @@ router.get(
         },
         options: {
           fullWidth: true,
+          contentPadding: !editorEnabled,
         },
         content: (
           <Hydrate>

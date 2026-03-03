@@ -204,10 +204,10 @@ export function TreeQuestionRow({
           )}
         </div>
         {question.id && (
-          <div className="d-flex align-items-center text-muted" style={{ fontSize: '0.8rem' }}>
+          <div className="d-flex align-items-center text-muted font-monospace" style={{ fontSize: '0.75rem' }}>
             <span className="text-truncate">{question.id}</span>
             {/* eslint-disable-next-line jsx-a11y-x/click-events-have-key-events, jsx-a11y-x/no-static-element-interactions -- wrapper only stops propagation to prevent row click */}
-            <span className="tree-hover-show" onClick={(e) => e.stopPropagation()}>
+            <span className="tree-hover-show ms-1" onClick={(e) => e.stopPropagation()}>
               <CopyButton
                 text={question.id}
                 tooltipId={`copy-qid-${question.id}`}
