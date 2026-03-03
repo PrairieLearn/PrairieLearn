@@ -14,7 +14,7 @@ import { IssueBadge } from '../../../components/IssueBadge.js';
 import { SyncProblemButton } from '../../../components/SyncProblemButton.js';
 import { TagBadgeList } from '../../../components/TagBadge.js';
 import { TopicBadge } from '../../../components/TopicBadge.js';
-import type { StaffAssessmentQuestionRow } from '../../../lib/assessment-question.js';
+import type { StaffAssessmentQuestionRow } from '../../../lib/assessment-question.shared.js';
 import type { StaffCourse } from '../../../lib/client/safe-db-types.js';
 import { idsEqual } from '../../../lib/id.js';
 

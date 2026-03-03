@@ -1,6 +1,6 @@
 import { describe, expect, it } from 'vitest';
 
-import type { StaffAssessmentQuestionRow } from '../../../lib/assessment-question.js';
+import type { StaffAssessmentQuestionRow } from '../../../lib/assessment-question.shared.js';
 import type { StaffCourse } from '../../../lib/client/safe-db-types.js';
 import type { ZoneQuestionBlockForm } from '../types.js';
 
