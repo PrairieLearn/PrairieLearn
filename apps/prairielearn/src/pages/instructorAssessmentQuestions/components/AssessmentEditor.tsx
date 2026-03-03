@@ -118,18 +118,27 @@ function AssessmentEditorInner({
   const courseQuestions = courseQuestionsQuery.data ?? [];
 
   const questionsInAssessment = useMemo(() => {
-    const qids = new Set<string>();
-    for (const zone of zones) {
+    const qidToZones = new Map<string, string[]>();
+    zones.forEach((zone, index) => {
+      const zoneName = zone.title || `Zone ${index + 1}`;
       for (const question of zone.questions) {
-        if (question.id) qids.add(question.id);
+        if (question.id) {
+          const existing = qidToZones.get(question.id) ?? [];
+          existing.push(zoneName);
+          qidToZones.set(question.id, existing);
+        }
         if (question.alternatives) {
           for (const alt of question.alternatives) {
-            if (alt.id) qids.add(alt.id);
+            if (alt.id) {
+              const existing = qidToZones.get(alt.id) ?? [];
+              existing.push(zoneName);
+              qidToZones.set(alt.id, existing);
+            }
           }
         }
       }
-    }
-    return qids;
+    });
+    return qidToZones;
   }, [zones]);
 
   const sensors = useSensors(
@@ -215,6 +224,11 @@ function AssessmentEditorInner({
         course,
         courseQuestions,
       });
+
+      // Remove from current location if already in assessment (move behavior)
+      if (questionsInAssessment.has(qid)) {
+        handleRemoveQuestionByQid(qid);
+      }
 
       if (selectedItem.altGroupTrackingId) {
         // Adding to existing alt group
@@ -324,6 +338,11 @@ function AssessmentEditorInner({
       return;
     }
 
+    // Remove from current location if already in assessment (move behavior)
+    if (questionsInAssessment.has(qid)) {
+      handleRemoveQuestionByQid(qid);
+    }
+
     const newQuestion = {
       id: qid,
       ...createQuestionWithTrackingId(),
@@ -417,6 +436,10 @@ function AssessmentEditorInner({
       questionId,
       alternativeTrackingId,
     });
+  };
+
+  const handleRemoveQuestionByQid = (qid: string) => {
+    dispatch({ type: 'REMOVE_QUESTION_BY_QID', qid });
   };
 
   const handleAddZone = () => {
@@ -814,6 +837,7 @@ function AssessmentEditorInner({
                 onDeleteZone={handleDeleteZone}
                 onQuestionPicked={handleQuestionPicked}
                 onPickQuestion={handlePickQuestion}
+                onRemoveQuestionByQid={handleRemoveQuestionByQid}
                 onResetButtonClick={resetModal.showWithData}
               />
             }

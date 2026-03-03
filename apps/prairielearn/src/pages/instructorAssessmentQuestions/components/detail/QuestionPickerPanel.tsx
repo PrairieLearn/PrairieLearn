@@ -20,14 +20,16 @@ export function QuestionPickerPanel({
   urlPrefix,
   currentAssessmentId,
   onQuestionSelected,
+  onRemoveQuestionByQid,
 }: {
   courseQuestions: CourseQuestionForPicker[];
   isLoading?: boolean;
-  questionsInAssessment: Set<string>;
+  questionsInAssessment: Map<string, string[]>;
   courseId: string;
   urlPrefix: string;
   currentAssessmentId?: string;
   onQuestionSelected: (qid: string) => void;
+  onRemoveQuestionByQid: (qid: string) => void;
 }) {
   const [searchQuery, setSearchQuery] = useState('');
   const [selectedTopics, setSelectedTopics] = useState<Set<string>>(() => new Set());
@@ -126,13 +128,12 @@ export function QuestionPickerPanel({
   const rowVirtualizer = useVirtualizer({
     count: sortedQuestions.length,
     getScrollElement: () => scrollParentRef.current,
-    estimateSize: () => 68,
+    estimateSize: () => 95,
     overscan: 10,
     getItemKey: (index) => sortedQuestions[index].qid,
   });
 
   const handleSelect = (question: CourseQuestionForPicker) => {
-    if (questionsInAssessment.has(question.qid)) return;
     onQuestionSelected(question.qid);
   };
 
@@ -229,7 +230,8 @@ export function QuestionPickerPanel({
             {virtualRows.map((virtualRow) => {
               const question = sortedQuestions[virtualRow.index];
               const qid = question.qid;
-              const isAlreadyAdded = questionsInAssessment.has(qid);
+              const addedZoneNames = questionsInAssessment.get(qid);
+              const isAlreadyAdded = addedZoneNames != null;
 
               const assessmentsToShow =
                 question.assessments?.filter((a) => a.assessment_id !== currentAssessmentId) ?? [];
@@ -240,11 +242,11 @@ export function QuestionPickerPanel({
                   ref={rowVirtualizer.measureElement}
                   data-index={virtualRow.index}
                   role="button"
-                  tabIndex={isAlreadyAdded ? -1 : 0}
-                  aria-label={`${qid}: ${question.title}${isAlreadyAdded ? ' (already added)' : ''}`}
+                  tabIndex={0}
+                  aria-label={`${qid}: ${question.title}${isAlreadyAdded ? ` (in ${addedZoneNames.join(', ')})` : ''}`}
                   className={clsx(
-                    'd-flex align-items-start gap-2 px-2 py-1 border-bottom',
-                    isAlreadyAdded ? 'bg-light text-muted' : 'list-group-item-action',
+                    'px-2 py-1 border-bottom list-group-item-action',
+                    isAlreadyAdded && 'bg-light',
                   )}
                   style={{
                     position: 'absolute',
@@ -252,10 +254,9 @@ export function QuestionPickerPanel({
                     left: 0,
                     width: '100%',
                     transform: `translateY(${virtualRow.start}px)`,
-                    cursor: isAlreadyAdded ? 'not-allowed' : 'pointer',
+                    cursor: 'pointer',
                     fontSize: '0.85rem',
                   }}
-                  aria-disabled={isAlreadyAdded}
                   onClick={() => handleSelect(question)}
                   onKeyDown={(e) => {
                     if (e.key === 'Enter' || e.key === ' ') {
@@ -264,34 +265,38 @@ export function QuestionPickerPanel({
                     }
                   }}
                 >
-                  <div className="flex-grow-1" style={{ minWidth: 0 }}>
-                    <div className="d-flex align-items-center gap-1">
-                      <a
-                        href={getQuestionUrl({ courseId, questionId: question.id })}
-                        target="_blank"
-                        rel="noopener noreferrer"
-                        className="text-nowrap"
-                        onClick={(e) => e.stopPropagation()}
-                      >
-                        <code className="small">{qid}</code>
-                      </a>
-                      {isAlreadyAdded && (
+                  <div className="d-flex align-items-center gap-1">
+                    <a
+                      href={getQuestionUrl({ courseId, questionId: question.id })}
+                      target="_blank"
+                      rel="noopener noreferrer"
+                      className="text-nowrap"
+                      onClick={(e) => e.stopPropagation()}
+                    >
+                      <code className="small">{qid}</code>
+                    </a>
+                    {isAlreadyAdded && (
+                      <>
                         <span className="badge bg-secondary" style={{ fontSize: '0.65rem' }}>
-                          Added
+                          {addedZoneNames.join(', ')}
                         </span>
-                      )}
-                    </div>
-                    <div className="text-truncate small">{question.title}</div>
-                    {assessmentsToShow.length > 0 && (
-                      <div className="d-flex flex-wrap gap-1 mt-1">
-                        <AssessmentBadges assessments={assessmentsToShow} urlPrefix={urlPrefix} />
-                      </div>
+                        <button
+                          type="button"
+                          className="btn btn-sm p-0 border-0 text-muted"
+                          style={{ fontSize: '0.6rem', lineHeight: 1 }}
+                          aria-label={`Remove ${qid} from assessment`}
+                          onClick={(e) => {
+                            e.stopPropagation();
+                            onRemoveQuestionByQid(qid);
+                          }}
+                        >
+                          <i className="bi bi-x-lg" aria-hidden="true" />
+                        </button>
+                      </>
                     )}
                   </div>
-                  <div
-                    className="d-flex flex-wrap gap-1 justify-content-end"
-                    style={{ maxWidth: '35%' }}
-                  >
+                  <div className="text-truncate small">{question.title}</div>
+                  <div className="d-flex flex-wrap gap-1 mt-1">
                     <QuestionTopicTagBadges
                       topic={question.topic}
                       tags={question.tags}
@@ -300,6 +305,11 @@ export function QuestionPickerPanel({
                       setExpandedQids={setExpandedTagsQids}
                     />
                   </div>
+                  {assessmentsToShow.length > 0 && (
+                    <div className="d-flex flex-wrap gap-1 mt-1">
+                      <AssessmentBadges assessments={assessmentsToShow} urlPrefix={urlPrefix} />
+                    </div>
+                  )}
                 </div>
               );
             })}

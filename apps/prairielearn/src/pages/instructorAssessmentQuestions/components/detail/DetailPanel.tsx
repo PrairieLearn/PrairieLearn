@@ -34,6 +34,7 @@ export function DetailPanel({
   onDeleteZone,
   onQuestionPicked,
   onPickQuestion,
+  onRemoveQuestionByQid,
   onResetButtonClick,
 }: {
   selectedItem: SelectedItem;
@@ -46,7 +47,7 @@ export function DetailPanel({
   hasCoursePermissionPreview: boolean;
   courseQuestions: CourseQuestionForPicker[];
   courseQuestionsLoading: boolean;
-  questionsInAssessment: Set<string>;
+  questionsInAssessment: Map<string, string[]>;
   currentAssessmentId: string;
   onUpdateZone: (zoneTrackingId: string, zone: Partial<ZoneAssessmentForm>) => void;
   onUpdateQuestion: (
@@ -62,6 +63,7 @@ export function DetailPanel({
   onDeleteZone: (zoneTrackingId: string) => void;
   onQuestionPicked: (qid: string) => void;
   onPickQuestion: (currentSelection: SelectedItem) => void;
+  onRemoveQuestionByQid: (qid: string) => void;
   onResetButtonClick: (assessmentQuestionId: string) => void;
 }) {
   if (selectedItem == null) {
@@ -153,6 +155,7 @@ export function DetailPanel({
         urlPrefix={urlPrefix}
         currentAssessmentId={currentAssessmentId}
         onQuestionSelected={onQuestionPicked}
+        onRemoveQuestionByQid={onRemoveQuestionByQid}
       />
     );
   }
@@ -167,6 +170,7 @@ export function DetailPanel({
       urlPrefix={urlPrefix}
       currentAssessmentId={currentAssessmentId}
       onQuestionSelected={onQuestionPicked}
+      onRemoveQuestionByQid={onRemoveQuestionByQid}
     />
   );
 }
