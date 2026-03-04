@@ -563,11 +563,22 @@ def parse(element_html: str, data: pl.QuestionData) -> None:
         )
         return
 
+    invalid_format_msg = (
+        "Your submitted answer has an invalid format. Please try again."
+    )
     for item in student_answer:
-        if not isinstance(item, dict) or "inner_html" not in item:
-            data["format_errors"][answer_name] = (
-                "Your submitted answer has an invalid format. Please try again."
-            )
+        if not isinstance(item, dict):
+            data["format_errors"][answer_name] = invalid_format_msg
+            return
+        if not isinstance(item.get("inner_html"), str) or not isinstance(
+            item.get("uuid"), str
+        ):
+            data["format_errors"][answer_name] = invalid_format_msg
+            return
+        try:
+            item["indent"] = int(item.get("indent") or 0)
+        except (TypeError, ValueError):
+            data["format_errors"][answer_name] = invalid_format_msg
             return
 
     if (not order_block_options.allow_blank) and (
@@ -602,10 +613,16 @@ def parse(element_html: str, data: pl.QuestionData) -> None:
 
             if matching_block is None:
                 matching_block = next(
-                    block
-                    for block in blocks
-                    if block["inner_html"] == answer["inner_html"]
+                    (
+                        block
+                        for block in blocks
+                        if block["inner_html"] == answer["inner_html"]
+                    ),
+                    None,
                 )
+            if matching_block is None:
+                data["format_errors"][answer_name] = invalid_format_msg
+                return
             answer["distractor_feedback"] = matching_block.get(
                 "distractor_feedback", ""
             )
@@ -614,7 +631,7 @@ def parse(element_html: str, data: pl.QuestionData) -> None:
     if grading_method is GradingMethodType.EXTERNAL:
         answer_code = ""
         for answer in student_answer:
-            indent = int(answer["indent"] or 0)
+            indent = answer["indent"]
             answer_code += (
                 ("    " * indent)
                 + lxml.html.fromstring(answer["inner_html"]).text_content()
