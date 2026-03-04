@@ -3,7 +3,7 @@ import { useCallback } from 'react';
 import { useForm } from 'react-hook-form';
 
 import type { EnumAssessmentType } from '../../../../lib/db-types.js';
-import type { ZoneQuestionBlockForm } from '../../types.js';
+import type { ZoneAssessmentForm, ZoneQuestionBlockForm } from '../../types.js';
 import {
   coerceToNumber,
   extractStringComment,
@@ -15,6 +15,7 @@ import {
 import { validatePositiveInteger } from '../../utils/questions.js';
 import { useAutoSave } from '../../utils/useAutoSave.js';
 
+import type { AdvancedFieldsInheritance } from './AdvancedFields.js';
 import { AdvancedFields } from './AdvancedFields.js';
 
 interface AltGroupFormData {
@@ -34,6 +35,7 @@ interface AltGroupFormData {
 
 export function AltGroupDetailPanel({
   zoneQuestionBlock,
+  zone,
   idPrefix,
   editMode,
   assessmentType,
@@ -42,6 +44,7 @@ export function AltGroupDetailPanel({
   onAddAlternative,
 }: {
   zoneQuestionBlock: ZoneQuestionBlockForm;
+  zone: ZoneAssessmentForm;
   idPrefix: string;
   editMode: boolean;
   assessmentType: EnumAssessmentType;
@@ -58,6 +61,7 @@ export function AltGroupDetailPanel({
     register,
     getValues,
     watch,
+    setValue,
     formState: { errors, isDirty, isValid },
   } = useForm<AltGroupFormData>({
     mode: 'onChange',
@@ -83,6 +87,23 @@ export function AltGroupDetailPanel({
   );
 
   useAutoSave({ isDirty, isValid, getValues, onSave: handleSave });
+
+  const advancedInheritance: AdvancedFieldsInheritance | undefined =
+    zone.advanceScorePerc != null ||
+    zone.gradeRateMinutes != null ||
+    zone.allowRealTimeGrading != null
+      ? {
+          parentAdvanceScorePerc: zone.advanceScorePerc,
+          parentGradeRateMinutes: zone.gradeRateMinutes,
+          parentAllowRealTimeGrading: zone.allowRealTimeGrading,
+          parentForceMaxPoints: undefined,
+          inheritedFromLabel: 'zone',
+          watch,
+          setValue,
+          getValues,
+          onSave: handleSave,
+        }
+      : undefined;
 
   const watchedAutoPoints = watch(originalPointsProperty);
   const autoPointsPlaceholder =
@@ -339,7 +360,13 @@ export function AltGroupDetailPanel({
         </small>
       </div>
 
-      <AdvancedFields register={register} errors={errors} idPrefix={idPrefix} variant="altGroup" />
+      <AdvancedFields
+        register={register}
+        errors={errors}
+        idPrefix={idPrefix}
+        variant="altGroup"
+        inheritance={advancedInheritance}
+      />
 
       <div className="d-flex gap-2">
         <button

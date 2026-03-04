@@ -218,6 +218,15 @@ function AssessmentEditorInner({
       if (activeType === 'question' && type === 'alternative') return false;
       if (activeType !== 'zone' && type === 'zone') return false;
       if (type === 'merge-zone') return false;
+      // When dragging an alternative, exclude its parent alt group so siblings
+      // resolve correctly in boundary collision
+      if (
+        activeType === 'alternative' &&
+        type === 'question' &&
+        String(c.id) === activeData?.parentTrackingId
+      ) {
+        return false;
+      }
       return true;
     });
 
@@ -678,6 +687,10 @@ function AssessmentEditorInner({
       }
 
       if (overType === 'question') {
+        // If the alternative resolved to its own parent group, skip extraction
+        const toBlock = zones[toPos.zoneIndex].questions[toPos.questionIndex];
+        if (fromBlock.trackingId === toBlock.trackingId) return;
+
         // Alternative dragged over a question block → extract to zone
         const toZone = zones[toPos.zoneIndex];
         dispatch({

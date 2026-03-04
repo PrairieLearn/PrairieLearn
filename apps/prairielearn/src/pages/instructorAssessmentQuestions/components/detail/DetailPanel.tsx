@@ -97,11 +97,12 @@ export function DetailPanel({
   if (selectedItem.type === 'question') {
     const result = findQuestionByTrackingId(zones, selectedItem.questionTrackingId);
     if (!result) return <EmptyDetailPanel />;
-    const { question } = result;
+    const { question, zone } = result;
     const questionData = question.id ? questionMetadata[question.id] : null;
     return (
       <QuestionDetailPanel
         question={question}
+        zone={zone}
         questionData={questionData ?? null}
         idPrefix={`question-${question.trackingId}`}
         editMode={editMode}
@@ -120,6 +121,7 @@ export function DetailPanel({
     const blockResult = findQuestionByTrackingId(zones, selectedItem.questionTrackingId);
     if (!blockResult) return <EmptyDetailPanel />;
     const block = blockResult.question;
+    const zone = blockResult.zone;
     const alternative = block.alternatives?.find(
       (a) => a.trackingId === selectedItem.alternativeTrackingId,
     );
@@ -129,6 +131,7 @@ export function DetailPanel({
       <QuestionDetailPanel
         question={alternative}
         zoneQuestionBlock={block}
+        zone={zone}
         questionData={altData ?? null}
         idPrefix={`alt-${alternative.trackingId}`}
         editMode={editMode}
@@ -150,6 +153,7 @@ export function DetailPanel({
     return (
       <AltGroupDetailPanel
         zoneQuestionBlock={block}
+        zone={altGroupResult.zone}
         idPrefix={`altgroup-${block.trackingId}`}
         editMode={editMode}
         assessmentType={assessmentType}

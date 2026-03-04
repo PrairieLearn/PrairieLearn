@@ -37,7 +37,7 @@ export function SortableAlternativeRow({
 }) {
   const { attributes, listeners, setNodeRef, transform, transition, isDragging } = useSortable({
     id: alternative.trackingId,
-    data: { type: 'alternative' },
+    data: { type: 'alternative', parentTrackingId: zoneQuestionBlock.trackingId },
     disabled: !editMode,
   });
 

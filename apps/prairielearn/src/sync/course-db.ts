@@ -1383,26 +1383,6 @@ function validateAssessment({
             ) {
               errors.push('Cannot specify "autoPoints": 0 when "maxAutoPoints" > 0');
             }
-
-            if (
-              typeof alternative.points === 'number' &&
-              alternative.maxPoints != null &&
-              alternative.points > alternative.maxPoints
-            ) {
-              warnings.push(
-                `"points" (${alternative.points}) cannot exceed "maxPoints" (${alternative.maxPoints})`,
-              );
-            }
-
-            if (
-              typeof alternative.autoPoints === 'number' &&
-              alternative.maxAutoPoints != null &&
-              alternative.autoPoints > alternative.maxAutoPoints
-            ) {
-              warnings.push(
-                `"autoPoints" (${alternative.autoPoints}) cannot exceed "maxAutoPoints" (${alternative.maxAutoPoints})`,
-              );
-            }
           }
         }
       });

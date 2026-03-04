@@ -7,13 +7,40 @@ import { OverlayTrigger } from '@prairielearn/ui';
 import { CopyButton } from '../../../../components/CopyButton.js';
 import { HistMini } from '../../../../components/HistMini.js';
 import type { StaffAssessmentQuestionRow } from '../../../../lib/assessment-question.shared.js';
+import { isRenderableComment } from '../../../../lib/comments.js';
 import type { EnumAssessmentType } from '../../../../lib/db-types.js';
 import type { QuestionAlternativeForm, ViewType, ZoneQuestionBlockForm } from '../../types.js';
 import type { ChangeTrackingResult } from '../../utils/modifiedTracking.js';
-import { toAssessmentForPicker } from '../../utils/questions.js';
+import { computeQuestionTotalPoints, toAssessmentForPicker } from '../../utils/questions.js';
 import { AssessmentBadges } from '../AssessmentBadges.js';
 
 import { DragHandle } from './DragHandle.js';
+
+/**
+ * Compresses an array of points by collapsing consecutive runs.
+ * e.g. [10, 10, 10, 5, 5] → "10×3, 5×2"
+ *      [10, 5, 3] → "10, 5, 3"
+ *      [10] → "10"
+ */
+function compactPoints(pts: number[]): string {
+  if (pts.length <= 1) return pts.join(', ');
+
+  const runs: { value: number; count: number }[] = [];
+  for (const p of pts) {
+    const last = runs[runs.length - 1];
+    if (last && last.value === p) {
+      last.count++;
+    } else {
+      runs.push({ value: p, count: 1 });
+    }
+  }
+
+  return runs
+    .flatMap((r) =>
+      r.count > 2 ? [`${r.value}×${r.count}`] : Array<string>(r.count).fill(`${r.value}`),
+    )
+    .join(', ');
+}
 
 export function PointsBadge({
   question,
@@ -25,6 +52,7 @@ export function PointsBadge({
   assessmentType: EnumAssessmentType;
 }): ReactElement | null {
   const tooltipId = useId();
+  const forceMax = question.forceMaxPoints ?? zoneQuestionBlock.forceMaxPoints;
   const autoPoints =
     question.points ??
     question.autoPoints ??
@@ -34,6 +62,24 @@ export function PointsBadge({
 
   if (assessmentType === 'Exam') {
     if (autoPoints == null && manualPoints == null) return null;
+
+    if (forceMax) {
+      const total = computeQuestionTotalPoints(question, assessmentType, zoneQuestionBlock);
+      return (
+        <OverlayTrigger
+          placement="top"
+          tooltip={{
+            props: { id: tooltipId },
+            body: `Force max points: student receives ${total} pts on regrade`,
+          }}
+        >
+          <span className="text-muted small text-nowrap ms-2">
+            <i className="bi bi-shield-fill-check me-1" aria-hidden="true" />
+            {total}
+          </span>
+        </OverlayTrigger>
+      );
+    }
 
     const compactParts: ReactElement[] = [];
     const tooltipParts: string[] = [];
@@ -56,7 +102,7 @@ export function PointsBadge({
       compactParts.push(
         <span key="auto">
           <i className="bi bi-lightning-fill me-1" aria-hidden="true" />
-          {pts.join(', ')}
+          {compactPoints(pts)}
         </span>,
       );
       tooltipParts.push(
@@ -87,6 +133,24 @@ export function PointsBadge({
   const maxAuto = Array.isArray(maxAutoPoints) ? maxAutoPoints[0] : maxAutoPoints;
 
   if (initPoints == null && maxAuto == null && manualPoints == null) return null;
+
+  if (forceMax) {
+    const total = computeQuestionTotalPoints(question, assessmentType, zoneQuestionBlock);
+    return (
+      <OverlayTrigger
+        placement="top"
+        tooltip={{
+          props: { id: tooltipId },
+          body: `Force max points: student receives ${total} pts on regrade`,
+        }}
+      >
+        <span className="text-muted small text-nowrap ms-2">
+          <i className="bi bi-shield-fill-check me-1" aria-hidden="true" />
+          {total}
+        </span>
+      </OverlayTrigger>
+    );
+  }
 
   const compactParts: ReactElement[] = [];
   const tooltipParts: string[] = [];
@@ -164,6 +228,7 @@ export function TreeQuestionRow({
   onDelete?: () => void;
 }) {
   const changeTooltipId = useId();
+  const commentTooltipId = useId();
   const indent = isAlternative ? '4.5rem' : '2.5rem';
 
   return (
@@ -222,6 +287,20 @@ export function TreeQuestionRow({
               tooltip={{ props: { id: changeTooltipId }, body: 'Modified' }}
             >
               <span className="text-warning ms-1">●</span>
+            </OverlayTrigger>
+          )}
+          {isRenderableComment(question.comment) && (
+            <OverlayTrigger
+              placement="top"
+              tooltip={{
+                props: { id: commentTooltipId },
+                body:
+                  typeof question.comment === 'string'
+                    ? question.comment
+                    : JSON.stringify(question.comment, null, 2),
+              }}
+            >
+              <i className="bi bi-chat-left-text text-muted ms-1" aria-hidden="true" />
             </OverlayTrigger>
           )}
         </div>

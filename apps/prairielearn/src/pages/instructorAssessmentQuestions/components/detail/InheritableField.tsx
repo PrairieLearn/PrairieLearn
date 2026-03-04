@@ -12,6 +12,7 @@ export function InheritableField({
   error,
   helpText,
   inheritedValueLabel,
+  inheritedFromLabel = 'group',
   placeholder,
   onOverride,
   onReset,
@@ -27,6 +28,7 @@ export function InheritableField({
   error?: FieldError;
   helpText: string;
   inheritedValueLabel?: string;
+  inheritedFromLabel?: string;
   placeholder?: string;
   onOverride: () => void;
   onReset: () => void;
@@ -47,7 +49,7 @@ export function InheritableField({
           disabled
         />
         <small className="form-text text-muted">
-          Inherited from group.{' '}
+          Inherited from {inheritedFromLabel}.{' '}
           <button
             type="button"
             className="btn btn-link btn-sm p-0 align-baseline"
@@ -81,7 +83,7 @@ export function InheritableField({
           <button
             type="button"
             className="btn btn-outline-secondary"
-            title="Reset to group value"
+            title={`Reset to ${inheritedFromLabel} value`}
             onClick={onReset}
           >
             <i className="bi bi-arrow-counterclockwise" />
@@ -114,7 +116,7 @@ export function InheritableField({
       )}
       <small id={`${id}-help`} className="form-text text-muted">
         {showResetButton && inheritedValueLabel
-          ? `Overrides group value (${inheritedValueLabel}).`
+          ? `Overrides ${inheritedFromLabel} value (${inheritedValueLabel}).`
           : helpText}
       </small>
     </div>

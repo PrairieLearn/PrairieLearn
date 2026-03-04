@@ -7,10 +7,15 @@ import { run } from '@prairielearn/run';
 import { OverlayTrigger } from '@prairielearn/ui';
 
 import type { StaffAssessmentQuestionRow } from '../../../../lib/assessment-question.shared.js';
+import { isRenderableComment } from '../../../../lib/comments.js';
 import type { EnumAssessmentType } from '../../../../lib/db-types.js';
 import type { EditorAction, SelectedItem, ViewType, ZoneAssessmentForm } from '../../types.js';
 import type { ChangeTrackingResult } from '../../utils/modifiedTracking.js';
-import { computeZonePointTotals, computeZoneQuestionCount } from '../../utils/questions.js';
+import {
+  computeZonePointTotals,
+  computeZoneQuestionCount,
+  hasZonePointsMismatch,
+} from '../../utils/questions.js';
 
 import { CollapseToggleButton } from './CollapseToggleButton.js';
 import { DragHandle } from './DragHandle.js';
@@ -64,7 +69,11 @@ export function TreeZoneNode({
   onDeleteZone: (zoneTrackingId: string) => void;
 }) {
   const changeTooltipId = useId();
+  const commentTooltipId = useId();
+  const zonePointsMismatchTooltipId = useId();
+  const badgeTooltipId = useId();
   const isCollapsed = collapsedZones.has(zone.trackingId);
+  const zonePointsMismatch = hasZonePointsMismatch(zone, assessmentType);
   const isSelected =
     selectedItem?.type === 'zone' && selectedItem.zoneTrackingId === zone.trackingId;
 
@@ -137,7 +146,7 @@ export function TreeZoneNode({
             ariaLabel={isCollapsed ? 'Expand zone' : 'Collapse zone'}
             onToggle={toggleCollapse}
           />
-          <span className="fw-semibold flex-grow-1">
+          <span className="fw-semibold">
             {zone.title || `Zone ${zoneNumber}`}
             {editMode && changeTracking.newIds.has(zone.trackingId) && (
               <OverlayTrigger
@@ -155,37 +164,108 @@ export function TreeZoneNode({
                 <span className="text-warning ms-1">●</span>
               </OverlayTrigger>
             )}
+            {isRenderableComment(zone.comment) && (
+              <OverlayTrigger
+                placement="top"
+                tooltip={{
+                  props: { id: commentTooltipId },
+                  body:
+                    typeof zone.comment === 'string'
+                      ? zone.comment
+                      : JSON.stringify(zone.comment, null, 2),
+                }}
+              >
+                <i className="bi bi-chat-left-text text-muted ms-1" aria-hidden="true" />
+              </OverlayTrigger>
+            )}
+            {zonePointsMismatch && (
+              <OverlayTrigger
+                placement="top"
+                tooltip={{
+                  props: { id: zonePointsMismatchTooltipId },
+                  body: 'Questions in this zone have different point values',
+                }}
+              >
+                <i
+                  className="bi bi-exclamation-triangle-fill text-warning ms-1"
+                  aria-hidden="true"
+                />
+              </OverlayTrigger>
+            )}
           </span>
-          <span className="d-inline-flex align-items-center gap-1 flex-wrap">
+          <span className="d-inline-flex align-items-center gap-1 flex-wrap ms-2">
             {run(() => {
-              if (zone.numberChoose != null) {
-                return (
-                  <span className="badge text-bg-light text-muted">Choose {zone.numberChoose}</span>
-                );
-              }
               const count = computeZoneQuestionCount(zone.questions);
               // ZonePointsBadge already shows "No questions" when the zone is empty.
               if (count === 0) return null;
               return (
-                <span className="badge text-bg-light text-muted">
-                  {count} question{count !== 1 ? 's' : ''}
-                </span>
+                <OverlayTrigger
+                  placement="top"
+                  tooltip={{
+                    props: { id: `${badgeTooltipId}-count` },
+                    body: 'Total questions in this zone',
+                  }}
+                >
+                  <span className="badge color-blue3">
+                    {count} question{count !== 1 ? 's' : ''}
+                  </span>
+                </OverlayTrigger>
               );
             })}
-            <ZonePointsBadge zone={zone} assessmentType={assessmentType} />
+            {zone.numberChoose != null && (
+              <OverlayTrigger
+                placement="top"
+                tooltip={{
+                  props: { id: `${badgeTooltipId}-choose` },
+                  body: 'Number of questions to randomly select from this zone',
+                }}
+              >
+                <span className="badge color-blue3">Choose {zone.numberChoose}</span>
+              </OverlayTrigger>
+            )}
+            <ZonePointsBadge
+              zone={zone}
+              assessmentType={assessmentType}
+              tooltipId={`${badgeTooltipId}-points`}
+            />
             {zone.maxPoints != null && (
-              <span className="badge text-bg-secondary">Max {zone.maxPoints} pts</span>
+              <OverlayTrigger
+                placement="top"
+                tooltip={{
+                  props: { id: `${badgeTooltipId}-max` },
+                  body: 'Maximum total points from this zone that count toward the assessment',
+                }}
+              >
+                <span className="badge color-blue3">Max {zone.maxPoints} pts</span>
+              </OverlayTrigger>
             )}
             {zone.bestQuestions != null && (
-              <span className="badge text-bg-secondary">Best {zone.bestQuestions}</span>
+              <OverlayTrigger
+                placement="top"
+                tooltip={{
+                  props: { id: `${badgeTooltipId}-best` },
+                  body: 'Only the highest-scoring questions in this zone count toward the total',
+                }}
+              >
+                <span className="badge color-blue3">Best {zone.bestQuestions}</span>
+              </OverlayTrigger>
             )}
             {zone.lockpoint && (
-              <span className="badge text-bg-warning">
-                <i className="bi bi-lock-fill me-1" aria-hidden="true" />
-                Lockpoint
-              </span>
+              <OverlayTrigger
+                placement="top"
+                tooltip={{
+                  props: { id: `${badgeTooltipId}-lock` },
+                  body: 'Students must complete this zone before proceeding to the next',
+                }}
+              >
+                <span className="badge color-blue3">
+                  <i className="bi bi-lock-fill me-1" aria-hidden="true" />
+                  Lockpoint
+                </span>
+              </OverlayTrigger>
             )}
           </span>
+          <span className="flex-grow-1" />
           {!editMode && (
             <i className="bi bi-chevron-right text-muted small ms-1" aria-hidden="true" />
           )}
@@ -268,25 +348,40 @@ export function TreeZoneNode({
 function ZonePointsBadge({
   zone,
   assessmentType,
+  tooltipId,
 }: {
   zone: ZoneAssessmentForm;
   assessmentType: EnumAssessmentType;
+  tooltipId: string;
 }) {
-  const { autoPoints, manualPoints } = computeZonePointTotals(zone.questions);
+  const { autoPoints, manualPoints } = computeZonePointTotals(zone.questions, {
+    bestQuestions: zone.bestQuestions,
+    numberChoose: zone.numberChoose,
+  });
   const totalPoints = autoPoints + manualPoints;
 
   if (totalPoints === 0 && zone.questions.length === 0) {
-    return <span className="badge text-bg-light text-muted">No questions</span>;
+    return <span className="badge color-blue3">No questions</span>;
   }
 
-  if (assessmentType === 'Exam') {
-    return <span className="badge text-bg-info">{totalPoints} pts</span>;
-  }
+  const label = run(() => {
+    if (assessmentType === 'Exam') return `${totalPoints} pts`;
+    const parts: string[] = [];
+    if (autoPoints > 0) parts.push(`${autoPoints} auto`);
+    if (manualPoints > 0) parts.push(`${manualPoints} manual`);
+    if (parts.length === 0) parts.push('0 pts');
+    return parts.join(' + ');
+  });
 
-  const parts: string[] = [];
-  if (autoPoints > 0) parts.push(`${autoPoints} auto`);
-  if (manualPoints > 0) parts.push(`${manualPoints} manual`);
-  if (parts.length === 0) parts.push('0 pts');
-
-  return <span className="badge text-bg-info">{parts.join(' + ')}</span>;
+  return (
+    <OverlayTrigger
+      placement="top"
+      tooltip={{
+        props: { id: tooltipId },
+        body: 'Total points a student can earn in this zone',
+      }}
+    >
+      <span className="badge color-blue3">{label}</span>
+    </OverlayTrigger>
+  );
 }

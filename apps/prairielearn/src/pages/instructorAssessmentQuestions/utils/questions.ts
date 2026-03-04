@@ -8,12 +8,14 @@ import type {
   StaffCourse,
   StaffCourseInstance,
 } from '../../../lib/client/safe-db-types.js';
-import type { ZoneAssessmentJson } from '../../../schemas/infoAssessment.js';
+import type { EnumAssessmentType } from '../../../lib/db-types.js';
+import type { QuestionPointsJson, ZoneAssessmentJson } from '../../../schemas/infoAssessment.js';
 import type { QuestionByQidResult } from '../trpc.js';
 import type {
   AssessmentForPicker,
   CourseQuestionForPicker,
   QuestionAlternativeForm,
+  ZoneAssessmentForm,
   ZoneQuestionBlockForm,
 } from '../types.js';
 
@@ -167,13 +169,15 @@ export function computeZoneQuestionCount(questions: ZoneQuestionBlockForm[]): nu
   return count;
 }
 
-export function computeZonePointTotals(questions: ZoneQuestionBlockForm[]): {
+export function computeZonePointTotals(
+  questions: ZoneQuestionBlockForm[],
+  opts?: { bestQuestions?: number; numberChoose?: number },
+): {
   autoPoints: number;
   manualPoints: number;
 } {
-  let autoPoints = 0;
-  let manualPoints = 0;
-  for (const q of questions) {
+  // Compute per-block point contributions.
+  const blockPoints = questions.map((q) => {
     if (q.alternatives) {
       // Resolve each alternative's effective points (alternative-level ?? group-level)
       const resolved = q.alternatives.map((alt) => ({
@@ -184,14 +188,92 @@ export function computeZonePointTotals(questions: ZoneQuestionBlockForm[]): {
       resolved.sort((a, b) => b.auto + b.manual - (a.auto + a.manual));
       const count = q.numberChoose ?? resolved.length;
       const selected = resolved.slice(0, count);
-      autoPoints += selected.reduce((sum, r) => sum + r.auto, 0);
-      manualPoints += selected.reduce((sum, r) => sum + r.manual, 0);
-    } else {
-      autoPoints += firstPoints(q.points ?? q.autoPoints);
-      manualPoints += q.manualPoints ?? 0;
+      return {
+        auto: selected.reduce((sum, r) => sum + r.auto, 0),
+        manual: selected.reduce((sum, r) => sum + r.manual, 0),
+      };
     }
+    return {
+      auto: firstPoints(q.points ?? q.autoPoints),
+      manual: q.manualPoints ?? 0,
+    };
+  });
+
+  // If the zone uses bestQuestions or numberChoose, only the best N blocks count.
+  const zoneChoose = opts?.bestQuestions ?? opts?.numberChoose;
+  if (zoneChoose != null && zoneChoose < blockPoints.length) {
+    blockPoints.sort((a, b) => b.auto + b.manual - (a.auto + a.manual));
+    blockPoints.length = zoneChoose;
   }
-  return { autoPoints, manualPoints };
+
+  return {
+    autoPoints: blockPoints.reduce((sum, b) => sum + b.auto, 0),
+    manualPoints: blockPoints.reduce((sum, b) => sum + b.manual, 0),
+  };
+}
+
+/**
+ * Computes the maximum total points for a question, resolving inheritance
+ * from the parent alt group when applicable.
+ */
+export function computeQuestionTotalPoints(
+  question: QuestionPointsJson,
+  assessmentType: EnumAssessmentType,
+  parent?: QuestionPointsJson,
+): number {
+  const points = question.points ?? parent?.points;
+  const autoPoints = question.autoPoints ?? parent?.autoPoints;
+  const maxAutoPoints = question.maxAutoPoints ?? parent?.maxAutoPoints;
+  const maxPoints = question.maxPoints ?? parent?.maxPoints;
+  const manualPoints = question.manualPoints ?? parent?.manualPoints ?? 0;
+
+  if (assessmentType === 'Homework') {
+    const auto = maxAutoPoints ?? maxPoints ?? autoPoints ?? points ?? 0;
+    return firstPoints(auto) + firstPoints(manualPoints);
+  }
+
+  // Exam: first element of points array is the max
+  const auto = points ?? autoPoints ?? 0;
+  return firstPoints(auto) + firstPoints(manualPoints);
+}
+
+/**
+ * Returns true if alternatives within an alt group have different total point values.
+ */
+export function hasPointsMismatch(
+  alternatives: QuestionAlternativeForm[],
+  assessmentType: EnumAssessmentType,
+  parent?: QuestionPointsJson,
+): boolean {
+  if (alternatives.length <= 1) return false;
+
+  const totals = alternatives.map((alt) => computeQuestionTotalPoints(alt, assessmentType, parent));
+  return totals.some((t) => t !== totals[0]);
+}
+
+/**
+ * Returns true if question blocks in a zone with bestQuestions or numberChoose
+ * have different contributed total point values.
+ */
+export function hasZonePointsMismatch(
+  zone: ZoneAssessmentForm,
+  assessmentType: EnumAssessmentType,
+): boolean {
+  if (zone.bestQuestions == null && zone.numberChoose == null) return false;
+  if (zone.questions.length <= 1) return false;
+
+  const blockTotals = zone.questions.map((block) => {
+    if (block.alternatives) {
+      const altTotals = block.alternatives
+        .map((alt) => computeQuestionTotalPoints(alt, assessmentType, block))
+        .sort((a, b) => b - a);
+      const count = block.numberChoose ?? altTotals.length;
+      return altTotals.slice(0, count).reduce((sum, t) => sum + t, 0);
+    }
+    return computeQuestionTotalPoints(block, assessmentType);
+  });
+
+  return blockTotals.some((t) => t !== blockTotals[0]);
 }
 
 export function toAssessmentForPicker(assessments: OtherAssessment[]): AssessmentForPicker[] {

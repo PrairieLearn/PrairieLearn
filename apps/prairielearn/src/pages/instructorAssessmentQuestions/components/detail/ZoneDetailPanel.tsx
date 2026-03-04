@@ -240,6 +240,10 @@ export function ZoneDetailPanel({
               if (v != null && v > zone.questions.length) {
                 return `Cannot exceed number of questions in zone (${zone.questions.length}).`;
               }
+              const numberChoose = getValues('numberChoose');
+              if (v != null && numberChoose != null && v > numberChoose) {
+                return `Cannot exceed number to choose (${numberChoose}).`;
+              }
             },
           })}
         />

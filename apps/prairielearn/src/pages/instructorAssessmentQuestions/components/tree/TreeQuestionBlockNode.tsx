@@ -7,9 +7,11 @@ import { run } from '@prairielearn/run';
 import { OverlayTrigger } from '@prairielearn/ui';
 
 import type { StaffAssessmentQuestionRow } from '../../../../lib/assessment-question.shared.js';
+import { isRenderableComment } from '../../../../lib/comments.js';
 import type { EnumAssessmentType } from '../../../../lib/db-types.js';
 import type { EditorAction, SelectedItem, ViewType, ZoneQuestionBlockForm } from '../../types.js';
 import type { ChangeTrackingResult } from '../../utils/modifiedTracking.js';
+import { hasPointsMismatch } from '../../utils/questions.js';
 
 import { CollapseToggleButton } from './CollapseToggleButton.js';
 import { DragHandle } from './DragHandle.js';
@@ -53,6 +55,7 @@ export function TreeQuestionBlockNode({
   ) => void;
 }) {
   const changeTooltipId = useId();
+  const commentTooltipId = useId();
   const hasAlternatives = zoneQuestionBlock.id == null;
   const isCollapsed = collapsedGroups.has(zoneQuestionBlock.trackingId);
   const toggleCollapse = () =>
@@ -124,24 +127,8 @@ export function TreeQuestionBlockNode({
   // Alternative group
   const alternativeCount = alternatives?.length ?? 0;
 
-  const pointsMismatch = run(() => {
-    if (!alternatives || alternatives.length <= 1) return false;
-
-    const getEffectivePoints = (alt: (typeof alternatives)[0]) =>
-      JSON.stringify({
-        autoPoints:
-          alt.points ?? alt.autoPoints ?? zoneQuestionBlock.points ?? zoneQuestionBlock.autoPoints,
-        manualPoints: alt.manualPoints ?? zoneQuestionBlock.manualPoints,
-        maxAutoPoints:
-          alt.maxPoints ??
-          alt.maxAutoPoints ??
-          zoneQuestionBlock.maxPoints ??
-          zoneQuestionBlock.maxAutoPoints,
-      });
-
-    const first = getEffectivePoints(alternatives[0]);
-    return alternatives.some((alt) => getEffectivePoints(alt) !== first);
-  });
+  const pointsMismatch =
+    alternatives != null && hasPointsMismatch(alternatives, assessmentType, zoneQuestionBlock);
 
   return (
     <div
@@ -185,43 +172,87 @@ export function TreeQuestionBlockNode({
           onToggle={toggleCollapse}
         />
         <i className="bi bi-stack text-primary me-1" aria-hidden="true" />
-        <span className="flex-grow-1 text-primary">
-          {run(() => {
-            const choose = zoneQuestionBlock.numberChoose;
-            if (choose == null) return `Choose ${alternativeCount} of ${alternativeCount}`;
-            return `Choose ${choose} of ${alternativeCount}`;
-          })}
-          {pointsMismatch && (
-            <OverlayTrigger
-              placement="top"
-              tooltip={{
-                props: { id: `points-mismatch-${zoneQuestionBlock.trackingId}` },
-                body: 'Alternatives have different point values',
-              }}
+        <div className="flex-grow-1" style={{ minWidth: 0 }}>
+          <div className="text-truncate text-primary">
+            {run(() => {
+              const choose = zoneQuestionBlock.numberChoose;
+              if (choose == null) return `Choose ${alternativeCount} of ${alternativeCount}`;
+              return `Choose ${choose} of ${alternativeCount}`;
+            })}
+            {pointsMismatch && (
+              <OverlayTrigger
+                placement="top"
+                tooltip={{
+                  props: { id: `points-mismatch-${zoneQuestionBlock.trackingId}` },
+                  body: 'Alternatives have different point values',
+                }}
+              >
+                <i
+                  className="bi bi-exclamation-triangle-fill text-warning ms-1"
+                  aria-hidden="true"
+                />
+              </OverlayTrigger>
+            )}
+            {editMode && changeTracking.newIds.has(zoneQuestionBlock.trackingId) && (
+              <OverlayTrigger
+                placement="top"
+                tooltip={{ props: { id: changeTooltipId }, body: 'New' }}
+              >
+                <span className="text-primary ms-1">●</span>
+              </OverlayTrigger>
+            )}
+            {editMode && changeTracking.modifiedIds.has(zoneQuestionBlock.trackingId) && (
+              <OverlayTrigger
+                placement="top"
+                tooltip={{ props: { id: changeTooltipId }, body: 'Modified' }}
+              >
+                <span className="text-warning ms-1">●</span>
+              </OverlayTrigger>
+            )}
+            {isRenderableComment(zoneQuestionBlock.comment) && (
+              <OverlayTrigger
+                placement="top"
+                tooltip={{
+                  props: { id: commentTooltipId },
+                  body:
+                    typeof zoneQuestionBlock.comment === 'string'
+                      ? zoneQuestionBlock.comment
+                      : JSON.stringify(zoneQuestionBlock.comment, null, 2),
+                }}
+              >
+                <i className="bi bi-chat-left-text text-muted ms-1" aria-hidden="true" />
+              </OverlayTrigger>
+            )}
+          </div>
+          {alternatives && alternatives.length > 0 && (
+            <div
+              className="text-muted font-monospace text-truncate"
+              style={{ fontSize: '0.75rem' }}
             >
-              <i
-                className="bi bi-exclamation-triangle-fill text-warning ms-1"
-                aria-hidden="true"
-              />
-            </OverlayTrigger>
+              {alternatives.slice(0, 2).map((alt, i) => (
+                <span key={alt.trackingId}>
+                  {i > 0 && ', '}
+                  {alt.id}
+                </span>
+              ))}
+              {alternatives.length > 2 && ', ...'}
+            </div>
           )}
-          {editMode && changeTracking.newIds.has(zoneQuestionBlock.trackingId) && (
-            <OverlayTrigger
-              placement="top"
-              tooltip={{ props: { id: changeTooltipId }, body: 'New' }}
-            >
-              <span className="text-primary ms-1">●</span>
-            </OverlayTrigger>
-          )}
-          {editMode && changeTracking.modifiedIds.has(zoneQuestionBlock.trackingId) && (
-            <OverlayTrigger
-              placement="top"
-              tooltip={{ props: { id: changeTooltipId }, body: 'Modified' }}
-            >
-              <span className="text-warning ms-1">●</span>
-            </OverlayTrigger>
-          )}
-        </span>
+        </div>
+        {run(() => {
+          if (!alternatives || alternatives.length === 0) return null;
+          const topics = alternatives
+            .map((alt) => (alt.id ? questionMetadata[alt.id]?.topic : null))
+            .filter(Boolean);
+          if (topics.length !== alternatives.length) return null;
+          const first = topics[0]!;
+          if (!topics.every((t) => t!.name === first.name)) return null;
+          return (
+            <div className="ms-2 me-2">
+              <span className={`badge color-${first.color}`}>{first.name}</span>
+            </div>
+          );
+        })}
         <div className="flex-shrink-0 text-end" style={{ minWidth: '6rem' }}>
           <PointsBadge
             question={zoneQuestionBlock}

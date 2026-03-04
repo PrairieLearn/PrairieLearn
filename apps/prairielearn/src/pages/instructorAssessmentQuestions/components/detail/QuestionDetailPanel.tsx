@@ -8,7 +8,12 @@ import { CopyButton } from '../../../../components/CopyButton.js';
 import { HistMini } from '../../../../components/HistMini.js';
 import type { StaffAssessmentQuestionRow } from '../../../../lib/assessment-question.shared.js';
 import type { EnumAssessmentType } from '../../../../lib/db-types.js';
-import type { QuestionAlternativeForm, SelectedItem, ZoneQuestionBlockForm } from '../../types.js';
+import type {
+  QuestionAlternativeForm,
+  SelectedItem,
+  ZoneAssessmentForm,
+  ZoneQuestionBlockForm,
+} from '../../types.js';
 import {
   coerceToNumber,
   extractStringComment,
@@ -22,6 +27,7 @@ import {
 import { validatePositiveInteger } from '../../utils/questions.js';
 import { useAutoSave } from '../../utils/useAutoSave.js';
 
+import type { AdvancedFieldsInheritance } from './AdvancedFields.js';
 import { AdvancedFields } from './AdvancedFields.js';
 import { InheritableField } from './InheritableField.js';
 
@@ -43,6 +49,7 @@ interface QuestionFormData {
 export function QuestionDetailPanel({
   question,
   zoneQuestionBlock,
+  zone,
   questionData,
   idPrefix,
   editMode,
@@ -56,6 +63,7 @@ export function QuestionDetailPanel({
 }: {
   question: ZoneQuestionBlockForm | QuestionAlternativeForm;
   zoneQuestionBlock?: ZoneQuestionBlockForm;
+  zone?: ZoneAssessmentForm;
   questionData: StaffAssessmentQuestionRow | null;
   idPrefix: string;
   editMode: boolean;
@@ -156,6 +164,57 @@ export function QuestionDetailPanel({
   );
 
   useAutoSave({ isDirty, isValid, getValues, onSave: handleSave });
+
+  const advancedInheritance: AdvancedFieldsInheritance | undefined = run(() => {
+    if (isAlternative) {
+      // Alternatives inherit from alt group, which may itself inherit from zone
+      const parentAdvanceScorePerc = zoneQuestionBlock.advanceScorePerc ?? zone?.advanceScorePerc;
+      const parentGradeRateMinutes = zoneQuestionBlock.gradeRateMinutes ?? zone?.gradeRateMinutes;
+      const parentAllowRealTimeGrading =
+        zoneQuestionBlock.allowRealTimeGrading ?? zone?.allowRealTimeGrading;
+      const parentForceMaxPoints = zoneQuestionBlock.forceMaxPoints;
+      if (
+        parentAdvanceScorePerc == null &&
+        parentGradeRateMinutes == null &&
+        parentAllowRealTimeGrading == null &&
+        parentForceMaxPoints == null
+      )
+        return undefined;
+      return {
+        parentAdvanceScorePerc,
+        parentGradeRateMinutes,
+        parentAllowRealTimeGrading,
+        parentForceMaxPoints,
+        inheritedFromLabel: 'group',
+        watch,
+        setValue,
+        getValues,
+        onSave: handleSave,
+      };
+    }
+    // Standalone questions inherit from zone
+    if (!zone) return undefined;
+    const parentAdvanceScorePerc = zone.advanceScorePerc;
+    const parentGradeRateMinutes = zone.gradeRateMinutes;
+    const parentAllowRealTimeGrading = zone.allowRealTimeGrading;
+    if (
+      parentAdvanceScorePerc == null &&
+      parentGradeRateMinutes == null &&
+      parentAllowRealTimeGrading == null
+    )
+      return undefined;
+    return {
+      parentAdvanceScorePerc,
+      parentGradeRateMinutes,
+      parentAllowRealTimeGrading,
+      parentForceMaxPoints: undefined,
+      inheritedFromLabel: 'zone',
+      watch,
+      setValue,
+      getValues,
+      onSave: handleSave,
+    };
+  });
 
   if (!editMode) {
     return (
@@ -382,9 +441,7 @@ export function QuestionDetailPanel({
               }
               // Directly save instead of setValue(field, undefined) because
               // RHF does not reliably trigger dirty-state changes for undefined.
-              onReset={() =>
-                handleSave({ ...getValues(), [originalPointsProperty]: undefined })
-              }
+              onReset={() => handleSave({ ...getValues(), [originalPointsProperty]: undefined })}
             />
           ) : (
             <div className="mb-3">
@@ -449,9 +506,7 @@ export function QuestionDetailPanel({
               }
               // Directly save instead of setValue(field, undefined) because
               // RHF does not reliably trigger dirty-state changes for undefined.
-              onReset={() =>
-                handleSave({ ...getValues(), [originalMaxProperty]: undefined })
-              }
+              onReset={() => handleSave({ ...getValues(), [originalMaxProperty]: undefined })}
             />
           ) : (
             <div className="mb-3">
@@ -514,9 +569,7 @@ export function QuestionDetailPanel({
               }
               // Directly save instead of setValue(field, undefined) because
               // RHF does not reliably trigger dirty-state changes for undefined.
-              onReset={() =>
-                handleSave({ ...getValues(), manualPoints: undefined })
-              }
+              onReset={() => handleSave({ ...getValues(), manualPoints: undefined })}
             />
           ) : (
             <div className="mb-3">
@@ -618,9 +671,7 @@ export function QuestionDetailPanel({
               }
               // Directly save instead of setValue(field, undefined) because
               // RHF does not reliably trigger dirty-state changes for undefined.
-              onReset={() =>
-                handleSave({ ...getValues(), [originalPointsProperty]: undefined })
-              }
+              onReset={() => handleSave({ ...getValues(), [originalPointsProperty]: undefined })}
             />
           ) : (
             <div className="mb-3">
@@ -689,9 +740,7 @@ export function QuestionDetailPanel({
               }
               // Directly save instead of setValue(field, undefined) because
               // RHF does not reliably trigger dirty-state changes for undefined.
-              onReset={() =>
-                handleSave({ ...getValues(), manualPoints: undefined })
-              }
+              onReset={() => handleSave({ ...getValues(), manualPoints: undefined })}
             />
           ) : (
             <div className="mb-3">
@@ -748,7 +797,13 @@ export function QuestionDetailPanel({
         </small>
       </div>
 
-      <AdvancedFields register={register} errors={errors} idPrefix={idPrefix} variant="question" />
+      <AdvancedFields
+        register={register}
+        errors={errors}
+        idPrefix={idPrefix}
+        variant="question"
+        inheritance={advancedInheritance}
+      />
 
       {questionData?.assessment_question.mean_question_score != null && (
         <dl className="mb-0">
