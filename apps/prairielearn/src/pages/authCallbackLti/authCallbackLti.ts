@@ -116,7 +116,7 @@ router.post(
     }
     const authName = parameters.lis_person_name_full || fallbackName;
 
-    const userId = await sqldb.callRow(
+    const userId = await sqldb.callScalar(
       'users_select_or_insert_lti',
       [
         authUid,
@@ -195,7 +195,7 @@ router.post(
     } else {
       // No linked assessment
 
-      const isInstructor = await sqldb.callRow(
+      const { is_instructor: isInstructor } = await sqldb.callRow(
         'users_is_instructor_in_course_instance',
         [userId, ltiResult.course_instance_id],
         SprocUsersIsInstructorInCourseInstanceSchema,
