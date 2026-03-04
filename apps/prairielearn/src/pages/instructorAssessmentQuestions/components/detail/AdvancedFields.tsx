@@ -8,7 +8,7 @@ import type {
   UseFormWatch,
 } from 'react-hook-form';
 
-import { coerceToNumber } from '../../utils/formHelpers.js';
+import { coerceToBoolean, coerceToNumber } from '../../utils/formHelpers.js';
 
 import { InheritableCheckboxField } from './InheritableCheckboxField.js';
 import { InheritableField } from './InheritableField.js';
@@ -208,7 +208,7 @@ export function AdvancedFields({
           isInherited={isInherited}
           inheritedValue={inheritance.parentForceMaxPoints}
           inheritedFromLabel={inheritance.inheritedFromLabel}
-          registerProps={register('forceMaxPoints')}
+          registerProps={register('forceMaxPoints', { setValueAs: coerceToBoolean })}
           showResetButton={!isInherited}
           onOverride={() =>
             inheritance.setValue('forceMaxPoints', inheritance.parentForceMaxPoints, {
@@ -229,7 +229,7 @@ export function AdvancedFields({
           className="form-check-input"
           id={`${idPrefix}-forceMaxPoints`}
           aria-describedby={`${idPrefix}-forceMaxPoints-help`}
-          {...register('forceMaxPoints')}
+          {...register('forceMaxPoints', { setValueAs: coerceToBoolean })}
         />
         <label htmlFor={`${idPrefix}-forceMaxPoints`} className="form-check-label">
           Force max points
@@ -253,7 +253,7 @@ export function AdvancedFields({
           isInherited={isInherited}
           inheritedValue={inheritance.parentAllowRealTimeGrading}
           inheritedFromLabel={inheritance.inheritedFromLabel}
-          registerProps={register('allowRealTimeGrading')}
+          registerProps={register('allowRealTimeGrading', { setValueAs: coerceToBoolean })}
           showResetButton={!isInherited}
           onOverride={() =>
             inheritance.setValue('allowRealTimeGrading', inheritance.parentAllowRealTimeGrading, {
@@ -274,7 +274,7 @@ export function AdvancedFields({
           className="form-check-input"
           id={`${idPrefix}-allowRealTimeGrading`}
           aria-describedby={`${idPrefix}-allowRealTimeGrading-help`}
-          {...register('allowRealTimeGrading')}
+          {...register('allowRealTimeGrading', { setValueAs: coerceToBoolean })}
         />
         <label htmlFor={`${idPrefix}-allowRealTimeGrading`} className="form-check-label">
           Allow real-time grading

@@ -5,6 +5,19 @@
 export const coerceToNumber = (v: string): number | undefined => (v === '' ? undefined : Number(v));
 
 /**
+ * Converts a value to a boolean or undefined.
+ * Used as a `setValueAs` transform for react-hook-form checkbox inputs.
+ * This is needed because InheritableCheckboxField renders a hidden input
+ * when the value is inherited, and RHF treats hidden inputs as text fields,
+ * reading string values instead of booleans.
+ */
+export const coerceToBoolean = (v: unknown): boolean | undefined => {
+  if (v === '' || v === undefined || v === null) return undefined;
+  if (typeof v === 'boolean') return v;
+  return v === 'true' || v === 'on';
+};
+
+/**
  * Parses a points list input value into a number, array of numbers, or string.
  * Used as a `setValueAs` transform for points list inputs that accept
  * comma-separated values (e.g. "10, 5, 2, 1").
