@@ -28,7 +28,7 @@ function compactPoints(pts: number[]): string {
   const runs: { value: number; count: number }[] = [];
   for (const p of pts) {
     const last = runs[runs.length - 1];
-    if (last && last.value === p) {
+    if (last?.value === p) {
       last.count++;
     } else {
       runs.push({ value: p, count: 1 });
@@ -37,7 +37,7 @@ function compactPoints(pts: number[]): string {
 
   return runs
     .flatMap((r) =>
-      r.count > 2 ? [`${r.value}×${r.count}`] : Array<string>(r.count).fill(`${r.value}`),
+      r.count > 2 ? [`${r.value}×${r.count}`] : new Array<string>(r.count).fill(`${r.value}`),
     )
     .join(', ');
 }
@@ -46,19 +46,27 @@ export function PointsBadge({
   question,
   zoneQuestionBlock,
   assessmentType,
+  gradingMethod,
 }: {
   question: ZoneQuestionBlockForm | QuestionAlternativeForm;
   zoneQuestionBlock: ZoneQuestionBlockForm;
   assessmentType: EnumAssessmentType;
+  gradingMethod?: string;
 }): ReactElement | null {
   const tooltipId = useId();
   const forceMax = question.forceMaxPoints ?? zoneQuestionBlock.forceMaxPoints;
-  const autoPoints =
+  const rawAutoPoints =
     question.points ??
     question.autoPoints ??
     zoneQuestionBlock.points ??
     zoneQuestionBlock.autoPoints;
-  const manualPoints = question.manualPoints ?? zoneQuestionBlock.manualPoints;
+  const rawManualPoints = question.manualPoints ?? zoneQuestionBlock.manualPoints;
+
+  // When the question uses manual grading, `points`/`autoPoints` in the JSON
+  // actually represent manual points, not auto points.
+  const isManualGrading = gradingMethod === 'Manual';
+  const autoPoints = isManualGrading ? undefined : rawAutoPoints;
+  const manualPoints = isManualGrading ? (rawAutoPoints ?? rawManualPoints) : rawManualPoints;
 
   if (assessmentType === 'Exam') {
     if (autoPoints == null && manualPoints == null) return null;
@@ -361,6 +369,7 @@ export function TreeQuestionRow({
           question={question}
           zoneQuestionBlock={zoneQuestionBlock}
           assessmentType={assessmentType}
+          gradingMethod={questionData?.question.grading_method}
         />
       </div>
       {editMode && onDelete && (

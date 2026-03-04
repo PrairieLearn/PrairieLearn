@@ -87,6 +87,7 @@ export function QuestionDetailPanel({
   onResetButtonClick: (assessmentQuestionId: string) => void;
 }) {
   const isAlternative = !!zoneQuestionBlock;
+  const isManualGrading = questionData?.question.grading_method === 'Manual';
 
   const originalPointsProperty = resolvePointsProperty(question, zoneQuestionBlock);
   const originalMaxProperty = resolveMaxPointsProperty(
@@ -266,14 +267,20 @@ export function QuestionDetailPanel({
         <dl className="mb-0">
           {autoPointsValue != null && (
             <>
-              <dt>{assessmentType === 'Exam' ? 'Points' : 'Auto points'}</dt>
+              <dt>
+                {isManualGrading
+                  ? 'Points (manual)'
+                  : assessmentType === 'Exam'
+                    ? 'Points'
+                    : 'Auto points'}
+              </dt>
               <dd>
                 {Array.isArray(autoPointsValue) ? autoPointsValue.join(', ') : autoPointsValue}
               </dd>
             </>
           )}
           {run(() => {
-            if (assessmentType !== 'Homework') return null;
+            if (assessmentType !== 'Homework' || isManualGrading) return null;
             const isDefault = maxAutoPointsValue == null;
             const effectiveMax = maxAutoPointsValue ?? autoPointsValue;
             if (effectiveMax == null) return null;
@@ -287,7 +294,7 @@ export function QuestionDetailPanel({
               </>
             );
           })}
-          {manualPointsValue != null && (
+          {!isManualGrading && manualPointsValue != null && (
             <>
               <dt>Manual points</dt>
               <dd>{manualPointsValue}</dd>
@@ -508,7 +515,7 @@ export function QuestionDetailPanel({
           {isAlternative ? (
             <InheritableField
               id={`${idPrefix}-autoPoints`}
-              label="Auto points"
+              label={isManualGrading ? 'Points (manual)' : 'Auto points'}
               inputType="number"
               step="any"
               isInherited={isPointsInherited}
@@ -523,7 +530,11 @@ export function QuestionDetailPanel({
                 },
               })}
               error={errors[originalPointsProperty]}
-              helpText="Points awarded for the auto-graded component."
+              helpText={
+                isManualGrading
+                  ? 'Points for manual grading.'
+                  : 'Points awarded for the auto-graded component.'
+              }
               inheritedValueLabel={formatPointsValue(inheritedPointsValue)}
               showResetButton={inheritedPointsValue != null}
               onOverride={() =>
@@ -539,7 +550,7 @@ export function QuestionDetailPanel({
           ) : (
             <div className="mb-3">
               <label htmlFor={`${idPrefix}-autoPoints`} className="form-label">
-                Auto points
+                {isManualGrading ? 'Points (manual)' : 'Auto points'}
               </label>
               <input
                 type="number"
@@ -570,118 +581,83 @@ export function QuestionDetailPanel({
                 </div>
               )}
               <small id={`${idPrefix}-autoPoints-help`} className="form-text text-muted">
-                Points awarded for the auto-graded component.
+                {isManualGrading
+                  ? 'Points for manual grading.'
+                  : 'Points awarded for the auto-graded component.'}
               </small>
             </div>
           )}
-          {isAlternative ? (
-            <InheritableField
-              id={`${idPrefix}-maxAutoPoints`}
-              label="Max auto points"
-              inputType="number"
-              isInherited={isMaxInherited}
-              inheritedDisplayValue={String(inheritedMaxValue ?? '')}
-              registerProps={register(originalMaxProperty, {
-                setValueAs: coerceToNumber,
-                deps: [originalPointsProperty],
-                validate: homeworkMaxPointsValidation,
-              })}
-              error={errors[originalMaxProperty]}
-              helpText="Maximum total auto-graded points. Defaults to auto points if not set."
-              placeholder={autoPointsPlaceholder}
-              inheritedValueLabel={String(inheritedMaxValue ?? '')}
-              showResetButton={inheritedMaxValue != null}
-              onOverride={() =>
-                setValue(originalMaxProperty, inheritedMaxValue, {
-                  shouldDirty: true,
-                  shouldValidate: true,
-                })
-              }
-              // Directly save instead of setValue(field, undefined) because
-              // RHF does not reliably trigger dirty-state changes for undefined.
-              onReset={() => handleSave({ ...getValues(), [originalMaxProperty]: undefined })}
-            />
-          ) : (
-            <div className="mb-3">
-              <label htmlFor={`${idPrefix}-maxAutoPoints`} className="form-label">
-                Max auto points
-              </label>
-              <input
-                type="number"
-                className={clsx(
-                  'form-control form-control-sm',
-                  errors[originalMaxProperty] && 'is-invalid',
-                )}
+          {!isManualGrading &&
+            (isAlternative ? (
+              <InheritableField
                 id={`${idPrefix}-maxAutoPoints`}
-                aria-invalid={!!errors[originalMaxProperty]}
-                aria-errormessage={
-                  errors[originalMaxProperty] ? `${idPrefix}-maxAutoPoints-error` : undefined
-                }
-                aria-describedby={`${idPrefix}-maxAutoPoints-help`}
-                placeholder={autoPointsPlaceholder}
-                {...register(originalMaxProperty, {
+                label="Max auto points"
+                inputType="number"
+                isInherited={isMaxInherited}
+                inheritedDisplayValue={String(inheritedMaxValue ?? '')}
+                registerProps={register(originalMaxProperty, {
                   setValueAs: coerceToNumber,
                   deps: [originalPointsProperty],
                   validate: homeworkMaxPointsValidation,
                 })}
-              />
-              {errors[originalMaxProperty] && (
-                <div id={`${idPrefix}-maxAutoPoints-error`} className="invalid-feedback">
-                  {errors[originalMaxProperty].message}
-                </div>
-              )}
-              <small id={`${idPrefix}-maxAutoPoints-help`} className="form-text text-muted">
-                Maximum total auto-graded points. Defaults to auto points if not set.
-              </small>
-            </div>
-          )}
-          {isAlternative ? (
-            <InheritableField
-              id={`${idPrefix}-manualPoints`}
-              label="Manual points"
-              inputType="number"
-              isInherited={isManualPointsInherited}
-              inheritedDisplayValue={String(inheritedManualPoints ?? '')}
-              registerProps={register('manualPoints', {
-                setValueAs: coerceToNumber,
-                deps: [originalPointsProperty],
-                validate: {
-                  atLeastOne: pointsValidation,
-                  nonNegative: nonNegativePointsValidation,
-                },
-              })}
-              error={errors.manualPoints}
-              helpText="Points awarded for the manually graded component."
-              inheritedValueLabel={String(inheritedManualPoints ?? '')}
-              showResetButton={inheritedManualPoints != null}
-              onOverride={() =>
-                setValue('manualPoints', inheritedManualPoints, {
-                  shouldDirty: true,
-                  shouldValidate: true,
-                })
-              }
-              // Directly save instead of setValue(field, undefined) because
-              // RHF does not reliably trigger dirty-state changes for undefined.
-              onReset={() => handleSave({ ...getValues(), manualPoints: undefined })}
-            />
-          ) : (
-            <div className="mb-3">
-              <label htmlFor={`${idPrefix}-manualPoints`} className="form-label">
-                Manual points
-              </label>
-              <input
-                type="number"
-                className={clsx(
-                  'form-control form-control-sm',
-                  errors.manualPoints && 'is-invalid',
-                )}
-                id={`${idPrefix}-manualPoints`}
-                aria-invalid={!!errors.manualPoints}
-                aria-errormessage={
-                  errors.manualPoints ? `${idPrefix}-manualPoints-error` : undefined
+                error={errors[originalMaxProperty]}
+                helpText="Maximum total auto-graded points. Defaults to auto points if not set."
+                placeholder={autoPointsPlaceholder}
+                inheritedValueLabel={String(inheritedMaxValue ?? '')}
+                showResetButton={inheritedMaxValue != null}
+                onOverride={() =>
+                  setValue(originalMaxProperty, inheritedMaxValue, {
+                    shouldDirty: true,
+                    shouldValidate: true,
+                  })
                 }
-                aria-describedby={`${idPrefix}-manualPoints-help`}
-                {...register('manualPoints', {
+                // Directly save instead of setValue(field, undefined) because
+                // RHF does not reliably trigger dirty-state changes for undefined.
+                onReset={() => handleSave({ ...getValues(), [originalMaxProperty]: undefined })}
+              />
+            ) : (
+              <div className="mb-3">
+                <label htmlFor={`${idPrefix}-maxAutoPoints`} className="form-label">
+                  Max auto points
+                </label>
+                <input
+                  type="number"
+                  className={clsx(
+                    'form-control form-control-sm',
+                    errors[originalMaxProperty] && 'is-invalid',
+                  )}
+                  id={`${idPrefix}-maxAutoPoints`}
+                  aria-invalid={!!errors[originalMaxProperty]}
+                  aria-errormessage={
+                    errors[originalMaxProperty] ? `${idPrefix}-maxAutoPoints-error` : undefined
+                  }
+                  aria-describedby={`${idPrefix}-maxAutoPoints-help`}
+                  placeholder={autoPointsPlaceholder}
+                  {...register(originalMaxProperty, {
+                    setValueAs: coerceToNumber,
+                    deps: [originalPointsProperty],
+                    validate: homeworkMaxPointsValidation,
+                  })}
+                />
+                {errors[originalMaxProperty] && (
+                  <div id={`${idPrefix}-maxAutoPoints-error`} className="invalid-feedback">
+                    {errors[originalMaxProperty].message}
+                  </div>
+                )}
+                <small id={`${idPrefix}-maxAutoPoints-help`} className="form-text text-muted">
+                  Maximum total auto-graded points. Defaults to auto points if not set.
+                </small>
+              </div>
+            ))}
+          {!isManualGrading &&
+            (isAlternative ? (
+              <InheritableField
+                id={`${idPrefix}-manualPoints`}
+                label="Manual points"
+                inputType="number"
+                isInherited={isManualPointsInherited}
+                inheritedDisplayValue={String(inheritedManualPoints ?? '')}
+                registerProps={register('manualPoints', {
                   setValueAs: coerceToNumber,
                   deps: [originalPointsProperty],
                   validate: {
@@ -689,17 +665,56 @@ export function QuestionDetailPanel({
                     nonNegative: nonNegativePointsValidation,
                   },
                 })}
+                error={errors.manualPoints}
+                helpText="Points awarded for the manually graded component."
+                inheritedValueLabel={String(inheritedManualPoints ?? '')}
+                showResetButton={inheritedManualPoints != null}
+                onOverride={() =>
+                  setValue('manualPoints', inheritedManualPoints, {
+                    shouldDirty: true,
+                    shouldValidate: true,
+                  })
+                }
+                // Directly save instead of setValue(field, undefined) because
+                // RHF does not reliably trigger dirty-state changes for undefined.
+                onReset={() => handleSave({ ...getValues(), manualPoints: undefined })}
               />
-              {errors.manualPoints && (
-                <div id={`${idPrefix}-manualPoints-error`} className="invalid-feedback">
-                  {errors.manualPoints.message}
-                </div>
-              )}
-              <small id={`${idPrefix}-manualPoints-help`} className="form-text text-muted">
-                Points awarded for the manually graded component.
-              </small>
-            </div>
-          )}
+            ) : (
+              <div className="mb-3">
+                <label htmlFor={`${idPrefix}-manualPoints`} className="form-label">
+                  Manual points
+                </label>
+                <input
+                  type="number"
+                  className={clsx(
+                    'form-control form-control-sm',
+                    errors.manualPoints && 'is-invalid',
+                  )}
+                  id={`${idPrefix}-manualPoints`}
+                  aria-invalid={!!errors.manualPoints}
+                  aria-errormessage={
+                    errors.manualPoints ? `${idPrefix}-manualPoints-error` : undefined
+                  }
+                  aria-describedby={`${idPrefix}-manualPoints-help`}
+                  {...register('manualPoints', {
+                    setValueAs: coerceToNumber,
+                    deps: [originalPointsProperty],
+                    validate: {
+                      atLeastOne: pointsValidation,
+                      nonNegative: nonNegativePointsValidation,
+                    },
+                  })}
+                />
+                {errors.manualPoints && (
+                  <div id={`${idPrefix}-manualPoints-error`} className="invalid-feedback">
+                    {errors.manualPoints.message}
+                  </div>
+                )}
+                <small id={`${idPrefix}-manualPoints-help`} className="form-text text-muted">
+                  Points awarded for the manually graded component.
+                </small>
+              </div>
+            ))}
           <div className="mb-3">
             <label htmlFor={`${idPrefix}-triesPerVariant`} className="form-label">
               Tries per variant
@@ -736,7 +751,7 @@ export function QuestionDetailPanel({
           {isAlternative ? (
             <InheritableField
               id={`${idPrefix}-pointsList`}
-              label="Points list"
+              label={isManualGrading ? 'Points (manual)' : 'Points list'}
               inputType="text"
               isInherited={isPointsInherited}
               inheritedDisplayValue={formatPointsValue(inheritedPointsValue)}
@@ -753,7 +768,11 @@ export function QuestionDetailPanel({
                 },
               })}
               error={errors[originalPointsProperty]}
-              helpText='Points for each attempt, as a comma-separated list (e.g. "10, 5, 2, 1").'
+              helpText={
+                isManualGrading
+                  ? 'Points for manual grading.'
+                  : 'Points for each attempt, as a comma-separated list (e.g. "10, 5, 2, 1").'
+              }
               inheritedValueLabel={formatPointsValue(inheritedPointsValue)}
               showResetButton={inheritedPointsValue != null}
               onOverride={() =>
@@ -769,7 +788,7 @@ export function QuestionDetailPanel({
           ) : (
             <div className="mb-3">
               <label htmlFor={`${idPrefix}-pointsList`} className="form-label">
-                Points list
+                {isManualGrading ? 'Points (manual)' : 'Points list'}
               </label>
               <input
                 type="text"
@@ -802,57 +821,21 @@ export function QuestionDetailPanel({
                 </div>
               )}
               <small id={`${idPrefix}-pointsList-help`} className="form-text text-muted">
-                Points for each attempt, as a comma-separated list (e.g. "10, 5, 2, 1").
+                {isManualGrading
+                  ? 'Points for manual grading.'
+                  : 'Points for each attempt, as a comma-separated list (e.g. "10, 5, 2, 1").'}
               </small>
             </div>
           )}
-          {isAlternative ? (
-            <InheritableField
-              id={`${idPrefix}-manualPoints`}
-              label="Manual points"
-              inputType="number"
-              isInherited={isManualPointsInherited}
-              inheritedDisplayValue={String(inheritedManualPoints ?? '')}
-              registerProps={register('manualPoints', {
-                setValueAs: coerceToNumber,
-                deps: [originalPointsProperty],
-                validate: {
-                  atLeastOne: pointsValidation,
-                  nonNegative: nonNegativePointsValidation,
-                },
-              })}
-              error={errors.manualPoints}
-              helpText="Points awarded for the manually graded component."
-              inheritedValueLabel={String(inheritedManualPoints ?? '')}
-              showResetButton={inheritedManualPoints != null}
-              onOverride={() =>
-                setValue('manualPoints', inheritedManualPoints, {
-                  shouldDirty: true,
-                  shouldValidate: true,
-                })
-              }
-              // Directly save instead of setValue(field, undefined) because
-              // RHF does not reliably trigger dirty-state changes for undefined.
-              onReset={() => handleSave({ ...getValues(), manualPoints: undefined })}
-            />
-          ) : (
-            <div className="mb-3">
-              <label htmlFor={`${idPrefix}-manualPoints`} className="form-label">
-                Manual points
-              </label>
-              <input
-                type="number"
-                className={clsx(
-                  'form-control form-control-sm',
-                  errors.manualPoints && 'is-invalid',
-                )}
+          {!isManualGrading &&
+            (isAlternative ? (
+              <InheritableField
                 id={`${idPrefix}-manualPoints`}
-                aria-invalid={!!errors.manualPoints}
-                aria-errormessage={
-                  errors.manualPoints ? `${idPrefix}-manualPoints-error` : undefined
-                }
-                aria-describedby={`${idPrefix}-manualPoints-help`}
-                {...register('manualPoints', {
+                label="Manual points"
+                inputType="number"
+                isInherited={isManualPointsInherited}
+                inheritedDisplayValue={String(inheritedManualPoints ?? '')}
+                registerProps={register('manualPoints', {
                   setValueAs: coerceToNumber,
                   deps: [originalPointsProperty],
                   validate: {
@@ -860,17 +843,56 @@ export function QuestionDetailPanel({
                     nonNegative: nonNegativePointsValidation,
                   },
                 })}
+                error={errors.manualPoints}
+                helpText="Points awarded for the manually graded component."
+                inheritedValueLabel={String(inheritedManualPoints ?? '')}
+                showResetButton={inheritedManualPoints != null}
+                onOverride={() =>
+                  setValue('manualPoints', inheritedManualPoints, {
+                    shouldDirty: true,
+                    shouldValidate: true,
+                  })
+                }
+                // Directly save instead of setValue(field, undefined) because
+                // RHF does not reliably trigger dirty-state changes for undefined.
+                onReset={() => handleSave({ ...getValues(), manualPoints: undefined })}
               />
-              {errors.manualPoints && (
-                <div id={`${idPrefix}-manualPoints-error`} className="invalid-feedback">
-                  {errors.manualPoints.message}
-                </div>
-              )}
-              <small id={`${idPrefix}-manualPoints-help`} className="form-text text-muted">
-                Points awarded for the manually graded component.
-              </small>
-            </div>
-          )}
+            ) : (
+              <div className="mb-3">
+                <label htmlFor={`${idPrefix}-manualPoints`} className="form-label">
+                  Manual points
+                </label>
+                <input
+                  type="number"
+                  className={clsx(
+                    'form-control form-control-sm',
+                    errors.manualPoints && 'is-invalid',
+                  )}
+                  id={`${idPrefix}-manualPoints`}
+                  aria-invalid={!!errors.manualPoints}
+                  aria-errormessage={
+                    errors.manualPoints ? `${idPrefix}-manualPoints-error` : undefined
+                  }
+                  aria-describedby={`${idPrefix}-manualPoints-help`}
+                  {...register('manualPoints', {
+                    setValueAs: coerceToNumber,
+                    deps: [originalPointsProperty],
+                    validate: {
+                      atLeastOne: pointsValidation,
+                      nonNegative: nonNegativePointsValidation,
+                    },
+                  })}
+                />
+                {errors.manualPoints && (
+                  <div id={`${idPrefix}-manualPoints-error`} className="invalid-feedback">
+                    {errors.manualPoints.message}
+                  </div>
+                )}
+                <small id={`${idPrefix}-manualPoints-help`} className="form-text text-muted">
+                  Points awarded for the manually graded component.
+                </small>
+              </div>
+            ))}
         </>
       )}
 
