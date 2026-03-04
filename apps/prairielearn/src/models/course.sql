@@ -22,23 +22,75 @@ SET
 WHERE
   id = $course_id;
 
--- BLOCK select_courses_with_staff_access
+-- BLOCK select_all_courses
 SELECT
-  c.*,
-  to_jsonb(permissions_course) AS permissions_course
+  c.*
 FROM
   courses AS c
-  JOIN authz_course ($user_id, c.id) AS permissions_course ON TRUE
 WHERE
   c.deleted_at IS NULL
-  -- returns a list of courses that are either example courses or are courses
-  -- in which the user has a non-None course role.
-  -- If the user is an administrator, return all courses.
-  AND (
-    (permissions_course ->> 'course_role')::enum_course_role > 'None'
-    OR c.example_course IS TRUE
-    OR $is_administrator IS TRUE
+ORDER BY
+  c.short_name,
+  c.title,
+  c.id;
+
+-- BLOCK select_courses_with_staff_access
+WITH
+  courses_with_permissions AS (
+    (
+      -- Courses where the user itself is part of staff with a non-None role
+      SELECT
+        c.id,
+        cp.course_role
+      FROM
+        course_permissions AS cp
+      WHERE
+        cp.user_id = $user_id
+        AND cp.course_role > 'None'
+    )
+    UNION
+    (
+      -- If the user is an institution administrator, they get Owner access to all courses in the institution
+      SELECT
+        c.id,
+        'Owner'::enum_course_role AS course_role
+      FROM
+        institution_administrators AS ia
+        JOIN courses AS c ON (c.institution_id = ia.institution_id)
+      WHERE
+        ia.user_id = $user_id
+        AND c.deleted_at IS NULL
+    )
+    UNION
+    (
+      -- All users have access to the example course with at least the Viewer role
+      SELECT
+        c.id,
+        'Viewer'::enum_course_role AS course_role
+      FROM
+        courses AS c
+      WHERE
+        c.example_course IS TRUE
+    )
+  ),
+  highest_role AS (
+    -- In case of multiple permissions for the same course, take the highest role
+    SELECT
+      id,
+      MAX(course_role::enum_course_role) AS course_role
+    FROM
+      courses_with_permissions
+    GROUP BY
+      id
   )
+SELECT
+  c.*,
+  hr.course_role
+FROM
+  highest_role AS hr
+  JOIN courses AS c ON (c.id = hr.id)
+WHERE
+  c.deleted_at IS NULL
 ORDER BY
   c.short_name,
   c.title,

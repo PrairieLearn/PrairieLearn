@@ -1,7 +1,6 @@
 import assert from 'assert';
 
 import { execa } from 'execa';
-import { z } from 'zod';
 
 import * as error from '@prairielearn/error';
 import {
@@ -15,16 +14,19 @@ import {
 import { run } from '@prairielearn/run';
 
 import { calculateCourseRolePermissions } from '../lib/authz-data-lib.js';
-import { type Course, CourseSchema, type EnumCourseRole } from '../lib/db-types.js';
+import {
+  type Course,
+  CoursePermissionSchema,
+  CourseSchema,
+  type EnumCourseRole,
+} from '../lib/db-types.js';
 
 import { insertAuditLog } from './audit-log.js';
 
 const sql = loadSqlEquiv(import.meta.url);
 
 const CourseWithPermissionsSchema = CourseSchema.extend({
-  permissions_course: z.object({
-    course_role: z.enum(['None', 'Previewer', 'Viewer', 'Editor', 'Owner']),
-  }),
+  course_role: CoursePermissionSchema.shape.course_role.unwrap(),
 });
 export type CourseWithPermissions = Course & {
   permissions_course: {
@@ -150,39 +152,26 @@ export async function selectCoursesWithStaffAccess({
   user_id: string;
   is_administrator: boolean;
 }): Promise<CourseWithPermissions[]> {
-  const rawCourses = await queryRows(
-    sql.select_courses_with_staff_access,
-    { user_id, is_administrator },
-    CourseWithPermissionsSchema,
-  );
+  const rawCourses = await run(async () => {
+    if (is_administrator) {
+      const courses = await queryRows(sql.select_all_courses, { user_id }, CourseSchema);
+      return courses.map((course) => ({ ...course, course_role: 'Owner' as const }));
+    }
 
-  // Users always have access to the example course.
-  const courses = rawCourses.map((c) => {
-    const course_role = run(() => {
-      if (c.example_course && ['None', 'Previewer'].includes(c.permissions_course.course_role)) {
-        return 'Viewer';
-      }
-      return c.permissions_course.course_role;
-    });
-    return {
-      ...c,
-      permissions_course: {
-        course_role,
-        ...calculateCourseRolePermissions(course_role),
-      },
-    };
+    return await queryRows(
+      sql.select_courses_with_staff_access,
+      { user_id },
+      CourseWithPermissionsSchema,
+    );
   });
-  if (!is_administrator) return courses;
 
-  // The above query isn't aware of administrator status. We need to update the
-  // permissions to reflect that the user is an administrator.
-  return courses.map((c) => ({
+  return rawCourses.map((c) => ({
     ...c,
     permissions_course: {
-      course_role: 'Owner',
-      ...calculateCourseRolePermissions('Owner'),
+      course_role: c.course_role,
+      ...calculateCourseRolePermissions(c.course_role),
     },
-  })) satisfies CourseWithPermissions[];
+  }));
 }
 
 /**
