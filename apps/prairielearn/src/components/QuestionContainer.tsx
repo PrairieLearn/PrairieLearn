@@ -240,8 +240,8 @@ function AIGradingExplanation({
             ? rotationCorrectionApplied
               ? html`<div class="alert alert-warning mb-3" role="alert">
                   <p>
-                    An image was uploaded in a rotated state by the student (this was an error by
-                    the student). The system corrected its rotation prior to AI grading.
+                    One or more images were uploaded in a rotated state by the student (this was an
+                    error by the student). The system corrected their rotation prior to AI grading.
                   </p>
                   <div class="card table-responsive mb-0" style="max-width: 800px;">
                     <table class="table table-sm mb-0">

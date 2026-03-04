@@ -196,8 +196,8 @@ export async function generatePrompt({
     input.push({
       role: systemRoleAfterUserMessage,
       content: formatPrompt([
-        'An image was uploaded in a rotated state by the student (this was an error by the student). The system corrected its rotation.',
-        'If there are rubric items associated with image rotation, then please note that this image was rotated incorrectly.',
+        'One or more images were uploaded in a rotated state by the student (this was an error by the student). The system corrected their rotation.',
+        'If there are rubric items associated with image rotation, then please note that one or more images were rotated incorrectly.',
       ]),
     });
   }

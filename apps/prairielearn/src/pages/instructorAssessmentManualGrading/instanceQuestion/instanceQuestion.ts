@@ -16,7 +16,6 @@ import {
   toggleAiGradingMode,
 } from '../../../ee/lib/ai-grading/ai-grading-util.js';
 import type {
-  CounterClockwiseRotationDegrees,
   InstanceQuestionAIGradingInfo,
   InstanceQuestionAIGradingInfoBase,
 } from '../../../ee/lib/ai-grading/types.js';
@@ -226,9 +225,11 @@ router.get(
 
         if (hasImage) {
           const correctedDegrees = ai_grading_job_data.rotation_correction_degrees ?? {};
+          const parsed = z.record(z.string(), z.number()).safeParse(correctedDegrees);
+          const validatedDegrees = parsed.success ? parsed.data : {};
           const rotationCorrectionDegrees = Object.fromEntries(
-            Object.entries(correctedDegrees).filter(([, degrees]) => degrees !== 0),
-          ) as Record<string, CounterClockwiseRotationDegrees>;
+            Object.entries(validatedDegrees).filter(([, degrees]) => degrees !== 0),
+          );
 
           aiGradingInfo = {
             ...aiGradingInfoBase,

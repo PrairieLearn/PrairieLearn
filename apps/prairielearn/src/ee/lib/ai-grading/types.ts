@@ -91,4 +91,4 @@ export const RotationCorrectionOutputSchema = z.object({
     .describe('The number corresponding to the image that is closest to being upright.'),
 });
 
-export type CounterClockwiseRotationDegrees = 0 | 90 | 180 | 270;
+export type CounterClockwiseRotationDegrees = number;
