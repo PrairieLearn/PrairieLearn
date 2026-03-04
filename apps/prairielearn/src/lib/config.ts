@@ -229,6 +229,9 @@ export const ConfigSchema = z.object({
   runningInEc2: z.boolean().default(false),
   cacheImageRegistry: z.string().nullable().default(null),
   fileEditorUseGit: z.boolean().default(false),
+  zohoClientId: z.string().nullable().default(null),
+  zohoClientSecret: z.string().nullable().default(null),
+  zohoRefreshToken: z.string().nullable().default(null),
   /**
    * The number of worker processes to spawn. If this is set to `null`, the
    * `workersPerCpu` value will be used to determine the number of workers.

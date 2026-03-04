@@ -18,6 +18,7 @@ import {
 import * as github from '../../../lib/github.js';
 import * as opsbot from '../../../lib/opsbot.js';
 import type { ResLocalsForPage } from '../../../lib/res-locals.js';
+import * as zoho from '../../../lib/zoho.js';
 
 export function createContext({ res }: CreateExpressContextOptions) {
   const locals = res.locals as ResLocalsForPage<'plain'>;
@@ -80,6 +81,24 @@ const submitCourseRequest = t.procedure
       institution: input.institution,
       referralSource: input.referralSource,
     });
+
+    zoho
+      .sendCourseRequestLead({
+        firstName: input.firstName,
+        lastName: input.lastName,
+        workEmail: input.workEmail,
+        institution: input.institution,
+        referralSource: input.referralSource,
+        userUid: ctx.authn_user.uid,
+        shortName,
+        title: input.title,
+        githubUser: input.githubUser,
+        createdAt: new Date(),
+      })
+      .catch((err) => {
+        logger.error('Error sending course request lead to Zoho', err);
+        Sentry.captureException(err);
+      });
 
     const autoApprove =
       config.courseRequestAutoApprovalEnabled &&
