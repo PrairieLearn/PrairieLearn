@@ -1,7 +1,7 @@
 import fetchCookie from 'fetch-cookie';
 import { afterAll, assert, beforeAll, describe, test } from 'vitest';
 
-import { loadSqlEquiv, queryRow } from '@prairielearn/postgres';
+import { loadSqlEquiv, queryScalar } from '@prairielearn/postgres';
 import { IdSchema } from '@prairielearn/zod';
 
 import { config } from '../lib/config.js';
@@ -34,7 +34,7 @@ describe('Instructor group controls', () => {
   let group2RowId: string | undefined;
 
   test.sequential('has group-based homework assessment', async () => {
-    assessment_id = await queryRow(sql.select_group_work_assessment, IdSchema);
+    assessment_id = await queryScalar(sql.select_group_work_assessment, IdSchema);
     instructorAssessmentGroupsUrl = `${courseInstanceUrl}/instructor/assessment/${assessment_id}/groups`;
   });
 
