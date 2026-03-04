@@ -487,13 +487,15 @@ export async function sync(
     ]);
   });
 
-  const nameToIdMap = await sqldb.callRow(
-    'sync_assessments',
-    [assessmentParams, courseId, courseInstanceId, config.checkSharingOnSync],
-    SprocSyncAssessmentsSchema,
-  );
+  await sqldb.runInTransactionAsync(async () => {
+    const nameToIdMap = await sqldb.callRow(
+      'sync_assessments',
+      [assessmentParams, courseId, courseInstanceId, config.checkSharingOnSync],
+      SprocSyncAssessmentsSchema,
+    );
 
-  await syncAssessmentTools(assessments, nameToIdMap);
+    await syncAssessmentTools(assessments, nameToIdMap);
+  });
 }
 
 async function syncAssessmentTools(
