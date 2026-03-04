@@ -36,7 +36,7 @@ describe(
 
     beforeAll(async function () {
       await helperServer.before()();
-      const assessmentId = await sqldb.queryRow(sql.select_sequential_exam, IdSchema);
+      const assessmentId = await sqldb.queryScalar(sql.select_sequential_exam, IdSchema);
       context.assessmentId = assessmentId;
       context.assessmentUrl = `${context.courseInstanceBaseUrl}/assessment/${context.assessmentId}/`;
       context.instructorAssessmentQuestionsUrl = `${context.courseInstanceBaseUrl}/instructor/assessment/${context.assessmentId}/questions/`;
@@ -76,7 +76,7 @@ describe(
       context.instanceQuestions = results.map((e) => {
         return {
           id: Number(e.instance_question_id),
-          locked: Boolean(e.sequence_locked),
+          locked: e.question_access_mode === 'blocked_sequence',
           url: `${context.courseInstanceBaseUrl}/instance_question/${e.instance_question_id}/`,
         };
       });

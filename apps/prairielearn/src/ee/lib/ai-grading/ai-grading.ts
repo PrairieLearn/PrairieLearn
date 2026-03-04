@@ -9,7 +9,7 @@ import mustache from 'mustache';
 import { z } from 'zod';
 
 import * as error from '@prairielearn/error';
-import { loadSqlEquiv, queryRow, runInTransactionAsync } from '@prairielearn/postgres';
+import { loadSqlEquiv, queryScalar, runInTransactionAsync } from '@prairielearn/postgres';
 import { run } from '@prairielearn/run';
 import { assertNever } from '@prairielearn/utils';
 import { IdSchema } from '@prairielearn/zod';
@@ -379,7 +379,7 @@ export async function aiGrade({
         }
 
         // OpenAI will take the property descriptions into account. See the
-        // examples here: https://platform.openai.com/docs/guides/structured-outputs
+        // examples here: https://developers.openai.com/api/docs/guides/structured-outputs
         const RubricGradingResultSchema = z.object({
           explanation: z.string().describe(explanationDescription),
           // rubric_items must be the last property in the schema.
@@ -599,7 +599,7 @@ export async function aiGrade({
             );
             const score =
               manual_rubric_grading.computed_points / assessment_question.max_manual_points;
-            const grading_job_id = await queryRow(
+            const grading_job_id = await queryScalar(
               sql.insert_grading_job,
               {
                 submission_id: submission.id,
@@ -845,7 +845,7 @@ export async function aiGrade({
           // Does not require grading: only create grading job and rubric grading
           await runInTransactionAsync(async () => {
             assert(assessment_question.max_manual_points);
-            const grading_job_id = await queryRow(
+            const grading_job_id = await queryScalar(
               sql.insert_grading_job,
               {
                 submission_id: submission.id,

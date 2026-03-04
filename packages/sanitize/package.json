@@ -1,6 +1,6 @@
 {
   "name": "@prairielearn/sanitize",
-  "version": "3.0.1",
+  "version": "3.0.2",
   "type": "module",
   "repository": {
     "type": "git",
@@ -18,8 +18,8 @@
   },
   "devDependencies": {
     "@prairielearn/tsconfig": "workspace:^",
-    "@types/node": "^24.10.9",
-    "@typescript/native-preview": "^7.0.0-dev.20260203.1",
+    "@types/node": "^24.11.0",
+    "@typescript/native-preview": "^7.0.0-dev.20260302.1",
     "@vitest/coverage-v8": "^4.0.18",
     "tsx": "^4.21.0",
     "typescript": "^5.9.3",

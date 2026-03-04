@@ -10,16 +10,10 @@ WHERE
 
 -- BLOCK select_assessments_with_question_for_display
 SELECT
-  jsonb_build_object(
-    'short_name',
-    result.course_short_name,
-    'long_name',
-    result.course_long_name,
-    'course_instance_id',
-    result.course_instance_id,
-    'assessments',
-    result.matched_assessments
-  )
+  result.course_short_name AS short_name,
+  result.course_long_name AS long_name,
+  result.course_instance_id,
+  result.matched_assessments AS assessments
 FROM
   (
     SELECT

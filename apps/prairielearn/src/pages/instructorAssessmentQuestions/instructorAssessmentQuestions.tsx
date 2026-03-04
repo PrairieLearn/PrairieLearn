@@ -1,5 +1,6 @@
 import * as path from 'path';
 
+import * as trpcExpress from '@trpc/server/adapters/express';
 import { Router } from 'express';
 import asyncHandler from 'express-async-handler';
 import fs from 'fs-extra';
@@ -7,33 +8,31 @@ import { z } from 'zod';
 
 import { HttpStatusError } from '@prairielearn/error';
 import { flash } from '@prairielearn/flash';
-import * as sqldb from '@prairielearn/postgres';
 import { Hydrate } from '@prairielearn/react/server';
+import { generatePrefixCsrfToken } from '@prairielearn/signed-token';
 
 import { PageLayout } from '../../components/PageLayout.js';
 import { selectAssessmentQuestions } from '../../lib/assessment-question.js';
 import { compiledScriptTag } from '../../lib/assets.js';
 import { b64EncodeUnicode } from '../../lib/base64-util.js';
 import { extractPageContext } from '../../lib/client/page-context.js';
-import {
-  StaffQuestionSchema,
-  StaffTagSchema,
-  StaffTopicSchema,
-} from '../../lib/client/safe-db-types.js';
+import { config } from '../../lib/config.js';
 import { FileModifyEditor, getOriginalHash } from '../../lib/editors.js';
 import { features } from '../../lib/features/index.js';
 import { getPaths } from '../../lib/instructorFiles.js';
 import { formatJsonWithPrettier } from '../../lib/prettier.js';
+import { handleTrpcError } from '../../lib/trpc.js';
 import { resetVariantsForAssessmentQuestion } from '../../models/variant.js';
 import { ZoneAssessmentJsonSchema } from '../../schemas/infoAssessment.js';
 
 import { InstructorAssessmentQuestionsTable } from './components/InstructorAssessmentQuestionsTable.js';
 import { InstructorAssessmentQuestionsTableLegacy } from './components/InstructorAssessmentQuestionsTableLegacy.js';
+import { assessmentQuestionsRouter, createContext } from './trpc.js';
 import { serializeZonesForJson } from './utils/dataTransform.js';
 import { buildHierarchicalAssessment } from './utils/questions.js';
+import { buildTrpcUrl } from './utils/trpc-url.js';
 
 const router = Router();
-const sql = sqldb.loadSqlEquiv(import.meta.url);
 
 const SaveQuestionsZonesSchema = z
   .string()
@@ -92,6 +91,14 @@ router.get(
       pageContext.authz_data.has_course_instance_permission_edit &&
       !res.locals.course.example_course;
 
+    const trpcCsrfToken = generatePrefixCsrfToken(
+      {
+        url: buildTrpcUrl(req.originalUrl),
+        authn_user_id: res.locals.authn_user.id,
+      },
+      config.secretKey,
+    );
+
     res.send(
       PageLayout({
         resLocals: res.locals,
@@ -110,6 +117,7 @@ router.get(
             {editorEnabled ? (
               <InstructorAssessmentQuestionsTable
                 course={pageContext.course}
+                courseInstance={pageContext.course_instance}
                 questionRows={questionRows}
                 jsonZones={jsonZones}
                 urlPrefix={pageContext.urlPrefix}
@@ -119,6 +127,7 @@ router.get(
                 canEdit={canEdit ?? false}
                 csrfToken={res.locals.__csrf_token}
                 origHash={origHash}
+                trpcCsrfToken={trpcCsrfToken}
               />
             ) : (
               <InstructorAssessmentQuestionsTableLegacy
@@ -142,33 +151,12 @@ router.get(
   }),
 );
 
-router.get(
-  '/question.json',
-  asyncHandler(async (req, res) => {
-    if (!res.locals.authz_data.has_course_permission_preview) {
-      throw new HttpStatusError(403, 'Access denied (must be course previewer)');
-    }
-
-    const parsedQuery = z
-      .object({
-        qid: z.string(),
-      })
-      .parse(req.query);
-
-    const assessmentQuestion = await sqldb.queryOptionalRow(
-      sql.select_assessment_question,
-      {
-        qid: parsedQuery.qid,
-        course_id: res.locals.course.id,
-      },
-      z.object({
-        question: StaffQuestionSchema,
-        topic: StaffTopicSchema,
-        open_issue_count: z.number(),
-        tags: z.array(StaffTagSchema),
-      }),
-    );
-    res.json(assessmentQuestion);
+router.use(
+  '/trpc',
+  trpcExpress.createExpressMiddleware({
+    router: assessmentQuestionsRouter,
+    createContext,
+    onError: handleTrpcError,
   }),
 );
 

@@ -130,7 +130,7 @@
         "enabled": {
           "description": "[DEPRECATED, DO NOT USE] Whether the external grader is currently enabled.",
           "type": "boolean",
-          "default": false,
+          "default": true,
           "deprecated": true
         },
         "image": {
