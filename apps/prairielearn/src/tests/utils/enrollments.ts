@@ -4,7 +4,7 @@ import { z } from 'zod';
 import { queryScalar } from '@prairielearn/postgres';
 
 // Must be imported so that `config.serverPort` is set.
-import '../helperServer';
+import '../helperServer.js';
 import { type PotentialEnrollmentStatus } from '../../ee/models/enrollment.js';
 import { constructCourseOrInstanceContext } from '../../lib/authz-data.js';
 import { config } from '../../lib/config.js';

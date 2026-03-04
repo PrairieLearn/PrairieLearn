@@ -1,5 +1,4 @@
 import { Router } from 'express';
-import z from 'zod';
 
 import * as sqldb from '@prairielearn/postgres';
 
@@ -16,7 +15,7 @@ const sql = sqldb.loadSqlEquiv(import.meta.url);
 router.get(
   '/',
   typedAsyncHandler<'plain'>(async (req, res) => {
-    const networks = await sqldb.queryScalar(sql.select, z.array(AdministratorNetworksRowSchema));
+    const networks = await sqldb.queryRows(sql.select, AdministratorNetworksRowSchema);
     res.send(AdministratorNetworks({ resLocals: res.locals, networks }));
   }),
 );
