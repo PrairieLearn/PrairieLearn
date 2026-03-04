@@ -70,7 +70,7 @@ describe('Assessment lockpoints', { timeout: 60_000 }, function () {
       })
     ).id;
     context.lockpointZoneIds = (
-      await sqldb.queryRows(
+      await sqldb.queryScalars(
         sql.select_lockpoint_zone_ids,
         { assessment_id: context.assessmentId },
         IdSchema,
@@ -372,7 +372,7 @@ describe('Assessment lockpoints', { timeout: 60_000 }, function () {
       helperClient.setUser(testUsers[1]);
       try {
         const advanceLockpointZoneIds = (
-          await sqldb.queryRows(
+          await sqldb.queryScalars(
             sql.select_lockpoint_zone_ids,
             { assessment_id: context.lockpointAdvanceAssessmentId },
             IdSchema,
@@ -456,7 +456,7 @@ describe('Assessment lockpoints', { timeout: 60_000 }, function () {
       helperClient.setUser(testUsers[2]);
       try {
         const homeworkLockpointZoneIds = (
-          await sqldb.queryRows(
+          await sqldb.queryScalars(
             sql.select_lockpoint_zone_ids,
             { assessment_id: context.lockpointHomeworkAssessmentId },
             IdSchema,

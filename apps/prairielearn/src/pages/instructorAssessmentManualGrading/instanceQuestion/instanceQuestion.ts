@@ -52,7 +52,7 @@ async function prepareLocalsForRender(
   // question has multiple variants, by default getAndRenderVariant may select a variant without
   // submissions or even create a new one. We don't want that behavior, so we select the last
   // submission and pass it along to getAndRenderVariant explicitly.
-  const variant_with_submission_id = await sqldb.queryOptionalRow(
+  const variant_with_submission_id = await sqldb.queryOptionalScalar(
     sql.select_variant_with_last_submission,
     { instance_question_id: resLocals.instance_question.id },
     IdSchema,
@@ -151,7 +151,7 @@ router.get(
 
         /** The submission was also manually graded if a manual grading job exists for it.*/
         const submissionManuallyGraded =
-          (await sqldb.queryOptionalRow(
+          (await sqldb.queryOptionalScalar(
             sql.select_exists_manual_grading_job_for_submission,
             { submission_id },
             z.boolean(),
@@ -219,7 +219,7 @@ router.get(
     req.session.show_submissions_assigned_to_me_only =
       req.session.show_submissions_assigned_to_me_only ?? true;
 
-    const submissionCredits = await sqldb.queryRows(
+    const submissionCredits = await sqldb.queryScalars(
       sql.select_submission_credit_values,
       { assessment_instance_id: res.locals.assessment_instance.id },
       z.number(),
