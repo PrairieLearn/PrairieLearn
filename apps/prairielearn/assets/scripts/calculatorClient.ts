@@ -65,7 +65,7 @@ export function initCalculator(storageKey: string, { drawer, fab, fabClose }: Dr
   ]);
   const autoAnsKeys = new Set(['+', '-', '*', '/', '^', '!']);
 
-  document.getElementsByName('calculate').forEach((button) =>
+  drawer.querySelectorAll('button[name="calculate"]').forEach((button) =>
     button.addEventListener('mousedown', (ev) => {
       ev.preventDefault();
       calculate(true);
