@@ -980,7 +980,11 @@ interface AssessmentEditorProps extends AssessmentEditorInnerProps {
   search: string;
 }
 
-export function AssessmentEditor({ trpcCsrfToken, search, ...innerProps }: AssessmentEditorProps) {
+export function AssessmentQuestionsEditor({
+  trpcCsrfToken,
+  search,
+  ...innerProps
+}: AssessmentEditorProps) {
   const [queryClient] = useState(() => new QueryClient());
   const [trpcClient] = useState(() => createAssessmentQuestionsTrpcClient(trpcCsrfToken));
   return (
@@ -994,4 +998,4 @@ export function AssessmentEditor({ trpcCsrfToken, search, ...innerProps }: Asses
   );
 }
 
-AssessmentEditor.displayName = 'AssessmentEditor';
+AssessmentQuestionsEditor.displayName = 'AssessmentQuestionsEditor';

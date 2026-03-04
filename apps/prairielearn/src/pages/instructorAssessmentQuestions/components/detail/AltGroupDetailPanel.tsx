@@ -194,7 +194,7 @@ export function AltGroupDetailPanel({
         <>
           <div className="mb-3">
             <label htmlFor={`${idPrefix}-autoPoints`} className="form-label">
-              Auto points (shared)
+              Auto points (default)
             </label>
             <input
               type="number"
@@ -227,7 +227,7 @@ export function AltGroupDetailPanel({
           </div>
           <div className="mb-3">
             <label htmlFor={`${idPrefix}-maxAutoPoints`} className="form-label">
-              Max auto points (shared)
+              Max auto points (default)
             </label>
             <input
               type="number"
@@ -261,7 +261,7 @@ export function AltGroupDetailPanel({
           </div>
           <div className="mb-3">
             <label htmlFor={`${idPrefix}-manualPoints`} className="form-label">
-              Manual points (shared)
+              Manual points (default)
             </label>
             <input
               type="number"
@@ -291,7 +291,7 @@ export function AltGroupDetailPanel({
         <>
           <div className="mb-3">
             <label htmlFor={`${idPrefix}-points`} className="form-label">
-              Points list (shared)
+              Points list (default)
             </label>
             <input
               type="text"
@@ -316,7 +316,7 @@ export function AltGroupDetailPanel({
           </div>
           <div className="mb-3">
             <label htmlFor={`${idPrefix}-manualPoints`} className="form-label">
-              Manual points (shared)
+              Manual points (default)
             </label>
             <input
               type="number"

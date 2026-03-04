@@ -178,8 +178,9 @@ export function QuestionDetailPanel({
         parentGradeRateMinutes == null &&
         parentAllowRealTimeGrading == null &&
         parentForceMaxPoints == null
-      )
+      ) {
         return undefined;
+      }
       return {
         parentAdvanceScorePerc,
         parentGradeRateMinutes,
@@ -201,8 +202,9 @@ export function QuestionDetailPanel({
       parentAdvanceScorePerc == null &&
       parentGradeRateMinutes == null &&
       parentAllowRealTimeGrading == null
-    )
+    ) {
       return undefined;
+    }
     return {
       parentAdvanceScorePerc,
       parentGradeRateMinutes,
@@ -330,27 +332,27 @@ export function QuestionDetailPanel({
   };
 
   const homeworkAutoPointsValidation = (_value: unknown, formValues: QuestionFormData) => {
-    const pts = formValues[originalPointsProperty];
-    const maxPts = formValues[originalMaxProperty];
-    if (typeof pts === 'number' && pts === 0 && maxPts != null && maxPts > 0) {
+    const points = formValues[originalPointsProperty];
+    const maxPoints = formValues[originalMaxProperty];
+    if (typeof points === 'number' && points === 0 && maxPoints != null && maxPoints > 0) {
       return 'Auto points cannot be 0 when max auto points is greater than 0.';
     }
-    if (typeof pts === 'number' && typeof maxPts === 'number' && pts > maxPts) {
+    if (typeof points === 'number' && typeof maxPoints === 'number' && points > maxPoints) {
       return 'Auto points cannot exceed max auto points.';
     }
     return pointsValidation(_value, formValues);
   };
 
   const homeworkMaxPointsValidation = (_value: unknown, formValues: QuestionFormData) => {
-    const pts = formValues[originalPointsProperty];
-    const maxPts = formValues[originalMaxProperty];
-    if (typeof pts === 'number' && pts === 0 && maxPts != null && maxPts > 0) {
+    const points = formValues[originalPointsProperty];
+    const maxPoints = formValues[originalMaxProperty];
+    if (typeof points === 'number' && points === 0 && maxPoints != null && maxPoints > 0) {
       return 'Max auto points must be 0 or empty when auto points is 0.';
     }
-    if (typeof pts === 'number' && typeof maxPts === 'number' && maxPts < pts) {
+    if (typeof points === 'number' && typeof maxPoints === 'number' && maxPoints < points) {
       return 'Max auto points must be at least auto points.';
     }
-    if (maxPts != null && maxPts < 0) return 'Max auto points must be non-negative.';
+    if (maxPoints != null && maxPoints < 0) return 'Max auto points must be non-negative.';
   };
 
   return (
@@ -405,7 +407,7 @@ export function QuestionDetailPanel({
               );
             }}
           >
-            Pick
+            Change
           </button>
         </div>
       </div>

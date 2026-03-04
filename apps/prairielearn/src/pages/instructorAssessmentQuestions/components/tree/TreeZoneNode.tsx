@@ -80,7 +80,7 @@ export function TreeZoneNode({
   const toggleCollapse = () =>
     dispatch({ type: 'TOGGLE_ZONE_COLLAPSE', trackingId: zone.trackingId });
 
-  const { setNodeRef: emptyDropRef, isOver: isOverEmpty } = useDroppable({
+  const { setNodeRef: emptyDropRef } = useDroppable({
     id: `${zone.trackingId}-empty-drop`,
     disabled: zone.questions.length > 0,
   });
@@ -308,7 +308,7 @@ export function TreeZoneNode({
             ))}
             {zone.questions.length === 0 &&
               (editMode ? (
-                <TreeEmptyDropZone dropRef={emptyDropRef} isOver={isOverEmpty} />
+                <TreeEmptyDropZone dropRef={emptyDropRef} />
               ) : (
                 <div className="text-center text-muted py-3 border-bottom">
                   <i className="bi bi-info-circle me-1" aria-hidden="true" />

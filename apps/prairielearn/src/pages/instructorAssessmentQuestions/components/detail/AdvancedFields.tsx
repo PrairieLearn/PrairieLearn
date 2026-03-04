@@ -31,6 +31,12 @@ const HELP_TEXT = {
   },
 } as const;
 
+/**
+ * Describes the parent values from which advanced fields can be inherited,
+ * along with form helpers needed to implement the inherit/override/reset pattern.
+ * Parent values come from the nearest ancestor that sets them
+ * (e.g., assessment for a zone, zone for an alt group, alt group for a question).
+ */
 export interface AdvancedFieldsInheritance {
   parentAdvanceScorePerc: number | undefined;
   parentGradeRateMinutes: number | undefined;

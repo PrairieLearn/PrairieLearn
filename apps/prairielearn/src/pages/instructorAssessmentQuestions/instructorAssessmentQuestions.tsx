@@ -26,7 +26,7 @@ import { getUrl } from '../../lib/url.js';
 import { resetVariantsForAssessmentQuestion } from '../../models/variant.js';
 import { ZoneAssessmentJsonSchema } from '../../schemas/infoAssessment.js';
 
-import { AssessmentEditor } from './components/AssessmentEditor.js';
+import { AssessmentQuestionsEditor } from './components/AssessmentEditor.js';
 import { InstructorAssessmentQuestionsTableLegacy } from './components/InstructorAssessmentQuestionsTableLegacy.js';
 import { assessmentQuestionsRouter, createContext } from './trpc.js';
 import { serializeZonesForJson } from './utils/dataTransform.js';
@@ -119,7 +119,7 @@ router.get(
         content: (
           <Hydrate>
             {editorEnabled ? (
-              <AssessmentEditor
+              <AssessmentQuestionsEditor
                 course={pageContext.course}
                 courseInstance={pageContext.course_instance}
                 questionRows={questionRows}
