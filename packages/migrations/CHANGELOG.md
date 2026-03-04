@@ -1,5 +1,20 @@
 # @prairielearn/migrations
 
+## 5.0.2
+
+### Patch Changes
+
+- 3c4799a: Upgrade all JavaScript dependencies
+- 2f9d39b: Update single-column Postgres query call sites to use `queryScalar` after the postgres package API change.
+- b7885cd: Remove deprecated untyped SQL exports: `queryAsync`, `queryOneRowAsync`, `queryZeroOrOneRowAsync`, `callAsync`, `callOneRowAsync`, `callZeroOrOneRowAsync`
+- Updated dependencies [3c4799a]
+- Updated dependencies [b7885cd]
+- Updated dependencies [2f9d39b]
+  - @prairielearn/named-locks@4.0.2
+  - @prairielearn/postgres@6.0.0
+  - @prairielearn/logger@3.1.1
+  - @prairielearn/error@3.0.3
+
 ## 5.0.1
 
 ### Patch Changes

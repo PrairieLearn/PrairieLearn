@@ -403,19 +403,19 @@ describe('accessibility', () => {
     endpoints = expressListEndpoints(app);
     endpoints.sort((a, b) => a.path.localeCompare(b.path));
 
-    const assessment_id = await sqldb.queryRow(
+    const assessment_id = await sqldb.queryScalar(
       'SELECT id FROM assessments WHERE tid = $tid',
       { tid: 'hw1-automaticTestSuite' },
       IdSchema,
     );
 
-    const question_id = await sqldb.queryRow(
+    const question_id = await sqldb.queryScalar(
       'SELECT id FROM questions WHERE qid = $qid',
       { qid: 'downloadFile' },
       IdSchema,
     );
 
-    const user_id = await sqldb.queryRow(
+    const user_id = await sqldb.queryScalar(
       'SELECT id FROM users WHERE uid = $uid',
       { uid: 'dev@example.com' },
       IdSchema,
@@ -458,7 +458,7 @@ describe('accessibility', () => {
       { course_instance_id: routeParams.course_instance_id },
     );
 
-    const course_id = await sqldb.queryRow(
+    const course_id = await sqldb.queryScalar(
       'SELECT course_id FROM course_instances WHERE id = $course_instance_id',
       { course_instance_id: routeParams.course_instance_id },
       IdSchema,
