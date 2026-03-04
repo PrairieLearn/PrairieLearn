@@ -1,4 +1,9 @@
-import { ComputeEngine, type Expression, type MathJsonExpression } from '@cortex-js/compute-engine';
+import {
+  ComputeEngine,
+  type Expression,
+  type MathJsonExpression,
+  isTensor,
+} from '@cortex-js/compute-engine';
 import { MathfieldElement } from 'mathlive';
 
 import { onDocumentReady } from '@prairielearn/browser-utils';
@@ -11,19 +16,27 @@ interface DrawerElements {
 
 type DisplayMode = 'numeric' | 'symbolic';
 
+interface HistoryItem {
+  input: string;
+  displayed: string;
+  numeric: number;
+  angleMode: string;
+}
+
 interface CalculatorLocalData {
-  ans: string | null;
   variable: { name: string; value: string }[];
-  history: { input: string; displayed: string; numeric: number; angleMode: string }[];
+  history: HistoryItem[];
   temp_input: string | null;
+  isOpen: boolean;
 }
 
 export function initCalculator(storageKey: string, { drawer, fab, fabClose }: DrawerElements) {
   showPanel('main');
   initColumnNavigation();
-  initDrawerUI(drawer, fab, fabClose);
+  initDrawerUI(drawer, fab, fabClose, storageKey);
   const ce = new ComputeEngine();
-  ce.timeLimit = 1;
+  ce.timeLimit = 500;
+
 
   ce.pushScope();
   const calculatorInputElement = document.getElementById('calculator-input') as MathfieldElement;
@@ -40,6 +53,17 @@ export function initCalculator(storageKey: string, { drawer, fab, fabClose }: Dr
   calculatorInputElement.menuItems = [];
   calculatorOutput.dataset.displayMode = 'numeric';
   calculatorOutput.dataset.angleMode = 'rad';
+
+  // Auto-insert ans: after submitting to history, the next operator/function
+  // input automatically prefixes with ans (classic calculator behavior).
+  let shouldAutoInsertAns = false;
+  const autoAnsButtons = new Set([
+    'plus', 'minus', 'mul', 'div', 'sqr', 'apowerb', 'perc', 'factorial', 'inv',
+    'sin', 'cos', 'tan', 'sin-1', 'cos-1', 'tan-1',
+    'sinh', 'cosh', 'tanh', 'sinh-1', 'cosh-1', 'tanh-1',
+    'sqrt', 'root', 'abs', 'ln', 'lg', 'log', 'epowerx', 'round',
+  ]);
+  const autoAnsKeys = new Set(['+', '-', '*', '/', '^', '!']);
 
   document.getElementsByName('calculate').forEach((button) =>
     button.addEventListener('mousedown', (ev) => {
@@ -67,27 +91,102 @@ export function initCalculator(storageKey: string, { drawer, fab, fabClose }: Dr
         variable: [],
         history: [],
         temp_input: null,
+        isOpen: true,
       }),
     );
   } else {
     const data: CalculatorLocalData = JSON.parse(calculatorLocalData);
     for (const historyItem of data.history) {
-      addHistoryItem(
-        historyItem.input,
-        historyItem.displayed,
-        historyItem.numeric,
-        historyItem.angleMode || 'rad',
-      );
-    }
-    if (data.ans) {
-      ce.assign('ans', ce.parse(data.ans));
+      addHistoryItem(historyItem);
     }
     for (const variable of data.variable) {
       ce.assign(variable.name, ce.parse(variable.value));
     }
+
+    // Set ans to the last history item's result, or \bot if no history
+    const historyPanel = document.getElementById('history-panel')!;
+    const items = Array.from(historyPanel.querySelectorAll<HTMLElement>('.history-item'));
+    if (items.length > 0) {
+      const displayMode = calculatorOutput.dataset.displayMode as DisplayMode;
+      const lastResult = resolveAnsAndEvaluate(items, 0, displayMode);
+      if (lastResult) {
+        ce.assign('ans', lastResult.evaluated);
+      } else {
+        ce.assign('ans', ce.parse('\\bot'));
+      }
+    } else {
+      ce.assign('ans', ce.parse('\\bot'));
+    }
+
     if (data.temp_input) {
       calculatorInputElement.value = data.temp_input;
       calculatorInputElement.dispatchEvent(new CustomEvent('input'));
+    }
+  }
+
+  /**
+   * Resolves the correct `ans` value by recursively evaluating previous history
+   * items, then evaluates the item at the given DOM index. Does not update the
+   * DOM — only returns the result. Saves and restores the global `ans`.
+   */
+  function resolveAnsAndEvaluate(
+    items: HTMLElement[],
+    domIndex: number,
+    displayMode: DisplayMode,
+  ): ReturnType<typeof evaluateExpression> {
+    const item = items[domIndex];
+    const input = item.dataset.input!;
+    const angleMode = item.dataset.angleMode!;
+
+    const savedAns = ce.box('ans').evaluate();
+
+    // checking `{ans}` here because it could be \mathrm{ans} or \operatorname{ans}
+    if (input.includes('{ans}') && domIndex + 1 < items.length) {
+      const prevResult = resolveAnsAndEvaluate(items, domIndex + 1, displayMode);
+      if (prevResult) {
+        ce.assign('ans', prevResult.evaluated);
+      }
+    }
+
+    const result = evaluateExpression(input, angleMode, displayMode);
+    ce.assign('ans', savedAns);
+    return result;
+  }
+
+  /**
+   * Re-evaluates a history item with the correct `ans` context, updates its
+   * displayed output, and forward-propagates to subsequent items that use `ans`.
+   */
+  function reevaluateHistoryItem(historyItemEl: HTMLElement, updateGlobalAns = true) {
+    const historyPanel = document.getElementById('history-panel')!;
+    const items = Array.from(historyPanel.querySelectorAll<HTMLElement>('.history-item'));
+    const domIndex = items.indexOf(historyItemEl);
+    if (domIndex === -1) return;
+
+    const displayMode = calculatorOutput.dataset.displayMode as DisplayMode;
+
+    const result = resolveAnsAndEvaluate(items, domIndex, displayMode);
+    if (result) {
+      const outputField = historyItemEl.querySelector<MathfieldElement>(
+        '.history-output .history-text',
+      )!;
+      outputField.value = `=${result.displayed}`;
+    }
+
+    // Forward propagation: if the next item uses ans, re-evaluate it too
+    if (domIndex > 0) {
+      const nextItem = items[domIndex - 1];
+      if (nextItem.dataset.input?.includes('{ans}')) {
+        reevaluateHistoryItem(nextItem, false);
+      }
+    }
+
+    // After all re-evaluations, set ans to the last history item's result
+    if (updateGlobalAns && items.length > 0) {
+      const lastResult = resolveAnsAndEvaluate(items, 0, displayMode);
+      if (lastResult) {
+        ce.assign('ans', lastResult.evaluated);
+      }
     }
   }
 
@@ -135,12 +234,15 @@ export function initCalculator(storageKey: string, { drawer, fab, fabClose }: Dr
       calculatorInputContainer.classList.remove('error');
       return;
     }
+    
     let parsed: Expression = ce.parse(input, {
       parseNumbers: 'rational',
     });
+
     if (calculatorOutput.dataset.angleMode === 'deg') {
       parsed = ce.box(radianToDegree(parsed.json));
     }
+
     const json = parsed.json;
     if (Array.isArray(json) && json[0] === 'Assign' && json[1] === 'InvisibleOperator') {
       parsed = ce.box([
@@ -149,41 +251,50 @@ export function initCalculator(storageKey: string, { drawer, fab, fabClose }: Dr
         'Assignment operator can only be used on single-letter variables',
       ]);
     }
+
     let evaluated: Expression;
     try {
       evaluated = parsed.evaluate();
     } catch (e) {
+      console.error('Error during evaluation:', e);
       if (e instanceof Error && e.name === 'CancellationError') {
-        calculatorInputElement.value = '';
-        calculatorOutput.value = ce.box(['Error', '', 'Output is too large']).toString();
+        evaluated = ce.error('Output is too large');
+        calculatorOutput.value = '\\mathrm{Error:\\ Output\\ is\\ too\\ large}';
       } else {
         calculatorInputElement.value = '';
-        calculatorOutput.value = ce
-          .box(['Error', '', e instanceof Error ? e.message : String(e)])
-          .toString();
+        console.error('Error during evaluation:', e);
+        calculatorOutput.value = '\\mathrm{Error}';
+        evaluated = ce.error(e instanceof Error ? e.message : String(e));
       }
-      return;
     }
 
     const error = hasError(evaluated.json);
 
+    if (error) {
+      console.error('Error in evaluated expression:', evaluated.toString());
+      calculatorInputContainer.classList.add('error');
+      return;
+    }
+
     let displayed = '';
     if (calculatorOutput.dataset.displayMode === 'symbolic') {
-      displayed = evaluated.toLatex({ notation: 'adaptiveScientific' });
+      displayed = evaluated.toLatex({
+        notation: 'adaptiveScientific',
+        fractionalDigits: ce.precision,
+      });
     } else {
-      displayed = evaluated.N().toLatex({ notation: 'adaptiveScientific' });
+      displayed = evaluated
+        .N()
+        .toLatex({ notation: 'adaptiveScientific', fractionalDigits: ce.precision });
     }
-    if (error) {
-      calculatorInputContainer.classList.add('error');
-    } else {
-      calculatorInputContainer.classList.remove('error');
-      calculatorOutput.value = `=${displayed}`;
-    }
+
+    calculatorInputContainer.classList.remove('error');
+    calculatorOutput.value = `=${displayed}`;
 
     // Update copy button
     const copyButton = document.getElementById('calculator-output-copy')!;
     copyButton.onclick = function () {
-      void copyToClipboard(evaluated.toString());
+      void copyToClipboard(ce.parse(displayed).toString());
     };
 
     const data: CalculatorLocalData = JSON.parse(
@@ -195,9 +306,11 @@ export function initCalculator(storageKey: string, { drawer, fab, fabClose }: Dr
           temp_input: null,
         }),
     );
+
     // Add to history
-    if (!error && addToHistory) {
+    if (addToHistory) {
       const parsedJson = parsed.json;
+      // FIXME: could be multiple assignments in one expression
       if (Array.isArray(parsedJson) && parsedJson[0] === 'Assign') {
         const varName = parsedJson[1] as string;
         const varVal = ce.box(parsedJson[2]).evaluate();
@@ -206,23 +319,24 @@ export function initCalculator(storageKey: string, { drawer, fab, fabClose }: Dr
           value: varVal.toLatex({ notation: 'auto' }),
         });
       }
+
       try {
         ce.assign('ans', evaluated);
-        data.ans = evaluated.toLatex({ notation: 'auto' });
+        shouldAutoInsertAns = true;
       } catch (e) {
         console.error('Failed to assign ans:', e);
       }
 
       const currentAngleMode = calculatorOutput.dataset.angleMode ?? 'rad';
       const numericValue = Number(evaluated.N().value);
-      addHistoryItem(input, displayed, numericValue, currentAngleMode);
-
-      data.history.push({
+      const historyItem = {
         input,
         displayed,
         numeric: numericValue,
         angleMode: currentAngleMode,
-      });
+      };
+      addHistoryItem(historyItem);
+      data.history.push(historyItem);
 
       calculatorInputElement.value = '';
       calculatorOutput.value = '';
@@ -231,56 +345,37 @@ export function initCalculator(storageKey: string, { drawer, fab, fabClose }: Dr
     localStorage.setItem(storageKey, JSON.stringify(data));
   }
 
-  ce.assign('ans', ce.parse('\\bot'));
+  // Clear history button
+  const clearHistoryBtn = document.getElementById('calculatorClearHistory')!;
+  clearHistoryBtn.addEventListener('click', () => {
+    const historyPanel = document.getElementById('history-panel')!;
+    historyPanel.innerHTML = '';
+    clearHistoryBtn.classList.add('d-none');
+    clearHistoryBtn.setAttribute('aria-hidden', 'true');
 
-  // Define custom functions
-  ce.assign('nCr', (args: readonly Expression[]) => {
-    if (args.length !== 2) {
-      return ce.box(['Error', '', 'nCr requires 2 inputs']);
+    const data: CalculatorLocalData = JSON.parse(
+      localStorage.getItem(storageKey) ??
+        JSON.stringify({ ans: null, variable: [], history: [], temp_input: null, isOpen: true }),
+    );
+    data.history = [];
+    localStorage.setItem(storageKey, JSON.stringify(data));
+
+    ce.assign('ans', ce.parse('\\bot'));
+    shouldAutoInsertAns = false;
+    if (calculatorInputElement.value.includes('{ans}')) {
+      calculatorInputElement.dispatchEvent(new CustomEvent('input'));
     }
-    if (args[1] > args[0]) {
-      return ce.number(0);
-    }
-    const [n, r] = [String(args[0]), String(args[1])];
-    return ce.parse(`$$ \\frac{${n}!}{(${r})!*(${n}-${r})!} $$`).evaluate();
   });
 
-  ce.assign('nPr', (args: readonly Expression[]) => {
-    if (args.length !== 2) {
-      return ce.box(['Error', '', 'nPr requires 2 inputs']);
-    }
-    if (args[1] > args[0]) {
-      return ce.number(0);
-    }
-    const [n, r] = [String(args[0]), String(args[1])];
-    return ce.parse(`$$ \\frac{${n}!}{(${n}-${r})!} $$`).evaluate();
-  });
-
-  ce.assign('stdev', (args: readonly Expression[]) => {
-    const nums = String(args[0]).slice(1, -1).split(',').map(Number);
-    const n = nums.length;
-    const mean = nums.reduce((a, b) => a + b) / n;
-    const variance = nums.reduce((sum, x) => sum + (x - mean) ** 2, 0) / (n - 1);
-    return ce.number(Math.sqrt(variance));
-  });
-
-  ce.assign('stdevp', (args: readonly Expression[]) => {
-    const nums = String(args[0]).slice(1, -1).split(',').map(Number);
-    const n = nums.length;
-    const mean = nums.reduce((a, b) => a + b) / n;
-    const variance = nums.reduce((sum, x) => sum + (x - mean) ** 2, 0) / n;
-    return ce.number(Math.sqrt(variance));
-  });
-
-  ce.assign('round', (args: readonly Expression[]) => {
-    return ce.number(Math.round(args[0] as unknown as number));
-  });
+  registerCustomFunctions(ce);
 
   // Buttons for number and letter inputs
   document.querySelectorAll<HTMLButtonElement>('.btn-key').forEach((button) => {
     prepareButton(button);
     button.addEventListener('click', () => {
+      shouldAutoInsertAns = false;
       calculatorInputElement.insert(button.textContent);
+      calculatorInputElement.focus();
     });
   });
 
@@ -306,6 +401,7 @@ export function initCalculator(storageKey: string, { drawer, fab, fabClose }: Dr
     prepareButton(button);
     button.addEventListener('click', () => {
       calculatorInputElement.executeCommand(['deleteBackward']);
+      calculatorInputElement.focus();
     });
   });
 
@@ -314,12 +410,14 @@ export function initCalculator(storageKey: string, { drawer, fab, fabClose }: Dr
     prepareButton(button);
     button.addEventListener('click', () => {
       calculatorInputElement.executeCommand(['moveToPreviousChar']);
+      calculatorInputElement.focus();
     });
   });
   document.getElementsByName('right').forEach((button) => {
     prepareButton(button);
     button.addEventListener('click', () => {
       calculatorInputElement.executeCommand(['moveToNextChar']);
+      calculatorInputElement.focus();
     });
   });
 
@@ -327,8 +425,9 @@ export function initCalculator(storageKey: string, { drawer, fab, fabClose }: Dr
   document.getElementsByName('clear').forEach((button) => {
     prepareButton(button);
     button.addEventListener('click', () => {
-      calculatorInputElement.executeCommand(['deleteAll']);
+      calculatorInputElement.executeCommand('deleteAll');
       calculatorInputElement.dispatchEvent(new CustomEvent('input'));
+      calculatorInputElement.focus();
     });
   });
 
@@ -427,7 +526,17 @@ export function initCalculator(storageKey: string, { drawer, fab, fabClose }: Dr
         }
     }
   }
-  calculatorInputElement.addEventListener('keydown', (ev) => handleKeyPress(ev));
+  calculatorInputElement.addEventListener('keydown', (ev) => {
+    if (shouldAutoInsertAns && calculatorInputElement.value.length === 0 && !ev.ctrlKey && !ev.metaKey) {
+      if (autoAnsKeys.has(ev.key)) {
+        calculatorInputElement.insert('\\operatorname{ans}');
+      }
+      if (ev.key.length === 1) {
+        shouldAutoInsertAns = false;
+      }
+    }
+    handleKeyPress(ev);
+  });
 
   // Shortcuts
   calculatorInputElement.inlineShortcuts = {
@@ -435,6 +544,8 @@ export function initCalculator(storageKey: string, { drawer, fab, fabClose }: Dr
     ans: '\\operatorname{ans}',
     stdev: '\\operatorname{stdev}([#?])',
     stdevp: '\\operatorname{stdevp}([#?])',
+    nCr: '\\operatorname{nCr}(#?,#?)',
+    nPr: '\\operatorname{nPr}(#?,#?)',
     mean: '\\operatorname{mean}([#?])',
     root: '\\sqrt[#?]{#?}',
     round: '\\operatorname{round}(#?)',
@@ -517,13 +628,30 @@ export function initCalculator(storageKey: string, { drawer, fab, fabClose }: Dr
       document.getElementsByName(buttonName).forEach((button) => {
         prepareButton(button);
         button.addEventListener('click', () => {
-          calculatorInputElement.insert(action);
+          if (
+            shouldAutoInsertAns &&
+            calculatorInputElement.value.length === 0 &&
+            autoAnsButtons.has(buttonName)
+          ) {
+            if (action.includes('#0')) {
+              calculatorInputElement.insert(action.replaceAll('#0', '\\operatorname{ans}'));
+            } else {
+              calculatorInputElement.insert('\\operatorname{ans}');
+              calculatorInputElement.insert(action);
+            }
+          } else {
+            calculatorInputElement.insert(action);
+          }
+          shouldAutoInsertAns = false;
+          calculatorInputElement.focus();
         });
       });
     }
   }
 
-  function addHistoryItem(input: string, displayed: string, numeric: number, angleMode = 'rad') {
+  function addHistoryItem(dataHistoryItem: HistoryItem) {
+    const { input, displayed, angleMode } = dataHistoryItem;
+
     const historyPanel = document.getElementById('history-panel')!;
 
     const template = document.getElementById('history-item-template') as HTMLTemplateElement;
@@ -536,12 +664,12 @@ export function initCalculator(storageKey: string, { drawer, fab, fabClose }: Dr
     // Set input text
     const inputRow = clone.querySelector('.history-input')!;
     const inputField = inputRow.querySelector<MathfieldElement>('.history-text')!;
-    inputField.innerHTML = input;
+    inputField.value = input;
 
     // Set output text
     const outputRow = clone.querySelector('.history-output')!;
     const outputField = outputRow.querySelector<MathfieldElement>('.history-text')!;
-    outputField.innerHTML = `=${displayed}`;
+    outputField.value = `=${displayed}`;
 
     // Only show rad/deg toggle if expression contains trig functions
     const modeSwitch = clone.querySelector<HTMLElement>('.history-mode-switch')!;
@@ -564,7 +692,7 @@ export function initCalculator(storageKey: string, { drawer, fab, fabClose }: Dr
       void copyToClipboard(normalizeLatex(input));
     });
     outputCopyBtn.addEventListener('click', () => {
-      void copyToClipboard(normalizeLatex(displayed));
+      void copyToClipboard(normalizeLatex(outputField.value.replace(/^=/, '')));
     });
 
     // Insert buttons
@@ -575,7 +703,7 @@ export function initCalculator(storageKey: string, { drawer, fab, fabClose }: Dr
       calculatorInputElement.dispatchEvent(new CustomEvent('input'));
     });
     outputInsertBtn.addEventListener('click', () => {
-      calculatorInputElement.insert(displayed);
+      calculatorInputElement.insert(outputField.value.replace(/^=/, ''));
       calculatorInputElement.dispatchEvent(new CustomEvent('input'));
     });
 
@@ -586,19 +714,16 @@ export function initCalculator(storageKey: string, { drawer, fab, fabClose }: Dr
     modeSwitchInput.addEventListener('change', () => {
       const isDeg = modeSwitchInput.checked;
       const newMode = isDeg ? 'deg' : 'rad';
-      const displayMode = calculatorOutput.dataset.displayMode as DisplayMode;
       historyItem.dataset.angleMode = newMode;
 
-      const result = evaluateExpression(input, newMode, displayMode);
-      // TODO: overwrite localStorage
-      if (result) {
-        outputField.innerHTML = `=${result.displayed}`;
-        displayed = result.displayed;
-        numeric = result.numeric;
-      }
+      reevaluateHistoryItem(historyItem);
     });
 
     historyPanel.insertBefore(clone, historyPanel.firstChild);
+
+    const clearHistoryButton = document.getElementById('calculatorClearHistory')!;
+    clearHistoryButton.classList.remove('d-none');
+    clearHistoryButton.setAttribute('aria-hidden', 'false');
   }
 }
 
@@ -627,27 +752,40 @@ function initColumnNavigation() {
   }
 }
 
-export function containsTrigFunction(input: string): boolean {
-  return /sin|cos|tan|cot|sec|csc/i.test(input);
-}
+function initDrawerUI(
+  drawer: HTMLElement,
+  fab: HTMLElement,
+  fabClose: HTMLElement | null,
+  storageKey: string,
+) {
+  function setIsOpen(value: boolean) {
+    const raw = localStorage.getItem(storageKey);
+    const data: CalculatorLocalData = raw
+      ? JSON.parse(raw)
+      : { ans: null, variable: [], history: [], temp_input: null, isOpen: false };
+    data.isOpen = value;
+    localStorage.setItem(storageKey, JSON.stringify(data));
+  }
 
-function initDrawerUI(drawer: HTMLElement, fab: HTMLElement, fabClose: HTMLElement | null) {
   function openDrawer() {
     fab.classList.remove('visible');
     drawer.classList.add('open');
     drawer.setAttribute('aria-hidden', 'false');
+    setIsOpen(true);
   }
 
   function collapseDrawer() {
     drawer.classList.remove('open');
     drawer.setAttribute('aria-hidden', 'true');
     fab.classList.add('visible');
+    setIsOpen(false);
   }
 
   function dismissCalculator() {
     drawer.classList.remove('open');
     drawer.setAttribute('aria-hidden', 'true');
     fab.classList.remove('visible');
+    setIsOpen(false);
   }
 
   fab.addEventListener('click', (ev) => {
@@ -704,6 +842,84 @@ function initDrawerUI(drawer: HTMLElement, fab: HTMLElement, fabClose: HTMLEleme
       }
     });
   }
+}
+
+export function registerCustomFunctions(ce: InstanceType<typeof ComputeEngine>) {
+  ce.declare('nCr', {
+    signature: '(n: number, r: number) -> number',
+    evaluate([n, r]) {
+      // nCr(n, r) = n! / (r! * (n - r)!)
+      const nVal = n.re;
+      const rVal = r.re;
+      if (Number.isNaN(nVal) || Number.isNaN(rVal)) return ce.error('Invalid input');
+      if (rVal > nVal) return ce.number(0);
+      const nFact = ce.box(['Factorial', n.json]).evaluate();
+      const rFact = ce.box(['Factorial', r.json]).evaluate();
+      const nrFact = ce.box(['Factorial', n.sub(r).json]).evaluate();
+      return nFact.div(rFact.mul(nrFact));
+    },
+  });
+
+  ce.declare('nPr', {
+    signature: '(n: number, r: number) -> number',
+    evaluate([n, r]) {
+      // nPr(n, r) = n! / (n - r)!
+      const nVal = n.re;
+      const rVal = r.re;
+      if (Number.isNaN(nVal) || Number.isNaN(rVal)) return ce.error('Invalid input');
+      if (rVal > nVal) return ce.number(0);
+      const nFact = ce.box(['Factorial', n.json]).evaluate();
+      const nrFact = ce.box(['Factorial', n.sub(r).json]).evaluate();
+      return nFact.div(nrFact);
+    },
+  });
+
+  ce.declare('stdev', {
+    signature: '(xs: list) -> number',
+    evaluate([list]) {
+      if (!isTensor(list)) {
+        return ce.error('Input must be a list');
+      }
+
+      if (list.shape.length !== 1) {
+        return ce.error('Input must be a 1-dimensional list');
+      }
+
+      const n = list.shape[0];
+      const xs = Array.from(list.each());
+      const mean = xs.reduce((a, b) => a.add(b)).div(n);
+      const variance = xs.reduce((sum, x) => sum.add(x.sub(mean).pow(2)), ce.number(0)).div(n - 1);
+      return variance.sqrt();
+    },
+  });
+
+
+  // we define this here but its not actually usable, because the standard
+  // deviation functions are only available as inline shortcuts stdev([#?])
+  // and stdevp([#?]), but after you type stdev it turns into stdev([#?]),
+  // so you can never actually call stdevp
+  ce.declare('stdevp', {
+    signature: '(xs: list) -> number',
+    evaluate([list]) {
+      if (!isTensor(list)) {
+        return ce.error('Input must be a list');
+      }
+
+      if (list.shape.length !== 1) {
+        return ce.error('Input must be a 1-dimensional list');
+      }
+
+      const n = list.shape[0];
+      const xs = Array.from(list.each());
+      const mean = xs.reduce((a, b) => a.add(b)).div(n);
+      const variance = xs.reduce((sum, x) => sum.add(x.sub(mean).pow(2)), ce.number(0)).div(n);
+      return variance.sqrt();
+    },
+  });
+}
+
+export function containsTrigFunction(input: string): boolean {
+  return /sin|cos|tan|cot|sec|csc/i.test(input);
 }
 
 /** based on https://github.com/vueuse/vueuse/blob/main/packages/core/useClipboard/index.ts */
@@ -766,24 +982,45 @@ onDocumentReady(() => {
   const fabClose = document.getElementById('calculatorFabClose');
   if (!drawer || !fab) return;
 
+  const storageKey = drawer.dataset.storageKey ?? 'pl-calculator';
   let initialized = false;
+
+  function initIfNeeded() {
+    if (!initialized) {
+      initialized = true;
+      try {
+        // drawer and fab are non-null: guarded above with `if (!drawer || !fab) return`
+        initCalculator(storageKey, { drawer: drawer!, fab: fab!, fabClose });
+      } catch (e) {
+        console.error('Failed to initialize calculator:', e);
+      }
+    }
+  }
+
   const toggleBtn = document.getElementById('calculatorDrawerToggle');
   if (toggleBtn) {
     toggleBtn.addEventListener('click', () => {
-      if (!initialized) {
-        initialized = true;
-        try {
-          initCalculator(drawer.dataset.storageKey ?? 'pl-calculator', {
-            drawer,
-            fab,
-            fabClose,
-          });
-        } catch (e) {
-          console.error('Failed to initialize calculator:', e);
-        }
-      }
+      initIfNeeded();
       fab.classList.remove('visible');
       drawer.classList.add('open');
+      drawer.setAttribute('aria-hidden', 'false');
+    });
+  }
+
+  const savedData = localStorage.getItem(storageKey);
+  const wasOpen = savedData
+    ? (JSON.parse(savedData) as CalculatorLocalData).isOpen === true
+    : false;
+  if (wasOpen) {
+    initIfNeeded();
+    fab.classList.remove('visible');
+    drawer.classList.add('no-transition', 'open');
+    drawer.setAttribute('aria-hidden', 'false');
+    // Remove the no-transition class after the browser has painted the open state
+    requestAnimationFrame(() => {
+      requestAnimationFrame(() => {
+        drawer.classList.remove('no-transition');
+      });
     });
   }
 });
