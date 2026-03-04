@@ -68,6 +68,7 @@ export function AssessmentTree({
         .tree-delete-btn:hover { color: var(--bs-danger) !important; }
         .tree-hover-show { opacity: 0; transition: opacity 0.15s; }
         .tree-row:hover .tree-hover-show { opacity: 1; }
+        .tree-hover-show:focus-within { opacity: 1; }
         [data-dragging] .tree-hover-show { opacity: 0 !important; pointer-events: none; }
         .tree-row.list-group-item-action:has(a:hover, .tree-interactive-badge:hover) {
           background-color: transparent;
