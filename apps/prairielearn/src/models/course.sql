@@ -48,7 +48,7 @@ WITH
         cp.user_id = $user_id
         AND cp.course_role > 'None'
     )
-    UNION
+    UNION ALL
     (
       -- If the user is an institution administrator, they get Owner access to all courses in the institution
       SELECT
@@ -61,7 +61,7 @@ WITH
         ia.user_id = $user_id
         AND c.deleted_at IS NULL
     )
-    UNION
+    UNION ALL
     (
       -- All users have access to the example course with at least the Viewer role
       SELECT
