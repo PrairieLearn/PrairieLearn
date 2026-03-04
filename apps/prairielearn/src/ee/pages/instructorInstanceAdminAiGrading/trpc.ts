@@ -77,7 +77,7 @@ const addCredentialMutation = t.procedure
   .input(
     z.object({
       provider: EnumAiGradingProviderSchema,
-      secret_key: z.string().min(1),
+      secret_key: z.string().trim().min(1),
     }),
   )
   .mutation(async (opts) => {

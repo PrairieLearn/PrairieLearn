@@ -13,6 +13,9 @@ const AUTH_TAG_LENGTH = 16;
  */
 export function encrypt(plaintext: string, key: string): string {
   const keyBuffer = Buffer.from(key, 'hex');
+  if (keyBuffer.length !== 32) {
+    throw new Error(`Expected a 32-byte key, got ${keyBuffer.length} bytes`);
+  }
   const iv = crypto.randomBytes(IV_LENGTH);
   const cipher = crypto.createCipheriv(ALGORITHM, keyBuffer, iv, {
     authTagLength: AUTH_TAG_LENGTH,
@@ -31,6 +34,9 @@ export function encrypt(plaintext: string, key: string): string {
  */
 export function decrypt(ciphertext: string, key: string): string {
   const keyBuffer = Buffer.from(key, 'hex');
+  if (keyBuffer.length !== 32) {
+    throw new Error(`Expected a 32-byte key, got ${keyBuffer.length} bytes`);
+  }
   const data = Buffer.from(ciphertext, 'base64');
   const iv = data.subarray(0, IV_LENGTH);
   const authTag = data.subarray(data.length - AUTH_TAG_LENGTH);
