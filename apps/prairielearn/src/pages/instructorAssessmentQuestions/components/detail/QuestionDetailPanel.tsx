@@ -267,6 +267,29 @@ export function QuestionDetailPanel({
 
   return (
     <div className="p-3">
+      {questionData && (
+        <div className="mb-3">
+          <div className="fw-semibold mb-1">
+            {hasCoursePermissionPreview ? (
+              <a href={`${urlPrefix}/question/${questionData.question.id}/`}>
+                {questionData.question.title}
+              </a>
+            ) : (
+              questionData.question.title
+            )}
+          </div>
+          <div className="d-flex flex-wrap gap-1 mt-2">
+            <span className={`badge color-${questionData.topic.color}`}>
+              {questionData.topic.name}
+            </span>
+            {questionData.tags?.map((tag) => (
+              <span key={tag.name} className={`badge color-${tag.color}`}>
+                {tag.name}
+              </span>
+            ))}
+          </div>
+        </div>
+      )}
       <div className="mb-3">
         <label htmlFor="question-id" className="form-label">
           QID
@@ -612,6 +635,22 @@ export function QuestionDetailPanel({
 
       <AdvancedFields register={register} idPrefix="question" variant="question" />
 
+      {questionData?.assessment_question.mean_question_score != null && (
+        <dl className="mb-0">
+          <dt>Mean score</dt>
+          <dd>{questionData.assessment_question.mean_question_score.toFixed(1)}%</dd>
+        </dl>
+      )}
+      {questionData?.assessment_question.number_submissions_hist && (
+        <div className="mb-3">
+          <div className="text-muted small mb-1">Submissions</div>
+          <HistMini
+            data={questionData.assessment_question.number_submissions_hist}
+            options={{ width: 100, height: 40 }}
+          />
+        </div>
+      )}
+
       <div className="d-flex gap-2">
         <button
           type="button"
@@ -620,6 +659,15 @@ export function QuestionDetailPanel({
         >
           Delete
         </button>
+        {questionData && (
+          <button
+            type="button"
+            className="btn btn-sm btn-outline-secondary"
+            onClick={() => onResetButtonClick(questionData.assessment_question.id)}
+          >
+            Reset question variants
+          </button>
+        )}
       </div>
     </div>
   );

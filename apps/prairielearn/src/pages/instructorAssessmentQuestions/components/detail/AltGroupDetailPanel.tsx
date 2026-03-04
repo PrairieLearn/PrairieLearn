@@ -120,6 +120,9 @@ export function AltGroupDetailPanel({
 
   return (
     <div className="p-3">
+      <div className="mb-3 text-muted small">
+        {alternativeCount} alternative{alternativeCount !== 1 ? 's' : ''} in group
+      </div>
       <div className="mb-3">
         <label htmlFor="altgroup-numberChoose" className="form-label">
           Number to choose

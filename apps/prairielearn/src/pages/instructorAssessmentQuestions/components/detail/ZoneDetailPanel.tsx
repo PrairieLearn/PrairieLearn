@@ -240,6 +240,10 @@ export function ZoneDetailPanel({
 
       <AdvancedFields register={register} idPrefix="zone" variant="zone" />
 
+      <div className="mt-2 mb-3 text-muted small">
+        {zone.questions.length} question{zone.questions.length !== 1 ? 's' : ''} in zone
+      </div>
+
       <div className="d-flex gap-2">
         <button
           type="button"
