@@ -24,7 +24,6 @@ math-field::part(virtual-keyboard-toggle) {
   position: fixed;
   bottom: 0;
   right: 16px;
-  z-index: 1040;
   background: var(--bs-body-bg, #fff);
   box-shadow: 0 -2px 10px rgba(0, 0, 0, 0.15);
   transform: translateY(100%);
@@ -38,15 +37,40 @@ math-field::part(virtual-keyboard-toggle) {
   transform: translateY(0);
 }
 
+.calculator-drawer.no-transition {
+  transition: none !important;
+}
+
 .calculator-resize-handle {
   position: absolute;
-  left: -4px;
+  left: 0;
   top: 0;
   bottom: 0;
   width: 8px;
   cursor: col-resize;
   touch-action: none;
   z-index: 1;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  transition: background-color 0.15s;
+}
+
+.calculator-resize-handle::after {
+  content: '';
+  width: 4px;
+  height: 32px;
+  border-radius: 2px;
+  background-color: transparent;
+  transition: background-color 0.15s;
+}
+
+.calculator-resize-handle:hover {
+  background-color: rgba(0, 0, 0, 0.06);
+}
+
+.calculator-resize-handle:hover::after {
+  background-color: rgba(0, 0, 0, 0.3);
 }
 
 .calculator-drawer-header {
@@ -153,12 +177,6 @@ math-field.pl-calculator-output:focus {
 
 .history-panel {
   height: 150px;
-}
-
-.history-panel:empty::before {
-  content: 'History will appear here';
-  color: var(--bs-secondary-color);
-  margin: auto;
 }
 
 .history-content {

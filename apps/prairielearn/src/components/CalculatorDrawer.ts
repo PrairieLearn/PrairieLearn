@@ -5,8 +5,7 @@ import { compiledScriptTag, compiledStylesheetTag, nodeModulesAssetPath } from '
 export function CalculatorDrawerHeadScripts(): HtmlSafeString {
   return html`
     <script src="${nodeModulesAssetPath('mathlive/mathlive.min.js')}"></script>
-    ${compiledScriptTag('calculatorClient.ts')}
-    ${compiledStylesheetTag('calculator.css')}
+    ${compiledScriptTag('calculatorClient.ts')} ${compiledStylesheetTag('calculator.css')}
   `;
 }
 
@@ -51,7 +50,7 @@ export function CalculatorDrawer({ storageKey }: { storageKey: string }): HtmlSa
         <span class="fw-medium small"> <i class="bi bi-calculator"></i> Calculator </span>
         <button
           type="button"
-          class="btn btn-sm btn-outline-light"
+          class="btn btn-sm btn-secondary"
           id="calculatorDrawerClose"
           aria-label="Close calculator"
         >
@@ -59,6 +58,19 @@ export function CalculatorDrawer({ storageKey }: { storageKey: string }): HtmlSa
         </button>
       </div>
       <div class="calculator-drawer-body overflow-auto flex-grow-1">
+        <div
+          class="d-flex align-items-center justify-content-between px-2 py-1 border border-bottom-0 bg-body-secondary"
+        >
+          <span class="small text-body-secondary">History</span>
+          <span
+            class="btn-link link-danger small d-none"
+            id="calculatorClearHistory"
+            role="button"
+            aria-hidden="true"
+          >
+            Clear all
+          </span>
+        </div>
         <div
           id="history-panel"
           class="history-panel d-flex flex-column-reverse overflow-auto bg-body-tertiary p-0 border border-bottom-0"
@@ -68,7 +80,11 @@ export function CalculatorDrawer({ storageKey }: { storageKey: string }): HtmlSa
           <div class="history-item d-flex align-items-stretch border-bottom">
             <div class="history-content flex-grow-1 d-flex flex-column">
               <div class="history-row history-input d-flex align-items-center gap-2 border-top">
-                <math-field class="history-text flex-grow-1" contenteditable="false"></math-field>
+                <math-field
+                  theme="light"
+                  class="history-text flex-grow-1"
+                  contenteditable="false"
+                ></math-field>
                 <div
                   class="form-check form-switch history-mode-switch d-flex align-items-center gap-1 m-0 p-0 text-nowrap"
                   title="Toggle deg/rad"
@@ -98,7 +114,11 @@ export function CalculatorDrawer({ storageKey }: { storageKey: string }): HtmlSa
                 </button>
               </div>
               <div class="history-row history-output d-flex align-items-center gap-2 border-top">
-                <math-field class="history-text flex-grow-1" contenteditable="false"></math-field>
+                <math-field
+                  theme="light"
+                  class="history-text flex-grow-1"
+                  contenteditable="false"
+                ></math-field>
                 <button
                   type="button"
                   class="calculator-action-btn history-copy-btn"
@@ -120,6 +140,7 @@ export function CalculatorDrawer({ storageKey }: { storageKey: string }): HtmlSa
 
         <div class="input-container d-flex align-items-center px-1 border">
           <math-field
+            theme="light"
             id="calculator-input"
             class="pl-calculator-input flex-grow-1"
             autofocus="autofocus"
@@ -145,6 +166,7 @@ export function CalculatorDrawer({ storageKey }: { storageKey: string }): HtmlSa
           class="output-panel d-flex align-items-center gap-2 px-1 border border-top-0 border-bottom-0"
         >
           <math-field
+            theme="light"
             id="calculator-output"
             class="pl-calculator-output flex-grow-1"
             contenteditable="false"
