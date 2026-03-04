@@ -332,6 +332,11 @@ function AssessmentEditorInner({
           return;
         }
 
+        // Remove from current location if already in assessment (move behavior)
+        if (questionsInAssessment.has(qid)) {
+          handleRemoveQuestionByQid(qid);
+        }
+
         const found = findQuestionByTrackingId(zones, questionTrackingId);
         if (found) {
           const oldId =

@@ -240,9 +240,10 @@ export function QuestionPickerPanel({
                   key={virtualRow.key}
                   ref={rowVirtualizer.measureElement}
                   data-index={virtualRow.index}
-                  role="button"
-                  tabIndex={0}
-                  aria-label={`${qid}: ${question.title}${isAlreadyAdded ? ` (in ${addedZoneNames.join(', ')})` : ''}`}
+                  role={isAlreadyAdded ? undefined : 'button'}
+                  tabIndex={isAlreadyAdded ? undefined : 0}
+                  aria-label={`${qid}: ${question.title}${isAlreadyAdded ? ` (already in ${addedZoneNames.join(', ')})` : ''}`}
+                  aria-disabled={isAlreadyAdded || undefined}
                   className="d-flex align-items-center px-2 py-1 border-bottom list-group-item-action picker-row"
                   style={{
                     position: 'absolute',
@@ -250,19 +251,24 @@ export function QuestionPickerPanel({
                     left: 0,
                     width: '100%',
                     transform: `translateY(${virtualRow.start}px)`,
-                    cursor: 'pointer',
+                    cursor: isAlreadyAdded ? 'not-allowed' : 'pointer',
                     fontSize: '0.85rem',
+                    opacity: isAlreadyAdded ? 0.5 : undefined,
                     ...(isAlreadyAdded
                       ? { borderLeft: '3px solid var(--bs-secondary)' }
                       : undefined),
                   }}
-                  onClick={() => handleSelect(question)}
-                  onKeyDown={(e) => {
-                    if (e.key === 'Enter' || e.key === ' ') {
-                      e.preventDefault();
-                      handleSelect(question);
-                    }
-                  }}
+                  onClick={isAlreadyAdded ? undefined : () => handleSelect(question)}
+                  onKeyDown={
+                    isAlreadyAdded
+                      ? undefined
+                      : (e) => {
+                          if (e.key === 'Enter' || e.key === ' ') {
+                            e.preventDefault();
+                            handleSelect(question);
+                          }
+                        }
+                  }
                 >
                   <div className="flex-grow-1" style={{ minWidth: 0 }}>
                     <div className="d-flex align-items-center gap-1">
