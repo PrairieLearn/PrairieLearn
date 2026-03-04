@@ -102,6 +102,11 @@ export function ZoneDetailPanel({
   };
 
   if (!editMode) {
+    const effectiveAdvanceScorePerc = zone.advanceScorePerc ?? assessmentDefaults.advanceScorePerc;
+    const effectiveGradeRateMinutes = zone.gradeRateMinutes ?? assessmentDefaults.gradeRateMinutes;
+    const effectiveAllowRealTimeGrading =
+      zone.allowRealTimeGrading ?? assessmentDefaults.allowRealTimeGrading;
+
     return (
       <div className="p-3">
         <dl className="mb-0">
@@ -137,23 +142,37 @@ export function ZoneDetailPanel({
               <dd className="text-break">{String(zone.comment)}</dd>
             </>
           )}
-          {/* TODO: Display inherited values from assessment-level settings */}
-          {zone.advanceScorePerc != null && (
+          {effectiveAdvanceScorePerc != null && (
             <>
               <dt>Advance score %</dt>
-              <dd>{zone.advanceScorePerc}%</dd>
+              <dd>
+                {effectiveAdvanceScorePerc}%
+                {zone.advanceScorePerc == null && (
+                  <span className="text-muted"> (inherited from assessment)</span>
+                )}
+              </dd>
             </>
           )}
-          {zone.gradeRateMinutes != null && (
+          {effectiveGradeRateMinutes != null && (
             <>
               <dt>Grade rate (minutes)</dt>
-              <dd>{zone.gradeRateMinutes}</dd>
+              <dd>
+                {effectiveGradeRateMinutes}
+                {zone.gradeRateMinutes == null && (
+                  <span className="text-muted"> (inherited from assessment)</span>
+                )}
+              </dd>
             </>
           )}
-          {zone.allowRealTimeGrading != null && (
+          {effectiveAllowRealTimeGrading != null && (
             <>
               <dt>Allow real-time grading</dt>
-              <dd>{zone.allowRealTimeGrading ? 'Yes' : 'No'}</dd>
+              <dd>
+                {effectiveAllowRealTimeGrading ? 'Yes' : 'No'}
+                {zone.allowRealTimeGrading == null && (
+                  <span className="text-muted"> (inherited from assessment)</span>
+                )}
+              </dd>
             </>
           )}
         </dl>

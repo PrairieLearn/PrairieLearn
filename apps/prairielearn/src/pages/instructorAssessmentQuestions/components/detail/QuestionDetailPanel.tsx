@@ -305,7 +305,85 @@ export function QuestionDetailPanel({
               <dd className="text-break">{String(question.comment)}</dd>
             </>
           )}
-          {/* TODO: Display inherited values from zone/alt group */}
+          {run(() => {
+            const effective =
+              question.advanceScorePerc ?? advancedInheritance.parentAdvanceScorePerc;
+            if (effective == null) return null;
+            const isInherited = question.advanceScorePerc == null;
+            return (
+              <>
+                <dt>Advance score %</dt>
+                <dd>
+                  {effective}%
+                  {isInherited && (
+                    <span className="text-muted">
+                      {' '}
+                      (inherited from {advancedInheritance.inheritedFromLabel})
+                    </span>
+                  )}
+                </dd>
+              </>
+            );
+          })}
+          {run(() => {
+            const effective =
+              question.gradeRateMinutes ?? advancedInheritance.parentGradeRateMinutes;
+            if (effective == null) return null;
+            const isInherited = question.gradeRateMinutes == null;
+            return (
+              <>
+                <dt>Grade rate (minutes)</dt>
+                <dd>
+                  {effective}
+                  {isInherited && (
+                    <span className="text-muted">
+                      {' '}
+                      (inherited from {advancedInheritance.inheritedFromLabel})
+                    </span>
+                  )}
+                </dd>
+              </>
+            );
+          })}
+          {run(() => {
+            const effective = question.forceMaxPoints ?? advancedInheritance.parentForceMaxPoints;
+            if (effective == null) return null;
+            const isInherited = question.forceMaxPoints == null;
+            return (
+              <>
+                <dt>Force max points</dt>
+                <dd>
+                  {effective ? 'Yes' : 'No'}
+                  {isInherited && (
+                    <span className="text-muted">
+                      {' '}
+                      (inherited from {advancedInheritance.inheritedFromLabel})
+                    </span>
+                  )}
+                </dd>
+              </>
+            );
+          })}
+          {run(() => {
+            const effective =
+              question.allowRealTimeGrading ?? advancedInheritance.parentAllowRealTimeGrading;
+            if (effective == null) return null;
+            const isInherited = question.allowRealTimeGrading == null;
+            return (
+              <>
+                <dt>Allow real-time grading</dt>
+                <dd>
+                  {effective ? 'Yes' : 'No'}
+                  {isInherited && (
+                    <span className="text-muted">
+                      {' '}
+                      (inherited from {advancedInheritance.inheritedFromLabel})
+                    </span>
+                  )}
+                </dd>
+              </>
+            );
+          })}
         </dl>
         {questionData?.assessment_question.mean_question_score != null && (
           <dl className="mb-0">
