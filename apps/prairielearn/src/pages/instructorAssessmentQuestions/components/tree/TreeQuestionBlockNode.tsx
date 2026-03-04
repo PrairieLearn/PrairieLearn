@@ -1,7 +1,7 @@
 import { useDroppable } from '@dnd-kit/core';
 import { SortableContext, useSortable, verticalListSortingStrategy } from '@dnd-kit/sortable';
 import clsx from 'clsx';
-import { type Dispatch, useId, useMemo } from 'react';
+import { type Dispatch, useCallback, useId, useMemo } from 'react';
 
 import { run } from '@prairielearn/run';
 import { OverlayTrigger } from '@prairielearn/ui';
@@ -75,6 +75,16 @@ export function TreeQuestionBlockNode({
 
   const sortableStyle = makeSortableStyle({ isDragging, transform, transition });
 
+  // Stable callback ref so React doesn't detach/reattach on every render,
+  // which would cause dnd-kit's ResizeObserver to unobserve/observe repeatedly.
+  const combinedRef = useCallback(
+    (node: HTMLDivElement | null) => {
+      setNodeRef(node);
+      mergeDropRef(node);
+    },
+    [setNodeRef, mergeDropRef],
+  );
+
   const alternatives = zoneQuestionBlock.alternatives;
   const alternativeIds = useMemo(
     () => (alternatives ?? []).map((a) => a.trackingId),
@@ -132,12 +142,17 @@ export function TreeQuestionBlockNode({
 
   return (
     <div
-      ref={(node: HTMLDivElement | null) => {
-        setNodeRef(node);
-        mergeDropRef(node);
+      ref={combinedRef}
+      style={{
+        ...sortableStyle,
+        // Use box-shadow instead of border to avoid changing the element's
+        // layout dimensions. A layout shift from adding/removing a border
+        // can cause dnd-kit's collision detection to oscillate, triggering
+        // an infinite update loop ("Maximum update depth exceeded").
+        boxShadow: isMergeOver ? 'inset 0 0 0 2px var(--bs-primary)' : undefined,
+        borderRadius: isMergeOver ? 'var(--bs-border-radius)' : undefined,
       }}
-      style={sortableStyle}
-      className={clsx(isMergeOver && 'border border-primary rounded bg-primary-subtle')}
+      className={clsx(isMergeOver && 'bg-primary-subtle')}
     >
       {/* Alt group header */}
       <div
