@@ -156,13 +156,15 @@ function connection(socket: Socket) {
 
   socket.on('heartbeat', (callback?: (result: any) => void) => {
     // TODO: remove the callback parameter in the future once all clients have been updated.
-    sqldb.queryRow(sql.update_workspace_heartbeat_at_now, { workspace_id }, DateFromISOString).then(
-      (heartbeat_at) => callback?.({ workspace_id, heartbeat_at }),
-      (err) => {
-        callback?.({ errorMessage: err.message });
-        Sentry.captureException(err);
-      },
-    );
+    sqldb
+      .queryScalar(sql.update_workspace_heartbeat_at_now, { workspace_id }, DateFromISOString)
+      .then(
+        (heartbeat_at) => callback?.({ workspace_id, heartbeat_at }),
+        (err) => {
+          callback?.({ errorMessage: err.message });
+          Sentry.captureException(err);
+        },
+      );
   });
 }
 

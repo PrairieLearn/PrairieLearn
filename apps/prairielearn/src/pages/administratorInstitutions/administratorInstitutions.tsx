@@ -92,7 +92,7 @@ router.post(
         .parse(req.body);
 
       // First, create the institution and get its ID
-      const institutionId = await sqldb.queryRow(
+      const institutionId = await sqldb.queryScalar(
         sql.insert_institution,
         {
           short_name: body.short_name.trim(),

@@ -1,1 +1,1 @@
-`figure.png` used in the `question.html` is not a physical file. Since this pl-figure is the "dynamic" type, the figure is generated via server.py's `file()`.
+This question uses `<pl-figure>` with `type="dynamic"` to render a dynamic figure that's generated via the `file()` function in `server.py`.

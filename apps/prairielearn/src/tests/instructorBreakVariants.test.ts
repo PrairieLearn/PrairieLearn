@@ -1,6 +1,6 @@
 import { afterAll, assert, beforeAll, describe, test } from 'vitest';
 
-import { loadSqlEquiv, queryRow } from '@prairielearn/postgres';
+import { loadSqlEquiv, queryScalar } from '@prairielearn/postgres';
 import { IdSchema } from '@prairielearn/zod';
 
 import { config } from '../lib/config.js';
@@ -125,7 +125,7 @@ describe('Instructor force-breaking variants on homework', () => {
   test.sequential('instructor breaks second variant via student instance page', async () => {
     const instanceUrl = `${courseInstanceUrl}/instructor/assessment_instance/1`;
 
-    const instanceQuestion = await queryRow(
+    const instanceQuestion = await queryScalar(
       sql.select_instance_question,
       { assessment_question_id: partialCredit2AssessmentQuestion.id },
       IdSchema,
@@ -298,7 +298,7 @@ describe('Instructor force-breaking variants on exam', () => {
   test.sequential('instructor cannot break second variant via student instance page', async () => {
     const instanceUrl = `${courseInstanceUrl}/instructor/assessment_instance/1`;
 
-    const instanceQuestion = await queryRow(
+    const instanceQuestion = await queryScalar(
       sql.select_instance_question,
       { assessment_question_id: partialCredit2AssessmentQuestion.id },
       IdSchema,

@@ -7,7 +7,7 @@ import { flash } from '@prairielearn/flash';
 import {
   execute,
   loadSqlEquiv,
-  queryOptionalRow,
+  queryOptionalScalar,
   queryRows,
   runInTransactionAsync,
 } from '@prairielearn/postgres';
@@ -98,7 +98,7 @@ router.post(
         return;
       }
       await runInTransactionAsync(async () => {
-        const numInstancesToGrade = await queryOptionalRow(
+        const numInstancesToGrade = await queryOptionalScalar(
           sql.count_instance_questions_to_grade,
           {
             assessment_id: res.locals.assessment.id,

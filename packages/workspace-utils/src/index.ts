@@ -9,7 +9,7 @@ import type { Server as SocketIOServer } from 'socket.io';
 import { z } from 'zod';
 
 import { contains } from '@prairielearn/path-utils';
-import { execute, loadSqlEquiv, queryRow } from '@prairielearn/postgres';
+import { execute, loadSqlEquiv, queryRow, queryScalar } from '@prairielearn/postgres';
 import { IdSchema, IntervalSchema } from '@prairielearn/zod';
 
 const WorkspaceVersionSchema = z.object({
@@ -72,7 +72,7 @@ export async function updateWorkspaceState(
   message = '',
 ): Promise<void> {
   // TODO: add locking
-  const duration_milliseconds = await queryRow(
+  const duration_milliseconds = await queryScalar(
     sql.update_workspace_state,
     { workspace_id, state, message },
     IntervalSchema,

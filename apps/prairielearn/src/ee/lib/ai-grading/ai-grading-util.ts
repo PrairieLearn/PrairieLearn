@@ -19,6 +19,7 @@ import {
   loadSqlEquiv,
   queryRow,
   queryRows,
+  queryScalar,
   runInTransactionAsync,
 } from '@prairielearn/postgres';
 import { run } from '@prairielearn/run';
@@ -583,7 +584,7 @@ export async function selectLastVariantAndSubmission(
 }
 
 export async function selectLastSubmissionId(instance_question_id: string): Promise<string> {
-  return await queryRow(sql.select_last_submission_id, { instance_question_id }, IdSchema);
+  return await queryScalar(sql.select_last_submission_id, { instance_question_id }, IdSchema);
 }
 
 export async function deleteAiGradingJobs({

@@ -8,9 +8,9 @@ import { flash } from '@prairielearn/flash';
 import {
   execute,
   loadSqlEquiv,
-  queryOptionalRow,
-  queryRow,
+  queryOptionalScalar,
   queryRows,
+  queryScalar,
 } from '@prairielearn/postgres';
 
 import { config } from '../../../lib/config.js';
@@ -109,7 +109,7 @@ router.post(
   '/:unsafe_lti13_instance_id?',
   typedAsyncHandler<'plain'>(async (req, res) => {
     if (req.body.__action === 'add_key') {
-      const keystoreJson = await queryOptionalRow(
+      const keystoreJson = await queryOptionalScalar(
         sql.select_keystore,
         {
           unsafe_lti13_instance_id: req.params.unsafe_lti13_instance_id,
@@ -144,7 +144,7 @@ router.post(
       flash('success', 'All keys deleted.');
       return res.redirect(req.originalUrl);
     } else if (req.body.__action === 'delete_key') {
-      const keystoreJson = await queryOptionalRow(
+      const keystoreJson = await queryOptionalScalar(
         sql.select_keystore,
         {
           unsafe_lti13_instance_id: req.params.unsafe_lti13_instance_id,
@@ -194,7 +194,7 @@ router.post(
       flash('success', 'Platform updated.');
       return res.redirect(req.originalUrl);
     } else if (req.body.__action === 'add_instance') {
-      const new_li = await queryRow(
+      const new_li = await queryScalar(
         sql.insert_instance,
         {
           ...lti13_instance_defaults,

@@ -186,7 +186,7 @@ async.series(
 );
 
 async function isJobCanceled(job: GradingJobMessage) {
-  const canceled = await sqldb.queryOptionalRow(
+  const canceled = await sqldb.queryOptionalScalar(
     sql.check_job_cancellation,
     {
       grading_job_id: job.jobId,

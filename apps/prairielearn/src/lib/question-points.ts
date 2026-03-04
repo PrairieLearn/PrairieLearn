@@ -4,7 +4,7 @@ import {
   execute,
   loadSqlEquiv,
   queryRow,
-  queryRows,
+  queryScalars,
   runInTransactionAsync,
 } from '@prairielearn/postgres';
 import { run } from '@prairielearn/run';
@@ -242,7 +242,7 @@ export async function updateInstanceQuestionStats({
 }: {
   instanceQuestion: InstanceQuestion;
 }) {
-  const submissionScores = await queryRows(
+  const submissionScores = await queryScalars(
     sql.select_submissions_for_stats,
     { instance_question_id: instanceQuestion.id },
     z.number(),

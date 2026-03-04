@@ -82,7 +82,7 @@ export async function sync(
     ]);
   });
 
-  const result = await sqldb.callRow(
+  const result = await sqldb.callScalar(
     'sync_questions',
     [questionParams, courseId],
     z.record(z.string(), IdSchema),

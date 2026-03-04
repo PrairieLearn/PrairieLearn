@@ -77,7 +77,7 @@ router.post(
       await sqldb.callRows(
         'courses_update_column',
         [req.body.course_id, req.body.column_name, req.body.value, res.locals.authn_user.id],
-        z.any(),
+        z.unknown(),
       );
     } else if (req.body.__action === 'courses_delete') {
       const course = await selectCourseById(req.body.course_id);

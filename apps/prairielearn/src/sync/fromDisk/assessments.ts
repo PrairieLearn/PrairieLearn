@@ -529,7 +529,7 @@ export async function validateAssessmentSharedQuestions(
   });
 
   if (importedQids.size > 0) {
-    const institutionId = await sqldb.queryRow(
+    const institutionId = await sqldb.queryScalar(
       sql.get_institution_id,
       { course_id: courseId },
       z.string(),

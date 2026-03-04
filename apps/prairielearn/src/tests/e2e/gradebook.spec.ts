@@ -60,7 +60,7 @@ async function createTestData(ciId: string): Promise<string> {
   );
 
   for (const student of TEST_STUDENTS) {
-    const userId = await sqldb.queryRow(
+    const userId = await sqldb.queryScalar(
       sql.insert_or_update_user,
       { uid: student.uid, name: student.name },
       z.string(),

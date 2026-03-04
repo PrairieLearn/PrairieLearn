@@ -527,7 +527,7 @@ async function _allocateContainerPort(workspace_id: string | number): Promise<nu
       instance_id: workspace_server_settings.instance_id,
       port,
     };
-    const port_used = await sqldb.queryRow(sql.get_is_port_occupied, params, PortOccupiedSchema);
+    const port_used = await sqldb.queryScalar(sql.get_is_port_occupied, params, PortOccupiedSchema);
     return !port_used;
   }
 

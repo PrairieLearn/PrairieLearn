@@ -1,5 +1,19 @@
 # @prairielearn/eslint-config
 
+## 2.0.0
+
+### Major Changes
+
+- 3c4799a: Upgrade to ESLint v10
+
+### Patch Changes
+
+- 3c4799a: Upgrade all JavaScript dependencies
+- 3c4799a: Disable the radix rule
+- Updated dependencies [3c4799a]
+- Updated dependencies [3c4799a]
+  - @prairielearn/eslint-plugin@4.0.0
+
 ## 1.1.0
 
 ### Minor Changes

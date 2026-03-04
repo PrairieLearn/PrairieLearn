@@ -7,7 +7,7 @@ import type * as httpProxyMiddleware from 'http-proxy-middleware';
 
 import { HttpStatusError } from '@prairielearn/error';
 import { logger } from '@prairielearn/logger';
-import { queryOptionalRow, queryRow } from '@prairielearn/postgres';
+import { queryOptionalScalar, queryScalar } from '@prairielearn/postgres';
 
 import { config } from '../lib/config.js';
 import { QuestionSchema, WorkspaceSchema } from '../lib/db-types.js';
@@ -110,8 +110,11 @@ export function makeWorkspaceProxyMiddleware(containerPathRegex: RegExp) {
             ' JOIN variants AS v ON (v.question_id = q.id)' +
             ' WHERE v.workspace_id = $workspace_id;';
           workspace_url_rewrite =
-            (await queryRow(sql, { workspace_id }, QuestionSchema.shape.workspace_url_rewrite)) ??
-            true;
+            (await queryScalar(
+              sql,
+              { workspace_id },
+              QuestionSchema.shape.workspace_url_rewrite,
+            )) ?? true;
           workspaceUrlRewriteCache.set(workspace_id, workspace_url_rewrite);
         }
 
@@ -131,7 +134,7 @@ export function makeWorkspaceProxyMiddleware(containerPathRegex: RegExp) {
       if (!match) throw new Error(`Could not match path: ${path}`);
 
       const workspace_id = match[1];
-      const hostname = await queryOptionalRow(
+      const hostname = await queryOptionalScalar(
         "SELECT hostname FROM workspaces WHERE id = $workspace_id AND state = 'running';",
         { workspace_id },
         WorkspaceSchema.shape.hostname,

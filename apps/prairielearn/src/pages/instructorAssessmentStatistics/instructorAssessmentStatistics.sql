@@ -1,6 +1,6 @@
 -- BLOCK select_assessment
 SELECT
-  to_jsonb(a) AS assessment
+  a.*
 FROM
   assessments AS a
 WHERE

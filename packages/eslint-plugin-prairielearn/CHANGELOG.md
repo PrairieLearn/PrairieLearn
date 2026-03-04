@@ -1,5 +1,15 @@
 # @prairielearn/eslint-plugin
 
+## 4.0.0
+
+### Major Changes
+
+- 3c4799a: Upgrade to ESLint v10
+
+### Patch Changes
+
+- 3c4799a: Upgrade all JavaScript dependencies
+
 ## 3.1.1
 
 ### Patch Changes

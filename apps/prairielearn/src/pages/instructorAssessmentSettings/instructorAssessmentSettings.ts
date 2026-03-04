@@ -37,7 +37,7 @@ const sql = sqldb.loadSqlEquiv(import.meta.url);
 router.get(
   '/',
   typedAsyncHandler<'assessment'>(async (req, res) => {
-    const tids = await sqldb.queryRows(
+    const tids = await sqldb.queryScalars(
       sql.tids,
       { course_instance_id: res.locals.course_instance.id },
       z.string(),
@@ -113,7 +113,7 @@ router.post(
         return res.redirect(res.locals.urlPrefix + '/edit_error/' + serverJob.jobSequenceId);
       }
 
-      const assessmentId = await sqldb.queryRow(
+      const assessmentId = await sqldb.queryScalar(
         sql.select_assessment_id_from_uuid,
         { uuid: editor.uuid, course_instance_id: res.locals.course_instance.id },
         IdSchema,

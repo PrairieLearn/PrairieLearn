@@ -98,7 +98,7 @@ export async function uploadFile({
     throw new Error(`Unknown storage type: ${storage_type}`);
   }
 
-  const file_id = await sqldb.queryRow(
+  const file_id = await sqldb.queryScalar(
     sql.insert_file,
     {
       display_filename,
