@@ -7,6 +7,7 @@ import superjson from 'superjson';
 import { z } from 'zod';
 
 import { HttpStatusError } from '@prairielearn/error';
+import { runInTransactionAsync } from '@prairielearn/postgres';
 import { IdSchema } from '@prairielearn/zod';
 
 import type { CourseInstance, StudentLabel } from '../../lib/db-types.js';
@@ -316,20 +317,24 @@ const editLabelMutation = t.procedure
     const desiredEnrollmentIdSet = new Set(desiredEnrollments.map((e) => e.id));
 
     const toAdd = desiredEnrollments.filter((e) => !currentEnrollmentIdSet.has(e.id));
-    if (toAdd.length > 0) {
-      await addLabelToEnrollments({
-        enrollments: toAdd,
-        label: updatedLabel,
-        authzData: authz_data,
-      });
-    }
-
     const toRemove = currentEnrollments.filter((e) => !desiredEnrollmentIdSet.has(e.id));
-    if (toRemove.length > 0) {
-      await removeLabelFromEnrollments({
-        enrollments: toRemove,
-        label: updatedLabel,
-        authzData: authz_data,
+
+    if (toAdd.length > 0 || toRemove.length > 0) {
+      await runInTransactionAsync(async () => {
+        if (toAdd.length > 0) {
+          await addLabelToEnrollments({
+            enrollments: toAdd,
+            label: updatedLabel,
+            authzData: authz_data,
+          });
+        }
+        if (toRemove.length > 0) {
+          await removeLabelFromEnrollments({
+            enrollments: toRemove,
+            label: updatedLabel,
+            authzData: authz_data,
+          });
+        }
       });
     }
 
