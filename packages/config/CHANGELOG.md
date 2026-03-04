@@ -1,5 +1,17 @@
 # @prairielearn/config
 
+## 4.1.0
+
+### Minor Changes
+
+- 9400eb3: Add generic type parameter to `ConfigSource` for type-safe config loading
+
+### Patch Changes
+
+- 3c4799a: Upgrade all JavaScript dependencies
+- Updated dependencies [3c4799a]
+  - @prairielearn/aws-imds@3.0.2
+
 ## 4.0.3
 
 ### Patch Changes
