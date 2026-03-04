@@ -101,6 +101,7 @@ const deleteCredentialMutation = t.procedure
     await deleteCredential({
       credential_id: opts.input.credential_id,
       course_instance_id: opts.ctx.course_instance.id,
+      authn_user_id: opts.ctx.authn_user.id,
     });
   });
 

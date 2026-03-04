@@ -35,7 +35,9 @@ RETURNING
 DELETE FROM course_instance_ai_grading_credentials
 WHERE
   id = $credential_id
-  AND course_instance_id = $course_instance_id;
+  AND course_instance_id = $course_instance_id
+RETURNING
+  *;
 
 -- BLOCK update_use_custom_api_keys
 UPDATE course_instances
