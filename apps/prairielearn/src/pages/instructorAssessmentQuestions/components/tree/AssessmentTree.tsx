@@ -64,19 +64,6 @@ export function AssessmentTree({
 }) {
   return (
     <SortableContext items={zones.map((z) => z.trackingId)} strategy={verticalListSortingStrategy}>
-      <style>{`
-        .tree-delete-btn:hover { color: var(--bs-danger) !important; }
-        .tree-hover-show { opacity: 0; transition: opacity 0.15s; }
-        .tree-row:hover .tree-hover-show { opacity: 1; }
-        .tree-hover-show:focus-within { opacity: 1; }
-        [data-dragging] .tree-hover-show { opacity: 0 !important; pointer-events: none; }
-        .tree-row.list-group-item-action:has(a:hover, .tree-interactive-badge:hover) {
-          background-color: transparent;
-        }
-        .tree-row.list-group-item-action:active:has(.tree-hover-show:active) {
-          background-color: var(--bs-list-group-action-hover-bg);
-        }
-      `}</style>
       <div
         className="d-flex align-items-center px-2 py-2 border-bottom bg-body"
         style={{ position: 'sticky', top: 0, zIndex: 11 }}

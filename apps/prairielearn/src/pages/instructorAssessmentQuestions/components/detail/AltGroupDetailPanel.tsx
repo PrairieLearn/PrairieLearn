@@ -48,7 +48,10 @@ export function AltGroupDetailPanel({
   idPrefix: string;
   editMode: boolean;
   assessmentType: EnumAssessmentType;
-  onUpdate: (questionTrackingId: string, question: Partial<ZoneQuestionBlockForm>) => void;
+  onUpdate: (
+    questionTrackingId: string,
+    question: Partial<ZoneQuestionBlockForm> | Partial<AltGroupFormData>,
+  ) => void;
   onDelete: (questionTrackingId: string, questionId: string) => void;
   onAddAlternative: (altGroupTrackingId: string) => void;
 }) {

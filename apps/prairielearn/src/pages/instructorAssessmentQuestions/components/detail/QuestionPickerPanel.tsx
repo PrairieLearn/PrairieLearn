@@ -212,12 +212,6 @@ export function QuestionPickerPanel({
       <div className="px-2 py-1 bg-light border-bottom text-muted small">
         {sortedQuestions.length} {sortedQuestions.length === 1 ? 'question' : 'questions'} found
       </div>
-      <style>{`
-        .picker-row .picker-hover-show { opacity: 0; transition: opacity 0.15s; }
-        .picker-row:hover .picker-hover-show { opacity: 1; }
-        .picker-hover-show:focus-within { opacity: 1; }
-        .picker-delete-btn:hover { color: var(--bs-danger) !important; }
-      `}</style>
       <div ref={scrollParentRef} className="flex-grow-1" style={{ overflow: 'auto' }}>
         {sortedQuestions.length === 0 ? (
           <div className="d-flex flex-column align-items-center justify-content-center text-muted py-5">

@@ -13,7 +13,7 @@ import { generatePrefixCsrfToken } from '@prairielearn/signed-token';
 
 import { PageLayout } from '../../components/PageLayout.js';
 import { selectAssessmentQuestions } from '../../lib/assessment-question.js';
-import { compiledScriptTag } from '../../lib/assets.js';
+import { compiledScriptTag, compiledStylesheetTag } from '../../lib/assets.js';
 import { b64EncodeUnicode } from '../../lib/base64-util.js';
 import { extractPageContext } from '../../lib/client/page-context.js';
 import { config } from '../../lib/config.js';
@@ -106,7 +106,9 @@ router.get(
       PageLayout({
         resLocals: res.locals,
         pageTitle: 'Questions',
-        headContent: compiledScriptTag('instructorAssessmentQuestionsClient.ts'),
+        headContent:
+          compiledScriptTag('instructorAssessmentQuestionsClient.ts') +
+          compiledStylesheetTag('instructorAssessmentQuestions.css'),
         navContext: {
           type: 'instructor',
           page: 'assessment',
