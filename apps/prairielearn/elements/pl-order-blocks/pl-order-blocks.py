@@ -550,7 +550,7 @@ def parse(element_html: str, data: pl.QuestionData) -> None:
 
     try:
         student_answer = json.loads(student_answer_raw)
-    except json.JSONDecodeError:
+    except (json.JSONDecodeError, TypeError):
         data["format_errors"][answer_name] = (
             "Your submitted answer could not be parsed. Please ensure you have not "
             "manually edited the submission data."
@@ -562,6 +562,13 @@ def parse(element_html: str, data: pl.QuestionData) -> None:
             "Your submitted answer has an invalid format. Please try again."
         )
         return
+
+    for item in student_answer:
+        if not isinstance(item, dict) or "inner_html" not in item:
+            data["format_errors"][answer_name] = (
+                "Your submitted answer has an invalid format. Please try again."
+            )
+            return
 
     if (not order_block_options.allow_blank) and (
         student_answer is None or student_answer == []
