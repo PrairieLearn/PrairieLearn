@@ -81,7 +81,7 @@ WITH
     FROM
       courses_with_permissions
     GROUP BY
-      id
+      course_id
   )
 SELECT
   c.*,

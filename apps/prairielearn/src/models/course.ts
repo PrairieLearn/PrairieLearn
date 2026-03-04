@@ -154,7 +154,7 @@ export async function selectCoursesWithStaffAccess({
 }): Promise<CourseWithPermissions[]> {
   const rawCourses = await run(async () => {
     if (is_administrator) {
-      const courses = await queryRows(sql.select_all_courses, { user_id }, CourseSchema);
+      const courses = await queryRows(sql.select_all_courses, CourseSchema);
       return courses.map((course) => ({ ...course, course_role: 'Owner' as const }));
     }
 
