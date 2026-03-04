@@ -225,19 +225,6 @@ export function TreeQuestionBlockNode({
         {!editMode && (
           <i className="bi bi-chevron-right text-muted small ms-1" aria-hidden="true" />
         )}
-        {editMode && onAddToAltGroup && (
-          <button
-            type="button"
-            className="btn btn-sm btn-outline-primary ms-1"
-            onClick={(e) => {
-              e.stopPropagation();
-              onAddToAltGroup(zoneQuestionBlock.trackingId);
-            }}
-          >
-            <i className="bi bi-plus-lg me-1" aria-hidden="true" />
-            Add alternative
-          </button>
-        )}
         {editMode && (
           <button
             type="button"
@@ -302,6 +289,18 @@ export function TreeQuestionBlockNode({
             );
           })}
         </SortableContext>
+      )}
+      {!isCollapsed && editMode && onAddToAltGroup && (
+        <div className="border-bottom py-2" style={{ paddingLeft: '4.5rem' }}>
+          <button
+            type="button"
+            className="btn btn-sm btn-link text-muted"
+            onClick={() => onAddToAltGroup(zoneQuestionBlock.trackingId)}
+          >
+            <i className="bi bi-plus-lg me-1" aria-hidden="true" />
+            Add alternative
+          </button>
+        </div>
       )}
     </div>
   );

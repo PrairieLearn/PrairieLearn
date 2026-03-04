@@ -115,7 +115,7 @@ export function AssessmentTree({
         ))}
         {editMode && (
           <div className="p-2">
-            <button className="btn btn-sm btn-outline-primary" type="button" onClick={onAddZone}>
+            <button className="btn btn-sm btn-link text-muted" type="button" onClick={onAddZone}>
               <i className="bi bi-plus-lg me-1" aria-hidden="true" />
               Add zone
             </button>

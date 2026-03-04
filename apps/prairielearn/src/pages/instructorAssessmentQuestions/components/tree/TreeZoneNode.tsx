@@ -241,7 +241,7 @@ export function TreeZoneNode({
                 style={{ paddingLeft: '2.5rem', paddingRight: '1rem' }}
               >
                 <button
-                  className="btn btn-sm btn-outline-primary"
+                  className="btn btn-sm btn-link text-muted"
                   type="button"
                   onClick={() => onAddQuestion(zone.trackingId)}
                 >
@@ -249,7 +249,7 @@ export function TreeZoneNode({
                   Add question
                 </button>
                 <button
-                  className="btn btn-sm btn-outline-primary"
+                  className="btn btn-sm btn-link text-muted"
                   type="button"
                   onClick={() => onAddAltGroup(zone.trackingId)}
                 >
