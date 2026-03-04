@@ -351,7 +351,6 @@ export function initCalculator(storageKey: string, { drawer, fab, fabClose }: Dr
     const historyPanel = document.getElementById('history-panel')!;
     historyPanel.innerHTML = '';
     clearHistoryBtn.classList.add('d-none');
-    clearHistoryBtn.setAttribute('aria-hidden', 'true');
 
     const data: CalculatorLocalData = JSON.parse(
       localStorage.getItem(storageKey) ??
@@ -723,7 +722,6 @@ export function initCalculator(storageKey: string, { drawer, fab, fabClose }: Dr
 
     const clearHistoryButton = document.getElementById('calculatorClearHistory')!;
     clearHistoryButton.classList.remove('d-none');
-    clearHistoryButton.setAttribute('aria-hidden', 'false');
   }
 }
 

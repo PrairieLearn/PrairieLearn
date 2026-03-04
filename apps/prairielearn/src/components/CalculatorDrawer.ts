@@ -62,14 +62,13 @@ export function CalculatorDrawer({ storageKey }: { storageKey: string }): HtmlSa
           class="d-flex align-items-center justify-content-between px-2 py-1 border border-bottom-0 bg-body-secondary"
         >
           <span class="small text-body-secondary">History</span>
-          <span
-            class="btn-link link-danger small d-none"
+          <button
+            type="button"
+            class="btn-link link-danger small p-0 border-0 bg-transparent d-none"
             id="calculatorClearHistory"
-            role="button"
-            aria-hidden="true"
           >
             Clear all
-          </span>
+          </button>
         </div>
         <div
           id="history-panel"
