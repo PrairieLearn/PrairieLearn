@@ -90,10 +90,10 @@ export async function checkPlanGrantsForQuestion(res: Response) {
 
   const question = QuestionSchema.parse(res.locals.question);
   const requiredFeatures: PlanFeatureName[] = [];
-  if (question.external_grading_image) {
+  if (question.external_grading_image != null) {
     requiredFeatures.push('external-grading');
   }
-  if (question.workspace_image) {
+  if (question.workspace_image != null) {
     requiredFeatures.push('workspaces');
   }
 
