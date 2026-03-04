@@ -7,6 +7,7 @@ import type {
   ZoneAssessmentForm,
   ZoneQuestionBlockForm,
 } from '../../types.js';
+import type { AssessmentAdvancedDefaults } from '../../utils/formHelpers.js';
 import { findQuestionByTrackingId } from '../../utils/useAssessmentEditor.js';
 
 import { AltGroupDetailPanel } from './AltGroupDetailPanel.js';
@@ -21,6 +22,7 @@ export function DetailPanel({
   questionMetadata,
   editMode,
   assessmentType,
+  assessmentDefaults,
   urlPrefix,
   courseId,
   hasCoursePermissionPreview,
@@ -45,6 +47,7 @@ export function DetailPanel({
   questionMetadata: Record<string, StaffAssessmentQuestionRow>;
   editMode: boolean;
   assessmentType: EnumAssessmentType;
+  assessmentDefaults: AssessmentAdvancedDefaults;
   urlPrefix: string;
   courseId: string;
   hasCoursePermissionPreview: boolean;
@@ -86,6 +89,7 @@ export function DetailPanel({
         zoneIndex={zoneIndex}
         idPrefix={`zone-${zone.trackingId}`}
         editMode={editMode}
+        assessmentDefaults={assessmentDefaults}
         onUpdate={onUpdateZone}
         onDelete={onDeleteZone}
         onAddQuestion={onAddQuestion}
@@ -107,6 +111,7 @@ export function DetailPanel({
         idPrefix={`question-${question.trackingId}`}
         editMode={editMode}
         assessmentType={assessmentType}
+        assessmentDefaults={assessmentDefaults}
         urlPrefix={urlPrefix}
         hasCoursePermissionPreview={hasCoursePermissionPreview}
         onUpdate={onUpdateQuestion}
@@ -136,6 +141,7 @@ export function DetailPanel({
         idPrefix={`alt-${alternative.trackingId}`}
         editMode={editMode}
         assessmentType={assessmentType}
+        assessmentDefaults={assessmentDefaults}
         urlPrefix={urlPrefix}
         hasCoursePermissionPreview={hasCoursePermissionPreview}
         onUpdate={onUpdateQuestion}
@@ -157,6 +163,7 @@ export function DetailPanel({
         idPrefix={`altgroup-${block.trackingId}`}
         editMode={editMode}
         assessmentType={assessmentType}
+        assessmentDefaults={assessmentDefaults}
         onUpdate={onUpdateQuestion}
         onDelete={onDeleteQuestion}
         onAddAlternative={onAddToAltGroup}

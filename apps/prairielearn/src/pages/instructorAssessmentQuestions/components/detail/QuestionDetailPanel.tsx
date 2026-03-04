@@ -15,6 +15,7 @@ import type {
   ZoneQuestionBlockForm,
 } from '../../types.js';
 import {
+  type AssessmentAdvancedDefaults,
   coerceToNumber,
   extractStringComment,
   formatPointsValue,
@@ -54,6 +55,7 @@ export function QuestionDetailPanel({
   idPrefix,
   editMode,
   assessmentType,
+  assessmentDefaults,
   urlPrefix,
   hasCoursePermissionPreview,
   onUpdate,
@@ -68,6 +70,7 @@ export function QuestionDetailPanel({
   idPrefix: string;
   editMode: boolean;
   assessmentType: EnumAssessmentType;
+  assessmentDefaults: AssessmentAdvancedDefaults;
   urlPrefix: string;
   hasCoursePermissionPreview: boolean;
   onUpdate: (
@@ -165,52 +168,62 @@ export function QuestionDetailPanel({
 
   useAutoSave({ isDirty, isValid, getValues, onSave: handleSave });
 
-  const advancedInheritance: AdvancedFieldsInheritance | undefined = run(() => {
+  const advancedInheritance: AdvancedFieldsInheritance = run(() => {
     if (isAlternative) {
-      // Alternatives inherit from alt group, which may itself inherit from zone
-      const parentAdvanceScorePerc = zoneQuestionBlock.advanceScorePerc ?? zone?.advanceScorePerc;
-      const parentGradeRateMinutes = zoneQuestionBlock.gradeRateMinutes ?? zone?.gradeRateMinutes;
+      // Alternatives inherit from alt group → zone → assessment
+      const parentAdvanceScorePerc =
+        zoneQuestionBlock.advanceScorePerc ??
+        zone?.advanceScorePerc ??
+        assessmentDefaults.advanceScorePerc;
+      const parentGradeRateMinutes =
+        zoneQuestionBlock.gradeRateMinutes ??
+        zone?.gradeRateMinutes ??
+        assessmentDefaults.gradeRateMinutes;
       const parentAllowRealTimeGrading =
-        zoneQuestionBlock.allowRealTimeGrading ?? zone?.allowRealTimeGrading;
+        zoneQuestionBlock.allowRealTimeGrading ??
+        zone?.allowRealTimeGrading ??
+        assessmentDefaults.allowRealTimeGrading;
       const parentForceMaxPoints = zoneQuestionBlock.forceMaxPoints;
-      if (
-        parentAdvanceScorePerc == null &&
-        parentGradeRateMinutes == null &&
-        parentAllowRealTimeGrading == null &&
-        parentForceMaxPoints == null
-      ) {
-        return undefined;
-      }
+      const inheritedFromLabel =
+        zoneQuestionBlock.advanceScorePerc != null ||
+        zoneQuestionBlock.gradeRateMinutes != null ||
+        zoneQuestionBlock.allowRealTimeGrading != null ||
+        zoneQuestionBlock.forceMaxPoints != null
+          ? 'group'
+          : zone?.advanceScorePerc != null ||
+              zone?.gradeRateMinutes != null ||
+              zone?.allowRealTimeGrading != null
+            ? 'zone'
+            : 'assessment';
       return {
         parentAdvanceScorePerc,
         parentGradeRateMinutes,
         parentAllowRealTimeGrading,
         parentForceMaxPoints,
-        inheritedFromLabel: 'group',
+        inheritedFromLabel,
         watch,
         setValue,
         getValues,
         onSave: handleSave,
       };
     }
-    // Standalone questions inherit from zone
-    if (!zone) return undefined;
-    const parentAdvanceScorePerc = zone.advanceScorePerc;
-    const parentGradeRateMinutes = zone.gradeRateMinutes;
-    const parentAllowRealTimeGrading = zone.allowRealTimeGrading;
-    if (
-      parentAdvanceScorePerc == null &&
-      parentGradeRateMinutes == null &&
-      parentAllowRealTimeGrading == null
-    ) {
-      return undefined;
-    }
+    // Standalone questions inherit from zone → assessment
+    const parentAdvanceScorePerc = zone?.advanceScorePerc ?? assessmentDefaults.advanceScorePerc;
+    const parentGradeRateMinutes = zone?.gradeRateMinutes ?? assessmentDefaults.gradeRateMinutes;
+    const parentAllowRealTimeGrading =
+      zone?.allowRealTimeGrading ?? assessmentDefaults.allowRealTimeGrading;
+    const inheritedFromLabel =
+      zone?.advanceScorePerc != null ||
+      zone?.gradeRateMinutes != null ||
+      zone?.allowRealTimeGrading != null
+        ? 'zone'
+        : 'assessment';
     return {
       parentAdvanceScorePerc,
       parentGradeRateMinutes,
       parentAllowRealTimeGrading,
       parentForceMaxPoints: undefined,
-      inheritedFromLabel: 'zone',
+      inheritedFromLabel,
       watch,
       setValue,
       getValues,

@@ -124,6 +124,16 @@ export function resolveMaxPointsProperty(
 }
 
 /**
+ * Assessment-level default values for advanced fields that cascade
+ * down through zones, alternative groups, and questions.
+ */
+export interface AssessmentAdvancedDefaults {
+  advanceScorePerc: number | undefined;
+  gradeRateMinutes: number | undefined;
+  allowRealTimeGrading: boolean | undefined;
+}
+
+/**
  * Formats a points value (number or array) for display.
  */
 export function formatPointsValue(value: number | number[] | undefined | null): string {

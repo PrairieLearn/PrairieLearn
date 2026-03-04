@@ -60,7 +60,7 @@ export function AdvancedFields({
   errors?: FieldErrors;
   idPrefix: string;
   variant: 'question' | 'altGroup' | 'zone';
-  inheritance?: AdvancedFieldsInheritance;
+  inheritance: AdvancedFieldsInheritance;
 }) {
   const advanceScorePercRegisterProps = register('advanceScorePerc', {
     setValueAs: coerceToNumber,

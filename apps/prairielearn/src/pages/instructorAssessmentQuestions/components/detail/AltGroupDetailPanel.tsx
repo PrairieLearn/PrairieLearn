@@ -5,6 +5,7 @@ import { useForm } from 'react-hook-form';
 import type { EnumAssessmentType } from '../../../../lib/db-types.js';
 import type { ZoneAssessmentForm, ZoneQuestionBlockForm } from '../../types.js';
 import {
+  type AssessmentAdvancedDefaults,
   coerceToNumber,
   extractStringComment,
   parsePointsListValue,
@@ -39,6 +40,7 @@ export function AltGroupDetailPanel({
   idPrefix,
   editMode,
   assessmentType,
+  assessmentDefaults,
   onUpdate,
   onDelete,
   onAddAlternative,
@@ -48,6 +50,7 @@ export function AltGroupDetailPanel({
   idPrefix: string;
   editMode: boolean;
   assessmentType: EnumAssessmentType;
+  assessmentDefaults: AssessmentAdvancedDefaults;
   onUpdate: (
     questionTrackingId: string,
     question: Partial<ZoneQuestionBlockForm> | Partial<AltGroupFormData>,
@@ -91,22 +94,26 @@ export function AltGroupDetailPanel({
 
   useAutoSave({ isDirty, isValid, getValues, onSave: handleSave });
 
-  const advancedInheritance: AdvancedFieldsInheritance | undefined =
-    zone.advanceScorePerc != null ||
-    zone.gradeRateMinutes != null ||
-    zone.allowRealTimeGrading != null
-      ? {
-          parentAdvanceScorePerc: zone.advanceScorePerc,
-          parentGradeRateMinutes: zone.gradeRateMinutes,
-          parentAllowRealTimeGrading: zone.allowRealTimeGrading,
-          parentForceMaxPoints: undefined,
-          inheritedFromLabel: 'zone',
-          watch,
-          setValue,
-          getValues,
-          onSave: handleSave,
-        }
-      : undefined;
+  const parentAdvanceScorePerc = zone.advanceScorePerc ?? assessmentDefaults.advanceScorePerc;
+  const parentGradeRateMinutes = zone.gradeRateMinutes ?? assessmentDefaults.gradeRateMinutes;
+  const parentAllowRealTimeGrading =
+    zone.allowRealTimeGrading ?? assessmentDefaults.allowRealTimeGrading;
+  const advancedInheritance: AdvancedFieldsInheritance = {
+    parentAdvanceScorePerc,
+    parentGradeRateMinutes,
+    parentAllowRealTimeGrading,
+    parentForceMaxPoints: undefined,
+    inheritedFromLabel:
+      zone.advanceScorePerc != null ||
+      zone.gradeRateMinutes != null ||
+      zone.allowRealTimeGrading != null
+        ? 'zone'
+        : 'assessment',
+    watch,
+    setValue,
+    getValues,
+    onSave: handleSave,
+  };
 
   const watchedAutoPoints = watch(originalPointsProperty);
   const autoPointsPlaceholder =

@@ -3,10 +3,15 @@ import { useCallback } from 'react';
 import { useForm } from 'react-hook-form';
 
 import type { ZoneAssessmentForm } from '../../types.js';
-import { coerceToNumber, extractStringComment } from '../../utils/formHelpers.js';
+import {
+  type AssessmentAdvancedDefaults,
+  coerceToNumber,
+  extractStringComment,
+} from '../../utils/formHelpers.js';
 import { validatePositiveInteger } from '../../utils/questions.js';
 import { useAutoSave } from '../../utils/useAutoSave.js';
 
+import type { AdvancedFieldsInheritance } from './AdvancedFields.js';
 import { AdvancedFields } from './AdvancedFields.js';
 
 interface ZoneFormData {
@@ -26,6 +31,7 @@ export function ZoneDetailPanel({
   zoneIndex,
   idPrefix,
   editMode,
+  assessmentDefaults,
   onUpdate,
   onDelete,
   onAddQuestion,
@@ -35,6 +41,7 @@ export function ZoneDetailPanel({
   zoneIndex: number;
   idPrefix: string;
   editMode: boolean;
+  assessmentDefaults: AssessmentAdvancedDefaults;
   onUpdate: (zoneTrackingId: string, zone: Partial<ZoneAssessmentForm>) => void;
   onDelete: (zoneTrackingId: string) => void;
   onAddQuestion: (zoneTrackingId: string) => void;
@@ -55,6 +62,8 @@ export function ZoneDetailPanel({
   const {
     register,
     getValues,
+    watch,
+    setValue,
     formState: { errors, isDirty, isValid },
   } = useForm<ZoneFormData>({
     mode: 'onChange',
@@ -79,6 +88,18 @@ export function ZoneDetailPanel({
   );
 
   useAutoSave({ isDirty, isValid, getValues, onSave: handleSave });
+
+  const advancedInheritance: AdvancedFieldsInheritance = {
+    parentAdvanceScorePerc: assessmentDefaults.advanceScorePerc,
+    parentGradeRateMinutes: assessmentDefaults.gradeRateMinutes,
+    parentAllowRealTimeGrading: assessmentDefaults.allowRealTimeGrading,
+    parentForceMaxPoints: undefined,
+    inheritedFromLabel: 'assessment',
+    watch,
+    setValue,
+    getValues,
+    onSave: handleSave,
+  };
 
   if (!editMode) {
     return (
@@ -303,7 +324,13 @@ export function ZoneDetailPanel({
         </small>
       </div>
 
-      <AdvancedFields register={register} errors={errors} idPrefix={idPrefix} variant="zone" />
+      <AdvancedFields
+        register={register}
+        errors={errors}
+        idPrefix={idPrefix}
+        variant="zone"
+        inheritance={advancedInheritance}
+      />
 
       <div className="mt-2 mb-3 text-muted small">
         {zone.questions.length} question{zone.questions.length !== 1 ? 's' : ''} in zone

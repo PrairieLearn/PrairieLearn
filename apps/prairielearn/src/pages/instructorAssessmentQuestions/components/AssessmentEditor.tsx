@@ -41,6 +41,7 @@ import {
   createZoneWithTrackingId,
   stripTrackingIds,
 } from '../utils/dataTransform.js';
+import type { AssessmentAdvancedDefaults } from '../utils/formHelpers.js';
 import { computeChangeTracking } from '../utils/modifiedTracking.js';
 import {
   buildQuestionMetadata,
@@ -131,6 +132,19 @@ function AssessmentEditorInner({
   const changeTracking = useMemo(
     () => computeChangeTracking(initialState.zones, zones),
     [initialState.zones, zones],
+  );
+
+  const assessmentDefaults: AssessmentAdvancedDefaults = useMemo(
+    () => ({
+      advanceScorePerc: assessment.advance_score_perc ?? undefined,
+      gradeRateMinutes: assessment.json_grade_rate_minutes ?? undefined,
+      allowRealTimeGrading: assessment.json_allow_real_time_grading ?? undefined,
+    }),
+    [
+      assessment.advance_score_perc,
+      assessment.json_grade_rate_minutes,
+      assessment.json_allow_real_time_grading,
+    ],
   );
 
   const [editMode, setEditMode] = useState(false);
@@ -888,6 +902,7 @@ function AssessmentEditorInner({
                 questionMetadata={questionMetadata}
                 editMode={editMode}
                 assessmentType={assessment.type}
+                assessmentDefaults={assessmentDefaults}
                 urlPrefix={urlPrefix}
                 courseId={course.id}
                 hasCoursePermissionPreview={hasCoursePermissionPreview}
