@@ -97,7 +97,8 @@ describe('Course requests', { timeout: 60_000 }, function () {
 
       // The denied request should appear on this page
       const requestCell = response.$(`td:contains("${shortName}")`);
-      assert.isAtLeast(requestCell.length, 1);
+      assert.strictEqual(requestCell.length, 1);
+      assert.strictEqual(requestCell.text().trim(), `${shortName}: ${title}`);
     });
 
     test.sequential('course requests page shows "Updated By" column', async () => {
@@ -166,11 +167,12 @@ describe('Course requests', { timeout: 60_000 }, function () {
   describe('course request appears on the right pages', () => {
     let pendingRequestId: string;
     const pendingShortName = 'CR TEST 303';
+    const pendingTitle = 'Pending Test Course';
 
     test.sequential('insert a pending course request', async () => {
       pendingRequestId = await insertCourseRequest({
         short_name: pendingShortName,
-        title: 'Pending Test Course',
+        title: pendingTitle,
         user_id: '1',
         github_user: 'EduardoMVAz',
         first_name: 'Test',
@@ -186,7 +188,8 @@ describe('Course requests', { timeout: 60_000 }, function () {
       assert.isTrue(response.ok);
 
       const requestCell = response.$(`td:contains("${pendingShortName}")`);
-      assert.isAtLeast(requestCell.length, 1);
+      assert.strictEqual(requestCell.length, 1);
+      assert.strictEqual(requestCell.text().trim(), `${pendingShortName}: ${pendingTitle}`);
     });
 
     test.sequential('pending request appears on course requests page (all)', async () => {
@@ -194,7 +197,8 @@ describe('Course requests', { timeout: 60_000 }, function () {
       assert.isTrue(response.ok);
 
       const requestCell = response.$(`td:contains("${pendingShortName}")`);
-      assert.isAtLeast(requestCell.length, 1);
+      assert.strictEqual(requestCell.length, 1);
+      assert.strictEqual(requestCell.text().trim(), `${pendingShortName}: ${pendingTitle}`);
     });
 
     test.sequential('deny the pending request', async () => {
@@ -221,7 +225,8 @@ describe('Course requests', { timeout: 60_000 }, function () {
       assert.isTrue(response.ok);
 
       const requestCell = response.$(`td:contains("${pendingShortName}")`);
-      assert.isAtLeast(requestCell.length, 1);
+      assert.strictEqual(requestCell.length, 1);
+      assert.strictEqual(requestCell.text().trim(), `${pendingShortName}: ${pendingTitle}`);
     });
   });
 });

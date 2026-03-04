@@ -3,11 +3,17 @@ import superjson from 'superjson';
 
 import type { AdministratorRouter } from '../../trpc/administrator/index.js';
 
-export function createAdministratorTrpcClient(csrfToken: string, urlPrefix: string) {
+export function createAdministratorTrpcClient({
+  csrfToken,
+  url = '/pl/administrator/trpc',
+}: {
+  csrfToken: string;
+  url?: string;
+}) {
   return createTRPCClient<AdministratorRouter>({
     links: [
       httpLink({
-        url: `${urlPrefix}/administrator/trpc`,
+        url,
         headers: { 'X-CSRF-Token': csrfToken },
         transformer: superjson,
       }),

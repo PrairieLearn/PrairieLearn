@@ -1,6 +1,7 @@
 import { QueryClient, useMutation, useQuery } from '@tanstack/react-query';
 import clsx from 'clsx';
 import { useState } from 'react';
+import { Alert } from 'react-bootstrap';
 import { useForm } from 'react-hook-form';
 
 import { OverlayTrigger } from '@prairielearn/ui';
@@ -58,7 +59,7 @@ export function AdministratorCourses({
   courseRepoDefaultBranch: string;
 }) {
   const [queryClient] = useState(() => new QueryClient());
-  const [trpcClient] = useState(() => createAdministratorTrpcClient(trpcCsrfToken, urlPrefix));
+  const [trpcClient] = useState(() => createAdministratorTrpcClient({ csrfToken: trpcCsrfToken }));
 
   const [showInsertCoursePopover, setShowInsertCoursePopover] = useState(false);
   const [deleteCourseId, setDeleteCourseId] = useState<string | null>(null);
@@ -117,50 +118,46 @@ export function AdministratorCourses({
                   </tr>
                 </thead>
                 <tbody>
-                  {courses.map((course) => {
+                  {courses.map((row) => {
                     return (
-                      <tr key={course.id}>
+                      <tr key={row.course.id}>
                         <td>
-                          <a href={`/pl/administrator/institution/${course.institution.id}`}>
-                            {course.institution.short_name}
+                          <a href={`/pl/administrator/institution/${row.institution.id}`}>
+                            {row.institution.short_name}
                           </a>
                         </td>
                         <CourseUpdateColumn
-                          course={course}
+                          row={row}
                           columnName="short_name"
                           label="short name"
-                          href={`/pl/course/${course.id}`}
+                          href={`/pl/course/${row.course.id}`}
                         />
-                        <CourseUpdateColumn course={course} columnName="title" label="title" />
+                        <CourseUpdateColumn row={row} columnName="title" label="title" />
                         <CourseUpdateColumn
-                          course={course}
+                          row={row}
                           columnName="display_timezone"
                           label="timezone"
                         />
-                        <CourseUpdateColumn course={course} columnName="path" label="path" />
-                        <CourseUpdateColumn
-                          course={course}
-                          columnName="repository"
-                          label="repository"
-                        />
-                        <CourseUpdateColumn course={course} columnName="branch" label="branch" />
+                        <CourseUpdateColumn row={row} columnName="path" label="path" />
+                        <CourseUpdateColumn row={row} columnName="repository" label="repository" />
+                        <CourseUpdateColumn row={row} columnName="branch" label="branch" />
                         <td className="align-middle">
                           <OverlayTrigger
                             trigger="click"
                             placement="auto"
                             popover={{
-                              header: `Confirm deletion of ${course.short_name}`,
+                              header: `Confirm deletion of ${row.course.short_name}`,
                               body: (
                                 <CourseDeleteForm
-                                  id={`courseDeleteButton${course.id}`}
-                                  course={course}
+                                  id={`courseDeleteButton${row.course.id}`}
+                                  row={row}
                                   onCancel={() => setDeleteCourseId(null)}
                                 />
                               ),
                             }}
-                            show={deleteCourseId === course.id}
+                            show={deleteCourseId === row.course.id}
                             rootClose
-                            onToggle={(open) => setDeleteCourseId(open ? course.id : null)}
+                            onToggle={(open) => setDeleteCourseId(open ? row.course.id : null)}
                           >
                             <button type="button" className="btn btn-sm btn-danger text-nowrap">
                               <i className="fa fa-times" aria-hidden="true" /> Delete course
@@ -193,11 +190,11 @@ AdministratorCourses.displayName = 'AdministratorCourses';
 
 function CourseDeleteForm({
   id,
-  course,
+  row,
   onCancel,
 }: {
   id: string;
-  course: CourseWithInstitution;
+  row: CourseWithInstitution;
   onCancel: () => void;
 }) {
   const trpc = useTRPC();
@@ -216,7 +213,7 @@ function CourseDeleteForm({
 
   const onSubmit = (data: DeleteCourseFormData) => {
     mutation.mutate(
-      { courseId: course.id, confirmShortName: data.short_name },
+      { courseId: row.course.id, confirmShortName: data.short_name },
       { onSuccess: () => window.location.reload() },
     );
   };
@@ -225,7 +222,7 @@ function CourseDeleteForm({
     <form name="course-delete-form" onSubmit={handleSubmit(onSubmit)}>
       <div className="mb-3">
         <label className="form-label" htmlFor={`inputConfirm${id}`}>
-          Type "{course.short_name}" to confirm:
+          Type "{row.course.short_name}" to confirm:
         </label>
         <input
           type="text"
@@ -235,10 +232,10 @@ function CourseDeleteForm({
         />
         {errors.short_name && <div className="invalid-feedback">{errors.short_name.message}</div>}
       </div>
-      {mutation.error && (
-        <div className="alert alert-danger" role="alert">
+      {mutation.isError && (
+        <Alert variant="danger" dismissible onClose={() => mutation.reset()}>
           {mutation.error.message}
-        </div>
+        </Alert>
       )}
       <div className="d-flex justify-content-end gap-2">
         <button type="button" className="btn btn-secondary gap-2" onClick={onCancel}>
@@ -346,6 +343,8 @@ function CourseInsertForm({
             selectedInstitution && isDefaultInstitution && 'is-warning',
             errors.institution_id && 'is-invalid',
           )}
+          aria-invalid={errors.institution_id ? true : undefined}
+          aria-errormessage={errors.institution_id ? 'courseAddInstitution-error' : undefined}
           {...register('institution_id', {
             required: 'Select an institution',
             onChange: (e) => {
@@ -366,7 +365,9 @@ function CourseInsertForm({
           ))}
         </select>
         {errors.institution_id && (
-          <div className="invalid-feedback">{errors.institution_id.message}</div>
+          <div id="courseAddInstitution-error" className="invalid-feedback">
+            {errors.institution_id.message}
+          </div>
         )}
         {isDefaultInstitution && (
           <div className="form-text text-warning">
@@ -384,9 +385,15 @@ function CourseInsertForm({
           className={clsx('form-control', errors.short_name && 'is-invalid')}
           id="courseAddInputShortName"
           placeholder="XC 101"
+          aria-invalid={errors.short_name ? true : undefined}
+          aria-errormessage={errors.short_name ? 'courseAddInputShortName-error' : undefined}
           {...register('short_name', { required: 'Enter a short name' })}
         />
-        {errors.short_name && <div className="invalid-feedback">{errors.short_name.message}</div>}
+        {errors.short_name && (
+          <div id="courseAddInputShortName-error" className="invalid-feedback">
+            {errors.short_name.message}
+          </div>
+        )}
       </div>
       <div className="mb-3">
         <label className="form-label" htmlFor="courseAddInputTitle">
@@ -397,9 +404,15 @@ function CourseInsertForm({
           className={clsx('form-control', errors.title && 'is-invalid')}
           id="courseAddInputTitle"
           placeholder="Template course title"
+          aria-invalid={errors.title ? true : undefined}
+          aria-errormessage={errors.title ? 'courseAddInputTitle-error' : undefined}
           {...register('title', { required: 'Enter a title' })}
         />
-        {errors.title && <div className="invalid-feedback">{errors.title.message}</div>}
+        {errors.title && (
+          <div id="courseAddInputTitle-error" className="invalid-feedback">
+            {errors.title.message}
+          </div>
+        )}
       </div>
       <div className="mb-3">
         <label className="form-label" htmlFor="courseAddInputTimezone">
@@ -409,10 +422,14 @@ function CourseInsertForm({
           type="text"
           className={clsx('form-control', errors.display_timezone && 'is-invalid')}
           id="courseAddInputTimezone"
+          aria-invalid={errors.display_timezone ? true : undefined}
+          aria-errormessage={errors.display_timezone ? 'courseAddInputTimezone-error' : undefined}
           {...register('display_timezone', { required: 'Enter a timezone' })}
         />
         {errors.display_timezone && (
-          <div className="invalid-feedback">{errors.display_timezone.message}</div>
+          <div id="courseAddInputTimezone-error" className="invalid-feedback">
+            {errors.display_timezone.message}
+          </div>
         )}
       </div>
       <div className="mb-3">
@@ -423,9 +440,15 @@ function CourseInsertForm({
           type="text"
           className={clsx('form-control', errors.path && 'is-invalid')}
           id="courseAddInputPath"
+          aria-invalid={errors.path ? true : undefined}
+          aria-errormessage={errors.path ? 'courseAddInputPath-error' : undefined}
           {...register('path', { required: 'Enter a path' })}
         />
-        {errors.path && <div className="invalid-feedback">{errors.path.message}</div>}
+        {errors.path && (
+          <div id="courseAddInputPath-error" className="invalid-feedback">
+            {errors.path.message}
+          </div>
+        )}
       </div>
       <div className="mb-3">
         <label className="form-label" htmlFor="courseAddInputRepository">
@@ -435,9 +458,15 @@ function CourseInsertForm({
           type="text"
           className={clsx('form-control', errors.repository && 'is-invalid')}
           id="courseAddInputRepository"
+          aria-invalid={errors.repository ? true : undefined}
+          aria-errormessage={errors.repository ? 'courseAddInputRepository-error' : undefined}
           {...register('repository', { required: 'Enter a repository' })}
         />
-        {errors.repository && <div className="invalid-feedback">{errors.repository.message}</div>}
+        {errors.repository && (
+          <div id="courseAddInputRepository-error" className="invalid-feedback">
+            {errors.repository.message}
+          </div>
+        )}
       </div>
       <div className="mb-3">
         <label className="form-label" htmlFor="courseAddInputBranch">
@@ -447,14 +476,20 @@ function CourseInsertForm({
           type="text"
           className={clsx('form-control', errors.branch && 'is-invalid')}
           id="courseAddInputBranch"
+          aria-invalid={errors.branch ? true : undefined}
+          aria-errormessage={errors.branch ? 'courseAddInputBranch-error' : undefined}
           {...register('branch', { required: 'Enter a branch' })}
         />
-        {errors.branch && <div className="invalid-feedback">{errors.branch.message}</div>}
+        {errors.branch && (
+          <div id="courseAddInputBranch-error" className="invalid-feedback">
+            {errors.branch.message}
+          </div>
+        )}
       </div>
-      {mutation.error && (
-        <div className="alert alert-danger" role="alert">
+      {mutation.isError && (
+        <Alert variant="danger" dismissible onClose={() => mutation.reset()}>
           {mutation.error.message}
-        </div>
+        </Alert>
       )}
       <div className="d-flex flex-wrap gap-1">
         <button type="button" className="btn btn-secondary" onClick={onCancel}>
@@ -473,12 +508,12 @@ function CourseInsertForm({
 }
 
 function CourseUpdateColumn({
-  course,
+  row,
   columnName,
   label,
   href,
 }: {
-  course: CourseWithInstitution;
+  row: CourseWithInstitution;
   columnName: CourseColumnName;
   label: string;
   href?: string;
@@ -487,7 +522,7 @@ function CourseUpdateColumn({
 
   return (
     <td className="align-middle">
-      {href !== undefined ? <a href={href}>{course[columnName]}</a> : course[columnName]}
+      {href !== undefined ? <a href={href}>{row.course[columnName]}</a> : row.course[columnName]}
       <OverlayTrigger
         trigger="click"
         placement="auto"
@@ -495,7 +530,7 @@ function CourseUpdateColumn({
           header: `Change ${label}`,
           body: (
             <CourseUpdateColumnForm
-              course={course}
+              row={row}
               columnName={columnName}
               label={label}
               onCancel={() => setShowPopover(false)}
@@ -519,12 +554,12 @@ function CourseUpdateColumn({
 }
 
 function CourseUpdateColumnForm({
-  course,
+  row,
   columnName,
   label,
   onCancel,
 }: {
-  course: CourseWithInstitution;
+  row: CourseWithInstitution;
   columnName: CourseColumnName;
   label: string;
   onCancel: () => void;
@@ -539,13 +574,13 @@ function CourseUpdateColumnForm({
   } = useForm<UpdateCourseColumnFormData>({
     mode: 'onSubmit',
     defaultValues: {
-      value: course[columnName] ?? '',
+      value: row.course[columnName] ?? '',
     },
   });
 
   const onSubmit = (data: UpdateCourseColumnFormData) => {
     mutation.mutate(
-      { courseId: course.id, columnName, value: data.value },
+      { courseId: row.course.id, columnName, value: data.value },
       {
         onSuccess: () => {
           onCancel();
@@ -566,10 +601,10 @@ function CourseUpdateColumnForm({
         />
         {errors.value && <div className="invalid-feedback">{errors.value.message}</div>}
       </div>
-      {mutation.error && (
-        <div className="alert alert-danger" role="alert">
+      {mutation.isError && (
+        <Alert variant="danger" dismissible onClose={() => mutation.reset()}>
           {mutation.error.message}
-        </div>
+        </Alert>
       )}
       <div className="d-flex justify-content-end gap-2">
         <button type="button" className="btn btn-secondary" onClick={onCancel}>

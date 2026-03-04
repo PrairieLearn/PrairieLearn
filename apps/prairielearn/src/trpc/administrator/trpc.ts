@@ -2,7 +2,7 @@ import { TRPCError, initTRPC } from '@trpc/server';
 import type { CreateExpressContextOptions } from '@trpc/server/adapters/express';
 import superjson from 'superjson';
 
-import type { ResLocalsForPage } from '../lib/res-locals.js';
+import type { ResLocalsForPage } from '../../lib/res-locals.js';
 
 export function createContext({ res }: CreateExpressContextOptions) {
   const locals = res.locals as ResLocalsForPage<'plain'>;

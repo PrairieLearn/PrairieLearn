@@ -1,8 +1,11 @@
-import type { z } from 'zod';
+import z from 'zod';
 
-import { RawAdminCourseSchema, RawAdminInstitutionSchema } from '../../lib/client/safe-db-types.js';
+import { AdminInstitutionSchema, StaffCourseSchema } from '../../lib/client/safe-db-types.js';
 
-export const CourseWithInstitutionSchema = RawAdminCourseSchema.extend({
-  institution: RawAdminInstitutionSchema,
+export const RawCourseWithInstitutionSchema = z.object({
+  course: StaffCourseSchema,
+  institution: AdminInstitutionSchema,
 });
+export const CourseWithInstitutionSchema =
+  RawCourseWithInstitutionSchema.brand<'CourseWithInstitution'>();
 export type CourseWithInstitution = z.infer<typeof CourseWithInstitutionSchema>;

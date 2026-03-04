@@ -7,7 +7,8 @@ import {
   updateCourseRequestNote,
 } from '../../lib/course-request.js';
 import { coursePathAvailability, courseRepositoryAvailability } from '../../lib/course.js';
-import { requireAdministrator, t } from '../trpc.js';
+
+import { requireAdministrator, t } from './trpc.js';
 
 const checkRepoAvailability = t.procedure
   .use(requireAdministrator)

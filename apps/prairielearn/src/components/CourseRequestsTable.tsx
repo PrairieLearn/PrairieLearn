@@ -1,7 +1,7 @@
 import { QueryClient, useMutation, useQuery } from '@tanstack/react-query';
 import clsx from 'clsx';
 import { useState } from 'react';
-import { Dropdown, Modal } from 'react-bootstrap';
+import { Alert, Dropdown, Modal } from 'react-bootstrap';
 import { useForm } from 'react-hook-form';
 
 import { OverlayTrigger } from '@prairielearn/ui';
@@ -120,7 +120,7 @@ function CourseRequestTableRow({
   const [showApprovePopover, setShowApprovePopover] = useState(false);
 
   const [queryClient] = useState(() => new QueryClient());
-  const [trpcClient] = useState(() => createAdministratorTrpcClient(trpcCsrfToken, urlPrefix));
+  const [trpcClient] = useState(() => createAdministratorTrpcClient({ csrfToken: trpcCsrfToken }));
 
   return (
     <QueryClientProviderDebug client={queryClient}>
@@ -387,6 +387,10 @@ function CourseRequestApproveForm({
             selectedInstitution && isDefaultInstitution && 'is-warning',
             errors.institution_id && 'is-invalid',
           )}
+          aria-invalid={errors.institution_id ? true : undefined}
+          aria-errormessage={
+            errors.institution_id ? 'courseRequestAddInstitution-error' : undefined
+          }
           {...register('institution_id', {
             required: 'Select an institution',
             onChange: (e) => {
@@ -407,7 +411,9 @@ function CourseRequestApproveForm({
           ))}
         </select>
         {errors.institution_id && (
-          <div className="invalid-feedback">{errors.institution_id.message}</div>
+          <div id="courseRequestAddInstitution-error" className="invalid-feedback">
+            {errors.institution_id.message}
+          </div>
         )}
         {isDefaultInstitution && (
           <div className="form-text text-warning">
@@ -425,9 +431,15 @@ function CourseRequestApproveForm({
           className={clsx('form-control', errors.short_name && 'is-invalid')}
           id="courseRequestAddInputShortName"
           placeholder="XC 101"
+          aria-invalid={errors.short_name ? true : undefined}
+          aria-errormessage={errors.short_name ? 'courseRequestAddInputShortName-error' : undefined}
           {...register('short_name', { required: 'Enter a short name' })}
         />
-        {errors.short_name && <div className="invalid-feedback">{errors.short_name.message}</div>}
+        {errors.short_name && (
+          <div id="courseRequestAddInputShortName-error" className="invalid-feedback">
+            {errors.short_name.message}
+          </div>
+        )}
       </div>
       <div className="mb-3">
         <label className="form-label" htmlFor="courseRequestAddInputTitle">
@@ -438,9 +450,15 @@ function CourseRequestApproveForm({
           className={clsx('form-control', errors.title && 'is-invalid')}
           id="courseRequestAddInputTitle"
           placeholder="Template course title"
+          aria-invalid={errors.title ? true : undefined}
+          aria-errormessage={errors.title ? 'courseRequestAddInputTitle-error' : undefined}
           {...register('title', { required: 'Enter a title' })}
         />
-        {errors.title && <div className="invalid-feedback">{errors.title.message}</div>}
+        {errors.title && (
+          <div id="courseRequestAddInputTitle-error" className="invalid-feedback">
+            {errors.title.message}
+          </div>
+        )}
       </div>
       <div className="mb-3">
         <label className="form-label" htmlFor="courseRequestAddInputTimezone">
@@ -450,10 +468,16 @@ function CourseRequestApproveForm({
           type="text"
           className={clsx('form-control', errors.display_timezone && 'is-invalid')}
           id="courseRequestAddInputTimezone"
+          aria-invalid={errors.display_timezone ? true : undefined}
+          aria-errormessage={
+            errors.display_timezone ? 'courseRequestAddInputTimezone-error' : undefined
+          }
           {...register('display_timezone', { required: 'Enter a timezone' })}
         />
         {errors.display_timezone && (
-          <div className="invalid-feedback">{errors.display_timezone.message}</div>
+          <div id="courseRequestAddInputTimezone-error" className="invalid-feedback">
+            {errors.display_timezone.message}
+          </div>
         )}
       </div>
       <div className="mb-3">
@@ -464,9 +488,15 @@ function CourseRequestApproveForm({
           type="text"
           className={clsx('form-control', errors.path && 'is-invalid')}
           id="courseRequestAddInputPath"
+          aria-invalid={errors.path ? true : undefined}
+          aria-errormessage={errors.path ? 'courseRequestAddInputPath-error' : undefined}
           {...register('path', { required: 'Enter a path' })}
         />
-        {errors.path && <div className="invalid-feedback">{errors.path.message}</div>}
+        {errors.path && (
+          <div id="courseRequestAddInputPath-error" className="invalid-feedback">
+            {errors.path.message}
+          </div>
+        )}
       </div>
       <div className="mb-3">
         <label className="form-label" htmlFor="courseRequestAddInputRepositoryName">
@@ -476,10 +506,16 @@ function CourseRequestApproveForm({
           type="text"
           className={clsx('form-control', errors.repository_short_name && 'is-invalid')}
           id="courseRequestAddInputRepositoryName"
+          aria-invalid={errors.repository_short_name ? true : undefined}
+          aria-errormessage={
+            errors.repository_short_name ? 'courseRequestAddInputRepositoryName-error' : undefined
+          }
           {...register('repository_short_name', { required: 'Enter a repository name' })}
         />
         {errors.repository_short_name && (
-          <div className="invalid-feedback">{errors.repository_short_name.message}</div>
+          <div id="courseRequestAddInputRepositoryName-error" className="invalid-feedback">
+            {errors.repository_short_name.message}
+          </div>
         )}
       </div>
       <div className="mb-3">
@@ -494,10 +530,10 @@ function CourseRequestApproveForm({
         />
       </div>
 
-      {mutation.error && (
-        <div className="alert alert-danger" role="alert">
+      {mutation.isError && (
+        <Alert variant="danger" dismissible onClose={() => mutation.reset()}>
           {mutation.error.message}
-        </div>
+        </Alert>
       )}
       <div className="d-flex justify-content-end gap-2">
         <button type="button" className="btn btn-secondary" onClick={onCancel}>
@@ -527,10 +563,10 @@ function CourseRequestDenyForm({
 
   return (
     <>
-      {mutation.error && (
-        <div className="alert alert-danger" role="alert">
+      {mutation.isError && (
+        <Alert variant="danger" dismissible onClose={() => mutation.reset()}>
           {mutation.error.message}
-        </div>
+        </Alert>
       )}
       <div className="d-flex justify-content-end gap-2">
         <button type="button" className="btn btn-secondary" onClick={onCancel}>
@@ -636,10 +672,10 @@ function CourseRequestEditNoteForm({
           <i className="fa fa-save" aria-hidden="true" /> Save note
         </button>
       </div>
-      {mutation.error && (
-        <div className="alert alert-danger mx-2 mb-2" role="alert">
+      {mutation.isError && (
+        <Alert variant="danger" dismissible onClose={() => mutation.reset()}>
           {mutation.error.message}
-        </div>
+        </Alert>
       )}
     </div>
   );

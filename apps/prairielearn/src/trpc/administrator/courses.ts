@@ -8,7 +8,8 @@ import {
   selectCourseById,
   updateCourseColumn,
 } from '../../models/course.js';
-import { requireAdministrator, t } from '../trpc.js';
+
+import { requireAdministrator, t } from './trpc.js';
 
 const insertCourseMutation = t.procedure
   .use(requireAdministrator)

@@ -1893,7 +1893,7 @@ export async function initExpress(): Promise<Express> {
   {
     const { createExpressMiddleware } = await import('@trpc/server/adapters/express');
     const { administratorRouter } = await import('./trpc/administrator/index.js');
-    const { createContext } = await import('./trpc/trpc.js');
+    const { createContext } = await import('./trpc/administrator/trpc.js');
     const { handleTrpcError } = await import('./lib/trpc.js');
     app.use(
       '/pl/administrator/trpc',
