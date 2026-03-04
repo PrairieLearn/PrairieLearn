@@ -209,7 +209,7 @@ export async function pullAndUpdateCourse({
 }
 
 export async function courseRepositoryAvailability(repoName: string) {
-  const result = await sqldb.queryRow(
+  const result = await sqldb.queryScalar(
     sql.exists_by_course_request_repository_name,
     { repoName },
     z.boolean(),
