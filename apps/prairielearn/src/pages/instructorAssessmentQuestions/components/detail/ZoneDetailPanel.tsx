@@ -205,7 +205,8 @@ export function ZoneDetailPanel({
           <div className="invalid-feedback">{errors.bestQuestions.message}</div>
         )}
         <small className="form-text text-muted">
-          Grade only the best N questions from this zone (leave empty for all).
+          Only the N highest-scoring questions in this zone count toward the total (leave empty for
+          all).
         </small>
       </div>
 
@@ -220,7 +221,7 @@ export function ZoneDetailPanel({
           Lockpoint
         </label>
         <small className="form-text text-muted d-block">
-          Students must complete this zone before proceeding to the next.
+          Creates a one-way barrier; crossing it makes all earlier zones read-only.
         </small>
       </div>
 

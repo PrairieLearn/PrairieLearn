@@ -80,7 +80,7 @@ export function AltGroupDetailPanel({
           <dt>Alternatives</dt>
           <dd>{alternativeCount}</dd>
           <dt>Number to choose</dt>
-          <dd>{zoneQuestionBlock.numberChoose ?? `All (${alternativeCount})`}</dd>
+          <dd>{zoneQuestionBlock.numberChoose ?? 1}</dd>
           {zoneQuestionBlock.points != null && (
             <>
               <dt>{assessmentType === 'Exam' ? 'Points' : 'Auto points'}</dt>
@@ -137,7 +137,8 @@ export function AltGroupDetailPanel({
           <div className="invalid-feedback">{errors.numberChoose.message}</div>
         )}
         <small className="form-text text-muted">
-          How many of the {alternativeCount} alternatives to choose (leave empty for all).
+          How many of the {alternativeCount} alternatives to randomly choose for each student
+          (default: 1).
         </small>
       </div>
 

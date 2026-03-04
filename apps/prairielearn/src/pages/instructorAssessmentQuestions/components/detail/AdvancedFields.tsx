@@ -5,8 +5,8 @@ import { coerceToNumber } from '../../utils/formHelpers.js';
 const HELP_TEXT = {
   advanceScorePerc: {
     question: 'Minimum score percentage required to unlock the next question.',
-    altGroup: 'Minimum score percentage required to advance past this group.',
-    zone: 'Minimum score percentage required to advance past this zone.',
+    altGroup: 'Default minimum score percentage to unlock the next question.',
+    zone: 'Default minimum score percentage to unlock the next question.',
   },
   gradeRateMinutes: {
     question: 'Minimum time between grading attempts.',
@@ -14,9 +14,9 @@ const HELP_TEXT = {
     zone: 'Minimum time between grading attempts for questions in this zone.',
   },
   allowRealTimeGrading: {
-    question: 'Let students see grading results immediately after submission.',
-    altGroup: 'Let students see grading results immediately after submission.',
-    zone: 'Let students see grading results immediately for questions in this zone.',
+    question: 'Allow students to see grading results during the exam (Exams only).',
+    altGroup: 'Allow students to see grading results during the exam (Exams only).',
+    zone: 'Allow students to see grading results during the exam for questions in this zone (Exams only).',
   },
 } as const;
 
@@ -74,7 +74,7 @@ export function AdvancedFields({
             Force max points
           </label>
           <small className="form-text text-muted d-block">
-            Award full points after enough attempts, regardless of correctness.
+            Award maximum points when the assessment is regraded. Used to fix broken questions.
           </small>
         </div>
       )}
