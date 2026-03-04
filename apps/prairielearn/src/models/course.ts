@@ -167,11 +167,11 @@ export async function selectCoursesWithStaffAccess({
     );
   });
 
-  return rawCourses.map((c) => ({
-    ...c,
+  return rawCourses.map(({ course_role, ...course }) => ({
+    ...course,
     permissions_course: {
-      course_role: c.course_role,
-      ...calculateCourseRolePermissions(c.course_role),
+      course_role,
+      ...calculateCourseRolePermissions(course_role),
     },
   }));
 }
