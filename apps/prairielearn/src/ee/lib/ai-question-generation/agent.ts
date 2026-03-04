@@ -25,7 +25,7 @@ import klaw from 'klaw';
 import memoize from 'p-memoize';
 import z from 'zod';
 
-import { execute, loadSqlEquiv, queryOptionalRow, queryRow } from '@prairielearn/postgres';
+import { execute, loadSqlEquiv, queryOptionalScalar, queryRow } from '@prairielearn/postgres';
 import { run } from '@prairielearn/run';
 import * as Sentry from '@prairielearn/sentry';
 
@@ -355,7 +355,7 @@ async function createQuestionGenerationAgent({
 
   // Create a cancellation check function that queries the database
   const checkCancellation = async () => {
-    const status = await queryOptionalRow(
+    const status = await queryOptionalScalar(
       sql.select_message_status,
       { id: messageId },
       EnumAiQuestionGenerationMessageStatusSchema,

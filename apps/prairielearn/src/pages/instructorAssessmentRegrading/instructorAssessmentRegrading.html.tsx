@@ -2,7 +2,7 @@ import { z } from 'zod';
 
 import { html } from '@prairielearn/html';
 
-import { JobStatusHTML } from '../../components/JobStatus.js';
+import { JobStatusHtml } from '../../components/JobStatus.js';
 import { Modal } from '../../components/Modal.js';
 import { PageLayout } from '../../components/PageLayout.js';
 import { JobSequenceSchema, UserSchema } from '../../lib/db-types.js';
@@ -95,7 +95,7 @@ export function InstructorAssessmentRegrading({
                         <td>${jobSequence.start_date_formatted}</td>
                         <td>${jobSequence.job_sequence.description}</td>
                         <td>${jobSequence.user_uid}</td>
-                        <td>${JobStatusHTML({ status: jobSequence.job_sequence.status })}</td>
+                        <td>${JobStatusHtml({ status: jobSequence.job_sequence.status })}</td>
                         <td>
                           <a
                             href="${resLocals.urlPrefix}/jobSequence/${jobSequence.job_sequence.id}"

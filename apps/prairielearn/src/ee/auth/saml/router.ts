@@ -150,15 +150,26 @@ router.post(
     ) {
       throw new Error('Missing one or more SAML attribute mappings');
     }
-    if (!resolved.uid || !resolved.uin || !resolved.name) {
-      throw new Error('Missing one or more SAML attributes');
+    const { uid, uin, name, email } = resolved;
+    if (!uid || !uin || !name) {
+      const nameAttributeDescription =
+        institutionSamlProvider.name_attribute ||
+        `${institutionSamlProvider.given_name_attribute} + ${institutionSamlProvider.family_name_attribute}`;
+      const missingAttributes = [
+        ...(!uid ? [`uid (${institutionSamlProvider.uid_attribute})`] : []),
+        ...(!uin ? [`uin (${institutionSamlProvider.uin_attribute})`] : []),
+        ...(!name ? [`name (${nameAttributeDescription})`] : []),
+      ];
+      throw new Error(
+        `Missing values for the following SAML attributes: ${missingAttributes.join(', ')}`,
+      );
     }
 
     const authnParams = {
-      uid: resolved.uid,
-      name: resolved.name,
-      uin: resolved.uin,
-      email: resolved.email,
+      uid,
+      name,
+      uin,
+      email,
       provider: 'SAML',
       institution_id: institutionId,
     };
