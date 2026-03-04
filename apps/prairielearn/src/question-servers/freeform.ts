@@ -829,7 +829,7 @@ export async function generate(
       params: {},
       correct_answers: {},
       variant_seed: Number.parseInt(variant_seed, 36),
-      options: { ...getContextOptions(context) },
+      options: getContextOptions(context),
     } satisfies ExecutionData;
 
     return await withCodeCaller(course, async (codeCaller) => {
