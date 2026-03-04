@@ -546,9 +546,22 @@ def parse(element_html: str, data: pl.QuestionData) -> None:
     order_block_options = OrderBlocksOptions(element)
     answer_name = order_block_options.answers_name
     answer_raw_name = answer_name + "-input"
-    student_answer = data["raw_submitted_answers"].get(answer_raw_name, "[]")
+    student_answer_raw = data["raw_submitted_answers"].get(answer_raw_name, "[]")
 
-    student_answer = json.loads(student_answer)
+    try:
+        student_answer = json.loads(student_answer_raw)
+    except json.JSONDecodeError:
+        data["format_errors"][answer_name] = (
+            "Your submitted answer could not be parsed. Please ensure you have not "
+            "manually edited the submission data."
+        )
+        return
+
+    if not isinstance(student_answer, list):
+        data["format_errors"][answer_name] = (
+            "Your submitted answer has an invalid format. Please try again."
+        )
+        return
 
     if (not order_block_options.allow_blank) and (
         student_answer is None or student_answer == []
