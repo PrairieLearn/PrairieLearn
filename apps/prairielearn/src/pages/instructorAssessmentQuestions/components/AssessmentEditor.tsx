@@ -3,16 +3,17 @@ import {
   DndContext,
   type DragEndEvent,
   type DragOverEvent,
+  DragOverlay,
+  type DragStartEvent,
   KeyboardSensor,
   PointerSensor,
-  closestCenter,
   useSensor,
   useSensors,
 } from '@dnd-kit/core';
 import { sortableKeyboardCoordinates } from '@dnd-kit/sortable';
 import { QueryClient, useQuery } from '@tanstack/react-query';
 import { parseAsStringLiteral, useQueryState } from 'nuqs';
-import { useMemo, useState } from 'react';
+import { useMemo, useRef, useState } from 'react';
 
 import { run } from '@prairielearn/run';
 import { NuqsAdapter, useModalState } from '@prairielearn/ui';
@@ -56,6 +57,36 @@ import { ResetQuestionVariantsModal } from './ResetQuestionVariantsModal.js';
 import { SplitPane } from './SplitPane.js';
 import { DetailPanel } from './detail/DetailPanel.js';
 import { AssessmentTree } from './tree/AssessmentTree.js';
+
+/**
+ * Collision detection for vertical lists that uses item boundaries instead of
+ * center distances. Unlike closestCenter, this works correctly for items of
+ * different heights (e.g. a tall alt group next to a short question row).
+ */
+const verticalBoundaryCollision: CollisionDetection = (args) => {
+  const { collisionRect, droppableContainers, droppableRects } = args;
+  const centerY = collisionRect.top + collisionRect.height / 2;
+
+  const items = droppableContainers
+    .map((c) => {
+      const rect = droppableRects.get(c.id);
+      return rect ? { id: c.id, top: rect.top, bottom: rect.top + rect.height } : null;
+    })
+    .filter((item): item is NonNullable<typeof item> => item != null)
+    .sort((a, b) => a.top - b.top);
+
+  if (items.length === 0) return [];
+
+  // Use the midpoint between adjacent items as the boundary.
+  for (let i = 0; i < items.length - 1; i++) {
+    const boundary = (items[i].bottom + items[i + 1].top) / 2;
+    if (centerY < boundary) {
+      return [{ id: items[i].id }];
+    }
+  }
+
+  return [{ id: items[items.length - 1].id }];
+};
 
 interface AssessmentEditorInnerProps {
   course: StaffCourse;
@@ -104,6 +135,8 @@ function AssessmentEditorInner({
 
   const [editMode, setEditMode] = useState(false);
   const [isDragging, setIsDragging] = useState(false);
+  const [activeDragId, setActiveDragId] = useState<string | null>(null);
+  const isKeyboardDragRef = useRef(false);
   const [selectedItem, setSelectedItem] = useState<SelectedItem>(null);
   const [viewType, setViewType] = useQueryState(
     'view',
@@ -146,22 +179,24 @@ function AssessmentEditorInner({
     useSensor(KeyboardSensor, { coordinateGetter: sortableKeyboardCoordinates }),
   );
 
-  // Custom collision detection with two strategies:
-  // 1. For standalone question drags: use rect containment to detect if the dragged
-  //    item is inside an alt group's merge zone (body area). If yes, return the merge
-  //    zone so the question can be merged into the group on drop. If no, fall through
-  //    to closestCenter for normal reorder.
-  // 2. For all question drags: filter alternatives (so SortableContext provides smooth
-  //    visual reorder) and filter merge zones (handled by #1 above).
-  // 3. For other drags (alternatives, zones): filter merge zones only.
+  // Custom collision detection:
+  // 1. For standalone question drags (mouse only): check if the cursor is inside
+  //    an alt group's merge zone. If yes, return the merge zone so the question
+  //    can be merged into the group on drop. The merge zone is inset from the alt
+  //    group edges so the top/bottom resolve to reorder instead of merge.
+  // 2. Fall back to boundary-based vertical collision (not closestCenter) to
+  //    determine reorder position. closestCenter uses item centers, which breaks
+  //    for items of very different heights — tall alt groups have centers far from
+  //    their edges, making it impossible to position items immediately above/below.
   const collisionDetection: CollisionDetection = (args) => {
     const activeData = args.active.data.current;
     const activeType = activeData?.type;
 
     // For standalone questions, check merge zones via rect containment first.
-    // closestCenter doesn't work here because the merge zone overlaps with the
-    // question-level sortable and the sortable's center often wins.
-    if (activeType === 'question' && !activeData?.hasAlternatives) {
+    // Skip merge zones for keyboard drags — sortableKeyboardCoordinates can't
+    // navigate to droppables that aren't part of a SortableContext, which causes
+    // the keyboard sensor to get stuck.
+    if (activeType === 'question' && !activeData?.hasAlternatives && !isKeyboardDragRef.current) {
       const dragCenterY = args.collisionRect.top + args.collisionRect.height / 2;
       for (const container of args.droppableContainers) {
         if (container.data.current?.type !== 'merge-zone') continue;
@@ -185,7 +220,7 @@ function AssessmentEditorInner({
       return true;
     });
 
-    return closestCenter({ ...args, droppableContainers: filtered });
+    return verticalBoundaryCollision({ ...args, droppableContainers: filtered });
   };
 
   const positionByStableId = useMemo(() => {
@@ -762,13 +797,23 @@ function AssessmentEditorInner({
         sensors={sensors}
         collisionDetection={collisionDetection}
         autoScroll={false}
-        onDragStart={() => setIsDragging(true)}
+        onDragStart={(event: DragStartEvent) => {
+          setIsDragging(true);
+          setActiveDragId(String(event.active.id));
+          isKeyboardDragRef.current = event.activatorEvent instanceof KeyboardEvent;
+        }}
         onDragOver={handleDragOver}
         onDragEnd={(event: DragEndEvent) => {
           setIsDragging(false);
+          setActiveDragId(null);
+          isKeyboardDragRef.current = false;
           handleDragEnd(event);
         }}
-        onDragCancel={() => setIsDragging(false)}
+        onDragCancel={() => {
+          setIsDragging(false);
+          setActiveDragId(null);
+          isKeyboardDragRef.current = false;
+        }}
       >
         <div data-dragging={isDragging || undefined}>
           <SplitPane
@@ -843,6 +888,15 @@ function AssessmentEditorInner({
             }
           />
         </div>
+        <DragOverlay dropAnimation={null}>
+          {activeDragId ? (
+            <DragPreview
+              activeDragId={activeDragId}
+              zones={zones}
+              questionMetadata={questionMetadata}
+            />
+          ) : null}
+        </DragOverlay>
       </DndContext>
       {assessment.type === 'Homework' ? (
         <ResetQuestionVariantsModal
@@ -861,6 +915,47 @@ function AssessmentEditorInner({
       )}
     </>
   );
+}
+
+function DragPreview({
+  activeDragId,
+  zones,
+  questionMetadata,
+}: {
+  activeDragId: string;
+  zones: ZoneAssessmentForm[];
+  questionMetadata: Record<string, StaffAssessmentQuestionRow>;
+}) {
+  for (const [zoneIndex, zone] of zones.entries()) {
+    if (zone.trackingId === activeDragId) {
+      return (
+        <div className="bg-body-secondary border rounded shadow-sm px-3 py-2 fw-semibold">
+          {zone.title || `Zone ${zoneIndex + 1}`}
+        </div>
+      );
+    }
+    for (const question of zone.questions) {
+      if (question.trackingId === activeDragId) {
+        const qData = question.id ? questionMetadata[question.id] : null;
+        return (
+          <div className="bg-body border rounded shadow-sm px-3 py-2 text-truncate">
+            {qData?.question.title ?? question.id ?? 'Alternative group'}
+          </div>
+        );
+      }
+      for (const alt of question.alternatives ?? []) {
+        if (alt.trackingId === activeDragId) {
+          const altData = alt.id ? questionMetadata[alt.id] : null;
+          return (
+            <div className="bg-body border rounded shadow-sm px-3 py-2 text-truncate">
+              {altData?.question.title ?? alt.id}
+            </div>
+          );
+        }
+      }
+    }
+  }
+  return null;
 }
 
 interface AssessmentEditorProps extends AssessmentEditorInnerProps {

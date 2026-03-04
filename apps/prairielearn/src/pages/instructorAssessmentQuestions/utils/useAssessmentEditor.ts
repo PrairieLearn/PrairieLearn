@@ -98,27 +98,6 @@ function findAlternativeAcrossZones(
 }
 
 /**
- * Handles alt group shrinkage after an alternative is removed.
- * If 1 alternative remains, auto-converts to standalone question.
- */
-function handleAltGroupShrinkage(
-  zone: ZoneAssessmentForm,
-  questionIndex: number,
-  question: ZoneQuestionBlockForm,
-): void {
-  if (!question.alternatives) return;
-
-  if (question.alternatives.length === 1) {
-    const remainingAlternative = question.alternatives[0];
-    const { alternatives: _alternatives, ...groupWithoutAlternatives } = question;
-    zone.questions[questionIndex] = {
-      ...groupWithoutAlternatives,
-      ...remainingAlternative,
-    };
-  }
-}
-
-/**
  * Creates a reducer for managing assessment editor state.
  * The initialState is captured in closure for the RESET action.
  * All operations use trackingIds for stable identity instead of position indices.
@@ -217,12 +196,6 @@ function createEditorReducer(initialState: EditorState) {
           }
 
           questionResult.question.alternatives!.splice(altResult.index, 1);
-
-          handleAltGroupShrinkage(
-            questionResult.zone,
-            questionResult.questionIndex,
-            questionResult.question,
-          );
         } else {
           // Deleting a regular question or entire alternative group
           questionResult.zone.questions.splice(questionResult.questionIndex, 1);
@@ -493,9 +466,6 @@ function createEditorReducer(initialState: EditorState) {
 
         toGroupResult.question.alternatives.splice(insertIndex, 0, movedAlt);
 
-        // Handle source group shrinkage
-        handleAltGroupShrinkage(fromResult.zone, fromResult.questionIndex, fromResult.question);
-
         return {
           ...state,
           zones: newZones,
@@ -527,11 +497,6 @@ function createEditorReducer(initialState: EditorState) {
           fromResult.alternativeIndex,
           1,
         );
-
-        // Handle source group shrinkage before inserting the new question block.
-        // This must happen first because inserting before the alt group in the
-        // same zone would shift indices and make fromResult.questionIndex stale.
-        handleAltGroupShrinkage(fromResult.zone, fromResult.questionIndex, fromResult.question);
 
         // Convert to standalone question block
         const newQuestion = alternativeToQuestionBlock(removedAlt);
@@ -617,12 +582,11 @@ function createEditorReducer(initialState: EditorState) {
             return { ...state, zones: newZones };
           }
 
-          for (const [qi, question] of zone.questions.entries()) {
+          for (const [, question] of zone.questions.entries()) {
             if (!question.alternatives) continue;
             const altIndex = question.alternatives.findIndex((a) => a.id === qid);
             if (altIndex !== -1) {
               question.alternatives.splice(altIndex, 1);
-              handleAltGroupShrinkage(zone, qi, question);
               return { ...state, zones: newZones };
             }
           }

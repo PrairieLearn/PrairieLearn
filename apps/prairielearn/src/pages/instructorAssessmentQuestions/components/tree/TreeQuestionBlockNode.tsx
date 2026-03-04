@@ -158,7 +158,7 @@ export function TreeQuestionBlockNode({
         tabIndex={0}
         className={clsx(
           'tree-row d-flex align-items-center py-1 border-bottom user-select-none',
-          isAltGroupSelected ? 'bg-primary-subtle' : '',
+          isAltGroupSelected ? 'bg-primary-subtle' : 'list-group-item-action',
         )}
         style={{ paddingLeft: '2.5rem', paddingRight: '0.5rem', cursor: 'pointer' }}
         onClick={(e) => {
@@ -222,6 +222,9 @@ export function TreeQuestionBlockNode({
             assessmentType={assessmentType}
           />
         </div>
+        {!editMode && (
+          <i className="bi bi-chevron-right text-muted small ms-1" aria-hidden="true" />
+        )}
         {editMode && onAddToAltGroup && (
           <button
             type="button"

@@ -111,7 +111,7 @@ export function TreeZoneNode({
           tabIndex={0}
           className={clsx(
             'tree-row d-flex align-items-center px-2 py-2 border-bottom user-select-none',
-            isSelected ? 'bg-primary-subtle' : 'bg-body-secondary',
+            isSelected ? 'bg-primary-subtle' : 'bg-body-secondary list-group-item-action',
           )}
           style={{ cursor: 'pointer', position: 'sticky', top: 0, zIndex: 10 }}
           onClick={(e) => {
@@ -157,14 +157,21 @@ export function TreeZoneNode({
             )}
           </span>
           <span className="d-inline-flex align-items-center gap-1 flex-wrap">
-            <span className="badge text-bg-light text-muted">
-              {zone.numberChoose == null
-                ? run(() => {
-                    const count = computeZoneQuestionCount(zone.questions);
-                    return `${count} question${count !== 1 ? 's' : ''}`;
-                  })
-                : `Choose ${zone.numberChoose}`}
-            </span>
+            {run(() => {
+              if (zone.numberChoose != null) {
+                return (
+                  <span className="badge text-bg-light text-muted">Choose {zone.numberChoose}</span>
+                );
+              }
+              const count = computeZoneQuestionCount(zone.questions);
+              // ZonePointsBadge already shows "No questions" when the zone is empty.
+              if (count === 0) return null;
+              return (
+                <span className="badge text-bg-light text-muted">
+                  {count} question{count !== 1 ? 's' : ''}
+                </span>
+              );
+            })}
             <ZonePointsBadge zone={zone} assessmentType={assessmentType} />
             {zone.maxPoints != null && (
               <span className="badge text-bg-secondary">Max {zone.maxPoints} pts</span>
@@ -179,6 +186,9 @@ export function TreeZoneNode({
               </span>
             )}
           </span>
+          {!editMode && (
+            <i className="bi bi-chevron-right text-muted small ms-1" aria-hidden="true" />
+          )}
           {editMode && (
             <button
               type="button"
@@ -235,7 +245,7 @@ export function TreeZoneNode({
                   type="button"
                   onClick={() => onAddQuestion(zone.trackingId)}
                 >
-                  <i className="bi bi-plus me-1" aria-hidden="true" />
+                  <i className="bi bi-plus-lg me-1" aria-hidden="true" />
                   Add question
                 </button>
                 <button
