@@ -36,6 +36,7 @@
   },
   "knip.configFilePath": ".knip.ts",
   "knip.requireConfig": true,
+  "knip.codeLens.enabled": false,
   "java.project.resourceFilters": ["node_modules", "\\.git", "exampleCourse"],
   "java.project.referencedLibraries": ["graders/java/libs/*.jar"],
   "java.project.sourcePaths": ["graders/java"],

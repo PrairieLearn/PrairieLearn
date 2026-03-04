@@ -32,6 +32,7 @@ jobs:
         with:
           # This makes Actions fetch all Git history so that Changesets can generate changelogs with the correct commits
           fetch-depth: 0
+          fetch-tags: false
           show-progress: false
 
       - name: Install additional dependencies
@@ -69,9 +70,20 @@ jobs:
         with:
           sizes-path: apps/prairielearn/public/build/sizes.json
           token: ${{ secrets.GITHUB_TOKEN }}
+          report-path: ${{ runner.temp }}/bundle-sizes-section.md
+
+      - name: Upload CI report artifact
+        if: github.event_name == 'pull_request'
+        uses: actions/upload-artifact@v7
+        with:
+          name: ci-report-bundle-sizes
+          path: ${{ runner.temp }}/bundle-sizes-section.md
+          retention-days: 1
 
       - name: Run the JavaScript linter
         run: make lint-js
+      - name: Run the Mustache linter
+        run: make lint-mustache
       - name: Run the links linter
         run: make lint-links
 

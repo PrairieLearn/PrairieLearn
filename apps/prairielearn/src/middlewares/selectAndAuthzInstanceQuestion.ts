@@ -6,18 +6,19 @@ import * as error from '@prairielearn/error';
 import * as sqldb from '@prairielearn/postgres';
 import { IdSchema } from '@prairielearn/zod';
 
+import { assessmentInstanceLabel } from '../lib/assessment.shared.js';
 import {
   AssessmentInstanceSchema,
   AssessmentQuestionSchema,
   AssessmentSchema,
   AssessmentSetSchema,
+  EnumQuestionAccessModeSchema,
   FileSchema,
   type GroupConfig,
   GroupSchema,
   InstanceQuestionSchema,
   QuestionSchema,
   SprocAuthzAssessmentInstanceSchema,
-  SprocInstanceQuestionsNextAllowedGradeSchema,
   SprocUsersGetDisplayedRoleSchema,
   UserSchema,
 } from '../lib/db-types.js';
@@ -39,11 +40,11 @@ const InstanceQuestionInfoSchema = z.object({
   }),
   next_instance_question: z.object({
     id: IdSchema.nullable(),
-    sequence_locked: z.boolean().nullable(),
+    question_access_mode: EnumQuestionAccessModeSchema.nullable(),
   }),
   question_number: z.string(),
   advance_score_perc: z.number().nullable(),
-  sequence_locked: z.boolean(),
+  question_access_mode: EnumQuestionAccessModeSchema,
   instructor_question_number: z.string(),
 });
 type InstanceQuestionInfo = z.infer<typeof InstanceQuestionInfoSchema>;
@@ -59,21 +60,19 @@ const SelectAndAuthzInstanceQuestionSchema = z.object({
   instance_role: SprocUsersGetDisplayedRoleSchema,
   instance_group: GroupSchema.nullable(),
   instance_group_uid_list: z.array(z.string()),
-  instance_question: z.object({
-    ...SprocInstanceQuestionsNextAllowedGradeSchema.shape,
-    ...InstanceQuestionSchema.shape,
-  }),
+  instance_question: InstanceQuestionSchema,
   instance_question_info: InstanceQuestionInfoSchema,
   assessment_question: AssessmentQuestionSchema,
   question: QuestionSchema,
   assessment: AssessmentSchema,
   assessment_set: AssessmentSetSchema,
   authz_result: SprocAuthzAssessmentInstanceSchema,
-  assessment_instance_label: z.string(),
   file_list: z.array(FileSchema),
 });
 
 export type ResLocalsInstanceQuestion = z.infer<typeof SelectAndAuthzInstanceQuestionSchema> & {
+  assessment_instance_label: string;
+
   instance_question_info: InstanceQuestionInfo & {
     previous_variants?: SimpleVariantWithScore[];
   };
@@ -103,7 +102,13 @@ export async function selectAndAuthzInstanceQuestion(req: Request, res: Response
   // TODO: consider row.assessment.modern_access_control
   if (!row.authz_result.authorized) throw new error.HttpStatusError(403, 'Access denied');
 
-  Object.assign(res.locals, row);
+  Object.assign(res.locals, row, {
+    assessment_instance_label: assessmentInstanceLabel(
+      row.assessment_instance,
+      row.assessment,
+      row.assessment_set,
+    ),
+  });
   if (res.locals.assessment.team_work) {
     res.locals.group_config = await getGroupConfig(res.locals.assessment.id);
     res.locals.group_info = await getGroupInfo(

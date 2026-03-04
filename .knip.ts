@@ -27,7 +27,7 @@ const REFERENCED_NODE_MODULES_DEPS = [
 const _FALSE_NEGATIVE_ELEMENT_DEPS = ['backbone', 'mersenne', 'numeric', 'popper.js'];
 
 // These packages are just used for their CLI tools, so we still want them installed.
-const _FALSE_NEGATIVE_CLI_DEPS = ['htmlhint', 'markdownlint-cli', 'pyright', 's3rver'];
+const _FALSE_NEGATIVE_CLI_DEPS = ['htmlhint', 'markdownlint-cli2', 'pyright', 's3rver'];
 
 // We want extract all dependencies of our elements, and mark them as used.
 // See https://github.com/webpro-nl/knip/issues/641 and https://github.com/webpro-nl/knip/pull/1220
@@ -79,10 +79,11 @@ for (const dep of REFERENCED_NODE_MODULES_DEPS) {
 }
 
 const config: KnipConfig = {
+  tags: ['-knipignore'],
   workspaces: {
     '.': {
-      entry: [],
-      project: [],
+      entry: ['scripts/*.{mts,mjs}'],
+      project: ['scripts/*.{mts,mjs}'],
       // https://knip.dev/guides/configuring-project-files#ignore-issues-in-specific-files
       ignore: ['vitest.config.ts', 'eslint.config.mjs'],
     },
@@ -96,7 +97,6 @@ const config: KnipConfig = {
         'src/question-servers/calculation-worker.ts',
       ],
       ignore: [
-        'src/lib/no-deprecated-sql.d.ts',
         'src/ee/pages/instructorAiGenerateDraftEditor/RichTextEditor/extensions/react-rendered-component-sample.tsx',
         // We have lots of aliases in this file
         'src/lib/client/safe-db-types.ts',
@@ -110,6 +110,9 @@ const config: KnipConfig = {
       project: ['**/*.{ts,cts,mts,tsx}'],
     },
     'apps/grader-host': {
+      project: ['**/*.{ts,cts,mts,tsx}'],
+    },
+    'packages/*': {
       project: ['**/*.{ts,cts,mts,tsx}'],
     },
     'packages/migrations': {
@@ -136,7 +139,7 @@ const config: KnipConfig = {
     // ...FALSE_NEGATIVE_CLI_DEPS,
   ],
   // TODO: enable these features
-  exclude: ['binaries', 'dependencies', 'exports', 'types'],
+  exclude: ['binaries', 'dependencies', 'unlisted'],
 };
 
 export default config;

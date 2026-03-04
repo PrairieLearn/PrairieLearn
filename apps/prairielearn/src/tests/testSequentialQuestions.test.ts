@@ -36,7 +36,7 @@ describe(
 
     beforeAll(async function () {
       await helperServer.before()();
-      const assessmentId = await sqldb.queryRow(sql.select_sequential_exam, IdSchema);
+      const assessmentId = await sqldb.queryScalar(sql.select_sequential_exam, IdSchema);
       context.assessmentId = assessmentId;
       context.assessmentUrl = `${context.courseInstanceBaseUrl}/assessment/${context.assessmentId}/`;
       context.instructorAssessmentQuestionsUrl = `${context.courseInstanceBaseUrl}/instructor/assessment/${context.assessmentId}/questions/`;
@@ -76,7 +76,7 @@ describe(
       context.instanceQuestions = results.map((e) => {
         return {
           id: Number(e.instance_question_id),
-          locked: Boolean(e.sequence_locked),
+          locked: e.question_access_mode === 'blocked_sequence',
           url: `${context.courseInstanceBaseUrl}/instance_question/${e.instance_question_id}/`,
         };
       });
@@ -116,6 +116,7 @@ describe(
 
         const computedLocks = response
           .$('table[data-testid="assessment-questions"] tbody tr')
+          .filter((i, elem) => response.$(elem).find('td').length > 0)
           .map((i, elem) => {
             return response.$(elem).hasClass('pl-sequence-locked');
           })
@@ -123,7 +124,11 @@ describe(
         assert.deepEqual(computedLocks, initialExpectedLocks);
 
         assert.include(
-          response.$('table[data-testid="assessment-questions"] tbody tr:nth-child(3)').html(),
+          response
+            .$('table[data-testid="assessment-questions"] tbody tr')
+            .filter((i, elem) => response.$(elem).find('td').length > 0)
+            .eq(2)
+            .html(),
           '60% on Question 2',
         );
       },

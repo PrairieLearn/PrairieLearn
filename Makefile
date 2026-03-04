@@ -109,7 +109,7 @@ update-jsonschema:
 	@yarn dlx tsx scripts/gen-jsonschema.mts && yarn prettier --write "apps/prairielearn/src/schemas/**/*.json" && yarn prettier --write "docs/assets/*.schema.json"
 
 # Runs additional third-party linters
-lint-all: lint-js lint-python lint-html lint-docs lint-docker lint-actions lint-shell lint-sql-migrations lint-sql
+lint-all: lint-js lint-python lint-html lint-mustache lint-docs lint-docker lint-actions lint-shell lint-sql-migrations lint-sql
 
 lint: lint-js lint-python lint-html lint-links lint-changeset
 lint-js:
@@ -127,8 +127,10 @@ lint-docs-links: build-docs
 # Lint HTML files, and the build output of the docs
 lint-html:
 	@yarn htmlhint "testCourse/**/question.html" "exampleCourse/**/question.html" "site"
+lint-mustache:
+	@yarn htmlmustache check
 lint-markdown:
-	@yarn markdownlint --ignore "**/node_modules/**" --ignore exampleCourse --ignore testCourse --ignore "**/dist/**" --ignore "**/test-results/**" --ignore .claude "**/*.md"
+	@yarn markdownlint-cli2
 lint-links:
 	@node scripts/validate-links.mjs
 lint-docker:
@@ -145,7 +147,7 @@ lint-changeset:
 	@yarn changeset status
 
 # Runs additional third-party formatters
-format-all: format-js format-python format-sql
+format-all: format-js format-python format-sql format-mustache
 
 format: format-js format-python
 format-sql:
@@ -158,6 +160,9 @@ format-js:
 format-js-cached:
 	@yarn eslint --ext js --fix --cache --cache-strategy content "**/*.{js,jsx,ts,tsx,mjs,cjs,mts,cts,html,mustache}"
 	@yarn prettier --write --cache --cache-strategy content "**/*.{js,jsx,ts,tsx,mjs,cjs,mts,cts,md,sql,json,yml,toml,html,css,scss,sh}"
+
+format-mustache:
+	@yarn htmlmustache format --write
 
 format-python:
 	@uv run ruff check --fix ./
@@ -185,14 +190,21 @@ changeset:
 lint-docs: lint-d2 lint-links lint-markdown lint-docs-links
 
 build-docs:
-	@uv run mkdocs build --strict
+	@NO_MKDOCS_2_WARNING=1 uv run mkdocs build --strict
 dev-docs:
-	@uv run mkdocs serve --livereload
+	@NO_MKDOCS_2_WARNING=1 uv run mkdocs serve --livereload
 
 format-d2:
 	@d2 fmt docs/**/*.d2
 lint-d2:
 	@d2 fmt --check docs/**/*.d2
 
+
+dangerous-drop-all-dbs:
+	@echo "Dropping all databases matching 'prairielearn_%'..."
+	@psql -h localhost -U postgres -tAc "SELECT datname FROM pg_database WHERE datname LIKE 'prairielearn_%'" | while read db; do \
+		echo "Dropping $$db"; \
+		psql -h localhost -U postgres -c "DROP DATABASE \"$$db\""; \
+	done
 
 ci: lint typecheck check-dependencies test

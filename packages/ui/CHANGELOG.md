@@ -1,5 +1,31 @@
 # @prairielearn/ui
 
+## 3.2.1
+
+### Patch Changes
+
+- 3c4799a: Upgrade all JavaScript dependencies
+- bfcdf32: Return no-op onChange handler in useShiftClickCheckbox
+- Updated dependencies [3c4799a]
+  - @prairielearn/browser-utils@2.7.1
+  - @prairielearn/run@2.0.2
+
+## 3.2.0
+
+### Minor Changes
+
+- c078fcb: Add `pinnedIds` prop to `FilterDropdown` to pin specific items at the top of the list
+- c078fcb: Add `FilterDropdown` component
+
+## 3.1.5
+
+### Patch Changes
+
+- e28f2e2: Replace `JSX.Element` with `ReactNode` in component type definitions
+- Updated dependencies [ad329f9]
+- Updated dependencies [7b937fb]
+  - @prairielearn/browser-utils@2.7.0
+
 ## 3.1.4
 
 ### Patch Changes

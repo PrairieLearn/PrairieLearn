@@ -77,6 +77,14 @@ export type EnumModeReason = z.infer<typeof EnumModeReasonSchema>;
 export const EnumPlanGrantTypeSchema = z.enum(['trial', 'stripe', 'invoice', 'gift']);
 export type EnumPlanGrantType = z.infer<typeof EnumPlanGrantTypeSchema>;
 
+export const EnumQuestionAccessModeSchema = z.enum([
+  'default',
+  'blocked_sequence',
+  'blocked_lockpoint',
+  'read_only_lockpoint',
+]);
+export type EnumQuestionAccessMode = z.infer<typeof EnumQuestionAccessModeSchema>;
+
 export const EnumQuestionTypeSchema = z.enum([
   'Calculation',
   'MultipleChoice',
@@ -95,17 +103,6 @@ export const JsonCommentSchema = z.union([z.string(), z.array(z.any()), z.record
 // *******************************************************************************
 // Sproc schemas. These should be alphabetized by their corresponding sproc name.
 // *******************************************************************************
-
-// Result of assessments_format_for_question sproc
-export const SprocAssessmentsFormatForQuestionSchema = z.array(
-  z.object({
-    assessment_id: IdSchema,
-    color: z.string(),
-    course_instance_id: IdSchema,
-    label: z.string(),
-    share_source_publicly: z.boolean(),
-  }),
-);
 
 // Result of check_assessment_access sproc
 const SprocCheckAssessmentAccessSchema = z.object({
@@ -179,7 +176,9 @@ export const SprocIpToModeSchema = z.object({
 export type SprocIpToMode = z.infer<typeof SprocIpToModeSchema>;
 
 // Result of users_is_instructor_in_course_instance sproc
-export const SprocUsersIsInstructorInCourseInstanceSchema = z.boolean();
+export const SprocUsersIsInstructorInCourseInstanceSchema = z.object({
+  is_instructor: z.boolean(),
+});
 
 // Result of users_select_or_insert sproc
 export const SprocUsersSelectOrInsertSchema = z.object({
@@ -191,9 +190,9 @@ export const SprocUsersSelectOrInsertSchema = z.object({
 // Result of question_order sproc
 export const SprocQuestionOrderSchema = z.object({
   instance_question_id: IdSchema,
+  question_access_mode: EnumQuestionAccessModeSchema,
   question_number: z.string(),
   row_order: z.number().int(),
-  sequence_locked: z.boolean(),
 });
 
 // Result of server_loads_current sproc
@@ -207,7 +206,9 @@ export const SprocServerLoadsCurrentSchema = z.object({
 });
 
 // Result of sync_assessments sproc
-export const SprocSyncAssessmentsSchema = z.record(z.string(), IdSchema).nullable();
+export const SprocSyncAssessmentsSchema = z.object({
+  name_to_id_map: z.record(z.string(), IdSchema).nullable(),
+});
 
 // Result of authz_course_instance sproc
 export const SprocAuthzCourseInstanceSchema = z.object({
@@ -219,20 +220,11 @@ export const SprocAuthzCourseInstanceSchema = z.object({
 });
 export type SprocAuthzCourseInstance = z.infer<typeof SprocAuthzCourseInstanceSchema>;
 
-// Result of instance_questions_next_allowed_grade sproc
-export const SprocInstanceQuestionsNextAllowedGradeSchema = z.object({
-  allow_grade_date: DateFromISOString.nullable(),
-  allow_grade_interval: z.string(),
-  allow_grade_left_ms: z.coerce.number(),
-});
-
 // *******************************************************************************
 // Database table schemas. These should be alphabetized by their corresponding
 // table name. For instance, `TeamSchema` should come before `TeamConfigSchema`
 // because `Team` comes before `TeamConfig` alphabetically.
 // *******************************************************************************
-
-export const AccessLogSchema = null;
 
 export const AccessTokenSchema = z.object({
   created_at: DateFromISOString,
@@ -304,7 +296,7 @@ export const AlternativeGroupSchema = z.object({
   json_max_points: z.number().nullable(),
   json_points: z.union([z.number(), z.array(z.number())]).nullable(),
   json_tries_per_variant: z.number().nullable(),
-  number: z.number().nullable(),
+  number: z.number(),
   number_choose: z.number().nullable(),
   zone_id: IdSchema,
 });
@@ -392,6 +384,17 @@ export const AssessmentAccessRuleSchema = z.object({
 });
 export type AssessmentAccessRule = z.infer<typeof AssessmentAccessRuleSchema>;
 
+export const AssessmentInstanceCrossedLockpointSchema = z.object({
+  assessment_instance_id: IdSchema,
+  authn_user_id: IdSchema,
+  crossed_at: DateFromISOString,
+  id: IdSchema,
+  zone_id: IdSchema,
+});
+export type AssessmentInstanceCrossedLockpoint = z.infer<
+  typeof AssessmentInstanceCrossedLockpointSchema
+>;
+
 export const AssessmentInstanceSchema = z.object({
   assessment_id: IdSchema,
   auth_user_id: IdSchema.nullable(),
@@ -409,7 +412,7 @@ export const AssessmentInstanceSchema = z.object({
   max_points: z.number().nullable(),
   mode: EnumModeSchema.nullable(),
   modified_at: DateFromISOString,
-  number: z.number().nullable(),
+  number: z.number(),
   open: z.boolean().nullable(),
   points: z.number().nullable(),
   score_perc: z.number().nullable(),
@@ -425,7 +428,7 @@ export const AssessmentModuleSchema = z.object({
   id: IdSchema,
   implicit: z.boolean(),
   name: z.string(),
-  number: z.number().nullable(),
+  number: z.number(),
 });
 export type AssessmentModule = z.infer<typeof AssessmentModuleSchema>;
 
@@ -661,7 +664,7 @@ export const CourseInstanceAccessRuleSchema = z.object({
   id: IdSchema,
   institution: z.string().nullable(),
   json_comment: JsonCommentSchema.nullable(),
-  number: z.number().nullable(),
+  number: z.number(),
   start_date: DateFromISOString.nullable(),
   uids: z.string().array().nullable(),
 });
@@ -765,11 +768,11 @@ export const EnrollmentSchema = z.object({
 export type Enrollment = z.infer<typeof EnrollmentSchema>;
 
 export const ExamModeNetworkSchema = z.object({
-  created_at: DateFromISOString,
-  during: z.unknown(), // https://github.com/PrairieLearn/PrairieLearn/pull/12437#discussion_r2219773815
+  created_at: DateFromISOString.nullable(),
+  during: z.unknown().nullable(), // https://github.com/PrairieLearn/PrairieLearn/pull/12437#discussion_r2219773815
   id: IdSchema,
   location: z.string().nullable(),
-  network: z.string().cidr(),
+  network: z.string().cidr().nullable(),
   purpose: z.string().nullable(),
 });
 export type ExamModeNetwork = z.infer<typeof ExamModeNetworkSchema>;
@@ -1102,7 +1105,7 @@ export const JobSequenceSchema = z.object({
   finish_date: DateFromISOString.nullable(),
   id: IdSchema,
   legacy: z.boolean(),
-  number: z.number().nullable(),
+  number: z.number(),
   start_date: DateFromISOString.nullable(),
   status: EnumJobStatusSchema.nullable(),
   type: z.string().nullable(),
@@ -1271,7 +1274,7 @@ export const QuestionSchema = z.object({
   directory: z.string().nullable(),
   draft: z.boolean(),
   external_grading_enable_networking: z.boolean().nullable(),
-  external_grading_enabled: z.boolean().nullable(),
+  external_grading_enabled: z.boolean(),
   external_grading_entrypoint: z.string().nullable(),
   external_grading_environment: z.record(z.string(), z.string().nullable()),
   external_grading_files: z.any().nullable(),
@@ -1369,6 +1372,8 @@ export type RubricItem = z.infer<typeof RubricItemSchema>;
 export const SamlProviderSchema = z.object({
   certificate: z.string(),
   email_attribute: z.string().nullable(),
+  family_name_attribute: z.string().nullable(),
+  given_name_attribute: z.string().nullable(),
   id: IdSchema,
   institution_id: IdSchema,
   issuer: z.string(),
@@ -1411,6 +1416,22 @@ export const StripeCheckoutSessionSchema = z.object({
 });
 export type StripeCheckoutSession = z.infer<typeof StripeCheckoutSessionSchema>;
 
+export const StudentLabelSchema = z.object({
+  color: z.string(),
+  course_instance_id: IdSchema,
+  id: IdSchema,
+  name: z.string(),
+  uuid: z.string(),
+});
+export type StudentLabel = z.infer<typeof StudentLabelSchema>;
+
+export const StudentLabelEnrollmentSchema = z.object({
+  enrollment_id: IdSchema,
+  id: IdSchema,
+  student_label_id: IdSchema,
+});
+export type StudentLabelEnrollment = z.infer<typeof StudentLabelEnrollmentSchema>;
+
 export const SubmissionSchema = z.object({
   auth_user_id: IdSchema.nullable(),
   broken: z.boolean().nullable(),
@@ -1450,7 +1471,7 @@ export const TagSchema = z.object({
   implicit: z.boolean(),
   json_comment: JsonCommentSchema.nullable(),
   name: z.string(),
-  number: z.number().nullable(),
+  number: z.number(),
 });
 export type Tag = z.infer<typeof TagSchema>;
 
@@ -1464,7 +1485,7 @@ export const TopicSchema = z.object({
   implicit: z.boolean(),
   json_comment: JsonCommentSchema.nullable(),
   name: z.string(),
-  number: z.number().nullable(),
+  number: z.number(),
 });
 export type Topic = z.infer<typeof TopicSchema>;
 
@@ -1523,8 +1544,6 @@ export const VariantSchema = z.object({
   workspace_id: IdSchema.nullable(),
 });
 export type Variant = z.infer<typeof VariantSchema>;
-
-export const VariantViewLogSchema = null;
 
 export const WorkspaceSchema = z.object({
   created_at: DateFromISOString,
@@ -1589,6 +1608,7 @@ export const ZoneSchema = z.object({
   json_can_view: z.string().array().nullable(),
   json_comment: JsonCommentSchema.nullable(),
   json_grade_rate_minutes: z.number().nullable(),
+  lockpoint: z.boolean(),
   max_points: z.number().nullable(),
   number: z.number(),
   number_choose: z.number().nullable(),
@@ -1601,7 +1621,6 @@ export type Zone = z.infer<typeof ZoneSchema>;
 // *******************************************************************************
 
 export const TableNames = [
-  'access_logs',
   'access_tokens',
   'administrators',
   'ai_grading_jobs',
@@ -1609,6 +1628,7 @@ export const TableNames = [
   'ai_question_generation_prompts',
   'alternative_groups',
   'assessment_access_rules',
+  'assessment_instance_crossed_lockpoints',
   'assessment_instances',
   'assessment_modules',
   'assessment_question_role_permissions',
@@ -1688,13 +1708,14 @@ export const TableNames = [
   'sharing_set_questions',
   'sharing_sets',
   'stripe_checkout_sessions',
+  'student_label_enrollments',
+  'student_labels',
   'submissions',
   'tags',
   'time_series',
   'topics',
   'user_sessions',
   'users',
-  'variant_view_logs',
   'variants',
   'workspace_host_logs',
   'workspace_hosts',

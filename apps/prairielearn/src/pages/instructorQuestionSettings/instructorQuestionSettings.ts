@@ -453,7 +453,11 @@ router.get(
       `questions/${res.locals.question.qid}`,
     );
 
-    const qids = await sqldb.queryRows(sql.qids, { course_id: res.locals.course.id }, z.string());
+    const qids = await sqldb.queryScalars(
+      sql.qids,
+      { course_id: res.locals.course.id },
+      z.string(),
+    );
 
     const assessmentsWithQuestion = await sqldb.queryRows(
       sql.select_assessments_with_question_for_display,

@@ -6,7 +6,7 @@ FROM
   assessments AS a
   JOIN assessment_sets AS aset ON aset.id = a.assessment_set_id
 WHERE
-  a.course_instance_id = 1
+  a.course_instance_id = $course_instance_id
 ORDER BY
   a.id
 LIMIT
@@ -32,7 +32,7 @@ INSERT INTO
     first_joined_at
   )
 VALUES
-  ($user_id, 1, 'joined', NOW())
+  ($user_id, $course_instance_id, 'joined', NOW())
 ON CONFLICT DO NOTHING;
 
 -- BLOCK insert_assessment_instance
@@ -40,6 +40,7 @@ INSERT INTO
   assessment_instances (
     assessment_id,
     user_id,
+    number,
     score_perc,
     points,
     max_points
@@ -48,7 +49,9 @@ VALUES
   (
     $assessment_id,
     $user_id,
+    1,
     $score_perc,
     $score_perc,
     100
-  );
+  )
+ON CONFLICT DO NOTHING;

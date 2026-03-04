@@ -2,6 +2,7 @@ import { z } from 'zod';
 
 import {
   ConfigLoader,
+  type ConfigSource,
   makeEnvConfigSource,
   makeFileConfigSource,
   makeImdsConfigSource,
@@ -11,7 +12,7 @@ import { logger } from '@prairielearn/logger';
 
 import { EXAMPLE_COURSE_PATH, TEST_COURSE_PATH } from './paths.js';
 
-export const DEV_MODE = process.env.NODE_ENV !== 'production';
+const DEV_MODE = process.env.NODE_ENV !== 'production';
 
 // We don't compare against 'test' since we use the 'MODE' environment variable
 // for running a subset of our tests.
@@ -599,14 +600,14 @@ export const ConfigSchema = z.object({
       'gpt-5.2-2025-12-11': TokenPricingSchema,
       'gemini-2.5-flash': TokenPricingSchema,
       'gemini-3-flash-preview': TokenPricingSchema,
-      'gemini-3-pro-preview': TokenPricingSchema,
+      'gemini-3.1-pro-preview': TokenPricingSchema,
       'claude-opus-4-5': TokenPricingSchema,
       'claude-haiku-4-5': TokenPricingSchema,
       'claude-sonnet-4-5': TokenPricingSchema,
     })
     .default({
       // Prices current as of 2025-11-26. Values obtained from
-      // https://platform.openai.com/docs/pricing
+      // https://developers.openai.com/api/docs/pricing
       // OpenAI does not charge for cache writes.
       'gpt-4o-2024-11-20': { input: 2.5, cachedInput: 1.25, cacheWrite: 0, output: 10 },
       'gpt-5-mini-2025-08-07': { input: 0.25, cachedInput: 0.025, cacheWrite: 0, output: 2 },
@@ -619,7 +620,7 @@ export const ConfigSchema = z.object({
       // Google does not charge for cache writes.
       'gemini-2.5-flash': { input: 0.3, cachedInput: 0.03, cacheWrite: 0, output: 2.5 },
       'gemini-3-flash-preview': { input: 0.5, cachedInput: 0.05, cacheWrite: 0, output: 3 },
-      'gemini-3-pro-preview': { input: 2, cachedInput: 0.2, cacheWrite: 0, output: 12 },
+      'gemini-3.1-pro-preview': { input: 2, cachedInput: 0.2, cacheWrite: 0, output: 12 },
 
       // Prices current as of 2025-11-25. Values obtained from
       // https://www.anthropic.com/pricing#api
@@ -638,15 +639,40 @@ const loader = new ConfigLoader(ConfigSchema);
 export const config = loader.config;
 
 /**
- * Attempts to load config from all our sources, including the given paths.
- *
- * @param paths Paths to JSON config files to try to load.
+ * Creates a config source that derives database and Redis settings from
+ * CONDUCTOR_WORKSPACE_NAME and CONDUCTOR_PORT.
+ * This enables isolated databases per Conductor workspace.
  */
+function makeConductorConfigSource(): ConfigSource<Config> {
+  return {
+    load: async (existingConfig) => {
+      const workspaceName = process.env.CONDUCTOR_WORKSPACE_NAME;
+      if (!workspaceName) return {};
+
+      const dbSuffix = workspaceName
+        .toLowerCase()
+        .replaceAll(/[^a-z0-9_]/g, '_')
+        .slice(0, 50);
+      const port = Number.parseInt(existingConfig.serverPort);
+      // Redis supports DBs 0-15 by default. With CONDUCTOR_PORT allocated in
+      // increments of 10, collisions occur after ~8 workspaces. This is acceptable
+      // since Redis stores transient data while Postgres databases remain fully isolated.
+      const redisDb = (port - 3000) % 16;
+
+      return {
+        postgresqlDatabase: `prairielearn_${dbSuffix}`,
+        redisUrl: `redis://localhost:6379/${redisDb}`,
+      };
+    },
+  };
+}
+
 export async function loadConfig(paths: string[]) {
   await loader.loadAndValidate([
     makeEnvConfigSource<typeof ConfigSchema>({
       serverPort: 'CONDUCTOR_PORT',
     }),
+    makeConductorConfigSource(),
     ...paths.map((path) => makeFileConfigSource(path)),
     makeImdsConfigSource(),
     makeSecretsManagerConfigSource('ConfSecret'),

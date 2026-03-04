@@ -67,7 +67,7 @@ const DEFAULT_GRADED_BY_FILTER: string[] = [];
 const DEFAULT_SUBMISSION_GROUP_FILTER: string[] = [];
 const DEFAULT_AI_AGREEMENT_FILTER: string[] = [];
 
-export interface AssessmentQuestionTableProps {
+interface AssessmentQuestionTableProps {
   hasCourseInstancePermissionEdit: boolean;
   course: PageContext<'assessmentQuestion', 'instructor'>['course'];
   courseInstance: PageContext<'assessmentQuestion', 'instructor'>['course_instance'];
@@ -470,7 +470,7 @@ export function AssessmentQuestionTable({
   // Update column visibility when AI grading mode changes
   useEffect(() => {
     // https://github.com/NickvanDyke/eslint-plugin-react-you-might-not-need-an-effect/issues/58
-    // eslint-disable-next-line react-you-might-not-need-an-effect/no-pass-ref-to-parent, @eslint-react/hooks-extra/no-direct-set-state-in-use-effect
+    // eslint-disable-next-line @eslint-react/hooks-extra/no-direct-set-state-in-use-effect
     void setColumnVisibility((prev) => ({
       ...prev,
       // Hide these columns in AI grading mode
