@@ -61,28 +61,6 @@ export async function beginGradingJob(grading_job_id: string): Promise<void> {
     GradingJobInfoSchema,
   );
 
-  if (!question.external_grading_enabled) {
-    logger.verbose('External grading disabled for job id: ' + grading_job.id);
-
-    // Make the grade 0
-    const ret = {
-      gradingId: grading_job.id,
-      grading: {
-        score: 0,
-        feedback: {
-          results: { succeeded: true, gradable: false },
-          message: 'External grading is not enabled :(',
-        },
-      },
-    };
-
-    // Send the grade out for processing and display
-    processGradingResult(ret).catch((err) =>
-      logger.error(`Error processing results for grading job ${grading_job.id}`, err),
-    );
-    return;
-  }
-
   logger.verbose(`Submitting external grading job ${grading_job.id}.`);
 
   const gradeRequest = grader.handleGradingRequest(

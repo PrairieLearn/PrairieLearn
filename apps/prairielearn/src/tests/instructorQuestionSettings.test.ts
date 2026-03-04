@@ -444,7 +444,6 @@ describe('Editing question settings', () => {
         topic: 'Test',
         grading_method: 'External',
         external_grading_image: 'test_image',
-        external_grading_enabled: 'true',
         external_grading_entrypoint: '/test',
         external_grading_files: 'test_file.txt',
         external_grading_timeout: '10',

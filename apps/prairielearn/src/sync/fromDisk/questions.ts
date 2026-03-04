@@ -45,7 +45,6 @@ function getParamsForQuestion(qid: string, q: QuestionJson | null | undefined) {
     single_variant: q.singleVariant,
     show_correct_answer: q.showCorrectAnswer,
     comment: q.comment,
-    external_grading_enabled: q.externalGradingOptions?.enabled ?? false,
     external_grading_image: q.externalGradingOptions?.image,
     external_grading_files: q.externalGradingOptions?.serverFilesCourse ?? [],
     external_grading_entrypoint,
