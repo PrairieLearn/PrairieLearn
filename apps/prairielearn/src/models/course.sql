@@ -40,7 +40,7 @@ WITH
     (
       -- Courses where the user itself is part of staff with a non-None role
       SELECT
-        c.id,
+        cp.course_id,
         cp.course_role
       FROM
         course_permissions AS cp
@@ -52,7 +52,7 @@ WITH
     (
       -- If the user is an institution administrator, they get Owner access to all courses in the institution
       SELECT
-        c.id,
+        c.id AS course_id,
         'Owner'::enum_course_role AS course_role
       FROM
         institution_administrators AS ia
@@ -65,7 +65,7 @@ WITH
     (
       -- All users have access to the example course with at least the Viewer role
       SELECT
-        c.id,
+        c.id AS course_id,
         'Viewer'::enum_course_role AS course_role
       FROM
         courses AS c
@@ -76,7 +76,7 @@ WITH
   highest_role AS (
     -- In case of multiple permissions for the same course, take the highest role
     SELECT
-      id,
+      course_id,
       MAX(course_role::enum_course_role) AS course_role
     FROM
       courses_with_permissions
@@ -88,7 +88,7 @@ SELECT
   hr.course_role
 FROM
   highest_role AS hr
-  JOIN courses AS c ON (c.id = hr.id)
+  JOIN courses AS c ON (c.id = hr.course_id)
 WHERE
   c.deleted_at IS NULL
 ORDER BY
