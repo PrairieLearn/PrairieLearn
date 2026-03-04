@@ -8,6 +8,9 @@ import {
   coerceToNumber,
   extractStringComment,
   parsePointsListValue,
+  resolveMaxPointsProperty,
+  resolvePointsProperty,
+  validateNonIncreasingPoints,
 } from '../../utils/formHelpers.js';
 import { validatePositiveInteger } from '../../utils/questions.js';
 import { useAutoSave } from '../../utils/useAutoSave.js';
@@ -31,22 +34,30 @@ interface AltGroupFormData {
 
 export function AltGroupDetailPanel({
   zoneQuestionBlock,
+  idPrefix,
   editMode,
   assessmentType,
   onUpdate,
   onDelete,
+  onAddAlternative,
 }: {
   zoneQuestionBlock: ZoneQuestionBlockForm;
+  idPrefix: string;
   editMode: boolean;
   assessmentType: EnumAssessmentType;
   onUpdate: (questionTrackingId: string, question: Partial<ZoneQuestionBlockForm>) => void;
   onDelete: (questionTrackingId: string, questionId: string) => void;
+  onAddAlternative: (altGroupTrackingId: string) => void;
 }) {
   const alternativeCount = zoneQuestionBlock.alternatives?.length ?? 0;
+
+  const originalPointsProperty = resolvePointsProperty(zoneQuestionBlock);
+  const originalMaxProperty = resolveMaxPointsProperty(originalPointsProperty, zoneQuestionBlock);
 
   const {
     register,
     getValues,
+    watch,
     formState: { errors, isDirty, isValid },
   } = useForm<AltGroupFormData>({
     mode: 'onChange',
@@ -73,6 +84,12 @@ export function AltGroupDetailPanel({
 
   useAutoSave({ isDirty, isValid, getValues, onSave: handleSave });
 
+  const watchedAutoPoints = watch(originalPointsProperty);
+  const autoPointsPlaceholder =
+    watchedAutoPoints == null
+      ? ''
+      : String(Array.isArray(watchedAutoPoints) ? watchedAutoPoints[0] : watchedAutoPoints);
+
   if (!editMode) {
     return (
       <div className="p-3">
@@ -81,24 +98,20 @@ export function AltGroupDetailPanel({
           <dd>{alternativeCount}</dd>
           <dt>Number to choose</dt>
           <dd>{zoneQuestionBlock.numberChoose ?? 1}</dd>
-          {zoneQuestionBlock.points != null && (
+          {zoneQuestionBlock[originalPointsProperty] != null && (
             <>
               <dt>{assessmentType === 'Exam' ? 'Points' : 'Auto points'}</dt>
               <dd>
-                {Array.isArray(zoneQuestionBlock.points)
-                  ? zoneQuestionBlock.points.join(', ')
-                  : zoneQuestionBlock.points}
+                {Array.isArray(zoneQuestionBlock[originalPointsProperty])
+                  ? zoneQuestionBlock[originalPointsProperty].join(', ')
+                  : zoneQuestionBlock[originalPointsProperty]}
               </dd>
             </>
           )}
-          {zoneQuestionBlock.autoPoints != null && (
+          {zoneQuestionBlock[originalMaxProperty] != null && (
             <>
-              <dt>Auto points</dt>
-              <dd>
-                {Array.isArray(zoneQuestionBlock.autoPoints)
-                  ? zoneQuestionBlock.autoPoints.join(', ')
-                  : zoneQuestionBlock.autoPoints}
-              </dd>
+              <dt>Max auto points</dt>
+              <dd>{zoneQuestionBlock[originalMaxProperty]}</dd>
             </>
           )}
           {zoneQuestionBlock.manualPoints != null && (
@@ -124,22 +137,33 @@ export function AltGroupDetailPanel({
         {alternativeCount} alternative{alternativeCount !== 1 ? 's' : ''} in group
       </div>
       <div className="mb-3">
-        <label htmlFor="altgroup-numberChoose" className="form-label">
+        <label htmlFor={`${idPrefix}-numberChoose`} className="form-label">
           Number to choose
         </label>
         <input
           type="number"
           className={clsx('form-control form-control-sm', errors.numberChoose && 'is-invalid')}
-          id="altgroup-numberChoose"
+          id={`${idPrefix}-numberChoose`}
+          aria-invalid={!!errors.numberChoose}
+          aria-errormessage={errors.numberChoose ? `${idPrefix}-numberChoose-error` : undefined}
+          aria-describedby={`${idPrefix}-numberChoose-help`}
           {...register('numberChoose', {
             setValueAs: coerceToNumber,
-            validate: (v) => validatePositiveInteger(v, 'Number to choose'),
+            validate: (v) => {
+              const msg = validatePositiveInteger(v, 'Number to choose');
+              if (msg) return msg;
+              if (v != null && v > alternativeCount) {
+                return `Cannot exceed number of alternatives (${alternativeCount}).`;
+              }
+            },
           })}
         />
         {errors.numberChoose && (
-          <div className="invalid-feedback">{errors.numberChoose.message}</div>
+          <div id={`${idPrefix}-numberChoose-error`} className="invalid-feedback">
+            {errors.numberChoose.message}
+          </div>
         )}
-        <small className="form-text text-muted">
+        <small id={`${idPrefix}-numberChoose-help`} className="form-text text-muted">
           How many of the {alternativeCount} alternatives to randomly choose for each student
           (default: 1).
         </small>
@@ -148,51 +172,96 @@ export function AltGroupDetailPanel({
       {assessmentType === 'Homework' ? (
         <>
           <div className="mb-3">
-            <label htmlFor="altgroup-autoPoints" className="form-label">
+            <label htmlFor={`${idPrefix}-autoPoints`} className="form-label">
               Auto points (shared)
             </label>
             <input
               type="number"
-              className="form-control form-control-sm"
-              id="altgroup-autoPoints"
+              className={clsx(
+                'form-control form-control-sm',
+                errors[originalPointsProperty] && 'is-invalid',
+              )}
+              id={`${idPrefix}-autoPoints`}
+              aria-invalid={!!errors[originalPointsProperty]}
+              aria-errormessage={
+                errors[originalPointsProperty] ? `${idPrefix}-autoPoints-error` : undefined
+              }
+              aria-describedby={`${idPrefix}-autoPoints-help`}
               step="any"
-              {...register('autoPoints', {
+              {...register(originalPointsProperty, {
                 setValueAs: coerceToNumber,
+                validate: (v) => {
+                  if (typeof v === 'number' && v < 0) return 'Auto points must be non-negative.';
+                },
               })}
             />
-            <small className="form-text text-muted">
+            {errors[originalPointsProperty] && (
+              <div id={`${idPrefix}-autoPoints-error`} className="invalid-feedback">
+                {errors[originalPointsProperty].message!}
+              </div>
+            )}
+            <small id={`${idPrefix}-autoPoints-help`} className="form-text text-muted">
               Default auto points inherited by alternatives unless overridden.
             </small>
           </div>
           <div className="mb-3">
-            <label htmlFor="altgroup-maxAutoPoints" className="form-label">
+            <label htmlFor={`${idPrefix}-maxAutoPoints`} className="form-label">
               Max auto points (shared)
             </label>
             <input
               type="number"
-              className="form-control form-control-sm"
-              id="altgroup-maxAutoPoints"
-              {...register('maxAutoPoints', {
+              className={clsx(
+                'form-control form-control-sm',
+                errors[originalMaxProperty] && 'is-invalid',
+              )}
+              id={`${idPrefix}-maxAutoPoints`}
+              aria-invalid={!!errors[originalMaxProperty]}
+              aria-errormessage={
+                errors[originalMaxProperty] ? `${idPrefix}-maxAutoPoints-error` : undefined
+              }
+              aria-describedby={`${idPrefix}-maxAutoPoints-help`}
+              placeholder={autoPointsPlaceholder}
+              {...register(originalMaxProperty, {
                 setValueAs: coerceToNumber,
+                validate: (v) => {
+                  if (v != null && v < 0) return 'Max auto points must be non-negative.';
+                },
               })}
             />
-            <small className="form-text text-muted">
-              Default max auto points inherited by alternatives unless overridden.
+            {errors[originalMaxProperty] && (
+              <div id={`${idPrefix}-maxAutoPoints-error`} className="invalid-feedback">
+                {errors[originalMaxProperty].message!}
+              </div>
+            )}
+            <small id={`${idPrefix}-maxAutoPoints-help`} className="form-text text-muted">
+              Default max auto points inherited by alternatives unless overridden. Defaults to auto
+              points if not set.
             </small>
           </div>
           <div className="mb-3">
-            <label htmlFor="altgroup-manualPoints" className="form-label">
+            <label htmlFor={`${idPrefix}-manualPoints`} className="form-label">
               Manual points (shared)
             </label>
             <input
               type="number"
-              className="form-control form-control-sm"
-              id="altgroup-manualPoints"
+              className={clsx('form-control form-control-sm', errors.manualPoints && 'is-invalid')}
+              id={`${idPrefix}-manualPoints`}
+              aria-invalid={!!errors.manualPoints}
+              aria-errormessage={errors.manualPoints ? `${idPrefix}-manualPoints-error` : undefined}
+              aria-describedby={`${idPrefix}-manualPoints-help`}
               {...register('manualPoints', {
                 setValueAs: coerceToNumber,
+                validate: (v) => {
+                  if (v != null && v < 0) return 'Manual points must be non-negative.';
+                },
               })}
             />
-            <small className="form-text text-muted">
+            {errors.manualPoints && (
+              <div id={`${idPrefix}-manualPoints-error`} className="invalid-feedback">
+                {errors.manualPoints.message}
+              </div>
+            )}
+            <small id={`${idPrefix}-manualPoints-help`} className="form-text text-muted">
               Default manual points inherited by alternatives unless overridden.
             </small>
           </div>
@@ -200,34 +269,54 @@ export function AltGroupDetailPanel({
       ) : (
         <>
           <div className="mb-3">
-            <label htmlFor="altgroup-points" className="form-label">
+            <label htmlFor={`${idPrefix}-points`} className="form-label">
               Points list (shared)
             </label>
             <input
               type="text"
-              className="form-control form-control-sm"
-              id="altgroup-points"
+              className={clsx('form-control form-control-sm', errors.points && 'is-invalid')}
+              id={`${idPrefix}-points`}
+              aria-invalid={!!errors.points}
+              aria-errormessage={errors.points ? `${idPrefix}-points-error` : undefined}
+              aria-describedby={`${idPrefix}-points-help`}
               {...register('points', {
                 setValueAs: parsePointsListValue,
+                validate: (v) => validateNonIncreasingPoints(v),
               })}
             />
-            <small className="form-text text-muted">
+            {errors.points && (
+              <div id={`${idPrefix}-points-error`} className="invalid-feedback">
+                {errors.points.message}
+              </div>
+            )}
+            <small id={`${idPrefix}-points-help`} className="form-text text-muted">
               Default points list inherited by alternatives unless overridden.
             </small>
           </div>
           <div className="mb-3">
-            <label htmlFor="altgroup-manualPoints" className="form-label">
+            <label htmlFor={`${idPrefix}-manualPoints`} className="form-label">
               Manual points (shared)
             </label>
             <input
               type="number"
-              className="form-control form-control-sm"
-              id="altgroup-manualPoints"
+              className={clsx('form-control form-control-sm', errors.manualPoints && 'is-invalid')}
+              id={`${idPrefix}-manualPoints`}
+              aria-invalid={!!errors.manualPoints}
+              aria-errormessage={errors.manualPoints ? `${idPrefix}-manualPoints-error` : undefined}
+              aria-describedby={`${idPrefix}-manualPoints-help`}
               {...register('manualPoints', {
                 setValueAs: coerceToNumber,
+                validate: (v) => {
+                  if (v != null && v < 0) return 'Manual points must be non-negative.';
+                },
               })}
             />
-            <small className="form-text text-muted">
+            {errors.manualPoints && (
+              <div id={`${idPrefix}-manualPoints-error`} className="invalid-feedback">
+                {errors.manualPoints.message}
+              </div>
+            )}
+            <small id={`${idPrefix}-manualPoints-help`} className="form-text text-muted">
               Default manual points inherited by alternatives unless overridden.
             </small>
           </div>
@@ -235,21 +324,31 @@ export function AltGroupDetailPanel({
       )}
 
       <div className="mb-3">
-        <label htmlFor="altgroup-comment" className="form-label">
+        <label htmlFor={`${idPrefix}-comment`} className="form-label">
           Comment
         </label>
         <textarea
           className="form-control form-control-sm"
-          id="altgroup-comment"
+          id={`${idPrefix}-comment`}
+          aria-describedby={`${idPrefix}-comment-help`}
           rows={2}
           {...register('comment')}
         />
-        <small className="form-text text-muted">Internal note, not shown to students.</small>
+        <small id={`${idPrefix}-comment-help`} className="form-text text-muted">
+          Internal note, not shown to students.
+        </small>
       </div>
 
-      <AdvancedFields register={register} idPrefix="altgroup" variant="altGroup" />
+      <AdvancedFields register={register} errors={errors} idPrefix={idPrefix} variant="altGroup" />
 
       <div className="d-flex gap-2">
+        <button
+          type="button"
+          className="btn btn-sm btn-outline-secondary"
+          onClick={() => onAddAlternative(zoneQuestionBlock.trackingId)}
+        >
+          Add alternative
+        </button>
         <button
           type="button"
           className="btn btn-sm btn-outline-danger"

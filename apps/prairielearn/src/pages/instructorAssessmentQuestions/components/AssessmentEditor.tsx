@@ -216,6 +216,7 @@ function AssessmentEditorInner({
     const filtered = args.droppableContainers.filter((c) => {
       const type = c.data.current?.type;
       if (activeType === 'question' && type === 'alternative') return false;
+      if (activeType !== 'zone' && type === 'zone') return false;
       if (type === 'merge-zone') return false;
       return true;
     });
@@ -880,6 +881,9 @@ function AssessmentEditorInner({
                 onUpdateQuestion={handleUpdateQuestion}
                 onDeleteQuestion={handleDeleteQuestion}
                 onDeleteZone={handleDeleteZone}
+                onAddQuestion={handleAddQuestion}
+                onAddAltGroup={handleAddAltGroup}
+                onAddToAltGroup={handleAddToAltGroup}
                 onQuestionPicked={handleQuestionPicked}
                 onPickQuestion={handlePickQuestion}
                 onRemoveQuestionByQid={handleRemoveQuestionByQid}

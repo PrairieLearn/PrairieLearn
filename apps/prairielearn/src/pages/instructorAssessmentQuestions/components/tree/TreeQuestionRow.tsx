@@ -82,7 +82,8 @@ export function PointsBadge({
     question.maxPoints ??
     question.maxAutoPoints ??
     zoneQuestionBlock.maxPoints ??
-    zoneQuestionBlock.maxAutoPoints;
+    zoneQuestionBlock.maxAutoPoints ??
+    autoPoints;
   const maxAuto = Array.isArray(maxAutoPoints) ? maxAutoPoints[0] : maxAutoPoints;
 
   if (initPoints == null && maxAuto == null && manualPoints == null) return null;
@@ -101,16 +102,22 @@ export function PointsBadge({
   }
 
   if (initPoints != null || maxAuto != null) {
+    const init = initPoints ?? 0;
+    const max = maxAuto ?? 0;
     if (compactParts.length > 0) {
       compactParts.push(<span key="sep"> + </span>);
     }
     compactParts.push(
       <span key="auto">
         <i className="bi bi-lightning-fill me-1" aria-hidden="true" />
-        {initPoints ?? 0}/{maxAuto ?? 0}
+        {init === max ? init : `${init}/${max}`}
       </span>,
     );
-    tooltipParts.push(`Auto-graded: ${initPoints ?? 0} pts initial, ${maxAuto ?? 0} pts max`);
+    tooltipParts.push(
+      init === max
+        ? `Auto-graded: ${init} pts`
+        : `Auto-graded: ${init} pts initial, ${max} pts max`,
+    );
   }
 
   return (

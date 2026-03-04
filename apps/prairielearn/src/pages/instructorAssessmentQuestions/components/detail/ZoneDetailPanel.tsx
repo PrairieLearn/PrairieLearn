@@ -23,14 +23,22 @@ interface ZoneFormData {
 
 export function ZoneDetailPanel({
   zone,
+  zoneIndex,
+  idPrefix,
   editMode,
   onUpdate,
   onDelete,
+  onAddQuestion,
+  onAddAltGroup,
 }: {
   zone: ZoneAssessmentForm;
+  zoneIndex: number;
+  idPrefix: string;
   editMode: boolean;
   onUpdate: (zoneTrackingId: string, zone: Partial<ZoneAssessmentForm>) => void;
   onDelete: (zoneTrackingId: string) => void;
+  onAddQuestion: (zoneTrackingId: string) => void;
+  onAddAltGroup: (zoneTrackingId: string) => void;
 }) {
   const formValues: ZoneFormData = {
     title: zone.title ?? '',
@@ -138,73 +146,109 @@ export function ZoneDetailPanel({
   return (
     <div className="p-3">
       <div className="mb-3">
-        <label htmlFor="zone-title" className="form-label">
+        <label htmlFor={`${idPrefix}-title`} className="form-label">
           Title
         </label>
         <input
           type="text"
           className="form-control form-control-sm"
-          id="zone-title"
+          id={`${idPrefix}-title`}
+          aria-describedby={`${idPrefix}-title-help`}
           {...register('title')}
         />
-        <small className="form-text text-muted">Display name shown to students.</small>
+        <small id={`${idPrefix}-title-help`} className="form-text text-muted">
+          Display name shown to students.
+        </small>
       </div>
 
       <div className="mb-3">
-        <label htmlFor="zone-maxPoints" className="form-label">
+        <label htmlFor={`${idPrefix}-maxPoints`} className="form-label">
           Max points
         </label>
         <input
           type="number"
-          className="form-control form-control-sm"
-          id="zone-maxPoints"
+          className={clsx('form-control form-control-sm', errors.maxPoints && 'is-invalid')}
+          id={`${idPrefix}-maxPoints`}
+          aria-invalid={!!errors.maxPoints}
+          aria-errormessage={errors.maxPoints ? `${idPrefix}-maxPoints-error` : undefined}
+          aria-describedby={`${idPrefix}-maxPoints-help`}
           {...register('maxPoints', {
             setValueAs: coerceToNumber,
+            validate: (v) => {
+              if (v != null && v < 0) return 'Max points must be non-negative.';
+            },
           })}
         />
-        <small className="form-text text-muted">
+        {errors.maxPoints && (
+          <div id={`${idPrefix}-maxPoints-error`} className="invalid-feedback">
+            {errors.maxPoints.message}
+          </div>
+        )}
+        <small id={`${idPrefix}-maxPoints-help`} className="form-text text-muted">
           Maximum total points from this zone that count toward the assessment.
         </small>
       </div>
 
       <div className="mb-3">
-        <label htmlFor="zone-numberChoose" className="form-label">
+        <label htmlFor={`${idPrefix}-numberChoose`} className="form-label">
           Number to choose
         </label>
         <input
           type="number"
           className={clsx('form-control form-control-sm', errors.numberChoose && 'is-invalid')}
-          id="zone-numberChoose"
+          id={`${idPrefix}-numberChoose`}
+          aria-invalid={!!errors.numberChoose}
+          aria-errormessage={errors.numberChoose ? `${idPrefix}-numberChoose-error` : undefined}
+          aria-describedby={`${idPrefix}-numberChoose-help`}
           {...register('numberChoose', {
             setValueAs: coerceToNumber,
-            validate: (v) => validatePositiveInteger(v, 'Number to choose'),
+            validate: (v) => {
+              const msg = validatePositiveInteger(v, 'Number to choose');
+              if (msg) return msg;
+              if (v != null && v > zone.questions.length) {
+                return `Cannot exceed number of questions in zone (${zone.questions.length}).`;
+              }
+            },
           })}
         />
         {errors.numberChoose && (
-          <div className="invalid-feedback">{errors.numberChoose.message}</div>
+          <div id={`${idPrefix}-numberChoose-error`} className="invalid-feedback">
+            {errors.numberChoose.message}
+          </div>
         )}
-        <small className="form-text text-muted">
+        <small id={`${idPrefix}-numberChoose-help`} className="form-text text-muted">
           How many questions from this zone to present (leave empty for all).
         </small>
       </div>
 
       <div className="mb-3">
-        <label htmlFor="zone-bestQuestions" className="form-label">
+        <label htmlFor={`${idPrefix}-bestQuestions`} className="form-label">
           Best questions
         </label>
         <input
           type="number"
           className={clsx('form-control form-control-sm', errors.bestQuestions && 'is-invalid')}
-          id="zone-bestQuestions"
+          id={`${idPrefix}-bestQuestions`}
+          aria-invalid={!!errors.bestQuestions}
+          aria-errormessage={errors.bestQuestions ? `${idPrefix}-bestQuestions-error` : undefined}
+          aria-describedby={`${idPrefix}-bestQuestions-help`}
           {...register('bestQuestions', {
             setValueAs: coerceToNumber,
-            validate: (v) => validatePositiveInteger(v, 'Best questions'),
+            validate: (v) => {
+              const msg = validatePositiveInteger(v, 'Best questions');
+              if (msg) return msg;
+              if (v != null && v > zone.questions.length) {
+                return `Cannot exceed number of questions in zone (${zone.questions.length}).`;
+              }
+            },
           })}
         />
         {errors.bestQuestions && (
-          <div className="invalid-feedback">{errors.bestQuestions.message}</div>
+          <div id={`${idPrefix}-bestQuestions-error`} className="invalid-feedback">
+            {errors.bestQuestions.message}
+          </div>
         )}
-        <small className="form-text text-muted">
+        <small id={`${idPrefix}-bestQuestions-help`} className="form-text text-muted">
           Only the N highest-scoring questions in this zone count toward the total (leave empty for
           all).
         </small>
@@ -213,38 +257,69 @@ export function ZoneDetailPanel({
       <div className="mb-3 form-check">
         <input
           type="checkbox"
-          className="form-check-input"
-          id="zone-lockpoint"
-          {...register('lockpoint')}
+          className={clsx('form-check-input', errors.lockpoint && 'is-invalid')}
+          id={`${idPrefix}-lockpoint`}
+          aria-invalid={!!errors.lockpoint}
+          aria-errormessage={errors.lockpoint ? `${idPrefix}-lockpoint-error` : undefined}
+          aria-describedby={`${idPrefix}-lockpoint-help`}
+          {...register('lockpoint', {
+            validate: (v) => {
+              if (v && zoneIndex === 0) {
+                return 'The first zone cannot have lockpoint enabled.';
+              }
+            },
+          })}
         />
-        <label htmlFor="zone-lockpoint" className="form-check-label">
+        <label htmlFor={`${idPrefix}-lockpoint`} className="form-check-label">
           Lockpoint
         </label>
-        <small className="form-text text-muted d-block">
+        {errors.lockpoint && (
+          <div id={`${idPrefix}-lockpoint-error`} className="invalid-feedback">
+            {errors.lockpoint.message}
+          </div>
+        )}
+        <small id={`${idPrefix}-lockpoint-help`} className="form-text text-muted d-block">
           Creates a one-way barrier; crossing it makes all earlier zones read-only.
         </small>
       </div>
 
       <div className="mb-3">
-        <label htmlFor="zone-comment" className="form-label">
+        <label htmlFor={`${idPrefix}-comment`} className="form-label">
           Comment
         </label>
         <textarea
           className="form-control form-control-sm"
-          id="zone-comment"
+          id={`${idPrefix}-comment`}
+          aria-describedby={`${idPrefix}-comment-help`}
           rows={2}
           {...register('comment')}
         />
-        <small className="form-text text-muted">Internal note, not shown to students.</small>
+        <small id={`${idPrefix}-comment-help`} className="form-text text-muted">
+          Internal note, not shown to students.
+        </small>
       </div>
 
-      <AdvancedFields register={register} idPrefix="zone" variant="zone" />
+      <AdvancedFields register={register} errors={errors} idPrefix={idPrefix} variant="zone" />
 
       <div className="mt-2 mb-3 text-muted small">
         {zone.questions.length} question{zone.questions.length !== 1 ? 's' : ''} in zone
       </div>
 
       <div className="d-flex gap-2">
+        <button
+          type="button"
+          className="btn btn-sm btn-outline-secondary"
+          onClick={() => onAddQuestion(zone.trackingId)}
+        >
+          Add question
+        </button>
+        <button
+          type="button"
+          className="btn btn-sm btn-outline-secondary"
+          onClick={() => onAddAltGroup(zone.trackingId)}
+        >
+          Add alternative group
+        </button>
         <button
           type="button"
           className="btn btn-sm btn-outline-danger"

@@ -1,5 +1,4 @@
 import { useVirtualizer } from '@tanstack/react-virtual';
-import clsx from 'clsx';
 import { useMemo, useRef, useState } from 'react';
 
 import { FilterDropdown, type FilterItem } from '@prairielearn/ui';
@@ -213,6 +212,12 @@ export function QuestionPickerPanel({
       <div className="px-2 py-1 bg-light border-bottom text-muted small">
         {sortedQuestions.length} {sortedQuestions.length === 1 ? 'question' : 'questions'} found
       </div>
+      <style>{`
+        .picker-row .picker-hover-show { opacity: 0; transition: opacity 0.15s; }
+        .picker-row:hover .picker-hover-show { opacity: 1; }
+        .picker-hover-show:focus-within { opacity: 1; }
+        .picker-delete-btn:hover { color: var(--bs-danger) !important; }
+      `}</style>
       <div ref={scrollParentRef} className="flex-grow-1" style={{ overflow: 'auto' }}>
         {sortedQuestions.length === 0 ? (
           <div className="d-flex flex-column align-items-center justify-content-center text-muted py-5">
@@ -244,10 +249,7 @@ export function QuestionPickerPanel({
                   role="button"
                   tabIndex={0}
                   aria-label={`${qid}: ${question.title}${isAlreadyAdded ? ` (in ${addedZoneNames.join(', ')})` : ''}`}
-                  className={clsx(
-                    'px-2 py-1 border-bottom list-group-item-action',
-                    isAlreadyAdded && 'bg-light',
-                  )}
+                  className="d-flex align-items-center px-2 py-1 border-bottom list-group-item-action picker-row"
                   style={{
                     position: 'absolute',
                     top: 0,
@@ -256,6 +258,9 @@ export function QuestionPickerPanel({
                     transform: `translateY(${virtualRow.start}px)`,
                     cursor: 'pointer',
                     fontSize: '0.85rem',
+                    ...(isAlreadyAdded
+                      ? { borderLeft: '3px solid var(--bs-secondary)' }
+                      : undefined),
                   }}
                   onClick={() => handleSelect(question)}
                   onKeyDown={(e) => {
@@ -265,50 +270,51 @@ export function QuestionPickerPanel({
                     }
                   }}
                 >
-                  <div className="d-flex align-items-center gap-1">
-                    <a
-                      href={getQuestionUrl({ courseId, questionId: question.id })}
-                      target="_blank"
-                      rel="noopener noreferrer"
-                      className="text-nowrap"
-                      onClick={(e) => e.stopPropagation()}
-                    >
-                      <code className="small">{qid}</code>
-                    </a>
-                    {isAlreadyAdded && (
-                      <>
+                  <div className="flex-grow-1" style={{ minWidth: 0 }}>
+                    <div className="d-flex align-items-center gap-1">
+                      <a
+                        href={getQuestionUrl({ courseId, questionId: question.id })}
+                        target="_blank"
+                        rel="noopener noreferrer"
+                        className="text-nowrap"
+                        onClick={(e) => e.stopPropagation()}
+                      >
+                        <code className="small">{qid}</code>
+                      </a>
+                      {isAlreadyAdded && (
                         <span className="badge bg-secondary" style={{ fontSize: '0.65rem' }}>
                           {addedZoneNames.join(', ')}
                         </span>
-                        <button
-                          type="button"
-                          className="btn btn-sm p-0 border-0 text-muted"
-                          style={{ fontSize: '0.6rem', lineHeight: 1 }}
-                          aria-label={`Remove ${qid} from assessment`}
-                          onClick={(e) => {
-                            e.stopPropagation();
-                            onRemoveQuestionByQid(qid);
-                          }}
-                        >
-                          <i className="bi bi-x-lg" aria-hidden="true" />
-                        </button>
-                      </>
+                      )}
+                    </div>
+                    <div className="text-truncate small">{question.title}</div>
+                    <div className="d-flex flex-wrap gap-1 mt-1">
+                      <QuestionTopicTagBadges
+                        topic={question.topic}
+                        tags={question.tags}
+                        qid={qid}
+                        isExpanded={expandedTagsQids.has(qid)}
+                        setExpandedQids={setExpandedTagsQids}
+                      />
+                    </div>
+                    {assessmentsToShow.length > 0 && (
+                      <div className="d-flex flex-wrap gap-1 mt-1">
+                        <AssessmentBadges assessments={assessmentsToShow} urlPrefix={urlPrefix} />
+                      </div>
                     )}
                   </div>
-                  <div className="text-truncate small">{question.title}</div>
-                  <div className="d-flex flex-wrap gap-1 mt-1">
-                    <QuestionTopicTagBadges
-                      topic={question.topic}
-                      tags={question.tags}
-                      qid={qid}
-                      isExpanded={expandedTagsQids.has(qid)}
-                      setExpandedQids={setExpandedTagsQids}
-                    />
-                  </div>
-                  {assessmentsToShow.length > 0 && (
-                    <div className="d-flex flex-wrap gap-1 mt-1">
-                      <AssessmentBadges assessments={assessmentsToShow} urlPrefix={urlPrefix} />
-                    </div>
+                  {isAlreadyAdded && (
+                    <button
+                      type="button"
+                      className="btn btn-sm border-0 text-muted ms-1 picker-delete-btn picker-hover-show"
+                      aria-label={`Remove ${qid} from assessment`}
+                      onClick={(e) => {
+                        e.stopPropagation();
+                        onRemoveQuestionByQid(qid);
+                      }}
+                    >
+                      <i className="bi bi-trash3" aria-hidden="true" />
+                    </button>
                   )}
                 </div>
               );

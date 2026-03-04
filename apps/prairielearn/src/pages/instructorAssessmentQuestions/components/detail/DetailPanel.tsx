@@ -32,6 +32,9 @@ export function DetailPanel({
   onUpdateQuestion,
   onDeleteQuestion,
   onDeleteZone,
+  onAddQuestion,
+  onAddAltGroup,
+  onAddToAltGroup,
   onQuestionPicked,
   onPickQuestion,
   onRemoveQuestionByQid,
@@ -61,6 +64,9 @@ export function DetailPanel({
     alternativeTrackingId?: string,
   ) => void;
   onDeleteZone: (zoneTrackingId: string) => void;
+  onAddQuestion: (zoneTrackingId: string) => void;
+  onAddAltGroup: (zoneTrackingId: string) => void;
+  onAddToAltGroup: (altGroupTrackingId: string) => void;
   onQuestionPicked: (qid: string) => void;
   onPickQuestion: (currentSelection: SelectedItem) => void;
   onRemoveQuestionByQid: (qid: string) => void;
@@ -71,14 +77,19 @@ export function DetailPanel({
   }
 
   if (selectedItem.type === 'zone') {
-    const zone = zones.find((z) => z.trackingId === selectedItem.zoneTrackingId);
+    const zoneIndex = zones.findIndex((z) => z.trackingId === selectedItem.zoneTrackingId);
+    const zone = zoneIndex !== -1 ? zones[zoneIndex] : undefined;
     if (!zone) return <EmptyDetailPanel />;
     return (
       <ZoneDetailPanel
         zone={zone}
+        zoneIndex={zoneIndex}
+        idPrefix={`zone-${zone.trackingId}`}
         editMode={editMode}
         onUpdate={onUpdateZone}
         onDelete={onDeleteZone}
+        onAddQuestion={onAddQuestion}
+        onAddAltGroup={onAddAltGroup}
       />
     );
   }
@@ -92,6 +103,7 @@ export function DetailPanel({
       <QuestionDetailPanel
         question={question}
         questionData={questionData ?? null}
+        idPrefix={`question-${question.trackingId}`}
         editMode={editMode}
         assessmentType={assessmentType}
         urlPrefix={urlPrefix}
@@ -118,6 +130,7 @@ export function DetailPanel({
         question={alternative}
         zoneQuestionBlock={block}
         questionData={altData ?? null}
+        idPrefix={`alt-${alternative.trackingId}`}
         editMode={editMode}
         assessmentType={assessmentType}
         urlPrefix={urlPrefix}
@@ -137,10 +150,12 @@ export function DetailPanel({
     return (
       <AltGroupDetailPanel
         zoneQuestionBlock={block}
+        idPrefix={`altgroup-${block.trackingId}`}
         editMode={editMode}
         assessmentType={assessmentType}
         onUpdate={onUpdateQuestion}
         onDelete={onDeleteQuestion}
+        onAddAlternative={onAddToAltGroup}
       />
     );
   }

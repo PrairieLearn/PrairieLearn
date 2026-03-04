@@ -12,8 +12,12 @@ import type { QuestionAlternativeForm, SelectedItem, ZoneQuestionBlockForm } fro
 import {
   coerceToNumber,
   extractStringComment,
+  formatPointsValue,
   parsePointsListValue,
+  resolveMaxPointsProperty,
+  resolvePointsProperty,
   validateAtLeastOnePointsField,
+  validateNonIncreasingPoints,
 } from '../../utils/formHelpers.js';
 import { validatePositiveInteger } from '../../utils/questions.js';
 import { useAutoSave } from '../../utils/useAutoSave.js';
@@ -36,15 +40,11 @@ interface QuestionFormData {
   allowRealTimeGrading?: boolean;
 }
 
-function formatPointsValue(value: number | number[] | undefined | null): string {
-  if (value == null) return '';
-  return Array.isArray(value) ? value.join(', ') : String(value);
-}
-
 export function QuestionDetailPanel({
   question,
   zoneQuestionBlock,
   questionData,
+  idPrefix,
   editMode,
   assessmentType,
   urlPrefix,
@@ -57,6 +57,7 @@ export function QuestionDetailPanel({
   question: ZoneQuestionBlockForm | QuestionAlternativeForm;
   zoneQuestionBlock?: ZoneQuestionBlockForm;
   questionData: StaffAssessmentQuestionRow | null;
+  idPrefix: string;
   editMode: boolean;
   assessmentType: EnumAssessmentType;
   urlPrefix: string;
@@ -76,27 +77,12 @@ export function QuestionDetailPanel({
 }) {
   const isAlternative = !!zoneQuestionBlock;
 
-  const originalPointsProperty = run(() => {
-    if (question.points != null) return 'points' as const;
-    if (question.autoPoints != null) return 'autoPoints' as const;
-    if (zoneQuestionBlock) {
-      if (zoneQuestionBlock.points != null) return 'points' as const;
-      if (zoneQuestionBlock.autoPoints != null) return 'autoPoints' as const;
-    }
-    return 'autoPoints' as const;
-  });
-
-  const originalMaxProperty = run(() => {
-    if (question.maxAutoPoints != null) return 'maxAutoPoints' as const;
-    if (question.maxPoints != null) return 'maxPoints' as const;
-    if (zoneQuestionBlock) {
-      if (zoneQuestionBlock.maxAutoPoints != null) return 'maxAutoPoints' as const;
-      if (zoneQuestionBlock.maxPoints != null) return 'maxPoints' as const;
-    }
-    return originalPointsProperty === 'points'
-      ? ('maxPoints' as const)
-      : ('maxAutoPoints' as const);
-  });
+  const originalPointsProperty = resolvePointsProperty(question, zoneQuestionBlock);
+  const originalMaxProperty = resolveMaxPointsProperty(
+    originalPointsProperty,
+    question,
+    zoneQuestionBlock,
+  );
 
   // For read-only display, use merged values (own ?? inherited)
   const autoPointsValue =
@@ -148,6 +134,12 @@ export function QuestionDetailPanel({
   const watchedPoints = watch(originalPointsProperty);
   const watchedMax = watch(originalMaxProperty);
   const watchedManualPoints = watch('manualPoints');
+
+  const autoPointsPlaceholder = run(() => {
+    const pts = watchedPoints ?? (isAlternative ? inheritedPointsValue : undefined);
+    if (pts == null) return '';
+    return String(Array.isArray(pts) ? pts[0] : pts);
+  });
 
   const isPointsInherited =
     isAlternative && watchedPoints === undefined && inheritedPointsValue != null;
@@ -206,12 +198,21 @@ export function QuestionDetailPanel({
               </dd>
             </>
           )}
-          {maxAutoPointsValue != null && (
-            <>
-              <dt>Max auto points</dt>
-              <dd>{maxAutoPointsValue}</dd>
-            </>
-          )}
+          {run(() => {
+            if (assessmentType !== 'Homework') return null;
+            const isDefault = maxAutoPointsValue == null;
+            const effectiveMax = maxAutoPointsValue ?? autoPointsValue;
+            if (effectiveMax == null) return null;
+            return (
+              <>
+                <dt>Max auto points</dt>
+                <dd>
+                  {Array.isArray(effectiveMax) ? effectiveMax[0] : effectiveMax}
+                  {isDefault && <span className="text-muted"> (default)</span>}
+                </dd>
+              </>
+            );
+          })}
           {manualPointsValue != null && (
             <>
               <dt>Manual points</dt>
@@ -265,6 +266,34 @@ export function QuestionDetailPanel({
   const pointsValidation = (_value: unknown, formValues: QuestionFormData) =>
     validateAtLeastOnePointsField(formValues, parentValues);
 
+  const nonNegativePointsValidation = (v: number | undefined) => {
+    if (v != null && v < 0) return 'Points must be non-negative.';
+  };
+
+  const homeworkAutoPointsValidation = (_value: unknown, formValues: QuestionFormData) => {
+    const pts = formValues[originalPointsProperty];
+    const maxPts = formValues[originalMaxProperty];
+    if (typeof pts === 'number' && pts === 0 && maxPts != null && maxPts > 0) {
+      return 'Auto points cannot be 0 when max auto points is greater than 0.';
+    }
+    if (typeof pts === 'number' && typeof maxPts === 'number' && pts > maxPts) {
+      return 'Auto points cannot exceed max auto points.';
+    }
+    return pointsValidation(_value, formValues);
+  };
+
+  const homeworkMaxPointsValidation = (_value: unknown, formValues: QuestionFormData) => {
+    const pts = formValues[originalPointsProperty];
+    const maxPts = formValues[originalMaxProperty];
+    if (typeof pts === 'number' && pts === 0 && maxPts != null && maxPts > 0) {
+      return 'Max auto points must be 0 or empty when auto points is 0.';
+    }
+    if (typeof pts === 'number' && typeof maxPts === 'number' && maxPts < pts) {
+      return 'Max auto points must be at least auto points.';
+    }
+    if (maxPts != null && maxPts < 0) return 'Max auto points must be non-negative.';
+  };
+
   return (
     <div className="p-3">
       {questionData && (
@@ -291,14 +320,14 @@ export function QuestionDetailPanel({
         </div>
       )}
       <div className="mb-3">
-        <label htmlFor="question-id" className="form-label">
+        <label htmlFor={`${idPrefix}-id`} className="form-label">
           QID
         </label>
         <div className="input-group input-group-sm">
           <input
             type="text"
             className={clsx('form-control', errors.id && 'is-invalid')}
-            id="question-id"
+            id={`${idPrefix}-id`}
             readOnly
             {...register('id')}
           />
@@ -326,7 +355,7 @@ export function QuestionDetailPanel({
         <>
           {isAlternative ? (
             <InheritableField
-              id="question-autoPoints"
+              id={`${idPrefix}-autoPoints`}
               label="Auto points"
               inputType="number"
               step="any"
@@ -334,7 +363,12 @@ export function QuestionDetailPanel({
               inheritedDisplayValue={formatPointsValue(inheritedPointsValue)}
               registerProps={register(originalPointsProperty, {
                 setValueAs: coerceToNumber,
-                validate: pointsValidation,
+                deps: [originalMaxProperty, 'manualPoints'],
+                validate: {
+                  atLeastOne: pointsValidation,
+                  crossField: homeworkAutoPointsValidation,
+                  nonNegative: (v) => nonNegativePointsValidation(v as number | undefined),
+                },
               })}
               error={errors[originalPointsProperty]}
               helpText="Points awarded for the auto-graded component."
@@ -346,16 +380,15 @@ export function QuestionDetailPanel({
                   shouldValidate: true,
                 })
               }
+              // Directly save instead of setValue(field, undefined) because
+              // RHF does not reliably trigger dirty-state changes for undefined.
               onReset={() =>
-                setValue(originalPointsProperty, undefined, {
-                  shouldDirty: true,
-                  shouldValidate: true,
-                })
+                handleSave({ ...getValues(), [originalPointsProperty]: undefined })
               }
             />
           ) : (
             <div className="mb-3">
-              <label htmlFor="question-autoPoints" className="form-label">
+              <label htmlFor={`${idPrefix}-autoPoints`} className="form-label">
                 Auto points
               </label>
               <input
@@ -364,33 +397,48 @@ export function QuestionDetailPanel({
                   'form-control form-control-sm',
                   errors[originalPointsProperty] && 'is-invalid',
                 )}
-                id="question-autoPoints"
+                id={`${idPrefix}-autoPoints`}
+                aria-invalid={!!errors[originalPointsProperty]}
+                aria-errormessage={
+                  errors[originalPointsProperty] ? `${idPrefix}-autoPoints-error` : undefined
+                }
+                aria-describedby={`${idPrefix}-autoPoints-help`}
                 step="any"
                 {...register(originalPointsProperty, {
                   setValueAs: coerceToNumber,
-                  validate: pointsValidation,
+                  deps: [originalMaxProperty, 'manualPoints'],
+                  validate: {
+                    atLeastOne: pointsValidation,
+                    crossField: homeworkAutoPointsValidation,
+                    nonNegative: (v) => nonNegativePointsValidation(v as number | undefined),
+                  },
                 })}
               />
               {errors[originalPointsProperty] && (
-                <div className="invalid-feedback">{errors[originalPointsProperty].message}</div>
+                <div id={`${idPrefix}-autoPoints-error`} className="invalid-feedback">
+                  {errors[originalPointsProperty].message}
+                </div>
               )}
-              <small className="form-text text-muted">
+              <small id={`${idPrefix}-autoPoints-help`} className="form-text text-muted">
                 Points awarded for the auto-graded component.
               </small>
             </div>
           )}
           {isAlternative ? (
             <InheritableField
-              id="question-maxAutoPoints"
+              id={`${idPrefix}-maxAutoPoints`}
               label="Max auto points"
               inputType="number"
               isInherited={isMaxInherited}
               inheritedDisplayValue={String(inheritedMaxValue ?? '')}
               registerProps={register(originalMaxProperty, {
                 setValueAs: coerceToNumber,
+                deps: [originalPointsProperty],
+                validate: homeworkMaxPointsValidation,
               })}
               error={errors[originalMaxProperty]}
-              helpText="Maximum total auto-graded points achievable across all attempts."
+              helpText="Maximum total auto-graded points. Defaults to auto points if not set."
+              placeholder={autoPointsPlaceholder}
               inheritedValueLabel={String(inheritedMaxValue ?? '')}
               showResetButton={inheritedMaxValue != null}
               onOverride={() =>
@@ -399,41 +447,60 @@ export function QuestionDetailPanel({
                   shouldValidate: true,
                 })
               }
+              // Directly save instead of setValue(field, undefined) because
+              // RHF does not reliably trigger dirty-state changes for undefined.
               onReset={() =>
-                setValue(originalMaxProperty, undefined, {
-                  shouldDirty: true,
-                  shouldValidate: true,
-                })
+                handleSave({ ...getValues(), [originalMaxProperty]: undefined })
               }
             />
           ) : (
             <div className="mb-3">
-              <label htmlFor="question-maxAutoPoints" className="form-label">
+              <label htmlFor={`${idPrefix}-maxAutoPoints`} className="form-label">
                 Max auto points
               </label>
               <input
                 type="number"
-                className="form-control form-control-sm"
-                id="question-maxAutoPoints"
+                className={clsx(
+                  'form-control form-control-sm',
+                  errors[originalMaxProperty] && 'is-invalid',
+                )}
+                id={`${idPrefix}-maxAutoPoints`}
+                aria-invalid={!!errors[originalMaxProperty]}
+                aria-errormessage={
+                  errors[originalMaxProperty] ? `${idPrefix}-maxAutoPoints-error` : undefined
+                }
+                aria-describedby={`${idPrefix}-maxAutoPoints-help`}
+                placeholder={autoPointsPlaceholder}
                 {...register(originalMaxProperty, {
                   setValueAs: coerceToNumber,
+                  deps: [originalPointsProperty],
+                  validate: homeworkMaxPointsValidation,
                 })}
               />
-              <small className="form-text text-muted">
-                Maximum total auto-graded points achievable across all attempts.
+              {errors[originalMaxProperty] && (
+                <div id={`${idPrefix}-maxAutoPoints-error`} className="invalid-feedback">
+                  {errors[originalMaxProperty].message}
+                </div>
+              )}
+              <small id={`${idPrefix}-maxAutoPoints-help`} className="form-text text-muted">
+                Maximum total auto-graded points. Defaults to auto points if not set.
               </small>
             </div>
           )}
           {isAlternative ? (
             <InheritableField
-              id="question-manualPoints"
+              id={`${idPrefix}-manualPoints`}
               label="Manual points"
               inputType="number"
               isInherited={isManualPointsInherited}
               inheritedDisplayValue={String(inheritedManualPoints ?? '')}
               registerProps={register('manualPoints', {
                 setValueAs: coerceToNumber,
-                validate: pointsValidation,
+                deps: [originalPointsProperty],
+                validate: {
+                  atLeastOne: pointsValidation,
+                  nonNegative: nonNegativePointsValidation,
+                },
               })}
               error={errors.manualPoints}
               helpText="Points awarded for the manually graded component."
@@ -445,16 +512,15 @@ export function QuestionDetailPanel({
                   shouldValidate: true,
                 })
               }
+              // Directly save instead of setValue(field, undefined) because
+              // RHF does not reliably trigger dirty-state changes for undefined.
               onReset={() =>
-                setValue('manualPoints', undefined, {
-                  shouldDirty: true,
-                  shouldValidate: true,
-                })
+                handleSave({ ...getValues(), manualPoints: undefined })
               }
             />
           ) : (
             <div className="mb-3">
-              <label htmlFor="question-manualPoints" className="form-label">
+              <label htmlFor={`${idPrefix}-manualPoints`} className="form-label">
                 Manual points
               </label>
               <input
@@ -463,22 +529,33 @@ export function QuestionDetailPanel({
                   'form-control form-control-sm',
                   errors.manualPoints && 'is-invalid',
                 )}
-                id="question-manualPoints"
+                id={`${idPrefix}-manualPoints`}
+                aria-invalid={!!errors.manualPoints}
+                aria-errormessage={
+                  errors.manualPoints ? `${idPrefix}-manualPoints-error` : undefined
+                }
+                aria-describedby={`${idPrefix}-manualPoints-help`}
                 {...register('manualPoints', {
                   setValueAs: coerceToNumber,
-                  validate: pointsValidation,
+                  deps: [originalPointsProperty],
+                  validate: {
+                    atLeastOne: pointsValidation,
+                    nonNegative: nonNegativePointsValidation,
+                  },
                 })}
               />
               {errors.manualPoints && (
-                <div className="invalid-feedback">{errors.manualPoints.message}</div>
+                <div id={`${idPrefix}-manualPoints-error`} className="invalid-feedback">
+                  {errors.manualPoints.message}
+                </div>
               )}
-              <small className="form-text text-muted">
+              <small id={`${idPrefix}-manualPoints-help`} className="form-text text-muted">
                 Points awarded for the manually graded component.
               </small>
             </div>
           )}
           <div className="mb-3">
-            <label htmlFor="question-triesPerVariant" className="form-label">
+            <label htmlFor={`${idPrefix}-triesPerVariant`} className="form-label">
               Tries per variant
             </label>
             <input
@@ -487,16 +564,23 @@ export function QuestionDetailPanel({
                 'form-control form-control-sm',
                 errors.triesPerVariant && 'is-invalid',
               )}
-              id="question-triesPerVariant"
+              id={`${idPrefix}-triesPerVariant`}
+              aria-invalid={!!errors.triesPerVariant}
+              aria-errormessage={
+                errors.triesPerVariant ? `${idPrefix}-triesPerVariant-error` : undefined
+              }
+              aria-describedby={`${idPrefix}-triesPerVariant-help`}
               {...register('triesPerVariant', {
                 setValueAs: coerceToNumber,
                 validate: (v) => validatePositiveInteger(v, 'Tries per variant'),
               })}
             />
             {errors.triesPerVariant && (
-              <div className="invalid-feedback">{errors.triesPerVariant.message}</div>
+              <div id={`${idPrefix}-triesPerVariant-error`} className="invalid-feedback">
+                {errors.triesPerVariant.message}
+              </div>
             )}
-            <small className="form-text text-muted">
+            <small id={`${idPrefix}-triesPerVariant-help`} className="form-text text-muted">
               Number of submission attempts allowed per question variant.
             </small>
           </div>
@@ -505,7 +589,7 @@ export function QuestionDetailPanel({
         <>
           {isAlternative ? (
             <InheritableField
-              id="question-pointsList"
+              id={`${idPrefix}-pointsList`}
               label="Points list"
               inputType="text"
               isInherited={isPointsInherited}
@@ -516,7 +600,11 @@ export function QuestionDetailPanel({
                   message: 'Points must be a number or a comma-separated list of numbers.',
                 },
                 setValueAs: parsePointsListValue,
-                validate: pointsValidation,
+                deps: ['manualPoints'],
+                validate: {
+                  atLeastOne: pointsValidation,
+                  nonIncreasing: (v) => validateNonIncreasingPoints(v),
+                },
               })}
               error={errors[originalPointsProperty]}
               helpText='Points for each attempt, as a comma-separated list (e.g. "10, 5, 2, 1").'
@@ -528,16 +616,15 @@ export function QuestionDetailPanel({
                   shouldValidate: true,
                 })
               }
+              // Directly save instead of setValue(field, undefined) because
+              // RHF does not reliably trigger dirty-state changes for undefined.
               onReset={() =>
-                setValue(originalPointsProperty, undefined, {
-                  shouldDirty: true,
-                  shouldValidate: true,
-                })
+                handleSave({ ...getValues(), [originalPointsProperty]: undefined })
               }
             />
           ) : (
             <div className="mb-3">
-              <label htmlFor="question-pointsList" className="form-label">
+              <label htmlFor={`${idPrefix}-pointsList`} className="form-label">
                 Points list
               </label>
               <input
@@ -546,34 +633,49 @@ export function QuestionDetailPanel({
                   'form-control form-control-sm',
                   errors[originalPointsProperty] && 'is-invalid',
                 )}
-                id="question-pointsList"
+                id={`${idPrefix}-pointsList`}
+                aria-invalid={!!errors[originalPointsProperty]}
+                aria-errormessage={
+                  errors[originalPointsProperty] ? `${idPrefix}-pointsList-error` : undefined
+                }
+                aria-describedby={`${idPrefix}-pointsList-help`}
                 {...register(originalPointsProperty, {
                   pattern: {
                     value: /^[0-9, ]*$/,
                     message: 'Points must be a number or a comma-separated list of numbers.',
                   },
                   setValueAs: parsePointsListValue,
-                  validate: pointsValidation,
+                  deps: ['manualPoints'],
+                  validate: {
+                    atLeastOne: pointsValidation,
+                    nonIncreasing: (v) => validateNonIncreasingPoints(v),
+                  },
                 })}
               />
               {errors[originalPointsProperty] && (
-                <div className="invalid-feedback">{errors[originalPointsProperty].message}</div>
+                <div id={`${idPrefix}-pointsList-error`} className="invalid-feedback">
+                  {errors[originalPointsProperty].message}
+                </div>
               )}
-              <small className="form-text text-muted">
+              <small id={`${idPrefix}-pointsList-help`} className="form-text text-muted">
                 Points for each attempt, as a comma-separated list (e.g. "10, 5, 2, 1").
               </small>
             </div>
           )}
           {isAlternative ? (
             <InheritableField
-              id="question-manualPoints"
+              id={`${idPrefix}-manualPoints`}
               label="Manual points"
               inputType="number"
               isInherited={isManualPointsInherited}
               inheritedDisplayValue={String(inheritedManualPoints ?? '')}
               registerProps={register('manualPoints', {
                 setValueAs: coerceToNumber,
-                validate: pointsValidation,
+                deps: [originalPointsProperty],
+                validate: {
+                  atLeastOne: pointsValidation,
+                  nonNegative: nonNegativePointsValidation,
+                },
               })}
               error={errors.manualPoints}
               helpText="Points awarded for the manually graded component."
@@ -585,16 +687,15 @@ export function QuestionDetailPanel({
                   shouldValidate: true,
                 })
               }
+              // Directly save instead of setValue(field, undefined) because
+              // RHF does not reliably trigger dirty-state changes for undefined.
               onReset={() =>
-                setValue('manualPoints', undefined, {
-                  shouldDirty: true,
-                  shouldValidate: true,
-                })
+                handleSave({ ...getValues(), manualPoints: undefined })
               }
             />
           ) : (
             <div className="mb-3">
-              <label htmlFor="question-manualPoints" className="form-label">
+              <label htmlFor={`${idPrefix}-manualPoints`} className="form-label">
                 Manual points
               </label>
               <input
@@ -603,16 +704,27 @@ export function QuestionDetailPanel({
                   'form-control form-control-sm',
                   errors.manualPoints && 'is-invalid',
                 )}
-                id="question-manualPoints"
+                id={`${idPrefix}-manualPoints`}
+                aria-invalid={!!errors.manualPoints}
+                aria-errormessage={
+                  errors.manualPoints ? `${idPrefix}-manualPoints-error` : undefined
+                }
+                aria-describedby={`${idPrefix}-manualPoints-help`}
                 {...register('manualPoints', {
                   setValueAs: coerceToNumber,
-                  validate: pointsValidation,
+                  deps: [originalPointsProperty],
+                  validate: {
+                    atLeastOne: pointsValidation,
+                    nonNegative: nonNegativePointsValidation,
+                  },
                 })}
               />
               {errors.manualPoints && (
-                <div className="invalid-feedback">{errors.manualPoints.message}</div>
+                <div id={`${idPrefix}-manualPoints-error`} className="invalid-feedback">
+                  {errors.manualPoints.message}
+                </div>
               )}
-              <small className="form-text text-muted">
+              <small id={`${idPrefix}-manualPoints-help`} className="form-text text-muted">
                 Points awarded for the manually graded component.
               </small>
             </div>
@@ -621,19 +733,22 @@ export function QuestionDetailPanel({
       )}
 
       <div className="mb-3">
-        <label htmlFor="question-comment" className="form-label">
+        <label htmlFor={`${idPrefix}-comment`} className="form-label">
           Comment
         </label>
         <textarea
           className="form-control form-control-sm"
-          id="question-comment"
+          id={`${idPrefix}-comment`}
+          aria-describedby={`${idPrefix}-comment-help`}
           rows={2}
           {...register('comment')}
         />
-        <small className="form-text text-muted">Internal note, not shown to students.</small>
+        <small id={`${idPrefix}-comment-help`} className="form-text text-muted">
+          Internal note, not shown to students.
+        </small>
       </div>
 
-      <AdvancedFields register={register} idPrefix="question" variant="question" />
+      <AdvancedFields register={register} errors={errors} idPrefix={idPrefix} variant="question" />
 
       {questionData?.assessment_question.mean_question_score != null && (
         <dl className="mb-0">

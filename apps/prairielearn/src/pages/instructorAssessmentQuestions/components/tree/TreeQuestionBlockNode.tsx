@@ -192,11 +192,18 @@ export function TreeQuestionBlockNode({
             return `Choose ${choose} of ${alternativeCount}`;
           })}
           {pointsMismatch && (
-            <i
-              className="bi bi-exclamation-triangle-fill text-warning ms-1"
-              aria-hidden="true"
-              title="Alternatives have different point values"
-            />
+            <OverlayTrigger
+              placement="top"
+              tooltip={{
+                props: { id: `points-mismatch-${zoneQuestionBlock.trackingId}` },
+                body: 'Alternatives have different point values',
+              }}
+            >
+              <i
+                className="bi bi-exclamation-triangle-fill text-warning ms-1"
+                aria-hidden="true"
+              />
+            </OverlayTrigger>
           )}
           {editMode && changeTracking.newIds.has(zoneQuestionBlock.trackingId) && (
             <OverlayTrigger

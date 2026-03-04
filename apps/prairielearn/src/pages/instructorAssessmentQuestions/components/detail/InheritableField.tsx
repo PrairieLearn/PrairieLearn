@@ -12,6 +12,7 @@ export function InheritableField({
   error,
   helpText,
   inheritedValueLabel,
+  placeholder,
   onOverride,
   onReset,
   showResetButton,
@@ -26,6 +27,7 @@ export function InheritableField({
   error?: FieldError;
   helpText: string;
   inheritedValueLabel?: string;
+  placeholder?: string;
   onOverride: () => void;
   onReset: () => void;
   showResetButton: boolean;
@@ -69,7 +71,11 @@ export function InheritableField({
             type={inputType}
             className={clsx('form-control form-control-sm', error && 'is-invalid')}
             id={id}
+            aria-invalid={!!error}
+            aria-errormessage={error ? `${id}-error` : undefined}
+            aria-describedby={`${id}-help`}
             step={step}
+            placeholder={placeholder}
             {...registerProps}
           />
           <button
@@ -80,7 +86,11 @@ export function InheritableField({
           >
             <i className="bi bi-arrow-counterclockwise" />
           </button>
-          {error && <div className="invalid-feedback">{error.message}</div>}
+          {error && (
+            <div id={`${id}-error`} className="invalid-feedback">
+              {error.message}
+            </div>
+          )}
         </div>
       ) : (
         <>
@@ -88,13 +98,21 @@ export function InheritableField({
             type={inputType}
             className={clsx('form-control form-control-sm', error && 'is-invalid')}
             id={id}
+            aria-invalid={!!error}
+            aria-errormessage={error ? `${id}-error` : undefined}
+            aria-describedby={`${id}-help`}
             step={step}
+            placeholder={placeholder}
             {...registerProps}
           />
-          {error && <div className="invalid-feedback">{error.message}</div>}
+          {error && (
+            <div id={`${id}-error`} className="invalid-feedback">
+              {error.message}
+            </div>
+          )}
         </>
       )}
-      <small className="form-text text-muted">
+      <small id={`${id}-help`} className="form-text text-muted">
         {showResetButton && inheritedValueLabel
           ? `Overrides group value (${inheritedValueLabel}).`
           : helpText}

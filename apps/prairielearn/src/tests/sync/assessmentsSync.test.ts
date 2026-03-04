@@ -1941,6 +1941,49 @@ describe('Assessment syncing', () => {
     );
   });
 
+  it('records a warning if a question has autoPoints exceeding maxAutoPoints on a Homework-type assessment', async () => {
+    const courseData = util.getCourseData();
+    const assessment = makeAssessment(courseData, 'Homework');
+    assessment.zones?.push({
+      title: 'test zone',
+      questions: [
+        {
+          id: util.QUESTION_ID,
+          maxAutoPoints: 3,
+          autoPoints: 5,
+        },
+      ],
+    });
+    courseData.courseInstances[util.COURSE_INSTANCE_ID].assessments['fail'] = assessment;
+    await util.writeAndSyncCourseData(courseData);
+    const syncedAssessment = await findSyncedAssessment('fail');
+    assert.isNotNull(syncedAssessment.sync_warnings);
+    assert.match(
+      syncedAssessment.sync_warnings,
+      /"autoPoints" \(5\) cannot exceed "maxAutoPoints" \(3\)/,
+    );
+  });
+
+  it('records a warning if a question has points exceeding maxPoints on a Homework-type assessment', async () => {
+    const courseData = util.getCourseData();
+    const assessment = makeAssessment(courseData, 'Homework');
+    assessment.zones?.push({
+      title: 'test zone',
+      questions: [
+        {
+          id: util.QUESTION_ID,
+          maxPoints: 3,
+          points: 5,
+        },
+      ],
+    });
+    courseData.courseInstances[util.COURSE_INSTANCE_ID].assessments['fail'] = assessment;
+    await util.writeAndSyncCourseData(courseData);
+    const syncedAssessment = await findSyncedAssessment('fail');
+    assert.isNotNull(syncedAssessment.sync_warnings);
+    assert.match(syncedAssessment.sync_warnings, /"points" \(5\) cannot exceed "maxPoints" \(3\)/);
+  });
+
   it('records an error if an assessment directory is missing an infoAssessment.json file', async () => {
     const courseData = util.getCourseData();
     const courseDir = await util.writeCourseToTempDirectory(courseData);
