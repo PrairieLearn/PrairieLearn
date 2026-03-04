@@ -2,7 +2,7 @@ import * as cheerio from 'cheerio';
 import fetch from 'node-fetch';
 import { afterAll, assert, beforeAll, describe, it } from 'vitest';
 
-import { loadSqlEquiv, queryRow, queryRows } from '@prairielearn/postgres';
+import { loadSqlEquiv, queryRow, queryRows, queryScalar } from '@prairielearn/postgres';
 import { IdSchema } from '@prairielearn/zod';
 
 import { config } from '../lib/config.js';
@@ -133,7 +133,7 @@ async function getQuestionUrl(
   assessmentInstanceId: string,
   questionId: string,
 ): Promise<string> {
-  const result = await queryRow(
+  const result = await queryScalar(
     sql.select_instance_questions,
     {
       assessment_instance_id: assessmentInstanceId,
@@ -151,7 +151,7 @@ async function getQuestionUrl(
  */
 async function prepareGroup() {
   // Get exam assessment URL using ids from database
-  const assessmentId = await queryRow(
+  const assessmentId = await queryScalar(
     sql.select_assessment,
     { assessment_tid: GROUP_WORK_ASSESSMENT_TID },
     IdSchema,

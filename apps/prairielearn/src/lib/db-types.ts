@@ -176,7 +176,9 @@ export const SprocIpToModeSchema = z.object({
 export type SprocIpToMode = z.infer<typeof SprocIpToModeSchema>;
 
 // Result of users_is_instructor_in_course_instance sproc
-export const SprocUsersIsInstructorInCourseInstanceSchema = z.boolean();
+export const SprocUsersIsInstructorInCourseInstanceSchema = z.object({
+  is_instructor: z.boolean(),
+});
 
 // Result of users_select_or_insert sproc
 export const SprocUsersSelectOrInsertSchema = z.object({
@@ -204,7 +206,9 @@ export const SprocServerLoadsCurrentSchema = z.object({
 });
 
 // Result of sync_assessments sproc
-export const SprocSyncAssessmentsSchema = z.record(z.string(), IdSchema).nullable();
+export const SprocSyncAssessmentsSchema = z.object({
+  name_to_id_map: z.record(z.string(), IdSchema).nullable(),
+});
 
 // Result of authz_course_instance sproc
 export const SprocAuthzCourseInstanceSchema = z.object({
