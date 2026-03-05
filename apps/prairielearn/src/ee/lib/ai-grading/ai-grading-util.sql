@@ -66,7 +66,9 @@ VALUES
     $cost,
     $course_id,
     $course_instance_id
-  );
+  )
+RETURNING
+  id;
 
 -- BLOCK select_last_variant_and_submission
 SELECT

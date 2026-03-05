@@ -1,7 +1,9 @@
 import { QueryClient, useMutation, useQuery } from '@tanstack/react-query';
 import clsx from 'clsx';
-import { useState } from 'react';
-import { Alert, Form, Modal } from 'react-bootstrap';
+// @ts-expect-error -- echarts ships `export = echarts` types but ESM runtime; `import *` works at runtime via esbuild
+import * as echarts from 'echarts';
+import { useEffect, useRef, useState } from 'react';
+import { Alert, Form, Modal, Spinner } from 'react-bootstrap';
 import { useForm } from 'react-hook-form';
 
 import { useModalState } from '@prairielearn/ui';
@@ -400,10 +402,11 @@ function AiGradingSettingsContent({
 function CreditPoolSection({ useCustomApiKeys }: { useCustomApiKeys: boolean }) {
   const trpc = useTRPC();
   const [showHistory, setShowHistory] = useState(false);
+  const [page, setPage] = useState(1);
 
   const poolQuery = useQuery(trpc.creditPool.queryOptions());
   const changesQuery = useQuery({
-    ...trpc.creditPoolChanges.queryOptions(),
+    ...trpc.creditPoolChanges.queryOptions({ page }),
     enabled: showHistory,
   });
   const timeSeriesQuery = useQuery(trpc.creditPoolBalanceTimeSeries.queryOptions());
@@ -417,7 +420,12 @@ function CreditPoolSection({ useCustomApiKeys }: { useCustomApiKeys: boolean }) 
   }
 
   if (!poolQuery.data) {
-    return null;
+    return (
+      <div className="border-top pt-3 mt-3 text-center py-4">
+        <Spinner animation="border" size="sm" className="me-2" />
+        Loading AI grading credits...
+      </div>
+    );
   }
 
   const pool = poolQuery.data;
@@ -474,8 +482,13 @@ function CreditPoolSection({ useCustomApiKeys }: { useCustomApiKeys: boolean }) 
 
         <TransactionHistory
           showHistory={showHistory}
-          setShowHistory={setShowHistory}
+          setShowHistory={(v) => {
+            setShowHistory(v);
+            if (v) setPage(1);
+          }}
           changesQuery={changesQuery}
+          page={page}
+          setPage={setPage}
         />
       </div>
     </div>
@@ -486,6 +499,8 @@ function TransactionHistory({
   showHistory,
   setShowHistory,
   changesQuery,
+  page,
+  setPage,
 }: {
   showHistory: boolean;
   setShowHistory: (v: boolean) => void;
@@ -493,16 +508,25 @@ function TransactionHistory({
     isLoading: boolean;
     isError: boolean;
     data?: {
-      id: string;
-      created_at: Date;
-      delta_milli_dollars: number;
-      credit_after_milli_dollars: number;
-      reason: string;
-      user_name: string | null;
-      user_uid: string | null;
-    }[];
+      rows: {
+        id: string;
+        created_at: Date;
+        delta_milli_dollars: number;
+        credit_after_milli_dollars: number;
+        submission_count: number;
+        reason: string;
+        user_name: string | null;
+        user_uid: string | null;
+      }[];
+      totalCount: number;
+    };
   };
+  page: number;
+  setPage: (p: number) => void;
 }) {
+  const pageSize = 25;
+  const totalPages = changesQuery.data ? Math.ceil(changesQuery.data.totalCount / pageSize) : 0;
+
   return (
     <div>
       <button
@@ -520,52 +544,89 @@ function TransactionHistory({
             <Alert variant="danger">Failed to load transaction history.</Alert>
           )}
           {changesQuery.data && (
-            <div className="table-responsive border rounded overflow-hidden">
-              <table className="table table-sm table-hover mb-0" aria-label="Transaction history">
-                <thead>
-                  <tr>
-                    <th className="px-3 py-2">Date</th>
-                    <th className="px-3 py-2">Change</th>
-                    <th className="px-3 py-2">Balance after</th>
-                    <th className="px-3 py-2">Reason</th>
-                    <th className="px-3 py-2">User</th>
-                  </tr>
-                </thead>
-                <tbody>
-                  {changesQuery.data.length === 0 ? (
+            <>
+              <div className="table-responsive border rounded overflow-hidden">
+                <table className="table table-sm table-hover mb-0" aria-label="Transaction history">
+                  <thead>
                     <tr>
-                      <td colSpan={5} className="text-muted text-center py-4 px-3">
-                        No transactions yet.
-                      </td>
+                      <th className="px-3 py-2">Date</th>
+                      <th className="px-3 py-2">Change</th>
+                      <th className="px-3 py-2">Balance after</th>
+                      <th className="px-3 py-2">Reason</th>
+                      <th className="px-3 py-2">User</th>
                     </tr>
-                  ) : (
-                    changesQuery.data.map((change) => (
-                      <tr key={change.id}>
-                        <td className="align-middle px-3 py-2">
-                          {new Date(change.created_at).toLocaleString()}
-                        </td>
-                        <td
-                          className={clsx(
-                            'align-middle px-3 py-2 fw-bold',
-                            change.delta_milli_dollars > 0 ? 'text-success' : 'text-danger',
-                          )}
-                        >
-                          {change.delta_milli_dollars > 0 ? '+' : '-'}
-                          {formatMilliDollars(Math.abs(change.delta_milli_dollars))}
-                        </td>
-                        <td className="align-middle px-3 py-2">
-                          {formatMilliDollars(change.credit_after_milli_dollars)}
-                        </td>
-                        <td className="align-middle px-3 py-2">{change.reason}</td>
-                        <td className="align-middle px-3 py-2">
-                          {change.user_name ?? change.user_uid ?? '—'}
+                  </thead>
+                  <tbody>
+                    {changesQuery.data.rows.length === 0 ? (
+                      <tr>
+                        <td colSpan={5} className="text-muted text-center py-4 px-3">
+                          No transactions yet.
                         </td>
                       </tr>
-                    ))
-                  )}
-                </tbody>
-              </table>
-            </div>
+                    ) : (
+                      changesQuery.data.rows.map((change) => (
+                        <tr key={change.id}>
+                          <td className="align-middle px-3 py-2">
+                            {new Date(change.created_at).toLocaleString()}
+                          </td>
+                          <td
+                            className={clsx(
+                              'align-middle px-3 py-2 fw-bold',
+                              change.delta_milli_dollars > 0 ? 'text-success' : 'text-danger',
+                            )}
+                          >
+                            {change.delta_milli_dollars > 0 ? '+' : '-'}
+                            {formatMilliDollars(Math.abs(change.delta_milli_dollars))}
+                          </td>
+                          <td className="align-middle px-3 py-2">
+                            {formatMilliDollars(change.credit_after_milli_dollars)}
+                          </td>
+                          <td className="align-middle px-3 py-2">
+                            {change.submission_count > 1
+                              ? `${change.reason} (${change.submission_count} submissions)`
+                              : change.reason}
+                          </td>
+                          <td className="align-middle px-3 py-2">
+                            {change.user_name ?? change.user_uid ?? '—'}
+                          </td>
+                        </tr>
+                      ))
+                    )}
+                  </tbody>
+                </table>
+              </div>
+              {totalPages > 1 && (
+                <nav aria-label="Transaction history pagination" className="mt-3">
+                  <ul className="pagination pagination-sm justify-content-center mb-0">
+                    <li className={clsx('page-item', page <= 1 && 'disabled')}>
+                      <button
+                        type="button"
+                        className="page-link"
+                        disabled={page <= 1}
+                        onClick={() => setPage(page - 1)}
+                      >
+                        Previous
+                      </button>
+                    </li>
+                    <li className="page-item disabled">
+                      <span className="page-link">
+                        Page {page} of {totalPages}
+                      </span>
+                    </li>
+                    <li className={clsx('page-item', page >= totalPages && 'disabled')}>
+                      <button
+                        type="button"
+                        className="page-link"
+                        disabled={page >= totalPages}
+                        onClick={() => setPage(page + 1)}
+                      >
+                        Next
+                      </button>
+                    </li>
+                  </ul>
+                </nav>
+              )}
+            </>
           )}
         </div>
       )}
@@ -574,69 +635,58 @@ function TransactionHistory({
 }
 
 function BalanceChart({ data }: { data: { date: Date; balance_milli_dollars: number }[] }) {
+  const chartRef = useRef<HTMLDivElement>(null);
+
+  useEffect(() => {
+    if (!chartRef.current || data.length < 2) return;
+
+    const chart = echarts.init(chartRef.current);
+
+    chart.setOption({
+      grid: { top: 10, right: 10, bottom: 30, left: 60 },
+      tooltip: {
+        trigger: 'axis',
+        formatter: (params: { value: [string, number] }[]) => {
+          const p = params[0];
+          const d = new Date(p.value[0]);
+          return `${d.toLocaleString()}<br/>${formatMilliDollars(p.value[1])}`;
+        },
+      },
+      xAxis: {
+        type: 'time',
+        axisLabel: { fontSize: 10 },
+      },
+      yAxis: {
+        type: 'value',
+        axisLabel: {
+          fontSize: 10,
+          formatter: (v: number) => formatMilliDollars(v),
+        },
+        min: 0,
+      },
+      series: [
+        {
+          type: 'line',
+          data: data.map((d) => [new Date(d.date).toISOString(), d.balance_milli_dollars]),
+          smooth: false,
+          symbol: 'circle',
+          symbolSize: 4,
+          lineStyle: { width: 2 },
+          areaStyle: { opacity: 0.1 },
+        },
+      ],
+    });
+
+    const handleResize = () => chart.resize();
+    window.addEventListener('resize', handleResize);
+
+    return () => {
+      window.removeEventListener('resize', handleResize);
+      chart.dispose();
+    };
+  }, [data]);
+
   if (data.length < 2) return null;
 
-  const maxBalance = Math.max(...data.map((d) => d.balance_milli_dollars));
-  const chartHeight = 120;
-  const chartWidth = 600;
-  const padding = { top: 10, right: 10, bottom: 20, left: 50 };
-  const innerWidth = chartWidth - padding.left - padding.right;
-  const innerHeight = chartHeight - padding.top - padding.bottom;
-
-  const yMax = maxBalance > 0 ? maxBalance : 1000;
-
-  const points = data.map((d, i) => {
-    const x = padding.left + (i / (data.length - 1)) * innerWidth;
-    const y = padding.top + innerHeight - (d.balance_milli_dollars / yMax) * innerHeight;
-    return { x, y, ...d };
-  });
-
-  const linePath = points.map((p, i) => `${i === 0 ? 'M' : 'L'} ${p.x} ${p.y}`).join(' ');
-
-  const formatTimestamp = (d: Date) => {
-    const dt = new Date(d);
-    return `${dt.toLocaleDateString()} ${dt.toLocaleTimeString()}`;
-  };
-
-  return (
-    <svg
-      viewBox={`0 0 ${chartWidth} ${chartHeight}`}
-      className="w-100"
-      style={{ maxHeight: '150px' }}
-      role="img"
-      aria-label="Credit balance chart"
-    >
-      <text x={padding.left - 5} y={padding.top + 4} textAnchor="end" fontSize="9" fill="#6c757d">
-        {formatMilliDollars(yMax)}
-      </text>
-      <text
-        x={padding.left - 5}
-        y={padding.top + innerHeight + 4}
-        textAnchor="end"
-        fontSize="9"
-        fill="#6c757d"
-      >
-        $0.00
-      </text>
-
-      <path d={linePath} fill="none" stroke="#0d6efd" strokeWidth="2" />
-
-      {points.map((p) => (
-        <circle key={`${p.date.toISOString()}`} cx={p.x} cy={p.y} r="3" fill="#0d6efd" />
-      ))}
-
-      <text x={points[0].x} y={chartHeight - 2} textAnchor="start" fontSize="9" fill="#6c757d">
-        {formatTimestamp(points[0].date)}
-      </text>
-      <text
-        x={points[points.length - 1].x}
-        y={chartHeight - 2}
-        textAnchor="end"
-        fontSize="9"
-        fill="#6c757d"
-      >
-        {formatTimestamp(points[points.length - 1].date)}
-      </text>
-    </svg>
-  );
+  return <div ref={chartRef} style={{ height: '200px', width: '100%' }} />;
 }

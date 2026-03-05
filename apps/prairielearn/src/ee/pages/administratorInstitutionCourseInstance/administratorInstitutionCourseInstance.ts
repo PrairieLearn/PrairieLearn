@@ -11,7 +11,7 @@ import { typedAsyncHandler } from '../../../lib/res-locals.js';
 import {
   adjustCreditPool,
   selectCreditPoolBalanceTimeSeries,
-  selectCreditPoolChanges,
+  selectCreditPoolChangesBatched,
 } from '../../../models/ai-grading-credit-pool.js';
 import { parseDesiredPlanGrants } from '../../lib/billing/components/PlanGrantsEditor.js';
 import {
@@ -63,12 +63,14 @@ router.get(
       course_instance_id: course_instance.id,
     });
 
-    const [creditPoolChanges, creditPoolTimeSeries] = aiGradingEnabled
+    const creditPage = Math.max(1, Number.parseInt(String(req.query.credit_page ?? '1')) || 1);
+
+    const [creditPoolChangesResult, creditPoolTimeSeries] = aiGradingEnabled
       ? await Promise.all([
-          selectCreditPoolChanges(course_instance.id),
+          selectCreditPoolChangesBatched(course_instance.id, creditPage),
           selectCreditPoolBalanceTimeSeries(course_instance.id),
         ])
-      : [[], []];
+      : [{ rows: [], totalCount: 0 }, []];
 
     res.send(
       AdministratorInstitutionCourseInstance({
@@ -77,7 +79,9 @@ router.get(
         course_instance,
         planGrants,
         aiGradingEnabled,
-        creditPoolChanges,
+        creditPoolChanges: creditPoolChangesResult.rows,
+        creditPoolTotalCount: creditPoolChangesResult.totalCount,
+        creditPage,
         creditPoolTimeSeries,
         resLocals: res.locals,
       }),

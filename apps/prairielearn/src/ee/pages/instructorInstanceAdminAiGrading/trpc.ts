@@ -15,7 +15,7 @@ import {
 import {
   selectCreditPool,
   selectCreditPoolBalanceTimeSeries,
-  selectCreditPoolChanges,
+  selectCreditPoolChangesBatched,
 } from '../../../models/ai-grading-credit-pool.js';
 
 import { formatCredential } from './utils/format.js';
@@ -114,9 +114,12 @@ const creditPoolQuery = t.procedure.use(requireAiGradingFeature).query(async (op
   return pool;
 });
 
-const creditPoolChangesQuery = t.procedure.use(requireAiGradingFeature).query(async (opts) => {
-  return await selectCreditPoolChanges(opts.ctx.course_instance.id);
-});
+const creditPoolChangesQuery = t.procedure
+  .use(requireAiGradingFeature)
+  .input(z.object({ page: z.number().int().min(1).default(1) }))
+  .query(async (opts) => {
+    return await selectCreditPoolChangesBatched(opts.ctx.course_instance.id, opts.input.page);
+  });
 
 const creditPoolBalanceTimeSeriesQuery = t.procedure
   .use(requireAiGradingFeature)

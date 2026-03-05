@@ -645,19 +645,17 @@ export async function aiGrade({
               course_instance_id: course_instance.id,
             };
 
-            if (rotationCorrectionApplied) {
-              await insertAiGradingJobWithRotationCorrection({
-                ...aiGradingJobParams,
-                gradingResponseWithRotationIssue,
-                rotationCorrections,
-                gradingResponseWithRotationCorrection: finalGradingResponse,
-              });
-            } else {
-              await insertAiGradingJob({
-                ...aiGradingJobParams,
-                response: finalGradingResponse,
-              });
-            }
+            const aiGradingJobId = rotationCorrectionApplied
+              ? await insertAiGradingJobWithRotationCorrection({
+                  ...aiGradingJobParams,
+                  gradingResponseWithRotationIssue,
+                  rotationCorrections,
+                  gradingResponseWithRotationCorrection: finalGradingResponse,
+                })
+              : await insertAiGradingJob({
+                  ...aiGradingJobParams,
+                  response: finalGradingResponse,
+                });
 
             await updateCourseInstanceUsagesForAiGradingResponses({
               gradingJobId: grading_job_id,
@@ -679,7 +677,7 @@ export async function aiGrade({
                 course_instance_id: course_instance.id,
                 cost_milli_dollars: costMilliDollars,
                 user_id: authn_user_id,
-                ai_grading_job_id: null,
+                ai_grading_job_id: aiGradingJobId,
                 assessment_question_id: assessment_question.id,
                 reason: `AI graded instance question ${instance_question.id}`,
               });
@@ -723,19 +721,17 @@ export async function aiGrade({
               course_instance_id: course_instance.id,
             };
 
-            if (rotationCorrectionApplied) {
-              await insertAiGradingJobWithRotationCorrection({
-                ...aiGradingJobParams,
-                gradingResponseWithRotationIssue,
-                rotationCorrections,
-                gradingResponseWithRotationCorrection: finalGradingResponse,
-              });
-            } else {
-              await insertAiGradingJob({
-                ...aiGradingJobParams,
-                response: finalGradingResponse,
-              });
-            }
+            const aiGradingJobId = rotationCorrectionApplied
+              ? await insertAiGradingJobWithRotationCorrection({
+                  ...aiGradingJobParams,
+                  gradingResponseWithRotationIssue,
+                  rotationCorrections,
+                  gradingResponseWithRotationCorrection: finalGradingResponse,
+                })
+              : await insertAiGradingJob({
+                  ...aiGradingJobParams,
+                  response: finalGradingResponse,
+                });
 
             await updateCourseInstanceUsagesForAiGradingResponses({
               gradingJobId: grading_job_id,
@@ -757,7 +753,7 @@ export async function aiGrade({
                 course_instance_id: course_instance.id,
                 cost_milli_dollars: costMilliDollars,
                 user_id: authn_user_id,
-                ai_grading_job_id: null,
+                ai_grading_job_id: aiGradingJobId,
                 assessment_question_id: assessment_question.id,
                 reason: `AI graded instance question ${instance_question.id}`,
               });
@@ -938,19 +934,17 @@ export async function aiGrade({
               course_instance_id: course_instance.id,
             };
 
-            if (rotationCorrectionApplied) {
-              await insertAiGradingJobWithRotationCorrection({
-                ...aiGradingJobParams,
-                gradingResponseWithRotationIssue,
-                rotationCorrections,
-                gradingResponseWithRotationCorrection: finalGradingResponse,
-              });
-            } else {
-              await insertAiGradingJob({
-                ...aiGradingJobParams,
-                response: finalGradingResponse,
-              });
-            }
+            const aiGradingJobId = rotationCorrectionApplied
+              ? await insertAiGradingJobWithRotationCorrection({
+                  ...aiGradingJobParams,
+                  gradingResponseWithRotationIssue,
+                  rotationCorrections,
+                  gradingResponseWithRotationCorrection: finalGradingResponse,
+                })
+              : await insertAiGradingJob({
+                  ...aiGradingJobParams,
+                  response: finalGradingResponse,
+                });
 
             await updateCourseInstanceUsagesForAiGradingResponses({
               gradingJobId: grading_job_id,
@@ -972,7 +966,7 @@ export async function aiGrade({
                 course_instance_id: course_instance.id,
                 cost_milli_dollars: costMilliDollars,
                 user_id: authn_user_id,
-                ai_grading_job_id: null,
+                ai_grading_job_id: aiGradingJobId,
                 assessment_question_id: assessment_question.id,
                 reason: `AI graded instance question ${instance_question.id}`,
               });
@@ -1006,19 +1000,17 @@ export async function aiGrade({
               course_id: course.id,
               course_instance_id: course_instance.id,
             };
-            if (rotationCorrectionApplied) {
-              await insertAiGradingJobWithRotationCorrection({
-                ...aiGradingJobParams,
-                gradingResponseWithRotationIssue,
-                rotationCorrections,
-                gradingResponseWithRotationCorrection: finalGradingResponse,
-              });
-            } else {
-              await insertAiGradingJob({
-                ...aiGradingJobParams,
-                response: finalGradingResponse,
-              });
-            }
+            const aiGradingJobId = rotationCorrectionApplied
+              ? await insertAiGradingJobWithRotationCorrection({
+                  ...aiGradingJobParams,
+                  gradingResponseWithRotationIssue,
+                  rotationCorrections,
+                  gradingResponseWithRotationCorrection: finalGradingResponse,
+                })
+              : await insertAiGradingJob({
+                  ...aiGradingJobParams,
+                  response: finalGradingResponse,
+                });
 
             await updateCourseInstanceUsagesForAiGradingResponses({
               gradingJobId: grading_job_id,
@@ -1040,7 +1032,7 @@ export async function aiGrade({
                 course_instance_id: course_instance.id,
                 cost_milli_dollars: costMilliDollars,
                 user_id: authn_user_id,
-                ai_grading_job_id: null,
+                ai_grading_job_id: aiGradingJobId,
                 assessment_question_id: assessment_question.id,
                 reason: `AI graded instance question ${instance_question.id}`,
               });

@@ -1,4 +1,4 @@
-import { type HtmlSafeString, html } from '@prairielearn/html';
+import { type HtmlSafeString, html, unsafeHtml } from '@prairielearn/html';
 
 import { PageLayout } from '../../../components/PageLayout.js';
 import { formatMilliDollars } from '../../../lib/ai-grading-credits.js';
@@ -10,17 +10,8 @@ import {
   type PlanGrant,
 } from '../../../lib/db-types.js';
 import type { ResLocalsForPage } from '../../../lib/res-locals.js';
+import type { BatchedCreditPoolChangeRow } from '../../../models/ai-grading-credit-pool.js';
 import { PlanGrantsEditor } from '../../lib/billing/components/PlanGrantsEditor.js';
-
-interface CreditPoolChange {
-  id: string;
-  created_at: Date;
-  delta_milli_dollars: number;
-  credit_after_milli_dollars: number;
-  reason: string;
-  user_name: string | null;
-  user_uid: string | null;
-}
 
 interface BalanceTimeSeriesPoint {
   date: Date;
@@ -34,6 +25,8 @@ export function AdministratorInstitutionCourseInstance({
   planGrants,
   aiGradingEnabled,
   creditPoolChanges,
+  creditPoolTotalCount,
+  creditPage,
   creditPoolTimeSeries,
   resLocals,
 }: {
@@ -42,7 +35,9 @@ export function AdministratorInstitutionCourseInstance({
   course_instance: CourseInstance;
   planGrants: PlanGrant[];
   aiGradingEnabled: boolean;
-  creditPoolChanges: CreditPoolChange[];
+  creditPoolChanges: BatchedCreditPoolChangeRow[];
+  creditPoolTotalCount: number;
+  creditPage: number;
   creditPoolTimeSeries: BalanceTimeSeriesPoint[];
   resLocals: ResLocalsForPage<'plain'>;
 }) {
@@ -156,203 +151,152 @@ export function AdministratorInstitutionCourseInstance({
       })}
       ${aiGradingEnabled
         ? html`
-            <div class="card mt-4">
-              <div class="card-header bg-primary text-white">
-                <h2 class="h6 mb-0">AI grading credits</h2>
-              </div>
-              <div class="card-body">
-                ${course_instance.ai_grading_use_custom_api_keys
-                  ? html`<div class="alert alert-danger" role="alert">
-                      This course instance is using custom API keys. Credits are not consumed when
-                      custom keys are in use.
-                    </div>`
-                  : html`<div class="alert alert-info" role="alert">
-                      This course instance is using platform API keys. Credits are consumed for each
-                      AI grading request.
-                    </div>`}
+            <h2 class="h4 mt-4">AI grading credits</h2>
 
-                <div class="row mb-3 g-3">
-                  <div class="col-md-4">
-                    <div class="border rounded p-3 text-center">
-                      <div class="text-muted small">Total available</div>
-                      <div class="h4 mb-0">
-                        ${formatMilliDollars(
-                          course_instance.credit_transferable_milli_dollars +
-                            course_instance.credit_non_transferable_milli_dollars,
-                        )}
-                      </div>
-                    </div>
-                  </div>
-                  <div class="col-md-4">
-                    <div class="border rounded p-3 text-center">
-                      <div class="text-muted small">Transferable</div>
-                      <div class="h5 mb-0">
-                        ${formatMilliDollars(course_instance.credit_transferable_milli_dollars)}
-                      </div>
-                    </div>
-                  </div>
-                  <div class="col-md-4">
-                    <div class="border rounded p-3 text-center">
-                      <div class="text-muted small">Non-transferable</div>
-                      <div class="h5 mb-0">
-                        ${formatMilliDollars(course_instance.credit_non_transferable_milli_dollars)}
-                      </div>
-                    </div>
+            ${course_instance.ai_grading_use_custom_api_keys
+              ? html`<div class="alert alert-danger" role="alert">
+                  This course instance is using custom API keys. Credits are not consumed when
+                  custom keys are in use.
+                </div>`
+              : html`<div class="alert alert-info" role="alert">
+                  This course instance is using platform API keys. Credits are consumed for each AI
+                  grading request.
+                </div>`}
+
+            <div class="row mb-3 g-3">
+              <div class="col-md-4">
+                <div class="border rounded p-3 text-center">
+                  <div class="text-muted small">Total available</div>
+                  <div class="h4 mb-0">
+                    ${formatMilliDollars(
+                      course_instance.credit_transferable_milli_dollars +
+                        course_instance.credit_non_transferable_milli_dollars,
+                    )}
                   </div>
                 </div>
-
-                <h3 class="h6">Adjust credits</h3>
-                <form method="POST" class="mb-3">
-                  <div class="row g-3 align-items-end">
-                    <div class="col-auto">
-                      <label class="form-label" for="adjustment_action">Action</label>
-                      <select
-                        class="form-select"
-                        id="adjustment_action"
-                        name="adjustment_action"
-                        ${isDeleted ? 'disabled' : ''}
-                      >
-                        <option value="add">Add</option>
-                        <option value="deduct">Deduct</option>
-                      </select>
-                    </div>
-                    <div class="col-auto">
-                      <label class="form-label" for="amount_dollars">Amount (USD)</label>
-                      <div class="input-group">
-                        <span class="input-group-text">$</span>
-                        <input
-                          type="number"
-                          class="form-control"
-                          id="amount_dollars"
-                          name="amount_dollars"
-                          min="0.01"
-                          step="0.01"
-                          placeholder="0.00"
-                          required
-                          ${isDeleted ? 'disabled' : ''}
-                        />
-                      </div>
-                    </div>
-                    <div class="col-auto">
-                      <label class="form-label" for="credit_type">Credit type</label>
-                      <select
-                        class="form-select"
-                        id="credit_type"
-                        name="credit_type"
-                        ${isDeleted ? 'disabled' : ''}
-                      >
-                        <option value="non_transferable">Non-transferable</option>
-                        <option value="transferable">Transferable</option>
-                      </select>
-                    </div>
-                    ${isDeleted
-                      ? ''
-                      : html`
-                          <div class="col-auto">
-                            <input
-                              type="hidden"
-                              name="__csrf_token"
-                              value="${resLocals.__csrf_token}"
-                            />
-                            <button
-                              type="submit"
-                              name="__action"
-                              value="adjust_credit_pool"
-                              class="btn btn-primary"
-                            >
-                              Apply
-                            </button>
-                          </div>
-                        `}
+              </div>
+              <div class="col-md-4">
+                <div class="border rounded p-3 text-center">
+                  <div class="text-muted small">Transferable</div>
+                  <div class="h5 mb-0">
+                    ${formatMilliDollars(course_instance.credit_transferable_milli_dollars)}
                   </div>
-                </form>
-
-                ${BalanceChartHtml(creditPoolTimeSeries)}
-                ${TransactionHistoryHtml(creditPoolChanges)}
+                </div>
+              </div>
+              <div class="col-md-4">
+                <div class="border rounded p-3 text-center">
+                  <div class="text-muted small">Non-transferable</div>
+                  <div class="h5 mb-0">
+                    ${formatMilliDollars(course_instance.credit_non_transferable_milli_dollars)}
+                  </div>
+                </div>
               </div>
             </div>
+
+            <h3 class="h6">Adjust credits</h3>
+            <form method="POST" class="mb-3">
+              <div class="row g-3 align-items-end">
+                <div class="col-auto">
+                  <label class="form-label" for="adjustment_action">Action</label>
+                  <select
+                    class="form-select"
+                    id="adjustment_action"
+                    name="adjustment_action"
+                    ${isDeleted ? 'disabled' : ''}
+                  >
+                    <option value="add">Add</option>
+                    <option value="deduct">Deduct</option>
+                  </select>
+                </div>
+                <div class="col-auto">
+                  <label class="form-label" for="amount_dollars">Amount (USD)</label>
+                  <div class="input-group">
+                    <span class="input-group-text">$</span>
+                    <input
+                      type="number"
+                      class="form-control"
+                      id="amount_dollars"
+                      name="amount_dollars"
+                      min="0.01"
+                      step="0.01"
+                      placeholder="0.00"
+                      required
+                      ${isDeleted ? 'disabled' : ''}
+                    />
+                  </div>
+                </div>
+                <div class="col-auto">
+                  <label class="form-label" for="credit_type">Credit type</label>
+                  <select
+                    class="form-select"
+                    id="credit_type"
+                    name="credit_type"
+                    ${isDeleted ? 'disabled' : ''}
+                  >
+                    <option value="non_transferable">Non-transferable</option>
+                    <option value="transferable">Transferable</option>
+                  </select>
+                </div>
+                ${isDeleted
+                  ? ''
+                  : html`
+                      <div class="col-auto">
+                        <input
+                          type="hidden"
+                          name="__csrf_token"
+                          value="${resLocals.__csrf_token}"
+                        />
+                        <button
+                          type="submit"
+                          name="__action"
+                          value="adjust_credit_pool"
+                          class="btn btn-primary"
+                        >
+                          Apply
+                        </button>
+                      </div>
+                    `}
+              </div>
+            </form>
+
+            ${BalanceChartContainer(creditPoolTimeSeries)}
+            ${TransactionHistoryHtml(creditPoolChanges, creditPoolTotalCount, creditPage)}
           `
         : ''}
     `,
   });
 }
 
-function BalanceChartHtml(data: BalanceTimeSeriesPoint[]): HtmlSafeString | string {
+function BalanceChartContainer(data: BalanceTimeSeriesPoint[]): HtmlSafeString | string {
   if (data.length < 2) return '';
 
-  const maxBalance = Math.max(...data.map((d) => d.balance_milli_dollars));
-  const chartHeight = 120;
-  const chartWidth = 600;
-  const padding = { top: 10, right: 10, bottom: 20, left: 50 };
-  const innerWidth = chartWidth - padding.left - padding.right;
-  const innerHeight = chartHeight - padding.top - padding.bottom;
-  const yMax = maxBalance > 0 ? maxBalance : 1000;
-
-  const points = data.map((d, i) => {
-    const x = padding.left + (i / (data.length - 1)) * innerWidth;
-    const y = padding.top + innerHeight - (d.balance_milli_dollars / yMax) * innerHeight;
-    return { x, y, ...d };
-  });
-
-  const linePath = points.map((p, i) => `${i === 0 ? 'M' : 'L'} ${p.x} ${p.y}`).join(' ');
-
-  const formatTimestamp = (d: Date) => `${d.toLocaleDateString()} ${d.toLocaleTimeString()}`;
+  const chartData = JSON.stringify(
+    data.map((d) => [d.date.toISOString(), d.balance_milli_dollars]),
+  );
 
   return html`
     <div class="mb-3">
       <h3 class="h6">Balance over time</h3>
-      <svg
-        viewBox="0 0 ${chartWidth} ${chartHeight}"
-        class="w-100"
-        style="max-height: 150px"
-        role="img"
-        aria-label="Credit balance chart"
-      >
-        <text
-          x="${padding.left - 5}"
-          y="${padding.top + 4}"
-          text-anchor="end"
-          font-size="9"
-          fill="#6c757d"
-        >
-          ${formatMilliDollars(yMax)}
-        </text>
-        <text
-          x="${padding.left - 5}"
-          y="${padding.top + innerHeight + 4}"
-          text-anchor="end"
-          font-size="9"
-          fill="#6c757d"
-        >
-          $0.00
-        </text>
-        <path d="${linePath}" fill="none" stroke="#0d6efd" stroke-width="2"></path>
-        ${points.map((p) => html`<circle cx="${p.x}" cy="${p.y}" r="3" fill="#0d6efd"></circle>`)}
-        <text
-          x="${points[0].x}"
-          y="${chartHeight - 2}"
-          text-anchor="start"
-          font-size="9"
-          fill="#6c757d"
-        >
-          ${formatTimestamp(points[0].date)}
-        </text>
-        <text
-          x="${points[points.length - 1].x}"
-          y="${chartHeight - 2}"
-          text-anchor="end"
-          font-size="9"
-          fill="#6c757d"
-        >
-          ${formatTimestamp(points[points.length - 1].date)}
-        </text>
-      </svg>
+      <div
+        class="js-balance-chart"
+        data-chart-data="${unsafeHtml(
+          chartData.replaceAll('&', '&amp;').replaceAll('"', '&quot;'),
+        )}"
+        style="height: 200px; width: 100%"
+      ></div>
     </div>
   `;
 }
 
-function TransactionHistoryHtml(changes: CreditPoolChange[]): HtmlSafeString {
-  if (changes.length === 0) return html``;
+function TransactionHistoryHtml(
+  changes: BatchedCreditPoolChangeRow[],
+  totalCount: number,
+  currentPage: number,
+): HtmlSafeString {
+  if (totalCount === 0) return html``;
+
+  const pageSize = 25;
+  const totalPages = Math.ceil(totalCount / pageSize);
 
   return html`
     <h3 class="h6">Transaction history</h3>
@@ -384,7 +328,11 @@ function TransactionHistoryHtml(changes: CreditPoolChange[]): HtmlSafeString {
                 <td class="align-middle px-3 py-2">
                   ${formatMilliDollars(change.credit_after_milli_dollars)}
                 </td>
-                <td class="align-middle px-3 py-2">${change.reason}</td>
+                <td class="align-middle px-3 py-2">
+                  ${change.submission_count > 1
+                    ? `${change.reason} (${change.submission_count} submissions)`
+                    : change.reason}
+                </td>
                 <td class="align-middle px-3 py-2">
                   ${change.user_name ?? change.user_uid ?? '—'}
                 </td>
@@ -394,5 +342,22 @@ function TransactionHistoryHtml(changes: CreditPoolChange[]): HtmlSafeString {
         </tbody>
       </table>
     </div>
+    ${totalPages > 1
+      ? html`
+          <nav aria-label="Transaction history pagination" class="mt-3">
+            <ul class="pagination pagination-sm justify-content-center mb-0">
+              <li class="page-item ${currentPage <= 1 ? 'disabled' : ''}">
+                <a class="page-link" href="?credit_page=${currentPage - 1}">Previous</a>
+              </li>
+              <li class="page-item disabled">
+                <span class="page-link">Page ${currentPage} of ${totalPages}</span>
+              </li>
+              <li class="page-item ${currentPage >= totalPages ? 'disabled' : ''}">
+                <a class="page-link" href="?credit_page=${currentPage + 1}">Next</a>
+              </li>
+            </ul>
+          </nav>
+        `
+      : ''}
   `;
 }

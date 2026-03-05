@@ -178,28 +178,35 @@ export async function adjustCreditPool({
   });
 }
 
-const CreditPoolChangeRowSchema = z.object({
+const BatchedCreditPoolChangeRowSchema = z.object({
   id: z.coerce.string(),
+  job_sequence_id: z.coerce.string().nullable(),
   created_at: z.coerce.date(),
   delta_milli_dollars: z.coerce.number(),
-  credit_before_milli_dollars: z.coerce.number(),
   credit_after_milli_dollars: z.coerce.number(),
-  credit_type: z.enum(['transferable', 'non_transferable']),
+  submission_count: z.coerce.number(),
   reason: z.string(),
   user_name: z.string().nullable(),
   user_uid: z.string().nullable(),
+  total_count: z.coerce.number(),
 });
 
-type CreditPoolChangeRow = z.infer<typeof CreditPoolChangeRowSchema>;
+export type BatchedCreditPoolChangeRow = z.infer<typeof BatchedCreditPoolChangeRowSchema>;
 
-export async function selectCreditPoolChanges(
+const CREDIT_POOL_CHANGES_PAGE_SIZE = 25;
+
+export async function selectCreditPoolChangesBatched(
   course_instance_id: string,
-): Promise<CreditPoolChangeRow[]> {
-  return await queryRows(
-    sql.select_credit_pool_changes,
-    { course_instance_id },
-    CreditPoolChangeRowSchema,
+  page: number,
+): Promise<{ rows: BatchedCreditPoolChangeRow[]; totalCount: number }> {
+  const offset = (page - 1) * CREDIT_POOL_CHANGES_PAGE_SIZE;
+  const rows = await queryRows(
+    sql.select_credit_pool_changes_batched,
+    { course_instance_id, limit: CREDIT_POOL_CHANGES_PAGE_SIZE, offset },
+    BatchedCreditPoolChangeRowSchema,
   );
+  const totalCount = rows.length > 0 ? rows[0].total_count : 0;
+  return { rows, totalCount };
 }
 
 const BalanceTimeSeriesPointSchema = z.object({

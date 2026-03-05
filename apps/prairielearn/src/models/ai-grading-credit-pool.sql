@@ -96,36 +96,100 @@ RETURNING
   credit_transferable_milli_dollars,
   credit_non_transferable_milli_dollars;
 
--- BLOCK select_credit_pool_changes
+-- BLOCK select_credit_pool_changes_batched
+WITH
+  batched AS (
+    SELECT
+      MIN(c.id) AS id,
+      j.job_sequence_id,
+      MIN(c.created_at) AS created_at,
+      SUM(c.delta_milli_dollars) AS delta_milli_dollars,
+      (
+        SELECT
+          c2.credit_after_milli_dollars
+        FROM
+          ai_grading_credit_pool_changes AS c2
+          JOIN ai_grading_jobs AS j2 ON j2.id = c2.ai_grading_job_id
+        WHERE
+          j2.job_sequence_id = j.job_sequence_id
+          AND c2.course_instance_id = $course_instance_id
+        ORDER BY
+          c2.id DESC
+        LIMIT
+          1
+      ) AS credit_after_milli_dollars,
+      COUNT(*)::int AS submission_count,
+      'AI grading' AS reason,
+      MAX(u.name) AS user_name,
+      MAX(u.uid) AS user_uid
+    FROM
+      ai_grading_credit_pool_changes AS c
+      JOIN ai_grading_jobs AS j ON j.id = c.ai_grading_job_id
+      LEFT JOIN users AS u ON u.id = c.user_id
+    WHERE
+      c.course_instance_id = $course_instance_id
+      AND c.ai_grading_job_id IS NOT NULL
+    GROUP BY
+      j.job_sequence_id
+    UNION ALL
+    SELECT
+      c.id,
+      NULL::bigint AS job_sequence_id,
+      c.created_at,
+      c.delta_milli_dollars,
+      c.credit_after_milli_dollars,
+      1 AS submission_count,
+      c.reason,
+      u.name AS user_name,
+      u.uid AS user_uid
+    FROM
+      ai_grading_credit_pool_changes AS c
+      LEFT JOIN users AS u ON u.id = c.user_id
+    WHERE
+      c.course_instance_id = $course_instance_id
+      AND c.ai_grading_job_id IS NULL
+  )
 SELECT
-  c.id,
-  c.created_at,
-  c.delta_milli_dollars,
-  c.credit_before_milli_dollars,
-  c.credit_after_milli_dollars,
-  c.credit_type,
-  c.reason,
-  u.name AS user_name,
-  u.uid AS user_uid
+  *,
+  COUNT(*) OVER () AS total_count
 FROM
-  ai_grading_credit_pool_changes AS c
-  LEFT JOIN users AS u ON u.id = c.user_id
-WHERE
-  c.course_instance_id = $course_instance_id
+  batched
 ORDER BY
-  c.created_at DESC,
-  c.id DESC
+  created_at DESC,
+  id DESC
 LIMIT
-  200;
+  $limit
+OFFSET
+  $offset;
 
 -- BLOCK select_credit_pool_balance_time_series
+WITH
+  numbered AS (
+    SELECT
+      *,
+      NTILE(200) OVER (
+        ORDER BY
+          created_at ASC,
+          id ASC
+      ) AS bucket
+    FROM
+      ai_grading_credit_pool_changes
+    WHERE
+      course_instance_id = $course_instance_id
+  ),
+  last_per_bucket AS (
+    SELECT DISTINCT
+      ON (bucket) *
+    FROM
+      numbered
+    ORDER BY
+      bucket,
+      id DESC
+  )
 SELECT
-  c.created_at AS date,
-  c.credit_after_milli_dollars AS balance_milli_dollars
+  created_at AS date,
+  credit_after_milli_dollars AS balance_milli_dollars
 FROM
-  ai_grading_credit_pool_changes AS c
-WHERE
-  c.course_instance_id = $course_instance_id
+  last_per_bucket
 ORDER BY
-  c.created_at ASC,
-  c.id ASC;
+  created_at ASC;
