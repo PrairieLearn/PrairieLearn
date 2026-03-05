@@ -209,6 +209,11 @@
     "gzip": 2559,
     "brotli": 2132
   },
+  "scripts/esm-bundles/hydrated-components/RichTextEditor.ts": {
+    "raw": 1372881,
+    "gzip": 427757,
+    "brotli": 365512
+  },
   "scripts/esm-bundles/hydrated-components/RubricSettings.ts": {
     "raw": 435585,
     "gzip": 134740,
@@ -220,9 +225,9 @@
     "brotli": 82224
   },
   "scripts/esm-bundles/hydrated-components/TagsTopicsTable.ts": {
-    "raw": 651099,
-    "gzip": 198486,
-    "brotli": 155055
+    "raw": 651296,
+    "gzip": 198538,
+    "brotli": 155108
   },
   "scripts/esm-bundles/hydrated-components/UserSettingsPage.ts": {
     "raw": 518575,
@@ -231,13 +236,18 @@
   },
   "scripts/esm-bundles/hydrated-components/InstructorCourseAdminInstances.ts": {
     "raw": 1093344,
-    "gzip": 337287,
-    "brotli": 276218
+    "gzip": 337286,
+    "brotli": 276237
   },
   "scripts/esm-bundles/hydrated-components/InstructorGradebookTable.ts": {
-    "raw": 783605,
-    "gzip": 236829,
-    "brotli": 206956
+    "raw": 783802,
+    "gzip": 236883,
+    "brotli": 207023
+  },
+  "scripts/esm-bundles/hydrated-components/InstructorInstanceAdminAiGrading.ts": {
+    "raw": 736829,
+    "gzip": 229711,
+    "brotli": 201163
   },
   "scripts/esm-bundles/hydrated-components/InstructorInstanceAdminBillingForm.ts": {
     "raw": 258890,
@@ -247,37 +257,32 @@
   "scripts/esm-bundles/hydrated-components/InstructorInstanceAdminSettings.ts": {
     "raw": 1169768,
     "gzip": 357763,
-    "brotli": 294083
+    "brotli": 294110
   },
   "scripts/esm-bundles/hydrated-components/InstructorStudentDetail.ts": {
-    "raw": 1103696,
-    "gzip": 332330,
-    "brotli": 271227
+    "raw": 1103893,
+    "gzip": 332383,
+    "brotli": 271276
   },
   "scripts/esm-bundles/hydrated-components/InstructorStudents.ts": {
-    "raw": 988059,
-    "gzip": 299042,
-    "brotli": 261025
+    "raw": 988256,
+    "gzip": 299094,
+    "brotli": 261106
   },
   "scripts/esm-bundles/hydrated-components/QuestionSettingsCardFooter.ts": {
     "raw": 823171,
     "gzip": 255778,
     "brotli": 204913
   },
-  "scripts/esm-bundles/hydrated-components/RichTextEditor.ts": {
-    "raw": 1372881,
-    "gzip": 427757,
-    "brotli": 365512
-  },
   "scripts/esm-bundles/hydrated-components/CopyCourseInstanceModal.ts": {
-    "raw": 656154,
-    "gzip": 199034,
-    "brotli": 173425
+    "raw": 656351,
+    "gzip": 199087,
+    "brotli": 173474
   },
   "scripts/esm-bundles/hydrated-components/CourseInstancePublishing.ts": {
-    "raw": 987395,
-    "gzip": 298102,
-    "brotli": 260188
+    "raw": 987592,
+    "gzip": 298156,
+    "brotli": 260259
   },
   "scripts/esm-bundles/hydrated-components/CreateQuestionForm.ts": {
     "raw": 395293,
@@ -295,14 +300,14 @@
     "brotli": 109255
   },
   "scripts/esm-bundles/hydrated-components/HomeCards.ts": {
-    "raw": 770050,
-    "gzip": 233873,
-    "brotli": 204322
+    "raw": 770247,
+    "gzip": 233929,
+    "brotli": 204364
   },
   "scripts/esm-bundles/hydrated-components/InstructorAssessmentQuestionsTable.ts": {
-    "raw": 1224747,
-    "gzip": 373617,
-    "brotli": 309463
+    "raw": 1224944,
+    "gzip": 373667,
+    "brotli": 309560
   },
   "scripts/esm-bundles/hydrated-components/InstructorAssessmentQuestionsTableLegacy.ts": {
     "raw": 623894,
@@ -315,9 +320,9 @@
     "brotli": 173836
   },
   "scripts/esm-bundles/hydrated-components/AdministratorCourses.ts": {
-    "raw": 751521,
-    "gzip": 225290,
-    "brotli": 196520
+    "raw": 751718,
+    "gzip": 225343,
+    "brotli": 196556
   },
   "scripts/esm-bundles/hydrated-components/AdministratorInstitutionSsoForm.ts": {
     "raw": 256094,
@@ -332,12 +337,12 @@
   "scripts/esm-bundles/hydrated-components/AiQuestionGenerationEditor.ts": {
     "raw": 2473125,
     "gzip": 716065,
-    "brotli": 610413
+    "brotli": 610539
   },
   "scripts/esm-bundles/hydrated-components/AssessmentQuestionManualGrading.ts": {
-    "raw": 1114819,
-    "gzip": 334474,
-    "brotli": 274752
+    "raw": 1116735,
+    "gzip": 335004,
+    "brotli": 275231
   },
   "scripts/esm-bundles/hydrated-components/AssessmentSetsPage.ts": {
     "raw": 810556,
