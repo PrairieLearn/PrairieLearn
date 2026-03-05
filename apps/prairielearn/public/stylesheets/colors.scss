@@ -5,9 +5,8 @@
 // Custom color classes used for badges, clickable badge-buttons, and other
 // colored UI elements throughout PrairieLearn.
 //
-// Install `sass` with `npm install -g sass`.
-// Run `sass --no-source-map colors.scss colors.css` to compile this file.
-// Make sure to re-format with Prettier after regenerating `colors.css`.
+// From the repository root, run `make compile-badge-colors` to compile this file.
+// This requires Dart Sass (via npx); Ruby Sass is not supported.
 //
 // When changing colors, also update:
 //   - apps/prairielearn/python/prairielearn/colors.py (Python color lookup)
