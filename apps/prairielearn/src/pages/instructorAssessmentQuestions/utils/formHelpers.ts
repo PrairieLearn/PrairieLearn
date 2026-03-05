@@ -6,6 +6,17 @@ import type { EnumAssessmentType } from '../../../lib/db-types.js';
  * Handles non-string inputs (e.g. undefined/null) that can occur when
  * react-hook-form resets form values via the `values` prop.
  */
+/**
+ * Converts a string value from an HTML textarea to a string or undefined.
+ * Used as a `setValueAs` transform for react-hook-form textarea inputs
+ * so that the empty-string DOM default round-trips back to `undefined`
+ * (matching the `values` prop) and avoids a false-positive dirty flag.
+ */
+export const coerceToOptionalString = (v: unknown): string | undefined => {
+  if (v === '' || v == null) return undefined;
+  return String(v);
+};
+
 export const coerceToNumber = (v: unknown): number | undefined => {
   if (v === '' || v == null) return undefined;
   const n = Number(v);

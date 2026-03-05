@@ -27,7 +27,7 @@ export function FormField({
   viewValue?: React.ReactNode;
   hideWhenEmpty?: boolean;
   error?: FieldError;
-  helpText?: string;
+  helpText?: React.ReactNode;
   children: (aria: AriaProps) => React.ReactNode;
 }) {
   if (!editMode) {
@@ -86,7 +86,7 @@ export function FormCheckField({
   viewValue?: boolean;
   hideWhenEmpty?: boolean;
   error?: FieldError;
-  helpText?: string;
+  helpText?: React.ReactNode;
   children: (aria: AriaProps) => React.ReactNode;
 }) {
   if (!editMode) {

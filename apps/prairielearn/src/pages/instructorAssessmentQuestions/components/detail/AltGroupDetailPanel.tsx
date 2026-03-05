@@ -5,6 +5,7 @@ import { useForm } from 'react-hook-form';
 import type { DetailState, ZoneAssessmentForm, ZoneQuestionBlockForm } from '../../types.js';
 import {
   coerceToNumber,
+  coerceToOptionalString,
   extractStringComment,
   parsePointsListValue,
   resolveMaxPointsProperty,
@@ -58,6 +59,10 @@ export function AltGroupDetailPanel({
   const originalPointsProperty = resolvePointsProperty(assessmentType, zoneQuestionBlock);
   const originalMaxProperty = resolveMaxPointsProperty(originalPointsProperty, zoneQuestionBlock);
 
+  // forceMaxPoints never has a parent for alt groups (parentForceMaxPoints is always undefined)
+  const hasAllowRealTimeGradingParent =
+    (zone.allowRealTimeGrading ?? assessmentDefaults.allowRealTimeGrading) != null;
+
   const {
     register,
     getValues,
@@ -77,14 +82,23 @@ export function AltGroupDetailPanel({
       triesPerVariant: zoneQuestionBlock.triesPerVariant ?? undefined,
       advanceScorePerc: zoneQuestionBlock.advanceScorePerc ?? undefined,
       gradeRateMinutes: zoneQuestionBlock.gradeRateMinutes ?? undefined,
-      forceMaxPoints: zoneQuestionBlock.forceMaxPoints ?? undefined,
-      allowRealTimeGrading: zoneQuestionBlock.allowRealTimeGrading ?? undefined,
+      forceMaxPoints: zoneQuestionBlock.forceMaxPoints ?? false,
+      allowRealTimeGrading:
+        zoneQuestionBlock.allowRealTimeGrading ??
+        (hasAllowRealTimeGradingParent ? undefined : false),
     },
   });
 
   const handleSave = useCallback(
-    (data: AltGroupFormData) => onUpdate(zoneQuestionBlock.trackingId, data),
-    [onUpdate, zoneQuestionBlock.trackingId],
+    (data: AltGroupFormData) =>
+      onUpdate(zoneQuestionBlock.trackingId, {
+        ...data,
+        forceMaxPoints: data.forceMaxPoints || undefined,
+        allowRealTimeGrading: hasAllowRealTimeGradingParent
+          ? data.allowRealTimeGrading
+          : data.allowRealTimeGrading || undefined,
+      }),
+    [onUpdate, zoneQuestionBlock.trackingId, hasAllowRealTimeGradingParent],
   );
 
   const resetAndSave = useCallback(
@@ -92,7 +106,7 @@ export function AltGroupDetailPanel({
     [handleSave, getValues],
   );
 
-  useAutoSave({ isDirty, isValid, getValues, onSave: handleSave });
+  useAutoSave({ isDirty, isValid, getValues, onSave: handleSave, watch });
 
   const parentAdvanceScorePerc = zone.advanceScorePerc ?? assessmentDefaults.advanceScorePerc;
   const parentGradeRateMinutes = zone.gradeRateMinutes ?? assessmentDefaults.gradeRateMinutes;
@@ -313,7 +327,7 @@ export function AltGroupDetailPanel({
               className="form-control form-control-sm"
               {...aria.inputProps}
               rows={2}
-              {...register('comment')}
+              {...register('comment', { setValueAs: coerceToOptionalString })}
             />
           )}
         </FormField>

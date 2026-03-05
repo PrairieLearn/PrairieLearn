@@ -18,6 +18,7 @@ import type {
 } from '../../types.js';
 import {
   coerceToNumber,
+  coerceToOptionalString,
   extractStringComment,
   formatPointsValue,
   parsePointsListValue,
@@ -82,6 +83,7 @@ export function QuestionDetailPanel({
   const {
     editMode,
     assessmentType,
+    constantQuestionValue,
     assessmentDefaults,
     courseInstanceId,
     hasCoursePermissionPreview,
@@ -121,6 +123,15 @@ export function QuestionDetailPanel({
       }
     : undefined;
 
+  // Compute parent boolean availability before useForm so we can set
+  // stable defaults that survive the DOM round-trip without false dirty flags.
+  const hasForceMaxPointsParent = isAlternative && zoneQuestionBlock.forceMaxPoints != null;
+  const hasAllowRealTimeGradingParent = isAlternative
+    ? (zoneQuestionBlock.allowRealTimeGrading ??
+        zone?.allowRealTimeGrading ??
+        assessmentDefaults.allowRealTimeGrading) != null
+    : (zone?.allowRealTimeGrading ?? assessmentDefaults.allowRealTimeGrading) != null;
+
   const {
     register,
     getValues,
@@ -138,8 +149,9 @@ export function QuestionDetailPanel({
       triesPerVariant: question.triesPerVariant ?? undefined,
       advanceScorePerc: question.advanceScorePerc ?? undefined,
       gradeRateMinutes: question.gradeRateMinutes ?? undefined,
-      forceMaxPoints: question.forceMaxPoints ?? undefined,
-      allowRealTimeGrading: question.allowRealTimeGrading ?? undefined,
+      forceMaxPoints: question.forceMaxPoints ?? (hasForceMaxPointsParent ? undefined : false),
+      allowRealTimeGrading:
+        question.allowRealTimeGrading ?? (hasAllowRealTimeGradingParent ? undefined : false),
     },
   });
 
@@ -163,8 +175,27 @@ export function QuestionDetailPanel({
   const alternativeTrackingId = isAlternative ? question.trackingId : undefined;
 
   const handleSave = useCallback(
-    (data: QuestionFormData) => onUpdate(questionTrackingId, data, alternativeTrackingId),
-    [onUpdate, questionTrackingId, alternativeTrackingId],
+    (data: QuestionFormData) =>
+      onUpdate(
+        questionTrackingId,
+        {
+          ...data,
+          forceMaxPoints: hasForceMaxPointsParent
+            ? data.forceMaxPoints
+            : data.forceMaxPoints || undefined,
+          allowRealTimeGrading: hasAllowRealTimeGradingParent
+            ? data.allowRealTimeGrading
+            : data.allowRealTimeGrading || undefined,
+        },
+        alternativeTrackingId,
+      ),
+    [
+      onUpdate,
+      questionTrackingId,
+      alternativeTrackingId,
+      hasForceMaxPointsParent,
+      hasAllowRealTimeGradingParent,
+    ],
   );
 
   const resetAndSave = useCallback(
@@ -172,7 +203,7 @@ export function QuestionDetailPanel({
     [handleSave, getValues],
   );
 
-  useAutoSave({ isDirty, isValid, getValues, onSave: handleSave });
+  useAutoSave({ isDirty, isValid, getValues, onSave: handleSave, watch });
 
   const advancedInheritance: AdvancedFieldsInheritance = run(() => {
     if (isAlternative) {
@@ -306,16 +337,20 @@ export function QuestionDetailPanel({
               </span>
             )}
           </span>
-          <div className="d-flex flex-wrap gap-1 mt-1">
+          <div className="mt-1">
             <span className={`badge color-${questionData.topic.color}`}>
               {questionData.topic.name}
             </span>
-            {questionData.tags?.map((tag) => (
-              <span key={tag.name} className={`badge color-${tag.color}`}>
-                {tag.name}
-              </span>
-            ))}
           </div>
+          {questionData.tags && questionData.tags.length > 0 && (
+            <div className="d-flex flex-wrap gap-1 mt-1">
+              {questionData.tags.map((tag) => (
+                <span key={tag.name} className={`badge color-${tag.color}`}>
+                  {tag.name}
+                </span>
+              ))}
+            </div>
+          )}
         </div>
       )}
 
@@ -361,6 +396,7 @@ export function QuestionDetailPanel({
           idPrefix={idPrefix}
           isAlternative={isAlternative}
           isManualGrading={isManualGrading}
+          constantQuestionValue={constantQuestionValue}
           pointsLabel={pointsLabel}
           autoPointsValue={autoPointsValue}
           maxAutoPointsValue={maxAutoPointsValue}
@@ -451,7 +487,7 @@ export function QuestionDetailPanel({
             className="form-control form-control-sm"
             {...aria.inputProps}
             rows={2}
-            {...register('comment')}
+            {...register('comment', { setValueAs: coerceToOptionalString })}
           />
         )}
       </FormField>
@@ -529,6 +565,7 @@ function HomeworkPointsFields({
   idPrefix,
   isAlternative,
   isManualGrading,
+  constantQuestionValue,
   pointsLabel,
   autoPointsValue,
   maxAutoPointsValue,
@@ -556,6 +593,7 @@ function HomeworkPointsFields({
   idPrefix: string;
   isAlternative: boolean;
   isManualGrading: boolean;
+  constantQuestionValue: boolean;
   pointsLabel: string;
   autoPointsValue: number | number[] | null | undefined;
   maxAutoPointsValue: number | number[] | null | undefined;
@@ -590,6 +628,32 @@ function HomeworkPointsFields({
   });
   const viewManualPoints =
     !isManualGrading && manualPointsValue != null ? String(manualPointsValue) : undefined;
+
+  const maxAutoPointsHelpText = constantQuestionValue ? (
+    <>
+      Maximum total auto-graded points. Students must answer correctly{' '}
+      <code>maxAutoPoints / autoPoints</code> times to earn full credit.{' '}
+      <a
+        href="https://docs.prairielearn.com/assessment/configuration/#question-points-for-homework-assessments"
+        target="_blank"
+        rel="noreferrer"
+      >
+        Learn more about question points
+      </a>
+    </>
+  ) : (
+    <>
+      Maximum total auto-graded points. Each consecutive correct answer is worth more; an incorrect
+      answer resets the value.{' '}
+      <a
+        href="https://docs.prairielearn.com/assessment/configuration/#question-points-for-homework-assessments"
+        target="_blank"
+        rel="noreferrer"
+      >
+        Learn more about question points
+      </a>
+    </>
+  );
 
   return (
     <>
@@ -677,7 +741,7 @@ function HomeworkPointsFields({
               validate: homeworkMaxPointsValidation,
             })}
             error={errors[originalMaxProperty]}
-            helpText="Maximum total auto-graded points. Defaults to auto points if not set."
+            helpText={maxAutoPointsHelpText}
             placeholder={autoPointsPlaceholder}
             inheritedValueLabel={inheritedMaxValue != null ? String(inheritedMaxValue) : undefined}
             showResetButton={inheritedMaxValue != null && !isMaxInherited}
@@ -696,7 +760,7 @@ function HomeworkPointsFields({
             label="Max auto points"
             viewValue={viewMaxAutoPoints}
             error={errors[originalMaxProperty]}
-            helpText="Maximum total auto-graded points. Defaults to auto points if not set."
+            helpText={maxAutoPointsHelpText}
             hideWhenEmpty
           >
             {(aria) => (

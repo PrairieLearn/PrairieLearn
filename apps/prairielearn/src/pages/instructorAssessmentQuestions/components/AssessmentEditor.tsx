@@ -13,7 +13,9 @@ import {
 import { sortableKeyboardCoordinates } from '@dnd-kit/sortable';
 import { QueryClient, useQuery } from '@tanstack/react-query';
 import { parseAsStringLiteral, useQueryState } from 'nuqs';
-import { useEffect, useMemo, useRef, useState } from 'react';
+import { useEffect, useId, useMemo, useRef, useState } from 'react';
+import OverlayTrigger from 'react-bootstrap/OverlayTrigger';
+import Tooltip from 'react-bootstrap/Tooltip';
 
 import { run } from '@prairielearn/run';
 import { NuqsAdapter, useModalState } from '@prairielearn/ui';
@@ -631,11 +633,19 @@ function AssessmentEditorInner({
       const returnTo = selectedItem.returnToSelection;
       for (const zone of zones) {
         for (const q of zone.questions) {
-          if (q.id === qid && returnTo.type === 'question' && returnTo.questionTrackingId === q.trackingId) {
+          if (
+            q.id === qid &&
+            returnTo.type === 'question' &&
+            returnTo.questionTrackingId === q.trackingId
+          ) {
             setSelectedItem(null);
           }
           for (const alt of q.alternatives ?? []) {
-            if (alt.id === qid && returnTo.type === 'alternative' && returnTo.alternativeTrackingId === alt.trackingId) {
+            if (
+              alt.id === qid &&
+              returnTo.type === 'alternative' &&
+              returnTo.alternativeTrackingId === alt.trackingId
+            ) {
               setSelectedItem(null);
             }
           }
@@ -663,8 +673,7 @@ function AssessmentEditorInner({
   const handleDeleteZone = (zoneTrackingId: string) => {
     if (selectedItem) {
       const zone = zones.find((z) => z.trackingId === zoneTrackingId);
-      const trackingIds = new Set<string>();
-      trackingIds.add(zoneTrackingId);
+      const trackingIds = new Set<string>([zoneTrackingId]);
       if (zone) {
         for (const q of zone.questions) {
           trackingIds.add(q.trackingId);
@@ -797,10 +806,7 @@ function AssessmentEditorInner({
       });
       // The question's trackingId is preserved but it's now an alternative
       // inside the group. Update the selection so DetailPanel can find it.
-      if (
-        selectedItem?.type === 'question' &&
-        selectedItem.questionTrackingId === activeIdStr
-      ) {
+      if (selectedItem?.type === 'question' && selectedItem.questionTrackingId === activeIdStr) {
         setSelectedItem({
           type: 'alternative',
           questionTrackingId: altGroupTrackingId,
@@ -1003,6 +1009,7 @@ function AssessmentEditorInner({
     () => ({
       editMode,
       assessmentType: assessment.type,
+      constantQuestionValue: assessment.constant_question_value ?? false,
       assessmentDefaults,
       courseInstanceId: courseInstance.id,
       courseId: course.id,
@@ -1011,6 +1018,7 @@ function AssessmentEditorInner({
     [
       editMode,
       assessment.type,
+      assessment.constant_question_value,
       assessmentDefaults,
       courseInstance.id,
       course.id,
@@ -1048,18 +1056,52 @@ function AssessmentEditorInner({
     return zones[index].title || `Zone ${index + 1}`;
   };
 
+  const docsTooltipId = useId();
   const rightTitle = run(() => {
     if (!selectedItem) return undefined;
+
+    const docsLink = (label: string, docsLabel: string, anchor: string) => (
+      <>
+        {label}{' '}
+        <OverlayTrigger
+          overlay={<Tooltip id={docsTooltipId}>View {docsLabel} documentation</Tooltip>}
+        >
+          <a
+            href={`https://docs.prairielearn.com/assessment/configuration/${anchor}`}
+            target="_blank"
+            rel="noreferrer"
+            aria-label={`View ${docsLabel} documentation`}
+            className="text-muted"
+          >
+            <i className="bi bi-question-circle" aria-hidden="true" />
+          </a>
+        </OverlayTrigger>
+      </>
+    );
+
     switch (selectedItem.type) {
       case 'zone': {
-        return editMode ? 'Edit zone' : zoneDisplayName(selectedItem.zoneTrackingId);
+        const label = editMode ? 'Edit zone' : zoneDisplayName(selectedItem.zoneTrackingId);
+        return docsLink(label, 'zone', '#question-specification');
       }
       case 'question':
-        return editMode ? 'Edit question' : 'Question';
+        return docsLink(
+          editMode ? 'Edit question' : 'Question',
+          'question',
+          '#question-specification',
+        );
       case 'alternative':
-        return editMode ? 'Edit alternative' : 'Alternative';
+        return docsLink(
+          editMode ? 'Edit alternative' : 'Alternative',
+          'alternative',
+          '#question-alternatives',
+        );
       case 'altGroup':
-        return editMode ? 'Edit alternative group' : 'Alternative group';
+        return docsLink(
+          editMode ? 'Edit alternative group' : 'Alternative group',
+          'alternative group',
+          '#question-alternatives',
+        );
       case 'picker': {
         if (selectedItem.returnToSelection) {
           return selectedItem.returnToSelection.type === 'alternative'
@@ -1067,13 +1109,13 @@ function AssessmentEditorInner({
             : 'Change question';
         }
         const name = zoneDisplayName(selectedItem.zoneTrackingId);
-        return `Adding to ${name}`;
+        return `Adding to "${name}"`;
       }
       case 'altGroupPicker': {
         const name = zoneDisplayName(selectedItem.zoneTrackingId);
         return selectedItem.altGroupTrackingId
-          ? `Adding to alternative group in ${name}`
-          : `Creating alternative group in ${name}`;
+          ? `Adding to alternative group in "${name}"`
+          : `Creating alternative group in "${name}"`;
       }
     }
   });
@@ -1122,7 +1164,6 @@ function AssessmentEditorInner({
             forceOpen={selectedItem}
             rightTitle={rightTitle}
             rightHeaderAction={rightHeaderAction}
-            onClose={() => setSelectedItem(null)}
             left={
               <AssessmentTree
                 zones={zones}
@@ -1166,6 +1207,7 @@ function AssessmentEditorInner({
                 currentAssessmentId={assessment.id}
               />
             }
+            onClose={() => setSelectedItem(null)}
           />
         </div>
         <DragOverlay dropAnimation={null}>

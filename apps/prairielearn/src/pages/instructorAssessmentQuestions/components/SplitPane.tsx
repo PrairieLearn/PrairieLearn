@@ -28,7 +28,7 @@ export function SplitPane({
 }: {
   left: ReactNode;
   right: ReactNode;
-  rightTitle?: string;
+  rightTitle?: ReactNode;
   /** If provided, replaces the default close "X" button in the header. */
   rightHeaderAction?: ReactNode;
   rightCollapsed?: boolean;

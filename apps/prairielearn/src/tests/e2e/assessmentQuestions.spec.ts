@@ -9,7 +9,7 @@ import { expect, test } from './fixtures.js';
 
 async function enterEditMode(page: Page, ciId: string, aId: string): Promise<void> {
   await page.goto(`/pl/course_instance/${ciId}/instructor/assessment/${aId}/questions`);
-  await page.getByRole('button', { name: 'Edit questions' }).click();
+  await page.getByRole('button', { name: 'Edit', exact: true }).click();
   await expect(page.locator('[aria-label="Drag to reorder"]').first()).toBeVisible();
 }
 
@@ -73,7 +73,7 @@ test.describe('Assessment questions', () => {
       await pointerDrag(page, dragHandles.nth(2), dragHandles.nth(1));
 
       await page.getByRole('button', { name: 'Save and sync' }).click();
-      await expect(page.getByRole('button', { name: 'Edit questions' })).toBeVisible();
+      await expect(page.getByRole('button', { name: 'Edit', exact: true })).toBeVisible();
 
       const infoAssessmentPath = path.join(
         testCoursePath,
@@ -119,7 +119,7 @@ test.describe('Assessment questions', () => {
       await pointerDrag(page, dragHandles.nth(3), dragHandles.nth(0));
 
       await page.getByRole('button', { name: 'Save and sync' }).click();
-      await expect(page.getByRole('button', { name: 'Edit questions' })).toBeVisible();
+      await expect(page.getByRole('button', { name: 'Edit', exact: true })).toBeVisible();
 
       const infoAssessmentPath = path.join(
         testCoursePath,
@@ -175,8 +175,15 @@ test.describe('Assessment questions', () => {
     await bestQuestionsInput.clear();
     await bestQuestionsInput.fill('2');
 
+    // Wait for auto-save to propagate before saving
+    await expect(async () => {
+      const hiddenZones = await page.locator('input[name="zones"]').inputValue();
+      const parsedZones = JSON.parse(hiddenZones);
+      expect(parsedZones[1].bestQuestions).toBe(2);
+    }).toPass({ timeout: 5000 });
+
     await page.getByRole('button', { name: 'Save and sync' }).click();
-    await expect(page.getByRole('button', { name: 'Edit questions' })).toBeVisible();
+    await expect(page.getByRole('button', { name: 'Edit', exact: true })).toBeVisible();
 
     const infoAssessmentPath = path.join(
       testCoursePath,
@@ -220,11 +227,15 @@ test.describe('Assessment questions', () => {
 
     await page.getByRole('button').filter({ hasText: 'partialCredit1' }).first().click();
 
+    const maxAutoPointsInput = page.getByLabel('Max auto points');
+    await maxAutoPointsInput.clear();
+    await maxAutoPointsInput.fill('10');
+
     const autoPointsInput = page.getByLabel('Auto points', { exact: true });
     await autoPointsInput.clear();
     await autoPointsInput.fill('7');
 
-    // Wait for debounced auto-save to propagate before switching to the picker
+    // Wait for auto-save to propagate before switching to the picker
     await expect(async () => {
       const hiddenZones = await page.locator('input[name="zones"]').inputValue();
       const parsedZones = JSON.parse(hiddenZones);
@@ -244,7 +255,7 @@ test.describe('Assessment questions', () => {
     await expect(page.getByLabel('Auto points', { exact: true })).toHaveValue('7');
 
     await page.getByRole('button', { name: 'Save and sync' }).click();
-    await expect(page.getByRole('button', { name: 'Edit questions' })).toBeVisible();
+    await expect(page.getByRole('button', { name: 'Edit', exact: true })).toBeVisible();
 
     const infoAssessmentPath = path.join(
       testCoursePath,
@@ -258,7 +269,7 @@ test.describe('Assessment questions', () => {
     expect(savedAssessment.zones).toEqual([
       {
         questions: [
-          { id: 'differentiatePolynomial', points: 7, maxPoints: 5 },
+          { id: 'differentiatePolynomial', points: 7, maxPoints: 10 },
           { id: 'partialCredit2', autoPoints: 2, maxAutoPoints: 10, manualPoints: 3 },
           { id: 'partialCredit3', points: 2, maxPoints: 10, triesPerVariant: 3 },
           { id: 'partialCredit4_v2', points: 3, maxPoints: 10 },
@@ -295,7 +306,7 @@ test.describe('Assessment questions', () => {
     await page.getByRole('button', { name: 'Done' }).click();
 
     await page.getByRole('button', { name: 'Save and sync' }).click();
-    await expect(page.getByRole('button', { name: 'Edit questions' })).toBeVisible();
+    await expect(page.getByRole('button', { name: 'Edit', exact: true })).toBeVisible();
 
     const infoAssessmentPath = path.join(
       testCoursePath,
@@ -335,7 +346,7 @@ test.describe('Assessment questions', () => {
     await page.getByRole('button', { name: 'Delete zone', exact: true }).last().click();
 
     await saveButton.click();
-    await expect(page.getByRole('button', { name: 'Edit questions' })).toBeVisible();
+    await expect(page.getByRole('button', { name: 'Edit', exact: true })).toBeVisible();
 
     const infoAssessmentPath = path.join(
       testCoursePath,
@@ -415,7 +426,7 @@ test.describe('Assessment questions', () => {
     }).toPass({ timeout: 5000 });
 
     await page.getByRole('button', { name: 'Save and sync' }).click();
-    await expect(page.getByRole('button', { name: 'Edit questions' })).toBeVisible();
+    await expect(page.getByRole('button', { name: 'Edit', exact: true })).toBeVisible();
 
     const infoAssessmentPath = path.join(
       testCoursePath,
@@ -443,7 +454,7 @@ test.describe('Assessment questions', () => {
     await page.goto(
       `/pl/course_instance/${courseInstance.id}/instructor/assessment/${assessment.id}/questions`,
     );
-    await page.getByRole('button', { name: 'Edit questions' }).click();
+    await page.getByRole('button', { name: 'Edit', exact: true }).click();
 
     await page.getByRole('button', { name: 'Add zone' }).click();
     await page.getByRole('button', { name: 'Add question' }).click();
@@ -459,8 +470,15 @@ test.describe('Assessment questions', () => {
     await autoPointsInput.clear();
     await autoPointsInput.fill('5');
 
+    // Wait for auto-save to propagate before saving
+    await expect(async () => {
+      const hiddenZones = await page.locator('input[name="zones"]').inputValue();
+      const parsedZones = JSON.parse(hiddenZones);
+      expect(parsedZones[0].questions[0].autoPoints).toBe(5);
+    }).toPass({ timeout: 5000 });
+
     await page.getByRole('button', { name: 'Save and sync' }).click();
-    await expect(page.getByRole('button', { name: 'Edit questions' })).toBeVisible();
+    await expect(page.getByRole('button', { name: 'Edit', exact: true })).toBeVisible();
 
     const infoAssessmentPath = path.join(
       testCoursePath,

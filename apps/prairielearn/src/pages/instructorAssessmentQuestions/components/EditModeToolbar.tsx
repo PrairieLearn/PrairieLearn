@@ -82,7 +82,7 @@ export function EditModeToolbar({
         type="button"
         onClick={() => setEditMode(true)}
       >
-        <i className="bi bi-pencil" aria-hidden="true" /> Edit questions
+        <i className="bi bi-pencil" aria-hidden="true" /> Edit
       </button>
     );
   }

@@ -3,7 +3,11 @@ import { useCallback } from 'react';
 import { useForm } from 'react-hook-form';
 
 import type { DetailState, ZoneAssessmentForm } from '../../types.js';
-import { coerceToNumber, extractStringComment } from '../../utils/formHelpers.js';
+import {
+  coerceToNumber,
+  coerceToOptionalString,
+  extractStringComment,
+} from '../../utils/formHelpers.js';
 import { validatePositiveInteger } from '../../utils/questions.js';
 import { useAutoSave } from '../../utils/useAutoSave.js';
 
@@ -38,6 +42,7 @@ export function ZoneDetailPanel({
   onDelete: (zoneTrackingId: string) => void;
 }) {
   const { editMode, assessmentDefaults } = state;
+  const hasAllowRealTimeGradingParent = assessmentDefaults.allowRealTimeGrading != null;
   const formValues: ZoneFormData = {
     title: zone.title ?? '',
     maxPoints: zone.maxPoints ?? undefined,
@@ -47,7 +52,9 @@ export function ZoneDetailPanel({
     comment: extractStringComment(zone.comment),
     advanceScorePerc: zone.advanceScorePerc ?? undefined,
     gradeRateMinutes: zone.gradeRateMinutes ?? undefined,
-    allowRealTimeGrading: zone.allowRealTimeGrading ?? undefined,
+    // We do this so that `isDirty = false` when the value is inherited.
+    allowRealTimeGrading:
+      zone.allowRealTimeGrading ?? (hasAllowRealTimeGradingParent ? undefined : false),
   };
 
   const {
@@ -75,10 +82,12 @@ export function ZoneDetailPanel({
         comment: data.comment || undefined,
         advanceScorePerc: data.advanceScorePerc,
         gradeRateMinutes: data.gradeRateMinutes,
-        allowRealTimeGrading: data.allowRealTimeGrading,
+        allowRealTimeGrading: hasAllowRealTimeGradingParent
+          ? data.allowRealTimeGrading
+          : data.allowRealTimeGrading || undefined,
       });
     },
-    [onUpdate, zone.trackingId],
+    [onUpdate, zone.trackingId, hasAllowRealTimeGradingParent],
   );
 
   const resetAndSave = useCallback(
@@ -86,7 +95,7 @@ export function ZoneDetailPanel({
     [handleSave, getValues],
   );
 
-  useAutoSave({ isDirty, isValid, getValues, onSave: handleSave });
+  useAutoSave({ isDirty, isValid, getValues, onSave: handleSave, watch });
 
   const advancedInheritance: AdvancedFieldsInheritance = {
     parentAdvanceScorePerc: assessmentDefaults.advanceScorePerc,
@@ -250,7 +259,7 @@ export function ZoneDetailPanel({
               className="form-control form-control-sm"
               {...aria.inputProps}
               rows={2}
-              {...register('comment')}
+              {...register('comment', { setValueAs: coerceToOptionalString })}
             />
           )}
         </FormField>

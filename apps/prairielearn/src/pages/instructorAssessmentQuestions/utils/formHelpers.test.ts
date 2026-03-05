@@ -93,26 +93,30 @@ describe('validateNonIncreasingPoints', () => {
 
 describe('resolvePointsProperty', () => {
   it('returns autoPoints when autoPoints is set in the first source', () => {
-    expect(resolvePointsProperty({ autoPoints: 10 })).toBe('autoPoints');
+    expect(resolvePointsProperty(undefined, { autoPoints: 10 })).toBe('autoPoints');
   });
 
   it('returns points when points is set and autoPoints is not', () => {
-    expect(resolvePointsProperty({ points: 5 })).toBe('points');
+    expect(resolvePointsProperty(undefined, { points: 5 })).toBe('points');
   });
 
   it('prefers autoPoints over points in the same source', () => {
-    expect(resolvePointsProperty({ autoPoints: 10, points: 5 })).toBe('autoPoints');
+    expect(resolvePointsProperty(undefined, { autoPoints: 10, points: 5 })).toBe('autoPoints');
   });
 
   it('falls back to later sources', () => {
-    expect(resolvePointsProperty({}, { points: 5 })).toBe('points');
+    expect(resolvePointsProperty(undefined, {}, { points: 5 })).toBe('points');
   });
 
   it('defaults to autoPoints when no sources have values', () => {
-    expect(resolvePointsProperty({}, undefined)).toBe('autoPoints');
+    expect(resolvePointsProperty(undefined, {}, undefined)).toBe('autoPoints');
   });
 
   it('defaults to autoPoints with no arguments', () => {
-    expect(resolvePointsProperty()).toBe('autoPoints');
+    expect(resolvePointsProperty(undefined)).toBe('autoPoints');
+  });
+
+  it('defaults to points for Exam assessment type', () => {
+    expect(resolvePointsProperty('Exam')).toBe('points');
   });
 });

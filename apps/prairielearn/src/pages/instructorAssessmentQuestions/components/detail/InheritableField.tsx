@@ -1,4 +1,5 @@
 import clsx from 'clsx';
+import type React from 'react';
 import type { FieldError, UseFormRegisterReturn } from 'react-hook-form';
 
 /**
@@ -37,7 +38,7 @@ export function InheritableField({
   viewValue?: string;
   registerProps: UseFormRegisterReturn;
   error?: FieldError;
-  helpText: string;
+  helpText: React.ReactNode;
   inheritedValueLabel?: string;
   inheritedFromLabel?: string;
   placeholder?: string;

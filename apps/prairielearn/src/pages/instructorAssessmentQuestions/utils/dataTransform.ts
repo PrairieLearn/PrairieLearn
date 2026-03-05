@@ -215,7 +215,7 @@ export function serializeZonesForJson(zones: ZoneAssessmentJson[]): ZoneAssessme
       canSubmit: propertyValueWithDefault(undefined, zone.canSubmit, isEmptyArray),
       canView: propertyValueWithDefault(undefined, zone.canView, isEmptyArray),
       questions: zone.questions
-        .filter((q) => !('alternatives' in q && q.alternatives && q.alternatives.length === 0))
+        .filter((q) => !('alternatives' in q && q.alternatives?.length === 0))
         .map(serializeQuestionBlock),
     });
   });
