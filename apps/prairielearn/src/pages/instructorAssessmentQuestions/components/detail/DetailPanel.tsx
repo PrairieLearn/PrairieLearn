@@ -22,6 +22,8 @@ export function DetailPanel({
   courseQuestions,
   courseQuestionsLoading,
   questionsInAssessment,
+  disabledQids,
+  currentChangeQid,
   currentAssessmentId,
 }: {
   selectedItem: SelectedItem;
@@ -32,6 +34,8 @@ export function DetailPanel({
   courseQuestions: CourseQuestionForPicker[];
   courseQuestionsLoading: boolean;
   questionsInAssessment: Map<string, string[]>;
+  disabledQids: Set<string>;
+  currentChangeQid?: string;
   currentAssessmentId: string;
 }) {
   if (selectedItem == null) {
@@ -131,6 +135,8 @@ export function DetailPanel({
           courseQuestions={courseQuestions}
           isLoading={courseQuestionsLoading}
           questionsInAssessment={questionsInAssessment}
+          disabledQids={disabledQids}
+          currentChangeQid={currentChangeQid}
           courseId={state.courseId}
           courseInstanceId={state.courseInstanceId}
           currentAssessmentId={currentAssessmentId}

@@ -212,6 +212,58 @@ function AssessmentEditorInner({
     return qidToZones;
   }, [zones]);
 
+  const disabledQids = useMemo(() => {
+    const disabled = new Set<string>();
+    if (selectedItem?.type === 'picker') {
+      const returnTo = selectedItem.returnToSelection;
+      if (returnTo?.type === 'alternative') {
+        // Changing an alternative: disable only siblings in the same alt group
+        const result = findQuestionByTrackingId(zones, returnTo.questionTrackingId);
+        if (result?.question.alternatives) {
+          for (const alt of result.question.alternatives) {
+            if (alt.id) disabled.add(alt.id);
+          }
+        }
+      } else {
+        // Adding to zone or changing a standalone question: disable only
+        // standalone QIDs already directly in the zone (not ones inside alt
+        // groups, since selecting those would move them out of the group).
+        const zone = zones.find((z) => z.trackingId === selectedItem.zoneTrackingId);
+        if (zone) {
+          for (const q of zone.questions) {
+            if (q.id) disabled.add(q.id);
+          }
+        }
+      }
+    } else if (selectedItem?.type === 'altGroupPicker' && selectedItem.altGroupTrackingId) {
+      // Disable only QIDs in the target alt group
+      for (const zone of zones) {
+        for (const q of zone.questions) {
+          if (q.trackingId === selectedItem.altGroupTrackingId && q.alternatives) {
+            for (const alt of q.alternatives) {
+              if (alt.id) disabled.add(alt.id);
+            }
+          }
+        }
+      }
+    }
+    return disabled;
+  }, [selectedItem, zones]);
+
+  const currentChangeQid = useMemo(() => {
+    if (selectedItem?.type !== 'picker' || !selectedItem.returnToSelection) return undefined;
+    const returnTo = selectedItem.returnToSelection;
+    if (returnTo.type !== 'question' && returnTo.type !== 'alternative') return undefined;
+    const result = findQuestionByTrackingId(zones, returnTo.questionTrackingId);
+    if (!result) return undefined;
+    if (returnTo.type === 'alternative') {
+      return result.question.alternatives?.find(
+        (a) => a.trackingId === returnTo.alternativeTrackingId,
+      )?.id;
+    }
+    return result.question.id;
+  }, [selectedItem, zones]);
+
   const sensors = useSensors(
     useSensor(PointerSensor, { activationConstraint: { distance: 6 } }),
     useSensor(KeyboardSensor, { coordinateGetter: sortableKeyboardCoordinates }),
@@ -899,6 +951,11 @@ function AssessmentEditorInner({
       case 'altGroup':
         return editMode ? 'Edit alternative group' : 'Alternative group';
       case 'picker': {
+        if (selectedItem.returnToSelection) {
+          return selectedItem.returnToSelection.type === 'alternative'
+            ? 'Change alternative'
+            : 'Change question';
+        }
         const name = zoneDisplayName(selectedItem.zoneTrackingId);
         return `Adding to ${name}`;
       }
@@ -992,6 +1049,8 @@ function AssessmentEditorInner({
                 courseQuestions={courseQuestions}
                 courseQuestionsLoading={courseQuestionsQuery.isLoading}
                 questionsInAssessment={questionsInAssessment}
+                disabledQids={disabledQids}
+                currentChangeQid={currentChangeQid}
                 currentAssessmentId={assessment.id}
               />
             }

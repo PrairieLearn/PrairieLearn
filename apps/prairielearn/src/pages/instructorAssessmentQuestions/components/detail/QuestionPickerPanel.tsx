@@ -15,6 +15,8 @@ export function QuestionPickerPanel({
   courseQuestions,
   isLoading,
   questionsInAssessment,
+  disabledQids,
+  currentChangeQid,
   courseId,
   courseInstanceId,
   currentAssessmentId,
@@ -24,6 +26,8 @@ export function QuestionPickerPanel({
   courseQuestions: CourseQuestionForPicker[];
   isLoading?: boolean;
   questionsInAssessment: Map<string, string[]>;
+  disabledQids: Set<string>;
+  currentChangeQid?: string;
   courseId: string;
   courseInstanceId: string;
   currentAssessmentId?: string;
@@ -230,7 +234,9 @@ export function QuestionPickerPanel({
               const question = sortedQuestions[virtualRow.index];
               const qid = question.qid;
               const addedZoneNames = questionsInAssessment.get(qid);
-              const isAlreadyAdded = addedZoneNames != null;
+              const isInAssessment = addedZoneNames != null;
+              const isCurrentChange = currentChangeQid === qid;
+              const isDisabled = disabledQids.has(qid) && !isCurrentChange;
 
               const assessmentsToShow =
                 question.assessments?.filter((a) => a.assessment_id !== currentAssessmentId) ?? [];
@@ -240,10 +246,10 @@ export function QuestionPickerPanel({
                   key={virtualRow.key}
                   ref={rowVirtualizer.measureElement}
                   data-index={virtualRow.index}
-                  role={isAlreadyAdded ? undefined : 'button'}
-                  tabIndex={isAlreadyAdded ? undefined : 0}
-                  aria-label={`${qid}: ${question.title}${isAlreadyAdded ? ` (already in ${addedZoneNames.join(', ')})` : ''}`}
-                  aria-disabled={isAlreadyAdded || undefined}
+                  role={isDisabled ? undefined : 'button'}
+                  tabIndex={isDisabled ? undefined : 0}
+                  aria-label={`${qid}: ${question.title}${isCurrentChange ? ' (current)' : isInAssessment ? ` (in ${addedZoneNames.join(', ')})` : ''}`}
+                  aria-disabled={isDisabled || undefined}
                   className="d-flex align-items-center px-2 py-1 border-bottom list-group-item-action picker-row"
                   style={{
                     position: 'absolute',
@@ -251,16 +257,19 @@ export function QuestionPickerPanel({
                     left: 0,
                     width: '100%',
                     transform: `translateY(${virtualRow.start}px)`,
-                    cursor: isAlreadyAdded ? 'not-allowed' : 'pointer',
+                    cursor: isDisabled ? 'not-allowed' : 'pointer',
                     fontSize: '0.85rem',
-                    opacity: isAlreadyAdded ? 0.5 : undefined,
-                    ...(isAlreadyAdded
-                      ? { borderLeft: '3px solid var(--bs-secondary)' }
-                      : undefined),
+                    opacity: isDisabled ? 0.5 : undefined,
+                    borderLeft: isCurrentChange
+                      ? '3px solid var(--bs-primary)'
+                      : isInAssessment
+                        ? '3px solid var(--bs-secondary)'
+                        : undefined,
+                    backgroundColor: isCurrentChange ? 'var(--bs-primary-bg-subtle)' : undefined,
                   }}
-                  onClick={isAlreadyAdded ? undefined : () => handleSelect(question)}
+                  onClick={isDisabled ? undefined : () => handleSelect(question)}
                   onKeyDown={
-                    isAlreadyAdded
+                    isDisabled
                       ? undefined
                       : (e) => {
                           if (e.key === 'Enter' || e.key === ' ') {
@@ -281,7 +290,7 @@ export function QuestionPickerPanel({
                       >
                         <code className="small">{qid}</code>
                       </a>
-                      {isAlreadyAdded && (
+                      {isInAssessment && (
                         <span className="badge bg-secondary" style={{ fontSize: '0.65rem' }}>
                           {addedZoneNames.join(', ')}
                         </span>
@@ -306,7 +315,7 @@ export function QuestionPickerPanel({
                       </div>
                     )}
                   </div>
-                  {isAlreadyAdded && (
+                  {isInAssessment && (
                     <button
                       type="button"
                       className="btn btn-sm border-0 text-muted ms-1 picker-delete-btn picker-hover-show"

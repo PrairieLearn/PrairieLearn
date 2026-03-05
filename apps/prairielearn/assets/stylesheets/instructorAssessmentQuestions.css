@@ -34,8 +34,11 @@
 .picker-hover-show:focus-within {
   opacity: 1;
 }
-.picker-row:hover {
-  background-color: var(--bs-tertiary-bg);
+.picker-row:not([aria-disabled]):hover {
+  background-color: var(--bs-primary-bg-subtle);
+}
+.picker-row[aria-disabled]:hover {
+  background-color: transparent;
 }
 .picker-delete-btn:hover {
   color: var(--bs-danger) !important;
