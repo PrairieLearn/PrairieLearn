@@ -1,5 +1,3 @@
-import type { EnumAssessmentType } from '../../../lib/db-types.js';
-
 /**
  * Converts a string value from an HTML input to a number or undefined.
  * Used as a `setValueAs` transform for react-hook-form number inputs.
@@ -114,52 +112,6 @@ export function validateNonIncreasingPoints(
  */
 export function extractStringComment(comment: unknown): string | undefined {
   return typeof comment === 'string' ? comment : undefined;
-}
-
-/**
- * Determines which points field name is set in the given sources.
- * Checks each source in order for `autoPoints` (modern) then `points` (legacy/Exam).
- * Falls back to checking `maxAutoPoints`/`maxPoints` to maintain consistency
- * when the points field is temporarily cleared (e.g. during editing).
- * Returns the first match, defaulting to `'autoPoints'`.
- */
-export function resolvePointsProperty(
-  assessmentType: EnumAssessmentType | undefined,
-  ...sources: (
-    | {
-        points?: unknown;
-        autoPoints?: unknown;
-        maxPoints?: unknown;
-        maxAutoPoints?: unknown;
-      }
-    | undefined
-  )[]
-): 'points' | 'autoPoints' {
-  for (const source of sources) {
-    if (source?.autoPoints != null) return 'autoPoints';
-    if (source?.points != null) return 'points';
-  }
-  for (const source of sources) {
-    if (source?.maxAutoPoints != null) return 'autoPoints';
-    if (source?.maxPoints != null) return 'points';
-  }
-  return assessmentType === 'Exam' ? 'points' : 'autoPoints';
-}
-
-/**
- * Determines which max points field name is set in the given sources.
- * Checks each source in order for `maxAutoPoints` then `maxPoints`.
- * Falls back based on the resolved points property name for consistency.
- */
-export function resolveMaxPointsProperty(
-  pointsProperty: 'points' | 'autoPoints',
-  ...sources: ({ maxPoints?: unknown; maxAutoPoints?: unknown } | undefined)[]
-): 'maxPoints' | 'maxAutoPoints' {
-  for (const source of sources) {
-    if (source?.maxAutoPoints != null) return 'maxAutoPoints';
-    if (source?.maxPoints != null) return 'maxPoints';
-  }
-  return pointsProperty === 'points' ? 'maxPoints' : 'maxAutoPoints';
 }
 
 /**

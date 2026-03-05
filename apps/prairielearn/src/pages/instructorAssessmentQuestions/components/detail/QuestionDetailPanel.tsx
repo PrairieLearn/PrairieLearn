@@ -29,8 +29,6 @@ import {
   formatPointsValue,
   makeResetAndSave,
   parsePointsListValue,
-  resolveMaxPointsProperty,
-  resolvePointsProperty,
   validateAtLeastOnePointsField,
   validateNonIncreasingPoints,
 } from '../../utils/formHelpers.js';
@@ -98,34 +96,28 @@ export function QuestionDetailPanel({
   const isAlternative = !!zoneQuestionBlock;
   const isManualGrading = questionData?.question.grading_method === 'Manual';
 
-  const originalPointsProperty = resolvePointsProperty(assessmentType, question, zoneQuestionBlock);
-  const originalMaxProperty = resolveMaxPointsProperty(
-    originalPointsProperty,
-    question,
-    zoneQuestionBlock,
-  );
+  const pointsProperty = assessmentType === 'Exam' ? 'points' : 'autoPoints';
+  const maxPointsProperty = assessmentType === 'Exam' ? 'maxPoints' : 'maxAutoPoints';
 
   // For read-only display, use merged values (own ?? inherited)
-  const autoPointsValue =
-    question[originalPointsProperty] ?? zoneQuestionBlock?.[originalPointsProperty];
-  const maxAutoPointsValue =
-    question[originalMaxProperty] ?? zoneQuestionBlock?.[originalMaxProperty];
+  const autoPointsValue = question[pointsProperty] ?? zoneQuestionBlock?.[pointsProperty];
+  const maxAutoPointsValue = question[maxPointsProperty] ?? zoneQuestionBlock?.[maxPointsProperty];
   const manualPointsValue = question.manualPoints ?? zoneQuestionBlock?.manualPoints;
 
   // Alternative's own values (may be undefined = inheriting from group)
-  const ownPointsValue = question[originalPointsProperty] ?? undefined;
-  const ownMaxValue = question[originalMaxProperty] ?? undefined;
+  const ownPointsValue = question[pointsProperty] ?? undefined;
+  const ownMaxValue = question[maxPointsProperty] ?? undefined;
   const ownManualPoints = question.manualPoints ?? undefined;
 
   // Group's values (what would be inherited)
-  const inheritedPointsValue = zoneQuestionBlock?.[originalPointsProperty] ?? undefined;
-  const inheritedMaxValue = zoneQuestionBlock?.[originalMaxProperty] ?? undefined;
+  const inheritedPointsValue = zoneQuestionBlock?.[pointsProperty] ?? undefined;
+  const inheritedMaxValue = zoneQuestionBlock?.[maxPointsProperty] ?? undefined;
   const inheritedManualPoints = zoneQuestionBlock?.manualPoints ?? undefined;
 
   const parentValues = isAlternative
     ? {
-        [originalPointsProperty]: inheritedPointsValue,
-        [originalMaxProperty]: inheritedMaxValue,
+        [pointsProperty]: inheritedPointsValue,
+        [maxPointsProperty]: inheritedMaxValue,
         manualPoints: inheritedManualPoints,
       }
     : undefined;
@@ -150,8 +142,8 @@ export function QuestionDetailPanel({
     values: {
       id: question.id ?? '',
       comment: extractStringComment(question.comment) || undefined,
-      [originalPointsProperty]: isAlternative ? ownPointsValue : (autoPointsValue ?? undefined),
-      [originalMaxProperty]: isAlternative ? ownMaxValue : (maxAutoPointsValue ?? undefined),
+      [pointsProperty]: isAlternative ? ownPointsValue : (autoPointsValue ?? undefined),
+      [maxPointsProperty]: isAlternative ? ownMaxValue : (maxAutoPointsValue ?? undefined),
       manualPoints: isAlternative ? ownManualPoints : (manualPointsValue ?? undefined),
       triesPerVariant: question.triesPerVariant ?? undefined,
       advanceScorePerc: question.advanceScorePerc ?? undefined,
@@ -162,8 +154,8 @@ export function QuestionDetailPanel({
     },
   });
 
-  const watchedPoints = watch(originalPointsProperty);
-  const watchedMax = watch(originalMaxProperty);
+  const watchedPoints = watch(pointsProperty);
+  const watchedMax = watch(maxPointsProperty);
   const watchedManualPoints = watch('manualPoints');
 
   const autoPointsPlaceholder = run(() => {
@@ -285,8 +277,8 @@ export function QuestionDetailPanel({
   };
 
   const homeworkAutoPointsValidation = (_value: unknown, formValues: QuestionFormData) => {
-    const points = formValues[originalPointsProperty];
-    const maxPoints = formValues[originalMaxProperty];
+    const points = formValues[pointsProperty];
+    const maxPoints = formValues[maxPointsProperty];
     if (typeof points === 'number' && points === 0 && maxPoints != null && maxPoints > 0) {
       return 'Auto points cannot be 0 when max auto points is greater than 0.';
     }
@@ -297,8 +289,8 @@ export function QuestionDetailPanel({
   };
 
   const homeworkMaxPointsValidation = (_value: unknown, formValues: QuestionFormData) => {
-    const points = formValues[originalPointsProperty];
-    const maxPoints = formValues[originalMaxProperty];
+    const points = formValues[pointsProperty];
+    const maxPoints = formValues[maxPointsProperty];
     if (typeof points === 'number' && points === 0 && maxPoints != null && maxPoints > 0) {
       return 'Max auto points must be 0 or empty when auto points is 0.';
     }
@@ -410,8 +402,8 @@ export function QuestionDetailPanel({
           inheritedMaxValue={inheritedMaxValue}
           inheritedManualPoints={inheritedManualPoints}
           autoPointsPlaceholder={autoPointsPlaceholder}
-          originalPointsProperty={originalPointsProperty}
-          originalMaxProperty={originalMaxProperty}
+          pointsProperty={pointsProperty}
+          maxPointsProperty={maxPointsProperty}
           register={register}
           errors={errors}
           setValue={setValue}
@@ -434,7 +426,7 @@ export function QuestionDetailPanel({
           isManualPointsInherited={isManualPointsInherited}
           inheritedPointsValue={inheritedPointsValue}
           inheritedManualPoints={inheritedManualPoints}
-          originalPointsProperty={originalPointsProperty}
+          pointsProperty={pointsProperty}
           register={register}
           errors={errors}
           setValue={setValue}
@@ -577,8 +569,8 @@ function HomeworkPointsFields({
   inheritedMaxValue,
   inheritedManualPoints,
   autoPointsPlaceholder,
-  originalPointsProperty,
-  originalMaxProperty,
+  pointsProperty,
+  maxPointsProperty,
   register,
   errors,
   setValue,
@@ -604,8 +596,8 @@ function HomeworkPointsFields({
   inheritedMaxValue: number | undefined;
   inheritedManualPoints: number | undefined;
   autoPointsPlaceholder: string;
-  originalPointsProperty: 'points' | 'autoPoints';
-  originalMaxProperty: 'maxPoints' | 'maxAutoPoints';
+  pointsProperty: 'points' | 'autoPoints';
+  maxPointsProperty: 'maxPoints' | 'maxAutoPoints';
   register: UseFormRegister<QuestionFormData>;
   errors: FieldErrors<QuestionFormData>;
   setValue: UseFormSetValue<QuestionFormData>;
@@ -668,16 +660,16 @@ function HomeworkPointsFields({
           isInherited={isPointsInherited}
           inheritedDisplayValue={formatPointsValue(inheritedPointsValue)}
           viewValue={!isPointsInherited ? viewAutoPoints : undefined}
-          registerProps={register(originalPointsProperty, {
+          registerProps={register(pointsProperty, {
             setValueAs: coerceToNumber,
-            deps: [originalMaxProperty, 'manualPoints'],
+            deps: [maxPointsProperty, 'manualPoints'],
             validate: {
               atLeastOne: pointsValidation,
               crossField: homeworkAutoPointsValidation,
               nonNegative: (v: number | number[] | undefined) => nonNegativePointsValidation(v),
             },
           })}
-          error={errors[originalPointsProperty]}
+          error={errors[pointsProperty]}
           helpText={
             isManualGrading
               ? 'Points for manual grading.'
@@ -686,12 +678,12 @@ function HomeworkPointsFields({
           inheritedValueLabel={formatPointsValue(inheritedPointsValue)}
           showResetButton={inheritedPointsValue != null && !isPointsInherited}
           onOverride={() =>
-            setValue(originalPointsProperty, inheritedPointsValue, {
+            setValue(pointsProperty, inheritedPointsValue, {
               shouldDirty: true,
               shouldValidate: true,
             })
           }
-          onReset={() => resetAndSave(originalPointsProperty)}
+          onReset={() => resetAndSave(pointsProperty)}
         />
       ) : (
         <FormField
@@ -699,7 +691,7 @@ function HomeworkPointsFields({
           id={`${idPrefix}-autoPoints`}
           label={pointsLabel}
           viewValue={viewAutoPoints}
-          error={errors[originalPointsProperty]}
+          error={errors[pointsProperty]}
           helpText={
             isManualGrading
               ? 'Points for manual grading.'
@@ -713,9 +705,9 @@ function HomeworkPointsFields({
               className={clsx('form-control form-control-sm', aria.errorClass)}
               {...aria.inputProps}
               step="any"
-              {...register(originalPointsProperty, {
+              {...register(pointsProperty, {
                 setValueAs: coerceToNumber,
-                deps: [originalMaxProperty, 'manualPoints'],
+                deps: [maxPointsProperty, 'manualPoints'],
                 validate: {
                   atLeastOne: pointsValidation,
                   crossField: homeworkAutoPointsValidation,
@@ -736,23 +728,23 @@ function HomeworkPointsFields({
             isInherited={isMaxInherited}
             inheritedDisplayValue={String(inheritedMaxValue ?? '')}
             viewValue={!isMaxInherited ? viewMaxAutoPoints : undefined}
-            registerProps={register(originalMaxProperty, {
+            registerProps={register(maxPointsProperty, {
               setValueAs: coerceToNumber,
-              deps: [originalPointsProperty],
+              deps: [pointsProperty],
               validate: homeworkMaxPointsValidation,
             })}
-            error={errors[originalMaxProperty]}
+            error={errors[maxPointsProperty]}
             helpText={maxAutoPointsHelpText}
             placeholder={autoPointsPlaceholder}
             inheritedValueLabel={inheritedMaxValue != null ? String(inheritedMaxValue) : undefined}
             showResetButton={inheritedMaxValue != null && !isMaxInherited}
             onOverride={() =>
-              setValue(originalMaxProperty, inheritedMaxValue, {
+              setValue(maxPointsProperty, inheritedMaxValue, {
                 shouldDirty: true,
                 shouldValidate: true,
               })
             }
-            onReset={() => resetAndSave(originalMaxProperty)}
+            onReset={() => resetAndSave(maxPointsProperty)}
           />
         ) : (
           <FormField
@@ -760,7 +752,7 @@ function HomeworkPointsFields({
             id={`${idPrefix}-maxAutoPoints`}
             label="Max auto points"
             viewValue={viewMaxAutoPoints}
-            error={errors[originalMaxProperty]}
+            error={errors[maxPointsProperty]}
             helpText={maxAutoPointsHelpText}
             hideWhenEmpty
           >
@@ -770,9 +762,9 @@ function HomeworkPointsFields({
                 className={clsx('form-control form-control-sm', aria.errorClass)}
                 {...aria.inputProps}
                 placeholder={autoPointsPlaceholder}
-                {...register(originalMaxProperty, {
+                {...register(maxPointsProperty, {
                   setValueAs: coerceToNumber,
-                  deps: [originalPointsProperty],
+                  deps: [pointsProperty],
                   validate: homeworkMaxPointsValidation,
                 })}
               />
@@ -795,7 +787,7 @@ function HomeworkPointsFields({
             }
             registerProps={register('manualPoints', {
               setValueAs: coerceToNumber,
-              deps: [originalPointsProperty],
+              deps: [pointsProperty],
               validate: {
                 atLeastOne: pointsValidation,
                 nonNegative: nonNegativePointsValidation,
@@ -832,7 +824,7 @@ function HomeworkPointsFields({
                 {...aria.inputProps}
                 {...register('manualPoints', {
                   setValueAs: coerceToNumber,
-                  deps: [originalPointsProperty],
+                  deps: [pointsProperty],
                   validate: {
                     atLeastOne: pointsValidation,
                     nonNegative: nonNegativePointsValidation,
@@ -858,7 +850,7 @@ function ExamPointsFields({
   isManualPointsInherited,
   inheritedPointsValue,
   inheritedManualPoints,
-  originalPointsProperty,
+  pointsProperty,
   register,
   errors,
   setValue,
@@ -877,7 +869,7 @@ function ExamPointsFields({
   isManualPointsInherited: boolean;
   inheritedPointsValue: number | number[] | undefined;
   inheritedManualPoints: number | undefined;
-  originalPointsProperty: 'points' | 'autoPoints';
+  pointsProperty: 'points' | 'autoPoints';
   register: UseFormRegister<QuestionFormData>;
   errors: FieldErrors<QuestionFormData>;
   setValue: UseFormSetValue<QuestionFormData>;
@@ -900,7 +892,7 @@ function ExamPointsFields({
           isInherited={isPointsInherited}
           inheritedDisplayValue={formatPointsValue(inheritedPointsValue)}
           viewValue={!isPointsInherited ? viewAutoPoints : undefined}
-          registerProps={register(originalPointsProperty, {
+          registerProps={register(pointsProperty, {
             pattern: {
               value: /^[0-9, ]*$/,
               message: 'Points must be a number or a comma-separated list of numbers.',
@@ -912,7 +904,7 @@ function ExamPointsFields({
               nonIncreasing: (v: number | number[] | undefined) => validateNonIncreasingPoints(v),
             },
           })}
-          error={errors[originalPointsProperty]}
+          error={errors[pointsProperty]}
           helpText={
             isManualGrading
               ? 'Points for manual grading.'
@@ -921,12 +913,12 @@ function ExamPointsFields({
           inheritedValueLabel={formatPointsValue(inheritedPointsValue)}
           showResetButton={inheritedPointsValue != null && !isPointsInherited}
           onOverride={() =>
-            setValue(originalPointsProperty, inheritedPointsValue, {
+            setValue(pointsProperty, inheritedPointsValue, {
               shouldDirty: true,
               shouldValidate: true,
             })
           }
-          onReset={() => resetAndSave(originalPointsProperty)}
+          onReset={() => resetAndSave(pointsProperty)}
         />
       ) : (
         <FormField
@@ -934,7 +926,7 @@ function ExamPointsFields({
           id={`${idPrefix}-pointsList`}
           label={pointsLabel}
           viewValue={viewAutoPoints}
-          error={errors[originalPointsProperty]}
+          error={errors[pointsProperty]}
           helpText={
             isManualGrading
               ? 'Points for manual grading.'
@@ -947,7 +939,7 @@ function ExamPointsFields({
               type="text"
               className={clsx('form-control form-control-sm', aria.errorClass)}
               {...aria.inputProps}
-              {...register(originalPointsProperty, {
+              {...register(pointsProperty, {
                 pattern: {
                   value: /^[0-9, ]*$/,
                   message: 'Points must be a number or a comma-separated list of numbers.',
@@ -980,7 +972,7 @@ function ExamPointsFields({
             }
             registerProps={register('manualPoints', {
               setValueAs: coerceToNumber,
-              deps: [originalPointsProperty],
+              deps: [pointsProperty],
               validate: {
                 atLeastOne: pointsValidation,
                 nonNegative: nonNegativePointsValidation,
@@ -1017,7 +1009,7 @@ function ExamPointsFields({
                 {...aria.inputProps}
                 {...register('manualPoints', {
                   setValueAs: coerceToNumber,
-                  deps: [originalPointsProperty],
+                  deps: [pointsProperty],
                   validate: {
                     atLeastOne: pointsValidation,
                     nonNegative: nonNegativePointsValidation,

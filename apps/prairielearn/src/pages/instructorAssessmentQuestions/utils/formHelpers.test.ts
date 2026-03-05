@@ -2,7 +2,6 @@ import { describe, expect, it } from 'vitest';
 
 import {
   parsePointsListValue,
-  resolvePointsProperty,
   validateAtLeastOnePointsField,
   validateNonIncreasingPoints,
 } from './formHelpers.js';
@@ -96,35 +95,5 @@ describe('validateNonIncreasingPoints', () => {
 
   it('returns undefined for undefined', () => {
     expect(validateNonIncreasingPoints(undefined)).toBeUndefined();
-  });
-});
-
-describe('resolvePointsProperty', () => {
-  it('returns autoPoints when autoPoints is set in the first source', () => {
-    expect(resolvePointsProperty(undefined, { autoPoints: 10 })).toBe('autoPoints');
-  });
-
-  it('returns points when points is set and autoPoints is not', () => {
-    expect(resolvePointsProperty(undefined, { points: 5 })).toBe('points');
-  });
-
-  it('prefers autoPoints over points in the same source', () => {
-    expect(resolvePointsProperty(undefined, { autoPoints: 10, points: 5 })).toBe('autoPoints');
-  });
-
-  it('falls back to later sources', () => {
-    expect(resolvePointsProperty(undefined, {}, { points: 5 })).toBe('points');
-  });
-
-  it('defaults to autoPoints when no sources have values', () => {
-    expect(resolvePointsProperty(undefined, {}, undefined)).toBe('autoPoints');
-  });
-
-  it('defaults to autoPoints with no arguments', () => {
-    expect(resolvePointsProperty(undefined)).toBe('autoPoints');
-  });
-
-  it('defaults to points for Exam assessment type', () => {
-    expect(resolvePointsProperty('Exam')).toBe('points');
   });
 });
