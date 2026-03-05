@@ -12,6 +12,11 @@ import {
   updateUseCustomApiKeys,
   upsertCredential,
 } from '../../../models/ai-grading-credentials.js';
+import {
+  selectCreditPool,
+  selectCreditPoolBalanceTimeSeries,
+  selectCreditPoolChanges,
+} from '../../../models/ai-grading-credit-pool.js';
 
 import { formatCredential } from './utils/format.js';
 
@@ -104,10 +109,28 @@ const deleteCredentialMutation = t.procedure
     });
   });
 
+const creditPoolQuery = t.procedure.use(requireAiGradingFeature).query(async (opts) => {
+  const pool = await selectCreditPool(opts.ctx.course_instance.id);
+  return pool;
+});
+
+const creditPoolChangesQuery = t.procedure.use(requireAiGradingFeature).query(async (opts) => {
+  return await selectCreditPoolChanges(opts.ctx.course_instance.id);
+});
+
+const creditPoolBalanceTimeSeriesQuery = t.procedure
+  .use(requireAiGradingFeature)
+  .query(async (opts) => {
+    return await selectCreditPoolBalanceTimeSeries(opts.ctx.course_instance.id);
+  });
+
 export const aiGradingSettingsRouter = t.router({
   updateUseCustomApiKeys: updateUseCustomApiKeysMutation,
   addCredential: addCredentialMutation,
   deleteCredential: deleteCredentialMutation,
+  creditPool: creditPoolQuery,
+  creditPoolChanges: creditPoolChangesQuery,
+  creditPoolBalanceTimeSeries: creditPoolBalanceTimeSeriesQuery,
 });
 
 export type AiGradingSettingsRouter = typeof aiGradingSettingsRouter;

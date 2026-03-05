@@ -14,13 +14,13 @@ export function formatMilliDollars(milliDollars: number): string {
  * Convert raw API cost in dollars to milli-dollars with an infrastructure fee markup.
  *
  * @param rawCostDollars - The raw API cost in US dollars (e.g. 0.0045)
- * @param feePercent - The infrastructure fee percentage (e.g. 20 for 20%)
+ * @param feeDecimal - The infrastructure fee as a decimal (e.g. 0.2 for 20%)
  * @returns The total cost in milli-dollars, rounded up to the nearest milli-dollar
  */
 export function calculateCostWithFeeMilliDollars(
   rawCostDollars: number,
-  feePercent: number,
+  feeDecimal: number,
 ): number {
-  const totalDollars = rawCostDollars * (1 + feePercent / 100);
+  const totalDollars = rawCostDollars * (1 + feeDecimal);
   return Math.ceil(totalDollars * 1000);
 }

@@ -9,8 +9,6 @@ import {
   runInTransactionAsync,
 } from '@prairielearn/postgres';
 
-import { AiGradingCreditPoolChangeSchema } from '../lib/db-types.js';
-
 const sql = loadSqlEquiv(import.meta.url);
 
 const CreditPoolSchema = z.object({
@@ -19,7 +17,7 @@ const CreditPoolSchema = z.object({
   total_milli_dollars: z.coerce.number(),
 });
 
-export type CreditPool = z.infer<typeof CreditPoolSchema>;
+type CreditPool = z.infer<typeof CreditPoolSchema>;
 
 const CreditPoolBalancesSchema = z.object({
   credit_transferable_milli_dollars: z.coerce.number(),
@@ -44,12 +42,14 @@ export async function deductCreditsForAiGrading({
   user_id,
   ai_grading_job_id,
   assessment_question_id,
+  reason,
 }: {
   course_instance_id: string;
   cost_milli_dollars: number;
   user_id: string | null;
   ai_grading_job_id: string | null;
   assessment_question_id: string | null;
+  reason: string;
 }): Promise<void> {
   await runInTransactionAsync(async () => {
     // Lock the row and get the current pool state before deduction for logging.
@@ -88,7 +88,7 @@ export async function deductCreditsForAiGrading({
         credit_after_milli_dollars: before.total_milli_dollars - nonTransferableDeducted,
         delta_milli_dollars: -nonTransferableDeducted,
         credit_type: 'non_transferable',
-        reason: 'AI grading',
+        reason,
         user_id,
         ai_grading_job_id,
         assessment_question_id,
@@ -103,7 +103,7 @@ export async function deductCreditsForAiGrading({
         credit_after_milli_dollars: afterTotal,
         delta_milli_dollars: -transferableDeducted,
         credit_type: 'transferable',
-        reason: 'AI grading',
+        reason,
         user_id,
         ai_grading_job_id,
         assessment_question_id,
@@ -113,91 +113,92 @@ export async function deductCreditsForAiGrading({
 }
 
 /**
- * Update the credit pool for a course instance (admin operation).
- * Logs changes for each pool that is modified.
+ * Adjust the credit pool for a course instance by a delta amount (admin operation).
+ * Positive delta adds credits, negative delta removes credits.
+ * Throws if the resulting balance would be negative.
  */
-export async function updateCreditPool({
+export async function adjustCreditPool({
   course_instance_id,
-  credit_transferable_milli_dollars,
-  credit_non_transferable_milli_dollars,
+  delta_milli_dollars,
+  credit_type,
   user_id,
   reason,
 }: {
   course_instance_id: string;
-  credit_transferable_milli_dollars: number;
-  credit_non_transferable_milli_dollars: number;
+  delta_milli_dollars: number;
+  credit_type: 'transferable' | 'non_transferable';
   user_id: string;
   reason: string;
 }): Promise<void> {
+  if (delta_milli_dollars === 0) return;
+
   await runInTransactionAsync(async () => {
-    const before = await queryRow(sql.select_credit_pool, { course_instance_id }, CreditPoolSchema);
+    const before = await queryRow(
+      sql.select_credit_pool_for_update,
+      { course_instance_id },
+      CreditPoolSchema,
+    );
 
-    const transferableDelta =
-      credit_transferable_milli_dollars - before.credit_transferable_milli_dollars;
-    const nonTransferableDelta =
-      credit_non_transferable_milli_dollars - before.credit_non_transferable_milli_dollars;
+    const currentBalance =
+      credit_type === 'transferable'
+        ? before.credit_transferable_milli_dollars
+        : before.credit_non_transferable_milli_dollars;
 
-    let runningTotal = before.total_milli_dollars;
+    if (currentBalance + delta_milli_dollars < 0) {
+      throw new Error(
+        `Cannot deduct more than the current ${credit_type} balance of $${(currentBalance / 1000).toFixed(2)}.`,
+      );
+    }
 
-    if (transferableDelta !== 0) {
+    const newBalance = currentBalance + delta_milli_dollars;
+
+    if (credit_type === 'transferable') {
       await execute(sql.update_credit_transferable, {
         course_instance_id,
-        credit_transferable_milli_dollars,
+        credit_transferable_milli_dollars: newBalance,
       });
-
-      await execute(sql.insert_credit_pool_change, {
-        course_instance_id,
-        credit_before_milli_dollars: runningTotal,
-        credit_after_milli_dollars: runningTotal + transferableDelta,
-        delta_milli_dollars: transferableDelta,
-        credit_type: 'transferable',
-        reason,
-        user_id,
-        ai_grading_job_id: null,
-        assessment_question_id: null,
-      });
-
-      runningTotal += transferableDelta;
-    }
-
-    if (nonTransferableDelta !== 0) {
+    } else {
       await execute(sql.update_credit_non_transferable, {
         course_instance_id,
-        credit_non_transferable_milli_dollars,
-      });
-
-      await execute(sql.insert_credit_pool_change, {
-        course_instance_id,
-        credit_before_milli_dollars: runningTotal,
-        credit_after_milli_dollars: runningTotal + nonTransferableDelta,
-        delta_milli_dollars: nonTransferableDelta,
-        credit_type: 'non_transferable',
-        reason,
-        user_id,
-        ai_grading_job_id: null,
-        assessment_question_id: null,
+        credit_non_transferable_milli_dollars: newBalance,
       });
     }
+
+    await execute(sql.insert_credit_pool_change, {
+      course_instance_id,
+      credit_before_milli_dollars: before.total_milli_dollars,
+      credit_after_milli_dollars: before.total_milli_dollars + delta_milli_dollars,
+      delta_milli_dollars,
+      credit_type,
+      reason,
+      user_id,
+      ai_grading_job_id: null,
+      assessment_question_id: null,
+    });
   });
 }
 
-const CreditPoolChangeWithUserSchema = AiGradingCreditPoolChangeSchema.extend({
+const CreditPoolChangeRowSchema = z.object({
+  id: z.coerce.string(),
+  created_at: z.coerce.date(),
+  delta_milli_dollars: z.coerce.number(),
+  credit_before_milli_dollars: z.coerce.number(),
+  credit_after_milli_dollars: z.coerce.number(),
+  credit_type: z.enum(['transferable', 'non_transferable']),
+  reason: z.string(),
   user_name: z.string().nullable(),
   user_uid: z.string().nullable(),
 });
 
-export type CreditPoolChangeWithUser = z.infer<typeof CreditPoolChangeWithUserSchema>;
+type CreditPoolChangeRow = z.infer<typeof CreditPoolChangeRowSchema>;
 
-/**
- * Get the credit pool change history for a course instance, ordered by most recent first.
- */
 export async function selectCreditPoolChanges(
   course_instance_id: string,
-): Promise<CreditPoolChangeWithUser[]> {
+): Promise<CreditPoolChangeRow[]> {
   return await queryRows(
     sql.select_credit_pool_changes,
     { course_instance_id },
-    CreditPoolChangeWithUserSchema,
+    CreditPoolChangeRowSchema,
   );
 }
 
@@ -206,11 +207,8 @@ const BalanceTimeSeriesPointSchema = z.object({
   balance_milli_dollars: z.coerce.number(),
 });
 
-export type BalanceTimeSeriesPoint = z.infer<typeof BalanceTimeSeriesPointSchema>;
+type BalanceTimeSeriesPoint = z.infer<typeof BalanceTimeSeriesPointSchema>;
 
-/**
- * Get daily end-of-day balance snapshots for the credit pool chart.
- */
 export async function selectCreditPoolBalanceTimeSeries(
   course_instance_id: string,
 ): Promise<BalanceTimeSeriesPoint[]> {
@@ -219,77 +217,4 @@ export async function selectCreditPoolBalanceTimeSeries(
     { course_instance_id },
     BalanceTimeSeriesPointSchema,
   );
-}
-
-const PerUserSpendSchema = z.object({
-  user_id: z.string(),
-  user_name: z.string().nullable(),
-  uid: z.string(),
-  total_cost_milli_dollars: z.coerce.number(),
-});
-
-export type PerUserSpend = z.infer<typeof PerUserSpendSchema>;
-
-/**
- * Get per-user AI grading spend for a course instance.
- */
-export async function selectPerUserAiGradingSpend(
-  course_instance_id: string,
-): Promise<PerUserSpend[]> {
-  return await queryRows(sql.select_per_user_spend, { course_instance_id }, PerUserSpendSchema);
-}
-
-const PerAssessmentSpendSchema = z.object({
-  assessment_id: z.string(),
-  assessment_label: z.string(),
-  total_cost_milli_dollars: z.coerce.number(),
-});
-
-export type PerAssessmentSpend = z.infer<typeof PerAssessmentSpendSchema>;
-
-/**
- * Get per-assessment AI grading spend for a course instance.
- */
-export async function selectPerAssessmentAiGradingSpend(
-  course_instance_id: string,
-): Promise<PerAssessmentSpend[]> {
-  return await queryRows(
-    sql.select_per_assessment_spend,
-    { course_instance_id },
-    PerAssessmentSpendSchema,
-  );
-}
-
-const PerQuestionSpendSchema = z.object({
-  question_id: z.string(),
-  question_qid: z.string(),
-  question_title: z.string().nullable(),
-  total_cost_milli_dollars: z.coerce.number(),
-});
-
-export type PerQuestionSpend = z.infer<typeof PerQuestionSpendSchema>;
-
-/**
- * Get per-question AI grading spend for a course instance.
- */
-export async function selectPerQuestionAiGradingSpend(
-  course_instance_id: string,
-): Promise<PerQuestionSpend[]> {
-  return await queryRows(
-    sql.select_per_question_spend,
-    { course_instance_id },
-    PerQuestionSpendSchema,
-  );
-}
-
-/**
- * Get the number of enrolled students (non-instructors) in a course instance.
- */
-export async function selectEnrollmentCount(course_instance_id: string): Promise<number> {
-  const result = await queryRow(
-    sql.select_enrollment_count,
-    { course_instance_id },
-    z.object({ enrollment_count: z.number() }),
-  );
-  return result.enrollment_count;
 }

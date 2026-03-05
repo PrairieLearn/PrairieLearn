@@ -6,8 +6,13 @@ import { flash } from '@prairielearn/flash';
 import { execute, loadSqlEquiv, queryRow } from '@prairielearn/postgres';
 
 import { CourseInstanceSchema, CourseSchema } from '../../../lib/db-types.js';
+import { features } from '../../../lib/features/index.js';
 import { typedAsyncHandler } from '../../../lib/res-locals.js';
-import { updateCreditPool } from '../../../models/ai-grading-credit-pool.js';
+import {
+  adjustCreditPool,
+  selectCreditPoolBalanceTimeSeries,
+  selectCreditPoolChanges,
+} from '../../../models/ai-grading-credit-pool.js';
 import { parseDesiredPlanGrants } from '../../lib/billing/components/PlanGrantsEditor.js';
 import {
   getPlanGrantsForCourseInstance,
@@ -52,12 +57,28 @@ router.get(
       institution_id: institution.id,
       course_instance_id: course_instance.id,
     });
+    const aiGradingEnabled = await features.enabled('ai-grading', {
+      institution_id: institution.id,
+      course_id: course.id,
+      course_instance_id: course_instance.id,
+    });
+
+    const [creditPoolChanges, creditPoolTimeSeries] = aiGradingEnabled
+      ? await Promise.all([
+          selectCreditPoolChanges(course_instance.id),
+          selectCreditPoolBalanceTimeSeries(course_instance.id),
+        ])
+      : [[], []];
+
     res.send(
       AdministratorInstitutionCourseInstance({
         institution,
         course,
         course_instance,
         planGrants,
+        aiGradingEnabled,
+        creditPoolChanges,
+        creditPoolTimeSeries,
         resLocals: res.locals,
       }),
     );
@@ -97,30 +118,33 @@ router.post(
       );
       flash('success', 'Successfully updated institution plan grants.');
       res.redirect(req.originalUrl);
-    } else if (req.body.__action === 'update_credit_pool') {
-      const creditTransferable = Number(req.body.credit_transferable_milli_dollars);
-      const creditNonTransferable = Number(req.body.credit_non_transferable_milli_dollars);
+    } else if (req.body.__action === 'adjust_credit_pool') {
+      const amountDollars = Number(req.body.amount_dollars);
+      const creditType = req.body.credit_type;
+      const action = req.body.adjustment_action;
 
-      if (
-        !Number.isInteger(creditTransferable) ||
-        !Number.isInteger(creditNonTransferable) ||
-        creditTransferable < 0 ||
-        creditNonTransferable < 0
-      ) {
-        throw new error.HttpStatusError(
-          400,
-          'Credit amounts must be non-negative integers (milli-dollars).',
-        );
+      if (!Number.isFinite(amountDollars) || amountDollars <= 0) {
+        throw new error.HttpStatusError(400, 'Amount must be a positive number.');
       }
 
-      await updateCreditPool({
+      if (creditType !== 'transferable' && creditType !== 'non_transferable') {
+        throw new error.HttpStatusError(400, 'Invalid credit type.');
+      }
+
+      if (action !== 'add' && action !== 'deduct') {
+        throw new error.HttpStatusError(400, 'Invalid action.');
+      }
+
+      const deltaMilliDollars = Math.round(amountDollars * 1000) * (action === 'deduct' ? -1 : 1);
+
+      await adjustCreditPool({
         course_instance_id: course_instance.id,
-        credit_transferable_milli_dollars: creditTransferable,
-        credit_non_transferable_milli_dollars: creditNonTransferable,
+        delta_milli_dollars: deltaMilliDollars,
+        credit_type: creditType,
         user_id: res.locals.authn_user.id,
-        reason: 'Admin update',
+        reason: `Admin ${action}`,
       });
-      flash('success', 'Successfully updated AI grading credits.');
+      flash('success', `Successfully ${action === 'add' ? 'added' : 'deducted'} credits.`);
       res.redirect(req.originalUrl);
     } else {
       throw new error.HttpStatusError(400, `Unknown action: ${req.body.__action}`);

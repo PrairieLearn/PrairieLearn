@@ -1,4 +1,4 @@
-import { QueryClient, useMutation } from '@tanstack/react-query';
+import { QueryClient, useMutation, useQuery } from '@tanstack/react-query';
 import clsx from 'clsx';
 import { useState } from 'react';
 import { Alert, Form, Modal } from 'react-bootstrap';
@@ -6,6 +6,7 @@ import { useForm } from 'react-hook-form';
 
 import { useModalState } from '@prairielearn/ui';
 
+import { formatMilliDollars } from '../../../lib/ai-grading-credits.js';
 import { QueryClientProviderDebug } from '../../../lib/client/tanstackQuery.js';
 import type { EnumAiGradingProvider } from '../../../lib/db-types.js';
 import {
@@ -365,6 +366,8 @@ function AiGradingSettingsContent({
             )}
           </div>
         )}
+
+        <CreditPoolSection useCustomApiKeys={useCustomApiKeys} />
       </div>
 
       <AddApiKeyModal
@@ -372,8 +375,6 @@ function AiGradingSettingsContent({
         providerOptions={providerOptions}
         credentials={credentials}
         onSuccess={(credential) => {
-          // The server upserts by provider, so replace any existing credential
-          // for the same provider with the newly returned one.
           setCredentials((prev) => {
             const filtered = prev.filter((c) => c.provider !== credential.provider);
             return [...filtered, credential];
@@ -385,7 +386,6 @@ function AiGradingSettingsContent({
       <DeleteApiKeyModal
         {...deleteModalState}
         onSuccess={() => {
-          // Read the target from modal state before hiding, since hide() clears it.
           const target = deleteModalState.data;
           if (target) {
             setCredentials((prev) => prev.filter((c) => c.id !== target.id));
@@ -394,5 +394,249 @@ function AiGradingSettingsContent({
         }}
       />
     </div>
+  );
+}
+
+function CreditPoolSection({ useCustomApiKeys }: { useCustomApiKeys: boolean }) {
+  const trpc = useTRPC();
+  const [showHistory, setShowHistory] = useState(false);
+
+  const poolQuery = useQuery(trpc.creditPool.queryOptions());
+  const changesQuery = useQuery({
+    ...trpc.creditPoolChanges.queryOptions(),
+    enabled: showHistory,
+  });
+  const timeSeriesQuery = useQuery(trpc.creditPoolBalanceTimeSeries.queryOptions());
+
+  if (poolQuery.isError) {
+    return (
+      <Alert variant="danger" className="border-top mt-3 pt-3">
+        Failed to load credit pool data.
+      </Alert>
+    );
+  }
+
+  if (!poolQuery.data) {
+    return null;
+  }
+
+  const pool = poolQuery.data;
+  const dimmed = useCustomApiKeys;
+
+  return (
+    <div className="border-top pt-3 mt-3">
+      <h2 className="h5 mb-3">AI grading credits</h2>
+
+      {useCustomApiKeys ? (
+        <Alert variant="danger">
+          This course instance is using custom API keys. Credits are not consumed when custom keys
+          are in use.
+        </Alert>
+      ) : (
+        <Alert variant="info">
+          This course instance is using platform API keys. Credits are consumed for each AI grading
+          request.
+        </Alert>
+      )}
+
+      <div className={clsx('row mb-3 g-3', dimmed && 'opacity-50')}>
+        <div className="col-md-4">
+          <div className="border rounded p-3 text-center">
+            <div className="text-muted small">Total available</div>
+            <div className="h4 mb-0">{formatMilliDollars(pool.total_milli_dollars)}</div>
+          </div>
+        </div>
+        <div className="col-md-4">
+          <div className="border rounded p-3 text-center">
+            <div className="text-muted small">Transferable</div>
+            <div className="h5 mb-0">
+              {formatMilliDollars(pool.credit_transferable_milli_dollars)}
+            </div>
+          </div>
+        </div>
+        <div className="col-md-4">
+          <div className="border rounded p-3 text-center">
+            <div className="text-muted small">Non-transferable</div>
+            <div className="h5 mb-0">
+              {formatMilliDollars(pool.credit_non_transferable_milli_dollars)}
+            </div>
+          </div>
+        </div>
+      </div>
+
+      <div className={clsx(dimmed && 'opacity-50')}>
+        {timeSeriesQuery.data && timeSeriesQuery.data.length > 1 && (
+          <div className="mb-3">
+            <h3 className="h6">Balance over time</h3>
+            <BalanceChart data={timeSeriesQuery.data} />
+          </div>
+        )}
+
+        <TransactionHistory
+          showHistory={showHistory}
+          setShowHistory={setShowHistory}
+          changesQuery={changesQuery}
+        />
+      </div>
+    </div>
+  );
+}
+
+function TransactionHistory({
+  showHistory,
+  setShowHistory,
+  changesQuery,
+}: {
+  showHistory: boolean;
+  setShowHistory: (v: boolean) => void;
+  changesQuery: {
+    isLoading: boolean;
+    isError: boolean;
+    data?: {
+      id: string;
+      created_at: Date;
+      delta_milli_dollars: number;
+      credit_after_milli_dollars: number;
+      reason: string;
+      user_name: string | null;
+      user_uid: string | null;
+    }[];
+  };
+}) {
+  return (
+    <div>
+      <button
+        type="button"
+        className="btn btn-sm btn-outline-secondary"
+        onClick={() => setShowHistory(!showHistory)}
+      >
+        {showHistory ? 'Hide transaction history' : 'Show transaction history'}
+      </button>
+
+      {showHistory && (
+        <div className="mt-3">
+          {changesQuery.isLoading && <p className="text-muted">Loading transaction history...</p>}
+          {changesQuery.isError && (
+            <Alert variant="danger">Failed to load transaction history.</Alert>
+          )}
+          {changesQuery.data && (
+            <div className="table-responsive border rounded overflow-hidden">
+              <table className="table table-sm table-hover mb-0" aria-label="Transaction history">
+                <thead>
+                  <tr>
+                    <th className="px-3 py-2">Date</th>
+                    <th className="px-3 py-2">Change</th>
+                    <th className="px-3 py-2">Balance after</th>
+                    <th className="px-3 py-2">Reason</th>
+                    <th className="px-3 py-2">User</th>
+                  </tr>
+                </thead>
+                <tbody>
+                  {changesQuery.data.length === 0 ? (
+                    <tr>
+                      <td colSpan={5} className="text-muted text-center py-4 px-3">
+                        No transactions yet.
+                      </td>
+                    </tr>
+                  ) : (
+                    changesQuery.data.map((change) => (
+                      <tr key={change.id}>
+                        <td className="align-middle px-3 py-2">
+                          {new Date(change.created_at).toLocaleString()}
+                        </td>
+                        <td
+                          className={clsx(
+                            'align-middle px-3 py-2 fw-bold',
+                            change.delta_milli_dollars > 0 ? 'text-success' : 'text-danger',
+                          )}
+                        >
+                          {change.delta_milli_dollars > 0 ? '+' : '-'}
+                          {formatMilliDollars(Math.abs(change.delta_milli_dollars))}
+                        </td>
+                        <td className="align-middle px-3 py-2">
+                          {formatMilliDollars(change.credit_after_milli_dollars)}
+                        </td>
+                        <td className="align-middle px-3 py-2">{change.reason}</td>
+                        <td className="align-middle px-3 py-2">
+                          {change.user_name ?? change.user_uid ?? '—'}
+                        </td>
+                      </tr>
+                    ))
+                  )}
+                </tbody>
+              </table>
+            </div>
+          )}
+        </div>
+      )}
+    </div>
+  );
+}
+
+function BalanceChart({ data }: { data: { date: Date; balance_milli_dollars: number }[] }) {
+  if (data.length < 2) return null;
+
+  const maxBalance = Math.max(...data.map((d) => d.balance_milli_dollars));
+  const chartHeight = 120;
+  const chartWidth = 600;
+  const padding = { top: 10, right: 10, bottom: 20, left: 50 };
+  const innerWidth = chartWidth - padding.left - padding.right;
+  const innerHeight = chartHeight - padding.top - padding.bottom;
+
+  const yMax = maxBalance > 0 ? maxBalance : 1000;
+
+  const points = data.map((d, i) => {
+    const x = padding.left + (i / (data.length - 1)) * innerWidth;
+    const y = padding.top + innerHeight - (d.balance_milli_dollars / yMax) * innerHeight;
+    return { x, y, ...d };
+  });
+
+  const linePath = points.map((p, i) => `${i === 0 ? 'M' : 'L'} ${p.x} ${p.y}`).join(' ');
+
+  const formatTimestamp = (d: Date) => {
+    const dt = new Date(d);
+    return `${dt.toLocaleDateString()} ${dt.toLocaleTimeString()}`;
+  };
+
+  return (
+    <svg
+      viewBox={`0 0 ${chartWidth} ${chartHeight}`}
+      className="w-100"
+      style={{ maxHeight: '150px' }}
+      role="img"
+      aria-label="Credit balance chart"
+    >
+      <text x={padding.left - 5} y={padding.top + 4} textAnchor="end" fontSize="9" fill="#6c757d">
+        {formatMilliDollars(yMax)}
+      </text>
+      <text
+        x={padding.left - 5}
+        y={padding.top + innerHeight + 4}
+        textAnchor="end"
+        fontSize="9"
+        fill="#6c757d"
+      >
+        $0.00
+      </text>
+
+      <path d={linePath} fill="none" stroke="#0d6efd" strokeWidth="2" />
+
+      {points.map((p) => (
+        <circle key={`${p.date.toISOString()}`} cx={p.x} cy={p.y} r="3" fill="#0d6efd" />
+      ))}
+
+      <text x={points[0].x} y={chartHeight - 2} textAnchor="start" fontSize="9" fill="#6c757d">
+        {formatTimestamp(points[0].date)}
+      </text>
+      <text
+        x={points[points.length - 1].x}
+        y={chartHeight - 2}
+        textAnchor="end"
+        fontSize="9"
+        fill="#6c757d"
+      >
+        {formatTimestamp(points[points.length - 1].date)}
+      </text>
+    </svg>
   );
 }

@@ -681,6 +681,7 @@ export async function aiGrade({
                 user_id: authn_user_id,
                 ai_grading_job_id: null,
                 assessment_question_id: assessment_question.id,
+                reason: `AI graded instance question ${instance_question.id}`,
               });
             }
           });
@@ -758,6 +759,7 @@ export async function aiGrade({
                 user_id: authn_user_id,
                 ai_grading_job_id: null,
                 assessment_question_id: assessment_question.id,
+                reason: `AI graded instance question ${instance_question.id}`,
               });
             }
           });
@@ -972,6 +974,7 @@ export async function aiGrade({
                 user_id: authn_user_id,
                 ai_grading_job_id: null,
                 assessment_question_id: assessment_question.id,
+                reason: `AI graded instance question ${instance_question.id}`,
               });
             }
           });
@@ -1039,6 +1042,7 @@ export async function aiGrade({
                 user_id: authn_user_id,
                 ai_grading_job_id: null,
                 assessment_question_id: assessment_question.id,
+                reason: `AI graded instance question ${instance_question.id}`,
               });
             }
           });
