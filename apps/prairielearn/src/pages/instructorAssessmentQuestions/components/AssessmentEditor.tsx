@@ -58,6 +58,7 @@ import { ResetQuestionVariantsModal } from './ResetQuestionVariantsModal.js';
 import { SplitPane } from './SplitPane.js';
 import { DetailPanel } from './detail/DetailPanel.js';
 import { AssessmentTree } from './tree/AssessmentTree.js';
+import { DragPreview } from './tree/DragPreview.js';
 
 /**
  * Collision detection for vertical lists that uses item boundaries instead of
@@ -954,46 +955,6 @@ function AssessmentEditorInner({
   );
 }
 
-function DragPreview({
-  activeDragId,
-  zones,
-  questionMetadata,
-}: {
-  activeDragId: string;
-  zones: ZoneAssessmentForm[];
-  questionMetadata: Record<string, StaffAssessmentQuestionRow>;
-}) {
-  for (const [zoneIndex, zone] of zones.entries()) {
-    if (zone.trackingId === activeDragId) {
-      return (
-        <div className="bg-body-secondary border rounded shadow-sm px-3 py-2 fw-semibold">
-          {zone.title || `Zone ${zoneIndex + 1}`}
-        </div>
-      );
-    }
-    for (const question of zone.questions) {
-      if (question.trackingId === activeDragId) {
-        const qData = question.id ? questionMetadata[question.id] : null;
-        return (
-          <div className="bg-body border rounded shadow-sm px-3 py-2 text-truncate">
-            {qData?.question.title ?? question.id ?? 'Alternative group'}
-          </div>
-        );
-      }
-      for (const alt of question.alternatives ?? []) {
-        if (alt.trackingId === activeDragId) {
-          const altData = alt.id ? questionMetadata[alt.id] : null;
-          return (
-            <div className="bg-body border rounded shadow-sm px-3 py-2 text-truncate">
-              {altData?.question.title ?? alt.id}
-            </div>
-          );
-        }
-      }
-    }
-  }
-  return null;
-}
 
 interface AssessmentEditorProps extends AssessmentEditorInnerProps {
   trpcCsrfToken: string;
