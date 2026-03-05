@@ -18,6 +18,7 @@ export function QuestionPickerPanel({
   questionsInAssessment,
   disabledQids,
   currentChangeQid,
+  isPickingQuestion,
   courseId,
   courseInstanceId,
   currentAssessmentId,
@@ -32,6 +33,7 @@ export function QuestionPickerPanel({
   courseId: string;
   courseInstanceId: string;
   currentAssessmentId?: string;
+  isPickingQuestion?: boolean;
   onQuestionSelected: (qid: string) => void;
   onRemoveQuestionByQid: (qid: string) => void;
 }) {
@@ -237,7 +239,7 @@ export function QuestionPickerPanel({
               const addedZoneNames = questionsInAssessment.get(qid);
               const isInAssessment = addedZoneNames != null;
               const isCurrentChange = currentChangeQid === qid;
-              const isDisabled = disabledQids.has(qid) && !isCurrentChange;
+              const isDisabled = (disabledQids.has(qid) && !isCurrentChange) || !!isPickingQuestion;
 
               const assessmentsToShow =
                 question.assessments?.filter((a) => a.assessment_id !== currentAssessmentId) ?? [];

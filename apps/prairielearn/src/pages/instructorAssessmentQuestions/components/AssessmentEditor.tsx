@@ -11,7 +11,7 @@ import {
   useSensors,
 } from '@dnd-kit/core';
 import { sortableKeyboardCoordinates } from '@dnd-kit/sortable';
-import { QueryClient, useQuery } from '@tanstack/react-query';
+import { QueryClient, useMutation, useQuery, useQueryClient } from '@tanstack/react-query';
 import { parseAsStringLiteral, useQueryState } from 'nuqs';
 import { useEffect, useId, useMemo, useRef, useState } from 'react';
 import OverlayTrigger from 'react-bootstrap/OverlayTrigger';
@@ -55,7 +55,7 @@ import {
   questionDisplayName,
 } from '../utils/questions.js';
 import { createAssessmentQuestionsTrpcClient } from '../utils/trpc-client.js';
-import { TRPCProvider, useTRPC, useTRPCClient } from '../utils/trpc-context.js';
+import { TRPCProvider, useTRPC } from '../utils/trpc-context.js';
 import { findQuestionByTrackingId, useAssessmentEditor } from '../utils/useAssessmentEditor.js';
 
 import { EditModeToolbar } from './EditModeToolbar.js';
@@ -148,7 +148,10 @@ function AssessmentEditorInner({
   origHash,
 }: AssessmentEditorInnerProps) {
   const trpc = useTRPC();
-  const trpcClient = useTRPCClient();
+  const queryClient = useQueryClient();
+  const questionByQidMutation = useMutation({
+    mutationFn: (qid: string) => queryClient.fetchQuery(trpc.questionByQid.queryOptions({ qid })),
+  });
 
   const [initialState] = useState(() => ({
     zones: addTrackingIds(jsonZones),
@@ -356,7 +359,7 @@ function AssessmentEditorInner({
     if (selectedItem?.type === 'altGroupPicker') {
       let questionData: QuestionByQidResult;
       try {
-        questionData = await trpcClient.questionByQid.query({ qid });
+        questionData = await questionByQidMutation.mutateAsync(qid);
       } catch {
         return;
       }
@@ -426,7 +429,7 @@ function AssessmentEditorInner({
 
         let questionData: QuestionByQidResult;
         try {
-          questionData = await trpcClient.questionByQid.query({ qid });
+          questionData = await questionByQidMutation.mutateAsync(qid);
         } catch {
           return;
         }
@@ -494,7 +497,7 @@ function AssessmentEditorInner({
     // Adding a new question to a zone
     let questionData: QuestionByQidResult;
     try {
-      questionData = await trpcClient.questionByQid.query({ qid });
+      questionData = await questionByQidMutation.mutateAsync(qid);
     } catch {
       return;
     }
@@ -627,32 +630,20 @@ function AssessmentEditorInner({
   };
 
   const handleRemoveQuestionByQid = (qid: string) => {
-    // Clear selection if the removed question is referenced by the current picker's
-    // returnToSelection (e.g., user opened "change question" then removed the same question).
-    if (selectedItem?.type === 'picker' && selectedItem.returnToSelection) {
-      const returnTo = selectedItem.returnToSelection;
-      for (const zone of zones) {
-        for (const q of zone.questions) {
-          if (
-            q.id === qid &&
-            returnTo.type === 'question' &&
-            returnTo.questionTrackingId === q.trackingId
-          ) {
-            setSelectedItem(null);
-          }
-          for (const alt of q.alternatives ?? []) {
-            if (
-              alt.id === qid &&
-              returnTo.type === 'alternative' &&
-              returnTo.alternativeTrackingId === alt.trackingId
-            ) {
-              setSelectedItem(null);
-            }
+    for (const zone of zones) {
+      for (const q of zone.questions) {
+        if (q.id === qid) {
+          handleDeleteQuestion(q.trackingId, qid);
+          return;
+        }
+        for (const alt of q.alternatives ?? []) {
+          if (alt.id === qid) {
+            handleDeleteQuestion(q.trackingId, qid, alt.trackingId);
+            return;
           }
         }
       }
     }
-    dispatch({ type: 'REMOVE_QUESTION_BY_QID', qid });
   };
 
   const handleAddZone = () => {
@@ -953,10 +944,14 @@ function AssessmentEditorInner({
 
   const isAllExpanded = collapsedGroups.size === 0;
 
+  const hasUnsavedChanges = useMemo(
+    () => JSON.stringify(zones) !== initialZonesJson,
+    [zones, initialZonesJson],
+  );
   const saveButtonDisabled =
-    JSON.stringify(zones) === initialZonesJson || zones.some((zone) => zone.questions.length === 0);
+    !hasUnsavedChanges || zones.some((zone) => zone.questions.length === 0);
 
-  const disableBeforeUnload = useBeforeUnload(editMode && !saveButtonDisabled);
+  const disableBeforeUnload = useBeforeUnload(editMode && hasUnsavedChanges);
 
   const saveButtonDisabledReason = zones.some((zone) => zone.questions.length === 0)
     ? 'Cannot save: one or more zones have no questions'
@@ -1001,6 +996,9 @@ function AssessmentEditorInner({
       setSelectedItem,
       dispatch,
     }),
+    // Handlers close over `zones` (updated on dispatch), so `[zones, selectedItem]`
+    // correctly captures all change triggers. Listing each handler individually
+    // would be redundant and cause unnecessary re-memoization.
     // eslint-disable-next-line react-hooks/exhaustive-deps
     [zones, selectedItem],
   );
@@ -1038,6 +1036,9 @@ function AssessmentEditorInner({
       onRemoveQuestionByQid: handleRemoveQuestionByQid,
       onResetButtonClick: resetModal.showWithData,
     }),
+    // Handlers close over `zones` (updated on dispatch), so `[zones, selectedItem]`
+    // correctly captures all change triggers. Listing each handler individually
+    // would be redundant and cause unnecessary re-memoization.
     // eslint-disable-next-line react-hooks/exhaustive-deps
     [zones, selectedItem],
   );
@@ -1206,6 +1207,7 @@ function AssessmentEditorInner({
                 disabledQids={disabledQids}
                 currentChangeQid={currentChangeQid}
                 currentAssessmentId={assessment.id}
+                isPickingQuestion={questionByQidMutation.isPending}
               />
             }
             onClose={() => setSelectedItem(null)}

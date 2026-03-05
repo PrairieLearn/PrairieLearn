@@ -1,5 +1,5 @@
 import clsx from 'clsx';
-import { useCallback } from 'react';
+import { useCallback, useMemo } from 'react';
 import { useForm } from 'react-hook-form';
 
 import type { StaffAssessmentQuestionRow } from '../../../../lib/assessment-question.shared.js';
@@ -8,6 +8,8 @@ import {
   coerceToNumber,
   coerceToOptionalString,
   extractStringComment,
+  formatPoints,
+  makeResetAndSave,
   parsePointsListValue,
   resolveMaxPointsProperty,
   resolvePointsProperty,
@@ -62,8 +64,11 @@ export function AltGroupDetailPanel({
   const sharedTags = (() => {
     const alternatives = zoneQuestionBlock.alternatives ?? [];
     const tagSets = alternatives
-      .filter((alt) => alt.id && questionMetadata[alt.id]?.tags)
-      .map((alt) => new Set(questionMetadata[alt.id!].tags!.map((t) => t.name)));
+      .filter(
+        (alt) =>
+          alt.id && (questionMetadata[alt.id] as StaffAssessmentQuestionRow | undefined)?.tags,
+      )
+      .map((alt) => new Set(questionMetadata[alt.id].tags!.map((t) => t.name)));
     if (tagSets.length === 0) return [];
     const intersection = tagSets[0];
     for (const s of tagSets.slice(1)) {
@@ -71,7 +76,7 @@ export function AltGroupDetailPanel({
         if (!s.has(name)) intersection.delete(name);
       }
     }
-    const firstTags = questionMetadata[alternatives.find((a) => a.id)!.id!].tags!;
+    const firstTags = questionMetadata[alternatives.find((a) => a.id)!.id].tags!;
     return firstTags.filter((t) => intersection.has(t.name));
   })();
 
@@ -120,8 +125,8 @@ export function AltGroupDetailPanel({
     [onUpdate, zoneQuestionBlock.trackingId, hasAllowRealTimeGradingParent],
   );
 
-  const resetAndSave = useCallback(
-    (field: string) => handleSave({ ...getValues(), [field]: undefined }),
+  const resetAndSave = useMemo(
+    () => makeResetAndSave(handleSave, getValues),
     [handleSave, getValues],
   );
 
@@ -150,11 +155,6 @@ export function AltGroupDetailPanel({
     watchedAutoPoints == null
       ? ''
       : String(Array.isArray(watchedAutoPoints) ? watchedAutoPoints[0] : watchedAutoPoints);
-
-  const formatPoints = (v: number | number[] | null | undefined) => {
-    if (v == null) return undefined;
-    return Array.isArray(v) ? v.join(', ') : String(v);
-  };
 
   const Wrapper = editMode ? 'div' : 'dl';
 

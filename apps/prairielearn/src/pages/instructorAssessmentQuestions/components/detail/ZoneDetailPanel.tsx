@@ -1,5 +1,5 @@
 import clsx from 'clsx';
-import { useCallback } from 'react';
+import { useCallback, useMemo } from 'react';
 import { useForm } from 'react-hook-form';
 
 import type { DetailState, ZoneAssessmentForm } from '../../types.js';
@@ -7,6 +7,7 @@ import {
   coerceToNumber,
   coerceToOptionalString,
   extractStringComment,
+  makeResetAndSave,
 } from '../../utils/formHelpers.js';
 import { validatePositiveInteger } from '../../utils/questions.js';
 import { useAutoSave } from '../../utils/useAutoSave.js';
@@ -90,8 +91,8 @@ export function ZoneDetailPanel({
     [onUpdate, zone.trackingId, hasAllowRealTimeGradingParent],
   );
 
-  const resetAndSave = useCallback(
-    (field: string) => handleSave({ ...getValues(), [field]: undefined }),
+  const resetAndSave = useMemo(
+    () => makeResetAndSave(handleSave, getValues),
     [handleSave, getValues],
   );
 

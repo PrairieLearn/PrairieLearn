@@ -1,15 +1,15 @@
 import { useDroppable } from '@dnd-kit/core';
 import { SortableContext, useSortable, verticalListSortingStrategy } from '@dnd-kit/sortable';
 import clsx from 'clsx';
-import { useCallback, useId, useMemo } from 'react';
+import { useCallback, useMemo } from 'react';
 
 import { run } from '@prairielearn/run';
 import { OverlayTrigger } from '@prairielearn/ui';
 
-import { isRenderableComment } from '../../../../lib/comments.js';
 import type { TreeActions, TreeState, ZoneQuestionBlockForm } from '../../types.js';
 import { hasPointsMismatch } from '../../utils/questions.js';
 
+import { ChangeIndicatorBadges } from './ChangeIndicatorBadges.js';
 import { CollapseToggleButton } from './CollapseToggleButton.js';
 import { DragHandle } from './DragHandle.js';
 import { SortableAlternativeRow } from './SortableAlternativeRow.js';
@@ -42,8 +42,6 @@ export function TreeQuestionBlockNode({
     assessmentType,
   } = state;
   const { setSelectedItem, dispatch, onAddToAltGroup, onDeleteQuestion } = actions;
-  const changeTooltipId = useId();
-  const commentTooltipId = useId();
   const hasAlternatives = zoneQuestionBlock.id == null;
   const isCollapsed = collapsedGroups.has(zoneQuestionBlock.trackingId);
   const toggleCollapse = () =>
@@ -194,36 +192,12 @@ export function TreeQuestionBlockNode({
                 />
               </OverlayTrigger>
             )}
-            {editMode && changeTracking.newIds.has(zoneQuestionBlock.trackingId) && (
-              <OverlayTrigger
-                placement="top"
-                tooltip={{ props: { id: changeTooltipId }, body: 'New' }}
-              >
-                <span className="text-primary ms-1">●</span>
-              </OverlayTrigger>
-            )}
-            {editMode && changeTracking.modifiedIds.has(zoneQuestionBlock.trackingId) && (
-              <OverlayTrigger
-                placement="top"
-                tooltip={{ props: { id: changeTooltipId }, body: 'Modified' }}
-              >
-                <span className="text-primary ms-1">●</span>
-              </OverlayTrigger>
-            )}
-            {isRenderableComment(zoneQuestionBlock.comment) && (
-              <OverlayTrigger
-                placement="top"
-                tooltip={{
-                  props: { id: commentTooltipId },
-                  body:
-                    typeof zoneQuestionBlock.comment === 'string'
-                      ? zoneQuestionBlock.comment
-                      : JSON.stringify(zoneQuestionBlock.comment, null, 2),
-                }}
-              >
-                <i className="bi bi-chat-left-text text-muted ms-1" aria-hidden="true" />
-              </OverlayTrigger>
-            )}
+            <ChangeIndicatorBadges
+              trackingId={zoneQuestionBlock.trackingId}
+              comment={zoneQuestionBlock.comment}
+              editMode={editMode}
+              changeTracking={changeTracking}
+            />
           </div>
           {alternatives && alternatives.length > 0 && (
             <div
@@ -243,7 +217,8 @@ export function TreeQuestionBlockNode({
             if (state.viewType !== 'detailed') return null;
             if (!alternatives || alternatives.length === 0) return null;
             const tagSets = alternatives
-              .filter((alt) => alt.id && questionMetadata[alt.id].tags)
+              // eslint-disable-next-line @typescript-eslint/no-unnecessary-condition -- metadata may not be loaded yet
+              .filter((alt) => alt.id && questionMetadata[alt.id]?.tags)
               .map((alt) => new Set(questionMetadata[alt.id].tags!.map((t) => t.name)));
             if (tagSets.length === 0) return null;
             const intersection = new Set(tagSets[0]);
@@ -255,7 +230,9 @@ export function TreeQuestionBlockNode({
             if (intersection.size === 0) return null;
             const firstAlt = alternatives.find((a) => a.id);
             if (!firstAlt) return null;
-            const firstTags = questionMetadata[firstAlt.id].tags!;
+            // eslint-disable-next-line @typescript-eslint/no-unnecessary-condition -- metadata may not be loaded yet
+            const firstTags = questionMetadata[firstAlt.id]?.tags;
+            if (!firstTags) return null;
             const sharedTags = firstTags.filter((t) => intersection.has(t.name));
             return (
               <div className="d-flex flex-wrap gap-1 mt-1">
@@ -271,7 +248,8 @@ export function TreeQuestionBlockNode({
         {run(() => {
           if (!alternatives || alternatives.length === 0) return null;
           const topics = alternatives
-            .map((alt) => (alt.id ? questionMetadata[alt.id].topic : null))
+            // eslint-disable-next-line @typescript-eslint/no-unnecessary-condition -- metadata may not be loaded yet
+            .map((alt) => (alt.id ? questionMetadata[alt.id]?.topic : null))
             .filter(Boolean);
           if (topics.length !== alternatives.length) return null;
           const first = topics[0]!;

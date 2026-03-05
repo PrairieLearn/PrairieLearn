@@ -1,6 +1,11 @@
 import clsx from 'clsx';
-import { useCallback } from 'react';
-import { useForm } from 'react-hook-form';
+import { useCallback, useMemo } from 'react';
+import {
+  type FieldErrors,
+  type UseFormRegister,
+  type UseFormSetValue,
+  useForm,
+} from 'react-hook-form';
 
 import { run } from '@prairielearn/run';
 import { OverlayTrigger } from '@prairielearn/ui';
@@ -20,7 +25,9 @@ import {
   coerceToNumber,
   coerceToOptionalString,
   extractStringComment,
+  formatPoints,
   formatPointsValue,
+  makeResetAndSave,
   parsePointsListValue,
   resolveMaxPointsProperty,
   resolvePointsProperty,
@@ -198,8 +205,8 @@ export function QuestionDetailPanel({
     ],
   );
 
-  const resetAndSave = useCallback(
-    (field: string) => handleSave({ ...getValues(), [field]: undefined }),
+  const resetAndSave = useMemo(
+    () => makeResetAndSave(handleSave, getValues),
     [handleSave, getValues],
   );
 
@@ -273,8 +280,8 @@ export function QuestionDetailPanel({
   const pointsValidation = (_value: unknown, formValues: QuestionFormData) =>
     validateAtLeastOnePointsField(formValues, parentValues);
 
-  const nonNegativePointsValidation = (v: number | undefined) => {
-    if (v != null && v < 0) return 'Points must be non-negative.';
+  const nonNegativePointsValidation = (v: number | number[] | undefined) => {
+    if (typeof v === 'number' && v < 0) return 'Points must be non-negative.';
   };
 
   const homeworkAutoPointsValidation = (_value: unknown, formValues: QuestionFormData) => {
@@ -299,11 +306,6 @@ export function QuestionDetailPanel({
       return 'Max auto points must be at least auto points.';
     }
     if (maxPoints != null && maxPoints < 0) return 'Max auto points must be non-negative.';
-  };
-
-  const formatPoints = (v: number | number[] | null | undefined) => {
-    if (v == null) return undefined;
-    return Array.isArray(v) ? v.join(', ') : String(v);
   };
 
   const pointsLabel = isManualGrading
@@ -418,7 +420,6 @@ export function QuestionDetailPanel({
           nonNegativePointsValidation={nonNegativePointsValidation}
           homeworkAutoPointsValidation={homeworkAutoPointsValidation}
           homeworkMaxPointsValidation={homeworkMaxPointsValidation}
-          formatPoints={formatPoints}
         />
       ) : (
         <ExamPointsFields
@@ -440,7 +441,6 @@ export function QuestionDetailPanel({
           resetAndSave={resetAndSave}
           pointsValidation={pointsValidation}
           nonNegativePointsValidation={nonNegativePointsValidation}
-          formatPoints={formatPoints}
         />
       )}
 
@@ -587,7 +587,6 @@ function HomeworkPointsFields({
   nonNegativePointsValidation,
   homeworkAutoPointsValidation,
   homeworkMaxPointsValidation,
-  formatPoints,
 }: {
   editMode: boolean;
   idPrefix: string;
@@ -605,17 +604,19 @@ function HomeworkPointsFields({
   inheritedMaxValue: number | undefined;
   inheritedManualPoints: number | undefined;
   autoPointsPlaceholder: string;
-  originalPointsProperty: string;
-  originalMaxProperty: string;
-  register: any;
-  errors: any;
-  setValue: any;
+  originalPointsProperty: 'points' | 'autoPoints';
+  originalMaxProperty: 'maxPoints' | 'maxAutoPoints';
+  register: UseFormRegister<QuestionFormData>;
+  errors: FieldErrors<QuestionFormData>;
+  setValue: UseFormSetValue<QuestionFormData>;
   resetAndSave: (field: string) => void;
-  pointsValidation: any;
-  nonNegativePointsValidation: any;
-  homeworkAutoPointsValidation: any;
-  homeworkMaxPointsValidation: any;
-  formatPoints: (v: number | number[] | null | undefined) => string | undefined;
+  pointsValidation: (value: unknown, formValues: QuestionFormData) => string | undefined;
+  nonNegativePointsValidation: (v: number | number[] | undefined) => string | undefined;
+  homeworkAutoPointsValidation: (
+    value: unknown,
+    formValues: QuestionFormData,
+  ) => string | undefined;
+  homeworkMaxPointsValidation: (value: unknown, formValues: QuestionFormData) => string | undefined;
 }) {
   const viewAutoPoints = formatPoints(autoPointsValue);
   const viewMaxAutoPoints = run(() => {
@@ -673,7 +674,7 @@ function HomeworkPointsFields({
             validate: {
               atLeastOne: pointsValidation,
               crossField: homeworkAutoPointsValidation,
-              nonNegative: (v: number | undefined) => nonNegativePointsValidation(v),
+              nonNegative: (v: number | number[] | undefined) => nonNegativePointsValidation(v),
             },
           })}
           error={errors[originalPointsProperty]}
@@ -718,7 +719,7 @@ function HomeworkPointsFields({
                 validate: {
                   atLeastOne: pointsValidation,
                   crossField: homeworkAutoPointsValidation,
-                  nonNegative: (v: number | undefined) => nonNegativePointsValidation(v),
+                  nonNegative: (v: number | number[] | undefined) => nonNegativePointsValidation(v),
                 },
               })}
             />
@@ -864,7 +865,6 @@ function ExamPointsFields({
   resetAndSave,
   pointsValidation,
   nonNegativePointsValidation,
-  formatPoints,
 }: {
   editMode: boolean;
   idPrefix: string;
@@ -877,14 +877,13 @@ function ExamPointsFields({
   isManualPointsInherited: boolean;
   inheritedPointsValue: number | number[] | undefined;
   inheritedManualPoints: number | undefined;
-  originalPointsProperty: string;
-  register: any;
-  errors: any;
-  setValue: any;
+  originalPointsProperty: 'points' | 'autoPoints';
+  register: UseFormRegister<QuestionFormData>;
+  errors: FieldErrors<QuestionFormData>;
+  setValue: UseFormSetValue<QuestionFormData>;
   resetAndSave: (field: string) => void;
-  pointsValidation: any;
-  nonNegativePointsValidation: any;
-  formatPoints: (v: number | number[] | null | undefined) => string | undefined;
+  pointsValidation: (value: unknown, formValues: QuestionFormData) => string | undefined;
+  nonNegativePointsValidation: (v: number | number[] | undefined) => string | undefined;
 }) {
   const viewAutoPoints = formatPoints(autoPointsValue);
   const viewManualPoints =

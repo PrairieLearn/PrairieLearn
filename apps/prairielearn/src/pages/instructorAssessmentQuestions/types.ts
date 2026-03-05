@@ -182,10 +182,6 @@ export type EditorAction =
       /** trackingId of the alternative to insert before, or null to append at end */
       beforeAlternativeTrackingId: string | null;
     }
-  | {
-      type: 'REMOVE_QUESTION_BY_QID';
-      qid: string;
-    }
   // Stubbed for future PR - will implement history tracking
   | { type: 'UNDO' }
   | { type: 'REDO' };

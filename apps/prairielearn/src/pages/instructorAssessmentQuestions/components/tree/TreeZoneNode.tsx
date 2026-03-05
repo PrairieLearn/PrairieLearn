@@ -6,7 +6,6 @@ import { useId } from 'react';
 import { run } from '@prairielearn/run';
 import { OverlayTrigger } from '@prairielearn/ui';
 
-import { isRenderableComment } from '../../../../lib/comments.js';
 import type { EnumAssessmentType } from '../../../../lib/db-types.js';
 import type { TreeActions, TreeState, ZoneAssessmentForm } from '../../types.js';
 import {
@@ -15,6 +14,7 @@ import {
   hasZonePointsMismatch,
 } from '../../utils/questions.js';
 
+import { ChangeIndicatorBadges } from './ChangeIndicatorBadges.js';
 import { CollapseToggleButton } from './CollapseToggleButton.js';
 import { DragHandle } from './DragHandle.js';
 import { TreeEmptyDropZone } from './TreeEmptyDropZone.js';
@@ -40,8 +40,6 @@ export function TreeZoneNode({
 }) {
   const { editMode, selectedItem, collapsedZones, changeTracking, assessmentType } = state;
   const { setSelectedItem, dispatch, onAddQuestion, onAddAltGroup, onDeleteZone } = actions;
-  const changeTooltipId = useId();
-  const commentTooltipId = useId();
   const zonePointsMismatchTooltipId = useId();
   const badgeTooltipId = useId();
   const isCollapsed = collapsedZones.has(zone.trackingId);
@@ -127,36 +125,12 @@ export function TreeZoneNode({
           />
           <span className="fw-semibold">
             {zone.title || `Zone ${zoneNumber}`}
-            {editMode && changeTracking.newIds.has(zone.trackingId) && (
-              <OverlayTrigger
-                placement="top"
-                tooltip={{ props: { id: changeTooltipId }, body: 'New' }}
-              >
-                <span className="text-primary ms-1">●</span>
-              </OverlayTrigger>
-            )}
-            {editMode && changeTracking.modifiedIds.has(zone.trackingId) && (
-              <OverlayTrigger
-                placement="top"
-                tooltip={{ props: { id: changeTooltipId }, body: 'Modified' }}
-              >
-                <span className="text-primary ms-1">●</span>
-              </OverlayTrigger>
-            )}
-            {isRenderableComment(zone.comment) && (
-              <OverlayTrigger
-                placement="top"
-                tooltip={{
-                  props: { id: commentTooltipId },
-                  body:
-                    typeof zone.comment === 'string'
-                      ? zone.comment
-                      : JSON.stringify(zone.comment, null, 2),
-                }}
-              >
-                <i className="bi bi-chat-left-text text-muted ms-1" aria-hidden="true" />
-              </OverlayTrigger>
-            )}
+            <ChangeIndicatorBadges
+              trackingId={zone.trackingId}
+              comment={zone.comment}
+              editMode={editMode}
+              changeTracking={changeTracking}
+            />
             {zonePointsMismatch && (
               <OverlayTrigger
                 placement="top"

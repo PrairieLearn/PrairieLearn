@@ -179,3 +179,24 @@ export function formatPointsValue(value: number | number[] | undefined | null): 
   if (value == null) return '';
   return Array.isArray(value) ? value.join(', ') : String(value);
 }
+
+/**
+ * Formats a points value for use as an optional display value.
+ * Returns `undefined` when the value is null/undefined (useful for `viewValue` props
+ * that treat `undefined` as "no value to display").
+ */
+export function formatPoints(v: number | number[] | null | undefined): string | undefined {
+  if (v == null) return undefined;
+  return Array.isArray(v) ? v.join(', ') : String(v);
+}
+
+/**
+ * Creates a callback that resets a single form field to `undefined` and saves.
+ * Used by detail panels to clear an inherited field override.
+ */
+export function makeResetAndSave<T>(
+  handleSave: (data: T) => void,
+  getValues: () => T,
+): (field: string) => void {
+  return (field: string) => handleSave({ ...getValues(), [field]: undefined } as T);
+}

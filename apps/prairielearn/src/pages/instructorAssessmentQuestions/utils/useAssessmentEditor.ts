@@ -568,30 +568,6 @@ function createEditorReducer(initialState: EditorState) {
         };
       }
 
-      case 'REMOVE_QUESTION_BY_QID': {
-        const { qid } = action;
-        const newZones = structuredClone(state.zones);
-
-        for (const zone of newZones) {
-          const questionIndex = zone.questions.findIndex((q) => q.id === qid);
-          if (questionIndex !== -1) {
-            zone.questions.splice(questionIndex, 1);
-            return { ...state, zones: newZones };
-          }
-
-          for (const [, question] of zone.questions.entries()) {
-            if (!question.alternatives) continue;
-            const altIndex = question.alternatives.findIndex((a) => a.id === qid);
-            if (altIndex !== -1) {
-              question.alternatives.splice(altIndex, 1);
-              return { ...state, zones: newZones };
-            }
-          }
-        }
-
-        return state;
-      }
-
       case 'RESET': {
         return initialState;
       }

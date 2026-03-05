@@ -8,7 +8,6 @@ import { CopyButton } from '../../../../components/CopyButton.js';
 import { HistMini } from '../../../../components/HistMini.js';
 import type { StaffAssessmentQuestionRow } from '../../../../lib/assessment-question.shared.js';
 import { getQuestionUrl } from '../../../../lib/client/url.js';
-import { isRenderableComment } from '../../../../lib/comments.js';
 import type { EnumAssessmentType } from '../../../../lib/db-types.js';
 import type { QuestionAlternativeForm, TreeState, ZoneQuestionBlockForm } from '../../types.js';
 import {
@@ -18,6 +17,7 @@ import {
 } from '../../utils/questions.js';
 import { AssessmentBadges } from '../AssessmentBadges.js';
 
+import { ChangeIndicatorBadges } from './ChangeIndicatorBadges.js';
 import { DragHandle } from './DragHandle.js';
 
 export function PointsBadge({
@@ -213,8 +213,6 @@ export function TreeQuestionRow({
     hasCoursePermissionPreview,
     assessmentType,
   } = state;
-  const changeTooltipId = useId();
-  const commentTooltipId = useId();
   const indent = isAlternative ? '4.5rem' : '2.5rem';
 
   return (
@@ -261,36 +259,12 @@ export function TreeQuestionRow({
           ) : (
             <span className="text-muted small">{question.id}</span>
           )}
-          {editMode && changeTracking.newIds.has(question.trackingId) && (
-            <OverlayTrigger
-              placement="top"
-              tooltip={{ props: { id: changeTooltipId }, body: 'New' }}
-            >
-              <span className="text-primary ms-1">●</span>
-            </OverlayTrigger>
-          )}
-          {editMode && changeTracking.modifiedIds.has(question.trackingId) && (
-            <OverlayTrigger
-              placement="top"
-              tooltip={{ props: { id: changeTooltipId }, body: 'Modified' }}
-            >
-              <span className="text-primary ms-1">●</span>
-            </OverlayTrigger>
-          )}
-          {isRenderableComment(question.comment) && (
-            <OverlayTrigger
-              placement="top"
-              tooltip={{
-                props: { id: commentTooltipId },
-                body:
-                  typeof question.comment === 'string'
-                    ? question.comment
-                    : JSON.stringify(question.comment, null, 2),
-              }}
-            >
-              <i className="bi bi-chat-left-text text-muted ms-1" aria-hidden="true" />
-            </OverlayTrigger>
-          )}
+          <ChangeIndicatorBadges
+            trackingId={question.trackingId}
+            comment={question.comment}
+            editMode={editMode}
+            changeTracking={changeTracking}
+          />
         </div>
         {question.id && (
           <div
