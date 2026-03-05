@@ -32,12 +32,8 @@ export function useAutoSave<T extends FieldValues>({
   // Debounce saves so that react-hook-form's async validation can settle
   // before we check isValid. The timeout reads isDirty/isValid from refs
   // to get the most up-to-date values.
-  const pendingRef = useRef(false);
-
   useEffect(() => {
-    pendingRef.current = true;
     const timer = setTimeout(() => {
-      pendingRef.current = false;
       if (isDirtyRef.current && isValidRef.current) {
         onSaveRef.current(getValues());
       }
@@ -45,11 +41,20 @@ export function useAutoSave<T extends FieldValues>({
     return () => clearTimeout(timer);
   }, [serialized, getValues]);
 
-  // Flush any pending save when the component unmounts (e.g. when the
-  // user switches to a different detail panel before the debounce fires).
+  // Save when the component unmounts (e.g. when the user switches to a
+  // different detail panel before the debounce fires).
+  //
+  // We save unconditionally (if dirty & valid) rather than tracking
+  // whether a debounce timer is pending via a ref. A "pending" flag set
+  // inside the useEffect above would be updated asynchronously, so React
+  // can unmount the component before the effect runs — leaving the flag
+  // stale and causing the last edit to be silently dropped. Saving
+  // unconditionally may produce a redundant dispatch when the debounce
+  // already fired, but that is harmless since the reducer receives
+  // identical data.
   useEffect(() => {
     return () => {
-      if (pendingRef.current && isDirtyRef.current && isValidRef.current) {
+      if (isDirtyRef.current && isValidRef.current) {
         onSaveRef.current(getValues());
       }
     };

@@ -44,6 +44,11 @@ export function DetailPanel({
     return null;
   }
 
+  // The `key` props on each detail panel below are critical. Without them,
+  // switching between two items of the same type (e.g., two questions) reuses
+  // the React instance. react-hook-form's `values` option then overwrites the
+  // old form state before the unmount cleanup in useAutoSave can flush it,
+  // silently dropping the user's last edit.
   switch (selectedItem.type) {
     case 'zone': {
       const zoneIndex = zones.findIndex((z) => z.trackingId === selectedItem.zoneTrackingId);
@@ -51,6 +56,7 @@ export function DetailPanel({
       if (!zone) throw new Error(`Zone not found: ${selectedItem.zoneTrackingId}`);
       return (
         <ZoneDetailPanel
+          key={zone.trackingId}
           zone={zone}
           zoneIndex={zoneIndex}
           idPrefix={`zone-${zone.trackingId}`}
@@ -68,6 +74,7 @@ export function DetailPanel({
       const questionData = question.id ? questionMetadata[question.id] : null;
       return (
         <QuestionDetailPanel
+          key={question.trackingId}
           question={question}
           zone={zone}
           questionData={questionData ?? null}
@@ -97,6 +104,7 @@ export function DetailPanel({
       const altData = alternative.id ? questionMetadata[alternative.id] : null;
       return (
         <QuestionDetailPanel
+          key={alternative.trackingId}
           question={alternative}
           zoneQuestionBlock={block}
           zone={zone}
@@ -119,6 +127,7 @@ export function DetailPanel({
       const block = altGroupResult.question;
       return (
         <AltGroupDetailPanel
+          key={block.trackingId}
           zoneQuestionBlock={block}
           zone={altGroupResult.zone}
           questionMetadata={questionMetadata}
