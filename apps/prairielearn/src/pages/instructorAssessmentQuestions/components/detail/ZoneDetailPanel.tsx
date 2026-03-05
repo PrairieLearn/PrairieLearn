@@ -129,9 +129,9 @@ export function ZoneDetailPanel({
           id={`${idPrefix}-maxPoints`}
           label="Max points"
           viewValue={zone.maxPoints}
-          hideWhenEmpty
           error={errors.maxPoints}
           helpText="Maximum total points from this zone that count toward the assessment."
+          hideWhenEmpty
         >
           {(aria) => (
             <input
@@ -153,9 +153,9 @@ export function ZoneDetailPanel({
           id={`${idPrefix}-numberChoose`}
           label="Number to choose"
           viewValue={zone.numberChoose}
-          hideWhenEmpty
           error={errors.numberChoose}
           helpText="How many questions from this zone to present (leave empty for all)."
+          hideWhenEmpty
         >
           {(aria) => (
             <input
@@ -181,9 +181,9 @@ export function ZoneDetailPanel({
           id={`${idPrefix}-bestQuestions`}
           label="Best questions"
           viewValue={zone.bestQuestions}
-          hideWhenEmpty
           error={errors.bestQuestions}
           helpText="Only the N highest-scoring questions in this zone count toward the total (leave empty for all)."
+          hideWhenEmpty
         >
           {(aria) => (
             <input
@@ -213,9 +213,9 @@ export function ZoneDetailPanel({
           id={`${idPrefix}-lockpoint`}
           label="Lockpoint"
           viewValue={zone.lockpoint}
-          hideWhenEmpty
           error={errors.lockpoint}
           helpText="Creates a one-way barrier; crossing it makes all earlier zones read-only."
+          hideWhenEmpty
         >
           {(aria) => (
             <input
@@ -238,8 +238,8 @@ export function ZoneDetailPanel({
           id={`${idPrefix}-comment`}
           label="Comment"
           viewValue={zone.comment != null ? <span className="text-break">{String(zone.comment)}</span> : undefined}
-          hideWhenEmpty
           helpText="Internal note, not shown to students."
+          hideWhenEmpty
         >
           {(aria) => (
             <textarea

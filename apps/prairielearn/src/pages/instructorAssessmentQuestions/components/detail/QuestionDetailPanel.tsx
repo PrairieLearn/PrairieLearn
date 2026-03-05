@@ -419,9 +419,9 @@ export function QuestionDetailPanel({
           id={`${idPrefix}-triesPerVariant`}
           label="Tries per variant"
           viewValue={question.triesPerVariant}
-          hideWhenEmpty
           error={errors.triesPerVariant}
           helpText="Number of submission attempts allowed per question variant."
+          hideWhenEmpty
         >
           {(aria) => (
             <input
@@ -447,8 +447,8 @@ export function QuestionDetailPanel({
             <span className="text-break">{String(question.comment)}</span>
           ) : undefined
         }
-        hideWhenEmpty
         helpText="Internal note, not shown to students."
+        hideWhenEmpty
       >
         {(aria) => (
           <textarea
@@ -638,13 +638,13 @@ function HomeworkPointsFields({
           id={`${idPrefix}-autoPoints`}
           label={pointsLabel}
           viewValue={viewAutoPoints}
-          hideWhenEmpty
           error={errors[originalPointsProperty]}
           helpText={
             isManualGrading
               ? 'Points for manual grading.'
               : 'Points awarded for the auto-graded component.'
           }
+          hideWhenEmpty
         >
           {(aria) => (
             <input
@@ -701,9 +701,9 @@ function HomeworkPointsFields({
             id={`${idPrefix}-maxAutoPoints`}
             label="Max auto points"
             viewValue={viewMaxAutoPoints}
-            hideWhenEmpty
             error={errors[originalMaxProperty]}
             helpText="Maximum total auto-graded points. Defaults to auto points if not set."
+            hideWhenEmpty
           >
             {(aria) => (
               <input
@@ -762,9 +762,9 @@ function HomeworkPointsFields({
             id={`${idPrefix}-manualPoints`}
             label="Manual points"
             viewValue={viewManualPoints}
-            hideWhenEmpty
             error={errors.manualPoints}
             helpText="Points awarded for the manually graded component."
+            hideWhenEmpty
           >
             {(aria) => (
               <input
@@ -877,13 +877,13 @@ function ExamPointsFields({
           id={`${idPrefix}-pointsList`}
           label={pointsLabel}
           viewValue={viewAutoPoints}
-          hideWhenEmpty
           error={errors[originalPointsProperty]}
           helpText={
             isManualGrading
               ? 'Points for manual grading.'
               : 'Points for each attempt, as a comma-separated list (e.g. "10, 5, 2, 1").'
           }
+          hideWhenEmpty
         >
           {(aria) => (
             <input
@@ -949,9 +949,9 @@ function ExamPointsFields({
             id={`${idPrefix}-manualPoints`}
             label="Manual points"
             viewValue={viewManualPoints}
-            hideWhenEmpty
             error={errors.manualPoints}
             helpText="Points awarded for the manually graded component."
+            hideWhenEmpty
           >
             {(aria) => (
               <input

@@ -166,9 +166,9 @@ export function AltGroupDetailPanel({
               id={`${idPrefix}-autoPoints`}
               label="Auto points (default)"
               viewValue={formatPoints(zoneQuestionBlock[originalPointsProperty])}
-              hideWhenEmpty
               error={errors[originalPointsProperty]}
               helpText="Default auto points inherited by alternatives unless overridden."
+              hideWhenEmpty
             >
               {(aria) => (
                 <input
@@ -194,9 +194,9 @@ export function AltGroupDetailPanel({
                   ? String(zoneQuestionBlock[originalMaxProperty])
                   : undefined
               }
-              hideWhenEmpty
               error={errors[originalMaxProperty]}
               helpText="Default max auto points inherited by alternatives unless overridden. Defaults to auto points if not set."
+              hideWhenEmpty
             >
               {(aria) => (
                 <input
@@ -222,9 +222,9 @@ export function AltGroupDetailPanel({
                   ? String(zoneQuestionBlock.manualPoints)
                   : undefined
               }
-              hideWhenEmpty
               error={errors.manualPoints}
               helpText="Default manual points inherited by alternatives unless overridden."
+              hideWhenEmpty
             >
               {(aria) => (
                 <input
@@ -248,9 +248,9 @@ export function AltGroupDetailPanel({
               id={`${idPrefix}-points`}
               label="Points list (default)"
               viewValue={formatPoints(zoneQuestionBlock[originalPointsProperty])}
-              hideWhenEmpty
               error={errors.points}
               helpText="Default points list inherited by alternatives unless overridden."
+              hideWhenEmpty
             >
               {(aria) => (
                 <input
@@ -273,9 +273,9 @@ export function AltGroupDetailPanel({
                   ? String(zoneQuestionBlock.manualPoints)
                   : undefined
               }
-              hideWhenEmpty
               error={errors.manualPoints}
               helpText="Default manual points inherited by alternatives unless overridden."
+              hideWhenEmpty
             >
               {(aria) => (
                 <input
@@ -303,8 +303,8 @@ export function AltGroupDetailPanel({
               <span className="text-break">{String(zoneQuestionBlock.comment)}</span>
             ) : undefined
           }
-          hideWhenEmpty
           helpText="Internal note, not shown to students."
+          hideWhenEmpty
         >
           {(aria) => (
             <textarea

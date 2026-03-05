@@ -149,9 +149,9 @@ export function AdvancedFields({
         id={`${idPrefix}-advanceScorePerc`}
         label="Advance score %"
         viewValue={viewValue}
-        hideWhenEmpty
         error={errors?.advanceScorePerc as FieldError | undefined}
         helpText={HELP_TEXT.advanceScorePerc[variant]}
+        hideWhenEmpty
       >
         {(aria) => (
           <input
@@ -208,9 +208,9 @@ export function AdvancedFields({
         id={`${idPrefix}-gradeRateMinutes`}
         label="Grade rate (minutes)"
         viewValue={viewValue}
-        hideWhenEmpty
         error={errors?.gradeRateMinutes as FieldError | undefined}
         helpText={HELP_TEXT.gradeRateMinutes[variant]}
+        hideWhenEmpty
       >
         {(aria) => (
           <input
@@ -256,8 +256,8 @@ export function AdvancedFields({
         id={`${idPrefix}-forceMaxPoints`}
         label="Force max points"
         viewValue={!!watchedForceMaxPoints}
-        hideWhenEmpty
         helpText="Award maximum points when the assessment is regraded. Used to fix broken questions."
+        hideWhenEmpty
       >
         {(aria) => (
           <input
@@ -302,8 +302,8 @@ export function AdvancedFields({
         id={`${idPrefix}-allowRealTimeGrading`}
         label="Allow real-time grading"
         viewValue={!!watchedAllowRealTimeGrading}
-        hideWhenEmpty
         helpText={HELP_TEXT.allowRealTimeGrading[variant]}
+        hideWhenEmpty
       >
         {(aria) => (
           <input
