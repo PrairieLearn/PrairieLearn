@@ -198,6 +198,14 @@ function createEditorReducer(initialState: EditorState) {
           questionResult.question.alternatives!.splice(altResult.index, 1);
         } else {
           // Deleting a regular question or entire alternative group
+
+          // Clean up metadata for all alternatives in the group
+          const { alternatives } = questionResult.question;
+          if (alternatives) {
+            for (const alt of alternatives) {
+              if (alt.id) delete newQuestionMetadata[alt.id];
+            }
+          }
           questionResult.zone.questions.splice(questionResult.questionIndex, 1);
         }
 

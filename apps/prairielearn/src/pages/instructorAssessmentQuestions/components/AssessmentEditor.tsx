@@ -187,6 +187,10 @@ function AssessmentEditorInner({
   const isDragging = activeDragId !== null;
   const isKeyboardDragRef = useRef(false);
   const [selectedItem, setSelectedItem] = useState<SelectedItem>(null);
+  // Ref tracks the latest selectedItem so async handlers (handleQuestionPicked)
+  // can detect if the selection changed during an await and bail out early.
+  const selectedItemRef = useRef(selectedItem);
+  selectedItemRef.current = selectedItem;
   const [viewType, setViewType] = useQueryState(
     'view',
     parseAsStringLiteral(['simple', 'detailed']).withDefault('simple'),
@@ -362,6 +366,7 @@ function AssessmentEditorInner({
       } catch {
         return;
       }
+      if (selectedItemRef.current !== selectedItem) return;
 
       const metadata = buildQuestionMetadata({
         data: questionData,
@@ -432,6 +437,7 @@ function AssessmentEditorInner({
         } catch {
           return;
         }
+        if (selectedItemRef.current !== selectedItem) return;
 
         const found = findQuestionByTrackingId(zones, questionTrackingId);
 
@@ -500,6 +506,7 @@ function AssessmentEditorInner({
     } catch {
       return;
     }
+    if (selectedItemRef.current !== selectedItem) return;
 
     // Remove from current location if already in assessment (move behavior)
     if (questionsInAssessment.has(qid)) {
@@ -945,9 +952,12 @@ function AssessmentEditorInner({
 
   const isAllExpanded = collapsedGroups.size === 0;
 
-  const hasZoneWithNoEffectiveQuestions = zones.some(
-    (zone) =>
-      zone.questions.filter((q) => !q.alternatives || q.alternatives.length > 0).length === 0,
+  const zonesForSave = useMemo(() => stripTrackingIds(zones), [zones]);
+  const hasZoneWithNoEffectiveQuestions = zonesForSave.some((zone) => zone.questions.length === 0);
+
+  // Check against pre-stripped zones since stripTrackingIds silently drops empty alt groups
+  const hasEmptyAltGroup = zones.some((zone) =>
+    zone.questions.some((q) => q.alternatives?.length === 0),
   );
 
   const hasUnsavedChanges = useMemo(
@@ -956,15 +966,15 @@ function AssessmentEditorInner({
   );
 
   const saveButtonDisabled =
-    JSON.stringify(zones) === initialZonesJson || hasZoneWithNoEffectiveQuestions;
+    !hasUnsavedChanges || hasZoneWithNoEffectiveQuestions || hasEmptyAltGroup;
 
   const disableBeforeUnload = useBeforeUnload(editMode && hasUnsavedChanges);
 
   const saveButtonDisabledReason = hasZoneWithNoEffectiveQuestions
     ? 'Cannot save: one or more zones have no questions'
-    : undefined;
-
-  const zonesForSave = useMemo(() => stripTrackingIds(zones), [zones]);
+    : hasEmptyAltGroup
+      ? 'Cannot save: one or more alternative groups have no questions'
+      : undefined;
 
   const treeState: TreeState = useMemo(
     () => ({
