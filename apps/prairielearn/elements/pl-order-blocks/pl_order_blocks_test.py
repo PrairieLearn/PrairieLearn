@@ -281,6 +281,48 @@ def test_answer_validation(options: dict, answer_options_list: list[dict]) -> No
             {
                 "answers-name": "test",
                 "grading-method": "dag",
+            },
+            [
+                {"tag": "1", "correct": True, "pre-dragged": True},
+                {"tag": "2", "correct": False, "pre-dragged": True},
+            ],
+            "Incorrect blocks cannot be pre-dragged.",
+        ),
+        (
+            {
+                "answers-name": "test",
+                "grading-method": "dag",
+            },
+            [
+                {"tag": "1", "correct": True, "pre-dragged": True},
+                {"tag": "2", "distractor_for": "1", "pre-dragged": True},
+            ],
+            "A block with distractors cannot be be pre-dragged.",
+        ),
+    ],
+)
+def test_pre_dragged_validation_failure(
+    options: dict, answer_options_list: list[dict], error: str
+) -> None:
+    """Tests valid pl-answer pre-dragged option failure"""
+    tags_html = "\n".join(
+        build_tag("pl-answer", answer_options) for answer_options in answer_options_list
+    )
+    question = build_tag("pl-order-blocks", options, tags_html)
+    html_element = lxml.html.fromstring(question)
+    order_blocks_options = OrderBlocksOptions(html_element)
+    assert_order_blocks_options(order_blocks_options, options)
+    with pytest.raises(ValueError, match=error):
+        order_blocks_options.validate()
+
+
+@pytest.mark.parametrize(
+    ("options", "answer_options_list", "error"),
+    [
+        (
+            {
+                "answers-name": "test",
+                "grading-method": "dag",
                 "weight": 2,
                 "indentation": False,
                 "partial-credit": "lcs",
