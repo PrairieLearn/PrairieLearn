@@ -1,6 +1,6 @@
 import type { UseFormRegisterReturn } from 'react-hook-form';
 
-import type { InheritanceSource } from './AdvancedFields.js';
+import type { InheritanceSource } from '../../types.js';
 
 export function InheritableCheckboxField({
   id,

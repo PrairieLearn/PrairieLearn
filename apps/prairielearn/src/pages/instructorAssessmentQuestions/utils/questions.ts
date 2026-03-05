@@ -181,7 +181,7 @@ export function buildHierarchicalAssessment(
   return zones;
 }
 
-export function firstPoints(value: number | number[] | null | undefined): number {
+function firstPoints(value: number | number[] | null | undefined): number {
   if (value == null) return 0;
   return Array.isArray(value) ? (value[0] ?? 0) : value;
 }

@@ -10,7 +10,14 @@ import {
 } from '../../schemas/infoAssessment.js';
 
 import type { AssessmentAdvancedDefaults } from './utils/formHelpers.js';
-import type { ChangeTrackingResult } from './utils/modifiedTracking.js';
+/**
+ * Describes which items are new vs modified compared to the initial state.
+ * Used to show colored dot indicators in the tree view.
+ */
+export interface ChangeTrackingResult {
+  newIds: Set<string>;
+  modifiedIds: Set<string>;
+}
 
 /**
  * Branded UUID type for stable drag-and-drop identity.
@@ -200,6 +207,11 @@ export type SelectedItem =
   | null;
 
 export type ViewType = 'simple' | 'detailed';
+
+/**
+ * Describes the parent values from which advanced fields can be inherited.
+ */
+export type InheritanceSource = 'zone' | 'group' | 'assessment';
 
 /**
  * Bundles all callbacks passed through the assessment tree hierarchy.

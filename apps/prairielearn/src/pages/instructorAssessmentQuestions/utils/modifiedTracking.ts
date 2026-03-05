@@ -1,11 +1,6 @@
 import stableStringify from 'fast-json-stable-stringify';
 
-import type { ZoneAssessmentForm } from '../types.js';
-
-export interface ChangeTrackingResult {
-  newIds: Set<string>;
-  modifiedIds: Set<string>;
-}
+import type { ChangeTrackingResult, ZoneAssessmentForm } from '../types.js';
 
 /**
  * Builds a map from trackingId to a deterministic JSON key for each item

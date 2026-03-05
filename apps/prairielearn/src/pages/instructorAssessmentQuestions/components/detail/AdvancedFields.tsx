@@ -7,6 +7,7 @@ import type {
   UseFormWatch,
 } from 'react-hook-form';
 
+import type { InheritanceSource } from '../../types.js';
 import { coerceToBoolean, coerceToNumber } from '../../utils/formHelpers.js';
 
 import { FormCheckField, FormField } from './FormField.js';
@@ -30,14 +31,6 @@ const HELP_TEXT = {
     zone: 'Allow students to see grading results during the exam for questions in this zone (Exams only).',
   },
 } as const;
-
-/**
- * Describes the parent values from which advanced fields can be inherited,
- * along with form helpers needed to implement the inherit/override/reset pattern.
- * Parent values come from the nearest ancestor that sets them
- * (e.g., assessment for a zone, zone for an alt group, alt group for a question).
- */
-export type InheritanceSource = 'zone' | 'group' | 'assessment';
 
 export interface AdvancedFieldsInheritance {
   parentAdvanceScorePerc: number | undefined;
