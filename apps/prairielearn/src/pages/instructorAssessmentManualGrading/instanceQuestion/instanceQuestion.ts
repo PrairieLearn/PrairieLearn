@@ -209,7 +209,23 @@ router.get(
           return null;
         });
 
+        const correctedDegrees = ai_grading_job_data.rotation_correction_degrees;
+        const parsed = z.record(z.string(), z.number()).safeParse(correctedDegrees ?? {});
+        const validatedDegrees = parsed.success ? parsed.data : {};
+        const rotationCorrectionDegrees = Object.fromEntries(
+          Object.entries(validatedDegrees).filter(([, degrees]) => degrees !== 0),
+        );
+
+        const hasPersistedRotationCorrectionData =
+          correctedDegrees != null &&
+          typeof correctedDegrees === 'object' &&
+          Object.keys(correctedDegrees).length > 0;
+
         const hasImage = run(() => {
+          // Use persisted rotation metadata to infer image context. This preserves
+          // historical AI grading context even if the current rendered HTML no
+          // longer includes image-capture markers.
+          if (hasPersistedRotationCorrectionData) return true;
           if (localsForRender.resLocals.submissionHtmls.length > 0) {
             return containsImageCapture(localsForRender.resLocals.submissionHtmls[0]);
           }
@@ -224,13 +240,6 @@ router.get(
         };
 
         if (hasImage) {
-          const correctedDegrees = ai_grading_job_data.rotation_correction_degrees ?? {};
-          const parsed = z.record(z.string(), z.number()).safeParse(correctedDegrees);
-          const validatedDegrees = parsed.success ? parsed.data : {};
-          const rotationCorrectionDegrees = Object.fromEntries(
-            Object.entries(validatedDegrees).filter(([, degrees]) => degrees !== 0),
-          );
-
           aiGradingInfo = {
             ...aiGradingInfoBase,
             hasImage: true,

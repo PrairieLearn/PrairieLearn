@@ -265,7 +265,7 @@ function AIGradingExplanation({
                   </div>
                 </div>`
               : html`<div class="alert alert-info mb-3" role="alert">
-                  All student-submitted images were uploaded in an upright state.
+                  None of the submitted images required rotation correction.
                 </div>`
             : ''}
           ${explanation
