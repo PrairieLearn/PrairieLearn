@@ -60,6 +60,7 @@ export function EditModeToolbar({
   setEditMode,
   saveButtonDisabled,
   saveButtonDisabledReason,
+  onSubmit,
   onCancel,
 }: {
   csrfToken: string;
@@ -70,6 +71,7 @@ export function EditModeToolbar({
   setEditMode: (editMode: boolean) => void;
   saveButtonDisabled: boolean;
   saveButtonDisabledReason?: string;
+  onSubmit?: () => void;
   onCancel: () => void;
 }) {
   if (!editMode) {
@@ -99,7 +101,7 @@ export function EditModeToolbar({
   );
 
   return (
-    <form method="POST" className="d-flex gap-2 align-items-center">
+    <form method="POST" className="d-flex gap-2 align-items-center" onSubmit={onSubmit}>
       <input type="hidden" name="__action" value="save_questions" />
       <input type="hidden" name="__csrf_token" value={csrfToken} />
       <input type="hidden" name="orig_hash" value={origHash} />

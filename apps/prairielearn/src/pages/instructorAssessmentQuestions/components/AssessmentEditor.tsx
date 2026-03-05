@@ -71,11 +71,14 @@ import { DragPreview } from './tree/DragPreview.js';
  * TODO: Extract to prairielearn/ui as a reusable hook. We could also
  * consider using `usehooks-ts`.
  */
-function useBeforeUnload(enabled: boolean): void {
+function useBeforeUnload(enabled: boolean): () => void {
+  const disabledRef = useRef(false);
+
   useEffect(() => {
     if (!enabled) return;
 
     const handler = (event: BeforeUnloadEvent) => {
+      if (disabledRef.current) return;
       event.preventDefault();
       event.returnValue = 'prompt';
       return 'prompt';
@@ -83,6 +86,10 @@ function useBeforeUnload(enabled: boolean): void {
     window.addEventListener('beforeunload', handler);
     return () => window.removeEventListener('beforeunload', handler);
   }, [enabled]);
+
+  return () => {
+    disabledRef.current = true;
+  };
 }
 
 /**
@@ -857,7 +864,7 @@ function AssessmentEditorInner({
   const saveButtonDisabled =
     JSON.stringify(zones) === initialZonesJson || zones.some((zone) => zone.questions.length === 0);
 
-  useBeforeUnload(editMode && !saveButtonDisabled);
+  const disableBeforeUnload = useBeforeUnload(editMode && !saveButtonDisabled);
 
   const saveButtonDisabledReason = zones.some((zone) => zone.questions.length === 0)
     ? 'Cannot save: one or more zones have no questions'
@@ -1046,6 +1053,7 @@ function AssessmentEditorInner({
                     setEditMode={setEditMode}
                     saveButtonDisabled={saveButtonDisabled}
                     saveButtonDisabledReason={saveButtonDisabledReason}
+                    onSubmit={disableBeforeUnload}
                     onCancel={() => {
                       dispatch({ type: 'RESET' });
                       setEditMode(false);
