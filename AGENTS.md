@@ -19,7 +19,7 @@ Backend: TypeScript / Express / Python / PostgreSQL
 
 ## Packages
 
-Libraries live in `packages/`. If you update a package, you MUST add a changeset. Create a markdown file in `.changeset/` with a name like `fix-my-bug.md` containing:
+Libraries live in `packages/`. If you update a public package (one without `"private": true` in its `package.json`, you MUST add a changeset. Create a markdown file in `.changeset/` with a name like `fix-my-bug.md` containing:
 
 ```markdown
 ---
