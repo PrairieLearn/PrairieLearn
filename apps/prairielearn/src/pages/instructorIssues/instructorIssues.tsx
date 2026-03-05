@@ -6,9 +6,17 @@ import { z } from 'zod';
 
 import { HttpStatusError } from '@prairielearn/error';
 import { flash } from '@prairielearn/flash';
-import { loadSqlEquiv, queryOptionalRow, queryRow, queryRows } from '@prairielearn/postgres';
+import {
+  loadSqlEquiv,
+  queryOptionalScalar,
+  queryRows,
+  queryScalar,
+  queryScalars,
+} from '@prairielearn/postgres';
 import { IdSchema } from '@prairielearn/zod';
 
+import { PageLayout } from '../../components/PageLayout.js';
+import { compiledStylesheetTag } from '../../lib/assets.js';
 import { extractPageContext } from '../../lib/client/page-context.js';
 import { idsEqual } from '../../lib/id.js';
 import { typedAsyncHandler } from '../../lib/res-locals.js';
@@ -107,7 +115,7 @@ async function updateIssueOpen(
   course_id: string,
   authn_user_id: string,
 ) {
-  const updated_issue_id = await queryOptionalRow(
+  const updated_issue_id = await queryOptionalScalar(
     sql.update_issue_open,
     { issue_id, new_open, course_id, authn_user_id },
     IdSchema,
@@ -125,12 +133,17 @@ router.get(
   typedAsyncHandler<'course' | 'course-instance'>(async (req, res) => {
     const filterQuery = typeof req.query.q === 'string' ? req.query.q : 'is:open';
 
-    const { authz_data: authzData, course } = extractPageContext(res.locals, {
+    const {
+      authz_data: authzData,
+      course,
+      __csrf_token,
+      urlPrefix,
+    } = extractPageContext(res.locals, {
       pageType: 'course',
       accessType: 'instructor',
     });
 
-    const [closedCount, openCount] = await queryRows(
+    const [closedCount, openCount] = await queryScalars(
       sql.issues_count,
       { course_id: course.id },
       z.number(),
@@ -210,14 +223,31 @@ router.get(
     const openFilteredIssuesCount = issueRows.reduce((acc, row) => (row.open ? acc + 1 : acc), 0);
 
     res.send(
-      InstructorIssues({
+      PageLayout({
         resLocals: res.locals,
-        issues,
-        filterQuery,
-        openFilteredIssuesCount,
-        openCount,
-        closedCount,
-        chosenPage: queryPageNumber,
+        pageTitle: 'Issues',
+        navContext: {
+          type: 'instructor',
+          page: 'course_admin',
+          subPage: 'issues',
+        },
+        options: {
+          fullWidth: true,
+        },
+        headContent: compiledStylesheetTag('instructorIssues.css'),
+        content: (
+          <InstructorIssues
+            issues={issues}
+            filterQuery={filterQuery}
+            openFilteredIssuesCount={openFilteredIssuesCount}
+            openCount={openCount}
+            closedCount={closedCount}
+            chosenPage={queryPageNumber}
+            urlPrefix={urlPrefix}
+            csrfToken={__csrf_token}
+            hasCoursePermissionEdit={authzData.has_course_permission_edit}
+          />
+        ),
       }),
     );
   }),
@@ -248,7 +278,7 @@ router.post(
       res.redirect(req.originalUrl);
     } else if (req.body.__action === 'close_matching') {
       const issueIds = req.body.unsafe_issue_ids.split(',').filter((id: string) => id !== '');
-      const closedCount = await queryRow(
+      const closedCount = await queryScalar(
         sql.close_issues,
         {
           issue_ids: issueIds,

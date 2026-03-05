@@ -74,7 +74,7 @@ jobs:
 
       - name: Upload CI report artifact
         if: github.event_name == 'pull_request'
-        uses: actions/upload-artifact@v6
+        uses: actions/upload-artifact@v7
         with:
           name: ci-report-bundle-sizes
           path: ${{ runner.temp }}/bundle-sizes-section.md
@@ -82,6 +82,8 @@ jobs:
 
       - name: Run the JavaScript linter
         run: make lint-js
+      - name: Run the Mustache linter
+        run: make lint-mustache
       - name: Run the links linter
         run: make lint-links
 
