@@ -8,7 +8,6 @@ import { PageLayout } from '../../components/PageLayout.js';
 import { extractPageContext } from '../../lib/client/page-context.js';
 import { config } from '../../lib/config.js';
 import { getCourseOwners } from '../../lib/course.js';
-import { getUrl } from '../../lib/url.js';
 import { createAuthzMiddleware } from '../../middlewares/authzHelper.js';
 
 import { InstructorStudentsLabels } from './instructorStudentsLabels.html.js';
@@ -55,8 +54,6 @@ router.get(
     const labels = await getStudentLabelsWithUserData(courseInstance.id);
     const canEdit = authz_data.has_course_instance_permission_edit ?? false;
 
-    const search = getUrl(req).search;
-
     const { trpcUrl, trpcCsrfToken, origHash } = await getStudentLabelsTrpcProps({
       course,
       courseInstance,
@@ -82,7 +79,6 @@ router.get(
               initialLabels={labels}
               canEdit={canEdit}
               isDevMode={config.devMode}
-              search={search}
               origHash={origHash}
             />
           </Hydrate>

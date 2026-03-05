@@ -1,8 +1,7 @@
 import { QueryClient } from '@tanstack/react-query';
-import { parseAsString, useQueryState } from 'nuqs';
-import { useMemo, useState } from 'react';
+import { useState } from 'react';
 
-import { NuqsAdapter, useModalState } from '@prairielearn/ui';
+import { useModalState } from '@prairielearn/ui';
 
 import { QueryClientProviderDebug } from '../../lib/client/tanstackQuery.js';
 
@@ -23,13 +22,12 @@ interface StudentLabelsPageProps {
   initialLabels: StudentLabelWithUserData[];
   canEdit: boolean;
   isDevMode: boolean;
-  search: string;
   origHash: string | null;
 }
 
 type StudentLabelsCardProps = Omit<
   StudentLabelsPageProps,
-  'isDevMode' | 'search' | 'trpcCsrfToken' | 'trpcUrl'
+  'isDevMode' | 'trpcCsrfToken' | 'trpcUrl'
 > & {
   trpcClient: StudentLabelsTrpcClient;
 };
@@ -41,8 +39,7 @@ function StudentLabelsCard({
   canEdit: canEditProp,
   origHash: initialOrigHash,
 }: Omit<StudentLabelsCardProps, 'csrfToken'>) {
-  const [labelParam, setLabelParam] = useQueryState('label', parseAsString.withDefault(''));
-  const [showAddModal, setShowAddModal] = useState(false);
+  const editModal = useModalState<LabelModifyModalData>();
   const deleteModal = useModalState<LabelDeleteModalData>();
   const [labels, setLabels] = useState<StudentLabelWithUserData[]>(initialLabels);
   const [origHash, setOrigHash] = useState(initialOrigHash);
@@ -56,34 +53,15 @@ function StudentLabelsCard({
     return result.labels;
   };
 
-  const modifyModalData = useMemo((): LabelModifyModalData | null => {
-    if (!canEdit) return null;
-
-    if (showAddModal) {
-      return { type: 'add', origHash };
-    }
-
-    if (labelParam) {
-      const label = labels.find((l) => l.student_label.name === labelParam);
-      if (label) {
-        return {
-          type: 'edit',
-          labelId: label.student_label.id,
-          name: label.student_label.name,
-          color: label.student_label.color,
-          uids: label.user_data.map((u) => u.uid),
-          origHash,
-        };
-      }
-    }
-
-    return null;
-  }, [showAddModal, labelParam, labels, canEdit, origHash]);
-
-  const modifyModalShow = modifyModalData !== null;
-
   const handleEdit = (label: StudentLabelWithUserData) => {
-    void setLabelParam(label.student_label.name);
+    editModal.showWithData({
+      type: 'edit',
+      labelId: label.student_label.id,
+      name: label.student_label.name,
+      color: label.student_label.color,
+      uids: label.user_data.map((u) => u.uid),
+      origHash,
+    });
   };
 
   const handleDelete = (label: StudentLabelWithUserData) => {
@@ -104,11 +82,6 @@ function StudentLabelsCard({
     deleteModal.hide();
   };
 
-  const handleEditModalHide = () => {
-    setShowAddModal(false);
-    void setLabelParam(null);
-  };
-
   const handleEditSuccess = async (newOrigHash: string | null) => {
     setOrigHash(newOrigHash);
     try {
@@ -116,8 +89,7 @@ function StudentLabelsCard({
     } catch {
       // The save succeeded; if the refetch fails, the user can refresh the page.
     }
-    setShowAddModal(false);
-    void setLabelParam(null);
+    editModal.hide();
   };
 
   return (
@@ -129,7 +101,7 @@ function StudentLabelsCard({
             <button
               type="button"
               className="btn btn-outline-primary btn-sm text-nowrap"
-              onClick={() => setShowAddModal(true)}
+              onClick={() => editModal.showWithData({ type: 'add', origHash })}
             >
               Add label
             </button>
@@ -179,11 +151,12 @@ function StudentLabelsCard({
       )}
 
       <LabelModifyModal
-        data={modifyModalData}
+        data={editModal.data}
         trpcClient={trpcClient}
         courseInstanceId={courseInstanceId}
-        show={modifyModalShow}
-        onHide={handleEditModalHide}
+        show={editModal.show}
+        onHide={editModal.onHide}
+        onExited={editModal.onExited}
         onSuccess={handleEditSuccess}
       />
 
@@ -202,7 +175,6 @@ function StudentLabelsCard({
 }
 
 export function InstructorStudentsLabels({
-  search,
   isDevMode,
   trpcCsrfToken,
   trpcUrl,
@@ -212,11 +184,9 @@ export function InstructorStudentsLabels({
   const [trpcClient] = useState(() => createStudentLabelsTrpcClient(trpcCsrfToken, trpcUrl));
 
   return (
-    <NuqsAdapter search={search}>
-      <QueryClientProviderDebug client={queryClient} isDevMode={isDevMode}>
-        <StudentLabelsCard trpcClient={trpcClient} {...innerProps} />
-      </QueryClientProviderDebug>
-    </NuqsAdapter>
+    <QueryClientProviderDebug client={queryClient} isDevMode={isDevMode}>
+      <StudentLabelsCard trpcClient={trpcClient} {...innerProps} />
+    </QueryClientProviderDebug>
   );
 }
 
