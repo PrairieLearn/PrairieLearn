@@ -19,6 +19,14 @@ import { SortableAlternativeRow } from './SortableAlternativeRow.js';
 import { PointsBadge, TreeQuestionRow } from './TreeQuestionRow.js';
 import { makeDraggableStyle } from './dragUtils.js';
 
+/**
+ * Renders a single question block within a zone in the assessment tree.
+ *
+ * A "question block" is either a standalone question or an alternative group
+ * (a group of interchangeable questions from which one is randomly selected).
+ * Standalone questions render as a single `TreeQuestionRow`; alternative groups
+ * render as a collapsible header with nested `SortableAlternativeRow` children.
+ */
 export function TreeQuestionBlockNode({
   zoneQuestionBlock,
   editMode,

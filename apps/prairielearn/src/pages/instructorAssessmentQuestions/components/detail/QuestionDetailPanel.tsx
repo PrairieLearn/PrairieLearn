@@ -606,7 +606,9 @@ export function QuestionDetailPanel({
                 error={errors[originalMaxProperty]}
                 helpText="Maximum total auto-graded points. Defaults to auto points if not set."
                 placeholder={autoPointsPlaceholder}
-                inheritedValueLabel={String(inheritedMaxValue ?? '')}
+                inheritedValueLabel={
+                  inheritedMaxValue != null ? String(inheritedMaxValue) : undefined
+                }
                 showResetButton={inheritedMaxValue != null}
                 onOverride={() =>
                   setValue(originalMaxProperty, inheritedMaxValue, {
@@ -670,7 +672,9 @@ export function QuestionDetailPanel({
                 })}
                 error={errors.manualPoints}
                 helpText="Points awarded for the manually graded component."
-                inheritedValueLabel={String(inheritedManualPoints ?? '')}
+                inheritedValueLabel={
+                  inheritedManualPoints != null ? String(inheritedManualPoints) : undefined
+                }
                 showResetButton={inheritedManualPoints != null}
                 onOverride={() =>
                   setValue('manualPoints', inheritedManualPoints, {
@@ -848,7 +852,9 @@ export function QuestionDetailPanel({
                 })}
                 error={errors.manualPoints}
                 helpText="Points awarded for the manually graded component."
-                inheritedValueLabel={String(inheritedManualPoints ?? '')}
+                inheritedValueLabel={
+                  inheritedManualPoints != null ? String(inheritedManualPoints) : undefined
+                }
                 showResetButton={inheritedManualPoints != null}
                 onOverride={() =>
                   setValue('manualPoints', inheritedManualPoints, {

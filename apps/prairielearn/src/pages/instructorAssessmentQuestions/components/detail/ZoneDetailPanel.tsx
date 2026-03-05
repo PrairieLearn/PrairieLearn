@@ -65,6 +65,9 @@ export function ZoneDetailPanel({
     values: formValues,
   });
 
+  // useCallback is needed here because handleSave is a dependency of
+  // useAutoSave — without it, a new function identity on every render
+  // would cause useAutoSave to re-trigger continuously.
   const handleSave = useCallback(
     (data: ZoneFormData) => {
       onUpdate(zone.trackingId, {

@@ -22,7 +22,7 @@ import { DragHandle } from './DragHandle.js';
  *      [10, 5, 3] → "10, 5, 3"
  *      [10] → "10"
  */
-function compactPoints(pts: number[]): string {
+export function compactPoints(pts: number[]): string {
   if (pts.length <= 1) return pts.join(', ');
 
   const runs: { value: number; count: number }[] = [];

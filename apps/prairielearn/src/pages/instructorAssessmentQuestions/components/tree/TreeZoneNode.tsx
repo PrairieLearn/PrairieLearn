@@ -23,6 +23,12 @@ import { TreeEmptyDropZone } from './TreeEmptyDropZone.js';
 import { TreeQuestionBlockNode } from './TreeQuestionBlockNode.js';
 import { makeDraggableStyle } from './dragUtils.js';
 
+/**
+ * Renders a zone node in the assessment tree — a sticky header with zone
+ * metadata badges (question count, points, lockpoint, etc.) followed by the
+ * zone's question blocks. Zones are sortable via drag-and-drop in edit mode
+ * and collapsible in both modes.
+ */
 export function TreeZoneNode({
   zone,
   zoneNumber,
@@ -120,7 +126,9 @@ export function TreeZoneNode({
           tabIndex={0}
           className={clsx(
             'tree-row d-flex align-items-center px-2 py-2 border-bottom user-select-none',
-            isSelected ? 'tree-row-selected bg-body-secondary' : 'bg-body-secondary list-group-item-action',
+            isSelected
+              ? 'tree-row-selected bg-body-secondary'
+              : 'bg-body-secondary list-group-item-action',
           )}
           style={{ cursor: 'pointer', position: 'sticky', top: 0, zIndex: 10 }}
           onClick={(e) => {

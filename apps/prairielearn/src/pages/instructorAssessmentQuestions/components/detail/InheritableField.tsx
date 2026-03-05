@@ -1,6 +1,13 @@
 import clsx from 'clsx';
 import type { FieldError, UseFormRegisterReturn } from 'react-hook-form';
 
+/**
+ * A form field that supports value inheritance from a parent scope
+ * (e.g., zone → alt group → question). When `isInherited` is true, the field
+ * displays a disabled input showing the inherited value with an "Override"
+ * button. When overridden, an optional "Reset" button lets the user clear
+ * the override and fall back to the inherited value.
+ */
 export function InheritableField({
   id,
   label,
