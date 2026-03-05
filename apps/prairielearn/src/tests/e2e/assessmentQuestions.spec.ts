@@ -14,21 +14,25 @@ async function enterEditMode(page: Page, ciId: string, aId: string): Promise<voi
 }
 
 test.describe('Assessment questions', () => {
+  test.beforeEach(async ({ enableFeatureFlag }) => {
+    await enableFeatureFlag('assessment-questions-editor');
+  });
+
   test.describe('exam5-perZoneGrading mutations', () => {
     test.describe.configure({ mode: 'serial' });
 
     test('can reorder a question within a zone and save', async ({
       page,
       testCoursePath,
-      courseInstanceId,
+      courseInstance,
     }) => {
       const assessmentTid = 'exam5-perZoneGrading';
       const assessment = await selectAssessmentByTid({
-        course_instance_id: courseInstanceId,
+        course_instance_id: courseInstance.id,
         tid: assessmentTid,
       });
 
-      await enterEditMode(page, courseInstanceId, assessment.id);
+      await enterEditMode(page, courseInstance.id, assessment.id);
 
       const dragHandles = page.locator('[aria-label="Drag to reorder"]');
       await expect(dragHandles).toHaveCount(4);
@@ -66,14 +70,14 @@ test.describe('Assessment questions', () => {
       ]);
     });
 
-    test('can drag a question across zones', async ({ page, testCoursePath, courseInstanceId }) => {
+    test('can drag a question across zones', async ({ page, testCoursePath, courseInstance }) => {
       const assessmentTid = 'exam5-perZoneGrading';
       const assessment = await selectAssessmentByTid({
-        course_instance_id: courseInstanceId,
+        course_instance_id: courseInstance.id,
         tid: assessmentTid,
       });
 
-      await enterEditMode(page, courseInstanceId, assessment.id);
+      await enterEditMode(page, courseInstance.id, assessment.id);
 
       const dragHandles = page.locator('[aria-label="Drag to reorder"]');
       await expect(dragHandles).toHaveCount(4);
@@ -108,15 +112,15 @@ test.describe('Assessment questions', () => {
   test('can edit question points and zone settings', async ({
     page,
     testCoursePath,
-    courseInstanceId,
+    courseInstance,
   }) => {
     const assessmentTid = 'hw4-perzonegrading';
     const assessment = await selectAssessmentByTid({
-      course_instance_id: courseInstanceId,
+      course_instance_id: courseInstance.id,
       tid: assessmentTid,
     });
 
-    await enterEditMode(page, courseInstanceId, assessment.id);
+    await enterEditMode(page, courseInstance.id, assessment.id);
 
     await page.getByRole('button').filter({ hasText: 'partialCredit1' }).first().click();
 
@@ -171,15 +175,15 @@ test.describe('Assessment questions', () => {
   test('can use question picker to change a question QID', async ({
     page,
     testCoursePath,
-    courseInstanceId,
+    courseInstance,
   }) => {
     const assessmentTid = 'hw3-partialCredit';
     const assessment = await selectAssessmentByTid({
-      course_instance_id: courseInstanceId,
+      course_instance_id: courseInstance.id,
       tid: assessmentTid,
     });
 
-    await enterEditMode(page, courseInstanceId, assessment.id);
+    await enterEditMode(page, courseInstance.id, assessment.id);
 
     await page.getByRole('button').filter({ hasText: 'partialCredit1' }).first().click();
 
@@ -231,15 +235,15 @@ test.describe('Assessment questions', () => {
   test('can add an alternative to an alt group and save', async ({
     page,
     testCoursePath,
-    courseInstanceId,
+    courseInstance,
   }) => {
     const assessmentTid = 'hw1-automaticTestSuite';
     const assessment = await selectAssessmentByTid({
-      course_instance_id: courseInstanceId,
+      course_instance_id: courseInstance.id,
       tid: assessmentTid,
     });
 
-    await enterEditMode(page, courseInstanceId, assessment.id);
+    await enterEditMode(page, courseInstance.id, assessment.id);
 
     await page
       .getByRole('button')
@@ -272,14 +276,14 @@ test.describe('Assessment questions', () => {
     expect(lastBlock.alternatives[2].id).toBe('addNumbers');
   });
 
-  test('can delete questions and a zone', async ({ page, testCoursePath, courseInstanceId }) => {
+  test('can delete questions and a zone', async ({ page, testCoursePath, courseInstance }) => {
     const assessmentTid = 'hw16-editorDeleteTest';
     const assessment = await selectAssessmentByTid({
-      course_instance_id: courseInstanceId,
+      course_instance_id: courseInstance.id,
       tid: assessmentTid,
     });
 
-    await enterEditMode(page, courseInstanceId, assessment.id);
+    await enterEditMode(page, courseInstance.id, assessment.id);
 
     await page.getByRole('button').filter({ hasText: 'partialCredit1' }).first().click();
     await page.getByRole('button', { name: 'Delete' }).click();
@@ -313,14 +317,14 @@ test.describe('Assessment questions', () => {
     ]);
   });
 
-  test('shows validation errors for homework auto points', async ({ page, courseInstanceId }) => {
+  test('shows validation errors for homework auto points', async ({ page, courseInstance }) => {
     const assessmentTid = 'hw2-miscProblems';
     const assessment = await selectAssessmentByTid({
-      course_instance_id: courseInstanceId,
+      course_instance_id: courseInstance.id,
       tid: assessmentTid,
     });
 
-    await enterEditMode(page, courseInstanceId, assessment.id);
+    await enterEditMode(page, courseInstance.id, assessment.id);
 
     await page.getByRole('button').filter({ hasText: 'fossilFuelsRadio' }).first().click();
 
@@ -351,14 +355,14 @@ test.describe('Assessment questions', () => {
     await expect(page.getByText('Auto points cannot exceed max auto points.')).not.toBeVisible();
   });
 
-  test('can edit exam points list', async ({ page, testCoursePath, courseInstanceId }) => {
+  test('can edit exam points list', async ({ page, testCoursePath, courseInstance }) => {
     const assessmentTid = 'exam12-sequentialQuestions';
     const assessment = await selectAssessmentByTid({
-      course_instance_id: courseInstanceId,
+      course_instance_id: courseInstance.id,
       tid: assessmentTid,
     });
 
-    await enterEditMode(page, courseInstanceId, assessment.id);
+    await enterEditMode(page, courseInstance.id, assessment.id);
 
     await page.getByRole('button').filter({ hasText: 'partialCredit3' }).first().click();
     await expect(page.getByLabel('Points list')).toBeVisible();
@@ -385,16 +389,16 @@ test.describe('Assessment questions', () => {
   test('can add a question to an empty assessment via zone and picker', async ({
     page,
     testCoursePath,
-    courseInstanceId,
+    courseInstance,
   }) => {
     const assessmentTid = 'hw14-emptyForEditor';
     const assessment = await selectAssessmentByTid({
-      course_instance_id: courseInstanceId,
+      course_instance_id: courseInstance.id,
       tid: assessmentTid,
     });
 
     await page.goto(
-      `/pl/course_instance/${courseInstanceId}/instructor/assessment/${assessment.id}/questions`,
+      `/pl/course_instance/${courseInstance.id}/instructor/assessment/${assessment.id}/questions`,
     );
     await page.getByRole('button', { name: 'Edit questions' }).click();
 
