@@ -12,7 +12,7 @@ import { selectCourseInstanceById } from '../models/course-instances.js';
 import { type AiGradingSettingsRouter } from '../ee/pages/instructorInstanceAdminAiGrading/trpc.js';
 
 import * as helperServer from './helperServer.js';
-import { type AuthUser, getOrCreateUser, withUser } from './utils/auth.js';
+import { type AuthUser, getConfiguredUser, getOrCreateUser, withUser } from './utils/auth.js';
 
 const siteUrl = 'http://localhost:' + config.serverPort;
 
@@ -26,9 +26,7 @@ const aiGradingSettingsPath = '/pl/course_instance/1/instructor/instance_admin/a
 const aiGradingSettingsUrl = siteUrl + aiGradingSettingsPath;
 
 async function createTrpcClient(user?: AuthUser) {
-  const dbUser = await getOrCreateUser(
-    user ?? { uid: config.authUid, name: config.authName, uin: config.authUin },
-  );
+  const dbUser = user ? await getOrCreateUser(user) : await getConfiguredUser();
   const csrfToken = generatePrefixCsrfToken(
     { url: aiGradingSettingsPath + '/trpc', authn_user_id: dbUser.id },
     config.secretKey,
