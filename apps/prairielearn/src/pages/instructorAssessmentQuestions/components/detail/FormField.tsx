@@ -1,7 +1,7 @@
 import type React from 'react';
 import type { FieldError } from 'react-hook-form';
 
-export interface AriaProps {
+interface AriaProps {
   inputProps: {
     id: string;
     'aria-invalid'?: boolean;

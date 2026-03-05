@@ -3,7 +3,7 @@ import { useId } from 'react';
 import { OverlayTrigger } from '@prairielearn/ui';
 
 import { isRenderableComment } from '../../../../lib/comments.js';
-import type { ChangeTrackingResult } from '../../utils/modifiedTracking.js';
+import type { ChangeTrackingResult } from '../../types.js';
 
 export function ChangeIndicatorBadges({
   trackingId,

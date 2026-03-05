@@ -2,7 +2,7 @@ import clsx from 'clsx';
 import type React from 'react';
 import type { FieldError, UseFormRegisterReturn } from 'react-hook-form';
 
-import type { InheritanceSource } from './AdvancedFields.js';
+import type { InheritanceSource } from '../../types.js';
 
 /**
  * A form field that supports value inheritance from a parent scope
