@@ -151,7 +151,7 @@ const aiGroupInstanceQuestionsMutation = t.procedure
     const job_sequence_id = await aiInstanceQuestionGrouping({
       question: opts.ctx.question,
       course: opts.ctx.course,
-      course_instance_id: opts.ctx.course_instance.id,
+      course_instance: opts.ctx.course_instance,
       assessment_question: opts.ctx.assessment_question,
       urlPrefix: opts.ctx.urlPrefix,
       authn_user_id: opts.ctx.authn_user.id,
