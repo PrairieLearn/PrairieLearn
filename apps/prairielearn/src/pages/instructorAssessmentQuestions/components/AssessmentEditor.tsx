@@ -162,7 +162,7 @@ function AssessmentEditorInner({
     () => ({
       advanceScorePerc: assessment.advance_score_perc ?? undefined,
       gradeRateMinutes: assessment.json_grade_rate_minutes ?? undefined,
-      allowRealTimeGrading: assessment.json_allow_real_time_grading ?? undefined,
+      allowRealTimeGrading: assessment.json_allow_real_time_grading ?? true,
     }),
     [
       assessment.advance_score_perc,
@@ -569,6 +569,12 @@ function AssessmentEditorInner({
     ) {
       setSelectedItem(null);
     }
+    if (
+      selectedItem?.type === 'altGroup' &&
+      selectedItem.questionTrackingId === questionTrackingId
+    ) {
+      setSelectedItem(null);
+    }
 
     dispatch({
       type: 'DELETE_QUESTION',
@@ -696,6 +702,18 @@ function AssessmentEditorInner({
         toAltGroupTrackingId: altGroupTrackingId,
         beforeAlternativeTrackingId: null,
       });
+      // The question's trackingId is preserved but it's now an alternative
+      // inside the group. Update the selection so DetailPanel can find it.
+      if (
+        selectedItem?.type === 'question' &&
+        selectedItem.questionTrackingId === activeIdStr
+      ) {
+        setSelectedItem({
+          type: 'alternative',
+          questionTrackingId: altGroupTrackingId,
+          alternativeTrackingId: activeIdStr,
+        });
+      }
       return;
     }
 

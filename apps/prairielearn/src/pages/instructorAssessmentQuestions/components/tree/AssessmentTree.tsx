@@ -29,7 +29,7 @@ export function AssessmentTree({
   return (
     <SortableContext items={zones.map((z) => z.trackingId)} strategy={verticalListSortingStrategy}>
       <div
-        className="d-flex align-items-center px-2 py-2 border-bottom bg-body"
+        className="d-flex align-items-center px-3 py-2 border-bottom bg-body"
         style={{ position: 'sticky', top: 0, zIndex: 11 }}
       >
         <ViewToggle

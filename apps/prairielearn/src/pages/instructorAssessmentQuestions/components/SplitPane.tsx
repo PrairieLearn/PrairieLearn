@@ -116,7 +116,7 @@ export function SplitPane({
               {rightHeaderAction ?? (
                 <button
                   type="button"
-                  className="btn btn-sm btn-outline-secondary border-0"
+                  className="btn btn-sm btn-outline-secondary"
                   aria-label="Close detail panel"
                   onClick={() => setManualCollapsed(true)}
                 >
