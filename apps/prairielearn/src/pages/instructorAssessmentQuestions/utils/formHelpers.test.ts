@@ -28,8 +28,16 @@ describe('parsePointsListValue', () => {
     expect(parsePointsListValue('abc')).toBe('abc');
   });
 
-  it('filters NaN values from comma-separated input', () => {
-    expect(parsePointsListValue('10, abc, 5')).toEqual([10, 5]);
+  it('returns raw string when comma-separated input contains non-numeric values', () => {
+    expect(parsePointsListValue('10, abc, 5')).toBe('10, abc, 5');
+  });
+
+  it('ignores trailing comma', () => {
+    expect(parsePointsListValue('10,')).toEqual([10]);
+  });
+
+  it('ignores leading comma', () => {
+    expect(parsePointsListValue(',5')).toEqual([5]);
   });
 });
 

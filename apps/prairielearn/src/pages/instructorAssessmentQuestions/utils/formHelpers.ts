@@ -45,10 +45,12 @@ export function parsePointsListValue(v: string): number | number[] | string | un
   if (v === '') return undefined;
   if (!Number.isNaN(Number(v))) return Number(v);
   if (v.includes(',')) {
-    return v
+    const parts = v
       .split(',')
-      .map((s: string) => Number(s.trim()))
-      .filter((n: number) => !Number.isNaN(n));
+      .map((s: string) => s.trim())
+      .filter((s: string) => s !== '');
+    if (parts.some((s) => Number.isNaN(Number(s)))) return v;
+    return parts.map((s: string) => Number(s));
   }
   return v;
 }
