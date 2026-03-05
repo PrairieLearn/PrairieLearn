@@ -207,9 +207,10 @@ export async function pullAndUpdateCourse({
 }
 
 export async function courseRepositoryAvailability(repoName: string) {
+  const escapedRepoName = repoName.replaceAll('%', '\\%').replaceAll('_', '\\_');
   const result = await sqldb.queryScalar(
     sql.exists_by_course_request_repository_name,
-    { repoName },
+    { repoName: escapedRepoName },
     z.boolean(),
   );
   return result;

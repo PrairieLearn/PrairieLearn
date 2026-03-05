@@ -1,10 +1,10 @@
-import type { CheerioAPI } from 'cheerio';
-import fetch from 'node-fetch';
-import superjson from 'superjson';
 import { afterAll, assert, beforeAll, describe, test } from 'vitest';
+
+import { generatePrefixCsrfToken } from '@prairielearn/signed-token';
 
 import { config } from '../lib/config.js';
 import { insertCourseRequest, selectAllCourseRequests } from '../lib/course-request.js';
+import { createAdministratorTrpcClient } from '../trpc/administrator/trpc-client.js';
 
 import * as helperClient from './helperClient.js';
 import * as helperServer from './helperServer.js';
@@ -13,31 +13,21 @@ const siteUrl = `http://localhost:${config.serverPort}`;
 const baseUrl = `${siteUrl}/pl`;
 const coursesAdminUrl = `${baseUrl}/administrator/courses`;
 const courseRequestsAdminUrl = `${baseUrl}/administrator/courseRequests`;
-const administratorTrpcUrl = `${baseUrl}/administrator/trpc`;
 
-function extractTrpcCsrfToken($: CheerioAPI, component: string): string {
-  const dataScript = $(`script[data-component-props][data-component="${component}"]`);
-  const props = superjson.parse<{ trpcCsrfToken: string }>(dataScript.text());
-  return props.trpcCsrfToken;
-}
-
-async function denyCourseRequestViaTrpc(trpcCsrfToken: string, courseRequestId: string) {
-  return fetch(`${administratorTrpcUrl}/courseRequests.denyCourseRequestMutation`, {
-    method: 'POST',
-    headers: {
-      'Content-Type': 'application/json',
-      'X-CSRF-Token': trpcCsrfToken,
-    },
-    body: JSON.stringify({ json: { courseRequestId } }),
-  });
-}
+const trpcCsrfToken = generatePrefixCsrfToken(
+  { url: '/pl/administrator/trpc', authn_user_id: '1' },
+  config.secretKey,
+);
+const trpcClient = createAdministratorTrpcClient({
+  csrfToken: trpcCsrfToken,
+  url: `${baseUrl}/administrator/trpc`,
+});
 
 describe('Course requests', { timeout: 60_000 }, function () {
   beforeAll(helperServer.before());
   afterAll(helperServer.after);
 
   let courseRequestId: string;
-  let csrfToken: string;
   const shortName = 'TEST 101';
   const title = 'Course Request Test Course';
 
@@ -56,16 +46,8 @@ describe('Course requests', { timeout: 60_000 }, function () {
   });
 
   describe('deny a course request', () => {
-    test.sequential('load admin courses page and extract CSRF token', async () => {
-      const response = await helperClient.fetchCheerio(coursesAdminUrl);
-      assert.isTrue(response.ok);
-      csrfToken = extractTrpcCsrfToken(response.$, 'AdministratorCourses');
-      assert.isString(csrfToken);
-    });
-
-    test.sequential('POST deny action', async () => {
-      const response = await denyCourseRequestViaTrpc(csrfToken, courseRequestId);
-      assert.isTrue(response.ok);
+    test.sequential('deny the course request', async () => {
+      await trpcClient.courseRequests.denyCourseRequestMutation.mutate({ courseRequestId });
     });
 
     test.sequential('verify status is denied in database', async () => {
@@ -143,11 +125,9 @@ describe('Course requests', { timeout: 60_000 }, function () {
     });
 
     test.sequential('deny the second request', async () => {
-      const response = await helperClient.fetchCheerio(courseRequestsAdminUrl);
-      csrfToken = extractTrpcCsrfToken(response.$, 'AdministratorCourseRequests');
-
-      const denyResponse = await denyCourseRequestViaTrpc(csrfToken, secondRequestId);
-      assert.isTrue(denyResponse.ok);
+      await trpcClient.courseRequests.denyCourseRequestMutation.mutate({
+        courseRequestId: secondRequestId,
+      });
     });
 
     test.sequential('denied request still has action buttons (can be re-approved)', async () => {
@@ -202,11 +182,9 @@ describe('Course requests', { timeout: 60_000 }, function () {
     });
 
     test.sequential('deny the pending request', async () => {
-      const response = await helperClient.fetchCheerio(coursesAdminUrl);
-      csrfToken = extractTrpcCsrfToken(response.$, 'AdministratorCourses');
-
-      const denyResponse = await denyCourseRequestViaTrpc(csrfToken, pendingRequestId);
-      assert.isTrue(denyResponse.ok);
+      await trpcClient.courseRequests.denyCourseRequestMutation.mutate({
+        courseRequestId: pendingRequestId,
+      });
     });
 
     test.sequential(

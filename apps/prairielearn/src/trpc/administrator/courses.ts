@@ -9,7 +9,7 @@ import {
   updateCourseColumn,
 } from '../../models/course.js';
 
-import { requireAdministrator, t } from './trpc.js';
+import { requireAdministrator, t } from './trpc-init.js';
 
 const insertCourseMutation = t.procedure
   .use(requireAdministrator)
@@ -66,7 +66,7 @@ const deleteCourseMutation = t.procedure
     if (input.confirmShortName !== course.short_name) {
       throw new TRPCError({
         code: 'BAD_REQUEST',
-        message: `deletion aborted: confirmation string "${input.confirmShortName}" did not match expected value of "${course.short_name}"`,
+        message: `Confirmation did not match expected value of "${course.short_name}"`,
       });
     }
 

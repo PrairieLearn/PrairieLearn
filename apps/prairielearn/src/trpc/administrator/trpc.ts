@@ -1,26 +1,20 @@
-import { TRPCError, initTRPC } from '@trpc/server';
-import type { CreateExpressContextOptions } from '@trpc/server/adapters/express';
-import superjson from 'superjson';
+import { createExpressMiddleware } from '@trpc/server/adapters/express';
 
-import type { ResLocalsForPage } from '../../lib/res-locals.js';
+import { handleTrpcError } from '../../lib/trpc.js';
 
-export function createContext({ res }: CreateExpressContextOptions) {
-  const locals = res.locals as ResLocalsForPage<'plain'>;
-  return {
-    authn_user: locals.authn_user,
-    is_administrator: locals.is_administrator,
-  };
-}
+import { administratorCourseRequestsRouter } from './course-requests.js';
+import { administratorCoursesRouter } from './courses.js';
+import { createContext, t } from './trpc-init.js';
 
-type TRPCContext = Awaited<ReturnType<typeof createContext>>;
-
-export const t = initTRPC.context<TRPCContext>().create({
-  transformer: superjson,
+export const administratorRouter = t.router({
+  courseRequests: administratorCourseRequestsRouter,
+  courses: administratorCoursesRouter,
 });
 
-export const requireAdministrator = t.middleware((opts) => {
-  if (!opts.ctx.is_administrator) {
-    throw new TRPCError({ code: 'FORBIDDEN', message: 'Access denied (must be an administrator)' });
-  }
-  return opts.next();
+export type AdministratorRouter = typeof administratorRouter;
+
+export const administratorTrpcRouter = createExpressMiddleware({
+  router: administratorRouter,
+  createContext,
+  onError: handleTrpcError,
 });

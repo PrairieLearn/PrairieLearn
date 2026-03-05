@@ -88,6 +88,7 @@ import { makeWorkspaceProxyMiddleware } from './middlewares/workspaceProxy.js';
 import { selectCourseById } from './models/course.js';
 import * as freeformServer from './question-servers/freeform.js';
 import * as sprocs from './sprocs/index.js';
+import { administratorTrpcRouter } from './trpc/administrator/trpc.js';
 
 process.on('warning', (e) => console.warn(e));
 
@@ -1890,20 +1891,7 @@ export async function initExpress(): Promise<Express> {
 
   app.use('/pl/administrator', (await import('./middlewares/authzIsAdministrator.js')).default);
 
-  {
-    const { createExpressMiddleware } = await import('@trpc/server/adapters/express');
-    const { administratorRouter } = await import('./trpc/administrator/index.js');
-    const { createContext } = await import('./trpc/administrator/trpc.js');
-    const { handleTrpcError } = await import('./lib/trpc.js');
-    app.use(
-      '/pl/administrator/trpc',
-      createExpressMiddleware({
-        router: administratorRouter,
-        createContext,
-        onError: handleTrpcError,
-      }),
-    );
-  }
+  app.use('/pl/administrator/trpc', administratorTrpcRouter);
 
   app.use(
     '/pl/administrator/admins',

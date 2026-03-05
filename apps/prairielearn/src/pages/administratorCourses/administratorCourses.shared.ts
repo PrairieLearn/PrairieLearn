@@ -1,9 +1,9 @@
 import z from 'zod';
 
-import { AdminInstitutionSchema, StaffCourseSchema } from '../../lib/client/safe-db-types.js';
+import { AdminCourseSchema, AdminInstitutionSchema } from '../../lib/client/safe-db-types.js';
 
 const RawCourseWithInstitutionSchema = z.object({
-  course: StaffCourseSchema,
+  course: AdminCourseSchema,
   institution: AdminInstitutionSchema,
 });
 export const CourseWithInstitutionSchema =

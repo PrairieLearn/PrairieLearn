@@ -218,13 +218,13 @@ function CourseRequestTableRow({
           </Dropdown>
         </td>
       </tr>
-      <tr>
-        <td colSpan={showAll ? 11 : 10} className="p-0">
-          {noteOpen && (
+      {noteOpen && (
+        <tr>
+          <td colSpan={showAll ? 11 : 10} className="p-0">
             <CourseRequestEditNoteForm request={row} onCancel={() => setNoteOpen(false)} />
-          )}
-        </td>
-      </tr>
+          </td>
+        </tr>
+      )}
       {row.jobs.length > 0 && (
         <tr>
           <td colSpan={showAll ? 11 : 10} className="p-0">

@@ -26,5 +26,5 @@ SELECT
     FROM
       courses
     WHERE
-      repository LIKE '%/' || replace(replace($repoName, '%', '\%'), '_', '\_') || '.git' ESCAPE '\'
+      repository LIKE '%/' || $repoName || '.git' ESCAPE '\'
   ) AS exists;
