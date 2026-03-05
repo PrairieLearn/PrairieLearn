@@ -592,13 +592,15 @@ function AssessmentEditorInner({
     }
     if (
       selectedItem?.type === 'altGroup' &&
-      selectedItem.questionTrackingId === questionTrackingId
+      selectedItem.questionTrackingId === questionTrackingId &&
+      alternativeTrackingId === undefined
     ) {
       setSelectedItem(null);
     }
     if (
       selectedItem?.type === 'altGroupPicker' &&
-      selectedItem.altGroupTrackingId === questionTrackingId
+      selectedItem.altGroupTrackingId === questionTrackingId &&
+      alternativeTrackingId === undefined
     ) {
       setSelectedItem(null);
     }
@@ -953,12 +955,16 @@ function AssessmentEditorInner({
 
   const isAllExpanded = collapsedGroups.size === 0;
 
+  const hasZoneWithNoEffectiveQuestions = zones.some(
+    (zone) => zone.questions.filter((q) => !q.alternatives || q.alternatives.length > 0).length === 0,
+  );
+
   const saveButtonDisabled =
-    JSON.stringify(zones) === initialZonesJson || zones.some((zone) => zone.questions.length === 0);
+    JSON.stringify(zones) === initialZonesJson || hasZoneWithNoEffectiveQuestions;
 
   const disableBeforeUnload = useBeforeUnload(editMode && !saveButtonDisabled);
 
-  const saveButtonDisabledReason = zones.some((zone) => zone.questions.length === 0)
+  const saveButtonDisabledReason = hasZoneWithNoEffectiveQuestions
     ? 'Cannot save: one or more zones have no questions'
     : undefined;
 

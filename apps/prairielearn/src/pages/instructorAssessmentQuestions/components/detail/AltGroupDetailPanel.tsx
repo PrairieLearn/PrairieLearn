@@ -1,5 +1,5 @@
 import clsx from 'clsx';
-import { useCallback } from 'react';
+import { useCallback, useEffect } from 'react';
 import { useForm } from 'react-hook-form';
 
 import type { StaffAssessmentQuestionRow } from '../../../../lib/assessment-question.shared.js';
@@ -87,6 +87,7 @@ export function AltGroupDetailPanel({
     getValues,
     watch,
     setValue,
+    trigger,
     formState: { errors, isDirty, isValid },
   } = useForm<AltGroupFormData>({
     mode: 'onChange',
@@ -126,6 +127,14 @@ export function AltGroupDetailPanel({
   );
 
   useAutoSave({ isDirty, isValid, getValues, onSave: handleSave, watch });
+
+  // When alternatives are deleted externally (via the tree), react-hook-form
+  // doesn't re-run the numberChoose validator since the field value didn't
+  // change through user input. Trigger revalidation so the "cannot exceed
+  // number of alternatives" error appears immediately.
+  useEffect(() => {
+    trigger('numberChoose');
+  }, [alternativeCount, trigger]);
 
   const parentAdvanceScorePerc = zone.advanceScorePerc ?? assessmentDefaults.advanceScorePerc;
   const parentGradeRateMinutes = zone.gradeRateMinutes ?? assessmentDefaults.gradeRateMinutes;
