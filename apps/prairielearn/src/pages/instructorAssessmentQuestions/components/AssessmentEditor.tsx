@@ -429,12 +429,24 @@ function AssessmentEditorInner({
           return;
         }
 
-        // Remove from current location if already in assessment (move behavior)
-        if (questionsInAssessment.has(qid)) {
-          handleRemoveQuestionByQid(qid);
-        }
-
         const found = findQuestionByTrackingId(zones, questionTrackingId);
+
+        // Remove from current location if already in assessment (move behavior),
+        // but skip if the question being removed is the one we're about to update.
+        if (questionsInAssessment.has(qid)) {
+          const currentQid = run(() => {
+            if (!found) return undefined;
+            if (returnTo.type === 'alternative') {
+              return found.question.alternatives?.find(
+                (a) => a.trackingId === returnTo.alternativeTrackingId,
+              )?.id;
+            }
+            return found.question.id;
+          });
+          if (currentQid !== qid) {
+            handleRemoveQuestionByQid(qid);
+          }
+        }
         if (found) {
           const oldId =
             returnTo.type === 'alternative'
@@ -613,31 +625,6 @@ function AssessmentEditorInner({
   };
 
   const handleRemoveQuestionByQid = (qid: string) => {
-    // Find the tracking IDs for the question being removed so we can clear selection
-    if (selectedItem) {
-      for (const zone of zones) {
-        for (const q of zone.questions) {
-          if (q.id === qid) {
-            if (
-              (selectedItem.type === 'question' || selectedItem.type === 'altGroup') &&
-              selectedItem.questionTrackingId === q.trackingId
-            ) {
-              setSelectedItem(null);
-            }
-          }
-          for (const alt of q.alternatives ?? []) {
-            if (alt.id === qid) {
-              if (
-                selectedItem.type === 'alternative' &&
-                selectedItem.alternativeTrackingId === alt.trackingId
-              ) {
-                setSelectedItem(null);
-              }
-            }
-          }
-        }
-      }
-    }
     dispatch({ type: 'REMOVE_QUESTION_BY_QID', qid });
   };
 
