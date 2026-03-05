@@ -625,6 +625,23 @@ function AssessmentEditorInner({
   };
 
   const handleRemoveQuestionByQid = (qid: string) => {
+    // Clear selection if the removed question is referenced by the current picker's
+    // returnToSelection (e.g., user opened "change question" then removed the same question).
+    if (selectedItem?.type === 'picker' && selectedItem.returnToSelection) {
+      const returnTo = selectedItem.returnToSelection;
+      for (const zone of zones) {
+        for (const q of zone.questions) {
+          if (q.id === qid && returnTo.type === 'question' && returnTo.questionTrackingId === q.trackingId) {
+            setSelectedItem(null);
+          }
+          for (const alt of q.alternatives ?? []) {
+            if (alt.id === qid && returnTo.type === 'alternative' && returnTo.alternativeTrackingId === alt.trackingId) {
+              setSelectedItem(null);
+            }
+          }
+        }
+      }
+    }
     dispatch({ type: 'REMOVE_QUESTION_BY_QID', qid });
   };
 
