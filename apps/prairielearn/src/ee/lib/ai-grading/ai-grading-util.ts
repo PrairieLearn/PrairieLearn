@@ -246,22 +246,29 @@ export function generateSubmissionMessage({
     submitted_answer,
   });
 
-  const content: UserContent = segments.map((segment) => {
+  const content: UserContent = segments.flatMap((segment) => {
     switch (segment.type) {
       case 'text':
         return segment;
       case 'image':
         if (segment.fileData) {
-          // fileData does not contain the MIME type header, so we add it.
-          return {
-            type: 'image',
-            image: `data:image/jpeg;base64,${segment.fileData}`,
-            providerOptions: {
-              openai: {
-                imageDetail: 'auto',
+          // Label each image with its filename so the LLM can reference it
+          // in the handwriting_orientations output.
+          return [
+            {
+              type: 'text' as const,
+              text: `[Image: ${segment.fileName}]`,
+            },
+            {
+              type: 'image' as const,
+              image: `data:image/jpeg;base64,${segment.fileData}`,
+              providerOptions: {
+                openai: {
+                  imageDetail: 'auto' as const,
+                },
               },
             },
-          };
+          ];
         } else {
           return {
             type: 'text',
@@ -540,7 +547,7 @@ export async function insertAiGradingJobWithRotationCorrection({
     string,
     {
       degreesRotated: CounterClockwiseRotationDegrees;
-      response: GenerateObjectResult<any>;
+      response?: GenerateObjectResult<any>;
     }
   >;
   gradingResponseWithRotationCorrection: GenerateObjectResult<any> | GenerateTextResult<any, any>;
@@ -565,9 +572,11 @@ export async function insertAiGradingJobWithRotationCorrection({
 
   const rotationCorrectionDegrees: Record<string, CounterClockwiseRotationDegrees> = {};
   for (const [filename, { degreesRotated, response }] of Object.entries(rotationCorrections)) {
-    prompt_tokens += response.usage.inputTokens ?? 0;
-    completion_tokens += response.usage.outputTokens ?? 0;
-    cost += calculateResponseCost({ model: model_id, usage: response.usage });
+    if (response) {
+      prompt_tokens += response.usage.inputTokens ?? 0;
+      completion_tokens += response.usage.outputTokens ?? 0;
+      cost += calculateResponseCost({ model: model_id, usage: response.usage });
+    }
     rotationCorrectionDegrees[filename] = degreesRotated;
   }
 
@@ -824,29 +833,36 @@ async function correctImageOrientation({
 }
 
 /**
- * Reorients all submitted images to be upright using the provided LLM.
+ * Reorients flagged submitted images to be upright using the provided LLM.
+ * Only images classified as non-upright in `orientations` are sent through
+ * the expensive rotation correction LLM call.
  *
  * @param param
  * @param param.submittedAnswer - The student's submitted answer object.
  * @param param.submittedImages - A mapping from filenames to base64-encoded images.
+ * @param param.orientations - The LLM's orientation classification for each image, keyed by filename.
  * @param param.model - The LLM to use for determining the correct orientations.
  *
- * @returns An updated submitted answer with corrected images, rotations correction amounts, and LLM responses.
+ * @returns An updated submitted answer with corrected images, rotation correction amounts,
+ * LLM responses, and whether any image was actually rotated.
  */
 export async function correctImagesOrientation({
   submittedAnswer,
   /** The key is the filename, and the value is the base64-encoded image */
   submittedImages,
+  orientations,
   model,
 }: {
   submittedAnswer: Record<string, any>;
   submittedImages: Record<string, string>;
+  orientations: Record<string, string>;
   model: LanguageModel;
 }) {
   if (!submittedAnswer._files) {
     return {
       rotatedSubmittedAnswer: submittedAnswer,
       rotationCorrections: {},
+      anyImageRotated: false,
     };
   }
 
@@ -859,11 +875,18 @@ export async function correctImagesOrientation({
     string,
     {
       degreesRotated: CounterClockwiseRotationDegrees;
-      response: GenerateObjectResult<any>;
+      response?: GenerateObjectResult<any>;
     }
   > = {};
 
+  let anyImageRotated = false;
+
   for (const [filename, image] of Object.entries(submittedImages)) {
+    if (orientations[filename] === 'Upright (0 degrees)') {
+      rotationCorrections[filename] = { degreesRotated: 0 };
+      continue;
+    }
+
     const { correctedImage, degreesRotated, response } = await correctImageOrientation({
       image,
       model,
@@ -877,6 +900,10 @@ export async function correctImagesOrientation({
       rotatedSubmittedAnswer._files[existingIndex].contents = correctedImage;
     }
 
+    if (degreesRotated !== 0) {
+      anyImageRotated = true;
+    }
+
     rotationCorrections[filename] = {
       degreesRotated,
       response,
@@ -886,6 +913,7 @@ export async function correctImagesOrientation({
   return {
     rotatedSubmittedAnswer,
     rotationCorrections,
+    anyImageRotated,
   };
 }
 /**
