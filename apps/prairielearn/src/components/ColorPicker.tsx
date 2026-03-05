@@ -32,19 +32,11 @@ export function ColorPicker({
       </select>
       <svg
         viewBox="0 0 32 32"
-        className="form-control-color p-0"
+        className="form-control-color p-0 rounded"
         style={{ cursor: 'default' }}
         aria-hidden="true"
       >
-        <rect
-          width="32"
-          height="32"
-          style={{
-            fill: `var(--color-${value})`,
-            rx: 'var(--bs-border-radius)',
-            ry: 'var(--bs-border-radius)',
-          }}
-        />
+        <rect width="32" height="32" rx="4" ry="4" style={{ fill: `var(--color-${value})` }} />
       </svg>
     </div>
   );

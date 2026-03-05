@@ -92,7 +92,7 @@ export function LabelDeleteModal({
         </Button>
         <Button
           variant="danger"
-          disabled={deleteMutation.isPending}
+          disabled={deleteMutation.isPending || !data}
           onClick={() => data && deleteMutation.mutate({ labelId: data.labelId })}
         >
           {deleteMutation.isPending ? (
