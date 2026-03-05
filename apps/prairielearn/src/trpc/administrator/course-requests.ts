@@ -88,7 +88,7 @@ const createCourseMutation = t.procedure
       displayTimezone: input.displayTimezone,
       path: input.path,
       repoShortName: input.repoShortName,
-      githubUser: input.githubUser.length > 0 ? input.githubUser : null,
+      githubUser: input.githubUser.trim().length > 0 ? input.githubUser.trim() : null,
       authnUser: ctx.authn_user,
     });
     return { jobSequenceId };

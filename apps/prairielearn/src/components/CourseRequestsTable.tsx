@@ -41,59 +41,64 @@ export function CourseRequestsTable({
   urlPrefix: string;
 }) {
   const headerPrefix = showAll ? 'All' : 'Pending';
+  const [queryClient] = useState(() => new QueryClient());
+  const [trpcClient] = useState(() => createAdministratorTrpcClient({ csrfToken: trpcCsrfToken }));
   return (
-    <div className="card mb-4">
-      <div className="card-header bg-primary text-white d-flex align-items-center">
-        <h2>{headerPrefix} course requests</h2>
-        {!showAll && (
-          <a
-            className="btn btn-sm btn-light ms-auto"
-            href={getAdministratorCourseRequestsUrl({ urlPrefix })}
-          >
-            <i className="fa fa-search" aria-hidden="true" />
-            <span className="d-none d-sm-inline">View all</span>
-          </a>
-        )}
-      </div>
-      <div className="table-responsive">
-        <table className="table table-sm" aria-label="Course requests">
-          <thead>
-            <tr>
-              <th>Created At</th>
-              <th>Short Name / Title</th>
-              <th>Institution</th>
-              <th>Requested By</th>
-              <th>PrairieLearn User</th>
-              <th>GitHub Username</th>
-              <th>Referral Source</th>
-              <th>Status</th>
-              {showAll && <th>Updated By</th>}
-              <th>Actions</th>
-              <th>Details</th>
-            </tr>
-          </thead>
-          <tbody>
-            {rows.map((row) => (
-              <CourseRequestTableRow
-                key={row.id}
-                row={row}
-                institutions={institutions}
-                coursesRoot={coursesRoot}
-                showAll={showAll}
-                trpcCsrfToken={trpcCsrfToken}
-                urlPrefix={urlPrefix}
-              />
-            ))}
-          </tbody>
-        </table>
-      </div>
-      <div className="card-footer">
-        <small>
-          Accepting a course request will automatically create a new GitHub repository and add the
-          course to the database.
-        </small>
-      </div>
-    </div>
+    <QueryClientProviderDebug client={queryClient}>
+      <TRPCProvider trpcClient={trpcClient} queryClient={queryClient}>
+        <div className="card mb-4">
+          <div className="card-header bg-primary text-white d-flex align-items-center">
+            <h2>{headerPrefix} course requests</h2>
+            {!showAll && (
+              <a
+                className="btn btn-sm btn-light ms-auto"
+                href={getAdministratorCourseRequestsUrl({ urlPrefix })}
+              >
+                <i className="fa fa-search" aria-hidden="true" />
+                <span className="d-none d-sm-inline">View all</span>
+              </a>
+            )}
+          </div>
+          <div className="table-responsive">
+            <table className="table table-sm" aria-label="Course requests">
+              <thead>
+                <tr>
+                  <th>Created At</th>
+                  <th>Short Name / Title</th>
+                  <th>Institution</th>
+                  <th>Requested By</th>
+                  <th>PrairieLearn User</th>
+                  <th>GitHub Username</th>
+                  <th>Referral Source</th>
+                  <th>Status</th>
+                  {showAll && <th>Updated By</th>}
+                  <th>Actions</th>
+                  <th>Details</th>
+                </tr>
+              </thead>
+              <tbody>
+                {rows.map((row) => (
+                  <CourseRequestTableRow
+                    key={row.id}
+                    row={row}
+                    institutions={institutions}
+                    coursesRoot={coursesRoot}
+                    showAll={showAll}
+                    urlPrefix={urlPrefix}
+                  />
+                ))}
+              </tbody>
+            </table>
+          </div>
+          <div className="card-footer">
+            <small>
+              Accepting a course request will automatically create a new GitHub repository and add
+              the course to the database.
+            </small>
+          </div>
+        </div>
+      </TRPCProvider>
+    </QueryClientProviderDebug>
   );
 }
 
@@ -104,14 +109,12 @@ function CourseRequestTableRow({
   institutions,
   coursesRoot,
   showAll,
-  trpcCsrfToken,
   urlPrefix,
 }: {
   row: CourseRequestRow;
   institutions: AdminInstitution[];
   coursesRoot: string;
   showAll: boolean;
-  trpcCsrfToken: string;
   urlPrefix: string;
 }) {
   const [noteOpen, setNoteOpen] = useState(Boolean(row.note));
@@ -119,165 +122,155 @@ function CourseRequestTableRow({
   const [showDenyPopover, setShowDenyPopover] = useState(false);
   const [showApprovePopover, setShowApprovePopover] = useState(false);
 
-  const [queryClient] = useState(() => new QueryClient());
-  const [trpcClient] = useState(() => createAdministratorTrpcClient({ csrfToken: trpcCsrfToken }));
-
   return (
-    <QueryClientProviderDebug client={queryClient}>
-      <TRPCProvider trpcClient={trpcClient} queryClient={queryClient}>
-        <>
-          <tr>
-            <td className="align-middle">{row.created_at.toISOString()}</td>
-            <td className="align-middle">
-              {row.short_name}: {row.title}
-            </td>
-            <td className="align-middle">{row.institution}</td>
-            <td className="align-middle">
-              {row.first_name} {row.last_name} ({row.work_email})
-            </td>
-            <td className="align-middle">
-              {row.user_name} ({row.user_uid})
-            </td>
-            <td className="align-middle">{row.github_user}</td>
-            <td className="align-middle">{row.referral_source}</td>
-            <td className="align-middle">
-              <CourseRequestStatusIcon status={row.approved_status} />
-            </td>
-            {showAll && (
-              <td className="align-middle">
-                {row.approved_status !== 'pending' &&
-                  (row.approved_by_name ?? 'Automatically Approved')}
-              </td>
-            )}
-            <td className="align-middle py-1">
-              {row.approved_status !== 'approved' && (
-                <div className="d-flex flex-wrap gap-1">
-                  <OverlayTrigger
-                    trigger="click"
-                    placement="auto"
-                    popover={{
-                      header: 'Deny course request',
-                      body: (
-                        <CourseRequestDenyForm
-                          request={row}
-                          onCancel={() => setShowDenyPopover(false)}
-                        />
-                      ),
-                    }}
-                    show={showDenyPopover}
-                    rootClose
-                    onToggle={setShowDenyPopover}
-                  >
-                    <button type="button" className="btn btn-sm btn-danger text-nowrap">
-                      <i className="fa fa-times" aria-hidden="true" /> Deny
-                    </button>
-                  </OverlayTrigger>
-                  <button
-                    type="button"
-                    className="btn btn-sm btn-success text-nowrap"
-                    onClick={() => setShowApprovePopover(true)}
-                  >
-                    <i className="fa fa-check" aria-hidden="true" /> Approve
-                  </button>
-                  <Modal
-                    show={showApprovePopover}
-                    backdrop="static"
-                    onHide={() => setShowApprovePopover(false)}
-                  >
-                    <Modal.Body>
-                      <CourseRequestApproveForm
-                        request={row}
-                        institutions={institutions}
-                        coursesRoot={coursesRoot}
-                        urlPrefix={urlPrefix}
-                        onCancel={() => setShowApprovePopover(false)}
-                      />
-                    </Modal.Body>
-                  </Modal>
-                </div>
-              )}
-            </td>
-            <td className="align-middle">
-              <Dropdown>
-                <Dropdown.Toggle
-                  variant="secondary"
-                  size="sm"
-                  className="btn-xs"
-                  aria-label={`Show details for ${row.short_name}`}
-                >
-                  Show details
-                </Dropdown.Toggle>
-                <Dropdown.Menu popperConfig={{ strategy: 'fixed' }} renderOnMount>
-                  <Dropdown.Item as="button" onClick={() => setNoteOpen(!noteOpen)}>
-                    {noteOpen ? 'Close note' : 'Edit note'}
-                  </Dropdown.Item>
-                  {row.jobs.length > 0 && (
-                    <Dropdown.Item as="button" onClick={() => setJobsOpen(!jobsOpen)}>
-                      {jobsOpen ? 'Hide jobs' : 'Show jobs'}
-                    </Dropdown.Item>
-                  )}
-                </Dropdown.Menu>
-              </Dropdown>
-            </td>
-          </tr>
-          <tr>
-            <td colSpan={showAll ? 11 : 10} className="p-0">
-              {noteOpen && (
-                <CourseRequestEditNoteForm request={row} onCancel={() => setNoteOpen(false)} />
-              )}
-            </td>
-          </tr>
-          {row.jobs.length > 0 && (
-            <tr>
-              <td colSpan={showAll ? 11 : 10} className="p-0">
-                {jobsOpen && (
-                  <table
-                    className="table table-sm table-active mb-0"
-                    aria-label="Course request jobs"
-                  >
-                    <thead>
-                      <tr>
-                        <th>Number</th>
-                        <th>Start Date</th>
-                        <th>End Date</th>
-                        <th>User</th>
-                        <th>Status</th>
-                        <th>
-                          <span className="visually-hidden">Details</span>
-                        </th>
-                      </tr>
-                    </thead>
-                    <tbody>
-                      {[...row.jobs].reverse().map((job) => {
-                        return (
-                          <tr key={job.id}>
-                            <td>{job.number}</td>
-                            <td>{job.start_date.toISOString()}</td>
-                            <td>{job.finish_date?.toISOString()}</td>
-                            <td>{job.authn_user_name}</td>
-                            <td>
-                              <JobStatus status={job.status} />
-                            </td>
-                            <td>
-                              <a
-                                href={`${urlPrefix}/administrator/jobSequence/${job.id}`}
-                                className="btn btn-xs btn-info float-end"
-                              >
-                                Details
-                              </a>
-                            </td>
-                          </tr>
-                        );
-                      })}
-                    </tbody>
-                  </table>
-                )}
-              </td>
-            </tr>
+    <>
+      <tr>
+        <td className="align-middle">{row.created_at.toISOString()}</td>
+        <td className="align-middle">
+          {row.short_name}: {row.title}
+        </td>
+        <td className="align-middle">{row.institution}</td>
+        <td className="align-middle">
+          {row.first_name} {row.last_name} ({row.work_email})
+        </td>
+        <td className="align-middle">
+          {row.user_name} ({row.user_uid})
+        </td>
+        <td className="align-middle">{row.github_user}</td>
+        <td className="align-middle">{row.referral_source}</td>
+        <td className="align-middle">
+          <CourseRequestStatusIcon status={row.approved_status} />
+        </td>
+        {showAll && (
+          <td className="align-middle">
+            {row.approved_status !== 'pending' &&
+              (row.approved_by_name ?? 'Automatically Approved')}
+          </td>
+        )}
+        <td className="align-middle py-1">
+          {row.approved_status !== 'approved' && (
+            <div className="d-flex flex-wrap gap-1">
+              <OverlayTrigger
+                trigger="click"
+                placement="auto"
+                popover={{
+                  header: 'Deny course request',
+                  body: (
+                    <CourseRequestDenyForm
+                      request={row}
+                      onCancel={() => setShowDenyPopover(false)}
+                    />
+                  ),
+                }}
+                show={showDenyPopover}
+                rootClose
+                onToggle={setShowDenyPopover}
+              >
+                <button type="button" className="btn btn-sm btn-danger text-nowrap">
+                  <i className="fa fa-times" aria-hidden="true" /> Deny
+                </button>
+              </OverlayTrigger>
+              <button
+                type="button"
+                className="btn btn-sm btn-success text-nowrap"
+                onClick={() => setShowApprovePopover(true)}
+              >
+                <i className="fa fa-check" aria-hidden="true" /> Approve
+              </button>
+              <Modal
+                show={showApprovePopover}
+                backdrop="static"
+                onHide={() => setShowApprovePopover(false)}
+              >
+                <Modal.Body>
+                  <CourseRequestApproveForm
+                    request={row}
+                    institutions={institutions}
+                    coursesRoot={coursesRoot}
+                    urlPrefix={urlPrefix}
+                    onCancel={() => setShowApprovePopover(false)}
+                  />
+                </Modal.Body>
+              </Modal>
+            </div>
           )}
-        </>
-      </TRPCProvider>
-    </QueryClientProviderDebug>
+        </td>
+        <td className="align-middle">
+          <Dropdown>
+            <Dropdown.Toggle
+              variant="secondary"
+              size="sm"
+              className="btn-xs"
+              aria-label={`Show details for ${row.short_name}`}
+            >
+              Show details
+            </Dropdown.Toggle>
+            <Dropdown.Menu popperConfig={{ strategy: 'fixed' }} renderOnMount>
+              <Dropdown.Item as="button" onClick={() => setNoteOpen(!noteOpen)}>
+                {noteOpen ? 'Close note' : 'Edit note'}
+              </Dropdown.Item>
+              {row.jobs.length > 0 && (
+                <Dropdown.Item as="button" onClick={() => setJobsOpen(!jobsOpen)}>
+                  {jobsOpen ? 'Hide jobs' : 'Show jobs'}
+                </Dropdown.Item>
+              )}
+            </Dropdown.Menu>
+          </Dropdown>
+        </td>
+      </tr>
+      <tr>
+        <td colSpan={showAll ? 11 : 10} className="p-0">
+          {noteOpen && (
+            <CourseRequestEditNoteForm request={row} onCancel={() => setNoteOpen(false)} />
+          )}
+        </td>
+      </tr>
+      {row.jobs.length > 0 && (
+        <tr>
+          <td colSpan={showAll ? 11 : 10} className="p-0">
+            {jobsOpen && (
+              <table className="table table-sm table-active mb-0" aria-label="Course request jobs">
+                <thead>
+                  <tr>
+                    <th>Number</th>
+                    <th>Start Date</th>
+                    <th>End Date</th>
+                    <th>User</th>
+                    <th>Status</th>
+                    <th>
+                      <span className="visually-hidden">Details</span>
+                    </th>
+                  </tr>
+                </thead>
+                <tbody>
+                  {[...row.jobs].reverse().map((job) => {
+                    return (
+                      <tr key={job.id}>
+                        <td>{job.number}</td>
+                        <td>{job.start_date.toISOString()}</td>
+                        <td>{job.finish_date?.toISOString()}</td>
+                        <td>{job.authn_user_name}</td>
+                        <td>
+                          <JobStatus status={job.status} />
+                        </td>
+                        <td>
+                          <a
+                            href={`${urlPrefix}/administrator/jobSequence/${job.id}`}
+                            className="btn btn-xs btn-info float-end"
+                          >
+                            Details
+                          </a>
+                        </td>
+                      </tr>
+                    );
+                  })}
+                </tbody>
+              </table>
+            )}
+          </td>
+        </tr>
+      )}
+    </>
   );
 }
 
@@ -313,7 +306,7 @@ function CourseRequestApproveForm({
       institution_id: '',
       short_name: request.short_name,
       title: request.title,
-      display_timezone: institutions[0]?.display_timezone ?? '',
+      display_timezone: '',
       path,
       repository_short_name: repoName,
       github_user: request.github_user ?? '',
@@ -637,10 +630,23 @@ function CourseRequestEditNoteForm({
     trpc.courseRequests.updateCourseRequestNoteMutation.mutationOptions(),
   );
 
-  const [note, setNoteValue] = useState(request.note ?? '');
+  const {
+    register,
+    handleSubmit,
+    formState: { isSubmitting },
+  } = useForm<{ note: string }>({
+    defaultValues: { note: request.note ?? '' },
+  });
+
+  const onSubmit = ({ note }: { note: string }) => {
+    mutation.mutate(
+      { courseRequestId: request.id, note },
+      { onSuccess: () => window.location.reload() },
+    );
+  };
 
   return (
-    <div>
+    <form onSubmit={handleSubmit(onSubmit)}>
       <div className="d-flex gap-2 align-items-center py-2 px-2">
         <label className="visually-hidden" htmlFor={`course-request-note-${request.id}`}>
           Note for course request {request.short_name}
@@ -648,27 +654,16 @@ function CourseRequestEditNoteForm({
         <textarea
           className="form-control flex-grow-1"
           id={`course-request-note-${request.id}`}
-          name="note"
           rows={1}
           maxLength={10000}
           placeholder="Add a note about this course request..."
           defaultValue={request.note ?? ''}
-          onChange={(e) => setNoteValue(e.target.value)}
+          {...register('note')}
         />
         <button type="button" className="btn btn-secondary" onClick={onCancel}>
           Cancel
         </button>
-        <button
-          type="submit"
-          className="btn btn-primary text-nowrap"
-          disabled={mutation.isPending}
-          onClick={() =>
-            mutation.mutate(
-              { courseRequestId: request.id, note },
-              { onSuccess: () => window.location.reload() },
-            )
-          }
-        >
+        <button type="submit" className="btn btn-primary text-nowrap" disabled={isSubmitting}>
           <i className="fa fa-save" aria-hidden="true" /> Save note
         </button>
       </div>
@@ -677,6 +672,6 @@ function CourseRequestEditNoteForm({
           {mutation.error.message}
         </Alert>
       )}
-    </div>
+    </form>
   );
 }

@@ -2,7 +2,7 @@ import z from 'zod';
 
 import { AdminInstitutionSchema, StaffCourseSchema } from '../../lib/client/safe-db-types.js';
 
-export const RawCourseWithInstitutionSchema = z.object({
+const RawCourseWithInstitutionSchema = z.object({
   course: StaffCourseSchema,
   institution: AdminInstitutionSchema,
 });
