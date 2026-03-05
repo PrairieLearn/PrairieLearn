@@ -79,124 +79,112 @@ export function DetailPanel({
     return <EmptyDetailPanel />;
   }
 
-  if (selectedItem.type === 'zone') {
-    const zoneIndex = zones.findIndex((z) => z.trackingId === selectedItem.zoneTrackingId);
-    const zone = zoneIndex !== -1 ? zones[zoneIndex] : undefined;
-    if (!zone) return <EmptyDetailPanel />;
-    return (
-      <ZoneDetailPanel
-        zone={zone}
-        zoneIndex={zoneIndex}
-        idPrefix={`zone-${zone.trackingId}`}
-        editMode={editMode}
-        assessmentDefaults={assessmentDefaults}
-        onUpdate={onUpdateZone}
-        onDelete={onDeleteZone}
-        onAddQuestion={onAddQuestion}
-        onAddAltGroup={onAddAltGroup}
-      />
-    );
-  }
+  switch (selectedItem.type) {
+    case 'zone': {
+      const zoneIndex = zones.findIndex((z) => z.trackingId === selectedItem.zoneTrackingId);
+      const zone = zoneIndex !== -1 ? zones[zoneIndex] : undefined;
+      if (!zone) return <EmptyDetailPanel />;
+      return (
+        <ZoneDetailPanel
+          zone={zone}
+          zoneIndex={zoneIndex}
+          idPrefix={`zone-${zone.trackingId}`}
+          editMode={editMode}
+          assessmentDefaults={assessmentDefaults}
+          onUpdate={onUpdateZone}
+          onDelete={onDeleteZone}
+          onAddQuestion={onAddQuestion}
+          onAddAltGroup={onAddAltGroup}
+        />
+      );
+    }
 
-  if (selectedItem.type === 'question') {
-    const result = findQuestionByTrackingId(zones, selectedItem.questionTrackingId);
-    if (!result) return <EmptyDetailPanel />;
-    const { question, zone } = result;
-    const questionData = question.id ? questionMetadata[question.id] : null;
-    return (
-      <QuestionDetailPanel
-        question={question}
-        zone={zone}
-        questionData={questionData ?? null}
-        idPrefix={`question-${question.trackingId}`}
-        editMode={editMode}
-        assessmentType={assessmentType}
-        assessmentDefaults={assessmentDefaults}
-        urlPrefix={urlPrefix}
-        hasCoursePermissionPreview={hasCoursePermissionPreview}
-        onUpdate={onUpdateQuestion}
-        onDelete={onDeleteQuestion}
-        onPickQuestion={onPickQuestion}
-        onResetButtonClick={onResetButtonClick}
-      />
-    );
-  }
+    case 'question': {
+      const result = findQuestionByTrackingId(zones, selectedItem.questionTrackingId);
+      if (!result) return <EmptyDetailPanel />;
+      const { question, zone } = result;
+      const questionData = question.id ? questionMetadata[question.id] : null;
+      return (
+        <QuestionDetailPanel
+          question={question}
+          zone={zone}
+          questionData={questionData ?? null}
+          idPrefix={`question-${question.trackingId}`}
+          editMode={editMode}
+          assessmentType={assessmentType}
+          assessmentDefaults={assessmentDefaults}
+          urlPrefix={urlPrefix}
+          hasCoursePermissionPreview={hasCoursePermissionPreview}
+          onUpdate={onUpdateQuestion}
+          onDelete={onDeleteQuestion}
+          onPickQuestion={onPickQuestion}
+          onResetButtonClick={onResetButtonClick}
+        />
+      );
+    }
 
-  if (selectedItem.type === 'alternative') {
-    const blockResult = findQuestionByTrackingId(zones, selectedItem.questionTrackingId);
-    if (!blockResult) return <EmptyDetailPanel />;
-    const block = blockResult.question;
-    const zone = blockResult.zone;
-    const alternative = block.alternatives?.find(
-      (a) => a.trackingId === selectedItem.alternativeTrackingId,
-    );
-    if (!alternative) return <EmptyDetailPanel />;
-    const altData = alternative.id ? questionMetadata[alternative.id] : null;
-    return (
-      <QuestionDetailPanel
-        question={alternative}
-        zoneQuestionBlock={block}
-        zone={zone}
-        questionData={altData ?? null}
-        idPrefix={`alt-${alternative.trackingId}`}
-        editMode={editMode}
-        assessmentType={assessmentType}
-        assessmentDefaults={assessmentDefaults}
-        urlPrefix={urlPrefix}
-        hasCoursePermissionPreview={hasCoursePermissionPreview}
-        onUpdate={onUpdateQuestion}
-        onDelete={onDeleteQuestion}
-        onPickQuestion={onPickQuestion}
-        onResetButtonClick={onResetButtonClick}
-      />
-    );
-  }
+    case 'alternative': {
+      const blockResult = findQuestionByTrackingId(zones, selectedItem.questionTrackingId);
+      if (!blockResult) return <EmptyDetailPanel />;
+      const block = blockResult.question;
+      const zone = blockResult.zone;
+      const alternative = block.alternatives?.find(
+        (a) => a.trackingId === selectedItem.alternativeTrackingId,
+      );
+      if (!alternative) return <EmptyDetailPanel />;
+      const altData = alternative.id ? questionMetadata[alternative.id] : null;
+      return (
+        <QuestionDetailPanel
+          question={alternative}
+          zoneQuestionBlock={block}
+          zone={zone}
+          questionData={altData ?? null}
+          idPrefix={`alt-${alternative.trackingId}`}
+          editMode={editMode}
+          assessmentType={assessmentType}
+          assessmentDefaults={assessmentDefaults}
+          urlPrefix={urlPrefix}
+          hasCoursePermissionPreview={hasCoursePermissionPreview}
+          onUpdate={onUpdateQuestion}
+          onDelete={onDeleteQuestion}
+          onPickQuestion={onPickQuestion}
+          onResetButtonClick={onResetButtonClick}
+        />
+      );
+    }
 
-  if (selectedItem.type === 'altGroup') {
-    const altGroupResult = findQuestionByTrackingId(zones, selectedItem.questionTrackingId);
-    if (!altGroupResult) return <EmptyDetailPanel />;
-    const block = altGroupResult.question;
-    return (
-      <AltGroupDetailPanel
-        zoneQuestionBlock={block}
-        zone={altGroupResult.zone}
-        idPrefix={`altgroup-${block.trackingId}`}
-        editMode={editMode}
-        assessmentType={assessmentType}
-        assessmentDefaults={assessmentDefaults}
-        onUpdate={onUpdateQuestion}
-        onDelete={(trackingId) => onDeleteQuestion(trackingId, '')}
-        onAddAlternative={onAddToAltGroup}
-      />
-    );
-  }
+    case 'altGroup': {
+      const altGroupResult = findQuestionByTrackingId(zones, selectedItem.questionTrackingId);
+      if (!altGroupResult) return <EmptyDetailPanel />;
+      const block = altGroupResult.question;
+      return (
+        <AltGroupDetailPanel
+          zoneQuestionBlock={block}
+          zone={altGroupResult.zone}
+          idPrefix={`altgroup-${block.trackingId}`}
+          editMode={editMode}
+          assessmentType={assessmentType}
+          assessmentDefaults={assessmentDefaults}
+          onUpdate={onUpdateQuestion}
+          onDelete={(trackingId) => onDeleteQuestion(trackingId, '')}
+          onAddAlternative={onAddToAltGroup}
+        />
+      );
+    }
 
-  if (selectedItem.type === 'altGroupPicker') {
-    return (
-      <QuestionPickerPanel
-        courseQuestions={courseQuestions}
-        isLoading={courseQuestionsLoading}
-        questionsInAssessment={questionsInAssessment}
-        courseId={courseId}
-        urlPrefix={urlPrefix}
-        currentAssessmentId={currentAssessmentId}
-        onQuestionSelected={onQuestionPicked}
-        onRemoveQuestionByQid={onRemoveQuestionByQid}
-      />
-    );
+    case 'picker':
+    case 'altGroupPicker':
+      return (
+        <QuestionPickerPanel
+          courseQuestions={courseQuestions}
+          isLoading={courseQuestionsLoading}
+          questionsInAssessment={questionsInAssessment}
+          courseId={courseId}
+          urlPrefix={urlPrefix}
+          currentAssessmentId={currentAssessmentId}
+          onQuestionSelected={onQuestionPicked}
+          onRemoveQuestionByQid={onRemoveQuestionByQid}
+        />
+      );
   }
-
-  // selectedItem.type === 'picker'
-  return (
-    <QuestionPickerPanel
-      courseQuestions={courseQuestions}
-      isLoading={courseQuestionsLoading}
-      questionsInAssessment={questionsInAssessment}
-      courseId={courseId}
-      urlPrefix={urlPrefix}
-      currentAssessmentId={currentAssessmentId}
-      onQuestionSelected={onQuestionPicked}
-      onRemoveQuestionByQid={onRemoveQuestionByQid}
-    />
-  );
 }

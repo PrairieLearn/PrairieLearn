@@ -1,6 +1,6 @@
 import type { CSSProperties } from 'react';
 
-export function makeSortableStyle(opts: {
+export function makeDraggableStyle(opts: {
   isDragging: boolean;
   transform: { y: number } | null;
   transition: string | undefined;

@@ -21,7 +21,7 @@ import { CollapseToggleButton } from './CollapseToggleButton.js';
 import { DragHandle } from './DragHandle.js';
 import { TreeEmptyDropZone } from './TreeEmptyDropZone.js';
 import { TreeQuestionBlockNode } from './TreeQuestionBlockNode.js';
-import { makeSortableStyle } from './sortableUtils.js';
+import { makeDraggableStyle } from './dragUtils.js';
 
 export function TreeZoneNode({
   zone,
@@ -86,22 +86,22 @@ export function TreeZoneNode({
   });
 
   const {
-    attributes: sortableAttributes,
-    listeners: sortableListeners,
-    setNodeRef: sortableRef,
-    transform: sortableTransform,
-    transition: sortableTransition,
-    isDragging: isSortableDragging,
+    attributes: draggableAttributes,
+    listeners: draggableListeners,
+    setNodeRef: draggableRef,
+    transform: draggableTransform,
+    transition: draggableTransition,
+    isDragging,
   } = useSortable({
     id: zone.trackingId,
     data: { type: 'zone' },
     disabled: !editMode,
   });
 
-  const sortableStyle = makeSortableStyle({
-    isDragging: isSortableDragging,
-    transform: sortableTransform,
-    transition: sortableTransition,
+  const draggableStyle = makeDraggableStyle({
+    isDragging,
+    transform: draggableTransform,
+    transition: draggableTransition,
   });
 
   const selectZone = () => {
@@ -113,7 +113,7 @@ export function TreeZoneNode({
       items={zone.questions.map((q) => q.trackingId)}
       strategy={verticalListSortingStrategy}
     >
-      <div ref={sortableRef} style={sortableStyle}>
+      <div ref={draggableRef} style={draggableStyle}>
         {/* Zone header */}
         <div
           role="button"
@@ -136,8 +136,8 @@ export function TreeZoneNode({
         >
           {editMode && (
             <DragHandle
-              attributes={sortableAttributes}
-              listeners={sortableListeners}
+              attributes={draggableAttributes}
+              listeners={draggableListeners}
               ariaLabel="Drag to reorder zone"
             />
           )}

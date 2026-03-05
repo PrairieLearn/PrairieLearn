@@ -214,8 +214,8 @@ export function TreeQuestionRow({
   urlPrefix,
   hasCoursePermissionPreview,
   assessmentType,
-  sortableAttributes,
-  sortableListeners,
+  draggableAttributes,
+  draggableListeners,
   onClick,
   onDelete,
 }: {
@@ -230,8 +230,8 @@ export function TreeQuestionRow({
   urlPrefix: string;
   hasCoursePermissionPreview: boolean;
   assessmentType: EnumAssessmentType;
-  sortableAttributes?: DraggableAttributes;
-  sortableListeners?: DraggableSyntheticListeners;
+  draggableAttributes?: DraggableAttributes;
+  draggableListeners?: DraggableSyntheticListeners;
   onClick: () => void;
   onDelete?: () => void;
 }) {
@@ -259,8 +259,8 @@ export function TreeQuestionRow({
         }
       }}
     >
-      {editMode && sortableListeners && sortableAttributes && (
-        <DragHandle attributes={sortableAttributes} listeners={sortableListeners} />
+      {editMode && draggableListeners && draggableAttributes && (
+        <DragHandle attributes={draggableAttributes} listeners={draggableListeners} />
       )}
       <div className="flex-grow-1" style={{ minWidth: 0 }}>
         <div className="text-truncate">

@@ -17,7 +17,7 @@ import { CollapseToggleButton } from './CollapseToggleButton.js';
 import { DragHandle } from './DragHandle.js';
 import { SortableAlternativeRow } from './SortableAlternativeRow.js';
 import { PointsBadge, TreeQuestionRow } from './TreeQuestionRow.js';
-import { makeSortableStyle } from './sortableUtils.js';
+import { makeDraggableStyle } from './dragUtils.js';
 
 export function TreeQuestionBlockNode({
   zoneQuestionBlock,
@@ -73,7 +73,7 @@ export function TreeQuestionBlockNode({
     disabled: !editMode || !hasAlternatives || isCollapsed,
   });
 
-  const sortableStyle = makeSortableStyle({ isDragging, transform, transition });
+  const draggableStyle = makeDraggableStyle({ isDragging, transform, transition });
 
   // Stable callback ref so React doesn't detach/reattach on every render,
   // which would cause dnd-kit's ResizeObserver to unobserve/observe repeatedly.
@@ -103,7 +103,7 @@ export function TreeQuestionBlockNode({
       selectedItem.questionTrackingId === zoneQuestionBlock.trackingId;
 
     return (
-      <div ref={setNodeRef} style={sortableStyle}>
+      <div ref={setNodeRef} style={draggableStyle}>
         <TreeQuestionRow
           question={zoneQuestionBlock}
           zoneQuestionBlock={zoneQuestionBlock}
@@ -116,8 +116,8 @@ export function TreeQuestionBlockNode({
           urlPrefix={urlPrefix}
           hasCoursePermissionPreview={hasCoursePermissionPreview}
           assessmentType={assessmentType}
-          sortableAttributes={editMode ? attributes : undefined}
-          sortableListeners={editMode ? listeners : undefined}
+          draggableAttributes={editMode ? attributes : undefined}
+          draggableListeners={editMode ? listeners : undefined}
           onClick={() =>
             setSelectedItem({
               type: 'question',
@@ -144,7 +144,7 @@ export function TreeQuestionBlockNode({
     <div
       ref={combinedRef}
       style={{
-        ...sortableStyle,
+        ...draggableStyle,
         // Use box-shadow instead of border to avoid changing the element's
         // layout dimensions. A layout shift from adding/removing a border
         // can cause dnd-kit's collision detection to oscillate, triggering

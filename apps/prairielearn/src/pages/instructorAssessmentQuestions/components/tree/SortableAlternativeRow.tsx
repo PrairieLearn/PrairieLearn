@@ -6,7 +6,7 @@ import type { QuestionAlternativeForm, ViewType, ZoneQuestionBlockForm } from '.
 import type { ChangeTrackingResult } from '../../utils/modifiedTracking.js';
 
 import { TreeQuestionRow } from './TreeQuestionRow.js';
-import { makeSortableStyle } from './sortableUtils.js';
+import { makeDraggableStyle } from './dragUtils.js';
 
 export function SortableAlternativeRow({
   alternative,
@@ -41,10 +41,10 @@ export function SortableAlternativeRow({
     disabled: !editMode,
   });
 
-  const sortableStyle = makeSortableStyle({ isDragging, transform, transition });
+  const draggableStyle = makeDraggableStyle({ isDragging, transform, transition });
 
   return (
-    <div ref={setNodeRef} style={sortableStyle}>
+    <div ref={setNodeRef} style={draggableStyle}>
       <TreeQuestionRow
         question={alternative}
         zoneQuestionBlock={zoneQuestionBlock}
@@ -56,8 +56,8 @@ export function SortableAlternativeRow({
         urlPrefix={urlPrefix}
         hasCoursePermissionPreview={hasCoursePermissionPreview}
         assessmentType={assessmentType}
-        sortableAttributes={editMode ? attributes : undefined}
-        sortableListeners={editMode ? listeners : undefined}
+        draggableAttributes={editMode ? attributes : undefined}
+        draggableListeners={editMode ? listeners : undefined}
         isAlternative
         onClick={onClick}
         onDelete={onDelete}

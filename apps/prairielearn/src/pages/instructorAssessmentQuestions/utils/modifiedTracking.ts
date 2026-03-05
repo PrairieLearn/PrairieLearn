@@ -1,3 +1,5 @@
+import stableStringify from 'fast-json-stable-stringify';
+
 import type { ZoneAssessmentForm } from '../types.js';
 
 export interface ChangeTrackingResult {
@@ -70,39 +72,34 @@ function buildPropsMap(zones: ZoneAssessmentForm[]): Map<string, string> {
 }
 
 /**
- * Produces a deterministic JSON string from an object, handling two issues
- * that arise when the reducer spreads form updates into existing objects:
- *
- * 1. Key ordering: `{...obj, ...update}` can reorder keys. We sort them.
- * 2. Default values: The form always sends all fields (e.g., `lockpoint: false`)
- *    even when the original object didn't have them. We strip `undefined`,
- *    `null`, and `false` since these are equivalent to "absent" for all
- *    boolean/optional fields in the assessment schema.
+ * Produces a deterministic JSON string from an object, stripping default
+ * values that the form always sends (e.g., `lockpoint: false`) even when
+ * the original object didn't have them. Key ordering is handled by
+ * `fast-json-stable-stringify`.
  */
-function stableStringify(obj: Record<string, unknown>): string {
-  const entries: [string, unknown][] = [];
-  for (const key of Object.keys(obj).sort()) {
-    const val = obj[key];
+function propsKey(obj: Record<string, unknown>): string {
+  const filtered: Record<string, unknown> = {};
+  for (const [key, val] of Object.entries(obj)) {
     if (val === undefined || val === null || val === false) continue;
-    entries.push([key, val]);
+    filtered[key] = val;
   }
-  return JSON.stringify(Object.fromEntries(entries));
+  return stableStringify(filtered);
 }
 
 function zonePropsKey(zone: ZoneAssessmentForm): string {
-  const { trackingId: _, questions: __, ...rest } = zone;
-  return stableStringify(rest);
+  const { trackingId: _trackingId, questions: _questions, ...rest } = zone;
+  return propsKey(rest);
 }
 
 function questionPropsKey(question: ZoneAssessmentForm['questions'][number]): string {
-  const { trackingId: _, alternatives, ...rest } = question;
+  const { trackingId: _trackingId, alternatives, ...rest } = question;
   // Include the ordered list of child alternative trackingIds so that
   // reordering alternatives marks the group as modified.
   const childIds = alternatives?.map((a) => a.trackingId) ?? [];
-  return stableStringify({ ...rest, childIds });
+  return propsKey({ ...rest, childIds });
 }
 
 function alternativePropsKey(alt: { trackingId: string; [key: string]: unknown }): string {
-  const { trackingId: _, ...rest } = alt;
-  return stableStringify(rest);
+  const { trackingId: _trackingId, ...rest } = alt;
+  return propsKey(rest);
 }
