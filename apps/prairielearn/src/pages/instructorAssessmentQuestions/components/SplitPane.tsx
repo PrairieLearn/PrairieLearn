@@ -136,7 +136,7 @@ export function SplitPane({
           </div>
         </>
       )}
-      {isCollapsed && !autoCollapsed && (
+      {isCollapsed && !autoCollapsed && !rightCollapsedProp && (
         <button
           type="button"
           className="btn btn-sm btn-outline-secondary position-absolute"

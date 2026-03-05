@@ -15,22 +15,21 @@ export function ViewToggle({
   onToggleExpandCollapse: () => void;
 }) {
   return (
-    <div className="d-flex gap-2">
-      <div className="btn-group btn-group-sm" role="group" aria-label="View type">
-        <button
-          type="button"
-          className={`btn ${viewType === 'simple' ? 'btn-secondary' : 'btn-outline-secondary'}`}
-          onClick={() => onViewTypeChange('simple')}
-        >
-          Simple
-        </button>
-        <button
-          type="button"
-          className={`btn ${viewType === 'detailed' ? 'btn-secondary' : 'btn-outline-secondary'}`}
-          onClick={() => onViewTypeChange('detailed')}
-        >
-          Detailed
-        </button>
+    <div className="d-flex gap-2 align-items-center">
+      <div className="border rounded px-2 py-1">
+        <div className="form-check form-switch mb-0">
+          <input
+            className="form-check-input"
+            type="checkbox"
+            role="switch"
+            id="viewTypeSwitch"
+            checked={viewType === 'detailed'}
+            onChange={() => onViewTypeChange(viewType === 'detailed' ? 'simple' : 'detailed')}
+          />
+          <label className="form-check-label" htmlFor="viewTypeSwitch">
+            Detailed
+          </label>
+        </div>
       </div>
       <button
         className="btn btn-sm btn-outline-secondary"
@@ -39,11 +38,11 @@ export function ViewToggle({
       >
         {isAllExpanded ? (
           <>
-            <i className="bi bi-chevron-contract" aria-hidden="true" /> Collapse all
+            <i className="bi bi-chevron-contract" aria-hidden="true" /> Collapse alternatives
           </>
         ) : (
           <>
-            <i className="bi bi-chevron-expand" aria-hidden="true" /> Expand all
+            <i className="bi bi-chevron-expand" aria-hidden="true" /> Expand alternatives
           </>
         )}
       </button>

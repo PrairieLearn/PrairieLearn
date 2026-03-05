@@ -1,3 +1,4 @@
+import { rankItem } from '@tanstack/match-sorter-utils';
 import { useVirtualizer } from '@tanstack/react-virtual';
 import { useMemo, useRef, useState } from 'react';
 
@@ -84,8 +85,8 @@ export function QuestionPickerPanel({
 
       const matchesSearch =
         !searchLower ||
-        q.qid.toLowerCase().includes(searchLower) ||
-        q.title.toLowerCase().includes(searchLower);
+        rankItem(q.qid, searchLower).passed ||
+        rankItem(q.title, searchLower).passed;
 
       const matchesTopic = selectedTopics.size === 0 || selectedTopics.has(String(q.topic.id));
 

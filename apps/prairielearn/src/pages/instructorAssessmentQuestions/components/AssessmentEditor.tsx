@@ -951,7 +951,7 @@ function AssessmentEditorInner({
     }
   };
 
-  const isAllExpanded = collapsedZones.size === 0 && collapsedGroups.size === 0;
+  const isAllExpanded = collapsedGroups.size === 0;
 
   const saveButtonDisabled =
     JSON.stringify(zones) === initialZonesJson || zones.some((zone) => zone.questions.length === 0);
@@ -1044,9 +1044,9 @@ function AssessmentEditorInner({
 
   const toggleExpandCollapse = () => {
     if (isAllExpanded) {
-      dispatch({ type: 'COLLAPSE_ALL' });
+      dispatch({ type: 'COLLAPSE_ALL_GROUPS' });
     } else {
-      dispatch({ type: 'EXPAND_ALL' });
+      dispatch({ type: 'EXPAND_ALL_GROUPS' });
     }
   };
 
@@ -1162,6 +1162,7 @@ function AssessmentEditorInner({
         <div data-dragging={isDragging || undefined}>
           <SplitPane
             forceOpen={selectedItem}
+            rightCollapsed={selectedItem == null ? true : undefined}
             rightTitle={rightTitle}
             rightHeaderAction={rightHeaderAction}
             left={

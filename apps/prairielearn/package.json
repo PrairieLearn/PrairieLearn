@@ -80,6 +80,7 @@
     "@prairielearn/zod": "workspace:^",
     "@pyroscope/nodejs": "^0.4.10",
     "@socket.io/redis-adapter": "^8.3.0",
+    "@tanstack/match-sorter-utils": "^8.19.4",
     "@tanstack/react-query": "^5.90.21",
     "@tanstack/react-table": "^8.21.3",
     "@tanstack/react-virtual": "^3.13.19",

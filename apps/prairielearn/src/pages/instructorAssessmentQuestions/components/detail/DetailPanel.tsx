@@ -119,6 +119,7 @@ export function DetailPanel({
         <AltGroupDetailPanel
           zoneQuestionBlock={block}
           zone={altGroupResult.zone}
+          questionMetadata={questionMetadata}
           idPrefix={`altgroup-${block.trackingId}`}
           state={state}
           onUpdate={actions.onUpdateQuestion}

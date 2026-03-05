@@ -239,6 +239,33 @@ export function TreeQuestionBlockNode({
               {alternatives.length > 2 && ', ...'}
             </div>
           )}
+          {run(() => {
+            if (state.viewType !== 'detailed') return null;
+            if (!alternatives || alternatives.length === 0) return null;
+            const tagSets = alternatives
+              .filter((alt) => alt.id && questionMetadata[alt.id]?.tags)
+              .map((alt) => new Set(questionMetadata[alt.id!].tags!.map((t) => t.name)));
+            if (tagSets.length === 0) return null;
+            const intersection = new Set(tagSets[0]);
+            for (const s of tagSets.slice(1)) {
+              for (const name of intersection) {
+                if (!s.has(name)) intersection.delete(name);
+              }
+            }
+            if (intersection.size === 0) return null;
+            const firstAlt = alternatives.find((a) => a.id)!;
+            const firstTags = questionMetadata[firstAlt.id!].tags!;
+            const sharedTags = firstTags.filter((t) => intersection.has(t.name));
+            return (
+              <div className="d-flex flex-wrap gap-1 mt-1">
+                {sharedTags.map((tag) => (
+                  <span key={tag.name} className={`badge color-${tag.color}`}>
+                    {tag.name}
+                  </span>
+                ))}
+              </div>
+            );
+          })}
         </div>
         {run(() => {
           if (!alternatives || alternatives.length === 0) return null;

@@ -152,8 +152,8 @@ export type EditorAction =
       type: 'TOGGLE_ZONE_COLLAPSE';
       trackingId: string;
     }
-  | { type: 'EXPAND_ALL' }
-  | { type: 'COLLAPSE_ALL' }
+  | { type: 'EXPAND_ALL_GROUPS' }
+  | { type: 'COLLAPSE_ALL_GROUPS' }
   | { type: 'RESET' }
   | {
       type: 'ADD_ALTERNATIVE';

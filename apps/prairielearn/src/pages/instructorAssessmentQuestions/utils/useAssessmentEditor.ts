@@ -378,22 +378,19 @@ function createEditorReducer(initialState: EditorState) {
         };
       }
 
-      case 'EXPAND_ALL': {
+      case 'EXPAND_ALL_GROUPS': {
         return {
           ...state,
           collapsedGroups: new Set<string>(),
-          collapsedZones: new Set<string>(),
         };
       }
 
-      case 'COLLAPSE_ALL': {
-        const zoneTrackingIds = state.zones.map((z) => z.trackingId);
+      case 'COLLAPSE_ALL_GROUPS': {
         const groupTrackingIds = state.zones.flatMap((z) =>
           z.questions.filter((q) => (q.alternatives?.length ?? 0) > 1).map((q) => q.trackingId),
         );
         return {
           ...state,
-          collapsedZones: new Set<string>(zoneTrackingIds),
           collapsedGroups: new Set<string>(groupTrackingIds),
         };
       }

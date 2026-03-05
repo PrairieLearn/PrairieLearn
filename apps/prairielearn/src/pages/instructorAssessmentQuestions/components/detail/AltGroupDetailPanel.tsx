@@ -2,6 +2,7 @@ import clsx from 'clsx';
 import { useCallback } from 'react';
 import { useForm } from 'react-hook-form';
 
+import type { StaffAssessmentQuestionRow } from '../../../../lib/assessment-question.shared.js';
 import type { DetailState, ZoneAssessmentForm, ZoneQuestionBlockForm } from '../../types.js';
 import {
   coerceToNumber,
@@ -36,6 +37,7 @@ interface AltGroupFormData {
 export function AltGroupDetailPanel({
   zoneQuestionBlock,
   zone,
+  questionMetadata,
   idPrefix,
   state,
   onUpdate,
@@ -44,6 +46,7 @@ export function AltGroupDetailPanel({
 }: {
   zoneQuestionBlock: ZoneQuestionBlockForm;
   zone: ZoneAssessmentForm;
+  questionMetadata: Record<string, StaffAssessmentQuestionRow>;
   idPrefix: string;
   state: DetailState;
   onUpdate: (
@@ -55,6 +58,22 @@ export function AltGroupDetailPanel({
 }) {
   const { editMode, assessmentType, assessmentDefaults } = state;
   const alternativeCount = zoneQuestionBlock.alternatives?.length ?? 0;
+
+  const sharedTags = (() => {
+    const alternatives = zoneQuestionBlock.alternatives ?? [];
+    const tagSets = alternatives
+      .filter((alt) => alt.id && questionMetadata[alt.id]?.tags)
+      .map((alt) => new Set(questionMetadata[alt.id!].tags!.map((t) => t.name)));
+    if (tagSets.length === 0) return [];
+    const intersection = tagSets[0];
+    for (const s of tagSets.slice(1)) {
+      for (const name of intersection) {
+        if (!s.has(name)) intersection.delete(name);
+      }
+    }
+    const firstTags = questionMetadata[alternatives.find((a) => a.id)!.id!].tags!;
+    return firstTags.filter((t) => intersection.has(t.name));
+  })();
 
   const originalPointsProperty = resolvePointsProperty(assessmentType, zoneQuestionBlock);
   const originalMaxProperty = resolveMaxPointsProperty(originalPointsProperty, zoneQuestionBlock);
@@ -144,6 +163,15 @@ export function AltGroupDetailPanel({
       <div className={clsx('text-muted small', editMode ? 'mb-3' : 'mb-2')}>
         {alternativeCount} alternative{alternativeCount !== 1 ? 's' : ''} in group
       </div>
+      {sharedTags.length > 0 && (
+        <div className="d-flex flex-wrap gap-1 mb-2">
+          {sharedTags.map((tag) => (
+            <span key={tag.name} className={`badge color-${tag.color}`}>
+              {tag.name}
+            </span>
+          ))}
+        </div>
+      )}
 
       <Wrapper className={clsx(!editMode && 'mb-0')}>
         <FormField
