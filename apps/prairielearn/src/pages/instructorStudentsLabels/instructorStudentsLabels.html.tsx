@@ -104,12 +104,12 @@ function StudentLabelsCard({
     deleteModal.hide();
   };
 
-  const handleModalHide = () => {
+  const handleEditModalHide = () => {
     setShowAddModal(false);
     void setLabelParam(null);
   };
 
-  const handleSuccess = async (newOrigHash: string | null) => {
+  const handleEditSuccess = async (newOrigHash: string | null) => {
     setOrigHash(newOrigHash);
     try {
       await fetchLabels();
@@ -183,8 +183,8 @@ function StudentLabelsCard({
         trpcClient={trpcClient}
         courseInstanceId={courseInstanceId}
         show={modifyModalShow}
-        onHide={handleModalHide}
-        onSuccess={handleSuccess}
+        onHide={handleEditModalHide}
+        onSuccess={handleEditSuccess}
       />
 
       <LabelDeleteModal

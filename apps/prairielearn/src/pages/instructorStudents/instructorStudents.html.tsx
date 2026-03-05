@@ -547,7 +547,7 @@ function StudentsCard({
       columnHelper.accessor((row) => row.student_labels, {
         id: 'student_labels',
         meta: {
-          label: 'Student Labels',
+          label: 'Student labels',
         },
         header: 'Labels',
         cell: (info) => {
@@ -703,7 +703,7 @@ function StudentsCard({
         >
           {labelMutationError instanceof Error
             ? labelMutationError.message
-            : 'Failed to update labels'}
+            : 'Failed to update student labels'}
         </Alert>
       )}
       <TanstackTableCard
