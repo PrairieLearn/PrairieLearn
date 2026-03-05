@@ -1,3 +1,4 @@
+import type { EnumAssessmentType } from '../../../lib/db-types.js';
 import { propertyValueWithDefault } from '../../../lib/editorUtil.shared.js';
 import type {
   QuestionAlternativeJson,
@@ -81,11 +82,13 @@ export function createZoneWithTrackingId(
  * New trackingIds are always generated (this is for new questions, not existing ones).
  * Accepts a partial question for creating new empty questions.
  */
-export function createQuestionWithTrackingId(): ZoneQuestionBlockForm {
+export function createQuestionWithTrackingId(
+  assessmentType: EnumAssessmentType,
+): ZoneQuestionBlockForm {
   // Cast needed for TypeScript spread inference with union types
   return {
     trackingId: createTrackingId(),
-    points: 1,
+    ...(assessmentType === 'Exam' ? { points: 1 } : { autoPoints: 1 }),
   } as ZoneQuestionBlockForm;
 }
 
@@ -101,12 +104,14 @@ export function createAlternativeWithTrackingId(): QuestionAlternativeForm {
 /**
  * Creates a new alternative group with a trackingId and empty alternatives.
  */
-export function createAltGroupWithTrackingId(): ZoneQuestionBlockForm {
+export function createAltGroupWithTrackingId(
+  assessmentType: EnumAssessmentType,
+): ZoneQuestionBlockForm {
   return {
     trackingId: createTrackingId(),
     alternatives: [],
     numberChoose: 1,
-    points: 1,
+    ...(assessmentType === 'Exam' ? { points: 1 } : { autoPoints: 1 }),
     canSubmit: [],
     canView: [],
   } as ZoneQuestionBlockForm;
@@ -155,7 +160,8 @@ function serializeQuestionAlternative(alternative: QuestionAlternativeJson) {
     gradeRateMinutes: alternative.gradeRateMinutes,
     forceMaxPoints: alternative.forceMaxPoints,
     allowRealTimeGrading: alternative.allowRealTimeGrading,
-    comment: alternative.comment,
+    // For some reason, comment gets set to the empty string if it's not set.
+    comment: alternative.comment || undefined,
   });
 }
 
@@ -169,7 +175,8 @@ function serializeQuestionBlock(question: ZoneQuestionBlockJson) {
       ? question.alternatives!.map(serializeQuestionAlternative)
       : undefined,
     numberChoose: question.numberChoose,
-    comment: question.comment,
+    // For some reason, comment gets set to the empty string if it's not set.
+    comment: question.comment || undefined,
 
     // These defaults will be inherited by question alternatives, unless they override them.
     // These should mirror the defaults from assessment syncing.
@@ -201,7 +208,8 @@ export function serializeZonesForJson(zones: ZoneAssessmentJson[]): ZoneAssessme
       advanceScorePerc: zone.advanceScorePerc,
       gradeRateMinutes: zone.gradeRateMinutes,
       allowRealTimeGrading: zone.allowRealTimeGrading,
-      comment: zone.comment,
+      // For some reason, comment gets set to the empty string if it's not set.
+      comment: zone.comment || undefined,
       canSubmit: propertyValueWithDefault(undefined, zone.canSubmit, isEmptyArray),
       canView: propertyValueWithDefault(undefined, zone.canView, isEmptyArray),
       questions: zone.questions.map(serializeQuestionBlock),

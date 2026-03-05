@@ -1,8 +1,16 @@
+import type { EnumAssessmentType } from '../../../lib/db-types.js';
+
 /**
  * Converts a string value from an HTML input to a number or undefined.
  * Used as a `setValueAs` transform for react-hook-form number inputs.
+ * Handles non-string inputs (e.g. undefined/null) that can occur when
+ * react-hook-form resets form values via the `values` prop.
  */
-export const coerceToNumber = (v: string): number | undefined => (v === '' ? undefined : Number(v));
+export const coerceToNumber = (v: unknown): number | undefined => {
+  if (v === '' || v == null) return undefined;
+  const n = Number(v);
+  return Number.isNaN(n) ? undefined : n;
+};
 
 /**
  * Converts a value to a boolean or undefined.
@@ -98,16 +106,31 @@ export function extractStringComment(comment: unknown): string | undefined {
 /**
  * Determines which points field name is set in the given sources.
  * Checks each source in order for `autoPoints` (modern) then `points` (legacy/Exam).
+ * Falls back to checking `maxAutoPoints`/`maxPoints` to maintain consistency
+ * when the points field is temporarily cleared (e.g. during editing).
  * Returns the first match, defaulting to `'autoPoints'`.
  */
 export function resolvePointsProperty(
-  ...sources: ({ points?: unknown; autoPoints?: unknown } | undefined)[]
+  assessmentType: EnumAssessmentType | undefined,
+  ...sources: (
+    | {
+        points?: unknown;
+        autoPoints?: unknown;
+        maxPoints?: unknown;
+        maxAutoPoints?: unknown;
+      }
+    | undefined
+  )[]
 ): 'points' | 'autoPoints' {
   for (const source of sources) {
     if (source?.autoPoints != null) return 'autoPoints';
     if (source?.points != null) return 'points';
   }
-  return 'autoPoints';
+  for (const source of sources) {
+    if (source?.maxAutoPoints != null) return 'autoPoints';
+    if (source?.maxPoints != null) return 'points';
+  }
+  return assessmentType === 'Exam' ? 'points' : 'autoPoints';
 }
 
 /**

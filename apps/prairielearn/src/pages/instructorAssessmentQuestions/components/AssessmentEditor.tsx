@@ -376,7 +376,7 @@ function AssessmentEditorInner({
         });
       } else {
         // Creating new alt group: first question picked creates the group
-        const newAltGroup = createAltGroupWithTrackingId();
+        const newAltGroup = createAltGroupWithTrackingId(assessment.type);
         const firstAlt = {
           ...createAlternativeWithTrackingId(),
           id: qid,
@@ -485,7 +485,7 @@ function AssessmentEditorInner({
 
     const newQuestion = {
       id: qid,
-      ...createQuestionWithTrackingId(),
+      ...createQuestionWithTrackingId(assessment.type),
     } as ZoneQuestionBlockForm;
 
     dispatch({
@@ -605,7 +605,7 @@ function AssessmentEditorInner({
   };
 
   const handleAddAltGroup = (zoneTrackingId: string) => {
-    const newAltGroup = createAltGroupWithTrackingId();
+    const newAltGroup = createAltGroupWithTrackingId(assessment.type);
     dispatch({
       type: 'ADD_QUESTION',
       zoneTrackingId,

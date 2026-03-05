@@ -89,7 +89,7 @@ export function QuestionDetailPanel({
   const isAlternative = !!zoneQuestionBlock;
   const isManualGrading = questionData?.question.grading_method === 'Manual';
 
-  const originalPointsProperty = resolvePointsProperty(question, zoneQuestionBlock);
+  const originalPointsProperty = resolvePointsProperty(assessmentType, question, zoneQuestionBlock);
   const originalMaxProperty = resolveMaxPointsProperty(
     originalPointsProperty,
     question,
@@ -130,8 +130,8 @@ export function QuestionDetailPanel({
   } = useForm<QuestionFormData>({
     mode: 'onChange',
     values: {
-      id: question.id ?? undefined,
-      comment: extractStringComment(question.comment),
+      id: question.id ?? '',
+      comment: extractStringComment(question.comment) || undefined,
       [originalPointsProperty]: isAlternative ? ownPointsValue : (autoPointsValue ?? undefined),
       [originalMaxProperty]: isAlternative ? ownMaxValue : (maxAutoPointsValue ?? undefined),
       manualPoints: isAlternative ? ownManualPoints : (manualPointsValue ?? undefined),

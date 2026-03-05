@@ -55,7 +55,7 @@ export function AltGroupDetailPanel({
   const { editMode, assessmentType, assessmentDefaults } = state;
   const alternativeCount = zoneQuestionBlock.alternatives?.length ?? 0;
 
-  const originalPointsProperty = resolvePointsProperty(zoneQuestionBlock);
+  const originalPointsProperty = resolvePointsProperty(assessmentType, zoneQuestionBlock);
   const originalMaxProperty = resolveMaxPointsProperty(originalPointsProperty, zoneQuestionBlock);
 
   const {
@@ -179,8 +179,9 @@ export function AltGroupDetailPanel({
                   {...register(originalPointsProperty, {
                     setValueAs: coerceToNumber,
                     validate: (v) => {
-                      if (typeof v === 'number' && v < 0)
+                      if (typeof v === 'number' && v < 0) {
                         return 'Auto points must be non-negative.';
+                      }
                     },
                   })}
                 />
