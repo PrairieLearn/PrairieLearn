@@ -51,7 +51,6 @@ import {
 } from '../../lib/client/url.js';
 import type { EnumEnrollmentStatus } from '../../lib/db-types.js';
 import { courseInstanceFilenamePrefix } from '../../lib/sanitize-name.js';
-import { LabelModifyModal } from '../instructorStudentsLabels/components/LabelModifyModal.js';
 import { createStudentLabelsTrpcClient } from '../instructorStudentsLabels/utils/trpc-client.js';
 
 import { InviteStudentsModal } from './components/InviteStudentsModal.js';
@@ -270,7 +269,6 @@ function StudentsCard({
     parseAsArrayOf(parseAsString).withDefault([]),
   );
   const [rowSelection, setRowSelection] = useState<RowSelectionState>({});
-  const [showCreateLabelModal, setShowCreateLabelModal] = useState(false);
 
   const { createCheckboxProps } = useShiftClickCheckbox<StudentRow>();
 
@@ -778,14 +776,13 @@ function StudentsCard({
                         </Dropdown.Item>
                       );
                     })}
-                    {studentLabels.length > 0 && <Dropdown.Divider />}
+                    <Dropdown.Divider />
                     <Dropdown.Item
-                      as="button"
-                      type="button"
-                      onClick={() => setShowCreateLabelModal(true)}
+                      as="a"
+                      href={getCourseInstanceStudentLabelsUrl(courseInstance.id)}
                     >
-                      <i className="bi bi-plus me-2" />
-                      Add to new label
+                      <i className="bi bi-gear me-2" />
+                      Manage labels
                     </Dropdown.Item>
                   </Dropdown.Menu>
                 </Dropdown>
@@ -906,22 +903,6 @@ function StudentsCard({
         students={students}
         onHide={() => setShowSync(false)}
         onSubmit={syncStudents}
-      />
-      <LabelModifyModal
-        data={showCreateLabelModal ? { type: 'add', origHash } : null}
-        trpcClient={trpcClient}
-        courseInstanceId={courseInstance.id}
-        show={showCreateLabelModal}
-        initialUids={selectedRows
-          .map((row) => row.original.user?.uid ?? row.original.enrollment.pending_uid)
-          .filter((uid): uid is string => uid != null)}
-        onHide={() => setShowCreateLabelModal(false)}
-        onSuccess={async (newOrigHash) => {
-          setOrigHash(newOrigHash);
-          await queryClient.invalidateQueries({ queryKey: ['enrollments', 'students'] });
-          await queryClient.invalidateQueries({ queryKey: ['student-labels'] });
-          setShowCreateLabelModal(false);
-        }}
       />
     </>
   );
