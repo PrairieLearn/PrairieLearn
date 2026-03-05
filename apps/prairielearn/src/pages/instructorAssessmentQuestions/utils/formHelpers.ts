@@ -50,7 +50,7 @@ export function parsePointsListValue(v: string): number | number[] | string | un
       .map((s: string) => s.trim())
       .filter((s: string) => s !== '');
     if (parts.some((s) => Number.isNaN(Number(s)))) return v;
-    return parts.map((s: string) => Number(s));
+    return parts.map(Number);
   }
   return v;
 }
