@@ -24,6 +24,7 @@ export function SplitPane({
   rightHeaderAction,
   rightCollapsed: rightCollapsedProp,
   forceOpen,
+  onClose,
 }: {
   left: ReactNode;
   right: ReactNode;
@@ -33,6 +34,8 @@ export function SplitPane({
   rightCollapsed?: boolean;
   /** When this value changes (and is truthy), re-open a manually collapsed panel. */
   forceOpen?: unknown;
+  /** Called when the user closes the detail panel via the X button. */
+  onClose?: () => void;
 }) {
   const [rightWidth, setRightWidth] = useState(DEFAULT_RIGHT_WIDTH);
   const autoCollapsed = useNarrowViewport();
@@ -118,7 +121,10 @@ export function SplitPane({
                   type="button"
                   className="btn btn-sm btn-outline-secondary"
                   aria-label="Close detail panel"
-                  onClick={() => setManualCollapsed(true)}
+                  onClick={() => {
+                    setManualCollapsed(true);
+                    onClose?.();
+                  }}
                 >
                   <i className="bi bi-x-lg" aria-hidden="true" />
                 </button>

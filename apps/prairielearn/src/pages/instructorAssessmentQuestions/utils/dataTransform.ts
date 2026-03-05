@@ -50,16 +50,18 @@ export function stripTrackingIds(zones: ZoneAssessmentForm[]): ZoneAssessmentJso
     const { trackingId: _zoneTrackingId, questions, ...zoneRest } = zone;
     return {
       ...zoneRest,
-      questions: questions.map((question: ZoneQuestionBlockForm) => {
-        const { trackingId: _trackingId, alternatives, ...questionRest } = question;
-        return {
-          ...questionRest,
-          alternatives: alternatives?.map((alt: QuestionAlternativeForm) => {
-            const { trackingId: _altTrackingId, ...altRest } = alt;
-            return altRest;
-          }),
-        };
-      }),
+      questions: questions
+        .filter((q) => !q.alternatives || q.alternatives.length > 0)
+        .map((question: ZoneQuestionBlockForm) => {
+          const { trackingId: _trackingId, alternatives, ...questionRest } = question;
+          return {
+            ...questionRest,
+            alternatives: alternatives?.map((alt: QuestionAlternativeForm) => {
+              const { trackingId: _altTrackingId, ...altRest } = alt;
+              return altRest;
+            }),
+          };
+        }),
     };
   }) as ZoneAssessmentJson[];
 }
@@ -212,7 +214,9 @@ export function serializeZonesForJson(zones: ZoneAssessmentJson[]): ZoneAssessme
       comment: zone.comment || undefined,
       canSubmit: propertyValueWithDefault(undefined, zone.canSubmit, isEmptyArray),
       canView: propertyValueWithDefault(undefined, zone.canView, isEmptyArray),
-      questions: zone.questions.map(serializeQuestionBlock),
+      questions: zone.questions
+        .filter((q) => !('alternatives' in q && q.alternatives && q.alternatives.length === 0))
+        .map(serializeQuestionBlock),
     });
   });
 }

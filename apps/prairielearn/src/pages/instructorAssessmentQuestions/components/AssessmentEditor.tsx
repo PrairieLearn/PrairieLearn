@@ -1052,8 +1052,7 @@ function AssessmentEditorInner({
     if (!selectedItem) return undefined;
     switch (selectedItem.type) {
       case 'zone': {
-        const name = zoneDisplayName(selectedItem.zoneTrackingId);
-        return editMode ? `Edit ${name.toLowerCase()}` : name;
+        return editMode ? 'Edit zone' : zoneDisplayName(selectedItem.zoneTrackingId);
       }
       case 'question':
         return editMode ? 'Edit question' : 'Question';
@@ -1123,6 +1122,7 @@ function AssessmentEditorInner({
             forceOpen={selectedItem}
             rightTitle={rightTitle}
             rightHeaderAction={rightHeaderAction}
+            onClose={() => setSelectedItem(null)}
             left={
               <AssessmentTree
                 zones={zones}
