@@ -677,7 +677,7 @@ export type CourseInstanceAccessRule = z.infer<typeof CourseInstanceAccessRuleSc
 export const CourseInstanceAiGradingCredentialSchema = z.object({
   course_instance_id: IdSchema,
   created_at: DateFromISOString,
-  created_by: IdSchema.nullable(),
+  created_by: IdSchema,
   encrypted_secret_key: z.string(),
   id: IdSchema,
   provider: EnumAiGradingProviderSchema,

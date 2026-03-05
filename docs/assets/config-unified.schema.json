@@ -580,6 +580,7 @@
     },
     "databaseEncryptionKey": {
       "type": "string",
+      "pattern": "^[0-9a-f]{64}$",
       "default": "0000000000000000000000000000000000000000000000000000000000000000"
     },
     "secretSlackOpsBotEndpoint": {
