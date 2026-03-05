@@ -306,20 +306,16 @@ export function QuestionDetailPanel({
               </span>
             )}
           </span>
-          <div className="text-muted small mt-1">
+          <div className="d-flex flex-wrap gap-1 mt-1">
             <span className={`badge color-${questionData.topic.color}`}>
               {questionData.topic.name}
             </span>
+            {questionData.tags?.map((tag) => (
+              <span key={tag.name} className={`badge color-${tag.color}`}>
+                {tag.name}
+              </span>
+            ))}
           </div>
-          {questionData.tags && questionData.tags.length > 0 && (
-            <div className="d-flex flex-wrap gap-1 mt-2">
-              {questionData.tags.map((tag) => (
-                <span key={tag.name} className={`badge color-${tag.color}`}>
-                  {tag.name}
-                </span>
-              ))}
-            </div>
-          )}
         </div>
       )}
 
