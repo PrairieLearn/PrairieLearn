@@ -17,7 +17,7 @@
     "test": "vitest run --coverage"
   },
   "dependencies": {
-    "es-toolkit": "^1.45.0"
+    "es-toolkit": "^1.45.1"
   },
   "devDependencies": {
     "@prairielearn/html": "workspace:^",

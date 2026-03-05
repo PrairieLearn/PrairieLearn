@@ -22,7 +22,7 @@
     "commander": "^14.0.3",
     "esbuild": "^0.27.3",
     "express-static-gzip": "^2.2.0 <3",
-    "fs-extra": "^11.3.3",
+    "fs-extra": "^11.3.4",
     "globby": "^16.1.1",
     "pretty-bytes": "^7.1.0",
     "tmp-promise": "^3.0.3"
