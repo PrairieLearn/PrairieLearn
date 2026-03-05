@@ -70,13 +70,16 @@ export function validateAtLeastOnePointsField(
 }
 
 /**
- * Validates that a points list is non-increasing (each value <= previous).
- * Returns an error message if invalid, or undefined if valid.
+ * Validates that a points list is non-increasing (each value <= previous) and
+ * that all values are non-negative. Returns an error message if invalid.
  */
 export function validateNonIncreasingPoints(
   value: number | number[] | string | undefined,
 ): string | undefined {
   if (value == null || typeof value === 'string' || typeof value === 'number') return;
+  for (const v of value) {
+    if (v < 0) return 'All point values must be non-negative.';
+  }
   for (let i = 1; i < value.length; i++) {
     if (value[i] > value[i - 1]) {
       return 'Points must be non-increasing (each value must be ≤ the previous).';

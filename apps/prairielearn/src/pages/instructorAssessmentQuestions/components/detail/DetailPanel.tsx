@@ -93,8 +93,6 @@ export function DetailPanel({
           assessmentDefaults={assessmentDefaults}
           onUpdate={onUpdateZone}
           onDelete={onDeleteZone}
-          onAddQuestion={onAddQuestion}
-          onAddAltGroup={onAddAltGroup}
         />
       );
     }

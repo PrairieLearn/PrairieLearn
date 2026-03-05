@@ -33,8 +33,6 @@ export function ZoneDetailPanel({
   assessmentDefaults,
   onUpdate,
   onDelete,
-  onAddQuestion,
-  onAddAltGroup,
 }: {
   zone: ZoneAssessmentForm;
   zoneIndex: number;
@@ -43,8 +41,6 @@ export function ZoneDetailPanel({
   assessmentDefaults: AssessmentAdvancedDefaults;
   onUpdate: (zoneTrackingId: string, zone: Partial<ZoneAssessmentForm>) => void;
   onDelete: (zoneTrackingId: string) => void;
-  onAddQuestion: (zoneTrackingId: string) => void;
-  onAddAltGroup: (zoneTrackingId: string) => void;
 }) {
   const formValues: ZoneFormData = {
     title: zone.title ?? '',
@@ -357,29 +353,13 @@ export function ZoneDetailPanel({
         {zone.questions.length} question{zone.questions.length !== 1 ? 's' : ''} in zone
       </div>
 
-      <div className="d-flex gap-2">
-        <button
-          type="button"
-          className="btn btn-sm btn-outline-secondary"
-          onClick={() => onAddQuestion(zone.trackingId)}
-        >
-          Add question
-        </button>
-        <button
-          type="button"
-          className="btn btn-sm btn-outline-secondary"
-          onClick={() => onAddAltGroup(zone.trackingId)}
-        >
-          Add alternative group
-        </button>
-        <button
-          type="button"
-          className="btn btn-sm btn-outline-danger"
-          onClick={() => onDelete(zone.trackingId)}
-        >
-          Delete zone
-        </button>
-      </div>
+      <button
+        type="button"
+        className="btn btn-sm btn-outline-danger"
+        onClick={() => onDelete(zone.trackingId)}
+      >
+        Delete zone
+      </button>
     </div>
   );
 }

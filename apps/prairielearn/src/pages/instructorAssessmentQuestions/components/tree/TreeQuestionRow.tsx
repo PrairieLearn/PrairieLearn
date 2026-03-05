@@ -245,7 +245,7 @@ export function TreeQuestionRow({
       tabIndex={0}
       className={clsx(
         'tree-row d-flex align-items-center py-1 border-bottom',
-        isSelected ? 'bg-primary-subtle' : 'list-group-item-action',
+        isSelected ? 'tree-row-selected' : 'list-group-item-action',
       )}
       style={{ paddingLeft: indent, paddingRight: '0.5rem', cursor: 'pointer' }}
       onClick={(e) => {

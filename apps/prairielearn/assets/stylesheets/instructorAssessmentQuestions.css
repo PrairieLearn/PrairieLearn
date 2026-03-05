@@ -34,6 +34,15 @@
 .picker-hover-show:focus-within {
   opacity: 1;
 }
+.picker-row:hover {
+  background-color: var(--bs-tertiary-bg);
+}
 .picker-delete-btn:hover {
   color: var(--bs-danger) !important;
+}
+
+/* Selection highlight */
+.tree-row-selected {
+  outline: 2px solid var(--bs-primary);
+  outline-offset: -2px;
 }

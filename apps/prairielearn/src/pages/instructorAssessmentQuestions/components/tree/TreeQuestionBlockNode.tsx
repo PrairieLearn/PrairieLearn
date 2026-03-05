@@ -160,7 +160,7 @@ export function TreeQuestionBlockNode({
         tabIndex={0}
         className={clsx(
           'tree-row d-flex align-items-center py-1 border-bottom user-select-none',
-          isAltGroupSelected ? 'bg-primary-subtle' : 'list-group-item-action',
+          isAltGroupSelected ? 'tree-row-selected' : 'list-group-item-action',
         )}
         style={{ paddingLeft: '2.5rem', paddingRight: '0.5rem', cursor: 'pointer' }}
         onClick={(e) => {

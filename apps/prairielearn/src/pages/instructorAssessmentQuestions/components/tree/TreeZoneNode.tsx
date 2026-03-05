@@ -120,7 +120,7 @@ export function TreeZoneNode({
           tabIndex={0}
           className={clsx(
             'tree-row d-flex align-items-center px-2 py-2 border-bottom user-select-none',
-            isSelected ? 'bg-primary-subtle' : 'bg-body-secondary list-group-item-action',
+            isSelected ? 'tree-row-selected bg-body-secondary' : 'bg-body-secondary list-group-item-action',
           )}
           style={{ cursor: 'pointer', position: 'sticky', top: 0, zIndex: 10 }}
           onClick={(e) => {
