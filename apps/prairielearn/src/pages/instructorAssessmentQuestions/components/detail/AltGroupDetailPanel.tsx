@@ -179,7 +179,8 @@ export function AltGroupDetailPanel({
                   {...register(originalPointsProperty, {
                     setValueAs: coerceToNumber,
                     validate: (v) => {
-                      if (typeof v === 'number' && v < 0) return 'Auto points must be non-negative.';
+                      if (typeof v === 'number' && v < 0)
+                        return 'Auto points must be non-negative.';
                     },
                   })}
                 />

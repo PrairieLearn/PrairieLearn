@@ -683,9 +683,7 @@ function HomeworkPointsFields({
             error={errors[originalMaxProperty]}
             helpText="Maximum total auto-graded points. Defaults to auto points if not set."
             placeholder={autoPointsPlaceholder}
-            inheritedValueLabel={
-              inheritedMaxValue != null ? String(inheritedMaxValue) : undefined
-            }
+            inheritedValueLabel={inheritedMaxValue != null ? String(inheritedMaxValue) : undefined}
             showResetButton={inheritedMaxValue != null && !isMaxInherited}
             onOverride={() =>
               setValue(originalMaxProperty, inheritedMaxValue, {

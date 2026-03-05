@@ -7,8 +7,7 @@ import { test as base } from '@playwright/test';
 import * as tmp from 'tmp-promise';
 
 import type { CourseInstance } from '../../lib/db-types.js';
-import type { FeatureName } from '../../lib/features/index.js';
-import { features } from '../../lib/features/index.js';
+import { type FeatureName, features } from '../../lib/features/index.js';
 import { TEST_COURSE_PATH } from '../../lib/paths.js';
 import { selectCourseInstanceByShortName } from '../../models/course-instances.js';
 import { selectCourseByShortName } from '../../models/course.js';
