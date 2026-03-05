@@ -1,4 +1,5 @@
 import clsx from 'clsx';
+import { ToggleButton, ToggleButtonGroup } from 'react-bootstrap';
 
 import type { ZoneAssessmentJson } from '../../../schemas/infoAssessment.js';
 import type { ViewType } from '../types.js';
@@ -16,21 +17,20 @@ export function ViewToggle({
 }) {
   return (
     <div className="d-flex gap-2 align-items-center">
-      <div className="border rounded px-2 py-1">
-        <div className="form-check form-switch mb-0">
-          <input
-            className="form-check-input"
-            type="checkbox"
-            role="switch"
-            id="viewTypeSwitch"
-            checked={viewType === 'detailed'}
-            onChange={() => onViewTypeChange(viewType === 'detailed' ? 'simple' : 'detailed')}
-          />
-          <label className="form-check-label" htmlFor="viewTypeSwitch">
-            Detailed
-          </label>
-        </div>
-      </div>
+      <ToggleButtonGroup
+        type="radio"
+        name="viewType"
+        value={viewType}
+        onChange={(val: ViewType) => onViewTypeChange(val)}
+        size="sm"
+      >
+        <ToggleButton id="viewType-simple" value="simple" variant="outline-secondary">
+          Simple
+        </ToggleButton>
+        <ToggleButton id="viewType-detailed" value="detailed" variant="outline-secondary">
+          Detailed
+        </ToggleButton>
+      </ToggleButtonGroup>
       <button
         className="btn btn-sm btn-outline-secondary"
         type="button"
