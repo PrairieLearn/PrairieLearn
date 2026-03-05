@@ -5065,7 +5065,7 @@ __metadata:
     mime: "npm:^4.1.0"
     minimist: "npm:^1.2.8"
     morphdom: "npm:^2.7.8"
-    multer: "npm:^2.1.0"
+    multer: "npm:^2.1.1"
     mustache: "npm:^4.2.0"
     node-fetch: "npm:^3.3.2"
     node-jose: "npm:^2.2.0"
@@ -17329,15 +17329,15 @@ __metadata:
   languageName: node
   linkType: hard
 
-"multer@npm:^2.1.0":
-  version: 2.1.0
-  resolution: "multer@npm:2.1.0"
+"multer@npm:^2.1.1":
+  version: 2.1.1
+  resolution: "multer@npm:2.1.1"
   dependencies:
     append-field: "npm:^1.0.0"
     busboy: "npm:^1.6.0"
     concat-stream: "npm:^2.0.0"
     type-is: "npm:^1.6.18"
-  checksum: 10c0/5b374b9a3dbdfe28bbcacbc070cfa8d81a94f74d2fbf979d96802750b7a463ea54c996faee9d25f323a0c67f55e4f82b2b5f034d91e174daf7bcfb7e0f52c165
+  checksum: 10c0/2ec4e02833b20f403cfb879d4b64d2a9070d902b9deae7aef18a6faadb707d7665385456cf540aa8a6dadfe3d4c5fc8e0e7b0675b94e1077048b1125426deee6
   languageName: node
   linkType: hard
 
