@@ -569,6 +569,12 @@ function AssessmentEditorInner({
     ) {
       setSelectedItem(null);
     }
+    if (
+      selectedItem?.type === 'altGroup' &&
+      selectedItem.questionTrackingId === questionTrackingId
+    ) {
+      setSelectedItem(null);
+    }
 
     dispatch({
       type: 'DELETE_QUESTION',
