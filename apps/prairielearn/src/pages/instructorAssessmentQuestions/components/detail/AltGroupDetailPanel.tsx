@@ -2,10 +2,8 @@ import clsx from 'clsx';
 import { useCallback } from 'react';
 import { useForm } from 'react-hook-form';
 
-import type { EnumAssessmentType } from '../../../../lib/db-types.js';
-import type { ZoneAssessmentForm, ZoneQuestionBlockForm } from '../../types.js';
+import type { DetailState, ZoneAssessmentForm, ZoneQuestionBlockForm } from '../../types.js';
 import {
-  type AssessmentAdvancedDefaults,
   coerceToNumber,
   extractStringComment,
   parsePointsListValue,
@@ -17,6 +15,7 @@ import { validatePositiveInteger } from '../../utils/questions.js';
 import { useAutoSave } from '../../utils/useAutoSave.js';
 
 import { AdvancedFields, type AdvancedFieldsInheritance } from './AdvancedFields.js';
+import { FormField } from './FormField.js';
 
 interface AltGroupFormData {
   numberChoose?: number;
@@ -37,9 +36,7 @@ export function AltGroupDetailPanel({
   zoneQuestionBlock,
   zone,
   idPrefix,
-  editMode,
-  assessmentType,
-  assessmentDefaults,
+  state,
   onUpdate,
   onDelete,
   onAddAlternative,
@@ -47,9 +44,7 @@ export function AltGroupDetailPanel({
   zoneQuestionBlock: ZoneQuestionBlockForm;
   zone: ZoneAssessmentForm;
   idPrefix: string;
-  editMode: boolean;
-  assessmentType: EnumAssessmentType;
-  assessmentDefaults: AssessmentAdvancedDefaults;
+  state: DetailState;
   onUpdate: (
     questionTrackingId: string,
     question: Partial<ZoneQuestionBlockForm> | Partial<AltGroupFormData>,
@@ -57,6 +52,7 @@ export function AltGroupDetailPanel({
   onDelete: (questionTrackingId: string) => void;
   onAddAlternative: (altGroupTrackingId: string) => void;
 }) {
+  const { editMode, assessmentType, assessmentDefaults } = state;
   const alternativeCount = zoneQuestionBlock.alternatives?.length ?? 0;
 
   const originalPointsProperty = resolvePointsProperty(zoneQuestionBlock);
@@ -91,6 +87,11 @@ export function AltGroupDetailPanel({
     [onUpdate, zoneQuestionBlock.trackingId],
   );
 
+  const resetAndSave = useCallback(
+    (field: string) => handleSave({ ...getValues(), [field]: undefined }),
+    [handleSave, getValues],
+  );
+
   useAutoSave({ isDirty, isValid, getValues, onSave: handleSave });
 
   const parentAdvanceScorePerc = zone.advanceScorePerc ?? assessmentDefaults.advanceScorePerc;
@@ -108,8 +109,7 @@ export function AltGroupDetailPanel({
     forceMaxPointsFromLabel: 'assessment',
     watch,
     setValue,
-    getValues,
-    onSave: handleSave,
+    resetAndSave,
   };
 
   const watchedAutoPoints = watch(originalPointsProperty);
@@ -118,279 +118,232 @@ export function AltGroupDetailPanel({
       ? ''
       : String(Array.isArray(watchedAutoPoints) ? watchedAutoPoints[0] : watchedAutoPoints);
 
-  if (!editMode) {
-    return (
-      <div className="p-3">
-        <dl className="mb-0">
-          <dt>Alternatives</dt>
-          <dd>{alternativeCount}</dd>
-          <dt>Number to choose</dt>
-          <dd>{zoneQuestionBlock.numberChoose ?? 1}</dd>
-          {zoneQuestionBlock[originalPointsProperty] != null && (
-            <>
-              <dt>{assessmentType === 'Exam' ? 'Points' : 'Auto points'}</dt>
-              <dd>
-                {Array.isArray(zoneQuestionBlock[originalPointsProperty])
-                  ? zoneQuestionBlock[originalPointsProperty].join(', ')
-                  : zoneQuestionBlock[originalPointsProperty]}
-              </dd>
-            </>
-          )}
-          {zoneQuestionBlock[originalMaxProperty] != null && (
-            <>
-              <dt>Max auto points</dt>
-              <dd>{zoneQuestionBlock[originalMaxProperty]}</dd>
-            </>
-          )}
-          {zoneQuestionBlock.manualPoints != null && (
-            <>
-              <dt>Manual points</dt>
-              <dd>{zoneQuestionBlock.manualPoints}</dd>
-            </>
-          )}
-          {zoneQuestionBlock.comment != null && (
-            <>
-              <dt>Comment</dt>
-              <dd className="text-break">{String(zoneQuestionBlock.comment)}</dd>
-            </>
-          )}
-        </dl>
-      </div>
-    );
-  }
+  const formatPoints = (v: number | number[] | null | undefined) => {
+    if (v == null) return undefined;
+    return Array.isArray(v) ? v.join(', ') : String(v);
+  };
+
+  const Wrapper = editMode ? 'div' : 'dl';
 
   return (
     <div className="p-3">
-      <div className="mb-3 text-muted small">
+      <div className={clsx('text-muted small', editMode ? 'mb-3' : 'mb-2')}>
         {alternativeCount} alternative{alternativeCount !== 1 ? 's' : ''} in group
       </div>
-      <div className="mb-3">
-        <label htmlFor={`${idPrefix}-numberChoose`} className="form-label">
-          Number to choose
-        </label>
-        <input
-          type="number"
-          className={clsx('form-control form-control-sm', errors.numberChoose && 'is-invalid')}
+
+      <Wrapper className={clsx(!editMode && 'mb-0')}>
+        <FormField
+          editMode={editMode}
           id={`${idPrefix}-numberChoose`}
-          aria-invalid={!!errors.numberChoose}
-          aria-errormessage={errors.numberChoose ? `${idPrefix}-numberChoose-error` : undefined}
-          aria-describedby={`${idPrefix}-numberChoose-help`}
-          {...register('numberChoose', {
-            setValueAs: coerceToNumber,
-            validate: (v) => {
-              const msg = validatePositiveInteger(v, 'Number to choose');
-              if (msg) return msg;
-              if (v != null && v > alternativeCount) {
-                return `Cannot exceed number of alternatives (${alternativeCount}).`;
-              }
-            },
-          })}
-        />
-        {errors.numberChoose && (
-          <div id={`${idPrefix}-numberChoose-error`} className="invalid-feedback">
-            {errors.numberChoose.message}
-          </div>
-        )}
-        <small id={`${idPrefix}-numberChoose-help`} className="form-text text-muted">
-          How many of the {alternativeCount} alternatives to randomly choose for each student
-          (default: 1).
-        </small>
-      </div>
-
-      {assessmentType === 'Homework' ? (
-        <>
-          <div className="mb-3">
-            <label htmlFor={`${idPrefix}-autoPoints`} className="form-label">
-              Auto points (default)
-            </label>
+          label="Number to choose"
+          viewValue={zoneQuestionBlock.numberChoose ?? 1}
+          error={errors.numberChoose}
+          helpText={`How many of the ${alternativeCount} alternatives to randomly choose for each student (default: 1).`}
+        >
+          {(aria) => (
             <input
               type="number"
-              className={clsx(
-                'form-control form-control-sm',
-                errors[originalPointsProperty] && 'is-invalid',
-              )}
+              className={clsx('form-control form-control-sm', aria.errorClass)}
+              {...aria.inputProps}
+              {...register('numberChoose', {
+                setValueAs: coerceToNumber,
+                validate: (v) => {
+                  const msg = validatePositiveInteger(v, 'Number to choose');
+                  if (msg) return msg;
+                  if (v != null && v > alternativeCount) {
+                    return `Cannot exceed number of alternatives (${alternativeCount}).`;
+                  }
+                },
+              })}
+            />
+          )}
+        </FormField>
+
+        {assessmentType === 'Homework' ? (
+          <>
+            <FormField
+              editMode={editMode}
               id={`${idPrefix}-autoPoints`}
-              aria-invalid={!!errors[originalPointsProperty]}
-              aria-errormessage={
-                errors[originalPointsProperty] ? `${idPrefix}-autoPoints-error` : undefined
-              }
-              aria-describedby={`${idPrefix}-autoPoints-help`}
-              step="any"
-              {...register(originalPointsProperty, {
-                setValueAs: coerceToNumber,
-                validate: (v) => {
-                  if (typeof v === 'number' && v < 0) return 'Auto points must be non-negative.';
-                },
-              })}
-            />
-            {errors[originalPointsProperty] && (
-              <div id={`${idPrefix}-autoPoints-error`} className="invalid-feedback">
-                {errors[originalPointsProperty].message!}
-              </div>
-            )}
-            <small id={`${idPrefix}-autoPoints-help`} className="form-text text-muted">
-              Default auto points inherited by alternatives unless overridden.
-            </small>
-          </div>
-          <div className="mb-3">
-            <label htmlFor={`${idPrefix}-maxAutoPoints`} className="form-label">
-              Max auto points (default)
-            </label>
-            <input
-              type="number"
-              className={clsx(
-                'form-control form-control-sm',
-                errors[originalMaxProperty] && 'is-invalid',
+              label="Auto points (default)"
+              viewValue={formatPoints(zoneQuestionBlock[originalPointsProperty])}
+              hideWhenEmpty
+              error={errors[originalPointsProperty]}
+              helpText="Default auto points inherited by alternatives unless overridden."
+            >
+              {(aria) => (
+                <input
+                  type="number"
+                  className={clsx('form-control form-control-sm', aria.errorClass)}
+                  {...aria.inputProps}
+                  step="any"
+                  {...register(originalPointsProperty, {
+                    setValueAs: coerceToNumber,
+                    validate: (v) => {
+                      if (typeof v === 'number' && v < 0) return 'Auto points must be non-negative.';
+                    },
+                  })}
+                />
               )}
+            </FormField>
+            <FormField
+              editMode={editMode}
               id={`${idPrefix}-maxAutoPoints`}
-              aria-invalid={!!errors[originalMaxProperty]}
-              aria-errormessage={
-                errors[originalMaxProperty] ? `${idPrefix}-maxAutoPoints-error` : undefined
+              label="Max auto points (default)"
+              viewValue={
+                zoneQuestionBlock[originalMaxProperty] != null
+                  ? String(zoneQuestionBlock[originalMaxProperty])
+                  : undefined
               }
-              aria-describedby={`${idPrefix}-maxAutoPoints-help`}
-              placeholder={autoPointsPlaceholder}
-              {...register(originalMaxProperty, {
-                setValueAs: coerceToNumber,
-                validate: (v) => {
-                  if (v != null && v < 0) return 'Max auto points must be non-negative.';
-                },
-              })}
-            />
-            {errors[originalMaxProperty] && (
-              <div id={`${idPrefix}-maxAutoPoints-error`} className="invalid-feedback">
-                {errors[originalMaxProperty].message!}
-              </div>
-            )}
-            <small id={`${idPrefix}-maxAutoPoints-help`} className="form-text text-muted">
-              Default max auto points inherited by alternatives unless overridden. Defaults to auto
-              points if not set.
-            </small>
-          </div>
-          <div className="mb-3">
-            <label htmlFor={`${idPrefix}-manualPoints`} className="form-label">
-              Manual points (default)
-            </label>
-            <input
-              type="number"
-              className={clsx('form-control form-control-sm', errors.manualPoints && 'is-invalid')}
+              hideWhenEmpty
+              error={errors[originalMaxProperty]}
+              helpText="Default max auto points inherited by alternatives unless overridden. Defaults to auto points if not set."
+            >
+              {(aria) => (
+                <input
+                  type="number"
+                  className={clsx('form-control form-control-sm', aria.errorClass)}
+                  {...aria.inputProps}
+                  placeholder={autoPointsPlaceholder}
+                  {...register(originalMaxProperty, {
+                    setValueAs: coerceToNumber,
+                    validate: (v) => {
+                      if (v != null && v < 0) return 'Max auto points must be non-negative.';
+                    },
+                  })}
+                />
+              )}
+            </FormField>
+            <FormField
+              editMode={editMode}
               id={`${idPrefix}-manualPoints`}
-              aria-invalid={!!errors.manualPoints}
-              aria-errormessage={errors.manualPoints ? `${idPrefix}-manualPoints-error` : undefined}
-              aria-describedby={`${idPrefix}-manualPoints-help`}
-              {...register('manualPoints', {
-                setValueAs: coerceToNumber,
-                validate: (v) => {
-                  if (v != null && v < 0) return 'Manual points must be non-negative.';
-                },
-              })}
-            />
-            {errors.manualPoints && (
-              <div id={`${idPrefix}-manualPoints-error`} className="invalid-feedback">
-                {errors.manualPoints.message}
-              </div>
-            )}
-            <small id={`${idPrefix}-manualPoints-help`} className="form-text text-muted">
-              Default manual points inherited by alternatives unless overridden.
-            </small>
-          </div>
-        </>
-      ) : (
-        <>
-          <div className="mb-3">
-            <label htmlFor={`${idPrefix}-points`} className="form-label">
-              Points list (default)
-            </label>
-            <input
-              type="text"
-              className={clsx('form-control form-control-sm', errors.points && 'is-invalid')}
+              label="Manual points (default)"
+              viewValue={
+                zoneQuestionBlock.manualPoints != null
+                  ? String(zoneQuestionBlock.manualPoints)
+                  : undefined
+              }
+              hideWhenEmpty
+              error={errors.manualPoints}
+              helpText="Default manual points inherited by alternatives unless overridden."
+            >
+              {(aria) => (
+                <input
+                  type="number"
+                  className={clsx('form-control form-control-sm', aria.errorClass)}
+                  {...aria.inputProps}
+                  {...register('manualPoints', {
+                    setValueAs: coerceToNumber,
+                    validate: (v) => {
+                      if (v != null && v < 0) return 'Manual points must be non-negative.';
+                    },
+                  })}
+                />
+              )}
+            </FormField>
+          </>
+        ) : (
+          <>
+            <FormField
+              editMode={editMode}
               id={`${idPrefix}-points`}
-              aria-invalid={!!errors.points}
-              aria-errormessage={errors.points ? `${idPrefix}-points-error` : undefined}
-              aria-describedby={`${idPrefix}-points-help`}
-              {...register('points', {
-                setValueAs: parsePointsListValue,
-                validate: (v) => validateNonIncreasingPoints(v),
-              })}
-            />
-            {errors.points && (
-              <div id={`${idPrefix}-points-error`} className="invalid-feedback">
-                {errors.points.message}
-              </div>
-            )}
-            <small id={`${idPrefix}-points-help`} className="form-text text-muted">
-              Default points list inherited by alternatives unless overridden.
-            </small>
-          </div>
-          <div className="mb-3">
-            <label htmlFor={`${idPrefix}-manualPoints`} className="form-label">
-              Manual points (default)
-            </label>
-            <input
-              type="number"
-              className={clsx('form-control form-control-sm', errors.manualPoints && 'is-invalid')}
+              label="Points list (default)"
+              viewValue={formatPoints(zoneQuestionBlock[originalPointsProperty])}
+              hideWhenEmpty
+              error={errors.points}
+              helpText="Default points list inherited by alternatives unless overridden."
+            >
+              {(aria) => (
+                <input
+                  type="text"
+                  className={clsx('form-control form-control-sm', aria.errorClass)}
+                  {...aria.inputProps}
+                  {...register('points', {
+                    setValueAs: parsePointsListValue,
+                    validate: (v) => validateNonIncreasingPoints(v),
+                  })}
+                />
+              )}
+            </FormField>
+            <FormField
+              editMode={editMode}
               id={`${idPrefix}-manualPoints`}
-              aria-invalid={!!errors.manualPoints}
-              aria-errormessage={errors.manualPoints ? `${idPrefix}-manualPoints-error` : undefined}
-              aria-describedby={`${idPrefix}-manualPoints-help`}
-              {...register('manualPoints', {
-                setValueAs: coerceToNumber,
-                validate: (v) => {
-                  if (v != null && v < 0) return 'Manual points must be non-negative.';
-                },
-              })}
-            />
-            {errors.manualPoints && (
-              <div id={`${idPrefix}-manualPoints-error`} className="invalid-feedback">
-                {errors.manualPoints.message}
-              </div>
-            )}
-            <small id={`${idPrefix}-manualPoints-help`} className="form-text text-muted">
-              Default manual points inherited by alternatives unless overridden.
-            </small>
-          </div>
-        </>
-      )}
+              label="Manual points (default)"
+              viewValue={
+                zoneQuestionBlock.manualPoints != null
+                  ? String(zoneQuestionBlock.manualPoints)
+                  : undefined
+              }
+              hideWhenEmpty
+              error={errors.manualPoints}
+              helpText="Default manual points inherited by alternatives unless overridden."
+            >
+              {(aria) => (
+                <input
+                  type="number"
+                  className={clsx('form-control form-control-sm', aria.errorClass)}
+                  {...aria.inputProps}
+                  {...register('manualPoints', {
+                    setValueAs: coerceToNumber,
+                    validate: (v) => {
+                      if (v != null && v < 0) return 'Manual points must be non-negative.';
+                    },
+                  })}
+                />
+              )}
+            </FormField>
+          </>
+        )}
 
-      <div className="mb-3">
-        <label htmlFor={`${idPrefix}-comment`} className="form-label">
-          Comment
-        </label>
-        <textarea
-          className="form-control form-control-sm"
+        <FormField
+          editMode={editMode}
           id={`${idPrefix}-comment`}
-          aria-describedby={`${idPrefix}-comment-help`}
-          rows={2}
-          {...register('comment')}
-        />
-        <small id={`${idPrefix}-comment-help`} className="form-text text-muted">
-          Internal note, not shown to students.
-        </small>
-      </div>
+          label="Comment"
+          viewValue={
+            zoneQuestionBlock.comment != null ? (
+              <span className="text-break">{String(zoneQuestionBlock.comment)}</span>
+            ) : undefined
+          }
+          hideWhenEmpty
+          helpText="Internal note, not shown to students."
+        >
+          {(aria) => (
+            <textarea
+              className="form-control form-control-sm"
+              {...aria.inputProps}
+              rows={2}
+              {...register('comment')}
+            />
+          )}
+        </FormField>
+      </Wrapper>
 
       <AdvancedFields
         register={register}
         errors={errors}
         idPrefix={idPrefix}
         variant="altGroup"
+        editMode={editMode}
         inheritance={advancedInheritance}
       />
 
-      <div className="d-flex gap-2">
-        <button
-          type="button"
-          className="btn btn-sm btn-outline-secondary"
-          onClick={() => onAddAlternative(zoneQuestionBlock.trackingId)}
-        >
-          Add alternative
-        </button>
-        <button
-          type="button"
-          className="btn btn-sm btn-outline-danger"
-          onClick={() => onDelete(zoneQuestionBlock.trackingId)}
-        >
-          Delete alternative group
-        </button>
-      </div>
+      {editMode && (
+        <div className="d-flex gap-2">
+          <button
+            type="button"
+            className="btn btn-sm btn-outline-secondary"
+            onClick={() => onAddAlternative(zoneQuestionBlock.trackingId)}
+          >
+            Add alternative
+          </button>
+          <button
+            type="button"
+            className="btn btn-sm btn-outline-danger"
+            onClick={() => onDelete(zoneQuestionBlock.trackingId)}
+          >
+            Delete alternative group
+          </button>
+        </div>
+      )}
     </div>
   );
 }

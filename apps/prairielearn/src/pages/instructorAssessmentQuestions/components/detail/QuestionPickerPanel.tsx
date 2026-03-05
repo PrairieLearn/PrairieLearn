@@ -16,7 +16,7 @@ export function QuestionPickerPanel({
   isLoading,
   questionsInAssessment,
   courseId,
-  urlPrefix,
+  courseInstanceId,
   currentAssessmentId,
   onQuestionSelected,
   onRemoveQuestionByQid,
@@ -25,7 +25,7 @@ export function QuestionPickerPanel({
   isLoading?: boolean;
   questionsInAssessment: Map<string, string[]>;
   courseId: string;
-  urlPrefix: string;
+  courseInstanceId: string;
   currentAssessmentId?: string;
   onQuestionSelected: (qid: string) => void;
   onRemoveQuestionByQid: (qid: string) => void;
@@ -299,7 +299,10 @@ export function QuestionPickerPanel({
                     </div>
                     {assessmentsToShow.length > 0 && (
                       <div className="d-flex flex-wrap gap-1 mt-1">
-                        <AssessmentBadges assessments={assessmentsToShow} urlPrefix={urlPrefix} />
+                        <AssessmentBadges
+                          assessments={assessmentsToShow}
+                          courseInstanceId={courseInstanceId}
+                        />
                       </div>
                     )}
                   </div>

@@ -1,16 +1,14 @@
 import { useDroppable } from '@dnd-kit/core';
 import { SortableContext, useSortable, verticalListSortingStrategy } from '@dnd-kit/sortable';
 import clsx from 'clsx';
-import { type Dispatch, useId } from 'react';
+import { useId } from 'react';
 
 import { run } from '@prairielearn/run';
 import { OverlayTrigger } from '@prairielearn/ui';
 
-import type { StaffAssessmentQuestionRow } from '../../../../lib/assessment-question.shared.js';
 import { isRenderableComment } from '../../../../lib/comments.js';
 import type { EnumAssessmentType } from '../../../../lib/db-types.js';
-import type { EditorAction, SelectedItem, ViewType, ZoneAssessmentForm } from '../../types.js';
-import type { ChangeTrackingResult } from '../../utils/modifiedTracking.js';
+import type { TreeActions, TreeState, ZoneAssessmentForm } from '../../types.js';
 import {
   computeZonePointTotals,
   computeZoneQuestionCount,
@@ -32,48 +30,16 @@ import { makeDraggableStyle } from './dragUtils.js';
 export function TreeZoneNode({
   zone,
   zoneNumber,
-  editMode,
-  viewType,
-  selectedItem,
-  setSelectedItem,
-  questionMetadata,
-  collapsedGroups,
-  collapsedZones,
-  changeTracking,
-  urlPrefix,
-  hasCoursePermissionPreview,
-  assessmentType,
-  dispatch,
-  onAddQuestion,
-  onAddAltGroup,
-  onAddToAltGroup,
-  onDeleteQuestion,
-  onDeleteZone,
+  state,
+  actions,
 }: {
   zone: ZoneAssessmentForm;
   zoneNumber: number;
-  editMode: boolean;
-  viewType: ViewType;
-  selectedItem: SelectedItem;
-  setSelectedItem: (item: SelectedItem) => void;
-  questionMetadata: Record<string, StaffAssessmentQuestionRow>;
-  collapsedGroups: Set<string>;
-  collapsedZones: Set<string>;
-  changeTracking: ChangeTrackingResult;
-  urlPrefix: string;
-  hasCoursePermissionPreview: boolean;
-  assessmentType: EnumAssessmentType;
-  dispatch: Dispatch<EditorAction>;
-  onAddQuestion: (zoneTrackingId: string) => void;
-  onAddAltGroup: (zoneTrackingId: string) => void;
-  onAddToAltGroup: (altGroupTrackingId: string) => void;
-  onDeleteQuestion: (
-    questionTrackingId: string,
-    questionId: string,
-    alternativeTrackingId?: string,
-  ) => void;
-  onDeleteZone: (zoneTrackingId: string) => void;
+  state: TreeState;
+  actions: TreeActions;
 }) {
+  const { editMode, selectedItem, collapsedZones, changeTracking, assessmentType } = state;
+  const { setSelectedItem, dispatch, onAddQuestion, onAddAltGroup, onDeleteZone } = actions;
   const changeTooltipId = useId();
   const commentTooltipId = useId();
   const zonePointsMismatchTooltipId = useId();
@@ -130,7 +96,13 @@ export function TreeZoneNode({
               ? 'tree-row-selected bg-body-secondary'
               : 'bg-body-secondary list-group-item-action',
           )}
-          style={{ cursor: 'pointer', position: 'sticky', top: 0, zIndex: 10 }}
+          style={{
+            cursor: 'pointer',
+            position: 'sticky',
+            top: 0,
+            zIndex: 10,
+            ...(zonePointsMismatch && { borderLeft: '6px solid var(--bs-warning)' }),
+          }}
           onClick={(e) => {
             e.stopPropagation();
             selectZone();
@@ -142,13 +114,12 @@ export function TreeZoneNode({
             }
           }}
         >
-          {editMode && (
-            <DragHandle
-              attributes={draggableAttributes}
-              listeners={draggableListeners}
-              ariaLabel="Drag to reorder zone"
-            />
-          )}
+          <DragHandle
+            attributes={draggableAttributes}
+            listeners={draggableListeners}
+            disabled={!editMode}
+            ariaLabel="Drag to reorder zone"
+          />
           <CollapseToggleButton
             isCollapsed={isCollapsed}
             ariaLabel={isCollapsed ? 'Expand zone' : 'Collapse zone'}
@@ -169,7 +140,7 @@ export function TreeZoneNode({
                 placement="top"
                 tooltip={{ props: { id: changeTooltipId }, body: 'Modified' }}
               >
-                <span className="text-warning ms-1">●</span>
+                <span className="text-primary ms-1">●</span>
               </OverlayTrigger>
             )}
             {isRenderableComment(zone.comment) && (
@@ -274,9 +245,6 @@ export function TreeZoneNode({
             )}
           </span>
           <span className="flex-grow-1" />
-          {!editMode && (
-            <i className="bi bi-chevron-right text-muted small ms-1" aria-hidden="true" />
-          )}
           {editMode && (
             <button
               type="button"
@@ -299,19 +267,8 @@ export function TreeZoneNode({
               <TreeQuestionBlockNode
                 key={zoneQuestionBlock.trackingId}
                 zoneQuestionBlock={zoneQuestionBlock}
-                editMode={editMode}
-                viewType={viewType}
-                selectedItem={selectedItem}
-                setSelectedItem={setSelectedItem}
-                questionMetadata={questionMetadata}
-                collapsedGroups={collapsedGroups}
-                changeTracking={changeTracking}
-                urlPrefix={urlPrefix}
-                hasCoursePermissionPreview={hasCoursePermissionPreview}
-                assessmentType={assessmentType}
-                dispatch={dispatch}
-                onAddToAltGroup={onAddToAltGroup}
-                onDeleteQuestion={onDeleteQuestion}
+                state={state}
+                actions={actions}
               />
             ))}
             {zone.questions.length === 0 &&

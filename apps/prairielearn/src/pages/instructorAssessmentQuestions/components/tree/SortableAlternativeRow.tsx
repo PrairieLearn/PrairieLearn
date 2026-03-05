@@ -1,9 +1,7 @@
 import { useSortable } from '@dnd-kit/sortable';
 
 import type { StaffAssessmentQuestionRow } from '../../../../lib/assessment-question.shared.js';
-import type { EnumAssessmentType } from '../../../../lib/db-types.js';
-import type { QuestionAlternativeForm, ViewType, ZoneQuestionBlockForm } from '../../types.js';
-import type { ChangeTrackingResult } from '../../utils/modifiedTracking.js';
+import type { QuestionAlternativeForm, TreeState, ZoneQuestionBlockForm } from '../../types.js';
 
 import { TreeQuestionRow } from './TreeQuestionRow.js';
 import { makeDraggableStyle } from './dragUtils.js';
@@ -12,33 +10,23 @@ export function SortableAlternativeRow({
   alternative,
   zoneQuestionBlock,
   questionData,
-  editMode,
-  viewType,
+  state,
   isSelected,
-  changeTracking,
-  urlPrefix,
-  hasCoursePermissionPreview,
-  assessmentType,
   onClick,
   onDelete,
 }: {
   alternative: QuestionAlternativeForm;
   zoneQuestionBlock: ZoneQuestionBlockForm;
   questionData: StaffAssessmentQuestionRow | null;
-  editMode: boolean;
-  viewType: ViewType;
+  state: TreeState;
   isSelected: boolean;
-  changeTracking: ChangeTrackingResult;
-  urlPrefix: string;
-  hasCoursePermissionPreview: boolean;
-  assessmentType: EnumAssessmentType;
   onClick: () => void;
   onDelete?: () => void;
 }) {
   const { attributes, listeners, setNodeRef, transform, transition, isDragging } = useSortable({
     id: alternative.trackingId,
     data: { type: 'alternative', parentTrackingId: zoneQuestionBlock.trackingId },
-    disabled: !editMode,
+    disabled: !state.editMode,
   });
 
   const draggableStyle = makeDraggableStyle({ isDragging, transform, transition });
@@ -49,15 +37,10 @@ export function SortableAlternativeRow({
         question={alternative}
         zoneQuestionBlock={zoneQuestionBlock}
         questionData={questionData}
-        editMode={editMode}
-        viewType={viewType}
+        state={state}
         isSelected={isSelected}
-        changeTracking={changeTracking}
-        urlPrefix={urlPrefix}
-        hasCoursePermissionPreview={hasCoursePermissionPreview}
-        assessmentType={assessmentType}
-        draggableAttributes={editMode ? attributes : undefined}
-        draggableListeners={editMode ? listeners : undefined}
+        draggableAttributes={attributes}
+        draggableListeners={listeners}
         isAlternative
         onClick={onClick}
         onDelete={onDelete}

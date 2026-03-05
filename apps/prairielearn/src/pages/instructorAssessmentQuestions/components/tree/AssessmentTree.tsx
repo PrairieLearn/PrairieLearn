@@ -1,67 +1,31 @@
 import { SortableContext, verticalListSortingStrategy } from '@dnd-kit/sortable';
-import type { Dispatch, ReactNode } from 'react';
+import type { ReactNode } from 'react';
 
-import type { StaffAssessmentQuestionRow } from '../../../../lib/assessment-question.shared.js';
-import type { EnumAssessmentType } from '../../../../lib/db-types.js';
-import type { EditorAction, SelectedItem, ViewType, ZoneAssessmentForm } from '../../types.js';
-import type { ChangeTrackingResult } from '../../utils/modifiedTracking.js';
+import type { TreeActions, TreeState, ViewType, ZoneAssessmentForm } from '../../types.js';
 import { ViewToggle } from '../EditModeToolbar.js';
 
 import { TreeZoneNode } from './TreeZoneNode.js';
 
 export function AssessmentTree({
   zones,
-  questionMetadata,
-  editMode,
-  viewType,
-  selectedItem,
-  setSelectedItem,
-  collapsedGroups,
-  collapsedZones,
-  changeTracking,
-  urlPrefix,
-  hasCoursePermissionPreview,
-  assessmentType,
-  dispatch,
-  onAddQuestion,
-  onAddAltGroup,
-  onAddToAltGroup,
+  state,
+  actions,
   onAddZone,
-  onDeleteQuestion,
-  onDeleteZone,
   isAllExpanded,
   onViewTypeChange,
   onToggleExpandCollapse,
   editControls,
 }: {
   zones: ZoneAssessmentForm[];
-  questionMetadata: Record<string, StaffAssessmentQuestionRow>;
-  editMode: boolean;
-  viewType: ViewType;
-  selectedItem: SelectedItem;
-  setSelectedItem: (item: SelectedItem) => void;
-  collapsedGroups: Set<string>;
-  collapsedZones: Set<string>;
-  changeTracking: ChangeTrackingResult;
-  urlPrefix: string;
-  hasCoursePermissionPreview: boolean;
-  assessmentType: EnumAssessmentType;
-  dispatch: Dispatch<EditorAction>;
-  onAddQuestion: (zoneTrackingId: string) => void;
-  onAddAltGroup: (zoneTrackingId: string) => void;
-  onAddToAltGroup: (altGroupTrackingId: string) => void;
+  state: TreeState;
+  actions: TreeActions;
   onAddZone: () => void;
-  onDeleteQuestion: (
-    questionTrackingId: string,
-    questionId: string,
-    alternativeTrackingId?: string,
-  ) => void;
-  onDeleteZone: (zoneTrackingId: string) => void;
   isAllExpanded: boolean;
   onViewTypeChange: (viewType: ViewType) => void;
   onToggleExpandCollapse: () => void;
   editControls?: ReactNode;
 }) {
+  const { editMode, viewType } = state;
   return (
     <SortableContext items={zones.map((z) => z.trackingId)} strategy={verticalListSortingStrategy}>
       <div
@@ -82,23 +46,8 @@ export function AssessmentTree({
             key={zone.trackingId}
             zone={zone}
             zoneNumber={zoneIndex + 1}
-            editMode={editMode}
-            viewType={viewType}
-            selectedItem={selectedItem}
-            setSelectedItem={setSelectedItem}
-            questionMetadata={questionMetadata}
-            collapsedGroups={collapsedGroups}
-            collapsedZones={collapsedZones}
-            changeTracking={changeTracking}
-            urlPrefix={urlPrefix}
-            hasCoursePermissionPreview={hasCoursePermissionPreview}
-            assessmentType={assessmentType}
-            dispatch={dispatch}
-            onAddQuestion={onAddQuestion}
-            onAddAltGroup={onAddAltGroup}
-            onAddToAltGroup={onAddToAltGroup}
-            onDeleteQuestion={onDeleteQuestion}
-            onDeleteZone={onDeleteZone}
+            state={state}
+            actions={actions}
           />
         ))}
         {editMode && (

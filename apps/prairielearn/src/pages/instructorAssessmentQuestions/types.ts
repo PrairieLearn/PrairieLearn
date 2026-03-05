@@ -1,11 +1,16 @@
+import type { Dispatch } from 'react';
 import { z } from 'zod';
 
 import type { StaffAssessmentQuestionRow } from '../../lib/assessment-question.shared.js';
+import type { EnumAssessmentType } from '../../lib/db-types.js';
 import {
   QuestionAlternativeJsonSchema,
   ZoneAssessmentJsonSchema,
   ZoneQuestionBlockJsonSchema,
 } from '../../schemas/infoAssessment.js';
+
+import type { AssessmentAdvancedDefaults } from './utils/formHelpers.js';
+import type { ChangeTrackingResult } from './utils/modifiedTracking.js';
 
 /**
  * Branded UUID type for stable drag-and-drop identity.
@@ -199,3 +204,71 @@ export type SelectedItem =
   | null;
 
 export type ViewType = 'simple' | 'detailed';
+
+/**
+ * Bundles all callbacks passed through the assessment tree hierarchy.
+ */
+export interface TreeActions {
+  onAddQuestion: (zoneTrackingId: string) => void;
+  onAddAltGroup: (zoneTrackingId: string) => void;
+  onAddToAltGroup: (altGroupTrackingId: string) => void;
+  onDeleteQuestion: (
+    questionTrackingId: string,
+    questionId: string,
+    alternativeTrackingId?: string,
+  ) => void;
+  onDeleteZone: (zoneTrackingId: string) => void;
+  setSelectedItem: (item: SelectedItem) => void;
+  dispatch: Dispatch<EditorAction>;
+}
+
+/**
+ * Bundles shared read-only state passed through the assessment tree hierarchy.
+ */
+export interface TreeState {
+  editMode: boolean;
+  viewType: ViewType;
+  selectedItem: SelectedItem;
+  questionMetadata: Record<string, StaffAssessmentQuestionRow>;
+  collapsedGroups: Set<string>;
+  collapsedZones: Set<string>;
+  changeTracking: ChangeTrackingResult;
+  courseInstanceId: string;
+  hasCoursePermissionPreview: boolean;
+  assessmentType: EnumAssessmentType;
+}
+
+/**
+ * Bundles shared read-only state passed through the detail panel hierarchy.
+ */
+export interface DetailState {
+  editMode: boolean;
+  assessmentType: EnumAssessmentType;
+  assessmentDefaults: AssessmentAdvancedDefaults;
+  courseInstanceId: string;
+  courseId: string;
+  hasCoursePermissionPreview: boolean;
+}
+
+/**
+ * Bundles all callbacks used by the detail panel hierarchy.
+ */
+export interface DetailActions {
+  onUpdateZone: (zoneTrackingId: string, zone: Partial<ZoneAssessmentForm>) => void;
+  onUpdateQuestion: (
+    questionTrackingId: string,
+    question: Partial<ZoneQuestionBlockForm> | Partial<QuestionAlternativeForm>,
+    alternativeTrackingId?: string,
+  ) => void;
+  onDeleteQuestion: (
+    questionTrackingId: string,
+    questionId: string,
+    alternativeTrackingId?: string,
+  ) => void;
+  onDeleteZone: (zoneTrackingId: string) => void;
+  onAddToAltGroup: (altGroupTrackingId: string) => void;
+  onQuestionPicked: (qid: string) => void;
+  onPickQuestion: (currentSelection: SelectedItem) => void;
+  onRemoveQuestionByQid: (qid: string) => void;
+  onResetButtonClick: (assessmentQuestionId: string) => void;
+}

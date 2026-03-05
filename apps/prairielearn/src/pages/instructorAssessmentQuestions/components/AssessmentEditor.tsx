@@ -13,7 +13,7 @@ import {
 import { sortableKeyboardCoordinates } from '@dnd-kit/sortable';
 import { QueryClient, useQuery } from '@tanstack/react-query';
 import { parseAsStringLiteral, useQueryState } from 'nuqs';
-import { useMemo, useRef, useState } from 'react';
+import { useEffect, useMemo, useRef, useState } from 'react';
 
 import { run } from '@prairielearn/run';
 import { NuqsAdapter, useModalState } from '@prairielearn/ui';
@@ -28,8 +28,12 @@ import { QueryClientProviderDebug } from '../../../lib/client/tanstackQuery.js';
 import type { ZoneAssessmentJson } from '../../../schemas/infoAssessment.js';
 import type { QuestionByQidResult } from '../trpc.js';
 import type {
+  DetailActions,
+  DetailState,
   QuestionAlternativeForm,
   SelectedItem,
+  TreeActions,
+  TreeState,
   ZoneAssessmentForm,
   ZoneQuestionBlockForm,
 } from '../types.js';
@@ -59,6 +63,27 @@ import { SplitPane } from './SplitPane.js';
 import { DetailPanel } from './detail/DetailPanel.js';
 import { AssessmentTree } from './tree/AssessmentTree.js';
 import { DragPreview } from './tree/DragPreview.js';
+
+/**
+ * Shows a browser confirmation dialog when the user tries to navigate away or
+ * close the tab while `enabled` is true. Useful for warning about unsaved changes.
+ *
+ * TODO: Extract to prairielearn/ui as a reusable hook. We could also
+ * consider using `usehooks-ts`.
+ */
+function useBeforeUnload(enabled: boolean): void {
+  useEffect(() => {
+    if (!enabled) return;
+
+    const handler = (event: BeforeUnloadEvent) => {
+      event.preventDefault();
+      event.returnValue = 'prompt';
+      return 'prompt';
+    };
+    window.addEventListener('beforeunload', handler);
+    return () => window.removeEventListener('beforeunload', handler);
+  }, [enabled]);
+}
 
 /**
  * Collision detection for vertical lists that uses item boundaries instead of
@@ -96,7 +121,6 @@ interface AssessmentEditorInnerProps {
   questionRows: StaffAssessmentQuestionRow[];
   jsonZones: ZoneAssessmentJson[];
   assessment: StaffAssessment;
-  urlPrefix: string;
   hasCoursePermissionPreview: boolean;
   canEdit: boolean;
   csrfToken: string;
@@ -108,7 +132,6 @@ function AssessmentEditorInner({
   courseInstance,
   questionRows,
   jsonZones,
-  urlPrefix,
   assessment,
   hasCoursePermissionPreview,
   canEdit,
@@ -764,11 +787,89 @@ function AssessmentEditorInner({
   const saveButtonDisabled =
     JSON.stringify(zones) === initialZonesJson || zones.some((zone) => zone.questions.length === 0);
 
+  useBeforeUnload(editMode && !saveButtonDisabled);
+
   const saveButtonDisabledReason = zones.some((zone) => zone.questions.length === 0)
     ? 'Cannot save: one or more zones have no questions'
     : undefined;
 
   const zonesForSave = useMemo(() => stripTrackingIds(zones), [zones]);
+
+  const treeState: TreeState = useMemo(
+    () => ({
+      editMode,
+      viewType,
+      selectedItem,
+      questionMetadata,
+      collapsedGroups,
+      collapsedZones,
+      changeTracking,
+      courseInstanceId: courseInstance.id,
+      hasCoursePermissionPreview,
+      assessmentType: assessment.type,
+    }),
+    [
+      editMode,
+      viewType,
+      selectedItem,
+      questionMetadata,
+      collapsedGroups,
+      collapsedZones,
+      changeTracking,
+      courseInstance.id,
+      hasCoursePermissionPreview,
+      assessment.type,
+    ],
+  );
+
+  const treeActions: TreeActions = useMemo(
+    () => ({
+      onAddQuestion: handleAddQuestion,
+      onAddAltGroup: handleAddAltGroup,
+      onAddToAltGroup: handleAddToAltGroup,
+      onDeleteQuestion: handleDeleteQuestion,
+      onDeleteZone: handleDeleteZone,
+      setSelectedItem,
+      dispatch,
+    }),
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+    [zones, selectedItem],
+  );
+
+  const detailState: DetailState = useMemo(
+    () => ({
+      editMode,
+      assessmentType: assessment.type,
+      assessmentDefaults,
+      courseInstanceId: courseInstance.id,
+      courseId: course.id,
+      hasCoursePermissionPreview,
+    }),
+    [
+      editMode,
+      assessment.type,
+      assessmentDefaults,
+      courseInstance.id,
+      course.id,
+      hasCoursePermissionPreview,
+    ],
+  );
+
+  const detailActions: DetailActions = useMemo(
+    () => ({
+      onUpdateZone: handleUpdateZone,
+      onUpdateQuestion: handleUpdateQuestion,
+      onDeleteQuestion: handleDeleteQuestion,
+      onDeleteZone: handleDeleteZone,
+      onAddToAltGroup: handleAddToAltGroup,
+      onQuestionPicked: handleQuestionPicked,
+      onPickQuestion: handlePickQuestion,
+      onRemoveQuestionByQid: handleRemoveQuestionByQid,
+      onResetButtonClick: resetModal.showWithData,
+    }),
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+    [zones, selectedItem],
+  );
 
   const toggleExpandCollapse = () => {
     if (isAllExpanded) {
@@ -857,18 +958,8 @@ function AssessmentEditorInner({
             left={
               <AssessmentTree
                 zones={zones}
-                questionMetadata={questionMetadata}
-                editMode={editMode}
-                viewType={viewType}
-                selectedItem={selectedItem}
-                setSelectedItem={setSelectedItem}
-                collapsedGroups={collapsedGroups}
-                collapsedZones={collapsedZones}
-                changeTracking={changeTracking}
-                urlPrefix={urlPrefix}
-                hasCoursePermissionPreview={hasCoursePermissionPreview}
-                assessmentType={assessment.type}
-                dispatch={dispatch}
+                state={treeState}
+                actions={treeActions}
                 isAllExpanded={isAllExpanded}
                 editControls={
                   <EditModeToolbar
@@ -886,12 +977,7 @@ function AssessmentEditorInner({
                     }}
                   />
                 }
-                onAddQuestion={handleAddQuestion}
-                onAddAltGroup={handleAddAltGroup}
-                onAddToAltGroup={handleAddToAltGroup}
                 onAddZone={handleAddZone}
-                onDeleteQuestion={handleDeleteQuestion}
-                onDeleteZone={handleDeleteZone}
                 onViewTypeChange={setViewType}
                 onToggleExpandCollapse={toggleExpandCollapse}
               />
@@ -901,27 +987,12 @@ function AssessmentEditorInner({
                 selectedItem={selectedItem}
                 zones={zones}
                 questionMetadata={questionMetadata}
-                editMode={editMode}
-                assessmentType={assessment.type}
-                assessmentDefaults={assessmentDefaults}
-                urlPrefix={urlPrefix}
-                courseId={course.id}
-                hasCoursePermissionPreview={hasCoursePermissionPreview}
+                state={detailState}
+                actions={detailActions}
                 courseQuestions={courseQuestions}
                 courseQuestionsLoading={courseQuestionsQuery.isLoading}
                 questionsInAssessment={questionsInAssessment}
                 currentAssessmentId={assessment.id}
-                onUpdateZone={handleUpdateZone}
-                onUpdateQuestion={handleUpdateQuestion}
-                onDeleteQuestion={handleDeleteQuestion}
-                onDeleteZone={handleDeleteZone}
-                onAddQuestion={handleAddQuestion}
-                onAddAltGroup={handleAddAltGroup}
-                onAddToAltGroup={handleAddToAltGroup}
-                onQuestionPicked={handleQuestionPicked}
-                onPickQuestion={handlePickQuestion}
-                onRemoveQuestionByQid={handleRemoveQuestionByQid}
-                onResetButtonClick={resetModal.showWithData}
               />
             }
           />
@@ -954,7 +1025,6 @@ function AssessmentEditorInner({
     </>
   );
 }
-
 
 interface AssessmentEditorProps extends AssessmentEditorInnerProps {
   trpcCsrfToken: string;

@@ -3,13 +3,17 @@ import type { DraggableAttributes, DraggableSyntheticListeners } from '@dnd-kit/
 export function DragHandle({
   attributes,
   listeners,
+  disabled,
   ariaLabel = 'Drag to reorder',
 }: {
-  attributes: DraggableAttributes;
-  listeners: DraggableSyntheticListeners;
+  attributes?: DraggableAttributes;
+  listeners?: DraggableSyntheticListeners;
+  disabled?: boolean;
   ariaLabel?: string;
 }) {
-  if (!listeners) return null;
+  if (disabled || !listeners) {
+    return null;
+  }
 
   return (
     // eslint-disable-next-line jsx-a11y-x/no-static-element-interactions

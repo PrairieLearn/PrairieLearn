@@ -1,17 +1,14 @@
 import type { StaffAssessmentQuestionRow } from '../../../../lib/assessment-question.shared.js';
-import type { EnumAssessmentType } from '../../../../lib/db-types.js';
 import type {
   CourseQuestionForPicker,
-  QuestionAlternativeForm,
+  DetailActions,
+  DetailState,
   SelectedItem,
   ZoneAssessmentForm,
-  ZoneQuestionBlockForm,
 } from '../../types.js';
-import type { AssessmentAdvancedDefaults } from '../../utils/formHelpers.js';
 import { findQuestionByTrackingId } from '../../utils/useAssessmentEditor.js';
 
 import { AltGroupDetailPanel } from './AltGroupDetailPanel.js';
-import { EmptyDetailPanel } from './EmptyDetailPanel.js';
 import { QuestionDetailPanel } from './QuestionDetailPanel.js';
 import { QuestionPickerPanel } from './QuestionPickerPanel.js';
 import { ZoneDetailPanel } from './ZoneDetailPanel.js';
@@ -20,86 +17,47 @@ export function DetailPanel({
   selectedItem,
   zones,
   questionMetadata,
-  editMode,
-  assessmentType,
-  assessmentDefaults,
-  urlPrefix,
-  courseId,
-  hasCoursePermissionPreview,
+  state,
+  actions,
   courseQuestions,
   courseQuestionsLoading,
   questionsInAssessment,
   currentAssessmentId,
-  onUpdateZone,
-  onUpdateQuestion,
-  onDeleteQuestion,
-  onDeleteZone,
-  onAddQuestion,
-  onAddAltGroup,
-  onAddToAltGroup,
-  onQuestionPicked,
-  onPickQuestion,
-  onRemoveQuestionByQid,
-  onResetButtonClick,
 }: {
   selectedItem: SelectedItem;
   zones: ZoneAssessmentForm[];
   questionMetadata: Record<string, StaffAssessmentQuestionRow>;
-  editMode: boolean;
-  assessmentType: EnumAssessmentType;
-  assessmentDefaults: AssessmentAdvancedDefaults;
-  urlPrefix: string;
-  courseId: string;
-  hasCoursePermissionPreview: boolean;
+  state: DetailState;
+  actions: DetailActions;
   courseQuestions: CourseQuestionForPicker[];
   courseQuestionsLoading: boolean;
   questionsInAssessment: Map<string, string[]>;
   currentAssessmentId: string;
-  onUpdateZone: (zoneTrackingId: string, zone: Partial<ZoneAssessmentForm>) => void;
-  onUpdateQuestion: (
-    questionTrackingId: string,
-    question: Partial<ZoneQuestionBlockForm> | Partial<QuestionAlternativeForm>,
-    alternativeTrackingId?: string,
-  ) => void;
-  onDeleteQuestion: (
-    questionTrackingId: string,
-    questionId: string,
-    alternativeTrackingId?: string,
-  ) => void;
-  onDeleteZone: (zoneTrackingId: string) => void;
-  onAddQuestion: (zoneTrackingId: string) => void;
-  onAddAltGroup: (zoneTrackingId: string) => void;
-  onAddToAltGroup: (altGroupTrackingId: string) => void;
-  onQuestionPicked: (qid: string) => void;
-  onPickQuestion: (currentSelection: SelectedItem) => void;
-  onRemoveQuestionByQid: (qid: string) => void;
-  onResetButtonClick: (assessmentQuestionId: string) => void;
 }) {
   if (selectedItem == null) {
-    return <EmptyDetailPanel />;
+    return null;
   }
 
   switch (selectedItem.type) {
     case 'zone': {
       const zoneIndex = zones.findIndex((z) => z.trackingId === selectedItem.zoneTrackingId);
       const zone = zoneIndex !== -1 ? zones[zoneIndex] : undefined;
-      if (!zone) return <EmptyDetailPanel />;
+      if (!zone) throw new Error(`Zone not found: ${selectedItem.zoneTrackingId}`);
       return (
         <ZoneDetailPanel
           zone={zone}
           zoneIndex={zoneIndex}
           idPrefix={`zone-${zone.trackingId}`}
-          editMode={editMode}
-          assessmentDefaults={assessmentDefaults}
-          onUpdate={onUpdateZone}
-          onDelete={onDeleteZone}
+          state={state}
+          onUpdate={actions.onUpdateZone}
+          onDelete={actions.onDeleteZone}
         />
       );
     }
 
     case 'question': {
       const result = findQuestionByTrackingId(zones, selectedItem.questionTrackingId);
-      if (!result) return <EmptyDetailPanel />;
+      if (!result) throw new Error(`Question not found: ${selectedItem.questionTrackingId}`);
       const { question, zone } = result;
       const questionData = question.id ? questionMetadata[question.id] : null;
       return (
@@ -108,28 +66,28 @@ export function DetailPanel({
           zone={zone}
           questionData={questionData ?? null}
           idPrefix={`question-${question.trackingId}`}
-          editMode={editMode}
-          assessmentType={assessmentType}
-          assessmentDefaults={assessmentDefaults}
-          urlPrefix={urlPrefix}
-          hasCoursePermissionPreview={hasCoursePermissionPreview}
-          onUpdate={onUpdateQuestion}
-          onDelete={onDeleteQuestion}
-          onPickQuestion={onPickQuestion}
-          onResetButtonClick={onResetButtonClick}
+          state={state}
+          onUpdate={actions.onUpdateQuestion}
+          onDelete={actions.onDeleteQuestion}
+          onPickQuestion={actions.onPickQuestion}
+          onResetButtonClick={actions.onResetButtonClick}
         />
       );
     }
 
     case 'alternative': {
       const blockResult = findQuestionByTrackingId(zones, selectedItem.questionTrackingId);
-      if (!blockResult) return <EmptyDetailPanel />;
+      if (!blockResult) {
+        throw new Error(`Question block not found: ${selectedItem.questionTrackingId}`);
+      }
       const block = blockResult.question;
       const zone = blockResult.zone;
       const alternative = block.alternatives?.find(
         (a) => a.trackingId === selectedItem.alternativeTrackingId,
       );
-      if (!alternative) return <EmptyDetailPanel />;
+      if (!alternative) {
+        throw new Error(`Alternative not found: ${selectedItem.alternativeTrackingId}`);
+      }
       const altData = alternative.id ? questionMetadata[alternative.id] : null;
       return (
         <QuestionDetailPanel
@@ -138,34 +96,30 @@ export function DetailPanel({
           zone={zone}
           questionData={altData ?? null}
           idPrefix={`alt-${alternative.trackingId}`}
-          editMode={editMode}
-          assessmentType={assessmentType}
-          assessmentDefaults={assessmentDefaults}
-          urlPrefix={urlPrefix}
-          hasCoursePermissionPreview={hasCoursePermissionPreview}
-          onUpdate={onUpdateQuestion}
-          onDelete={onDeleteQuestion}
-          onPickQuestion={onPickQuestion}
-          onResetButtonClick={onResetButtonClick}
+          state={state}
+          onUpdate={actions.onUpdateQuestion}
+          onDelete={actions.onDeleteQuestion}
+          onPickQuestion={actions.onPickQuestion}
+          onResetButtonClick={actions.onResetButtonClick}
         />
       );
     }
 
     case 'altGroup': {
       const altGroupResult = findQuestionByTrackingId(zones, selectedItem.questionTrackingId);
-      if (!altGroupResult) return <EmptyDetailPanel />;
+      if (!altGroupResult) {
+        throw new Error(`Alt group not found: ${selectedItem.questionTrackingId}`);
+      }
       const block = altGroupResult.question;
       return (
         <AltGroupDetailPanel
           zoneQuestionBlock={block}
           zone={altGroupResult.zone}
           idPrefix={`altgroup-${block.trackingId}`}
-          editMode={editMode}
-          assessmentType={assessmentType}
-          assessmentDefaults={assessmentDefaults}
-          onUpdate={onUpdateQuestion}
-          onDelete={(trackingId) => onDeleteQuestion(trackingId, '')}
-          onAddAlternative={onAddToAltGroup}
+          state={state}
+          onUpdate={actions.onUpdateQuestion}
+          onDelete={(trackingId) => actions.onDeleteQuestion(trackingId, '')}
+          onAddAlternative={actions.onAddToAltGroup}
         />
       );
     }
@@ -177,11 +131,11 @@ export function DetailPanel({
           courseQuestions={courseQuestions}
           isLoading={courseQuestionsLoading}
           questionsInAssessment={questionsInAssessment}
-          courseId={courseId}
-          urlPrefix={urlPrefix}
+          courseId={state.courseId}
+          courseInstanceId={state.courseInstanceId}
           currentAssessmentId={currentAssessmentId}
-          onQuestionSelected={onQuestionPicked}
-          onRemoveQuestionByQid={onRemoveQuestionByQid}
+          onQuestionSelected={actions.onQuestionPicked}
+          onRemoveQuestionByQid={actions.onRemoveQuestionByQid}
         />
       );
   }

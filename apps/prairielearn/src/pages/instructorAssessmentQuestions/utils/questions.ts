@@ -19,6 +19,34 @@ import type {
   ZoneQuestionBlockForm,
 } from '../types.js';
 
+/**
+ * Compresses an array of points by collapsing consecutive runs.
+ * e.g. [10, 10, 10, 5, 5] → "10×3, 5, 5"
+ *      [10, 5, 3] → "10, 5, 3"
+ *      [10] → "10"
+ */
+export function compactPoints(pts: number[]): string {
+  if (pts.length <= 1) return pts.join(', ');
+
+  const runs: { value: number; count: number }[] = [];
+  for (const p of pts) {
+    const last = runs.at(-1);
+    if (last?.value === p) {
+      last.count++;
+    } else {
+      runs.push({ value: p, count: 1 });
+    }
+  }
+
+  return runs
+    .flatMap((r) =>
+      r.count > 2
+        ? [`${r.value}×${r.count}`]
+        : Array.from<string>({ length: r.count }).fill(`${r.value}`),
+    )
+    .join(', ');
+}
+
 export function validatePositiveInteger(value: number | undefined, fieldName: string) {
   if (value !== undefined && value < 1) {
     return `${fieldName} must be at least 1.`;

@@ -2,7 +2,6 @@ import clsx from 'clsx';
 import type {
   FieldError,
   FieldErrors,
-  UseFormGetValues,
   UseFormRegister,
   UseFormSetValue,
   UseFormWatch,
@@ -10,6 +9,7 @@ import type {
 
 import { coerceToBoolean, coerceToNumber } from '../../utils/formHelpers.js';
 
+import { FormCheckField, FormField } from './FormField.js';
 import { InheritableCheckboxField } from './InheritableCheckboxField.js';
 import { InheritableField } from './InheritableField.js';
 
@@ -48,8 +48,7 @@ export interface AdvancedFieldsInheritance {
   forceMaxPointsFromLabel: string;
   watch: UseFormWatch<any>;
   setValue: UseFormSetValue<any>;
-  getValues: UseFormGetValues<any>;
-  onSave: (data: any) => void;
+  resetAndSave: (field: string) => void;
 }
 
 export function AdvancedFields({
@@ -57,12 +56,14 @@ export function AdvancedFields({
   errors,
   idPrefix,
   variant,
+  editMode = true,
   inheritance,
 }: {
   register: UseFormRegister<any>;
   errors?: FieldErrors;
   idPrefix: string;
   variant: 'question' | 'altGroup' | 'zone';
+  editMode?: boolean;
   inheritance: AdvancedFieldsInheritance;
 }) {
   const advanceScorePercRegisterProps = register('advanceScorePerc', {
@@ -81,17 +82,47 @@ export function AdvancedFields({
     },
   });
 
+  const watchedAdvanceScorePerc = inheritance.watch('advanceScorePerc');
+  const watchedGradeRateMinutes = inheritance.watch('gradeRateMinutes');
+  const watchedForceMaxPoints = inheritance.watch('forceMaxPoints');
+  const watchedAllowRealTimeGrading = inheritance.watch('allowRealTimeGrading');
+
+  // In view mode, hide entire section if all effective values are null
+  if (!editMode) {
+    const effectiveAdvanceScorePerc =
+      watchedAdvanceScorePerc ?? inheritance.parentAdvanceScorePerc;
+    const effectiveGradeRateMinutes =
+      watchedGradeRateMinutes ?? inheritance.parentGradeRateMinutes;
+    const effectiveForceMaxPoints = watchedForceMaxPoints ?? inheritance.parentForceMaxPoints;
+    const effectiveAllowRealTimeGrading =
+      watchedAllowRealTimeGrading ?? inheritance.parentAllowRealTimeGrading;
+
+    if (
+      effectiveAdvanceScorePerc == null &&
+      effectiveGradeRateMinutes == null &&
+      effectiveForceMaxPoints == null &&
+      effectiveAllowRealTimeGrading == null
+    ) {
+      return null;
+    }
+  }
+
   const renderAdvanceScorePerc = () => {
     if (inheritance.parentAdvanceScorePerc != null) {
-      const watchedValue = inheritance.watch('advanceScorePerc');
-      const isInherited = watchedValue === undefined;
+      const isInherited = watchedAdvanceScorePerc === undefined;
       return (
         <InheritableField
           id={`${idPrefix}-advanceScorePerc`}
           label="Advance score %"
           inputType="number"
+          editMode={editMode}
           isInherited={isInherited}
           inheritedDisplayValue={String(inheritance.parentAdvanceScorePerc)}
+          viewValue={
+            !isInherited && watchedAdvanceScorePerc != null
+              ? `${watchedAdvanceScorePerc}%`
+              : undefined
+          }
           registerProps={advanceScorePercRegisterProps}
           error={errors?.advanceScorePerc as FieldError | undefined}
           helpText={HELP_TEXT.advanceScorePerc[variant]}
@@ -104,53 +135,53 @@ export function AdvancedFields({
               shouldValidate: true,
             })
           }
-          onReset={() =>
-            inheritance.onSave({ ...inheritance.getValues(), advanceScorePerc: undefined })
-          }
+          onReset={() => inheritance.resetAndSave('advanceScorePerc')}
         />
       );
     }
 
+    const viewValue =
+      watchedAdvanceScorePerc != null ? `${watchedAdvanceScorePerc}%` : undefined;
+
     return (
-      <div className="mb-3">
-        <label htmlFor={`${idPrefix}-advanceScorePerc`} className="form-label">
-          Advance score %
-        </label>
-        <input
-          type="number"
-          className={clsx('form-control form-control-sm', errors?.advanceScorePerc && 'is-invalid')}
-          id={`${idPrefix}-advanceScorePerc`}
-          aria-invalid={!!errors?.advanceScorePerc}
-          aria-errormessage={
-            errors?.advanceScorePerc ? `${idPrefix}-advanceScorePerc-error` : undefined
-          }
-          aria-describedby={`${idPrefix}-advanceScorePerc-help`}
-          {...advanceScorePercRegisterProps}
-        />
-        {errors?.advanceScorePerc && (
-          <div id={`${idPrefix}-advanceScorePerc-error`} className="invalid-feedback">
-            {errors.advanceScorePerc.message as string}
-          </div>
+      <FormField
+        editMode={editMode}
+        id={`${idPrefix}-advanceScorePerc`}
+        label="Advance score %"
+        viewValue={viewValue}
+        hideWhenEmpty
+        error={errors?.advanceScorePerc as FieldError | undefined}
+        helpText={HELP_TEXT.advanceScorePerc[variant]}
+      >
+        {(aria) => (
+          <input
+            type="number"
+            className={clsx('form-control form-control-sm', aria.errorClass)}
+            {...aria.inputProps}
+            {...advanceScorePercRegisterProps}
+          />
         )}
-        <small id={`${idPrefix}-advanceScorePerc-help`} className="form-text text-muted">
-          {HELP_TEXT.advanceScorePerc[variant]}
-        </small>
-      </div>
+      </FormField>
     );
   };
 
   const renderGradeRateMinutes = () => {
     if (inheritance.parentGradeRateMinutes != null) {
-      const watchedValue = inheritance.watch('gradeRateMinutes');
-      const isInherited = watchedValue === undefined;
+      const isInherited = watchedGradeRateMinutes === undefined;
       return (
         <InheritableField
           id={`${idPrefix}-gradeRateMinutes`}
           label="Grade rate (minutes)"
           inputType="number"
           step="any"
+          editMode={editMode}
           isInherited={isInherited}
           inheritedDisplayValue={String(inheritance.parentGradeRateMinutes)}
+          viewValue={
+            !isInherited && watchedGradeRateMinutes != null
+              ? String(watchedGradeRateMinutes)
+              : undefined
+          }
           registerProps={gradeRateMinutesRegisterProps}
           error={errors?.gradeRateMinutes as FieldError | undefined}
           helpText={HELP_TEXT.gradeRateMinutes[variant]}
@@ -163,54 +194,50 @@ export function AdvancedFields({
               shouldValidate: true,
             })
           }
-          onReset={() =>
-            inheritance.onSave({ ...inheritance.getValues(), gradeRateMinutes: undefined })
-          }
+          onReset={() => inheritance.resetAndSave('gradeRateMinutes')}
         />
       );
     }
 
+    const viewValue =
+      watchedGradeRateMinutes != null ? String(watchedGradeRateMinutes) : undefined;
+
     return (
-      <div className="mb-3">
-        <label htmlFor={`${idPrefix}-gradeRateMinutes`} className="form-label">
-          Grade rate (minutes)
-        </label>
-        <input
-          type="number"
-          className={clsx('form-control form-control-sm', errors?.gradeRateMinutes && 'is-invalid')}
-          id={`${idPrefix}-gradeRateMinutes`}
-          aria-invalid={!!errors?.gradeRateMinutes}
-          aria-errormessage={
-            errors?.gradeRateMinutes ? `${idPrefix}-gradeRateMinutes-error` : undefined
-          }
-          aria-describedby={`${idPrefix}-gradeRateMinutes-help`}
-          step="any"
-          {...gradeRateMinutesRegisterProps}
-        />
-        {errors?.gradeRateMinutes && (
-          <div id={`${idPrefix}-gradeRateMinutes-error`} className="invalid-feedback">
-            {errors.gradeRateMinutes.message as string}
-          </div>
+      <FormField
+        editMode={editMode}
+        id={`${idPrefix}-gradeRateMinutes`}
+        label="Grade rate (minutes)"
+        viewValue={viewValue}
+        hideWhenEmpty
+        error={errors?.gradeRateMinutes as FieldError | undefined}
+        helpText={HELP_TEXT.gradeRateMinutes[variant]}
+      >
+        {(aria) => (
+          <input
+            type="number"
+            className={clsx('form-control form-control-sm', aria.errorClass)}
+            step="any"
+            {...aria.inputProps}
+            {...gradeRateMinutesRegisterProps}
+          />
         )}
-        <small id={`${idPrefix}-gradeRateMinutes-help`} className="form-text text-muted">
-          {HELP_TEXT.gradeRateMinutes[variant]}
-        </small>
-      </div>
+      </FormField>
     );
   };
 
   const renderForceMaxPoints = () => {
     if (inheritance.parentForceMaxPoints != null) {
-      const watchedValue = inheritance.watch('forceMaxPoints');
-      const isInherited = watchedValue === undefined;
+      const isInherited = watchedForceMaxPoints === undefined;
       return (
         <InheritableCheckboxField
           id={`${idPrefix}-forceMaxPoints`}
           label="Force max points"
           helpText="Award maximum points when the assessment is regraded. Used to fix broken questions."
+          editMode={editMode}
           isInherited={isInherited}
           inheritedValue={inheritance.parentForceMaxPoints}
           inheritedFromLabel={inheritance.forceMaxPointsFromLabel}
+          viewValue={!isInherited ? !!watchedForceMaxPoints : undefined}
           registerProps={register('forceMaxPoints', { setValueAs: coerceToBoolean })}
           showResetButton={!isInherited}
           onOverride={() =>
@@ -218,44 +245,45 @@ export function AdvancedFields({
               shouldDirty: true,
             })
           }
-          onReset={() =>
-            inheritance.onSave({ ...inheritance.getValues(), forceMaxPoints: undefined })
-          }
+          onReset={() => inheritance.resetAndSave('forceMaxPoints')}
         />
       );
     }
 
     return (
-      <div className="mb-3 form-check">
-        <input
-          type="checkbox"
-          className="form-check-input"
-          id={`${idPrefix}-forceMaxPoints`}
-          aria-describedby={`${idPrefix}-forceMaxPoints-help`}
-          {...register('forceMaxPoints', { setValueAs: coerceToBoolean })}
-        />
-        <label htmlFor={`${idPrefix}-forceMaxPoints`} className="form-check-label">
-          Force max points
-        </label>
-        <small id={`${idPrefix}-forceMaxPoints-help`} className="form-text text-muted d-block">
-          Award maximum points when the assessment is regraded. Used to fix broken questions.
-        </small>
-      </div>
+      <FormCheckField
+        editMode={editMode}
+        id={`${idPrefix}-forceMaxPoints`}
+        label="Force max points"
+        viewValue={!!watchedForceMaxPoints}
+        hideWhenEmpty
+        helpText="Award maximum points when the assessment is regraded. Used to fix broken questions."
+      >
+        {(aria) => (
+          <input
+            type="checkbox"
+            className={clsx('form-check-input', aria.errorClass)}
+            {...aria.inputProps}
+            {...register('forceMaxPoints', { setValueAs: coerceToBoolean })}
+          />
+        )}
+      </FormCheckField>
     );
   };
 
   const renderAllowRealTimeGrading = () => {
     if (inheritance.parentAllowRealTimeGrading != null) {
-      const watchedValue = inheritance.watch('allowRealTimeGrading');
-      const isInherited = watchedValue === undefined;
+      const isInherited = watchedAllowRealTimeGrading === undefined;
       return (
         <InheritableCheckboxField
           id={`${idPrefix}-allowRealTimeGrading`}
           label="Allow real-time grading"
           helpText={HELP_TEXT.allowRealTimeGrading[variant]}
+          editMode={editMode}
           isInherited={isInherited}
           inheritedValue={inheritance.parentAllowRealTimeGrading}
           inheritedFromLabel={inheritance.allowRealTimeGradingFromLabel}
+          viewValue={!isInherited ? !!watchedAllowRealTimeGrading : undefined}
           registerProps={register('allowRealTimeGrading', { setValueAs: coerceToBoolean })}
           showResetButton={!isInherited}
           onOverride={() =>
@@ -263,32 +291,29 @@ export function AdvancedFields({
               shouldDirty: true,
             })
           }
-          onReset={() =>
-            inheritance.onSave({ ...inheritance.getValues(), allowRealTimeGrading: undefined })
-          }
+          onReset={() => inheritance.resetAndSave('allowRealTimeGrading')}
         />
       );
     }
 
     return (
-      <div className="mb-3 form-check">
-        <input
-          type="checkbox"
-          className="form-check-input"
-          id={`${idPrefix}-allowRealTimeGrading`}
-          aria-describedby={`${idPrefix}-allowRealTimeGrading-help`}
-          {...register('allowRealTimeGrading', { setValueAs: coerceToBoolean })}
-        />
-        <label htmlFor={`${idPrefix}-allowRealTimeGrading`} className="form-check-label">
-          Allow real-time grading
-        </label>
-        <small
-          id={`${idPrefix}-allowRealTimeGrading-help`}
-          className="form-text text-muted d-block"
-        >
-          {HELP_TEXT.allowRealTimeGrading[variant]}
-        </small>
-      </div>
+      <FormCheckField
+        editMode={editMode}
+        id={`${idPrefix}-allowRealTimeGrading`}
+        label="Allow real-time grading"
+        viewValue={!!watchedAllowRealTimeGrading}
+        hideWhenEmpty
+        helpText={HELP_TEXT.allowRealTimeGrading[variant]}
+      >
+        {(aria) => (
+          <input
+            type="checkbox"
+            className={clsx('form-check-input', aria.errorClass)}
+            {...aria.inputProps}
+            {...register('allowRealTimeGrading', { setValueAs: coerceToBoolean })}
+          />
+        )}
+      </FormCheckField>
     );
   };
 

@@ -1,0 +1,21 @@
+{
+  "uuid": "a8e3f7d1-4b2c-4e9a-b5d6-1c3f8a2e9b07",
+  "type": "Homework",
+  "set": "Homework",
+  "number": "16",
+  "title": "Editor delete test",
+  "allowAccess": [{ "credit": 100 }],
+  "zones": [
+    {
+      "title": "Keep zone",
+      "questions": [{ "id": "addNumbers", "points": 5, "maxPoints": 10 }]
+    },
+    {
+      "title": "Zone to delete",
+      "questions": [
+        { "id": "partialCredit1", "points": 3 },
+        { "id": "partialCredit2", "points": 4 }
+      ]
+    }
+  ]
+}

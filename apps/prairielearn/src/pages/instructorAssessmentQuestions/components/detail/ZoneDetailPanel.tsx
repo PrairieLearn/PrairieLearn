@@ -2,16 +2,13 @@ import clsx from 'clsx';
 import { useCallback } from 'react';
 import { useForm } from 'react-hook-form';
 
-import type { ZoneAssessmentForm } from '../../types.js';
-import {
-  type AssessmentAdvancedDefaults,
-  coerceToNumber,
-  extractStringComment,
-} from '../../utils/formHelpers.js';
+import type { DetailState, ZoneAssessmentForm } from '../../types.js';
+import { coerceToNumber, extractStringComment } from '../../utils/formHelpers.js';
 import { validatePositiveInteger } from '../../utils/questions.js';
 import { useAutoSave } from '../../utils/useAutoSave.js';
 
 import { AdvancedFields, type AdvancedFieldsInheritance } from './AdvancedFields.js';
+import { FormCheckField, FormField } from './FormField.js';
 
 interface ZoneFormData {
   title: string;
@@ -29,19 +26,18 @@ export function ZoneDetailPanel({
   zone,
   zoneIndex,
   idPrefix,
-  editMode,
-  assessmentDefaults,
+  state,
   onUpdate,
   onDelete,
 }: {
   zone: ZoneAssessmentForm;
   zoneIndex: number;
   idPrefix: string;
-  editMode: boolean;
-  assessmentDefaults: AssessmentAdvancedDefaults;
+  state: DetailState;
   onUpdate: (zoneTrackingId: string, zone: Partial<ZoneAssessmentForm>) => void;
   onDelete: (zoneTrackingId: string) => void;
 }) {
+  const { editMode, assessmentDefaults } = state;
   const formValues: ZoneFormData = {
     title: zone.title ?? '',
     maxPoints: zone.maxPoints ?? undefined,
@@ -85,6 +81,11 @@ export function ZoneDetailPanel({
     [onUpdate, zone.trackingId],
   );
 
+  const resetAndSave = useCallback(
+    (field: string) => handleSave({ ...getValues(), [field]: undefined }),
+    [handleSave, getValues],
+  );
+
   useAutoSave({ isDirty, isValid, getValues, onSave: handleSave });
 
   const advancedInheritance: AdvancedFieldsInheritance = {
@@ -98,257 +99,165 @@ export function ZoneDetailPanel({
     forceMaxPointsFromLabel: 'assessment',
     watch,
     setValue,
-    getValues,
-    onSave: handleSave,
+    resetAndSave,
   };
 
-  if (!editMode) {
-    const effectiveAdvanceScorePerc = zone.advanceScorePerc ?? assessmentDefaults.advanceScorePerc;
-    const effectiveGradeRateMinutes = zone.gradeRateMinutes ?? assessmentDefaults.gradeRateMinutes;
-    const effectiveAllowRealTimeGrading =
-      zone.allowRealTimeGrading ?? assessmentDefaults.allowRealTimeGrading;
-
-    return (
-      <div className="p-3">
-        <dl className="mb-0">
-          <dt>Title</dt>
-          <dd>{zone.title || <span className="text-muted">No title</span>}</dd>
-          {zone.maxPoints != null && (
-            <>
-              <dt>Max points</dt>
-              <dd>{zone.maxPoints}</dd>
-            </>
-          )}
-          {zone.numberChoose != null && (
-            <>
-              <dt>Number to choose</dt>
-              <dd>{zone.numberChoose}</dd>
-            </>
-          )}
-          {zone.bestQuestions != null && (
-            <>
-              <dt>Best questions</dt>
-              <dd>{zone.bestQuestions}</dd>
-            </>
-          )}
-          {zone.lockpoint && (
-            <>
-              <dt>Lockpoint</dt>
-              <dd>Yes</dd>
-            </>
-          )}
-          {zone.comment != null && (
-            <>
-              <dt>Comment</dt>
-              <dd className="text-break">{String(zone.comment)}</dd>
-            </>
-          )}
-          {effectiveAdvanceScorePerc != null && (
-            <>
-              <dt>Advance score %</dt>
-              <dd>
-                {effectiveAdvanceScorePerc}%
-                {zone.advanceScorePerc == null && (
-                  <span className="text-muted"> (inherited from assessment)</span>
-                )}
-              </dd>
-            </>
-          )}
-          {effectiveGradeRateMinutes != null && (
-            <>
-              <dt>Grade rate (minutes)</dt>
-              <dd>
-                {effectiveGradeRateMinutes}
-                {zone.gradeRateMinutes == null && (
-                  <span className="text-muted"> (inherited from assessment)</span>
-                )}
-              </dd>
-            </>
-          )}
-          {effectiveAllowRealTimeGrading != null && (
-            <>
-              <dt>Allow real-time grading</dt>
-              <dd>
-                {effectiveAllowRealTimeGrading ? 'Yes' : 'No'}
-                {zone.allowRealTimeGrading == null && (
-                  <span className="text-muted"> (inherited from assessment)</span>
-                )}
-              </dd>
-            </>
-          )}
-        </dl>
-        <div className="mt-2 text-muted small">
-          {zone.questions.length} question{zone.questions.length !== 1 ? 's' : ''} in zone
-        </div>
-      </div>
-    );
-  }
+  const Wrapper = editMode ? 'div' : 'dl';
 
   return (
     <div className="p-3">
-      <div className="mb-3">
-        <label htmlFor={`${idPrefix}-title`} className="form-label">
-          Title
-        </label>
-        <input
-          type="text"
-          className="form-control form-control-sm"
+      <Wrapper className={clsx(!editMode && 'mb-0')}>
+        <FormField
+          editMode={editMode}
           id={`${idPrefix}-title`}
-          aria-describedby={`${idPrefix}-title-help`}
-          {...register('title')}
-        />
-        <small id={`${idPrefix}-title-help`} className="form-text text-muted">
-          Display name shown to students.
-        </small>
-      </div>
+          label="Title"
+          viewValue={zone.title || <span className="text-muted">No title</span>}
+          helpText="Display name shown to students."
+        >
+          {(aria) => (
+            <input
+              type="text"
+              className="form-control form-control-sm"
+              {...aria.inputProps}
+              {...register('title')}
+            />
+          )}
+        </FormField>
 
-      <div className="mb-3">
-        <label htmlFor={`${idPrefix}-maxPoints`} className="form-label">
-          Max points
-        </label>
-        <input
-          type="number"
-          className={clsx('form-control form-control-sm', errors.maxPoints && 'is-invalid')}
+        <FormField
+          editMode={editMode}
           id={`${idPrefix}-maxPoints`}
-          aria-invalid={!!errors.maxPoints}
-          aria-errormessage={errors.maxPoints ? `${idPrefix}-maxPoints-error` : undefined}
-          aria-describedby={`${idPrefix}-maxPoints-help`}
-          {...register('maxPoints', {
-            setValueAs: coerceToNumber,
-            validate: (v) => {
-              if (v != null && v < 0) return 'Max points must be non-negative.';
-            },
-          })}
-        />
-        {errors.maxPoints && (
-          <div id={`${idPrefix}-maxPoints-error`} className="invalid-feedback">
-            {errors.maxPoints.message}
-          </div>
-        )}
-        <small id={`${idPrefix}-maxPoints-help`} className="form-text text-muted">
-          Maximum total points from this zone that count toward the assessment.
-        </small>
-      </div>
+          label="Max points"
+          viewValue={zone.maxPoints}
+          hideWhenEmpty
+          error={errors.maxPoints}
+          helpText="Maximum total points from this zone that count toward the assessment."
+        >
+          {(aria) => (
+            <input
+              type="number"
+              className={clsx('form-control form-control-sm', aria.errorClass)}
+              {...aria.inputProps}
+              {...register('maxPoints', {
+                setValueAs: coerceToNumber,
+                validate: (v) => {
+                  if (v != null && v < 0) return 'Max points must be non-negative.';
+                },
+              })}
+            />
+          )}
+        </FormField>
 
-      <div className="mb-3">
-        <label htmlFor={`${idPrefix}-numberChoose`} className="form-label">
-          Number to choose
-        </label>
-        <input
-          type="number"
-          className={clsx('form-control form-control-sm', errors.numberChoose && 'is-invalid')}
+        <FormField
+          editMode={editMode}
           id={`${idPrefix}-numberChoose`}
-          aria-invalid={!!errors.numberChoose}
-          aria-errormessage={errors.numberChoose ? `${idPrefix}-numberChoose-error` : undefined}
-          aria-describedby={`${idPrefix}-numberChoose-help`}
-          {...register('numberChoose', {
-            setValueAs: coerceToNumber,
-            validate: (v) => {
-              const msg = validatePositiveInteger(v, 'Number to choose');
-              if (msg) return msg;
-              if (v != null && v > zone.questions.length) {
-                return `Cannot exceed number of questions in zone (${zone.questions.length}).`;
-              }
-            },
-          })}
-        />
-        {errors.numberChoose && (
-          <div id={`${idPrefix}-numberChoose-error`} className="invalid-feedback">
-            {errors.numberChoose.message}
-          </div>
-        )}
-        <small id={`${idPrefix}-numberChoose-help`} className="form-text text-muted">
-          How many questions from this zone to present (leave empty for all).
-        </small>
-      </div>
+          label="Number to choose"
+          viewValue={zone.numberChoose}
+          hideWhenEmpty
+          error={errors.numberChoose}
+          helpText="How many questions from this zone to present (leave empty for all)."
+        >
+          {(aria) => (
+            <input
+              type="number"
+              className={clsx('form-control form-control-sm', aria.errorClass)}
+              {...aria.inputProps}
+              {...register('numberChoose', {
+                setValueAs: coerceToNumber,
+                validate: (v) => {
+                  const msg = validatePositiveInteger(v, 'Number to choose');
+                  if (msg) return msg;
+                  if (v != null && v > zone.questions.length) {
+                    return `Cannot exceed number of questions in zone (${zone.questions.length}).`;
+                  }
+                },
+              })}
+            />
+          )}
+        </FormField>
 
-      <div className="mb-3">
-        <label htmlFor={`${idPrefix}-bestQuestions`} className="form-label">
-          Best questions
-        </label>
-        <input
-          type="number"
-          className={clsx('form-control form-control-sm', errors.bestQuestions && 'is-invalid')}
+        <FormField
+          editMode={editMode}
           id={`${idPrefix}-bestQuestions`}
-          aria-invalid={!!errors.bestQuestions}
-          aria-errormessage={errors.bestQuestions ? `${idPrefix}-bestQuestions-error` : undefined}
-          aria-describedby={`${idPrefix}-bestQuestions-help`}
-          {...register('bestQuestions', {
-            setValueAs: coerceToNumber,
-            validate: (v) => {
-              const msg = validatePositiveInteger(v, 'Best questions');
-              if (msg) return msg;
-              if (v != null && v > zone.questions.length) {
-                return `Cannot exceed number of questions in zone (${zone.questions.length}).`;
-              }
-              const numberChoose = getValues('numberChoose');
-              if (v != null && numberChoose != null && v > numberChoose) {
-                return `Cannot exceed number to choose (${numberChoose}).`;
-              }
-            },
-          })}
-        />
-        {errors.bestQuestions && (
-          <div id={`${idPrefix}-bestQuestions-error`} className="invalid-feedback">
-            {errors.bestQuestions.message}
-          </div>
-        )}
-        <small id={`${idPrefix}-bestQuestions-help`} className="form-text text-muted">
-          Only the N highest-scoring questions in this zone count toward the total (leave empty for
-          all).
-        </small>
-      </div>
+          label="Best questions"
+          viewValue={zone.bestQuestions}
+          hideWhenEmpty
+          error={errors.bestQuestions}
+          helpText="Only the N highest-scoring questions in this zone count toward the total (leave empty for all)."
+        >
+          {(aria) => (
+            <input
+              type="number"
+              className={clsx('form-control form-control-sm', aria.errorClass)}
+              {...aria.inputProps}
+              {...register('bestQuestions', {
+                setValueAs: coerceToNumber,
+                validate: (v) => {
+                  const msg = validatePositiveInteger(v, 'Best questions');
+                  if (msg) return msg;
+                  if (v != null && v > zone.questions.length) {
+                    return `Cannot exceed number of questions in zone (${zone.questions.length}).`;
+                  }
+                  const numberChoose = getValues('numberChoose');
+                  if (v != null && numberChoose != null && v > numberChoose) {
+                    return `Cannot exceed number to choose (${numberChoose}).`;
+                  }
+                },
+              })}
+            />
+          )}
+        </FormField>
 
-      <div className="mb-3 form-check">
-        <input
-          type="checkbox"
-          className={clsx('form-check-input', errors.lockpoint && 'is-invalid')}
+        <FormCheckField
+          editMode={editMode}
           id={`${idPrefix}-lockpoint`}
-          aria-invalid={!!errors.lockpoint}
-          aria-errormessage={errors.lockpoint ? `${idPrefix}-lockpoint-error` : undefined}
-          aria-describedby={`${idPrefix}-lockpoint-help`}
-          {...register('lockpoint', {
-            validate: (v) => {
-              if (v && zoneIndex === 0) {
-                return 'The first zone cannot have lockpoint enabled.';
-              }
-            },
-          })}
-        />
-        <label htmlFor={`${idPrefix}-lockpoint`} className="form-check-label">
-          Lockpoint
-        </label>
-        {errors.lockpoint && (
-          <div id={`${idPrefix}-lockpoint-error`} className="invalid-feedback">
-            {errors.lockpoint.message}
-          </div>
-        )}
-        <small id={`${idPrefix}-lockpoint-help`} className="form-text text-muted d-block">
-          Creates a one-way barrier; crossing it makes all earlier zones read-only.
-        </small>
-      </div>
+          label="Lockpoint"
+          viewValue={zone.lockpoint}
+          hideWhenEmpty
+          error={errors.lockpoint}
+          helpText="Creates a one-way barrier; crossing it makes all earlier zones read-only."
+        >
+          {(aria) => (
+            <input
+              type="checkbox"
+              className={clsx('form-check-input', aria.errorClass)}
+              {...aria.inputProps}
+              {...register('lockpoint', {
+                validate: (v) => {
+                  if (v && zoneIndex === 0) {
+                    return 'The first zone cannot have lockpoint enabled.';
+                  }
+                },
+              })}
+            />
+          )}
+        </FormCheckField>
 
-      <div className="mb-3">
-        <label htmlFor={`${idPrefix}-comment`} className="form-label">
-          Comment
-        </label>
-        <textarea
-          className="form-control form-control-sm"
+        <FormField
+          editMode={editMode}
           id={`${idPrefix}-comment`}
-          aria-describedby={`${idPrefix}-comment-help`}
-          rows={2}
-          {...register('comment')}
-        />
-        <small id={`${idPrefix}-comment-help`} className="form-text text-muted">
-          Internal note, not shown to students.
-        </small>
-      </div>
+          label="Comment"
+          viewValue={zone.comment != null ? <span className="text-break">{String(zone.comment)}</span> : undefined}
+          hideWhenEmpty
+          helpText="Internal note, not shown to students."
+        >
+          {(aria) => (
+            <textarea
+              className="form-control form-control-sm"
+              {...aria.inputProps}
+              rows={2}
+              {...register('comment')}
+            />
+          )}
+        </FormField>
+      </Wrapper>
 
       <AdvancedFields
         register={register}
         errors={errors}
         idPrefix={idPrefix}
         variant="zone"
+        editMode={editMode}
         inheritance={advancedInheritance}
       />
 
@@ -356,13 +265,15 @@ export function ZoneDetailPanel({
         {zone.questions.length} question{zone.questions.length !== 1 ? 's' : ''} in zone
       </div>
 
-      <button
-        type="button"
-        className="btn btn-sm btn-outline-danger"
-        onClick={() => onDelete(zone.trackingId)}
-      >
-        Delete zone
-      </button>
+      {editMode && (
+        <button
+          type="button"
+          className="btn btn-sm btn-outline-danger"
+          onClick={() => onDelete(zone.trackingId)}
+        >
+          Delete zone
+        </button>
+      )}
     </div>
   );
 }

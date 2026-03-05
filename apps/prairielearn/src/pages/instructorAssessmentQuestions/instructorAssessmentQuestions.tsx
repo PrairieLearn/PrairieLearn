@@ -127,7 +127,6 @@ router.get(
                 courseInstance={pageContext.course_instance}
                 questionRows={questionRows}
                 jsonZones={jsonZones}
-                urlPrefix={pageContext.urlPrefix}
                 assessment={pageContext.assessment}
                 hasCoursePermissionPreview={pageContext.authz_data.has_course_permission_preview}
                 canEdit={canEdit ?? false}

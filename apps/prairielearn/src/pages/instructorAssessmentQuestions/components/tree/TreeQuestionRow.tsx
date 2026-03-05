@@ -7,40 +7,18 @@ import { OverlayTrigger } from '@prairielearn/ui';
 import { CopyButton } from '../../../../components/CopyButton.js';
 import { HistMini } from '../../../../components/HistMini.js';
 import type { StaffAssessmentQuestionRow } from '../../../../lib/assessment-question.shared.js';
+import { getQuestionUrl } from '../../../../lib/client/url.js';
 import { isRenderableComment } from '../../../../lib/comments.js';
 import type { EnumAssessmentType } from '../../../../lib/db-types.js';
-import type { QuestionAlternativeForm, ViewType, ZoneQuestionBlockForm } from '../../types.js';
-import type { ChangeTrackingResult } from '../../utils/modifiedTracking.js';
-import { computeQuestionTotalPoints, toAssessmentForPicker } from '../../utils/questions.js';
+import type { QuestionAlternativeForm, TreeState, ZoneQuestionBlockForm } from '../../types.js';
+import {
+  compactPoints,
+  computeQuestionTotalPoints,
+  toAssessmentForPicker,
+} from '../../utils/questions.js';
 import { AssessmentBadges } from '../AssessmentBadges.js';
 
 import { DragHandle } from './DragHandle.js';
-
-/**
- * Compresses an array of points by collapsing consecutive runs.
- * e.g. [10, 10, 10, 5, 5] → "10×3, 5×2"
- *      [10, 5, 3] → "10, 5, 3"
- *      [10] → "10"
- */
-export function compactPoints(pts: number[]): string {
-  if (pts.length <= 1) return pts.join(', ');
-
-  const runs: { value: number; count: number }[] = [];
-  for (const p of pts) {
-    const last = runs[runs.length - 1];
-    if (last?.value === p) {
-      last.count++;
-    } else {
-      runs.push({ value: p, count: 1 });
-    }
-  }
-
-  return runs
-    .flatMap((r) =>
-      r.count > 2 ? [`${r.value}×${r.count}`] : new Array<string>(r.count).fill(`${r.value}`),
-    )
-    .join(', ');
-}
 
 export function PointsBadge({
   question,
@@ -82,7 +60,7 @@ export function PointsBadge({
           }}
         >
           <span className="text-muted small text-nowrap ms-2">
-            <i className="bi bi-shield-fill-check me-1" aria-hidden="true" />
+            <i className="bi bi-pin-angle-fill me-1" aria-hidden="true" />
             {total}
           </span>
         </OverlayTrigger>
@@ -93,13 +71,14 @@ export function PointsBadge({
     const tooltipParts: string[] = [];
 
     if (manualPoints != null) {
+      const manualStr = String(manualPoints);
       compactParts.push(
         <span key="manual">
-          <i className="bi bi-pencil-fill me-1" aria-hidden="true" />
-          {manualPoints}
+          <i className="bi bi-person-fill me-1" aria-hidden="true" />
+          {manualStr}
         </span>,
       );
-      tooltipParts.push(`Manual grading: ${manualPoints} pts`);
+      tooltipParts.push(`Manual grading: ${manualStr} pts`);
     }
 
     if (autoPoints != null) {
@@ -109,7 +88,7 @@ export function PointsBadge({
       }
       compactParts.push(
         <span key="auto">
-          <i className="bi bi-lightning-fill me-1" aria-hidden="true" />
+          <i className="bi bi-lightning-charge-fill me-1" aria-hidden="true" />
           {compactPoints(pts)}
         </span>,
       );
@@ -153,7 +132,7 @@ export function PointsBadge({
         }}
       >
         <span className="text-muted small text-nowrap ms-2">
-          <i className="bi bi-shield-fill-check me-1" aria-hidden="true" />
+          <i className="bi bi-pin-angle-fill me-1" aria-hidden="true" />
           {total}
         </span>
       </OverlayTrigger>
@@ -164,13 +143,14 @@ export function PointsBadge({
   const tooltipParts: string[] = [];
 
   if (manualPoints != null) {
+    const manualStr = String(manualPoints);
     compactParts.push(
       <span key="manual">
-        <i className="bi bi-pencil-fill me-1" aria-hidden="true" />
-        {manualPoints}
+        <i className="bi bi-person-fill me-1" aria-hidden="true" />
+        {manualStr}
       </span>,
     );
-    tooltipParts.push(`Manual grading: ${manualPoints} pts`);
+    tooltipParts.push(`Manual grading: ${manualStr} pts`);
   }
 
   if (initPoints != null || maxAuto != null) {
@@ -181,7 +161,7 @@ export function PointsBadge({
     }
     compactParts.push(
       <span key="auto">
-        <i className="bi bi-lightning-fill me-1" aria-hidden="true" />
+        <i className="bi bi-lightning-charge-fill me-1" aria-hidden="true" />
         {init === max ? init : `${init}/${max}`}
       </span>,
     );
@@ -207,13 +187,8 @@ export function TreeQuestionRow({
   zoneQuestionBlock,
   isAlternative,
   questionData,
-  editMode,
-  viewType,
+  state,
   isSelected,
-  changeTracking,
-  urlPrefix,
-  hasCoursePermissionPreview,
-  assessmentType,
   draggableAttributes,
   draggableListeners,
   onClick,
@@ -223,18 +198,21 @@ export function TreeQuestionRow({
   zoneQuestionBlock: ZoneQuestionBlockForm;
   isAlternative: boolean;
   questionData: StaffAssessmentQuestionRow | null;
-  editMode: boolean;
-  viewType: ViewType;
+  state: TreeState;
   isSelected: boolean;
-  changeTracking: ChangeTrackingResult;
-  urlPrefix: string;
-  hasCoursePermissionPreview: boolean;
-  assessmentType: EnumAssessmentType;
   draggableAttributes?: DraggableAttributes;
   draggableListeners?: DraggableSyntheticListeners;
   onClick: () => void;
   onDelete?: () => void;
 }) {
+  const {
+    editMode,
+    viewType,
+    changeTracking,
+    courseInstanceId,
+    hasCoursePermissionPreview,
+    assessmentType,
+  } = state;
   const changeTooltipId = useId();
   const commentTooltipId = useId();
   const indent = isAlternative ? '4.5rem' : '2.5rem';
@@ -259,16 +237,14 @@ export function TreeQuestionRow({
         }
       }}
     >
-      {editMode && draggableListeners && draggableAttributes && (
-        <DragHandle attributes={draggableAttributes} listeners={draggableListeners} />
-      )}
+      <DragHandle attributes={draggableAttributes} listeners={draggableListeners} disabled={!editMode} />
       <div className="flex-grow-1" style={{ minWidth: 0 }}>
         <div className="text-truncate">
           {questionData ? (
             hasCoursePermissionPreview ? (
               <>
                 <a
-                  href={`${urlPrefix}/question/${questionData.question.id}/`}
+                  href={getQuestionUrl({ courseInstanceId, questionId: questionData.question.id })}
                   className="link-underline-opacity-0 link-underline-opacity-100-hover text-primary-emphasis"
                   onClick={(e) => e.stopPropagation()}
                 >
@@ -294,7 +270,7 @@ export function TreeQuestionRow({
               placement="top"
               tooltip={{ props: { id: changeTooltipId }, body: 'Modified' }}
             >
-              <span className="text-warning ms-1">●</span>
+              <span className="text-primary ms-1">●</span>
             </OverlayTrigger>
           )}
           {isRenderableComment(question.comment) && (
@@ -350,7 +326,7 @@ export function TreeQuestionRow({
               <div className="d-flex flex-wrap align-items-center gap-1 mt-1">
                 <AssessmentBadges
                   assessments={toAssessmentForPicker(questionData.other_assessments)}
-                  urlPrefix={urlPrefix}
+                  courseInstanceId={courseInstanceId}
                 />
               </div>
             )}
@@ -385,7 +361,6 @@ export function TreeQuestionRow({
           <i className="bi bi-trash3" aria-hidden="true" />
         </button>
       )}
-      {!editMode && <i className="bi bi-chevron-right text-muted small ms-1" aria-hidden="true" />}
     </div>
   );
 }

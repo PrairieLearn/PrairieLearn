@@ -1,16 +1,13 @@
 import { useDroppable } from '@dnd-kit/core';
 import { SortableContext, useSortable, verticalListSortingStrategy } from '@dnd-kit/sortable';
 import clsx from 'clsx';
-import { type Dispatch, useCallback, useId, useMemo } from 'react';
+import { useCallback, useId, useMemo } from 'react';
 
 import { run } from '@prairielearn/run';
 import { OverlayTrigger } from '@prairielearn/ui';
 
-import type { StaffAssessmentQuestionRow } from '../../../../lib/assessment-question.shared.js';
 import { isRenderableComment } from '../../../../lib/comments.js';
-import type { EnumAssessmentType } from '../../../../lib/db-types.js';
-import type { EditorAction, SelectedItem, ViewType, ZoneQuestionBlockForm } from '../../types.js';
-import type { ChangeTrackingResult } from '../../utils/modifiedTracking.js';
+import type { TreeActions, TreeState, ZoneQuestionBlockForm } from '../../types.js';
 import { hasPointsMismatch } from '../../utils/questions.js';
 
 import { CollapseToggleButton } from './CollapseToggleButton.js';
@@ -29,39 +26,22 @@ import { makeDraggableStyle } from './dragUtils.js';
  */
 export function TreeQuestionBlockNode({
   zoneQuestionBlock,
-  editMode,
-  viewType,
-  selectedItem,
-  setSelectedItem,
-  questionMetadata,
-  collapsedGroups,
-  changeTracking,
-  urlPrefix,
-  hasCoursePermissionPreview,
-  assessmentType,
-  dispatch,
-  onAddToAltGroup,
-  onDeleteQuestion,
+  state,
+  actions,
 }: {
   zoneQuestionBlock: ZoneQuestionBlockForm;
-  editMode: boolean;
-  viewType: ViewType;
-  selectedItem: SelectedItem;
-  setSelectedItem: (item: SelectedItem) => void;
-  questionMetadata: Record<string, StaffAssessmentQuestionRow>;
-  collapsedGroups: Set<string>;
-  changeTracking: ChangeTrackingResult;
-  urlPrefix: string;
-  hasCoursePermissionPreview: boolean;
-  assessmentType: EnumAssessmentType;
-  dispatch: Dispatch<EditorAction>;
-  onAddToAltGroup?: (altGroupTrackingId: string) => void;
-  onDeleteQuestion: (
-    questionTrackingId: string,
-    questionId: string,
-    alternativeTrackingId?: string,
-  ) => void;
+  state: TreeState;
+  actions: TreeActions;
 }) {
+  const {
+    editMode,
+    selectedItem,
+    questionMetadata,
+    collapsedGroups,
+    changeTracking,
+    assessmentType,
+  } = state;
+  const { setSelectedItem, dispatch, onAddToAltGroup, onDeleteQuestion } = actions;
   const changeTooltipId = useId();
   const commentTooltipId = useId();
   const hasAlternatives = zoneQuestionBlock.id == null;
@@ -117,25 +97,18 @@ export function TreeQuestionBlockNode({
           zoneQuestionBlock={zoneQuestionBlock}
           isAlternative={false}
           questionData={questionData}
-          editMode={editMode}
-          viewType={viewType}
+          state={state}
           isSelected={isSelected}
-          changeTracking={changeTracking}
-          urlPrefix={urlPrefix}
-          hasCoursePermissionPreview={hasCoursePermissionPreview}
-          assessmentType={assessmentType}
-          draggableAttributes={editMode ? attributes : undefined}
-          draggableListeners={editMode ? listeners : undefined}
+          draggableAttributes={attributes}
+          draggableListeners={listeners}
           onClick={() =>
             setSelectedItem({
               type: 'question',
               questionTrackingId: zoneQuestionBlock.trackingId,
             })
           }
-          onDelete={
-            editMode
-              ? () => onDeleteQuestion(zoneQuestionBlock.trackingId, zoneQuestionBlock.id ?? '')
-              : undefined
+          onDelete={() =>
+            onDeleteQuestion(zoneQuestionBlock.trackingId, zoneQuestionBlock.id ?? '')
           }
         />
       </div>
@@ -170,7 +143,12 @@ export function TreeQuestionBlockNode({
           'tree-row d-flex align-items-center py-1 border-bottom user-select-none',
           isAltGroupSelected ? 'tree-row-selected' : 'list-group-item-action',
         )}
-        style={{ paddingLeft: '2.5rem', paddingRight: '0.5rem', cursor: 'pointer' }}
+        style={{
+          paddingLeft: '2.5rem',
+          paddingRight: '0.5rem',
+          cursor: 'pointer',
+          ...(pointsMismatch && { borderLeft: '6px solid var(--bs-warning)' }),
+        }}
         onClick={(e) => {
           e.stopPropagation();
           setSelectedItem({
@@ -188,7 +166,7 @@ export function TreeQuestionBlockNode({
           }
         }}
       >
-        {editMode && <DragHandle attributes={attributes} listeners={listeners} />}
+        <DragHandle attributes={attributes} listeners={listeners} disabled={!editMode} />
         <CollapseToggleButton
           isCollapsed={isCollapsed}
           ariaLabel={isCollapsed ? 'Expand alternatives' : 'Collapse alternatives'}
@@ -229,7 +207,7 @@ export function TreeQuestionBlockNode({
                 placement="top"
                 tooltip={{ props: { id: changeTooltipId }, body: 'Modified' }}
               >
-                <span className="text-warning ms-1">●</span>
+                <span className="text-primary ms-1">●</span>
               </OverlayTrigger>
             )}
             {isRenderableComment(zoneQuestionBlock.comment) && (
@@ -265,7 +243,7 @@ export function TreeQuestionBlockNode({
         {run(() => {
           if (!alternatives || alternatives.length === 0) return null;
           const topics = alternatives
-            .map((alt) => (alt.id ? questionMetadata[alt.id]?.topic : null))
+            .map((alt) => (alt.id ? questionMetadata[alt.id].topic : null))
             .filter(Boolean);
           if (topics.length !== alternatives.length) return null;
           const first = topics[0]!;
@@ -283,9 +261,6 @@ export function TreeQuestionBlockNode({
             assessmentType={assessmentType}
           />
         </div>
-        {!editMode && (
-          <i className="bi bi-chevron-right text-muted small ms-1" aria-hidden="true" />
-        )}
         {editMode && (
           <button
             type="button"
@@ -322,13 +297,8 @@ export function TreeQuestionBlockNode({
                 alternative={alternative}
                 zoneQuestionBlock={zoneQuestionBlock}
                 questionData={altQuestionData}
-                editMode={editMode}
-                viewType={viewType}
+                state={state}
                 isSelected={isAltSelected}
-                changeTracking={changeTracking}
-                urlPrefix={urlPrefix}
-                hasCoursePermissionPreview={hasCoursePermissionPreview}
-                assessmentType={assessmentType}
                 onClick={() =>
                   setSelectedItem({
                     type: 'alternative',
@@ -351,7 +321,7 @@ export function TreeQuestionBlockNode({
           })}
         </SortableContext>
       )}
-      {!isCollapsed && editMode && onAddToAltGroup && (
+      {!isCollapsed && editMode && (
         <div className="border-bottom py-2" style={{ paddingLeft: '4.5rem' }}>
           <button
             type="button"

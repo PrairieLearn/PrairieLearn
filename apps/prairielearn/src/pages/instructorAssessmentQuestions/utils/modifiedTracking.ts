@@ -71,6 +71,7 @@ function buildPropsMap(zones: ZoneAssessmentForm[]): Map<string, string> {
   return map;
 }
 
+
 /**
  * Produces a deterministic JSON string from an object, stripping default
  * values that the form always sends (e.g., `lockpoint: false`) even when
@@ -92,11 +93,8 @@ function zonePropsKey(zone: ZoneAssessmentForm): string {
 }
 
 function questionPropsKey(question: ZoneAssessmentForm['questions'][number]): string {
-  const { trackingId: _trackingId, alternatives, ...rest } = question;
-  // Include the ordered list of child alternative trackingIds so that
-  // reordering alternatives marks the group as modified.
-  const childIds = alternatives?.map((a) => a.trackingId) ?? [];
-  return propsKey({ ...rest, childIds });
+  const { trackingId: _trackingId, alternatives: _alternatives, ...rest } = question;
+  return propsKey(rest);
 }
 
 function alternativePropsKey(alt: { trackingId: string; [key: string]: unknown }): string {

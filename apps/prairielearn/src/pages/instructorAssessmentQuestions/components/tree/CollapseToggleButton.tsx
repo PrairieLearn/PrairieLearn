@@ -1,3 +1,5 @@
+import clsx from 'clsx';
+
 export function CollapseToggleButton({
   isCollapsed,
   ariaLabel,
@@ -17,7 +19,10 @@ export function CollapseToggleButton({
         onToggle();
       }}
     >
-      <i className={`bi bi-chevron-${isCollapsed ? 'right' : 'down'}`} aria-hidden="true" />
+      <i
+        className={clsx('bi', isCollapsed ? 'bi-chevron-right' : 'bi-chevron-down')}
+        aria-hidden="true"
+      />
     </button>
   );
 }

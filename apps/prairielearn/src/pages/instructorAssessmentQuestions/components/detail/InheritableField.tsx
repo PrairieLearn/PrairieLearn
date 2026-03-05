@@ -13,8 +13,10 @@ export function InheritableField({
   label,
   inputType = 'number',
   step,
+  editMode = true,
   isInherited,
   inheritedDisplayValue,
+  viewValue,
   registerProps,
   error,
   helpText,
@@ -29,8 +31,10 @@ export function InheritableField({
   label: string;
   inputType?: 'number' | 'text';
   step?: string;
+  editMode?: boolean;
   isInherited: boolean;
   inheritedDisplayValue: string;
+  viewValue?: string;
   registerProps: UseFormRegisterReturn;
   error?: FieldError;
   helpText: string;
@@ -41,6 +45,29 @@ export function InheritableField({
   onReset: () => void;
   showResetButton: boolean;
 }) {
+  if (!editMode) {
+    if (isInherited) {
+      return (
+        <>
+          <dt>{label}</dt>
+          <dd>
+            {inheritedDisplayValue}{' '}
+            <span className="text-muted">(inherited from {inheritedFromLabel})</span>
+          </dd>
+        </>
+      );
+    }
+    if (viewValue != null) {
+      return (
+        <>
+          <dt>{label}</dt>
+          <dd>{viewValue}</dd>
+        </>
+      );
+    }
+    return null;
+  }
+
   if (isInherited) {
     return (
       <div className="mb-3">

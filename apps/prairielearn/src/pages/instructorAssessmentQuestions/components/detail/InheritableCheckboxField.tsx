@@ -4,9 +4,11 @@ export function InheritableCheckboxField({
   id,
   label,
   helpText,
+  editMode = true,
   isInherited,
   inheritedValue,
   inheritedFromLabel,
+  viewValue,
   registerProps,
   showResetButton,
   onOverride,
@@ -15,14 +17,39 @@ export function InheritableCheckboxField({
   id: string;
   label: string;
   helpText: string;
+  editMode?: boolean;
   isInherited: boolean;
   inheritedValue: boolean;
   inheritedFromLabel: string;
+  viewValue?: boolean;
   registerProps: UseFormRegisterReturn;
   showResetButton: boolean;
   onOverride: () => void;
   onReset: () => void;
 }) {
+  if (!editMode) {
+    if (isInherited) {
+      return (
+        <>
+          <dt>{label}</dt>
+          <dd>
+            {inheritedValue ? 'Yes' : 'No'}{' '}
+            <span className="text-muted">(inherited from {inheritedFromLabel})</span>
+          </dd>
+        </>
+      );
+    }
+    if (viewValue != null) {
+      return (
+        <>
+          <dt>{label}</dt>
+          <dd>{viewValue ? 'Yes' : 'No'}</dd>
+        </>
+      );
+    }
+    return null;
+  }
+
   if (isInherited) {
     return (
       <div className="mb-3 form-check">
