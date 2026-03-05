@@ -14,6 +14,7 @@ import {
   resolveMaxPointsProperty,
   resolvePointsProperty,
   validateNonIncreasingPoints,
+  validatePointsListFormat,
 } from '../../utils/formHelpers.js';
 import { getSharedTags, validatePositiveInteger } from '../../utils/questions.js';
 import { useAutoSave } from '../../utils/useAutoSave.js';
@@ -97,6 +98,12 @@ export function AltGroupDetailPanel({
     },
   });
 
+  useEffect(() => {
+    // Alternatives can be deleted from the tree while this panel is open.
+    // Revalidate immediately so numberChoose errors update without extra input.
+    void trigger('numberChoose');
+  }, [alternativeCount, trigger]);
+
   const handleSave = useCallback(
     (data: AltGroupFormData) =>
       onUpdate(zoneQuestionBlock.trackingId, {
@@ -115,14 +122,6 @@ export function AltGroupDetailPanel({
   );
 
   useAutoSave({ isDirty, isValid, getValues, onSave: handleSave, watch });
-
-  // When alternatives are deleted externally (via the tree), react-hook-form
-  // doesn't re-run the numberChoose validator since the field value didn't
-  // change through user input. Trigger revalidation so the "cannot exceed
-  // number of alternatives" error appears immediately.
-  useEffect(() => {
-    void trigger('numberChoose');
-  }, [alternativeCount, trigger]);
 
   const parentAdvanceScorePerc = zone.advanceScorePerc ?? assessmentDefaults.advanceScorePerc;
   const parentGradeRateMinutes = zone.gradeRateMinutes ?? assessmentDefaults.gradeRateMinutes;
@@ -295,7 +294,10 @@ export function AltGroupDetailPanel({
                   {...aria.inputProps}
                   {...register('points', {
                     setValueAs: parsePointsListValue,
-                    validate: (v) => validateNonIncreasingPoints(v),
+                    validate: {
+                      format: (v) => validatePointsListFormat(v),
+                      nonIncreasing: (v) => validateNonIncreasingPoints(v),
+                    },
                   })}
                 />
               )}

@@ -3,7 +3,9 @@ import * as path from 'node:path';
 
 import type { Page } from '@playwright/test';
 
+import { TEST_COURSE_PATH } from '../../lib/paths.js';
 import { selectAssessmentByTid } from '../../models/assessment.js';
+import { syncCourse } from '../helperCourse.js';
 
 import { expect, test } from './fixtures.js';
 
@@ -45,20 +47,44 @@ async function pointerDrag(
   await page.waitForTimeout(200);
 }
 
+async function resetAssessmentFromTemplate({
+  assessmentTid,
+  testCoursePath,
+}: {
+  assessmentTid: string;
+  testCoursePath: string;
+}): Promise<void> {
+  const relativePath = path.join(
+    'courseInstances',
+    'Sp15',
+    'assessments',
+    assessmentTid,
+    'infoAssessment.json',
+  );
+  await fs.copyFile(
+    path.join(TEST_COURSE_PATH, relativePath),
+    path.join(testCoursePath, relativePath),
+  );
+  await syncCourse(testCoursePath);
+}
+
 test.describe('Assessment questions', () => {
   test.beforeEach(async ({ enableFeatureFlag }) => {
     await enableFeatureFlag('assessment-questions-editor');
   });
 
   test.describe('exam5-perZoneGrading mutations', () => {
-    test.describe.configure({ mode: 'serial' });
+    const assessmentTid = 'exam5-perZoneGrading';
+
+    test.beforeEach(async ({ testCoursePath }) => {
+      await resetAssessmentFromTemplate({ assessmentTid, testCoursePath });
+    });
 
     test('can reorder a question within a zone and save', async ({
       page,
       testCoursePath,
       courseInstance,
     }) => {
-      const assessmentTid = 'exam5-perZoneGrading';
       const assessment = await selectAssessmentByTid({
         course_instance_id: courseInstance.id,
         tid: assessmentTid,
@@ -104,7 +130,6 @@ test.describe('Assessment questions', () => {
     });
 
     test('can drag a question across zones', async ({ page, testCoursePath, courseInstance }) => {
-      const assessmentTid = 'exam5-perZoneGrading';
       const assessment = await selectAssessmentByTid({
         course_instance_id: courseInstance.id,
         tid: assessmentTid,
@@ -130,14 +155,13 @@ test.describe('Assessment questions', () => {
       const savedContent = await fs.readFile(infoAssessmentPath, 'utf-8');
       const savedAssessment = JSON.parse(savedContent);
 
-      // The reorder test left zone 2 as [partialCredit3, partialCredit2, partialCredit4_v2]
       expect(savedAssessment.zones[0].questions.map((q: { id: string }) => q.id)).toEqual([
         'partialCredit4_v2',
         'partialCredit1',
       ]);
       expect(savedAssessment.zones[1].questions.map((q: { id: string }) => q.id)).toEqual([
-        'partialCredit3',
         'partialCredit2',
+        'partialCredit3',
       ]);
     });
   });
@@ -321,6 +345,35 @@ test.describe('Assessment questions', () => {
     expect(lastBlock.numberChoose).toBe(1);
     expect(lastBlock.alternatives).toHaveLength(3);
     expect(lastBlock.alternatives[2].id).toBe('addNumbers');
+  });
+
+  test('revalidates number to choose when alternatives are deleted from the tree', async ({
+    page,
+    courseInstance,
+  }) => {
+    const assessmentTid = 'hw1-automaticTestSuite';
+    const assessment = await selectAssessmentByTid({
+      course_instance_id: courseInstance.id,
+      tid: assessmentTid,
+    });
+
+    await enterEditMode(page, courseInstance.id, assessment.id);
+
+    await page
+      .getByRole('button')
+      .filter({ hasText: /Choose 1 of 2/ })
+      .click();
+
+    const numberChooseInput = page.getByLabel('Number to choose');
+    await numberChooseInput.clear();
+    await numberChooseInput.fill('2');
+    await expect(page.getByText('Cannot exceed number of alternatives (2).')).not.toBeVisible();
+
+    await page
+      .getByRole('button', { name: 'Delete aiGradingMultiImageCapture', exact: true })
+      .click();
+
+    await expect(page.getByText('Cannot exceed number of alternatives (1).')).toBeVisible();
   });
 
   test('can delete questions and a zone', async ({ page, testCoursePath, courseInstance }) => {

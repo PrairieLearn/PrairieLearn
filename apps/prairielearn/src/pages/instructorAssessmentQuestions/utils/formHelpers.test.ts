@@ -5,6 +5,7 @@ import {
   resolvePointsProperty,
   validateAtLeastOnePointsField,
   validateNonIncreasingPoints,
+  validatePointsListFormat,
 } from './formHelpers.js';
 
 describe('parsePointsListValue', () => {
@@ -96,6 +97,26 @@ describe('validateNonIncreasingPoints', () => {
 
   it('returns undefined for undefined', () => {
     expect(validateNonIncreasingPoints(undefined)).toBeUndefined();
+  });
+});
+
+describe('validatePointsListFormat', () => {
+  it('returns an error for a raw string value', () => {
+    expect(validatePointsListFormat('10, abc, 5')).toBe(
+      'Points must be a number or a comma-separated list of numbers.',
+    );
+  });
+
+  it('returns undefined for a number', () => {
+    expect(validatePointsListFormat(7)).toBeUndefined();
+  });
+
+  it('returns undefined for a number array', () => {
+    expect(validatePointsListFormat([10, 8, 5])).toBeUndefined();
+  });
+
+  it('returns undefined for undefined', () => {
+    expect(validatePointsListFormat(undefined)).toBeUndefined();
   });
 });
 

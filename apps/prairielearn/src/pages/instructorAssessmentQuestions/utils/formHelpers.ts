@@ -109,6 +109,17 @@ export function validateNonIncreasingPoints(
 }
 
 /**
+ * Validates that a points-list input parsed to numbers instead of an invalid string.
+ */
+export function validatePointsListFormat(
+  value: number | number[] | string | undefined,
+): string | undefined {
+  if (typeof value === 'string') {
+    return 'Points must be a number or a comma-separated list of numbers.';
+  }
+}
+
+/**
  * Extracts a string comment from a value that may be a string or other type.
  * Returns the comment if it's a string, or undefined otherwise.
  */

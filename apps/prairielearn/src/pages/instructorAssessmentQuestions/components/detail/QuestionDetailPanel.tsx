@@ -33,6 +33,7 @@ import {
   resolvePointsProperty,
   validateAtLeastOnePointsField,
   validateNonIncreasingPoints,
+  validatePointsListFormat,
 } from '../../utils/formHelpers.js';
 import { validatePositiveInteger } from '../../utils/questions.js';
 import { useAutoSave } from '../../utils/useAutoSave.js';
@@ -901,15 +902,13 @@ function ExamPointsFields({
           inheritedDisplayValue={formatPointsValue(inheritedPointsValue)}
           viewValue={!isPointsInherited ? viewAutoPoints : undefined}
           registerProps={register(originalPointsProperty, {
-            pattern: {
-              value: /^[0-9, ]*$/,
-              message: 'Points must be a number or a comma-separated list of numbers.',
-            },
             setValueAs: parsePointsListValue,
             deps: ['manualPoints'],
             validate: {
               atLeastOne: pointsValidation,
-              nonIncreasing: (v: number | number[] | undefined) => validateNonIncreasingPoints(v),
+              format: (v: number | number[] | string | undefined) => validatePointsListFormat(v),
+              nonIncreasing: (v: number | number[] | string | undefined) =>
+                validateNonIncreasingPoints(v),
             },
           })}
           error={errors[originalPointsProperty]}
@@ -948,15 +947,13 @@ function ExamPointsFields({
               className={clsx('form-control form-control-sm', aria.errorClass)}
               {...aria.inputProps}
               {...register(originalPointsProperty, {
-                pattern: {
-                  value: /^[0-9, ]*$/,
-                  message: 'Points must be a number or a comma-separated list of numbers.',
-                },
                 setValueAs: parsePointsListValue,
                 deps: ['manualPoints'],
                 validate: {
                   atLeastOne: pointsValidation,
-                  nonIncreasing: (v: number | number[] | undefined) =>
+                  format: (v: number | number[] | string | undefined) =>
+                    validatePointsListFormat(v),
+                  nonIncreasing: (v: number | number[] | string | undefined) =>
                     validateNonIncreasingPoints(v),
                 },
               })}

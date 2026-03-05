@@ -330,6 +330,7 @@ export function TreeQuestionRow({
         <button
           type="button"
           className="btn btn-sm border-0 text-muted ms-1 tree-delete-btn hover-show"
+          aria-label={`Delete ${question.id ?? 'question'}`}
           title="Delete question"
           onClick={(e) => {
             e.stopPropagation();
