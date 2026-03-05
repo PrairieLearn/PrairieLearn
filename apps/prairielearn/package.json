@@ -148,7 +148,7 @@
     "dockerode": "^4.0.9",
     "domelementtype": "^2.3.0",
     "domhandler": "^5.0.3",
-    "dompurify": "^3.3.1",
+    "dompurify": "^3.3.2",
     "dropzone": "^5.9.3",
     "es-main": "^1.4.0",
     "es-toolkit": "^1.45.0",
