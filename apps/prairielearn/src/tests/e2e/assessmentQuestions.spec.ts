@@ -368,7 +368,7 @@ test.describe('Assessment questions', () => {
 
     await autoPointsInput.clear();
     await expect(
-      page.getByText('At least one of auto points or manual points must be set.'),
+      page.getByText('At least one of auto points or manual points must be set.').first(),
     ).toBeVisible();
 
     await autoPointsInput.fill('0');
