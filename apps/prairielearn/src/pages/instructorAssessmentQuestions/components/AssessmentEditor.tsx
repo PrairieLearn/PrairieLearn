@@ -696,6 +696,18 @@ function AssessmentEditorInner({
         toAltGroupTrackingId: altGroupTrackingId,
         beforeAlternativeTrackingId: null,
       });
+      // The question's trackingId is preserved but it's now an alternative
+      // inside the group. Update the selection so DetailPanel can find it.
+      if (
+        selectedItem?.type === 'question' &&
+        selectedItem.questionTrackingId === activeIdStr
+      ) {
+        setSelectedItem({
+          type: 'alternative',
+          questionTrackingId: altGroupTrackingId,
+          alternativeTrackingId: activeIdStr,
+        });
+      }
       return;
     }
 
