@@ -1,15 +1,15 @@
-import { createTRPCClient, httpLink, TRPCClientError } from '@trpc/client';
+import { TRPCClientError, createTRPCClient, httpLink } from '@trpc/client';
 import superjson from 'superjson';
 import { afterAll, assert, beforeAll, describe, test } from 'vitest';
 
 import { generatePrefixCsrfToken } from '@prairielearn/signed-token';
 
+import { type AiGradingSettingsRouter } from '../ee/pages/instructorInstanceAdminAiGrading/trpc.js';
 import { config } from '../lib/config.js';
 import { features } from '../lib/features/index.js';
 import { decryptFromStorage } from '../lib/storage-crypt.js';
 import { selectCredentials } from '../models/ai-grading-credentials.js';
 import { selectCourseInstanceById } from '../models/course-instances.js';
-import { type AiGradingSettingsRouter } from '../ee/pages/instructorInstanceAdminAiGrading/trpc.js';
 
 import * as helperServer from './helperServer.js';
 import { type AuthUser, getConfiguredUser, getOrCreateUser, withUser } from './utils/auth.js';
@@ -119,26 +119,23 @@ describe('AI grading credentials', () => {
       const anthropicCred = credentials.find((c) => c.provider === 'anthropic');
       assert.isDefined(anthropicCred);
 
-      await client.deleteCredential.mutate({ credential_id: anthropicCred!.id });
+      await client.deleteCredential.mutate({ credential_id: anthropicCred.id });
 
       const remaining = await selectCredentials('1');
       assert.lengthOf(remaining, 1);
       assert.equal(remaining[0].provider, 'openai');
     });
 
-    test.sequential(
-      'deleting a credential from another course instance is a no-op',
-      async () => {
-        const credentials = await selectCredentials('1');
-        const openaiCred = credentials.find((c) => c.provider === 'openai');
-        assert.isDefined(openaiCred);
+    test.sequential('deleting a credential from another course instance is a no-op', async () => {
+      const credentials = await selectCredentials('1');
+      const openaiCred = credentials.find((c) => c.provider === 'openai');
+      assert.isDefined(openaiCred);
 
-        await client.deleteCredential.mutate({ credential_id: '999999' });
+      await client.deleteCredential.mutate({ credential_id: '999999' });
 
-        const remaining = await selectCredentials('1');
-        assert.lengthOf(remaining, 1);
-      },
-    );
+      const remaining = await selectCredentials('1');
+      assert.lengthOf(remaining, 1);
+    });
 
     test.sequential('toggle custom API keys off', async () => {
       const result = await client.updateUseCustomApiKeys.mutate({ enabled: false });
@@ -157,7 +154,7 @@ describe('AI grading credentials', () => {
       const credentials = await selectCredentials('1');
       const googleCred = credentials.find((c) => c.provider === 'google');
       assert.isDefined(googleCred);
-      const decrypted = decryptFromStorage(googleCred!.encrypted_secret_key);
+      const decrypted = decryptFromStorage(googleCred.encrypted_secret_key);
       assert.equal(decrypted, 'sk-google-with-whitespace');
     });
   });
