@@ -162,7 +162,7 @@ function AssessmentEditorInner({
     () => ({
       advanceScorePerc: assessment.advance_score_perc ?? undefined,
       gradeRateMinutes: assessment.json_grade_rate_minutes ?? undefined,
-      allowRealTimeGrading: assessment.json_allow_real_time_grading ?? undefined,
+      allowRealTimeGrading: assessment.json_allow_real_time_grading ?? true,
     }),
     [
       assessment.advance_score_perc,
