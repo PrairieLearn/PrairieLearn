@@ -2,6 +2,8 @@ import clsx from 'clsx';
 import type React from 'react';
 import type { FieldError, UseFormRegisterReturn } from 'react-hook-form';
 
+import type { InheritanceSource } from './AdvancedFields.js';
+
 /**
  * A form field that supports value inheritance from a parent scope
  * (e.g., zone → alt group → question). When `isInherited` is true, the field
@@ -40,7 +42,7 @@ export function InheritableField({
   error?: FieldError;
   helpText: React.ReactNode;
   inheritedValueLabel?: string;
-  inheritedFromLabel?: string;
+  inheritedFromLabel?: InheritanceSource;
   placeholder?: string;
   onOverride: () => void;
   onReset: () => void;

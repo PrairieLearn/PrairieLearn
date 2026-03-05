@@ -7,7 +7,7 @@ import { run } from '@prairielearn/run';
 import { OverlayTrigger } from '@prairielearn/ui';
 
 import type { TreeActions, TreeState, ZoneQuestionBlockForm } from '../../types.js';
-import { hasPointsMismatch } from '../../utils/questions.js';
+import { getSharedTags, hasPointsMismatch } from '../../utils/questions.js';
 
 import { ChangeIndicatorBadges } from './ChangeIndicatorBadges.js';
 import { CollapseToggleButton } from './CollapseToggleButton.js';
@@ -216,24 +216,8 @@ export function TreeQuestionBlockNode({
           {run(() => {
             if (state.viewType !== 'detailed') return null;
             if (!alternatives || alternatives.length === 0) return null;
-            const tagSets = alternatives
-              // eslint-disable-next-line @typescript-eslint/no-unnecessary-condition -- metadata may not be loaded yet
-              .filter((alt) => alt.id && questionMetadata[alt.id]?.tags)
-              .map((alt) => new Set(questionMetadata[alt.id].tags!.map((t) => t.name)));
-            if (tagSets.length === 0) return null;
-            const intersection = new Set(tagSets[0]);
-            for (const s of tagSets.slice(1)) {
-              for (const name of intersection) {
-                if (!s.has(name)) intersection.delete(name);
-              }
-            }
-            if (intersection.size === 0) return null;
-            const firstAlt = alternatives.find((a) => a.id);
-            if (!firstAlt) return null;
-            // eslint-disable-next-line @typescript-eslint/no-unnecessary-condition -- metadata may not be loaded yet
-            const firstTags = questionMetadata[firstAlt.id]?.tags;
-            if (!firstTags) return null;
-            const sharedTags = firstTags.filter((t) => intersection.has(t.name));
+            const sharedTags = getSharedTags(alternatives, questionMetadata);
+            if (sharedTags.length === 0) return null;
             return (
               <div className="d-flex flex-wrap gap-1 mt-1">
                 {sharedTags.map((tag) => (
@@ -270,7 +254,7 @@ export function TreeQuestionBlockNode({
         {editMode && (
           <button
             type="button"
-            className="btn btn-sm border-0 text-muted ms-1 tree-delete-btn tree-hover-show"
+            className="btn btn-sm border-0 text-muted ms-1 tree-delete-btn hover-show"
             title="Delete alternative group"
             onClick={(e) => {
               e.stopPropagation();

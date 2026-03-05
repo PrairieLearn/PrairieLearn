@@ -1,5 +1,7 @@
 import type { UseFormRegisterReturn } from 'react-hook-form';
 
+import type { InheritanceSource } from './AdvancedFields.js';
+
 export function InheritableCheckboxField({
   id,
   label,
@@ -20,7 +22,7 @@ export function InheritableCheckboxField({
   editMode?: boolean;
   isInherited: boolean;
   inheritedValue: boolean;
-  inheritedFromLabel: string;
+  inheritedFromLabel: InheritanceSource;
   viewValue?: boolean;
   registerProps: UseFormRegisterReturn;
   showResetButton: boolean;

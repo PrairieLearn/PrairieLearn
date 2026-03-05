@@ -7,6 +7,7 @@ import type {
   StaffAssessment,
   StaffCourse,
   StaffCourseInstance,
+  StaffTag,
 } from '../../../lib/client/safe-db-types.js';
 import type { EnumAssessmentType } from '../../../lib/db-types.js';
 import type { QuestionPointsJson, ZoneAssessmentJson } from '../../../schemas/infoAssessment.js';
@@ -456,4 +457,32 @@ export function buildQuestionMetadata(opts: {
     start_new_alternative_group: true,
     alternative_group_size: 1,
   });
+}
+
+/**
+ * Computes the set of tags shared across all alternatives in an alt group.
+ * Returns the tag objects from the first alternative that has tags.
+ */
+export function getSharedTags(
+  alternatives: { id: string }[],
+  questionMetadata: Record<string, StaffAssessmentQuestionRow>,
+): StaffTag[] {
+  const tagSets = alternatives
+    // eslint-disable-next-line @typescript-eslint/no-unnecessary-condition -- metadata may not be loaded yet
+    .filter((alt) => alt.id && questionMetadata[alt.id]?.tags)
+    .map((alt) => new Set(questionMetadata[alt.id].tags!.map((t) => t.name)));
+  if (tagSets.length === 0) return [];
+  const intersection = new Set(tagSets[0]);
+  for (const s of tagSets.slice(1)) {
+    for (const name of intersection) {
+      if (!s.has(name)) intersection.delete(name);
+    }
+  }
+  if (intersection.size === 0) return [];
+  const firstAlt = alternatives.find((a) => a.id);
+  if (!firstAlt) return [];
+  // eslint-disable-next-line @typescript-eslint/no-unnecessary-condition -- metadata may not be loaded yet
+  const firstTags = questionMetadata[firstAlt.id]?.tags;
+  if (!firstTags) return [];
+  return firstTags.filter((t) => intersection.has(t.name));
 }

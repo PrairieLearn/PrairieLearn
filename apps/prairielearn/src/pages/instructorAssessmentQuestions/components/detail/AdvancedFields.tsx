@@ -37,15 +37,17 @@ const HELP_TEXT = {
  * Parent values come from the nearest ancestor that sets them
  * (e.g., assessment for a zone, zone for an alt group, alt group for a question).
  */
+export type InheritanceSource = 'zone' | 'group' | 'assessment';
+
 export interface AdvancedFieldsInheritance {
   parentAdvanceScorePerc: number | undefined;
   parentGradeRateMinutes: number | undefined;
   parentAllowRealTimeGrading: boolean | undefined;
   parentForceMaxPoints: boolean | undefined;
-  advanceScorePercFromLabel: string;
-  gradeRateMinutesFromLabel: string;
-  allowRealTimeGradingFromLabel: string;
-  forceMaxPointsFromLabel: string;
+  advanceScorePercFromLabel: InheritanceSource;
+  gradeRateMinutesFromLabel: InheritanceSource;
+  allowRealTimeGradingFromLabel: InheritanceSource;
+  forceMaxPointsFromLabel: InheritanceSource;
   watch: UseFormWatch<any>;
   setValue: UseFormSetValue<any>;
   resetAndSave: (field: string) => void;

@@ -321,7 +321,7 @@ export function QuestionPickerPanel({
                   {isInAssessment && (
                     <button
                       type="button"
-                      className="btn btn-sm border-0 text-muted ms-1 picker-delete-btn picker-hover-show"
+                      className="btn btn-sm border-0 text-muted ms-1 picker-delete-btn hover-show"
                       aria-label={`Remove ${qid} from assessment`}
                       onClick={(e) => {
                         e.stopPropagation();

@@ -2,7 +2,7 @@ import { describe, expect, it } from 'vitest';
 
 import type { TrackingId, ZoneAssessmentForm } from '../types.js';
 
-import { computeChangeTracking } from './modifiedTracking.js';
+import { buildPropsMap, computeChangeTracking } from './modifiedTracking.js';
 
 function tid(): TrackingId {
   return crypto.randomUUID() as TrackingId;
@@ -44,7 +44,7 @@ describe('computeChangeTracking', () => {
       }),
     ];
 
-    const { newIds, modifiedIds } = computeChangeTracking(zones, zones);
+    const { newIds, modifiedIds } = computeChangeTracking(buildPropsMap(zones), zones);
 
     expect(newIds.size).toBe(0);
     expect(modifiedIds.size).toBe(0);
@@ -63,7 +63,10 @@ describe('computeChangeTracking', () => {
       }),
     ];
 
-    const { newIds, modifiedIds } = computeChangeTracking(initialZones, currentZones);
+    const { newIds, modifiedIds } = computeChangeTracking(
+      buildPropsMap(initialZones),
+      currentZones,
+    );
 
     expect(newIds).toContain(newZoneId);
     expect(newIds).toContain(newQuestionId);
@@ -88,7 +91,10 @@ describe('computeChangeTracking', () => {
       }),
     ];
 
-    const { newIds, modifiedIds } = computeChangeTracking(initialZones, currentZones);
+    const { newIds, modifiedIds } = computeChangeTracking(
+      buildPropsMap(initialZones),
+      currentZones,
+    );
 
     expect(newIds.size).toBe(0);
     expect(modifiedIds).toContain(zoneId);
@@ -112,7 +118,10 @@ describe('computeChangeTracking', () => {
       }),
     ];
 
-    const { newIds, modifiedIds } = computeChangeTracking(initialZones, currentZones);
+    const { newIds, modifiedIds } = computeChangeTracking(
+      buildPropsMap(initialZones),
+      currentZones,
+    );
 
     expect(newIds.size).toBe(0);
     expect(modifiedIds.size).toBe(0);
@@ -142,7 +151,7 @@ describe('computeChangeTracking', () => {
       }),
     ];
 
-    const { newIds } = computeChangeTracking(initialZones, currentZones);
+    const { newIds } = computeChangeTracking(buildPropsMap(initialZones), currentZones);
 
     expect(newIds).toContain(altId);
   });
@@ -179,7 +188,10 @@ describe('computeChangeTracking', () => {
       }),
     ];
 
-    const { newIds, modifiedIds } = computeChangeTracking(initialZones, currentZones);
+    const { newIds, modifiedIds } = computeChangeTracking(
+      buildPropsMap(initialZones),
+      currentZones,
+    );
 
     expect(newIds.size).toBe(0);
     expect(modifiedIds.size).toBe(0);

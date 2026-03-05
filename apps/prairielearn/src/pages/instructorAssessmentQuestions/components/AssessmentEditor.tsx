@@ -14,11 +14,9 @@ import { sortableKeyboardCoordinates } from '@dnd-kit/sortable';
 import { QueryClient, useMutation, useQuery, useQueryClient } from '@tanstack/react-query';
 import { parseAsStringLiteral, useQueryState } from 'nuqs';
 import { useEffect, useId, useMemo, useRef, useState } from 'react';
-import OverlayTrigger from 'react-bootstrap/OverlayTrigger';
-import Tooltip from 'react-bootstrap/Tooltip';
 
 import { run } from '@prairielearn/run';
-import { NuqsAdapter, useModalState } from '@prairielearn/ui';
+import { NuqsAdapter, OverlayTrigger, useModalState } from '@prairielearn/ui';
 
 import type { StaffAssessmentQuestionRow } from '../../../lib/assessment-question.shared.js';
 import type {
@@ -48,7 +46,7 @@ import {
   stripTrackingIds,
 } from '../utils/dataTransform.js';
 import type { AssessmentAdvancedDefaults } from '../utils/formHelpers.js';
-import { computeChangeTracking } from '../utils/modifiedTracking.js';
+import { buildPropsMap, computeChangeTracking } from '../utils/modifiedTracking.js';
 import {
   buildQuestionMetadata,
   normalizeQuestionPoints,
@@ -165,9 +163,10 @@ function AssessmentEditorInner({
   const { zones, questionMetadata, collapsedGroups, collapsedZones, dispatch } =
     useAssessmentEditor(initialState);
   const initialZonesJson = useMemo(() => JSON.stringify(initialState.zones), [initialState.zones]);
+  const initialPropsMap = useMemo(() => buildPropsMap(initialState.zones), [initialState.zones]);
   const changeTracking = useMemo(
-    () => computeChangeTracking(initialState.zones, zones),
-    [initialState.zones, zones],
+    () => computeChangeTracking(initialPropsMap, zones),
+    [initialPropsMap, zones],
   );
 
   const assessmentDefaults: AssessmentAdvancedDefaults = useMemo(
@@ -184,8 +183,8 @@ function AssessmentEditorInner({
   );
 
   const [editMode, setEditMode] = useState(false);
-  const [isDragging, setIsDragging] = useState(false);
   const [activeDragId, setActiveDragId] = useState<string | null>(null);
+  const isDragging = activeDragId !== null;
   const isKeyboardDragRef = useRef(false);
   const [selectedItem, setSelectedItem] = useState<SelectedItem>(null);
   const [viewType, setViewType] = useQueryState(
@@ -1065,7 +1064,7 @@ function AssessmentEditorInner({
       <>
         {label}{' '}
         <OverlayTrigger
-          overlay={<Tooltip id={docsTooltipId}>View {docsLabel} documentation</Tooltip>}
+          tooltip={{ body: `View ${docsLabel} documentation`, props: { id: docsTooltipId } }}
         >
           <a
             href={`https://docs.prairielearn.com/assessment/configuration/${anchor}`}
@@ -1143,19 +1142,16 @@ function AssessmentEditorInner({
         collisionDetection={collisionDetection}
         autoScroll={false}
         onDragStart={(event: DragStartEvent) => {
-          setIsDragging(true);
           setActiveDragId(String(event.active.id));
           isKeyboardDragRef.current = event.activatorEvent instanceof KeyboardEvent;
         }}
         onDragOver={handleDragOver}
         onDragEnd={(event: DragEndEvent) => {
-          setIsDragging(false);
           setActiveDragId(null);
           isKeyboardDragRef.current = false;
           handleDragEnd(event);
         }}
         onDragCancel={() => {
-          setIsDragging(false);
           setActiveDragId(null);
           isKeyboardDragRef.current = false;
         }}

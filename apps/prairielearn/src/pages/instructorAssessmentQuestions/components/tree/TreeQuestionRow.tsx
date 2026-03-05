@@ -273,7 +273,7 @@ export function TreeQuestionRow({
           >
             <span className="text-truncate">{question.id}</span>
             {/* eslint-disable-next-line jsx-a11y-x/click-events-have-key-events, jsx-a11y-x/no-static-element-interactions -- wrapper only stops propagation to prevent row click */}
-            <span className="tree-hover-show ms-1" onClick={(e) => e.stopPropagation()}>
+            <span className="hover-show ms-1" onClick={(e) => e.stopPropagation()}>
               <CopyButton
                 text={question.id}
                 tooltipId={`copy-qid-${question.id}`}
@@ -329,7 +329,7 @@ export function TreeQuestionRow({
       {editMode && onDelete && (
         <button
           type="button"
-          className="btn btn-sm border-0 text-muted ms-1 tree-delete-btn tree-hover-show"
+          className="btn btn-sm border-0 text-muted ms-1 tree-delete-btn hover-show"
           title="Delete question"
           onClick={(e) => {
             e.stopPropagation();

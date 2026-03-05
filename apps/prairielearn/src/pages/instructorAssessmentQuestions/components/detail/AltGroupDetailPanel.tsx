@@ -15,7 +15,7 @@ import {
   resolvePointsProperty,
   validateNonIncreasingPoints,
 } from '../../utils/formHelpers.js';
-import { validatePositiveInteger } from '../../utils/questions.js';
+import { getSharedTags, validatePositiveInteger } from '../../utils/questions.js';
 import { useAutoSave } from '../../utils/useAutoSave.js';
 
 import { AdvancedFields, type AdvancedFieldsInheritance } from './AdvancedFields.js';
@@ -61,24 +61,7 @@ export function AltGroupDetailPanel({
   const { editMode, assessmentType, assessmentDefaults } = state;
   const alternativeCount = zoneQuestionBlock.alternatives?.length ?? 0;
 
-  const sharedTags = (() => {
-    const alternatives = zoneQuestionBlock.alternatives ?? [];
-    const tagSets = alternatives
-      .filter(
-        (alt) =>
-          alt.id && (questionMetadata[alt.id] as StaffAssessmentQuestionRow | undefined)?.tags,
-      )
-      .map((alt) => new Set(questionMetadata[alt.id].tags!.map((t) => t.name)));
-    if (tagSets.length === 0) return [];
-    const intersection = tagSets[0];
-    for (const s of tagSets.slice(1)) {
-      for (const name of intersection) {
-        if (!s.has(name)) intersection.delete(name);
-      }
-    }
-    const firstTags = questionMetadata[alternatives.find((a) => a.id)!.id].tags!;
-    return firstTags.filter((t) => intersection.has(t.name));
-  })();
+  const sharedTags = getSharedTags(zoneQuestionBlock.alternatives ?? [], questionMetadata);
 
   const originalPointsProperty = resolvePointsProperty(assessmentType, zoneQuestionBlock);
   const originalMaxProperty = resolveMaxPointsProperty(originalPointsProperty, zoneQuestionBlock);

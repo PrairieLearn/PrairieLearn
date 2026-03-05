@@ -2,38 +2,32 @@
 .tree-delete-btn:hover {
   color: var(--bs-danger) !important;
 }
-.tree-hover-show {
+
+/* Shared hover-show pattern for tree and picker rows */
+.hover-show {
   opacity: 0;
   transition: opacity 0.15s;
 }
-.tree-row:hover .tree-hover-show {
+.tree-row:hover .hover-show,
+.picker-row:hover .hover-show {
   opacity: 1;
 }
-.tree-hover-show:focus-within {
+.hover-show:focus-within {
   opacity: 1;
 }
-[data-dragging] .tree-hover-show {
+[data-dragging] .hover-show {
   opacity: 0 !important;
   pointer-events: none;
 }
+
 .tree-row.list-group-item-action:has(a:hover, .tree-interactive-badge:hover) {
   background-color: transparent;
 }
-.tree-row.list-group-item-action:active:has(.tree-hover-show:active) {
+.tree-row.list-group-item-action:active:has(.hover-show:active) {
   background-color: var(--bs-list-group-action-hover-bg);
 }
 
-/* Question picker hover styles */
-.picker-row .picker-hover-show {
-  opacity: 0;
-  transition: opacity 0.15s;
-}
-.picker-row:hover .picker-hover-show {
-  opacity: 1;
-}
-.picker-hover-show:focus-within {
-  opacity: 1;
-}
+/* Question picker styles */
 .picker-row:not([aria-disabled]):hover {
   background-color: var(--bs-primary-bg-subtle);
 }
