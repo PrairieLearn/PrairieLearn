@@ -575,6 +575,27 @@ function AssessmentEditorInner({
     ) {
       setSelectedItem(null);
     }
+    if (
+      selectedItem?.type === 'altGroupPicker' &&
+      selectedItem.altGroupTrackingId === questionTrackingId
+    ) {
+      setSelectedItem(null);
+    }
+    if (selectedItem?.type === 'picker' && selectedItem.returnToSelection) {
+      const returnTo = selectedItem.returnToSelection;
+      if (
+        (returnTo.type === 'question' || returnTo.type === 'altGroup') &&
+        returnTo.questionTrackingId === questionTrackingId
+      ) {
+        setSelectedItem(null);
+      }
+      if (
+        returnTo.type === 'alternative' &&
+        returnTo.alternativeTrackingId === alternativeTrackingId
+      ) {
+        setSelectedItem(null);
+      }
+    }
 
     dispatch({
       type: 'DELETE_QUESTION',
@@ -585,6 +606,31 @@ function AssessmentEditorInner({
   };
 
   const handleRemoveQuestionByQid = (qid: string) => {
+    // Find the tracking IDs for the question being removed so we can clear selection
+    if (selectedItem) {
+      for (const zone of zones) {
+        for (const q of zone.questions) {
+          if (q.id === qid) {
+            if (
+              (selectedItem.type === 'question' || selectedItem.type === 'altGroup') &&
+              selectedItem.questionTrackingId === q.trackingId
+            ) {
+              setSelectedItem(null);
+            }
+          }
+          for (const alt of q.alternatives ?? []) {
+            if (alt.id === qid) {
+              if (
+                selectedItem.type === 'alternative' &&
+                selectedItem.alternativeTrackingId === alt.trackingId
+              ) {
+                setSelectedItem(null);
+              }
+            }
+          }
+        }
+      }
+    }
     dispatch({ type: 'REMOVE_QUESTION_BY_QID', qid });
   };
 
@@ -604,8 +650,44 @@ function AssessmentEditorInner({
   };
 
   const handleDeleteZone = (zoneTrackingId: string) => {
-    if (selectedItem?.type === 'zone' && selectedItem.zoneTrackingId === zoneTrackingId) {
-      setSelectedItem(null);
+    if (selectedItem) {
+      const zone = zones.find((z) => z.trackingId === zoneTrackingId);
+      const trackingIds = new Set<string>();
+      trackingIds.add(zoneTrackingId);
+      if (zone) {
+        for (const q of zone.questions) {
+          trackingIds.add(q.trackingId);
+          for (const alt of q.alternatives ?? []) {
+            trackingIds.add(alt.trackingId);
+          }
+        }
+      }
+
+      const shouldClear = run(() => {
+        switch (selectedItem.type) {
+          case 'zone':
+            return trackingIds.has(selectedItem.zoneTrackingId);
+          case 'question':
+          case 'altGroup':
+            return trackingIds.has(selectedItem.questionTrackingId);
+          case 'alternative':
+            return trackingIds.has(selectedItem.alternativeTrackingId);
+          case 'picker':
+            return trackingIds.has(selectedItem.zoneTrackingId);
+          case 'altGroupPicker':
+            return (
+              trackingIds.has(selectedItem.zoneTrackingId) ||
+              (selectedItem.altGroupTrackingId !== undefined &&
+                trackingIds.has(selectedItem.altGroupTrackingId))
+            );
+          default:
+            return false;
+        }
+      });
+
+      if (shouldClear) {
+        setSelectedItem(null);
+      }
     }
     dispatch({ type: 'DELETE_ZONE', zoneTrackingId });
   };
