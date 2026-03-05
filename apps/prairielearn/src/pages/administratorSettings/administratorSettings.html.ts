@@ -258,7 +258,7 @@ export function AdministratorSettings({ resLocals }: { resLocals: ResLocalsForPa
               </p>
               <div class="d-flex gap-4 mb-4">
                 <div>
-                  <h6 class="text-body-secondary mb-2">Original (before #14295)</h6>
+                  <div class="text-body-secondary fw-semibold mb-2">Original (before #14295)</div>
                   <table class="table table-sm table-bordered mb-0" style="width: auto">
                     <tbody>
                       ${issueAssessments.map(
@@ -273,7 +273,7 @@ export function AdministratorSettings({ resLocals }: { resLocals: ResLocalsForPa
                   </table>
                 </div>
                 <div>
-                  <h6 class="text-body-secondary mb-2">Current master (#14295)</h6>
+                  <div class="text-body-secondary fw-semibold mb-2">Current master (#14295)</div>
                   <table class="table table-sm table-bordered mb-0" style="width: auto">
                     <tbody>
                       ${issueAssessments.map(
@@ -288,7 +288,7 @@ export function AdministratorSettings({ resLocals }: { resLocals: ResLocalsForPa
                   </table>
                 </div>
                 <div>
-                  <h6 class="text-body-secondary mb-2">This PR</h6>
+                  <div class="text-body-secondary fw-semibold mb-2">This PR</div>
                   <table class="table table-sm table-bordered mb-0" style="width: auto">
                     <tbody>
                       ${issueAssessments.map(
