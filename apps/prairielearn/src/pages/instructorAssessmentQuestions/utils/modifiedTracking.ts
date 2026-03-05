@@ -71,7 +71,6 @@ function buildPropsMap(zones: ZoneAssessmentForm[]): Map<string, string> {
   return map;
 }
 
-
 /**
  * Produces a deterministic JSON string from an object, stripping default
  * values that the form always sends (e.g., `lockpoint: false`) even when

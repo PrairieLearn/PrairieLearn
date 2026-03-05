@@ -13,7 +13,43 @@ async function enterEditMode(page: Page, ciId: string, aId: string): Promise<voi
   await expect(page.locator('[aria-label="Drag to reorder"]').first()).toBeVisible();
 }
 
+/**
+ * Performs a pointer-based drag using dnd-kit's PointerSensor.
+ * Uses Playwright's low-level mouse API to simulate a real drag gesture.
+ *
+ * TODO: this is super ugly, we should figure out how to avoid this. We should be able to use keyboard shortcuts to drag and drop.
+ */
+async function pointerDrag(
+  page: Page,
+  source: ReturnType<Page['locator']>,
+  target: ReturnType<Page['locator']>,
+): Promise<void> {
+  const sourceBox = await source.boundingBox();
+  const targetBox = await target.boundingBox();
+  if (!sourceBox || !targetBox) throw new Error('Could not get bounding boxes');
+
+  const sx = sourceBox.x + sourceBox.width / 2;
+  const sy = sourceBox.y + sourceBox.height / 2;
+  const tx = targetBox.x + targetBox.width / 2;
+  const ty = targetBox.y + targetBox.height / 2;
+
+  await page.mouse.move(sx, sy);
+  await page.mouse.down();
+  // Move in small steps to trigger PointerSensor's distance constraint
+  const stepCount = 10;
+  for (let i = 1; i <= stepCount; i++) {
+    await page.mouse.move(sx + ((tx - sx) * i) / stepCount, sy + ((ty - sy) * i) / stepCount);
+  }
+  await page.waitForTimeout(100);
+  await page.mouse.up();
+  await page.waitForTimeout(200);
+}
+
 test.describe('Assessment questions', () => {
+  test.beforeEach(async ({ enableFeatureFlag }) => {
+    await enableFeatureFlag('assessment-questions-editor');
+  });
+
   test.describe('exam5-perZoneGrading mutations', () => {
     test.describe.configure({ mode: 'serial' });
 
@@ -33,7 +69,8 @@ test.describe('Assessment questions', () => {
       const dragHandles = page.locator('[aria-label="Drag to reorder"]');
       await expect(dragHandles).toHaveCount(4);
 
-      await dragHandles.nth(2).dragTo(dragHandles.nth(1));
+      // Move partialCredit3 (index 2) up one position before partialCredit2
+      await pointerDrag(page, dragHandles.nth(2), dragHandles.nth(1));
 
       await page.getByRole('button', { name: 'Save and sync' }).click();
       await expect(page.getByRole('button', { name: 'Edit questions' })).toBeVisible();
@@ -78,8 +115,8 @@ test.describe('Assessment questions', () => {
       const dragHandles = page.locator('[aria-label="Drag to reorder"]');
       await expect(dragHandles).toHaveCount(4);
 
-      // Drag partialCredit4_v2 (last, zone 2) to zone 1
-      await dragHandles.nth(3).dragTo(dragHandles.nth(0));
+      // Drag partialCredit4_v2 (last, zone 2) up to zone 1
+      await pointerDrag(page, dragHandles.nth(3), dragHandles.nth(0));
 
       await page.getByRole('button', { name: 'Save and sync' }).click();
       await expect(page.getByRole('button', { name: 'Edit questions' })).toBeVisible();
@@ -187,20 +224,23 @@ test.describe('Assessment questions', () => {
     await autoPointsInput.clear();
     await autoPointsInput.fill('7');
 
-    await page.getByRole('button', { name: 'Pick' }).click();
+    // Wait for debounced auto-save to propagate before switching to the picker
+    await expect(async () => {
+      const hiddenZones = await page.locator('input[name="zones"]').inputValue();
+      const parsedZones = JSON.parse(hiddenZones);
+      expect(parsedZones[0].questions[0].points).toBe(7);
+    }).toPass({ timeout: 5000 });
+
+    await page.getByRole('button', { name: 'Change', exact: true }).click();
     await expect(page.getByLabel('Search by QID or title')).toBeVisible();
 
-    await page.getByLabel('Search by QID or title').fill('differentiate');
-
-    await page.getByRole('button', { name: 'Filter by Topic' }).click();
-    await page.getByRole('option', { name: 'Calculus' }).click();
-    await page.keyboard.press('Escape');
+    await page.getByLabel('Search by QID or title').fill('differentiatePolynomial');
 
     await expect(page.getByText(/1 question/)).toBeVisible();
 
     await page.getByRole('button', { name: /^differentiatePolynomial:/ }).click();
 
-    await expect(page.getByLabel('QID')).toHaveValue('differentiatePolynomial');
+    await expect(page.getByLabel('QID', { exact: true })).toHaveValue('differentiatePolynomial');
     await expect(page.getByLabel('Auto points', { exact: true })).toHaveValue('7');
 
     await page.getByRole('button', { name: 'Save and sync' }).click();
@@ -246,7 +286,7 @@ test.describe('Assessment questions', () => {
       .filter({ hasText: /Choose 1 of 2/ })
       .click();
 
-    await page.getByRole('button', { name: 'Add alternative' }).click();
+    await page.getByRole('button', { name: 'Add alternative', exact: true }).last().click();
     await expect(page.getByLabel('Search by QID or title')).toBeVisible();
 
     await page.getByLabel('Search by QID or title').fill('addNumbers');
@@ -282,17 +322,17 @@ test.describe('Assessment questions', () => {
     await enterEditMode(page, courseInstance.id, assessment.id);
 
     await page.getByRole('button').filter({ hasText: 'partialCredit1' }).first().click();
-    await page.getByRole('button', { name: 'Delete' }).click();
+    await page.getByRole('button', { name: 'Delete', exact: true }).click();
 
     await page.getByRole('button').filter({ hasText: 'partialCredit2' }).first().click();
-    await page.getByRole('button', { name: 'Delete' }).click();
+    await page.getByRole('button', { name: 'Delete', exact: true }).click();
 
     // Save should be disabled because the zone has 0 questions
     const saveButton = page.getByRole('button', { name: 'Save and sync' });
     await expect(saveButton).toBeDisabled();
 
     await page.getByRole('button').filter({ hasText: 'Zone to delete' }).first().click();
-    await page.getByRole('button', { name: 'Delete zone' }).click();
+    await page.getByRole('button', { name: 'Delete zone', exact: true }).last().click();
 
     await saveButton.click();
     await expect(page.getByRole('button', { name: 'Edit questions' })).toBeVisible();
@@ -328,7 +368,7 @@ test.describe('Assessment questions', () => {
 
     await autoPointsInput.clear();
     await expect(
-      page.getByText('At least one of auto points or manual points must be set.'),
+      page.getByText('At least one of auto points or manual points must be set.').first(),
     ).toBeVisible();
 
     await autoPointsInput.fill('0');
@@ -361,11 +401,18 @@ test.describe('Assessment questions', () => {
     await enterEditMode(page, courseInstance.id, assessment.id);
 
     await page.getByRole('button').filter({ hasText: 'partialCredit3' }).first().click();
-    await expect(page.getByLabel('Points list')).toBeVisible();
+    await expect(page.getByLabel('Points', { exact: true })).toBeVisible();
 
-    const pointsInput = page.getByLabel('Points list');
+    const pointsInput = page.getByLabel('Points', { exact: true });
     await pointsInput.clear();
     await pointsInput.fill('8, 4, 2');
+
+    // Wait for auto-save to propagate the points change to the hidden form input
+    await expect(async () => {
+      const hiddenZones = await page.locator('input[name="zones"]').inputValue();
+      const parsedZones = JSON.parse(hiddenZones);
+      expect(parsedZones[1].questions[0].points).toEqual([8, 4, 2]);
+    }).toPass({ timeout: 5000 });
 
     await page.getByRole('button', { name: 'Save and sync' }).click();
     await expect(page.getByRole('button', { name: 'Edit questions' })).toBeVisible();

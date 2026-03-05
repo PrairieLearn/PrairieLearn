@@ -237,7 +237,11 @@ export function TreeQuestionRow({
         }
       }}
     >
-      <DragHandle attributes={draggableAttributes} listeners={draggableListeners} disabled={!editMode} />
+      <DragHandle
+        attributes={draggableAttributes}
+        listeners={draggableListeners}
+        disabled={!editMode}
+      />
       <div className="flex-grow-1" style={{ minWidth: 0 }}>
         <div className="text-truncate">
           {questionData ? (

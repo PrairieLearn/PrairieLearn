@@ -237,7 +237,11 @@ export function ZoneDetailPanel({
           editMode={editMode}
           id={`${idPrefix}-comment`}
           label="Comment"
-          viewValue={zone.comment != null ? <span className="text-break">{String(zone.comment)}</span> : undefined}
+          viewValue={
+            zone.comment != null ? (
+              <span className="text-break">{String(zone.comment)}</span>
+            ) : undefined
+          }
           helpText="Internal note, not shown to students."
           hideWhenEmpty
         >

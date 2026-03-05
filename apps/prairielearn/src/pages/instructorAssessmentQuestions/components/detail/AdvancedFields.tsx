@@ -89,10 +89,8 @@ export function AdvancedFields({
 
   // In view mode, hide entire section if all effective values are null
   if (!editMode) {
-    const effectiveAdvanceScorePerc =
-      watchedAdvanceScorePerc ?? inheritance.parentAdvanceScorePerc;
-    const effectiveGradeRateMinutes =
-      watchedGradeRateMinutes ?? inheritance.parentGradeRateMinutes;
+    const effectiveAdvanceScorePerc = watchedAdvanceScorePerc ?? inheritance.parentAdvanceScorePerc;
+    const effectiveGradeRateMinutes = watchedGradeRateMinutes ?? inheritance.parentGradeRateMinutes;
     const effectiveForceMaxPoints = watchedForceMaxPoints ?? inheritance.parentForceMaxPoints;
     const effectiveAllowRealTimeGrading =
       watchedAllowRealTimeGrading ?? inheritance.parentAllowRealTimeGrading;
@@ -140,8 +138,7 @@ export function AdvancedFields({
       );
     }
 
-    const viewValue =
-      watchedAdvanceScorePerc != null ? `${watchedAdvanceScorePerc}%` : undefined;
+    const viewValue = watchedAdvanceScorePerc != null ? `${watchedAdvanceScorePerc}%` : undefined;
 
     return (
       <FormField
@@ -199,8 +196,7 @@ export function AdvancedFields({
       );
     }
 
-    const viewValue =
-      watchedGradeRateMinutes != null ? String(watchedGradeRateMinutes) : undefined;
+    const viewValue = watchedGradeRateMinutes != null ? String(watchedGradeRateMinutes) : undefined;
 
     return (
       <FormField
