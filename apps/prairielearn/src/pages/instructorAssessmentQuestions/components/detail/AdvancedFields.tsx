@@ -42,7 +42,10 @@ export interface AdvancedFieldsInheritance {
   parentGradeRateMinutes: number | undefined;
   parentAllowRealTimeGrading: boolean | undefined;
   parentForceMaxPoints: boolean | undefined;
-  inheritedFromLabel: string;
+  advanceScorePercFromLabel: string;
+  gradeRateMinutesFromLabel: string;
+  allowRealTimeGradingFromLabel: string;
+  forceMaxPointsFromLabel: string;
   watch: UseFormWatch<any>;
   setValue: UseFormSetValue<any>;
   getValues: UseFormGetValues<any>;
@@ -79,7 +82,7 @@ export function AdvancedFields({
   });
 
   const renderAdvanceScorePerc = () => {
-    if (inheritance?.parentAdvanceScorePerc != null) {
+    if (inheritance.parentAdvanceScorePerc != null) {
       const watchedValue = inheritance.watch('advanceScorePerc');
       const isInherited = watchedValue === undefined;
       return (
@@ -93,7 +96,7 @@ export function AdvancedFields({
           error={errors?.advanceScorePerc as FieldError | undefined}
           helpText={HELP_TEXT.advanceScorePerc[variant]}
           inheritedValueLabel={String(inheritance.parentAdvanceScorePerc)}
-          inheritedFromLabel={inheritance.inheritedFromLabel}
+          inheritedFromLabel={inheritance.advanceScorePercFromLabel}
           showResetButton={!isInherited}
           onOverride={() =>
             inheritance.setValue('advanceScorePerc', inheritance.parentAdvanceScorePerc, {
@@ -137,7 +140,7 @@ export function AdvancedFields({
   };
 
   const renderGradeRateMinutes = () => {
-    if (inheritance?.parentGradeRateMinutes != null) {
+    if (inheritance.parentGradeRateMinutes != null) {
       const watchedValue = inheritance.watch('gradeRateMinutes');
       const isInherited = watchedValue === undefined;
       return (
@@ -152,7 +155,7 @@ export function AdvancedFields({
           error={errors?.gradeRateMinutes as FieldError | undefined}
           helpText={HELP_TEXT.gradeRateMinutes[variant]}
           inheritedValueLabel={String(inheritance.parentGradeRateMinutes)}
-          inheritedFromLabel={inheritance.inheritedFromLabel}
+          inheritedFromLabel={inheritance.gradeRateMinutesFromLabel}
           showResetButton={!isInherited}
           onOverride={() =>
             inheritance.setValue('gradeRateMinutes', inheritance.parentGradeRateMinutes, {
@@ -197,7 +200,7 @@ export function AdvancedFields({
   };
 
   const renderForceMaxPoints = () => {
-    if (inheritance?.parentForceMaxPoints != null) {
+    if (inheritance.parentForceMaxPoints != null) {
       const watchedValue = inheritance.watch('forceMaxPoints');
       const isInherited = watchedValue === undefined;
       return (
@@ -207,7 +210,7 @@ export function AdvancedFields({
           helpText="Award maximum points when the assessment is regraded. Used to fix broken questions."
           isInherited={isInherited}
           inheritedValue={inheritance.parentForceMaxPoints}
-          inheritedFromLabel={inheritance.inheritedFromLabel}
+          inheritedFromLabel={inheritance.forceMaxPointsFromLabel}
           registerProps={register('forceMaxPoints', { setValueAs: coerceToBoolean })}
           showResetButton={!isInherited}
           onOverride={() =>
@@ -242,7 +245,7 @@ export function AdvancedFields({
   };
 
   const renderAllowRealTimeGrading = () => {
-    if (inheritance?.parentAllowRealTimeGrading != null) {
+    if (inheritance.parentAllowRealTimeGrading != null) {
       const watchedValue = inheritance.watch('allowRealTimeGrading');
       const isInherited = watchedValue === undefined;
       return (
@@ -252,7 +255,7 @@ export function AdvancedFields({
           helpText={HELP_TEXT.allowRealTimeGrading[variant]}
           isInherited={isInherited}
           inheritedValue={inheritance.parentAllowRealTimeGrading}
-          inheritedFromLabel={inheritance.inheritedFromLabel}
+          inheritedFromLabel={inheritance.allowRealTimeGradingFromLabel}
           registerProps={register('allowRealTimeGrading', { setValueAs: coerceToBoolean })}
           showResetButton={!isInherited}
           onOverride={() =>

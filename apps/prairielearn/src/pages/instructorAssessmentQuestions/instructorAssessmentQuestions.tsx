@@ -106,9 +106,10 @@ router.get(
       PageLayout({
         resLocals: res.locals,
         pageTitle: 'Questions',
-        headContent:
-          compiledScriptTag('instructorAssessmentQuestionsClient.ts') +
+        headContent: [
+          compiledScriptTag('instructorAssessmentQuestionsClient.ts'),
           compiledStylesheetTag('instructorAssessmentQuestions.css'),
+        ],
         navContext: {
           type: 'instructor',
           page: 'assessment',

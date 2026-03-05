@@ -11,8 +11,7 @@ import {
 import { validatePositiveInteger } from '../../utils/questions.js';
 import { useAutoSave } from '../../utils/useAutoSave.js';
 
-import type { AdvancedFieldsInheritance } from './AdvancedFields.js';
-import { AdvancedFields } from './AdvancedFields.js';
+import { AdvancedFields, type AdvancedFieldsInheritance } from './AdvancedFields.js';
 
 interface ZoneFormData {
   title: string;
@@ -94,7 +93,10 @@ export function ZoneDetailPanel({
     parentGradeRateMinutes: assessmentDefaults.gradeRateMinutes,
     parentAllowRealTimeGrading: assessmentDefaults.allowRealTimeGrading,
     parentForceMaxPoints: undefined,
-    inheritedFromLabel: 'assessment',
+    advanceScorePercFromLabel: 'assessment',
+    gradeRateMinutesFromLabel: 'assessment',
+    allowRealTimeGradingFromLabel: 'assessment',
+    forceMaxPointsFromLabel: 'assessment',
     watch,
     setValue,
     getValues,

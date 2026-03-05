@@ -28,8 +28,7 @@ import {
 import { validatePositiveInteger } from '../../utils/questions.js';
 import { useAutoSave } from '../../utils/useAutoSave.js';
 
-import type { AdvancedFieldsInheritance } from './AdvancedFields.js';
-import { AdvancedFields } from './AdvancedFields.js';
+import { AdvancedFields, type AdvancedFieldsInheritance } from './AdvancedFields.js';
 import { InheritableField } from './InheritableField.js';
 
 interface QuestionFormData {
@@ -185,23 +184,30 @@ export function QuestionDetailPanel({
         zone?.allowRealTimeGrading ??
         assessmentDefaults.allowRealTimeGrading;
       const parentForceMaxPoints = zoneQuestionBlock.forceMaxPoints;
-      const inheritedFromLabel =
-        zoneQuestionBlock.advanceScorePerc != null ||
-        zoneQuestionBlock.gradeRateMinutes != null ||
-        zoneQuestionBlock.allowRealTimeGrading != null ||
-        zoneQuestionBlock.forceMaxPoints != null
-          ? 'group'
-          : zone?.advanceScorePerc != null ||
-              zone?.gradeRateMinutes != null ||
-              zone?.allowRealTimeGrading != null
-            ? 'zone'
-            : 'assessment';
       return {
         parentAdvanceScorePerc,
         parentGradeRateMinutes,
         parentAllowRealTimeGrading,
         parentForceMaxPoints,
-        inheritedFromLabel,
+        advanceScorePercFromLabel:
+          zoneQuestionBlock.advanceScorePerc != null
+            ? 'group'
+            : zone?.advanceScorePerc != null
+              ? 'zone'
+              : 'assessment',
+        gradeRateMinutesFromLabel:
+          zoneQuestionBlock.gradeRateMinutes != null
+            ? 'group'
+            : zone?.gradeRateMinutes != null
+              ? 'zone'
+              : 'assessment',
+        allowRealTimeGradingFromLabel:
+          zoneQuestionBlock.allowRealTimeGrading != null
+            ? 'group'
+            : zone?.allowRealTimeGrading != null
+              ? 'zone'
+              : 'assessment',
+        forceMaxPointsFromLabel: zoneQuestionBlock.forceMaxPoints != null ? 'group' : 'assessment',
         watch,
         setValue,
         getValues,
@@ -213,18 +219,15 @@ export function QuestionDetailPanel({
     const parentGradeRateMinutes = zone?.gradeRateMinutes ?? assessmentDefaults.gradeRateMinutes;
     const parentAllowRealTimeGrading =
       zone?.allowRealTimeGrading ?? assessmentDefaults.allowRealTimeGrading;
-    const inheritedFromLabel =
-      zone?.advanceScorePerc != null ||
-      zone?.gradeRateMinutes != null ||
-      zone?.allowRealTimeGrading != null
-        ? 'zone'
-        : 'assessment';
     return {
       parentAdvanceScorePerc,
       parentGradeRateMinutes,
       parentAllowRealTimeGrading,
       parentForceMaxPoints: undefined,
-      inheritedFromLabel,
+      advanceScorePercFromLabel: zone?.advanceScorePerc != null ? 'zone' : 'assessment',
+      gradeRateMinutesFromLabel: zone?.gradeRateMinutes != null ? 'zone' : 'assessment',
+      allowRealTimeGradingFromLabel: zone?.allowRealTimeGrading != null ? 'zone' : 'assessment',
+      forceMaxPointsFromLabel: 'assessment',
       watch,
       setValue,
       getValues,
@@ -325,7 +328,7 @@ export function QuestionDetailPanel({
                   {isInherited && (
                     <span className="text-muted">
                       {' '}
-                      (inherited from {advancedInheritance.inheritedFromLabel})
+                      (inherited from {advancedInheritance.advanceScorePercFromLabel})
                     </span>
                   )}
                 </dd>
@@ -345,7 +348,7 @@ export function QuestionDetailPanel({
                   {isInherited && (
                     <span className="text-muted">
                       {' '}
-                      (inherited from {advancedInheritance.inheritedFromLabel})
+                      (inherited from {advancedInheritance.gradeRateMinutesFromLabel})
                     </span>
                   )}
                 </dd>
@@ -364,7 +367,7 @@ export function QuestionDetailPanel({
                   {isInherited && (
                     <span className="text-muted">
                       {' '}
-                      (inherited from {advancedInheritance.inheritedFromLabel})
+                      (inherited from {advancedInheritance.forceMaxPointsFromLabel})
                     </span>
                   )}
                 </dd>
@@ -384,7 +387,7 @@ export function QuestionDetailPanel({
                   {isInherited && (
                     <span className="text-muted">
                       {' '}
-                      (inherited from {advancedInheritance.inheritedFromLabel})
+                      (inherited from {advancedInheritance.allowRealTimeGradingFromLabel})
                     </span>
                   )}
                 </dd>

@@ -165,7 +165,7 @@ export function DetailPanel({
         assessmentType={assessmentType}
         assessmentDefaults={assessmentDefaults}
         onUpdate={onUpdateQuestion}
-        onDelete={onDeleteQuestion}
+        onDelete={(trackingId) => onDeleteQuestion(trackingId, '')}
         onAddAlternative={onAddToAltGroup}
       />
     );

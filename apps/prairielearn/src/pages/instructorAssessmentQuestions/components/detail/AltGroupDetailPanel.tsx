@@ -16,8 +16,7 @@ import {
 import { validatePositiveInteger } from '../../utils/questions.js';
 import { useAutoSave } from '../../utils/useAutoSave.js';
 
-import type { AdvancedFieldsInheritance } from './AdvancedFields.js';
-import { AdvancedFields } from './AdvancedFields.js';
+import { AdvancedFields, type AdvancedFieldsInheritance } from './AdvancedFields.js';
 
 interface AltGroupFormData {
   numberChoose?: number;
@@ -55,7 +54,7 @@ export function AltGroupDetailPanel({
     questionTrackingId: string,
     question: Partial<ZoneQuestionBlockForm> | Partial<AltGroupFormData>,
   ) => void;
-  onDelete: (questionTrackingId: string, questionId: string) => void;
+  onDelete: (questionTrackingId: string) => void;
   onAddAlternative: (altGroupTrackingId: string) => void;
 }) {
   const alternativeCount = zoneQuestionBlock.alternatives?.length ?? 0;
@@ -103,12 +102,10 @@ export function AltGroupDetailPanel({
     parentGradeRateMinutes,
     parentAllowRealTimeGrading,
     parentForceMaxPoints: undefined,
-    inheritedFromLabel:
-      zone.advanceScorePerc != null ||
-      zone.gradeRateMinutes != null ||
-      zone.allowRealTimeGrading != null
-        ? 'zone'
-        : 'assessment',
+    advanceScorePercFromLabel: zone.advanceScorePerc != null ? 'zone' : 'assessment',
+    gradeRateMinutesFromLabel: zone.gradeRateMinutes != null ? 'zone' : 'assessment',
+    allowRealTimeGradingFromLabel: zone.allowRealTimeGrading != null ? 'zone' : 'assessment',
+    forceMaxPointsFromLabel: 'assessment',
     watch,
     setValue,
     getValues,
@@ -389,7 +386,7 @@ export function AltGroupDetailPanel({
         <button
           type="button"
           className="btn btn-sm btn-outline-danger"
-          onClick={() => onDelete(zoneQuestionBlock.trackingId, '')}
+          onClick={() => onDelete(zoneQuestionBlock.trackingId)}
         >
           Delete alternative group
         </button>
