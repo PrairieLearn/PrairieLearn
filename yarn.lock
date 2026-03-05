@@ -4652,7 +4652,7 @@ __metadata:
     "@types/node": "npm:^24.11.0"
     "@typescript/native-preview": "npm:^7.0.0-dev.20260302.1"
     "@vitest/coverage-v8": "npm:^4.0.18"
-    dompurify: "npm:^3.3.1"
+    dompurify: "npm:^3.3.2"
     jsdom: "npm:^28.1.0"
     marked: "npm:^17.0.3"
     mathjax: "npm:^4.1.1"
@@ -5016,7 +5016,7 @@ __metadata:
     dockerode: "npm:^4.0.9"
     domelementtype: "npm:^2.3.0"
     domhandler: "npm:^5.0.3"
-    dompurify: "npm:^3.3.1"
+    dompurify: "npm:^3.3.2"
     dropzone: "npm:^5.9.3"
     es-main: "npm:^1.4.0"
     es-toolkit: "npm:^1.45.0"
@@ -5065,7 +5065,7 @@ __metadata:
     mime: "npm:^4.1.0"
     minimist: "npm:^1.2.8"
     morphdom: "npm:^2.7.8"
-    multer: "npm:^2.1.0"
+    multer: "npm:^2.1.1"
     mustache: "npm:^4.2.0"
     node-fetch: "npm:^3.3.2"
     node-jose: "npm:^2.2.0"
@@ -12749,15 +12749,15 @@ __metadata:
   languageName: node
   linkType: hard
 
-"dompurify@npm:^3.0.8, dompurify@npm:^3.3.1":
-  version: 3.3.1
-  resolution: "dompurify@npm:3.3.1"
+"dompurify@npm:^3.0.8, dompurify@npm:^3.3.2":
+  version: 3.3.2
+  resolution: "dompurify@npm:3.3.2"
   dependencies:
     "@types/trusted-types": "npm:^2.0.7"
   dependenciesMeta:
     "@types/trusted-types":
       optional: true
-  checksum: 10c0/fa0a8c55a436ba0d54389195e3d2337e311f56de709a2fc9efc98dbbc7746fa53bb4b74b6ac043b77a279a8f2ebd8685f0ebaa6e58c9e32e92051d529bc0baf8
+  checksum: 10c0/8989525f003dd062e829137982b5412143421342991b2732bd621a1efd98b2c3cdc4f37547601d0727d3bc20f1d0eb2a0ecca287d3688f168cdb54ced867ca8f
   languageName: node
   linkType: hard
 
@@ -17329,15 +17329,15 @@ __metadata:
   languageName: node
   linkType: hard
 
-"multer@npm:^2.1.0":
-  version: 2.1.0
-  resolution: "multer@npm:2.1.0"
+"multer@npm:^2.1.1":
+  version: 2.1.1
+  resolution: "multer@npm:2.1.1"
   dependencies:
     append-field: "npm:^1.0.0"
     busboy: "npm:^1.6.0"
     concat-stream: "npm:^2.0.0"
     type-is: "npm:^1.6.18"
-  checksum: 10c0/5b374b9a3dbdfe28bbcacbc070cfa8d81a94f74d2fbf979d96802750b7a463ea54c996faee9d25f323a0c67f55e4f82b2b5f034d91e174daf7bcfb7e0f52c165
+  checksum: 10c0/2ec4e02833b20f403cfb879d4b64d2a9070d902b9deae7aef18a6faadb707d7665385456cf540aa8a6dadfe3d4c5fc8e0e7b0675b94e1077048b1125426deee6
   languageName: node
   linkType: hard
 
@@ -21334,9 +21334,9 @@ __metadata:
   linkType: hard
 
 "underscore@npm:>=1.8.3":
-  version: 1.13.6
-  resolution: "underscore@npm:1.13.6"
-  checksum: 10c0/5f57047f47273044c045fddeb8b141dafa703aa487afd84b319c2495de2e685cecd0b74abec098292320d518b267c0c4598e45aa47d4c3628d0d4020966ba521
+  version: 1.13.8
+  resolution: "underscore@npm:1.13.8"
+  checksum: 10c0/6677688daeda30484823e77c0b89ce4dcf29964a77d5a06f37299c007ab4bb1c66a0ff75e0d274620b62a1fe2a6ba29879f8214533ca611d71a1ae504f2bfc9b
   languageName: node
   linkType: hard
 
