@@ -1,7 +1,5 @@
 import { describe, expect, it } from 'vitest';
 
-import type { PageAuthzData } from '../authz-data-lib.js';
-
 import { extractPageContext } from './page-context.js';
 import type { StaffInstitution, StaffUser } from './safe-db-types.js';
 
@@ -370,10 +368,7 @@ const mockAssessmentQuestionData = {
 describe('extractPageContext', () => {
   it('strips extra fields from the data for plain pageType', () => {
     const mockData = {
-      authz_data: createInstructorAuthzData({
-        authn_user: { ...TEST_USER, foo: 'bar' },
-        user: { ...TEST_USER, foo: 'bar' },
-      }),
+      authz_data: createInstructorAuthzData(),
       ...createBaseContext({ plainUrlPrefix: undefined }),
       authn_user: { ...TEST_USER, foo: 'bar' },
       extraField: 'this should be stripped',
@@ -381,10 +376,6 @@ describe('extractPageContext', () => {
     };
 
     const expected = {
-      authz_data: createInstructorAuthzData({
-        authn_user: TEST_USER as StaffUser,
-        user: TEST_USER as StaffUser,
-      }) as PageAuthzData,
       ...createBaseContext({ plainUrlPrefix: undefined }),
       authn_user: TEST_USER as StaffUser,
       authn_institution: TEST_INSTITUTION as StaffInstitution,
@@ -396,23 +387,21 @@ describe('extractPageContext', () => {
     });
 
     expect(result).toEqual(expected);
+    expect(result).not.toHaveProperty('authz_data');
   });
 
-  it('throws error when required fields are missing', () => {
-    const invalidData = {
-      // Missing most fields
-      authz_data: {
-        has_course_instance_permission_edit: true,
-        // Missing required fields like authn_is_administrator, is_administrator, user, etc.
-      },
+  it('does not include authz data for plain pages even when withAuthzData is true', () => {
+    const mockData = {
+      ...createBaseContext(),
+      authz_data: createInstructorAuthzData(),
     };
 
-    expect(() =>
-      extractPageContext(invalidData, {
-        pageType: 'plain',
-        accessType: 'instructor',
-      }),
-    ).toThrow();
+    const result = extractPageContext(mockData, {
+      pageType: 'plain',
+      accessType: 'instructor',
+    });
+
+    expect(result).not.toHaveProperty('authz_data');
   });
 
   it('returns plain context without authz data when withAuthzData is false', () => {
@@ -429,7 +418,95 @@ describe('extractPageContext', () => {
   });
 });
 
+const createCourseOnlyAuthzData = (overrides: Record<string, any> = {}) => ({
+  authn_user: TEST_USER,
+  authn_is_administrator: false,
+  authn_has_course_permission_preview: true,
+  authn_has_course_permission_view: true,
+  authn_has_course_permission_edit: true,
+  authn_has_course_permission_own: true,
+  authn_course_role: 'Owner',
+  authn_mode: 'Public',
+  is_administrator: false,
+  has_course_permission_preview: true,
+  has_course_permission_view: true,
+  has_course_permission_edit: true,
+  has_course_permission_own: true,
+  course_role: 'Owner',
+  mode: 'Public',
+  user: TEST_USER,
+  ...overrides,
+});
+
+describe('extractPageContext with course pageType', () => {
+  it('parses course authz data without CI properties', () => {
+    const mockData = {
+      ...createBaseContext({ navbarType: 'instructor' }),
+      ...mockInstructorData,
+      authz_data: createCourseOnlyAuthzData(),
+    };
+
+    const result = extractPageContext(mockData, {
+      pageType: 'course',
+      accessType: 'instructor',
+    });
+
+    expect(result).toHaveProperty('authz_data');
+    expect(result).toHaveProperty('course');
+    expect(result.authz_data.has_course_permission_edit).toBe(true);
+    expect(result.authz_data).not.toHaveProperty('has_course_instance_permission_edit');
+  });
+
+  it('returns authz_data with required course_role for course pages', () => {
+    const mockData = {
+      ...createBaseContext({ navbarType: 'instructor' }),
+      ...mockInstructorData,
+      authz_data: createCourseOnlyAuthzData(),
+    };
+
+    const result = extractPageContext(mockData, {
+      pageType: 'course',
+      accessType: 'instructor',
+    });
+
+    expect(result.authz_data.course_role).toBe('Owner');
+  });
+});
+
 describe('extractPageContext with courseInstance pageType', () => {
+  it('throws when CI authz properties are missing', () => {
+    const mockData = {
+      ...createBaseContext(),
+      ...mockStudentData,
+      authz_data: createCourseOnlyAuthzData(),
+    };
+
+    expect(() =>
+      extractPageContext(mockData, {
+        pageType: 'courseInstance',
+        accessType: 'student',
+      }),
+    ).toThrow();
+  });
+
+  it('returns authz_data with required CI properties', () => {
+    const mockData = {
+      ...createBaseContext({ navbarType: 'instructor' }),
+      ...mockInstructorData,
+      authz_data: createInstructorAuthzData(),
+    };
+
+    const result = extractPageContext(mockData, {
+      pageType: 'courseInstance',
+      accessType: 'instructor',
+    });
+
+    expect(result.authz_data.has_course_instance_permission_edit).toBe(true);
+    expect(result.authz_data.has_course_instance_permission_view).toBe(true);
+    expect(result.authz_data.has_student_access).toBe(false);
+    expect(result.authz_data.has_student_access_with_enrollment).toBe(false);
+  });
+
   it('parses student context correctly and includes base context', () => {
     const mockDataWithBase = {
       ...mockStudentData,
