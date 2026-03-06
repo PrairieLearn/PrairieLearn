@@ -57,7 +57,10 @@ async function createTestData(courseInstanceId: string): Promise<string> {
       z.string(),
     );
 
-    await sqldb.execute(sql.insert_enrollment, { user_id: userId, course_instance_id: courseInstanceId });
+    await sqldb.execute(sql.insert_enrollment, {
+      user_id: userId,
+      course_instance_id: courseInstanceId,
+    });
 
     if (student.score !== null) {
       await sqldb.execute(sql.insert_assessment_instance, {
