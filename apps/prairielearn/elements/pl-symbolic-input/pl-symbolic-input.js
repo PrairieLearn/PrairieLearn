@@ -375,7 +375,8 @@
       {
         id: 'power',
         label: () => '<span class="ML__insert-template">x<sup>y</sup></span>',
-        onMenuSelect: () => mf.insert('\\left({#@}\\right)^{#?}'),
+        onMenuSelect: () =>
+          isSelected(mf) ? mf.insert('\\left({#@}\\right)^{#?}') : mf.insert('{#@}^{#?}'),
       },
       {
         id: 'sqrt',
