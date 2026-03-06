@@ -52,8 +52,6 @@ def grade_o_expression(
         assumptions={var: {"positive": True} for var in variables},
     )
 
-    # print(f"true {sym_true_source}, sub {sym_sub_source}")
-
     if sym_true_source == sym_sub_source:
         return (1, CORRECT_UNCONDITIONAL_FEEDBACK)
 
