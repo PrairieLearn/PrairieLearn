@@ -43,7 +43,6 @@ export function AltGroupDetailPanel({
   state,
   onUpdate,
   onDelete,
-  onAddAlternative,
 }: {
   zoneQuestionBlock: ZoneQuestionBlockForm;
   zone: ZoneAssessmentForm;
@@ -55,7 +54,6 @@ export function AltGroupDetailPanel({
     question: Partial<ZoneQuestionBlockForm> | Partial<AltGroupFormData>,
   ) => void;
   onDelete: (questionTrackingId: string) => void;
-  onAddAlternative: (altGroupTrackingId: string) => void;
 }) {
   const { editMode, assessmentType, assessmentDefaults } = state;
   const alternativeCount = zoneQuestionBlock.alternatives?.length ?? 0;
@@ -367,13 +365,6 @@ export function AltGroupDetailPanel({
 
       {editMode && (
         <div className="d-flex gap-2">
-          <button
-            type="button"
-            className="btn btn-sm btn-outline-secondary"
-            onClick={() => onAddAlternative(zoneQuestionBlock.trackingId)}
-          >
-            Add alternative
-          </button>
           <button
             type="button"
             className="btn btn-sm btn-outline-danger"

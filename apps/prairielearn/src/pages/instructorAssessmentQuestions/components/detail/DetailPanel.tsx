@@ -137,7 +137,6 @@ export function DetailPanel({
           state={state}
           onUpdate={actions.onUpdateQuestion}
           onDelete={(trackingId) => actions.onDeleteQuestion(trackingId, '')}
-          onAddAlternative={actions.onAddToAltGroup}
         />
       );
     }
