@@ -1,32 +1,32 @@
 {
   "prairielearn/executor": {
     "linux/amd64": {
-      "digest": "sha256:961ebe76a50a87dc19ca24da47e03668527cf990015b85e5e0362b33e3681257",
-      "size": 1326053272
+      "digest": "sha256:5b95c986996dc4f0c23a2ab81d7634a5e7e94184ad92e47469cc77bca095d1fb",
+      "size": 1322159796
     },
     "linux/arm64": {
-      "digest": "sha256:a6a8e014f95100a076c41bb1decddcde9ec816b5902f272d9606138f4d1fa3f2",
-      "size": 1292126755
+      "digest": "sha256:c9cd48cdf847a41867e00e54004b99992a3fd5e77c017cb21f7a05f1362e0c86",
+      "size": 1288115235
     }
   },
   "prairielearn/prairielearn": {
     "linux/amd64": {
-      "digest": "sha256:038d2ce5b95688bacaffb8280d71c6aacd4a52cc840ce3d67a31ede7ee4897e2",
-      "size": 1326050438
+      "digest": "sha256:e5ac647260ccd3eb30881bee766e45ffd4f73016355bf439f3c979731a20cd0c",
+      "size": 1322156966
     },
     "linux/arm64": {
-      "digest": "sha256:923aede95becc59055f8fd1d61b0c34fd59b9635f998a3bdc3eb3d309bf9dfe8",
-      "size": 1292123927
+      "digest": "sha256:ad4951e761de1f3ab89c7d1a3a42dc8869b5cc7e41e91882066520cf8a80828f",
+      "size": 1288112406
     }
   },
   "prairielearn/workspace-desktop": {
     "linux/amd64": {
-      "digest": "sha256:a1ab4395f64e6b7a89a3f5f37b02f2b90ff1f6704e8cf5dcc478bf71cded0b30",
-      "size": 809276762
+      "digest": "sha256:ba0a3a131670a54e2581a4f4f8dddbf790348a3a28c579da1f18d4cee829916c",
+      "size": 809108721
     },
     "linux/arm64": {
-      "digest": "sha256:328e7fa07b27d4c9a92766465206d74968df93dce6583486df89894b841a8524",
-      "size": 788101665
+      "digest": "sha256:84bda75f396b0cae6fb84312b3acdc0f5969ceb3f1feb9d2baee31e66b824d1e",
+      "size": 787463772
     }
   },
   "prairielearn/grader-python": {
@@ -107,6 +107,16 @@
     "linux/arm64": {
       "digest": "sha256:a42644e0f0692ef0967d970eaaefbb82d9ad81fcf52e0081bcbc6a8a885198f0",
       "size": 487371234
+    }
+  },
+  "prairielearn/workspace-xtermjs": {
+    "linux/amd64": {
+      "digest": "sha256:7dc43cc28b8f7b7cc14b71d7f1f96dca020e5f22c080b097e21ce2722f3c7862",
+      "size": 512323402
+    },
+    "linux/arm64": {
+      "digest": "sha256:b8e286aae11d82177cce1fd86637988a1daa09ba1e1a247371f6118dda2db811",
+      "size": 502002204
     }
   }
 }
