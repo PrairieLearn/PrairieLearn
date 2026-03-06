@@ -13,6 +13,7 @@ import {
   compactPoints,
   computeQuestionTotalPoints,
   computeZonePointTotals,
+  computeZoneQuestionCount,
   hasPointsMismatch,
   hasZonePointsMismatch,
   normalizeQuestionPoints,
@@ -20,50 +21,29 @@ import {
 } from './questions.js';
 
 describe('compactPoints', () => {
-  it('returns empty string for empty array', () => {
-    expect(compactPoints([])).toBe('');
-  });
-
-  it('returns single value for single-element array', () => {
-    expect(compactPoints([10])).toBe('10');
-  });
-
-  it('joins distinct values with commas', () => {
-    expect(compactPoints([10, 5, 3])).toBe('10, 5, 3');
-  });
-
-  it('does not collapse runs of 2', () => {
-    expect(compactPoints([10, 10])).toBe('10, 10');
-  });
-
-  it('collapses runs of 3 or more', () => {
-    expect(compactPoints([10, 10, 10])).toBe('10\u00d73');
-  });
-
-  it('collapses mixed runs', () => {
-    expect(compactPoints([10, 10, 10, 5, 5])).toBe('10\u00d73, 5, 5');
-  });
-
-  it('handles multiple collapsed runs', () => {
-    expect(compactPoints([10, 10, 10, 5, 5, 5])).toBe('10\u00d73, 5\u00d73');
-  });
-
-  it('handles alternating values', () => {
-    expect(compactPoints([10, 5, 10, 5])).toBe('10, 5, 10, 5');
+  it.each([
+    { input: [], expected: '' },
+    { input: [10], expected: '10' },
+    { input: [10, 5, 3], expected: '10, 5, 3' },
+    { input: [10, 10], expected: '10, 10' },
+    { input: [10, 10, 10], expected: '10\u00d73' },
+    { input: [10, 10, 10, 5, 5], expected: '10\u00d73, 5, 5' },
+    { input: [10, 10, 10, 5, 5, 5], expected: '10\u00d73, 5\u00d73' },
+    { input: [10, 5, 10, 5], expected: '10, 5, 10, 5' },
+  ])('compactPoints($input) === $expected', ({ input, expected }) => {
+    expect(compactPoints(input)).toBe(expected);
   });
 });
 
 describe('normalizeQuestionPoints', () => {
   it('converts points to autoPoints when manualPoints is set', () => {
-    const question = {
+    const result = normalizeQuestionPoints({
       trackingId: 'test-id',
       id: 'q1',
       points: 10,
       maxPoints: 20,
       manualPoints: 5,
-    } as ZoneQuestionBlockForm;
-
-    const result = normalizeQuestionPoints(question);
+    } as ZoneQuestionBlockForm);
 
     expect(result.autoPoints).toBe(10);
     expect(result.points).toBeUndefined();
@@ -72,14 +52,12 @@ describe('normalizeQuestionPoints', () => {
   });
 
   it('leaves points unchanged when manualPoints is not set', () => {
-    const question = {
+    const result = normalizeQuestionPoints({
       trackingId: 'test-id',
       id: 'q1',
       points: 10,
       maxPoints: 20,
-    } as ZoneQuestionBlockForm;
-
-    const result = normalizeQuestionPoints(question);
+    } as ZoneQuestionBlockForm);
 
     expect(result.points).toBe(10);
     expect(result.autoPoints).toBeUndefined();
@@ -89,26 +67,25 @@ describe('normalizeQuestionPoints', () => {
 describe('questionDisplayName', () => {
   const baseCourse = { id: 'course-1', sharing_name: 'shared-course' } as StaffCourse;
 
-  it('returns QID for questions in the same course', () => {
-    const questionRow = {
-      question: { qid: 'my-question', course_id: 'course-1' },
-      course: { sharing_name: 'other-course' },
-    } as StaffAssessmentQuestionRow;
-
-    const result = questionDisplayName(baseCourse, questionRow);
-
-    expect(result).toBe('my-question');
-  });
-
-  it('returns prefixed QID for shared questions from other courses', () => {
-    const questionRow = {
-      question: { qid: 'shared-question', course_id: 'other-course-id' },
-      course: { sharing_name: 'external-course' },
-    } as StaffAssessmentQuestionRow;
-
-    const result = questionDisplayName(baseCourse, questionRow);
-
-    expect(result).toBe('@external-course/shared-question');
+  it.each([
+    {
+      name: 'same course',
+      row: {
+        question: { qid: 'my-question', course_id: 'course-1' },
+        course: { sharing_name: 'other-course' },
+      },
+      expected: 'my-question',
+    },
+    {
+      name: 'shared question from other course',
+      row: {
+        question: { qid: 'shared-question', course_id: 'other-course-id' },
+        course: { sharing_name: 'external-course' },
+      },
+      expected: '@external-course/shared-question',
+    },
+  ])('returns $expected for $name', ({ row, expected }) => {
+    expect(questionDisplayName(baseCourse, row as StaffAssessmentQuestionRow)).toBe(expected);
   });
 });
 
@@ -193,28 +170,15 @@ describe('buildHierarchicalAssessment', () => {
 });
 
 describe('computeQuestionTotalPoints', () => {
-  it('returns points for Homework with points only', () => {
-    expect(computeQuestionTotalPoints({ points: 10 }, 'Homework')).toBe(10);
-  });
-
-  it('returns maxAutoPoints + manualPoints for Homework', () => {
-    expect(computeQuestionTotalPoints({ maxAutoPoints: 6, manualPoints: 4 }, 'Homework')).toBe(10);
-  });
-
-  it('falls back to autoPoints when maxAutoPoints is not set for Homework', () => {
-    expect(computeQuestionTotalPoints({ autoPoints: 6, manualPoints: 4 }, 'Homework')).toBe(10);
-  });
-
-  it('returns maxPoints for Homework', () => {
-    expect(computeQuestionTotalPoints({ maxPoints: 10 }, 'Homework')).toBe(10);
-  });
-
-  it('returns first element of points array + manualPoints for Exam', () => {
-    expect(computeQuestionTotalPoints({ points: [4, 3, 2], manualPoints: 4 }, 'Exam')).toBe(8);
-  });
-
-  it('returns first element of points array + manualPoints for Exam (uniform)', () => {
-    expect(computeQuestionTotalPoints({ points: [3, 3, 3], manualPoints: 5 }, 'Exam')).toBe(8);
+  it.each([
+    { name: 'points for Homework', input: { points: 10 }, type: 'Homework' as const, expected: 10 },
+    { name: 'maxAutoPoints + manualPoints for Homework', input: { maxAutoPoints: 6, manualPoints: 4 }, type: 'Homework' as const, expected: 10 },
+    { name: 'autoPoints fallback for Homework', input: { autoPoints: 6, manualPoints: 4 }, type: 'Homework' as const, expected: 10 },
+    { name: 'maxPoints for Homework', input: { maxPoints: 10 }, type: 'Homework' as const, expected: 10 },
+    { name: 'points array + manualPoints for Exam', input: { points: [4, 3, 2], manualPoints: 4 }, type: 'Exam' as const, expected: 8 },
+    { name: 'uniform points array + manualPoints for Exam', input: { points: [3, 3, 3], manualPoints: 5 }, type: 'Exam' as const, expected: 8 },
+  ])('$name → $expected', ({ input, type, expected }) => {
+    expect(computeQuestionTotalPoints(input, type)).toBe(expected);
   });
 
   it('inherits points from parent when question has none', () => {
@@ -223,25 +187,30 @@ describe('computeQuestionTotalPoints', () => {
 });
 
 describe('hasPointsMismatch', () => {
-  it('returns false for same totals with different representations', () => {
-    const alternatives = [
-      { trackingId: 't1', id: 'q1', points: 10 },
-      { trackingId: 't2', id: 'q2', autoPoints: 6, manualPoints: 4 },
-    ] as QuestionAlternativeForm[];
-    expect(hasPointsMismatch(alternatives, 'Homework')).toBe(false);
-  });
-
-  it('returns true for different totals', () => {
-    const alternatives = [
-      { trackingId: 't1', id: 'q1', points: 10 },
-      { trackingId: 't2', id: 'q2', points: 5 },
-    ] as QuestionAlternativeForm[];
-    expect(hasPointsMismatch(alternatives, 'Homework')).toBe(true);
-  });
-
-  it('returns false for a single alternative', () => {
-    const alternatives = [{ trackingId: 't1', id: 'q1', points: 10 }] as QuestionAlternativeForm[];
-    expect(hasPointsMismatch(alternatives, 'Homework')).toBe(false);
+  it.each([
+    {
+      name: 'same totals with different representations',
+      alternatives: [
+        { trackingId: 't1', id: 'q1', points: 10 },
+        { trackingId: 't2', id: 'q2', autoPoints: 6, manualPoints: 4 },
+      ],
+      expected: false,
+    },
+    {
+      name: 'different totals',
+      alternatives: [
+        { trackingId: 't1', id: 'q1', points: 10 },
+        { trackingId: 't2', id: 'q2', points: 5 },
+      ],
+      expected: true,
+    },
+    {
+      name: 'single alternative',
+      alternatives: [{ trackingId: 't1', id: 'q1', points: 10 }],
+      expected: false,
+    },
+  ])('returns $expected for $name', ({ alternatives, expected }) => {
+    expect(hasPointsMismatch(alternatives as QuestionAlternativeForm[], 'Homework')).toBe(expected);
   });
 
   it('uses parent points when alternatives have none', () => {
@@ -249,109 +218,156 @@ describe('hasPointsMismatch', () => {
       { trackingId: 't1', id: 'q1' },
       { trackingId: 't2', id: 'q2' },
     ] as QuestionAlternativeForm[];
-    const parent = { points: 10 };
-    expect(hasPointsMismatch(alternatives, 'Homework', parent)).toBe(false);
+    expect(hasPointsMismatch(alternatives, 'Homework', { points: 10 })).toBe(false);
   });
 });
 
 describe('hasZonePointsMismatch', () => {
-  it('returns false when zone has no bestQuestions or numberChoose', () => {
-    const zone = {
-      trackingId: 'z1',
-      questions: [
-        { trackingId: 'q1', id: 'q1', points: 10 },
-        { trackingId: 'q2', id: 'q2', points: 5 },
-      ],
-    } as ZoneAssessmentForm;
-    expect(hasZonePointsMismatch(zone, 'Homework')).toBe(false);
-  });
-
-  it('returns false when all blocks have same total with numberChoose', () => {
-    const zone = {
-      trackingId: 'z1',
-      numberChoose: 2,
-      questions: [
-        { trackingId: 'q1', id: 'q1', points: 10 },
-        { trackingId: 'q2', id: 'q2', autoPoints: 6, manualPoints: 4 },
-      ],
-    } as ZoneAssessmentForm;
-    expect(hasZonePointsMismatch(zone, 'Homework')).toBe(false);
-  });
-
-  it('returns true when blocks differ with bestQuestions', () => {
-    const zone = {
-      trackingId: 'z1',
-      bestQuestions: 1,
-      questions: [
-        { trackingId: 'q1', id: 'q1', points: 10 },
-        { trackingId: 'q2', id: 'q2', points: 5 },
-      ],
-    } as ZoneAssessmentForm;
-    expect(hasZonePointsMismatch(zone, 'Homework')).toBe(true);
-  });
-
-  it('returns false when zone has only one question', () => {
-    const zone = {
-      trackingId: 'z1',
-      bestQuestions: 1,
-      questions: [{ trackingId: 'q1', id: 'q1', points: 10 }],
-    } as ZoneAssessmentForm;
-    expect(hasZonePointsMismatch(zone, 'Homework')).toBe(false);
+  it.each([
+    {
+      name: 'no bestQuestions or numberChoose',
+      zone: { trackingId: 'z1', questions: [{ trackingId: 'q1', id: 'q1', points: 10 }, { trackingId: 'q2', id: 'q2', points: 5 }] },
+      expected: false,
+    },
+    {
+      name: 'same totals with numberChoose',
+      zone: { trackingId: 'z1', numberChoose: 2, questions: [{ trackingId: 'q1', id: 'q1', points: 10 }, { trackingId: 'q2', id: 'q2', autoPoints: 6, manualPoints: 4 }] },
+      expected: false,
+    },
+    {
+      name: 'different totals with bestQuestions',
+      zone: { trackingId: 'z1', bestQuestions: 1, questions: [{ trackingId: 'q1', id: 'q1', points: 10 }, { trackingId: 'q2', id: 'q2', points: 5 }] },
+      expected: true,
+    },
+    {
+      name: 'only one question',
+      zone: { trackingId: 'z1', bestQuestions: 1, questions: [{ trackingId: 'q1', id: 'q1', points: 10 }] },
+      expected: false,
+    },
+  ])('returns $expected when $name', ({ zone, expected }) => {
+    expect(hasZonePointsMismatch(zone as ZoneAssessmentForm, 'Homework')).toBe(expected);
   });
 });
 
 describe('computeZonePointTotals', () => {
-  it('sums all blocks when no bestQuestions or numberChoose', () => {
-    const questions = [
-      { trackingId: 'q1', id: 'q1', points: 10 },
-      { trackingId: 'q2', id: 'q2', points: 5 },
-      { trackingId: 'q3', id: 'q3', points: 3 },
-    ] as ZoneQuestionBlockForm[];
-    const result = computeZonePointTotals(questions);
-    expect(result.autoPoints).toBe(18);
-    expect(result.manualPoints).toBe(0);
+  it.each([
+    {
+      name: 'sums all blocks with no options',
+      questions: [
+        { trackingId: 'q1', id: 'q1', points: 10 },
+        { trackingId: 'q2', id: 'q2', points: 5 },
+        { trackingId: 'q3', id: 'q3', points: 3 },
+      ],
+      opts: undefined,
+      expectedAuto: 18,
+      expectedManual: 0,
+    },
+    {
+      name: 'selects best N blocks with bestQuestions',
+      questions: [
+        { trackingId: 'q1', id: 'q1', points: 10 },
+        { trackingId: 'q2', id: 'q2', points: 5 },
+        { trackingId: 'q3', id: 'q3', points: 3 },
+      ],
+      opts: { bestQuestions: 2 },
+      expectedAuto: 15,
+      expectedManual: 0,
+    },
+    {
+      name: 'selects best N blocks with numberChoose',
+      questions: [
+        { trackingId: 'q1', id: 'q1', points: 3 },
+        { trackingId: 'q2', id: 'q2', points: 7 },
+        { trackingId: 'q3', id: 'q3', points: 5 },
+      ],
+      opts: { numberChoose: 1 },
+      expectedAuto: 7,
+      expectedManual: 0,
+    },
+    {
+      name: 'handles bestQuestions with manualPoints',
+      questions: [
+        { trackingId: 'q1', id: 'q1', autoPoints: 6, manualPoints: 4 },
+        { trackingId: 'q2', id: 'q2', autoPoints: 3, manualPoints: 2 },
+        { trackingId: 'q3', id: 'q3', autoPoints: 1, manualPoints: 1 },
+      ],
+      opts: { bestQuestions: 2 },
+      expectedAuto: 9,
+      expectedManual: 6,
+    },
+    {
+      name: 'returns all blocks when bestQuestions >= count',
+      questions: [
+        { trackingId: 'q1', id: 'q1', points: 10 },
+        { trackingId: 'q2', id: 'q2', points: 5 },
+      ],
+      opts: { bestQuestions: 5 },
+      expectedAuto: 15,
+      expectedManual: 0,
+    },
+    {
+      name: 'caps alt group numberChoose at alternatives.length',
+      questions: [
+        {
+          trackingId: 'q1',
+          numberChoose: 5,
+          alternatives: [
+            { trackingId: 'a1', id: 'q1', points: 10 },
+            { trackingId: 'a2', id: 'q2', points: 8 },
+          ],
+        },
+      ],
+      opts: undefined,
+      expectedAuto: 18,
+      expectedManual: 0,
+    },
+  ])('$name', ({ questions, opts, expectedAuto, expectedManual }) => {
+    const result = computeZonePointTotals(questions as ZoneQuestionBlockForm[], opts);
+    expect(result.autoPoints).toBe(expectedAuto);
+    expect(result.manualPoints).toBe(expectedManual);
   });
+});
 
-  it('selects best N blocks when bestQuestions is set', () => {
-    const questions = [
-      { trackingId: 'q1', id: 'q1', points: 10 },
-      { trackingId: 'q2', id: 'q2', points: 5 },
-      { trackingId: 'q3', id: 'q3', points: 3 },
-    ] as ZoneQuestionBlockForm[];
-    const result = computeZonePointTotals(questions, { bestQuestions: 2 });
-    expect(result.autoPoints).toBe(15);
-    expect(result.manualPoints).toBe(0);
-  });
-
-  it('selects best N blocks when numberChoose is set', () => {
-    const questions = [
-      { trackingId: 'q1', id: 'q1', points: 3 },
-      { trackingId: 'q2', id: 'q2', points: 7 },
-      { trackingId: 'q3', id: 'q3', points: 5 },
-    ] as ZoneQuestionBlockForm[];
-    const result = computeZonePointTotals(questions, { numberChoose: 1 });
-    expect(result.autoPoints).toBe(7);
-    expect(result.manualPoints).toBe(0);
-  });
-
-  it('handles bestQuestions with manualPoints', () => {
-    const questions = [
-      { trackingId: 'q1', id: 'q1', autoPoints: 6, manualPoints: 4 },
-      { trackingId: 'q2', id: 'q2', autoPoints: 3, manualPoints: 2 },
-      { trackingId: 'q3', id: 'q3', autoPoints: 1, manualPoints: 1 },
-    ] as ZoneQuestionBlockForm[];
-    const result = computeZonePointTotals(questions, { bestQuestions: 2 });
-    expect(result.autoPoints).toBe(9);
-    expect(result.manualPoints).toBe(6);
-  });
-
-  it('returns all blocks when bestQuestions >= number of blocks', () => {
-    const questions = [
-      { trackingId: 'q1', id: 'q1', points: 10 },
-      { trackingId: 'q2', id: 'q2', points: 5 },
-    ] as ZoneQuestionBlockForm[];
-    const result = computeZonePointTotals(questions, { bestQuestions: 5 });
-    expect(result.autoPoints).toBe(15);
-    expect(result.manualPoints).toBe(0);
+describe('computeZoneQuestionCount', () => {
+  it.each([
+    {
+      name: 'single questions count as 1 each',
+      questions: [
+        { trackingId: 'q1', id: 'q1' },
+        { trackingId: 'q2', id: 'q2' },
+      ],
+      expected: 2,
+    },
+    {
+      name: 'uses numberChoose for alt groups',
+      questions: [
+        {
+          trackingId: 'q1',
+          numberChoose: 2,
+          alternatives: [
+            { trackingId: 'a1', id: 'q1' },
+            { trackingId: 'a2', id: 'q2' },
+            { trackingId: 'a3', id: 'q3' },
+          ],
+        },
+      ],
+      expected: 2,
+    },
+    {
+      name: 'caps numberChoose at alternatives.length',
+      questions: [
+        {
+          trackingId: 'q1',
+          numberChoose: 5,
+          alternatives: [
+            { trackingId: 'a1', id: 'q1' },
+            { trackingId: 'a2', id: 'q2' },
+          ],
+        },
+      ],
+      expected: 2,
+    },
+  ])('$name → $expected', ({ questions, expected }) => {
+    expect(computeZoneQuestionCount(questions as ZoneQuestionBlockForm[])).toBe(expected);
   });
 });

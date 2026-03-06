@@ -190,7 +190,7 @@ export function computeZoneQuestionCount(questions: ZoneQuestionBlockForm[]): nu
   let count = 0;
   for (const q of questions) {
     if (q.alternatives) {
-      count += q.numberChoose ?? q.alternatives.length;
+      count += Math.min(q.numberChoose ?? q.alternatives.length, q.alternatives.length);
     } else {
       count += 1;
     }
@@ -215,7 +215,7 @@ export function computeZonePointTotals(
       }));
       // Sort by total descending and take the best numberChoose alternatives
       resolved.sort((a, b) => b.auto + b.manual - (a.auto + a.manual));
-      const count = q.numberChoose ?? resolved.length;
+      const count = Math.min(q.numberChoose ?? resolved.length, resolved.length);
       const selected = resolved.slice(0, count);
       return {
         auto: selected.reduce((sum, r) => sum + r.auto, 0),
@@ -296,7 +296,7 @@ export function hasZonePointsMismatch(
       const altTotals = block.alternatives
         .map((alt) => computeQuestionTotalPoints(alt, assessmentType, block))
         .sort((a, b) => b - a);
-      const count = block.numberChoose ?? altTotals.length;
+      const count = Math.min(block.numberChoose ?? altTotals.length, altTotals.length);
       return altTotals.slice(0, count).reduce((sum, t) => sum + t, 0);
     }
     return computeQuestionTotalPoints(block, assessmentType);
