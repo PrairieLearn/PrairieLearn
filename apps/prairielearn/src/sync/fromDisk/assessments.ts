@@ -538,14 +538,21 @@ async function syncAssessmentTools(
     }
   }
 
-  for (const { assessmentId, zones } of assessmentsWithZoneTools) {
-    const zoneRows = await sqldb.queryRows(
-      sql.select_zone_ids,
-      { assessment_id: assessmentId },
-      z.object({ id: IdSchema, number: z.number() }),
-    );
+  const zoneRowsByAssessment = new Map(
+    await Promise.all(
+      assessmentsWithZoneTools.map(async ({ assessmentId }) => {
+        const zoneRows = await sqldb.queryRows(
+          sql.select_zone_ids,
+          { assessment_id: assessmentId },
+          z.object({ id: IdSchema, number: z.number() }),
+        );
+        return [assessmentId, new Map(zoneRows.map((row) => [row.number, row]))] as const;
+      }),
+    ),
+  );
 
-    const zoneRowsByNumber = new Map(zoneRows.map((row) => [row.number, row]));
+  for (const { assessmentId, zones } of assessmentsWithZoneTools) {
+    const zoneRowsByNumber = zoneRowsByAssessment.get(assessmentId)!;
 
     for (const [index, zone] of zones.entries()) {
       if (!zone.tools) continue;

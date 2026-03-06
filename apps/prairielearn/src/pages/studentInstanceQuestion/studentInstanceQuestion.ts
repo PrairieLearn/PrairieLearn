@@ -4,14 +4,14 @@ import url from 'node:url';
 import { type Request, type Response, Router } from 'express';
 
 import { HttpStatusError } from '@prairielearn/error';
-import { loadSqlEquiv, queryOptionalScalar, queryRows } from '@prairielearn/postgres';
+import { loadSqlEquiv, queryOptionalScalar } from '@prairielearn/postgres';
 import { IdSchema } from '@prairielearn/zod';
 
 import checkPlanGrantsForQuestion from '../../ee/middlewares/checkPlanGrantsForQuestion.js';
 import { gradeAssessmentInstance } from '../../lib/assessment.js';
 import { canDeleteAssessmentInstance } from '../../lib/assessment.shared.js';
 import { getQuestionCopyTargets } from '../../lib/copy-content.js';
-import { AssessmentToolSchema, type File } from '../../lib/db-types.js';
+import { type File } from '../../lib/db-types.js';
 import { deleteFile, uploadFile } from '../../lib/file-store.js';
 import { getQuestionGroupPermissions } from '../../lib/groups.js';
 import { idsEqual } from '../../lib/id.js';
@@ -22,6 +22,10 @@ import { typedAsyncHandler } from '../../lib/res-locals.js';
 import clientFingerprint from '../../middlewares/clientFingerprint.js';
 import { enterpriseOnly } from '../../middlewares/enterpriseOnly.js';
 import { logPageView } from '../../middlewares/logPageView.js';
+import {
+  selectEnabledAssessmentTools,
+  selectZoneIdForInstanceQuestion,
+} from '../../models/assessment.js';
 import { selectUserById } from '../../models/user.js';
 import { selectAndAuthzVariant, selectVariantsByInstanceQuestion } from '../../models/variant.js';
 
@@ -317,14 +321,11 @@ router.get(
     const isAssessmentAvailable =
       res.locals.assessment_instance.open && res.locals.authz_result.active;
 
-    const enabledTools = await queryRows(
-      sql.select_assessment_tools,
-      {
-        assessment_id: res.locals.assessment.id,
-        instance_question_id: res.locals.instance_question.id,
-      },
-      AssessmentToolSchema,
-    );
+    const zone_id = await selectZoneIdForInstanceQuestion(res.locals.instance_question.id);
+    const enabledTools = await selectEnabledAssessmentTools({
+      assessment_id: res.locals.assessment.id,
+      zone_id,
+    });
 
     if (variant_id === null && !isAssessmentAvailable) {
       // We can't generate a new variant in this case, so we

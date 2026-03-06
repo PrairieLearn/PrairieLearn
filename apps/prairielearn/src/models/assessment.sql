@@ -29,6 +29,48 @@ FROM
 WHERE
   a.id = $assessment_id;
 
+-- BLOCK select_zone_id_for_instance_question
+SELECT
+  z.id
+FROM
+  instance_questions AS iq
+  JOIN assessment_questions AS aq ON aq.id = iq.assessment_question_id
+  JOIN alternative_groups AS ag ON ag.id = aq.alternative_group_id
+  JOIN zones AS z ON z.id = ag.zone_id
+WHERE
+  iq.id = $instance_question_id;
+
+-- BLOCK select_enabled_assessment_tools
+WITH
+  zone_tools AS (
+    SELECT
+      tool
+    FROM
+      assessment_tools
+    WHERE
+      zone_id = $zone_id
+  )
+SELECT
+  *
+FROM
+  assessment_tools
+WHERE
+  enabled = TRUE
+  AND (
+    -- Zone-level tools take priority on a per-tool basis
+    zone_id = $zone_id
+    OR (
+      -- Fall back to assessment-level tools for tools not overridden at zone level
+      assessment_id = $assessment_id
+      AND tool NOT IN (
+        SELECT
+          tool
+        FROM
+          zone_tools
+      )
+    )
+  );
+
 -- BLOCK select_assessments_for_course_instance
 WITH
   issue_count AS (
