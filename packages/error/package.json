@@ -1,6 +1,6 @@
 {
   "name": "@prairielearn/error",
-  "version": "3.0.3",
+  "version": "3.0.4",
   "type": "module",
   "repository": {
     "type": "git",
@@ -17,7 +17,7 @@
     "test": "vitest run --coverage"
   },
   "dependencies": {
-    "es-toolkit": "^1.45.0"
+    "es-toolkit": "^1.45.1"
   },
   "devDependencies": {
     "@prairielearn/html": "workspace:^",

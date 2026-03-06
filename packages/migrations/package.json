@@ -1,6 +1,6 @@
 {
   "name": "@prairielearn/migrations",
-  "version": "5.0.2",
+  "version": "5.0.3",
   "type": "module",
   "repository": {
     "type": "git",
@@ -21,7 +21,7 @@
     "@prairielearn/logger": "workspace:^",
     "@prairielearn/named-locks": "workspace:^",
     "@prairielearn/postgres": "workspace:^",
-    "fs-extra": "^11.3.3",
+    "fs-extra": "^11.3.4",
     "serialize-error": "^13.0.1",
     "zod": "^3.25.76"
   },
