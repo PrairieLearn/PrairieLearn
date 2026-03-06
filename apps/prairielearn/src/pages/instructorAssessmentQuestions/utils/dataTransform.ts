@@ -203,53 +203,57 @@ const isEmptyArray = (v: unknown) => !v || (Array.isArray(v) && v.length === 0);
  * to prevent unintended inheritance from the parent question block.
  */
 function serializeQuestionAlternative(alternative: QuestionAlternativeJson) {
-  const pts = denormalizeQuestionPoints(alternative);
+  const denormalized = denormalizeQuestionPoints(alternative);
   return omitUndefined({
-    id: pts.id,
-    points: pts.points,
-    autoPoints: pts.autoPoints,
-    maxPoints: pts.maxPoints,
-    maxAutoPoints: pts.maxAutoPoints,
-    manualPoints: pts.manualPoints,
-    triesPerVariant: pts.triesPerVariant,
-    advanceScorePerc: pts.advanceScorePerc,
-    gradeRateMinutes: pts.gradeRateMinutes,
-    forceMaxPoints: pts.forceMaxPoints,
-    allowRealTimeGrading: pts.allowRealTimeGrading,
+    id: denormalized.id,
+    points: denormalized.points,
+    autoPoints: denormalized.autoPoints,
+    maxPoints: denormalized.maxPoints,
+    maxAutoPoints: denormalized.maxAutoPoints,
+    manualPoints: denormalized.manualPoints,
+    triesPerVariant: denormalized.triesPerVariant,
+    advanceScorePerc: denormalized.advanceScorePerc,
+    gradeRateMinutes: denormalized.gradeRateMinutes,
+    forceMaxPoints: denormalized.forceMaxPoints,
+    allowRealTimeGrading: denormalized.allowRealTimeGrading,
     // For some reason, comment gets set to the empty string if it's not set.
-    comment: pts.comment || undefined,
+    comment: denormalized.comment || undefined,
   });
 }
 
 /** Serializes a question block for JSON output, stripping default values where appropriate. */
 function serializeQuestionBlock(question: ZoneQuestionBlockJson) {
   const isAlternativeGroup = 'alternatives' in question && question.alternatives;
-  const pts = denormalizeQuestionPoints(question);
+  const denormalized = denormalizeQuestionPoints(question);
 
   return omitUndefined({
-    id: isAlternativeGroup ? undefined : pts.id,
+    id: isAlternativeGroup ? undefined : denormalized.id,
     alternatives: isAlternativeGroup
-      ? pts.alternatives!.map(serializeQuestionAlternative)
+      ? denormalized.alternatives!.map(serializeQuestionAlternative)
       : undefined,
-    numberChoose: pts.numberChoose,
+    numberChoose: denormalized.numberChoose,
     // For some reason, comment gets set to the empty string if it's not set.
-    comment: pts.comment || undefined,
+    comment: denormalized.comment || undefined,
 
     // These defaults will be inherited by question alternatives, unless they override them.
     // These should mirror the defaults from assessment syncing.
-    allowRealTimeGrading: propertyValueWithDefault(undefined, pts.allowRealTimeGrading, true),
-    triesPerVariant: propertyValueWithDefault(undefined, pts.triesPerVariant, 1),
-    forceMaxPoints: propertyValueWithDefault(undefined, pts.forceMaxPoints, false),
+    allowRealTimeGrading: propertyValueWithDefault(
+      undefined,
+      denormalized.allowRealTimeGrading,
+      true,
+    ),
+    triesPerVariant: propertyValueWithDefault(undefined, denormalized.triesPerVariant, 1),
+    forceMaxPoints: propertyValueWithDefault(undefined, denormalized.forceMaxPoints, false),
 
-    canSubmit: propertyValueWithDefault(undefined, pts.canSubmit, isEmptyArray),
-    canView: propertyValueWithDefault(undefined, pts.canView, isEmptyArray),
-    points: pts.points,
-    autoPoints: pts.autoPoints,
-    maxPoints: pts.maxPoints,
-    maxAutoPoints: pts.maxAutoPoints,
-    manualPoints: pts.manualPoints,
-    advanceScorePerc: pts.advanceScorePerc,
-    gradeRateMinutes: pts.gradeRateMinutes,
+    canSubmit: propertyValueWithDefault(undefined, denormalized.canSubmit, isEmptyArray),
+    canView: propertyValueWithDefault(undefined, denormalized.canView, isEmptyArray),
+    points: denormalized.points,
+    autoPoints: denormalized.autoPoints,
+    maxPoints: denormalized.maxPoints,
+    maxAutoPoints: denormalized.maxAutoPoints,
+    manualPoints: denormalized.manualPoints,
+    advanceScorePerc: denormalized.advanceScorePerc,
+    gradeRateMinutes: denormalized.gradeRateMinutes,
   });
 }
 

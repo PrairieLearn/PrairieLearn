@@ -46,7 +46,7 @@ export function AltGroupDetailPanel({
 }: {
   zoneQuestionBlock: ZoneQuestionBlockForm;
   zone: ZoneAssessmentForm;
-  questionMetadata: Record<string, StaffAssessmentQuestionRow>;
+  questionMetadata: Partial<Record<string, StaffAssessmentQuestionRow>>;
   idPrefix: string;
   state: DetailState;
   onUpdate: (
@@ -60,12 +60,9 @@ export function AltGroupDetailPanel({
 
   const sharedTags = getSharedTags(zoneQuestionBlock.alternatives ?? [], questionMetadata);
 
+  // Exam uses points/maxPoints; Homework uses autoPoints/maxAutoPoints
   const pointsProperty = assessmentType === 'Exam' ? 'points' : 'autoPoints';
   const maxPointsProperty = assessmentType === 'Exam' ? 'maxPoints' : 'maxAutoPoints';
-
-  // forceMaxPoints never has a parent for alt groups (parentForceMaxPoints is always undefined)
-  const hasAllowRealTimeGradingParent =
-    (zone.allowRealTimeGrading ?? assessmentDefaults.allowRealTimeGrading) != null;
 
   const {
     register,
@@ -88,9 +85,7 @@ export function AltGroupDetailPanel({
       advanceScorePerc: zoneQuestionBlock.advanceScorePerc ?? undefined,
       gradeRateMinutes: zoneQuestionBlock.gradeRateMinutes ?? undefined,
       forceMaxPoints: zoneQuestionBlock.forceMaxPoints ?? false,
-      allowRealTimeGrading:
-        zoneQuestionBlock.allowRealTimeGrading ??
-        (hasAllowRealTimeGradingParent ? undefined : false),
+      allowRealTimeGrading: zoneQuestionBlock.allowRealTimeGrading ?? undefined,
     },
   });
 
@@ -105,11 +100,9 @@ export function AltGroupDetailPanel({
       onUpdate(zoneQuestionBlock.trackingId, {
         ...data,
         forceMaxPoints: data.forceMaxPoints || undefined,
-        allowRealTimeGrading: hasAllowRealTimeGradingParent
-          ? data.allowRealTimeGrading
-          : data.allowRealTimeGrading || undefined,
+        allowRealTimeGrading: data.allowRealTimeGrading,
       }),
-    [onUpdate, zoneQuestionBlock.trackingId, hasAllowRealTimeGradingParent],
+    [onUpdate, zoneQuestionBlock.trackingId],
   );
 
   const resetAndSave = useMemo(
@@ -127,11 +120,11 @@ export function AltGroupDetailPanel({
     parentAdvanceScorePerc,
     parentGradeRateMinutes,
     parentAllowRealTimeGrading,
+    // forceMaxPoints never has a parent for alt groups; it's only defined at the alt group level
     parentForceMaxPoints: undefined,
     advanceScorePercFromLabel: zone.advanceScorePerc != null ? 'zone' : 'assessment',
     gradeRateMinutesFromLabel: zone.gradeRateMinutes != null ? 'zone' : 'assessment',
     allowRealTimeGradingFromLabel: zone.allowRealTimeGrading != null ? 'zone' : 'assessment',
-    // Only alt groups define forceMaxPoints; fallback is never displayed
     forceMaxPointsFromLabel: 'assessment',
     watch,
     setValue,

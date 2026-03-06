@@ -30,7 +30,7 @@ export function DetailPanel({
 }: {
   selectedItem: SelectedItem;
   zones: ZoneAssessmentForm[];
-  questionMetadata: Record<string, StaffAssessmentQuestionRow>;
+  questionMetadata: Partial<Record<string, StaffAssessmentQuestionRow>>;
   state: DetailState;
   actions: DetailActions;
   courseQuestions: CourseQuestionForPicker[];
@@ -73,7 +73,7 @@ export function DetailPanel({
       const result = findQuestionByTrackingId(zones, selectedItem.questionTrackingId);
       if (!result) throw new Error(`Question not found: ${selectedItem.questionTrackingId}`);
       const { question, zone } = result;
-      const questionData = question.id ? questionMetadata[question.id] : null;
+      const questionData = (question.id ? questionMetadata[question.id] : null) ?? null;
       return (
         <QuestionDetailPanel
           key={question.trackingId}
@@ -103,7 +103,7 @@ export function DetailPanel({
       if (!alternative) {
         throw new Error(`Alternative not found: ${selectedItem.alternativeTrackingId}`);
       }
-      const altData = alternative.id ? questionMetadata[alternative.id] : null;
+      const altData = (alternative.id ? questionMetadata[alternative.id] : null) ?? null;
       return (
         <QuestionDetailPanel
           key={alternative.trackingId}

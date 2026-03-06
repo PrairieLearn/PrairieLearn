@@ -419,4 +419,20 @@ describe('computeZoneQuestionCount', () => {
   ])('$name → $expected', ({ questions, expected }) => {
     expect(computeZoneQuestionCount(questions as ZoneQuestionBlockForm[])).toBe(expected);
   });
+
+  it('counts questions in zone with mixed questions and alternative groups', () => {
+    const questions = [
+      { trackingId: 'q1', id: 'q1' },
+      {
+        trackingId: 'q2',
+        numberChoose: 2,
+        alternatives: [
+          { trackingId: 'a1', id: 'q2' },
+          { trackingId: 'a2', id: 'q3' },
+          { trackingId: 'a3', id: 'q4' },
+        ],
+      },
+    ];
+    expect(computeZoneQuestionCount(questions as ZoneQuestionBlockForm[])).toBe(3);
+  });
 });

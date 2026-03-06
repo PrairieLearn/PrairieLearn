@@ -303,8 +303,8 @@ test.describe('Assessment questions', () => {
     ]);
   });
 
-  test.describe('hw17-editorAltGroupTest mutations', () => {
-    const assessmentTid = 'hw17-editorAltGroupTest';
+  test.describe('hw16-editorTest alt group mutations', () => {
+    const assessmentTid = 'hw16-editorTest';
 
     test.beforeEach(async ({ testCoursePath }) => {
       await resetAssessmentFromTemplate({ assessmentTid, testCoursePath });
@@ -347,7 +347,7 @@ test.describe('Assessment questions', () => {
       const savedContent = await fs.readFile(infoAssessmentPath, 'utf-8');
       const savedAssessment = JSON.parse(savedContent);
 
-      const lastBlock = savedAssessment.zones[0].questions.at(-1);
+      const lastBlock = savedAssessment.zones.at(-1).questions.at(-1);
       expect(lastBlock.numberChoose).toBe(1);
       expect(lastBlock.alternatives).toHaveLength(3);
       expect(lastBlock.alternatives[2].id).toBe('addNumbers');
@@ -383,7 +383,7 @@ test.describe('Assessment questions', () => {
   });
 
   test('can delete questions and a zone', async ({ page, testCoursePath, courseInstance }) => {
-    const assessmentTid = 'hw16-editorDeleteTest';
+    const assessmentTid = 'hw16-editorTest';
     const assessment = await selectAssessmentByTid({
       course_instance_id: courseInstance.id,
       tid: assessmentTid,
@@ -416,7 +416,7 @@ test.describe('Assessment questions', () => {
     const savedContent = await fs.readFile(infoAssessmentPath, 'utf-8');
     const savedAssessment = JSON.parse(savedContent);
 
-    expect(savedAssessment.zones).toHaveLength(1);
+    expect(savedAssessment.zones).toHaveLength(2);
     expect(savedAssessment.zones[0].title).toBe('Keep zone');
     expect(savedAssessment.zones[0].questions).toEqual([
       { id: 'addNumbers', points: 5, maxPoints: 10 },

@@ -1,4 +1,4 @@
-import { useCallback, useState } from 'react';
+import { useCallback, useEffect, useRef, useState } from 'react';
 
 import { OverlayTrigger } from '@prairielearn/ui';
 
@@ -12,11 +12,19 @@ export function CopyButton({
   ariaLabel?: string;
 }) {
   const [copied, setCopied] = useState(false);
+  const timerRef = useRef<ReturnType<typeof setTimeout> | null>(null);
+
+  useEffect(() => {
+    return () => {
+      if (timerRef.current != null) clearTimeout(timerRef.current);
+    };
+  }, []);
 
   const handleCopy = useCallback(async () => {
     await navigator.clipboard.writeText(text);
     setCopied(true);
-    setTimeout(() => setCopied(false), 1500);
+    if (timerRef.current != null) clearTimeout(timerRef.current);
+    timerRef.current = setTimeout(() => setCopied(false), 1500);
   }, [text]);
 
   return (

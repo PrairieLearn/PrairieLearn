@@ -3,7 +3,7 @@
   "type": "Homework",
   "set": "Homework",
   "number": "16",
-  "title": "Editor delete test",
+  "title": "Editor test",
   "allowAccess": [{ "credit": 100 }],
   "zones": [
     {
@@ -15,6 +15,16 @@
       "questions": [
         { "id": "partialCredit1", "points": 3 },
         { "id": "partialCredit2", "points": 4 }
+      ]
+    },
+    {
+      "questions": [
+        { "id": "addVectors", "points": 2, "maxPoints": 11 },
+        {
+          "alternatives": [{ "id": "aiGradingMultiImageCapture" }, { "id": "aiGradingRubrics" }],
+          "numberChoose": 1,
+          "points": 1
+        }
       ]
     }
   ]

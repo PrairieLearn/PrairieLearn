@@ -83,7 +83,8 @@ export function TreeQuestionBlockNode({
 
   if (!hasAlternatives) {
     // Single question (no alternatives)
-    const questionData = zoneQuestionBlock.id ? questionMetadata[zoneQuestionBlock.id] : null;
+    const questionData =
+      (zoneQuestionBlock.id ? questionMetadata[zoneQuestionBlock.id] : null) ?? null;
     const isSelected =
       selectedItem?.type === 'question' &&
       selectedItem.questionTrackingId === zoneQuestionBlock.trackingId;
@@ -232,7 +233,6 @@ export function TreeQuestionBlockNode({
         {run(() => {
           if (!alternatives || alternatives.length === 0) return null;
           const topics = alternatives
-            // eslint-disable-next-line @typescript-eslint/no-unnecessary-condition -- metadata may not be loaded yet
             .map((alt) => (alt.id ? questionMetadata[alt.id]?.topic : null))
             .filter(Boolean);
           if (topics.length !== alternatives.length) return null;
@@ -276,7 +276,8 @@ export function TreeQuestionBlockNode({
       {!isCollapsed && (
         <SortableContext items={alternativeIds} strategy={verticalListSortingStrategy}>
           {alternatives?.map((alternative) => {
-            const altQuestionData = alternative.id ? questionMetadata[alternative.id] : null;
+            const altQuestionData =
+              (alternative.id ? questionMetadata[alternative.id] : null) ?? null;
             const isAltSelected =
               selectedItem?.type === 'alternative' &&
               selectedItem.questionTrackingId === zoneQuestionBlock.trackingId &&

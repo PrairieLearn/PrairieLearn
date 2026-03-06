@@ -43,7 +43,6 @@ export function ZoneDetailPanel({
   onDelete: (zoneTrackingId: string) => void;
 }) {
   const { editMode, assessmentDefaults } = state;
-  const hasAllowRealTimeGradingParent = assessmentDefaults.allowRealTimeGrading != null;
   const formValues: ZoneFormData = {
     title: zone.title ?? '',
     maxPoints: zone.maxPoints ?? undefined,
@@ -54,8 +53,7 @@ export function ZoneDetailPanel({
     advanceScorePerc: zone.advanceScorePerc ?? undefined,
     gradeRateMinutes: zone.gradeRateMinutes ?? undefined,
     // We do this so that `isDirty = false` when the value is inherited.
-    allowRealTimeGrading:
-      zone.allowRealTimeGrading ?? (hasAllowRealTimeGradingParent ? undefined : false),
+    allowRealTimeGrading: zone.allowRealTimeGrading ?? undefined,
   };
 
   const {
@@ -80,12 +78,10 @@ export function ZoneDetailPanel({
         comment: data.comment || undefined,
         advanceScorePerc: data.advanceScorePerc,
         gradeRateMinutes: data.gradeRateMinutes,
-        allowRealTimeGrading: hasAllowRealTimeGradingParent
-          ? data.allowRealTimeGrading
-          : data.allowRealTimeGrading || undefined,
+        allowRealTimeGrading: data.allowRealTimeGrading,
       });
     },
-    [onUpdate, zone.trackingId, hasAllowRealTimeGradingParent],
+    [onUpdate, zone.trackingId],
   );
 
   const resetAndSave = useMemo(

@@ -465,12 +465,11 @@ export function buildQuestionMetadata(opts: {
  */
 export function getSharedTags(
   alternatives: { id: string }[],
-  questionMetadata: Record<string, StaffAssessmentQuestionRow>,
+  questionMetadata: Partial<Record<string, StaffAssessmentQuestionRow>>,
 ): StaffTag[] {
   const tagSets = alternatives
-    // eslint-disable-next-line @typescript-eslint/no-unnecessary-condition -- metadata may not be loaded yet
     .filter((alt) => alt.id && questionMetadata[alt.id]?.tags)
-    .map((alt) => new Set(questionMetadata[alt.id].tags!.map((t) => t.name)));
+    .map((alt) => new Set(questionMetadata[alt.id]!.tags!.map((t) => t.name)));
   if (tagSets.length === 0) return [];
   const intersection = new Set(tagSets[0]);
   for (const s of tagSets.slice(1)) {
@@ -481,7 +480,6 @@ export function getSharedTags(
   if (intersection.size === 0) return [];
   const firstAlt = alternatives.find((a) => a.id);
   if (!firstAlt) return [];
-  // eslint-disable-next-line @typescript-eslint/no-unnecessary-condition -- metadata may not be loaded yet
   const firstTags = questionMetadata[firstAlt.id]?.tags;
   if (!firstTags) return [];
   return firstTags.filter((t) => intersection.has(t.name));

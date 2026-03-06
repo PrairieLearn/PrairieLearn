@@ -1,10 +1,4 @@
 /**
- * Converts a string value from an HTML input to a number or undefined.
- * Used as a `setValueAs` transform for react-hook-form number inputs.
- * Handles non-string inputs (e.g. undefined/null) that can occur when
- * react-hook-form resets form values via the `values` prop.
- */
-/**
  * Converts a string value from an HTML textarea to a string or undefined.
  * Used as a `setValueAs` transform for react-hook-form textarea inputs
  * so that the empty-string DOM default round-trips back to `undefined`
@@ -15,6 +9,12 @@ export const coerceToOptionalString = (v: unknown): string | undefined => {
   return String(v);
 };
 
+/**
+ * Converts a string value from an HTML input to a number or undefined.
+ * Used as a `setValueAs` transform for react-hook-form number inputs.
+ * Handles non-string inputs (e.g. undefined/null) that can occur when
+ * react-hook-form resets form values via the `values` prop.
+ */
 export const coerceToNumber = (v: unknown): number | undefined => {
   if (v === '' || v == null) return undefined;
   const n = Number(v);
@@ -95,7 +95,10 @@ export function validateAtLeastOnePointsField(
 export function validateNonIncreasingPoints(
   value: number | number[] | string | undefined,
 ): string | undefined {
-  if (value == null || typeof value === 'string' || typeof value === 'number') return;
+  if (value == null || typeof value === 'string') return;
+  if (typeof value === 'number') {
+    return value < 0 ? 'All point values must be non-negative.' : undefined;
+  }
   for (const v of value) {
     if (v < 0) return 'All point values must be non-negative.';
   }
@@ -132,7 +135,7 @@ export function extractStringComment(comment: unknown): string | undefined {
 export interface AssessmentAdvancedDefaults {
   advanceScorePerc: number | undefined;
   gradeRateMinutes: number | undefined;
-  allowRealTimeGrading: boolean | undefined;
+  allowRealTimeGrading: boolean;
 }
 
 /**

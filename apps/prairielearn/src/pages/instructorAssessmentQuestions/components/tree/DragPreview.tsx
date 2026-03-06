@@ -8,7 +8,7 @@ export function DragPreview({
 }: {
   activeDragId: string;
   zones: ZoneAssessmentForm[];
-  questionMetadata: Record<string, StaffAssessmentQuestionRow>;
+  questionMetadata: Partial<Record<string, StaffAssessmentQuestionRow>>;
 }) {
   for (const [zoneIndex, zone] of zones.entries()) {
     if (zone.trackingId === activeDragId) {

@@ -126,12 +126,6 @@ export function QuestionDetailPanel({
   // Compute parent boolean availability before useForm so we can set
   // stable defaults that survive the DOM round-trip without false dirty flags.
   const hasForceMaxPointsParent = isAlternative && zoneQuestionBlock.forceMaxPoints != null;
-  const hasAllowRealTimeGradingParent = isAlternative
-    ? (zoneQuestionBlock.allowRealTimeGrading ??
-        zone?.allowRealTimeGrading ??
-        assessmentDefaults.allowRealTimeGrading) != null
-    : (zone?.allowRealTimeGrading ?? assessmentDefaults.allowRealTimeGrading) != null;
-
   const {
     register,
     getValues,
@@ -150,8 +144,7 @@ export function QuestionDetailPanel({
       advanceScorePerc: question.advanceScorePerc ?? undefined,
       gradeRateMinutes: question.gradeRateMinutes ?? undefined,
       forceMaxPoints: question.forceMaxPoints ?? (hasForceMaxPointsParent ? undefined : false),
-      allowRealTimeGrading:
-        question.allowRealTimeGrading ?? (hasAllowRealTimeGradingParent ? undefined : false),
+      allowRealTimeGrading: question.allowRealTimeGrading ?? undefined,
     },
   });
 
@@ -183,19 +176,11 @@ export function QuestionDetailPanel({
           forceMaxPoints: hasForceMaxPointsParent
             ? data.forceMaxPoints
             : data.forceMaxPoints || undefined,
-          allowRealTimeGrading: hasAllowRealTimeGradingParent
-            ? data.allowRealTimeGrading
-            : data.allowRealTimeGrading || undefined,
+          allowRealTimeGrading: data.allowRealTimeGrading,
         },
         alternativeTrackingId,
       ),
-    [
-      onUpdate,
-      questionTrackingId,
-      alternativeTrackingId,
-      hasForceMaxPointsParent,
-      hasAllowRealTimeGradingParent,
-    ],
+    [onUpdate, questionTrackingId, alternativeTrackingId, hasForceMaxPointsParent],
   );
 
   const resetAndSave = useMemo(

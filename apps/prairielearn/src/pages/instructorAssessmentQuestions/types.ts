@@ -87,7 +87,7 @@ export interface CourseQuestionForPicker {
  */
 export interface EditorState {
   zones: ZoneAssessmentForm[];
-  questionMetadata: Record<string, StaffAssessmentQuestionRow>;
+  questionMetadata: Partial<Record<string, StaffAssessmentQuestionRow>>;
   /** Tracks which alternative groups are collapsed by their trackingId */
   collapsedGroups: Set<string>;
   /** Tracks which zones are collapsed by their trackingId */
@@ -244,7 +244,7 @@ export interface TreeState {
   editMode: boolean;
   viewType: ViewType;
   selectedItem: SelectedItem;
-  questionMetadata: Record<string, StaffAssessmentQuestionRow>;
+  questionMetadata: Partial<Record<string, StaffAssessmentQuestionRow>>;
   collapsedGroups: Set<string>;
   collapsedZones: Set<string>;
   changeTracking: ChangeTrackingResult;
