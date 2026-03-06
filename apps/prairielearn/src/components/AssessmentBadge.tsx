@@ -2,17 +2,20 @@ import { renderHtml } from '@prairielearn/react';
 
 import { type AssessmentInstanceUrlParts, getAssessmentInstanceUrl } from '../lib/client/url.js';
 
+type AssessmentBadgeProps = {
+  assessment: { assessment_id: string; color: string; label: string };
+} & (
+  | ({ hideLink: true } & Partial<AssessmentInstanceUrlParts> & { publicURL?: boolean })
+  | ({ hideLink?: false } & AssessmentInstanceUrlParts & { publicURL?: boolean })
+);
+
 export function AssessmentBadge({
   assessment,
   hideLink = false,
   urlPrefix,
   courseInstanceId,
   publicURL = false,
-}: {
-  assessment: { assessment_id: string; color: string; label: string };
-  hideLink?: boolean;
-  publicURL?: boolean;
-} & AssessmentInstanceUrlParts) {
+}: AssessmentBadgeProps) {
   if (hideLink) {
     return <span className={`badge color-${assessment.color}`}>{assessment.label}</span>;
   }
@@ -26,7 +29,7 @@ export function AssessmentBadge({
           publicURL,
         }
       : {
-          courseInstanceId,
+          courseInstanceId: courseInstanceId!,
           assessmentId: assessment.assessment_id,
           publicURL,
         },
