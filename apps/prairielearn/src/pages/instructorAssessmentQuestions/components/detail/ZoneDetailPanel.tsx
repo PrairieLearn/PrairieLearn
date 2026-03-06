@@ -146,6 +146,7 @@ export function ZoneDetailPanel({
           {(aria) => (
             <input
               type="number"
+              step="any"
               className={clsx('form-control form-control-sm', aria.errorClass)}
               {...aria.inputProps}
               {...register('maxPoints', {

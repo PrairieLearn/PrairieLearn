@@ -234,6 +234,7 @@ export function AltGroupDetailPanel({
               {(aria) => (
                 <input
                   type="number"
+                  step="any"
                   className={clsx('form-control form-control-sm', aria.errorClass)}
                   {...aria.inputProps}
                   placeholder={autoPointsPlaceholder}
@@ -262,6 +263,7 @@ export function AltGroupDetailPanel({
               {(aria) => (
                 <input
                   type="number"
+                  step="any"
                   className={clsx('form-control form-control-sm', aria.errorClass)}
                   {...aria.inputProps}
                   {...register('manualPoints', {
@@ -316,6 +318,7 @@ export function AltGroupDetailPanel({
               {(aria) => (
                 <input
                   type="number"
+                  step="any"
                   className={clsx('form-control form-control-sm', aria.errorClass)}
                   {...aria.inputProps}
                   {...register('manualPoints', {

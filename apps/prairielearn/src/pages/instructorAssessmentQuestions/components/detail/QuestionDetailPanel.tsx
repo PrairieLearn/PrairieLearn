@@ -729,6 +729,7 @@ function HomeworkPointsFields({
             id={`${idPrefix}-maxAutoPoints`}
             label="Max auto points"
             inputType="number"
+            step="any"
             editMode={editMode}
             isInherited={isMaxInherited}
             inheritedDisplayValue={String(inheritedMaxValue ?? '')}
@@ -764,6 +765,7 @@ function HomeworkPointsFields({
             {(aria) => (
               <input
                 type="number"
+                step="any"
                 className={clsx('form-control form-control-sm', aria.errorClass)}
                 {...aria.inputProps}
                 placeholder={autoPointsPlaceholder}
@@ -782,6 +784,7 @@ function HomeworkPointsFields({
             id={`${idPrefix}-manualPoints`}
             label="Manual points"
             inputType="number"
+            step="any"
             editMode={editMode}
             isInherited={isManualPointsInherited}
             inheritedDisplayValue={String(inheritedManualPoints ?? '')}
@@ -825,6 +828,7 @@ function HomeworkPointsFields({
             {(aria) => (
               <input
                 type="number"
+                step="any"
                 className={clsx('form-control form-control-sm', aria.errorClass)}
                 {...aria.inputProps}
                 {...register('manualPoints', {
@@ -971,6 +975,7 @@ function ExamPointsFields({
             id={`${idPrefix}-manualPoints`}
             label="Manual points"
             inputType="number"
+            step="any"
             editMode={editMode}
             isInherited={isManualPointsInherited}
             inheritedDisplayValue={String(inheritedManualPoints ?? '')}
@@ -1014,6 +1019,7 @@ function ExamPointsFields({
             {(aria) => (
               <input
                 type="number"
+                step="any"
                 className={clsx('form-control form-control-sm', aria.errorClass)}
                 {...aria.inputProps}
                 {...register('manualPoints', {
