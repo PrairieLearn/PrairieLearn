@@ -258,6 +258,7 @@ export function TanstackTable<RowDataModel>({
     <div style={{ position: 'relative' }} className="d-flex flex-column h-100">
       <div
         ref={scrollContainerRef}
+        data-testid="table-scroll-container"
         style={{
           position: 'absolute',
           top: 0,

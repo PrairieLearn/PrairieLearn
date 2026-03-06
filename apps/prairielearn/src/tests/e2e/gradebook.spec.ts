@@ -1,11 +1,7 @@
+import type { Page } from '@playwright/test';
 import { z } from 'zod';
 
 import * as sqldb from '@prairielearn/postgres';
-
-import { EXAMPLE_COURSE_PATH } from '../../lib/paths.js';
-import { selectCourseInstanceByShortName } from '../../models/course-instances.js';
-import { selectCourseByShortName } from '../../models/course.js';
-import { syncCourse } from '../helperCourse.js';
 
 import { expect, test } from './fixtures.js';
 
@@ -38,15 +34,7 @@ const AssessmentInfoSchema = z.object({
   label: z.string(),
 });
 
-// Will be set during test setup
-let courseInstanceId: string;
 let assessmentLabel: string;
-
-async function getCourseInstanceId(): Promise<string> {
-  const course = await selectCourseByShortName('XC 101');
-  const courseInstance = await selectCourseInstanceByShortName({ course, shortName: 'SectionA' });
-  return courseInstance.id;
-}
 
 /**
  * Creates test students with assessment scores for gradebook filter testing.
@@ -80,15 +68,46 @@ async function createTestData(ciId: string): Promise<string> {
   return assessment.label;
 }
 
+/**
+ * Scrolls the gradebook table horizontally until the target filter button
+ * appears in the DOM. The table uses column virtualization, so off-screen
+ * columns are not rendered until scrolled into view.
+ */
+async function scrollToFilterButton(page: Page, label: string) {
+  const btnSelector = `button[aria-label="Filter ${label}"]`;
+  const btn = page.locator(btnSelector);
+  if ((await btn.count()) > 0) return;
+  // Scroll inside the browser in a single evaluate call to avoid round-trip overhead.
+  // The table uses column virtualization, so we scroll incrementally until the
+  // target element appears in the DOM.
+  const scrollContainer = page.getByTestId('table-scroll-container');
+  await scrollContainer.evaluate(
+    (el, selector) =>
+      new Promise<void>((resolve) => {
+        const step = () => {
+          if (el.querySelector(selector) || el.scrollLeft >= el.scrollWidth - el.clientWidth) {
+            resolve();
+            return;
+          }
+          el.scrollLeft += 300;
+          requestAnimationFrame(step);
+        };
+        step();
+      }),
+    btnSelector,
+  );
+}
+
 test.describe('Gradebook column visibility', () => {
-  test.beforeAll(async () => {
-    await syncCourse(EXAMPLE_COURSE_PATH);
-    courseInstanceId = await getCourseInstanceId();
-    await createTestData(courseInstanceId);
+  let gradebookUrl: string;
+
+  test.beforeAll(async ({ courseInstance }) => {
+    gradebookUrl = `/pl/course_instance/${courseInstance.id}/instructor/instance_admin/gradebook`;
+    await createTestData(courseInstance.id);
   });
 
   test('unchecking assessment set properly unchecks the set checkbox', async ({ page }) => {
-    await page.goto(`/pl/course_instance/${courseInstanceId}/instructor/instance_admin/gradebook`);
+    await page.goto(gradebookUrl);
     await expect(page).toHaveTitle(/Gradebook/);
 
     // Open the View dropdown
@@ -117,24 +136,26 @@ test.describe('Gradebook column visibility', () => {
 });
 
 test.describe('Gradebook numeric filter', () => {
-  test.beforeAll(async () => {
-    await syncCourse(EXAMPLE_COURSE_PATH);
-    courseInstanceId = await getCourseInstanceId();
-    assessmentLabel = await createTestData(courseInstanceId);
+  let gradebookUrl: string;
+
+  test.beforeAll(async ({ courseInstance }) => {
+    gradebookUrl = `/pl/course_instance/${courseInstance.id}/instructor/instance_admin/gradebook`;
+    assessmentLabel = await createTestData(courseInstance.id);
   });
 
   test('filters table rows when using numeric filter input', async ({ page }) => {
-    await page.goto(`/pl/course_instance/${courseInstanceId}/instructor/instance_admin/gradebook`);
+    await page.goto(gradebookUrl);
     await expect(page).toHaveTitle(/Gradebook/);
 
     // Wait for table to load with all enrolled students
     const tableBody = page.locator('tbody').first();
     await expect(tableBody.locator('tr')).toHaveCount(TEST_STUDENTS.length, { timeout: 10000 });
 
-    // Find the filter button for the assessment we inserted data into
-    const filterButton = page.locator(
-      `button[aria-label="Filter ${assessmentLabel.toLowerCase()}"]`,
-    );
+    // The gradebook uses column virtualization, so the target column may not be
+    // in the DOM yet. Scroll the table until the column becomes visible.
+    const targetLabel = assessmentLabel.toLowerCase();
+    await scrollToFilterButton(page, targetLabel);
+    const filterButton = page.locator(`button[aria-label="Filter ${targetLabel}"]`);
     await expect(filterButton).toBeVisible();
 
     // Open the filter dropdown and apply a filter
@@ -157,31 +178,15 @@ test.describe('Gradebook numeric filter', () => {
   });
 
   test('shows only rows matching the filter criteria', async ({ page }) => {
-    await page.goto(`/pl/course_instance/${courseInstanceId}/instructor/instance_admin/gradebook`);
+    await page.goto(gradebookUrl);
 
     const tableBody = page.locator('tbody').first();
     await expect(tableBody.locator('tr')).toHaveCount(TEST_STUDENTS.length, { timeout: 10000 });
 
-    // Find the filter button and its column index for the assessment we inserted data into
-    const filterButton = page.locator(
-      `button[aria-label="Filter ${assessmentLabel.toLowerCase()}"]`,
-    );
+    const targetLabel = assessmentLabel.toLowerCase();
+    await scrollToFilterButton(page, targetLabel);
+    const filterButton = page.locator(`button[aria-label="Filter ${targetLabel}"]`);
     await expect(filterButton).toBeVisible();
-
-    // Get the column index by finding the header cell containing the filter button
-    const allHeaders = page.locator('thead th');
-    const headerCount = await allHeaders.count();
-
-    let assessmentColumnIndex = -1;
-    for (let i = 0; i < headerCount; i++) {
-      const header = allHeaders.nth(i);
-      const btn = header.locator(`button[aria-label="Filter ${assessmentLabel.toLowerCase()}"]`);
-      if ((await btn.count()) > 0) {
-        assessmentColumnIndex = i;
-        break;
-      }
-    }
-    expect(assessmentColumnIndex).toBeGreaterThanOrEqual(0);
 
     // Apply the filter
     await filterButton.click();
@@ -192,22 +197,19 @@ test.describe('Gradebook numeric filter', () => {
     await expect(filterButton.locator('i')).toHaveClass(/bi-funnel-fill/);
     await expect(tableBody.locator('tr')).toHaveCount(EXPECTED_STUDENTS_ABOVE_90);
 
-    // Verify each visible row has a value > 90 in the filtered column
+    // Verify each filtered row's UID corresponds to a test student with score > 90.
+    // The UID column is pinned and always visible.
     const rows = tableBody.locator('tr');
     const rowCount = await rows.count();
+    const expectedUids = TEST_STUDENTS.filter((s) => s.score !== null && s.score > 90).map(
+      (s) => s.uid,
+    );
 
     for (let i = 0; i < rowCount; i++) {
-      const cell = rows.nth(i).locator('td').nth(assessmentColumnIndex);
-      const cellText = await cell.textContent();
-      const cleanText = cellText?.trim() ?? '';
-
-      // Should not see null/empty values with a numeric filter
-      expect(cleanText).not.toBe('—');
-      expect(cleanText).not.toBe('');
-
-      // Extract the numeric value and verify it's > 90
-      const value = Number.parseFloat(cleanText);
-      expect(value).toBeGreaterThan(90);
+      const uidCell = rows.nth(i).locator('td').first();
+      const uidText = (await uidCell.textContent())?.trim() ?? '';
+      expect(uidText).not.toBe('');
+      expect(expectedUids).toContain(uidText);
     }
   });
 });
