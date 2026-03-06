@@ -1174,7 +1174,11 @@ function AssessmentEditorInner({
           isKeyboardDragRef.current = false;
         }}
       >
-        <div data-dragging={isDragging || undefined}>
+        <div
+          data-dragging={isDragging || undefined}
+          style={{ height: '100%' }}
+          data-assessment-editor
+        >
           <SplitPane
             forceOpen={selectedItem}
             rightCollapsed={selectedItem == null ? true : undefined}
