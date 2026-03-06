@@ -99,7 +99,6 @@ describe('validateNonIncreasingPoints', () => {
   });
 });
 
-
 describe('validatePointsListFormat', () => {
   it('returns an error for a raw string value', () => {
     expect(validatePointsListFormat('10, abc, 5')).toBe(
