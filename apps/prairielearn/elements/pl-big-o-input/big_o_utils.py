@@ -91,7 +91,6 @@ def grade_o_expression(
     # There's a chance that some fringe function inputs cannot have their sign evalutated
     # We need to catch NotImplementedError because of this.
     except (TypeError, NotImplementedError):
-        # raise e
         return (0.0, TYPE_ERROR_FEEDBACK)
 
 
