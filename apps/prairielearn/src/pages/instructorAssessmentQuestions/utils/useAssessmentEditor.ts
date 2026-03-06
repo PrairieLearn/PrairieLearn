@@ -298,11 +298,23 @@ function createEditorReducer(initialState: EditorState) {
           throw new Error(`DELETE_ZONE: Zone with trackingId ${zoneTrackingId} not found`);
         }
 
+        // Remove metadata for all deleted questions and alternatives
+        const newQuestionMetadata = { ...state.questionMetadata };
+        for (const question of zoneResult.zone.questions) {
+          if (question.id) delete newQuestionMetadata[question.id];
+          if (question.alternatives) {
+            for (const alt of question.alternatives) {
+              if (alt.id) delete newQuestionMetadata[alt.id];
+            }
+          }
+        }
+
         newZones.splice(zoneResult.index, 1);
 
         return {
           ...state,
           zones: newZones,
+          questionMetadata: newQuestionMetadata,
         };
       }
 
