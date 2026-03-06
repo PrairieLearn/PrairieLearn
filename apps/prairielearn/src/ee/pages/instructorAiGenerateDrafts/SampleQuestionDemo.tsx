@@ -179,10 +179,10 @@ export function SampleQuestionDemo({
         {variant.question
           .split(/(\$\$[\s\S]+?\$\$|\$[\s\S]+?\$|\*\*[\s\S]+?\*\*)/g)
           .filter(Boolean)
-          .map((part) => {
+          .map((part, index) => {
             // Bold text
             if (part.startsWith('**') && part.endsWith('**')) {
-              return <strong key={`bold-${part.slice(2, -2)}`}>{part.slice(2, -2)}</strong>;
+              return <strong key={`bold-${index}-${part.slice(2, -2)}`}>{part.slice(2, -2)}</strong>;
             }
 
             // MathJax
@@ -190,11 +190,11 @@ export function SampleQuestionDemo({
               (part.startsWith('$$') && part.endsWith('$$')) ||
               (part.startsWith('$') && part.endsWith('$'))
             ) {
-              return <span key={`math-${part.slice(2, -2)}`}>{part}</span>;
+              return <span key={`math-${index}-${part.slice(2, -2)}`}>{part}</span>;
             }
 
             // Regular text
-            return <span key={`text-${part.slice(0, 10)}`}>{part}</span>;
+            return <span key={`text-${index}`}>{part}</span>;
           })}
         {(prompt.answerType === 'number' || prompt.answerType === 'string') && (
           <NumericOrStringInput
