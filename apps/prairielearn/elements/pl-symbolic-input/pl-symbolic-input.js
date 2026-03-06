@@ -587,8 +587,6 @@
       ],
     };
 
-    const elementKeyboardLayoutProxy = makeShortcutProxy(elementKeyboardLayout, mf);
-
     mf.addEventListener('focus', () => {
       mathVirtualKeyboard.layouts = [elementKeyboardLayout, ...defaultKeyboardLayouts];
     });
