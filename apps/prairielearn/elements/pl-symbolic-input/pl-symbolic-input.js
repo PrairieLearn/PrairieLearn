@@ -333,13 +333,9 @@
           return wrapWithProxy(proxiedElements);
         }
 
-        // if (typeof target[prop] === 'object' && target[prop] !== null) {
-        //   return new Proxy(target[prop], shortcutProxyHandler);
-        // }
         if (
           value &&
           typeof value === 'string' &&
-          // !(typeof value === 'function') &&
           isSelected(mf) &&
           !value.includes('\\left(#@\\right)')
         ) {
@@ -586,8 +582,6 @@
         ],
       ],
     };
-
-    const elementKeyboardLayoutProxy = makeShortcutProxy(elementKeyboardLayout, mf);
 
     mf.addEventListener('focus', () => {
       mathVirtualKeyboard.layouts = [elementKeyboardLayout, ...defaultKeyboardLayouts];
