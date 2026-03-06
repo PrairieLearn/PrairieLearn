@@ -321,18 +321,25 @@
           return value;
         }
 
-        if (typeof value === 'function') {
-          return value.bind(target);
-        }
         if (typeof value === 'object') {
           return wrapWithProxy(value);
         }
+
+        if (typeof value === 'function') {
+          return value.bind(target);
+        }
+        if (Array.isArray(value)) {
+          const proxiedElements = value.map(wrapWithProxy);
+          return wrapWithProxy(proxiedElements);
+        }
+
         // if (typeof target[prop] === 'object' && target[prop] !== null) {
         //   return new Proxy(target[prop], shortcutProxyHandler);
         // }
         if (
           value &&
-          !(typeof value === 'function') &&
+          typeof value === 'string' &&
+          // !(typeof value === 'function') &&
           isSelected(mf) &&
           !value.includes('\\left(#@\\right)')
         ) {
@@ -401,12 +408,15 @@
       label: 'math',
       rows: [
         [
-          { class: 'small', latex: '\\left({#@}\\right)^{#?}' },
-          {
-            class: 'small',
-            latex: '\\left({#@}\\right)^{2}',
-            variants: [{ class: 'small', latex: '\\left({#@}\\right)^{3}' }],
-          },
+          makeShortcutProxy({ class: 'small', latex: '{#@}^{#?}' }, mf),
+          makeShortcutProxy(
+            {
+              class: 'small',
+              latex: '{#@}^{2}',
+              variants: [{ class: 'small', latex: '{#@}^{3}' }],
+            },
+            mf,
+          ),
           {
             class: 'small',
             latex: '\\frac{#@}{#?}',
@@ -580,7 +590,7 @@
     const elementKeyboardLayoutProxy = makeShortcutProxy(elementKeyboardLayout, mf);
 
     mf.addEventListener('focus', () => {
-      mathVirtualKeyboard.layouts = [elementKeyboardLayoutProxy, ...defaultKeyboardLayouts];
+      mathVirtualKeyboard.layouts = [elementKeyboardLayout, ...defaultKeyboardLayouts];
     });
 
     setUpSymbolicInputMacros(mf);
