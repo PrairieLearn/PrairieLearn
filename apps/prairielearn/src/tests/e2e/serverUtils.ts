@@ -13,6 +13,8 @@ const BASE_PORT = 3014;
 interface WorkerServerOptions {
   /** Additional course directories to include beyond the defaults */
   courseDirs?: string[];
+  /** Additional config overrides to pass to the server */
+  configOverrides?: Partial<Config>;
 }
 
 /**
@@ -41,6 +43,7 @@ export async function setupWorkerServer(
         postgresqlHost: setupResults.host,
         devMode: true, // We need this to start up the asset server.
         ...(options.courseDirs && { courseDirs: options.courseDirs }),
+        ...options.configOverrides,
       };
 
       await fs.writeFile(tmpFile.path, JSON.stringify(config, null, 2));
