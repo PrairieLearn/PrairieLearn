@@ -1,5 +1,21 @@
 # @prairielearn/eslint-plugin
 
+## 4.0.0
+
+### Major Changes
+
+- 3c4799a: Upgrade to ESLint v10
+
+### Patch Changes
+
+- 3c4799a: Upgrade all JavaScript dependencies
+
+## 3.1.1
+
+### Patch Changes
+
+- 7b937fb: Remove unused exports, add `@knipignore` for intentionally public exports, and re-export newly used symbols from `@prairielearn/formatter`.
+
 ## 3.1.0
 
 ### Minor Changes

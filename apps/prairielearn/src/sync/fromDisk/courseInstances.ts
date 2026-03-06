@@ -16,7 +16,7 @@ const sql = sqldb.loadSqlEquiv(import.meta.filename);
 export async function uniqueEnrollmentCode() {
   while (true) {
     const enrollmentCode = generateEnrollmentCode();
-    const existingEnrollmentCode = await sqldb.queryOptionalRow(
+    const existingEnrollmentCode = await sqldb.queryOptionalScalar(
       sql.select_existing_enrollment_code,
       { enrollment_code: enrollmentCode },
       z.string(),
@@ -85,7 +85,7 @@ export async function sync(
       .filter((institution) => institution != null);
 
     // Select only the valid institution names.
-    const validInstitutions = await sqldb.queryRows(
+    const validInstitutions = await sqldb.queryScalars(
       sql.select_valid_institution_short_names,
       { short_names: Array.from(new Set(institutions)) },
       z.string(),
@@ -131,7 +131,7 @@ export async function sync(
     }),
   );
 
-  const result = await sqldb.callRow(
+  const result = await sqldb.callScalar(
     'sync_course_instances',
     [courseInstanceParams, courseId],
     z.record(z.string(), IdSchema),

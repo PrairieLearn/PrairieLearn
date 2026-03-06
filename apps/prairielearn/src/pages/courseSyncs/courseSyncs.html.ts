@@ -5,7 +5,7 @@ import { formatDate } from '@prairielearn/formatter';
 import { escapeHtml, html } from '@prairielearn/html';
 import { IdSchema } from '@prairielearn/zod';
 
-import { JobStatus } from '../../components/JobStatus.js';
+import { JobStatusHtml } from '../../components/JobStatus.js';
 import { PageLayout } from '../../components/PageLayout.js';
 import { config } from '../../lib/config.js';
 import { type Course, JobSequenceSchema, QuestionSchema, UserSchema } from '../../lib/db-types.js';
@@ -21,7 +21,7 @@ export const ImageRowSchema = z.object({
   size: z.number().optional(),
   pushed_at: z.date().nullish(),
 });
-export type ImageRow = z.infer<typeof ImageRowSchema>;
+type ImageRow = z.infer<typeof ImageRowSchema>;
 
 export const JobSequenceRowSchema = JobSequenceSchema.extend({
   user_uid: UserSchema.shape.uid.nullable(),
@@ -155,7 +155,7 @@ export function CourseSyncs({
                     </td>
                     <td>${jobSequence.description}</td>
                     <td>${jobSequence.user_uid ?? '(System)'}</td>
-                    <td>${JobStatus({ status: jobSequence.status })}</td>
+                    <td>${JobStatusHtml({ status: jobSequence.status })}</td>
                     <td>
                       <a
                         href="${urlPrefix}/jobSequence/${jobSequence.id}"

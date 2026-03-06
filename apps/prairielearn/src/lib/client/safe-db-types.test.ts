@@ -70,6 +70,7 @@ const minimalStudentCourse: z.input<typeof StudentCourseSchema> = {
 };
 
 const minimalStaffCourseInstance: z.input<typeof StaffCourseInstanceSchema> = {
+  ai_grading_use_custom_api_keys: false,
   assessments_group_by: 'Set',
   course_id: '1',
   deleted_at: null,
@@ -227,7 +228,7 @@ const minimalStaffAssessmentInstance: z.input<typeof StaffAssessmentInstanceSche
   max_points: null,
   mode: null,
   modified_at: new Date(),
-  number: null,
+  number: 1,
   open: null,
   points: null,
   score_perc: null,
@@ -250,7 +251,7 @@ const minimalStudentAssessmentInstance: z.input<typeof StudentAssessmentInstance
   max_points: null,
   mode: null,
   modified_at: new Date(),
-  number: null,
+  number: 1,
   open: null,
   points: null,
   score_perc: null,
@@ -348,7 +349,7 @@ const minimalStaffAlternativeGroup: z.input<typeof StaffAlternativeGroupSchema> 
   json_max_points: null,
   json_points: null,
   json_tries_per_variant: null,
-  number: null,
+  number: 1,
   number_choose: null,
   zone_id: '6',
 };
@@ -446,7 +447,7 @@ const minimalStaffQuestion: z.input<typeof StaffQuestionSchema> = {
   directory: null,
   draft: false,
   external_grading_enable_networking: null,
-  external_grading_enabled: null,
+  external_grading_enabled: false,
   external_grading_entrypoint: null,
   external_grading_environment: {},
   external_grading_files: null,
@@ -491,7 +492,7 @@ const minimalStaffTag: z.input<typeof StaffTagSchema> = {
   implicit: false,
   json_comment: null,
   name: 'Test Tag',
-  number: null,
+  number: 1,
 };
 
 const minimalStaffTopic: z.input<typeof StaffTopicSchema> = {
@@ -502,7 +503,7 @@ const minimalStaffTopic: z.input<typeof StaffTopicSchema> = {
   implicit: false,
   json_comment: null,
   name: 'Test Topic',
-  number: null,
+  number: 1,
 };
 
 const minimalStaffZone: z.input<typeof StaffZoneSchema> = {
@@ -515,6 +516,7 @@ const minimalStaffZone: z.input<typeof StaffZoneSchema> = {
   json_can_view: null,
   json_comment: null,
   json_grade_rate_minutes: null,
+  lockpoint: false,
   max_points: null,
   number: 1,
   number_choose: null,

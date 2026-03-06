@@ -1126,10 +1126,6 @@ export async function initExpress(): Promise<Express> {
     (await import('./pages/jobSequence/jobSequence.js')).default,
   );
   app.use(
-    '/pl/course_instance/:course_instance_id(\\d+)/instructor/loadFromDisk',
-    (await import('./pages/instructorLoadFromDisk/instructorLoadFromDisk.js')).default,
-  );
-  app.use(
     '/pl/course_instance/:course_instance_id(\\d+)/instructor/edit_error',
     (await import('./pages/editError/editError.js')).default,
   );
@@ -1244,6 +1240,9 @@ export async function initExpress(): Promise<Express> {
         res.locals,
       );
       res.locals.billing_enabled = hasCourseInstanceBilling && isEnterprise();
+
+      const aiGradingEnabled = await features.enabledFromLocals('ai-grading', res.locals);
+      res.locals.ai_grading_enabled = aiGradingEnabled && isEnterprise();
       next();
     }),
   );
@@ -1257,6 +1256,14 @@ export async function initExpress(): Promise<Express> {
     (await import('./pages/instructorInstanceAdminPublishing/instructorInstanceAdminPublishing.js'))
       .default,
   );
+  if (isEnterprise()) {
+    app.use(
+      '/pl/course_instance/:course_instance_id(\\d+)/instructor/instance_admin/ai_grading',
+      (
+        await import('./ee/pages/instructorInstanceAdminAiGrading/instructorInstanceAdminAiGrading.js')
+      ).default,
+    );
+  }
   app.use(
     '/pl/course_instance/:course_instance_id(\\d+)/instructor/instance_admin/assessments',
     (await import('./pages/instructorAssessments/instructorAssessments.js')).default,
@@ -1504,10 +1511,6 @@ export async function initExpress(): Promise<Express> {
 
   if (config.devMode) {
     app.use(
-      '/pl/course_instance/:course_instance_id(\\d+)/loadFromDisk',
-      (await import('./pages/instructorLoadFromDisk/instructorLoadFromDisk.js')).default,
-    );
-    app.use(
       '/pl/course_instance/:course_instance_id(\\d+)/jobSequence',
       (await import('./pages/jobSequence/jobSequence.js')).default,
     );
@@ -1693,10 +1696,6 @@ export async function initExpress(): Promise<Express> {
     (await import('./pages/instructorFileDownload/instructorFileDownload.js')).default,
   );
 
-  app.use(
-    '/pl/course/:course_id(\\d+)/loadFromDisk',
-    (await import('./pages/instructorLoadFromDisk/instructorLoadFromDisk.js')).default,
-  );
   app.use(
     '/pl/course/:course_id(\\d+)/jobSequence',
     (await import('./pages/jobSequence/jobSequence.js')).default,
@@ -2138,7 +2137,7 @@ export async function insertDevUser() {
     ' ON CONFLICT (uid) DO UPDATE' +
     ' SET name = EXCLUDED.name' +
     ' RETURNING id;';
-  const user_id = await sqldb.queryRow(sql, UserSchema.shape.id);
+  const user_id = await sqldb.queryScalar(sql, UserSchema.shape.id);
   const adminSql =
     'INSERT INTO administrators (user_id)' +
     ' VALUES ($user_id)' +
@@ -2525,7 +2524,8 @@ if (shouldStartServer) {
     load.initEstimator('python_worker_idle', 1, false);
     load.initEstimator('python_callback_waiting', 1);
 
-    await codeCaller.init();
+    // in e2e tests, we want to initialize the code callers lazily
+    await codeCaller.init({ lazyWorkers: process.env.NODE_ENV === 'test' });
     await assets.init();
     await cache.init({
       type: config.cacheType,
@@ -2591,6 +2591,18 @@ if (shouldStartServer) {
   // we want to gracefully shut down. This is used below in the ASG
   // lifecycle handler, and also within the "terminate" webhook.
   process.once('SIGTERM', async () => {
+    // In test environments, the entire process group receives SIGTERM, which
+    // can cause in-flight outgoing HTTP requests to fail with ECONNRESET.
+    // These unhandled 'error' events on ClientRequest objects would crash the
+    // process, so we suppress them during shutdown.
+    if (process.env.NODE_ENV === 'test') {
+      process.on('uncaughtException', (err: NodeJS.ErrnoException) => {
+        if (err.code === 'ECONNRESET') return;
+        logger.error('Uncaught exception during shutdown', err);
+        process.exit(1);
+      });
+    }
+
     // By this point, we should no longer be attached to the load balancer,
     // so there's no point shutting down the HTTP server or the socket.io
     // server.

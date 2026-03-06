@@ -1,4 +1,4 @@
-export const PRETTIER_CONFIG = {
+const PRETTIER_CONFIG = {
   tabWidth: 2,
   printWidth: 100,
 };

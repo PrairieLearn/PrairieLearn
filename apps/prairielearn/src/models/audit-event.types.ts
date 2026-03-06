@@ -8,6 +8,7 @@ import type { TableName } from '../lib/db-types.js';
  */
 export const requiredTableFields = {
   course_instances: ['course_instance_id'],
+  course_instance_ai_grading_credentials: ['course_instance_id'],
   courses: ['course_id'],
   users: ['subject_user_id'],
   teams: ['team_id'],
@@ -16,6 +17,7 @@ export const requiredTableFields = {
   assessments: ['assessment_id'],
   institutions: ['institution_id'],
   enrollments: ['course_instance_id', 'subject_user_id', 'action_detail'],
+  student_label_enrollments: ['enrollment_id', 'action_detail'],
 } as const satisfies Partial<Record<TableName, readonly string[]>>;
 
 /**
@@ -24,6 +26,10 @@ export const requiredTableFields = {
 export type SupportedTableActionCombination =
   | {
       tableName: 'course_instances';
+      actionDetail?: null;
+    }
+  | {
+      tableName: 'course_instance_ai_grading_credentials';
       actionDetail?: null;
     }
   | {
@@ -77,6 +83,10 @@ export type SupportedTableActionCombination =
         | 'reenrolled_by_manual_sync'
         | 'reenrolled_by_instructor'
         | null;
+    }
+  | {
+      tableName: 'student_label_enrollments';
+      actionDetail?: 'enrollment_added' | 'enrollment_removed' | null;
     };
 export type SupportedActionsForTable<T extends TableName> = NonNullable<
   Exclude<Extract<SupportedTableActionCombination, { tableName: T }>['actionDetail'], null>

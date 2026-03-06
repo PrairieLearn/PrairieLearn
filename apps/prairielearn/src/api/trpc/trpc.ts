@@ -26,12 +26,11 @@ export function createContext({ req }: CreateExpressContextOptions) {
   };
 }
 
-export type TRPCContext = Awaited<ReturnType<typeof createContext>>;
+type TRPCContext = Awaited<ReturnType<typeof createContext>>;
 
-export const t = initTRPC.context<TRPCContext>().create();
+const t = initTRPC.context<TRPCContext>().create();
 
 export const router = t.router;
-export const publicProcedure = t.procedure;
 
 export const privateProcedure = t.procedure.use(async (opts) => {
   // When running in the same process, we can bypass JWT verification.

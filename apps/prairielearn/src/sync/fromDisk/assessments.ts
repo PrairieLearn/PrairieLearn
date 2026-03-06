@@ -6,7 +6,11 @@ import { assertNever } from '@prairielearn/utils';
 import { IdSchema } from '@prairielearn/zod';
 
 import { config } from '../../lib/config.js';
-import { type AssessmentTool, EnumAssessmentToolSchema, SprocSyncAssessmentsSchema } from '../../lib/db-types.js';
+import {
+  type AssessmentTool,
+  EnumAssessmentToolSchema,
+  SprocSyncAssessmentsSchema,
+} from '../../lib/db-types.js';
 import { features } from '../../lib/features/index.js';
 import {
   type AssessmentJson,
@@ -94,6 +98,7 @@ function getParamsForAssessment(
       number_choose: zone.numberChoose ?? null,
       max_points: zone.maxPoints,
       best_questions: zone.bestQuestions,
+      lockpoint: zone.lockpoint,
       advance_score_perc: zone.advanceScorePerc,
       allow_real_time_grading: zone.allowRealTimeGrading,
       grade_rate_minutes: zone.gradeRateMinutes,
@@ -488,13 +493,13 @@ export async function sync(
   });
 
   await sqldb.runInTransactionAsync(async () => {
-    const nameToIdMap = await sqldb.callRow(
+    const { name_to_id_map } = await sqldb.callRow(
       'sync_assessments',
       [assessmentParams, courseId, courseInstanceId, config.checkSharingOnSync],
       SprocSyncAssessmentsSchema,
     );
 
-    await syncAssessmentTools(assessments, nameToIdMap);
+    await syncAssessmentTools(assessments, name_to_id_map);
   });
 }
 
@@ -607,7 +612,7 @@ export async function validateAssessmentSharedQuestions(
   });
 
   if (importedQids.size > 0) {
-    const institutionId = await sqldb.queryRow(
+    const institutionId = await sqldb.queryScalar(
       sql.get_institution_id,
       { course_id: courseId },
       z.string(),

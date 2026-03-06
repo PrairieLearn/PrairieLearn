@@ -29,7 +29,7 @@ export const ManualGradingQuestionSchema = AssessmentQuestionSchema.extend({
     .nullable(),
   num_open_instances: z.coerce.number(),
 });
-export type ManualGradingQuestion = z.infer<typeof ManualGradingQuestionSchema>;
+type ManualGradingQuestion = z.infer<typeof ManualGradingQuestionSchema>;
 
 export function ManualGradingAssessment({
   resLocals,
@@ -70,22 +70,6 @@ export function ManualGradingAssessment({
           assessmentId={resLocals.assessment.id}
           urlPrefix={resLocals.urlPrefix}
         />
-        {adminFeaturesEnabled && (
-          <>
-            <form method="POST" id="ai-grade-all">
-              <input type="hidden" name="__action" value="ai_grade_all" />
-              <input type="hidden" name="__csrf_token" value={resLocals.__csrf_token} />
-            </form>
-            <form method="POST" id="delete-ai-grading-data">
-              <input type="hidden" name="__action" value="delete_ai_grading_data" />
-              <input type="hidden" name="__csrf_token" value={resLocals.__csrf_token} />
-            </form>
-            <form method="POST" id="export-ai-grading-statistics">
-              <input type="hidden" name="__action" value="export_ai_grading_statistics" />
-              <input type="hidden" name="__csrf_token" value={resLocals.__csrf_token} />
-            </form>
-          </>
-        )}
         <div className="card mb-4">
           <div className="card-header bg-primary text-white align-items-center justify-content-between d-flex gap-2">
             <h1>
@@ -100,37 +84,43 @@ export function ManualGradingAssessment({
                 // eslint-disable-next-line @eslint-react/dom/no-dangerously-set-innerhtml
                 dangerouslySetInnerHTML={{
                   __html: html`
-                    <button
-                      type="button"
-                      class="btn btn-sm btn-light grading-tag-button"
-                      name="export-ai-grading-statistics"
-                      aria-label="Export AI grading statistics"
-                      onclick="$('#export-ai-grading-statistics').submit();"
-                    >
-                      <i class="bi bi-download" aria-hidden="true"></i>
-                      Export AI grading statistics
-                    </button>
-                    <button
-                      type="button"
-                      class="btn btn-sm btn-light grading-tag-button"
-                      name="ai-grade-all-questions"
-                      aria-label="AI grade all questions"
-                      onclick="$('#ai-grade-all').submit();"
-                    >
-                      <i class="bi bi-stars" aria-hidden="true"></i>
-                      AI grade all questions
-                    </button>
-                    <button
-                      type="button"
-                      class="btn btn-sm btn-light grading-tag-button"
-                      name="delete-ai-grading-data"
-                      aria-label="Delete all AI grading data"
-                      data-bs-toggle="tooltip"
-                      data-bs-title="Delete all AI grading results for this assessment's questions"
-                      onclick="$('#delete-ai-grading-data').submit();"
-                    >
-                      Delete AI grading data
-                    </button>
+                    <form method="POST" class="d-inline">
+                      <input type="hidden" name="__action" value="export_ai_grading_statistics" />
+                      <input type="hidden" name="__csrf_token" value="${resLocals.__csrf_token}" />
+                      <button
+                        type="submit"
+                        class="btn btn-sm btn-light grading-tag-button"
+                        aria-label="Export AI grading statistics"
+                      >
+                        <i class="bi bi-download" aria-hidden="true"></i>
+                        Export AI grading statistics
+                      </button>
+                    </form>
+                    <form method="POST" class="d-inline">
+                      <input type="hidden" name="__action" value="ai_grade_all" />
+                      <input type="hidden" name="__csrf_token" value="${resLocals.__csrf_token}" />
+                      <button
+                        type="submit"
+                        class="btn btn-sm btn-light grading-tag-button"
+                        aria-label="AI grade all questions"
+                      >
+                        <i class="bi bi-stars" aria-hidden="true"></i>
+                        AI grade all questions
+                      </button>
+                    </form>
+                    <form method="POST" class="d-inline">
+                      <input type="hidden" name="__action" value="delete_ai_grading_data" />
+                      <input type="hidden" name="__csrf_token" value="${resLocals.__csrf_token}" />
+                      <button
+                        type="submit"
+                        class="btn btn-sm btn-light grading-tag-button"
+                        aria-label="Delete all AI grading data"
+                        data-bs-toggle="tooltip"
+                        data-bs-title="Delete all AI grading results for this assessment's questions"
+                      >
+                        Delete AI grading data
+                      </button>
+                    </form>
                   `.toString(),
                 }}
               />

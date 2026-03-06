@@ -4,11 +4,12 @@ import url from 'node:url';
 import { type Request, type Response, Router } from 'express';
 
 import { HttpStatusError } from '@prairielearn/error';
-import { loadSqlEquiv, queryOptionalRow, queryRows } from '@prairielearn/postgres';
+import { loadSqlEquiv, queryOptionalScalar, queryRows } from '@prairielearn/postgres';
 import { IdSchema } from '@prairielearn/zod';
 
 import checkPlanGrantsForQuestion from '../../ee/middlewares/checkPlanGrantsForQuestion.js';
-import { canDeleteAssessmentInstance, gradeAssessmentInstance } from '../../lib/assessment.js';
+import { gradeAssessmentInstance } from '../../lib/assessment.js';
+import { canDeleteAssessmentInstance } from '../../lib/assessment.shared.js';
 import { getQuestionCopyTargets } from '../../lib/copy-content.js';
 import { AssessmentToolSchema, type File } from '../../lib/db-types.js';
 import { deleteFile, uploadFile } from '../../lib/file-store.js';
@@ -179,6 +180,9 @@ async function validateAndProcessSubmission(req: Request, res: Response) {
   if (!res.locals.authz_result.active) {
     throw new HttpStatusError(400, 'This assessment is not accepting submissions at this time.');
   }
+  if (res.locals.instance_question_info.question_access_mode === 'read_only_lockpoint') {
+    throw new HttpStatusError(403, 'This question is read-only after crossing a lockpoint');
+  }
   if (res.locals.group_config?.has_roles && !res.locals.group_role_permissions.can_submit) {
     throw new HttpStatusError(
       403,
@@ -327,7 +331,7 @@ router.get(
       // fetch and display the most recent non-broken variant.
       // If no such variant exists, we tell the user that a new variant
       // cannot be generated.
-      const last_variant_id = await queryOptionalRow(
+      const last_variant_id = await queryOptionalScalar(
         sql.select_last_variant_id,
         { instance_question_id: res.locals.instance_question.id },
         IdSchema,

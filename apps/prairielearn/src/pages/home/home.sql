@@ -170,6 +170,7 @@ WITH
   base_enrollments AS (
     SELECT
       e.id AS enrollment_id,
+      c.id AS course_id,
       c.short_name AS course_short_name,
       c.title AS course_title,
       ci.id AS course_instance_id,
@@ -194,7 +195,6 @@ WITH
           c.example_course IS FALSE
           OR $include_example_course_enrollments
         )
-        AND users_is_instructor_in_course (u.id, c.id) IS FALSE
       )
     WHERE
       e.user_id = $user_id
@@ -203,6 +203,7 @@ WITH
   -- Legacy courses: use access rules for dates and check_course_instance_access for filtering
   legacy_courses AS (
     SELECT
+      be.course_id,
       be.course_short_name,
       be.course_title,
       be.course_instance,
@@ -234,6 +235,7 @@ WITH
   -- Modern courses: use publishing dates directly and fetch extension data
   modern_courses AS (
     SELECT
+      be.course_id,
       be.course_short_name,
       be.course_title,
       be.course_instance,

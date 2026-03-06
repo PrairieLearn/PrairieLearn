@@ -1,5 +1,3 @@
-import { z } from 'zod';
-
 import { loadSqlEquiv, queryOptionalRow, queryRow, queryRows } from '@prairielearn/postgres';
 
 import { type Question, QuestionSchema } from '../lib/db-types.js';
@@ -54,10 +52,7 @@ export async function selectQuestionByInstanceQuestionId(
   );
 }
 
-export const QuestionForCopySchema = QuestionSchema.extend({
-  should_copy: z.boolean().optional(),
-});
-export type QuestionForCopy = z.infer<typeof QuestionForCopySchema>;
+type QuestionForCopy = Question & { should_copy?: boolean };
 
 export async function selectQuestionsForCourseInstanceCopy(
   course_instance_id: string,
