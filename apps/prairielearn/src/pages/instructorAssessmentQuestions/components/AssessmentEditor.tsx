@@ -38,11 +38,11 @@ import type {
   ZoneQuestionBlockForm,
 } from '../types.js';
 import {
-  addTrackingIds,
   createAltGroupWithTrackingId,
   createAlternativeWithTrackingId,
   createQuestionWithTrackingId,
   createZoneWithTrackingId,
+  prepareZonesForEditor,
   stripTrackingIds,
 } from '../utils/dataTransform.js';
 import type { AssessmentAdvancedDefaults } from '../utils/formHelpers.js';
@@ -152,7 +152,7 @@ function AssessmentEditorInner({
   });
 
   const [initialState] = useState(() => ({
-    zones: addTrackingIds(jsonZones),
+    zones: prepareZonesForEditor(jsonZones, assessment.type),
     questionMetadata: Object.fromEntries(
       questionRows.map((r) => [questionDisplayName(course, r), r]),
     ),

@@ -11,7 +11,7 @@ import {
 import * as courseDB from '../../../sync/course-db.js';
 import type { ZoneAssessmentForm } from '../types.js';
 
-import { addTrackingIds, serializeZonesForJson, stripTrackingIds } from './dataTransform.js';
+import { prepareZonesForEditor, serializeZonesForJson, stripTrackingIds } from './dataTransform.js';
 
 describe('serializeZonesForJson', () => {
   test('should strip defaults while preserving structure for all example course assessments', async () => {
@@ -110,7 +110,7 @@ describe('serializeZonesForJson', () => {
   });
 });
 
-describe('addTrackingIds', () => {
+describe('prepareZonesForEditor', () => {
   it('adds trackingIds to zones, questions, and alternatives', () => {
     const zones: ZoneAssessmentJson[] = [
       {
@@ -130,7 +130,7 @@ describe('addTrackingIds', () => {
       },
     ];
 
-    const result = addTrackingIds(zones);
+    const result = prepareZonesForEditor(zones);
 
     expect(result).toHaveLength(1);
     expect(result[0].trackingId).toBeDefined();
@@ -156,7 +156,7 @@ describe('addTrackingIds', () => {
       },
     ];
 
-    const result = addTrackingIds(zones);
+    const result = prepareZonesForEditor(zones);
 
     const trackingIds = [
       result[0].trackingId,
@@ -165,6 +165,75 @@ describe('addTrackingIds', () => {
     ];
     const uniqueIds = new Set(trackingIds);
     expect(uniqueIds.size).toBe(trackingIds.length);
+  });
+});
+
+describe('prepareZonesForEditor normalization', () => {
+  it('normalizes legacy points/maxPoints to autoPoints/maxAutoPoints for Homework', () => {
+    const zones: ZoneAssessmentJson[] = [
+      {
+        lockpoint: false,
+        canSubmit: [],
+        canView: [],
+        questions: [
+          { id: 'q1', points: 5, maxPoints: 10, canSubmit: [], canView: [] },
+          {
+            numberChoose: 1,
+            canSubmit: [],
+            canView: [],
+            points: 3,
+            alternatives: [{ id: 'alt1', points: 2, maxPoints: 8 }],
+          },
+        ],
+      },
+    ];
+
+    const result = prepareZonesForEditor(zones, 'Homework');
+
+    expect(result[0].questions[0].autoPoints).toBe(5);
+    expect(result[0].questions[0].maxAutoPoints).toBe(10);
+    expect(result[0].questions[0].points).toBeUndefined();
+    expect(result[0].questions[0].maxPoints).toBeUndefined();
+
+    expect(result[0].questions[1].autoPoints).toBe(3);
+    expect(result[0].questions[1].points).toBeUndefined();
+
+    expect(result[0].questions[1].alternatives![0].autoPoints).toBe(2);
+    expect(result[0].questions[1].alternatives![0].maxAutoPoints).toBe(8);
+    expect(result[0].questions[1].alternatives![0].points).toBeUndefined();
+    expect(result[0].questions[1].alternatives![0].maxPoints).toBeUndefined();
+  });
+
+  it('does not normalize when autoPoints is already set for Homework', () => {
+    const zones: ZoneAssessmentJson[] = [
+      {
+        lockpoint: false,
+        canSubmit: [],
+        canView: [],
+        questions: [{ id: 'q1', autoPoints: 7, points: 5, canSubmit: [], canView: [] }],
+      },
+    ];
+
+    const result = prepareZonesForEditor(zones, 'Homework');
+
+    expect(result[0].questions[0].autoPoints).toBe(7);
+    expect(result[0].questions[0].points).toBe(5);
+  });
+
+  it('does not normalize for Exam assessments', () => {
+    const zones: ZoneAssessmentJson[] = [
+      {
+        lockpoint: false,
+        canSubmit: [],
+        canView: [],
+        questions: [{ id: 'q1', points: 5, canSubmit: [], canView: [] }],
+      },
+    ];
+
+    const result = prepareZonesForEditor(zones, 'Exam');
+
+    expect(result[0].questions[0].points).toBe(5);
+    expect(result[0].questions[0].autoPoints).toBeUndefined();
   });
 });
 

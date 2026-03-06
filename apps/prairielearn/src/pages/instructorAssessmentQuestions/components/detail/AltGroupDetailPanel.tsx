@@ -11,8 +11,6 @@ import {
   formatPoints,
   makeResetAndSave,
   parsePointsListValue,
-  resolveMaxPointsProperty,
-  resolvePointsProperty,
   validateNonIncreasingPoints,
   validatePointsListFormat,
 } from '../../utils/formHelpers.js';
@@ -64,8 +62,8 @@ export function AltGroupDetailPanel({
 
   const sharedTags = getSharedTags(zoneQuestionBlock.alternatives ?? [], questionMetadata);
 
-  const originalPointsProperty = resolvePointsProperty(assessmentType, zoneQuestionBlock);
-  const originalMaxProperty = resolveMaxPointsProperty(originalPointsProperty, zoneQuestionBlock);
+  const pointsProperty = assessmentType === 'Exam' ? 'points' : 'autoPoints';
+  const maxPointsProperty = assessmentType === 'Exam' ? 'maxPoints' : 'maxAutoPoints';
 
   // forceMaxPoints never has a parent for alt groups (parentForceMaxPoints is always undefined)
   const hasAllowRealTimeGradingParent =
@@ -141,7 +139,7 @@ export function AltGroupDetailPanel({
     resetAndSave,
   };
 
-  const watchedAutoPoints = watch(originalPointsProperty);
+  const watchedAutoPoints = watch(pointsProperty);
   const autoPointsPlaceholder =
     watchedAutoPoints == null
       ? ''
@@ -198,8 +196,8 @@ export function AltGroupDetailPanel({
               editMode={editMode}
               id={`${idPrefix}-autoPoints`}
               label="Auto points (default)"
-              viewValue={formatPoints(zoneQuestionBlock[originalPointsProperty])}
-              error={errors[originalPointsProperty]}
+              viewValue={formatPoints(zoneQuestionBlock[pointsProperty])}
+              error={errors[pointsProperty]}
               helpText="Default auto points inherited by alternatives unless overridden."
               hideWhenEmpty
             >
@@ -209,7 +207,7 @@ export function AltGroupDetailPanel({
                   className={clsx('form-control form-control-sm', aria.errorClass)}
                   {...aria.inputProps}
                   step="any"
-                  {...register(originalPointsProperty, {
+                  {...register(pointsProperty, {
                     setValueAs: coerceToNumber,
                     validate: (v) => {
                       if (typeof v === 'number' && v < 0) {
@@ -225,11 +223,11 @@ export function AltGroupDetailPanel({
               id={`${idPrefix}-maxAutoPoints`}
               label="Max auto points (default)"
               viewValue={
-                zoneQuestionBlock[originalMaxProperty] != null
-                  ? String(zoneQuestionBlock[originalMaxProperty])
+                zoneQuestionBlock[maxPointsProperty] != null
+                  ? String(zoneQuestionBlock[maxPointsProperty])
                   : undefined
               }
-              error={errors[originalMaxProperty]}
+              error={errors[maxPointsProperty]}
               helpText="Default max auto points inherited by alternatives unless overridden. Defaults to auto points if not set."
               hideWhenEmpty
             >
@@ -239,7 +237,7 @@ export function AltGroupDetailPanel({
                   className={clsx('form-control form-control-sm', aria.errorClass)}
                   {...aria.inputProps}
                   placeholder={autoPointsPlaceholder}
-                  {...register(originalMaxProperty, {
+                  {...register(maxPointsProperty, {
                     setValueAs: coerceToNumber,
                     validate: (v) => {
                       if (v != null && v < 0) return 'Max auto points must be non-negative.';
@@ -282,8 +280,8 @@ export function AltGroupDetailPanel({
               editMode={editMode}
               id={`${idPrefix}-points`}
               label="Points list (default)"
-              viewValue={formatPoints(zoneQuestionBlock[originalPointsProperty])}
-              error={errors.points}
+              viewValue={formatPoints(zoneQuestionBlock[pointsProperty])}
+              error={errors[pointsProperty]}
               helpText="Default points list inherited by alternatives unless overridden."
               hideWhenEmpty
             >
@@ -292,7 +290,7 @@ export function AltGroupDetailPanel({
                   type="text"
                   className={clsx('form-control form-control-sm', aria.errorClass)}
                   {...aria.inputProps}
-                  {...register('points', {
+                  {...register(pointsProperty, {
                     setValueAs: parsePointsListValue,
                     validate: {
                       format: (v) => validatePointsListFormat(v),

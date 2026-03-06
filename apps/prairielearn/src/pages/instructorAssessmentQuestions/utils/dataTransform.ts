@@ -2,6 +2,7 @@ import type { EnumAssessmentType } from '../../../lib/db-types.js';
 import { propertyValueWithDefault } from '../../../lib/editorUtil.shared.js';
 import type {
   QuestionAlternativeJson,
+  QuestionPointsJson,
   ZoneAssessmentJson,
   ZoneAssessmentJsonInput,
   ZoneQuestionBlockJson,
@@ -21,19 +22,45 @@ function createTrackingId(): TrackingId {
 }
 
 /**
- * Adds trackingId to zones, questions, and alternatives.
- * Used when initializing editor state from saved data.
+ * For Homework assessments, normalizes legacy `points`/`maxPoints` fields to
+ * `autoPoints`/`maxAutoPoints`. Only converts when the modern field isn't already set.
+ * Exam assessments use `points` as the canonical field name, so no normalization is needed.
  */
-export function addTrackingIds(zones: ZoneAssessmentJson[]): ZoneAssessmentForm[] {
+function normalizeQuestionPoints<T extends QuestionPointsJson>(
+  obj: T,
+  assessmentType: EnumAssessmentType | undefined,
+): T {
+  if (assessmentType !== 'Homework') return obj;
+  const result = { ...obj };
+  if (result.points != null && result.autoPoints == null) {
+    result.autoPoints = result.points;
+    delete result.points;
+  }
+  if (result.maxPoints != null && result.maxAutoPoints == null) {
+    result.maxAutoPoints = result.maxPoints;
+    delete result.maxPoints;
+  }
+  return result;
+}
+
+/**
+ * Prepares raw JSON zones for the editor by adding tracking IDs and
+ * normalizing legacy point fields. For Homework assessments, converts
+ * `points`/`maxPoints` to `autoPoints`/`maxAutoPoints`.
+ */
+export function prepareZonesForEditor(
+  zones: ZoneAssessmentJson[],
+  assessmentType?: EnumAssessmentType,
+): ZoneAssessmentForm[] {
   // Cast needed for TypeScript spread inference with union types
   return zones.map((zone) => ({
     ...zone,
     trackingId: createTrackingId(),
     questions: zone.questions.map((question) => ({
-      ...question,
+      ...normalizeQuestionPoints(question, assessmentType),
       trackingId: createTrackingId(),
       alternatives: question.alternatives?.map((alt) => ({
-        ...alt,
+        ...normalizeQuestionPoints(alt, assessmentType),
         trackingId: createTrackingId(),
       })),
     })),
