@@ -79,7 +79,7 @@ export function computeChangeTracking(
 function propsKey(obj: Record<string, unknown>): string {
   const filtered: Record<string, unknown> = {};
   for (const [key, val] of Object.entries(obj)) {
-    if (val === undefined || val === null || val === false) continue;
+    if (val === undefined) continue;
     filtered[key] = val;
   }
   return stableStringify(filtered);

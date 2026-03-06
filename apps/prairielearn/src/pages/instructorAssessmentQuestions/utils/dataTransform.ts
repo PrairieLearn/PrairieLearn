@@ -159,7 +159,7 @@ export function alternativeToQuestionBlock(alt: QuestionAlternativeForm): ZoneQu
  * Preserves trackingId so dnd-kit can track the item mid-drag.
  */
 export function questionBlockToAlternative(block: ZoneQuestionBlockForm): QuestionAlternativeForm {
-  const { alternatives: _alternatives, numberChoose: _numberChoose, ...rest } = block;
+  const { alternatives: _alternatives, numberChoose: _numberChoose, canSubmit: _canSubmit, canView: _canView, ...rest } = block;
   return { ...rest } as QuestionAlternativeForm;
 }
 
