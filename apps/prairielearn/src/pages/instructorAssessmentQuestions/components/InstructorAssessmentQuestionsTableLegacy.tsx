@@ -266,9 +266,14 @@ export function InstructorAssessmentQuestionsTableLegacy({
           assessmentQuestionId={resetAssessmentQuestionId}
           show={showResetModal}
           onHide={() => setShowResetModal(false)}
+          onExited={() => {}}
         />
       ) : (
-        <ExamResetNotSupportedModal show={showResetModal} onHide={() => setShowResetModal(false)} />
+        <ExamResetNotSupportedModal
+          show={showResetModal}
+          onHide={() => setShowResetModal(false)}
+          onExited={() => {}}
+        />
       )}
     </>
   );
