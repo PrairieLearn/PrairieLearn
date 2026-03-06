@@ -2,11 +2,6 @@ import { z } from 'zod';
 
 import * as sqldb from '@prairielearn/postgres';
 
-import { EXAMPLE_COURSE_PATH } from '../../lib/paths.js';
-import { selectCourseInstanceByShortName } from '../../models/course-instances.js';
-import { selectCourseByShortName } from '../../models/course.js';
-import { syncCourse } from '../helperCourse.js';
-
 import { expect, test } from './fixtures.js';
 
 const sql = sqldb.loadSqlEquiv(import.meta.url);
@@ -38,15 +33,7 @@ const AssessmentInfoSchema = z.object({
   label: z.string(),
 });
 
-// Will be set during test setup
-let courseInstanceId: string;
 let assessmentLabel: string;
-
-async function getCourseInstanceId(): Promise<string> {
-  const course = await selectCourseByShortName('XC 101');
-  const courseInstance = await selectCourseInstanceByShortName({ course, shortName: 'SectionA' });
-  return courseInstance.id;
-}
 
 /**
  * Creates test students with assessment scores for gradebook filter testing.
@@ -81,14 +68,15 @@ async function createTestData(ciId: string): Promise<string> {
 }
 
 test.describe('Gradebook column visibility', () => {
-  test.beforeAll(async () => {
-    await syncCourse(EXAMPLE_COURSE_PATH);
-    courseInstanceId = await getCourseInstanceId();
-    await createTestData(courseInstanceId);
+  let gradebookUrl: string;
+
+  test.beforeAll(async ({ courseInstance }) => {
+    gradebookUrl = `/pl/course_instance/${courseInstance.id}/instructor/instance_admin/gradebook`;
+    await createTestData(courseInstance.id);
   });
 
   test('unchecking assessment set properly unchecks the set checkbox', async ({ page }) => {
-    await page.goto(`/pl/course_instance/${courseInstanceId}/instructor/instance_admin/gradebook`);
+    await page.goto(gradebookUrl);
     await expect(page).toHaveTitle(/Gradebook/);
 
     // Open the View dropdown
@@ -117,14 +105,15 @@ test.describe('Gradebook column visibility', () => {
 });
 
 test.describe('Gradebook numeric filter', () => {
-  test.beforeAll(async () => {
-    await syncCourse(EXAMPLE_COURSE_PATH);
-    courseInstanceId = await getCourseInstanceId();
-    assessmentLabel = await createTestData(courseInstanceId);
+  let gradebookUrl: string;
+
+  test.beforeAll(async ({ courseInstance }) => {
+    gradebookUrl = `/pl/course_instance/${courseInstance.id}/instructor/instance_admin/gradebook`;
+    assessmentLabel = await createTestData(courseInstance.id);
   });
 
   test('filters table rows when using numeric filter input', async ({ page }) => {
-    await page.goto(`/pl/course_instance/${courseInstanceId}/instructor/instance_admin/gradebook`);
+    await page.goto(gradebookUrl);
     await expect(page).toHaveTitle(/Gradebook/);
 
     // Wait for table to load with all enrolled students
@@ -157,7 +146,7 @@ test.describe('Gradebook numeric filter', () => {
   });
 
   test('shows only rows matching the filter criteria', async ({ page }) => {
-    await page.goto(`/pl/course_instance/${courseInstanceId}/instructor/instance_admin/gradebook`);
+    await page.goto(gradebookUrl);
 
     const tableBody = page.locator('tbody').first();
     await expect(tableBody.locator('tr')).toHaveCount(TEST_STUDENTS.length, { timeout: 10000 });
