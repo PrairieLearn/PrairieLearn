@@ -103,7 +103,7 @@ async function closeSql(): Promise<void> {
   await sqldb.closeAsync();
 }
 
-async function databaseExists(dbName: string): Promise<boolean> {
+export async function databaseExists(dbName: string): Promise<boolean> {
   const client = new pg.Client(POSTGRES_INIT_CONNECTION_STRING);
   await client.connect();
   const result = await client.query(
@@ -115,11 +115,7 @@ async function databaseExists(dbName: string): Promise<boolean> {
 }
 
 export async function setupDatabases({ configurePool = true }: { configurePool?: boolean } = {}) {
-  const templateExists = await databaseExists(POSTGRES_DATABASE_TEMPLATE);
   const dbName = getDatabaseNameForCurrentWorker();
-  if (!templateExists) {
-    await createTemplate();
-  }
 
   const poolConfig = await createFromTemplate({
     dbName,
