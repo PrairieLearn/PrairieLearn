@@ -229,7 +229,7 @@ export function ZoneDetailPanel({
               {...register('lockpoint', {
                 validate: (v) => {
                   if (v && zoneIndex === 0) {
-                    return 'The first zone cannot have lockpoint enabled.';
+                    return 'The first zone cannot be a lockpoint.';
                   }
                 },
               })}

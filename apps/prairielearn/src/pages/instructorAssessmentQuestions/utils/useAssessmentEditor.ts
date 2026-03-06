@@ -515,8 +515,8 @@ function createEditorReducer(initialState: EditorState) {
           1,
         );
 
-        // Convert to standalone question block
-        const newQuestion = alternativeToQuestionBlock(removedAlt);
+        // Convert to standalone question block, resolving inherited values
+        const newQuestion = alternativeToQuestionBlock(removedAlt, fromResult.question);
 
         // Find insertion point (uses trackingIds, so unaffected by shrinkage)
         let insertIndex: number;

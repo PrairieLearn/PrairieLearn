@@ -206,11 +206,23 @@ export function computeZonePointTotals(
   manualPoints: number;
 } {
   // Compute per-block point contributions.
+  // For Homework questions with max-point caps (maxAutoPoints/maxPoints),
+  // the cap represents the maximum achievable score and should be used
+  // instead of the initial autoPoints value.
   const blockPoints = questions.map((q) => {
     if (q.alternatives) {
       // Resolve each alternative's effective points (alternative-level ?? group-level)
       const resolved = q.alternatives.map((alt) => ({
-        auto: firstPoints(alt.points ?? alt.autoPoints ?? q.points ?? q.autoPoints),
+        auto: firstPoints(
+          alt.maxAutoPoints ??
+            alt.maxPoints ??
+            q.maxAutoPoints ??
+            q.maxPoints ??
+            alt.points ??
+            alt.autoPoints ??
+            q.points ??
+            q.autoPoints,
+        ),
         manual: alt.manualPoints ?? q.manualPoints ?? 0,
       }));
       // Sort by total descending and take the best numberChoose alternatives
@@ -223,7 +235,7 @@ export function computeZonePointTotals(
       };
     }
     return {
-      auto: firstPoints(q.points ?? q.autoPoints),
+      auto: firstPoints(q.maxAutoPoints ?? q.maxPoints ?? q.points ?? q.autoPoints),
       manual: q.manualPoints ?? 0,
     };
   });
@@ -478,9 +490,8 @@ export function getSharedTags(
     }
   }
   if (intersection.size === 0) return [];
-  const firstAlt = alternatives.find((a) => a.id);
-  if (!firstAlt) return [];
-  const firstTags = questionMetadata[firstAlt.id]?.tags;
-  if (!firstTags) return [];
+  const firstTaggedAlt = alternatives.find((a) => a.id && questionMetadata[a.id]?.tags?.length);
+  if (!firstTaggedAlt) return [];
+  const firstTags = questionMetadata[firstTaggedAlt.id]!.tags!;
   return firstTags.filter((t) => intersection.has(t.name));
 }

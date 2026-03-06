@@ -101,10 +101,15 @@ describe('computeChangeTracking', () => {
     expect(modifiedIds).not.toContain(questionId);
   });
 
-  it('treats false/undefined values as equivalent for propsKey', () => {
+  it('treats explicit undefined and absent keys as equivalent', () => {
     const zoneId = tid();
     const questionId = tid();
 
+    // The form layer often produces objects with explicit `undefined` values
+    // (e.g. `{ autoPoints: undefined }`), while the initial state parsed from
+    // JSON simply lacks those keys. `fast-json-stable-stringify` omits
+    // `undefined` values — just like `JSON.stringify` — so both representations
+    // produce the same deterministic string.
     const initialZones: ZoneAssessmentForm[] = [
       makeZone({
         trackingId: zoneId,
@@ -124,6 +129,35 @@ describe('computeChangeTracking', () => {
     );
 
     expect(newIds.size).toBe(0);
+    expect(modifiedIds.size).toBe(0);
+  });
+
+  it('treats multiple explicit undefined keys as equivalent to absent keys', () => {
+    const zoneId = tid();
+    const questionId = tid();
+
+    const initialZones: ZoneAssessmentForm[] = [
+      makeZone({
+        trackingId: zoneId,
+        title: 'Zone',
+        lockpoint: false,
+        maxPoints: undefined,
+        numberChoose: undefined,
+        bestQuestions: undefined,
+        questions: [makeQuestion({ trackingId: questionId, id: 'q1' })],
+      }),
+    ];
+    const currentZones: ZoneAssessmentForm[] = [
+      makeZone({
+        trackingId: zoneId,
+        title: 'Zone',
+        lockpoint: false,
+        questions: [makeQuestion({ trackingId: questionId, id: 'q1' })],
+      }),
+    ];
+
+    const { modifiedIds } = computeChangeTracking(buildPropsMap(initialZones), currentZones);
+
     expect(modifiedIds.size).toBe(0);
   });
 

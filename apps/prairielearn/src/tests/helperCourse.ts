@@ -19,6 +19,7 @@ export async function syncCourse(courseDir = TEST_COURSE_PATH) {
   try {
     syncResult = await syncFromDisk.syncOrCreateDiskToSql(courseDir, logger);
   } catch (err) {
+    // Log any output to make investigating test failures easier.
     console.log(getOutput());
     throw err;
   }

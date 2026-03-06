@@ -375,6 +375,45 @@ describe('computeZonePointTotals', () => {
     expect(result.autoPoints).toBe(expectedAuto);
     expect(result.manualPoints).toBe(expectedManual);
   });
+
+  it('uses maxAutoPoints cap for Homework questions', () => {
+    const questions = [
+      { trackingId: 'q1', id: 'q1', autoPoints: 1, maxAutoPoints: 5 },
+      { trackingId: 'q2', id: 'q2', autoPoints: 2, maxAutoPoints: 8 },
+    ] as ZoneQuestionBlockForm[];
+
+    const result = computeZonePointTotals(questions);
+    expect(result.autoPoints).toBe(13);
+  });
+
+  it('uses maxPoints cap when maxAutoPoints is absent', () => {
+    const questions = [
+      { trackingId: 'q1', id: 'q1', points: 1, maxPoints: 5 },
+    ] as ZoneQuestionBlockForm[];
+
+    const result = computeZonePointTotals(questions);
+    expect(result.autoPoints).toBe(5);
+  });
+
+  it('uses maxAutoPoints cap for alternatives within an alt group', () => {
+    const questions = [
+      {
+        trackingId: 'q1',
+        autoPoints: 1,
+        maxAutoPoints: 5,
+        numberChoose: 1,
+        alternatives: [
+          { trackingId: 'a1', id: 'q1' },
+          { trackingId: 'a2', id: 'q2', autoPoints: 2, maxAutoPoints: 10 },
+        ],
+      },
+    ] as ZoneQuestionBlockForm[];
+
+    const result = computeZonePointTotals(questions);
+    // Alternative a2 overrides with max 10; a1 inherits group max 5.
+    // numberChoose=1, so pick the best = 10.
+    expect(result.autoPoints).toBe(10);
+  });
 });
 
 describe('computeZoneQuestionCount', () => {

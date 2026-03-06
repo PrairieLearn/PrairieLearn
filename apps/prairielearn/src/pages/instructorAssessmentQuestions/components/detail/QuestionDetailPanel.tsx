@@ -316,9 +316,12 @@ export function QuestionDetailPanel({
           >
             {question.id}
             {question.id && (
-              <span className="ms-1">
-                <CopyButton text={question.id} tooltipId="copy-qid" ariaLabel="Copy QID" />
-              </span>
+              <CopyButton
+                text={question.id}
+                tooltipId="copy-qid"
+                ariaLabel="Copy QID"
+                className="ms-1"
+              />
             )}
           </span>
           <div className="mt-1">

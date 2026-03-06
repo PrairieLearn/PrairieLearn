@@ -1054,11 +1054,12 @@ function AssessmentEditorInner({
       onRemoveQuestionByQid: handleRemoveQuestionByQid,
       onResetButtonClick: resetModal.showWithData,
     }),
-    // Handlers close over `zones` (updated on dispatch), so `[zones, selectedItem]`
-    // correctly captures all change triggers. Listing each handler individually
+    // Handlers close over `zones` (updated on dispatch) and `courseQuestions`
+    // (used by handleQuestionPicked to build metadata), so these deps
+    // correctly capture all change triggers. Listing each handler individually
     // would be redundant and cause unnecessary re-memoization.
     // eslint-disable-next-line react-hooks/exhaustive-deps
-    [zones, selectedItem],
+    [zones, selectedItem, courseQuestions],
   );
 
   const toggleExpandCollapse = () => {

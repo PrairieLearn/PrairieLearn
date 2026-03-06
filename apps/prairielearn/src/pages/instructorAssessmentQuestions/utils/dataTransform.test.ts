@@ -105,7 +105,7 @@ describe('serializeZonesForJson', () => {
     const serialized = serializeZonesForJson(parsedZones);
     expect(serialized[0].allowRealTimeGrading).toBeUndefined();
 
-    // Re-parsing should still yield the default value
+    // Re-parsing the stripped value should leave it undefined (not re-introduce the default)
     const reparsed = serialized.map((zone) => ZoneAssessmentJsonSchema.parse(zone));
     expect(reparsed[0].allowRealTimeGrading).toBeUndefined();
   });

@@ -149,9 +149,29 @@ export function createAltGroupWithTrackingId(
 /**
  * Converts an alternative to a standalone question block.
  * Preserves trackingId so dnd-kit can track the item mid-drag.
+ * When a parent block is provided, inherited fields (points, triesPerVariant,
+ * advanced settings) are resolved so the extracted question retains its
+ * effective values rather than losing them.
  */
-export function alternativeToQuestionBlock(alt: QuestionAlternativeForm): ZoneQuestionBlockForm {
-  return { ...alt } as ZoneQuestionBlockForm;
+export function alternativeToQuestionBlock(
+  alt: QuestionAlternativeForm,
+  parent?: ZoneQuestionBlockForm,
+): ZoneQuestionBlockForm {
+  if (!parent) return { ...alt } as ZoneQuestionBlockForm;
+
+  return {
+    points: alt.points ?? parent.points,
+    autoPoints: alt.autoPoints ?? parent.autoPoints,
+    maxPoints: alt.maxPoints ?? parent.maxPoints,
+    maxAutoPoints: alt.maxAutoPoints ?? parent.maxAutoPoints,
+    manualPoints: alt.manualPoints ?? parent.manualPoints,
+    triesPerVariant: alt.triesPerVariant ?? parent.triesPerVariant,
+    forceMaxPoints: alt.forceMaxPoints ?? parent.forceMaxPoints,
+    advanceScorePerc: alt.advanceScorePerc ?? parent.advanceScorePerc,
+    gradeRateMinutes: alt.gradeRateMinutes ?? parent.gradeRateMinutes,
+    allowRealTimeGrading: alt.allowRealTimeGrading ?? parent.allowRealTimeGrading,
+    ...alt,
+  } as ZoneQuestionBlockForm;
 }
 
 /**

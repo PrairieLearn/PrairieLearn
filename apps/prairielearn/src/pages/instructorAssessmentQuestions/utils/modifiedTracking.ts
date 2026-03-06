@@ -71,18 +71,14 @@ export function computeChangeTracking(
 }
 
 /**
- * Produces a deterministic JSON string from an object, stripping default
- * values that the form always sends (e.g., `lockpoint: false`) even when
- * the original object didn't have them. Key ordering is handled by
- * `fast-json-stable-stringify`.
+ * Produces a deterministic JSON string from an object.
+ * `fast-json-stable-stringify` provides consistent key ordering and
+ * already omits `undefined` values (same as `JSON.stringify`), so form
+ * objects with explicit `undefined` keys compare equal to objects that
+ * simply lack those keys.
  */
 function propsKey(obj: Record<string, unknown>): string {
-  const filtered: Record<string, unknown> = {};
-  for (const [key, val] of Object.entries(obj)) {
-    if (val === undefined) continue;
-    filtered[key] = val;
-  }
-  return stableStringify(filtered);
+  return stableStringify(obj);
 }
 
 function zonePropsKey(zone: ZoneAssessmentForm): string {
