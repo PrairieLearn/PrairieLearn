@@ -27,4 +27,44 @@ SELECT
       courses
     WHERE
       repository LIKE '%/' || $repoName || '.git' ESCAPE '\'
+      AND deleted_at IS NULL
+  ) AS exists;
+
+-- BLOCK exists_by_course_repository
+SELECT
+  EXISTS (
+    SELECT
+      1
+    FROM
+      courses
+    WHERE
+      repository = $repository
+      AND deleted_at IS NULL
+  ) AS exists;
+
+-- BLOCK exists_by_course_repository_suffix
+SELECT
+  EXISTS (
+    SELECT
+      1
+    FROM
+      courses
+    WHERE
+      (
+        repository LIKE '%/' || $suffix ESCAPE '\'
+        OR repository LIKE '%:' || $suffix ESCAPE '\'
+      )
+      AND deleted_at IS NULL
+  ) AS exists;
+
+-- BLOCK exists_by_course_path
+SELECT
+  EXISTS (
+    SELECT
+      1
+    FROM
+      courses
+    WHERE
+      path = $path
+      AND deleted_at IS NULL
   ) AS exists;

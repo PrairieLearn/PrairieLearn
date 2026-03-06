@@ -312,6 +312,7 @@ export async function updateCourseColumn({
   authnUserId: string;
 }): Promise<Course> {
   return await runInTransactionAsync(async () => {
+    const oldCourse = await selectCourseById(courseId);
     const course = await queryRow(
       updateCourseColumnSqlMap[columnName],
       { course_id: courseId, value },
@@ -321,7 +322,10 @@ export async function updateCourseColumn({
       authn_user_id: authnUserId,
       action: 'update',
       table_name: 'courses',
+      column_name: columnName,
       row_id: courseId,
+      parameters: { [columnName]: value },
+      old_state: oldCourse,
       new_state: course,
       course_id: courseId,
       institution_id: course.institution_id,

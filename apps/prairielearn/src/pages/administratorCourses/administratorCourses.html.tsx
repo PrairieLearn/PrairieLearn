@@ -1,4 +1,4 @@
-import { QueryClient, useMutation, useQuery } from '@tanstack/react-query';
+import { QueryClient, useMutation } from '@tanstack/react-query';
 import clsx from 'clsx';
 import { useState } from 'react';
 import { Alert } from 'react-bootstrap';
@@ -266,7 +266,6 @@ function CourseInsertForm({
     handleSubmit,
     watch,
     setValue,
-    setError,
     formState: { errors, isSubmitting },
   } = useForm<InsertCourseFormData>({
     mode: 'onSubmit',
@@ -281,41 +280,11 @@ function CourseInsertForm({
     },
   });
   const institutionId = watch('institution_id');
-  const repoNameValue = watch('repository');
-  const pathNameValue = watch('path');
-
-  const { refetch: refetchRepo } = useQuery({
-    ...trpc.courseRequests.checkRepoAvailability.queryOptions({
-      repoName: repoNameValue,
-    }),
-    enabled: false,
-  });
-
-  const { refetch: refetchPath } = useQuery({
-    ...trpc.courseRequests.checkPathAvailability.queryOptions({
-      path: pathNameValue,
-    }),
-    enabled: false,
-  });
 
   const selectedInstitution = institutions.find((i) => i.id === institutionId);
   const isDefaultInstitution = selectedInstitution?.short_name === 'Default';
 
   const onSubmit = async (data: InsertCourseFormData) => {
-    const [repoResult, pathResult] = await Promise.all([refetchRepo(), refetchPath()]);
-
-    if (repoResult.data?.exists) {
-      setError('repository', {
-        message: 'A course with this repository already exists',
-      });
-    }
-    if (pathResult.data?.exists) {
-      setError('path', { message: 'A course already exists at this path' });
-    }
-    if (repoResult.data?.exists || pathResult.data?.exists) {
-      return;
-    }
-
     mutation.mutate(
       {
         title: data.title,

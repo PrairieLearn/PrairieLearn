@@ -10,24 +10,6 @@ import { coursePathAvailability, courseRepositoryAvailability } from '../../lib/
 
 import { requireAdministrator, t } from './trpc-init.js';
 
-const checkRepoAvailability = t.procedure
-  .use(requireAdministrator)
-  .input(z.object({ repoName: z.string() }))
-  .output(z.object({ exists: z.boolean() }))
-  .query(async (opts) => {
-    const exists = await courseRepositoryAvailability(opts.input.repoName);
-    return { exists };
-  });
-
-const checkPathAvailability = t.procedure
-  .use(requireAdministrator)
-  .input(z.object({ path: z.string() }))
-  .output(z.object({ exists: z.boolean() }))
-  .query(async (opts) => {
-    const exists = await coursePathAvailability(opts.input.path);
-    return { exists };
-  });
-
 const denyCourseRequestMutation = t.procedure
   .use(requireAdministrator)
   .input(z.object({ courseRequestId: z.string() }))
@@ -95,8 +77,6 @@ const createCourseMutation = t.procedure
   });
 
 export const administratorCourseRequestsRouter = t.router({
-  checkRepoAvailability,
-  checkPathAvailability,
   denyCourseRequestMutation,
   updateCourseRequestNoteMutation,
   createCourseMutation,

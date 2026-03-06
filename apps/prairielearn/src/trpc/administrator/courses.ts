@@ -1,7 +1,7 @@
 import { TRPCError } from '@trpc/server';
 import { z } from 'zod';
 
-import { coursePathAvailability, courseRepositoryAvailability } from '../../lib/course.js';
+import { coursePathAvailability, courseRepositoryUrlAvailability } from '../../lib/course.js';
 import {
   deleteCourse,
   insertCourse,
@@ -25,7 +25,7 @@ const insertCourseMutation = t.procedure
     }),
   )
   .mutation(async ({ input, ctx }) => {
-    const repoExists = await courseRepositoryAvailability(input.repository);
+    const repoExists = await courseRepositoryUrlAvailability(input.repository);
     if (repoExists) {
       throw new TRPCError({
         code: 'BAD_REQUEST',
