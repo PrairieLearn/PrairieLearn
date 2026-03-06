@@ -545,17 +545,18 @@ async function syncAssessmentTools(
       z.object({ id: IdSchema, number: z.number() }),
     );
 
-    if (zoneRows.length !== zones.length) {
-      // This should never happen
-      throw new Error(
-        `Number of zones in the database (${zoneRows.length}) does not match number of zones in the info files (${zones.length}) for assessment ID ${assessmentId}.`,
-      );
-    }
+    const zoneRowsByNumber = new Map(zoneRows.map((row) => [row.number, row]));
 
     for (const [index, zone] of zones.entries()) {
       if (!zone.tools) continue;
 
-      const zoneRow = zoneRows[index];
+      const zoneNumber = index + 1;
+      const zoneRow = zoneRowsByNumber.get(zoneNumber);
+      if (!zoneRow) {
+        throw new Error(
+          `Zone number ${zoneNumber} not found in database for assessment ID ${assessmentId}.`,
+        );
+      }
 
       for (const [toolName, { enabled, ...settings }] of Object.entries(zone.tools)) {
         const tool = EnumAssessmentToolSchema.parse(toolName);

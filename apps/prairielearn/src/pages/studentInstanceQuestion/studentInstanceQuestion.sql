@@ -31,7 +31,7 @@ FROM
 WHERE
   enabled = TRUE
   AND (
-    -- Zone-level tools take priority when any exist for this zone
+    -- Zone-level tools take priority on a per-tool basis
     zone_id = (
       SELECT
         id
@@ -39,11 +39,11 @@ WHERE
         question_zone
     )
     OR (
-      -- Fall back to assessment-level tools when no zone-level tools exist
+      -- Fall back to assessment-level tools for tools not overridden at zone level
       assessment_id = $assessment_id
-      AND NOT EXISTS (
+      AND tool NOT IN (
         SELECT
-          1
+          tool
         FROM
           assessment_tools
         WHERE
