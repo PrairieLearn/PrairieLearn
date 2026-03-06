@@ -77,7 +77,9 @@ def prepare(element_html: str, data: pl.QuestionData) -> None:
         pl.get_string_attrib(element, "variable", VARIABLES_DEFAULT)
     )
 
-    if len(variables) > 1:
+    big_o_type = pl.get_enum_attrib(element, "type", BigOType, BIG_O_TYPE_DEFAULT)
+
+    if len(variables) > 1 and big_o_type is not BigOType.BIG_O:
         raise ValueError(f"Only one variable is supported for question {name}")
 
     if pl.has_attrib(element, "correct-answer"):

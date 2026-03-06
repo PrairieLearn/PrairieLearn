@@ -49,27 +49,36 @@ def grade_o_expression(
 
     try:
         if sym_true.equals(sym_sub):
-            return (1.0, CORRECT_COMPLEX_FEEDBACK)
+            return (1.0, CORRECT_UNCONDITIONAL_FEEDBACK)
 
-        elif sympy.limit(sym_sub, sympy.Symbol(variables[0]), sympy.oo) < sympy.sympify(
+        if sympy.limit(sym_sub, sympy.Symbol(variables[0]), sympy.oo) < sympy.sympify(
             0
         ):
             return (0.0, NEGATIVE_FEEDBACK)
 
-        limit = sympy.limit(
-            sympy.simplify(sym_true / sym_sub), sympy.Symbol(variables[0]), sympy.oo
-        )
+        limit = sympy.Expr()
+        best_ans = 1.0
+        feedback = CONSTANT_FACTORS_FEEDBACK
+        for var in variables:
+            limit = sympy.limit(sym_true / sym_sub, sympy.Symbol(var), sympy.oo)
+            
+            if limit < sympy.sympify(0):
+                return (0.0, NEGATIVE_FEEDBACK)
+            elif limit == sympy.sympify(1) and best_ans > 0.5:
+                best_ans = 0.5
+                feedback = LOWER_ORDER_TERMS_FEEDBACK
+            elif limit == sympy.sympify(0) and best_ans > 0.25:
+                best_ans = 0.25
+                feedback = TOO_LOOSE_FEEDBACK
+            elif limit == sympy.oo and best_ans > 0:
+                best_ans = 0
+                feedback = INCORRECT_FEEDBACK
+        
+        if (best_ans == 1.0):
+            best_ans = 0.5
+            feedback = CONSTANT_FACTORS_FEEDBACK
+        return (best_ans, feedback)
 
-        if limit < sympy.sympify(0):
-            return (0.0, NEGATIVE_FEEDBACK)
-        elif limit == sympy.oo:
-            return (0.0, INCORRECT_FEEDBACK)
-        elif limit == sympy.sympify(0):
-            return (0.25, TOO_LOOSE_FEEDBACK)
-        elif limit == sympy.sympify(1):
-            return (0.5, LOWER_ORDER_TERMS_FEEDBACK)
-
-        return (0.5, CONSTANT_FACTORS_FEEDBACK)
     except TypeError:
         return (0.0, TYPE_ERROR_FEEDBACK)
 
