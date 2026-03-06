@@ -19,7 +19,7 @@
   "dependencies": {
     "base64url": "^3.0.1",
     "debug": "^4.4.3",
-    "es-toolkit": "^1.45.0"
+    "es-toolkit": "^1.45.1"
   },
   "devDependencies": {
     "@prairielearn/tsconfig": "workspace:^",

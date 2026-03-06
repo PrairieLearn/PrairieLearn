@@ -16,7 +16,7 @@
     "dev": "tsgo --watch --preserveWatchOutput"
   },
   "dependencies": {
-    "@smithy/property-provider": "^4.2.10",
+    "@smithy/property-provider": "^4.2.11",
     "@smithy/types": "^4.13.0"
   },
   "devDependencies": {

@@ -17,7 +17,7 @@
   },
   "dependencies": {
     "@prairielearn/postgres": "workspace:^",
-    "pg": "^8.19.0"
+    "pg": "^8.20.0"
   },
   "devDependencies": {
     "@prairielearn/tsconfig": "workspace:^",

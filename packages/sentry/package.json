@@ -16,8 +16,8 @@
     "dev": "tsgo --watch --preserveWatchOutput"
   },
   "dependencies": {
-    "@sentry/core": "^10.41.0",
-    "@sentry/node-core": "^10.41.0",
+    "@sentry/core": "^10.42.0",
+    "@sentry/node-core": "^10.42.0",
     "execa": "^9.6.1"
   },
   "devDependencies": {
