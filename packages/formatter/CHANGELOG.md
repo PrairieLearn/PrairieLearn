@@ -1,5 +1,11 @@
 # @prairielearn/formatter
 
+## 2.2.2
+
+### Patch Changes
+
+- 144cd19: Upgrade all JavaScript dependencies
+
 ## 2.2.1
 
 ### Patch Changes
