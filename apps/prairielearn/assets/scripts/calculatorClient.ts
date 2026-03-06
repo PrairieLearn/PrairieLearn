@@ -395,7 +395,9 @@ export function initCalculator(storageKey: string, { drawer, fab, fabClose }: Dr
     prepareButton(button);
     button.addEventListener('click', () => {
       shouldAutoInsertAns = false;
-      calculatorInputElement.insert(button.textContent);
+      const key = button.dataset.key;
+      const value = key && button.classList.contains('uppercase') ? key.toUpperCase() : key;
+      calculatorInputElement.insert(value ?? button.textContent);
       calculatorInputElement.focus();
     });
   });
@@ -406,13 +408,7 @@ export function initCalculator(storageKey: string, { drawer, fab, fabClose }: Dr
       button.classList.toggle('btn-light');
       button.classList.toggle('btn-secondary');
       document.querySelectorAll<HTMLButtonElement>('.btn-key[data-key]').forEach((btn) => {
-        const key = btn.dataset.key!;
-        if (key >= 'a' && key <= 'z') {
-          btn.textContent =
-            btn.textContent.toUpperCase() === btn.textContent
-              ? btn.textContent.toLowerCase()
-              : btn.textContent.toUpperCase();
-        }
+        btn.classList.toggle('uppercase');
       });
     }),
   );

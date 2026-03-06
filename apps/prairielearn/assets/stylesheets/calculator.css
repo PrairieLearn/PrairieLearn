@@ -275,6 +275,10 @@ math-field.history-text:focus {
 
 /* #region Keyboard buttons */
 
+.btn-key.uppercase {
+  text-transform: uppercase;
+}
+
 #main-keyboard .btn,
 #func-keyboard .btn {
   min-width: 50px;
