@@ -45,7 +45,7 @@ router.get(
         // The save succeeded but the sync itself failed. Show the "failed
         // sync" message with a "Pull from remote" button.
         failedSync = true;
-      } else if (job.data.hadJsonErrors) {
+      } else if (job.data.saveSucceeded && job.data.hadJsonErrors) {
         // The sync ran to completion, but individual entities had invalid
         // JSON. The save and push succeeded.
         hadJsonErrors = true;
