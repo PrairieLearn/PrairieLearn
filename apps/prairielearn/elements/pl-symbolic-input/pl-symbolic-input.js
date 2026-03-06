@@ -518,7 +518,7 @@
               }
             : '[separator]',
           '[separator]',
-          { class: 'small', label: '0', width: 2 },
+          { latex: '0', width: 2 },
           '.',
           '/',
           '[separator]',
