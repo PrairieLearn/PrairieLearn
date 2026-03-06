@@ -1144,6 +1144,7 @@ function AssessmentEditorInner({
         <button
           type="button"
           className="btn btn-sm btn-outline-secondary"
+          disabled={questionByQidMutation.isPending}
           onClick={handlePickerDone}
         >
           Done
