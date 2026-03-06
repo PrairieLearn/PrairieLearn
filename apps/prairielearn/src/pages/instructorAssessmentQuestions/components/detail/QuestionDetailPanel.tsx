@@ -307,6 +307,8 @@ export function QuestionDetailPanel({
       ? 'Points'
       : 'Auto points';
 
+  const Wrapper = editMode ? 'div' : 'dl';
+
   return (
     <div className="p-3">
       {/* Question header (title, tags, badges) — same in both modes */}
@@ -385,105 +387,107 @@ export function QuestionDetailPanel({
       )}
 
       {/* Points fields */}
-      {assessmentType === 'Homework' ? (
-        <HomeworkPointsFields
-          editMode={editMode}
-          idPrefix={idPrefix}
-          isAlternative={isAlternative}
-          isManualGrading={isManualGrading}
-          constantQuestionValue={constantQuestionValue}
-          pointsLabel={pointsLabel}
-          autoPointsValue={autoPointsValue}
-          maxAutoPointsValue={maxAutoPointsValue}
-          manualPointsValue={manualPointsValue}
-          isPointsInherited={isPointsInherited}
-          isMaxInherited={isMaxInherited}
-          isManualPointsInherited={isManualPointsInherited}
-          inheritedPointsValue={inheritedPointsValue}
-          inheritedMaxValue={inheritedMaxValue}
-          inheritedManualPoints={inheritedManualPoints}
-          autoPointsPlaceholder={autoPointsPlaceholder}
-          pointsProperty={pointsProperty}
-          maxPointsProperty={maxPointsProperty}
-          register={register}
-          errors={errors}
-          setValue={setValue}
-          resetAndSave={resetAndSave}
-          pointsValidation={pointsValidation}
-          nonNegativePointsValidation={nonNegativePointsValidation}
-          homeworkAutoPointsValidation={homeworkAutoPointsValidation}
-          homeworkMaxPointsValidation={homeworkMaxPointsValidation}
-        />
-      ) : (
-        <ExamPointsFields
-          editMode={editMode}
-          idPrefix={idPrefix}
-          isAlternative={isAlternative}
-          isManualGrading={isManualGrading}
-          pointsLabel={pointsLabel}
-          autoPointsValue={autoPointsValue}
-          manualPointsValue={manualPointsValue}
-          isPointsInherited={isPointsInherited}
-          isManualPointsInherited={isManualPointsInherited}
-          inheritedPointsValue={inheritedPointsValue}
-          inheritedManualPoints={inheritedManualPoints}
-          pointsProperty={pointsProperty}
-          register={register}
-          errors={errors}
-          setValue={setValue}
-          resetAndSave={resetAndSave}
-          pointsValidation={pointsValidation}
-          nonNegativePointsValidation={nonNegativePointsValidation}
-        />
-      )}
+      <Wrapper className={clsx(!editMode && 'mb-0')}>
+        {assessmentType === 'Homework' ? (
+          <HomeworkPointsFields
+            editMode={editMode}
+            idPrefix={idPrefix}
+            isAlternative={isAlternative}
+            isManualGrading={isManualGrading}
+            constantQuestionValue={constantQuestionValue}
+            pointsLabel={pointsLabel}
+            autoPointsValue={autoPointsValue}
+            maxAutoPointsValue={maxAutoPointsValue}
+            manualPointsValue={manualPointsValue}
+            isPointsInherited={isPointsInherited}
+            isMaxInherited={isMaxInherited}
+            isManualPointsInherited={isManualPointsInherited}
+            inheritedPointsValue={inheritedPointsValue}
+            inheritedMaxValue={inheritedMaxValue}
+            inheritedManualPoints={inheritedManualPoints}
+            autoPointsPlaceholder={autoPointsPlaceholder}
+            pointsProperty={pointsProperty}
+            maxPointsProperty={maxPointsProperty}
+            register={register}
+            errors={errors}
+            setValue={setValue}
+            resetAndSave={resetAndSave}
+            pointsValidation={pointsValidation}
+            nonNegativePointsValidation={nonNegativePointsValidation}
+            homeworkAutoPointsValidation={homeworkAutoPointsValidation}
+            homeworkMaxPointsValidation={homeworkMaxPointsValidation}
+          />
+        ) : (
+          <ExamPointsFields
+            editMode={editMode}
+            idPrefix={idPrefix}
+            isAlternative={isAlternative}
+            isManualGrading={isManualGrading}
+            pointsLabel={pointsLabel}
+            autoPointsValue={autoPointsValue}
+            manualPointsValue={manualPointsValue}
+            isPointsInherited={isPointsInherited}
+            isManualPointsInherited={isManualPointsInherited}
+            inheritedPointsValue={inheritedPointsValue}
+            inheritedManualPoints={inheritedManualPoints}
+            pointsProperty={pointsProperty}
+            register={register}
+            errors={errors}
+            setValue={setValue}
+            resetAndSave={resetAndSave}
+            pointsValidation={pointsValidation}
+            nonNegativePointsValidation={nonNegativePointsValidation}
+          />
+        )}
 
-      {/* Tries per variant (Homework only) */}
-      {assessmentType === 'Homework' && (
+        {/* Tries per variant (Homework only) */}
+        {assessmentType === 'Homework' && (
+          <FormField
+            editMode={editMode}
+            id={`${idPrefix}-triesPerVariant`}
+            label="Tries per variant"
+            viewValue={question.triesPerVariant}
+            error={errors.triesPerVariant}
+            helpText="Number of submission attempts allowed per question variant."
+            hideWhenEmpty
+          >
+            {(aria) => (
+              <input
+                type="number"
+                className={clsx('form-control form-control-sm', aria.errorClass)}
+                {...aria.inputProps}
+                {...register('triesPerVariant', {
+                  setValueAs: coerceToNumber,
+                  validate: (v) => validatePositiveInteger(v, 'Tries per variant'),
+                })}
+              />
+            )}
+          </FormField>
+        )}
+
+        {/* Comment */}
         <FormField
           editMode={editMode}
-          id={`${idPrefix}-triesPerVariant`}
-          label="Tries per variant"
-          viewValue={question.triesPerVariant}
-          error={errors.triesPerVariant}
-          helpText="Number of submission attempts allowed per question variant."
+          id={`${idPrefix}-comment`}
+          label="Comment"
+          viewValue={
+            question.comment != null ? (
+              <span className="text-break">{String(question.comment)}</span>
+            ) : undefined
+          }
+          helpText="Internal note, not shown to students."
           hideWhenEmpty
         >
           {(aria) => (
-            <input
-              type="number"
-              className={clsx('form-control form-control-sm', aria.errorClass)}
+            <textarea
+              className="form-control form-control-sm"
               {...aria.inputProps}
-              {...register('triesPerVariant', {
-                setValueAs: coerceToNumber,
-                validate: (v) => validatePositiveInteger(v, 'Tries per variant'),
-              })}
+              rows={2}
+              {...register('comment', { setValueAs: coerceToOptionalString })}
             />
           )}
         </FormField>
-      )}
-
-      {/* Comment */}
-      <FormField
-        editMode={editMode}
-        id={`${idPrefix}-comment`}
-        label="Comment"
-        viewValue={
-          question.comment != null ? (
-            <span className="text-break">{String(question.comment)}</span>
-          ) : undefined
-        }
-        helpText="Internal note, not shown to students."
-        hideWhenEmpty
-      >
-        {(aria) => (
-          <textarea
-            className="form-control form-control-sm"
-            {...aria.inputProps}
-            rows={2}
-            {...register('comment', { setValueAs: coerceToOptionalString })}
-          />
-        )}
-      </FormField>
+      </Wrapper>
 
       {/* Advanced fields */}
       <AdvancedFields

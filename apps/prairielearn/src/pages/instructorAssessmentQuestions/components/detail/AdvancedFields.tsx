@@ -308,14 +308,19 @@ export function AdvancedFields({
     );
   };
 
-  return (
+  const fields = (
     <>
-      <h6 className="text-muted text-uppercase small mb-3 mt-4">Advanced</h6>
-
       {renderAdvanceScorePerc()}
       {renderGradeRateMinutes()}
       {variant !== 'zone' && renderForceMaxPoints()}
       {renderAllowRealTimeGrading()}
+    </>
+  );
+
+  return (
+    <>
+      <h6 className="text-muted text-uppercase small mb-3 mt-4">Advanced</h6>
+      {editMode ? fields : <dl className="mb-0">{fields}</dl>}
     </>
   );
 }
