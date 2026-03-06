@@ -152,16 +152,16 @@ __metadata:
   linkType: hard
 
 "@ai-sdk/react@npm:^3.0.118":
-  version: 3.0.120
-  resolution: "@ai-sdk/react@npm:3.0.120"
+  version: 3.0.121
+  resolution: "@ai-sdk/react@npm:3.0.121"
   dependencies:
     "@ai-sdk/provider-utils": "npm:4.0.20"
-    ai: "npm:6.0.118"
+    ai: "npm:6.0.119"
     swr: "npm:^2.2.5"
     throttleit: "npm:2.1.0"
   peerDependencies:
     react: ^18 || ~19.0.1 || ~19.1.2 || ^19.2.1
-  checksum: 10c0/606544121dbcfcc5f302f2463eaa7c587b0632259797d421683cc460fe30a467fb144fb5fcb7216da28b50b34bba40abe2b080400766baa347eebc9a3be71c01
+  checksum: 10c0/15f8b9152ffdb4873f61755833002fa6f75d1cfc2f34e58d212f7e97bf71e0c8b5aa8cfd6702511cffe68e4ca3543b8d22b9375704ba5fe137b8b02a1cc98d79
   languageName: node
   linkType: hard
 
@@ -4848,6 +4848,7 @@ __metadata:
     "@sa11y/format": "npm:^8.0.27"
     "@smithy/types": "npm:^4.13.0"
     "@socket.io/redis-adapter": "npm:^8.3.0"
+    "@tanstack/match-sorter-utils": "npm:^8.19.4"
     "@tanstack/react-query": "npm:^5.90.21"
     "@tanstack/react-table": "npm:^8.21.3"
     "@tanstack/react-virtual": "npm:^3.13.19"
@@ -5223,6 +5224,7 @@ __metadata:
     "@prairielearn/browser-utils": "workspace:^"
     "@prairielearn/run": "workspace:^"
     "@prairielearn/tsconfig": "workspace:^"
+    "@tanstack/match-sorter-utils": "npm:^8.19.4"
     "@tanstack/react-table": "npm:^8.21.3"
     "@tanstack/react-virtual": "npm:^3.13.19"
     "@tanstack/table-core": "npm:^8.21.3"
@@ -8238,6 +8240,15 @@ __metadata:
   languageName: node
   linkType: hard
 
+"@tanstack/match-sorter-utils@npm:^8.19.4":
+  version: 8.19.4
+  resolution: "@tanstack/match-sorter-utils@npm:8.19.4"
+  dependencies:
+    remove-accents: "npm:0.5.0"
+  checksum: 10c0/935022e3d639f19472131d289f3e1202253ff34301717c337e9bac0eeae6a0bd56450ed8ae2f7eb7ac9dfefa7ceaa7d126d8c5441021968b4a9eabc3ac4f8ba1
+  languageName: node
+  linkType: hard
+
 "@tanstack/query-core@npm:5.90.20":
   version: 5.90.20
   resolution: "@tanstack/query-core@npm:5.90.20"
@@ -10510,9 +10521,9 @@ __metadata:
   languageName: node
   linkType: hard
 
-"ai@npm:6.0.118, ai@npm:^6.0.116":
-  version: 6.0.118
-  resolution: "ai@npm:6.0.118"
+"ai@npm:6.0.119, ai@npm:^6.0.116":
+  version: 6.0.119
+  resolution: "ai@npm:6.0.119"
   dependencies:
     "@ai-sdk/gateway": "npm:3.0.68"
     "@ai-sdk/provider": "npm:3.0.8"
@@ -10520,7 +10531,7 @@ __metadata:
     "@opentelemetry/api": "npm:1.9.0"
   peerDependencies:
     zod: ^3.25.76 || ^4.1.8
-  checksum: 10c0/29beb697f321c0ff29a573fc2d88d85bf39c09794f2e88364032e9801bc640558223085baf32f0a7194dc07cb4d718b0f05554836c8ac6265775cd9be2f28d31
+  checksum: 10c0/4499d09a7bff9561eca5d8238b1c3c4dcfa31ceba384e169aad65e1fb9c0f3c198a6963be206deb7ca44afe16f5531a43eb805699738699e3564f94c6233cc76
   languageName: node
   linkType: hard
 
@@ -14699,8 +14710,8 @@ __metadata:
   linkType: hard
 
 "html-validate@npm:^10.11.0":
-  version: 10.11.0
-  resolution: "html-validate@npm:10.11.0"
+  version: 10.11.1
+  resolution: "html-validate@npm:10.11.1"
   dependencies:
     "@html-validate/stylish": "npm:^5.0.0"
     "@sidvind/better-ajv-errors": "npm:4.0.1"
@@ -14726,7 +14737,7 @@ __metadata:
       optional: true
   bin:
     html-validate: bin/html-validate.mjs
-  checksum: 10c0/767e1702db72fa639d13ff10335d82f2a806912b46cce4e0d544ce5f29c8f617f932cb25619f2202f3a83012c96a258f487c7121c116ee22ca88f9628eaad24c
+  checksum: 10c0/5c1c141ddc0e1b94a9cb61d8a002b39898134ee5cdbb7f0b273ea2255f9445fd55954f8d1c68bd43234d3673d6811ab242510737de4b0b2c3461738b8aa625bc
   languageName: node
   linkType: hard
 
@@ -19320,6 +19331,13 @@ __metadata:
   languageName: node
   linkType: hard
 
+"remove-accents@npm:0.5.0":
+  version: 0.5.0
+  resolution: "remove-accents@npm:0.5.0"
+  checksum: 10c0/a75321aa1b53d9abe82637115a492770bfe42bb38ed258be748bf6795871202bc8b4badff22013494a7029f5a241057ad8d3f72adf67884dbe15a9e37e87adc4
+  languageName: node
+  linkType: hard
+
 "require-directory@npm:^2.1.1":
   version: 2.1.1
   resolution: "require-directory@npm:2.1.1"
@@ -20943,58 +20961,58 @@ __metadata:
   languageName: node
   linkType: hard
 
-"turbo-darwin-64@npm:2.8.13":
-  version: 2.8.13
-  resolution: "turbo-darwin-64@npm:2.8.13"
+"turbo-darwin-64@npm:2.8.14":
+  version: 2.8.14
+  resolution: "turbo-darwin-64@npm:2.8.14"
   conditions: os=darwin & cpu=x64
   languageName: node
   linkType: hard
 
-"turbo-darwin-arm64@npm:2.8.13":
-  version: 2.8.13
-  resolution: "turbo-darwin-arm64@npm:2.8.13"
+"turbo-darwin-arm64@npm:2.8.14":
+  version: 2.8.14
+  resolution: "turbo-darwin-arm64@npm:2.8.14"
   conditions: os=darwin & cpu=arm64
   languageName: node
   linkType: hard
 
-"turbo-linux-64@npm:2.8.13":
-  version: 2.8.13
-  resolution: "turbo-linux-64@npm:2.8.13"
+"turbo-linux-64@npm:2.8.14":
+  version: 2.8.14
+  resolution: "turbo-linux-64@npm:2.8.14"
   conditions: os=linux & cpu=x64
   languageName: node
   linkType: hard
 
-"turbo-linux-arm64@npm:2.8.13":
-  version: 2.8.13
-  resolution: "turbo-linux-arm64@npm:2.8.13"
+"turbo-linux-arm64@npm:2.8.14":
+  version: 2.8.14
+  resolution: "turbo-linux-arm64@npm:2.8.14"
   conditions: os=linux & cpu=arm64
   languageName: node
   linkType: hard
 
-"turbo-windows-64@npm:2.8.13":
-  version: 2.8.13
-  resolution: "turbo-windows-64@npm:2.8.13"
+"turbo-windows-64@npm:2.8.14":
+  version: 2.8.14
+  resolution: "turbo-windows-64@npm:2.8.14"
   conditions: os=win32 & cpu=x64
   languageName: node
   linkType: hard
 
-"turbo-windows-arm64@npm:2.8.13":
-  version: 2.8.13
-  resolution: "turbo-windows-arm64@npm:2.8.13"
+"turbo-windows-arm64@npm:2.8.14":
+  version: 2.8.14
+  resolution: "turbo-windows-arm64@npm:2.8.14"
   conditions: os=win32 & cpu=arm64
   languageName: node
   linkType: hard
 
 "turbo@npm:^2.8.13":
-  version: 2.8.13
-  resolution: "turbo@npm:2.8.13"
+  version: 2.8.14
+  resolution: "turbo@npm:2.8.14"
   dependencies:
-    turbo-darwin-64: "npm:2.8.13"
-    turbo-darwin-arm64: "npm:2.8.13"
-    turbo-linux-64: "npm:2.8.13"
-    turbo-linux-arm64: "npm:2.8.13"
-    turbo-windows-64: "npm:2.8.13"
-    turbo-windows-arm64: "npm:2.8.13"
+    turbo-darwin-64: "npm:2.8.14"
+    turbo-darwin-arm64: "npm:2.8.14"
+    turbo-linux-64: "npm:2.8.14"
+    turbo-linux-arm64: "npm:2.8.14"
+    turbo-windows-64: "npm:2.8.14"
+    turbo-windows-arm64: "npm:2.8.14"
   dependenciesMeta:
     turbo-darwin-64:
       optional: true
@@ -21010,7 +21028,7 @@ __metadata:
       optional: true
   bin:
     turbo: bin/turbo
-  checksum: 10c0/c66f4a8ef0b1aa00961f3139faa89f4cfed9e9fe429464a8ee59ec063f89b35bb557d293202a0a8fd4ac73da3c8887eb360cee8399b4015a099f2e6791521a8f
+  checksum: 10c0/36836b63f3b788e2118d509d58d9f98b1dc9add1cd5a77ba9c3906984bf3a94496dac75d02d00481f4409869cb5c1899da5c21d4731531079e1ac9158cf4aed1
   languageName: node
   linkType: hard
 

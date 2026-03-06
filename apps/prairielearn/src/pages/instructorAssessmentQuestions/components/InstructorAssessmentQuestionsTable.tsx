@@ -176,6 +176,7 @@ interface InstructorAssessmentQuestionsTableInnerProps {
   assessment: StaffAssessment;
   assessmentSetName: string;
   urlPrefix: string;
+  courseInstanceId?: string;
   hasCoursePermissionPreview: boolean;
   canEdit: boolean;
   csrfToken: string;
@@ -800,6 +801,7 @@ function InstructorAssessmentQuestionsTableInner({
                           questionMetadata,
                           editMode,
                           urlPrefix,
+                          courseId: course.id,
                           hasCoursePermissionPreview,
                           canEdit,
                           showAdvanceScorePercCol,

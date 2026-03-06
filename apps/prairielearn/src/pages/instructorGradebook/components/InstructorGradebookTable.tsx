@@ -5,7 +5,6 @@ import {
   type ColumnSizingState,
   type Header,
   type SortingState,
-  type Updater,
   createColumnHelper,
   getCoreRowModel,
   getFilteredRowModel,
@@ -31,6 +30,8 @@ import {
   PresetFilterDropdown,
   TanstackTableCard,
   type TanstackTableCsvCell,
+  createColumnFiltersChangeHandler,
+  extractLeafColumnIds,
   numericColumnFilterFn,
   parseAsColumnPinningState,
   parseAsColumnVisibilityStateWithColumns,
@@ -59,26 +60,6 @@ const STATUS_VALUES = Object.values(EnumEnrollmentStatusSchema.Values);
 const DEFAULT_STATUS_FILTER: EnumEnrollmentStatus[] = ['joined'];
 
 const columnHelper = createColumnHelper<GradebookRow>();
-
-/**
- * Recursively extracts leaf column IDs from column definitions.
- * Group columns are skipped, only actual data columns are included.
- */
-function extractLeafColumnIds(columns: { id?: string | null; columns?: unknown[] }[]): string[] {
-  const leafIds: string[] = [];
-  for (const col of columns) {
-    if (col.columns && Array.isArray(col.columns) && col.columns.length > 0) {
-      // This is a group column, recurse into its children
-      leafIds.push(...extractLeafColumnIds(col.columns as typeof columns));
-    } else if (col.id) {
-      // This is a leaf column
-      leafIds.push(col.id);
-    }
-  }
-  return leafIds;
-}
-
-type ColumnId = 'uid' | 'user_name' | 'uin' | 'role' | 'enrollment_status' | `a${number}`;
 
 interface GradebookTableProps {
   csrfToken: string;
@@ -133,9 +114,9 @@ function GradebookTable({
     defaultAssessmentFilterValues,
   );
 
-  // We keep a consistent interface for the column filter setters, but we don't need to pass the column ID to the setters
-  // other than the assessment filters.
-  const columnFilterSetters = useMemo<Record<ColumnId, Updater<any>>>(() => {
+  const columnFilterSetters = useMemo<
+    Record<string, ((_columnId: string, value: any) => void) | undefined>
+  >(() => {
     return {
       uid: undefined,
       user_name: undefined,
@@ -180,15 +161,8 @@ function GradebookTable({
     return filters;
   }, [statusFilter, roleFilter, assessmentFilterValues]);
 
-  // Sync TanStack column filter changes back to URL
   const handleColumnFiltersChange = useMemo(
-    () => (updaterOrValue: Updater<ColumnFiltersState>) => {
-      const newFilters =
-        typeof updaterOrValue === 'function' ? updaterOrValue(columnFilters) : updaterOrValue;
-      for (const filter of newFilters) {
-        columnFilterSetters[filter.id as ColumnId]?.(filter.id, filter.value);
-      }
-    },
+    () => createColumnFiltersChangeHandler(columnFilters, columnFilterSetters),
     [columnFilters, columnFilterSetters],
   );
 
