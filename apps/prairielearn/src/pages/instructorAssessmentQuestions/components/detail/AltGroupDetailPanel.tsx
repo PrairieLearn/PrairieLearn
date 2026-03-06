@@ -131,6 +131,7 @@ export function AltGroupDetailPanel({
     advanceScorePercFromLabel: zone.advanceScorePerc != null ? 'zone' : 'assessment',
     gradeRateMinutesFromLabel: zone.gradeRateMinutes != null ? 'zone' : 'assessment',
     allowRealTimeGradingFromLabel: zone.allowRealTimeGrading != null ? 'zone' : 'assessment',
+    // Only alt groups define forceMaxPoints; fallback is never displayed
     forceMaxPointsFromLabel: 'assessment',
     watch,
     setValue,

@@ -93,6 +93,36 @@ describe('serializeZonesForJson', () => {
     }
   });
 
+  it('strips default allowRealTimeGrading from zones', () => {
+    const parsedZones = [
+      ZoneAssessmentJsonSchema.parse({
+        title: 'Zone with default allowRealTimeGrading',
+        allowRealTimeGrading: true,
+        questions: [{ id: 'q1' }],
+      }),
+    ];
+
+    const serialized = serializeZonesForJson(parsedZones);
+    expect(serialized[0].allowRealTimeGrading).toBeUndefined();
+
+    // Re-parsing should still yield the default value
+    const reparsed = serialized.map((zone) => ZoneAssessmentJsonSchema.parse(zone));
+    expect(reparsed[0].allowRealTimeGrading).toBeUndefined();
+  });
+
+  it('preserves non-default allowRealTimeGrading on zones', () => {
+    const parsedZones = [
+      ZoneAssessmentJsonSchema.parse({
+        title: 'Zone with non-default allowRealTimeGrading',
+        allowRealTimeGrading: false,
+        questions: [{ id: 'q1' }],
+      }),
+    ];
+
+    const serialized = serializeZonesForJson(parsedZones);
+    expect(serialized[0].allowRealTimeGrading).toBe(false);
+  });
+
   it('preserves lockpoint when serializing zones', () => {
     const parsedZones = [
       ZoneAssessmentJsonSchema.parse({

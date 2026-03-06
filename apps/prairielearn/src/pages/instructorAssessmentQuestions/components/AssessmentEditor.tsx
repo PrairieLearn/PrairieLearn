@@ -579,12 +579,20 @@ function AssessmentEditorInner({
       updatedQuestion as ZoneQuestionBlockForm | QuestionAlternativeForm,
     );
 
-    dispatch({
-      type: 'UPDATE_QUESTION',
-      questionTrackingId,
-      question: normalized,
-      alternativeTrackingId,
-    });
+    if (alternativeTrackingId !== undefined) {
+      dispatch({
+        type: 'UPDATE_QUESTION',
+        questionTrackingId,
+        question: normalized as Partial<QuestionAlternativeForm>,
+        alternativeTrackingId,
+      });
+    } else {
+      dispatch({
+        type: 'UPDATE_QUESTION',
+        questionTrackingId,
+        question: normalized as Partial<ZoneQuestionBlockForm>,
+      });
+    }
   };
 
   const handleDeleteQuestion = (
@@ -644,20 +652,7 @@ function AssessmentEditorInner({
   };
 
   const handleRemoveQuestionByQid = (qid: string) => {
-    for (const zone of zones) {
-      for (const q of zone.questions) {
-        if (q.id === qid) {
-          handleDeleteQuestion(q.trackingId, qid);
-          return;
-        }
-        for (const alt of q.alternatives ?? []) {
-          if (alt.id === qid) {
-            handleDeleteQuestion(q.trackingId, qid, alt.trackingId);
-            return;
-          }
-        }
-      }
-    }
+    dispatch({ type: 'REMOVE_QUESTION_BY_QID', qid });
   };
 
   const handleAddZone = () => {

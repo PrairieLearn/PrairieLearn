@@ -94,7 +94,7 @@ export function InstructorAssessmentQuestionsTableLegacy({
     points_list: number[] | null;
     init_points: number | null;
   }) {
-    if (max_auto_points || !max_manual_points) {
+    if (max_auto_points != null || !max_manual_points) {
       switch (assessmentType) {
         case 'Exam':
           return (points_list || [max_manual_points])

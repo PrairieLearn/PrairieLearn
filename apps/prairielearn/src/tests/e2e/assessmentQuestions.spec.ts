@@ -554,4 +554,58 @@ test.describe('Assessment questions', () => {
       },
     ]);
   });
+
+  test('group assessment round-trip preserves canView and canSubmit', async ({
+    page,
+    testCoursePath,
+    courseInstance,
+  }) => {
+    const assessmentTid = 'hw5-templateGroupWork';
+    await resetAssessmentFromTemplate({ assessmentTid, testCoursePath });
+
+    const assessment = await selectAssessmentByTid({
+      course_instance_id: courseInstance.id,
+      tid: assessmentTid,
+    });
+
+    await enterEditMode(page, courseInstance.id, assessment.id);
+
+    // Click on the first question and change its points to trigger a save
+    await page.getByRole('button').filter({ hasText: 'demoNewton-page1' }).first().click();
+    const autoPointsInput = page.getByLabel('Auto points', { exact: true });
+    await autoPointsInput.clear();
+    await autoPointsInput.fill('2');
+
+    // Wait for auto-save to propagate
+    await expect(async () => {
+      const hiddenZones = await page.locator('input[name="zones"]').inputValue();
+      const parsedZones = JSON.parse(hiddenZones);
+      expect(parsedZones[0].questions[0].autoPoints).toBe(2);
+    }).toPass({ timeout: 5000 });
+
+    await page.getByRole('button', { name: 'Save and sync' }).click();
+    await expect(page.getByRole('button', { name: 'Edit', exact: true })).toBeVisible();
+
+    const infoAssessmentPath = path.join(
+      testCoursePath,
+      'courseInstances/Sp15/assessments',
+      assessmentTid,
+      'infoAssessment.json',
+    );
+    const savedContent = await fs.readFile(infoAssessmentPath, 'utf-8');
+    const savedAssessment = JSON.parse(savedContent);
+
+    const zone = savedAssessment.zones[0];
+
+    // Zone-level canSubmit should be preserved
+    expect(zone.canSubmit).toEqual(['Recorder']);
+
+    // Question-level canView/canSubmit should be preserved
+    const q2 = zone.questions[1];
+    expect(q2.canView).toEqual(['Recorder']);
+
+    const q3 = zone.questions[2];
+    expect(q3.canView).toEqual(['Reflector']);
+    expect(q3.canSubmit).toEqual(['Reflector']);
+  });
 });

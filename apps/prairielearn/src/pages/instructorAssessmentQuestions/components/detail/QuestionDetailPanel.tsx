@@ -244,6 +244,7 @@ export function QuestionDetailPanel({
             : zone?.allowRealTimeGrading != null
               ? 'zone'
               : 'assessment',
+        // Only alt groups define forceMaxPoints; fallback is never displayed
         forceMaxPointsFromLabel: zoneQuestionBlock.forceMaxPoints != null ? 'group' : 'assessment',
         watch,
         setValue,
@@ -263,6 +264,7 @@ export function QuestionDetailPanel({
       advanceScorePercFromLabel: zone?.advanceScorePerc != null ? 'zone' : 'assessment',
       gradeRateMinutesFromLabel: zone?.gradeRateMinutes != null ? 'zone' : 'assessment',
       allowRealTimeGradingFromLabel: zone?.allowRealTimeGrading != null ? 'zone' : 'assessment',
+      // Only alt groups define forceMaxPoints; fallback is never displayed
       forceMaxPointsFromLabel: 'assessment',
       watch,
       setValue,
@@ -903,7 +905,7 @@ function ExamPointsFields({
           viewValue={!isPointsInherited ? viewAutoPoints : undefined}
           registerProps={register(pointsProperty, {
             pattern: {
-              value: /^[0-9, ]*$/,
+              value: /^[0-9., ]*$/,
               message: 'Points must be a number or a comma-separated list of numbers.',
             },
             setValueAs: parsePointsListValue,
@@ -952,7 +954,7 @@ function ExamPointsFields({
               {...aria.inputProps}
               {...register(pointsProperty, {
                 pattern: {
-                  value: /^[0-9, ]*$/,
+                  value: /^[0-9., ]*$/,
                   message: 'Points must be a number or a comma-separated list of numbers.',
                 },
                 setValueAs: parsePointsListValue,

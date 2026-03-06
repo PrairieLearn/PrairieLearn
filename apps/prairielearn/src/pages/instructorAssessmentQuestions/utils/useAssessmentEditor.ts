@@ -588,6 +588,38 @@ function createEditorReducer(initialState: EditorState) {
         };
       }
 
+      case 'REMOVE_QUESTION_BY_QID': {
+        const { qid } = action;
+        const newZones = structuredClone(state.zones);
+        const newQuestionMetadata = { ...state.questionMetadata };
+
+        for (const zone of newZones) {
+          for (let qi = 0; qi < zone.questions.length; qi++) {
+            const q = zone.questions[qi];
+            if (q.id === qid) {
+              // Remove standalone question
+              if (q.alternatives) {
+                for (const alt of q.alternatives) {
+                  if (alt.id) delete newQuestionMetadata[alt.id];
+                }
+              }
+              delete newQuestionMetadata[qid];
+              zone.questions.splice(qi, 1);
+              return { ...state, zones: newZones, questionMetadata: newQuestionMetadata };
+            }
+            for (let ai = 0; ai < (q.alternatives ?? []).length; ai++) {
+              if (q.alternatives![ai].id === qid) {
+                delete newQuestionMetadata[qid];
+                q.alternatives!.splice(ai, 1);
+                return { ...state, zones: newZones, questionMetadata: newQuestionMetadata };
+              }
+            }
+          }
+        }
+        // QID not found — no-op
+        return state;
+      }
+
       case 'RESET': {
         return initialState;
       }

@@ -83,9 +83,10 @@ export function InheritableField({
           className="form-control form-control-sm bg-light"
           id={id}
           value={inheritedDisplayValue}
+          aria-describedby={`${id}-help`}
           disabled
         />
-        <small className="form-text text-muted">
+        <small id={`${id}-help`} className="form-text text-muted">
           Inherited from {inheritedFromLabel}.{' '}
           <button
             type="button"

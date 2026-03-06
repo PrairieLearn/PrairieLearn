@@ -32,6 +32,17 @@ const HELP_TEXT = {
   },
 } as const;
 
+/**
+ * Each `*FromLabel` identifies which ancestor level a field's inherited value
+ * comes from (displayed as "Inherited from {label}"). The label is only shown
+ * when the corresponding `parent*` value is non-null; when `parent*` is
+ * undefined the label is never displayed, so its value is irrelevant.
+ *
+ * For `forceMaxPoints` specifically, only alt groups define this property —
+ * zones and assessments do not — so `parentForceMaxPoints` is `undefined`
+ * everywhere except inside an alt group. The `forceMaxPointsFromLabel` fallback
+ * is therefore never displayed outside of alt groups.
+ */
 export interface AdvancedFieldsInheritance {
   parentAdvanceScorePerc: number | undefined;
   parentGradeRateMinutes: number | undefined;
@@ -108,6 +119,7 @@ export function AdvancedFields({
           id={`${idPrefix}-advanceScorePerc`}
           label="Advance score %"
           inputType="number"
+          step="any"
           editMode={editMode}
           isInherited={isInherited}
           inheritedDisplayValue={String(inheritance.parentAdvanceScorePerc)}

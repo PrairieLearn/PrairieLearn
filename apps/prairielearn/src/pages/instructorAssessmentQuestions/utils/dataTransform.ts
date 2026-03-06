@@ -140,9 +140,9 @@ export function createAltGroupWithTrackingId(
     trackingId: createTrackingId(),
     alternatives: [],
     numberChoose: 1,
-    ...(assessmentType === 'Exam' ? { points: 1 } : { autoPoints: 1 }),
     canSubmit: [],
     canView: [],
+    ...(assessmentType === 'Exam' ? { points: 1 } : { autoPoints: 1 }),
   } as ZoneQuestionBlockForm;
 }
 
@@ -264,7 +264,7 @@ export function serializeZonesForJson(zones: ZoneAssessmentJson[]): ZoneAssessme
       bestQuestions: zone.bestQuestions,
       advanceScorePerc: zone.advanceScorePerc,
       gradeRateMinutes: zone.gradeRateMinutes,
-      allowRealTimeGrading: zone.allowRealTimeGrading,
+      allowRealTimeGrading: propertyValueWithDefault(undefined, zone.allowRealTimeGrading, true),
       // For some reason, comment gets set to the empty string if it's not set.
       comment: zone.comment || undefined,
       canSubmit: propertyValueWithDefault(undefined, zone.canSubmit, isEmptyArray),

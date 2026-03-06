@@ -109,9 +109,14 @@ export type EditorAction =
   | {
       type: 'UPDATE_QUESTION';
       questionTrackingId: string;
-      question: Partial<ZoneQuestionBlockForm> | Partial<QuestionAlternativeForm>;
-      /** Only set when updating an alternative within an alternative group */
-      alternativeTrackingId?: string;
+      question: Partial<ZoneQuestionBlockForm>;
+      alternativeTrackingId?: undefined;
+    }
+  | {
+      type: 'UPDATE_QUESTION';
+      questionTrackingId: string;
+      question: Partial<QuestionAlternativeForm>;
+      alternativeTrackingId: string;
     }
   | {
       type: 'DELETE_QUESTION';
@@ -190,6 +195,7 @@ export type EditorAction =
       /** trackingId of the alternative to insert before, or null to append at end */
       beforeAlternativeTrackingId: string | null;
     }
+  | { type: 'REMOVE_QUESTION_BY_QID'; qid: string }
   // Stubbed for future PR - will implement history tracking
   | { type: 'UNDO' }
   | { type: 'REDO' };

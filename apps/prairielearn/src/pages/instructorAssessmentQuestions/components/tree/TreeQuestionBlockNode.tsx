@@ -42,7 +42,7 @@ export function TreeQuestionBlockNode({
     assessmentType,
   } = state;
   const { setSelectedItem, dispatch, onAddToAltGroup, onDeleteQuestion } = actions;
-  const hasAlternatives = zoneQuestionBlock.id == null;
+  const hasAlternatives = zoneQuestionBlock.alternatives != null;
   const isCollapsed = collapsedGroups.has(zoneQuestionBlock.trackingId);
   const toggleCollapse = () =>
     dispatch({ type: 'TOGGLE_GROUP_COLLAPSE', trackingId: zoneQuestionBlock.trackingId });

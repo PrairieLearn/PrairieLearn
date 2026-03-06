@@ -31,7 +31,19 @@
 .split-pane__left {
   flex: 1;
   min-width: 0;
-  overflow: auto;
+}
+
+@media (min-width: 769px) {
+  .split-pane__left {
+    display: flex;
+    flex-direction: column;
+  }
+
+  .split-pane__left-body {
+    overflow: auto;
+    flex: 1 1 0;
+    min-height: 0;
+  }
 }
 
 .split-pane__separator {
