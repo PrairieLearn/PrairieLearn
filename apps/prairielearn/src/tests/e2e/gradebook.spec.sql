@@ -1,3 +1,8 @@
+-- BLOCK clear_enrollments
+DELETE FROM enrollments
+WHERE
+  course_instance_id = $course_instance_id;
+
 -- BLOCK select_first_assessment
 SELECT
   a.id,

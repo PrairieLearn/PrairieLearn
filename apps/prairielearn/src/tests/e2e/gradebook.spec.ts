@@ -40,10 +40,12 @@ let assessmentLabel: string;
  * Creates test students with assessment scores for gradebook filter testing.
  * Returns the assessment label for use in tests.
  */
-async function createTestData(ciId: string): Promise<string> {
+async function createTestData(courseInstanceId: string): Promise<string> {
+  await sqldb.execute(sql.clear_enrollments, { course_instance_id: courseInstanceId });
+
   const assessment = await sqldb.queryRow(
     sql.select_first_assessment,
-    { course_instance_id: ciId },
+    { course_instance_id: courseInstanceId },
     AssessmentInfoSchema,
   );
 
@@ -54,7 +56,7 @@ async function createTestData(ciId: string): Promise<string> {
       z.string(),
     );
 
-    await sqldb.execute(sql.insert_enrollment, { user_id: userId, course_instance_id: ciId });
+    await sqldb.execute(sql.insert_enrollment, { user_id: userId, course_instance_id: courseInstanceId });
 
     if (student.score !== null) {
       await sqldb.execute(sql.insert_assessment_instance, {
@@ -147,7 +149,6 @@ test.describe('Gradebook numeric filter', () => {
     await page.goto(gradebookUrl);
     await expect(page).toHaveTitle(/Gradebook/);
 
-    // Wait for table to load with all enrolled students
     const tableBody = page.locator('tbody').first();
     await expect(tableBody.locator('tr')).toHaveCount(TEST_STUDENTS.length, { timeout: 10000 });
 
