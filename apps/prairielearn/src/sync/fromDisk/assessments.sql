@@ -158,10 +158,12 @@ WHERE
 -- BLOCK select_zone_ids
 SELECT
   id,
+  assessment_id,
   number
 FROM
   zones
 WHERE
-  assessment_id = $assessment_id
+  assessment_id = ANY ($assessment_ids::bigint[])
 ORDER BY
+  assessment_id,
   number;

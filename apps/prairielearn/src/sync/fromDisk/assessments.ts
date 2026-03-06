@@ -538,18 +538,22 @@ async function syncAssessmentTools(
     }
   }
 
-  const zoneRowsByAssessment = new Map(
-    await Promise.all(
-      assessmentsWithZoneTools.map(async ({ assessmentId }) => {
-        const zoneRows = await sqldb.queryRows(
-          sql.select_zone_ids,
-          { assessment_id: assessmentId },
-          z.object({ id: IdSchema, number: z.number() }),
-        );
-        return [assessmentId, new Map(zoneRows.map((row) => [row.number, row]))] as const;
-      }),
-    ),
-  );
+  const zoneRowsByAssessment = new Map<string, Map<number, { id: string; number: number }>>();
+  if (assessmentsWithZoneTools.length > 0) {
+    const allZoneRows = await sqldb.queryRows(
+      sql.select_zone_ids,
+      { assessment_ids: assessmentsWithZoneTools.map(({ assessmentId }) => assessmentId) },
+      z.object({ id: IdSchema, assessment_id: IdSchema, number: z.number() }),
+    );
+    for (const row of allZoneRows) {
+      let byNumber = zoneRowsByAssessment.get(row.assessment_id);
+      if (!byNumber) {
+        byNumber = new Map();
+        zoneRowsByAssessment.set(row.assessment_id, byNumber);
+      }
+      byNumber.set(row.number, row);
+    }
+  }
 
   for (const { assessmentId, zones } of assessmentsWithZoneTools) {
     const zoneRowsByNumber = zoneRowsByAssessment.get(assessmentId)!;

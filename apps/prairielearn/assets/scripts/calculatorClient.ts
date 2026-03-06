@@ -37,6 +37,15 @@ const DEFAULT_CALCULATOR_DATA: CalculatorLocalData = {
   isOpen: false,
 };
 
+function getCalculatorData(storageKey: string): CalculatorLocalData {
+  const raw = localStorage.getItem(storageKey);
+  return raw ? JSON.parse(raw) : { ...DEFAULT_CALCULATOR_DATA };
+}
+
+function setCalculatorData(storageKey: string, data: CalculatorLocalData) {
+  localStorage.setItem(storageKey, JSON.stringify(data));
+}
+
 const TRIG_FUNCTIONS = new Set([
   'Sin',
   'Cos',
@@ -151,9 +160,9 @@ export function initCalculator(storageKey: string, { drawer, fab, fabClose }: Dr
   // Data from localStorage
   const calculatorLocalData = localStorage.getItem(storageKey);
   if (!calculatorLocalData) {
-    localStorage.setItem(storageKey, JSON.stringify({ ...DEFAULT_CALCULATOR_DATA, isOpen: true }));
+    setCalculatorData(storageKey, { ...DEFAULT_CALCULATOR_DATA, isOpen: true });
   } else {
-    const data: CalculatorLocalData = JSON.parse(calculatorLocalData);
+    const data = getCalculatorData(storageKey);
     for (const historyItem of data.history) {
       addHistoryItem(historyItem);
     }
@@ -195,7 +204,7 @@ export function initCalculator(storageKey: string, { drawer, fab, fabClose }: Dr
     const input = item.dataset.input!;
     const angleMode = item.dataset.angleMode! as AngleMode;
 
-    const savedAns = ce.box('ans').evaluate();
+    const savedAns = ce.expr('ans').evaluate();
 
     // checking `{ans}` here because it could be \mathrm{ans} or \operatorname{ans}
     if (input.includes('{ans}') && domIndex + 1 < items.length) {
@@ -257,7 +266,7 @@ export function initCalculator(storageKey: string, { drawer, fab, fabClose }: Dr
     let parsed = ce.parse(input, { parseNumbers: 'rational' });
 
     if (angleMode === 'deg') {
-      parsed = ce.box(radianToDegree(parsed.json));
+      parsed = ce.expr(radianToDegree(parsed.json));
     }
 
     const json = parsed.json;
@@ -315,9 +324,7 @@ export function initCalculator(storageKey: string, { drawer, fab, fabClose }: Dr
       void copyToClipboard(ce.parse(displayed).toString());
     };
 
-    const data: CalculatorLocalData = JSON.parse(
-      localStorage.getItem(storageKey) ?? JSON.stringify(DEFAULT_CALCULATOR_DATA),
-    );
+    const data = getCalculatorData(storageKey);
 
     // Add to history
     if (addToHistory) {
@@ -326,7 +333,7 @@ export function initCalculator(storageKey: string, { drawer, fab, fabClose }: Dr
       // FIXME: could be multiple assignments in one expression
       if (Array.isArray(parsedJson) && parsedJson[0] === 'Assign') {
         const varName = parsedJson[1] as string;
-        const varVal = ce.box(parsedJson[2]).evaluate();
+        const varVal = ce.expr(parsedJson[2]).evaluate();
         data.variable.push({
           name: varName,
           value: varVal.toLatex({ notation: 'auto' }),
@@ -352,7 +359,7 @@ export function initCalculator(storageKey: string, { drawer, fab, fabClose }: Dr
       calculatorOutput.value = '';
     }
     data.temp_input = calculatorInputElement.value;
-    localStorage.setItem(storageKey, JSON.stringify(data));
+    setCalculatorData(storageKey, data);
   }
 
   // Clear history button
@@ -360,11 +367,9 @@ export function initCalculator(storageKey: string, { drawer, fab, fabClose }: Dr
     historyPanel.innerHTML = '';
     clearHistoryBtn.classList.add('d-none');
 
-    const data: CalculatorLocalData = JSON.parse(
-      localStorage.getItem(storageKey) ?? JSON.stringify(DEFAULT_CALCULATOR_DATA),
-    );
+    const data = getCalculatorData(storageKey);
     data.history = [];
-    localStorage.setItem(storageKey, JSON.stringify(data));
+    setCalculatorData(storageKey, data);
 
     ce.assign('ans', ce.parse('\\bot'));
     shouldAutoInsertAns = false;
@@ -733,10 +738,9 @@ function initDrawerUI(
   storageKey: string,
 ) {
   function setIsOpen(value: boolean) {
-    const raw = localStorage.getItem(storageKey);
-    const data: CalculatorLocalData = raw ? JSON.parse(raw) : { ...DEFAULT_CALCULATOR_DATA };
+    const data = getCalculatorData(storageKey);
     data.isOpen = value;
-    localStorage.setItem(storageKey, JSON.stringify(data));
+    setCalculatorData(storageKey, data);
   }
 
   function openDrawer() {
@@ -822,10 +826,10 @@ export function registerCustomFunctions(ce: InstanceType<typeof ComputeEngine>) 
     const rVal = r.re;
     if (Number.isNaN(nVal) || Number.isNaN(rVal)) return ce.error('Invalid input');
     if (rVal > nVal) return ce.number(0);
-    const nFact = ce.box(['Factorial', n.json]).evaluate();
-    const nrFact = ce.box(['Factorial', n.sub(r).json]).evaluate();
+    const nFact = ce.expr(['Factorial', n.json]).evaluate();
+    const nrFact = ce.expr(['Factorial', n.sub(r).json]).evaluate();
     if (combination) {
-      const rFact = ce.box(['Factorial', r.json]).evaluate();
+      const rFact = ce.expr(['Factorial', r.json]).evaluate();
       return nFact.div(rFact.mul(nrFact));
     }
     return nFact.div(nrFact);
@@ -968,10 +972,7 @@ onDocumentReady(() => {
     });
   }
 
-  const savedData = localStorage.getItem(storageKey);
-  const wasOpen = savedData
-    ? (JSON.parse(savedData) as CalculatorLocalData).isOpen === true
-    : false;
+  const wasOpen = getCalculatorData(storageKey).isOpen === true;
   if (wasOpen) {
     initIfNeeded();
     fab.classList.remove('visible');
