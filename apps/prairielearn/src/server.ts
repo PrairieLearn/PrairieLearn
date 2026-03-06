@@ -2524,7 +2524,8 @@ if (shouldStartServer) {
     load.initEstimator('python_worker_idle', 1, false);
     load.initEstimator('python_callback_waiting', 1);
 
-    await codeCaller.init();
+    // in e2e tests, we want to initialize the code callers lazily
+    await codeCaller.init({ lazyWorkers: process.env.NODE_ENV === 'test' });
     await assets.init();
     await cache.init({
       type: config.cacheType,
