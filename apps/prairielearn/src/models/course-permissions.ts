@@ -5,6 +5,7 @@ import {
   execute,
   loadSqlEquiv,
   queryOptionalRow,
+  queryOptionalScalar,
   queryRows,
   runInTransactionAsync,
 } from '@prairielearn/postgres';
@@ -293,7 +294,7 @@ export async function selectCourseInstancePermissionForUser({
   course_instance_id: string;
   user_id: string;
 }) {
-  return await queryOptionalRow(
+  return await queryOptionalScalar(
     sql.select_course_instance_permission_for_user,
     { course_instance_id, user_id },
     EnumCourseInstanceRoleSchema,
@@ -311,7 +312,7 @@ export async function selectCoursePermissionForUser({
   course_id: string;
   user_id: string;
 }) {
-  return await queryOptionalRow(
+  return await queryOptionalScalar(
     sql.select_course_permission_for_user,
     { course_id, user_id },
     EnumCourseRoleSchema,
@@ -328,7 +329,7 @@ export async function userIsInstructorInAnyCourse({
 }: {
   user_id: string;
 }): Promise<boolean> {
-  const result = await queryOptionalRow(
+  const result = await queryOptionalScalar(
     sql.user_is_instructor_in_any_course,
     { user_id },
     z.boolean(),

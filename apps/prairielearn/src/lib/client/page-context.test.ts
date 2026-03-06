@@ -132,6 +132,7 @@ const mockStudentData = {
 const mockInstructorData = {
   course_instance: {
     ...STUDENT_COURSE_INSTANCE,
+    ai_grading_use_custom_api_keys: false,
     enrollment_code: 'AAABBBDDDD',
     enrollment_limit: 10,
     json_comment: 'foo',

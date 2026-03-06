@@ -29,7 +29,7 @@ async function insertTestVariant({
   userId: string;
   variantSeed?: string;
 }) {
-  return await sqldb.queryRow(
+  return await sqldb.queryScalar(
     sql.insert_test_variant,
     {
       question_id: questionId,

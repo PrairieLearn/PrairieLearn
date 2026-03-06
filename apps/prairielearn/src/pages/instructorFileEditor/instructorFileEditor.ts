@@ -12,8 +12,8 @@ import {
   execute,
   loadSqlEquiv,
   queryOptionalRow,
-  queryRow,
-  queryRows,
+  queryScalar,
+  queryScalars,
 } from '@prairielearn/postgres';
 import { IdSchema } from '@prairielearn/zod';
 
@@ -264,7 +264,7 @@ async function readDraftEdit({
   // contents of whatever draft we found, because we don't want to get
   // in a situation where the user is trapped with an unreadable draft.
   // We accept the possibility that a draft will occasionally be lost.
-  const deletedFileEdits = await queryRows(
+  const deletedFileEdits = await queryScalars(
     sql.soft_delete_file_edit,
     { user_id, course_id, dir_name, file_name },
     IdSchema.nullable(),
@@ -310,7 +310,7 @@ async function writeDraftEdit({
   orig_hash: string;
   editContents: string;
 }) {
-  const deletedFileEdits = await queryRows(
+  const deletedFileEdits = await queryScalars(
     sql.soft_delete_file_edit,
     { user_id, course_id, dir_name, file_name },
     IdSchema.nullable(),
@@ -332,7 +332,7 @@ async function writeDraftEdit({
     authn_user_id,
   });
 
-  const editID = await queryRow(
+  const editID = await queryScalar(
     sql.insert_file_edit,
     { user_id, course_id, dir_name, file_name, orig_hash, file_id },
     IdSchema,

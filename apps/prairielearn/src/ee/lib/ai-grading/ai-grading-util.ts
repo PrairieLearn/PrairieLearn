@@ -19,6 +19,7 @@ import {
   loadSqlEquiv,
   queryRow,
   queryRows,
+  queryScalar,
   runInTransactionAsync,
 } from '@prairielearn/postgres';
 import { run } from '@prairielearn/run';
@@ -70,6 +71,7 @@ const MODELS_SUPPORTING_SYSTEM_MSG_AFTER_USER_MSG = new Set<AiGradingModelId>([
 export async function generatePrompt({
   questionPrompt,
   questionAnswer,
+  rotationCorrected = false,
   submission_text,
   submitted_answer,
   rubric_items,
@@ -80,6 +82,8 @@ export async function generatePrompt({
 }: {
   questionPrompt: string;
   questionAnswer: string;
+  /** If true, the prompt will include that rotation correction was applied prior to grading. */
+  rotationCorrected?: boolean;
   submission_text: string;
   submitted_answer: Record<string, any> | null;
   rubric_items: RubricItem[];
@@ -186,6 +190,16 @@ export async function generatePrompt({
         content: questionAnswer.trim(),
       },
     );
+  }
+
+  if (rotationCorrected) {
+    input.push({
+      role: systemRoleAfterUserMessage,
+      content: formatPrompt([
+        'One or more images were uploaded in a rotated state by the student (this was an error by the student). The system corrected their rotation.',
+        'If there are rubric items associated with image rotation, then please note that one or more images were rotated incorrectly.',
+      ]),
+    });
   }
 
   input.push(
@@ -583,7 +597,7 @@ export async function selectLastVariantAndSubmission(
 }
 
 export async function selectLastSubmissionId(instance_question_id: string): Promise<string> {
-  return await queryRow(sql.select_last_submission_id, { instance_question_id }, IdSchema);
+  return await queryScalar(sql.select_last_submission_id, { instance_question_id }, IdSchema);
 }
 
 export async function deleteAiGradingJobs({

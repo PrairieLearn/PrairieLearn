@@ -1,6 +1,6 @@
 {
   "name": "@prairielearn/eslint-plugin",
-  "version": "3.1.1",
+  "version": "4.0.0",
   "repository": {
     "type": "git",
     "url": "https://github.com/PrairieLearn/PrairieLearn.git",
@@ -27,7 +27,7 @@
     "@types/node": "^24.11.0",
     "@typescript-eslint/rule-tester": "^8.56.1",
     "@typescript-eslint/types": "^8.56.1",
-    "@typescript/native-preview": "^7.0.0-dev.20260302.1",
+    "@typescript/native-preview": "^7.0.0-dev.20260305.1",
     "@vitest/coverage-v8": "^4.0.18",
     "tsx": "^4.21.0",
     "vitest": "^4.0.18"
