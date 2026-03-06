@@ -176,26 +176,34 @@ export function SampleQuestionDemo({
     <Card ref={cardRef}>
       {header && <CardHeader>{header}</CardHeader>}
       <CardBody>
-        {variant.question
-          .split(/(\$\$[\s\S]+?\$\$|\$[\s\S]+?\$|\*\*[\s\S]+?\*\*)/g)
-          .filter(Boolean)
-          .map((part, index) => {
-            // Bold text
-            if (part.startsWith('**') && part.endsWith('**')) {
-              return <strong key={`bold-${index}-${part.slice(2, -2)}`}>{part.slice(2, -2)}</strong>;
-            }
+        {/* Index keys are needed to disambiguate duplicate math expressions (e.g. two "$ c $")
+            while content in the key forces DOM recreation when values change between variants. */}
+        {
+          /* eslint-disable @eslint-react/no-array-index-key */
+          variant.question
+            .split(/(\$\$[\s\S]+?\$\$|\$[\s\S]+?\$|\*\*[\s\S]+?\*\*)/g)
+            .filter(Boolean)
+            .map((part, index) => {
+              // Bold text
+              if (part.startsWith('**') && part.endsWith('**')) {
+                return (
+                  <strong key={`bold-${index}-${part.slice(2, -2)}`}>{part.slice(2, -2)}</strong>
+                );
+              }
 
-            // MathJax
-            if (
-              (part.startsWith('$$') && part.endsWith('$$')) ||
-              (part.startsWith('$') && part.endsWith('$'))
-            ) {
-              return <span key={`math-${index}-${part.slice(2, -2)}`}>{part}</span>;
-            }
+              // MathJax
+              if (
+                (part.startsWith('$$') && part.endsWith('$$')) ||
+                (part.startsWith('$') && part.endsWith('$'))
+              ) {
+                return <span key={`math-${index}-${part.slice(2, -2)}`}>{part}</span>;
+              }
 
-            // Regular text
-            return <span key={`text-${index}`}>{part}</span>;
-          })}
+              // Regular text
+              return <span key={`text-${index}`}>{part}</span>;
+            })
+          /* eslint-enable @eslint-react/no-array-index-key */
+        }
         {(prompt.answerType === 'number' || prompt.answerType === 'string') && (
           <NumericOrStringInput
             userInputResponse={userInputResponse}
