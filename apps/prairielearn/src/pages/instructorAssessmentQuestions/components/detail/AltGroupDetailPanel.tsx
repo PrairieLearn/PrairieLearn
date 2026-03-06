@@ -119,7 +119,7 @@ export function AltGroupDetailPanel({
     [handleSave, getValues],
   );
 
-  useAutoSave({ isDirty, isValid, getValues, onSave: handleSave, watch });
+  useAutoSave({ isDirty, isValid, getValues, onSave: handleSave });
 
   const parentAdvanceScorePerc = zone.advanceScorePerc ?? assessmentDefaults.advanceScorePerc;
   const parentGradeRateMinutes = zone.gradeRateMinutes ?? assessmentDefaults.gradeRateMinutes;

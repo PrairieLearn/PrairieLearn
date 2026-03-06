@@ -69,9 +69,6 @@ export function ZoneDetailPanel({
     values: formValues,
   });
 
-  // useCallback is needed here because handleSave is a dependency of
-  // useAutoSave — without it, a new function identity on every render
-  // would cause useAutoSave to re-trigger continuously.
   const handleSave = useCallback(
     (data: ZoneFormData) => {
       onUpdate(zone.trackingId, {
@@ -96,7 +93,7 @@ export function ZoneDetailPanel({
     [handleSave, getValues],
   );
 
-  useAutoSave({ isDirty, isValid, getValues, onSave: handleSave, watch });
+  useAutoSave({ isDirty, isValid, getValues, onSave: handleSave });
 
   const advancedInheritance: AdvancedFieldsInheritance = {
     parentAdvanceScorePerc: assessmentDefaults.advanceScorePerc,
