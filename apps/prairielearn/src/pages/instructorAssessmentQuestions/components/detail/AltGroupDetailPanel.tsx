@@ -83,7 +83,9 @@ export function AltGroupDetailPanel({
       triesPerVariant: zoneQuestionBlock.triesPerVariant ?? undefined,
       advanceScorePerc: zoneQuestionBlock.advanceScorePerc ?? undefined,
       gradeRateMinutes: zoneQuestionBlock.gradeRateMinutes ?? undefined,
-      forceMaxPoints: zoneQuestionBlock.forceMaxPoints ?? false,
+      forceMaxPoints: editMode
+        ? (zoneQuestionBlock.forceMaxPoints ?? false)
+        : zoneQuestionBlock.forceMaxPoints,
       allowRealTimeGrading: zoneQuestionBlock.allowRealTimeGrading ?? undefined,
     },
   });
@@ -200,9 +202,16 @@ export function AltGroupDetailPanel({
                   step="any"
                   {...register(pointsProperty, {
                     setValueAs: coerceToNumber,
-                    validate: (v) => {
+                    validate: (v, formValues) => {
                       if (typeof v === 'number' && v < 0) {
                         return 'Auto points must be non-negative.';
+                      }
+                      const maxPoints = formValues[maxPointsProperty];
+                      if (typeof v === 'number' && v === 0 && maxPoints != null && maxPoints > 0) {
+                        return 'Auto points cannot be 0 when max auto points is greater than 0.';
+                      }
+                      if (typeof v === 'number' && typeof maxPoints === 'number' && v > maxPoints) {
+                        return 'Auto points cannot exceed max auto points.';
                       }
                     },
                   })}
@@ -231,8 +240,15 @@ export function AltGroupDetailPanel({
                   placeholder={autoPointsPlaceholder}
                   {...register(maxPointsProperty, {
                     setValueAs: coerceToNumber,
-                    validate: (v) => {
+                    validate: (v, formValues) => {
                       if (v != null && v < 0) return 'Max auto points must be non-negative.';
+                      const points = formValues[pointsProperty];
+                      if (typeof points === 'number' && points === 0 && v != null && v > 0) {
+                        return 'Max auto points must be 0 or empty when auto points is 0.';
+                      }
+                      if (typeof points === 'number' && typeof v === 'number' && v < points) {
+                        return 'Max auto points must be at least auto points.';
+                      }
                     },
                   })}
                 />
