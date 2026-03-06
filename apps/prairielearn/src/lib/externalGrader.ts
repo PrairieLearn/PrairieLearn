@@ -247,7 +247,7 @@ export async function processGradingResult(content: any): Promise<void> {
       await updateCourseInstanceUsagesForGradingJob({ grading_job_id: content.gradingId });
     }
 
-    const assessment_instance_id = await sqldb.queryOptionalRow(
+    const assessment_instance_id = await sqldb.queryOptionalScalar(
       sql.select_assessment_for_grading_job,
       { grading_job_id: content.gradingId },
       IdSchema,

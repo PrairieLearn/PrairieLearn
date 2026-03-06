@@ -52,7 +52,7 @@ WHERE
 
 -- BLOCK select_enrollment_by_uid
 SELECT
-  to_jsonb(e) AS enrollment
+  e.*
 FROM
   enrollments AS e
   LEFT JOIN users AS u ON (u.id = e.user_id)

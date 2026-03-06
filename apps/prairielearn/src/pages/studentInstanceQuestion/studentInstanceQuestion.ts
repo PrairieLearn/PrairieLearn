@@ -4,7 +4,7 @@ import url from 'node:url';
 import { type Request, type Response, Router } from 'express';
 
 import { HttpStatusError } from '@prairielearn/error';
-import { loadSqlEquiv, queryOptionalRow } from '@prairielearn/postgres';
+import { loadSqlEquiv, queryOptionalScalar } from '@prairielearn/postgres';
 import { IdSchema } from '@prairielearn/zod';
 
 import checkPlanGrantsForQuestion from '../../ee/middlewares/checkPlanGrantsForQuestion.js';
@@ -322,7 +322,7 @@ router.get(
       // fetch and display the most recent non-broken variant.
       // If no such variant exists, we tell the user that a new variant
       // cannot be generated.
-      const last_variant_id = await queryOptionalRow(
+      const last_variant_id = await queryOptionalScalar(
         sql.select_last_variant_id,
         { instance_question_id: res.locals.instance_question.id },
         IdSchema,

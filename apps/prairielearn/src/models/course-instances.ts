@@ -1,6 +1,12 @@
 import { z } from 'zod';
 
-import { loadSqlEquiv, queryOptionalRow, queryRow, queryRows } from '@prairielearn/postgres';
+import {
+  loadSqlEquiv,
+  queryOptionalRow,
+  queryRow,
+  queryRows,
+  queryScalar,
+} from '@prairielearn/postgres';
 import { DateFromISOString } from '@prairielearn/zod';
 
 import {
@@ -189,7 +195,7 @@ export async function selectCourseHasCourseInstances({
 }: {
   course: CourseContext;
 }): Promise<boolean> {
-  return await queryRow(
+  return await queryScalar(
     sql.select_course_has_course_instances,
     { course_id: course.id },
     z.boolean(),

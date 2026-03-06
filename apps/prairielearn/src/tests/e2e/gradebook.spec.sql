@@ -1,3 +1,20 @@
+-- BLOCK clear_assessment_instances
+DELETE FROM assessment_instances
+WHERE
+  assessment_id IN (
+    SELECT
+      id
+    FROM
+      assessments
+    WHERE
+      course_instance_id = $course_instance_id
+  );
+
+-- BLOCK clear_enrollments
+DELETE FROM enrollments
+WHERE
+  course_instance_id = $course_instance_id;
+
 -- BLOCK select_first_assessment
 SELECT
   a.id,
@@ -6,7 +23,7 @@ FROM
   assessments AS a
   JOIN assessment_sets AS aset ON aset.id = a.assessment_set_id
 WHERE
-  a.course_instance_id = 1
+  a.course_instance_id = $course_instance_id
 ORDER BY
   a.id
 LIMIT
@@ -32,7 +49,7 @@ INSERT INTO
     first_joined_at
   )
 VALUES
-  ($user_id, 1, 'joined', NOW())
+  ($user_id, $course_instance_id, 'joined', NOW())
 ON CONFLICT DO NOTHING;
 
 -- BLOCK insert_assessment_instance
@@ -53,5 +70,4 @@ VALUES
     $score_perc,
     $score_perc,
     100
-  )
-ON CONFLICT DO NOTHING;
+  );

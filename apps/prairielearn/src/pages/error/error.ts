@@ -85,7 +85,6 @@ export default (function (err, req, res, _next) {
     return;
   }
 
-  // Check if the client only accepts JSON
   if (req.accepts('application/json') && !req.accepts('html')) {
     res.send({
       error: err.message,
