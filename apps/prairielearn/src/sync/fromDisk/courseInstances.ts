@@ -131,9 +131,9 @@ export async function sync(
     }),
   );
 
-  const result = await sqldb.callScalar(
-    'sync_course_instances',
-    [courseInstanceParams, courseId],
+  const result = await sqldb.queryScalar(
+    sql.sync_course_instances,
+    { course_instances_data: courseInstanceParams, course_id: courseId },
     z.record(z.string(), IdSchema),
   );
 
