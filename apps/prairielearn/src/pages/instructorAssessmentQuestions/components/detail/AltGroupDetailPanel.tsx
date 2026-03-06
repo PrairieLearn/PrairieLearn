@@ -60,7 +60,6 @@ export function AltGroupDetailPanel({
 
   const sharedTags = getSharedTags(zoneQuestionBlock.alternatives ?? [], questionMetadata);
 
-  // Exam uses points/maxPoints; Homework uses autoPoints/maxAutoPoints
   const pointsProperty = assessmentType === 'Exam' ? 'points' : 'autoPoints';
   const maxPointsProperty = assessmentType === 'Exam' ? 'maxPoints' : 'maxAutoPoints';
 
