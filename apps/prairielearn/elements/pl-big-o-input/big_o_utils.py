@@ -1,3 +1,4 @@
+import itertools
 from collections.abc import Callable
 
 import prairielearn.sympy_utils as psu
@@ -69,12 +70,12 @@ def grade_o_expression(
                 return (0.0, NEGATIVE_FEEDBACK)
 
         limit_res = []
-        for var in variables:
-            limit = sympy.limit(
-                sym_true / sym_sub, sympy.Symbol(var, positive=True), sympy.oo
-            )
+        for perm in itertools.permutations(variables):
+            limit = sym_true / sym_sub
+            for var in perm:
+                limit = sympy.limit(limit, sympy.Symbol(var, positive=True), sympy.oo)
+
             limit_res.append(limit)
-            print(f" for var {var}, limit {limit}")
 
         if any(res < sympy.sympify(0) for res in limit_res):
             return (0.0, NEGATIVE_FEEDBACK)
