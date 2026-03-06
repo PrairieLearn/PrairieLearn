@@ -220,9 +220,9 @@
     "brotli": 117504
   },
   "scripts/esm-bundles/hydrated-components/SampleQuestions.ts": {
-    "raw": 297358,
-    "gzip": 94822,
-    "brotli": 82210
+    "raw": 297360,
+    "gzip": 94826,
+    "brotli": 82213
   },
   "scripts/esm-bundles/hydrated-components/TagsTopicsTable.ts": {
     "raw": 651296,
