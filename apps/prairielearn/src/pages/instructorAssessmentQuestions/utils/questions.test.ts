@@ -172,11 +172,36 @@ describe('buildHierarchicalAssessment', () => {
 describe('computeQuestionTotalPoints', () => {
   it.each([
     { name: 'points for Homework', input: { points: 10 }, type: 'Homework' as const, expected: 10 },
-    { name: 'maxAutoPoints + manualPoints for Homework', input: { maxAutoPoints: 6, manualPoints: 4 }, type: 'Homework' as const, expected: 10 },
-    { name: 'autoPoints fallback for Homework', input: { autoPoints: 6, manualPoints: 4 }, type: 'Homework' as const, expected: 10 },
-    { name: 'maxPoints for Homework', input: { maxPoints: 10 }, type: 'Homework' as const, expected: 10 },
-    { name: 'points array + manualPoints for Exam', input: { points: [4, 3, 2], manualPoints: 4 }, type: 'Exam' as const, expected: 8 },
-    { name: 'uniform points array + manualPoints for Exam', input: { points: [3, 3, 3], manualPoints: 5 }, type: 'Exam' as const, expected: 8 },
+    {
+      name: 'maxAutoPoints + manualPoints for Homework',
+      input: { maxAutoPoints: 6, manualPoints: 4 },
+      type: 'Homework' as const,
+      expected: 10,
+    },
+    {
+      name: 'autoPoints fallback for Homework',
+      input: { autoPoints: 6, manualPoints: 4 },
+      type: 'Homework' as const,
+      expected: 10,
+    },
+    {
+      name: 'maxPoints for Homework',
+      input: { maxPoints: 10 },
+      type: 'Homework' as const,
+      expected: 10,
+    },
+    {
+      name: 'points array + manualPoints for Exam',
+      input: { points: [4, 3, 2], manualPoints: 4 },
+      type: 'Exam' as const,
+      expected: 8,
+    },
+    {
+      name: 'uniform points array + manualPoints for Exam',
+      input: { points: [3, 3, 3], manualPoints: 5 },
+      type: 'Exam' as const,
+      expected: 8,
+    },
   ])('$name → $expected', ({ input, type, expected }) => {
     expect(computeQuestionTotalPoints(input, type)).toBe(expected);
   });
@@ -226,22 +251,46 @@ describe('hasZonePointsMismatch', () => {
   it.each([
     {
       name: 'no bestQuestions or numberChoose',
-      zone: { trackingId: 'z1', questions: [{ trackingId: 'q1', id: 'q1', points: 10 }, { trackingId: 'q2', id: 'q2', points: 5 }] },
+      zone: {
+        trackingId: 'z1',
+        questions: [
+          { trackingId: 'q1', id: 'q1', points: 10 },
+          { trackingId: 'q2', id: 'q2', points: 5 },
+        ],
+      },
       expected: false,
     },
     {
       name: 'same totals with numberChoose',
-      zone: { trackingId: 'z1', numberChoose: 2, questions: [{ trackingId: 'q1', id: 'q1', points: 10 }, { trackingId: 'q2', id: 'q2', autoPoints: 6, manualPoints: 4 }] },
+      zone: {
+        trackingId: 'z1',
+        numberChoose: 2,
+        questions: [
+          { trackingId: 'q1', id: 'q1', points: 10 },
+          { trackingId: 'q2', id: 'q2', autoPoints: 6, manualPoints: 4 },
+        ],
+      },
       expected: false,
     },
     {
       name: 'different totals with bestQuestions',
-      zone: { trackingId: 'z1', bestQuestions: 1, questions: [{ trackingId: 'q1', id: 'q1', points: 10 }, { trackingId: 'q2', id: 'q2', points: 5 }] },
+      zone: {
+        trackingId: 'z1',
+        bestQuestions: 1,
+        questions: [
+          { trackingId: 'q1', id: 'q1', points: 10 },
+          { trackingId: 'q2', id: 'q2', points: 5 },
+        ],
+      },
       expected: true,
     },
     {
       name: 'only one question',
-      zone: { trackingId: 'z1', bestQuestions: 1, questions: [{ trackingId: 'q1', id: 'q1', points: 10 }] },
+      zone: {
+        trackingId: 'z1',
+        bestQuestions: 1,
+        questions: [{ trackingId: 'q1', id: 'q1', points: 10 }],
+      },
       expected: false,
     },
   ])('returns $expected when $name', ({ zone, expected }) => {
