@@ -14,16 +14,13 @@ FROM
 WHERE
   enrollment_code = $enrollment_code;
 
--- BLOCK sync_course_instances
+-- BLOCK sync_course_instances_insert_delete
 WITH
   json_course_instances AS (
     SELECT
       entries ->> 0 AS short_name,
       (entries ->> 1)::uuid AS uuid,
-      entries ->> 2 AS enrollment_code,
-      entries ->> 3 AS errors,
-      entries ->> 4 AS warnings,
-      (entries -> 5)::jsonb AS data
+      entries ->> 2 AS enrollment_code
     FROM
       UNNEST($course_instances_data::jsonb[]) AS entries
   ),
@@ -124,19 +121,35 @@ WITH
     RETURNING
       dest.short_name AS src_short_name,
       dest.id AS inserted_dest_id
-  ),
-  current_course_instances AS (
-    -- At this point, there will be exactly one non-deleted row for
-    -- all short_names that we loaded from disk. It is now safe to
-    -- update all those rows with the new information from disk (if we
-    -- have any).
+  )
+  -- At this point, there will be exactly one non-deleted row for
+  -- all short_names that we loaded from disk. It is now safe to
+  -- update all those rows with the new information from disk (if we
+  -- have any).
+SELECT
+  -- Make a map from CIID to ID to return to the caller
+  COALESCE(
+    jsonb_object_agg(
+      short_name,
+      COALESCE(uci.updated_dest_id, ici.inserted_dest_id)
+    ),
+    '{}'::jsonb
+  )
+FROM
+  json_course_instances AS src
+  LEFT JOIN update_matched_dest_rows AS uci ON (uci.src_short_name = src.short_name)
+  LEFT JOIN insert_unmatched_src_rows AS ici ON (ici.src_short_name = src.short_name);
+
+-- BLOCK sync_course_instances_update
+WITH
+  json_course_instances AS (
     SELECT
-      COALESCE(uci.updated_dest_id, ici.inserted_dest_id) AS course_instance_id,
-      src.*
+      (entries ->> 0)::bigint AS course_instance_id,
+      entries ->> 1 AS errors,
+      entries ->> 2 AS warnings,
+      (entries -> 3)::jsonb AS data
     FROM
-      json_course_instances AS src
-      LEFT JOIN update_matched_dest_rows AS uci ON (uci.src_short_name = src.short_name)
-      LEFT JOIN insert_unmatched_src_rows AS ici ON (ici.src_short_name = src.short_name)
+      UNNEST($course_instances_data::jsonb[]) AS entries
   ),
   valid_course_instances AS (
     SELECT
@@ -147,7 +160,7 @@ WITH
         c.display_timezone
       ) AS display_timezone
     FROM
-      current_course_instances AS src
+      json_course_instances AS src
       JOIN courses AS c ON (c.id = $course_id)
     WHERE
       src.errors IS NULL
@@ -226,27 +239,17 @@ WITH
     WHERE
       ciar.course_instance_id = ci.course_instance_id
       AND ciar.number > JSONB_ARRAY_LENGTH(ci.data -> 'access_rules')
-  ),
-  updated_course_instance_errors AS (
-    -- Add errors where needed.
-    UPDATE course_instances AS dest
-    SET
-      sync_errors = src.errors,
-      sync_warnings = src.warnings
-    FROM
-      current_course_instances AS src
-    WHERE
-      dest.id = src.course_instance_id
-      AND dest.deleted_at IS NULL
-      AND dest.course_id = $course_id
-      AND src.errors IS NOT NULL
-      AND src.errors != ''
   )
-SELECT
-  -- Make a map from CIID to ID to return to the caller
-  COALESCE(
-    jsonb_object_agg(short_name, course_instance_id),
-    '{}'::jsonb
-  )
+  -- Add errors where needed.
+UPDATE course_instances AS dest
+SET
+  sync_errors = src.errors,
+  sync_warnings = src.warnings
 FROM
-  current_course_instances;
+  json_course_instances AS src
+WHERE
+  dest.id = src.course_instance_id
+  AND dest.deleted_at IS NULL
+  AND dest.course_id = $course_id
+  AND src.errors IS NOT NULL
+  AND src.errors != '';

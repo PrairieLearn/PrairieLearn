@@ -116,26 +116,45 @@ export async function sync(
     });
   }
 
-  const courseInstanceParams = await Promise.all(
-    Object.entries(courseData.courseInstances).map(async ([shortName, courseInstanceData]) => {
-      const { courseInstance } = courseInstanceData;
-      return JSON.stringify([
+  const courseInstanceIdentityParams = await Promise.all(
+    Object.entries(courseData.courseInstances).map(async ([shortName, courseInstanceData]) =>
+      JSON.stringify([
         shortName,
-        courseInstance.uuid,
+        courseInstanceData.courseInstance.uuid,
         // This enrollment code is only used for inserts, and not used on updates
         await uniqueEnrollmentCode(),
+      ]),
+    ),
+  );
+
+  const shortNameToIdMapping = await sqldb.queryScalar(
+    sql.sync_course_instances_insert_delete,
+    { course_instances_data: courseInstanceIdentityParams, course_id: courseId },
+    z.record(z.string(), IdSchema),
+  );
+
+  const courseInstanceGeneralParams = Object.entries(courseData.courseInstances).map(
+    ([shortName, courseInstanceData]) => {
+      const courseInstanceId = shortNameToIdMapping[shortName];
+      if (!courseInstanceId) {
+        throw new Error(
+          `Assertion: course instance with short name "${shortName}" was not synced successfully`,
+        );
+      }
+      const { courseInstance } = courseInstanceData;
+      return JSON.stringify([
+        courseInstanceId,
         infofile.stringifyErrors(courseInstance),
         infofile.stringifyWarnings(courseInstance),
         getParamsForCourseInstance(courseInstance.data),
       ]);
-    }),
+    },
   );
 
-  const result = await sqldb.queryScalar(
-    sql.sync_course_instances,
-    { course_instances_data: courseInstanceParams, course_id: courseId },
-    z.record(z.string(), IdSchema),
-  );
+  await sqldb.execute(sql.sync_course_instances_update, {
+    course_instances_data: courseInstanceGeneralParams,
+    course_id: courseId,
+  });
 
-  return result;
+  return shortNameToIdMapping;
 }
