@@ -1,0 +1,21 @@
+{
+  "uuid": "a3c7e1f2-8b4d-4a6e-9c5f-d2e8f7a1b3c4",
+  "type": "Homework",
+  "title": "Homework for editor alt group test",
+  "set": "Homework",
+  "number": "17",
+  "allowAccess": [{ "credit": 100 }],
+  "zones": [
+    {
+      "questions": [
+        { "id": "addNumbers", "points": 1, "maxPoints": 5 },
+        { "id": "addVectors", "points": 2, "maxPoints": 11 },
+        {
+          "alternatives": [{ "id": "aiGradingMultiImageCapture" }, { "id": "aiGradingRubrics" }],
+          "numberChoose": 1,
+          "points": 1
+        }
+      ]
+    }
+  ]
+}

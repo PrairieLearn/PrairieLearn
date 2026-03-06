@@ -10,6 +10,7 @@ import {
 } from '../../schemas/infoAssessment.js';
 
 import type { AssessmentAdvancedDefaults } from './utils/formHelpers.js';
+
 /**
  * Describes which items are new vs modified compared to the initial state.
  * Used to show colored dot indicators in the tree view.

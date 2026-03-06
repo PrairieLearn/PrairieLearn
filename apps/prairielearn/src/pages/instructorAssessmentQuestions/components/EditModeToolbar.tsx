@@ -21,8 +21,8 @@ export function ViewToggle({
         type="radio"
         name="viewType"
         value={viewType}
-        onChange={(val: ViewType) => onViewTypeChange(val)}
         size="sm"
+        onChange={(val: ViewType) => onViewTypeChange(val)}
       >
         <ToggleButton id="viewType-simple" value="simple" variant="outline-secondary">
           Simple

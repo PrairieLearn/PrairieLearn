@@ -163,6 +163,26 @@ export function questionBlockToAlternative(block: ZoneQuestionBlockForm): Questi
   return { ...rest } as QuestionAlternativeForm;
 }
 
+/**
+ * Inverse of `normalizeQuestionPoints`. For questions without `manualPoints`,
+ * converts `autoPoints`/`maxAutoPoints` back to `points`/`maxPoints` so the
+ * saved JSON uses the canonical legacy format.
+ */
+function denormalizeQuestionPoints<T extends QuestionPointsJson>(obj: T): T {
+  const result = { ...obj };
+  if (result.manualPoints == null) {
+    if (result.autoPoints != null && result.points == null) {
+      result.points = result.autoPoints;
+      delete result.autoPoints;
+    }
+    if (result.maxAutoPoints != null && result.maxPoints == null) {
+      result.maxPoints = result.maxAutoPoints;
+      delete result.maxAutoPoints;
+    }
+  }
+  return result;
+}
+
 /** Removes keys with undefined values from an object. */
 function omitUndefined<T extends Record<string, unknown>>(obj: T): T {
   return Object.fromEntries(Object.entries(obj).filter(([, v]) => v !== undefined)) as T;
@@ -177,51 +197,53 @@ const isEmptyArray = (v: unknown) => !v || (Array.isArray(v) && v.length === 0);
  * to prevent unintended inheritance from the parent question block.
  */
 function serializeQuestionAlternative(alternative: QuestionAlternativeJson) {
+  const pts = denormalizeQuestionPoints(alternative);
   return omitUndefined({
-    id: alternative.id,
-    points: alternative.points,
-    autoPoints: alternative.autoPoints,
-    maxPoints: alternative.maxPoints,
-    maxAutoPoints: alternative.maxAutoPoints,
-    manualPoints: alternative.manualPoints,
-    triesPerVariant: alternative.triesPerVariant,
-    advanceScorePerc: alternative.advanceScorePerc,
-    gradeRateMinutes: alternative.gradeRateMinutes,
-    forceMaxPoints: alternative.forceMaxPoints,
-    allowRealTimeGrading: alternative.allowRealTimeGrading,
+    id: pts.id,
+    points: pts.points,
+    autoPoints: pts.autoPoints,
+    maxPoints: pts.maxPoints,
+    maxAutoPoints: pts.maxAutoPoints,
+    manualPoints: pts.manualPoints,
+    triesPerVariant: pts.triesPerVariant,
+    advanceScorePerc: pts.advanceScorePerc,
+    gradeRateMinutes: pts.gradeRateMinutes,
+    forceMaxPoints: pts.forceMaxPoints,
+    allowRealTimeGrading: pts.allowRealTimeGrading,
     // For some reason, comment gets set to the empty string if it's not set.
-    comment: alternative.comment || undefined,
+    comment: pts.comment || undefined,
   });
 }
 
 /** Serializes a question block for JSON output, stripping default values where appropriate. */
 function serializeQuestionBlock(question: ZoneQuestionBlockJson) {
   const isAlternativeGroup = 'alternatives' in question && question.alternatives;
+  const pts = denormalizeQuestionPoints(question);
 
   return omitUndefined({
-    id: isAlternativeGroup ? undefined : question.id,
+    id: isAlternativeGroup ? undefined : pts.id,
     alternatives: isAlternativeGroup
-      ? question.alternatives!.map(serializeQuestionAlternative)
+      ? pts.alternatives!.map(serializeQuestionAlternative)
       : undefined,
-    numberChoose: question.numberChoose,
+    numberChoose: pts.numberChoose,
     // For some reason, comment gets set to the empty string if it's not set.
-    comment: question.comment || undefined,
+    comment: pts.comment || undefined,
 
     // These defaults will be inherited by question alternatives, unless they override them.
     // These should mirror the defaults from assessment syncing.
-    allowRealTimeGrading: propertyValueWithDefault(undefined, question.allowRealTimeGrading, true),
-    triesPerVariant: propertyValueWithDefault(undefined, question.triesPerVariant, 1),
-    forceMaxPoints: propertyValueWithDefault(undefined, question.forceMaxPoints, false),
+    allowRealTimeGrading: propertyValueWithDefault(undefined, pts.allowRealTimeGrading, true),
+    triesPerVariant: propertyValueWithDefault(undefined, pts.triesPerVariant, 1),
+    forceMaxPoints: propertyValueWithDefault(undefined, pts.forceMaxPoints, false),
 
-    canSubmit: propertyValueWithDefault(undefined, question.canSubmit, isEmptyArray),
-    canView: propertyValueWithDefault(undefined, question.canView, isEmptyArray),
-    points: question.points,
-    autoPoints: question.autoPoints,
-    maxPoints: question.maxPoints,
-    maxAutoPoints: question.maxAutoPoints,
-    manualPoints: question.manualPoints,
-    advanceScorePerc: question.advanceScorePerc,
-    gradeRateMinutes: question.gradeRateMinutes,
+    canSubmit: propertyValueWithDefault(undefined, pts.canSubmit, isEmptyArray),
+    canView: propertyValueWithDefault(undefined, pts.canView, isEmptyArray),
+    points: pts.points,
+    autoPoints: pts.autoPoints,
+    maxPoints: pts.maxPoints,
+    maxAutoPoints: pts.maxAutoPoints,
+    manualPoints: pts.manualPoints,
+    advanceScorePerc: pts.advanceScorePerc,
+    gradeRateMinutes: pts.gradeRateMinutes,
   });
 }
 

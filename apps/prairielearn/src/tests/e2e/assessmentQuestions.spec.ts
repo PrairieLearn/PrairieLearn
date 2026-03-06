@@ -263,7 +263,7 @@ test.describe('Assessment questions', () => {
     await expect(async () => {
       const hiddenZones = await page.locator('input[name="zones"]').inputValue();
       const parsedZones = JSON.parse(hiddenZones);
-      expect(parsedZones[0].questions[0].points).toBe(7);
+      expect(parsedZones[0].questions[0].autoPoints).toBe(7);
     }).toPass({ timeout: 5000 });
 
     await page.getByRole('button', { name: 'Change', exact: true }).click();
@@ -303,77 +303,83 @@ test.describe('Assessment questions', () => {
     ]);
   });
 
-  test('can add an alternative to an alt group and save', async ({
-    page,
-    testCoursePath,
-    courseInstance,
-  }) => {
-    const assessmentTid = 'hw1-automaticTestSuite';
-    const assessment = await selectAssessmentByTid({
-      course_instance_id: courseInstance.id,
-      tid: assessmentTid,
+  test.describe('hw17-editorAltGroupTest mutations', () => {
+    const assessmentTid = 'hw17-editorAltGroupTest';
+
+    test.beforeEach(async ({ testCoursePath }) => {
+      await resetAssessmentFromTemplate({ assessmentTid, testCoursePath });
     });
 
-    await enterEditMode(page, courseInstance.id, assessment.id);
-
-    await page
-      .getByRole('button')
-      .filter({ hasText: /Choose 1 of 2/ })
-      .click();
-
-    await page.getByRole('button', { name: 'Add alternative', exact: true }).last().click();
-    await expect(page.getByLabel('Search by QID or title')).toBeVisible();
-
-    await page.getByLabel('Search by QID or title').fill('addNumbers');
-    await page.getByRole('button', { name: /^addNumbers:/ }).click();
-
-    await page.getByRole('button', { name: 'Done' }).click();
-
-    await page.getByRole('button', { name: 'Save and sync' }).click();
-    await expect(page.getByRole('button', { name: 'Edit', exact: true })).toBeVisible();
-
-    const infoAssessmentPath = path.join(
+    test('can add an alternative to an alt group and save', async ({
+      page,
       testCoursePath,
-      'courseInstances/Sp15/assessments',
-      assessmentTid,
-      'infoAssessment.json',
-    );
-    const savedContent = await fs.readFile(infoAssessmentPath, 'utf-8');
-    const savedAssessment = JSON.parse(savedContent);
+      courseInstance,
+    }) => {
+      const assessment = await selectAssessmentByTid({
+        course_instance_id: courseInstance.id,
+        tid: assessmentTid,
+      });
 
-    const lastBlock = savedAssessment.zones[0].questions.at(-1);
-    expect(lastBlock.numberChoose).toBe(1);
-    expect(lastBlock.alternatives).toHaveLength(3);
-    expect(lastBlock.alternatives[2].id).toBe('addNumbers');
-  });
+      await enterEditMode(page, courseInstance.id, assessment.id);
 
-  test('revalidates number to choose when alternatives are deleted from the tree', async ({
-    page,
-    courseInstance,
-  }) => {
-    const assessmentTid = 'hw1-automaticTestSuite';
-    const assessment = await selectAssessmentByTid({
-      course_instance_id: courseInstance.id,
-      tid: assessmentTid,
+      await page
+        .getByRole('button')
+        .filter({ hasText: /Choose 1 of 2/ })
+        .click();
+
+      await page.getByRole('button', { name: 'Add alternative', exact: true }).last().click();
+      await expect(page.getByLabel('Search by QID or title')).toBeVisible();
+
+      await page.getByLabel('Search by QID or title').fill('addNumbers');
+      await page.getByRole('button', { name: /^addNumbers:/ }).click();
+
+      await page.getByRole('button', { name: 'Done' }).click();
+
+      await page.getByRole('button', { name: 'Save and sync' }).click();
+      await expect(page.getByRole('button', { name: 'Edit', exact: true })).toBeVisible();
+
+      const infoAssessmentPath = path.join(
+        testCoursePath,
+        'courseInstances/Sp15/assessments',
+        assessmentTid,
+        'infoAssessment.json',
+      );
+      const savedContent = await fs.readFile(infoAssessmentPath, 'utf-8');
+      const savedAssessment = JSON.parse(savedContent);
+
+      const lastBlock = savedAssessment.zones[0].questions.at(-1);
+      expect(lastBlock.numberChoose).toBe(1);
+      expect(lastBlock.alternatives).toHaveLength(3);
+      expect(lastBlock.alternatives[2].id).toBe('addNumbers');
     });
 
-    await enterEditMode(page, courseInstance.id, assessment.id);
+    test('revalidates number to choose when alternatives are deleted from the tree', async ({
+      page,
+      courseInstance,
+    }) => {
+      const assessment = await selectAssessmentByTid({
+        course_instance_id: courseInstance.id,
+        tid: assessmentTid,
+      });
 
-    await page
-      .getByRole('button')
-      .filter({ hasText: /Choose 1 of 2/ })
-      .click();
+      await enterEditMode(page, courseInstance.id, assessment.id);
 
-    const numberChooseInput = page.getByLabel('Number to choose');
-    await numberChooseInput.clear();
-    await numberChooseInput.fill('2');
-    await expect(page.getByText('Cannot exceed number of alternatives (2).')).not.toBeVisible();
+      await page
+        .getByRole('button')
+        .filter({ hasText: /Choose 1 of 2/ })
+        .click();
 
-    await page
-      .getByRole('button', { name: 'Delete aiGradingMultiImageCapture', exact: true })
-      .click();
+      const numberChooseInput = page.getByLabel('Number to choose');
+      await numberChooseInput.clear();
+      await numberChooseInput.fill('2');
+      await expect(page.getByText('Cannot exceed number of alternatives (2).')).not.toBeVisible();
 
-    await expect(page.getByText('Cannot exceed number of alternatives (1).')).toBeVisible();
+      await page
+        .getByRole('button', { name: 'Delete aiGradingMultiImageCapture', exact: true })
+        .click();
+
+      await expect(page.getByText('Cannot exceed number of alternatives (1).')).toBeVisible();
+    });
   });
 
   test('can delete questions and a zone', async ({ page, testCoursePath, courseInstance }) => {
@@ -544,7 +550,7 @@ test.describe('Assessment questions', () => {
 
     expect(savedAssessment.zones).toEqual([
       {
-        questions: [{ id: 'partialCredit1', autoPoints: 5 }],
+        questions: [{ id: 'partialCredit1', points: 5 }],
       },
     ]);
   });
