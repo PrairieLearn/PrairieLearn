@@ -1,16 +1,18 @@
 import { useEffect, useRef } from 'react';
-import type { FieldValues, UseFormGetValues } from 'react-hook-form';
+import type { FieldValues, UseFormGetValues, UseFormWatch } from 'react-hook-form';
 
 export function useAutoSave<T extends FieldValues>({
   isDirty,
   isValid,
   getValues,
   onSave,
+  watch,
 }: {
   isDirty: boolean;
   isValid: boolean;
   getValues: UseFormGetValues<T>;
   onSave: (data: T) => void;
+  watch: UseFormWatch<T>;
 }) {
   const onSaveRef = useRef(onSave);
   onSaveRef.current = onSave;
@@ -20,11 +22,24 @@ export function useAutoSave<T extends FieldValues>({
   isDirtyRef.current = isDirty;
   isValidRef.current = isValid;
 
-  // Save whenever the form is dirty and valid. With mode: 'onChange',
-  // react-hook-form re-renders on every field change, so this effect
-  // naturally fires after each keystroke.
+  // Flag set by the watch subscription when a form value changes.
+  // The effect below only saves when this flag is true, so
+  // validation-only re-renders (e.g. from trigger()) don't cause saves.
+  const pendingSaveRef = useRef(false);
+
   useEffect(() => {
-    if (isDirty && isValid) {
+    const subscription = watch(() => {
+      pendingSaveRef.current = true;
+    });
+    return () => subscription.unsubscribe();
+  }, [watch]);
+
+  // Save after each render where a form value changed and the form is
+  // dirty and valid. isDirty/isValid are read directly from the render
+  // scope (not refs) so they reflect the current render's state.
+  useEffect(() => {
+    if (pendingSaveRef.current && isDirty && isValid) {
+      pendingSaveRef.current = false;
       onSaveRef.current(getValues());
     }
   });

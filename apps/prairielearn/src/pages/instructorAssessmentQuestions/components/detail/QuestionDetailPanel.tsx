@@ -203,7 +203,7 @@ export function QuestionDetailPanel({
     [handleSave, getValues],
   );
 
-  useAutoSave({ isDirty, isValid, getValues, onSave: handleSave });
+  useAutoSave({ isDirty, isValid, getValues, onSave: handleSave, watch });
 
   const advancedInheritance: AdvancedFieldsInheritance = run(() => {
     if (isAlternative) {
