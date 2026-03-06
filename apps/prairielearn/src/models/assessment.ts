@@ -5,9 +5,9 @@ import {
   loadSqlEquiv,
   queryCursor,
   queryOptionalRow,
+  queryOptionalScalar,
   queryRow,
   queryRows,
-  queryScalar,
 } from '@prairielearn/postgres';
 import { IdSchema } from '@prairielearn/zod';
 
@@ -106,8 +106,8 @@ export async function selectEnabledAssessmentTools({
 
 export async function selectZoneIdForInstanceQuestion(
   instance_question_id: string,
-): Promise<string> {
-  return await queryScalar(
+): Promise<string | null> {
+  return await queryOptionalScalar(
     sql.select_zone_id_for_instance_question,
     { instance_question_id },
     IdSchema,

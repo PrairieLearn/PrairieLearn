@@ -35,8 +35,8 @@ SELECT
 FROM
   instance_questions AS iq
   JOIN assessment_questions AS aq ON aq.id = iq.assessment_question_id
-  JOIN alternative_groups AS ag ON ag.id = aq.alternative_group_id
-  JOIN zones AS z ON z.id = ag.zone_id
+  LEFT JOIN alternative_groups AS ag ON ag.id = aq.alternative_group_id
+  LEFT JOIN zones AS z ON z.id = ag.zone_id
 WHERE
   iq.id = $instance_question_id;
 

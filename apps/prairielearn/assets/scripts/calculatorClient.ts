@@ -147,12 +147,12 @@ export function initCalculator(storageKey: string, { drawer, fab, fabClose }: Dr
   ]);
   const autoAnsKeys = new Set(['+', '-', '*', '/', '^', '!']);
 
-  drawer.querySelectorAll('button[name="calculate"]').forEach((button) =>
-    button.addEventListener('mousedown', (ev) => {
-      ev.preventDefault();
+  drawer.querySelectorAll('button[name="calculate"]').forEach((button) => {
+    prepareButton(button);
+    button.addEventListener('click', () => {
       calculate(true);
-    }),
-  );
+    });
+  });
 
   let typingTimer: ReturnType<typeof setTimeout>;
   const delay = 200;
@@ -972,6 +972,9 @@ onDocumentReady(() => {
       fab.classList.remove('visible');
       drawer.classList.add('open');
       drawer.setAttribute('aria-hidden', 'false');
+      const data = getCalculatorData(storageKey);
+      data.isOpen = true;
+      setCalculatorData(storageKey, data);
     });
   }
 
