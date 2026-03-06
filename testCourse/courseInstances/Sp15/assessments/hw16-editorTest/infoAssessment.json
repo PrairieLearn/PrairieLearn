@@ -8,7 +8,7 @@
   "zones": [
     {
       "title": "Keep zone",
-      "questions": [{ "id": "addNumbers", "points": 5, "maxPoints": 10 }]
+      "questions": [{ "id": "downloadFile", "points": 5, "maxPoints": 10 }]
     },
     {
       "title": "Zone to delete",

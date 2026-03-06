@@ -419,7 +419,7 @@ test.describe('Assessment questions', () => {
     expect(savedAssessment.zones).toHaveLength(2);
     expect(savedAssessment.zones[0].title).toBe('Keep zone');
     expect(savedAssessment.zones[0].questions).toEqual([
-      { id: 'addNumbers', points: 5, maxPoints: 10 },
+      { id: 'downloadFile', points: 5, maxPoints: 10 },
     ]);
   });
 
