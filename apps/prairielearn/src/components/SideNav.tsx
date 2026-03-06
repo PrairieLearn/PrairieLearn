@@ -325,7 +325,7 @@ function CourseInstanceNav({
             <span title="${resLocals.course_instance?.short_name ?? ''}">
               ${resLocals.course_instance
                 ? truncateMiddle(resLocals.course_instance.short_name, 22)
-                : 'Select a course instance...'}
+                : 'Select...'}
             </span>
           </button>
           <div class="dropdown-menu py-0 overflow-hidden">
