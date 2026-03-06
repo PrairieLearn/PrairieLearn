@@ -15,12 +15,12 @@ interface DrawerElements {
 }
 
 type DisplayMode = 'numeric' | 'symbolic';
+type AngleMode = 'rad' | 'deg';
 
 interface HistoryItem {
   input: string;
   displayed: string;
-  numeric: number;
-  angleMode: string;
+  angleMode: AngleMode;
 }
 
 interface CalculatorLocalData {
@@ -30,18 +30,60 @@ interface CalculatorLocalData {
   isOpen: boolean;
 }
 
+const DEFAULT_CALCULATOR_DATA: CalculatorLocalData = {
+  variable: [],
+  history: [],
+  temp_input: null,
+  isOpen: false,
+};
+
+const TRIG_FUNCTIONS = new Set([
+  'Sin',
+  'Cos',
+  'Tan',
+  'Cot',
+  'Sec',
+  'Csc',
+  'Sinh',
+  'Cosh',
+  'Tanh',
+  'Coth',
+  'Sech',
+  'Csch',
+]);
+
+const INVERSE_TRIG_FUNCTIONS = new Set([
+  'Arcsin',
+  'Arccos',
+  'Arctan',
+  'Arctan2',
+  'Acot',
+  'Asec',
+  'Acsc',
+  'Arsinh',
+  'Arcosh',
+  'Artanh',
+  'Arcoth',
+  'Asech',
+  'Acsch',
+]);
+
 export function initCalculator(storageKey: string, { drawer, fab, fabClose }: DrawerElements) {
   showPanel('main');
   initColumnNavigation();
   initDrawerUI(drawer, fab, fabClose, storageKey);
   const ce = new ComputeEngine();
   ce.timeLimit = 500;
-
-
   ce.pushScope();
   const calculatorInputElement = document.getElementById('calculator-input') as MathfieldElement;
   const calculatorInputContainer = calculatorInputElement.parentElement!;
   const calculatorOutput = document.getElementById('calculator-output') as MathfieldElement;
+  const copyButton = document.getElementById('calculator-output-copy')!;
+  const historyPanel = document.getElementById('history-panel')!;
+  const clearHistoryBtn = document.getElementById('calculatorClearHistory')!;
+  const historyTemplate = document.getElementById('history-item-template') as HTMLTemplateElement;
+  const displayModeSwitch = document.getElementById('displayModeSwitch')!;
+  const angleModeSwitch = document.getElementById('angleModeSwitch')!;
 
   const onExport = (_mf: unknown, latex: string) => {
     return ce.parse(latex).toString();
@@ -58,10 +100,35 @@ export function initCalculator(storageKey: string, { drawer, fab, fabClose }: Dr
   // input automatically prefixes with ans (classic calculator behavior).
   let shouldAutoInsertAns = false;
   const autoAnsButtons = new Set([
-    'plus', 'minus', 'mul', 'div', 'sqr', 'apowerb', 'perc', 'factorial', 'inv',
-    'sin', 'cos', 'tan', 'sin-1', 'cos-1', 'tan-1',
-    'sinh', 'cosh', 'tanh', 'sinh-1', 'cosh-1', 'tanh-1',
-    'sqrt', 'root', 'abs', 'ln', 'lg', 'log', 'epowerx', 'round',
+    'plus',
+    'minus',
+    'mul',
+    'div',
+    'sqr',
+    'apowerb',
+    'perc',
+    'factorial',
+    'inv',
+    'sin',
+    'cos',
+    'tan',
+    'sin-1',
+    'cos-1',
+    'tan-1',
+    'sinh',
+    'cosh',
+    'tanh',
+    'sinh-1',
+    'cosh-1',
+    'tanh-1',
+    'sqrt',
+    'root',
+    'abs',
+    'ln',
+    'lg',
+    'log',
+    'epowerx',
+    'round',
   ]);
   const autoAnsKeys = new Set(['+', '-', '*', '/', '^', '!']);
 
@@ -84,16 +151,7 @@ export function initCalculator(storageKey: string, { drawer, fab, fabClose }: Dr
   // Data from localStorage
   const calculatorLocalData = localStorage.getItem(storageKey);
   if (!calculatorLocalData) {
-    localStorage.setItem(
-      storageKey,
-      JSON.stringify({
-        ans: null,
-        variable: [],
-        history: [],
-        temp_input: null,
-        isOpen: true,
-      }),
-    );
+    localStorage.setItem(storageKey, JSON.stringify({ ...DEFAULT_CALCULATOR_DATA, isOpen: true }));
   } else {
     const data: CalculatorLocalData = JSON.parse(calculatorLocalData);
     for (const historyItem of data.history) {
@@ -104,7 +162,6 @@ export function initCalculator(storageKey: string, { drawer, fab, fabClose }: Dr
     }
 
     // Set ans to the last history item's result, or \bot if no history
-    const historyPanel = document.getElementById('history-panel')!;
     const items = Array.from(historyPanel.querySelectorAll<HTMLElement>('.history-item'));
     if (items.length > 0) {
       const displayMode = calculatorOutput.dataset.displayMode as DisplayMode;
@@ -136,7 +193,7 @@ export function initCalculator(storageKey: string, { drawer, fab, fabClose }: Dr
   ): ReturnType<typeof evaluateExpression> {
     const item = items[domIndex];
     const input = item.dataset.input!;
-    const angleMode = item.dataset.angleMode!;
+    const angleMode = item.dataset.angleMode! as AngleMode;
 
     const savedAns = ce.box('ans').evaluate();
 
@@ -158,7 +215,6 @@ export function initCalculator(storageKey: string, { drawer, fab, fabClose }: Dr
    * displayed output, and forward-propagates to subsequent items that use `ans`.
    */
   function reevaluateHistoryItem(historyItemEl: HTMLElement, updateGlobalAns = true) {
-    const historyPanel = document.getElementById('history-panel')!;
     const items = Array.from(historyPanel.querySelectorAll<HTMLElement>('.history-item'));
     const domIndex = items.indexOf(historyItemEl);
     if (domIndex === -1) return;
@@ -192,8 +248,9 @@ export function initCalculator(storageKey: string, { drawer, fab, fabClose }: Dr
 
   function evaluateExpression(
     input: string,
-    angleMode = 'rad',
+    angleMode: AngleMode = 'rad',
     displayMode: DisplayMode = 'numeric',
+    latexOptions: { notation: string; fractionalDigits?: number } = { notation: 'auto' },
   ) {
     if (!input || input.length === 0) return null;
 
@@ -210,13 +267,10 @@ export function initCalculator(storageKey: string, { drawer, fab, fabClose }: Dr
 
     try {
       const evaluated = parsed.evaluate();
-      const displayed =
-        displayMode === 'symbolic'
-          ? evaluated.toLatex({ notation: 'auto' })
-          : evaluated.N().toLatex({ notation: 'auto' });
-      const numeric = Number(evaluated.N().value);
+      const numericValue = displayMode === 'symbolic' ? evaluated : evaluated.N();
+      const displayed = numericValue.toLatex(latexOptions);
 
-      return { displayed, numeric, evaluated };
+      return { displayed, evaluated };
     } catch (e) {
       console.error('Evaluation failed:', e);
       return null;
@@ -227,88 +281,47 @@ export function initCalculator(storageKey: string, { drawer, fab, fabClose }: Dr
     const input = calculatorInputElement.value;
     if (input.length === 0) {
       calculatorOutput.value = '';
-      const copyButton = document.getElementById('calculator-output-copy')!;
       copyButton.onclick = function () {
         void copyToClipboard('');
       };
       calculatorInputContainer.classList.remove('error');
       return;
     }
-    
-    let parsed: Expression = ce.parse(input, {
-      parseNumbers: 'rational',
+
+    const angleMode = (calculatorOutput.dataset.angleMode ?? 'rad') as AngleMode;
+    const displayMode = calculatorOutput.dataset.displayMode as DisplayMode;
+    const result = evaluateExpression(input, angleMode, displayMode, {
+      notation: 'adaptiveScientific',
+      fractionalDigits: ce.precision,
     });
 
-    if (calculatorOutput.dataset.angleMode === 'deg') {
-      parsed = ce.box(radianToDegree(parsed.json));
+    if (!result) {
+      calculatorInputContainer.classList.add('error');
+      return;
     }
 
-    const json = parsed.json;
-    if (Array.isArray(json) && json[0] === 'Assign' && json[1] === 'InvisibleOperator') {
-      parsed = ce.box([
-        'Error',
-        '',
-        'Assignment operator can only be used on single-letter variables',
-      ]);
-    }
+    const { displayed, evaluated } = result;
 
-    let evaluated: Expression;
-    try {
-      evaluated = parsed.evaluate();
-    } catch (e) {
-      console.error('Error during evaluation:', e);
-      if (e instanceof Error && e.name === 'CancellationError') {
-        evaluated = ce.error('Output is too large');
-        calculatorOutput.value = '\\mathrm{Error:\\ Output\\ is\\ too\\ large}';
-      } else {
-        calculatorInputElement.value = '';
-        console.error('Error during evaluation:', e);
-        calculatorOutput.value = '\\mathrm{Error}';
-        evaluated = ce.error(e instanceof Error ? e.message : String(e));
-      }
-    }
-
-    const error = hasError(evaluated.json);
-
-    if (error) {
+    if (hasError(evaluated.json)) {
       console.error('Error in evaluated expression:', evaluated.toString());
       calculatorInputContainer.classList.add('error');
       return;
     }
 
-    let displayed = '';
-    if (calculatorOutput.dataset.displayMode === 'symbolic') {
-      displayed = evaluated.toLatex({
-        notation: 'adaptiveScientific',
-        fractionalDigits: ce.precision,
-      });
-    } else {
-      displayed = evaluated
-        .N()
-        .toLatex({ notation: 'adaptiveScientific', fractionalDigits: ce.precision });
-    }
-
     calculatorInputContainer.classList.remove('error');
     calculatorOutput.value = `=${displayed}`;
 
-    // Update copy button
-    const copyButton = document.getElementById('calculator-output-copy')!;
     copyButton.onclick = function () {
       void copyToClipboard(ce.parse(displayed).toString());
     };
 
     const data: CalculatorLocalData = JSON.parse(
-      localStorage.getItem(storageKey) ??
-        JSON.stringify({
-          ans: null,
-          variable: [],
-          history: [],
-          temp_input: null,
-        }),
+      localStorage.getItem(storageKey) ?? JSON.stringify(DEFAULT_CALCULATOR_DATA),
     );
 
     // Add to history
     if (addToHistory) {
+      const parsed = ce.parse(input, { parseNumbers: 'rational' });
       const parsedJson = parsed.json;
       // FIXME: could be multiple assignments in one expression
       if (Array.isArray(parsedJson) && parsedJson[0] === 'Assign') {
@@ -327,13 +340,10 @@ export function initCalculator(storageKey: string, { drawer, fab, fabClose }: Dr
         console.error('Failed to assign ans:', e);
       }
 
-      const currentAngleMode = calculatorOutput.dataset.angleMode ?? 'rad';
-      const numericValue = Number(evaluated.N().value);
-      const historyItem = {
+      const historyItem: HistoryItem = {
         input,
         displayed,
-        numeric: numericValue,
-        angleMode: currentAngleMode,
+        angleMode,
       };
       addHistoryItem(historyItem);
       data.history.push(historyItem);
@@ -346,15 +356,12 @@ export function initCalculator(storageKey: string, { drawer, fab, fabClose }: Dr
   }
 
   // Clear history button
-  const clearHistoryBtn = document.getElementById('calculatorClearHistory')!;
   clearHistoryBtn.addEventListener('click', () => {
-    const historyPanel = document.getElementById('history-panel')!;
     historyPanel.innerHTML = '';
     clearHistoryBtn.classList.add('d-none');
 
     const data: CalculatorLocalData = JSON.parse(
-      localStorage.getItem(storageKey) ??
-        JSON.stringify({ ans: null, variable: [], history: [], temp_input: null, isOpen: true }),
+      localStorage.getItem(storageKey) ?? JSON.stringify(DEFAULT_CALCULATOR_DATA),
     );
     data.history = [];
     localStorage.setItem(storageKey, JSON.stringify(data));
@@ -491,8 +498,8 @@ export function initCalculator(storageKey: string, { drawer, fab, fabClose }: Dr
   });
 
   // Symbolic-numeric transformation
-  prepareButton(document.getElementById('displayModeSwitch')!);
-  document.getElementById('displayModeSwitch')?.addEventListener('click', () => {
+  prepareButton(displayModeSwitch);
+  displayModeSwitch.addEventListener('click', () => {
     if (calculatorOutput.dataset.displayMode === 'numeric') {
       calculatorOutput.dataset.displayMode = 'symbolic';
     } else {
@@ -502,8 +509,8 @@ export function initCalculator(storageKey: string, { drawer, fab, fabClose }: Dr
   });
 
   // Degree-radian transformation
-  prepareButton(document.getElementById('angleModeSwitch')!);
-  document.getElementById('angleModeSwitch')!.addEventListener('click', () => {
+  prepareButton(angleModeSwitch);
+  angleModeSwitch.addEventListener('click', () => {
     if (calculatorOutput.dataset.angleMode === 'deg') {
       calculatorOutput.dataset.angleMode = 'rad';
     } else {
@@ -526,7 +533,12 @@ export function initCalculator(storageKey: string, { drawer, fab, fabClose }: Dr
     }
   }
   calculatorInputElement.addEventListener('keydown', (ev) => {
-    if (shouldAutoInsertAns && calculatorInputElement.value.length === 0 && !ev.ctrlKey && !ev.metaKey) {
+    if (
+      shouldAutoInsertAns &&
+      calculatorInputElement.value.length === 0 &&
+      !ev.ctrlKey &&
+      !ev.metaKey
+    ) {
       if (autoAnsKeys.has(ev.key)) {
         calculatorInputElement.insert('\\operatorname{ans}');
       }
@@ -569,45 +581,14 @@ export function initCalculator(storageKey: string, { drawer, fab, fabClose }: Dr
     if (!Array.isArray(json)) {
       return json;
     }
-    const trigFunc = [
-      'Sin',
-      'Cos',
-      'Tan',
-      'Cot',
-      'Sec',
-      'Csc',
-      'Sinh',
-      'Cosh',
-      'Tanh',
-      'Coth',
-      'Sech',
-      'Csch',
-    ];
-    const trigFuncInv = [
-      'Arcsin',
-      'Arccos',
-      'Arctan',
-      'Arctan2',
-      'Acot',
-      'Asec',
-      'Acsc',
-      'Arsinh',
-      'Arcosh',
-      'Artanh',
-      'Arcoth',
-      'Asech',
-      'Acsch',
-    ];
-    let parsedExpr: MathJsonExpression;
-    if (trigFunc.includes(json[0])) {
-      parsedExpr = [json[0], ['Degrees', radianToDegree(json[1])]];
-    } else if (trigFuncInv.includes(json[0])) {
-      parsedExpr = ['Divide', [json[0], radianToDegree(json[1])], ['Degrees', 1]];
-    } else {
-      const [symbol, ...args] = json;
-      parsedExpr = [symbol, ...args.map(radianToDegree)];
+    if (TRIG_FUNCTIONS.has(json[0] as string)) {
+      return [json[0], ['Degrees', radianToDegree(json[1])]];
     }
-    return parsedExpr;
+    if (INVERSE_TRIG_FUNCTIONS.has(json[0] as string)) {
+      return ['Divide', [json[0], radianToDegree(json[1])], ['Degrees', 1]];
+    }
+    const [symbol, ...args] = json;
+    return [symbol, ...args.map(radianToDegree)];
   }
 
   /**
@@ -651,10 +632,7 @@ export function initCalculator(storageKey: string, { drawer, fab, fabClose }: Dr
   function addHistoryItem(dataHistoryItem: HistoryItem) {
     const { input, displayed, angleMode } = dataHistoryItem;
 
-    const historyPanel = document.getElementById('history-panel')!;
-
-    const template = document.getElementById('history-item-template') as HTMLTemplateElement;
-    const clone = document.importNode(template.content, true);
+    const clone = document.importNode(historyTemplate.content, true);
 
     const historyItem = clone.querySelector<HTMLElement>('.history-item')!;
     historyItem.dataset.input = input;
@@ -719,9 +697,7 @@ export function initCalculator(storageKey: string, { drawer, fab, fabClose }: Dr
     });
 
     historyPanel.insertBefore(clone, historyPanel.firstChild);
-
-    const clearHistoryButton = document.getElementById('calculatorClearHistory')!;
-    clearHistoryButton.classList.remove('d-none');
+    clearHistoryBtn.classList.remove('d-none');
   }
 }
 
@@ -758,9 +734,7 @@ function initDrawerUI(
 ) {
   function setIsOpen(value: boolean) {
     const raw = localStorage.getItem(storageKey);
-    const data: CalculatorLocalData = raw
-      ? JSON.parse(raw)
-      : { ans: null, variable: [], history: [], temp_input: null, isOpen: false };
+    const data: CalculatorLocalData = raw ? JSON.parse(raw) : { ...DEFAULT_CALCULATOR_DATA };
     data.isOpen = value;
     localStorage.setItem(storageKey, JSON.stringify(data));
   }
@@ -843,54 +817,55 @@ function initDrawerUI(
 }
 
 export function registerCustomFunctions(ce: InstanceType<typeof ComputeEngine>) {
+  function computePermComb(n: Expression, r: Expression, combination: boolean) {
+    const nVal = n.re;
+    const rVal = r.re;
+    if (Number.isNaN(nVal) || Number.isNaN(rVal)) return ce.error('Invalid input');
+    if (rVal > nVal) return ce.number(0);
+    const nFact = ce.box(['Factorial', n.json]).evaluate();
+    const nrFact = ce.box(['Factorial', n.sub(r).json]).evaluate();
+    if (combination) {
+      const rFact = ce.box(['Factorial', r.json]).evaluate();
+      return nFact.div(rFact.mul(nrFact));
+    }
+    return nFact.div(nrFact);
+  }
+
   ce.declare('nCr', {
     signature: '(n: number, r: number) -> number',
     evaluate([n, r]) {
-      // nCr(n, r) = n! / (r! * (n - r)!)
-      const nVal = n.re;
-      const rVal = r.re;
-      if (Number.isNaN(nVal) || Number.isNaN(rVal)) return ce.error('Invalid input');
-      if (rVal > nVal) return ce.number(0);
-      const nFact = ce.box(['Factorial', n.json]).evaluate();
-      const rFact = ce.box(['Factorial', r.json]).evaluate();
-      const nrFact = ce.box(['Factorial', n.sub(r).json]).evaluate();
-      return nFact.div(rFact.mul(nrFact));
+      return computePermComb(n, r, true);
     },
   });
 
   ce.declare('nPr', {
     signature: '(n: number, r: number) -> number',
     evaluate([n, r]) {
-      // nPr(n, r) = n! / (n - r)!
-      const nVal = n.re;
-      const rVal = r.re;
-      if (Number.isNaN(nVal) || Number.isNaN(rVal)) return ce.error('Invalid input');
-      if (rVal > nVal) return ce.number(0);
-      const nFact = ce.box(['Factorial', n.json]).evaluate();
-      const nrFact = ce.box(['Factorial', n.sub(r).json]).evaluate();
-      return nFact.div(nrFact);
+      return computePermComb(n, r, false);
     },
   });
+
+  function computeStdev(list: Expression, population: boolean) {
+    if (!isTensor(list)) {
+      return ce.error('Input must be a list');
+    }
+    if (list.shape.length !== 1) {
+      return ce.error('Input must be a 1-dimensional list');
+    }
+    const n = list.shape[0];
+    const xs = Array.from(list.each());
+    const mean = xs.reduce((a, b) => a.add(b)).div(n);
+    const divisor = population ? n : n - 1;
+    const variance = xs.reduce((sum, x) => sum.add(x.sub(mean).pow(2)), ce.number(0)).div(divisor);
+    return variance.sqrt();
+  }
 
   ce.declare('stdev', {
     signature: '(xs: list) -> number',
     evaluate([list]) {
-      if (!isTensor(list)) {
-        return ce.error('Input must be a list');
-      }
-
-      if (list.shape.length !== 1) {
-        return ce.error('Input must be a 1-dimensional list');
-      }
-
-      const n = list.shape[0];
-      const xs = Array.from(list.each());
-      const mean = xs.reduce((a, b) => a.add(b)).div(n);
-      const variance = xs.reduce((sum, x) => sum.add(x.sub(mean).pow(2)), ce.number(0)).div(n - 1);
-      return variance.sqrt();
+      return computeStdev(list, false);
     },
   });
-
 
   // we define this here but its not actually usable, because the standard
   // deviation functions are only available as inline shortcuts stdev([#?])
@@ -899,19 +874,7 @@ export function registerCustomFunctions(ce: InstanceType<typeof ComputeEngine>) 
   ce.declare('stdevp', {
     signature: '(xs: list) -> number',
     evaluate([list]) {
-      if (!isTensor(list)) {
-        return ce.error('Input must be a list');
-      }
-
-      if (list.shape.length !== 1) {
-        return ce.error('Input must be a 1-dimensional list');
-      }
-
-      const n = list.shape[0];
-      const xs = Array.from(list.each());
-      const mean = xs.reduce((a, b) => a.add(b)).div(n);
-      const variance = xs.reduce((sum, x) => sum.add(x.sub(mean).pow(2)), ce.number(0)).div(n);
-      return variance.sqrt();
+      return computeStdev(list, true);
     },
   });
 }
