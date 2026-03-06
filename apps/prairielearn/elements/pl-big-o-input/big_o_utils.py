@@ -37,49 +37,61 @@ def grade_o_expression(
         return grade_blank_expression(a_true, a_sub)
 
     sym_true, sym_true_source = psu.convert_string_to_sympy_with_source(
-        a_true, variables, allow_complex=False, allow_trig_functions=False
+        a_true,
+        variables,
+        allow_complex=False,
+        allow_trig_functions=False,
+        assumptions={var: {"positive": True} for var in variables},
     )
 
     sym_sub, sym_sub_source = psu.convert_string_to_sympy_with_source(
-        a_sub, variables, allow_complex=False, allow_trig_functions=False
+        a_sub,
+        variables,
+        allow_complex=False,
+        allow_trig_functions=False,
+        assumptions={var: {"positive": True} for var in variables},
     )
+
+    # print(f"true {sym_true_source}, sub {sym_sub_source}")
 
     if sym_true_source == sym_sub_source:
         return (1, CORRECT_UNCONDITIONAL_FEEDBACK)
 
     try:
         if sym_true.equals(sym_sub):
-            return (1.0, CORRECT_UNCONDITIONAL_FEEDBACK)
+            if len(variables) == 1:
+                return (1.0, CORRECT_COMPLEX_FEEDBACK)
+            else:
+                return (1, CORRECT_UNCONDITIONAL_FEEDBACK)
 
-        if sympy.limit(sym_sub, sympy.Symbol(variables[0]), sympy.oo) < sympy.sympify(
-            0
-        ):
-            return (0.0, NEGATIVE_FEEDBACK)
-
-        limit = sympy.Expr()
-        best_ans = 1.0
-        feedback = CONSTANT_FACTORS_FEEDBACK
         for var in variables:
-            limit = sympy.limit(sym_true / sym_sub, sympy.Symbol(var), sympy.oo)
-            
-            if limit < sympy.sympify(0):
+            if sympy.limit(
+                sym_sub, sympy.Symbol(var, positive=True), sympy.oo
+            ) < sympy.sympify(0):
                 return (0.0, NEGATIVE_FEEDBACK)
-            elif limit == sympy.sympify(1) and best_ans > 0.5:
-                best_ans = 0.5
-                feedback = LOWER_ORDER_TERMS_FEEDBACK
-            elif limit == sympy.sympify(0) and best_ans > 0.25:
-                best_ans = 0.25
-                feedback = TOO_LOOSE_FEEDBACK
-            elif limit == sympy.oo and best_ans > 0:
-                best_ans = 0
-                feedback = INCORRECT_FEEDBACK
-        
-        if (best_ans == 1.0):
-            best_ans = 0.5
-            feedback = CONSTANT_FACTORS_FEEDBACK
-        return (best_ans, feedback)
 
-    except TypeError:
+        limit_res = []
+        for var in variables:
+            limit = sympy.limit(
+                sym_true / sym_sub, sympy.Symbol(var, positive=True), sympy.oo
+            )
+            limit_res.append(limit)
+            print(f" for var {var}, limit {limit}")
+
+        if any(res < sympy.sympify(0) for res in limit_res):
+            return (0.0, NEGATIVE_FEEDBACK)
+        elif all(res == sympy.sympify(1) for res in limit_res):
+            return (0.5, LOWER_ORDER_TERMS_FEEDBACK)
+        elif any(res == sympy.sympify(0) for res in limit_res):
+            return (0.25, TOO_LOOSE_FEEDBACK)
+        elif any(res == sympy.oo for res in limit_res):
+            return (0, INCORRECT_FEEDBACK)
+        else:
+            return (0.5, CONSTANT_FACTORS_FEEDBACK)
+    # There's a chance that some fringe function inputs cannot have their sign evalutated
+    # We need to catch NotImplementedError because of this.
+    except (TypeError, NotImplementedError):
+        # raise e
         return (0.0, TYPE_ERROR_FEEDBACK)
 
 
