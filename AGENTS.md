@@ -159,7 +159,6 @@ When writing tests:
 - In e2e tests, don't use CSS class selectors (e.g. `page.locator('.my-class')`). Prefer Playwright's recommended locators: `getByRole`, `getByText`, `getByTestId`, `getByLabel`. Add `data-testid` attributes or `aria-label` to page components when needed.
 - Don't add comments that narrate what the code already says (e.g., `// Click the button` before a `.click()` call). Only add comments when the intent isn't obvious from reading the code.
 - Prefer using the existing test course and its course instances for testing. Don't create new courses or course instances just to get a clean slate; instead, use transaction rollbacks or wipe the state between tests.
-- Playwright e2e tests run fully in parallel (`fullyParallel: true`). Each test must be self-contained — set up its own state (users, enrollments, etc.) rather than relying on shared mutable state from `beforeAll`. Use the `courseInstance` fixture for the default course instance. Don't use module-level variables to share state between tests.
 
 ### Rendering HTML
 
