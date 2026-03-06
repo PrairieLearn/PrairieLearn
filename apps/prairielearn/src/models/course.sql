@@ -84,7 +84,7 @@ WITH
       course_id
   )
 SELECT
-  c.*,
+  to_jsonb(c) AS course,
   hr.course_role
 FROM
   highest_role AS hr

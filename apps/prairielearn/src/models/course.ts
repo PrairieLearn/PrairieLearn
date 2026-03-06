@@ -16,17 +16,19 @@ import { run } from '@prairielearn/run';
 import { calculateCourseRolePermissions } from '../lib/authz-data-lib.js';
 import {
   type Course,
-  CoursePermissionSchema,
   CourseSchema,
   type EnumCourseRole,
+  EnumCourseRoleSchema,
 } from '../lib/db-types.js';
 
 import { insertAuditLog } from './audit-log.js';
+import z from 'zod';
 
 const sql = loadSqlEquiv(import.meta.url);
 
-const CourseWithPermissionsSchema = CourseSchema.extend({
-  course_role: CoursePermissionSchema.shape.course_role.unwrap(),
+const CourseWithPermissionsSchema = z.object({
+  course: CourseSchema,
+  course_role: EnumCourseRoleSchema,
 });
 export type CourseWithPermissions = Course & {
   permissions_course: {
@@ -157,7 +159,7 @@ export async function selectCoursesWithStaffAccess({
       // Administrators have Owner permission in all courses, so we can skip the
       // complex query and just return all courses
       const courses = await queryRows(sql.select_all_courses, CourseSchema);
-      return courses.map((course) => ({ ...course, course_role: 'Owner' as const }));
+      return courses.map((course) => ({ course, course_role: 'Owner' as EnumCourseRole }));
     }
 
     return await queryRows(
@@ -167,7 +169,7 @@ export async function selectCoursesWithStaffAccess({
     );
   });
 
-  return rawCourses.map(({ course_role, ...course }) => ({
+  return rawCourses.map(({ course_role, course }) => ({
     ...course,
     permissions_course: {
       course_role,
