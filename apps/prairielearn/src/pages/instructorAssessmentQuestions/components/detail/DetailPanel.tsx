@@ -26,6 +26,7 @@ export function DetailPanel({
   currentChangeQid,
   currentAssessmentId,
   isPickingQuestion,
+  pickerError,
 }: {
   selectedItem: SelectedItem;
   zones: ZoneAssessmentForm[];
@@ -39,6 +40,7 @@ export function DetailPanel({
   currentChangeQid?: string;
   currentAssessmentId: string;
   isPickingQuestion?: boolean;
+  pickerError: Error | null;
 }) {
   if (selectedItem == null) {
     return null;
@@ -153,6 +155,7 @@ export function DetailPanel({
           courseInstanceId={state.courseInstanceId}
           currentAssessmentId={currentAssessmentId}
           isPickingQuestion={isPickingQuestion}
+          pickerError={pickerError}
           onQuestionSelected={actions.onQuestionPicked}
           onRemoveQuestionByQid={actions.onRemoveQuestionByQid}
         />

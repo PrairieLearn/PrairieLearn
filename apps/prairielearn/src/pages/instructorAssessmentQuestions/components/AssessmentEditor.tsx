@@ -364,6 +364,8 @@ function AssessmentEditorInner({
       try {
         questionData = await questionByQidMutation.mutateAsync(qid);
       } catch {
+        // mutateAsync re-throws, but the error is stored in mutation.error
+        // and surfaced via pickerError. We just need to bail out here.
         return;
       }
       if (selectedItemRef.current !== selectedItem) return;
@@ -435,6 +437,8 @@ function AssessmentEditorInner({
         try {
           questionData = await questionByQidMutation.mutateAsync(qid);
         } catch {
+          // mutateAsync re-throws, but the error is stored in mutation.error
+          // and surfaced via pickerError. We just need to bail out here.
           return;
         }
         if (selectedItemRef.current !== selectedItem) return;
@@ -504,6 +508,8 @@ function AssessmentEditorInner({
     try {
       questionData = await questionByQidMutation.mutateAsync(qid);
     } catch {
+      // mutateAsync re-throws, but the error is stored in mutation.error
+      // and surfaced via pickerError. We just need to bail out here.
       return;
     }
     if (selectedItemRef.current !== selectedItem) return;
@@ -1228,6 +1234,7 @@ function AssessmentEditorInner({
                 currentChangeQid={currentChangeQid}
                 currentAssessmentId={assessment.id}
                 isPickingQuestion={questionByQidMutation.isPending}
+                pickerError={questionByQidMutation.error}
               />
             }
             onClose={() => setSelectedItem(null)}

@@ -19,6 +19,7 @@ export function QuestionPickerPanel({
   disabledQids,
   currentChangeQid,
   isPickingQuestion,
+  pickerError,
   courseId,
   courseInstanceId,
   currentAssessmentId,
@@ -34,6 +35,7 @@ export function QuestionPickerPanel({
   courseInstanceId: string;
   currentAssessmentId?: string;
   isPickingQuestion?: boolean;
+  pickerError: Error | null;
   onQuestionSelected: (qid: string) => void;
   onRemoveQuestionByQid: (qid: string) => void;
 }) {
@@ -214,6 +216,12 @@ export function QuestionPickerPanel({
         <div className="alert alert-warning small mx-2 mt-2 mb-0" role="alert">
           <i className="bi bi-info-circle me-1" aria-hidden="true" />
           Shared questions from other courses are not yet searchable here.
+        </div>
+      )}
+      {pickerError && (
+        <div className="alert alert-danger small mx-2 mt-2 mb-0" role="alert">
+          <i className="bi bi-exclamation-triangle-fill me-1" aria-hidden="true" />
+          {pickerError.message || 'Failed to add question. Please try again.'}
         </div>
       )}
       <div className="px-2 py-1 bg-light border-bottom text-muted small">
