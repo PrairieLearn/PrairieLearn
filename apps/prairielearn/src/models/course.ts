@@ -1,6 +1,7 @@
 import assert from 'assert';
 
 import { execa } from 'execa';
+import z from 'zod';
 
 import * as error from '@prairielearn/error';
 import {
@@ -22,7 +23,6 @@ import {
 } from '../lib/db-types.js';
 
 import { insertAuditLog } from './audit-log.js';
-import z from 'zod';
 
 const sql = loadSqlEquiv(import.meta.url);
 
