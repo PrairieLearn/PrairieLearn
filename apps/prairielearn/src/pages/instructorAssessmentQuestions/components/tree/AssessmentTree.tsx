@@ -23,7 +23,7 @@ export function AssessmentTree({
   isAllExpanded: boolean;
   onViewTypeChange: (viewType: ViewType) => void;
   onToggleExpandCollapse: () => void;
-  editControls?: ReactNode;
+  editControls: ReactNode;
 }) {
   const { editMode, viewType } = state;
   return (

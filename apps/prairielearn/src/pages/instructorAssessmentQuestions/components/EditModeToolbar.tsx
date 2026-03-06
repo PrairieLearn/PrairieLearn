@@ -70,7 +70,7 @@ export function EditModeToolbar({
   setEditMode: (editMode: boolean) => void;
   saveButtonDisabled: boolean;
   saveButtonDisabledReason?: string;
-  onSubmit?: () => void;
+  onSubmit: () => void;
   onCancel: () => void;
 }) {
   if (!editMode) {

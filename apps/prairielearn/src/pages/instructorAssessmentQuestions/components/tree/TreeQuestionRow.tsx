@@ -200,8 +200,8 @@ export function TreeQuestionRow({
   questionData: StaffAssessmentQuestionRow | null;
   state: TreeState;
   isSelected: boolean;
-  draggableAttributes?: DraggableAttributes;
-  draggableListeners?: DraggableSyntheticListeners;
+  draggableAttributes: DraggableAttributes;
+  draggableListeners: DraggableSyntheticListeners;
   onClick: () => void;
   onDelete?: () => void;
 }) {
