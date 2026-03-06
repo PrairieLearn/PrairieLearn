@@ -98,7 +98,9 @@ export function StudentInstanceQuestion({
         : ''}
     `,
     postContent: hasCalculator
-      ? CalculatorDrawer({ storageKey: `calculator-${resLocals.assessment.uuid}` })
+      ? CalculatorDrawer({
+          storageKey: `calculator-${resLocals.assessment.uuid}-${resLocals.assessment_instance.id}`,
+        })
       : '',
     content: html`
       ${userCanDeleteAssessmentInstance ? RegenerateInstanceAlert() : ''}

@@ -507,10 +507,23 @@ async function syncAssessmentTools(
   assessments: CourseInstanceData['assessments'],
   nameToIdMap: Record<string, string> | null,
 ) {
-  const toolRows: (
-    | Pick<AssessmentTool, 'assessment_id' | 'tool' | 'enabled' | 'settings'>
-    | Pick<AssessmentTool, 'zone_id' | 'tool' | 'enabled' | 'settings'>
-  )[] = [];
+  interface AssessmentLevelToolRow {
+    assessment_id: AssessmentTool['assessment_id'];
+    zone_id?: never;
+    tool: AssessmentTool['tool'];
+    enabled: AssessmentTool['enabled'];
+    settings: AssessmentTool['settings'];
+  }
+
+  interface ZoneLevelToolRow {
+    zone_id: AssessmentTool['zone_id'];
+    assessment_id?: never;
+    tool: AssessmentTool['tool'];
+    enabled: AssessmentTool['enabled'];
+    settings: AssessmentTool['settings'];
+  }
+
+  const toolRows: (AssessmentLevelToolRow | ZoneLevelToolRow)[] = [];
   const assessmentIds: string[] = [];
   const assessmentsWithZoneTools: { assessmentId: string; zones: AssessmentJson['zones'] }[] = [];
 
@@ -533,7 +546,8 @@ async function syncAssessmentTools(
     }
 
     const zones = assessment.data?.zones;
-    if (zones?.some((zone) => zone.tools)) {
+    if (!zones) continue;
+    if (zones.some((zone) => zone.tools)) {
       assessmentsWithZoneTools.push({ assessmentId, zones });
     }
   }

@@ -13,7 +13,6 @@ import { IdSchema } from '@prairielearn/zod';
 
 import {
   type Assessment,
-  type AssessmentTool,
   AssessmentModuleSchema,
   AssessmentSchema,
   AssessmentSetSchema,
@@ -79,17 +78,29 @@ export type AssessmentRow = z.infer<typeof AssessmentRowSchema>;
  * configuration on a per-tool basis: if a zone defines a tool (even as
  * disabled), the assessment-level row for that tool is ignored.
  */
+const EnabledAssessmentToolSchema = z.object({
+  tool: AssessmentToolSchema.shape.tool,
+  settings: AssessmentToolSchema.shape.settings,
+});
+
 export async function selectEnabledAssessmentTools({
   assessment_id,
   zone_id,
 }: {
   assessment_id: string;
-  zone_id: string;
-}): Promise<AssessmentTool[]> {
+  zone_id?: string | null;
+}) {
+  if (zone_id == null) {
+    return await queryRows(
+      sql.select_enabled_assessment_tools_no_zone,
+      { assessment_id },
+      EnabledAssessmentToolSchema,
+    );
+  }
   return await queryRows(
     sql.select_enabled_assessment_tools,
     { assessment_id, zone_id },
-    AssessmentToolSchema,
+    EnabledAssessmentToolSchema,
   );
 }
 

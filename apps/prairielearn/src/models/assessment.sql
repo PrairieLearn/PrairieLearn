@@ -51,7 +51,8 @@ WITH
       zone_id = $zone_id
   )
 SELECT
-  *
+  tool,
+  settings
 FROM
   assessment_tools
 WHERE
@@ -70,6 +71,17 @@ WHERE
       )
     )
   );
+
+-- BLOCK select_enabled_assessment_tools_no_zone
+SELECT
+  tool,
+  settings
+FROM
+  assessment_tools
+WHERE
+  assessment_id = $assessment_id
+  AND zone_id IS NULL
+  AND enabled = TRUE;
 
 -- BLOCK select_assessments_for_course_instance
 WITH

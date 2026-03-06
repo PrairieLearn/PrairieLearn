@@ -39,7 +39,13 @@ const DEFAULT_CALCULATOR_DATA: CalculatorLocalData = {
 
 function getCalculatorData(storageKey: string): CalculatorLocalData {
   const raw = localStorage.getItem(storageKey);
-  return raw ? JSON.parse(raw) : { ...DEFAULT_CALCULATOR_DATA };
+  if (!raw) return { ...DEFAULT_CALCULATOR_DATA };
+  try {
+    return JSON.parse(raw);
+  } catch {
+    localStorage.removeItem(storageKey);
+    return { ...DEFAULT_CALCULATOR_DATA };
+  }
 }
 
 function setCalculatorData(storageKey: string, data: CalculatorLocalData) {
@@ -306,6 +312,8 @@ export function initCalculator(storageKey: string, { drawer, fab, fabClose }: Dr
 
     if (!result) {
       calculatorInputContainer.classList.add('error');
+      calculatorOutput.value = '';
+      copyButton.onclick = null;
       return;
     }
 
@@ -314,6 +322,8 @@ export function initCalculator(storageKey: string, { drawer, fab, fabClose }: Dr
     if (hasError(evaluated.json)) {
       console.error('Error in evaluated expression:', evaluated.toString());
       calculatorInputContainer.classList.add('error');
+      calculatorOutput.value = '';
+      copyButton.onclick = null;
       return;
     }
 
@@ -559,7 +569,6 @@ export function initCalculator(storageKey: string, { drawer, fab, fabClose }: Dr
     ...calculatorInputElement.inlineShortcuts,
     ans: '\\operatorname{ans}',
     stdev: '\\operatorname{stdev}([#?])',
-    stdevp: '\\operatorname{stdevp}([#?])',
     nCr: '\\operatorname{nCr}(#?,#?)',
     nPr: '\\operatorname{nPr}(#?,#?)',
     mean: '\\operatorname{mean}([#?])',
@@ -871,10 +880,8 @@ export function registerCustomFunctions(ce: InstanceType<typeof ComputeEngine>) 
     },
   });
 
-  // we define this here but its not actually usable, because the standard
-  // deviation functions are only available as inline shortcuts stdev([#?])
-  // and stdevp([#?]), but after you type stdev it turns into stdev([#?]),
-  // so you can never actually call stdevp
+  // stdevp is only accessible via the button UI, not as an inline shortcut,
+  // because typing "stdev" triggers the stdev shortcut before "p" can be typed
   ce.declare('stdevp', {
     signature: '(xs: list) -> number',
     evaluate([list]) {
@@ -952,10 +959,10 @@ onDocumentReady(() => {
 
   function initIfNeeded() {
     if (!initialized) {
-      initialized = true;
       try {
         // drawer and fab are non-null: guarded above with `if (!drawer || !fab) return`
         initCalculator(storageKey, { drawer: drawer!, fab: fab!, fabClose });
+        initialized = true;
       } catch (e) {
         console.error('Failed to initialize calculator:', e);
       }

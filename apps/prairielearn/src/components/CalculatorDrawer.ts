@@ -102,14 +102,14 @@ export function CalculatorDrawer({ storageKey }: { storageKey: string }): HtmlSa
                   class="calculator-action-btn history-copy-btn"
                   title="Copy to clipboard"
                 >
-                  <i class="fa-solid fa-copy"></i>
+                  <i class="bi bi-copy"></i>
                 </button>
                 <button
                   type="button"
                   class="calculator-action-btn history-insert-btn"
                   title="Insert into input"
                 >
-                  <i class="fa-solid fa-arrow-down"></i>
+                  <i class="bi bi-arrow-down"></i>
                 </button>
               </div>
               <div class="history-row history-output d-flex align-items-center gap-2 border-top">
@@ -123,14 +123,14 @@ export function CalculatorDrawer({ storageKey }: { storageKey: string }): HtmlSa
                   class="calculator-action-btn history-copy-btn"
                   title="Copy to clipboard"
                 >
-                  <i class="fa-solid fa-copy"></i>
+                  <i class="bi bi-copy"></i>
                 </button>
                 <button
                   type="button"
                   class="calculator-action-btn history-insert-btn"
                   title="Insert into input"
                 >
-                  <i class="fa-solid fa-arrow-down"></i>
+                  <i class="bi bi-arrow-down"></i>
                 </button>
               </div>
             </div>
@@ -157,7 +157,7 @@ export function CalculatorDrawer({ storageKey }: { storageKey: string }): HtmlSa
             data-bs-delay="300"
             data-bs-title="Clear input"
           >
-            <i class="fa-solid fa-xmark"></i>
+            <i class="bi bi-x-lg"></i>
           </button>
         </div>
         <div
@@ -181,7 +181,7 @@ export function CalculatorDrawer({ storageKey }: { storageKey: string }): HtmlSa
             data-bs-delay="300"
             data-bs-title="Copy this output"
           >
-            <i class="fa-solid fa-copy"></i>
+            <i class="bi bi-copy"></i>
           </button>
         </div>
 
@@ -259,7 +259,7 @@ export function CalculatorDrawer({ storageKey }: { storageKey: string }): HtmlSa
               type="button"
               class="col-nav col-nav-left flex-shrink-0 align-items-center justify-content-center"
             >
-              <i class="fa-solid fa-chevron-left"></i>
+              <i class="bi bi-chevron-left"></i>
             </button>
             <div class="col-functions d-flex flex-column flex-shrink-0">
               <div class="btn-row d-flex">
@@ -317,7 +317,7 @@ export function CalculatorDrawer({ storageKey }: { storageKey: string }): HtmlSa
               type="button"
               class="col-nav col-nav-right flex-shrink-0 align-items-center justify-content-center"
             >
-              <i class="fa-solid fa-chevron-right"></i>
+              <i class="bi bi-chevron-right"></i>
             </button>
             <div class="col-extras d-flex flex-column flex-shrink-0">
               <div class="btn-row d-flex">
@@ -330,14 +330,14 @@ export function CalculatorDrawer({ storageKey }: { storageKey: string }): HtmlSa
               </div>
               <div class="btn-row d-flex">
                 <button name="left" type="button" class="btn btn-light">
-                  <i class="fa-solid fa-left-long"></i></button
+                  <i class="bi bi-arrow-left"></i></button
                 ><button name="right" type="button" class="btn btn-light">
-                  <i class="fa-solid fa-right-long"></i>
+                  <i class="bi bi-arrow-right"></i>
                 </button>
               </div>
               <div class="btn-row d-flex">
                 <button name="backspace" type="button" class="btn btn-light">
-                  <i class="fa-solid fa-delete-left"></i></button
+                  <i class="bi bi-backspace"></i></button
                 ><button name="calculate" type="button" class="btn btn-success">
                   <i class="bi bi-arrow-return-left"></i>
                 </button>
@@ -383,12 +383,12 @@ export function CalculatorDrawer({ storageKey }: { storageKey: string }): HtmlSa
               <button data-key="m" type="button" class="btn btn-light btn-key">m</button>
               <button name="assign" type="button" class="btn btn-light">$:=$</button>
               <button name="backspace" type="button" class="btn btn-light">
-                <i class="fa-solid fa-delete-left"></i>
+                <i class="bi bi-backspace"></i>
               </button>
             </div>
             <div id="abc-row-4" class="btn-row d-flex justify-content-center">
               <button name="shift" type="button" class="btn btn-light btn-wide">
-                <i class="fa-solid fa-arrow-up"></i>
+                <i class="bi bi-arrow-up"></i>
               </button>
               <button name="lpar" type="button" class="btn btn-light">(</button>
               <button name="rpar" type="button" class="btn btn-light">)</button>
@@ -397,10 +397,10 @@ export function CalculatorDrawer({ storageKey }: { storageKey: string }): HtmlSa
               <button name="factorial" type="button" class="btn btn-light">$!$</button>
               <button name="pi" type="button" class="btn btn-light">$\\pi$</button>
               <button name="left" type="button" class="btn btn-light">
-                <i class="fa-solid fa-left-long"></i>
+                <i class="bi bi-arrow-left"></i>
               </button>
               <button name="right" type="button" class="btn btn-light">
-                <i class="fa-solid fa-right-long"></i>
+                <i class="bi bi-arrow-right"></i>
               </button>
               <button name="calculate" type="button" class="btn btn-success btn-wide">
                 <i class="bi bi-arrow-return-left"></i>
@@ -416,7 +416,7 @@ export function CalculatorDrawer({ storageKey }: { storageKey: string }): HtmlSa
               type="button"
               class="col-nav col-nav-left flex-shrink-0 align-items-center justify-content-center"
             >
-              <i class="fa-solid fa-chevron-left"></i>
+              <i class="bi bi-chevron-left"></i>
             </button>
             <div class="col-switchable d-flex flex-row">
               <div class="col-trig d-flex flex-column flex-shrink-0">
@@ -469,12 +469,12 @@ export function CalculatorDrawer({ storageKey }: { storageKey: string }): HtmlSa
               type="button"
               class="col-nav col-nav-right flex-shrink-0 align-items-center justify-content-center"
             >
-              <i class="fa-solid fa-chevron-right"></i>
+              <i class="bi bi-chevron-right"></i>
             </button>
             <div class="col-action d-flex flex-column flex-shrink-0">
               <div class="btn-row d-flex">
                 <button name="backspace" type="button" class="btn btn-light">
-                  <i class="fa-solid fa-delete-left"></i>
+                  <i class="bi bi-backspace"></i>
                 </button>
               </div>
               <div class="btn-row d-flex">
