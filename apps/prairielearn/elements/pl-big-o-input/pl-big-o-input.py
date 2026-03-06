@@ -81,7 +81,7 @@ def prepare(element_html: str, data: pl.QuestionData) -> None:
         pl.get_string_attrib(element, "variables", VARIABLES_DEFAULT)
     )
 
-    if len(single_variable[0]) != 0 and len(variables) != 0:
+    if len(single_variable[0]) != 0 and len(variables[0]) != 0:
         raise ValueError("variable is deprecated, use only 'variables' property")
     if len(variables[0]) == 0:
         variables = single_variable
