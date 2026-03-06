@@ -3,7 +3,9 @@ import { IdSchema } from '@prairielearn/zod';
 
 import { dangerousFullSystemAuthz } from '../../lib/authz-data-lib.js';
 import { selectAssessmentByTid } from '../../models/assessment.js';
+import { selectCourseInstanceById } from '../../models/course-instances.js';
 import { ensureUncheckedEnrollment } from '../../models/enrollment.js';
+import { syncCourse } from '../helperCourse.js';
 import { getOrCreateUser } from '../utils/auth.js';
 
 import { expect, test } from './fixtures.js';
@@ -12,11 +14,15 @@ const sql = sqldb.loadSqlEquiv(import.meta.url);
 
 const STUDENT = { uid: 'e2e_rubric_student@test.com', name: 'E2E Rubric Student', uin: 'E2E001' };
 
+let courseInstanceId: string;
 let assessmentId: string;
 
 test.describe('Manual grading rubric submission panel update', () => {
-  test.beforeAll(async ({ courseInstance }) => {
+  test.beforeAll(async ({ testCoursePath }) => {
+    await syncCourse(testCoursePath);
+
     const student = await getOrCreateUser(STUDENT);
+    const courseInstance = await selectCourseInstanceById('1');
 
     await ensureUncheckedEnrollment({
       userId: student.id,
@@ -28,22 +34,19 @@ test.describe('Manual grading rubric submission panel update', () => {
 
     const assessment = await selectAssessmentByTid({
       tid: 'hw9-internalExternalManual',
-      course_instance_id: courseInstance.id,
+      course_instance_id: '1',
     });
     assessmentId = assessment.id;
+    courseInstanceId = '1';
   });
 
-  test('submission panel updates after rubric settings change', async ({
-    page,
-    baseURL,
-    courseInstance,
-  }) => {
+  test('submission panel updates after rubric settings change', async ({ page, baseURL }) => {
     await page.context().addCookies([
       { name: 'pl2_requested_uid', value: STUDENT.uid, url: baseURL },
       { name: 'pl2_requested_data_changed', value: 'true', url: baseURL },
     ]);
 
-    await page.goto(`/pl/course_instance/${courseInstance.id}/assessments`);
+    await page.goto(`/pl/course_instance/${courseInstanceId}/assessments`);
     await page.getByRole('link', { name: 'Homework for Internal, External, Manual' }).click();
     await page
       .getByRole('link', { name: 'Manual Grading: Fibonacci function, file upload' })
@@ -80,7 +83,7 @@ test.describe('Manual grading rubric submission panel update', () => {
       IdSchema,
     );
 
-    const manualGradingIQUrl = `/pl/course_instance/${courseInstance.id}/instructor/assessment/${assessmentId}/manual_grading/instance_question/${iqId}`;
+    const manualGradingIQUrl = `/pl/course_instance/${courseInstanceId}/instructor/assessment/${assessmentId}/manual_grading/instance_question/${iqId}`;
     await page.goto(manualGradingIQUrl);
 
     await expect(page.locator('[data-testid="submission-status"] .badge').first()).toContainText(
