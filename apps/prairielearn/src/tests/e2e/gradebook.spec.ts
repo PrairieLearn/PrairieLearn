@@ -41,6 +41,7 @@ let assessmentLabel: string;
  * Returns the assessment label for use in tests.
  */
 async function createTestData(courseInstanceId: string): Promise<string> {
+  await sqldb.execute(sql.clear_assessment_instances, { course_instance_id: courseInstanceId });
   await sqldb.execute(sql.clear_enrollments, { course_instance_id: courseInstanceId });
 
   const assessment = await sqldb.queryRow(

@@ -79,7 +79,7 @@ export const test = base.extend<TestFixtures, WorkerFixtures>({
   ],
 
   courseInstance: [
-    async ({ testCoursePath }, use) => {
+    async ({ testCoursePath, workerPort: _workerPort }, use) => {
       await syncCourse(testCoursePath);
 
       const course = await selectCourseByShortName('QA 101');
