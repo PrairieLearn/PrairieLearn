@@ -8,6 +8,7 @@ import type {
   StaffCourse,
   StaffCourseInstance,
   StaffTag,
+  StaffTopic,
 } from '../../../lib/client/safe-db-types.js';
 import type { EnumAssessmentType } from '../../../lib/db-types.js';
 import type { QuestionPointsJson, ZoneAssessmentJson } from '../../../schemas/infoAssessment.js';
@@ -20,6 +21,7 @@ import type {
   ZoneQuestionBlockForm,
 } from '../types.js';
 
+export type QuestionMetadataMap = Partial<Record<string, StaffAssessmentQuestionRow>>;
 /**
  * Compresses an array of points by collapsing consecutive runs.
  * e.g. [10, 10, 10, 5, 5] → "10×3, 5, 5"
@@ -477,7 +479,7 @@ export function buildQuestionMetadata(opts: {
  */
 export function getSharedTags(
   alternatives: { id: string }[],
-  questionMetadata: Partial<Record<string, StaffAssessmentQuestionRow>>,
+  questionMetadata: QuestionMetadataMap,
 ): StaffTag[] {
   const tagSets = alternatives
     .filter((alt) => alt.id && questionMetadata[alt.id]?.tags)
@@ -494,4 +496,20 @@ export function getSharedTags(
   if (!firstTaggedAlt) return [];
   const firstTags = questionMetadata[firstTaggedAlt.id]!.tags!;
   return firstTags.filter((t) => intersection.has(t.name));
+}
+
+/**
+ * Returns the topic shared by all alternatives in an alt group, or null if they differ.
+ */
+export function getSharedTopic(
+  alternatives: { id: string }[],
+  questionMetadata: QuestionMetadataMap,
+): StaffTopic | null {
+  const topics = alternatives
+    .filter((alt) => alt.id && questionMetadata[alt.id])
+    .map((alt) => questionMetadata[alt.id]!.topic);
+  if (topics.length === 0) return null;
+  const firstName = topics[0].name;
+  if (topics.every((t) => t.name === firstName)) return topics[0];
+  return null;
 }

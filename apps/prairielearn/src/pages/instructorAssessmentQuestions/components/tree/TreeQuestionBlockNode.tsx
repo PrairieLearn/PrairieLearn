@@ -7,13 +7,14 @@ import { run } from '@prairielearn/run';
 import { OverlayTrigger } from '@prairielearn/ui';
 
 import type { TreeActions, TreeState, ZoneQuestionBlockForm } from '../../types.js';
-import { getSharedTags, hasPointsMismatch } from '../../utils/questions.js';
+import { getSharedTags, getSharedTopic, hasPointsMismatch } from '../../utils/questions.js';
 
 import { ChangeIndicatorBadges } from './ChangeIndicatorBadges.js';
 import { CollapseToggleButton } from './CollapseToggleButton.js';
 import { DragHandle } from './DragHandle.js';
 import { SortableAlternativeRow } from './SortableAlternativeRow.js';
 import { PointsBadge, TreeQuestionRow } from './TreeQuestionRow.js';
+import { WarningIndicator } from './WarningIndicator.js';
 import { makeDraggableStyle } from './dragUtils.js';
 
 /**
@@ -180,18 +181,10 @@ export function TreeQuestionBlockNode({
               return `Choose ${choose} of ${alternativeCount}`;
             })}
             {pointsMismatch && (
-              <OverlayTrigger
-                placement="top"
-                tooltip={{
-                  props: { id: `points-mismatch-${zoneQuestionBlock.trackingId}` },
-                  body: 'Alternatives have different point values',
-                }}
-              >
-                <i
-                  className="bi bi-exclamation-triangle-fill text-warning ms-1"
-                  aria-hidden="true"
-                />
-              </OverlayTrigger>
+              <WarningIndicator
+                tooltipId={`points-mismatch-${zoneQuestionBlock.trackingId}`}
+                body="Alternatives have different point values"
+              />
             )}
             <ChangeIndicatorBadges
               trackingId={zoneQuestionBlock.trackingId}
@@ -220,27 +213,32 @@ export function TreeQuestionBlockNode({
             const sharedTags = getSharedTags(alternatives, questionMetadata);
             if (sharedTags.length === 0) return null;
             return (
-              <div className="d-flex flex-wrap gap-1 mt-1">
+              <div className="d-flex flex-wrap align-items-center gap-1 mt-1">
                 {sharedTags.map((tag) => (
                   <span key={tag.name} className={`badge color-${tag.color}`}>
                     {tag.name}
                   </span>
                 ))}
+                <OverlayTrigger
+                  placement="top"
+                  tooltip={{
+                    props: { id: `shared-tags-${zoneQuestionBlock.trackingId}` },
+                    body: 'Tags shared across all alternatives',
+                  }}
+                >
+                  <i className="bi bi-question-circle text-muted" aria-hidden="true" />
+                </OverlayTrigger>
               </div>
             );
           })}
         </div>
         {run(() => {
           if (!alternatives || alternatives.length === 0) return null;
-          const topics = alternatives
-            .map((alt) => (alt.id ? questionMetadata[alt.id]?.topic : null))
-            .filter(Boolean);
-          if (topics.length !== alternatives.length) return null;
-          const first = topics[0]!;
-          if (!topics.every((t) => t!.name === first.name)) return null;
+          const topic = getSharedTopic(alternatives, questionMetadata);
+          if (!topic) return null;
           return (
             <div className="ms-2 me-2">
-              <span className={`badge color-${first.color}`}>{first.name}</span>
+              <span className={`badge color-${topic.color}`}>{topic.name}</span>
             </div>
           );
         })}
