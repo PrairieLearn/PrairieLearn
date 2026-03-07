@@ -105,6 +105,31 @@ WITH
       user_ids
       JOIN users AS u ON (u.id = user_ids.user_id)
   ),
+  -- Pre-compute team member UIDs to avoid a correlated subquery in user_scores
+  team_member_uids AS (
+    SELECT
+      s.assessment_instance_id,
+      s.user_id,
+      jsonb_agg(
+        jsonb_build_object('uid', ou.uid, 'enrollment_id', e.id)
+      ) AS uid_other_users_group
+    FROM
+      course_scores AS s
+      JOIN team_users AS ogu ON (
+        ogu.team_id = s.team_id
+        AND ogu.user_id != s.user_id
+      )
+      JOIN course_users AS ou ON (ou.id = ogu.user_id)
+      LEFT JOIN enrollments AS e ON (
+        ou.id = e.user_id
+        AND e.course_instance_id = $course_instance_id
+      )
+    WHERE
+      s.team_id IS NOT NULL
+    GROUP BY
+      s.assessment_instance_id,
+      s.user_id
+  ),
   user_scores AS (
     -- Aggregate scores for each user
     SELECT
@@ -117,30 +142,16 @@ WITH
           'assessment_instance_id',
           s.assessment_instance_id,
           'uid_other_users_group',
-          COALESCE(
-            (
-              SELECT
-                jsonb_agg(
-                  jsonb_build_object('uid', ou.uid, 'enrollment_id', e.id)
-                )
-              FROM
-                team_users AS ogu
-                LEFT JOIN course_users AS ou ON (ou.id = ogu.user_id)
-                LEFT JOIN enrollments AS e ON (
-                  ou.id = e.user_id
-                  AND e.course_instance_id = $course_instance_id
-                )
-              WHERE
-                ogu.team_id = s.team_id
-                AND ogu.user_id != u.id
-            ),
-            '[]'::jsonb
-          )
+          COALESCE(tmu.uid_other_users_group, '[]'::jsonb)
         )
       ) AS scores
     FROM
       course_users AS u
       JOIN course_scores AS s ON (s.user_id = u.id)
+      LEFT JOIN team_member_uids AS tmu ON (
+        tmu.assessment_instance_id = s.assessment_instance_id
+        AND tmu.user_id = u.id
+      )
     GROUP BY
       u.id
   )
