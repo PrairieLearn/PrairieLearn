@@ -28,7 +28,7 @@ Gives automated feedback in the case of improper asymptotic input.
 ## Details
 
 Correct answers must be specified as strings with Python syntax (e.g., `n**2`, `2**n`, `n * log(n)`), with
-the same syntax as [`pl-symbolic-input`](pl-symbolic-input.md). Only one variable is supported.
+the same syntax as [`pl-symbolic-input`](pl-symbolic-input.md). Up to 7 variables are supported.
 
 ## Example implementations
 
