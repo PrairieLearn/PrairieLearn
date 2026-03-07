@@ -13,7 +13,7 @@ SELECT
       JOIN student_labels AS sl ON (sl.id = aacsl.student_label_id)
     WHERE
       aacsl.assessment_access_control_id = aac.id
-  ) AS groups,
+  ) AS student_labels,
   (
     SELECT
       jsonb_agg(
@@ -31,7 +31,7 @@ SELECT
     FROM
       assessment_access_control_enrollments AS aace
       JOIN enrollments AS e ON (e.id = aace.enrollment_id)
-      JOIN users AS u ON (u.user_id = e.user_id)
+      JOIN users AS u ON (u.id = e.user_id)
     WHERE
       aace.assessment_access_control_id = aac.id
   ) AS individual_targets,
@@ -45,7 +45,7 @@ SELECT
     FROM
       assessment_access_control_early_deadline AS d
     WHERE
-      d.access_control_id = aac.id
+      d.assessment_access_control_id = aac.id
   ) AS early_deadlines,
   (
     SELECT
@@ -57,7 +57,7 @@ SELECT
     FROM
       assessment_access_control_late_deadline AS d
     WHERE
-      d.access_control_id = aac.id
+      d.assessment_access_control_id = aac.id
   ) AS late_deadlines,
   (
     SELECT
@@ -67,7 +67,7 @@ SELECT
     FROM
       assessment_access_control_prairietest_exam AS pte
     WHERE
-      pte.access_control_id = aac.id
+      pte.assessment_access_control_id = aac.id
   ) AS prairietest_exams
 FROM
   assessment_access_control AS aac

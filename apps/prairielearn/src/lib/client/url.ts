@@ -108,6 +108,16 @@ type QuestionUrlParts =
   | { courseInstanceId: string; courseId?: undefined }
   | { courseInstanceId?: undefined; courseId: string };
 
+export function getAssessmentAccessUrl({
+  courseInstanceId,
+  assessmentId,
+}: {
+  courseInstanceId: string;
+  assessmentId: string;
+}): string {
+  return `/pl/course_instance/${courseInstanceId}/instructor/assessment/${assessmentId}/access`;
+}
+
 export function getQuestionUrl({
   courseInstanceId,
   courseId,

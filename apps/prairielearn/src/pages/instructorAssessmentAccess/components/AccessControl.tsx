@@ -15,7 +15,6 @@ interface AccessControlProps {
   courseInstance: PageContext<'courseInstance', 'instructor'>['course_instance'];
   csrfToken: string;
   origHash: string;
-  urlPrefix: string;
   assessmentId: string;
   initialData: AccessControlJsonWithId[];
 }
@@ -24,7 +23,6 @@ export function AccessControlInner({
   courseInstance,
   csrfToken,
   origHash: initialOrigHash,
-  urlPrefix,
   assessmentId,
   initialData,
 }: AccessControlProps) {
@@ -143,7 +141,6 @@ export function AccessControlInner({
         courseInstance={courseInstance}
         initialData={initialData}
         isSaving={saveMutation.isPending}
-        urlPrefix={urlPrefix}
         onSubmit={handleFormSubmit}
       />
     </div>

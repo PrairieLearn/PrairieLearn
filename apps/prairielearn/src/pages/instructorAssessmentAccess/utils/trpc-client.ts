@@ -3,13 +3,11 @@ import superjson from 'superjson';
 
 import type { AccessControlRouter } from '../trpc.js';
 
-import { buildTrpcUrl } from './trpc-url.js';
-
-export function createAccessControlTrpcClient(csrfToken: string) {
+export function createAccessControlTrpcClient(csrfToken: string, trpcUrl: string) {
   return createTRPCClient<AccessControlRouter>({
     links: [
       httpLink({
-        url: typeof window === 'undefined' ? '' : buildTrpcUrl(window.location.pathname),
+        url: trpcUrl,
         headers: {
           'X-TRPC': 'true',
           'X-CSRF-Token': csrfToken,

@@ -197,7 +197,7 @@ export function generateRuleSummary(
 ): string[] {
   const lines: string[] = [];
 
-  // Groups and students are handled separately with links in RuleSummaryCard
+  // Student labels and students are handled separately with links in RuleSummaryCard
 
   // Enabled/disabled status
   if (!rule.enabled) {
@@ -286,8 +286,11 @@ export function RuleSummaryCard({
   const students =
     !isMainRule && rule.appliesTo.targetType === 'individual' ? rule.appliesTo.individuals : [];
 
-  // Get groups for linking (only for group rules)
-  const groups = !isMainRule && rule.appliesTo.targetType === 'group' ? rule.appliesTo.groups : [];
+  // Get student labels for linking (only for student label rules)
+  const studentLabels =
+    !isMainRule && rule.appliesTo.targetType === 'student_label'
+      ? rule.appliesTo.studentLabels
+      : [];
 
   return (
     <Card className="mb-3">
@@ -295,7 +298,7 @@ export function RuleSummaryCard({
         <div className="d-flex align-items-center gap-2">
           {!isMainRule && (
             <Badge bg="secondary">
-              {rule.appliesTo.targetType === 'group' ? 'Group' : 'Student'}
+              {rule.appliesTo.targetType === 'student_label' ? 'Student label' : 'Student'}
             </Badge>
           )}
           <strong>{title}</strong>
@@ -309,15 +312,15 @@ export function RuleSummaryCard({
         <div className="d-flex gap-2">
           {onEditStudentLabels && (
             <Button variant="outline-secondary" size="sm" onClick={onEditStudentLabels}>
-              <i className="fa fa-users me-1" /> Groups
+              <i className="bi bi-people me-1" /> Student labels
             </Button>
           )}
           <a href={editUrl} className="btn btn-outline-primary btn-sm">
-            <i className="fa fa-pencil me-1" /> Edit
+            <i className="bi bi-pencil me-1" /> Edit
           </a>
           {onRemove && (
             <Button variant="outline-danger" size="sm" onClick={onRemove}>
-              <i className="fa fa-trash me-1" /> Remove
+              <i className="bi bi-trash me-1" /> Remove
             </Button>
           )}
         </div>
@@ -351,14 +354,16 @@ export function RuleSummaryCard({
           </div>
         )}
 
-        {/* Groups with links (for group-based rules) */}
-        {groups.length > 0 && (
+        {/* Student labels with links (for student-label-based rules) */}
+        {studentLabels.length > 0 && (
           <div className="mb-2">
-            <span className="text-muted">Groups: </span>
-            {groups.map((group, idx) => (
-              <span key={group.groupId || group.name}>
-                <a href={getCourseInstanceStudentLabelsUrl(courseInstanceId)}>{group.name}</a>
-                {idx < groups.length - 1 && ', '}
+            <span className="text-muted">Student labels: </span>
+            {studentLabels.map((studentLabel, idx) => (
+              <span key={studentLabel.studentLabelId || studentLabel.name}>
+                <a href={getCourseInstanceStudentLabelsUrl(courseInstanceId)}>
+                  {studentLabel.name}
+                </a>
+                {idx < studentLabels.length - 1 && ', '}
               </span>
             ))}
           </div>
@@ -395,7 +400,7 @@ export function RuleSummaryCard({
         {/* Show message if nothing configured */}
         {dateTableRows.length === 0 &&
           summaryLines.length === 0 &&
-          groups.length === 0 &&
+          studentLabels.length === 0 &&
           students.length === 0 && (
             <p className="text-muted mb-0">No specific settings configured</p>
           )}

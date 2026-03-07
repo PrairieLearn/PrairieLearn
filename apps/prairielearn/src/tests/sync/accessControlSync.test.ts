@@ -2,7 +2,7 @@ import * as crypto from 'node:crypto';
 
 import { afterAll, assert, beforeAll, beforeEach, describe, it } from 'vitest';
 
-import { execute, queryRow } from '@prairielearn/postgres';
+import * as sqldb from '@prairielearn/postgres';
 import { IdSchema } from '@prairielearn/zod';
 
 import {
@@ -14,11 +14,14 @@ import {
   AssessmentSchema,
   CourseInstanceSchema,
 } from '../../lib/db-types.js';
+import { features } from '../../lib/features/index.js';
 import { idsEqual } from '../../lib/id.js';
 import { type AccessControlJsonInput } from '../../schemas/accessControl.js';
 import * as helperDb from '../helperDb.js';
 
 import * as util from './util.js';
+
+const sql = sqldb.loadSqlEquiv(import.meta.url);
 
 /**
  * Makes a basic access control rule for testing.
@@ -36,8 +39,15 @@ function makeAccessControlRule(
   };
 }
 
+const TARGET_TYPE_ORDER: Record<string, number> = {
+  none: 0,
+  student_label: 1,
+  enrollment: 2,
+};
+
 /**
- * Helper to find synced access control rules for an assessment.
+ * Helper to find synced access control rules for an assessment,
+ * sorted by (target_type, number).
  */
 async function findSyncedAccessControlRules(assessmentId: string) {
   const syncedAssessments = await util.dumpTableWithSchema('assessments', AssessmentSchema);
@@ -48,7 +58,14 @@ async function findSyncedAccessControlRules(assessmentId: string) {
     'assessment_access_control',
     AssessmentAccessControlSchema,
   );
-  return allRules.filter((rule) => idsEqual(rule.assessment_id, assessment.id));
+  return allRules
+    .filter((rule) => idsEqual(rule.assessment_id, assessment.id))
+    .sort((a, b) => {
+      const typeOrder =
+        (TARGET_TYPE_ORDER[a.target_type] ?? 99) - (TARGET_TYPE_ORDER[b.target_type] ?? 99);
+      if (typeOrder !== 0) return typeOrder;
+      return (a.number ?? 0) - (b.number ?? 0);
+    });
 }
 
 /**
@@ -73,7 +90,10 @@ function addStudentLabelToConfig(
 }
 
 describe('Access control syncing', () => {
-  beforeAll(helperDb.before);
+  beforeAll(async () => {
+    await helperDb.before();
+    await features.enable('enhanced-access-control');
+  });
 
   afterAll(helperDb.after);
 
@@ -257,7 +277,7 @@ describe('Access control syncing', () => {
         AssessmentAccessControlEarlyDeadlineSchema,
       );
       const deadlines = allDeadlines.filter((d) =>
-        idsEqual(d.access_control_id, syncedRules[0].id),
+        idsEqual(d.assessment_access_control_id, syncedRules[0].id),
       );
       assert.equal(deadlines.length, 2);
       assert.equal(deadlines[0].credit, 120);
@@ -289,7 +309,7 @@ describe('Access control syncing', () => {
         AssessmentAccessControlLateDeadlineSchema,
       );
       const deadlines = allDeadlines.filter((d) =>
-        idsEqual(d.access_control_id, syncedRules[0].id),
+        idsEqual(d.assessment_access_control_id, syncedRules[0].id),
       );
       assert.equal(deadlines.length, 2);
       assert.equal(deadlines[0].credit, 80);
@@ -319,7 +339,7 @@ describe('Access control syncing', () => {
         AssessmentAccessControlLateDeadlineSchema,
       );
       const deadlines = allDeadlines.filter((d) =>
-        idsEqual(d.access_control_id, syncedRules[0].id),
+        idsEqual(d.assessment_access_control_id, syncedRules[0].id),
       );
       assert.equal(deadlines.length, 0);
     });
@@ -347,7 +367,7 @@ describe('Access control syncing', () => {
         AssessmentAccessControlLateDeadlineSchema,
       );
       const initialDeadlines = allInitialDeadlines.filter((d) =>
-        idsEqual(d.access_control_id, initialRules[0].id),
+        idsEqual(d.assessment_access_control_id, initialRules[0].id),
       );
       assert.equal(initialDeadlines.length, 1);
 
@@ -367,7 +387,7 @@ describe('Access control syncing', () => {
 
       // check if the new deadlines array is empty
       const syncedDeadlines = allSyncedDeadlines.filter((d) =>
-        idsEqual(d.access_control_id, syncedRules[0].id),
+        idsEqual(d.assessment_access_control_id, syncedRules[0].id),
       );
       assert.equal(syncedDeadlines.length, 0);
     });
@@ -407,9 +427,6 @@ describe('Access control syncing', () => {
 
       const syncedRules = await findSyncedAccessControlRules(util.ASSESSMENT_ID);
       assert.equal(syncedRules.length, 3);
-
-      // sort for stable numbering
-      syncedRules.sort((a, b) => (a.number ?? 0) - (b.number ?? 0));
 
       // check each rule is in the correct number
       assert.equal(syncedRules[0].number, 0);
@@ -457,7 +474,6 @@ describe('Access control syncing', () => {
       await util.overwriteAndSyncCourseData(courseData, courseDir);
 
       const syncedRules = await findSyncedAccessControlRules(util.ASSESSMENT_ID);
-      syncedRules.sort((a, b) => (a.number ?? 0) - (b.number ?? 0));
       assert.equal(syncedRules.length, 2);
 
       // verify the updated rule1 is still at number 0
@@ -546,7 +562,6 @@ describe('Access control syncing', () => {
 
       // verify initial order: assignment (0), group1 (1), group2 (2)
       const initialRules = await findSyncedAccessControlRules(util.ASSESSMENT_ID);
-      initialRules.sort((a, b) => (a.number ?? 0) - (b.number ?? 0));
       assert.equal(initialRules[0].date_control_duration_minutes, 60);
       assert.equal(initialRules[1].date_control_duration_minutes, 90);
       assert.equal(initialRules[2].date_control_duration_minutes, 120);
@@ -559,7 +574,6 @@ describe('Access control syncing', () => {
 
       // verify the group rules were swapped in the database
       const syncedRules = await findSyncedAccessControlRules(util.ASSESSMENT_ID);
-      syncedRules.sort((a, b) => (a.number ?? 0) - (b.number ?? 0));
       assert.equal(syncedRules.length, 3);
       assert.equal(syncedRules[0].number, 0);
       assert.equal(syncedRules[0].date_control_duration_minutes, 60); // assignment stays at 0
@@ -571,8 +585,8 @@ describe('Access control syncing', () => {
   });
 
   describe('Enrollment-level rule precedence', () => {
-    // Verifies that enrollment-level rules (at 100+) are preserved
-    // when JSON rules (0-99) are modified
+    // Verifies that enrollment-level rules are preserved
+    // when JSON rules are modified
     it('preserves enrollment rules when group rules change', async () => {
       const courseData = util.getCourseData();
       const groupName1 = 'Group A';
@@ -610,7 +624,6 @@ describe('Access control syncing', () => {
 
       // validate initial state: 3 rules with numbers 0, 1, 2
       let allRules = await findSyncedAccessControlRules(util.ASSESSMENT_ID);
-      allRules.sort((a, b) => (a.number ?? 0) - (b.number ?? 0));
       assert.equal(allRules.length, 3);
       assert.equal(allRules[0].number, 0);
       assert.equal(allRules[0].date_control_duration_minutes, 60); // assignment
@@ -619,72 +632,73 @@ describe('Access control syncing', () => {
       assert.equal(allRules[2].number, 2);
       assert.equal(allRules[2].date_control_duration_minutes, 120); // group2
 
-      // manually create 2 enrollment-level rules (UI creation) at numbers 100+
-      const user1Id = await queryRow(
-        'INSERT INTO users (uid, name, institution_id) VALUES ($1, $2, $3) RETURNING id',
-        ['user1@example.com', 'User 1', '1'],
+      // manually create 2 enrollment-level rules (UI creation)
+      const user1Id = await sqldb.queryScalar(
+        sql.insert_user,
+        { uid: 'user1@example.com', name: 'User 1', institution_id: '1' },
         IdSchema,
       );
 
-      const user2Id = await queryRow(
-        'INSERT INTO users (uid, name, institution_id) VALUES ($1, $2, $3) RETURNING id',
-        ['user2@example.com', 'User 2', '1'],
+      const user2Id = await sqldb.queryScalar(
+        sql.insert_user,
+        { uid: 'user2@example.com', name: 'User 2', institution_id: '1' },
         IdSchema,
       );
 
       // Create enrollments for the users
-      const enrollment1Id = await queryRow(
-        'INSERT INTO enrollments (user_id, course_instance_id, status, first_joined_at) VALUES ($1, $2, $3, NOW()) RETURNING id',
-        [user1Id, assessment.course_instance_id, 'joined'],
+      const enrollment1Id = await sqldb.queryScalar(
+        sql.insert_enrollment,
+        { user_id: user1Id, course_instance_id: assessment.course_instance_id, status: 'joined' },
         IdSchema,
       );
 
-      const enrollment2Id = await queryRow(
-        'INSERT INTO enrollments (user_id, course_instance_id, status, first_joined_at) VALUES ($1, $2, $3, NOW()) RETURNING id',
-        [user2Id, assessment.course_instance_id, 'joined'],
+      const enrollment2Id = await sqldb.queryScalar(
+        sql.insert_enrollment,
+        { user_id: user2Id, course_instance_id: assessment.course_instance_id, status: 'joined' },
         IdSchema,
       );
 
-      const enrollmentRule1Id = await queryRow(
-        `INSERT INTO assessment_access_control (
-    course_instance_id, assessment_id, enabled, block_access,
-    list_before_release, "number", target_type, date_control_duration_minutes,
-    date_control_duration_minutes_overridden
-  ) VALUES ($1, $2, true, false, true, 100, 'enrollment', 150, true) RETURNING id`,
-        [assessment.course_instance_id, assessment.id],
+      const enrollmentRule1Id = await sqldb.queryScalar(
+        sql.insert_enrollment_access_control_rule,
+        {
+          course_instance_id: assessment.course_instance_id,
+          assessment_id: assessment.id,
+          number: 1,
+          duration_minutes: 150,
+        },
         IdSchema,
       );
 
-      const enrollmentRule2Id = await queryRow(
-        `INSERT INTO assessment_access_control (
-    course_instance_id, assessment_id, enabled, block_access,
-    list_before_release, "number", target_type, date_control_duration_minutes,
-    date_control_duration_minutes_overridden
-  ) VALUES ($1, $2, true, false, true, 101, 'enrollment', 180, true) RETURNING id`,
-        [assessment.course_instance_id, assessment.id],
+      const enrollmentRule2Id = await sqldb.queryScalar(
+        sql.insert_enrollment_access_control_rule,
+        {
+          course_instance_id: assessment.course_instance_id,
+          assessment_id: assessment.id,
+          number: 2,
+          duration_minutes: 180,
+        },
         IdSchema,
       );
 
       // create enrollment targets
-      await execute(
-        'INSERT INTO assessment_access_control_enrollments (assessment_access_control_id, enrollment_id) VALUES ($1, $2)',
-        [enrollmentRule1Id, enrollment1Id],
-      );
-      await execute(
-        'INSERT INTO assessment_access_control_enrollments (assessment_access_control_id, enrollment_id) VALUES ($1, $2)',
-        [enrollmentRule2Id, enrollment2Id],
-      );
+      await sqldb.execute(sql.insert_enrollment_target, {
+        assessment_access_control_id: enrollmentRule1Id,
+        enrollment_id: enrollment1Id,
+      });
+      await sqldb.execute(sql.insert_enrollment_target, {
+        assessment_access_control_id: enrollmentRule2Id,
+        enrollment_id: enrollment2Id,
+      });
 
-      // validate we now have 5 rules
+      // validate we now have 5 rules: none(0), student_label(1,2), enrollment(1,2)
       allRules = await findSyncedAccessControlRules(util.ASSESSMENT_ID);
-      allRules.sort((a, b) => (a.number ?? 0) - (b.number ?? 0));
       assert.equal(allRules.length, 5);
-      assert.equal(allRules[0].number, 0); // assignment
-      assert.equal(allRules[1].number, 1); // group1
-      assert.equal(allRules[2].number, 2); // group2
-      assert.equal(allRules[3].number, 100); // enrollment1
+      assert.equal(allRules[0].number, 0); // assignment (none)
+      assert.equal(allRules[1].number, 1); // group1 (student_label)
+      assert.equal(allRules[2].number, 2); // group2 (student_label)
+      assert.equal(allRules[3].number, 1); // enrollment1
       assert.equal(allRules[3].date_control_duration_minutes, 150);
-      assert.equal(allRules[4].number, 101); // enrollment2
+      assert.equal(allRules[4].number, 2); // enrollment2
       assert.equal(allRules[4].date_control_duration_minutes, 180);
 
       // remove one group rule and resync
@@ -693,17 +707,16 @@ describe('Access control syncing', () => {
       ].accessControl = [assignmentRule, groupRule1];
       await util.overwriteAndSyncCourseData(courseData, courseDir);
 
-      // verify enrollment rules are preserved (still at 100, 101)
+      // verify enrollment rules are preserved
       allRules = await findSyncedAccessControlRules(util.ASSESSMENT_ID);
-      allRules.sort((a, b) => (a.number ?? 0) - (b.number ?? 0));
       assert.equal(allRules.length, 4);
-      assert.equal(allRules[0].number, 0); // assignment
+      assert.equal(allRules[0].number, 0); // assignment (none)
       assert.equal(allRules[0].date_control_duration_minutes, 60);
-      assert.equal(allRules[1].number, 1); // group1
+      assert.equal(allRules[1].number, 1); // group1 (student_label)
       assert.equal(allRules[1].date_control_duration_minutes, 90);
-      assert.equal(allRules[2].number, 100); // enrollment1
+      assert.equal(allRules[2].number, 1); // enrollment1
       assert.equal(allRules[2].date_control_duration_minutes, 150);
-      assert.equal(allRules[3].number, 101); // enrollment2
+      assert.equal(allRules[3].number, 2); // enrollment2
       assert.equal(allRules[3].date_control_duration_minutes, 180);
 
       // verify the enrollment rules still have enrollment targets
@@ -730,17 +743,16 @@ describe('Access control syncing', () => {
 
       // verify enrollment rules are still preserved
       allRules = await findSyncedAccessControlRules(util.ASSESSMENT_ID);
-      allRules.sort((a, b) => (a.number ?? 0) - (b.number ?? 0));
       assert.equal(allRules.length, 5);
-      assert.equal(allRules[0].number, 0); // assignment
+      assert.equal(allRules[0].number, 0); // assignment (none)
       assert.equal(allRules[0].date_control_duration_minutes, 60);
-      assert.equal(allRules[1].number, 1); // group1
+      assert.equal(allRules[1].number, 1); // group1 (student_label)
       assert.equal(allRules[1].date_control_duration_minutes, 90);
-      assert.equal(allRules[2].number, 2); // group3 (new)
+      assert.equal(allRules[2].number, 2); // group3 (student_label, new)
       assert.equal(allRules[2].date_control_duration_minutes, 135);
-      assert.equal(allRules[3].number, 100); // enrollment1
+      assert.equal(allRules[3].number, 1); // enrollment1
       assert.equal(allRules[3].date_control_duration_minutes, 150);
-      assert.equal(allRules[4].number, 101); // enrollment2
+      assert.equal(allRules[4].number, 2); // enrollment2
       assert.equal(allRules[4].date_control_duration_minutes, 180);
 
       // verify enrollment rules still preserved
@@ -756,7 +768,7 @@ describe('Access control syncing', () => {
       assert.equal(finalTargets.length, 2);
     });
 
-    // validate that enrollment-level rules (at 100+) are preserved
+    // validate that enrollment-level rules are preserved
     // when JSON rules change
     it('preserves enrollment rules when group rules are removed', async () => {
       const courseData = util.getCourseData();
@@ -786,43 +798,43 @@ describe('Access control syncing', () => {
       );
       assert.isOk(assessment);
 
-      // Create an enrollment-level rule at number 100+
-      const userId = await queryRow(
-        'INSERT INTO users (uid, name, institution_id) VALUES ($1, $2, $3) RETURNING id',
-        ['user@example.com', 'Test User', '1'],
+      // Create an enrollment-level rule
+      const userId = await sqldb.queryScalar(
+        sql.insert_user,
+        { uid: 'user@example.com', name: 'Test User', institution_id: '1' },
         IdSchema,
       );
 
-      const enrollmentId = await queryRow(
-        'INSERT INTO enrollments (user_id, course_instance_id, status, first_joined_at) VALUES ($1, $2, $3, NOW()) RETURNING id',
-        [userId, assessment.course_instance_id, 'joined'],
+      const enrollmentId = await sqldb.queryScalar(
+        sql.insert_enrollment,
+        { user_id: userId, course_instance_id: assessment.course_instance_id, status: 'joined' },
         IdSchema,
       );
 
-      const enrollmentRuleId = await queryRow(
-        `INSERT INTO assessment_access_control (
-  course_instance_id, assessment_id, enabled, block_access,
-  list_before_release, "number", target_type, date_control_duration_minutes,
-  date_control_duration_minutes_overridden
-) VALUES ($1, $2, true, false, true, 100, 'enrollment', 150, true) RETURNING id`,
-        [assessment.course_instance_id, assessment.id],
+      const enrollmentRuleId = await sqldb.queryScalar(
+        sql.insert_enrollment_access_control_rule,
+        {
+          course_instance_id: assessment.course_instance_id,
+          assessment_id: assessment.id,
+          number: 1,
+          duration_minutes: 150,
+        },
         IdSchema,
       );
 
-      await execute(
-        'INSERT INTO assessment_access_control_enrollments (assessment_access_control_id, enrollment_id) VALUES ($1, $2)',
-        [enrollmentRuleId, enrollmentId],
-      );
+      await sqldb.execute(sql.insert_enrollment_target, {
+        assessment_access_control_id: enrollmentRuleId,
+        enrollment_id: enrollmentId,
+      });
 
-      // Verify initial state: assignment (number 0), group (number 1), enrollment (number 100)
+      // Verify initial state: none(0), student_label(1), enrollment(1)
       let allRules = await findSyncedAccessControlRules(util.ASSESSMENT_ID);
-      allRules.sort((a, b) => (a.number ?? 0) - (b.number ?? 0));
       assert.equal(allRules.length, 3);
       assert.equal(allRules[0].number, 0);
-      assert.equal(allRules[0].date_control_duration_minutes, 60); // assignment
+      assert.equal(allRules[0].date_control_duration_minutes, 60); // assignment (none)
       assert.equal(allRules[1].number, 1);
-      assert.equal(allRules[1].date_control_duration_minutes, 90); // group
-      assert.equal(allRules[2].number, 100);
+      assert.equal(allRules[1].date_control_duration_minutes, 90); // group (student_label)
+      assert.equal(allRules[2].number, 1);
       assert.equal(allRules[2].date_control_duration_minutes, 150); // enrollment
 
       // Remove the group rule by syncing with only the assignment rule
@@ -831,14 +843,13 @@ describe('Access control syncing', () => {
       ].accessControl = [assignmentRule];
       await util.overwriteAndSyncCourseData(courseData, courseDir);
 
-      // verify the group rule was deleted but enrollment rule preserved at 100
+      // verify the group rule was deleted but enrollment rule preserved
       allRules = await findSyncedAccessControlRules(util.ASSESSMENT_ID);
-      allRules.sort((a, b) => (a.number ?? 0) - (b.number ?? 0));
       assert.equal(allRules.length, 2);
       assert.equal(allRules[0].number, 0);
-      assert.equal(allRules[0].date_control_duration_minutes, 60); // assignment rule
-      assert.equal(allRules[1].number, 100);
-      assert.equal(allRules[1].date_control_duration_minutes, 150); // enrollment rule
+      assert.equal(allRules[0].date_control_duration_minutes, 60); // assignment (none)
+      assert.equal(allRules[1].number, 1);
+      assert.equal(allRules[1].date_control_duration_minutes, 150); // enrollment
 
       // verify it's still an enrollment rule
       const allEnrollments = await util.dumpTableWithSchema(
@@ -976,33 +987,35 @@ describe('Access control syncing', () => {
       assert.isOk(assessment);
 
       // Create a user and enrollment
-      const userId = await queryRow(
-        'INSERT INTO users (uid, name, institution_id) VALUES ($1, $2, $3) RETURNING id',
-        ['user@example.com', 'Test User', '1'],
+      const userId = await sqldb.queryScalar(
+        sql.insert_user,
+        { uid: 'user@example.com', name: 'Test User', institution_id: '1' },
         IdSchema,
       );
 
-      const enrollmentId = await queryRow(
-        'INSERT INTO enrollments (user_id, course_instance_id, status, first_joined_at) VALUES ($1, $2, $3, NOW()) RETURNING id',
-        [userId, assessment.course_instance_id, 'joined'],
+      const enrollmentId = await sqldb.queryScalar(
+        sql.insert_enrollment,
+        { user_id: userId, course_instance_id: assessment.course_instance_id, status: 'joined' },
         IdSchema,
       );
 
       // Create an access control rule with target_type='enrollment' (must use number > 0)
-      const ruleId = await queryRow(
-        `INSERT INTO assessment_access_control (
-          course_instance_id, assessment_id, enabled, block_access,
-          list_before_release, "number", target_type
-        ) VALUES ($1, $2, true, false, true, 100, 'enrollment') RETURNING id`,
-        [assessment.course_instance_id, assessment.id],
+      const ruleId = await sqldb.queryScalar(
+        sql.insert_enrollment_access_control_rule,
+        {
+          course_instance_id: assessment.course_instance_id,
+          assessment_id: assessment.id,
+          number: 100,
+          duration_minutes: null,
+        },
         IdSchema,
       );
 
       // Add an enrollment (should succeed)
-      await execute(
-        'INSERT INTO assessment_access_control_enrollments (assessment_access_control_id, enrollment_id) VALUES ($1, $2)',
-        [ruleId, enrollmentId],
-      );
+      await sqldb.execute(sql.insert_enrollment_target, {
+        assessment_access_control_id: ruleId,
+        enrollment_id: enrollmentId,
+      });
 
       // Get the student label ID
       const syncedCourseInstances = await util.dumpTableWithSchema(
@@ -1014,9 +1027,9 @@ describe('Access control syncing', () => {
       );
       assert.isOk(courseInstance);
 
-      const studentLabelId = await queryRow(
-        'SELECT id FROM student_labels WHERE name = $1 AND course_instance_id = $2',
-        [groupName, courseInstance.id],
+      const studentLabelId = await sqldb.queryScalar(
+        sql.select_student_label_id,
+        { name: groupName, course_instance_id: courseInstance.id },
         IdSchema,
       );
 
@@ -1025,10 +1038,10 @@ describe('Access control syncing', () => {
       // requires target_type='student_label', so the FK constraint will fail
       let errorThrown = false;
       try {
-        await execute(
-          'INSERT INTO assessment_access_control_student_labels (assessment_access_control_id, student_label_id) VALUES ($1, $2)',
-          [ruleId, studentLabelId],
-        );
+        await sqldb.execute(sql.insert_student_label_target, {
+          assessment_access_control_id: ruleId,
+          student_label_id: studentLabelId,
+        });
       } catch (error) {
         errorThrown = true;
         assert.include(
@@ -1124,8 +1137,6 @@ describe('Access control syncing', () => {
       // validate both rules were synced successfully
       const syncedRules = await findSyncedAccessControlRules(util.ASSESSMENT_ID);
       assert.equal(syncedRules.length, 2, 'Should sync all rules when properly configured');
-
-      syncedRules.sort((a, b) => (a.number ?? 0) - (b.number ?? 0));
       assert.equal(syncedRules[0].date_control_duration_minutes, 60); // assignment
       assert.equal(syncedRules[1].date_control_duration_minutes, 90); // group
     });

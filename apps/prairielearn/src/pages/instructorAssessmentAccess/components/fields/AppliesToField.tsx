@@ -1,4 +1,3 @@
-import { useMemo } from 'react';
 import { Button, Card, Form } from 'react-bootstrap';
 import { type Control, type UseFormSetValue, useFieldArray, useWatch } from 'react-hook-form';
 
@@ -7,8 +6,8 @@ import { ChipGroup } from '@prairielearn/ui';
 import type {
   AccessControlFormData,
   AppliesTo,
-  GroupTarget,
   IndividualTarget,
+  StudentLabelTarget,
   TargetType,
 } from '../types.js';
 
@@ -20,24 +19,16 @@ interface AppliesToFieldProps {
   control: Control<AccessControlFormData>;
   setValue: UseFormSetValue<AccessControlFormData>;
   namePrefix: NamePrefix;
-  urlPrefix: string;
-  assessmentId: string;
 }
 
-export function AppliesToField({
-  control,
-  setValue,
-  namePrefix,
-  urlPrefix,
-  assessmentId,
-}: AppliesToFieldProps) {
+export function AppliesToField({ control, setValue, namePrefix }: AppliesToFieldProps) {
   // Watch the current appliesTo value
   const appliesTo = useWatch({
     control,
     name: `${namePrefix}.appliesTo` as const,
   });
 
-  // Field arrays for managing individuals and groups
+  // Field arrays for managing individuals and student labels
   const {
     fields: individualFields,
     append: appendIndividual,
@@ -48,12 +39,12 @@ export function AppliesToField({
   });
 
   const {
-    fields: groupFields,
-    append: appendGroup,
-    remove: removeGroup,
+    fields: studentLabelFields,
+    append: appendStudentLabel,
+    remove: removeStudentLabel,
   } = useFieldArray({
     control,
-    name: `${namePrefix}.appliesTo.groups` as 'mainRule.appliesTo.groups',
+    name: `${namePrefix}.appliesTo.studentLabels` as 'mainRule.appliesTo.studentLabels',
   });
 
   // Handle target type change
@@ -64,16 +55,16 @@ export function AppliesToField({
       {
         targetType: newType,
         individuals: [],
-        groups: [],
+        studentLabels: [],
       },
       { shouldDirty: true },
     );
   };
 
-  // Handle adding groups
-  const handleAddGroups = (groups: GroupTarget[]) => {
-    for (const group of groups) {
-      appendGroup(group);
+  // Handle adding student labels
+  const handleAddStudentLabels = (labels: StudentLabelTarget[]) => {
+    for (const label of labels) {
+      appendStudentLabel(label);
     }
   };
 
@@ -86,50 +77,44 @@ export function AppliesToField({
 
   // Handle removing all individuals
   const handleRemoveAllIndividuals = () => {
-    // Remove all items by index, starting from the end
     for (let i = individualFields.length - 1; i >= 0; i--) {
       removeIndividual(i);
     }
   };
 
-  // Handle removing all groups
-  const handleRemoveAllGroups = () => {
-    // Remove all items by index, starting from the end
-    for (let i = groupFields.length - 1; i >= 0; i--) {
-      removeGroup(i);
+  // Handle removing all student labels
+  const handleRemoveAllStudentLabels = () => {
+    for (let i = studentLabelFields.length - 1; i >= 0; i--) {
+      removeStudentLabel(i);
     }
   };
 
   // Get values with safe defaults - appliesTo may be undefined during initial render
   const typedAppliesTo = appliesTo as AppliesTo | undefined;
   const currentTargetType = typedAppliesTo?.targetType ?? 'individual';
-  const individuals = useMemo(() => typedAppliesTo?.individuals ?? [], [typedAppliesTo]);
-  const groups = useMemo(() => typedAppliesTo?.groups ?? [], [typedAppliesTo]);
+  const individuals = typedAppliesTo?.individuals ?? [];
+  const studentLabels = typedAppliesTo?.studentLabels ?? [];
 
   // Map data to ChipGroup items
-  const individualChipItems = useMemo(
-    () => individuals.map((s) => ({ id: s.uid, label: s.name ?? s.uid })),
-    [individuals],
-  );
-  const groupChipItems = useMemo(
-    () => groups.map((g) => ({ id: g.groupId, label: g.name })),
-    [groups],
-  );
+  const individualChipItems = individuals.map((s) => ({ id: s.uid, label: s.name ?? s.uid }));
+  const studentLabelChipItems = studentLabels.map((sl) => ({
+    id: sl.studentLabelId,
+    label: sl.name,
+  }));
 
   // Remove by id (used by ChipGroup's onRemove which provides the item id)
   const handleRemoveIndividualByUid = (uid: string) => {
     const index = individuals.findIndex((s) => s.uid === uid);
     if (index !== -1) removeIndividual(index);
   };
-  const handleRemoveGroupById = (groupId: string) => {
-    const index = groups.findIndex((g) => g.groupId === groupId);
-    if (index !== -1) removeGroup(index);
+  const handleRemoveStudentLabelById = (studentLabelId: string) => {
+    const index = studentLabels.findIndex((sl) => sl.studentLabelId === studentLabelId);
+    if (index !== -1) removeStudentLabel(index);
   };
 
   // Create sets for excluded IDs
-  const excludedGroupIds = useMemo(() => new Set(groups.map((g) => g.groupId)), [groups]);
-
-  const excludedUids = useMemo(() => new Set(individuals.map((i) => i.uid)), [individuals]);
+  const excludedStudentLabelIds = new Set(studentLabels.map((sl) => sl.studentLabelId));
+  const excludedUids = new Set(individuals.map((i) => i.uid));
 
   return (
     <Card className="mb-3">
@@ -149,11 +134,11 @@ export function AppliesToField({
           />
           <Form.Check
             type="radio"
-            id={`${namePrefix}-target-group`}
+            id={`${namePrefix}-target-student-label`}
             name={`${namePrefix}-target-type`}
             label="Student labels"
-            checked={currentTargetType === 'group'}
-            onChange={() => handleTargetTypeChange('group')}
+            checked={currentTargetType === 'student_label'}
+            onChange={() => handleTargetTypeChange('student_label')}
           />
         </div>
 
@@ -168,20 +153,18 @@ export function AppliesToField({
             />
           ) : (
             <ChipGroup
-              items={groupChipItems}
-              label="Selected groups"
-              emptyMessage="No groups selected"
-              onRemove={handleRemoveGroupById}
+              items={studentLabelChipItems}
+              label="Selected student labels"
+              emptyMessage="No student labels selected"
+              onRemove={handleRemoveStudentLabelById}
             />
           )}
 
           <AddTargetPopover
             targetType={currentTargetType}
-            urlPrefix={urlPrefix}
-            assessmentId={assessmentId}
-            excludedGroupIds={excludedGroupIds}
+            excludedStudentLabelIds={excludedStudentLabelIds}
             excludedUids={excludedUids}
-            onSelectGroups={handleAddGroups}
+            onSelectStudentLabels={handleAddStudentLabels}
             onSelectStudents={handleAddStudents}
           />
 
@@ -190,8 +173,8 @@ export function AppliesToField({
               Remove all
             </Button>
           )}
-          {currentTargetType === 'group' && groups.length > 0 && (
-            <Button variant="outline-secondary" size="sm" onClick={handleRemoveAllGroups}>
+          {currentTargetType === 'student_label' && studentLabels.length > 0 && (
+            <Button variant="outline-secondary" size="sm" onClick={handleRemoveAllStudentLabels}>
               Remove all
             </Button>
           )}

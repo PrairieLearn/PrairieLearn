@@ -40,13 +40,13 @@ export function AccessControlSummary({
     if (override.id) {
       return `${baseUrl}/${override.id}`;
     }
-    return `${baseUrl}/new`;
+    return `${baseUrl}/new-override`;
   };
   return (
     <div>
       {/* Main Rule Section */}
       <section className="mb-4">
-        <h5 className="mb-3">Main Rule</h5>
+        <h5 className="mb-3">Main rule</h5>
         <RuleSummaryCard
           rule={mainRule}
           isMainRule={true}
@@ -61,7 +61,7 @@ export function AccessControlSummary({
         <div className="d-flex justify-content-between align-items-center mb-3">
           <h5 className="mb-0">Overrides</h5>
           <Button variant="success" size="sm" onClick={onAddOverride}>
-            <i className="fa fa-plus me-1" /> Add override
+            <i className="bi bi-plus-lg me-1" /> Add override
           </Button>
         </div>
 

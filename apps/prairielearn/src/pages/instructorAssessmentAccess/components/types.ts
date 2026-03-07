@@ -15,7 +15,7 @@ export interface AccessControlJsonWithId extends AccessControlJson {
   id?: string;
   /** Database rule number for sorting */
   number?: number;
-  /** Rule type: 'student_label' for group-based rules, 'enrollment' for individual student rules, 'none' for rules without specific targeting */
+  /** Rule type: 'student_label' for label-based rules, 'enrollment' for individual student rules, 'none' for rules without specific targeting */
   ruleType?: 'student_label' | 'enrollment' | 'none' | null;
   /** Individual students (for enrollment-based rules) */
   individuals?: AccessControlIndividual[];
@@ -87,15 +87,15 @@ export const IndividualTargetSchema = z.object({
   name: z.string().nullable(),
 });
 
-export const GroupTargetSchema = z.object({
-  groupId: z.string(),
+export const StudentLabelTargetSchema = z.object({
+  studentLabelId: z.string(),
   name: z.string(),
 });
 
 export const AppliesToSchema = z.object({
-  targetType: z.enum(['individual', 'group']),
+  targetType: z.enum(['individual', 'student_label']),
   individuals: z.array(IndividualTargetSchema),
-  groups: z.array(GroupTargetSchema),
+  studentLabels: z.array(StudentLabelTargetSchema),
 });
 
 export const AccessControlRuleFormDataSchema = z.object({
@@ -144,7 +144,7 @@ export type TargetType = z.infer<typeof AppliesToSchema>['targetType'];
 
 export type IndividualTarget = z.infer<typeof IndividualTargetSchema>;
 
-export type GroupTarget = z.infer<typeof GroupTargetSchema>;
+export type StudentLabelTarget = z.infer<typeof StudentLabelTargetSchema>;
 
 export type AppliesTo = z.infer<typeof AppliesToSchema>;
 
@@ -196,8 +196,8 @@ export function formRuleToJson(
   isMainRule: boolean,
 ): AccessControlJsonWithId {
   const labels =
-    rule.appliesTo.targetType === 'group' && rule.appliesTo.groups.length > 0
-      ? rule.appliesTo.groups.map((g) => g.name)
+    rule.appliesTo.targetType === 'student_label' && rule.appliesTo.studentLabels.length > 0
+      ? rule.appliesTo.studentLabels.map((sl) => sl.name)
       : undefined;
 
   const output: AccessControlJsonWithId = {
@@ -305,7 +305,7 @@ export function jsonToFormData(
   const hasQuestionVisibility = ac?.hideQuestions !== undefined;
   const hasScoreVisibility = ac?.hideScore !== undefined;
 
-  // Convert groups/individuals to appliesTo structure based on rule type
+  // Convert student labels/individuals to appliesTo structure based on rule type
   let appliesTo: AppliesTo;
   if (json.ruleType === 'enrollment' && json.individuals && json.individuals.length > 0) {
     appliesTo = {
@@ -315,13 +315,13 @@ export function jsonToFormData(
         uid: i.uid,
         name: i.name,
       })),
-      groups: [],
+      studentLabels: [],
     };
   } else {
     appliesTo = {
-      targetType: 'group',
+      targetType: 'student_label',
       individuals: [],
-      groups: (json.labels ?? []).map((name: string) => ({ groupId: '', name })),
+      studentLabels: (json.labels ?? []).map((name: string) => ({ studentLabelId: '', name })),
     };
   }
 
@@ -405,7 +405,7 @@ export function createDefaultOverrideFormData(): AccessControlRuleFormData {
     appliesTo: {
       targetType: 'individual',
       individuals: [],
-      groups: [],
+      studentLabels: [],
     },
     dateControl: {
       enabled: false,

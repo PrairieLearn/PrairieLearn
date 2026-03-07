@@ -9,7 +9,7 @@ import { typedAsyncHandler } from '../../lib/res-locals.js';
 import { handleTrpcError } from '../../lib/trpc.js';
 
 import {
-  AccessControlWithGroupsSchema,
+  AccessControlWithStudentLabelsSchema,
   InstructorAssessmentAccessEdit,
 } from './instructorAssessmentAccessEdit.html.js';
 import { accessControlRouter, createContext } from './trpc.js';
@@ -28,21 +28,21 @@ router.use(
 
 const AccessControlQueryResultSchema = z.object({
   access_control: RawStaffAssessmentAccessControlSchema,
-  groups: AccessControlWithGroupsSchema.shape.groups,
-  individual_targets: AccessControlWithGroupsSchema.shape.individual_targets,
-  early_deadlines: AccessControlWithGroupsSchema.shape.early_deadlines,
-  late_deadlines: AccessControlWithGroupsSchema.shape.late_deadlines,
-  prairietest_exams: AccessControlWithGroupsSchema.shape.prairietest_exams,
+  student_labels: AccessControlWithStudentLabelsSchema.shape.student_labels,
+  individual_targets: AccessControlWithStudentLabelsSchema.shape.individual_targets,
+  early_deadlines: AccessControlWithStudentLabelsSchema.shape.early_deadlines,
+  late_deadlines: AccessControlWithStudentLabelsSchema.shape.late_deadlines,
+  prairietest_exams: AccessControlWithStudentLabelsSchema.shape.prairietest_exams,
 });
 
 router.get(
   '/new',
-  typedAsyncHandler<'assessment'>(async (_req, res) => {
+  typedAsyncHandler<'assessment'>(async (req, res) => {
     res.send(
       InstructorAssessmentAccessEdit({
         resLocals: res.locals,
         accessControl: null,
-        isNewMainRule: true,
+        isNewMainRule: req.query.type === 'main',
       }),
     );
   }),
@@ -79,7 +79,7 @@ router.get(
 
     const accessControl = {
       ...result.access_control,
-      groups: result.groups,
+      student_labels: result.student_labels,
       individual_targets: result.individual_targets,
       early_deadlines: result.early_deadlines,
       late_deadlines: result.late_deadlines,

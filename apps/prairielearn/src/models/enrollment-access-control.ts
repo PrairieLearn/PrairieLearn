@@ -1,4 +1,4 @@
-import { callRow, execute, loadSqlEquiv } from '@prairielearn/postgres';
+import { callScalar, execute, loadSqlEquiv } from '@prairielearn/postgres';
 import { IdSchema } from '@prairielearn/zod';
 
 const sql = loadSqlEquiv(import.meta.url);
@@ -37,7 +37,7 @@ export interface EnrollmentAccessControlRuleData {
 
 /**
  * Creates or updates an enrollment-based access control rule (targeting individual students).
- * These rules are stored in the database with number >= 100 and target_type = 'enrollment'.
+ * These rules are stored in the database with target_type = 'enrollment'.
  *
  * @param courseInstanceId The course instance ID
  * @param assessmentId The assessment ID
@@ -88,7 +88,7 @@ export async function syncEnrollmentAccessControl(
     JSON.stringify({ date: d.date, credit: d.credit }),
   );
 
-  return callRow(
+  return callScalar(
     'sync_enrollment_access_control',
     [
       courseInstanceId,

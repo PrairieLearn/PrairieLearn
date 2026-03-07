@@ -29,19 +29,19 @@ BEGIN
     );
 
     DELETE FROM assessment_access_control_early_deadline
-    WHERE access_control_id IN (
+    WHERE assessment_access_control_id IN (
         SELECT id FROM assessment_access_control
         WHERE assessment_id = syncing_assessment_id AND target_type IN ('none', 'student_label')
     );
 
     DELETE FROM assessment_access_control_late_deadline
-    WHERE access_control_id IN (
+    WHERE assessment_access_control_id IN (
         SELECT id FROM assessment_access_control
         WHERE assessment_id = syncing_assessment_id AND target_type IN ('none', 'student_label')
     );
 
     DELETE FROM assessment_access_control_prairietest_exam
-    WHERE access_control_id IN (
+    WHERE assessment_access_control_id IN (
         SELECT id FROM assessment_access_control
         WHERE assessment_id = syncing_assessment_id AND target_type IN ('none', 'student_label')
     );
@@ -150,19 +150,19 @@ BEGIN
         WHERE (g ->> 0)::integer = rule_number;
 
         -- Early deadlines
-        INSERT INTO assessment_access_control_early_deadline (access_control_id, date, credit, sort_order)
-        SELECT new_rule_id, (d ->> 1)::timestamp with time zone, (d ->> 2)::integer, ROW_NUMBER() OVER () - 1
-        FROM UNNEST(early_deadlines_data) AS d
+        INSERT INTO assessment_access_control_early_deadline (assessment_access_control_id, date, credit, sort_order)
+        SELECT new_rule_id, (d ->> 1)::timestamp with time zone, (d ->> 2)::integer, ordinality - 1
+        FROM UNNEST(early_deadlines_data) WITH ORDINALITY AS d
         WHERE (d ->> 0)::integer = rule_number;
 
         -- Late deadlines
-        INSERT INTO assessment_access_control_late_deadline (access_control_id, date, credit, sort_order)
-        SELECT new_rule_id, (d ->> 1)::timestamp with time zone, (d ->> 2)::integer, ROW_NUMBER() OVER () - 1
-        FROM UNNEST(late_deadlines_data) AS d
+        INSERT INTO assessment_access_control_late_deadline (assessment_access_control_id, date, credit, sort_order)
+        SELECT new_rule_id, (d ->> 1)::timestamp with time zone, (d ->> 2)::integer, ordinality - 1
+        FROM UNNEST(late_deadlines_data) WITH ORDINALITY AS d
         WHERE (d ->> 0)::integer = rule_number;
 
         -- PrairieTest exams
-        INSERT INTO assessment_access_control_prairietest_exam (access_control_id, uuid, read_only)
+        INSERT INTO assessment_access_control_prairietest_exam (assessment_access_control_id, uuid, read_only)
         SELECT new_rule_id, (e ->> 1)::uuid, (e ->> 2)::boolean
         FROM UNNEST(prairietest_exams_data) AS e
         WHERE (e ->> 0)::integer = rule_number;

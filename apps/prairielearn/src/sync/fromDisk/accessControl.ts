@@ -1,6 +1,7 @@
 import { z } from 'zod';
 
 import * as sqldb from '@prairielearn/postgres';
+import { runInTransactionAsync } from '@prairielearn/postgres';
 
 import { StudentLabelSchema } from '../../lib/db-types.js';
 import type { AccessControlJson } from '../../schemas/accessControl.js';
@@ -73,6 +74,16 @@ export async function syncAccessControl(
   assessmentId: string,
   accessControlRules: AccessControlJson[],
 ): Promise<void> {
+  await runInTransactionAsync(async () => {
+    await syncAccessControlInternal(courseInstanceId, assessmentId, accessControlRules);
+  });
+}
+
+async function syncAccessControlInternal(
+  courseInstanceId: string,
+  assessmentId: string,
+  accessControlRules: AccessControlJson[],
+): Promise<void> {
   const JSON_RULE_START = 0;
   const MAX_JSON_RULES = 1000;
 
@@ -91,12 +102,15 @@ export async function syncAccessControl(
   // Map by name since the JSON uses label names, not IDs
   const validLabelIds = new Map(existingLabels.map((g) => [g.name, g.id]));
 
-  // Collect all exam UUIDs for bulk validation
+  // Collect all exam UUIDs for bulk validation, filtering out invalid UUID strings
+  const UUID_REGEX = /^[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12}$/i;
   const allExamUuids = new Set<string>();
   for (const rule of accessControlRules) {
     const exams = rule.integrations?.prairieTest?.exams ?? [];
     for (const e of exams) {
-      allExamUuids.add(e.examUuid);
+      if (UUID_REGEX.test(e.examUuid)) {
+        allExamUuids.add(e.examUuid);
+      }
     }
   }
 
@@ -115,17 +129,18 @@ export async function syncAccessControl(
     }
   }
 
-  // Filter out rules with invalid labels, logging errors for skipped rules
-  const validRules: AccessControlJson[] = [];
+  // Validate that all label references are valid
   for (const rule of accessControlRules) {
     const ruleLabels = rule.labels ?? [];
     const invalidLabels = ruleLabels.filter((label) => !validLabelIds.has(label));
     if (invalidLabels.length > 0) {
-      // Skip this rule but continue with others
-      continue;
+      throw new Error(
+        `Invalid student label(s): ${invalidLabels.join(', ')}. ` +
+          `Valid labels are: ${[...validLabelIds.keys()].join(', ') || '(none)'}`,
+      );
     }
-    validRules.push(rule);
   }
+  const validRules = accessControlRules;
 
   // Prepare all rule data upfront
   const preparedRules: PreparedRule[] = [];
@@ -287,7 +302,7 @@ export async function syncAccessControl(
   }
 
   // Call the stored procedure to sync all access control rules
-  await sqldb.callRow(
+  await sqldb.callRows(
     'sync_access_control',
     [
       courseInstanceId,

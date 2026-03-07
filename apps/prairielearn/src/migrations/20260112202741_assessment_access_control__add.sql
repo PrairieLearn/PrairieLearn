@@ -6,7 +6,7 @@ CREATE TABLE assessment_access_control (
   enabled boolean,
   block_access boolean,
   list_before_release boolean,
-  number INTEGER,
+  number INTEGER NOT NULL,
   -- Target type: 'none' for main rule (applies to all), 'enrollment' for individual students, 'student_label' for student labels
   target_type TEXT NOT NULL CHECK (
     target_type IN ('none', 'enrollment', 'student_label')
@@ -82,25 +82,31 @@ CREATE INDEX assessment_access_control_student_labels_sg_id_idx ON assessment_ac
 -- Early deadline table
 CREATE TABLE assessment_access_control_early_deadline (
   id BIGSERIAL PRIMARY KEY,
-  access_control_id BIGINT NOT NULL REFERENCES assessment_access_control (id) ON DELETE CASCADE ON UPDATE CASCADE,
+  assessment_access_control_id BIGINT NOT NULL REFERENCES assessment_access_control (id) ON DELETE CASCADE ON UPDATE CASCADE,
   date TIMESTAMP WITH TIME ZONE NOT NULL,
   credit INT NOT NULL,
   sort_order INTEGER NOT NULL
 );
+
+CREATE INDEX assessment_access_control_early_deadline_access_control_id_idx ON assessment_access_control_early_deadline (assessment_access_control_id);
 
 -- Late deadline table
 CREATE TABLE assessment_access_control_late_deadline (
   id BIGSERIAL PRIMARY KEY,
-  access_control_id BIGINT NOT NULL REFERENCES assessment_access_control (id) ON DELETE CASCADE ON UPDATE CASCADE,
+  assessment_access_control_id BIGINT NOT NULL REFERENCES assessment_access_control (id) ON DELETE CASCADE ON UPDATE CASCADE,
   date TIMESTAMP WITH TIME ZONE NOT NULL,
   credit INT NOT NULL,
   sort_order INTEGER NOT NULL
 );
 
+CREATE INDEX assessment_access_control_late_deadline_access_control_id_idx ON assessment_access_control_late_deadline (assessment_access_control_id);
+
 -- PrairieTest exam table
 CREATE TABLE assessment_access_control_prairietest_exam (
   id BIGSERIAL PRIMARY KEY,
-  access_control_id BIGINT NOT NULL REFERENCES assessment_access_control (id) ON DELETE CASCADE ON UPDATE CASCADE,
+  assessment_access_control_id BIGINT NOT NULL REFERENCES assessment_access_control (id) ON DELETE CASCADE ON UPDATE CASCADE,
   uuid uuid NOT NULL,
   read_only boolean
 );
+
+CREATE INDEX assessment_access_control_prairietest_exam_access_control_id_idx ON assessment_access_control_prairietest_exam (assessment_access_control_id);

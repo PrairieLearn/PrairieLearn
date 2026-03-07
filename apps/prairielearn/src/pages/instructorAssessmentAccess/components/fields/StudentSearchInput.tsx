@@ -2,72 +2,31 @@ import { useMutation, useQuery } from '@tanstack/react-query';
 import { useCallback, useMemo, useState } from 'react';
 import { Alert, Badge, Button, Form, ListGroup, Spinner, Tab, Tabs } from 'react-bootstrap';
 
+import { useTRPCClient } from '../../utils/trpc-context.js';
 import type { IndividualTarget } from '../types.js';
 
 interface StudentSearchInputProps {
-  urlPrefix: string;
-  assessmentId: string;
   excludedUids: Set<string>;
   onSelect: (students: IndividualTarget[]) => void;
   onClose: () => void;
 }
 
-interface StudentData {
-  id: string;
-  uid: string;
-  name: string | null;
-}
-
-interface UidValidationResult {
-  id: string | null;
-  uid: string;
-  name: string | null;
-  enrolled: boolean;
-  notFound?: boolean;
-}
-
-export function StudentSearchInput({
-  urlPrefix,
-  assessmentId,
-  excludedUids,
-  onSelect,
-  onClose,
-}: StudentSearchInputProps) {
+export function StudentSearchInput({ excludedUids, onSelect, onClose }: StudentSearchInputProps) {
+  const trpcClient = useTRPCClient();
   const [searchQuery, setSearchQuery] = useState('');
   const [uidInput, setUidInput] = useState('');
-  const [validatedUids, setValidatedUids] = useState<UidValidationResult[]>([]);
+  const [validatedUids, setValidatedUids] = useState<
+    { id: string | null; uid: string; name: string | null; enrolled: boolean; notFound: boolean }[]
+  >([]);
   const [selectedStudents, setSelectedStudents] = useState<Set<string>>(() => new Set());
 
-  // Fetch all enrolled students
   const { data: allStudents, isLoading: isLoadingStudents } = useQuery({
-    queryKey: ['all-students', urlPrefix, assessmentId],
-    queryFn: async () => {
-      const res = await fetch(`${urlPrefix}/assessment/${assessmentId}/access/students.json`, {
-        headers: { Accept: 'application/json' },
-      });
-      if (!res.ok) {
-        const errorData = await res.json().catch(() => ({}));
-        throw new Error(errorData.error || 'Failed to fetch students');
-      }
-      return res.json() as Promise<StudentData[]>;
-    },
+    queryKey: ['all-students'],
+    queryFn: () => trpcClient.students.query(),
   });
 
-  // Validate UIDs mutation
   const validateMutation = useMutation({
-    mutationFn: async (uids: string[]) => {
-      const res = await fetch(`${urlPrefix}/assessment/${assessmentId}/access/validate-uids.json`, {
-        method: 'POST',
-        headers: { 'Content-Type': 'application/json', Accept: 'application/json' },
-        body: JSON.stringify({ uids }),
-      });
-      if (!res.ok) {
-        const errorData = await res.json().catch(() => ({}));
-        throw new Error(errorData.error || 'Failed to validate UIDs');
-      }
-      const data = await res.json();
-      return data.results as UidValidationResult[];
-    },
+    mutationFn: (uids: string[]) => trpcClient.validateUids.mutate({ uids }),
     onSuccess: (results) => {
       setValidatedUids(results);
     },
@@ -168,7 +127,6 @@ export function StudentSearchInput({
     (r) => r.id && r.enrolled && !excludedUids.has(r.uid),
   ).length;
 
-  // Count selected students that aren't already excluded
   const selectedCount = allStudents
     ? allStudents.filter((s) => selectedStudents.has(s.id) && !excludedUids.has(s.uid)).length
     : 0;
@@ -222,7 +180,7 @@ export function StudentSearchInput({
                       className="me-2"
                       type="checkbox"
                       checked={selectedStudents.has(student.id)}
-                      onChange={() => {}}
+                      readOnly
                     />
                     <div className="flex-grow-1">
                       <div>{student.name ?? student.uid}</div>

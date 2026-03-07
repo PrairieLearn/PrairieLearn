@@ -3,6 +3,7 @@ import { Button, Form } from 'react-bootstrap';
 import { useFieldArray, useForm } from 'react-hook-form';
 
 import type { PageContext } from '../../../lib/client/page-context.js';
+import { getAssessmentAccessUrl } from '../../../lib/client/url.js';
 
 import { AccessControlBreadcrumb } from './AccessControlBreadcrumb.js';
 import { AccessControlSummary } from './AccessControlSummary.js';
@@ -21,7 +22,6 @@ interface AccessControlFormProps {
   courseInstance: PageContext<'courseInstance', 'instructor'>['course_instance'];
   assessmentType?: 'Exam' | 'Homework';
   isSaving?: boolean;
-  urlPrefix: string;
   assessmentId: string;
 }
 
@@ -32,10 +32,9 @@ export function AccessControlForm({
   onSubmit,
   courseInstance,
   isSaving = false,
-  urlPrefix,
   assessmentId,
 }: AccessControlFormProps) {
-  const baseUrl = `${urlPrefix}/assessment/${assessmentId}/access`;
+  const baseUrl = getAssessmentAccessUrl({ courseInstanceId: courseInstance.id, assessmentId });
   const [deleteModalState, setDeleteModalState] = useState<{
     show: boolean;
     overrideIndex: number | null;
@@ -78,7 +77,7 @@ export function AccessControlForm({
   const addOverride = () => {
     appendOverride(createDefaultOverrideFormData());
     // Navigate to the new override edit page
-    window.location.href = `${baseUrl}/new`;
+    window.location.href = `${baseUrl}/new-override`;
   };
 
   const handleDeleteClick = (index: number) => {
@@ -106,12 +105,13 @@ export function AccessControlForm({
       return `Override ${index + 1}`;
     }
 
-    if (appliesTo.targetType === 'group') {
-      const groups = appliesTo.groups;
-      if (groups.length === 0) return `Override ${index + 1}`;
-      if (groups.length === 1) return `Overrides for ${groups[0].name}`;
-      if (groups.length === 2) return `Overrides for ${groups[0].name} and ${groups[1].name}`;
-      return `Overrides for ${groups[0].name}, ${groups[1].name}, and ${groups.length - 2} others`;
+    if (appliesTo.targetType === 'student_label') {
+      const studentLabels = appliesTo.studentLabels;
+      if (studentLabels.length === 0) return `Override ${index + 1}`;
+      if (studentLabels.length === 1) return `Overrides for ${studentLabels[0].name}`;
+      if (studentLabels.length === 2)
+        return `Overrides for ${studentLabels[0].name} and ${studentLabels[1].name}`;
+      return `Overrides for ${studentLabels[0].name}, ${studentLabels[1].name}, and ${studentLabels.length - 2} others`;
     } else {
       const individuals = appliesTo.individuals;
       if (individuals.length === 0) return `Override ${index + 1}`;

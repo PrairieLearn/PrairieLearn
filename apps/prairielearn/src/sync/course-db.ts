@@ -1128,6 +1128,15 @@ export function validateAccessControlArray({
     results[0].errors.push(
       `Found ${assignmentLevelRules.length} assignment-level rules. Only one rule should apply to everyone.`,
     );
+  } else {
+    // The DB constraint `check_first_rule_is_none` requires the assignment-level rule at index 0
+    const firstRule = accessControlJsonArray[0];
+    const isFirstRuleAssignmentLevel = firstRule.labels == null || firstRule.labels.length === 0;
+    if (!isFirstRuleAssignmentLevel) {
+      results[0].errors.push(
+        'The assignment-level rule (without labels) must be the first rule in the array.',
+      );
+    }
   }
 
   // Check for integrations on non-assignment-level rules

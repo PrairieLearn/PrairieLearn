@@ -27,7 +27,7 @@ function setValueAtPath<TFieldValues extends FieldValues>(
   setValue: UseFormSetValue<TFieldValues>,
   path: Path<TFieldValues>,
 
-  value: any,
+  value: unknown,
   options?: { shouldDirty?: boolean },
 ): void {
   setValue(path, value, options);

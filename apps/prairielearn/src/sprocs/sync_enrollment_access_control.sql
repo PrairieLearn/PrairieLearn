@@ -49,15 +49,18 @@ BEGIN
             after_complete_show_score_again_date_overridden = (rule_data ->> 'after_complete_show_score_again_date_overridden')::boolean,
             after_complete_show_score_again_date = (rule_data ->> 'after_complete_show_score_again_date')::timestamp with time zone
         WHERE id = existing_rule_id
+            AND assessment_id = syncing_assessment_id
+            AND course_instance_id = syncing_course_instance_id
+            AND target_type = 'enrollment'
         RETURNING id INTO new_rule_id;
 
         -- Delete old child rows
         DELETE FROM assessment_access_control_enrollments
         WHERE assessment_access_control_id = new_rule_id;
         DELETE FROM assessment_access_control_early_deadline
-        WHERE access_control_id = new_rule_id;
+        WHERE assessment_access_control_id = new_rule_id;
         DELETE FROM assessment_access_control_late_deadline
-        WHERE access_control_id = new_rule_id;
+        WHERE assessment_access_control_id = new_rule_id;
     ELSE
         -- Get next available number for enrollment rules
         SELECT COALESCE(MAX(number), 0) + 1 INTO next_number
@@ -135,12 +138,12 @@ BEGIN
     SELECT new_rule_id, unnest(enrollment_ids);
 
     -- Insert early deadlines
-    INSERT INTO assessment_access_control_early_deadline (access_control_id, date, credit, sort_order)
+    INSERT INTO assessment_access_control_early_deadline (assessment_access_control_id, date, credit, sort_order)
     SELECT new_rule_id, (d ->> 'date')::timestamp with time zone, (d ->> 'credit')::integer, ordinality - 1
     FROM UNNEST(early_deadlines_data) WITH ORDINALITY AS d;
 
     -- Insert late deadlines
-    INSERT INTO assessment_access_control_late_deadline (access_control_id, date, credit, sort_order)
+    INSERT INTO assessment_access_control_late_deadline (assessment_access_control_id, date, credit, sort_order)
     SELECT new_rule_id, (d ->> 'date')::timestamp with time zone, (d ->> 'credit')::integer, ordinality - 1
     FROM UNNEST(late_deadlines_data) WITH ORDINALITY AS d;
 

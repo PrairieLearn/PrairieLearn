@@ -20,7 +20,7 @@ const PrairieTestExamSchema = z.object({
   readOnly: z.boolean().nullable(),
 });
 
-const GroupSchema = z.object({
+const StudentLabelSchema = z.object({
   id: z.string(),
   name: z.string(),
 });
@@ -31,14 +31,14 @@ const IndividualTargetSchema = z.object({
   name: z.string().nullable(),
 });
 
-export const AccessControlWithGroupsSchema = RawStaffAssessmentAccessControlSchema.extend({
-  groups: z.array(GroupSchema).nullable(),
+export const AccessControlWithStudentLabelsSchema = RawStaffAssessmentAccessControlSchema.extend({
+  student_labels: z.array(StudentLabelSchema).nullable(),
   individual_targets: z.array(IndividualTargetSchema).nullable(),
   early_deadlines: z.array(DeadlineSchema).nullable(),
   late_deadlines: z.array(DeadlineSchema).nullable(),
   prairietest_exams: z.array(PrairieTestExamSchema).nullable(),
 });
-export type AccessControlWithGroups = z.infer<typeof AccessControlWithGroupsSchema>;
+export type AccessControlWithStudentLabels = z.infer<typeof AccessControlWithStudentLabelsSchema>;
 
 export function InstructorAssessmentAccessEdit({
   resLocals,
@@ -46,7 +46,7 @@ export function InstructorAssessmentAccessEdit({
   isNewMainRule = false,
 }: {
   resLocals: ResLocalsForPage<'assessment'>;
-  accessControl: AccessControlWithGroups | null;
+  accessControl: AccessControlWithStudentLabels | null;
   isNewMainRule?: boolean;
 }) {
   const isNew = accessControl === null;
@@ -63,16 +63,16 @@ export function InstructorAssessmentAccessEdit({
     pageTitle = 'New override';
   } else {
     // Generate descriptive title based on targets
-    const groups = accessControl.groups ?? [];
+    const studentLabels = accessControl.student_labels ?? [];
     const individuals = accessControl.individual_targets ?? [];
 
-    if (groups.length > 0) {
-      if (groups.length === 1) {
-        pageTitle = `Edit override for ${groups[0].name}`;
-      } else if (groups.length === 2) {
-        pageTitle = `Edit override for ${groups[0].name} and ${groups[1].name}`;
+    if (studentLabels.length > 0) {
+      if (studentLabels.length === 1) {
+        pageTitle = `Edit override for ${studentLabels[0].name}`;
+      } else if (studentLabels.length === 2) {
+        pageTitle = `Edit override for ${studentLabels[0].name} and ${studentLabels[1].name}`;
       } else {
-        pageTitle = `Edit override for ${groups[0].name}, ${groups[1].name}, and ${groups.length - 2} others`;
+        pageTitle = `Edit override for ${studentLabels[0].name}, ${studentLabels[1].name}, and ${studentLabels.length - 2} others`;
       }
     } else if (individuals.length > 0) {
       const getName = (ind: (typeof individuals)[0]) => ind.name || ind.uid;
@@ -107,7 +107,6 @@ export function InstructorAssessmentAccessEdit({
           isNew={isNew}
           courseInstance={pageContext.course_instance}
           csrfToken={resLocals.__csrf_token}
-          urlPrefix={resLocals.urlPrefix}
           assessmentId={resLocals.assessment.id}
         />,
       )}

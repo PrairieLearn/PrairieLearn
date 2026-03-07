@@ -3,28 +3,24 @@ import { Button } from 'react-bootstrap';
 
 import { OverlayTrigger } from '@prairielearn/ui';
 
-import type { GroupTarget, IndividualTarget, TargetType } from '../types.js';
+import type { IndividualTarget, StudentLabelTarget, TargetType } from '../types.js';
 
-import { GroupSearchInput } from './GroupSearchInput.js';
+import { StudentLabelSearchInput } from './StudentLabelSearchInput.js';
 import { StudentSearchInput } from './StudentSearchInput.js';
 
 interface AddTargetPopoverProps {
   targetType: TargetType;
-  urlPrefix: string;
-  assessmentId: string;
-  excludedGroupIds: Set<string>;
+  excludedStudentLabelIds: Set<string>;
   excludedUids: Set<string>;
-  onSelectGroups: (groups: GroupTarget[]) => void;
+  onSelectStudentLabels: (studentLabels: StudentLabelTarget[]) => void;
   onSelectStudents: (students: IndividualTarget[]) => void;
 }
 
 export function AddTargetPopover({
   targetType,
-  urlPrefix,
-  assessmentId,
-  excludedGroupIds,
+  excludedStudentLabelIds,
   excludedUids,
-  onSelectGroups,
+  onSelectStudentLabels,
   onSelectStudents,
 }: AddTargetPopoverProps) {
   const [show, setShow] = useState(false);
@@ -32,26 +28,22 @@ export function AddTargetPopover({
   const handleClose = () => setShow(false);
 
   const popoverContent =
-    targetType === 'group' ? (
-      <GroupSearchInput
-        urlPrefix={urlPrefix}
-        assessmentId={assessmentId}
-        excludedGroupIds={excludedGroupIds}
-        onSelect={onSelectGroups}
+    targetType === 'student_label' ? (
+      <StudentLabelSearchInput
+        excludedStudentLabelIds={excludedStudentLabelIds}
+        onSelect={onSelectStudentLabels}
         onClose={handleClose}
       />
     ) : (
       <StudentSearchInput
-        urlPrefix={urlPrefix}
-        assessmentId={assessmentId}
         excludedUids={excludedUids}
         onSelect={onSelectStudents}
         onClose={handleClose}
       />
     );
 
-  const buttonLabel = targetType === 'group' ? 'Add groups' : 'Add students';
-  const popoverHeader = targetType === 'group' ? 'Select groups' : 'Add students';
+  const buttonLabel = targetType === 'student_label' ? 'Add student labels' : 'Add students';
+  const popoverHeader = targetType === 'student_label' ? 'Select student labels' : 'Add students';
 
   return (
     <OverlayTrigger

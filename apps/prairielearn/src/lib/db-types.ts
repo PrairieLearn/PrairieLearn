@@ -263,7 +263,7 @@ export const AssessmentAccessControlSchema = z.object({
   enabled: z.boolean().nullable(),
   id: IdSchema,
   list_before_release: z.boolean().nullable(),
-  number: z.number().nullable(),
+  number: z.number(),
 
   // Integrations fields
   integrations_prairietest_overridden: z.boolean().nullable(),
@@ -274,7 +274,7 @@ export const AssessmentAccessControlSchema = z.object({
 export type AssessmentAccessControl = z.infer<typeof AssessmentAccessControlSchema>;
 
 export const AssessmentAccessControlEarlyDeadlineSchema = z.object({
-  access_control_id: IdSchema,
+  assessment_access_control_id: IdSchema,
   credit: z.number().int(),
   date: DateFromISOString,
   id: IdSchema,
@@ -292,7 +292,7 @@ export type AssessmentAccessControlEnrollment = z.infer<
 >;
 
 export const AssessmentAccessControlLateDeadlineSchema = z.object({
-  access_control_id: IdSchema,
+  assessment_access_control_id: IdSchema,
   credit: z.number().int(),
   date: DateFromISOString,
   id: IdSchema,
@@ -300,7 +300,7 @@ export const AssessmentAccessControlLateDeadlineSchema = z.object({
 });
 
 export const AssessmentAccessControlPrairietestExamSchema = z.object({
-  access_control_id: IdSchema,
+  assessment_access_control_id: IdSchema,
   id: IdSchema,
   read_only: z.boolean().nullable(),
   uuid: z.string(),

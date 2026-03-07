@@ -1,14 +1,14 @@
-import { QueryClient, useMutation, useQueryClient } from '@tanstack/react-query';
-import { useCallback, useMemo, useState } from 'react';
+import { QueryClient, useMutation } from '@tanstack/react-query';
+import { useState } from 'react';
 import { Alert, Button, Form } from 'react-bootstrap';
 import { useForm } from 'react-hook-form';
 
-import { ServerJobsProgressInfo } from '../../../components/ServerJobProgress/ServerJobProgressBars.js';
-import { useServerJobProgress } from '../../../components/ServerJobProgress/useServerJobProgress.js';
 import type { PageContext } from '../../../lib/client/page-context.js';
 import { QueryClientProviderDebug } from '../../../lib/client/tanstackQuery.js';
-import { getCourseInstanceJobSequenceUrl } from '../../../lib/client/url.js';
-import type { AccessControlWithGroups } from '../instructorAssessmentAccessEdit.html.js';
+import { getAssessmentAccessUrl } from '../../../lib/client/url.js';
+import type { AccessControlWithStudentLabels } from '../instructorAssessmentAccessEdit.html.js';
+import { createAccessControlTrpcClient } from '../utils/trpc-client.js';
+import { TRPCProvider, useTRPCClient } from '../utils/trpc-context.js';
 
 import { AccessControlBreadcrumb } from './AccessControlBreadcrumb.js';
 import { ConfirmationModal } from './ConfirmationModal.js';
@@ -37,30 +37,29 @@ function toDatetimeLocalString(date: Date): string {
 }
 
 interface AccessControlRulePageProps {
-  accessControl: AccessControlWithGroups | null;
+  accessControl: AccessControlWithStudentLabels | null;
   isMainRule: boolean;
   isNew: boolean;
   courseInstance: PageContext<'courseInstance', 'instructor'>['course_instance'];
   csrfToken: string;
-  urlPrefix: string;
   assessmentId: string;
 }
 
 function dbRowToFormData(
-  row: AccessControlWithGroups,
+  row: AccessControlWithStudentLabels,
   isMainRule: boolean,
 ): AccessControlRuleFormData {
-  // Convert groups and individual_targets to the appliesTo structure
-  const groups = row.groups ?? ([] as { id: string; name: string }[]);
+  // Convert student labels and individual_targets to the appliesTo structure
+  const studentLabels = row.student_labels ?? ([] as { id: string; name: string }[]);
   const individualTargets =
     row.individual_targets ?? ([] as { enrollmentId: string; uid: string; name: string | null }[]);
 
   let appliesTo;
-  if (groups.length > 0) {
+  if (studentLabels.length > 0) {
     appliesTo = {
-      targetType: 'group' as const,
+      targetType: 'student_label' as const,
       individuals: [],
-      groups: groups.map((g) => ({ groupId: g.id, name: g.name })),
+      studentLabels: studentLabels.map((sl) => ({ studentLabelId: sl.id, name: sl.name })),
     };
   } else if (individualTargets.length > 0) {
     appliesTo = {
@@ -70,13 +69,13 @@ function dbRowToFormData(
         uid: t.uid,
         name: t.name,
       })),
-      groups: [],
+      studentLabels: [],
     };
   } else {
     appliesTo = {
       targetType: 'individual' as const,
       individuals: [],
-      groups: [],
+      studentLabels: [],
     };
   }
 
@@ -192,34 +191,13 @@ function AccessControlRulePageInner({
   isMainRule,
   isNew,
   courseInstance,
-  csrfToken,
-  urlPrefix,
   assessmentId,
 }: AccessControlRulePageProps) {
   const [deleteModalState, setDeleteModalState] = useState<{ show: boolean }>({ show: false });
-  const [saveJobSequenceId, setSaveJobSequenceId] = useState<string | null>(null);
-  const [deleteJobSequenceId, setDeleteJobSequenceId] = useState<string | null>(null);
   const [showSuccess, setShowSuccess] = useState(false);
-  const queryClient = useQueryClient();
+  const trpcClient = useTRPCClient();
 
-  const baseUrl = `${urlPrefix}/assessment/${assessmentId}/access`;
-
-  const onProgressChange = useCallback(() => {
-    void queryClient.invalidateQueries();
-  }, [queryClient]);
-
-  const { jobsProgress, handleAddOngoingJobSequence, handleDismissCompleteJobSequence } =
-    useServerJobProgress({
-      enabled: true,
-      initialOngoingJobSequenceTokens: null,
-      onProgressChange,
-    });
-
-  const jobProgressArray = useMemo(() => Object.values(jobsProgress), [jobsProgress]);
-
-  const isSaveInProgress = jobProgressArray.some(
-    (job) => job.num_total > 0 && job.num_complete < job.num_total,
-  );
+  const baseUrl = getAssessmentAccessUrl({ courseInstanceId: courseInstance.id, assessmentId });
 
   const ruleFormData = accessControl
     ? dbRowToFormData(accessControl, isMainRule)
@@ -246,92 +224,27 @@ function AccessControlRulePageInner({
   const saveMutation = useMutation({
     mutationKey: ['save-access-control', accessControl?.id ?? 'new'],
     mutationFn: async (data: AccessControlFormData) => {
-      setSaveJobSequenceId(null);
-
-      const body = new URLSearchParams({
-        __action: isNew ? 'create_access_control' : 'update_access_control',
-        __csrf_token: csrfToken,
-        form_data: JSON.stringify(data),
+      const ruleData = isMainRule ? data.mainRule : data.overrides[0];
+      return trpcClient.saveRule.mutate({
+        isMainRule,
+        isNew,
+        ruleId: accessControl?.id,
+        formData: ruleData,
       });
-
-      const targetUrl = window.location.href;
-      const res = await fetch(targetUrl, {
-        method: 'POST',
-        headers: {
-          Accept: 'application/json',
-        },
-        body,
-      });
-
-      if (!res.ok) {
-        let errorMessage = 'Failed to save access control';
-        try {
-          const result = await res.json();
-          errorMessage = result.error || errorMessage;
-          if (result.job_sequence_id) {
-            setSaveJobSequenceId(result.job_sequence_id);
-          }
-        } catch {
-          // Response wasn't JSON
-        }
-        throw new Error(errorMessage);
-      }
-
-      // Check if this is a pending (background) job
-      if (res.status === 200) {
-        const result = await res.json();
-        if (result.pending && result.job_sequence_id && result.job_sequence_token) {
-          // Add to progress tracking
-          handleAddOngoingJobSequence(result.job_sequence_id, result.job_sequence_token);
-          return { pending: true, jobSequenceId: result.job_sequence_id };
-        }
-      }
-
-      return { pending: false };
     },
-    onSuccess: (result) => {
-      // Only show success immediately if not pending (i.e., synchronous completion)
-      if (!result.pending) {
-        setShowSuccess(true);
-        reset(getValues());
-      }
-      // For pending jobs, success will be shown via progress tracking
+    onSuccess: () => {
+      setShowSuccess(true);
+      reset(getValues());
     },
   });
 
   const deleteMutation = useMutation({
     mutationKey: ['delete-access-control', accessControl?.id],
     mutationFn: async () => {
-      setDeleteJobSequenceId(null);
-
-      const body = new URLSearchParams({
-        __action: 'delete_access_control',
-        __csrf_token: csrfToken,
+      return trpcClient.deleteRule.mutate({
+        ruleId: accessControl!.id,
+        targetType: accessControl!.target_type,
       });
-
-      const res = await fetch(window.location.href, {
-        method: 'POST',
-        headers: {
-          Accept: 'application/json',
-        },
-        body,
-      });
-
-      if (!res.ok) {
-        let errorMessage = 'Failed to delete access control';
-        try {
-          const result = await res.json();
-          errorMessage = result.error || errorMessage;
-          if (result.job_sequence_id) {
-            setDeleteJobSequenceId(result.job_sequence_id);
-          }
-        } catch {
-          // Response wasn't JSON
-        }
-        throw new Error(errorMessage);
-      }
-
-      return res;
     },
     onSuccess: () => {
       window.location.href = baseUrl;
@@ -357,13 +270,13 @@ function AccessControlRulePageInner({
   const currentFormData = isMainRule ? watchedData.mainRule : watchedData.overrides[0];
   const isEnabled = currentFormData.enabled;
 
-  // Check if override has at least one target (student or group)
+  // Check if override has at least one target (student or student label)
   const hasNoTargets =
     !isMainRule &&
     ((currentFormData.appliesTo.targetType === 'individual' &&
       currentFormData.appliesTo.individuals.length === 0) ||
-      (currentFormData.appliesTo.targetType === 'group' &&
-        currentFormData.appliesTo.groups.length === 0));
+      (currentFormData.appliesTo.targetType === 'student_label' &&
+        currentFormData.appliesTo.studentLabels.length === 0));
 
   return (
     <div>
@@ -373,63 +286,15 @@ function AccessControlRulePageInner({
         </Alert>
       )}
       {saveMutation.isError && (
-        <Alert
-          variant="danger"
-          dismissible
-          onClose={() => {
-            saveMutation.reset();
-            setSaveJobSequenceId(null);
-          }}
-        >
+        <Alert variant="danger" dismissible onClose={() => saveMutation.reset()}>
           {saveMutation.error.message}
-          {saveJobSequenceId && (
-            <>
-              {' '}
-              <Alert.Link
-                href={getCourseInstanceJobSequenceUrl(courseInstance.id, saveJobSequenceId)}
-              >
-                View job logs
-              </Alert.Link>
-            </>
-          )}
         </Alert>
       )}
 
       {deleteMutation.isError && (
-        <Alert
-          variant="danger"
-          dismissible
-          onClose={() => {
-            deleteMutation.reset();
-            setDeleteJobSequenceId(null);
-          }}
-        >
+        <Alert variant="danger" dismissible onClose={() => deleteMutation.reset()}>
           {deleteMutation.error.message}
-          {deleteJobSequenceId && (
-            <>
-              {' '}
-              <Alert.Link
-                href={getCourseInstanceJobSequenceUrl(courseInstance.id, deleteJobSequenceId)}
-              >
-                View job logs
-              </Alert.Link>
-            </>
-          )}
         </Alert>
-      )}
-
-      {jobProgressArray.length > 0 && (
-        <ServerJobsProgressInfo
-          itemNames="sync stages"
-          jobsProgress={jobProgressArray}
-          courseInstanceId={courseInstance.id}
-          statusText={{
-            inProgress: 'Saving access control...',
-            complete: 'Save complete',
-            failed: 'Save failed',
-          }}
-          onDismissCompleteJobSequence={handleDismissCompleteJobSequence}
-        />
       )}
 
       <Form onSubmit={handleSubmit(handleFormSubmit)}>
@@ -450,7 +315,7 @@ function AccessControlRulePageInner({
                 }
               }}
             >
-              <i className={`fa fa-${isEnabled ? 'check' : 'times'} me-1`} />
+              <i className={`bi bi-${isEnabled ? 'check-lg' : 'x-lg'} me-1`} />
               {isEnabled ? 'Enabled' : 'Disabled'}
             </Button>
 
@@ -460,20 +325,14 @@ function AccessControlRulePageInner({
                 size="sm"
                 onClick={() => setDeleteModalState({ show: true })}
               >
-                <i className="fa fa-trash me-1" /> Delete
+                <i className="bi bi-trash me-1" /> Delete
               </Button>
             )}
           </div>
         </div>
 
         {!isMainRule && (
-          <AppliesToField
-            control={control}
-            setValue={setValue}
-            namePrefix="overrides.0"
-            urlPrefix={urlPrefix}
-            assessmentId={assessmentId}
-          />
+          <AppliesToField control={control} setValue={setValue} namePrefix="overrides.0" />
         )}
 
         <div className="mb-4">
@@ -486,18 +345,16 @@ function AccessControlRulePageInner({
 
         {hasNoTargets && (
           <Alert variant="warning" className="mt-3">
-            You must add at least one student or group before saving this override.
+            You must add at least one student or student label before saving this override.
           </Alert>
         )}
         <div className="mt-4 d-flex gap-2">
           <Button
             type="submit"
             variant="primary"
-            disabled={
-              (!isDirty && !isNew) || saveMutation.isPending || isSaveInProgress || hasNoTargets
-            }
+            disabled={(!isDirty && !isNew) || saveMutation.isPending || hasNoTargets}
           >
-            {saveMutation.isPending || isSaveInProgress
+            {saveMutation.isPending
               ? isNew
                 ? 'Creating...'
                 : 'Saving...'
@@ -528,9 +385,18 @@ function AccessControlRulePageInner({
 
 export function AccessControlRulePage(props: AccessControlRulePageProps) {
   const [queryClient] = useState(() => new QueryClient());
+  const [trpcClient] = useState(() => {
+    const accessUrl = getAssessmentAccessUrl({
+      courseInstanceId: props.courseInstance.id,
+      assessmentId: props.assessmentId,
+    });
+    return createAccessControlTrpcClient(props.csrfToken, `${accessUrl}/edit/trpc`);
+  });
   return (
     <QueryClientProviderDebug client={queryClient}>
-      <AccessControlRulePageInner {...props} />
+      <TRPCProvider trpcClient={trpcClient} queryClient={queryClient}>
+        <AccessControlRulePageInner {...props} />
+      </TRPCProvider>
     </QueryClientProviderDebug>
   );
 }

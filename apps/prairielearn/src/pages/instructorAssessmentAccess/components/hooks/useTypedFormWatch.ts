@@ -1,4 +1,4 @@
-import { type Control, type Path, useWatch } from 'react-hook-form';
+import { type Control, type FieldArrayPath, type Path, useWatch } from 'react-hook-form';
 
 import type { AccessControlFormData, OverridableField } from '../types.js';
 
@@ -52,9 +52,10 @@ export function getFieldName(
  * The type assertion here is necessary because useFieldArray expects a narrow
  * FieldArrayPath type that TypeScript cannot infer from dynamic template literals.
  * This function centralizes that assertion.
- *
- * @returns The path as any type to satisfy useFieldArray's strict typing
  */
-export function getArrayFieldName(namePrefix: NamePrefix, fieldPath: string): any {
-  return `${namePrefix}.${fieldPath}`;
+export function getArrayFieldName(
+  namePrefix: NamePrefix,
+  fieldPath: string,
+): FieldArrayPath<AccessControlFormData> {
+  return `${namePrefix}.${fieldPath}` as FieldArrayPath<AccessControlFormData>;
 }

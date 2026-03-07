@@ -213,21 +213,21 @@ export async function syncDiskToSqlWithLock(
             syncAssessments.sync(courseId, courseInstanceId, courseInstanceData, questionIds),
           );
 
-          if (assessmentIds && hasEnhancedAccessControl) {
+          if (assessmentIds?.name_to_id_map && hasEnhancedAccessControl) {
+            const idMap = assessmentIds.name_to_id_map;
             await timed(`Synced access control for ${ciid}`, async () => {
               for (const [tid, assessment] of Object.entries(courseInstanceData.assessments)) {
-                const assessmentId = assessmentIds[tid];
+                const assessmentId = idMap[tid];
                 const accessControlRules = assessment.data?.accessControl;
-                if (assessmentId && accessControlRules) {
-                  const validationResults = courseDB.validateAccessControlArray({
-                    accessControlJsonArray: accessControlRules,
-                  });
-                  const validationErrors = validationResults.flatMap((r) => r.errors);
-                  if (validationErrors.length > 0) {
-                    infofile.addErrors(assessment, validationErrors);
+                if (assessmentId) {
+                  if (!accessControlRules || infofile.hasErrors(assessment)) {
                     await syncAccessControl(courseInstanceId, assessmentId, []);
                   } else {
-                    await syncAccessControl(courseInstanceId, assessmentId, accessControlRules);
+                    try {
+                      await syncAccessControl(courseInstanceId, assessmentId, accessControlRules);
+                    } catch (err) {
+                      infofile.addError(assessment, String(err));
+                    }
                   }
                 }
               }
