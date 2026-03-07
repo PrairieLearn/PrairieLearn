@@ -1,16 +1,16 @@
 import { QueryClient, useMutation, useQuery } from '@tanstack/react-query';
 import clsx from 'clsx';
-// @ts-ignore -- echarts types use `export =` but esbuild handles it as ESM at runtime
-import * as echarts from 'echarts';
-import { useEffect, useRef, useState } from 'react';
+import { useState } from 'react';
 import { Alert, Form, Modal, Spinner } from 'react-bootstrap';
 import { useForm } from 'react-hook-form';
 
 import { useModalState } from '@prairielearn/ui';
 
-import { formatMilliDollars } from '../../../lib/ai-grading-credits.js';
 import { QueryClientProviderDebug } from '../../../lib/client/tanstackQuery.js';
 import type { EnumAiGradingProvider } from '../../../lib/db-types.js';
+import { BalanceCards } from '../../components/ai-grading-credits/BalanceCards.js';
+import { DailySpendingChart } from '../../components/ai-grading-credits/DailySpendingChart.js';
+import { TransactionHistoryTable } from '../../components/ai-grading-credits/TransactionHistoryTable.js';
 import {
   AI_GRADING_PROVIDER_DISPLAY_NAMES,
   AI_GRADING_PROVIDER_OPTIONS,
@@ -446,30 +446,7 @@ function CreditPoolSection({ useCustomApiKeys }: { useCustomApiKeys: boolean }) 
         </Alert>
       )}
 
-      <div className={clsx('row mb-3 g-3', dimmed && 'opacity-50')}>
-        <div className="col-md-4">
-          <div className="border rounded p-3 text-center">
-            <div className="text-muted small">Total available</div>
-            <div className="h4 mb-0">{formatMilliDollars(pool.total_milli_dollars)}</div>
-          </div>
-        </div>
-        <div className="col-md-4">
-          <div className="border rounded p-3 text-center">
-            <div className="text-muted small">Transferable</div>
-            <div className="h5 mb-0">
-              {formatMilliDollars(pool.credit_transferable_milli_dollars)}
-            </div>
-          </div>
-        </div>
-        <div className="col-md-4">
-          <div className="border rounded p-3 text-center">
-            <div className="text-muted small">Non-transferable</div>
-            <div className="h5 mb-0">
-              {formatMilliDollars(pool.credit_non_transferable_milli_dollars)}
-            </div>
-          </div>
-        </div>
-      </div>
+      <BalanceCards pool={pool} dimmed={dimmed} />
 
       <div className={clsx(dimmed && 'opacity-50')}>
         <div className="mb-3">
@@ -535,9 +512,6 @@ function TransactionHistory({
   page: number;
   setPage: (p: number) => void;
 }) {
-  const pageSize = 25;
-  const totalPages = changesQuery.data ? Math.ceil(changesQuery.data.totalCount / pageSize) : 0;
-
   return (
     <div>
       <button
@@ -555,156 +529,15 @@ function TransactionHistory({
             <Alert variant="danger">Failed to load transaction history.</Alert>
           )}
           {changesQuery.data && (
-            <>
-              <div className="table-responsive border rounded overflow-hidden">
-                <table className="table table-sm table-hover mb-0" aria-label="Transaction history">
-                  <thead>
-                    <tr>
-                      <th className="px-3 py-2">Date</th>
-                      <th className="px-3 py-2">Change</th>
-                      <th className="px-3 py-2">Balance after</th>
-                      <th className="px-3 py-2">Reason</th>
-                      <th className="px-3 py-2">User</th>
-                    </tr>
-                  </thead>
-                  <tbody>
-                    {changesQuery.data.rows.length === 0 ? (
-                      <tr>
-                        <td colSpan={5} className="text-muted text-center py-4 px-3">
-                          No transactions yet.
-                        </td>
-                      </tr>
-                    ) : (
-                      changesQuery.data.rows.map((change) => (
-                        <tr key={change.id}>
-                          <td className="align-middle px-3 py-2">
-                            {new Date(change.created_at).toLocaleString()}
-                          </td>
-                          <td
-                            className={clsx(
-                              'align-middle px-3 py-2 fw-bold',
-                              change.delta_milli_dollars > 0 ? 'text-success' : 'text-danger',
-                            )}
-                          >
-                            {change.delta_milli_dollars > 0 ? '+' : '-'}
-                            {formatMilliDollars(Math.abs(change.delta_milli_dollars))}
-                          </td>
-                          <td className="align-middle px-3 py-2">
-                            {formatMilliDollars(change.credit_after_milli_dollars)}
-                          </td>
-                          <td className="align-middle px-3 py-2">
-                            {change.submission_count > 1
-                              ? `${change.reason} (${change.submission_count} submissions)`
-                              : change.reason}
-                          </td>
-                          <td className="align-middle px-3 py-2">
-                            {change.user_name ?? change.user_uid ?? '—'}
-                          </td>
-                        </tr>
-                      ))
-                    )}
-                  </tbody>
-                </table>
-              </div>
-              {totalPages > 1 && (
-                <nav aria-label="Transaction history pagination" className="mt-3">
-                  <ul className="pagination pagination-sm justify-content-center mb-0">
-                    <li className={clsx('page-item', page <= 1 && 'disabled')}>
-                      <button
-                        type="button"
-                        className="page-link"
-                        disabled={page <= 1}
-                        onClick={() => setPage(page - 1)}
-                      >
-                        Previous
-                      </button>
-                    </li>
-                    <li className="page-item disabled">
-                      <span className="page-link">
-                        Page {page} of {totalPages}
-                      </span>
-                    </li>
-                    <li className={clsx('page-item', page >= totalPages && 'disabled')}>
-                      <button
-                        type="button"
-                        className="page-link"
-                        disabled={page >= totalPages}
-                        onClick={() => setPage(page + 1)}
-                      >
-                        Next
-                      </button>
-                    </li>
-                  </ul>
-                </nav>
-              )}
-            </>
+            <TransactionHistoryTable
+              rows={changesQuery.data.rows}
+              totalCount={changesQuery.data.totalCount}
+              page={page}
+              onPageChange={setPage}
+            />
           )}
         </div>
       )}
     </div>
   );
-}
-
-function DailySpendingChart({ data }: { data: { date: Date; spending_milli_dollars: number }[] }) {
-  const chartRef = useRef<HTMLDivElement>(null);
-
-  useEffect(() => {
-    if (!chartRef.current || data.length === 0) return;
-
-    const chart = echarts.init(chartRef.current);
-
-    const dates = data.map((d) => new Date(d.date).toISOString().slice(0, 10));
-    const values = data.map((d) => d.spending_milli_dollars);
-
-    chart.setOption({
-      grid: { top: 10, right: 10, bottom: 30, left: 60 },
-      tooltip: {
-        trigger: 'axis',
-        formatter: (params: { value: number; name: string }[]) => {
-          const p = params[0];
-          const d = new Date(p.name + 'T00:00:00');
-          const dateStr = d.toLocaleDateString(undefined, { month: 'short', day: 'numeric' });
-          return `${dateStr}<br/>${formatMilliDollars(p.value)}`;
-        },
-      },
-      xAxis: {
-        type: 'category',
-        data: dates,
-        axisLabel: {
-          fontSize: 10,
-          formatter: (val: string) => {
-            const d = new Date(val + 'T00:00:00');
-            return d.toLocaleDateString(undefined, { month: 'short', day: 'numeric' });
-          },
-        },
-      },
-      yAxis: {
-        type: 'value',
-        axisLabel: {
-          fontSize: 10,
-          formatter: (v: number) => formatMilliDollars(v),
-        },
-        min: 0,
-      },
-      series: [
-        {
-          type: 'bar',
-          data: values,
-          itemStyle: { color: '#5470c6' },
-        },
-      ],
-    });
-
-    const handleResize = () => chart.resize();
-    window.addEventListener('resize', handleResize);
-
-    return () => {
-      window.removeEventListener('resize', handleResize);
-      chart.dispose();
-    };
-  }, [data]);
-
-  if (data.length === 0) return null;
-
-  return <div ref={chartRef} style={{ height: '200px', width: '100%' }} />;
 }

@@ -1,19 +1,17 @@
+import * as trpcExpress from '@trpc/server/adapters/express';
 import { Router } from 'express';
 import { z } from 'zod';
 
 import * as error from '@prairielearn/error';
 import { flash } from '@prairielearn/flash';
 import { execute, loadSqlEquiv, queryRow } from '@prairielearn/postgres';
+import { generatePrefixCsrfToken } from '@prairielearn/signed-token';
 
+import { config } from '../../../lib/config.js';
 import { CourseInstanceSchema, CourseSchema } from '../../../lib/db-types.js';
 import { features } from '../../../lib/features/index.js';
 import { typedAsyncHandler } from '../../../lib/res-locals.js';
-import {
-  adjustCreditPool,
-  selectCreditPool,
-  selectCreditPoolChangesBatched,
-  selectDailySpending,
-} from '../../../models/ai-grading-credit-pool.js';
+import { handleTrpcError } from '../../../lib/trpc.js';
 import { parseDesiredPlanGrants } from '../../lib/billing/components/PlanGrantsEditor.js';
 import {
   getPlanGrantsForCourseInstance,
@@ -22,6 +20,7 @@ import {
 import { getInstitution } from '../../lib/institution.js';
 
 import { AdministratorInstitutionCourseInstance } from './administratorInstitutionCourseInstance.html.js';
+import { adminCreditPoolRouter, createAdminContext } from './trpc.js';
 
 const sql = loadSqlEquiv(import.meta.url);
 const router = Router({ mergeParams: true });
@@ -46,14 +45,36 @@ async function selectCourseInstanceAndCourseInInstitution({
   );
 }
 
-router.get(
-  '/',
-  typedAsyncHandler<'plain'>(async (req, res) => {
-    const institution = await getInstitution(req.params.institution_id);
+// Middleware: load course and course_instance into res.locals for tRPC context.
+router.use(
+  typedAsyncHandler<'plain'>(async (req, res, next) => {
     const { course, course_instance } = await selectCourseInstanceAndCourseInInstitution({
       institution_id: req.params.institution_id,
       unsafe_course_instance_id: req.params.course_instance_id,
     });
+    (res.locals as any).course = course;
+    (res.locals as any).course_instance = course_instance;
+    next();
+  }),
+);
+
+// Mount tRPC for the admin credit pool section.
+router.use(
+  '/trpc',
+  trpcExpress.createExpressMiddleware({
+    router: adminCreditPoolRouter,
+    createContext: createAdminContext,
+    onError: handleTrpcError,
+  }),
+);
+
+router.get(
+  '/',
+  typedAsyncHandler<'plain'>(async (req, res) => {
+    const course = (res.locals as any).course;
+    const course_instance = (res.locals as any).course_instance;
+
+    const institution = await getInstitution(req.params.institution_id);
     const planGrants = await getPlanGrantsForCourseInstance({
       institution_id: institution.id,
       course_instance_id: course_instance.id,
@@ -64,17 +85,15 @@ router.get(
       course_instance_id: course_instance.id,
     });
 
-    const creditPage = Math.max(1, Number.parseInt(String(req.query.credit_page ?? '1')) || 1);
-    const chartDays = [7, 14, 30].includes(Number(req.query.chart_days))
-      ? (Number(req.query.chart_days) as 7 | 14 | 30)
-      : 30;
-
-    const [creditPoolChangesResult, dailySpending] = aiGradingEnabled
-      ? await Promise.all([
-          selectCreditPoolChangesBatched(course_instance.id, creditPage),
-          selectDailySpending(course_instance.id, chartDays),
-        ])
-      : [{ rows: [], totalCount: 0 }, []];
+    const trpcCsrfToken = aiGradingEnabled
+      ? generatePrefixCsrfToken(
+          {
+            url: req.originalUrl.split('?')[0] + '/trpc',
+            authn_user_id: res.locals.authn_user.id,
+          },
+          config.secretKey,
+        )
+      : null;
 
     res.send(
       AdministratorInstitutionCourseInstance({
@@ -83,11 +102,7 @@ router.get(
         course_instance,
         planGrants,
         aiGradingEnabled,
-        creditPoolChanges: creditPoolChangesResult.rows,
-        creditPoolTotalCount: creditPoolChangesResult.totalCount,
-        creditPage,
-        dailySpending,
-        chartDays,
+        trpcCsrfToken,
         resLocals: res.locals,
       }),
     );
@@ -97,10 +112,7 @@ router.get(
 router.post(
   '/',
   typedAsyncHandler<'plain'>(async (req, res) => {
-    const { course_instance } = await selectCourseInstanceAndCourseInInstitution({
-      institution_id: req.params.institution_id,
-      unsafe_course_instance_id: req.params.course_instance_id,
-    });
+    const course_instance = (res.locals as any).course_instance;
 
     if (course_instance.deleted_at != null) {
       throw new error.HttpStatusError(403, 'Cannot modify a deleted course instance');
@@ -126,41 +138,6 @@ router.post(
         res.locals.authn_user.id,
       );
       flash('success', 'Successfully updated institution plan grants.');
-      res.redirect(req.originalUrl);
-    } else if (req.body.__action === 'adjust_credit_pool') {
-      const amountDollars = Number(req.body.amount_dollars);
-      const creditType = req.body.credit_type;
-      const action = req.body.adjustment_action;
-
-      if (!Number.isFinite(amountDollars) || amountDollars <= 0) {
-        throw new error.HttpStatusError(400, 'Amount must be a positive number.');
-      }
-
-      if (creditType !== 'transferable' && creditType !== 'non_transferable') {
-        throw new error.HttpStatusError(400, 'Invalid credit type.');
-      }
-
-      if (action !== 'add' && action !== 'deduct') {
-        throw new error.HttpStatusError(400, 'Invalid action.');
-      }
-
-      const deltaMilliDollars = Math.round(amountDollars * 1000) * (action === 'deduct' ? -1 : 1);
-
-      await adjustCreditPool({
-        course_instance_id: course_instance.id,
-        delta_milli_dollars: deltaMilliDollars,
-        credit_type: creditType,
-        user_id: res.locals.authn_user.id,
-        reason: `Admin ${action}`,
-      });
-
-      if (req.headers['x-requested-with'] === 'fetch') {
-        const pool = await selectCreditPool(course_instance.id);
-        res.json(pool);
-        return;
-      }
-
-      flash('success', `Successfully ${action === 'add' ? 'added' : 'deducted'} credits.`);
       res.redirect(req.originalUrl);
     } else {
       throw new error.HttpStatusError(400, `Unknown action: ${req.body.__action}`);

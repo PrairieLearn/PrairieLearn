@@ -191,7 +191,7 @@ const BatchedCreditPoolChangeRowSchema = z.object({
   total_count: z.coerce.number(),
 });
 
-export type BatchedCreditPoolChangeRow = z.infer<typeof BatchedCreditPoolChangeRowSchema>;
+type BatchedCreditPoolChangeRow = z.infer<typeof BatchedCreditPoolChangeRowSchema>;
 
 const CREDIT_POOL_CHANGES_PAGE_SIZE = 25;
 
@@ -214,7 +214,7 @@ const DailySpendingPointSchema = z.object({
   spending_milli_dollars: z.coerce.number(),
 });
 
-export type DailySpendingPoint = z.infer<typeof DailySpendingPointSchema>;
+type DailySpendingPoint = z.infer<typeof DailySpendingPointSchema>;
 
 export async function selectDailySpending(
   course_instance_id: string,
