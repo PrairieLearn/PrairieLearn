@@ -1,4 +1,10 @@
-import { type Control, type FieldValues, type Path, type UseFormSetValue } from 'react-hook-form';
+import {
+  type Control,
+  type FieldValues,
+  type Path,
+  type PathValue,
+  type UseFormSetValue,
+} from 'react-hook-form';
 
 import type { AccessControlFormData, DateControlFormData, OverridableField } from '../types.js';
 
@@ -26,11 +32,10 @@ function isOverridableFieldKey(key: string): key is OverridableFieldKey {
 function setValueAtPath<TFieldValues extends FieldValues>(
   setValue: UseFormSetValue<TFieldValues>,
   path: Path<TFieldValues>,
-
-  value: unknown,
+  value: OverridableField<unknown> | boolean,
   options?: { shouldDirty?: boolean },
 ): void {
-  setValue(path, value, options);
+  setValue(path, value as PathValue<TFieldValues, Path<TFieldValues>>, options);
 }
 
 interface UseOverridableFieldOptions<T> {

@@ -1,4 +1,4 @@
-import { callScalar, execute, loadSqlEquiv } from '@prairielearn/postgres';
+import { callScalar, execute, loadSqlEquiv, runInTransactionAsync } from '@prairielearn/postgres';
 import { IdSchema } from '@prairielearn/zod';
 
 const sql = loadSqlEquiv(import.meta.url);
@@ -88,17 +88,19 @@ export async function syncEnrollmentAccessControl(
     JSON.stringify({ date: d.date, credit: d.credit }),
   );
 
-  return callScalar(
-    'sync_enrollment_access_control',
-    [
-      courseInstanceId,
-      assessmentId,
-      ruleJson,
-      enrollmentIds,
-      earlyDeadlinesJson,
-      lateDeadlinesJson,
-    ],
-    IdSchema,
+  return runInTransactionAsync(async () =>
+    callScalar(
+      'sync_enrollment_access_control',
+      [
+        courseInstanceId,
+        assessmentId,
+        ruleJson,
+        enrollmentIds,
+        earlyDeadlinesJson,
+        lateDeadlinesJson,
+      ],
+      IdSchema,
+    ),
   );
 }
 

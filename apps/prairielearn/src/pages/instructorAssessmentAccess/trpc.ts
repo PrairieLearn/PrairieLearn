@@ -6,6 +6,7 @@ import { z } from 'zod';
 import { loadSqlEquiv, queryRows, runInTransactionAsync } from '@prairielearn/postgres';
 
 import type { ResLocalsForPage } from '../../lib/res-locals.js';
+import { insertAuditEvent } from '../../models/audit-event.js';
 import {
   type EnrollmentAccessControlRuleData,
   deleteEnrollmentAccessControl,
@@ -28,6 +29,7 @@ export function createContext({ res }: CreateExpressContextOptions) {
     course_instance: locals.course_instance,
     assessment: locals.assessment,
     authz_data: locals.authz_data,
+    authn_user: locals.authn_user,
   };
 }
 
@@ -192,10 +194,11 @@ function dbRowToAccessControlJson(row: JsonRuleRow): AccessControlJson & { id: s
     row.date_control_after_last_deadline_allow_submissions !== null
   ) {
     dateControl.afterLastDeadline = {
-      credit: unmapField(
-        row.date_control_after_last_deadline_credit_overridden,
-        row.date_control_after_last_deadline_credit,
-      ),
+      credit:
+        unmapField(
+          row.date_control_after_last_deadline_credit_overridden,
+          row.date_control_after_last_deadline_credit,
+        ) ?? undefined,
       allowSubmissions: row.date_control_after_last_deadline_allow_submissions ?? undefined,
     };
   }
@@ -359,7 +362,24 @@ const saveRule = t.procedure
         .map((i) => i.enrollmentId)
         .filter((id): id is string => id !== undefined);
 
-      await syncEnrollmentAccessControl(courseInstanceId, assessmentId, ruleData, enrollmentIds);
+      const newRuleId = await syncEnrollmentAccessControl(
+        courseInstanceId,
+        assessmentId,
+        ruleData,
+        enrollmentIds,
+      );
+
+      await insertAuditEvent({
+        tableName: 'assessment_access_control',
+        action: isNew ? 'insert' : 'update',
+        actionDetail: 'rule_saved',
+        rowId: newRuleId,
+        newRow: { target_type: 'enrollment', enrollment_ids: enrollmentIds },
+        assessmentId,
+        courseInstanceId,
+        agentUserId: opts.ctx.authz_data.user.id,
+        agentAuthnUserId: opts.ctx.authn_user.id,
+      });
     } else {
       // JSON path (main rule or student_label override)
       // Wrap in a transaction to prevent race conditions between read and write
@@ -399,6 +419,18 @@ const saveRule = t.procedure
         const rulesToSync: AccessControlJson[] = updatedRules.map(({ id: _id, ...rest }) => rest);
 
         await syncAccessControl(courseInstanceId, assessmentId, rulesToSync);
+
+        await insertAuditEvent({
+          tableName: 'assessment_access_control',
+          action: isNew ? 'insert' : 'update',
+          actionDetail: 'rule_saved',
+          rowId: ruleId ?? assessmentId,
+          newRow: { is_main_rule: isMainRule, rule_count: rulesToSync.length },
+          assessmentId,
+          courseInstanceId,
+          agentUserId: opts.ctx.authz_data.user.id,
+          agentAuthnUserId: opts.ctx.authn_user.id,
+        });
       });
     }
 
@@ -451,6 +483,18 @@ const deleteRule = t.procedure
         await syncAccessControl(courseInstanceId, assessmentId, rulesToSync);
       });
     }
+
+    await insertAuditEvent({
+      tableName: 'assessment_access_control',
+      action: 'delete',
+      actionDetail: 'rule_deleted',
+      rowId: ruleId,
+      oldRow: { target_type: targetType },
+      assessmentId,
+      courseInstanceId,
+      agentUserId: opts.ctx.authz_data.user.id,
+      agentAuthnUserId: opts.ctx.authn_user.id,
+    });
 
     return { success: true as const };
   });

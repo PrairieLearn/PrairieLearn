@@ -52,6 +52,7 @@ export function AccessControlForm({
     control,
     handleSubmit,
     watch,
+    reset,
     formState: { isDirty, isValid },
   } = useForm<AccessControlFormData>({
     mode: 'onChange',
@@ -148,8 +149,8 @@ export function AccessControlForm({
           <Button
             type="button"
             variant="outline-secondary"
-            disabled={isSaving}
-            onClick={() => window.location.reload()}
+            disabled={!isDirty || isSaving}
+            onClick={() => reset()}
           >
             Reset
           </Button>

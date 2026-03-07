@@ -67,6 +67,7 @@ export function StudentSearchInput({ excludedUids, onSelect, onClose }: StudentS
     const validStudents = validatedUids
       .filter((r) => r.id && r.enrolled && !excludedUids.has(r.uid))
       .map((r) => ({
+        enrollmentId: r.id ?? undefined,
         uid: r.uid,
         name: r.name,
       }));
@@ -113,6 +114,7 @@ export function StudentSearchInput({ excludedUids, onSelect, onClose }: StudentS
     const studentsToAdd = allStudents
       .filter((s) => selectedStudents.has(s.id) && !excludedUids.has(s.uid))
       .map((s) => ({
+        enrollmentId: s.id,
         uid: s.uid,
         name: s.name,
       }));

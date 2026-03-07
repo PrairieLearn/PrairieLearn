@@ -3,6 +3,7 @@ import assert from 'node:assert';
 import async from 'async';
 
 import * as namedLocks from '@prairielearn/named-locks';
+import { runInTransactionAsync } from '@prairielearn/postgres';
 
 import { chalk } from '../lib/chalk.js';
 import { config } from '../lib/config.js';
@@ -221,10 +222,18 @@ export async function syncDiskToSqlWithLock(
                 const accessControlRules = assessment.data?.accessControl;
                 if (assessmentId) {
                   if (!accessControlRules || infofile.hasErrors(assessment)) {
-                    await syncAccessControl(courseInstanceId, assessmentId, []);
+                    await runInTransactionAsync(async () => {
+                      await syncAccessControl(courseInstanceId, assessmentId, []);
+                    });
                   } else {
                     try {
-                      await syncAccessControl(courseInstanceId, assessmentId, accessControlRules);
+                      await runInTransactionAsync(async () => {
+                        await syncAccessControl(
+                          courseInstanceId,
+                          assessmentId,
+                          accessControlRules,
+                        );
+                      });
                     } catch (err) {
                       infofile.addError(assessment, String(err));
                     }

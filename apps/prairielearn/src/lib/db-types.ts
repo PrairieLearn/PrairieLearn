@@ -233,12 +233,12 @@ export const AssessmentAccessControlSchema = z.object({
   // After complete fields
   after_complete_hide_questions: z.boolean().nullable(),
   after_complete_hide_questions_again_date: DateFromISOString.nullable(),
-  after_complete_hide_questions_again_date_overridden: z.boolean().nullable(),
+  after_complete_hide_questions_again_date_overridden: z.boolean(),
   after_complete_hide_score: z.boolean().nullable(),
   after_complete_show_questions_again_date: DateFromISOString.nullable(),
-  after_complete_show_questions_again_date_overridden: z.boolean().nullable(),
+  after_complete_show_questions_again_date_overridden: z.boolean(),
   after_complete_show_score_again_date: DateFromISOString.nullable(),
-  after_complete_show_score_again_date_overridden: z.boolean().nullable(),
+  after_complete_show_score_again_date_overridden: z.boolean(),
 
   assessment_id: IdSchema,
   block_access: z.boolean().nullable(),
@@ -247,18 +247,18 @@ export const AssessmentAccessControlSchema = z.object({
   // Date control fields
   date_control_after_last_deadline_allow_submissions: z.boolean().nullable(),
   date_control_after_last_deadline_credit: z.number().nullable(),
-  date_control_after_last_deadline_credit_overridden: z.boolean().nullable(),
+  date_control_after_last_deadline_credit_overridden: z.boolean(),
   date_control_due_date: DateFromISOString.nullable(),
-  date_control_due_date_overridden: z.boolean().nullable(),
+  date_control_due_date_overridden: z.boolean(),
   date_control_duration_minutes: z.number().nullable(),
-  date_control_duration_minutes_overridden: z.boolean().nullable(),
-  date_control_early_deadlines_overridden: z.boolean().nullable(),
-  date_control_late_deadlines_overridden: z.boolean().nullable(),
-  date_control_overridden: z.boolean().nullable(),
+  date_control_duration_minutes_overridden: z.boolean(),
+  date_control_early_deadlines_overridden: z.boolean(),
+  date_control_late_deadlines_overridden: z.boolean(),
+  date_control_overridden: z.boolean(),
   date_control_password: z.string().nullable(),
-  date_control_password_overridden: z.boolean().nullable(),
+  date_control_password_overridden: z.boolean(),
   date_control_release_date: DateFromISOString.nullable(),
-  date_control_release_date_overridden: z.boolean().nullable(),
+  date_control_release_date_overridden: z.boolean(),
 
   enabled: z.boolean().nullable(),
   id: IdSchema,
@@ -266,7 +266,7 @@ export const AssessmentAccessControlSchema = z.object({
   number: z.number(),
 
   // Integrations fields
-  integrations_prairietest_overridden: z.boolean().nullable(),
+  integrations_prairietest_overridden: z.boolean(),
 
   // Target type: 'none' for main rule (applies to all), 'enrollment' for individual students, 'student_label' for labels
   target_type: z.enum(['none', 'enrollment', 'student_label']),

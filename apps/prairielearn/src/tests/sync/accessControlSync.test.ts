@@ -64,7 +64,7 @@ async function findSyncedAccessControlRules(assessmentId: string) {
       const typeOrder =
         (TARGET_TYPE_ORDER[a.target_type] ?? 99) - (TARGET_TYPE_ORDER[b.target_type] ?? 99);
       if (typeOrder !== 0) return typeOrder;
-      return (a.number ?? 0) - (b.number ?? 0);
+      return a.number - b.number;
     });
 }
 
@@ -959,9 +959,24 @@ describe('Access control syncing', () => {
         util.ASSESSMENT_ID
       ].accessControl = [assignmentRule, ruleWithInvalidTarget];
 
-      await util.writeAndSyncCourseData(courseData);
+      const courseDir = await util.writeCourseToTempDirectory(courseData);
+      const syncResults = await util.syncCourseData(courseDir);
 
-      // No rules should be synced because one has an invalid group target
+      // Verify that sync recorded an error for the invalid label
+      assert.equal(syncResults.status, 'complete');
+      if (syncResults.status === 'complete') {
+        const assessment =
+          syncResults.courseData.courseInstances[util.COURSE_INSTANCE_ID].assessments[
+            util.ASSESSMENT_ID
+          ];
+        assert.isOk(assessment.errors, 'Assessment should have errors');
+        assert.isTrue(
+          assessment.errors.some((error) => error.includes('nonexistent-group')),
+          'Should have error mentioning the invalid label name',
+        );
+      }
+
+      // No rules should be synced because the sync errored
       const syncedRules = await findSyncedAccessControlRules(util.ASSESSMENT_ID);
       assert.equal(
         syncedRules.length,

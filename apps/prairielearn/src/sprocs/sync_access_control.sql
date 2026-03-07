@@ -16,6 +16,7 @@ DECLARE
     rule_number integer;
     new_rule_id bigint;
     max_json_rule_number integer;
+    incoming_target_type text;
 BEGIN
     -- Calculate the max JSON rule number that will exist after sync
     max_json_rule_number := JSON_RULE_START + COALESCE(array_length(rules_data, 1), 0) - 1;
@@ -49,6 +50,16 @@ BEGIN
     -- Step 2: Loop through JSON rules and upsert each
     rule_number := JSON_RULE_START;
     FOR rule IN SELECT * FROM UNNEST(rules_data) LOOP
+        -- If the target_type changed for this number, delete the old row first
+        -- to avoid unique constraint conflicts (the conflict key includes target_type)
+        incoming_target_type := (rule ->> 'target_type')::text;
+        DELETE FROM assessment_access_control
+        WHERE assessment_id = syncing_assessment_id
+            AND course_instance_id = syncing_course_instance_id
+            AND number = rule_number
+            AND target_type != incoming_target_type
+            AND target_type IN ('none', 'student_label');
+
         INSERT INTO assessment_access_control (
             course_instance_id,
             assessment_id,

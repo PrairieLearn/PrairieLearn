@@ -54,6 +54,11 @@ BEGIN
             AND target_type = 'enrollment'
         RETURNING id INTO new_rule_id;
 
+        IF new_rule_id IS NULL THEN
+            RAISE EXCEPTION 'Access control rule % not found for assessment % in course instance %',
+                existing_rule_id, syncing_assessment_id, syncing_course_instance_id;
+        END IF;
+
         -- Delete old child rows
         DELETE FROM assessment_access_control_enrollments
         WHERE assessment_access_control_id = new_rule_id;

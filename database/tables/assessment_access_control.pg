@@ -1,32 +1,32 @@
 columns
     after_complete_hide_questions: boolean
     after_complete_hide_questions_again_date: timestamp with time zone
-    after_complete_hide_questions_again_date_overridden: boolean
+    after_complete_hide_questions_again_date_overridden: boolean not null default false
     after_complete_hide_score: boolean
     after_complete_show_questions_again_date: timestamp with time zone
-    after_complete_show_questions_again_date_overridden: boolean
+    after_complete_show_questions_again_date_overridden: boolean not null default false
     after_complete_show_score_again_date: timestamp with time zone
-    after_complete_show_score_again_date_overridden: boolean
+    after_complete_show_score_again_date_overridden: boolean not null default false
     assessment_id: bigint not null
     block_access: boolean
     course_instance_id: bigint not null
     date_control_after_last_deadline_allow_submissions: boolean
     date_control_after_last_deadline_credit: integer
-    date_control_after_last_deadline_credit_overridden: boolean
+    date_control_after_last_deadline_credit_overridden: boolean not null default false
     date_control_due_date: timestamp with time zone
-    date_control_due_date_overridden: boolean
+    date_control_due_date_overridden: boolean not null default false
     date_control_duration_minutes: integer
-    date_control_duration_minutes_overridden: boolean
-    date_control_early_deadlines_overridden: boolean
-    date_control_late_deadlines_overridden: boolean
-    date_control_overridden: boolean
+    date_control_duration_minutes_overridden: boolean not null default false
+    date_control_early_deadlines_overridden: boolean not null default false
+    date_control_late_deadlines_overridden: boolean not null default false
+    date_control_overridden: boolean not null default false
     date_control_password: text
-    date_control_password_overridden: boolean
+    date_control_password_overridden: boolean not null default false
     date_control_release_date: timestamp with time zone
-    date_control_release_date_overridden: boolean
+    date_control_release_date_overridden: boolean not null default false
     enabled: boolean
     id: bigint not null default nextval('assessment_access_control_id_seq'::regclass)
-    integrations_prairietest_overridden: boolean
+    integrations_prairietest_overridden: boolean not null default false
     list_before_release: boolean
     number: integer not null
     target_type: text not null
