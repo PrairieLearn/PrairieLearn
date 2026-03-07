@@ -19,7 +19,6 @@ import { CollapseToggleButton } from './CollapseToggleButton.js';
 import { DragHandle } from './DragHandle.js';
 import { SortableAlternativeRow } from './SortableAlternativeRow.js';
 import { PointsBadge, TreeQuestionRow } from './TreeQuestionRow.js';
-import { WarningIndicator } from './WarningIndicator.js';
 import { makeDraggableStyle } from './dragUtils.js';
 
 /**
@@ -189,10 +188,18 @@ export function TreeQuestionBlockNode({
               return `Choose ${choose} of ${alternativeCount}`;
             })}
             {pointsMismatch && (
-              <WarningIndicator
-                tooltipId={`points-mismatch-${zoneQuestionBlock.trackingId}`}
-                body="Alternatives have different point values"
-              />
+              <OverlayTrigger
+                placement="top"
+                tooltip={{
+                  props: { id: `points-mismatch-${zoneQuestionBlock.trackingId}` },
+                  body: 'Alternatives have different point values',
+                }}
+              >
+                <i
+                  className="bi bi-exclamation-triangle-fill text-warning ms-1"
+                  aria-hidden="true"
+                />
+              </OverlayTrigger>
             )}
             {chooseExceeds && (
               <OverlayTrigger
