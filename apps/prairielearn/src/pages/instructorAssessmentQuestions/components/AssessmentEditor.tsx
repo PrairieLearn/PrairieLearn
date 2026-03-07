@@ -132,6 +132,7 @@ interface AssessmentEditorInnerProps {
   canEdit: boolean;
   csrfToken: string;
   origHash: string;
+  switchViewUrl: string | null;
 }
 
 function AssessmentEditorInner({
@@ -144,6 +145,7 @@ function AssessmentEditorInner({
   canEdit,
   csrfToken,
   origHash,
+  switchViewUrl,
 }: AssessmentEditorInnerProps) {
   const trpc = useTRPC();
   const queryClient = useQueryClient();
@@ -1193,6 +1195,7 @@ function AssessmentEditorInner({
                 state={treeState}
                 actions={treeActions}
                 isAllExpanded={isAllExpanded}
+                switchViewUrl={switchViewUrl}
                 editControls={
                   <EditModeToolbar
                     csrfToken={csrfToken}

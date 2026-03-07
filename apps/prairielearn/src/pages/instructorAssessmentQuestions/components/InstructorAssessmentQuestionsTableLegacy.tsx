@@ -57,6 +57,7 @@ export function InstructorAssessmentQuestionsTableLegacy({
   hasCoursePermissionPreview,
   hasCourseInstancePermissionEdit,
   csrfToken,
+  switchViewUrl,
 }: {
   course: StaffCourse;
   questionRows: StaffAssessmentQuestionRow[];
@@ -67,6 +68,7 @@ export function InstructorAssessmentQuestionsTableLegacy({
   hasCoursePermissionPreview: boolean;
   hasCourseInstancePermissionEdit: boolean;
   csrfToken: string;
+  switchViewUrl: string | null;
 }) {
   const [resetAssessmentQuestionId, setResetAssessmentQuestionId] = useState('');
   const [showResetModal, setShowResetModal] = useState(false);
@@ -117,6 +119,11 @@ export function InstructorAssessmentQuestionsTableLegacy({
           <h1>
             {assessmentSetName} {assessmentNumber}: Questions
           </h1>
+          {switchViewUrl && (
+            <a href={switchViewUrl} className="btn btn-sm btn-outline-light ms-auto">
+              Switch to new view
+            </a>
+          )}
         </div>
         <div className="table-responsive">
           <table className="table table-sm table-hover" aria-label="Assessment questions">
