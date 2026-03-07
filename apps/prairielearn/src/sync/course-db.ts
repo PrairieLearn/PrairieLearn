@@ -1045,6 +1045,10 @@ function validateQuestion({
     }
   }
 
+  if (question.gradingMethod === 'External' && !question.externalGradingOptions) {
+    errors.push('"externalGradingOptions" is required when "gradingMethod" is "External"');
+  }
+
   if (question.externalGradingOptions?.timeout) {
     if (question.externalGradingOptions.timeout > config.externalGradingMaximumTimeout) {
       warnings.push(

@@ -103,13 +103,18 @@ check-dependencies:
 
 check-jsonschema:
 	@yarn dlx tsx scripts/gen-jsonschema.mts check
+compile-badge-colors:
+	@npx sass --no-source-map apps/prairielearn/public/stylesheets/colors.scss apps/prairielearn/public/stylesheets/colors.css
+	@yarn prettier --write apps/prairielearn/public/stylesheets/colors.css
+check-badge-contrast:
+	@node scripts/check-badge-contrast.mjs
 check-npm-packages:
 	@node scripts/check-npm-packages.mjs
 update-jsonschema:
 	@yarn dlx tsx scripts/gen-jsonschema.mts && yarn prettier --write "apps/prairielearn/src/schemas/**/*.json" && yarn prettier --write "docs/assets/*.schema.json"
 
 # Runs additional third-party linters
-lint-all: lint-js lint-python lint-html lint-docs lint-docker lint-actions lint-shell lint-sql-migrations lint-sql
+lint-all: lint-js lint-python lint-html lint-mustache lint-docs lint-docker lint-actions lint-shell lint-sql-migrations lint-sql
 
 lint: lint-js lint-python lint-html lint-links lint-changeset
 lint-js:
@@ -127,6 +132,8 @@ lint-docs-links: build-docs
 # Lint HTML files, and the build output of the docs
 lint-html:
 	@yarn htmlhint "testCourse/**/question.html" "exampleCourse/**/question.html" "site"
+lint-mustache:
+	@yarn htmlmustache check
 lint-markdown:
 	@yarn markdownlint-cli2
 lint-links:
@@ -145,7 +152,7 @@ lint-changeset:
 	@yarn changeset status
 
 # Runs additional third-party formatters
-format-all: format-js format-python format-sql
+format-all: format-js format-python format-sql format-mustache
 
 format: format-js format-python
 format-sql:
@@ -158,6 +165,9 @@ format-js:
 format-js-cached:
 	@yarn eslint --ext js --fix --cache --cache-strategy content "**/*.{js,jsx,ts,tsx,mjs,cjs,mts,cts,html,mustache}"
 	@yarn prettier --write --cache --cache-strategy content "**/*.{js,jsx,ts,tsx,mjs,cjs,mts,cts,md,sql,json,yml,toml,html,css,scss,sh}"
+
+format-mustache:
+	@yarn htmlmustache format --write
 
 format-python:
 	@uv run ruff check --fix ./

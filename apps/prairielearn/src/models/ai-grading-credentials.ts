@@ -1,4 +1,10 @@
-import { execute, loadSqlEquiv, queryRow, queryRows } from '@prairielearn/postgres';
+import {
+  loadSqlEquiv,
+  queryOptionalRow,
+  queryRow,
+  queryRows,
+  runInTransactionAsync,
+} from '@prairielearn/postgres';
 
 import {
   CourseInstanceAiGradingCredentialSchema,
@@ -6,7 +12,14 @@ import {
   type EnumAiGradingProvider,
 } from '../lib/db-types.js';
 
+import { insertAuditEvent } from './audit-event.js';
+
 const sql = loadSqlEquiv(import.meta.url);
+
+/** Returns a copy of the credential row with the encrypted key redacted. */
+function redactCredentialRow(row: Record<string, any>): Record<string, any> {
+  return { ...row, encrypted_secret_key: '[REDACTED]' };
+}
 
 export async function selectCredentials(course_instance_id: string) {
   return await queryRows(
@@ -27,21 +40,52 @@ export async function upsertCredential({
   encrypted_secret_key: string;
   created_by: string;
 }) {
-  return await queryRow(
-    sql.upsert_credential,
-    { course_instance_id, provider, encrypted_secret_key, created_by },
-    CourseInstanceAiGradingCredentialSchema,
-  );
+  return await runInTransactionAsync(async () => {
+    const row = await queryRow(
+      sql.upsert_credential,
+      { course_instance_id, provider, encrypted_secret_key, created_by },
+      CourseInstanceAiGradingCredentialSchema,
+    );
+    await insertAuditEvent({
+      tableName: 'course_instance_ai_grading_credentials',
+      action: 'insert',
+      rowId: row.id,
+      newRow: redactCredentialRow(row),
+      courseInstanceId: course_instance_id,
+      agentAuthnUserId: created_by,
+      agentUserId: created_by,
+    });
+    return row;
+  });
 }
 
 export async function deleteCredential({
   credential_id,
   course_instance_id,
+  authn_user_id,
 }: {
   credential_id: string;
   course_instance_id: string;
+  authn_user_id: string;
 }) {
-  await execute(sql.delete_credential, { credential_id, course_instance_id });
+  await runInTransactionAsync(async () => {
+    const deleted = await queryOptionalRow(
+      sql.delete_credential,
+      { credential_id, course_instance_id },
+      CourseInstanceAiGradingCredentialSchema,
+    );
+    if (deleted) {
+      await insertAuditEvent({
+        tableName: 'course_instance_ai_grading_credentials',
+        action: 'delete',
+        rowId: deleted.id,
+        oldRow: redactCredentialRow(deleted),
+        courseInstanceId: course_instance_id,
+        agentAuthnUserId: authn_user_id,
+        agentUserId: authn_user_id,
+      });
+    }
+  });
 }
 
 export async function updateUseCustomApiKeys({

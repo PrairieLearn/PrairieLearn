@@ -377,6 +377,8 @@ function AiGradingSettingsContent({
         providerOptions={providerOptions}
         credentials={credentials}
         onSuccess={(credential) => {
+          // The server upserts by provider, so replace any existing credential
+          // for the same provider with the newly returned one.
           setCredentials((prev) => {
             const filtered = prev.filter((c) => c.provider !== credential.provider);
             return [...filtered, credential];
@@ -388,6 +390,7 @@ function AiGradingSettingsContent({
       <DeleteApiKeyModal
         {...deleteModalState}
         onSuccess={() => {
+          // Read the target from modal state before hiding, since hide() clears it.
           const target = deleteModalState.data;
           if (target) {
             setCredentials((prev) => prev.filter((c) => c.id !== target.id));

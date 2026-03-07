@@ -493,7 +493,7 @@ export function AssessmentQuestionTable({
   // Update column visibility when AI grading mode changes
   useEffect(() => {
     // https://github.com/NickvanDyke/eslint-plugin-react-you-might-not-need-an-effect/issues/58
-    // eslint-disable-next-line react-you-might-not-need-an-effect/no-pass-ref-to-parent, @eslint-react/hooks-extra/no-direct-set-state-in-use-effect
+    // eslint-disable-next-line @eslint-react/hooks-extra/no-direct-set-state-in-use-effect
     void setColumnVisibility((prev) => ({
       ...prev,
       // Hide these columns in AI grading mode

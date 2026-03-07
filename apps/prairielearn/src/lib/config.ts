@@ -203,7 +203,10 @@ export const ConfigSchema = z.object({
   // TODO: tweak this value once we see the data from #2267
   questionTimeoutMilliseconds: z.number().default(10000),
   secretKey: z.string().default('THIS_IS_THE_SECRET_KEY'),
-  databaseEncryptionKey: z.string().default('0'.repeat(64)),
+  databaseEncryptionKey: z
+    .string()
+    .regex(/^[0-9a-f]{64}$/i)
+    .default('0'.repeat(64)),
   secretSlackOpsBotEndpoint: z.string().nullable().default(null),
   secretSlackToken: z.string().nullable().default(null),
   secretSlackCourseRequestChannel: z.string().nullable().default(null),
@@ -606,7 +609,7 @@ export const ConfigSchema = z.object({
       'gpt-5.2-2025-12-11': TokenPricingSchema,
       'gemini-2.5-flash': TokenPricingSchema,
       'gemini-3-flash-preview': TokenPricingSchema,
-      'gemini-3-pro-preview': TokenPricingSchema,
+      'gemini-3.1-pro-preview': TokenPricingSchema,
       'claude-opus-4-5': TokenPricingSchema,
       'claude-haiku-4-5': TokenPricingSchema,
       'claude-sonnet-4-5': TokenPricingSchema,
@@ -626,7 +629,7 @@ export const ConfigSchema = z.object({
       // Google does not charge for cache writes.
       'gemini-2.5-flash': { input: 0.3, cachedInput: 0.03, cacheWrite: 0, output: 2.5 },
       'gemini-3-flash-preview': { input: 0.5, cachedInput: 0.05, cacheWrite: 0, output: 3 },
-      'gemini-3-pro-preview': { input: 2, cachedInput: 0.2, cacheWrite: 0, output: 12 },
+      'gemini-3.1-pro-preview': { input: 2, cachedInput: 0.2, cacheWrite: 0, output: 12 },
 
       // Prices current as of 2025-11-25. Values obtained from
       // https://www.anthropic.com/pricing#api

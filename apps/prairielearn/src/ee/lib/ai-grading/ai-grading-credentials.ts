@@ -1,14 +1,10 @@
-import { loadSqlEquiv, queryRows } from '@prairielearn/postgres';
-
 import { config } from '../../../lib/config.js';
 import {
   type CourseInstance,
-  CourseInstanceAiGradingCredentialSchema,
-  type EnumAiGradingProvider,
+  type EnumAiGradingProvider
 } from '../../../lib/db-types.js';
 import { decryptFromStorage } from '../../../lib/storage-crypt.js';
-
-const sql = loadSqlEquiv(import.meta.url);
+import { selectCredentials } from '../../../models/ai-grading-credentials.js';
 
 interface ResolvedProviderKeys {
   openai: { apiKey: string; organization: string | null } | null;
@@ -41,11 +37,7 @@ export async function resolveAiGradingKeys(
     };
   }
 
-  const credentials = await queryRows(
-    sql.select_credentials_for_course_instance,
-    { course_instance_id: courseInstance.id },
-    CourseInstanceAiGradingCredentialSchema,
-  );
+  const credentials = await selectCredentials(courseInstance.id);
 
   const keys: ResolvedProviderKeys = {
     openai: null,

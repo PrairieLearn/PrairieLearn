@@ -82,7 +82,7 @@ const addCredentialMutation = t.procedure
   .input(
     z.object({
       provider: EnumAiGradingProviderSchema,
-      secret_key: z.string().min(1),
+      secret_key: z.string().trim().min(1),
     }),
   )
   .mutation(async (opts) => {
@@ -106,6 +106,7 @@ const deleteCredentialMutation = t.procedure
     await deleteCredential({
       credential_id: opts.input.credential_id,
       course_instance_id: opts.ctx.course_instance.id,
+      authn_user_id: opts.ctx.authn_user.id
     });
   });
 
