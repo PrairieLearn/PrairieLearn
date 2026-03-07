@@ -168,8 +168,17 @@ WITH
       ai.id AS assessment_instance_id,
       iq.id AS iq_id,
       z.id AS zone_id,
+      a.type AS assessment_type,
+      iq.status,
+      iq.auto_points,
+      iq.manual_points,
+      iq.current_value,
+      iq.points_list,
+      iq.variants_points_list,
       aq.max_points,
+      aq.max_auto_points,
       aq.max_manual_points,
+      aq.init_points,
       iq.requires_manual_grading,
       row_number() OVER (
         PARTITION BY
@@ -206,35 +215,74 @@ WITH
         OR (allq.best_questions IS NULL)
       )
   ),
-  pending_by_zone AS (
+  pending_by_question AS (
     SELECT
       mpq.assessment_instance_id,
       mpq.zone_id,
-      CASE
-        WHEN mpq.zone_max_points IS NULL THEN sum(
-          CASE
-            WHEN COALESCE(mpq.max_manual_points, 0) > 0
-            AND mpq.requires_manual_grading THEN COALESCE(mpq.max_manual_points, 0)
-            ELSE 0
-          END
-        )
-        ELSE LEAST(
-          sum(
+      (
+        CASE
+          WHEN COALESCE(mpq.max_manual_points, 0) > 0
+          AND mpq.requires_manual_grading THEN COALESCE(mpq.max_manual_points, 0)
+          ELSE 0
+        END
+      ) + (
+        CASE
+          WHEN mpq.status IN ('saved', 'grading')
+          AND COALESCE(mpq.max_auto_points, 0) > 0 THEN LEAST(
+            GREATEST(
+              0,
+              COALESCE(mpq.max_auto_points, 0) - COALESCE(mpq.auto_points, 0)
+            ),
             CASE
-              WHEN COALESCE(mpq.max_manual_points, 0) > 0
-              AND mpq.requires_manual_grading THEN COALESCE(mpq.max_manual_points, 0)
-              ELSE 0
+              WHEN mpq.assessment_type = 'Homework' THEN (
+                CASE
+                  WHEN COALESCE(array_length(mpq.variants_points_list, 1), 0) = 0
+                  OR COALESCE(
+                    mpq.variants_points_list[array_length(mpq.variants_points_list, 1)],
+                    0
+                  ) >= GREATEST(
+                    0,
+                    COALESCE(mpq.init_points, 0) - COALESCE(mpq.max_manual_points, 0)
+                  ) THEN GREATEST(
+                    0,
+                    COALESCE(mpq.current_value, 0) - COALESCE(mpq.max_manual_points, 0)
+                  )
+                  ELSE GREATEST(
+                    0,
+                    COALESCE(mpq.current_value, 0) - COALESCE(mpq.max_manual_points, 0)
+                  ) - COALESCE(
+                    mpq.variants_points_list[array_length(mpq.variants_points_list, 1)],
+                    0
+                  )
+                END
+              )
+              ELSE GREATEST(
+                0,
+                COALESCE(mpq.points_list[1], mpq.current_value, 0) - COALESCE(mpq.max_manual_points, 0)
+              )
             END
-          ),
-          mpq.zone_max_points
-        )
-      END AS pending_points
+          )
+          ELSE 0
+        END
+      ) AS pending_points,
+      mpq.zone_max_points
     FROM
       max_points_questions AS mpq
+  ),
+  pending_by_zone AS (
+    SELECT
+      pbq.assessment_instance_id,
+      pbq.zone_id,
+      CASE
+        WHEN pbq.zone_max_points IS NULL THEN sum(pbq.pending_points)
+        ELSE LEAST(sum(pbq.pending_points), pbq.zone_max_points)
+      END AS pending_points
+    FROM
+      pending_by_question AS pbq
     GROUP BY
-      mpq.assessment_instance_id,
-      mpq.zone_id,
-      mpq.zone_max_points
+      pbq.assessment_instance_id,
+      pbq.zone_id,
+      pbq.zone_max_points
   ),
   pending_total AS (
     SELECT

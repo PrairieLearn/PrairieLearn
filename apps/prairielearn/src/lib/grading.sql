@@ -193,6 +193,7 @@ WITH
   prior_instance_question AS (
     SELECT
       iq.id,
+      iq.status AS old_status,
       iq.requires_manual_grading AS old_requires_manual_grading
     FROM
       instance_questions AS iq
@@ -204,7 +205,7 @@ WITH
   updated_instance_question AS (
     UPDATE instance_questions AS iq
     SET
-      status = $status,
+      status = $status::enum_instance_question_status,
       duration = duration + ($delta * interval '1 ms'),
       first_duration = coalesce(first_duration, $delta * interval '1 ms'),
       modified_at = now(),
@@ -222,7 +223,16 @@ WITH
       (
         NOT piq.old_requires_manual_grading
         AND $requires_manual_grading
-      ) AS newly_requires_manual_grading
+      ) AS newly_requires_manual_grading,
+      (
+        (piq.old_status IN ('saved', 'grading')) IS DISTINCT FROM ($status IN ('saved', 'grading'))
+        OR (
+          piq.old_requires_manual_grading IS DISTINCT FROM (
+            piq.old_requires_manual_grading
+            OR $requires_manual_grading
+          )
+        )
+      ) AS pending_state_changed
   ),
   updated_assessment_instance AS (
     UPDATE assessment_instances
