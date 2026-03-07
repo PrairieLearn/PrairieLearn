@@ -98,6 +98,15 @@ export const EnumQuestionTypeSchema = z.enum([
 ]);
 export type EnumQuestionType = z.infer<typeof EnumQuestionTypeSchema>;
 
+export const EnumWorkflowRunStatusSchema = z.enum([
+  'canceled',
+  'completed',
+  'error',
+  'running',
+  'waiting_for_input',
+]);
+export type EnumWorkflowRunStatus = z.infer<typeof EnumWorkflowRunStatusSchema>;
+
 // *******************************************************************************
 // Miscellaneous schemas; keep these alphabetized.
 // *******************************************************************************
@@ -1560,6 +1569,24 @@ export const VariantSchema = z.object({
   workspace_id: IdSchema.nullable(),
 });
 export type Variant = z.infer<typeof VariantSchema>;
+
+export const WorkflowRunSchema = z.object({
+  completed_at: DateFromISOString.nullable(),
+  context: z.record(z.unknown()),
+  created_at: DateFromISOString,
+  error_message: z.string().nullable(),
+  heartbeat_at: DateFromISOString.nullable(),
+  id: IdSchema,
+  locked_at: DateFromISOString.nullable(),
+  locked_by: z.string().nullable(),
+  output: z.string(),
+  phase: z.string().nullable(),
+  state: z.record(z.unknown()),
+  status: EnumWorkflowRunStatusSchema,
+  type: z.string(),
+  updated_at: DateFromISOString,
+});
+export type WorkflowRun = z.infer<typeof WorkflowRunSchema>;
 
 export const WorkspaceSchema = z.object({
   created_at: DateFromISOString,

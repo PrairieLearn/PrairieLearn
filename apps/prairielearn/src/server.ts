@@ -54,6 +54,7 @@ import { run } from '@prairielearn/run';
 import { createSessionMiddleware } from '@prairielearn/session';
 import { getCheckedSignedTokenData } from '@prairielearn/signed-token';
 import { assertNever } from '@prairielearn/utils';
+import * as workflows from '@prairielearn/workflows';
 
 import * as cron from './cron/index.js';
 import * as assets from './lib/assets.js';
@@ -2341,6 +2342,8 @@ if (shouldStartServer) {
       renewIntervalMs: config.namedLocksRenewIntervalMs,
     });
 
+    await workflows.init(pgConfig, idleErrorHandler);
+
     logger.verbose('Successfully connected to database');
 
     if (argv['refresh-workspace-hosts-and-exit']) {
@@ -2496,6 +2499,8 @@ if (shouldStartServer) {
         workDurationMs: config.batchedMigrationsWorkDurationMs,
         sleepDurationMs: config.batchedMigrationsSleepDurationMs,
       });
+
+      workflows.startCronLoop();
     }
 
     if ('sync-course' in argv) {
@@ -2621,6 +2626,7 @@ if (shouldStartServer) {
       assets.close(),
       codeCaller.finish(),
       stopBatchedMigrations(),
+      workflows.stopCronLoop(),
     ]);
     serviceResults.forEach((r) => {
       if (r.status === 'rejected') {
@@ -2630,7 +2636,11 @@ if (shouldStartServer) {
     });
 
     // Then close the database connections now that nothing is using them.
-    const dbResults = await Promise.allSettled([namedLocks.close(), sqldb.closeAsync()]);
+    const dbResults = await Promise.allSettled([
+      workflows.close(),
+      namedLocks.close(),
+      sqldb.closeAsync(),
+    ]);
     dbResults.forEach((r) => {
       if (r.status === 'rejected') {
         logger.error('Error closing database connections', r.reason);
@@ -2691,6 +2701,8 @@ export async function close() {
   await codeCaller.finish();
   load.close();
   await stopBatchedMigrations();
+  await workflows.stopCronLoop();
+  await workflows.close();
   await namedLocks.close();
   await sqldb.closeAsync();
 }
