@@ -10,7 +10,8 @@ import {
 } from '../lib/assessment-grading.js';
 import { setAssessmentInstancePoints } from '../lib/assessment.js';
 import { config } from '../lib/config.js';
-import { AssessmentInstanceSchema } from '../lib/db-types.js';
+import { AssessmentInstanceSchema, InstanceQuestionSchema } from '../lib/db-types.js';
+import { updateInstanceQuestionScore } from '../lib/manualGrading.js';
 import { selectAssessmentByTid } from '../models/assessment.js';
 
 import * as helperServer from './helperServer.js';
@@ -184,5 +185,130 @@ describe('score_perc_pending', { timeout: 40_000 }, () => {
     assert.equal(after.score_perc_pending, 0);
     assert.equal(after.points, pointsBefore);
     assert.equal(after.score_perc, scoreBefore);
+  });
+
+  it('manual points do not clear pending while requires_manual_grading is true', async () => {
+    const assessment_id = await startAssessment('hwScorePercPendingManualOnly');
+    const assessmentInstance = await sqldb.queryRow(
+      sql.select_latest_assessment_instance,
+      { assessment_id },
+      AssessmentInstanceSchema,
+    );
+
+    await sqldb.execute(sql.mark_instance_questions_requires_manual_grading, {
+      assessment_instance_id: assessmentInstance.id,
+    });
+    await sqldb.execute(sql.set_manual_points_for_assessment_instance, {
+      assessment_instance_id: assessmentInstance.id,
+      manual_points: 3,
+    });
+    await updateAssessmentInstancesScorePercPending([assessmentInstance.id]);
+
+    const refreshed = await sqldb.queryRow(
+      sql.select_latest_assessment_instance,
+      { assessment_id },
+      AssessmentInstanceSchema,
+    );
+    assert.closeTo(refreshed.score_perc_pending, 100, 0.0001);
+  });
+
+  it('saved autograded submissions contribute pending until grading completes', async () => {
+    const assessment_id = await startAssessment('hwScorePercPendingMixed');
+    const assessmentInstance = await sqldb.queryRow(
+      sql.select_latest_assessment_instance,
+      { assessment_id },
+      AssessmentInstanceSchema,
+    );
+    const autogradedInstanceQuestion = await sqldb.queryRow(
+      sql.select_autograded_instance_question,
+      { assessment_instance_id: assessmentInstance.id },
+      InstanceQuestionSchema,
+    );
+
+    await sqldb.execute(sql.clear_manual_requires_manual_grading_for_assessment_instance, {
+      assessment_instance_id: assessmentInstance.id,
+    });
+    await sqldb.execute(sql.update_instance_question_status, {
+      instance_question_id: autogradedInstanceQuestion.id,
+      status: 'saved',
+    });
+    await updateAssessmentInstancesScorePercPending([assessmentInstance.id]);
+
+    const pending = await sqldb.queryRow(
+      sql.select_latest_assessment_instance,
+      { assessment_id },
+      AssessmentInstanceSchema,
+    );
+    assert.isAbove(pending.score_perc_pending, 0);
+
+    await sqldb.execute(sql.update_instance_question_status, {
+      instance_question_id: autogradedInstanceQuestion.id,
+      status: 'complete',
+    });
+    await updateAssessmentInstancesScorePercPending([assessmentInstance.id]);
+
+    const finalized = await sqldb.queryRow(
+      sql.select_latest_assessment_instance,
+      { assessment_id },
+      AssessmentInstanceSchema,
+    );
+    assert.equal(finalized.score_perc_pending, 0);
+  });
+
+  it('regrading with the same score clears manual pending', async () => {
+    const assessment = await selectAssessmentByTid({
+      course_instance_id: '1',
+      tid: 'hwScorePercPendingManualOnly',
+    });
+    const assessment_id = await startAssessment('hwScorePercPendingManualOnly');
+    const assessmentInstance = await sqldb.queryRow(
+      sql.select_latest_assessment_instance,
+      { assessment_id },
+      AssessmentInstanceSchema,
+    );
+    const instanceQuestion = await sqldb.queryRow(
+      sql.select_instance_question,
+      { assessment_instance_id: assessmentInstance.id },
+      InstanceQuestionSchema,
+    );
+
+    await sqldb.execute(sql.mark_instance_questions_requires_manual_grading, {
+      assessment_instance_id: assessmentInstance.id,
+    });
+    await updateInstanceQuestionScore({
+      assessment,
+      instance_question_id: instanceQuestion.id,
+      submission_id: null,
+      check_modified_at: null,
+      score: { manual_points: 3 },
+      authn_user_id: '1',
+    });
+
+    await sqldb.execute(sql.mark_instance_questions_requires_manual_grading, {
+      assessment_instance_id: assessmentInstance.id,
+    });
+    await updateInstanceQuestionScore({
+      assessment,
+      instance_question_id: instanceQuestion.id,
+      submission_id: null,
+      check_modified_at: null,
+      score: { manual_points: 3 },
+      authn_user_id: '1',
+    });
+
+    await updateAssessmentInstancesScorePercPending([assessmentInstance.id]);
+    const refreshed = await sqldb.queryRow(
+      sql.select_latest_assessment_instance,
+      { assessment_id },
+      AssessmentInstanceSchema,
+    );
+    assert.equal(refreshed.score_perc_pending, 0);
+
+    const pendingQuestions = await sqldb.queryRow(
+      sql.count_pending_instance_questions,
+      { assessment_instance_id: assessmentInstance.id },
+      z.number(),
+    );
+    assert.equal(pendingQuestions, 0);
   });
 });

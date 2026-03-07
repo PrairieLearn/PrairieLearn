@@ -43,3 +43,55 @@ FROM
 WHERE
   iq.assessment_instance_id = $assessment_instance_id
   AND iq.requires_manual_grading;
+
+-- BLOCK select_autograded_instance_question
+SELECT
+  iq.*
+FROM
+  instance_questions AS iq
+  JOIN assessment_questions AS aq ON (aq.id = iq.assessment_question_id)
+WHERE
+  iq.assessment_instance_id = $assessment_instance_id
+  AND COALESCE(aq.max_auto_points, 0) > 0
+  AND COALESCE(aq.max_manual_points, 0) = 0
+ORDER BY
+  iq.id
+LIMIT
+  1;
+
+-- BLOCK update_instance_question_status
+UPDATE instance_questions
+SET
+  status = $status::enum_instance_question_status
+WHERE
+  id = $instance_question_id;
+
+-- BLOCK clear_manual_requires_manual_grading_for_assessment_instance
+UPDATE instance_questions AS iq
+SET
+  requires_manual_grading = FALSE
+FROM
+  assessment_questions AS aq
+WHERE
+  iq.assessment_instance_id = $assessment_instance_id
+  AND iq.assessment_question_id = aq.id
+  AND COALESCE(aq.max_manual_points, 0) > 0;
+
+-- BLOCK select_instance_question
+SELECT
+  iq.*
+FROM
+  instance_questions AS iq
+WHERE
+  iq.assessment_instance_id = $assessment_instance_id
+ORDER BY
+  iq.id
+LIMIT
+  1;
+
+-- BLOCK set_manual_points_for_assessment_instance
+UPDATE instance_questions AS iq
+SET
+  manual_points = $manual_points
+WHERE
+  iq.assessment_instance_id = $assessment_instance_id;
