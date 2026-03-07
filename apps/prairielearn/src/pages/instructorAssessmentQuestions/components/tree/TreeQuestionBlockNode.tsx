@@ -180,9 +180,9 @@ export function TreeQuestionBlockNode({
           ariaLabel={isCollapsed ? 'Expand alternatives' : 'Collapse alternatives'}
           onToggle={toggleCollapse}
         />
-        <i className="bi bi-stack text-primary me-1" aria-hidden="true" />
         <div className="flex-grow-1" style={{ minWidth: 0 }}>
           <div className="text-truncate text-primary">
+            <i className="bi bi-stack me-1" aria-hidden="true" />
             {run(() => {
               const choose = zoneQuestionBlock.numberChoose;
               if (choose == null) return `Choose ${alternativeCount} of ${alternativeCount}`;
