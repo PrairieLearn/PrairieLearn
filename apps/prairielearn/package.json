@@ -76,6 +76,7 @@
     "@prairielearn/tsconfig": "workspace:^",
     "@prairielearn/ui": "workspace:^",
     "@prairielearn/utils": "workspace:^",
+    "@prairielearn/workflows": "workspace:^",
     "@prairielearn/workspace-utils": "workspace:^",
     "@prairielearn/zod": "workspace:^",
     "@pyroscope/nodejs": "^0.4.10",
