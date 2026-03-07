@@ -48,6 +48,7 @@ BIG_O_INPUT_MUSTACHE_TEMPLATE_NAME = "pl-big-o-input.mustache"
 # This timeout is chosen to allow multiple sympy-based elements to grade on one page,
 # while not exceeding the global timeout enforced for Python execution.
 SYMPY_TIMEOUT = 3
+MAX_VARIABLES = 7
 
 
 def prepare(element_html: str, data: pl.QuestionData) -> None:
@@ -81,12 +82,12 @@ def prepare(element_html: str, data: pl.QuestionData) -> None:
         pl.get_string_attrib(element, "variables", VARIABLES_DEFAULT)
     )
 
-    if len(single_variable[0]) != 0 and len(variables[0]) != 0:
+    if pl.has_attrib(element, "variable") and pl.has_attrib(element, "variables"):
         raise ValueError("variable is deprecated, use only 'variables' property")
     if len(variables[0]) == 0:
         variables = single_variable
 
-    if len(variables) > 8:
+    if len(variables) > MAX_VARIABLES:
         raise ValueError("Too many variables specified.")
 
     if pl.has_attrib(element, "correct-answer"):

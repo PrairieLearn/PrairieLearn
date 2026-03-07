@@ -142,9 +142,7 @@ def grade_theta_expression(
                     omega_limit, sympy.Symbol(var, positive=True), sympy.oo
                 )
                 bigo_limit = sympy.limit(
-                    bigo_limit,
-                    sympy.Symbol(var, positive=True),
-                    sympy.oo,
+                    bigo_limit, sympy.Symbol(var, positive=True), sympy.oo
                 )
 
             limit_res.append((omega_limit, bigo_limit))
@@ -163,7 +161,7 @@ def grade_theta_expression(
         else:
             return (0.25, THETA_CONSTANT_FACTORS_FEEDBACK)
 
-    except TypeError:
+    except (TypeError, NotImplementedError):
         return (0.0, TYPE_ERROR_FEEDBACK)
 
 

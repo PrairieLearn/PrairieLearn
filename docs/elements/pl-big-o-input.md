@@ -4,7 +4,7 @@ Fill in the blank field that allows for asymptotic mathematical input (i.e. big 
 Gives automated feedback in the case of improper asymptotic input.
 
 ```html title="question.html"
-<pl-big-o-input answers-name="ans" variable="n" correct-answer="n**2" size="10"></pl-big-o-input>
+<pl-big-o-input answers-name="ans" variables="n" correct-answer="n**2" size="10"></pl-big-o-input>
 ```
 
 ## Customizations
@@ -22,7 +22,7 @@ Gives automated feedback in the case of improper asymptotic input.
 | `show-score`     | boolean                                                            | true                      | Whether to show the score badge and feedback next to this element.                                                                                                                |
 | `size`           | integer                                                            | 35                        | Size of the input box.                                                                                                                                                            |
 | `type`           | `"big-o"`, `"theta"`, `"omega"`, `"little-o"`, or `"little-omega"` | `"big-o"`                 | Type of asymptotic answer required.                                                                                                                                               |
-| `variable`       | string                                                             | —                         | A symbol for use in the symbolic expression. Only one variable supported.                                                                                                         |
+| `variables`       | string                                                             | —                         | A comma-delimited list of symbols that can be used in the symbolic expression. Up to 7 variables are supported.                                                                                                         |
 | `weight`         | integer                                                            | 1                         | Weight to use when computing a weighted average score over elements.                                                                                                              |
 
 ## Details
