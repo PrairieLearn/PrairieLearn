@@ -53,6 +53,7 @@ export function init(): void {
 }
 
 export async function beginGradingJob(grading_job_id: string): Promise<void> {
+  // This function should only be called for questions with a grading method of "External".
   assert(grader, 'External grader not initialized');
 
   const { grading_job, submission, variant, question, course } = await sqldb.queryRow(
