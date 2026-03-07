@@ -4,7 +4,6 @@ import superjson from 'superjson';
 import { z } from 'zod';
 
 import { EnumAiGradingProviderSchema } from '../../../lib/db-types.js';
-import { features } from '../../../lib/features/index.js';
 import type { ResLocalsForPage } from '../../../lib/res-locals.js';
 import { encryptForStorage } from '../../../lib/storage-crypt.js';
 import {
@@ -12,11 +11,7 @@ import {
   updateUseCustomApiKeys,
   upsertCredential,
 } from '../../../models/ai-grading-credentials.js';
-import {
-  selectCreditPool,
-  selectCreditPoolChangesBatched,
-  selectDailySpending,
-} from '../../../models/ai-grading-credit-pool.js';
+import { creditPoolProcedures, requireAiGradingFeature } from '../../lib/credit-pool-trpc.js';
 
 import { formatCredential } from './utils/format.js';
 
@@ -42,23 +37,6 @@ const requireEditPermission = t.middleware(async (opts) => {
     throw new TRPCError({
       code: 'FORBIDDEN',
       message: 'Access denied',
-    });
-  }
-  return opts.next();
-});
-
-const requireAiGradingFeature = t.middleware(async (opts) => {
-  const enabled = await features.enabled('ai-grading', {
-    institution_id: opts.ctx.course.institution_id,
-    course_id: opts.ctx.course.id,
-    course_instance_id: opts.ctx.course_instance.id,
-    user_id: opts.ctx.authn_user.id,
-  });
-
-  if (!enabled) {
-    throw new TRPCError({
-      code: 'FORBIDDEN',
-      message: 'Access denied (feature not available)',
     });
   }
   return opts.next();
@@ -106,40 +84,15 @@ const deleteCredentialMutation = t.procedure
     await deleteCredential({
       credential_id: opts.input.credential_id,
       course_instance_id: opts.ctx.course_instance.id,
-      authn_user_id: opts.ctx.authn_user.id
+      authn_user_id: opts.ctx.authn_user.id,
     });
   });
 
-const creditPoolQuery = t.procedure.use(requireAiGradingFeature).query(async (opts) => {
-  const pool = await selectCreditPool(opts.ctx.course_instance.id);
-  return pool;
-});
-
-const creditPoolChangesQuery = t.procedure
-  .use(requireAiGradingFeature)
-  .input(z.object({ page: z.number().int().min(1).default(1) }))
-  .query(async (opts) => {
-    return await selectCreditPoolChangesBatched(opts.ctx.course_instance.id, opts.input.page);
-  });
-
-const dailySpendingQuery = t.procedure
-  .use(requireAiGradingFeature)
-  .input(
-    z.object({
-      days: z.union([z.literal(7), z.literal(14), z.literal(30)]).default(30),
-    }),
-  )
-  .query(async (opts) => {
-    return await selectDailySpending(opts.ctx.course_instance.id, opts.input.days);
-  });
-
 export const aiGradingSettingsRouter = t.router({
+  ...creditPoolProcedures,
   updateUseCustomApiKeys: updateUseCustomApiKeysMutation,
   addCredential: addCredentialMutation,
   deleteCredential: deleteCredentialMutation,
-  creditPool: creditPoolQuery,
-  creditPoolChanges: creditPoolChangesQuery,
-  dailySpending: dailySpendingQuery,
 });
 
 export type AiGradingSettingsRouter = typeof aiGradingSettingsRouter;
