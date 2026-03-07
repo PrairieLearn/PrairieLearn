@@ -1,7 +1,7 @@
 import * as fs from 'node:fs/promises';
 import * as path from 'node:path';
 
-import type { Page } from '@playwright/test';
+import type { Locator, Page } from '@playwright/test';
 
 import { TEST_COURSE_PATH } from '../../lib/paths.js';
 import { selectAssessmentByTid } from '../../models/assessment.js';
@@ -16,35 +16,18 @@ async function enterEditMode(page: Page, ciId: string, aId: string): Promise<voi
 }
 
 /**
- * Performs a pointer-based drag using dnd-kit's PointerSensor.
- * Uses Playwright's low-level mouse API to simulate a real drag gesture.
- *
- * TODO: this is super ugly, we should figure out how to avoid this. We should be able to use keyboard shortcuts to drag and drop.
+ * Performs a keyboard-based drag using dnd-kit's KeyboardSensor.
+ * Focuses the source drag handle, activates it with Space, uses arrow keys
+ * to move it, then drops it with Space.
  */
-async function pointerDrag(
-  page: Page,
-  source: ReturnType<Page['locator']>,
-  target: ReturnType<Page['locator']>,
-): Promise<void> {
-  const sourceBox = await source.boundingBox();
-  const targetBox = await target.boundingBox();
-  if (!sourceBox || !targetBox) throw new Error('Could not get bounding boxes');
-
-  const sx = sourceBox.x + sourceBox.width / 2;
-  const sy = sourceBox.y + sourceBox.height / 2;
-  const tx = targetBox.x + targetBox.width / 2;
-  const ty = targetBox.y + targetBox.height / 2;
-
-  await page.mouse.move(sx, sy);
-  await page.mouse.down();
-  // Move in small steps to trigger PointerSensor's distance constraint
-  const stepCount = 10;
-  for (let i = 1; i <= stepCount; i++) {
-    await page.mouse.move(sx + ((tx - sx) * i) / stepCount, sy + ((ty - sy) * i) / stepCount);
+async function keyboardDrag(page: Page, source: Locator, direction: 'up' | 'down', steps: number) {
+  const arrowKey = direction === 'up' ? 'ArrowUp' : 'ArrowDown';
+  await source.focus();
+  await page.keyboard.press(' ');
+  for (let i = 0; i < steps; i++) {
+    await page.keyboard.press(arrowKey);
   }
-  await page.waitForTimeout(100);
-  await page.mouse.up();
-  await page.waitForTimeout(200);
+  await page.keyboard.press(' ');
 }
 
 async function resetAssessmentFromTemplate({
@@ -96,7 +79,7 @@ test.describe('Assessment questions', () => {
       await expect(dragHandles).toHaveCount(4);
 
       // Move partialCredit3 (index 2) up one position before partialCredit2
-      await pointerDrag(page, dragHandles.nth(2), dragHandles.nth(1));
+      await keyboardDrag(page, dragHandles.nth(2), 'up', 1);
 
       await page.getByRole('button', { name: 'Save and sync' }).click();
       await expect(page.getByRole('button', { name: 'Edit', exact: true })).toBeVisible();
@@ -140,8 +123,9 @@ test.describe('Assessment questions', () => {
       const dragHandles = page.locator('[aria-label="Drag to reorder"]');
       await expect(dragHandles).toHaveCount(4);
 
-      // Drag partialCredit4_v2 (last, zone 2) up to zone 1
-      await pointerDrag(page, dragHandles.nth(3), dragHandles.nth(0));
+      // Drag partialCredit4_v2 (last, zone 2) up to zone 1.
+      // 4 steps: 3 questions + 1 zone header (also a droppable) in between.
+      await keyboardDrag(page, dragHandles.nth(3), 'up', 4);
 
       await page.getByRole('button', { name: 'Save and sync' }).click();
       await expect(page.getByRole('button', { name: 'Edit', exact: true })).toBeVisible();
