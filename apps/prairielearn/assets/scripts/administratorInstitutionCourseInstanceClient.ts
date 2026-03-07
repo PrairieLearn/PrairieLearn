@@ -1,4 +1,3 @@
-// @ts-expect-error -- echarts ships `export = echarts` types but ESM runtime; `import *` works at runtime via esbuild
 import * as echarts from 'echarts';
 
 import { onDocumentReady } from '@prairielearn/browser-utils';

@@ -1,6 +1,6 @@
 import { QueryClient, useMutation, useQuery } from '@tanstack/react-query';
 import clsx from 'clsx';
-// @ts-expect-error -- echarts ships `export = echarts` types but ESM runtime; `import *` works at runtime via esbuild
+// @ts-ignore -- echarts types use `export =` but esbuild handles it as ESM at runtime
 import * as echarts from 'echarts';
 import { useEffect, useRef, useState } from 'react';
 import { Alert, Form, Modal, Spinner } from 'react-bootstrap';
