@@ -247,6 +247,7 @@ export function TanstackTable<RowDataModel>({
   useEffect(() => {
     if (hasAutoSized) {
       // https://github.com/NickvanDyke/eslint-plugin-react-you-might-not-need-an-effect/issues/58
+      // eslint-disable-next-line react-you-might-not-need-an-effect/no-pass-data-to-parent
       columnVirtualizer.measure();
     }
   }, [columnVirtualizer, hasAutoSized]);
@@ -258,6 +259,7 @@ export function TanstackTable<RowDataModel>({
     <div style={{ position: 'relative' }} className="d-flex flex-column h-100">
       <div
         ref={scrollContainerRef}
+        data-testid="table-scroll-container"
         style={{
           position: 'absolute',
           top: 0,

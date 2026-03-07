@@ -203,6 +203,10 @@ export const ConfigSchema = z.object({
   // TODO: tweak this value once we see the data from #2267
   questionTimeoutMilliseconds: z.number().default(10000),
   secretKey: z.string().default('THIS_IS_THE_SECRET_KEY'),
+  databaseEncryptionKey: z
+    .string()
+    .regex(/^[0-9a-f]{64}$/i)
+    .default('0'.repeat(64)),
   secretSlackOpsBotEndpoint: z.string().nullable().default(null),
   secretSlackToken: z.string().nullable().default(null),
   secretSlackCourseRequestChannel: z.string().nullable().default(null),
@@ -695,6 +699,13 @@ export async function loadConfig(paths: string[]) {
 
     if (!config.cookieDomain.startsWith('.')) {
       throw new Error('cookieDomain must start with a dot, e.g. ".example.com"');
+    }
+
+    const defaultKey = ConfigSchema.parse({}).databaseEncryptionKey;
+    if (config.databaseEncryptionKey === defaultKey) {
+      throw new Error(
+        'databaseEncryptionKey must be set to a secure value in production environments',
+      );
     }
   }
 

@@ -106,7 +106,6 @@ const config: KnipConfig = {
       project: ['**/*.{ts,cts,mts,tsx}'],
     },
     'apps/workspace-host': {
-      entry: ['src/interface.ts'],
       project: ['**/*.{ts,cts,mts,tsx}'],
     },
     'apps/grader-host': {

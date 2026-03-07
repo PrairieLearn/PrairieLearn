@@ -544,6 +544,18 @@ describe('Question syncing', () => {
     assert.match(syncedQuestion.sync_errors, /Error validating question options/);
   });
 
+  it('records an error if gradingMethod is External but externalGradingOptions is missing', async () => {
+    const courseData = util.getCourseData();
+    courseData.questions[util.QUESTION_ID].gradingMethod = 'External';
+    const courseDir = await util.writeCourseToTempDirectory(courseData);
+    await util.syncCourseData(courseDir);
+    const syncedQuestions = await util.dumpTableWithSchema('questions', QuestionSchema);
+    const syncedQuestion = syncedQuestions.find((q) => q.qid === util.QUESTION_ID);
+    assert.isDefined(syncedQuestion);
+    assert.isNotNull(syncedQuestion.sync_errors);
+    assert.match(syncedQuestion.sync_errors, /externalGradingOptions/);
+  });
+
   it('records a warning if same UUID is used in multiple questions', async () => {
     const courseData = util.getCourseData();
     courseData.questions['test2'] = courseData.questions[util.QUESTION_ID];
