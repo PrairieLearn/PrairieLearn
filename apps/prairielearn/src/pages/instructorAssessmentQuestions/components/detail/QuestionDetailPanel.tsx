@@ -114,6 +114,9 @@ export function QuestionDetailPanel({
   const inheritedPointsValue = zoneQuestionBlock?.[pointsProperty] ?? undefined;
   const inheritedMaxValue = zoneQuestionBlock?.[maxPointsProperty] ?? undefined;
   const inheritedManualPoints = zoneQuestionBlock?.manualPoints ?? undefined;
+  const inheritedTriesPerVariant = zoneQuestionBlock?.triesPerVariant ?? undefined;
+
+  const ownTriesPerVariant = question.triesPerVariant ?? undefined;
 
   const parentValues = isAlternative
     ? {
@@ -140,7 +143,7 @@ export function QuestionDetailPanel({
       [pointsProperty]: isAlternative ? ownPointsValue : (autoPointsValue ?? undefined),
       [maxPointsProperty]: isAlternative ? ownMaxValue : (maxAutoPointsValue ?? undefined),
       manualPoints: isAlternative ? ownManualPoints : (manualPointsValue ?? undefined),
-      triesPerVariant: question.triesPerVariant ?? undefined,
+      triesPerVariant: isAlternative ? ownTriesPerVariant : (question.triesPerVariant ?? undefined),
       advanceScorePerc: question.advanceScorePerc ?? undefined,
       gradeRateMinutes: question.gradeRateMinutes ?? undefined,
       forceMaxPoints: question.forceMaxPoints ?? (hasForceMaxPointsParent ? undefined : false),
@@ -163,6 +166,10 @@ export function QuestionDetailPanel({
   const isMaxInherited = isAlternative && watchedMax === undefined && inheritedMaxValue != null;
   const isManualPointsInherited =
     isAlternative && watchedManualPoints === undefined && inheritedManualPoints != null;
+
+  const watchedTriesPerVariant = watch('triesPerVariant');
+  const isTriesPerVariantInherited =
+    isAlternative && watchedTriesPerVariant === undefined && inheritedTriesPerVariant != null;
 
   const questionTrackingId = isAlternative ? zoneQuestionBlock.trackingId : question.trackingId;
   const alternativeTrackingId = isAlternative ? question.trackingId : undefined;
@@ -431,29 +438,61 @@ export function QuestionDetailPanel({
         )}
 
         {/* Tries per variant (Homework only) */}
-        {assessmentType === 'Homework' && (
-          <FormField
-            editMode={editMode}
-            id={`${idPrefix}-triesPerVariant`}
-            label="Tries per variant"
-            viewValue={question.triesPerVariant}
-            error={errors.triesPerVariant}
-            helpText="Number of submission attempts allowed per question variant."
-            hideWhenEmpty
-          >
-            {(aria) => (
-              <input
-                type="number"
-                className={clsx('form-control form-control-sm', aria.errorClass)}
-                {...aria.inputProps}
-                {...register('triesPerVariant', {
-                  setValueAs: coerceToNumber,
-                  validate: (v) => validatePositiveInteger(v, 'Tries per variant'),
-                })}
-              />
-            )}
-          </FormField>
-        )}
+        {assessmentType === 'Homework' &&
+          (isAlternative ? (
+            <InheritableField
+              id={`${idPrefix}-triesPerVariant`}
+              label="Tries per variant"
+              inputType="number"
+              editMode={editMode}
+              isInherited={isTriesPerVariantInherited}
+              inheritedDisplayValue={String(inheritedTriesPerVariant ?? '')}
+              viewValue={
+                !isTriesPerVariantInherited && question.triesPerVariant != null
+                  ? String(question.triesPerVariant)
+                  : undefined
+              }
+              registerProps={register('triesPerVariant', {
+                setValueAs: coerceToNumber,
+                validate: (v) => validatePositiveInteger(v, 'Tries per variant'),
+              })}
+              error={errors.triesPerVariant}
+              helpText="Number of submission attempts allowed per question variant."
+              inheritedValueLabel={
+                inheritedTriesPerVariant != null ? String(inheritedTriesPerVariant) : undefined
+              }
+              showResetButton={inheritedTriesPerVariant != null && !isTriesPerVariantInherited}
+              onOverride={() =>
+                setValue('triesPerVariant', inheritedTriesPerVariant, {
+                  shouldDirty: true,
+                  shouldValidate: true,
+                })
+              }
+              onReset={() => resetAndSave('triesPerVariant')}
+            />
+          ) : (
+            <FormField
+              editMode={editMode}
+              id={`${idPrefix}-triesPerVariant`}
+              label="Tries per variant"
+              viewValue={question.triesPerVariant}
+              error={errors.triesPerVariant}
+              helpText="Number of submission attempts allowed per question variant."
+              hideWhenEmpty
+            >
+              {(aria) => (
+                <input
+                  type="number"
+                  className={clsx('form-control form-control-sm', aria.errorClass)}
+                  {...aria.inputProps}
+                  {...register('triesPerVariant', {
+                    setValueAs: coerceToNumber,
+                    validate: (v) => validatePositiveInteger(v, 'Tries per variant'),
+                  })}
+                />
+              )}
+            </FormField>
+          ))}
 
         {/* Comment */}
         <FormField

@@ -296,6 +296,31 @@ export function AltGroupDetailPanel({
                 />
               )}
             </FormField>
+            <FormField
+              editMode={editMode}
+              id={`${idPrefix}-triesPerVariant`}
+              label="Tries per variant (default)"
+              viewValue={
+                zoneQuestionBlock.triesPerVariant != null
+                  ? String(zoneQuestionBlock.triesPerVariant)
+                  : undefined
+              }
+              error={errors.triesPerVariant}
+              helpText="Default number of submission attempts per variant, inherited by alternatives unless overridden."
+              hideWhenEmpty
+            >
+              {(aria) => (
+                <input
+                  type="number"
+                  className={clsx('form-control form-control-sm', aria.errorClass)}
+                  {...aria.inputProps}
+                  {...register('triesPerVariant', {
+                    setValueAs: coerceToNumber,
+                    validate: (v) => validatePositiveInteger(v, 'Tries per variant'),
+                  })}
+                />
+              )}
+            </FormField>
           </>
         ) : (
           <>
