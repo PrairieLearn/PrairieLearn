@@ -320,6 +320,17 @@ export function hasZonePointsMismatch(
 }
 
 /**
+ * Returns true if a zone's numberChoose or bestQuestions exceeds the number of questions.
+ */
+export function hasZoneChooseExceedsCount(zone: ZoneAssessmentForm): boolean {
+  const count = zone.questions.length;
+  if (count === 0) return false;
+  if (zone.numberChoose != null && zone.numberChoose > count) return true;
+  if (zone.bestQuestions != null && zone.bestQuestions > count) return true;
+  return false;
+}
+
+/**
  * Returns true if an alt group's numberChoose exceeds the number of alternatives.
  */
 export function hasAltGroupChooseExceedsCount(block: ZoneQuestionBlockForm): boolean {
