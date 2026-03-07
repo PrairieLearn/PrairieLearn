@@ -53,6 +53,11 @@ def grade_o_expression(
         assumptions={var: {"positive": True} for var in variables},
     )
 
+    var_list = [
+        sympy.Symbol(psu.greek_unicode_transform(var), positive=True)
+        for var in variables
+    ]
+
     if sym_true_source == sym_sub_source:
         return (1, CORRECT_UNCONDITIONAL_FEEDBACK)
 
@@ -65,16 +70,16 @@ def grade_o_expression(
             else:
                 return (1, CORRECT_UNCONDITIONAL_FEEDBACK)
 
-        if len(variables) == 1 and sympy.limit(
-            sym_sub, sympy.Symbol(variables[0], positive=True), sympy.oo
+        if len(var_list) == 1 and sympy.limit(
+            sym_sub, var_list[0], sympy.oo
         ) < sympy.sympify(0):
             return (0.0, NEGATIVE_FEEDBACK)
 
         limit_res = []
-        for perm in itertools.permutations(variables):
+        for perm in itertools.permutations(var_list):
             limit = sym_true / sym_sub
             for var in perm:
-                limit = sympy.limit(limit, sympy.Symbol(var, positive=True), sympy.oo)
+                limit = sympy.limit(limit, var, sympy.oo)
 
             # Ignore unsolvable limits.
             if not isinstance(limit, sympy.Limit):
@@ -121,6 +126,11 @@ def grade_theta_expression(
         assumptions={var: {"positive": True} for var in variables},
     )
 
+    var_list = [
+        sympy.Symbol(psu.greek_unicode_transform(var), positive=True)
+        for var in variables
+    ]
+
     if sym_true_source == sym_sub_source:
         return (1, CORRECT_UNCONDITIONAL_FEEDBACK)
 
@@ -131,22 +141,18 @@ def grade_theta_expression(
             else:
                 return (1, CORRECT_UNCONDITIONAL_FEEDBACK)
 
-        if len(variables) == 1 and sympy.limit(
-            sym_sub, sympy.Symbol(variables[0], positive=True), sympy.oo
+        if len(var_list) == 1 and sympy.limit(
+            sym_sub, var_list[0], sympy.oo
         ) < sympy.sympify(0):
             return (0.0, NEGATIVE_FEEDBACK)
 
         limit_res = []
-        for perm in itertools.permutations(variables):
+        for perm in itertools.permutations(var_list):
             omega_limit = sym_sub / sym_true
             bigo_limit = sym_true / sym_sub
             for var in perm:
-                omega_limit = sympy.limit(
-                    omega_limit, sympy.Symbol(var, positive=True), sympy.oo
-                )
-                bigo_limit = sympy.limit(
-                    bigo_limit, sympy.Symbol(var, positive=True), sympy.oo
-                )
+                omega_limit = sympy.limit(omega_limit, var, sympy.oo)
+                bigo_limit = sympy.limit(bigo_limit, var, sympy.oo)
 
             if not isinstance(omega_limit, sympy.Limit) and not isinstance(
                 bigo_limit, sympy.Limit
@@ -196,6 +202,11 @@ def grade_omega_expression(
         assumptions={var: {"positive": True} for var in variables},
     )
 
+    var_list = [
+        sympy.Symbol(psu.greek_unicode_transform(var), positive=True)
+        for var in variables
+    ]
+
     if sym_true_source == sym_sub_source:
         return (1, CORRECT_UNCONDITIONAL_FEEDBACK)
 
@@ -206,16 +217,16 @@ def grade_omega_expression(
             else:
                 return (1, CORRECT_UNCONDITIONAL_FEEDBACK)
 
-        if len(variables) == 1 and sympy.limit(
-            sym_sub, sympy.Symbol(variables[0], positive=True), sympy.oo
+        if len(var_list) == 1 and sympy.limit(
+            sym_sub, var_list[0], sympy.oo
         ) < sympy.sympify(0):
             return (0.0, NEGATIVE_FEEDBACK)
 
         limit_res = []
-        for perm in itertools.permutations(variables):
+        for perm in itertools.permutations(var_list):
             limit = sym_true / sym_sub
             for var in perm:
-                limit = sympy.limit(limit, sympy.Symbol(var, positive=True), sympy.oo)
+                limit = sympy.limit(limit, var, sympy.oo)
 
             if not isinstance(limit, sympy.Limit):
                 limit_res.append(limit)
