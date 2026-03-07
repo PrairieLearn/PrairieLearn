@@ -126,7 +126,7 @@ def render(element_html: str, data: pl.QuestionData) -> str:
     variables = psu.get_items_list(
         pl.get_string_attrib(element, "variables", VARIABLES_DEFAULT)
     )
-    if len(variables[0]) == 0:
+    if not pl.has_attrib(element, "variables"):
         variables = single_variable
 
     display = pl.get_enum_attrib(element, "display", DisplayType, DISPLAY_DEFAULT)
@@ -272,7 +272,7 @@ def parse(element_html: str, data: pl.QuestionData) -> None:
     variables = psu.get_items_list(
         pl.get_string_attrib(element, "variables", VARIABLES_DEFAULT)
     )
-    if len(variables[0]) == 0:
+    if not pl.has_attrib(element, "variables"):
         variables = single_variable
 
     allow_blank = pl.get_boolean_attrib(element, "allow-blank", ALLOW_BLANK_DEFAULT)
@@ -310,7 +310,7 @@ def grade(element_html: str, data: pl.QuestionData) -> None:
     variables = psu.get_items_list(
         pl.get_string_attrib(element, "variables", VARIABLES_DEFAULT)
     )
-    if len(variables[0]) == 0:
+    if not pl.has_attrib(element, "variables"):
         variables = single_variable
 
     weight = pl.get_integer_attrib(element, "weight", WEIGHT_DEFAULT)

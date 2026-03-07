@@ -67,9 +67,10 @@ def grade_o_expression(
             else:
                 return (1, CORRECT_UNCONDITIONAL_FEEDBACK)
 
-        for var in var_list:
-            if sympy.limit(sym_sub, var, sympy.oo) < sympy.sympify(0):
-                return (0.0, NEGATIVE_FEEDBACK)
+        if len(var_list) == 1 and sympy.limit(
+            sym_sub, var_list[0], sympy.oo
+        ) < sympy.sympify(0):
+            return (0.0, NEGATIVE_FEEDBACK)
 
         limit_res = []
         for perm in itertools.permutations(var_list):
@@ -134,9 +135,10 @@ def grade_theta_expression(
             else:
                 return (1, CORRECT_UNCONDITIONAL_FEEDBACK)
 
-        for var in var_list:
-            if sympy.limit(sym_sub, var, sympy.oo) < sympy.sympify(0):
-                return (0.0, NEGATIVE_FEEDBACK)
+        if len(var_list) == 1 and sympy.limit(
+            sym_sub, var_list[0], sympy.oo
+        ) < sympy.sympify(0):
+            return (0.0, NEGATIVE_FEEDBACK)
 
         limit_res = []
         for perm in itertools.permutations(var_list):
@@ -206,9 +208,10 @@ def grade_omega_expression(
             else:
                 return (1, CORRECT_UNCONDITIONAL_FEEDBACK)
 
-        for var in var_list:
-            if sympy.limit(sym_sub, var, sympy.oo) < sympy.sympify(0):
-                return (0.0, NEGATIVE_FEEDBACK)
+        if len(var_list) == 1 and sympy.limit(
+            sym_sub, var_list[0], sympy.oo
+        ) < sympy.sympify(0):
+            return (0.0, NEGATIVE_FEEDBACK)
 
         limit_res = []
         for perm in itertools.permutations(var_list):
