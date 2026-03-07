@@ -67,6 +67,7 @@ export const SubmissionForScoreUpdateSchema = z.object({
   submission_id: IdSchema.nullable(),
   instance_question_id: IdSchema,
   assessment_instance_id: IdSchema,
+  requires_manual_grading: z.boolean(),
   max_points: PointsSchema,
   max_auto_points: PointsSchema,
   max_manual_points: PointsSchema,
