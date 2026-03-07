@@ -319,6 +319,14 @@ export function hasZonePointsMismatch(
   return blockTotals.some((t) => t !== blockTotals[0]);
 }
 
+/**
+ * Returns true if an alt group's numberChoose exceeds the number of alternatives.
+ */
+export function hasAltGroupChooseExceedsCount(block: ZoneQuestionBlockForm): boolean {
+  if (block.numberChoose == null || block.alternatives == null) return false;
+  return block.numberChoose > block.alternatives.length;
+}
+
 export function toAssessmentForPicker(assessments: OtherAssessment[]): AssessmentForPicker[] {
   return assessments.map((a) => ({
     assessment_id: String(a.assessment_id),

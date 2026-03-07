@@ -7,7 +7,12 @@ import { run } from '@prairielearn/run';
 import { OverlayTrigger } from '@prairielearn/ui';
 
 import type { TreeActions, TreeState, ZoneQuestionBlockForm } from '../../types.js';
-import { getSharedTags, getSharedTopic, hasPointsMismatch } from '../../utils/questions.js';
+import {
+  getSharedTags,
+  getSharedTopic,
+  hasAltGroupChooseExceedsCount,
+  hasPointsMismatch,
+} from '../../utils/questions.js';
 
 import { ChangeIndicatorBadges } from './ChangeIndicatorBadges.js';
 import { CollapseToggleButton } from './CollapseToggleButton.js';
@@ -120,6 +125,7 @@ export function TreeQuestionBlockNode({
 
   const pointsMismatch =
     alternatives != null && hasPointsMismatch(alternatives, assessmentType, zoneQuestionBlock);
+  const chooseExceeds = hasAltGroupChooseExceedsCount(zoneQuestionBlock);
 
   return (
     <div
@@ -147,7 +153,9 @@ export function TreeQuestionBlockNode({
           paddingLeft: '2.5rem',
           paddingRight: '0.5rem',
           cursor: 'pointer',
-          ...(pointsMismatch && { borderLeft: '6px solid var(--bs-warning)' }),
+          ...((pointsMismatch || chooseExceeds) && {
+            borderLeft: '6px solid var(--bs-warning)',
+          }),
         }}
         onClick={(e) => {
           e.stopPropagation();
@@ -185,6 +193,20 @@ export function TreeQuestionBlockNode({
                 tooltipId={`points-mismatch-${zoneQuestionBlock.trackingId}`}
                 body="Alternatives have different point values"
               />
+            )}
+            {chooseExceeds && (
+              <OverlayTrigger
+                placement="top"
+                tooltip={{
+                  props: { id: `choose-exceeds-${zoneQuestionBlock.trackingId}` },
+                  body: 'Number to choose exceeds the number of alternatives in this group',
+                }}
+              >
+                <i
+                  className="bi bi-exclamation-triangle-fill text-warning ms-1"
+                  aria-hidden="true"
+                />
+              </OverlayTrigger>
             )}
             <ChangeIndicatorBadges
               trackingId={zoneQuestionBlock.trackingId}
