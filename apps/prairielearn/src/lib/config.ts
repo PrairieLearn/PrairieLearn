@@ -576,6 +576,11 @@ export const ConfigSchema = z.object({
    */
   aiGradingRateLimitDollars: z.number().default(10),
   /**
+   * Infrastructure fee applied to AI grading API costs, expressed as a decimal.
+   * For example, 0.2 means a 20% markup on raw API costs.
+   */
+  aiGradingInfrastructureFeePercent: z.number().default(0.2),
+  /**
    * The hourly spending rate limit for AI question generation, in US dollars.
    * Accounts for both input and output tokens.
    */

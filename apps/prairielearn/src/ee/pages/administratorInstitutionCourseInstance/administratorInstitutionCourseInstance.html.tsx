@@ -1,4 +1,5 @@
 import { html } from '@prairielearn/html';
+import { hydrateHtml } from '@prairielearn/react/server';
 
 import { PageLayout } from '../../../components/PageLayout.js';
 import { compiledScriptTag } from '../../../lib/assets.js';
@@ -11,17 +12,23 @@ import {
 import type { ResLocalsForPage } from '../../../lib/res-locals.js';
 import { PlanGrantsEditor } from '../../lib/billing/components/PlanGrantsEditor.js';
 
+import { AdminCreditPoolSection } from './AdminCreditPoolSection.js';
+
 export function AdministratorInstitutionCourseInstance({
   institution,
   course,
   course_instance,
   planGrants,
+  aiGradingEnabled,
+  trpcCsrfToken,
   resLocals,
 }: {
   institution: Institution;
   course: Course;
   course_instance: CourseInstance;
   planGrants: PlanGrant[];
+  aiGradingEnabled: boolean;
+  trpcCsrfToken: string | null;
   resLocals: ResLocalsForPage<'plain'>;
 }) {
   const isDeleted = course_instance.deleted_at !== null;
@@ -132,6 +139,15 @@ export function AdministratorInstitutionCourseInstance({
         csrfToken: resLocals.__csrf_token,
         disabled: isDeleted,
       })}
+      ${aiGradingEnabled && trpcCsrfToken
+        ? hydrateHtml(
+            <AdminCreditPoolSection
+              trpcCsrfToken={trpcCsrfToken}
+              useCustomApiKeys={course_instance.ai_grading_use_custom_api_keys}
+              isDeleted={isDeleted}
+            />,
+          )
+        : ''}
     `,
   });
 }
