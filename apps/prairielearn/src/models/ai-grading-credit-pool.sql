@@ -162,34 +162,34 @@ LIMIT
 OFFSET
   $offset;
 
--- BLOCK select_credit_pool_balance_time_series
+-- BLOCK select_daily_spending
 WITH
-  numbered AS (
+  date_range AS (
     SELECT
-      *,
-      NTILE(200) OVER (
-        ORDER BY
-          created_at ASC,
-          id ASC
-      ) AS bucket
+      generate_series(
+        DATE_TRUNC('day', NOW() - ($days || ' days')::interval),
+        DATE_TRUNC('day', NOW()),
+        '1 day'::interval
+      )::date AS day
+  ),
+  daily AS (
+    SELECT
+      DATE_TRUNC('day', created_at)::date AS day,
+      SUM(ABS(delta_milli_dollars)) AS spending_milli_dollars
     FROM
       ai_grading_credit_pool_changes
     WHERE
       course_instance_id = $course_instance_id
-  ),
-  last_per_bucket AS (
-    SELECT DISTINCT
-      ON (bucket) *
-    FROM
-      numbered
-    ORDER BY
-      bucket,
-      id DESC
+      AND created_at >= NOW() - ($days || ' days')::interval
+      AND delta_milli_dollars < 0
+    GROUP BY
+      DATE_TRUNC('day', created_at)::date
   )
 SELECT
-  created_at AS date,
-  credit_after_milli_dollars AS balance_milli_dollars
+  dr.day AS date,
+  COALESCE(d.spending_milli_dollars, 0)::bigint AS spending_milli_dollars
 FROM
-  last_per_bucket
+  date_range AS dr
+  LEFT JOIN daily AS d ON d.day = dr.day
 ORDER BY
-  created_at ASC;
+  dr.day ASC;

@@ -403,13 +403,14 @@ function CreditPoolSection({ useCustomApiKeys }: { useCustomApiKeys: boolean }) 
   const trpc = useTRPC();
   const [showHistory, setShowHistory] = useState(false);
   const [page, setPage] = useState(1);
+  const [chartDays, setChartDays] = useState<7 | 14 | 30>(30);
 
   const poolQuery = useQuery(trpc.creditPool.queryOptions());
   const changesQuery = useQuery({
     ...trpc.creditPoolChanges.queryOptions({ page }),
     enabled: showHistory,
   });
-  const timeSeriesQuery = useQuery(trpc.creditPoolBalanceTimeSeries.queryOptions());
+  const dailySpendingQuery = useQuery(trpc.dailySpending.queryOptions({ days: chartDays }));
 
   if (poolQuery.isError) {
     return (
@@ -435,15 +436,10 @@ function CreditPoolSection({ useCustomApiKeys }: { useCustomApiKeys: boolean }) 
     <div className="border-top pt-3 mt-3">
       <h2 className="h5 mb-3">AI grading credits</h2>
 
-      {useCustomApiKeys ? (
+      {useCustomApiKeys && (
         <Alert variant="danger">
-          This course instance is using custom API keys. Credits are not consumed when custom keys
-          are in use.
-        </Alert>
-      ) : (
-        <Alert variant="info">
-          This course instance is using platform API keys. Credits are consumed for each AI grading
-          request.
+          AI grading credits are not deducted while custom API keys are active. Usage is billed
+          directly by the API provider.
         </Alert>
       )}
 
@@ -473,12 +469,24 @@ function CreditPoolSection({ useCustomApiKeys }: { useCustomApiKeys: boolean }) 
       </div>
 
       <div className={clsx(dimmed && 'opacity-50')}>
-        {timeSeriesQuery.data && timeSeriesQuery.data.length > 1 && (
-          <div className="mb-3">
-            <h3 className="h6">Balance over time</h3>
-            <BalanceChart data={timeSeriesQuery.data} />
+        <div className="mb-3">
+          <div className="d-flex justify-content-between align-items-center mb-2">
+            <h3 className="h6 mb-0">Daily usage</h3>
+            <div className="btn-group btn-group-sm" role="group" aria-label="Time range">
+              {([7, 14, 30] as const).map((d) => (
+                <button
+                  key={d}
+                  type="button"
+                  className={clsx('btn', d === chartDays ? 'btn-primary' : 'btn-outline-secondary')}
+                  onClick={() => setChartDays(d)}
+                >
+                  {d}d
+                </button>
+              ))}
+            </div>
           </div>
-        )}
+          {dailySpendingQuery.data && <DailySpendingChart data={dailySpendingQuery.data} />}
+        </div>
 
         <TransactionHistory
           showHistory={showHistory}
@@ -634,27 +642,38 @@ function TransactionHistory({
   );
 }
 
-function BalanceChart({ data }: { data: { date: Date; balance_milli_dollars: number }[] }) {
+function DailySpendingChart({ data }: { data: { date: Date; spending_milli_dollars: number }[] }) {
   const chartRef = useRef<HTMLDivElement>(null);
 
   useEffect(() => {
-    if (!chartRef.current || data.length < 2) return;
+    if (!chartRef.current || data.length === 0) return;
 
     const chart = echarts.init(chartRef.current);
+
+    const dates = data.map((d) => new Date(d.date).toISOString().slice(0, 10));
+    const values = data.map((d) => d.spending_milli_dollars);
 
     chart.setOption({
       grid: { top: 10, right: 10, bottom: 30, left: 60 },
       tooltip: {
         trigger: 'axis',
-        formatter: (params: { value: [string, number] }[]) => {
+        formatter: (params: { value: number; name: string }[]) => {
           const p = params[0];
-          const d = new Date(p.value[0]);
-          return `${d.toLocaleString()}<br/>${formatMilliDollars(p.value[1])}`;
+          const d = new Date(p.name + 'T00:00:00');
+          const dateStr = d.toLocaleDateString(undefined, { month: 'short', day: 'numeric' });
+          return `${dateStr}<br/>${formatMilliDollars(p.value)}`;
         },
       },
       xAxis: {
-        type: 'time',
-        axisLabel: { fontSize: 10 },
+        type: 'category',
+        data: dates,
+        axisLabel: {
+          fontSize: 10,
+          formatter: (val: string) => {
+            const d = new Date(val + 'T00:00:00');
+            return d.toLocaleDateString(undefined, { month: 'short', day: 'numeric' });
+          },
+        },
       },
       yAxis: {
         type: 'value',
@@ -666,13 +685,9 @@ function BalanceChart({ data }: { data: { date: Date; balance_milli_dollars: num
       },
       series: [
         {
-          type: 'line',
-          data: data.map((d) => [new Date(d.date).toISOString(), d.balance_milli_dollars]),
-          smooth: false,
-          symbol: 'circle',
-          symbolSize: 4,
-          lineStyle: { width: 2 },
-          areaStyle: { opacity: 0.1 },
+          type: 'bar',
+          data: values,
+          itemStyle: { color: '#5470c6' },
         },
       ],
     });
@@ -686,7 +701,7 @@ function BalanceChart({ data }: { data: { date: Date; balance_milli_dollars: num
     };
   }, [data]);
 
-  if (data.length < 2) return null;
+  if (data.length === 0) return null;
 
   return <div ref={chartRef} style={{ height: '200px', width: '100%' }} />;
 }

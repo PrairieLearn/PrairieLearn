@@ -10,13 +10,11 @@ import {
   type PlanGrant,
 } from '../../../lib/db-types.js';
 import type { ResLocalsForPage } from '../../../lib/res-locals.js';
-import type { BatchedCreditPoolChangeRow } from '../../../models/ai-grading-credit-pool.js';
+import type {
+  BatchedCreditPoolChangeRow,
+  DailySpendingPoint,
+} from '../../../models/ai-grading-credit-pool.js';
 import { PlanGrantsEditor } from '../../lib/billing/components/PlanGrantsEditor.js';
-
-interface BalanceTimeSeriesPoint {
-  date: Date;
-  balance_milli_dollars: number;
-}
 
 export function AdministratorInstitutionCourseInstance({
   institution,
@@ -27,7 +25,8 @@ export function AdministratorInstitutionCourseInstance({
   creditPoolChanges,
   creditPoolTotalCount,
   creditPage,
-  creditPoolTimeSeries,
+  dailySpending,
+  chartDays,
   resLocals,
 }: {
   institution: Institution;
@@ -38,7 +37,8 @@ export function AdministratorInstitutionCourseInstance({
   creditPoolChanges: BatchedCreditPoolChangeRow[];
   creditPoolTotalCount: number;
   creditPage: number;
-  creditPoolTimeSeries: BalanceTimeSeriesPoint[];
+  dailySpending: DailySpendingPoint[];
+  chartDays: number;
   resLocals: ResLocalsForPage<'plain'>;
 }) {
   const isDeleted = course_instance.deleted_at !== null;
@@ -155,19 +155,16 @@ export function AdministratorInstitutionCourseInstance({
 
             ${course_instance.ai_grading_use_custom_api_keys
               ? html`<div class="alert alert-danger" role="alert">
-                  This course instance is using custom API keys. Credits are not consumed when
-                  custom keys are in use.
+                  AI grading credits are not deducted while custom API keys are active. Usage is
+                  billed directly by the API provider.
                 </div>`
-              : html`<div class="alert alert-info" role="alert">
-                  This course instance is using platform API keys. Credits are consumed for each AI
-                  grading request.
-                </div>`}
+              : ''}
 
             <div class="row mb-3 g-3">
               <div class="col-md-4">
                 <div class="border rounded p-3 text-center">
                   <div class="text-muted small">Total available</div>
-                  <div class="h4 mb-0">
+                  <div class="h4 mb-0 js-balance-total">
                     ${formatMilliDollars(
                       course_instance.credit_transferable_milli_dollars +
                         course_instance.credit_non_transferable_milli_dollars,
@@ -178,7 +175,7 @@ export function AdministratorInstitutionCourseInstance({
               <div class="col-md-4">
                 <div class="border rounded p-3 text-center">
                   <div class="text-muted small">Transferable</div>
-                  <div class="h5 mb-0">
+                  <div class="h5 mb-0 js-balance-transferable">
                     ${formatMilliDollars(course_instance.credit_transferable_milli_dollars)}
                   </div>
                 </div>
@@ -186,80 +183,83 @@ export function AdministratorInstitutionCourseInstance({
               <div class="col-md-4">
                 <div class="border rounded p-3 text-center">
                   <div class="text-muted small">Non-transferable</div>
-                  <div class="h5 mb-0">
+                  <div class="h5 mb-0 js-balance-non-transferable">
                     ${formatMilliDollars(course_instance.credit_non_transferable_milli_dollars)}
                   </div>
                 </div>
               </div>
             </div>
 
-            <h3 class="h6">Adjust credits</h3>
-            <form method="POST" class="mb-3">
-              <div class="row g-3 align-items-end">
-                <div class="col-auto">
-                  <label class="form-label" for="adjustment_action">Action</label>
-                  <select
-                    class="form-select"
-                    id="adjustment_action"
-                    name="adjustment_action"
-                    ${isDeleted ? 'disabled' : ''}
-                  >
-                    <option value="add">Add</option>
-                    <option value="deduct">Deduct</option>
-                  </select>
-                </div>
-                <div class="col-auto">
-                  <label class="form-label" for="amount_dollars">Amount (USD)</label>
-                  <div class="input-group">
-                    <span class="input-group-text">$</span>
-                    <input
-                      type="number"
-                      class="form-control"
-                      id="amount_dollars"
-                      name="amount_dollars"
-                      min="0.01"
-                      step="0.01"
-                      placeholder="0.00"
-                      required
+            <div class="border rounded p-3 mb-3">
+              <h3 class="h6 mb-3">Adjust credits</h3>
+              <div class="js-adjust-feedback"></div>
+              <form class="js-adjust-credits-form">
+                <div class="row g-3 align-items-end">
+                  <div class="col-auto">
+                    <label class="form-label" for="adjustment_action">Action</label>
+                    <select
+                      class="form-select"
+                      id="adjustment_action"
+                      name="adjustment_action"
                       ${isDeleted ? 'disabled' : ''}
-                    />
+                    >
+                      <option value="add">Add</option>
+                      <option value="deduct">Deduct</option>
+                    </select>
                   </div>
+                  <div class="col-auto">
+                    <label class="form-label" for="amount_dollars">Amount (USD)</label>
+                    <div class="input-group">
+                      <span class="input-group-text">$</span>
+                      <input
+                        type="number"
+                        class="form-control"
+                        id="amount_dollars"
+                        name="amount_dollars"
+                        min="0.01"
+                        step="0.01"
+                        placeholder="0.00"
+                        required
+                        ${isDeleted ? 'disabled' : ''}
+                      />
+                    </div>
+                  </div>
+                  <div class="col-auto">
+                    <label class="form-label" for="credit_type">Credit type</label>
+                    <select
+                      class="form-select"
+                      id="credit_type"
+                      name="credit_type"
+                      ${isDeleted ? 'disabled' : ''}
+                    >
+                      <option value="non_transferable">Non-transferable</option>
+                      <option value="transferable">Transferable</option>
+                    </select>
+                  </div>
+                  ${isDeleted
+                    ? ''
+                    : html`
+                        <div class="col-auto">
+                          <input
+                            type="hidden"
+                            name="__csrf_token"
+                            value="${resLocals.__csrf_token}"
+                          />
+                          <button
+                            type="submit"
+                            name="__action"
+                            value="adjust_credit_pool"
+                            class="btn btn-primary js-adjust-submit"
+                          >
+                            Apply
+                          </button>
+                        </div>
+                      `}
                 </div>
-                <div class="col-auto">
-                  <label class="form-label" for="credit_type">Credit type</label>
-                  <select
-                    class="form-select"
-                    id="credit_type"
-                    name="credit_type"
-                    ${isDeleted ? 'disabled' : ''}
-                  >
-                    <option value="non_transferable">Non-transferable</option>
-                    <option value="transferable">Transferable</option>
-                  </select>
-                </div>
-                ${isDeleted
-                  ? ''
-                  : html`
-                      <div class="col-auto">
-                        <input
-                          type="hidden"
-                          name="__csrf_token"
-                          value="${resLocals.__csrf_token}"
-                        />
-                        <button
-                          type="submit"
-                          name="__action"
-                          value="adjust_credit_pool"
-                          class="btn btn-primary"
-                        >
-                          Apply
-                        </button>
-                      </div>
-                    `}
-              </div>
-            </form>
+              </form>
+            </div>
 
-            ${BalanceChartContainer(creditPoolTimeSeries)}
+            ${DailySpendingChartContainer(dailySpending, chartDays)}
             ${TransactionHistoryHtml(creditPoolChanges, creditPoolTotalCount, creditPage)}
           `
         : ''}
@@ -267,18 +267,33 @@ export function AdministratorInstitutionCourseInstance({
   });
 }
 
-function BalanceChartContainer(data: BalanceTimeSeriesPoint[]): HtmlSafeString | string {
-  if (data.length < 2) return '';
-
+function DailySpendingChartContainer(
+  data: DailySpendingPoint[],
+  chartDays: number,
+): HtmlSafeString {
   const chartData = JSON.stringify(
-    data.map((d) => [d.date.toISOString(), d.balance_milli_dollars]),
+    data.map((d) => [d.date.toISOString().slice(0, 10), d.spending_milli_dollars]),
   );
 
   return html`
     <div class="mb-3">
-      <h3 class="h6">Balance over time</h3>
+      <div class="d-flex justify-content-between align-items-center mb-2">
+        <h3 class="h6 mb-0">Daily usage</h3>
+        <div class="btn-group btn-group-sm" role="group" aria-label="Time range">
+          ${[7, 14, 30].map(
+            (d) => html`
+              <a
+                href="?chart_days=${d}"
+                class="btn ${d === chartDays ? 'btn-primary' : 'btn-outline-secondary'}"
+              >
+                ${d}d
+              </a>
+            `,
+          )}
+        </div>
+      </div>
       <div
-        class="js-balance-chart"
+        class="js-spending-chart"
         data-chart-data="${unsafeHtml(
           chartData.replaceAll('&', '&amp;').replaceAll('"', '&quot;'),
         )}"

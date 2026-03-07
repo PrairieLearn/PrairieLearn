@@ -209,19 +209,20 @@ export async function selectCreditPoolChangesBatched(
   return { rows, totalCount };
 }
 
-const BalanceTimeSeriesPointSchema = z.object({
+const DailySpendingPointSchema = z.object({
   date: z.coerce.date(),
-  balance_milli_dollars: z.coerce.number(),
+  spending_milli_dollars: z.coerce.number(),
 });
 
-type BalanceTimeSeriesPoint = z.infer<typeof BalanceTimeSeriesPointSchema>;
+export type DailySpendingPoint = z.infer<typeof DailySpendingPointSchema>;
 
-export async function selectCreditPoolBalanceTimeSeries(
+export async function selectDailySpending(
   course_instance_id: string,
-): Promise<BalanceTimeSeriesPoint[]> {
+  days: number,
+): Promise<DailySpendingPoint[]> {
   return await queryRows(
-    sql.select_credit_pool_balance_time_series,
-    { course_instance_id },
-    BalanceTimeSeriesPointSchema,
+    sql.select_daily_spending,
+    { course_instance_id, days },
+    DailySpendingPointSchema,
   );
 }

@@ -23,24 +23,35 @@ onDocumentReady(() => {
     });
   });
 
-  const chartEl = document.querySelector<HTMLElement>('.js-balance-chart');
-  if (chartEl?.dataset.chartData) {
-    const data: [string, number][] = JSON.parse(chartEl.dataset.chartData);
-    const chart = echarts.init(chartEl);
+  const spendingChartEl = document.querySelector<HTMLElement>('.js-spending-chart');
+  if (spendingChartEl?.dataset.chartData) {
+    const data: [string, number][] = JSON.parse(spendingChartEl.dataset.chartData);
+    const chart = echarts.init(spendingChartEl);
+
+    const dates = data.map((d) => d[0]);
+    const values = data.map((d) => d[1]);
 
     chart.setOption({
       grid: { top: 10, right: 10, bottom: 30, left: 60 },
       tooltip: {
         trigger: 'axis',
-        formatter: (params: { value: [string, number] }[]) => {
+        formatter: (params: { value: number; name: string }[]) => {
           const p = params[0];
-          const d = new Date(p.value[0]);
-          return `${d.toLocaleString()}<br/>${formatMilliDollars(p.value[1])}`;
+          const d = new Date(p.name + 'T00:00:00');
+          const dateStr = d.toLocaleDateString(undefined, { month: 'short', day: 'numeric' });
+          return `${dateStr}<br/>${formatMilliDollars(p.value)}`;
         },
       },
       xAxis: {
-        type: 'time',
-        axisLabel: { fontSize: 10 },
+        type: 'category',
+        data: dates,
+        axisLabel: {
+          fontSize: 10,
+          formatter: (val: string) => {
+            const d = new Date(val + 'T00:00:00');
+            return d.toLocaleDateString(undefined, { month: 'short', day: 'numeric' });
+          },
+        },
       },
       yAxis: {
         type: 'value',
@@ -52,17 +63,108 @@ onDocumentReady(() => {
       },
       series: [
         {
-          type: 'line',
-          data,
-          smooth: false,
-          symbol: 'circle',
-          symbolSize: 4,
-          lineStyle: { width: 2 },
-          areaStyle: { opacity: 0.1 },
+          type: 'bar',
+          data: values,
+          itemStyle: { color: '#5470c6' },
         },
       ],
     });
 
     window.addEventListener('resize', () => chart.resize());
+  }
+
+  const adjustForm = document.querySelector<HTMLFormElement>('.js-adjust-credits-form');
+  if (adjustForm) {
+    adjustForm.addEventListener('submit', async (e) => {
+      e.preventDefault();
+
+      const feedbackEl = adjustForm.parentElement?.querySelector('.js-adjust-feedback');
+      const submitBtn = adjustForm.querySelector<HTMLButtonElement>('.js-adjust-submit');
+      if (!submitBtn) return;
+
+      const formData = new URLSearchParams();
+      formData.set('__action', 'adjust_credit_pool');
+      formData.set(
+        '__csrf_token',
+        adjustForm.querySelector<HTMLInputElement>('input[name="__csrf_token"]')?.value ?? '',
+      );
+      formData.set(
+        'adjustment_action',
+        adjustForm.querySelector<HTMLSelectElement>('#adjustment_action')?.value ?? '',
+      );
+      formData.set(
+        'amount_dollars',
+        adjustForm.querySelector<HTMLInputElement>('#amount_dollars')?.value ?? '',
+      );
+      formData.set(
+        'credit_type',
+        adjustForm.querySelector<HTMLSelectElement>('#credit_type')?.value ?? '',
+      );
+
+      submitBtn.disabled = true;
+      submitBtn.textContent = 'Applying...';
+      if (feedbackEl) feedbackEl.innerHTML = '';
+
+      try {
+        const res = await fetch(window.location.pathname, {
+          method: 'POST',
+          headers: {
+            'Content-Type': 'application/x-www-form-urlencoded',
+            'X-Requested-With': 'fetch',
+          },
+          body: formData.toString(),
+        });
+
+        if (!res.ok) {
+          const text = await res.text();
+          throw new Error(text || `Request failed (${res.status})`);
+        }
+
+        const pool: {
+          credit_transferable_milli_dollars: number;
+          credit_non_transferable_milli_dollars: number;
+          total_milli_dollars: number;
+        } = await res.json();
+
+        const totalEl = document.querySelector('.js-balance-total');
+        const transferableEl = document.querySelector('.js-balance-transferable');
+        const nonTransferableEl = document.querySelector('.js-balance-non-transferable');
+
+        if (totalEl) {
+          totalEl.textContent = formatMilliDollars(pool.total_milli_dollars);
+        }
+        if (transferableEl) {
+          transferableEl.textContent = formatMilliDollars(pool.credit_transferable_milli_dollars);
+        }
+        if (nonTransferableEl) {
+          nonTransferableEl.textContent = formatMilliDollars(
+            pool.credit_non_transferable_milli_dollars,
+          );
+        }
+
+        if (feedbackEl) {
+          feedbackEl.innerHTML =
+            '<div class="alert alert-success alert-dismissible fade show py-2">' +
+            'Credits updated successfully.' +
+            '<button type="button" class="btn-close" data-bs-dismiss="alert"></button>' +
+            '</div>';
+        }
+
+        const amountInput = adjustForm.querySelector<HTMLInputElement>('#amount_dollars');
+        if (amountInput) amountInput.value = '';
+      } catch (err) {
+        if (feedbackEl) {
+          const message = err instanceof Error ? err.message : 'An error occurred.';
+          feedbackEl.innerHTML =
+            '<div class="alert alert-danger alert-dismissible fade show py-2">' +
+            message +
+            '<button type="button" class="btn-close" data-bs-dismiss="alert"></button>' +
+            '</div>';
+        }
+      } finally {
+        submitBtn.disabled = false;
+        submitBtn.textContent = 'Apply';
+      }
+    });
   }
 });

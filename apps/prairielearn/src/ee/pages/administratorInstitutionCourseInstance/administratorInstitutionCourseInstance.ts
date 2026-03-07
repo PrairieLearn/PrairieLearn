@@ -10,8 +10,9 @@ import { features } from '../../../lib/features/index.js';
 import { typedAsyncHandler } from '../../../lib/res-locals.js';
 import {
   adjustCreditPool,
-  selectCreditPoolBalanceTimeSeries,
+  selectCreditPool,
   selectCreditPoolChangesBatched,
+  selectDailySpending,
 } from '../../../models/ai-grading-credit-pool.js';
 import { parseDesiredPlanGrants } from '../../lib/billing/components/PlanGrantsEditor.js';
 import {
@@ -64,11 +65,14 @@ router.get(
     });
 
     const creditPage = Math.max(1, Number.parseInt(String(req.query.credit_page ?? '1')) || 1);
+    const chartDays = [7, 14, 30].includes(Number(req.query.chart_days))
+      ? (Number(req.query.chart_days) as 7 | 14 | 30)
+      : 30;
 
-    const [creditPoolChangesResult, creditPoolTimeSeries] = aiGradingEnabled
+    const [creditPoolChangesResult, dailySpending] = aiGradingEnabled
       ? await Promise.all([
           selectCreditPoolChangesBatched(course_instance.id, creditPage),
-          selectCreditPoolBalanceTimeSeries(course_instance.id),
+          selectDailySpending(course_instance.id, chartDays),
         ])
       : [{ rows: [], totalCount: 0 }, []];
 
@@ -82,7 +86,8 @@ router.get(
         creditPoolChanges: creditPoolChangesResult.rows,
         creditPoolTotalCount: creditPoolChangesResult.totalCount,
         creditPage,
-        creditPoolTimeSeries,
+        dailySpending,
+        chartDays,
         resLocals: res.locals,
       }),
     );
@@ -148,6 +153,13 @@ router.post(
         user_id: res.locals.authn_user.id,
         reason: `Admin ${action}`,
       });
+
+      if (req.headers['x-requested-with'] === 'fetch') {
+        const pool = await selectCreditPool(course_instance.id);
+        res.json(pool);
+        return;
+      }
+
       flash('success', `Successfully ${action === 'add' ? 'added' : 'deducted'} credits.`);
       res.redirect(req.originalUrl);
     } else {

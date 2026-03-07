@@ -14,8 +14,8 @@ import {
 } from '../../../models/ai-grading-credentials.js';
 import {
   selectCreditPool,
-  selectCreditPoolBalanceTimeSeries,
   selectCreditPoolChangesBatched,
+  selectDailySpending,
 } from '../../../models/ai-grading-credit-pool.js';
 
 import { formatCredential } from './utils/format.js';
@@ -121,10 +121,15 @@ const creditPoolChangesQuery = t.procedure
     return await selectCreditPoolChangesBatched(opts.ctx.course_instance.id, opts.input.page);
   });
 
-const creditPoolBalanceTimeSeriesQuery = t.procedure
+const dailySpendingQuery = t.procedure
   .use(requireAiGradingFeature)
+  .input(
+    z.object({
+      days: z.union([z.literal(7), z.literal(14), z.literal(30)]).default(30),
+    }),
+  )
   .query(async (opts) => {
-    return await selectCreditPoolBalanceTimeSeries(opts.ctx.course_instance.id);
+    return await selectDailySpending(opts.ctx.course_instance.id, opts.input.days);
   });
 
 export const aiGradingSettingsRouter = t.router({
@@ -133,7 +138,7 @@ export const aiGradingSettingsRouter = t.router({
   deleteCredential: deleteCredentialMutation,
   creditPool: creditPoolQuery,
   creditPoolChanges: creditPoolChangesQuery,
-  creditPoolBalanceTimeSeries: creditPoolBalanceTimeSeriesQuery,
+  dailySpending: dailySpendingQuery,
 });
 
 export type AiGradingSettingsRouter = typeof aiGradingSettingsRouter;
