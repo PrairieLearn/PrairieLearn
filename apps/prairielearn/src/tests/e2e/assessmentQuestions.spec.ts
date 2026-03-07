@@ -97,16 +97,16 @@ test.describe('Assessment questions', () => {
         {
           title: 'Questions to test maxPoints',
           maxPoints: 5,
-          questions: [{ id: 'partialCredit1', points: [10, 5, 1] }],
+          questions: [{ id: 'partialCredit1', autoPoints: [10, 5, 1] }],
         },
         {
           title: 'Questions to test maxPoints and bestQuestions together',
           bestQuestions: 2,
           maxPoints: 15,
           questions: [
-            { id: 'partialCredit3', points: [15, 10, 5, 1] },
-            { id: 'partialCredit2', points: [10, 5, 1] },
-            { id: 'partialCredit4_v2', points: [20, 15, 10, 5, 1] },
+            { id: 'partialCredit3', autoPoints: [15, 10, 5, 1] },
+            { id: 'partialCredit2', autoPoints: [10, 5, 1] },
+            { id: 'partialCredit4_v2', autoPoints: [20, 15, 10, 5, 1] },
           ],
         },
       ]);
@@ -206,15 +206,15 @@ test.describe('Assessment questions', () => {
       {
         title: 'Questions to test maxPoints',
         maxPoints: 7,
-        questions: [{ id: 'partialCredit4_v2', points: 4, maxPoints: 8 }],
+        questions: [{ id: 'partialCredit4_v2', autoPoints: 4, maxAutoPoints: 8 }],
       },
       {
         title: 'Questions to test bestQuestions',
         bestQuestions: 2,
         questions: [
-          { id: 'partialCredit1', points: 10, maxPoints: 30, triesPerVariant: 2 },
-          { id: 'partialCredit2', points: 5, maxPoints: 40 },
-          { id: 'partialCredit3', points: 5, maxPoints: 50 },
+          { id: 'partialCredit1', autoPoints: 10, maxAutoPoints: 30, triesPerVariant: 2 },
+          { id: 'partialCredit2', autoPoints: 5, maxAutoPoints: 40 },
+          { id: 'partialCredit3', autoPoints: 5, maxAutoPoints: 50 },
         ],
       },
     ]);
@@ -277,11 +277,11 @@ test.describe('Assessment questions', () => {
     expect(savedAssessment.zones).toEqual([
       {
         questions: [
-          { id: 'differentiatePolynomial', points: 7, maxPoints: 10 },
+          { id: 'differentiatePolynomial', autoPoints: 7, maxAutoPoints: 10 },
           { id: 'partialCredit2', autoPoints: 2, maxAutoPoints: 10, manualPoints: 3 },
-          { id: 'partialCredit3', points: 2, maxPoints: 10, triesPerVariant: 3 },
-          { id: 'partialCredit4_v2', points: 3, maxPoints: 10 },
-          { id: 'partialCredit6_no_partial', points: 3, maxPoints: 11 },
+          { id: 'partialCredit3', autoPoints: 2, maxAutoPoints: 10, triesPerVariant: 3 },
+          { id: 'partialCredit4_v2', autoPoints: 3, maxAutoPoints: 10 },
+          { id: 'partialCredit6_no_partial', autoPoints: 3, maxAutoPoints: 11 },
         ],
       },
     ]);
@@ -403,7 +403,7 @@ test.describe('Assessment questions', () => {
     expect(savedAssessment.zones).toHaveLength(2);
     expect(savedAssessment.zones[0].title).toBe('Keep zone');
     expect(savedAssessment.zones[0].questions).toEqual([
-      { id: 'downloadFile', points: 5, maxPoints: 10 },
+      { id: 'downloadFile', autoPoints: 5, maxAutoPoints: 10 },
     ]);
   });
 
@@ -455,17 +455,17 @@ test.describe('Assessment questions', () => {
     await enterEditMode(page, courseInstance.id, assessment.id);
 
     await page.getByRole('button').filter({ hasText: 'partialCredit3' }).first().click();
-    await expect(page.getByLabel('Points', { exact: true })).toBeVisible();
+    await expect(page.getByLabel('Auto points', { exact: true })).toBeVisible();
 
-    const pointsInput = page.getByLabel('Points', { exact: true });
-    await pointsInput.clear();
-    await pointsInput.fill('8, 4, 2');
+    const autoPointsInput = page.getByLabel('Auto points', { exact: true });
+    await autoPointsInput.clear();
+    await autoPointsInput.fill('8, 4, 2');
 
     // Wait for auto-save to propagate the points change to the hidden form input
     await expect(async () => {
       const hiddenZones = await page.locator('input[name="zones"]').inputValue();
       const parsedZones = JSON.parse(hiddenZones);
-      expect(parsedZones[1].questions[0].points).toEqual([8, 4, 2]);
+      expect(parsedZones[1].questions[0].autoPoints).toEqual([8, 4, 2]);
     }).toPass({ timeout: 5000 });
 
     await page.getByRole('button', { name: 'Save and sync' }).click();
@@ -480,7 +480,7 @@ test.describe('Assessment questions', () => {
     const savedContent = await fs.readFile(infoAssessmentPath, 'utf-8');
     const savedAssessment = JSON.parse(savedContent);
 
-    expect(savedAssessment.zones[1].questions[0].points).toEqual([8, 4, 2]);
+    expect(savedAssessment.zones[1].questions[0].autoPoints).toEqual([8, 4, 2]);
   });
 
   test('can add a question to an empty assessment via zone and picker', async ({
@@ -534,7 +534,7 @@ test.describe('Assessment questions', () => {
 
     expect(savedAssessment.zones).toEqual([
       {
-        questions: [{ id: 'partialCredit1', points: 5 }],
+        questions: [{ id: 'partialCredit1', autoPoints: 5 }],
       },
     ]);
   });
