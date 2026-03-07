@@ -53,6 +53,8 @@ def grade_o_expression(
         assumptions={var: {"positive": True} for var in variables},
     )
 
+    var_list = list(sym_true.free_symbols)
+
     if sym_true_source == sym_sub_source:
         return (1, CORRECT_UNCONDITIONAL_FEEDBACK)
 
@@ -65,19 +67,22 @@ def grade_o_expression(
             else:
                 return (1, CORRECT_UNCONDITIONAL_FEEDBACK)
 
-        for var in variables:
-            if sympy.limit(
-                sym_sub, sympy.Symbol(var, positive=True), sympy.oo
-            ) < sympy.sympify(0):
+        for var in var_list:
+            if sympy.limit(sym_sub, var, sympy.oo) < sympy.sympify(0):
                 return (0.0, NEGATIVE_FEEDBACK)
 
         limit_res = []
-        for perm in itertools.permutations(variables):
+        for perm in itertools.permutations(var_list):
             limit = sym_true / sym_sub
             for var in perm:
-                limit = sympy.limit(limit, sympy.Symbol(var, positive=True), sympy.oo)
+                limit = sympy.limit(limit, var, sympy.oo)
 
-            limit_res.append(limit)
+            # Ignore unsolvable limits.
+            if not isinstance(limit, sympy.Limit):
+                limit_res.append(limit)
+
+        if len(limit_res) == 0:
+            return (0.0, TYPE_ERROR_FEEDBACK)
 
         if any(res < sympy.sympify(0) for res in limit_res):
             return (0.0, NEGATIVE_FEEDBACK)
@@ -117,6 +122,8 @@ def grade_theta_expression(
         assumptions={var: {"positive": True} for var in variables},
     )
 
+    var_list = list(sym_true.free_symbols)
+
     if sym_true_source == sym_sub_source:
         return (1, CORRECT_UNCONDITIONAL_FEEDBACK)
 
@@ -127,25 +134,25 @@ def grade_theta_expression(
             else:
                 return (1, CORRECT_UNCONDITIONAL_FEEDBACK)
 
-        for var in variables:
-            if sympy.limit(
-                sym_sub, sympy.Symbol(var, positive=True), sympy.oo
-            ) < sympy.sympify(0):
+        for var in var_list:
+            if sympy.limit(sym_sub, var, sympy.oo) < sympy.sympify(0):
                 return (0.0, NEGATIVE_FEEDBACK)
 
         limit_res = []
-        for perm in itertools.permutations(variables):
+        for perm in itertools.permutations(var_list):
             omega_limit = sym_sub / sym_true
             bigo_limit = sym_true / sym_sub
             for var in perm:
-                omega_limit = sympy.limit(
-                    omega_limit, sympy.Symbol(var, positive=True), sympy.oo
-                )
-                bigo_limit = sympy.limit(
-                    bigo_limit, sympy.Symbol(var, positive=True), sympy.oo
-                )
+                omega_limit = sympy.limit(omega_limit, var, sympy.oo)
+                bigo_limit = sympy.limit(bigo_limit, var, sympy.oo)
 
-            limit_res.append((omega_limit, bigo_limit))
+            if not isinstance(omega_limit, sympy.Limit) and not isinstance(
+                bigo_limit, sympy.Limit
+            ):
+                limit_res.append((omega_limit, bigo_limit))
+
+        if len(limit_res) == 0:
+            return (0.0, TYPE_ERROR_FEEDBACK)
 
         if any(
             res[0] < sympy.sympify(0) or res[1] < sympy.sympify(0) for res in limit_res
@@ -187,6 +194,8 @@ def grade_omega_expression(
         assumptions={var: {"positive": True} for var in variables},
     )
 
+    var_list = list(sym_true.free_symbols)
+
     if sym_true_source == sym_sub_source:
         return (1, CORRECT_UNCONDITIONAL_FEEDBACK)
 
@@ -197,19 +206,21 @@ def grade_omega_expression(
             else:
                 return (1, CORRECT_UNCONDITIONAL_FEEDBACK)
 
-        for var in variables:
-            if sympy.limit(
-                sym_sub, sympy.Symbol(var, positive=True), sympy.oo
-            ) < sympy.sympify(0):
+        for var in var_list:
+            if sympy.limit(sym_sub, var, sympy.oo) < sympy.sympify(0):
                 return (0.0, NEGATIVE_FEEDBACK)
 
         limit_res = []
-        for perm in itertools.permutations(variables):
+        for perm in itertools.permutations(var_list):
             limit = sym_true / sym_sub
             for var in perm:
-                limit = sympy.limit(limit, sympy.Symbol(var, positive=True), sympy.oo)
+                limit = sympy.limit(limit, var, sympy.oo)
 
-            limit_res.append(limit)
+            if not isinstance(limit, sympy.Limit):
+                limit_res.append(limit)
+
+        if len(limit_res) == 0:
+            return (0.0, TYPE_ERROR_FEEDBACK)
 
         if any(res < sympy.sympify(0) for res in limit_res):
             return (0.0, NEGATIVE_FEEDBACK)
