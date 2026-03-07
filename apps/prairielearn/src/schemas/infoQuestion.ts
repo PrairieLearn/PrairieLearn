@@ -1,7 +1,7 @@
 import { z } from 'zod';
 
 import { CommentJsonSchema } from './comment.js';
-import { QuestionParameterJsonSchema } from './questionPreferences.js';
+import { QuestionPreferencesSchemaJsonSchema } from './questionPreferences.js';
 
 const QuestionDependencyJsonSchema = z
   .object({
@@ -270,7 +270,7 @@ export const QuestionJsonSchema = z
       .describe("Whether this question's source code is publicly shared.")
       .optional()
       .default(false),
-    preferences: QuestionParameterJsonSchema.optional(),
+    preferences: QuestionPreferencesSchemaJsonSchema.optional(),
   })
   .strict()
   .describe('Info files for questions.');

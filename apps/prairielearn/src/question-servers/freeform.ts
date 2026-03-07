@@ -78,21 +78,6 @@ type ElementNameMap = Record<
   }
 >;
 
-/**
- * Extracts preferences from variant options or question schema.
- * For phases with a variant, preferences come from variant.preferences.
- * For generate phase, preferences come from question.preferences_schema defaults.
- */
-export function getPreferences({
-  preferences,
-  preferencesSchema,
-}: {
-  preferences?: Record<string, string | number | boolean> | null;
-  preferencesSchema?: Record<string, { default: string | number | boolean }> | null;
-}): Record<string, string | number | boolean> {
-  return { ...extractDefaultPreferences(preferencesSchema), ...preferences };
-}
-
 // Maps core element names to element info
 let coreElementsCache: ElementNameMap = {};
 // Maps course IDs to course element info
@@ -849,13 +834,10 @@ export async function generate(
       correct_answers: {},
       variant_seed: Number.parseInt(variant_seed, 36),
       options: { ...course.options, ...question.options, ...getContextOptions(context) },
-      preferences: getPreferences({
-        preferences,
-        preferencesSchema: question.preferences_schema as Record<
-          string,
-          { default: string | number | boolean }
-        > | null,
-      }),
+      preferences: {
+        ...extractDefaultPreferences(question.preferences_schema),
+        ...preferences,
+      },
     } satisfies ExecutionData;
 
     return await withCodeCaller(course, async (codeCaller) => {
@@ -893,9 +875,7 @@ export async function prepare(
       correct_answers: variant.true_answer ?? {},
       variant_seed: Number.parseInt(variant.variant_seed, 36),
       options: { ...variant.options, ...getContextOptions(context) },
-      preferences: getPreferences({
-        preferences: variant.preferences ?? undefined,
-      }),
+      preferences: variant.preferences ?? {},
       answers_names: {},
     } satisfies ExecutionData;
 
@@ -1017,9 +997,7 @@ async function renderPanel({
     feedback: submission?.feedback ?? {},
     variant_seed: Number.parseInt(variant.variant_seed, 36),
     options,
-    preferences: getPreferences({
-      preferences: variant.preferences ?? undefined,
-    }),
+    preferences: variant.preferences ?? {},
     raw_submitted_answers: submission?.raw_submitted_answer ?? {},
     editable: !!(
       locals.allowAnswerEditing &&
@@ -1558,9 +1536,7 @@ export async function file(
       correct_answers: variant.true_answer ?? {},
       variant_seed: Number.parseInt(variant.variant_seed, 36),
       options: { ...variant.options, ...getContextOptions(context) },
-      preferences: getPreferences({
-        preferences: variant.preferences ?? undefined,
-      }),
+      preferences: variant.preferences ?? {},
       filename,
     } satisfies ExecutionData;
 
@@ -1615,9 +1591,7 @@ export async function parse(
       format_errors: submission.format_errors ?? {},
       variant_seed: Number.parseInt(variant.variant_seed, 36),
       options: { ...variant.options, ...getContextOptions(context) },
-      preferences: getPreferences({
-        preferences: variant.preferences ?? undefined,
-      }),
+      preferences: variant.preferences ?? {},
       raw_submitted_answers: submission.raw_submitted_answer ?? {},
       gradable: submission.gradable ?? true,
     } satisfies ExecutionData;
@@ -1674,9 +1648,7 @@ export async function grade(
       feedback: submission.feedback == null ? {} : submission.feedback,
       variant_seed: Number.parseInt(variant.variant_seed, 36),
       options: { ...variant.options, ...getContextOptions(context) },
-      preferences: getPreferences({
-        preferences: variant.preferences ?? undefined,
-      }),
+      preferences: variant.preferences ?? {},
       raw_submitted_answers: submission.raw_submitted_answer ?? {},
       gradable: submission.gradable ?? true,
     } satisfies ExecutionData;
@@ -1731,9 +1703,7 @@ export async function test(
       feedback: {},
       variant_seed: Number.parseInt(variant.variant_seed, 36),
       options: { ...variant.options, ...getContextOptions(context) },
-      preferences: getPreferences({
-        preferences: variant.preferences ?? undefined,
-      }),
+      preferences: variant.preferences ?? {},
       raw_submitted_answers: {},
       gradable: true as boolean,
       test_type,

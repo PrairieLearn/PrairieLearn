@@ -5,6 +5,8 @@ import { z } from 'zod';
 
 import { DateFromISOString, IdSchema, IntervalSchema } from '@prairielearn/zod';
 
+import { QuestionPreferencesSchemaJsonSchema } from '../schemas/questionPreferences.js';
+
 // *******************************************************************************
 // Enum schemas. These should be alphabetized by their corresponding enum name.
 // *******************************************************************************
@@ -1273,7 +1275,7 @@ export const QuestionSchema = z.object({
   number: z.number().nullable(),
   options: z.any().nullable(),
   partial_credit: z.boolean().nullable(),
-  preferences_schema: z.record(z.string(), z.any()).nullable(),
+  preferences_schema: QuestionPreferencesSchemaJsonSchema.nullable(),
   qid: z.string().nullable(),
   share_publicly: z.boolean(),
   share_source_publicly: z.boolean(),

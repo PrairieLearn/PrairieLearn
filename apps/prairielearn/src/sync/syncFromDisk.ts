@@ -17,7 +17,7 @@ import {
 } from '../models/course.js';
 import { selectInstitutionForCourse } from '../models/institution.js';
 import { flushElementCache } from '../question-servers/freeform.js';
-import type { QuestionParameterJson } from '../schemas/questionPreferences.js';
+import type { QuestionPreferencesSchemaJson } from '../schemas/questionPreferences.js';
 
 import * as courseDB from './course-db.js';
 import * as syncAssessmentModules from './fromDisk/assessmentModules.js';
@@ -178,7 +178,10 @@ export async function syncDiskToSqlWithLock(
     // populate any shared questions in that dictionary. We also need to do it before
     // syncing the assessment sets, as the presence of errors that this validation
     // could produce influences whether the "Unknown" assessment set is created.
-    const sharedQuestionPreferencesByCi = new Map<string, Record<string, QuestionParameterJson>>();
+    const sharedQuestionPreferencesByCi = new Map<
+      string,
+      Record<string, QuestionPreferencesSchemaJson>
+    >();
     await timed('Check sharing validity', async () => {
       await async.eachLimit(Object.entries(courseData.courseInstances), 3, async ([ciid, ci]) => {
         const prefs = await syncAssessments.validateAssessmentSharedQuestions(

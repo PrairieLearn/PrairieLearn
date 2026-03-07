@@ -14,10 +14,10 @@ import {
   type AssessmentJson,
   type QuestionAlternativeJson,
   type QuestionJson,
-  type QuestionParameterJson,
-  QuestionParameterJsonSchema,
   type QuestionPointsJson,
   type QuestionPreferences,
+  type QuestionPreferencesSchemaJson,
+  QuestionPreferencesSchemaJsonSchema,
   type ZoneQuestionBlockJson,
 } from '../../schemas/index.js';
 import { type CourseInstanceData, convertLegacyGroupsToGroupsConfig } from '../course-db.js';
@@ -25,8 +25,31 @@ import { isDateInFuture } from '../dates.js';
 import * as infofile from '../infofile.js';
 import { type InfoFile } from '../infofile.js';
 
-// We use a single global instance so that schemas aren't recompiled every time they're used
+// We use a single global instance so that schemas aren't recompiled every time they're used.
 const ajv = new Ajv({ allErrors: true, allowUnionTypes: true });
+
+// Cache compiled AJV validators by preferences schema reference to avoid
+// recompilation when the same question appears multiple times in an assessment.
+const compiledValidatorCache = new WeakMap<
+  // A WeakMap holds "weak" references to its keys — if nothing else in the program references a key object, the garbage collector can reclaim both the key and its associated value. A
+  // regular Map would keep everything alive forever.
+  // Once a sync finishes and those objects go out of scope, the cached validators are automatically cleaned up.
+  QuestionPreferencesSchemaJson,
+  ReturnType<Ajv['compile']>
+>();
+
+function getOrCompileValidator(schema: QuestionPreferencesSchemaJson) {
+  let validate = compiledValidatorCache.get(schema);
+  if (!validate) {
+    validate = ajv.compile({
+      type: 'object',
+      properties: schema,
+      additionalProperties: false,
+    });
+    compiledValidatorCache.set(schema, validate);
+  }
+  return validate;
+}
 
 const sql = sqldb.loadSqlEquiv(import.meta.url);
 
@@ -37,23 +60,13 @@ interface MergePreferencesResult {
   errors: string[];
 }
 
-/**
- * Merges instructor-provided preferences with question defaults and validates against schema.
- *
- * @param qid - The question ID (for error messages)
- * @param schema - The question's preferences schema (from info.json)
- * @param overrides - The instructor's preferences overrides (from infoAssessment.json)
- * @returns The merged preferences and any validation errors
- */
-export function mergeAndValidatePreferences(
+function mergeAndValidatePreferences(
   qid: string,
-  schema: QuestionParameterJson | null | undefined,
+  schema: QuestionPreferencesSchemaJson | null | undefined,
   overrides: QuestionPreferences | undefined,
 ): MergePreferencesResult {
   const errors: string[] = [];
-  // If the question has no preferences schema
   if (!schema) {
-    // If overrides were provided but the question doesn't support preferences, that's an error
     if (overrides && Object.keys(overrides).length > 0) {
       errors.push(
         `Question "${qid}" does not define a preferences schema, but preferences were provided in the assessment`,
@@ -64,12 +77,7 @@ export function mergeAndValidatePreferences(
 
   const merged: QuestionPreferences = { ...extractDefaultPreferences(schema), ...overrides };
 
-  // Validate merged preferences against the JSON schema using AJV
-  const validate = ajv.compile({
-    type: 'object',
-    properties: schema,
-    additionalProperties: false,
-  });
+  const validate = getOrCompileValidator(schema);
   const valid = validate(merged);
 
   if (!valid && validate.errors) {
@@ -120,14 +128,14 @@ function getParamsForAssessment(
   assessmentInfoFile: AssessmentInfoFile,
   questionIds: Record<string, any>,
   questions: Record<string, InfoFile<QuestionJson>>,
-  sharedQuestionPreferences: Record<string, QuestionParameterJson>,
+  sharedQuestionPreferences: Record<string, QuestionPreferencesSchemaJson>,
 ) {
   if (infofile.hasErrors(assessmentInfoFile)) return null;
   const assessment = assessmentInfoFile.data;
   if (!assessment) throw new Error(`Missing assessment data for ${assessmentInfoFile.uuid}`);
 
   // Helper to get preferences schema for a question
-  const getPreferencesSchema = (qid: string): QuestionParameterJson | null => {
+  const getPreferencesSchema = (qid: string): QuestionPreferencesSchemaJson | null => {
     if (qid.startsWith('@')) {
       return sharedQuestionPreferences[qid] ?? null;
     }
@@ -530,7 +538,7 @@ export async function sync(
   courseInstanceData: CourseInstanceData,
   questionIds: Record<string, any>,
   questions: Record<string, InfoFile<QuestionJson>>,
-  sharedQuestionPreferences: Record<string, QuestionParameterJson>,
+  sharedQuestionPreferences: Record<string, QuestionPreferencesSchemaJson>,
 ) {
   const assessments = courseInstanceData.assessments;
 
@@ -582,7 +590,12 @@ export async function sync(
   const assessmentParams = Object.entries(assessments).map(([tid, assessment]) => {
     // getParamsForAssessment must be called before stringifyErrors/stringifyWarnings so
     // that any errors it adds to the infofile are captured in the serialized output.
-    const params = getParamsForAssessment(assessment, questionIds, questions, sharedQuestionPreferences);
+    const params = getParamsForAssessment(
+      assessment,
+      questionIds,
+      questions,
+      sharedQuestionPreferences,
+    );
     return JSON.stringify([
       tid,
       assessment.uuid,
@@ -603,7 +616,7 @@ export async function validateAssessmentSharedQuestions(
   courseId: string,
   assessments: CourseInstanceData['assessments'],
   questionIds: Record<string, string>,
-): Promise<Record<string, QuestionParameterJson>> {
+): Promise<Record<string, QuestionPreferencesSchemaJson>> {
   // A set of all imported question IDs.
   const importedQids = new Set<string>();
 
@@ -670,10 +683,10 @@ export async function validateAssessmentSharedQuestions(
         sharing_name: z.string(),
         qid: z.string(),
         id: IdSchema,
-        preferences_schema: QuestionParameterJsonSchema.nullable(),
+        preferences_schema: QuestionPreferencesSchemaJsonSchema.nullable(),
       }),
     );
-    const sharedQuestionPreferences: Record<string, QuestionParameterJson> = {};
+    const sharedQuestionPreferences: Record<string, QuestionPreferencesSchemaJson> = {};
     for (const row of importedQuestions) {
       const fullQid = '@' + row.sharing_name + '/' + row.qid;
       questionIds[fullQid] = row.id;
