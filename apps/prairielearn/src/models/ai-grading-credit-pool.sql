@@ -174,16 +174,17 @@ WITH
   ),
   daily AS (
     SELECT
-      DATE_TRUNC('day', created_at)::date AS day,
-      SUM(ABS(delta_milli_dollars)) AS spending_milli_dollars
+      DATE_TRUNC('day', c.created_at)::date AS day,
+      SUM(ABS(c.delta_milli_dollars)) AS spending_milli_dollars
     FROM
-      ai_grading_credit_pool_changes
+      ai_grading_credit_pool_changes AS c
     WHERE
-      course_instance_id = $course_instance_id
-      AND created_at >= NOW() - ($days || ' days')::interval
-      AND delta_milli_dollars < 0
+      c.course_instance_id = $course_instance_id
+      AND c.created_at >= NOW() - ($days || ' days')::interval
+      AND c.delta_milli_dollars < 0
+      AND c.ai_grading_job_id IS NOT NULL
     GROUP BY
-      DATE_TRUNC('day', created_at)::date
+      DATE_TRUNC('day', c.created_at)::date
   )
 SELECT
   dr.day AS date,
@@ -193,3 +194,40 @@ FROM
   LEFT JOIN daily AS d ON d.day = dr.day
 ORDER BY
   dr.day ASC;
+
+-- BLOCK select_daily_spending_grouped
+SELECT
+  DATE_TRUNC('day', c.created_at)::date AS date,
+  CASE $group_by
+    WHEN 'user' THEN COALESCE(u.name, u.uid, 'User ' || c.user_id::text)
+    WHEN 'assessment' THEN COALESCE(
+      a.title || E'\n' || a.tid,
+      a.title,
+      a.tid,
+      'Unknown assessment'
+    )
+    WHEN 'question' THEN COALESCE(
+      q.title || E'\n' || q.qid,
+      q.title,
+      q.qid,
+      'Unknown question'
+    )
+  END AS group_label,
+  SUM(ABS(c.delta_milli_dollars))::bigint AS spending_milli_dollars
+FROM
+  ai_grading_credit_pool_changes AS c
+  LEFT JOIN users AS u ON u.id = c.user_id
+  LEFT JOIN assessment_questions AS aq ON aq.id = c.assessment_question_id
+  LEFT JOIN assessments AS a ON a.id = aq.assessment_id
+  LEFT JOIN questions AS q ON q.id = aq.question_id
+WHERE
+  c.course_instance_id = $course_instance_id
+  AND c.created_at >= NOW() - ($days || ' days')::interval
+  AND c.delta_milli_dollars < 0
+  AND c.ai_grading_job_id IS NOT NULL
+GROUP BY
+  DATE_TRUNC('day', c.created_at)::date,
+  group_label
+ORDER BY
+  date ASC,
+  group_label ASC;

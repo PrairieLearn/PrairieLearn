@@ -146,7 +146,7 @@ export async function adjustCreditPool({
 
     if (currentBalance + delta_milli_dollars < 0) {
       throw new Error(
-        `Cannot deduct more than the current ${credit_type} balance of $${(currentBalance / 1000).toFixed(2)}.`,
+        `Cannot deduct more than the current ${credit_type.replace('_', '-')} balance of $${(currentBalance / 1000).toFixed(2)}.`,
       );
     }
 
@@ -202,7 +202,11 @@ export async function selectCreditPoolChangesBatched(
   const offset = (page - 1) * CREDIT_POOL_CHANGES_PAGE_SIZE;
   const rows = await queryRows(
     sql.select_credit_pool_changes_batched,
-    { course_instance_id, limit: CREDIT_POOL_CHANGES_PAGE_SIZE, offset },
+    {
+      course_instance_id,
+      limit: CREDIT_POOL_CHANGES_PAGE_SIZE,
+      offset,
+    },
     BatchedCreditPoolChangeRowSchema,
   );
   const totalCount = rows.length > 0 ? rows[0].total_count : 0;
@@ -224,5 +228,25 @@ export async function selectDailySpending(
     sql.select_daily_spending,
     { course_instance_id, days },
     DailySpendingPointSchema,
+  );
+}
+
+const GroupedDailySpendingPointSchema = z.object({
+  date: z.coerce.date(),
+  group_label: z.string(),
+  spending_milli_dollars: z.coerce.number(),
+});
+
+type GroupedDailySpendingPoint = z.infer<typeof GroupedDailySpendingPointSchema>;
+
+export async function selectDailySpendingGrouped(
+  course_instance_id: string,
+  days: number,
+  group_by: 'user' | 'assessment' | 'question',
+): Promise<GroupedDailySpendingPoint[]> {
+  return await queryRows(
+    sql.select_daily_spending_grouped,
+    { course_instance_id, days, group_by },
+    GroupedDailySpendingPointSchema,
   );
 }

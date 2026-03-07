@@ -1,7 +1,7 @@
 import { QueryClient, useMutation, useQuery } from '@tanstack/react-query';
 import clsx from 'clsx';
 import { useState } from 'react';
-import { Alert, Form, Modal, Spinner } from 'react-bootstrap';
+import { Alert, Dropdown, Form, Modal, Spinner } from 'react-bootstrap';
 import { useForm } from 'react-hook-form';
 
 import { useModalState } from '@prairielearn/ui';
@@ -9,7 +9,10 @@ import { useModalState } from '@prairielearn/ui';
 import { QueryClientProviderDebug } from '../../../lib/client/tanstackQuery.js';
 import type { EnumAiGradingProvider } from '../../../lib/db-types.js';
 import { BalanceCards } from '../../components/ai-grading-credits/BalanceCards.js';
-import { DailySpendingChart } from '../../components/ai-grading-credits/DailySpendingChart.js';
+import {
+  DailySpendingChart,
+  type GroupByOption,
+} from '../../components/ai-grading-credits/DailySpendingChart.js';
 import { TransactionHistoryTable } from '../../components/ai-grading-credits/TransactionHistoryTable.js';
 import {
   AI_GRADING_PROVIDER_DISPLAY_NAMES,
@@ -407,6 +410,7 @@ function CreditPoolSection({ useCustomApiKeys }: { useCustomApiKeys: boolean }) 
   const [showHistory, setShowHistory] = useState(false);
   const [page, setPage] = useState(1);
   const [chartDays, setChartDays] = useState<7 | 14 | 30>(30);
+  const [groupBy, setGroupBy] = useState<GroupByOption>('none');
 
   const poolQuery = useQuery(trpc.creditPool.queryOptions());
   const changesQuery = useQuery({
@@ -414,6 +418,13 @@ function CreditPoolSection({ useCustomApiKeys }: { useCustomApiKeys: boolean }) 
     enabled: showHistory,
   });
   const dailySpendingQuery = useQuery(trpc.dailySpending.queryOptions({ days: chartDays }));
+  const groupedSpendingQuery = useQuery({
+    ...trpc.dailySpendingGrouped.queryOptions({
+      days: chartDays,
+      group_by: groupBy as 'user' | 'assessment' | 'question',
+    }),
+    enabled: groupBy !== 'none',
+  });
 
   if (poolQuery.isError) {
     return (
@@ -433,39 +444,67 @@ function CreditPoolSection({ useCustomApiKeys }: { useCustomApiKeys: boolean }) 
   }
 
   const pool = poolQuery.data;
-  const dimmed = useCustomApiKeys;
 
-  return (
-    <div className="border-top pt-3 mt-3">
-      <h2 className="h5 mb-3">AI grading credits</h2>
-
+  const creditPoolContent = (
+    <>
       {useCustomApiKeys && (
-        <Alert variant="danger">
-          AI grading credits are not deducted while custom API keys are active. Usage is billed
-          directly by the API provider.
-        </Alert>
+        <p className="text-muted small mb-3">
+          While custom API keys are active, PrairieLearn AI grading credits are not deducted.
+        </p>
       )}
 
-      <BalanceCards pool={pool} dimmed={dimmed} />
+      <BalanceCards pool={pool} context="instructor" />
 
-      <div className={clsx(dimmed && 'opacity-50')}>
+      <div>
         <div className="mb-3">
           <div className="d-flex justify-content-between align-items-center mb-2">
             <h3 className="h6 mb-0">Daily usage</h3>
-            <div className="btn-group btn-group-sm" role="group" aria-label="Time range">
-              {([7, 14, 30] as const).map((d) => (
-                <button
-                  key={d}
-                  type="button"
-                  className={clsx('btn', d === chartDays ? 'btn-primary' : 'btn-outline-secondary')}
-                  onClick={() => setChartDays(d)}
-                >
-                  {d}d
-                </button>
-              ))}
+            <div className="d-flex align-items-center gap-2">
+              <Dropdown onSelect={(key) => setGroupBy((key ?? 'none') as GroupByOption)}>
+                <Dropdown.Toggle variant="outline-secondary" size="sm">
+                  {groupBy === 'none' && 'Group by'}
+                  {groupBy === 'user' && 'Group by user'}
+                  {groupBy === 'assessment' && 'Group by assessment'}
+                  {groupBy === 'question' && 'Group by question'}
+                </Dropdown.Toggle>
+                <Dropdown.Menu>
+                  <Dropdown.Item eventKey="none" active={groupBy === 'none'}>
+                    Group by
+                  </Dropdown.Item>
+                  <Dropdown.Item eventKey="user" active={groupBy === 'user'}>
+                    Group by user
+                  </Dropdown.Item>
+                  <Dropdown.Item eventKey="assessment" active={groupBy === 'assessment'}>
+                    Group by assessment
+                  </Dropdown.Item>
+                  <Dropdown.Item eventKey="question" active={groupBy === 'question'}>
+                    Group by question
+                  </Dropdown.Item>
+                </Dropdown.Menu>
+              </Dropdown>
+              <div className="btn-group btn-group-sm" role="group" aria-label="Time range">
+                {([7, 14, 30] as const).map((d) => (
+                  <button
+                    key={d}
+                    type="button"
+                    className={clsx(
+                      'btn',
+                      d === chartDays ? 'btn-primary' : 'btn-outline-secondary',
+                    )}
+                    onClick={() => setChartDays(d)}
+                  >
+                    {d}d
+                  </button>
+                ))}
+              </div>
             </div>
           </div>
-          {dailySpendingQuery.data && <DailySpendingChart data={dailySpendingQuery.data} />}
+          {dailySpendingQuery.data && (
+            <DailySpendingChart
+              data={dailySpendingQuery.data}
+              groupedData={groupBy !== 'none' ? groupedSpendingQuery.data : undefined}
+            />
+          )}
         </div>
 
         <TransactionHistory
@@ -479,6 +518,21 @@ function CreditPoolSection({ useCustomApiKeys }: { useCustomApiKeys: boolean }) 
           setPage={setPage}
         />
       </div>
+    </>
+  );
+
+  return (
+    <div className="border-top pt-3 mt-3">
+      <div className={
+        clsx(
+          'd-flex align-items-center gap-2',
+          useCustomApiKeys ? 'mb-1': 'mb-3'
+        )
+      }>
+        <h2 className="h5 mb-0">AI grading credits</h2>
+        {useCustomApiKeys && <span className="badge text-bg-secondary">Inactive</span>}
+      </div>
+      {creditPoolContent}
     </div>
   );
 }
