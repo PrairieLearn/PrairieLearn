@@ -26,7 +26,7 @@ import {
   useShiftClickCheckbox,
 } from '@prairielearn/ui';
 
-import { RubricSettings } from '../../../../components/RubricSettings.js';
+import { type ProposedRubricItem, RubricSettings } from '../../../../components/RubricSettings.js';
 import { ServerJobsProgressInfo } from '../../../../components/ServerJobProgress/ServerJobProgressBars.js';
 import { useServerJobProgress } from '../../../../components/ServerJobProgress/useServerJobProgress.js';
 import {
@@ -90,6 +90,9 @@ interface AssessmentQuestionTableProps {
   onSetGroupInfoModalState: (modalState: GroupInfoModalState) => void;
   onSetConflictModalState: (modalState: ConflictModalState) => void;
   mutations: ReturnType<typeof useManualGradingActions>;
+  proposedRubricItem?: ProposedRubricItem | null;
+  onAcceptProposal?: (item: ProposedRubricItem) => void;
+  onUpdateProposal?: (item: ProposedRubricItem) => void;
 }
 
 function AiGradingOptionContent({ text, numToGrade }: { text: string; numToGrade: number }) {
@@ -182,6 +185,9 @@ export function AssessmentQuestionTable({
   onSetGroupInfoModalState,
   onSetConflictModalState,
   mutations,
+  proposedRubricItem,
+  onAcceptProposal,
+  onUpdateProposal,
 }: AssessmentQuestionTableProps) {
   const trpc = useTRPC();
   // Query state management
@@ -659,6 +665,9 @@ export function AssessmentQuestionTable({
             assessment_tid: assessment.tid!,
             question_qid: questionQid,
           }}
+          proposedRubricItem={proposedRubricItem}
+          onAcceptProposal={onAcceptProposal}
+          onUpdateProposal={onUpdateProposal}
         />
       </div>
       {aiGradingMode && (

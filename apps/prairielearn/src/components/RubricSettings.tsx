@@ -53,6 +53,13 @@ declare global {
   }
 }
 
+export interface ProposedRubricItem {
+  action: 'add' | 'modify' | 'remove';
+  description: string;
+  points: number;
+  explanation: string;
+}
+
 export function RubricSettings({
   hasCourseInstancePermissionEdit,
   assessmentQuestion,
@@ -60,6 +67,9 @@ export function RubricSettings({
   csrfToken,
   aiGradingStats,
   context,
+  proposedRubricItem,
+  onAcceptProposal,
+  onUpdateProposal,
 }: {
   hasCourseInstancePermissionEdit: boolean;
   assessmentQuestion: StaffAssessmentQuestion;
@@ -67,6 +77,9 @@ export function RubricSettings({
   csrfToken: string;
   aiGradingStats: AiGradingGeneralStats | null;
   context: Record<string, any>;
+  proposedRubricItem?: ProposedRubricItem | null;
+  onAcceptProposal?: (item: ProposedRubricItem) => void;
+  onUpdateProposal?: (item: ProposedRubricItem) => void;
 }) {
   const showAiGradingStats = Boolean(aiGradingStats);
   const rubricItemsWithDisagreementCount = aiGradingStats?.rubric_stats ?? {};
@@ -784,6 +797,13 @@ export function RubricSettings({
                   </td>
                 </tr>
               )}
+              {proposedRubricItem && (
+                <ProposedRubricRow
+                  item={proposedRubricItem}
+                  onAccept={onAcceptProposal}
+                  onUpdate={onUpdateProposal}
+                />
+              )}
             </tbody>
           </table>
         </div>
@@ -976,6 +996,77 @@ export function RubricSettings({
         )}
       </div>
     </div>
+  );
+}
+
+function ProposedRubricRow({
+  item,
+  onAccept,
+  onUpdate,
+}: {
+  item: ProposedRubricItem;
+  onAccept?: (item: ProposedRubricItem) => void;
+  onUpdate?: (item: ProposedRubricItem) => void;
+}) {
+  const [points, setPoints] = useState(item.points);
+  const [description, setDescription] = useState(item.description);
+  const [explanation, setExplanation] = useState(item.explanation);
+
+  return (
+    <tr style={{ backgroundColor: '#fff8e1', borderLeft: '3px solid #ffc107' }}>
+      <td className="text-nowrap align-middle">
+        <span className="badge bg-warning text-dark">
+          <i className="bi bi-stars me-1" />
+          Proposed
+        </span>
+      </td>
+      <td className="align-middle" style={{ width: 80 }}>
+        <input
+          type="number"
+          className="form-control form-control-sm"
+          value={points}
+          onChange={(e) => {
+            const val = Number(e.target.value);
+            setPoints(val);
+            onUpdate?.({ ...item, points: val, description, explanation });
+          }}
+        />
+      </td>
+      <td className="align-middle">
+        <input
+          type="text"
+          className="form-control form-control-sm"
+          value={description}
+          onChange={(e) => {
+            setDescription(e.target.value);
+            onUpdate?.({ ...item, points, description: e.target.value, explanation });
+          }}
+        />
+      </td>
+      <td className="align-middle">
+        <input
+          type="text"
+          className="form-control form-control-sm"
+          value={explanation}
+          onChange={(e) => {
+            setExplanation(e.target.value);
+            onUpdate?.({ ...item, points, description, explanation: e.target.value });
+          }}
+        />
+      </td>
+      <td className="align-middle" />
+      <td className="align-middle" />
+      <td className="align-middle">
+        <button
+          type="button"
+          className="btn btn-success btn-sm"
+          onClick={() => onAccept?.({ ...item, points, description, explanation })}
+        >
+          <i className="bi bi-check-lg me-1" />
+          Save
+        </button>
+      </td>
+    </tr>
   );
 }
 
