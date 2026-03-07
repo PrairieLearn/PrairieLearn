@@ -102,7 +102,7 @@ function findAlternativeAcrossZones(
  * The initialState is captured in closure for the RESET action.
  * All operations use trackingIds for stable identity instead of position indices.
  */
-function createEditorReducer(initialState: EditorState) {
+export function createEditorReducer(initialState: EditorState) {
   return function editorReducer(state: EditorState, action: EditorAction): EditorState {
     switch (action.type) {
       case 'ADD_QUESTION': {

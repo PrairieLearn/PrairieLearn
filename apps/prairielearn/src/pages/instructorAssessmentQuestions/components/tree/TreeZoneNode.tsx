@@ -11,6 +11,7 @@ import type { TreeActions, TreeState, ZoneAssessmentForm } from '../../types.js'
 import {
   computeZonePointTotals,
   computeZoneQuestionCount,
+  hasZoneChooseExceedsCount,
   hasZonePointsMismatch,
 } from '../../utils/questions.js';
 
@@ -19,6 +20,7 @@ import { CollapseToggleButton } from './CollapseToggleButton.js';
 import { DragHandle } from './DragHandle.js';
 import { TreeEmptyDropZone } from './TreeEmptyDropZone.js';
 import { TreeQuestionBlockNode } from './TreeQuestionBlockNode.js';
+import { WarningIndicator } from './WarningIndicator.js';
 import { makeDraggableStyle } from './dragUtils.js';
 
 /**
@@ -40,10 +42,10 @@ export function TreeZoneNode({
 }) {
   const { editMode, selectedItem, collapsedZones, changeTracking, assessmentType } = state;
   const { setSelectedItem, dispatch, onAddQuestion, onAddAltGroup, onDeleteZone } = actions;
-  const zonePointsMismatchTooltipId = useId();
   const badgeTooltipId = useId();
   const isCollapsed = collapsedZones.has(zone.trackingId);
   const zonePointsMismatch = hasZonePointsMismatch(zone, assessmentType);
+  const zoneChooseExceeds = hasZoneChooseExceedsCount(zone);
   const isSelected =
     selectedItem?.type === 'zone' && selectedItem.zoneTrackingId === zone.trackingId;
 
@@ -99,7 +101,9 @@ export function TreeZoneNode({
             position: 'sticky',
             top: 0,
             zIndex: 10,
-            ...(zonePointsMismatch && { borderLeft: '6px solid var(--bs-warning)' }),
+            ...((zonePointsMismatch || zoneChooseExceeds) && {
+              borderLeft: '6px solid var(--bs-warning)',
+            }),
           }}
           onClick={(e) => {
             e.stopPropagation();
@@ -132,18 +136,16 @@ export function TreeZoneNode({
               changeTracking={changeTracking}
             />
             {zonePointsMismatch && (
-              <OverlayTrigger
-                placement="top"
-                tooltip={{
-                  props: { id: zonePointsMismatchTooltipId },
-                  body: 'Questions in this zone have different point values',
-                }}
-              >
-                <i
-                  className="bi bi-exclamation-triangle-fill text-warning ms-1"
-                  aria-hidden="true"
-                />
-              </OverlayTrigger>
+              <WarningIndicator
+                tooltipId={`points-mismatch-${zone.trackingId}`}
+                body="Questions in this zone have different point values"
+              />
+            )}
+            {zoneChooseExceeds && (
+              <WarningIndicator
+                tooltipId={`choose-exceeds-${zone.trackingId}`}
+                body="Number to choose or best questions exceeds the number of questions in this zone"
+              />
             )}
           </span>
           <span className="d-inline-flex align-items-center gap-1 flex-wrap ms-2">

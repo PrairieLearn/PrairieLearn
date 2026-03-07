@@ -1,7 +1,7 @@
 import * as fs from 'node:fs/promises';
 import * as path from 'node:path';
 
-import type { Page } from '@playwright/test';
+import type { Locator, Page } from '@playwright/test';
 
 import { TEST_COURSE_PATH } from '../../lib/paths.js';
 import { selectAssessmentByTid } from '../../models/assessment.js';
@@ -16,35 +16,18 @@ async function enterEditMode(page: Page, ciId: string, aId: string): Promise<voi
 }
 
 /**
- * Performs a pointer-based drag using dnd-kit's PointerSensor.
- * Uses Playwright's low-level mouse API to simulate a real drag gesture.
- *
- * TODO: this is super ugly, we should figure out how to avoid this. We should be able to use keyboard shortcuts to drag and drop.
+ * Performs a keyboard-based drag using dnd-kit's KeyboardSensor.
+ * Focuses the source drag handle, activates it with Space, uses arrow keys
+ * to move it, then drops it with Space.
  */
-async function pointerDrag(
-  page: Page,
-  source: ReturnType<Page['locator']>,
-  target: ReturnType<Page['locator']>,
-): Promise<void> {
-  const sourceBox = await source.boundingBox();
-  const targetBox = await target.boundingBox();
-  if (!sourceBox || !targetBox) throw new Error('Could not get bounding boxes');
-
-  const sx = sourceBox.x + sourceBox.width / 2;
-  const sy = sourceBox.y + sourceBox.height / 2;
-  const tx = targetBox.x + targetBox.width / 2;
-  const ty = targetBox.y + targetBox.height / 2;
-
-  await page.mouse.move(sx, sy);
-  await page.mouse.down();
-  // Move in small steps to trigger PointerSensor's distance constraint
-  const stepCount = 10;
-  for (let i = 1; i <= stepCount; i++) {
-    await page.mouse.move(sx + ((tx - sx) * i) / stepCount, sy + ((ty - sy) * i) / stepCount);
+async function keyboardDrag(page: Page, source: Locator, direction: 'up' | 'down', steps: number) {
+  const arrowKey = direction === 'up' ? 'ArrowUp' : 'ArrowDown';
+  await source.focus();
+  await page.keyboard.press(' ');
+  for (let i = 0; i < steps; i++) {
+    await page.keyboard.press(arrowKey);
   }
-  await page.waitForTimeout(100);
-  await page.mouse.up();
-  await page.waitForTimeout(200);
+  await page.keyboard.press(' ');
 }
 
 async function resetAssessmentFromTemplate({
@@ -96,7 +79,7 @@ test.describe('Assessment questions', () => {
       await expect(dragHandles).toHaveCount(4);
 
       // Move partialCredit3 (index 2) up one position before partialCredit2
-      await pointerDrag(page, dragHandles.nth(2), dragHandles.nth(1));
+      await keyboardDrag(page, dragHandles.nth(2), 'up', 1);
 
       await page.getByRole('button', { name: 'Save and sync' }).click();
       await expect(page.getByRole('button', { name: 'Edit', exact: true })).toBeVisible();
@@ -114,16 +97,16 @@ test.describe('Assessment questions', () => {
         {
           title: 'Questions to test maxPoints',
           maxPoints: 5,
-          questions: [{ id: 'partialCredit1', points: [10, 5, 1] }],
+          questions: [{ id: 'partialCredit1', autoPoints: [10, 5, 1] }],
         },
         {
           title: 'Questions to test maxPoints and bestQuestions together',
           bestQuestions: 2,
           maxPoints: 15,
           questions: [
-            { id: 'partialCredit3', points: [15, 10, 5, 1] },
-            { id: 'partialCredit2', points: [10, 5, 1] },
-            { id: 'partialCredit4_v2', points: [20, 15, 10, 5, 1] },
+            { id: 'partialCredit3', autoPoints: [15, 10, 5, 1] },
+            { id: 'partialCredit2', autoPoints: [10, 5, 1] },
+            { id: 'partialCredit4_v2', autoPoints: [20, 15, 10, 5, 1] },
           ],
         },
       ]);
@@ -140,8 +123,9 @@ test.describe('Assessment questions', () => {
       const dragHandles = page.locator('[aria-label="Drag to reorder"]');
       await expect(dragHandles).toHaveCount(4);
 
-      // Drag partialCredit4_v2 (last, zone 2) up to zone 1
-      await pointerDrag(page, dragHandles.nth(3), dragHandles.nth(0));
+      // Drag partialCredit4_v2 (last, zone 2) up to zone 1.
+      // 4 steps: 3 questions + 1 zone header (also a droppable) in between.
+      await keyboardDrag(page, dragHandles.nth(3), 'up', 4);
 
       await page.getByRole('button', { name: 'Save and sync' }).click();
       await expect(page.getByRole('button', { name: 'Edit', exact: true })).toBeVisible();
@@ -222,15 +206,15 @@ test.describe('Assessment questions', () => {
       {
         title: 'Questions to test maxPoints',
         maxPoints: 7,
-        questions: [{ id: 'partialCredit4_v2', points: 4, maxPoints: 8 }],
+        questions: [{ id: 'partialCredit4_v2', autoPoints: 4, maxAutoPoints: 8 }],
       },
       {
         title: 'Questions to test bestQuestions',
         bestQuestions: 2,
         questions: [
-          { id: 'partialCredit1', points: 10, maxPoints: 30, triesPerVariant: 2 },
-          { id: 'partialCredit2', points: 5, maxPoints: 40 },
-          { id: 'partialCredit3', points: 5, maxPoints: 50 },
+          { id: 'partialCredit1', autoPoints: 10, maxAutoPoints: 30, triesPerVariant: 2 },
+          { id: 'partialCredit2', autoPoints: 5, maxAutoPoints: 40 },
+          { id: 'partialCredit3', autoPoints: 5, maxAutoPoints: 50 },
         ],
       },
     ]);
@@ -293,11 +277,11 @@ test.describe('Assessment questions', () => {
     expect(savedAssessment.zones).toEqual([
       {
         questions: [
-          { id: 'differentiatePolynomial', points: 7, maxPoints: 10 },
+          { id: 'differentiatePolynomial', autoPoints: 7, maxAutoPoints: 10 },
           { id: 'partialCredit2', autoPoints: 2, maxAutoPoints: 10, manualPoints: 3 },
-          { id: 'partialCredit3', points: 2, maxPoints: 10, triesPerVariant: 3 },
-          { id: 'partialCredit4_v2', points: 3, maxPoints: 10 },
-          { id: 'partialCredit6_no_partial', points: 3, maxPoints: 11 },
+          { id: 'partialCredit3', autoPoints: 2, maxAutoPoints: 10, triesPerVariant: 3 },
+          { id: 'partialCredit4_v2', autoPoints: 3, maxAutoPoints: 10 },
+          { id: 'partialCredit6_no_partial', autoPoints: 3, maxAutoPoints: 11 },
         ],
       },
     ]);
@@ -419,7 +403,7 @@ test.describe('Assessment questions', () => {
     expect(savedAssessment.zones).toHaveLength(2);
     expect(savedAssessment.zones[0].title).toBe('Keep zone');
     expect(savedAssessment.zones[0].questions).toEqual([
-      { id: 'downloadFile', points: 5, maxPoints: 10 },
+      { id: 'downloadFile', autoPoints: 5, maxAutoPoints: 10 },
     ]);
   });
 
@@ -471,17 +455,17 @@ test.describe('Assessment questions', () => {
     await enterEditMode(page, courseInstance.id, assessment.id);
 
     await page.getByRole('button').filter({ hasText: 'partialCredit3' }).first().click();
-    await expect(page.getByLabel('Points', { exact: true })).toBeVisible();
+    await expect(page.getByLabel('Auto points', { exact: true })).toBeVisible();
 
-    const pointsInput = page.getByLabel('Points', { exact: true });
-    await pointsInput.clear();
-    await pointsInput.fill('8, 4, 2');
+    const autoPointsInput = page.getByLabel('Auto points', { exact: true });
+    await autoPointsInput.clear();
+    await autoPointsInput.fill('8, 4, 2');
 
     // Wait for auto-save to propagate the points change to the hidden form input
     await expect(async () => {
       const hiddenZones = await page.locator('input[name="zones"]').inputValue();
       const parsedZones = JSON.parse(hiddenZones);
-      expect(parsedZones[1].questions[0].points).toEqual([8, 4, 2]);
+      expect(parsedZones[1].questions[0].autoPoints).toEqual([8, 4, 2]);
     }).toPass({ timeout: 5000 });
 
     await page.getByRole('button', { name: 'Save and sync' }).click();
@@ -496,7 +480,7 @@ test.describe('Assessment questions', () => {
     const savedContent = await fs.readFile(infoAssessmentPath, 'utf-8');
     const savedAssessment = JSON.parse(savedContent);
 
-    expect(savedAssessment.zones[1].questions[0].points).toEqual([8, 4, 2]);
+    expect(savedAssessment.zones[1].questions[0].autoPoints).toEqual([8, 4, 2]);
   });
 
   test('can add a question to an empty assessment via zone and picker', async ({
@@ -550,7 +534,7 @@ test.describe('Assessment questions', () => {
 
     expect(savedAssessment.zones).toEqual([
       {
-        questions: [{ id: 'partialCredit1', points: 5 }],
+        questions: [{ id: 'partialCredit1', autoPoints: 5 }],
       },
     ]);
   });

@@ -2,6 +2,7 @@ import clsx from 'clsx';
 import { useCallback, useMemo } from 'react';
 import {
   type FieldErrors,
+  type RegisterOptions,
   type UseFormRegister,
   type UseFormSetValue,
   useForm,
@@ -14,6 +15,7 @@ import { CopyButton } from '../../../../components/CopyButton.js';
 import { HistMini } from '../../../../components/HistMini.js';
 import type { StaffAssessmentQuestionRow } from '../../../../lib/assessment-question.shared.js';
 import { getQuestionUrl } from '../../../../lib/client/url.js';
+import type { EnumAssessmentType } from '../../../../lib/db-types.js';
 import type {
   DetailState,
   QuestionAlternativeForm,
@@ -97,31 +99,23 @@ export function QuestionDetailPanel({
   const isAlternative = !!zoneQuestionBlock;
   const isManualGrading = questionData?.question.grading_method === 'Manual';
 
-  const pointsProperty = assessmentType === 'Exam' ? 'points' : 'autoPoints';
-  const maxPointsProperty = assessmentType === 'Exam' ? 'maxPoints' : 'maxAutoPoints';
-
   // For read-only display, use merged values (own ?? inherited)
-  const autoPointsValue = question[pointsProperty] ?? zoneQuestionBlock?.[pointsProperty];
-  const maxAutoPointsValue = question[maxPointsProperty] ?? zoneQuestionBlock?.[maxPointsProperty];
+  const autoPointsValue = question.autoPoints ?? zoneQuestionBlock?.autoPoints;
+  const maxAutoPointsValue = question.maxAutoPoints ?? zoneQuestionBlock?.maxAutoPoints;
   const manualPointsValue = question.manualPoints ?? zoneQuestionBlock?.manualPoints;
 
   // Alternative's own values (may be undefined = inheriting from group)
-  const ownPointsValue = question[pointsProperty] ?? undefined;
-  const ownMaxValue = question[maxPointsProperty] ?? undefined;
+  const ownAutoPoints = question.autoPoints ?? undefined;
+  const ownMaxAutoPoints = question.maxAutoPoints ?? undefined;
   const ownManualPoints = question.manualPoints ?? undefined;
 
   // Group's values (what would be inherited)
-  const inheritedPointsValue = zoneQuestionBlock?.[pointsProperty] ?? undefined;
-  const inheritedMaxValue = zoneQuestionBlock?.[maxPointsProperty] ?? undefined;
+  const inheritedAutoPoints = zoneQuestionBlock?.autoPoints ?? undefined;
+  const inheritedMaxAutoPoints = zoneQuestionBlock?.maxAutoPoints ?? undefined;
   const inheritedManualPoints = zoneQuestionBlock?.manualPoints ?? undefined;
+  const inheritedTriesPerVariant = zoneQuestionBlock?.triesPerVariant ?? undefined;
 
-  const parentValues = isAlternative
-    ? {
-        [pointsProperty]: inheritedPointsValue,
-        [maxPointsProperty]: inheritedMaxValue,
-        manualPoints: inheritedManualPoints,
-      }
-    : undefined;
+  const ownTriesPerVariant = question.triesPerVariant ?? undefined;
 
   // Compute parent boolean availability before useForm so we can set
   // stable defaults that survive the DOM round-trip without false dirty flags.
@@ -137,10 +131,10 @@ export function QuestionDetailPanel({
     values: {
       id: question.id ?? '',
       comment: extractStringComment(question.comment) || undefined,
-      [pointsProperty]: isAlternative ? ownPointsValue : (autoPointsValue ?? undefined),
-      [maxPointsProperty]: isAlternative ? ownMaxValue : (maxAutoPointsValue ?? undefined),
+      autoPoints: isAlternative ? ownAutoPoints : (autoPointsValue ?? undefined),
+      maxAutoPoints: isAlternative ? ownMaxAutoPoints : (maxAutoPointsValue ?? undefined),
       manualPoints: isAlternative ? ownManualPoints : (manualPointsValue ?? undefined),
-      triesPerVariant: question.triesPerVariant ?? undefined,
+      triesPerVariant: isAlternative ? ownTriesPerVariant : (question.triesPerVariant ?? undefined),
       advanceScorePerc: question.advanceScorePerc ?? undefined,
       gradeRateMinutes: question.gradeRateMinutes ?? undefined,
       forceMaxPoints: question.forceMaxPoints ?? (hasForceMaxPointsParent ? undefined : false),
@@ -148,21 +142,26 @@ export function QuestionDetailPanel({
     },
   });
 
-  const watchedPoints = watch(pointsProperty);
-  const watchedMax = watch(maxPointsProperty);
+  const watchedAutoPoints = watch('autoPoints');
+  const watchedMaxAutoPoints = watch('maxAutoPoints');
   const watchedManualPoints = watch('manualPoints');
 
   const autoPointsPlaceholder = run(() => {
-    const pts = watchedPoints ?? (isAlternative ? inheritedPointsValue : undefined);
+    const pts = watchedAutoPoints ?? (isAlternative ? inheritedAutoPoints : undefined);
     if (pts == null) return '';
     return String(Array.isArray(pts) ? pts[0] : pts);
   });
 
-  const isPointsInherited =
-    isAlternative && watchedPoints === undefined && inheritedPointsValue != null;
-  const isMaxInherited = isAlternative && watchedMax === undefined && inheritedMaxValue != null;
+  const isAutoPointsInherited =
+    isAlternative && watchedAutoPoints === undefined && inheritedAutoPoints != null;
+  const isMaxAutoPointsInherited =
+    isAlternative && watchedMaxAutoPoints === undefined && inheritedMaxAutoPoints != null;
   const isManualPointsInherited =
     isAlternative && watchedManualPoints === undefined && inheritedManualPoints != null;
+
+  const watchedTriesPerVariant = watch('triesPerVariant');
+  const isTriesPerVariantInherited =
+    isAlternative && watchedTriesPerVariant === undefined && inheritedTriesPerVariant != null;
 
   const questionTrackingId = isAlternative ? zoneQuestionBlock.trackingId : question.trackingId;
   const alternativeTrackingId = isAlternative ? question.trackingId : undefined;
@@ -257,42 +256,12 @@ export function QuestionDetailPanel({
     };
   });
 
-  const pointsValidation = (_value: unknown, formValues: QuestionFormData) =>
-    validateAtLeastOnePointsField(formValues, parentValues);
-
-  const nonNegativePointsValidation = (v: number | number[] | undefined) => {
-    if (typeof v === 'number' && v < 0) return 'Points must be non-negative.';
-  };
-
-  const homeworkAutoPointsValidation = (_value: unknown, formValues: QuestionFormData) => {
-    const points = formValues[pointsProperty];
-    const maxPoints = formValues[maxPointsProperty];
-    if (typeof points === 'number' && points === 0 && maxPoints != null && maxPoints > 0) {
-      return 'Auto points cannot be 0 when max auto points is greater than 0.';
-    }
-    if (typeof points === 'number' && typeof maxPoints === 'number' && points > maxPoints) {
-      return 'Auto points cannot exceed max auto points.';
-    }
-    return pointsValidation(_value, formValues);
-  };
-
-  const homeworkMaxPointsValidation = (_value: unknown, formValues: QuestionFormData) => {
-    const points = formValues[pointsProperty];
-    const maxPoints = formValues[maxPointsProperty];
-    if (typeof points === 'number' && points === 0 && maxPoints != null && maxPoints > 0) {
-      return 'Max auto points must be 0 or empty when auto points is 0.';
-    }
-    if (typeof points === 'number' && typeof maxPoints === 'number' && maxPoints < points) {
-      return 'Max auto points must be at least auto points.';
-    }
-    if (maxPoints != null && maxPoints < 0) return 'Max auto points must be non-negative.';
-  };
-
-  const pointsLabel = isManualGrading
-    ? 'Points (manual)'
-    : assessmentType === 'Exam'
-      ? 'Points'
-      : 'Auto points';
+  const savedAutoPointsSet =
+    question.autoPoints != null || (isAlternative && zoneQuestionBlock.autoPoints != null);
+  const savedMaxAutoPointsSet =
+    question.maxAutoPoints != null || (isAlternative && zoneQuestionBlock.maxAutoPoints != null);
+  const showAutoPointsForManual = isManualGrading && savedAutoPointsSet;
+  const showMaxAutoPointsForManual = isManualGrading && savedMaxAutoPointsSet;
 
   const Wrapper = editMode ? 'div' : 'dl';
 
@@ -378,82 +347,87 @@ export function QuestionDetailPanel({
 
       {/* Points fields */}
       <Wrapper className={clsx(!editMode && 'mb-0')}>
-        {assessmentType === 'Homework' ? (
-          <HomeworkPointsFields
-            editMode={editMode}
-            idPrefix={idPrefix}
-            isAlternative={isAlternative}
-            isManualGrading={isManualGrading}
-            constantQuestionValue={constantQuestionValue}
-            pointsLabel={pointsLabel}
-            autoPointsValue={autoPointsValue}
-            maxAutoPointsValue={maxAutoPointsValue}
-            manualPointsValue={manualPointsValue}
-            isPointsInherited={isPointsInherited}
-            isMaxInherited={isMaxInherited}
-            isManualPointsInherited={isManualPointsInherited}
-            inheritedPointsValue={inheritedPointsValue}
-            inheritedMaxValue={inheritedMaxValue}
-            inheritedManualPoints={inheritedManualPoints}
-            autoPointsPlaceholder={autoPointsPlaceholder}
-            pointsProperty={pointsProperty}
-            maxPointsProperty={maxPointsProperty}
-            register={register}
-            errors={errors}
-            setValue={setValue}
-            resetAndSave={resetAndSave}
-            pointsValidation={pointsValidation}
-            nonNegativePointsValidation={nonNegativePointsValidation}
-            homeworkAutoPointsValidation={homeworkAutoPointsValidation}
-            homeworkMaxPointsValidation={homeworkMaxPointsValidation}
-          />
-        ) : (
-          <ExamPointsFields
-            editMode={editMode}
-            idPrefix={idPrefix}
-            isAlternative={isAlternative}
-            isManualGrading={isManualGrading}
-            pointsLabel={pointsLabel}
-            autoPointsValue={autoPointsValue}
-            manualPointsValue={manualPointsValue}
-            isPointsInherited={isPointsInherited}
-            isManualPointsInherited={isManualPointsInherited}
-            inheritedPointsValue={inheritedPointsValue}
-            inheritedManualPoints={inheritedManualPoints}
-            pointsProperty={pointsProperty}
-            register={register}
-            errors={errors}
-            setValue={setValue}
-            resetAndSave={resetAndSave}
-            pointsValidation={pointsValidation}
-            nonNegativePointsValidation={nonNegativePointsValidation}
-          />
-        )}
+        <PointsFields
+          assessmentType={assessmentType}
+          editMode={editMode}
+          idPrefix={idPrefix}
+          isAlternative={isAlternative}
+          isManualGrading={isManualGrading}
+          constantQuestionValue={constantQuestionValue}
+          autoPointsValue={autoPointsValue}
+          maxAutoPointsValue={maxAutoPointsValue}
+          manualPointsValue={manualPointsValue}
+          isAutoPointsInherited={isAutoPointsInherited}
+          isMaxAutoPointsInherited={isMaxAutoPointsInherited}
+          isManualPointsInherited={isManualPointsInherited}
+          inheritedAutoPoints={inheritedAutoPoints}
+          inheritedMaxAutoPoints={inheritedMaxAutoPoints}
+          inheritedManualPoints={inheritedManualPoints}
+          autoPointsPlaceholder={autoPointsPlaceholder}
+          register={register}
+          errors={errors}
+          setValue={setValue}
+          resetAndSave={resetAndSave}
+          showAutoPointsForManual={showAutoPointsForManual}
+          showMaxAutoPointsForManual={showMaxAutoPointsForManual}
+        />
 
         {/* Tries per variant (Homework only) */}
-        {assessmentType === 'Homework' && (
-          <FormField
-            editMode={editMode}
-            id={`${idPrefix}-triesPerVariant`}
-            label="Tries per variant"
-            viewValue={question.triesPerVariant}
-            error={errors.triesPerVariant}
-            helpText="Number of submission attempts allowed per question variant."
-            hideWhenEmpty
-          >
-            {(aria) => (
-              <input
-                type="number"
-                className={clsx('form-control form-control-sm', aria.errorClass)}
-                {...aria.inputProps}
-                {...register('triesPerVariant', {
-                  setValueAs: coerceToNumber,
-                  validate: (v) => validatePositiveInteger(v, 'Tries per variant'),
-                })}
-              />
-            )}
-          </FormField>
-        )}
+        {assessmentType === 'Homework' &&
+          (isAlternative ? (
+            <InheritableField
+              id={`${idPrefix}-triesPerVariant`}
+              label="Tries per variant"
+              inputType="number"
+              editMode={editMode}
+              isInherited={isTriesPerVariantInherited}
+              inheritedDisplayValue={String(inheritedTriesPerVariant ?? '')}
+              viewValue={
+                !isTriesPerVariantInherited && question.triesPerVariant != null
+                  ? String(question.triesPerVariant)
+                  : undefined
+              }
+              registerProps={register('triesPerVariant', {
+                setValueAs: coerceToNumber,
+                validate: (v) => validatePositiveInteger(v, 'Tries per variant'),
+              })}
+              error={errors.triesPerVariant}
+              helpText="Number of submission attempts allowed per question variant."
+              inheritedValueLabel={
+                inheritedTriesPerVariant != null ? String(inheritedTriesPerVariant) : undefined
+              }
+              showResetButton={inheritedTriesPerVariant != null && !isTriesPerVariantInherited}
+              onOverride={() =>
+                setValue('triesPerVariant', inheritedTriesPerVariant, {
+                  shouldDirty: true,
+                  shouldValidate: true,
+                })
+              }
+              onReset={() => resetAndSave('triesPerVariant')}
+            />
+          ) : (
+            <FormField
+              editMode={editMode}
+              id={`${idPrefix}-triesPerVariant`}
+              label="Tries per variant"
+              viewValue={question.triesPerVariant}
+              error={errors.triesPerVariant}
+              helpText="Number of submission attempts allowed per question variant."
+              hideWhenEmpty
+            >
+              {(aria) => (
+                <input
+                  type="number"
+                  className={clsx('form-control form-control-sm', aria.errorClass)}
+                  {...aria.inputProps}
+                  {...register('triesPerVariant', {
+                    setValueAs: coerceToNumber,
+                    validate: (v) => validatePositiveInteger(v, 'Tries per variant'),
+                  })}
+                />
+              )}
+            </FormField>
+          ))}
 
         {/* Comment */}
         <FormField
@@ -547,67 +521,101 @@ export function QuestionDetailPanel({
   );
 }
 
-function HomeworkPointsFields({
+function PointsFields({
+  assessmentType,
   editMode,
   idPrefix,
   isAlternative,
   isManualGrading,
   constantQuestionValue,
-  pointsLabel,
   autoPointsValue,
   maxAutoPointsValue,
   manualPointsValue,
-  isPointsInherited,
-  isMaxInherited,
+  isAutoPointsInherited,
+  isMaxAutoPointsInherited,
   isManualPointsInherited,
-  inheritedPointsValue,
-  inheritedMaxValue,
+  inheritedAutoPoints,
+  inheritedMaxAutoPoints,
   inheritedManualPoints,
   autoPointsPlaceholder,
-  pointsProperty,
-  maxPointsProperty,
   register,
   errors,
   setValue,
   resetAndSave,
-  pointsValidation,
-  nonNegativePointsValidation,
-  homeworkAutoPointsValidation,
-  homeworkMaxPointsValidation,
+  showAutoPointsForManual,
+  showMaxAutoPointsForManual,
 }: {
+  assessmentType: EnumAssessmentType;
   editMode: boolean;
   idPrefix: string;
   isAlternative: boolean;
   isManualGrading: boolean;
   constantQuestionValue: boolean;
-  pointsLabel: string;
   autoPointsValue: number | number[] | null | undefined;
   maxAutoPointsValue: number | number[] | null | undefined;
   manualPointsValue: number | null | undefined;
-  isPointsInherited: boolean;
-  isMaxInherited: boolean;
+  isAutoPointsInherited: boolean;
+  isMaxAutoPointsInherited: boolean;
   isManualPointsInherited: boolean;
-  inheritedPointsValue: number | number[] | undefined;
-  inheritedMaxValue: number | undefined;
+  inheritedAutoPoints: number | number[] | undefined;
+  inheritedMaxAutoPoints: number | undefined;
   inheritedManualPoints: number | undefined;
   autoPointsPlaceholder: string;
-  pointsProperty: 'points' | 'autoPoints';
-  maxPointsProperty: 'maxPoints' | 'maxAutoPoints';
   register: UseFormRegister<QuestionFormData>;
   errors: FieldErrors<QuestionFormData>;
   setValue: UseFormSetValue<QuestionFormData>;
   resetAndSave: (field: string) => void;
-  pointsValidation: (value: unknown, formValues: QuestionFormData) => string | undefined;
-  nonNegativePointsValidation: (v: number | number[] | undefined) => string | undefined;
-  homeworkAutoPointsValidation: (
-    value: unknown,
-    formValues: QuestionFormData,
-  ) => string | undefined;
-  homeworkMaxPointsValidation: (value: unknown, formValues: QuestionFormData) => string | undefined;
+  showAutoPointsForManual: boolean;
+  showMaxAutoPointsForManual: boolean;
 }) {
+  const isHomework = assessmentType === 'Homework';
+
+  const parentValues = isAlternative
+    ? {
+        autoPoints: inheritedAutoPoints,
+        maxAutoPoints: inheritedMaxAutoPoints,
+        manualPoints: inheritedManualPoints,
+      }
+    : undefined;
+
+  const pointsValidation = (_value: unknown, formValues: QuestionFormData) =>
+    validateAtLeastOnePointsField(formValues, parentValues);
+
+  const nonNegativePointsValidation = (v: number | number[] | undefined) => {
+    if (typeof v === 'number' && v < 0) return 'Points must be non-negative.';
+  };
+
+  const resolveEffectivePoints = (formValues: QuestionFormData) => {
+    const points = formValues.autoPoints ?? parentValues?.autoPoints;
+    const maxPoints = formValues.maxAutoPoints ?? parentValues?.maxAutoPoints;
+    return { points, maxPoints };
+  };
+
+  const homeworkAutoPointsValidation = (_value: unknown, formValues: QuestionFormData) => {
+    const { points, maxPoints } = resolveEffectivePoints(formValues);
+    if (typeof points === 'number' && points === 0 && maxPoints != null && maxPoints > 0) {
+      return 'Auto points cannot be 0 when max auto points is greater than 0.';
+    }
+    if (typeof points === 'number' && typeof maxPoints === 'number' && points > maxPoints) {
+      return 'Auto points cannot exceed max auto points.';
+    }
+    return pointsValidation(_value, formValues);
+  };
+
+  const homeworkMaxPointsValidation = (_value: unknown, formValues: QuestionFormData) => {
+    const { points, maxPoints } = resolveEffectivePoints(formValues);
+    if (typeof points === 'number' && points === 0 && maxPoints != null && maxPoints > 0) {
+      return 'Max auto points must be 0 or empty when auto points is 0.';
+    }
+    if (typeof points === 'number' && typeof maxPoints === 'number' && maxPoints < points) {
+      return 'Max auto points must be at least auto points.';
+    }
+    if (maxPoints != null && maxPoints < 0) return 'Max auto points must be non-negative.';
+  };
+
   const viewAutoPoints = formatPoints(autoPointsValue);
   const viewMaxAutoPoints = run(() => {
-    if (isManualGrading) return undefined;
+    if (isManualGrading && (isHomework || !showMaxAutoPointsForManual)) return undefined;
     const isDefault = maxAutoPointsValue == null;
     const effectiveMax = maxAutoPointsValue ?? autoPointsValue;
     if (effectiveMax == null) return undefined;
@@ -617,103 +625,186 @@ function HomeworkPointsFields({
   const viewManualPoints =
     !isManualGrading && manualPointsValue != null ? String(manualPointsValue) : undefined;
 
-  const maxAutoPointsHelpText = constantQuestionValue ? (
-    <>
-      Maximum total auto-graded points. Students must answer correctly{' '}
-      <code>maxAutoPoints / autoPoints</code> times to earn full credit.{' '}
-      <a
-        href="https://docs.prairielearn.com/assessment/configuration/#question-points-for-homework-assessments"
-        target="_blank"
-        rel="noreferrer"
-      >
-        Learn more about question points
-      </a>
-    </>
+  const autoPointsId = `${idPrefix}-${isHomework ? 'autoPoints' : 'pointsList'}`;
+  const autoPointsInputType = isHomework ? 'number' : 'text';
+  const autoPointsHelpText = isHomework
+    ? 'Points awarded for the auto-graded component.'
+    : 'Points for each attempt, as a comma-separated list (e.g. "10, 5, 2, 1").';
+  const autoPointsRegisterOptions: RegisterOptions<QuestionFormData, 'autoPoints'> = isHomework
+    ? {
+        setValueAs: coerceToNumber,
+        deps: ['maxAutoPoints', 'manualPoints'],
+        validate: {
+          atLeastOne: pointsValidation,
+          crossField: homeworkAutoPointsValidation,
+          nonNegative: (v: number | number[] | undefined) => nonNegativePointsValidation(v),
+        },
+      }
+    : {
+        pattern: {
+          value: /^[0-9., ]*$/,
+          message: 'Points must be a number or a comma-separated list of numbers.',
+        },
+        setValueAs: parsePointsListValue,
+        deps: ['manualPoints'],
+        validate: {
+          atLeastOne: pointsValidation,
+          format: (v: number | number[] | string | undefined) => validatePointsListFormat(v),
+          nonIncreasing: (v: number | number[] | string | undefined) =>
+            validateNonIncreasingPoints(v),
+        },
+      };
+
+  const maxAutoPointsRegisterOptions: RegisterOptions<QuestionFormData, 'maxAutoPoints'> = {
+    setValueAs: coerceToNumber,
+    deps: ['autoPoints'],
+    ...(isHomework ? { validate: homeworkMaxPointsValidation } : {}),
+  };
+  const maxAutoPointsHelpText = run(() => {
+    if (!isHomework) return 'Max auto points for this question.';
+    return constantQuestionValue ? (
+      <>
+        Maximum total auto-graded points. Students must answer correctly{' '}
+        <code>maxAutoPoints / autoPoints</code> times to earn full credit.{' '}
+        <a
+          href="https://docs.prairielearn.com/assessment/configuration/#question-points-for-homework-assessments"
+          target="_blank"
+          rel="noreferrer"
+        >
+          Learn more about question points
+        </a>
+      </>
+    ) : (
+      <>
+        Maximum total auto-graded points. Each consecutive correct answer is worth more; an
+        incorrect answer resets the value.{' '}
+        <a
+          href="https://docs.prairielearn.com/assessment/configuration/#question-points-for-homework-assessments"
+          target="_blank"
+          rel="noreferrer"
+        >
+          Learn more about question points
+        </a>
+      </>
+    );
+  });
+  const maxAutoPointsPlaceholder = isHomework ? autoPointsPlaceholder : undefined;
+
+  const manualPointsRegisterOptions: RegisterOptions<QuestionFormData, 'manualPoints'> = {
+    setValueAs: coerceToNumber,
+    deps: ['autoPoints'],
+    validate: {
+      atLeastOne: pointsValidation,
+      nonNegative: nonNegativePointsValidation,
+    },
+  };
+
+  const manualPointsField = isAlternative ? (
+    <InheritableField
+      id={`${idPrefix}-manualPoints`}
+      label="Manual points"
+      inputType="number"
+      step="any"
+      editMode={editMode}
+      isInherited={isManualPointsInherited}
+      inheritedDisplayValue={String(inheritedManualPoints ?? '')}
+      viewValue={
+        !isManualPointsInherited && manualPointsValue != null
+          ? String(manualPointsValue)
+          : undefined
+      }
+      registerProps={register('manualPoints', manualPointsRegisterOptions)}
+      error={errors.manualPoints}
+      helpText="Points awarded for the manually graded component."
+      inheritedValueLabel={
+        inheritedManualPoints != null ? String(inheritedManualPoints) : undefined
+      }
+      showResetButton={inheritedManualPoints != null && !isManualPointsInherited}
+      onOverride={() =>
+        setValue('manualPoints', inheritedManualPoints, {
+          shouldDirty: true,
+          shouldValidate: true,
+        })
+      }
+      onReset={() => resetAndSave('manualPoints')}
+    />
   ) : (
-    <>
-      Maximum total auto-graded points. Each consecutive correct answer is worth more; an incorrect
-      answer resets the value.{' '}
-      <a
-        href="https://docs.prairielearn.com/assessment/configuration/#question-points-for-homework-assessments"
-        target="_blank"
-        rel="noreferrer"
-      >
-        Learn more about question points
-      </a>
-    </>
+    <FormField
+      editMode={editMode}
+      id={`${idPrefix}-manualPoints`}
+      label="Manual points"
+      viewValue={isManualGrading ? undefined : viewManualPoints}
+      error={errors.manualPoints}
+      helpText="Points awarded for the manually graded component."
+      hideWhenEmpty
+    >
+      {(aria) => (
+        <input
+          type="number"
+          step="any"
+          className={clsx('form-control form-control-sm', aria.errorClass)}
+          {...aria.inputProps}
+          {...register('manualPoints', manualPointsRegisterOptions)}
+        />
+      )}
+    </FormField>
   );
 
   return (
     <>
-      {isAlternative ? (
-        <InheritableField
-          id={`${idPrefix}-autoPoints`}
-          label={pointsLabel}
-          inputType="number"
-          step="any"
-          editMode={editMode}
-          isInherited={isPointsInherited}
-          inheritedDisplayValue={formatPointsValue(inheritedPointsValue)}
-          viewValue={!isPointsInherited ? viewAutoPoints : undefined}
-          registerProps={register(pointsProperty, {
-            setValueAs: coerceToNumber,
-            deps: [maxPointsProperty, 'manualPoints'],
-            validate: {
-              atLeastOne: pointsValidation,
-              crossField: homeworkAutoPointsValidation,
-              nonNegative: (v: number | number[] | undefined) => nonNegativePointsValidation(v),
-            },
-          })}
-          error={errors[pointsProperty]}
-          helpText={
-            isManualGrading
-              ? 'Points for manual grading.'
-              : 'Points awarded for the auto-graded component.'
-          }
-          inheritedValueLabel={formatPointsValue(inheritedPointsValue)}
-          showResetButton={inheritedPointsValue != null && !isPointsInherited}
-          onOverride={() =>
-            setValue(pointsProperty, inheritedPointsValue, {
-              shouldDirty: true,
-              shouldValidate: true,
-            })
-          }
-          onReset={() => resetAndSave(pointsProperty)}
-        />
-      ) : (
-        <FormField
-          editMode={editMode}
-          id={`${idPrefix}-autoPoints`}
-          label={pointsLabel}
-          viewValue={viewAutoPoints}
-          error={errors[pointsProperty]}
-          helpText={
-            isManualGrading
-              ? 'Points for manual grading.'
-              : 'Points awarded for the auto-graded component.'
-          }
-          hideWhenEmpty
-        >
-          {(aria) => (
-            <input
-              type="number"
-              className={clsx('form-control form-control-sm', aria.errorClass)}
-              {...aria.inputProps}
-              step="any"
-              {...register(pointsProperty, {
-                setValueAs: coerceToNumber,
-                deps: [maxPointsProperty, 'manualPoints'],
-                validate: {
-                  atLeastOne: pointsValidation,
-                  crossField: homeworkAutoPointsValidation,
-                  nonNegative: (v: number | number[] | undefined) => nonNegativePointsValidation(v),
-                },
-              })}
-            />
-          )}
-        </FormField>
+      {isManualGrading && manualPointsField}
+      {(showAutoPointsForManual || showMaxAutoPointsForManual) && (
+        <div className="alert alert-warning small py-2 mb-2" role="alert">
+          <i className="bi bi-exclamation-triangle-fill me-1" aria-hidden="true" />
+          Auto points have no effect on manually-graded questions.
+        </div>
       )}
-      {!isManualGrading &&
+      {(!isManualGrading || showAutoPointsForManual) &&
+        (isAlternative ? (
+          <InheritableField
+            id={autoPointsId}
+            label="Auto points"
+            inputType={autoPointsInputType}
+            step={isHomework ? 'any' : undefined}
+            editMode={editMode}
+            isInherited={isAutoPointsInherited}
+            inheritedDisplayValue={formatPointsValue(inheritedAutoPoints)}
+            viewValue={!isAutoPointsInherited ? viewAutoPoints : undefined}
+            registerProps={register('autoPoints', autoPointsRegisterOptions)}
+            error={errors.autoPoints}
+            helpText={autoPointsHelpText}
+            inheritedValueLabel={formatPointsValue(inheritedAutoPoints)}
+            showResetButton={inheritedAutoPoints != null && !isAutoPointsInherited}
+            onOverride={() =>
+              setValue('autoPoints', inheritedAutoPoints, {
+                shouldDirty: true,
+                shouldValidate: true,
+              })
+            }
+            onReset={() => resetAndSave('autoPoints')}
+          />
+        ) : (
+          <FormField
+            editMode={editMode}
+            id={autoPointsId}
+            label="Auto points"
+            viewValue={viewAutoPoints}
+            error={errors.autoPoints}
+            helpText={autoPointsHelpText}
+            hideWhenEmpty
+          >
+            {(aria) => (
+              <input
+                type={autoPointsInputType}
+                className={clsx('form-control form-control-sm', aria.errorClass)}
+                {...aria.inputProps}
+                step={isHomework ? 'any' : undefined}
+                {...register('autoPoints', autoPointsRegisterOptions)}
+              />
+            )}
+          </FormField>
+        ))}
+      {(!isManualGrading || showMaxAutoPointsForManual) &&
         (isAlternative ? (
           <InheritableField
             id={`${idPrefix}-maxAutoPoints`}
@@ -721,26 +812,24 @@ function HomeworkPointsFields({
             inputType="number"
             step="any"
             editMode={editMode}
-            isInherited={isMaxInherited}
-            inheritedDisplayValue={String(inheritedMaxValue ?? '')}
-            viewValue={!isMaxInherited ? viewMaxAutoPoints : undefined}
-            registerProps={register(maxPointsProperty, {
-              setValueAs: coerceToNumber,
-              deps: [pointsProperty],
-              validate: homeworkMaxPointsValidation,
-            })}
-            error={errors[maxPointsProperty]}
+            isInherited={isMaxAutoPointsInherited}
+            inheritedDisplayValue={String(inheritedMaxAutoPoints ?? '')}
+            viewValue={!isMaxAutoPointsInherited ? viewMaxAutoPoints : undefined}
+            registerProps={register('maxAutoPoints', maxAutoPointsRegisterOptions)}
+            error={errors.maxAutoPoints}
             helpText={maxAutoPointsHelpText}
-            placeholder={autoPointsPlaceholder}
-            inheritedValueLabel={inheritedMaxValue != null ? String(inheritedMaxValue) : undefined}
-            showResetButton={inheritedMaxValue != null && !isMaxInherited}
+            placeholder={maxAutoPointsPlaceholder}
+            inheritedValueLabel={
+              inheritedMaxAutoPoints != null ? String(inheritedMaxAutoPoints) : undefined
+            }
+            showResetButton={inheritedMaxAutoPoints != null && !isMaxAutoPointsInherited}
             onOverride={() =>
-              setValue(maxPointsProperty, inheritedMaxValue, {
+              setValue('maxAutoPoints', inheritedMaxAutoPoints, {
                 shouldDirty: true,
                 shouldValidate: true,
               })
             }
-            onReset={() => resetAndSave(maxPointsProperty)}
+            onReset={() => resetAndSave('maxAutoPoints')}
           />
         ) : (
           <FormField
@@ -748,7 +837,7 @@ function HomeworkPointsFields({
             id={`${idPrefix}-maxAutoPoints`}
             label="Max auto points"
             viewValue={viewMaxAutoPoints}
-            error={errors[maxPointsProperty]}
+            error={errors.maxAutoPoints}
             helpText={maxAutoPointsHelpText}
             hideWhenEmpty
           >
@@ -758,272 +847,13 @@ function HomeworkPointsFields({
                 step="any"
                 className={clsx('form-control form-control-sm', aria.errorClass)}
                 {...aria.inputProps}
-                placeholder={autoPointsPlaceholder}
-                {...register(maxPointsProperty, {
-                  setValueAs: coerceToNumber,
-                  deps: [pointsProperty],
-                  validate: homeworkMaxPointsValidation,
-                })}
+                placeholder={maxAutoPointsPlaceholder}
+                {...register('maxAutoPoints', maxAutoPointsRegisterOptions)}
               />
             )}
           </FormField>
         ))}
-      {!isManualGrading &&
-        (isAlternative ? (
-          <InheritableField
-            id={`${idPrefix}-manualPoints`}
-            label="Manual points"
-            inputType="number"
-            step="any"
-            editMode={editMode}
-            isInherited={isManualPointsInherited}
-            inheritedDisplayValue={String(inheritedManualPoints ?? '')}
-            viewValue={
-              !isManualPointsInherited && manualPointsValue != null
-                ? String(manualPointsValue)
-                : undefined
-            }
-            registerProps={register('manualPoints', {
-              setValueAs: coerceToNumber,
-              deps: [pointsProperty],
-              validate: {
-                atLeastOne: pointsValidation,
-                nonNegative: nonNegativePointsValidation,
-              },
-            })}
-            error={errors.manualPoints}
-            helpText="Points awarded for the manually graded component."
-            inheritedValueLabel={
-              inheritedManualPoints != null ? String(inheritedManualPoints) : undefined
-            }
-            showResetButton={inheritedManualPoints != null && !isManualPointsInherited}
-            onOverride={() =>
-              setValue('manualPoints', inheritedManualPoints, {
-                shouldDirty: true,
-                shouldValidate: true,
-              })
-            }
-            onReset={() => resetAndSave('manualPoints')}
-          />
-        ) : (
-          <FormField
-            editMode={editMode}
-            id={`${idPrefix}-manualPoints`}
-            label="Manual points"
-            viewValue={viewManualPoints}
-            error={errors.manualPoints}
-            helpText="Points awarded for the manually graded component."
-            hideWhenEmpty
-          >
-            {(aria) => (
-              <input
-                type="number"
-                step="any"
-                className={clsx('form-control form-control-sm', aria.errorClass)}
-                {...aria.inputProps}
-                {...register('manualPoints', {
-                  setValueAs: coerceToNumber,
-                  deps: [pointsProperty],
-                  validate: {
-                    atLeastOne: pointsValidation,
-                    nonNegative: nonNegativePointsValidation,
-                  },
-                })}
-              />
-            )}
-          </FormField>
-        ))}
-    </>
-  );
-}
-
-function ExamPointsFields({
-  editMode,
-  idPrefix,
-  isAlternative,
-  isManualGrading,
-  pointsLabel,
-  autoPointsValue,
-  manualPointsValue,
-  isPointsInherited,
-  isManualPointsInherited,
-  inheritedPointsValue,
-  inheritedManualPoints,
-  pointsProperty,
-  register,
-  errors,
-  setValue,
-  resetAndSave,
-  pointsValidation,
-  nonNegativePointsValidation,
-}: {
-  editMode: boolean;
-  idPrefix: string;
-  isAlternative: boolean;
-  isManualGrading: boolean;
-  pointsLabel: string;
-  autoPointsValue: number | number[] | null | undefined;
-  manualPointsValue: number | null | undefined;
-  isPointsInherited: boolean;
-  isManualPointsInherited: boolean;
-  inheritedPointsValue: number | number[] | undefined;
-  inheritedManualPoints: number | undefined;
-  pointsProperty: 'points' | 'autoPoints';
-  register: UseFormRegister<QuestionFormData>;
-  errors: FieldErrors<QuestionFormData>;
-  setValue: UseFormSetValue<QuestionFormData>;
-  resetAndSave: (field: string) => void;
-  pointsValidation: (value: unknown, formValues: QuestionFormData) => string | undefined;
-  nonNegativePointsValidation: (v: number | number[] | undefined) => string | undefined;
-}) {
-  const viewAutoPoints = formatPoints(autoPointsValue);
-  const viewManualPoints =
-    !isManualGrading && manualPointsValue != null ? String(manualPointsValue) : undefined;
-
-  return (
-    <>
-      {isAlternative ? (
-        <InheritableField
-          id={`${idPrefix}-pointsList`}
-          label={pointsLabel}
-          inputType="text"
-          editMode={editMode}
-          isInherited={isPointsInherited}
-          inheritedDisplayValue={formatPointsValue(inheritedPointsValue)}
-          viewValue={!isPointsInherited ? viewAutoPoints : undefined}
-          registerProps={register(pointsProperty, {
-            pattern: {
-              value: /^[0-9., ]*$/,
-              message: 'Points must be a number or a comma-separated list of numbers.',
-            },
-            setValueAs: parsePointsListValue,
-            deps: ['manualPoints'],
-            validate: {
-              atLeastOne: pointsValidation,
-              format: (v: number | number[] | string | undefined) => validatePointsListFormat(v),
-              nonIncreasing: (v: number | number[] | string | undefined) =>
-                validateNonIncreasingPoints(v),
-            },
-          })}
-          error={errors[pointsProperty]}
-          helpText={
-            isManualGrading
-              ? 'Points for manual grading.'
-              : 'Points for each attempt, as a comma-separated list (e.g. "10, 5, 2, 1").'
-          }
-          inheritedValueLabel={formatPointsValue(inheritedPointsValue)}
-          showResetButton={inheritedPointsValue != null && !isPointsInherited}
-          onOverride={() =>
-            setValue(pointsProperty, inheritedPointsValue, {
-              shouldDirty: true,
-              shouldValidate: true,
-            })
-          }
-          onReset={() => resetAndSave(pointsProperty)}
-        />
-      ) : (
-        <FormField
-          editMode={editMode}
-          id={`${idPrefix}-pointsList`}
-          label={pointsLabel}
-          viewValue={viewAutoPoints}
-          error={errors[pointsProperty]}
-          helpText={
-            isManualGrading
-              ? 'Points for manual grading.'
-              : 'Points for each attempt, as a comma-separated list (e.g. "10, 5, 2, 1").'
-          }
-          hideWhenEmpty
-        >
-          {(aria) => (
-            <input
-              type="text"
-              className={clsx('form-control form-control-sm', aria.errorClass)}
-              {...aria.inputProps}
-              {...register(pointsProperty, {
-                pattern: {
-                  value: /^[0-9., ]*$/,
-                  message: 'Points must be a number or a comma-separated list of numbers.',
-                },
-                setValueAs: parsePointsListValue,
-                deps: ['manualPoints'],
-                validate: {
-                  atLeastOne: pointsValidation,
-                  format: (v: number | number[] | string | undefined) =>
-                    validatePointsListFormat(v),
-                  nonIncreasing: (v: number | number[] | string | undefined) =>
-                    validateNonIncreasingPoints(v),
-                },
-              })}
-            />
-          )}
-        </FormField>
-      )}
-      {!isManualGrading &&
-        (isAlternative ? (
-          <InheritableField
-            id={`${idPrefix}-manualPoints`}
-            label="Manual points"
-            inputType="number"
-            step="any"
-            editMode={editMode}
-            isInherited={isManualPointsInherited}
-            inheritedDisplayValue={String(inheritedManualPoints ?? '')}
-            viewValue={
-              !isManualPointsInherited && manualPointsValue != null
-                ? String(manualPointsValue)
-                : undefined
-            }
-            registerProps={register('manualPoints', {
-              setValueAs: coerceToNumber,
-              deps: [pointsProperty],
-              validate: {
-                atLeastOne: pointsValidation,
-                nonNegative: nonNegativePointsValidation,
-              },
-            })}
-            error={errors.manualPoints}
-            helpText="Points awarded for the manually graded component."
-            inheritedValueLabel={
-              inheritedManualPoints != null ? String(inheritedManualPoints) : undefined
-            }
-            showResetButton={inheritedManualPoints != null && !isManualPointsInherited}
-            onOverride={() =>
-              setValue('manualPoints', inheritedManualPoints, {
-                shouldDirty: true,
-                shouldValidate: true,
-              })
-            }
-            onReset={() => resetAndSave('manualPoints')}
-          />
-        ) : (
-          <FormField
-            editMode={editMode}
-            id={`${idPrefix}-manualPoints`}
-            label="Manual points"
-            viewValue={viewManualPoints}
-            error={errors.manualPoints}
-            helpText="Points awarded for the manually graded component."
-            hideWhenEmpty
-          >
-            {(aria) => (
-              <input
-                type="number"
-                step="any"
-                className={clsx('form-control form-control-sm', aria.errorClass)}
-                {...aria.inputProps}
-                {...register('manualPoints', {
-                  setValueAs: coerceToNumber,
-                  deps: [pointsProperty],
-                  validate: {
-                    atLeastOne: pointsValidation,
-                    nonNegative: nonNegativePointsValidation,
-                  },
-                })}
-              />
-            )}
-          </FormField>
-        ))}
+      {!isManualGrading && manualPointsField}
     </>
   );
 }

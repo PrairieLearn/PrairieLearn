@@ -15,6 +15,7 @@ export function AssessmentTree({
   onViewTypeChange,
   onToggleExpandCollapse,
   editControls,
+  switchViewUrl,
 }: {
   zones: ZoneAssessmentForm[];
   state: TreeState;
@@ -24,6 +25,7 @@ export function AssessmentTree({
   onViewTypeChange: (viewType: ViewType) => void;
   onToggleExpandCollapse: () => void;
   editControls: ReactNode;
+  switchViewUrl: string | null;
 }) {
   const { editMode, viewType } = state;
   return (
@@ -35,7 +37,14 @@ export function AssessmentTree({
           onViewTypeChange={onViewTypeChange}
           onToggleExpandCollapse={onToggleExpandCollapse}
         />
-        {editControls && <div className="ms-auto">{editControls}</div>}
+        <div className="ms-auto d-flex gap-2 align-items-center">
+          {switchViewUrl && (
+            <a href={switchViewUrl} className="btn btn-sm btn-outline-secondary">
+              Switch to classic view
+            </a>
+          )}
+          {editControls}
+        </div>
       </div>
       <div className="split-pane__left-body">
         <SortableContext
