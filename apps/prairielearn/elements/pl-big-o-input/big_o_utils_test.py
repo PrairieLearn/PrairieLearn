@@ -3,6 +3,7 @@ import prairielearn.sympy_utils as psu
 import pytest
 
 VARIABLES = ["n"]
+MULTI_VARIATE = ["n", "m"]
 
 ALL_GRADING_FUNCTIONS = [
     bou.grade_o_expression,
@@ -145,6 +146,36 @@ class TestBigOInput:
 
         assert 0.0 < score < 1.0
         assert feedback == bou.TOO_LOOSE_FEEDBACK
+
+    @pytest.mark.parametrize(
+        ("a_true", "a_sub"),
+        [
+            ("n*m", "(n**2)*m"),
+            ("n*m", "n*(m**2)"),
+            ("n+m", "n+m**2"),
+            ("n+m", "n+factorial(m)"),
+            ("n+m", "n**2+m**2"),
+            ("n", "n*m"),
+        ],
+    )
+    def test_multivariate_too_loose(self, a_true: str, a_sub: str) -> None:
+        score, feedback = bou.grade_o_expression(a_true, a_sub, MULTI_VARIATE)
+
+        assert 0.0 < score < 1.0
+        assert feedback == bou.TOO_LOOSE_FEEDBACK
+
+    @pytest.mark.parametrize(
+        ("a_true", "a_sub"),
+        [
+            ("n*m", "2*n*m"),
+            ("n+m", "2*n+m"),
+        ],
+    )
+    def test_multivariate_unnecessary_constants(self, a_true: str, a_sub: str) -> None:
+        score, feedback = bou.grade_o_expression(a_true, a_sub, MULTI_VARIATE)
+
+        assert 0.0 < score < 1.0
+        assert feedback == bou.CONSTANT_FACTORS_FEEDBACK
 
     @pytest.mark.parametrize(
         ("a_true", "a_sub"),

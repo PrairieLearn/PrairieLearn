@@ -1,3 +1,4 @@
+import itertools
 from collections.abc import Callable
 
 import prairielearn.sympy_utils as psu
@@ -37,40 +38,69 @@ def grade_o_expression(
         return grade_blank_expression(a_true, a_sub)
 
     sym_true, sym_true_source = psu.convert_string_to_sympy_with_source(
-        a_true, variables, allow_complex=False, allow_trig_functions=False
+        a_true,
+        variables,
+        allow_complex=False,
+        allow_trig_functions=False,
+        assumptions={var: {"positive": True} for var in variables},
     )
 
     sym_sub, sym_sub_source = psu.convert_string_to_sympy_with_source(
-        a_sub, variables, allow_complex=False, allow_trig_functions=False
+        a_sub,
+        variables,
+        allow_complex=False,
+        allow_trig_functions=False,
+        assumptions={var: {"positive": True} for var in variables},
     )
+
+    var_list = [
+        sympy.Symbol(psu.greek_unicode_transform(var), positive=True)
+        for var in variables
+    ]
 
     if sym_true_source == sym_sub_source:
         return (1, CORRECT_UNCONDITIONAL_FEEDBACK)
 
     try:
         if sym_true.equals(sym_sub):
-            return (1.0, CORRECT_COMPLEX_FEEDBACK)
+            # Sympy doesn't treat n*m and m*n the same in CodeTypes
+            # So complex feedback needs to be disabled for multivariate
+            if len(variables) == 1:
+                return (1.0, CORRECT_COMPLEX_FEEDBACK)
+            else:
+                return (1, CORRECT_UNCONDITIONAL_FEEDBACK)
 
-        elif sympy.limit(sym_sub, sympy.Symbol(variables[0]), sympy.oo) < sympy.sympify(
-            0
-        ):
+        if len(var_list) == 1 and sympy.limit(
+            sym_sub, var_list[0], sympy.oo
+        ) < sympy.sympify(0):
             return (0.0, NEGATIVE_FEEDBACK)
 
-        limit = sympy.limit(
-            sympy.simplify(sym_true / sym_sub), sympy.Symbol(variables[0]), sympy.oo
-        )
+        limit_res = []
+        for perm in itertools.permutations(var_list):
+            limit = sym_true / sym_sub
+            for var in perm:
+                limit = sympy.limit(limit, var, sympy.oo)
 
-        if limit < sympy.sympify(0):
+            # Ignore unsolvable limits.
+            if not isinstance(limit, sympy.Limit):
+                limit_res.append(limit)
+
+        if len(limit_res) == 0:
+            return (0.0, TYPE_ERROR_FEEDBACK)
+
+        if any(res < sympy.sympify(0) for res in limit_res):
             return (0.0, NEGATIVE_FEEDBACK)
-        elif limit == sympy.oo:
-            return (0.0, INCORRECT_FEEDBACK)
-        elif limit == sympy.sympify(0):
+        elif any(res == sympy.oo for res in limit_res):
+            return (0, INCORRECT_FEEDBACK)
+        elif any(res == sympy.sympify(0) for res in limit_res):
             return (0.25, TOO_LOOSE_FEEDBACK)
-        elif limit == sympy.sympify(1):
+        elif all(res == sympy.sympify(1) for res in limit_res):
             return (0.5, LOWER_ORDER_TERMS_FEEDBACK)
-
-        return (0.5, CONSTANT_FACTORS_FEEDBACK)
-    except TypeError:
+        else:
+            return (0.5, CONSTANT_FACTORS_FEEDBACK)
+    # There's a chance that some fringe function inputs cannot have their sign evalutated
+    # We need to catch NotImplementedError because of this.
+    except (TypeError, NotImplementedError):
         return (0.0, TYPE_ERROR_FEEDBACK)
 
 
@@ -81,41 +111,72 @@ def grade_theta_expression(
         return grade_blank_expression(a_true, a_sub)
 
     sym_true, sym_true_source = psu.convert_string_to_sympy_with_source(
-        a_true, variables, allow_complex=False, allow_trig_functions=False
+        a_true,
+        variables,
+        allow_complex=False,
+        allow_trig_functions=False,
+        assumptions={var: {"positive": True} for var in variables},
     )
 
     sym_sub, sym_sub_source = psu.convert_string_to_sympy_with_source(
-        a_sub, variables, allow_complex=False, allow_trig_functions=False
+        a_sub,
+        variables,
+        allow_complex=False,
+        allow_trig_functions=False,
+        assumptions={var: {"positive": True} for var in variables},
     )
+
+    var_list = [
+        sympy.Symbol(psu.greek_unicode_transform(var), positive=True)
+        for var in variables
+    ]
 
     if sym_true_source == sym_sub_source:
         return (1, CORRECT_UNCONDITIONAL_FEEDBACK)
 
     try:
         if sym_true.equals(sym_sub):
-            return (1.0, CORRECT_COMPLEX_FEEDBACK)
+            if len(variables) == 1:
+                return (1.0, CORRECT_COMPLEX_FEEDBACK)
+            else:
+                return (1, CORRECT_UNCONDITIONAL_FEEDBACK)
 
-        elif sympy.limit(sym_sub, sympy.Symbol(variables[0]), sympy.oo) < sympy.sympify(
-            0
+        if len(var_list) == 1 and sympy.limit(
+            sym_sub, var_list[0], sympy.oo
+        ) < sympy.sympify(0):
+            return (0.0, NEGATIVE_FEEDBACK)
+
+        limit_res = []
+        for perm in itertools.permutations(var_list):
+            omega_limit = sym_sub / sym_true
+            bigo_limit = sym_true / sym_sub
+            for var in perm:
+                omega_limit = sympy.limit(omega_limit, var, sympy.oo)
+                bigo_limit = sympy.limit(bigo_limit, var, sympy.oo)
+
+            if not isinstance(omega_limit, sympy.Limit) and not isinstance(
+                bigo_limit, sympy.Limit
+            ):
+                limit_res.append((omega_limit, bigo_limit))
+
+        if len(limit_res) == 0:
+            return (0.0, TYPE_ERROR_FEEDBACK)
+
+        if any(
+            res[0] < sympy.sympify(0) or res[1] < sympy.sympify(0) for res in limit_res
         ):
             return (0.0, NEGATIVE_FEEDBACK)
-
-        omega_limit = sympy.limit(
-            sympy.simplify(sym_sub / sym_true), sympy.Symbol(variables[0]), sympy.oo
-        )
-        bigo_limit = sympy.limit(
-            sympy.simplify(sym_true / sym_sub), sympy.Symbol(variables[0]), sympy.oo
-        )
-
-        if omega_limit < sympy.sympify(0) or bigo_limit < sympy.sympify(0):
-            return (0.0, NEGATIVE_FEEDBACK)
-        elif sympy.oo in (omega_limit, bigo_limit):
+        elif any(sympy.oo in res for res in limit_res):
             return (0.0, INCORRECT_FEEDBACK)
-        elif omega_limit == sympy.sympify(1) and bigo_limit == sympy.sympify(1):
+        elif all(
+            res[0] == sympy.sympify(1) and res[1] == sympy.sympify(1)
+            for res in limit_res
+        ):
             return (0.25, THETA_LOWER_ORDER_TERMS_FEEDBACK)
+        else:
+            return (0.25, THETA_CONSTANT_FACTORS_FEEDBACK)
 
-        return (0.25, THETA_CONSTANT_FACTORS_FEEDBACK)
-    except TypeError:
+    except (TypeError, NotImplementedError):
         return (0.0, TYPE_ERROR_FEEDBACK)
 
 
@@ -126,40 +187,65 @@ def grade_omega_expression(
         return grade_blank_expression(a_true, a_sub)
 
     sym_true, sym_true_source = psu.convert_string_to_sympy_with_source(
-        a_true, variables, allow_complex=False, allow_trig_functions=False
+        a_true,
+        variables,
+        allow_complex=False,
+        allow_trig_functions=False,
+        assumptions={var: {"positive": True} for var in variables},
     )
 
     sym_sub, sym_sub_source = psu.convert_string_to_sympy_with_source(
-        a_sub, variables, allow_complex=False, allow_trig_functions=False
+        a_sub,
+        variables,
+        allow_complex=False,
+        allow_trig_functions=False,
+        assumptions={var: {"positive": True} for var in variables},
     )
+
+    var_list = [
+        sympy.Symbol(psu.greek_unicode_transform(var), positive=True)
+        for var in variables
+    ]
 
     if sym_true_source == sym_sub_source:
         return (1, CORRECT_UNCONDITIONAL_FEEDBACK)
 
     try:
         if sym_true.equals(sym_sub):
-            return (1, CORRECT_COMPLEX_FEEDBACK)
+            if len(variables) == 1:
+                return (1.0, CORRECT_COMPLEX_FEEDBACK)
+            else:
+                return (1, CORRECT_UNCONDITIONAL_FEEDBACK)
 
-        elif sympy.limit(sym_sub, sympy.Symbol(variables[0]), sympy.oo) < sympy.sympify(
-            0
-        ):
+        if len(var_list) == 1 and sympy.limit(
+            sym_sub, var_list[0], sympy.oo
+        ) < sympy.sympify(0):
             return (0.0, NEGATIVE_FEEDBACK)
 
-        limit = sympy.limit(
-            sympy.simplify(sym_true / sym_sub), sympy.Symbol(variables[0]), sympy.oo
-        )
+        limit_res = []
+        for perm in itertools.permutations(var_list):
+            limit = sym_true / sym_sub
+            for var in perm:
+                limit = sympy.limit(limit, var, sympy.oo)
 
-        if limit < sympy.sympify(0):
+            if not isinstance(limit, sympy.Limit):
+                limit_res.append(limit)
+
+        if len(limit_res) == 0:
+            return (0.0, TYPE_ERROR_FEEDBACK)
+
+        if any(res < sympy.sympify(0) for res in limit_res):
             return (0.0, NEGATIVE_FEEDBACK)
-        elif limit == sympy.oo:
+        elif any(res == sympy.sympify(0) for res in limit_res):
+            return (0, INCORRECT_FEEDBACK)
+        elif any(res == sympy.oo for res in limit_res):
             return (0.25, TOO_LOOSE_FEEDBACK)
-        elif limit == sympy.sympify(0):
-            return (0.0, INCORRECT_FEEDBACK)
-        elif limit == sympy.sympify(1):
+        elif all(res == sympy.sympify(1) for res in limit_res):
             return (0.5, LOWER_ORDER_TERMS_FEEDBACK)
+        else:
+            return (0.5, CONSTANT_FACTORS_FEEDBACK)
 
-        return (0.5, CONSTANT_FACTORS_FEEDBACK)
-    except TypeError:
+    except (TypeError, NotImplementedError):
         return (0.0, TYPE_ERROR_FEEDBACK)
 
 
