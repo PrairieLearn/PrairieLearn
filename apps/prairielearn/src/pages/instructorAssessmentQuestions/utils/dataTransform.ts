@@ -1,4 +1,3 @@
-import type { EnumAssessmentType } from '../../../lib/db-types.js';
 import { propertyValueWithDefault } from '../../../lib/editorUtil.shared.js';
 import type {
   QuestionAlternativeJson,
@@ -14,6 +13,8 @@ import type {
   ZoneQuestionBlockForm,
 } from '../types.js';
 
+import type { QuestionMetadataMap } from './questions.js';
+
 /**
  * Creates a new TrackingId (branded UUID).
  */
@@ -22,16 +23,18 @@ function createTrackingId(): TrackingId {
 }
 
 /**
- * For Homework assessments, normalizes legacy `points`/`maxPoints` fields to
- * `autoPoints`/`maxAutoPoints`. Only converts when the modern field isn't already set.
- * Exam assessments use `points` as the canonical field name, so no normalization is needed.
+ * Normalizes legacy `points`/`maxPoints` fields for the editor.
+ * - For manually-graded questions: `points` → `manualPoints` (when `manualPoints` is not set)
+ * - For all other questions: `points` → `autoPoints`, `maxPoints` → `maxAutoPoints`
+ * Only converts when the modern field isn't already set.
  */
-function normalizeQuestionPoints<T extends QuestionPointsJson>(
-  obj: T,
-  assessmentType: EnumAssessmentType | undefined,
-): T {
-  if (assessmentType !== 'Homework') return obj;
+function normalizeQuestionPoints<T extends QuestionPointsJson>(obj: T, gradingMethod?: string): T {
   const result = { ...obj };
+  if (gradingMethod === 'Manual' && result.points != null && result.manualPoints == null) {
+    result.manualPoints = Array.isArray(result.points) ? result.points[0] : result.points;
+    delete result.points;
+    return result;
+  }
   if (result.points != null && result.autoPoints == null) {
     result.autoPoints = result.points;
     delete result.points;
@@ -45,22 +48,25 @@ function normalizeQuestionPoints<T extends QuestionPointsJson>(
 
 /**
  * Prepares raw JSON zones for the editor by adding tracking IDs and
- * normalizing legacy point fields. For Homework assessments, converts
- * `points`/`maxPoints` to `autoPoints`/`maxAutoPoints`.
+ * normalizing legacy point fields. Converts `points`/`maxPoints` to
+ * `autoPoints`/`maxAutoPoints` (or `manualPoints` for manually-graded questions).
  */
 export function prepareZonesForEditor(
   zones: ZoneAssessmentJson[],
-  assessmentType?: EnumAssessmentType,
+  questionMetadata: QuestionMetadataMap,
 ): ZoneAssessmentForm[] {
+  const getGradingMethod = (id?: string) =>
+    id ? questionMetadata[id]?.question.grading_method : undefined;
+
   // Cast needed for TypeScript spread inference with union types
   return zones.map((zone) => ({
     ...zone,
     trackingId: createTrackingId(),
     questions: zone.questions.map((question) => ({
-      ...normalizeQuestionPoints(question, assessmentType),
+      ...normalizeQuestionPoints(question, getGradingMethod(question.id)),
       trackingId: createTrackingId(),
       alternatives: question.alternatives?.map((alt) => ({
-        ...normalizeQuestionPoints(alt, assessmentType),
+        ...normalizeQuestionPoints(alt, getGradingMethod(alt.id)),
         trackingId: createTrackingId(),
       })),
     })),
@@ -111,13 +117,11 @@ export function createZoneWithTrackingId(
  * New trackingIds are always generated (this is for new questions, not existing ones).
  * Accepts a partial question for creating new empty questions.
  */
-export function createQuestionWithTrackingId(
-  assessmentType: EnumAssessmentType,
-): ZoneQuestionBlockForm {
+export function createQuestionWithTrackingId(): ZoneQuestionBlockForm {
   // Cast needed for TypeScript spread inference with union types
   return {
     trackingId: createTrackingId(),
-    ...(assessmentType === 'Exam' ? { points: 1 } : { autoPoints: 1 }),
+    autoPoints: 1,
   } as ZoneQuestionBlockForm;
 }
 
@@ -133,16 +137,14 @@ export function createAlternativeWithTrackingId(): QuestionAlternativeForm {
 /**
  * Creates a new alternative group with a trackingId and empty alternatives.
  */
-export function createAltGroupWithTrackingId(
-  assessmentType: EnumAssessmentType,
-): ZoneQuestionBlockForm {
+export function createAltGroupWithTrackingId(): ZoneQuestionBlockForm {
   return {
     trackingId: createTrackingId(),
     alternatives: [],
     numberChoose: 1,
     canSubmit: [],
     canView: [],
-    ...(assessmentType === 'Exam' ? { points: 1 } : { autoPoints: 1 }),
+    autoPoints: 1,
   } as ZoneQuestionBlockForm;
 }
 

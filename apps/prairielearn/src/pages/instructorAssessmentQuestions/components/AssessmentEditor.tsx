@@ -153,14 +153,17 @@ function AssessmentEditorInner({
     mutationFn: (qid: string) => queryClient.fetchQuery(trpc.questionByQid.queryOptions({ qid })),
   });
 
-  const [initialState] = useState(() => ({
-    zones: prepareZonesForEditor(jsonZones, assessment.type),
-    questionMetadata: Object.fromEntries(
+  const [initialState] = useState(() => {
+    const questionMetadataMap = Object.fromEntries(
       questionRows.map((r) => [questionDisplayName(course, r), r]),
-    ),
-    collapsedGroups: new Set<string>(),
-    collapsedZones: new Set<string>(),
-  }));
+    );
+    return {
+      zones: prepareZonesForEditor(jsonZones, questionMetadataMap),
+      questionMetadata: questionMetadataMap,
+      collapsedGroups: new Set<string>(),
+      collapsedZones: new Set<string>(),
+    };
+  });
 
   const { zones, questionMetadata, collapsedGroups, collapsedZones, dispatch } =
     useAssessmentEditor(initialState);
@@ -396,7 +399,7 @@ function AssessmentEditorInner({
         });
       } else {
         // Creating new alt group: first question picked creates the group
-        const newAltGroup = createAltGroupWithTrackingId(assessment.type);
+        const newAltGroup = createAltGroupWithTrackingId();
         const firstAlt = {
           ...createAlternativeWithTrackingId(),
           id: qid,
@@ -523,7 +526,7 @@ function AssessmentEditorInner({
 
     const newQuestion = {
       id: qid,
-      ...createQuestionWithTrackingId(assessment.type),
+      ...createQuestionWithTrackingId(),
     } as ZoneQuestionBlockForm;
 
     dispatch({
@@ -715,7 +718,7 @@ function AssessmentEditorInner({
   };
 
   const handleAddAltGroup = (zoneTrackingId: string) => {
-    const newAltGroup = createAltGroupWithTrackingId(assessment.type);
+    const newAltGroup = createAltGroupWithTrackingId();
     dispatch({
       type: 'ADD_QUESTION',
       zoneTrackingId,
@@ -849,6 +852,15 @@ function AssessmentEditorInner({
     });
   };
 
+  const upgradeSelectedAlternativeToQuestion = (trackingId: string) => {
+    if (
+      selectedItem?.type === 'alternative' &&
+      selectedItem.alternativeTrackingId === trackingId
+    ) {
+      setSelectedItem({ type: 'question', questionTrackingId: trackingId });
+    }
+  };
+
   const handleDragOver = ({ active, over }: DragOverEvent) => {
     if (!over) return;
 
@@ -878,7 +890,7 @@ function AssessmentEditorInner({
           toZoneTrackingId: targetZone.trackingId,
           beforeQuestionTrackingId: null,
         });
-        setSelectedItem(null);
+        upgradeSelectedAlternativeToQuestion(activeIdStr);
         return;
       }
 
@@ -913,7 +925,7 @@ function AssessmentEditorInner({
           toZoneTrackingId: toZone.trackingId,
           beforeQuestionTrackingId: toZone.questions[toPos.questionIndex].trackingId,
         });
-        setSelectedItem(null);
+        upgradeSelectedAlternativeToQuestion(activeIdStr);
       }
       return;
     }
