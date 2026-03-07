@@ -1,5 +1,5 @@
 import clsx from 'clsx';
-import { useCallback, useMemo } from 'react';
+import { useCallback, useEffect, useMemo } from 'react';
 import { useForm } from 'react-hook-form';
 
 import type { DetailState, ZoneAssessmentForm } from '../../types.js';
@@ -61,11 +61,17 @@ export function ZoneDetailPanel({
     getValues,
     watch,
     setValue,
+    trigger,
     formState: { errors, isDirty, isValid },
   } = useForm<ZoneFormData>({
     mode: 'onChange',
     values: formValues,
   });
+
+  useEffect(() => {
+    void trigger('numberChoose');
+    void trigger('bestQuestions');
+  }, [zone.questions.length, trigger]);
 
   const handleSave = useCallback(
     (data: ZoneFormData) => {
