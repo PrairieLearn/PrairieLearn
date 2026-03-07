@@ -42,8 +42,6 @@ export function TreeZoneNode({
 }) {
   const { editMode, selectedItem, collapsedZones, changeTracking, assessmentType } = state;
   const { setSelectedItem, dispatch, onAddQuestion, onAddAltGroup, onDeleteZone } = actions;
-  const zonePointsMismatchTooltipId = useId();
-  const zoneChooseExceedsTooltipId = useId();
   const badgeTooltipId = useId();
   const isCollapsed = collapsedZones.has(zone.trackingId);
   const zonePointsMismatch = hasZonePointsMismatch(zone, assessmentType);
@@ -138,32 +136,16 @@ export function TreeZoneNode({
               changeTracking={changeTracking}
             />
             {zonePointsMismatch && (
-              <OverlayTrigger
-                placement="top"
-                tooltip={{
-                  props: { id: zonePointsMismatchTooltipId },
-                  body: 'Questions in this zone have different point values',
-                }}
-              >
-                <i
-                  className="bi bi-exclamation-triangle-fill text-warning ms-1"
-                  aria-hidden="true"
-                />
-              </OverlayTrigger>
+              <WarningIndicator
+                tooltipId={`points-mismatch-${zone.trackingId}`}
+                body="Questions in this zone have different point values"
+              />
             )}
             {zoneChooseExceeds && (
-              <OverlayTrigger
-                placement="top"
-                tooltip={{
-                  props: { id: zoneChooseExceedsTooltipId },
-                  body: 'Number to choose or best questions exceeds the number of questions in this zone',
-                }}
-              >
-                <i
-                  className="bi bi-exclamation-triangle-fill text-warning ms-1"
-                  aria-hidden="true"
-                />
-              </OverlayTrigger>
+              <WarningIndicator
+                tooltipId={`choose-exceeds-${zone.trackingId}`}
+                body="Number to choose or best questions exceeds the number of questions in this zone"
+              />
             )}
           </span>
           <span className="d-inline-flex align-items-center gap-1 flex-wrap ms-2">

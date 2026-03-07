@@ -19,6 +19,7 @@ import { AssessmentBadges } from '../AssessmentBadges.js';
 
 import { ChangeIndicatorBadges } from './ChangeIndicatorBadges.js';
 import { DragHandle } from './DragHandle.js';
+import { WarningIndicator } from './WarningIndicator.js';
 
 export function PointsBadge({
   question,
@@ -255,18 +256,10 @@ export function TreeQuestionRow({
             <span className="text-muted small">{question.id}</span>
           )}
           {hasManualGradingAutoPointsWarning && (
-            <OverlayTrigger
-              placement="top"
-              tooltip={{
-                props: { id: `manual-auto-points-${question.trackingId}` },
-                body: 'Auto points have no effect on manually-graded questions',
-              }}
-            >
-              <i
-                className="bi bi-exclamation-triangle-fill text-warning ms-1"
-                aria-hidden="true"
-              />
-            </OverlayTrigger>
+            <WarningIndicator
+              tooltipId={`manual-auto-points-${question.trackingId}`}
+              body="Auto points have no effect on manually-graded questions"
+            />
           )}
           <ChangeIndicatorBadges
             trackingId={question.trackingId}

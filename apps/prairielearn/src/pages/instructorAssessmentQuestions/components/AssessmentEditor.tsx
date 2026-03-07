@@ -853,10 +853,7 @@ function AssessmentEditorInner({
   };
 
   const upgradeSelectedAlternativeToQuestion = (trackingId: string) => {
-    if (
-      selectedItem?.type === 'alternative' &&
-      selectedItem.alternativeTrackingId === trackingId
-    ) {
+    if (selectedItem?.type === 'alternative' && selectedItem.alternativeTrackingId === trackingId) {
       setSelectedItem({ type: 'question', questionTrackingId: trackingId });
     }
   };

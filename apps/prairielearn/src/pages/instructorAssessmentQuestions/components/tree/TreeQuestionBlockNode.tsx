@@ -19,6 +19,7 @@ import { CollapseToggleButton } from './CollapseToggleButton.js';
 import { DragHandle } from './DragHandle.js';
 import { SortableAlternativeRow } from './SortableAlternativeRow.js';
 import { PointsBadge, TreeQuestionRow } from './TreeQuestionRow.js';
+import { WarningIndicator } from './WarningIndicator.js';
 import { makeDraggableStyle } from './dragUtils.js';
 
 /**
@@ -188,32 +189,16 @@ export function TreeQuestionBlockNode({
               return `Choose ${choose} of ${alternativeCount}`;
             })}
             {pointsMismatch && (
-              <OverlayTrigger
-                placement="top"
-                tooltip={{
-                  props: { id: `points-mismatch-${zoneQuestionBlock.trackingId}` },
-                  body: 'Alternatives have different point values',
-                }}
-              >
-                <i
-                  className="bi bi-exclamation-triangle-fill text-warning ms-1"
-                  aria-hidden="true"
-                />
-              </OverlayTrigger>
+              <WarningIndicator
+                tooltipId={`points-mismatch-${zoneQuestionBlock.trackingId}`}
+                body="Alternatives have different point values"
+              />
             )}
             {chooseExceeds && (
-              <OverlayTrigger
-                placement="top"
-                tooltip={{
-                  props: { id: `choose-exceeds-${zoneQuestionBlock.trackingId}` },
-                  body: 'Number to choose exceeds the number of alternatives in this group',
-                }}
-              >
-                <i
-                  className="bi bi-exclamation-triangle-fill text-warning ms-1"
-                  aria-hidden="true"
-                />
-              </OverlayTrigger>
+              <WarningIndicator
+                tooltipId={`choose-exceeds-${zoneQuestionBlock.trackingId}`}
+                body="Number to choose exceeds the number of alternatives in this group"
+              />
             )}
             <ChangeIndicatorBadges
               trackingId={zoneQuestionBlock.trackingId}
