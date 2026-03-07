@@ -150,14 +150,14 @@ BEGIN
         WHERE (g ->> 0)::integer = rule_number;
 
         -- Early deadlines
-        INSERT INTO assessment_access_control_early_deadline (access_control_id, date, credit)
-        SELECT new_rule_id, (d ->> 1)::timestamp with time zone, (d ->> 2)::integer
+        INSERT INTO assessment_access_control_early_deadline (access_control_id, date, credit, sort_order)
+        SELECT new_rule_id, (d ->> 1)::timestamp with time zone, (d ->> 2)::integer, ROW_NUMBER() OVER () - 1
         FROM UNNEST(early_deadlines_data) AS d
         WHERE (d ->> 0)::integer = rule_number;
 
         -- Late deadlines
-        INSERT INTO assessment_access_control_late_deadline (access_control_id, date, credit)
-        SELECT new_rule_id, (d ->> 1)::timestamp with time zone, (d ->> 2)::integer
+        INSERT INTO assessment_access_control_late_deadline (access_control_id, date, credit, sort_order)
+        SELECT new_rule_id, (d ->> 1)::timestamp with time zone, (d ->> 2)::integer, ROW_NUMBER() OVER () - 1
         FROM UNNEST(late_deadlines_data) AS d
         WHERE (d ->> 0)::integer = rule_number;
 

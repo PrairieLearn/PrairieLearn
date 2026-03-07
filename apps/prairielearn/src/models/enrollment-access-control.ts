@@ -94,7 +94,7 @@ export async function syncEnrollmentAccessControl(
       courseInstanceId,
       assessmentId,
       ruleJson,
-      `{${enrollmentIds.join(',')}}`,
+      enrollmentIds,
       earlyDeadlinesJson,
       lateDeadlinesJson,
     ],
@@ -106,7 +106,17 @@ export async function syncEnrollmentAccessControl(
  * Deletes an enrollment-based access control rule.
  *
  * @param accessControlId The access control rule ID to delete
+ * @param courseInstanceId The course instance ID (for scoping)
+ * @param assessmentId The assessment ID (for scoping)
  */
-export async function deleteEnrollmentAccessControl(accessControlId: string): Promise<void> {
-  await execute(sql.delete_enrollment_rule, { id: accessControlId });
+export async function deleteEnrollmentAccessControl(
+  accessControlId: string,
+  courseInstanceId: string,
+  assessmentId: string,
+): Promise<void> {
+  await execute(sql.delete_enrollment_rule, {
+    id: accessControlId,
+    course_instance_id: courseInstanceId,
+    assessment_id: assessmentId,
+  });
 }

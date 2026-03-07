@@ -21,11 +21,6 @@ export interface AccessControlJsonWithId extends AccessControlJson {
   individuals?: AccessControlIndividual[];
 }
 
-// ============================================================================
-// Zod Schemas for form data validation
-// ============================================================================
-
-/** Schema for overridable fields */
 export const OverridableFieldSchema = <T extends z.ZodTypeAny>(valueSchema: T) =>
   z.object({
     isOverridden: z.boolean(),
@@ -33,19 +28,16 @@ export const OverridableFieldSchema = <T extends z.ZodTypeAny>(valueSchema: T) =
     value: valueSchema,
   });
 
-/** Schema for deadline entries */
 export const DeadlineEntrySchema = z.object({
   date: z.string(),
   credit: z.number(),
 });
 
-/** Schema for after last deadline settings */
 export const AfterLastDeadlineValueSchema = z.object({
   allowSubmissions: z.boolean().optional(),
   credit: z.number().optional(),
 });
 
-/** Schema for date control form data */
 export const DateControlFormDataSchema = z.object({
   enabled: z.boolean(),
   releaseDate: OverridableFieldSchema(z.string()),
@@ -57,7 +49,6 @@ export const DateControlFormDataSchema = z.object({
   password: OverridableFieldSchema(z.string()),
 });
 
-/** Schema for PrairieTest integration form data */
 export const PrairieTestFormDataSchema = z.object({
   enabled: z.boolean(),
   exams: z
@@ -70,51 +61,43 @@ export const PrairieTestFormDataSchema = z.object({
     .optional(),
 });
 
-/** Schema for integrations form data */
 export const IntegrationsFormDataSchema = z.object({
   prairieTest: PrairieTestFormDataSchema,
 });
 
-/** Schema for question visibility settings */
 export const QuestionVisibilityValueSchema = z.object({
   hideQuestions: z.boolean(),
   showAgainDate: z.string().optional(),
   hideAgainDate: z.string().optional(),
 });
 
-/** Schema for score visibility settings */
 export const ScoreVisibilityValueSchema = z.object({
   hideScore: z.boolean(),
   showAgainDate: z.string().optional(),
 });
 
-/** Schema for after complete form data */
 export const AfterCompleteFormDataSchema = z.object({
   questionVisibility: OverridableFieldSchema(QuestionVisibilityValueSchema),
   scoreVisibility: OverridableFieldSchema(ScoreVisibilityValueSchema),
 });
 
-/** Schema for individual student in form */
 export const IndividualTargetSchema = z.object({
   enrollmentId: z.string().optional(),
   uid: z.string(),
   name: z.string().nullable(),
 });
 
-/** Schema for group target */
 export const GroupTargetSchema = z.object({
   groupId: z.string(),
   name: z.string(),
 });
 
-/** Schema for applies to configuration */
 export const AppliesToSchema = z.object({
   targetType: z.enum(['individual', 'group']),
   individuals: z.array(IndividualTargetSchema),
   groups: z.array(GroupTargetSchema),
 });
 
-/** Schema for a single access control rule form data */
 export const AccessControlRuleFormDataSchema = z.object({
   id: z.string().optional(),
   enabled: z.boolean(),
@@ -126,15 +109,10 @@ export const AccessControlRuleFormDataSchema = z.object({
   afterComplete: AfterCompleteFormDataSchema,
 });
 
-/** Schema for the complete access control form data */
 export const AccessControlFormDataSchema = z.object({
   mainRule: AccessControlRuleFormDataSchema,
   overrides: z.array(AccessControlRuleFormDataSchema),
 });
-
-// ============================================================================
-// Types derived from Zod schemas
-// ============================================================================
 
 /** Generic type for fields that can be overridden in override rules */
 export interface OverridableField<T> {
@@ -146,57 +124,38 @@ export interface OverridableField<T> {
   value: T;
 }
 
-/** Deadline entry for early/late deadlines */
 export type DeadlineEntry = z.infer<typeof DeadlineEntrySchema>;
 
-/** After last deadline settings */
 export type AfterLastDeadlineValue = z.infer<typeof AfterLastDeadlineValueSchema>;
 
-/** Date control form data */
 export type DateControlFormData = z.infer<typeof DateControlFormDataSchema>;
 
-/** PrairieTest integration form data */
 export type PrairieTestFormData = z.infer<typeof PrairieTestFormDataSchema>;
 
-/** Integrations form data */
 export type IntegrationsFormData = z.infer<typeof IntegrationsFormDataSchema>;
 
-/** Question visibility settings after completion */
 export type QuestionVisibilityValue = z.infer<typeof QuestionVisibilityValueSchema>;
 
-/** Score visibility settings after completion */
 export type ScoreVisibilityValue = z.infer<typeof ScoreVisibilityValueSchema>;
 
-/** After completion form data with separate overridable sections */
 export type AfterCompleteFormData = z.infer<typeof AfterCompleteFormDataSchema>;
 
-/** Target type for access control rules */
 export type TargetType = z.infer<typeof AppliesToSchema>['targetType'];
 
-/** Individual student in form */
 export type IndividualTarget = z.infer<typeof IndividualTargetSchema>;
 
-/** Student label target */
 export type GroupTarget = z.infer<typeof GroupTargetSchema>;
 
-/** Applies to configuration for access control rules */
 export type AppliesTo = z.infer<typeof AppliesToSchema>;
 
-/** Single access control rule form data */
 export type AccessControlRuleFormData = z.infer<typeof AccessControlRuleFormDataSchema>;
 
-/** Complete access control form data */
 export type AccessControlFormData = z.infer<typeof AccessControlFormDataSchema>;
 
-/** Navigation view state for access control form */
 export type AccessControlView =
   | { type: 'summary' }
   | { type: 'edit-main' }
   | { type: 'edit-override'; index: number };
-
-// ============================================================================
-// Shared utility functions
-// ============================================================================
 
 /**
  * Creates an overridable field structure.
@@ -216,15 +175,11 @@ export function makeOverridable<T>(
   };
 }
 
-// ============================================================================
-// Transform functions
-// ============================================================================
-
 /** Helper function to transform form data to JSON output */
 export function formDataToJson(formData: AccessControlFormData): AccessControlJsonWithId[] {
   // Filter out individual/enrollment rules - they should not be written to JSON
   const jsonRules = [formData.mainRule, ...formData.overrides].filter(
-    (rule) => rule.appliesTo.targetType !== 'individual' || rule.appliesTo.individuals.length === 0,
+    (rule) => rule.appliesTo.targetType !== 'individual',
   );
   return jsonRules.map((rule, index) => formRuleToJson(rule, index === 0));
 }
@@ -248,7 +203,7 @@ export function formRuleToJson(
   const output: AccessControlJsonWithId = {
     enabled: rule.enabled,
     blockAccess: rule.blockAccess,
-    listBeforeRelease: rule.listBeforeRelease || true,
+    listBeforeRelease: rule.listBeforeRelease ?? true,
     labels,
   };
 
@@ -430,12 +385,12 @@ export function jsonToFormData(
     afterComplete: {
       questionVisibility: makeOverridable(isMainRule, hasQuestionVisibility, true, {
         hideQuestions: ac?.hideQuestions ?? false,
-        showAgainDate: ac?.showQuestionsAgainDate ? '' : undefined,
-        hideAgainDate: ac?.hideQuestionsAgainDate ? '' : undefined,
+        showAgainDate: ac?.showQuestionsAgainDate ?? undefined,
+        hideAgainDate: ac?.hideQuestionsAgainDate ?? undefined,
       }),
       scoreVisibility: makeOverridable(isMainRule, hasScoreVisibility, true, {
         hideScore: ac?.hideScore ?? false,
-        showAgainDate: ac?.showScoreAgainDate ? '' : undefined,
+        showAgainDate: ac?.showScoreAgainDate ?? undefined,
       }),
     },
   };

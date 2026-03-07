@@ -278,6 +278,7 @@ export const AssessmentAccessControlEarlyDeadlineSchema = z.object({
   credit: z.number().int(),
   date: DateFromISOString,
   id: IdSchema,
+  sort_order: z.number(),
 });
 
 export const AssessmentAccessControlEnrollmentSchema = z.object({
@@ -295,12 +296,13 @@ export const AssessmentAccessControlLateDeadlineSchema = z.object({
   credit: z.number().int(),
   date: DateFromISOString,
   id: IdSchema,
+  sort_order: z.number(),
 });
 
 export const AssessmentAccessControlPrairietestExamSchema = z.object({
   access_control_id: IdSchema,
   id: IdSchema,
-  read_only: z.boolean(),
+  read_only: z.boolean().nullable(),
   uuid: z.string(),
 });
 
@@ -1723,15 +1725,15 @@ export type Zone = z.infer<typeof ZoneSchema>;
 export const TableNames = [
   'access_tokens',
   'administrators',
+  'ai_grading_jobs',
+  'ai_question_generation_messages',
+  'ai_question_generation_prompts',
   'assessment_access_control',
   'assessment_access_control_early_deadline',
   'assessment_access_control_enrollments',
   'assessment_access_control_late_deadline',
   'assessment_access_control_prairietest_exam',
   'assessment_access_control_student_labels',
-  'ai_grading_jobs',
-  'ai_question_generation_messages',
-  'ai_question_generation_prompts',
   'alternative_groups',
   'assessment_access_rules',
   'assessment_instance_crossed_lockpoints',

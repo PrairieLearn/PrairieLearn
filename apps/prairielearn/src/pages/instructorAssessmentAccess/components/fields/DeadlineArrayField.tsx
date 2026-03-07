@@ -1,5 +1,11 @@
 import { Button, Col, Form, InputGroup, Row } from 'react-bootstrap';
-import { type Control, type UseFormSetValue, useFieldArray, useFormState } from 'react-hook-form';
+import {
+  type Control,
+  type UseFormSetValue,
+  get,
+  useFieldArray,
+  useFormState,
+} from 'react-hook-form';
 
 import { FriendlyDate } from '../../../../components/FriendlyDate.js';
 import { FieldWrapper } from '../FieldWrapper.js';
@@ -68,35 +74,12 @@ export function DeadlineArrayField({
   // Get form errors
   const { errors } = useFormState({ control });
 
-  // Helper to get error message for a deadline
-  const getDateError = (index: number) => {
-    const err = errors as any;
-    const parts = namePrefix.split('.');
-    if (parts[0] === 'mainRule') {
-      return err?.mainRule?.dateControl?.[isEarly ? 'earlyDeadlines' : 'lateDeadlines']?.value?.[
-        index
-      ]?.date?.message;
-    } else {
-      const overrideIndex = Number.parseInt(parts[1]);
-      return err?.overrides?.[overrideIndex]?.dateControl?.[
-        isEarly ? 'earlyDeadlines' : 'lateDeadlines'
-      ]?.value?.[index]?.date?.message;
-    }
+  const getDateError = (index: number): string | undefined => {
+    return get(errors, `${namePrefix}.${fieldPath}.value.${index}.date`)?.message;
   };
 
-  const getCreditError = (index: number) => {
-    const err = errors as any;
-    const parts = namePrefix.split('.');
-    if (parts[0] === 'mainRule') {
-      return err?.mainRule?.dateControl?.[isEarly ? 'earlyDeadlines' : 'lateDeadlines']?.value?.[
-        index
-      ]?.credit?.message;
-    } else {
-      const overrideIndex = Number.parseInt(parts[1]);
-      return err?.overrides?.[overrideIndex]?.dateControl?.[
-        isEarly ? 'earlyDeadlines' : 'lateDeadlines'
-      ]?.value?.[index]?.credit?.message;
-    }
+  const getCreditError = (index: number): string | undefined => {
+    return get(errors, `${namePrefix}.${fieldPath}.value.${index}.credit`)?.message;
   };
 
   // Get time range text for a deadline

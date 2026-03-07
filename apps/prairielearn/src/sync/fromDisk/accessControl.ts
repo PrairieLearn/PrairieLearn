@@ -66,41 +66,6 @@ interface PreparedRule {
 }
 
 /**
- * Validates access control rules before syncing. Returns an array of error messages.
- */
-export function validateAccessControlRules(accessControlRules: AccessControlJson[]): string[] {
-  const errors: string[] = [];
-
-  // Determine which rules are assignment-level (no labels) vs group-level (has labels)
-  const assignmentLevelRules = accessControlRules.filter(
-    (rule) => !rule.labels || rule.labels.length === 0,
-  );
-
-  if (accessControlRules.length > 0 && assignmentLevelRules.length === 0) {
-    errors.push(
-      'Access control must include exactly one assignment-level rule (a rule without groups). Found none.',
-    );
-  } else if (assignmentLevelRules.length > 1) {
-    errors.push(
-      `Access control must include exactly one assignment-level rule (a rule without groups). Found ${assignmentLevelRules.length}.`,
-    );
-  }
-
-  // Integrations are only allowed on assignment-level rules
-  for (const rule of accessControlRules) {
-    const hasLabels = rule.labels && rule.labels.length > 0;
-    if (hasLabels && rule.integrations) {
-      errors.push(
-        'Only the assignment-level rule (without groups) is allowed to specify integrations.',
-      );
-      break;
-    }
-  }
-
-  return errors;
-}
-
-/**
  * Syncs access control rules for an assessment using bulk operations.
  */
 export async function syncAccessControl(
@@ -150,26 +115,22 @@ export async function syncAccessControl(
     }
   }
 
-  // Check for invalid label targets - if any labels don't exist, skip syncing all rules
+  // Filter out rules with invalid labels, logging errors for skipped rules
+  const validRules: AccessControlJson[] = [];
   for (const rule of accessControlRules) {
     const ruleLabels = rule.labels ?? [];
     const invalidLabels = ruleLabels.filter((label) => !validLabelIds.has(label));
     if (invalidLabels.length > 0) {
-      // Don't sync any rules if there are invalid labels
-      // Delete all existing rules for this assessment to reflect the invalid state
-      await sqldb.callRow(
-        'sync_access_control',
-        [courseInstanceId, assessmentId, [], [], [], [], []],
-        z.unknown(),
-      );
-      return;
+      // Skip this rule but continue with others
+      continue;
     }
+    validRules.push(rule);
   }
 
   // Prepare all rule data upfront
   const preparedRules: PreparedRule[] = [];
-  for (let i = 0; i < accessControlRules.length; i++) {
-    const rule = accessControlRules[i];
+  for (let i = 0; i < validRules.length; i++) {
+    const rule = validRules[i];
     const dateControl = rule.dateControl ?? {};
     const afterComplete = rule.afterComplete ?? {};
     const afterLastDeadline = dateControl.afterLastDeadline ?? {};

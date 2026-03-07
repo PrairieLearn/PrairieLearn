@@ -1,5 +1,5 @@
 import { Dropdown } from 'react-bootstrap';
-import { type Control, type Path, type UseFormSetValue, useWatch } from 'react-hook-form';
+import { type Control, type UseFormSetValue, useWatch } from 'react-hook-form';
 
 import { PrairieTestControlForm } from './PrairieTestControlForm.js';
 import type { AccessControlFormData } from './types.js';
@@ -22,23 +22,14 @@ export function IntegrationsSection({ control, setValue }: IntegrationsSectionPr
 
   const addIntegration = (key: string) => {
     if (key === 'prairieTest') {
-      setValue(
-        'mainRule.integrations.prairieTest.enabled' as Path<AccessControlFormData>,
-        true as never,
-      );
+      setValue('mainRule.integrations.prairieTest.enabled', true);
     }
   };
 
   const removeIntegration = (key: string) => {
     if (key === 'prairieTest') {
-      setValue(
-        'mainRule.integrations.prairieTest.enabled' as Path<AccessControlFormData>,
-        false as never,
-      );
-      setValue(
-        'mainRule.integrations.prairieTest.exams' as Path<AccessControlFormData>,
-        [] as never,
-      );
+      setValue('mainRule.integrations.prairieTest.enabled', false);
+      setValue('mainRule.integrations.prairieTest.exams', []);
     }
   };
 

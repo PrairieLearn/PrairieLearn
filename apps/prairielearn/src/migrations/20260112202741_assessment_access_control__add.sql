@@ -1,16 +1,3 @@
--- Drop tables if they exist (to handle partial migration state)
-DROP TABLE IF EXISTS assessment_access_control_prairietest_exam CASCADE;
-
-DROP TABLE IF EXISTS assessment_access_control_late_deadline CASCADE;
-
-DROP TABLE IF EXISTS assessment_access_control_early_deadline CASCADE;
-
-DROP TABLE IF EXISTS assessment_access_control_student_labels CASCADE;
-
-DROP TABLE IF EXISTS assessment_access_control_enrollments CASCADE;
-
-DROP TABLE IF EXISTS assessment_access_control CASCADE;
-
 -- Main access control rules table
 CREATE TABLE assessment_access_control (
   id BIGSERIAL PRIMARY KEY,
@@ -97,7 +84,8 @@ CREATE TABLE assessment_access_control_early_deadline (
   id BIGSERIAL PRIMARY KEY,
   access_control_id BIGINT NOT NULL REFERENCES assessment_access_control (id) ON DELETE CASCADE ON UPDATE CASCADE,
   date TIMESTAMP WITH TIME ZONE NOT NULL,
-  credit INT NOT NULL
+  credit INT NOT NULL,
+  sort_order INTEGER NOT NULL
 );
 
 -- Late deadline table
@@ -105,7 +93,8 @@ CREATE TABLE assessment_access_control_late_deadline (
   id BIGSERIAL PRIMARY KEY,
   access_control_id BIGINT NOT NULL REFERENCES assessment_access_control (id) ON DELETE CASCADE ON UPDATE CASCADE,
   date TIMESTAMP WITH TIME ZONE NOT NULL,
-  credit INT NOT NULL
+  credit INT NOT NULL,
+  sort_order INTEGER NOT NULL
 );
 
 -- PrairieTest exam table

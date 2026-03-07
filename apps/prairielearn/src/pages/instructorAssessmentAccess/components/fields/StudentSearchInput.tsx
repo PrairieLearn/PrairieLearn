@@ -287,7 +287,7 @@ export function StudentSearchInput({
                     <Badge bg="danger">Not found</Badge>
                   ) : !result.enrolled ? (
                     <Badge bg="warning">Not enrolled</Badge>
-                  ) : excludedUids.has(result.id!) ? (
+                  ) : excludedUids.has(result.uid) ? (
                     <Badge bg="secondary">Already added</Badge>
                   ) : (
                     <Badge bg="success">Valid</Badge>

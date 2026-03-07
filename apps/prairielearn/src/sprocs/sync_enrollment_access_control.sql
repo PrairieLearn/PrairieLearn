@@ -14,6 +14,8 @@ DECLARE
     new_rule_id bigint;
     next_number integer;
 BEGIN
+    LOCK TABLE assessment_access_control IN EXCLUSIVE MODE;
+
     -- Check if updating an existing rule (rule_data contains 'id')
     existing_rule_id := (rule_data ->> 'id')::bigint;
 
@@ -133,14 +135,14 @@ BEGIN
     SELECT new_rule_id, unnest(enrollment_ids);
 
     -- Insert early deadlines
-    INSERT INTO assessment_access_control_early_deadline (access_control_id, date, credit)
-    SELECT new_rule_id, (d ->> 'date')::timestamp with time zone, (d ->> 'credit')::integer
-    FROM UNNEST(early_deadlines_data) AS d;
+    INSERT INTO assessment_access_control_early_deadline (access_control_id, date, credit, sort_order)
+    SELECT new_rule_id, (d ->> 'date')::timestamp with time zone, (d ->> 'credit')::integer, ordinality - 1
+    FROM UNNEST(early_deadlines_data) WITH ORDINALITY AS d;
 
     -- Insert late deadlines
-    INSERT INTO assessment_access_control_late_deadline (access_control_id, date, credit)
-    SELECT new_rule_id, (d ->> 'date')::timestamp with time zone, (d ->> 'credit')::integer
-    FROM UNNEST(late_deadlines_data) AS d;
+    INSERT INTO assessment_access_control_late_deadline (access_control_id, date, credit, sort_order)
+    SELECT new_rule_id, (d ->> 'date')::timestamp with time zone, (d ->> 'credit')::integer, ordinality - 1
+    FROM UNNEST(late_deadlines_data) WITH ORDINALITY AS d;
 
     RETURN new_rule_id;
 END;

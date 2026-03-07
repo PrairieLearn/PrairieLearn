@@ -44,7 +44,6 @@ export function AccessControlForm({
     overrideIndex: null,
   });
 
-  // Convert initial JSON data to form data structure
   const mainRule = initialData[0]
     ? jsonToFormData(initialData[0], true)
     : jsonToFormData({ enabled: true, listBeforeRelease: true }, true);
@@ -128,10 +127,8 @@ export function AccessControlForm({
   return (
     <div>
       <Form onSubmit={handleSubmit(handleFormSubmit)}>
-        {/* Breadcrumb navigation */}
         <AccessControlBreadcrumb baseUrl={baseUrl} currentPage={{ type: 'summary' }} />
 
-        {/* Summary view with URL-based edit navigation */}
         <div className="mb-4">
           <AccessControlSummary
             baseUrl={baseUrl}
@@ -144,7 +141,6 @@ export function AccessControlForm({
           />
         </div>
 
-        {/* Form actions */}
         <div className="mt-4 d-flex gap-2">
           <Button type="submit" variant="primary" disabled={!isDirty || !isValid || isSaving}>
             {isSaving ? 'Saving...' : 'Save changes'}
@@ -160,7 +156,6 @@ export function AccessControlForm({
         </div>
       </Form>
 
-      {/* Delete confirmation modal */}
       <ConfirmationModal
         show={deleteModalState.show}
         title="Delete override rule"

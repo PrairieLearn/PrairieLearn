@@ -204,7 +204,6 @@ function AccessControlRulePageInner({
 
   const baseUrl = `${urlPrefix}/assessment/${assessmentId}/access`;
 
-  // Progress tracking for save operations
   const onProgressChange = useCallback(() => {
     void queryClient.invalidateQueries();
   }, [queryClient]);
@@ -216,20 +215,16 @@ function AccessControlRulePageInner({
       onProgressChange,
     });
 
-  // Convert jobsProgress object to array for display
   const jobProgressArray = useMemo(() => Object.values(jobsProgress), [jobsProgress]);
 
-  // Check if there's an ongoing save job
   const isSaveInProgress = jobProgressArray.some(
     (job) => job.num_total > 0 && job.num_complete < job.num_total,
   );
 
-  // Set up form with initial data
   const ruleFormData = accessControl
     ? dbRowToFormData(accessControl, isMainRule)
     : createDefaultOverrideFormData();
 
-  // Use the full form structure for compatibility with existing components
   const {
     control,
     handleSubmit,
@@ -359,9 +354,6 @@ function AccessControlRulePageInner({
       ? 'New override'
       : `Override ${accessControl?.number}`;
 
-  // currentFormData is always defined because:
-  // - When isMainRule is true, we select mainRule (always defined)
-  // - When isMainRule is false, overrides[0] is always defined (initialized with ruleFormData)
   const currentFormData = isMainRule ? watchedData.mainRule : watchedData.overrides[0];
   const isEnabled = currentFormData.enabled;
 
@@ -426,7 +418,6 @@ function AccessControlRulePageInner({
         </Alert>
       )}
 
-      {/* Progress bar for save operations */}
       {jobProgressArray.length > 0 && (
         <ServerJobsProgressInfo
           itemNames="sync stages"
@@ -442,15 +433,12 @@ function AccessControlRulePageInner({
       )}
 
       <Form onSubmit={handleSubmit(handleFormSubmit)}>
-        {/* Breadcrumb navigation */}
         <AccessControlBreadcrumb baseUrl={baseUrl} currentPage={{ type: 'edit', ruleName }} />
 
-        {/* Rule header with name and actions */}
         <div className="d-flex align-items-center justify-content-between mb-3">
           <h5 className="mb-0">{ruleName}</h5>
 
           <div className="d-flex gap-2">
-            {/* Enable/Disable toggle */}
             <Button
               variant={isEnabled ? 'success' : 'outline-secondary'}
               size="sm"
@@ -466,7 +454,6 @@ function AccessControlRulePageInner({
               {isEnabled ? 'Enabled' : 'Disabled'}
             </Button>
 
-            {/* Delete button (overrides only, not for new) */}
             {!isMainRule && !isNew && (
               <Button
                 variant="outline-danger"
@@ -479,7 +466,6 @@ function AccessControlRulePageInner({
           </div>
         </div>
 
-        {/* "Applies to" selector for overrides */}
         {!isMainRule && (
           <AppliesToField
             control={control}
@@ -490,7 +476,6 @@ function AccessControlRulePageInner({
           />
         )}
 
-        {/* Main content area */}
         <div className="mb-4">
           {isMainRule ? (
             <MainRuleForm control={control} courseInstance={courseInstance} setValue={setValue} />
@@ -499,7 +484,6 @@ function AccessControlRulePageInner({
           )}
         </div>
 
-        {/* Form actions */}
         {hasNoTargets && (
           <Alert variant="warning" className="mt-3">
             You must add at least one student or group before saving this override.
@@ -529,7 +513,6 @@ function AccessControlRulePageInner({
         </div>
       </Form>
 
-      {/* Delete confirmation modal */}
       <ConfirmationModal
         show={deleteModalState.show}
         title="Delete override rule"

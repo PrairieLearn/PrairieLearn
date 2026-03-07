@@ -3,6 +3,7 @@ columns
     credit: integer not null
     date: timestamp with time zone not null
     id: bigint not null default nextval('assessment_access_control_late_deadline_id_seq'::regclass)
+    sort_order: integer not null
 
 indexes
     assessment_access_control_late_deadline_pkey: PRIMARY KEY (id) USING btree (id)

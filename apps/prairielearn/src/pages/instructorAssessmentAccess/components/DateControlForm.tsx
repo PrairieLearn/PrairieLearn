@@ -1,14 +1,12 @@
 import { Card, Col, Form, Row } from 'react-bootstrap';
 import { type Control, type UseFormSetValue } from 'react-hook-form';
 
-import {
-  AfterLastDeadlineField,
-  DeadlineArrayField,
-  DueDateField,
-  DurationField,
-  PasswordField,
-  ReleaseDateField,
-} from './fields/index.js';
+import { AfterLastDeadlineField } from './fields/AfterLastDeadlineField.js';
+import { DeadlineArrayField } from './fields/DeadlineArrayField.js';
+import { DueDateField } from './fields/DueDateField.js';
+import { DurationField } from './fields/DurationField.js';
+import { PasswordField } from './fields/PasswordField.js';
+import { ReleaseDateField } from './fields/ReleaseDateField.js';
 import {
   type NamePrefix,
   getFieldName,

@@ -33,7 +33,6 @@ export function AccessControlInner({
   const [jobSequenceId, setJobSequenceId] = useState<string | null>(null);
   const queryClient = useQueryClient();
 
-  // Progress tracking for save operations
   const onProgressChange = useCallback(() => {
     void queryClient.invalidateQueries();
   }, [queryClient]);
@@ -45,7 +44,6 @@ export function AccessControlInner({
       onProgressChange,
     });
 
-  // Convert jobsProgress object to array for display
   const jobProgressArray = useMemo(() => Object.values(jobsProgress), [jobsProgress]);
 
   const saveMutation = useMutation({
@@ -126,7 +124,6 @@ export function AccessControlInner({
         </Alert>
       )}
 
-      {/* Progress bar for save operations */}
       {jobProgressArray.length > 0 && (
         <ServerJobsProgressInfo
           itemNames="sync stages"
