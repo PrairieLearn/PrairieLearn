@@ -1,5 +1,13 @@
 # @prairielearn/ui
 
+## 3.2.3
+
+### Patch Changes
+
+- dab7ca0: Fix OverlayTrigger focus trapping when trigger prop is an array
+- dab7ca0: Fix OverlayTrigger returning focus on tooltip dismiss, which created an infinite focus loop for focus-triggered tooltips
+- 45221b9: Make TanstackTable easier to test
+
 ## 3.2.2
 
 ### Patch Changes
