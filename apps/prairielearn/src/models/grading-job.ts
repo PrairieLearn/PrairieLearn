@@ -65,9 +65,11 @@ async function selectGradingJobById(grading_job_id: string): Promise<GradingJob>
 export async function insertGradingJob({
   submission_id,
   authn_user_id,
+  recomputePending = true,
 }: {
   submission_id: string;
   authn_user_id: string | null;
+  recomputePending?: boolean;
 }): Promise<GradingJob> {
   return await runInTransactionAsync(async () => {
     await lockSubmission({ submission_id });
@@ -81,7 +83,12 @@ export async function insertGradingJob({
       }),
     );
     if (assessment_instance_id != null) {
-      await updateAssessmentInstanceGrade({ assessment_instance_id, authn_user_id, credit });
+      await updateAssessmentInstanceGrade({
+        assessment_instance_id,
+        authn_user_id,
+        credit,
+        recomputePending,
+      });
     }
     return grading_job;
   });
