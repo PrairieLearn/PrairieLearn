@@ -429,8 +429,9 @@ const saveAllRules = t.procedure
       await syncAccessControl(courseInstanceId, assessmentId, rulesToSync);
 
       // Sync enrollment rules
-      const existingEnrollmentRules = await fetchEnrollmentRules(assessmentId);
-      const existingIds = new Set(existingEnrollmentRules.map((r) => r.id));
+      const existingIds = new Set(
+        currentRules.filter((r) => r.ruleType === 'enrollment').map((r) => r.id),
+      );
       const submittedIds = new Set(enrollmentRules.filter((r) => r.id).map((r) => r.id));
 
       // Delete enrollment rules that were removed
@@ -504,7 +505,7 @@ const saveAllRules = t.procedure
     });
   });
 
-export async function fetchAccessControlJsonRules(assessmentId: string) {
+async function fetchAccessControlJsonRules(assessmentId: string) {
   const rows = await queryRows(
     sql.select_all_json_rules,
     { assessment_id: assessmentId },

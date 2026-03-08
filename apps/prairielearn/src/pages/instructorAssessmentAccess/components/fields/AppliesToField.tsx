@@ -27,20 +27,12 @@ export function AppliesToField({ control, setValue, namePrefix }: AppliesToField
     name: `${namePrefix}.appliesTo` as const,
   });
 
-  const {
-    fields: individualFields,
-    append: appendIndividual,
-    remove: removeIndividual,
-  } = useFieldArray({
+  const { append: appendIndividual, remove: removeIndividual } = useFieldArray({
     control,
     name: `${namePrefix}.appliesTo.individuals` as 'mainRule.appliesTo.individuals',
   });
 
-  const {
-    fields: studentLabelFields,
-    append: appendStudentLabel,
-    remove: removeStudentLabel,
-  } = useFieldArray({
+  const { append: appendStudentLabel, remove: removeStudentLabel } = useFieldArray({
     control,
     name: `${namePrefix}.appliesTo.studentLabels` as 'mainRule.appliesTo.studentLabels',
   });
@@ -70,15 +62,11 @@ export function AppliesToField({ control, setValue, namePrefix }: AppliesToField
   };
 
   const handleRemoveAllIndividuals = () => {
-    for (let i = individualFields.length - 1; i >= 0; i--) {
-      removeIndividual(i);
-    }
+    removeIndividual();
   };
 
   const handleRemoveAllStudentLabels = () => {
-    for (let i = studentLabelFields.length - 1; i >= 0; i--) {
-      removeStudentLabel(i);
-    }
+    removeStudentLabel();
   };
 
   // appliesTo may be undefined during initial render

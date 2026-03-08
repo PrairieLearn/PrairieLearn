@@ -19,7 +19,7 @@ interface AccessControlProps {
   initialData: AccessControlJsonWithId[];
 }
 
-export function AccessControlInner({
+function AccessControlInner({
   courseInstance,
   origHash: initialOrigHash,
   initialData,
@@ -39,10 +39,10 @@ export function AccessControlInner({
     const jsonRules = data.filter((r) => r.ruleType !== 'enrollment');
     const enrollmentRules = data
       .filter((r) => r.ruleType === 'enrollment')
-      .map((r) => ({
-        id: r.id,
-        enrollmentIds: (r.individuals ?? []).map((i) => i.enrollmentId),
-        ruleJson: { ...r, ruleType: undefined, individuals: undefined },
+      .map(({ ruleType: _, individuals, ...ruleJson }) => ({
+        id: ruleJson.id,
+        enrollmentIds: (individuals ?? []).map((i) => i.enrollmentId),
+        ruleJson,
       }));
 
     try {

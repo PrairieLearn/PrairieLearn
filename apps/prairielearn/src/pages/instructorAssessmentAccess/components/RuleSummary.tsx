@@ -7,7 +7,7 @@ import {
 
 import type { AccessControlRuleFormData, DeadlineEntry } from './types.js';
 
-export type SummaryVerbosity = 'compact' | 'verbose';
+type SummaryVerbosity = 'compact' | 'verbose';
 
 function formatDate(dateStr: string): string {
   if (!dateStr) return '';
@@ -175,7 +175,7 @@ function generateDateTableRows(
   return rows;
 }
 
-export function generateRuleSummary(
+function generateRuleSummary(
   rule: AccessControlRuleFormData,
   verbosity: SummaryVerbosity = 'compact',
 ): string[] {

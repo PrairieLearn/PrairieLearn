@@ -18,7 +18,7 @@ export interface AccessControlJsonWithId extends AccessControlJson {
   individuals?: AccessControlIndividual[];
 }
 
-export const OverridableFieldSchema = <T extends z.ZodTypeAny>(valueSchema: T) =>
+const OverridableFieldSchema = <T extends z.ZodTypeAny>(valueSchema: T) =>
   z.object({
     isOverridden: z.boolean(),
     isEnabled: z.boolean(),
@@ -46,7 +46,7 @@ export const DateControlFormDataSchema = z.object({
   password: OverridableFieldSchema(z.string()),
 });
 
-export const PrairieTestFormDataSchema = z.object({
+const PrairieTestFormDataSchema = z.object({
   enabled: z.boolean(),
   exams: z
     .array(
@@ -58,7 +58,7 @@ export const PrairieTestFormDataSchema = z.object({
     .optional(),
 });
 
-export const IntegrationsFormDataSchema = z.object({
+const IntegrationsFormDataSchema = z.object({
   prairieTest: PrairieTestFormDataSchema,
 });
 
@@ -73,7 +73,7 @@ export const ScoreVisibilityValueSchema = z.object({
   showAgainDate: z.string().optional(),
 });
 
-export const AfterCompleteFormDataSchema = z.object({
+const AfterCompleteFormDataSchema = z.object({
   questionVisibility: OverridableFieldSchema(QuestionVisibilityValueSchema),
   scoreVisibility: OverridableFieldSchema(ScoreVisibilityValueSchema),
 });
@@ -126,15 +126,9 @@ export type AfterLastDeadlineValue = z.infer<typeof AfterLastDeadlineValueSchema
 
 export type DateControlFormData = z.infer<typeof DateControlFormDataSchema>;
 
-export type PrairieTestFormData = z.infer<typeof PrairieTestFormDataSchema>;
-
-export type IntegrationsFormData = z.infer<typeof IntegrationsFormDataSchema>;
-
 export type QuestionVisibilityValue = z.infer<typeof QuestionVisibilityValueSchema>;
 
 export type ScoreVisibilityValue = z.infer<typeof ScoreVisibilityValueSchema>;
-
-export type AfterCompleteFormData = z.infer<typeof AfterCompleteFormDataSchema>;
 
 export type TargetType = z.infer<typeof AppliesToSchema>['targetType'];
 
@@ -152,7 +146,7 @@ export type AccessControlFormData = z.infer<typeof AccessControlFormDataSchema>;
  * For main rules, isOverridden is always true.
  * For override rules, isOverridden depends on whether the field has a value.
  */
-export function makeOverridable<T>(
+function makeOverridable<T>(
   isMainRule: boolean,
   hasValue: boolean,
   isEnabled: boolean,
@@ -185,7 +179,7 @@ export function formDataToJson(formData: AccessControlFormData): AccessControlJs
  * @param rule The form data rule to convert
  * @param isMainRule If true, includes integrations in the output (only main rules support this)
  */
-export function formRuleToJson(
+function formRuleToJson(
   rule: AccessControlRuleFormData,
   isMainRule: boolean,
 ): AccessControlJsonWithId {
@@ -195,6 +189,7 @@ export function formRuleToJson(
       : undefined;
 
   const output: AccessControlJsonWithId = {
+    id: rule.id,
     enabled: rule.enabled,
     blockAccess: rule.blockAccess,
     listBeforeRelease: rule.listBeforeRelease ?? true,

@@ -6,11 +6,7 @@ import {
   selectPrairieTestReservation,
   selectStudentContext,
 } from './access-control-data.js';
-import {
-  type AccessControlResolverResult,
-  type AccessControlRuleInput,
-  resolveAccessControl,
-} from './access-control-resolver.js';
+import { type AccessControlResolverResult, resolveAccessControl } from './access-control-resolver.js';
 import type {
   EnumCourseInstanceRole,
   EnumCourseRole,
@@ -70,21 +66,15 @@ function resolverResultToSprocAuthzAssessment(
 export async function resolveModernAssessmentAccess(
   input: ModernAssessmentAccessInput,
 ): Promise<SprocAuthzAssessment & { list_before_release: boolean; block_access: boolean }> {
-  const rules = await selectAccessControlRulesForAssessment(input.assessmentId);
-  return resolveModernAssessmentAccessWithRules({ ...input, rules });
-}
+  const { assessmentId, userId, courseInstanceId, authzData, reqDate, displayTimezone } = input;
 
-async function resolveModernAssessmentAccessWithRules(
-  input: ModernAssessmentAccessInput & { rules: AccessControlRuleInput[] },
-): Promise<SprocAuthzAssessment & { list_before_release: boolean; block_access: boolean }> {
-  const { rules, userId, courseInstanceId, authzData, reqDate, displayTimezone } = input;
-
-  const student = await selectStudentContext(userId, courseInstanceId);
-
-  let prairieTestReservation = null;
-  if (authzData.mode === 'Exam' && authzData.mode_reason === 'PrairieTest') {
-    prairieTestReservation = await selectPrairieTestReservation(userId, reqDate);
-  }
+  const [rules, student, prairieTestReservation] = await Promise.all([
+    selectAccessControlRulesForAssessment(assessmentId),
+    selectStudentContext(userId, courseInstanceId),
+    authzData.mode === 'Exam' && authzData.mode_reason === 'PrairieTest'
+      ? selectPrairieTestReservation(userId, reqDate)
+      : Promise.resolve(null),
+  ]);
 
   const result = resolveAccessControl({
     rules,
@@ -172,13 +162,13 @@ export async function resolveModernAssessmentAccessBatch(
 > {
   const { courseInstanceId, userId, authzData, reqDate, displayTimezone } = input;
 
-  const allRules = await selectAccessControlRulesForCourseInstance(courseInstanceId);
-  const student = await selectStudentContext(userId, courseInstanceId);
-
-  let prairieTestReservation = null;
-  if (authzData.mode === 'Exam' && authzData.mode_reason === 'PrairieTest') {
-    prairieTestReservation = await selectPrairieTestReservation(userId, reqDate);
-  }
+  const [allRules, student, prairieTestReservation] = await Promise.all([
+    selectAccessControlRulesForCourseInstance(courseInstanceId),
+    selectStudentContext(userId, courseInstanceId),
+    authzData.mode === 'Exam' && authzData.mode_reason === 'PrairieTest'
+      ? selectPrairieTestReservation(userId, reqDate)
+      : Promise.resolve(null),
+  ]);
 
   const results = new Map<
     string,
