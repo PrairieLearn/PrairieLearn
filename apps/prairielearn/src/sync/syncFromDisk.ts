@@ -220,7 +220,7 @@ export async function syncDiskToSqlWithLock(
             ),
           );
 
-          if (assessmentIds?.name_to_id_map && hasEnhancedAccessControl) {
+          if (assessmentIds.name_to_id_map && hasEnhancedAccessControl) {
             const idMap = assessmentIds.name_to_id_map;
             await timed(`Synced access control for ${ciid}`, async () => {
               for (const [tid, assessment] of Object.entries(courseInstanceData.assessments)) {

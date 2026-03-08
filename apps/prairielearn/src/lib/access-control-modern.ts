@@ -6,7 +6,10 @@ import {
   selectPrairieTestReservation,
   selectStudentContext,
 } from './access-control-data.js';
-import { type AccessControlResolverResult, resolveAccessControl } from './access-control-resolver.js';
+import {
+  type AccessControlResolverResult,
+  resolveAccessControl,
+} from './access-control-resolver.js';
 import type {
   EnumCourseInstanceRole,
   EnumCourseRole,

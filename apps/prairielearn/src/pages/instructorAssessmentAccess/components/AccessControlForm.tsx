@@ -1,6 +1,8 @@
 import { useState } from 'react';
-import { Alert, Button, Form, Offcanvas, OverlayTrigger, Tooltip } from 'react-bootstrap';
+import { Alert, Button, Form, Offcanvas, Tooltip } from 'react-bootstrap';
 import { type FieldErrors, useFieldArray, useForm } from 'react-hook-form';
+
+import { OverlayTrigger } from '@prairielearn/ui';
 
 import type { PageContext } from '../../../lib/client/page-context.js';
 
@@ -31,7 +33,6 @@ const defaultInitialData: AccessControlJsonWithId[] = [];
 function collectErrorMessages(errors: FieldErrors<AccessControlFormData>, prefix = ''): string[] {
   const messages: string[] = [];
   for (const [key, value] of Object.entries(errors)) {
-    if (!value) continue;
     const path = prefix ? `${prefix}.${key}` : key;
     if (typeof value.message === 'string') {
       messages.push(`${path}: ${value.message}`);
@@ -192,8 +193,8 @@ export function AccessControlForm({
           <Alert variant="danger">
             <Alert.Heading as="h6">Please fix the following errors:</Alert.Heading>
             <ul className="mb-0">
-              {errorMessages.map((msg, i) => (
-                <li key={i}>{msg}</li>
+              {errorMessages.map((msg) => (
+                <li key={msg}>{msg}</li>
               ))}
             </ul>
           </Alert>
