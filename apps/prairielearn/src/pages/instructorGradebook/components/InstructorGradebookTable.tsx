@@ -25,6 +25,7 @@ import { z } from 'zod';
 
 import {
   CategoricalColumnFilter,
+  MultiSelectColumnFilter,
   type NumericColumnFilterValue,
   NumericInputColumnFilter,
   NuqsAdapter,
@@ -39,6 +40,8 @@ import {
 } from '@prairielearn/ui';
 
 import { EnrollmentStatusIcon } from '../../../components/EnrollmentStatusIcon.js';
+import { StudentLabelBadge } from '../../../components/StudentLabelBadge.js';
+import type { StaffStudentLabel } from '../../../lib/client/safe-db-types.js';
 import { QueryClientProviderDebug } from '../../../lib/client/tanstackQuery.js';
 import { getStudentEnrollmentUrl } from '../../../lib/client/url.js';
 import { type EnumEnrollmentStatus, EnumEnrollmentStatusSchema } from '../../../lib/db-types.js';
@@ -60,10 +63,6 @@ const DEFAULT_STATUS_FILTER: EnumEnrollmentStatus[] = ['joined'];
 
 const columnHelper = createColumnHelper<GradebookRow>();
 
-/**
- * Recursively extracts leaf column IDs from column definitions.
- * Group columns are skipped, only actual data columns are included.
- */
 function extractLeafColumnIds(columns: { id?: string | null; columns?: unknown[] }[]): string[] {
   const leafIds: string[] = [];
   for (const col of columns) {
@@ -78,12 +77,20 @@ function extractLeafColumnIds(columns: { id?: string | null; columns?: unknown[]
   return leafIds;
 }
 
-type ColumnId = 'uid' | 'user_name' | 'uin' | 'role' | 'enrollment_status' | `a${number}`;
+type ColumnId =
+  | 'uid'
+  | 'user_name'
+  | 'uin'
+  | 'role'
+  | 'enrollment_status'
+  | 'student_labels'
+  | `a${number}`;
 
 interface GradebookTableProps {
   csrfToken: string;
   courseAssessments: CourseAssessmentRow[];
   gradebookRows: GradebookRow[];
+  studentLabels: StaffStudentLabel[];
   urlPrefix: string;
   courseInstanceId: string;
   filenameBase: string;
@@ -93,6 +100,7 @@ function GradebookTable({
   csrfToken,
   courseAssessments,
   gradebookRows: initialGradebookRows,
+  studentLabels,
   urlPrefix,
   courseInstanceId,
   filenameBase,
@@ -115,6 +123,10 @@ function GradebookTable({
     'status',
     parseAsArrayOf(parseAsStringLiteral(STATUS_VALUES)).withDefault(DEFAULT_STATUS_FILTER),
   );
+  const [studentLabelsFilter, setStudentLabelsFilter] = useQueryState<string[]>(
+    'student_labels',
+    parseAsArrayOf(parseAsString).withDefault([]),
+  );
 
   const assessmentIds = useMemo(() => {
     return courseAssessments.map((assessment) => assessment.assessment_id);
@@ -133,8 +145,6 @@ function GradebookTable({
     defaultAssessmentFilterValues,
   );
 
-  // We keep a consistent interface for the column filter setters, but we don't need to pass the column ID to the setters
-  // other than the assessment filters.
   const columnFilterSetters = useMemo<Record<ColumnId, Updater<any>>>(() => {
     return {
       uid: undefined,
@@ -143,6 +153,7 @@ function GradebookTable({
       role: (_columnId: string, value: GradebookRow['role'][]) => setRoleFilter(value),
       enrollment_status: (_columnId: string, value: EnumEnrollmentStatus[]) =>
         setStatusFilter(value),
+      student_labels: (_columnId: string, value: string[]) => setStudentLabelsFilter(value),
       ...Object.fromEntries(
         assessmentIds.map((assessmentId) => [
           `a${assessmentId}`,
@@ -157,20 +168,27 @@ function GradebookTable({
         ]),
       ),
     };
-  }, [assessmentIds, setAssessmentFilterValues, setRoleFilter, setStatusFilter]);
+  }, [
+    assessmentIds,
+    setAssessmentFilterValues,
+    setRoleFilter,
+    setStatusFilter,
+    setStudentLabelsFilter,
+  ]);
 
-  // The individual column filters are the source of truth, and this is derived from them.
   const columnFilters = useMemo<ColumnFiltersState>(() => {
     const filters: ColumnFiltersState = [];
 
-    // Apply status filter
     if (statusFilter.length > 0) {
       filters.push({ id: 'enrollment_status', value: statusFilter });
     }
 
-    // Apply role filter from role column filter
     if (roleFilter.length > 0) {
       filters.push({ id: 'role', value: roleFilter });
+    }
+
+    if (studentLabelsFilter.length > 0) {
+      filters.push({ id: 'student_labels', value: studentLabelsFilter });
     }
 
     Object.entries(assessmentFilterValues).forEach(([columnId, filterValue]) => {
@@ -178,9 +196,8 @@ function GradebookTable({
     });
 
     return filters;
-  }, [statusFilter, roleFilter, assessmentFilterValues]);
+  }, [statusFilter, roleFilter, studentLabelsFilter, assessmentFilterValues]);
 
-  // Sync TanStack column filter changes back to URL
   const handleColumnFiltersChange = useMemo(
     () => (updaterOrValue: Updater<ColumnFiltersState>) => {
       const newFilters =
@@ -279,7 +296,6 @@ function GradebookTable({
         },
       }),
 
-      // Enrollment Status column
       columnHelper.accessor((row) => row.enrollment?.status, {
         id: 'enrollment_status',
         header: 'Enrollment',
@@ -290,13 +306,42 @@ function GradebookTable({
         filterFn: (row, columnId, filterValues: string[]) => {
           if (filterValues.length === 0) return true;
           const current = row.getValue<EnumEnrollmentStatus | undefined>(columnId);
-          // If there is no enrollment status, it doesn't match if any filter is set.
           if (!current) return false;
           return filterValues.includes(current);
         },
       }),
 
-      // Dynamic assessment columns
+      columnHelper.accessor('student_labels', {
+        id: 'student_labels',
+        meta: {
+          label: 'Labels',
+        },
+        header: () => (
+          <span className="d-inline-flex align-items-center gap-1">
+            <span>Labels</span>
+            <i className="bi bi-people" aria-hidden="true" />
+          </span>
+        ),
+        cell: (info) => {
+          const labels = info.getValue();
+          if (labels.length === 0) return '—';
+          return (
+            <div className="d-flex flex-wrap gap-1">
+              {labels.map((label) => (
+                <StudentLabelBadge key={label.id} label={label} />
+              ))}
+            </div>
+          );
+        },
+        filterFn: (row, columnId, filterValues: string[]) => {
+          if (filterValues.length === 0) return true;
+          const labelIds = new Set(
+            row.getValue<GradebookRow['student_labels']>(columnId).map((l) => l.id),
+          );
+          return filterValues.some((id) => labelIds.has(id));
+        },
+      }),
+
       ...Array.from(assessmentsBySet.groups.entries()).map(([setId, assessments]) =>
         columnHelper.group({
           id: `group_${setId}`,
@@ -363,18 +408,15 @@ function GradebookTable({
     [assessmentsBySet.groups, assessmentsBySet.headingById, urlPrefix, courseInstanceId, csrfToken],
   );
 
-  // Extract only leaf column IDs (exclude group columns)
   const allColumnIds = extractLeafColumnIds(columns);
 
-  // Set default visibility: hide name, UIN, role, and enrollment status columns by default
-  const defaultColumnVisibility = Object.fromEntries(
-    allColumnIds.map((id) => {
-      if (['uin', 'role', 'enrollment_status'].includes(id)) {
-        return [id, false];
-      }
-      return [id, true];
-    }),
-  );
+  const defaultColumnVisibility = useMemo(() => {
+    const hiddenByDefault = new Set(['uin', 'role', 'enrollment_status']);
+    if (studentLabels.length === 0) {
+      hiddenByDefault.add('student_labels');
+    }
+    return Object.fromEntries(allColumnIds.map((id) => [id, !hiddenByDefault.has(id)]));
+  }, [allColumnIds, studentLabels.length]);
 
   const [columnVisibility, setColumnVisibility] = useQueryState(
     'columns',
@@ -393,7 +435,6 @@ function GradebookTable({
     }
   };
 
-  // Create filters for assessment columns
   const filters = useMemo(() => {
     const assessmentFilters: Record<
       string,
@@ -406,6 +447,8 @@ function GradebookTable({
         return <NumericInputColumnFilter column={header.column} />;
       };
     });
+
+    const labelIds = studentLabels.map((l) => l.id);
 
     return {
       role: ({ header }: { header: Header<GradebookRow, GradebookRow['role']> }) => (
@@ -422,9 +465,24 @@ function GradebookTable({
           renderValueLabel={({ value }) => <EnrollmentStatusIcon type="text" status={value} />}
         />
       ),
+      student_labels: ({
+        header,
+      }: {
+        header: Header<GradebookRow, GradebookRow['student_labels']>;
+      }) => (
+        <MultiSelectColumnFilter
+          column={header.column}
+          allColumnValues={labelIds}
+          renderValueLabel={({ value }) => {
+            const label = studentLabels.find((l) => l.id === String(value));
+            if (!label) return <span>{String(value)}</span>;
+            return <span>{label.name}</span>;
+          }}
+        />
+      ),
       ...assessmentFilters,
     };
-  }, [courseAssessments]);
+  }, [courseAssessments, studentLabels]);
 
   const table = useReactTable({
     data: gradebookRows,
@@ -478,6 +536,13 @@ function GradebookTable({
               { name: 'UIN', value: row.uin },
               { name: 'Role', value: row.role },
               { name: 'Enrollment', value: row.enrollment?.status ?? null },
+              {
+                name: 'Labels',
+                value:
+                  row.student_labels.length > 0
+                    ? row.student_labels.map((l) => l.name).join(', ')
+                    : null,
+              },
             ];
             for (const assessment of courseAssessments) {
               data.push({
@@ -525,6 +590,7 @@ export function InstructorGradebookTable({
   csrfToken,
   courseAssessments,
   gradebookRows,
+  studentLabels,
   urlPrefix,
   filenameBase,
   search,
@@ -543,6 +609,7 @@ export function InstructorGradebookTable({
           csrfToken={csrfToken}
           courseAssessments={courseAssessments}
           gradebookRows={gradebookRows}
+          studentLabels={studentLabels}
           urlPrefix={urlPrefix}
           filenameBase={filenameBase}
           courseInstanceId={courseInstanceId}

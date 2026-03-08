@@ -1,0 +1,193 @@
+import { QueryClient } from '@tanstack/react-query';
+import { useState } from 'react';
+
+import { useModalState } from '@prairielearn/ui';
+
+import { QueryClientProviderDebug } from '../../lib/client/tanstackQuery.js';
+
+import { LabelDeleteModal, type LabelDeleteModalData } from './components/LabelDeleteModal.js';
+import { LabelModifyModal, type LabelModifyModalData } from './components/LabelModifyModal.js';
+import { LabelTableRow } from './components/LabelTableRow.js';
+import type { StudentLabelWithUserData } from './instructorStudentsLabels.types.js';
+import {
+  type StudentLabelsTrpcClient,
+  createStudentLabelsTrpcClient,
+} from './utils/trpc-client.js';
+
+interface StudentLabelsPageProps {
+  csrfToken: string;
+  trpcCsrfToken: string;
+  trpcUrl: string;
+  courseInstanceId: string;
+  initialLabels: StudentLabelWithUserData[];
+  canEdit: boolean;
+  isDevMode: boolean;
+  origHash: string | null;
+}
+
+type StudentLabelsCardProps = Omit<
+  StudentLabelsPageProps,
+  'isDevMode' | 'trpcCsrfToken' | 'trpcUrl'
+> & {
+  trpcClient: StudentLabelsTrpcClient;
+};
+
+function StudentLabelsCard({
+  trpcClient,
+  courseInstanceId,
+  initialLabels,
+  canEdit: canEditProp,
+  origHash: initialOrigHash,
+}: Omit<StudentLabelsCardProps, 'csrfToken'>) {
+  const editModal = useModalState<LabelModifyModalData>();
+  const deleteModal = useModalState<LabelDeleteModalData>();
+  const [labels, setLabels] = useState<StudentLabelWithUserData[]>(initialLabels);
+  const [origHash, setOrigHash] = useState(initialOrigHash);
+
+  const canEdit = canEditProp && origHash !== null;
+
+  const fetchLabels = async () => {
+    const result = await trpcClient.labels.query();
+    setLabels(result.labels);
+    setOrigHash(result.origHash);
+    return result.labels;
+  };
+
+  const handleEdit = (label: StudentLabelWithUserData) => {
+    editModal.showWithData({
+      type: 'edit',
+      labelId: label.student_label.id,
+      name: label.student_label.name,
+      color: label.student_label.color,
+      uids: label.user_data.map((u) => u.uid),
+      origHash,
+    });
+  };
+
+  const handleDelete = (label: StudentLabelWithUserData) => {
+    deleteModal.showWithData({
+      labelId: label.student_label.id,
+      labelName: label.student_label.name,
+      userData: label.user_data,
+    });
+  };
+
+  const handleDeleteSuccess = async (newOrigHash: string | null) => {
+    setOrigHash(newOrigHash);
+    try {
+      await fetchLabels();
+    } catch {
+      // The delete succeeded; if the refetch fails, the user can refresh the page.
+    }
+    deleteModal.hide();
+  };
+
+  const handleEditSuccess = async (newOrigHash: string | null) => {
+    setOrigHash(newOrigHash);
+    try {
+      await fetchLabels();
+    } catch {
+      // The save succeeded; if the refetch fails, the user can refresh the page.
+    }
+    editModal.hide();
+  };
+
+  return (
+    <>
+      <div className="mb-3">
+        <div className="d-flex align-items-center justify-content-between mb-2">
+          <h2 className="h5 mb-0">Student labels</h2>
+          {canEdit && (
+            <button
+              type="button"
+              className="btn btn-outline-primary btn-sm text-nowrap"
+              onClick={() => editModal.showWithData({ type: 'add', origHash })}
+            >
+              Add label
+            </button>
+          )}
+        </div>
+        <small className="text-muted">
+          Organize students for filtering and analysis. Labels can be used to track sections,
+          accommodations, or any custom categorization. Labels are not visible to students.
+        </small>
+      </div>
+
+      {canEditProp && origHash === null && (
+        <div className="alert alert-info" role="alert">
+          You cannot edit student labels because the <code>infoCourseInstance.json</code> file does
+          not exist.
+        </div>
+      )}
+
+      {labels.length === 0 ? (
+        <div className="text-center text-muted mb-3">
+          <p className="mb-0">No student labels configured.</p>
+        </div>
+      ) : (
+        <div className="table-responsive">
+          <table className="table table-striped">
+            <thead>
+              <tr>
+                <th>Name</th>
+                <th>Students</th>
+                {canEdit && <th style={{ width: '140px' }}>Actions</th>}
+              </tr>
+            </thead>
+            <tbody>
+              {labels.map((label) => (
+                <LabelTableRow
+                  key={label.student_label.id}
+                  label={label}
+                  courseInstanceId={courseInstanceId}
+                  canEdit={canEdit}
+                  onEdit={handleEdit}
+                  onDelete={handleDelete}
+                />
+              ))}
+            </tbody>
+          </table>
+        </div>
+      )}
+
+      <LabelModifyModal
+        data={editModal.data}
+        trpcClient={trpcClient}
+        courseInstanceId={courseInstanceId}
+        show={editModal.show}
+        onHide={editModal.onHide}
+        onExited={editModal.onExited}
+        onSuccess={handleEditSuccess}
+      />
+
+      <LabelDeleteModal
+        data={deleteModal.data}
+        trpcClient={trpcClient}
+        courseInstanceId={courseInstanceId}
+        origHash={origHash}
+        show={deleteModal.show}
+        onHide={deleteModal.onHide}
+        onExited={deleteModal.onExited}
+        onSuccess={handleDeleteSuccess}
+      />
+    </>
+  );
+}
+
+export function InstructorStudentsLabels({
+  isDevMode,
+  trpcCsrfToken,
+  trpcUrl,
+  ...innerProps
+}: StudentLabelsPageProps) {
+  const [queryClient] = useState(() => new QueryClient());
+  const [trpcClient] = useState(() => createStudentLabelsTrpcClient(trpcCsrfToken, trpcUrl));
+
+  return (
+    <QueryClientProviderDebug client={queryClient} isDevMode={isDevMode}>
+      <StudentLabelsCard trpcClient={trpcClient} {...innerProps} />
+    </QueryClientProviderDebug>
+  );
+}
+
+InstructorStudentsLabels.displayName = 'InstructorStudentsLabels';

@@ -143,6 +143,23 @@ WITH
       JOIN course_scores AS s ON (s.user_id = u.id)
     GROUP BY
       u.id
+  ),
+  student_label_agg AS (
+    SELECT
+      sle.enrollment_id,
+      jsonb_agg(
+        to_jsonb(sl.*)
+        ORDER BY
+          sl.name
+      ) AS student_labels
+    FROM
+      student_label_enrollments sle
+      JOIN student_labels sl ON sl.id = sle.student_label_id
+      JOIN enrollments e ON e.id = sle.enrollment_id
+    WHERE
+      e.course_instance_id = $course_instance_id
+    GROUP BY
+      sle.enrollment_id
   )
 SELECT
   u.id AS user_id,
@@ -151,7 +168,8 @@ SELECT
   u.user_name,
   u.role,
   to_jsonb(e.*) AS enrollment,
-  COALESCE(s.scores, '{}') AS scores
+  COALESCE(s.scores, '{}') AS scores,
+  COALESCE(sla.student_labels, '[]'::jsonb) AS student_labels
 FROM
   course_users AS u
   LEFT JOIN enrollments AS e ON (
@@ -159,6 +177,7 @@ FROM
     AND e.course_instance_id = $course_instance_id
   )
   LEFT JOIN user_scores AS s ON (u.id = s.user_id)
+  LEFT JOIN student_label_agg sla ON sla.enrollment_id = e.id
 ORDER BY
   role DESC,
   uid ASC;
@@ -174,4 +193,4 @@ FROM
   LEFT JOIN teams AS g ON (g.id = ai.team_id)
   LEFT JOIN team_users AS gu ON (gu.team_id = g.id)
 WHERE
-  ai.id = $assessment_instance_id
+  ai.id = $assessment_instance_id;
