@@ -25,6 +25,7 @@ import {
   selectInstanceQuestionGroups,
   updateManualInstanceQuestionGroup,
 } from '../../../ee/lib/ai-instance-question-grouping/ai-instance-question-grouping-util.js';
+import { updateAssessmentInstancesScorePercPending } from '../../../lib/assessment-grading.js';
 import { AiGradingJobSchema, GradingJobSchema } from '../../../lib/db-types.js';
 import { features } from '../../../lib/features/index.js';
 import { idsEqual } from '../../../lib/id.js';
@@ -714,10 +715,19 @@ router.post(
           );
         }
       }
-      await sqldb.execute(sql.update_assigned_grader, {
-        instance_question_id: res.locals.instance_question.id,
-        assigned_grader,
-        requires_manual_grading: actionPrompt !== 'graded',
+      await sqldb.runInTransactionAsync(async () => {
+        const assessmentInstanceId = await sqldb.queryOptionalRow(
+          sql.update_assigned_grader,
+          {
+            instance_question_id: res.locals.instance_question.id,
+            assigned_grader,
+            requires_manual_grading: actionPrompt !== 'graded',
+          },
+          IdSchema.nullable(),
+        );
+        if (assessmentInstanceId != null) {
+          await updateAssessmentInstancesScorePercPending([assessmentInstanceId]);
+        }
       });
 
       req.session.skip_graded_submissions = req.session.skip_graded_submissions ?? true;

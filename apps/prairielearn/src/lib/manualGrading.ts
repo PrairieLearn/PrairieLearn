@@ -13,7 +13,10 @@ import { IdSchema } from '@prairielearn/zod';
 import type { SubmissionForRender } from '../components/SubmissionPanel.js';
 import { selectInstanceQuestionGroups } from '../ee/lib/ai-instance-question-grouping/ai-instance-question-grouping-util.js';
 
-import { updateAssessmentInstanceGrade } from './assessment-grading.js';
+import {
+  updateAssessmentInstanceGrade,
+  updateAssessmentInstancesScorePercPending,
+} from './assessment-grading.js';
 import {
   type Assessment,
   type AssessmentQuestion,
@@ -370,7 +373,12 @@ export async function updateAssessmentQuestionRubric({
     }
 
     if (tag_for_manual_grading) {
-      await sqldb.execute(sql.tag_for_manual_grading, { assessment_question_id });
+      const assessment_instance_ids = await sqldb.queryRows(
+        sql.tag_for_manual_grading,
+        { assessment_question_id },
+        IdSchema,
+      );
+      await updateAssessmentInstancesScorePercPending(assessment_instance_ids);
     }
   });
 }
@@ -658,6 +666,16 @@ export async function updateInstanceQuestionScore({
     }
 
     let grading_job_id: string | null = null;
+    const shouldUpdateInstanceQuestionScore =
+      new_score_perc != null &&
+      (current_submission.requires_manual_grading ||
+        score.auto_points != null ||
+        score.auto_score_perc != null ||
+        score.manual_points != null ||
+        score.manual_score_perc != null ||
+        score.points != null ||
+        score.score_perc != null ||
+        score.partial_scores != null);
 
     // if we were originally provided a submission_id or we have feedback or partial scores, create a
     // grading job and update the submission
@@ -700,7 +718,7 @@ export async function updateInstanceQuestionScore({
 
     // do the score update of the instance_question, log it, and update the assessment_instance, if we
     // have a new_score
-    if (new_score_perc != null && !current_submission.modified_at_conflict) {
+    if (shouldUpdateInstanceQuestionScore && !current_submission.modified_at_conflict) {
       await sqldb.execute(sql.update_instance_question_score, {
         instance_question_id: current_submission.instance_question_id,
         points: new_points,
