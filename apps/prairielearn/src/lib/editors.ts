@@ -1566,10 +1566,6 @@ export class QuestionRenameEditor extends Editor {
       `For each assessment, read/write infoAssessment.json to replace ${this.question.qid} with ${this.qid_new}`,
     );
     for (const assessment of assessments) {
-      assert(
-        assessment.course_instance_directory !== null,
-        'course_instance_directory is required',
-      );
       assert(assessment.assessment_directory !== null, 'assessment_directory is required');
       const infoPath = path.join(
         this.course.path,
@@ -1735,10 +1731,6 @@ export class AssessmentSetRenameEditor extends Editor {
     const pathsToAdd: string[] = [];
 
     for (const assessment of assessments) {
-      assert(
-        assessment.course_instance_directory !== null,
-        'course_instance_directory is required',
-      );
       assert(assessment.assessment_directory !== null, 'assessment_directory is required');
 
       const infoPath = path.join(
@@ -1788,8 +1780,7 @@ export class QuestionCopyEditor extends Editor {
   ) {
     const { from_qid, from_course, from_path, is_transfer } = params;
 
-    const from_course_label =
-      from_course.short_name == null ? 'unknown course' : `course ${from_course.short_name}`;
+    const from_course_label = `course ${from_course.short_name}`;
 
     super({
       ...params,

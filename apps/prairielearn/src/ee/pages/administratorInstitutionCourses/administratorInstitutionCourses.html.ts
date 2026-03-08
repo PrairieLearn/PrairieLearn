@@ -36,7 +36,7 @@ export function AdministratorInstitutionCourses({
                 <tr>
                   <td>
                     <a href="/pl/administrator/institution/${institution.id}/course/${course.id}">
-                      ${course.short_name ?? '—'}: ${course.title ?? '—'}
+                      ${course.short_name}: ${course.title ?? '—'}
                     </a>
                   </td>
                   <td>${course.yearly_enrollment_limit ?? institution.yearly_enrollment_limit}</td>
