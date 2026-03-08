@@ -102,6 +102,27 @@ WHERE
   id = $id
 FOR NO KEY UPDATE;
 
+-- BLOCK select_and_lock_enrollment_for_staff_permissions
+SELECT
+  e.*
+FROM
+  enrollments AS e
+WHERE
+  e.course_instance_id = $course_instance_id
+  AND (
+    e.user_id = $user_id
+    OR e.pending_uid = (
+      SELECT
+        u.uid
+      FROM
+        users AS u
+      WHERE
+        u.id = $user_id
+    )
+  )
+  AND e.status IN ('joined', 'blocked', 'invited', 'rejected')
+FOR NO KEY UPDATE;
+
 -- BLOCK set_enrollment_status
 UPDATE enrollments
 SET
@@ -117,3 +138,80 @@ WHERE
   id = $enrollment_id
 RETURNING
   *;
+
+-- BLOCK update_enrollments_to_removed_for_course_batch
+WITH
+  old_enrollments AS (
+    SELECT
+      e.*,
+      ci.course_id AS ci_course_id
+    FROM
+      enrollments AS e
+      JOIN course_instances AS ci ON (ci.id = e.course_instance_id)
+    WHERE
+      ci.course_id = $course_id
+      AND e.user_id = ANY ($user_ids::bigint[])
+      AND e.status IN ('joined', 'blocked')
+    FOR NO KEY UPDATE OF
+      e
+  ),
+  updated_enrollments AS (
+    UPDATE enrollments AS e
+    SET
+      status = 'removed'
+    FROM
+      old_enrollments AS oe
+    WHERE
+      e.id = oe.id
+    RETURNING
+      e.*
+  )
+SELECT
+  to_jsonb(oe.*) AS old_enrollment,
+  to_jsonb(ue.*) AS new_enrollment,
+  oe.ci_course_id AS course_id
+FROM
+  old_enrollments AS oe
+  JOIN updated_enrollments AS ue ON (oe.id = ue.id);
+
+-- BLOCK delete_enrollments_for_course_batch
+WITH
+  enrollments_to_delete AS (
+    SELECT
+      e.*,
+      ci.course_id AS ci_course_id
+    FROM
+      enrollments AS e
+      JOIN course_instances AS ci ON (ci.id = e.course_instance_id)
+    WHERE
+      ci.course_id = $course_id
+      AND (
+        e.user_id = ANY ($user_ids::bigint[])
+        OR e.pending_uid IN (
+          SELECT
+            u.uid
+          FROM
+            users AS u
+          WHERE
+            u.id = ANY ($user_ids::bigint[])
+        )
+      )
+      AND e.status IN ('invited', 'rejected')
+    FOR NO KEY UPDATE OF
+      e
+  ),
+  deleted_enrollments AS (
+    DELETE FROM enrollments AS e USING enrollments_to_delete AS etd
+    WHERE
+      e.id = etd.id
+    RETURNING
+      e.*
+  )
+SELECT
+  to_jsonb(etd.*) AS old_enrollment,
+  etd.ci_course_id AS course_id,
+  COALESCE(etd.user_id, u.id)::bigint AS resolved_user_id
+FROM
+  enrollments_to_delete AS etd
+  JOIN deleted_enrollments AS de ON (etd.id = de.id)
+  LEFT JOIN users AS u ON (u.uid = etd.pending_uid);

@@ -1,8 +1,25 @@
-import { loadSqlEquiv, queryRow } from '@prairielearn/postgres';
+import { z } from 'zod';
 
-import { type AssessmentInstance, AssessmentInstanceSchema } from '../lib/db-types.js';
+import { loadSqlEquiv, queryOptionalRow, queryRow } from '@prairielearn/postgres';
+
+import {
+  type AssessmentInstance,
+  AssessmentInstanceSchema,
+  AssessmentSchema,
+} from '../lib/db-types.js';
 
 const sql = loadSqlEquiv(import.meta.url);
+
+export async function selectAndLockAssessmentInstance(assessmentInstanceId: string) {
+  return await queryOptionalRow(
+    sql.select_and_lock_assessment_instance,
+    { assessment_instance_id: assessmentInstanceId },
+    z.object({
+      assessment_instance: AssessmentInstanceSchema,
+      assessment: AssessmentSchema,
+    }),
+  );
+}
 
 export async function selectAssessmentInstanceById(
   assessment_instance_id: string,
