@@ -111,10 +111,11 @@
       "type": "boolean"
     },
     "options": {
-      "description": "Options that define how the question will work, specific to the individual question type.",
+      "description": "[DEPRECATED, DO NOT USE] Options that define how the question will work, specific to the individual question type.",
       "type": "object",
       "additionalProperties": {},
-      "properties": {}
+      "properties": {},
+      "deprecated": true
     },
     "externalGradingOptions": {
       "description": "Options for externally graded questions.",

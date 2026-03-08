@@ -245,7 +245,7 @@ export const QuestionJsonSchema = z
       .object({})
       .catchall(z.any())
       .describe(
-        'Options that define how the question will work, specific to the individual question type.',
+        '[DEPRECATED, DO NOT USE] Options that define how the question will work, specific to the individual question type.',
       )
       .optional(),
     externalGradingOptions: ExternalGradingOptionsJsonSchema.optional(),
