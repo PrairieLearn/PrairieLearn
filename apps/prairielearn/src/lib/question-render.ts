@@ -499,6 +499,7 @@ export async function getAndRenderVariant(
         options,
         require_open,
         client_fingerprint_id: locals.client_fingerprint_id ?? null,
+        assessment_id: locals.assessment?.id ?? null,
       });
     }
   });

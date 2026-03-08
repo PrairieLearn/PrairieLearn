@@ -347,6 +347,95 @@
       "description": "Whether this question's source code is publicly shared.",
       "type": "boolean",
       "default": false
+    },
+    "preferences": {
+      "type": "object",
+      "additionalProperties": {
+        "anyOf": [
+          {
+            "type": "object",
+            "additionalProperties": false,
+            "required": ["type", "default"],
+            "properties": {
+              "type": {
+                "type": "string",
+                "const": "string"
+              },
+              "default": {
+                "type": "string"
+              }
+            }
+          },
+          {
+            "type": "object",
+            "additionalProperties": false,
+            "required": ["type", "default"],
+            "properties": {
+              "type": {
+                "type": "string",
+                "const": "number"
+              },
+              "default": {
+                "type": "number"
+              }
+            }
+          },
+          {
+            "type": "object",
+            "additionalProperties": false,
+            "required": ["type", "default"],
+            "properties": {
+              "type": {
+                "type": "string",
+                "const": "boolean"
+              },
+              "default": {
+                "type": "boolean"
+              }
+            }
+          },
+          {
+            "type": "object",
+            "additionalProperties": false,
+            "required": ["type", "enum", "default"],
+            "properties": {
+              "type": {
+                "type": "string",
+                "const": "string"
+              },
+              "enum": {
+                "type": "array",
+                "items": {
+                  "type": "string"
+                }
+              },
+              "default": {
+                "type": "string"
+              }
+            }
+          },
+          {
+            "type": "object",
+            "additionalProperties": false,
+            "required": ["type", "enum", "default"],
+            "properties": {
+              "type": {
+                "type": "string",
+                "const": "number"
+              },
+              "enum": {
+                "type": "array",
+                "items": {
+                  "type": "number"
+                }
+              },
+              "default": {
+                "type": "number"
+              }
+            }
+          }
+        ]
+      }
     }
   },
   "definitions": {

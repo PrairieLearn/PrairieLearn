@@ -45,6 +45,7 @@ WITH
         params,
         true_answer,
         options,
+        preferences,
         broken,
         broken_at,
         authn_user_id,
@@ -64,6 +65,7 @@ WITH
         $params,
         $true_answer,
         $options,
+        $preferences,
         $broken,
         CASE
           WHEN $broken THEN NOW()
@@ -87,6 +89,15 @@ FROM
   new_variant AS v
   JOIN courses AS c ON (c.id = v.course_id)
   LEFT JOIN course_instances AS ci ON (ci.id = v.course_instance_id);
+
+-- BLOCK select_preferences_for_assessment_question
+SELECT
+  aq.preferences
+FROM
+  assessment_questions AS aq
+WHERE
+  aq.assessment_id = $assessment_id
+  AND aq.question_id = $question_id;
 
 -- BLOCK select_and_lock_assessment_instance_for_instance_question
 SELECT

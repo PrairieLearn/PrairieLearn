@@ -25,6 +25,7 @@ import { idsEqual } from '../lib/id.js';
 import { isEnterprise } from '../lib/license.js';
 import * as markdown from '../lib/markdown.js';
 import { APP_ROOT_PATH } from '../lib/paths.js';
+import { extractDefaultPreferences } from '../lib/question-preferences.js';
 import type { UntypedResLocals } from '../lib/res-locals.types.js';
 import { getOrUpdateCourseCommitHash } from '../models/course.js';
 import {
@@ -76,6 +77,7 @@ type ElementNameMap = Record<
     directory: string;
   }
 >;
+
 // Maps core element names to element info
 let coreElementsCache: ElementNameMap = {};
 // Maps course IDs to course element info
@@ -460,25 +462,26 @@ function checkData(data: Record<string, any>, origData: Record<string, any>, pha
   /**************************************************************************************************************************************/
   //                       property                 type      presentPhases                         changePhases
   /**************************************************************************************************************************************/
-  const err =   checkProp('params',                'object',  allPhases,                            ['generate', 'prepare', 'parse', 'grade'])
-             || checkProp('correct_answers',       'object',  allPhases,                            ['generate', 'prepare', 'parse', 'grade'])
-             || checkProp('variant_seed',          'integer', allPhases,                            [])
-             || checkProp('options',               'object',  allPhases,                            [])
-             || checkProp('submitted_answers',     'object',  ['render', 'parse', 'grade'],         ['parse', 'grade'])
-             || checkProp('format_errors',         'object',  ['render', 'parse', 'grade', 'test'], ['parse', 'grade', 'test'])
-             || checkProp('raw_submitted_answers', 'object',  ['render', 'parse', 'grade', 'test'], ['test'])
-             || checkProp('partial_scores',        'object',  ['render', 'grade', 'test'],          ['grade', 'test'])
-             || checkProp('score',                 'number',  ['render', 'grade', 'test'],          ['grade', 'test'])
-             || checkProp('feedback',              'object',  ['render', 'parse', 'grade', 'test'], ['grade', 'parse', 'test'])
-             || checkProp('editable',              'boolean', ['render'],                           [])
-             || checkProp('manual_grading',        'boolean', ['render'],                           [])
-             || checkProp('ai_grading',            'boolean', ['render'],                           [])
-             || checkProp('panel',                 'string',  ['render'],                           [])
-             || checkProp('num_valid_submissions', 'integer', ['render'],                           [])
-             || checkProp('gradable',              'boolean', ['parse', 'grade', 'test'],           [])
-             || checkProp('filename',              'string',  ['file'],                             [])
-             || checkProp('test_type',             'string',  ['test'],                             [])
-             || checkProp('answers_names',         'object',  ['prepare'],                          ['prepare']);
+  const err = checkProp('params', 'object', allPhases, ['generate', 'prepare', 'parse', 'grade'])
+    || checkProp('correct_answers', 'object', allPhases, ['generate', 'prepare', 'parse', 'grade'])
+    || checkProp('variant_seed', 'integer', allPhases, [])
+    || checkProp('options', 'object', allPhases, [])
+    || checkProp('preferences', 'object', allPhases, [])
+    || checkProp('submitted_answers', 'object', ['render', 'parse', 'grade'], ['parse', 'grade'])
+    || checkProp('format_errors', 'object', ['render', 'parse', 'grade', 'test'], ['parse', 'grade', 'test'])
+    || checkProp('raw_submitted_answers', 'object', ['render', 'parse', 'grade', 'test'], ['test'])
+    || checkProp('partial_scores', 'object', ['render', 'grade', 'test'], ['grade', 'test'])
+    || checkProp('score', 'number', ['render', 'grade', 'test'], ['grade', 'test'])
+    || checkProp('feedback', 'object', ['render', 'parse', 'grade', 'test'], ['grade', 'parse', 'test'])
+    || checkProp('editable', 'boolean', ['render'], [])
+    || checkProp('manual_grading', 'boolean', ['render'], [])
+    || checkProp('ai_grading', 'boolean', ['render'], [])
+    || checkProp('panel', 'string', ['render'], [])
+    || checkProp('num_valid_submissions', 'integer', ['render'], [])
+    || checkProp('gradable', 'boolean', ['parse', 'grade', 'test'], [])
+    || checkProp('filename', 'string', ['file'], [])
+    || checkProp('test_type', 'string', ['test'], [])
+    || checkProp('answers_names', 'object', ['prepare'], ['prepare']);
   if (err) return err;
 
   const extraProps = difference(Object.keys(data), checked);
@@ -821,6 +824,7 @@ export async function generate(
   question: Question,
   course: Course,
   variant_seed: string,
+  preferences?: Record<string, string | number | boolean>,
 ): QuestionServerReturnValue<GenerateResultData> {
   return instrumented('freeform.generate', async () => {
     const context = await getContext(question, course);
@@ -830,6 +834,10 @@ export async function generate(
       correct_answers: {},
       variant_seed: Number.parseInt(variant_seed, 36),
       options: { ...course.options, ...question.options, ...getContextOptions(context) },
+      preferences: {
+        ...extractDefaultPreferences(question.preferences_schema),
+        ...preferences,
+      },
     } satisfies ExecutionData;
 
     return await withCodeCaller(course, async (codeCaller) => {
@@ -867,6 +875,7 @@ export async function prepare(
       correct_answers: variant.true_answer ?? {},
       variant_seed: Number.parseInt(variant.variant_seed, 36),
       options: { ...variant.options, ...getContextOptions(context) },
+      preferences: variant.preferences ?? {},
       answers_names: {},
     } satisfies ExecutionData;
 
@@ -883,6 +892,7 @@ export async function prepare(
         data: {
           params: resultData.params,
           true_answer: resultData.correct_answers,
+          options: resultData.options,
         },
       };
     });
@@ -987,6 +997,7 @@ async function renderPanel({
     feedback: submission?.feedback ?? {},
     variant_seed: Number.parseInt(variant.variant_seed, 36),
     options,
+    preferences: variant.preferences ?? {},
     raw_submitted_answers: submission?.raw_submitted_answer ?? {},
     editable: !!(
       locals.allowAnswerEditing &&
@@ -1525,6 +1536,7 @@ export async function file(
       correct_answers: variant.true_answer ?? {},
       variant_seed: Number.parseInt(variant.variant_seed, 36),
       options: { ...variant.options, ...getContextOptions(context) },
+      preferences: variant.preferences ?? {},
       filename,
     } satisfies ExecutionData;
 
@@ -1579,6 +1591,7 @@ export async function parse(
       format_errors: submission.format_errors ?? {},
       variant_seed: Number.parseInt(variant.variant_seed, 36),
       options: { ...variant.options, ...getContextOptions(context) },
+      preferences: variant.preferences ?? {},
       raw_submitted_answers: submission.raw_submitted_answer ?? {},
       gradable: submission.gradable ?? true,
     } satisfies ExecutionData;
@@ -1635,6 +1648,7 @@ export async function grade(
       feedback: submission.feedback == null ? {} : submission.feedback,
       variant_seed: Number.parseInt(variant.variant_seed, 36),
       options: { ...variant.options, ...getContextOptions(context) },
+      preferences: variant.preferences ?? {},
       raw_submitted_answers: submission.raw_submitted_answer ?? {},
       gradable: submission.gradable ?? true,
     } satisfies ExecutionData;
@@ -1689,6 +1703,7 @@ export async function test(
       feedback: {},
       variant_seed: Number.parseInt(variant.variant_seed, 36),
       options: { ...variant.options, ...getContextOptions(context) },
+      preferences: variant.preferences ?? {},
       raw_submitted_answers: {},
       gradable: true as boolean,
       test_type,

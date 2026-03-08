@@ -1,0 +1,18 @@
+{
+  "uuid": "92a876bc-81df-49a9-8658-59565d285e81",
+  "title": "Randomized multiple-choice question with dynamic drawing and question parameters",
+  "topic": "Gallery",
+  "type": "v3",
+  "tags": ["Sp26", "mfsilva"],
+  "preferences": {
+    "gravitational_constant": {
+      "type": "number",
+      "default": 9.8
+    },
+    "fired_object": {
+      "type": "string",
+      "enum": ["cannon ball", "bowling ball"],
+      "default": "cannon ball"
+    }
+  }
+}

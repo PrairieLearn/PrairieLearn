@@ -17,6 +17,7 @@ columns
     open: boolean default true
     options: jsonb
     params: jsonb
+    preferences: jsonb
     question_id: bigint not null
     team_id: bigint
     true_answer: jsonb

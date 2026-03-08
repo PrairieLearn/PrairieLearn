@@ -15,7 +15,8 @@ const schemaNameOverrides: Record<string, string | null> = {
   time_series: 'TimeSeriesSchema',
 };
 
-const customSchemas = new Set(['IdSchema', 'IntervalSchema']);
+// Schemas not associated with a table.
+const customSchemas = new Set(['IdSchema', 'IntervalSchema', 'QuestionPreferenceDefinitionSchema']);
 const unusedSchemas = new Set([
   'JsonCommentSchema',
   // TODO: Make these the primary schemas after renaming "teams" back to "groups"
@@ -94,9 +95,9 @@ describe('Database Schema Sync Test', () => {
         // throw an error with the diff
         throw new Error(
           `Database columns for table '${tableName}' do not match Zod schema keys.\n` +
-            extraColumnsDiff +
-            '\n' +
-            missingColumnsDiff,
+          extraColumnsDiff +
+          '\n' +
+          missingColumnsDiff,
         );
       }
     }
