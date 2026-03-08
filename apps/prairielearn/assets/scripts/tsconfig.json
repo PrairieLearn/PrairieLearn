@@ -18,8 +18,8 @@
     // Support native ESM, which esbuild supports.
     "esModuleInterop": true,
     "allowSyntheticDefaultImports": true,
-    "module": "NodeNext",
-    "moduleResolution": "NodeNext",
+    "module": "esnext",
+    "moduleResolution": "bundler",
     "jsx": "react-jsx",
     "skipLibCheck": true
   },

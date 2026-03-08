@@ -22,6 +22,10 @@ import { typedAsyncHandler } from '../../lib/res-locals.js';
 import clientFingerprint from '../../middlewares/clientFingerprint.js';
 import { enterpriseOnly } from '../../middlewares/enterpriseOnly.js';
 import { logPageView } from '../../middlewares/logPageView.js';
+import {
+  selectEnabledAssessmentTools,
+  selectZoneIdForInstanceQuestion,
+} from '../../models/assessment.js';
 import { selectUserById } from '../../models/user.js';
 import { selectAndAuthzVariant, selectVariantsByInstanceQuestion } from '../../models/variant.js';
 
@@ -317,6 +321,17 @@ router.get(
     const isAssessmentAvailable =
       res.locals.assessment_instance.open && res.locals.authz_result.active;
 
+    // zone_id can be null if the question's alternative_group was deleted.
+    // In that case, don't show any tools.
+    const zone_id = await selectZoneIdForInstanceQuestion(res.locals.instance_question.id);
+    const enabledTools =
+      zone_id != null
+        ? await selectEnabledAssessmentTools({
+            assessment_id: res.locals.assessment.id,
+            zone_id,
+          })
+        : [];
+
     if (variant_id === null && !isAssessmentAvailable) {
       // We can't generate a new variant in this case, so we
       // fetch and display the most recent non-broken variant.
@@ -332,6 +347,7 @@ router.get(
           StudentInstanceQuestion({
             resLocals: res.locals,
             userCanDeleteAssessmentInstance: canDeleteAssessmentInstance(res.locals),
+            enabledTools,
           }),
         );
         return;
@@ -394,6 +410,7 @@ router.get(
         assignedGrader,
         lastGrader,
         questionCopyTargets,
+        enabledTools,
       }),
     );
   }),

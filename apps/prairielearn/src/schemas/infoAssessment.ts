@@ -1,5 +1,7 @@
 import { type ZodSchema, z } from 'zod';
 
+import { EnumAssessmentToolSchema } from '../lib/db-types.js';
+
 import { CommentJsonSchema } from './comment.js';
 
 function uniqueArray<T extends ZodSchema>(schema: T) {
@@ -297,6 +299,13 @@ export const ZoneQuestionBlockJsonSchema = QuestionPointsJsonSchema.extend({
 
 export type ZoneQuestionBlockJson = z.infer<typeof ZoneQuestionBlockJsonSchema>;
 
+export const AssessmentToolsJsonSchema = z.object({
+  enabled: z.boolean().describe('Whether this assessment tool is enabled.'),
+  // leave room for additional keys in the future
+}).catchall(z.unknown());
+
+export type AssessmentToolsJson = z.infer<typeof AssessmentToolsJsonSchema>;
+
 export const ZoneAssessmentJsonSchema = z.object({
   title: z
     .string()
@@ -362,6 +371,10 @@ export const ZoneAssessmentJsonSchema = z.object({
     )
     .optional()
     .default([]),
+  tools: z
+    .record(EnumAssessmentToolSchema, AssessmentToolsJsonSchema)
+    .describe('Tools available for questions in this zone. Overrides assessment-level tools.')
+    .optional(),
 });
 
 export type ZoneAssessmentJson = z.infer<typeof ZoneAssessmentJsonSchema>;
@@ -546,6 +559,10 @@ export const AssessmentJsonSchema = z
       )
       .optional()
       .default(false),
+    tools: z
+      .record(EnumAssessmentToolSchema, AssessmentToolsJsonSchema)
+      .describe('Configuration for assessment tools.')
+      .optional(),
   })
   .strict()
   .describe('Configuration data for an assessment.');

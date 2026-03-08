@@ -6,7 +6,11 @@ import { assertNever } from '@prairielearn/utils';
 import { IdSchema } from '@prairielearn/zod';
 
 import { config } from '../../lib/config.js';
-import { SprocSyncAssessmentsSchema } from '../../lib/db-types.js';
+import {
+  type AssessmentTool,
+  EnumAssessmentToolSchema,
+  SprocSyncAssessmentsSchema,
+} from '../../lib/db-types.js';
 import { features } from '../../lib/features/index.js';
 import {
   type AssessmentJson,
@@ -48,6 +52,7 @@ type AssessmentInfoFile = infofile.InfoFile<AssessmentJson>;
  *   j) Soft-delete unused assessment questions (from deleted assessments)
  *   k) Delete unused assessment access rules (from deleted assessments)
  *   l) Delete unused zones (from deletes assessments)
+ * 5. Sync assessment tools (assessment-level and zone-level)
  */
 
 function getParamsForAssessment(
@@ -487,11 +492,115 @@ export async function sync(
     ]);
   });
 
-  await sqldb.callRow(
-    'sync_assessments',
-    [assessmentParams, courseId, courseInstanceId, config.checkSharingOnSync],
-    SprocSyncAssessmentsSchema,
-  );
+  await sqldb.runInTransactionAsync(async () => {
+    const { name_to_id_map } = await sqldb.callRow(
+      'sync_assessments',
+      [assessmentParams, courseId, courseInstanceId, config.checkSharingOnSync],
+      SprocSyncAssessmentsSchema,
+    );
+
+    await syncAssessmentTools(assessments, name_to_id_map);
+  });
+}
+
+async function syncAssessmentTools(
+  assessments: CourseInstanceData['assessments'],
+  nameToIdMap: Record<string, string> | null,
+) {
+  interface AssessmentLevelToolRow {
+    assessment_id: AssessmentTool['assessment_id'];
+    zone_id?: never;
+    tool: AssessmentTool['tool'];
+    enabled: AssessmentTool['enabled'];
+    settings: AssessmentTool['settings'];
+  }
+
+  interface ZoneLevelToolRow {
+    zone_id: AssessmentTool['zone_id'];
+    assessment_id?: never;
+    tool: AssessmentTool['tool'];
+    enabled: AssessmentTool['enabled'];
+    settings: AssessmentTool['settings'];
+  }
+
+  const toolRows: (AssessmentLevelToolRow | ZoneLevelToolRow)[] = [];
+  const assessmentIds: string[] = [];
+  const assessmentsWithZoneTools: { assessmentId: string; zones: AssessmentJson['zones'] }[] = [];
+
+  for (const [tid, assessment] of Object.entries(assessments)) {
+    const assessmentId = nameToIdMap?.[tid];
+    if (!assessmentId) continue;
+
+    assessmentIds.push(assessmentId);
+
+    if (assessment.data?.tools) {
+      for (const [toolName, { enabled, ...settings }] of Object.entries(assessment.data.tools)) {
+        const tool = EnumAssessmentToolSchema.parse(toolName);
+        toolRows.push({
+          assessment_id: assessmentId,
+          tool,
+          enabled,
+          settings,
+        });
+      }
+    }
+
+    const zones = assessment.data?.zones;
+    if (!zones) continue;
+    if (zones.some((zone) => zone.tools)) {
+      assessmentsWithZoneTools.push({ assessmentId, zones });
+    }
+  }
+
+  const zoneRowsByAssessment = new Map<string, Map<number, { id: string; number: number }>>();
+  if (assessmentsWithZoneTools.length > 0) {
+    const allZoneRows = await sqldb.queryRows(
+      sql.select_zone_ids,
+      { assessment_ids: assessmentsWithZoneTools.map(({ assessmentId }) => assessmentId) },
+      z.object({ id: IdSchema, assessment_id: IdSchema, number: z.number() }),
+    );
+    for (const row of allZoneRows) {
+      let byNumber = zoneRowsByAssessment.get(row.assessment_id);
+      if (!byNumber) {
+        byNumber = new Map();
+        zoneRowsByAssessment.set(row.assessment_id, byNumber);
+      }
+      byNumber.set(row.number, row);
+    }
+  }
+
+  for (const { assessmentId, zones } of assessmentsWithZoneTools) {
+    const zoneRowsByNumber = zoneRowsByAssessment.get(assessmentId)!;
+
+    for (const [index, zone] of zones.entries()) {
+      if (!zone.tools) continue;
+
+      const zoneNumber = index + 1;
+      const zoneRow = zoneRowsByNumber.get(zoneNumber);
+      if (!zoneRow) {
+        throw new Error(
+          `Zone number ${zoneNumber} not found in database for assessment ID ${assessmentId}.`,
+        );
+      }
+
+      for (const [toolName, { enabled, ...settings }] of Object.entries(zone.tools)) {
+        const tool = EnumAssessmentToolSchema.parse(toolName);
+        toolRows.push({
+          zone_id: zoneRow.id,
+          tool,
+          enabled,
+          settings,
+        });
+      }
+    }
+  }
+
+  if (assessmentIds.length > 0) {
+    await sqldb.execute(sql.sync_assessment_tools, {
+      tools: JSON.stringify(toolRows),
+      assessment_ids: assessmentIds,
+    });
+  }
 }
 
 export async function validateAssessmentSharedQuestions(
