@@ -1,7 +1,6 @@
 import { z } from 'zod';
 
 import * as sqldb from '@prairielearn/postgres';
-import { runInTransactionAsync } from '@prairielearn/postgres';
 
 import { StudentLabelSchema } from '../../lib/db-types.js';
 import type { AccessControlJson } from '../../schemas/accessControl.js';
@@ -67,16 +66,6 @@ export async function syncAccessControl(
   assessmentId: string,
   accessControlRules: AccessControlJson[],
 ): Promise<void> {
-  await runInTransactionAsync(async () => {
-    await syncAccessControlInternal(courseInstanceId, assessmentId, accessControlRules);
-  });
-}
-
-async function syncAccessControlInternal(
-  courseInstanceId: string,
-  assessmentId: string,
-  accessControlRules: AccessControlJson[],
-): Promise<void> {
   const JSON_RULE_START = 0;
   const MAX_JSON_RULES = 1000;
 
@@ -105,17 +94,20 @@ async function syncAccessControlInternal(
     }
   }
 
-  const validExamUuids = new Set<string>();
   if (allExamUuids.size > 0) {
     const examValidation = await sqldb.queryRows(
       sql.check_exam_uuids_exist,
       { exam_uuids: JSON.stringify([...allExamUuids]) },
       z.object({ uuid: z.string(), uuid_exists: z.boolean() }),
     );
-    for (const { uuid, uuid_exists } of examValidation) {
-      if (uuid_exists) {
-        validExamUuids.add(uuid);
-      }
+    const invalidUuids = examValidation
+      .filter(({ uuid_exists }) => !uuid_exists)
+      .map(({ uuid }) => uuid);
+    if (invalidUuids.length > 0) {
+      throw new Error(
+        `Invalid PrairieTest exam UUID(s): ${invalidUuids.join(', ')}. ` +
+          `These UUIDs do not match any known PrairieTest exams.`,
+      );
     }
   }
 
@@ -129,11 +121,9 @@ async function syncAccessControlInternal(
       );
     }
   }
-  const validRules = accessControlRules;
-
   const preparedRules: PreparedRule[] = [];
-  for (let i = 0; i < validRules.length; i++) {
-    const rule = validRules[i];
+  for (let i = 0; i < accessControlRules.length; i++) {
+    const rule = accessControlRules[i];
     const dateControl = rule.dateControl ?? {};
     const afterComplete = rule.afterComplete ?? {};
     const afterLastDeadline = dateControl.afterLastDeadline ?? {};
@@ -176,9 +166,7 @@ async function syncAccessControlInternal(
     const targetType: 'none' | 'student_label' =
       studentLabelIds.length > 0 ? 'student_label' : 'none';
 
-    const validExams = (rule.integrations?.prairieTest?.exams ?? []).filter((e) =>
-      validExamUuids.has(e.examUuid),
-    );
+    const exams = rule.integrations?.prairieTest?.exams ?? [];
 
     preparedRules.push({
       number: ruleNumber,
@@ -212,7 +200,7 @@ async function syncAccessControlInternal(
       studentLabelIds,
       earlyDeadlines: earlyDeadlinesField.value ?? [],
       lateDeadlines: lateDeadlinesField.value ?? [],
-      prairietestExams: validExams.map((e) => ({
+      prairietestExams: exams.map((e) => ({
         uuid: e.examUuid,
         readOnly: e.readOnly ?? false,
       })),

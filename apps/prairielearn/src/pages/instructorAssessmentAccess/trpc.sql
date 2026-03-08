@@ -84,6 +84,8 @@ SELECT
     SELECT
       jsonb_agg(
         jsonb_build_object('examUuid', pte.uuid, 'readOnly', pte.read_only)
+        ORDER BY
+          pte.uuid
       )
     FROM
       assessment_access_control_prairietest_exam AS pte

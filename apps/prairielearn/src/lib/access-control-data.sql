@@ -80,7 +80,8 @@ FROM
   LEFT JOIN assessment_access_control_student_labels acsl ON acsl.assessment_access_control_id = aac.id
   LEFT JOIN assessment_access_control_prairietest_exam acpe ON acpe.assessment_access_control_id = aac.id
 WHERE
-  aac.assessment_id = $assessment_id
+  aac.course_instance_id = $course_instance_id
+  AND aac.assessment_id = $assessment_id
 GROUP BY
   aac.id
 ORDER BY

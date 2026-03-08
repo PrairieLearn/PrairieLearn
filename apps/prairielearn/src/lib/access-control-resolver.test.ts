@@ -127,7 +127,7 @@ describe('resolveAccessControl', () => {
   });
 
   describe('main rule with date control', () => {
-    it('denies access before release date', () => {
+    it('denies access before release date when listBeforeRelease is false', () => {
       const result = resolveAccessControl({
         ...baseInput,
         rules: [
@@ -140,7 +140,7 @@ describe('resolveAccessControl', () => {
         ],
         date: new Date('2025-03-15T12:00:00Z'),
       });
-      expect(result.authorized).toBe(true);
+      expect(result.authorized).toBe(false);
       expect(result.credit).toBe(0);
       expect(result.active).toBe(false);
     });
@@ -271,6 +271,7 @@ describe('resolveAccessControl', () => {
         ],
         date: new Date('2025-03-15T12:00:00Z'),
       });
+      expect(result.authorized).toBe(true);
       expect(result.listBeforeRelease).toBe(true);
       expect(result.active).toBe(false);
     });
@@ -822,6 +823,23 @@ describe('resolveAccessControl', () => {
         },
       });
       expect(result.timeLimitMin).toBeNull();
+    });
+
+    it('clamps time limit to zero when deadline is less than 31 seconds away', () => {
+      const result = resolveAccessControl({
+        ...baseInput,
+        rules: [
+          makeMainRule({
+            dateControl: {
+              dueDate: '2025-03-15T12:00:20Z',
+              durationMinutes: 60,
+            },
+          }),
+        ],
+        date: new Date('2025-03-15T12:00:00Z'),
+      });
+      // 20 seconds until deadline, minus 31 seconds = negative -> should clamp to 0
+      expect(result.timeLimitMin).toBe(0);
     });
 
     it('returns null when no durationMinutes', () => {

@@ -208,11 +208,12 @@ function rowToAccessControlRuleInput(row: AccessControlRuleRow): AccessControlRu
 }
 
 export async function selectAccessControlRulesForAssessment(
+  courseInstanceId: string,
   assessmentId: string,
 ): Promise<AccessControlRuleInput[]> {
   const rows = await queryRows(
     sql.select_access_control_rules_for_assessment,
-    { assessment_id: assessmentId },
+    { course_instance_id: courseInstanceId, assessment_id: assessmentId },
     AccessControlRuleRowSchema,
   );
   return rows.map(rowToAccessControlRuleInput);

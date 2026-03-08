@@ -26,7 +26,7 @@ export function StudentSearchInput({ excludedUids, onSelect, onClose }: StudentS
   });
 
   const validateMutation = useMutation({
-    mutationFn: (uids: string[]) => trpcClient.validateUids.mutate({ uids }),
+    mutationFn: (uids: string[]) => trpcClient.validateUids.query({ uids }),
     onSuccess: (results) => {
       setValidatedUids(results);
     },

@@ -139,14 +139,13 @@ export function mergeRules(
     }
   }
 
-  // integrations is not merged from overrides; it comes from the main rule only
-
   return merged;
 }
 
 interface CreditResult {
   credit: number;
   active: boolean;
+  beforeRelease: boolean;
   nextDeadlineDate: Date | null;
   password: string | null;
   timeLimitMin: number | null;
@@ -163,8 +162,9 @@ export function computeCredit(
     return {
       credit: 100,
       active: true,
+      beforeRelease: false,
       nextDeadlineDate: null,
-      password: dateControl?.password ?? null,
+      password: null,
       timeLimitMin: null,
       listBeforeRelease: false,
     };
@@ -176,6 +176,7 @@ export function computeCredit(
       return {
         credit: 0,
         active: false,
+        beforeRelease: true,
         nextDeadlineDate: releaseDate,
         password: null,
         timeLimitMin: null,
@@ -186,12 +187,7 @@ export function computeCredit(
 
   // Build timeline segments: each entry is [deadline, creditBefore]
   // The credit value represents what you get if you submit BEFORE this deadline.
-  interface TimelineEntry {
-    date: Date;
-    credit: number;
-  }
-
-  const timeline: TimelineEntry[] = [];
+  const timeline: { date: Date; credit: number }[] = [];
 
   if (dateControl.earlyDeadlines) {
     for (const entry of dateControl.earlyDeadlines) {
@@ -215,6 +211,7 @@ export function computeCredit(
     return {
       credit: 100,
       active: true,
+      beforeRelease: false,
       nextDeadlineDate: null,
       password: dateControl.password ?? null,
       timeLimitMin: computeTimeLimitMin(dateControl.durationMinutes, null, date, authzMode),
@@ -232,6 +229,7 @@ export function computeCredit(
       return {
         credit,
         active: credit > 0,
+        beforeRelease: false,
         nextDeadlineDate: nextDeadline,
         password: dateControl.password ?? null,
         timeLimitMin: computeTimeLimitMin(
@@ -252,6 +250,7 @@ export function computeCredit(
   return {
     credit,
     active,
+    beforeRelease: false,
     nextDeadlineDate: null,
     password: dateControl.password ?? null,
     timeLimitMin: computeTimeLimitMin(dateControl.durationMinutes, null, date, authzMode),
@@ -272,7 +271,7 @@ function computeTimeLimitMin(
 
   // Cap time limit by seconds until next deadline, minus 31 seconds (legacy behavior).
   const secondsUntilDeadline = (nextDeadline.getTime() - date.getTime()) / 1000 - 31;
-  return Math.floor(Math.min(durationMinutes, secondsUntilDeadline / 60));
+  return Math.max(0, Math.floor(Math.min(durationMinutes, secondsUntilDeadline / 60)));
 }
 
 export function resolveVisibility(
@@ -454,6 +453,12 @@ export function resolveAccessControl(
     undefined,
     date,
   );
+
+  // If the assessment is before its release date and listBeforeRelease is false,
+  // the student should not see or access it at all.
+  if (creditResult.beforeRelease && !creditResult.listBeforeRelease) {
+    return { ...UNAUTHORIZED_RESULT };
+  }
 
   const creditDateString = formatCreditDateString(
     creditResult.credit,

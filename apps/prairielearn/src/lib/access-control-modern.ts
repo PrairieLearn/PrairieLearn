@@ -72,7 +72,7 @@ export async function resolveModernAssessmentAccess(
   const { assessmentId, userId, courseInstanceId, authzData, reqDate, displayTimezone } = input;
 
   const [rules, student, prairieTestReservation] = await Promise.all([
-    selectAccessControlRulesForAssessment(assessmentId),
+    selectAccessControlRulesForAssessment(courseInstanceId, assessmentId),
     selectStudentContext(userId, courseInstanceId),
     authzData.mode === 'Exam' && authzData.mode_reason === 'PrairieTest'
       ? selectPrairieTestReservation(userId, reqDate)

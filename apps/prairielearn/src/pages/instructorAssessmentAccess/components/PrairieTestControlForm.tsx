@@ -137,8 +137,8 @@ export function PrairieTestControlForm({
 
           <div className="alert alert-warning">
             <i className="bi bi-exclamation-triangle me-2" aria-hidden="true" />
-            <strong>Important:</strong> Make sure the exam UUIDs are correct. Invalid UUIDs will be
-            ignored during sync. You can find exam UUIDs in your PrairieTest course settings.
+            <strong>Important:</strong> Make sure the exam UUIDs are correct. Invalid UUIDs will
+            cause an error when saving. You can find exam UUIDs in your PrairieTest course settings.
           </div>
         </div>
       </Card.Body>

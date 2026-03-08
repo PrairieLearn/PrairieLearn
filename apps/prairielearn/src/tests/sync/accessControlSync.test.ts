@@ -57,6 +57,18 @@ async function getAssessmentDbId(assessmentTid: string): Promise<string> {
   return assessment.id;
 }
 
+async function getCourseInstanceDbId(courseInstanceShortName: string): Promise<string> {
+  const syncedCourseInstances = await util.dumpTableWithSchema(
+    'course_instances',
+    CourseInstanceSchema,
+  );
+  const courseInstance = syncedCourseInstances.find(
+    (ci) => ci.short_name === courseInstanceShortName,
+  );
+  assert.isOk(courseInstance);
+  return courseInstance.id;
+}
+
 async function findSyncedAccessControlRules(assessmentId: string) {
   const dbId = await getAssessmentDbId(assessmentId);
 
@@ -1348,7 +1360,8 @@ describe('Access control syncing', () => {
       await util.writeAndSyncCourseData(courseData);
 
       const dbId = await getAssessmentDbId(util.ASSESSMENT_ID);
-      const rules = await selectAccessControlRulesForAssessment(dbId);
+      const ciId = await getCourseInstanceDbId(util.COURSE_INSTANCE_ID);
+      const rules = await selectAccessControlRulesForAssessment(ciId, dbId);
       const override = rules.find((r) => r.number > 0);
       assert.isOk(override);
       assert.equal(override.rule.dateControl?.afterLastDeadline?.allowSubmissions, false);
@@ -1371,7 +1384,8 @@ describe('Access control syncing', () => {
       await util.writeAndSyncCourseData(courseData);
 
       const dbId = await getAssessmentDbId(util.ASSESSMENT_ID);
-      const rules = await selectAccessControlRulesForAssessment(dbId);
+      const ciId = await getCourseInstanceDbId(util.COURSE_INSTANCE_ID);
+      const rules = await selectAccessControlRulesForAssessment(ciId, dbId);
       const override = rules.find((r) => r.number > 0);
       assert.isOk(override);
       assert.equal(override.rule.afterComplete?.hideQuestions, true);
@@ -1394,7 +1408,8 @@ describe('Access control syncing', () => {
       await util.writeAndSyncCourseData(courseData);
 
       const dbId = await getAssessmentDbId(util.ASSESSMENT_ID);
-      const rules = await selectAccessControlRulesForAssessment(dbId);
+      const ciId = await getCourseInstanceDbId(util.COURSE_INSTANCE_ID);
+      const rules = await selectAccessControlRulesForAssessment(ciId, dbId);
       const override = rules.find((r) => r.number > 0);
       assert.isOk(override);
       assert.equal(override.rule.afterComplete?.hideScore, true);

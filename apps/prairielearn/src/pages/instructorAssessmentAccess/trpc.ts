@@ -26,6 +26,8 @@ import { selectStudentLabelsInCourseInstance } from '../../models/student-label.
 import type { AccessControlJson } from '../../schemas/accessControl.js';
 import { syncAccessControl } from '../../sync/fromDisk/accessControl.js';
 
+import type { AccessControlJsonWithId as SharedAccessControlJsonWithId } from './components/types.js';
+
 const sql = loadSqlEquiv(import.meta.url);
 
 export function createContext({ res }: CreateExpressContextOptions) {
@@ -83,7 +85,7 @@ const students = t.procedure.use(requireCourseInstancePermissionView).query(asyn
 const validateUids = t.procedure
   .use(requireCourseInstancePermissionView)
   .input(z.object({ uids: z.array(z.string()) }))
-  .mutation(async (opts) => {
+  .query(async (opts) => {
     const results = await selectUsersAndEnrollmentsByUidsInCourseInstance({
       uids: opts.input.uids,
       courseInstance: opts.ctx.course_instance,
@@ -153,9 +155,12 @@ function toISOStringOrUndefined(overridden: boolean, date: Date | null): string 
   return date.toISOString();
 }
 
-function dbRowToAccessControlJson(row: JsonRuleRow): AccessControlJson & { id: string } {
-  const labels = row.labels ?? [];
+type BaseRuleRow = z.infer<typeof AccessControlRuleBaseSchema> & {
+  early_deadlines: z.infer<typeof DeadlineArraySchema>;
+  late_deadlines: z.infer<typeof DeadlineArraySchema>;
+};
 
+function dbBaseRowToAccessControlJson(row: BaseRuleRow): AccessControlJson & { id: string } {
   const dateControl: AccessControlJson['dateControl'] = {};
 
   if (row.date_control_overridden) {
@@ -194,17 +199,6 @@ function dbRowToAccessControlJson(row: JsonRuleRow): AccessControlJson & { id: s
     dateControl.password = row.date_control_password;
   }
 
-  const integrations: AccessControlJson['integrations'] = {};
-  if (row.integrations_prairietest_overridden && row.prairietest_exams) {
-    integrations.prairieTest = {
-      enabled: true,
-      exams: row.prairietest_exams.map((e) => ({
-        examUuid: e.examUuid,
-        readOnly: e.readOnly ?? undefined,
-      })),
-    };
-  }
-
   const afterComplete: AccessControlJson['afterComplete'] = {};
   if (row.after_complete_hide_questions !== null) {
     afterComplete.hideQuestions = row.after_complete_hide_questions;
@@ -236,18 +230,35 @@ function dbRowToAccessControlJson(row: JsonRuleRow): AccessControlJson & { id: s
     enabled: row.enabled ?? undefined,
     blockAccess: row.block_access,
     listBeforeRelease: row.list_before_release,
-    labels: labels.length > 0 ? labels : undefined,
     dateControl: Object.keys(dateControl).length > 0 ? dateControl : undefined,
-    integrations: Object.keys(integrations).length > 0 ? integrations : undefined,
     afterComplete: Object.keys(afterComplete).length > 0 ? afterComplete : undefined,
   };
 }
 
-interface AccessControlJsonWithId extends AccessControlJson {
-  id: string;
-  ruleType?: 'student_label' | 'enrollment' | 'none' | null;
-  individuals?: { enrollmentId: string; uid: string; name: string | null }[];
+function dbRowToAccessControlJson(row: JsonRuleRow): AccessControlJson & { id: string } {
+  const base = dbBaseRowToAccessControlJson(row);
+  const labels = row.labels ?? [];
+
+  const integrations: AccessControlJson['integrations'] = {};
+  if (row.integrations_prairietest_overridden && row.prairietest_exams) {
+    integrations.prairieTest = {
+      enabled: true,
+      exams: row.prairietest_exams.map((e) => ({
+        examUuid: e.examUuid,
+        readOnly: e.readOnly ?? undefined,
+      })),
+    };
+  }
+
+  return {
+    ...base,
+    labels: labels.length > 0 ? labels : undefined,
+    integrations: Object.keys(integrations).length > 0 ? integrations : undefined,
+  };
 }
+
+type AccessControlJsonWithId = Required<Pick<SharedAccessControlJsonWithId, 'id'>> &
+  SharedAccessControlJsonWithId;
 
 const EnrollmentRuleRowSchema = AccessControlRuleBaseSchema.extend({
   target_type: z.literal('enrollment'),
@@ -267,15 +278,7 @@ const EnrollmentRuleRowSchema = AccessControlRuleBaseSchema.extend({
 type EnrollmentRuleRow = z.infer<typeof EnrollmentRuleRowSchema>;
 
 function dbEnrollmentRowToAccessControlJson(row: EnrollmentRuleRow): AccessControlJsonWithId {
-  // Enrollment rows share the same column structure as JSON rows for date/after-complete fields,
-  // but don't have labels or prairietest_exams.
-  const asJsonRow: JsonRuleRow = {
-    ...row,
-    target_type: 'none',
-    labels: null,
-    prairietest_exams: null,
-  };
-  const base = dbRowToAccessControlJson(asJsonRow);
+  const base = dbBaseRowToAccessControlJson(row);
   return {
     ...base,
     ruleType: 'enrollment',
@@ -326,6 +329,7 @@ function formJsonToEnrollmentRuleData(
     durationMinutes: dc?.durationMinutes ?? null,
     passwordOverridden: dc?.password !== undefined,
     password: dc?.password ?? null,
+    // PrairieTest integrations are only configured on the main rule, not on enrollment overrides.
     integrationsPrairietestOverridden: false,
     hideQuestions: ac?.hideQuestions ?? null,
     showQuestionsAgainDateOverridden: ac?.showQuestionsAgainDate !== undefined,
@@ -340,6 +344,17 @@ function formJsonToEnrollmentRuleData(
   };
 }
 
+const DateStringInputSchema = z.string().refine((s) => !isNaN(new Date(s).getTime()), {
+  message: 'Must be a valid date string',
+});
+
+const DeadlineInputSchema = z.object({
+  date: DateStringInputSchema,
+  credit: z.number().min(0, 'Credit must be non-negative'),
+});
+
+const UUID_REGEX = /^[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12}$/i;
+
 const AccessControlJsonInputSchema: z.ZodType<AccessControlJson & { id?: string }> = z.object({
   id: z.string().optional(),
   enabled: z.boolean().optional(),
@@ -349,17 +364,17 @@ const AccessControlJsonInputSchema: z.ZodType<AccessControlJson & { id?: string 
   dateControl: z
     .object({
       enabled: z.boolean().optional(),
-      releaseDate: z.string().optional(),
-      dueDate: z.string().nullable().optional(),
-      earlyDeadlines: z.array(z.object({ date: z.string(), credit: z.number() })).optional(),
-      lateDeadlines: z.array(z.object({ date: z.string(), credit: z.number() })).optional(),
+      releaseDate: DateStringInputSchema.optional(),
+      dueDate: DateStringInputSchema.nullable().optional(),
+      earlyDeadlines: z.array(DeadlineInputSchema).optional(),
+      lateDeadlines: z.array(DeadlineInputSchema).optional(),
       afterLastDeadline: z
         .object({
-          credit: z.number().optional(),
+          credit: z.number().min(0, 'Credit must be non-negative').optional(),
           allowSubmissions: z.boolean().optional(),
         })
         .optional(),
-      durationMinutes: z.number().optional(),
+      durationMinutes: z.number().int().positive().optional(),
       password: z.string().nullable().optional(),
     })
     .optional(),
@@ -371,7 +386,7 @@ const AccessControlJsonInputSchema: z.ZodType<AccessControlJson & { id?: string 
           exams: z
             .array(
               z.object({
-                examUuid: z.string(),
+                examUuid: z.string().regex(UUID_REGEX, 'Invalid UUID format'),
                 readOnly: z.boolean().optional(),
               }),
             )
@@ -383,10 +398,10 @@ const AccessControlJsonInputSchema: z.ZodType<AccessControlJson & { id?: string 
   afterComplete: z
     .object({
       hideQuestions: z.boolean().optional(),
-      showQuestionsAgainDate: z.string().optional(),
-      hideQuestionsAgainDate: z.string().optional(),
+      showQuestionsAgainDate: DateStringInputSchema.optional(),
+      hideQuestionsAgainDate: DateStringInputSchema.optional(),
       hideScore: z.boolean().optional(),
-      showScoreAgainDate: z.string().optional(),
+      showScoreAgainDate: DateStringInputSchema.optional(),
     })
     .optional(),
 });
@@ -407,12 +422,11 @@ const saveAllRules = t.procedure
     }),
   )
   .mutation(async (opts) => {
-    const { rules, enrollmentRules = [], origHash } = opts.input;
+    const { rules, enrollmentRules, origHash } = opts.input;
     const courseInstanceId = opts.ctx.course_instance.id;
     const assessmentId = opts.ctx.assessment.id;
 
     return runInTransactionAsync(async () => {
-      // Verify origHash against current DB state (includes both JSON and enrollment rules)
       const currentRules = await fetchAllAccessControlRules(assessmentId);
       const currentHash = computeHash(currentRules);
 
@@ -424,25 +438,25 @@ const saveAllRules = t.procedure
         });
       }
 
-      // Sync JSON rules (none/student_label)
       const rulesToSync: AccessControlJson[] = rules.map(({ id: _id, ...rest }) => rest);
       await syncAccessControl(courseInstanceId, assessmentId, rulesToSync);
 
-      // Sync enrollment rules
-      const existingIds = new Set(
-        currentRules.filter((r) => r.ruleType === 'enrollment').map((r) => r.id),
-      );
-      const submittedIds = new Set(enrollmentRules.filter((r) => r.id).map((r) => r.id));
+      // Only process enrollment rule deletions when enrollmentRules is explicitly
+      // provided. When omitted, leave existing enrollment rules untouched.
+      if (enrollmentRules !== undefined) {
+        const existingIds = new Set(
+          currentRules.filter((r) => r.ruleType === 'enrollment').map((r) => r.id),
+        );
+        const submittedIds = new Set(enrollmentRules.filter((r) => r.id).map((r) => r.id));
 
-      // Delete enrollment rules that were removed
-      for (const existingId of existingIds) {
-        if (!submittedIds.has(existingId)) {
-          await deleteEnrollmentAccessControl(existingId, courseInstanceId, assessmentId);
+        for (const existingId of existingIds) {
+          if (!submittedIds.has(existingId)) {
+            await deleteEnrollmentAccessControl(existingId, courseInstanceId, assessmentId);
+          }
         }
       }
 
-      // Validate enrollment rules are allowed and enrollment IDs belong to this course instance
-      if (enrollmentRules.length > 0) {
+      if (enrollmentRules !== undefined && enrollmentRules.length > 0) {
         const enhancedEnabled = await features.enabled('enhanced-access-control', {
           institution_id: opts.ctx.course.institution_id,
           course_id: opts.ctx.course.id,
@@ -469,20 +483,19 @@ const saveAllRules = t.procedure
             });
           }
         }
-      }
 
-      // Upsert each submitted enrollment rule
-      for (const enrollmentRule of enrollmentRules) {
-        const ruleData = formJsonToEnrollmentRuleData(enrollmentRule.ruleJson);
-        if (enrollmentRule.id) {
-          ruleData.id = enrollmentRule.id;
+        for (const enrollmentRule of enrollmentRules) {
+          const ruleData = formJsonToEnrollmentRuleData(enrollmentRule.ruleJson);
+          if (enrollmentRule.id) {
+            ruleData.id = enrollmentRule.id;
+          }
+          await syncEnrollmentAccessControl(
+            courseInstanceId,
+            assessmentId,
+            ruleData,
+            enrollmentRule.enrollmentIds,
+          );
         }
-        await syncEnrollmentAccessControl(
-          courseInstanceId,
-          assessmentId,
-          ruleData,
-          enrollmentRule.enrollmentIds,
-        );
       }
 
       await insertAuditEvent({
@@ -490,14 +503,13 @@ const saveAllRules = t.procedure
         action: 'update',
         actionDetail: 'rule_saved',
         rowId: assessmentId,
-        newRow: { rule_count: rulesToSync.length + enrollmentRules.length },
+        newRow: { rule_count: rulesToSync.length + (enrollmentRules?.length ?? 0) },
         assessmentId,
         courseInstanceId,
         agentUserId: opts.ctx.authz_data.user.id,
         agentAuthnUserId: opts.ctx.authn_user.id,
       });
 
-      // Compute new hash from freshly synced data (includes both JSON and enrollment rules)
       const newRules = await fetchAllAccessControlRules(assessmentId);
       const newHash = computeHash(newRules);
 

@@ -1,3 +1,4 @@
+import assert from 'node:assert';
 import fs from 'node:fs/promises';
 import path from 'node:path';
 
@@ -7,6 +8,7 @@ import {
   addLabelToEnrollment,
   selectStudentLabelsInCourseInstance,
 } from '../../models/student-label.js';
+import type { AccessControlJsonInput } from '../../schemas/accessControl.js';
 import { syncCourse } from '../helperCourse.js';
 import { getOrCreateUser } from '../utils/auth.js';
 
@@ -20,18 +22,11 @@ const ASSESSMENT_DIR = 'courseInstances/Sp15/assessments/hw-accessControl';
 
 async function writeAssessmentConfig(
   testCoursePath: string,
-  accessControl: Record<string, unknown>[],
+  accessControl: AccessControlJsonInput[],
 ) {
   const configPath = path.join(testCoursePath, ASSESSMENT_DIR, 'infoAssessment.json');
-  const config = {
-    uuid: 'f5b2c8d1-9a3e-4f7b-8c1d-2e5a6b9c0d1f',
-    type: 'Homework',
-    title: ASSESSMENT_TITLE,
-    set: 'Homework',
-    number: '14',
-    accessControl,
-    zones: [{ title: 'Access Control Test Zone', questions: [{ id: 'addNumbers', points: 1 }] }],
-  };
+  const config = JSON.parse(await fs.readFile(configPath, 'utf-8'));
+  config.accessControl = accessControl;
   await fs.writeFile(configPath, JSON.stringify(config, null, 2));
 }
 
@@ -66,15 +61,15 @@ test.describe.serial('Student access control', () => {
     });
 
     // Assign Student A to the "Section A" label
+    assert(enrollmentA, 'Expected enrollment for Student A');
     const labels = await selectStudentLabelsInCourseInstance(courseInstance);
     const sectionALabel = labels.find((l) => l.name === 'Section A');
-    if (sectionALabel && enrollmentA) {
-      await addLabelToEnrollment({
-        enrollment: enrollmentA,
-        label: sectionALabel,
-        authzData,
-      });
-    }
+    assert(sectionALabel, 'Expected "Section A" label to exist in course instance');
+    await addLabelToEnrollment({
+      enrollment: enrollmentA,
+      label: sectionALabel,
+      authzData,
+    });
   });
 
   test.afterAll(async ({ testCoursePath }) => {

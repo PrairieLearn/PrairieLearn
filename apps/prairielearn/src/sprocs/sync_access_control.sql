@@ -18,11 +18,8 @@ DECLARE
     max_json_rule_number integer;
     incoming_target_type text;
 BEGIN
-    -- Calculate the max JSON rule number that will exist after sync
     max_json_rule_number := JSON_RULE_START + COALESCE(array_length(rules_data, 1), 0) - 1;
 
-    -- Step 1: Delete child rows for JSON rules (target_type = 'none' or 'student_label')
-    -- This must happen before the upsert to avoid constraint violations on child tables
     DELETE FROM assessment_access_control_student_labels
     WHERE assessment_access_control_id IN (
         SELECT id FROM assessment_access_control
@@ -47,7 +44,6 @@ BEGIN
         WHERE assessment_id = syncing_assessment_id AND target_type IN ('none', 'student_label')
     );
 
-    -- Step 2: Loop through JSON rules and upsert each
     rule_number := JSON_RULE_START;
     FOR rule IN SELECT * FROM UNNEST(rules_data) LOOP
         -- If the target_type changed for this number, delete the old row first
@@ -153,26 +149,21 @@ BEGIN
             after_complete_show_score_again_date = EXCLUDED.after_complete_show_score_again_date
         RETURNING id INTO new_rule_id;
 
-        -- Insert child rows for this rule
-        -- Student labels
         INSERT INTO assessment_access_control_student_labels (assessment_access_control_id, student_label_id)
         SELECT new_rule_id, (g ->> 1)::bigint
         FROM UNNEST(student_labels_data) AS g
         WHERE (g ->> 0)::integer = rule_number;
 
-        -- Early deadlines
         INSERT INTO assessment_access_control_early_deadline (assessment_access_control_id, date, credit, sort_order)
         SELECT new_rule_id, (d ->> 1)::timestamp with time zone, (d ->> 2)::integer, ordinality - 1
         FROM UNNEST(early_deadlines_data) WITH ORDINALITY AS d
         WHERE (d ->> 0)::integer = rule_number;
 
-        -- Late deadlines
         INSERT INTO assessment_access_control_late_deadline (assessment_access_control_id, date, credit, sort_order)
         SELECT new_rule_id, (d ->> 1)::timestamp with time zone, (d ->> 2)::integer, ordinality - 1
         FROM UNNEST(late_deadlines_data) WITH ORDINALITY AS d
         WHERE (d ->> 0)::integer = rule_number;
 
-        -- PrairieTest exams
         INSERT INTO assessment_access_control_prairietest_exam (assessment_access_control_id, uuid, read_only)
         SELECT new_rule_id, (e ->> 1)::uuid, (e ->> 2)::boolean
         FROM UNNEST(prairietest_exams_data) AS e
@@ -181,7 +172,6 @@ BEGIN
         rule_number := rule_number + 1;
     END LOOP;
 
-    -- Step 3: Delete excess JSON rules (rules beyond what we just synced, but not enrollment rules)
     DELETE FROM assessment_access_control
     WHERE assessment_id = syncing_assessment_id
         AND number > max_json_rule_number
