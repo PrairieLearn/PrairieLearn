@@ -76,6 +76,7 @@ interface DynamicWorkspaceFile {
 interface InitializeResult {
   sourcePath: string;
   destinationPath: string;
+  version: number;
 }
 
 interface FileGenerationError {
@@ -261,63 +262,90 @@ async function startup(workspace_id: string): Promise<void> {
   // - We don't want multiple hosts trying to assign a host for the same
   //   workspace at the same time.
   let shouldAssignHost = false as boolean;
-  await sqldb.runInTransactionAsync(async () => {
-    // First, lock the workspace row.
-    const workspace = await sqldb.queryRow(
-      sql.select_and_lock_workspace,
-      { workspace_id },
-      WorkspaceSchema,
-    );
-
-    // If the initial state was `uninitialized`, we should check if it's
-    // still uninitialized. If so, we'll need to perform a state transition.
-    const shouldTransitionToStopped =
-      state === 'uninitialized' && workspace.state === 'uninitialized';
-    if (shouldTransitionToStopped) {
-      if (initializeResult !== null) {
-        // First, move any existing directory out of the way to get a clean start. This
-        // should never happen in production environments, but when running
-        // workspaces locally in development, we may end up trying to reuse the
-        // same workspace ID and thus directory, for instance if the database
-        // is reset in the middle of testing. In that case, we want to ensure
-        // that we don't try to write on top of an existing directory, as this
-        // could lead to unexpected behavior.
-        try {
-          const timestampSuffix = new Date().toISOString().replaceAll(/[^a-zA-Z0-9]/g, '-');
-          await fs.move(
-            initializeResult.destinationPath,
-            `${initializeResult.destinationPath}-bak-${timestampSuffix}`,
-            { overwrite: true },
-          );
-        } catch (err: any) {
-          // If the directory couldn't be moved because it didn't exist, ignore the error.
-          // But otherwise, rethrow it.
-          if (err.code !== 'ENOENT') {
-            throw err;
-          }
-        }
-
-        // Next, move the newly created directory into place. This will be
-        // done with a lock held, so we shouldn't worry about other processes
-        // trying to work with these directories at the same time.
-        await fs.move(initializeResult.sourcePath, initializeResult.destinationPath, {
-          overwrite: true,
-        });
-      }
-      await workspaceUtils.updateWorkspaceState(workspace_id, 'stopped', 'Initialization complete');
-    }
-
-    // If the workspace is in the stopped state (or we just transitioned to it),
-    // transition to the launching state.
-    if (workspace.state === 'stopped' || shouldTransitionToStopped) {
-      await workspaceUtils.updateWorkspaceState(
-        workspace_id,
-        'launching',
-        'Assigning workspace host',
+  let movedInitializeFiles = false as boolean;
+  try {
+    await sqldb.runInTransactionAsync(async () => {
+      // First, lock the workspace row.
+      const workspace = await sqldb.queryRow(
+        sql.select_and_lock_workspace,
+        { workspace_id },
+        WorkspaceSchema,
       );
-      shouldAssignHost = true;
+
+      // If the initial state was `uninitialized`, we should check if it's
+      // still uninitialized. If so, we'll need to perform a state transition.
+      const shouldTransitionToStopped =
+        state === 'uninitialized' && workspace.state === 'uninitialized';
+      if (shouldTransitionToStopped) {
+        if (initializeResult !== null) {
+          // If the version changed while we were initializing (e.g., a reset
+          // incremented the version), bail out. A newer startup() call will
+          // handle the current version.
+          if (initializeResult.version !== workspace.version) {
+            return;
+          }
+
+          // First, move any existing directory out of the way to get a clean start. This
+          // should never happen in production environments, but when running
+          // workspaces locally in development, we may end up trying to reuse the
+          // same workspace ID and thus directory, for instance if the database
+          // is reset in the middle of testing. In that case, we want to ensure
+          // that we don't try to write on top of an existing directory, as this
+          // could lead to unexpected behavior.
+          try {
+            const timestampSuffix = new Date().toISOString().replaceAll(/[^a-zA-Z0-9]/g, '-');
+            await fs.move(
+              initializeResult.destinationPath,
+              `${initializeResult.destinationPath}-bak-${timestampSuffix}`,
+              { overwrite: true },
+            );
+          } catch (err: any) {
+            // If the directory couldn't be moved because it didn't exist, ignore the error.
+            // But otherwise, rethrow it.
+            if (err.code !== 'ENOENT') {
+              throw err;
+            }
+          }
+
+          // Next, move the newly created directory into place. This will be
+          // done with a lock held, so we shouldn't worry about other processes
+          // trying to work with these directories at the same time.
+          await fs.move(initializeResult.sourcePath, initializeResult.destinationPath, {
+            overwrite: true,
+          });
+          movedInitializeFiles = true;
+        }
+        await workspaceUtils.updateWorkspaceState(
+          workspace_id,
+          'stopped',
+          'Initialization complete',
+        );
+      }
+
+      // If the workspace is in the stopped state (or we just transitioned to it),
+      // transition to the launching state.
+      if (workspace.state === 'stopped' || shouldTransitionToStopped) {
+        await workspaceUtils.updateWorkspaceState(
+          workspace_id,
+          'launching',
+          'Assigning workspace host',
+        );
+        shouldAssignHost = true;
+      }
+    });
+  } finally {
+    // If initialize() created a temp directory but we didn't move it into
+    // place (version changed, another call won the race, or a reboot happened
+    // during initialization), clean it up to avoid stranded directories.
+    if (initializeResult !== null && !movedInitializeFiles) {
+      await fs.remove(initializeResult.sourcePath).catch((err) => {
+        logger.error(
+          `Failed to remove workspace temp directory: ${initializeResult.sourcePath}`,
+          err,
+        );
+      });
     }
-  });
+  }
 
   // Bail out if needed; this should only ever occur if another host is
   // already trying to assign this host to a workspace.
@@ -426,7 +454,7 @@ async function initialize(workspace_id: string): Promise<InitializeResult> {
     });
   }
 
-  return { sourcePath, destinationPath };
+  return { sourcePath, destinationPath, version: workspace.version };
 }
 
 export async function generateWorkspaceFiles({
