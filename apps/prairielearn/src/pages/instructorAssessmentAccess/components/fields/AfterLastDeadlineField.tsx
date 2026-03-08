@@ -31,7 +31,6 @@ export function AfterLastDeadlineField({
     defaultValue: {} as AfterLastDeadlineValue,
   });
 
-  // Watch due date and late deadlines for calculating last deadline text
   const dueDate = useWatchOverridableField<string>(control, namePrefix, 'dateControl.dueDate');
 
   const lateDeadlines = useWatchOverridableField<DeadlineEntry[]>(
@@ -40,7 +39,6 @@ export function AfterLastDeadlineField({
     'dateControl.lateDeadlines',
   );
 
-  // Determine the current mode based on field values
   const getMode = (): AfterLastDeadlineMode => {
     const { allowSubmissions, credit } = field.value;
     if (!allowSubmissions) return 'no_submissions';
@@ -50,7 +48,6 @@ export function AfterLastDeadlineField({
 
   const mode = getMode();
 
-  // Get the last deadline text
   const getLastDeadlineText = () => {
     if (!dueDate || !lateDeadlines) return 'This will take effect after the last deadline';
 
@@ -140,7 +137,6 @@ export function AfterLastDeadlineField({
     </Form.Group>
   );
 
-  // Header content with title and description
   const headerContent = (
     <div>
       <strong>After last deadline</strong>

@@ -2,14 +2,12 @@ import { z } from 'zod';
 
 import type { AccessControlJson } from '../../../schemas/accessControl.js';
 
-/** Individual student for enrollment-based rules */
 export interface AccessControlIndividual {
   enrollmentId: string;
   uid: string;
   name: string | null;
 }
 
-/** AccessControlJson with optional database ID and rule information for tracking */
 export interface AccessControlJsonWithId extends AccessControlJson {
   /** Database ID (undefined for new/unsaved rules) */
   id?: string;
@@ -17,7 +15,6 @@ export interface AccessControlJsonWithId extends AccessControlJson {
   number?: number;
   /** Rule type: 'student_label' for label-based rules, 'enrollment' for individual student rules, 'none' for rules without specific targeting */
   ruleType?: 'student_label' | 'enrollment' | 'none' | null;
-  /** Individual students (for enrollment-based rules) */
   individuals?: AccessControlIndividual[];
 }
 
@@ -100,6 +97,7 @@ export const AppliesToSchema = z.object({
 
 export const AccessControlRuleFormDataSchema = z.object({
   id: z.string().optional(),
+  trackingId: z.string(),
   enabled: z.boolean(),
   blockAccess: z.boolean().optional(),
   listBeforeRelease: z.boolean().optional(),
@@ -114,13 +112,11 @@ export const AccessControlFormDataSchema = z.object({
   overrides: z.array(AccessControlRuleFormDataSchema),
 });
 
-/** Generic type for fields that can be overridden in override rules */
 export interface OverridableField<T> {
   /** Whether the field is overridden. Always true for main rule, can be false for overrides. */
   isOverridden: boolean;
   /** Whether the field is enabled (e.g., false = "release immediately", true = "release after date") */
   isEnabled: boolean;
-  /** The actual value of the field */
   value: T;
 }
 
@@ -152,13 +148,7 @@ export type AccessControlRuleFormData = z.infer<typeof AccessControlRuleFormData
 
 export type AccessControlFormData = z.infer<typeof AccessControlFormDataSchema>;
 
-export type AccessControlView =
-  | { type: 'summary' }
-  | { type: 'edit-main' }
-  | { type: 'edit-override'; index: number };
-
 /**
- * Creates an overridable field structure.
  * For main rules, isOverridden is always true.
  * For override rules, isOverridden depends on whether the field has a value.
  */
@@ -175,20 +165,24 @@ export function makeOverridable<T>(
   };
 }
 
-/** Helper function to transform form data to JSON output */
 export function formDataToJson(formData: AccessControlFormData): AccessControlJsonWithId[] {
-  // Filter out individual/enrollment rules - they should not be written to JSON
-  const jsonRules = [formData.mainRule, ...formData.overrides].filter(
-    (rule) => rule.appliesTo.targetType !== 'individual',
-  );
-  return jsonRules.map((rule, index) => formRuleToJson(rule, index === 0));
+  const allRules = [formData.mainRule, ...formData.overrides];
+  return allRules.map((rule, index) => {
+    const json = formRuleToJson(rule, index === 0);
+    if (rule.appliesTo.targetType === 'individual') {
+      json.ruleType = 'enrollment';
+      json.individuals = rule.appliesTo.individuals.map((ind) => ({
+        enrollmentId: ind.enrollmentId ?? '',
+        uid: ind.uid,
+        name: ind.name,
+      }));
+    }
+    return json;
+  });
 }
 
 /**
- * Transforms a single access control rule form data to JSON format for writing to infoAssessment.json.
- * This function is shared between client-side summary saves and server-side individual rule saves.
- *
- * @param rule The form data for the rule
+ * @param rule The form data rule to convert
  * @param isMainRule If true, includes integrations in the output (only main rules support this)
  */
 export function formRuleToJson(
@@ -290,8 +284,7 @@ export function formRuleToJson(
 }
 
 /**
- * Convert JSON to form data structure.
- * @param json The access control JSON (optionally with ID)
+ * @param json The JSON rule data to convert
  * @param isMainRule If true, all fields are marked as overridden (main rule behavior).
  * If false, only fields with values are marked as overridden (override rule behavior).
  */
@@ -305,7 +298,6 @@ export function jsonToFormData(
   const hasQuestionVisibility = ac?.hideQuestions !== undefined;
   const hasScoreVisibility = ac?.hideScore !== undefined;
 
-  // Convert student labels/individuals to appliesTo structure based on rule type
   let appliesTo: AppliesTo;
   if (json.ruleType === 'enrollment' && json.individuals && json.individuals.length > 0) {
     appliesTo = {
@@ -327,6 +319,7 @@ export function jsonToFormData(
 
   return {
     id: json.id,
+    trackingId: json.id ?? crypto.randomUUID(),
     enabled: json.enabled ?? true,
     blockAccess: json.blockAccess ?? false,
     listBeforeRelease: json.listBeforeRelease ?? true,
@@ -396,9 +389,9 @@ export function jsonToFormData(
   };
 }
 
-/** Create default form data for a new override rule */
 export function createDefaultOverrideFormData(): AccessControlRuleFormData {
   return {
+    trackingId: crypto.randomUUID(),
     enabled: true,
     blockAccess: false,
     listBeforeRelease: true,

@@ -38,12 +38,6 @@ export interface EnrollmentAccessControlRuleData {
 /**
  * Creates or updates an enrollment-based access control rule (targeting individual students).
  * These rules are stored in the database with target_type = 'enrollment'.
- *
- * @param courseInstanceId The course instance ID
- * @param assessmentId The assessment ID
- * @param ruleData The rule configuration data
- * @param enrollmentIds Array of enrollment IDs to target
- * @returns The access control rule ID
  */
 export async function syncEnrollmentAccessControl(
   courseInstanceId: string,
@@ -104,13 +98,6 @@ export async function syncEnrollmentAccessControl(
   );
 }
 
-/**
- * Deletes an enrollment-based access control rule.
- *
- * @param accessControlId The access control rule ID to delete
- * @param courseInstanceId The course instance ID (for scoping)
- * @param assessmentId The assessment ID (for scoping)
- */
 export async function deleteEnrollmentAccessControl(
   accessControlId: string,
   courseInstanceId: string,

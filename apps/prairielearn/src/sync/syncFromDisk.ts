@@ -211,7 +211,13 @@ export async function syncDiskToSqlWithLock(
         async ([ciid, courseInstanceData]) => {
           const courseInstanceId = courseInstanceIds[ciid];
           const assessmentIds = await timed(`Synced assessments for ${ciid}`, () =>
-            syncAssessments.sync(courseId, courseInstanceId, courseInstanceData, questionIds),
+            syncAssessments.sync(
+              courseId,
+              courseInstanceId,
+              courseInstanceData,
+              questionIds,
+              hasEnhancedAccessControl,
+            ),
           );
 
           if (assessmentIds?.name_to_id_map && hasEnhancedAccessControl) {
@@ -228,11 +234,7 @@ export async function syncDiskToSqlWithLock(
                   } else {
                     try {
                       await runInTransactionAsync(async () => {
-                        await syncAccessControl(
-                          courseInstanceId,
-                          assessmentId,
-                          accessControlRules,
-                        );
+                        await syncAccessControl(courseInstanceId, assessmentId, accessControlRules);
                       });
                     } catch (err) {
                       infofile.addError(assessment, String(err));

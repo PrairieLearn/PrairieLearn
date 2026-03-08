@@ -1,10 +1,19 @@
+import crypto from 'node:crypto';
+
 import { TRPCError, initTRPC } from '@trpc/server';
 import type { CreateExpressContextOptions } from '@trpc/server/adapters/express';
 import superjson from 'superjson';
 import { z } from 'zod';
 
-import { loadSqlEquiv, queryRows, runInTransactionAsync } from '@prairielearn/postgres';
+import {
+  loadSqlEquiv,
+  queryRows,
+  queryScalar,
+  runInTransactionAsync,
+} from '@prairielearn/postgres';
 
+import { AssessmentAccessControlSchema } from '../../lib/db-types.js';
+import { features } from '../../lib/features/index.js';
 import type { ResLocalsForPage } from '../../lib/res-locals.js';
 import { insertAuditEvent } from '../../models/audit-event.js';
 import {
@@ -16,8 +25,6 @@ import { selectUsersAndEnrollmentsByUidsInCourseInstance } from '../../models/en
 import { selectStudentLabelsInCourseInstance } from '../../models/student-label.js';
 import type { AccessControlJson } from '../../schemas/accessControl.js';
 import { syncAccessControl } from '../../sync/fromDisk/accessControl.js';
-
-import { AccessControlRuleFormDataSchema, formRuleToJson } from './components/types.js';
 
 const sql = loadSqlEquiv(import.meta.url);
 
@@ -110,39 +117,18 @@ const studentLabels = t.procedure.use(requireCourseInstancePermissionView).query
   }));
 });
 
-const JsonRuleRowSchema = z.object({
-  id: z.string(),
-  number: z.number(),
+const AccessControlRuleBaseSchema = AssessmentAccessControlSchema.omit({
+  assessment_id: true,
+  course_instance_id: true,
+});
+
+const DeadlineArraySchema = z.array(z.object({ date: z.string(), credit: z.number() })).nullable();
+
+const JsonRuleRowSchema = AccessControlRuleBaseSchema.extend({
   target_type: z.enum(['none', 'student_label']),
-  enabled: z.boolean().nullable(),
-  block_access: z.boolean().nullable(),
-  list_before_release: z.boolean().nullable(),
-  date_control_overridden: z.boolean(),
-  date_control_release_date_overridden: z.boolean(),
-  date_control_release_date: z.coerce.date().nullable(),
-  date_control_due_date_overridden: z.boolean(),
-  date_control_due_date: z.coerce.date().nullable(),
-  date_control_early_deadlines_overridden: z.boolean(),
-  date_control_late_deadlines_overridden: z.boolean(),
-  date_control_after_last_deadline_allow_submissions: z.boolean().nullable(),
-  date_control_after_last_deadline_credit_overridden: z.boolean(),
-  date_control_after_last_deadline_credit: z.number().nullable(),
-  date_control_duration_minutes_overridden: z.boolean(),
-  date_control_duration_minutes: z.number().nullable(),
-  date_control_password_overridden: z.boolean(),
-  date_control_password: z.string().nullable(),
-  integrations_prairietest_overridden: z.boolean(),
-  after_complete_hide_questions: z.boolean().nullable(),
-  after_complete_show_questions_again_date_overridden: z.boolean(),
-  after_complete_show_questions_again_date: z.coerce.date().nullable(),
-  after_complete_hide_questions_again_date_overridden: z.boolean(),
-  after_complete_hide_questions_again_date: z.coerce.date().nullable(),
-  after_complete_hide_score: z.boolean().nullable(),
-  after_complete_show_score_again_date_overridden: z.boolean(),
-  after_complete_show_score_again_date: z.coerce.date().nullable(),
   labels: z.array(z.string()).nullable(),
-  early_deadlines: z.array(z.object({ date: z.string(), credit: z.number() })).nullable(),
-  late_deadlines: z.array(z.object({ date: z.string(), credit: z.number() })).nullable(),
+  early_deadlines: DeadlineArraySchema,
+  late_deadlines: DeadlineArraySchema,
   prairietest_exams: z
     .array(z.object({ examUuid: z.string(), readOnly: z.boolean().nullable() }))
     .nullable(),
@@ -172,7 +158,6 @@ function dbRowToAccessControlJson(row: JsonRuleRow): AccessControlJson & { id: s
 
   const dateControl: AccessControlJson['dateControl'] = {};
 
-  // Set dateControl.enabled based on whether any date control field is overridden
   if (row.date_control_overridden) {
     dateControl.enabled = true;
   }
@@ -258,253 +243,285 @@ function dbRowToAccessControlJson(row: JsonRuleRow): AccessControlJson & { id: s
   };
 }
 
-function formRuleToEnrollmentData(
-  rule: z.infer<typeof AccessControlRuleFormDataSchema>,
-): EnrollmentAccessControlRuleData {
-  const dc = rule.dateControl;
-  const ac = rule.afterComplete;
+interface AccessControlJsonWithId extends AccessControlJson {
+  id: string;
+  ruleType?: 'student_label' | 'enrollment' | 'none' | null;
+  individuals?: { enrollmentId: string; uid: string; name: string | null }[];
+}
 
-  const releaseDateOverridden = dc.releaseDate.isOverridden && dc.releaseDate.isEnabled;
-  const dueDateOverridden = dc.dueDate.isOverridden && dc.dueDate.isEnabled;
-  const earlyDeadlinesOverridden =
-    dc.earlyDeadlines.isOverridden &&
-    dc.earlyDeadlines.isEnabled &&
-    dc.earlyDeadlines.value.length > 0;
-  const lateDeadlinesOverridden =
-    dc.lateDeadlines.isOverridden &&
-    dc.lateDeadlines.isEnabled &&
-    dc.lateDeadlines.value.length > 0;
-  const afterLastDeadlineCreditOverridden =
-    dc.afterLastDeadline.isOverridden && dc.afterLastDeadline.isEnabled;
-  const durationMinutesOverridden = dc.durationMinutes.isOverridden && dc.durationMinutes.isEnabled;
-  const passwordOverridden =
-    dc.password.isOverridden && dc.password.isEnabled && dc.password.value !== '';
+const EnrollmentRuleRowSchema = AccessControlRuleBaseSchema.extend({
+  target_type: z.literal('enrollment'),
+  enrollments: z
+    .array(
+      z.object({
+        enrollmentId: z.string(),
+        uid: z.string(),
+        name: z.string().nullable(),
+      }),
+    )
+    .nullable(),
+  early_deadlines: DeadlineArraySchema,
+  late_deadlines: DeadlineArraySchema,
+});
 
-  const dateControlOverridden =
-    releaseDateOverridden ||
-    dueDateOverridden ||
-    earlyDeadlinesOverridden ||
-    lateDeadlinesOverridden ||
-    afterLastDeadlineCreditOverridden ||
-    durationMinutesOverridden ||
-    passwordOverridden;
+type EnrollmentRuleRow = z.infer<typeof EnrollmentRuleRowSchema>;
 
+function dbEnrollmentRowToAccessControlJson(row: EnrollmentRuleRow): AccessControlJsonWithId {
+  // Enrollment rows share the same column structure as JSON rows for date/after-complete fields,
+  // but don't have labels or prairietest_exams.
+  const asJsonRow: JsonRuleRow = {
+    ...row,
+    target_type: 'none',
+    labels: null,
+    prairietest_exams: null,
+  };
+  const base = dbRowToAccessControlJson(asJsonRow);
   return {
-    id: rule.id,
-    enabled: rule.enabled,
-    blockAccess: rule.blockAccess ?? false,
-    listBeforeRelease: rule.listBeforeRelease ?? true,
-    dateControlOverridden,
-    releaseDateOverridden,
-    releaseDate: releaseDateOverridden && dc.releaseDate.value ? dc.releaseDate.value : null,
-    dueDateOverridden,
-    dueDate: dueDateOverridden && dc.dueDate.value ? dc.dueDate.value : null,
-    earlyDeadlinesOverridden,
-    lateDeadlinesOverridden,
-    afterLastDeadlineAllowSubmissions: afterLastDeadlineCreditOverridden
-      ? (dc.afterLastDeadline.value.allowSubmissions ?? null)
-      : null,
-    afterLastDeadlineCreditOverridden,
-    afterLastDeadlineCredit: afterLastDeadlineCreditOverridden
-      ? (dc.afterLastDeadline.value.credit ?? null)
-      : null,
-    durationMinutesOverridden,
-    durationMinutes: durationMinutesOverridden ? dc.durationMinutes.value : null,
-    passwordOverridden,
-    password: passwordOverridden ? dc.password.value : null,
-    integrationsPrairietestOverridden: false,
-    hideQuestions: ac.questionVisibility.isOverridden
-      ? ac.questionVisibility.value.hideQuestions
-      : null,
-    showQuestionsAgainDateOverridden:
-      ac.questionVisibility.isOverridden && ac.questionVisibility.value.showAgainDate !== undefined,
-    showQuestionsAgainDate: ac.questionVisibility.isOverridden
-      ? (ac.questionVisibility.value.showAgainDate ?? null)
-      : null,
-    hideQuestionsAgainDateOverridden:
-      ac.questionVisibility.isOverridden && ac.questionVisibility.value.hideAgainDate !== undefined,
-    hideQuestionsAgainDate: ac.questionVisibility.isOverridden
-      ? (ac.questionVisibility.value.hideAgainDate ?? null)
-      : null,
-    hideScore: ac.scoreVisibility.isOverridden ? ac.scoreVisibility.value.hideScore : null,
-    showScoreAgainDateOverridden:
-      ac.scoreVisibility.isOverridden && ac.scoreVisibility.value.showAgainDate !== undefined,
-    showScoreAgainDate: ac.scoreVisibility.isOverridden
-      ? (ac.scoreVisibility.value.showAgainDate ?? null)
-      : null,
-    earlyDeadlines: earlyDeadlinesOverridden ? dc.earlyDeadlines.value : [],
-    lateDeadlines: lateDeadlinesOverridden ? dc.lateDeadlines.value : [],
+    ...base,
+    ruleType: 'enrollment',
+    individuals: row.enrollments ?? [],
   };
 }
 
-const saveRule = t.procedure
+async function fetchEnrollmentRules(assessmentId: string): Promise<AccessControlJsonWithId[]> {
+  const rows = await queryRows(
+    sql.select_all_enrollment_rules,
+    { assessment_id: assessmentId },
+    EnrollmentRuleRowSchema,
+  );
+  return rows.map(dbEnrollmentRowToAccessControlJson);
+}
+
+export async function fetchAllAccessControlRules(
+  assessmentId: string,
+): Promise<AccessControlJsonWithId[]> {
+  const [jsonRules, enrollmentRules] = await Promise.all([
+    fetchAccessControlJsonRules(assessmentId),
+    fetchEnrollmentRules(assessmentId),
+  ]);
+  return [...jsonRules, ...enrollmentRules];
+}
+
+function formJsonToEnrollmentRuleData(
+  rule: AccessControlJson & { id?: string },
+): EnrollmentAccessControlRuleData {
+  const dc = rule.dateControl;
+  const ac = rule.afterComplete;
+  return {
+    id: rule.id,
+    enabled: rule.enabled ?? true,
+    blockAccess: rule.blockAccess ?? false,
+    listBeforeRelease: rule.listBeforeRelease ?? true,
+    dateControlOverridden: dc?.enabled === true,
+    releaseDateOverridden: dc?.releaseDate !== undefined,
+    releaseDate: dc?.releaseDate ?? null,
+    dueDateOverridden: dc?.dueDate !== undefined,
+    dueDate: dc?.dueDate ?? null,
+    earlyDeadlinesOverridden: dc?.earlyDeadlines !== undefined,
+    lateDeadlinesOverridden: dc?.lateDeadlines !== undefined,
+    afterLastDeadlineAllowSubmissions: dc?.afterLastDeadline?.allowSubmissions ?? null,
+    afterLastDeadlineCreditOverridden: dc?.afterLastDeadline?.credit !== undefined,
+    afterLastDeadlineCredit: dc?.afterLastDeadline?.credit ?? null,
+    durationMinutesOverridden: dc?.durationMinutes !== undefined,
+    durationMinutes: dc?.durationMinutes ?? null,
+    passwordOverridden: dc?.password !== undefined,
+    password: dc?.password ?? null,
+    integrationsPrairietestOverridden: false,
+    hideQuestions: ac?.hideQuestions ?? null,
+    showQuestionsAgainDateOverridden: ac?.showQuestionsAgainDate !== undefined,
+    showQuestionsAgainDate: ac?.showQuestionsAgainDate ?? null,
+    hideQuestionsAgainDateOverridden: ac?.hideQuestionsAgainDate !== undefined,
+    hideQuestionsAgainDate: ac?.hideQuestionsAgainDate ?? null,
+    hideScore: ac?.hideScore ?? null,
+    showScoreAgainDateOverridden: ac?.showScoreAgainDate !== undefined,
+    showScoreAgainDate: ac?.showScoreAgainDate ?? null,
+    earlyDeadlines: dc?.earlyDeadlines ?? [],
+    lateDeadlines: dc?.lateDeadlines ?? [],
+  };
+}
+
+const AccessControlJsonInputSchema: z.ZodType<AccessControlJson & { id?: string }> = z.object({
+  id: z.string().optional(),
+  enabled: z.boolean().optional(),
+  blockAccess: z.boolean().nullable().optional(),
+  listBeforeRelease: z.boolean().nullable().optional(),
+  labels: z.array(z.string()).optional(),
+  dateControl: z
+    .object({
+      enabled: z.boolean().optional(),
+      releaseDate: z.string().optional(),
+      dueDate: z.string().nullable().optional(),
+      earlyDeadlines: z.array(z.object({ date: z.string(), credit: z.number() })).optional(),
+      lateDeadlines: z.array(z.object({ date: z.string(), credit: z.number() })).optional(),
+      afterLastDeadline: z
+        .object({
+          credit: z.number().optional(),
+          allowSubmissions: z.boolean().optional(),
+        })
+        .optional(),
+      durationMinutes: z.number().optional(),
+      password: z.string().nullable().optional(),
+    })
+    .optional(),
+  integrations: z
+    .object({
+      prairieTest: z
+        .object({
+          enabled: z.boolean().optional(),
+          exams: z
+            .array(
+              z.object({
+                examUuid: z.string(),
+                readOnly: z.boolean().optional(),
+              }),
+            )
+            .optional(),
+        })
+        .optional(),
+    })
+    .optional(),
+  afterComplete: z
+    .object({
+      hideQuestions: z.boolean().optional(),
+      showQuestionsAgainDate: z.string().optional(),
+      hideQuestionsAgainDate: z.string().optional(),
+      hideScore: z.boolean().optional(),
+      showScoreAgainDate: z.string().optional(),
+    })
+    .optional(),
+});
+
+const EnrollmentRuleInputSchema = z.object({
+  id: z.string().optional(),
+  enrollmentIds: z.array(z.string()),
+  ruleJson: AccessControlJsonInputSchema,
+});
+
+const saveAllRules = t.procedure
   .use(requireCourseInstancePermissionEdit)
   .input(
     z.object({
-      isMainRule: z.boolean(),
-      isNew: z.boolean(),
-      ruleId: z.string().optional(),
-      formData: AccessControlRuleFormDataSchema,
+      rules: z.array(AccessControlJsonInputSchema),
+      enrollmentRules: z.array(EnrollmentRuleInputSchema).optional(),
+      origHash: z.string(),
     }),
   )
   .mutation(async (opts) => {
-    const { isMainRule, isNew, ruleId, formData } = opts.input;
+    const { rules, enrollmentRules = [], origHash } = opts.input;
     const courseInstanceId = opts.ctx.course_instance.id;
     const assessmentId = opts.ctx.assessment.id;
 
-    if (formData.appliesTo.targetType === 'individual' && !isMainRule) {
-      // Enrollment path
-      const ruleData = formRuleToEnrollmentData(formData);
-      if (!isNew && ruleId) {
-        ruleData.id = ruleId;
-      }
-      const enrollmentIds = formData.appliesTo.individuals
-        .map((i) => i.enrollmentId)
-        .filter((id): id is string => id !== undefined);
+    return runInTransactionAsync(async () => {
+      // Verify origHash against current DB state (includes both JSON and enrollment rules)
+      const currentRules = await fetchAllAccessControlRules(assessmentId);
+      const currentHash = computeHash(currentRules);
 
-      const newRuleId = await syncEnrollmentAccessControl(
-        courseInstanceId,
-        assessmentId,
-        ruleData,
-        enrollmentIds,
-      );
+      if (currentHash !== origHash) {
+        throw new TRPCError({
+          code: 'CONFLICT',
+          message:
+            'The access control rules have been modified since you loaded this page. Please refresh and try again.',
+        });
+      }
+
+      // Sync JSON rules (none/student_label)
+      const rulesToSync: AccessControlJson[] = rules.map(({ id: _id, ...rest }) => rest);
+      await syncAccessControl(courseInstanceId, assessmentId, rulesToSync);
+
+      // Sync enrollment rules
+      const existingEnrollmentRules = await fetchEnrollmentRules(assessmentId);
+      const existingIds = new Set(existingEnrollmentRules.map((r) => r.id));
+      const submittedIds = new Set(enrollmentRules.filter((r) => r.id).map((r) => r.id));
+
+      // Delete enrollment rules that were removed
+      for (const existingId of existingIds) {
+        if (!submittedIds.has(existingId)) {
+          await deleteEnrollmentAccessControl(existingId, courseInstanceId, assessmentId);
+        }
+      }
+
+      // Validate enrollment rules are allowed and enrollment IDs belong to this course instance
+      if (enrollmentRules.length > 0) {
+        const enhancedEnabled = await features.enabled('enhanced-access-control', {
+          institution_id: opts.ctx.course.institution_id,
+          course_id: opts.ctx.course.id,
+          course_instance_id: opts.ctx.course_instance.id,
+        });
+        if (!enhancedEnabled) {
+          throw new TRPCError({
+            code: 'FORBIDDEN',
+            message: 'Enhanced access control is not enabled for this course.',
+          });
+        }
+
+        const allEnrollmentIds = [...new Set(enrollmentRules.flatMap((r) => r.enrollmentIds))];
+        if (allEnrollmentIds.length > 0) {
+          const validCount = await queryScalar(
+            sql.validate_enrollment_ids,
+            { enrollment_ids: allEnrollmentIds, course_instance_id: courseInstanceId },
+            z.number(),
+          );
+          if (validCount !== allEnrollmentIds.length) {
+            throw new TRPCError({
+              code: 'BAD_REQUEST',
+              message: 'One or more enrollment IDs do not belong to this course instance.',
+            });
+          }
+        }
+      }
+
+      // Upsert each submitted enrollment rule
+      for (const enrollmentRule of enrollmentRules) {
+        const ruleData = formJsonToEnrollmentRuleData(enrollmentRule.ruleJson);
+        if (enrollmentRule.id) {
+          ruleData.id = enrollmentRule.id;
+        }
+        await syncEnrollmentAccessControl(
+          courseInstanceId,
+          assessmentId,
+          ruleData,
+          enrollmentRule.enrollmentIds,
+        );
+      }
 
       await insertAuditEvent({
         tableName: 'assessment_access_control',
-        action: isNew ? 'insert' : 'update',
+        action: 'update',
         actionDetail: 'rule_saved',
-        rowId: newRuleId,
-        newRow: { target_type: 'enrollment', enrollment_ids: enrollmentIds },
+        rowId: assessmentId,
+        newRow: { rule_count: rulesToSync.length + enrollmentRules.length },
         assessmentId,
         courseInstanceId,
         agentUserId: opts.ctx.authz_data.user.id,
         agentAuthnUserId: opts.ctx.authn_user.id,
       });
-    } else {
-      // JSON path (main rule or student_label override)
-      // Wrap in a transaction to prevent race conditions between read and write
-      await runInTransactionAsync(async () => {
-        const existingRows = await queryRows(
-          sql.select_all_json_rules,
-          { assessment_id: assessmentId },
-          JsonRuleRowSchema,
-        );
 
-        const existingJsonRules = existingRows.map(dbRowToAccessControlJson);
-        const newRuleJson = formRuleToJson(formData, isMainRule);
+      // Compute new hash from freshly synced data (includes both JSON and enrollment rules)
+      const newRules = await fetchAllAccessControlRules(assessmentId);
+      const newHash = computeHash(newRules);
 
-        let updatedRules: (AccessControlJson & { id?: string })[];
-
-        if (isNew) {
-          if (isMainRule) {
-            // Replace or insert at index 0
-            updatedRules = [newRuleJson, ...existingJsonRules];
-          } else {
-            updatedRules = [...existingJsonRules, newRuleJson];
-          }
-        } else {
-          // Find and replace the matching rule by ruleId
-          const idx = existingJsonRules.findIndex((r) => r.id === ruleId);
-          if (idx === -1) {
-            throw new TRPCError({
-              code: 'NOT_FOUND',
-              message: `Access control rule ${ruleId} not found`,
-            });
-          }
-          updatedRules = [...existingJsonRules];
-          updatedRules[idx] = newRuleJson;
-        }
-
-        // Strip the `id` property before passing to syncAccessControl
-        const rulesToSync: AccessControlJson[] = updatedRules.map(({ id: _id, ...rest }) => rest);
-
-        await syncAccessControl(courseInstanceId, assessmentId, rulesToSync);
-
-        await insertAuditEvent({
-          tableName: 'assessment_access_control',
-          action: isNew ? 'insert' : 'update',
-          actionDetail: 'rule_saved',
-          rowId: ruleId ?? assessmentId,
-          newRow: { is_main_rule: isMainRule, rule_count: rulesToSync.length },
-          assessmentId,
-          courseInstanceId,
-          agentUserId: opts.ctx.authz_data.user.id,
-          agentAuthnUserId: opts.ctx.authn_user.id,
-        });
-      });
-    }
-
-    return { success: true as const };
-  });
-
-const deleteRule = t.procedure
-  .use(requireCourseInstancePermissionEdit)
-  .input(
-    z.object({
-      ruleId: z.string(),
-      targetType: z.enum(['enrollment', 'student_label', 'none']),
-    }),
-  )
-  .mutation(async (opts) => {
-    const { ruleId, targetType } = opts.input;
-    const courseInstanceId = opts.ctx.course_instance.id;
-    const assessmentId = opts.ctx.assessment.id;
-
-    if (targetType === 'none') {
-      throw new TRPCError({
-        code: 'BAD_REQUEST',
-        message: 'Cannot delete the main access control rule',
-      });
-    }
-
-    if (targetType === 'enrollment') {
-      await deleteEnrollmentAccessControl(ruleId, courseInstanceId, assessmentId);
-    } else {
-      // student_label: load all JSON rules, remove the matching one, re-sync
-      // Wrap in a transaction to prevent race conditions between read and write
-      await runInTransactionAsync(async () => {
-        const existingRows = await queryRows(
-          sql.select_all_json_rules,
-          { assessment_id: assessmentId },
-          JsonRuleRowSchema,
-        );
-
-        const existingJsonRules = existingRows.map(dbRowToAccessControlJson);
-        const filtered = existingJsonRules.filter((r) => r.id !== ruleId);
-
-        if (filtered.length === existingJsonRules.length) {
-          throw new TRPCError({
-            code: 'NOT_FOUND',
-            message: `Access control rule ${ruleId} not found`,
-          });
-        }
-
-        const rulesToSync: AccessControlJson[] = filtered.map(({ id: _id, ...rest }) => rest);
-        await syncAccessControl(courseInstanceId, assessmentId, rulesToSync);
-      });
-    }
-
-    await insertAuditEvent({
-      tableName: 'assessment_access_control',
-      action: 'delete',
-      actionDetail: 'rule_deleted',
-      rowId: ruleId,
-      oldRow: { target_type: targetType },
-      assessmentId,
-      courseInstanceId,
-      agentUserId: opts.ctx.authz_data.user.id,
-      agentAuthnUserId: opts.ctx.authn_user.id,
+      return { newHash };
     });
-
-    return { success: true as const };
   });
+
+export async function fetchAccessControlJsonRules(assessmentId: string) {
+  const rows = await queryRows(
+    sql.select_all_json_rules,
+    { assessment_id: assessmentId },
+    JsonRuleRowSchema,
+  );
+  return rows.map(dbRowToAccessControlJson);
+}
+
+export function computeHash(rules: object[]): string {
+  return crypto.createHash('sha256').update(JSON.stringify(rules)).digest('hex');
+}
 
 export const accessControlRouter = t.router({
   students,
   validateUids,
   studentLabels,
-  saveRule,
-  deleteRule,
+  saveAllRules,
 });
 
 export type AccessControlRouter = typeof accessControlRouter;

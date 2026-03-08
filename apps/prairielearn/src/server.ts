@@ -886,17 +886,6 @@ export async function initExpress(): Promise<Express> {
     ],
   );
   app.use(
-    '/pl/course_instance/:course_instance_id(\\d+)/instructor/assessment/:assessment_id(\\d+)/access/edit',
-    [
-      function (req: Request, res: Response, next: NextFunction) {
-        res.locals.navSubPage = 'access';
-        next();
-      },
-      (await import('./pages/instructorAssessmentAccess/instructorAssessmentAccessEdit.js'))
-        .default,
-    ],
-  );
-  app.use(
     '/pl/course_instance/:course_instance_id(\\d+)/instructor/assessment/:assessment_id(\\d+)/assessment_statistics',
     [
       function (req: Request, res: Response, next: NextFunction) {

@@ -34,7 +34,6 @@ export function FieldWrapper({
   noCardForMainRule = false,
   headerContent,
 }: FieldWrapperProps) {
-  // For main rules, just render the children (optionally without card)
   if (!isOverrideRule) {
     if (noCardForMainRule) {
       return (
@@ -52,7 +51,6 @@ export function FieldWrapper({
     );
   }
 
-  // For override rules, show the override UI
   const cardStyle = isOverridden ? {} : { border: '2px dashed #dee2e6' };
 
   return (

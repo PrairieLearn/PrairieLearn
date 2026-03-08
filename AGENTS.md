@@ -123,7 +123,7 @@ When working with assessment "groups" / "teams", see the [`groups-and-teams` ski
 - Information about the current user, course instance, course, etc. is stored in `res.locals` in route handlers. Types for `res.locals` are defined in `apps/prairielearn/src/lib/res-locals.ts`.
 - NEVER use `as any` casts in TypeScript code to avoid type errors.
 - Don't add extra defensive checks or try/catch blocks that are abnormal for that area of the codebase (especially if called by trusted / validated codepaths).
-- Don't add extra comments that a human wouldn't add or that are inconsistent with the rest of the file.
+- Don't add extra comments that a human wouldn't add or that are inconsistent with the rest of the file. Comments should explain *why*, not *what* — if a comment just restates the code, remove it.
 - Always check for existing model functions in `apps/prairielearn/src/models/` or lib functions before writing one-off database queries.
 - Express request handlers must always either send a response (either by calling `res.send`/etc. or throwing an error) or explicitly pass control by calling `next(...)`.
 - DO NOT re-export functions or types from other modules for convenience or backward compatibility within applications (e.g. `export { bar } from 'foo'` in `apps/*`). When moving a function to a new module, update all callers to import from the new location directly. Package-level barrel exports in `packages/*/src/index.ts` are expected and should be used to provide a clean public API.

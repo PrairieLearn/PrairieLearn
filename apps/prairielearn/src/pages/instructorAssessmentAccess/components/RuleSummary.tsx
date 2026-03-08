@@ -7,10 +7,8 @@ import {
 
 import type { AccessControlRuleFormData, DeadlineEntry } from './types.js';
 
-/** Verbosity level for summary display */
 export type SummaryVerbosity = 'compact' | 'verbose';
 
-/** Format a date string for display in summary */
 function formatDate(dateStr: string): string {
   if (!dateStr) return '';
   try {
@@ -27,7 +25,6 @@ function formatDate(dateStr: string): string {
   }
 }
 
-/** Row data for the date summary table */
 interface DateTableRow {
   date: string;
   label: string;
@@ -35,7 +32,6 @@ interface DateTableRow {
   visibility: string;
 }
 
-/** Generate table rows for date control summary */
 function generateDateTableRows(
   rule: AccessControlRuleFormData,
   verbosity: SummaryVerbosity = 'compact',
@@ -60,7 +56,6 @@ function generateDateTableRows(
     return rows;
   }
 
-  // Collect all date entries with their metadata
   interface DateEntry {
     date: string;
     timestamp: number;
@@ -71,7 +66,6 @@ function generateDateTableRows(
 
   const entries: DateEntry[] = [];
 
-  // Release date
   if (dc.releaseDate.isOverridden && dc.releaseDate.isEnabled && dc.releaseDate.value) {
     const visibilityParts: string[] = ['Assessment opens'];
     if (rule.listBeforeRelease) {
@@ -85,7 +79,6 @@ function generateDateTableRows(
       visibility: visibilityParts.join(' '),
     });
   } else if (verbosity === 'verbose' && dc.releaseDate.isOverridden && !dc.releaseDate.isEnabled) {
-    // In verbose mode, show when release date is explicitly disabled (released immediately)
     rows.push({
       date: 'Released immediately',
       label: '',
@@ -94,7 +87,6 @@ function generateDateTableRows(
     });
   }
 
-  // Early deadlines
   if (dc.earlyDeadlines.isOverridden && dc.earlyDeadlines.isEnabled) {
     dc.earlyDeadlines.value.forEach((deadline: DeadlineEntry, index: number) => {
       if (deadline.date) {
@@ -109,7 +101,6 @@ function generateDateTableRows(
     });
   }
 
-  // Due date
   if (dc.dueDate.isOverridden && dc.dueDate.isEnabled && dc.dueDate.value) {
     entries.push({
       date: dc.dueDate.value,
@@ -119,7 +110,6 @@ function generateDateTableRows(
       visibility: 'Open',
     });
   } else if (verbosity === 'verbose' && dc.dueDate.isOverridden && !dc.dueDate.isEnabled) {
-    // In verbose mode, show when due date is explicitly disabled (no due date)
     rows.push({
       date: 'No due date',
       label: '',
@@ -128,7 +118,6 @@ function generateDateTableRows(
     });
   }
 
-  // Late deadlines
   if (dc.lateDeadlines.isOverridden && dc.lateDeadlines.isEnabled) {
     dc.lateDeadlines.value.forEach((deadline: DeadlineEntry, index: number) => {
       if (deadline.date) {
@@ -143,10 +132,8 @@ function generateDateTableRows(
     });
   }
 
-  // Sort entries by timestamp
   entries.sort((a, b) => a.timestamp - b.timestamp);
 
-  // Convert entries to rows
   for (const entry of entries) {
     rows.push({
       date: formatDate(entry.date),
@@ -156,7 +143,6 @@ function generateDateTableRows(
     });
   }
 
-  // After last deadline row (if configured)
   if (dc.afterLastDeadline.isOverridden && dc.afterLastDeadline.isEnabled) {
     const afterDeadline = dc.afterLastDeadline.value;
     const visibilityParts: string[] = [];
@@ -167,7 +153,6 @@ function generateDateTableRows(
       visibilityParts.push('Closed');
     }
 
-    // Include question/score visibility from afterComplete
     if (rule.afterComplete.questionVisibility.isOverridden) {
       if (rule.afterComplete.questionVisibility.value.hideQuestions) {
         visibilityParts.push('Questions hidden');
@@ -190,28 +175,22 @@ function generateDateTableRows(
   return rows;
 }
 
-/** Generate summary lines for non-date-related settings */
 export function generateRuleSummary(
   rule: AccessControlRuleFormData,
   verbosity: SummaryVerbosity = 'compact',
 ): string[] {
   const lines: string[] = [];
 
-  // Student labels and students are handled separately with links in RuleSummaryCard
-
-  // Enabled/disabled status
   if (!rule.enabled) {
     lines.push('Rule is disabled');
     return lines;
   }
 
-  // Block access
   if (rule.blockAccess) {
     lines.push('Blocks access');
     return lines;
   }
 
-  // Duration (still shown in list, not table)
   if (rule.dateControl.durationMinutes.isOverridden) {
     if (rule.dateControl.durationMinutes.isEnabled) {
       lines.push(`Time limit: ${rule.dateControl.durationMinutes.value} minutes`);
@@ -220,7 +199,6 @@ export function generateRuleSummary(
     }
   }
 
-  // Password
   if (rule.dateControl.password.isOverridden) {
     if (rule.dateControl.password.isEnabled && rule.dateControl.password.value) {
       lines.push('Password protected');
@@ -229,12 +207,10 @@ export function generateRuleSummary(
     }
   }
 
-  // PrairieTest control
   if (rule.integrations.prairieTest.enabled && rule.integrations.prairieTest.exams?.length) {
     lines.push(`${rule.integrations.prairieTest.exams.length} PrairieTest exam(s)`);
   }
 
-  // After complete settings (only if not already shown in table via afterLastDeadline)
   const hasAfterLastDeadline =
     rule.dateControl.afterLastDeadline.isOverridden && rule.dateControl.afterLastDeadline.isEnabled;
 
@@ -262,10 +238,12 @@ interface RuleSummaryCardProps {
   rule: AccessControlRuleFormData;
   isMainRule: boolean;
   title: string;
-  editUrl: string;
+  editUrl?: string;
+  onEdit?: () => void;
   courseInstanceId: string;
   onEditStudentLabels?: () => void;
   onRemove?: () => void;
+  dragHandleProps?: Record<string, unknown>;
 }
 
 export function RuleSummaryCard({
@@ -274,19 +252,18 @@ export function RuleSummaryCard({
   title,
   onRemove,
   editUrl,
+  onEdit,
   courseInstanceId,
   onEditStudentLabels,
+  dragHandleProps,
 }: RuleSummaryCardProps) {
-  // Default verbosity: compact for main rule, verbose for overrides
   const effectiveVerbosity: SummaryVerbosity = isMainRule ? 'compact' : 'verbose';
   const summaryLines = generateRuleSummary(rule, effectiveVerbosity);
   const dateTableRows = generateDateTableRows(rule, effectiveVerbosity);
 
-  // Get students for linking (only for individual/student rules)
   const students =
     !isMainRule && rule.appliesTo.targetType === 'individual' ? rule.appliesTo.individuals : [];
 
-  // Get student labels for linking (only for student label rules)
   const studentLabels =
     !isMainRule && rule.appliesTo.targetType === 'student_label'
       ? rule.appliesTo.studentLabels
@@ -296,6 +273,17 @@ export function RuleSummaryCard({
     <Card className="mb-3">
       <Card.Header className="d-flex justify-content-between align-items-center">
         <div className="d-flex align-items-center gap-2">
+          {dragHandleProps && (
+            <button
+              type="button"
+              className="btn btn-sm btn-ghost p-0"
+              style={{ cursor: 'grab', touchAction: 'none' }}
+              aria-label="Drag to reorder"
+              {...dragHandleProps}
+            >
+              <i className="bi bi-grip-vertical" aria-hidden="true" />
+            </button>
+          )}
           {!isMainRule && (
             <Badge bg="secondary">
               {rule.appliesTo.targetType === 'student_label' ? 'Student label' : 'Student'}
@@ -315,9 +303,15 @@ export function RuleSummaryCard({
               <i className="bi bi-people me-1" /> Student labels
             </Button>
           )}
-          <a href={editUrl} className="btn btn-outline-primary btn-sm">
-            <i className="bi bi-pencil me-1" /> Edit
-          </a>
+          {onEdit ? (
+            <Button variant="outline-primary" size="sm" onClick={onEdit}>
+              <i className="bi bi-pencil me-1" /> Edit
+            </Button>
+          ) : editUrl ? (
+            <a href={editUrl} className="btn btn-outline-primary btn-sm">
+              <i className="bi bi-pencil me-1" /> Edit
+            </a>
+          ) : null}
           {onRemove && (
             <Button variant="outline-danger" size="sm" onClick={onRemove}>
               <i className="bi bi-trash me-1" /> Remove
@@ -326,7 +320,6 @@ export function RuleSummaryCard({
         </div>
       </Card.Header>
       <Card.Body>
-        {/* Date summary table */}
         {dateTableRows.length > 0 && (
           <div className="mb-3">
             <strong className="d-block mb-2">Deadlines</strong>
@@ -354,7 +347,6 @@ export function RuleSummaryCard({
           </div>
         )}
 
-        {/* Student labels with links (for student-label-based rules) */}
         {studentLabels.length > 0 && (
           <div className="mb-2">
             <span className="text-muted">Student labels: </span>
@@ -369,7 +361,6 @@ export function RuleSummaryCard({
           </div>
         )}
 
-        {/* Students with links (for student-based rules) */}
         {students.length > 0 && (
           <div className="mb-2">
             <span className="text-muted">Students: </span>
@@ -388,7 +379,6 @@ export function RuleSummaryCard({
           </div>
         )}
 
-        {/* Other settings list */}
         {summaryLines.length > 0 && (
           <ul className="mb-0 ps-3">
             {summaryLines.map((line) => (
@@ -397,7 +387,6 @@ export function RuleSummaryCard({
           </ul>
         )}
 
-        {/* Show message if nothing configured */}
         {dateTableRows.length === 0 &&
           summaryLines.length === 0 &&
           studentLabels.length === 0 &&

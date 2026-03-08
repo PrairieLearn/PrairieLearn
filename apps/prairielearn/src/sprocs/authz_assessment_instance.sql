@@ -108,7 +108,7 @@ BEGIN
     -- we need to check instead that "there exists a team_users with the same team_id
     -- as the assessment instance and the same user_id as the effective user."
     IF
-        (((group_work) AND (NOT EXISTS (SELECT 1 FROM team_users AS gu WHERE gu.team_id = assessment_instance.team_id AND gu.user_id = (authz_data->'user'->>'id')::bigint)))
+        (((group_work) AND (NOT EXISTS (SELECT 1 FROM team_users AS gu JOIN teams AS g ON g.id = gu.team_id WHERE gu.team_id = assessment_instance.team_id AND gu.user_id = (authz_data->'user'->>'id')::bigint AND g.deleted_at IS NULL)))
         OR ((NOT group_work) AND ((authz_data->'user'->>'id')::bigint != assessment_instance.user_id)))
     THEN
         authorized := authorized AND (authz_data->>'has_course_instance_permission_view')::boolean;

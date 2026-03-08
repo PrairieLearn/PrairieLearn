@@ -1,5 +1,7 @@
 import { z } from 'zod';
 
+import { IdSchema } from '@prairielearn/zod';
+
 import {
   RawStaffAssessmentInstanceSchema,
   RawStaffAssessmentSchema,
@@ -15,6 +17,8 @@ const StudentGradebookRowSchema = z
     assessment_instance: RawStudentAssessmentInstanceSchema__UNSAFE,
     assessment_set: RawStudentAssessmentSetSchema,
     show_closed_assessment_score: z.boolean(),
+    modern_access_control: z.boolean(),
+    assessment_id: IdSchema,
   })
   .transform((data) => {
     // TODO: Instead of doing a single parse from the database,
@@ -35,6 +39,8 @@ const StaffGradebookRowSchema = z
     assessment_instance: RawStaffAssessmentInstanceSchema,
     assessment_set: RawStaffAssessmentSetSchema,
     show_closed_assessment_score: z.boolean(),
+    modern_access_control: z.boolean(),
+    assessment_id: IdSchema,
   })
   .brand('StaffGradebookRow');
 

@@ -37,7 +37,6 @@ export function AfterCompleteForm({
 }: AfterCompleteFormProps) {
   const isOverrideRule = namePrefix.startsWith('overrides.');
 
-  // Use the hook for question visibility
   const {
     field: questionVisibility,
     setField: setQuestionVisibility,
@@ -51,7 +50,6 @@ export function AfterCompleteForm({
     defaultValue: { hideQuestions: false } as QuestionVisibilityValue,
   });
 
-  // Use the hook for score visibility
   const {
     field: scoreVisibility,
     setField: setScoreVisibility,
@@ -65,7 +63,6 @@ export function AfterCompleteForm({
     defaultValue: { hideScore: false } as ScoreVisibilityValue,
   });
 
-  // Determine the current mode for question visibility
   const getHideQuestionsMode = (): HideQuestionsMode => {
     const value = questionVisibility.value;
     if (!value.hideQuestions) return 'show_questions';
@@ -76,7 +73,6 @@ export function AfterCompleteForm({
 
   const hideQuestionsMode = getHideQuestionsMode();
 
-  // Determine the current mode for score visibility
   const getHideScoreMode = (): HideScoreMode => {
     const value = scoreVisibility.value;
     if (!value.hideScore) return 'show_score';
@@ -108,7 +104,6 @@ export function AfterCompleteForm({
     props: { id: 'after-complete-info-popover' },
   };
 
-  // Question visibility form content
   const questionVisibilityContent = (
     <Form.Group>
       <div className="mb-2">
@@ -236,7 +231,6 @@ export function AfterCompleteForm({
     </Form.Group>
   );
 
-  // Score visibility form content
   const scoreVisibilityContent = (
     <Form.Group>
       <div className="mb-2">
@@ -326,7 +320,6 @@ export function AfterCompleteForm({
       <Card.Body>
         <Row>
           <Col md={6}>
-            {/* Question visibility section */}
             <FieldWrapper
               isOverrideRule={isOverrideRule}
               isOverridden={questionVisibility.isOverridden}
@@ -339,7 +332,6 @@ export function AfterCompleteForm({
             </FieldWrapper>
           </Col>
           <Col md={6}>
-            {/* Score visibility section */}
             <FieldWrapper
               isOverrideRule={isOverrideRule}
               isOverridden={scoreVisibility.isOverridden}

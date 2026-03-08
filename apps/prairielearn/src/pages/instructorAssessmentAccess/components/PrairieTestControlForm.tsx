@@ -26,14 +26,12 @@ export function PrairieTestControlForm({
     name: `${namePrefix}.integrations.prairieTest.exams`,
   });
 
-  // Watch exams array
   const exams = useWatch({
     control,
     name: `${namePrefix}.integrations.prairieTest.exams`,
   });
 
   const addExam = () => {
-    // Initialize exams array if it doesn't exist
     if (exams === undefined) {
       setValue(getFieldName(namePrefix, 'integrations.prairieTest.exams'), []);
     }

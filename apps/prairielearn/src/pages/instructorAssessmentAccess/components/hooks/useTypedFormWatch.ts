@@ -23,9 +23,6 @@ export function useWatchField<T>(
   }) as T | undefined;
 }
 
-/**
- * Watch an overridable field with proper typing.
- */
 export function useWatchOverridableField<T>(
   control: Control<AccessControlFormData>,
   namePrefix: NamePrefix,
@@ -34,10 +31,7 @@ export function useWatchOverridableField<T>(
   return useWatchField<OverridableField<T>>(control, namePrefix, fieldPath);
 }
 
-/**
- * Create a form field name from prefix and path.
- * Centralizes the type assertion for register() calls.
- */
+/** Centralizes the type assertion for register() calls. */
 export function getFieldName(
   namePrefix: NamePrefix,
   fieldPath: string,

@@ -32,10 +32,8 @@ export function OverrideRuleContent({ control, index, setValue }: OverrideRuleCo
         </Form.Group>
       )}
 
-      {/* Effects section - only show if rule is enabled and doesn't block access */}
       {isEnabled && !blockAccess && (
         <div className="mb-3">
-          {/* Date control section */}
           <DateControlForm
             control={control}
             namePrefix={`overrides.${index}`}
@@ -44,7 +42,6 @@ export function OverrideRuleContent({ control, index, setValue }: OverrideRuleCo
             description="Control access and credit to your exam based on a schedule"
           />
 
-          {/* After completion behavior section */}
           <AfterCompleteForm
             control={control}
             namePrefix={`overrides.${index}`}

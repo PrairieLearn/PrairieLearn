@@ -14,7 +14,7 @@ DECLARE
     new_rule_id bigint;
     next_number integer;
 BEGIN
-    LOCK TABLE assessment_access_control IN EXCLUSIVE MODE;
+    PERFORM pg_advisory_xact_lock(syncing_assessment_id);
 
     -- Check if updating an existing rule (rule_data contains 'id')
     existing_rule_id := (rule_data ->> 'id')::bigint;
@@ -67,7 +67,8 @@ BEGIN
         DELETE FROM assessment_access_control_late_deadline
         WHERE assessment_access_control_id = new_rule_id;
     ELSE
-        -- Get next available number for enrollment rules
+        -- Get next available number for enrollment rules. Starts at 1 (not 0)
+        -- because check_first_rule_is_none requires number=0 ⟺ target_type='none'.
         SELECT COALESCE(MAX(number), 0) + 1 INTO next_number
         FROM assessment_access_control
         WHERE assessment_id = syncing_assessment_id AND target_type = 'enrollment';

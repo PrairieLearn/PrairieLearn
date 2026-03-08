@@ -56,19 +56,12 @@ interface PreparedRule {
   hideScore: boolean | null;
   showScoreAgainDateOverridden: boolean;
   showScoreAgainDate: string | null;
-  /** Student label IDs to target with this rule */
   studentLabelIds: string[];
-  /** Early deadline entries for this rule */
   earlyDeadlines: { date: string; credit: number }[];
-  /** Late deadline entries for this rule */
   lateDeadlines: { date: string; credit: number }[];
-  /** PrairieTest exam references for this rule */
   prairietestExams: { uuid: string; readOnly: boolean }[];
 }
 
-/**
- * Syncs access control rules for an assessment using bulk operations.
- */
 export async function syncAccessControl(
   courseInstanceId: string,
   assessmentId: string,
@@ -93,7 +86,6 @@ async function syncAccessControlInternal(
     );
   }
 
-  // Load existing student labels to validate that label names exist
   const existingLabels = await sqldb.queryRows(
     sql.select_student_labels,
     { course_instance_id: courseInstanceId },
@@ -102,7 +94,6 @@ async function syncAccessControlInternal(
   // Map by name since the JSON uses label names, not IDs
   const validLabelIds = new Map(existingLabels.map((g) => [g.name, g.id]));
 
-  // Collect all exam UUIDs for bulk validation, filtering out invalid UUID strings
   const UUID_REGEX = /^[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12}$/i;
   const allExamUuids = new Set<string>();
   for (const rule of accessControlRules) {
@@ -114,7 +105,6 @@ async function syncAccessControlInternal(
     }
   }
 
-  // Validate exam UUIDs in bulk
   const validExamUuids = new Set<string>();
   if (allExamUuids.size > 0) {
     const examValidation = await sqldb.queryRows(
@@ -129,7 +119,6 @@ async function syncAccessControlInternal(
     }
   }
 
-  // Validate that all label references are valid
   for (const rule of accessControlRules) {
     const ruleLabels = rule.labels ?? [];
     const invalidLabels = ruleLabels.filter((label) => !validLabelIds.has(label));
@@ -142,7 +131,6 @@ async function syncAccessControlInternal(
   }
   const validRules = accessControlRules;
 
-  // Prepare all rule data upfront
   const preparedRules: PreparedRule[] = [];
   for (let i = 0; i < validRules.length; i++) {
     const rule = validRules[i];
@@ -150,7 +138,6 @@ async function syncAccessControlInternal(
     const afterComplete = rule.afterComplete ?? {};
     const afterLastDeadline = dateControl.afterLastDeadline ?? {};
 
-    // Map JSON fields to DB representation
     const enabled = mapField(rule.enabled);
     const blockAccess = mapField(rule.blockAccess);
     const listBeforeRelease = mapField(rule.listBeforeRelease);
@@ -168,7 +155,6 @@ async function syncAccessControlInternal(
     const hideScoreField = mapField(afterComplete.hideScore);
     const showScoreAgainDateField = mapField(afterComplete.showScoreAgainDate);
 
-    // dateControlOverridden is true if any nested field is overridden
     const dateControlOverridden =
       releaseDateField.overridden ||
       dueDateField.overridden ||
@@ -179,21 +165,17 @@ async function syncAccessControlInternal(
       afterLastDeadlineAllowSubmissionsField.overridden ||
       afterLastDeadlineCreditField.overridden;
 
-    // integrationsPrairietestOverridden is true if exams are defined
     const integrationsPrairietestOverridden = rule.integrations?.prairieTest?.exams !== undefined;
 
-    // Get valid student label IDs for this rule
     const ruleLabels = rule.labels ?? [];
     const studentLabelIds = ruleLabels
       .map((label) => validLabelIds.get(label))
       .filter((id): id is string => id !== undefined);
 
-    // Determine target_type based on whether the rule has labels
     const ruleNumber = JSON_RULE_START + i;
     const targetType: 'none' | 'student_label' =
       studentLabelIds.length > 0 ? 'student_label' : 'none';
 
-    // Filter to valid exam UUIDs only
     const validExams = (rule.integrations?.prairieTest?.exams ?? []).filter((e) =>
       validExamUuids.has(e.examUuid),
     );
@@ -237,7 +219,6 @@ async function syncAccessControlInternal(
     });
   }
 
-  // Prepare rule data for the sproc
   const ruleRows = preparedRules.map((r) =>
     JSON.stringify({
       number: r.number,
@@ -301,7 +282,6 @@ async function syncAccessControlInternal(
     }
   }
 
-  // Call the stored procedure to sync all access control rules
   await sqldb.callRows(
     'sync_access_control',
     [

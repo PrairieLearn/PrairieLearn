@@ -183,7 +183,6 @@ describe('Assignment-level rule requirement', () => {
       accessControlJsonArray: parsedRules,
     });
 
-    // should have an error on the first rule
     assert.isTrue(
       results[0].errors.length > 0,
       'Expected error when no assignment-level rule exists',
@@ -217,7 +216,6 @@ describe('Assignment-level rule requirement', () => {
       accessControlJsonArray: parsedRules,
     });
 
-    // Should have an error on the first rule
     assert.isTrue(
       results[0].errors.length > 0,
       'Expected error when multiple assignment-level rules exist',
@@ -269,14 +267,12 @@ describe('Date fields without seconds', () => {
 
     const parsed = AccessControlJsonSchema.parse(ruleWithDateWithoutSeconds);
 
-    // Verify dates were transformed to include seconds
     assert.equal(parsed.dateControl?.releaseDate, '2024-03-14T00:01:00');
     assert.equal(parsed.dateControl?.dueDate, '2024-03-21T23:59:00');
     assert.equal(parsed.dateControl?.earlyDeadlines?.[0].date, '2024-03-17T23:59:00');
     assert.equal(parsed.dateControl?.lateDeadlines?.[0].date, '2024-03-23T23:59:00');
     assert.equal(parsed.afterComplete?.showQuestionsAgainDate, '2024-03-25T12:00:00');
 
-    // Verify validation passes
     const results = validateAccessControlArray({
       accessControlJsonArray: [parsed],
     });
@@ -297,11 +293,9 @@ describe('Date fields without seconds', () => {
 
     const parsed = AccessControlJsonSchema.parse(ruleWithDateWithSeconds);
 
-    // Verify dates remain unchanged
     assert.equal(parsed.dateControl?.releaseDate, '2024-03-14T00:01:00');
     assert.equal(parsed.dateControl?.dueDate, '2024-03-21T23:59:00');
 
-    // Verify validation passes
     const results = validateAccessControlArray({
       accessControlJsonArray: [parsed],
     });

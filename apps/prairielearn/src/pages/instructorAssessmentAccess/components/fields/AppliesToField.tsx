@@ -22,13 +22,11 @@ interface AppliesToFieldProps {
 }
 
 export function AppliesToField({ control, setValue, namePrefix }: AppliesToFieldProps) {
-  // Watch the current appliesTo value
   const appliesTo = useWatch({
     control,
     name: `${namePrefix}.appliesTo` as const,
   });
 
-  // Field arrays for managing individuals and student labels
   const {
     fields: individualFields,
     append: appendIndividual,
@@ -47,9 +45,7 @@ export function AppliesToField({ control, setValue, namePrefix }: AppliesToField
     name: `${namePrefix}.appliesTo.studentLabels` as 'mainRule.appliesTo.studentLabels',
   });
 
-  // Handle target type change
   const handleTargetTypeChange = (newType: TargetType) => {
-    // Clear selections when switching modes
     setValue(
       `${namePrefix}.appliesTo` as const,
       {
@@ -61,48 +57,42 @@ export function AppliesToField({ control, setValue, namePrefix }: AppliesToField
     );
   };
 
-  // Handle adding student labels
   const handleAddStudentLabels = (labels: StudentLabelTarget[]) => {
     for (const label of labels) {
       appendStudentLabel(label);
     }
   };
 
-  // Handle adding students
   const handleAddStudents = (students: IndividualTarget[]) => {
     for (const student of students) {
       appendIndividual(student);
     }
   };
 
-  // Handle removing all individuals
   const handleRemoveAllIndividuals = () => {
     for (let i = individualFields.length - 1; i >= 0; i--) {
       removeIndividual(i);
     }
   };
 
-  // Handle removing all student labels
   const handleRemoveAllStudentLabels = () => {
     for (let i = studentLabelFields.length - 1; i >= 0; i--) {
       removeStudentLabel(i);
     }
   };
 
-  // Get values with safe defaults - appliesTo may be undefined during initial render
+  // appliesTo may be undefined during initial render
   const typedAppliesTo = appliesTo as AppliesTo | undefined;
   const currentTargetType = typedAppliesTo?.targetType ?? 'individual';
   const individuals = typedAppliesTo?.individuals ?? [];
   const studentLabels = typedAppliesTo?.studentLabels ?? [];
 
-  // Map data to ChipGroup items
   const individualChipItems = individuals.map((s) => ({ id: s.uid, label: s.name ?? s.uid }));
   const studentLabelChipItems = studentLabels.map((sl) => ({
     id: sl.studentLabelId,
     label: sl.name,
   }));
 
-  // Remove by id (used by ChipGroup's onRemove which provides the item id)
   const handleRemoveIndividualByUid = (uid: string) => {
     const index = individuals.findIndex((s) => s.uid === uid);
     if (index !== -1) removeIndividual(index);
@@ -112,7 +102,6 @@ export function AppliesToField({ control, setValue, namePrefix }: AppliesToField
     if (index !== -1) removeStudentLabel(index);
   };
 
-  // Create sets for excluded IDs
   const excludedStudentLabelIds = new Set(studentLabels.map((sl) => sl.studentLabelId));
   const excludedUids = new Set(individuals.map((i) => i.uid));
 
@@ -122,7 +111,6 @@ export function AppliesToField({ control, setValue, namePrefix }: AppliesToField
         <strong>Applies to</strong>
       </Card.Header>
       <Card.Body>
-        {/* Radio buttons for target type */}
         <div className="mb-3">
           <Form.Check
             type="radio"
@@ -142,7 +130,6 @@ export function AppliesToField({ control, setValue, namePrefix }: AppliesToField
           />
         </div>
 
-        {/* Selected items display */}
         <div className="d-flex flex-wrap align-items-center gap-1">
           {currentTargetType === 'individual' ? (
             <ChipGroup

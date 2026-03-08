@@ -19,35 +19,29 @@ export function MainRuleForm({
   courseInstance: _courseInstance,
   setValue,
 }: MainRuleFormProps) {
-  // Watch the main rule enabled state
   const ruleEnabled = useWatch({
     control,
     name: 'mainRule.enabled',
   });
 
-  // Watch block access state
   const blockAccess = useWatch({
     control,
     name: 'mainRule.blockAccess',
   });
 
-  // Watch actual field values to determine if controls are active
   const releaseDate = useWatch({
     control,
     name: 'mainRule.dateControl.releaseDate',
   }) as OverridableField<string> | undefined;
 
-  // Watch PrairieTest exams
   const prairieTestExams = useWatch({
     control,
     name: 'mainRule.integrations.prairieTest.exams',
     defaultValue: [],
   });
 
-  // Check if date-based release is available (has a release date enabled)
   const hasDateRelease = releaseDate?.isEnabled ?? false;
 
-  // Check if PrairieTest-based release is available
   const hasPrairieTestRelease = (prairieTestExams?.length ?? 0) > 0;
 
   return (

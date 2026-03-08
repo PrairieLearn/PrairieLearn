@@ -3,6 +3,7 @@ import z from 'zod';
 
 import { loadSqlEquiv, queryOptionalRow } from '@prairielearn/postgres';
 
+import { resolveModernAssessmentAccess } from '../lib/access-control-modern.js';
 import {
   AssessmentModuleSchema,
   AssessmentSchema,
@@ -25,7 +26,7 @@ const SelectAndAuthzAssessmentSchema = z.object({
 export type ResLocalsAssessment = z.infer<typeof SelectAndAuthzAssessmentSchema>;
 
 export default asyncHandler(async (req, res, next) => {
-  const row = await queryOptionalRow(
+  let row = await queryOptionalRow(
     sql.select_and_auth,
     {
       assessment_id: req.params.assessment_id,
@@ -39,7 +40,17 @@ export default asyncHandler(async (req, res, next) => {
     res.status(403).send(AccessDenied({ resLocals: res.locals }));
     return;
   }
-  // TODO: consider row.assessment.modern_access_control
+  if (row.assessment.modern_access_control) {
+    const modernResult = await resolveModernAssessmentAccess({
+      assessmentId: row.assessment.id,
+      userId: res.locals.authz_data.user.id,
+      courseInstanceId: res.locals.course_instance.id,
+      authzData: res.locals.authz_data,
+      reqDate: res.locals.req_date,
+      displayTimezone: res.locals.course_instance.display_timezone,
+    });
+    row = { ...row, authz_result: modernResult };
+  }
   if (!row.authz_result.authorized) {
     res.status(403).send(AccessDenied({ resLocals: res.locals }));
     return;

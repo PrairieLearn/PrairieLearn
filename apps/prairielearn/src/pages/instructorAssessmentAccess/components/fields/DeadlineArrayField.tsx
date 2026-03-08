@@ -52,7 +52,6 @@ export function DeadlineArrayField({
       defaultValue: [] as DeadlineEntry[],
     });
 
-  // Watch related fields for validation and display
   const releaseDate = useWatchOverridableField<string>(
     control,
     namePrefix,
@@ -61,17 +60,20 @@ export function DeadlineArrayField({
 
   const dueDate = useWatchOverridableField<string>(control, namePrefix, 'dateControl.dueDate');
 
-  // Use field array for the deadline entries
+  // `getArrayFieldName` returns a union of all valid field array paths in
+  // AccessControlFormData, so `fields` is typed as a union of all possible
+  // element types (deadlines, individuals, labels, etc.). We narrow it here
+  // since we know this component only operates on deadline arrays.
   const {
-    fields: deadlineFields,
+    fields: rawDeadlineFields,
     append: appendDeadline,
     remove: removeDeadline,
   } = useFieldArray({
     control,
     name: getArrayFieldName(namePrefix, `${fieldPath}.value`),
   });
+  const deadlineFields = rawDeadlineFields as (DeadlineEntry & { id: string })[];
 
-  // Get form errors
   const { errors } = useFormState({ control });
 
   const getDateError = (index: number): string | undefined => {
@@ -82,13 +84,20 @@ export function DeadlineArrayField({
     return get(errors, `${namePrefix}.${fieldPath}.value.${index}.credit`)?.message;
   };
 
-  // Get time range text for a deadline
   const getTimeRangeText = (index: number) => {
     if (!releaseDate || !dueDate) return null;
 
+    // Use deadlineFields (from useFieldArray) as the source of truth rather than
+    // field.value (from useWatch), since useFieldArray updates synchronously on
+    // append/remove while useWatch lags by one render.
+    const deadlines: DeadlineEntry[] = deadlineFields.map((f) => ({
+      date: f.date,
+      credit: f.credit,
+    }));
+
     const range = isEarly
-      ? getEarlyDeadlineRange(index, field.value, releaseDate)
-      : getLateDeadlineRange(index, field.value, dueDate);
+      ? getEarlyDeadlineRange(index, deadlines, releaseDate)
+      : getLateDeadlineRange(index, deadlines, dueDate);
 
     if (!range) return null;
 
@@ -110,42 +119,36 @@ export function DeadlineArrayField({
     );
   };
 
-  // Validation rules
-  // Note: validate functions receive unknown type due to dynamic path, so we cast to expected type
+  // validate functions receive unknown type due to dynamic path, so we cast to expected type
   const validateDate = (value: unknown, index: number) => {
     const stringValue = value as string;
     if (!stringValue) return 'Date is required';
     const deadlineDate = new Date(stringValue);
 
     if (isEarly) {
-      // Early deadline must be before due date
       if (dueDate?.isEnabled && dueDate.value) {
         const currentDueDate = new Date(dueDate.value);
         if (deadlineDate >= currentDueDate) {
           return 'Early deadline must be before due date';
         }
       }
-      // Must be after previous early deadline
       if (index > 0 && field.value[index - 1]?.date) {
         if (deadlineDate <= new Date(field.value[index - 1].date)) {
           return 'Must be after previous early deadline';
         }
       }
-      // First early deadline must be after release date
       if (index === 0 && releaseDate?.isEnabled && releaseDate.value) {
         if (deadlineDate < new Date(releaseDate.value)) {
           return 'Must be after release date';
         }
       }
     } else {
-      // Late deadline must be after due date
       if (dueDate?.isEnabled && dueDate.value) {
         const currentDueDate = new Date(dueDate.value);
         if (deadlineDate <= currentDueDate) {
           return 'Late deadline must be after due date';
         }
       }
-      // Must be after previous late deadline
       if (index > 0 && field.value[index - 1]?.date) {
         if (deadlineDate <= new Date(field.value[index - 1].date)) {
           return 'Must be after previous late deadline';
@@ -170,9 +173,6 @@ export function DeadlineArrayField({
     appendDeadline({ date: '', credit: isEarly ? 101 : 99 });
   };
 
-  // Determine if the field should be visible
-  // For early deadlines: need release date enabled OR (override rule AND overridden)
-  // For late deadlines: need due date enabled OR (override rule AND overridden)
   const shouldShow = () => {
     if (isEarly) {
       return releaseDate?.isEnabled || (isOverrideRule && field.isOverridden);
@@ -182,7 +182,6 @@ export function DeadlineArrayField({
   };
 
   if (!shouldShow()) {
-    // For override rules, still show the override button even when hidden
     if (isOverrideRule) {
       return (
         <FieldWrapper

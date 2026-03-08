@@ -32,7 +32,6 @@ export function StudentSearchInput({ excludedUids, onSelect, onClose }: StudentS
     },
   });
 
-  // Filter students based on search query and exclusions (client-side)
   const filteredStudents = useMemo(() => {
     if (!allStudents) return [];
     return allStudents.filter((student) => {
@@ -46,7 +45,6 @@ export function StudentSearchInput({ excludedUids, onSelect, onClose }: StudentS
     });
   }, [allStudents, excludedUids, searchQuery]);
 
-  // Parse UIDs from input
   const parseUids = useCallback((input: string) => {
     return input
       .split(/[,\s\n]+/)
@@ -54,7 +52,6 @@ export function StudentSearchInput({ excludedUids, onSelect, onClose }: StudentS
       .filter((uid) => uid.length > 0);
   }, []);
 
-  // Handle validate button click
   const handleValidate = () => {
     const uids = parseUids(uidInput);
     if (uids.length > 0) {
@@ -62,7 +59,6 @@ export function StudentSearchInput({ excludedUids, onSelect, onClose }: StudentS
     }
   };
 
-  // Handle adding validated UIDs
   const handleAddValidated = () => {
     const validStudents = validatedUids
       .filter((r) => r.id && r.enrolled && !excludedUids.has(r.uid))
@@ -79,7 +75,6 @@ export function StudentSearchInput({ excludedUids, onSelect, onClose }: StudentS
     }
   };
 
-  // Handle checkbox toggle
   const handleToggleStudent = (studentId: string) => {
     setSelectedStudents((prev) => {
       const newSet = new Set(prev);
@@ -92,7 +87,6 @@ export function StudentSearchInput({ excludedUids, onSelect, onClose }: StudentS
     });
   };
 
-  // Handle select all visible
   const handleSelectAll = () => {
     setSelectedStudents((prev) => {
       const newSet = new Set(prev);
@@ -103,12 +97,10 @@ export function StudentSearchInput({ excludedUids, onSelect, onClose }: StudentS
     });
   };
 
-  // Handle clear selection
   const handleClearSelection = () => {
     setSelectedStudents(new Set());
   };
 
-  // Handle adding selected students
   const handleAddSelected = () => {
     if (!allStudents) return;
     const studentsToAdd = allStudents

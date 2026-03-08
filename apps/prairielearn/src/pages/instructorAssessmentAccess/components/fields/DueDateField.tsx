@@ -25,7 +25,6 @@ export function DueDateField({ control, setValue, namePrefix }: DueDateFieldProp
     defaultValue: '',
   });
 
-  // Watch release date and early deadlines for credit period display
   const releaseDate = useWatchOverridableField<string>(
     control,
     namePrefix,
@@ -38,7 +37,6 @@ export function DueDateField({ control, setValue, namePrefix }: DueDateFieldProp
     'dateControl.earlyDeadlines',
   );
 
-  // Calculate the credit period text
   const getCreditPeriodText = () => {
     if (!field.value) return null;
 

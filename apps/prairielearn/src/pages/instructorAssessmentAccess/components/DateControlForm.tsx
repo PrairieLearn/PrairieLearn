@@ -32,14 +32,12 @@ export function DateControlForm({
 }: DateControlFormProps) {
   const isOverrideRule = namePrefix.startsWith('overrides.');
 
-  // Watch the dateControl.enabled state (only used for main rule)
   const dateControlEnabledField = useWatchField<boolean>(
     control,
     namePrefix,
     'dateControl.enabled',
   );
 
-  // Watch fields to determine if any override is active (for override rules)
   const releaseDate = useWatchOverridableField<string>(
     control,
     namePrefix,
@@ -86,11 +84,9 @@ export function DateControlForm({
       password?.isOverridden
     : dateControlEnabledField;
 
-  // Check if any date-based fields are enabled (for showing After Last Deadline)
   const hasAnyDateControl =
     dueDate?.isEnabled || earlyDeadlines?.isOverridden || lateDeadlines?.isOverridden;
 
-  // Early return if form values haven't loaded yet
   if (!releaseDate || !dueDate || !durationMinutes || !password) {
     return null;
   }
@@ -124,7 +120,6 @@ export function DateControlForm({
         }}
       >
         <div>
-          {/* Release Date and Due Date */}
           <Row className="mb-3">
             <Col md={6}>
               <ReleaseDateField control={control} setValue={setValue} namePrefix={namePrefix} />
@@ -134,7 +129,6 @@ export function DateControlForm({
             </Col>
           </Row>
 
-          {/* Early and Late Deadlines */}
           <Row className="mb-4">
             <Col md={6}>
               <DeadlineArrayField
@@ -156,7 +150,6 @@ export function DateControlForm({
 
           {!isOverrideRule && <hr className="my-4" />}
 
-          {/* After Last Deadline - show when dates are configured or it's an override rule */}
           {(isOverrideRule || hasAnyDateControl) && (
             <div className="mb-3">
               <AfterLastDeadlineField
@@ -169,7 +162,6 @@ export function DateControlForm({
 
           {!isOverrideRule && <hr className="my-4" />}
 
-          {/* Duration and Password */}
           <Row className="mb-3">
             <Col md={6}>
               <DurationField control={control} setValue={setValue} namePrefix={namePrefix} />
