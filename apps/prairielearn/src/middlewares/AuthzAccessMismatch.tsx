@@ -1,10 +1,16 @@
 import { partition } from 'es-toolkit';
 
+import {
+  type CourseInstancePageAuthzData,
+  type PageAuthzData,
+  isCourseInstancePageAuthzData,
+} from '../lib/authz-data-lib.js';
 import { removeCookieClient, setCookieClient } from '../lib/client/cookie.js';
-import type { PageContextWithAuthzData } from '../lib/client/page-context.js';
 import type { StaffUser, StudentUser } from '../lib/client/safe-db-types.js';
 
-// These keys can be used as part of permission checks.
+// These keys can be used as part of permission checks. We use
+// CourseInstancePageAuthzData for key extraction since it has all possible
+// permission keys (course + course instance).
 export type CheckablePermissionKeys = Extract<
   | 'is_administrator'
   | 'has_course_permission_preview'
@@ -15,13 +21,13 @@ export type CheckablePermissionKeys = Extract<
   | 'has_course_instance_permission_edit'
   | 'has_student_access'
   | 'has_student_access_with_enrollment',
-  keyof PageContextWithAuthzData['authz_data']
+  keyof CourseInstancePageAuthzData
 >;
 
 // These keys are used to show users diagnostic information about their permissions.
 type DiagnosticPermissionKeys = Extract<
   CheckablePermissionKeys | 'course_role' | 'course_instance_role',
-  keyof PageContextWithAuthzData['authz_data']
+  keyof CourseInstancePageAuthzData
 >;
 
 interface PermissionMeta {
@@ -35,7 +41,7 @@ interface PermissionData extends PermissionMeta {
   authnValue: boolean | string;
 }
 
-const PERMISSIONS_META = [
+const COURSE_PERMISSIONS_META = [
   {
     label: 'Administrator',
     key: 'is_administrator',
@@ -66,6 +72,9 @@ const PERMISSIONS_META = [
     key: 'has_course_permission_own',
     type: 'boolean',
   },
+] satisfies PermissionMeta[];
+
+const CI_PERMISSIONS_META = [
   {
     label: 'Course instance role',
     key: 'course_instance_role',
@@ -92,6 +101,8 @@ const PERMISSIONS_META = [
     type: 'boolean',
   },
 ] satisfies PermissionMeta[];
+
+const ALL_PERMISSIONS_META = [...COURSE_PERMISSIONS_META, ...CI_PERMISSIONS_META];
 
 function PermissionsTable({ permissions }: { permissions: PermissionData[] }) {
   return (
@@ -148,7 +159,7 @@ function formatUser(user: StudentUser | StaffUser) {
 
 function getPermissionDescription(permissionKeys: CheckablePermissionKeys[]): string {
   const descriptions = permissionKeys.map((key) => {
-    const permission = PERMISSIONS_META.find((p) => p.key === key);
+    const permission = ALL_PERMISSIONS_META.find((p) => p.key === key);
     return permission?.label.toLowerCase() || key.toString().replaceAll('_', ' ');
   });
 
@@ -178,15 +189,20 @@ export function AuthzAccessMismatch({
    */
   errorExplanation?: string;
   oneOfPermissionKeys: CheckablePermissionKeys[];
-  authzData: PageContextWithAuthzData['authz_data'];
+  authzData: PageAuthzData;
   authnUser: StudentUser | StaffUser;
   authzUser: StudentUser | StaffUser | null;
 }) {
-  const permissions: PermissionData[] = PERMISSIONS_META.map((permission) => {
+  const isCourseInstance = isCourseInstancePageAuthzData(authzData);
+  const applicableMeta = isCourseInstance ? ALL_PERMISSIONS_META : COURSE_PERMISSIONS_META;
+
+  // Cast to Record for dynamic key access (computed `authn_` prefix keys).
+  const data = authzData as unknown as Record<string, boolean | string | undefined>;
+  const permissions: PermissionData[] = applicableMeta.map((permission) => {
+    const defaultValue = permission.type === 'string' ? '' : false;
     return {
-      authnValue:
-        authzData[`authn_${permission.key}`] ?? (permission.type === 'string' ? '' : false),
-      value: authzData[permission.key] ?? (permission.type === 'string' ? '' : false),
+      authnValue: data[`authn_${permission.key}`] ?? defaultValue,
+      value: data[permission.key] ?? defaultValue,
       ...permission,
     };
   });
@@ -203,7 +219,8 @@ export function AuthzAccessMismatch({
   // Use special messaging if there is an effective role but the effective user remains the same
   const hasEffectiveUser = authzUser?.id !== authnUser.id;
   const isStudentViewActive =
-    !authzData.has_course_permission_preview && !authzData.has_course_instance_permission_view;
+    !authzData.has_course_permission_preview &&
+    !(isCourseInstance && authzData.has_course_instance_permission_view);
 
   return (
     <main id="content" className="container">
