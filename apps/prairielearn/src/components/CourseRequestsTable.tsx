@@ -1,83 +1,104 @@
+import { QueryClient, useMutation } from '@tanstack/react-query';
+import clsx from 'clsx';
 import { useState } from 'react';
-import { Dropdown } from 'react-bootstrap';
+import { Alert, Dropdown, Modal } from 'react-bootstrap';
+import { useForm } from 'react-hook-form';
 
 import { OverlayTrigger } from '@prairielearn/ui';
 
 import type { AdminInstitution } from '../lib/client/safe-db-types.js';
+import { QueryClientProviderDebug } from '../lib/client/tanstackQuery.js';
 import { getAdministratorCourseRequestsUrl } from '../lib/client/url.js';
 import type { CourseRequestRow } from '../lib/course-request.js';
+import { createAdministratorTrpcClient } from '../trpc/administrator/trpc-client.js';
+import { TRPCProvider, useTRPC } from '../trpc/administrator/trpc-context.js';
 
 import { JobStatus } from './JobStatus.js';
+
+interface CourseRequestApproveFormData {
+  institution_id: string;
+  short_name: string;
+  title: string;
+  display_timezone: string;
+  path: string;
+  repository_short_name: string;
+  github_user: string;
+}
 
 export function CourseRequestsTable({
   rows,
   institutions,
   coursesRoot,
   showAll,
-  csrfToken,
+  trpcCsrfToken,
   urlPrefix,
 }: {
   rows: CourseRequestRow[];
   institutions: AdminInstitution[];
   coursesRoot: string;
   showAll: boolean;
-  csrfToken: string;
+  trpcCsrfToken: string;
   urlPrefix: string;
 }) {
   const headerPrefix = showAll ? 'All' : 'Pending';
+  const [queryClient] = useState(() => new QueryClient());
+  const [trpcClient] = useState(() => createAdministratorTrpcClient({ csrfToken: trpcCsrfToken }));
   return (
-    <div className="card mb-4">
-      <div className="card-header bg-primary text-white d-flex align-items-center">
-        <h2>{headerPrefix} course requests</h2>
-        {!showAll && (
-          <a
-            className="btn btn-sm btn-light ms-auto"
-            href={getAdministratorCourseRequestsUrl({ urlPrefix })}
-          >
-            <i className="fa fa-search" aria-hidden="true" />
-            <span className="d-none d-sm-inline">View all</span>
-          </a>
-        )}
-      </div>
-      <div className="table-responsive">
-        <table className="table table-sm" aria-label="Course requests">
-          <thead>
-            <tr>
-              <th>Created At</th>
-              <th>Short Name / Title</th>
-              <th>Institution</th>
-              <th>Requested By</th>
-              <th>PrairieLearn User</th>
-              <th>GitHub Username</th>
-              <th>Referral Source</th>
-              <th>Status</th>
-              {showAll && <th>Updated By</th>}
-              <th>Actions</th>
-              <th>Details</th>
-            </tr>
-          </thead>
-          <tbody>
-            {rows.map((row) => (
-              <CourseRequestTableRow
-                key={row.id}
-                row={row}
-                institutions={institutions}
-                coursesRoot={coursesRoot}
-                showAll={showAll}
-                csrfToken={csrfToken}
-                urlPrefix={urlPrefix}
-              />
-            ))}
-          </tbody>
-        </table>
-      </div>
-      <div className="card-footer">
-        <small>
-          Accepting a course request will automatically create a new GitHub repository and add the
-          course to the database.
-        </small>
-      </div>
-    </div>
+    <QueryClientProviderDebug client={queryClient}>
+      <TRPCProvider trpcClient={trpcClient} queryClient={queryClient}>
+        <div className="card mb-4">
+          <div className="card-header bg-primary text-white d-flex align-items-center">
+            <h2>{headerPrefix} course requests</h2>
+            {!showAll && (
+              <a
+                className="btn btn-sm btn-light ms-auto"
+                href={getAdministratorCourseRequestsUrl({ urlPrefix })}
+              >
+                <i className="fa fa-search" aria-hidden="true" />
+                <span className="d-none d-sm-inline">View all</span>
+              </a>
+            )}
+          </div>
+          <div className="table-responsive">
+            <table className="table table-sm" aria-label="Course requests">
+              <thead>
+                <tr>
+                  <th>Created At</th>
+                  <th>Short Name / Title</th>
+                  <th>Institution</th>
+                  <th>Requested By</th>
+                  <th>PrairieLearn User</th>
+                  <th>GitHub Username</th>
+                  <th>Referral Source</th>
+                  <th>Status</th>
+                  {showAll && <th>Updated By</th>}
+                  <th>Actions</th>
+                  <th>Details</th>
+                </tr>
+              </thead>
+              <tbody>
+                {rows.map((row) => (
+                  <CourseRequestTableRow
+                    key={row.id}
+                    row={row}
+                    institutions={institutions}
+                    coursesRoot={coursesRoot}
+                    showAll={showAll}
+                    urlPrefix={urlPrefix}
+                  />
+                ))}
+              </tbody>
+            </table>
+          </div>
+          <div className="card-footer">
+            <small>
+              Accepting a course request will automatically create a new GitHub repository and add
+              the course to the database.
+            </small>
+          </div>
+        </div>
+      </TRPCProvider>
+    </QueryClientProviderDebug>
   );
 }
 
@@ -88,14 +109,12 @@ function CourseRequestTableRow({
   institutions,
   coursesRoot,
   showAll,
-  csrfToken,
   urlPrefix,
 }: {
   row: CourseRequestRow;
   institutions: AdminInstitution[];
   coursesRoot: string;
   showAll: boolean;
-  csrfToken: string;
   urlPrefix: string;
 }) {
   const [noteOpen, setNoteOpen] = useState(Boolean(row.note));
@@ -139,7 +158,6 @@ function CourseRequestTableRow({
                   body: (
                     <CourseRequestDenyForm
                       request={row}
-                      csrfToken={csrfToken}
                       onCancel={() => setShowDenyPopover(false)}
                     />
                   ),
@@ -152,29 +170,28 @@ function CourseRequestTableRow({
                   <i className="fa fa-times" aria-hidden="true" /> Deny
                 </button>
               </OverlayTrigger>
-              <OverlayTrigger
-                trigger="click"
-                placement="auto"
-                popover={{
-                  header: 'Approve course request',
-                  body: (
-                    <CourseRequestApproveForm
-                      request={row}
-                      institutions={institutions}
-                      coursesRoot={coursesRoot}
-                      csrfToken={csrfToken}
-                      onCancel={() => setShowApprovePopover(false)}
-                    />
-                  ),
-                }}
-                show={showApprovePopover}
-                rootClose
-                onToggle={setShowApprovePopover}
+              <button
+                type="button"
+                className="btn btn-sm btn-success text-nowrap"
+                onClick={() => setShowApprovePopover(true)}
               >
-                <button type="button" className="btn btn-sm btn-success text-nowrap">
-                  <i className="fa fa-check" aria-hidden="true" /> Approve
-                </button>
-              </OverlayTrigger>
+                <i className="fa fa-check" aria-hidden="true" /> Approve
+              </button>
+              <Modal
+                show={showApprovePopover}
+                backdrop="static"
+                onHide={() => setShowApprovePopover(false)}
+              >
+                <Modal.Body>
+                  <CourseRequestApproveForm
+                    request={row}
+                    institutions={institutions}
+                    coursesRoot={coursesRoot}
+                    urlPrefix={urlPrefix}
+                    onCancel={() => setShowApprovePopover(false)}
+                  />
+                </Modal.Body>
+              </Modal>
             </div>
           )}
         </td>
@@ -204,11 +221,7 @@ function CourseRequestTableRow({
       {noteOpen && (
         <tr>
           <td colSpan={showAll ? 11 : 10} className="p-0">
-            <CourseRequestEditNoteForm
-              request={row}
-              csrfToken={csrfToken}
-              onCancel={() => setNoteOpen(false)}
-            />
+            <CourseRequestEditNoteForm request={row} onCancel={() => setNoteOpen(false)} />
           </td>
         </tr>
       )}
@@ -265,45 +278,111 @@ function CourseRequestApproveForm({
   request,
   institutions,
   coursesRoot,
-  csrfToken,
+  urlPrefix,
   onCancel,
 }: {
   request: CourseRequestRow;
   institutions: AdminInstitution[];
   coursesRoot: string;
-  csrfToken: string;
+  urlPrefix: string;
   onCancel: () => void;
 }) {
-  const repo_name = 'pl-' + request.short_name.replaceAll(' ', '').toLowerCase();
-  const [timezone, setTimezone] = useState(institutions[0]?.display_timezone ?? '');
+  const trpc = useTRPC();
+  const mutation = useMutation(trpc.courseRequests.createCourseMutation.mutationOptions());
+
+  const repoName = 'pl-' + request.short_name.replaceAll(' ', '').toLowerCase();
+  const path = coursesRoot + '/' + repoName;
+
+  const {
+    register,
+    handleSubmit,
+    watch,
+    setValue,
+    formState: { errors, isSubmitting },
+  } = useForm<CourseRequestApproveFormData>({
+    mode: 'onSubmit',
+    defaultValues: {
+      institution_id: '',
+      short_name: request.short_name,
+      title: request.title,
+      display_timezone: '',
+      path,
+      repository_short_name: repoName,
+      github_user: request.github_user ?? '',
+    },
+  });
+  const institutionId = watch('institution_id');
+
+  const selectedInstitution = institutions.find((i) => i.id === institutionId);
+  const isDefaultInstitution = selectedInstitution?.short_name === 'Default';
+
+  const onSubmit = async (data: CourseRequestApproveFormData) => {
+    mutation.mutate(
+      {
+        courseRequestId: request.id,
+        shortName: data.short_name,
+        title: data.title,
+        institutionId: data.institution_id,
+        displayTimezone: data.display_timezone,
+        path: data.path,
+        repoShortName: data.repository_short_name,
+        githubUser: data.github_user,
+      },
+      {
+        onSuccess: ({ jobSequenceId }) => {
+          window.location.href = `${urlPrefix}/administrator/jobSequence/${jobSequenceId}/`;
+        },
+      },
+    );
+  };
 
   return (
-    <form name={`create-course-from-request-form-${request.id}`} method="POST">
-      <input type="hidden" name="__csrf_token" value={csrfToken} />
-      <input type="hidden" name="__action" value="create_course_from_request" />
-      <input type="hidden" name="request_id" value={request.id} />
-
+    <form name={`create-course-from-request-form-${request.id}`} onSubmit={handleSubmit(onSubmit)}>
       <div className="mb-3">
         <label className="form-label" htmlFor="courseRequestAddInstitution">
           Institution:
         </label>
         <select
           id="courseRequestAddInstitution"
-          name="institution_id"
-          className="form-select"
-          onChange={({ currentTarget }) => {
-            const selected = institutions.find((i) => i.id === currentTarget.value);
-            if (selected) {
-              setTimezone(selected.display_timezone);
-            }
-          }}
+          className={clsx(
+            'form-select',
+            selectedInstitution && isDefaultInstitution && 'is-warning',
+            errors.institution_id && 'is-invalid',
+          )}
+          aria-invalid={errors.institution_id ? true : undefined}
+          aria-errormessage={
+            errors.institution_id ? 'courseRequestAddInstitution-error' : undefined
+          }
+          {...register('institution_id', {
+            required: 'Select an institution',
+            onChange: (e) => {
+              const selected = institutions.find((i) => i.id === e.target.value);
+              if (selected) {
+                setValue('display_timezone', selected.display_timezone);
+              }
+            },
+          })}
         >
+          <option value="" disabled>
+            Select an institution...
+          </option>
           {institutions.map((i) => (
             <option key={i.id} value={i.id}>
               {i.short_name}
             </option>
           ))}
         </select>
+        {errors.institution_id && (
+          <div id="courseRequestAddInstitution-error" className="invalid-feedback">
+            {errors.institution_id.message}
+          </div>
+        )}
+        {isDefaultInstitution && (
+          <div className="form-text text-warning">
+            <i className="fa fa-exclamation-triangle" aria-hidden="true" /> The "Default"
+            institution is typically not intended for new courses.
+          </div>
+        )}
       </div>
       <div className="mb-3">
         <label className="form-label" htmlFor="courseRequestAddInputShortName">
@@ -311,12 +390,18 @@ function CourseRequestApproveForm({
         </label>
         <input
           type="text"
-          className="form-control"
+          className={clsx('form-control', errors.short_name && 'is-invalid')}
           id="courseRequestAddInputShortName"
-          name="short_name"
           placeholder="XC 101"
-          defaultValue={request.short_name}
+          aria-invalid={errors.short_name ? true : undefined}
+          aria-errormessage={errors.short_name ? 'courseRequestAddInputShortName-error' : undefined}
+          {...register('short_name', { required: 'Enter a short name' })}
         />
+        {errors.short_name && (
+          <div id="courseRequestAddInputShortName-error" className="invalid-feedback">
+            {errors.short_name.message}
+          </div>
+        )}
       </div>
       <div className="mb-3">
         <label className="form-label" htmlFor="courseRequestAddInputTitle">
@@ -324,12 +409,18 @@ function CourseRequestApproveForm({
         </label>
         <input
           type="text"
-          className="form-control"
+          className={clsx('form-control', errors.title && 'is-invalid')}
           id="courseRequestAddInputTitle"
-          name="title"
           placeholder="Template course title"
-          defaultValue={request.title}
+          aria-invalid={errors.title ? true : undefined}
+          aria-errormessage={errors.title ? 'courseRequestAddInputTitle-error' : undefined}
+          {...register('title', { required: 'Enter a title' })}
         />
+        {errors.title && (
+          <div id="courseRequestAddInputTitle-error" className="invalid-feedback">
+            {errors.title.message}
+          </div>
+        )}
       </div>
       <div className="mb-3">
         <label className="form-label" htmlFor="courseRequestAddInputTimezone">
@@ -337,12 +428,19 @@ function CourseRequestApproveForm({
         </label>
         <input
           type="text"
-          className="form-control"
+          className={clsx('form-control', errors.display_timezone && 'is-invalid')}
           id="courseRequestAddInputTimezone"
-          name="display_timezone"
-          value={timezone}
-          onChange={(e) => setTimezone(e.currentTarget.value)}
+          aria-invalid={errors.display_timezone ? true : undefined}
+          aria-errormessage={
+            errors.display_timezone ? 'courseRequestAddInputTimezone-error' : undefined
+          }
+          {...register('display_timezone', { required: 'Enter a timezone' })}
         />
+        {errors.display_timezone && (
+          <div id="courseRequestAddInputTimezone-error" className="invalid-feedback">
+            {errors.display_timezone.message}
+          </div>
+        )}
       </div>
       <div className="mb-3">
         <label className="form-label" htmlFor="courseRequestAddInputPath">
@@ -350,11 +448,17 @@ function CourseRequestApproveForm({
         </label>
         <input
           type="text"
-          className="form-control"
+          className={clsx('form-control', errors.path && 'is-invalid')}
           id="courseRequestAddInputPath"
-          name="path"
-          defaultValue={coursesRoot + '/' + repo_name}
+          aria-invalid={errors.path ? true : undefined}
+          aria-errormessage={errors.path ? 'courseRequestAddInputPath-error' : undefined}
+          {...register('path', { required: 'Enter a path' })}
         />
+        {errors.path && (
+          <div id="courseRequestAddInputPath-error" className="invalid-feedback">
+            {errors.path.message}
+          </div>
+        )}
       </div>
       <div className="mb-3">
         <label className="form-label" htmlFor="courseRequestAddInputRepositoryName">
@@ -362,11 +466,19 @@ function CourseRequestApproveForm({
         </label>
         <input
           type="text"
-          className="form-control"
+          className={clsx('form-control', errors.repository_short_name && 'is-invalid')}
           id="courseRequestAddInputRepositoryName"
-          name="repository_short_name"
-          defaultValue={repo_name}
+          aria-invalid={errors.repository_short_name ? true : undefined}
+          aria-errormessage={
+            errors.repository_short_name ? 'courseRequestAddInputRepositoryName-error' : undefined
+          }
+          {...register('repository_short_name', { required: 'Enter a repository name' })}
         />
+        {errors.repository_short_name && (
+          <div id="courseRequestAddInputRepositoryName-error" className="invalid-feedback">
+            {errors.repository_short_name.message}
+          </div>
+        )}
       </div>
       <div className="mb-3">
         <label className="form-label" htmlFor="courseRequestAddInputGithubUser">
@@ -376,16 +488,24 @@ function CourseRequestApproveForm({
           type="text"
           className="form-control"
           id="courseRequestAddInputGithubUser"
-          name="github_user"
-          defaultValue={request.github_user ?? ''}
+          {...register('github_user')}
         />
       </div>
 
+      {mutation.isError && (
+        <Alert variant="danger" dismissible onClose={() => mutation.reset()}>
+          {mutation.error.message}
+        </Alert>
+      )}
       <div className="d-flex justify-content-end gap-2">
         <button type="button" className="btn btn-secondary" onClick={onCancel}>
           Cancel
         </button>
-        <button type="submit" className="btn btn-primary">
+        <button
+          type="submit"
+          className="btn btn-primary"
+          disabled={isSubmitting || mutation.isPending}
+        >
           Create course
         </button>
       </div>
@@ -395,26 +515,40 @@ function CourseRequestApproveForm({
 
 function CourseRequestDenyForm({
   request,
-  csrfToken,
   onCancel,
 }: {
   request: CourseRequestRow;
-  csrfToken: string;
   onCancel: () => void;
 }) {
+  const trpc = useTRPC();
+  const mutation = useMutation(trpc.courseRequests.denyCourseRequestMutation.mutationOptions());
+
   return (
-    <form method="POST" className="d-flex justify-content-end gap-2">
-      <input type="hidden" name="__csrf_token" value={csrfToken} />
-      <input type="hidden" name="__action" value="deny_course_request" />
-      <input type="hidden" name="approve_deny_action" value="deny" />
-      <input type="hidden" name="request_id" value={request.id} />
-      <button type="button" className="btn btn-secondary" onClick={onCancel}>
-        Cancel
-      </button>
-      <button type="submit" className="btn btn-danger">
-        Deny
-      </button>
-    </form>
+    <>
+      {mutation.isError && (
+        <Alert variant="danger" dismissible onClose={() => mutation.reset()}>
+          {mutation.error.message}
+        </Alert>
+      )}
+      <div className="d-flex justify-content-end gap-2">
+        <button type="button" className="btn btn-secondary" onClick={onCancel}>
+          Cancel
+        </button>
+        <button
+          type="button"
+          className="btn btn-danger"
+          disabled={mutation.isPending}
+          onClick={() =>
+            mutation.mutate(
+              { courseRequestId: request.id },
+              { onSuccess: () => window.location.reload() },
+            )
+          }
+        >
+          Deny
+        </button>
+      </div>
+    </>
   );
 }
 
@@ -455,18 +589,33 @@ function CourseRequestStatusIcon({ status }: { status: CourseRequestRow['approve
 
 function CourseRequestEditNoteForm({
   request,
-  csrfToken,
   onCancel,
 }: {
   request: CourseRequestRow;
-  csrfToken: string;
   onCancel: () => void;
 }) {
+  const trpc = useTRPC();
+  const mutation = useMutation(
+    trpc.courseRequests.updateCourseRequestNoteMutation.mutationOptions(),
+  );
+
+  const {
+    register,
+    handleSubmit,
+    formState: { isSubmitting },
+  } = useForm<{ note: string }>({
+    defaultValues: { note: request.note ?? '' },
+  });
+
+  const onSubmit = ({ note }: { note: string }) => {
+    mutation.mutate(
+      { courseRequestId: request.id, note },
+      { onSuccess: () => window.location.reload() },
+    );
+  };
+
   return (
-    <form method="POST">
-      <input type="hidden" name="__csrf_token" value={csrfToken} />
-      <input type="hidden" name="__action" value="update_course_request_note" />
-      <input type="hidden" name="request_id" value={request.id} />
+    <form onSubmit={handleSubmit(onSubmit)}>
       <div className="d-flex gap-2 align-items-center py-2 px-2">
         <label className="visually-hidden" htmlFor={`course-request-note-${request.id}`}>
           Note for course request {request.short_name}
@@ -474,19 +623,24 @@ function CourseRequestEditNoteForm({
         <textarea
           className="form-control flex-grow-1"
           id={`course-request-note-${request.id}`}
-          name="note"
           rows={1}
           maxLength={10000}
           placeholder="Add a note about this course request..."
           defaultValue={request.note ?? ''}
+          {...register('note')}
         />
         <button type="button" className="btn btn-secondary" onClick={onCancel}>
           Cancel
         </button>
-        <button type="submit" className="btn btn-primary text-nowrap">
+        <button type="submit" className="btn btn-primary text-nowrap" disabled={isSubmitting}>
           <i className="fa fa-save" aria-hidden="true" /> Save note
         </button>
       </div>
+      {mutation.isError && (
+        <Alert variant="danger" dismissible onClose={() => mutation.reset()}>
+          {mutation.error.message}
+        </Alert>
+      )}
     </form>
   );
 }
