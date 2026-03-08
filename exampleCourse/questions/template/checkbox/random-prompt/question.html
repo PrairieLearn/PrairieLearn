@@ -9,7 +9,5 @@
   partial-credit="net-correct"
   min-correct="2"
 >
-  {{#params.options}}
-    <pl-answer correct="{{correct}}">{{answer}}</pl-answer>
-  {{/params.options}}
+  {{#params.options}}<pl-answer correct="{{correct}}">{{answer}}</pl-answer>{{/params.options}}
 </pl-checkbox>

@@ -1,23 +1,25 @@
 <pl-question-panel>
-<p>
-This question illustrates the basic use of
-<a href="https://docs.prairielearn.com/elements/pl-order-blocks"><code>pl-order-blocks</code></a>.
-</p>
-<hr>
-<p>
-Drag all the prime numbers below to the answer zone. Remember 1 is not a prime number.
-</p>
+  <p>
+    This question illustrates the basic use of
+    <a href="https://docs.prairielearn.com/elements/pl-order-blocks"><code>pl-order-blocks</code></a>.
+  </p>
+  <hr>
+  <p>Drag all the prime numbers below to the answer zone. Remember 1 is not a prime number.</p>
 
-<p>
-This example uses the attribute <code>source-blocks-order="ordered"</code> so that
-the displayed blocks appear in the same order as defined in the HTML (rather than the default
-<code>"alphabetized"</code> which would sort them alphabetically). It also uses the attribute
-<code>grading-method="unordered"</code>, so that any ordering of the solution is accepted as correct.
-</p>
-
+  <p>
+    This example uses the attribute <code>source-blocks-order="ordered"</code> so that the displayed
+    blocks appear in the same order as defined in the HTML (rather than the default
+    <code>"alphabetized"</code> which would sort them alphabetically). It also uses the attribute
+    <code>grading-method="unordered"</code>, so that any ordering of the solution is accepted as
+    correct.
+  </p>
 </pl-question-panel>
 
-<pl-order-blocks answers-name="prime-numbers-unordered" source-blocks-order="ordered" grading-method="unordered">
+<pl-order-blocks
+  answers-name="prime-numbers-unordered"
+  source-blocks-order="ordered"
+  grading-method="unordered"
+>
   <pl-answer correct="false">1</pl-answer>
   <pl-answer correct="true">2</pl-answer>
   <pl-answer correct="true">3</pl-answer>

@@ -1,126 +1,192 @@
-
 {{#question}}
-<span class="d-inline-block ms-2 pl-matrix-component-span-fullwidth">
+  <span class="d-inline-block ms-2 pl-matrix-component-span-fullwidth">
     <div class="input-group">
-        {{#label}}
-        <label class="input-group-text" id="pl-matrix-component-input-{{uuid}}-label">{{{label}}}</label>
-        {{/label}}
-        <div class="form-control pl-matrix-component-input-container" >
-            {{{input_array}}}
-        </div>
-        <button type="button" class="btn btn-light border d-flex align-items-center" data-bs-toggle="popover" data-bs-html="true" title="Matrix" data-bs-content="{{info}}" data-bs-placement="auto">
-            <i class="fas fa-question-circle" aria-hidden="true"></i>
-            {{#correct}}&nbsp;<span class="badge text-bg-success"><i class="fas fa-check" aria-hidden="true"></i> 100%</span>{{/correct}}
-            {{#partial}}&nbsp;<span class="badge text-bg-warning"><i class="far fa-circle" aria-hidden="true"></i> {{partial}}%</span>{{/partial}}
-            {{#incorrect}}&nbsp;<span class="badge text-bg-danger"><i class="fas fa-times" aria-hidden="true"></i> 0%</span>{{/incorrect}}
-
-        </button>
+      {{#label}}
+        <label class="input-group-text" id="pl-matrix-component-input-{{uuid}}-label">
+          {{{label}}}
+        </label>
+      {{/label}}
+      <div class="form-control pl-matrix-component-input-container">{{{input_array}}}</div>
+      <button
+        type="button"
+        class="btn btn-light border d-flex align-items-center"
+        data-bs-toggle="popover"
+        data-bs-html="true"
+        title="Matrix"
+        data-bs-content="{{info}}"
+        data-bs-placement="auto"
+      >
+        <i class="fas fa-question-circle" aria-hidden="true"></i>
+        {{#correct}}
+          &nbsp;
+          <span class="badge text-bg-success">
+            <i class="fas fa-check" aria-hidden="true"></i> 100%
+          </span>
+        {{/correct}}
+        {{#partial}}
+          &nbsp;
+          <span class="badge text-bg-warning">
+            <i class="far fa-circle" aria-hidden="true"></i> {{partial}}%
+          </span>
+        {{/partial}}
+        {{#incorrect}}
+          &nbsp;
+          <span class="badge text-bg-danger">
+            <i class="fas fa-times" aria-hidden="true"></i> 0%
+          </span>
+        {{/incorrect}}
+      </button>
     </div>
-</span>
+  </span>
 {{/question}}
 
 {{#submission}}
+  <div class="d-inline-block ms-2">
+    {{#error}}
+      <span class="pl-matrix-component-input-invalid">
+        {{#parse_error}}
+          {{#label}}<span>{{{label}}}</span>{{/label}}
 
-<div class="d-inline-block ms-2">
+          {{#raw_submitted_answer}}{{{raw_submitted_answer}}}{{/raw_submitted_answer}}
+          <span class="small" style="white-space: nowrap">
+            <span class="badge text-bg-danger">
+              Invalid <i class="fas fa-exclamation-triangle" aria-hidden="true"></i>
+            </span>
+            <a
+              class="link-primary"
+              tabindex="0"
+              role="button"
+              data-bs-placement="auto"
+              data-bs-toggle="popover"
+              data-bs-html="true"
+              title="Format error"
+              data-bs-content="{{parse_error}}"
+            >
+              More info…
+            </a>
+          </span>
+        {{/parse_error}}
+        {{#missing_input}}
+          {{#label}}<span>{{{label}}}</span>{{/label}}
+          <span class="small" style="white-space: nowrap">
+            <span class="badge text-bg-dark border">
+              Missing input <i class="fas fa-exclamation-triangle" aria-hidden="true"></i>
+            </span>
+            <a
+              class="link-primary"
+              tabindex="0"
+              role="button"
+              data-bs-placement="auto"
+              data-bs-toggle="popover"
+              data-bs-html="true"
+              title="Missing input"
+              data-bs-content="There is no submitted value for this field.  This may have happened because the question was changed by course staff after the answer was submitted."
+            >
+              More info…
+            </a>
+          </span>
+        {{/missing_input}}
+      </span>
+    {{/error}}
 
-{{#error}}
-<span class="pl-matrix-component-input-invalid">
-
-{{#parse_error}}
-    {{#label}}<span>{{{label}}}</span>{{/label}}
-
-    {{#raw_submitted_answer}}{{{raw_submitted_answer}}}{{/raw_submitted_answer}}
-    <span class="small" style="white-space: nowrap">
-        <span class="badge text-bg-danger">
-            Invalid <i class="fas fa-exclamation-triangle" aria-hidden="true"></i>
-        </span>
-        <a
-            class="link-primary"
-            tabindex="0"
-            role="button"
-            data-bs-placement="auto"
-            data-bs-toggle="popover"
-            data-bs-html="true"
-            title="Format error"
-            data-bs-content="{{parse_error}}"
-        >
-           More info…
-        </a>
-    </span>
-{{/parse_error}}
-{{#missing_input}}
-    {{#label}}<span>{{{label}}}</span>{{/label}}
-    <span class="small" style="white-space: nowrap">
-        <span class="badge text-bg-dark border">
-            Missing input 
-            <i class="fas fa-exclamation-triangle" aria-hidden="true"></i>
-        </span>
-        <a 
-            class="link-primary"
-            tabindex="0"
-            role="button"
-            data-bs-placement="auto"
-            data-bs-toggle="popover"
-            data-bs-html="true"
-            title="Missing input"
-            data-bs-content="There is no submitted value for this field.  This may have happened because the question was changed by course staff after the answer was submitted."
-        >
-           More info…
-        </a>
-    </span>
-{{/missing_input}}
-
-</span>
-{{/error}}
-
-{{^error}}
-{{#a_sub}}
-{{#label}}{{{label}}}{{/label}}
-{{a_sub}}
-{{#correct}}<span class="badge text-bg-success"><i class="fas fa-check" aria-hidden="true"></i> 100%</span>{{/correct}}
-{{#partial}}<span class="badge text-bg-warning"><i class="far fa-circle" aria-hidden="true"></i> {{partial}}%</span>{{/partial}}
-{{#incorrect}}<span class="badge text-bg-danger"><i class="fas fa-times" aria-hidden="true"></i> 0%</span>{{/incorrect}}
-{{/a_sub}}
-{{#a_sub_feedback}}{{{a_sub_feedback}}}{{/a_sub_feedback}}
-{{/error}}
-
-</div>
-
+    {{^error}}
+      {{#a_sub}}
+        {{#label}}{{{label}}}{{/label}}
+        {{a_sub}}
+        {{#correct}}
+          <span class="badge text-bg-success">
+            <i class="fas fa-check" aria-hidden="true"></i> 100%
+          </span>
+        {{/correct}}
+        {{#partial}}
+          <span class="badge text-bg-warning">
+            <i class="far fa-circle" aria-hidden="true"></i> {{partial}}%
+          </span>
+        {{/partial}}
+        {{#incorrect}}
+          <span class="badge text-bg-danger">
+            <i class="fas fa-times" aria-hidden="true"></i> 0%
+          </span>
+        {{/incorrect}}
+      {{/a_sub}}
+      {{#a_sub_feedback}}{{{a_sub_feedback}}}{{/a_sub_feedback}}
+    {{/error}}
+  </div>
 {{/submission}}
 
 {{#answer}}
-<div class="d-inline-block ms-2">
+  <div class="d-inline-block ms-2">
     {{#label}}<span>{{{label}}}</span>{{/label}}
     <samp>{{latex_data}}</samp>
-</div>
+  </div>
 {{/answer}}
 
 {{#format}}
-<p>
-You must enter all the components of the matrix.
-</p>
-<p>
-Each entry must be a real number between <code>-1e308</code> and <code>1e308</code> (i.e., it must be interpretable as a double-precision floating-point number).
-No symbolic expressions (those that involve {{^allow_fractions}}fractions, {{/allow_fractions}}square roots, variables, etc.) will be accepted. Scientific notation is accepted (e.g., <code>1.2e03</code>). {{#allow_fractions}}Fractions are accepted.{{/allow_fractions}}
-</p>
-<p>
-{{#relabs}}Numbers must be accurate to within relative tolerance <code>{{rtol}}</code> and absolute tolerance <code>{{atol}}</code>.{{/relabs}}
-{{#sigfig}}Numbers must be accurate to {{digits}} significant figures. This means (for example) that if the true answer is <code>1.234</code>, then the submitted answer must be between <code>1.234 - {{comparison_eps}}</code> and <code>1.234 + {{comparison_eps}}</code> to be counted correct.{{/sigfig}}
-{{#decdig}}Numbers must be accurate to {{digits}} digits after the decimal. This means (for example) that if the true answer is <code>1.234</code>, then the submitted answer must be between <code>1.234 - {{comparison_eps}}</code> and <code>1.234 + {{comparison_eps}}</code> to be counted correct.{{/decdig}}
-</p>
+  <p>You must enter all the components of the matrix.</p>
+  <p>
+    Each entry must be a real number between <code>-1e308</code> and <code>1e308</code> (i.e., it
+    must be interpretable as a double-precision floating-point number). No symbolic expressions
+    (those that involve {{^allow_fractions}}fractions, {{/allow_fractions}}square roots, variables,
+    etc.) will be accepted. Scientific notation is accepted (e.g., <code>1.2e03</code>).
+    {{#allow_fractions}}Fractions are accepted.{{/allow_fractions}}
+  </p>
+  <p>
+    {{#relabs}}
+      Numbers must be accurate to within relative tolerance <code>{{rtol}}</code> and absolute
+      tolerance <code>{{atol}}</code>.
+    {{/relabs}}
+    {{#sigfig}}
+      Numbers must be accurate to {{digits}} significant figures. This means (for example) that if
+      the true answer is <code>1.234</code>, then the submitted answer must be between
+      <code>1.234 - {{comparison_eps}}</code> and <code>1.234 + {{comparison_eps}}</code> to be
+      counted correct.
+    {{/sigfig}}
+    {{#decdig}}
+      Numbers must be accurate to {{digits}} digits after the decimal. This means (for example) that
+      if the true answer is <code>1.234</code>, then the submitted answer must be between
+      <code>1.234 - {{comparison_eps}}</code> and <code>1.234 + {{comparison_eps}}</code> to be
+      counted correct.
+    {{/decdig}}
+  </p>
 {{/format}}
 
 {{#shortformat}}
-{{#relabs}}(rtol={{rtol}}, atol={{atol}}){{/relabs}}{{#sigfig}}({{digits}} significant figures){{/sigfig}}{{#decdig}}({{digits}} digits after decimal){{/decdig}}
+  {{#relabs}}(rtol={{rtol}}, atol={{atol}}){{/relabs}}
+  {{#sigfig}}({{digits}} significant figures){{/sigfig}}
+  {{#decdig}}({{digits}} digits after decimal){{/decdig}}
 {{/shortformat}}
 
 {{#format_error}}
-    <p> Invalid format: one or more entries of the submitted answer could not be interpreted as a decimal number.  No symbolic expressions (those that involve {{^allow_fractions}}fractions,{{/allow_fractions}} square roots, variables, etc.) will be accepted. Scientific notation is accepted. {{#allow_fractions}}Fractions are accepted.{{/allow_fractions}} </p>
-    <p> Example <i>valid</i> inputs: <code>5</code> &nbsp; <code>-17.3</code> &nbsp; <code>4.25e7</code> </p>
-    <p> Example <i>invalid</i> inputs: <code>2/3</code> &nbsp; <code>6+9</code> &nbsp; <code>4*10^7</code> &nbsp; <code>3*pi</code> &nbsp; <code>3.6i</code> </p>
-    <hr>
-    <small>
-        <p> You must enter all the components of the matrix. </p>
-        <p> Each entry of the submitted answer must be formatted as a <i>double-precision floating-point</i> number.  These numbers lie roughly in the range of -1.79 &times; 10<sup>308</sup> to 1.79 &times; 10<sup>308</sup>. </p>
-    </small>
+  <p>
+    Invalid format: one or more entries of the submitted answer could not be interpreted as a
+    decimal number. No symbolic expressions (those that involve
+    {{^allow_fractions}}fractions,{{/allow_fractions}} square roots, variables, etc.) will be
+    accepted. Scientific notation is accepted.
+    {{#allow_fractions}}Fractions are accepted.{{/allow_fractions}}
+  </p>
+  <p>
+    Example <i>valid</i> inputs: <code>5</code> &nbsp;
+    <code>-17.3</code>
+    &nbsp;
+    <code>4.25e7</code>
+  </p>
+  <p>
+    Example <i>invalid</i> inputs: <code>2/3</code> &nbsp;
+    <code>6+9</code>
+    &nbsp;
+    <code>4*10^7</code>
+    &nbsp;
+    <code>3*pi</code>
+    &nbsp;
+    <code>3.6i</code>
+  </p>
+  <hr>
+  <small>
+    <p>You must enter all the components of the matrix.</p>
+    <p>
+      Each entry of the submitted answer must be formatted as a
+      <i>double-precision floating-point</i> number. These numbers lie roughly in the range of -1.79
+      &times; 10<sup>308</sup> to 1.79 &times; 10<sup>308</sup>.
+    </p>
+  </small>
 {{/format_error}}
