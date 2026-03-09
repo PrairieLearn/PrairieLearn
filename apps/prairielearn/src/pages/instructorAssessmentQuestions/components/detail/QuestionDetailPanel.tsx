@@ -11,7 +11,6 @@ import { run } from '@prairielearn/run';
 import { OverlayTrigger } from '@prairielearn/ui';
 
 import { CopyButton } from '../../../../components/CopyButton.js';
-import { HistMini } from '../../../../components/HistMini.js';
 import type { StaffAssessmentQuestionRow } from '../../../../lib/assessment-question.shared.js';
 import { getQuestionUrl } from '../../../../lib/client/url.js';
 import type {
@@ -488,23 +487,6 @@ export function QuestionDetailPanel({
         editMode={editMode}
         inheritance={advancedInheritance}
       />
-
-      {/* Stats — shown in both modes */}
-      {questionData?.assessment_question.mean_question_score != null && (
-        <dl className="mb-0">
-          <dt>Mean score</dt>
-          <dd>{questionData.assessment_question.mean_question_score.toFixed(1)}%</dd>
-        </dl>
-      )}
-      {questionData?.assessment_question.number_submissions_hist && (
-        <div className="mb-3">
-          <div className="text-muted small mb-1">Submissions</div>
-          <HistMini
-            data={questionData.assessment_question.number_submissions_hist}
-            options={{ width: 100, height: 40 }}
-          />
-        </div>
-      )}
 
       {/* Action buttons */}
       <div className="d-flex gap-2">
