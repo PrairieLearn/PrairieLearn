@@ -154,7 +154,8 @@ describe('features', () => {
   it('allows DB grants to override config-enabled features', async () => {
     const features = new FeatureManager(['test:example-feature-flag']);
 
-    config.features = { 'test:example-feature-flag': true };
+    const originalFeatures = config.features;
+    config.features = { ...originalFeatures, 'test:example-feature-flag': true };
     try {
       // Config enables the feature globally.
       assert.isTrue(await features.enabled('test:example-feature-flag'));
@@ -170,14 +171,15 @@ describe('features', () => {
       // But the config should still apply for contexts without a DB grant.
       assert.isTrue(await features.enabled('test:example-feature-flag'));
     } finally {
-      delete config.features['test:example-feature-flag'];
+      config.features = originalFeatures;
     }
   });
 
   it('allows DB grants to override config-disabled features', async () => {
     const features = new FeatureManager(['test:example-feature-flag']);
 
-    config.features = { 'test:example-feature-flag': false };
+    const originalFeatures = config.features;
+    config.features = { ...originalFeatures, 'test:example-feature-flag': false };
     try {
       // Config disables the feature globally.
       assert.isFalse(await features.enabled('test:example-feature-flag'));
@@ -186,7 +188,7 @@ describe('features', () => {
       await features.enable('test:example-feature-flag');
       assert.isTrue(await features.enabled('test:example-feature-flag'));
     } finally {
-      delete config.features['test:example-feature-flag'];
+      config.features = originalFeatures;
     }
   });
 
