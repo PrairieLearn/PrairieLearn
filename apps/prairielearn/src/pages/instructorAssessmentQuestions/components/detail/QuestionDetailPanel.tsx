@@ -662,10 +662,9 @@ function PointsFields({
   const maxAutoPointsRegisterOptions: RegisterOptions<QuestionFormData, 'maxAutoPoints'> = {
     setValueAs: coerceToNumber,
     deps: ['autoPoints'],
-    ...(isHomework ? { validate: homeworkMaxPointsValidation } : {}),
+    validate: homeworkMaxPointsValidation,
   };
   const maxAutoPointsHelpText = run(() => {
-    if (!isHomework) return 'Max auto points for this question.';
     return constantQuestionValue ? (
       <>
         Maximum total auto-graded points. Students must answer correctly{' '}
@@ -692,7 +691,7 @@ function PointsFields({
       </>
     );
   });
-  const maxAutoPointsPlaceholder = isHomework ? autoPointsPlaceholder : undefined;
+
 
   const manualPointsRegisterOptions: RegisterOptions<QuestionFormData, 'manualPoints'> = {
     setValueAs: coerceToNumber,
@@ -831,7 +830,7 @@ function PointsFields({
             registerProps={register('maxAutoPoints', maxAutoPointsRegisterOptions)}
             error={errors.maxAutoPoints}
             helpText={maxAutoPointsHelpText}
-            placeholder={maxAutoPointsPlaceholder}
+            placeholder={autoPointsPlaceholder}
             inheritedValueLabel={
               inheritedMaxAutoPoints != null ? String(inheritedMaxAutoPoints) : undefined
             }
@@ -864,7 +863,7 @@ function PointsFields({
                 step="any"
                 className={clsx('form-control form-control-sm', aria.errorClass)}
                 {...aria.inputProps}
-                placeholder={maxAutoPointsPlaceholder}
+                placeholder={autoPointsPlaceholder}
                 {...register('maxAutoPoints', maxAutoPointsRegisterOptions)}
               />
             )}
