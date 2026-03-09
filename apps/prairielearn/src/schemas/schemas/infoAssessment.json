@@ -620,6 +620,15 @@
       "minimum": 0,
       "maximum": 100
     },
+    "QuestionPreferencesJsonSchema": {
+      "type": "object",
+      "additionalProperties": {
+        "$ref": "#/definitions/QuestionAlternativeJsonSchema/properties/preferences/additionalProperties"
+      },
+      "propertyNames": {
+        "minLength": 1
+      }
+    },
     "LegacyGroupRoleJsonSchema": {
       "description": "A custom role for use in group assessments that allows control over certain permissions.",
       "type": "object",

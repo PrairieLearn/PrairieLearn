@@ -8,6 +8,7 @@ import * as sqldb from '@prairielearn/postgres';
 import { workspaceFastGlobDefaultOptions } from '@prairielearn/workspace-utils';
 import { IdSchema } from '@prairielearn/zod';
 
+import { selectPreferencesForAssessmentQuestion } from '../models/assessment-question.js';
 import { selectCourseById } from '../models/course.js';
 import { selectQuestionById, selectQuestionByInstanceQuestionId } from '../models/question.js';
 import * as questionServers from '../question-servers/index.js';
@@ -16,7 +17,7 @@ import {
   type Course,
   type CourseInstance,
   type Question,
-  QuestionPreferenceDefinitionSchema,
+  type QuestionPreferenceDefinitionSchema,
   type Variant,
   VariantSchema,
 } from './db-types.js';
@@ -261,11 +262,7 @@ async function makeAndInsertVariant({
   );
 
   if (assessment_id && question_id) {
-    const result = await sqldb.queryOptionalRow(
-      sql.select_preferences_for_assessment_question,
-      { assessment_id, question_id },
-      QuestionPreferenceDefinitionSchema.nullish(),
-    );
+    const result = await selectPreferencesForAssessmentQuestion(assessment_id, question_id);
     if (result) {
       preferences = result;
     }
