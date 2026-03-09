@@ -53,7 +53,7 @@ export function InheritableField({
       return (
         <>
           <dt>{label}</dt>
-          <dd>
+          <dd className="text-body-secondary">
             {inheritedDisplayValue}{' '}
             <span className="text-muted">(inherited from {inheritedFromLabel})</span>
           </dd>
@@ -64,7 +64,7 @@ export function InheritableField({
       return (
         <>
           <dt>{label}</dt>
-          <dd>{viewValue}</dd>
+          <dd className="text-body-secondary">{viewValue}</dd>
         </>
       );
     }

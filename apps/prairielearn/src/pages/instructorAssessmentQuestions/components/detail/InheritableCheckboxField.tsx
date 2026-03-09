@@ -34,7 +34,7 @@ export function InheritableCheckboxField({
       return (
         <>
           <dt>{label}</dt>
-          <dd>
+          <dd className="text-body-secondary">
             {inheritedValue ? 'Yes' : 'No'}{' '}
             <span className="text-muted">(inherited from {inheritedFromLabel})</span>
           </dd>
@@ -45,7 +45,7 @@ export function InheritableCheckboxField({
       return (
         <>
           <dt>{label}</dt>
-          <dd>{viewValue ? 'Yes' : 'No'}</dd>
+          <dd className="text-body-secondary">{viewValue ? 'Yes' : 'No'}</dd>
         </>
       );
     }

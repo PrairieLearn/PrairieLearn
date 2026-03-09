@@ -13,6 +13,7 @@ import { validatePositiveInteger } from '../../utils/questions.js';
 import { useAutoSave } from '../../utils/useAutoSave.js';
 
 import { AdvancedFields, type AdvancedFieldsInheritance } from './AdvancedFields.js';
+import { DetailSectionHeader } from './DetailSectionHeader.js';
 import { FormCheckField, FormField } from './FormField.js';
 
 interface ZoneFormData {
@@ -109,6 +110,8 @@ export function ZoneDetailPanel({
 
   return (
     <div className="p-3">
+      <DetailSectionHeader first>Settings</DetailSectionHeader>
+
       <Wrapper className={clsx(!editMode && 'mb-0')}>
         <FormField
           editMode={editMode}

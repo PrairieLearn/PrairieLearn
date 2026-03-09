@@ -35,7 +35,9 @@ export function FormField({
     return (
       <>
         <dt>{label}</dt>
-        <dd>{viewValue ?? <span className="text-muted">&mdash;</span>}</dd>
+        <dd className="text-body-secondary">
+          {viewValue ?? <span className="text-muted">&mdash;</span>}
+        </dd>
       </>
     );
   }
@@ -94,7 +96,7 @@ export function FormCheckField({
     return (
       <>
         <dt>{label}</dt>
-        <dd>{viewValue ? 'Yes' : 'No'}</dd>
+        <dd className="text-body-secondary">{viewValue ? 'Yes' : 'No'}</dd>
       </>
     );
   }

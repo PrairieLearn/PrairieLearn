@@ -37,6 +37,7 @@ import { validatePositiveInteger } from '../../utils/questions.js';
 import { useAutoSave } from '../../utils/useAutoSave.js';
 
 import { AdvancedFields, type AdvancedFieldsInheritance } from './AdvancedFields.js';
+import { DetailSectionHeader } from './DetailSectionHeader.js';
 import { FormField } from './FormField.js';
 import { InheritableField } from './InheritableField.js';
 
@@ -341,6 +342,8 @@ export function QuestionDetailPanel({
         </div>
       )}
 
+      <DetailSectionHeader first={!questionData}>Settings</DetailSectionHeader>
+
       {/* QID field — edit mode only */}
       {editMode && (
         <div className="mb-3">
@@ -490,10 +493,16 @@ export function QuestionDetailPanel({
       />
 
       {/* Stats — shown in both modes */}
+      {(questionData?.assessment_question.mean_question_score != null ||
+        questionData?.assessment_question.number_submissions_hist) && (
+        <DetailSectionHeader>Statistics</DetailSectionHeader>
+      )}
       {questionData?.assessment_question.mean_question_score != null && (
         <dl className="mb-0">
           <dt>Mean score</dt>
-          <dd>{questionData.assessment_question.mean_question_score.toFixed(1)}%</dd>
+          <dd className="text-body-secondary">
+            {questionData.assessment_question.mean_question_score.toFixed(1)}%
+          </dd>
         </dl>
       )}
       {questionData?.assessment_question.number_submissions_hist && (
