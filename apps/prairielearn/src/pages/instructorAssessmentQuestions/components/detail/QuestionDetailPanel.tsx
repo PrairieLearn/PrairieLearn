@@ -816,7 +816,8 @@ function PointsFields({
             )}
           </FormField>
         ))}
-      {(!isManualGrading || showMaxAutoPointsForManual) &&
+      {isHomework &&
+        (!isManualGrading || showMaxAutoPointsForManual) &&
         (isAlternative ? (
           <InheritableField
             id={`${idPrefix}-maxAutoPoints`}
