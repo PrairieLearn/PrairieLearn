@@ -456,6 +456,7 @@ export function buildQuestionMetadata(opts: {
       number_submissions_hist: null,
       number_submissions_variance: null,
       points_list: null,
+      preferences: null,
       question_score_variance: null,
       quintile_question_scores: null,
       some_nonzero_submission_perc: null,
