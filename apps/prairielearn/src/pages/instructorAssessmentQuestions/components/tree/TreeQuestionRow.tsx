@@ -284,7 +284,7 @@ export function TreeQuestionRow({
           <>
             {questionData.tags?.length && (
               <div className="d-flex flex-wrap align-items-center gap-1 mt-1">
-                {questionData.tags?.map((tag) => (
+                {questionData.tags.map((tag) => (
                   <span key={tag.name} className={`badge color-${tag.color}`}>
                     {tag.name}
                   </span>
