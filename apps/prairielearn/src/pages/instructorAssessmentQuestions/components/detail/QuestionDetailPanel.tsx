@@ -38,6 +38,7 @@ import { validatePositiveInteger } from '../../utils/questions.js';
 import { useAutoSave } from '../../utils/useAutoSave.js';
 
 import { AdvancedFields, type AdvancedFieldsInheritance } from './AdvancedFields.js';
+import { DetailSectionHeader } from './DetailSectionHeader.js';
 import { FormField } from './FormField.js';
 import { InheritableField } from './InheritableField.js';
 
@@ -316,6 +317,8 @@ export function QuestionDetailPanel({
           )}
         </div>
       )}
+
+      <DetailSectionHeader first={!questionData}>Settings</DetailSectionHeader>
 
       {/* QID field — edit mode only */}
       {editMode && (

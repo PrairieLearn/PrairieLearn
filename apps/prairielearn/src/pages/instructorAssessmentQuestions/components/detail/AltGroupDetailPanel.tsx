@@ -22,6 +22,7 @@ import {
 import { useAutoSave } from '../../utils/useAutoSave.js';
 
 import { AdvancedFields, type AdvancedFieldsInheritance } from './AdvancedFields.js';
+import { DetailSectionHeader } from './DetailSectionHeader.js';
 import { FormField } from './FormField.js';
 
 interface AltGroupFormData {
@@ -168,6 +169,8 @@ export function AltGroupDetailPanel({
           </div>
         </div>
       )}
+
+      <DetailSectionHeader>Settings</DetailSectionHeader>
 
       <Wrapper className={clsx(!editMode && 'mb-0')}>
         <FormField
