@@ -616,6 +616,39 @@ export async function sync(
   );
 }
 
+/**
+ * Pre-validates preferences for local (non-shared) assessment questions and adds
+ * errors to the assessment infofile. Must be called before assessment sets are
+ * synced so that errors influence whether the "Unknown" fallback set is created.
+ */
+export function preValidateAssessmentLocalPreferences(
+  assessments: CourseInstanceData['assessments'],
+  questions: Record<string, InfoFile<QuestionJson>>,
+): void {
+  for (const assessment of Object.values(assessments)) {
+    if (infofile.hasErrors(assessment) || !assessment.data) continue;
+    for (const zone of assessment.data.zones) {
+      for (const question of zone.questions) {
+        const validate = (qid: string, preferences: QuestionPreferences | undefined) => {
+          if (qid.startsWith('@')) return;
+          const schema = questions[qid]?.data?.preferences ?? null;
+          const { errors } = mergeAndValidatePreferences(qid, schema, preferences);
+          for (const error of errors) {
+            infofile.addError(assessment, error);
+          }
+        };
+        if (question.alternatives) {
+          for (const alt of question.alternatives) {
+            if (alt.id) validate(alt.id, alt.preferences);
+          }
+        } else if (question.id) {
+          validate(question.id, question.preferences);
+        }
+      }
+    }
+  }
+}
+
 export async function validateAssessmentSharedQuestions(
   courseId: string,
   assessments: CourseInstanceData['assessments'],
