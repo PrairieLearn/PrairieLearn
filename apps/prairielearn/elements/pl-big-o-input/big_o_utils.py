@@ -66,7 +66,7 @@ def grade_o_expression(
             # Sympy doesn't treat n*m and m*n the same in CodeTypes
             # So complex feedback needs to be disabled for multivariate
             if len(variables) == 1:
-                return (1.0, CORRECT_COMPLEX_FEEDBACK)
+                return (1, CORRECT_COMPLEX_FEEDBACK)
             else:
                 return (1, CORRECT_UNCONDITIONAL_FEEDBACK)
 
@@ -137,7 +137,7 @@ def grade_theta_expression(
     try:
         if sym_true.equals(sym_sub):
             if len(variables) == 1:
-                return (1.0, CORRECT_COMPLEX_FEEDBACK)
+                return (1, CORRECT_COMPLEX_FEEDBACK)
             else:
                 return (1, CORRECT_UNCONDITIONAL_FEEDBACK)
 
@@ -213,7 +213,7 @@ def grade_omega_expression(
     try:
         if sym_true.equals(sym_sub):
             if len(variables) == 1:
-                return (1.0, CORRECT_COMPLEX_FEEDBACK)
+                return (1, CORRECT_COMPLEX_FEEDBACK)
             else:
                 return (1, CORRECT_UNCONDITIONAL_FEEDBACK)
 
