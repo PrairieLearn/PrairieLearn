@@ -13,7 +13,7 @@ import { generatePrefixCsrfToken } from '@prairielearn/signed-token';
 
 import { PageLayout } from '../../components/PageLayout.js';
 import { selectAssessmentQuestions } from '../../lib/assessment-question.js';
-import { compiledScriptTag } from '../../lib/assets.js';
+import { compiledScriptTag, compiledStylesheetTag } from '../../lib/assets.js';
 import { b64EncodeUnicode } from '../../lib/base64-util.js';
 import { extractPageContext } from '../../lib/client/page-context.js';
 import { config } from '../../lib/config.js';
@@ -22,10 +22,11 @@ import { features } from '../../lib/features/index.js';
 import { getPaths } from '../../lib/instructorFiles.js';
 import { formatJsonWithPrettier } from '../../lib/prettier.js';
 import { handleTrpcError } from '../../lib/trpc.js';
+import { getUrl } from '../../lib/url.js';
 import { resetVariantsForAssessmentQuestion } from '../../models/variant.js';
 import { ZoneAssessmentJsonSchema } from '../../schemas/infoAssessment.js';
 
-import { InstructorAssessmentQuestionsTable } from './components/InstructorAssessmentQuestionsTable.js';
+import { AssessmentQuestionsEditor } from './components/AssessmentEditor.js';
 import { InstructorAssessmentQuestionsTableLegacy } from './components/InstructorAssessmentQuestionsTableLegacy.js';
 import { assessmentQuestionsRouter, createContext } from './trpc.js';
 import { serializeZonesForJson } from './utils/dataTransform.js';
@@ -99,11 +100,16 @@ router.get(
       config.secretKey,
     );
 
+    const search = getUrl(req).search;
+
     res.send(
       PageLayout({
         resLocals: res.locals,
         pageTitle: 'Questions',
-        headContent: compiledScriptTag('instructorAssessmentQuestionsClient.ts'),
+        headContent: [
+          compiledScriptTag('instructorAssessmentQuestionsClient.ts'),
+          compiledStylesheetTag('instructorAssessmentQuestions.css'),
+        ],
         navContext: {
           type: 'instructor',
           page: 'assessment',
@@ -111,23 +117,23 @@ router.get(
         },
         options: {
           fullWidth: true,
+          contentPadding: !editorEnabled,
         },
         content: (
           <Hydrate>
             {editorEnabled ? (
-              <InstructorAssessmentQuestionsTable
+              <AssessmentQuestionsEditor
                 course={pageContext.course}
                 courseInstance={pageContext.course_instance}
                 questionRows={questionRows}
                 jsonZones={jsonZones}
-                urlPrefix={pageContext.urlPrefix}
                 assessment={pageContext.assessment}
-                assessmentSetName={pageContext.assessment_set.name}
                 hasCoursePermissionPreview={pageContext.authz_data.has_course_permission_preview}
                 canEdit={canEdit ?? false}
                 csrfToken={res.locals.__csrf_token}
                 origHash={origHash}
                 trpcCsrfToken={trpcCsrfToken}
+                search={search}
               />
             ) : (
               <InstructorAssessmentQuestionsTableLegacy
