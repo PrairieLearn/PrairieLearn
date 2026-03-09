@@ -142,7 +142,7 @@ const ExternalGradingOptionsJsonSchema = z
       .boolean()
       .describe('[DEPRECATED, DO NOT USE] Whether the external grader is currently enabled.')
       .optional()
-      .default(false),
+      .default(true),
     image: z
       .string()
       .describe(
@@ -185,10 +185,6 @@ const ExternalGradingOptionsJsonSchema = z
   })
   .strict()
   .describe('Options for externally graded questions.');
-
-export const defaultExternalGradingOptions = ExternalGradingOptionsJsonSchema.extend({
-  image: ExternalGradingOptionsJsonSchema.shape.image.optional(),
-}).parse({});
 
 export const QuestionJsonSchema = z
   .object({

@@ -539,7 +539,7 @@ async function runTest({
     }
   }
 
-  const issueCount = await sqldb.queryRow(
+  const issueCount = await sqldb.queryScalar(
     sql.select_issue_count_for_variant,
     { variant_id: variant.id },
     z.number(),

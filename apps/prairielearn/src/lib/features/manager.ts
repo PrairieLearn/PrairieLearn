@@ -2,7 +2,7 @@ import { AsyncLocalStorage } from 'node:async_hooks';
 
 import { z } from 'zod';
 
-import { execute, loadSqlEquiv, queryOptionalRow } from '@prairielearn/postgres';
+import { execute, loadSqlEquiv, queryOptionalScalar } from '@prairielearn/postgres';
 
 import { selectCourseById } from '../../models/course.js';
 import { config } from '../config.js';
@@ -98,10 +98,7 @@ export class FeatureManager<FeatureName extends string> {
     // Allow global overrides, e.g. for tests.
     if (name in this.globalOverrides) return this.globalOverrides[name];
 
-    // Allow config to globally override a feature.
-    if (name in config.features) return config.features[name];
-
-    const featureIsEnabled = await queryOptionalRow(
+    const featureIsEnabled = await queryOptionalScalar(
       sql.is_feature_enabled,
       {
         name,
@@ -111,7 +108,12 @@ export class FeatureManager<FeatureName extends string> {
       z.boolean(),
     );
 
-    if (featureIsEnabled) return true;
+    // If the DB has a matching grant, use it (whether enabling or disabling).
+    if (featureIsEnabled != null) return featureIsEnabled;
+
+    // Allow config to globally enable or disable a feature. This acts as a
+    // default when no DB grant matches the given context.
+    if (name in config.features) return config.features[name];
 
     // Allow features to be enabled in dev mode via `options.devModeFeatures`
     // in `infoCourse.json`.

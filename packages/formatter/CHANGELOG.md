@@ -1,5 +1,23 @@
 # @prairielearn/formatter
 
+## 2.2.2
+
+### Patch Changes
+
+- 144cd19: Upgrade all JavaScript dependencies
+
+## 2.2.1
+
+### Patch Changes
+
+- 3c4799a: Upgrade all JavaScript dependencies
+
+## 2.2.0
+
+### Minor Changes
+
+- 3d31293: Add `truncateMiddle` function that truncates a string in the middle, preserving both the start and end to maintain recognizability
+
 ## 2.1.0
 
 ### Minor Changes

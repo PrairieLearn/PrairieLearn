@@ -14,7 +14,7 @@ import { IssueBadge } from '../../../components/IssueBadge.js';
 import { SyncProblemButton } from '../../../components/SyncProblemButton.js';
 import { TagBadgeList } from '../../../components/TagBadge.js';
 import { TopicBadge } from '../../../components/TopicBadge.js';
-import type { StaffAssessmentQuestionRow } from '../../../lib/assessment-question.js';
+import type { StaffAssessmentQuestionRow } from '../../../lib/assessment-question.shared.js';
 import type { StaffCourse } from '../../../lib/client/safe-db-types.js';
 import { idsEqual } from '../../../lib/id.js';
 
@@ -94,7 +94,7 @@ export function InstructorAssessmentQuestionsTableLegacy({
     points_list: number[] | null;
     init_points: number | null;
   }) {
-    if (max_auto_points || !max_manual_points) {
+    if (max_auto_points != null || !max_manual_points) {
       switch (assessmentType) {
         case 'Exam':
           return (points_list || [max_manual_points])
@@ -266,9 +266,14 @@ export function InstructorAssessmentQuestionsTableLegacy({
           assessmentQuestionId={resetAssessmentQuestionId}
           show={showResetModal}
           onHide={() => setShowResetModal(false)}
+          onExited={() => {}}
         />
       ) : (
-        <ExamResetNotSupportedModal show={showResetModal} onHide={() => setShowResetModal(false)} />
+        <ExamResetNotSupportedModal
+          show={showResetModal}
+          onHide={() => setShowResetModal(false)}
+          onExited={() => {}}
+        />
       )}
     </>
   );

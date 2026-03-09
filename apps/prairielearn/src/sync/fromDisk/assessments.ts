@@ -179,6 +179,7 @@ function getParamsForAssessment(
       number_choose: zone.numberChoose ?? null,
       max_points: zone.maxPoints,
       best_questions: zone.bestQuestions,
+      lockpoint: zone.lockpoint,
       advance_score_perc: zone.advanceScorePerc,
       allow_real_time_grading: zone.allowRealTimeGrading,
       grade_rate_minutes: zone.gradeRateMinutes,
@@ -647,7 +648,7 @@ export async function validateAssessmentSharedQuestions(
   });
 
   if (importedQids.size > 0) {
-    const institutionId = await sqldb.queryRow(
+    const institutionId = await sqldb.queryScalar(
       sql.get_institution_id,
       { course_id: courseId },
       z.string(),

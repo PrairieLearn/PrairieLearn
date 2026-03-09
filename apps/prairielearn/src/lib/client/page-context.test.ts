@@ -132,6 +132,7 @@ const mockStudentData = {
 const mockInstructorData = {
   course_instance: {
     ...STUDENT_COURSE_INSTANCE,
+    ai_grading_use_custom_api_keys: false,
     enrollment_code: 'AAABBBDDDD',
     enrollment_limit: 10,
     json_comment: 'foo',
@@ -323,7 +324,7 @@ const STAFF_QUESTION = {
   directory: 'questions/question1',
   draft: false,
   external_grading_enable_networking: null,
-  external_grading_enabled: null,
+  external_grading_enabled: undefined,
   external_grading_entrypoint: null,
   external_grading_environment: {},
   external_grading_files: null,
