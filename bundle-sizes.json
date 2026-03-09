@@ -110,9 +110,9 @@
     "brotli": 2027
   },
   "scripts/instructorFileEditorClient.tsx": {
-    "raw": 1320802,
+    "raw": 1320841,
     "gzip": 375787,
-    "brotli": 279686
+    "brotli": 279631
   },
   "scripts/instructorQuestionSettingsClient.tsx": {
     "raw": 262934,
