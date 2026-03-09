@@ -18,32 +18,21 @@ import { AssessmentBadges } from '../AssessmentBadges.js';
 
 import { ChangeIndicatorBadges } from './ChangeIndicatorBadges.js';
 import { DragHandle } from './DragHandle.js';
+import { WarningIndicator } from './WarningIndicator.js';
 
 export function PointsBadge({
   question,
   zoneQuestionBlock,
   assessmentType,
-  gradingMethod,
 }: {
   question: ZoneQuestionBlockForm | QuestionAlternativeForm;
   zoneQuestionBlock: ZoneQuestionBlockForm;
   assessmentType: EnumAssessmentType;
-  gradingMethod?: string;
 }): ReactElement | null {
   const tooltipId = useId();
   const forceMax = question.forceMaxPoints ?? zoneQuestionBlock.forceMaxPoints;
-  const rawAutoPoints =
-    question.points ??
-    question.autoPoints ??
-    zoneQuestionBlock.points ??
-    zoneQuestionBlock.autoPoints;
-  const rawManualPoints = question.manualPoints ?? zoneQuestionBlock.manualPoints;
-
-  // When the question uses manual grading, `points`/`autoPoints` in the JSON
-  // actually represent manual points, not auto points.
-  const isManualGrading = gradingMethod === 'Manual';
-  const autoPoints = isManualGrading ? undefined : rawAutoPoints;
-  const manualPoints = isManualGrading ? (rawAutoPoints ?? rawManualPoints) : rawManualPoints;
+  const autoPoints = question.autoPoints ?? zoneQuestionBlock.autoPoints;
+  const manualPoints = question.manualPoints ?? zoneQuestionBlock.manualPoints;
 
   if (assessmentType === 'Exam') {
     if (autoPoints == null && manualPoints == null) return null;
@@ -110,12 +99,7 @@ export function PointsBadge({
 
   // Homework
   const initPoints = Array.isArray(autoPoints) ? autoPoints[0] : autoPoints;
-  const maxAutoPoints =
-    question.maxPoints ??
-    question.maxAutoPoints ??
-    zoneQuestionBlock.maxPoints ??
-    zoneQuestionBlock.maxAutoPoints ??
-    autoPoints;
+  const maxAutoPoints = question.maxAutoPoints ?? zoneQuestionBlock.maxAutoPoints ?? autoPoints;
   const maxAuto = Array.isArray(maxAutoPoints) ? maxAutoPoints[0] : maxAutoPoints;
 
   if (initPoints == null && maxAuto == null && manualPoints == null) return null;
@@ -214,6 +198,11 @@ export function TreeQuestionRow({
   } = state;
   const indent = isAlternative ? '4.5rem' : '2.5rem';
 
+  const hasManualGradingAutoPointsWarning =
+    questionData?.question.grading_method === 'Manual' &&
+    ((question.autoPoints ?? zoneQuestionBlock.autoPoints) != null ||
+      (question.maxAutoPoints ?? zoneQuestionBlock.maxAutoPoints) != null);
+
   return (
     <div
       role="button"
@@ -222,7 +211,14 @@ export function TreeQuestionRow({
         'tree-row d-flex align-items-center py-1 border-bottom',
         isSelected ? 'tree-row-selected' : 'list-group-item-action',
       )}
-      style={{ paddingLeft: indent, paddingRight: '0.5rem', cursor: 'pointer' }}
+      style={{
+        paddingLeft: indent,
+        paddingRight: '0.5rem',
+        cursor: 'pointer',
+        ...(hasManualGradingAutoPointsWarning && {
+          borderLeft: '6px solid var(--bs-warning)',
+        }),
+      }}
       onClick={(e) => {
         e.stopPropagation();
         onClick();
@@ -257,6 +253,12 @@ export function TreeQuestionRow({
             )
           ) : (
             <span className="text-muted small">{question.id}</span>
+          )}
+          {hasManualGradingAutoPointsWarning && (
+            <WarningIndicator
+              tooltipId={`manual-auto-points-${question.trackingId}`}
+              body="Auto points have no effect on manually-graded questions"
+            />
           )}
           <ChangeIndicatorBadges
             trackingId={question.trackingId}
@@ -314,7 +316,6 @@ export function TreeQuestionRow({
           question={question}
           zoneQuestionBlock={zoneQuestionBlock}
           assessmentType={assessmentType}
-          gradingMethod={questionData?.question.grading_method}
         />
       </div>
       {editMode && onDelete && (

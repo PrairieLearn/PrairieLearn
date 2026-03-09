@@ -1,5 +1,5 @@
 import clsx from 'clsx';
-import { useCallback, useMemo } from 'react';
+import { useCallback, useEffect, useMemo } from 'react';
 import { useForm } from 'react-hook-form';
 
 import type { DetailState, ZoneAssessmentForm } from '../../types.js';
@@ -13,6 +13,7 @@ import { validatePositiveInteger } from '../../utils/questions.js';
 import { useAutoSave } from '../../utils/useAutoSave.js';
 
 import { AdvancedFields, type AdvancedFieldsInheritance } from './AdvancedFields.js';
+import { DetailSectionHeader } from './DetailSectionHeader.js';
 import { FormCheckField, FormField } from './FormField.js';
 
 interface ZoneFormData {
@@ -61,11 +62,19 @@ export function ZoneDetailPanel({
     getValues,
     watch,
     setValue,
+    trigger,
     formState: { errors, isDirty, isValid },
   } = useForm<ZoneFormData>({
     mode: 'onChange',
     values: formValues,
   });
+
+  // Questions can be added/removed from the zone while this panel is open.
+  // Revalidate so numberChoose/bestQuestions errors update without extra input.
+  useEffect(() => {
+    void trigger('numberChoose');
+    void trigger('bestQuestions');
+  }, [zone.questions.length, trigger]);
 
   const handleSave = useCallback(
     (data: ZoneFormData) => {
@@ -109,6 +118,8 @@ export function ZoneDetailPanel({
 
   return (
     <div className="p-3">
+      <DetailSectionHeader first>Settings</DetailSectionHeader>
+
       <Wrapper className={clsx(!editMode && 'mb-0')}>
         <FormField
           editMode={editMode}
