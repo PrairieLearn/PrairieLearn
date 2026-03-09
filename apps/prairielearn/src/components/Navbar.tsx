@@ -50,6 +50,8 @@ export function Navbar({
       <a
         href="https://docs.prairielearn.com/student-guide/accessibility/"
         class="d-inline-flex p-2 m-2 text-white"
+        target="_blank"
+        rel="noreferrer"
       >
         Accessibility guide
       </a>
