@@ -7,6 +7,7 @@ import {
   type AccessControlRuleInput,
   type PrairieTestReservation,
   type StudentContext,
+  cascadeOverrides,
   computeCredit,
   formatDateShort,
   mergeRules,
@@ -481,7 +482,7 @@ describe('resolveAccessControl', () => {
   });
 
   describe('override priority', () => {
-    it('first matching override wins', () => {
+    it('later matching override wins via cascading', () => {
       const result = resolveAccessControl({
         ...baseInput,
         rules: [
@@ -501,10 +502,9 @@ describe('resolveAccessControl', () => {
         ],
         student: { enrollmentId: 'enroll-1', studentLabelIds: [] },
       });
-      // First override (due June 1 UTC = May 31 CDT) should win over second (due July 1)
+      // Both overrides apply, second (due July 1 UTC = Jun 30 CDT) wins
       expect(result.credit).toBe(100);
-      // Verify the next deadline is from override 1, not override 2
-      expect(result.creditDateString).toContain('May 31');
+      expect(result.creditDateString).toContain('Jun 30');
     });
 
     it('skips disabled overrides', () => {
@@ -605,7 +605,7 @@ describe('resolveAccessControl', () => {
       expect(result.creditDateString).toContain('Jun 30');
     });
 
-    it('enrollment overrides maintain their relative order by number', () => {
+    it('both enrollment overrides apply, later number wins', () => {
       const result = resolveAccessControl({
         ...baseInput,
         rules: [
@@ -625,8 +625,82 @@ describe('resolveAccessControl', () => {
         ],
         student: { enrollmentId: 'enroll-1', studentLabelIds: [] },
       });
-      // First enrollment override (number=1, due June 1 UTC = May 31 CDT) should win
+      // Both apply via cascading, second (number=2, due Aug 1 UTC = Jul 31 CDT) wins
+      expect(result.creditDateString).toContain('Jul 31');
+    });
+  });
+
+  describe('cascading overrides', () => {
+    it('fields from different overrides merge together', () => {
+      const result = resolveAccessControl({
+        ...baseInput,
+        rules: [
+          makeMainRule({
+            dateControl: { dueDate: '2025-04-01T00:00:00Z' },
+          }),
+          makeOverrideRule(
+            1,
+            { dateControl: { dueDate: '2025-06-01T00:00:00Z' } },
+            { targetType: 'student_label', studentLabelIds: ['label-1'] },
+          ),
+          makeOverrideRule(
+            1,
+            { dateControl: { password: 'override-pw' } },
+            { targetType: 'enrollment', enrollmentIds: ['enroll-1'] },
+          ),
+        ],
+        student: { enrollmentId: 'enroll-1', studentLabelIds: ['label-1'] },
+      });
+      // student_label sets dueDate, enrollment sets password — both should apply
+      expect(result.password).toBe('override-pw');
+      // Due date from student_label override (June 1 UTC = May 31 CDT) should carry through
       expect(result.creditDateString).toContain('May 31');
+    });
+
+    it('blockAccess cascades between overrides', () => {
+      const result = resolveAccessControl({
+        ...baseInput,
+        rules: [
+          makeMainRule({}),
+          makeOverrideRule(
+            1,
+            { blockAccess: true },
+            { targetType: 'student_label', studentLabelIds: ['label-1'] },
+          ),
+          makeOverrideRule(
+            1,
+            { dateControl: { dueDate: '2025-06-01T00:00:00Z' } },
+            { targetType: 'enrollment', enrollmentIds: ['enroll-1'] },
+          ),
+        ],
+        student: { enrollmentId: 'enroll-1', studentLabelIds: ['label-1'] },
+      });
+      // blockAccess from student_label cascades through to enrollment override
+      expect(result.authorized).toBe(false);
+      expect(result.blockAccess).toBe(true);
+    });
+
+    it('blockAccess can be explicitly overridden to false', () => {
+      const result = resolveAccessControl({
+        ...baseInput,
+        rules: [
+          makeMainRule({}),
+          makeOverrideRule(
+            1,
+            { blockAccess: true },
+            { targetType: 'student_label', studentLabelIds: ['label-1'] },
+          ),
+          makeOverrideRule(
+            1,
+            { blockAccess: false },
+            { targetType: 'enrollment', enrollmentIds: ['enroll-1'] },
+          ),
+        ],
+        student: { enrollmentId: 'enroll-1', studentLabelIds: ['label-1'] },
+      });
+      // enrollment explicitly sets blockAccess=false, overriding student_label's true
+      expect(result.authorized).toBe(true);
+      expect(result.blockAccess).toBe(false);
     });
   });
 
@@ -1117,6 +1191,63 @@ describe('mergeRules', () => {
     );
     expect(result.dateControl?.dueDate).toBe('2025-04-01T00:00:00Z');
     expect(result.dateControl?.password).toBe('secret');
+  });
+});
+
+describe('cascadeOverrides', () => {
+  it('inherits blockAccess from base when next does not set it', () => {
+    const result = cascadeOverrides(
+      { blockAccess: true },
+      { dateControl: { dueDate: '2025-05-01' } },
+    );
+    expect(result.blockAccess).toBe(true);
+  });
+
+  it('next overrides blockAccess from base', () => {
+    const result = cascadeOverrides({ blockAccess: true }, { blockAccess: false });
+    expect(result.blockAccess).toBe(false);
+  });
+
+  it('merges dateControl sub-fields from base and next', () => {
+    const result = cascadeOverrides(
+      { dateControl: { dueDate: '2025-04-01', password: 'pw1' } },
+      { dateControl: { dueDate: '2025-05-01' } },
+    );
+    expect(result.dateControl?.dueDate).toBe('2025-05-01');
+    expect(result.dateControl?.password).toBe('pw1');
+  });
+
+  it('inherits all dateControl from base when next has none', () => {
+    const result = cascadeOverrides(
+      { dateControl: { dueDate: '2025-04-01', password: 'pw1' } },
+      { blockAccess: false },
+    );
+    expect(result.dateControl?.dueDate).toBe('2025-04-01');
+    expect(result.dateControl?.password).toBe('pw1');
+  });
+
+  it('sets dateControl from next when base has none', () => {
+    const result = cascadeOverrides({}, { dateControl: { dueDate: '2025-05-01' } });
+    expect(result.dateControl?.dueDate).toBe('2025-05-01');
+  });
+
+  it('merges afterComplete sub-fields', () => {
+    const result = cascadeOverrides(
+      { afterComplete: { hideQuestions: true, hideScore: true } },
+      { afterComplete: { hideQuestions: false } },
+    );
+    expect(result.afterComplete?.hideQuestions).toBe(false);
+    expect(result.afterComplete?.hideScore).toBe(true);
+  });
+
+  it('does not inherit enabled from base', () => {
+    const result = cascadeOverrides({ enabled: false }, {});
+    expect(result.enabled).toBeUndefined();
+  });
+
+  it('preserves listBeforeRelease from base when next does not set it', () => {
+    const result = cascadeOverrides({ listBeforeRelease: true }, {});
+    expect(result.listBeforeRelease).toBe(true);
   });
 });
 

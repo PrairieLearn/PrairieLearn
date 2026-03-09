@@ -1,16 +1,12 @@
 import { type FieldArrayPath, type Path, useFormContext, useWatch } from 'react-hook-form';
 
-import type { AccessControlFormData, OverridableField } from '../types.js';
+import type { AccessControlFormData } from '../types.js';
 
 export type NamePrefix = 'mainRule' | `overrides.${number}`;
 
 /**
  * Type-safe wrapper for useWatch with dynamic paths.
  * Centralizes the necessary type assertion for react-hook-form dynamic paths.
- *
- * react-hook-form's Path type doesn't support computed template literal paths like
- * `${namePrefix}.dateControl.releaseDate`, so we use a type assertion here.
- * This is the single source of truth for this pattern.
  */
 export function useWatchField<T>(namePrefix: NamePrefix, fieldPath: string): T | undefined {
   const { control } = useFormContext<AccessControlFormData>();
@@ -18,13 +14,6 @@ export function useWatchField<T>(namePrefix: NamePrefix, fieldPath: string): T |
     control,
     name: `${namePrefix}.${fieldPath}` as Path<AccessControlFormData>,
   }) as T | undefined;
-}
-
-export function useWatchOverridableField<T>(
-  namePrefix: NamePrefix,
-  fieldPath: string,
-): OverridableField<T> | undefined {
-  return useWatchField<OverridableField<T>>(namePrefix, fieldPath);
 }
 
 /** Centralizes the type assertion for register() calls. */
@@ -38,10 +27,6 @@ export function getFieldName(
 /**
  * Create a form field name for use with useFieldArray.
  * useFieldArray has stricter typing requirements than regular register().
- *
- * The type assertion here is necessary because useFieldArray expects a narrow
- * FieldArrayPath type that TypeScript cannot infer from dynamic template literals.
- * This function centralizes that assertion.
  */
 export function getArrayFieldName(
   namePrefix: NamePrefix,

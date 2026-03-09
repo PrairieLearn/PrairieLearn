@@ -3,10 +3,9 @@ import { useFormContext, useWatch } from 'react-hook-form';
 
 import type { PageContext } from '../../../lib/client/page-context.js';
 
-import { AfterCompleteForm } from './AfterCompleteForm.js';
-import { DateControlForm } from './DateControlForm.js';
+import { MainAfterCompleteForm } from './AfterCompleteForm.js';
+import { MainDateControlForm } from './DateControlForm.js';
 import { IntegrationsSection } from './IntegrationsSection.js';
-import { useWatchOverridableField } from './hooks/useTypedFormWatch.js';
 import type { AccessControlFormData } from './types.js';
 
 interface MainRuleFormProps {
@@ -24,19 +23,18 @@ export function MainRuleForm({ courseInstance: _courseInstance }: MainRuleFormPr
     name: 'mainRule.blockAccess',
   });
 
-  const releaseDate = useWatchOverridableField<string>('mainRule', 'dateControl.releaseDate');
+  const releaseDate = useWatch<AccessControlFormData, 'mainRule.releaseDate'>({
+    name: 'mainRule.releaseDate',
+  });
 
-  const prairieTestExams = useWatch<
-    AccessControlFormData,
-    'mainRule.integrations.prairieTest.exams'
-  >({
-    name: 'mainRule.integrations.prairieTest.exams',
+  const prairieTestExams = useWatch<AccessControlFormData, 'mainRule.prairieTestExams'>({
+    name: 'mainRule.prairieTestExams',
     defaultValue: [],
   });
 
-  const hasDateRelease = releaseDate?.isEnabled ?? false;
+  const hasDateRelease = releaseDate !== null;
 
-  const hasPrairieTestRelease = (prairieTestExams?.length ?? 0) > 0;
+  const hasPrairieTestRelease = prairieTestExams.length > 0;
 
   return (
     <div>
@@ -72,10 +70,10 @@ export function MainRuleForm({ courseInstance: _courseInstance }: MainRuleFormPr
             </Form.Group>
           )}
 
-          <DateControlForm />
+          <MainDateControlForm />
           <IntegrationsSection />
 
-          <AfterCompleteForm namePrefix="mainRule" />
+          <MainAfterCompleteForm />
         </>
       )}
     </div>

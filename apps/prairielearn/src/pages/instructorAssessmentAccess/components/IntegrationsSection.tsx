@@ -7,11 +7,8 @@ import type { AccessControlFormData } from './types.js';
 export function IntegrationsSection() {
   const { setValue } = useFormContext<AccessControlFormData>();
 
-  const prairieTestEnabled = useWatch<
-    AccessControlFormData,
-    'mainRule.integrations.prairieTest.enabled'
-  >({
-    name: 'mainRule.integrations.prairieTest.enabled',
+  const prairieTestEnabled = useWatch<AccessControlFormData, 'mainRule.prairieTestEnabled'>({
+    name: 'mainRule.prairieTestEnabled',
   });
 
   const availableIntegrations = [
@@ -21,14 +18,14 @@ export function IntegrationsSection() {
 
   const addIntegration = (key: string) => {
     if (key === 'prairieTest') {
-      setValue('mainRule.integrations.prairieTest.enabled', true);
+      setValue('mainRule.prairieTestEnabled', true);
     }
   };
 
   const removeIntegration = (key: string) => {
     if (key === 'prairieTest') {
-      setValue('mainRule.integrations.prairieTest.enabled', false);
-      setValue('mainRule.integrations.prairieTest.exams', []);
+      setValue('mainRule.prairieTestEnabled', false);
+      setValue('mainRule.prairieTestExams', []);
     }
   };
 
@@ -53,10 +50,7 @@ export function IntegrationsSection() {
       </div>
 
       {prairieTestEnabled ? (
-        <PrairieTestControlForm
-          namePrefix="mainRule"
-          onRemove={() => removeIntegration('prairieTest')}
-        />
+        <PrairieTestControlForm onRemove={() => removeIntegration('prairieTest')} />
       ) : (
         <p className="text-muted">No integrations configured.</p>
       )}

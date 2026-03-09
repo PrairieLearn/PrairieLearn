@@ -1,72 +1,101 @@
 import { Form } from 'react-bootstrap';
+import { type Path, useController, useWatch } from 'react-hook-form';
 
 import { FieldWrapper } from '../FieldWrapper.js';
-import { useOverridableField } from '../hooks/useOverridableField.js';
-import type { NamePrefix } from '../hooks/useTypedFormWatch.js';
+import type { AccessControlFormData } from '../types.js';
 
-interface ReleaseDateFieldProps {
-  namePrefix: NamePrefix;
+function formatInheritedDate(value: string | null): string {
+  if (!value) return 'Released immediately';
+  try {
+    const date = new Date(value);
+    return `After ${date.toLocaleDateString('en-US', { month: 'short', day: 'numeric', year: 'numeric', hour: 'numeric', minute: '2-digit' })}`;
+  } catch {
+    return `After ${value}`;
+  }
 }
 
-export function ReleaseDateField({ namePrefix }: ReleaseDateFieldProps) {
-  const { field, isOverrideRule, setField, enableOverride, removeOverride } = useOverridableField({
-    namePrefix,
-    fieldPath: 'dateControl.releaseDate',
-    defaultValue: '',
-    deps: ['dateControl.earlyDeadlines.value'],
-  });
+interface ReleaseDateInputProps {
+  value: string | null;
+  onChange: (value: string | null) => void;
+  idPrefix: string;
+}
 
-  const content = (
+function ReleaseDateInput({ value, onChange, idPrefix }: ReleaseDateInputProps) {
+  return (
     <Form.Group>
       <div className="mb-2">
         <Form.Check
           type="radio"
-          name={`${namePrefix}-releaseMode`}
-          id={`${namePrefix}-release-immediately`}
+          name={`${idPrefix}-releaseMode`}
+          id={`${idPrefix}-release-immediately`}
           label="Released immediately"
-          checked={!field.isEnabled}
+          checked={value === null}
           onChange={({ currentTarget }) => {
-            if (currentTarget.checked) {
-              setField({ isEnabled: false });
-            }
+            if (currentTarget.checked) onChange(null);
           }}
         />
         <Form.Check
           type="radio"
-          name={`${namePrefix}-releaseMode`}
-          id={`${namePrefix}-release-after-date`}
+          name={`${idPrefix}-releaseMode`}
+          id={`${idPrefix}-release-after-date`}
           label="Released after date"
-          checked={field.isEnabled}
+          checked={value !== null}
           onChange={({ currentTarget }) => {
-            if (currentTarget.checked) {
-              setField({ isEnabled: true });
-            }
+            if (currentTarget.checked) onChange('');
           }}
         />
       </div>
-      {field.isEnabled && (
+      {value !== null && (
         <Form.Control
           type="datetime-local"
           aria-label="Release date"
-          value={field.value}
-          onChange={({ currentTarget }) => {
-            setField({ value: currentTarget.value });
-          }}
+          value={value}
+          onChange={({ currentTarget }) => onChange(currentTarget.value)}
         />
       )}
     </Form.Group>
   );
+}
+
+export function MainReleaseDateField() {
+  const { field } = useController<AccessControlFormData, 'mainRule.releaseDate'>({
+    name: 'mainRule.releaseDate',
+  });
+
+  return (
+    <div>
+      <strong>Release date</strong>
+      <ReleaseDateInput value={field.value} idPrefix="mainRule" onChange={field.onChange} />
+    </div>
+  );
+}
+
+export function OverrideReleaseDateField({ index }: { index: number }) {
+  const mainValue = useWatch<AccessControlFormData, 'mainRule.releaseDate'>({
+    name: 'mainRule.releaseDate',
+  });
+
+  const { field } = useController({
+    name: `overrides.${index}.releaseDate` as Path<AccessControlFormData>,
+  });
+
+  const value = field.value as string | null | undefined;
+  const isOverridden = value !== undefined;
 
   return (
     <FieldWrapper
-      isOverrideRule={isOverrideRule}
-      isOverridden={field.isOverridden}
+      isOverridden={isOverridden}
       label="Release date"
+      inheritedValue={formatInheritedDate(mainValue)}
       headerContent={<strong>Release date</strong>}
-      onOverride={() => enableOverride('')}
-      onRemoveOverride={removeOverride}
+      onOverride={() => field.onChange(mainValue)}
+      onRemoveOverride={() => field.onChange(undefined)}
     >
-      {content}
+      <ReleaseDateInput
+        value={value as string | null}
+        idPrefix={`overrides-${index}`}
+        onChange={field.onChange}
+      />
     </FieldWrapper>
   );
 }

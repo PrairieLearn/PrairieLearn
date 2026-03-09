@@ -13,11 +13,11 @@ import { Fragment, useId, useMemo } from 'react';
 import { Alert, Button, Table } from 'react-bootstrap';
 
 import { RuleSummaryCard, generateDateTableRows, generateRuleSummary } from './RuleSummary.js';
-import type { AccessControlRuleFormData } from './types.js';
+import type { MainRuleData, OverrideData } from './types.js';
 
 interface SortableOverrideCardProps {
   id: string;
-  override: AccessControlRuleFormData;
+  override: OverrideData;
   title: string;
   courseInstanceId: string;
   errors?: string[];
@@ -60,7 +60,7 @@ function SortableOverrideCard({
   );
 }
 
-function MainRuleSummaryContent({ rule }: { rule: AccessControlRuleFormData }) {
+function MainRuleSummaryContent({ rule }: { rule: MainRuleData }) {
   const summaryLines = generateRuleSummary(rule, 'compact');
   const dateTableRows = generateDateTableRows(rule, 'compact');
 
@@ -108,8 +108,8 @@ function MainRuleSummaryContent({ rule }: { rule: AccessControlRuleFormData }) {
 }
 
 interface AccessControlSummaryProps {
-  mainRule: AccessControlRuleFormData;
-  overrides: AccessControlRuleFormData[];
+  mainRule: MainRuleData;
+  overrides: OverrideData[];
   /** Get the display name for an override by index */
   getOverrideName: (index: number) => string;
   mainRuleErrors?: string[];

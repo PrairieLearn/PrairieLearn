@@ -1,9 +1,8 @@
 import { Form } from 'react-bootstrap';
-import { useFormContext } from 'react-hook-form';
+import { type Path, useFormContext, useWatch } from 'react-hook-form';
 
-import { AfterCompleteForm } from './AfterCompleteForm.js';
-import { DateControlForm } from './DateControlForm.js';
-import { type NamePrefix, useWatchField } from './hooks/useTypedFormWatch.js';
+import { OverrideAfterCompleteForm } from './AfterCompleteForm.js';
+import { OverrideDateControlForm } from './DateControlForm.js';
 import type { AccessControlFormData } from './types.js';
 
 interface OverrideRuleContentProps {
@@ -12,11 +11,14 @@ interface OverrideRuleContentProps {
 
 export function OverrideRuleContent({ index }: OverrideRuleContentProps) {
   const { register } = useFormContext<AccessControlFormData>();
-  const namePrefix: NamePrefix = `overrides.${index}`;
 
-  const isEnabled = useWatchField<boolean>(namePrefix, 'enabled');
+  const isEnabled = useWatch({
+    name: `overrides.${index}.enabled` as Path<AccessControlFormData>,
+  }) as boolean | undefined;
 
-  const blockAccess = useWatchField<boolean>(namePrefix, 'blockAccess');
+  const blockAccess = useWatch({
+    name: `overrides.${index}.blockAccess` as Path<AccessControlFormData>,
+  }) as boolean | undefined;
 
   return (
     <div>
@@ -37,14 +39,14 @@ export function OverrideRuleContent({ index }: OverrideRuleContentProps) {
 
       {isEnabled && !blockAccess && (
         <div className="mb-3">
-          <DateControlForm
-            namePrefix={`overrides.${index}`}
+          <OverrideDateControlForm
+            index={index}
             title="Date control"
             description="Control access and credit to your exam based on a schedule"
           />
 
-          <AfterCompleteForm
-            namePrefix={`overrides.${index}`}
+          <OverrideAfterCompleteForm
+            index={index}
             title="After completion behavior"
             description="Configure what happens after students complete the assessment"
           />

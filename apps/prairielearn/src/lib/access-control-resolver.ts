@@ -155,6 +155,78 @@ export function mergeRules(
   return merged;
 }
 
+/**
+ * Cascades two override JSONs where the second wins.
+ * Unlike `mergeRules`, `blockAccess` inherits through the cascade
+ * (between overrides it should carry forward).
+ */
+export function cascadeOverrides(
+  base: AccessControlJson,
+  next: AccessControlJson,
+): AccessControlJson {
+  const merged: AccessControlJson = {};
+
+  // blockAccess cascades between overrides (inherits from base, next can replace).
+  if (base.blockAccess !== undefined) merged.blockAccess = base.blockAccess;
+  if (next.blockAccess !== undefined) merged.blockAccess = next.blockAccess;
+
+  // listBeforeRelease cascades.
+  if (base.listBeforeRelease !== undefined) merged.listBeforeRelease = base.listBeforeRelease;
+  if (next.listBeforeRelease !== undefined) merged.listBeforeRelease = next.listBeforeRelease;
+
+  // enabled is per-rule, doesn't cascade.
+  if (next.enabled !== undefined) merged.enabled = next.enabled;
+
+  // dateControl: inherit sub-fields from base, next can replace.
+  if (base.dateControl || next.dateControl) {
+    if (!base.dateControl) {
+      merged.dateControl = next.dateControl;
+    } else if (!next.dateControl) {
+      merged.dateControl = { ...base.dateControl };
+    } else {
+      merged.dateControl = { ...base.dateControl };
+      const ov = next.dateControl;
+      if (ov.enabled !== undefined) merged.dateControl.enabled = ov.enabled;
+      if (ov.releaseDate !== undefined) merged.dateControl.releaseDate = ov.releaseDate;
+      if (ov.dueDate !== undefined) merged.dateControl.dueDate = ov.dueDate;
+      if (ov.earlyDeadlines !== undefined) merged.dateControl.earlyDeadlines = ov.earlyDeadlines;
+      if (ov.lateDeadlines !== undefined) merged.dateControl.lateDeadlines = ov.lateDeadlines;
+      if (ov.afterLastDeadline !== undefined) {
+        merged.dateControl.afterLastDeadline = ov.afterLastDeadline;
+      }
+      if (ov.durationMinutes !== undefined) {
+        merged.dateControl.durationMinutes = ov.durationMinutes;
+      }
+      if (ov.password !== undefined) merged.dateControl.password = ov.password;
+    }
+  }
+
+  // afterComplete: inherit from base, next can replace.
+  if (base.afterComplete || next.afterComplete) {
+    if (!base.afterComplete) {
+      merged.afterComplete = next.afterComplete;
+    } else if (!next.afterComplete) {
+      merged.afterComplete = { ...base.afterComplete };
+    } else {
+      merged.afterComplete = { ...base.afterComplete };
+      const ov = next.afterComplete;
+      if (ov.hideQuestions !== undefined) merged.afterComplete.hideQuestions = ov.hideQuestions;
+      if (ov.showQuestionsAgainDate !== undefined) {
+        merged.afterComplete.showQuestionsAgainDate = ov.showQuestionsAgainDate;
+      }
+      if (ov.hideQuestionsAgainDate !== undefined) {
+        merged.afterComplete.hideQuestionsAgainDate = ov.hideQuestionsAgainDate;
+      }
+      if (ov.hideScore !== undefined) merged.afterComplete.hideScore = ov.hideScore;
+      if (ov.showScoreAgainDate !== undefined) {
+        merged.afterComplete.showScoreAgainDate = ov.showScoreAgainDate;
+      }
+    }
+  }
+
+  return merged;
+}
+
 interface CreditResult {
   credit: number;
   active: boolean;
@@ -389,34 +461,40 @@ export function resolveAccessControl(
     return { ...UNAUTHORIZED_RESULT };
   }
 
-  // Enrollment overrides take precedence over student_label overrides, then by number.
-  let matchedOverride: AccessControlRuleInput | null = null;
+  // Sort: student_label first (broader), enrollment second (more specific, wins in cascade).
   const overrides = rules
     .filter((r) => r.number !== 0)
     .sort((a, b) => {
-      const typeOrder = (t: string) => (t === 'enrollment' ? 0 : 1);
+      const typeOrder = (t: string) => (t === 'student_label' ? 0 : 1);
       const diff = typeOrder(a.targetType) - typeOrder(b.targetType);
       if (diff !== 0) return diff;
       return a.number - b.number;
     });
 
+  // Collect all matching overrides.
+  const matchedOverrides: AccessControlRuleInput[] = [];
   for (const rule of overrides) {
     if (rule.rule.enabled === false) continue;
 
     if (rule.targetType === 'enrollment') {
       if (student.enrollmentId && rule.enrollmentIds.includes(student.enrollmentId)) {
-        matchedOverride = rule;
-        break;
+        matchedOverrides.push(rule);
       }
     } else if (rule.targetType === 'student_label') {
       if (rule.studentLabelIds.some((id) => student.studentLabelIds.includes(id))) {
-        matchedOverride = rule;
-        break;
+        matchedOverrides.push(rule);
       }
     }
   }
 
-  const effectiveRule = mergeRules(mainRuleInput.rule, matchedOverride?.rule ?? null);
+  // Cascade all matched overrides, then merge with main rule.
+  let cascadedOverride: AccessControlJson | null = null;
+  for (const override of matchedOverrides) {
+    cascadedOverride = cascadedOverride
+      ? cascadeOverrides(cascadedOverride, override.rule)
+      : override.rule;
+  }
+  const effectiveRule = mergeRules(mainRuleInput.rule, cascadedOverride);
 
   if (effectiveRule.enabled === false) {
     return { ...UNAUTHORIZED_RESULT };

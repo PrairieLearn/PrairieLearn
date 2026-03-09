@@ -1,44 +1,36 @@
 import { useState } from 'react';
 import { Button, Form, InputGroup } from 'react-bootstrap';
+import { type Path, useController, useWatch } from 'react-hook-form';
 
 import { FieldWrapper } from '../FieldWrapper.js';
-import { useOverridableField } from '../hooks/useOverridableField.js';
-import type { NamePrefix } from '../hooks/useTypedFormWatch.js';
+import type { AccessControlFormData } from '../types.js';
 
-interface PasswordFieldProps {
-  namePrefix: NamePrefix;
+interface PasswordInputProps {
+  value: string | null;
+  onChange: (value: string | null) => void;
+  idPrefix: string;
 }
 
-export function PasswordField({ namePrefix }: PasswordFieldProps) {
+function PasswordInput({ value, onChange, idPrefix }: PasswordInputProps) {
   const [showPassword, setShowPassword] = useState(false);
 
-  const { field, isOverrideRule, setField, enableOverride, removeOverride, toggleEnabled } =
-    useOverridableField({
-      namePrefix,
-      fieldPath: 'dateControl.password',
-      defaultValue: '',
-    });
-
-  const headerContent = (
-    <Form.Check
-      type="checkbox"
-      id={`${namePrefix}-password-enabled`}
-      label={<strong>Password</strong>}
-      checked={field.isEnabled}
-      onChange={({ currentTarget }) => toggleEnabled(currentTarget.checked)}
-    />
-  );
-
-  const content = (
+  return (
     <Form.Group>
-      {field.isEnabled && (
-        <InputGroup>
+      <Form.Check
+        type="checkbox"
+        id={`${idPrefix}-password-enabled`}
+        label={<strong>Password</strong>}
+        checked={value !== null}
+        onChange={({ currentTarget }) => onChange(currentTarget.checked ? '' : null)}
+      />
+      {value !== null && (
+        <InputGroup className="mt-2">
           <Form.Control
             type={showPassword ? 'text' : 'password'}
             aria-label="Assessment password"
             placeholder="Password"
-            value={field.value}
-            onChange={({ currentTarget }) => setField({ value: currentTarget.value })}
+            value={value}
+            onChange={({ currentTarget }) => onChange(currentTarget.value)}
           />
           <Button
             variant="outline-secondary"
@@ -50,23 +42,49 @@ export function PasswordField({ namePrefix }: PasswordFieldProps) {
         </InputGroup>
       )}
       <Form.Text className="text-muted">
-        {field.isEnabled
+        {value !== null
           ? 'This password will be required to start the assessment.'
           : 'Require a password in order to start the assessment.'}
       </Form.Text>
     </Form.Group>
   );
+}
+
+export function MainPasswordField() {
+  const { field } = useController<AccessControlFormData, 'mainRule.password'>({
+    name: 'mainRule.password',
+  });
+
+  return <PasswordInput value={field.value} idPrefix="mainRule" onChange={field.onChange} />;
+}
+
+export function OverridePasswordField({ index }: { index: number }) {
+  const mainValue = useWatch<AccessControlFormData, 'mainRule.password'>({
+    name: 'mainRule.password',
+  });
+
+  const { field } = useController({
+    name: `overrides.${index}.password` as Path<AccessControlFormData>,
+  });
+
+  const value = field.value as string | null | undefined;
+  const isOverridden = value !== undefined;
+
+  const inheritedText = mainValue !== null ? 'Password protected' : 'No password';
 
   return (
     <FieldWrapper
-      isOverrideRule={isOverrideRule}
-      isOverridden={field.isOverridden}
+      isOverridden={isOverridden}
       label="Password"
-      headerContent={headerContent}
-      onOverride={() => enableOverride('')}
-      onRemoveOverride={removeOverride}
+      inheritedValue={inheritedText}
+      onOverride={() => field.onChange(mainValue)}
+      onRemoveOverride={() => field.onChange(undefined)}
     >
-      {content}
+      <PasswordInput
+        value={value as string | null}
+        idPrefix={`overrides-${index}`}
+        onChange={field.onChange}
+      />
     </FieldWrapper>
   );
 }

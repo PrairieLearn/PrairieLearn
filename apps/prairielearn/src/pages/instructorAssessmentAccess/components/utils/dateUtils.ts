@@ -1,4 +1,4 @@
-import type { DeadlineEntry, OverridableField } from '../types.js';
+import type { DeadlineEntry } from '../types.js';
 
 export function getUserTimezone(): string {
   return Intl.DateTimeFormat().resolvedOptions().timeZone;
@@ -12,7 +12,7 @@ interface DateRange {
 export function getEarlyDeadlineRange(
   index: number,
   deadlines: DeadlineEntry[],
-  releaseDate: OverridableField<string>,
+  releaseDate: string | null | undefined,
 ): DateRange | null {
   const currentDeadline = deadlines[index];
   if (!currentDeadline.date) return null;
@@ -21,8 +21,8 @@ export function getEarlyDeadlineRange(
   let startDate: Date | null = null;
 
   if (index === 0) {
-    if (releaseDate.isEnabled && releaseDate.value) {
-      startDate = new Date(releaseDate.value);
+    if (releaseDate) {
+      startDate = new Date(releaseDate);
     }
   } else {
     const previousDeadline = deadlines[index - 1];
@@ -37,7 +37,7 @@ export function getEarlyDeadlineRange(
 export function getLateDeadlineRange(
   index: number,
   deadlines: DeadlineEntry[],
-  dueDate: OverridableField<string>,
+  dueDate: string | null | undefined,
 ): DateRange | null {
   const currentDeadline = deadlines[index];
   if (!currentDeadline.date) return null;
@@ -46,8 +46,8 @@ export function getLateDeadlineRange(
   let startDate: Date | null = null;
 
   if (index === 0) {
-    if (dueDate.isEnabled && dueDate.value) {
-      startDate = new Date(dueDate.value);
+    if (dueDate) {
+      startDate = new Date(dueDate);
     }
   } else {
     const previousDeadline = deadlines[index - 1];
@@ -60,11 +60,11 @@ export function getLateDeadlineRange(
 }
 
 export function getLastDeadlineDate(
-  lateDeadlines: OverridableField<DeadlineEntry[]>,
-  dueDate: OverridableField<string>,
+  lateDeadlines: DeadlineEntry[] | undefined,
+  dueDate: string | null | undefined,
 ): Date | null {
-  if (lateDeadlines.isEnabled && lateDeadlines.value.length > 0) {
-    const validLateDeadlines = lateDeadlines.value.filter((d) => d.date);
+  if (lateDeadlines && lateDeadlines.length > 0) {
+    const validLateDeadlines = lateDeadlines.filter((d) => d.date);
     if (validLateDeadlines.length > 0) {
       const sorted = [...validLateDeadlines].sort(
         (a, b) => new Date(b.date).getTime() - new Date(a.date).getTime(),
@@ -73,21 +73,19 @@ export function getLastDeadlineDate(
     }
   }
 
-  if (dueDate.isEnabled && dueDate.value) {
-    return new Date(dueDate.value);
+  if (dueDate) {
+    return new Date(dueDate);
   }
 
   return null;
 }
 
-export function getLatestEarlyDeadlineDate(
-  earlyDeadlines: OverridableField<DeadlineEntry[]>,
-): Date | null {
-  if (!earlyDeadlines.isEnabled || earlyDeadlines.value.length === 0) {
+export function getLatestEarlyDeadlineDate(earlyDeadlines: DeadlineEntry[]): Date | null {
+  if (earlyDeadlines.length === 0) {
     return null;
   }
 
-  const validDeadlines = earlyDeadlines.value.filter((d) => d.date);
+  const validDeadlines = earlyDeadlines.filter((d) => d.date);
   if (validDeadlines.length === 0) {
     return null;
   }

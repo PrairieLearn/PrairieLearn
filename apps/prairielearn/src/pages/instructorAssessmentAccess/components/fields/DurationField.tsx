@@ -1,64 +1,82 @@
 import { Form, InputGroup } from 'react-bootstrap';
+import { type Path, useController, useWatch } from 'react-hook-form';
 
 import { FieldWrapper } from '../FieldWrapper.js';
-import { useOverridableField } from '../hooks/useOverridableField.js';
-import type { NamePrefix } from '../hooks/useTypedFormWatch.js';
+import type { AccessControlFormData } from '../types.js';
 
-interface DurationFieldProps {
-  namePrefix: NamePrefix;
+interface DurationInputProps {
+  value: number | null;
+  onChange: (value: number | null) => void;
+  idPrefix: string;
 }
 
-export function DurationField({ namePrefix }: DurationFieldProps) {
-  const { field, isOverrideRule, setField, enableOverride, removeOverride, toggleEnabled } =
-    useOverridableField({
-      namePrefix,
-      fieldPath: 'dateControl.durationMinutes',
-      defaultValue: 60,
-    });
-
-  const headerContent = (
-    <Form.Check
-      type="checkbox"
-      id={`${namePrefix}-time-limit-enabled`}
-      label={<strong>Time limit</strong>}
-      checked={field.isEnabled}
-      onChange={({ currentTarget }) => toggleEnabled(currentTarget.checked)}
-    />
-  );
-
-  const content = (
+function DurationInput({ value, onChange, idPrefix }: DurationInputProps) {
+  return (
     <Form.Group>
-      {field.isEnabled && (
-        <InputGroup>
+      <Form.Check
+        type="checkbox"
+        id={`${idPrefix}-time-limit-enabled`}
+        label={<strong>Time limit</strong>}
+        checked={value !== null}
+        onChange={({ currentTarget }) => onChange(currentTarget.checked ? 60 : null)}
+      />
+      {value !== null && (
+        <InputGroup className="mt-2">
           <Form.Control
             type="number"
             aria-label="Duration in minutes"
             placeholder="Duration in minutes"
             min="1"
-            value={field.value}
-            onChange={({ currentTarget }) => setField({ value: Number(currentTarget.value) || 60 })}
+            value={value}
+            onChange={({ currentTarget }) => onChange(Number(currentTarget.value) || 60)}
           />
           <InputGroup.Text>minutes</InputGroup.Text>
         </InputGroup>
       )}
       <Form.Text className="text-muted">
-        {field.isEnabled
-          ? `Students will have ${field.value || 60} minutes to complete the assessment.`
+        {value !== null
+          ? `Students will have ${value || 60} minutes to complete the assessment.`
           : 'Add a time limit to the assessment.'}
       </Form.Text>
     </Form.Group>
   );
+}
+
+export function MainDurationField() {
+  const { field } = useController<AccessControlFormData, 'mainRule.durationMinutes'>({
+    name: 'mainRule.durationMinutes',
+  });
+
+  return <DurationInput value={field.value} idPrefix="mainRule" onChange={field.onChange} />;
+}
+
+export function OverrideDurationField({ index }: { index: number }) {
+  const mainValue = useWatch<AccessControlFormData, 'mainRule.durationMinutes'>({
+    name: 'mainRule.durationMinutes',
+  });
+
+  const { field } = useController({
+    name: `overrides.${index}.durationMinutes` as Path<AccessControlFormData>,
+  });
+
+  const value = field.value as number | null | undefined;
+  const isOverridden = value !== undefined;
+
+  const inheritedText = mainValue !== null ? `${mainValue} minutes` : 'No time limit';
 
   return (
     <FieldWrapper
-      isOverrideRule={isOverrideRule}
-      isOverridden={field.isOverridden}
+      isOverridden={isOverridden}
       label="Time limit"
-      headerContent={headerContent}
-      onOverride={() => enableOverride(60)}
-      onRemoveOverride={removeOverride}
+      inheritedValue={inheritedText}
+      onOverride={() => field.onChange(mainValue)}
+      onRemoveOverride={() => field.onChange(undefined)}
     >
-      {content}
+      <DurationInput
+        value={value as number | null}
+        idPrefix={`overrides-${index}`}
+        onChange={field.onChange}
+      />
     </FieldWrapper>
   );
 }

@@ -1,5 +1,11 @@
 import { Button, Card, Form } from 'react-bootstrap';
-import { useFieldArray, useFormContext, useWatch } from 'react-hook-form';
+import {
+  type FieldArrayPath,
+  type Path,
+  useFieldArray,
+  useFormContext,
+  useWatch,
+} from 'react-hook-form';
 
 import { ChipGroup } from '@prairielearn/ui';
 
@@ -22,25 +28,25 @@ export function AppliesToField({ namePrefix }: AppliesToFieldProps) {
   const { setValue } = useFormContext<AccessControlFormData>();
 
   const appliesTo = useWatch({
-    name: `${namePrefix}.appliesTo` as const,
+    name: `${namePrefix}.appliesTo` as Path<AccessControlFormData>,
   });
 
   const { append: appendIndividual, remove: removeIndividual } = useFieldArray({
-    name: `${namePrefix}.appliesTo.individuals` as 'mainRule.appliesTo.individuals',
+    name: `${namePrefix}.appliesTo.individuals` as FieldArrayPath<AccessControlFormData>,
   });
 
   const { append: appendStudentLabel, remove: removeStudentLabel } = useFieldArray({
-    name: `${namePrefix}.appliesTo.studentLabels` as 'mainRule.appliesTo.studentLabels',
+    name: `${namePrefix}.appliesTo.studentLabels` as FieldArrayPath<AccessControlFormData>,
   });
 
   const handleTargetTypeChange = (newType: TargetType) => {
     setValue(
-      `${namePrefix}.appliesTo` as const,
+      `${namePrefix}.appliesTo` as Path<AccessControlFormData>,
       {
         targetType: newType,
         individuals: [],
         studentLabels: [],
-      },
+      } as never,
       { shouldDirty: true },
     );
   };

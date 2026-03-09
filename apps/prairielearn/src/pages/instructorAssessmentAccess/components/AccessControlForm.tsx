@@ -17,7 +17,8 @@ import {
   type AccessControlJsonWithId,
   createDefaultOverrideFormData,
   formDataToJson,
-  jsonToFormData,
+  jsonToMainRuleFormData,
+  jsonToOverrideFormData,
 } from './types.js';
 
 interface AccessControlFormProps {
@@ -50,7 +51,7 @@ const FIELD_LABELS: Record<string, string> = {
 const ARRAY_LABELS: Record<string, string> = {
   earlyDeadlines: 'Early deadline',
   lateDeadlines: 'Late deadline',
-  exams: 'Exam',
+  prairieTestExams: 'Exam',
 };
 
 function collectErrorMessages(
@@ -98,9 +99,9 @@ export function AccessControlForm({
   });
 
   const mainRule = initialData[0]
-    ? jsonToFormData(initialData[0], true)
-    : jsonToFormData({ enabled: true, listBeforeRelease: true }, true);
-  const overrides = initialData.slice(1).map((json) => jsonToFormData(json, false));
+    ? jsonToMainRuleFormData(initialData[0])
+    : jsonToMainRuleFormData({ enabled: true, listBeforeRelease: true });
+  const overrides = initialData.slice(1).map(jsonToOverrideFormData);
 
   const methods = useForm<AccessControlFormData>({
     mode: 'onChange',
@@ -165,13 +166,8 @@ export function AccessControlForm({
   };
 
   const getOverrideName = (index: number): string => {
-    const override = watchedData.overrides[index] as
-      | AccessControlFormData['overrides'][number]
-      | undefined;
-    const appliesTo = override?.appliesTo;
-    if (!appliesTo) {
-      return `Override ${index + 1}`;
-    }
+    const override = watchedData.overrides[index];
+    const appliesTo = override.appliesTo;
 
     if (appliesTo.targetType === 'student_label') {
       const studentLabels = appliesTo.studentLabels;

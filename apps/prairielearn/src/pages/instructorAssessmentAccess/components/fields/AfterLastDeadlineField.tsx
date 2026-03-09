@@ -1,57 +1,61 @@
 import { Alert, Form, InputGroup } from 'react-bootstrap';
-import { get, useFormContext, useFormState } from 'react-hook-form';
+import {
+  type Path,
+  get,
+  useController,
+  useFormContext,
+  useFormState,
+  useWatch,
+} from 'react-hook-form';
 
 import { FriendlyDate } from '../../../../components/FriendlyDate.js';
 import { FieldWrapper } from '../FieldWrapper.js';
-import { useOverridableField } from '../hooks/useOverridableField.js';
-import {
-  type NamePrefix,
-  getFieldName,
-  useWatchOverridableField,
-} from '../hooks/useTypedFormWatch.js';
+import { getFieldName } from '../hooks/useTypedFormWatch.js';
 import type { AccessControlFormData, AfterLastDeadlineValue, DeadlineEntry } from '../types.js';
 import { getLastDeadlineDate, getUserTimezone } from '../utils/dateUtils.js';
 
-interface AfterLastDeadlineFieldProps {
-  namePrefix: NamePrefix;
-}
-
 type AfterLastDeadlineMode = 'no_submissions' | 'practice_submissions' | 'partial_credit';
 
-export function AfterLastDeadlineField({ namePrefix }: AfterLastDeadlineFieldProps) {
+function getMode(value: AfterLastDeadlineValue | null): AfterLastDeadlineMode {
+  if (!value) return 'no_submissions';
+  const { allowSubmissions, credit } = value;
+  if (!allowSubmissions) return 'no_submissions';
+  if (credit === undefined) return 'practice_submissions';
+  return 'partial_credit';
+}
+
+function formatInheritedValue(value: AfterLastDeadlineValue | null): string {
+  if (!value) return 'No submissions';
+  if (!value.allowSubmissions) return 'No submissions';
+  if (value.credit === undefined) return 'Practice submissions';
+  return `${value.credit}% credit`;
+}
+
+interface AfterLastDeadlineInputProps {
+  value: AfterLastDeadlineValue | null;
+  onChange: (value: AfterLastDeadlineValue | null) => void;
+  idPrefix: string;
+  dueDate: string | null | undefined;
+  lateDeadlines: DeadlineEntry[] | undefined;
+  creditFieldPath: string;
+}
+
+function AfterLastDeadlineInput({
+  value,
+  onChange,
+  idPrefix,
+  dueDate,
+  lateDeadlines,
+  creditFieldPath,
+}: AfterLastDeadlineInputProps) {
   const { register } = useFormContext<AccessControlFormData>();
   const userTimezone = getUserTimezone();
-
-  const { field, isOverrideRule, setField, enableOverride, removeOverride } = useOverridableField({
-    namePrefix,
-    fieldPath: 'dateControl.afterLastDeadline',
-    defaultValue: {} as AfterLastDeadlineValue,
-  });
-
-  const dueDate = useWatchOverridableField<string>(namePrefix, 'dateControl.dueDate');
-
-  const lateDeadlines = useWatchOverridableField<DeadlineEntry[]>(
-    namePrefix,
-    'dateControl.lateDeadlines',
-  );
-
-  const getMode = (): AfterLastDeadlineMode => {
-    const { allowSubmissions, credit } = field.value;
-    if (!allowSubmissions) return 'no_submissions';
-    if (credit === undefined) return 'practice_submissions';
-    return 'partial_credit';
-  };
-
-  const mode = getMode();
-
-  const creditFieldPath = getFieldName(namePrefix, 'dateControl.afterLastDeadline.value.credit');
-
   const { errors } = useFormState();
   const creditError: string | undefined = get(errors, creditFieldPath)?.message;
 
-  const getLastDeadlineText = () => {
-    if (!dueDate || !lateDeadlines) return 'This will take effect after the last deadline';
+  const mode = getMode(value);
 
+  const getLastDeadlineText = () => {
     const lastDate = getLastDeadlineDate(lateDeadlines, dueDate);
     if (lastDate) {
       return (
@@ -61,44 +65,42 @@ export function AfterLastDeadlineField({ namePrefix }: AfterLastDeadlineFieldPro
         </>
       );
     }
-
     return 'This will take effect after the last deadline';
   };
 
-  const hasLastDeadline =
-    (dueDate?.isEnabled && dueDate.value) ||
-    (lateDeadlines?.isEnabled && lateDeadlines.value.length > 0);
+  const hasLastDeadline = !!dueDate || (lateDeadlines && lateDeadlines.length > 0);
 
-  const content = (
+  return (
     <Form.Group>
       {!hasLastDeadline && (
         <Alert variant="warning" className="py-2 mb-2">
           This setting will have no effect because there is no due date set.
         </Alert>
       )}
-      <div className="mb-2">
+      <div>
+        <strong>After last deadline</strong>
+        <br />
+        <small className="text-muted">{getLastDeadlineText()}</small>
+      </div>
+      <div className="mb-2 mt-2">
         <Form.Check
           type="radio"
-          name={`${namePrefix}-afterLastDeadlineMode`}
-          id={`${namePrefix}-after-deadline-no-submissions`}
+          name={`${idPrefix}-afterLastDeadlineMode`}
+          id={`${idPrefix}-after-deadline-no-submissions`}
           label="No submissions allowed"
           checked={mode === 'no_submissions'}
           onChange={({ currentTarget }) => {
-            if (currentTarget.checked) {
-              setField({ isEnabled: true, value: { allowSubmissions: false } });
-            }
+            if (currentTarget.checked) onChange({ allowSubmissions: false });
           }}
         />
         <Form.Check
           type="radio"
-          name={`${namePrefix}-afterLastDeadlineMode`}
-          id={`${namePrefix}-after-deadline-practice-submissions`}
+          name={`${idPrefix}-afterLastDeadlineMode`}
+          id={`${idPrefix}-after-deadline-practice-submissions`}
           label="Allow practice submissions"
           checked={mode === 'practice_submissions'}
           onChange={({ currentTarget }) => {
-            if (currentTarget.checked) {
-              setField({ isEnabled: true, value: { allowSubmissions: true } });
-            }
+            if (currentTarget.checked) onChange({ allowSubmissions: true });
           }}
         />
         <Form.Text className="text-muted ms-4 mb-3 d-block">
@@ -107,14 +109,12 @@ export function AfterLastDeadlineField({ namePrefix }: AfterLastDeadlineFieldPro
 
         <Form.Check
           type="radio"
-          name={`${namePrefix}-afterLastDeadlineMode`}
-          id={`${namePrefix}-after-deadline-partial-credit`}
+          name={`${idPrefix}-afterLastDeadlineMode`}
+          id={`${idPrefix}-after-deadline-partial-credit`}
           label="Allow submissions for partial credit"
           checked={mode === 'partial_credit'}
           onChange={({ currentTarget }) => {
-            if (currentTarget.checked) {
-              setField({ isEnabled: true, value: { allowSubmissions: true, credit: 0 } });
-            }
+            if (currentTarget.checked) onChange({ allowSubmissions: true, credit: 0 });
           }}
         />
       </div>
@@ -127,17 +127,17 @@ export function AfterLastDeadlineField({ namePrefix }: AfterLastDeadlineFieldPro
               aria-label="Credit percentage after last deadline"
               aria-invalid={!!creditError}
               aria-errormessage={
-                creditError ? `${namePrefix}-after-deadline-credit-error` : undefined
+                creditError ? `${idPrefix}-after-deadline-credit-error` : undefined
               }
               min="0"
               max="200"
               placeholder="Credit percentage"
               isInvalid={!!creditError}
-              {...register(creditFieldPath, {
+              {...register(creditFieldPath as Parameters<typeof register>[0], {
                 shouldUnregister: true,
                 valueAsNumber: true,
-                validate: (value) => {
-                  const num = value as number;
+                validate: (v) => {
+                  const num = v as number;
                   if (Number.isNaN(num)) return 'Credit is required';
                   if (num < 0 || num > 200) return 'Must be 0–200%';
                   return true;
@@ -148,7 +148,7 @@ export function AfterLastDeadlineField({ namePrefix }: AfterLastDeadlineFieldPro
           </InputGroup>
           {creditError && (
             <Form.Text
-              id={`${namePrefix}-after-deadline-credit-error`}
+              id={`${idPrefix}-after-deadline-credit-error`}
               className="text-danger d-block"
               role="alert"
             >
@@ -162,25 +162,75 @@ export function AfterLastDeadlineField({ namePrefix }: AfterLastDeadlineFieldPro
       )}
     </Form.Group>
   );
+}
 
-  const headerContent = (
-    <div>
-      <strong>After last deadline</strong>
-      <br />
-      <small className="text-muted">{getLastDeadlineText()}</small>
-    </div>
+export function MainAfterLastDeadlineField() {
+  const { field } = useController<AccessControlFormData, 'mainRule.afterLastDeadline'>({
+    name: 'mainRule.afterLastDeadline',
+  });
+
+  const dueDate = useWatch<AccessControlFormData, 'mainRule.dueDate'>({
+    name: 'mainRule.dueDate',
+  });
+
+  const lateDeadlines = useWatch<AccessControlFormData, 'mainRule.lateDeadlines'>({
+    name: 'mainRule.lateDeadlines',
+  });
+
+  return (
+    <AfterLastDeadlineInput
+      value={field.value}
+      idPrefix="mainRule"
+      dueDate={dueDate}
+      lateDeadlines={lateDeadlines}
+      creditFieldPath="mainRule.afterLastDeadline.credit"
+      onChange={field.onChange}
+    />
   );
+}
+
+export function OverrideAfterLastDeadlineField({ index }: { index: number }) {
+  const mainValue = useWatch<AccessControlFormData, 'mainRule.afterLastDeadline'>({
+    name: 'mainRule.afterLastDeadline',
+  });
+
+  const { field } = useController({
+    name: `overrides.${index}.afterLastDeadline` as Path<AccessControlFormData>,
+  });
+
+  const value = field.value as AfterLastDeadlineValue | null | undefined;
+  const isOverridden = value !== undefined;
+
+  const dueDate = useWatch({
+    name: `overrides.${index}.dueDate` as Path<AccessControlFormData>,
+  }) as string | null | undefined;
+  const mainDueDate = useWatch<AccessControlFormData, 'mainRule.dueDate'>({
+    name: 'mainRule.dueDate',
+  });
+
+  const lateDeadlines = useWatch({
+    name: `overrides.${index}.lateDeadlines` as Path<AccessControlFormData>,
+  }) as DeadlineEntry[] | undefined;
+  const mainLateDeadlines = useWatch<AccessControlFormData, 'mainRule.lateDeadlines'>({
+    name: 'mainRule.lateDeadlines',
+  });
 
   return (
     <FieldWrapper
-      isOverrideRule={isOverrideRule}
-      isOverridden={field.isOverridden}
+      isOverridden={isOverridden}
       label="After last deadline"
-      headerContent={headerContent}
-      onOverride={() => enableOverride({ allowSubmissions: false })}
-      onRemoveOverride={removeOverride}
+      inheritedValue={formatInheritedValue(mainValue)}
+      onOverride={() => field.onChange(mainValue ?? { allowSubmissions: false })}
+      onRemoveOverride={() => field.onChange(undefined)}
     >
-      {content}
+      <AfterLastDeadlineInput
+        value={value as AfterLastDeadlineValue | null}
+        idPrefix={`overrides-${index}`}
+        dueDate={dueDate !== undefined ? dueDate : mainDueDate}
+        lateDeadlines={lateDeadlines !== undefined ? lateDeadlines : mainLateDeadlines}
+        creditFieldPath={getFieldName(`overrides.${index}`, 'afterLastDeadline.credit')}
+        onChange={field.onChange}
+      />
     </FieldWrapper>
   );
 }

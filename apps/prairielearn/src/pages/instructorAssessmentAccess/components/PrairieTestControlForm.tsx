@@ -1,39 +1,30 @@
 import { Button, Card, Col, Form, Row } from 'react-bootstrap';
-import { get, useFieldArray, useFormContext, useFormState, useWatch } from 'react-hook-form';
+import { get, useFieldArray, useFormContext, useFormState } from 'react-hook-form';
 
-import { type NamePrefix, getFieldName } from './hooks/useTypedFormWatch.js';
 import type { AccessControlFormData } from './types.js';
 
 interface PrairieTestControlFormProps {
-  namePrefix: NamePrefix;
   onRemove?: () => void;
 }
 
-export function PrairieTestControlForm({ namePrefix, onRemove }: PrairieTestControlFormProps) {
-  const { register, setValue } = useFormContext<AccessControlFormData>();
+export function PrairieTestControlForm({ onRemove }: PrairieTestControlFormProps) {
+  const { register } = useFormContext<AccessControlFormData>();
 
   const {
     fields: examFields,
     append: appendExam,
     remove: removeExam,
   } = useFieldArray({
-    name: `${namePrefix}.integrations.prairieTest.exams` as 'mainRule.integrations.prairieTest.exams',
-  });
-
-  const exams = useWatch({
-    name: `${namePrefix}.integrations.prairieTest.exams` as const,
+    name: 'mainRule.prairieTestExams',
   });
 
   const { errors } = useFormState();
 
   const getExamUuidError = (index: number): string | undefined => {
-    return get(errors, `${namePrefix}.integrations.prairieTest.exams.${index}.examUuid`)?.message;
+    return get(errors, `mainRule.prairieTestExams.${index}.examUuid`)?.message;
   };
 
   const addExam = () => {
-    if (exams === undefined) {
-      setValue(getFieldName(namePrefix, 'integrations.prairieTest.exams'), []);
-    }
     appendExam({ examUuid: '', readOnly: false });
   };
 
@@ -76,7 +67,7 @@ export function PrairieTestControlForm({ namePrefix, onRemove }: PrairieTestCont
                   <Card.Body>
                     <Row>
                       <Col md={8}>
-                        <Form.Group className="mb-2" controlId={`${namePrefix}-exam-uuid-${index}`}>
+                        <Form.Group className="mb-2" controlId={`mainRule-exam-uuid-${index}`}>
                           <Form.Label>Exam UUID</Form.Label>
                           <Form.Control
                             type="text"
@@ -84,39 +75,30 @@ export function PrairieTestControlForm({ namePrefix, onRemove }: PrairieTestCont
                             aria-invalid={!!getExamUuidError(index)}
                             aria-errormessage={
                               getExamUuidError(index)
-                                ? `${namePrefix}-exam-uuid-${index}-error`
+                                ? `mainRule-exam-uuid-${index}-error`
                                 : undefined
                             }
-                            aria-describedby={`${namePrefix}-exam-uuid-${index}-help`}
+                            aria-describedby={`mainRule-exam-uuid-${index}-help`}
                             placeholder="Enter PrairieTest exam UUID (e.g., 11e89892-3eff-4d7f-90a2-221372f14e5c)"
-                            {...register(
-                              getFieldName(
-                                namePrefix,
-                                `integrations.prairieTest.exams.${index}.examUuid`,
-                              ),
-                              {
-                                required: 'Exam UUID is required',
-                                pattern: {
-                                  value:
-                                    /^[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12}$/i,
-                                  message: 'Invalid UUID format',
-                                },
+                            {...register(`mainRule.prairieTestExams.${index}.examUuid`, {
+                              required: 'Exam UUID is required',
+                              pattern: {
+                                value:
+                                  /^[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12}$/i,
+                                message: 'Invalid UUID format',
                               },
-                            )}
+                            })}
                           />
                           {getExamUuidError(index) && (
                             <Form.Text
-                              id={`${namePrefix}-exam-uuid-${index}-error`}
+                              id={`mainRule-exam-uuid-${index}-error`}
                               className="text-danger d-block"
                               role="alert"
                             >
                               {getExamUuidError(index)}
                             </Form.Text>
                           )}
-                          <Form.Text
-                            id={`${namePrefix}-exam-uuid-${index}-help`}
-                            className="text-muted"
-                          >
+                          <Form.Text id={`mainRule-exam-uuid-${index}-help`} className="text-muted">
                             You can find this UUID in the PrairieTest exam settings
                           </Form.Text>
                         </Form.Group>
@@ -125,18 +107,13 @@ export function PrairieTestControlForm({ namePrefix, onRemove }: PrairieTestCont
                         <Form.Group className="mb-2">
                           <Form.Check
                             type="checkbox"
-                            id={`${namePrefix}-exam-readonly-${index}`}
+                            id={`mainRule-exam-readonly-${index}`}
                             label="Read-only mode"
-                            {...register(
-                              getFieldName(
-                                namePrefix,
-                                `integrations.prairieTest.exams.${index}.readOnly`,
-                              ),
-                            )}
-                            aria-describedby={`${namePrefix}-exam-readonly-${index}-help`}
+                            {...register(`mainRule.prairieTestExams.${index}.readOnly`)}
+                            aria-describedby={`mainRule-exam-readonly-${index}-help`}
                           />
                           <Form.Text
-                            id={`${namePrefix}-exam-readonly-${index}-help`}
+                            id={`mainRule-exam-readonly-${index}-help`}
                             className="text-muted"
                           >
                             Students can view but not submit answers

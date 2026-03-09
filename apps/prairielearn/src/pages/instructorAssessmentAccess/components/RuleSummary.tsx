@@ -5,9 +5,14 @@ import {
   getStudentEnrollmentUrl,
 } from '../../../lib/client/url.js';
 
-import type { AccessControlRuleFormData, DeadlineEntry } from './types.js';
+import type { DeadlineEntry, MainRuleData, OverrideData } from './types.js';
 
+type RuleData = MainRuleData | OverrideData;
 type SummaryVerbosity = 'compact' | 'verbose';
+
+function isMainRuleData(rule: RuleData): rule is MainRuleData {
+  return 'dateControlEnabled' in rule;
+}
 
 function formatDate(dateStr: string): string {
   if (!dateStr) return '';
@@ -33,24 +38,23 @@ interface DateTableRow {
 }
 
 export function generateDateTableRows(
-  rule: AccessControlRuleFormData,
+  rule: RuleData,
   verbosity: SummaryVerbosity = 'compact',
 ): DateTableRow[] {
   const rows: DateTableRow[] = [];
-  const dc = rule.dateControl;
 
-  // Date control is enabled if:
-  // 1. The explicit enabled flag is true (main rule), OR
-  // 2. Any field is overridden (override rules implicitly enable date control)
-  const isDateControlEnabled =
-    dc.enabled ||
-    dc.releaseDate.isOverridden ||
-    dc.dueDate.isOverridden ||
-    dc.earlyDeadlines.isOverridden ||
-    dc.lateDeadlines.isOverridden ||
-    dc.afterLastDeadline.isOverridden ||
-    dc.durationMinutes.isOverridden ||
-    dc.password.isOverridden;
+  // For main rule: check dateControlEnabled flag
+  // For override: check if any date field is set (not undefined)
+  const isMain = isMainRuleData(rule);
+  const isDateControlEnabled = isMain
+    ? rule.dateControlEnabled
+    : rule.releaseDate !== undefined ||
+      rule.dueDate !== undefined ||
+      rule.earlyDeadlines !== undefined ||
+      rule.lateDeadlines !== undefined ||
+      rule.afterLastDeadline !== undefined ||
+      rule.durationMinutes !== undefined ||
+      rule.password !== undefined;
 
   if (!isDateControlEnabled) {
     return rows;
@@ -66,19 +70,25 @@ export function generateDateTableRows(
 
   const entries: DateEntry[] = [];
 
-  if (dc.releaseDate.isOverridden && dc.releaseDate.isEnabled && dc.releaseDate.value) {
+  const releaseDate = rule.releaseDate;
+  const dueDate = rule.dueDate;
+  const earlyDeadlines = rule.earlyDeadlines;
+  const lateDeadlines = rule.lateDeadlines;
+  const afterLastDeadline = rule.afterLastDeadline;
+
+  if (releaseDate) {
     const visibilityParts: string[] = ['Assessment opens'];
-    if (rule.listBeforeRelease) {
+    if (isMain && rule.listBeforeRelease) {
       visibilityParts.push('(listed before release)');
     }
     entries.push({
-      date: dc.releaseDate.value,
-      timestamp: new Date(dc.releaseDate.value).getTime(),
+      date: releaseDate,
+      timestamp: new Date(releaseDate).getTime(),
       label: 'Release',
       credit: '—',
       visibility: visibilityParts.join(' '),
     });
-  } else if (verbosity === 'verbose' && dc.releaseDate.isOverridden && !dc.releaseDate.isEnabled) {
+  } else if (releaseDate === null && verbosity === 'verbose') {
     rows.push({
       date: 'Released immediately',
       label: '',
@@ -87,8 +97,8 @@ export function generateDateTableRows(
     });
   }
 
-  if (dc.earlyDeadlines.isOverridden && dc.earlyDeadlines.isEnabled) {
-    dc.earlyDeadlines.value.forEach((deadline: DeadlineEntry, index: number) => {
+  if (earlyDeadlines) {
+    earlyDeadlines.forEach((deadline: DeadlineEntry, index: number) => {
       if (deadline.date) {
         entries.push({
           date: deadline.date,
@@ -101,15 +111,15 @@ export function generateDateTableRows(
     });
   }
 
-  if (dc.dueDate.isOverridden && dc.dueDate.isEnabled && dc.dueDate.value) {
+  if (dueDate) {
     entries.push({
-      date: dc.dueDate.value,
-      timestamp: new Date(dc.dueDate.value).getTime(),
+      date: dueDate,
+      timestamp: new Date(dueDate).getTime(),
       label: 'Due',
       credit: '100%',
       visibility: 'Open',
     });
-  } else if (verbosity === 'verbose' && dc.dueDate.isOverridden && !dc.dueDate.isEnabled) {
+  } else if (dueDate === null && verbosity === 'verbose') {
     rows.push({
       date: 'No due date',
       label: '',
@@ -118,8 +128,8 @@ export function generateDateTableRows(
     });
   }
 
-  if (dc.lateDeadlines.isOverridden && dc.lateDeadlines.isEnabled) {
-    dc.lateDeadlines.value.forEach((deadline: DeadlineEntry, index: number) => {
+  if (lateDeadlines) {
+    lateDeadlines.forEach((deadline: DeadlineEntry, index: number) => {
       if (deadline.date) {
         entries.push({
           date: deadline.date,
@@ -143,31 +153,28 @@ export function generateDateTableRows(
     });
   }
 
-  if (dc.afterLastDeadline.isOverridden && dc.afterLastDeadline.isEnabled) {
-    const afterDeadline = dc.afterLastDeadline.value;
+  if (afterLastDeadline) {
     const visibilityParts: string[] = [];
 
-    if (afterDeadline.allowSubmissions) {
+    if (afterLastDeadline.allowSubmissions) {
       visibilityParts.push('Submissions allowed');
     } else {
       visibilityParts.push('Closed');
     }
 
-    if (rule.afterComplete.questionVisibility.isOverridden) {
-      if (rule.afterComplete.questionVisibility.value.hideQuestions) {
-        visibilityParts.push('Questions hidden');
-      }
+    const qv = rule.questionVisibility;
+    if (qv?.hideQuestions) {
+      visibilityParts.push('Questions hidden');
     }
-    if (rule.afterComplete.scoreVisibility.isOverridden) {
-      if (rule.afterComplete.scoreVisibility.value.hideScore) {
-        visibilityParts.push('Score hidden');
-      }
+    const sv = rule.scoreVisibility;
+    if (sv?.hideScore) {
+      visibilityParts.push('Score hidden');
     }
 
     rows.push({
       date: 'After last deadline',
       label: '',
-      credit: afterDeadline.credit !== undefined ? `${afterDeadline.credit}%` : '0%',
+      credit: afterLastDeadline.credit !== undefined ? `${afterLastDeadline.credit}%` : '0%',
       visibility: visibilityParts.join(', '),
     });
   }
@@ -176,7 +183,7 @@ export function generateDateTableRows(
 }
 
 export function generateRuleSummary(
-  rule: AccessControlRuleFormData,
+  rule: RuleData,
   verbosity: SummaryVerbosity = 'compact',
 ): string[] {
   const lines: string[] = [];
@@ -191,39 +198,42 @@ export function generateRuleSummary(
     return lines;
   }
 
-  if (rule.dateControl.durationMinutes.isOverridden) {
-    if (rule.dateControl.durationMinutes.isEnabled) {
-      lines.push(`Time limit: ${rule.dateControl.durationMinutes.value} minutes`);
+  const durationMinutes = rule.durationMinutes;
+  if (durationMinutes !== undefined) {
+    if (durationMinutes !== null) {
+      lines.push(`Time limit: ${durationMinutes} minutes`);
     } else if (verbosity === 'verbose') {
       lines.push('No time limit');
     }
   }
 
-  if (rule.dateControl.password.isOverridden) {
-    if (rule.dateControl.password.isEnabled && rule.dateControl.password.value) {
+  const password = rule.password;
+  if (password !== undefined) {
+    if (password !== null && password !== '') {
       lines.push('Password protected');
     } else if (verbosity === 'verbose') {
       lines.push('No password');
     }
   }
 
-  if (rule.integrations.prairieTest.enabled && rule.integrations.prairieTest.exams?.length) {
-    lines.push(`${rule.integrations.prairieTest.exams.length} PrairieTest exam(s)`);
+  if (isMainRuleData(rule) && rule.prairieTestEnabled && rule.prairieTestExams.length > 0) {
+    lines.push(`${rule.prairieTestExams.length} PrairieTest exam(s)`);
   }
 
-  const hasAfterLastDeadline =
-    rule.dateControl.afterLastDeadline.isOverridden && rule.dateControl.afterLastDeadline.isEnabled;
+  const hasAfterLastDeadline = rule.afterLastDeadline != null;
 
   if (!hasAfterLastDeadline) {
-    if (rule.afterComplete.questionVisibility.isOverridden) {
-      if (rule.afterComplete.questionVisibility.value.hideQuestions) {
+    const qv = rule.questionVisibility;
+    if (qv !== undefined) {
+      if (qv.hideQuestions) {
         lines.push('Questions hidden after completion');
       } else if (verbosity === 'verbose') {
         lines.push('Questions visible after completion');
       }
     }
-    if (rule.afterComplete.scoreVisibility.isOverridden) {
-      if (rule.afterComplete.scoreVisibility.value.hideScore) {
+    const sv = rule.scoreVisibility;
+    if (sv !== undefined) {
+      if (sv.hideScore) {
         lines.push('Score hidden after completion');
       } else if (verbosity === 'verbose') {
         lines.push('Score visible after completion');
@@ -235,7 +245,7 @@ export function generateRuleSummary(
 }
 
 interface RuleSummaryCardProps {
-  rule: AccessControlRuleFormData;
+  rule: RuleData;
   isMainRule: boolean;
   title: string;
   editUrl?: string;
@@ -263,12 +273,14 @@ export function RuleSummaryCard({
   const summaryLines = generateRuleSummary(rule, effectiveVerbosity);
   const dateTableRows = generateDateTableRows(rule, effectiveVerbosity);
 
+  const overrideRule = !isMainRule ? (rule as OverrideData) : null;
+
   const students =
-    !isMainRule && rule.appliesTo.targetType === 'individual' ? rule.appliesTo.individuals : [];
+    overrideRule?.appliesTo.targetType === 'individual' ? overrideRule.appliesTo.individuals : [];
 
   const studentLabels =
-    !isMainRule && rule.appliesTo.targetType === 'student_label'
-      ? rule.appliesTo.studentLabels
+    overrideRule?.appliesTo.targetType === 'student_label'
+      ? overrideRule.appliesTo.studentLabels
       : [];
 
   return (
@@ -286,9 +298,9 @@ export function RuleSummaryCard({
               <i className="bi bi-grip-vertical" aria-hidden="true" />
             </button>
           )}
-          {!isMainRule && (
+          {overrideRule && (
             <Badge bg="secondary">
-              {rule.appliesTo.targetType === 'student_label' ? 'Student label' : 'Student'}
+              {overrideRule.appliesTo.targetType === 'student_label' ? 'Student label' : 'Student'}
             </Badge>
           )}
           <strong>{title}</strong>
