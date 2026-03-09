@@ -286,9 +286,14 @@ export function computeQuestionTotalPoints(
 export function hasPointsMismatch(
   alternatives: QuestionAlternativeForm[],
   assessmentType: EnumAssessmentType,
-  parent?: QuestionPointsJson,
+  parent?: QuestionPointsJson & { numberChoose?: number | null },
 ): boolean {
   if (alternatives.length <= 1) return false;
+  // When all alternatives are selected, different point values don't cause
+  // inconsistency — every student gets the same total. Alt groups default
+  // to choosing 1 alternative when numberChoose is not set.
+  const effectiveChoose = parent?.numberChoose ?? 1;
+  if (effectiveChoose >= alternatives.length) return false;
 
   const totals = alternatives.map((alt) => computeQuestionTotalPoints(alt, assessmentType, parent));
   return totals.some((t) => t !== totals[0]);

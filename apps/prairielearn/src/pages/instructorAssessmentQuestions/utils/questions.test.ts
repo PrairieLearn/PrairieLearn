@@ -245,6 +245,23 @@ describe('hasPointsMismatch', () => {
     ] as QuestionAlternativeForm[];
     expect(hasPointsMismatch(alternatives, 'Homework', { points: 10 })).toBe(false);
   });
+
+  it('returns false when numberChoose >= alternatives (all selected)', () => {
+    const alternatives = [
+      { trackingId: 't1', id: 'q1', points: 10 },
+      { trackingId: 't2', id: 'q2', points: 5 },
+    ] as QuestionAlternativeForm[];
+    expect(hasPointsMismatch(alternatives, 'Homework', { numberChoose: 2 })).toBe(false);
+  });
+
+  it('returns true when numberChoose < alternatives with different points', () => {
+    const alternatives = [
+      { trackingId: 't1', id: 'q1', points: 10 },
+      { trackingId: 't2', id: 'q2', points: 5 },
+      { trackingId: 't3', id: 'q3', points: 10 },
+    ] as QuestionAlternativeForm[];
+    expect(hasPointsMismatch(alternatives, 'Homework', { numberChoose: 2 })).toBe(true);
+  });
 });
 
 describe('hasZonePointsMismatch', () => {
@@ -292,6 +309,57 @@ describe('hasZonePointsMismatch', () => {
         questions: [{ trackingId: 'q1', id: 'q1', points: 10 }],
       },
       expected: false,
+    },
+    {
+      name: 'different points but numberChoose >= question count',
+      zone: {
+        trackingId: 'z1',
+        numberChoose: 3,
+        questions: [
+          { trackingId: 'q1', id: 'q1', points: 10 },
+          { trackingId: 'q2', id: 'q2', points: 5 },
+          { trackingId: 'q3', id: 'q3', points: 3 },
+        ],
+      },
+      expected: false,
+    },
+    {
+      name: 'different points but bestQuestions >= question count',
+      zone: {
+        trackingId: 'z1',
+        bestQuestions: 2,
+        questions: [
+          { trackingId: 'q1', id: 'q1', points: 10 },
+          { trackingId: 'q2', id: 'q2', points: 5 },
+        ],
+      },
+      expected: false,
+    },
+    {
+      name: 'different points with numberChoose < question count',
+      zone: {
+        trackingId: 'z1',
+        numberChoose: 1,
+        questions: [
+          { trackingId: 'q1', id: 'q1', points: 10 },
+          { trackingId: 'q2', id: 'q2', points: 5 },
+        ],
+      },
+      expected: true,
+    },
+    {
+      name: 'different points with bestQuestions < numberChoose',
+      zone: {
+        trackingId: 'z1',
+        numberChoose: 3,
+        bestQuestions: 2,
+        questions: [
+          { trackingId: 'q1', id: 'q1', points: 10 },
+          { trackingId: 'q2', id: 'q2', points: 5 },
+          { trackingId: 'q3', id: 'q3', points: 3 },
+        ],
+      },
+      expected: true,
     },
   ])('returns $expected when $name', ({ zone, expected }) => {
     expect(hasZonePointsMismatch(zone as ZoneAssessmentForm, 'Homework')).toBe(expected);
