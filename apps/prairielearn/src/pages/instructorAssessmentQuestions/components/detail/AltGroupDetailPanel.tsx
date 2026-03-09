@@ -2,7 +2,6 @@ import clsx from 'clsx';
 import { useCallback, useEffect, useMemo } from 'react';
 import { useForm } from 'react-hook-form';
 
-import type { StaffAssessmentQuestionRow } from '../../../../lib/assessment-question.shared.js';
 import type { DetailState, ZoneAssessmentForm, ZoneQuestionBlockForm } from '../../types.js';
 import {
   coerceToNumber,
@@ -14,7 +13,12 @@ import {
   validateNonIncreasingPoints,
   validatePointsListFormat,
 } from '../../utils/formHelpers.js';
-import { getSharedTags, validatePositiveInteger } from '../../utils/questions.js';
+import {
+  type QuestionMetadataMap,
+  getSharedTags,
+  getSharedTopic,
+  validatePositiveInteger,
+} from '../../utils/questions.js';
 import { useAutoSave } from '../../utils/useAutoSave.js';
 
 import { AdvancedFields, type AdvancedFieldsInheritance } from './AdvancedFields.js';
@@ -46,7 +50,7 @@ export function AltGroupDetailPanel({
 }: {
   zoneQuestionBlock: ZoneQuestionBlockForm;
   zone: ZoneAssessmentForm;
-  questionMetadata: Partial<Record<string, StaffAssessmentQuestionRow>>;
+  questionMetadata: QuestionMetadataMap;
   idPrefix: string;
   state: DetailState;
   onUpdate: (
@@ -58,6 +62,7 @@ export function AltGroupDetailPanel({
   const { editMode, assessmentType, assessmentDefaults } = state;
   const alternativeCount = zoneQuestionBlock.alternatives?.length ?? 0;
 
+  const sharedTopic = getSharedTopic(zoneQuestionBlock.alternatives ?? [], questionMetadata);
   const sharedTags = getSharedTags(zoneQuestionBlock.alternatives ?? [], questionMetadata);
 
   const pointsProperty = assessmentType === 'Exam' ? 'points' : 'autoPoints';
@@ -145,13 +150,22 @@ export function AltGroupDetailPanel({
       <div className={clsx('text-muted small', editMode ? 'mb-3' : 'mb-2')}>
         {alternativeCount} alternative{alternativeCount !== 1 ? 's' : ''} in group
       </div>
+      {sharedTopic && (
+        <div className="mb-2">
+          <div className="text-muted small mb-1">Topic shared across alternatives</div>
+          <span className={`badge color-${sharedTopic.color}`}>{sharedTopic.name}</span>
+        </div>
+      )}
       {sharedTags.length > 0 && (
-        <div className="d-flex flex-wrap gap-1 mb-2">
-          {sharedTags.map((tag) => (
-            <span key={tag.name} className={`badge color-${tag.color}`}>
-              {tag.name}
-            </span>
-          ))}
+        <div className="mb-2">
+          <div className="text-muted small mb-1">Tags shared across alternatives</div>
+          <div className="d-flex flex-wrap gap-1">
+            {sharedTags.map((tag) => (
+              <span key={tag.name} className={`badge color-${tag.color}`}>
+                {tag.name}
+              </span>
+            ))}
+          </div>
         </div>
       )}
 
@@ -278,6 +292,31 @@ export function AltGroupDetailPanel({
                     validate: (v) => {
                       if (v != null && v < 0) return 'Manual points must be non-negative.';
                     },
+                  })}
+                />
+              )}
+            </FormField>
+            <FormField
+              editMode={editMode}
+              id={`${idPrefix}-triesPerVariant`}
+              label="Tries per variant (default)"
+              viewValue={
+                zoneQuestionBlock.triesPerVariant != null
+                  ? String(zoneQuestionBlock.triesPerVariant)
+                  : undefined
+              }
+              error={errors.triesPerVariant}
+              helpText="Default number of submission attempts per variant, inherited by alternatives unless overridden."
+              hideWhenEmpty
+            >
+              {(aria) => (
+                <input
+                  type="number"
+                  className={clsx('form-control form-control-sm', aria.errorClass)}
+                  {...aria.inputProps}
+                  {...register('triesPerVariant', {
+                    setValueAs: coerceToNumber,
+                    validate: (v) => validatePositiveInteger(v, 'Tries per variant'),
                   })}
                 />
               )}

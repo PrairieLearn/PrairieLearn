@@ -1,4 +1,3 @@
-import type { EnumAssessmentType } from '../../../lib/db-types.js';
 import { propertyValueWithDefault } from '../../../lib/editorUtil.shared.js';
 import type {
   QuestionAlternativeJson,
@@ -14,6 +13,8 @@ import type {
   ZoneQuestionBlockForm,
 } from '../types.js';
 
+import type { QuestionMetadataMap } from './questions.js';
+
 /**
  * Creates a new TrackingId (branded UUID).
  */
@@ -22,16 +23,23 @@ function createTrackingId(): TrackingId {
 }
 
 /**
- * For Homework assessments, normalizes legacy `points`/`maxPoints` fields to
- * `autoPoints`/`maxAutoPoints`. Only converts when the modern field isn't already set.
- * Exam assessments use `points` as the canonical field name, so no normalization is needed.
+ * Normalizes legacy `points`/`maxPoints` fields for the editor.
+ * - For manually-graded questions: `points` → `manualPoints` (when `manualPoints` is not set)
+ * - For all other questions: `points` → `autoPoints`, `maxPoints` → `maxAutoPoints`
+ * Only converts when the modern field isn't already set.
  */
-function normalizeQuestionPoints<T extends QuestionPointsJson>(
-  obj: T,
-  assessmentType: EnumAssessmentType | undefined,
-): T {
-  if (assessmentType !== 'Homework') return obj;
+function normalizeQuestionPoints<T extends QuestionPointsJson>(obj: T, gradingMethod?: string): T {
   const result = { ...obj };
+  // When gradingMethod is Manual, we use the first element of the points array as the manual points.
+  // The first element in a points array should be the highest value in the pointsList array.
+
+  // The sync code passes maxPoints as max(pointsList) to sync_assessments.sql,
+  // which if we are using manual grading, will be used for computed_manual_points.
+  if (gradingMethod === 'Manual' && result.points != null && result.manualPoints == null) {
+    result.manualPoints = Array.isArray(result.points) ? result.points[0] : result.points;
+    delete result.points;
+    return result;
+  }
   if (result.points != null && result.autoPoints == null) {
     result.autoPoints = result.points;
     delete result.points;
@@ -45,22 +53,25 @@ function normalizeQuestionPoints<T extends QuestionPointsJson>(
 
 /**
  * Prepares raw JSON zones for the editor by adding tracking IDs and
- * normalizing legacy point fields. For Homework assessments, converts
- * `points`/`maxPoints` to `autoPoints`/`maxAutoPoints`.
+ * normalizing legacy point fields. Converts `points`/`maxPoints` to
+ * `autoPoints`/`maxAutoPoints` (or `manualPoints` for manually-graded questions).
  */
 export function prepareZonesForEditor(
   zones: ZoneAssessmentJson[],
-  assessmentType?: EnumAssessmentType,
+  questionMetadata: QuestionMetadataMap,
 ): ZoneAssessmentForm[] {
+  const getGradingMethod = (id?: string) =>
+    id ? questionMetadata[id]?.question.grading_method : undefined;
+
   // Cast needed for TypeScript spread inference with union types
   return zones.map((zone) => ({
     ...zone,
     trackingId: createTrackingId(),
     questions: zone.questions.map((question) => ({
-      ...normalizeQuestionPoints(question, assessmentType),
+      ...normalizeQuestionPoints(question, getGradingMethod(question.id)),
       trackingId: createTrackingId(),
       alternatives: question.alternatives?.map((alt) => ({
-        ...normalizeQuestionPoints(alt, assessmentType),
+        ...normalizeQuestionPoints(alt, getGradingMethod(alt.id)),
         trackingId: createTrackingId(),
       })),
     })),
@@ -111,13 +122,11 @@ export function createZoneWithTrackingId(
  * New trackingIds are always generated (this is for new questions, not existing ones).
  * Accepts a partial question for creating new empty questions.
  */
-export function createQuestionWithTrackingId(
-  assessmentType: EnumAssessmentType,
-): ZoneQuestionBlockForm {
+export function createQuestionWithTrackingId(): ZoneQuestionBlockForm {
   // Cast needed for TypeScript spread inference with union types
   return {
     trackingId: createTrackingId(),
-    ...(assessmentType === 'Exam' ? { points: 1 } : { autoPoints: 1 }),
+    autoPoints: 1,
   } as ZoneQuestionBlockForm;
 }
 
@@ -133,16 +142,14 @@ export function createAlternativeWithTrackingId(): QuestionAlternativeForm {
 /**
  * Creates a new alternative group with a trackingId and empty alternatives.
  */
-export function createAltGroupWithTrackingId(
-  assessmentType: EnumAssessmentType,
-): ZoneQuestionBlockForm {
+export function createAltGroupWithTrackingId(): ZoneQuestionBlockForm {
   return {
     trackingId: createTrackingId(),
     alternatives: [],
     numberChoose: 1,
     canSubmit: [],
     canView: [],
-    ...(assessmentType === 'Exam' ? { points: 1 } : { autoPoints: 1 }),
+    autoPoints: 1,
   } as ZoneQuestionBlockForm;
 }
 
@@ -189,26 +196,6 @@ export function questionBlockToAlternative(block: ZoneQuestionBlockForm): Questi
   return { ...rest } as QuestionAlternativeForm;
 }
 
-/**
- * Inverse of `normalizeQuestionPoints`. For questions without `manualPoints`,
- * converts `autoPoints`/`maxAutoPoints` back to `points`/`maxPoints` so the
- * saved JSON uses the canonical legacy format.
- */
-function denormalizeQuestionPoints<T extends QuestionPointsJson>(obj: T): T {
-  const result = { ...obj };
-  if (result.manualPoints == null) {
-    if (result.autoPoints != null && result.points == null) {
-      result.points = result.autoPoints;
-      delete result.autoPoints;
-    }
-    if (result.maxAutoPoints != null && result.maxPoints == null) {
-      result.maxPoints = result.maxAutoPoints;
-      delete result.maxAutoPoints;
-    }
-  }
-  return result;
-}
-
 /** Removes keys with undefined values from an object. */
 function omitUndefined<T extends Record<string, unknown>>(obj: T): T {
   return Object.fromEntries(Object.entries(obj).filter(([, v]) => v !== undefined)) as T;
@@ -223,57 +210,51 @@ const isEmptyArray = (v: unknown) => !v || (Array.isArray(v) && v.length === 0);
  * to prevent unintended inheritance from the parent question block.
  */
 function serializeQuestionAlternative(alternative: QuestionAlternativeJson) {
-  const denormalized = denormalizeQuestionPoints(alternative);
   return omitUndefined({
-    id: denormalized.id,
-    points: denormalized.points,
-    autoPoints: denormalized.autoPoints,
-    maxPoints: denormalized.maxPoints,
-    maxAutoPoints: denormalized.maxAutoPoints,
-    manualPoints: denormalized.manualPoints,
-    triesPerVariant: denormalized.triesPerVariant,
-    advanceScorePerc: denormalized.advanceScorePerc,
-    gradeRateMinutes: denormalized.gradeRateMinutes,
-    forceMaxPoints: denormalized.forceMaxPoints,
-    allowRealTimeGrading: denormalized.allowRealTimeGrading,
+    id: alternative.id,
+    points: alternative.points,
+    autoPoints: alternative.autoPoints,
+    maxPoints: alternative.maxPoints,
+    maxAutoPoints: alternative.maxAutoPoints,
+    manualPoints: alternative.manualPoints,
+    triesPerVariant: alternative.triesPerVariant,
+    advanceScorePerc: alternative.advanceScorePerc,
+    gradeRateMinutes: alternative.gradeRateMinutes,
+    forceMaxPoints: alternative.forceMaxPoints,
+    allowRealTimeGrading: alternative.allowRealTimeGrading,
     // For some reason, comment gets set to the empty string if it's not set.
-    comment: denormalized.comment || undefined,
+    comment: alternative.comment || undefined,
   });
 }
 
 /** Serializes a question block for JSON output, stripping default values where appropriate. */
 function serializeQuestionBlock(question: ZoneQuestionBlockJson) {
   const isAlternativeGroup = 'alternatives' in question && question.alternatives;
-  const denormalized = denormalizeQuestionPoints(question);
 
   return omitUndefined({
-    id: isAlternativeGroup ? undefined : denormalized.id,
+    id: isAlternativeGroup ? undefined : question.id,
     alternatives: isAlternativeGroup
-      ? denormalized.alternatives!.map(serializeQuestionAlternative)
+      ? question.alternatives!.map(serializeQuestionAlternative)
       : undefined,
-    numberChoose: denormalized.numberChoose,
+    numberChoose: question.numberChoose,
     // For some reason, comment gets set to the empty string if it's not set.
-    comment: denormalized.comment || undefined,
+    comment: question.comment || undefined,
 
     // These defaults will be inherited by question alternatives, unless they override them.
     // These should mirror the defaults from assessment syncing.
-    allowRealTimeGrading: propertyValueWithDefault(
-      undefined,
-      denormalized.allowRealTimeGrading,
-      true,
-    ),
-    triesPerVariant: propertyValueWithDefault(undefined, denormalized.triesPerVariant, 1),
-    forceMaxPoints: propertyValueWithDefault(undefined, denormalized.forceMaxPoints, false),
+    allowRealTimeGrading: propertyValueWithDefault(undefined, question.allowRealTimeGrading, true),
+    triesPerVariant: propertyValueWithDefault(undefined, question.triesPerVariant, 1),
+    forceMaxPoints: propertyValueWithDefault(undefined, question.forceMaxPoints, false),
 
-    canSubmit: propertyValueWithDefault(undefined, denormalized.canSubmit, isEmptyArray),
-    canView: propertyValueWithDefault(undefined, denormalized.canView, isEmptyArray),
-    points: denormalized.points,
-    autoPoints: denormalized.autoPoints,
-    maxPoints: denormalized.maxPoints,
-    maxAutoPoints: denormalized.maxAutoPoints,
-    manualPoints: denormalized.manualPoints,
-    advanceScorePerc: denormalized.advanceScorePerc,
-    gradeRateMinutes: denormalized.gradeRateMinutes,
+    canSubmit: propertyValueWithDefault(undefined, question.canSubmit, isEmptyArray),
+    canView: propertyValueWithDefault(undefined, question.canView, isEmptyArray),
+    points: question.points,
+    autoPoints: question.autoPoints,
+    maxPoints: question.maxPoints,
+    maxAutoPoints: question.maxAutoPoints,
+    manualPoints: question.manualPoints,
+    advanceScorePerc: question.advanceScorePerc,
+    gradeRateMinutes: question.gradeRateMinutes,
   });
 }
 
