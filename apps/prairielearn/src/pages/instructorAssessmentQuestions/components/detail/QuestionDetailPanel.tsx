@@ -695,7 +695,6 @@ function PointsFields({
     );
   });
 
-
   const manualPointsRegisterOptions: RegisterOptions<QuestionFormData, 'manualPoints'> = {
     setValueAs: coerceToNumber,
     deps: ['autoPoints'],
