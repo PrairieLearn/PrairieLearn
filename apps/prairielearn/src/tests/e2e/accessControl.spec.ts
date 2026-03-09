@@ -205,7 +205,7 @@ test.describe('Access control UI', () => {
     // Override the duration field: find "Time limit" label and click its associated Override button
     await drawer
       .getByText('Time limit', { exact: true })
-      .locator('..')
+      .locator('../..')
       .getByRole('button', { name: 'Override' })
       .click();
 
@@ -218,7 +218,7 @@ test.describe('Access control UI', () => {
     // Override question visibility
     await drawer
       .getByText('Question visibility', { exact: true })
-      .locator('..')
+      .locator('../..')
       .getByRole('button', { name: 'Override' })
       .click();
 

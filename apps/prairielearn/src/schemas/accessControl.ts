@@ -41,7 +41,13 @@ const DateControlJsonSchema = z
   .optional();
 
 const ExamJsonSchema = z.object({
-  examUuid: z.string().uuid('Invalid UUID format').describe('UUID of associated PrairieTest exam'),
+  examUuid: z
+    .string()
+    .regex(
+      /^[0-9a-fA-F]{8}-[0-9a-fA-F]{4}-[0-9a-fA-F]{4}-[0-9a-fA-F]{4}-[0-9a-fA-F]{12}$/,
+      'Invalid UUID format',
+    )
+    .describe('UUID of associated PrairieTest exam'),
   readOnly: z.boolean().optional().describe('Whether the exam is read-only for students'),
 });
 

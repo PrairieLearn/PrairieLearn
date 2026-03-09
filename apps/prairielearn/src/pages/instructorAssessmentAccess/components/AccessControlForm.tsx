@@ -112,6 +112,7 @@ export function AccessControlForm({
   });
 
   const {
+    control,
     handleSubmit,
     watch,
     reset,
@@ -125,6 +126,7 @@ export function AccessControlForm({
     move: moveOverride,
     insert: insertOverride,
   } = useFieldArray({
+    control,
     name: 'overrides',
   });
 

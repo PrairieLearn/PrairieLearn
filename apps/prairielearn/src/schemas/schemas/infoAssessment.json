@@ -814,7 +814,8 @@
                     "properties": {
                       "examUuid": {
                         "description": "UUID of associated PrairieTest exam",
-                        "type": "string"
+                        "type": "string",
+                        "pattern": "^[0-9a-fA-F]{8}-[0-9a-fA-F]{4}-[0-9a-fA-F]{4}-[0-9a-fA-F]{4}-[0-9a-fA-F]{12}$"
                       },
                       "readOnly": {
                         "description": "Whether the exam is read-only for students",
