@@ -96,6 +96,7 @@ export function AltGroupDetailPanel({
         : zoneQuestionBlock.forceMaxPoints,
       allowRealTimeGrading: zoneQuestionBlock.allowRealTimeGrading ?? undefined,
     },
+    resetOptions: { keepDirtyValues: true },
   });
 
   useEffect(() => {

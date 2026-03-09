@@ -154,6 +154,7 @@ export function QuestionDetailPanel({
       forceMaxPoints: question.forceMaxPoints ?? (hasForceMaxPointsParent ? undefined : false),
       allowRealTimeGrading: question.allowRealTimeGrading ?? undefined,
     },
+    resetOptions: { keepDirtyValues: true },
   });
 
   const watchedAutoPoints = watch('autoPoints');

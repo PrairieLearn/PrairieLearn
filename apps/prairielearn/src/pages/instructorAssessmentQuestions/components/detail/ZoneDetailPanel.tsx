@@ -69,6 +69,7 @@ export function ZoneDetailPanel({
   } = useForm<ZoneFormData>({
     mode: 'onChange',
     values: formValues,
+    resetOptions: { keepDirtyValues: true },
   });
 
   // Questions can be added/removed from the zone while this panel is open.
