@@ -28,29 +28,6 @@ import { type InfoFile } from '../infofile.js';
 // We use a single global instance so that schemas aren't recompiled every time they're used.
 const ajv = new Ajv({ allErrors: true, allowUnionTypes: true });
 
-// Cache compiled AJV validators by preferences schema reference to avoid
-// recompilation when the same question appears multiple times in an assessment.
-const compiledValidatorCache = new WeakMap<
-  // A WeakMap holds "weak" references to its keys — if nothing else in the program references a key object, the garbage collector can reclaim both the key and its associated value. A
-  // regular Map would keep everything alive forever.
-  // Once a sync finishes and those objects go out of scope, the cached validators are automatically cleaned up.
-  QuestionPreferencesSchemaJson,
-  ReturnType<Ajv['compile']>
->();
-
-function getOrCompileValidator(schema: QuestionPreferencesSchemaJson) {
-  let validate = compiledValidatorCache.get(schema);
-  if (!validate) {
-    validate = ajv.compile({
-      type: 'object',
-      properties: schema,
-      additionalProperties: false,
-    });
-    compiledValidatorCache.set(schema, validate);
-  }
-  return validate;
-}
-
 const sql = sqldb.loadSqlEquiv(import.meta.url);
 
 type AssessmentInfoFile = infofile.InfoFile<AssessmentJson>;
@@ -77,7 +54,12 @@ function mergeAndValidatePreferences(
 
   const merged: QuestionPreferences = { ...extractDefaultPreferences(schema), ...overrides };
 
-  const validate = getOrCompileValidator(schema);
+  const validate = ajv.compile({
+    type: 'object',
+    properties: schema,
+    additionalProperties: false,
+  });
+
   const valid = validate(merged);
 
   if (!valid && validate.errors) {
