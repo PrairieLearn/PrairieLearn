@@ -5,7 +5,6 @@ import { type ReactElement, useId } from 'react';
 import { OverlayTrigger } from '@prairielearn/ui';
 
 import { CopyButton } from '../../../../components/CopyButton.js';
-import { HistMini } from '../../../../components/HistMini.js';
 import type { StaffAssessmentQuestionRow } from '../../../../lib/assessment-question.shared.js';
 import { getQuestionUrl } from '../../../../lib/client/url.js';
 import type { EnumAssessmentType } from '../../../../lib/db-types.js';
@@ -283,20 +282,13 @@ export function TreeQuestionRow({
         )}
         {viewType === 'detailed' && questionData && (
           <>
-            {(questionData.tags?.length ||
-              questionData.assessment_question.number_submissions_hist) && (
+            {questionData.tags?.length && (
               <div className="d-flex flex-wrap align-items-center gap-1 mt-1">
                 {questionData.tags?.map((tag) => (
                   <span key={tag.name} className={`badge color-${tag.color}`}>
                     {tag.name}
                   </span>
                 ))}
-                {questionData.assessment_question.number_submissions_hist && (
-                  <HistMini
-                    data={questionData.assessment_question.number_submissions_hist}
-                    options={{ width: 60, height: 20 }}
-                  />
-                )}
               </div>
             )}
             {questionData.other_assessments && questionData.other_assessments.length > 0 && (
