@@ -9,7 +9,11 @@ import {
   extractStringComment,
   makeResetAndSave,
 } from '../../utils/formHelpers.js';
-import { validatePositiveInteger } from '../../utils/questions.js';
+import {
+  hasZoneChooseExceedsCount,
+  hasZonePointsMismatch,
+  validatePositiveInteger,
+} from '../../utils/questions.js';
 import { useAutoSave } from '../../utils/useAutoSave.js';
 
 import { AdvancedFields, type AdvancedFieldsInheritance } from './AdvancedFields.js';
@@ -43,7 +47,7 @@ export function ZoneDetailPanel({
   onUpdate: (zoneTrackingId: string, zone: Partial<ZoneAssessmentForm>) => void;
   onDelete: (zoneTrackingId: string) => void;
 }) {
-  const { editMode, assessmentDefaults } = state;
+  const { editMode, assessmentType, assessmentDefaults } = state;
   const formValues: ZoneFormData = {
     title: zone.title ?? '',
     maxPoints: zone.maxPoints ?? undefined,
@@ -116,8 +120,24 @@ export function ZoneDetailPanel({
 
   const Wrapper = editMode ? 'div' : 'dl';
 
+  const zonePointsMismatch = hasZonePointsMismatch(zone, assessmentType);
+  const zoneChooseExceeds = hasZoneChooseExceedsCount(zone);
+
   return (
     <div className="p-3">
+      {zonePointsMismatch && (
+        <div className="alert alert-warning small mb-3" role="alert">
+          <i className="bi bi-exclamation-triangle-fill me-1" aria-hidden="true" />
+          Students will receive different total points because this zone randomly selects questions
+          with different point values.
+        </div>
+      )}
+      {zoneChooseExceeds && (
+        <div className="alert alert-warning small mb-3" role="alert">
+          <i className="bi bi-exclamation-triangle-fill me-1" aria-hidden="true" />
+          Number to choose or best questions exceeds the number of questions in this zone.
+        </div>
+      )}
       <DetailSectionHeader first>Settings</DetailSectionHeader>
 
       <Wrapper className={clsx(!editMode && 'mb-0')}>

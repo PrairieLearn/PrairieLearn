@@ -17,6 +17,8 @@ import {
   type QuestionMetadataMap,
   getSharedTags,
   getSharedTopic,
+  hasAltGroupChooseExceedsCount,
+  hasPointsMismatch,
   validatePositiveInteger,
 } from '../../utils/questions.js';
 import { useAutoSave } from '../../utils/useAutoSave.js';
@@ -144,10 +146,28 @@ export function AltGroupDetailPanel({
       ? ''
       : String(Array.isArray(watchedAutoPoints) ? watchedAutoPoints[0] : watchedAutoPoints);
 
+  const pointsMismatch =
+    zoneQuestionBlock.alternatives != null &&
+    hasPointsMismatch(zoneQuestionBlock.alternatives, assessmentType, zoneQuestionBlock);
+  const chooseExceeds = hasAltGroupChooseExceedsCount(zoneQuestionBlock);
+
   const Wrapper = editMode ? 'div' : 'dl';
 
   return (
     <div className="p-3">
+      {pointsMismatch && (
+        <div className="alert alert-warning small mb-3" role="alert">
+          <i className="bi bi-exclamation-triangle-fill me-1" aria-hidden="true" />
+          Students will receive different total points because this group has alternatives with
+          different point values.
+        </div>
+      )}
+      {chooseExceeds && (
+        <div className="alert alert-warning small mb-3" role="alert">
+          <i className="bi bi-exclamation-triangle-fill me-1" aria-hidden="true" />
+          Number to choose exceeds the number of alternatives in this group.
+        </div>
+      )}
       <div className={clsx('text-muted small', editMode ? 'mb-3' : 'mb-2')}>
         {alternativeCount} alternative{alternativeCount !== 1 ? 's' : ''} in group
       </div>

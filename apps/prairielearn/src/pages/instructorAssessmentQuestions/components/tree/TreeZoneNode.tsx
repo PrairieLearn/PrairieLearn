@@ -137,20 +137,22 @@ export function TreeZoneNode({
               editMode={editMode}
               changeTracking={changeTracking}
             />
+          </span>
+          <span className="d-inline-flex align-items-center gap-1 flex-wrap ms-2">
             {zonePointsMismatch && (
               <WarningIndicator
                 tooltipId={`points-mismatch-${zone.trackingId}`}
-                body="Questions in this zone have different point values"
+                label="Inconsistent points"
+                body="Students will receive different total points because this zone randomly selects questions with different point values"
               />
             )}
             {zoneChooseExceeds && (
               <WarningIndicator
                 tooltipId={`choose-exceeds-${zone.trackingId}`}
+                label="Choose exceeds count"
                 body="Number to choose or best questions exceeds the number of questions in this zone"
               />
             )}
-          </span>
-          <span className="d-inline-flex align-items-center gap-1 flex-wrap ms-2">
             {run(() => {
               const count = computeZoneQuestionCount(zone.questions);
               // ZonePointsBadge already shows "No questions" when the zone is empty.
@@ -163,9 +165,9 @@ export function TreeZoneNode({
                     body: 'Total questions in this zone',
                   }}
                 >
-                  <span className="badge color-blue3">
+                  <button type="button" className="btn btn-badge color-blue3">
                     {count} question{count !== 1 ? 's' : ''}
-                  </span>
+                  </button>
                 </OverlayTrigger>
               );
             })}
@@ -177,7 +179,9 @@ export function TreeZoneNode({
                   body: 'Number of questions to randomly select from this zone',
                 }}
               >
-                <span className="badge color-blue3">Choose {zone.numberChoose}</span>
+                <button type="button" className="btn btn-badge color-blue3">
+                  Choose {zone.numberChoose}
+                </button>
               </OverlayTrigger>
             )}
             <ZonePointsBadge
@@ -193,7 +197,9 @@ export function TreeZoneNode({
                   body: 'Maximum total points from this zone that count toward the assessment',
                 }}
               >
-                <span className="badge color-blue3">Max {zone.maxPoints} pts</span>
+                <button type="button" className="btn btn-badge color-blue3">
+                  Max {zone.maxPoints} pts
+                </button>
               </OverlayTrigger>
             )}
             {zone.bestQuestions != null && (
@@ -204,7 +210,9 @@ export function TreeZoneNode({
                   body: 'Only the highest-scoring questions in this zone count toward the total',
                 }}
               >
-                <span className="badge color-blue3">Best {zone.bestQuestions}</span>
+                <button type="button" className="btn btn-badge color-blue3">
+                  Best {zone.bestQuestions}
+                </button>
               </OverlayTrigger>
             )}
             {zone.lockpoint && (
@@ -215,10 +223,10 @@ export function TreeZoneNode({
                   body: 'Students must complete this zone before proceeding to the next',
                 }}
               >
-                <span className="badge color-blue3">
+                <button type="button" className="btn btn-badge color-blue3">
                   <i className="bi bi-lock-fill me-1" aria-hidden="true" />
                   Lockpoint
-                </span>
+                </button>
               </OverlayTrigger>
             )}
           </span>
@@ -325,7 +333,9 @@ function ZonePointsBadge({
         body: 'Total points a student can earn in this zone',
       }}
     >
-      <span className="badge color-blue3">{label}</span>
+      <button type="button" className="btn btn-badge color-blue3">
+        {label}
+      </button>
     </OverlayTrigger>
   );
 }

@@ -257,6 +257,7 @@ export function TreeQuestionRow({
           {hasManualGradingAutoPointsWarning && (
             <WarningIndicator
               tooltipId={`manual-auto-points-${question.trackingId}`}
+              label="Auto points ignored"
               body="Auto points have no effect on manually-graded questions"
             />
           )}

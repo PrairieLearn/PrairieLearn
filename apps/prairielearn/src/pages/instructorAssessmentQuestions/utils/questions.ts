@@ -304,6 +304,13 @@ export function hasZonePointsMismatch(
 ): boolean {
   if (zone.bestQuestions == null && zone.numberChoose == null) return false;
   if (zone.questions.length <= 1) return false;
+  // When all questions are both presented and counted, every student sees the
+  // same total regardless of individual point values — no warning needed.
+  const effectiveChoose = zone.numberChoose ?? zone.questions.length;
+  const effectiveBest = zone.bestQuestions ?? effectiveChoose;
+  if (effectiveChoose >= zone.questions.length && effectiveBest >= effectiveChoose) {
+    return false;
+  }
 
   const blockTotals = zone.questions.map((block) => {
     if (block.alternatives) {
