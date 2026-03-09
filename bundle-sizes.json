@@ -315,9 +315,9 @@
     "brotli": 205357
   },
   "scripts/esm-bundles/hydrated-components/InstructorAssessmentQuestionsTableLegacy.ts": {
-    "raw": 625155,
-    "gzip": 200484,
-    "brotli": 157054
+    "raw": 625173,
+    "gzip": 200562,
+    "brotli": 157012
   },
   "scripts/esm-bundles/hydrated-components/AdministratorCourseRequests.ts": {
     "raw": 645309,
@@ -350,9 +350,9 @@
     "brotli": 276134
   },
   "scripts/esm-bundles/hydrated-components/AssessmentQuestionsEditor.ts": {
-    "raw": 1259608,
-    "gzip": 381345,
-    "brotli": 315172
+    "raw": 1206079,
+    "gzip": 362729,
+    "brotli": 298791
   },
   "scripts/esm-bundles/hydrated-components/AssessmentSetsPage.ts": {
     "raw": 818225,
