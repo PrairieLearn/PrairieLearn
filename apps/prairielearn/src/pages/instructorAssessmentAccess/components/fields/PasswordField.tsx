@@ -1,41 +1,32 @@
 import { useState } from 'react';
 import { Button, Form, InputGroup } from 'react-bootstrap';
-import { type Control, type UseFormSetValue } from 'react-hook-form';
 
 import { FieldWrapper } from '../FieldWrapper.js';
 import { useOverridableField } from '../hooks/useOverridableField.js';
-import type { AccessControlFormData } from '../types.js';
-
-type NamePrefix = 'mainRule' | `overrides.${number}`;
+import type { NamePrefix } from '../hooks/useTypedFormWatch.js';
 
 interface PasswordFieldProps {
-  control: Control<AccessControlFormData>;
-  setValue: UseFormSetValue<AccessControlFormData>;
   namePrefix: NamePrefix;
 }
 
-export function PasswordField({ control, setValue, namePrefix }: PasswordFieldProps) {
+export function PasswordField({ namePrefix }: PasswordFieldProps) {
   const [showPassword, setShowPassword] = useState(false);
 
   const { field, isOverrideRule, setField, enableOverride, removeOverride, toggleEnabled } =
     useOverridableField({
-      control,
-      setValue,
       namePrefix,
       fieldPath: 'dateControl.password',
       defaultValue: '',
     });
 
   const headerContent = (
-    <div className="d-flex align-items-center">
-      <Form.Check
-        type="checkbox"
-        className="me-2"
-        checked={field.isEnabled}
-        onChange={({ currentTarget }) => toggleEnabled(currentTarget.checked)}
-      />
-      <strong>Password</strong>
-    </div>
+    <Form.Check
+      type="checkbox"
+      id={`${namePrefix}-password-enabled`}
+      label={<strong>Password</strong>}
+      checked={field.isEnabled}
+      onChange={({ currentTarget }) => toggleEnabled(currentTarget.checked)}
+    />
   );
 
   const content = (
@@ -44,11 +35,16 @@ export function PasswordField({ control, setValue, namePrefix }: PasswordFieldPr
         <InputGroup>
           <Form.Control
             type={showPassword ? 'text' : 'password'}
+            aria-label="Assessment password"
             placeholder="Password"
             value={field.value}
             onChange={({ currentTarget }) => setField({ value: currentTarget.value })}
           />
-          <Button variant="outline-secondary" onClick={() => setShowPassword(!showPassword)}>
+          <Button
+            variant="outline-secondary"
+            aria-label={showPassword ? 'Hide password' : 'Show password'}
+            onClick={() => setShowPassword(!showPassword)}
+          >
             <i className={`bi ${showPassword ? 'bi-eye-slash' : 'bi-eye'}`} aria-hidden="true" />
           </Button>
         </InputGroup>

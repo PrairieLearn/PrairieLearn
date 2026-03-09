@@ -1,25 +1,19 @@
 import { Form } from 'react-bootstrap';
-import { type Control, type UseFormSetValue } from 'react-hook-form';
 
 import { FieldWrapper } from '../FieldWrapper.js';
 import { useOverridableField } from '../hooks/useOverridableField.js';
-import type { AccessControlFormData } from '../types.js';
-
-type NamePrefix = 'mainRule' | `overrides.${number}`;
+import type { NamePrefix } from '../hooks/useTypedFormWatch.js';
 
 interface ReleaseDateFieldProps {
-  control: Control<AccessControlFormData>;
-  setValue: UseFormSetValue<AccessControlFormData>;
   namePrefix: NamePrefix;
 }
 
-export function ReleaseDateField({ control, setValue, namePrefix }: ReleaseDateFieldProps) {
+export function ReleaseDateField({ namePrefix }: ReleaseDateFieldProps) {
   const { field, isOverrideRule, setField, enableOverride, removeOverride } = useOverridableField({
-    control,
-    setValue,
     namePrefix,
     fieldPath: 'dateControl.releaseDate',
     defaultValue: '',
+    deps: ['dateControl.earlyDeadlines.value'],
   });
 
   const content = (
@@ -53,8 +47,11 @@ export function ReleaseDateField({ control, setValue, namePrefix }: ReleaseDateF
       {field.isEnabled && (
         <Form.Control
           type="datetime-local"
+          aria-label="Release date"
           value={field.value}
-          onChange={({ currentTarget }) => setField({ value: currentTarget.value })}
+          onChange={({ currentTarget }) => {
+            setField({ value: currentTarget.value });
+          }}
         />
       )}
     </Form.Group>

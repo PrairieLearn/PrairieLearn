@@ -1,23 +1,22 @@
 import { Form } from 'react-bootstrap';
-import { type Control, type UseFormSetValue, useWatch } from 'react-hook-form';
+import { useFormContext } from 'react-hook-form';
 
 import { AfterCompleteForm } from './AfterCompleteForm.js';
 import { DateControlForm } from './DateControlForm.js';
+import { type NamePrefix, useWatchField } from './hooks/useTypedFormWatch.js';
 import type { AccessControlFormData } from './types.js';
 
 interface OverrideRuleContentProps {
-  control: Control<AccessControlFormData>;
   index: number;
-  setValue: UseFormSetValue<AccessControlFormData>;
 }
 
-export function OverrideRuleContent({ control, index, setValue }: OverrideRuleContentProps) {
-  const override = useWatch({
-    control,
-    name: `overrides.${index}`,
-  });
+export function OverrideRuleContent({ index }: OverrideRuleContentProps) {
+  const { register } = useFormContext<AccessControlFormData>();
+  const namePrefix: NamePrefix = `overrides.${index}`;
 
-  const { enabled: isEnabled, blockAccess } = override;
+  const isEnabled = useWatchField<boolean>(namePrefix, 'enabled');
+
+  const blockAccess = useWatchField<boolean>(namePrefix, 'blockAccess');
 
   return (
     <div>
@@ -25,27 +24,27 @@ export function OverrideRuleContent({ control, index, setValue }: OverrideRuleCo
         <Form.Group className="mb-3">
           <Form.Check
             type="checkbox"
+            id={`overrides-${index}-block-access`}
             label="Block access"
-            {...control.register(`overrides.${index}.blockAccess`)}
+            {...register(`overrides.${index}.blockAccess`)}
+            aria-describedby={`overrides-${index}-block-access-help`}
           />
-          <Form.Text className="text-muted">Deny access if this rule applies</Form.Text>
+          <Form.Text id={`overrides-${index}-block-access-help`} className="text-muted">
+            Deny access if this rule applies
+          </Form.Text>
         </Form.Group>
       )}
 
       {isEnabled && !blockAccess && (
         <div className="mb-3">
           <DateControlForm
-            control={control}
             namePrefix={`overrides.${index}`}
-            setValue={setValue}
             title="Date control"
             description="Control access and credit to your exam based on a schedule"
           />
 
           <AfterCompleteForm
-            control={control}
             namePrefix={`overrides.${index}`}
-            setValue={setValue}
             title="After completion behavior"
             description="Configure what happens after students complete the assessment"
           />

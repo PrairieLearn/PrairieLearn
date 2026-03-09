@@ -131,6 +131,7 @@ export function StudentSearchInput({ excludedUids, onSelect, onClose }: StudentS
         <Tab eventKey="search" title="Search">
           <Form.Control
             className="mb-2"
+            aria-label="Filter students by name or UID"
             placeholder="Filter by name or UID..."
             type="text"
             value={searchQuery}
@@ -167,6 +168,7 @@ export function StudentSearchInput({ excludedUids, onSelect, onClose }: StudentS
                   <ListGroup.Item
                     key={student.id}
                     className="py-2 d-flex align-items-center"
+                    aria-selected={selectedStudents.has(student.id)}
                     action
                     onClick={() => handleToggleStudent(student.id)}
                   >
@@ -174,6 +176,8 @@ export function StudentSearchInput({ excludedUids, onSelect, onClose }: StudentS
                       className="me-2"
                       type="checkbox"
                       checked={selectedStudents.has(student.id)}
+                      tabIndex={-1}
+                      aria-hidden="true"
                       readOnly
                     />
                     <div className="flex-grow-1">
@@ -191,6 +195,7 @@ export function StudentSearchInput({ excludedUids, onSelect, onClose }: StudentS
           <Form.Control
             as="textarea"
             className="mb-2"
+            aria-label="Paste UIDs (comma, space, or newline separated)"
             placeholder="Paste UIDs (comma, space, or newline separated)"
             rows={3}
             value={uidInput}

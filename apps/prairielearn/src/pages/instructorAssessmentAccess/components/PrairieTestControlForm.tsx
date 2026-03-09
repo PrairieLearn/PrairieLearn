@@ -1,35 +1,34 @@
 import { Button, Card, Col, Form, Row } from 'react-bootstrap';
-import { type Control, type UseFormSetValue, useFieldArray, useWatch } from 'react-hook-form';
+import { get, useFieldArray, useFormContext, useFormState, useWatch } from 'react-hook-form';
 
 import { type NamePrefix, getFieldName } from './hooks/useTypedFormWatch.js';
 import type { AccessControlFormData } from './types.js';
 
 interface PrairieTestControlFormProps {
-  control: Control<AccessControlFormData>;
   namePrefix: NamePrefix;
-  setValue: UseFormSetValue<AccessControlFormData>;
   onRemove?: () => void;
 }
 
-export function PrairieTestControlForm({
-  control,
-  namePrefix,
-  setValue,
-  onRemove,
-}: PrairieTestControlFormProps) {
+export function PrairieTestControlForm({ namePrefix, onRemove }: PrairieTestControlFormProps) {
+  const { register, setValue } = useFormContext<AccessControlFormData>();
+
   const {
     fields: examFields,
     append: appendExam,
     remove: removeExam,
   } = useFieldArray({
-    control,
-    name: `${namePrefix}.integrations.prairieTest.exams`,
+    name: `${namePrefix}.integrations.prairieTest.exams` as 'mainRule.integrations.prairieTest.exams',
   });
 
   const exams = useWatch({
-    control,
-    name: `${namePrefix}.integrations.prairieTest.exams`,
+    name: `${namePrefix}.integrations.prairieTest.exams` as const,
   });
+
+  const { errors } = useFormState();
+
+  const getExamUuidError = (index: number): string | undefined => {
+    return get(errors, `${namePrefix}.integrations.prairieTest.exams.${index}.examUuid`)?.message;
+  };
 
   const addExam = () => {
     if (exams === undefined) {
@@ -77,12 +76,20 @@ export function PrairieTestControlForm({
                   <Card.Body>
                     <Row>
                       <Col md={8}>
-                        <Form.Group className="mb-2">
+                        <Form.Group className="mb-2" controlId={`${namePrefix}-exam-uuid-${index}`}>
                           <Form.Label>Exam UUID</Form.Label>
                           <Form.Control
                             type="text"
+                            isInvalid={!!getExamUuidError(index)}
+                            aria-invalid={!!getExamUuidError(index)}
+                            aria-errormessage={
+                              getExamUuidError(index)
+                                ? `${namePrefix}-exam-uuid-${index}-error`
+                                : undefined
+                            }
+                            aria-describedby={`${namePrefix}-exam-uuid-${index}-help`}
                             placeholder="Enter PrairieTest exam UUID (e.g., 11e89892-3eff-4d7f-90a2-221372f14e5c)"
-                            {...control.register(
+                            {...register(
                               getFieldName(
                                 namePrefix,
                                 `integrations.prairieTest.exams.${index}.examUuid`,
@@ -97,7 +104,19 @@ export function PrairieTestControlForm({
                               },
                             )}
                           />
-                          <Form.Text className="text-muted">
+                          {getExamUuidError(index) && (
+                            <Form.Text
+                              id={`${namePrefix}-exam-uuid-${index}-error`}
+                              className="text-danger d-block"
+                              role="alert"
+                            >
+                              {getExamUuidError(index)}
+                            </Form.Text>
+                          )}
+                          <Form.Text
+                            id={`${namePrefix}-exam-uuid-${index}-help`}
+                            className="text-muted"
+                          >
                             You can find this UUID in the PrairieTest exam settings
                           </Form.Text>
                         </Form.Group>
@@ -106,15 +125,20 @@ export function PrairieTestControlForm({
                         <Form.Group className="mb-2">
                           <Form.Check
                             type="checkbox"
+                            id={`${namePrefix}-exam-readonly-${index}`}
                             label="Read-only mode"
-                            {...control.register(
+                            {...register(
                               getFieldName(
                                 namePrefix,
                                 `integrations.prairieTest.exams.${index}.readOnly`,
                               ),
                             )}
+                            aria-describedby={`${namePrefix}-exam-readonly-${index}-help`}
                           />
-                          <Form.Text className="text-muted">
+                          <Form.Text
+                            id={`${namePrefix}-exam-readonly-${index}-help`}
+                            className="text-muted"
+                          >
                             Students can view but not submit answers
                           </Form.Text>
                         </Form.Group>
@@ -122,6 +146,7 @@ export function PrairieTestControlForm({
                           size="sm"
                           variant="outline-danger"
                           className="mt-2"
+                          aria-label={`Remove exam ${index + 1}`}
                           onClick={() => removeExam(index)}
                         >
                           <i className="bi bi-trash me-1" aria-hidden="true" />
@@ -134,12 +159,6 @@ export function PrairieTestControlForm({
               ))}
             </div>
           )}
-
-          <div className="alert alert-warning">
-            <i className="bi bi-exclamation-triangle me-2" aria-hidden="true" />
-            <strong>Important:</strong> Make sure the exam UUIDs are correct. Invalid UUIDs will
-            cause an error when saving. You can find exam UUIDs in your PrairieTest course settings.
-          </div>
         </div>
       </Card.Body>
     </Card>

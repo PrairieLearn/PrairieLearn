@@ -1,22 +1,14 @@
 import { Button, Card, Col, Form, Row } from 'react-bootstrap';
-import { type Control, type UseFormSetValue } from 'react-hook-form';
 
 import { OverlayTrigger } from '@prairielearn/ui';
 
 import { FieldWrapper } from './FieldWrapper.js';
 import { useOverridableField } from './hooks/useOverridableField.js';
-import type {
-  AccessControlFormData,
-  QuestionVisibilityValue,
-  ScoreVisibilityValue,
-} from './types.js';
-
-type NamePrefix = 'mainRule' | `overrides.${number}`;
+import type { NamePrefix } from './hooks/useTypedFormWatch.js';
+import type { QuestionVisibilityValue, ScoreVisibilityValue } from './types.js';
 
 interface AfterCompleteFormProps {
-  control: Control<AccessControlFormData>;
   namePrefix: NamePrefix;
-  setValue: UseFormSetValue<AccessControlFormData>;
   title?: string;
   description?: string;
 }
@@ -29,9 +21,7 @@ type HideQuestionsMode =
 type HideScoreMode = 'show_score' | 'hide_score_forever' | 'hide_score_until_date';
 
 export function AfterCompleteForm({
-  control,
   namePrefix,
-  setValue,
   title = 'After completion behavior',
   description = 'Configure what happens after students complete the assessment',
 }: AfterCompleteFormProps) {
@@ -43,8 +33,6 @@ export function AfterCompleteForm({
     enableOverride: enableQuestionOverride,
     removeOverride: removeQuestionOverride,
   } = useOverridableField({
-    control,
-    setValue,
     namePrefix,
     fieldPath: 'afterComplete.questionVisibility',
     defaultValue: { hideQuestions: false } as QuestionVisibilityValue,
@@ -56,8 +44,6 @@ export function AfterCompleteForm({
     enableOverride: enableScoreOverride,
     removeOverride: removeScoreOverride,
   } = useOverridableField({
-    control,
-    setValue,
     namePrefix,
     fieldPath: 'afterComplete.scoreVisibility',
     defaultValue: { hideScore: false } as ScoreVisibilityValue,
@@ -153,9 +139,13 @@ export function AfterCompleteForm({
         />
         {hideQuestionsMode === 'hide_questions_until_date' && (
           <div className="ms-4 mt-2">
-            <Form.Label>Show questions again on:</Form.Label>
+            <Form.Label htmlFor={`${namePrefix}-show-questions-date`}>
+              Show questions again on:
+            </Form.Label>
             <Form.Control
+              id={`${namePrefix}-show-questions-date`}
               type="datetime-local"
+              aria-describedby={`${namePrefix}-show-questions-date-help`}
               value={questionVisibility.value.showAgainDate ?? ''}
               onChange={({ currentTarget }) =>
                 setQuestionVisibility({
@@ -166,7 +156,7 @@ export function AfterCompleteForm({
                 })
               }
             />
-            <Form.Text className="text-muted">
+            <Form.Text id={`${namePrefix}-show-questions-date-help`} className="text-muted">
               Questions will be hidden after completion and become visible again on this date
             </Form.Text>
           </div>
@@ -190,8 +180,11 @@ export function AfterCompleteForm({
           <div className="ms-4 mt-2">
             <Row className="mb-2">
               <Col md={6}>
-                <Form.Label>Show questions again on:</Form.Label>
+                <Form.Label htmlFor={`${namePrefix}-show-questions-between-start`}>
+                  Show questions again on:
+                </Form.Label>
                 <Form.Control
+                  id={`${namePrefix}-show-questions-between-start`}
                   type="datetime-local"
                   value={questionVisibility.value.showAgainDate ?? ''}
                   onChange={({ currentTarget }) =>
@@ -206,8 +199,11 @@ export function AfterCompleteForm({
                 />
               </Col>
               <Col md={6}>
-                <Form.Label>Hide questions again on:</Form.Label>
+                <Form.Label htmlFor={`${namePrefix}-hide-questions-between-end`}>
+                  Hide questions again on:
+                </Form.Label>
                 <Form.Control
+                  id={`${namePrefix}-hide-questions-between-end`}
                   type="datetime-local"
                   value={questionVisibility.value.hideAgainDate ?? ''}
                   onChange={({ currentTarget }) =>
@@ -280,9 +276,11 @@ export function AfterCompleteForm({
         />
         {hideScoreMode === 'hide_score_until_date' && (
           <div className="ms-4 mt-2">
-            <Form.Label>Show score again on:</Form.Label>
+            <Form.Label htmlFor={`${namePrefix}-show-score-date`}>Show score again on:</Form.Label>
             <Form.Control
+              id={`${namePrefix}-show-score-date`}
               type="datetime-local"
+              aria-describedby={`${namePrefix}-show-score-date-help`}
               value={scoreVisibility.value.showAgainDate ?? ''}
               onChange={({ currentTarget }) =>
                 setScoreVisibility({
@@ -293,7 +291,7 @@ export function AfterCompleteForm({
                 })
               }
             />
-            <Form.Text className="text-muted">
+            <Form.Text id={`${namePrefix}-show-score-date-help`} className="text-muted">
               Score will be hidden after completion and become visible again on this date
             </Form.Text>
           </div>
@@ -309,7 +307,12 @@ export function AfterCompleteForm({
           <div className="d-flex align-items-center">
             <span>{title}</span>
             <OverlayTrigger trigger="click" placement="right" popover={infoPopoverConfig}>
-              <Button variant="link" size="sm" className="ms-2 p-0">
+              <Button
+                variant="link"
+                size="sm"
+                className="ms-2 p-0"
+                aria-label="When is an assessment complete?"
+              >
                 <i className="bi bi-info-circle" aria-hidden="true" />
               </Button>
             </OverlayTrigger>

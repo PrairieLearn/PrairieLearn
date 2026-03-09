@@ -1,4 +1,4 @@
-import { type Control, type FieldArrayPath, type Path, useWatch } from 'react-hook-form';
+import { type FieldArrayPath, type Path, useFormContext, useWatch } from 'react-hook-form';
 
 import type { AccessControlFormData, OverridableField } from '../types.js';
 
@@ -12,11 +12,8 @@ export type NamePrefix = 'mainRule' | `overrides.${number}`;
  * `${namePrefix}.dateControl.releaseDate`, so we use a type assertion here.
  * This is the single source of truth for this pattern.
  */
-export function useWatchField<T>(
-  control: Control<AccessControlFormData>,
-  namePrefix: NamePrefix,
-  fieldPath: string,
-): T | undefined {
+export function useWatchField<T>(namePrefix: NamePrefix, fieldPath: string): T | undefined {
+  const { control } = useFormContext<AccessControlFormData>();
   return useWatch({
     control,
     name: `${namePrefix}.${fieldPath}` as Path<AccessControlFormData>,
@@ -24,11 +21,10 @@ export function useWatchField<T>(
 }
 
 export function useWatchOverridableField<T>(
-  control: Control<AccessControlFormData>,
   namePrefix: NamePrefix,
   fieldPath: string,
 ): OverridableField<T> | undefined {
-  return useWatchField<OverridableField<T>>(control, namePrefix, fieldPath);
+  return useWatchField<OverridableField<T>>(namePrefix, fieldPath);
 }
 
 /** Centralizes the type assertion for register() calls. */

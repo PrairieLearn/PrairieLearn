@@ -1,12 +1,12 @@
-import { useState } from 'react';
-import { Alert, Button, Form, Offcanvas, Tooltip } from 'react-bootstrap';
-import { type FieldErrors, useFieldArray, useForm } from 'react-hook-form';
+import clsx from 'clsx';
+import { useCallback, useState } from 'react';
+import { Alert, Button, Form, Offcanvas } from 'react-bootstrap';
+import { FormProvider, useFieldArray, useForm } from 'react-hook-form';
 
 import { OverlayTrigger } from '@prairielearn/ui';
 
 import type { PageContext } from '../../../lib/client/page-context.js';
 
-import { AccessControlBreadcrumb } from './AccessControlBreadcrumb.js';
 import { AccessControlSummary } from './AccessControlSummary.js';
 import { ConfirmationModal } from './ConfirmationModal.js';
 import { MainRuleForm } from './MainRuleForm.js';
@@ -30,14 +30,52 @@ interface AccessControlFormProps {
 
 const defaultInitialData: AccessControlJsonWithId[] = [];
 
-function collectErrorMessages(errors: FieldErrors<AccessControlFormData>, prefix = ''): string[] {
+/**
+ * Maps react-hook-form error field keys to human-friendly labels.
+ * Keys at any depth in the error object are matched.
+ */
+const FIELD_LABELS: Record<string, string> = {
+  examUuid: 'Exam UUID',
+  releaseDate: 'Release date',
+  dueDate: 'Due date',
+  durationMinutes: 'Time limit',
+  password: 'Password',
+};
+
+/**
+ * Array field keys that should produce indexed labels like "Early deadline 1".
+ * When a numeric index is encountered under one of these keys, the label is
+ * built from the array name + 1-based index and used as context for child errors.
+ */
+const ARRAY_LABELS: Record<string, string> = {
+  earlyDeadlines: 'Early deadline',
+  lateDeadlines: 'Late deadline',
+  exams: 'Exam',
+};
+
+function collectErrorMessages(
+  errors: Record<string, unknown> | undefined,
+  parentKey?: string,
+  parentArrayLabel?: string,
+): string[] {
+  if (!errors) return [];
   const messages: string[] = [];
   for (const [key, value] of Object.entries(errors)) {
-    const path = prefix ? `${prefix}.${key}` : key;
-    if (typeof value.message === 'string') {
-      messages.push(`${path}: ${value.message}`);
-    } else if (typeof value === 'object') {
-      messages.push(...collectErrorMessages(value as FieldErrors<AccessControlFormData>, path));
+    if (value && typeof value === 'object') {
+      const obj = value as Record<string, unknown>;
+      if (typeof obj.message === 'string') {
+        const label = FIELD_LABELS[key] ?? parentKey;
+        messages.push(label ? `${label}: ${obj.message}` : obj.message);
+      } else if (ARRAY_LABELS[key]) {
+        messages.push(...collectErrorMessages(obj, parentKey, ARRAY_LABELS[key]));
+      } else if (parentArrayLabel && /^\d+$/.test(key)) {
+        const indexedLabel = `${parentArrayLabel} ${Number(key) + 1}`;
+        messages.push(...collectErrorMessages(obj, indexedLabel));
+      } else {
+        messages.push(
+          ...collectErrorMessages(obj, FIELD_LABELS[key] ?? parentKey, parentArrayLabel),
+        );
+      }
     }
   }
   return messages;
@@ -64,14 +102,7 @@ export function AccessControlForm({
     : jsonToFormData({ enabled: true, listBeforeRelease: true }, true);
   const overrides = initialData.slice(1).map((json) => jsonToFormData(json, false));
 
-  const {
-    control,
-    handleSubmit,
-    watch,
-    reset,
-    setValue,
-    formState: { isDirty, isValid, errors },
-  } = useForm<AccessControlFormData>({
+  const methods = useForm<AccessControlFormData>({
     mode: 'onChange',
     defaultValues: {
       mainRule,
@@ -80,12 +111,19 @@ export function AccessControlForm({
   });
 
   const {
+    handleSubmit,
+    watch,
+    reset,
+    setValue,
+    formState: { isDirty, isValid, errors },
+  } = methods;
+
+  const {
     append: appendOverride,
     remove: removeOverride,
     move: moveOverride,
     insert: insertOverride,
   } = useFieldArray({
-    control,
     name: 'overrides',
   });
 
@@ -155,7 +193,15 @@ export function AccessControlForm({
     }
   };
 
-  const errorMessages = collectErrorMessages(errors);
+  const mainRuleErrors = collectErrorMessages(
+    errors.mainRule as Record<string, unknown> | undefined,
+  );
+  const getOverrideErrors = useCallback(
+    (index: number): string[] =>
+      collectErrorMessages(errors.overrides?.[index] as Record<string, unknown> | undefined),
+    [errors.overrides],
+  );
+
   const saveDisabledReason = isSaving
     ? 'Saving...'
     : !isDirty
@@ -164,58 +210,53 @@ export function AccessControlForm({
         ? 'Fix validation errors before saving'
         : null;
 
+  const saveButtonDisabled = saveDisabledReason !== null;
+
   const saveButton = (
-    <Button type="submit" variant="primary" disabled={saveDisabledReason !== null}>
-      {isSaving ? 'Saving...' : 'Save changes'}
-    </Button>
+    <button
+      className={clsx('btn btn-sm', saveButtonDisabled ? 'btn-outline-secondary' : 'btn-primary')}
+      type="submit"
+      disabled={saveButtonDisabled}
+    >
+      <i className="bi bi-floppy" aria-hidden="true" /> Save and sync
+    </button>
   );
 
   return (
-    <div>
+    <FormProvider {...methods}>
       <Form onSubmit={handleSubmit(handleFormSubmit)}>
-        <AccessControlBreadcrumb />
+        <AccessControlSummary
+          courseInstanceId={courseInstance.id}
+          getOverrideName={getOverrideName}
+          mainRule={watchedData.mainRule}
+          overrides={watchedData.overrides}
+          mainRuleErrors={mainRuleErrors}
+          getOverrideErrors={getOverrideErrors}
+          onAddOverride={addOverride}
+          onRemoveOverride={handleDeleteClick}
+          onMoveOverride={moveOverride}
+          onEditMainRule={() => setShowMainRuleDrawer(true)}
+          onEditOverride={(index) => setEditingOverrideIndex(index)}
+        />
 
-        <div className="mb-4">
-          <AccessControlSummary
-            courseInstanceId={courseInstance.id}
-            getOverrideName={getOverrideName}
-            mainRule={watchedData.mainRule}
-            overrides={watchedData.overrides}
-            onAddOverride={addOverride}
-            onRemoveOverride={handleDeleteClick}
-            onMoveOverride={moveOverride}
-            onEditMainRule={() => setShowMainRuleDrawer(true)}
-            onEditOverride={(index) => setEditingOverrideIndex(index)}
-          />
-        </div>
-
-        {errorMessages.length > 0 && (
-          <Alert variant="danger">
-            <Alert.Heading as="h6">Please fix the following errors:</Alert.Heading>
-            <ul className="mb-0">
-              {errorMessages.map((msg) => (
-                <li key={msg}>{msg}</li>
-              ))}
-            </ul>
-          </Alert>
-        )}
-
-        <div className="mt-4 d-flex gap-2">
+        <div className="d-flex gap-2 mt-3">
           {saveDisabledReason ? (
-            <OverlayTrigger overlay={<Tooltip id="save-tooltip">{saveDisabledReason}</Tooltip>}>
+            <OverlayTrigger tooltip={{ props: { id: 'save-tooltip' }, body: saveDisabledReason }}>
               <span className="d-inline-block">{saveButton}</span>
             </OverlayTrigger>
           ) : (
             saveButton
           )}
-          <Button
-            type="button"
-            variant="outline-secondary"
-            disabled={!isDirty || isSaving}
-            onClick={() => reset()}
-          >
-            Reset
-          </Button>
+          {isDirty && (
+            <button
+              className="btn btn-sm btn-outline-secondary"
+              type="button"
+              disabled={isSaving}
+              onClick={() => reset()}
+            >
+              Cancel
+            </button>
+          )}
         </div>
       </Form>
 
@@ -231,17 +272,21 @@ export function AccessControlForm({
             <Button
               variant={watchedData.mainRule.enabled ? 'success' : 'outline-secondary'}
               size="sm"
+              aria-pressed={watchedData.mainRule.enabled}
               onClick={() =>
                 setValue('mainRule.enabled', !watchedData.mainRule.enabled, { shouldDirty: true })
               }
             >
-              <i className={`bi bi-${watchedData.mainRule.enabled ? 'check-lg' : 'x-lg'} me-1`} />
+              <i
+                className={`bi bi-${watchedData.mainRule.enabled ? 'check-lg' : 'x-lg'} me-1`}
+                aria-hidden="true"
+              />
               {watchedData.mainRule.enabled ? 'Enabled' : 'Disabled'}
             </Button>
           </Offcanvas.Title>
         </Offcanvas.Header>
         <Offcanvas.Body>
-          <MainRuleForm control={control} courseInstance={courseInstance} setValue={setValue} />
+          <MainRuleForm courseInstance={courseInstance} />
           <div className="mt-3">
             <Button variant="primary" onClick={() => setShowMainRuleDrawer(false)}>
               Done
@@ -266,13 +311,17 @@ export function AccessControlForm({
                   <Button
                     variant={overrideEnabled ? 'success' : 'outline-secondary'}
                     size="sm"
+                    aria-pressed={overrideEnabled}
                     onClick={() =>
                       setValue(`overrides.${editingOverrideIndex}.enabled`, !overrideEnabled, {
                         shouldDirty: true,
                       })
                     }
                   >
-                    <i className={`bi bi-${overrideEnabled ? 'check-lg' : 'x-lg'} me-1`} />
+                    <i
+                      className={`bi bi-${overrideEnabled ? 'check-lg' : 'x-lg'} me-1`}
+                      aria-hidden="true"
+                    />
                     {overrideEnabled ? 'Enabled' : 'Disabled'}
                   </Button>
                 );
@@ -296,16 +345,8 @@ export function AccessControlForm({
                       this rule to take effect.
                     </Alert>
                   )}
-                  <AppliesToField
-                    control={control}
-                    setValue={setValue}
-                    namePrefix={`overrides.${editingOverrideIndex}`}
-                  />
-                  <OverrideRuleContent
-                    control={control}
-                    index={editingOverrideIndex}
-                    setValue={setValue}
-                  />
+                  <AppliesToField namePrefix={`overrides.${editingOverrideIndex}`} />
+                  <OverrideRuleContent index={editingOverrideIndex} />
                   <div className="mt-3">
                     <Button variant="primary" onClick={() => setEditingOverrideIndex(null)}>
                       Done
@@ -326,6 +367,6 @@ export function AccessControlForm({
         onConfirm={handleDeleteConfirm}
         onCancel={handleDeleteCancel}
       />
-    </div>
+    </FormProvider>
   );
 }

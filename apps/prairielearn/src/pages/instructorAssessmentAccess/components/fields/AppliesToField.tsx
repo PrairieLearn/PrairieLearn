@@ -1,8 +1,9 @@
 import { Button, Card, Form } from 'react-bootstrap';
-import { type Control, type UseFormSetValue, useFieldArray, useWatch } from 'react-hook-form';
+import { useFieldArray, useFormContext, useWatch } from 'react-hook-form';
 
 import { ChipGroup } from '@prairielearn/ui';
 
+import type { NamePrefix } from '../hooks/useTypedFormWatch.js';
 import type {
   AccessControlFormData,
   AppliesTo,
@@ -13,27 +14,22 @@ import type {
 
 import { AddTargetPopover } from './AddTargetPopover.js';
 
-type NamePrefix = 'mainRule' | `overrides.${number}`;
-
 interface AppliesToFieldProps {
-  control: Control<AccessControlFormData>;
-  setValue: UseFormSetValue<AccessControlFormData>;
   namePrefix: NamePrefix;
 }
 
-export function AppliesToField({ control, setValue, namePrefix }: AppliesToFieldProps) {
+export function AppliesToField({ namePrefix }: AppliesToFieldProps) {
+  const { setValue } = useFormContext<AccessControlFormData>();
+
   const appliesTo = useWatch({
-    control,
     name: `${namePrefix}.appliesTo` as const,
   });
 
   const { append: appendIndividual, remove: removeIndividual } = useFieldArray({
-    control,
     name: `${namePrefix}.appliesTo.individuals` as 'mainRule.appliesTo.individuals',
   });
 
   const { append: appendStudentLabel, remove: removeStudentLabel } = useFieldArray({
-    control,
     name: `${namePrefix}.appliesTo.studentLabels` as 'mainRule.appliesTo.studentLabels',
   });
 
@@ -99,7 +95,8 @@ export function AppliesToField({ control, setValue, namePrefix }: AppliesToField
         <strong>Applies to</strong>
       </Card.Header>
       <Card.Body>
-        <div className="mb-3">
+        <fieldset className="mb-3">
+          <legend className="visually-hidden">Target type</legend>
           <Form.Check
             type="radio"
             id={`${namePrefix}-target-individual`}
@@ -116,7 +113,7 @@ export function AppliesToField({ control, setValue, namePrefix }: AppliesToField
             checked={currentTargetType === 'student_label'}
             onChange={() => handleTargetTypeChange('student_label')}
           />
-        </div>
+        </fieldset>
 
         <div className="d-flex flex-wrap align-items-center gap-1">
           {currentTargetType === 'individual' ? (

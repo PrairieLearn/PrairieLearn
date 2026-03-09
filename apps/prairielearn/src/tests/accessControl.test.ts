@@ -68,7 +68,10 @@ describe('Valid configs', () => {
       {
         integrations: {
           prairieTest: {
-            exams: [{ examUuid: '1' }, { examUuid: '2', readOnly: true }],
+            exams: [
+              { examUuid: '11e89892-3eff-4d7f-90a2-221372f14e5c' },
+              { examUuid: '22f99903-4a00-5e80-a1b3-332483025d6d', readOnly: true },
+            ],
           },
         },
       },
@@ -102,7 +105,7 @@ describe('Valid configs', () => {
         },
         integrations: {
           prairieTest: {
-            exams: [{ examUuid: '1', readOnly: true }],
+            exams: [{ examUuid: '11e89892-3eff-4d7f-90a2-221372f14e5c', readOnly: true }],
           },
         },
       },
@@ -366,5 +369,38 @@ describe('Date fields must be dates', () => {
         `Expected error at path ${JSON.stringify(example.expectedPath)} at example ${exampleIndex}, but got: ${JSON.stringify(result.error.issues.map((i) => i.path))}`,
       );
     });
+  });
+});
+
+describe('Exam UUID validation', () => {
+  it('should reject invalid exam UUIDs', () => {
+    const result = AccessControlJsonSchema.safeParse({
+      integrations: {
+        prairieTest: {
+          exams: [{ examUuid: 'not-a-uuid' }],
+        },
+      },
+    });
+
+    assert.isFalse(result.success);
+    assert.isTrue(
+      result.error.issues.some(
+        (issue) =>
+          JSON.stringify(issue.path) ===
+          JSON.stringify(['integrations', 'prairieTest', 'exams', 0, 'examUuid']),
+      ),
+    );
+  });
+
+  it('should accept valid exam UUIDs', () => {
+    const result = AccessControlJsonSchema.safeParse({
+      integrations: {
+        prairieTest: {
+          exams: [{ examUuid: '11e89892-3eff-4d7f-90a2-221372f14e5c' }],
+        },
+      },
+    });
+
+    assert.isTrue(result.success);
   });
 });

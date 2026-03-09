@@ -5,7 +5,6 @@ import { loadSqlEquiv, queryRows } from '@prairielearn/postgres';
 import { generatePrefixCsrfToken } from '@prairielearn/signed-token';
 
 import { config } from '../../lib/config.js';
-import { features } from '../../lib/features/index.js';
 import { typedAsyncHandler } from '../../lib/res-locals.js';
 import { handleTrpcError } from '../../lib/trpc.js';
 
@@ -40,13 +39,7 @@ router.get(
 
     const jsonRules = await fetchAllAccessControlRules(assessmentId);
 
-    const enhancedAccessControlEnabled = await features.enabled('enhanced-access-control', {
-      institution_id: res.locals.course.institution_id,
-      course_id: res.locals.course.id,
-      course_instance_id: res.locals.course_instance.id,
-    });
-
-    if (jsonRules.length > 0 || enhancedAccessControlEnabled) {
+    if (jsonRules.length > 0) {
       const origHash = computeHash(jsonRules);
       const trpcCsrfToken = generatePrefixCsrfToken(
         {

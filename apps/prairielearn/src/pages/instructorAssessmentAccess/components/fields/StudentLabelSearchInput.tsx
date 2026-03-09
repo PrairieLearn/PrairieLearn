@@ -85,6 +85,7 @@ export function StudentLabelSearchInput({
     <div style={{ minWidth: '250px' }}>
       <Form.Control
         className="mb-2"
+        aria-label="Filter student labels"
         placeholder="Filter student labels..."
         type="text"
         value={filter}
@@ -123,6 +124,7 @@ export function StudentLabelSearchInput({
               <ListGroup.Item
                 key={studentLabel.id}
                 className="py-2 d-flex align-items-center"
+                aria-selected={selectedStudentLabels.has(studentLabel.id)}
                 action
                 onClick={() => handleToggleStudentLabel(studentLabel.id)}
               >
@@ -130,6 +132,8 @@ export function StudentLabelSearchInput({
                   className="me-2"
                   type="checkbox"
                   checked={selectedStudentLabels.has(studentLabel.id)}
+                  tabIndex={-1}
+                  aria-hidden="true"
                   readOnly
                 />
                 <div className="d-flex align-items-center flex-grow-1">

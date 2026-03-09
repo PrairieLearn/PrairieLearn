@@ -1,40 +1,36 @@
-import { Form, InputGroup } from 'react-bootstrap';
-import { type Control, type UseFormSetValue } from 'react-hook-form';
+import { Alert, Form, InputGroup } from 'react-bootstrap';
+import { get, useFormContext, useFormState } from 'react-hook-form';
 
 import { FriendlyDate } from '../../../../components/FriendlyDate.js';
 import { FieldWrapper } from '../FieldWrapper.js';
 import { useOverridableField } from '../hooks/useOverridableField.js';
-import { type NamePrefix, useWatchOverridableField } from '../hooks/useTypedFormWatch.js';
+import {
+  type NamePrefix,
+  getFieldName,
+  useWatchOverridableField,
+} from '../hooks/useTypedFormWatch.js';
 import type { AccessControlFormData, AfterLastDeadlineValue, DeadlineEntry } from '../types.js';
 import { getLastDeadlineDate, getUserTimezone } from '../utils/dateUtils.js';
 
 interface AfterLastDeadlineFieldProps {
-  control: Control<AccessControlFormData>;
-  setValue: UseFormSetValue<AccessControlFormData>;
   namePrefix: NamePrefix;
 }
 
 type AfterLastDeadlineMode = 'no_submissions' | 'practice_submissions' | 'partial_credit';
 
-export function AfterLastDeadlineField({
-  control,
-  setValue,
-  namePrefix,
-}: AfterLastDeadlineFieldProps) {
+export function AfterLastDeadlineField({ namePrefix }: AfterLastDeadlineFieldProps) {
+  const { register } = useFormContext<AccessControlFormData>();
   const userTimezone = getUserTimezone();
 
   const { field, isOverrideRule, setField, enableOverride, removeOverride } = useOverridableField({
-    control,
-    setValue,
     namePrefix,
     fieldPath: 'dateControl.afterLastDeadline',
     defaultValue: {} as AfterLastDeadlineValue,
   });
 
-  const dueDate = useWatchOverridableField<string>(control, namePrefix, 'dateControl.dueDate');
+  const dueDate = useWatchOverridableField<string>(namePrefix, 'dateControl.dueDate');
 
   const lateDeadlines = useWatchOverridableField<DeadlineEntry[]>(
-    control,
     namePrefix,
     'dateControl.lateDeadlines',
   );
@@ -47,6 +43,11 @@ export function AfterLastDeadlineField({
   };
 
   const mode = getMode();
+
+  const creditFieldPath = getFieldName(namePrefix, 'dateControl.afterLastDeadline.value.credit');
+
+  const { errors } = useFormState();
+  const creditError: string | undefined = get(errors, creditFieldPath)?.message;
 
   const getLastDeadlineText = () => {
     if (!dueDate || !lateDeadlines) return 'This will take effect after the last deadline';
@@ -64,8 +65,17 @@ export function AfterLastDeadlineField({
     return 'This will take effect after the last deadline';
   };
 
+  const hasLastDeadline =
+    (dueDate?.isEnabled && dueDate.value) ||
+    (lateDeadlines?.isEnabled && lateDeadlines.value.length > 0);
+
   const content = (
     <Form.Group>
+      {!hasLastDeadline && (
+        <Alert variant="warning" className="py-2 mb-2">
+          This setting will have no effect because there is no due date set.
+        </Alert>
+      )}
       <div className="mb-2">
         <Form.Check
           type="radio"
@@ -114,22 +124,38 @@ export function AfterLastDeadlineField({
           <InputGroup>
             <Form.Control
               type="number"
+              aria-label="Credit percentage after last deadline"
+              aria-invalid={!!creditError}
+              aria-errormessage={
+                creditError ? `${namePrefix}-after-deadline-credit-error` : undefined
+              }
               min="0"
               max="200"
               placeholder="Credit percentage"
-              value={field.value.credit ?? 0}
-              onChange={({ currentTarget }) =>
-                setField({
-                  value: {
-                    allowSubmissions: true,
-                    credit: Number(currentTarget.value) || 0,
-                  },
-                })
-              }
+              isInvalid={!!creditError}
+              {...register(creditFieldPath, {
+                shouldUnregister: true,
+                valueAsNumber: true,
+                validate: (value) => {
+                  const num = value as number;
+                  if (Number.isNaN(num)) return 'Credit is required';
+                  if (num < 0 || num > 200) return 'Must be 0–200%';
+                  return true;
+                },
+              })}
             />
             <InputGroup.Text>%</InputGroup.Text>
           </InputGroup>
-          <Form.Text className="text-muted">
+          {creditError && (
+            <Form.Text
+              id={`${namePrefix}-after-deadline-credit-error`}
+              className="text-danger d-block"
+              role="alert"
+            >
+              {creditError}
+            </Form.Text>
+          )}
+          <Form.Text className="text-muted d-block">
             Students will receive this percentage of credit for submissions after the deadline
           </Form.Text>
         </div>

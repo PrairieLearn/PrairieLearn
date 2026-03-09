@@ -1,17 +1,16 @@
 import { Dropdown } from 'react-bootstrap';
-import { type Control, type UseFormSetValue, useWatch } from 'react-hook-form';
+import { useFormContext, useWatch } from 'react-hook-form';
 
 import { PrairieTestControlForm } from './PrairieTestControlForm.js';
 import type { AccessControlFormData } from './types.js';
 
-interface IntegrationsSectionProps {
-  control: Control<AccessControlFormData>;
-  setValue: UseFormSetValue<AccessControlFormData>;
-}
+export function IntegrationsSection() {
+  const { setValue } = useFormContext<AccessControlFormData>();
 
-export function IntegrationsSection({ control, setValue }: IntegrationsSectionProps) {
-  const prairieTestEnabled = useWatch({
-    control,
+  const prairieTestEnabled = useWatch<
+    AccessControlFormData,
+    'mainRule.integrations.prairieTest.enabled'
+  >({
     name: 'mainRule.integrations.prairieTest.enabled',
   });
 
@@ -55,9 +54,7 @@ export function IntegrationsSection({ control, setValue }: IntegrationsSectionPr
 
       {prairieTestEnabled ? (
         <PrairieTestControlForm
-          control={control}
           namePrefix="mainRule"
-          setValue={setValue}
           onRemove={() => removeIntegration('prairieTest')}
         />
       ) : (

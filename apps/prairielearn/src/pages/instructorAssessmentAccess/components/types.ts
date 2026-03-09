@@ -175,6 +175,20 @@ export function formDataToJson(formData: AccessControlFormData): AccessControlJs
   });
 }
 
+function isDateControlActive(rule: AccessControlRuleFormData, isMainRule: boolean): boolean {
+  if (isMainRule) return rule.dateControl.enabled;
+  const dc = rule.dateControl;
+  return (
+    dc.releaseDate.isOverridden ||
+    dc.dueDate.isOverridden ||
+    dc.earlyDeadlines.isOverridden ||
+    dc.lateDeadlines.isOverridden ||
+    dc.afterLastDeadline.isOverridden ||
+    dc.durationMinutes.isOverridden ||
+    dc.password.isOverridden
+  );
+}
+
 /**
  * @param rule The form data rule to convert
  * @param isMainRule If true, includes integrations in the output (only main rules support this)
@@ -196,7 +210,7 @@ function formRuleToJson(
     labels,
   };
 
-  if (rule.dateControl.enabled) {
+  if (isDateControlActive(rule, isMainRule)) {
     output.dateControl = {
       enabled: true,
     };

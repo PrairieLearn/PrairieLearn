@@ -1,38 +1,29 @@
 import { Form, InputGroup } from 'react-bootstrap';
-import { type Control, type UseFormSetValue } from 'react-hook-form';
 
 import { FieldWrapper } from '../FieldWrapper.js';
 import { useOverridableField } from '../hooks/useOverridableField.js';
-import type { AccessControlFormData } from '../types.js';
-
-type NamePrefix = 'mainRule' | `overrides.${number}`;
+import type { NamePrefix } from '../hooks/useTypedFormWatch.js';
 
 interface DurationFieldProps {
-  control: Control<AccessControlFormData>;
-  setValue: UseFormSetValue<AccessControlFormData>;
   namePrefix: NamePrefix;
 }
 
-export function DurationField({ control, setValue, namePrefix }: DurationFieldProps) {
+export function DurationField({ namePrefix }: DurationFieldProps) {
   const { field, isOverrideRule, setField, enableOverride, removeOverride, toggleEnabled } =
     useOverridableField({
-      control,
-      setValue,
       namePrefix,
       fieldPath: 'dateControl.durationMinutes',
       defaultValue: 60,
     });
 
   const headerContent = (
-    <div className="d-flex align-items-center">
-      <Form.Check
-        type="checkbox"
-        className="me-2"
-        checked={field.isEnabled}
-        onChange={({ currentTarget }) => toggleEnabled(currentTarget.checked)}
-      />
-      <strong>Time limit</strong>
-    </div>
+    <Form.Check
+      type="checkbox"
+      id={`${namePrefix}-time-limit-enabled`}
+      label={<strong>Time limit</strong>}
+      checked={field.isEnabled}
+      onChange={({ currentTarget }) => toggleEnabled(currentTarget.checked)}
+    />
   );
 
   const content = (
@@ -41,6 +32,7 @@ export function DurationField({ control, setValue, namePrefix }: DurationFieldPr
         <InputGroup>
           <Form.Control
             type="number"
+            aria-label="Duration in minutes"
             placeholder="Duration in minutes"
             min="1"
             value={field.value}

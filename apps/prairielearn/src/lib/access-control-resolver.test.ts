@@ -630,6 +630,48 @@ describe('resolveAccessControl', () => {
     });
   });
 
+  describe('disabled/blocking main with override', () => {
+    it('authorizes when main is disabled but matched override has no enabled field', () => {
+      const result = resolveAccessControl({
+        ...baseInput,
+        rules: [
+          makeMainRule({ enabled: false }),
+          makeOverrideRule(
+            1,
+            { dateControl: { dueDate: '2025-05-01T00:00:00Z' } },
+            { targetType: 'enrollment', enrollmentIds: ['enroll-1'] },
+          ),
+        ],
+        student: { enrollmentId: 'enroll-1', studentLabelIds: [] },
+      });
+      expect(result.authorized).toBe(true);
+    });
+
+    it('authorizes when main has blockAccess but matched override does not', () => {
+      const result = resolveAccessControl({
+        ...baseInput,
+        rules: [
+          makeMainRule({ blockAccess: true }),
+          makeOverrideRule(1, {}, { targetType: 'enrollment', enrollmentIds: ['enroll-1'] }),
+        ],
+        student: { enrollmentId: 'enroll-1', studentLabelIds: [] },
+      });
+      expect(result.authorized).toBe(true);
+    });
+
+    it('denies when main is disabled and no override matches', () => {
+      const result = resolveAccessControl({
+        ...baseInput,
+        rules: [
+          makeMainRule({ enabled: false }),
+          makeOverrideRule(1, {}, { targetType: 'enrollment', enrollmentIds: ['enroll-other'] }),
+        ],
+        student: { enrollmentId: 'enroll-1', studentLabelIds: [] },
+      });
+      expect(result.authorized).toBe(false);
+    });
+  });
+
   describe('field inheritance', () => {
     it('override only overrides explicitly-set fields', () => {
       const result = resolveAccessControl({
@@ -1027,6 +1069,54 @@ describe('mergeRules', () => {
     );
     expect(result.afterComplete?.hideQuestions).toBe(false);
     expect(result.afterComplete?.hideScore).toBe(true);
+  });
+
+  it('does not inherit enabled from main', () => {
+    const result = mergeRules({ enabled: false }, {});
+    expect(result.enabled).toBeUndefined();
+  });
+
+  it('does not inherit blockAccess from main', () => {
+    const result = mergeRules({ blockAccess: true }, {});
+    expect(result.blockAccess).toBeUndefined();
+  });
+
+  it('does not inherit name from main', () => {
+    const result = mergeRules({ name: 'Main Rule' }, {});
+    expect(result.name).toBeUndefined();
+  });
+
+  it('does not inherit labels from main', () => {
+    const result = mergeRules({ labels: ['group-a'] }, {});
+    expect(result.labels).toBeUndefined();
+  });
+
+  it('does not inherit integrations from main', () => {
+    const result = mergeRules({ integrations: { prairieTest: { enabled: true } } }, {});
+    expect(result.integrations).toBeUndefined();
+  });
+
+  it('does not inherit dateControl.enabled from main', () => {
+    const result = mergeRules(
+      { dateControl: { enabled: false, dueDate: '2025-04-01T00:00:00Z' } },
+      { dateControl: { dueDate: '2025-05-01T00:00:00Z' } },
+    );
+    expect(result.dateControl?.enabled).toBeUndefined();
+    expect(result.dateControl?.dueDate).toBe('2025-05-01T00:00:00Z');
+  });
+
+  it('inherits afterComplete from main when override has none', () => {
+    const result = mergeRules({ afterComplete: { hideQuestions: true } }, {});
+    expect(result.afterComplete?.hideQuestions).toBe(true);
+  });
+
+  it('inherits dateControl sub-fields from main when override has none', () => {
+    const result = mergeRules(
+      { dateControl: { dueDate: '2025-04-01T00:00:00Z', password: 'secret' } },
+      {},
+    );
+    expect(result.dateControl?.dueDate).toBe('2025-04-01T00:00:00Z');
+    expect(result.dateControl?.password).toBe('secret');
   });
 });
 

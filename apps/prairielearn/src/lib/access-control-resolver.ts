@@ -90,19 +90,29 @@ export function mergeRules(
 ): AccessControlJson {
   if (!override) return main;
 
-  const merged: AccessControlJson = { ...main };
+  const merged: AccessControlJson = {};
 
-  if (override.enabled !== undefined) merged.enabled = override.enabled;
-  if (override.blockAccess !== undefined) merged.blockAccess = override.blockAccess;
+  // Policy-level fields: inherit from main, override can replace.
+  if (main.listBeforeRelease !== undefined) merged.listBeforeRelease = main.listBeforeRelease;
   if (override.listBeforeRelease !== undefined) {
     merged.listBeforeRelease = override.listBeforeRelease;
   }
 
-  if (override.dateControl !== undefined) {
+  // Per-rule fields: only from override, never inherited from main.
+  // enabled, blockAccess, name, labels, integrations are per-rule concepts.
+  if (override.enabled !== undefined) merged.enabled = override.enabled;
+  if (override.blockAccess !== undefined) merged.blockAccess = override.blockAccess;
+
+  // dateControl: inherit sub-fields from main (except dateControl.enabled), override can replace.
+  if (main.dateControl || override.dateControl) {
     if (!main.dateControl) {
       merged.dateControl = override.dateControl;
+    } else if (!override.dateControl) {
+      const { enabled: _enabled, ...rest } = main.dateControl;
+      merged.dateControl = { ...rest };
     } else {
-      merged.dateControl = { ...main.dateControl };
+      const { enabled: _enabled, ...mainRest } = main.dateControl;
+      merged.dateControl = { ...mainRest };
       const ov = override.dateControl;
       if (ov.enabled !== undefined) merged.dateControl.enabled = ov.enabled;
       if (ov.releaseDate !== undefined) merged.dateControl.releaseDate = ov.releaseDate;
@@ -119,9 +129,12 @@ export function mergeRules(
     }
   }
 
-  if (override.afterComplete !== undefined) {
+  // afterComplete: inherit sub-fields from main, override can replace.
+  if (main.afterComplete || override.afterComplete) {
     if (!main.afterComplete) {
       merged.afterComplete = override.afterComplete;
+    } else if (!override.afterComplete) {
+      merged.afterComplete = { ...main.afterComplete };
     } else {
       merged.afterComplete = { ...main.afterComplete };
       const ov = override.afterComplete;

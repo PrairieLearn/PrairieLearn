@@ -1,38 +1,29 @@
 import { Form } from 'react-bootstrap';
-import { type Control, type UseFormSetValue } from 'react-hook-form';
 
 import { FriendlyDate } from '../../../../components/FriendlyDate.js';
 import { FieldWrapper } from '../FieldWrapper.js';
 import { useOverridableField } from '../hooks/useOverridableField.js';
 import { type NamePrefix, useWatchOverridableField } from '../hooks/useTypedFormWatch.js';
-import type { AccessControlFormData, DeadlineEntry } from '../types.js';
+import type { DeadlineEntry } from '../types.js';
 import { getLatestEarlyDeadlineDate, getUserTimezone } from '../utils/dateUtils.js';
 
 interface DueDateFieldProps {
-  control: Control<AccessControlFormData>;
-  setValue: UseFormSetValue<AccessControlFormData>;
   namePrefix: NamePrefix;
 }
 
-export function DueDateField({ control, setValue, namePrefix }: DueDateFieldProps) {
+export function DueDateField({ namePrefix }: DueDateFieldProps) {
   const userTimezone = getUserTimezone();
 
   const { field, isOverrideRule, setField, enableOverride, removeOverride } = useOverridableField({
-    control,
-    setValue,
     namePrefix,
     fieldPath: 'dateControl.dueDate',
     defaultValue: '',
+    deps: ['dateControl.earlyDeadlines.value', 'dateControl.lateDeadlines.value'],
   });
 
-  const releaseDate = useWatchOverridableField<string>(
-    control,
-    namePrefix,
-    'dateControl.releaseDate',
-  );
+  const releaseDate = useWatchOverridableField<string>(namePrefix, 'dateControl.releaseDate');
 
   const earlyDeadlines = useWatchOverridableField<DeadlineEntry[]>(
-    control,
     namePrefix,
     'dateControl.earlyDeadlines',
   );
@@ -109,8 +100,11 @@ export function DueDateField({ control, setValue, namePrefix }: DueDateFieldProp
         <>
           <Form.Control
             type="datetime-local"
+            aria-label="Due date"
             value={field.value}
-            onChange={({ currentTarget }) => setField({ value: currentTarget.value })}
+            onChange={({ currentTarget }) => {
+              setField({ value: currentTarget.value });
+            }}
           />
           {field.value && <Form.Text className="text-muted">{getCreditPeriodText()}</Form.Text>}
         </>

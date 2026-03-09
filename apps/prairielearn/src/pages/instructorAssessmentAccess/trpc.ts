@@ -344,7 +344,7 @@ function formJsonToEnrollmentRuleData(
   };
 }
 
-const DateStringInputSchema = z.string().refine((s) => !isNaN(new Date(s).getTime()), {
+const DateStringInputSchema = z.string().refine((s) => !Number.isNaN(new Date(s).getTime()), {
   message: 'Must be a valid date string',
 });
 
@@ -503,6 +503,7 @@ const saveAllRules = t.procedure
         action: 'update',
         actionDetail: 'rule_saved',
         rowId: assessmentId,
+        oldRow: { rules: currentRules },
         newRow: { rule_count: rulesToSync.length + (enrollmentRules?.length ?? 0) },
         assessmentId,
         courseInstanceId,

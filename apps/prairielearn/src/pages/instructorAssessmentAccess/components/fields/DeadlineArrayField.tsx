@@ -1,11 +1,5 @@
 import { Button, Col, Form, InputGroup, Row } from 'react-bootstrap';
-import {
-  type Control,
-  type UseFormSetValue,
-  get,
-  useFieldArray,
-  useFormState,
-} from 'react-hook-form';
+import { get, useFieldArray, useFormContext, useFormState } from 'react-hook-form';
 
 import { FriendlyDate } from '../../../../components/FriendlyDate.js';
 import { FieldWrapper } from '../FieldWrapper.js';
@@ -24,19 +18,13 @@ import {
 } from '../utils/dateUtils.js';
 
 interface DeadlineArrayFieldProps {
-  control: Control<AccessControlFormData>;
-  setValue: UseFormSetValue<AccessControlFormData>;
   namePrefix: NamePrefix;
   /** 'early' for early deadlines (before due date), 'late' for late deadlines (after due date) */
   type: 'early' | 'late';
 }
 
-export function DeadlineArrayField({
-  control,
-  setValue,
-  namePrefix,
-  type,
-}: DeadlineArrayFieldProps) {
+export function DeadlineArrayField({ namePrefix, type }: DeadlineArrayFieldProps) {
+  const { register } = useFormContext<AccessControlFormData>();
   const userTimezone = getUserTimezone();
   const isEarly = type === 'early';
 
@@ -45,20 +33,14 @@ export function DeadlineArrayField({
 
   const { field, isOverrideRule, enableOverride, removeOverride, toggleEnabled } =
     useOverridableField({
-      control,
-      setValue,
       namePrefix,
       fieldPath,
       defaultValue: [] as DeadlineEntry[],
     });
 
-  const releaseDate = useWatchOverridableField<string>(
-    control,
-    namePrefix,
-    'dateControl.releaseDate',
-  );
+  const releaseDate = useWatchOverridableField<string>(namePrefix, 'dateControl.releaseDate');
 
-  const dueDate = useWatchOverridableField<string>(control, namePrefix, 'dateControl.dueDate');
+  const dueDate = useWatchOverridableField<string>(namePrefix, 'dateControl.dueDate');
 
   // `getArrayFieldName` returns a union of all valid field array paths in
   // AccessControlFormData, so `fields` is typed as a union of all possible
@@ -69,12 +51,11 @@ export function DeadlineArrayField({
     append: appendDeadline,
     remove: removeDeadline,
   } = useFieldArray({
-    control,
     name: getArrayFieldName(namePrefix, `${fieldPath}.value`),
   });
   const deadlineFields = rawDeadlineFields as (DeadlineEntry & { id: string })[];
 
-  const { errors } = useFormState({ control });
+  const { errors } = useFormState();
 
   const getDateError = (index: number): string | undefined => {
     return get(errors, `${namePrefix}.${fieldPath}.value.${index}.date`)?.message;
@@ -137,7 +118,7 @@ export function DeadlineArrayField({
           return 'Must be after previous early deadline';
         }
       }
-      if (index === 0 && releaseDate?.isEnabled && releaseDate.value) {
+      if (releaseDate?.isEnabled && releaseDate.value) {
         if (deadlineDate < new Date(releaseDate.value)) {
           return 'Must be after release date';
         }
@@ -162,9 +143,9 @@ export function DeadlineArrayField({
   const validateCredit = (value: unknown) => {
     const numValue = value as number;
     if (isEarly) {
-      if (numValue < 101 || numValue > 200) return 'Must be 101-200%';
+      if (numValue < 101 || numValue > 200) return 'Credit must be 101-200%';
     } else {
-      if (numValue < 0 || numValue > 99) return 'Must be 0-99%';
+      if (numValue < 0 || numValue > 99) return 'Credit must be 0-99%';
     }
     return true;
   };
@@ -204,15 +185,13 @@ export function DeadlineArrayField({
 
   const headerContent = (
     <div className="d-flex justify-content-between align-items-center" style={{ flex: 1 }}>
-      <div className="d-flex align-items-center">
-        <Form.Check
-          type="checkbox"
-          className="me-2"
-          checked={field.isEnabled}
-          onChange={({ currentTarget }) => toggleEnabled(currentTarget.checked)}
-        />
-        <strong>{label}</strong>
-      </div>
+      <Form.Check
+        type="checkbox"
+        id={`${namePrefix}-${type}-deadlines-enabled`}
+        label={<strong>{label}</strong>}
+        checked={field.isEnabled}
+        onChange={({ currentTarget }) => toggleEnabled(currentTarget.checked)}
+      />
       <Button size="sm" variant="outline-primary" disabled={!field.isEnabled} onClick={addDeadline}>
         Add {isEarly ? 'early' : 'late'}
       </Button>
@@ -228,38 +207,66 @@ export function DeadlineArrayField({
               <Col md={6}>
                 <Form.Control
                   type="datetime-local"
+                  aria-label={`${isEarly ? 'Early' : 'Late'} deadline ${index + 1} date`}
+                  aria-invalid={!!getDateError(index)}
+                  aria-errormessage={
+                    getDateError(index)
+                      ? `${namePrefix}-${type}-deadline-${index}-date-error`
+                      : undefined
+                  }
                   placeholder="Deadline Date"
-                  {...control.register(
-                    getFieldName(namePrefix, `${fieldPath}.value.${index}.date`),
-                    {
-                      validate: (value) => validateDate(value, index),
-                    },
-                  )}
+                  {...register(getFieldName(namePrefix, `${fieldPath}.value.${index}.date`), {
+                    validate: (value) => validateDate(value, index),
+                  })}
                 />
                 {getDateError(index) && (
-                  <Form.Text className="text-danger">{getDateError(index)}</Form.Text>
+                  <Form.Text
+                    id={`${namePrefix}-${type}-deadline-${index}-date-error`}
+                    className="text-danger"
+                    role="alert"
+                  >
+                    {getDateError(index)}
+                  </Form.Text>
                 )}
               </Col>
               <Col md={4}>
                 <InputGroup>
                   <Form.Control
                     type="number"
+                    aria-label={`${isEarly ? 'Early' : 'Late'} deadline ${index + 1} credit percentage`}
+                    aria-invalid={!!getCreditError(index)}
+                    aria-errormessage={
+                      getCreditError(index)
+                        ? `${namePrefix}-${type}-deadline-${index}-credit-error`
+                        : undefined
+                    }
                     placeholder="Credit"
                     min={isEarly ? '101' : '0'}
                     max={isEarly ? '200' : '99'}
-                    {...control.register(
-                      getFieldName(namePrefix, `${fieldPath}.value.${index}.credit`),
-                      { valueAsNumber: true, validate: validateCredit },
-                    )}
+                    {...register(getFieldName(namePrefix, `${fieldPath}.value.${index}.credit`), {
+                      valueAsNumber: true,
+                      validate: validateCredit,
+                    })}
                   />
                   <InputGroup.Text>%</InputGroup.Text>
                 </InputGroup>
                 {getCreditError(index) && (
-                  <Form.Text className="text-danger">{getCreditError(index)}</Form.Text>
+                  <Form.Text
+                    id={`${namePrefix}-${type}-deadline-${index}-credit-error`}
+                    className="text-danger"
+                    role="alert"
+                  >
+                    {getCreditError(index)}
+                  </Form.Text>
                 )}
               </Col>
               <Col md={2} className="d-flex align-items-start">
-                <Button size="sm" variant="outline-danger" onClick={() => removeDeadline(index)}>
+                <Button
+                  size="sm"
+                  variant="outline-danger"
+                  aria-label={`Remove ${isEarly ? 'early' : 'late'} deadline ${index + 1}`}
+                  onClick={() => removeDeadline(index)}
+                >
                   <i className="bi bi-trash" aria-hidden="true" />
                 </Button>
               </Col>

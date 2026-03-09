@@ -1,4 +1,4 @@
-import { Badge, Button, Card, Table } from 'react-bootstrap';
+import { Alert, Badge, Button, Card, Table } from 'react-bootstrap';
 
 import {
   getCourseInstanceStudentLabelsUrl,
@@ -32,7 +32,7 @@ interface DateTableRow {
   visibility: string;
 }
 
-function generateDateTableRows(
+export function generateDateTableRows(
   rule: AccessControlRuleFormData,
   verbosity: SummaryVerbosity = 'compact',
 ): DateTableRow[] {
@@ -175,7 +175,7 @@ function generateDateTableRows(
   return rows;
 }
 
-function generateRuleSummary(
+export function generateRuleSummary(
   rule: AccessControlRuleFormData,
   verbosity: SummaryVerbosity = 'compact',
 ): string[] {
@@ -241,6 +241,7 @@ interface RuleSummaryCardProps {
   editUrl?: string;
   onEdit?: () => void;
   courseInstanceId: string;
+  errors?: string[];
   onEditStudentLabels?: () => void;
   onRemove?: () => void;
   dragHandleProps?: Record<string, unknown>;
@@ -254,6 +255,7 @@ export function RuleSummaryCard({
   editUrl,
   onEdit,
   courseInstanceId,
+  errors,
   onEditStudentLabels,
   dragHandleProps,
 }: RuleSummaryCardProps) {
@@ -320,6 +322,16 @@ export function RuleSummaryCard({
         </div>
       </Card.Header>
       <Card.Body>
+        {errors && errors.length > 0 && (
+          <Alert variant="danger" className="mb-3">
+            <ul className="mb-0">
+              {errors.map((msg) => (
+                <li key={msg}>{msg}</li>
+              ))}
+            </ul>
+          </Alert>
+        )}
+
         {dateTableRows.length > 0 && (
           <div className="mb-3">
             <strong className="d-block mb-2">Deadlines</strong>

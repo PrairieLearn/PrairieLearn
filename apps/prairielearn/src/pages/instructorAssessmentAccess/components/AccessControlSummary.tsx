@@ -9,10 +9,10 @@ import {
 } from '@dnd-kit/core';
 import { SortableContext, useSortable, verticalListSortingStrategy } from '@dnd-kit/sortable';
 import { CSS } from '@dnd-kit/utilities';
-import { Fragment, useMemo } from 'react';
-import { Button } from 'react-bootstrap';
+import { Fragment, useId, useMemo } from 'react';
+import { Alert, Button, Table } from 'react-bootstrap';
 
-import { RuleSummaryCard } from './RuleSummary.js';
+import { RuleSummaryCard, generateDateTableRows, generateRuleSummary } from './RuleSummary.js';
 import type { AccessControlRuleFormData } from './types.js';
 
 interface SortableOverrideCardProps {
@@ -20,6 +20,7 @@ interface SortableOverrideCardProps {
   override: AccessControlRuleFormData;
   title: string;
   courseInstanceId: string;
+  errors?: string[];
   onEdit: () => void;
   onRemove: () => void;
 }
@@ -29,6 +30,7 @@ function SortableOverrideCard({
   override,
   title,
   courseInstanceId,
+  errors,
   onEdit,
   onRemove,
 }: SortableOverrideCardProps) {
@@ -49,10 +51,58 @@ function SortableOverrideCard({
         isMainRule={false}
         title={title}
         courseInstanceId={courseInstanceId}
+        errors={errors}
         dragHandleProps={{ ...attributes, ...listeners }}
         onEdit={onEdit}
         onRemove={onRemove}
       />
+    </div>
+  );
+}
+
+function MainRuleSummaryContent({ rule }: { rule: AccessControlRuleFormData }) {
+  const summaryLines = generateRuleSummary(rule, 'compact');
+  const dateTableRows = generateDateTableRows(rule, 'compact');
+
+  return (
+    <div>
+      {dateTableRows.length > 0 && (
+        <div className="mb-3">
+          <Table size="sm" className="mb-0" bordered>
+            <thead className="table-light">
+              <tr>
+                <th>Date</th>
+                <th>Credit</th>
+                <th>Visibility</th>
+              </tr>
+            </thead>
+            <tbody>
+              {dateTableRows.map((row) => (
+                <tr key={`${row.date}-${row.label}-${row.credit}-${row.visibility}`}>
+                  <td>
+                    {row.label && <span className="text-muted me-1">{row.label}:</span>}
+                    {row.date}
+                  </td>
+                  <td>{row.credit}</td>
+                  <td>{row.visibility}</td>
+                </tr>
+              ))}
+            </tbody>
+          </Table>
+        </div>
+      )}
+
+      {summaryLines.length > 0 && (
+        <ul className="mb-0 ps-3">
+          {summaryLines.map((line) => (
+            <li key={line}>{line}</li>
+          ))}
+        </ul>
+      )}
+
+      {dateTableRows.length === 0 && summaryLines.length === 0 && (
+        <p className="text-muted mb-0">No specific settings configured</p>
+      )}
     </div>
   );
 }
@@ -62,6 +112,8 @@ interface AccessControlSummaryProps {
   overrides: AccessControlRuleFormData[];
   /** Get the display name for an override by index */
   getOverrideName: (index: number) => string;
+  mainRuleErrors?: string[];
+  getOverrideErrors?: (index: number) => string[];
   onAddOverride: () => void;
   onRemoveOverride: (index: number) => void;
   onMoveOverride: (fromIndex: number, toIndex: number) => void;
@@ -77,6 +129,8 @@ export function AccessControlSummary({
   mainRule,
   overrides,
   getOverrideName,
+  mainRuleErrors,
+  getOverrideErrors,
   onAddOverride,
   onRemoveOverride,
   onMoveOverride,
@@ -84,6 +138,7 @@ export function AccessControlSummary({
   onEditOverride,
   courseInstanceId,
 }: AccessControlSummaryProps) {
+  const dndId = useId();
   const sensors = useSensors(
     useSensor(PointerSensor, { activationConstraint: { distance: 6 } }),
     useSensor(KeyboardSensor),
@@ -112,14 +167,24 @@ export function AccessControlSummary({
   return (
     <div>
       <section className="mb-4">
-        <h5 className="mb-3">Main rule</h5>
-        <RuleSummaryCard
-          rule={mainRule}
-          isMainRule={true}
-          title="Main access control rule"
-          courseInstanceId={courseInstanceId}
-          onEdit={onEditMainRule}
-        />
+        <div className="d-flex justify-content-between align-items-center mb-3">
+          <h5 className="mb-0">Main rule</h5>
+          <Button variant="outline-primary" size="sm" onClick={onEditMainRule}>
+            <i className="bi bi-pencil me-1" /> Edit
+          </Button>
+        </div>
+
+        {mainRuleErrors && mainRuleErrors.length > 0 && (
+          <Alert variant="danger" className="mb-3">
+            <ul className="mb-0">
+              {mainRuleErrors.map((msg) => (
+                <li key={msg}>{msg}</li>
+              ))}
+            </ul>
+          </Alert>
+        )}
+
+        <MainRuleSummaryContent rule={mainRule} />
       </section>
 
       <section>
@@ -137,6 +202,7 @@ export function AccessControlSummary({
           </p>
         ) : (
           <DndContext
+            id={dndId}
             sensors={sensors}
             collisionDetection={closestCenter}
             onDragEnd={handleDragEnd}
@@ -167,6 +233,7 @@ export function AccessControlSummary({
                       override={override}
                       title={getOverrideName(index)}
                       courseInstanceId={courseInstanceId}
+                      errors={getOverrideErrors?.(index)}
                       onEdit={() => onEditOverride(index)}
                       onRemove={() => onRemoveOverride(index)}
                     />
