@@ -83,6 +83,9 @@ router.get(
       res.locals,
     );
 
+    const showLegacy = !editorEnabled || req.query.view === 'legacy';
+    const showEditor = editorEnabled && !showLegacy;
+
     const pageContext = extractPageContext(res.locals, {
       pageType: 'assessment',
       accessType: 'instructor',
@@ -102,6 +105,20 @@ router.get(
 
     const search = getUrl(req).search;
 
+    // Build toggle link that adds/removes the `view=legacy` query parameter.
+    const toggleUrl = (() => {
+      if (!editorEnabled) return null;
+      const url = getUrl(req);
+      const params = new URLSearchParams(url.search);
+      if (showEditor) {
+        params.set('view', 'legacy');
+      } else {
+        params.delete('view');
+      }
+      const qs = params.toString();
+      return `${url.pathname}${qs ? `?${qs}` : ''}`;
+    })();
+
     res.send(
       PageLayout({
         resLocals: res.locals,
@@ -117,11 +134,11 @@ router.get(
         },
         options: {
           fullWidth: true,
-          contentPadding: !editorEnabled,
+          contentPadding: !showEditor,
         },
         content: (
           <Hydrate>
-            {editorEnabled ? (
+            {showEditor ? (
               <AssessmentQuestionsEditor
                 course={pageContext.course}
                 courseInstance={pageContext.course_instance}
@@ -134,6 +151,7 @@ router.get(
                 origHash={origHash}
                 trpcCsrfToken={trpcCsrfToken}
                 search={search}
+                switchViewUrl={toggleUrl}
               />
             ) : (
               <InstructorAssessmentQuestionsTableLegacy
@@ -148,6 +166,7 @@ router.get(
                   pageContext.authz_data.has_course_instance_permission_edit ?? false
                 }
                 csrfToken={res.locals.__csrf_token}
+                switchViewUrl={toggleUrl}
               />
             )}
           </Hydrate>

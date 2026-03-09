@@ -1,4 +1,5 @@
 import clsx from 'clsx';
+import { useState } from 'react';
 import type {
   FieldError,
   FieldErrors,
@@ -94,6 +95,17 @@ export function AdvancedFields({
   const watchedForceMaxPoints = inheritance.watch('forceMaxPoints');
   const watchedAllowRealTimeGrading = inheritance.watch('allowRealTimeGrading');
 
+  // Track which inheritable fields are in "override" mode. Initialized from
+  // the form values at mount; toggled only by Override/Reset buttons. This
+  // prevents the field from switching back to inherited mode when the user
+  // clears it via backspace.
+  const [overriddenFields, setOverriddenFields] = useState(() => ({
+    advanceScorePerc: watchedAdvanceScorePerc !== undefined,
+    gradeRateMinutes: watchedGradeRateMinutes !== undefined,
+    forceMaxPoints: watchedForceMaxPoints !== undefined,
+    allowRealTimeGrading: watchedAllowRealTimeGrading !== undefined,
+  }));
+
   // In view mode, hide entire section if all effective values are null
   if (!editMode) {
     const effectiveAdvanceScorePerc = watchedAdvanceScorePerc ?? inheritance.parentAdvanceScorePerc;
@@ -114,7 +126,7 @@ export function AdvancedFields({
 
   const renderAdvanceScorePerc = () => {
     if (inheritance.parentAdvanceScorePerc != null) {
-      const isInherited = watchedAdvanceScorePerc === undefined;
+      const isInherited = !overriddenFields.advanceScorePerc;
       return (
         <InheritableField
           id={`${idPrefix}-advanceScorePerc`}
@@ -135,13 +147,17 @@ export function AdvancedFields({
           inheritedValueLabel={String(inheritance.parentAdvanceScorePerc)}
           inheritedFromLabel={inheritance.advanceScorePercFromLabel}
           showResetButton={!isInherited}
-          onOverride={() =>
+          onOverride={() => {
+            setOverriddenFields((prev) => ({ ...prev, advanceScorePerc: true }));
             inheritance.setValue('advanceScorePerc', inheritance.parentAdvanceScorePerc, {
               shouldDirty: true,
               shouldValidate: true,
-            })
-          }
-          onReset={() => inheritance.resetAndSave('advanceScorePerc')}
+            });
+          }}
+          onReset={() => {
+            setOverriddenFields((prev) => ({ ...prev, advanceScorePerc: false }));
+            inheritance.resetAndSave('advanceScorePerc');
+          }}
         />
       );
     }
@@ -173,7 +189,7 @@ export function AdvancedFields({
 
   const renderGradeRateMinutes = () => {
     if (inheritance.parentGradeRateMinutes != null) {
-      const isInherited = watchedGradeRateMinutes === undefined;
+      const isInherited = !overriddenFields.gradeRateMinutes;
       return (
         <InheritableField
           id={`${idPrefix}-gradeRateMinutes`}
@@ -194,13 +210,17 @@ export function AdvancedFields({
           inheritedValueLabel={String(inheritance.parentGradeRateMinutes)}
           inheritedFromLabel={inheritance.gradeRateMinutesFromLabel}
           showResetButton={!isInherited}
-          onOverride={() =>
+          onOverride={() => {
+            setOverriddenFields((prev) => ({ ...prev, gradeRateMinutes: true }));
             inheritance.setValue('gradeRateMinutes', inheritance.parentGradeRateMinutes, {
               shouldDirty: true,
               shouldValidate: true,
-            })
-          }
-          onReset={() => inheritance.resetAndSave('gradeRateMinutes')}
+            });
+          }}
+          onReset={() => {
+            setOverriddenFields((prev) => ({ ...prev, gradeRateMinutes: false }));
+            inheritance.resetAndSave('gradeRateMinutes');
+          }}
         />
       );
     }
@@ -232,7 +252,7 @@ export function AdvancedFields({
 
   const renderForceMaxPoints = () => {
     if (inheritance.parentForceMaxPoints != null) {
-      const isInherited = watchedForceMaxPoints === undefined;
+      const isInherited = !overriddenFields.forceMaxPoints;
       return (
         <InheritableCheckboxField
           id={`${idPrefix}-forceMaxPoints`}
@@ -245,12 +265,16 @@ export function AdvancedFields({
           viewValue={!isInherited ? !!watchedForceMaxPoints : undefined}
           registerProps={register('forceMaxPoints', { setValueAs: coerceToBoolean })}
           showResetButton={!isInherited}
-          onOverride={() =>
+          onOverride={() => {
+            setOverriddenFields((prev) => ({ ...prev, forceMaxPoints: true }));
             inheritance.setValue('forceMaxPoints', inheritance.parentForceMaxPoints, {
               shouldDirty: true,
-            })
-          }
-          onReset={() => inheritance.resetAndSave('forceMaxPoints')}
+            });
+          }}
+          onReset={() => {
+            setOverriddenFields((prev) => ({ ...prev, forceMaxPoints: false }));
+            inheritance.resetAndSave('forceMaxPoints');
+          }}
         />
       );
     }
@@ -278,7 +302,7 @@ export function AdvancedFields({
 
   const renderAllowRealTimeGrading = () => {
     if (inheritance.parentAllowRealTimeGrading != null) {
-      const isInherited = watchedAllowRealTimeGrading === undefined;
+      const isInherited = !overriddenFields.allowRealTimeGrading;
       return (
         <InheritableCheckboxField
           id={`${idPrefix}-allowRealTimeGrading`}
@@ -291,12 +315,16 @@ export function AdvancedFields({
           viewValue={!isInherited ? !!watchedAllowRealTimeGrading : undefined}
           registerProps={register('allowRealTimeGrading', { setValueAs: coerceToBoolean })}
           showResetButton={!isInherited}
-          onOverride={() =>
+          onOverride={() => {
+            setOverriddenFields((prev) => ({ ...prev, allowRealTimeGrading: true }));
             inheritance.setValue('allowRealTimeGrading', inheritance.parentAllowRealTimeGrading, {
               shouldDirty: true,
-            })
-          }
-          onReset={() => inheritance.resetAndSave('allowRealTimeGrading')}
+            });
+          }}
+          onReset={() => {
+            setOverriddenFields((prev) => ({ ...prev, allowRealTimeGrading: false }));
+            inheritance.resetAndSave('allowRealTimeGrading');
+          }}
         />
       );
     }

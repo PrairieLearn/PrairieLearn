@@ -23,7 +23,9 @@ export function ChangeIndicatorBadges({
     <>
       {editMode && changeTracking.newIds.has(trackingId) && (
         <OverlayTrigger placement="top" tooltip={{ props: { id: changeTooltipId }, body: 'New' }}>
-          <span className="text-primary ms-1">●</span>
+          <span className="text-primary ms-1" role="img" aria-label="New">
+            ●
+          </span>
         </OverlayTrigger>
       )}
       {editMode && changeTracking.modifiedIds.has(trackingId) && (
@@ -31,7 +33,9 @@ export function ChangeIndicatorBadges({
           placement="top"
           tooltip={{ props: { id: changeTooltipId }, body: 'Modified' }}
         >
-          <span className="text-primary ms-1">●</span>
+          <span className="text-primary ms-1" role="img" aria-label="Modified">
+            ●
+          </span>
         </OverlayTrigger>
       )}
       {isRenderableComment(comment) && (
