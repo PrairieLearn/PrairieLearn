@@ -307,6 +307,7 @@ export const ZoneAssessmentJsonSchema = z.object({
   comments: CommentJsonSchema.optional().describe('DEPRECATED -- do not use.'),
   maxPoints: z
     .number()
+    .gte(0)
     .describe(
       'Only this many of the points that are awarded for answering questions in this zone will count toward the total points.',
     )
@@ -410,12 +411,14 @@ export const AssessmentJsonSchema = z
     text: z.string().describe('HTML text shown on the assessment overview page.').optional(),
     maxPoints: z
       .number()
+      .gte(0)
       .describe(
         'The number of points that must be earned in this assessment to achieve a score of 100%.',
       )
       .optional(),
     maxBonusPoints: z
       .number()
+      .gte(0)
       .describe('The maximum number of additional points that can be earned beyond maxPoints.')
       .optional(),
     allowPersonalNotes: z

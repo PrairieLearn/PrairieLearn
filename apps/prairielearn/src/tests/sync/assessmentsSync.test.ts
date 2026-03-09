@@ -1941,6 +1941,220 @@ describe('Assessment syncing', () => {
     );
   });
 
+  it('records a warning if autoPoints exceeds maxAutoPoints on a Homework assessment', async () => {
+    const courseData = util.getCourseData();
+    const assessment = makeAssessment(courseData, 'Homework');
+    assessment.zones?.push({
+      title: 'test zone',
+      questions: [
+        {
+          id: util.QUESTION_ID,
+          autoPoints: 15,
+          maxAutoPoints: 10,
+        },
+      ],
+    });
+    courseData.courseInstances[util.COURSE_INSTANCE_ID].assessments['warn'] = assessment;
+    await util.writeAndSyncCourseData(courseData);
+    const syncedAssessment = await findSyncedAssessment('warn');
+    assert.isNotNull(syncedAssessment.sync_warnings);
+    assert.match(
+      syncedAssessment.sync_warnings,
+      /"autoPoints" \(15\) should not exceed "maxAutoPoints" \(10\)/,
+    );
+  });
+
+  it('records a warning if points exceeds maxPoints on a Homework assessment', async () => {
+    const courseData = util.getCourseData();
+    const assessment = makeAssessment(courseData, 'Homework');
+    assessment.zones?.push({
+      title: 'test zone',
+      questions: [
+        {
+          id: util.QUESTION_ID,
+          points: 20,
+          maxPoints: 10,
+        },
+      ],
+    });
+    courseData.courseInstances[util.COURSE_INSTANCE_ID].assessments['warn'] = assessment;
+    await util.writeAndSyncCourseData(courseData);
+    const syncedAssessment = await findSyncedAssessment('warn');
+    assert.isNotNull(syncedAssessment.sync_warnings);
+    assert.match(
+      syncedAssessment.sync_warnings,
+      /"points" \(20\) should not exceed "maxPoints" \(10\)/,
+    );
+  });
+
+  it('does not produce a warning when autoPoints equals maxAutoPoints on a Homework assessment', async () => {
+    const courseData = util.getCourseData();
+    const assessment = makeAssessment(courseData, 'Homework');
+    assessment.zones?.push({
+      title: 'test zone',
+      questions: [
+        {
+          id: util.QUESTION_ID,
+          autoPoints: 10,
+          maxAutoPoints: 10,
+        },
+      ],
+    });
+    courseData.courseInstances[util.COURSE_INSTANCE_ID].assessments['ok'] = assessment;
+    await util.writeAndSyncCourseData(courseData);
+    const syncedAssessment = await findSyncedAssessment('ok');
+    assert.isNotOk(syncedAssessment.sync_warnings);
+  });
+
+  it('records a warning if bestQuestions exceeds numberChoose on a zone', async () => {
+    const courseData = util.getCourseData();
+    const assessment = makeAssessment(courseData);
+    assessment.zones?.push({
+      title: 'test zone',
+      numberChoose: 1,
+      bestQuestions: 3,
+      questions: [
+        { id: util.QUESTION_ID, points: 10 },
+        { id: util.ALTERNATIVE_QUESTION_ID, points: 10 },
+        { id: util.MANUAL_GRADING_QUESTION_ID, points: 10 },
+      ],
+    });
+    courseData.courseInstances[util.COURSE_INSTANCE_ID].assessments['warn'] = assessment;
+    await util.writeAndSyncCourseData(courseData);
+    const syncedAssessment = await findSyncedAssessment('warn');
+    assert.isNotNull(syncedAssessment.sync_warnings);
+    assert.match(
+      syncedAssessment.sync_warnings,
+      /"bestQuestions" \(3\) should not exceed "numberChoose" \(1\)/,
+    );
+  });
+
+  it('records a warning if zone numberChoose exceeds the number of questions', async () => {
+    const courseData = util.getCourseData();
+    const assessment = makeAssessment(courseData);
+    assessment.zones?.push({
+      title: 'test zone',
+      numberChoose: 5,
+      questions: [
+        { id: util.QUESTION_ID, points: 10 },
+        { id: util.ALTERNATIVE_QUESTION_ID, points: 10 },
+      ],
+    });
+    courseData.courseInstances[util.COURSE_INSTANCE_ID].assessments['warn'] = assessment;
+    await util.writeAndSyncCourseData(courseData);
+    const syncedAssessment = await findSyncedAssessment('warn');
+    assert.isNotNull(syncedAssessment.sync_warnings);
+    assert.match(
+      syncedAssessment.sync_warnings,
+      /"numberChoose" \(5\) exceeds the number of questions in the zone \(2\)/,
+    );
+  });
+
+  it('records a warning if zone bestQuestions exceeds the number of questions', async () => {
+    const courseData = util.getCourseData();
+    const assessment = makeAssessment(courseData);
+    assessment.zones?.push({
+      title: 'test zone',
+      bestQuestions: 5,
+      questions: [
+        { id: util.QUESTION_ID, points: 10 },
+        { id: util.ALTERNATIVE_QUESTION_ID, points: 10 },
+      ],
+    });
+    courseData.courseInstances[util.COURSE_INSTANCE_ID].assessments['warn'] = assessment;
+    await util.writeAndSyncCourseData(courseData);
+    const syncedAssessment = await findSyncedAssessment('warn');
+    assert.isNotNull(syncedAssessment.sync_warnings);
+    assert.match(
+      syncedAssessment.sync_warnings,
+      /"bestQuestions" \(5\) exceeds the number of questions in the zone \(2\)/,
+    );
+  });
+
+  it('records a warning if alternative group numberChoose exceeds alternatives count', async () => {
+    const courseData = util.getCourseData();
+    const assessment = makeAssessment(courseData);
+    assessment.zones?.push({
+      title: 'test zone',
+      questions: [
+        {
+          numberChoose: 5,
+          points: 10,
+          alternatives: [{ id: util.QUESTION_ID }, { id: util.ALTERNATIVE_QUESTION_ID }],
+        },
+      ],
+    });
+    courseData.courseInstances[util.COURSE_INSTANCE_ID].assessments['warn'] = assessment;
+    await util.writeAndSyncCourseData(courseData);
+    const syncedAssessment = await findSyncedAssessment('warn');
+    assert.isNotNull(syncedAssessment.sync_warnings);
+    assert.match(
+      syncedAssessment.sync_warnings,
+      /"numberChoose" \(5\) exceeds the number of alternatives \(2\)/,
+    );
+  });
+
+  it('records a warning if zone numberChoose is 0', async () => {
+    const courseData = util.getCourseData();
+    const assessment = makeAssessment(courseData);
+    assessment.zones?.push({
+      title: 'test zone',
+      numberChoose: 0,
+      questions: [
+        { id: util.QUESTION_ID, points: 10 },
+        { id: util.ALTERNATIVE_QUESTION_ID, points: 10 },
+      ],
+    });
+    courseData.courseInstances[util.COURSE_INSTANCE_ID].assessments['warn'] = assessment;
+    await util.writeAndSyncCourseData(courseData);
+    const syncedAssessment = await findSyncedAssessment('warn');
+    assert.isNotNull(syncedAssessment.sync_warnings);
+    assert.match(
+      syncedAssessment.sync_warnings,
+      /"numberChoose" is 0, so no questions will be presented from this zone/,
+    );
+  });
+
+  it('records a warning if zone bestQuestions is 0', async () => {
+    const courseData = util.getCourseData();
+    const assessment = makeAssessment(courseData);
+    assessment.zones?.push({
+      title: 'test zone',
+      bestQuestions: 0,
+      questions: [
+        { id: util.QUESTION_ID, points: 10 },
+        { id: util.ALTERNATIVE_QUESTION_ID, points: 10 },
+      ],
+    });
+    courseData.courseInstances[util.COURSE_INSTANCE_ID].assessments['warn'] = assessment;
+    await util.writeAndSyncCourseData(courseData);
+    const syncedAssessment = await findSyncedAssessment('warn');
+    assert.isNotNull(syncedAssessment.sync_warnings);
+    assert.match(
+      syncedAssessment.sync_warnings,
+      /"bestQuestions" is 0, so no questions from this zone will count toward the total points/,
+    );
+  });
+
+  it('does not produce warnings for a valid zone configuration', async () => {
+    const courseData = util.getCourseData();
+    const assessment = makeAssessment(courseData);
+    assessment.zones?.push({
+      title: 'test zone',
+      numberChoose: 2,
+      bestQuestions: 1,
+      questions: [
+        { id: util.QUESTION_ID, points: 10 },
+        { id: util.ALTERNATIVE_QUESTION_ID, points: 10 },
+        { id: util.MANUAL_GRADING_QUESTION_ID, points: 10 },
+      ],
+    });
+    courseData.courseInstances[util.COURSE_INSTANCE_ID].assessments['ok'] = assessment;
+    await util.writeAndSyncCourseData(courseData);
+    const syncedAssessment = await findSyncedAssessment('ok');
+    assert.isNotOk(syncedAssessment.sync_warnings);
+  });
+
   it('records an error if an assessment directory is missing an infoAssessment.json file', async () => {
     const courseData = util.getCourseData();
     const courseDir = await util.writeCourseToTempDirectory(courseData);

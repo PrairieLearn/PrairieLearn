@@ -1387,9 +1387,42 @@ function validateAssessment({
             ) {
               errors.push('Cannot specify "autoPoints": 0 when "maxAutoPoints" > 0');
             }
+
+            if (
+              alternative.autoPoints != null &&
+              alternative.maxAutoPoints != null &&
+              !Array.isArray(alternative.autoPoints) &&
+              alternative.autoPoints > alternative.maxAutoPoints
+            ) {
+              warnings.push(
+                `"autoPoints" (${alternative.autoPoints}) should not exceed "maxAutoPoints" (${alternative.maxAutoPoints})`,
+              );
+            }
+
+            if (
+              alternative.points != null &&
+              alternative.maxPoints != null &&
+              !Array.isArray(alternative.points) &&
+              alternative.points > alternative.maxPoints
+            ) {
+              warnings.push(
+                `"points" (${alternative.points}) should not exceed "maxPoints" (${alternative.maxPoints})`,
+              );
+            }
           }
         }
       });
+
+      if (
+        !courseInstanceExpired &&
+        zoneQuestion.numberChoose != null &&
+        zoneQuestion.alternatives &&
+        zoneQuestion.numberChoose > zoneQuestion.alternatives.length
+      ) {
+        warnings.push(
+          `Alternative group: "numberChoose" (${zoneQuestion.numberChoose}) exceeds the number of alternatives (${zoneQuestion.alternatives.length})`,
+        );
+      }
     });
   });
 
@@ -1515,12 +1548,50 @@ function validateAssessment({
     errors.push('The first zone cannot have lockpoint: true');
   }
 
-  assessment.zones.forEach((zone) => {
+  assessment.zones.forEach((zone, zoneIndex) => {
     // A lockpoint zone with no questions would create a pointless barrier -
     // the student would have to cross a lockpoint with nothing to work on
     // in the zone, which is almost certainly a configuration mistake.
     if (zone.lockpoint && zone.numberChoose === 0) {
       errors.push('A lockpoint zone must include at least one selectable question');
+    }
+
+    if (!courseInstanceExpired) {
+      const zoneLabel = zone.title ?? `zone ${zoneIndex + 1}`;
+
+      if (
+        zone.bestQuestions != null &&
+        zone.numberChoose != null &&
+        zone.bestQuestions > zone.numberChoose
+      ) {
+        warnings.push(
+          `Zone "${zoneLabel}": "bestQuestions" (${zone.bestQuestions}) should not exceed "numberChoose" (${zone.numberChoose})`,
+        );
+      }
+
+      if (zone.numberChoose != null && zone.numberChoose > zone.questions.length) {
+        warnings.push(
+          `Zone "${zoneLabel}": "numberChoose" (${zone.numberChoose}) exceeds the number of questions in the zone (${zone.questions.length})`,
+        );
+      }
+
+      if (zone.bestQuestions != null && zone.bestQuestions > zone.questions.length) {
+        warnings.push(
+          `Zone "${zoneLabel}": "bestQuestions" (${zone.bestQuestions}) exceeds the number of questions in the zone (${zone.questions.length})`,
+        );
+      }
+
+      if (zone.numberChoose === 0 && !zone.lockpoint) {
+        warnings.push(
+          `Zone "${zoneLabel}": "numberChoose" is 0, so no questions will be presented from this zone`,
+        );
+      }
+
+      if (zone.bestQuestions === 0) {
+        warnings.push(
+          `Zone "${zoneLabel}": "bestQuestions" is 0, so no questions from this zone will count toward the total points`,
+        );
+      }
     }
   });
 
