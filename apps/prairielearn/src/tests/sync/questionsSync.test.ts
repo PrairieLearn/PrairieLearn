@@ -861,4 +861,66 @@ describe('Question syncing', () => {
     assert.match(syncedQuestion.sync_errors, /"sharePublicly" cannot be used/);
     assert.match(syncedQuestion.sync_errors, /"shareSourcePublicly" cannot be used/);
   });
+
+  describe('question preferences schema validation', () => {
+    it('syncs successfully with a valid preferences schema', async () => {
+      const courseData = util.getCourseData();
+      const courseDir = await util.writeCourseToTempDirectory(courseData);
+      await util.syncCourseData(courseDir);
+      const syncedQuestion = await findSyncedQuestion(util.PREFERENCES_QUESTION_ID);
+      assert.isNull(syncedQuestion.sync_errors);
+    });
+
+    it('fails with an error when a preferences field has an unknown type', async () => {
+      const courseData = util.getCourseData();
+      courseData.questions[util.PREFERENCES_QUESTION_ID].preferences = {
+        ...courseData.questions[util.PREFERENCES_QUESTION_ID].preferences,
+        badField: { type: 'invalid' as any, default: 'hello' as any },
+      };
+      const courseDir = await util.writeCourseToTempDirectory(courseData);
+      await util.syncCourseData(courseDir);
+      const syncedQuestion = await findSyncedQuestion(util.PREFERENCES_QUESTION_ID);
+      assert.isNotNull(syncedQuestion.sync_errors);
+      assert.match(syncedQuestion.sync_errors, /must have required property/);
+    });
+
+    it('fails with an error when a preferences field default has the wrong type', async () => {
+      const courseData = util.getCourseData();
+      courseData.questions[util.PREFERENCES_QUESTION_ID].preferences = {
+        ...courseData.questions[util.PREFERENCES_QUESTION_ID].preferences,
+        badNum: { type: 'number', default: 'not-a-number' as any },
+      };
+      const courseDir = await util.writeCourseToTempDirectory(courseData);
+      await util.syncCourseData(courseDir);
+      const syncedQuestion = await findSyncedQuestion(util.PREFERENCES_QUESTION_ID);
+      assert.isNotNull(syncedQuestion.sync_errors);
+      assert.match(syncedQuestion.sync_errors, /must have required property/);
+    });
+
+    it('fails with an error when a preferences field is missing its default value', async () => {
+      const courseData = util.getCourseData();
+      courseData.questions[util.PREFERENCES_QUESTION_ID].preferences = {
+        ...courseData.questions[util.PREFERENCES_QUESTION_ID].preferences,
+        noDefault: { type: 'string' } as any,
+      };
+      const courseDir = await util.writeCourseToTempDirectory(courseData);
+      await util.syncCourseData(courseDir);
+      const syncedQuestion = await findSyncedQuestion(util.PREFERENCES_QUESTION_ID);
+      assert.isNotNull(syncedQuestion.sync_errors);
+      assert.match(syncedQuestion.sync_errors, /must have required property 'default'/);
+    });
+
+    it('fails with an error when a preferences enum field default is not in the enum list', async () => {
+      const courseData = util.getCourseData();
+      courseData.questions[util.PREFERENCES_QUESTION_ID].preferences = {
+        ...courseData.questions[util.PREFERENCES_QUESTION_ID].preferences,
+        badEnum: { type: 'string', enum: ['a', 'b'], default: 'c' } as any,
+      };
+      const courseDir = await util.writeCourseToTempDirectory(courseData);
+      await util.syncCourseData(courseDir);
+      const syncedQuestion = await findSyncedQuestion(util.PREFERENCES_QUESTION_ID);
+      assert.isNotNull(syncedQuestion.sync_errors);
+      assert.match(syncedQuestion.sync_errors, /unrecognized_keys/);
+    });
+  });
 });
