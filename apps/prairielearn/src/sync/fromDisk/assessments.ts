@@ -599,21 +599,30 @@ export async function sync(
 }
 
 /**
- * Pre-validates preferences for local (non-shared) assessment questions and adds
- * errors to the assessment infofile. Must be called before assessment sets are
- * synced so that errors influence whether the "Unknown" fallback set is created.
+ * Pre-validates preferences for assessment questions and adds errors to the
+ * assessment infofile. Must be called before assessment sets are synced so that
+ * errors influence whether the "Unknown" fallback set is created.
  */
-export function preValidateAssessmentLocalPreferences(
+export function preValidateAssessmentPreferences(
   assessments: CourseInstanceData['assessments'],
   questions: Record<string, InfoFile<QuestionJson>>,
+  sharedQuestionPreferences: Record<string, QuestionPreferencesSchemaJson>,
 ): void {
   for (const assessment of Object.values(assessments)) {
     if (infofile.hasErrors(assessment) || !assessment.data) continue;
     for (const zone of assessment.data.zones) {
       for (const question of zone.questions) {
         const validate = (qid: string, preferences: QuestionPreferences | undefined) => {
-          if (qid.startsWith('@')) return;
-          const schema = questions[qid].data?.preferences ?? null;
+          let schema: QuestionPreferencesSchemaJson | null;
+          if (qid.startsWith('@')) {
+            schema = sharedQuestionPreferences[qid] ?? null;
+          } else {
+            const questionInfo = questions[qid];
+
+            // eslint-disable-next-line @typescript-eslint/no-unnecessary-condition
+            if (!questionInfo) return; // Missing QID will be caught later during assessment sync
+            schema = questionInfo.data?.preferences ?? null;
+          }
           const { errors } = mergeAndValidatePreferences(qid, schema, preferences);
           for (const error of errors) {
             infofile.addError(assessment, error);

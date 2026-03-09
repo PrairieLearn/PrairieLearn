@@ -264,7 +264,7 @@ async function makeAndInsertVariant({
   if (assessment_id) {
     const result = await selectPreferencesForAssessmentQuestion(assessment_id, question.id);
     if (result) {
-      preferences = result;
+      preferences = { ...preferences, ...result };
     }
   }
 

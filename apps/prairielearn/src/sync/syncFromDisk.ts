@@ -190,9 +190,13 @@ export async function syncDiskToSqlWithLock(
           questionIds,
         );
         sharedQuestionPreferencesByCi.set(ciid, prefs);
-        // Pre-validate local question preferences so that errors are present when
+        // Pre-validate question preferences so that errors are present when
         // assessment sets are synced (which influences whether "Unknown" is created).
-        syncAssessments.preValidateAssessmentLocalPreferences(ci.assessments, courseData.questions);
+        syncAssessments.preValidateAssessmentPreferences(
+          ci.assessments,
+          courseData.questions,
+          prefs,
+        );
       });
     });
 

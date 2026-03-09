@@ -95,9 +95,9 @@ describe('Database Schema Sync Test', () => {
         // throw an error with the diff
         throw new Error(
           `Database columns for table '${tableName}' do not match Zod schema keys.\n` +
-          extraColumnsDiff +
-          '\n' +
-          missingColumnsDiff,
+            extraColumnsDiff +
+            '\n' +
+            missingColumnsDiff,
         );
       }
     }

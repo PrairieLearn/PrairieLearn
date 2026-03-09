@@ -462,26 +462,26 @@ function checkData(data: Record<string, any>, origData: Record<string, any>, pha
   /**************************************************************************************************************************************/
   //                       property                 type      presentPhases                         changePhases
   /**************************************************************************************************************************************/
-  const err = checkProp('params', 'object', allPhases, ['generate', 'prepare', 'parse', 'grade'])
-    || checkProp('correct_answers', 'object', allPhases, ['generate', 'prepare', 'parse', 'grade'])
-    || checkProp('variant_seed', 'integer', allPhases, [])
-    || checkProp('options', 'object', allPhases, [])
-    || checkProp('preferences', 'object', allPhases, [])
-    || checkProp('submitted_answers', 'object', ['render', 'parse', 'grade'], ['parse', 'grade'])
-    || checkProp('format_errors', 'object', ['render', 'parse', 'grade', 'test'], ['parse', 'grade', 'test'])
-    || checkProp('raw_submitted_answers', 'object', ['render', 'parse', 'grade', 'test'], ['test'])
-    || checkProp('partial_scores', 'object', ['render', 'grade', 'test'], ['grade', 'test'])
-    || checkProp('score', 'number', ['render', 'grade', 'test'], ['grade', 'test'])
-    || checkProp('feedback', 'object', ['render', 'parse', 'grade', 'test'], ['grade', 'parse', 'test'])
-    || checkProp('editable', 'boolean', ['render'], [])
-    || checkProp('manual_grading', 'boolean', ['render'], [])
-    || checkProp('ai_grading', 'boolean', ['render'], [])
-    || checkProp('panel', 'string', ['render'], [])
-    || checkProp('num_valid_submissions', 'integer', ['render'], [])
-    || checkProp('gradable', 'boolean', ['parse', 'grade', 'test'], [])
-    || checkProp('filename', 'string', ['file'], [])
-    || checkProp('test_type', 'string', ['test'], [])
-    || checkProp('answers_names', 'object', ['prepare'], ['prepare']);
+  const err =   checkProp('params',                'object',  allPhases,                            ['generate', 'prepare', 'parse', 'grade'])
+             || checkProp('correct_answers',       'object',  allPhases,                            ['generate', 'prepare', 'parse', 'grade'])
+             || checkProp('variant_seed',          'integer', allPhases,                            [])
+             || checkProp('options',               'object',  allPhases,                            [])
+             || checkProp('preferences',           'object',  allPhases,                            [])
+             || checkProp('submitted_answers',     'object',  ['render', 'parse', 'grade'],         ['parse', 'grade'])
+             || checkProp('format_errors',         'object',  ['render', 'parse', 'grade', 'test'], ['parse', 'grade', 'test'])
+             || checkProp('raw_submitted_answers', 'object',  ['render', 'parse', 'grade', 'test'], ['test'])
+             || checkProp('partial_scores',        'object',  ['render', 'grade', 'test'],          ['grade', 'test'])
+             || checkProp('score',                 'number',  ['render', 'grade', 'test'],          ['grade', 'test'])
+             || checkProp('feedback',              'object',  ['render', 'parse', 'grade', 'test'], ['grade', 'parse', 'test'])
+             || checkProp('editable',              'boolean', ['render'],                           [])
+             || checkProp('manual_grading',        'boolean', ['render'],                           [])
+             || checkProp('ai_grading',            'boolean', ['render'],                           [])
+             || checkProp('panel',                 'string',  ['render'],                           [])
+             || checkProp('num_valid_submissions', 'integer', ['render'],                           [])
+             || checkProp('gradable',              'boolean', ['parse', 'grade', 'test'],           [])
+             || checkProp('filename',              'string',  ['file'],                             [])
+             || checkProp('test_type',             'string',  ['test'],                             [])
+             || checkProp('answers_names',         'object',  ['prepare'],                          ['prepare']);
   if (err) return err;
 
   const extraProps = difference(Object.keys(data), checked);

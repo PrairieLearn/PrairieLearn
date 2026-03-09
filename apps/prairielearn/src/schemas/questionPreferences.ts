@@ -49,6 +49,6 @@ const NumberEnumType = z
 
 const FieldSchema = z.union([StringType, NumberType, BooleanType, StringEnumType, NumberEnumType]);
 
-export const QuestionPreferencesSchemaJsonSchema = z.record(z.string(), FieldSchema);
+export const QuestionPreferencesSchemaJsonSchema = z.record(z.string().min(1), FieldSchema);
 
 export type QuestionPreferencesSchemaJson = z.infer<typeof QuestionPreferencesSchemaJsonSchema>;
