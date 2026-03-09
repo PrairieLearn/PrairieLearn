@@ -30,13 +30,16 @@
       "questions": [
         {
           "id": "demo/annotated/LectureVelocity/1-Introduction",
-          "points": 1,
+          "autoPoints": 1,
           "triesPerVariant": 2
         },
-        { "id": "demo/annotated/LectureVelocity/2-Derivative", "points": 1 },
+        {
+          "id": "demo/annotated/LectureVelocity/2-Derivative",
+          "autoPoints": 1
+        },
         {
           "id": "demo/annotated/LectureVelocity/4-KnowledgeTest",
-          "points": 2,
+          "autoPoints": 2,
           "triesPerVariant": 2
         }
       ]

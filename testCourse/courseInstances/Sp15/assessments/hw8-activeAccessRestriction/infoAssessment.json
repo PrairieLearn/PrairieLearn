@@ -5,9 +5,21 @@
   "set": "Homework",
   "number": "8",
   "allowAccess": [
-    { "startDate": "2020-01-01T00:00:01", "endDate": "2020-12-31T23:59:59", "credit": 100 },
-    { "startDate": "2030-01-01T00:00:01", "endDate": "2030-12-31T23:59:59", "credit": 75 },
-    { "startDate": "2000-01-01T00:00:01", "endDate": "2024-12-31T23:59:59", "active": false },
+    {
+      "startDate": "2020-01-01T00:00:01",
+      "endDate": "2020-12-31T23:59:59",
+      "credit": 100
+    },
+    {
+      "startDate": "2030-01-01T00:00:01",
+      "endDate": "2030-12-31T23:59:59",
+      "credit": 75
+    },
+    {
+      "startDate": "2000-01-01T00:00:01",
+      "endDate": "2024-12-31T23:59:59",
+      "active": false
+    },
     {
       "startDate": "2025-01-01T00:00:01",
       "endDate": "2039-12-31T23:59:59",
@@ -19,9 +31,20 @@
     {
       "title": "Main zone",
       "questions": [
-        { "id": "partialCredit1", "points": 10 },
-        { "id": "fossilFuelsRadio", "points": 2, "maxPoints": 10 },
-        { "id": "positionTimeGraph", "points": 2, "maxPoints": 10 }
+        {
+          "id": "partialCredit1",
+          "autoPoints": 10
+        },
+        {
+          "id": "fossilFuelsRadio",
+          "autoPoints": 2,
+          "maxAutoPoints": 10
+        },
+        {
+          "id": "positionTimeGraph",
+          "autoPoints": 2,
+          "maxAutoPoints": 10
+        }
       ]
     }
   ]

@@ -5,12 +5,23 @@
   "set": "Worksheet",
   "module": "AnotherModule",
   "number": "1",
-  "allowAccess": [{ "credit": 100 }],
+  "allowAccess": [
+    {
+      "credit": 100
+    }
+  ],
   "zones": [
     {
       "questions": [
-        { "id": "demo/demoNewton-page1", "points": 5, "advanceScorePerc": 50 },
-        { "id": "demo/demoNewton-page2", "points": 5 }
+        {
+          "id": "demo/demoNewton-page1",
+          "autoPoints": 5,
+          "advanceScorePerc": 50
+        },
+        {
+          "id": "demo/demoNewton-page2",
+          "autoPoints": 5
+        }
       ]
     }
   ]

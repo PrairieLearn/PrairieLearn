@@ -17,7 +17,12 @@
   "zones": [
     {
       "title": "Hard questions",
-      "questions": [{ "id": "positionTimeGraph", "points": [10] }]
+      "questions": [
+        {
+          "id": "positionTimeGraph",
+          "autoPoints": [10]
+        }
+      ]
     }
   ]
 }

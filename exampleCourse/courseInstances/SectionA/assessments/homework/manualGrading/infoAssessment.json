@@ -29,9 +29,21 @@
     {
       "title": "Unlimited question variants with one single attempt",
       "questions": [
-        { "id": "template/checkbox/random-prompt", "points": 1, "maxPoints": 6 },
-        { "id": "template/string-input/random", "points": 1, "maxPoints": 3 },
-        { "id": "template/symbolic-input/random", "points": 1, "maxPoints": 6 }
+        {
+          "id": "template/checkbox/random-prompt",
+          "autoPoints": 1,
+          "maxAutoPoints": 6
+        },
+        {
+          "id": "template/string-input/random",
+          "autoPoints": 1,
+          "maxAutoPoints": 3
+        },
+        {
+          "id": "template/symbolic-input/random",
+          "autoPoints": 1,
+          "maxAutoPoints": 6
+        }
       ]
     },
     {
@@ -39,23 +51,43 @@
       "questions": [
         {
           "id": "demo/annotated/engVectorDrawing",
-          "points": 2,
-          "maxPoints": 6,
+          "autoPoints": 2,
+          "maxAutoPoints": 6,
           "triesPerVariant": 2
         },
-        { "id": "demo/annotated/engBeamStress", "points": 2, "maxPoints": 6, "triesPerVariant": 3 }
+        {
+          "id": "demo/annotated/engBeamStress",
+          "autoPoints": 2,
+          "maxAutoPoints": 6,
+          "triesPerVariant": 3
+        }
       ]
     },
     {
       "title": "Single question variant with unlimited number of attempts",
-      "questions": [{ "id": "demo/annotated/engMarkovBrewing", "points": 8 }]
+      "questions": [
+        {
+          "id": "demo/annotated/engMarkovBrewing",
+          "autoPoints": 8
+        }
+      ]
     },
     {
       "title": "Manually graded questions",
       "questions": [
-        { "id": "demo/autograder/codeUpload", "autoPoints": 10, "manualPoints": 5 },
-        { "id": "demo/fileDownloadUpload", "points": 10 },
-        { "id": "demo/markdownEditorLivePreview", "points": 5 }
+        {
+          "id": "demo/autograder/codeUpload",
+          "autoPoints": 10,
+          "manualPoints": 5
+        },
+        {
+          "id": "demo/fileDownloadUpload",
+          "manualPoints": 10
+        },
+        {
+          "id": "demo/markdownEditorLivePreview",
+          "manualPoints": 5
+        }
       ]
     }
   ]

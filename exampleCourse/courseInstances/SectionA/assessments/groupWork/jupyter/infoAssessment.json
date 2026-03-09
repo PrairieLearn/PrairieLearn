@@ -12,14 +12,27 @@
   "studentGroupCreate": true,
   "studentGroupJoin": true,
   "studentGroupLeave": true,
-  "allowAccess": [{ "credit": 100 }],
+  "allowAccess": [
+    {
+      "credit": 100
+    }
+  ],
   "zones": [
     {
       "title": " How Markov chains work?",
       "questions": [
-        { "id": "demo/annotated/MarkovChainGroupActivity/MarkovChains-Intro", "points": 1 },
-        { "id": "demo/annotated/MarkovChainGroupActivity/MarkovChains-Gambler", "points": 1 },
-        { "id": "demo/annotated/MarkovChainGroupActivity/MarkovChains-PageRank", "points": 1 }
+        {
+          "id": "demo/annotated/MarkovChainGroupActivity/MarkovChains-Intro",
+          "autoPoints": 1
+        },
+        {
+          "id": "demo/annotated/MarkovChainGroupActivity/MarkovChains-Gambler",
+          "autoPoints": 1
+        },
+        {
+          "id": "demo/annotated/MarkovChainGroupActivity/MarkovChains-PageRank",
+          "autoPoints": 1
+        }
       ]
     }
   ],

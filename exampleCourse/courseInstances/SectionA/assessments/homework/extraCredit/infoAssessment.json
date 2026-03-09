@@ -32,29 +32,77 @@
       "title": "Fundamental questions",
       "bestQuestions": 2,
       "questions": [
-        { "id": "demo/calculation", "points": 1, "maxPoints": 3 },
-        { "id": "demo/randomCheckbox", "points": 1, "maxPoints": 3 },
-        { "id": "demo/randomPlot", "points": 1, "maxPoints": 3 },
-        { "id": "demo/randomFakeData", "points": 1, "maxPoints": 3 },
-        { "id": "demo/randomZippedFile", "points": 1, "maxPoints": 3 }
+        {
+          "id": "demo/calculation",
+          "autoPoints": 1,
+          "maxAutoPoints": 3
+        },
+        {
+          "id": "demo/randomCheckbox",
+          "autoPoints": 1,
+          "maxAutoPoints": 3
+        },
+        {
+          "id": "demo/randomPlot",
+          "autoPoints": 1,
+          "maxAutoPoints": 3
+        },
+        {
+          "id": "demo/randomFakeData",
+          "autoPoints": 1,
+          "maxAutoPoints": 3
+        },
+        {
+          "id": "demo/randomZippedFile",
+          "autoPoints": 1,
+          "maxAutoPoints": 3
+        }
       ]
     },
     {
       "title": "Intermediate questions",
       "maxPoints": 6,
       "questions": [
-        { "id": "demo/annotated/engCentroid", "points": 1, "maxPoints": 3 },
-        { "id": "demo/annotated/engLogic", "points": 1, "maxPoints": 3 },
-        { "id": "workshop/PeriodicTable1", "points": 1, "maxPoints": 3 }
+        {
+          "id": "demo/annotated/engCentroid",
+          "autoPoints": 1,
+          "maxAutoPoints": 3
+        },
+        {
+          "id": "demo/annotated/engLogic",
+          "autoPoints": 1,
+          "maxAutoPoints": 3
+        },
+        {
+          "id": "workshop/PeriodicTable1",
+          "autoPoints": 1,
+          "maxAutoPoints": 3
+        }
       ]
     },
     {
       "title": "Advanced questions",
       "questions": [
-        { "id": "demo/annotated/mathProof", "points": 3, "maxPoints": 3 },
-        { "id": "demo/computeNumber-fromDataFrame", "points": 1, "maxPoints": 6 },
-        { "id": "demo/computeNumber-fromArray", "points": 1, "maxPoints": 6 },
-        { "id": "demo/computeRotationMatrix", "points": 1, "maxPoints": 6 }
+        {
+          "id": "demo/annotated/mathProof",
+          "autoPoints": 3,
+          "maxAutoPoints": 3
+        },
+        {
+          "id": "demo/computeNumber-fromDataFrame",
+          "autoPoints": 1,
+          "maxAutoPoints": 6
+        },
+        {
+          "id": "demo/computeNumber-fromArray",
+          "autoPoints": 1,
+          "maxAutoPoints": 6
+        },
+        {
+          "id": "demo/computeRotationMatrix",
+          "autoPoints": 1,
+          "maxAutoPoints": 6
+        }
       ]
     }
   ],

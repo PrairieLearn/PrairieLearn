@@ -30,12 +30,36 @@
   "zones": [
     {
       "questions": [
-        { "id": "fossilFuelsRadio", "points": 2, "maxPoints": 10 },
-        { "id": "positionTimeGraph", "points": 2, "maxPoints": 10 },
-        { "id": "downloadFile", "points": 2, "maxPoints": 10 },
-        { "id": "differentiatePolynomial", "points": 2, "maxPoints": 10 },
-        { "id": "subfolder/nestedQuestion", "points": 2, "maxPoints": 10 },
-        { "id": "workspace", "points": 2, "maxPoints": 10 }
+        {
+          "id": "fossilFuelsRadio",
+          "autoPoints": 2,
+          "maxAutoPoints": 10
+        },
+        {
+          "id": "positionTimeGraph",
+          "autoPoints": 2,
+          "maxAutoPoints": 10
+        },
+        {
+          "id": "downloadFile",
+          "autoPoints": 2,
+          "maxAutoPoints": 10
+        },
+        {
+          "id": "differentiatePolynomial",
+          "autoPoints": 2,
+          "maxAutoPoints": 10
+        },
+        {
+          "id": "subfolder/nestedQuestion",
+          "autoPoints": 2,
+          "maxAutoPoints": 10
+        },
+        {
+          "id": "workspace",
+          "autoPoints": 2,
+          "maxAutoPoints": 10
+        }
       ]
     }
   ]

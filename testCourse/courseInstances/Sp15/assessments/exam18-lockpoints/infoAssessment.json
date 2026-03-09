@@ -1,6 +1,10 @@
 {
   "uuid": "3d4ef390-5e04-4a7d-9dce-6cf8f5c17311",
-  "allowAccess": [{ "credit": 100 }],
+  "allowAccess": [
+    {
+      "credit": 100
+    }
+  ],
   "type": "Exam",
   "title": "Exam with lockpoints",
   "set": "Exam",
@@ -11,7 +15,7 @@
       "questions": [
         {
           "id": "addNumbers",
-          "points": 10
+          "autoPoints": 10
         }
       ]
     },
@@ -21,7 +25,7 @@
       "questions": [
         {
           "id": "partialCredit3",
-          "points": 10
+          "autoPoints": 10
         }
       ]
     },
@@ -31,7 +35,7 @@
       "questions": [
         {
           "id": "orderBlocks",
-          "points": 10
+          "autoPoints": 10
         }
       ]
     }

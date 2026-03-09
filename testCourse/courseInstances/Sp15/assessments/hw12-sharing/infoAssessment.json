@@ -4,13 +4,25 @@
   "title": "Homework to demonstrate assessment sharing",
   "set": "Homework",
   "number": "12",
-  "allowAccess": [{ "credit": 100 }],
+  "allowAccess": [
+    {
+      "credit": 100
+    }
+  ],
   "shareSourcePublicly": true,
   "zones": [
     {
       "questions": [
-        { "id": "orderBlocks", "points": 2, "maxPoints": 6 },
-        { "id": "partialCredit1", "points": 2, "maxPoints": 6 }
+        {
+          "id": "orderBlocks",
+          "autoPoints": 2,
+          "maxAutoPoints": 6
+        },
+        {
+          "id": "partialCredit1",
+          "autoPoints": 2,
+          "maxAutoPoints": 6
+        }
       ]
     }
   ]
