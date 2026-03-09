@@ -55,7 +55,7 @@ function makeAssessment(
     number: '1',
     zones: [],
     allowAccess: [],
-    ...(preferences || {})
+    ...preferences
   };
 }
 
@@ -4330,7 +4330,7 @@ describe('Assessment syncing', () => {
     courseData.courseInstances[util.COURSE_INSTANCE_ID].assessments['prefFail'] = assessment;
     await util.writeAndSyncCourseData(courseData);
     const syncedAssessment = await findSyncedAssessment('prefFail');
-    assert.equal(syncedAssessment.sync_errors, `Question "test" does not define a preferences schema, but preferences were provided in the assessment`);
+    assert.equal(syncedAssessment.sync_errors, 'Question "test" does not define a preferences schema, but preferences were provided in the assessment');
   });
 
   it('uses question default values when preferences are not specified in the assessment', async () => {

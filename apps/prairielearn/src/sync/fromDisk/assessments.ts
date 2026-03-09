@@ -631,7 +631,7 @@ export function preValidateAssessmentLocalPreferences(
       for (const question of zone.questions) {
         const validate = (qid: string, preferences: QuestionPreferences | undefined) => {
           if (qid.startsWith('@')) return;
-          const schema = questions[qid]?.data?.preferences ?? null;
+          const schema = questions[qid].data?.preferences ?? null;
           const { errors } = mergeAndValidatePreferences(qid, schema, preferences);
           for (const error of errors) {
             infofile.addError(assessment, error);

@@ -229,13 +229,13 @@ const questions: Record<string, QuestionJsonInput> = {
     type: 'v3',
     preferences: {
       num: {
-        type: "number",
+        type: 'number',
         default: 42
       },
       str: {
-        type: "string",
-        enum: ["valid A", "valid B"],
-        default: "valid A"
+        type: 'string',
+        enum: ['valid A', 'valid B'],
+        default: 'valid A'
       }
     }
   },
@@ -296,11 +296,11 @@ export function getCourseData() {
 
 function getFakeLogger() {
   return {
-    verbose: () => { },
-    debug: () => { },
-    info: () => { },
-    warn: () => { },
-    error: () => { },
+    verbose: () => {},
+    debug: () => {},
+    info: () => {},
+    warn: () => {},
+    error: () => {},
   };
 }
 
