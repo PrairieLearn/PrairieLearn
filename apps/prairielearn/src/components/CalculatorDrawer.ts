@@ -81,7 +81,7 @@ export function CalculatorDrawer({ storageKey }: { storageKey: string }): HtmlSa
               <div class="history-row history-input d-flex align-items-center gap-2 border-top">
                 <math-field
                   theme="light"
-                  class="history-text flex-grow-1"
+                  class="history-text flex-grow-1 force-light"
                   contenteditable="false"
                 ></math-field>
                 <div
@@ -115,7 +115,7 @@ export function CalculatorDrawer({ storageKey }: { storageKey: string }): HtmlSa
               <div class="history-row history-output d-flex align-items-center gap-2 border-top">
                 <math-field
                   theme="light"
-                  class="history-text flex-grow-1"
+                  class="history-text flex-grow-1 force-light"
                   contenteditable="false"
                 ></math-field>
                 <button
@@ -141,7 +141,7 @@ export function CalculatorDrawer({ storageKey }: { storageKey: string }): HtmlSa
           <math-field
             theme="light"
             id="calculator-input"
-            class="pl-calculator-input flex-grow-1"
+            class="pl-calculator-input flex-grow-1 force-light"
             autofocus="autofocus"
             placeholder="\\mathrm{Use\\ keyboard\\ or\\ buttons\\ below\\ to\\ start}"
             autocomplete="off"
@@ -167,7 +167,7 @@ export function CalculatorDrawer({ storageKey }: { storageKey: string }): HtmlSa
           <math-field
             theme="light"
             id="calculator-output"
-            class="pl-calculator-output flex-grow-1"
+            class="pl-calculator-output flex-grow-1 force-light"
             contenteditable="false"
             placeholder="\\mathrm{Output\\ will\\ be\\ displayed\\ here}"
           >

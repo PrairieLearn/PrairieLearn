@@ -8,6 +8,73 @@ math-field::part(virtual-keyboard-toggle) {
   display: none;
 }
 
+/* Apparently theme="light" does not override prefers-color-scheme
+ * so we are manually overriding the relevant CSS variables to ensure
+ * the math field looks good in dark mode regardless of user preference.
+ * https://github.com/arnog/mathlive/blob/8342e1cb75e7828ef7cb092ef42887858215e669/css/mathfield.less
+ * https://github.com/arnog/mathlive/blob/8342e1cb75e7828ef7cb092ef42887858215e669/src/ui/colors/colors.less
+ */
+math-field.force-light {
+  --hue: 210;
+  --caret-color: hsl(var(--hue), 40%, 49%);
+  --selection-color: #000;
+  --selection-background-color: hsl(var(--hue), 70%, 85%);
+  --contains-highlight-background-color: hsl(var(--hue), 40%, 95%);
+  --contains-highlight-color: hsl(var(--hue), 40%, 49%);
+  --text-highlight-background-color: hsla(var(--hue), 40%, 50%, 0.1);
+  
+  /* override mathlive/css/mathfield.less */
+  --_contains-highlight-background-color: var(
+    --contains-highlight-background-color,
+    hsl(var(--_hue), 40%, 95%)
+  );
+  --_caret-color: var(--caret-color, hsl(var(--_hue), 40%, 49%));
+
+  --_selection-color: var(--selection-color, #000);
+  --_selection-background-color: var(
+    --selection-background-color,
+    hsl(var(--_hue), 70%, 85%)
+  );
+
+  --_text-highlight-background-color: var(
+    --highlight-text,
+    hsla(var(--_hue), 40%, 50%, 0.1)
+  );
+
+  --_contains-highlight-background-color: var(
+    --contains-highlight-background-color,
+    hsl(var(--_hue), 40%, 95%)
+  );
+
+  --_latex-color: var(--latex-color, hsl(var(--_hue), 80%, 40%));
+
+  --_composition-background-color: var(--composition-background-color, #fff1c2);
+  --_composition-text-color: var(--composition-text-color, black);
+  --_composition-underline-color: var(
+    --composition-underline-color,
+    transparent
+  );
+
+  --_smart-fence-color: var(--smart-fence-color, currentColor);
+  --_smart-fence-opacity: var(--smart-fence-opacity, 0.5);
+
+  /* override mathlive/src/ui/colors/colors.less */
+  --semantic-blue: var(--blue-700);
+  --semantic-red: var(--red-400);
+  --semantic-orange: var(--orange-400);
+  --semantic-green: var(--green-700);
+
+  --neutral-100: #f5f5f5;
+  --neutral-200: #eeeeee;
+  --neutral-300: #e0e0e0;
+  --neutral-400: #bdbdbd;
+  --neutral-500: #9e9e9e;
+  --neutral-600: #757575;
+  --neutral-700: #616161;
+  --neutral-800: #424242;
+  --neutral-900: #212121;
+}
+
 /* Disable MathJax click activation on calculator buttons while keeping keyboard a11y
  * TODO: Investigate if we can further improve this behavior.
  * See https://docs.mathjax.org/en/v4.0/upgrading/whats-new-4.0/explorer.html#exploring-expressions
