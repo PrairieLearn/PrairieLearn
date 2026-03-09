@@ -490,13 +490,16 @@ export function QuestionDetailPanel({
       />
 
       {/* Stats — shown in both modes */}
-      {questionData?.assessment_question.mean_question_score != null && (
-        <dl className="mb-0">
-          <dt>Mean score</dt>
-          <dd>{questionData.assessment_question.mean_question_score.toFixed(1)}%</dd>
-        </dl>
-      )}
-      {questionData?.assessment_question.number_submissions_hist && (
+      {questionData?.assessment_question.mean_question_score != null &&
+        questionData.assessment_question.some_submission_perc !== 0 && (
+          <dl className="mb-0">
+            <dt>Mean score</dt>
+            <dd>{questionData.assessment_question.mean_question_score.toFixed(1)}%</dd>
+          </dl>
+        )}
+      {questionData?.assessment_question.number_submissions_hist?.some(
+        (v, i) => i > 0 && v > 0,
+      ) && (
         <div className="mb-3">
           <div className="text-muted small mb-1">Submissions</div>
           <HistMini

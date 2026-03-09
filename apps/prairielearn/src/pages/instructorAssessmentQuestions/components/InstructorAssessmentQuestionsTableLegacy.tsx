@@ -195,12 +195,15 @@ export function InstructorAssessmentQuestionsTableLegacy({
                         </td>
                       )}
                       <td>
-                        {assessment_question.mean_question_score
+                        {assessment_question.mean_question_score != null &&
+                        assessment_question.some_submission_perc !== 0
                           ? `${assessment_question.mean_question_score.toFixed(3)}%`
                           : ''}
                       </td>
                       <td className="text-center">
-                        {assessment_question.number_submissions_hist ? (
+                        {assessment_question.number_submissions_hist?.some(
+                          (v, i) => i > 0 && v > 0,
+                        ) ? (
                           <HistMini
                             data={assessment_question.number_submissions_hist}
                             options={{ width: 60, height: 20 }}

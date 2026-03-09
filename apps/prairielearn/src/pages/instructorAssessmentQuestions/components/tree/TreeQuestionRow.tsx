@@ -284,14 +284,18 @@ export function TreeQuestionRow({
         {viewType === 'detailed' && questionData && (
           <>
             {(questionData.tags?.length ||
-              questionData.assessment_question.number_submissions_hist) && (
+              questionData.assessment_question.number_submissions_hist?.some(
+                (v, i) => i > 0 && v > 0,
+              )) && (
               <div className="d-flex flex-wrap align-items-center gap-1 mt-1">
                 {questionData.tags?.map((tag) => (
                   <span key={tag.name} className={`badge color-${tag.color}`}>
                     {tag.name}
                   </span>
                 ))}
-                {questionData.assessment_question.number_submissions_hist && (
+                {questionData.assessment_question.number_submissions_hist?.some(
+                  (v, i) => i > 0 && v > 0,
+                ) && (
                   <HistMini
                     data={questionData.assessment_question.number_submissions_hist}
                     options={{ width: 60, height: 20 }}
