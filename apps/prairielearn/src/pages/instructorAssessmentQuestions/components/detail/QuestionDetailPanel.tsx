@@ -736,7 +736,7 @@ function PointsFields({
       editMode={editMode}
       id={`${idPrefix}-manualPoints`}
       label="Manual points"
-      viewValue={isManualGrading ? undefined : viewManualPoints}
+      viewValue={manualPointsValue != null ? String(manualPointsValue) : undefined}
       error={errors.manualPoints}
       helpText="Points awarded for the manually graded component."
       hideWhenEmpty
