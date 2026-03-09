@@ -2,6 +2,7 @@ import { afterAll, assert, beforeAll, beforeEach, describe, expect, it } from 'v
 
 import { execute } from '@prairielearn/postgres';
 
+import { config } from '../lib/config.js';
 import { FeatureManager } from '../lib/features/manager.js';
 
 import * as helperCourse from './helperCourse.js';
@@ -148,6 +149,45 @@ describe('features', () => {
       options: {},
     });
     assert.isFalse(await features.enabled('test:example-feature-flag', context));
+  });
+
+  it('allows DB grants to override config-enabled features', async () => {
+    const features = new FeatureManager(['test:example-feature-flag']);
+
+    config.features = { 'test:example-feature-flag': true };
+    try {
+      // Config enables the feature globally.
+      assert.isTrue(await features.enabled('test:example-feature-flag'));
+
+      // A global DB disable should override the config.
+      await features.disable('test:example-feature-flag');
+      assert.isFalse(await features.enabled('test:example-feature-flag'));
+
+      // A scoped DB disable should also override the config for that scope.
+      await features.delete('test:example-feature-flag');
+      await features.disable('test:example-feature-flag', { institution_id: '1' });
+      assert.isFalse(await features.enabled('test:example-feature-flag', { institution_id: '1' }));
+      // But the config should still apply for contexts without a DB grant.
+      assert.isTrue(await features.enabled('test:example-feature-flag'));
+    } finally {
+      delete config.features['test:example-feature-flag'];
+    }
+  });
+
+  it('allows DB grants to override config-disabled features', async () => {
+    const features = new FeatureManager(['test:example-feature-flag']);
+
+    config.features = { 'test:example-feature-flag': false };
+    try {
+      // Config disables the feature globally.
+      assert.isFalse(await features.enabled('test:example-feature-flag'));
+
+      // A global DB enable should override the config.
+      await features.enable('test:example-feature-flag');
+      assert.isTrue(await features.enabled('test:example-feature-flag'));
+    } finally {
+      delete config.features['test:example-feature-flag'];
+    }
   });
 
   it('validates and typechecks feature flags', async () => {
