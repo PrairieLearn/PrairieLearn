@@ -82,11 +82,14 @@ function mergeAndValidatePreferences(
 
   if (!valid && validate.errors) {
     for (const error of validate.errors) {
-      const path = error.instancePath || '/';
+      const path = error.instancePath || '';
       let message = `Question "${qid}": preferences${path} ${error.message}`;
 
       if (error.keyword === 'enum' && error.params.allowedValues) {
         message += `: ${error.params.allowedValues.join(', ')}`;
+      }
+      if (error.keyword === 'additionalProperties' && error.params.additionalProperty) {
+        message += `: "${error.params.additionalProperty}"`;
       }
 
       errors.push(message);
