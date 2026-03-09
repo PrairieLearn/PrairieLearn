@@ -580,9 +580,12 @@
       ],
     };
 
-    mf.addEventListener('focus', () => {
+    const updateKeyboardLayout = () => {
       mathVirtualKeyboard.layouts = [elementKeyboardLayout, ...defaultKeyboardLayouts];
-    });
+    };
+
+    mf.addEventListener('focus', updateKeyboardLayout);
+    mf.addEventListener('selection-change', updateKeyboardLayout);
 
     setUpSymbolicInputMacros(mf);
 
