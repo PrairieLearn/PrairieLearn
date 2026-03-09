@@ -587,22 +587,25 @@ function CourseRequestApproveForm({
               <ReactMarkdown>{legitimacyData.summary}</ReactMarkdown>
             </small>
             {legitimacyData.sources.length > 0 && (
-              <div className="mt-1 d-flex flex-wrap gap-1">
-                {legitimacyData.sources
-                  .filter(
-                    (source, index, arr) => arr.findIndex((s) => s.url === source.url) === index,
-                  )
-                  .map((source) => (
-                    <a
-                      key={source.url}
-                      href={source.url}
-                      target="_blank"
-                      rel="noreferrer"
-                      className="small"
-                    >
-                      {source.title ?? source.url}
-                    </a>
-                  ))}
+              <div className="mt-1">
+                <span className="small text-muted">Sources</span>
+                <div className="d-flex flex-wrap gap-1">
+                  {legitimacyData.sources
+                    .filter(
+                      (source, index, arr) => arr.findIndex((s) => s.url === source.url) === index,
+                    )
+                    .map((source) => (
+                      <a
+                        key={source.url}
+                        href={source.url}
+                        target="_blank"
+                        rel="noreferrer"
+                        className="small"
+                      >
+                        {source.title ?? source.url}
+                      </a>
+                    ))}
+                </div>
               </div>
             )}
           </div>
@@ -637,22 +640,25 @@ function CourseRequestApproveForm({
             </div>
           )}
           {suggestedPrefixData && suggestedPrefixData.sources.length > 0 && (
-            <div className="mt-1 d-flex flex-wrap gap-1">
-              {suggestedPrefixData.sources
-                .filter(
-                  (source, index, arr) => arr.findIndex((s) => s.url === source.url) === index,
-                )
-                .map((source) => (
-                  <a
-                    key={source.url}
-                    href={source.url}
-                    target="_blank"
-                    rel="noreferrer"
-                    className="small"
-                  >
-                    {source.title ?? source.url}
-                  </a>
-                ))}
+            <div className="mt-1">
+              <span className="small text-muted">Sources</span>
+              <div className="d-flex flex-wrap gap-1">
+                {suggestedPrefixData.sources
+                  .filter(
+                    (source, index, arr) => arr.findIndex((s) => s.url === source.url) === index,
+                  )
+                  .map((source) => (
+                    <a
+                      key={source.url}
+                      href={source.url}
+                      target="_blank"
+                      rel="noreferrer"
+                      className="small"
+                    >
+                      {source.title ?? source.url}
+                    </a>
+                  ))}
+              </div>
             </div>
           )}
         </div>
