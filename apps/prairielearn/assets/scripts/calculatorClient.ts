@@ -953,11 +953,10 @@ onDocumentReady(() => {
   const storageKey = drawer.dataset.storageKey ?? 'pl-calculator';
   let initialized = false;
 
-  function initIfNeeded() {
+  const initIfNeeded = () => {
     if (!initialized) {
       try {
-        // drawer and fab are non-null: guarded above with `if (!drawer || !fab) return`
-        initCalculator(storageKey, { drawer: drawer!, fab: fab!, fabClose });
+        initCalculator(storageKey, { drawer, fab, fabClose });
         initialized = true;
       } catch (e) {
         console.error('Failed to initialize calculator:', e);
