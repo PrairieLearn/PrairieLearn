@@ -11,6 +11,7 @@ import type {
 import type { InheritanceSource } from '../../types.js';
 import { coerceToBoolean, coerceToNumber } from '../../utils/formHelpers.js';
 
+import { DetailSectionHeader } from './DetailSectionHeader.js';
 import { FormCheckField, FormField } from './FormField.js';
 import { InheritableCheckboxField } from './InheritableCheckboxField.js';
 import { InheritableField } from './InheritableField.js';
@@ -360,7 +361,7 @@ export function AdvancedFields({
 
   return (
     <>
-      <h6 className="text-muted text-uppercase small mb-3 mt-4">Advanced</h6>
+      <DetailSectionHeader>Advanced</DetailSectionHeader>
       {editMode ? fields : <dl className="mb-0">{fields}</dl>}
     </>
   );
