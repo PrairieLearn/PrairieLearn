@@ -13,7 +13,7 @@ import {
 import { sortableKeyboardCoordinates } from '@dnd-kit/sortable';
 import { QueryClient, useMutation, useQuery, useQueryClient } from '@tanstack/react-query';
 import { parseAsStringLiteral, useQueryState } from 'nuqs';
-import { useEffect, useId, useMemo, useRef, useState } from 'react';
+import { useCallback, useEffect, useId, useMemo, useRef, useState } from 'react';
 
 import { run } from '@prairielearn/run';
 import { NuqsAdapter, OverlayTrigger, useModalState } from '@prairielearn/ui';
@@ -188,6 +188,10 @@ function AssessmentEditorInner({
   );
 
   const [editMode, setEditMode] = useState(false);
+  const [formHasErrors, setFormHasErrors] = useState(false);
+  const handleFormValidChange = useCallback((isValid: boolean) => {
+    setFormHasErrors(!isValid);
+  }, []);
   const [activeDragId, setActiveDragId] = useState<string | null>(null);
   const isDragging = activeDragId !== null;
   const isKeyboardDragRef = useRef(false);
@@ -978,15 +982,32 @@ function AssessmentEditorInner({
   );
 
   const saveButtonDisabled =
-    !hasUnsavedChanges || hasZoneWithNoEffectiveQuestions || hasEmptyAltGroup;
+    !hasUnsavedChanges || hasZoneWithNoEffectiveQuestions || hasEmptyAltGroup || formHasErrors;
 
   const disableBeforeUnload = useBeforeUnload(editMode && hasUnsavedChanges);
+
+  const formErrorDisabledReason = formHasErrors
+    ? run(() => {
+        switch (selectedItem?.type) {
+          case 'zone':
+            return 'Cannot save: the selected zone has configuration errors';
+          case 'question':
+            return 'Cannot save: the selected question has configuration errors';
+          case 'altGroup':
+            return 'Cannot save: the selected alternative group has configuration errors';
+          case 'alternative':
+            return 'Cannot save: the selected alternative has configuration errors';
+          default:
+            return 'Cannot save: there are configuration errors';
+        }
+      })
+    : undefined;
 
   const saveButtonDisabledReason = hasZoneWithNoEffectiveQuestions
     ? 'Cannot save: one or more zones have no questions'
     : hasEmptyAltGroup
       ? 'Cannot save: one or more alternative groups have no questions'
-      : undefined;
+      : formErrorDisabledReason;
 
   const treeState: TreeState = useMemo(
     () => ({
@@ -1064,6 +1085,7 @@ function AssessmentEditorInner({
       onPickQuestion: handlePickQuestion,
       onRemoveQuestionByQid: handleRemoveQuestionByQid,
       onResetButtonClick: resetModal.showWithData,
+      onFormValidChange: handleFormValidChange,
     }),
     // Handlers close over `zones` (updated on dispatch) and `courseQuestions`
     // (used by handleQuestionPicked to build metadata), so these deps
@@ -1219,6 +1241,7 @@ function AssessmentEditorInner({
                     onCancel={() => {
                       setSelectedItem(null);
                       dispatch({ type: 'RESET' });
+                      setFormHasErrors(false);
                       setEditMode(false);
                     }}
                   />
