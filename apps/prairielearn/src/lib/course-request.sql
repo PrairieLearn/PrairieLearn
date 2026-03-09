@@ -104,3 +104,34 @@ SET
   note = $note
 WHERE
   course_requests.id = $id;
+
+-- BLOCK select_institution_prefix
+SELECT
+  (
+    regexp_match(c.repository, '/pl-([a-z0-9]+)-[^/]+\.git$')
+  ) [1] AS prefix
+FROM
+  courses AS c
+WHERE
+  c.institution_id = $institution_id
+  AND c.repository ~ '/pl-[a-z0-9]+-[^/]+\.git$'
+GROUP BY
+  prefix
+ORDER BY
+  count(*) DESC
+LIMIT
+  1;
+
+-- BLOCK select_course_request_by_id
+SELECT
+  cr.first_name,
+  cr.last_name,
+  cr.work_email,
+  cr.institution,
+  u.name AS user_name,
+  u.uid AS user_uid
+FROM
+  course_requests AS cr
+  JOIN users AS u ON u.id = cr.user_id
+WHERE
+  cr.id = $course_request_id;

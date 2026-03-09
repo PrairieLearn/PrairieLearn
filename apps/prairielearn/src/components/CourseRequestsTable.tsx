@@ -1,8 +1,9 @@
-import { QueryClient, useMutation } from '@tanstack/react-query';
+import { QueryClient, useMutation, useQuery } from '@tanstack/react-query';
 import clsx from 'clsx';
-import { useState } from 'react';
+import { useEffect, useState } from 'react';
 import { Alert, Dropdown, Modal } from 'react-bootstrap';
 import { useForm } from 'react-hook-form';
+import ReactMarkdown from 'react-markdown';
 
 import { OverlayTrigger } from '@prairielearn/ui';
 
@@ -313,6 +314,20 @@ function CourseRequestApproveForm({
   });
   const institutionId = watch('institution_id');
 
+  const { data: prefixData } = useQuery({
+    ...trpc.courseRequests.selectInstitutionPrefixQuery.queryOptions({ institutionId }),
+    enabled: !!institutionId,
+  });
+
+  useEffect(() => {
+    if (prefixData?.prefix) {
+      const shortNameSlug = request.short_name.replaceAll(' ', '').toLowerCase();
+      const newRepoName = `pl-${prefixData.prefix}-${shortNameSlug}`;
+      setValue('repository_short_name', newRepoName);
+      setValue('path', `${coursesRoot}/${newRepoName}`);
+    }
+  }, [prefixData, request.short_name, coursesRoot, setValue]);
+
   const selectedInstitution = institutions.find((i) => i.id === institutionId);
   const isDefaultInstitution = selectedInstitution?.short_name === 'Default';
 
@@ -335,6 +350,41 @@ function CourseRequestApproveForm({
       },
     );
   };
+
+  const {
+    data: legitimacyData,
+    isFetching: isCheckingLegitimacy,
+    isError: isLegitimacyError,
+    refetch: checkLegitimacy,
+  } = useQuery({
+    ...trpc.courseRequests.checkInstructorLegitimacyQuery.queryOptions({
+      courseRequestId: request.id,
+    }),
+    enabled: false,
+  });
+
+  const emailDomain = request.work_email?.split('@')[1] ?? '';
+  const {
+    data: suggestedPrefixData,
+    isFetching: isFetchingPrefix,
+    isError: isPrefixError,
+    refetch: suggestRepositoryNamePrefix,
+  } = useQuery({
+    ...trpc.courseRequests.suggestPrefixFromEmailQuery.queryOptions({
+      institutionName: request.institution ?? '',
+      emailDomain,
+    }),
+    enabled: false,
+  });
+
+  useEffect(() => {
+    if (suggestedPrefixData?.prefix) {
+      const shortNameSlug = request.short_name.replaceAll(' ', '').toLowerCase();
+      const newRepoName = `pl-${suggestedPrefixData.prefix}-${shortNameSlug}`;
+      setValue('repository_short_name', newRepoName);
+      setValue('path', `${coursesRoot}/${newRepoName}`);
+    }
+  }, [suggestedPrefixData, request.short_name, coursesRoot, setValue]);
 
   return (
     <form name={`create-course-from-request-form-${request.id}`} onSubmit={handleSubmit(onSubmit)}>
@@ -497,6 +547,116 @@ function CourseRequestApproveForm({
           {mutation.error.message}
         </Alert>
       )}
+      <div className="mb-3">
+        <OverlayTrigger
+          trigger={['hover', 'focus']}
+          placement="top"
+          tooltip={{
+            body: 'Uses AI web search to verify whether the instructor appears in faculty directories or professional profiles at their stated institution.',
+            props: { id: 'check-instructor-legitimacy-tooltip' },
+          }}
+        >
+          <button
+            type="button"
+            className="btn btn-secondary"
+            disabled={isCheckingLegitimacy}
+            aria-busy={isCheckingLegitimacy}
+            onClick={() => checkLegitimacy()}
+          >
+            {isCheckingLegitimacy ? 'Checking...' : 'Check instructor legitimacy'}
+          </button>
+        </OverlayTrigger>
+        {isLegitimacyError && (
+          <div className="mt-2 text-danger small">Failed to check legitimacy. Try again.</div>
+        )}
+        {legitimacyData && (
+          <div aria-live="polite" aria-atomic="true">
+            <div className="mt-2 d-flex align-items-start gap-2">
+              <span
+                className={clsx('badge', {
+                  'text-bg-success': legitimacyData.confidence === 'high',
+                  'text-bg-warning': legitimacyData.confidence === 'medium',
+                  'text-bg-danger': legitimacyData.confidence === 'low',
+                })}
+              >
+                {legitimacyData.isLikely ? 'Likely legitimate' : 'Uncertain'} &middot;{' '}
+                {legitimacyData.confidence} confidence
+              </span>
+            </div>
+            <small className="text-muted">
+              <ReactMarkdown>{legitimacyData.summary}</ReactMarkdown>
+            </small>
+            {legitimacyData.sources.length > 0 && (
+              <div className="mt-1 d-flex flex-wrap gap-1">
+                {legitimacyData.sources
+                  .filter(
+                    (source, index, arr) => arr.findIndex((s) => s.url === source.url) === index,
+                  )
+                  .map((source) => (
+                    <a
+                      key={source.url}
+                      href={source.url}
+                      target="_blank"
+                      rel="noreferrer"
+                      className="small"
+                    >
+                      {source.title ?? source.url}
+                    </a>
+                  ))}
+              </div>
+            )}
+          </div>
+        )}
+      </div>
+      <div className="mb-3">
+        <OverlayTrigger
+          trigger={['hover', 'focus']}
+          placement="top"
+          tooltip={{
+            body: 'Uses AI web search to suggest a short prefix for the repository name based on the institution (e.g. "uiuc" for the University of Illinois). Useful when no existing courses are found for the selected institution.',
+            props: { id: 'suggest-prefix-tooltip' },
+          }}
+        >
+          <button
+            type="button"
+            className="btn btn-secondary"
+            disabled={isFetchingPrefix || !request.institution || !request.work_email}
+            aria-busy={isFetchingPrefix}
+            onClick={() => suggestRepositoryNamePrefix()}
+          >
+            {isFetchingPrefix ? 'Suggesting...' : 'Suggest prefix'}
+          </button>
+        </OverlayTrigger>
+        {isPrefixError && (
+          <div className="mt-2 text-danger small">Failed to suggest prefix. Try again.</div>
+        )}
+        <div aria-live="polite" aria-atomic="true">
+          {suggestedPrefixData && (
+            <div className="mt-2 text-muted small">
+              <ReactMarkdown>{suggestedPrefixData.reasoning}</ReactMarkdown>
+            </div>
+          )}
+          {suggestedPrefixData && suggestedPrefixData.sources.length > 0 && (
+            <div className="mt-1 d-flex flex-wrap gap-1">
+              {suggestedPrefixData.sources
+                .filter(
+                  (source, index, arr) => arr.findIndex((s) => s.url === source.url) === index,
+                )
+                .map((source) => (
+                  <a
+                    key={source.url}
+                    href={source.url}
+                    target="_blank"
+                    rel="noreferrer"
+                    className="small"
+                  >
+                    {source.title ?? source.url}
+                  </a>
+                ))}
+            </div>
+          )}
+        </div>
+      </div>
       <div className="d-flex justify-content-end gap-2">
         <button type="button" className="btn btn-secondary" onClick={onCancel}>
           Cancel

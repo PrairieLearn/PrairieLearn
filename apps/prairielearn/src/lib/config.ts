@@ -580,6 +580,11 @@ export const ConfigSchema = z.object({
    * Accounts for both input and output tokens.
    */
   aiQuestionGenerationRateLimitDollars: z.number().default(1),
+  /**
+   * OpenAI credentials for AI-assisted course request review.
+   */
+  courseRequestOpenAiApiKey: z.string().nullable().default(null),
+  courseRequestOpenAiOrganization: z.string().nullable().default(null),
   requireTermsAcceptance: z.boolean().default(false),
   pyroscopeEnabled: z.boolean().default(false),
   pyroscopeServerAddress: z.string().nullable().default(null),

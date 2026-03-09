@@ -2,8 +2,15 @@ import { TRPCError } from '@trpc/server';
 import { z } from 'zod';
 
 import {
+  checkInstructorLegitimacy,
+  suggestPrefixFromEmailDomain,
+  suggestTimezone,
+} from '../../lib/course-request-ai.js';
+import {
   createCourseFromRequest,
   denyCourseRequest,
+  selectCourseRequestForAi,
+  selectInstitutionPrefix,
   updateCourseRequestNote,
 } from '../../lib/course-request.js';
 import { coursePathAvailability, courseRepositoryAvailability } from '../../lib/course.js';
@@ -76,8 +83,85 @@ const createCourseMutation = t.procedure
     return { jobSequenceId };
   });
 
+const checkInstructorLegitimacyQuery = t.procedure
+  .use(requireAdministrator)
+  .input(z.object({ courseRequestId: z.string() }))
+  .output(
+    z.object({
+      isLikely: z.boolean(),
+      confidence: z.enum(['high', 'medium', 'low']),
+      summary: z.string(),
+      sources: z.array(z.object({ url: z.string(), title: z.string().optional() })),
+    }),
+  )
+  .query(async ({ input }) => {
+    const courseRequest = await selectCourseRequestForAi({
+      courseRequestId: input.courseRequestId,
+    });
+
+    return await checkInstructorLegitimacy({
+      instructorFirstName: courseRequest.first_name,
+      instructorLastName: courseRequest.last_name,
+      instructorEmail: courseRequest.work_email,
+      institution: courseRequest.institution,
+      userDisplayName: courseRequest.user_name,
+      userUid: courseRequest.user_uid,
+    });
+  });
+
+const suggestTimezoneQuery = t.procedure
+  .use(requireAdministrator)
+  .input(z.object({ institutionName: z.string(), emailDomain: z.string() }))
+  .output(
+    z.object({
+      timezone: z.string(),
+      reasoning: z.string(),
+      sources: z.array(z.object({ url: z.string(), title: z.string().optional() })),
+    }),
+  )
+  .query(async ({ input }) => {
+    return await suggestTimezone({
+      emailDomain: input.emailDomain,
+      institutionName: input.institutionName,
+    });
+  });
+
+const selectInstitutionPrefixQuery = t.procedure
+  .use(requireAdministrator)
+  .input(z.object({ institutionId: z.string() }))
+  .output(
+    z.object({
+      prefix: z.string().nullable(),
+    }),
+  )
+  .query(async ({ input }) => {
+    const row = await selectInstitutionPrefix({ institutionId: input.institutionId });
+    return { prefix: row?.prefix ?? null };
+  });
+
+const suggestPrefixFromEmailQuery = t.procedure
+  .use(requireAdministrator)
+  .input(z.object({ institutionName: z.string(), emailDomain: z.string() }))
+  .output(
+    z.object({
+      prefix: z.string(),
+      reasoning: z.string(),
+      sources: z.array(z.object({ url: z.string(), title: z.string().optional() })),
+    }),
+  )
+  .query(async ({ input }) => {
+    return await suggestPrefixFromEmailDomain({
+      emailDomain: input.emailDomain,
+      institutionName: input.institutionName,
+    });
+  });
+
 export const administratorCourseRequestsRouter = t.router({
   denyCourseRequestMutation,
   updateCourseRequestNoteMutation,
   createCourseMutation,
+  checkInstructorLegitimacyQuery,
+  suggestTimezoneQuery,
+  suggestPrefixFromEmailQuery,
+  selectInstitutionPrefixQuery,
 });

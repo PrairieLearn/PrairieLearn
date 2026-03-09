@@ -1,7 +1,15 @@
 import { z } from 'zod';
 
 import { logger } from '@prairielearn/logger';
-import { execute, executeRow, loadSqlEquiv, queryRows, queryScalar } from '@prairielearn/postgres';
+import {
+  execute,
+  executeRow,
+  loadSqlEquiv,
+  queryOptionalRow,
+  queryRow,
+  queryRows,
+  queryScalar,
+} from '@prairielearn/postgres';
 import * as Sentry from '@prairielearn/sentry';
 import { DateFromISOString, IdSchema } from '@prairielearn/zod';
 
@@ -40,6 +48,15 @@ const CourseRequestRowSchema = z.object({
   work_email: z.string().nullable(),
 });
 export type CourseRequestRow = z.infer<typeof CourseRequestRowSchema>;
+
+const CourseRequestForAiSchema = z.object({
+  first_name: z.string().nullable(),
+  last_name: z.string().nullable(),
+  work_email: z.string().nullable(),
+  institution: z.string().nullable(),
+  user_name: z.string().nullable(),
+  user_uid: z.string(),
+});
 
 async function selectCourseRequests(show_all: boolean) {
   return await queryRows(sql.select_course_requests, { show_all }, CourseRequestRowSchema);
@@ -169,4 +186,20 @@ export async function updateCourseRequestNote({
   note: string;
 }) {
   await executeRow(sql.update_course_request_note, { id: courseRequestId, note });
+}
+
+export async function selectInstitutionPrefix({ institutionId }: { institutionId: string }) {
+  return await queryOptionalRow(
+    sql.select_institution_prefix,
+    { institution_id: institutionId },
+    z.object({ prefix: z.string().nullable() }),
+  );
+}
+
+export async function selectCourseRequestForAi({ courseRequestId }: { courseRequestId: string }) {
+  return await queryRow(
+    sql.select_course_request_by_id,
+    { course_request_id: courseRequestId },
+    CourseRequestForAiSchema,
+  );
 }
