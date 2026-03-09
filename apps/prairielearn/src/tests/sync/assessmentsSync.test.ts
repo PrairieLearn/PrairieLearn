@@ -4455,4 +4455,48 @@ describe('Assessment syncing', () => {
     const syncedAssessment = await findSyncedAssessment('prefFail');
     assert.isNotNull(syncedAssessment.sync_errors);
   });
+
+  it('does not crash when a nonexistent question has preferences', async () => {
+    const courseData = util.getCourseData();
+    const assessment = makeAssessment(courseData, 'Exam');
+    assessment.zones?.push({
+      title: 'zone 1',
+      questions: [
+        {
+          id: 'doesNotExist',
+          points: 5,
+          preferences: {
+            someKey: 'someValue',
+          },
+        },
+      ],
+    });
+    courseData.courseInstances[util.COURSE_INSTANCE_ID].assessments['prefMissing'] = assessment;
+    await util.writeAndSyncCourseData(courseData);
+    const syncedAssessment = await findSyncedAssessment('prefMissing');
+    assert.isNotNull(syncedAssessment.sync_errors);
+    assert.match(syncedAssessment.sync_errors, /doesNotExist/);
+  });
+
+  it('records an error for a question with an empty-string preference key', async () => {
+    const courseData = util.getCourseData();
+    courseData.questions['emptyKeyPref'] = {
+      uuid: 'b1c2d3e4-f5a6-7890-abcd-ef1234567890',
+      title: 'Empty key preferences test',
+      topic: 'Test',
+      tags: ['test'],
+      type: 'v3',
+      preferences: {
+        '': {
+          type: 'number',
+          default: 1,
+        },
+      },
+    };
+    await util.writeAndSyncCourseData(courseData);
+    const syncedQuestions = await util.dumpTableWithSchema('questions', QuestionSchema);
+    const syncedQuestion = syncedQuestions.find((q) => q.qid === 'emptyKeyPref');
+    assert.isDefined(syncedQuestion);
+    assert.isNotNull(syncedQuestion.sync_errors);
+  });
 });
