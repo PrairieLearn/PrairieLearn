@@ -30,6 +30,11 @@ function createTrackingId(): TrackingId {
  */
 function normalizeQuestionPoints<T extends QuestionPointsJson>(obj: T, gradingMethod?: string): T {
   const result = { ...obj };
+  // When gradingMethod is Manual, we use the first element of the points array as the manual points.
+  // The first element in a points array should be the highest value in the pointsList array.
+
+  // The sync code passes maxPoints as max(pointsList) to sync_assessments.sql,
+  // which if we are using manual grading, will be used for computed_manual_points.
   if (gradingMethod === 'Manual' && result.points != null && result.manualPoints == null) {
     result.manualPoints = Array.isArray(result.points) ? result.points[0] : result.points;
     delete result.points;

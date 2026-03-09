@@ -125,6 +125,8 @@ export function TreeQuestionBlockNode({
 
   const pointsMismatch =
     alternatives != null && hasPointsMismatch(alternatives, assessmentType, zoneQuestionBlock);
+  // This warning triggers when alternatives are deleted from a group, reducing
+  // the count below an already-saved numberChoose.
   const chooseExceeds = hasAltGroupChooseExceedsCount(zoneQuestionBlock);
 
   return (
@@ -240,7 +242,13 @@ export function TreeQuestionBlockNode({
                     body: 'Tags shared across all alternatives',
                   }}
                 >
-                  <i className="bi bi-question-circle text-muted" aria-hidden="true" />
+                  <button
+                    type="button"
+                    className="btn btn-xs btn-ghost p-0"
+                    aria-label="Tags shared across all alternatives"
+                  >
+                    <i className="bi bi-question-circle text-muted" aria-hidden="true" />
+                  </button>
                 </OverlayTrigger>
               </div>
             );

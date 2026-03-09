@@ -68,6 +68,8 @@ export function ZoneDetailPanel({
     values: formValues,
   });
 
+  // Questions can be added/removed from the zone while this panel is open.
+  // Revalidate so numberChoose/bestQuestions errors update without extra input.
   useEffect(() => {
     void trigger('numberChoose');
     void trigger('bestQuestions');

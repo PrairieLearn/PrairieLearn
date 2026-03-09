@@ -45,6 +45,8 @@ export function TreeZoneNode({
   const badgeTooltipId = useId();
   const isCollapsed = collapsedZones.has(zone.trackingId);
   const zonePointsMismatch = hasZonePointsMismatch(zone, assessmentType);
+  // This warning triggers when questions are deleted from a zone, reducing
+  // the count below an already-saved numberChoose/bestQuestions.
   const zoneChooseExceeds = hasZoneChooseExceedsCount(zone);
   const isSelected =
     selectedItem?.type === 'zone' && selectedItem.zoneTrackingId === zone.trackingId;
