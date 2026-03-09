@@ -252,10 +252,10 @@ export function generateSubmissionMessage({
         return segment;
       case 'image':
         if (segment.fileData) {
-          // fileData does not contain the MIME type header, so we add it.
           return {
             type: 'image',
-            image: `data:image/jpeg;base64,${segment.fileData}`,
+            image: segment.fileData,
+            mediaType: 'image/jpeg',
             providerOptions: {
               openai: {
                 imageDetail: 'auto',
@@ -797,7 +797,8 @@ async function correctImageOrientation({
         },
         {
           type: 'image',
-          image: `data:image/jpeg;base64,${images[i - 1]}`,
+          image: images[i - 1],
+          mediaType: 'image/jpeg',
           providerOptions: {
             openai: {
               imageDetail: 'auto',
