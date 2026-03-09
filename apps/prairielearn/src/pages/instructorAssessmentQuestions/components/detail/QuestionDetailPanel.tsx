@@ -1,5 +1,5 @@
 import clsx from 'clsx';
-import { useCallback, useMemo } from 'react';
+import { useCallback, useMemo, useState } from 'react';
 import {
   type FieldErrors,
   type RegisterOptions,
@@ -117,6 +117,18 @@ export function QuestionDetailPanel({
 
   const ownTriesPerVariant = question.triesPerVariant ?? undefined;
 
+  // Track which inheritable fields are in "override" mode. Initialized from
+  // props; toggled only by Override/Reset buttons. This prevents the field
+  // from switching back to inherited mode when the user clears it via
+  // backspace (which would set the form value to undefined and immediately
+  // re-show the disabled inherited input before the user can type a new value).
+  const [overriddenFields, setOverriddenFields] = useState(() => ({
+    autoPoints: question.autoPoints != null,
+    maxAutoPoints: question.maxAutoPoints != null,
+    manualPoints: question.manualPoints != null,
+    triesPerVariant: question.triesPerVariant != null,
+  }));
+
   // Compute parent boolean availability before useForm so we can set
   // stable defaults that survive the DOM round-trip without false dirty flags.
   const hasForceMaxPointsParent = isAlternative && zoneQuestionBlock.forceMaxPoints != null;
@@ -143,9 +155,6 @@ export function QuestionDetailPanel({
   });
 
   const watchedAutoPoints = watch('autoPoints');
-  const watchedMaxAutoPoints = watch('maxAutoPoints');
-  const watchedManualPoints = watch('manualPoints');
-
   const autoPointsPlaceholder = run(() => {
     const pts = watchedAutoPoints ?? (isAlternative ? inheritedAutoPoints : undefined);
     if (pts == null) return '';
@@ -153,15 +162,14 @@ export function QuestionDetailPanel({
   });
 
   const isAutoPointsInherited =
-    isAlternative && watchedAutoPoints === undefined && inheritedAutoPoints != null;
+    isAlternative && !overriddenFields.autoPoints && inheritedAutoPoints != null;
   const isMaxAutoPointsInherited =
-    isAlternative && watchedMaxAutoPoints === undefined && inheritedMaxAutoPoints != null;
+    isAlternative && !overriddenFields.maxAutoPoints && inheritedMaxAutoPoints != null;
   const isManualPointsInherited =
-    isAlternative && watchedManualPoints === undefined && inheritedManualPoints != null;
+    isAlternative && !overriddenFields.manualPoints && inheritedManualPoints != null;
 
-  const watchedTriesPerVariant = watch('triesPerVariant');
   const isTriesPerVariantInherited =
-    isAlternative && watchedTriesPerVariant === undefined && inheritedTriesPerVariant != null;
+    isAlternative && !overriddenFields.triesPerVariant && inheritedTriesPerVariant != null;
 
   const questionTrackingId = isAlternative ? zoneQuestionBlock.trackingId : question.trackingId;
   const alternativeTrackingId = isAlternative ? question.trackingId : undefined;
@@ -370,6 +378,9 @@ export function QuestionDetailPanel({
           resetAndSave={resetAndSave}
           showAutoPointsForManual={showAutoPointsForManual}
           showMaxAutoPointsForManual={showMaxAutoPointsForManual}
+          onFieldOverrideChange={(field, overridden) =>
+            setOverriddenFields((prev) => ({ ...prev, [field]: overridden }))
+          }
         />
 
         {/* Tries per variant (Homework only) */}
@@ -397,13 +408,17 @@ export function QuestionDetailPanel({
                 inheritedTriesPerVariant != null ? String(inheritedTriesPerVariant) : undefined
               }
               showResetButton={inheritedTriesPerVariant != null && !isTriesPerVariantInherited}
-              onOverride={() =>
+              onOverride={() => {
+                setOverriddenFields((prev) => ({ ...prev, triesPerVariant: true }));
                 setValue('triesPerVariant', inheritedTriesPerVariant, {
                   shouldDirty: true,
                   shouldValidate: true,
-                })
-              }
-              onReset={() => resetAndSave('triesPerVariant')}
+                });
+              }}
+              onReset={() => {
+                setOverriddenFields((prev) => ({ ...prev, triesPerVariant: false }));
+                resetAndSave('triesPerVariant');
+              }}
             />
           ) : (
             <FormField
@@ -544,6 +559,7 @@ function PointsFields({
   resetAndSave,
   showAutoPointsForManual,
   showMaxAutoPointsForManual,
+  onFieldOverrideChange,
 }: {
   assessmentType: EnumAssessmentType;
   editMode: boolean;
@@ -567,14 +583,15 @@ function PointsFields({
   resetAndSave: (field: string) => void;
   showAutoPointsForManual: boolean;
   showMaxAutoPointsForManual: boolean;
+  onFieldOverrideChange: (field: string, overridden: boolean) => void;
 }) {
   const isHomework = assessmentType === 'Homework';
 
   const parentValues = isAlternative
     ? {
-        autoPoints: inheritedAutoPoints,
-        maxAutoPoints: inheritedMaxAutoPoints,
-        manualPoints: inheritedManualPoints,
+        autoPoints: isAutoPointsInherited ? inheritedAutoPoints : undefined,
+        maxAutoPoints: isMaxAutoPointsInherited ? inheritedMaxAutoPoints : undefined,
+        manualPoints: isManualPointsInherited ? inheritedManualPoints : undefined,
       }
     : undefined;
 
@@ -720,13 +737,17 @@ function PointsFields({
         inheritedManualPoints != null ? String(inheritedManualPoints) : undefined
       }
       showResetButton={inheritedManualPoints != null && !isManualPointsInherited}
-      onOverride={() =>
+      onOverride={() => {
+        onFieldOverrideChange('manualPoints', true);
         setValue('manualPoints', inheritedManualPoints, {
           shouldDirty: true,
           shouldValidate: true,
-        })
-      }
-      onReset={() => resetAndSave('manualPoints')}
+        });
+      }}
+      onReset={() => {
+        onFieldOverrideChange('manualPoints', false);
+        resetAndSave('manualPoints');
+      }}
     />
   ) : (
     <FormField
@@ -775,13 +796,17 @@ function PointsFields({
             helpText={autoPointsHelpText}
             inheritedValueLabel={formatPointsValue(inheritedAutoPoints)}
             showResetButton={inheritedAutoPoints != null && !isAutoPointsInherited}
-            onOverride={() =>
+            onOverride={() => {
+              onFieldOverrideChange('autoPoints', true);
               setValue('autoPoints', inheritedAutoPoints, {
                 shouldDirty: true,
                 shouldValidate: true,
-              })
-            }
-            onReset={() => resetAndSave('autoPoints')}
+              });
+            }}
+            onReset={() => {
+              onFieldOverrideChange('autoPoints', false);
+              resetAndSave('autoPoints');
+            }}
           />
         ) : (
           <FormField
@@ -823,13 +848,17 @@ function PointsFields({
               inheritedMaxAutoPoints != null ? String(inheritedMaxAutoPoints) : undefined
             }
             showResetButton={inheritedMaxAutoPoints != null && !isMaxAutoPointsInherited}
-            onOverride={() =>
+            onOverride={() => {
+              onFieldOverrideChange('maxAutoPoints', true);
               setValue('maxAutoPoints', inheritedMaxAutoPoints, {
                 shouldDirty: true,
                 shouldValidate: true,
-              })
-            }
-            onReset={() => resetAndSave('maxAutoPoints')}
+              });
+            }}
+            onReset={() => {
+              onFieldOverrideChange('maxAutoPoints', false);
+              resetAndSave('maxAutoPoints');
+            }}
           />
         ) : (
           <FormField
