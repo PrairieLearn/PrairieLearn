@@ -31,6 +31,10 @@ export function useResizeHandle({
   );
 
   // Re-clamp when bounds change (e.g. dynamic maxWidth from container resize).
+  // Sync width state so onMouseDown/onKeyDown closures use the clamped value.
+  useEffect(() => {
+    setWidth((w) => clamp(w));
+  }, [clamp]);
   const clampedWidth = clamp(width);
 
   const onMouseDown = useCallback(
