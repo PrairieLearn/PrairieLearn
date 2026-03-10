@@ -331,7 +331,7 @@ As shown in the table, all functions (except for `render`) accept a single argum
 | `score`                 | `float` | The total score for the question variant.                                                                                            |
 | `feedback`              | `dict`  | Dictionary of [feedback](#providing-feedback) for each answer. Each item maps from a named answer to a feedback message.             |
 | `variant_seed`          | `int`   | The [random seed](#randomization) for this question variant.                                                                         |
-| `options`               | `dict`  | Any options associated with the question, e.g. for [accessing files](#accessing-files-on-disk)                                       |
+| `options`               | `dict`  | System-provided options such as file paths and URLs (see [accessing files](#accessing-files-on-disk)).                               |
 | `filename`              | `str`   | The name of the [dynamic file requested](#generating-dynamic-files-with-file) in the `file()` function.                              |
 | `test_type`             | `str`   | The type of test being run in the [`test()` function](#testing-questions-with-test).                                                 |
 
