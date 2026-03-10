@@ -399,7 +399,6 @@ function AssessmentEditorInner({
         data: questionData,
         assessment,
         courseInstance,
-        course,
         courseQuestions,
       });
 
@@ -502,7 +501,6 @@ function AssessmentEditorInner({
               data: questionData,
               assessment,
               courseInstance,
-              course,
               courseQuestions,
             }),
           });
@@ -557,7 +555,6 @@ function AssessmentEditorInner({
         data: questionData,
         assessment,
         courseInstance,
-        course,
         courseQuestions,
       }),
     });

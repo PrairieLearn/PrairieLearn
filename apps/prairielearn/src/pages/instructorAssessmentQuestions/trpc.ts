@@ -6,6 +6,7 @@ import { z } from 'zod';
 import * as sqldb from '@prairielearn/postgres';
 
 import {
+  StaffCourseSchema,
   StaffQuestionSchema,
   StaffTagSchema,
   StaffTopicSchema,
@@ -70,6 +71,7 @@ const courseQuestionsQuery = t.procedure.query(async (opts) => {
 const QuestionByQidResultSchema = z.object({
   question: StaffQuestionSchema,
   topic: StaffTopicSchema,
+  course: StaffCourseSchema,
   open_issue_count: z.number(),
   tags: z.array(StaffTagSchema),
 });

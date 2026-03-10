@@ -409,10 +409,9 @@ export function buildQuestionMetadata(opts: {
   data: QuestionByQidResult;
   assessment: StaffAssessment;
   courseInstance: StaffCourseInstance;
-  course: StaffCourse;
   courseQuestions?: CourseQuestionForPicker[];
 }): EditorQuestionMetadata {
-  const { data, assessment, courseInstance, course, courseQuestions } = opts;
+  const { data, assessment, courseInstance, courseQuestions } = opts;
 
   const otherAssessments: OtherAssessment[] | null = (() => {
     if (!courseQuestions) return null;
@@ -437,7 +436,7 @@ export function buildQuestionMetadata(opts: {
   return {
     question: data.question,
     topic: data.topic,
-    course,
+    course: data.course,
     tags: data.tags,
     other_assessments: otherAssessments,
     open_issue_count: data.open_issue_count,
