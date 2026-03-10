@@ -1208,6 +1208,7 @@ function AssessmentEditorInner({
 
   const rightHeaderAction = run(() => {
     if (selectedItem?.type === 'picker' || selectedItem?.type === 'altGroupPicker') {
+      const isChangeMode = selectedItem.type === 'picker' && selectedItem.returnToSelection != null;
       return (
         <button
           type="button"
@@ -1215,7 +1216,7 @@ function AssessmentEditorInner({
           disabled={questionByQidMutation.isPending}
           onClick={handlePickerDone}
         >
-          Done
+          {isChangeMode ? 'Cancel' : 'Done'}
         </button>
       );
     }
