@@ -640,9 +640,23 @@ function PointsFields({
 
   const autoPointsId = `${idPrefix}-${isHomework ? 'autoPoints' : 'pointsList'}`;
   const autoPointsInputType = isHomework ? 'number' : 'text';
-  const autoPointsHelpText = isHomework
-    ? 'Points awarded for the auto-graded component.'
-    : 'Points for each attempt, as a comma-separated list (e.g. "10, 5, 2, 1").';
+  const autoPointsHelpText = isHomework ? (
+    <>
+      Points awarded for the auto-graded component.{' '}
+      {constantQuestionValue
+        ? 'Each correct answer is worth this many points.'
+        : 'Each consecutive correct answer is worth more; an incorrect answer resets the value.'}{' '}
+      <a
+        href="https://docs.prairielearn.com/assessment/configuration/#question-points-for-homework-assessments"
+        target="_blank"
+        rel="noreferrer"
+      >
+        Learn more about question points
+      </a>
+    </>
+  ) : (
+    'Points for each attempt, as a comma-separated list (e.g. "10, 5, 2, 1").'
+  );
   const autoPointsRegisterOptions: RegisterOptions<QuestionFormData, 'autoPoints'> = isHomework
     ? {
         setValueAs: coerceToNumber,
@@ -673,33 +687,7 @@ function PointsFields({
     deps: ['autoPoints'],
     validate: homeworkMaxPointsValidation,
   };
-  const maxAutoPointsHelpText = run(() => {
-    return constantQuestionValue ? (
-      <>
-        Maximum total auto-graded points. Students must answer correctly{' '}
-        <code>maxAutoPoints / autoPoints</code> times to earn full credit.{' '}
-        <a
-          href="https://docs.prairielearn.com/assessment/configuration/#question-points-for-homework-assessments"
-          target="_blank"
-          rel="noreferrer"
-        >
-          Learn more about question points
-        </a>
-      </>
-    ) : (
-      <>
-        Maximum total auto-graded points. Each consecutive correct answer is worth more; an
-        incorrect answer resets the value.{' '}
-        <a
-          href="https://docs.prairielearn.com/assessment/configuration/#question-points-for-homework-assessments"
-          target="_blank"
-          rel="noreferrer"
-        >
-          Learn more about question points
-        </a>
-      </>
-    );
-  });
+  const maxAutoPointsHelpText = 'Maximum total auto-graded points.';
 
   const manualPointsRegisterOptions: RegisterOptions<QuestionFormData, 'manualPoints'> = {
     setValueAs: coerceToNumber,
