@@ -1,6 +1,7 @@
 import path from 'path';
 
 import fs from 'fs-extra';
+import { z } from 'zod';
 
 import * as error from '@prairielearn/error';
 import { logger } from '@prairielearn/logger';
@@ -15,6 +16,13 @@ import {
 } from '../load-migrations.js';
 
 const sql = sqldb.loadSqlEquiv(import.meta.filename);
+
+const MigrationRowSchema = z.object({
+  id: z.coerce.string(),
+  filename: z.string(),
+  index: z.number().nullable(),
+  timestamp: z.string().nullable(),
+});
 
 interface InitOptions {
   directories: string[];
@@ -130,7 +138,7 @@ export async function initWithLock({ directories, project, migrationFilters = {}
       }
     }
 
-    let allMigrations = await sqldb.queryAsync(sql.get_migrations, { project });
+    let allMigrations = await sqldb.queryRows(sql.get_migrations, { project }, MigrationRowSchema);
     const migrationFiles = await readAndValidateMigrationsFromDirectories(directories, [
       '.sql',
       '.js',
@@ -141,7 +149,7 @@ export async function initWithLock({ directories, project, migrationFilters = {}
     // Validation: if we not all previously-executed migrations have timestamps,
     // prompt the user to deploy an earlier version that includes both indexes
     // and timestamps.
-    const migrationsMissingTimestamps = allMigrations.rows.filter((m) => !m.timestamp);
+    const migrationsMissingTimestamps = allMigrations.filter((m) => !m.timestamp);
     if (migrationsMissingTimestamps.length > 0) {
       throw new Error(
         [
@@ -155,18 +163,18 @@ export async function initWithLock({ directories, project, migrationFilters = {}
     }
 
     // Refetch the list of migrations from the database.
-    allMigrations = await sqldb.queryAsync(sql.get_migrations, { project });
+    allMigrations = await sqldb.queryRows(sql.get_migrations, { project }, MigrationRowSchema);
 
     // Sort the migration files into execution order.
     const sortedMigrationFiles = sortMigrationFiles(migrationFiles);
 
     // Figure out which migrations have to be applied.
     const migrationsToExecute = getMigrationsToExecute(sortedMigrationFiles, {
-      excludeMigrations: allMigrations.rows,
+      excludeMigrations: allMigrations,
       ...resolvedMigrationFilters,
     });
     for (const { directory, filename, timestamp } of migrationsToExecute) {
-      if (allMigrations.rows.length === 0) {
+      if (allMigrations.length === 0) {
         // if we are running all the migrations then log at a lower level
         logger.verbose(`Running migration ${filename}`);
       } else {

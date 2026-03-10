@@ -2,7 +2,7 @@ import * as async from 'async';
 import { type Request, type Response } from 'express';
 
 import { HttpStatusError } from '@prairielearn/error';
-import { loadSqlEquiv, queryRow } from '@prairielearn/postgres';
+import { loadSqlEquiv, queryScalar } from '@prairielearn/postgres';
 import { recursivelyTruncateStrings } from '@prairielearn/sanitize';
 import { IdSchema } from '@prairielearn/zod';
 
@@ -55,7 +55,7 @@ export async function insertIssue({
   // Allow for a higher limit on the system data. This object contains output
   // from the Python subprocess, which can be especially useful for debugging.
   const truncatedSystemData = recursivelyTruncateStrings(systemData, 10000);
-  return await queryRow(
+  return await queryScalar(
     sql.insert_issue,
     {
       variant_id: variantId,
