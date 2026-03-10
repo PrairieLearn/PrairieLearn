@@ -33,7 +33,6 @@ describe('sproc ip_to_mode tests', function () {
         SprocIpToModeSchema,
       );
       assert.equal(result.mode, 'Public');
-      assert.equal(result.mode_reason, 'Default');
     });
   });
 
@@ -60,10 +59,7 @@ describe('sproc ip_to_mode tests', function () {
             SprocIpToModeSchema,
           );
 
-          console.log('before assertions');
           assert.equal(result.mode, 'Exam');
-          assert.equal(result.mode_reason, 'PrairieTest');
-          console.log('after assertions');
         });
         console.log('after transaction');
       });
@@ -83,7 +79,6 @@ describe('sproc ip_to_mode tests', function () {
             SprocIpToModeSchema,
           );
           assert.equal(result.mode, 'Exam');
-          assert.equal(result.mode_reason, 'PrairieTest');
         });
       });
 
@@ -102,7 +97,6 @@ describe('sproc ip_to_mode tests', function () {
             SprocIpToModeSchema,
           );
           assert.equal(result.mode, 'Public');
-          assert.equal(result.mode_reason, 'Default');
         });
       });
 
@@ -121,7 +115,6 @@ describe('sproc ip_to_mode tests', function () {
             SprocIpToModeSchema,
           );
           assert.equal(result.mode, 'Public');
-          assert.equal(result.mode_reason, 'Default');
         });
       });
 
@@ -143,7 +136,6 @@ describe('sproc ip_to_mode tests', function () {
             SprocIpToModeSchema,
           );
           assert.equal(firstSessionInLocation.mode, 'Exam');
-          assert.equal(firstSessionInLocation.mode_reason, 'PrairieTest');
 
           const secondSessionInLocation = await sqldb.callRow(
             'ip_to_mode',
@@ -156,7 +148,6 @@ describe('sproc ip_to_mode tests', function () {
             SprocIpToModeSchema,
           );
           assert.equal(secondSessionInLocation.mode, 'Exam');
-          assert.equal(secondSessionInLocation.mode_reason, 'PrairieTest');
 
           const notInLocation = await sqldb.callRow(
             'ip_to_mode',
@@ -169,7 +160,6 @@ describe('sproc ip_to_mode tests', function () {
             SprocIpToModeSchema,
           );
           assert.equal(notInLocation.mode, 'Public');
-          assert.equal(notInLocation.mode_reason, 'Default');
         });
       });
     });
@@ -186,7 +176,6 @@ describe('sproc ip_to_mode tests', function () {
             SprocIpToModeSchema,
           );
           assert.equal(result.mode, 'Exam');
-          assert.equal(result.mode_reason, 'PrairieTest');
         });
       });
 
@@ -201,7 +190,6 @@ describe('sproc ip_to_mode tests', function () {
             SprocIpToModeSchema,
           );
           assert.equal(result.mode, 'Public');
-          assert.equal(result.mode_reason, 'Default');
         });
       });
 
@@ -216,7 +204,6 @@ describe('sproc ip_to_mode tests', function () {
             SprocIpToModeSchema,
           );
           assert.equal(result.mode, 'Public');
-          assert.equal(result.mode_reason, 'Default');
         });
       });
     });
@@ -233,7 +220,6 @@ describe('sproc ip_to_mode tests', function () {
             SprocIpToModeSchema,
           );
           assert.equal(result.mode, 'Exam');
-          assert.equal(result.mode_reason, 'PrairieTest');
         });
       });
 
@@ -253,7 +239,6 @@ describe('sproc ip_to_mode tests', function () {
             SprocIpToModeSchema,
           );
           assert.equal(result.mode, 'Exam');
-          assert.equal(result.mode_reason, 'PrairieTest');
         });
       });
 
@@ -273,7 +258,6 @@ describe('sproc ip_to_mode tests', function () {
             SprocIpToModeSchema,
           );
           assert.equal(result.mode, 'Public');
-          assert.equal(result.mode_reason, 'Default');
         });
       });
 
@@ -288,7 +272,6 @@ describe('sproc ip_to_mode tests', function () {
             SprocIpToModeSchema,
           );
           assert.equal(result.mode, 'Public');
-          assert.equal(result.mode_reason, 'Default');
         });
       });
     });
@@ -314,7 +297,6 @@ describe('sproc ip_to_mode tests', function () {
             SprocIpToModeSchema,
           );
           assert.equal(result.mode, 'Public');
-          assert.equal(result.mode_reason, 'Default');
         });
       });
 
@@ -336,7 +318,6 @@ describe('sproc ip_to_mode tests', function () {
             SprocIpToModeSchema,
           );
           assert.equal(result.mode, 'Public');
-          assert.equal(result.mode_reason, 'Default');
         });
       });
     });
@@ -357,7 +338,6 @@ describe('sproc ip_to_mode tests', function () {
             SprocIpToModeSchema,
           );
           assert.equal(result.mode, 'Exam');
-          assert.equal(result.mode_reason, 'PrairieTest');
         });
       });
     });
@@ -378,7 +358,6 @@ describe('sproc ip_to_mode tests', function () {
             SprocIpToModeSchema,
           );
           assert.equal(result.mode, 'Exam');
-          assert.equal(result.mode_reason, 'PrairieTest');
         });
       });
 
@@ -402,7 +381,6 @@ describe('sproc ip_to_mode tests', function () {
             SprocIpToModeSchema,
           );
           assert.equal(result.mode, 'Public');
-          assert.equal(result.mode_reason, 'Default');
         });
       });
 
@@ -445,7 +423,6 @@ describe('sproc ip_to_mode tests', function () {
           SprocIpToModeSchema,
         );
         assert.equal(result.mode, 'Exam');
-        assert.equal(result.mode_reason, 'PrairieTest');
       });
     });
 
@@ -462,7 +439,6 @@ describe('sproc ip_to_mode tests', function () {
           SprocIpToModeSchema,
         );
         assert.equal(result.mode, 'Exam');
-        assert.equal(result.mode_reason, 'PrairieTest');
       });
     });
 
@@ -478,7 +454,6 @@ describe('sproc ip_to_mode tests', function () {
           SprocIpToModeSchema,
         );
         assert.equal(result.mode, 'Exam');
-        assert.equal(result.mode_reason, 'PrairieTest');
       });
     });
   });

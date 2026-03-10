@@ -11,7 +11,6 @@ const sql = sqldb.loadSqlEquiv(import.meta.url);
 async function checkAssessmentAccess(params: {
   assessment_id: string;
   authz_mode: EnumMode;
-  authz_mode_reason?: string;
   course_role: string;
   course_instance_role: string;
   user_id: string;
@@ -24,7 +23,6 @@ async function checkAssessmentAccess(params: {
     [
       params.assessment_id,
       params.authz_mode,
-      params.authz_mode_reason,
       params.course_role,
       params.course_instance_role,
       params.user_id,
@@ -151,7 +149,6 @@ describe('sproc check_assessment_access* tests', function () {
         const authorized = await checkAssessmentAccess({
           assessment_id: '10',
           authz_mode: 'Exam',
-          authz_mode_reason: 'PrairieTest',
           course_role: 'None',
           course_instance_role: 'None',
           user_id: '1000',
@@ -166,7 +163,6 @@ describe('sproc check_assessment_access* tests', function () {
         const authorized = await checkAssessmentAccess({
           assessment_id: '11',
           authz_mode: 'Exam',
-          authz_mode_reason: 'PrairieTest',
           course_role: 'None',
           course_instance_role: 'None',
           user_id: '1000',
@@ -192,7 +188,6 @@ describe('sproc check_assessment_access* tests', function () {
         const authorized = await checkAssessmentAccess({
           assessment_id: '10',
           authz_mode: 'Exam',
-          authz_mode_reason: 'PrairieTest',
           course_role: 'None',
           course_instance_role: 'None',
           user_id: '1000',
@@ -207,7 +202,6 @@ describe('sproc check_assessment_access* tests', function () {
         const authorized = await checkAssessmentAccess({
           assessment_id: '11',
           authz_mode: 'Exam',
-          authz_mode_reason: 'PrairieTest',
           course_role: 'None',
           course_instance_role: 'None',
           user_id: '1000',
@@ -222,7 +216,6 @@ describe('sproc check_assessment_access* tests', function () {
         const authorized = await checkAssessmentAccess({
           assessment_id: '12',
           authz_mode: 'Exam',
-          authz_mode_reason: 'PrairieTest',
           course_role: 'None',
           course_instance_role: 'None',
           user_id: '1000',
@@ -237,7 +230,6 @@ describe('sproc check_assessment_access* tests', function () {
         const authorized = await checkAssessmentAccess({
           assessment_id: '53',
           authz_mode: 'Exam',
-          authz_mode_reason: 'PrairieTest',
           course_role: 'None',
           course_instance_role: 'None',
           user_id: '1000',
@@ -252,7 +244,6 @@ describe('sproc check_assessment_access* tests', function () {
         const authorized = await checkAssessmentAccess({
           assessment_id: '54',
           authz_mode: 'Exam',
-          authz_mode_reason: 'PrairieTest',
           course_role: 'None',
           course_instance_role: 'None',
           user_id: '1000',
@@ -262,23 +253,6 @@ describe('sproc check_assessment_access* tests', function () {
         });
         assert.isFalse(authorized);
       });
-    });
-  });
-
-  describe('with other authz_mode_reason values', () => {
-    it('should not allow access if exam_uuid is set', async () => {
-      const authorized = await checkAssessmentAccess({
-        assessment_id: '11',
-        authz_mode: 'Exam',
-        authz_mode_reason: 'Network',
-        course_role: 'None',
-        course_instance_role: 'None',
-        user_id: '1000',
-        uid: 'valid@example.com',
-        date: '2010-07-07 06:06:06-00',
-        display_timezone: 'US/Central',
-      });
-      assert.isFalse(authorized);
     });
   });
 });

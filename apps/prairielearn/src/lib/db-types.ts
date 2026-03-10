@@ -74,9 +74,6 @@ export type EnumJobStatus = z.infer<typeof EnumJobStatusSchema>;
 export const EnumModeSchema = z.enum(['Public', 'Exam', 'SEB']);
 export type EnumMode = z.infer<typeof EnumModeSchema>;
 
-export const EnumModeReasonSchema = z.enum(['Default', 'PrairieTest', 'Network']);
-export type EnumModeReason = z.infer<typeof EnumModeReasonSchema>;
-
 export const EnumPlanGrantTypeSchema = z.enum(['trial', 'stripe', 'invoice', 'gift']);
 export type EnumPlanGrantType = z.infer<typeof EnumPlanGrantTypeSchema>;
 
@@ -174,7 +171,6 @@ export type SprocAuthzCourse = z.infer<typeof SprocAuthzCourseSchema>;
 // Result of ip_to_mode sproc
 export const SprocIpToModeSchema = z.object({
   mode: EnumModeSchema,
-  mode_reason: EnumModeReasonSchema,
 });
 export type SprocIpToMode = z.infer<typeof SprocIpToModeSchema>;
 
@@ -782,16 +778,6 @@ export const EnrollmentSchema = z.object({
   user_id: IdSchema.nullable(),
 });
 export type Enrollment = z.infer<typeof EnrollmentSchema>;
-
-export const ExamModeNetworkSchema = z.object({
-  created_at: DateFromISOString.nullable(),
-  during: z.unknown().nullable(), // https://github.com/PrairieLearn/PrairieLearn/pull/12437#discussion_r2219773815
-  id: IdSchema,
-  location: z.string().nullable(),
-  network: z.string().cidr().nullable(),
-  purpose: z.string().nullable(),
-});
-export type ExamModeNetwork = z.infer<typeof ExamModeNetworkSchema>;
 
 export const FeatureGrantSchema = null;
 
@@ -1675,7 +1661,6 @@ export const TableNames = [
   'current_pages',
   'draft_question_metadata',
   'enrollments',
-  'exam_mode_networks',
   'feature_grants',
   'file_edits',
   'file_transfers',
