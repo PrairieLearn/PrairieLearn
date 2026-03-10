@@ -4,7 +4,6 @@ import { z } from 'zod';
 import {
   checkInstructorLegitimacy,
   suggestPrefixFromEmailDomain,
-  suggestTimezone,
 } from '../../lib/course-request-ai.js';
 import {
   createCourseFromRequest,
@@ -109,23 +108,6 @@ const checkInstructorLegitimacyQuery = t.procedure
     });
   });
 
-const suggestTimezoneQuery = t.procedure
-  .use(requireAdministrator)
-  .input(z.object({ institutionName: z.string(), emailDomain: z.string() }))
-  .output(
-    z.object({
-      timezone: z.string(),
-      reasoning: z.string(),
-      sources: z.array(z.object({ url: z.string(), title: z.string().optional() })),
-    }),
-  )
-  .query(async ({ input }) => {
-    return await suggestTimezone({
-      emailDomain: input.emailDomain,
-      institutionName: input.institutionName,
-    });
-  });
-
 const selectInstitutionPrefixQuery = t.procedure
   .use(requireAdministrator)
   .input(z.object({ institutionId: z.string() }))
@@ -161,7 +143,6 @@ export const administratorCourseRequestsRouter = t.router({
   updateCourseRequestNoteMutation,
   createCourseMutation,
   checkInstructorLegitimacyQuery,
-  suggestTimezoneQuery,
-  suggestPrefixFromEmailQuery,
   selectInstitutionPrefixQuery,
+  suggestPrefixFromEmailQuery,
 });

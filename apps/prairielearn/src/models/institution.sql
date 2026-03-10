@@ -26,3 +26,21 @@ ORDER BY
   i.short_name,
   i.long_name,
   i.id;
+
+-- BLOCK insert_institution
+INSERT INTO
+  institutions (
+    long_name,
+    short_name,
+    display_timezone,
+    uid_regexp
+  )
+VALUES
+  (
+    $long_name,
+    $short_name,
+    $display_timezone,
+    $uid_regexp
+  )
+RETURNING
+  id;

@@ -1,30 +1,93 @@
-import { Modal } from 'react-bootstrap';
+import { useMutation, useQuery } from '@tanstack/react-query';
+import { Alert, Modal } from 'react-bootstrap';
+import { useForm } from 'react-hook-form';
+import ReactMarkdown from 'react-markdown';
+
+import { OverlayTrigger } from '@prairielearn/ui';
 
 import type { StaffAuthnProvider } from '../../../lib/client/safe-db-types.js';
 import { type Timezone, formatTimezone } from '../../../lib/timezone.shared.js';
+import { useTRPC } from '../utils/trpc-context.js';
+
+interface AddInstitutionFormData {
+  short_name: string;
+  long_name: string;
+  display_timezone: string;
+  uid_regexp: string;
+  enabled_authn_provider_ids: string[];
+}
 
 export function AddInstitutionModal({
   show,
   availableTimezones,
   supportedAuthenticationProviders,
-  csrfToken,
   onClose,
 }: {
   show: boolean;
   availableTimezones: Timezone[];
   supportedAuthenticationProviders: StaffAuthnProvider[];
-  csrfToken: string;
   onClose: () => void;
 }) {
+  const trpc = useTRPC();
+  const mutation = useMutation(trpc.addInstitution.mutationOptions());
+
+  const defaultCheckedIds = supportedAuthenticationProviders
+    .filter((p) => p.name === 'Google' || p.name === 'Azure')
+    .map((p) => p.id);
+
+  const {
+    register,
+    handleSubmit,
+    watch,
+    setValue,
+    formState: { isSubmitting },
+  } = useForm<AddInstitutionFormData>({
+    mode: 'onSubmit',
+    defaultValues: {
+      display_timezone: '',
+      enabled_authn_provider_ids: defaultCheckedIds,
+    },
+  });
+  const institutionName = watch('long_name');
+  const emailDomain = watch('short_name');
+
+  const onSubmit = async (data: AddInstitutionFormData) => {
+    mutation.mutate(
+      {
+        shortName: data.short_name,
+        longName: data.long_name,
+        displayTimezone: data.display_timezone,
+        uidRegexp: data.uid_regexp,
+        enabledAuthnProviderIds: data.enabled_authn_provider_ids,
+      },
+      { onSuccess: () => window.location.reload() },
+    );
+  };
+
+  const {
+    data: timezoneData,
+    isFetching: isFetchingTimezone,
+    isError: isTimezoneError,
+    refetch: suggestTimezone,
+  } = useQuery({
+    ...trpc.suggestTimezoneQuery.queryOptions({ institutionName, emailDomain }),
+    enabled: false,
+  });
+
+  async function handleSuggestTimezone() {
+    const { data } = await suggestTimezone();
+    if (data?.timezone) {
+      setValue('display_timezone', data.timezone);
+    }
+  }
+
   return (
     <Modal show={show} onHide={onClose}>
       <Modal.Header closeButton>
         <Modal.Title>Add Institution</Modal.Title>
       </Modal.Header>
       <Modal.Body>
-        <form method="POST" id="add-institution-form">
-          <input type="hidden" name="__action" value="add_institution" />
-          <input type="hidden" name="__csrf_token" value={csrfToken} />
+        <form id="add-institution-form" onSubmit={handleSubmit(onSubmit)}>
           <div className="mb-3">
             <label className="form-label" htmlFor="short_name">
               Short name
@@ -33,8 +96,7 @@ export function AddInstitutionModal({
               type="text"
               className="form-control"
               id="short_name"
-              name="short_name"
-              required
+              {...register('short_name', { required: 'Enter a short name' })}
             />
             <small id="short_name_help" className="form-text text-muted">
               An abbreviation or short name, e.g. "illinois.edu" or "ubc.ca". Usually this should be
@@ -45,7 +107,12 @@ export function AddInstitutionModal({
             <label className="form-label" htmlFor="long_name">
               Long name
             </label>
-            <input type="text" className="form-control" id="long_name" name="long_name" required />
+            <input
+              type="text"
+              className="form-control"
+              id="long_name"
+              {...register('long_name', { required: 'Enter a long name' })}
+            />
             <small id="long_name_help" className="form-text text-muted">
               Use the full name of the university, e.g. "University of Illinois Urbana-Champaign".
             </small>
@@ -57,9 +124,7 @@ export function AddInstitutionModal({
             <select
               className="form-select"
               id="display_timezone"
-              name="display_timezone"
-              defaultValue=""
-              required
+              {...register('display_timezone', { required: 'Select a timezone' })}
             >
               <option value="" disabled hidden>
                 Timezone
@@ -82,12 +147,47 @@ export function AddInstitutionModal({
               . It's best to use a city-based timezone that has the same times as the institution,
               e.g. "America/Chicago".
             </small>
+            <div className="mt-2">
+              <OverlayTrigger
+                trigger={['hover', 'focus']}
+                placement="top"
+                tooltip={{
+                  body: 'Uses AI web search to suggest the correct timezone based on the institution name and domain. Fill in the short name and long name first.',
+                  props: { id: 'suggest-timezone-tooltip' },
+                }}
+              >
+                <button
+                  type="button"
+                  className="btn btn-secondary btn-sm"
+                  aria-busy={isFetchingTimezone}
+                  disabled={isFetchingTimezone}
+                  onClick={handleSuggestTimezone}
+                >
+                  {isFetchingTimezone ? 'Suggesting...' : 'Suggest timezone'}
+                </button>
+              </OverlayTrigger>
+              {isTimezoneError && (
+                <div className="mt-2 text-danger small">Failed to suggest timezone. Try again.</div>
+              )}
+              <div aria-live="polite" aria-atomic="true">
+                {timezoneData && (
+                  <div className="mt-2 text-muted small">
+                    <ReactMarkdown>{timezoneData.reasoning}</ReactMarkdown>
+                  </div>
+                )}
+              </div>
+            </div>
           </div>
           <div className="mb-3">
             <label className="form-label" htmlFor="uid_regexp">
               UID regexp
             </label>
-            <input type="text" className="form-control" id="uid_regexp" name="uid_regexp" />
+            <input
+              type="text"
+              className="form-control"
+              id="uid_regexp"
+              {...register('uid_regexp')}
+            />
             <small id="uid_regexp_help" className="form-text text-muted">
               Should match the non-username part of user UIDs, e.g. <code>@example\.com$</code>.
               This should be set for institution-based access restrictions to work correctly.
@@ -97,26 +197,20 @@ export function AddInstitutionModal({
             <div className="mb-3">
               <div className="form-label">Authentication providers</div>
               <div className="mb-2">
-                {supportedAuthenticationProviders.map((provider) => {
-                  // Default Google and Azure/Microsoft to checked
-                  const isDefaultChecked = provider.name === 'Google' || provider.name === 'Azure';
-
-                  return (
-                    <div key={provider.id} className="form-check">
-                      <input
-                        className="form-check-input"
-                        type="checkbox"
-                        value={provider.id}
-                        id={`authn-provider-${provider.id}`}
-                        name="enabled_authn_provider_ids"
-                        defaultChecked={isDefaultChecked}
-                      />
-                      <label className="form-check-label" htmlFor={`authn-provider-${provider.id}`}>
-                        {provider.name}
-                      </label>
-                    </div>
-                  );
-                })}
+                {supportedAuthenticationProviders.map((provider) => (
+                  <div key={provider.id} className="form-check">
+                    <input
+                      className="form-check-input"
+                      type="checkbox"
+                      id={`authn-provider-${provider.id}`}
+                      value={provider.id}
+                      {...register('enabled_authn_provider_ids')}
+                    />
+                    <label className="form-check-label" htmlFor={`authn-provider-${provider.id}`}>
+                      {provider.name}
+                    </label>
+                  </div>
+                ))}
               </div>
               <small className="form-text text-muted">
                 Select which authentication methods users from this institution can use to log in.
@@ -130,13 +224,23 @@ export function AddInstitutionModal({
               installation. Additional SSO authentication providers can be configured later.
             </div>
           )}
+          {mutation.isError && (
+            <Alert variant="danger" dismissible onClose={() => mutation.reset()}>
+              {mutation.error.message}
+            </Alert>
+          )}
         </form>
       </Modal.Body>
       <Modal.Footer>
         <button type="button" className="btn btn-secondary" onClick={onClose}>
           Cancel
         </button>
-        <button type="submit" className="btn btn-primary" form="add-institution-form">
+        <button
+          type="submit"
+          className="btn btn-primary"
+          form="add-institution-form"
+          disabled={isSubmitting || mutation.isPending}
+        >
           Add institution
         </button>
       </Modal.Footer>

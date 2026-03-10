@@ -569,47 +569,50 @@ function CourseRequestApproveForm({
         {isLegitimacyError && (
           <div className="mt-2 text-danger small">Failed to check legitimacy. Try again.</div>
         )}
-        {legitimacyData && (
-          <div aria-live="polite" aria-atomic="true">
-            <div className="mt-2 d-flex align-items-start gap-2">
-              <span
-                className={clsx('badge', {
-                  'text-bg-success': legitimacyData.confidence === 'high',
-                  'text-bg-warning': legitimacyData.confidence === 'medium',
-                  'text-bg-danger': legitimacyData.confidence === 'low',
-                })}
-              >
-                {legitimacyData.isLikely ? 'Likely legitimate' : 'Uncertain'} &middot;{' '}
-                {legitimacyData.confidence} confidence
-              </span>
-            </div>
-            <small className="text-muted">
-              <ReactMarkdown>{legitimacyData.summary}</ReactMarkdown>
-            </small>
-            {legitimacyData.sources.length > 0 && (
-              <div className="mt-1">
-                <span className="small text-muted">Sources</span>
-                <div className="d-flex flex-wrap gap-1">
-                  {legitimacyData.sources
-                    .filter(
-                      (source, index, arr) => arr.findIndex((s) => s.url === source.url) === index,
-                    )
-                    .map((source) => (
-                      <a
-                        key={source.url}
-                        href={source.url}
-                        target="_blank"
-                        rel="noreferrer"
-                        className="small"
-                      >
-                        {source.title ?? source.url}
-                      </a>
-                    ))}
-                </div>
+        <div aria-live="polite" aria-atomic="true">
+          {legitimacyData && (
+            <>
+              <div className="mt-2 d-flex align-items-start gap-2">
+                <span
+                  className={clsx('badge', {
+                    'text-bg-success': legitimacyData.confidence === 'high',
+                    'text-bg-warning': legitimacyData.confidence === 'medium',
+                    'text-bg-danger': legitimacyData.confidence === 'low',
+                  })}
+                >
+                  {legitimacyData.isLikely ? 'Likely legitimate' : 'Uncertain'} &middot;{' '}
+                  {legitimacyData.confidence} confidence
+                </span>
               </div>
-            )}
-          </div>
-        )}
+              <small className="text-muted">
+                <ReactMarkdown>{legitimacyData.summary}</ReactMarkdown>
+              </small>
+              {legitimacyData.sources.length > 0 && (
+                <div className="mt-1">
+                  <span className="small text-muted">Sources</span>
+                  <div className="d-flex flex-wrap gap-1">
+                    {legitimacyData.sources
+                      .filter(
+                        (source, index, arr) =>
+                          arr.findIndex((s) => s.url === source.url) === index,
+                      )
+                      .map((source) => (
+                        <a
+                          key={source.url}
+                          href={source.url}
+                          target="_blank"
+                          rel="noreferrer"
+                          className="small"
+                        >
+                          {source.title ?? source.url}
+                        </a>
+                      ))}
+                  </div>
+                </div>
+              )}
+            </>
+          )}
+        </div>
       </div>
       <div className="mb-3">
         <OverlayTrigger

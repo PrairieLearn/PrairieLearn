@@ -1,7 +1,7 @@
-import { QueryClient, useMutation } from '@tanstack/react-query';
+import { QueryClient, useMutation, useQuery } from '@tanstack/react-query';
 import clsx from 'clsx';
-import { useState } from 'react';
-import { Alert } from 'react-bootstrap';
+import { useEffect, useState } from 'react';
+import { Alert, Modal } from 'react-bootstrap';
 import { useForm } from 'react-hook-form';
 
 import { OverlayTrigger } from '@prairielearn/ui';
@@ -61,7 +61,7 @@ export function AdministratorCourses({
   const [queryClient] = useState(() => new QueryClient());
   const [trpcClient] = useState(() => createAdministratorTrpcClient({ csrfToken: trpcCsrfToken }));
 
-  const [showInsertCoursePopover, setShowInsertCoursePopover] = useState(false);
+  const [showInsertCourseModal, setShowInsertCourseModal] = useState(false);
   const [deleteCourseId, setDeleteCourseId] = useState<string | null>(null);
 
   return (
@@ -80,28 +80,28 @@ export function AdministratorCourses({
           <div id="courses" className="card mb-4">
             <div className="card-header bg-primary text-white d-flex align-items-center">
               <h2>Courses</h2>
-              <OverlayTrigger
-                trigger="click"
-                placement="auto"
-                popover={{
-                  header: 'Add new course',
-                  body: (
-                    <CourseInsertForm
-                      institutions={institutions}
-                      courseRepoDefaultBranch={courseRepoDefaultBranch}
-                      onCancel={() => setShowInsertCoursePopover(false)}
-                    />
-                  ),
-                }}
-                show={showInsertCoursePopover}
-                rootClose
-                onToggle={setShowInsertCoursePopover}
+              <button
+                type="button"
+                className="btn btn-sm btn-light ms-auto"
+                onClick={() => setShowInsertCourseModal(true)}
               >
-                <button type="button" className="btn btn-sm btn-light ms-auto">
-                  <i className="fa fa-plus" aria-hidden="true" />
-                  <span className="d-none d-sm-inline">Add course</span>
-                </button>
-              </OverlayTrigger>
+                <i className="fa fa-plus" aria-hidden="true" />
+                <span className="d-none d-sm-inline">Add course</span>
+              </button>
+              <Modal
+                show={showInsertCourseModal}
+                backdrop="static"
+                onHide={() => setShowInsertCourseModal(false)}
+              >
+                <Modal.Body>
+                  <CourseInsertForm
+                    institutions={institutions}
+                    coursesRoot={coursesRoot}
+                    courseRepoDefaultBranch={courseRepoDefaultBranch}
+                    onCancel={() => setShowInsertCourseModal(false)}
+                  />
+                </Modal.Body>
+              </Modal>
             </div>
             <div className="table-responsive">
               <table className="table table-sm table-hover table-striped" aria-label="Courses">
@@ -172,9 +172,9 @@ export function AdministratorCourses({
             </div>
             <div className="card-footer">
               <small>
-                When a course is synced, if the <strong>path</strong> does not exist on disk then a
+                When a course is synced, if the <strong>path</strong> does not exist on disk then a{' '}
                 <code>git clone</code> is performed from the <strong>repository</strong>, otherwise
-                a <code>git pull</code> is run in the <strong>path</strong> directory. The
+                a <code>git pull</code> is run in the <strong>path</strong> directory. The{' '}
                 <strong>short name</strong> and <strong>title</strong> are updated from the JSON
                 configuration file in the repository during the sync.
               </small>
@@ -228,9 +228,15 @@ function CourseDeleteForm({
           type="text"
           className={clsx('form-control', errors.short_name && 'is-invalid')}
           id={`inputConfirm${id}`}
+          aria-invalid={errors.short_name ? true : undefined}
+          aria-errormessage={errors.short_name ? `inputConfirm${id}-error` : undefined}
           {...register('short_name')}
         />
-        {errors.short_name && <div className="invalid-feedback">{errors.short_name.message}</div>}
+        {errors.short_name && (
+          <div id={`inputConfirm${id}-error`} className="invalid-feedback">
+            {errors.short_name.message}
+          </div>
+        )}
       </div>
       {mutation.isError && (
         <Alert variant="danger" dismissible onClose={() => mutation.reset()}>
@@ -251,10 +257,12 @@ function CourseDeleteForm({
 
 function CourseInsertForm({
   institutions,
+  coursesRoot,
   courseRepoDefaultBranch,
   onCancel,
 }: {
   institutions: AdminInstitution[];
+  coursesRoot: string;
   courseRepoDefaultBranch: string;
   onCancel: () => void;
 }) {
@@ -266,6 +274,7 @@ function CourseInsertForm({
     handleSubmit,
     watch,
     setValue,
+    getValues,
     formState: { errors, isSubmitting },
   } = useForm<InsertCourseFormData>({
     mode: 'onSubmit',
@@ -274,12 +283,29 @@ function CourseInsertForm({
       short_name: 'XC 101',
       title: 'Template course title',
       display_timezone: institutions[0]?.display_timezone ?? '',
-      path: '/data1/courses/pl-XXX',
+      path: `${coursesRoot}/pl-XXX`,
       repository: 'git@github.com:PrairieLearn/pl-XXX.git',
       branch: courseRepoDefaultBranch,
     },
   });
   const institutionId = watch('institution_id');
+  const shortName = watch('short_name');
+
+  const { data: prefixData } = useQuery({
+    ...trpc.courseRequests.selectInstitutionPrefixQuery.queryOptions({ institutionId }),
+    enabled: !!institutionId,
+  });
+
+  useEffect(() => {
+    if (!prefixData) return;
+    const slug = shortName.replaceAll(' ', '').toLowerCase();
+    const newRepoShortName = prefixData.prefix ? `pl-${prefixData.prefix}-${slug}` : `pl-${slug}`;
+    setValue('path', `${coursesRoot}/${newRepoShortName}`);
+    setValue(
+      'repository',
+      getValues('repository').replace(/\/pl-[^/]+\.git$/, `/${newRepoShortName}.git`),
+    );
+  }, [prefixData, shortName, coursesRoot, getValues, setValue]);
 
   const selectedInstitution = institutions.find((i) => i.id === institutionId);
   const isDefaultInstitution = selectedInstitution?.short_name === 'Default';
