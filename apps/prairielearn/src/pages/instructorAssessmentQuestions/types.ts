@@ -2,7 +2,14 @@ import type { Dispatch } from 'react';
 import { z } from 'zod';
 
 import type { StaffAssessmentQuestionRow } from '../../lib/assessment-question.shared.js';
-import type { EnumAssessmentType } from '../../lib/db-types.js';
+import type {
+  Assessment,
+  AssessmentSet,
+  EnumAssessmentType,
+  Question,
+  Tag,
+  Topic,
+} from '../../lib/db-types.js';
 import {
   QuestionAlternativeJsonSchema,
   ZoneAssessmentJsonSchema,
@@ -59,13 +66,13 @@ export type ZoneAssessmentForm = z.infer<typeof ZoneAssessmentFormSchema>;
  * Assessment data for the question picker, including fields needed for grouping.
  */
 export interface AssessmentForPicker {
-  assessment_id: string;
+  assessment_id: Assessment['id'];
   label: string;
-  color: string;
-  assessment_set_abbreviation?: string;
-  assessment_set_name?: string;
-  assessment_set_color?: string;
-  assessment_number?: string;
+  color: AssessmentSet['color'];
+  assessment_set_abbreviation?: AssessmentSet['abbreviation'];
+  assessment_set_name?: AssessmentSet['name'];
+  assessment_set_color?: AssessmentSet['color'];
+  assessment_number?: Assessment['number'];
 }
 
 /**
@@ -73,11 +80,12 @@ export interface AssessmentForPicker {
  * Only includes fields needed for display and selection.
  */
 export interface CourseQuestionForPicker {
-  id: string;
+  id: Question['id'];
   qid: string;
-  title: string;
-  topic: { id: string; name: string; color: string };
-  tags: { id: string; name: string; color: string }[] | null;
+  title: Question['title'];
+  grading_method: Question['grading_method'];
+  topic: Pick<Topic, 'id' | 'name' | 'color'>;
+  tags: Pick<Tag, 'id' | 'name' | 'color'>[] | null;
   assessments: AssessmentForPicker[] | null;
 }
 

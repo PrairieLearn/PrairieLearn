@@ -4,13 +4,19 @@ import { useMemo, useRef, useState } from 'react';
 
 import { FilterDropdown, type FilterItem } from '@prairielearn/ui';
 
-import { getQuestionUrl } from '../../../../lib/client/url.js';
+import { getQuestionCreateUrl, getQuestionUrl } from '../../../../lib/client/url.js';
 import type { CourseQuestionForPicker } from '../../types.js';
 import { AssessmentBadges } from '../AssessmentBadges.js';
 import { QuestionTopicTagBadges } from '../QuestionTopicTagBadges.js';
 
 const NOT_IN_ANY_ASSESSMENT_ID = '__not_in_any_assessment__';
 const PINNED_ASSESSMENT_IDS = new Set([NOT_IN_ANY_ASSESSMENT_ID]);
+
+const GRADING_METHOD_ITEMS: FilterItem[] = [
+  { id: 'Internal', name: 'Internal' },
+  { id: 'External', name: 'External' },
+  { id: 'Manual', name: 'Manual' },
+];
 
 export function QuestionPickerPanel({
   courseQuestions,
@@ -43,6 +49,9 @@ export function QuestionPickerPanel({
   const [selectedTopics, setSelectedTopics] = useState<Set<string>>(() => new Set());
   const [selectedTags, setSelectedTags] = useState<Set<string>>(() => new Set());
   const [selectedAssessments, setSelectedAssessments] = useState<Set<string>>(() => new Set());
+  const [selectedGradingMethods, setSelectedGradingMethods] = useState<Set<string>>(
+    () => new Set(),
+  );
   const [expandedTagsQids, setExpandedTagsQids] = useState<Set<string>>(() => new Set());
 
   const scrollParentRef = useRef<HTMLDivElement>(null);
@@ -114,7 +123,12 @@ export function QuestionPickerPanel({
         }
       }
 
-      return matchesSearch && matchesTopic && matchesTags && matchesAssessment;
+      const matchesGradingMethod =
+        selectedGradingMethods.size === 0 || selectedGradingMethods.has(q.grading_method);
+
+      return (
+        matchesSearch && matchesTopic && matchesTags && matchesAssessment && matchesGradingMethod
+      );
     });
   }, [
     courseQuestions,
@@ -122,6 +136,7 @@ export function QuestionPickerPanel({
     selectedTopics,
     selectedTags,
     selectedAssessments,
+    selectedGradingMethods,
     currentAssessmentId,
   ]);
 
@@ -149,10 +164,14 @@ export function QuestionPickerPanel({
     setSelectedTopics(new Set());
     setSelectedTags(new Set());
     setSelectedAssessments(new Set());
+    setSelectedGradingMethods(new Set());
   };
 
   const hasActiveFilters =
-    selectedTopics.size > 0 || selectedTags.size > 0 || selectedAssessments.size > 0;
+    selectedTopics.size > 0 ||
+    selectedTags.size > 0 ||
+    selectedAssessments.size > 0 ||
+    selectedGradingMethods.size > 0;
 
   const virtualRows = rowVirtualizer.getVirtualItems();
 
@@ -201,6 +220,12 @@ export function QuestionPickerPanel({
             maxHeight={20 * 28 + 50}
             onChange={setSelectedAssessments}
           />
+          <FilterDropdown
+            label="Grading"
+            items={GRADING_METHOD_ITEMS}
+            selectedIds={selectedGradingMethods}
+            onChange={setSelectedGradingMethods}
+          />
           {hasActiveFilters && (
             <button
               type="button"
@@ -229,9 +254,18 @@ export function QuestionPickerPanel({
       </div>
       <div ref={scrollParentRef} className="flex-grow-1" style={{ overflow: 'auto' }}>
         {sortedQuestions.length === 0 ? (
-          <div className="d-flex flex-column align-items-center justify-content-center text-muted py-5">
+          <div className="d-flex flex-column align-items-center justify-content-center text-muted py-5 text-center px-3">
             <i className="bi bi-search display-6 mb-2" aria-hidden="true" />
-            <p>No questions match your search criteria.</p>
+            <p className="mb-1">No questions match your search criteria.</p>
+            <small>
+              <a
+                href={getQuestionCreateUrl(courseInstanceId)}
+                target="_blank"
+                rel="noopener noreferrer"
+              >
+                Create a new question
+              </a>
+            </small>
           </div>
         ) : (
           <div
