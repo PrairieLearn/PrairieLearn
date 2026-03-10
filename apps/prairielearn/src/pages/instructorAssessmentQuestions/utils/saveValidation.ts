@@ -2,8 +2,6 @@ import type { ZoneAssessmentForm, ZoneQuestionBlockForm } from '../types.js';
 
 import { validatePositiveInteger } from './questions.js';
 
-export type StructuralSaveValidationErrorKind = 'zone' | 'altGroup';
-
 function zoneHasStructuralValidationError(zone: ZoneAssessmentForm, zoneIndex: number): boolean {
   if (zone.lockpoint && zoneIndex === 0) {
     return true;
@@ -43,7 +41,7 @@ function altGroupHasStructuralValidationError(question: ZoneQuestionBlockForm): 
 
 export function getStructuralSaveValidationErrorKind(
   zones: ZoneAssessmentForm[],
-): StructuralSaveValidationErrorKind | undefined {
+): 'zone' | 'altGroup' | undefined {
   if (zones.some(zoneHasStructuralValidationError)) {
     return 'zone';
   }
