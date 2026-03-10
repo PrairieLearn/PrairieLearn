@@ -205,7 +205,7 @@ export function QuestionDetailPanel({
     [handleSave, getValues],
   );
 
-  useAutoSave({ isDirty, isValid, getValues, onSave: handleSave, watch });
+  useAutoSave({ isDirty, isValid, getValues, onSave: handleSave, watch, trigger });
 
   // Validate immediately on mount so that pre-existing invalid state
   // (e.g. no points set on a newly added question) is flagged right away.

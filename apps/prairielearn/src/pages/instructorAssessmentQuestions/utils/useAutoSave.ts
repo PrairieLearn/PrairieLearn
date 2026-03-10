@@ -7,12 +7,14 @@ export function useAutoSave<T extends FieldValues>({
   getValues,
   onSave,
   watch,
+  trigger,
 }: {
   isDirty: boolean;
   isValid: boolean;
   getValues: UseFormGetValues<T>;
   onSave: (data: T) => void;
   watch: UseFormWatch<T>;
+  trigger: () => Promise<boolean>;
 }) {
   const onSaveRef = useRef(onSave);
   onSaveRef.current = onSave;
@@ -35,12 +37,17 @@ export function useAutoSave<T extends FieldValues>({
   }, [watch]);
 
   // Save after each render where a form value changed and the form is
-  // dirty and valid. isDirty/isValid are read directly from the render
-  // scope (not refs) so they reflect the current render's state.
+  // dirty. We explicitly trigger() validation rather than relying on
+  // isValid from the render scope, because a watch-triggered re-render
+  // can have stale isValid (true) before validation has completed.
   useEffect(() => {
-    if (pendingSaveRef.current && isDirty && isValid) {
+    if (pendingSaveRef.current && isDirty) {
       pendingSaveRef.current = false;
-      onSaveRef.current(getValues());
+      void trigger().then((valid) => {
+        if (valid && isDirtyRef.current) {
+          onSaveRef.current(getValues());
+        }
+      });
     }
   });
 
