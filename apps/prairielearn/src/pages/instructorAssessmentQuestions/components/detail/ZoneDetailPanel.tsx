@@ -151,7 +151,7 @@ export function ZoneDetailPanel({
         </div>
       )}
       {zoneChooseExceeds && (
-        <div className="alert alert-warning small mb-3" role="alert">
+        <div className="alert alert-danger small mb-3" role="alert">
           <i className="bi bi-exclamation-triangle-fill me-1" aria-hidden="true" />
           Number to choose or best questions exceeds the number of questions in this zone.
         </div>
