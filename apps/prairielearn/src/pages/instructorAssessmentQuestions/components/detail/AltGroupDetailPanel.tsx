@@ -148,27 +148,29 @@ export function AltGroupDetailPanel({
 
   return (
     <div className="p-3">
-      <div className={clsx('text-muted small', editMode ? 'mb-3' : 'mb-2')}>
-        {alternativeCount} alternative{alternativeCount !== 1 ? 's' : ''} in group
-      </div>
-      {sharedTopic && (
-        <div className="mb-2">
-          <div className="text-muted small mb-1">Topic shared across alternatives</div>
-          <span className={`badge color-${sharedTopic.color}`}>{sharedTopic.name}</span>
+      <div className="d-flex flex-column gap-2">
+        <div className="text-muted small">
+          {alternativeCount} alternative{alternativeCount !== 1 ? 's' : ''} in group
         </div>
-      )}
-      {sharedTags.length > 0 && (
-        <div className="mb-2">
-          <div className="text-muted small mb-1">Tags shared across alternatives</div>
-          <div className="d-flex flex-wrap gap-1">
-            {sharedTags.map((tag) => (
-              <span key={tag.name} className={`badge color-${tag.color}`}>
-                {tag.name}
-              </span>
-            ))}
+        {sharedTopic && (
+          <div>
+            <div className="text-muted small mb-1">Topic shared across alternatives</div>
+            <span className={`badge color-${sharedTopic.color}`}>{sharedTopic.name}</span>
           </div>
-        </div>
-      )}
+        )}
+        {sharedTags.length > 0 && (
+          <div>
+            <div className="text-muted small mb-1">Tags shared across alternatives</div>
+            <div className="d-flex flex-wrap gap-1">
+              {sharedTags.map((tag) => (
+                <span key={tag.name} className={`badge color-${tag.color}`}>
+                  {tag.name}
+                </span>
+              ))}
+            </div>
+          </div>
+        )}
+      </div>
 
       <DetailSectionHeader>Settings</DetailSectionHeader>
 
