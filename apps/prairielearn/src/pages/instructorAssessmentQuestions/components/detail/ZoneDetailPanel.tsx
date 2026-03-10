@@ -67,6 +67,12 @@ export function ZoneDetailPanel({
   } = useForm<ZoneFormData>({
     mode: 'onChange',
     values: formValues,
+    // Prevent autosave from clobbering in-progress typing. Without this,
+    // the autosave feedback loop (edit → save → parent state update →
+    // values prop change → form reset) resets the input mid-keystroke.
+    // This is safe because the only source of values changes while the
+    // panel is open is autosave; switching entities remounts the component.
+    resetOptions: { keepDirtyValues: true, keepErrors: true },
   });
 
   const zoneQuestionCount = computeZoneQuestionCount(zone.questions);
