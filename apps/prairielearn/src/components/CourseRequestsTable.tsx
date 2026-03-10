@@ -1,4 +1,4 @@
-import { QueryClient, useMutation } from '@tanstack/react-query';
+import { useMutation } from '@tanstack/react-query';
 import clsx from 'clsx';
 import { useState } from 'react';
 import { Alert, Dropdown, Modal } from 'react-bootstrap';
@@ -7,11 +7,9 @@ import { useForm } from 'react-hook-form';
 import { OverlayTrigger } from '@prairielearn/ui';
 
 import type { AdminInstitution } from '../lib/client/safe-db-types.js';
-import { QueryClientProviderDebug } from '../lib/client/tanstackQuery.js';
 import { getAdministratorCourseRequestsUrl } from '../lib/client/url.js';
 import type { CourseRequestRow } from '../lib/course-request.js';
-import { createAdministratorTrpcClient } from '../trpc/administrator/trpc-client.js';
-import { TRPCProvider, useTRPC } from '../trpc/administrator/trpc-context.js';
+import { useTRPC } from '../trpc/administrator/trpc-context.js';
 
 import { JobStatus } from './JobStatus.js';
 
@@ -30,75 +28,67 @@ export function CourseRequestsTable({
   institutions,
   coursesRoot,
   showAll,
-  trpcCsrfToken,
   urlPrefix,
 }: {
   rows: CourseRequestRow[];
   institutions: AdminInstitution[];
   coursesRoot: string;
   showAll: boolean;
-  trpcCsrfToken: string;
   urlPrefix: string;
 }) {
   const headerPrefix = showAll ? 'All' : 'Pending';
-  const [queryClient] = useState(() => new QueryClient());
-  const [trpcClient] = useState(() => createAdministratorTrpcClient({ csrfToken: trpcCsrfToken }));
   return (
-    <QueryClientProviderDebug client={queryClient}>
-      <TRPCProvider trpcClient={trpcClient} queryClient={queryClient}>
-        <div className="card mb-4">
-          <div className="card-header bg-primary text-white d-flex align-items-center">
-            <h2>{headerPrefix} course requests</h2>
-            {!showAll && (
-              <a
-                className="btn btn-sm btn-light ms-auto"
-                href={getAdministratorCourseRequestsUrl({ urlPrefix })}
-              >
-                <i className="fa fa-search" aria-hidden="true" />
-                <span className="d-none d-sm-inline">View all</span>
-              </a>
-            )}
-          </div>
-          <div className="table-responsive">
-            <table className="table table-sm" aria-label="Course requests">
-              <thead>
-                <tr>
-                  <th>Created At</th>
-                  <th>Short Name / Title</th>
-                  <th>Institution</th>
-                  <th>Requested By</th>
-                  <th>PrairieLearn User</th>
-                  <th>GitHub Username</th>
-                  <th>Referral Source</th>
-                  <th>Status</th>
-                  {showAll && <th>Updated By</th>}
-                  <th>Actions</th>
-                  <th>Details</th>
-                </tr>
-              </thead>
-              <tbody>
-                {rows.map((row) => (
-                  <CourseRequestTableRow
-                    key={row.id}
-                    row={row}
-                    institutions={institutions}
-                    coursesRoot={coursesRoot}
-                    showAll={showAll}
-                    urlPrefix={urlPrefix}
-                  />
-                ))}
-              </tbody>
-            </table>
-          </div>
-          <div className="card-footer">
-            <small>
-              Accepting a course request will automatically create a new GitHub repository and add
-              the course to the database.
-            </small>
-          </div>
-        </div>
-      </TRPCProvider>
-    </QueryClientProviderDebug>
+    <div className="card mb-4">
+      <div className="card-header bg-primary text-white d-flex align-items-center">
+        <h2>{headerPrefix} course requests</h2>
+        {!showAll && (
+          <a
+            className="btn btn-sm btn-light ms-auto"
+            href={getAdministratorCourseRequestsUrl({ urlPrefix })}
+          >
+            <i className="fa fa-search" aria-hidden="true" />
+            <span className="d-none d-sm-inline">View all</span>
+          </a>
+        )}
+      </div>
+      <div className="table-responsive">
+        <table className="table table-sm" aria-label="Course requests">
+          <thead>
+            <tr>
+              <th>Created At</th>
+              <th>Short Name / Title</th>
+              <th>Institution</th>
+              <th>Requested By</th>
+              <th>PrairieLearn User</th>
+              <th>GitHub Username</th>
+              <th>Referral Source</th>
+              <th>Status</th>
+              {showAll && <th>Updated By</th>}
+              <th>Actions</th>
+              <th>Details</th>
+            </tr>
+          </thead>
+          <tbody>
+            {rows.map((row) => (
+              <CourseRequestTableRow
+                key={row.id}
+                row={row}
+                institutions={institutions}
+                coursesRoot={coursesRoot}
+                showAll={showAll}
+                urlPrefix={urlPrefix}
+              />
+            ))}
+          </tbody>
+        </table>
+      </div>
+      <div className="card-footer">
+        <small>
+          Accepting a course request will automatically create a new GitHub repository and add the
+          course to the database.
+        </small>
+      </div>
+    </div>
   );
 }
 
@@ -129,15 +119,28 @@ function CourseRequestTableRow({
         <td className="align-middle">
           {row.short_name}: {row.title}
         </td>
-        <td className="align-middle">{row.institution}</td>
         <td className="align-middle">
-          {row.first_name} {row.last_name} ({row.work_email})
+          <EmptyState value={row.institution} label="No institution" />
+        </td>
+        <td className="align-middle">
+          {row.first_name || row.last_name ? (
+            <>
+              {row.first_name} {row.last_name}{' '}
+              {row.work_email ? `(${row.work_email})` : ''}
+            </>
+          ) : (
+            <span className="text-muted fst-italic">No contact info</span>
+          )}
         </td>
         <td className="align-middle">
           {row.user_name} ({row.user_uid})
         </td>
-        <td className="align-middle">{row.github_user}</td>
-        <td className="align-middle">{row.referral_source}</td>
+        <td className="align-middle">
+          <EmptyState value={row.github_user} label="No GitHub user" />
+        </td>
+        <td className="align-middle">
+          <EmptyState value={row.referral_source} label="No referral source" />
+        </td>
         <td className="align-middle">
           <CourseRequestStatusIcon status={row.approved_status} />
         </td>
@@ -288,7 +291,7 @@ function CourseRequestApproveForm({
   onCancel: () => void;
 }) {
   const trpc = useTRPC();
-  const mutation = useMutation(trpc.courseRequests.createCourseMutation.mutationOptions());
+  const mutation = useMutation(trpc.courseRequests.createCourse.mutationOptions());
 
   const repoName = 'pl-' + request.short_name.replaceAll(' ', '').toLowerCase();
   const path = coursesRoot + '/' + repoName;
@@ -316,7 +319,7 @@ function CourseRequestApproveForm({
   const selectedInstitution = institutions.find((i) => i.id === institutionId);
   const isDefaultInstitution = selectedInstitution?.short_name === 'Default';
 
-  const onSubmit = async (data: CourseRequestApproveFormData) => {
+  const onSubmit = (data: CourseRequestApproveFormData) => {
     mutation.mutate(
       {
         courseRequestId: request.id,
@@ -344,11 +347,7 @@ function CourseRequestApproveForm({
         </label>
         <select
           id="courseRequestAddInstitution"
-          className={clsx(
-            'form-select',
-            selectedInstitution && isDefaultInstitution && 'is-warning',
-            errors.institution_id && 'is-invalid',
-          )}
+          className={clsx('form-select', errors.institution_id && 'is-invalid')}
           aria-invalid={errors.institution_id ? true : undefined}
           aria-errormessage={
             errors.institution_id ? 'courseRequestAddInstitution-error' : undefined
@@ -395,7 +394,14 @@ function CourseRequestApproveForm({
           placeholder="XC 101"
           aria-invalid={errors.short_name ? true : undefined}
           aria-errormessage={errors.short_name ? 'courseRequestAddInputShortName-error' : undefined}
-          {...register('short_name', { required: 'Enter a short name' })}
+          {...register('short_name', {
+            required: 'Enter a short name',
+            pattern: {
+              value: /^[A-Z]+ [A-Z0-9]+$/,
+              message:
+                'The course rubric and number should be a series of letters, followed by a space, followed by a series of numbers and/or letters.',
+            },
+          })}
         />
         {errors.short_name && (
           <div id="courseRequestAddInputShortName-error" className="invalid-feedback">
@@ -412,9 +418,13 @@ function CourseRequestApproveForm({
           className={clsx('form-control', errors.title && 'is-invalid')}
           id="courseRequestAddInputTitle"
           placeholder="Template course title"
+          maxLength={75}
           aria-invalid={errors.title ? true : undefined}
           aria-errormessage={errors.title ? 'courseRequestAddInputTitle-error' : undefined}
-          {...register('title', { required: 'Enter a title' })}
+          {...register('title', {
+            required: 'Enter a title',
+            maxLength: { value: 75, message: 'Title must be at most 75 characters' },
+          })}
         />
         {errors.title && (
           <div id="courseRequestAddInputTitle-error" className="invalid-feedback">
@@ -521,7 +531,7 @@ function CourseRequestDenyForm({
   onCancel: () => void;
 }) {
   const trpc = useTRPC();
-  const mutation = useMutation(trpc.courseRequests.denyCourseRequestMutation.mutationOptions());
+  const mutation = useMutation(trpc.courseRequests.deny.mutationOptions());
 
   return (
     <>
@@ -596,13 +606,13 @@ function CourseRequestEditNoteForm({
 }) {
   const trpc = useTRPC();
   const mutation = useMutation(
-    trpc.courseRequests.updateCourseRequestNoteMutation.mutationOptions(),
+    trpc.courseRequests.updateNote.mutationOptions(),
   );
 
   const {
     register,
     handleSubmit,
-    formState: { isSubmitting },
+    formState: { isSubmitting, isDirty },
   } = useForm<{ note: string }>({
     defaultValues: { note: request.note ?? '' },
   });
@@ -630,9 +640,13 @@ function CourseRequestEditNoteForm({
           {...register('note')}
         />
         <button type="button" className="btn btn-secondary" onClick={onCancel}>
-          Cancel
+          Close
         </button>
-        <button type="submit" className="btn btn-primary text-nowrap" disabled={isSubmitting}>
+        <button
+          type="submit"
+          className="btn btn-primary text-nowrap"
+          disabled={!isDirty || isSubmitting || mutation.isPending}
+        >
           <i className="fa fa-save" aria-hidden="true" /> Save note
         </button>
       </div>
@@ -643,4 +657,9 @@ function CourseRequestEditNoteForm({
       )}
     </form>
   );
+}
+
+function EmptyState({ value, label }: { value: string | null; label: string }) {
+  if (value) return <>{value}</>;
+  return <span className="text-muted fst-italic">{label}</span>;
 }

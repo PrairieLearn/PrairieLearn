@@ -6,11 +6,11 @@ import {
   denyCourseRequest,
   updateCourseRequestNote,
 } from '../../lib/course-request.js';
-import { coursePathAvailability, courseRepositoryAvailability } from '../../lib/course.js';
+import { checkCoursePathExists, checkCourseRepositoryExists } from '../../lib/course.js';
 
 import { requireAdministrator, t } from './trpc-init.js';
 
-const denyCourseRequestMutation = t.procedure
+const deny = t.procedure
   .use(requireAdministrator)
   .input(z.object({ courseRequestId: z.string() }))
   .mutation(async ({ input, ctx }) => {
@@ -20,7 +20,7 @@ const denyCourseRequestMutation = t.procedure
     });
   });
 
-const updateCourseRequestNoteMutation = t.procedure
+const updateNote = t.procedure
   .use(requireAdministrator)
   .input(z.object({ courseRequestId: z.string(), note: z.string() }))
   .mutation(async ({ input }) => {
@@ -30,13 +30,19 @@ const updateCourseRequestNoteMutation = t.procedure
     });
   });
 
-const createCourseMutation = t.procedure
+const createCourse = t.procedure
   .use(requireAdministrator)
   .input(
     z.object({
       courseRequestId: z.string().min(1),
-      shortName: z.string().min(1, 'Short name is required'),
-      title: z.string().min(1, 'Title is required'),
+      shortName: z
+        .string()
+        .min(1, 'Short name is required')
+        .regex(
+          /^[A-Z]+ [A-Z0-9]+$/,
+          'The course rubric and number should be a series of letters, followed by a space, followed by a series of numbers and/or letters.',
+        ),
+      title: z.string().min(1, 'Title is required').max(75, 'Title must be at most 75 characters'),
       institutionId: z.string().min(1, 'Institution is required'),
       displayTimezone: z.string().min(1, 'Timezone is required'),
       path: z.string().min(1, 'Path is required'),
@@ -46,7 +52,7 @@ const createCourseMutation = t.procedure
   )
   .output(z.object({ jobSequenceId: z.string() }))
   .mutation(async ({ input, ctx }) => {
-    const repoExists = await courseRepositoryAvailability(input.repoShortName);
+    const repoExists = await checkCourseRepositoryExists(input.repoShortName);
     if (repoExists) {
       throw new TRPCError({
         code: 'BAD_REQUEST',
@@ -54,7 +60,7 @@ const createCourseMutation = t.procedure
       });
     }
 
-    const pathExists = await coursePathAvailability(input.path);
+    const pathExists = await checkCoursePathExists(input.path);
     if (pathExists) {
       throw new TRPCError({
         code: 'BAD_REQUEST',
@@ -77,7 +83,7 @@ const createCourseMutation = t.procedure
   });
 
 export const administratorCourseRequestsRouter = t.router({
-  denyCourseRequestMutation,
-  updateCourseRequestNoteMutation,
-  createCourseMutation,
+  deny,
+  updateNote,
+  createCourse,
 });

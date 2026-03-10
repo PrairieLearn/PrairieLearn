@@ -141,8 +141,7 @@ export async function createCourseRepoJob(
   const createCourseRepo = async (job: ServerJob) => {
     const client = getGithubClient();
     if (client === null) {
-      // If we are running locally and don't have a client, then just exit early
-      job.info('Nothing to do, exiting...');
+      job.info('No GitHub client token configured; skipping repository setup.');
       return;
     }
 

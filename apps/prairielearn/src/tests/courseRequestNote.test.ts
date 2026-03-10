@@ -46,7 +46,7 @@ describe('Course request note', { timeout: 60_000 }, function () {
     });
 
     test.sequential('update the note on the course request', async () => {
-      await trpcClient.courseRequests.updateCourseRequestNoteMutation.mutate({
+      await trpcClient.courseRequests.updateNote.mutate({
         courseRequestId,
         note,
       });
@@ -67,7 +67,7 @@ describe('Course request note', { timeout: 60_000 }, function () {
     const secondNote = 'Updated note';
 
     test.sequential('update with first note', async () => {
-      await trpcClient.courseRequests.updateCourseRequestNoteMutation.mutate({
+      await trpcClient.courseRequests.updateNote.mutate({
         courseRequestId,
         note: firstNote,
       });
@@ -81,7 +81,7 @@ describe('Course request note', { timeout: 60_000 }, function () {
     });
 
     test.sequential('update with second note overwrites first', async () => {
-      await trpcClient.courseRequests.updateCourseRequestNoteMutation.mutate({
+      await trpcClient.courseRequests.updateNote.mutate({
         courseRequestId,
         note: secondNote,
       });
