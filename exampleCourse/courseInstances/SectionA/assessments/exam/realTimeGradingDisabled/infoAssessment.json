@@ -5,13 +5,7 @@
   "set": "Exam",
   "number": "2",
   "allowRealTimeGrading": false,
-  "allowAccess": [
-    {
-      "credit": 100,
-      "timeLimitMin": 3,
-      "showClosedAssessment": false
-    }
-  ],
+  "allowAccess": [{ "credit": 100, "timeLimitMin": 3, "showClosedAssessment": false }],
   "zones": [
     {
       "title": "Warm-up",
@@ -20,12 +14,8 @@
           "numberChoose": 1,
           "autoPoints": 25,
           "alternatives": [
-            {
-              "id": "template/checkbox/random-prompt"
-            },
-            {
-              "id": "template/multiple-choice/multi-correct-pool"
-            }
+            { "id": "template/checkbox/random-prompt" },
+            { "id": "template/multiple-choice/multi-correct-pool" }
           ]
         }
       ]
@@ -37,24 +27,16 @@
           "numberChoose": 1,
           "autoPoints": 10,
           "alternatives": [
-            {
-              "id": "template/multiple-choice/images"
-            },
-            {
-              "id": "demo/multipleChoiceSingleCorrect"
-            }
+            { "id": "template/multiple-choice/images" },
+            { "id": "demo/multipleChoiceSingleCorrect" }
           ]
         },
         {
           "numberChoose": 1,
           "autoPoints": 10,
           "alternatives": [
-            {
-              "id": "template/multiple-choice/random-prompt-true-false"
-            },
-            {
-              "id": "template/multiple-choice/random-prompt"
-            }
+            { "id": "template/multiple-choice/random-prompt-true-false" },
+            { "id": "template/multiple-choice/random-prompt" }
           ]
         }
       ]
@@ -66,18 +48,11 @@
           "numberChoose": 1,
           "autoPoints": 5,
           "alternatives": [
-            {
-              "id": "demo/fixedCheckbox"
-            },
-            {
-              "id": "template/symbolic-input/random"
-            }
+            { "id": "demo/fixedCheckbox" },
+            { "id": "template/symbolic-input/random" }
           ]
         },
-        {
-          "id": "demo/randomMultipleChoice",
-          "autoPoints": 5
-        }
+        { "id": "demo/randomMultipleChoice", "autoPoints": 5 }
       ]
     }
   ],

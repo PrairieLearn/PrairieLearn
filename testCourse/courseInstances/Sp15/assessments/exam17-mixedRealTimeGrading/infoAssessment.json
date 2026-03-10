@@ -5,57 +5,29 @@
   "set": "Exam",
   "number": "17",
   "shuffleQuestions": false,
-  "allowAccess": [
-    {
-      "credit": 100,
-      "timeLimitMin": 50
-    }
-  ],
+  "allowAccess": [{ "credit": 100, "timeLimitMin": 50 }],
   "zones": [
     {
       "title": "Auto-graded questions with real-time grading disabled",
-      "questions": [
-        {
-          "id": "partialCredit1",
-          "autoPoints": 5,
-          "allowRealTimeGrading": false
-        }
-      ]
+      "questions": [{ "id": "partialCredit1", "autoPoints": 5, "allowRealTimeGrading": false }]
     },
     {
       "title": "Auto-graded questions with real-time grading enabled",
       "questions": [
-        {
-          "id": "partialCredit2",
-          "autoPoints": 5,
-          "allowRealTimeGrading": true
-        },
-        {
-          "id": "partialCredit3",
-          "autoPoints": 5,
-          "allowRealTimeGrading": true
-        }
+        { "id": "partialCredit2", "autoPoints": 5, "allowRealTimeGrading": true },
+        { "id": "partialCredit3", "autoPoints": 5, "allowRealTimeGrading": true }
       ]
     },
     {
       "title": "Manually-graded questions with real-time grading disabled",
       "questions": [
-        {
-          "id": "manualGrade/shortAnswer",
-          "manualPoints": 5,
-          "allowRealTimeGrading": false
-        }
+        { "id": "manualGrade/shortAnswer", "manualPoints": 5, "allowRealTimeGrading": false }
       ]
     },
     {
       "title": "Questions with mixed manual and auto grading with real-time grading disabled",
       "questions": [
-        {
-          "id": "addNumbers",
-          "autoPoints": 5,
-          "manualPoints": 5,
-          "allowRealTimeGrading": false
-        }
+        { "id": "addNumbers", "autoPoints": 5, "manualPoints": 5, "allowRealTimeGrading": false }
       ]
     }
   ]

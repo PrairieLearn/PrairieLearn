@@ -5,41 +5,17 @@
   "set": "Exam",
   "number": "8",
   "allowRealTimeGrading": false,
-  "allowAccess": [
-    {
-      "credit": 100,
-      "timeLimitMin": 50,
-      "showClosedAssessment": false
-    }
-  ],
+  "allowAccess": [{ "credit": 100, "timeLimitMin": 50, "showClosedAssessment": false }],
   "zones": [
     {
       "title": "Hard questions",
       "questions": [
-        {
-          "id": "addNumbers",
-          "autoPoints": 5
-        },
-        {
-          "id": "fossilFuelsRadio",
-          "autoPoints": 17
-        },
-        {
-          "id": "partialCredit1",
-          "autoPoints": 19
-        },
-        {
-          "id": "partialCredit2",
-          "autoPoints": 9
-        },
-        {
-          "id": "partialCredit3",
-          "autoPoints": 13
-        },
-        {
-          "id": "brokenGeneration",
-          "autoPoints": 10
-        }
+        { "id": "addNumbers", "autoPoints": 5 },
+        { "id": "fossilFuelsRadio", "autoPoints": 17 },
+        { "id": "partialCredit1", "autoPoints": 19 },
+        { "id": "partialCredit2", "autoPoints": 9 },
+        { "id": "partialCredit3", "autoPoints": 13 },
+        { "id": "brokenGeneration", "autoPoints": 10 }
       ]
     }
   ]

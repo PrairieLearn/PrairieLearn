@@ -11,33 +11,12 @@
   "studentGroupJoin": true,
   "studentGroupLeave": true,
   "groupRoles": [
-    {
-      "name": "Manager",
-      "minimum": 1,
-      "maximum": 1,
-      "canAssignRoles": true
-    },
-    {
-      "name": "Recorder",
-      "minimum": 1,
-      "maximum": 1
-    },
-    {
-      "name": "Reflector",
-      "minimum": 1,
-      "maximum": 1
-    },
-    {
-      "name": "Contributor"
-    }
+    { "name": "Manager", "minimum": 1, "maximum": 1, "canAssignRoles": true },
+    { "name": "Recorder", "minimum": 1, "maximum": 1 },
+    { "name": "Reflector", "minimum": 1, "maximum": 1 },
+    { "name": "Contributor" }
   ],
-  "allowAccess": [
-    {
-      "credit": 100,
-      "timeLimitMin": 50,
-      "showClosedAssessment": false
-    }
-  ],
+  "allowAccess": [{ "credit": 100, "timeLimitMin": 50, "showClosedAssessment": false }],
   "canView": ["Manager", "Reflector", "Recorder", "Contributor"],
   "canSubmit": ["Recorder"],
   "zones": [
@@ -47,26 +26,12 @@
         {
           "numberChoose": 1,
           "autoPoints": [25, 24, 23, 22, 21, 20],
-          "alternatives": [
-            {
-              "id": "demo/calculation"
-            },
-            {
-              "id": "demo/matrixAlgebra"
-            }
-          ]
+          "alternatives": [{ "id": "demo/calculation" }, { "id": "demo/matrixAlgebra" }]
         },
         {
           "numberChoose": 1,
           "autoPoints": [25, 24, 23, 22, 21, 20],
-          "alternatives": [
-            {
-              "id": "demo/fixedCheckbox"
-            },
-            {
-              "id": "demo/randomPlot"
-            }
-          ]
+          "alternatives": [{ "id": "demo/fixedCheckbox" }, { "id": "demo/randomPlot" }]
         }
       ]
     },
@@ -76,23 +41,12 @@
         {
           "numberChoose": 1,
           "autoPoints": [10, 9, 8, 7, 6],
-          "alternatives": [
-            {
-              "id": "demo/matrixComplexAlgebra"
-            },
-            {
-              "id": "demo/randomCheckbox"
-            }
-          ]
+          "alternatives": [{ "id": "demo/matrixComplexAlgebra" }, { "id": "demo/randomCheckbox" }]
         },
         {
           "numberChoose": 1,
           "autoPoints": [10, 9, 8, 7, 6],
-          "alternatives": [
-            {
-              "id": "demo/randomMultipleChoice"
-            }
-          ]
+          "alternatives": [{ "id": "demo/randomMultipleChoice" }]
         }
       ]
     },
@@ -103,12 +57,8 @@
           "numberChoose": 1,
           "autoPoints": [5, 4, 3, 2, 1],
           "alternatives": [
-            {
-              "id": "demo/randomDataFrame"
-            },
-            {
-              "id": "template/symbolic-input/random"
-            }
+            { "id": "demo/randomDataFrame" },
+            { "id": "template/symbolic-input/random" }
           ]
         },
         {
@@ -116,14 +66,7 @@
           "autoPoints": [5, 4, 3, 2, 1],
           "canView": ["Reflector"],
           "canSubmit": ["Reflector"],
-          "alternatives": [
-            {
-              "id": "demo/custom/element"
-            },
-            {
-              "id": "demo/custom/gradeFunction"
-            }
-          ]
+          "alternatives": [{ "id": "demo/custom/element" }, { "id": "demo/custom/gradeFunction" }]
         }
       ]
     }

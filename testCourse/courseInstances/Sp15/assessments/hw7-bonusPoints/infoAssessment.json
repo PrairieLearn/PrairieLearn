@@ -6,22 +6,12 @@
   "number": "7",
   "maxPoints": 10,
   "maxBonusPoints": 2,
-  "allowAccess": [
-    {
-      "credit": 100
-    }
-  ],
+  "allowAccess": [{ "credit": 100 }],
   "zones": [
     {
       "questions": [
-        {
-          "id": "partialCredit1",
-          "autoPoints": 8
-        },
-        {
-          "id": "partialCredit2",
-          "autoPoints": 8
-        }
+        { "id": "partialCredit1", "autoPoints": 8 },
+        { "id": "partialCredit2", "autoPoints": 8 }
       ]
     }
   ]

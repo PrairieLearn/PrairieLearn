@@ -19,30 +19,11 @@
     }
   ],
   "zones": [
+    { "questions": [{ "id": "template/number-input/random-prompt", "autoPoints": [3, 1] }] },
     {
-      "questions": [
-        {
-          "id": "template/number-input/random-prompt",
-          "autoPoints": [3, 1]
-        }
-      ]
+      "questions": [{ "id": "template/matrix-component-input/random-graph", "autoPoints": [3, 1] }]
     },
-    {
-      "questions": [
-        {
-          "id": "template/matrix-component-input/random-graph",
-          "autoPoints": [3, 1]
-        }
-      ]
-    },
-    {
-      "questions": [
-        {
-          "id": "demo/annotated/engCircuit",
-          "autoPoints": [5, 4, 3, 2, 1]
-        }
-      ]
-    },
+    { "questions": [{ "id": "demo/annotated/engCircuit", "autoPoints": [5, 4, 3, 2, 1] }] },
     {
       "questions": [
         {
@@ -50,15 +31,9 @@
           "numberChoose": 1,
           "autoPoints": [4, 2, 1],
           "alternatives": [
-            {
-              "id": "demo/annotated/mathOuterProduct"
-            },
-            {
-              "id": "demo/annotated/mathMatrixMult"
-            },
-            {
-              "id": "demo/annotated/mathMatrixMultT"
-            }
+            { "id": "demo/annotated/mathOuterProduct" },
+            { "id": "demo/annotated/mathMatrixMult" },
+            { "id": "demo/annotated/mathMatrixMultT" }
           ]
         }
       ]

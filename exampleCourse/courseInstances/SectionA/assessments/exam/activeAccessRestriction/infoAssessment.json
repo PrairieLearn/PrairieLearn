@@ -27,18 +27,9 @@
     {
       "title": "Math Questions",
       "questions": [
-        {
-          "id": "demo/calculation",
-          "autoPoints": [10, 9, 8, 7, 6]
-        },
-        {
-          "id": "demo/randomMultipleChoice",
-          "autoPoints": [25, 24, 23, 22, 21]
-        },
-        {
-          "id": "demo/randomCheckbox",
-          "autoPoints": [25, 24, 23, 22, 21]
-        }
+        { "id": "demo/calculation", "autoPoints": [10, 9, 8, 7, 6] },
+        { "id": "demo/randomMultipleChoice", "autoPoints": [25, 24, 23, 22, 21] },
+        { "id": "demo/randomCheckbox", "autoPoints": [25, 24, 23, 22, 21] }
       ]
     }
   ]

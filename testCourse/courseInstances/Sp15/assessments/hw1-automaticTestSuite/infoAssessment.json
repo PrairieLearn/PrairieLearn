@@ -5,45 +5,16 @@
   "set": "Homework",
   "number": "1",
   "module": "Module1",
-  "allowAccess": [
-    {
-      "credit": 100
-    }
-  ],
+  "allowAccess": [{ "credit": 100 }],
   "zones": [
     {
       "questions": [
-        {
-          "id": "addNumbers",
-          "autoPoints": 1,
-          "maxAutoPoints": 5
-        },
-        {
-          "id": "addVectors",
-          "autoPoints": 2,
-          "maxAutoPoints": 11
-        },
-        {
-          "id": "fossilFuelsRadio",
-          "autoPoints": 3,
-          "maxAutoPoints": 14
-        },
-        {
-          "id": "downloadFile",
-          "autoPoints": 5,
-          "maxAutoPoints": 17
-        },
-        {
-          "id": "partialCredit1",
-          "autoPoints": 1,
-          "maxAutoPoints": 6
-        },
-        {
-          "id": "partialCredit2",
-          "autoPoints": 2,
-          "maxAutoPoints": 7,
-          "triesPerVariant": 3
-        },
+        { "id": "addNumbers", "autoPoints": 1, "maxAutoPoints": 5 },
+        { "id": "addVectors", "autoPoints": 2, "maxAutoPoints": 11 },
+        { "id": "fossilFuelsRadio", "autoPoints": 3, "maxAutoPoints": 14 },
+        { "id": "downloadFile", "autoPoints": 5, "maxAutoPoints": 17 },
+        { "id": "partialCredit1", "autoPoints": 1, "maxAutoPoints": 6 },
+        { "id": "partialCredit2", "autoPoints": 2, "maxAutoPoints": 7, "triesPerVariant": 3 },
         {
           "id": "partialCredit3",
           "autoPoints": 3,
@@ -51,26 +22,10 @@
           "manualPoints": 4,
           "triesPerVariant": 5
         },
-        {
-          "id": "partialCredit4_v2",
-          "autoPoints": 4,
-          "maxAutoPoints": 13
-        },
-        {
-          "id": "partialCredit5_v2_partial",
-          "autoPoints": 5,
-          "maxAutoPoints": 12
-        },
-        {
-          "id": "partialCredit6_no_partial",
-          "autoPoints": 3,
-          "maxAutoPoints": 8
-        },
-        {
-          "id": "brokenGrading",
-          "autoPoints": 2,
-          "maxAutoPoints": 4
-        }
+        { "id": "partialCredit4_v2", "autoPoints": 4, "maxAutoPoints": 13 },
+        { "id": "partialCredit5_v2_partial", "autoPoints": 5, "maxAutoPoints": 12 },
+        { "id": "partialCredit6_no_partial", "autoPoints": 3, "maxAutoPoints": 8 },
+        { "id": "brokenGrading", "autoPoints": 2, "maxAutoPoints": 4 }
       ]
     }
   ]

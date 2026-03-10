@@ -6,43 +6,21 @@
   "number": "4",
   "module": "Module2",
   "allowAccess": [
-    {
-      "credit": 100,
-      "startDate": "1900-07-07T23:59:59",
-      "endDate": "2300-07-10T23:59:59"
-    }
+    { "credit": 100, "startDate": "1900-07-07T23:59:59", "endDate": "2300-07-10T23:59:59" }
   ],
   "zones": [
     {
       "title": "Questions to test maxPoints",
       "maxPoints": 7,
-      "questions": [
-        {
-          "id": "partialCredit4_v2",
-          "autoPoints": 4,
-          "maxAutoPoints": 8
-        }
-      ]
+      "questions": [{ "id": "partialCredit4_v2", "autoPoints": 4, "maxAutoPoints": 8 }]
     },
     {
       "title": "Questions to test bestQuestions",
       "bestQuestions": 1,
       "questions": [
-        {
-          "id": "partialCredit1",
-          "autoPoints": 5,
-          "maxAutoPoints": 30
-        },
-        {
-          "id": "partialCredit2",
-          "autoPoints": 5,
-          "maxAutoPoints": 40
-        },
-        {
-          "id": "partialCredit3",
-          "autoPoints": 5,
-          "maxAutoPoints": 50
-        }
+        { "id": "partialCredit1", "autoPoints": 5, "maxAutoPoints": 30 },
+        { "id": "partialCredit2", "autoPoints": 5, "maxAutoPoints": 40 },
+        { "id": "partialCredit3", "autoPoints": 5, "maxAutoPoints": 50 }
       ]
     }
   ]

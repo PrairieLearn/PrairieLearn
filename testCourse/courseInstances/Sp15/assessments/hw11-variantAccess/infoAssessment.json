@@ -4,19 +4,6 @@
   "title": "Test access to a variant and its resources",
   "set": "Homework",
   "number": "11",
-  "allowAccess": [
-    {
-      "credit": 100
-    }
-  ],
-  "zones": [
-    {
-      "questions": [
-        {
-          "id": "variantAccess",
-          "autoPoints": 4
-        }
-      ]
-    }
-  ]
+  "allowAccess": [{ "credit": 100 }],
+  "zones": [{ "questions": [{ "id": "variantAccess", "autoPoints": 4 }] }]
 }

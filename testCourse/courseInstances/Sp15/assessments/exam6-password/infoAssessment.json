@@ -15,14 +15,6 @@
     }
   ],
   "zones": [
-    {
-      "title": "Hard questions",
-      "questions": [
-        {
-          "id": "positionTimeGraph",
-          "autoPoints": [10]
-        }
-      ]
-    }
+    { "title": "Hard questions", "questions": [{ "id": "positionTimeGraph", "autoPoints": [10] }] }
   ]
 }

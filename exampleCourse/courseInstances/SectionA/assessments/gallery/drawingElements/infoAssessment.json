@@ -7,86 +7,22 @@
   "zones": [
     {
       "questions": [
-        {
-          "id": "demo/drawing/simpleTutorial",
-          "autoPoints": 2,
-          "maxAutoPoints": 6
-        },
-        {
-          "id": "demo/drawing/gradeVector",
-          "autoPoints": 2,
-          "maxAutoPoints": 6
-        },
-        {
-          "id": "demo/drawing/liftingMechanism",
-          "autoPoints": 2,
-          "maxAutoPoints": 6
-        },
-        {
-          "id": "demo/drawing/frame-exploded",
-          "autoPoints": 2,
-          "maxAutoPoints": 6
-        },
-        {
-          "id": "demo/drawing/centroid",
-          "autoPoints": 2,
-          "maxAutoPoints": 6
-        },
-        {
-          "id": "demo/drawing/collarRod",
-          "autoPoints": 2,
-          "maxAutoPoints": 6
-        },
-        {
-          "id": "demo/drawing/pulley",
-          "autoPoints": 2,
-          "maxAutoPoints": 6
-        },
-        {
-          "id": "demo/drawing/graphs",
-          "autoPoints": 2,
-          "maxAutoPoints": 6
-        },
-        {
-          "id": "demo/drawing/inclinedPlane",
-          "autoPoints": 2,
-          "maxAutoPoints": 6
-        },
-        {
-          "id": "demo/drawing/inclinedPlane-reaction",
-          "autoPoints": 2,
-          "maxAutoPoints": 6
-        },
-        {
-          "id": "demo/drawing/vmDiagrams",
-          "autoPoints": 2,
-          "maxAutoPoints": 6
-        },
-        {
-          "id": "demo/drawing/buttons",
-          "autoPoints": 2,
-          "maxAutoPoints": 6
-        },
-        {
-          "id": "demo/drawing/customizedButtons",
-          "autoPoints": 2,
-          "maxAutoPoints": 6
-        },
-        {
-          "id": "demo/drawing/extensions",
-          "autoPoints": 2,
-          "maxAutoPoints": 6
-        },
-        {
-          "id": "demo/drawing/resistorCapacitorCircuit",
-          "autoPoints": 2,
-          "maxAutoPoints": 6
-        },
-        {
-          "id": "element/drawingGallery",
-          "autoPoints": 2,
-          "maxAutoPoints": 6
-        }
+        { "id": "demo/drawing/simpleTutorial", "autoPoints": 2, "maxAutoPoints": 6 },
+        { "id": "demo/drawing/gradeVector", "autoPoints": 2, "maxAutoPoints": 6 },
+        { "id": "demo/drawing/liftingMechanism", "autoPoints": 2, "maxAutoPoints": 6 },
+        { "id": "demo/drawing/frame-exploded", "autoPoints": 2, "maxAutoPoints": 6 },
+        { "id": "demo/drawing/centroid", "autoPoints": 2, "maxAutoPoints": 6 },
+        { "id": "demo/drawing/collarRod", "autoPoints": 2, "maxAutoPoints": 6 },
+        { "id": "demo/drawing/pulley", "autoPoints": 2, "maxAutoPoints": 6 },
+        { "id": "demo/drawing/graphs", "autoPoints": 2, "maxAutoPoints": 6 },
+        { "id": "demo/drawing/inclinedPlane", "autoPoints": 2, "maxAutoPoints": 6 },
+        { "id": "demo/drawing/inclinedPlane-reaction", "autoPoints": 2, "maxAutoPoints": 6 },
+        { "id": "demo/drawing/vmDiagrams", "autoPoints": 2, "maxAutoPoints": 6 },
+        { "id": "demo/drawing/buttons", "autoPoints": 2, "maxAutoPoints": 6 },
+        { "id": "demo/drawing/customizedButtons", "autoPoints": 2, "maxAutoPoints": 6 },
+        { "id": "demo/drawing/extensions", "autoPoints": 2, "maxAutoPoints": 6 },
+        { "id": "demo/drawing/resistorCapacitorCircuit", "autoPoints": 2, "maxAutoPoints": 6 },
+        { "id": "element/drawingGallery", "autoPoints": 2, "maxAutoPoints": 6 }
       ]
     }
   ]

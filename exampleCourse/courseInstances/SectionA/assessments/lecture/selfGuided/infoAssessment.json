@@ -33,10 +33,7 @@
           "autoPoints": 1,
           "triesPerVariant": 2
         },
-        {
-          "id": "demo/annotated/LectureVelocity/2-Derivative",
-          "autoPoints": 1
-        },
+        { "id": "demo/annotated/LectureVelocity/2-Derivative", "autoPoints": 1 },
         {
           "id": "demo/annotated/LectureVelocity/4-KnowledgeTest",
           "autoPoints": 2,

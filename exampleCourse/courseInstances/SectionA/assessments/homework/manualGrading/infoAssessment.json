@@ -29,21 +29,9 @@
     {
       "title": "Unlimited question variants with one single attempt",
       "questions": [
-        {
-          "id": "template/checkbox/random-prompt",
-          "autoPoints": 1,
-          "maxAutoPoints": 6
-        },
-        {
-          "id": "template/string-input/random",
-          "autoPoints": 1,
-          "maxAutoPoints": 3
-        },
-        {
-          "id": "template/symbolic-input/random",
-          "autoPoints": 1,
-          "maxAutoPoints": 6
-        }
+        { "id": "template/checkbox/random-prompt", "autoPoints": 1, "maxAutoPoints": 6 },
+        { "id": "template/string-input/random", "autoPoints": 1, "maxAutoPoints": 3 },
+        { "id": "template/symbolic-input/random", "autoPoints": 1, "maxAutoPoints": 6 }
       ]
     },
     {
@@ -65,29 +53,14 @@
     },
     {
       "title": "Single question variant with unlimited number of attempts",
-      "questions": [
-        {
-          "id": "demo/annotated/engMarkovBrewing",
-          "autoPoints": 8
-        }
-      ]
+      "questions": [{ "id": "demo/annotated/engMarkovBrewing", "autoPoints": 8 }]
     },
     {
       "title": "Manually graded questions",
       "questions": [
-        {
-          "id": "demo/autograder/codeUpload",
-          "autoPoints": 10,
-          "manualPoints": 5
-        },
-        {
-          "id": "demo/fileDownloadUpload",
-          "manualPoints": 10
-        },
-        {
-          "id": "demo/markdownEditorLivePreview",
-          "manualPoints": 5
-        }
+        { "id": "demo/autograder/codeUpload", "autoPoints": 10, "manualPoints": 5 },
+        { "id": "demo/fileDownloadUpload", "manualPoints": 10 },
+        { "id": "demo/markdownEditorLivePreview", "manualPoints": 5 }
       ]
     }
   ]

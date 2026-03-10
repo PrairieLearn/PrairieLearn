@@ -9,54 +9,25 @@
     "minMembers": 2,
     "maxMembers": 4,
     "roles": [
-      {
-        "name": "Manager",
-        "minMembers": 1,
-        "maxMembers": 1
-      },
-      {
-        "name": "Recorder",
-        "minMembers": 1,
-        "maxMembers": 1
-      },
-      {
-        "name": "Reflector",
-        "minMembers": 1,
-        "maxMembers": 1
-      },
-      {
-        "name": "Contributor"
-      }
+      { "name": "Manager", "minMembers": 1, "maxMembers": 1 },
+      { "name": "Recorder", "minMembers": 1, "maxMembers": 1 },
+      { "name": "Reflector", "minMembers": 1, "maxMembers": 1 },
+      { "name": "Contributor" }
     ],
-    "studentPermissions": {
-      "canCreateGroup": true,
-      "canJoinGroup": true,
-      "canLeaveGroup": true
-    },
+    "studentPermissions": { "canCreateGroup": true, "canJoinGroup": true, "canLeaveGroup": true },
     "rolePermissions": {
       "canAssignRoles": ["Manager"],
       "canView": ["Manager", "Reflector", "Recorder", "Contributor"]
     }
   },
-  "allowAccess": [
-    {
-      "credit": 100
-    }
-  ],
+  "allowAccess": [{ "credit": 100 }],
   "zones": [
     {
       "canSubmit": ["Recorder"],
       "title": "Hard questions",
       "questions": [
-        {
-          "id": "demo/demoNewton-page1",
-          "autoPoints": 1
-        },
-        {
-          "id": "demo/demoNewton-page2",
-          "autoPoints": 1,
-          "canView": ["Recorder"]
-        },
+        { "id": "demo/demoNewton-page1", "autoPoints": 1 },
+        { "id": "demo/demoNewton-page2", "autoPoints": 1, "canView": ["Recorder"] },
         {
           "id": "addNumbers",
           "autoPoints": 1,
