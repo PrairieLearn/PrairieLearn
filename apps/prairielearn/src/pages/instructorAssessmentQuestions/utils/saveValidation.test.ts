@@ -42,5 +42,4 @@ describe('getStructuralSaveValidationErrorKind', () => {
       ]),
     ).toBe('zone');
   });
-
 });
