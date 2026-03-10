@@ -303,7 +303,7 @@ export function initCalculator(storageKey: string, { drawer, fab, fabClose }: Dr
     if (input.length === 0) {
       calculatorOutput.value = '';
       copyButton.onclick = function () {
-        void copyToClipboard('');
+        void navigator.clipboard.writeText('');
       };
       calculatorInputContainer.classList.remove('error');
       return;
@@ -337,7 +337,7 @@ export function initCalculator(storageKey: string, { drawer, fab, fabClose }: Dr
     calculatorOutput.value = `=${displayed}`;
 
     copyButton.onclick = function () {
-      void copyToClipboard(ce.parse(displayed).toString());
+      void navigator.clipboard.writeText(ce.parse(displayed).toString());
     };
 
     const data = getCalculatorData(storageKey);
@@ -686,10 +686,10 @@ export function initCalculator(storageKey: string, { drawer, fab, fabClose }: Dr
       clone.querySelector<HTMLElement>('.history-output .history-copy-btn'),
     );
     inputCopyBtn.addEventListener('click', () => {
-      void copyToClipboard(normalizeLatex(input));
+      void navigator.clipboard.writeText(normalizeLatex(input));
     });
     outputCopyBtn.addEventListener('click', () => {
-      void copyToClipboard(normalizeLatex(outputField.value.replace(/^=/, '')));
+      void navigator.clipboard.writeText(normalizeLatex(outputField.value.replace(/^=/, '')));
     });
 
     // Insert buttons
@@ -902,60 +902,6 @@ export function registerCustomFunctions(ce: InstanceType<typeof ComputeEngine>) 
 
 export function containsTrigFunction(input: string): boolean {
   return /sin|cos|tan|cot|sec|csc/i.test(input);
-}
-
-/** based on https://github.com/vueuse/vueuse/blob/main/packages/core/useClipboard/index.ts */
-export async function copyToClipboard(text: string): Promise<void> {
-  // Guard against SSR or non-browser environments
-  // eslint-disable-next-line @typescript-eslint/no-unnecessary-condition
-  if (typeof window === 'undefined' || !navigator || !document) {
-    return;
-  }
-
-  let useLegacy = true;
-
-  // 1. Try Modern Async Clipboard API
-  // eslint-disable-next-line @typescript-eslint/no-unnecessary-condition
-  if (navigator.clipboard && typeof navigator.clipboard.writeText === 'function') {
-    try {
-      await navigator.clipboard.writeText(text);
-      useLegacy = false; // Success, no need for legacy
-    } catch {
-      // Permission denied or other error? Fallback to legacy.
-      useLegacy = true;
-    }
-  }
-
-  // 2. Fallback to legacy execCommand
-  if (useLegacy) {
-    legacyCopy(text);
-  }
-}
-
-function legacyCopy(value: string) {
-  const ta = document.createElement('textarea');
-  ta.value = value;
-
-  // Ensure the element is not visible but part of the DOM
-  ta.style.position = 'absolute';
-  ta.style.opacity = '0';
-  ta.style.left = '-9999px'; // Added safety to ensure it's off-screen
-  ta.style.top = '0';
-  ta.setAttribute('readonly', ''); // Prevent keyboard from popping up on mobile
-
-  document.body.append(ta);
-
-  ta.select();
-  // Additional selection range for mobile compatibility
-  ta.setSelectionRange(0, value.length);
-
-  try {
-    document.execCommand('copy');
-  } catch (err) {
-    throw new Error('Failed to copy text using legacy method.', { cause: err });
-  } finally {
-    ta.remove();
-  }
 }
 
 function ensureElement<E extends Element>(element: E | null): E {
