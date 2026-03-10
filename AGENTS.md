@@ -108,7 +108,7 @@ When working with assessment "groups" / "teams", see the [`groups-and-teams` ski
 ### SQL query conventions
 
 - Use `to_jsonb(table.*)` if you need to select all columns from a table as JSON. This is preferred over explicit `jsonb_build_object` calls because it automatically includes all columns and stays in sync with schema changes.
-- When writing SQL, get table names from `database/tables/` (the source of truth) or from nearby existing queries in the same feature area. Do NOT rely on table names found in old migrations, as tables may have been renamed since those migrations were written.
+- When writing SQL, get table and column names from `database/tables/` (the source of truth) or from nearby existing queries in the same feature area. Do NOT rely on names found in old migrations, as tables and columns may have been renamed since those migrations were written.
 
 ## TypeScript guidance
 
