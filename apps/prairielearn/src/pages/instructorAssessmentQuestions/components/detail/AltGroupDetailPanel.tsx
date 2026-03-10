@@ -6,9 +6,10 @@ import type { DetailState, ZoneAssessmentForm, ZoneQuestionBlockForm } from '../
 import {
   coerceToNumber,
   coerceToOptionalString,
-  extractStringComment,
+  commentToString,
   formatPoints,
   makeResetAndSave,
+  parseCommentValue,
   parsePointsListValue,
   validateNonIncreasingPoints,
   validatePointsListFormat,
@@ -84,7 +85,7 @@ export function AltGroupDetailPanel({
     mode: 'onChange',
     values: {
       numberChoose: zoneQuestionBlock.numberChoose ?? undefined,
-      comment: extractStringComment(zoneQuestionBlock.comment),
+      comment: commentToString(zoneQuestionBlock.comment),
       points: zoneQuestionBlock.points ?? undefined,
       autoPoints: zoneQuestionBlock.autoPoints ?? undefined,
       maxPoints: zoneQuestionBlock.maxPoints ?? undefined,
@@ -121,6 +122,7 @@ export function AltGroupDetailPanel({
     (data: AltGroupFormData) =>
       onUpdate(zoneQuestionBlock.trackingId, {
         ...data,
+        comment: parseCommentValue(data.comment),
         forceMaxPoints: data.forceMaxPoints || undefined,
         allowRealTimeGrading: data.allowRealTimeGrading,
       }),
@@ -442,7 +444,7 @@ export function AltGroupDetailPanel({
           label="Comment"
           viewValue={
             zoneQuestionBlock.comment != null ? (
-              <span className="text-break">{String(zoneQuestionBlock.comment)}</span>
+              <span className="text-break">{commentToString(zoneQuestionBlock.comment)}</span>
             ) : undefined
           }
           helpText="Internal note, not shown to students."
