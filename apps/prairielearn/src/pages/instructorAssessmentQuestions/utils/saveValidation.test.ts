@@ -47,6 +47,33 @@ describe('getStructuralSaveValidationErrorKind', () => {
     expect(getStructuralSaveValidationErrorKind([makeZone({ numberChoose: 2 })])).toBe('zone');
   });
 
+  it('returns undefined when numberChoose accounts for alt group contributions', () => {
+    // 5 individual questions + 1 alt group (choose 2) = 7 choosable questions
+    expect(
+      getStructuralSaveValidationErrorKind([
+        makeZone({
+          numberChoose: 7,
+          questions: [
+            makeQuestion({ trackingId: makeTrackingId(101), id: 'q1' }),
+            makeQuestion({ trackingId: makeTrackingId(102), id: 'q2' }),
+            makeQuestion({ trackingId: makeTrackingId(103), id: 'q3' }),
+            makeQuestion({ trackingId: makeTrackingId(104), id: 'q4' }),
+            makeQuestion({ trackingId: makeTrackingId(105), id: 'q5' }),
+            makeQuestion({
+              trackingId: makeTrackingId(106),
+              numberChoose: 2,
+              alternatives: [
+                { trackingId: makeTrackingId(200), id: 'a1' },
+                { trackingId: makeTrackingId(201), id: 'a2' },
+                { trackingId: makeTrackingId(202), id: 'a3' },
+              ],
+            }),
+          ],
+        }),
+      ]),
+    ).toBeUndefined();
+  });
+
   it('returns zone when bestQuestions exceeds numberChoose', () => {
     expect(
       getStructuralSaveValidationErrorKind([

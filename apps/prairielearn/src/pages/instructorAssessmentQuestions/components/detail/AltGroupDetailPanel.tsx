@@ -17,6 +17,8 @@ import {
   type QuestionMetadataMap,
   getSharedTags,
   getSharedTopic,
+  hasAltGroupChooseExceedsCount,
+  hasPointsMismatch,
   validatePositiveInteger,
 } from '../../utils/questions.js';
 import { useAutoSave } from '../../utils/useAutoSave.js';
@@ -62,7 +64,7 @@ export function AltGroupDetailPanel({
   onDelete: (questionTrackingId: string) => void;
   onFormValidChange: (isValid: boolean) => void;
 }) {
-  const { editMode, assessmentType, assessmentDefaults } = state;
+  const { editMode, assessmentType, constantQuestionValue, assessmentDefaults } = state;
   const alternativeCount = zoneQuestionBlock.alternatives?.length ?? 0;
 
   const sharedTopic = getSharedTopic(zoneQuestionBlock.alternatives ?? [], questionMetadata);
@@ -107,8 +109,13 @@ export function AltGroupDetailPanel({
   useEffect(() => {
     // Alternatives can be deleted from the tree while this panel is open.
     // Revalidate immediately so numberChoose errors update without extra input.
-    void trigger('numberChoose');
-  }, [alternativeCount, trigger]);
+    // We use the result of trigger() directly because formState.isValid may
+    // not update until user interaction with mode: 'onChange'.
+    void trigger().then((valid) => {
+      // TODO: you can easily click off the item and save the form to bypass this validation.
+      onFormValidChange(valid);
+    });
+  }, [alternativeCount, trigger, onFormValidChange]);
 
   const handleSave = useCallback(
     (data: AltGroupFormData) =>
@@ -157,10 +164,28 @@ export function AltGroupDetailPanel({
       ? ''
       : String(Array.isArray(watchedAutoPoints) ? watchedAutoPoints[0] : watchedAutoPoints);
 
+  const pointsMismatch =
+    zoneQuestionBlock.alternatives != null &&
+    hasPointsMismatch(zoneQuestionBlock.alternatives, assessmentType, zoneQuestionBlock);
+  const chooseExceeds = hasAltGroupChooseExceedsCount(zoneQuestionBlock);
+
   const Wrapper = editMode ? 'div' : 'dl';
 
   return (
     <div className="p-3">
+      {pointsMismatch && (
+        <div className="alert alert-warning small mb-3" role="alert">
+          <i className="bi bi-exclamation-triangle-fill me-1" aria-hidden="true" />
+          Students will receive different total points because this group has alternatives with
+          different point values.
+        </div>
+      )}
+      {chooseExceeds && (
+        <div className="alert alert-warning small mb-3" role="alert">
+          <i className="bi bi-exclamation-triangle-fill me-1" aria-hidden="true" />
+          Number to choose exceeds the number of alternatives in this group.
+        </div>
+      )}
       <div className="d-flex flex-column gap-2">
         <div className="text-muted small">
           {alternativeCount} alternative{alternativeCount !== 1 ? 's' : ''} in group
@@ -223,7 +248,21 @@ export function AltGroupDetailPanel({
               label="Auto points (default)"
               viewValue={formatPoints(zoneQuestionBlock[pointsProperty])}
               error={errors[pointsProperty]}
-              helpText="Default auto points inherited by alternatives unless overridden."
+              helpText={
+                <>
+                  Points awarded for the auto-graded component.{' '}
+                  {constantQuestionValue
+                    ? 'Each correct answer is worth this many points.'
+                    : 'Each consecutive correct answer is worth more; an incorrect answer resets the value.'}{' '}
+                  <a
+                    href="https://docs.prairielearn.com/assessment/configuration/#question-points-for-homework-assessments"
+                    target="_blank"
+                    rel="noreferrer"
+                  >
+                    Learn more about question points
+                  </a>
+                </>
+              }
               hideWhenEmpty
             >
               {(aria) => (
@@ -260,7 +299,7 @@ export function AltGroupDetailPanel({
                   : undefined
               }
               error={errors[maxPointsProperty]}
-              helpText="Default max auto points inherited by alternatives unless overridden. Defaults to auto points if not set."
+              helpText="Maximum total auto-graded points."
               hideWhenEmpty
             >
               {(aria) => (
@@ -345,10 +384,10 @@ export function AltGroupDetailPanel({
             <FormField
               editMode={editMode}
               id={`${idPrefix}-points`}
-              label="Points list (default)"
+              label="Auto points (default)"
               viewValue={formatPoints(zoneQuestionBlock[pointsProperty])}
               error={errors[pointsProperty]}
-              helpText="Default points list inherited by alternatives unless overridden."
+              helpText='Default auto points inherited by alternatives unless overridden, as a comma-separated list (e.g. "10, 5, 2, 1").'
               hideWhenEmpty
             >
               {(aria) => (
