@@ -168,7 +168,7 @@ export async function loadUser(
 
     res.locals.is_institution_administrator =
       res.locals.is_administrator ||
-      (await sqldb.queryRow(
+      (await sqldb.queryScalar(
         sql.select_is_institution_admin,
         {
           institution_id: res.locals.authn_institution.id,

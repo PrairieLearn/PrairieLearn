@@ -1,8 +1,9 @@
 import path from 'node:path';
 
 import { afterAll, assert, beforeAll, describe, it } from 'vitest';
+import { z } from 'zod';
 
-import { makePostgresTestUtils, queryAsync } from '@prairielearn/postgres';
+import { makePostgresTestUtils, queryRow } from '@prairielearn/postgres';
 
 import { getMigrationsToExecute, initWithLock } from './migrations.js';
 
@@ -152,9 +153,8 @@ describe('migrations', () => {
 
       // If both migrations ran successfully, there should be a single user
       // in the database.
-      const users = await queryAsync('SELECT * FROM users', {});
-      assert.lengthOf(users.rows, 1);
-      assert.equal(users.rows[0].name, 'Test User');
+      const users = await queryRow('SELECT * FROM users', {}, z.object({ name: z.string() }));
+      assert.equal(users.name, 'Test User');
     });
   });
 });

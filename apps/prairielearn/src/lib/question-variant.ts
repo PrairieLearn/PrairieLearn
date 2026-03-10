@@ -177,7 +177,7 @@ async function selectQuestion(
 async function lockAssessmentInstanceForInstanceQuestion(
   instance_question_id: string,
 ): Promise<void> {
-  const assessment_instance_id = await sqldb.queryOptionalRow(
+  const assessment_instance_id = await sqldb.queryOptionalScalar(
     sql.select_and_lock_assessment_instance_for_instance_question,
     { instance_question_id },
     IdSchema,
@@ -286,7 +286,7 @@ async function makeAndInsertVariant({
       real_user_id = instance_question.user_id;
       real_group_id = instance_question.team_id;
 
-      new_number = await sqldb.queryOptionalRow(
+      new_number = await sqldb.queryOptionalScalar(
         sql.next_variant_number,
         { instance_question_id },
         z.number().nullable(),
@@ -306,7 +306,7 @@ async function makeAndInsertVariant({
     const question = await selectQuestionById(question_id);
     let workspace_id: string | null = null;
     if (question.workspace_image !== null) {
-      workspace_id = await sqldb.queryOptionalRow(sql.insert_workspace, IdSchema);
+      workspace_id = await sqldb.queryOptionalScalar(sql.insert_workspace, IdSchema);
     }
 
     return await sqldb.queryRow(

@@ -61,7 +61,7 @@ export default function (options = { publicQuestionEndpoint: false, coreElements
       if (options.coreElements) {
         elementFilesDir = path.join(APP_ROOT_PATH, 'elements');
       } else if (options.publicQuestionEndpoint) {
-        const has_publicly_shared_question = await sqldb.queryRow(
+        const has_publicly_shared_question = await sqldb.queryScalar(
           sql.select_has_publicly_shared_question,
           { course_id: req.params.course_id },
           z.boolean(),
@@ -78,7 +78,7 @@ export default function (options = { publicQuestionEndpoint: false, coreElements
         let question_course: Course;
         if (req.params.producing_course_id) {
           const producing_course_id = z.string().parse(req.params.producing_course_id);
-          const has_shared_question = await sqldb.queryRow(
+          const has_shared_question = await sqldb.queryScalar(
             sql.select_has_shared_question,
             { consuming_course_id: res.locals.course.id, producing_course_id },
             z.boolean(),

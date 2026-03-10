@@ -156,10 +156,10 @@
     </pl-question-panel>
 
     <pl-matching answers-name="ex8">
-      <pl-statement match="filter"><pl-code language="python">list(filter(lambda item: item > 0, lst))</pl-code></pl-statement>
+      <pl-statement match="filter"><pl-code language="python">list(filter(lambda item: item &gt; 0, lst))</pl-code></pl-statement>
       <pl-statement match="map"><pl-code language="python">list(map(lambda item: item * 2, lst))</pl-code></pl-statement>
       <pl-statement match="product"><pl-code language="python">list(itertools.product(lst1, lst2))</pl-code></pl-statement>
-      <pl-option name="filter"><pl-code language="python">[item for item in lst if item > 0]</pl-code></pl-option>
+      <pl-option name="filter"><pl-code language="python">[item for item in lst if item &gt; 0]</pl-code></pl-option>
       <pl-option name="map"><pl-code language="python">[item * 2 for item in lst]</pl-code></pl-option>
       <pl-option name="product"><pl-code language="python">[(a, b) for a in lst1 for b in lst2]</pl-code></pl-option>
     </pl-matching>

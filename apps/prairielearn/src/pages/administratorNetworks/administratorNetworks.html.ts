@@ -1,6 +1,8 @@
 import z from 'zod';
 
+import { formatDate } from '@prairielearn/formatter';
 import { html } from '@prairielearn/html';
+import { DateFromISOString } from '@prairielearn/zod';
 
 import { PageLayout } from '../../components/PageLayout.js';
 import { ExamModeNetworkSchema } from '../../lib/db-types.js';
@@ -8,8 +10,8 @@ import type { ResLocalsForPage } from '../../lib/res-locals.js';
 
 export const AdministratorNetworksRowSchema = z.object({
   network: ExamModeNetworkSchema.shape.network,
-  start_date: z.string(),
-  end_date: z.string(),
+  start_date: DateFromISOString.nullable(),
+  end_date: DateFromISOString.nullable(),
   location: ExamModeNetworkSchema.shape.location,
   purpose: ExamModeNetworkSchema.shape.purpose,
 });
@@ -55,11 +57,11 @@ export function AdministratorNetworks({
               ${networks.map(
                 (network: AdministratorNetworksRow) => html`
                   <tr>
-                    <td>${network.network}</td>
-                    <td>${network.start_date}</td>
-                    <td>${network.end_date}</td>
-                    <td>${network.location}</td>
-                    <td>${network.purpose}</td>
+                    <td>${network.network ?? '—'}</td>
+                    <td>${network.start_date ? formatDate(network.start_date, 'UTC') : '—'}</td>
+                    <td>${network.end_date ? formatDate(network.end_date, 'UTC') : '—'}</td>
+                    <td>${network.location ?? '—'}</td>
+                    <td>${network.purpose ?? '—'}</td>
                   </tr>
                 `,
               )}

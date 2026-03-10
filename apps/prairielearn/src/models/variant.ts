@@ -4,19 +4,20 @@ import { z } from 'zod';
 
 import { AugmentedError } from '@prairielearn/error';
 import {
-  callRow,
+  callScalar,
   execute,
   loadSqlEquiv,
   queryOptionalRow,
-  queryRow,
+  queryOptionalScalar,
   queryRows,
+  queryScalar,
 } from '@prairielearn/postgres';
 import { IdSchema } from '@prairielearn/zod';
 
 import { calculateCourseInstanceRolePermissions } from '../lib/authz-data-lib.js';
 import {
   type Course,
-  EnumCourseInstanceRoleSchema,
+  SprocAuthzCourseInstanceSchema,
   SubmissionSchema,
   type User,
   type Variant,
@@ -101,7 +102,7 @@ async function selectUserOwnsVariant({
   user_id: string;
   variant_id: string;
 }): Promise<boolean> {
-  return await queryRow(sql.select_user_owns_variant, { user_id, variant_id }, z.boolean());
+  return await queryScalar(sql.select_user_owns_variant, { user_id, variant_id }, z.boolean());
 }
 
 export async function selectAndAuthzVariant(options: {
@@ -224,16 +225,16 @@ export async function selectAndAuthzVariant(options: {
       course_instance_id == null ||
       !idsEqual(course_instance_id, variant.course_instance_id)
     ) {
-      const authnUserPermissions = await callRow(
+      const authnUserPermissions = await callScalar(
         'authz_course_instance',
         [authn_user.id, variant.course_instance_id, new Date()],
-        z.object({ course_instance_role: EnumCourseInstanceRoleSchema }),
+        SprocAuthzCourseInstanceSchema,
       );
 
-      const userPermissions = await callRow(
+      const userPermissions = await callScalar(
         'authz_course_instance',
         [user.id, variant.course_instance_id, new Date()],
-        z.object({ course_instance_role: EnumCourseInstanceRoleSchema }),
+        SprocAuthzCourseInstanceSchema,
       );
 
       authnHasCourseInstancePermissionView = calculateCourseInstanceRolePermissions(
@@ -263,7 +264,7 @@ export async function selectAndAuthzVariant(options: {
  * Assumes that the caller is already within a transaction.
  */
 export async function lockVariant({ variant_id }: { variant_id: string }) {
-  const locked = await queryOptionalRow(
+  const locked = await queryOptionalScalar(
     sql.select_and_lock_assessment_instance_or_variant,
     { variant_id },
     z.boolean(),

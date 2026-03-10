@@ -806,7 +806,7 @@ export class CourseInstanceCopyEditor extends Editor {
     const courseInstancesPath = path.join(this.course.path, 'courseInstances');
 
     debug('Get all existing long names');
-    const oldNamesLong = await sqldb.queryRows(
+    const oldNamesLong = await sqldb.queryScalars(
       sql.select_course_instances_with_course,
       { course_id: this.course.id },
       z.string(),
@@ -1219,7 +1219,7 @@ export class QuestionAddEditor extends Editor {
 
     const { qid, title } = await run(async () => {
       if (!(this.qid && this.title) && this.isDraft) {
-        let draftNumber = await sqldb.queryRow(
+        let draftNumber = await sqldb.queryScalar(
           sql.update_draft_number,
           { course_id: this.course.id },
           z.number(),
@@ -1229,7 +1229,7 @@ export class QuestionAddEditor extends Editor {
           await fs.pathExists(path.join(questionsPath, '__drafts__', `draft_${draftNumber}`))
         ) {
           // increment and sync to postgres
-          draftNumber = await sqldb.queryRow(
+          draftNumber = await sqldb.queryScalar(
             sql.update_draft_number,
             { course_id: this.course.id },
             z.number(),
@@ -1829,7 +1829,7 @@ export class QuestionCopyEditor extends Editor {
 }
 
 async function selectQuestionTitlesForCourse(course: Course): Promise<string[]> {
-  return await sqldb.queryRows(
+  return await sqldb.queryScalars(
     sql.select_question_titles_for_course,
     { course_id: course.id },
     z.string(),
@@ -1837,7 +1837,7 @@ async function selectQuestionTitlesForCourse(course: Course): Promise<string[]> 
 }
 
 async function selectQuestionUuidsForCourse(course: Course): Promise<string[]> {
-  return await sqldb.queryRows(
+  return await sqldb.queryScalars(
     sql.select_question_uuids_for_course,
     { course_id: course.id },
     z.string(),

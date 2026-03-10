@@ -150,7 +150,6 @@ BEGIN
         share_publicly = (src.data->>'share_publicly')::boolean,
         share_source_publicly = (src.data->>'share_source_publicly')::boolean,
         json_comment = (src.data->'comment'),
-        external_grading_enabled = (src.data->>'external_grading_enabled')::boolean,
         external_grading_image = src.data->>'external_grading_image',
         external_grading_files = jsonb_array_to_text_array(src.data->'external_grading_files'),
         external_grading_entrypoint = src.data->>'external_grading_entrypoint',

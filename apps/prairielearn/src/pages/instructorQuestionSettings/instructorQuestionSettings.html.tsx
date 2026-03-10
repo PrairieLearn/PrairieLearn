@@ -458,21 +458,6 @@ ${Object.keys(resLocals.question.workspace_environment).length > 0 &&
                 id="external-grading-options"
                 ${resLocals.question.external_grading_image ? '' : 'hidden'}
               >
-                <div class="mb-3 form-check">
-                  <input
-                    class="form-check-input"
-                    type="checkbox"
-                    id="external_grading_enabled"
-                    name="external_grading_enabled"
-                    ${canEdit ? '' : 'disabled'}
-                    ${resLocals.question.external_grading_enabled === true ? 'checked' : ''}
-                  />
-                  <label class="form-check-label" for="external_grading_enabled">Enabled</label>
-                  <div class="small text-muted">
-                    Whether the external grader is currently enabled. Useful for troubleshooting
-                    external grader failures, for instance.
-                  </div>
-                </div>
                 <div class="mb-3">
                   <label class="form-label" for="external_grading_image">Image</label>
                   <input

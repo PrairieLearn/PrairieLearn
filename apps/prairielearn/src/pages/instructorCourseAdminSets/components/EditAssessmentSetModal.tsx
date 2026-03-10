@@ -1,8 +1,7 @@
 import { useState } from 'react';
 import { Modal } from 'react-bootstrap';
 
-import { ColorSwatch } from '../../../components/ColorSwatch.js';
-import { ColorJsonSchema } from '../../../schemas/index.js';
+import { ColorPicker } from '../../../components/ColorPicker.js';
 import type { InstructorCourseAdminSetFormRow } from '../instructorCourseAdminSets.types.js';
 
 export interface EditAssessmentSetModalData {
@@ -136,27 +135,17 @@ export function EditAssessmentSetsModal({
                 <label className="form-label" htmlFor="color">
                   Color
                 </label>
-                <div className="d-flex gap-2 align-items-center">
-                  <select
-                    className="form-select"
-                    id="color"
-                    value={assessmentSet.color}
-                    required
-                    onChange={(e) =>
-                      setAssessmentSet({
-                        ...assessmentSet,
-                        color: e.currentTarget.value,
-                      })
-                    }
-                  >
-                    {ColorJsonSchema.options.map((color) => (
-                      <option key={color} value={color}>
-                        {color}
-                      </option>
-                    ))}
-                  </select>
-                  <ColorSwatch color={assessmentSet.color} />
-                </div>
+                <ColorPicker
+                  id="color"
+                  value={assessmentSet.color}
+                  required
+                  onChange={(color) =>
+                    setAssessmentSet({
+                      ...assessmentSet,
+                      color,
+                    })
+                  }
+                />
               </div>
             </>
           ) : null}

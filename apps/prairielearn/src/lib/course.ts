@@ -33,7 +33,7 @@ export async function checkAssessmentInstanceBelongsToCourseInstance(
   course_instance_id: string,
 ): Promise<void> {
   if (
-    (await sqldb.queryOptionalRow(
+    (await sqldb.queryOptionalScalar(
       sql.check_belongs,
       { assessment_instance_id, course_instance_id },
       IdSchema,

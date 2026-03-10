@@ -65,7 +65,7 @@ router.get(
       GroupUsersRowSchema,
     );
 
-    const notAssigned = await sqldb.queryRows(
+    const notAssigned = await sqldb.queryScalars(
       sql.select_not_in_group,
       {
         group_config_id: groupConfigInfo.id,

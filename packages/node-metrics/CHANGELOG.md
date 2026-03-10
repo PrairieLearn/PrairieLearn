@@ -1,5 +1,17 @@
 # @prairielearn/node-metrics
 
+## 3.0.4
+
+### Patch Changes
+
+- 144cd19: Upgrade all JavaScript dependencies
+
+## 3.0.3
+
+### Patch Changes
+
+- 3c4799a: Upgrade all JavaScript dependencies
+
 ## 3.0.2
 
 ### Patch Changes
