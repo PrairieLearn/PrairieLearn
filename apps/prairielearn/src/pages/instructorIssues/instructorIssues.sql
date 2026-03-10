@@ -89,8 +89,7 @@ SELECT
   COALESCE(ci.display_timezone, c.display_timezone) AS display_timezone,
   a.id AS assessment_id,
   CASE
-    WHEN i.assessment_id IS NOT NULL
-    AND a.id IS NOT NULL THEN JSONB_BUILD_OBJECT(
+    WHEN a.id IS NOT NULL THEN JSONB_BUILD_OBJECT(
       'label',
       -- Fallback to the assessment tid if the assessment set is not found
       COALESCE(aset.abbreviation || a.number, a.tid),

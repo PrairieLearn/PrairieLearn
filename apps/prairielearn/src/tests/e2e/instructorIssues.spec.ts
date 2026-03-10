@@ -37,13 +37,11 @@ async function insertTestVariant({
   courseId,
   authnUserId,
   userId,
-  variantSeed,
 }: {
   questionId: string;
   courseId: string;
   authnUserId: string;
   userId: string;
-  variantSeed?: string;
 }) {
   return await sqldb.queryScalar(
     sql.insert_test_variant,
@@ -52,7 +50,7 @@ async function insertTestVariant({
       course_id: courseId,
       authn_user_id: authnUserId,
       user_id: userId,
-      variant_seed: variantSeed ?? `test_seed_${Date.now()}`,
+      variant_seed: 'test_seed',
     },
     IdSchema,
   );
@@ -122,7 +120,6 @@ async function createTestIssues(courseId: string) {
       courseId,
       authnUserId: user.id,
       userId: user.id,
-      variantSeed: `seed_${Date.now()}_${Math.random()}`,
     });
 
     const issueId = await insertIssue({
@@ -291,7 +288,6 @@ test.describe('Instructor issues page', () => {
         courseId: courseInstance.course_id,
         authnUserId: user.id,
         userId: user.id,
-        variantSeed: `cancel_test_${Date.now()}`,
       });
 
       await insertIssue({
@@ -341,7 +337,6 @@ test.describe('Instructor issues page', () => {
         courseId: course.id,
         authnUserId: user.id,
         userId: user.id,
-        variantSeed: `deleted_assessment_test_${Date.now()}`,
       });
 
       const issueId = await insertIssue({
@@ -361,7 +356,7 @@ test.describe('Instructor issues page', () => {
 
       await page.goto(issuesUrl);
 
-      await expect(page.getByText('Deleted assessment: E1').first()).toBeVisible();
+      await expect(page.getByText('E1 (deleted)').first()).toBeVisible();
     });
 
     test('falls back to tid when assessment set is missing', async ({
@@ -385,7 +380,6 @@ test.describe('Instructor issues page', () => {
         courseId: course.id,
         authnUserId: user.id,
         userId: user.id,
-        variantSeed: `deleted_assessment_no_set_${Date.now()}`,
       });
 
       const issueId = await insertIssue({
@@ -406,7 +400,7 @@ test.describe('Instructor issues page', () => {
 
       await page.goto(issuesUrl);
 
-      await expect(page.getByText('Deleted assessment: exam2-miscProblems').first()).toBeVisible();
+      await expect(page.getByText('exam2-miscProblems (deleted)').first()).toBeVisible();
     });
   });
 });
