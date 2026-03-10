@@ -95,7 +95,13 @@ export function InstructorInstanceAdminLti({
             The LTI (Learning Tools Interoperability) standard allows other online learning websites
             to embed PrairieLearn assessments within them. PrairieLearn acts as a
             <em>Tool Provider</em> for LTI. See the
-            <a href="https://www.imsglobal.org/basic-overview-how-lti-works"> LTI overview </a>
+            <a
+              href="https://www.imsglobal.org/basic-overview-how-lti-works"
+              target="_blank"
+              rel="noreferrer"
+            >
+              LTI overview
+            </a>
             for more information.
           </p>
           <p>

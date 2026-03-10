@@ -161,7 +161,6 @@ router.post(
           workspace_graded_files: GradedFilesSchema,
           workspace_enable_networking: BooleanFromCheckboxSchema,
           workspace_environment: z.string().optional(),
-          external_grading_enabled: BooleanFromCheckboxSchema,
           external_grading_image: z.string().optional(),
           external_grading_files: GradedFilesSchema,
           external_grading_entrypoint: ArgumentsSchema,
@@ -277,11 +276,6 @@ router.post(
 
       const externalGradingOptions = {
         comment: questionInfo.externalGradingOptions?.comment ?? undefined,
-        enabled: propertyValueWithDefault(
-          questionInfo.externalGradingOptions?.enabled,
-          body.external_grading_enabled,
-          false,
-        ),
         image: propertyValueWithDefault(
           questionInfo.externalGradingOptions?.image,
           body.external_grading_image,

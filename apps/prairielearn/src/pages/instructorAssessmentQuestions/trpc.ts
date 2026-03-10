@@ -49,6 +49,7 @@ const courseQuestionsQuery = t.procedure.query(async (opts) => {
     id: q.id,
     qid: q.qid,
     title: q.title,
+    grading_method: q.grading_method,
     topic: { id: q.topic.id, name: q.topic.name, color: q.topic.color },
     tags: q.tags?.map((t) => ({ id: t.id, name: t.name, color: t.color })) ?? null,
     assessments:

@@ -5,14 +5,5 @@
   "set": "Homework",
   "number": "11",
   "allowAccess": [{ "credit": 100 }],
-  "zones": [
-    {
-      "questions": [
-        {
-          "id": "variantAccess",
-          "points": 4
-        }
-      ]
-    }
-  ]
+  "zones": [{ "questions": [{ "id": "variantAccess", "autoPoints": 4 }] }]
 }
