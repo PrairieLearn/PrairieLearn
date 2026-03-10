@@ -165,7 +165,7 @@ export function TreeQuestionBlockNode({
           paddingRight: '0.5rem',
           cursor: 'pointer',
           ...(chooseExceeds
-            ? { borderLeft: '6px solid var(--bs-danger)' }
+            ? { borderLeft: '6px solid var(--bs-warning)' }
             : pointsMismatch
               ? { borderLeft: '6px solid var(--bs-warning)' }
               : {}),
@@ -222,7 +222,6 @@ export function TreeQuestionBlockNode({
                   tooltipId={`choose-exceeds-${zoneQuestionBlock.trackingId}`}
                   label="Choose exceeds count"
                   body="Number to choose exceeds the number of alternatives in this group"
-                  variant="error"
                 />
               )}
             </span>
@@ -307,7 +306,7 @@ export function TreeQuestionBlockNode({
 
       {/* Alternatives */}
       {!isCollapsed && alternativeCount === 0 && editMode && (
-        <div className="text-muted fst-italic border-bottom py-2" style={{ paddingLeft: '3.5rem' }}>
+        <div className="text-muted fst-italic border-bottom py-2" style={{ paddingLeft: '4.5rem' }}>
           No alternatives yet. Use "Add alternative" to add questions.
         </div>
       )}

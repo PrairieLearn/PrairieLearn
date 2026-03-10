@@ -367,6 +367,13 @@ export function hasZoneChooseExceedsCount(zone: ZoneAssessmentForm): boolean {
   if (count === 0) return false;
   if (zone.numberChoose != null && zone.numberChoose > count) return true;
   if (zone.bestQuestions != null && zone.bestQuestions > count) return true;
+  if (
+    zone.bestQuestions != null &&
+    zone.numberChoose != null &&
+    zone.bestQuestions > zone.numberChoose
+  ) {
+    return true;
+  }
   return false;
 }
 
