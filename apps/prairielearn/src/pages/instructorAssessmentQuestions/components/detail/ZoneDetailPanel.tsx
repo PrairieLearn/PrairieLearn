@@ -156,11 +156,11 @@ export function ZoneDetailPanel({
           Number to choose or best questions exceeds the number of questions in this zone.
         </div>
       )}
-      <div className="text-muted small mb-2">
+      <div className="text-muted small">
         {zoneQuestionCount} choosable question{zoneQuestionCount !== 1 ? 's' : ''} in zone
       </div>
 
-      <DetailSectionHeader first>Settings</DetailSectionHeader>
+      <DetailSectionHeader>Settings</DetailSectionHeader>
 
       <Wrapper className={clsx(!editMode && 'mb-0')}>
         <FormField
