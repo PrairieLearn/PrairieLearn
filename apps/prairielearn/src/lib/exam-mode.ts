@@ -1,9 +1,12 @@
 import type { Request, Response } from 'express';
+import z from 'zod';
 
-import { callScalar } from '@prairielearn/postgres';
+import { loadSqlEquiv, queryScalar } from '@prairielearn/postgres';
 
 import { config } from './config.js';
-import { type EnumMode, EnumModeSchema } from './db-types.js';
+import { type EnumMode } from './db-types.js';
+
+const sql = loadSqlEquiv(import.meta.url);
 
 export async function getModeForRequest(req: Request, res: Response): Promise<EnumMode> {
   // If we're lucky, `authzCourseOrInstance` has already populated the mode.
@@ -30,13 +33,18 @@ export async function ipToMode({
   date,
   authn_user_id,
 }: {
-  ip: string | undefined;
+  ip: string | null | undefined;
   date: Date;
   authn_user_id: string;
-}) {
+}): Promise<EnumMode> {
   // Express's types indicate that `ip` may be undefined in some cases. We want
   // to ensure that we don't try to proceed without one.
-  if (ip === undefined) throw new Error('IP address is required');
+  if (ip == null) throw new Error('IP address is required');
 
-  return await callScalar('ip_to_mode', [ip, date, authn_user_id], EnumModeSchema);
+  const hasPrairieTestReservation = await queryScalar(
+    sql.select_active_prairietest_reservation,
+    { ip, date, authn_user_id },
+    z.boolean(),
+  );
+  return hasPrairieTestReservation ? 'Exam' : 'Public';
 }

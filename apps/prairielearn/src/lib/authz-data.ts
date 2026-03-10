@@ -24,6 +24,7 @@ import {
   EnumModeSchema,
   type User,
 } from './db-types.js';
+import { ipToMode } from './exam-mode.js';
 
 const sql = sqldb.loadSqlEquiv(import.meta.url);
 
@@ -44,7 +45,7 @@ async function selectCourseOrInstanceContextData({
   ip: string | null;
   req_date: Date;
 }) {
-  return sqldb.queryOptionalRow(
+  const result = await sqldb.queryOptionalRow(
     sql.select_course_or_instance_context_data,
     {
       user_id,
@@ -53,8 +54,13 @@ async function selectCourseOrInstanceContextData({
       ip,
       req_date,
     },
-    CourseOrInstanceContextDataSchema,
+    CourseOrInstanceContextDataSchema.omit({ mode: true }),
   );
+  if (result === null) return null;
+  return {
+    ...result,
+    mode: await ipToMode({ ip: ip ?? undefined, date: req_date, authn_user_id: user_id }),
+  };
 }
 
 export const CourseOrInstanceOverridesSchema = z.object({

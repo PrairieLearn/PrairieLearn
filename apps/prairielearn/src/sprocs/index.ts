@@ -37,7 +37,6 @@ export async function init() {
       'authz_course.sql',
       'authz_course_instance.sql',
       'courses_update_column.sql',
-      'ip_to_mode.sql',
       'users_select_or_insert.sql',
       'users_select_or_insert_lti.sql',
       'users_is_instructor_in_course_instance.sql',
