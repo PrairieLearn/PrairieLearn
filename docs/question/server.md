@@ -334,8 +334,45 @@ As shown in the table, all functions (except for `render`) accept a single argum
 | `options`               | `dict`  | Any options associated with the question, e.g. for [accessing files](#accessing-files-on-disk)                                       |
 | `filename`              | `str`   | The name of the [dynamic file requested](#generating-dynamic-files-with-file) in the `file()` function.                              |
 | `test_type`             | `str`   | The type of test being run in the [`test()` function](#testing-questions-with-test).                                                 |
+| `answers_names`         | `dict`  | A dictionary whose keys list the names of the answers in the question.                                                               |
+| `panel`                 | `str`   | Which panel is being rendered (`question`, `submission`, or `answer`).                                                               |
+| `editable`              | `bool`  | Whether the question is currently in an editable state.                                                                              |
+| `num_valid_submissions` | `int`   | The number of valid (not containing format errors) submissions by the student for the current variant.                               |
+| `manual_grading`        | `bool`  | Whether the question is being rendered in the manual grading view.                                                                   |
+| `ai_grading`            | `bool`  | Whether the question is being rendered in the AI grading view.                                                                       |
+| `gradable`              | `bool`  | Whether the submission can be graded. Automatically set to `false` if there are format errors.                                       |
 
-The key `data` fields and their types are described above. You can view a full list of all fields in the [`QuestionData` reference](../python-reference/prairielearn/question_utils.md#prairielearn.question_utils.QuestionData).
+Not all fields are available in every function — some are only present in specific phases. See the [data field scopes](#data-field-scopes) table below for details. You can also view a full list of all fields in the [`QuestionData` reference](../python-reference/prairielearn/question_utils.md#prairielearn.question_utils.QuestionData).
+
+### Data field scopes
+
+Each field in the `data` dictionary is either stored **per-variant** (shared across all submissions) or **per-submission** (unique to each student submission).
+
+| Field                   | Scope      | Notes                                                                                                        |
+| ----------------------- | ---------- | ------------------------------------------------------------------------------------------------------------ |
+| `params`                | Variant    | Set in `generate()`. Can be modified in `parse()`, in which case the modified value is saved per-submission. |
+| `correct_answers`       | Variant    | Set in `generate()`. Can be modified in `parse()`, in which case the modified value is saved per-submission. |
+| `submitted_answers`     | Submission | —                                                                                                            |
+| `raw_submitted_answers` | Submission | —                                                                                                            |
+| `format_errors`         | Submission | —                                                                                                            |
+| `partial_scores`        | Submission | —                                                                                                            |
+| `score`                 | Submission | —                                                                                                            |
+| `feedback`              | Submission | —                                                                                                            |
+| `variant_seed`          | Variant    | —                                                                                                            |
+| `options`               | Variant    | —                                                                                                            |
+| `filename`              | Not stored | Only in `file()`.                                                                                            |
+| `test_type`             | Not stored | Only in `test()`.                                                                                            |
+| `answers_names`         | Not stored | Available in `prepare()` and later.                                                                          |
+| `panel`                 | Not stored | Only in `render()`.                                                                                          |
+| `editable`              | Not stored | Only in `render()`.                                                                                          |
+| `num_valid_submissions` | Not stored | Only in `render()`.                                                                                          |
+| `manual_grading`        | Not stored | Only in `render()`.                                                                                          |
+| `ai_grading`            | Not stored | Only in `render()`.                                                                                          |
+| `gradable`              | Submission | —                                                                                                            |
+
+!!! note
+
+    Although `params` and `correct_answers` are initially set per-variant in `generate()`, they can be modified in `parse()`. When this happens, the modified values are saved with the submission rather than the variant. This means `grade()` sees the per-submission copies, allowing question authors to adjust parameters or correct answers based on the student's input.
 
 ## Question data storage
 
