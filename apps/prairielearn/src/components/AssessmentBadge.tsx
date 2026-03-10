@@ -9,29 +9,24 @@ type AssessmentBadgeProps = {
   | ({ hideLink?: false } & AssessmentInstanceUrlParts & { publicURL?: boolean })
 );
 
-export function AssessmentBadge({
-  assessment,
-  hideLink = false,
-  urlPrefix,
-  courseInstanceId,
-  publicURL = false,
-}: AssessmentBadgeProps) {
-  if (hideLink) {
+export function AssessmentBadge(props: AssessmentBadgeProps) {
+  const { assessment } = props;
+
+  if (props.hideLink) {
     return <span className={`badge color-${assessment.color}`}>{assessment.label}</span>;
   }
 
   const link = getAssessmentInstanceUrl(
-    // TypeScript is not smart enough to infer the correct type here
-    urlPrefix !== undefined
+    props.urlPrefix !== undefined
       ? {
-          urlPrefix,
+          urlPrefix: props.urlPrefix,
           assessmentId: assessment.assessment_id,
-          publicURL,
+          publicURL: props.publicURL,
         }
       : {
-          courseInstanceId: courseInstanceId!,
+          courseInstanceId: props.courseInstanceId,
           assessmentId: assessment.assessment_id,
-          publicURL,
+          publicURL: props.publicURL,
         },
   );
 
