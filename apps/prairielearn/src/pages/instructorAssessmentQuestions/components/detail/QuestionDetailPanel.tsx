@@ -30,6 +30,7 @@ import {
   formatPointsValue,
   makeResetAndSave,
   parsePointsListValue,
+  preserveNonStringComment,
   validateAtLeastOnePointsField,
   validateNonIncreasingPoints,
   validatePointsListFormat,
@@ -93,6 +94,7 @@ export function QuestionDetailPanel({
 }) {
   const {
     editMode,
+    hasCourseInstancePermissionEdit,
     assessmentType,
     constantQuestionValue,
     assessmentDefaults,
@@ -190,6 +192,7 @@ export function QuestionDetailPanel({
         questionTrackingId,
         {
           ...data,
+          comment: preserveNonStringComment(question.comment, data.comment),
           forceMaxPoints: hasForceMaxPointsParent
             ? data.forceMaxPoints
             : data.forceMaxPoints || undefined,
@@ -197,7 +200,13 @@ export function QuestionDetailPanel({
         },
         alternativeTrackingId,
       ),
-    [onUpdate, questionTrackingId, alternativeTrackingId, hasForceMaxPointsParent],
+    [
+      onUpdate,
+      question.comment,
+      questionTrackingId,
+      alternativeTrackingId,
+      hasForceMaxPointsParent,
+    ],
   );
 
   const resetAndSave = useMemo(
@@ -516,7 +525,7 @@ export function QuestionDetailPanel({
 
       {/* Action buttons */}
       <div className="d-flex gap-2">
-        {questionData && questionData.assessment_question.id !== '0' && (
+        {!editMode && hasCourseInstancePermissionEdit && questionData && (
           <OverlayTrigger
             placement="top"
             tooltip={{

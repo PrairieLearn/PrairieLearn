@@ -266,6 +266,7 @@ export interface TreeState {
  */
 export interface DetailState {
   editMode: boolean;
+  hasCourseInstancePermissionEdit: boolean;
   assessmentType: EnumAssessmentType;
   constantQuestionValue: boolean;
   assessmentDefaults: AssessmentAdvancedDefaults;

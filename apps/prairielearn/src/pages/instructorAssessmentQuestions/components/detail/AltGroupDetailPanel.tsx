@@ -10,6 +10,7 @@ import {
   formatPoints,
   makeResetAndSave,
   parsePointsListValue,
+  preserveNonStringComment,
   validateNonIncreasingPoints,
   validatePointsListFormat,
 } from '../../utils/formHelpers.js';
@@ -121,10 +122,11 @@ export function AltGroupDetailPanel({
     (data: AltGroupFormData) =>
       onUpdate(zoneQuestionBlock.trackingId, {
         ...data,
+        comment: preserveNonStringComment(zoneQuestionBlock.comment, data.comment),
         forceMaxPoints: data.forceMaxPoints || undefined,
         allowRealTimeGrading: data.allowRealTimeGrading,
       }),
-    [onUpdate, zoneQuestionBlock.trackingId],
+    [onUpdate, zoneQuestionBlock.comment, zoneQuestionBlock.trackingId],
   );
 
   const resetAndSave = useMemo(

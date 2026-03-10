@@ -1,3 +1,5 @@
+import type { CommentJson } from '../../../schemas/comment.js';
+
 /**
  * Converts a string value from an HTML textarea to a string or undefined.
  * Used as a `setValueAs` transform for react-hook-form textarea inputs
@@ -126,6 +128,24 @@ export function validatePointsListFormat(
  */
 export function extractStringComment(comment: unknown): string | undefined {
   return typeof comment === 'string' ? comment : undefined;
+}
+
+/**
+ * Preserves existing non-string comments unless the user explicitly replaces
+ * them with a string value. This prevents array/object comments from being
+ * silently deleted by forms that only expose a textarea editor.
+ */
+export function preserveNonStringComment(
+  originalComment: CommentJson | undefined,
+  editedComment: string | undefined,
+): CommentJson | undefined {
+  if (editedComment != null && editedComment !== '') {
+    return editedComment;
+  }
+  if (originalComment != null && typeof originalComment !== 'string') {
+    return originalComment;
+  }
+  return undefined;
 }
 
 /**

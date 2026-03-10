@@ -53,6 +53,7 @@ import {
   questionDisplayName,
 } from '../utils/questions.js';
 import { getStructuralSaveValidationErrorKind } from '../utils/saveValidation.js';
+import { sanitizeSelectedItem, selectedItemsEqual } from '../utils/selectedItem.js';
 import { createAssessmentQuestionsTrpcClient } from '../utils/trpc-client.js';
 import { TRPCProvider, useTRPC } from '../utils/trpc-context.js';
 import { findQuestionByTrackingId, useAssessmentEditor } from '../utils/useAssessmentEditor.js';
@@ -130,6 +131,7 @@ interface AssessmentEditorInnerProps {
   jsonZones: ZoneAssessmentJson[];
   assessment: StaffAssessment;
   hasCoursePermissionPreview: boolean;
+  hasCourseInstancePermissionEdit: boolean;
   canEdit: boolean;
   csrfToken: string;
   origHash: string;
@@ -143,6 +145,7 @@ function AssessmentEditorInner({
   jsonZones,
   assessment,
   hasCoursePermissionPreview,
+  hasCourseInstancePermissionEdit,
   canEdit,
   csrfToken,
   origHash,
@@ -192,7 +195,13 @@ function AssessmentEditorInner({
   const [activeDragId, setActiveDragId] = useState<string | null>(null);
   const isDragging = activeDragId !== null;
   const isKeyboardDragRef = useRef(false);
-  const [selectedItem, setSelectedItem] = useState<SelectedItem>(null);
+  const [selectedItemState, setSelectedItem] = useState<SelectedItem>(null);
+  const selectedItem = useMemo(() => {
+    const nextSelectedItem = sanitizeSelectedItem(selectedItemState, zones);
+    return selectedItemsEqual(selectedItemState, nextSelectedItem)
+      ? selectedItemState
+      : nextSelectedItem;
+  }, [selectedItemState, zones]);
 
   // Ref tracks the latest selectedItem so async handlers (handleQuestionPicked)
   // can detect if the selection changed during an await and bail out early.
@@ -211,7 +220,7 @@ function AssessmentEditorInner({
   // mounted form will report its own validity, while persisted tree-state
   // invariants are checked separately from `zones`.
   useEffect(() => {
-    // eslint-disable-next-line react-you-might-not-need-an-effect/no-chain-state-updates, @eslint-react/hooks-extra/no-direct-set-state-in-use-effect
+    // eslint-disable-next-line react-you-might-not-need-an-effect/no-adjust-state-on-prop-change, react-you-might-not-need-an-effect/no-chain-state-updates, @eslint-react/hooks-extra/no-direct-set-state-in-use-effect
     setSelectedFormHasErrors(false);
   }, [selectedItem]);
 
@@ -1089,6 +1098,7 @@ function AssessmentEditorInner({
   const detailState: DetailState = useMemo(
     () => ({
       editMode,
+      hasCourseInstancePermissionEdit,
       assessmentType: assessment.type,
       constantQuestionValue: assessment.constant_question_value ?? false,
       assessmentDefaults,
@@ -1098,6 +1108,7 @@ function AssessmentEditorInner({
     }),
     [
       editMode,
+      hasCourseInstancePermissionEdit,
       assessment.type,
       assessment.constant_question_value,
       assessmentDefaults,
