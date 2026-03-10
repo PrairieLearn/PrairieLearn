@@ -31,6 +31,9 @@
 .split-pane__left {
   flex: 1;
   min-width: 0;
+  /* Contain z-indexed children (e.g. sticky zone headers) so they don't
+     paint over the separator's focus ring. */
+  isolation: isolate;
 }
 
 @media (min-width: 769px) {
@@ -57,6 +60,7 @@
   outline: 2px solid var(--bs-primary);
   outline-offset: -1px;
   background-color: var(--bs-primary-bg-subtle);
+  z-index: 1;
 }
 
 .split-pane__right {
