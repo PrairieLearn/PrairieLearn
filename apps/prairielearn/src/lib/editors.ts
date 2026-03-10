@@ -1642,6 +1642,49 @@ export class QuestionRenameEditor extends Editor {
       });
     }
 
+    // Ensure that the new QID is not a subdirectory of an existing question's
+    // QID, or vice versa. The sync process stops recursing into subdirectories
+    // once it finds an info.json, so nesting one question inside another would
+    // make the nested question invisible.
+    if (qidChanging) {
+      const existingQids = await getExistingShortNames(questionsPath, 'info.json');
+      const normalizedNewQid = path.normalize(this.qid_new);
+      for (const existingQid of existingQids) {
+        // Skip the question being renamed.
+        if (existingQid === this.question.qid) continue;
+
+        const normalizedExistingQid = path.normalize(existingQid);
+        if (normalizedNewQid.startsWith(normalizedExistingQid + '/')) {
+          throw new AugmentedError(
+            `The QID "${this.qid_new}" is a subdirectory of the existing question "${existingQid}". A question cannot be nested inside another question's directory.`,
+            {
+              info: html`
+                <p>
+                  The QID <code>${this.qid_new}</code> is a subdirectory of the existing question
+                  <code>${existingQid}</code>. A question cannot be nested inside another question's
+                  directory.
+                </p>
+              `,
+            },
+          );
+        }
+        if (normalizedExistingQid.startsWith(normalizedNewQid + '/')) {
+          throw new AugmentedError(
+            `The QID "${this.qid_new}" would be a parent directory of the existing question "${existingQid}". A question cannot contain another question's directory.`,
+            {
+              info: html`
+                <p>
+                  The QID <code>${this.qid_new}</code> would be a parent directory of the existing
+                  question <code>${existingQid}</code>. A question cannot contain another question's
+                  directory.
+                </p>
+              `,
+            },
+          );
+        }
+      }
+    }
+
     const pathsToAdd: string[] = [];
 
     if (qidChanging) {
