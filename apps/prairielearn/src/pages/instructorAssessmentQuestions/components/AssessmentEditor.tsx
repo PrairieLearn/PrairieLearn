@@ -42,6 +42,7 @@ import {
   createAlternativeWithTrackingId,
   createQuestionWithTrackingId,
   createZoneWithTrackingId,
+  getDefaultPointFieldsForNewQuestion,
   prepareZonesForEditor,
   stripTrackingIds,
 } from '../utils/dataTransform.js';
@@ -197,6 +198,14 @@ function AssessmentEditorInner({
   const isDragging = activeDragId !== null;
   const isKeyboardDragRef = useRef(false);
   const [selectedItemState, setSelectedItem] = useState<SelectedItem>(null);
+  // After tree mutations (drag-and-drop, extraction, deletion), the stored
+  // selection may point at a removed or restructured item. sanitizeSelectedItem
+  // resolves this to a valid selection or null. We preserve referential identity
+  // via selectedItemsEqual so that autosave-driven `zones` changes (which happen
+  // on every keystroke) don't produce a new object reference when the selection
+  // is logically unchanged. A new reference would re-trigger the effect that
+  // resets selectedFormHasErrors (clearing validation mid-edit) and re-run
+  // expensive memos like the tree event handlers.
   const selectedItem = useMemo(() => {
     const nextSelectedItem = sanitizeSelectedItem(selectedItemState, zones);
     return selectedItemsEqual(selectedItemState, nextSelectedItem)
@@ -418,6 +427,22 @@ function AssessmentEditorInner({
       }
 
       if (selectedItem.altGroupTrackingId) {
+        // Empty groups start neutral; seed point defaults from the first picked question.
+        const altGroupResult = findQuestionByTrackingId(zones, selectedItem.altGroupTrackingId);
+        const shouldInitializeAltGroupPoints =
+          altGroupResult?.question.alternatives?.length === 0 &&
+          altGroupResult.question.autoPoints == null &&
+          altGroupResult.question.maxAutoPoints == null &&
+          altGroupResult.question.manualPoints == null;
+
+        if (shouldInitializeAltGroupPoints) {
+          dispatch({
+            type: 'UPDATE_QUESTION',
+            questionTrackingId: selectedItem.altGroupTrackingId,
+            question: getDefaultPointFieldsForNewQuestion(questionData.question.grading_method),
+          });
+        }
+
         // Adding to existing alt group
         const newAlt = { ...createAlternativeWithTrackingId(), id: qid } as QuestionAlternativeForm;
         dispatch({
@@ -428,7 +453,10 @@ function AssessmentEditorInner({
         });
       } else {
         // Creating new alt group: first question picked creates the group
-        const newAltGroup = createAltGroupWithTrackingId();
+        const newAltGroup = {
+          ...createAltGroupWithTrackingId(),
+          ...getDefaultPointFieldsForNewQuestion(questionData.question.grading_method),
+        };
         const firstAlt = {
           ...createAlternativeWithTrackingId(),
           id: qid,
@@ -553,13 +581,10 @@ function AssessmentEditorInner({
       handleRemoveQuestionByQid(qid);
     }
 
-    const isManual = questionData.question.grading_method === 'Manual';
     const newQuestion: ZoneQuestionBlockForm & { id: string } = {
       ...createQuestionWithTrackingId(),
       id: qid,
-      // Use manualPoints for Manual questions so the sync code doesn't
-      // treat the default autoPoints: 1 as a split-point question.
-      ...(isManual ? { autoPoints: undefined, manualPoints: 1 } : {}),
+      ...getDefaultPointFieldsForNewQuestion(questionData.question.grading_method),
     };
 
     dispatch({

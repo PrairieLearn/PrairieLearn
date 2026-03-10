@@ -142,6 +142,21 @@ export function createQuestionWithTrackingId(): ZoneQuestionBlockForm {
 }
 
 /**
+ * Returns the default point fields for a newly added question based on its grading method.
+ */
+export function getDefaultPointFieldsForNewQuestion(gradingMethod: string | null | undefined) {
+  if (gradingMethod === 'Manual') {
+    return {
+      autoPoints: undefined,
+      manualPoints: 1,
+    };
+  }
+  return {
+    autoPoints: 1,
+  };
+}
+
+/**
  * Creates a new alternative with a trackingId.
  */
 export function createAlternativeWithTrackingId(): QuestionAlternativeForm {
@@ -152,6 +167,8 @@ export function createAlternativeWithTrackingId(): QuestionAlternativeForm {
 
 /**
  * Creates a new alternative group with a trackingId and empty alternatives.
+ * Point defaults are chosen when the first question is added, since a blank
+ * group does not yet have a grading method to inherit from.
  */
 export function createAltGroupWithTrackingId(): ZoneQuestionBlockForm {
   return {
@@ -160,7 +177,6 @@ export function createAltGroupWithTrackingId(): ZoneQuestionBlockForm {
     numberChoose: 1,
     canSubmit: [],
     canView: [],
-    autoPoints: 1,
   } as ZoneQuestionBlockForm;
 }
 

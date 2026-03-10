@@ -11,7 +11,13 @@ import {
 import * as courseDB from '../../../sync/course-db.js';
 import type { ZoneAssessmentForm } from '../types.js';
 
-import { prepareZonesForEditor, serializeZonesForJson, stripTrackingIds } from './dataTransform.js';
+import {
+  createAltGroupWithTrackingId,
+  getDefaultPointFieldsForNewQuestion,
+  prepareZonesForEditor,
+  serializeZonesForJson,
+  stripTrackingIds,
+} from './dataTransform.js';
 
 describe('serializeZonesForJson', () => {
   test('should strip defaults while preserving structure for all example course assessments', async () => {
@@ -194,6 +200,23 @@ describe('prepareZonesForEditor', () => {
     ];
     const uniqueIds = new Set(trackingIds);
     expect(uniqueIds.size).toBe(trackingIds.length);
+  });
+});
+
+describe('new question defaults', () => {
+  it('uses manual points for Manual questions', () => {
+    expect(getDefaultPointFieldsForNewQuestion('Manual')).toEqual({
+      autoPoints: undefined,
+      manualPoints: 1,
+    });
+  });
+
+  it('starts empty alt groups without inherited point defaults', () => {
+    const result = createAltGroupWithTrackingId();
+
+    expect(result.autoPoints).toBeUndefined();
+    expect(result.manualPoints).toBeUndefined();
+    expect(result.alternatives).toEqual([]);
   });
 });
 

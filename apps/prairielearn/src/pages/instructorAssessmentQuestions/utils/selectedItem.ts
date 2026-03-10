@@ -18,6 +18,13 @@ function findAlternativeLocation(zones: ZoneAssessmentForm[], alternativeTrackin
   return null;
 }
 
+/**
+ * Ensures the current selection still refers to a valid item in the zone tree.
+ * Tree mutations (drag-and-drop, extraction, deletion) can leave the selection
+ * pointing at a removed or restructured item. This function walks each case
+ * and either returns the original selection (if still valid), adjusts it to
+ * follow the item to its new location, or returns null to deselect.
+ */
 export function sanitizeSelectedItem(
   selectedItem: SelectedItem,
   zones: ZoneAssessmentForm[],
