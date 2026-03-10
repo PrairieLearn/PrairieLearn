@@ -733,12 +733,8 @@ export function StudentAssessmentInstance({
                                   `
                                 : html`
                                     <li>
-                                      ${resLocals.authz_data.mode_reason === 'Network'
-                                        ? html`When you are done, please logout and close your
-                                          browser; there is no need to do anything else.`
-                                        : html`When you are done, please follow the instructions of
-                                          your proctor regarding check-out procedures.`}
-                                      If you have any saved answers when you leave, they will be
+                                      When you are done, please logout and close your browser. If
+                                      you have any saved answers when you leave, they will be
                                       automatically graded before your final score is computed.
                                     </li>
                                   `}
