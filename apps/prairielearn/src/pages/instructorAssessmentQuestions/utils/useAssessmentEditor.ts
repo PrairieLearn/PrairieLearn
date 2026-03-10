@@ -117,7 +117,7 @@ export function createEditorReducer(initialState: EditorState) {
         zoneResult.zone.questions.push(question);
 
         const newQuestionMetadata = questionData
-          ? { ...state.questionMetadata, [question.id!]: questionData }
+          ? { ...state.questionMetadata, [question.id]: questionData }
           : state.questionMetadata;
 
         return {
@@ -515,8 +515,8 @@ export function createEditorReducer(initialState: EditorState) {
           1,
         );
 
-        // Convert to standalone question block, resolving inherited values
-        const newQuestion = alternativeToQuestionBlock(removedAlt, fromResult.question);
+        // Convert to standalone question block, stripping undefined inherited values
+        const newQuestion = alternativeToQuestionBlock(removedAlt);
 
         // Find insertion point (uses trackingIds, so unaffected by shrinkage)
         let insertIndex: number;

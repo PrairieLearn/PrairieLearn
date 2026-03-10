@@ -235,7 +235,7 @@ describe('createEditorReducer', () => {
     expect(extracted.trackingId).toEqual(tid('a1'));
     expect(extracted.id).toBe('alt-qid-1');
     expect(extracted.autoPoints).toBe(5);
-    expect(extracted.triesPerVariant).toBe(2);
+    expect(extracted.triesPerVariant).toBeUndefined();
 
     expect(state.zones[0].questions[2].trackingId).toEqual(tid('q1'));
 

@@ -31,9 +31,7 @@ import { FormField } from './FormField.js';
 interface AltGroupFormData {
   numberChoose?: number;
   comment?: string;
-  points?: number | number[];
   autoPoints?: number | number[];
-  maxPoints?: number;
   maxAutoPoints?: number;
   manualPoints?: number;
   triesPerVariant?: number;
@@ -71,9 +69,6 @@ export function AltGroupDetailPanel({
   const sharedTopic = getSharedTopic(zoneQuestionBlock.alternatives ?? [], questionMetadata);
   const sharedTags = getSharedTags(zoneQuestionBlock.alternatives ?? [], questionMetadata);
 
-  const pointsProperty = assessmentType === 'Exam' ? 'points' : 'autoPoints';
-  const maxPointsProperty = assessmentType === 'Exam' ? 'maxPoints' : 'maxAutoPoints';
-
   const {
     register,
     getValues,
@@ -86,9 +81,7 @@ export function AltGroupDetailPanel({
     values: {
       numberChoose: zoneQuestionBlock.numberChoose ?? undefined,
       comment: commentToString(zoneQuestionBlock.comment),
-      points: zoneQuestionBlock.points ?? undefined,
       autoPoints: zoneQuestionBlock.autoPoints ?? undefined,
-      maxPoints: zoneQuestionBlock.maxPoints ?? undefined,
       maxAutoPoints: zoneQuestionBlock.maxAutoPoints ?? undefined,
       manualPoints: zoneQuestionBlock.manualPoints ?? undefined,
       triesPerVariant: zoneQuestionBlock.triesPerVariant ?? undefined,
@@ -160,7 +153,7 @@ export function AltGroupDetailPanel({
     resetAndSave,
   };
 
-  const watchedAutoPoints = watch(pointsProperty);
+  const watchedAutoPoints = watch('autoPoints');
   const autoPointsPlaceholder =
     watchedAutoPoints == null
       ? ''
@@ -248,8 +241,8 @@ export function AltGroupDetailPanel({
               editMode={editMode}
               id={`${idPrefix}-autoPoints`}
               label="Auto points (default)"
-              viewValue={formatPoints(zoneQuestionBlock[pointsProperty])}
-              error={errors[pointsProperty]}
+              viewValue={formatPoints(zoneQuestionBlock.autoPoints)}
+              error={errors.autoPoints}
               helpText={
                 <>
                   Points awarded for the auto-graded component.{' '}
@@ -273,13 +266,13 @@ export function AltGroupDetailPanel({
                   className={clsx('form-control form-control-sm', aria.errorClass)}
                   {...aria.inputProps}
                   step="any"
-                  {...register(pointsProperty, {
+                  {...register('autoPoints', {
                     setValueAs: coerceToNumber,
                     validate: (v, formValues) => {
                       if (typeof v === 'number' && v < 0) {
                         return 'Auto points must be non-negative.';
                       }
-                      const maxPoints = formValues[maxPointsProperty];
+                      const maxPoints = formValues.maxAutoPoints;
                       if (typeof v === 'number' && v === 0 && maxPoints != null && maxPoints > 0) {
                         return 'Auto points cannot be 0 when max auto points is greater than 0.';
                       }
@@ -296,11 +289,11 @@ export function AltGroupDetailPanel({
               id={`${idPrefix}-maxAutoPoints`}
               label="Max auto points (default)"
               viewValue={
-                zoneQuestionBlock[maxPointsProperty] != null
-                  ? String(zoneQuestionBlock[maxPointsProperty])
+                zoneQuestionBlock.maxAutoPoints != null
+                  ? String(zoneQuestionBlock.maxAutoPoints)
                   : undefined
               }
-              error={errors[maxPointsProperty]}
+              error={errors.maxAutoPoints}
               helpText="Maximum total auto-graded points."
               hideWhenEmpty
             >
@@ -311,11 +304,11 @@ export function AltGroupDetailPanel({
                   className={clsx('form-control form-control-sm', aria.errorClass)}
                   {...aria.inputProps}
                   placeholder={autoPointsPlaceholder}
-                  {...register(maxPointsProperty, {
+                  {...register('maxAutoPoints', {
                     setValueAs: coerceToNumber,
                     validate: (v, formValues) => {
                       if (v != null && v < 0) return 'Max auto points must be non-negative.';
-                      const points = formValues[pointsProperty];
+                      const points = formValues.autoPoints;
                       if (typeof points === 'number' && points === 0 && v != null && v > 0) {
                         return 'Max auto points must be 0 or empty when auto points is 0.';
                       }
@@ -387,8 +380,8 @@ export function AltGroupDetailPanel({
               editMode={editMode}
               id={`${idPrefix}-points`}
               label="Auto points (default)"
-              viewValue={formatPoints(zoneQuestionBlock[pointsProperty])}
-              error={errors[pointsProperty]}
+              viewValue={formatPoints(zoneQuestionBlock.autoPoints)}
+              error={errors.autoPoints}
               helpText='Default auto points inherited by alternatives unless overridden, as a comma-separated list (e.g. "10, 5, 2, 1").'
               hideWhenEmpty
             >
@@ -397,7 +390,7 @@ export function AltGroupDetailPanel({
                   type="text"
                   className={clsx('form-control form-control-sm', aria.errorClass)}
                   {...aria.inputProps}
-                  {...register(pointsProperty, {
+                  {...register('autoPoints', {
                     setValueAs: parsePointsListValue,
                     validate: {
                       format: (v) => validatePointsListFormat(v),

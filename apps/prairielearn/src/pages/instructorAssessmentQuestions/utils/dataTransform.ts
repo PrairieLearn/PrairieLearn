@@ -142,6 +142,21 @@ export function createQuestionWithTrackingId(): ZoneQuestionBlockForm {
 }
 
 /**
+ * Returns the default point fields for a newly added question based on its grading method.
+ */
+export function getDefaultPointFieldsForNewQuestion(gradingMethod: string | null | undefined) {
+  if (gradingMethod === 'Manual') {
+    return {
+      autoPoints: undefined,
+      manualPoints: 1,
+    };
+  }
+  return {
+    autoPoints: 1,
+  };
+}
+
+/**
  * Creates a new alternative with a trackingId.
  */
 export function createAlternativeWithTrackingId(): QuestionAlternativeForm {
@@ -152,6 +167,8 @@ export function createAlternativeWithTrackingId(): QuestionAlternativeForm {
 
 /**
  * Creates a new alternative group with a trackingId and empty alternatives.
+ * Point defaults are chosen when the first question is added, since a blank
+ * group does not yet have a grading method to inherit from.
  */
 export function createAltGroupWithTrackingId(): ZoneQuestionBlockForm {
   return {
@@ -160,36 +177,18 @@ export function createAltGroupWithTrackingId(): ZoneQuestionBlockForm {
     numberChoose: 1,
     canSubmit: [],
     canView: [],
-    autoPoints: 1,
   } as ZoneQuestionBlockForm;
 }
 
 /**
  * Converts an alternative to a standalone question block.
  * Preserves trackingId so dnd-kit can track the item mid-drag.
- * When a parent block is provided, inherited fields (points, triesPerVariant,
- * advanced settings) are resolved so the extracted question retains its
- * effective values rather than losing them.
+ * Strips undefined own properties so that fields the alternative was
+ * inheriting from its parent alt group remain undefined (inheritable)
+ * rather than being snapshotted or overwritten.
  */
-export function alternativeToQuestionBlock(
-  alt: QuestionAlternativeForm,
-  parent?: ZoneQuestionBlockForm,
-): ZoneQuestionBlockForm {
-  if (!parent) return { ...alt } as ZoneQuestionBlockForm;
-
-  return {
-    points: alt.points ?? parent.points,
-    autoPoints: alt.autoPoints ?? parent.autoPoints,
-    maxPoints: alt.maxPoints ?? parent.maxPoints,
-    maxAutoPoints: alt.maxAutoPoints ?? parent.maxAutoPoints,
-    manualPoints: alt.manualPoints ?? parent.manualPoints,
-    triesPerVariant: alt.triesPerVariant ?? parent.triesPerVariant,
-    forceMaxPoints: alt.forceMaxPoints ?? parent.forceMaxPoints,
-    advanceScorePerc: alt.advanceScorePerc ?? parent.advanceScorePerc,
-    gradeRateMinutes: alt.gradeRateMinutes ?? parent.gradeRateMinutes,
-    allowRealTimeGrading: alt.allowRealTimeGrading ?? parent.allowRealTimeGrading,
-    ...alt,
-  } as ZoneQuestionBlockForm;
+export function alternativeToQuestionBlock(alt: QuestionAlternativeForm): ZoneQuestionBlockForm {
+  return omitUndefined({ ...alt }) as ZoneQuestionBlockForm;
 }
 
 /**
@@ -251,9 +250,12 @@ function serializeQuestionBlock(question: ZoneQuestionBlockJson) {
     // For some reason, comment gets set to the empty string if it's not set.
     comment: question.comment || undefined,
 
-    // These defaults will be inherited by question alternatives, unless they override them.
-    // These should mirror the defaults from assessment syncing.
-    allowRealTimeGrading: propertyValueWithDefault(undefined, question.allowRealTimeGrading, true),
+    // Preserve allowRealTimeGrading as-is: stripping the default `true` would
+    // silently change behavior when a parent zone/assessment sets `false`,
+    // since the sync code inherits question → zone → assessment.
+    allowRealTimeGrading: question.allowRealTimeGrading,
+    // triesPerVariant and forceMaxPoints don't inherit from zones, so stripping
+    // their defaults is safe — the sync code applies the same defaults.
     triesPerVariant: propertyValueWithDefault(undefined, question.triesPerVariant, 1),
     forceMaxPoints: propertyValueWithDefault(undefined, question.forceMaxPoints, false),
 
@@ -280,7 +282,9 @@ export function serializeZonesForJson(zones: ZoneAssessmentJson[]): ZoneAssessme
       bestQuestions: zone.bestQuestions,
       advanceScorePerc: zone.advanceScorePerc,
       gradeRateMinutes: zone.gradeRateMinutes,
-      allowRealTimeGrading: propertyValueWithDefault(undefined, zone.allowRealTimeGrading, true),
+      // Preserve as-is: stripping `true` would change behavior when the
+      // assessment-level default is `false`, since sync inherits zone → assessment.
+      allowRealTimeGrading: zone.allowRealTimeGrading,
       // For some reason, comment gets set to the empty string if it's not set.
       comment: zone.comment || undefined,
       canSubmit: propertyValueWithDefault(undefined, zone.canSubmit, isEmptyArray),
