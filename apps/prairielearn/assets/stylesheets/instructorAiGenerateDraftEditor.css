@@ -11,7 +11,7 @@
   display: grid;
   grid-template-areas: 'preview-tabs chat' 'preview chat';
   grid-template-rows: min-content 1fr;
-  grid-template-columns: 1fr var(--chat-width, 500px);
+  grid-template-columns: 1fr auto;
 }
 
 .app-chat-container {

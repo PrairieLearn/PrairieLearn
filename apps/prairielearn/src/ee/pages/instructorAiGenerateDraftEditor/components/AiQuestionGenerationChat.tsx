@@ -620,24 +620,17 @@ export function AiQuestionGenerationChat({
     resize: 'smooth',
   });
 
-  const [chatWidth, setChatWidth] = useState(500);
-  const { separatorProps: resizerProps } = useResizeHandle({
-    currentWidth: chatWidth,
+  const { width: chatWidth, separatorProps: resizerProps } = useResizeHandle({
+    initialWidth: 500,
     minWidth: 260,
     maxWidth: 800,
-    onWidthChange: (width) => {
-      setChatWidth(width);
-      containerRef.current
-        ?.closest<HTMLElement>('.app-container')
-        ?.style.setProperty('--chat-width', `${width}px`);
-    },
     ariaLabel: 'Resize chat',
   });
 
   const hasMessages = messages.length > 0;
 
   return (
-    <div className="app-chat-container">
+    <div className="app-chat-container" style={{ width: chatWidth }}>
       <div ref={containerRef} className="app-chat px-2 pb-2 bg-light border-start">
         <div
           className={clsx('app-chat-history', {

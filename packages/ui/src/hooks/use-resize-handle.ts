@@ -1,22 +1,21 @@
-import { useCallback, useEffect, useRef } from 'react';
+import { useCallback, useEffect, useRef, useState } from 'react';
 
 const KEYBOARD_STEP = 10;
 
 export function useResizeHandle({
-  currentWidth,
+  initialWidth,
   minWidth,
   maxWidth,
-  onWidthChange,
   ariaLabel = 'Resize panel',
   ariaControls,
 }: {
-  currentWidth: number;
+  initialWidth: number;
   minWidth: number;
   maxWidth: number;
-  onWidthChange: (width: number) => void;
   ariaLabel?: string;
   ariaControls?: string;
 }) {
+  const [width, setWidth] = useState(initialWidth);
   const isDraggingRef = useRef(false);
   const cleanupRef = useRef<(() => void) | null>(null);
 
@@ -36,14 +35,14 @@ export function useResizeHandle({
       e.preventDefault();
       isDraggingRef.current = true;
       const startX = e.clientX;
-      const startWidth = currentWidth;
+      const startWidth = width;
       document.body.classList.add('user-select-none');
 
       const onMouseMove = (ev: MouseEvent) => {
         if (!isDraggingRef.current) return;
         // Panel is on the right: dragging left (decreasing clientX) grows it.
         const delta = startX - ev.clientX;
-        onWidthChange(clamp(startWidth + delta));
+        setWidth(clamp(startWidth + delta));
       };
 
       const cleanup = () => {
@@ -62,7 +61,7 @@ export function useResizeHandle({
       document.addEventListener('mousemove', onMouseMove);
       document.addEventListener('mouseup', onMouseUp);
     },
-    [currentWidth, clamp, onWidthChange],
+    [width, clamp],
   );
 
   const onKeyDown = useCallback(
@@ -72,12 +71,12 @@ export function useResizeHandle({
         case 'ArrowLeft':
         case 'ArrowUp':
           // Move separator left/up -> right panel grows.
-          newWidth = clamp(currentWidth + KEYBOARD_STEP);
+          newWidth = clamp(width + KEYBOARD_STEP);
           break;
         case 'ArrowRight':
         case 'ArrowDown':
           // Move separator right/down -> right panel shrinks.
-          newWidth = clamp(currentWidth - KEYBOARD_STEP);
+          newWidth = clamp(width - KEYBOARD_STEP);
           break;
         case 'Home':
           newWidth = maxWidth;
@@ -89,16 +88,17 @@ export function useResizeHandle({
           return;
       }
       e.preventDefault();
-      onWidthChange(newWidth);
+      setWidth(newWidth);
     },
-    [currentWidth, minWidth, maxWidth, clamp, onWidthChange],
+    [width, minWidth, maxWidth, clamp],
   );
 
   const range = maxWidth - minWidth;
   // 0 = right panel at max width (separator far left), 100 = right panel at min width (separator far right).
-  const valuenow = range > 0 ? Math.round(((maxWidth - currentWidth) / range) * 100) : 0;
+  const valuenow = range > 0 ? Math.round(((maxWidth - width) / range) * 100) : 0;
 
   return {
+    width,
     separatorProps: {
       role: 'separator' as const,
       tabIndex: 0,

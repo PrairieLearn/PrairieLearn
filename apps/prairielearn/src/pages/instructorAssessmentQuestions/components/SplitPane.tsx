@@ -46,7 +46,6 @@ export function SplitPane({
   /** Called when the user closes the detail panel via the X button. */
   onClose?: () => void;
 }) {
-  const [rightWidth, setRightWidth] = useState(DEFAULT_RIGHT_WIDTH);
   const isNarrow = useNarrowViewport();
   const [manualCollapsed, setManualCollapsed] = useState(true);
   const prevForceOpenRef = useRef(forceOpen);
@@ -61,11 +60,10 @@ export function SplitPane({
 
   const isCollapsed = rightCollapsedProp ?? manualCollapsed;
 
-  const { separatorProps } = useResizeHandle({
-    currentWidth: rightWidth,
+  const { width: rightWidth, separatorProps } = useResizeHandle({
+    initialWidth: DEFAULT_RIGHT_WIDTH,
     minWidth: MIN_RIGHT_WIDTH,
     maxWidth: MAX_RIGHT_WIDTH,
-    onWidthChange: setRightWidth,
     ariaLabel: 'Resize panel',
     ariaControls: 'split-pane-detail',
   });
