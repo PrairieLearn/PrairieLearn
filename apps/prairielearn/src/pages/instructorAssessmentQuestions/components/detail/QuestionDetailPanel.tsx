@@ -139,6 +139,7 @@ export function QuestionDetailPanel({
     getValues,
     watch,
     setValue,
+    trigger,
     formState: { errors, isDirty, isValid },
   } = useForm<QuestionFormData>({
     mode: 'onChange',
@@ -204,6 +205,17 @@ export function QuestionDetailPanel({
   );
 
   useAutoSave({ isDirty, isValid, getValues, onSave: handleSave, watch });
+
+  // Validate immediately on mount so that pre-existing invalid state
+  // (e.g. no points set on a newly added question) is flagged right away.
+  // We use the result of trigger() directly because formState.isValid may
+  // not update until user interaction with mode: 'onChange'.
+  useEffect(() => {
+    void trigger().then((valid) => {
+      // TODO: you can easily click off the item and save the form to bypass this validation.
+      onFormValidChange(valid);
+    });
+  }, [trigger, onFormValidChange]);
 
   useEffect(() => {
     // eslint-disable-next-line react-you-might-not-need-an-effect/no-pass-data-to-parent
