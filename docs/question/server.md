@@ -348,31 +348,31 @@ Not all fields are available in every function — some are only present in spec
 
 Each field in the `data` dictionary is either stored **per-variant** (shared across all submissions) or **per-submission** (unique to each student submission).
 
-| Field                   | Scope      | Notes                                                                                                        |
-| ----------------------- | ---------- | ------------------------------------------------------------------------------------------------------------ |
-| `params`                | Variant    | Set in `generate()`. Can be modified in `parse()`, in which case the modified value is saved per-submission. |
-| `correct_answers`       | Variant    | Set in `generate()`. Can be modified in `parse()`, in which case the modified value is saved per-submission. |
-| `submitted_answers`     | Submission | —                                                                                                            |
-| `raw_submitted_answers` | Submission | —                                                                                                            |
-| `format_errors`         | Submission | —                                                                                                            |
-| `partial_scores`        | Submission | —                                                                                                            |
-| `score`                 | Submission | —                                                                                                            |
-| `feedback`              | Submission | —                                                                                                            |
-| `variant_seed`          | Variant    | —                                                                                                            |
-| `options`               | Variant    | —                                                                                                            |
-| `filename`              | Not stored | Only in `file()`.                                                                                            |
-| `test_type`             | Not stored | Only in `test()`.                                                                                            |
-| `answers_names`         | Not stored | Available in `prepare()` and later.                                                                          |
-| `panel`                 | Not stored | Only in `render()`.                                                                                          |
-| `editable`              | Not stored | Only in `render()`.                                                                                          |
-| `num_valid_submissions` | Not stored | Only in `render()`.                                                                                          |
-| `manual_grading`        | Not stored | Only in `render()`.                                                                                          |
-| `ai_grading`            | Not stored | Only in `render()`.                                                                                          |
-| `gradable`              | Submission | —                                                                                                            |
+| Field                   | Scope            | Notes                                           |
+| ----------------------- | ---------------- | ----------------------------------------------- |
+| `params`                | Both             | Stored on both the variant and each submission. |
+| `correct_answers`       | Both             | Stored on both the variant and each submission. |
+| `submitted_answers`     | Submission       | —                                               |
+| `raw_submitted_answers` | Submission       | —                                               |
+| `format_errors`         | Submission       | —                                               |
+| `partial_scores`        | Submission       | —                                               |
+| `score`                 | Submission       | —                                               |
+| `feedback`              | Submission       | —                                               |
+| `variant_seed`          | Variant          | —                                               |
+| `options`               | Variant          | —                                               |
+| `filename`              | None (not saved) | Only in `file()`.                               |
+| `test_type`             | None (not saved) | Only in `test()`.                               |
+| `answers_names`         | None (not saved) | Available in `prepare()` and later.             |
+| `panel`                 | None (not saved) | Only in `render()`.                             |
+| `editable`              | None (not saved) | Only in `render()`.                             |
+| `num_valid_submissions` | None (not saved) | Only in `render()`.                             |
+| `manual_grading`        | None (not saved) | Only in `render()`.                             |
+| `ai_grading`            | None (not saved) | Only in `render()`.                             |
+| `gradable`              | Submission       | —                                               |
 
 !!! note
 
-    Although `params` and `correct_answers` are initially set per-variant in `generate()`, they can be modified in `parse()`. When this happens, the modified values are saved with the submission rather than the variant. This means `grade()` sees the per-submission copies, allowing question authors to adjust parameters or correct answers based on the student's input.
+    `params` and `correct_answers` are set per-variant in `generate()` and stored on both the variant and each submission. The submission copies are point-in-time snapshots. If `parse()` modifies these values, the updated values are saved to both the variant and the submission. `grade()` uses the per-submission copies, allowing question authors to adjust parameters or correct answers based on the student's input.
 
 ## Question data storage
 
