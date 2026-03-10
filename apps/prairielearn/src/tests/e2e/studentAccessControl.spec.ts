@@ -103,7 +103,7 @@ test.describe.serial('Student access control', () => {
     ]);
 
     await page.goto(`/pl/course_instance/${courseInstance.id}/assessments`);
-    await expect(page.getByText(ASSESSMENT_TITLE)).not.toBeVisible();
+    await expect(page.getByText(ASSESSMENT_TITLE, { exact: true })).not.toBeVisible();
   });
 
   test('listBeforeRelease: true with future release shows grayed-out assessment', async ({
@@ -134,8 +134,8 @@ test.describe.serial('Student access control', () => {
     await page.goto(`/pl/course_instance/${courseInstance.id}/assessments`);
 
     // The assessment title should be visible but not as a link
-    await expect(page.getByText(ASSESSMENT_TITLE)).toBeVisible();
-    const assessmentLink = page.getByRole('link', { name: ASSESSMENT_TITLE });
+    await expect(page.getByText(ASSESSMENT_TITLE, { exact: true })).toBeVisible();
+    const assessmentLink = page.getByRole('link', { name: ASSESSMENT_TITLE, exact: true });
     await expect(assessmentLink).not.toBeVisible();
 
     // "Opens soon" text should be visible
@@ -168,7 +168,7 @@ test.describe.serial('Student access control', () => {
 
     await page.goto(`/pl/course_instance/${courseInstance.id}/assessments`);
 
-    const assessmentLink = page.getByRole('link', { name: ASSESSMENT_TITLE });
+    const assessmentLink = page.getByRole('link', { name: ASSESSMENT_TITLE, exact: true });
     await expect(assessmentLink).toBeVisible();
     await expect(assessmentLink).toHaveAttribute('href', /\/assessment\/\d+/);
   });
@@ -202,7 +202,7 @@ test.describe.serial('Student access control', () => {
       { name: 'pl2_requested_data_changed', value: 'true', url: baseURL },
     ]);
     await page.goto(`/pl/course_instance/${courseInstance.id}/assessments`);
-    await expect(page.getByText(ASSESSMENT_TITLE)).not.toBeVisible();
+    await expect(page.getByText(ASSESSMENT_TITLE, { exact: true })).not.toBeVisible();
 
     // Student B is NOT in "Section A" - should see the assessment as a clickable link
     await page.context().addCookies([
@@ -210,11 +210,11 @@ test.describe.serial('Student access control', () => {
       { name: 'pl2_requested_data_changed', value: 'true', url: baseURL },
     ]);
     await page.goto(`/pl/course_instance/${courseInstance.id}/assessments`);
-    const assessmentLink = page.getByRole('link', { name: ASSESSMENT_TITLE });
+    const assessmentLink = page.getByRole('link', { name: ASSESSMENT_TITLE, exact: true });
     await expect(assessmentLink).toBeVisible();
   });
 
-  test('listBeforeRelease: false with future release shows assessment without "Opens soon"', async ({
+  test('listBeforeRelease: false with future release hides assessment entirely', async ({
     page,
     baseURL,
     courseInstance,
@@ -241,12 +241,7 @@ test.describe.serial('Student access control', () => {
 
     await page.goto(`/pl/course_instance/${courseInstance.id}/assessments`);
 
-    // Assessment is visible but as plain text (not a link, since it's not active)
-    await expect(page.getByText(ASSESSMENT_TITLE)).toBeVisible();
-    const assessmentLink = page.getByRole('link', { name: ASSESSMENT_TITLE });
-    await expect(assessmentLink).not.toBeVisible();
-
-    // Unlike listBeforeRelease: true, "Opens soon" should NOT be shown
-    await expect(page.getByText('Opens soon')).not.toBeVisible();
+    // Assessment should not be visible at all when listBeforeRelease is false
+    await expect(page.getByText(ASSESSMENT_TITLE, { exact: true })).not.toBeVisible();
   });
 });

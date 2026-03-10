@@ -40,10 +40,6 @@ test.describe('Access control UI', () => {
     await syncCourse(testCoursePath);
   });
 
-  test.afterAll(async () => {
-    await features.disable('enhanced-access-control');
-  });
-
   test('can view page with initial data and verify summary', async ({ page, courseInstance }) => {
     const assessment = await selectAssessmentByTid({
       course_instance_id: courseInstance.id,

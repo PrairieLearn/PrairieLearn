@@ -106,7 +106,7 @@ export async function syncAccessControl(
     if (invalidUuids.length > 0) {
       throw new Error(
         `Invalid PrairieTest exam UUID(s): ${invalidUuids.join(', ')}. ` +
-          `These UUIDs do not match any known PrairieTest exams.`,
+          'These UUIDs do not match any known PrairieTest exams.',
       );
     }
   }
