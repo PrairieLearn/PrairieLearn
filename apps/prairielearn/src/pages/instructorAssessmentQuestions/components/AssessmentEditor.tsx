@@ -1273,7 +1273,6 @@ function AssessmentEditorInner({
                     saveButtonDisabledReason={saveButtonDisabledReason}
                     onSubmit={disableBeforeUnload}
                     onCancel={() => {
-                      setSelectedItem(null);
                       dispatch({ type: 'RESET' });
                       setEditMode(false);
                     }}

@@ -30,6 +30,9 @@ export function useResizeHandle({
     [minWidth, maxWidth],
   );
 
+  // Re-clamp when bounds change (e.g. dynamic maxWidth from container resize).
+  const clampedWidth = clamp(width);
+
   const onMouseDown = useCallback(
     (e: React.MouseEvent) => {
       e.preventDefault();
@@ -95,10 +98,10 @@ export function useResizeHandle({
 
   const range = maxWidth - minWidth;
   // 0 = right panel at max width (separator far left), 100 = right panel at min width (separator far right).
-  const valuenow = range > 0 ? Math.round(((maxWidth - width) / range) * 100) : 0;
+  const valuenow = range > 0 ? Math.round(((maxWidth - clampedWidth) / range) * 100) : 0;
 
   return {
-    width,
+    width: clampedWidth,
     separatorProps: {
       role: 'separator' as const,
       tabIndex: 0,
