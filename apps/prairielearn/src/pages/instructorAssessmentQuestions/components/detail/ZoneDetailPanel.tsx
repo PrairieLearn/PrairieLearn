@@ -9,12 +9,17 @@ import {
   extractStringComment,
   makeResetAndSave,
 } from '../../utils/formHelpers.js';
-import { computeZoneQuestionCount, validatePositiveInteger } from '../../utils/questions.js';
+import {
+  computeZoneQuestionCount,
+  getZonePointsMismatch,
+  hasZoneChooseExceedsCount,
+  validatePositiveInteger,
+} from '../../utils/questions.js';
 import { useAutoSave } from '../../utils/useAutoSave.js';
 
 import { AdvancedFields, type AdvancedFieldsInheritance } from './AdvancedFields.js';
 import { DetailSectionHeader } from './DetailSectionHeader.js';
-import { FormCheckField, FormField } from './FormField.js';
+import { FormField } from './FormField.js';
 
 interface ZoneFormData {
   title: string;
@@ -45,7 +50,7 @@ export function ZoneDetailPanel({
   onDelete: (zoneTrackingId: string) => void;
   onFormValidChange: (isValid: boolean) => void;
 }) {
-  const { editMode, assessmentDefaults } = state;
+  const { editMode, assessmentType, assessmentDefaults } = state;
   const formValues: ZoneFormData = {
     title: zone.title ?? '',
     maxPoints: zone.maxPoints ?? undefined,
@@ -83,8 +88,11 @@ export function ZoneDetailPanel({
   // whenever those dependencies change. This also handles initial mount so that
   // pre-existing invalid values (e.g. from JSON) are flagged immediately.
   useEffect(() => {
-    void trigger();
-  }, [zoneQuestionCount, trigger]);
+    void trigger().then((valid) => {
+      // TODO: you can easily click off the item and save the form to bypass this validation.
+      onFormValidChange(valid);
+    });
+  }, [zoneQuestionCount, trigger, onFormValidChange]);
 
   const handleSave = useCallback(
     (data: ZoneFormData) => {
@@ -131,13 +139,28 @@ export function ZoneDetailPanel({
 
   const Wrapper = editMode ? 'div' : 'dl';
 
+  const zonePointsMismatch = getZonePointsMismatch(zone, assessmentType);
+  const zoneChooseExceeds = hasZoneChooseExceedsCount(zone);
+
   return (
     <div className="p-3">
+      {zonePointsMismatch && (
+        <div className="alert alert-warning small mb-3" role="alert">
+          <i className="bi bi-exclamation-triangle-fill me-1" aria-hidden="true" />
+          {zonePointsMismatch.body}
+        </div>
+      )}
+      {zoneChooseExceeds && (
+        <div className="alert alert-warning small mb-3" role="alert">
+          <i className="bi bi-exclamation-triangle-fill me-1" aria-hidden="true" />
+          Number to choose or best questions exceeds the number of questions in this zone.
+        </div>
+      )}
       <div className="text-muted small">
         {zoneQuestionCount} choosable question{zoneQuestionCount !== 1 ? 's' : ''} in zone
       </div>
 
-      <DetailSectionHeader>Settings</DetailSectionHeader>
+      <DetailSectionHeader first>Settings</DetailSectionHeader>
 
       <Wrapper className={clsx(!editMode && 'mb-0')}>
         <FormField
@@ -145,7 +168,7 @@ export function ZoneDetailPanel({
           id={`${idPrefix}-title`}
           label="Title"
           viewValue={zone.title || <span className="text-muted">No title</span>}
-          helpText="Display name shown to students."
+          helpText="Display name shown to students (optional)."
         >
           {(aria) => (
             <input
@@ -163,7 +186,7 @@ export function ZoneDetailPanel({
           label="Max points"
           viewValue={zone.maxPoints}
           error={errors.maxPoints}
-          helpText="Maximum total points from this zone that count toward the assessment."
+          helpText="Maximum total points from this zone that count toward the assessment (leave empty for all)."
           hideWhenEmpty
         >
           {(aria) => (
@@ -242,31 +265,6 @@ export function ZoneDetailPanel({
           )}
         </FormField>
 
-        <FormCheckField
-          editMode={editMode}
-          id={`${idPrefix}-lockpoint`}
-          label="Lockpoint"
-          viewValue={zone.lockpoint}
-          error={errors.lockpoint}
-          helpText="Creates a one-way barrier; crossing it makes all earlier zones read-only."
-          hideWhenEmpty
-        >
-          {(aria) => (
-            <input
-              type="checkbox"
-              className={clsx('form-check-input', aria.errorClass)}
-              {...aria.inputProps}
-              {...register('lockpoint', {
-                validate: (v) => {
-                  if (v && zoneIndex === 0) {
-                    return 'The first zone cannot be a lockpoint.';
-                  }
-                },
-              })}
-            />
-          )}
-        </FormCheckField>
-
         <FormField
           editMode={editMode}
           id={`${idPrefix}-comment`}
@@ -297,6 +295,7 @@ export function ZoneDetailPanel({
         variant="zone"
         editMode={editMode}
         inheritance={advancedInheritance}
+        zoneIndex={zoneIndex}
       />
 
       {editMode && (
