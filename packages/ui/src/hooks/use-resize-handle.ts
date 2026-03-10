@@ -1,4 +1,4 @@
-import { useCallback, useRef } from 'react';
+import { useCallback, useEffect, useRef } from 'react';
 
 const KEYBOARD_STEP = 10;
 
@@ -18,6 +18,13 @@ export function useResizeHandle({
   ariaControls?: string;
 }) {
   const isDraggingRef = useRef(false);
+  const cleanupRef = useRef<(() => void) | null>(null);
+
+  useEffect(() => {
+    return () => {
+      cleanupRef.current?.();
+    };
+  }, []);
 
   const clamp = useCallback(
     (w: number) => Math.min(maxWidth, Math.max(minWidth, w)),
@@ -39,13 +46,19 @@ export function useResizeHandle({
         onWidthChange(clamp(startWidth + delta));
       };
 
-      const onMouseUp = () => {
+      const cleanup = () => {
         isDraggingRef.current = false;
         document.body.classList.remove('user-select-none');
         document.removeEventListener('mousemove', onMouseMove);
         document.removeEventListener('mouseup', onMouseUp);
+        cleanupRef.current = null;
       };
 
+      const onMouseUp = () => {
+        cleanup();
+      };
+
+      cleanupRef.current = cleanup;
       document.addEventListener('mousemove', onMouseMove);
       document.addEventListener('mouseup', onMouseUp);
     },
