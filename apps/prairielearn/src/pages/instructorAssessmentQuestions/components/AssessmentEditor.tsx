@@ -51,6 +51,7 @@ import {
   buildQuestionMetadata,
   normalizeQuestionPoints,
   questionDisplayName,
+  toEditorMetadata,
 } from '../utils/questions.js';
 import { getStructuralSaveValidationErrorKind } from '../utils/saveValidation.js';
 import { sanitizeSelectedItem, selectedItemsEqual } from '../utils/selectedItem.js';
@@ -159,7 +160,7 @@ function AssessmentEditorInner({
 
   const [initialState] = useState(() => {
     const questionMetadataMap = Object.fromEntries(
-      questionRows.map((r) => [questionDisplayName(course, r), r]),
+      questionRows.map((r) => [questionDisplayName(course, r), toEditorMetadata(r)]),
     );
     return {
       zones: prepareZonesForEditor(jsonZones, questionMetadataMap),

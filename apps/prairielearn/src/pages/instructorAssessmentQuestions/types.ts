@@ -1,7 +1,7 @@
 import type { Dispatch } from 'react';
 import { z } from 'zod';
 
-import type { StaffAssessmentQuestionRow } from '../../lib/assessment-question.shared.js';
+import type { EditorQuestionMetadata } from '../../lib/assessment-question.shared.js';
 import type {
   Assessment,
   AssessmentSet,
@@ -95,7 +95,7 @@ export interface CourseQuestionForPicker {
  */
 export interface EditorState {
   zones: ZoneAssessmentForm[];
-  questionMetadata: Partial<Record<string, StaffAssessmentQuestionRow>>;
+  questionMetadata: Partial<Record<string, EditorQuestionMetadata>>;
   /** Tracks which alternative groups are collapsed by their trackingId */
   collapsedGroups: Set<string>;
   /** Tracks which zones are collapsed by their trackingId */
@@ -112,7 +112,7 @@ export type EditorAction =
       type: 'ADD_QUESTION';
       zoneTrackingId: string;
       question: ZoneQuestionBlockForm & { id: string };
-      questionData: StaffAssessmentQuestionRow;
+      questionData: EditorQuestionMetadata;
     }
   | {
       type: 'ADD_QUESTION';
@@ -169,7 +169,7 @@ export type EditorAction =
       type: 'UPDATE_QUESTION_METADATA';
       questionId: string;
       oldQuestionId?: string;
-      questionData: StaffAssessmentQuestionRow;
+      questionData: EditorQuestionMetadata;
     }
   | {
       type: 'TOGGLE_GROUP_COLLAPSE';
@@ -186,7 +186,7 @@ export type EditorAction =
       type: 'ADD_ALTERNATIVE';
       altGroupTrackingId: string;
       alternative: QuestionAlternativeForm;
-      questionData?: StaffAssessmentQuestionRow;
+      questionData?: EditorQuestionMetadata;
     }
   | {
       type: 'REORDER_ALTERNATIVE';
@@ -258,7 +258,7 @@ export interface TreeState {
   editMode: boolean;
   viewType: ViewType;
   selectedItem: SelectedItem;
-  questionMetadata: Partial<Record<string, StaffAssessmentQuestionRow>>;
+  questionMetadata: Partial<Record<string, EditorQuestionMetadata>>;
   collapsedGroups: Set<string>;
   collapsedZones: Set<string>;
   changeTracking: ChangeTrackingResult;
