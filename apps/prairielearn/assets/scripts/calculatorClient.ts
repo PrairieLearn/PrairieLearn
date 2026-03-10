@@ -90,15 +90,21 @@ export function initCalculator(storageKey: string, { drawer, fab, fabClose }: Dr
   const ce = new ComputeEngine();
   ce.timeLimit = 500;
   ce.pushScope();
-  const calculatorInputElement = document.getElementById('calculator-input') as MathfieldElement;
-  const calculatorInputContainer = calculatorInputElement.parentElement!;
-  const calculatorOutput = document.getElementById('calculator-output') as MathfieldElement;
-  const copyButton = document.getElementById('calculator-output-copy')!;
-  const historyPanel = document.getElementById('history-panel')!;
-  const clearHistoryBtn = document.getElementById('calculatorClearHistory')!;
-  const historyTemplate = document.getElementById('history-item-template') as HTMLTemplateElement;
-  const displayModeSwitch = document.getElementById('displayModeSwitch')!;
-  const angleModeSwitch = document.getElementById('angleModeSwitch')!;
+  const calculatorInputElement = ensureElement(
+    document.querySelector<MathfieldElement>('#calculator-input'),
+  );
+  const calculatorInputContainer = ensureElement(calculatorInputElement.parentElement);
+  const calculatorOutput = ensureElement(
+    document.querySelector<MathfieldElement>('#calculator-output'),
+  );
+  const copyButton = ensureElement(document.getElementById('calculator-output-copy'));
+  const historyPanel = ensureElement(document.getElementById('history-panel'));
+  const clearHistoryBtn = ensureElement(document.getElementById('calculatorClearHistory'));
+  const historyTemplate = ensureElement(
+    document.querySelector<HTMLTemplateElement>('#history-item-template'),
+  );
+  const displayModeSwitch = ensureElement(document.getElementById('displayModeSwitch'));
+  const angleModeSwitch = ensureElement(document.getElementById('angleModeSwitch'));
 
   const onExport = (_mf: unknown, latex: string) => {
     return ce.parse(latex).toString();
@@ -238,9 +244,9 @@ export function initCalculator(storageKey: string, { drawer, fab, fabClose }: Dr
 
     const result = resolveAnsAndEvaluate(items, domIndex, displayMode);
     if (result) {
-      const outputField = historyItemEl.querySelector<MathfieldElement>(
-        '.history-output .history-text',
-      )!;
+      const outputField = ensureElement(
+        historyItemEl.querySelector<MathfieldElement>('.history-output .history-text'),
+      );
       outputField.value = `=${result.displayed}`;
     }
 
@@ -644,22 +650,22 @@ export function initCalculator(storageKey: string, { drawer, fab, fabClose }: Dr
 
     const clone = document.importNode(historyTemplate.content, true);
 
-    const historyItem = clone.querySelector<HTMLElement>('.history-item')!;
+    const historyItem = ensureElement(clone.querySelector<HTMLElement>('.history-item'));
     historyItem.dataset.input = input;
     historyItem.dataset.angleMode = angleMode;
 
     // Set input text
-    const inputRow = clone.querySelector('.history-input')!;
-    const inputField = inputRow.querySelector<MathfieldElement>('.history-text')!;
+    const inputRow = ensureElement(clone.querySelector<HTMLElement>('.history-input'));
+    const inputField = ensureElement(inputRow.querySelector<MathfieldElement>('.history-text'));
     inputField.value = input;
 
     // Set output text
-    const outputRow = clone.querySelector('.history-output')!;
-    const outputField = outputRow.querySelector<MathfieldElement>('.history-text')!;
+    const outputRow = ensureElement(clone.querySelector<HTMLElement>('.history-output'));
+    const outputField = ensureElement(outputRow.querySelector<MathfieldElement>('.history-text'));
     outputField.value = `=${displayed}`;
 
     // Only show rad/deg toggle if expression contains trig functions
-    const modeSwitch = clone.querySelector<HTMLElement>('.history-mode-switch')!;
+    const modeSwitch = ensureElement(clone.querySelector<HTMLElement>('.history-mode-switch'));
     const hasTrig = containsTrigFunction(input);
     if (!hasTrig) {
       modeSwitch.classList.remove('d-flex');
@@ -673,8 +679,12 @@ export function initCalculator(storageKey: string, { drawer, fab, fabClose }: Dr
     outputField.onExport = historyOnExport;
 
     // Copy buttons
-    const inputCopyBtn = clone.querySelector('.history-input .history-copy-btn')!;
-    const outputCopyBtn = clone.querySelector('.history-output .history-copy-btn')!;
+    const inputCopyBtn = ensureElement(
+      clone.querySelector<HTMLElement>('.history-input .history-copy-btn'),
+    );
+    const outputCopyBtn = ensureElement(
+      clone.querySelector<HTMLElement>('.history-output .history-copy-btn'),
+    );
     inputCopyBtn.addEventListener('click', () => {
       void copyToClipboard(normalizeLatex(input));
     });
@@ -683,8 +693,12 @@ export function initCalculator(storageKey: string, { drawer, fab, fabClose }: Dr
     });
 
     // Insert buttons
-    const inputInsertBtn = clone.querySelector('.history-input .history-insert-btn')!;
-    const outputInsertBtn = clone.querySelector('.history-output .history-insert-btn')!;
+    const inputInsertBtn = ensureElement(
+      clone.querySelector<HTMLElement>('.history-input .history-insert-btn'),
+    );
+    const outputInsertBtn = ensureElement(
+      clone.querySelector<HTMLElement>('.history-output .history-insert-btn'),
+    );
     inputInsertBtn.addEventListener('click', () => {
       calculatorInputElement.insert(input);
       calculatorInputElement.dispatchEvent(new CustomEvent('input'));
@@ -695,7 +709,7 @@ export function initCalculator(storageKey: string, { drawer, fab, fabClose }: Dr
     });
 
     // Deg/rad mode switch
-    const modeSwitchInput = modeSwitch.querySelector('input')!;
+    const modeSwitchInput = ensureElement(modeSwitch.querySelector('input'));
     modeSwitchInput.checked = angleMode === 'deg';
 
     modeSwitchInput.addEventListener('change', () => {
@@ -944,6 +958,13 @@ function legacyCopy(value: string) {
   }
 }
 
+function ensureElement<E extends Element>(element: E | null): E {
+  if (!element) {
+    throw new Error('Element is required but not found in the DOM.');
+  }
+  return element;
+}
+
 onDocumentReady(() => {
   const drawer = document.getElementById('calculatorDrawer');
   const fab = document.getElementById('calculatorFab');
@@ -962,7 +983,7 @@ onDocumentReady(() => {
         console.error('Failed to initialize calculator:', e);
       }
     }
-  }
+  };
 
   const toggleBtn = document.getElementById('calculatorDrawerToggle');
   if (toggleBtn) {
