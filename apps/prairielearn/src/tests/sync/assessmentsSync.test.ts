@@ -2166,7 +2166,10 @@ describe('Assessment syncing', () => {
         {
           numberChoose: 2,
           points: 10,
-          alternatives: [{ id: util.ALTERNATIVE_QUESTION_ID }, { id: util.MANUAL_GRADING_QUESTION_ID }],
+          alternatives: [
+            { id: util.ALTERNATIVE_QUESTION_ID },
+            { id: util.MANUAL_GRADING_QUESTION_ID },
+          ],
         },
       ],
     });
@@ -2187,7 +2190,10 @@ describe('Assessment syncing', () => {
         {
           numberChoose: 2,
           points: 10,
-          alternatives: [{ id: util.ALTERNATIVE_QUESTION_ID }, { id: util.MANUAL_GRADING_QUESTION_ID }],
+          alternatives: [
+            { id: util.ALTERNATIVE_QUESTION_ID },
+            { id: util.MANUAL_GRADING_QUESTION_ID },
+          ],
         },
       ],
     });
@@ -2208,7 +2214,10 @@ describe('Assessment syncing', () => {
         {
           numberChoose: 2,
           points: 10,
-          alternatives: [{ id: util.ALTERNATIVE_QUESTION_ID }, { id: util.MANUAL_GRADING_QUESTION_ID }],
+          alternatives: [
+            { id: util.ALTERNATIVE_QUESTION_ID },
+            { id: util.MANUAL_GRADING_QUESTION_ID },
+          ],
         },
       ],
     });
@@ -2233,7 +2242,10 @@ describe('Assessment syncing', () => {
         {
           numberChoose: 5,
           points: 10,
-          alternatives: [{ id: util.ALTERNATIVE_QUESTION_ID }, { id: util.MANUAL_GRADING_QUESTION_ID }],
+          alternatives: [
+            { id: util.ALTERNATIVE_QUESTION_ID },
+            { id: util.MANUAL_GRADING_QUESTION_ID },
+          ],
         },
       ],
     });
