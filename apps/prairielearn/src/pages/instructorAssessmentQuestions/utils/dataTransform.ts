@@ -234,9 +234,12 @@ function serializeQuestionBlock(question: ZoneQuestionBlockJson) {
     // For some reason, comment gets set to the empty string if it's not set.
     comment: question.comment || undefined,
 
-    // These defaults will be inherited by question alternatives, unless they override them.
-    // These should mirror the defaults from assessment syncing.
-    allowRealTimeGrading: propertyValueWithDefault(undefined, question.allowRealTimeGrading, true),
+    // Preserve allowRealTimeGrading as-is: stripping the default `true` would
+    // silently change behavior when a parent zone/assessment sets `false`,
+    // since the sync code inherits question → zone → assessment.
+    allowRealTimeGrading: question.allowRealTimeGrading,
+    // triesPerVariant and forceMaxPoints don't inherit from zones, so stripping
+    // their defaults is safe — the sync code applies the same defaults.
     triesPerVariant: propertyValueWithDefault(undefined, question.triesPerVariant, 1),
     forceMaxPoints: propertyValueWithDefault(undefined, question.forceMaxPoints, false),
 
@@ -263,7 +266,9 @@ export function serializeZonesForJson(zones: ZoneAssessmentJson[]): ZoneAssessme
       bestQuestions: zone.bestQuestions,
       advanceScorePerc: zone.advanceScorePerc,
       gradeRateMinutes: zone.gradeRateMinutes,
-      allowRealTimeGrading: propertyValueWithDefault(undefined, zone.allowRealTimeGrading, true),
+      // Preserve as-is: stripping `true` would change behavior when the
+      // assessment-level default is `false`, since sync inherits zone → assessment.
+      allowRealTimeGrading: zone.allowRealTimeGrading,
       // For some reason, comment gets set to the empty string if it's not set.
       comment: zone.comment || undefined,
       canSubmit: propertyValueWithDefault(undefined, zone.canSubmit, isEmptyArray),

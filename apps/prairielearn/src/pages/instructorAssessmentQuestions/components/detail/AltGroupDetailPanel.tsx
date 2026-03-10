@@ -31,9 +31,7 @@ import { FormField } from './FormField.js';
 interface AltGroupFormData {
   numberChoose?: number;
   comment?: string;
-  points?: number | number[];
   autoPoints?: number | number[];
-  maxPoints?: number;
   maxAutoPoints?: number;
   manualPoints?: number;
   triesPerVariant?: number;
@@ -71,8 +69,10 @@ export function AltGroupDetailPanel({
   const sharedTopic = getSharedTopic(zoneQuestionBlock.alternatives ?? [], questionMetadata);
   const sharedTags = getSharedTags(zoneQuestionBlock.alternatives ?? [], questionMetadata);
 
-  const pointsProperty = assessmentType === 'Exam' ? 'points' : 'autoPoints';
-  const maxPointsProperty = assessmentType === 'Exam' ? 'maxPoints' : 'maxAutoPoints';
+  // Always use autoPoints/maxAutoPoints: normalizeQuestionPoints() already
+  // converts legacy points/maxPoints on load, so these are the canonical fields.
+  const pointsProperty = 'autoPoints' as const;
+  const maxPointsProperty = 'maxAutoPoints' as const;
 
   const {
     register,
@@ -86,9 +86,7 @@ export function AltGroupDetailPanel({
     values: {
       numberChoose: zoneQuestionBlock.numberChoose ?? undefined,
       comment: extractStringComment(zoneQuestionBlock.comment),
-      points: zoneQuestionBlock.points ?? undefined,
       autoPoints: zoneQuestionBlock.autoPoints ?? undefined,
-      maxPoints: zoneQuestionBlock.maxPoints ?? undefined,
       maxAutoPoints: zoneQuestionBlock.maxAutoPoints ?? undefined,
       manualPoints: zoneQuestionBlock.manualPoints ?? undefined,
       triesPerVariant: zoneQuestionBlock.triesPerVariant ?? undefined,

@@ -256,12 +256,13 @@ describe('hasPointsMismatch', () => {
       expected: false,
     },
     {
-      name: 'different totals',
+      name: 'different totals without numberChoose (all selected)',
       alternatives: [
         { trackingId: 't1', id: 'q1', points: 10 },
         { trackingId: 't2', id: 'q2', points: 5 },
       ],
-      expected: true,
+      // No mismatch: SQL selects all alternatives when numberChoose is unset.
+      expected: false,
     },
     {
       name: 'single alternative',

@@ -93,7 +93,7 @@ describe('serializeZonesForJson', () => {
     }
   });
 
-  it('strips default allowRealTimeGrading from zones', () => {
+  it('preserves explicit default allowRealTimeGrading on zones', () => {
     const parsedZones = [
       ZoneAssessmentJsonSchema.parse({
         title: 'Zone with default allowRealTimeGrading',
@@ -102,12 +102,11 @@ describe('serializeZonesForJson', () => {
       }),
     ];
 
+    // Explicit `true` must be preserved because a parent assessment may set
+    // allowRealTimeGrading to `false`, and stripping the zone's `true` would
+    // silently change its effective value via inheritance.
     const serialized = serializeZonesForJson(parsedZones);
-    expect(serialized[0].allowRealTimeGrading).toBeUndefined();
-
-    // Re-parsing the stripped value should leave it undefined (not re-introduce the default)
-    const reparsed = serialized.map((zone) => ZoneAssessmentJsonSchema.parse(zone));
-    expect(reparsed[0].allowRealTimeGrading).toBeUndefined();
+    expect(serialized[0].allowRealTimeGrading).toBe(true);
   });
 
   it('preserves non-default allowRealTimeGrading on zones', () => {

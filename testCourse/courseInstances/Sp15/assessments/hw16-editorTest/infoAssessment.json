@@ -13,8 +13,8 @@
     {
       "title": "Zone to delete",
       "questions": [
-        { "id": "partialCredit1", "autoPoints": 3 },
-        { "id": "partialCredit2", "autoPoints": 4 }
+        { "id": "partialCredit2", "autoPoints": 4 },
+        { "id": "partialCredit1", "autoPoints": 3 }
       ]
     },
     {
@@ -22,7 +22,6 @@
         { "id": "addVectors", "autoPoints": 2, "maxAutoPoints": 11 },
         {
           "alternatives": [{ "id": "aiGradingMultiImageCapture" }, { "id": "aiGradingRubrics" }],
-          "numberChoose": 1,
           "autoPoints": 1
         }
       ]

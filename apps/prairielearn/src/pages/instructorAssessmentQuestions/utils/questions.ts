@@ -294,9 +294,9 @@ export function hasPointsMismatch(
 ): boolean {
   if (alternatives.length <= 1) return false;
   // When all alternatives are selected, different point values don't cause
-  // inconsistency — every student gets the same total. Alt groups default
-  // to choosing 1 alternative when numberChoose is not set.
-  const effectiveChoose = parent?.numberChoose ?? 1;
+  // inconsistency — every student gets the same total. The SQL runtime
+  // selects all alternatives when number_choose is NULL (assessment.sql:196).
+  const effectiveChoose = parent?.numberChoose ?? alternatives.length;
   if (effectiveChoose >= alternatives.length) return false;
 
   const totals = alternatives.map((alt) => computeQuestionTotalPoints(alt, assessmentType, parent));

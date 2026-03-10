@@ -285,7 +285,7 @@ export function TreeQuestionRow({
         )}
         {viewType === 'detailed' && questionData && (
           <>
-            {questionData.tags?.length && (
+            {questionData.tags != null && questionData.tags.length > 0 && (
               <div className="d-flex flex-wrap align-items-center gap-1 mt-1">
                 {questionData.tags.map((tag) => (
                   <span key={tag.name} className={`badge color-${tag.color}`}>

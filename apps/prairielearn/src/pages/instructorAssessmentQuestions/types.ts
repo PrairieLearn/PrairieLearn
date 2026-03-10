@@ -111,8 +111,14 @@ export type EditorAction =
   | {
       type: 'ADD_QUESTION';
       zoneTrackingId: string;
+      question: ZoneQuestionBlockForm & { id: string };
+      questionData: StaffAssessmentQuestionRow;
+    }
+  | {
+      type: 'ADD_QUESTION';
+      zoneTrackingId: string;
       question: ZoneQuestionBlockForm;
-      questionData?: StaffAssessmentQuestionRow;
+      questionData?: undefined;
     }
   | {
       type: 'UPDATE_QUESTION';

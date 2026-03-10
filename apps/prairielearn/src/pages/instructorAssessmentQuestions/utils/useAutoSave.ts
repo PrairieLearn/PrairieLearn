@@ -53,6 +53,13 @@ export function useAutoSave<T extends FieldValues>({
 
   // Save on unmount in case the deferred effect above hasn't fired yet
   // (React can unmount before a pending useEffect runs).
+  //
+  // Note: isValidRef can theoretically be stale here (the main save path
+  // uses trigger() for fresh validation, but trigger() is async and can't
+  // be awaited in a cleanup function). In practice this is fine because all
+  // form validators in the editor are synchronous, so isValid settles
+  // before the next render. The reducer state is also validated server-side
+  // before being written to disk, so a stale validity check here is low-risk.
   useEffect(() => {
     return () => {
       if (isDirtyRef.current && isValidRef.current) {

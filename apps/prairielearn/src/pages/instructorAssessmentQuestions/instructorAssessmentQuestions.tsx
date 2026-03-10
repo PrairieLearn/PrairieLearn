@@ -92,8 +92,7 @@ router.get(
     });
 
     const canEdit =
-      pageContext.authz_data.has_course_instance_permission_edit &&
-      !res.locals.course.example_course;
+      pageContext.authz_data.has_course_permission_edit && !res.locals.course.example_course;
 
     const trpcCsrfToken = generatePrefixCsrfToken(
       {
@@ -149,7 +148,7 @@ router.get(
                 hasCourseInstancePermissionEdit={
                   pageContext.authz_data.has_course_instance_permission_edit ?? false
                 }
-                canEdit={canEdit ?? false}
+                canEdit={canEdit}
                 csrfToken={res.locals.__csrf_token}
                 origHash={origHash}
                 trpcCsrfToken={trpcCsrfToken}

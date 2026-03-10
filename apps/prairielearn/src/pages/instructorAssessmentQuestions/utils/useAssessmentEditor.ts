@@ -117,7 +117,7 @@ export function createEditorReducer(initialState: EditorState) {
         zoneResult.zone.questions.push(question);
 
         const newQuestionMetadata = questionData
-          ? { ...state.questionMetadata, [question.id!]: questionData }
+          ? { ...state.questionMetadata, [question.id]: questionData }
           : state.questionMetadata;
 
         return {
