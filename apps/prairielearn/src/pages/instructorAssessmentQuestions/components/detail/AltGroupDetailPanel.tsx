@@ -268,7 +268,7 @@ export function AltGroupDetailPanel({
                   step="any"
                   {...register('autoPoints', {
                     setValueAs: coerceToNumber,
-                    deps: ['maxAutoPoints', 'manualPoints'],
+                    deps: ['maxAutoPoints'],
                     validate: (v, formValues) => {
                       if (typeof v === 'number' && v < 0) {
                         return 'Auto points must be non-negative.';
