@@ -268,6 +268,7 @@ export function AltGroupDetailPanel({
                   step="any"
                   {...register('autoPoints', {
                     setValueAs: coerceToNumber,
+                    deps: ['maxAutoPoints', 'manualPoints'],
                     validate: (v, formValues) => {
                       if (typeof v === 'number' && v < 0) {
                         return 'Auto points must be non-negative.';
@@ -306,6 +307,7 @@ export function AltGroupDetailPanel({
                   placeholder={autoPointsPlaceholder}
                   {...register('maxAutoPoints', {
                     setValueAs: coerceToNumber,
+                    deps: ['autoPoints'],
                     validate: (v, formValues) => {
                       if (v != null && v < 0) return 'Max auto points must be non-negative.';
                       const points = formValues.autoPoints;
