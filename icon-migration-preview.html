@@ -1,0 +1,845 @@
+<!doctype html>
+<html lang="en">
+  <head>
+    <meta charset="UTF-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+    <title>Font Awesome → Bootstrap Icons Migration Preview</title>
+    <link
+      rel="stylesheet"
+      href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.5.1/css/all.min.css"
+    />
+    <link
+      rel="stylesheet"
+      href="https://cdn.jsdelivr.net/npm/bootstrap-icons@1.11.3/font/bootstrap-icons.min.css"
+    />
+    <style>
+      body {
+        font-family:
+          system-ui,
+          -apple-system,
+          sans-serif;
+        max-width: 1200px;
+        margin: 0 auto;
+        padding: 2rem;
+        background: #f8f9fa;
+      }
+      h1 {
+        margin-bottom: 0.5rem;
+      }
+      .subtitle {
+        color: #6c757d;
+        margin-bottom: 2rem;
+      }
+      table {
+        width: 100%;
+        border-collapse: collapse;
+        background: white;
+        border-radius: 8px;
+        overflow: hidden;
+        box-shadow: 0 1px 3px rgba(0, 0, 0, 0.1);
+      }
+      th {
+        background: #212529;
+        color: white;
+        padding: 12px 16px;
+        text-align: left;
+      }
+      td {
+        padding: 10px 16px;
+        border-bottom: 1px solid #dee2e6;
+        vertical-align: middle;
+      }
+      tr:last-child td {
+        border-bottom: none;
+      }
+      tr:hover td {
+        background: #f1f3f5;
+      }
+      .icon-cell {
+        font-size: 1.25rem;
+        text-align: center;
+        width: 60px;
+      }
+      .class-cell {
+        font-family: monospace;
+        font-size: 0.85rem;
+        color: #495057;
+      }
+      .count-cell {
+        text-align: center;
+        width: 60px;
+        color: #6c757d;
+      }
+      .section-header td {
+        background: #e9ecef;
+        font-weight: 600;
+        padding: 8px 16px;
+      }
+      .note {
+        color: #dc3545;
+        font-size: 0.8rem;
+        font-style: italic;
+      }
+      .special-note {
+        background: #fff3cd;
+        padding: 1rem;
+        border-radius: 8px;
+        margin-bottom: 1.5rem;
+        border-left: 4px solid #ffc107;
+      }
+      .legend {
+        display: flex;
+        gap: 2rem;
+        margin-bottom: 1.5rem;
+        flex-wrap: wrap;
+      }
+      .legend-item {
+        display: flex;
+        align-items: center;
+        gap: 0.5rem;
+        font-size: 0.9rem;
+      }
+      .legend-color {
+        width: 12px;
+        height: 12px;
+        border-radius: 2px;
+      }
+      .arrow {
+        color: #6c757d;
+        font-size: 1.2rem;
+      }
+      .group-label {
+        display: inline-block;
+        background: #e2e3e5;
+        color: #41464b;
+        padding: 2px 8px;
+        border-radius: 4px;
+        font-size: 0.75rem;
+        font-weight: 600;
+        margin-left: 8px;
+      }
+    </style>
+  </head>
+  <body>
+    <h1>Font Awesome → Bootstrap Icons Migration</h1>
+    <p class="subtitle">
+      Preview of icon replacements for <code>apps/prairielearn/src/pages</code> and
+      <code>apps/prairielearn/src/components</code>
+    </p>
+
+    <div class="special-note">
+      <strong>Special cases requiring manual attention:</strong>
+      <ul style="margin-bottom: 0">
+        <li>
+          <code>fa-ul</code> / <code>fa-li</code> — Font Awesome list styling (used in workspace
+          modals). Replace with standard <code>&lt;ul&gt;</code> with custom CSS or Bootstrap list
+          groups.
+        </li>
+        <li>
+          <code>fa-spin</code> / <code>fa-pulse</code> — Animated spinner classes. Use Bootstrap's
+          <code>spinner-border</code> component or CSS animation.
+        </li>
+        <li>
+          <code>fa-10x</code> / <code>fa-2x</code> / <code>fa-2xl</code> — Size modifiers. Use
+          inline <code>font-size</code> style instead.
+        </li>
+        <li>
+          <code>fa-width-auto</code> — Custom width class. Can be dropped or replaced with custom
+          CSS.
+        </li>
+      </ul>
+    </div>
+
+    <table>
+      <thead>
+        <tr>
+          <th>Count</th>
+          <th>Old (Font Awesome)</th>
+          <th>Old class</th>
+          <th></th>
+          <th>New (Bootstrap)</th>
+          <th>New class</th>
+        </tr>
+      </thead>
+      <tbody>
+        <!-- Navigation & Arrows -->
+        <tr class="section-header">
+          <td colspan="6">Navigation & Arrows</td>
+        </tr>
+        <tr>
+          <td class="count-cell">2</td>
+          <td class="icon-cell"><i class="fa fa-angle-left"></i></td>
+          <td class="class-cell">fa fa-angle-left</td>
+          <td class="arrow">→</td>
+          <td class="icon-cell"><i class="bi bi-chevron-left"></i></td>
+          <td class="class-cell">bi bi-chevron-left</td>
+        </tr>
+        <tr>
+          <td class="count-cell">2</td>
+          <td class="icon-cell"><i class="fa fa-angle-right"></i></td>
+          <td class="class-cell">fa fa-angle-right</td>
+          <td class="arrow">→</td>
+          <td class="icon-cell"><i class="bi bi-chevron-right"></i></td>
+          <td class="class-cell">bi bi-chevron-right</td>
+        </tr>
+        <tr>
+          <td class="count-cell">1</td>
+          <td class="icon-cell"><i class="fa fa-angle-double-left"></i></td>
+          <td class="class-cell">fa fa-angle-double-left</td>
+          <td class="arrow">→</td>
+          <td class="icon-cell"><i class="bi bi-chevron-double-left"></i></td>
+          <td class="class-cell">bi bi-chevron-double-left</td>
+        </tr>
+        <tr>
+          <td class="count-cell">1</td>
+          <td class="icon-cell"><i class="fa fa-angle-double-right"></i></td>
+          <td class="class-cell">fa fa-angle-double-right</td>
+          <td class="arrow">→</td>
+          <td class="icon-cell"><i class="bi bi-chevron-double-right"></i></td>
+          <td class="class-cell">bi bi-chevron-double-right</td>
+        </tr>
+        <tr>
+          <td class="count-cell">7</td>
+          <td class="icon-cell"><i class="fa fa-angle-up"></i></td>
+          <td class="class-cell">fa fa-angle-up</td>
+          <td class="arrow">→</td>
+          <td class="icon-cell"><i class="bi bi-chevron-up"></i></td>
+          <td class="class-cell">bi bi-chevron-up</td>
+        </tr>
+        <tr>
+          <td class="count-cell">1</td>
+          <td class="icon-cell"><i class="fas fa-chevron-up"></i></td>
+          <td class="class-cell">fas fa-chevron-up</td>
+          <td class="arrow">→</td>
+          <td class="icon-cell"><i class="bi bi-chevron-up"></i></td>
+          <td class="class-cell">bi bi-chevron-up</td>
+        </tr>
+        <tr>
+          <td class="count-cell">1</td>
+          <td class="icon-cell"><i class="fas fa-chevron-down"></i></td>
+          <td class="class-cell">fas fa-chevron-down</td>
+          <td class="arrow">→</td>
+          <td class="icon-cell"><i class="bi bi-chevron-down"></i></td>
+          <td class="class-cell">bi bi-chevron-down</td>
+        </tr>
+        <tr>
+          <td class="count-cell">2+1</td>
+          <td class="icon-cell"><i class="fa fa-arrow-left"></i></td>
+          <td class="class-cell">fa fa-arrow-left</td>
+          <td class="arrow">→</td>
+          <td class="icon-cell"><i class="bi bi-arrow-left"></i></td>
+          <td class="class-cell">bi bi-arrow-left</td>
+        </tr>
+        <tr>
+          <td class="count-cell">2</td>
+          <td class="icon-cell"><i class="fa fa-arrow-right"></i></td>
+          <td class="class-cell">fa fa-arrow-right</td>
+          <td class="arrow">→</td>
+          <td class="icon-cell"><i class="bi bi-arrow-right"></i></td>
+          <td class="class-cell">bi bi-arrow-right</td>
+        </tr>
+        <tr>
+          <td class="count-cell">2+1</td>
+          <td class="icon-cell"><i class="fa fa-arrow-up"></i></td>
+          <td class="class-cell">fa(s) fa-arrow-up</td>
+          <td class="arrow">→</td>
+          <td class="icon-cell"><i class="bi bi-arrow-up"></i></td>
+          <td class="class-cell">bi bi-arrow-up</td>
+        </tr>
+        <tr>
+          <td class="count-cell">2+1</td>
+          <td class="icon-cell"><i class="fa fa-arrow-down"></i></td>
+          <td class="class-cell">fa(s) fa-arrow-down</td>
+          <td class="arrow">→</td>
+          <td class="icon-cell"><i class="bi bi-arrow-down"></i></td>
+          <td class="class-cell">bi bi-arrow-down</td>
+        </tr>
+        <tr>
+          <td class="count-cell">1</td>
+          <td class="icon-cell"><i class="fas fa-arrows-up-down"></i></td>
+          <td class="class-cell">fas fa-arrows-up-down</td>
+          <td class="arrow">→</td>
+          <td class="icon-cell"><i class="bi bi-arrow-down-up"></i></td>
+          <td class="class-cell">bi bi-arrow-down-up</td>
+        </tr>
+        <tr>
+          <td class="count-cell">1</td>
+          <td class="icon-cell"><i class="fa fa-home"></i></td>
+          <td class="class-cell">fa fa-home</td>
+          <td class="arrow">→</td>
+          <td class="icon-cell"><i class="bi bi-house-door-fill"></i></td>
+          <td class="class-cell">bi bi-house-door-fill</td>
+        </tr>
+
+        <!-- Actions -->
+        <tr class="section-header">
+          <td colspan="6">Actions</td>
+        </tr>
+        <tr>
+          <td class="count-cell">12+2</td>
+          <td class="icon-cell"><i class="fa fa-plus"></i></td>
+          <td class="class-cell">fa(s) fa-plus</td>
+          <td class="arrow">→</td>
+          <td class="icon-cell"><i class="bi bi-plus-lg"></i></td>
+          <td class="class-cell">bi bi-plus-lg</td>
+        </tr>
+        <tr>
+          <td class="count-cell">16+3</td>
+          <td class="icon-cell"><i class="fa fa-times"></i></td>
+          <td class="class-cell">fa(s) fa-times</td>
+          <td class="arrow">→</td>
+          <td class="icon-cell"><i class="bi bi-x-lg"></i></td>
+          <td class="class-cell">bi bi-x-lg</td>
+        </tr>
+        <tr>
+          <td class="count-cell">13</td>
+          <td class="icon-cell"><i class="fa fa-edit"></i></td>
+          <td class="class-cell">fa fa-edit</td>
+          <td class="arrow">→</td>
+          <td class="icon-cell"><i class="bi bi-pencil-square"></i></td>
+          <td class="class-cell">bi bi-pencil-square</td>
+        </tr>
+        <tr>
+          <td class="count-cell">2</td>
+          <td class="icon-cell"><i class="fas fa-pencil"></i></td>
+          <td class="class-cell">fas fa-pencil</td>
+          <td class="arrow">→</td>
+          <td class="icon-cell"><i class="bi bi-pencil"></i></td>
+          <td class="class-cell">bi bi-pencil</td>
+        </tr>
+        <tr>
+          <td class="count-cell">3+4</td>
+          <td class="icon-cell"><i class="fa fa-trash"></i></td>
+          <td class="class-cell">fa(s) fa-trash</td>
+          <td class="arrow">→</td>
+          <td class="icon-cell"><i class="bi bi-trash-fill"></i></td>
+          <td class="class-cell">bi bi-trash-fill</td>
+        </tr>
+        <tr>
+          <td class="count-cell">3</td>
+          <td class="icon-cell"><i class="far fa-trash-alt"></i></td>
+          <td class="class-cell">far fa-trash-alt</td>
+          <td class="arrow">→</td>
+          <td class="icon-cell"><i class="bi bi-trash"></i></td>
+          <td class="class-cell">bi bi-trash</td>
+        </tr>
+        <tr>
+          <td class="count-cell">3+2</td>
+          <td class="icon-cell"><i class="fa fa-save"></i></td>
+          <td class="class-cell">fa(s) fa-save</td>
+          <td class="arrow">→</td>
+          <td class="icon-cell"><i class="bi bi-floppy-fill"></i></td>
+          <td class="class-cell">bi bi-floppy-fill</td>
+        </tr>
+        <tr>
+          <td class="count-cell">5</td>
+          <td class="icon-cell"><i class="fa fa-clone"></i></td>
+          <td class="class-cell">fa fa-clone</td>
+          <td class="arrow">→</td>
+          <td class="icon-cell"><i class="bi bi-copy"></i></td>
+          <td class="class-cell">bi bi-copy</td>
+        </tr>
+        <tr>
+          <td class="count-cell">2+3</td>
+          <td class="icon-cell"><i class="fa fa-copy"></i></td>
+          <td class="class-cell">fa(r) fa-copy</td>
+          <td class="arrow">→</td>
+          <td class="icon-cell"><i class="bi bi-copy"></i></td>
+          <td class="class-cell">bi bi-copy</td>
+        </tr>
+        <tr>
+          <td class="count-cell">8+3</td>
+          <td class="icon-cell"><i class="fa fa-sync"></i></td>
+          <td class="class-cell">fa(s) fa-sync</td>
+          <td class="arrow">→</td>
+          <td class="icon-cell"><i class="bi bi-arrow-repeat"></i></td>
+          <td class="class-cell">bi bi-arrow-repeat</td>
+        </tr>
+        <tr>
+          <td class="count-cell">1</td>
+          <td class="icon-cell"><i class="fas fa-sync-alt"></i></td>
+          <td class="class-cell">fas fa-sync-alt</td>
+          <td class="arrow">→</td>
+          <td class="icon-cell"><i class="bi bi-arrow-repeat"></i></td>
+          <td class="class-cell">bi bi-arrow-repeat</td>
+        </tr>
+        <tr>
+          <td class="count-cell">1</td>
+          <td class="icon-cell"><i class="fa fa-rotate-right"></i></td>
+          <td class="class-cell">fa fa-rotate-right</td>
+          <td class="arrow">→</td>
+          <td class="icon-cell"><i class="bi bi-arrow-repeat"></i></td>
+          <td class="class-cell">bi bi-arrow-repeat</td>
+        </tr>
+        <tr>
+          <td class="count-cell">1</td>
+          <td class="icon-cell"><i class="fa fa-rotate"></i></td>
+          <td class="class-cell">fa fa-rotate</td>
+          <td class="arrow">→</td>
+          <td class="icon-cell"><i class="bi bi-arrow-repeat"></i></td>
+          <td class="class-cell">bi bi-arrow-repeat</td>
+        </tr>
+        <tr>
+          <td class="count-cell">2</td>
+          <td class="icon-cell"><i class="fa fa-search"></i></td>
+          <td class="class-cell">fa fa-search</td>
+          <td class="arrow">→</td>
+          <td class="icon-cell"><i class="bi bi-search"></i></td>
+          <td class="class-cell">bi bi-search</td>
+        </tr>
+        <tr>
+          <td class="count-cell">4</td>
+          <td class="icon-cell"><i class="fas fa-download"></i></td>
+          <td class="class-cell">fas fa-download</td>
+          <td class="arrow">→</td>
+          <td class="icon-cell"><i class="bi bi-download"></i></td>
+          <td class="class-cell">bi bi-download</td>
+        </tr>
+        <tr>
+          <td class="count-cell">5</td>
+          <td class="icon-cell"><i class="fas fa-upload"></i></td>
+          <td class="class-cell">fas fa-upload</td>
+          <td class="arrow">→</td>
+          <td class="icon-cell"><i class="bi bi-upload"></i></td>
+          <td class="class-cell">bi bi-upload</td>
+        </tr>
+        <tr>
+          <td class="count-cell">1</td>
+          <td class="icon-cell"><i class="fas fa-share-nodes"></i></td>
+          <td class="class-cell">fas fa-share-nodes</td>
+          <td class="arrow">→</td>
+          <td class="icon-cell"><i class="bi bi-share-fill"></i></td>
+          <td class="class-cell">bi bi-share-fill</td>
+        </tr>
+        <tr>
+          <td class="count-cell">1</td>
+          <td class="icon-cell"><i class="fas fa-shuffle"></i></td>
+          <td class="class-cell">fas fa-shuffle</td>
+          <td class="arrow">→</td>
+          <td class="icon-cell"><i class="bi bi-shuffle"></i></td>
+          <td class="class-cell">bi bi-shuffle</td>
+        </tr>
+        <tr>
+          <td class="count-cell">1</td>
+          <td class="icon-cell"><i class="fas fa-play"></i></td>
+          <td class="class-cell">fas fa-play</td>
+          <td class="arrow">→</td>
+          <td class="icon-cell"><i class="bi bi-play-fill"></i></td>
+          <td class="class-cell">bi bi-play-fill</td>
+        </tr>
+        <tr>
+          <td class="count-cell">1</td>
+          <td class="icon-cell"><i class="fa fa-wand-magic-sparkles"></i></td>
+          <td class="class-cell">fa fa-wand-magic-sparkles</td>
+          <td class="arrow">→</td>
+          <td class="icon-cell"><i class="bi bi-stars"></i></td>
+          <td class="class-cell">bi bi-stars</td>
+        </tr>
+        <tr>
+          <td class="count-cell">1</td>
+          <td class="icon-cell"><i class="fas fa-paintbrush"></i></td>
+          <td class="class-cell">fas fa-paintbrush</td>
+          <td class="arrow">→</td>
+          <td class="icon-cell"><i class="bi bi-brush-fill"></i></td>
+          <td class="class-cell">bi bi-brush-fill</td>
+        </tr>
+        <tr>
+          <td class="count-cell">1</td>
+          <td class="icon-cell"><i class="fas fa-recycle"></i></td>
+          <td class="class-cell">fas fa-recycle</td>
+          <td class="arrow">→</td>
+          <td class="icon-cell"><i class="bi bi-recycle"></i></td>
+          <td class="class-cell">bi bi-recycle</td>
+        </tr>
+        <tr>
+          <td class="count-cell">1</td>
+          <td class="icon-cell"><i class="fa fa-grip-vertical"></i></td>
+          <td class="class-cell">fa fa-grip-vertical</td>
+          <td class="arrow">→</td>
+          <td class="icon-cell"><i class="bi bi-grip-vertical"></i></td>
+          <td class="class-cell">bi bi-grip-vertical</td>
+        </tr>
+
+        <!-- Status & Feedback -->
+        <tr class="section-header">
+          <td colspan="6">Status & Feedback</td>
+        </tr>
+        <tr>
+          <td class="count-cell">3</td>
+          <td class="icon-cell"><i class="fa fa-check"></i></td>
+          <td class="class-cell">fa fa-check</td>
+          <td class="arrow">→</td>
+          <td class="icon-cell"><i class="bi bi-check-lg"></i></td>
+          <td class="class-cell">bi bi-check-lg</td>
+        </tr>
+        <tr>
+          <td class="count-cell">4+1</td>
+          <td class="icon-cell"><i class="fa fa-check-circle"></i></td>
+          <td class="class-cell">fa(s) fa-check-circle</td>
+          <td class="arrow">→</td>
+          <td class="icon-cell"><i class="bi bi-check-circle-fill"></i></td>
+          <td class="class-cell">bi bi-check-circle-fill</td>
+        </tr>
+        <tr>
+          <td class="count-cell">1</td>
+          <td class="icon-cell"><i class="fas fa-check-square"></i></td>
+          <td class="class-cell">fas fa-check-square</td>
+          <td class="arrow">→</td>
+          <td class="icon-cell"><i class="bi bi-check-square-fill"></i></td>
+          <td class="class-cell">bi bi-check-square-fill</td>
+        </tr>
+        <tr>
+          <td class="count-cell">2</td>
+          <td class="icon-cell"><i class="fa fa-exclamation-circle"></i></td>
+          <td class="class-cell">fa fa-exclamation-circle</td>
+          <td class="arrow">→</td>
+          <td class="icon-cell"><i class="bi bi-exclamation-circle-fill"></i></td>
+          <td class="class-cell">bi bi-exclamation-circle-fill</td>
+        </tr>
+        <tr>
+          <td class="count-cell">4+2</td>
+          <td class="icon-cell"><i class="fa fa-exclamation-triangle"></i></td>
+          <td class="class-cell">fa(s) fa-exclamation-triangle</td>
+          <td class="arrow">→</td>
+          <td class="icon-cell"><i class="bi bi-exclamation-triangle-fill"></i></td>
+          <td class="class-cell">bi bi-exclamation-triangle-fill</td>
+        </tr>
+        <tr>
+          <td class="count-cell">11+2</td>
+          <td class="icon-cell"><i class="fa fa-question-circle"></i></td>
+          <td class="class-cell">fa(s) fa-question-circle</td>
+          <td class="arrow">→</td>
+          <td class="icon-cell"><i class="bi bi-question-circle-fill"></i></td>
+          <td class="class-cell">bi bi-question-circle-fill</td>
+        </tr>
+        <tr>
+          <td class="count-cell">4</td>
+          <td class="icon-cell"><i class="far fa-question-circle"></i></td>
+          <td class="class-cell">far fa-question-circle</td>
+          <td class="arrow">→</td>
+          <td class="icon-cell"><i class="bi bi-question-circle"></i></td>
+          <td class="class-cell">bi bi-question-circle</td>
+        </tr>
+        <tr>
+          <td class="count-cell">2</td>
+          <td class="icon-cell"><i class="fa fa-info-circle"></i></td>
+          <td class="class-cell">fa fa-info-circle</td>
+          <td class="arrow">→</td>
+          <td class="icon-cell"><i class="bi bi-info-circle-fill"></i></td>
+          <td class="class-cell">bi bi-info-circle-fill</td>
+        </tr>
+        <tr>
+          <td class="count-cell">10</td>
+          <td class="icon-cell"><i class="fas fa-circle-info"></i></td>
+          <td class="class-cell">fas fa-circle-info</td>
+          <td class="arrow">→</td>
+          <td class="icon-cell"><i class="bi bi-info-circle-fill"></i></td>
+          <td class="class-cell">bi bi-info-circle-fill</td>
+        </tr>
+        <tr>
+          <td class="count-cell">4+1</td>
+          <td class="icon-cell"><i class="fas fa-lock"></i></td>
+          <td class="class-cell">fa(s) fa-lock</td>
+          <td class="arrow">→</td>
+          <td class="icon-cell"><i class="bi bi-lock-fill"></i></td>
+          <td class="class-cell">bi bi-lock-fill</td>
+        </tr>
+        <tr>
+          <td class="count-cell">1</td>
+          <td class="icon-cell"><i class="fas fa-ban"></i></td>
+          <td class="class-cell">fas fa-ban</td>
+          <td class="arrow">→</td>
+          <td class="icon-cell"><i class="bi bi-slash-circle-fill"></i></td>
+          <td class="class-cell">bi bi-slash-circle-fill</td>
+        </tr>
+        <tr>
+          <td class="count-cell">1</td>
+          <td class="icon-cell"><i class="fas fa-clipboard-check"></i></td>
+          <td class="class-cell">fas fa-clipboard-check</td>
+          <td class="arrow">→</td>
+          <td class="icon-cell"><i class="bi bi-clipboard-check-fill"></i></td>
+          <td class="class-cell">bi bi-clipboard-check-fill</td>
+        </tr>
+
+        <!-- Content & Objects -->
+        <tr class="section-header">
+          <td colspan="6">Content & Objects</td>
+        </tr>
+        <tr>
+          <td class="count-cell">4</td>
+          <td class="icon-cell"><i class="far fa-clipboard"></i></td>
+          <td class="class-cell">far fa-clipboard</td>
+          <td class="arrow">→</td>
+          <td class="icon-cell"><i class="bi bi-clipboard"></i></td>
+          <td class="class-cell">bi bi-clipboard</td>
+        </tr>
+        <tr>
+          <td class="count-cell">3</td>
+          <td class="icon-cell"><i class="fas fa-qrcode"></i></td>
+          <td class="class-cell">fas fa-qrcode</td>
+          <td class="arrow">→</td>
+          <td class="icon-cell"><i class="bi bi-qr-code-scan"></i></td>
+          <td class="class-cell">bi bi-qr-code-scan</td>
+        </tr>
+        <tr>
+          <td class="count-cell">1</td>
+          <td class="icon-cell"><i class="far fa-file-alt"></i></td>
+          <td class="class-cell">far fa-file-alt</td>
+          <td class="arrow">→</td>
+          <td class="icon-cell"><i class="bi bi-file-earmark-text"></i></td>
+          <td class="class-cell">bi bi-file-earmark-text</td>
+        </tr>
+        <tr>
+          <td class="count-cell">1</td>
+          <td class="icon-cell"><i class="fa fa-folder"></i></td>
+          <td class="class-cell">fa fa-folder</td>
+          <td class="arrow">→</td>
+          <td class="icon-cell"><i class="bi bi-folder-fill"></i></td>
+          <td class="class-cell">bi bi-folder-fill</td>
+        </tr>
+        <tr>
+          <td class="count-cell">1</td>
+          <td class="icon-cell"><i class="fas fa-book"></i></td>
+          <td class="class-cell">fas fa-book</td>
+          <td class="arrow">→</td>
+          <td class="icon-cell"><i class="bi bi-book-fill"></i></td>
+          <td class="class-cell">bi bi-book-fill</td>
+        </tr>
+        <tr>
+          <td class="count-cell">1</td>
+          <td class="icon-cell"><i class="fas fa-tags"></i></td>
+          <td class="class-cell">fas fa-tags</td>
+          <td class="arrow">→</td>
+          <td class="icon-cell"><i class="bi bi-tags-fill"></i></td>
+          <td class="class-cell">bi bi-tags-fill</td>
+        </tr>
+        <tr>
+          <td class="count-cell">1</td>
+          <td class="icon-cell"><i class="fas fa-tag"></i></td>
+          <td class="class-cell">fas fa-tag</td>
+          <td class="arrow">→</td>
+          <td class="icon-cell"><i class="bi bi-tag-fill"></i></td>
+          <td class="class-cell">bi bi-tag-fill</td>
+        </tr>
+        <tr>
+          <td class="count-cell">1</td>
+          <td class="icon-cell"><i class="fa fa-list"></i></td>
+          <td class="class-cell">fa fa-list</td>
+          <td class="arrow">→</td>
+          <td class="icon-cell"><i class="bi bi-list-ul"></i></td>
+          <td class="class-cell">bi bi-list-ul</td>
+        </tr>
+        <tr>
+          <td class="count-cell">3</td>
+          <td class="icon-cell"><i class="fas fa-list-check"></i></td>
+          <td class="class-cell">fas fa-list-check</td>
+          <td class="arrow">→</td>
+          <td class="icon-cell"><i class="bi bi-list-check"></i></td>
+          <td class="class-cell">bi bi-list-check</td>
+        </tr>
+        <tr>
+          <td class="count-cell">1</td>
+          <td class="icon-cell"><i class="fa fa-tasks"></i></td>
+          <td class="class-cell">fa fa-tasks</td>
+          <td class="arrow">→</td>
+          <td class="icon-cell"><i class="bi bi-list-task"></i></td>
+          <td class="class-cell">bi bi-list-task</td>
+        </tr>
+        <tr>
+          <td class="count-cell">1</td>
+          <td class="icon-cell"><i class="fa fa-question"></i></td>
+          <td class="class-cell">fa fa-question</td>
+          <td class="arrow">→</td>
+          <td class="icon-cell"><i class="bi bi-question-lg"></i></td>
+          <td class="class-cell">bi bi-question-lg</td>
+        </tr>
+        <tr>
+          <td class="count-cell">2</td>
+          <td class="icon-cell"><i class="fas fa-paperclip"></i></td>
+          <td class="class-cell">fas fa-paperclip</td>
+          <td class="arrow">→</td>
+          <td class="icon-cell"><i class="bi bi-paperclip"></i></td>
+          <td class="class-cell">bi bi-paperclip</td>
+        </tr>
+
+        <!-- Time & Clock -->
+        <tr class="section-header">
+          <td colspan="6">Time & Clock</td>
+        </tr>
+        <tr>
+          <td class="count-cell">2</td>
+          <td class="icon-cell"><i class="fa fa-clock"></i></td>
+          <td class="class-cell">fa fa-clock</td>
+          <td class="arrow">→</td>
+          <td class="icon-cell"><i class="bi bi-clock-fill"></i></td>
+          <td class="class-cell">bi bi-clock-fill</td>
+        </tr>
+        <tr>
+          <td class="count-cell">1</td>
+          <td class="icon-cell"><i class="far fa-clock"></i></td>
+          <td class="class-cell">far fa-clock</td>
+          <td class="arrow">→</td>
+          <td class="icon-cell"><i class="bi bi-clock"></i></td>
+          <td class="class-cell">bi bi-clock</td>
+        </tr>
+        <tr>
+          <td class="count-cell">3</td>
+          <td class="icon-cell"><i class="fa fa-hourglass-half"></i></td>
+          <td class="class-cell">fa fa-hourglass-half</td>
+          <td class="arrow">→</td>
+          <td class="icon-cell"><i class="bi bi-hourglass-split"></i></td>
+          <td class="class-cell">bi bi-hourglass-split</td>
+        </tr>
+
+        <!-- UI & Interface -->
+        <tr class="section-header">
+          <td colspan="6">UI & Interface</td>
+        </tr>
+        <tr>
+          <td class="count-cell">2</td>
+          <td class="icon-cell"><i class="fas fa-window-restore"></i></td>
+          <td class="class-cell">fas fa-window-restore</td>
+          <td class="arrow">→</td>
+          <td class="icon-cell"><i class="bi bi-window-stack"></i></td>
+          <td class="class-cell">bi bi-window-stack</td>
+        </tr>
+        <tr>
+          <td class="count-cell">1</td>
+          <td class="icon-cell"><i class="fas fa-bars-staggered"></i></td>
+          <td class="class-cell">fas fa-bars-staggered</td>
+          <td class="arrow">→</td>
+          <td class="icon-cell"><i class="bi bi-journal-text"></i></td>
+          <td class="class-cell">bi bi-journal-text</td>
+        </tr>
+        <tr>
+          <td class="count-cell">2</td>
+          <td class="icon-cell"><i class="fa fa-i-cursor"></i></td>
+          <td class="class-cell">fa fa-i-cursor</td>
+          <td class="arrow">→</td>
+          <td class="icon-cell"><i class="bi bi-cursor-text"></i></td>
+          <td class="class-cell">bi bi-cursor-text</td>
+        </tr>
+        <tr>
+          <td class="count-cell">1</td>
+          <td class="icon-cell"><i class="fa fa-laptop-code"></i></td>
+          <td class="class-cell">fa fa-laptop-code</td>
+          <td class="arrow">→</td>
+          <td class="icon-cell"><i class="bi bi-laptop"></i></td>
+          <td class="class-cell">bi bi-laptop</td>
+        </tr>
+        <tr>
+          <td class="count-cell">3</td>
+          <td class="icon-cell"><i class="far fa-caret-square-down"></i></td>
+          <td class="class-cell">far fa-caret-square-down</td>
+          <td class="arrow">→</td>
+          <td class="icon-cell"><i class="bi bi-caret-down-square"></i></td>
+          <td class="class-cell">bi bi-caret-down-square</td>
+        </tr>
+        <tr>
+          <td class="count-cell">1</td>
+          <td class="icon-cell"><i class="fas fa-eye-slash"></i></td>
+          <td class="class-cell">fas fa-eye-slash</td>
+          <td class="arrow">→</td>
+          <td class="icon-cell"><i class="bi bi-eye-slash-fill"></i></td>
+          <td class="class-cell">bi bi-eye-slash-fill</td>
+        </tr>
+        <tr>
+          <td class="count-cell">2</td>
+          <td class="icon-cell"><i class="fas fa-cog"></i></td>
+          <td class="class-cell">fas fa-cog</td>
+          <td class="arrow">→</td>
+          <td class="icon-cell"><i class="bi bi-gear-fill"></i></td>
+          <td class="class-cell">bi bi-gear-fill</td>
+        </tr>
+
+        <!-- Size modifiers (special) -->
+        <tr class="section-header">
+          <td colspan="6">
+            FA-specific features
+            <span class="group-label">fa-ul/fa-li lists, fa-10x, fa-2x, fa-2xl, fa-width-auto</span>
+          </td>
+        </tr>
+        <tr>
+          <td class="count-cell">2</td>
+          <td class="icon-cell">
+            <i class="fa fa-exclamation-triangle"></i><code> fa-ul/fa-li</code>
+          </td>
+          <td class="class-cell">fa-ul + fa-li list pattern</td>
+          <td class="arrow">→</td>
+          <td class="icon-cell">Use standard <code>&lt;ul&gt;</code> with flex layout</td>
+          <td class="class-cell">Remove fa-ul/fa-li, use flex or custom margin</td>
+        </tr>
+        <tr>
+          <td class="count-cell">1</td>
+          <td class="icon-cell"><i class="fa fa-circle-notch" style="font-size: 2rem"></i></td>
+          <td class="class-cell">fa-10x (very large loading spinner)</td>
+          <td class="arrow">→</td>
+          <td class="icon-cell">Use <code>style="font-size: 10rem"</code></td>
+          <td class="class-cell">Inline font-size style</td>
+        </tr>
+        <tr>
+          <td class="count-cell">1</td>
+          <td class="icon-cell"><i class="fa fa-spinner" style="font-size: 1.5rem"></i></td>
+          <td class="class-cell">fa-2x (double size spinner)</td>
+          <td class="arrow">→</td>
+          <td class="icon-cell">Use <code>style="font-size: 2em"</code></td>
+          <td class="class-cell">Inline font-size style</td>
+        </tr>
+        <tr>
+          <td class="count-cell">1</td>
+          <td class="icon-cell"><i class="fa fa-ban" style="font-size: 1.3rem"></i></td>
+          <td class="class-cell">fa-2xl</td>
+          <td class="arrow">→</td>
+          <td class="icon-cell">Use <code>style="font-size: 1.5em"</code></td>
+          <td class="class-cell">Inline font-size style</td>
+        </tr>
+        <tr>
+          <td class="count-cell">2</td>
+          <td class="icon-cell"><i class="fas fa-exclamation-triangle"></i></td>
+          <td class="class-cell">fa-width-auto (custom class)</td>
+          <td class="arrow">→</td>
+          <td class="icon-cell">Drop <code>fa-width-auto</code></td>
+          <td class="class-cell">Not needed for Bootstrap Icons</td>
+        </tr>
+        <tr>
+          <td class="count-cell">1</td>
+          <td class="icon-cell"><i class="fa fa-xmark" style="font-size: 2rem"></i></td>
+          <td class="class-cell">fa fa-xmark (in workspace failed state)</td>
+          <td class="arrow">→</td>
+          <td class="icon-cell"><i class="bi bi-x" style="font-size: 2rem"></i></td>
+          <td class="class-cell">bi bi-x</td>
+        </tr>
+        <tr>
+          <td class="count-cell">1</td>
+          <td class="icon-cell"><i class="fa fa-calendar"></i></td>
+          <td class="class-cell">fa fa-calendar</td>
+          <td class="arrow">→</td>
+          <td class="icon-cell"><i class="bi bi-calendar-fill"></i></td>
+          <td class="class-cell">bi bi-calendar-fill</td>
+        </tr>
+        <tr>
+          <td class="count-cell">1</td>
+          <td class="icon-cell"><i class="fa fa-ban"></i></td>
+          <td class="class-cell">fa fa-ban (workspaceLogs)</td>
+          <td class="arrow">→</td>
+          <td class="icon-cell"><i class="bi bi-slash-circle"></i></td>
+          <td class="class-cell">bi bi-slash-circle</td>
+        </tr>
+      </tbody>
+    </table>
+
+    <style>
+      .spin-animation {
+        animation: spin 1s linear infinite;
+      }
+      @keyframes spin {
+        from {
+          transform: rotate(0deg);
+        }
+        to {
+          transform: rotate(360deg);
+        }
+      }
+    </style>
+  </body>
+</html>
