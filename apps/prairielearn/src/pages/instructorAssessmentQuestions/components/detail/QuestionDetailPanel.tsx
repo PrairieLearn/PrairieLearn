@@ -12,7 +12,7 @@ import { run } from '@prairielearn/run';
 import { OverlayTrigger } from '@prairielearn/ui';
 
 import { CopyButton } from '../../../../components/CopyButton.js';
-import type { StaffAssessmentQuestionRow } from '../../../../lib/assessment-question.shared.js';
+import type { EditorQuestionMetadata } from '../../../../lib/assessment-question.shared.js';
 import { getQuestionUrl } from '../../../../lib/client/url.js';
 import type { EnumAssessmentType } from '../../../../lib/db-types.js';
 import type {
@@ -74,7 +74,7 @@ export function QuestionDetailPanel({
   question: ZoneQuestionBlockForm | QuestionAlternativeForm;
   zoneQuestionBlock?: ZoneQuestionBlockForm;
   zone?: ZoneAssessmentForm;
-  questionData: StaffAssessmentQuestionRow | null;
+  questionData: EditorQuestionMetadata | null;
   idPrefix: string;
   state: DetailState;
   onUpdate: (
@@ -516,7 +516,7 @@ export function QuestionDetailPanel({
 
       {/* Action buttons */}
       <div className="d-flex gap-2">
-        {questionData && questionData.assessment_question.id !== '0' && (
+        {questionData?.assessment_question_id != null && (
           <OverlayTrigger
             placement="top"
             tooltip={{
@@ -527,7 +527,7 @@ export function QuestionDetailPanel({
             <button
               type="button"
               className="btn btn-sm btn-outline-secondary"
-              onClick={() => onResetButtonClick(questionData.assessment_question.id)}
+              onClick={() => onResetButtonClick(questionData.assessment_question_id!)}
             >
               Reset question variants
             </button>
