@@ -286,24 +286,53 @@ export function computeQuestionTotalPoints(
 export function hasPointsMismatch(
   alternatives: QuestionAlternativeForm[],
   assessmentType: EnumAssessmentType,
-  parent?: QuestionPointsJson,
+  parent?: QuestionPointsJson & { numberChoose?: number | null },
 ): boolean {
   if (alternatives.length <= 1) return false;
+  // When all alternatives are selected, different point values don't cause
+  // inconsistency — every student gets the same total. Alt groups default
+  // to choosing 1 alternative when numberChoose is not set.
+  const effectiveChoose = parent?.numberChoose ?? 1;
+  if (effectiveChoose >= alternatives.length) return false;
 
   const totals = alternatives.map((alt) => computeQuestionTotalPoints(alt, assessmentType, parent));
   return totals.some((t) => t !== totals[0]);
 }
 
+type ZonePointsMismatchKind = 'numberChoose' | 'bestQuestions' | 'both';
+
+const ZONE_POINTS_MISMATCH_TEXT: Record<ZonePointsMismatchKind, { label: string; body: string }> = {
+  numberChoose: {
+    label: 'Inconsistent points',
+    body: 'Students will receive different total points because this zone randomly selects questions with different point values.',
+  },
+  bestQuestions: {
+    label: 'Inconsistent points',
+    body: 'Students will receive different total points because only the best-scoring questions count and questions have different point values.',
+  },
+  both: {
+    label: 'Inconsistent points',
+    body: 'Students will receive different total points because this zone randomly selects questions and only counts the best-scoring ones, and questions have different point values.',
+  },
+};
+
 /**
- * Returns true if question blocks in a zone with bestQuestions or numberChoose
- * have different contributed total point values.
+ * Returns label and body text describing why question blocks in a zone have
+ * inconsistent point values, or null if there is no mismatch.
  */
-export function hasZonePointsMismatch(
+export function getZonePointsMismatch(
   zone: ZoneAssessmentForm,
   assessmentType: EnumAssessmentType,
-): boolean {
-  if (zone.bestQuestions == null && zone.numberChoose == null) return false;
-  if (zone.questions.length <= 1) return false;
+): { label: string; body: string } | null {
+  if (zone.bestQuestions == null && zone.numberChoose == null) return null;
+  if (zone.questions.length <= 1) return null;
+  // When all questions are both presented and counted, every student sees the
+  // same total regardless of individual point values — no warning needed.
+  const effectiveChoose = zone.numberChoose ?? zone.questions.length;
+  const effectiveBest = zone.bestQuestions ?? effectiveChoose;
+  if (effectiveChoose >= zone.questions.length && effectiveBest >= effectiveChoose) {
+    return null;
+  }
 
   const blockTotals = zone.questions.map((block) => {
     if (block.alternatives) {
@@ -316,14 +345,25 @@ export function hasZonePointsMismatch(
     return computeQuestionTotalPoints(block, assessmentType);
   });
 
-  return blockTotals.some((t) => t !== blockTotals[0]);
+  if (!blockTotals.some((t) => t !== blockTotals[0])) return null;
+
+  const hasNumberChoose = zone.numberChoose != null && zone.numberChoose < zone.questions.length;
+  const hasBestQuestions = zone.bestQuestions != null && zone.bestQuestions < effectiveChoose;
+
+  const kind: ZonePointsMismatchKind =
+    hasNumberChoose && hasBestQuestions
+      ? 'both'
+      : hasBestQuestions
+        ? 'bestQuestions'
+        : 'numberChoose';
+  return ZONE_POINTS_MISMATCH_TEXT[kind];
 }
 
 /**
  * Returns true if a zone's numberChoose or bestQuestions exceeds the number of questions.
  */
 export function hasZoneChooseExceedsCount(zone: ZoneAssessmentForm): boolean {
-  const count = zone.questions.length;
+  const count = computeZoneQuestionCount(zone.questions);
   if (count === 0) return false;
   if (zone.numberChoose != null && zone.numberChoose > count) return true;
   if (zone.bestQuestions != null && zone.bestQuestions > count) return true;
