@@ -4,7 +4,7 @@ import { run } from '@prairielearn/run';
 
 import { NavPageSchema, NavbarTypeSchema } from '../../components/Navbar.types.js';
 import { SelectUserSchema } from '../authn.types.js';
-import { PageAuthzDataSchema } from '../authz-data-lib.js';
+import { CourseInstancePageAuthzDataSchema, CoursePageAuthzDataSchema } from '../authz-data-lib.js';
 import type { UntypedResLocals } from '../res-locals.types.js';
 
 import {
@@ -50,12 +50,19 @@ type StaffPlainPageContext = z.infer<typeof StaffPlainPageContextSchema>;
 
 /* Authz data page context */
 
-const AuthzDataPageContextSchema = z
+const CourseAuthzDataPageContextSchema = z
   .object({
-    authz_data: PageAuthzDataSchema,
+    authz_data: CoursePageAuthzDataSchema,
   })
-  .brand<'AuthzDataPageContext'>();
-type AuthzDataPageContext = z.infer<typeof AuthzDataPageContextSchema>;
+  .brand<'CourseAuthzDataPageContext'>();
+type CourseAuthzDataPageContext = z.infer<typeof CourseAuthzDataPageContextSchema>;
+
+const CourseInstanceAuthzDataPageContextSchema = z
+  .object({
+    authz_data: CourseInstancePageAuthzDataSchema,
+  })
+  .brand<'CourseInstanceAuthzDataPageContext'>();
+type CourseInstanceAuthzDataPageContext = z.infer<typeof CourseInstanceAuthzDataPageContextSchema>;
 
 // Since this data comes from res.locals and not the database, we can make certain guarantees
 // about the data.
@@ -174,15 +181,21 @@ interface PageTypeReturnMap {
   };
 }
 
+interface AuthzDataForPageType {
+  plain: object;
+  course: CourseAuthzDataPageContext;
+  courseInstance: CourseInstanceAuthzDataPageContext;
+  assessment: CourseInstanceAuthzDataPageContext;
+  assessmentQuestion: CourseInstanceAuthzDataPageContext;
+}
+
 export type PageContext<
   PageType extends 'plain' | 'course' | 'courseInstance' | 'assessment' | 'assessmentQuestion',
   AccessType extends 'student' | 'instructor',
   WithAuthz extends boolean = true,
 > = WithAuthz extends true
-  ? PageTypeReturnMap[AccessType][PageType] & AuthzDataPageContext
+  ? PageTypeReturnMap[AccessType][PageType] & AuthzDataForPageType[PageType]
   : PageTypeReturnMap[AccessType][PageType];
-
-export type PageContextWithAuthzData = PageContext<'plain', 'student' | 'instructor', true>;
 
 /**
  * Extract page context from res.locals with hierarchical inclusion.
@@ -217,11 +230,11 @@ export function extractPageContext<
   });
 
   const authzData = run(() => {
-    if (withAuthzData) {
-      return AuthzDataPageContextSchema.parse(resLocals);
-    } else {
-      return null;
+    if (!withAuthzData || pageType === 'plain') return null;
+    if (pageType === 'course') {
+      return CourseAuthzDataPageContextSchema.parse(resLocals);
     }
+    return CourseInstanceAuthzDataPageContextSchema.parse(resLocals);
   });
 
   if (pageType === 'plain') {

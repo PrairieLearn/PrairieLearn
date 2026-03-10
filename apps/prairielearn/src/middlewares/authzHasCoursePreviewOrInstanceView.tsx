@@ -5,6 +5,7 @@ import * as error from '@prairielearn/error';
 import { Hydrate } from '@prairielearn/react/server';
 
 import { PageLayout } from '../components/PageLayout.js';
+import { PageAuthzDataSchema } from '../lib/authz-data-lib.js';
 import { extractPageContext } from '../lib/client/page-context.js';
 
 import { AuthzAccessMismatch } from './AuthzAccessMismatch.js';
@@ -46,7 +47,9 @@ export async function authzHasCoursePreviewOrInstanceView(
     const pageContext = extractPageContext(res.locals, {
       pageType: 'plain',
       accessType: 'instructor',
+      withAuthzData: false,
     });
+    const authzData = PageAuthzDataSchema.parse(res.locals.authz_data);
     return {
       type: 'body',
       html: PageLayout({
@@ -63,9 +66,9 @@ export async function authzHasCoursePreviewOrInstanceView(
                 'has_course_permission_preview',
                 'has_course_instance_permission_view',
               ]}
-              authzData={pageContext.authz_data}
+              authzData={authzData}
               authnUser={pageContext.authn_user}
-              authzUser={pageContext.authz_data.user}
+              authzUser={authzData.user}
             />
           </Hydrate>
         ),
