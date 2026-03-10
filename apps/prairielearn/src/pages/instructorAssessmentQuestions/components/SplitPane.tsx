@@ -14,7 +14,8 @@ const DEFAULT_RIGHT_WIDTH = 360;
 const MIN_RIGHT_WIDTH = 280;
 const MAX_RIGHT_WIDTH = 600;
 const MIN_LEFT_WIDTH = 400;
-const NARROW_CONTAINER_BREAKPOINT = MIN_LEFT_WIDTH + MIN_RIGHT_WIDTH;
+const SEPARATOR_WIDTH = 4;
+const NARROW_CONTAINER_BREAKPOINT = MIN_LEFT_WIDTH + MIN_RIGHT_WIDTH + SEPARATOR_WIDTH;
 
 export function SplitPane({
   left,
@@ -65,7 +66,7 @@ export function SplitPane({
 
   const dynamicMaxWidth =
     containerWidth > 0
-      ? Math.max(0, Math.min(MAX_RIGHT_WIDTH, containerWidth - MIN_LEFT_WIDTH))
+      ? Math.max(0, Math.min(MAX_RIGHT_WIDTH, containerWidth - MIN_LEFT_WIDTH - SEPARATOR_WIDTH))
       : MAX_RIGHT_WIDTH;
 
   const { width: rightWidth, separatorProps } = useResizeHandle({
