@@ -152,7 +152,7 @@ export function ZoneDetailPanel({
         </div>
       )}
       {zoneChooseExceeds && (
-        <div className="alert alert-danger small mb-3" role="alert">
+        <div className="alert alert-warning small mb-3" role="alert">
           <i className="bi bi-exclamation-triangle-fill me-1" aria-hidden="true" />
           Number to choose or best questions exceeds the number of questions in this zone.
         </div>
@@ -222,13 +222,7 @@ export function ZoneDetailPanel({
               {...aria.inputProps}
               {...register('numberChoose', {
                 setValueAs: coerceToNumber,
-                validate: (v) => {
-                  const msg = validatePositiveInteger(v, 'Number to choose');
-                  if (msg) return msg;
-                  if (v != null && v > zoneQuestionCount) {
-                    return `Cannot exceed number of choosable questions in zone (${zoneQuestionCount}).`;
-                  }
-                },
+                validate: (v) => validatePositiveInteger(v, 'Number to choose'),
               })}
             />
           )}
@@ -250,17 +244,7 @@ export function ZoneDetailPanel({
               {...aria.inputProps}
               {...register('bestQuestions', {
                 setValueAs: coerceToNumber,
-                validate: (v) => {
-                  const msg = validatePositiveInteger(v, 'Best questions');
-                  if (msg) return msg;
-                  if (v != null && v > zoneQuestionCount) {
-                    return `Cannot exceed number of choosable questions in zone (${zoneQuestionCount}).`;
-                  }
-                  const numberChoose = getValues('numberChoose');
-                  if (v != null && numberChoose != null && v > numberChoose) {
-                    return `Cannot exceed number to choose (${numberChoose}).`;
-                  }
-                },
+                validate: (v) => validatePositiveInteger(v, 'Best questions'),
               })}
             />
           )}

@@ -58,7 +58,11 @@ import { getStructuralSaveValidationErrorKind } from '../utils/saveValidation.js
 import { sanitizeSelectedItem, selectedItemsEqual } from '../utils/selectedItem.js';
 import { createAssessmentQuestionsTrpcClient } from '../utils/trpc-client.js';
 import { TRPCProvider, useTRPC } from '../utils/trpc-context.js';
-import { findQuestionByTrackingId, useAssessmentEditor } from '../utils/useAssessmentEditor.js';
+import {
+  findByTrackingId,
+  findQuestionByTrackingId,
+  useAssessmentEditor,
+} from '../utils/useAssessmentEditor.js';
 
 import { EditModeToolbar } from './EditModeToolbar.js';
 import { ExamResetNotSupportedModal } from './ExamResetNotSupportedModal.js';
@@ -1311,7 +1315,52 @@ function AssessmentEditorInner({
                     saveButtonDisabledReason={saveButtonDisabledReason}
                     onSubmit={disableBeforeUnload}
                     onCancel={() => {
-                      setSelectedItem(null);
+                      // Resolve transient picker states to persisted selections.
+                      const resolvedItem = run((): SelectedItem => {
+                        if (selectedItem?.type === 'picker') {
+                          return selectedItem.returnToSelection ?? null;
+                        }
+                        if (selectedItem?.type === 'altGroupPicker') {
+                          return selectedItem.altGroupTrackingId
+                            ? {
+                                type: 'altGroup',
+                                questionTrackingId: selectedItem.altGroupTrackingId,
+                              }
+                            : null;
+                        }
+                        return selectedItem;
+                      });
+
+                      // Validate the resolved selection against the initial (pre-edit) state.
+                      const valid = run(() => {
+                        if (!resolvedItem) return true;
+                        const { zones: z } = initialState;
+                        switch (resolvedItem.type) {
+                          case 'zone':
+                            return findByTrackingId(z, resolvedItem.zoneTrackingId) === 'zone';
+                          case 'question':
+                            return (
+                              findByTrackingId(z, resolvedItem.questionTrackingId) === 'question'
+                            );
+                          case 'altGroup':
+                            // Must still be a question with alternatives after reset.
+                            return (
+                              findByTrackingId(z, resolvedItem.questionTrackingId) === 'question' &&
+                              !!findQuestionByTrackingId(z, resolvedItem.questionTrackingId)
+                                ?.question.alternatives
+                            );
+                          case 'alternative':
+                            return (
+                              findByTrackingId(z, resolvedItem.questionTrackingId) === 'question' &&
+                              findByTrackingId(z, resolvedItem.alternativeTrackingId) ===
+                                'alternative'
+                            );
+                          case 'picker':
+                          case 'altGroupPicker':
+                            return false;
+                        }
+                      });
+                      setSelectedItem(valid ? resolvedItem : null);
                       dispatch({ type: 'RESET' });
                       setEditMode(false);
                     }}

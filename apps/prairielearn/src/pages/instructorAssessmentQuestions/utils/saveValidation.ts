@@ -1,27 +1,22 @@
 import type { ZoneAssessmentForm, ZoneQuestionBlockForm } from '../types.js';
 
-import { computeZoneQuestionCount, validatePositiveInteger } from './questions.js';
+import { validatePositiveInteger } from './questions.js';
 
 function zoneHasStructuralValidationError(zone: ZoneAssessmentForm, zoneIndex: number): boolean {
   if (zone.lockpoint && zoneIndex === 0) {
     return true;
   }
 
-  const questionCount = computeZoneQuestionCount(zone.questions);
-
   if (
     zone.numberChoose != null &&
-    (validatePositiveInteger(zone.numberChoose, 'Number to choose') != null ||
-      zone.numberChoose > questionCount)
+    validatePositiveInteger(zone.numberChoose, 'Number to choose') != null
   ) {
     return true;
   }
 
   if (
     zone.bestQuestions != null &&
-    (validatePositiveInteger(zone.bestQuestions, 'Best questions') != null ||
-      zone.bestQuestions > questionCount ||
-      (zone.numberChoose != null && zone.bestQuestions > zone.numberChoose))
+    validatePositiveInteger(zone.bestQuestions, 'Best questions') != null
   ) {
     return true;
   }
@@ -30,15 +25,11 @@ function zoneHasStructuralValidationError(zone: ZoneAssessmentForm, zoneIndex: n
 }
 
 function altGroupHasStructuralValidationError(question: ZoneQuestionBlockForm): boolean {
-  const alternativeCount = question.alternatives?.length;
-  if (alternativeCount == null || question.numberChoose == null) {
+  if (question.numberChoose == null) {
     return false;
   }
 
-  return (
-    validatePositiveInteger(question.numberChoose, 'Number to choose') != null ||
-    question.numberChoose > alternativeCount
-  );
+  return validatePositiveInteger(question.numberChoose, 'Number to choose') != null;
 }
 
 export function getStructuralSaveValidationErrorKind(
