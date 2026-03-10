@@ -22,7 +22,6 @@
   "zones": [
     {
       "title": "Fundamental questions",
-      "bestQuestions": 3,
       "questions": [
         {
           "id": "demo/demoNewton-page1",
