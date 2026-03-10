@@ -287,4 +287,5 @@ export interface DetailActions {
   onPickQuestion: (currentSelection: SelectedItem) => void;
   onRemoveQuestionByQid: (qid: string) => void;
   onResetButtonClick: (assessmentQuestionId: string) => void;
+  onFormValidChange: (isValid: boolean) => void;
 }

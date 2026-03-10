@@ -1,5 +1,5 @@
 import clsx from 'clsx';
-import { useCallback, useMemo, useState } from 'react';
+import { useCallback, useEffect, useMemo, useState } from 'react';
 import {
   type FieldErrors,
   type RegisterOptions,
@@ -38,6 +38,7 @@ import { validatePositiveInteger } from '../../utils/questions.js';
 import { useAutoSave } from '../../utils/useAutoSave.js';
 
 import { AdvancedFields, type AdvancedFieldsInheritance } from './AdvancedFields.js';
+import { DetailSectionHeader } from './DetailSectionHeader.js';
 import { FormField } from './FormField.js';
 import { InheritableField } from './InheritableField.js';
 
@@ -67,6 +68,7 @@ export function QuestionDetailPanel({
   onDelete,
   onPickQuestion,
   onResetButtonClick,
+  onFormValidChange,
 }: {
   question: ZoneQuestionBlockForm | QuestionAlternativeForm;
   zoneQuestionBlock?: ZoneQuestionBlockForm;
@@ -86,6 +88,7 @@ export function QuestionDetailPanel({
   ) => void;
   onPickQuestion: (currentSelection: SelectedItem) => void;
   onResetButtonClick: (assessmentQuestionId: string) => void;
+  onFormValidChange: (isValid: boolean) => void;
 }) {
   const {
     editMode,
@@ -136,6 +139,7 @@ export function QuestionDetailPanel({
     getValues,
     watch,
     setValue,
+    trigger,
     formState: { errors, isDirty, isValid },
   } = useForm<QuestionFormData>({
     mode: 'onChange',
@@ -151,6 +155,12 @@ export function QuestionDetailPanel({
       forceMaxPoints: question.forceMaxPoints ?? (hasForceMaxPointsParent ? undefined : false),
       allowRealTimeGrading: question.allowRealTimeGrading ?? undefined,
     },
+    // Prevent autosave from clobbering in-progress typing. Without this,
+    // the autosave feedback loop (edit → save → parent state update →
+    // values prop change → form reset) resets the input mid-keystroke.
+    // This is safe because the only source of values changes while the
+    // panel is open is autosave; switching entities remounts the component.
+    resetOptions: { keepDirtyValues: true, keepErrors: true },
   });
 
   const watchedAutoPoints = watch('autoPoints');
@@ -195,6 +205,22 @@ export function QuestionDetailPanel({
   );
 
   useAutoSave({ isDirty, isValid, getValues, onSave: handleSave, watch });
+
+  // Validate immediately on mount so that pre-existing invalid state
+  // (e.g. no points set on a newly added question) is flagged right away.
+  // We use the result of trigger() directly because formState.isValid may
+  // not update until user interaction with mode: 'onChange'.
+  useEffect(() => {
+    void trigger().then((valid) => {
+      // TODO: you can easily click off the item and save the form to bypass this validation.
+      onFormValidChange(valid);
+    });
+  }, [trigger, onFormValidChange]);
+
+  useEffect(() => {
+    // eslint-disable-next-line react-you-might-not-need-an-effect/no-pass-data-to-parent
+    onFormValidChange(isValid);
+  }, [isValid, onFormValidChange]);
 
   const advancedInheritance: AdvancedFieldsInheritance = run(() => {
     if (isAlternative) {
@@ -316,6 +342,8 @@ export function QuestionDetailPanel({
           )}
         </div>
       )}
+
+      <DetailSectionHeader first={!questionData}>Settings</DetailSectionHeader>
 
       {/* QID field — edit mode only */}
       {editMode && (
@@ -621,14 +649,26 @@ function PointsFields({
     const val = Array.isArray(effectiveMax) ? effectiveMax[0] : effectiveMax;
     return isDefault ? `${val} (default)` : String(val);
   });
-  const viewManualPoints =
-    !isManualGrading && manualPointsValue != null ? String(manualPointsValue) : undefined;
 
   const autoPointsId = `${idPrefix}-${isHomework ? 'autoPoints' : 'pointsList'}`;
   const autoPointsInputType = isHomework ? 'number' : 'text';
-  const autoPointsHelpText = isHomework
-    ? 'Points awarded for the auto-graded component.'
-    : 'Points for each attempt, as a comma-separated list (e.g. "10, 5, 2, 1").';
+  const autoPointsHelpText = isHomework ? (
+    <>
+      Points awarded for the auto-graded component.{' '}
+      {constantQuestionValue
+        ? 'Each correct answer is worth this many points.'
+        : 'Each consecutive correct answer is worth more; an incorrect answer resets the value.'}{' '}
+      <a
+        href="https://docs.prairielearn.com/assessment/configuration/#question-points-for-homework-assessments"
+        target="_blank"
+        rel="noreferrer"
+      >
+        Learn more about question points
+      </a>
+    </>
+  ) : (
+    'Points for each attempt, as a comma-separated list (e.g. "10, 5, 2, 1").'
+  );
   const autoPointsRegisterOptions: RegisterOptions<QuestionFormData, 'autoPoints'> = isHomework
     ? {
         setValueAs: coerceToNumber,
@@ -657,37 +697,9 @@ function PointsFields({
   const maxAutoPointsRegisterOptions: RegisterOptions<QuestionFormData, 'maxAutoPoints'> = {
     setValueAs: coerceToNumber,
     deps: ['autoPoints'],
-    ...(isHomework ? { validate: homeworkMaxPointsValidation } : {}),
+    validate: homeworkMaxPointsValidation,
   };
-  const maxAutoPointsHelpText = run(() => {
-    if (!isHomework) return 'Max auto points for this question.';
-    return constantQuestionValue ? (
-      <>
-        Maximum total auto-graded points. Students must answer correctly{' '}
-        <code>maxAutoPoints / autoPoints</code> times to earn full credit.{' '}
-        <a
-          href="https://docs.prairielearn.com/assessment/configuration/#question-points-for-homework-assessments"
-          target="_blank"
-          rel="noreferrer"
-        >
-          Learn more about question points
-        </a>
-      </>
-    ) : (
-      <>
-        Maximum total auto-graded points. Each consecutive correct answer is worth more; an
-        incorrect answer resets the value.{' '}
-        <a
-          href="https://docs.prairielearn.com/assessment/configuration/#question-points-for-homework-assessments"
-          target="_blank"
-          rel="noreferrer"
-        >
-          Learn more about question points
-        </a>
-      </>
-    );
-  });
-  const maxAutoPointsPlaceholder = isHomework ? autoPointsPlaceholder : undefined;
+  const maxAutoPointsHelpText = 'Maximum total auto-graded points.';
 
   const manualPointsRegisterOptions: RegisterOptions<QuestionFormData, 'manualPoints'> = {
     setValueAs: coerceToNumber,
@@ -736,7 +748,7 @@ function PointsFields({
       editMode={editMode}
       id={`${idPrefix}-manualPoints`}
       label="Manual points"
-      viewValue={isManualGrading ? undefined : viewManualPoints}
+      viewValue={manualPointsValue != null ? String(manualPointsValue) : undefined}
       error={errors.manualPoints}
       helpText="Points awarded for the manually graded component."
       hideWhenEmpty
@@ -811,7 +823,8 @@ function PointsFields({
             )}
           </FormField>
         ))}
-      {(!isManualGrading || showMaxAutoPointsForManual) &&
+      {isHomework &&
+        (!isManualGrading || showMaxAutoPointsForManual) &&
         (isAlternative ? (
           <InheritableField
             id={`${idPrefix}-maxAutoPoints`}
@@ -825,7 +838,7 @@ function PointsFields({
             registerProps={register('maxAutoPoints', maxAutoPointsRegisterOptions)}
             error={errors.maxAutoPoints}
             helpText={maxAutoPointsHelpText}
-            placeholder={maxAutoPointsPlaceholder}
+            placeholder={autoPointsPlaceholder}
             inheritedValueLabel={
               inheritedMaxAutoPoints != null ? String(inheritedMaxAutoPoints) : undefined
             }
@@ -858,7 +871,7 @@ function PointsFields({
                 step="any"
                 className={clsx('form-control form-control-sm', aria.errorClass)}
                 {...aria.inputProps}
-                placeholder={maxAutoPointsPlaceholder}
+                placeholder={autoPointsPlaceholder}
                 {...register('maxAutoPoints', maxAutoPointsRegisterOptions)}
               />
             )}
