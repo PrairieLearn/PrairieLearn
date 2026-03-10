@@ -7,13 +7,19 @@ import { run } from '@prairielearn/run';
 import { OverlayTrigger } from '@prairielearn/ui';
 
 import type { TreeActions, TreeState, ZoneQuestionBlockForm } from '../../types.js';
-import { getSharedTags, hasPointsMismatch } from '../../utils/questions.js';
+import {
+  getSharedTags,
+  getSharedTopic,
+  hasAltGroupChooseExceedsCount,
+  hasPointsMismatch,
+} from '../../utils/questions.js';
 
 import { ChangeIndicatorBadges } from './ChangeIndicatorBadges.js';
 import { CollapseToggleButton } from './CollapseToggleButton.js';
 import { DragHandle } from './DragHandle.js';
 import { SortableAlternativeRow } from './SortableAlternativeRow.js';
 import { PointsBadge, TreeQuestionRow } from './TreeQuestionRow.js';
+import { WarningIndicator } from './WarningIndicator.js';
 import { makeDraggableStyle } from './dragUtils.js';
 
 /**
@@ -119,6 +125,9 @@ export function TreeQuestionBlockNode({
 
   const pointsMismatch =
     alternatives != null && hasPointsMismatch(alternatives, assessmentType, zoneQuestionBlock);
+  // This warning triggers when alternatives are deleted from a group, reducing
+  // the count below an already-saved numberChoose.
+  const chooseExceeds = hasAltGroupChooseExceedsCount(zoneQuestionBlock);
 
   return (
     <div
@@ -146,7 +155,9 @@ export function TreeQuestionBlockNode({
           paddingLeft: '2.5rem',
           paddingRight: '0.5rem',
           cursor: 'pointer',
-          ...(pointsMismatch && { borderLeft: '6px solid var(--bs-warning)' }),
+          ...((pointsMismatch || chooseExceeds) && {
+            borderLeft: '6px solid var(--bs-warning)',
+          }),
         }}
         onClick={(e) => {
           e.stopPropagation();
@@ -172,33 +183,37 @@ export function TreeQuestionBlockNode({
           onToggle={toggleCollapse}
         />
         <div className="flex-grow-1" style={{ minWidth: 0 }}>
-          <div className="text-truncate text-primary">
-            <i className="bi bi-stack me-1" aria-hidden="true" />
-            {run(() => {
-              const choose = zoneQuestionBlock.numberChoose;
-              if (choose == null) return `Choose ${alternativeCount} of ${alternativeCount}`;
-              return `Choose ${choose} of ${alternativeCount}`;
-            })}
-            {pointsMismatch && (
-              <OverlayTrigger
-                placement="top"
-                tooltip={{
-                  props: { id: `points-mismatch-${zoneQuestionBlock.trackingId}` },
-                  body: 'Alternatives have different point values',
-                }}
-              >
-                <i
-                  className="bi bi-exclamation-triangle-fill text-warning ms-1"
-                  aria-hidden="true"
+          <div className="d-flex align-items-center">
+            <span className="text-truncate text-primary">
+              <i className="bi bi-stack me-1" aria-hidden="true" />
+              {run(() => {
+                const choose = zoneQuestionBlock.numberChoose;
+                if (choose == null) return `Choose ${alternativeCount} of ${alternativeCount}`;
+                return `Choose ${choose} of ${alternativeCount}`;
+              })}
+              <ChangeIndicatorBadges
+                trackingId={zoneQuestionBlock.trackingId}
+                comment={zoneQuestionBlock.comment}
+                editMode={editMode}
+                changeTracking={changeTracking}
+              />
+            </span>
+            <span className="d-inline-flex align-items-center gap-1 flex-wrap ms-2">
+              {pointsMismatch && (
+                <WarningIndicator
+                  tooltipId={`points-mismatch-${zoneQuestionBlock.trackingId}`}
+                  label="Inconsistent points"
+                  body="Students will receive different total points because this group has alternatives with different point values"
                 />
-              </OverlayTrigger>
-            )}
-            <ChangeIndicatorBadges
-              trackingId={zoneQuestionBlock.trackingId}
-              comment={zoneQuestionBlock.comment}
-              editMode={editMode}
-              changeTracking={changeTracking}
-            />
+              )}
+              {chooseExceeds && (
+                <WarningIndicator
+                  tooltipId={`choose-exceeds-${zoneQuestionBlock.trackingId}`}
+                  label="Choose exceeds count"
+                  body="Number to choose exceeds the number of alternatives in this group"
+                />
+              )}
+            </span>
           </div>
           {alternatives && alternatives.length > 0 && (
             <div
@@ -220,27 +235,38 @@ export function TreeQuestionBlockNode({
             const sharedTags = getSharedTags(alternatives, questionMetadata);
             if (sharedTags.length === 0) return null;
             return (
-              <div className="d-flex flex-wrap gap-1 mt-1">
+              <div className="d-flex flex-wrap align-items-center gap-1 mt-1">
                 {sharedTags.map((tag) => (
                   <span key={tag.name} className={`badge color-${tag.color}`}>
                     {tag.name}
                   </span>
                 ))}
+                <OverlayTrigger
+                  placement="top"
+                  tooltip={{
+                    props: { id: `shared-tags-${zoneQuestionBlock.trackingId}` },
+                    body: 'Tags shared across all alternatives',
+                  }}
+                >
+                  <button
+                    type="button"
+                    className="btn btn-xs btn-ghost p-0"
+                    aria-label="Tags shared across all alternatives"
+                  >
+                    <i className="bi bi-question-circle text-muted" aria-hidden="true" />
+                  </button>
+                </OverlayTrigger>
               </div>
             );
           })}
         </div>
         {run(() => {
           if (!alternatives || alternatives.length === 0) return null;
-          const topics = alternatives
-            .map((alt) => (alt.id ? questionMetadata[alt.id]?.topic : null))
-            .filter(Boolean);
-          if (topics.length !== alternatives.length) return null;
-          const first = topics[0]!;
-          if (!topics.every((t) => t!.name === first.name)) return null;
+          const topic = getSharedTopic(alternatives, questionMetadata);
+          if (!topic) return null;
           return (
             <div className="ms-2 me-2">
-              <span className={`badge color-${first.color}`}>{first.name}</span>
+              <span className={`badge color-${topic.color}`}>{topic.name}</span>
             </div>
           );
         })}

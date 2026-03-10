@@ -13,7 +13,7 @@ import {
 import { sortableKeyboardCoordinates } from '@dnd-kit/sortable';
 import { QueryClient, useMutation, useQuery, useQueryClient } from '@tanstack/react-query';
 import { parseAsStringLiteral, useQueryState } from 'nuqs';
-import { useEffect, useId, useMemo, useRef, useState } from 'react';
+import { useCallback, useEffect, useId, useMemo, useRef, useState } from 'react';
 
 import { run } from '@prairielearn/run';
 import { NuqsAdapter, OverlayTrigger, useModalState } from '@prairielearn/ui';
@@ -52,6 +52,7 @@ import {
   normalizeQuestionPoints,
   questionDisplayName,
 } from '../utils/questions.js';
+import { getStructuralSaveValidationErrorKind } from '../utils/saveValidation.js';
 import { createAssessmentQuestionsTrpcClient } from '../utils/trpc-client.js';
 import { TRPCProvider, useTRPC } from '../utils/trpc-context.js';
 import { findQuestionByTrackingId, useAssessmentEditor } from '../utils/useAssessmentEditor.js';
@@ -132,6 +133,7 @@ interface AssessmentEditorInnerProps {
   canEdit: boolean;
   csrfToken: string;
   origHash: string;
+  switchViewUrl: string | null;
 }
 
 function AssessmentEditorInner({
@@ -144,6 +146,7 @@ function AssessmentEditorInner({
   canEdit,
   csrfToken,
   origHash,
+  switchViewUrl,
 }: AssessmentEditorInnerProps) {
   const trpc = useTRPC();
   const queryClient = useQueryClient();
@@ -151,14 +154,17 @@ function AssessmentEditorInner({
     mutationFn: (qid: string) => queryClient.fetchQuery(trpc.questionByQid.queryOptions({ qid })),
   });
 
-  const [initialState] = useState(() => ({
-    zones: prepareZonesForEditor(jsonZones, assessment.type),
-    questionMetadata: Object.fromEntries(
+  const [initialState] = useState(() => {
+    const questionMetadataMap = Object.fromEntries(
       questionRows.map((r) => [questionDisplayName(course, r), r]),
-    ),
-    collapsedGroups: new Set<string>(),
-    collapsedZones: new Set<string>(),
-  }));
+    );
+    return {
+      zones: prepareZonesForEditor(jsonZones, questionMetadataMap),
+      questionMetadata: questionMetadataMap,
+      collapsedGroups: new Set<string>(),
+      collapsedZones: new Set<string>(),
+    };
+  });
 
   const { zones, questionMetadata, collapsedGroups, collapsedZones, dispatch } =
     useAssessmentEditor(initialState);
@@ -187,10 +193,28 @@ function AssessmentEditorInner({
   const isDragging = activeDragId !== null;
   const isKeyboardDragRef = useRef(false);
   const [selectedItem, setSelectedItem] = useState<SelectedItem>(null);
+
   // Ref tracks the latest selectedItem so async handlers (handleQuestionPicked)
   // can detect if the selection changed during an await and bail out early.
   const selectedItemRef = useRef(selectedItem);
   selectedItemRef.current = selectedItem;
+
+  // Tracks validation errors for the currently mounted detail form only.
+  // Invalid draft values in the open form are discarded on unmount because
+  // useAutoSave never commits invalid data to `zones`. Structural invariants
+  // that can be broken by tree edits are validated separately from `zones`.
+  const [selectedFormHasErrors, setSelectedFormHasErrors] = useState(false);
+  const handleFormValidChange = useCallback((isValid: boolean) => {
+    setSelectedFormHasErrors(!isValid);
+  }, []);
+  // Reset the open-form error state when the selection changes. The next
+  // mounted form will report its own validity, while persisted tree-state
+  // invariants are checked separately from `zones`.
+  useEffect(() => {
+    // eslint-disable-next-line react-you-might-not-need-an-effect/no-chain-state-updates, @eslint-react/hooks-extra/no-direct-set-state-in-use-effect
+    setSelectedFormHasErrors(false);
+  }, [selectedItem]);
+
   const [viewType, setViewType] = useQueryState(
     'view',
     parseAsStringLiteral(['simple', 'detailed']).withDefault('simple'),
@@ -394,7 +418,7 @@ function AssessmentEditorInner({
         });
       } else {
         // Creating new alt group: first question picked creates the group
-        const newAltGroup = createAltGroupWithTrackingId(assessment.type);
+        const newAltGroup = createAltGroupWithTrackingId();
         const firstAlt = {
           ...createAlternativeWithTrackingId(),
           id: qid,
@@ -521,7 +545,7 @@ function AssessmentEditorInner({
 
     const newQuestion = {
       id: qid,
-      ...createQuestionWithTrackingId(assessment.type),
+      ...createQuestionWithTrackingId(),
     } as ZoneQuestionBlockForm;
 
     dispatch({
@@ -713,7 +737,7 @@ function AssessmentEditorInner({
   };
 
   const handleAddAltGroup = (zoneTrackingId: string) => {
-    const newAltGroup = createAltGroupWithTrackingId(assessment.type);
+    const newAltGroup = createAltGroupWithTrackingId();
     dispatch({
       type: 'ADD_QUESTION',
       zoneTrackingId,
@@ -847,6 +871,12 @@ function AssessmentEditorInner({
     });
   };
 
+  const upgradeSelectedAlternativeToQuestion = (trackingId: string) => {
+    if (selectedItem?.type === 'alternative' && selectedItem.alternativeTrackingId === trackingId) {
+      setSelectedItem({ type: 'question', questionTrackingId: trackingId });
+    }
+  };
+
   const handleDragOver = ({ active, over }: DragOverEvent) => {
     if (!over) return;
 
@@ -876,7 +906,7 @@ function AssessmentEditorInner({
           toZoneTrackingId: targetZone.trackingId,
           beforeQuestionTrackingId: null,
         });
-        setSelectedItem(null);
+        upgradeSelectedAlternativeToQuestion(activeIdStr);
         return;
       }
 
@@ -911,7 +941,7 @@ function AssessmentEditorInner({
           toZoneTrackingId: toZone.trackingId,
           beforeQuestionTrackingId: toZone.questions[toPos.questionIndex].trackingId,
         });
-        setSelectedItem(null);
+        upgradeSelectedAlternativeToQuestion(activeIdStr);
       }
       return;
     }
@@ -960,6 +990,10 @@ function AssessmentEditorInner({
   const hasEmptyAltGroup = zones.some((zone) =>
     zone.questions.some((q) => q.alternatives?.length === 0),
   );
+  const structuralSaveValidationErrorKind = useMemo(
+    () => getStructuralSaveValidationErrorKind(zones),
+    [zones],
+  );
 
   const hasUnsavedChanges = useMemo(
     () => JSON.stringify(zones) !== initialZonesJson,
@@ -967,15 +1001,46 @@ function AssessmentEditorInner({
   );
 
   const saveButtonDisabled =
-    !hasUnsavedChanges || hasZoneWithNoEffectiveQuestions || hasEmptyAltGroup;
+    !hasUnsavedChanges ||
+    hasZoneWithNoEffectiveQuestions ||
+    hasEmptyAltGroup ||
+    selectedFormHasErrors ||
+    structuralSaveValidationErrorKind != null;
 
   const disableBeforeUnload = useBeforeUnload(editMode && hasUnsavedChanges);
+
+  const selectedFormErrorDisabledReason = selectedFormHasErrors
+    ? run(() => {
+        switch (selectedItem?.type) {
+          case 'zone':
+            return 'Cannot save: the selected zone has configuration errors';
+          case 'question':
+            return 'Cannot save: the selected question has configuration errors';
+          case 'altGroup':
+            return 'Cannot save: the selected alternative group has configuration errors';
+          case 'alternative':
+            return 'Cannot save: the selected alternative has configuration errors';
+          default:
+            return 'Cannot save: there are configuration errors';
+        }
+      })
+    : undefined;
+  const structuralSaveValidationErrorReason = run(() => {
+    switch (structuralSaveValidationErrorKind) {
+      case 'zone':
+        return 'Cannot save: one or more zones have configuration errors';
+      case 'altGroup':
+        return 'Cannot save: one or more alternative groups have configuration errors';
+      default:
+        return undefined;
+    }
+  });
 
   const saveButtonDisabledReason = hasZoneWithNoEffectiveQuestions
     ? 'Cannot save: one or more zones have no questions'
     : hasEmptyAltGroup
       ? 'Cannot save: one or more alternative groups have no questions'
-      : undefined;
+      : (selectedFormErrorDisabledReason ?? structuralSaveValidationErrorReason);
 
   const treeState: TreeState = useMemo(
     () => ({
@@ -1053,6 +1118,7 @@ function AssessmentEditorInner({
       onPickQuestion: handlePickQuestion,
       onRemoveQuestionByQid: handleRemoveQuestionByQid,
       onResetButtonClick: resetModal.showWithData,
+      onFormValidChange: handleFormValidChange,
     }),
     // Handlers close over `zones` (updated on dispatch) and `courseQuestions`
     // (used by handleQuestionPicked to build metadata), so these deps
@@ -1193,6 +1259,7 @@ function AssessmentEditorInner({
                 state={treeState}
                 actions={treeActions}
                 isAllExpanded={isAllExpanded}
+                switchViewUrl={switchViewUrl}
                 editControls={
                   <EditModeToolbar
                     csrfToken={csrfToken}

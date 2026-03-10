@@ -26,15 +26,15 @@
       "questions": [
         {
           "id": "demo/demoNewton-page1",
-          "points": 1,
-          "maxPoints": 5,
+          "autoPoints": 1,
+          "maxAutoPoints": 5,
           "canView": ["Manager", "Reflector", "Recorder", "Contributor"],
           "canSubmit": ["Recorder"]
         },
         {
           "id": "demo/demoNewton-page2",
-          "points": 1,
-          "maxPoints": 5,
+          "autoPoints": 1,
+          "maxAutoPoints": 5,
           "canView": ["Reflector"],
           "canSubmit": ["Reflector"]
         }

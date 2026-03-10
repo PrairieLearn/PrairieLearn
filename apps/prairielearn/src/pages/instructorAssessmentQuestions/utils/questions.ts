@@ -8,6 +8,7 @@ import type {
   StaffCourse,
   StaffCourseInstance,
   StaffTag,
+  StaffTopic,
 } from '../../../lib/client/safe-db-types.js';
 import type { EnumAssessmentType } from '../../../lib/db-types.js';
 import type { QuestionPointsJson, ZoneAssessmentJson } from '../../../schemas/infoAssessment.js';
@@ -20,6 +21,7 @@ import type {
   ZoneQuestionBlockForm,
 } from '../types.js';
 
+export type QuestionMetadataMap = Partial<Record<string, StaffAssessmentQuestionRow>>;
 /**
  * Compresses an array of points by collapsing consecutive runs.
  * e.g. [10, 10, 10, 5, 5] → "10×3, 5, 5"
@@ -284,24 +286,53 @@ export function computeQuestionTotalPoints(
 export function hasPointsMismatch(
   alternatives: QuestionAlternativeForm[],
   assessmentType: EnumAssessmentType,
-  parent?: QuestionPointsJson,
+  parent?: QuestionPointsJson & { numberChoose?: number | null },
 ): boolean {
   if (alternatives.length <= 1) return false;
+  // When all alternatives are selected, different point values don't cause
+  // inconsistency — every student gets the same total. Alt groups default
+  // to choosing 1 alternative when numberChoose is not set.
+  const effectiveChoose = parent?.numberChoose ?? 1;
+  if (effectiveChoose >= alternatives.length) return false;
 
   const totals = alternatives.map((alt) => computeQuestionTotalPoints(alt, assessmentType, parent));
   return totals.some((t) => t !== totals[0]);
 }
 
+type ZonePointsMismatchKind = 'numberChoose' | 'bestQuestions' | 'both';
+
+const ZONE_POINTS_MISMATCH_TEXT: Record<ZonePointsMismatchKind, { label: string; body: string }> = {
+  numberChoose: {
+    label: 'Inconsistent points',
+    body: 'Students will receive different total points because this zone randomly selects questions with different point values.',
+  },
+  bestQuestions: {
+    label: 'Inconsistent points',
+    body: 'Students will receive different total points because only the best-scoring questions count and questions have different point values.',
+  },
+  both: {
+    label: 'Inconsistent points',
+    body: 'Students will receive different total points because this zone randomly selects questions and only counts the best-scoring ones, and questions have different point values.',
+  },
+};
+
 /**
- * Returns true if question blocks in a zone with bestQuestions or numberChoose
- * have different contributed total point values.
+ * Returns label and body text describing why question blocks in a zone have
+ * inconsistent point values, or null if there is no mismatch.
  */
-export function hasZonePointsMismatch(
+export function getZonePointsMismatch(
   zone: ZoneAssessmentForm,
   assessmentType: EnumAssessmentType,
-): boolean {
-  if (zone.bestQuestions == null && zone.numberChoose == null) return false;
-  if (zone.questions.length <= 1) return false;
+): { label: string; body: string } | null {
+  if (zone.bestQuestions == null && zone.numberChoose == null) return null;
+  if (zone.questions.length <= 1) return null;
+  // When all questions are both presented and counted, every student sees the
+  // same total regardless of individual point values — no warning needed.
+  const effectiveChoose = zone.numberChoose ?? zone.questions.length;
+  const effectiveBest = zone.bestQuestions ?? effectiveChoose;
+  if (effectiveChoose >= zone.questions.length && effectiveBest >= effectiveChoose) {
+    return null;
+  }
 
   const blockTotals = zone.questions.map((block) => {
     if (block.alternatives) {
@@ -314,7 +345,37 @@ export function hasZonePointsMismatch(
     return computeQuestionTotalPoints(block, assessmentType);
   });
 
-  return blockTotals.some((t) => t !== blockTotals[0]);
+  if (!blockTotals.some((t) => t !== blockTotals[0])) return null;
+
+  const hasNumberChoose = zone.numberChoose != null && zone.numberChoose < zone.questions.length;
+  const hasBestQuestions = zone.bestQuestions != null && zone.bestQuestions < effectiveChoose;
+
+  const kind: ZonePointsMismatchKind =
+    hasNumberChoose && hasBestQuestions
+      ? 'both'
+      : hasBestQuestions
+        ? 'bestQuestions'
+        : 'numberChoose';
+  return ZONE_POINTS_MISMATCH_TEXT[kind];
+}
+
+/**
+ * Returns true if a zone's numberChoose or bestQuestions exceeds the number of questions.
+ */
+export function hasZoneChooseExceedsCount(zone: ZoneAssessmentForm): boolean {
+  const count = computeZoneQuestionCount(zone.questions);
+  if (count === 0) return false;
+  if (zone.numberChoose != null && zone.numberChoose > count) return true;
+  if (zone.bestQuestions != null && zone.bestQuestions > count) return true;
+  return false;
+}
+
+/**
+ * Returns true if an alt group's numberChoose exceeds the number of alternatives.
+ */
+export function hasAltGroupChooseExceedsCount(block: ZoneQuestionBlockForm): boolean {
+  if (block.numberChoose == null || block.alternatives == null) return false;
+  return block.numberChoose > block.alternatives.length;
 }
 
 export function toAssessmentForPicker(assessments: OtherAssessment[]): AssessmentForPicker[] {
@@ -477,7 +538,7 @@ export function buildQuestionMetadata(opts: {
  */
 export function getSharedTags(
   alternatives: { id: string }[],
-  questionMetadata: Partial<Record<string, StaffAssessmentQuestionRow>>,
+  questionMetadata: QuestionMetadataMap,
 ): StaffTag[] {
   const tagSets = alternatives
     .filter((alt) => alt.id && questionMetadata[alt.id]?.tags)
@@ -494,4 +555,20 @@ export function getSharedTags(
   if (!firstTaggedAlt) return [];
   const firstTags = questionMetadata[firstTaggedAlt.id]!.tags!;
   return firstTags.filter((t) => intersection.has(t.name));
+}
+
+/**
+ * Returns the topic shared by all alternatives in an alt group, or null if they differ.
+ */
+export function getSharedTopic(
+  alternatives: { id: string }[],
+  questionMetadata: QuestionMetadataMap,
+): StaffTopic | null {
+  const topics = alternatives
+    .filter((alt) => alt.id && questionMetadata[alt.id])
+    .map((alt) => questionMetadata[alt.id]!.topic);
+  if (topics.length === 0) return null;
+  const firstName = topics[0].name;
+  if (topics.every((t) => t.name === firstName)) return topics[0];
+  return null;
 }

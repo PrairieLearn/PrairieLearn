@@ -2,7 +2,6 @@ import clsx from 'clsx';
 import { useCallback, useEffect, useMemo } from 'react';
 import { useForm } from 'react-hook-form';
 
-import type { StaffAssessmentQuestionRow } from '../../../../lib/assessment-question.shared.js';
 import type { DetailState, ZoneAssessmentForm, ZoneQuestionBlockForm } from '../../types.js';
 import {
   coerceToNumber,
@@ -14,10 +13,18 @@ import {
   validateNonIncreasingPoints,
   validatePointsListFormat,
 } from '../../utils/formHelpers.js';
-import { getSharedTags, validatePositiveInteger } from '../../utils/questions.js';
+import {
+  type QuestionMetadataMap,
+  getSharedTags,
+  getSharedTopic,
+  hasAltGroupChooseExceedsCount,
+  hasPointsMismatch,
+  validatePositiveInteger,
+} from '../../utils/questions.js';
 import { useAutoSave } from '../../utils/useAutoSave.js';
 
 import { AdvancedFields, type AdvancedFieldsInheritance } from './AdvancedFields.js';
+import { DetailSectionHeader } from './DetailSectionHeader.js';
 import { FormField } from './FormField.js';
 
 interface AltGroupFormData {
@@ -43,10 +50,11 @@ export function AltGroupDetailPanel({
   state,
   onUpdate,
   onDelete,
+  onFormValidChange,
 }: {
   zoneQuestionBlock: ZoneQuestionBlockForm;
   zone: ZoneAssessmentForm;
-  questionMetadata: Partial<Record<string, StaffAssessmentQuestionRow>>;
+  questionMetadata: QuestionMetadataMap;
   idPrefix: string;
   state: DetailState;
   onUpdate: (
@@ -54,10 +62,12 @@ export function AltGroupDetailPanel({
     question: Partial<ZoneQuestionBlockForm> | Partial<AltGroupFormData>,
   ) => void;
   onDelete: (questionTrackingId: string) => void;
+  onFormValidChange: (isValid: boolean) => void;
 }) {
-  const { editMode, assessmentType, assessmentDefaults } = state;
+  const { editMode, assessmentType, constantQuestionValue, assessmentDefaults } = state;
   const alternativeCount = zoneQuestionBlock.alternatives?.length ?? 0;
 
+  const sharedTopic = getSharedTopic(zoneQuestionBlock.alternatives ?? [], questionMetadata);
   const sharedTags = getSharedTags(zoneQuestionBlock.alternatives ?? [], questionMetadata);
 
   const pointsProperty = assessmentType === 'Exam' ? 'points' : 'autoPoints';
@@ -88,13 +98,24 @@ export function AltGroupDetailPanel({
         : zoneQuestionBlock.forceMaxPoints,
       allowRealTimeGrading: zoneQuestionBlock.allowRealTimeGrading ?? undefined,
     },
+    // Prevent autosave from clobbering in-progress typing. Without this,
+    // the autosave feedback loop (edit → save → parent state update →
+    // values prop change → form reset) resets the input mid-keystroke.
+    // This is safe because the only source of values changes while the
+    // panel is open is autosave; switching entities remounts the component.
+    resetOptions: { keepDirtyValues: true, keepErrors: true },
   });
 
   useEffect(() => {
     // Alternatives can be deleted from the tree while this panel is open.
     // Revalidate immediately so numberChoose errors update without extra input.
-    void trigger('numberChoose');
-  }, [alternativeCount, trigger]);
+    // We use the result of trigger() directly because formState.isValid may
+    // not update until user interaction with mode: 'onChange'.
+    void trigger().then((valid) => {
+      // TODO: you can easily click off the item and save the form to bypass this validation.
+      onFormValidChange(valid);
+    });
+  }, [alternativeCount, trigger, onFormValidChange]);
 
   const handleSave = useCallback(
     (data: AltGroupFormData) =>
@@ -112,6 +133,11 @@ export function AltGroupDetailPanel({
   );
 
   useAutoSave({ isDirty, isValid, getValues, onSave: handleSave, watch });
+
+  useEffect(() => {
+    // eslint-disable-next-line react-you-might-not-need-an-effect/no-pass-data-to-parent
+    onFormValidChange(isValid);
+  }, [isValid, onFormValidChange]);
 
   const parentAdvanceScorePerc = zone.advanceScorePerc ?? assessmentDefaults.advanceScorePerc;
   const parentGradeRateMinutes = zone.gradeRateMinutes ?? assessmentDefaults.gradeRateMinutes;
@@ -138,22 +164,53 @@ export function AltGroupDetailPanel({
       ? ''
       : String(Array.isArray(watchedAutoPoints) ? watchedAutoPoints[0] : watchedAutoPoints);
 
+  const pointsMismatch =
+    zoneQuestionBlock.alternatives != null &&
+    hasPointsMismatch(zoneQuestionBlock.alternatives, assessmentType, zoneQuestionBlock);
+  const chooseExceeds = hasAltGroupChooseExceedsCount(zoneQuestionBlock);
+
   const Wrapper = editMode ? 'div' : 'dl';
 
   return (
     <div className="p-3">
-      <div className={clsx('text-muted small', editMode ? 'mb-3' : 'mb-2')}>
-        {alternativeCount} alternative{alternativeCount !== 1 ? 's' : ''} in group
-      </div>
-      {sharedTags.length > 0 && (
-        <div className="d-flex flex-wrap gap-1 mb-2">
-          {sharedTags.map((tag) => (
-            <span key={tag.name} className={`badge color-${tag.color}`}>
-              {tag.name}
-            </span>
-          ))}
+      {pointsMismatch && (
+        <div className="alert alert-warning small mb-3" role="alert">
+          <i className="bi bi-exclamation-triangle-fill me-1" aria-hidden="true" />
+          Students will receive different total points because this group has alternatives with
+          different point values.
         </div>
       )}
+      {chooseExceeds && (
+        <div className="alert alert-warning small mb-3" role="alert">
+          <i className="bi bi-exclamation-triangle-fill me-1" aria-hidden="true" />
+          Number to choose exceeds the number of alternatives in this group.
+        </div>
+      )}
+      <div className="d-flex flex-column gap-2">
+        <div className="text-muted small">
+          {alternativeCount} alternative{alternativeCount !== 1 ? 's' : ''} in group
+        </div>
+        {sharedTopic && (
+          <div>
+            <div className="text-muted small mb-1">Topic shared across alternatives</div>
+            <span className={`badge color-${sharedTopic.color}`}>{sharedTopic.name}</span>
+          </div>
+        )}
+        {sharedTags.length > 0 && (
+          <div>
+            <div className="text-muted small mb-1">Tags shared across alternatives</div>
+            <div className="d-flex flex-wrap gap-1">
+              {sharedTags.map((tag) => (
+                <span key={tag.name} className={`badge color-${tag.color}`}>
+                  {tag.name}
+                </span>
+              ))}
+            </div>
+          </div>
+        )}
+      </div>
+
+      <DetailSectionHeader>Settings</DetailSectionHeader>
 
       <Wrapper className={clsx(!editMode && 'mb-0')}>
         <FormField
@@ -191,7 +248,21 @@ export function AltGroupDetailPanel({
               label="Auto points (default)"
               viewValue={formatPoints(zoneQuestionBlock[pointsProperty])}
               error={errors[pointsProperty]}
-              helpText="Default auto points inherited by alternatives unless overridden."
+              helpText={
+                <>
+                  Points awarded for the auto-graded component.{' '}
+                  {constantQuestionValue
+                    ? 'Each correct answer is worth this many points.'
+                    : 'Each consecutive correct answer is worth more; an incorrect answer resets the value.'}{' '}
+                  <a
+                    href="https://docs.prairielearn.com/assessment/configuration/#question-points-for-homework-assessments"
+                    target="_blank"
+                    rel="noreferrer"
+                  >
+                    Learn more about question points
+                  </a>
+                </>
+              }
               hideWhenEmpty
             >
               {(aria) => (
@@ -228,7 +299,7 @@ export function AltGroupDetailPanel({
                   : undefined
               }
               error={errors[maxPointsProperty]}
-              helpText="Default max auto points inherited by alternatives unless overridden. Defaults to auto points if not set."
+              helpText="Maximum total auto-graded points."
               hideWhenEmpty
             >
               {(aria) => (
@@ -282,16 +353,41 @@ export function AltGroupDetailPanel({
                 />
               )}
             </FormField>
+            <FormField
+              editMode={editMode}
+              id={`${idPrefix}-triesPerVariant`}
+              label="Tries per variant (default)"
+              viewValue={
+                zoneQuestionBlock.triesPerVariant != null
+                  ? String(zoneQuestionBlock.triesPerVariant)
+                  : undefined
+              }
+              error={errors.triesPerVariant}
+              helpText="Default number of submission attempts per variant, inherited by alternatives unless overridden."
+              hideWhenEmpty
+            >
+              {(aria) => (
+                <input
+                  type="number"
+                  className={clsx('form-control form-control-sm', aria.errorClass)}
+                  {...aria.inputProps}
+                  {...register('triesPerVariant', {
+                    setValueAs: coerceToNumber,
+                    validate: (v) => validatePositiveInteger(v, 'Tries per variant'),
+                  })}
+                />
+              )}
+            </FormField>
           </>
         ) : (
           <>
             <FormField
               editMode={editMode}
               id={`${idPrefix}-points`}
-              label="Points list (default)"
+              label="Auto points (default)"
               viewValue={formatPoints(zoneQuestionBlock[pointsProperty])}
               error={errors[pointsProperty]}
-              helpText="Default points list inherited by alternatives unless overridden."
+              helpText='Default auto points inherited by alternatives unless overridden, as a comma-separated list (e.g. "10, 5, 2, 1").'
               hideWhenEmpty
             >
               {(aria) => (

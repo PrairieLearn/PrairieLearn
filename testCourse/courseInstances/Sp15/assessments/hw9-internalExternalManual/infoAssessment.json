@@ -9,10 +9,10 @@
     {
       "comment": "Generic points, use default grading method",
       "questions": [
-        { "id": "internalGrade/addingNumbers", "points": 2, "maxPoints": 6 },
-        { "id": "manualGrade/codeUpload", "points": 2, "maxPoints": 6 },
-        { "id": "externalGrade/alpine", "points": 2, "maxPoints": 6 },
-        { "id": "externalGrade/entrypointArgs", "points": 2, "maxPoints": 6 }
+        { "id": "internalGrade/addingNumbers", "autoPoints": 2, "maxAutoPoints": 6 },
+        { "id": "manualGrade/codeUpload", "manualPoints": 6 },
+        { "id": "externalGrade/alpine", "autoPoints": 2, "maxAutoPoints": 6 },
+        { "id": "externalGrade/entrypointArgs", "autoPoints": 2, "maxAutoPoints": 6 }
       ]
     },
     {
