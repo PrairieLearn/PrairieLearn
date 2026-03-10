@@ -1564,7 +1564,7 @@ function validateAssessment({
       const effectiveZoneSize = zone.questions.reduce((sum, q) => {
         if (q.alternatives) {
           const altCount = q.alternatives.length;
-          return sum + Math.min(q.numberChoose ?? 1, altCount);
+          return sum + Math.min(q.numberChoose ?? altCount, altCount);
         }
         return sum + 1;
       }, 0);

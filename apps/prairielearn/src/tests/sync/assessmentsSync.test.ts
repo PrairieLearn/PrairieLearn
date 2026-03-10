@@ -2259,6 +2259,80 @@ describe('Assessment syncing', () => {
     );
   });
 
+  it('counts all alternatives in effective zone size when numberChoose is not set', async () => {
+    const courseData = util.getCourseData();
+    const assessment = makeAssessment(courseData);
+    // Effective zone size = 1 (standalone) + 2 (all alternatives) = 3.
+    // Zone numberChoose of 3 should not warn.
+    assessment.zones?.push({
+      title: 'test zone',
+      numberChoose: 3,
+      questions: [
+        { id: util.QUESTION_ID, points: 10 },
+        {
+          points: 10,
+          alternatives: [
+            { id: util.ALTERNATIVE_QUESTION_ID },
+            { id: util.MANUAL_GRADING_QUESTION_ID },
+          ],
+        },
+      ],
+    });
+    courseData.courseInstances[util.COURSE_INSTANCE_ID].assessments['ok'] = assessment;
+    await util.writeAndSyncCourseData(courseData);
+    const syncedAssessment = await findSyncedAssessment('ok');
+    assert.isNotOk(syncedAssessment.sync_warnings);
+  });
+
+  it('warns when zone numberChoose exceeds effective size with unset alternative numberChoose', async () => {
+    const courseData = util.getCourseData();
+    const assessment = makeAssessment(courseData);
+    assessment.zones?.push({
+      title: 'test zone',
+      numberChoose: 4,
+      questions: [
+        { id: util.QUESTION_ID, points: 10 },
+        {
+          points: 10,
+          alternatives: [{ id: util.ALTERNATIVE_QUESTION_ID }],
+        },
+      ],
+    });
+    courseData.courseInstances[util.COURSE_INSTANCE_ID].assessments['warn'] = assessment;
+    await util.writeAndSyncCourseData(courseData);
+    const syncedAssessment = await findSyncedAssessment('warn');
+    assert.isNotNull(syncedAssessment.sync_warnings);
+    assert.match(
+      syncedAssessment.sync_warnings,
+      /"numberChoose" \(4\) exceeds the number of questions in the zone \(2\)/,
+    );
+  });
+
+  it('does not produce warnings for an expired course instance', async () => {
+    const courseData = util.getCourseData();
+    const assessment = makeAssessment(courseData, 'Homework');
+    assessment.zones?.push({
+      title: 'test zone',
+      questions: [
+        {
+          id: util.QUESTION_ID,
+          autoPoints: 15,
+          maxAutoPoints: 10,
+        },
+      ],
+    });
+    courseData.courseInstances[util.COURSE_INSTANCE_ID].assessments['warn'] = assessment;
+    courseData.courseInstances[util.COURSE_INSTANCE_ID].courseInstance.allowAccess = [
+      {
+        startDate: '2000-01-01T00:00:00',
+        endDate: '2001-01-01T00:00:00',
+      },
+    ];
+    await util.writeAndSyncCourseData(courseData);
+    const syncedAssessment = await findSyncedAssessment('warn');
+    assert.isNotOk(syncedAssessment.sync_warnings);
+  });
+
   it('records an error if an assessment directory is missing an infoAssessment.json file', async () => {
     const courseData = util.getCourseData();
     const courseDir = await util.writeCourseToTempDirectory(courseData);
