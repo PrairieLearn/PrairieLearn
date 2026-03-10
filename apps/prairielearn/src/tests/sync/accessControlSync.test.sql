@@ -27,7 +27,7 @@ INSERT INTO
     enabled,
     block_access,
     list_before_release,
-    "number",
+    number,
     target_type,
     date_control_duration_minutes,
     date_control_duration_minutes_overridden
@@ -42,7 +42,7 @@ VALUES
     $number,
     'enrollment',
     $duration_minutes::integer,
-    $duration_minutes::integer IS NOT NULL
+    $duration_minutes::integer IS NOT null
   )
 RETURNING
   id;

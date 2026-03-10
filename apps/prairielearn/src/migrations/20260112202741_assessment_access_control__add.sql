@@ -82,10 +82,11 @@ CREATE INDEX assessment_access_control_student_labels_sg_id_idx ON assessment_ac
 -- Early deadline table
 CREATE TABLE assessment_access_control_early_deadline (
   id BIGSERIAL PRIMARY KEY,
-  assessment_access_control_id BIGINT NOT NULL REFERENCES assessment_access_control (id) ON DELETE CASCADE ON UPDATE CASCADE,
+  assessment_access_control_id BIGINT NOT NULL,
   date TIMESTAMP WITH TIME ZONE NOT NULL,
   credit INT NOT NULL,
-  sort_order INTEGER NOT NULL
+  sort_order INTEGER NOT NULL,
+  CONSTRAINT assessment_access_control_early_deadline_access_control_id_fkey FOREIGN KEY (assessment_access_control_id) REFERENCES assessment_access_control (id) ON DELETE CASCADE ON UPDATE CASCADE
 );
 
 CREATE INDEX assessment_access_control_early_deadline_access_control_id_idx ON assessment_access_control_early_deadline (assessment_access_control_id);
@@ -93,10 +94,11 @@ CREATE INDEX assessment_access_control_early_deadline_access_control_id_idx ON a
 -- Late deadline table
 CREATE TABLE assessment_access_control_late_deadline (
   id BIGSERIAL PRIMARY KEY,
-  assessment_access_control_id BIGINT NOT NULL REFERENCES assessment_access_control (id) ON DELETE CASCADE ON UPDATE CASCADE,
+  assessment_access_control_id BIGINT NOT NULL,
   date TIMESTAMP WITH TIME ZONE NOT NULL,
   credit INT NOT NULL,
-  sort_order INTEGER NOT NULL
+  sort_order INTEGER NOT NULL,
+  CONSTRAINT assessment_access_control_late_deadline_access_control_id_fkey FOREIGN KEY (assessment_access_control_id) REFERENCES assessment_access_control (id) ON DELETE CASCADE ON UPDATE CASCADE
 );
 
 CREATE INDEX assessment_access_control_late_deadline_access_control_id_idx ON assessment_access_control_late_deadline (assessment_access_control_id);
@@ -104,9 +106,10 @@ CREATE INDEX assessment_access_control_late_deadline_access_control_id_idx ON as
 -- PrairieTest exam table
 CREATE TABLE assessment_access_control_prairietest_exam (
   id BIGSERIAL PRIMARY KEY,
-  assessment_access_control_id BIGINT NOT NULL REFERENCES assessment_access_control (id) ON DELETE CASCADE ON UPDATE CASCADE,
+  assessment_access_control_id BIGINT NOT NULL,
   uuid uuid NOT NULL,
-  read_only boolean
+  read_only boolean,
+  CONSTRAINT assessment_access_control_prairietest_ex_access_control_id_fkey FOREIGN KEY (assessment_access_control_id) REFERENCES assessment_access_control (id) ON DELETE CASCADE ON UPDATE CASCADE
 );
 
-CREATE INDEX assessment_access_control_prairietest_exam_access_control_id_idx ON assessment_access_control_prairietest_exam (assessment_access_control_id);
+CREATE INDEX assessment_access_control_prairietest_exam_aac_id_idx ON assessment_access_control_prairietest_exam (assessment_access_control_id);
