@@ -261,7 +261,7 @@ describe('hasPointsMismatch', () => {
         { trackingId: 't1', id: 'q1', points: 10 },
         { trackingId: 't2', id: 'q2', points: 5 },
       ],
-      // No mismatch: SQL selects all alternatives when numberChoose is unset.
+      // No mismatch: all alternatives are selected when numberChoose is unset.
       expected: false,
     },
     {

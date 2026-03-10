@@ -294,8 +294,8 @@ export function hasPointsMismatch(
 ): boolean {
   if (alternatives.length <= 1) return false;
   // When all alternatives are selected, different point values don't cause
-  // inconsistency — every student gets the same total. The SQL runtime
-  // selects all alternatives when number_choose is NULL (assessment.sql:196).
+  // inconsistency — every student gets the same total. The assessment instance
+  // creation process selects all alternatives when number_choose is NULL.
   const effectiveChoose = parent?.numberChoose ?? alternatives.length;
   if (effectiveChoose >= alternatives.length) return false;
 
