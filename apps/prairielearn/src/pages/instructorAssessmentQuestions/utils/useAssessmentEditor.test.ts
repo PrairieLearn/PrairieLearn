@@ -235,7 +235,7 @@ describe('createEditorReducer', () => {
     expect(extracted.trackingId).toEqual(tid('a1'));
     expect(extracted.id).toBe('alt-qid-1');
     expect(extracted.autoPoints).toBe(5);
-    expect(extracted.triesPerVariant).toBeUndefined();
+    expect(extracted.triesPerVariant).toBe(2);
 
     expect(state.zones[0].questions[2].trackingId).toEqual(tid('q1'));
 
@@ -297,6 +297,64 @@ describe('createEditorReducer', () => {
     // Should keep its own autoPoints, inherit manualPoints from group
     expect(extracted2.autoPoints).toBe(7);
     expect(extracted2.manualPoints).toBe(2);
+  });
+
+  it('extract alternative inherits non-point fields from parent alt group', () => {
+    // alt has no own settings — inherits everything from the group
+    const alt = makeAlternative('a1', { id: 'alt-qid-1' });
+    // alt2 has its own triesPerVariant override
+    const alt2 = makeAlternative('a2', {
+      id: 'alt-qid-2',
+      triesPerVariant: 5,
+      allowRealTimeGrading: true,
+    });
+    const altGroup = makeQuestion('ag1', {
+      id: 'ag-qid',
+      alternatives: [alt, alt2],
+      numberChoose: 1,
+      autoPoints: 3,
+      triesPerVariant: 2,
+      allowRealTimeGrading: false,
+      gradeRateMinutes: 10,
+      forceMaxPoints: true,
+      advanceScorePerc: 50,
+    });
+    const initialState = makeState({
+      zones: [makeZone('z1', [altGroup])],
+    });
+    const reducer = createEditorReducer(initialState);
+
+    // Extract alt (inheriting all settings) to standalone
+    let state = reducer(initialState, {
+      type: 'EXTRACT_ALTERNATIVE_TO_QUESTION',
+      alternativeTrackingId: 'a1',
+      toZoneTrackingId: 'z1',
+      beforeQuestionTrackingId: null,
+    });
+
+    const extracted = state.zones[0].questions[1];
+    expect(extracted.triesPerVariant).toBe(2);
+    expect(extracted.allowRealTimeGrading).toBe(false);
+    expect(extracted.gradeRateMinutes).toBe(10);
+    expect(extracted.forceMaxPoints).toBe(true);
+    expect(extracted.advanceScorePerc).toBe(50);
+
+    // Extract alt2 (has own overrides) to standalone
+    state = reducer(state, {
+      type: 'EXTRACT_ALTERNATIVE_TO_QUESTION',
+      alternativeTrackingId: 'a2',
+      toZoneTrackingId: 'z1',
+      beforeQuestionTrackingId: null,
+    });
+
+    const extracted2 = state.zones[0].questions[2];
+    // Should keep its own overrides
+    expect(extracted2.triesPerVariant).toBe(5);
+    expect(extracted2.allowRealTimeGrading).toBe(true);
+    // Should inherit the rest from the group
+    expect(extracted2.gradeRateMinutes).toBe(10);
+    expect(extracted2.forceMaxPoints).toBe(true);
+    expect(extracted2.advanceScorePerc).toBe(50);
   });
 
   it('reorder alternative across groups then extract inherits from final group', () => {

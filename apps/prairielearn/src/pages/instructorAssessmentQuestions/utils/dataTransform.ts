@@ -186,10 +186,10 @@ export function createAltGroupWithTrackingId(): ZoneQuestionBlockForm {
  * Strips undefined own properties so they don't appear as explicit keys
  * in the resulting object.
  *
- * When {@link parentGroup} is provided, any point fields that the
+ * When {@link parentGroup} is provided, any inheritable fields that the
  * alternative was inheriting (i.e. undefined on the alternative itself)
- * are filled in from the parent, since a standalone question must have
- * its own point values.
+ * are filled in from the parent so the standalone question preserves
+ * the same effective behavior.
  */
 export function alternativeToQuestionBlock(
   alt: QuestionAlternativeForm,
@@ -200,6 +200,11 @@ export function alternativeToQuestionBlock(
     merged.autoPoints ??= parentGroup.autoPoints;
     merged.manualPoints ??= parentGroup.manualPoints;
     merged.maxAutoPoints ??= parentGroup.maxAutoPoints;
+    merged.triesPerVariant ??= parentGroup.triesPerVariant;
+    merged.forceMaxPoints ??= parentGroup.forceMaxPoints;
+    merged.advanceScorePerc ??= parentGroup.advanceScorePerc;
+    merged.gradeRateMinutes ??= parentGroup.gradeRateMinutes;
+    merged.allowRealTimeGrading ??= parentGroup.allowRealTimeGrading;
   }
   return omitUndefined(merged) as ZoneQuestionBlockForm;
 }
