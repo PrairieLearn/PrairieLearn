@@ -243,7 +243,11 @@ export function computeZonePointTotals(
   });
 
   // If the zone uses bestQuestions or numberChoose, only the best N blocks count.
-  const zoneChoose = opts?.bestQuestions ?? opts?.numberChoose;
+  // When both are set, the effective limit is the smaller of the two.
+  const zoneChoose =
+    opts?.bestQuestions != null && opts.numberChoose != null
+      ? Math.min(opts.bestQuestions, opts.numberChoose)
+      : (opts?.bestQuestions ?? opts?.numberChoose);
   if (zoneChoose != null && zoneChoose < blockPoints.length) {
     blockPoints.sort((a, b) => b.auto + b.manual - (a.auto + a.manual));
     blockPoints.length = zoneChoose;

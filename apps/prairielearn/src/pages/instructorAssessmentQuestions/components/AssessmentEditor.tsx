@@ -1277,31 +1277,52 @@ function AssessmentEditorInner({
                     saveButtonDisabledReason={saveButtonDisabledReason}
                     onSubmit={disableBeforeUnload}
                     onCancel={() => {
+                      // Resolve transient picker states to persisted selections.
+                      const resolvedItem = run((): SelectedItem => {
+                        if (selectedItem?.type === 'picker') {
+                          return selectedItem.returnToSelection ?? null;
+                        }
+                        if (selectedItem?.type === 'altGroupPicker') {
+                          return selectedItem.altGroupTrackingId
+                            ? {
+                                type: 'altGroup',
+                                questionTrackingId: selectedItem.altGroupTrackingId,
+                              }
+                            : null;
+                        }
+                        return selectedItem;
+                      });
+
+                      // Validate the resolved selection against the initial (pre-edit) state.
                       const valid = run(() => {
-                        if (!selectedItem) return true;
+                        if (!resolvedItem) return true;
                         const { zones: z } = initialState;
-                        switch (selectedItem.type) {
+                        switch (resolvedItem.type) {
                           case 'zone':
-                          case 'picker':
-                          case 'altGroupPicker':
-                            return findByTrackingId(z, selectedItem.zoneTrackingId) === 'zone';
+                            return findByTrackingId(z, resolvedItem.zoneTrackingId) === 'zone';
                           case 'question':
-                            return findByTrackingId(z, selectedItem.questionTrackingId) === 'question';
+                            return (
+                              findByTrackingId(z, resolvedItem.questionTrackingId) === 'question'
+                            );
                           case 'altGroup':
                             // Must still be a question with alternatives after reset.
                             return (
-                              findByTrackingId(z, selectedItem.questionTrackingId) === 'question' &&
-                              !!findQuestionByTrackingId(z, selectedItem.questionTrackingId)
+                              findByTrackingId(z, resolvedItem.questionTrackingId) === 'question' &&
+                              !!findQuestionByTrackingId(z, resolvedItem.questionTrackingId)
                                 ?.question.alternatives
                             );
                           case 'alternative':
                             return (
-                              findByTrackingId(z, selectedItem.questionTrackingId) === 'question' &&
-                              findByTrackingId(z, selectedItem.alternativeTrackingId) === 'alternative'
+                              findByTrackingId(z, resolvedItem.questionTrackingId) === 'question' &&
+                              findByTrackingId(z, resolvedItem.alternativeTrackingId) ===
+                                'alternative'
                             );
+                          case 'picker':
+                          case 'altGroupPicker':
+                            return false;
                         }
                       });
-                      if (!valid) setSelectedItem(null);
+                      setSelectedItem(valid ? resolvedItem : null);
                       dispatch({ type: 'RESET' });
                       setEditMode(false);
                     }}

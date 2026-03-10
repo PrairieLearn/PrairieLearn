@@ -164,11 +164,9 @@ export function TreeQuestionBlockNode({
           paddingLeft: '2.5rem',
           paddingRight: '0.5rem',
           cursor: 'pointer',
-          ...(chooseExceeds
+          ...(chooseExceeds || pointsMismatch
             ? { borderLeft: '6px solid var(--bs-warning)' }
-            : pointsMismatch
-              ? { borderLeft: '6px solid var(--bs-warning)' }
-              : {}),
+            : {}),
         }}
         onClick={(e) => {
           e.stopPropagation();
