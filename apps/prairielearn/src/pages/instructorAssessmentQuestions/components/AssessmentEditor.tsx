@@ -52,10 +52,10 @@ import {
   normalizeQuestionPoints,
   questionDisplayName,
 } from '../utils/questions.js';
+import { getStructuralSaveValidationErrorKind } from '../utils/saveValidation.js';
 import { createAssessmentQuestionsTrpcClient } from '../utils/trpc-client.js';
 import { TRPCProvider, useTRPC } from '../utils/trpc-context.js';
 import { findQuestionByTrackingId, useAssessmentEditor } from '../utils/useAssessmentEditor.js';
-import { getStructuralSaveValidationErrorKind } from '../utils/saveValidation.js';
 
 import { EditModeToolbar } from './EditModeToolbar.js';
 import { ExamResetNotSupportedModal } from './ExamResetNotSupportedModal.js';
