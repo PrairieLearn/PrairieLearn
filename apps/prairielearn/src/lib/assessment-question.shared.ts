@@ -4,10 +4,14 @@ import {
   StaffAlternativeGroupSchema,
   StaffAssessmentQuestionSchema,
   StaffAssessmentSchema,
+  type StaffCourse,
   StaffCourseInstanceSchema,
   StaffCourseSchema,
+  type StaffQuestion,
   StaffQuestionSchema,
+  type StaffTag,
   StaffTagSchema,
+  type StaffTopic,
   StaffTopicSchema,
   StaffZoneSchema,
 } from '../lib/client/safe-db-types.js';
@@ -60,10 +64,10 @@ export type StaffAssessmentQuestionRow = z.infer<typeof StaffAssessmentQuestionR
  * zone / alternative_group / assessment_question objects.
  */
 export interface EditorQuestionMetadata {
-  question: z.infer<typeof StaffQuestionSchema>;
-  topic: z.infer<typeof StaffTopicSchema>;
-  course: z.infer<typeof StaffCourseSchema>;
-  tags: z.infer<typeof StaffTagSchema>[] | null;
+  question: StaffQuestion;
+  topic: StaffTopic;
+  course: StaffCourse;
+  tags: StaffTag[] | null;
   other_assessments: OtherAssessment[] | null;
   open_issue_count: number;
   assessment_question_id: string | null;
