@@ -3,6 +3,7 @@ import type { ReactNode } from 'react';
 
 import type { TreeActions, TreeState, ViewType, ZoneAssessmentForm } from '../../types.js';
 import { ViewToggle } from '../EditModeToolbar.js';
+import { ViewSwitcherDropdown } from '../ViewSwitcherDropdown.js';
 
 import { TreeZoneNode } from './TreeZoneNode.js';
 
@@ -28,21 +29,23 @@ export function AssessmentTree({
   switchViewUrl: string | null;
 }) {
   const { editMode, viewType } = state;
+  const hasAlternatives = zones.some((zone) => zone.questions.some((q) => q.alternatives != null));
   return (
     <div className="d-flex flex-column h-100">
       <div className="d-flex align-items-center px-3 py-2 border-bottom bg-body flex-shrink-0">
         <ViewToggle
           viewType={viewType}
           isAllExpanded={isAllExpanded}
+          hasAlternatives={hasAlternatives}
           onViewTypeChange={onViewTypeChange}
           onToggleExpandCollapse={onToggleExpandCollapse}
         />
         <div className="ms-auto d-flex gap-2 align-items-center">
-          {switchViewUrl && (
-            <a href={switchViewUrl} className="btn btn-sm btn-outline-secondary">
-              Switch to classic view
-            </a>
-          )}
+          <ViewSwitcherDropdown
+            currentView="new"
+            switchViewUrl={switchViewUrl}
+            editMode={editMode}
+          />
           {editControls}
         </div>
       </div>

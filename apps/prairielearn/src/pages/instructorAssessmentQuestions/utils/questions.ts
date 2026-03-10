@@ -323,7 +323,7 @@ export function hasZonePointsMismatch(
  * Returns true if a zone's numberChoose or bestQuestions exceeds the number of questions.
  */
 export function hasZoneChooseExceedsCount(zone: ZoneAssessmentForm): boolean {
-  const count = zone.questions.length;
+  const count = computeZoneQuestionCount(zone.questions);
   if (count === 0) return false;
   if (zone.numberChoose != null && zone.numberChoose > count) return true;
   if (zone.bestQuestions != null && zone.bestQuestions > count) return true;
