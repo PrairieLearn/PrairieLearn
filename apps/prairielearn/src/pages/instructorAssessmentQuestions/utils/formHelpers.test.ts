@@ -2,6 +2,7 @@ import { describe, expect, it } from 'vitest';
 
 import {
   parsePointsListValue,
+  preserveNonStringComment,
   validateAtLeastOnePointsField,
   validateNonIncreasingPoints,
   validatePointsListFormat,
@@ -116,5 +117,25 @@ describe('validatePointsListFormat', () => {
 
   it('returns undefined for undefined', () => {
     expect(validatePointsListFormat(undefined)).toBeUndefined();
+  });
+});
+
+describe('preserveNonStringComment', () => {
+  it('preserves an existing array comment when the textarea stays empty', () => {
+    expect(preserveNonStringComment(['comment', 'array'], undefined)).toEqual(['comment', 'array']);
+  });
+
+  it('preserves an existing object comment when the textarea stays empty', () => {
+    expect(preserveNonStringComment({ note: 'keep me' }, undefined)).toEqual({
+      note: 'keep me',
+    });
+  });
+
+  it('uses the edited string comment when provided', () => {
+    expect(preserveNonStringComment({ note: 'old' }, 'new comment')).toBe('new comment');
+  });
+
+  it('clears an existing string comment when the textarea is empty', () => {
+    expect(preserveNonStringComment('old comment', undefined)).toBeUndefined();
   });
 });

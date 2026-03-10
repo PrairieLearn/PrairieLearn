@@ -124,6 +124,7 @@ export function buildHierarchicalAssessment(
       questions: [],
       advanceScorePerc: row.zone.advance_score_perc ?? undefined,
       gradeRateMinutes: row.zone.json_grade_rate_minutes ?? undefined,
+      allowRealTimeGrading: row.zone.json_allow_real_time_grading ?? undefined,
       canView: row.zone.json_can_view ?? [],
       canSubmit: row.zone.json_can_submit ?? [],
     };
@@ -145,6 +146,7 @@ export function buildHierarchicalAssessment(
         canView: row.alternative_group.json_can_view ?? [],
         canSubmit: row.alternative_group.json_can_submit ?? [],
         gradeRateMinutes: row.alternative_group.json_grade_rate_minutes ?? undefined,
+        allowRealTimeGrading: row.alternative_group.json_allow_real_time_grading ?? undefined,
         numberChoose: row.alternative_group.number_choose ?? undefined,
         triesPerVariant: row.alternative_group.json_tries_per_variant ?? undefined,
         points: row.alternative_group.json_points ?? undefined,
@@ -181,6 +183,8 @@ export function buildHierarchicalAssessment(
     } else {
       // Set the top level question ID if there are no alternatives
       zones[zoneNumber - 1].questions[positionInZone].id = questionDisplayName(course, row);
+      zones[zoneNumber - 1].questions[positionInZone].comment =
+        row.assessment_question.json_comment ?? undefined;
     }
   }
   return zones;
@@ -293,9 +297,9 @@ export function hasPointsMismatch(
 ): boolean {
   if (alternatives.length <= 1) return false;
   // When all alternatives are selected, different point values don't cause
-  // inconsistency — every student gets the same total. Alt groups default
-  // to choosing 1 alternative when numberChoose is not set.
-  const effectiveChoose = parent?.numberChoose ?? 1;
+  // inconsistency — every student gets the same total. The assessment instance
+  // creation process selects all alternatives when number_choose is NULL.
+  const effectiveChoose = parent?.numberChoose ?? alternatives.length;
   if (effectiveChoose >= alternatives.length) return false;
 
   const totals = alternatives.map((alt) => computeQuestionTotalPoints(alt, assessmentType, parent));

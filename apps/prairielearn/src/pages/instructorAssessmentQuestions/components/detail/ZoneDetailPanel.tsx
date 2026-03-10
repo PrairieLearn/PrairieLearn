@@ -8,6 +8,7 @@ import {
   coerceToOptionalString,
   extractStringComment,
   makeResetAndSave,
+  preserveNonStringComment,
 } from '../../utils/formHelpers.js';
 import {
   computeZoneQuestionCount,
@@ -102,13 +103,13 @@ export function ZoneDetailPanel({
         numberChoose: data.numberChoose,
         bestQuestions: data.bestQuestions,
         lockpoint: data.lockpoint,
-        comment: data.comment || undefined,
+        comment: preserveNonStringComment(zone.comment, data.comment),
         advanceScorePerc: data.advanceScorePerc,
         gradeRateMinutes: data.gradeRateMinutes,
         allowRealTimeGrading: data.allowRealTimeGrading,
       });
     },
-    [onUpdate, zone.trackingId],
+    [onUpdate, zone.comment, zone.trackingId],
   );
 
   const resetAndSave = useMemo(

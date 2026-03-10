@@ -111,8 +111,14 @@ export type EditorAction =
   | {
       type: 'ADD_QUESTION';
       zoneTrackingId: string;
+      question: ZoneQuestionBlockForm & { id: string };
+      questionData: EditorQuestionMetadata;
+    }
+  | {
+      type: 'ADD_QUESTION';
+      zoneTrackingId: string;
       question: ZoneQuestionBlockForm;
-      questionData?: EditorQuestionMetadata;
+      questionData?: undefined;
     }
   | {
       type: 'UPDATE_QUESTION';
@@ -266,6 +272,7 @@ export interface TreeState {
  */
 export interface DetailState {
   editMode: boolean;
+  hasCourseInstancePermissionEdit: boolean;
   assessmentType: EnumAssessmentType;
   constantQuestionValue: boolean;
   assessmentDefaults: AssessmentAdvancedDefaults;
