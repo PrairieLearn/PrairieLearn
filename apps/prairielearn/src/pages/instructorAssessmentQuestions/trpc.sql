@@ -39,7 +39,7 @@ SELECT
 FROM
   questions AS q
   JOIN topics AS top ON (top.id = q.topic_id)
-  JOIN pl_courses AS c ON (c.id = q.course_id)
+  JOIN courses AS c ON (c.id = q.course_id)
   LEFT JOIN issue_count AS ic ON (ic.question_id = q.id)
 WHERE
   q.course_id = $course_id
