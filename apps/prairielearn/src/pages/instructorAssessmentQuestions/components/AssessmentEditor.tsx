@@ -55,7 +55,11 @@ import {
 import { getStructuralSaveValidationErrorKind } from '../utils/saveValidation.js';
 import { createAssessmentQuestionsTrpcClient } from '../utils/trpc-client.js';
 import { TRPCProvider, useTRPC } from '../utils/trpc-context.js';
-import { findQuestionByTrackingId, useAssessmentEditor } from '../utils/useAssessmentEditor.js';
+import {
+  findByTrackingId,
+  findQuestionByTrackingId,
+  useAssessmentEditor,
+} from '../utils/useAssessmentEditor.js';
 
 import { EditModeToolbar } from './EditModeToolbar.js';
 import { ExamResetNotSupportedModal } from './ExamResetNotSupportedModal.js';
@@ -1273,6 +1277,31 @@ function AssessmentEditorInner({
                     saveButtonDisabledReason={saveButtonDisabledReason}
                     onSubmit={disableBeforeUnload}
                     onCancel={() => {
+                      const valid = run(() => {
+                        if (!selectedItem) return true;
+                        const { zones: z } = initialState;
+                        switch (selectedItem.type) {
+                          case 'zone':
+                          case 'picker':
+                          case 'altGroupPicker':
+                            return findByTrackingId(z, selectedItem.zoneTrackingId) === 'zone';
+                          case 'question':
+                            return findByTrackingId(z, selectedItem.questionTrackingId) === 'question';
+                          case 'altGroup':
+                            // Must still be a question with alternatives after reset.
+                            return (
+                              findByTrackingId(z, selectedItem.questionTrackingId) === 'question' &&
+                              !!findQuestionByTrackingId(z, selectedItem.questionTrackingId)
+                                ?.question.alternatives
+                            );
+                          case 'alternative':
+                            return (
+                              findByTrackingId(z, selectedItem.questionTrackingId) === 'question' &&
+                              findByTrackingId(z, selectedItem.alternativeTrackingId) === 'alternative'
+                            );
+                        }
+                      });
+                      if (!valid) setSelectedItem(null);
                       dispatch({ type: 'RESET' });
                       setEditMode(false);
                     }}

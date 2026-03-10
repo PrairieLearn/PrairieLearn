@@ -98,6 +98,24 @@ function findAlternativeAcrossZones(
 }
 
 /**
+ * Searches zones for a tracking ID and returns what type of item it is.
+ * Returns null if the tracking ID is not found anywhere.
+ */
+export function findByTrackingId(
+  zones: ZoneAssessmentForm[],
+  trackingId: string,
+): 'zone' | 'question' | 'alternative' | null {
+  for (const zone of zones) {
+    if (zone.trackingId === trackingId) return 'zone';
+    for (const question of zone.questions) {
+      if (question.trackingId === trackingId) return 'question';
+      if (question.alternatives?.some((a) => a.trackingId === trackingId)) return 'alternative';
+    }
+  }
+  return null;
+}
+
+/**
  * Creates a reducer for managing assessment editor state.
  * The initialState is captured in closure for the RESET action.
  * All operations use trackingIds for stable identity instead of position indices.
