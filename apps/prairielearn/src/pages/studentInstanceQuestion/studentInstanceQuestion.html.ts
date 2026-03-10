@@ -31,6 +31,7 @@ export function StudentInstanceQuestion({
   questionCopyTargets,
   enabledTools = [],
 }: {
+  /** TODO: refine type here to ResLocalsForPage<'instance-question'> and fix type errors */
   resLocals: UntypedResLocals;
   userCanDeleteAssessmentInstance: boolean;
   assignedGrader?: User | null;
