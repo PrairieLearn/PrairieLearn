@@ -11,6 +11,7 @@ import type {
 import type { InheritanceSource } from '../../types.js';
 import { coerceToBoolean, coerceToNumber } from '../../utils/formHelpers.js';
 
+import { DetailSectionHeader } from './DetailSectionHeader.js';
 import { FormCheckField, FormField } from './FormField.js';
 import { InheritableCheckboxField } from './InheritableCheckboxField.js';
 import { InheritableField } from './InheritableField.js';
@@ -65,6 +66,7 @@ export function AdvancedFields({
   variant,
   editMode = true,
   inheritance,
+  zoneIndex,
 }: {
   register: UseFormRegister<any>;
   errors?: FieldErrors;
@@ -72,6 +74,7 @@ export function AdvancedFields({
   variant: 'question' | 'altGroup' | 'zone';
   editMode?: boolean;
   inheritance: AdvancedFieldsInheritance;
+  zoneIndex?: number;
 }) {
   const advanceScorePercRegisterProps = register('advanceScorePerc', {
     setValueAs: coerceToNumber,
@@ -93,6 +96,7 @@ export function AdvancedFields({
   const watchedGradeRateMinutes = inheritance.watch('gradeRateMinutes');
   const watchedForceMaxPoints = inheritance.watch('forceMaxPoints');
   const watchedAllowRealTimeGrading = inheritance.watch('allowRealTimeGrading');
+  const watchedLockpoint = variant === 'zone' ? inheritance.watch('lockpoint') : undefined;
 
   // Track which inheritable fields are in "override" mode. Initialized from
   // the form values at mount; toggled only by Override/Reset buttons. This
@@ -117,11 +121,41 @@ export function AdvancedFields({
       effectiveAdvanceScorePerc == null &&
       effectiveGradeRateMinutes == null &&
       effectiveForceMaxPoints == null &&
-      effectiveAllowRealTimeGrading == null
+      effectiveAllowRealTimeGrading == null &&
+      !watchedLockpoint
     ) {
       return null;
     }
   }
+
+  const renderLockpoint = () => {
+    return (
+      <FormCheckField
+        editMode={editMode}
+        id={`${idPrefix}-lockpoint`}
+        label="Lockpoint"
+        viewValue={!!watchedLockpoint}
+        error={errors?.lockpoint as FieldError | undefined}
+        helpText="Creates a one-way barrier; crossing it makes all earlier zones read-only."
+        hideWhenEmpty
+      >
+        {(aria) => (
+          <input
+            type="checkbox"
+            className={clsx('form-check-input', aria.errorClass)}
+            {...aria.inputProps}
+            {...register('lockpoint', {
+              validate: (v) => {
+                if (v && zoneIndex === 0) {
+                  return 'The first zone cannot be a lockpoint.';
+                }
+              },
+            })}
+          />
+        )}
+      </FormCheckField>
+    );
+  };
 
   const renderAdvanceScorePerc = () => {
     if (inheritance.parentAdvanceScorePerc != null) {
@@ -351,6 +385,7 @@ export function AdvancedFields({
 
   const fields = (
     <>
+      {variant === 'zone' && renderLockpoint()}
       {renderAdvanceScorePerc()}
       {renderGradeRateMinutes()}
       {variant !== 'zone' && renderForceMaxPoints()}
@@ -360,7 +395,7 @@ export function AdvancedFields({
 
   return (
     <>
-      <h6 className="text-muted text-uppercase small mb-3 mt-4">Advanced</h6>
+      <DetailSectionHeader>Advanced</DetailSectionHeader>
       {editMode ? fields : <dl className="mb-0">{fields}</dl>}
     </>
   );

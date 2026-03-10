@@ -183,31 +183,37 @@ export function TreeQuestionBlockNode({
           onToggle={toggleCollapse}
         />
         <div className="flex-grow-1" style={{ minWidth: 0 }}>
-          <div className="text-truncate text-primary">
-            <i className="bi bi-stack me-1" aria-hidden="true" />
-            {run(() => {
-              const choose = zoneQuestionBlock.numberChoose;
-              if (choose == null) return `Choose ${alternativeCount} of ${alternativeCount}`;
-              return `Choose ${choose} of ${alternativeCount}`;
-            })}
-            {pointsMismatch && (
-              <WarningIndicator
-                tooltipId={`points-mismatch-${zoneQuestionBlock.trackingId}`}
-                body="Alternatives have different point values"
+          <div className="d-flex align-items-center">
+            <span className="text-truncate text-primary">
+              <i className="bi bi-stack me-1" aria-hidden="true" />
+              {run(() => {
+                const choose = zoneQuestionBlock.numberChoose;
+                if (choose == null) return `Choose ${alternativeCount} of ${alternativeCount}`;
+                return `Choose ${choose} of ${alternativeCount}`;
+              })}
+              <ChangeIndicatorBadges
+                trackingId={zoneQuestionBlock.trackingId}
+                comment={zoneQuestionBlock.comment}
+                editMode={editMode}
+                changeTracking={changeTracking}
               />
-            )}
-            {chooseExceeds && (
-              <WarningIndicator
-                tooltipId={`choose-exceeds-${zoneQuestionBlock.trackingId}`}
-                body="Number to choose exceeds the number of alternatives in this group"
-              />
-            )}
-            <ChangeIndicatorBadges
-              trackingId={zoneQuestionBlock.trackingId}
-              comment={zoneQuestionBlock.comment}
-              editMode={editMode}
-              changeTracking={changeTracking}
-            />
+            </span>
+            <span className="d-inline-flex align-items-center gap-1 flex-wrap ms-2">
+              {pointsMismatch && (
+                <WarningIndicator
+                  tooltipId={`points-mismatch-${zoneQuestionBlock.trackingId}`}
+                  label="Inconsistent points"
+                  body="Students will receive different total points because this group has alternatives with different point values"
+                />
+              )}
+              {chooseExceeds && (
+                <WarningIndicator
+                  tooltipId={`choose-exceeds-${zoneQuestionBlock.trackingId}`}
+                  label="Choose exceeds count"
+                  body="Number to choose exceeds the number of alternatives in this group"
+                />
+              )}
+            </span>
           </div>
           {alternatives && alternatives.length > 0 && (
             <div
