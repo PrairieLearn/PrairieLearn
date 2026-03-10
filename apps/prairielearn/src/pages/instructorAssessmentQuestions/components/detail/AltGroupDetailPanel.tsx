@@ -50,6 +50,7 @@ export function AltGroupDetailPanel({
   state,
   onUpdate,
   onDelete,
+  onFormValidChange,
 }: {
   zoneQuestionBlock: ZoneQuestionBlockForm;
   zone: ZoneAssessmentForm;
@@ -61,6 +62,7 @@ export function AltGroupDetailPanel({
     question: Partial<ZoneQuestionBlockForm> | Partial<AltGroupFormData>,
   ) => void;
   onDelete: (questionTrackingId: string) => void;
+  onFormValidChange: (isValid: boolean) => void;
 }) {
   const { editMode, assessmentType, assessmentDefaults } = state;
   const alternativeCount = zoneQuestionBlock.alternatives?.length ?? 0;
@@ -96,6 +98,12 @@ export function AltGroupDetailPanel({
         : zoneQuestionBlock.forceMaxPoints,
       allowRealTimeGrading: zoneQuestionBlock.allowRealTimeGrading ?? undefined,
     },
+    // Prevent autosave from clobbering in-progress typing. Without this,
+    // the autosave feedback loop (edit → save → parent state update →
+    // values prop change → form reset) resets the input mid-keystroke.
+    // This is safe because the only source of values changes while the
+    // panel is open is autosave; switching entities remounts the component.
+    resetOptions: { keepDirtyValues: true, keepErrors: true },
   });
 
   useEffect(() => {
@@ -120,6 +128,11 @@ export function AltGroupDetailPanel({
   );
 
   useAutoSave({ isDirty, isValid, getValues, onSave: handleSave, watch });
+
+  useEffect(() => {
+    // eslint-disable-next-line react-you-might-not-need-an-effect/no-pass-data-to-parent
+    onFormValidChange(isValid);
+  }, [isValid, onFormValidChange]);
 
   const parentAdvanceScorePerc = zone.advanceScorePerc ?? assessmentDefaults.advanceScorePerc;
   const parentGradeRateMinutes = zone.gradeRateMinutes ?? assessmentDefaults.gradeRateMinutes;
@@ -172,13 +185,13 @@ export function AltGroupDetailPanel({
         {alternativeCount} alternative{alternativeCount !== 1 ? 's' : ''} in group
       </div>
       {sharedTopic && (
-        <div className="mb-2">
+        <div>
           <div className="text-muted small mb-1">Topic shared across alternatives</div>
           <span className={`badge color-${sharedTopic.color}`}>{sharedTopic.name}</span>
         </div>
       )}
       {sharedTags.length > 0 && (
-        <div className="mb-2">
+        <div>
           <div className="text-muted small mb-1">Tags shared across alternatives</div>
           <div className="d-flex flex-wrap gap-1">
             {sharedTags.map((tag) => (
