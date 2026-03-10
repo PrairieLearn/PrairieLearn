@@ -116,7 +116,7 @@ export function ZoneDetailPanel({
     [handleSave, getValues],
   );
 
-  useAutoSave({ isDirty, isValid, getValues, onSave: handleSave, watch });
+  useAutoSave({ isDirty, isValid, getValues, onSave: handleSave, watch, trigger });
 
   useEffect(() => {
     // eslint-disable-next-line react-you-might-not-need-an-effect/no-pass-data-to-parent
@@ -151,7 +151,7 @@ export function ZoneDetailPanel({
         </div>
       )}
       {zoneChooseExceeds && (
-        <div className="alert alert-warning small mb-3" role="alert">
+        <div className="alert alert-danger small mb-3" role="alert">
           <i className="bi bi-exclamation-triangle-fill me-1" aria-hidden="true" />
           Number to choose or best questions exceeds the number of questions in this zone.
         </div>
@@ -160,7 +160,7 @@ export function ZoneDetailPanel({
         {zoneQuestionCount} choosable question{zoneQuestionCount !== 1 ? 's' : ''} in zone
       </div>
 
-      <DetailSectionHeader first>Settings</DetailSectionHeader>
+      <DetailSectionHeader>Settings</DetailSectionHeader>
 
       <Wrapper className={clsx(!editMode && 'mb-0')}>
         <FormField

@@ -1,12 +1,13 @@
 import {
   type ReactNode,
-  useCallback,
   useEffect,
   useLayoutEffect,
   useRef,
   useState,
   useSyncExternalStore,
 } from 'react';
+
+import { useResizeHandle } from '@prairielearn/ui';
 
 const DEFAULT_RIGHT_WIDTH = 360;
 const MIN_RIGHT_WIDTH = 280;
@@ -45,10 +46,8 @@ export function SplitPane({
   /** Called when the user closes the detail panel via the X button. */
   onClose?: () => void;
 }) {
-  const [rightWidth, setRightWidth] = useState(DEFAULT_RIGHT_WIDTH);
   const isNarrow = useNarrowViewport();
   const [manualCollapsed, setManualCollapsed] = useState(true);
-  const isDraggingRef = useRef(false);
   const prevForceOpenRef = useRef(forceOpen);
   const narrowContainerRef = useRef<HTMLDivElement>(null);
   const savedScrollTopRef = useRef(0);
@@ -61,31 +60,13 @@ export function SplitPane({
 
   const isCollapsed = rightCollapsedProp ?? manualCollapsed;
 
-  const handleMouseDown = useCallback(
-    (e: React.MouseEvent) => {
-      e.preventDefault();
-      isDraggingRef.current = true;
-      const startX = e.clientX;
-      const startWidth = rightWidth;
-
-      const onMouseMove = (ev: MouseEvent) => {
-        if (!isDraggingRef.current) return;
-        const delta = startX - ev.clientX;
-        const newWidth = Math.min(MAX_RIGHT_WIDTH, Math.max(MIN_RIGHT_WIDTH, startWidth + delta));
-        setRightWidth(newWidth);
-      };
-
-      const onMouseUp = () => {
-        isDraggingRef.current = false;
-        document.removeEventListener('mousemove', onMouseMove);
-        document.removeEventListener('mouseup', onMouseUp);
-      };
-
-      document.addEventListener('mousemove', onMouseMove);
-      document.addEventListener('mouseup', onMouseUp);
-    },
-    [rightWidth],
-  );
+  const { width: rightWidth, separatorProps } = useResizeHandle({
+    initialWidth: DEFAULT_RIGHT_WIDTH,
+    minWidth: MIN_RIGHT_WIDTH,
+    maxWidth: MAX_RIGHT_WIDTH,
+    ariaLabel: 'Resize panel',
+    ariaControls: 'split-pane-detail',
+  });
 
   const closeButton = rightHeaderAction ?? (
     <button
@@ -143,19 +124,9 @@ export function SplitPane({
     <div ref={narrowContainerRef} className="split-pane" data-collapsed={isCollapsed || undefined}>
       <div className="split-pane__left">{left}</div>
 
-      {/* Separator is interactive (resizable) but uses role="separator" which jsx-a11y considers non-interactive */}
-      {/* eslint-disable jsx-a11y-x/no-noninteractive-element-interactions, jsx-a11y-x/no-noninteractive-tabindex */}
-      <div
-        className="split-pane__separator"
-        role="separator"
-        tabIndex={0}
-        aria-orientation="vertical"
-        aria-label="Resize panel"
-        onMouseDown={handleMouseDown}
-      />
-      {/* eslint-enable jsx-a11y-x/no-noninteractive-element-interactions, jsx-a11y-x/no-noninteractive-tabindex */}
+      <div className="split-pane__separator" {...separatorProps} />
 
-      <div className="split-pane__right" style={{ width: rightWidth }}>
+      <div id="split-pane-detail" className="split-pane__right" style={{ width: rightWidth }}>
         <div className="split-pane__right-header">
           <span className="fw-semibold small">{rightTitle}</span>
           {closeButton}

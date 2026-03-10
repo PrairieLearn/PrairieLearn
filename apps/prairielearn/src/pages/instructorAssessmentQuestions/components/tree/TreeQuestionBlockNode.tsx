@@ -1,4 +1,4 @@
-import { useDroppable } from '@dnd-kit/core';
+import { useDndContext, useDroppable } from '@dnd-kit/core';
 import { SortableContext, useSortable, verticalListSortingStrategy } from '@dnd-kit/sortable';
 import clsx from 'clsx';
 import { useCallback, useMemo } from 'react';
@@ -55,7 +55,7 @@ export function TreeQuestionBlockNode({
 
   const { attributes, listeners, setNodeRef, transform, transition, isDragging } = useSortable({
     id: zoneQuestionBlock.trackingId,
-    data: { type: 'question', hasAlternatives },
+    data: { type: 'question', hasAlternatives, qid: zoneQuestionBlock.id },
     disabled: !editMode,
   });
 
@@ -82,6 +82,8 @@ export function TreeQuestionBlockNode({
     () => (alternatives ?? []).map((a) => a.trackingId),
     [alternatives],
   );
+
+  const { active } = useDndContext();
 
   const isAltGroupSelected =
     selectedItem?.type === 'altGroup' &&
@@ -123,6 +125,13 @@ export function TreeQuestionBlockNode({
   // Alternative group
   const alternativeCount = alternatives?.length ?? 0;
 
+  // Is one of our alternatives being dragged away?
+  const isDraggingChildOut =
+    active?.data.current?.type === 'alternative' &&
+    active.data.current.parentTrackingId === zoneQuestionBlock.trackingId;
+
+  const displayCount = alternativeCount + (isMergeOver ? 1 : 0) - (isDraggingChildOut ? 1 : 0);
+
   const pointsMismatch =
     alternatives != null && hasPointsMismatch(alternatives, assessmentType, zoneQuestionBlock);
   // This warning triggers when alternatives are deleted from a group, reducing
@@ -155,9 +164,11 @@ export function TreeQuestionBlockNode({
           paddingLeft: '2.5rem',
           paddingRight: '0.5rem',
           cursor: 'pointer',
-          ...((pointsMismatch || chooseExceeds) && {
-            borderLeft: '6px solid var(--bs-warning)',
-          }),
+          ...(chooseExceeds
+            ? { borderLeft: '6px solid var(--bs-danger)' }
+            : pointsMismatch
+              ? { borderLeft: '6px solid var(--bs-warning)' }
+              : {}),
         }}
         onClick={(e) => {
           e.stopPropagation();
@@ -188,8 +199,8 @@ export function TreeQuestionBlockNode({
               <i className="bi bi-stack me-1" aria-hidden="true" />
               {run(() => {
                 const choose = zoneQuestionBlock.numberChoose;
-                if (choose == null) return `Choose ${alternativeCount} of ${alternativeCount}`;
-                return `Choose ${choose} of ${alternativeCount}`;
+                if (choose == null) return `Choose ${displayCount} of ${displayCount}`;
+                return `Choose ${choose} of ${displayCount}`;
               })}
               <ChangeIndicatorBadges
                 trackingId={zoneQuestionBlock.trackingId}
@@ -211,6 +222,7 @@ export function TreeQuestionBlockNode({
                   tooltipId={`choose-exceeds-${zoneQuestionBlock.trackingId}`}
                   label="Choose exceeds count"
                   body="Number to choose exceeds the number of alternatives in this group"
+                  variant="error"
                 />
               )}
             </span>
@@ -338,6 +350,25 @@ export function TreeQuestionBlockNode({
             );
           })}
         </SortableContext>
+      )}
+      {!isCollapsed && isMergeOver && (
+        <div
+          className="tree-row d-flex align-items-center py-1 border-bottom"
+          style={{ paddingLeft: '4.5rem', paddingRight: '0.5rem', opacity: 0.5 }}
+        >
+          {editMode && (
+            <span className="me-2" style={{ visibility: 'hidden' }}>
+              <i className="bi bi-grip-vertical" aria-hidden="true" />
+            </span>
+          )}
+          <div className="flex-grow-1" style={{ minWidth: 0 }}>
+            <div className="text-truncate">
+              {active?.data.current?.qid
+                ? questionMetadata[active.data.current.qid]?.question.title
+                : null}
+            </div>
+          </div>
+        </div>
       )}
       {!isCollapsed && editMode && (
         <div className="border-bottom py-2" style={{ paddingLeft: '4.5rem' }}>
