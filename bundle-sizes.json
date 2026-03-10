@@ -350,9 +350,9 @@
     "brotli": 276518
   },
   "scripts/esm-bundles/hydrated-components/AssessmentQuestionsEditor.ts": {
-    "raw": 1217237,
-    "gzip": 365747,
-    "brotli": 301246
+    "raw": 1214980,
+    "gzip": 365229,
+    "brotli": 300813
   },
   "scripts/esm-bundles/hydrated-components/AssessmentSetsPage.ts": {
     "raw": 819526,
