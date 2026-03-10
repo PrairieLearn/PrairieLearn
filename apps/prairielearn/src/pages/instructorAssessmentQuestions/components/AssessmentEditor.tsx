@@ -552,10 +552,14 @@ function AssessmentEditorInner({
       handleRemoveQuestionByQid(qid);
     }
 
-    const newQuestion = {
-      id: qid,
+    const isManual = questionData.question.grading_method === 'Manual';
+    const newQuestion: ZoneQuestionBlockForm & { id: string } = {
       ...createQuestionWithTrackingId(),
-    } as ZoneQuestionBlockForm;
+      id: qid,
+      // Use manualPoints for Manual questions so the sync code doesn't
+      // treat the default autoPoints: 1 as a split-point question.
+      ...(isManual ? { autoPoints: undefined, manualPoints: 1 } : {}),
+    };
 
     dispatch({
       type: 'ADD_QUESTION',
