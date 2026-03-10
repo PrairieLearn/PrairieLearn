@@ -1,16 +1,18 @@
 import type { ZoneAssessmentForm, ZoneQuestionBlockForm } from '../types.js';
 
-import { validatePositiveInteger } from './questions.js';
+import { computeZoneQuestionCount, validatePositiveInteger } from './questions.js';
 
 function zoneHasStructuralValidationError(zone: ZoneAssessmentForm, zoneIndex: number): boolean {
   if (zone.lockpoint && zoneIndex === 0) {
     return true;
   }
 
+  const questionCount = computeZoneQuestionCount(zone.questions);
+
   if (
     zone.numberChoose != null &&
     (validatePositiveInteger(zone.numberChoose, 'Number to choose') != null ||
-      zone.numberChoose > zone.questions.length)
+      zone.numberChoose > questionCount)
   ) {
     return true;
   }
@@ -18,7 +20,7 @@ function zoneHasStructuralValidationError(zone: ZoneAssessmentForm, zoneIndex: n
   if (
     zone.bestQuestions != null &&
     (validatePositiveInteger(zone.bestQuestions, 'Best questions') != null ||
-      zone.bestQuestions > zone.questions.length ||
+      zone.bestQuestions > questionCount ||
       (zone.numberChoose != null && zone.bestQuestions > zone.numberChoose))
   ) {
     return true;
