@@ -119,7 +119,7 @@ describe('buildHierarchicalAssessment', () => {
         },
         assessment_question: { number: 2 },
         start_new_alternative_group: true,
-      } as unknown as StaffAssessmentQuestionRow,
+      } as StaffAssessmentQuestionRow,
     ];
 
     const result = buildHierarchicalAssessment(course, rows);
@@ -156,7 +156,7 @@ describe('buildHierarchicalAssessment', () => {
         },
         assessment_question: { number: 2, number_in_alternative_group: 2 },
         start_new_alternative_group: false,
-      } as unknown as StaffAssessmentQuestionRow,
+      } as StaffAssessmentQuestionRow,
     ];
 
     const result = buildHierarchicalAssessment(course, rows);
