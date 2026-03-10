@@ -34,8 +34,9 @@ import {
   validateNonIncreasingPoints,
   validatePointsListFormat,
 } from '../../utils/formHelpers.js';
-import { validatePositiveInteger } from '../../utils/questions.js';
+import { toAssessmentForPicker, validatePositiveInteger } from '../../utils/questions.js';
 import { useAutoSave } from '../../utils/useAutoSave.js';
+import { AssessmentBadges } from '../AssessmentBadges.js';
 
 import { AdvancedFields, type AdvancedFieldsInheritance } from './AdvancedFields.js';
 import { DetailSectionHeader } from './DetailSectionHeader.js';
@@ -338,6 +339,14 @@ export function QuestionDetailPanel({
                   {tag.name}
                 </span>
               ))}
+            </div>
+          )}
+          {questionData.other_assessments && questionData.other_assessments.length > 0 && (
+            <div className="d-flex flex-wrap align-items-center gap-1 mt-1">
+              <AssessmentBadges
+                assessments={toAssessmentForPicker(questionData.other_assessments)}
+                courseInstanceId={courseInstanceId}
+              />
             </div>
           )}
         </div>
