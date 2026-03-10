@@ -222,15 +222,17 @@ const isEmptyArray = (v: unknown) => !v || (Array.isArray(v) && v.length === 0);
 function serializeQuestionAlternative(alternative: QuestionAlternativeJson) {
   return omitUndefined({
     id: alternative.id,
+
     points: alternative.points,
     autoPoints: alternative.autoPoints,
     maxPoints: alternative.maxPoints,
     maxAutoPoints: alternative.maxAutoPoints,
     manualPoints: alternative.manualPoints,
+
     triesPerVariant: alternative.triesPerVariant,
+    forceMaxPoints: alternative.forceMaxPoints,
     advanceScorePerc: alternative.advanceScorePerc,
     gradeRateMinutes: alternative.gradeRateMinutes,
-    forceMaxPoints: alternative.forceMaxPoints,
     allowRealTimeGrading: alternative.allowRealTimeGrading,
     // For some reason, comment gets set to the empty string if it's not set.
     comment: alternative.comment || undefined,
@@ -247,27 +249,27 @@ function serializeQuestionBlock(question: ZoneQuestionBlockJson) {
       ? question.alternatives!.map(serializeQuestionAlternative)
       : undefined,
     numberChoose: question.numberChoose,
-    // For some reason, comment gets set to the empty string if it's not set.
-    comment: question.comment || undefined,
 
-    // Preserve allowRealTimeGrading as-is: stripping the default `true` would
-    // silently change behavior when a parent zone/assessment sets `false`,
-    // since the sync code inherits question → zone → assessment.
-    allowRealTimeGrading: question.allowRealTimeGrading,
-    // triesPerVariant and forceMaxPoints don't inherit from zones, so stripping
-    // their defaults is safe — the sync code applies the same defaults.
-    triesPerVariant: propertyValueWithDefault(undefined, question.triesPerVariant, 1),
-    forceMaxPoints: propertyValueWithDefault(undefined, question.forceMaxPoints, false),
-
-    canSubmit: propertyValueWithDefault(undefined, question.canSubmit, isEmptyArray),
-    canView: propertyValueWithDefault(undefined, question.canView, isEmptyArray),
     points: question.points,
     autoPoints: question.autoPoints,
     maxPoints: question.maxPoints,
     maxAutoPoints: question.maxAutoPoints,
     manualPoints: question.manualPoints,
+
+    // triesPerVariant and forceMaxPoints don't inherit from zones, so stripping
+    // their defaults is safe — the sync code applies the same defaults.
+    triesPerVariant: propertyValueWithDefault(undefined, question.triesPerVariant, 1),
+    forceMaxPoints: propertyValueWithDefault(undefined, question.forceMaxPoints, false),
     advanceScorePerc: question.advanceScorePerc,
     gradeRateMinutes: question.gradeRateMinutes,
+    // Preserve allowRealTimeGrading as-is: stripping the default `true` would
+    // silently change behavior when a parent zone/assessment sets `false`,
+    // since the sync code inherits question → zone → assessment.
+    allowRealTimeGrading: question.allowRealTimeGrading,
+    canSubmit: propertyValueWithDefault(undefined, question.canSubmit, isEmptyArray),
+    canView: propertyValueWithDefault(undefined, question.canView, isEmptyArray),
+    // For some reason, comment gets set to the empty string if it's not set.
+    comment: question.comment || undefined,
   });
 }
 
