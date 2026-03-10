@@ -509,4 +509,3 @@ describe('stripTrackingIds', () => {
     expect(result[0].questions[0].manualPoints).toBe(5);
   });
 });
-
