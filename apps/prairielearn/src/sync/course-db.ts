@@ -1559,6 +1559,16 @@ function validateAssessment({
     if (!courseInstanceExpired) {
       const zoneLabel = zone.title ?? `zone ${zoneIndex + 1}`;
 
+      // Calculate the effective number of questions in the zone, accounting
+      // for alternative groups that contribute multiple questions.
+      const effectiveZoneSize = zone.questions.reduce((sum, q) => {
+        if (q.alternatives) {
+          const altCount = q.alternatives.length;
+          return sum + Math.min(q.numberChoose ?? 1, altCount);
+        }
+        return sum + 1;
+      }, 0);
+
       if (
         zone.bestQuestions != null &&
         zone.numberChoose != null &&
@@ -1569,15 +1579,15 @@ function validateAssessment({
         );
       }
 
-      if (zone.numberChoose != null && zone.numberChoose > zone.questions.length) {
+      if (zone.numberChoose != null && zone.numberChoose > effectiveZoneSize) {
         warnings.push(
-          `Zone "${zoneLabel}": "numberChoose" (${zone.numberChoose}) exceeds the number of questions in the zone (${zone.questions.length})`,
+          `Zone "${zoneLabel}": "numberChoose" (${zone.numberChoose}) exceeds the number of questions in the zone (${effectiveZoneSize})`,
         );
       }
 
-      if (zone.bestQuestions != null && zone.bestQuestions > zone.questions.length) {
+      if (zone.bestQuestions != null && zone.bestQuestions > effectiveZoneSize) {
         warnings.push(
-          `Zone "${zoneLabel}": "bestQuestions" (${zone.bestQuestions}) exceeds the number of questions in the zone (${zone.questions.length})`,
+          `Zone "${zoneLabel}": "bestQuestions" (${zone.bestQuestions}) exceeds the number of questions in the zone (${effectiveZoneSize})`,
         );
       }
 
