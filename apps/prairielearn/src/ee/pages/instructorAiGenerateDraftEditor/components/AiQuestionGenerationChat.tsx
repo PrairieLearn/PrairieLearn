@@ -13,6 +13,7 @@ import { Modal } from 'react-bootstrap';
 import { useStickToBottom } from 'use-stick-to-bottom';
 
 import { run } from '@prairielearn/run';
+import { useResizeHandle } from '@prairielearn/ui';
 import { assertNever } from '@prairielearn/utils';
 
 import type {
@@ -611,7 +612,6 @@ export function AiQuestionGenerationChat({
   const showSpinner = useShowSpinner({ status, messages });
 
   const containerRef = useRef<HTMLDivElement>(null);
-  const resizerRef = useRef<HTMLDivElement>(null);
   const stickToBottom = useStickToBottom({
     initial: 'smooth',
     // The experience with animated collapsible sections is currently janky.
@@ -620,49 +620,19 @@ export function AiQuestionGenerationChat({
     resize: 'smooth',
   });
 
-  // Chat width resizing
-  useEffect(() => {
-    const container = containerRef.current?.closest<HTMLElement>('.app-container');
-    const resizer = resizerRef.current;
-
-    if (!container || !resizer) return;
-
-    const minWidth = 260;
-    const maxWidth = 800;
-    let startX = 0;
-    let startWidth = 0;
-
-    const onMouseMove = (e: MouseEvent) => {
-      const dx = e.clientX - startX;
-      const newWidth = Math.min(maxWidth, Math.max(minWidth, startWidth - dx));
-      container.style.setProperty('--chat-width', `${newWidth}px`);
-    };
-
-    const onMouseUp = () => {
-      document.removeEventListener('mousemove', onMouseMove);
-      document.removeEventListener('mouseup', onMouseUp);
-      document.body.classList.remove('user-select-none');
-    };
-
-    const onMouseDown = (e: MouseEvent) => {
-      startX = e.clientX;
-      const styles = getComputedStyle(container);
-      const current = styles.getPropertyValue('--chat-width').trim() || '500px';
-      startWidth =
-        Number.parseInt(current) || containerRef.current?.getBoundingClientRect().width || 500;
-      document.addEventListener('mousemove', onMouseMove);
-      document.addEventListener('mouseup', onMouseUp);
-      document.body.classList.add('user-select-none');
-    };
-
-    resizer.addEventListener('mousedown', onMouseDown);
-
-    return () => {
-      resizer.removeEventListener('mousedown', onMouseDown);
-      document.removeEventListener('mousemove', onMouseMove);
-      document.removeEventListener('mouseup', onMouseUp);
-    };
-  }, []);
+  const [chatWidth, setChatWidth] = useState(500);
+  const { separatorProps: resizerProps } = useResizeHandle({
+    currentWidth: chatWidth,
+    minWidth: 260,
+    maxWidth: 800,
+    onWidthChange: (width) => {
+      setChatWidth(width);
+      containerRef.current
+        ?.closest<HTMLElement>('.app-container')
+        ?.style.setProperty('--chat-width', `${width}px`);
+    },
+    ariaLabel: 'Resize chat',
+  });
 
   const hasMessages = messages.length > 0;
 
@@ -742,12 +712,7 @@ export function AiQuestionGenerationChat({
             }}
           />
         </div>
-        <div
-          ref={resizerRef}
-          className="app-chat-resizer"
-          aria-label="Resize chat"
-          role="separator"
-        />
+        <div className="app-chat-resizer" {...resizerProps} />
       </div>
 
       <Modal show={showUnsavedChangesModal} onHide={() => setShowUnsavedChangesModal(false)}>

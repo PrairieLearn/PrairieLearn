@@ -53,6 +53,12 @@
   flex-shrink: 0;
 }
 
+.split-pane__separator:focus-visible {
+  outline: 2px solid var(--bs-primary);
+  outline-offset: -1px;
+  background-color: var(--bs-primary-bg-subtle);
+}
+
 .split-pane__right {
   flex-shrink: 0;
   display: flex;

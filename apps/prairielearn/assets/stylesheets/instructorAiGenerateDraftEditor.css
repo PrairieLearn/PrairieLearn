@@ -105,6 +105,11 @@
   background: rgba(0, 0, 0, 0.05);
 }
 
+.app-chat-resizer:focus-visible {
+  outline: 2px solid var(--bs-primary);
+  background-color: var(--bs-primary-bg-subtle);
+}
+
 .question-wrapper {
   max-width: 900px;
 }
