@@ -30,11 +30,6 @@ export function useResizeHandle({
     [minWidth, maxWidth],
   );
 
-  // Re-clamp when bounds change (e.g. dynamic maxWidth from container resize).
-  // Sync width state so onMouseDown/onKeyDown closures use the clamped value.
-  useEffect(() => {
-    setWidth((w) => clamp(w));
-  }, [clamp]);
   const clampedWidth = clamp(width);
 
   const onMouseDown = useCallback(
@@ -42,7 +37,7 @@ export function useResizeHandle({
       e.preventDefault();
       isDraggingRef.current = true;
       const startX = e.clientX;
-      const startWidth = width;
+      const startWidth = clampedWidth;
       document.body.classList.add('user-select-none');
 
       const onMouseMove = (ev: MouseEvent) => {
@@ -68,7 +63,7 @@ export function useResizeHandle({
       document.addEventListener('mousemove', onMouseMove);
       document.addEventListener('mouseup', onMouseUp);
     },
-    [width, clamp],
+    [clampedWidth, clamp],
   );
 
   const onKeyDown = useCallback(
@@ -78,12 +73,12 @@ export function useResizeHandle({
         case 'ArrowLeft':
         case 'ArrowUp':
           // Move separator left/up -> right panel grows.
-          newWidth = clamp(width + KEYBOARD_STEP);
+          newWidth = clamp(clampedWidth + KEYBOARD_STEP);
           break;
         case 'ArrowRight':
         case 'ArrowDown':
           // Move separator right/down -> right panel shrinks.
-          newWidth = clamp(width - KEYBOARD_STEP);
+          newWidth = clamp(clampedWidth - KEYBOARD_STEP);
           break;
         case 'Home':
           newWidth = maxWidth;
@@ -97,7 +92,7 @@ export function useResizeHandle({
       e.preventDefault();
       setWidth(newWidth);
     },
-    [width, minWidth, maxWidth, clamp],
+    [clampedWidth, minWidth, maxWidth, clamp],
   );
 
   const range = maxWidth - minWidth;
