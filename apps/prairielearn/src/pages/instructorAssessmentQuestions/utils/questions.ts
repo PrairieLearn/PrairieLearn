@@ -299,22 +299,39 @@ export function hasPointsMismatch(
   return totals.some((t) => t !== totals[0]);
 }
 
+type ZonePointsMismatchKind = 'numberChoose' | 'bestQuestions' | 'both';
+
+const ZONE_POINTS_MISMATCH_TEXT: Record<ZonePointsMismatchKind, { label: string; body: string }> = {
+  numberChoose: {
+    label: 'Inconsistent points',
+    body: 'Students will receive different total points because this zone randomly selects questions with different point values.',
+  },
+  bestQuestions: {
+    label: 'Inconsistent points',
+    body: 'Students will receive different total points because only the best-scoring questions count and questions have different point values.',
+  },
+  both: {
+    label: 'Inconsistent points',
+    body: 'Students will receive different total points because this zone randomly selects questions and only counts the best-scoring ones, and questions have different point values.',
+  },
+};
+
 /**
- * Returns true if question blocks in a zone with bestQuestions or numberChoose
- * have different contributed total point values.
+ * Returns label and body text describing why question blocks in a zone have
+ * inconsistent point values, or null if there is no mismatch.
  */
-export function hasZonePointsMismatch(
+export function getZonePointsMismatch(
   zone: ZoneAssessmentForm,
   assessmentType: EnumAssessmentType,
-): boolean {
-  if (zone.bestQuestions == null && zone.numberChoose == null) return false;
-  if (zone.questions.length <= 1) return false;
+): { label: string; body: string } | null {
+  if (zone.bestQuestions == null && zone.numberChoose == null) return null;
+  if (zone.questions.length <= 1) return null;
   // When all questions are both presented and counted, every student sees the
   // same total regardless of individual point values — no warning needed.
   const effectiveChoose = zone.numberChoose ?? zone.questions.length;
   const effectiveBest = zone.bestQuestions ?? effectiveChoose;
   if (effectiveChoose >= zone.questions.length && effectiveBest >= effectiveChoose) {
-    return false;
+    return null;
   }
 
   const blockTotals = zone.questions.map((block) => {
@@ -328,7 +345,18 @@ export function hasZonePointsMismatch(
     return computeQuestionTotalPoints(block, assessmentType);
   });
 
-  return blockTotals.some((t) => t !== blockTotals[0]);
+  if (!blockTotals.some((t) => t !== blockTotals[0])) return null;
+
+  const hasNumberChoose = zone.numberChoose != null && zone.numberChoose < zone.questions.length;
+  const hasBestQuestions = zone.bestQuestions != null && zone.bestQuestions < effectiveChoose;
+
+  const kind: ZonePointsMismatchKind =
+    hasNumberChoose && hasBestQuestions
+      ? 'both'
+      : hasBestQuestions
+        ? 'bestQuestions'
+        : 'numberChoose';
+  return ZONE_POINTS_MISMATCH_TEXT[kind];
 }
 
 /**

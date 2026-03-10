@@ -14,8 +14,8 @@ import {
   computeQuestionTotalPoints,
   computeZonePointTotals,
   computeZoneQuestionCount,
+  getZonePointsMismatch,
   hasPointsMismatch,
-  hasZonePointsMismatch,
   normalizeQuestionPoints,
   questionDisplayName,
 } from './questions.js';
@@ -264,7 +264,7 @@ describe('hasPointsMismatch', () => {
   });
 });
 
-describe('hasZonePointsMismatch', () => {
+describe('getZonePointsMismatch', () => {
   it.each([
     {
       name: 'no bestQuestions or numberChoose',
@@ -275,7 +275,6 @@ describe('hasZonePointsMismatch', () => {
           { trackingId: 'q2', id: 'q2', points: 5 },
         ],
       },
-      expected: false,
     },
     {
       name: 'same totals with numberChoose',
@@ -287,19 +286,6 @@ describe('hasZonePointsMismatch', () => {
           { trackingId: 'q2', id: 'q2', autoPoints: 6, manualPoints: 4 },
         ],
       },
-      expected: false,
-    },
-    {
-      name: 'different totals with bestQuestions',
-      zone: {
-        trackingId: 'z1',
-        bestQuestions: 1,
-        questions: [
-          { trackingId: 'q1', id: 'q1', points: 10 },
-          { trackingId: 'q2', id: 'q2', points: 5 },
-        ],
-      },
-      expected: true,
     },
     {
       name: 'only one question',
@@ -308,7 +294,6 @@ describe('hasZonePointsMismatch', () => {
         bestQuestions: 1,
         questions: [{ trackingId: 'q1', id: 'q1', points: 10 }],
       },
-      expected: false,
     },
     {
       name: 'different points but numberChoose >= question count',
@@ -321,7 +306,6 @@ describe('hasZonePointsMismatch', () => {
           { trackingId: 'q3', id: 'q3', points: 3 },
         ],
       },
-      expected: false,
     },
     {
       name: 'different points but bestQuestions >= question count',
@@ -333,36 +317,71 @@ describe('hasZonePointsMismatch', () => {
           { trackingId: 'q2', id: 'q2', points: 5 },
         ],
       },
-      expected: false,
     },
-    {
-      name: 'different points with numberChoose < question count',
-      zone: {
-        trackingId: 'z1',
-        numberChoose: 1,
-        questions: [
-          { trackingId: 'q1', id: 'q1', points: 10 },
-          { trackingId: 'q2', id: 'q2', points: 5 },
-        ],
-      },
-      expected: true,
-    },
-    {
-      name: 'different points with bestQuestions < numberChoose',
-      zone: {
-        trackingId: 'z1',
-        numberChoose: 3,
-        bestQuestions: 2,
-        questions: [
-          { trackingId: 'q1', id: 'q1', points: 10 },
-          { trackingId: 'q2', id: 'q2', points: 5 },
-          { trackingId: 'q3', id: 'q3', points: 3 },
-        ],
-      },
-      expected: true,
-    },
-  ])('returns $expected when $name', ({ zone, expected }) => {
-    expect(hasZonePointsMismatch(zone as ZoneAssessmentForm, 'Homework')).toBe(expected);
+  ])('returns null when $name', ({ zone }) => {
+    expect(getZonePointsMismatch(zone as ZoneAssessmentForm, 'Homework')).toBeNull();
+  });
+
+  it('warns about random selection when numberChoose < question count', () => {
+    const zone = {
+      trackingId: 'z1',
+      numberChoose: 1,
+      questions: [
+        { trackingId: 'q1', id: 'q1', points: 10 },
+        { trackingId: 'q2', id: 'q2', points: 5 },
+      ],
+    };
+    const result = getZonePointsMismatch(zone as ZoneAssessmentForm, 'Homework');
+    expect(result?.label).toBe('Inconsistent points');
+    expect(result?.body).toContain('randomly selects');
+  });
+
+  it('warns about best-scoring when bestQuestions < question count', () => {
+    const zone = {
+      trackingId: 'z1',
+      bestQuestions: 1,
+      questions: [
+        { trackingId: 'q1', id: 'q1', points: 10 },
+        { trackingId: 'q2', id: 'q2', points: 5 },
+      ],
+    };
+    const result = getZonePointsMismatch(zone as ZoneAssessmentForm, 'Homework');
+    expect(result?.label).toBe('Inconsistent points');
+    expect(result?.body).toContain('best-scoring');
+  });
+
+  it('warns about both when bestQuestions < numberChoose (numberChoose covers all)', () => {
+    const zone = {
+      trackingId: 'z1',
+      numberChoose: 3,
+      bestQuestions: 2,
+      questions: [
+        { trackingId: 'q1', id: 'q1', points: 10 },
+        { trackingId: 'q2', id: 'q2', points: 5 },
+        { trackingId: 'q3', id: 'q3', points: 3 },
+      ],
+    };
+    const result = getZonePointsMismatch(zone as ZoneAssessmentForm, 'Homework');
+    expect(result?.label).toBe('Inconsistent points');
+    expect(result?.body).toContain('best-scoring');
+  });
+
+  it('warns about both when numberChoose and bestQuestions are both active', () => {
+    const zone = {
+      trackingId: 'z1',
+      numberChoose: 3,
+      bestQuestions: 2,
+      questions: [
+        { trackingId: 'q1', id: 'q1', points: 10 },
+        { trackingId: 'q2', id: 'q2', points: 5 },
+        { trackingId: 'q3', id: 'q3', points: 3 },
+        { trackingId: 'q4', id: 'q4', points: 7 },
+      ],
+    };
+    const result = getZonePointsMismatch(zone as ZoneAssessmentForm, 'Homework');
+    expect(result?.label).toBe('Inconsistent points');
+    expect(result?.body).toContain('randomly selects');
+    expect(result?.body).toContain('best-scoring');
   });
 });
 

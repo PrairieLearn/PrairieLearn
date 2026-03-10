@@ -11,8 +11,8 @@ import type { TreeActions, TreeState, ZoneAssessmentForm } from '../../types.js'
 import {
   computeZonePointTotals,
   computeZoneQuestionCount,
+  getZonePointsMismatch,
   hasZoneChooseExceedsCount,
-  hasZonePointsMismatch,
 } from '../../utils/questions.js';
 
 import { ChangeIndicatorBadges } from './ChangeIndicatorBadges.js';
@@ -44,7 +44,7 @@ export function TreeZoneNode({
   const { setSelectedItem, dispatch, onAddQuestion, onAddAltGroup, onDeleteZone } = actions;
   const badgeTooltipId = useId();
   const isCollapsed = collapsedZones.has(zone.trackingId);
-  const zonePointsMismatch = hasZonePointsMismatch(zone, assessmentType);
+  const zonePointsMismatch = getZonePointsMismatch(zone, assessmentType);
   // This warning triggers when questions are deleted from a zone, reducing
   // the count below an already-saved numberChoose/bestQuestions.
   const zoneChooseExceeds = hasZoneChooseExceedsCount(zone);
@@ -103,7 +103,7 @@ export function TreeZoneNode({
             position: 'sticky',
             top: 0,
             zIndex: 10,
-            ...((zonePointsMismatch || zoneChooseExceeds) && {
+            ...((zonePointsMismatch != null || zoneChooseExceeds) && {
               borderLeft: '6px solid var(--bs-warning)',
             }),
           }}
@@ -142,8 +142,8 @@ export function TreeZoneNode({
             {zonePointsMismatch && (
               <WarningIndicator
                 tooltipId={`points-mismatch-${zone.trackingId}`}
-                label="Inconsistent points"
-                body="Students will receive different total points because this zone randomly selects questions with different point values"
+                label={zonePointsMismatch.label}
+                body={zonePointsMismatch.body}
               />
             )}
             {zoneChooseExceeds && (

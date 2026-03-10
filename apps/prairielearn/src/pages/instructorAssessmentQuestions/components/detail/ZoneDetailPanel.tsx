@@ -10,8 +10,8 @@ import {
   makeResetAndSave,
 } from '../../utils/formHelpers.js';
 import {
+  getZonePointsMismatch,
   hasZoneChooseExceedsCount,
-  hasZonePointsMismatch,
   validatePositiveInteger,
 } from '../../utils/questions.js';
 import { useAutoSave } from '../../utils/useAutoSave.js';
@@ -120,7 +120,7 @@ export function ZoneDetailPanel({
 
   const Wrapper = editMode ? 'div' : 'dl';
 
-  const zonePointsMismatch = hasZonePointsMismatch(zone, assessmentType);
+  const zonePointsMismatch = getZonePointsMismatch(zone, assessmentType);
   const zoneChooseExceeds = hasZoneChooseExceedsCount(zone);
 
   return (
@@ -128,8 +128,7 @@ export function ZoneDetailPanel({
       {zonePointsMismatch && (
         <div className="alert alert-warning small mb-3" role="alert">
           <i className="bi bi-exclamation-triangle-fill me-1" aria-hidden="true" />
-          Students will receive different total points because this zone randomly selects questions
-          with different point values.
+          {zonePointsMismatch.body}
         </div>
       )}
       {zoneChooseExceeds && (
