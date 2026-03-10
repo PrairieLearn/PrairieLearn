@@ -181,7 +181,7 @@ export function AltGroupDetailPanel({
         </div>
       )}
       {chooseExceeds && (
-        <div className="alert alert-warning small mb-3" role="alert">
+        <div className="alert alert-danger small mb-3" role="alert">
           <i className="bi bi-exclamation-triangle-fill me-1" aria-hidden="true" />
           Number to choose exceeds the number of alternatives in this group.
         </div>
