@@ -164,9 +164,11 @@ export function TreeQuestionBlockNode({
           paddingLeft: '2.5rem',
           paddingRight: '0.5rem',
           cursor: 'pointer',
-          ...((pointsMismatch || chooseExceeds) && {
-            borderLeft: '6px solid var(--bs-warning)',
-          }),
+          ...(chooseExceeds
+            ? { borderLeft: '6px solid var(--bs-danger)' }
+            : pointsMismatch
+              ? { borderLeft: '6px solid var(--bs-warning)' }
+              : {}),
         }}
         onClick={(e) => {
           e.stopPropagation();
@@ -220,6 +222,7 @@ export function TreeQuestionBlockNode({
                   tooltipId={`choose-exceeds-${zoneQuestionBlock.trackingId}`}
                   label="Choose exceeds count"
                   body="Number to choose exceeds the number of alternatives in this group"
+                  variant="error"
                 />
               )}
             </span>
