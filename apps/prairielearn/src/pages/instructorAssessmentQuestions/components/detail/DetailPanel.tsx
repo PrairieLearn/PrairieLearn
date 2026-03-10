@@ -65,6 +65,7 @@ export function DetailPanel({
           state={state}
           onUpdate={actions.onUpdateZone}
           onDelete={actions.onDeleteZone}
+          onFormValidChange={actions.onFormValidChange}
         />
       );
     }
@@ -86,6 +87,7 @@ export function DetailPanel({
           onDelete={actions.onDeleteQuestion}
           onPickQuestion={actions.onPickQuestion}
           onResetButtonClick={actions.onResetButtonClick}
+          onFormValidChange={actions.onFormValidChange}
         />
       );
     }
@@ -117,6 +119,7 @@ export function DetailPanel({
           onDelete={actions.onDeleteQuestion}
           onPickQuestion={actions.onPickQuestion}
           onResetButtonClick={actions.onResetButtonClick}
+          onFormValidChange={actions.onFormValidChange}
         />
       );
     }
@@ -137,6 +140,7 @@ export function DetailPanel({
           state={state}
           onUpdate={actions.onUpdateQuestion}
           onDelete={(trackingId) => actions.onDeleteQuestion(trackingId, '')}
+          onFormValidChange={actions.onFormValidChange}
         />
       );
     }

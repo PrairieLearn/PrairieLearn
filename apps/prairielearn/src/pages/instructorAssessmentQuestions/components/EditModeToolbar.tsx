@@ -11,11 +11,13 @@ export function ViewToggle({
   viewType,
   onViewTypeChange,
   isAllExpanded,
+  hasAlternatives,
   onToggleExpandCollapse,
 }: {
   viewType: ViewType;
   onViewTypeChange: (viewType: ViewType) => void;
   isAllExpanded: boolean;
+  hasAlternatives: boolean;
   onToggleExpandCollapse: () => void;
 }) {
   return (
@@ -34,21 +36,23 @@ export function ViewToggle({
           Detailed
         </ToggleButton>
       </ToggleButtonGroup>
-      <button
-        className="btn btn-sm btn-outline-secondary"
-        type="button"
-        onClick={onToggleExpandCollapse}
-      >
-        {isAllExpanded ? (
-          <>
-            <i className="bi bi-chevron-contract" aria-hidden="true" /> Collapse alternatives
-          </>
-        ) : (
-          <>
-            <i className="bi bi-chevron-expand" aria-hidden="true" /> Expand alternatives
-          </>
-        )}
-      </button>
+      {hasAlternatives && (
+        <button
+          className="btn btn-sm btn-outline-secondary"
+          type="button"
+          onClick={onToggleExpandCollapse}
+        >
+          {isAllExpanded ? (
+            <>
+              <i className="bi bi-chevron-contract" aria-hidden="true" /> Collapse alternatives
+            </>
+          ) : (
+            <>
+              <i className="bi bi-chevron-expand" aria-hidden="true" /> Expand alternatives
+            </>
+          )}
+        </button>
+      )}
     </div>
   );
 }

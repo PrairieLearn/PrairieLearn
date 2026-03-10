@@ -1,5 +1,5 @@
 import clsx from 'clsx';
-import { useCallback, useMemo, useState } from 'react';
+import { useCallback, useEffect, useMemo, useState } from 'react';
 import {
   type FieldErrors,
   type RegisterOptions,
@@ -68,6 +68,7 @@ export function QuestionDetailPanel({
   onDelete,
   onPickQuestion,
   onResetButtonClick,
+  onFormValidChange,
 }: {
   question: ZoneQuestionBlockForm | QuestionAlternativeForm;
   zoneQuestionBlock?: ZoneQuestionBlockForm;
@@ -87,6 +88,7 @@ export function QuestionDetailPanel({
   ) => void;
   onPickQuestion: (currentSelection: SelectedItem) => void;
   onResetButtonClick: (assessmentQuestionId: string) => void;
+  onFormValidChange: (isValid: boolean) => void;
 }) {
   const {
     editMode,
@@ -202,6 +204,11 @@ export function QuestionDetailPanel({
   );
 
   useAutoSave({ isDirty, isValid, getValues, onSave: handleSave, watch });
+
+  useEffect(() => {
+    // eslint-disable-next-line react-you-might-not-need-an-effect/no-pass-data-to-parent
+    onFormValidChange(isValid);
+  }, [isValid, onFormValidChange]);
 
   const advancedInheritance: AdvancedFieldsInheritance = run(() => {
     if (isAlternative) {
@@ -630,8 +637,6 @@ function PointsFields({
     const val = Array.isArray(effectiveMax) ? effectiveMax[0] : effectiveMax;
     return isDefault ? `${val} (default)` : String(val);
   });
-  const viewManualPoints =
-    !isManualGrading && manualPointsValue != null ? String(manualPointsValue) : undefined;
 
   const autoPointsId = `${idPrefix}-${isHomework ? 'autoPoints' : 'pointsList'}`;
   const autoPointsInputType = isHomework ? 'number' : 'text';
@@ -666,10 +671,9 @@ function PointsFields({
   const maxAutoPointsRegisterOptions: RegisterOptions<QuestionFormData, 'maxAutoPoints'> = {
     setValueAs: coerceToNumber,
     deps: ['autoPoints'],
-    ...(isHomework ? { validate: homeworkMaxPointsValidation } : {}),
+    validate: homeworkMaxPointsValidation,
   };
   const maxAutoPointsHelpText = run(() => {
-    if (!isHomework) return 'Max auto points for this question.';
     return constantQuestionValue ? (
       <>
         Maximum total auto-graded points. Students must answer correctly{' '}
@@ -696,7 +700,6 @@ function PointsFields({
       </>
     );
   });
-  const maxAutoPointsPlaceholder = isHomework ? autoPointsPlaceholder : undefined;
 
   const manualPointsRegisterOptions: RegisterOptions<QuestionFormData, 'manualPoints'> = {
     setValueAs: coerceToNumber,
@@ -745,7 +748,7 @@ function PointsFields({
       editMode={editMode}
       id={`${idPrefix}-manualPoints`}
       label="Manual points"
-      viewValue={isManualGrading ? undefined : viewManualPoints}
+      viewValue={manualPointsValue != null ? String(manualPointsValue) : undefined}
       error={errors.manualPoints}
       helpText="Points awarded for the manually graded component."
       hideWhenEmpty
@@ -820,7 +823,8 @@ function PointsFields({
             )}
           </FormField>
         ))}
-      {(!isManualGrading || showMaxAutoPointsForManual) &&
+      {isHomework &&
+        (!isManualGrading || showMaxAutoPointsForManual) &&
         (isAlternative ? (
           <InheritableField
             id={`${idPrefix}-maxAutoPoints`}
@@ -834,7 +838,7 @@ function PointsFields({
             registerProps={register('maxAutoPoints', maxAutoPointsRegisterOptions)}
             error={errors.maxAutoPoints}
             helpText={maxAutoPointsHelpText}
-            placeholder={maxAutoPointsPlaceholder}
+            placeholder={autoPointsPlaceholder}
             inheritedValueLabel={
               inheritedMaxAutoPoints != null ? String(inheritedMaxAutoPoints) : undefined
             }
@@ -867,7 +871,7 @@ function PointsFields({
                 step="any"
                 className={clsx('form-control form-control-sm', aria.errorClass)}
                 {...aria.inputProps}
-                placeholder={maxAutoPointsPlaceholder}
+                placeholder={autoPointsPlaceholder}
                 {...register('maxAutoPoints', maxAutoPointsRegisterOptions)}
               />
             )}

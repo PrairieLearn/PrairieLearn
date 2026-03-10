@@ -35,6 +35,7 @@ export function ZoneDetailPanel({
   state,
   onUpdate,
   onDelete,
+  onFormValidChange,
 }: {
   zone: ZoneAssessmentForm;
   zoneIndex: number;
@@ -42,6 +43,7 @@ export function ZoneDetailPanel({
   state: DetailState;
   onUpdate: (zoneTrackingId: string, zone: Partial<ZoneAssessmentForm>) => void;
   onDelete: (zoneTrackingId: string) => void;
+  onFormValidChange: (isValid: boolean) => void;
 }) {
   const { editMode, assessmentDefaults } = state;
   const formValues: ZoneFormData = {
@@ -107,6 +109,11 @@ export function ZoneDetailPanel({
   );
 
   useAutoSave({ isDirty, isValid, getValues, onSave: handleSave, watch });
+
+  useEffect(() => {
+    // eslint-disable-next-line react-you-might-not-need-an-effect/no-pass-data-to-parent
+    onFormValidChange(isValid);
+  }, [isValid, onFormValidChange]);
 
   const advancedInheritance: AdvancedFieldsInheritance = {
     parentAdvanceScorePerc: assessmentDefaults.advanceScorePerc,

@@ -48,6 +48,7 @@ export function AltGroupDetailPanel({
   state,
   onUpdate,
   onDelete,
+  onFormValidChange,
 }: {
   zoneQuestionBlock: ZoneQuestionBlockForm;
   zone: ZoneAssessmentForm;
@@ -59,6 +60,7 @@ export function AltGroupDetailPanel({
     question: Partial<ZoneQuestionBlockForm> | Partial<AltGroupFormData>,
   ) => void;
   onDelete: (questionTrackingId: string) => void;
+  onFormValidChange: (isValid: boolean) => void;
 }) {
   const { editMode, assessmentType, assessmentDefaults } = state;
   const alternativeCount = zoneQuestionBlock.alternatives?.length ?? 0;
@@ -124,6 +126,11 @@ export function AltGroupDetailPanel({
   );
 
   useAutoSave({ isDirty, isValid, getValues, onSave: handleSave, watch });
+
+  useEffect(() => {
+    // eslint-disable-next-line react-you-might-not-need-an-effect/no-pass-data-to-parent
+    onFormValidChange(isValid);
+  }, [isValid, onFormValidChange]);
 
   const parentAdvanceScorePerc = zone.advanceScorePerc ?? assessmentDefaults.advanceScorePerc;
   const parentGradeRateMinutes = zone.gradeRateMinutes ?? assessmentDefaults.gradeRateMinutes;
