@@ -1,0 +1,122 @@
+import { describe, expect, it } from 'vitest';
+
+import type { TrackingId, ZoneAssessmentForm, ZoneQuestionBlockForm } from '../types.js';
+
+import { getStructuralSaveValidationErrorKind } from './saveValidation.js';
+
+function makeTrackingId(n: number): TrackingId {
+  return `00000000-0000-4000-8000-${String(n).padStart(12, '0')}` as TrackingId;
+}
+
+function makeQuestion(overrides: Partial<ZoneQuestionBlockForm> = {}): ZoneQuestionBlockForm {
+  return {
+    trackingId: makeTrackingId(100),
+    id: 'q1',
+    canSubmit: [],
+    canView: [],
+    ...overrides,
+  };
+}
+
+function makeZone(overrides: Partial<ZoneAssessmentForm> = {}): ZoneAssessmentForm {
+  return {
+    trackingId: makeTrackingId(1),
+    lockpoint: false,
+    canSubmit: [],
+    canView: [],
+    questions: [makeQuestion()],
+    ...overrides,
+  };
+}
+
+describe('getStructuralSaveValidationErrorKind', () => {
+  it('returns undefined for valid zones', () => {
+    expect(getStructuralSaveValidationErrorKind([makeZone()])).toBeUndefined();
+  });
+
+  it('returns zone when the first zone is a lockpoint', () => {
+    expect(
+      getStructuralSaveValidationErrorKind([
+        makeZone({ lockpoint: true }),
+        makeZone({ trackingId: makeTrackingId(2) }),
+      ]),
+    ).toBe('zone');
+  });
+
+  it('returns zone when numberChoose exceeds questions in the zone', () => {
+    expect(getStructuralSaveValidationErrorKind([makeZone({ numberChoose: 2 })])).toBe('zone');
+  });
+
+  it('returns undefined when numberChoose accounts for alt group contributions', () => {
+    // 5 individual questions + 1 alt group (choose 2) = 7 choosable questions
+    expect(
+      getStructuralSaveValidationErrorKind([
+        makeZone({
+          numberChoose: 7,
+          questions: [
+            makeQuestion({ trackingId: makeTrackingId(101), id: 'q1' }),
+            makeQuestion({ trackingId: makeTrackingId(102), id: 'q2' }),
+            makeQuestion({ trackingId: makeTrackingId(103), id: 'q3' }),
+            makeQuestion({ trackingId: makeTrackingId(104), id: 'q4' }),
+            makeQuestion({ trackingId: makeTrackingId(105), id: 'q5' }),
+            makeQuestion({
+              trackingId: makeTrackingId(106),
+              numberChoose: 2,
+              alternatives: [
+                { trackingId: makeTrackingId(200), id: 'a1' },
+                { trackingId: makeTrackingId(201), id: 'a2' },
+                { trackingId: makeTrackingId(202), id: 'a3' },
+              ],
+            }),
+          ],
+        }),
+      ]),
+    ).toBeUndefined();
+  });
+
+  it('returns zone when bestQuestions exceeds numberChoose', () => {
+    expect(
+      getStructuralSaveValidationErrorKind([
+        makeZone({
+          questions: [makeQuestion(), makeQuestion({ trackingId: makeTrackingId(101), id: 'q2' })],
+          numberChoose: 1,
+          bestQuestions: 2,
+        }),
+      ]),
+    ).toBe('zone');
+  });
+
+  it('returns altGroup when an alternative group chooses too many alternatives', () => {
+    expect(
+      getStructuralSaveValidationErrorKind([
+        makeZone({
+          questions: [
+            makeQuestion({
+              numberChoose: 2,
+              alternatives: [
+                { trackingId: makeTrackingId(200), id: 'a1' },
+                { trackingId: makeTrackingId(201), id: 'a2' },
+              ],
+            }),
+          ],
+        }),
+      ]),
+    ).toBeUndefined();
+
+    expect(
+      getStructuralSaveValidationErrorKind([
+        makeZone({
+          questions: [
+            makeQuestion({
+              numberChoose: 3,
+              alternatives: [
+                { trackingId: makeTrackingId(200), id: 'a1' },
+                { trackingId: makeTrackingId(201), id: 'a2' },
+              ],
+            }),
+          ],
+        }),
+      ]),
+    ).toBe('altGroup');
+  });
+});
