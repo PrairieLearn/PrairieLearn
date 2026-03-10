@@ -525,23 +525,25 @@ export function QuestionDetailPanel({
 
       {/* Action buttons */}
       <div className="d-flex gap-2">
-        {!editMode && hasCourseInstancePermissionEdit && questionData?.assessment_question_id != null && (
-          <OverlayTrigger
-            placement="top"
-            tooltip={{
-              props: { id: 'reset-variants-tooltip' },
-              body: 'Resets all existing variants for this question on this assessment, so students will get new variants on their next visit.',
-            }}
-          >
-            <button
-              type="button"
-              className="btn btn-sm btn-outline-secondary"
-              onClick={() => onResetButtonClick(questionData.assessment_question_id!)}
+        {!editMode &&
+          hasCourseInstancePermissionEdit &&
+          questionData?.assessment_question_id != null && (
+            <OverlayTrigger
+              placement="top"
+              tooltip={{
+                props: { id: 'reset-variants-tooltip' },
+                body: 'Resets all existing variants for this question on this assessment, so students will get new variants on their next visit.',
+              }}
             >
-              Reset question variants
-            </button>
-          </OverlayTrigger>
-        )}
+              <button
+                type="button"
+                className="btn btn-sm btn-outline-secondary"
+                onClick={() => onResetButtonClick(questionData.assessment_question_id!)}
+              >
+                Reset question variants
+              </button>
+            </OverlayTrigger>
+          )}
         {editMode && (
           <OverlayTrigger
             placement="top"
