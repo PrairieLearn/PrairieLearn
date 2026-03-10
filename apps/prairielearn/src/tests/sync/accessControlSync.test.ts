@@ -107,6 +107,8 @@ function addStudentLabelToConfig(
   });
 }
 
+const TEST_EXAM_UUID = '11e89892-3eff-4d7f-90a2-221372f14e5c';
+
 describe('Access control syncing', () => {
   beforeAll(helperDb.before);
 
@@ -115,6 +117,7 @@ describe('Access control syncing', () => {
   beforeEach(async () => {
     await helperDb.resetDatabase();
     await features.enable('enhanced-access-control');
+    await sqldb.executeRow(sql.insert_pt_exam, { uuid: TEST_EXAM_UUID });
   });
 
   describe('Basic rule syncing', () => {
@@ -1219,7 +1222,7 @@ describe('Access control syncing', () => {
         dateControl: { durationMinutes: 90 },
         integrations: {
           prairieTest: {
-            exams: [{ examUuid: '11e89892-3eff-4d7f-90a2-221372f14e5c' }],
+            exams: [{ examUuid: TEST_EXAM_UUID }],
           },
         },
       });
@@ -1275,7 +1278,7 @@ describe('Access control syncing', () => {
         dateControl: { durationMinutes: 60 },
         integrations: {
           prairieTest: {
-            exams: [{ examUuid: '11e89892-3eff-4d7f-90a2-221372f14e5c' }],
+            exams: [{ examUuid: TEST_EXAM_UUID }],
           },
         },
       });

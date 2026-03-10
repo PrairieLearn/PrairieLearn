@@ -67,3 +67,9 @@ INSERT INTO
   assessment_access_control_student_labels (assessment_access_control_id, student_label_id)
 VALUES
   ($assessment_access_control_id, $student_label_id);
+
+-- BLOCK insert_pt_exam
+INSERT INTO
+  pt_exams (uuid, name)
+VALUES
+  ($uuid::uuid, 'Test Exam');
