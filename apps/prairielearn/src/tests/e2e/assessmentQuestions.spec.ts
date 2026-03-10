@@ -24,6 +24,8 @@ async function keyboardDrag(page: Page, source: Locator, direction: 'up' | 'down
   const arrowKey = direction === 'up' ? 'ArrowUp' : 'ArrowDown';
   await source.focus();
   await page.keyboard.press(' ');
+  // Wait for dnd-kit to activate the drag before issuing arrow key moves.
+  await expect(source).toHaveAttribute('aria-pressed', 'true');
   for (let i = 0; i < steps; i++) {
     await page.keyboard.press(arrowKey);
   }
