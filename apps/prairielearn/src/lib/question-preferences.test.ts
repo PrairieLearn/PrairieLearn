@@ -22,10 +22,9 @@ describe('extractDefaultPreferences', () => {
   });
 
   it('extracts a number default', () => {
-    assert.deepEqual(
-      extractDefaultPreferences({ gravitational_constant: { default: 9.8 } }),
-      { gravitational_constant: 9.8 },
-    );
+    assert.deepEqual(extractDefaultPreferences({ gravitational_constant: { default: 9.8 } }), {
+      gravitational_constant: 9.8,
+    });
   });
 
   it('extracts a boolean default', () => {
@@ -46,16 +45,10 @@ describe('extractDefaultPreferences', () => {
   });
 
   it('extracts default from an enum-like field (only default matters)', () => {
-    assert.deepEqual(
-      extractDefaultPreferences({ units: { default: 'SI' } }),
-      { units: 'SI' },
-    );
+    assert.deepEqual(extractDefaultPreferences({ units: { default: 'SI' } }), { units: 'SI' });
   });
 
   it('extracts default when default happens to be a number from an allowed set', () => {
-    assert.deepEqual(
-      extractDefaultPreferences({ precision: { default: 4 } }),
-      { precision: 4 },
-    );
+    assert.deepEqual(extractDefaultPreferences({ precision: { default: 4 } }), { precision: 4 });
   });
 });

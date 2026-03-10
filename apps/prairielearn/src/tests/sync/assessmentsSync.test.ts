@@ -44,7 +44,7 @@ const sql = sqldb.loadSqlEquiv(import.meta.url);
 function makeAssessment(
   courseData: util.CourseData,
   type: 'Homework' | 'Exam' = 'Exam',
-  preferences?: Record<string, string | number>
+  preferences?: Record<string, string | number>,
 ): AssessmentJsonInput {
   const assessmentSet = courseData.course.assessmentSets?.[0].name ?? '';
   return {
@@ -55,7 +55,7 @@ function makeAssessment(
     number: '1',
     zones: [],
     allowAccess: [],
-    ...preferences
+    ...preferences,
   };
 }
 
@@ -861,7 +861,7 @@ describe('Assessment syncing', () => {
     assert.isOk(secondQuestionContributorPermission);
     assert.isTrue(
       !secondQuestionContributorPermission.can_view &&
-      !secondQuestionContributorPermission.can_submit,
+        !secondQuestionContributorPermission.can_submit,
       'contributor should not be able to view or submit second question',
     );
   });
@@ -958,7 +958,7 @@ describe('Assessment syncing', () => {
     assert.isOk(secondQuestionContributorPermission);
     assert.isTrue(
       !secondQuestionContributorPermission.can_view &&
-      !secondQuestionContributorPermission.can_submit,
+        !secondQuestionContributorPermission.can_submit,
       'contributor should not be able to view or submit second question',
     );
   });
@@ -1060,7 +1060,7 @@ describe('Assessment syncing', () => {
     assert.isOk(secondQuestionContributorPermission);
     assert.isTrue(
       !secondQuestionContributorPermission.can_view &&
-      !secondQuestionContributorPermission.can_submit,
+        !secondQuestionContributorPermission.can_submit,
       'contributor should not be able to view or submit second question',
     );
   });
@@ -4330,7 +4330,10 @@ describe('Assessment syncing', () => {
     courseData.courseInstances[util.COURSE_INSTANCE_ID].assessments['prefFail'] = assessment;
     await util.writeAndSyncCourseData(courseData);
     const syncedAssessment = await findSyncedAssessment('prefFail');
-    assert.equal(syncedAssessment.sync_errors, 'Question "test" does not define a preferences schema, but preferences were provided in the assessment');
+    assert.equal(
+      syncedAssessment.sync_errors,
+      'Question "test" does not define a preferences schema, but preferences were provided in the assessment',
+    );
   });
 
   it('uses question default values when preferences are not specified in the assessment', async () => {
