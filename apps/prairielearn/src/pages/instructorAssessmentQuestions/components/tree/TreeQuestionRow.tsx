@@ -62,7 +62,7 @@ export function PointsBadge({
       const manualStr = String(manualPoints);
       compactParts.push(
         <span key="manual">
-          <i className="bi bi-person-fill me-1" aria-hidden="true" />
+          <i className="bi bi-pen-fill me-1" aria-hidden="true" />
           {manualStr}
         </span>,
       );
@@ -129,7 +129,7 @@ export function PointsBadge({
     const manualStr = String(manualPoints);
     compactParts.push(
       <span key="manual">
-        <i className="bi bi-person-fill me-1" aria-hidden="true" />
+        <i className="bi bi-pen-fill me-1" aria-hidden="true" />
         {manualStr}
       </span>,
     );
