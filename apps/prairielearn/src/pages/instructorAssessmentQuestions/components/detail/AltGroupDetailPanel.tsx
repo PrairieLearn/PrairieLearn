@@ -6,11 +6,11 @@ import type { DetailState, ZoneAssessmentForm, ZoneQuestionBlockForm } from '../
 import {
   coerceToNumber,
   coerceToOptionalString,
-  extractStringComment,
+  commentToString,
   formatPoints,
   makeResetAndSave,
+  parseCommentValue,
   parsePointsListValue,
-  preserveNonStringComment,
   validateNonIncreasingPoints,
   validatePointsListFormat,
 } from '../../utils/formHelpers.js';
@@ -80,7 +80,7 @@ export function AltGroupDetailPanel({
     mode: 'onChange',
     values: {
       numberChoose: zoneQuestionBlock.numberChoose ?? undefined,
-      comment: extractStringComment(zoneQuestionBlock.comment),
+      comment: commentToString(zoneQuestionBlock.comment),
       autoPoints: zoneQuestionBlock.autoPoints ?? undefined,
       maxAutoPoints: zoneQuestionBlock.maxAutoPoints ?? undefined,
       manualPoints: zoneQuestionBlock.manualPoints ?? undefined,
@@ -115,11 +115,11 @@ export function AltGroupDetailPanel({
     (data: AltGroupFormData) =>
       onUpdate(zoneQuestionBlock.trackingId, {
         ...data,
-        comment: preserveNonStringComment(zoneQuestionBlock.comment, data.comment),
+        comment: parseCommentValue(data.comment),
         forceMaxPoints: data.forceMaxPoints || undefined,
         allowRealTimeGrading: data.allowRealTimeGrading,
       }),
-    [onUpdate, zoneQuestionBlock.comment, zoneQuestionBlock.trackingId],
+    [onUpdate, zoneQuestionBlock.trackingId],
   );
 
   const resetAndSave = useMemo(
@@ -437,7 +437,7 @@ export function AltGroupDetailPanel({
           label="Comment"
           viewValue={
             zoneQuestionBlock.comment != null ? (
-              <span className="text-break">{String(zoneQuestionBlock.comment)}</span>
+              <span className="text-break">{commentToString(zoneQuestionBlock.comment)}</span>
             ) : undefined
           }
           helpText="Internal note, not shown to students."

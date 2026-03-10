@@ -25,12 +25,12 @@ import type {
 import {
   coerceToNumber,
   coerceToOptionalString,
-  extractStringComment,
+  commentToString,
   formatPoints,
   formatPointsValue,
   makeResetAndSave,
+  parseCommentValue,
   parsePointsListValue,
-  preserveNonStringComment,
   validateAtLeastOnePointsField,
   validateNonIncreasingPoints,
   validatePointsListFormat,
@@ -148,7 +148,7 @@ export function QuestionDetailPanel({
     mode: 'onChange',
     values: {
       id: question.id ?? '',
-      comment: extractStringComment(question.comment) || undefined,
+      comment: commentToString(question.comment),
       autoPoints: isAlternative ? ownAutoPoints : (autoPointsValue ?? undefined),
       maxAutoPoints: isAlternative ? ownMaxAutoPoints : (maxAutoPointsValue ?? undefined),
       manualPoints: isAlternative ? ownManualPoints : (manualPointsValue ?? undefined),
@@ -192,7 +192,7 @@ export function QuestionDetailPanel({
         questionTrackingId,
         {
           ...data,
-          comment: preserveNonStringComment(question.comment, data.comment),
+          comment: parseCommentValue(data.comment),
           forceMaxPoints: hasForceMaxPointsParent
             ? data.forceMaxPoints
             : data.forceMaxPoints || undefined,
@@ -200,13 +200,7 @@ export function QuestionDetailPanel({
         },
         alternativeTrackingId,
       ),
-    [
-      onUpdate,
-      question.comment,
-      questionTrackingId,
-      alternativeTrackingId,
-      hasForceMaxPointsParent,
-    ],
+    [onUpdate, questionTrackingId, alternativeTrackingId, hasForceMaxPointsParent],
   );
 
   const resetAndSave = useMemo(
@@ -496,7 +490,7 @@ export function QuestionDetailPanel({
           label="Comment"
           viewValue={
             question.comment != null ? (
-              <span className="text-break">{String(question.comment)}</span>
+              <span className="text-break">{commentToString(question.comment)}</span>
             ) : undefined
           }
           helpText="Internal note, not shown to students."

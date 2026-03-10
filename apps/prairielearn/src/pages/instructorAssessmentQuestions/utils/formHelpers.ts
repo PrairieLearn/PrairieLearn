@@ -1,5 +1,3 @@
-import type { CommentJson } from '../../../schemas/comment.js';
-
 /**
  * Converts a string value from an HTML textarea to a string or undefined.
  * Used as a `setValueAs` transform for react-hook-form textarea inputs
@@ -123,29 +121,33 @@ export function validatePointsListFormat(
 }
 
 /**
- * Extracts a string comment from a value that may be a string or other type.
- * Returns the comment if it's a string, or undefined otherwise.
+ * Converts a comment value to a string for display or form editing.
+ * Strings are returned as-is; arrays and objects are JSON-stringified.
  */
-export function extractStringComment(comment: unknown): string | undefined {
-  return typeof comment === 'string' ? comment : undefined;
+export function commentToString(comment: unknown): string | undefined {
+  if (comment == null) return undefined;
+  if (typeof comment === 'string') return comment;
+  return JSON.stringify(comment);
 }
 
 /**
- * Preserves existing non-string comments unless the user explicitly replaces
- * them with a string value. This prevents array/object comments from being
- * silently deleted by forms that only expose a textarea editor.
+ * Parses a comment string from a form textarea back to its proper type.
+ * If the string parses as a valid JSON array or object, the parsed value
+ * is returned. Otherwise the raw string is returned.
  */
-export function preserveNonStringComment(
-  originalComment: CommentJson | undefined,
-  editedComment: string | undefined,
-): CommentJson | undefined {
-  if (editedComment != null && editedComment !== '') {
-    return editedComment;
+export function parseCommentValue(
+  value: string | undefined,
+): string | unknown[] | Record<string, unknown> | undefined {
+  if (value == null || value === '') return undefined;
+  try {
+    const parsed = JSON.parse(value);
+    if (Array.isArray(parsed) || (typeof parsed === 'object' && parsed !== null)) {
+      return parsed;
+    }
+  } catch {
+    // Not valid JSON, return as string
   }
-  if (originalComment != null && typeof originalComment !== 'string') {
-    return originalComment;
-  }
-  return undefined;
+  return value;
 }
 
 /**

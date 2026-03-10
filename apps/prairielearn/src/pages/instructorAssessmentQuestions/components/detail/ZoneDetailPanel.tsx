@@ -6,9 +6,9 @@ import type { DetailState, ZoneAssessmentForm } from '../../types.js';
 import {
   coerceToNumber,
   coerceToOptionalString,
-  extractStringComment,
+  commentToString,
   makeResetAndSave,
-  preserveNonStringComment,
+  parseCommentValue,
 } from '../../utils/formHelpers.js';
 import {
   computeZoneQuestionCount,
@@ -58,7 +58,7 @@ export function ZoneDetailPanel({
     numberChoose: zone.numberChoose ?? undefined,
     bestQuestions: zone.bestQuestions ?? undefined,
     lockpoint: zone.lockpoint,
-    comment: extractStringComment(zone.comment),
+    comment: commentToString(zone.comment),
     advanceScorePerc: zone.advanceScorePerc ?? undefined,
     gradeRateMinutes: zone.gradeRateMinutes ?? undefined,
     // We do this so that `isDirty = false` when the value is inherited.
@@ -103,13 +103,13 @@ export function ZoneDetailPanel({
         numberChoose: data.numberChoose,
         bestQuestions: data.bestQuestions,
         lockpoint: data.lockpoint,
-        comment: preserveNonStringComment(zone.comment, data.comment),
+        comment: parseCommentValue(data.comment),
         advanceScorePerc: data.advanceScorePerc,
         gradeRateMinutes: data.gradeRateMinutes,
         allowRealTimeGrading: data.allowRealTimeGrading,
       });
     },
-    [onUpdate, zone.comment, zone.trackingId],
+    [onUpdate, zone.trackingId],
   );
 
   const resetAndSave = useMemo(
@@ -272,7 +272,7 @@ export function ZoneDetailPanel({
           label="Comment"
           viewValue={
             zone.comment != null ? (
-              <span className="text-break">{String(zone.comment)}</span>
+              <span className="text-break">{commentToString(zone.comment)}</span>
             ) : undefined
           }
           helpText="Internal note, not shown to students."

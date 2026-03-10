@@ -1,8 +1,9 @@
 import { describe, expect, it } from 'vitest';
 
 import {
+  commentToString,
+  parseCommentValue,
   parsePointsListValue,
-  preserveNonStringComment,
   validateAtLeastOnePointsField,
   validateNonIncreasingPoints,
   validatePointsListFormat,
@@ -100,6 +101,69 @@ describe('validateNonIncreasingPoints', () => {
   });
 });
 
+describe('commentToString', () => {
+  it('returns undefined for null/undefined', () => {
+    expect(commentToString(null)).toBeUndefined();
+    expect(commentToString(undefined)).toBeUndefined();
+  });
+
+  it('returns string comments as-is', () => {
+    expect(commentToString('hello')).toBe('hello');
+    expect(commentToString('')).toBe('');
+  });
+
+  it('JSON-stringifies arrays', () => {
+    expect(commentToString(['a', 'b'])).toBe('["a","b"]');
+  });
+
+  it('JSON-stringifies objects', () => {
+    expect(commentToString({ key: 'value' })).toBe('{"key":"value"}');
+  });
+});
+
+describe('parseCommentValue', () => {
+  it('returns undefined for empty/null/undefined', () => {
+    expect(parseCommentValue(undefined)).toBeUndefined();
+    expect(parseCommentValue('')).toBeUndefined();
+  });
+
+  it('returns plain strings as-is', () => {
+    expect(parseCommentValue('hello')).toBe('hello');
+  });
+
+  it('parses JSON arrays', () => {
+    expect(parseCommentValue('["a","b"]')).toEqual(['a', 'b']);
+  });
+
+  it('parses JSON objects', () => {
+    expect(parseCommentValue('{"key":"value"}')).toEqual({ key: 'value' });
+  });
+
+  it('returns string for invalid JSON', () => {
+    expect(parseCommentValue('{bad json')).toBe('{bad json');
+  });
+
+  it('returns string for JSON primitives (number, boolean, null)', () => {
+    expect(parseCommentValue('42')).toBe('42');
+    expect(parseCommentValue('true')).toBe('true');
+    expect(parseCommentValue('null')).toBe('null');
+  });
+
+  it('round-trips with commentToString for arrays', () => {
+    const original = ['a', 'b'];
+    expect(parseCommentValue(commentToString(original))).toEqual(original);
+  });
+
+  it('round-trips with commentToString for objects', () => {
+    const original = { key: 'value' };
+    expect(parseCommentValue(commentToString(original))).toEqual(original);
+  });
+
+  it('round-trips with commentToString for strings', () => {
+    expect(parseCommentValue(commentToString('hello'))).toBe('hello');
+  });
+});
+
 describe('validatePointsListFormat', () => {
   it('returns an error for a raw string value', () => {
     expect(validatePointsListFormat('10, abc, 5')).toBe(
@@ -117,25 +181,5 @@ describe('validatePointsListFormat', () => {
 
   it('returns undefined for undefined', () => {
     expect(validatePointsListFormat(undefined)).toBeUndefined();
-  });
-});
-
-describe('preserveNonStringComment', () => {
-  it('preserves an existing array comment when the textarea stays empty', () => {
-    expect(preserveNonStringComment(['comment', 'array'], undefined)).toEqual(['comment', 'array']);
-  });
-
-  it('preserves an existing object comment when the textarea stays empty', () => {
-    expect(preserveNonStringComment({ note: 'keep me' }, undefined)).toEqual({
-      note: 'keep me',
-    });
-  });
-
-  it('uses the edited string comment when provided', () => {
-    expect(preserveNonStringComment({ note: 'old' }, 'new comment')).toBe('new comment');
-  });
-
-  it('clears an existing string comment when the textarea is empty', () => {
-    expect(preserveNonStringComment('old comment', undefined)).toBeUndefined();
   });
 });
