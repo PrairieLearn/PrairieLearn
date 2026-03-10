@@ -9,7 +9,7 @@ import {
   extractStringComment,
   makeResetAndSave,
 } from '../../utils/formHelpers.js';
-import { validatePositiveInteger } from '../../utils/questions.js';
+import { computeZoneQuestionCount, validatePositiveInteger } from '../../utils/questions.js';
 import { useAutoSave } from '../../utils/useAutoSave.js';
 
 import { AdvancedFields, type AdvancedFieldsInheritance } from './AdvancedFields.js';
@@ -35,6 +35,7 @@ export function ZoneDetailPanel({
   state,
   onUpdate,
   onDelete,
+  onFormValidChange,
 }: {
   zone: ZoneAssessmentForm;
   zoneIndex: number;
@@ -42,6 +43,7 @@ export function ZoneDetailPanel({
   state: DetailState;
   onUpdate: (zoneTrackingId: string, zone: Partial<ZoneAssessmentForm>) => void;
   onDelete: (zoneTrackingId: string) => void;
+  onFormValidChange: (isValid: boolean) => void;
 }) {
   const { editMode, assessmentDefaults } = state;
   const formValues: ZoneFormData = {
@@ -67,14 +69,22 @@ export function ZoneDetailPanel({
   } = useForm<ZoneFormData>({
     mode: 'onChange',
     values: formValues,
+    // Prevent autosave from clobbering in-progress typing. Without this,
+    // the autosave feedback loop (edit → save → parent state update →
+    // values prop change → form reset) resets the input mid-keystroke.
+    // This is safe because the only source of values changes while the
+    // panel is open is autosave; switching entities remounts the component.
+    resetOptions: { keepDirtyValues: true, keepErrors: true },
   });
 
-  // Questions can be added/removed from the zone while this panel is open.
-  // Revalidate so numberChoose/bestQuestions errors update without extra input.
+  const zoneQuestionCount = computeZoneQuestionCount(zone.questions);
+
+  // Revalidate fields that depend on external zone state (question count, etc.)
+  // whenever those dependencies change. This also handles initial mount so that
+  // pre-existing invalid values (e.g. from JSON) are flagged immediately.
   useEffect(() => {
-    void trigger('numberChoose');
-    void trigger('bestQuestions');
-  }, [zone.questions.length, trigger]);
+    void trigger();
+  }, [zoneQuestionCount, trigger]);
 
   const handleSave = useCallback(
     (data: ZoneFormData) => {
@@ -100,6 +110,11 @@ export function ZoneDetailPanel({
 
   useAutoSave({ isDirty, isValid, getValues, onSave: handleSave, watch });
 
+  useEffect(() => {
+    // eslint-disable-next-line react-you-might-not-need-an-effect/no-pass-data-to-parent
+    onFormValidChange(isValid);
+  }, [isValid, onFormValidChange]);
+
   const advancedInheritance: AdvancedFieldsInheritance = {
     parentAdvanceScorePerc: assessmentDefaults.advanceScorePerc,
     parentGradeRateMinutes: assessmentDefaults.gradeRateMinutes,
@@ -118,7 +133,11 @@ export function ZoneDetailPanel({
 
   return (
     <div className="p-3">
-      <DetailSectionHeader first>Settings</DetailSectionHeader>
+      <div className="text-muted small">
+        {zoneQuestionCount} choosable question{zoneQuestionCount !== 1 ? 's' : ''} in zone
+      </div>
+
+      <DetailSectionHeader>Settings</DetailSectionHeader>
 
       <Wrapper className={clsx(!editMode && 'mb-0')}>
         <FormField
@@ -182,8 +201,8 @@ export function ZoneDetailPanel({
                 validate: (v) => {
                   const msg = validatePositiveInteger(v, 'Number to choose');
                   if (msg) return msg;
-                  if (v != null && v > zone.questions.length) {
-                    return `Cannot exceed number of questions in zone (${zone.questions.length}).`;
+                  if (v != null && v > zoneQuestionCount) {
+                    return `Cannot exceed number of choosable questions in zone (${zoneQuestionCount}).`;
                   }
                 },
               })}
@@ -210,8 +229,8 @@ export function ZoneDetailPanel({
                 validate: (v) => {
                   const msg = validatePositiveInteger(v, 'Best questions');
                   if (msg) return msg;
-                  if (v != null && v > zone.questions.length) {
-                    return `Cannot exceed number of questions in zone (${zone.questions.length}).`;
+                  if (v != null && v > zoneQuestionCount) {
+                    return `Cannot exceed number of choosable questions in zone (${zoneQuestionCount}).`;
                   }
                   const numberChoose = getValues('numberChoose');
                   if (v != null && numberChoose != null && v > numberChoose) {
@@ -279,10 +298,6 @@ export function ZoneDetailPanel({
         editMode={editMode}
         inheritance={advancedInheritance}
       />
-
-      <div className="mt-2 mb-3 text-muted small">
-        {zone.questions.length} question{zone.questions.length !== 1 ? 's' : ''} in zone
-      </div>
 
       {editMode && (
         <button

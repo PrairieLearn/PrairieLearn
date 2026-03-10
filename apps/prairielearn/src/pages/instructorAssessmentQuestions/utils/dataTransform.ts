@@ -24,20 +24,31 @@ function createTrackingId(): TrackingId {
 
 /**
  * Normalizes legacy `points`/`maxPoints` fields for the editor.
- * - For manually-graded questions: `points` → `manualPoints` (when `manualPoints` is not set)
+ * - For manually-graded questions: `maxPoints` or `points` → `manualPoints`
  * - For all other questions: `points` → `autoPoints`, `maxPoints` → `maxAutoPoints`
  * Only converts when the modern field isn't already set.
  */
 function normalizeQuestionPoints<T extends QuestionPointsJson>(obj: T, gradingMethod?: string): T {
   const result = { ...obj };
-  // When gradingMethod is Manual, we use the first element of the points array as the manual points.
-  // The first element in a points array should be the highest value in the pointsList array.
-
-  // The sync code passes maxPoints as max(pointsList) to sync_assessments.sql,
-  // which if we are using manual grading, will be used for computed_manual_points.
-  if (gradingMethod === 'Manual' && result.points != null && result.manualPoints == null) {
-    result.manualPoints = Array.isArray(result.points) ? result.points[0] : result.points;
+  // For Manual questions, the sync code (sync_assessments.sql) uses max_points as
+  // computed_manual_points. For Homework, max_points comes from maxPoints ?? points;
+  // for Exam, it comes from max(pointsList). We prefer maxPoints when present (Homework),
+  // falling back to first(points) (Exam or Homework without maxPoints).
+  // Skip if split-point fields (autoPoints/maxAutoPoints) are already set, since those
+  // indicate the author is using modern fields and intentionally omitted manualPoints.
+  if (
+    gradingMethod === 'Manual' &&
+    result.manualPoints == null &&
+    result.autoPoints == null &&
+    result.maxAutoPoints == null
+  ) {
+    const pts =
+      result.maxPoints ?? (Array.isArray(result.points) ? result.points[0] : result.points);
+    if (pts != null) {
+      result.manualPoints = pts;
+    }
     delete result.points;
+    delete result.maxPoints;
     return result;
   }
   if (result.points != null && result.autoPoints == null) {
