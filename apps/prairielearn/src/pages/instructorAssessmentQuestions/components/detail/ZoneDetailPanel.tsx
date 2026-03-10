@@ -14,7 +14,7 @@ import { useAutoSave } from '../../utils/useAutoSave.js';
 
 import { AdvancedFields, type AdvancedFieldsInheritance } from './AdvancedFields.js';
 import { DetailSectionHeader } from './DetailSectionHeader.js';
-import { FormCheckField, FormField } from './FormField.js';
+import { FormField } from './FormField.js';
 
 interface ZoneFormData {
   title: string;
@@ -145,7 +145,7 @@ export function ZoneDetailPanel({
           id={`${idPrefix}-title`}
           label="Title"
           viewValue={zone.title || <span className="text-muted">No title</span>}
-          helpText="Display name shown to students."
+          helpText="Display name shown to students (optional)."
         >
           {(aria) => (
             <input
@@ -163,7 +163,7 @@ export function ZoneDetailPanel({
           label="Max points"
           viewValue={zone.maxPoints}
           error={errors.maxPoints}
-          helpText="Maximum total points from this zone that count toward the assessment."
+          helpText="Maximum total points from this zone that count toward the assessment (leave empty for all)."
           hideWhenEmpty
         >
           {(aria) => (
@@ -242,31 +242,6 @@ export function ZoneDetailPanel({
           )}
         </FormField>
 
-        <FormCheckField
-          editMode={editMode}
-          id={`${idPrefix}-lockpoint`}
-          label="Lockpoint"
-          viewValue={zone.lockpoint}
-          error={errors.lockpoint}
-          helpText="Creates a one-way barrier; crossing it makes all earlier zones read-only."
-          hideWhenEmpty
-        >
-          {(aria) => (
-            <input
-              type="checkbox"
-              className={clsx('form-check-input', aria.errorClass)}
-              {...aria.inputProps}
-              {...register('lockpoint', {
-                validate: (v) => {
-                  if (v && zoneIndex === 0) {
-                    return 'The first zone cannot be a lockpoint.';
-                  }
-                },
-              })}
-            />
-          )}
-        </FormCheckField>
-
         <FormField
           editMode={editMode}
           id={`${idPrefix}-comment`}
@@ -297,6 +272,7 @@ export function ZoneDetailPanel({
         variant="zone"
         editMode={editMode}
         inheritance={advancedInheritance}
+        zoneIndex={zoneIndex}
       />
 
       {editMode && (

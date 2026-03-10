@@ -62,7 +62,7 @@ export function AltGroupDetailPanel({
   onDelete: (questionTrackingId: string) => void;
   onFormValidChange: (isValid: boolean) => void;
 }) {
-  const { editMode, assessmentType, assessmentDefaults } = state;
+  const { editMode, assessmentType, constantQuestionValue, assessmentDefaults } = state;
   const alternativeCount = zoneQuestionBlock.alternatives?.length ?? 0;
 
   const sharedTopic = getSharedTopic(zoneQuestionBlock.alternatives ?? [], questionMetadata);
@@ -223,7 +223,21 @@ export function AltGroupDetailPanel({
               label="Auto points (default)"
               viewValue={formatPoints(zoneQuestionBlock[pointsProperty])}
               error={errors[pointsProperty]}
-              helpText="Default auto points inherited by alternatives unless overridden."
+              helpText={
+                <>
+                  Points awarded for the auto-graded component.{' '}
+                  {constantQuestionValue
+                    ? 'Each correct answer is worth this many points.'
+                    : 'Each consecutive correct answer is worth more; an incorrect answer resets the value.'}{' '}
+                  <a
+                    href="https://docs.prairielearn.com/assessment/configuration/#question-points-for-homework-assessments"
+                    target="_blank"
+                    rel="noreferrer"
+                  >
+                    Learn more about question points
+                  </a>
+                </>
+              }
               hideWhenEmpty
             >
               {(aria) => (
@@ -260,7 +274,7 @@ export function AltGroupDetailPanel({
                   : undefined
               }
               error={errors[maxPointsProperty]}
-              helpText="Default max auto points inherited by alternatives unless overridden. Defaults to auto points if not set."
+              helpText="Maximum total auto-graded points."
               hideWhenEmpty
             >
               {(aria) => (
@@ -345,10 +359,10 @@ export function AltGroupDetailPanel({
             <FormField
               editMode={editMode}
               id={`${idPrefix}-points`}
-              label="Points list (default)"
+              label="Auto points (default)"
               viewValue={formatPoints(zoneQuestionBlock[pointsProperty])}
               error={errors[pointsProperty]}
-              helpText="Default points list inherited by alternatives unless overridden."
+              helpText='Default auto points inherited by alternatives unless overridden, as a comma-separated list (e.g. "10, 5, 2, 1").'
               hideWhenEmpty
             >
               {(aria) => (
