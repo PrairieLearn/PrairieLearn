@@ -88,8 +88,11 @@ export function ZoneDetailPanel({
   // whenever those dependencies change. This also handles initial mount so that
   // pre-existing invalid values (e.g. from JSON) are flagged immediately.
   useEffect(() => {
-    void trigger();
-  }, [zoneQuestionCount, trigger]);
+    void trigger().then((valid) => {
+      // TODO: you can easily click off the item and save the form to bypass this validation.
+      onFormValidChange(valid);
+    });
+  }, [zoneQuestionCount, trigger, onFormValidChange]);
 
   const handleSave = useCallback(
     (data: ZoneFormData) => {

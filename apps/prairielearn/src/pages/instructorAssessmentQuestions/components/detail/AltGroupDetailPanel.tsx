@@ -109,8 +109,13 @@ export function AltGroupDetailPanel({
   useEffect(() => {
     // Alternatives can be deleted from the tree while this panel is open.
     // Revalidate immediately so numberChoose errors update without extra input.
-    void trigger('numberChoose');
-  }, [alternativeCount, trigger]);
+    // We use the result of trigger() directly because formState.isValid may
+    // not update until user interaction with mode: 'onChange'.
+    void trigger().then((valid) => {
+      // TODO: you can easily click off the item and save the form to bypass this validation.
+      onFormValidChange(valid);
+    });
+  }, [alternativeCount, trigger, onFormValidChange]);
 
   const handleSave = useCallback(
     (data: AltGroupFormData) =>
