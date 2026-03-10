@@ -183,12 +183,25 @@ export function createAltGroupWithTrackingId(): ZoneQuestionBlockForm {
 /**
  * Converts an alternative to a standalone question block.
  * Preserves trackingId so dnd-kit can track the item mid-drag.
- * Strips undefined own properties so that fields the alternative was
- * inheriting from its parent alt group remain undefined (inheritable)
- * rather than being snapshotted or overwritten.
+ * Strips undefined own properties so they don't appear as explicit keys
+ * in the resulting object.
+ *
+ * When {@link parentGroup} is provided, any point fields that the
+ * alternative was inheriting (i.e. undefined on the alternative itself)
+ * are filled in from the parent, since a standalone question must have
+ * its own point values.
  */
-export function alternativeToQuestionBlock(alt: QuestionAlternativeForm): ZoneQuestionBlockForm {
-  return omitUndefined({ ...alt }) as ZoneQuestionBlockForm;
+export function alternativeToQuestionBlock(
+  alt: QuestionAlternativeForm,
+  parentGroup?: ZoneQuestionBlockForm,
+): ZoneQuestionBlockForm {
+  const merged = { ...alt };
+  if (parentGroup) {
+    merged.autoPoints ??= parentGroup.autoPoints;
+    merged.manualPoints ??= parentGroup.manualPoints;
+    merged.maxAutoPoints ??= parentGroup.maxAutoPoints;
+  }
+  return omitUndefined(merged) as ZoneQuestionBlockForm;
 }
 
 /**

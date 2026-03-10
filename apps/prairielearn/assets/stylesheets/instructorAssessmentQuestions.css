@@ -1,6 +1,9 @@
 /* Prevent double-scrolling: make the editor fill remaining space in the
-   app-main-container flex column instead of using a hardcoded viewport offset. */
+   app-main-container flex column instead of using a hardcoded viewport offset.
+   Use a flex column so sync-error alerts and the editor share the space. */
 #content:has([data-assessment-editor]) {
+  display: flex;
+  flex-direction: column;
   flex: 1;
   min-height: 0;
 }
@@ -15,8 +18,17 @@
   }
 }
 
+/* When sync errors/warnings are present above the editor, cap their height
+   so the editor remains usable. The alert becomes independently scrollable. */
+#content:has([data-assessment-editor]) > .alert {
+  flex-shrink: 0;
+  max-height: 25vh;
+  overflow-y: auto;
+}
+
 #content:has([data-assessment-editor]) > .js-hydrated-component {
-  height: 100%;
+  flex: 1;
+  min-height: 0;
 }
 
 /* ── SplitPane layout ─────────────────────────────────────────────────── */
