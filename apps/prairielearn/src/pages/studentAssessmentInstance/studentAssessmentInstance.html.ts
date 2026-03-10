@@ -733,10 +733,9 @@ export function StudentAssessmentInstance({
                                   `
                                 : html`
                                     <li>
-                                      When you are done, please logout and close your browser; there
-                                      is no need to do anything else. If you have any saved answers
-                                      when you leave, they will be automatically graded before your
-                                      final score is computed.
+                                      When you are done, please logout and close your browser. If
+                                      you have any saved answers when you leave, they will be
+                                      automatically graded before your final score is computed.
                                     </li>
                                   `}
                             </ul>
