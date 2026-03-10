@@ -17,7 +17,6 @@
   "zones": [
     {
       "title": "Fundamental questions",
-      "bestQuestions": 3,
       "questions": [
         { "id": "demo/demoNewton-page1", "autoPoints": 1, "maxAutoPoints": 5 },
         { "id": "demo/demoNewton-page2", "autoPoints": 1, "maxAutoPoints": 5 }
