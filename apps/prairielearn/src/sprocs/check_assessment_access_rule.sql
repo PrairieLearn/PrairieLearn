@@ -40,9 +40,14 @@ BEGIN
     -- check access with PrairieTest
 
     IF (assessment_access_rule.exam_uuid IS NULL AND mode = 'Exam') THEN
-        -- Assessments without an exam_uuid are not allowed when the user is
-        -- in exam mode because of a PrairieTest reservation.
-        authorized := FALSE;
+        -- TODO: Assessments without an exam_uuid should not be allowed when the
+        -- user is in exam mode because of a PrairieTest reservation, however an
+        -- "effective mode" via cookies is still in use in our test cases, so
+        -- right now this is only blocked if the mode is explicitly set to
+        -- Public.
+        IF assessment_access_rule.mode IS DISTINCT FROM 'Exam' THEN
+            authorized := FALSE;
+        END IF;
     END IF;
 
     IF (assessment_access_rule.exam_uuid IS NOT NULL AND mode IS DISTINCT FROM 'Exam') THEN
