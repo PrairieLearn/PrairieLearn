@@ -203,6 +203,13 @@ export function TreeQuestionRow({
     ((question.autoPoints ?? zoneQuestionBlock.autoPoints) != null ||
       (question.maxAutoPoints ?? zoneQuestionBlock.maxAutoPoints) != null);
 
+  // While the `title` property is mandatory in question JSON files, it may be
+  // empty or consist solely of whitespace. If it doesn't have a title, we'll
+  // display the QID instead.
+  const hasTitle = (questionData?.question.title?.trim().length ?? 0) > 0;
+
+  const questionQid = question.id ?? questionData?.question.qid;
+
   return (
     <div
       role="button"
@@ -245,11 +252,22 @@ export function TreeQuestionRow({
                   className="link-underline-opacity-0 link-underline-opacity-100-hover text-primary-emphasis"
                   onClick={(e) => e.stopPropagation()}
                 >
-                  {questionData.question.title}
+                  {hasTitle ? questionData.question.title : (questionQid ?? 'Question')}
                 </a>
+                {!hasTitle && questionQid && (
+                  <CopyButton
+                    text={questionQid}
+                    tooltipId={`copy-qid-${question.id}`}
+                    ariaLabel="Copy QID"
+                    className="hover-show ms-1"
+                    onClick={(e) => e.stopPropagation()}
+                  />
+                )}
               </>
-            ) : (
+            ) : hasTitle ? (
               questionData.question.title
+            ) : (
+              (questionQid ?? 'Question')
             )
           ) : (
             <span className="text-muted small">{question.id}</span>
@@ -268,7 +286,7 @@ export function TreeQuestionRow({
             changeTracking={changeTracking}
           />
         </div>
-        {question.id && (
+        {hasTitle && question.id && (
           <div
             className="d-flex align-items-center text-muted font-monospace"
             style={{ fontSize: '0.75rem' }}
