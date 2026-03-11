@@ -18,6 +18,7 @@ import {
   questionBlockToAlternative,
 } from './dataTransform.js';
 import { sanitizeSelectedItem, selectedItemsEqual } from './selectedItem.js';
+import { findQuestionByTrackingId } from './zoneLookup.js';
 
 /**
  * Finds a zone by its trackingId.
@@ -30,29 +31,6 @@ function findZoneByTrackingId(
   const index = zones.findIndex((z) => z.trackingId === trackingId);
   if (index === -1) return null;
   return { zone: zones[index], index };
-}
-
-/**
- * Finds a question by its trackingId across all zones.
- * Returns the question, zone, and their indices, or null if not found.
- */
-export function findQuestionByTrackingId(
-  zones: ZoneAssessmentForm[],
-  trackingId: string,
-): {
-  question: ZoneQuestionBlockForm;
-  questionIndex: number;
-  zone: ZoneAssessmentForm;
-  zoneIndex: number;
-} | null {
-  for (let zoneIndex = 0; zoneIndex < zones.length; zoneIndex++) {
-    const zone = zones[zoneIndex];
-    const questionIndex = zone.questions.findIndex((q) => q.trackingId === trackingId);
-    if (questionIndex !== -1) {
-      return { question: zone.questions[questionIndex], questionIndex, zone, zoneIndex };
-    }
-  }
-  return null;
 }
 
 /**
@@ -101,24 +79,6 @@ function findAlternativeAcrossZones(
           zoneIndex,
         };
       }
-    }
-  }
-  return null;
-}
-
-/**
- * Searches zones for a tracking ID and returns what type of item it is.
- * Returns null if the tracking ID is not found anywhere.
- */
-export function findByTrackingId(
-  zones: ZoneAssessmentForm[],
-  trackingId: string,
-): 'zone' | 'question' | 'alternative' | null {
-  for (const zone of zones) {
-    if (zone.trackingId === trackingId) return 'zone';
-    for (const question of zone.questions) {
-      if (question.trackingId === trackingId) return 'question';
-      if (question.alternatives?.some((a) => a.trackingId === trackingId)) return 'alternative';
     }
   }
   return null;

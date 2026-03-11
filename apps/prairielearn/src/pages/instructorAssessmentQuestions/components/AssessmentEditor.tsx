@@ -54,7 +54,8 @@ import {
 import { getStructuralSaveValidationErrorKind } from '../utils/saveValidation.js';
 import { createAssessmentQuestionsTrpcClient } from '../utils/trpc-client.js';
 import { TRPCProvider, useTRPC } from '../utils/trpc-context.js';
-import { findQuestionByTrackingId, useAssessmentEditor } from '../utils/useAssessmentEditor.js';
+import { useAssessmentEditor } from '../utils/useAssessmentEditor.js';
+import { findQuestionByTrackingId } from '../utils/zoneLookup.js';
 
 import { EditModeToolbar } from './EditModeToolbar.js';
 import { ExamResetNotSupportedModal } from './ExamResetNotSupportedModal.js';
