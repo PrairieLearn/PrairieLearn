@@ -390,6 +390,133 @@ function CourseRequestApproveForm({
 
   return (
     <form name={`create-course-from-request-form-${request.id}`} onSubmit={handleSubmit(onSubmit)}>
+      <div className="card mb-3">
+        <div className="card-header d-flex align-items-center justify-content-between py-2">
+          <strong>Requesting instructor</strong>
+          <OverlayTrigger
+            trigger={['hover', 'focus']}
+            placement="top"
+            tooltip={{
+              body: 'Uses AI web search to verify whether the instructor appears in faculty directories or professional profiles at their stated institution.',
+              props: { id: 'check-instructor-legitimacy-tooltip' },
+            }}
+          >
+            <button
+              type="button"
+              className="btn btn-sm btn-outline-secondary"
+              disabled={isCheckingLegitimacy}
+              aria-busy={isCheckingLegitimacy}
+              onClick={() => checkLegitimacy()}
+            >
+              {isCheckingLegitimacy ? (
+                <>
+                  <i className="fa fa-spinner fa-spin" aria-hidden="true" /> Checking...
+                </>
+              ) : (
+                <>
+                  <i className="fa fa-search" aria-hidden="true" /> Check legitimacy
+                </>
+              )}
+            </button>
+          </OverlayTrigger>
+        </div>
+        <div className="card-body py-2">
+          <div className="row g-2 small">
+            <div className="col-12">
+              <strong>Requested by:</strong>{' '}
+              {request.first_name || request.last_name ? (
+                <span>
+                  {request.first_name} {request.last_name}
+                  {request.work_email && ` (${request.work_email})`}
+                </span>
+              ) : request.work_email ? (
+                <span>{request.work_email}</span>
+              ) : (
+                <span className="fst-italic text-muted">Not provided</span>
+              )}
+            </div>
+            <div className="col-12">
+              <strong>PrairieLearn user:</strong>{' '}
+              {request.user_name ? (
+                <span>
+                  {request.user_name} ({request.user_uid})
+                </span>
+              ) : (
+                <span>{request.user_uid}</span>
+              )}
+            </div>
+            <div className="col-12">
+              <strong>Institution:</strong>{' '}
+              {request.institution ? (
+                <span>{request.institution}</span>
+              ) : (
+                <span className="fst-italic text-muted">Not provided</span>
+              )}
+            </div>
+            <div className="col-12">
+              <strong>GitHub:</strong>{' '}
+              {request.github_user ? (
+                <a
+                  href={`https://github.com/${request.github_user}`}
+                  target="_blank"
+                  rel="noreferrer"
+                >
+                  {request.github_user}
+                </a>
+              ) : (
+                <span className="fst-italic text-muted">Not provided</span>
+              )}
+            </div>
+          </div>
+          {isLegitimacyError && (
+            <div className="mt-2 text-danger small">Failed to check legitimacy. Try again.</div>
+          )}
+          <div aria-live="polite" aria-atomic="true">
+            {legitimacyData && (
+              <div className="mt-2 pt-2 border-top">
+                <div className="d-flex align-items-start gap-2">
+                  <span
+                    className={clsx('badge', {
+                      'text-bg-success': legitimacyData.confidence === 'high',
+                      'text-bg-warning': legitimacyData.confidence === 'medium',
+                      'text-bg-danger': legitimacyData.confidence === 'low',
+                    })}
+                  >
+                    {legitimacyData.isLikely ? 'Likely legitimate' : 'Uncertain'} &middot;{' '}
+                    {legitimacyData.confidence} confidence
+                  </span>
+                </div>
+                <small className="text-muted">
+                  <ReactMarkdown>{legitimacyData.summary}</ReactMarkdown>
+                </small>
+                {legitimacyData.sources.length > 0 && (
+                  <div className="mt-1">
+                    <span className="small text-muted">Sources</span>
+                    <div className="d-flex flex-wrap gap-1">
+                      {legitimacyData.sources
+                        .filter(
+                          (source, index, arr) =>
+                            arr.findIndex((s) => s.url === source.url) === index,
+                        )
+                        .map((source) => (
+                          <a
+                            key={source.url}
+                            href={source.url}
+                            target="_blank"
+                            rel="noreferrer"
+                            className="small"
+                          >
+                            {source.title ?? source.url}
+                          </a>
+                        ))}
+                    </div>
+                  </div>
+                )}
+              </div>
+            )}
+          </div>
+        </div>
+      </div>
       <div className="mb-3">
         <label className="form-label" htmlFor="courseRequestAddInstitution">
           Institution:
@@ -556,73 +683,6 @@ function CourseRequestApproveForm({
           {mutation.error.message}
         </Alert>
       )}
-      <div className="mb-3">
-        <OverlayTrigger
-          trigger={['hover', 'focus']}
-          placement="top"
-          tooltip={{
-            body: 'Uses AI web search to verify whether the instructor appears in faculty directories or professional profiles at their stated institution.',
-            props: { id: 'check-instructor-legitimacy-tooltip' },
-          }}
-        >
-          <button
-            type="button"
-            className="btn btn-secondary"
-            disabled={isCheckingLegitimacy}
-            aria-busy={isCheckingLegitimacy}
-            onClick={() => checkLegitimacy()}
-          >
-            {isCheckingLegitimacy ? 'Checking...' : 'Check instructor legitimacy'}
-          </button>
-        </OverlayTrigger>
-        {isLegitimacyError && (
-          <div className="mt-2 text-danger small">Failed to check legitimacy. Try again.</div>
-        )}
-        <div aria-live="polite" aria-atomic="true">
-          {legitimacyData && (
-            <>
-              <div className="mt-2 d-flex align-items-start gap-2">
-                <span
-                  className={clsx('badge', {
-                    'text-bg-success': legitimacyData.confidence === 'high',
-                    'text-bg-warning': legitimacyData.confidence === 'medium',
-                    'text-bg-danger': legitimacyData.confidence === 'low',
-                  })}
-                >
-                  {legitimacyData.isLikely ? 'Likely legitimate' : 'Uncertain'} &middot;{' '}
-                  {legitimacyData.confidence} confidence
-                </span>
-              </div>
-              <small className="text-muted">
-                <ReactMarkdown>{legitimacyData.summary}</ReactMarkdown>
-              </small>
-              {legitimacyData.sources.length > 0 && (
-                <div className="mt-1">
-                  <span className="small text-muted">Sources</span>
-                  <div className="d-flex flex-wrap gap-1">
-                    {legitimacyData.sources
-                      .filter(
-                        (source, index, arr) =>
-                          arr.findIndex((s) => s.url === source.url) === index,
-                      )
-                      .map((source) => (
-                        <a
-                          key={source.url}
-                          href={source.url}
-                          target="_blank"
-                          rel="noreferrer"
-                          className="small"
-                        >
-                          {source.title ?? source.url}
-                        </a>
-                      ))}
-                  </div>
-                </div>
-              )}
-            </>
-          )}
-        </div>
-      </div>
       <div className="mb-3">
         <OverlayTrigger
           trigger={['hover', 'focus']}
