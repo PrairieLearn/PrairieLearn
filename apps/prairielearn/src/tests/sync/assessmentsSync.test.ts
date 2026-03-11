@@ -669,7 +669,7 @@ describe('Assessment syncing', () => {
     const assessment = makeAssessment(courseData);
     assessment.allowAccess?.push(
       {
-        mode: 'Exam',
+        examUuid: 'f593a8c9-ccd4-449c-936c-c26c96ea089b',
       },
       {
         mode: 'Public',
@@ -722,7 +722,6 @@ describe('Assessment syncing', () => {
     // an empty points array, so we can't test that here as it's impossible
     // for it to ever be written to the database.
     assessment.allowAccess?.push({
-      mode: 'Exam',
       uids: [],
     });
     courseData.courseInstances[util.COURSE_INSTANCE_ID].assessments['newexam'] = assessment;
