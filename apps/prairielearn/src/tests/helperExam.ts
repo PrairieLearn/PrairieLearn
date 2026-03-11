@@ -31,6 +31,7 @@ interface TestExam {
   title: string;
   questions: TestExamQuestion[];
   keyedQuestions: Record<string, TestExamQuestion>;
+  examUuid: string;
 }
 
 const exam1AutomaticTestSuiteQuestions: TestExamQuestion[] = [
@@ -50,6 +51,7 @@ export const exams: Record<string, TestExam> = {
     title: 'Exam for automatic test suite',
     questions: exam1AutomaticTestSuiteQuestions,
     keyedQuestions: keyBy(exam1AutomaticTestSuiteQuestions, (question) => question.qid),
+    examUuid: 'e66122b5-c793-4235-9851-9a3aa80ae39b',
   },
 };
 
@@ -72,6 +74,7 @@ export async function withPTReservation<T>(
       user_id: userId,
       access_start: accessStart,
       access_end: accessEnd,
+      exam_uuid: exam1AutomaticTestSuite.examUuid,
     });
     return await fn();
   } finally {

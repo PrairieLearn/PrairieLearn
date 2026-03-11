@@ -21,8 +21,7 @@ WITH
     INSERT INTO
       pt_exams (uuid)
     VALUES
-      -- This matches the value of examUuid in exam1-automaticTestSuite/infoAssessment.json
-      ('e66122b5-c793-4235-9851-9a3aa80ae39b')
+      ($exam_uuid)
     RETURNING
       *
   ),
