@@ -67,6 +67,8 @@ export const AssessmentRowSchema = AssessmentStatsRowSchema.extend({
   assessment_module: AssessmentModuleSchema,
   label: z.string(),
   open_issue_count: z.coerce.number(),
+  num_instance_questions_to_grade: z.coerce.number(),
+  num_instance_questions_with_manual_grading: z.coerce.number(),
 });
 export type AssessmentRow = z.infer<typeof AssessmentRowSchema>;
 

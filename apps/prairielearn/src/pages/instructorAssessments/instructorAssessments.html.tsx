@@ -7,6 +7,7 @@ import { run } from '@prairielearn/run';
 import { AssessmentModuleHeadingHtml } from '../../components/AssessmentModuleHeading.js';
 import { AssessmentSetHeadingHtml } from '../../components/AssessmentSetHeading.js';
 import { IssueBadgeHtml } from '../../components/IssueBadge.js';
+import { ManualGradingBadgeHtml } from '../../components/ManualGradingBadge.js';
 import { Modal } from '../../components/Modal.js';
 import { PageLayout } from '../../components/PageLayout.js';
 import { ScorebarHtml } from '../../components/Scorebar.js';
@@ -37,7 +38,7 @@ export function InstructorAssessments({
   assessmentModules: AssessmentModule[];
   assessmentsGroupBy: 'Set' | 'Module';
 }) {
-  const { urlPrefix, authz_data, course, __csrf_token } = resLocals;
+  const { urlPrefix, authz_data, course, course_instance, __csrf_token } = resLocals;
 
   return PageLayout({
     resLocals,
@@ -136,6 +137,12 @@ export function InstructorAssessments({
                               count: row.open_issue_count,
                               urlPrefix,
                               issueAid: row.tid,
+                            })}
+                            ${ManualGradingBadgeHtml({
+                              numToGrade: row.num_instance_questions_to_grade,
+                              numTotal: row.num_instance_questions_with_manual_grading,
+                              courseInstanceId: course_instance.id,
+                              assessmentId: row.id,
                             })}
                           </td>
 

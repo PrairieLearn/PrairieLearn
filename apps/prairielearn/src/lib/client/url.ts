@@ -118,3 +118,13 @@ export function getQuestionUrl({
 export function getQuestionCreateUrl(courseInstanceId: string): string {
   return `/pl/course_instance/${courseInstanceId}/instructor/course_admin/questions/create`;
 }
+
+export function getAssessmentManualGradingUrl({
+  courseInstanceId,
+  assessmentId,
+}: {
+  courseInstanceId: string;
+  assessmentId: string;
+}): string {
+  return `/pl/course_instance/${courseInstanceId}/instructor/assessment/${assessmentId}/manual_grading`;
+}

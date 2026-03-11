@@ -104,6 +104,7 @@ function getLatestSubmissionStatus($: cheerio.CheerioAPI): string {
 
 let iqUrl: string, iqId: string | number;
 let instancesAssessmentUrl: string;
+let assessmentsUrl: string;
 let manualGradingAssessmentUrl: string;
 let manualGradingAssessmentQuestionUrl: string;
 let manualGradingIQUrl: string;
@@ -220,6 +221,20 @@ function checkGradingResults(assigned_grader: MockUser, grader: MockUser): void 
     assert.closeTo(instanceList[0].instance_question.manual_points!, score_points, 0.01);
     assert.closeTo(instanceList[0].instance_question.auto_points!, 0, 0.01);
   });
+
+  test.sequential(
+    'assessments listing page should not show manual grading badge after grading',
+    async () => {
+      setUser(defaultUser);
+      const res = await fetch(assessmentsUrl);
+      assert.equal(res.ok, true);
+      const $ = cheerio.load(await res.text());
+      const row = $(`tr:contains("${assessmentTitle}")`);
+      assert.equal(row.length, 1);
+      const badge = row.find('.badge.text-bg-primary');
+      assert.equal(badge.length, 0);
+    },
+  );
 
   test.sequential(
     'manual grading page for assessment does NOT show graded instance for grading',
@@ -455,6 +470,7 @@ describe('Manual Grading', { timeout: 80_000 }, function () {
       course_instance_id: '1',
       tid: 'hw9-internalExternalManual',
     });
+    assessmentsUrl = `${baseUrl}/course_instance/1/instructor/instance_admin/assessments`;
     manualGradingAssessmentUrl = `${baseUrl}/course_instance/1/instructor/assessment/${assessment.id}/manual_grading`;
     instancesAssessmentUrl = `${baseUrl}/course_instance/1/instructor/assessment/${assessment.id}/instances`;
   });
@@ -519,6 +535,23 @@ describe('Manual Grading', { timeout: 80_000 }, function () {
         );
         assert.equal(instanceQuestion.requires_manual_grading, true);
       });
+
+      test.sequential(
+        'assessments listing page should show manual grading badge',
+        async () => {
+          setUser(defaultUser);
+          const res = await fetch(assessmentsUrl);
+          assert.equal(res.ok, true);
+          const $ = cheerio.load(await res.text());
+          const row = $(`tr:contains("${assessmentTitle}")`);
+          assert.equal(row.length, 1);
+          const badge = row.find('.badge.text-bg-primary');
+          assert.equal(badge.length, 1);
+          assert.include(badge.attr('href'), '/manual_grading');
+          assert.equal(badge.attr('data-bs-title'), '1 / 1 ungraded');
+          assert.include(badge.text(), '1');
+        },
+      );
     });
 
     describe('Manual grading behavior while instance is open', () => {
