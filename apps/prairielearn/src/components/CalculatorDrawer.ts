@@ -1,4 +1,4 @@
-import { type HtmlSafeString, html } from '@prairielearn/html';
+import { type HtmlSafeString, escapeHtml, html } from '@prairielearn/html';
 
 import { compiledScriptTag, compiledStylesheetTag, nodeModulesAssetPath } from '../lib/assets.js';
 
@@ -9,10 +9,42 @@ export function CalculatorDrawerHeadScripts(): HtmlSafeString {
   `;
 }
 
-export function CalculatorDrawerToggle(): HtmlSafeString {
+export function CalculatorDrawerToggle({
+  showInfoPopover = false,
+}: { showInfoPopover?: boolean } = {}): HtmlSafeString {
+  // TODO: there might be more tools, which makes this card not calculator specific. refactor to a more generic component
+  const toolsPopoverContent = html` <p>
+      Tools can be enabled per-assessment or per-zone in your
+      <code>infoAssessment.json</code>:
+    </p>
+    <pre class="mb-0"><code>"tools":
+  {
+    "calculator": {
+      "enabled": true
+    }
+  }</code></pre>`;
+
   return html`
     <div class="card mb-4">
-      <div class="card-header bg-secondary text-white">Tools</div>
+      <div class="card-header bg-secondary text-white d-flex align-items-center">
+        <span>Tools</span>
+        ${showInfoPopover
+          ? html`
+              <button
+                type="button"
+                class="btn btn-link ms-auto text-white border-0"
+                data-bs-toggle="popover"
+                data-bs-container="body"
+                data-bs-html="true"
+                data-bs-title="Enabling tools"
+                data-bs-content="${escapeHtml(toolsPopoverContent)}"
+                data-bs-placement="auto"
+              >
+                <i class="bi bi-question-circle" aria-hidden="true"></i>
+              </button>
+            `
+          : ''}
+      </div>
       <div class="card-body">
         <button type="button" class="btn btn-outline-secondary w-100" id="calculatorDrawerToggle">
           <i class="bi bi-calculator"></i> Calculator
