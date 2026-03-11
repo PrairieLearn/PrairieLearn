@@ -22,7 +22,7 @@ export async function getModeForRequest(req: Request, res: Response): Promise<En
   }
 
   return await ipToMode({
-    ip: req.ip ?? null,
+    ip: req.ip,
     date: res.locals.req_date,
     authn_user_id: res.locals.authn_user.id,
   });
@@ -33,10 +33,14 @@ export async function ipToMode({
   date,
   authn_user_id,
 }: {
-  ip: string | null;
+  ip: string | null | undefined;
   date: Date;
   authn_user_id: string;
 }): Promise<EnumMode> {
+  // Express's types indicate that `ip` may be undefined in some cases. We want
+  // to ensure that we don't try to proceed without one.
+  if (ip == null) throw new Error('IP address is required');
+
   const hasPrairieTestReservation = await queryScalar(
     sql.select_active_prairietest_reservation,
     { ip, date, authn_user_id },
