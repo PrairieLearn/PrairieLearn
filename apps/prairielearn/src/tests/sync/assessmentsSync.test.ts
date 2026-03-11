@@ -1724,6 +1724,23 @@ describe('Assessment syncing', () => {
     );
   });
 
+  it('records an error if an access rule mode=Exam without an examUuid', async () => {
+    const courseData = util.getCourseData();
+    const assessment = makeAssessment(courseData);
+    assessment.allowAccess?.push({
+      mode: 'Exam',
+      credit: 100,
+    });
+    courseData.courseInstances[util.COURSE_INSTANCE_ID].assessments['fail'] = assessment;
+    await util.writeAndSyncCourseData(courseData);
+    const syncedAssessment = await findSyncedAssessment('fail');
+    assert.isNotNull(syncedAssessment.sync_warnings);
+    assert.match(
+      syncedAssessment.sync_warnings,
+      /Invalid allowAccess rule: examUuid is required with "mode": "Exam"/,
+    );
+  });
+
   it('records an error if a question specifies neither an ID nor an alternative', async () => {
     const courseData = util.getCourseData();
     const assessment = makeAssessment(courseData);
