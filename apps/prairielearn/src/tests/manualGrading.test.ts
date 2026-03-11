@@ -536,22 +536,19 @@ describe('Manual Grading', { timeout: 80_000 }, function () {
         assert.equal(instanceQuestion.requires_manual_grading, true);
       });
 
-      test.sequential(
-        'assessments listing page should show manual grading badge',
-        async () => {
-          setUser(defaultUser);
-          const res = await fetch(assessmentsUrl);
-          assert.equal(res.ok, true);
-          const $ = cheerio.load(await res.text());
-          const row = $(`tr:contains("${assessmentTitle}")`);
-          assert.equal(row.length, 1);
-          const badge = row.find('.badge.text-bg-primary');
-          assert.equal(badge.length, 1);
-          assert.include(badge.attr('href'), '/manual_grading');
-          assert.equal(badge.attr('data-bs-title'), '1 / 1 ungraded');
-          assert.include(badge.text(), '1');
-        },
-      );
+      test.sequential('assessments listing page should show manual grading badge', async () => {
+        setUser(defaultUser);
+        const res = await fetch(assessmentsUrl);
+        assert.equal(res.ok, true);
+        const $ = cheerio.load(await res.text());
+        const row = $(`tr:contains("${assessmentTitle}")`);
+        assert.equal(row.length, 1);
+        const badge = row.find('.badge.text-bg-primary');
+        assert.equal(badge.length, 1);
+        assert.include(badge.attr('href'), '/manual_grading');
+        assert.equal(badge.attr('data-bs-title'), '1 / 1 ungraded');
+        assert.include(badge.text(), '1');
+      });
     });
 
     describe('Manual grading behavior while instance is open', () => {
