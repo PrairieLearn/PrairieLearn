@@ -190,9 +190,9 @@
     "brotli": 2157
   },
   "stylesheets/instructorAssessmentQuestions.css": {
-    "raw": 2751,
-    "gzip": 905,
-    "brotli": 724
+    "raw": 2886,
+    "gzip": 931,
+    "brotli": 749
   },
   "stylesheets/instructorIssues.css": {
     "raw": 149,
@@ -350,9 +350,9 @@
     "brotli": 276689
   },
   "scripts/esm-bundles/hydrated-components/AssessmentQuestionsEditor.ts": {
-    "raw": 1218244,
-    "gzip": 365923,
-    "brotli": 301577
+    "raw": 1218814,
+    "gzip": 366055,
+    "brotli": 301700
   },
   "scripts/esm-bundles/hydrated-components/AssessmentSetsPage.ts": {
     "raw": 819533,
