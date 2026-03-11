@@ -130,6 +130,81 @@
     const getText = () => quill.getText();
     const counter = options.counter === 'none' ? null : new Counter(options.counter, uuid, getText);
 
+    // --- Live min/max word-count invalid button wiring ---
+    const editorContainer = baseElement.closest('.pl-rich-text-editor-container');
+    const invalidButton = document.getElementById(`rte-invalid-${uuid}`);
+
+    // Read bounds from HTML data attributes on the container
+    const minWordCount = editorContainer?.dataset?.minWordCount
+      ? Number(editorContainer.dataset.minWordCount)
+      : null;
+    const maxWordCount = editorContainer?.dataset?.maxWordCount
+      ? Number(editorContainer.dataset.maxWordCount)
+      : null;
+
+    const hasBounds =
+      invalidButton && (Number.isFinite(minWordCount) || Number.isFinite(maxWordCount));
+
+    let invalidPopover = null;
+    if (hasBounds) {
+      invalidPopover = bootstrap.Popover.getOrCreateInstance(invalidButton, {
+        trigger: 'hover focus',
+        placement: 'top',
+        title: 'Invalid',
+        content: '',
+      });
+    }
+
+    const countWords = (text) => {
+      const trimmed = text.trim();
+      return trimmed.length > 0 ? trimmed.split(/\s+/).length : 0;
+    };
+
+    const requirementsText = (min, max) => {
+      const hasMin = Number.isFinite(min);
+      const hasMax = Number.isFinite(max);
+      if (hasMin && hasMax) {
+        if (min === max) return `Exactly ${min} word${min === 1 ? '' : 's'}`;
+        return `Between ${min} and ${max} words`;
+      }
+      if (hasMin) return `At least ${min} word${min === 1 ? '' : 's'}`;
+      return `At most ${max} word${max === 1 ? '' : 's'}`;
+    };
+
+      const updateInvalidUI = () => {
+        if (!hasBounds) return;
+
+        const wc = countWords(getText());
+        const tooFew = Number.isFinite(minWordCount) && wc < minWordCount;
+        const tooMany = Number.isFinite(maxWordCount) && wc > maxWordCount;
+        const isInvalid = tooFew || tooMany;
+
+        if (!isInvalid) {
+          invalidButton.classList.add('d-none');
+          invalidPopover?.hide?.();
+          invalidButton.setAttribute('data-bs-content', '');
+          return;
+        }
+
+        invalidButton.classList.remove('d-none');
+        const req = requirementsText(minWordCount, maxWordCount);
+        const msg = `Word count requirement: ${req}. Current: ${wc}.`;
+
+        invalidButton.setAttribute('data-bs-content', msg);
+
+        if (invalidPopover?.setContent) {
+          invalidPopover.setContent({ '.popover-body': msg });
+        } else {
+          invalidPopover?.dispose?.();
+          invalidPopover = bootstrap.Popover.getOrCreateInstance(invalidButton, {
+            trigger: 'hover focus',
+            placement: 'top',
+            title: 'Invalid',
+            content: msg,
+          });
+        }
+      };
+
     const updateHiddenInput = function () {
       // If a user types something and erases it, the editor will be blank, but
       // the content will be something like `<p></p>`. In order to make sure
@@ -166,6 +241,9 @@
       if (counter) {
         counter.update();
       }
+
+      // Update word count requirements UI
+      updateInvalidUI();
     };
 
     quill.on('text-change', updateHiddenInput);

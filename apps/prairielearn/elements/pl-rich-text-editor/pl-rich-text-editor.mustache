@@ -6,7 +6,9 @@ $(function() {
 </script>
 <input type="hidden" id="rte-input-{{editor_uuid}}"
        name="{{name}}" value="{{current_file_contents}}"/>
-<div class="pl-rich-text-editor-container position-relative">
+<div class="pl-rich-text-editor-container position-relative"
+  {{#min_word_count}}data-min-word-count="{{min_word_count}}"{{/min_word_count}}
+  {{#max_word_count}}data-max-word-count="{{max_word_count}}"{{/max_word_count}}>
     {{^clipboard_enabled}}
     <div class="position-absolute end-0 p-3" style="z-index: 11">
       <div id="rte-clipboard-toast-{{editor_uuid}}" class="toast hide bg-warning" role="alert" aria-live="assertive" aria-atomic="true">
@@ -19,10 +21,34 @@ $(function() {
       </div>
     </div>
     {{/clipboard_enabled}}
+
     <div id="rte-{{editor_uuid}}" class="border mathjax_ignore" data-options="{{quill_options_json}}"></div>
-    {{#counter_enabled}}
-        <div class="pl-rich-text-editor-counter-container">
-            <div id="rte-counter-{{editor_uuid}}" class="text-secondary"></div>
-        </div>
-    {{/counter_enabled}}
+    {{#footer_enabled}}
+    <div class="pl-rich-text-editor-counter-container d-flex justify-content-between align-items-center">
+      <div class="pl-rich-text-editor-requirements text-secondary small">
+        {{#has_word_count_bounds}}
+          {{word_count_requirements_text}}
+        {{/has_word_count_bounds}}
+      </div>
+
+      <div class="d-flex align-items-center gap-2">
+        {{#has_word_count_bounds}}
+          <button type="button"
+                  class="btn btn-sm btn-outline-danger d-none"
+                  id="rte-invalid-{{editor_uuid}}"
+                  data-bs-toggle="popover"
+                  data-bs-trigger="hover focus"
+                  data-bs-placement="top"
+                  title="Invalid"
+                  data-bs-content="">
+            Invalid
+          </button>
+        {{/has_word_count_bounds}}
+
+        {{#counter_enabled}}
+          <div id="rte-counter-{{editor_uuid}}" class="text-secondary"></div>
+        {{/counter_enabled}}
+      </div>
+    </div>
+  {{/footer_enabled}}
 </div>
