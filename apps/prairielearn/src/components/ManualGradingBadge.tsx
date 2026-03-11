@@ -21,8 +21,10 @@ function ManualGradingBadge({
       href={getAssessmentManualGradingUrl({ courseInstanceId, assessmentId })}
       data-bs-toggle="tooltip"
       data-bs-title={`${numToGrade} / ${numTotal} ungraded`}
+      aria-label={`${numToGrade} / ${numTotal} ungraded`}
+      data-testid="manual-grading-badge"
     >
-      <i className="bi bi-pen-fill" /> {numToGrade}
+      <i className="bi bi-pen-fill" aria-hidden="true" /> {numToGrade}
     </a>
   );
 }

@@ -231,7 +231,7 @@ function checkGradingResults(assigned_grader: MockUser, grader: MockUser): void 
       const $ = cheerio.load(await res.text());
       const row = $(`tr:contains("${assessmentTitle}")`);
       assert.equal(row.length, 1);
-      const badge = row.find('.badge.text-bg-primary');
+      const badge = row.find('[data-testid="manual-grading-badge"]');
       assert.equal(badge.length, 0);
     },
   );
@@ -543,7 +543,7 @@ describe('Manual Grading', { timeout: 80_000 }, function () {
         const $ = cheerio.load(await res.text());
         const row = $(`tr:contains("${assessmentTitle}")`);
         assert.equal(row.length, 1);
-        const badge = row.find('.badge.text-bg-primary');
+        const badge = row.find('[data-testid="manual-grading-badge"]');
         assert.equal(badge.length, 1);
         assert.include(badge.attr('href'), '/manual_grading');
         assert.equal(badge.attr('data-bs-title'), '1 / 1 ungraded');
