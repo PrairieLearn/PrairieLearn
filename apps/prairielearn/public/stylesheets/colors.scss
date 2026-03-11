@@ -2,16 +2,15 @@
 @import '../../../../node_modules/bootstrap/scss/variables';
 @import '../../../../node_modules/bootstrap/scss/mixins';
 
-// We reuse Bootstrap's `button-variant` mixin to generate appropriate hover
-// styles. Crucially, this will ensure that appropriate color contrast is
-// maintained.
+// Custom color classes used for badges, clickable badge-buttons, and other
+// colored UI elements throughout PrairieLearn.
 //
-// As with normal buttons (see `local.css`), we also include an outline with
-// `:focus-visible` to ensure that the focus state has sufficient contrast,
-// no matter the background color on which the button is situated.
+// From the repository root, run `make compile-badge-colors` to compile this file.
+// This requires Dart Sass (via npx); Ruby Sass is not supported.
 //
-// Install `sass` with `npm install -g sass`.
-// Run `sass --sourcemap=none colors.scss colors.css` to compile this file.
+// When changing colors, also update:
+//   - apps/prairielearn/python/prairielearn/colors.py (Python color lookup)
+//   - docs/course/colors.html (documentation color swatches)
 
 $custom-colors: (
   'red1': #ffccbc,
@@ -32,28 +31,18 @@ $custom-colors: (
   'green1': #8effc1,
   'green2': #2ecc71,
   'green3': #008c31,
-  'yellow1': #fde3a7,
-  'yellow2': #f5ab35,
-  'yellow3': #d87400,
+  'yellow1': #fdeea5,
+  'yellow2': #f5ce32,
+  'yellow3': #d6a100,
   'orange1': #ffdcb5,
   'orange2': #ff926b,
   'orange3': #c3522b,
-  'brown1': #f6c4a3,
-  'brown2': #ce9c7b,
-  'brown3': #8e5c3b,
+  'brown1': #e6bfa8,
+  'brown2': #c0957c,
+  'brown3': #7d5640,
   'gray1': #e0e0e0,
   'gray2': #909090,
   'gray3': #505050,
-);
-
-$color-contrast-overrides: (
-  // Override foreground colors for specific entries in `$custom-colors` when
-  // the automatically generated `color-contrast()` value isn't desirable.
-  // Keys must match the color names above; anything not listed falls back to
-  // the contrast function.
-  'turquoise3': #fff,
-  'green3': #fff,
-  'yellow3': #fff
 );
 
 :root {
@@ -62,6 +51,10 @@ $color-contrast-overrides: (
   }
 }
 
+// Clickable badge buttons: sized like badges with hover/focus/active states.
+// Each `.btn.btn-badge.color-*` sets CSS custom properties for its colors;
+// the shared state logic here reads those properties, avoiding repetitive
+// per-color CSS for every pseudo-class.
 .btn.btn-badge {
   --bs-badge-padding-x: #{$badge-padding-x};
   --bs-badge-padding-y: #{$badge-padding-y};
@@ -75,44 +68,106 @@ $color-contrast-overrides: (
   line-height: 1;
   border-radius: var(--bs-badge-border-radius);
 
-  // Ensures consistent sizing with badges, which don't have a border.
-  border: none;
+  color: var(--pl-badge-text);
+  background-color: var(--pl-badge-bg);
+  border-color: var(--pl-badge-border);
+
+  &:hover {
+    background-color: color-mix(in srgb, var(--pl-badge-bg), black 7%);
+    border-color: color-mix(in srgb, var(--pl-badge-border), black 12%);
+  }
+
+  &:active,
+  &.active {
+    background-color: color-mix(in srgb, var(--pl-badge-bg), black 14%);
+    border-color: color-mix(in srgb, var(--pl-badge-border), black 22%);
+  }
+
+  &:disabled,
+  &.disabled {
+    background-color: var(--pl-badge-bg);
+    border-color: var(--pl-badge-border);
+  }
+
+  &:focus-visible {
+    outline: 2px solid var(--pl-badge-text);
+    outline-offset: 1px;
+  }
+}
+
+// Converts a Sass color to a hex string with rounded RGB channels.
+// Modern Dart Sass outputs fractional `rgb()` values from color functions;
+// this forces clean hex codes like `#c73000` in the compiled CSS.
+@function _hex-byte($n) {
+  $hex: '0123456789abcdef';
+  $n: round($n);
+  @return str-slice($hex, floor($n / 16) + 1, floor($n / 16) + 1) +
+    str-slice($hex, ($n % 16) + 1, ($n % 16) + 1);
+}
+
+@function to-hex($c) {
+  @return unquote('#' + _hex-byte(red($c)) + _hex-byte(green($c)) + _hex-byte(blue($c)));
+}
+
+// Returns a text color derived from `$base` that is dark enough for
+// sufficient contrast against the badge background `$bg`.
+// Uses Bootstrap's `contrast-ratio()` to ensure WCAG AA compliance (4.5:1).
+@function badge-text-color($base, $bg) {
+  @each $amount in -55%, -65%, -75%, -85%, -95% {
+    $candidate: scale-color($base, $lightness: $amount);
+    @if contrast-ratio($candidate, $bg) >= 4.5 {
+      @return $candidate;
+    }
+  }
+  // Last resort: near-black will always have sufficient contrast.
+  @return #1a1a1a;
+}
+
+// Computes the badge background by scaling lightness upward until the
+// background reaches a minimum relative luminance. This compensates for
+// the mismatch between HSL lightness and perceptual brightness: saturated
+// purples/magentas need more HSL lightening to reach the same perceived
+// brightness as desaturated or green-channel-heavy colors.
+// Starts at 60% scaling for maximum color depth; most colors pass at 60%.
+@function badge-bg-color($base, $min-luminance: 0.5) {
+  @for $pct from 60 through 85 {
+    $bg: scale-color($base, $lightness: $pct * 1%);
+    @if luminance($bg) >= $min-luminance {
+      @return $bg;
+    }
+  }
+  @return scale-color($base, $lightness: 70%);
 }
 
 @each $color, $value in $custom-colors {
-  $has-override: map-has-key($color-contrast-overrides, $color);
-  $text-color: if(
-    $has-override,
-    map-get($color-contrast-overrides, $color),
-    color-contrast($value)
-  );
+  // GitHub-style badge colors: light tinted background, vivid border & text.
+  // The background uses adaptive lightness scaling: it starts at 60% (for
+  // maximum visual depth) and increases until the background reaches a
+  // perceptual luminance floor. This ensures dark saturated bases (purple3,
+  // pink3) get lightened enough for accessible contrast, while lighter bases
+  // keep their full color depth.
+  // The border is the base color itself, giving each badge a vivid color
+  // accent that's properly ordered across levels (1 = light, 3 = vivid).
+  $badge-bg: badge-bg-color($value);
+  $badge-border: $value;
+  $badge-text: badge-text-color($value, $badge-bg);
 
-  .color-#{$color} {
-    color: $text-color;
-    background-color: $value;
+  // Convert computed colors to hex for clean CSS output.
+  $badge-bg: to-hex($badge-bg);
+  $badge-border: to-hex($badge-border);
+  $badge-text: to-hex($badge-text);
+
+  // Badge: GitHub-style with light bg, saturated border & text.
+  .badge.color-#{$color} {
+    color: $badge-text;
+    background-color: $badge-bg;
+    border: 1px solid $badge-border;
   }
 
-  .btn.color-#{$color} {
-    // Ensure button foregrounds (default, hover, active, disabled) respect the
-    // same override/fallback color.
-    @if $has-override {
-      @include button-variant(
-        $value,
-        $value,
-        $color: $text-color,
-        $hover-color: $text-color,
-        $active-color: $text-color,
-        $disabled-color: $text-color
-      );
-    } @else {
-      @include button-variant($value, $value);
-    }
-  }
-
-  .btn.color-#{$color}:focus:focus-visible {
-    outline-style: solid !important;
-    outline-color: var(--bs-btn-hover-color);
-    outline-width: 2px !important;
-    outline-offset: -2px !important;
+  // Badge button colors: set custom properties read by `.btn.btn-badge` above.
+  .btn.btn-badge.color-#{$color} {
+    --pl-badge-text: #{$badge-text};
+    --pl-badge-bg: #{$badge-bg};
+    --pl-badge-border: #{$badge-border};
   }
 }

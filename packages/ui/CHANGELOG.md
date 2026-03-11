@@ -1,5 +1,29 @@
 # @prairielearn/ui
 
+## 3.2.2
+
+### Patch Changes
+
+- 144cd19: Fix ComboBox type compatibility with react-aria-components 1.16.0
+- 144cd19: Upgrade all JavaScript dependencies
+
+## 3.2.1
+
+### Patch Changes
+
+- 3c4799a: Upgrade all JavaScript dependencies
+- bfcdf32: Return no-op onChange handler in useShiftClickCheckbox
+- Updated dependencies [3c4799a]
+  - @prairielearn/browser-utils@2.7.1
+  - @prairielearn/run@2.0.2
+
+## 3.2.0
+
+### Minor Changes
+
+- c078fcb: Add `pinnedIds` prop to `FilterDropdown` to pin specific items at the top of the list
+- c078fcb: Add `FilterDropdown` component
+
 ## 3.1.5
 
 ### Patch Changes

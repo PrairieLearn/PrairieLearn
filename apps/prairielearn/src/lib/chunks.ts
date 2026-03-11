@@ -930,7 +930,7 @@ export async function generateAllChunksForCourseList(course_ids: string[], authn
  */
 async function _generateAllChunksForCourseWithJob(course_id: string, job: ServerJob) {
   job.info(chalk.bold('Looking up course directory'));
-  let courseDir = await sqldb.queryRow(
+  let courseDir = await sqldb.queryScalar(
     sql.select_course_dir,
     { course_id },
     CourseSchema.shape.path,
@@ -1195,7 +1195,7 @@ export async function getTemplateQuestionIds(
   question: QuestionWithTemplateDirectory,
 ): Promise<string[]> {
   if (!question.template_directory) return [];
-  const questionIds = await sqldb.queryRows(
+  const questionIds = await sqldb.queryScalars(
     sql.select_template_question_ids,
     { question_id: question.id },
     IdSchema,
