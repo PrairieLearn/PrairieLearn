@@ -17,7 +17,7 @@ function ManualGradingBadge({
 
   return (
     <a
-      className="badge rounded-pill text-bg-primary"
+      className="badge rounded-pill text-bg-primary ms-1"
       href={getAssessmentManualGradingUrl({ courseInstanceId, assessmentId })}
       data-bs-toggle="tooltip"
       data-bs-title={`${numToGrade} / ${numTotal} ungraded`}
