@@ -15,11 +15,11 @@ WHERE
   assessment_id = $assessment_id
   AND question_id = $question_id;
 
--- BLOCK select_preferences_for_assessment_question
+-- BLOCK select_preferences_for_instance_question
 SELECT
   aq.preferences
 FROM
-  assessment_questions AS aq
+  instance_questions AS iq
+  JOIN assessment_questions AS aq ON (aq.id = iq.assessment_question_id)
 WHERE
-  aq.assessment_id = $assessment_id
-  AND aq.question_id = $question_id;
+  iq.id = $instance_question_id;

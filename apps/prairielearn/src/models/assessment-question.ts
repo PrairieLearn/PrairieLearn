@@ -32,14 +32,11 @@ export async function selectAssessmentQuestionByQuestionId({
   );
 }
 
-export async function selectPreferencesForAssessmentQuestion(
-  assessment_id: string,
-  question_id: string,
-) {
-  const row = await sqldb.queryOptionalRow(
-    sql.select_preferences_for_assessment_question,
-    { assessment_id, question_id },
+export async function selectPreferencesForInstanceQuestion(instance_question_id: string) {
+  const row = await sqldb.queryRow(
+    sql.select_preferences_for_instance_question,
+    { instance_question_id },
     z.object({ preferences: QuestionPreferenceDefinitionSchema.nullable() }),
   );
-  return row?.preferences ?? null;
+  return row.preferences;
 }

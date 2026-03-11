@@ -355,7 +355,6 @@ async function testQuestion({
       options: { variant_seed },
       require_open: true,
       client_fingerprint_id: null,
-      assessment_id: null,
     });
   } finally {
     const generateEnd = Date.now();

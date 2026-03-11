@@ -237,6 +237,10 @@ const questions: Record<string, QuestionJsonInput> = {
         enum: ['valid A', 'valid B'],
         default: 'valid A',
       },
+      bool: {
+        type: 'boolean',
+        default: true,
+      },
     },
   },
 };

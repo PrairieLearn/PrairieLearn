@@ -615,7 +615,11 @@ export function preValidateAssessmentPreferences(
         const validate = (qid: string, preferences: QuestionPreferences | undefined) => {
           let schema: QuestionPreferencesSchemaJson | null;
           if (qid.startsWith('@')) {
-            schema = sharedQuestionPreferences[qid] ?? null;
+            if (qid in sharedQuestionPreferences) {
+              schema = sharedQuestionPreferences[qid];
+            } else {
+              return;
+            }
           } else {
             const questionInfo = questions[qid];
 
@@ -623,6 +627,7 @@ export function preValidateAssessmentPreferences(
             if (!questionInfo) return; // Missing QID will be caught later during assessment sync
             schema = questionInfo.data?.preferences ?? null;
           }
+          if (!schema) return;
           const { errors } = mergeAndValidatePreferences(qid, schema, preferences);
           for (const error of errors) {
             infofile.addError(assessment, error);

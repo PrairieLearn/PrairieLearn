@@ -4,7 +4,6 @@
   "topic": "Test",
   "sharePublicly": true,
   "type": "v3",
-  "tags": ["v3"],
   "preferences": {
     "gravitational_constant": {
       "type": "number",
@@ -12,7 +11,10 @@
     },
     "fired_object": {
       "type": "string",
-      "enum": ["cannon ball", "bowling ball"],
+      "enum": [
+        "cannon ball",
+        "bowling ball"
+      ],
       "default": "cannon ball"
     }
   }

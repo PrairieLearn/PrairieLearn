@@ -496,7 +496,6 @@ export async function getAndRenderVariant(
         options: { variant_seed },
         require_open: !!locals.assessment && locals.assessment.type !== 'Exam',
         client_fingerprint_id: locals.client_fingerprint_id ?? null,
-        assessment_id: locals.assessment?.id ?? null,
       });
     }
   });

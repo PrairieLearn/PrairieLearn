@@ -11,6 +11,7 @@ import { afterAll, assert, beforeAll, describe, it } from 'vitest';
 import { config } from '../lib/config.js';
 import type { Course, Question, Submission, Variant } from '../lib/db-types.js';
 import { EXAMPLE_COURSE_PATH } from '../lib/paths.js';
+import { extractDefaultPreferences } from '../lib/question-preferences.js';
 import { buildQuestionUrls } from '../lib/question-render.js';
 import { makeVariant } from '../lib/question-variant.js';
 import * as questionServers from '../question-servers/index.js';
@@ -297,13 +298,7 @@ describe('Internally graded question lifecycle tests', { timeout: 60_000 }, func
       } as unknown as Question;
 
       // Extract default preferences from info.json preferences schema
-      const preferences: Record<string, string | number | boolean> = {};
-      if (info.preferences) {
-        for (const [key, prop] of Object.entries(info.preferences)) {
-          const p = prop as { default: string | number | boolean };
-          preferences[key] = p.default!;
-        }
-      }
+      const preferences = info.preferences ? extractDefaultPreferences(info.preferences) : {};
 
       // Prepare and generate
       const { courseIssues: prepareGenerateIssues, variant: rawVariant } = await makeVariant({

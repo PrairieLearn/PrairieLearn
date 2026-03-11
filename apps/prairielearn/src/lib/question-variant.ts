@@ -8,7 +8,7 @@ import * as sqldb from '@prairielearn/postgres';
 import { workspaceFastGlobDefaultOptions } from '@prairielearn/workspace-utils';
 import { IdSchema } from '@prairielearn/zod';
 
-import { selectPreferencesForAssessmentQuestion } from '../models/assessment-question.js';
+import { selectPreferencesForInstanceQuestion } from '../models/assessment-question.js';
 import { selectCourseById } from '../models/course.js';
 import { selectQuestionById, selectQuestionByInstanceQuestionId } from '../models/question.js';
 import * as questionServers from '../question-servers/index.js';
@@ -227,7 +227,6 @@ async function selectVariantForInstanceQuestion(
  * @param params.options.variant_seed - The seed for the variant.
  * @param params.require_open - If true, only use an existing variant if it is open.
  * @param params.client_fingerprint_id - The client fingerprint for this variant.
- * @param params.assessment_id - The assessment for the new variant. Can be null.
  */
 async function makeAndInsertVariant({
   question_id,
@@ -240,7 +239,6 @@ async function makeAndInsertVariant({
   options,
   require_open,
   client_fingerprint_id,
-  assessment_id,
 }: {
   question_id: string | null;
   instance_question_id: string | null;
@@ -252,7 +250,6 @@ async function makeAndInsertVariant({
   options: { variant_seed?: string | null };
   require_open: boolean;
   client_fingerprint_id: string | null;
-  assessment_id: string | null;
 }): Promise<VariantWithFormattedDate> {
   const question = await selectQuestion(question_id, instance_question_id);
 
@@ -261,11 +258,9 @@ async function makeAndInsertVariant({
     question.preferences_schema,
   );
 
-  if (assessment_id) {
-    const result = await selectPreferencesForAssessmentQuestion(assessment_id, question.id);
-    if (result) {
-      preferences = { ...preferences, ...result };
-    }
+  if (instance_question_id) {
+    const result = await selectPreferencesForInstanceQuestion(instance_question_id);
+    preferences = result ? { ...preferences, ...result } : preferences;
   }
 
   const { courseIssues, variant: variantData } = await makeVariant({
@@ -388,7 +383,6 @@ async function makeAndInsertVariant({
  * @param params.options.variant_seed - The seed for the variant.
  * @param params.require_open - If true, only use an existing variant if it is open.
  * @param params.client_fingerprint_id - The client fingerprint for this variant. Can be null.
- * @param params.assessment_id - The assessment for the new variant. Can be null.
  */
 export async function ensureVariant({
   question_id,
@@ -401,7 +395,6 @@ export async function ensureVariant({
   options,
   require_open,
   client_fingerprint_id,
-  assessment_id,
 }: {
   question_id: string | null;
   instance_question_id: string | null;
@@ -413,7 +406,6 @@ export async function ensureVariant({
   options: { variant_seed?: string | null };
   require_open: boolean;
   client_fingerprint_id: string | null;
-  assessment_id: string | null;
 }): Promise<VariantWithFormattedDate> {
   if (instance_question_id != null) {
     // See if we have a useable existing variant, otherwise make a new one. This
@@ -437,7 +429,6 @@ export async function ensureVariant({
     options,
     require_open,
     client_fingerprint_id,
-    assessment_id,
   });
 }
 

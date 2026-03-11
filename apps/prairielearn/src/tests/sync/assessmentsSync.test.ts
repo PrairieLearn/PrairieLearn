@@ -44,7 +44,7 @@ const sql = sqldb.loadSqlEquiv(import.meta.url);
 function makeAssessment(
   courseData: util.CourseData,
   type: 'Homework' | 'Exam' = 'Exam',
-  preferences?: Record<string, string | number>,
+  preferences?: Record<string, string | number | boolean>,
 ): AssessmentJsonInput {
   const assessmentSet = courseData.course.assessmentSets?.[0].name ?? '';
   return {
@@ -4230,6 +4230,7 @@ describe('Assessment syncing', () => {
           preferences: {
             num: 10,
             str: 'valid A',
+            bool: true,
           },
         },
       ],
@@ -4309,6 +4310,30 @@ describe('Assessment syncing', () => {
     assert.equal(
       syncedAssessment.sync_errors,
       'Question "questionPreferencesTest": preferences/str must be equal to one of the allowed values: valid A, valid B',
+    );
+  });
+
+  it('records an error if a boolean preference value is not passed as a boolean', async () => {
+    const courseData = util.getCourseData();
+    const assessment = makeAssessment(courseData, 'Exam');
+    assessment.zones?.push({
+      title: 'zone 1',
+      questions: [
+        {
+          id: util.PREFERENCES_QUESTION_ID,
+          points: 5,
+          preferences: {
+            bool: 'invalid choice',
+          },
+        },
+      ],
+    });
+    courseData.courseInstances[util.COURSE_INSTANCE_ID].assessments['prefFail'] = assessment;
+    await util.writeAndSyncCourseData(courseData);
+    const syncedAssessment = await findSyncedAssessment('prefFail');
+    assert.equal(
+      syncedAssessment.sync_errors,
+      'Question "questionPreferencesTest": preferences/bool must be boolean',
     );
   });
 
