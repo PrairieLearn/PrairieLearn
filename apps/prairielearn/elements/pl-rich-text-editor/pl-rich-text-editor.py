@@ -46,7 +46,12 @@ def element_inner_html(element: lxml.html.HtmlElement) -> str:
 
 
 def count_words_from_html_base64(file_contents_b64: str) -> int:
-    """Count words from base64-encoded HTML contents stored by the element."""
+    """Count words from base64-encoded HTML contents stored by the element.
+
+    Words are counted as sequences of non-whitespace characters. HTML tags are
+    stripped to extract plain text, non-breaking spaces (U+00A0) are normalized
+    to regular spaces, then the text is split on whitespace.
+    """
     if not file_contents_b64:
         return 0
     try:
@@ -223,6 +228,8 @@ def render(element_html: str, data: pl.QuestionData) -> str:
             "clipboard_enabled": clipboard_enabled,
             "min_word_count": min_wc,
             "max_word_count": max_wc,
+            "min_word_count_is_set": min_wc is not None,
+            "max_word_count_is_set": max_wc is not None,
             "has_word_count_bounds": has_word_count_bounds,
             "word_count_requirements_text": word_count_requirements_text,
             "footer_enabled": (counter != Counter.NONE) or has_word_count_bounds,
@@ -285,6 +292,7 @@ def parse(element_html: str, data: pl.QuestionData) -> None:
     # pl-rich-text-editor (potentially stored in Markdown)
     pl.add_submitted_file(data, file_name, file_contents, mimetype="text/html")
 
+    # Word count validation after adding the file so that the file is stored in the submitted_answers["_files"] key
     min_wc = pl.get_integer_attrib(element, "min-word-count", MIN_WORD_COUNT_DEFAULT)
     max_wc = pl.get_integer_attrib(element, "max-word-count", MAX_WORD_COUNT_DEFAULT)
 

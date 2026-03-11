@@ -12,6 +12,14 @@
     }
   });
 
+  // Words are counted as sequences of non-whitespace characters. Non-breaking
+  // spaces (U+00A0) are normalized to regular spaces before splitting.
+  const countWords = (text) => {
+    const normalized = text.replace(/\xa0/g, ' ').trim();
+    const tokens = normalized ? normalized.split(/\s+/) : [];
+    return tokens.length;
+  };
+
   class Counter {
     constructor(unit, uuid, getText) {
       this.unit = unit;
@@ -24,9 +32,7 @@
 
     calculate(text) {
       if (this.unit === 'word') {
-        const trimmed = text.trim();
-        // Splitting empty text returns a non-empty array
-        return trimmed.length > 0 ? trimmed.split(/\s+/).length : 0;
+        return countWords(text);
       } else if (this.unit === 'character') {
         // Use a spread so that Unicode characters are counted instead of utf-16 code units
         return [...text].length;
@@ -130,9 +136,9 @@
     const getText = () => quill.getText();
     const counter = options.counter === 'none' ? null : new Counter(options.counter, uuid, getText);
 
-    // --- Live min/max word-count invalid button wiring ---
+    // --- Live min/max word-count invalid message wiring ---
     const editorContainer = baseElement.closest('.pl-rich-text-editor-container');
-    const invalidButton = document.getElementById(`rte-invalid-${uuid}`);
+    const invalidElement = document.getElementById(`rte-invalid-${uuid}`);
 
     // Read bounds from HTML data attributes on the container
     const minWordCount = editorContainer?.dataset?.minWordCount
@@ -143,67 +149,28 @@
       : null;
 
     const hasBounds =
-      invalidButton && (Number.isFinite(minWordCount) || Number.isFinite(maxWordCount));
+      invalidElement && (Number.isFinite(minWordCount) || Number.isFinite(maxWordCount));
 
-    let invalidPopover = null;
-    if (hasBounds) {
-      invalidPopover = bootstrap.Popover.getOrCreateInstance(invalidButton, {
-        trigger: 'hover focus',
-        placement: 'top',
-        title: 'Invalid',
-        content: '',
-      });
-    }
+    const updateInvalidUI = () => {
+      if (!hasBounds) return;
 
-    const countWords = (text) => {
-      const trimmed = text.trim();
-      return trimmed.length > 0 ? trimmed.split(/\s+/).length : 0;
-    };
+      const wc = countWords(getText());
+      const tooFew = Number.isFinite(minWordCount) && wc < minWordCount;
+      const tooMany = Number.isFinite(maxWordCount) && wc > maxWordCount;
+      const isInvalid = tooFew || tooMany;
 
-    const requirementsText = (min, max) => {
-      const hasMin = Number.isFinite(min);
-      const hasMax = Number.isFinite(max);
-      if (hasMin && hasMax) {
-        if (min === max) return `Exactly ${min} word${min === 1 ? '' : 's'}`;
-        return `Between ${min} and ${max} words`;
+      if (!isInvalid) {
+        invalidElement.classList.add('d-none');
+        invalidElement.textContent = '';
+        return;
       }
-      if (hasMin) return `At least ${min} word${min === 1 ? '' : 's'}`;
-      return `At most ${max} word${max === 1 ? '' : 's'}`;
+
+      invalidElement.classList.remove('d-none');
+      const msg = tooFew
+        ? `Too few words (${wc} of ${minWordCount})`
+        : `Too many words (${wc} of ${maxWordCount})`;
+      invalidElement.textContent = msg;
     };
-
-      const updateInvalidUI = () => {
-        if (!hasBounds) return;
-
-        const wc = countWords(getText());
-        const tooFew = Number.isFinite(minWordCount) && wc < minWordCount;
-        const tooMany = Number.isFinite(maxWordCount) && wc > maxWordCount;
-        const isInvalid = tooFew || tooMany;
-
-        if (!isInvalid) {
-          invalidButton.classList.add('d-none');
-          invalidPopover?.hide?.();
-          invalidButton.setAttribute('data-bs-content', '');
-          return;
-        }
-
-        invalidButton.classList.remove('d-none');
-        const req = requirementsText(minWordCount, maxWordCount);
-        const msg = `Word count requirement: ${req}. Current: ${wc}.`;
-
-        invalidButton.setAttribute('data-bs-content', msg);
-
-        if (invalidPopover?.setContent) {
-          invalidPopover.setContent({ '.popover-body': msg });
-        } else {
-          invalidPopover?.dispose?.();
-          invalidPopover = bootstrap.Popover.getOrCreateInstance(invalidButton, {
-            trigger: 'hover focus',
-            placement: 'top',
-            title: 'Invalid',
-            content: msg,
-          });
-        }
-      };
 
     const updateHiddenInput = function () {
       // If a user types something and erases it, the editor will be blank, but
