@@ -48,11 +48,7 @@ WITH
   manual_grading_count AS (
     SELECT
       aq.assessment_id,
-      count(*) FILTER (
-        WHERE
-          iq.requires_manual_grading
-      ) AS num_instance_questions_to_grade,
-      count(*) AS num_instance_questions_with_manual_grading
+      count(*) AS num_instance_questions_to_grade
     FROM
       assessment_questions AS aq
       JOIN instance_questions AS iq ON (iq.assessment_question_id = aq.id)
@@ -67,8 +63,7 @@ WITH
           AND deleted_at IS NULL
       )
       AND aq.deleted_at IS NULL
-      AND coalesce(aq.max_manual_points, 0) > 0
-      AND iq.status != 'unanswered'
+      AND iq.requires_manual_grading
     GROUP BY
       aq.assessment_id
   )
@@ -108,8 +103,7 @@ SELECT
     ) IS NULL
   ) AS start_new_assessment_group,
   coalesce(ic.open_issue_count, 0) AS open_issue_count,
-  coalesce(mgc.num_instance_questions_to_grade, 0) AS num_instance_questions_to_grade,
-  coalesce(mgc.num_instance_questions_with_manual_grading, 0) AS num_instance_questions_with_manual_grading
+  coalesce(mgc.num_instance_questions_to_grade, 0) AS num_instance_questions_to_grade
 FROM
   assessments AS a
   JOIN course_instances AS ci ON (ci.id = a.course_instance_id)

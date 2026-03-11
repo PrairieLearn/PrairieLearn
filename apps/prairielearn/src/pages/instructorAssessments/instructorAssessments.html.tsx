@@ -140,7 +140,6 @@ export function InstructorAssessments({
                             })}
                             ${ManualGradingBadgeHtml({
                               numToGrade: row.num_instance_questions_to_grade,
-                              numTotal: row.num_instance_questions_with_manual_grading,
                               courseInstanceId: course_instance.id,
                               assessmentId: row.id,
                             })}
