@@ -1,6 +1,6 @@
 import { assert, describe, it } from 'vitest';
 
-import { getUniqueNames, propertyValueWithDefault } from './editorUtil.shared.js';
+import { getUniqueNames, propertyValueWithDefault, uuidsMatch } from './editorUtil.shared.js';
 
 describe('editor utils', () => {
   describe('getNamesForAdd', () => {
@@ -231,6 +231,20 @@ describe('editor utils', () => {
     it('should return the new value if it differs from the default value, even if the values are booleans', () => {
       const property = propertyValueWithDefault(true, false, true);
       assert.equal(property, false);
+    });
+  });
+
+  describe('uuidsMatch', () => {
+    it('treats UUIDs with different casing as equal', () => {
+      assert.isTrue(
+        uuidsMatch('854E9FAF-7282-4501-99D8-B8C309AD7C9E', '854e9faf-7282-4501-99d8-b8c309ad7c9e'),
+      );
+    });
+
+    it('returns false when the UUID value actually changed', () => {
+      assert.isFalse(
+        uuidsMatch('854E9FAF-7282-4501-99D8-B8C309AD7C9E', '5719ebfe-ad20-42b1-b0dc-c47f0f714871'),
+      );
     });
   });
 });

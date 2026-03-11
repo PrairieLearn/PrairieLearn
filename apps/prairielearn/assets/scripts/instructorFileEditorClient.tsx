@@ -8,7 +8,7 @@ import { renderHtml } from '@prairielearn/react';
 import { run } from '@prairielearn/run';
 
 import { b64DecodeUnicode, b64EncodeUnicode } from '../../src/lib/base64-util.js';
-import { type FileMetadata, FileType } from '../../src/lib/editorUtil.shared.js';
+import { type FileMetadata, FileType, uuidsMatch } from '../../src/lib/editorUtil.shared.js';
 
 import { configureAceBasePaths } from './lib/ace.js';
 import './lib/verboseToggle.js';
@@ -244,7 +244,7 @@ class InstructorFileEditor {
           return { errorCode: SaveErrorCode.INVALID_JSON };
         } else if (this.fileMetadata.uuid) {
           if ('uuid' in parsedContent) {
-            if (parsedContent.uuid !== this.fileMetadata.uuid) {
+            if (!uuidsMatch(this.fileMetadata.uuid, parsedContent.uuid)) {
               return {
                 errorCode: SaveErrorCode.UUID_CHANGED,
                 originalUuid: this.fileMetadata.uuid,

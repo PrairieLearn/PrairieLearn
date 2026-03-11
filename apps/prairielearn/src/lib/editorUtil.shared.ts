@@ -45,6 +45,14 @@ export interface FileMetadata {
   type: FileType;
 }
 
+export function uuidsMatch(originalUuid: string | null, newUuid: unknown): boolean {
+  if (typeof originalUuid !== 'string' || typeof newUuid !== 'string') {
+    return originalUuid === newUuid;
+  }
+
+  return originalUuid.toLowerCase() === newUuid.toLowerCase();
+}
+
 export function getUniqueNames({
   shortNames,
   longNames,
@@ -98,7 +106,7 @@ export function getUniqueNames({
       if (typeof oldLongName !== 'string') return;
       const found =
         oldLongName === longName ||
-        oldLongName.match(new RegExp(`^${escapeRegExp(longName)} \\(([0-9]+)\\)$`));
+        oldLongName.match(new RegExp(`^${escapeRegExp(longName)} \(([0-9]+)\)$`));
       if (found) {
         const foundNumber = found === true ? 1 : Number.parseInt(found[1]);
         if (foundNumber >= numberOfMostRecentCopy) {
@@ -205,7 +213,7 @@ export function getNamesForCopy(
     let number = 1;
     oldnames.forEach((oldname) => {
       if (typeof oldname !== 'string') return;
-      const found = oldname.match(new RegExp(`^${escapeRegExp(basename)} \\(copy ([0-9]+)\\)$`));
+      const found = oldname.match(new RegExp(`^${escapeRegExp(basename)} \(copy ([0-9]+)\)$`));
       if (found) {
         const foundNumber = Number.parseInt(found[1]);
         if (foundNumber >= number) {
