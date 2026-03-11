@@ -131,11 +131,15 @@ export function ComboBox<T = void>({
       <AriaComboBox
         {...props}
         items={filteredItems}
-        selectedKey={value}
+        value={value}
         isDisabled={disabled}
         isInvalid={!!errorMessage}
         menuTrigger="focus"
         allowsEmptyCollection
+        onChange={(key) => {
+          setFilterText('');
+          onChange(key?.toString() ?? null);
+        }}
         onInputChange={(inputValue) => {
           setFilterText(inputValue);
           if (inputValue === '') {

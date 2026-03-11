@@ -153,5 +153,12 @@ ruleTester.run('no-current-target-in-callback', rule, {
       }} />`,
       errors: [{ messageId: 'noCurrentTargetInCallback' }],
     },
+    // react-hook-form handleSubmit callbacks are also after the original event boundary
+    {
+      code: `const onSubmit = handleSubmit((_data, e) => {
+        e.currentTarget.submit();
+      });`,
+      errors: [{ messageId: 'noCurrentTargetInCallback' }],
+    },
   ],
 });

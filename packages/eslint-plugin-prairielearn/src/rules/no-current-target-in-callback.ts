@@ -95,6 +95,26 @@ export default ESLintUtils.RuleCreator.withoutDocs({
       return false;
     }
 
+    function isKnownEventBoundaryCallback(
+      callExpression: TSESTree.CallExpression,
+      callbackIndex: number,
+    ): boolean {
+      if (callbackIndex !== 0) {
+        return false;
+      }
+
+      if (
+        callExpression.callee.type === 'Identifier' &&
+        callExpression.callee.name === 'handleSubmit'
+      ) {
+        // react-hook-form invokes this callback after its own submit handling,
+        // so treat it as an event boundary like other deferred callbacks.
+        return true;
+      }
+
+      return false;
+    }
+
     /**
      * Check if a node is inside a nested function that is passed to a callback
      * API that may invoke it after the event handler returns.
@@ -110,7 +130,11 @@ export default ESLintUtils.RuleCreator.withoutDocs({
           const parent = current.parent;
           if (current.type !== 'FunctionDeclaration' && parent?.type === 'CallExpression') {
             const callbackIndex = parent.arguments.indexOf(current);
-            if (callbackIndex !== -1 && isKnownDeferredCallee(parent.callee)) {
+            if (
+              callbackIndex !== -1 &&
+              (isKnownDeferredCallee(parent.callee) ||
+                isKnownEventBoundaryCallback(parent, callbackIndex))
+            ) {
               return true;
             }
           }

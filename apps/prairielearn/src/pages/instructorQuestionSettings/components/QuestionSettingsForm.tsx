@@ -1,5 +1,5 @@
 import clsx from 'clsx';
-import { useMemo } from 'react';
+import { useMemo, useRef } from 'react';
 import { useForm } from 'react-hook-form';
 
 import { ComboBox, type ComboBoxItem, TagPicker } from '@prairielearn/ui';
@@ -121,6 +121,11 @@ export const QuestionSettingsForm = ({
   csrfToken: string;
   canEdit: boolean;
 }) => {
+  // `handleSubmit` runs after react-hook-form processes the submit event, so use a
+  // stable ref rather than depending on `event.currentTarget` here.
+  // If we didn't wrap in `handleSubmit`, we could use `event.currentTarget`.
+  const formRef = useRef<HTMLFormElement>(null);
+
   const defaultValues: QuestionSettingsFormValues = {
     qid: question.qid ?? '',
     title: question.title ?? '',
@@ -209,12 +214,17 @@ export const QuestionSettingsForm = ({
 
   const otherQids = new Set(qids.filter((q) => q !== defaultValues.qid));
 
-  const handleFormSubmit = handleSubmit((_data, e) => {
-    e!.currentTarget.submit();
+  const handleFormSubmit = handleSubmit(() => {
+    formRef.current?.submit();
   });
 
   return (
-    <form name="edit-question-settings-form" method="POST" onSubmit={handleFormSubmit}>
+    <form
+      ref={formRef}
+      name="edit-question-settings-form"
+      method="POST"
+      onSubmit={handleFormSubmit}
+    >
       <input type="hidden" name="__csrf_token" value={csrfToken} />
       <input type="hidden" name="__action" value="update_question" />
       <input type="hidden" name="orig_hash" value={origHash} />
