@@ -55,6 +55,7 @@
 
 .split-pane:not([data-narrow]) .split-pane__left-body {
   overflow: auto;
+  scrollbar-gutter: stable;
   flex: 1 1 0;
   min-height: 0;
 }
@@ -90,6 +91,7 @@
 
 .split-pane__right-body {
   overflow: auto;
+  scrollbar-gutter: stable;
   flex: 1;
   display: flex;
   flex-direction: column;

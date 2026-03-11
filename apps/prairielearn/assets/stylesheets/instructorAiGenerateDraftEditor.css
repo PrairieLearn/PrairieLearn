@@ -88,6 +88,7 @@
   grid-area: preview;
   min-height: 0;
   overflow-y: auto;
+  scrollbar-gutter: stable;
 }
 
 .app-chat-resizer {
