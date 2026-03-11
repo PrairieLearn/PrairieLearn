@@ -2,9 +2,11 @@ import base64
 import hashlib
 import json
 import os
+import re
 from enum import Enum
 
 import chevron
+import lxml.etree
 import lxml.html
 import prairielearn as pl
 from typing_extensions import assert_never
@@ -48,15 +50,15 @@ def element_inner_html(element: lxml.html.HtmlElement) -> str:
 def count_words_from_html_base64(file_contents_b64: str) -> int:
     """Count words from base64-encoded HTML contents stored by the element.
 
-    Words are counted as sequences of non-whitespace characters. HTML tags are
-    stripped to extract plain text, non-breaking spaces (U+00A0) are normalized
-    to regular spaces, then the text is split on whitespace.
+    Words are counted as sequences of word characters (alphanumeric and
+    underscore). HTML tags are stripped to extract plain text, then the text is
+    split on sequences of non-word characters (whitespace, punctuation, etc.).
     """
     if not file_contents_b64:
         return 0
     try:
         html = base64.b64decode(file_contents_b64).decode("utf-8", errors="replace")
-    except Exception:
+    except (ValueError, TypeError):
         # If decode fails, treat as empty rather than crashing student submissions.
         return 0
 
@@ -64,7 +66,7 @@ def count_words_from_html_base64(file_contents_b64: str) -> int:
     try:
         root = lxml.html.fromstring(html)
         text = root.text_content()
-    except Exception:
+    except lxml.etree.LxmlError:
         # If HTML is malformed, fallback to a naive strip of tags by parsing fragments
         try:
             frags = lxml.html.fragments_fromstring(html)
@@ -75,11 +77,11 @@ def count_words_from_html_base64(file_contents_b64: str) -> int:
                 else:
                     parts.append(frag.text_content())
             text = " ".join(parts)
-        except Exception:
+        except lxml.etree.LxmlError:
             text = html
 
-    # Normalize whitespace and split
-    tokens = [t for t in text.replace("\xa0", " ").split() if t]
+    # Split on non-word characters; filter empty tokens from leading/trailing
+    tokens = [t for t in re.split(r"\W+", text) if t]
     return len(tokens)
 
 def prepare(element_html: str, data: pl.QuestionData) -> None:
@@ -219,7 +221,7 @@ def render(element_html: str, data: pl.QuestionData) -> str:
         else:
             word_count_requirements_text = f"Maximum: {max_wc} words"
 
-        html_params: dict[str, str | bool | int | None] = {
+        html_params = {
             "name": answer_name,
             "file_name": file_name,
             "editor_uuid": uuid,

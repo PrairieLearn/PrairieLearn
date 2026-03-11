@@ -12,11 +12,11 @@
     }
   });
 
-  // Words are counted as sequences of non-whitespace characters. Non-breaking
-  // spaces (U+00A0) are normalized to regular spaces before splitting.
+  // Words are counted as sequences of word characters (alphanumeric and
+  // underscore). The text is split on sequences of non-word characters
+  // (whitespace, punctuation, etc.).
   const countWords = (text) => {
-    const normalized = text.replace(/\xa0/g, ' ').trim();
-    const tokens = normalized ? normalized.split(/\s+/) : [];
+    const tokens = text.trim() ? text.split(/\W+/).filter((t) => t) : [];
     return tokens.length;
   };
 
