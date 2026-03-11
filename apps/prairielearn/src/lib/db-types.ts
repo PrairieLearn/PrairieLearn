@@ -779,6 +779,8 @@ export const EnrollmentSchema = z.object({
 });
 export type Enrollment = z.infer<typeof EnrollmentSchema>;
 
+export const ExamModeNetworkSchema = null;
+
 export const FeatureGrantSchema = null;
 
 export const FileSchema = z.object({
@@ -1661,6 +1663,7 @@ export const TableNames = [
   'current_pages',
   'draft_question_metadata',
   'enrollments',
+  'exam_mode_networks',
   'feature_grants',
   'file_edits',
   'file_transfers',
