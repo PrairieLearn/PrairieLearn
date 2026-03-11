@@ -307,6 +307,47 @@
     },
   ];
 
+  const isSelected = (mf) => {
+    const firstSelection = mf.selection?.ranges?.[0];
+    return firstSelection && firstSelection[1] !== firstSelection[0];
+  };
+
+  const makeShortcutProxy = (proxiedObject, mf) => {
+    const shortcutProxyHandler = {
+      get(target, prop, receiver) {
+        let value = Reflect.get(target, prop, receiver);
+
+        if (value === null) {
+          return value;
+        }
+
+        if (typeof value === 'object') {
+          return wrapWithProxy(value);
+        }
+
+        if (typeof value === 'function') {
+          return value.bind(target);
+        }
+
+        if (
+          value &&
+          typeof value === 'string' &&
+          isSelected(mf) &&
+          !value.includes('\\left(#@\\right)')
+        ) {
+          value = value.replace('#@', '\\left(#@\\right)');
+        }
+        return typeof value === 'function' ? value.bind(target) : value;
+      },
+    };
+
+    function wrapWithProxy(target) {
+      return new Proxy(target, shortcutProxyHandler);
+    }
+
+    return wrapWithProxy(proxiedObject);
+  };
+
   /**
    * Initialize a <math-field> element with custom settings for <pl-symbolic-input>
    *
@@ -334,7 +375,8 @@
       {
         id: 'power',
         label: () => '<span class="ML__insert-template">x<sup>y</sup></span>',
-        onMenuSelect: () => mf.insert('{#@}^{#?}'),
+        onMenuSelect: () =>
+          isSelected(mf) ? mf.insert('\\left({#@}\\right)^{#?}') : mf.insert('{#@}^{#?}'),
       },
       {
         id: 'sqrt',
@@ -359,12 +401,15 @@
       label: 'math',
       rows: [
         [
-          { class: 'small', latex: '{#@}^{#?}' },
-          {
-            class: 'small',
-            latex: '{#@}^{2}',
-            variants: [{ class: 'small', latex: '{#@}^{3}' }],
-          },
+          makeShortcutProxy({ class: 'small', latex: '{#@}^{#?}' }, mf),
+          makeShortcutProxy(
+            {
+              class: 'small',
+              latex: '{#@}^{2}',
+              variants: [{ class: 'small', latex: '{#@}^{3}' }],
+            },
+            mf,
+          ),
           {
             class: 'small',
             latex: '\\frac{#@}{#?}',
@@ -413,7 +458,13 @@
           '1',
           '2',
           '3',
-          { latex: '\\times', insert: '\\cdot' },
+          makeShortcutProxy(
+            {
+              latex: '\\times',
+              insert: '{#@}\\cdot',
+            },
+            mf,
+          ),
           '[separator]',
           '(',
           ')',
@@ -518,7 +569,7 @@
               }
             : '[separator]',
           '[separator]',
-          { class: 'small', label: '0', width: 2 },
+          { latex: '0', width: 2 },
           '.',
           '/',
           '[separator]',
@@ -529,9 +580,12 @@
       ],
     };
 
-    mf.addEventListener('focus', () => {
+    const updateKeyboardLayout = () => {
       mathVirtualKeyboard.layouts = [elementKeyboardLayout, ...defaultKeyboardLayouts];
-    });
+    };
+
+    mf.addEventListener('focus', updateKeyboardLayout);
+    mf.addEventListener('selection-change', updateKeyboardLayout);
 
     setUpSymbolicInputMacros(mf);
 
@@ -638,8 +692,11 @@
       '**': {
         value: '{#@}^{#?}',
       },
+      '^': {
+        value: '{#@}^{#?}',
+      },
       '*': {
-        value: '\\cdot',
+        value: '{#@}\\cdot',
       },
       '|': {
         value: '|{#@}|',
@@ -657,11 +714,14 @@
         value: '\\infty',
       },
     };
-    [...customFunctions].forEach((f) => (inlineShortcuts[f] = `\\operatorname{${f}}`));
-    [...greekLettersToUnicode.keys()].forEach((l) => (inlineShortcuts[l] = `\\${l}`));
-    [...greekLetters].forEach((l) => (inlineShortcuts[l] = `\\${l}`));
+
+    const shortcutProxy = makeShortcutProxy(inlineShortcuts, mf);
+
+    [...customFunctions].forEach((f) => (shortcutProxy[f] = `\\operatorname{${f}}`));
+    [...greekLettersToUnicode.keys()].forEach((l) => (shortcutProxy[l] = `\\${l}`));
+    [...greekLetters].forEach((l) => (shortcutProxy[l] = `\\${l}`));
 
     mf.macros = macros;
-    mf.inlineShortcuts = inlineShortcuts;
+    mf.inlineShortcuts = shortcutProxy;
   }
 })();

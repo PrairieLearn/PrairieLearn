@@ -103,9 +103,9 @@ export function TreeZoneNode({
             position: 'sticky',
             top: 0,
             zIndex: 10,
-            ...((zonePointsMismatch != null || zoneChooseExceeds) && {
-              borderLeft: '6px solid var(--bs-warning)',
-            }),
+            ...(zoneChooseExceeds || zonePointsMismatch != null
+              ? { borderLeft: '6px solid var(--bs-warning)' }
+              : {}),
           }}
           onClick={(e) => {
             e.stopPropagation();

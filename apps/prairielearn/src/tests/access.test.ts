@@ -5,6 +5,7 @@ import fetch from 'node-fetch';
 import { afterAll, assert, beforeAll, describe, it } from 'vitest';
 
 import * as sqldb from '@prairielearn/postgres';
+import { DateFromISOString } from '@prairielearn/zod';
 
 import { dangerousFullSystemAuthz } from '../lib/authz-data-lib.js';
 import { config } from '../lib/config.js';
@@ -19,6 +20,7 @@ import { selectAssessmentByTid } from '../models/assessment.js';
 import { selectCourseInstanceById } from '../models/course-instances.js';
 import { ensureUncheckedEnrollment } from '../models/enrollment.js';
 
+import { withPTReservation } from './helperExam.js';
 import * as helperServer from './helperServer.js';
 
 const sql = sqldb.loadSqlEquiv(import.meta.url);
@@ -62,33 +64,26 @@ describe('Access control', { timeout: 20000 }, function () {
     return cookies;
   }
 
-  function cookiesStudentExam() {
-    const cookies = cookiesStudent();
-    cookies.setCookieSync('pl_test_mode=Exam', siteUrl);
-    cookies.setCookieSync('pl_test_date=2100-06-13T13:12:00Z', siteUrl);
-    return cookies;
-  }
-
   function cookiesStudentExamBeforeCourseInstance() {
-    const cookies = cookiesStudentExam();
+    const cookies = cookiesStudent();
     cookies.setCookieSync('pl_test_date=1750-06-13T13:12:00Z', siteUrl);
     return cookies;
   }
 
   function cookiesStudentExamBeforeAssessment() {
-    const cookies = cookiesStudentExam();
+    const cookies = cookiesStudent();
     cookies.setCookieSync('pl_test_date=1910-06-13T13:12:00Z', siteUrl);
     return cookies;
   }
 
   function cookiesStudentExamAfterAssessment() {
-    const cookies = cookiesStudentExam();
+    const cookies = cookiesStudent();
     cookies.setCookieSync('pl_test_date=2350-06-13T13:12:00Z', siteUrl);
     return cookies;
   }
 
   function cookiesStudentExamAfterCourseInstance() {
-    const cookies = cookiesStudentExam();
+    const cookies = cookiesStudent();
     cookies.setCookieSync('pl_test_date=2450-06-13T13:12:00Z', siteUrl);
     return cookies;
   }
@@ -104,6 +99,7 @@ describe('Access control', { timeout: 20000 }, function () {
   let questionData: any;
   let variant: Variant;
   let instance_question: InstanceQuestion;
+  let reservationArgs: Parameters<typeof withPTReservation>[0];
 
   /**********************************************************************/
 
@@ -125,6 +121,11 @@ describe('Access control', { timeout: 20000 }, function () {
   describe('2. the student user', function () {
     it('should select from the DB', async () => {
       user = await sqldb.queryRow(sql.select_student_user, UserSchema);
+      reservationArgs = {
+        userId: user.id,
+        accessStart: DateFromISOString.parse('1920-07-07 23:59:59'),
+        accessEnd: DateFromISOString.parse('2300-07-10 23:59:59'),
+      };
     });
   });
 
@@ -181,13 +182,22 @@ describe('Access control', { timeout: 20000 }, function () {
       await getAssessments(cookiesStudent(), false);
     });
     it('as student in Exam mode before time period should not contain E1', async () => {
-      await getAssessments(cookiesStudentExamBeforeAssessment(), false);
+      await withPTReservation(
+        reservationArgs,
+        async () => await getAssessments(cookiesStudentExamBeforeAssessment(), false),
+      );
     });
     it('as student in Exam mode after time period should not contain E1', async () => {
-      await getAssessments(cookiesStudentExamAfterAssessment(), false);
+      await withPTReservation(
+        reservationArgs,
+        async () => await getAssessments(cookiesStudentExamAfterAssessment(), false),
+      );
     });
     it('as student in Exam mode should contain E1', async () => {
-      await getAssessments(cookiesStudentExam(), true);
+      await withPTReservation(
+        reservationArgs,
+        async () => await getAssessments(cookiesStudent(), true),
+      );
     });
     it('should have the correct link for E1', function () {
       assert.nestedProperty(elemList[0], 'attribs.href');
@@ -209,13 +219,22 @@ describe('Access control', { timeout: 20000 }, function () {
       await getAssessment(cookiesStudent(), 403);
     });
     it('as student in Exam mode before time period should return 403', async () => {
-      await getAssessment(cookiesStudentExamBeforeAssessment(), 403);
+      await withPTReservation(
+        reservationArgs,
+        async () => await getAssessment(cookiesStudentExamBeforeAssessment(), 403),
+      );
     });
     it('as student in Exam mode after time period should return 403', async () => {
-      await getAssessment(cookiesStudentExamAfterAssessment(), 403);
+      await withPTReservation(
+        reservationArgs,
+        async () => await getAssessment(cookiesStudentExamAfterAssessment(), 403),
+      );
     });
     it('as student in Exam mode should load successfully', async () => {
-      await getAssessment(cookiesStudentExam(), 200);
+      await withPTReservation(
+        reservationArgs,
+        async () => await getAssessment(cookiesStudent(), 200),
+      );
     });
     it('should parse', function () {
       $ = cheerio.load(page);
@@ -255,13 +274,22 @@ describe('Access control', { timeout: 20000 }, function () {
       await postAssessment(cookiesStudent(), true, 403);
     });
     it('as student in Exam mode before time period should return 403', async () => {
-      await postAssessment(cookiesStudentExamBeforeAssessment(), true, 403);
+      await withPTReservation(
+        reservationArgs,
+        async () => await postAssessment(cookiesStudentExamBeforeAssessment(), true, 403),
+      );
     });
     it('as student in Exam mode after time period should return 403', async () => {
-      await postAssessment(cookiesStudentExamAfterAssessment(), true, 403);
+      await withPTReservation(
+        reservationArgs,
+        async () => await postAssessment(cookiesStudentExamAfterAssessment(), true, 403),
+      );
     });
     it('as student in Exam mode should load successfully', async () => {
-      await postAssessment(cookiesStudentExam(), true, 200);
+      await withPTReservation(
+        reservationArgs,
+        async () => await postAssessment(cookiesStudent(), true, 200),
+      );
     });
   });
 
@@ -278,13 +306,22 @@ describe('Access control', { timeout: 20000 }, function () {
       await getAssessmentInstance(cookiesStudent(), 403);
     });
     it('as student in Exam mode before time period should return 403', async () => {
-      await getAssessmentInstance(cookiesStudentExamBeforeAssessment(), 403);
+      await withPTReservation(
+        reservationArgs,
+        async () => await getAssessmentInstance(cookiesStudentExamBeforeAssessment(), 403),
+      );
     });
     it('as student in Exam mode after time period should return 403', async () => {
-      await getAssessmentInstance(cookiesStudentExamAfterAssessment(), 403);
+      await withPTReservation(
+        reservationArgs,
+        async () => await getAssessmentInstance(cookiesStudentExamAfterAssessment(), 403),
+      );
     });
     it('as student in Exam mode should load successfully', async () => {
-      await getAssessmentInstance(cookiesStudentExam(), 200);
+      await withPTReservation(
+        reservationArgs,
+        async () => await getAssessmentInstance(cookiesStudent(), 200),
+      );
     });
     it('should parse', function () {
       $ = cheerio.load(page);
@@ -322,13 +359,22 @@ describe('Access control', { timeout: 20000 }, function () {
       await getInstanceQuestion(cookiesStudent(), 403);
     });
     it('as student in Exam mode before time period should return 403', async () => {
-      await getInstanceQuestion(cookiesStudentExamBeforeAssessment(), 403);
+      await withPTReservation(
+        reservationArgs,
+        async () => await getInstanceQuestion(cookiesStudentExamBeforeAssessment(), 403),
+      );
     });
     it('as student in Exam mode after time period should return 403', async () => {
-      await getInstanceQuestion(cookiesStudentExamAfterAssessment(), 403);
+      await withPTReservation(
+        reservationArgs,
+        async () => await getInstanceQuestion(cookiesStudentExamAfterAssessment(), 403),
+      );
     });
     it('as student in Exam mode should load successfully', async () => {
-      await getInstanceQuestion(cookiesStudentExam(), 200);
+      await withPTReservation(
+        reservationArgs,
+        async () => await getInstanceQuestion(cookiesStudent(), 200),
+      );
     });
     it('should parse', function () {
       $ = cheerio.load(page);
@@ -385,13 +431,22 @@ describe('Access control', { timeout: 20000 }, function () {
       await postInstanceQuestion(cookiesStudent(), 403);
     });
     it('as student in Exam mode before time period should return 403', async () => {
-      await postInstanceQuestion(cookiesStudentExamBeforeAssessment(), 403);
+      await withPTReservation(
+        reservationArgs,
+        async () => await postInstanceQuestion(cookiesStudentExamBeforeAssessment(), 403),
+      );
     });
     it('as student in Exam mode after time period should return 403', async () => {
-      await postInstanceQuestion(cookiesStudentExamAfterAssessment(), 403);
+      await withPTReservation(
+        reservationArgs,
+        async () => await postInstanceQuestion(cookiesStudentExamAfterAssessment(), 403),
+      );
     });
     it('as student in Exam mode should load successfully', async () => {
-      await postInstanceQuestion(cookiesStudentExam(), 200);
+      await withPTReservation(
+        reservationArgs,
+        async () => await postInstanceQuestion(cookiesStudent(), 200),
+      );
     });
   });
 });

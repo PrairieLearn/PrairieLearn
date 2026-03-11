@@ -5,7 +5,7 @@ import { type ReactElement, useId } from 'react';
 import { OverlayTrigger } from '@prairielearn/ui';
 
 import { CopyButton } from '../../../../components/CopyButton.js';
-import type { StaffAssessmentQuestionRow } from '../../../../lib/assessment-question.shared.js';
+import type { EditorQuestionMetadata } from '../../../../lib/assessment-question.shared.js';
 import { getQuestionUrl } from '../../../../lib/client/url.js';
 import type { EnumAssessmentType } from '../../../../lib/db-types.js';
 import type { QuestionAlternativeForm, TreeState, ZoneQuestionBlockForm } from '../../types.js';
@@ -62,7 +62,7 @@ export function PointsBadge({
       const manualStr = String(manualPoints);
       compactParts.push(
         <span key="manual">
-          <i className="bi bi-person-fill me-1" aria-hidden="true" />
+          <i className="bi bi-pen-fill me-1" aria-hidden="true" />
           {manualStr}
         </span>,
       );
@@ -129,7 +129,7 @@ export function PointsBadge({
     const manualStr = String(manualPoints);
     compactParts.push(
       <span key="manual">
-        <i className="bi bi-person-fill me-1" aria-hidden="true" />
+        <i className="bi bi-pen-fill me-1" aria-hidden="true" />
         {manualStr}
       </span>,
     );
@@ -180,7 +180,7 @@ export function TreeQuestionRow({
   question: ZoneQuestionBlockForm | QuestionAlternativeForm;
   zoneQuestionBlock: ZoneQuestionBlockForm;
   isAlternative: boolean;
-  questionData: StaffAssessmentQuestionRow | null;
+  questionData: EditorQuestionMetadata | null;
   state: TreeState;
   isSelected: boolean;
   draggableAttributes: DraggableAttributes;
@@ -285,7 +285,7 @@ export function TreeQuestionRow({
         )}
         {viewType === 'detailed' && questionData && (
           <>
-            {questionData.tags?.length && (
+            {questionData.tags != null && questionData.tags.length > 0 && (
               <div className="d-flex flex-wrap align-items-center gap-1 mt-1">
                 {questionData.tags.map((tag) => (
                   <span key={tag.name} className={`badge color-${tag.color}`}>

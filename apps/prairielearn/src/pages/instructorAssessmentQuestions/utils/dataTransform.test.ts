@@ -11,7 +11,13 @@ import {
 import * as courseDB from '../../../sync/course-db.js';
 import type { ZoneAssessmentForm } from '../types.js';
 
-import { prepareZonesForEditor, serializeZonesForJson, stripTrackingIds } from './dataTransform.js';
+import {
+  createAltGroupWithTrackingId,
+  getDefaultPointFieldsForNewQuestion,
+  prepareZonesForEditor,
+  serializeZonesForJson,
+  stripTrackingIds,
+} from './dataTransform.js';
 
 describe('serializeZonesForJson', () => {
   test('should strip defaults while preserving structure for all example course assessments', async () => {
@@ -93,7 +99,7 @@ describe('serializeZonesForJson', () => {
     }
   });
 
-  it('strips default allowRealTimeGrading from zones', () => {
+  it('preserves explicit default allowRealTimeGrading on zones', () => {
     const parsedZones = [
       ZoneAssessmentJsonSchema.parse({
         title: 'Zone with default allowRealTimeGrading',
@@ -102,12 +108,11 @@ describe('serializeZonesForJson', () => {
       }),
     ];
 
+    // Explicit `true` must be preserved because a parent assessment may set
+    // allowRealTimeGrading to `false`, and stripping the zone's `true` would
+    // silently change its effective value via inheritance.
     const serialized = serializeZonesForJson(parsedZones);
-    expect(serialized[0].allowRealTimeGrading).toBeUndefined();
-
-    // Re-parsing the stripped value should leave it undefined (not re-introduce the default)
-    const reparsed = serialized.map((zone) => ZoneAssessmentJsonSchema.parse(zone));
-    expect(reparsed[0].allowRealTimeGrading).toBeUndefined();
+    expect(serialized[0].allowRealTimeGrading).toBe(true);
   });
 
   it('preserves non-default allowRealTimeGrading on zones', () => {
@@ -195,6 +200,23 @@ describe('prepareZonesForEditor', () => {
     ];
     const uniqueIds = new Set(trackingIds);
     expect(uniqueIds.size).toBe(trackingIds.length);
+  });
+});
+
+describe('new question defaults', () => {
+  it('uses manual points for Manual questions', () => {
+    expect(getDefaultPointFieldsForNewQuestion('Manual')).toEqual({
+      autoPoints: undefined,
+      manualPoints: 1,
+    });
+  });
+
+  it('starts empty alt groups without inherited point defaults', () => {
+    const result = createAltGroupWithTrackingId();
+
+    expect(result.autoPoints).toBeUndefined();
+    expect(result.manualPoints).toBeUndefined();
+    expect(result.alternatives).toEqual([]);
   });
 });
 

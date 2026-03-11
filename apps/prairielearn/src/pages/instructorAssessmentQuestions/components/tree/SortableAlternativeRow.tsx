@@ -1,6 +1,6 @@
 import { useSortable } from '@dnd-kit/sortable';
 
-import type { StaffAssessmentQuestionRow } from '../../../../lib/assessment-question.shared.js';
+import type { EditorQuestionMetadata } from '../../../../lib/assessment-question.shared.js';
 import type { QuestionAlternativeForm, TreeState, ZoneQuestionBlockForm } from '../../types.js';
 
 import { TreeQuestionRow } from './TreeQuestionRow.js';
@@ -17,7 +17,7 @@ export function SortableAlternativeRow({
 }: {
   alternative: QuestionAlternativeForm;
   zoneQuestionBlock: ZoneQuestionBlockForm;
-  questionData: StaffAssessmentQuestionRow | null;
+  questionData: EditorQuestionMetadata | null;
   state: TreeState;
   isSelected: boolean;
   onClick: () => void;

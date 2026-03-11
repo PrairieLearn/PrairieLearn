@@ -8,23 +8,22 @@
   "allowAccess": [
     {
       "mode": "Exam",
+      "examUuid": "e66122b5-c793-4235-9851-9a3aa80ae39b",
       "credit": 100,
-      "timeLimitMin": 50,
-      "startDate": "1920-07-07T23:59:59",
-      "endDate": "2300-07-10T23:59:59"
+      "timeLimitMin": 50
     }
   ],
   "zones": [
     {
       "title": "Hard questions",
       "questions": [
-        { "id": "addNumbers", "points": [5, 3, 1] },
+        { "id": "addNumbers", "autoPoints": [5, 3, 1] },
         { "id": "addVectors", "autoPoints": [11, 9], "manualPoints": 10 },
-        { "id": "fossilFuelsRadio", "points": [17, 13, 7, 2] },
-        { "id": "partialCredit1", "points": [19] },
-        { "id": "partialCredit2", "points": [9, 7, 5, 3] },
-        { "id": "partialCredit3", "points": [13, 13, 8, 0.5, 0.1] },
-        { "id": "brokenGeneration", "points": [10] }
+        { "id": "fossilFuelsRadio", "autoPoints": [17, 13, 7, 2] },
+        { "id": "partialCredit1", "autoPoints": [19] },
+        { "id": "partialCredit2", "autoPoints": [9, 7, 5, 3] },
+        { "id": "partialCredit3", "autoPoints": [13, 13, 8, 0.5, 0.1] },
+        { "id": "brokenGeneration", "autoPoints": [10] }
       ]
     }
   ],

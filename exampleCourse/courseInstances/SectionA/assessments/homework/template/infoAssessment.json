@@ -29,9 +29,9 @@
     {
       "title": "Unlimited question variants with one single attempt",
       "questions": [
-        { "id": "template/checkbox/random-prompt", "points": 1, "maxPoints": 6 },
-        { "id": "template/string-input/random", "points": 1, "maxPoints": 3 },
-        { "id": "template/symbolic-input/random", "points": 1, "maxPoints": 6 }
+        { "id": "template/checkbox/random-prompt", "autoPoints": 1, "maxAutoPoints": 6 },
+        { "id": "template/string-input/random", "autoPoints": 1, "maxAutoPoints": 3 },
+        { "id": "template/symbolic-input/random", "autoPoints": 1, "maxAutoPoints": 6 }
       ]
     },
     {
@@ -39,16 +39,21 @@
       "questions": [
         {
           "id": "demo/annotated/engVectorDrawing",
-          "points": 2,
-          "maxPoints": 6,
+          "autoPoints": 2,
+          "maxAutoPoints": 6,
           "triesPerVariant": 2
         },
-        { "id": "demo/annotated/engBeamStress", "points": 2, "maxPoints": 6, "triesPerVariant": 3 }
+        {
+          "id": "demo/annotated/engBeamStress",
+          "autoPoints": 2,
+          "maxAutoPoints": 6,
+          "triesPerVariant": 3
+        }
       ]
     },
     {
       "title": "Single question variant with unlimited number of attempts",
-      "questions": [{ "id": "demo/annotated/engMarkovBrewing", "points": 8 }]
+      "questions": [{ "id": "demo/annotated/engMarkovBrewing", "autoPoints": 8 }]
     }
   ],
   "text": "<p><strong>Comments about this assessment:</strong></p> </p><p><strong>The first zone</strong> includes examples of lower level questions that involve nearly automatic responses. As such, we use the drilling for mastery configuration (PrairieLearn default for homework), where students can create unlimited question variants, each one with a single attempt. Read more <a href=\"https://github.com/PrairieLearn/PrairieLearn/blob/master/exampleCourse/courseInstances/SectionA/assessments/homework/template/__docs/docs.md/#drilling-for-mastery-unlimited-variants-with-single-attempt\" rel=\"noreferrer\" target=\"_blank\">here</a>.</p> <p><strong>The second zone</strong> includes examples of more sophisticated questions that often involve more than one step to achieve the solution. These questions allow students to retry the same question variant more than once, before creating a new variant. Read more <a href=\"https://github.com/PrairieLearn/PrairieLearn/blob/master/exampleCourse/courseInstances/SectionA/assessments/homework/template/__docs/docs.md/#repeated-variant-unlimited-variants-with-prescribed-number-of-retry-attempts\" rel=\"noreferrer\" target=\"_blank\">here</a>.</p><p><strong>The third zone</strong> includes a coding question that involve multiple skills levels (lower to high) and several steps to obtain the solution. Students receive only one variant of the question and have unlimited attempts to complete it successfully. Read more <a href=\"https://github.com/PrairieLearn/PrairieLearn/blob/master/exampleCourse/courseInstances/SectionA/assessments/homework/template/__docs/docs.md/#fixed-variant-unlimited-retry-attempts-for-a-single-question-variant\" rel=\"noreferrer\" target=\"_blank\">here</a>.</p>"

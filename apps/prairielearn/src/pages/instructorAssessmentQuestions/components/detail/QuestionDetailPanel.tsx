@@ -12,7 +12,7 @@ import { run } from '@prairielearn/run';
 import { OverlayTrigger } from '@prairielearn/ui';
 
 import { CopyButton } from '../../../../components/CopyButton.js';
-import type { StaffAssessmentQuestionRow } from '../../../../lib/assessment-question.shared.js';
+import type { EditorQuestionMetadata } from '../../../../lib/assessment-question.shared.js';
 import { getQuestionUrl } from '../../../../lib/client/url.js';
 import type { EnumAssessmentType } from '../../../../lib/db-types.js';
 import type {
@@ -25,17 +25,19 @@ import type {
 import {
   coerceToNumber,
   coerceToOptionalString,
-  extractStringComment,
+  commentToString,
   formatPoints,
   formatPointsValue,
   makeResetAndSave,
+  parseCommentValue,
   parsePointsListValue,
   validateAtLeastOnePointsField,
   validateNonIncreasingPoints,
   validatePointsListFormat,
 } from '../../utils/formHelpers.js';
-import { validatePositiveInteger } from '../../utils/questions.js';
+import { toAssessmentForPicker, validatePositiveInteger } from '../../utils/questions.js';
 import { useAutoSave } from '../../utils/useAutoSave.js';
+import { AssessmentBadges } from '../AssessmentBadges.js';
 
 import { AdvancedFields, type AdvancedFieldsInheritance } from './AdvancedFields.js';
 import { DetailSectionHeader } from './DetailSectionHeader.js';
@@ -73,7 +75,7 @@ export function QuestionDetailPanel({
   question: ZoneQuestionBlockForm | QuestionAlternativeForm;
   zoneQuestionBlock?: ZoneQuestionBlockForm;
   zone?: ZoneAssessmentForm;
-  questionData: StaffAssessmentQuestionRow | null;
+  questionData: EditorQuestionMetadata | null;
   idPrefix: string;
   state: DetailState;
   onUpdate: (
@@ -92,6 +94,7 @@ export function QuestionDetailPanel({
 }) {
   const {
     editMode,
+    hasCourseInstancePermissionEdit,
     assessmentType,
     constantQuestionValue,
     assessmentDefaults,
@@ -145,7 +148,7 @@ export function QuestionDetailPanel({
     mode: 'onChange',
     values: {
       id: question.id ?? '',
-      comment: extractStringComment(question.comment) || undefined,
+      comment: commentToString(question.comment),
       autoPoints: isAlternative ? ownAutoPoints : (autoPointsValue ?? undefined),
       maxAutoPoints: isAlternative ? ownMaxAutoPoints : (maxAutoPointsValue ?? undefined),
       manualPoints: isAlternative ? ownManualPoints : (manualPointsValue ?? undefined),
@@ -189,6 +192,7 @@ export function QuestionDetailPanel({
         questionTrackingId,
         {
           ...data,
+          comment: parseCommentValue(data.comment),
           forceMaxPoints: hasForceMaxPointsParent
             ? data.forceMaxPoints
             : data.forceMaxPoints || undefined,
@@ -204,7 +208,7 @@ export function QuestionDetailPanel({
     [handleSave, getValues],
   );
 
-  useAutoSave({ isDirty, isValid, getValues, onSave: handleSave, watch });
+  useAutoSave({ isDirty, isValid, getValues, onSave: handleSave, watch, trigger });
 
   // Validate immediately on mount so that pre-existing invalid state
   // (e.g. no points set on a newly added question) is flagged right away.
@@ -338,6 +342,14 @@ export function QuestionDetailPanel({
                   {tag.name}
                 </span>
               ))}
+            </div>
+          )}
+          {questionData.other_assessments && questionData.other_assessments.length > 0 && (
+            <div className="d-flex flex-wrap align-items-center gap-1 mt-1">
+              <AssessmentBadges
+                assessments={toAssessmentForPicker(questionData.other_assessments)}
+                courseInstanceId={courseInstanceId}
+              />
             </div>
           )}
         </div>
@@ -478,7 +490,7 @@ export function QuestionDetailPanel({
           label="Comment"
           viewValue={
             question.comment != null ? (
-              <span className="text-break">{String(question.comment)}</span>
+              <span className="text-break">{commentToString(question.comment)}</span>
             ) : undefined
           }
           helpText="Internal note, not shown to students."
@@ -507,23 +519,25 @@ export function QuestionDetailPanel({
 
       {/* Action buttons */}
       <div className="d-flex gap-2">
-        {questionData && questionData.assessment_question.id !== '0' && (
-          <OverlayTrigger
-            placement="top"
-            tooltip={{
-              props: { id: 'reset-variants-tooltip' },
-              body: 'Resets all existing variants for this question on this assessment, so students will get new variants on their next visit.',
-            }}
-          >
-            <button
-              type="button"
-              className="btn btn-sm btn-outline-secondary"
-              onClick={() => onResetButtonClick(questionData.assessment_question.id)}
+        {!editMode &&
+          hasCourseInstancePermissionEdit &&
+          questionData?.assessment_question_id != null && (
+            <OverlayTrigger
+              placement="top"
+              tooltip={{
+                props: { id: 'reset-variants-tooltip' },
+                body: 'Resets all existing variants for this question on this assessment, so students will get new variants on their next visit.',
+              }}
             >
-              Reset question variants
-            </button>
-          </OverlayTrigger>
-        )}
+              <button
+                type="button"
+                className="btn btn-sm btn-outline-secondary"
+                onClick={() => onResetButtonClick(questionData.assessment_question_id!)}
+              >
+                Reset question variants
+              </button>
+            </OverlayTrigger>
+          )}
         {editMode && (
           <OverlayTrigger
             placement="top"

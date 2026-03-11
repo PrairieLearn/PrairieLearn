@@ -55,6 +55,30 @@ export const exams: Record<string, TestExam> = {
 
 export const exam1AutomaticTestSuite = exams['exam1-automaticTestSuite'];
 
+export async function withPTReservation<T>(
+  {
+    userId,
+    accessStart,
+    accessEnd,
+  }: {
+    userId: string;
+    accessStart: Date;
+    accessEnd: Date;
+  },
+  fn: () => Promise<T>,
+) {
+  try {
+    await sqldb.execute(sql.create_pt_reservation, {
+      user_id: userId,
+      access_start: accessStart,
+      access_end: accessEnd,
+    });
+    return await fn();
+  } finally {
+    await sqldb.execute(sql.delete_pt_reservation);
+  }
+}
+
 export function startExam(locals: Record<string, any>, examTid: keyof typeof exams) {
   if (!(examTid in exams)) {
     throw new Error(`Exam ${examTid} not found`);
