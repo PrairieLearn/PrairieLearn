@@ -217,10 +217,12 @@ function AssessmentEditorInner({
       : nextSelectedItem;
   }, [selectedItemState, zones]);
 
-  // Ref tracks the latest selectedItem so async handlers (handleQuestionPicked)
-  // can detect if the selection changed during an await and bail out early.
+  // Refs track the latest values so async handlers (handleQuestionPicked)
+  // can read fresh state after an await instead of using the stale closure.
   const selectedItemRef = useRef(selectedItem);
   selectedItemRef.current = selectedItem;
+  const zonesRef = useRef(zones);
+  zonesRef.current = zones;
 
   // Tracks validation errors for the currently mounted detail form only.
   // Invalid draft values in the open form are discarded on unmount because
@@ -431,7 +433,11 @@ function AssessmentEditorInner({
 
       if (selectedItem.altGroupTrackingId) {
         // Empty groups start neutral; seed point defaults from the first picked question.
-        const altGroupResult = findQuestionByTrackingId(zones, selectedItem.altGroupTrackingId);
+        // Use zonesRef to read fresh state after the await (the closure's `zones` is stale).
+        const altGroupResult = findQuestionByTrackingId(
+          zonesRef.current,
+          selectedItem.altGroupTrackingId,
+        );
         const shouldInitializeAltGroupPoints =
           altGroupResult?.question.alternatives?.length === 0 &&
           altGroupResult.question.autoPoints == null &&
@@ -508,7 +514,8 @@ function AssessmentEditorInner({
         }
         if (selectedItemRef.current !== selectedItem) return;
 
-        const found = findQuestionByTrackingId(zones, questionTrackingId);
+        // Use zonesRef to read fresh state after the await (the closure's `zones` is stale).
+        const found = findQuestionByTrackingId(zonesRef.current, questionTrackingId);
 
         // Remove from current location if already in assessment (move behavior),
         // but skip if the question being removed is the one we're about to update.
