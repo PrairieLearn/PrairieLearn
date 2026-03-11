@@ -24,7 +24,7 @@ The `config.json` file should contain appropriate overrides for the keys in [`li
 
 ### Handling unknown SSH hosts
 
-When syncing a course from a new Git host, the sync may fail with a "Host key verification failed" error if the host is not in `known_hosts`. To automatically accept host keys for new hosts, set `gitSshCommand` in your `config.json`:
+PrairieLearn uses SSH for all Git operations — including course sync (clone/fetch/push), editor commits, and course creation from a remote repo. Connections to a new Git host may fail with a "Host key verification failed" error if the host is not in `known_hosts`. To automatically accept host keys for new hosts, set `gitSshCommand` in your `config.json`:
 
 ```json title="config.json"
 {
