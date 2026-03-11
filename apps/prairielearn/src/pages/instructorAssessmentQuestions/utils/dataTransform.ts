@@ -7,7 +7,9 @@ import type {
   ZoneQuestionBlockJson,
 } from '../../../schemas/infoAssessment.js';
 import type {
+  AltGroupBlockForm,
   QuestionAlternativeForm,
+  SingleQuestionBlockForm,
   TrackingId,
   ZoneAssessmentForm,
   ZoneQuestionBlockForm,
@@ -133,12 +135,11 @@ export function createZoneWithTrackingId(
  * New trackingIds are always generated (this is for new questions, not existing ones).
  * Accepts a partial question for creating new empty questions.
  */
-export function createQuestionWithTrackingId(): ZoneQuestionBlockForm {
-  // Cast needed for TypeScript spread inference with union types
+export function createQuestionWithTrackingId(): Omit<SingleQuestionBlockForm, 'id'> {
   return {
     trackingId: createTrackingId(),
     autoPoints: 1,
-  } as ZoneQuestionBlockForm;
+  } as Omit<SingleQuestionBlockForm, 'id'>;
 }
 
 /**
@@ -170,14 +171,14 @@ export function createAlternativeWithTrackingId(): QuestionAlternativeForm {
  * Point defaults are chosen when the first question is added, since a blank
  * group does not yet have a grading method to inherit from.
  */
-export function createAltGroupWithTrackingId(): ZoneQuestionBlockForm {
+export function createAltGroupWithTrackingId(): AltGroupBlockForm {
   return {
     trackingId: createTrackingId(),
     alternatives: [],
     numberChoose: 1,
     canSubmit: [],
     canView: [],
-  } as ZoneQuestionBlockForm;
+  } as AltGroupBlockForm;
 }
 
 /**
@@ -194,7 +195,7 @@ export function createAltGroupWithTrackingId(): ZoneQuestionBlockForm {
 export function alternativeToQuestionBlock(
   alt: QuestionAlternativeForm,
   parentGroup?: ZoneQuestionBlockForm,
-): ZoneQuestionBlockForm {
+): SingleQuestionBlockForm {
   const merged = { ...alt };
   if (parentGroup) {
     merged.autoPoints ??= parentGroup.autoPoints;
@@ -206,7 +207,7 @@ export function alternativeToQuestionBlock(
     merged.gradeRateMinutes ??= parentGroup.gradeRateMinutes;
     merged.allowRealTimeGrading ??= parentGroup.allowRealTimeGrading;
   }
-  return omitUndefined(merged) as ZoneQuestionBlockForm;
+  return omitUndefined(merged) as SingleQuestionBlockForm;
 }
 
 /**

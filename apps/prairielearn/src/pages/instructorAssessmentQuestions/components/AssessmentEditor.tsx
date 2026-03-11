@@ -28,10 +28,12 @@ import { QueryClientProviderDebug } from '../../../lib/client/tanstackQuery.js';
 import type { ZoneAssessmentJson } from '../../../schemas/infoAssessment.js';
 import type { QuestionByQidResult } from '../trpc.js';
 import type {
+  AltGroupBlockForm,
   DetailActions,
   DetailState,
   QuestionAlternativeForm,
   SelectedItem,
+  SingleQuestionBlockForm,
   TreeActions,
   TreeState,
   ZoneAssessmentForm,
@@ -462,7 +464,7 @@ function AssessmentEditorInner({
         });
       } else {
         // Creating new alt group: first question picked creates the group
-        const newAltGroup = {
+        const newAltGroup: AltGroupBlockForm = {
           ...createAltGroupWithTrackingId(),
           ...getDefaultPointFieldsForNewQuestion(questionData.question.grading_method),
         };
@@ -590,7 +592,7 @@ function AssessmentEditorInner({
       handleRemoveQuestionByQid(qid);
     }
 
-    const newQuestion: ZoneQuestionBlockForm & { id: string } = {
+    const newQuestion: SingleQuestionBlockForm = {
       ...createQuestionWithTrackingId(),
       id: qid,
       ...getDefaultPointFieldsForNewQuestion(questionData.question.grading_method),

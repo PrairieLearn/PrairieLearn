@@ -1,14 +1,23 @@
 import { useReducer, useState } from 'react';
 
-import type {
-  EditorAction,
-  EditorState,
-  QuestionAlternativeForm,
-  ZoneAssessmentForm,
-  ZoneQuestionBlockForm,
+import {
+  type AltGroupBlockForm,
+  type EditorAction,
+  type EditorState,
+  type QuestionAlternativeForm,
+  type ZoneAssessmentForm,
+  type ZoneQuestionBlockForm,
+  assertSingleQuestion,
 } from '../types.js';
 
 import { alternativeToQuestionBlock, questionBlockToAlternative } from './dataTransform.js';
+
+/**
+ * Asserts that a question block is an alternative group (has alternatives).
+ */
+function assertAltGroup(q: ZoneQuestionBlockForm): asserts q is AltGroupBlockForm {
+  if (!q.alternatives) throw new Error('Expected an alternative group, not a single question');
+}
 
 /**
  * Finds a zone by its trackingId.
@@ -176,7 +185,7 @@ export function createEditorReducer(initialState: EditorState) {
           questionResult.zone.questions[questionResult.questionIndex] = {
             ...questionResult.question,
             ...question,
-          };
+          } as ZoneQuestionBlockForm;
         }
 
         return {
@@ -444,9 +453,7 @@ export function createEditorReducer(initialState: EditorState) {
           );
         }
 
-        if (!groupResult.question.alternatives) {
-          groupResult.question.alternatives = [];
-        }
+        assertAltGroup(groupResult.question);
         groupResult.question.alternatives.push(alternative);
 
         const newQuestionMetadata =
@@ -481,9 +488,7 @@ export function createEditorReducer(initialState: EditorState) {
           );
         }
 
-        if (!toGroupResult.question.alternatives) {
-          toGroupResult.question.alternatives = [];
-        }
+        assertAltGroup(toGroupResult.question);
 
         // Remove alternative from source
         const [movedAlt] = fromResult.question.alternatives!.splice(fromResult.alternativeIndex, 1);
@@ -578,12 +583,11 @@ export function createEditorReducer(initialState: EditorState) {
           );
         }
 
-        if (!toGroupResult.question.alternatives) {
-          toGroupResult.question.alternatives = [];
-        }
+        assertAltGroup(toGroupResult.question);
 
         // Remove question from source zone
         const [removedQuestion] = fromResult.zone.questions.splice(fromResult.questionIndex, 1);
+        assertSingleQuestion(removedQuestion);
 
         // Convert to alternative
         const newAlt = questionBlockToAlternative(removedQuestion);
@@ -617,11 +621,6 @@ export function createEditorReducer(initialState: EditorState) {
             const q = zone.questions[qi];
             if (q.id === qid) {
               // Remove standalone question
-              if (q.alternatives) {
-                for (const alt of q.alternatives) {
-                  if (alt.id) delete newQuestionMetadata[alt.id];
-                }
-              }
               delete newQuestionMetadata[qid];
               zone.questions.splice(qi, 1);
               return { ...state, zones: newZones, questionMetadata: newQuestionMetadata };

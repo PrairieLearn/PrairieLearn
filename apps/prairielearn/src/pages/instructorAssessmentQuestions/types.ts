@@ -51,7 +51,52 @@ export const ZoneQuestionBlockFormSchema = ZoneQuestionBlockJsonSchema.omit({
   trackingId: TrackingIdSchema,
   alternatives: z.array(QuestionAlternativeFormSchema).min(1).optional(),
 });
-export type ZoneQuestionBlockForm = z.infer<typeof ZoneQuestionBlockFormSchema>;
+
+/**
+ * Shared fields across both question block variants.
+ * Excludes the discriminating `id` and `alternatives` properties.
+ */
+type ZoneQuestionBlockFormBase = Omit<
+  z.infer<typeof ZoneQuestionBlockFormSchema>,
+  'id' | 'alternatives'
+>;
+
+/**
+ * A standalone question block — has a QID, no alternatives.
+ */
+export type SingleQuestionBlockForm = ZoneQuestionBlockFormBase & {
+  id: string;
+  alternatives?: undefined;
+};
+
+/**
+ * An alternative group — has alternatives, no direct QID.
+ */
+export type AltGroupBlockForm = ZoneQuestionBlockFormBase & {
+  id?: undefined;
+  alternatives: QuestionAlternativeForm[];
+};
+
+/**
+ * A question block is either a standalone question or an alternative group.
+ * Discriminate via `q.alternatives != null` (alt group) or `q.id != null` (single question).
+ */
+export type ZoneQuestionBlockForm = SingleQuestionBlockForm | AltGroupBlockForm;
+
+/**
+ * A question (standalone or alternative) that is known to have a QID.
+ * Used by components that only render individual questions, never alt groups.
+ */
+export type QuestionWithId = SingleQuestionBlockForm | QuestionAlternativeForm;
+
+/**
+ * Asserts that a question block is a single question (not an alternative group).
+ */
+export function assertSingleQuestion(
+  q: ZoneQuestionBlockForm,
+): asserts q is SingleQuestionBlockForm {
+  if (!q.id) throw new Error('Expected a single question block, not an alternative group');
+}
 
 /**
  * Form version of ZoneAssessmentJson - adds trackingId, updates questions type.
@@ -60,7 +105,9 @@ export const ZoneAssessmentFormSchema = ZoneAssessmentJsonSchema.omit({ question
   trackingId: TrackingIdSchema,
   questions: z.array(ZoneQuestionBlockFormSchema),
 });
-export type ZoneAssessmentForm = z.infer<typeof ZoneAssessmentFormSchema>;
+export type ZoneAssessmentForm = Omit<z.infer<typeof ZoneAssessmentFormSchema>, 'questions'> & {
+  questions: ZoneQuestionBlockForm[];
+};
 
 /**
  * Assessment data for the question picker, including fields needed for grouping.
@@ -111,13 +158,13 @@ export type EditorAction =
   | {
       type: 'ADD_QUESTION';
       zoneTrackingId: string;
-      question: ZoneQuestionBlockForm & { id: string };
+      question: SingleQuestionBlockForm;
       questionData: EditorQuestionMetadata;
     }
   | {
       type: 'ADD_QUESTION';
       zoneTrackingId: string;
-      question: ZoneQuestionBlockForm;
+      question: AltGroupBlockForm;
       questionData?: undefined;
     }
   | {

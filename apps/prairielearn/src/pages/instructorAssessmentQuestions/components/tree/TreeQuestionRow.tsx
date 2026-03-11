@@ -8,10 +8,16 @@ import { CopyButton } from '../../../../components/CopyButton.js';
 import type { EditorQuestionMetadata } from '../../../../lib/assessment-question.shared.js';
 import { getQuestionUrl } from '../../../../lib/client/url.js';
 import type { EnumAssessmentType } from '../../../../lib/db-types.js';
-import type { QuestionAlternativeForm, TreeState, ZoneQuestionBlockForm } from '../../types.js';
+import type {
+  QuestionAlternativeForm,
+  QuestionWithId,
+  TreeState,
+  ZoneQuestionBlockForm,
+} from '../../types.js';
 import {
   compactPoints,
   computeQuestionTotalPoints,
+  questionHasTitle,
   toAssessmentForPicker,
 } from '../../utils/questions.js';
 import { AssessmentBadges } from '../AssessmentBadges.js';
@@ -177,7 +183,7 @@ export function TreeQuestionRow({
   onClick,
   onDelete,
 }: {
-  question: ZoneQuestionBlockForm | QuestionAlternativeForm;
+  question: QuestionWithId;
   zoneQuestionBlock: ZoneQuestionBlockForm;
   isAlternative: boolean;
   questionData: EditorQuestionMetadata | null;
@@ -203,12 +209,7 @@ export function TreeQuestionRow({
     ((question.autoPoints ?? zoneQuestionBlock.autoPoints) != null ||
       (question.maxAutoPoints ?? zoneQuestionBlock.maxAutoPoints) != null);
 
-  // While the `title` property is mandatory in question JSON files, it may be
-  // empty or consist solely of whitespace. If it doesn't have a title, we'll
-  // display the QID instead.
-  const hasTitle = (questionData?.question.title?.trim().length ?? 0) > 0;
-
-  const questionQid = question.id ?? questionData?.question.qid;
+  const hasTitle = questionHasTitle(questionData);
 
   return (
     <div
@@ -252,11 +253,15 @@ export function TreeQuestionRow({
                   className="link-underline-opacity-0 link-underline-opacity-100-hover text-primary-emphasis"
                   onClick={(e) => e.stopPropagation()}
                 >
-                  {hasTitle ? questionData.question.title : (questionQid ?? 'Question')}
+                  {hasTitle ? (
+                    questionData.question.title
+                  ) : (
+                    <span className="font-monospace">{question.id}</span>
+                  )}
                 </a>
-                {!hasTitle && questionQid && (
+                {!hasTitle && (
                   <CopyButton
-                    text={questionQid}
+                    text={question.id}
                     tooltipId={`copy-qid-${question.id}`}
                     ariaLabel="Copy QID"
                     className="hover-show ms-1"
@@ -267,10 +272,10 @@ export function TreeQuestionRow({
             ) : hasTitle ? (
               questionData.question.title
             ) : (
-              (questionQid ?? 'Question')
+              <span className="font-monospace">{question.id}</span>
             )
           ) : (
-            <span className="text-muted small">{question.id}</span>
+            <span className="text-muted small font-monospace">{question.id}</span>
           )}
           {hasManualGradingAutoPointsWarning && (
             <WarningIndicator
@@ -286,7 +291,7 @@ export function TreeQuestionRow({
             changeTracking={changeTracking}
           />
         </div>
-        {hasTitle && question.id && (
+        {hasTitle && (
           <div
             className="d-flex align-items-center text-muted font-monospace"
             style={{ fontSize: '0.75rem' }}
@@ -341,7 +346,7 @@ export function TreeQuestionRow({
         <button
           type="button"
           className="btn btn-sm border-0 text-muted ms-1 tree-delete-btn hover-show"
-          aria-label={`Delete ${question.id ?? 'question'}`}
+          aria-label={`Delete ${question.id}`}
           title="Delete question"
           onClick={(e) => {
             e.stopPropagation();

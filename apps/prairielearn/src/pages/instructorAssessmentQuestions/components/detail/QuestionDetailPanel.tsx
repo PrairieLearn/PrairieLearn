@@ -18,6 +18,7 @@ import type { EnumAssessmentType } from '../../../../lib/db-types.js';
 import type {
   DetailState,
   QuestionAlternativeForm,
+  QuestionWithId,
   SelectedItem,
   ZoneAssessmentForm,
   ZoneQuestionBlockForm,
@@ -35,7 +36,11 @@ import {
   validateNonIncreasingPoints,
   validatePointsListFormat,
 } from '../../utils/formHelpers.js';
-import { toAssessmentForPicker, validatePositiveInteger } from '../../utils/questions.js';
+import {
+  questionHasTitle,
+  toAssessmentForPicker,
+  validatePositiveInteger,
+} from '../../utils/questions.js';
 import { useAutoSave } from '../../utils/useAutoSave.js';
 import { AssessmentBadges } from '../AssessmentBadges.js';
 
@@ -72,7 +77,7 @@ export function QuestionDetailPanel({
   onResetButtonClick,
   onFormValidChange,
 }: {
-  question: ZoneQuestionBlockForm | QuestionAlternativeForm;
+  question: QuestionWithId;
   zoneQuestionBlock?: ZoneQuestionBlockForm;
   zone?: ZoneAssessmentForm;
   questionData: EditorQuestionMetadata | null;
@@ -103,6 +108,7 @@ export function QuestionDetailPanel({
   } = state;
   const isAlternative = !!zoneQuestionBlock;
   const isManualGrading = questionData?.question.grading_method === 'Manual';
+  const hasTitle = questionHasTitle(questionData);
 
   // For read-only display, use merged values (own ?? inherited)
   const autoPointsValue = question.autoPoints ?? zoneQuestionBlock?.autoPoints;
@@ -147,7 +153,7 @@ export function QuestionDetailPanel({
   } = useForm<QuestionFormData>({
     mode: 'onChange',
     values: {
-      id: question.id ?? '',
+      id: question.id,
       comment: commentToString(question.comment),
       autoPoints: isAlternative ? ownAutoPoints : (autoPointsValue ?? undefined),
       maxAutoPoints: isAlternative ? ownMaxAutoPoints : (maxAutoPointsValue ?? undefined),
@@ -307,21 +313,26 @@ export function QuestionDetailPanel({
       {/* Question header (title, tags, badges) — same in both modes */}
       {questionData && (
         <div className="mb-3">
-          <div className="fw-semibold mb-1">
+          <div className="fw-semibold mb-1 d-inline-flex align-items-center">
             {hasCoursePermissionPreview ? (
-              <a href={getQuestionUrl({ courseInstanceId, questionId: questionData.question.id })}>
-                {questionData.question.title}
+              <a
+                href={getQuestionUrl({
+                  courseInstanceId,
+                  questionId: questionData.question.id,
+                })}
+              >
+                {hasTitle ? (
+                  questionData.question.title
+                ) : (
+                  <span className="font-monospace">{question.id}</span>
+                )}
               </a>
-            ) : (
+            ) : hasTitle ? (
               questionData.question.title
+            ) : (
+              <span className="font-monospace">{question.id}</span>
             )}
-          </div>
-          <span
-            className="d-inline-flex align-items-center text-muted font-monospace"
-            style={{ fontSize: '0.75rem' }}
-          >
-            {question.id}
-            {question.id && (
+            {!hasTitle && (
               <CopyButton
                 text={question.id}
                 tooltipId="copy-qid"
@@ -329,7 +340,21 @@ export function QuestionDetailPanel({
                 className="ms-1"
               />
             )}
-          </span>
+          </div>
+          {hasTitle && (
+            <span
+              className="d-inline-flex align-items-center text-muted font-monospace"
+              style={{ fontSize: '0.75rem' }}
+            >
+              {question.id}
+              <CopyButton
+                text={question.id}
+                tooltipId="copy-qid"
+                ariaLabel="Copy QID"
+                className="ms-1"
+              />
+            </span>
+          )}
           <div className="mt-1">
             <span className={`badge color-${questionData.topic.color}`}>
               {questionData.topic.name}
@@ -549,7 +574,7 @@ export function QuestionDetailPanel({
             <button
               type="button"
               className="btn btn-sm btn-outline-danger"
-              onClick={() => onDelete(questionTrackingId, question.id ?? '', alternativeTrackingId)}
+              onClick={() => onDelete(questionTrackingId, question.id, alternativeTrackingId)}
             >
               Delete
             </button>

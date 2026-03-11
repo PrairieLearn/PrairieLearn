@@ -6,12 +6,18 @@ import { useCallback, useMemo } from 'react';
 import { run } from '@prairielearn/run';
 import { OverlayTrigger } from '@prairielearn/ui';
 
-import type { TreeActions, TreeState, ZoneQuestionBlockForm } from '../../types.js';
+import {
+  type TreeActions,
+  type TreeState,
+  type ZoneQuestionBlockForm,
+  assertSingleQuestion,
+} from '../../types.js';
 import {
   getSharedTags,
   getSharedTopic,
   hasAltGroupChooseExceedsCount,
   hasPointsMismatch,
+  titleOrQid,
 } from '../../utils/questions.js';
 
 import { ChangeIndicatorBadges } from './ChangeIndicatorBadges.js';
@@ -90,9 +96,10 @@ export function TreeQuestionBlockNode({
     selectedItem.questionTrackingId === zoneQuestionBlock.trackingId;
 
   if (!hasAlternatives) {
-    // Single question (no alternatives)
-    const questionData =
-      (zoneQuestionBlock.id ? questionMetadata[zoneQuestionBlock.id] : null) ?? null;
+    // Single question (no alternatives) — must have an id.
+    assertSingleQuestion(zoneQuestionBlock);
+
+    const questionData = questionMetadata[zoneQuestionBlock.id] ?? null;
     const isSelected =
       selectedItem?.type === 'question' &&
       selectedItem.questionTrackingId === zoneQuestionBlock.trackingId;
@@ -114,9 +121,7 @@ export function TreeQuestionBlockNode({
               questionTrackingId: zoneQuestionBlock.trackingId,
             })
           }
-          onDelete={() =>
-            onDeleteQuestion(zoneQuestionBlock.trackingId, zoneQuestionBlock.id ?? '')
-          }
+          onDelete={() => onDeleteQuestion(zoneQuestionBlock.trackingId, zoneQuestionBlock.id)}
         />
       </div>
     );
@@ -309,8 +314,7 @@ export function TreeQuestionBlockNode({
       {!isCollapsed && (
         <SortableContext items={alternativeIds} strategy={verticalListSortingStrategy}>
           {alternatives?.map((alternative) => {
-            const altQuestionData =
-              (alternative.id ? questionMetadata[alternative.id] : null) ?? null;
+            const altQuestionData = questionMetadata[alternative.id] ?? null;
             const isAltSelected =
               selectedItem?.type === 'alternative' &&
               selectedItem.questionTrackingId === zoneQuestionBlock.trackingId &&
@@ -358,9 +362,11 @@ export function TreeQuestionBlockNode({
           )}
           <div className="flex-grow-1" style={{ minWidth: 0 }}>
             <div className="text-truncate">
-              {active?.data.current?.qid
-                ? questionMetadata[active.data.current.qid]?.question.title
-                : null}
+              {run(() => {
+                const activeQid = active?.data.current?.qid;
+                if (!activeQid) return null;
+                return titleOrQid(questionMetadata[activeQid]?.question.title, activeQid);
+              })}
             </div>
           </div>
         </div>
