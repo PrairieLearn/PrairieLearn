@@ -75,13 +75,11 @@ export default ESLintUtils.RuleCreator.withoutDocs({
 
       if (callee.type === 'Identifier') {
         return (
+          // e.g. setTimeout, setInterval, setImmediate, etc.
           /^set[A-Z0-9_]/.test(callee.name) ||
           callee.name === 'queueMicrotask' ||
           callee.name === 'requestAnimationFrame' ||
           callee.name === 'requestIdleCallback' ||
-          callee.name === 'setImmediate' ||
-          callee.name === 'setInterval' ||
-          callee.name === 'setTimeout' ||
           callee.name === 'startTransition'
         );
       }
