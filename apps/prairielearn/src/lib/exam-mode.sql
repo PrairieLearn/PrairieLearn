@@ -3,7 +3,7 @@ WITH
   active_reservations AS (
     SELECT
       r.session_id,
-      -- We consider a session to be "active" is either of the following is true:
+      -- We consider a session to be "active" if either of the following is true:
       (
         -- The reservation is checked in but hasn't had their access start yet.
         -- We'll consider the reservation active for the first hour after check-in.
