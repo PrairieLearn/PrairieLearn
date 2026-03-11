@@ -1,5 +1,4 @@
 import assert from 'assert';
-import url from 'node:url';
 
 import { type Request, type Response, Router } from 'express';
 
@@ -35,7 +34,7 @@ router.use(enterpriseOnly(() => checkPlanGrantsForQuestion));
 router.use((req, res, next) => {
   // We deliberately use `url` instead of `originalUrl`. The former is relative to
   // where this router is mounted, while the latter is absolute to the app.
-  const pathname = url.parse(req.url).pathname ?? '/';
+  const { pathname } = new URL(req.url, 'http://localhost');
 
   // Because this router is mounted a general path, its middleware will also
   // be run for sub-routes like `submissions/:submission_id/file/:filename`
