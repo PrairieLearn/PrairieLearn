@@ -18,7 +18,7 @@ import {
   questionBlockToAlternative,
 } from './dataTransform.js';
 import { sanitizeSelectedItem, selectedItemsEqual } from './selectedItem.js';
-import { findQuestionByTrackingId } from './zoneLookup.js';
+import { findQuestionByTrackingId, isQidInAssessment } from './zoneLookup.js';
 
 /**
  * Finds a zone by its trackingId.
@@ -82,19 +82,6 @@ function findAlternativeAcrossZones(
     }
   }
   return null;
-}
-
-/**
- * Checks whether a QID already exists somewhere in the assessment zones.
- */
-function isQidInAssessment(zones: ZoneAssessmentForm[], qid: string): boolean {
-  for (const zone of zones) {
-    for (const q of zone.questions) {
-      if (q.id === qid) return true;
-      if (q.alternatives?.some((a) => a.id === qid)) return true;
-    }
-  }
-  return false;
 }
 
 /**
