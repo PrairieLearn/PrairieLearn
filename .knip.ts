@@ -97,7 +97,6 @@ const config: KnipConfig = {
         'src/question-servers/calculation-worker.ts',
       ],
       ignore: [
-        'src/lib/no-deprecated-sql.d.ts',
         'src/ee/pages/instructorAiGenerateDraftEditor/RichTextEditor/extensions/react-rendered-component-sample.tsx',
         // We have lots of aliases in this file
         'src/lib/client/safe-db-types.ts',
@@ -107,7 +106,6 @@ const config: KnipConfig = {
       project: ['**/*.{ts,cts,mts,tsx}'],
     },
     'apps/workspace-host': {
-      entry: ['src/interface.ts'],
       project: ['**/*.{ts,cts,mts,tsx}'],
     },
     'apps/grader-host': {

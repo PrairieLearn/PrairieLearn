@@ -1,9 +1,10 @@
 import { UAParser } from 'ua-parser-js';
 import { z } from 'zod';
 
+import { formatDate } from '@prairielearn/formatter';
 import { escapeHtml, html } from '@prairielearn/html';
 import { run } from '@prairielearn/run';
-import { IdSchema } from '@prairielearn/zod';
+import { DateFromISOString, IdSchema } from '@prairielearn/zod';
 
 import { EditQuestionPointsScoreButtonHtml } from '../../components/EditQuestionPointsScore.js';
 import { Modal } from '../../components/Modal.js';
@@ -45,6 +46,10 @@ type AssessmentInstanceStats = z.infer<typeof AssessmentInstanceStatsSchema>;
 export const InstanceQuestionRowSchema = InstanceQuestionSchema.extend({
   instructor_question_number: z.string(),
   assessment_question: AssessmentQuestionSchema,
+  lockpoint: z.boolean(),
+  lockpoint_crossed: z.boolean(),
+  lockpoint_crossed_at: DateFromISOString.nullable(),
+  lockpoint_crossed_authn_user_uid: z.string().nullable(),
   qid: z.string().nullable(),
   question_id: IdSchema,
   question_number: z.string(),
@@ -79,6 +84,10 @@ export function InstructorAssessmentInstance({
   instance_questions: InstanceQuestionRow[];
   assessmentInstanceLog: InstanceLogEntry[];
 }) {
+  const headingLabel = resLocals.instance_group
+    ? html`${resLocals.instance_group.name} <i class="fas fa-users"></i>`
+    : html`${resLocals.instance_user.name} (${resLocals.instance_user.uid})`;
+
   return PageLayout({
     resLocals,
     pageTitle: resLocals.instance_group?.name ?? resLocals.instance_user?.uid ?? '',
@@ -117,12 +126,7 @@ export function InstructorAssessmentInstance({
       ${ExamResetNotSupportedModal({ assessment: resLocals.assessment })}
       <div class="card mb-4">
         <div class="card-header bg-primary text-white">
-          <h2>
-            ${resLocals.assessment_instance_label} Summary:
-            ${resLocals.instance_group
-              ? html`${resLocals.instance_group.name} <i class="fas fa-users"></i>`
-              : html`${resLocals.instance_user.name} (${resLocals.instance_user.uid})`}
-          </h2>
+          <h2>${resLocals.assessment_instance_label} Summary: ${headingLabel}</h2>
         </div>
         <div class="table-responsive">
           <table
@@ -300,12 +304,7 @@ export function InstructorAssessmentInstance({
 
       <div class="card mb-4">
         <div class="card-header bg-primary text-white">
-          <h2>
-            ${resLocals.assessment_instance_label} Questions:
-            ${resLocals.instance_group
-              ? html`${resLocals.instance_group.name} <i class="fas fa-users"></i>`
-              : html`${resLocals.instance_user.name} (${resLocals.instance_user.uid})`}
-          </h2>
+          <h2>${resLocals.assessment_instance_label} Questions: ${headingLabel}</h2>
         </div>
 
         <div class="table-responsive">
@@ -346,6 +345,28 @@ export function InstructorAssessmentInstance({
                   }
 
                   return html`
+                    ${instance_question.start_new_zone && instance_question.lockpoint
+                      ? html`
+                          <tr>
+                            <th colspan="9" class="bg-light fw-normal">
+                              ${instance_question.lockpoint_crossed
+                                ? html`
+                                    Lockpoint crossed by
+                                    ${instance_question.lockpoint_crossed_authn_user_uid ??
+                                    'unknown user'}
+                                    ${instance_question.lockpoint_crossed_at
+                                      ? html`at
+                                        ${formatDate(
+                                          instance_question.lockpoint_crossed_at,
+                                          resLocals.course_instance.display_timezone,
+                                        )}`
+                                      : ''}
+                                  `
+                                : html`Lockpoint not yet crossed`}
+                            </th>
+                          </tr>
+                        `
+                      : ''}
                     ${showZoneInfo
                       ? html`
                           <tr>
@@ -515,12 +536,7 @@ export function InstructorAssessmentInstance({
 
       <div class="card mb-4">
         <div class="card-header bg-primary text-white">
-          <h2>
-            ${resLocals.assessment_instance_label} Statistics:
-            ${resLocals.instance_group
-              ? html`${resLocals.instance_group.name} <i class="fas fa-users"></i>`
-              : html`${resLocals.instance_user.name} (${resLocals.instance_user.uid})`}
-          </h2>
+          <h2>${resLocals.assessment_instance_label} Statistics: ${headingLabel}</h2>
         </div>
         <div class="table-responsive">
           <table
@@ -581,12 +597,7 @@ export function InstructorAssessmentInstance({
 
       <div class="card mb-4">
         <div class="card-header bg-primary text-white">
-          <h2>
-            ${resLocals.assessment_instance_label} Log:
-            ${resLocals.instance_group
-              ? html`${resLocals.instance_group.name} <i class="fas fa-users"></i>`
-              : html`${resLocals.instance_user.name} (${resLocals.instance_user.uid})`}
-          </h2>
+          <h2>${resLocals.assessment_instance_label} Log: ${headingLabel}</h2>
         </div>
         <div class="card-body">
           <small>
@@ -633,7 +644,7 @@ export function InstructorAssessmentInstance({
                             <td>
                               <button
                                 type="button"
-                                class="btn btn-xs color-${FINGERPRINT_COLORS[
+                                class="btn btn-badge color-${FINGERPRINT_COLORS[
                                   row.client_fingerprint_number % 6
                                 ]}"
                                 id="fingerprintPopover${row.client_fingerprint.id}-${index}"

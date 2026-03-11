@@ -1,4 +1,4 @@
-import type { Locator, Page } from '@playwright/test';
+import type { Locator } from '@playwright/test';
 
 import { expect, test } from './fixtures.js';
 
@@ -8,23 +8,12 @@ function getRowIndex(row: Locator) {
   );
 }
 
-async function syncAllCourses(page: Page) {
-  await page.goto('/pl/loadFromDisk');
-  await expect(page).toHaveURL(/\/jobSequence\//);
-  await expect(page.locator('.badge', { hasText: 'Success' })).toBeVisible();
-}
-
-const courseId = '1';
-
 test.describe('Assessment sets editor', () => {
-  test.beforeAll(async ({ browser, workerPort }) => {
-    const page = await browser.newPage({ baseURL: `http://localhost:${workerPort}` });
-    await syncAllCourses(page);
-    await page.close();
-  });
-
-  test('can create assessment sets and persist changes after save', async ({ page }) => {
-    await page.goto(`/pl/course/${courseId}/course_admin/sets`);
+  test('can create assessment sets and persist changes after save', async ({
+    page,
+    courseInstance,
+  }) => {
+    await page.goto(`/pl/course/${courseInstance.course_id}/course_admin/sets`);
     await expect(page).toHaveTitle(/Assessment sets/);
     await page.waitForSelector('.js-hydrated-component');
 
@@ -78,7 +67,7 @@ test.describe('Assessment sets editor', () => {
     }
 
     // Verify order persisted after reload
-    await page.goto(`/pl/course/${courseId}/course_admin/sets`);
+    await page.goto(`/pl/course/${courseInstance.course_id}/course_admin/sets`);
     await page.waitForSelector('.js-hydrated-component');
 
     const rowsAfterReload = page.locator('table[aria-label="Assessment sets"] tbody tr');
@@ -94,8 +83,8 @@ test.describe('Assessment sets editor', () => {
     );
   });
 
-  test('can edit an existing assessment set', async ({ page }) => {
-    await page.goto(`/pl/course/${courseId}/course_admin/sets`);
+  test('can edit an existing assessment set', async ({ page, courseInstance }) => {
+    await page.goto(`/pl/course/${courseInstance.course_id}/course_admin/sets`);
     await expect(page).toHaveTitle(/Assessment sets/);
     await page.waitForSelector('.js-hydrated-component');
 
@@ -150,7 +139,7 @@ test.describe('Assessment sets editor', () => {
     }
 
     // Verify changes persisted after reload
-    await page.goto(`/pl/course/${courseId}/course_admin/sets`);
+    await page.goto(`/pl/course/${courseInstance.course_id}/course_admin/sets`);
     await page.waitForSelector('.js-hydrated-component');
 
     const tbodyAfterReload = page.locator('table[aria-label="Assessment sets"] tbody');
@@ -158,8 +147,8 @@ test.describe('Assessment sets editor', () => {
     await expect(tbodyAfterReload.locator('.badge', { hasText: originalAbbrev })).not.toBeVisible();
   });
 
-  test('can delete an assessment set', async ({ page }) => {
-    await page.goto(`/pl/course/${courseId}/course_admin/sets`);
+  test('can delete an assessment set', async ({ page, courseInstance }) => {
+    await page.goto(`/pl/course/${courseInstance.course_id}/course_admin/sets`);
     await expect(page).toHaveTitle(/Assessment sets/);
     await page.waitForSelector('.js-hydrated-component');
 
@@ -199,7 +188,7 @@ test.describe('Assessment sets editor', () => {
     }
 
     // Verify deletion persisted after reload
-    await page.goto(`/pl/course/${courseId}/course_admin/sets`);
+    await page.goto(`/pl/course/${courseInstance.course_id}/course_admin/sets`);
     await page.waitForSelector('.js-hydrated-component');
 
     const tbodyAfterReload = page.locator('table[aria-label="Assessment sets"] tbody');

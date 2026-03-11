@@ -703,7 +703,7 @@ describe('student data access', { timeout: 60_000 }, function () {
     // This page should contain a warning that the user doesn't have access to
     // student data, and a prompt to obtain access.
     assert.lengthOf(response.$('table#gradebook-data'), 0);
-    assert.lengthOf(response.$('h2:contains("Insufficient permissions")'), 1);
+    assert.include(response.$('.card-body').text(), "You don't have permission to view this page");
   });
 
   test.sequential('instructor (no role) cannot view gradebook raw data', async () => {
