@@ -51,7 +51,6 @@ async function selectCourseOrInstanceContextData({
       user_id,
       course_id,
       course_instance_id,
-      ip,
       req_date,
     },
     CourseOrInstanceContextDataSchema.omit({ mode: true }),
@@ -59,7 +58,7 @@ async function selectCourseOrInstanceContextData({
   if (result === null) return null;
   return {
     ...result,
-    mode: await ipToMode({ ip: ip ?? undefined, date: req_date, authn_user_id: user_id }),
+    mode: await ipToMode({ ip, date: req_date, authn_user_id: user_id }),
   };
 }
 
