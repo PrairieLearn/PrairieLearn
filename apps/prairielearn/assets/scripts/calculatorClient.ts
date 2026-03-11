@@ -795,11 +795,6 @@ function initDrawerUI(
     });
   }
 
-  const closeBtn = document.getElementById('calculatorDrawerClose');
-  if (closeBtn) {
-    closeBtn.addEventListener('click', collapseDrawer);
-  }
-
   // Left-edge resize handle
   const resizeHandle = document.getElementById('calculatorResizeHandle');
   if (resizeHandle) {
@@ -825,11 +820,10 @@ function initDrawerUI(
     });
   }
 
-  // Clicking the header bar toggles open/collapse
+  // Clicking the header button toggles open/collapse
   const header = drawer.querySelector('.calculator-drawer-header');
   if (header) {
-    header.addEventListener('click', (ev) => {
-      if (ev.target === closeBtn || closeBtn?.contains(ev.target as Node)) return;
+    header.addEventListener('click', () => {
       if (drawer.classList.contains('open')) {
         collapseDrawer();
       } else {

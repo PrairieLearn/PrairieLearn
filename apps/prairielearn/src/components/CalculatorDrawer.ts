@@ -76,19 +76,15 @@ export function CalculatorDrawer({ storageKey }: { storageKey: string }): HtmlSa
       data-storage-key="${storageKey}"
     >
       <div class="calculator-resize-handle" id="calculatorResizeHandle"></div>
-      <div
-        class="calculator-drawer-header d-flex align-items-center justify-content-between flex-shrink-0 bg-secondary text-white user-select-none"
+      <button
+        type="button"
+        class="calculator-drawer-header d-flex align-items-center justify-content-between flex-shrink-0 bg-secondary text-white user-select-none border-0 w-100"
+        id="calculatorDrawerClose"
+        aria-label="Toggle calculator"
       >
         <span class="fw-medium small"> <i class="bi bi-calculator"></i> Calculator </span>
-        <button
-          type="button"
-          class="btn btn-sm btn-secondary"
-          id="calculatorDrawerClose"
-          aria-label="Close calculator"
-        >
-          <i class="bi bi-chevron-down"></i>
-        </button>
-      </div>
+        <i class="bi bi-chevron-down"></i>
+      </button>
       <div class="calculator-drawer-body overflow-auto flex-grow-1">
         <div
           class="d-flex align-items-center justify-content-between px-2 py-1 border border-bottom-0 bg-body-secondary"
