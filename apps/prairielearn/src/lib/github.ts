@@ -244,10 +244,10 @@ export async function createCourseRepoJob(
 
     // Automatically sync the new course. This part is shamelessly stolen
     // from `pages/shared/syncHelpers.js`.
-    const git_env = process.env;
-    if (config.gitSshCommand != null) {
-      git_env.GIT_SSH_COMMAND = config.gitSshCommand;
-    }
+    const git_env = {
+      ...process.env,
+      GIT_SSH_COMMAND: config.gitSshCommand,
+    };
 
     job.info('Clone from remote git repository');
     await job.exec('git', ['clone', repository, inserted_course.path], {

@@ -214,7 +214,7 @@ export const ConfigSchema = z.object({
   githubCourseOwner: z.string().default('PrairieLearn'),
   githubCourseTemplate: z.string().default('pl-template'),
   githubMachineTeam: z.string().default('machine'),
-  gitSshCommand: z.string().nullable().default(null),
+  gitSshCommand: z.string().default('ssh -o StrictHostKeyChecking=accept-new'),
   externalGradingUseAws: z.boolean().default(false),
   externalGradingJobsQueueName: z.string().default('grading_jobs_dev'),
   externalGradingResultsQueueName: z.string().default('grading_results_dev'),
