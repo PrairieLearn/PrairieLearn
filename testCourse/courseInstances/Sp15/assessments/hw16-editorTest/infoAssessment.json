@@ -24,10 +24,6 @@
           "alternatives": [{ "id": "aiGradingMultiImageCapture" }, { "id": "aiGradingRubrics" }],
           "numberChoose": 1,
           "autoPoints": 1
-        },
-        {
-          "alternatives": [{ "id": "aiGradingSingleImageCapture" }, { "id": "blankAnswers" }],
-          "numberChoose": 1
         }
       ]
     }

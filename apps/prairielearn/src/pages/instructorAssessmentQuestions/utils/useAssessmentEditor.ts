@@ -138,10 +138,10 @@ function isQidInAssessment(zones: ZoneAssessmentForm[], qid: string): boolean {
 }
 
 /**
- * Removes a question/alternative with the given QID from the zones array (mutating in place).
+ * Removes a question/alternative with the given QID from the zones array.
  * Also cleans up the corresponding metadata entries.
  */
-function removeQidMutably(
+function removeQid(
   zones: ZoneAssessmentForm[],
   questionMetadata: EditorState['questionMetadata'],
   qid: string,
@@ -171,14 +171,14 @@ function removeQidMutably(
 }
 
 /**
- * Handles the QUESTION_PICKED compound action. Extracted to keep the switch
- * statement readable. All state reads are synchronous and always current.
+ * Handles the QUESTION_PICKED compound action.
  */
 function handleQuestionPicked(
   state: EditorState,
   action: Extract<EditorAction, { type: 'QUESTION_PICKED' }>,
 ): EditorState {
-  const { qid, metadata, gradingMethod, expectedSelectedItem } = action;
+  const { qid, metadata, expectedSelectedItem } = action;
+  const gradingMethod = metadata.question.grading_method;
 
   // Bail if the selection changed during the async fetch — the user navigated
   // away, so this pick is stale.
@@ -186,22 +186,21 @@ function handleQuestionPicked(
     return state;
   }
 
-  const sel = state.selectedItem;
+  const selectedItem = state.selectedItem;
 
-  // --- Path 1: Adding to an alt group (altGroupPicker) ---
-  if (sel?.type === 'altGroupPicker') {
+  if (selectedItem?.type === 'altGroupPicker') {
     const newZones = structuredClone(state.zones);
     const newQuestionMetadata = { ...state.questionMetadata };
-    let newSelectedItem: SelectedItem = sel;
+    let newSelectedItem: SelectedItem = selectedItem;
 
     // Remove from current location if already in assessment (move behavior)
     if (isQidInAssessment(newZones, qid)) {
-      removeQidMutably(newZones, newQuestionMetadata, qid);
+      removeQid(newZones, newQuestionMetadata, qid);
     }
 
-    if (sel.altGroupTrackingId) {
+    if (selectedItem.altGroupTrackingId) {
       // Adding to existing alt group
-      const altGroupResult = findQuestionByTrackingId(newZones, sel.altGroupTrackingId);
+      const altGroupResult = findQuestionByTrackingId(newZones, selectedItem.altGroupTrackingId);
       if (!altGroupResult) return state;
 
       // Empty groups start neutral; seed point defaults from the first picked question.
@@ -231,7 +230,7 @@ function handleQuestionPicked(
       const firstAlt = { ...createAlternativeWithTrackingId(), id: qid } as QuestionAlternativeForm;
       newAltGroup.alternatives = [firstAlt];
 
-      const zoneResult = findZoneByTrackingId(newZones, sel.zoneTrackingId);
+      const zoneResult = findZoneByTrackingId(newZones, selectedItem.zoneTrackingId);
       if (!zoneResult) return state;
       zoneResult.zone.questions.push(newAltGroup);
       newQuestionMetadata[qid] = metadata;
@@ -239,7 +238,7 @@ function handleQuestionPicked(
       // Update selection so subsequent picks add to this group
       newSelectedItem = {
         type: 'altGroupPicker',
-        zoneTrackingId: sel.zoneTrackingId,
+        zoneTrackingId: selectedItem.zoneTrackingId,
         altGroupTrackingId: newAltGroup.trackingId,
       };
     }
@@ -252,11 +251,10 @@ function handleQuestionPicked(
     };
   }
 
-  // --- Path 2 & 3: picker (with or without returnToSelection) ---
-  if (sel?.type === 'picker') {
-    if (sel.returnToSelection) {
-      // Path 2: Changing a question's QID via the picker
-      const returnTo = sel.returnToSelection;
+  if (selectedItem?.type === 'picker') {
+    if (selectedItem.returnToSelection) {
+      // Changing a question's QID via the picker
+      const returnTo = selectedItem.returnToSelection;
       if (returnTo.type !== 'question' && returnTo.type !== 'alternative') return state;
 
       const newZones = structuredClone(state.zones);
@@ -275,7 +273,7 @@ function handleQuestionPicked(
               )?.id
             : found.question.id;
         if (currentQid !== qid) {
-          removeQidMutably(newZones, newQuestionMetadata, qid);
+          removeQid(newZones, newQuestionMetadata, qid);
         }
       }
 
@@ -318,16 +316,16 @@ function handleQuestionPicked(
       };
     }
 
-    // Path 3: Adding a new question to a zone
+    // Adding a new question to a zone
     const newZones = structuredClone(state.zones);
     const newQuestionMetadata = { ...state.questionMetadata };
 
     // Remove from current location if already in assessment (move behavior)
     if (isQidInAssessment(newZones, qid)) {
-      removeQidMutably(newZones, newQuestionMetadata, qid);
+      removeQid(newZones, newQuestionMetadata, qid);
     }
 
-    const zoneResult = findZoneByTrackingId(newZones, sel.zoneTrackingId);
+    const zoneResult = findZoneByTrackingId(newZones, selectedItem.zoneTrackingId);
     if (!zoneResult) return state;
 
     const newQuestion: ZoneQuestionBlockForm & { id: string } = {
@@ -863,7 +861,7 @@ export function createEditorReducer(initialState: EditorState) {
 
         const newZones = structuredClone(state.zones);
         const newQuestionMetadata = { ...state.questionMetadata };
-        removeQidMutably(newZones, newQuestionMetadata, qid);
+        removeQid(newZones, newQuestionMetadata, qid);
         return { ...state, zones: newZones, questionMetadata: newQuestionMetadata };
       }
 
@@ -879,7 +877,20 @@ export function createEditorReducer(initialState: EditorState) {
       }
 
       case 'RESET': {
-        return initialState;
+        // Resolve transient picker states to persisted selections so the
+        // post-reducer sanitizer can validate against initialState.zones.
+        const currentItem = state.selectedItem;
+        let resolved: SelectedItem = null;
+        if (currentItem?.type === 'picker') {
+          resolved = currentItem.returnToSelection ?? null;
+        } else if (currentItem?.type === 'altGroupPicker') {
+          resolved = currentItem.altGroupTrackingId
+            ? { type: 'altGroup', questionTrackingId: currentItem.altGroupTrackingId }
+            : null;
+        } else {
+          resolved = currentItem;
+        }
+        return { ...initialState, selectedItem: resolved };
       }
 
       case 'UNDO':

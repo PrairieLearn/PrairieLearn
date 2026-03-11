@@ -29,6 +29,7 @@ import type { ZoneAssessmentJson } from '../../../schemas/infoAssessment.js';
 import type {
   DetailActions,
   DetailState,
+  EditorState,
   QuestionAlternativeForm,
   SelectedItem,
   TreeActions,
@@ -53,11 +54,7 @@ import {
 import { getStructuralSaveValidationErrorKind } from '../utils/saveValidation.js';
 import { createAssessmentQuestionsTrpcClient } from '../utils/trpc-client.js';
 import { TRPCProvider, useTRPC } from '../utils/trpc-context.js';
-import {
-  findByTrackingId,
-  findQuestionByTrackingId,
-  useAssessmentEditor,
-} from '../utils/useAssessmentEditor.js';
+import { findQuestionByTrackingId, useAssessmentEditor } from '../utils/useAssessmentEditor.js';
 
 import { EditModeToolbar } from './EditModeToolbar.js';
 import { ExamResetNotSupportedModal } from './ExamResetNotSupportedModal.js';
@@ -158,7 +155,7 @@ function AssessmentEditorInner({
     mutationFn: (qid: string) => queryClient.fetchQuery(trpc.questionByQid.queryOptions({ qid })),
   });
 
-  const [initialState] = useState(() => {
+  const [initialState] = useState<EditorState>(() => {
     const questionMetadataMap = Object.fromEntries(
       questionRows.map((r) => [questionDisplayName(course, r), toEditorMetadata(r)]),
     );
@@ -167,15 +164,13 @@ function AssessmentEditorInner({
       questionMetadata: questionMetadataMap,
       collapsedGroups: new Set<string>(),
       collapsedZones: new Set<string>(),
-      selectedItem: null as SelectedItem,
+      selectedItem: null,
     };
   });
 
   const { zones, questionMetadata, collapsedGroups, collapsedZones, selectedItem, dispatch } =
     useAssessmentEditor(initialState);
 
-  // Wrap dispatch in a setter-style callback so existing call sites
-  // (tree nodes, detail panel, etc.) can keep calling setSelectedItem(item).
   const setSelectedItem = useCallback(
     (item: SelectedItem) => dispatch({ type: 'SET_SELECTED_ITEM', selectedItem: item }),
     [dispatch],
@@ -402,7 +397,6 @@ function AssessmentEditorInner({
           courseInstance,
           courseQuestions,
         }),
-        gradingMethod: questionData.question.grading_method,
         expectedSelectedItem: selectedItem,
       });
     } catch {
@@ -1025,55 +1019,7 @@ function AssessmentEditorInner({
                     saveButtonDisabledReason={saveButtonDisabledReason}
                     onSubmit={disableBeforeUnload}
                     onCancel={() => {
-                      // Resolve transient picker states to persisted selections.
-                      const resolvedItem = run((): SelectedItem => {
-                        if (selectedItem?.type === 'picker') {
-                          return selectedItem.returnToSelection ?? null;
-                        }
-                        if (selectedItem?.type === 'altGroupPicker') {
-                          return selectedItem.altGroupTrackingId
-                            ? {
-                                type: 'altGroup',
-                                questionTrackingId: selectedItem.altGroupTrackingId,
-                              }
-                            : null;
-                        }
-                        return selectedItem;
-                      });
-
-                      // Validate the resolved selection against the initial (pre-edit) state.
-                      const valid = run(() => {
-                        if (!resolvedItem) return true;
-                        const { zones: z } = initialState;
-                        switch (resolvedItem.type) {
-                          case 'zone':
-                            return findByTrackingId(z, resolvedItem.zoneTrackingId) === 'zone';
-                          case 'question':
-                            return (
-                              findByTrackingId(z, resolvedItem.questionTrackingId) === 'question'
-                            );
-                          case 'altGroup':
-                            // Must still be a question with alternatives after reset.
-                            return (
-                              findByTrackingId(z, resolvedItem.questionTrackingId) === 'question' &&
-                              !!findQuestionByTrackingId(z, resolvedItem.questionTrackingId)
-                                ?.question.alternatives
-                            );
-                          case 'alternative':
-                            return (
-                              findByTrackingId(z, resolvedItem.questionTrackingId) === 'question' &&
-                              findByTrackingId(z, resolvedItem.alternativeTrackingId) ===
-                                'alternative'
-                            );
-                          case 'picker':
-                          case 'altGroupPicker':
-                            return false;
-                        }
-                      });
-                      // RESET restores initial zones (with selectedItem: null).
-                      // Dispatch it first, then set the resolved selection.
                       dispatch({ type: 'RESET' });
-                      setSelectedItem(valid ? resolvedItem : null);
                       setEditMode(false);
                     }}
                   />

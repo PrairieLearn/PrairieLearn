@@ -223,7 +223,7 @@ export type EditorAction =
       type: 'QUESTION_PICKED';
       qid: string;
       metadata: EditorQuestionMetadata;
-      gradingMethod: string;
+      /** The selectedItem at the time the pick was initiated; used to detect stale picks. */
       expectedSelectedItem: SelectedItem;
     }
   // Stubbed for future PR - will implement history tracking
