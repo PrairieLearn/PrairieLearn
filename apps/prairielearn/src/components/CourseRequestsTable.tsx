@@ -125,8 +125,7 @@ function CourseRequestTableRow({
         <td className="align-middle">
           {row.first_name || row.last_name ? (
             <>
-              {row.first_name} {row.last_name}{' '}
-              {row.work_email ? `(${row.work_email})` : ''}
+              {row.first_name} {row.last_name} {row.work_email ? `(${row.work_email})` : ''}
             </>
           ) : (
             <span className="text-muted fst-italic">No contact info</span>
@@ -605,9 +604,7 @@ function CourseRequestEditNoteForm({
   onCancel: () => void;
 }) {
   const trpc = useTRPC();
-  const mutation = useMutation(
-    trpc.courseRequests.updateNote.mutationOptions(),
-  );
+  const mutation = useMutation(trpc.courseRequests.updateNote.mutationOptions());
 
   const {
     register,
