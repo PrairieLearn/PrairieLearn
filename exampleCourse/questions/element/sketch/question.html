@@ -15,17 +15,17 @@
     <p>For full marks, draw the function $f(x) = 2^x$ (connecting the provided helper points) and mark 
       the horizontal asymptote at $y = 0$.</p>
   </pl-question-panel>
-  <pl-sketch answers-name="sketch-example" xrange="-1,2" yrange="-1,5">
+  <pl-sketch answers-name="sketch-example" x-range="-1,2" y-range="-1,5">
     <pl-sketch-tool id="fd" type="free-draw"></pl-sketch-tool>
     <pl-sketch-tool id="hl" type="horizontal-line"></pl-sketch-tool>
     <pl-sketch-tool id="pt" type="point" read-only="true"></pl-sketch-tool>
-    <pl-sketch-initial toolid="pt" coordinates="-1,0.5"></pl-sketch-initial>
-    <pl-sketch-initial toolid="pt" coordinates="0,1"></pl-sketch-initial>
-    <pl-sketch-initial toolid="pt" coordinates="1,2"></pl-sketch-initial>
-    <pl-sketch-initial toolid="pt" coordinates="2,4"></pl-sketch-initial>
-    <pl-sketch-grade type="match" toolid="hl" y="0"></pl-sketch-grade> 
-    <pl-sketch-grade type="count" toolid="hl" count="1"></pl-sketch-grade> 
-    <pl-sketch-grade type="match-fun"  toolid="fd" fun="2**x"></pl-sketch-grade> 
+    <pl-sketch-initial tool-id="pt" coordinates="-1,0.5"></pl-sketch-initial>
+    <pl-sketch-initial tool-id="pt" coordinates="0,1"></pl-sketch-initial>
+    <pl-sketch-initial tool-id="pt" coordinates="1,2"></pl-sketch-initial>
+    <pl-sketch-initial tool-id="pt" coordinates="2,4"></pl-sketch-initial>
+    <pl-sketch-grade type="match" tool-id="hl" y="0"></pl-sketch-grade> 
+    <pl-sketch-grade type="count" tool-id="hl" count="1"></pl-sketch-grade> 
+    <pl-sketch-grade type="match-function"  tool-id="fd" function="2**x"></pl-sketch-grade> 
   </pl-sketch>
 </pl-card>
 
@@ -52,14 +52,13 @@
 <pl-card>
   <pl-question-panel>
     <p>The drawing canvas itself can be customized by changing its display size and the visible x- and y-ranges inside 
-      the canvas. All drawings and the grid lines are scaled automatically. If no grading tools are specified, the 
-      element will default to a single free-hand function drawing tool.</p>
+      the canvas. All drawings and the grid lines are scaled automatically.</p>
     <p>This question also illustrates two other customizations: it is set up to allows blank submissions, and it prevents 
       drawn objects from being dragged off-canvas. The latter setting is recommended when using object counts as grading 
       criteria, because if students drag objects partially off-canvas, they might become hard to see for the human 
       eye and can cause confusion.</p>
   </pl-question-panel>
-  <pl-sketch answers-name="sketch-size" xrange="-5,50" yrange="-100,100" width="500" height="200" allow-blank="true" enforce-bounds="true">
+  <pl-sketch answers-name="sketch-size" x-range="-5,50" y-range="-100,100" width="500" height="200" allow-blank="true" enforce-bounds="true">
   </pl-sketch>
 </pl-card>
 
@@ -78,12 +77,12 @@
   </pl-question-panel>
   <pl-sketch answers-name="sketch-grade" allow-blank="true">
     <pl-sketch-tool id="pt" type="point"></pl-sketch-tool>
-    <pl-sketch-grade type="match" toolid="pt" x="0" y="0"></pl-sketch-grade> 
-    <pl-sketch-grade type="match" toolid="pt" x="1" y="1"></pl-sketch-grade> 
-    <pl-sketch-grade type="count" toolid="pt" count="3"></pl-sketch-grade> 
-    <pl-sketch-grade type="undefined-in" toolid="pt" xrange="2,"></pl-sketch-grade> 
-    <pl-sketch-grade type="less-than" toolid="pt" y="3"></pl-sketch-grade> 
-    <pl-sketch-grade type="greater-than" toolid="pt" y="-3"></pl-sketch-grade> 
+    <pl-sketch-grade type="match" tool-id="pt" x="0" y="0"></pl-sketch-grade> 
+    <pl-sketch-grade type="match" tool-id="pt" x="1" y="1"></pl-sketch-grade> 
+    <pl-sketch-grade type="count" tool-id="pt" count="3"></pl-sketch-grade> 
+    <pl-sketch-grade type="undefined-in" tool-id="pt" x-range="2,"></pl-sketch-grade> 
+    <pl-sketch-grade type="less-than" tool-id="pt" y="3"></pl-sketch-grade> 
+    <pl-sketch-grade type="greater-than" tool-id="pt" y="-3"></pl-sketch-grade> 
   </pl-sketch>
 </pl-card>
 
@@ -103,11 +102,11 @@
       more types of criteria, such as concavity checks or length-based grading.
     </p>
   </pl-question-panel>
-  <pl-sketch answers-name="sketch-grade-fun" allow-blank="true">
+  <pl-sketch answers-name="sketch-grade-function" allow-blank="true">
     <pl-sketch-tool id="fd" type="free-draw"></pl-sketch-tool>
-    <pl-sketch-grade type="defined-in" toolid="fd" xrange="-1," stage="1"></pl-sketch-grade> 
-    <pl-sketch-grade type="match-fun" toolid="fd" fun="x" xrange="-1,1" stage="2" weight="3"></pl-sketch-grade> 
-    <pl-sketch-grade type="monot-increasing" toolid="fd" xrange="1," stage="2"></pl-sketch-grade> 
+    <pl-sketch-grade type="defined-in" tool-id="fd" x-range="-1," stage="1"></pl-sketch-grade> 
+    <pl-sketch-grade type="match-function" tool-id="fd" function="x" x-range="-1,1" stage="2" weight="3"></pl-sketch-grade> 
+    <pl-sketch-grade type="monot-increasing" tool-id="fd" x-range="1," stage="2"></pl-sketch-grade> 
   </pl-sketch>
 </pl-card>
 
@@ -122,21 +121,21 @@
       counter-productive as it slows down grading to the point where a submission becomes invalid. We strongly recommend giving 
       students a low-stakes opportunity to practice all available drawing tools before using them in exams.</p>
   </pl-question-panel>
-  <pl-sketch answers-name="sketch-grade-poly" xrange="-1,5" allow-blank="true">
+  <pl-sketch answers-name="sketch-grade-poly" x-range="-1,5" allow-blank="true">
     <pl-sketch-tool id="pl" type="polygon"></pl-sketch-tool>
-    <pl-sketch-grade type="defined-in" toolid="pl" xrange="0,2"></pl-sketch-grade> 
-    <pl-sketch-grade type="greater-than" toolid="pl" fun="-x" xrange="0,2"></pl-sketch-grade> 
-    <pl-sketch-grade type="less-than" toolid="pl" fun="x" xrange="0,2"></pl-sketch-grade> 
-    <pl-sketch-grade type="match" toolid="pl" x="0" y="0"></pl-sketch-grade> 
-    <pl-sketch-grade type="match" toolid="pl" x="1" y="-1"></pl-sketch-grade> 
-    <pl-sketch-grade type="match" toolid="pl" x="1" y="1"></pl-sketch-grade> 
-    <pl-sketch-grade type="match" toolid="pl" x="2" y="-2"></pl-sketch-grade> 
-    <pl-sketch-grade type="match" toolid="pl" x="2" y="2"></pl-sketch-grade> 
+    <pl-sketch-grade type="defined-in" tool-id="pl" x-range="0,2"></pl-sketch-grade> 
+    <pl-sketch-grade type="greater-than" tool-id="pl" function="-x" x-range="0,2"></pl-sketch-grade> 
+    <pl-sketch-grade type="less-than" tool-id="pl" function="x" x-range="0,2"></pl-sketch-grade> 
+    <pl-sketch-grade type="match" tool-id="pl" x="0" y="0"></pl-sketch-grade> 
+    <pl-sketch-grade type="match" tool-id="pl" x="1" y="-1"></pl-sketch-grade> 
+    <pl-sketch-grade type="match" tool-id="pl" x="1" y="1"></pl-sketch-grade> 
+    <pl-sketch-grade type="match" tool-id="pl" x="2" y="-2"></pl-sketch-grade> 
+    <pl-sketch-grade type="match" tool-id="pl" x="2" y="2"></pl-sketch-grade> 
 
     <!-- Ungraded helper lines for easier shading -->
     <pl-sketch-tool id="sp1" type="spline" read-only="true"></pl-sketch-tool>
     <pl-sketch-tool id="sp2" type="spline" read-only="true"></pl-sketch-tool>
-    <pl-sketch-initial toolid="sp1" fun="-x" xrange="0,2"></pl-sketch-initial> 
-    <pl-sketch-initial toolid="sp2" fun="x" xrange="0,2"></pl-sketch-initial> 
+    <pl-sketch-initial tool-id="sp1" function="-x" x-range="0,2"></pl-sketch-initial> 
+    <pl-sketch-initial tool-id="sp2" function="x" x-range="0,2"></pl-sketch-initial> 
   </pl-sketch>
 </pl-card>

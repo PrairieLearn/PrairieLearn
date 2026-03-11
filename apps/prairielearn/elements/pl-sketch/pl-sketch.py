@@ -22,7 +22,6 @@ WIDTH_DEFAULT = 800
 HEIGHT_DEFAULT = 450
 ENFORCE_BOUNDS_DEFAULT = False
 READ_ONLY_DEFAULT = False
-COORDINATES_DEFAULT = "cartesian"
 ADD_DEFAULT_TOOLS_DEFAULT = False
 ALLOW_BLANK_DEFAULT = False
 
@@ -32,8 +31,8 @@ def prepare(element_html: str, data: pl.QuestionData) -> None:
     required_attribs = ["answers-name"]
     optional_attribs = [
         "weight",
-        "xrange",
-        "yrange",
+        "x-range",
+        "y-range",
         "width",
         "height",
         "enforce-bounds",
@@ -45,12 +44,12 @@ def prepare(element_html: str, data: pl.QuestionData) -> None:
     name = pl.get_string_attrib(element, "answers-name")
     pl.check_answers_names(data, name)
 
-    # xrange check
+    # x-range check
     x_range = split_range(
-        pl.get_string_attrib(element, "xrange", XRANGE_DEFAULT), None, None
+        pl.get_string_attrib(element, "x-range", XRANGE_DEFAULT), None, None
     )
     y_range = split_range(
-        pl.get_string_attrib(element, "yrange", YRANGE_DEFAULT), None, None
+        pl.get_string_attrib(element, "y-range", YRANGE_DEFAULT), None, None
     )
 
     read_only = pl.get_boolean_attrib(element, "read-only", READ_ONLY_DEFAULT)
@@ -412,7 +411,7 @@ def check_grader(
     """
     # Common list of optional grader attribs
     optional_attribs = [
-        "toolid",
+        "tool-id",
         "tolerance",
         "weight",
         "stage",
@@ -420,7 +419,7 @@ def check_grader(
         "debug",
     ]
     grader_type = pl.get_string_attrib(grader_tag, "type").strip()
-    grader_tools = pl.get_string_attrib(grader_tag, "toolid")
+    grader_tools = pl.get_string_attrib(grader_tag, "tool-id")
     tools: list[SketchTool] = []
     for tool_raw in grader_tools.split(","):
         tool = tool_raw.strip()
@@ -442,7 +441,7 @@ def check_grader(
         case "count":
             optional_attribs.extend([
                 "mode",
-                "xrange",
+                "x-range",
                 "count",
             ])
             mode_attrib = pl.get_string_attrib(grader_tag, "mode", None)
@@ -468,7 +467,7 @@ def check_grader(
             | "concave-up"
             | "concave-down"
         ):
-            optional_attribs.append("xrange")
+            optional_attribs.append("x-range")
             for tool in tools:
                 if tool["name"] == "horizontal-line":
                     raise ValueError(
@@ -525,27 +524,27 @@ def check_grader(
                         raise ValueError(
                             'The "endpoint" attribute of the "match" grading criterion must be "start", "end", or "either".'
                         )
-        case "match-fun":
+        case "match-function":
             optional_attribs.extend([
-                "fun",
-                "xyflip",
+                "function",
+                "xy-flip",
                 "allow-undefined",
-                "xrange",
-                "yrange",
+                "x-range",
+                "y-range",
             ])
-            if pl.get_boolean_attrib(grader_tag, "xyflip", False):
+            if pl.get_boolean_attrib(grader_tag, "xy-flip", False):
                 split_range(
-                    pl.get_string_attrib(grader_tag, "yrange", ","),
+                    pl.get_string_attrib(grader_tag, "y-range", ","),
                     ranges["y_start"],
                     ranges["y_end"],
                 )
             else:
                 split_range(
-                    pl.get_string_attrib(grader_tag, "xrange", ","),
+                    pl.get_string_attrib(grader_tag, "x-range", ","),
                     ranges["x_start"],
                     ranges["x_end"],
                 )
-            parse_function_string(pl.get_string_attrib(grader_tag, "fun"))
+            parse_function_string(pl.get_string_attrib(grader_tag, "function"))
             for tool in tools:
                 if (
                     tool["name"] == "line-segment"
@@ -554,26 +553,26 @@ def check_grader(
                     or (tool["name"] == "polyline" and tool["closed"])
                 ):
                     raise ValueError(
-                        'The "match-fun" grading criterion does not support the line, polygon, or horizontal/vertical line tools.'
+                        'The "match-function" grading criterion does not support the line, polygon, or horizontal/vertical line tools.'
                     )
             pl.get_boolean_attrib(grader_tag, "allow-undefined", False)
             defaults["tolerance"] = 20
         case "less-than" | "greater-than":
             optional_attribs.extend([
                 "y",
-                "fun",
-                "xyflip",
+                "function",
+                "xy-flip",
                 "allow-undefined",
-                "xrange",
-                "yrange",
+                "x-range",
+                "y-range",
             ])
             y_attrib = pl.get_float_attrib(grader_tag, "y", None)
-            fun_attrib = pl.get_string_attrib(grader_tag, "fun", None)
+            fun_attrib = pl.get_string_attrib(grader_tag, "function", None)
             if (y_attrib is None and fun_attrib is None) or (
                 y_attrib is not None and fun_attrib is not None
             ):
                 raise ValueError(
-                    f'For the "{grader_type}" grading criterion, exactly one of the attributes "y" and "fun" must be set.'
+                    f'For the "{grader_type}" grading criterion, exactly one of the attributes "y" and "function" must be set.'
                 )
             if fun_attrib is not None:
                 parse_function_string(fun_attrib)
@@ -587,7 +586,7 @@ def check_grader(
         case _:
             raise ValueError("Invalid grader type used: " + grader_type)
 
-    pl.check_attribs(grader_tag, ["type", "toolid"], optional_attribs)
+    pl.check_attribs(grader_tag, ["type", "tool-id"], optional_attribs)
 
     tool_params: SketchGrader = {
         "type": grader_type,
@@ -602,19 +601,19 @@ def check_grader(
         "x": pl.get_float_attrib(grader_tag, "x", None),
         "y": pl.get_float_attrib(grader_tag, "y", None),
         "xrange": split_range(
-            pl.get_string_attrib(grader_tag, "xrange", ","),
+            pl.get_string_attrib(grader_tag, "x-range", ","),
             ranges["x_start"],
             ranges["x_end"],
         ),
         "yrange": split_range(
-            pl.get_string_attrib(grader_tag, "yrange", ","),
+            pl.get_string_attrib(grader_tag, "y-range", ","),
             ranges["y_start"],
             ranges["y_end"],
         ),
         "endpoint": pl.get_string_attrib(grader_tag, "endpoint", None),
         "count": pl.get_integer_attrib(grader_tag, "count", None),
-        "fun": pl.get_string_attrib(grader_tag, "fun", None),
-        "xyflip": pl.get_boolean_attrib(grader_tag, "xyflip", None),
+        "fun": pl.get_string_attrib(grader_tag, "function", None),
+        "xyflip": pl.get_boolean_attrib(grader_tag, "xy-flip", None),
         "mode": pl.get_string_attrib(grader_tag, "mode", None),
         "allowundefined": pl.get_boolean_attrib(grader_tag, "allow-undefined", None),
     }
@@ -638,11 +637,11 @@ def check_initial(
         ValueError: If data in the tag is invalid
     """
     # check that toolid parameter there for all
-    initial_tool = pl.get_string_attrib(initial_tag, "toolid")
+    initial_tool = pl.get_string_attrib(initial_tag, "tool-id")
     initial_coords = pl.get_string_attrib(initial_tag, "coordinates", None)
-    initial_fun = pl.get_string_attrib(initial_tag, "fun", None)
+    initial_fun = pl.get_string_attrib(initial_tag, "function", None)
     initial_xrange = split_range(
-        pl.get_string_attrib(initial_tag, "xrange", ","),
+        pl.get_string_attrib(initial_tag, "x-range", ","),
         ranges["x_start"],
         ranges["x_end"],
     )
@@ -656,7 +655,7 @@ def check_initial(
         initial_coords is not None and initial_fun is not None
     ):
         raise ValueError(
-            "Each initial drawing element needs either a coordinates or a fun attribute."
+            'Each initial drawing element needs either a "coordinates" or a "function" attribute.'
         )
 
     coords = []

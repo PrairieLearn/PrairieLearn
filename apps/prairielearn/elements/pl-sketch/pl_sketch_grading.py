@@ -29,7 +29,7 @@ def grade_submission(
             return match(grader, submitted_answer, tool_dict)
         case "count":
             return count(grader, submitted_answer, tool_dict)
-        case "match-fun":
+        case "match-function":
             return match_fun(grader, submitted_answer, tool_dict)
         case "monot-increasing":
             return monot_increasing(grader, submitted_answer, tool_dict)
