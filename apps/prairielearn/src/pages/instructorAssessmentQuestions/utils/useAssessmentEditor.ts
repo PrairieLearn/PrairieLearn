@@ -4,11 +4,20 @@ import type {
   EditorAction,
   EditorState,
   QuestionAlternativeForm,
+  SelectedItem,
   ZoneAssessmentForm,
   ZoneQuestionBlockForm,
 } from '../types.js';
 
-import { alternativeToQuestionBlock, questionBlockToAlternative } from './dataTransform.js';
+import {
+  alternativeToQuestionBlock,
+  createAltGroupWithTrackingId,
+  createAlternativeWithTrackingId,
+  createQuestionWithTrackingId,
+  getDefaultPointFieldsForNewQuestion,
+  questionBlockToAlternative,
+} from './dataTransform.js';
+import { sanitizeSelectedItem, selectedItemsEqual } from './selectedItem.js';
 
 /**
  * Finds a zone by its trackingId.
@@ -116,12 +125,237 @@ export function findByTrackingId(
 }
 
 /**
+ * Checks whether a QID already exists somewhere in the assessment zones.
+ */
+function isQidInAssessment(zones: ZoneAssessmentForm[], qid: string): boolean {
+  for (const zone of zones) {
+    for (const q of zone.questions) {
+      if (q.id === qid) return true;
+      if (q.alternatives?.some((a) => a.id === qid)) return true;
+    }
+  }
+  return false;
+}
+
+/**
+ * Removes a question/alternative with the given QID from the zones array (mutating in place).
+ * Also cleans up the corresponding metadata entries.
+ */
+function removeQidMutably(
+  zones: ZoneAssessmentForm[],
+  questionMetadata: EditorState['questionMetadata'],
+  qid: string,
+): void {
+  for (const zone of zones) {
+    for (let qi = 0; qi < zone.questions.length; qi++) {
+      const q = zone.questions[qi];
+      if (q.id === qid) {
+        if (q.alternatives) {
+          for (const alt of q.alternatives) {
+            if (alt.id) delete questionMetadata[alt.id];
+          }
+        }
+        delete questionMetadata[qid];
+        zone.questions.splice(qi, 1);
+        return;
+      }
+      for (let ai = 0; ai < (q.alternatives ?? []).length; ai++) {
+        if (q.alternatives![ai].id === qid) {
+          delete questionMetadata[qid];
+          q.alternatives!.splice(ai, 1);
+          return;
+        }
+      }
+    }
+  }
+}
+
+/**
+ * Handles the QUESTION_PICKED compound action. Extracted to keep the switch
+ * statement readable. All state reads are synchronous and always current.
+ */
+function handleQuestionPicked(
+  state: EditorState,
+  action: Extract<EditorAction, { type: 'QUESTION_PICKED' }>,
+): EditorState {
+  const { qid, metadata, gradingMethod, expectedSelectedItem } = action;
+
+  // Bail if the selection changed during the async fetch — the user navigated
+  // away, so this pick is stale.
+  if (!selectedItemsEqual(state.selectedItem, expectedSelectedItem)) {
+    return state;
+  }
+
+  const sel = state.selectedItem;
+
+  // --- Path 1: Adding to an alt group (altGroupPicker) ---
+  if (sel?.type === 'altGroupPicker') {
+    const newZones = structuredClone(state.zones);
+    const newQuestionMetadata = { ...state.questionMetadata };
+    let newSelectedItem: SelectedItem = sel;
+
+    // Remove from current location if already in assessment (move behavior)
+    if (isQidInAssessment(newZones, qid)) {
+      removeQidMutably(newZones, newQuestionMetadata, qid);
+    }
+
+    if (sel.altGroupTrackingId) {
+      // Adding to existing alt group
+      const altGroupResult = findQuestionByTrackingId(newZones, sel.altGroupTrackingId);
+      if (!altGroupResult) return state;
+
+      // Empty groups start neutral; seed point defaults from the first picked question.
+      const shouldInitializeAltGroupPoints =
+        altGroupResult.question.alternatives?.length === 0 &&
+        altGroupResult.question.autoPoints == null &&
+        altGroupResult.question.maxAutoPoints == null &&
+        altGroupResult.question.manualPoints == null;
+
+      if (shouldInitializeAltGroupPoints) {
+        const pointFields = getDefaultPointFieldsForNewQuestion(gradingMethod);
+        Object.assign(altGroupResult.question, pointFields);
+      }
+
+      const newAlt = { ...createAlternativeWithTrackingId(), id: qid } as QuestionAlternativeForm;
+      if (!altGroupResult.question.alternatives) {
+        altGroupResult.question.alternatives = [];
+      }
+      altGroupResult.question.alternatives.push(newAlt);
+      newQuestionMetadata[qid] = metadata;
+    } else {
+      // Creating new alt group: first question picked creates the group
+      const newAltGroup = {
+        ...createAltGroupWithTrackingId(),
+        ...getDefaultPointFieldsForNewQuestion(gradingMethod),
+      };
+      const firstAlt = { ...createAlternativeWithTrackingId(), id: qid } as QuestionAlternativeForm;
+      newAltGroup.alternatives = [firstAlt];
+
+      const zoneResult = findZoneByTrackingId(newZones, sel.zoneTrackingId);
+      if (!zoneResult) return state;
+      zoneResult.zone.questions.push(newAltGroup);
+      newQuestionMetadata[qid] = metadata;
+
+      // Update selection so subsequent picks add to this group
+      newSelectedItem = {
+        type: 'altGroupPicker',
+        zoneTrackingId: sel.zoneTrackingId,
+        altGroupTrackingId: newAltGroup.trackingId,
+      };
+    }
+
+    return {
+      ...state,
+      zones: newZones,
+      questionMetadata: newQuestionMetadata,
+      selectedItem: newSelectedItem,
+    };
+  }
+
+  // --- Path 2 & 3: picker (with or without returnToSelection) ---
+  if (sel?.type === 'picker') {
+    if (sel.returnToSelection) {
+      // Path 2: Changing a question's QID via the picker
+      const returnTo = sel.returnToSelection;
+      if (returnTo.type !== 'question' && returnTo.type !== 'alternative') return state;
+
+      const newZones = structuredClone(state.zones);
+      const newQuestionMetadata = { ...state.questionMetadata };
+
+      const found = findQuestionByTrackingId(newZones, returnTo.questionTrackingId);
+      if (!found) return state;
+
+      // Remove from current location if already in assessment (move behavior),
+      // but skip if the question being removed is the one we're about to update.
+      if (isQidInAssessment(newZones, qid)) {
+        const currentQid =
+          returnTo.type === 'alternative'
+            ? found.question.alternatives?.find(
+                (a) => a.trackingId === returnTo.alternativeTrackingId,
+              )?.id
+            : found.question.id;
+        if (currentQid !== qid) {
+          removeQidMutably(newZones, newQuestionMetadata, qid);
+        }
+      }
+
+      // Re-find after potential removal (indices may have shifted)
+      const updatedFound = findQuestionByTrackingId(newZones, returnTo.questionTrackingId);
+      if (!updatedFound) return state;
+
+      // Get old QID for metadata cleanup
+      const oldId =
+        returnTo.type === 'alternative'
+          ? updatedFound.question.alternatives?.find(
+              (a) => a.trackingId === returnTo.alternativeTrackingId,
+            )?.id
+          : updatedFound.question.id;
+
+      // Update metadata
+      if (oldId && oldId !== qid) {
+        delete newQuestionMetadata[oldId];
+      }
+      newQuestionMetadata[qid] = metadata;
+
+      // Update QID on the question/alternative
+      if (returnTo.type === 'alternative') {
+        const alt = updatedFound.question.alternatives?.find(
+          (a) => a.trackingId === returnTo.alternativeTrackingId,
+        );
+        if (alt) alt.id = qid;
+      } else {
+        updatedFound.zone.questions[updatedFound.questionIndex] = {
+          ...updatedFound.question,
+          id: qid,
+        };
+      }
+
+      return {
+        ...state,
+        zones: newZones,
+        questionMetadata: newQuestionMetadata,
+        selectedItem: returnTo,
+      };
+    }
+
+    // Path 3: Adding a new question to a zone
+    const newZones = structuredClone(state.zones);
+    const newQuestionMetadata = { ...state.questionMetadata };
+
+    // Remove from current location if already in assessment (move behavior)
+    if (isQidInAssessment(newZones, qid)) {
+      removeQidMutably(newZones, newQuestionMetadata, qid);
+    }
+
+    const zoneResult = findZoneByTrackingId(newZones, sel.zoneTrackingId);
+    if (!zoneResult) return state;
+
+    const newQuestion: ZoneQuestionBlockForm & { id: string } = {
+      ...createQuestionWithTrackingId(),
+      id: qid,
+      ...getDefaultPointFieldsForNewQuestion(gradingMethod),
+    };
+
+    zoneResult.zone.questions.push(newQuestion);
+    newQuestionMetadata[qid] = metadata;
+
+    return {
+      ...state,
+      zones: newZones,
+      questionMetadata: newQuestionMetadata,
+    };
+  }
+
+  return state;
+}
+
+/**
  * Creates a reducer for managing assessment editor state.
  * The initialState is captured in closure for the RESET action.
  * All operations use trackingIds for stable identity instead of position indices.
  */
 export function createEditorReducer(initialState: EditorState) {
-  return function editorReducer(state: EditorState, action: EditorAction): EditorState {
+  function coreReducer(state: EditorState, action: EditorAction): EditorState {
     switch (action.type) {
       case 'ADD_QUESTION': {
         const { zoneTrackingId, question, questionData } = action;
@@ -601,42 +835,47 @@ export function createEditorReducer(initialState: EditorState) {
 
         toGroupResult.question.alternatives.splice(insertIndex, 0, newAlt);
 
+        // If the merged question was selected, follow it to its new location
+        // as an alternative. sanitizeSelectedItem can't handle this because a
+        // question trackingId becoming an alternative trackingId is a type change.
+        let mergeSelectedItem = state.selectedItem;
+        if (
+          state.selectedItem?.type === 'question' &&
+          state.selectedItem.questionTrackingId === questionTrackingId
+        ) {
+          mergeSelectedItem = {
+            type: 'alternative',
+            questionTrackingId: toAltGroupTrackingId,
+            alternativeTrackingId: questionTrackingId,
+          };
+        }
+
         return {
           ...state,
           zones: newZones,
+          selectedItem: mergeSelectedItem,
         };
       }
 
       case 'REMOVE_QUESTION_BY_QID': {
         const { qid } = action;
+        if (!isQidInAssessment(state.zones, qid)) return state;
+
         const newZones = structuredClone(state.zones);
         const newQuestionMetadata = { ...state.questionMetadata };
+        removeQidMutably(newZones, newQuestionMetadata, qid);
+        return { ...state, zones: newZones, questionMetadata: newQuestionMetadata };
+      }
 
-        for (const zone of newZones) {
-          for (let qi = 0; qi < zone.questions.length; qi++) {
-            const q = zone.questions[qi];
-            if (q.id === qid) {
-              // Remove standalone question
-              if (q.alternatives) {
-                for (const alt of q.alternatives) {
-                  if (alt.id) delete newQuestionMetadata[alt.id];
-                }
-              }
-              delete newQuestionMetadata[qid];
-              zone.questions.splice(qi, 1);
-              return { ...state, zones: newZones, questionMetadata: newQuestionMetadata };
-            }
-            for (let ai = 0; ai < (q.alternatives ?? []).length; ai++) {
-              if (q.alternatives![ai].id === qid) {
-                delete newQuestionMetadata[qid];
-                q.alternatives!.splice(ai, 1);
-                return { ...state, zones: newZones, questionMetadata: newQuestionMetadata };
-              }
-            }
-          }
-        }
-        // QID not found — no-op
-        return state;
+      case 'SET_SELECTED_ITEM': {
+        return {
+          ...state,
+          selectedItem: action.selectedItem,
+        };
+      }
+
+      case 'QUESTION_PICKED': {
+        return handleQuestionPicked(state, action);
       }
 
       case 'RESET': {
@@ -651,6 +890,25 @@ export function createEditorReducer(initialState: EditorState) {
       default:
         return state;
     }
+  }
+
+  // Wrap the core reducer with automatic selection sanitization.
+  // When zones change, the current selection may point at a removed or
+  // restructured item. sanitizeSelectedItem resolves it to a valid selection
+  // or null. selectedItemsEqual preserves referential identity so that
+  // autosave-driven zone changes don't produce a new object reference when
+  // the selection is logically unchanged.
+  return function editorReducer(state: EditorState, action: EditorAction): EditorState {
+    const nextState = coreReducer(state, action);
+
+    if (nextState.zones !== state.zones && nextState.selectedItem != null) {
+      const sanitized = sanitizeSelectedItem(nextState.selectedItem, nextState.zones);
+      if (!selectedItemsEqual(nextState.selectedItem, sanitized)) {
+        return { ...nextState, selectedItem: sanitized };
+      }
+    }
+
+    return nextState;
   };
 }
 
@@ -668,6 +926,7 @@ export function useAssessmentEditor(initialState: EditorState) {
     questionMetadata: state.questionMetadata,
     collapsedGroups: state.collapsedGroups,
     collapsedZones: state.collapsedZones,
+    selectedItem: state.selectedItem,
     canUndo: false,
     canRedo: false,
     dispatch,

@@ -26,7 +26,6 @@ import type {
 } from '../../../lib/client/safe-db-types.js';
 import { QueryClientProviderDebug } from '../../../lib/client/tanstackQuery.js';
 import type { ZoneAssessmentJson } from '../../../schemas/infoAssessment.js';
-import type { QuestionByQidResult } from '../trpc.js';
 import type {
   DetailActions,
   DetailState,
@@ -39,10 +38,7 @@ import type {
 } from '../types.js';
 import {
   createAltGroupWithTrackingId,
-  createAlternativeWithTrackingId,
-  createQuestionWithTrackingId,
   createZoneWithTrackingId,
-  getDefaultPointFieldsForNewQuestion,
   prepareZonesForEditor,
   stripTrackingIds,
 } from '../utils/dataTransform.js';
@@ -55,7 +51,6 @@ import {
   toEditorMetadata,
 } from '../utils/questions.js';
 import { getStructuralSaveValidationErrorKind } from '../utils/saveValidation.js';
-import { sanitizeSelectedItem, selectedItemsEqual } from '../utils/selectedItem.js';
 import { createAssessmentQuestionsTrpcClient } from '../utils/trpc-client.js';
 import { TRPCProvider, useTRPC } from '../utils/trpc-context.js';
 import {
@@ -172,11 +167,20 @@ function AssessmentEditorInner({
       questionMetadata: questionMetadataMap,
       collapsedGroups: new Set<string>(),
       collapsedZones: new Set<string>(),
+      selectedItem: null as SelectedItem,
     };
   });
 
-  const { zones, questionMetadata, collapsedGroups, collapsedZones, dispatch } =
+  const { zones, questionMetadata, collapsedGroups, collapsedZones, selectedItem, dispatch } =
     useAssessmentEditor(initialState);
+
+  // Wrap dispatch in a setter-style callback so existing call sites
+  // (tree nodes, detail panel, etc.) can keep calling setSelectedItem(item).
+  const setSelectedItem = useCallback(
+    (item: SelectedItem) => dispatch({ type: 'SET_SELECTED_ITEM', selectedItem: item }),
+    [dispatch],
+  );
+
   const initialZonesJson = useMemo(() => JSON.stringify(initialState.zones), [initialState.zones]);
   const initialPropsMap = useMemo(() => buildPropsMap(initialState.zones), [initialState.zones]);
   const changeTracking = useMemo(
@@ -201,28 +205,6 @@ function AssessmentEditorInner({
   const [activeDragId, setActiveDragId] = useState<string | null>(null);
   const isDragging = activeDragId !== null;
   const isKeyboardDragRef = useRef(false);
-  const [selectedItemState, setSelectedItem] = useState<SelectedItem>(null);
-  // After tree mutations (drag-and-drop, extraction, deletion), the stored
-  // selection may point at a removed or restructured item. sanitizeSelectedItem
-  // resolves this to a valid selection or null. We preserve referential identity
-  // via selectedItemsEqual so that autosave-driven `zones` changes (which happen
-  // on every keystroke) don't produce a new object reference when the selection
-  // is logically unchanged. A new reference would re-trigger the effect that
-  // resets selectedFormHasErrors (clearing validation mid-edit) and re-run
-  // expensive memos like the tree event handlers.
-  const selectedItem = useMemo(() => {
-    const nextSelectedItem = sanitizeSelectedItem(selectedItemState, zones);
-    return selectedItemsEqual(selectedItemState, nextSelectedItem)
-      ? selectedItemState
-      : nextSelectedItem;
-  }, [selectedItemState, zones]);
-
-  // Refs track the latest values so async handlers (handleQuestionPicked)
-  // can read fresh state after an await instead of using the stale closure.
-  const selectedItemRef = useRef(selectedItem);
-  selectedItemRef.current = selectedItem;
-  const zonesRef = useRef(zones);
-  zonesRef.current = zones;
 
   // Tracks validation errors for the currently mounted detail form only.
   // Invalid draft values in the open form are discarded on unmount because
@@ -408,207 +390,25 @@ function AssessmentEditorInner({
   };
 
   const handleQuestionPicked = async (qid: string) => {
-    if (selectedItem?.type === 'altGroupPicker') {
-      let questionData: QuestionByQidResult;
-      try {
-        questionData = await questionByQidMutation.mutateAsync(qid);
-      } catch {
-        // mutateAsync re-throws, but the error is stored in mutation.error
-        // and surfaced via pickerError. We just need to bail out here.
-        return;
-      }
-      if (selectedItemRef.current !== selectedItem) return;
-
-      const metadata = buildQuestionMetadata({
-        data: questionData,
-        assessment,
-        courseInstance,
-        courseQuestions,
-      });
-
-      // Remove from current location if already in assessment (move behavior)
-      if (questionsInAssessment.has(qid)) {
-        handleRemoveQuestionByQid(qid);
-      }
-
-      if (selectedItem.altGroupTrackingId) {
-        // Empty groups start neutral; seed point defaults from the first picked question.
-        // Use zonesRef to read fresh state after the await (the closure's `zones` is stale).
-        const altGroupResult = findQuestionByTrackingId(
-          zonesRef.current,
-          selectedItem.altGroupTrackingId,
-        );
-        const shouldInitializeAltGroupPoints =
-          altGroupResult?.question.alternatives?.length === 0 &&
-          altGroupResult.question.autoPoints == null &&
-          altGroupResult.question.maxAutoPoints == null &&
-          altGroupResult.question.manualPoints == null;
-
-        if (shouldInitializeAltGroupPoints) {
-          dispatch({
-            type: 'UPDATE_QUESTION',
-            questionTrackingId: selectedItem.altGroupTrackingId,
-            question: getDefaultPointFieldsForNewQuestion(questionData.question.grading_method),
-          });
-        }
-
-        // Adding to existing alt group
-        const newAlt = { ...createAlternativeWithTrackingId(), id: qid } as QuestionAlternativeForm;
-        dispatch({
-          type: 'ADD_ALTERNATIVE',
-          altGroupTrackingId: selectedItem.altGroupTrackingId,
-          alternative: newAlt,
-          questionData: metadata,
-        });
-      } else {
-        // Creating new alt group: first question picked creates the group
-        const newAltGroup = {
-          ...createAltGroupWithTrackingId(),
-          ...getDefaultPointFieldsForNewQuestion(questionData.question.grading_method),
-        };
-        const firstAlt = {
-          ...createAlternativeWithTrackingId(),
-          id: qid,
-        } as QuestionAlternativeForm;
-        newAltGroup.alternatives = [firstAlt];
-
-        // Don't pass questionData to ADD_QUESTION — it stores metadata under
-        // question.id, which is undefined for alt groups. Store it separately.
-        dispatch({
-          type: 'ADD_QUESTION',
-          zoneTrackingId: selectedItem.zoneTrackingId,
-          question: newAltGroup,
-        });
-        dispatch({
-          type: 'UPDATE_QUESTION_METADATA',
-          questionId: qid,
-          questionData: metadata,
-        });
-
-        // Update selection so subsequent picks add to this group
-        setSelectedItem({
-          type: 'altGroupPicker',
-          zoneTrackingId: selectedItem.zoneTrackingId,
-          altGroupTrackingId: newAltGroup.trackingId,
-        });
-      }
-      // Stay in picker for "add another" behavior
-      return;
-    }
-
-    if (selectedItem?.type !== 'picker') return;
-
-    if (selectedItem.returnToSelection) {
-      // Returning to a question detail panel after picking a new QID
-      const returnTo = selectedItem.returnToSelection;
-      if (returnTo.type === 'question' || returnTo.type === 'alternative') {
-        const questionTrackingId = returnTo.questionTrackingId;
-
-        let questionData: QuestionByQidResult;
-        try {
-          questionData = await questionByQidMutation.mutateAsync(qid);
-        } catch {
-          // mutateAsync re-throws, but the error is stored in mutation.error
-          // and surfaced via pickerError. We just need to bail out here.
-          return;
-        }
-        if (selectedItemRef.current !== selectedItem) return;
-
-        // Use zonesRef to read fresh state after the await (the closure's `zones` is stale).
-        const found = findQuestionByTrackingId(zonesRef.current, questionTrackingId);
-
-        // Remove from current location if already in assessment (move behavior),
-        // but skip if the question being removed is the one we're about to update.
-        if (questionsInAssessment.has(qid)) {
-          const currentQid = run(() => {
-            if (!found) return undefined;
-            if (returnTo.type === 'alternative') {
-              return found.question.alternatives?.find(
-                (a) => a.trackingId === returnTo.alternativeTrackingId,
-              )?.id;
-            }
-            return found.question.id;
-          });
-          if (currentQid !== qid) {
-            handleRemoveQuestionByQid(qid);
-          }
-        }
-        if (found) {
-          const oldId =
-            returnTo.type === 'alternative'
-              ? found.question.alternatives?.find(
-                  (a) => a.trackingId === returnTo.alternativeTrackingId,
-                )?.id
-              : found.question.id;
-
-          dispatch({
-            type: 'UPDATE_QUESTION_METADATA',
-            questionId: qid,
-            oldQuestionId: oldId,
-            questionData: buildQuestionMetadata({
-              data: questionData,
-              assessment,
-              courseInstance,
-              courseQuestions,
-            }),
-          });
-
-          if (returnTo.type === 'alternative') {
-            dispatch({
-              type: 'UPDATE_QUESTION',
-              questionTrackingId,
-              alternativeTrackingId: returnTo.alternativeTrackingId,
-              question: { id: qid },
-            });
-          } else {
-            dispatch({
-              type: 'UPDATE_QUESTION',
-              questionTrackingId,
-              question: { id: qid },
-            });
-          }
-        }
-
-        setSelectedItem(returnTo);
-      }
-      return;
-    }
-
-    // Adding a new question to a zone
-    let questionData: QuestionByQidResult;
     try {
-      questionData = await questionByQidMutation.mutateAsync(qid);
+      const questionData = await questionByQidMutation.mutateAsync(qid);
+
+      dispatch({
+        type: 'QUESTION_PICKED',
+        qid,
+        metadata: buildQuestionMetadata({
+          data: questionData,
+          assessment,
+          courseInstance,
+          courseQuestions,
+        }),
+        gradingMethod: questionData.question.grading_method,
+        expectedSelectedItem: selectedItem,
+      });
     } catch {
       // mutateAsync re-throws, but the error is stored in mutation.error
       // and surfaced via pickerError. We just need to bail out here.
-      return;
     }
-    if (selectedItemRef.current !== selectedItem) return;
-
-    // Remove from current location if already in assessment (move behavior)
-    if (questionsInAssessment.has(qid)) {
-      handleRemoveQuestionByQid(qid);
-    }
-
-    const newQuestion: ZoneQuestionBlockForm & { id: string } = {
-      ...createQuestionWithTrackingId(),
-      id: qid,
-      ...getDefaultPointFieldsForNewQuestion(questionData.question.grading_method),
-    };
-
-    dispatch({
-      type: 'ADD_QUESTION',
-      zoneTrackingId: selectedItem.zoneTrackingId,
-      question: newQuestion,
-      questionData: buildQuestionMetadata({
-        data: questionData,
-        assessment,
-        courseInstance,
-        courseQuestions,
-      }),
-    });
-
-    // Stay in picker for "add another" behavior
   };
 
   const handlePickerDone = () => {
@@ -671,49 +471,6 @@ function AssessmentEditorInner({
     questionId: string,
     alternativeTrackingId?: string,
   ) => {
-    // Clear selection if the deleted item was selected
-    if (
-      selectedItem?.type === 'question' &&
-      selectedItem.questionTrackingId === questionTrackingId
-    ) {
-      setSelectedItem(null);
-    }
-    if (
-      selectedItem?.type === 'alternative' &&
-      selectedItem.alternativeTrackingId === alternativeTrackingId
-    ) {
-      setSelectedItem(null);
-    }
-    if (
-      selectedItem?.type === 'altGroup' &&
-      selectedItem.questionTrackingId === questionTrackingId &&
-      alternativeTrackingId === undefined
-    ) {
-      setSelectedItem(null);
-    }
-    if (
-      selectedItem?.type === 'altGroupPicker' &&
-      selectedItem.altGroupTrackingId === questionTrackingId &&
-      alternativeTrackingId === undefined
-    ) {
-      setSelectedItem(null);
-    }
-    if (selectedItem?.type === 'picker' && selectedItem.returnToSelection) {
-      const returnTo = selectedItem.returnToSelection;
-      if (
-        (returnTo.type === 'question' || returnTo.type === 'altGroup') &&
-        returnTo.questionTrackingId === questionTrackingId
-      ) {
-        setSelectedItem(null);
-      }
-      if (
-        returnTo.type === 'alternative' &&
-        returnTo.alternativeTrackingId === alternativeTrackingId
-      ) {
-        setSelectedItem(null);
-      }
-    }
-
     dispatch({
       type: 'DELETE_QUESTION',
       questionTrackingId,
@@ -742,44 +499,6 @@ function AssessmentEditorInner({
   };
 
   const handleDeleteZone = (zoneTrackingId: string) => {
-    if (selectedItem) {
-      const zone = zones.find((z) => z.trackingId === zoneTrackingId);
-      const trackingIds = new Set<string>([zoneTrackingId]);
-      if (zone) {
-        for (const q of zone.questions) {
-          trackingIds.add(q.trackingId);
-          for (const alt of q.alternatives ?? []) {
-            trackingIds.add(alt.trackingId);
-          }
-        }
-      }
-
-      const shouldClear = run(() => {
-        switch (selectedItem.type) {
-          case 'zone':
-            return trackingIds.has(selectedItem.zoneTrackingId);
-          case 'question':
-          case 'altGroup':
-            return trackingIds.has(selectedItem.questionTrackingId);
-          case 'alternative':
-            return trackingIds.has(selectedItem.alternativeTrackingId);
-          case 'picker':
-            return trackingIds.has(selectedItem.zoneTrackingId);
-          case 'altGroupPicker':
-            return (
-              trackingIds.has(selectedItem.zoneTrackingId) ||
-              (selectedItem.altGroupTrackingId !== undefined &&
-                trackingIds.has(selectedItem.altGroupTrackingId))
-            );
-          default:
-            return false;
-        }
-      });
-
-      if (shouldClear) {
-        setSelectedItem(null);
-      }
-    }
     dispatch({ type: 'DELETE_ZONE', zoneTrackingId });
   };
 
@@ -875,15 +594,6 @@ function AssessmentEditorInner({
         toAltGroupTrackingId: altGroupTrackingId,
         beforeAlternativeTrackingId: null,
       });
-      // The question's trackingId is preserved but it's now an alternative
-      // inside the group. Update the selection so DetailPanel can find it.
-      if (selectedItem?.type === 'question' && selectedItem.questionTrackingId === activeIdStr) {
-        setSelectedItem({
-          type: 'alternative',
-          questionTrackingId: altGroupTrackingId,
-          alternativeTrackingId: activeIdStr,
-        });
-      }
       return;
     }
 
@@ -918,12 +628,6 @@ function AssessmentEditorInner({
     });
   };
 
-  const upgradeSelectedAlternativeToQuestion = (trackingId: string) => {
-    if (selectedItem?.type === 'alternative' && selectedItem.alternativeTrackingId === trackingId) {
-      setSelectedItem({ type: 'question', questionTrackingId: trackingId });
-    }
-  };
-
   const handleDragOver = ({ active, over }: DragOverEvent) => {
     if (!over) return;
 
@@ -953,7 +657,7 @@ function AssessmentEditorInner({
           toZoneTrackingId: targetZone.trackingId,
           beforeQuestionTrackingId: null,
         });
-        upgradeSelectedAlternativeToQuestion(activeIdStr);
+
         return;
       }
 
@@ -988,7 +692,6 @@ function AssessmentEditorInner({
           toZoneTrackingId: toZone.trackingId,
           beforeQuestionTrackingId: toZone.questions[toPos.questionIndex].trackingId,
         });
-        upgradeSelectedAlternativeToQuestion(activeIdStr);
       }
       return;
     }
@@ -1367,8 +1070,10 @@ function AssessmentEditorInner({
                             return false;
                         }
                       });
-                      setSelectedItem(valid ? resolvedItem : null);
+                      // RESET restores initial zones (with selectedItem: null).
+                      // Dispatch it first, then set the resolved selection.
                       dispatch({ type: 'RESET' });
+                      setSelectedItem(valid ? resolvedItem : null);
                       setEditMode(false);
                     }}
                   />

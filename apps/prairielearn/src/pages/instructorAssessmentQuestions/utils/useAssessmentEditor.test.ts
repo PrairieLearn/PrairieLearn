@@ -54,6 +54,7 @@ function makeState(overrides?: Partial<EditorState>): EditorState {
     questionMetadata: {},
     collapsedGroups: new Set<string>(),
     collapsedZones: new Set<string>(),
+    selectedItem: null,
     ...overrides,
   };
 }
