@@ -175,6 +175,8 @@ export const AssessmentAccessRuleJsonSchema = z
     'An access rule that permits people to access this assessment. All restrictions in the rule must be satisfied for the rule to allow access.',
   );
 
+export type AssessmentAccessRuleJson = z.input<typeof AssessmentAccessRuleJsonSchema>;
+
 export const PointsSingleJsonSchema = z
   .number()
   .gte(0)

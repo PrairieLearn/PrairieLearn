@@ -1,36 +1,15 @@
-#!/usr/bin/env npx tsx
 /**
- * Migrate old allowAccess arrays to new accessControl schema.
+ * Migration library for converting legacy allowAccess arrays to modern accessControl format.
  *
- * Usage: npx tsx src/migrate-access-control.ts [--dry-run]
- *
- * Maps the top 15 archetypes (covering 98% of non-uid assessments) from the
- * old allowAccess rule-array format to the new AccessControlJsonSchema format.
+ * Extracted from the standalone migrate-access-control.ts script.
  */
 
 import * as fs from 'fs/promises';
 import * as path from 'path';
-import { execa } from 'execa';
 
-// ---------------------------------------------------------------------------
-// Types
-// ---------------------------------------------------------------------------
+import type { AssessmentAccessRuleJson } from '../schemas/infoAssessment.js';
 
-interface OldAccessRule {
-  comment?: string;
-  uids?: string[];
-  startDate?: string;
-  endDate?: string;
-  mode?: string;
-  password?: string;
-  examUuid?: string;
-  active?: boolean;
-  credit?: number;
-  showClosedAssessment?: boolean;
-  showClosedAssessmentScore?: boolean;
-  timeLimitMin?: number;
-  role?: string;
-}
+import { formatJsonWithPrettier } from './prettier.js';
 
 interface DeadlineEntry {
   date: string;
@@ -59,7 +38,7 @@ interface NewAccessControl {
   integrations?: {
     prairieTest?: {
       enabled?: boolean;
-      exams?: Array<{ examUuid: string; readOnly?: boolean }>;
+      exams?: { examUuid: string; readOnly?: boolean }[];
     };
   };
   afterComplete?: {
@@ -71,20 +50,27 @@ interface NewAccessControl {
   };
 }
 
-interface MigrationResult {
+interface AssessmentMigrationAnalysis {
+  tid: string;
+  title: string;
+  type: string;
   archetype: string;
-  filePath: string;
-  oldAllowAccess: OldAccessRule[];
-  newAccessControl: NewAccessControl[];
-  warnings: string[];
+  canMigrate: boolean;
+  ruleCount: number;
+  hasUidRules: boolean;
+}
+
+interface CourseInstanceMigrationAnalysis {
+  assessments: AssessmentMigrationAnalysis[];
+  hasLegacyRules: boolean;
+  allCanMigrate: boolean;
 }
 
 // ---------------------------------------------------------------------------
 // Helpers
 // ---------------------------------------------------------------------------
 
-/** Get the credit-granting rules (credit > 0), sorted by credit desc, then startDate asc. */
-function getCreditRules(rules: OldAccessRule[]): OldAccessRule[] {
+function getCreditRules(rules: AssessmentAccessRuleJson[]): AssessmentAccessRuleJson[] {
   return rules
     .filter((r) => (r.credit ?? 0) > 0)
     .sort((a, b) => {
@@ -94,23 +80,16 @@ function getCreditRules(rules: OldAccessRule[]): OldAccessRule[] {
     });
 }
 
-/** Get the visibility rules (active:false rules used for schedule visibility). */
-function getVisibilityRules(rules: OldAccessRule[]): OldAccessRule[] {
+function getVisibilityRules(rules: AssessmentAccessRuleJson[]): AssessmentAccessRuleJson[] {
   return rules.filter((r) => (r.active ?? true) === false && !r.examUuid && !r.password);
 }
 
-/**
- * Find the release date: the earliest startDate among visibility rules
- * (active:false), falling back to the earliest credit rule startDate.
- */
-function findReleaseDate(rules: OldAccessRule[]): string | undefined {
-  // Prefer active:false rules (these are schedule visibility rules)
+function findReleaseDate(rules: AssessmentAccessRuleJson[]): string | undefined {
   const visibilityDates = getVisibilityRules(rules)
     .map((r) => r.startDate)
     .filter(Boolean) as string[];
   if (visibilityDates.length > 0) return visibilityDates.sort()[0];
 
-  // Fall back to earliest credit rule start
   const creditDates = getCreditRules(rules)
     .map((r) => r.startDate)
     .filter(Boolean) as string[];
@@ -119,18 +98,15 @@ function findReleaseDate(rules: OldAccessRule[]): string | undefined {
   return undefined;
 }
 
-/** Check if any rule (including credit rules) hides the closed assessment. */
-function anyHidesClosedAssessment(rules: OldAccessRule[]): boolean {
+function anyHidesClosedAssessment(rules: AssessmentAccessRuleJson[]): boolean {
   return rules.some((r) => r.showClosedAssessment === false);
 }
 
-/** Check if any rule (including credit rules) hides the closed score. */
-function anyHidesClosedScore(rules: OldAccessRule[]): boolean {
+function anyHidesClosedScore(rules: AssessmentAccessRuleJson[]): boolean {
   return rules.some((r) => r.showClosedAssessmentScore === false);
 }
 
-/** Build afterComplete section from showClosed flags. */
-function buildAfterComplete(rules: OldAccessRule[]): NewAccessControl['afterComplete'] | undefined {
+function buildAfterComplete(rules: AssessmentAccessRuleJson[]): NewAccessControl['afterComplete'] | undefined {
   const hidesAssessment = anyHidesClosedAssessment(rules);
   const hidesScore = anyHidesClosedScore(rules);
   if (!hidesAssessment && !hidesScore) return undefined;
@@ -142,7 +118,7 @@ function buildAfterComplete(rules: OldAccessRule[]): NewAccessControl['afterComp
 }
 
 // ---------------------------------------------------------------------------
-// Archetype classification (reused from analyze script)
+// Archetype classification
 // ---------------------------------------------------------------------------
 
 interface RuleAnalysis {
@@ -158,7 +134,7 @@ interface RuleAnalysis {
   isOpenCredit: boolean;
 }
 
-function analyzeRule(rule: OldAccessRule): RuleAnalysis {
+function analyzeRule(rule: AssessmentAccessRuleJson): RuleAnalysis {
   const hasStart = 'startDate' in rule;
   const hasEnd = 'endDate' in rule;
   const credit = rule.credit ?? 0;
@@ -183,7 +159,27 @@ function analyzeRule(rule: OldAccessRule): RuleAnalysis {
   };
 }
 
-function classifyArchetype(rules: OldAccessRule[]): string {
+function withMods(
+  base: string,
+  has: {
+    creditModeGated: boolean;
+    modeGate: boolean;
+    viewing: boolean;
+    hiding: boolean;
+    creditHidesClosed: boolean;
+    creditHidesScore: boolean;
+  },
+): string {
+  const mods: string[] = [];
+  if (has.creditModeGated) mods.push('mode-gated');
+  else if (has.modeGate && !has.viewing && !has.hiding) mods.push('mode-gated');
+  if (has.creditHidesClosed) mods.push('hides-closed');
+  else if (has.creditHidesScore) mods.push('hides-score');
+  if (mods.length === 0) return base;
+  return `${base} (${mods.join(', ')})`;
+}
+
+export function classifyArchetype(rules: AssessmentAccessRuleJson[]): string {
   const analyzed = rules.map(analyzeRule);
   const creditRules = analyzed.filter((r) => r.creditType !== 'none');
   const nonCreditRules = analyzed.filter((r) => r.creditType === 'none');
@@ -199,7 +195,9 @@ function classifyArchetype(rules: OldAccessRule[]): string {
     viewing: nonCreditRules.some(
       (r) => r.isActive && !r.isPrairieTest && !r.hasPassword && !r.hidesClosedAssessment,
     ),
-    hiding: nonCreditRules.some((r) => !r.isActive || r.hidesClosedAssessment || r.hidesClosedScore),
+    hiding: nonCreditRules.some(
+      (r) => !r.isActive || r.hidesClosedAssessment || r.hidesClosedScore,
+    ),
     modeGate: analyzed.some((r) => r.hasMode),
     creditModeGated: creditRules.some((r) => r.hasMode),
     creditHidesClosed: creditRules.some((r) => r.hidesClosedAssessment),
@@ -226,8 +224,9 @@ function classifyArchetype(rules: OldAccessRule[]): string {
     (has.fullCredit && has.reducedCredit) ||
     (has.bonusCredit && has.reducedCredit) ||
     (has.bonusCredit && has.fullCredit)
-  )
+  ) {
     return withMods('declining-credit', has);
+  }
   if ((has.fullCredit || has.bonusCredit) && creditRules.length === 1) {
     const base = has.viewing || has.hiding ? 'single-deadline-with-viewing' : 'single-deadline';
     return withMods(base, has);
@@ -241,27 +240,17 @@ function classifyArchetype(rules: OldAccessRule[]): string {
   return 'unclassified';
 }
 
-function withMods(
-  base: string,
-  has: { creditModeGated: boolean; modeGate: boolean; viewing: boolean; hiding: boolean; creditHidesClosed: boolean; creditHidesScore: boolean },
-): string {
-  const mods: string[] = [];
-  if (has.creditModeGated) mods.push('mode-gated');
-  else if (has.modeGate && !has.viewing && !has.hiding) mods.push('mode-gated');
-  if (has.creditHidesClosed) mods.push('hides-closed');
-  else if (has.creditHidesScore) mods.push('hides-score');
-  if (mods.length === 0) return base;
-  return `${base} (${mods.join(', ')})`;
-}
-
 // ---------------------------------------------------------------------------
-// Migration functions — one per archetype family
+// Migration functions
 // ---------------------------------------------------------------------------
 
-function migrateSingleDeadline(rules: OldAccessRule[]): { result: NewAccessControl; warnings: string[] } {
+function migrateSingleDeadline(rules: AssessmentAccessRuleJson[]): {
+  result: NewAccessControl;
+  warnings: string[];
+} {
   const warnings: string[] = [];
   const creditRules = getCreditRules(rules);
-  const creditRule = creditRules[0];
+  const creditRule = creditRules[0] as AssessmentAccessRuleJson | undefined;
 
   if (!creditRule) {
     warnings.push('No credit rule found');
@@ -270,7 +259,6 @@ function migrateSingleDeadline(rules: OldAccessRule[]): { result: NewAccessContr
 
   const result: NewAccessControl = {};
 
-  // dateControl
   const releaseDate = findReleaseDate(rules);
   if (creditRule.startDate || creditRule.endDate || releaseDate) {
     result.dateControl = { enabled: true };
@@ -279,14 +267,16 @@ function migrateSingleDeadline(rules: OldAccessRule[]): { result: NewAccessContr
     if (creditRule.timeLimitMin) result.dateControl.durationMinutes = creditRule.timeLimitMin;
   }
 
-  // afterComplete
   const afterComplete = buildAfterComplete(rules);
   if (afterComplete) result.afterComplete = afterComplete;
 
   return { result, warnings };
 }
 
-function migrateDecliningCredit(rules: OldAccessRule[]): { result: NewAccessControl; warnings: string[] } {
+function migrateDecliningCredit(rules: AssessmentAccessRuleJson[]): {
+  result: NewAccessControl;
+  warnings: string[];
+} {
   const warnings: string[] = [];
   const creditRules = getCreditRules(rules);
   if (creditRules.length === 0) {
@@ -294,12 +284,10 @@ function migrateDecliningCredit(rules: OldAccessRule[]): { result: NewAccessCont
     return { result: {}, warnings };
   }
 
-  // Separate into bonus (>100), full (100), and reduced (<100) tiers
   const bonusRules = creditRules.filter((r) => (r.credit ?? 0) > 100);
   const fullRules = creditRules.filter((r) => (r.credit ?? 0) === 100);
   const reducedRules = creditRules.filter((r) => (r.credit ?? 0) > 0 && (r.credit ?? 0) < 100);
 
-  // The primary deadline is the end of the last full-credit rule (or last bonus if no full)
   const primaryRules = fullRules.length > 0 ? fullRules : bonusRules;
   const primaryEndDates = primaryRules
     .map((r) => r.endDate)
@@ -317,14 +305,12 @@ function migrateDecliningCredit(rules: OldAccessRule[]): { result: NewAccessCont
   if (releaseDate) result.dateControl!.releaseDate = releaseDate;
   if (dueDate) result.dateControl!.dueDate = dueDate;
 
-  // Early deadlines (bonus credit before the due date)
   if (bonusRules.length > 0 && fullRules.length > 0) {
     result.dateControl!.earlyDeadlines = bonusRules
       .filter((r) => r.endDate)
       .map((r) => ({ date: r.endDate!, credit: r.credit! }));
   }
 
-  // Late deadlines (reduced credit after the due date)
   if (reducedRules.length > 0) {
     result.dateControl!.lateDeadlines = reducedRules
       .filter((r) => r.endDate)
@@ -332,14 +318,16 @@ function migrateDecliningCredit(rules: OldAccessRule[]): { result: NewAccessCont
       .map((r) => ({ date: r.endDate!, credit: r.credit! }));
   }
 
-  // afterComplete
   const afterComplete = buildAfterComplete(rules);
   if (afterComplete) result.afterComplete = afterComplete;
 
   return { result, warnings };
 }
 
-function migratePrairieTestExam(rules: OldAccessRule[]): { result: NewAccessControl; warnings: string[] } {
+function migratePrairieTestExam(rules: AssessmentAccessRuleJson[]): {
+  result: NewAccessControl;
+  warnings: string[];
+} {
   const warnings: string[] = [];
   const examRules = rules.filter((r) => r.examUuid);
 
@@ -359,7 +347,6 @@ function migratePrairieTestExam(rules: OldAccessRule[]): { result: NewAccessCont
     },
   };
 
-  // If there's a visibility rule with dates, set releaseDate
   const releaseDate = findReleaseDate(rules);
   if (releaseDate) {
     result.dateControl = {
@@ -369,14 +356,13 @@ function migratePrairieTestExam(rules: OldAccessRule[]): { result: NewAccessCont
     };
   }
 
-  // afterComplete
   const afterComplete = buildAfterComplete(rules);
   if (afterComplete) result.afterComplete = afterComplete;
 
   return { result, warnings };
 }
 
-function migrateViewOnly(rules: OldAccessRule[]): { result: NewAccessControl; warnings: string[] } {
+function migrateViewOnly(rules: AssessmentAccessRuleJson[]): { result: NewAccessControl; warnings: string[] } {
   const warnings: string[] = [];
   const allDates = rules.map((r) => r.startDate).filter(Boolean) as string[];
   const releaseDate = allDates.sort()[0];
@@ -392,7 +378,10 @@ function migrateViewOnly(rules: OldAccessRule[]): { result: NewAccessControl; wa
   return { result, warnings };
 }
 
-function migrateMultiDeadline(rules: OldAccessRule[]): { result: NewAccessControl; warnings: string[] } {
+function migrateMultiDeadline(rules: AssessmentAccessRuleJson[]): {
+  result: NewAccessControl;
+  warnings: string[];
+} {
   const warnings: string[] = [];
   const creditRules = getCreditRules(rules);
 
@@ -401,9 +390,14 @@ function migrateMultiDeadline(rules: OldAccessRule[]): { result: NewAccessContro
     return { result: {}, warnings };
   }
 
-  // Multiple full-credit windows: use the overall span
-  const startDates = creditRules.map((r) => r.startDate).filter(Boolean).sort() as string[];
-  const endDates = creditRules.map((r) => r.endDate).filter(Boolean).sort() as string[];
+  const startDates = creditRules
+    .map((r) => r.startDate)
+    .filter(Boolean)
+    .sort() as string[];
+  const endDates = creditRules
+    .map((r) => r.endDate)
+    .filter(Boolean)
+    .sort() as string[];
   const releaseDate = findReleaseDate(rules) ?? startDates[0];
   const dueDate = endDates[endDates.length - 1];
 
@@ -421,14 +415,16 @@ function migrateMultiDeadline(rules: OldAccessRule[]): { result: NewAccessContro
   if (releaseDate) result.dateControl!.releaseDate = releaseDate;
   if (dueDate) result.dateControl!.dueDate = dueDate;
 
-  // afterComplete
   const afterComplete = buildAfterComplete(rules);
   if (afterComplete) result.afterComplete = afterComplete;
 
   return { result, warnings };
 }
 
-function migratePasswordGated(rules: OldAccessRule[]): { result: NewAccessControl; warnings: string[] } {
+function migratePasswordGated(rules: AssessmentAccessRuleJson[]): {
+  result: NewAccessControl;
+  warnings: string[];
+} {
   const warnings: string[] = [];
   const passwordRule = rules.find((r) => r.password);
 
@@ -446,21 +442,20 @@ function migratePasswordGated(rules: OldAccessRule[]): { result: NewAccessContro
   if (passwordRule.startDate) result.dateControl!.releaseDate = passwordRule.startDate;
   if (passwordRule.endDate) result.dateControl!.dueDate = passwordRule.endDate;
 
-  // afterComplete
   const afterComplete = buildAfterComplete(rules);
   if (afterComplete) result.afterComplete = afterComplete;
 
   return { result, warnings };
 }
 
-function migrateHidden(_rules: OldAccessRule[]): { result: NewAccessControl; warnings: string[] } {
+function migrateHidden(_rules: AssessmentAccessRuleJson[]): { result: NewAccessControl; warnings: string[] } {
   return {
     result: { blockAccess: true },
     warnings: [],
   };
 }
 
-function migrateNoOp(_rules: OldAccessRule[]): { result: NewAccessControl; warnings: string[] } {
+function migrateNoOp(_rules: AssessmentAccessRuleJson[]): { result: NewAccessControl; warnings: string[] } {
   return {
     result: {},
     warnings: ['No-op access rule — produces empty accessControl entry'],
@@ -471,11 +466,10 @@ function migrateNoOp(_rules: OldAccessRule[]): { result: NewAccessControl; warni
 // Dispatcher
 // ---------------------------------------------------------------------------
 
-function migrateAllowAccess(
+export function migrateAllowAccess(
   archetype: string,
-  rules: OldAccessRule[],
+  rules: AssessmentAccessRuleJson[],
 ): { result: NewAccessControl; warnings: string[] } {
-  // Strip modifiers to get the base archetype
   const base = archetype.replace(/\s*\(.*\)$/, '');
 
   switch (base) {
@@ -517,141 +511,129 @@ function migrateAllowAccess(
 }
 
 // ---------------------------------------------------------------------------
-// Main
+// Analysis functions
 // ---------------------------------------------------------------------------
 
-async function main() {
-  const dryRun = process.argv.includes('--dry-run');
-
-  console.log('\nDiscovering infoAssessment.json files...\n');
-
-  const { stdout } = await execa('find', ['repos', '-name', 'infoAssessment.json']);
-  const allPaths = stdout
-    .split('\n')
-    .filter((p) => p.includes('/courseInstances/') && p.includes('/assessments/'));
-
-  console.log(`Found ${allPaths.length} assessment files\n`);
-
-  let processed = 0;
-  let migrated = 0;
-  let skippedUids = 0;
-  let skippedNoAccess = 0;
-  let parseErrors = 0;
-  let unsupported = 0;
-  let withWarnings = 0;
-  const archetypeCounts = new Map<string, { total: number; migrated: number }>();
-  const allWarnings: Array<{ path: string; archetype: string; warnings: string[] }> = [];
-  const sampleResults: MigrationResult[] = [];
-
-  for (const filePath of allPaths) {
-    let data: Record<string, unknown>;
-    try {
-      const content = await fs.readFile(filePath, 'utf-8');
-      data = JSON.parse(content);
-    } catch {
-      parseErrors++;
-      continue;
-    }
-
-    const allowAccess = data.allowAccess as OldAccessRule[] | undefined;
-    if (!allowAccess || !Array.isArray(allowAccess) || allowAccess.length === 0) {
-      skippedNoAccess++;
-      continue;
-    }
-
-    if (allowAccess.some((rule) => rule.uids)) {
-      skippedUids++;
-      continue;
-    }
-
-    processed++;
-    const archetype = classifyArchetype(allowAccess);
-    const entry = archetypeCounts.get(archetype) ?? { total: 0, migrated: 0 };
-    entry.total++;
-
-    const { result, warnings } = migrateAllowAccess(archetype, allowAccess);
-
-    if (warnings.some((w) => w.startsWith('Unsupported'))) {
-      unsupported++;
-      archetypeCounts.set(archetype, entry);
-      continue;
-    }
-
-    entry.migrated++;
-    archetypeCounts.set(archetype, entry);
-    migrated++;
-
-    if (warnings.length > 0) {
-      withWarnings++;
-      allWarnings.push({ path: filePath, archetype, warnings });
-    }
-
-    // Collect samples (first 2 per archetype)
-    const sampleCount = sampleResults.filter((s) => s.archetype === archetype).length;
-    if (sampleCount < 2) {
-      sampleResults.push({
-        archetype,
-        filePath,
-        oldAllowAccess: allowAccess,
-        newAccessControl: [result],
-        warnings,
-      });
-    }
+export async function analyzeAssessmentFile(
+  filePath: string,
+  tid: string,
+): Promise<AssessmentMigrationAnalysis | null> {
+  let data: Record<string, unknown>;
+  try {
+    const content = await fs.readFile(filePath, 'utf-8');
+    data = JSON.parse(content);
+  } catch {
+    return null;
   }
 
-  // Output
-  console.log('MIGRATION SUMMARY');
-  console.log('='.repeat(80));
-  console.log(`Total files:            ${allPaths.length.toLocaleString()}`);
-  console.log(`Processed:              ${processed.toLocaleString()}`);
-  console.log(`Migrated:               ${migrated.toLocaleString()}`);
-  console.log(`Skipped (uids):         ${skippedUids.toLocaleString()}`);
-  console.log(`Skipped (no access):    ${skippedNoAccess.toLocaleString()}`);
-  console.log(`Parse errors:           ${parseErrors.toLocaleString()}`);
-  console.log(`Unsupported archetype:  ${unsupported.toLocaleString()}`);
-  console.log(`With warnings:          ${withWarnings.toLocaleString()}`);
-
-  console.log('\n\nPER-ARCHETYPE COUNTS');
-  console.log('='.repeat(80));
-  const sorted = [...archetypeCounts.entries()].sort((a, b) => b[1].total - a[1].total);
-  for (const [arch, { total, migrated: m }] of sorted) {
-    console.log(`  ${arch}: ${m}/${total} migrated`);
+  // Skip assessments that already use modern accessControl
+  if ('accessControl' in data && !('allowAccess' in data)) {
+    return null;
   }
 
-  console.log('\n\nSAMPLE MIGRATIONS');
-  console.log('='.repeat(80));
-  for (const sample of sampleResults) {
-    console.log(`\n--- ${sample.archetype} ---`);
-    console.log(`File: ${sample.filePath}`);
-    console.log(`Old allowAccess:`);
-    console.log(JSON.stringify(sample.oldAllowAccess, null, 2));
-    console.log(`New accessControl:`);
-    console.log(JSON.stringify(sample.newAccessControl, null, 2));
-    if (sample.warnings.length > 0) {
-      console.log(`Warnings: ${sample.warnings.join('; ')}`);
-    }
+  const allowAccess = data.allowAccess as AssessmentAccessRuleJson[] | undefined;
+  if (!allowAccess || !Array.isArray(allowAccess) || allowAccess.length === 0) {
+    return null;
   }
 
-  if (allWarnings.length > 0) {
-    console.log('\n\nWARNINGS (first 20)');
-    console.log('='.repeat(80));
-    for (const { path: p, archetype, warnings } of allWarnings.slice(0, 20)) {
-      console.log(`  ${p} [${archetype}]: ${warnings.join('; ')}`);
-    }
-    if (allWarnings.length > 20) {
-      console.log(`  ... and ${allWarnings.length - 20} more`);
-    }
-  }
+  const hasUidRules = allowAccess.some((rule) => rule.uids);
+  const rulesForClassification = allowAccess.filter((rule) => !rule.uids);
 
-  // Write report
-  const reportPath = path.join('reports', 'migration-preview.json');
-  await fs.mkdir('reports', { recursive: true });
-  await fs.writeFile(
-    reportPath,
-    JSON.stringify({ samples: sampleResults, warnings: allWarnings }, null, 2),
-    'utf-8',
-  );
-  console.log(`\n\nReport written to: ${reportPath}`);
+  const archetype =
+    rulesForClassification.length > 0 ? classifyArchetype(rulesForClassification) : 'unclassified';
+
+  const { warnings } = migrateAllowAccess(archetype, rulesForClassification);
+  const canMigrate =
+    archetype !== 'unclassified' && !warnings.some((w) => w.startsWith('Unsupported'));
+
+  return {
+    tid,
+    title: (data.title as string | undefined) ?? tid,
+    type: (data.type as string | undefined) ?? 'unknown',
+    archetype,
+    canMigrate,
+    ruleCount: allowAccess.length,
+    hasUidRules,
+  };
 }
 
-main().catch(console.error);
+export async function analyzeCourseInstanceAssessments(
+  courseInstancePath: string,
+): Promise<CourseInstanceMigrationAnalysis> {
+  const assessmentsPath = path.join(courseInstancePath, 'assessments');
+  const assessments: AssessmentMigrationAnalysis[] = [];
+
+  let dirs: string[];
+  try {
+    dirs = await fs.readdir(assessmentsPath);
+  } catch {
+    return { assessments: [], hasLegacyRules: false, allCanMigrate: true };
+  }
+
+  for (const dir of dirs) {
+    const infoPath = path.join(assessmentsPath, dir, 'infoAssessment.json');
+    try {
+      await fs.access(infoPath);
+    } catch {
+      continue;
+    }
+
+    const analysis = await analyzeAssessmentFile(infoPath, dir);
+    if (analysis) {
+      assessments.push(analysis);
+    }
+  }
+
+  return {
+    assessments,
+    hasLegacyRules: assessments.length > 0,
+    allCanMigrate: assessments.every((a) => a.canMigrate),
+  };
+}
+
+export async function applyMigrationToAssessmentFile(
+  filePath: string,
+  strategy: 'migrate' | 'keep' | 'wipe',
+  preserveIncompatible: boolean,
+): Promise<void> {
+  const content = await fs.readFile(filePath, 'utf-8');
+  const data = JSON.parse(content);
+
+  const allowAccess = data.allowAccess as AssessmentAccessRuleJson[] | undefined;
+  if (!allowAccess || !Array.isArray(allowAccess) || allowAccess.length === 0) {
+    return;
+  }
+
+  // Skip if already using modern format
+  if ('accessControl' in data) {
+    return;
+  }
+
+  if (strategy === 'wipe') {
+    delete data.allowAccess;
+    const formatted = await formatJsonWithPrettier(JSON.stringify(data));
+    await fs.writeFile(filePath, formatted);
+    return;
+  }
+
+  // strategy === 'migrate'
+  const rulesForMigration = allowAccess.filter((rule) => !rule.uids);
+  const archetype =
+    rulesForMigration.length > 0 ? classifyArchetype(rulesForMigration) : 'unclassified';
+  const { result, warnings } = migrateAllowAccess(archetype, rulesForMigration);
+  const canMigrate =
+    archetype !== 'unclassified' && !warnings.some((w) => w.startsWith('Unsupported'));
+
+  if (canMigrate) {
+    data.accessControl = [result];
+    delete data.allowAccess;
+  } else if (!preserveIncompatible) {
+    delete data.allowAccess;
+  } else {
+    // preserveIncompatible: keep allowAccess as-is
+    return;
+  }
+
+  const formatted = await formatJsonWithPrettier(JSON.stringify(data));
+  await fs.writeFile(filePath, formatted);
+}

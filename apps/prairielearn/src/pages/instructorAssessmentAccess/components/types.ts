@@ -39,7 +39,7 @@ export const ScoreVisibilityValueSchema = z.object({
   showAgainDate: z.string().optional(),
 });
 
-export const PrairieTestExamSchema = z.object({
+const PrairieTestExamSchema = z.object({
   examUuid: z.string(),
   readOnly: z.boolean().optional(),
 });
@@ -112,8 +112,6 @@ export type AfterLastDeadlineValue = z.infer<typeof AfterLastDeadlineValueSchema
 export type QuestionVisibilityValue = z.infer<typeof QuestionVisibilityValueSchema>;
 
 export type ScoreVisibilityValue = z.infer<typeof ScoreVisibilityValueSchema>;
-
-export type PrairieTestExam = z.infer<typeof PrairieTestExamSchema>;
 
 export type TargetType = z.infer<typeof AppliesToSchema>['targetType'];
 
