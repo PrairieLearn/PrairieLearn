@@ -227,10 +227,10 @@ export function computeZonePointTotals(
             alt.maxPoints ??
             q.maxAutoPoints ??
             q.maxPoints ??
-            alt.points ??
             alt.autoPoints ??
-            q.points ??
-            q.autoPoints,
+            alt.points ??
+            q.autoPoints ??
+            q.points,
         ),
         manual: alt.manualPoints ?? q.manualPoints ?? 0,
       }));
@@ -244,7 +244,7 @@ export function computeZonePointTotals(
       };
     }
     return {
-      auto: firstPoints(q.maxAutoPoints ?? q.maxPoints ?? q.points ?? q.autoPoints),
+      auto: firstPoints(q.maxAutoPoints ?? q.maxPoints ?? q.autoPoints ?? q.points),
       manual: q.manualPoints ?? 0,
     };
   });
