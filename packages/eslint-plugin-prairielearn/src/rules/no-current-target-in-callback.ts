@@ -1,10 +1,10 @@
 import { ESLintUtils, type TSESTree } from '@typescript-eslint/utils';
 
 /**
- * This rule detects when `event.currentTarget` is accessed inside a nested
- * callback function within a React event handler. This is problematic because
- * React may execute callbacks (like those passed to setState) asynchronously,
- * at which point `currentTarget` may already be nullified.
+ * This rule detects when `event.currentTarget` is accessed after an `await` or
+ * inside a callback passed to a likely deferred API within a React event
+ * handler. Those callbacks may run after the handler returns, at which point
+ * `currentTarget` may already be nullified.
  *
  * Bad:
  * ```tsx
@@ -68,26 +68,59 @@ export default ESLintUtils.RuleCreator.withoutDocs({
       return children;
     }
 
-    /** Check if a node is inside a nested function relative to the event handler */
-    function isInsideNestedFunction(
+    function isKnownDeferredCallee(callee: TSESTree.Expression | TSESTree.Super): boolean {
+      if (callee.type === 'Super') {
+        return false;
+      }
+
+      if (callee.type === 'Identifier') {
+        return (
+          /^set[A-Z0-9_]/.test(callee.name) ||
+          callee.name === 'queueMicrotask' ||
+          callee.name === 'requestAnimationFrame' ||
+          callee.name === 'requestIdleCallback' ||
+          callee.name === 'setImmediate' ||
+          callee.name === 'setInterval' ||
+          callee.name === 'setTimeout' ||
+          callee.name === 'startTransition'
+        );
+      }
+
+      if (callee.type === 'MemberExpression' && callee.property.type === 'Identifier') {
+        return (
+          callee.property.name === 'then' ||
+          callee.property.name === 'catch' ||
+          callee.property.name === 'finally'
+        );
+      }
+
+      return false;
+    }
+
+    /**
+     * Check if a node is inside a nested function that is passed to a callback
+     * API that may invoke it after the event handler returns.
+     */
+    function isInsideDeferredCallback(
       node: TSESTree.Node,
       eventHandlerFunction: TSESTree.Node,
     ): boolean {
-      let current: TSESTree.Node | undefined = node.parent;
-      let foundNestedFunction = false;
+      let current: TSESTree.Node | undefined = node;
 
       while (current && current !== eventHandlerFunction) {
-        if (
-          current.type === 'ArrowFunctionExpression' ||
-          current.type === 'FunctionExpression' ||
-          current.type === 'FunctionDeclaration'
-        ) {
-          foundNestedFunction = true;
+        if (isFunctionLike(current)) {
+          const parent = current.parent;
+          if (current.type !== 'FunctionDeclaration' && parent?.type === 'CallExpression') {
+            const callbackIndex = parent.arguments.indexOf(current);
+            if (callbackIndex !== -1 && isKnownDeferredCallee(parent.callee)) {
+              return true;
+            }
+          }
         }
         current = current.parent;
       }
 
-      return foundNestedFunction && current === eventHandlerFunction;
+      return false;
     }
 
     /** Check if the function contains an await before this access, ignoring nested functions */
@@ -292,7 +325,7 @@ export default ESLintUtils.RuleCreator.withoutDocs({
           if (objectName !== eventParam.name) continue;
 
           if (
-            isInsideNestedFunction(node, eventHandler) ||
+            isInsideDeferredCallback(node, eventHandler) ||
             hasPriorAwaitInSameFunction(node, eventHandler)
           ) {
             context.report({

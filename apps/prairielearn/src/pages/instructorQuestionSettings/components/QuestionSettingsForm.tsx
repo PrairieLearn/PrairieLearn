@@ -17,6 +17,7 @@ import type {
 } from '../../../lib/client/safe-db-types.js';
 import { idsEqual } from '../../../lib/id.js';
 import { validateShortName } from '../../../lib/short-name.js';
+import { coerceToNumber } from '../../instructorAssessmentQuestions/utils/formHelpers.js';
 import type { SelectedAssessments } from '../instructorQuestionSettings.types.js';
 
 function AssessmentBadges({
@@ -77,7 +78,7 @@ interface QuestionSettingsFormValues {
   external_grading_image: string;
   external_grading_entrypoint: string;
   external_grading_files: string;
-  external_grading_timeout: string;
+  external_grading_timeout: number | undefined;
   external_grading_enable_networking: boolean;
   external_grading_environment: string;
 }
@@ -145,7 +146,7 @@ export const QuestionSettingsForm = ({
     external_grading_image: question.external_grading_image ?? '',
     external_grading_entrypoint: question.external_grading_entrypoint ?? '',
     external_grading_files: question.external_grading_files?.join(', ') ?? '',
-    external_grading_timeout: question.external_grading_timeout?.toString() ?? '',
+    external_grading_timeout: question.external_grading_timeout ?? undefined,
     external_grading_enable_networking: question.external_grading_enable_networking ?? false,
     external_grading_environment:
       Object.keys(question.external_grading_environment).length > 0
@@ -154,10 +155,10 @@ export const QuestionSettingsForm = ({
   };
 
   const {
+    handleSubmit,
     register,
     watch,
     setValue,
-    trigger,
     clearErrors,
     formState: { errors, isDirty },
   } = useForm<QuestionSettingsFormValues>({
@@ -208,14 +209,9 @@ export const QuestionSettingsForm = ({
 
   const otherQids = new Set(qids.filter((q) => q !== defaultValues.qid));
 
-  const handleFormSubmit = async (e: React.SubmitEvent<HTMLFormElement>) => {
-    e.preventDefault();
-    const form = e.currentTarget;
-    const isValid = await trigger();
-    if (isValid) {
-      form.submit();
-    }
-  };
+  const handleFormSubmit = handleSubmit((_data, e) => {
+    e!.currentTarget.submit();
+  });
 
   return (
     <form name="edit-question-settings-form" method="POST" onSubmit={handleFormSubmit}>
@@ -730,14 +726,28 @@ export const QuestionSettingsForm = ({
               </label>
               <input
                 type="number"
-                className="form-control"
+                className={clsx('form-control', errors.external_grading_timeout && 'is-invalid')}
                 id="external_grading_timeout"
-                min="0"
                 disabled={!canEdit}
+                aria-invalid={!!errors.external_grading_timeout || undefined}
+                aria-errormessage={
+                  errors.external_grading_timeout ? 'external_grading_timeout-error' : undefined
+                }
                 // Disable default behavior of incrementing/decrementing the value when scrolling
                 onWheel={(e) => e.currentTarget.blur()}
-                {...register('external_grading_timeout')}
+                {...register('external_grading_timeout', {
+                  setValueAs: coerceToNumber,
+                  min: {
+                    value: 0,
+                    message: 'Timeout must be at least 0 seconds',
+                  },
+                })}
               />
+              {errors.external_grading_timeout && (
+                <div id="external_grading_timeout-error" className="invalid-feedback">
+                  {errors.external_grading_timeout.message}
+                </div>
+              )}
               <small className="form-text text-muted">
                 The number of seconds after which the grading job will timeout.
               </small>

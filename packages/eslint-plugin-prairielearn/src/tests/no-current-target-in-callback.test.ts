@@ -38,6 +38,21 @@ ruleTester.run('no-current-target-in-callback', rule, {
     {
       code: '<Component render={(e) => setFoo(() => e.currentTarget)} />',
     },
+    // Synchronous nested callbacks are safe
+    {
+      code: '<input onChange={(e) => items.map(() => e.currentTarget.value)} />',
+    },
+    {
+      code: `const handlePaste = (e: React.ClipboardEvent<HTMLInputElement>) => {
+        fields.find((field) => field.name === e.currentTarget.name);
+      };`,
+    },
+    {
+      code: `const handlePaste = (e: React.ClipboardEvent<HTMLInputElement>) => {
+        const cursorPosition = run(() => e.currentTarget.selectionStart ?? 0);
+        return cursorPosition;
+      };`,
+    },
     // Direct setState without callback
     {
       code: '<input onChange={(e) => setChecks({ value: e.currentTarget.checked })} />',
@@ -94,19 +109,9 @@ ruleTester.run('no-current-target-in-callback', rule, {
       code: '<button onClick={(e) => setFoo((prev) => ({ ...prev, clicked: e.currentTarget.id }))} />',
       errors: [{ messageId: 'noCurrentTargetInCallback' }],
     },
-    // Nested arrow function in array method
-    {
-      code: '<input onChange={(e) => items.map(() => e.currentTarget.value)} />',
-      errors: [{ messageId: 'noCurrentTargetInCallback' }],
-    },
     // Function expression callback
     {
       code: '<input onChange={(e) => setChecks(function(c) { return { ...c, value: e.currentTarget.checked }; })} />',
-      errors: [{ messageId: 'noCurrentTargetInCallback' }],
-    },
-    // Deeply nested
-    {
-      code: '<input onChange={(e) => outer(() => inner(() => e.currentTarget.value))} />',
       errors: [{ messageId: 'noCurrentTargetInCallback' }],
     },
     // With block body
@@ -115,6 +120,20 @@ ruleTester.run('no-current-target-in-callback', rule, {
         setChecks((c) => {
           return { ...c, value: e.currentTarget.checked };
         });
+      }} />`,
+      errors: [{ messageId: 'noCurrentTargetInCallback' }],
+    },
+    // Promise callbacks are deferred
+    {
+      code: `<input onChange={(e) => {
+        Promise.resolve().then(() => e.currentTarget.value);
+      }} />`,
+      errors: [{ messageId: 'noCurrentTargetInCallback' }],
+    },
+    // Timer callbacks are deferred
+    {
+      code: `<input onChange={(e) => {
+        setTimeout(() => e.currentTarget.value, 0);
       }} />`,
       errors: [{ messageId: 'noCurrentTargetInCallback' }],
     },

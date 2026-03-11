@@ -136,8 +136,12 @@ export function ComboBox<T = void>({
         isInvalid={!!errorMessage}
         menuTrigger="focus"
         allowsEmptyCollection
-        onInputChange={setFilterText}
-        onSelectionChange={(key) => onChange(key as string | null)}
+        onInputChange={(inputValue) => {
+          setFilterText(inputValue);
+          if (inputValue === '') {
+            onChange(null);
+          }
+        }}
       >
         {({ isOpen }) => (
           <>
