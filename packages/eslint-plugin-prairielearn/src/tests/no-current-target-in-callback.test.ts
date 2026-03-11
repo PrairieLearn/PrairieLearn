@@ -42,6 +42,21 @@ ruleTester.run('no-current-target-in-callback', rule, {
     {
       code: '<input onChange={(e) => setChecks({ value: e.currentTarget.checked })} />',
     },
+    // Capturing currentTarget before await is safe
+    {
+      code: `const handleSubmit = async (e: React.SubmitEvent<HTMLFormElement>) => {
+        const form = e.currentTarget;
+        await trigger();
+        form.submit();
+      };`,
+    },
+    // Destructuring currentTarget before await is safe
+    {
+      code: `const handleSubmit = async ({ currentTarget }: React.SubmitEvent<HTMLFormElement>) => {
+        await trigger();
+        currentTarget.submit();
+      };`,
+    },
     // Event target (not currentTarget) - different issue, not covered by this rule
     {
       code: '<input onChange={(e) => setChecks((c) => ({ ...c, value: e.target.checked }))} />',
@@ -100,6 +115,22 @@ ruleTester.run('no-current-target-in-callback', rule, {
         setChecks((c) => {
           return { ...c, value: e.currentTarget.checked };
         });
+      }} />`,
+      errors: [{ messageId: 'noCurrentTargetInCallback' }],
+    },
+    // Access after await in a typed event handler
+    {
+      code: `const handleSubmit = async (e: React.SubmitEvent<HTMLFormElement>) => {
+        await trigger();
+        e.currentTarget.submit();
+      };`,
+      errors: [{ messageId: 'noCurrentTargetInCallback' }],
+    },
+    // Access after await in an inline JSX handler
+    {
+      code: `<form onSubmit={async (e) => {
+        await trigger();
+        e.currentTarget.submit();
       }} />`,
       errors: [{ messageId: 'noCurrentTargetInCallback' }],
     },

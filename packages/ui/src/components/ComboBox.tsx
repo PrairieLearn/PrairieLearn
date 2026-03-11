@@ -4,7 +4,6 @@ import { useFilter } from 'react-aria';
 import {
   ComboBox as AriaComboBox,
   type ComboBoxProps as AriaComboBoxProps,
-  Autocomplete,
   Button,
   FieldError,
   Group,
@@ -13,8 +12,6 @@ import {
   ListBox,
   ListBoxItem,
   Popover,
-  SearchField,
-  Select,
   Tag,
   TagGroup,
   TagList,
@@ -216,7 +213,7 @@ export function ComboBox<T = void>({
 }
 
 /**
- * Multi-selection picker with removable tags using Select with selectionMode="multiple".
+ * Multi-selection combobox with removable tags.
  */
 export function TagPicker<T = void>({
   items,
@@ -234,11 +231,12 @@ export function TagPicker<T = void>({
   renderTagContent = defaultRenderTagContent,
   tagClassName = defaultTagClassName,
 }: TagPickerProps<T>) {
-  // TODO: Once https://github.com/adobe/react-spectrum/pull/9525 is released, we can refactor this to avoid embedding a `Select` component.
-
   const { contains } = useFilter({ sensitivity: 'base' });
-  const [isOpen, setIsOpen] = useState(false);
+  const [filterText, setFilterText] = useState('');
 
+  const filteredItems = items.filter((item) =>
+    contains(item.searchableText ?? item.label, filterText),
+  );
   const selectedItems = items.filter((item) => value.includes(item.id));
 
   return (
@@ -287,91 +285,102 @@ export function TagPicker<T = void>({
         </TagGroup>
       )}
 
-      <Select<ComboBoxItem<T>, 'multiple'>
+      <AriaComboBox<ComboBoxItem<T>, 'multiple'>
         aria-labelledby={ariaLabelledby}
-        selectionMode="multiple"
-        value={value}
         isDisabled={disabled}
         isInvalid={!!errorMessage}
-        onChange={(keys) => onChange(keys as string[])}
-        onOpenChange={setIsOpen}
+        items={filteredItems}
+        inputValue={filterText}
+        menuTrigger="focus"
+        selectionMode="multiple"
+        value={value}
+        allowsEmptyCollection
+        onChange={(keys) => {
+          setFilterText('');
+          onChange(keys as string[]);
+        }}
+        onInputChange={setFilterText}
       >
-        {label && <Label className="form-label">{label}</Label>}
+        {({ isOpen: isComboBoxOpen }) => (
+          <>
+            {label && <Label className="form-label">{label}</Label>}
 
-        <Button
-          id={id}
-          className={clsx(
-            'form-control d-flex align-items-center text-start',
-            disabled && 'bg-body-secondary',
-            isOpen && 'border-primary shadow-sm',
-            errorMessage && 'is-invalid',
-          )}
-          style={{ minHeight: '38px', cursor: disabled ? 'not-allowed' : 'pointer' }}
-        >
-          <span className="flex-grow-1 text-muted">{placeholder}</span>
-          <i
-            aria-hidden="true"
-            className={clsx(
-              'bi ms-auto',
-              isOpen ? 'bi-chevron-up' : 'bi-chevron-down',
-              'text-muted',
-            )}
-          />
-        </Button>
-
-        {description && (
-          <Text className="form-text text-muted" slot="description">
-            {description}
-          </Text>
-        )}
-
-        <FieldError className="invalid-feedback d-block">{errorMessage}</FieldError>
-
-        <Popover
-          className="dropdown-menu show py-0 overflow-auto"
-          offset={2}
-          placement="bottom"
-          shouldFlip={false}
-          style={{ maxHeight: '300px', width: 'var(--trigger-width)' }}
-        >
-          <Autocomplete filter={contains}>
-            <SearchField aria-label="Search" className="p-2 border-bottom">
-              <Input className="form-control form-control-sm" placeholder="Search..." />
-            </SearchField>
-            <ListBox
-              className="list-unstyled m-0"
-              items={items}
-              renderEmptyState={() => (
-                <div className="dropdown-item text-muted">No options found</div>
+            <Group
+              className={clsx(
+                'form-control d-flex align-items-center gap-1',
+                disabled && 'bg-body-secondary',
+                isComboBoxOpen && 'border-primary shadow-sm',
+                errorMessage && 'is-invalid',
               )}
+              style={{ minHeight: '38px', cursor: disabled ? 'not-allowed' : 'text' }}
             >
-              {(item: ComboBoxItem<T>) => (
-                <ListBoxItem
-                  id={item.id}
-                  className={({ isFocused }) =>
-                    clsx('dropdown-item d-flex align-items-center gap-2', isFocused && 'active')
-                  }
-                  style={{ cursor: 'pointer' }}
-                  textValue={item.searchableText ?? item.label}
-                >
-                  {({ isSelected }) => (
-                    <>
-                      <input
-                        checked={isSelected}
-                        className="form-check-input m-0"
-                        tabIndex={-1}
-                        type="checkbox"
-                        readOnly
-                      />
-                      <div className="flex-grow-1">{renderItem(item)}</div>
-                    </>
+              <Input
+                className="border-0 flex-grow-1 bg-transparent"
+                id={id}
+                placeholder={placeholder}
+                style={{ outline: 'none' }}
+              />
+              <Button aria-label="Show suggestions" className="border-0 bg-transparent p-0 ms-auto">
+                <i
+                  aria-hidden="true"
+                  className={clsx(
+                    'bi',
+                    isComboBoxOpen ? 'bi-chevron-up' : 'bi-chevron-down',
+                    'text-muted',
                   )}
-                </ListBoxItem>
-              )}
-            </ListBox>
-          </Autocomplete>
-        </Popover>
-      </Select>
+                />
+              </Button>
+            </Group>
+
+            {description && (
+              <Text className="form-text text-muted" slot="description">
+                {description}
+              </Text>
+            )}
+
+            <FieldError className="invalid-feedback d-block">{errorMessage}</FieldError>
+
+            <Popover
+              className="dropdown-menu show py-0 overflow-auto"
+              offset={2}
+              placement="bottom"
+              shouldFlip={false}
+              style={{ maxHeight: '300px', width: 'var(--trigger-width)' }}
+            >
+              <ListBox
+                className="list-unstyled m-0"
+                renderEmptyState={() => (
+                  <div className="dropdown-item text-muted">No options found</div>
+                )}
+              >
+                {(item: ComboBoxItem<T>) => (
+                  <ListBoxItem
+                    id={item.id}
+                    className={({ isFocused }) =>
+                      clsx('dropdown-item d-flex align-items-center gap-2', isFocused && 'active')
+                    }
+                    style={{ cursor: 'pointer' }}
+                    textValue={item.searchableText ?? item.label}
+                  >
+                    {({ isSelected }) => (
+                      <>
+                        <input
+                          checked={isSelected}
+                          className="form-check-input m-0"
+                          tabIndex={-1}
+                          type="checkbox"
+                          readOnly
+                        />
+                        <div className="flex-grow-1">{renderItem(item)}</div>
+                      </>
+                    )}
+                  </ListBoxItem>
+                )}
+              </ListBox>
+            </Popover>
+          </>
+        )}
+      </AriaComboBox>
     </div>
   );
 }

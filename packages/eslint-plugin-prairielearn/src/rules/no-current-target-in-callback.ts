@@ -21,15 +21,52 @@ export default ESLintUtils.RuleCreator.withoutDocs({
     type: 'problem',
     messages: {
       noCurrentTargetInCallback:
-        'Accessing event.currentTarget inside a callback may fail because currentTarget can be nullified before the callback runs. Destructure currentTarget at the start of the event handler instead.',
+        'Accessing event.currentTarget after an async boundary may fail because currentTarget can be nullified before the access runs. Destructure currentTarget at the start of the event handler instead.',
     },
     schema: [],
   },
   defaultOptions: [],
 
   create(context) {
-    // Track event handler parameters and their scopes
-    const eventHandlerParams = new Map<TSESTree.Node, TSESTree.Identifier>();
+    const trackedEventFunctions = new Map<TSESTree.Node, TSESTree.Identifier>();
+    const visitorKeys = context.sourceCode.visitorKeys;
+
+    function isFunctionLike(
+      node: TSESTree.Node,
+    ): node is
+      | TSESTree.ArrowFunctionExpression
+      | TSESTree.FunctionExpression
+      | TSESTree.FunctionDeclaration {
+      return (
+        node.type === 'ArrowFunctionExpression' ||
+        node.type === 'FunctionExpression' ||
+        node.type === 'FunctionDeclaration'
+      );
+    }
+
+    function isNode(value: unknown): value is TSESTree.Node {
+      return typeof value === 'object' && value !== null && 'type' in value;
+    }
+
+    function getChildNodes(node: TSESTree.Node): TSESTree.Node[] {
+      const children: TSESTree.Node[] = [];
+
+      for (const key of visitorKeys[node.type] ?? []) {
+        const value: unknown = node[key as keyof TSESTree.Node];
+
+        if (Array.isArray(value)) {
+          for (const child of value) {
+            if (isNode(child)) {
+              children.push(child);
+            }
+          }
+        } else if (isNode(value)) {
+          children.push(value);
+        }
+      }
+
+      return children;
+    }
 
     /** Check if a node is inside a nested function relative to the event handler */
     function isInsideNestedFunction(
@@ -53,14 +90,59 @@ export default ESLintUtils.RuleCreator.withoutDocs({
       return foundNestedFunction && current === eventHandlerFunction;
     }
 
+    /** Check if the function contains an await before this access, ignoring nested functions */
+    function hasPriorAwaitInSameFunction(
+      node: TSESTree.Node,
+      eventHandlerFunction: TSESTree.Node,
+    ): boolean {
+      if (
+        !('body' in eventHandlerFunction) ||
+        !eventHandlerFunction.body ||
+        Array.isArray(eventHandlerFunction.body)
+      ) {
+        return false;
+      }
+
+      let foundPriorAwait = false;
+
+      const visit = (current: TSESTree.Node) => {
+        if (foundPriorAwait || current.range[0] >= node.range[0]) {
+          return;
+        }
+
+        if (current !== eventHandlerFunction && isFunctionLike(current)) {
+          return;
+        }
+
+        if (current.type === 'AwaitExpression') {
+          foundPriorAwait = true;
+          return;
+        }
+
+        for (const child of getChildNodes(current)) {
+          visit(child);
+          if (foundPriorAwait) {
+            return;
+          }
+        }
+      };
+
+      visit(eventHandlerFunction.body);
+      return foundPriorAwait;
+    }
+
     /** Find the function that contains this node */
     function findContainingFunction(
       node: TSESTree.Node,
-    ): TSESTree.ArrowFunctionExpression | TSESTree.FunctionExpression | null {
+    ):
+      | TSESTree.ArrowFunctionExpression
+      | TSESTree.FunctionExpression
+      | TSESTree.FunctionDeclaration
+      | null {
       let current: TSESTree.Node | undefined = node.parent;
 
       while (current) {
-        if (current.type === 'ArrowFunctionExpression' || current.type === 'FunctionExpression') {
+        if (isFunctionLike(current)) {
           return current;
         }
         current = current.parent;
@@ -71,7 +153,10 @@ export default ESLintUtils.RuleCreator.withoutDocs({
 
     /** Check if a function is a JSX event handler */
     function isJSXEventHandler(
-      func: TSESTree.ArrowFunctionExpression | TSESTree.FunctionExpression,
+      func:
+        | TSESTree.ArrowFunctionExpression
+        | TSESTree.FunctionExpression
+        | TSESTree.FunctionDeclaration,
     ): boolean {
       const parent = func.parent;
 
@@ -90,7 +175,10 @@ export default ESLintUtils.RuleCreator.withoutDocs({
 
     /** Get the first parameter of an event handler if it looks like an event */
     function getEventParameter(
-      func: TSESTree.ArrowFunctionExpression | TSESTree.FunctionExpression,
+      func:
+        | TSESTree.ArrowFunctionExpression
+        | TSESTree.FunctionExpression
+        | TSESTree.FunctionDeclaration,
     ): TSESTree.Identifier | null {
       const firstParam = func.params[0];
 
@@ -104,27 +192,80 @@ export default ESLintUtils.RuleCreator.withoutDocs({
       return null;
     }
 
+    function isReactEventType(typeAnnotation: TSESTree.TypeNode): boolean {
+      if (typeAnnotation.type === 'TSTypeReference') {
+        if (
+          typeAnnotation.typeName.type === 'TSQualifiedName' &&
+          typeAnnotation.typeName.left.type === 'Identifier' &&
+          typeAnnotation.typeName.left.name === 'React' &&
+          typeAnnotation.typeName.right.type === 'Identifier' &&
+          typeAnnotation.typeName.right.name.endsWith('Event')
+        ) {
+          return true;
+        }
+
+        if (
+          typeAnnotation.typeName.type === 'Identifier' &&
+          (typeAnnotation.typeName.name === 'SyntheticEvent' ||
+            typeAnnotation.typeName.name.endsWith('Event'))
+        ) {
+          return true;
+        }
+      }
+
+      return false;
+    }
+
+    function isTypedReactEventHandler(
+      func:
+        | TSESTree.ArrowFunctionExpression
+        | TSESTree.FunctionExpression
+        | TSESTree.FunctionDeclaration,
+    ): boolean {
+      const firstParam = func.params[0];
+      if (!firstParam || firstParam.type !== 'Identifier' || !firstParam.typeAnnotation) {
+        return false;
+      }
+
+      return isReactEventType(firstParam.typeAnnotation.typeAnnotation);
+    }
+
+    function trackIfEventHandler(
+      node:
+        | TSESTree.ArrowFunctionExpression
+        | TSESTree.FunctionExpression
+        | TSESTree.FunctionDeclaration,
+    ) {
+      if (!isJSXEventHandler(node) && !isTypedReactEventHandler(node)) {
+        return;
+      }
+
+      const eventParam = getEventParameter(node);
+      if (eventParam) {
+        trackedEventFunctions.set(node, eventParam);
+      }
+    }
+
     return {
       // When we enter a JSX event handler, track its event parameter
       'JSXAttribute > JSXExpressionContainer > ArrowFunctionExpression': (
         node: TSESTree.ArrowFunctionExpression,
       ) => {
-        if (isJSXEventHandler(node)) {
-          const eventParam = getEventParameter(node);
-          if (eventParam) {
-            eventHandlerParams.set(node, eventParam);
-          }
-        }
+        trackIfEventHandler(node);
       },
       'JSXAttribute > JSXExpressionContainer > FunctionExpression': (
         node: TSESTree.FunctionExpression,
       ) => {
-        if (isJSXEventHandler(node)) {
-          const eventParam = getEventParameter(node);
-          if (eventParam) {
-            eventHandlerParams.set(node, eventParam);
-          }
-        }
+        trackIfEventHandler(node);
+      },
+      ArrowFunctionExpression(node: TSESTree.ArrowFunctionExpression) {
+        trackIfEventHandler(node);
+      },
+      FunctionExpression(node: TSESTree.FunctionExpression) {
+        trackIfEventHandler(node);
+      },
+      FunctionDeclaration(node: TSESTree.FunctionDeclaration) {
+        trackIfEventHandler(node);
       },
 
       // Check for .currentTarget access
@@ -146,12 +287,14 @@ export default ESLintUtils.RuleCreator.withoutDocs({
         if (!containingFunction) return;
 
         // Check each tracked event handler to see if this access is problematic
-        for (const [eventHandler, eventParam] of eventHandlerParams) {
+        for (const [eventHandler, eventParam] of trackedEventFunctions) {
           // Check if this is accessing the event parameter
           if (objectName !== eventParam.name) continue;
 
-          // Check if the access is inside a nested function within the event handler
-          if (isInsideNestedFunction(node, eventHandler)) {
+          if (
+            isInsideNestedFunction(node, eventHandler) ||
+            hasPriorAwaitInSameFunction(node, eventHandler)
+          ) {
             context.report({
               node,
               messageId: 'noCurrentTargetInCallback',
@@ -165,12 +308,21 @@ export default ESLintUtils.RuleCreator.withoutDocs({
       'JSXAttribute > JSXExpressionContainer > ArrowFunctionExpression:exit': (
         node: TSESTree.ArrowFunctionExpression,
       ) => {
-        eventHandlerParams.delete(node);
+        trackedEventFunctions.delete(node);
       },
       'JSXAttribute > JSXExpressionContainer > FunctionExpression:exit': (
         node: TSESTree.FunctionExpression,
       ) => {
-        eventHandlerParams.delete(node);
+        trackedEventFunctions.delete(node);
+      },
+      'ArrowFunctionExpression:exit'(node: TSESTree.ArrowFunctionExpression) {
+        trackedEventFunctions.delete(node);
+      },
+      'FunctionExpression:exit'(node: TSESTree.FunctionExpression) {
+        trackedEventFunctions.delete(node);
+      },
+      'FunctionDeclaration:exit'(node: TSESTree.FunctionDeclaration) {
+        trackedEventFunctions.delete(node);
       },
     };
   },

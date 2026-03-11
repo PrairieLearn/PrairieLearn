@@ -210,9 +210,10 @@ export const QuestionSettingsForm = ({
 
   const handleFormSubmit = async (e: React.SubmitEvent<HTMLFormElement>) => {
     e.preventDefault();
+    const form = e.currentTarget;
     const isValid = await trigger();
     if (isValid) {
-      e.currentTarget.submit();
+      form.submit();
     }
   };
 
