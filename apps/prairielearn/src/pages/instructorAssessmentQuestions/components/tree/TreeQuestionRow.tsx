@@ -5,6 +5,7 @@ import { type ReactElement, useId } from 'react';
 import { OverlayTrigger } from '@prairielearn/ui';
 
 import { CopyButton } from '../../../../components/CopyButton.js';
+import { IssueBadge } from '../../../../components/IssueBadge.js';
 import type { EditorQuestionMetadata } from '../../../../lib/assessment-question.shared.js';
 import { getQuestionUrl } from '../../../../lib/client/url.js';
 import type { EnumAssessmentType } from '../../../../lib/db-types.js';
@@ -247,6 +248,12 @@ export function TreeQuestionRow({
                 >
                   {questionData.question.title}
                 </a>
+                <IssueBadge
+                  count={questionData.open_issue_count}
+                  urlPrefix={`/pl/course_instance/${courseInstanceId}/instructor`}
+                  issueQid={questionData.question.qid}
+                  className="ms-1"
+                />
               </>
             ) : (
               questionData.question.title
