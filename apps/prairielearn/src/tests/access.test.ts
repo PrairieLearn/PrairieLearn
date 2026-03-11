@@ -5,7 +5,6 @@ import fetch from 'node-fetch';
 import { afterAll, assert, beforeAll, describe, it } from 'vitest';
 
 import * as sqldb from '@prairielearn/postgres';
-import { DateFromISOString } from '@prairielearn/zod';
 
 import { dangerousFullSystemAuthz } from '../lib/authz-data-lib.js';
 import { config } from '../lib/config.js';
@@ -123,8 +122,8 @@ describe('Access control', { timeout: 20000 }, function () {
       user = await sqldb.queryRow(sql.select_student_user, UserSchema);
       reservationArgs = {
         userId: user.id,
-        accessStart: DateFromISOString.parse('1920-07-07 23:59:59'),
-        accessEnd: DateFromISOString.parse('2300-07-10 23:59:59'),
+        accessStart: new Date('1920-07-07 23:59:59'),
+        accessEnd: new Date('2300-07-10 23:59:59'),
       };
     });
   });
