@@ -1,4 +1,4 @@
-import type { StaffAssessmentQuestionRow } from '../../../../lib/assessment-question.shared.js';
+import type { EditorQuestionMetadata } from '../../../../lib/assessment-question.shared.js';
 import type {
   CourseQuestionForPicker,
   DetailActions,
@@ -30,7 +30,7 @@ export function DetailPanel({
 }: {
   selectedItem: SelectedItem;
   zones: ZoneAssessmentForm[];
-  questionMetadata: Partial<Record<string, StaffAssessmentQuestionRow>>;
+  questionMetadata: Partial<Record<string, EditorQuestionMetadata>>;
   state: DetailState;
   actions: DetailActions;
   courseQuestions: CourseQuestionForPicker[];

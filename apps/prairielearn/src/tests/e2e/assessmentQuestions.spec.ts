@@ -24,6 +24,8 @@ async function keyboardDrag(page: Page, source: Locator, direction: 'up' | 'down
   const arrowKey = direction === 'up' ? 'ArrowUp' : 'ArrowDown';
   await source.focus();
   await page.keyboard.press(' ');
+  // Wait for dnd-kit to activate the drag before issuing arrow key moves.
+  await expect(source).toHaveAttribute('aria-pressed', 'true');
   for (let i = 0; i < steps; i++) {
     await page.keyboard.press(arrowKey);
   }
@@ -356,13 +358,14 @@ test.describe('Assessment questions', () => {
       const numberChooseInput = page.getByLabel('Number to choose');
       await numberChooseInput.clear();
       await numberChooseInput.fill('2');
-      await expect(page.getByText('Cannot exceed number of alternatives (2).')).not.toBeVisible();
+      const warningText = 'Number to choose exceeds the number of alternatives in this group.';
+      await expect(page.getByText(warningText)).not.toBeVisible();
 
       await page
         .getByRole('button', { name: 'Delete aiGradingMultiImageCapture', exact: true })
         .click();
 
-      await expect(page.getByText('Cannot exceed number of alternatives (1).')).toBeVisible();
+      await expect(page.getByText(warningText)).toBeVisible();
     });
   });
 

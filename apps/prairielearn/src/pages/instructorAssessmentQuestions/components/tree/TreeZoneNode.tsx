@@ -103,11 +103,9 @@ export function TreeZoneNode({
             position: 'sticky',
             top: 0,
             zIndex: 10,
-            ...(zoneChooseExceeds
-              ? { borderLeft: '6px solid var(--bs-danger)' }
-              : zonePointsMismatch != null
-                ? { borderLeft: '6px solid var(--bs-warning)' }
-                : {}),
+            ...(zoneChooseExceeds || zonePointsMismatch != null
+              ? { borderLeft: '6px solid var(--bs-warning)' }
+              : {}),
           }}
           onClick={(e) => {
             e.stopPropagation();
@@ -153,7 +151,6 @@ export function TreeZoneNode({
                 tooltipId={`choose-exceeds-${zone.trackingId}`}
                 label="Choose exceeds count"
                 body="Number to choose or best questions exceeds the number of questions in this zone"
-                variant="error"
               />
             )}
             {run(() => {

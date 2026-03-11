@@ -6,8 +6,9 @@ import type { DetailState, ZoneAssessmentForm } from '../../types.js';
 import {
   coerceToNumber,
   coerceToOptionalString,
-  extractStringComment,
+  commentToString,
   makeResetAndSave,
+  parseCommentValue,
 } from '../../utils/formHelpers.js';
 import {
   computeZoneQuestionCount,
@@ -57,7 +58,7 @@ export function ZoneDetailPanel({
     numberChoose: zone.numberChoose ?? undefined,
     bestQuestions: zone.bestQuestions ?? undefined,
     lockpoint: zone.lockpoint,
-    comment: extractStringComment(zone.comment),
+    comment: commentToString(zone.comment),
     advanceScorePerc: zone.advanceScorePerc ?? undefined,
     gradeRateMinutes: zone.gradeRateMinutes ?? undefined,
     // We do this so that `isDirty = false` when the value is inherited.
@@ -102,7 +103,7 @@ export function ZoneDetailPanel({
         numberChoose: data.numberChoose,
         bestQuestions: data.bestQuestions,
         lockpoint: data.lockpoint,
-        comment: data.comment || undefined,
+        comment: parseCommentValue(data.comment),
         advanceScorePerc: data.advanceScorePerc,
         gradeRateMinutes: data.gradeRateMinutes,
         allowRealTimeGrading: data.allowRealTimeGrading,
@@ -151,7 +152,7 @@ export function ZoneDetailPanel({
         </div>
       )}
       {zoneChooseExceeds && (
-        <div className="alert alert-danger small mb-3" role="alert">
+        <div className="alert alert-warning small mb-3" role="alert">
           <i className="bi bi-exclamation-triangle-fill me-1" aria-hidden="true" />
           Number to choose or best questions exceeds the number of questions in this zone.
         </div>
@@ -221,13 +222,7 @@ export function ZoneDetailPanel({
               {...aria.inputProps}
               {...register('numberChoose', {
                 setValueAs: coerceToNumber,
-                validate: (v) => {
-                  const msg = validatePositiveInteger(v, 'Number to choose');
-                  if (msg) return msg;
-                  if (v != null && v > zoneQuestionCount) {
-                    return `Cannot exceed number of choosable questions in zone (${zoneQuestionCount}).`;
-                  }
-                },
+                validate: (v) => validatePositiveInteger(v, 'Number to choose'),
               })}
             />
           )}
@@ -249,17 +244,7 @@ export function ZoneDetailPanel({
               {...aria.inputProps}
               {...register('bestQuestions', {
                 setValueAs: coerceToNumber,
-                validate: (v) => {
-                  const msg = validatePositiveInteger(v, 'Best questions');
-                  if (msg) return msg;
-                  if (v != null && v > zoneQuestionCount) {
-                    return `Cannot exceed number of choosable questions in zone (${zoneQuestionCount}).`;
-                  }
-                  const numberChoose = getValues('numberChoose');
-                  if (v != null && numberChoose != null && v > numberChoose) {
-                    return `Cannot exceed number to choose (${numberChoose}).`;
-                  }
-                },
+                validate: (v) => validatePositiveInteger(v, 'Best questions'),
               })}
             />
           )}
@@ -271,7 +256,7 @@ export function ZoneDetailPanel({
           label="Comment"
           viewValue={
             zone.comment != null ? (
-              <span className="text-break">{String(zone.comment)}</span>
+              <span className="text-break">{commentToString(zone.comment)}</span>
             ) : undefined
           }
           helpText="Internal note, not shown to students."

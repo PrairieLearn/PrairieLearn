@@ -320,22 +320,59 @@ As shown in the table, all functions (except for `render`) accept a single argum
 
 ### `data` dictionary
 
-| Attribute               | Type    | Description                                                                                                                          |
-| ----------------------- | ------- | ------------------------------------------------------------------------------------------------------------------------------------ |
-| `params`                | `dict`  | Parameters for the question variant. These are set in the `generate()` function and can be used in the `question.html` file.         |
-| `correct_answers`       | `dict`  | Correct answers for the question variant. Each item maps from a named answer to a value.                                             |
-| `submitted_answers`     | `dict`  | Student answers submitted for the question after parsing.                                                                            |
-| `raw_submitted_answers` | `dict`  | Raw student answers submitted for the question.                                                                                      |
-| `format_errors`         | `dict`  | Dictionary of format errors for each answer. Each item maps from a named answer to an error message.                                 |
-| `partial_scores`        | `dict`  | Dictionary of partial scores for each answer. Each entry is a dictionary with the keys `score` (float) and `weight` (int, optional). |
-| `score`                 | `float` | The total score for the question variant.                                                                                            |
-| `feedback`              | `dict`  | Dictionary of [feedback](#providing-feedback) for each answer. Each item maps from a named answer to a feedback message.             |
-| `variant_seed`          | `int`   | The [random seed](#randomization) for this question variant.                                                                         |
-| `options`               | `dict`  | Any options associated with the question, e.g. for [accessing files](#accessing-files-on-disk)                                       |
-| `filename`              | `str`   | The name of the [dynamic file requested](#generating-dynamic-files-with-file) in the `file()` function.                              |
-| `test_type`             | `str`   | The type of test being run in the [`test()` function](#testing-questions-with-test).                                                 |
+| Attribute               | Type    | Description                                                                                                                                                      |
+| ----------------------- | ------- | ---------------------------------------------------------------------------------------------------------------------------------------------------------------- |
+| `params`                | `dict`  | Parameters for the question variant. These are set in the `generate()` function and can be used in the `question.html` file.                                     |
+| `correct_answers`       | `dict`  | Correct answers for the question variant. Each item maps from a named answer to a value.                                                                         |
+| `submitted_answers`     | `dict`  | Student answers submitted for the question after parsing.                                                                                                        |
+| `raw_submitted_answers` | `dict`  | Raw student answers submitted for the question.                                                                                                                  |
+| `format_errors`         | `dict`  | Dictionary of format errors for each answer. Each item maps from a named answer to an error message.                                                             |
+| `partial_scores`        | `dict`  | Dictionary of partial scores for each answer. Each entry is a dictionary with the keys `score` (float) and `weight` (int, optional).                             |
+| `score`                 | `float` | The total score for the question variant.                                                                                                                        |
+| `feedback`              | `dict`  | Dictionary of [feedback](#providing-feedback) for each answer. Each item maps from a named answer to a feedback message.                                         |
+| `variant_seed`          | `int`   | The [random seed](#randomization) for this question variant.                                                                                                     |
+| `options`               | `dict`  | Any options associated with the question, e.g. for [accessing files](#accessing-files-on-disk)                                                                   |
+| `filename`              | `str`   | The name of the [dynamic file requested](#generating-dynamic-files-with-file) in the `file()` function.                                                          |
+| `test_type`             | `str`   | The type of test being run in the [`test()` function](#testing-questions-with-test).                                                                             |
+| `answers_names`         | `dict`  | A dictionary whose keys list the names of the answers in the question.                                                                                           |
+| `panel`                 | `str`   | Which panel is being rendered (`question`, `submission`, or `answer`).                                                                                           |
+| `editable`              | `bool`  | Whether the question is currently in an editable state.                                                                                                          |
+| `num_valid_submissions` | `int`   | The number of valid (not containing format errors) submissions by the student for the current variant.                                                           |
+| `manual_grading`        | `bool`  | Whether manual-grading content should be shown. This is `true` in the manual grading view, and also for question and answer panels when rendered for AI grading. |
+| `ai_grading`            | `bool`  | Whether the question is being rendered for AI grading.                                                                                                           |
+| `gradable`              | `bool`  | Whether the submission can be graded. Automatically set to `false` if there are format errors.                                                                   |
 
-The key `data` fields and their types are described above. You can view a full list of all fields in the [`QuestionData` reference](../python-reference/prairielearn/question_utils.md#prairielearn.question_utils.QuestionData).
+Not all fields are available in every function — some are only present in specific phases. See the [data field scopes](#data-field-scopes) table below for details. You can also view a full list of all fields in the [`QuestionData` reference](../python-reference/prairielearn/question_utils.md#prairielearn.question_utils.QuestionData).
+
+### Data field scopes
+
+Each field in the `data` dictionary is either stored **per-variant** (shared across all submissions) or **per-submission** (unique to each student submission). Certain fields are only available in specific functions.
+
+| Field                   | Scope            | Notes                                           |
+| ----------------------- | ---------------- | ----------------------------------------------- |
+| `params`                | Both             | Stored on both the variant and each submission. |
+| `correct_answers`       | Both             | Stored on both the variant and each submission. |
+| `submitted_answers`     | Submission       | —                                               |
+| `raw_submitted_answers` | Submission       | —                                               |
+| `format_errors`         | Submission       | —                                               |
+| `partial_scores`        | Submission       | —                                               |
+| `score`                 | Submission       | —                                               |
+| `feedback`              | Submission       | —                                               |
+| `variant_seed`          | Variant          | —                                               |
+| `options`               | Variant          | —                                               |
+| `filename`              | None (not saved) | Only in `file()`.                               |
+| `test_type`             | None (not saved) | Only in `test()`.                               |
+| `answers_names`         | None (not saved) | Only in `prepare()`.                            |
+| `panel`                 | None (not saved) | Only in `render()`.                             |
+| `editable`              | None (not saved) | Only in `render()`.                             |
+| `num_valid_submissions` | None (not saved) | Only in `render()`.                             |
+| `manual_grading`        | None (not saved) | Only in `render()`.                             |
+| `ai_grading`            | None (not saved) | Only in `render()`.                             |
+| `gradable`              | Submission       | Only in `parse()`, `grade()`, and `test()`.     |
+
+!!! note
+
+    `params` and `correct_answers` are set per-variant in `generate()` and stored on both the variant and each submission. The submission copies are point-in-time snapshots. If `parse()` or `grade()` modifies these values, the updated values are saved to both the variant and the submission.
 
 ## Question data storage
 

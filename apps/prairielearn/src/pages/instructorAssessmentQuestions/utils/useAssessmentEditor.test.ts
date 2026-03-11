@@ -253,6 +253,156 @@ describe('createEditorReducer', () => {
     expect(state.zones[0].questions).toHaveLength(2);
   });
 
+  it('extract alternative inherits points from parent alt group', () => {
+    // alt1 has no own points — it inherits autoPoints from the group
+    const alt1 = makeAlternative('a1', { id: 'alt-qid-1' });
+    // alt2 has its own autoPoints, which should be preserved
+    const alt2 = makeAlternative('a2', { id: 'alt-qid-2', autoPoints: 7 });
+    const altGroup = makeQuestion('ag1', {
+      id: 'ag-qid',
+      alternatives: [alt1, alt2],
+      numberChoose: 1,
+      autoPoints: 3,
+      manualPoints: 2,
+    });
+    const initialState = makeState({
+      zones: [makeZone('z1', [altGroup])],
+    });
+    const reducer = createEditorReducer(initialState);
+
+    // Extract alt1 (inheriting points) to standalone
+    let state = reducer(initialState, {
+      type: 'EXTRACT_ALTERNATIVE_TO_QUESTION',
+      alternativeTrackingId: 'a1',
+      toZoneTrackingId: 'z1',
+      beforeQuestionTrackingId: null,
+    });
+
+    const extracted1 = state.zones[0].questions[1];
+    expect(extracted1.trackingId).toEqual(tid('a1'));
+    // Should inherit autoPoints and manualPoints from the group
+    expect(extracted1.autoPoints).toBe(3);
+    expect(extracted1.manualPoints).toBe(2);
+
+    // Extract alt2 (own points) to standalone
+    state = reducer(state, {
+      type: 'EXTRACT_ALTERNATIVE_TO_QUESTION',
+      alternativeTrackingId: 'a2',
+      toZoneTrackingId: 'z1',
+      beforeQuestionTrackingId: null,
+    });
+
+    const extracted2 = state.zones[0].questions[2];
+    expect(extracted2.trackingId).toEqual(tid('a2'));
+    // Should keep its own autoPoints, inherit manualPoints from group
+    expect(extracted2.autoPoints).toBe(7);
+    expect(extracted2.manualPoints).toBe(2);
+  });
+
+  it('extract alternative inherits non-point fields from parent alt group', () => {
+    // alt has no own settings — inherits everything from the group
+    const alt = makeAlternative('a1', { id: 'alt-qid-1' });
+    // alt2 has its own triesPerVariant override
+    const alt2 = makeAlternative('a2', {
+      id: 'alt-qid-2',
+      triesPerVariant: 5,
+      allowRealTimeGrading: true,
+    });
+    const altGroup = makeQuestion('ag1', {
+      id: 'ag-qid',
+      alternatives: [alt, alt2],
+      numberChoose: 1,
+      autoPoints: 3,
+      triesPerVariant: 2,
+      allowRealTimeGrading: false,
+      gradeRateMinutes: 10,
+      forceMaxPoints: true,
+      advanceScorePerc: 50,
+    });
+    const initialState = makeState({
+      zones: [makeZone('z1', [altGroup])],
+    });
+    const reducer = createEditorReducer(initialState);
+
+    // Extract alt (inheriting all settings) to standalone
+    let state = reducer(initialState, {
+      type: 'EXTRACT_ALTERNATIVE_TO_QUESTION',
+      alternativeTrackingId: 'a1',
+      toZoneTrackingId: 'z1',
+      beforeQuestionTrackingId: null,
+    });
+
+    const extracted = state.zones[0].questions[1];
+    expect(extracted.triesPerVariant).toBe(2);
+    expect(extracted.allowRealTimeGrading).toBe(false);
+    expect(extracted.gradeRateMinutes).toBe(10);
+    expect(extracted.forceMaxPoints).toBe(true);
+    expect(extracted.advanceScorePerc).toBe(50);
+
+    // Extract alt2 (has own overrides) to standalone
+    state = reducer(state, {
+      type: 'EXTRACT_ALTERNATIVE_TO_QUESTION',
+      alternativeTrackingId: 'a2',
+      toZoneTrackingId: 'z1',
+      beforeQuestionTrackingId: null,
+    });
+
+    const extracted2 = state.zones[0].questions[2];
+    // Should keep its own overrides
+    expect(extracted2.triesPerVariant).toBe(5);
+    expect(extracted2.allowRealTimeGrading).toBe(true);
+    // Should inherit the rest from the group
+    expect(extracted2.gradeRateMinutes).toBe(10);
+    expect(extracted2.forceMaxPoints).toBe(true);
+    expect(extracted2.advanceScorePerc).toBe(50);
+  });
+
+  it('reorder alternative across groups then extract inherits from final group', () => {
+    // alt has no own points — inherits from whichever group it's in
+    const alt = makeAlternative('a1', { id: 'alt-qid-1' });
+    const altGroupA = makeQuestion('agA', {
+      id: 'ag-qid-A',
+      alternatives: [alt],
+      numberChoose: 1,
+      autoPoints: 5,
+    });
+    const altGroupB = makeQuestion('agB', {
+      id: 'ag-qid-B',
+      alternatives: [makeAlternative('b1', { id: 'alt-qid-B1' })],
+      numberChoose: 1,
+      autoPoints: 10,
+      manualPoints: 3,
+    });
+    const initialState = makeState({
+      zones: [makeZone('z1', [altGroupA, altGroupB])],
+    });
+    const reducer = createEditorReducer(initialState);
+
+    // Move alt from group A to group B
+    let state = reducer(initialState, {
+      type: 'REORDER_ALTERNATIVE',
+      alternativeTrackingId: 'a1',
+      toAltGroupTrackingId: 'agB',
+      beforeAlternativeTrackingId: null,
+    });
+
+    expect(state.zones[0].questions[1].alternatives).toHaveLength(2);
+
+    // Extract alt (now in group B) to standalone
+    state = reducer(state, {
+      type: 'EXTRACT_ALTERNATIVE_TO_QUESTION',
+      alternativeTrackingId: 'a1',
+      toZoneTrackingId: 'z1',
+      beforeQuestionTrackingId: null,
+    });
+
+    const extracted = state.zones[0].questions[2];
+    expect(extracted.trackingId).toEqual(tid('a1'));
+    // Should inherit from group B (current parent), not group A (original parent)
+    expect(extracted.autoPoints).toBe(10);
+    expect(extracted.manualPoints).toBe(3);
+  });
+
   it('REMOVE_QUESTION_BY_QID: standalone, alternative, and nonexistent', () => {
     const alt = makeAlternative('a1', { id: 'alt-qid' });
     const altGroup = makeQuestion('ag1', {
