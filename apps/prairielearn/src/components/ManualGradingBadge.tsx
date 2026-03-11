@@ -22,7 +22,7 @@ function ManualGradingBadge({
       data-bs-toggle="tooltip"
       data-bs-title={`${numToGrade} / ${numTotal} ungraded`}
     >
-      <i className="bi bi-pencil-square" /> {numToGrade}
+      <i className="bi bi-pen-fill" /> {numToGrade}
     </a>
   );
 }
