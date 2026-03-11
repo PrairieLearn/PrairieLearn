@@ -52,6 +52,16 @@ def test_parse_blank_submission_without_allow_blank_sets_error() -> None:
     assert data["submitted_answers"]["test"] is None
 
 
+def test_parse_malformed_json_with_allow_blank_sets_error() -> None:
+    element_html = build_element_html(allow_blank=True)
+    data = make_question_data(submitted_answers={"test": "not json"})
+
+    pl_drawing.parse(element_html, data)
+
+    assert "test" in data["format_errors"]
+    assert data["submitted_answers"]["test"] is None
+
+
 def test_parse_blank_submission_with_allow_blank_no_error() -> None:
     element_html = build_element_html(allow_blank=True)
     data = make_question_data(submitted_answers={"test": "[]"})
@@ -94,11 +104,46 @@ def test_grade_blank_submission_without_allow_blank_sets_error() -> None:
     assert "test" not in data["partial_scores"]
 
 
-def test_grade_blank_submission_with_allow_blank_scores_zero() -> None:
+def test_grade_blank_with_all_optional_refs_scores_full() -> None:
     element_html = build_element_html(allow_blank=True)
+    reference = [
+        {
+            "id": 0,
+            "type": "pl-point",
+            "gradingName": "pl-point",
+            "graded": True,
+            "optional_grading": True,
+            "x1": 100,
+            "y1": 100,
+        }
+    ]
     data = make_question_data(
         submitted_answers={"test": None},
-        correct_answers={"test": []},
+        correct_answers={"test": reference},
+    )
+
+    pl_drawing.grade(element_html, data)
+
+    assert "test" not in data["format_errors"]
+    assert "test" in data["partial_scores"]
+    assert math.isclose(data["partial_scores"]["test"]["score"], 1.0)
+
+
+def test_grade_blank_submission_with_allow_blank_scores_zero() -> None:
+    element_html = build_element_html(allow_blank=True)
+    reference = [
+        {
+            "id": 0,
+            "type": "pl-point",
+            "gradingName": "pl-point",
+            "graded": True,
+            "x1": 100,
+            "y1": 100,
+        }
+    ]
+    data = make_question_data(
+        submitted_answers={"test": None},
+        correct_answers={"test": reference},
     )
 
     pl_drawing.grade(element_html, data)
@@ -110,9 +155,19 @@ def test_grade_blank_submission_with_allow_blank_scores_zero() -> None:
 
 def test_grade_blank_submission_with_allow_blank_uses_weight() -> None:
     element_html = build_element_html(allow_blank=True, weight=5)
+    reference = [
+        {
+            "id": 0,
+            "type": "pl-point",
+            "gradingName": "pl-point",
+            "graded": True,
+            "x1": 100,
+            "y1": 100,
+        }
+    ]
     data = make_question_data(
         submitted_answers={"test": None},
-        correct_answers={"test": []},
+        correct_answers={"test": reference},
     )
 
     pl_drawing.grade(element_html, data)
@@ -122,9 +177,19 @@ def test_grade_blank_submission_with_allow_blank_uses_weight() -> None:
 
 def test_grade_blank_submission_with_allow_blank_feedback_structure() -> None:
     element_html = build_element_html(allow_blank=True)
+    reference = [
+        {
+            "id": 0,
+            "type": "pl-point",
+            "gradingName": "pl-point",
+            "graded": True,
+            "x1": 100,
+            "y1": 100,
+        }
+    ]
     data = make_question_data(
         submitted_answers={"test": None},
-        correct_answers={"test": []},
+        correct_answers={"test": reference},
     )
 
     pl_drawing.grade(element_html, data)

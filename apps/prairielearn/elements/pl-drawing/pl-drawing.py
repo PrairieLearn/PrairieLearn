@@ -436,10 +436,6 @@ def parse(element_html: str, data: pl.QuestionData) -> None:
             return
     except (json.JSONDecodeError, KeyError, TypeError):
         data["submitted_answers"][name] = None
-
-        if allow_blank:
-            return
-
         data["format_errors"][name] = defaults.no_submission_error
 
 
@@ -475,12 +471,10 @@ def grade(element_html: str, data: pl.QuestionData) -> None:
     reference = data["correct_answers"].get(name, [])
 
     if not isinstance(student, list) or len(student) == 0:
-        if allow_blank:
-            data["partial_scores"][name] = _blank_score(weight)
-            return
-        else:
+        if not allow_blank:
             data["format_errors"][name] = defaults.no_submission_error
             return
+        student = []
 
     matches = {}  # If a reference object is matched to a student object
     num_correct = 0  # number correct
@@ -693,9 +687,5 @@ def test(element_html: str, data: pl.ElementTestData) -> None:
         }
 
     elif result == "invalid":
-        allow_blank = pl.get_boolean_attrib(element, "allow-blank", ALLOW_BLANK_DEFAULT)
-        if allow_blank:
-            data["raw_submitted_answers"][name] = "[]"
-        else:
-            data["format_errors"][name] = ""
-            data["raw_submitted_answers"][name] = "invalid submission"
+        data["format_errors"][name] = ""
+        data["raw_submitted_answers"][name] = "invalid submission"
