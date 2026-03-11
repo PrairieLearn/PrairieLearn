@@ -220,6 +220,7 @@ export const QuestionSettingsForm = ({
   return (
     <form name="edit-question-settings-form" method="POST" onSubmit={handleFormSubmit}>
       <input type="hidden" name="__csrf_token" value={csrfToken} />
+      <input type="hidden" name="__action" value="update_question" />
       <input type="hidden" name="orig_hash" value={origHash} />
 
       <div className="mb-3">
@@ -800,8 +801,6 @@ export const QuestionSettingsForm = ({
             id="save-button"
             type="submit"
             className="btn btn-primary mb-2"
-            name="__action"
-            value="update_question"
             disabled={!isDirty}
           >
             Save
