@@ -71,7 +71,7 @@ The `data` dictionary has the following possible keys (not all keys will be pres
 
 | Key                             | Type    | Description                                                                                                                                                      |
 | ------------------------------- | ------- | ---------------------------------------------------------------------------------------------------------------------------------------------------------------- |
-| `data["ai_grading"]`            | boolean | Whether the question is being rendered for AI grading.                                                                                                   |
+| `data["ai_grading"]`            | boolean | Whether the question is being rendered for AI grading.                                                                                                           |
 | `data["correct_answers"]`       | dict    | The true answer (if any) for the variant.                                                                                                                        |
 | `data["editable"]`              | boolean | Whether the question is currently in an editable state.                                                                                                          |
 | `data["extensions"]`            | dict    | A list of extensions that are available to be loaded by this element. For more information see the [element extensions](./elementExtensions.md) documentation.   |

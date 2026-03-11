@@ -339,36 +339,36 @@ As shown in the table, all functions (except for `render`) accept a single argum
 | `editable`              | `bool`  | Whether the question is currently in an editable state.                                                                                                          |
 | `num_valid_submissions` | `int`   | The number of valid (not containing format errors) submissions by the student for the current variant.                                                           |
 | `manual_grading`        | `bool`  | Whether manual-grading content should be shown. This is `true` in the manual grading view, and also for question and answer panels when rendered for AI grading. |
-| `ai_grading`            | `bool`  | Whether the question is being rendered for AI grading.                                                                                                   |
+| `ai_grading`            | `bool`  | Whether the question is being rendered for AI grading.                                                                                                           |
 | `gradable`              | `bool`  | Whether the submission can be graded. Automatically set to `false` if there are format errors.                                                                   |
 
 Not all fields are available in every function — some are only present in specific phases. See the [data field scopes](#data-field-scopes) table below for details. You can also view a full list of all fields in the [`QuestionData` reference](../python-reference/prairielearn/question_utils.md#prairielearn.question_utils.QuestionData).
 
 ### Data field scopes
 
-Each field in the `data` dictionary is either stored **per-variant** (shared across all submissions) or **per-submission** (unique to each student submission).
+Each field in the `data` dictionary is either stored **per-variant** (shared across all submissions) or **per-submission** (unique to each student submission). Certain fields are only available in specific functions.
 
-| Field                   | Scope            | Notes                                                                                        |
-| ----------------------- | ---------------- | -------------------------------------------------------------------------------------------- |
-| `params`                | Both             | Stored on both the variant and each submission.                                              |
-| `correct_answers`       | Both             | Stored on both the variant and each submission.                                              |
-| `submitted_answers`     | Submission       | —                                                                                            |
-| `raw_submitted_answers` | Submission       | —                                                                                            |
-| `format_errors`         | Submission       | —                                                                                            |
-| `partial_scores`        | Submission       | —                                                                                            |
-| `score`                 | Submission       | —                                                                                            |
-| `feedback`              | Submission       | —                                                                                            |
-| `variant_seed`          | Variant          | —                                                                                            |
-| `options`               | Variant          | —                                                                                            |
-| `filename`              | None (not saved) | Only in `file()`.                                                                            |
-| `test_type`             | None (not saved) | Only in `test()`.                                                                            |
-| `answers_names`         | None (not saved) | Only in `prepare()`.                                                                         |
-| `panel`                 | None (not saved) | Only in `render()`.                                                                          |
-| `editable`              | None (not saved) | Only in `render()`.                                                                          |
-| `num_valid_submissions` | None (not saved) | Only in `render()`.                                                                          |
-| `manual_grading`        | None (not saved) | Only in `render()`. Also `true` for question and answer panels when rendered for AI grading. |
-| `ai_grading`            | None (not saved) | Only in `render()`.                                                                          |
-| `gradable`              | Submission       | Only in `parse()`, `grade()`, and `test()`.                                                  |
+| Field                   | Scope            | Notes                                           |
+| ----------------------- | ---------------- | ----------------------------------------------- |
+| `params`                | Both             | Stored on both the variant and each submission. |
+| `correct_answers`       | Both             | Stored on both the variant and each submission. |
+| `submitted_answers`     | Submission       | —                                               |
+| `raw_submitted_answers` | Submission       | —                                               |
+| `format_errors`         | Submission       | —                                               |
+| `partial_scores`        | Submission       | —                                               |
+| `score`                 | Submission       | —                                               |
+| `feedback`              | Submission       | —                                               |
+| `variant_seed`          | Variant          | —                                               |
+| `options`               | Variant          | —                                               |
+| `filename`              | None (not saved) | Only in `file()`.                               |
+| `test_type`             | None (not saved) | Only in `test()`.                               |
+| `answers_names`         | None (not saved) | Only in `prepare()`.                            |
+| `panel`                 | None (not saved) | Only in `render()`.                             |
+| `editable`              | None (not saved) | Only in `render()`.                             |
+| `num_valid_submissions` | None (not saved) | Only in `render()`.                             |
+| `manual_grading`        | None (not saved) | Only in `render()`.                             |
+| `ai_grading`            | None (not saved) | Only in `render()`.                             |
+| `gradable`              | Submission       | Only in `parse()`, `grade()`, and `test()`.     |
 
 !!! note
 
