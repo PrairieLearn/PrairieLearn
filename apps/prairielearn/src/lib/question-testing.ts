@@ -342,23 +342,19 @@ async function testQuestion({
   let submission: Submission | null = null;
 
   const question_course = await getQuestionCourse(question, variant_course);
-  const instance_question_id = null;
-  const options = { variant_seed };
-  const require_open = true;
-  const client_fingerprint_id = null;
   const generateStart = Date.now();
   try {
     variant = await ensureVariant({
       question_id: question.id,
-      instance_question_id,
+      instance_question_id: null,
       user_id: authn_user_id,
       authn_user_id,
       course_instance,
       variant_course,
       question_course,
-      options,
-      require_open,
-      client_fingerprint_id,
+      options: { variant_seed },
+      require_open: true,
+      client_fingerprint_id: null,
       assessment_id: null,
     });
   } finally {
