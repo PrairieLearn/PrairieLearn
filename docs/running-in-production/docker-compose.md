@@ -80,24 +80,6 @@ cat ~/.ssh/id_rsa.pub
 
 Next to add the SSH key on GitHub go to [SSH keys](https://github.com/settings/ssh/new) under `profile settings`. Add a title, then copy the public key into the `Key` field.
 
-### Handling unknown SSH hosts
-
-When syncing a course from a new Git host, the sync may fail with a "Host key verification failed" error if the host is not in the container's `known_hosts` file. To automatically accept host keys for new hosts, set `gitSshCommand` in your `config.json`:
-
-```json title="config.json"
-{
-  "gitSshCommand": "ssh -o StrictHostKeyChecking=accept-new"
-}
-```
-
-This accepts host keys on first connection and saves them, but still rejects connections if a previously-seen host's key changes. If you need to specify both a custom SSH key and accept new hosts, combine the options:
-
-```json title="config.json"
-{
-  "gitSshCommand": "ssh -i /path/to/key -o StrictHostKeyChecking=accept-new"
-}
-```
-
 ## Adding courses
 
 Adding courses is done through a GitHub repository. It is recommended to set up an organization under one user to which you can add all courses.
