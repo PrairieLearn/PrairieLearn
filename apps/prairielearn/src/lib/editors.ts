@@ -177,10 +177,10 @@ export abstract class Editor {
     // made. We use `executeUnsafe` instead of `execute` because we want
     // errors to be thrown and handled by the caller.
     await serverJob.executeUnsafe(async (job) => {
-      const gitEnv = {
-        ...process.env,
-        GIT_SSH_COMMAND: config.gitSshCommand,
-      };
+      const gitEnv = process.env;
+      if (config.gitSshCommand != null) {
+        gitEnv.GIT_SSH_COMMAND = config.gitSshCommand;
+      }
 
       const lockName = getLockNameForCoursePath(this.course.path);
       await namedLocks.doWithLock(lockName, { timeout: 5000 }, async () => {

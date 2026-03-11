@@ -359,8 +359,8 @@
       "default": "machine"
     },
     "gitSshCommand": {
-      "type": "string",
-      "default": "ssh -o StrictHostKeyChecking=accept-new"
+      "type": ["string", "null"],
+      "default": null
     },
     "externalGradingUseAws": {
       "type": "boolean",

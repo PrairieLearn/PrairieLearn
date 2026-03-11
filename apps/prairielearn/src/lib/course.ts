@@ -69,10 +69,10 @@ export async function pullAndUpdateCourse({
     courseId: course.id,
   });
 
-  const gitEnv = {
-    ...process.env,
-    GIT_SSH_COMMAND: config.gitSshCommand,
-  };
+  const gitEnv = process.env;
+  if (config.gitSshCommand != null) {
+    gitEnv.GIT_SSH_COMMAND = config.gitSshCommand;
+  }
 
   const jobPromise = serverJob.execute(async (job) => {
     const { path, branch, repository, commit_hash } = course;
