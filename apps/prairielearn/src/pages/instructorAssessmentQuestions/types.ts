@@ -1,8 +1,15 @@
 import type { Dispatch } from 'react';
 import { z } from 'zod';
 
-import type { StaffAssessmentQuestionRow } from '../../lib/assessment-question.shared.js';
-import type { EnumAssessmentType } from '../../lib/db-types.js';
+import type { EditorQuestionMetadata } from '../../lib/assessment-question.shared.js';
+import type {
+  Assessment,
+  AssessmentSet,
+  EnumAssessmentType,
+  Question,
+  Tag,
+  Topic,
+} from '../../lib/db-types.js';
 import {
   QuestionAlternativeJsonSchema,
   ZoneAssessmentJsonSchema,
@@ -59,13 +66,13 @@ export type ZoneAssessmentForm = z.infer<typeof ZoneAssessmentFormSchema>;
  * Assessment data for the question picker, including fields needed for grouping.
  */
 export interface AssessmentForPicker {
-  assessment_id: string;
+  assessment_id: Assessment['id'];
   label: string;
-  color: string;
-  assessment_set_abbreviation?: string;
-  assessment_set_name?: string;
-  assessment_set_color?: string;
-  assessment_number?: string;
+  color: AssessmentSet['color'];
+  assessment_set_abbreviation?: AssessmentSet['abbreviation'];
+  assessment_set_name?: AssessmentSet['name'];
+  assessment_set_color?: AssessmentSet['color'];
+  assessment_number?: Assessment['number'];
 }
 
 /**
@@ -73,11 +80,12 @@ export interface AssessmentForPicker {
  * Only includes fields needed for display and selection.
  */
 export interface CourseQuestionForPicker {
-  id: string;
+  id: Question['id'];
   qid: string;
-  title: string;
-  topic: { id: string; name: string; color: string };
-  tags: { id: string; name: string; color: string }[] | null;
+  title: Question['title'];
+  grading_method: Question['grading_method'];
+  topic: Pick<Topic, 'id' | 'name' | 'color'>;
+  tags: Pick<Tag, 'id' | 'name' | 'color'>[] | null;
   assessments: AssessmentForPicker[] | null;
 }
 
@@ -87,7 +95,7 @@ export interface CourseQuestionForPicker {
  */
 export interface EditorState {
   zones: ZoneAssessmentForm[];
-  questionMetadata: Partial<Record<string, StaffAssessmentQuestionRow>>;
+  questionMetadata: Partial<Record<string, EditorQuestionMetadata>>;
   /** Tracks which alternative groups are collapsed by their trackingId */
   collapsedGroups: Set<string>;
   /** Tracks which zones are collapsed by their trackingId */
@@ -103,8 +111,14 @@ export type EditorAction =
   | {
       type: 'ADD_QUESTION';
       zoneTrackingId: string;
+      question: ZoneQuestionBlockForm & { id: string };
+      questionData: EditorQuestionMetadata;
+    }
+  | {
+      type: 'ADD_QUESTION';
+      zoneTrackingId: string;
       question: ZoneQuestionBlockForm;
-      questionData?: StaffAssessmentQuestionRow;
+      questionData?: undefined;
     }
   | {
       type: 'UPDATE_QUESTION';
@@ -155,7 +169,7 @@ export type EditorAction =
       type: 'UPDATE_QUESTION_METADATA';
       questionId: string;
       oldQuestionId?: string;
-      questionData: StaffAssessmentQuestionRow;
+      questionData: EditorQuestionMetadata;
     }
   | {
       type: 'TOGGLE_GROUP_COLLAPSE';
@@ -172,7 +186,7 @@ export type EditorAction =
       type: 'ADD_ALTERNATIVE';
       altGroupTrackingId: string;
       alternative: QuestionAlternativeForm;
-      questionData?: StaffAssessmentQuestionRow;
+      questionData?: EditorQuestionMetadata;
     }
   | {
       type: 'REORDER_ALTERNATIVE';
@@ -244,7 +258,7 @@ export interface TreeState {
   editMode: boolean;
   viewType: ViewType;
   selectedItem: SelectedItem;
-  questionMetadata: Partial<Record<string, StaffAssessmentQuestionRow>>;
+  questionMetadata: Partial<Record<string, EditorQuestionMetadata>>;
   collapsedGroups: Set<string>;
   collapsedZones: Set<string>;
   changeTracking: ChangeTrackingResult;
@@ -258,6 +272,7 @@ export interface TreeState {
  */
 export interface DetailState {
   editMode: boolean;
+  hasCourseInstancePermissionEdit: boolean;
   assessmentType: EnumAssessmentType;
   constantQuestionValue: boolean;
   assessmentDefaults: AssessmentAdvancedDefaults;

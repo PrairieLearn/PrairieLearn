@@ -6,20 +6,23 @@
   "module": "AnotherModule",
   "number": "2",
   "comment": "this is a group activity, with minimum size of 1 and maximum size of 5, where students can self-assign to groups.",
-  "groupWork": true,
-  "groupMinSize": 1,
-  "groupMaxSize": 5,
-  "studentGroupCreate": true,
-  "studentGroupJoin": true,
-  "studentGroupLeave": true,
+  "groups": {
+    "minMembers": 1,
+    "maxMembers": 5,
+    "studentPermissions": {
+      "canCreateGroup": true,
+      "canJoinGroup": true,
+      "canLeaveGroup": true
+    }
+  },
   "allowAccess": [{ "credit": 100 }],
   "zones": [
     {
       "title": " How Markov chains work?",
       "questions": [
-        { "id": "demo/annotated/MarkovChainGroupActivity/MarkovChains-Intro", "points": 1 },
-        { "id": "demo/annotated/MarkovChainGroupActivity/MarkovChains-Gambler", "points": 1 },
-        { "id": "demo/annotated/MarkovChainGroupActivity/MarkovChains-PageRank", "points": 1 }
+        { "id": "demo/annotated/MarkovChainGroupActivity/MarkovChains-Intro", "autoPoints": 1 },
+        { "id": "demo/annotated/MarkovChainGroupActivity/MarkovChains-Gambler", "autoPoints": 1 },
+        { "id": "demo/annotated/MarkovChainGroupActivity/MarkovChains-PageRank", "autoPoints": 1 }
       ]
     }
   ],
