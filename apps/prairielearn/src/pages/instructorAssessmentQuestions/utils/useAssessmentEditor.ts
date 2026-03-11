@@ -533,8 +533,9 @@ export function createEditorReducer(initialState: EditorState) {
           1,
         );
 
-        // Convert to standalone question block, stripping undefined inherited values
-        const newQuestion = alternativeToQuestionBlock(removedAlt);
+        // Convert to standalone question block, inheriting any point fields
+        // from the parent alt group so the extracted question is valid.
+        const newQuestion = alternativeToQuestionBlock(removedAlt, fromResult.question);
 
         // Find insertion point (uses trackingIds, so unaffected by shrinkage)
         let insertIndex: number;
