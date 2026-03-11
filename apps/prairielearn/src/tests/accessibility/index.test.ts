@@ -436,6 +436,7 @@ describe('accessibility', () => {
     assert.isNotNull(enrollment);
 
     await features.enable('question-sharing');
+    await features.enable('ai-grading');
 
     routeParams = {
       ...STATIC_ROUTE_PARAMS,

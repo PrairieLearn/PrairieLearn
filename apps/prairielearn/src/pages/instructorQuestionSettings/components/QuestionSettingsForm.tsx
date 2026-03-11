@@ -73,7 +73,7 @@ interface QuestionSettingsFormValues {
   workspace_environment: string;
   workspace_enable_networking: boolean;
   workspace_rewrite_url: boolean;
-  external_grading_enabled: boolean;
+  external_grading_ui_enabled: boolean;
   external_grading_image: string;
   external_grading_entrypoint: string;
   external_grading_files: string;
@@ -82,7 +82,7 @@ interface QuestionSettingsFormValues {
   external_grading_environment: string;
 }
 
-export function validateJson(value: string): string | true {
+function validateJson(value: string): string | true {
   if (!value || value.trim() === '' || value.trim() === '{}') return true;
   try {
     const parsed = JSON.parse(value);
@@ -140,7 +140,8 @@ export const QuestionSettingsForm = ({
         : '{}',
     workspace_enable_networking: question.workspace_enable_networking ?? false,
     workspace_rewrite_url: question.workspace_url_rewrite ?? true,
-    external_grading_enabled: !!question.external_grading_image,
+    // The state of the checkbox, defaulting to the presence of an external grading image
+    external_grading_ui_enabled: !!question.external_grading_image,
     external_grading_image: question.external_grading_image ?? '',
     external_grading_entrypoint: question.external_grading_entrypoint ?? '',
     external_grading_files: question.external_grading_files?.join(', ') ?? '',
@@ -168,7 +169,7 @@ export const QuestionSettingsForm = ({
   const selectedTags = watch('tags');
   const selectedGradingMethod = watch('grading_method');
   const workspaceEnabled = watch('workspace_enabled');
-  const externalGradingEnabled = watch('external_grading_enabled');
+  const externalGradingUIEnabled = watch('external_grading_ui_enabled');
 
   const isExternalGrading = selectedGradingMethod === 'External';
 
@@ -377,13 +378,7 @@ export const QuestionSettingsForm = ({
           className="form-select"
           id="grading_method"
           disabled={!canEdit}
-          {...register('grading_method', {
-            onChange: (e) => {
-              if (e.target.value === 'External') {
-                setValue('external_grading_enabled', true, { shouldDirty: true });
-              }
-            },
-          })}
+          {...register('grading_method')}
         >
           <option value="Internal">Internal</option>
           <option value="External">External</option>
@@ -637,6 +632,7 @@ export const QuestionSettingsForm = ({
       </div>
 
       <div className="mb-3">
+        {/* If the grading method is external, you must specify external grading options */}
         {isExternalGrading ? (
           <h4 className="mb-0">External grading</h4>
         ) : (
@@ -645,16 +641,9 @@ export const QuestionSettingsForm = ({
               className="form-check-input"
               type="checkbox"
               id="externalGradingEnabled"
-              checked={externalGradingEnabled}
+              checked={externalGradingUIEnabled}
               disabled={!canEdit}
-              onChange={() => {
-                if (externalGradingEnabled) {
-                  clearErrors(['external_grading_image', 'external_grading_environment']);
-                }
-                setValue('external_grading_enabled', !externalGradingEnabled, {
-                  shouldDirty: true,
-                });
-              }}
+              {...register('external_grading_ui_enabled')}
             />
             <label className="form-check-label h4 mb-0" htmlFor="externalGradingEnabled">
               External grading
@@ -668,7 +657,7 @@ export const QuestionSettingsForm = ({
           </a>
           .
         </small>
-        {(isExternalGrading || externalGradingEnabled) && (
+        {(isExternalGrading || externalGradingUIEnabled) && (
           <div className={clsx('mt-3', !isExternalGrading && 'ps-4')} id="external-grading-options">
             <div className="mb-3">
               <label className="form-label" htmlFor="external_grading_image">
@@ -684,7 +673,7 @@ export const QuestionSettingsForm = ({
                   errors.external_grading_image ? 'external_grading_image-error' : undefined
                 }
                 {...register('external_grading_image', {
-                  required: externalGradingEnabled && 'Image is required for external grading',
+                  required: 'Image is required for external grading',
                 })}
               />
               {errors.external_grading_image && (

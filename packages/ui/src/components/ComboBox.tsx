@@ -44,7 +44,10 @@ type ManagedAriaProps =
   | 'menuTrigger'
   | 'allowsEmptyCollection'
   | 'isDisabled'
-  | 'isInvalid';
+  | 'isInvalid'
+  | 'value'
+  | 'defaultValue'
+  | 'onChange';
 
 export interface ComboBoxProps<T = void> extends Omit<
   AriaComboBoxProps<ComboBoxItem<T>>,

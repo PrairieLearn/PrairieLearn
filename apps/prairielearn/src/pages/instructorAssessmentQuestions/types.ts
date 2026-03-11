@@ -1,12 +1,31 @@
+import type { Dispatch } from 'react';
 import { z } from 'zod';
 
-import type { StaffAssessmentQuestionRow } from '../../lib/assessment-question.shared.js';
-import type { EnumAssessmentType } from '../../lib/db-types.js';
+import type { EditorQuestionMetadata } from '../../lib/assessment-question.shared.js';
+import type {
+  Assessment,
+  AssessmentSet,
+  EnumAssessmentType,
+  Question,
+  Tag,
+  Topic,
+} from '../../lib/db-types.js';
 import {
   QuestionAlternativeJsonSchema,
   ZoneAssessmentJsonSchema,
   ZoneQuestionBlockJsonSchema,
 } from '../../schemas/infoAssessment.js';
+
+import type { AssessmentAdvancedDefaults } from './utils/formHelpers.js';
+
+/**
+ * Describes which items are new vs modified compared to the initial state.
+ * Used to show colored dot indicators in the tree view.
+ */
+export interface ChangeTrackingResult {
+  newIds: Set<string>;
+  modifiedIds: Set<string>;
+}
 
 /**
  * Branded UUID type for stable drag-and-drop identity.
@@ -47,13 +66,13 @@ export type ZoneAssessmentForm = z.infer<typeof ZoneAssessmentFormSchema>;
  * Assessment data for the question picker, including fields needed for grouping.
  */
 export interface AssessmentForPicker {
-  assessment_id: string;
+  assessment_id: Assessment['id'];
   label: string;
-  color: string;
-  assessment_set_abbreviation?: string;
-  assessment_set_name?: string;
-  assessment_set_color?: string;
-  assessment_number?: string;
+  color: AssessmentSet['color'];
+  assessment_set_abbreviation?: AssessmentSet['abbreviation'];
+  assessment_set_name?: AssessmentSet['name'];
+  assessment_set_color?: AssessmentSet['color'];
+  assessment_number?: Assessment['number'];
 }
 
 /**
@@ -61,36 +80,13 @@ export interface AssessmentForPicker {
  * Only includes fields needed for display and selection.
  */
 export interface CourseQuestionForPicker {
-  id: string;
+  id: Question['id'];
   qid: string;
-  title: string;
-  topic: { id: string; name: string; color: string };
-  tags: { id: string; name: string; color: string }[] | null;
+  title: Question['title'];
+  grading_method: Question['grading_method'];
+  topic: Pick<Topic, 'id' | 'name' | 'color'>;
+  tags: Pick<Tag, 'id' | 'name' | 'color'>[] | null;
   assessments: AssessmentForPicker[] | null;
-}
-
-/**
- * Shared state passed down through the assessment questions table component tree.
- */
-export interface AssessmentState {
-  questionMetadata: Record<string, StaffAssessmentQuestionRow>;
-  editMode: boolean;
-  urlPrefix: string;
-  hasCoursePermissionPreview: boolean;
-  canEdit: boolean;
-  showAdvanceScorePercCol: boolean;
-  assessmentType: EnumAssessmentType;
-}
-
-/**
- * Computes the number of table columns based on UI state.
- * This is derived from editMode and showAdvanceScorePercCol to avoid synchronization issues.
- */
-export function getTableColumnCount(
-  state: Pick<AssessmentState, 'editMode' | 'showAdvanceScorePercCol'>,
-): number {
-  const baseCols = state.showAdvanceScorePercCol ? 10 : 9;
-  return baseCols + (state.editMode ? 3 : 0);
 }
 
 /**
@@ -99,32 +95,12 @@ export function getTableColumnCount(
  */
 export interface EditorState {
   zones: ZoneAssessmentForm[];
-  questionMetadata: Record<string, StaffAssessmentQuestionRow>;
+  questionMetadata: Partial<Record<string, EditorQuestionMetadata>>;
   /** Tracks which alternative groups are collapsed by their trackingId */
   collapsedGroups: Set<string>;
   /** Tracks which zones are collapsed by their trackingId */
   collapsedZones: Set<string>;
 }
-
-/**
- * Handler for editing a question or alternative in the assessment editor.
- */
-export type HandleEditQuestion = (params: {
-  question: ZoneQuestionBlockForm | QuestionAlternativeForm;
-  zoneQuestionBlock?: ZoneQuestionBlockForm;
-  questionTrackingId: string;
-  /** Only set when editing an alternative within a zone question block */
-  alternativeTrackingId?: string;
-}) => void;
-
-/**
- * Handler for deleting a question or alternative from the assessment.
- */
-export type HandleDeleteQuestion = (
-  questionTrackingId: string,
-  questionId: string,
-  alternativeTrackingId?: string,
-) => void;
 
 /**
  * All possible actions that can modify the editor state.
@@ -135,15 +111,26 @@ export type EditorAction =
   | {
       type: 'ADD_QUESTION';
       zoneTrackingId: string;
+      question: ZoneQuestionBlockForm & { id: string };
+      questionData: EditorQuestionMetadata;
+    }
+  | {
+      type: 'ADD_QUESTION';
+      zoneTrackingId: string;
       question: ZoneQuestionBlockForm;
-      questionData?: StaffAssessmentQuestionRow;
+      questionData?: undefined;
     }
   | {
       type: 'UPDATE_QUESTION';
       questionTrackingId: string;
-      question: Partial<ZoneQuestionBlockForm> | Partial<QuestionAlternativeForm>;
-      /** Only set when updating an alternative within an alternative group */
-      alternativeTrackingId?: string;
+      question: Partial<ZoneQuestionBlockForm>;
+      alternativeTrackingId?: undefined;
+    }
+  | {
+      type: 'UPDATE_QUESTION';
+      questionTrackingId: string;
+      question: Partial<QuestionAlternativeForm>;
+      alternativeTrackingId: string;
     }
   | {
       type: 'DELETE_QUESTION';
@@ -182,7 +169,7 @@ export type EditorAction =
       type: 'UPDATE_QUESTION_METADATA';
       questionId: string;
       oldQuestionId?: string;
-      questionData: StaffAssessmentQuestionRow;
+      questionData: EditorQuestionMetadata;
     }
   | {
       type: 'TOGGLE_GROUP_COLLAPSE';
@@ -192,9 +179,128 @@ export type EditorAction =
       type: 'TOGGLE_ZONE_COLLAPSE';
       trackingId: string;
     }
-  | { type: 'EXPAND_ALL' }
-  | { type: 'COLLAPSE_ALL' }
+  | { type: 'EXPAND_ALL_GROUPS' }
+  | { type: 'COLLAPSE_ALL_GROUPS' }
   | { type: 'RESET' }
+  | {
+      type: 'ADD_ALTERNATIVE';
+      altGroupTrackingId: string;
+      alternative: QuestionAlternativeForm;
+      questionData?: EditorQuestionMetadata;
+    }
+  | {
+      type: 'REORDER_ALTERNATIVE';
+      alternativeTrackingId: string;
+      toAltGroupTrackingId: string;
+      /** trackingId of the alternative to insert before, or null to append at end */
+      beforeAlternativeTrackingId: string | null;
+    }
+  | {
+      type: 'EXTRACT_ALTERNATIVE_TO_QUESTION';
+      alternativeTrackingId: string;
+      toZoneTrackingId: string;
+      /** trackingId of the question to insert before, or null to append at end */
+      beforeQuestionTrackingId: string | null;
+    }
+  | {
+      type: 'MERGE_QUESTION_INTO_ALT_GROUP';
+      questionTrackingId: string;
+      toAltGroupTrackingId: string;
+      /** trackingId of the alternative to insert before, or null to append at end */
+      beforeAlternativeTrackingId: string | null;
+    }
+  | { type: 'REMOVE_QUESTION_BY_QID'; qid: string }
   // Stubbed for future PR - will implement history tracking
   | { type: 'UNDO' }
   | { type: 'REDO' };
+
+/**
+ * Represents the currently selected item in the split-pane editor.
+ * The detail panel renders based on this selection.
+ */
+export type SelectedItem =
+  | { type: 'zone'; zoneTrackingId: string }
+  | { type: 'question'; questionTrackingId: string }
+  | { type: 'alternative'; questionTrackingId: string; alternativeTrackingId: string }
+  | { type: 'altGroup'; questionTrackingId: string }
+  | { type: 'picker'; zoneTrackingId: string; returnToSelection?: SelectedItem }
+  | { type: 'altGroupPicker'; zoneTrackingId: string; altGroupTrackingId?: string }
+  | null;
+
+export type ViewType = 'simple' | 'detailed';
+
+/**
+ * Describes the parent values from which advanced fields can be inherited.
+ */
+export type InheritanceSource = 'zone' | 'group' | 'assessment';
+
+/**
+ * Bundles all callbacks passed through the assessment tree hierarchy.
+ */
+export interface TreeActions {
+  onAddQuestion: (zoneTrackingId: string) => void;
+  onAddAltGroup: (zoneTrackingId: string) => void;
+  onAddToAltGroup: (altGroupTrackingId: string) => void;
+  onDeleteQuestion: (
+    questionTrackingId: string,
+    questionId: string,
+    alternativeTrackingId?: string,
+  ) => void;
+  onDeleteZone: (zoneTrackingId: string) => void;
+  setSelectedItem: (item: SelectedItem) => void;
+  dispatch: Dispatch<EditorAction>;
+}
+
+/**
+ * Bundles shared read-only state passed through the assessment tree hierarchy.
+ */
+export interface TreeState {
+  editMode: boolean;
+  viewType: ViewType;
+  selectedItem: SelectedItem;
+  questionMetadata: Partial<Record<string, EditorQuestionMetadata>>;
+  collapsedGroups: Set<string>;
+  collapsedZones: Set<string>;
+  changeTracking: ChangeTrackingResult;
+  courseInstanceId: string;
+  hasCoursePermissionPreview: boolean;
+  assessmentType: EnumAssessmentType;
+}
+
+/**
+ * Bundles shared read-only state passed through the detail panel hierarchy.
+ */
+export interface DetailState {
+  editMode: boolean;
+  hasCourseInstancePermissionEdit: boolean;
+  assessmentType: EnumAssessmentType;
+  constantQuestionValue: boolean;
+  assessmentDefaults: AssessmentAdvancedDefaults;
+  courseInstanceId: string;
+  courseId: string;
+  hasCoursePermissionPreview: boolean;
+}
+
+/**
+ * Bundles all callbacks used by the detail panel hierarchy.
+ */
+export interface DetailActions {
+  onUpdateZone: (zoneTrackingId: string, zone: Partial<ZoneAssessmentForm>) => void;
+  onUpdateQuestion: (
+    questionTrackingId: string,
+    question: Partial<ZoneQuestionBlockForm> | Partial<QuestionAlternativeForm>,
+    alternativeTrackingId?: string,
+  ) => void;
+  onDeleteQuestion: (
+    questionTrackingId: string,
+    questionId: string,
+    alternativeTrackingId?: string,
+  ) => void;
+  onDeleteZone: (zoneTrackingId: string) => void;
+  onAddToAltGroup: (altGroupTrackingId: string) => void;
+  onQuestionPicked: (qid: string) => void;
+  onPickQuestion: (currentSelection: SelectedItem) => void;
+  onRemoveQuestionByQid: (qid: string) => void;
+  onResetButtonClick: (assessmentQuestionId: string) => void;
+  onFormValidChange: (isValid: boolean) => void;
+}
