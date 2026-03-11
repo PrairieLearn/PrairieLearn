@@ -282,8 +282,8 @@ function CourseInsertForm({
       short_name: '',
       title: '',
       display_timezone: institutions[0]?.display_timezone ?? '',
-      path: '',
-      repository: '',
+      path: `${coursesRoot}/pl-XXX`,
+      repository: 'git@github.com:PrairieLearn/pl-XXX.git',
       branch: courseRepoDefaultBranch,
     },
   });
@@ -296,15 +296,16 @@ function CourseInsertForm({
   });
 
   useEffect(() => {
-    if (!prefixData) return;
+    if (!shortName) return;
+    if (institutionId && !prefixData) return;
     const slug = shortName.replaceAll(' ', '').toLowerCase();
-    const newRepoShortName = prefixData.prefix ? `pl-${prefixData.prefix}-${slug}` : `pl-${slug}`;
+    const newRepoShortName = prefixData?.prefix ? `pl-${prefixData.prefix}-${slug}` : `pl-${slug}`;
     setValue('path', `${coursesRoot}/${newRepoShortName}`);
     setValue(
       'repository',
       getValues('repository').replace(/\/pl-[^/]+\.git$/, `/${newRepoShortName}.git`),
     );
-  }, [prefixData, shortName, coursesRoot, getValues, setValue]);
+  }, [prefixData, shortName, institutionId, coursesRoot, getValues, setValue]);
 
   const selectedInstitution = institutions.find((i) => i.id === institutionId);
   const isDefaultInstitution = selectedInstitution?.short_name === 'Default';
