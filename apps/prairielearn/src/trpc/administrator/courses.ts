@@ -1,7 +1,7 @@
 import { TRPCError } from '@trpc/server';
 import { z } from 'zod';
 
-import { coursePathAvailability, courseRepositoryUrlAvailability } from '../../lib/course.js';
+import { checkCoursePathExists, checkCourseRepositoryUrlExists } from '../../lib/course.js';
 import {
   deleteCourse,
   insertCourse,
@@ -11,13 +11,19 @@ import {
 
 import { requireAdministrator, t } from './trpc-init.js';
 
-const insertCourseMutation = t.procedure
+const insert = t.procedure
   .use(requireAdministrator)
   .input(
     z.object({
       institutionId: z.string().min(1, 'Institution is required'),
-      shortName: z.string().min(1, 'Short name is required'),
-      title: z.string().min(1, 'Title is required'),
+      shortName: z
+        .string()
+        .min(1, 'Short name is required')
+        .regex(
+          /^[A-Z]+ [A-Z0-9]+$/,
+          'The course rubric and number should be a series of letters, followed by a space, followed by a series of numbers and/or letters.',
+        ),
+      title: z.string().min(1, 'Title is required').max(75, 'Title must be at most 75 characters'),
       displayTimezone: z.string().min(1, 'Timezone is required'),
       path: z.string().min(1, 'Path is required'),
       repository: z.string().min(1, 'Repository is required'),
@@ -25,7 +31,7 @@ const insertCourseMutation = t.procedure
     }),
   )
   .mutation(async ({ input, ctx }) => {
-    const repoExists = await courseRepositoryUrlAvailability(input.repository);
+    const repoExists = await checkCourseRepositoryUrlExists(input.repository);
     if (repoExists) {
       throw new TRPCError({
         code: 'BAD_REQUEST',
@@ -33,7 +39,7 @@ const insertCourseMutation = t.procedure
       });
     }
 
-    const pathExists = await coursePathAvailability(input.path);
+    const pathExists = await checkCoursePathExists(input.path);
     if (pathExists) {
       throw new TRPCError({
         code: 'BAD_REQUEST',
@@ -53,7 +59,7 @@ const insertCourseMutation = t.procedure
     });
   });
 
-const deleteCourseMutation = t.procedure
+const deleteCourseProcedure = t.procedure
   .use(requireAdministrator)
   .input(
     z.object({
@@ -76,7 +82,7 @@ const deleteCourseMutation = t.procedure
     });
   });
 
-const updateCourseColumnMutation = t.procedure
+const updateColumn = t.procedure
   .use(requireAdministrator)
   .input(
     z.object({
@@ -102,7 +108,7 @@ const updateCourseColumnMutation = t.procedure
   });
 
 export const administratorCoursesRouter = t.router({
-  insertCourseMutation,
-  deleteCourseMutation,
-  updateCourseColumnMutation,
+  insert,
+  delete: deleteCourseProcedure,
+  updateColumn,
 });

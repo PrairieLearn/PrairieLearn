@@ -47,7 +47,7 @@ describe('Course requests', { timeout: 60_000 }, function () {
 
   describe('deny a course request', () => {
     test.sequential('deny the course request', async () => {
-      await trpcClient.courseRequests.denyCourseRequestMutation.mutate({ courseRequestId });
+      await trpcClient.courseRequests.deny.mutate({ courseRequestId });
     });
 
     test.sequential('verify status is denied in database', async () => {
@@ -125,7 +125,7 @@ describe('Course requests', { timeout: 60_000 }, function () {
     });
 
     test.sequential('deny the second request', async () => {
-      await trpcClient.courseRequests.denyCourseRequestMutation.mutate({
+      await trpcClient.courseRequests.deny.mutate({
         courseRequestId: secondRequestId,
       });
     });
@@ -182,7 +182,7 @@ describe('Course requests', { timeout: 60_000 }, function () {
     });
 
     test.sequential('deny the pending request', async () => {
-      await trpcClient.courseRequests.denyCourseRequestMutation.mutate({
+      await trpcClient.courseRequests.deny.mutate({
         courseRequestId: pendingRequestId,
       });
     });

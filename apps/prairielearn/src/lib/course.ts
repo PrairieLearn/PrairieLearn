@@ -206,7 +206,8 @@ export async function pullAndUpdateCourse({
   return { jobSequenceId: serverJob.jobSequenceId, jobPromise };
 }
 
-export async function courseRepositoryAvailability(repoName: string) {
+export async function checkCourseRepositoryExists(repoName: string) {
+  // Escape SQL LIKE wildcards so they are matched literally.
   const escapedRepoName = repoName.replaceAll('%', '\\%').replaceAll('_', '\\_');
   const result = await sqldb.queryScalar(
     sql.exists_by_course_request_repository_name,
@@ -233,13 +234,14 @@ function extractRepoSuffix(repository: string): string | null {
   return null;
 }
 
-export async function courseRepositoryUrlAvailability(repository: string) {
+export async function checkCourseRepositoryUrlExists(repository: string) {
   const suffix = extractRepoSuffix(repository);
   if (suffix == null) {
     // Fall back to exact match if we can't parse the URL.
     return await sqldb.queryScalar(sql.exists_by_course_repository, { repository }, z.boolean());
   }
 
+  // Escape SQL LIKE wildcards so they are matched literally.
   const escapedSuffix = suffix.replaceAll('%', '\\%').replaceAll('_', '\\_');
   return await sqldb.queryScalar(
     sql.exists_by_course_repository_suffix,
@@ -248,7 +250,7 @@ export async function courseRepositoryUrlAvailability(repository: string) {
   );
 }
 
-export async function coursePathAvailability(path: string) {
+export async function checkCoursePathExists(path: string) {
   const result = await sqldb.queryScalar(sql.exists_by_course_path, { path }, z.boolean());
   return result;
 }

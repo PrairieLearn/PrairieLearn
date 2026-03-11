@@ -291,6 +291,7 @@ const updateCourseColumnSqlMap = {
   path: sql.update_course_column_path,
   repository: sql.update_course_column_repository,
   branch: sql.update_course_column_branch,
+  institution_id: sql.update_course_column_institution_id,
 } as const;
 
 export async function updateCourseColumn({
@@ -300,7 +301,14 @@ export async function updateCourseColumn({
   authnUserId,
 }: {
   courseId: string;
-  columnName: 'short_name' | 'title' | 'display_timezone' | 'path' | 'repository' | 'branch';
+  columnName:
+    | 'short_name'
+    | 'title'
+    | 'display_timezone'
+    | 'path'
+    | 'repository'
+    | 'branch'
+    | 'institution_id';
   value: string;
   authnUserId: string;
 }): Promise<Course> {

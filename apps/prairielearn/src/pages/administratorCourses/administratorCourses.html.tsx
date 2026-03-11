@@ -73,7 +73,6 @@ export function AdministratorCourses({
             rows={courseRequests}
             institutions={institutions}
             coursesRoot={coursesRoot}
-            trpcCsrfToken={trpcCsrfToken}
             urlPrefix={urlPrefix}
             showAll={false}
           />
@@ -198,7 +197,7 @@ function CourseDeleteForm({
   onCancel: () => void;
 }) {
   const trpc = useTRPC();
-  const mutation = useMutation(trpc.courses.deleteCourseMutation.mutationOptions());
+  const mutation = useMutation(trpc.courses.delete.mutationOptions());
 
   const {
     register,
@@ -267,7 +266,7 @@ function CourseInsertForm({
   onCancel: () => void;
 }) {
   const trpc = useTRPC();
-  const mutation = useMutation(trpc.courses.insertCourseMutation.mutationOptions());
+  const mutation = useMutation(trpc.courses.insert.mutationOptions());
 
   const {
     register,
@@ -280,11 +279,11 @@ function CourseInsertForm({
     mode: 'onSubmit',
     defaultValues: {
       institution_id: '',
-      short_name: 'XC 101',
-      title: 'Template course title',
+      short_name: '',
+      title: '',
       display_timezone: institutions[0]?.display_timezone ?? '',
-      path: `${coursesRoot}/pl-XXX`,
-      repository: 'git@github.com:PrairieLearn/pl-XXX.git',
+      path: '',
+      repository: '',
       branch: courseRepoDefaultBranch,
     },
   });
@@ -310,7 +309,7 @@ function CourseInsertForm({
   const selectedInstitution = institutions.find((i) => i.id === institutionId);
   const isDefaultInstitution = selectedInstitution?.short_name === 'Default';
 
-  const onSubmit = async (data: InsertCourseFormData) => {
+  const onSubmit = (data: InsertCourseFormData) => {
     mutation.mutate(
       {
         title: data.title,
@@ -333,11 +332,7 @@ function CourseInsertForm({
         </label>
         <select
           id="courseAddInstitution"
-          className={clsx(
-            'form-select',
-            selectedInstitution && isDefaultInstitution && 'is-warning',
-            errors.institution_id && 'is-invalid',
-          )}
+          className={clsx('form-select', errors.institution_id && 'is-invalid')}
           aria-invalid={errors.institution_id ? true : undefined}
           aria-errormessage={errors.institution_id ? 'courseAddInstitution-error' : undefined}
           {...register('institution_id', {
@@ -382,7 +377,14 @@ function CourseInsertForm({
           placeholder="XC 101"
           aria-invalid={errors.short_name ? true : undefined}
           aria-errormessage={errors.short_name ? 'courseAddInputShortName-error' : undefined}
-          {...register('short_name', { required: 'Enter a short name' })}
+          {...register('short_name', {
+            required: 'Enter a short name',
+            pattern: {
+              value: /^[A-Z]+ [A-Z0-9]+$/,
+              message:
+                'The course rubric and number should be a series of letters, followed by a space, followed by a series of numbers and/or letters.',
+            },
+          })}
         />
         {errors.short_name && (
           <div id="courseAddInputShortName-error" className="invalid-feedback">
@@ -401,7 +403,11 @@ function CourseInsertForm({
           placeholder="Template course title"
           aria-invalid={errors.title ? true : undefined}
           aria-errormessage={errors.title ? 'courseAddInputTitle-error' : undefined}
-          {...register('title', { required: 'Enter a title' })}
+          maxLength={75}
+          {...register('title', {
+            required: 'Enter a title',
+            maxLength: { value: 75, message: 'Title must be at most 75 characters' },
+          })}
         />
         {errors.title && (
           <div id="courseAddInputTitle-error" className="invalid-feedback">
@@ -435,6 +441,7 @@ function CourseInsertForm({
           type="text"
           className={clsx('form-control', errors.path && 'is-invalid')}
           id="courseAddInputPath"
+          placeholder="/data1/courses/pl-XXX"
           aria-invalid={errors.path ? true : undefined}
           aria-errormessage={errors.path ? 'courseAddInputPath-error' : undefined}
           {...register('path', { required: 'Enter a path' })}
@@ -453,6 +460,7 @@ function CourseInsertForm({
           type="text"
           className={clsx('form-control', errors.repository && 'is-invalid')}
           id="courseAddInputRepository"
+          placeholder="git@github.com:PrairieLearn/pl-XXX.git"
           aria-invalid={errors.repository ? true : undefined}
           aria-errormessage={errors.repository ? 'courseAddInputRepository-error' : undefined}
           {...register('repository', { required: 'Enter a repository' })}
@@ -560,7 +568,7 @@ function CourseUpdateColumnForm({
   onCancel: () => void;
 }) {
   const trpc = useTRPC();
-  const mutation = useMutation(trpc.courses.updateCourseColumnMutation.mutationOptions());
+  const mutation = useMutation(trpc.courses.updateColumn.mutationOptions());
 
   const {
     register,

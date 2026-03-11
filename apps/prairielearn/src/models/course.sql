@@ -154,6 +154,7 @@ SET
   deleted_at = current_timestamp
 WHERE
   id = $course_id
+  AND deleted_at IS NULL
 RETURNING
   *;
 
@@ -203,6 +204,7 @@ SET
   short_name = $value
 WHERE
   id = $course_id
+  AND deleted_at IS NULL
 RETURNING
   *;
 
@@ -212,6 +214,7 @@ SET
   title = $value
 WHERE
   id = $course_id
+  AND deleted_at IS NULL
 RETURNING
   *;
 
@@ -221,6 +224,7 @@ SET
   display_timezone = $value
 WHERE
   id = $course_id
+  AND deleted_at IS NULL
 RETURNING
   *;
 
@@ -230,6 +234,7 @@ SET
   path = $value
 WHERE
   id = $course_id
+  AND deleted_at IS NULL
 RETURNING
   *;
 
@@ -239,6 +244,7 @@ SET
   repository = $value
 WHERE
   id = $course_id
+  AND deleted_at IS NULL
 RETURNING
   *;
 
@@ -248,6 +254,17 @@ SET
   branch = $value
 WHERE
   id = $course_id
+  AND deleted_at IS NULL
+RETURNING
+  *;
+
+-- BLOCK update_course_column_institution_id
+UPDATE courses
+SET
+  institution_id = $value::bigint
+WHERE
+  id = $course_id
+  AND deleted_at IS NULL
 RETURNING
   *;
 

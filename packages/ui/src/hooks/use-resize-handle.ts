@@ -30,12 +30,14 @@ export function useResizeHandle({
     [minWidth, maxWidth],
   );
 
+  const clampedWidth = clamp(width);
+
   const onMouseDown = useCallback(
     (e: React.MouseEvent) => {
       e.preventDefault();
       isDraggingRef.current = true;
       const startX = e.clientX;
-      const startWidth = width;
+      const startWidth = clampedWidth;
       document.body.classList.add('user-select-none');
 
       const onMouseMove = (ev: MouseEvent) => {
@@ -61,7 +63,7 @@ export function useResizeHandle({
       document.addEventListener('mousemove', onMouseMove);
       document.addEventListener('mouseup', onMouseUp);
     },
-    [width, clamp],
+    [clampedWidth, clamp],
   );
 
   const onKeyDown = useCallback(
@@ -71,12 +73,12 @@ export function useResizeHandle({
         case 'ArrowLeft':
         case 'ArrowUp':
           // Move separator left/up -> right panel grows.
-          newWidth = clamp(width + KEYBOARD_STEP);
+          newWidth = clamp(clampedWidth + KEYBOARD_STEP);
           break;
         case 'ArrowRight':
         case 'ArrowDown':
           // Move separator right/down -> right panel shrinks.
-          newWidth = clamp(width - KEYBOARD_STEP);
+          newWidth = clamp(clampedWidth - KEYBOARD_STEP);
           break;
         case 'Home':
           newWidth = maxWidth;
@@ -90,15 +92,15 @@ export function useResizeHandle({
       e.preventDefault();
       setWidth(newWidth);
     },
-    [width, minWidth, maxWidth, clamp],
+    [clampedWidth, minWidth, maxWidth, clamp],
   );
 
   const range = maxWidth - minWidth;
   // 0 = right panel at max width (separator far left), 100 = right panel at min width (separator far right).
-  const valuenow = range > 0 ? Math.round(((maxWidth - width) / range) * 100) : 0;
+  const valuenow = range > 0 ? Math.round(((maxWidth - clampedWidth) / range) * 100) : 0;
 
   return {
-    width,
+    width: clampedWidth,
     separatorProps: {
       role: 'separator' as const,
       tabIndex: 0,
