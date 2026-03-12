@@ -175,7 +175,6 @@ def test_implicit_complex_rejected_with_no_simplify(a_sub: str) -> None:
     assert "complex number" in data["format_errors"]["test"]
 
 
-
 def test_formula_editor_initial_value_respects_display_log_as_ln(
     monkeypatch: pytest.MonkeyPatch,
 ) -> None:
