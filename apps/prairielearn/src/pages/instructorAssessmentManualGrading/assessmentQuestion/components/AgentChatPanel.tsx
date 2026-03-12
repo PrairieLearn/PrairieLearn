@@ -253,6 +253,19 @@ export function AgentChatPanel({
     [handleSend],
   );
 
+  const handleEditRubric = useCallback(() => {
+    const rubricPanel = document.getElementById('rubric-setting');
+    if (rubricPanel && !rubricPanel.classList.contains('show')) {
+      // Find and click the toggle button to open via Bootstrap collapse.
+      const toggle = document.querySelector<HTMLElement>('[data-bs-target="#rubric-setting"]');
+      toggle?.click();
+    }
+    // Scroll the rubric panel into view.
+    setTimeout(() => {
+      document.getElementById('rubric-setting')?.scrollIntoView({ behavior: 'smooth' });
+    }, 350);
+  }, []);
+
   const isGrading = phase === 'grading';
 
   return (
@@ -366,7 +379,12 @@ export function AgentChatPanel({
         {/* Rubric ready action buttons */}
         {phase === 'rubricReady' && (
           <div className="d-flex gap-2 mb-2">
-            <Button variant="outline-primary" size="sm" className="flex-grow-1">
+            <Button
+              variant="outline-primary"
+              size="sm"
+              className="flex-grow-1"
+              onClick={handleEditRubric}
+            >
               <i className="bi bi-pencil me-1" />
               Edit rubric
             </Button>
