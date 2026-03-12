@@ -4,21 +4,14 @@
   "set": "Homework",
   "number": "17",
   "title": "Question Preferences",
-  "allowAccess": [
-    {
-      "credit": 100
-    }
-  ],
+  "allowAccess": [{ "credit": 100 }],
   "zones": [
     {
       "questions": [
         {
           "id": "questionPreferences",
-          "points": 1,
-          "preferences": {
-            "gravitational_constant": 13,
-            "fired_object": "bowling ball"
-          }
+          "autoPoints": 1,
+          "preferences": { "fired_object": "bowling ball", "gravitational_constant": 13 }
         }
       ]
     }
