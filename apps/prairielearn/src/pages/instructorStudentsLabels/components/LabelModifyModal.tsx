@@ -120,8 +120,14 @@ export function LabelModifyModal({
           setStage({ type: 'confirming', unknownUids: result.unenrolledUids });
           return;
         }
-      } catch {
-        // If the check fails, proceed with the save anyway.
+      } catch (err) {
+        setError('uids', {
+          message:
+            err instanceof Error
+              ? `Failed to validate UIDs: ${err.message}`
+              : 'Failed to validate UIDs',
+        });
+        return;
       }
     }
 

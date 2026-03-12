@@ -271,6 +271,12 @@ const editLabelMutation = t.procedure
             message: 'Label not found in course configuration',
           });
         }
+        if (studentLabels.some((l, i) => i !== labelIndex && l.name === name)) {
+          throw new TRPCError({
+            code: 'BAD_REQUEST',
+            message: 'A label with this name already exists',
+          });
+        }
         studentLabels[labelIndex] = { uuid: studentLabels[labelIndex].uuid, name, color };
         jsonContents.studentLabels = studentLabels;
         return jsonContents;

@@ -33,7 +33,7 @@ export function ExpandableUserList({
   return (
     <div className="d-flex flex-wrap align-items-center gap-2">
       {usersToShow.map((user) => (
-        <span key={user.uid}>
+        <span key={user.enrollment_id}>
           <a
             href={getStudentEnrollmentUrl(courseInstanceId, user.enrollment_id)}
             className="text-decoration-none"

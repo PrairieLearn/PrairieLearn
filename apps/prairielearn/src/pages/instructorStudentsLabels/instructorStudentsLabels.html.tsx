@@ -1,4 +1,4 @@
-import { QueryClient } from '@tanstack/react-query';
+import { QueryClient, useQuery, useQueryClient } from '@tanstack/react-query';
 import { useState } from 'react';
 
 import { useModalState } from '@prairielearn/ui';
@@ -41,17 +41,26 @@ function StudentLabelsCard({
 }: Omit<StudentLabelsCardProps, 'csrfToken'>) {
   const editModal = useModalState<LabelModifyModalData>();
   const deleteModal = useModalState<LabelDeleteModalData>();
-  const [labels, setLabels] = useState<StudentLabelWithUserData[]>(initialLabels);
   const [origHash, setOrigHash] = useState(initialOrigHash);
+  const queryClient = useQueryClient();
+
+  const { data: labels = initialLabels } = useQuery({
+    queryKey: ['student-labels-with-user-data', courseInstanceId],
+    queryFn: async () => {
+      const result = await trpcClient.labels.query();
+      setOrigHash(result.origHash);
+      return result.labels;
+    },
+    staleTime: Infinity,
+    initialData: initialLabels,
+  });
 
   const canEdit = canEditProp && origHash !== null;
 
-  const fetchLabels = async () => {
-    const result = await trpcClient.labels.query();
-    setLabels(result.labels);
-    setOrigHash(result.origHash);
-    return result.labels;
-  };
+  const invalidateLabels = () =>
+    queryClient.invalidateQueries({
+      queryKey: ['student-labels-with-user-data', courseInstanceId],
+    });
 
   const handleEdit = (label: StudentLabelWithUserData) => {
     editModal.showWithData({
@@ -74,21 +83,13 @@ function StudentLabelsCard({
 
   const handleDeleteSuccess = async (newOrigHash: string | null) => {
     setOrigHash(newOrigHash);
-    try {
-      await fetchLabels();
-    } catch {
-      // The delete succeeded; if the refetch fails, the user can refresh the page.
-    }
+    await invalidateLabels();
     deleteModal.hide();
   };
 
   const handleEditSuccess = async (newOrigHash: string | null) => {
     setOrigHash(newOrigHash);
-    try {
-      await fetchLabels();
-    } catch {
-      // The save succeeded; if the refetch fails, the user can refresh the page.
-    }
+    await invalidateLabels();
     editModal.hide();
   };
 
