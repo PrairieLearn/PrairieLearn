@@ -888,7 +888,6 @@ export async function prepare(
         data: {
           params: resultData.params,
           true_answer: resultData.correct_answers,
-          options: resultData.options,
         },
       };
     });
