@@ -394,12 +394,7 @@ class TestExceptions:
 
     @pytest.mark.parametrize("a_sub", IMPLICIT_COMPLEX_CASES)
     def test_not_allowed_implicit_complex_no_simplify(self, a_sub: str) -> None:
-        """Expressions like sqrt(-2) must raise HasComplexError even with simplify_expression=False.
-
-        When simplify_expression=False, evaluateFalse keeps sqrt(-2) as Pow(-2, 1/2)
-        instead of simplifying to sqrt(2)*I. The is_extended_real check in sympy_check
-        ensures these are still caught.
-        """
+        """Expressions like sqrt(-2) must raise HasComplexError even with simplify_expression=False."""
         with pytest.raises(psu.HasComplexError):
             psu.convert_string_to_sympy(
                 a_sub, self.VARIABLES, allow_complex=False, simplify_expression=False
@@ -494,9 +489,6 @@ class TestExceptions:
     def test_implicit_complex_format_error_no_simplify(self, a_sub: str) -> None:
         """validate_string_as_sympy must return a format error for implicitly complex
         expressions like sqrt(-2) even with simplify_expression=False.
-
-        Previously, evaluateFalse kept sqrt(-2) as Pow(-2, 1/2) without I in the
-        tree, so sympy_check didn't detect it as complex and validation passed.
         """
         format_error = psu.validate_string_as_sympy(
             a_sub,

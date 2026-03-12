@@ -150,11 +150,6 @@ def test_parse_without_variables_attribute_with_assumptions() -> None:
 def test_implicit_complex_rejected_with_no_simplify(a_sub: str) -> None:
     """Submitting an implicitly complex expression like sqrt(-2) must produce a
     format error during parse, even when display-simplified-expression is false.
-
-    Previously, evaluateFalse kept sqrt(-2) unevaluated as Pow(-2, 1/2), so the
-    imaginary unit I never appeared in the expression tree and sympy_check didn't
-    detect it. The submission passed parse but then crashed during grading when
-    json_to_sympy re-evaluated with simplification enabled.
     """
     correct_answer = psu.sympy_to_json(sympy.Integer(42))
 
