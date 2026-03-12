@@ -238,6 +238,8 @@ export function PageLayout({
     forcedInitialNavToggleState?: boolean;
     /** Whether or not to show the branded page footer. */
     showFooter?: boolean;
+    /** Whether to hide the context navigation tabs. Useful for full-page takeover patterns. */
+    hideContextNavigation?: boolean;
   };
   /** Include scripts and other additional head content here. */
   headContent?: HtmlSafeString | HtmlSafeString[] | ReactNode;
@@ -257,6 +259,7 @@ export function PageLayout({
     dataAttributes: {},
     enableNavbar: true,
     showFooter: false,
+    hideContextNavigation: false,
     ...options,
   };
 
@@ -402,7 +405,7 @@ export function PageLayout({
                     assessmentSet: resLocals.assessment_set,
                   })
                 : ''}
-              ${showContextNavigation
+              ${showContextNavigation && !resolvedOptions.hideContextNavigation
                 ? ContextNavigation({
                     resLocals,
                     navPage: navContext.page,

@@ -279,6 +279,7 @@ export interface TreeState {
   collapsedZones: Set<string>;
   changeTracking: ChangeTrackingResult;
   courseInstanceId: string;
+  assessmentId: string;
   hasCoursePermissionPreview: boolean;
   assessmentType: EnumAssessmentType;
 }
@@ -293,6 +294,7 @@ export interface DetailState {
   constantQuestionValue: boolean;
   assessmentDefaults: AssessmentAdvancedDefaults;
   courseInstanceId: string;
+  assessmentId: string;
   courseId: string;
   hasCoursePermissionPreview: boolean;
 }

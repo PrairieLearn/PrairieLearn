@@ -66,4 +66,5 @@ export interface TabInfo {
   tabLabel: string;
   htmlSuffix?: (resLocals: UntypedResLocals) => HtmlValue;
   renderCondition?: (resLocals: UntypedResLocals) => boolean;
+  disabledCondition?: (resLocals: UntypedResLocals) => boolean;
 }

@@ -115,6 +115,18 @@ export function getQuestionUrl({
   return `${urlPrefix}/question/${questionId}`;
 }
 
+export function getAssessmentQuestionUrl({
+  courseInstanceId,
+  assessmentQuestionId,
+  questionId,
+}: {
+  courseInstanceId: string;
+  assessmentQuestionId: string;
+  questionId: string;
+}): string {
+  return `/pl/course_instance/${courseInstanceId}/instructor/question/${questionId}?assessment_question_id=${assessmentQuestionId}`;
+}
+
 export function getQuestionCreateUrl(courseInstanceId: string): string {
   return `/pl/course_instance/${courseInstanceId}/instructor/course_admin/questions/create`;
 }

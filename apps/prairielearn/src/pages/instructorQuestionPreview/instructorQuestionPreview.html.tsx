@@ -3,9 +3,17 @@ import assert from 'node:assert';
 import { html, unsafeHtml } from '@prairielearn/html';
 import { run } from '@prairielearn/run';
 
+import { AssessmentQuestionConfigPanel } from '../../components/AssessmentQuestionConfigPanel.js';
+import { BreadcrumbsHtml } from '../../components/Breadcrumbs.js';
 import { InstructorInfoPanel } from '../../components/InstructorInfoPanel.js';
 import { PageLayout } from '../../components/PageLayout.js';
+import { QuestionAssessmentPicker } from '../../components/QuestionAssessmentPicker.js';
 import { QuestionContainer } from '../../components/QuestionContainer.js';
+import type {
+  AssessmentForPicker,
+  AssessmentQuestionContext,
+  NavQuestion,
+} from '../../lib/assessment-question-context.js';
 import { assetPath, compiledScriptTag, nodeModulesAssetPath } from '../../lib/assets.js';
 import { type CopyTarget } from '../../lib/copy-content.js';
 import type { ResLocalsForPage } from '../../lib/res-locals.js';
@@ -20,6 +28,10 @@ export function InstructorQuestionPreview({
   readmeHtml,
   questionCopyTargets,
   resLocals,
+  assessmentQuestionContext,
+  assessmentsList,
+  prevQuestion,
+  nextQuestion,
 }: {
   normalPreviewUrl: string;
   manualGradingPreviewEnabled: boolean;
@@ -30,6 +42,10 @@ export function InstructorQuestionPreview({
   readmeHtml: string;
   questionCopyTargets: CopyTarget[] | null;
   resLocals: ResLocalsForPage<'instructor-question'>;
+  assessmentQuestionContext: AssessmentQuestionContext | null;
+  assessmentsList: AssessmentForPicker[] | null;
+  prevQuestion: NavQuestion | null;
+  nextQuestion: NavQuestion | null;
 }) {
   assert(resLocals.question.qid !== null);
 
@@ -84,6 +100,64 @@ export function InstructorQuestionPreview({
       </style>
     `,
     content: html`
+      ${assessmentQuestionContext
+        ? html`
+            <div class="d-flex align-items-center mb-3">
+              ${BreadcrumbsHtml({
+                items: [
+                  {
+                    label: 'Questions',
+                    href: `${resLocals.urlPrefix}/assessment/${assessmentQuestionContext.assessment.id}/questions`,
+                  },
+                  {
+                    label: `${assessmentQuestionContext.number_in_alternative_group}: ${resLocals.question.title}`,
+                  },
+                ],
+              })}
+
+              <div class="ms-auto d-flex align-items-center gap-1">
+                ${prevQuestion
+                  ? html`
+                      <a
+                        href="${resLocals.urlPrefix}/question/${prevQuestion.question_id}/preview?assessment_question_id=${prevQuestion.id}"
+                        class="btn btn-sm btn-outline-primary"
+                        aria-label="Previous question"
+                      >
+                        <i class="bi bi-chevron-left"></i>
+                      </a>
+                    `
+                  : html`
+                      <button
+                        class="btn btn-sm btn-outline-primary"
+                        disabled
+                        aria-label="Previous question"
+                      >
+                        <i class="bi bi-chevron-left"></i>
+                      </button>
+                    `}
+                ${nextQuestion
+                  ? html`
+                      <a
+                        href="${resLocals.urlPrefix}/question/${nextQuestion.question_id}/preview?assessment_question_id=${nextQuestion.id}"
+                        class="btn btn-sm btn-outline-primary"
+                        aria-label="Next question"
+                      >
+                        <i class="bi bi-chevron-right"></i>
+                      </a>
+                    `
+                  : html`
+                      <button
+                        class="btn btn-sm btn-outline-primary"
+                        disabled
+                        aria-label="Next question"
+                      >
+                        <i class="bi bi-chevron-right"></i>
+                      </button>
+                    `}
+              </div>
+            </div>
+          `
+        : ''}
       ${manualGradingPreviewEnabled
         ? html`
             <div class="alert alert-primary">
@@ -157,16 +231,33 @@ export function InstructorQuestionPreview({
         </div>
 
         <div class="col-lg-3 col-sm-12">
-          <div class="card mb-3">
-            <div class="card-header bg-secondary text-white">
-              <h2>Student view placeholder</h2>
-            </div>
-            <div class="card-body">
-              <div class="d-flex justify-content-center">
-                In student views this area is used for assessment and score info.
-              </div>
-            </div>
-          </div>
+          ${assessmentsList
+            ? QuestionAssessmentPicker({
+                assessments: assessmentsList,
+                selectedAssessmentQuestionId:
+                  assessmentQuestionContext?.assessment_question.id ?? null,
+                currentPath: `question/${resLocals.question.id}/preview`,
+                urlPrefix: resLocals.urlPrefix,
+              })
+            : html`
+                <div class="card mb-3">
+                  <div class="card-header bg-secondary text-white">
+                    <h2>Student view placeholder</h2>
+                  </div>
+                  <div class="card-body">
+                    <div class="d-flex justify-content-center">
+                      In student views this area is used for assessment and score info.
+                    </div>
+                  </div>
+                </div>
+              `}
+          ${assessmentQuestionContext
+            ? AssessmentQuestionConfigPanel({
+                assessment_question: assessmentQuestionContext.assessment_question,
+                assessment: assessmentQuestionContext.assessment,
+                numberInAlternativeGroup: assessmentQuestionContext.number_in_alternative_group,
+              })
+            : ''}
           ${InstructorInfoPanel({
             course: resLocals.course,
             course_instance: resLocals.course_instance,

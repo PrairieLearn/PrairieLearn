@@ -11,6 +11,11 @@ import { markdownToHtml } from '@prairielearn/markdown';
 import { run } from '@prairielearn/run';
 import { IdSchema } from '@prairielearn/zod';
 
+import {
+  loadAssessmentQuestionContext,
+  loadAssessmentsForQuestion,
+  loadNavQuestions,
+} from '../../lib/assessment-question-context.js';
 import { getRuntimeDirectoryForCourse } from '../../lib/chunks.js';
 import { getQuestionCopyTargets } from '../../lib/copy-content.js';
 import { features } from '../../lib/features/index.js';
@@ -30,15 +35,19 @@ const router = Router();
 router.post(
   '/',
   typedAsyncHandler<'instructor-question'>(async (req, res) => {
+    const assessmentQuestionIdParam = req.query.assessment_question_id
+      ? `&assessment_question_id=${IdSchema.parse(req.query.assessment_question_id)}`
+      : '';
+
     if (req.body.__action === 'grade' || req.body.__action === 'save') {
       const variant_id = await processSubmission(req, res);
       res.redirect(
-        `${res.locals.urlPrefix}/question/${res.locals.question.id}/preview/?variant_id=${variant_id}`,
+        `${res.locals.urlPrefix}/question/${res.locals.question.id}/preview/?variant_id=${variant_id}${assessmentQuestionIdParam}`,
       );
     } else if (req.body.__action === 'report_issue') {
       const variant_id = await reportIssueFromForm(req, res);
       res.redirect(
-        `${res.locals.urlPrefix}/question/${res.locals.question.id}/preview/?variant_id=${variant_id}`,
+        `${res.locals.urlPrefix}/question/${res.locals.question.id}/preview/?variant_id=${variant_id}${assessmentQuestionIdParam}`,
       );
     } else {
       throw new error.HttpStatusError(400, `unknown __action: ${req.body.__action}`);
@@ -60,11 +69,43 @@ router.get(
       res.locals.questionRenderContext = 'manual_grading';
     }
 
+    const assessment_question_id = req.query.assessment_question_id
+      ? IdSchema.parse(req.query.assessment_question_id)
+      : null;
+
     const variant_seed = req.query.variant_seed ? z.string().parse(req.query.variant_seed) : null;
     const variant_id = req.query.variant_id ? IdSchema.parse(req.query.variant_id) : null;
     // req.query.variant_id might be undefined, which will generate a new variant
     await getAndRenderVariant(variant_id, variant_seed, res.locals);
     await logPageView('instructorQuestionPreview', req, res);
+
+    const assessmentsList = res.locals.course_instance
+      ? await loadAssessmentsForQuestion(res.locals.question.id, res.locals.course_instance.id)
+      : null;
+
+    const assessmentQuestionContext =
+      assessment_question_id && res.locals.course_instance
+        ? await loadAssessmentQuestionContext(
+            assessment_question_id,
+            res.locals.question.id,
+            res.locals.course_instance.id,
+          )
+        : null;
+
+    const { prevQuestion, nextQuestion } =
+      assessmentQuestionContext && assessment_question_id
+        ? await loadNavQuestions(assessmentQuestionContext.assessment.id, assessment_question_id)
+        : { prevQuestion: null, nextQuestion: null };
+
+    // Set assessment context on res.locals so the navbar tabs can read it
+    // (e.g., to enable/disable the manual grading tab).
+    if (assessmentQuestionContext) {
+      Object.assign(res.locals, {
+        assessment_question: assessmentQuestionContext.assessment_question,
+        assessment: assessmentQuestionContext.assessment,
+      });
+    }
+
     const questionCopyTargets = await getQuestionCopyTargets({
       course: res.locals.course,
       is_administrator: res.locals.is_administrator,
@@ -152,6 +193,10 @@ router.get(
         readmeHtml,
         resLocals: res.locals,
         questionCopyTargets,
+        assessmentQuestionContext,
+        assessmentsList,
+        prevQuestion,
+        nextQuestion,
       }),
     );
   }),

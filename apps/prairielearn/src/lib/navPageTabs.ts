@@ -134,7 +134,7 @@ export function getNavPageTabs() {
         renderCondition: ({ authz_data }) => authz_data.has_course_instance_permission_view,
       },
       {
-        activeSubPage: 'questions',
+        activeSubPage: ['questions', 'assessment_question'],
         urlSuffix: ({ assessment }) => `/assessment/${assessment.id}/questions`,
         iconClasses: 'far fa-file-alt',
         tabLabel: 'Questions',
@@ -228,6 +228,18 @@ export function getNavPageTabs() {
             className: 'ms-2',
           }),
         renderCondition: ({ course, question }) => question.course_id === course.id,
+      },
+      {
+        activeSubPage: 'manual_grading',
+        urlSuffix: (resLocals) => {
+          if (resLocals.assessment && resLocals.assessment_question) {
+            return `/assessment/${resLocals.assessment.id}/manual_grading/assessment_question/${resLocals.assessment_question.id}`;
+          }
+          return '';
+        },
+        iconClasses: 'fas fa-marker',
+        tabLabel: 'Manual grading',
+        disabledCondition: (resLocals) => !resLocals.assessment_question,
       },
     ],
     admin: [

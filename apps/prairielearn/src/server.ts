@@ -965,6 +965,24 @@ export async function initExpress(): Promise<Express> {
     (await import('./pages/instructorFileDownload/instructorFileDownload.js')).default,
   );
 
+  // Redirect old assessment question URLs to the unified question page
+  app.use(
+    '/pl/course_instance/:course_instance_id(\\d+)/instructor/assessment/:assessment_id(\\d+)/assessment_question/:assessment_question_id(\\d+)',
+    [
+      (await import('./middlewares/selectAndAuthzAssessmentQuestion.js')).default,
+      function (req: Request, res: Response) {
+        const questionId = res.locals.question.id;
+        const assessmentQuestionId = req.params.assessment_question_id;
+        // Map sub-paths: /preview, /statistics, or bare → preview
+        const subPath = req.path.replace(/^\//, '') || 'preview';
+        const page = subPath === 'statistics' ? 'statistics' : 'preview';
+        const query = new URLSearchParams(req.query as Record<string, string>);
+        query.set('assessment_question_id', assessmentQuestionId);
+        res.redirect(`${res.locals.urlPrefix}/question/${questionId}/${page}?${query.toString()}`);
+      },
+    ],
+  );
+
   app.use(
     '/pl/course_instance/:course_instance_id(\\d+)/instructor/assessment/:assessment_id(\\d+)/manual_grading/assessment_question/:assessment_question_id(\\d+)',
     [

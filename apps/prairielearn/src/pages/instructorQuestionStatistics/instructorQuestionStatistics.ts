@@ -5,7 +5,14 @@ import { Router } from 'express';
 import { stringifyStream } from '@prairielearn/csv';
 import * as error from '@prairielearn/error';
 import * as sqldb from '@prairielearn/postgres';
+import { IdSchema } from '@prairielearn/zod';
 
+import {
+  loadAssessmentQuestionContext,
+  loadAssessmentsForQuestion,
+  loadNavQuestions,
+} from '../../lib/assessment-question-context.js';
+import { updateAssessmentQuestionStatsForAssessment } from '../../lib/assessment.js';
 import { type ResLocalsForPage, typedAsyncHandler } from '../../lib/res-locals.js';
 import { questionFilenamePrefix } from '../../lib/sanitize-name.js';
 import { STAT_DESCRIPTIONS } from '../shared/assessmentStatDescriptions.js';
@@ -32,17 +39,52 @@ router.get(
     if (res.locals.question.course_id !== res.locals.course.id) {
       throw new error.HttpStatusError(403, 'Access denied');
     }
-    const rows = await sqldb.queryRows(
-      sql.assessment_question_stats,
-      { question_id: res.locals.question.id },
-      AssessmentQuestionStatsRowSchema,
-    );
+
+    const assessmentQuestionId = req.query.assessment_question_id
+      ? IdSchema.parse(req.query.assessment_question_id)
+      : null;
+
+    const [rows, assessmentQuestionContext, assessmentsList] = await Promise.all([
+      sqldb.queryRows(
+        sql.assessment_question_stats,
+        { question_id: res.locals.question.id },
+        AssessmentQuestionStatsRowSchema,
+      ),
+      assessmentQuestionId && res.locals.course_instance
+        ? loadAssessmentQuestionContext(
+            assessmentQuestionId,
+            res.locals.question.id,
+            res.locals.course_instance.id,
+          )
+        : null,
+      res.locals.course_instance
+        ? loadAssessmentsForQuestion(res.locals.question.id, res.locals.course_instance.id)
+        : null,
+    ]);
+
+    const navQuestions =
+      assessmentQuestionContext && assessmentQuestionId
+        ? await loadNavQuestions(assessmentQuestionContext.assessment.id, assessmentQuestionId)
+        : null;
+
+    // Set assessment context on res.locals so the navbar tabs can read it
+    // (e.g., to enable/disable the manual grading tab).
+    if (assessmentQuestionContext) {
+      Object.assign(res.locals, {
+        assessment_question: assessmentQuestionContext.assessment_question,
+        assessment: assessmentQuestionContext.assessment,
+      });
+    }
 
     res.send(
       InstructorQuestionStatistics({
         questionStatsCsvFilename: makeStatsCsvFilename(res.locals),
         rows,
         resLocals: res.locals,
+        assessmentQuestionContext,
+        assessmentsList,
+        prevQuestion: navQuestions?.prevQuestion ?? null,
+        nextQuestion: navQuestions?.nextQuestion ?? null,
       }),
     );
   }),
@@ -121,6 +163,30 @@ router.get(
       await pipeline(cursor.stream(100), stringifier, res);
     } else {
       throw new error.HttpStatusError(404, 'Unknown filename: ' + req.params.filename);
+    }
+  }),
+);
+
+router.post(
+  '/',
+  typedAsyncHandler<'instructor-question'>(async (req, res) => {
+    if (req.body.__action === 'refresh_stats') {
+      const assessmentQuestionId = req.query.assessment_question_id
+        ? IdSchema.parse(req.query.assessment_question_id)
+        : null;
+      if (assessmentQuestionId && res.locals.course_instance) {
+        const context = await loadAssessmentQuestionContext(
+          assessmentQuestionId,
+          res.locals.question.id,
+          res.locals.course_instance.id,
+        );
+        if (context) {
+          await updateAssessmentQuestionStatsForAssessment(context.assessment.id);
+        }
+      }
+      res.redirect(req.originalUrl);
+    } else {
+      throw new error.HttpStatusError(400, `unknown __action: ${req.body.__action}`);
     }
   }),
 );

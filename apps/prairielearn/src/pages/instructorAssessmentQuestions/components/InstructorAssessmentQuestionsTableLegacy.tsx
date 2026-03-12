@@ -43,7 +43,13 @@ function Title({
     </>
   );
   if (hasCoursePermissionPreview) {
-    return <a href={`${urlPrefix}/question/${question.id}/`}>{title}</a>;
+    return (
+      <a
+        href={`${urlPrefix}/assessment/${assessment_question.assessment_id}/assessment_question/${assessment_question.id}`}
+      >
+        {title}
+      </a>
+    );
   }
   return title;
 }

@@ -13,7 +13,7 @@ import { OverlayTrigger } from '@prairielearn/ui';
 
 import { CopyButton } from '../../../../components/CopyButton.js';
 import type { EditorQuestionMetadata } from '../../../../lib/assessment-question.shared.js';
-import { getQuestionUrl } from '../../../../lib/client/url.js';
+import { getAssessmentQuestionUrl, getQuestionUrl } from '../../../../lib/client/url.js';
 import type { EnumAssessmentType } from '../../../../lib/db-types.js';
 import type {
   DetailState,
@@ -309,7 +309,17 @@ export function QuestionDetailPanel({
         <div className="mb-3">
           <div className="fw-semibold mb-1">
             {hasCoursePermissionPreview ? (
-              <a href={getQuestionUrl({ courseInstanceId, questionId: questionData.question.id })}>
+              <a
+                href={
+                  questionData.assessment_question_id
+                    ? getAssessmentQuestionUrl({
+                        courseInstanceId,
+                        assessmentQuestionId: questionData.assessment_question_id,
+                        questionId: questionData.question.id,
+                      })
+                    : getQuestionUrl({ courseInstanceId, questionId: questionData.question.id })
+                }
+              >
                 {questionData.question.title}
               </a>
             ) : (

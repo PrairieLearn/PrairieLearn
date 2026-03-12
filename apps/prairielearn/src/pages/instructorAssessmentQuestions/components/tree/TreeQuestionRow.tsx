@@ -6,7 +6,7 @@ import { OverlayTrigger } from '@prairielearn/ui';
 
 import { CopyButton } from '../../../../components/CopyButton.js';
 import type { EditorQuestionMetadata } from '../../../../lib/assessment-question.shared.js';
-import { getQuestionUrl } from '../../../../lib/client/url.js';
+import { getAssessmentQuestionUrl, getQuestionUrl } from '../../../../lib/client/url.js';
 import type { EnumAssessmentType } from '../../../../lib/db-types.js';
 import type { QuestionAlternativeForm, TreeState, ZoneQuestionBlockForm } from '../../types.js';
 import {
@@ -241,7 +241,15 @@ export function TreeQuestionRow({
             hasCoursePermissionPreview ? (
               <>
                 <a
-                  href={getQuestionUrl({ courseInstanceId, questionId: questionData.question.id })}
+                  href={
+                    questionData.assessment_question_id
+                      ? getAssessmentQuestionUrl({
+                          courseInstanceId,
+                          assessmentQuestionId: questionData.assessment_question_id,
+                          questionId: questionData.question.id,
+                        })
+                      : getQuestionUrl({ courseInstanceId, questionId: questionData.question.id })
+                  }
                   className="link-underline-opacity-0 link-underline-opacity-100-hover text-primary-emphasis"
                   onClick={(e) => e.stopPropagation()}
                 >

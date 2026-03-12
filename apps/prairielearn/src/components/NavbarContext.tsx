@@ -41,9 +41,12 @@ function NavbarTab({
   tabInfo: TabInfo;
 }) {
   const { urlPrefix } = resLocals;
-  const { activeSubPage, iconClasses, tabLabel, htmlSuffix, renderCondition } = tabInfo;
+  const { activeSubPage, iconClasses, tabLabel, htmlSuffix, renderCondition, disabledCondition } =
+    tabInfo;
 
   if (renderCondition != null && !renderCondition(resLocals)) return '';
+
+  const isDisabled = disabledCondition != null && disabledCondition(resLocals);
 
   const urlSuffix =
     typeof tabInfo.urlSuffix === 'function' ? tabInfo.urlSuffix(resLocals) : tabInfo.urlSuffix;
@@ -53,6 +56,16 @@ function NavbarTab({
     (Array.isArray(activeSubPage) && navSubPage != null && activeSubPage.includes(navSubPage))
       ? 'active text-dark'
       : 'text-secondary';
+
+  if (isDisabled) {
+    return html`
+      <li class="nav-item">
+        <span class="nav-link disabled d-flex align-items-center">
+          <i class="me-1 ${iconClasses}"></i>${tabLabel}${htmlSuffix?.(resLocals) || ''}
+        </span>
+      </li>
+    `;
+  }
 
   return html`
     <li class="nav-item">
