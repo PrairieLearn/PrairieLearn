@@ -31,6 +31,7 @@ import {
   EnumQuestionAccessModeSchema,
   type GroupConfig,
   InstanceQuestionSchema,
+  QuestionSchema,
 } from '../../lib/db-types.js';
 import { formatPoints } from '../../lib/format.js';
 import { type GroupInfo, getRoleNamesForUser } from '../../lib/groups.js';
@@ -46,7 +47,7 @@ export const InstanceQuestionRowSchema = InstanceQuestionSchema.extend({
   lockpoint_crossed: z.boolean(),
   lockpoint_crossed_at: DateFromISOString.nullable(),
   lockpoint_crossed_authn_user_uid: z.string().nullable(),
-  question_title: z.string(),
+  question_title: QuestionSchema.shape.title,
   max_points: z.number().nullable(),
   max_manual_points: z.number().nullable(),
   max_auto_points: z.number().nullable(),
@@ -485,7 +486,7 @@ export function StudentAssessmentInstance({
                             rowLabelText:
                               resLocals.assessment.type === 'Exam'
                                 ? `Question ${instance_question_row.question_number}`
-                                : instance_question_row.question_title
+                                : instance_question_row.question_title?.trim()
                                   ? `${instance_question_row.question_number}. ${instance_question_row.question_title}`
                                   : instance_question_row.question_number,
                           })}
