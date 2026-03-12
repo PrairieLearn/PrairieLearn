@@ -156,7 +156,11 @@ export async function selectRubricData({
   submission,
 }: {
   assessment_question?: AssessmentQuestion | null;
-  submission?: Submission | SubmissionForRender | null;
+  submission?:
+    | Submission
+    | SubmissionForRender
+    | Pick<Submission, 'true_answer' | 'params' | 'submitted_answer'>
+    | null;
 }): Promise<RubricData | null> {
   // If there is no assessment question (e.g., in question preview), there is no rubric
   if (!assessment_question?.manual_rubric_id) return null;

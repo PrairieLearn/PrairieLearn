@@ -1,4 +1,4 @@
-import { type inferRouterOutputs, TRPCError, initTRPC } from '@trpc/server';
+import { TRPCError, type inferRouterOutputs, initTRPC } from '@trpc/server';
 import type { CreateExpressContextOptions } from '@trpc/server/adapters/express';
 import mustache from 'mustache';
 import superjson from 'superjson';
@@ -12,7 +12,6 @@ import { IdSchema } from '@prairielearn/zod';
 
 import { calculateAiGradingStats } from '../../../ee/lib/ai-grading/ai-grading-stats.js';
 import {
-  containsImageCapture,
   selectLastSubmissionId,
   selectRubricGradingItems,
 } from '../../../ee/lib/ai-grading/ai-grading-util.js';
@@ -39,9 +38,7 @@ import { selectUserById } from '../../../models/user.js';
 
 import { GradingJobDataSchema } from './instanceQuestion.html.js';
 
-const sql = sqldb.loadSqlEquiv(
-  new URL('./instanceQuestion.sql', import.meta.url).pathname.replace(/\.ts$/, ''),
-);
+const sql = sqldb.loadSqlEquiv(new URL('instanceQuestion.ts', import.meta.url).href);
 
 export function createContext({ res }: CreateExpressContextOptions) {
   const locals = res.locals as ResLocalsForPage<'instructor-instance-question'>;
@@ -128,7 +125,7 @@ const pageDataQuery = t.procedure
       };
     });
 
-    // Fetch rubric data
+    // selectRubricData only uses true_answer, params, and submitted_answer
     const rubricData = await manualGrading.selectRubricData({
       assessment_question,
       submission: {
@@ -145,10 +142,7 @@ const pageDataQuery = t.procedure
       requiredRole: ['Student Data Viewer'],
     });
 
-    // Fetch assigned grader and last grader names
-    const assignedGrader = instance_question.assigned_grader
-      ? await selectUserById(instance_question.assigned_grader)
-      : null;
+    // Fetch last grader name
     const lastGrader = instance_question.last_grader
       ? await selectUserById(instance_question.last_grader)
       : null;
@@ -334,8 +328,7 @@ const pageDataQuery = t.procedure
     const manual_points = instance_question.manual_points ?? 0;
     const points = instance_question.points ?? 0;
 
-    const effectiveShowSubmissionsAssignedToMeOnly =
-      !authz_data.has_course_instance_permission_edit ? false : true;
+    const effectiveShowSubmissionsAssignedToMeOnly = authz_data.has_course_instance_permission_edit;
 
     return {
       rubricData,
@@ -362,11 +355,10 @@ const pageDataQuery = t.procedure
       autoPoints: auto_points,
       manualPoints: manual_points,
       totalPoints: points,
-      submissionFeedback:
-        (submissionAndVariant.submission_feedback as Record<string, any> | null)?.manual ?? null,
+      submissionFeedback: submissionAndVariant.submission_feedback?.manual ?? null,
       rubricGrading,
       openIssues,
-      graders: graders?.map((g) => StaffUserSchema.parse(g)) ?? null,
+      graders: graders.map((g) => StaffUserSchema.parse(g)),
       aiGradingInfo,
       hasEditPermission: authz_data.has_course_instance_permission_edit,
       showInstanceQuestionGroup: instanceQuestionGroupsExist && aiGradingMode,

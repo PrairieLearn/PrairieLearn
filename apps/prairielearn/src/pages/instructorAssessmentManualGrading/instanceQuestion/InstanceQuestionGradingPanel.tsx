@@ -401,7 +401,6 @@ function RubricInputSection({
                     type="number"
                     step="any"
                     className="form-control"
-                    name="score_manual_adjust_points"
                     value={adjustPoints || ''}
                     disabled={disabled}
                     onChange={(e) => onAdjustPointsChange(Number(e.target.value), 'points')}
@@ -414,7 +413,6 @@ function RubricInputSection({
                     type="number"
                     step="any"
                     className="form-control"
-                    name="score_manual_adjust_percent"
                     value={adjustPercentage || ''}
                     disabled={disabled}
                     onChange={(e) => onAdjustPointsChange(Number(e.target.value), 'percentage')}
@@ -655,21 +653,28 @@ function GradingForm({
     instance_question_group_name: string;
     instance_question_group_description: string;
   }) => {
-    await fetch(`${instanceQuestionId}/manual_instance_question_group`, {
-      method: 'PUT',
-      headers: { 'Content-Type': 'application/json' },
-      body: JSON.stringify({ manualInstanceQuestionGroupId: group.id }),
-    });
+    const previousGroup = selectedGroup;
+    const newGroup = group.id
+      ? {
+          id: group.id,
+          assessment_question_id: '',
+          instance_question_group_name: group.instance_question_group_name,
+          instance_question_group_description: group.instance_question_group_description,
+        }
+      : null;
+    setSelectedGroup(newGroup);
 
-    if (group.id) {
-      setSelectedGroup({
-        id: group.id,
-        assessment_question_id: '',
-        instance_question_group_name: group.instance_question_group_name,
-        instance_question_group_description: group.instance_question_group_description,
+    try {
+      const response = await fetch(`${instanceQuestionId}/manual_instance_question_group`, {
+        method: 'PUT',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ manualInstanceQuestionGroupId: group.id }),
       });
-    } else {
-      setSelectedGroup(null);
+      if (!response.ok) {
+        throw new Error(`Failed to update group: ${response.statusText}`);
+      }
+    } catch {
+      setSelectedGroup(previousGroup);
     }
   };
 
@@ -712,13 +717,16 @@ function GradingForm({
       <input type="hidden" name="__csrf_token" value={csrfToken} />
       <input type="hidden" name="modified_at" value={modifiedAt} />
       <input type="hidden" name="submission_id" value={submissionId} />
-      {/* Hidden input for computed manual points when rubric is active */}
+      {/* Hidden inputs for computed values when rubric is active */}
       {rubricData && (
-        <input
-          type="hidden"
-          name="score_manual_points"
-          value={roundPoints(effectiveManualPoints)}
-        />
+        <>
+          <input
+            type="hidden"
+            name="score_manual_points"
+            value={roundPoints(effectiveManualPoints)}
+          />
+          <input type="hidden" name="score_manual_adjust_points" value={adjustPoints || ''} />
+        </>
       )}
       <ul className="list-group list-group-flush">
         {maxPoints > 0 && (

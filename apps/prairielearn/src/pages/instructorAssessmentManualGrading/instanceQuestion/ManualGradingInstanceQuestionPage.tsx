@@ -1,75 +1,21 @@
+import { QueryClient, useQuery, useQueryClient } from '@tanstack/react-query';
 import { useCallback, useState } from 'react';
 
 import { RubricSettings } from '../../../components/RubricSettings.js';
-import type {
-  AiGradingGeneralStats,
-  InstanceQuestionAIGradingInfo,
-} from '../../../ee/lib/ai-grading/types.js';
-import type {
-  StaffAssessmentQuestion,
-  StaffInstanceQuestionGroup,
-  StaffUser,
-} from '../../../lib/client/safe-db-types.js';
+import { QueryClientProviderDebug } from '../../../lib/client/tanstackQuery.js';
 import type { RubricData } from '../../../lib/manualGrading.types.js';
 
 import { InstanceQuestionGradingPanel } from './InstanceQuestionGradingPanel.js';
+import type { PageData } from './trpc.js';
+import { createManualGradingInstanceQuestionTrpcClient } from './utils/trpc-client.js';
+import { TRPCProvider, useTRPC } from './utils/trpc-context.js';
 
 interface ManualGradingInstanceQuestionPageProps {
-  /** Shared state (lifted from children) */
-  initialRubricData: RubricData | null;
-  initialModifiedAt: string;
-
-  /** RubricSettings props */
-  rubricSettings: {
-    hasCourseInstancePermissionEdit: boolean;
-    assessmentQuestion: StaffAssessmentQuestion;
-    csrfToken: string;
-    aiGradingStats: AiGradingGeneralStats | null;
-    context: Record<string, any>;
-  };
-
-  /** InstanceQuestionGradingPanel props (minus rubricData/modifiedAt) */
-  gradingPanel: {
-    csrfToken: string;
-    submissionId: string;
-    instanceQuestionId: string;
-    maxAutoPoints: number;
-    maxManualPoints: number;
-    maxPoints: number;
-    autoPoints: number;
-    manualPoints: number;
-    totalPoints: number;
-    submissionFeedback: string | null;
-    rubricGrading: {
-      adjust_points: number;
-      rubric_items: Record<string, { score: number }> | null;
-    } | null;
-    openIssues: { id: string; open: boolean | null }[];
-    graders: StaffUser[] | null;
-    aiGradingInfo?: InstanceQuestionAIGradingInfo;
-    hasEditPermission: boolean;
-    showInstanceQuestionGroup: boolean;
-    selectedInstanceQuestionGroup: StaffInstanceQuestionGroup | null;
-    instanceQuestionGroups?: StaffInstanceQuestionGroup[];
-    skipGradedSubmissions: boolean;
-    showSubmissionsAssignedToMeOnly: boolean;
-    graderGuidelinesRendered: string | null;
-    conflictGradingJob: {
-      grader_name: string | null;
-      auto_points: number | null;
-      manual_points: number | null;
-      score: number | null;
-      feedback: Record<string, any> | null;
-    } | null;
-    conflictGradingJobDateFormatted: string | null;
-    conflictLastGraderName: string | null;
-    existingDateFormatted: string | null;
-    displayTimezone: string;
-  };
-
-  /** Page-level content */
+  initialPageData: PageData;
+  trpcCsrfToken: string;
+  csrfToken: string;
+  hasCourseInstancePermissionEdit: boolean;
   assessmentInstanceOpen: boolean;
-  hasNon100CreditSubmissions: boolean;
   breadcrumb: {
     urlPrefix: string;
     assessmentId: string;
@@ -79,39 +25,78 @@ interface ManualGradingInstanceQuestionPageProps {
   };
   aiGradingEnabled: boolean;
   aiGradingMode: boolean;
-  csrfToken: string;
-
-  /** Pre-rendered HTML strings */
+  skipGradedSubmissions: boolean;
+  showSubmissionsAssignedToMeOnly: boolean;
   questionContainerHtml: string;
   personalNotesPanelHtml: string;
   instructorInfoPanelHtml: string;
 }
 
 export function ManualGradingInstanceQuestionPage({
-  initialRubricData,
-  initialModifiedAt,
-  rubricSettings,
-  gradingPanel,
+  initialPageData,
+  trpcCsrfToken,
+  ...rest
+}: ManualGradingInstanceQuestionPageProps) {
+  const [queryClient] = useState(
+    () =>
+      new QueryClient({
+        defaultOptions: { queries: { refetchOnWindowFocus: false } },
+      }),
+  );
+  const [trpcClient] = useState(() => createManualGradingInstanceQuestionTrpcClient(trpcCsrfToken));
+
+  return (
+    <QueryClientProviderDebug client={queryClient}>
+      <TRPCProvider trpcClient={trpcClient} queryClient={queryClient}>
+        <ManualGradingInstanceQuestionPageInner initialPageData={initialPageData} {...rest} />
+      </TRPCProvider>
+    </QueryClientProviderDebug>
+  );
+}
+
+ManualGradingInstanceQuestionPage.displayName = 'ManualGradingInstanceQuestionPage';
+
+type InnerProps = Omit<ManualGradingInstanceQuestionPageProps, 'trpcCsrfToken'>;
+
+function ManualGradingInstanceQuestionPageInner({
+  initialPageData,
+  csrfToken,
+  hasCourseInstancePermissionEdit,
   assessmentInstanceOpen,
-  hasNon100CreditSubmissions,
   breadcrumb,
   aiGradingEnabled,
   aiGradingMode,
-  csrfToken,
+  skipGradedSubmissions,
+  showSubmissionsAssignedToMeOnly,
   questionContainerHtml,
   personalNotesPanelHtml,
   instructorInfoPanelHtml,
-}: ManualGradingInstanceQuestionPageProps) {
-  const [rubricData, setRubricData] = useState(initialRubricData);
-  const [modifiedAt, setModifiedAt] = useState(initialModifiedAt);
+}: InnerProps) {
+  const trpc = useTRPC();
+  const queryClient = useQueryClient();
+
+  const conflictGradingJobId =
+    typeof window !== 'undefined'
+      ? new URLSearchParams(window.location.search).get('conflict_grading_job_id')
+      : null;
+
+  const { data: pageData } = useQuery({
+    ...trpc.pageData.queryOptions({
+      conflictGradingJobId,
+    }),
+    initialData: initialPageData,
+    staleTime: Infinity,
+  });
+
   const [rubricSettingsOpen, setRubricSettingsOpen] = useState(false);
 
   const handleRubricSaved = useCallback(
-    (data: { rubric_data: RubricData | null; modifiedAt: string }) => {
-      setRubricData(data.rubric_data);
-      setModifiedAt(data.modifiedAt);
+    (_data: { rubric_data: RubricData | null; modifiedAt: string }) => {
+      void queryClient.invalidateQueries({
+        queryKey: trpc.pageData.queryKey({ conflictGradingJobId }),
+      });
     },
-    [],
+    [queryClient, trpc, conflictGradingJobId],
   );
 
   return (
@@ -124,7 +109,7 @@ export function ManualGradingInstanceQuestionPage({
         </div>
       )}
 
-      {hasNon100CreditSubmissions && (
+      {pageData.hasNon100CreditSubmissions && (
         <div className="alert alert-warning" role="alert">
           There are submissions in this assessment instance with credit different than 100%.
           Submitting a manual grade will override any credit limits set for this assessment
@@ -180,12 +165,12 @@ export function ManualGradingInstanceQuestionPage({
 
       <div className="mb-3">
         <RubricSettings
-          hasCourseInstancePermissionEdit={rubricSettings.hasCourseInstancePermissionEdit}
-          assessmentQuestion={rubricSettings.assessmentQuestion}
-          rubricData={rubricData}
-          csrfToken={rubricSettings.csrfToken}
-          aiGradingStats={rubricSettings.aiGradingStats}
-          context={rubricSettings.context}
+          hasCourseInstancePermissionEdit={hasCourseInstancePermissionEdit}
+          assessmentQuestion={pageData.assessmentQuestion}
+          rubricData={pageData.rubricData}
+          csrfToken={csrfToken}
+          aiGradingStats={pageData.aiGradingStats}
+          context={pageData.rubricSettingsContext}
           settingsOpen={rubricSettingsOpen}
           onRubricSaved={handleRubricSaved}
           onToggleSettingsOpen={() => setRubricSettingsOpen((prev) => !prev)}
@@ -202,9 +187,38 @@ export function ManualGradingInstanceQuestionPage({
           <div className="card mb-4 border-info">
             <div className="card-header bg-info">Grading</div>
             <InstanceQuestionGradingPanel
-              {...gradingPanel}
-              rubricData={rubricData}
-              modifiedAt={modifiedAt}
+              csrfToken={csrfToken}
+              modifiedAt={pageData.modifiedAt}
+              submissionId={pageData.submissionId}
+              instanceQuestionId={pageData.instanceQuestionId}
+              maxAutoPoints={pageData.maxAutoPoints}
+              maxManualPoints={pageData.maxManualPoints}
+              maxPoints={pageData.maxPoints}
+              autoPoints={pageData.autoPoints}
+              manualPoints={pageData.manualPoints}
+              totalPoints={pageData.totalPoints}
+              submissionFeedback={pageData.submissionFeedback}
+              rubricData={pageData.rubricData}
+              rubricGrading={pageData.rubricGrading}
+              openIssues={pageData.openIssues}
+              graders={pageData.graders}
+              aiGradingInfo={pageData.aiGradingInfo}
+              hasEditPermission={pageData.hasEditPermission}
+              showInstanceQuestionGroup={pageData.showInstanceQuestionGroup}
+              selectedInstanceQuestionGroup={pageData.selectedInstanceQuestionGroup}
+              instanceQuestionGroups={pageData.instanceQuestionGroups}
+              skipGradedSubmissions={skipGradedSubmissions}
+              showSubmissionsAssignedToMeOnly={
+                pageData.effectiveShowSubmissionsAssignedToMeOnly
+                  ? showSubmissionsAssignedToMeOnly
+                  : false
+              }
+              graderGuidelinesRendered={pageData.graderGuidelinesRendered}
+              conflictGradingJob={pageData.conflictGradingJob}
+              conflictGradingJobDateFormatted={pageData.conflictGradingJobDateFormatted}
+              conflictLastGraderName={pageData.conflictLastGraderName}
+              existingDateFormatted={pageData.existingDateFormatted}
+              displayTimezone={pageData.displayTimezone}
               onToggleRubricSettings={() => setRubricSettingsOpen((prev) => !prev)}
             />
           </div>
@@ -221,5 +235,3 @@ export function ManualGradingInstanceQuestionPage({
     </>
   );
 }
-
-ManualGradingInstanceQuestionPage.displayName = 'ManualGradingInstanceQuestionPage';

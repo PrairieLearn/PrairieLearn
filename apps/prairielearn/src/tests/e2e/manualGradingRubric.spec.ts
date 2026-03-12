@@ -105,21 +105,7 @@ test.describe('Manual grading rubric submission panel update', () => {
     await rubricCheckboxes.first().check();
     await page.locator('form[name="manual-grading-form"] textarea').fill('Good work on this!');
 
-    // Debug: capture the form data before submit
-    const formData = await page.evaluate(() => {
-      const form = document.querySelector<HTMLFormElement>('form[name="manual-grading-form"]');
-      if (!form) return 'no form found';
-      const fd = new FormData(form);
-      return Object.fromEntries(fd.entries());
-    });
-    console.log('Form data before grade:', JSON.stringify(formData, null, 2));
-
-    // Use #grade-button — there's also a hidden group-grading button.
-    const [response] = await Promise.all([
-      page.waitForNavigation(),
-      page.locator('#grade-button').click(),
-    ]);
-    console.log('Grade response status:', response?.status(), 'url:', response?.url());
+    await Promise.all([page.waitForNavigation(), page.locator('#grade-button').click()]);
 
     // After grading, PL redirects to the next IQ to grade. Navigate back.
     await page.goto(manualGradingIQUrl);
@@ -144,23 +130,6 @@ test.describe('Manual grading rubric submission panel update', () => {
       timeout: 10000,
     });
     await expect(page.locator('body[data-e2e-no-reload="true"]')).toBeVisible();
-
-    // The submission panel should have been replaced via AJAX with updated rubric feedback.
-    // Wait a bit for the async submission panel replacement to complete
-    await page.waitForTimeout(2000);
-
-    const debugInfo = await page.evaluate(() => {
-      const submissionEls = document.querySelectorAll('[id^="submission-"]');
-      const feedbackEls = document.querySelectorAll('[data-testid="submission-with-feedback"]');
-      const rubricContainers = document.querySelectorAll('[data-testid^="rubric-item-container-"]');
-      return {
-        submissionIds: Array.from(submissionEls).map((el) => el.id),
-        feedbackCount: feedbackEls.length,
-        rubricContainerCount: rubricContainers.length,
-        feedbackHTML: feedbackEls[0]?.innerHTML?.slice(0, 1000) ?? 'none',
-      };
-    });
-    console.log('Debug submission panel:', JSON.stringify(debugInfo, null, 2));
 
     await expect(
       page

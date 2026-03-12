@@ -99,10 +99,10 @@ export function InstanceQuestion({
     .map((issue) => ({ id: issue.id, open: issue.open }));
 
   // Users are only assigned to grade submissions if they have edit permissions.
-  const effectiveShowSubmissionsAssignedToMeOnly = !resLocals.authz_data
-    .has_course_instance_permission_edit
-    ? false
-    : showSubmissionsAssignedToMeOnly;
+  // This flag indicates whether the user CAN toggle "show my assignments only".
+  // The React component combines this with the session value.
+  const effectiveShowSubmissionsAssignedToMeOnly =
+    resLocals.authz_data.has_course_instance_permission_edit;
 
   // Pre-render HTML panels that are too complex for React conversion.
   const questionContainerHtml = QuestionContainer({
@@ -158,7 +158,7 @@ export function InstanceQuestion({
       question_qid: resLocals.question.qid,
       variant_params: resLocals.variant.params,
       variant_true_answer: resLocals.variant.true_answer,
-      submission_submitted_answer: resLocals.submission.submitted_answer,
+      submission_submitted_answer: resLocals.submission.submitted_answer ?? null,
     },
     submissionId: resLocals.submission.id,
     instanceQuestionId: resLocals.instance_question.id,
@@ -177,7 +177,7 @@ export function InstanceQuestion({
         }
       : null,
     openIssues,
-    graders: graders?.map((g) => StaffUserSchema.parse(g)) ?? null,
+    graders: graders?.map((g) => StaffUserSchema.parse(g)) ?? [],
     aiGradingInfo,
     hasEditPermission: resLocals.authz_data.has_course_instance_permission_edit,
     showInstanceQuestionGroup: instanceQuestionGroupsExist && aiGradingMode,
@@ -252,9 +252,7 @@ export function InstanceQuestion({
           initialPageData={initialPageData}
           trpcCsrfToken={trpcCsrfToken}
           csrfToken={__csrf_token}
-          hasCourseInstancePermissionEdit={
-            resLocals.authz_data.has_course_instance_permission_edit
-          }
+          hasCourseInstancePermissionEdit={resLocals.authz_data.has_course_instance_permission_edit}
           assessmentInstanceOpen={resLocals.assessment_instance.open ?? false}
           breadcrumb={{
             urlPrefix: resLocals.urlPrefix,
