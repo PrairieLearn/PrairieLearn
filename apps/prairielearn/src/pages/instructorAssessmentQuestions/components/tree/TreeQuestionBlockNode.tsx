@@ -161,7 +161,10 @@ export function TreeQuestionBlockNode({
         )}
         style={{
           paddingLeft: '2.5rem',
-          paddingRight: '0.5rem',
+          // Extra right padding prevents macOS overlay scrollbars
+          // from overlapping row content like the points badge.
+          // https://bugzilla.mozilla.org/show_bug.cgi?id=636564
+          paddingRight: '1.5rem',
           cursor: 'pointer',
           ...(chooseExceeds || pointsMismatch ? { borderLeft: '6px solid var(--bs-warning)' } : {}),
         }}
@@ -347,7 +350,7 @@ export function TreeQuestionBlockNode({
       {!isCollapsed && isMergeOver && (
         <div
           className="tree-row d-flex align-items-center py-1 border-bottom"
-          style={{ paddingLeft: '4.5rem', paddingRight: '0.5rem', opacity: 0.5 }}
+          style={{ paddingLeft: '4.5rem', paddingRight: '1.5rem', opacity: 0.5 }}
         >
           {editMode && (
             <span className="me-2" style={{ visibility: 'hidden' }}>
