@@ -360,7 +360,11 @@ export function TreeQuestionBlockNode({
                 const activeQid = active?.data.current?.qid;
                 if (!activeQid) return null;
                 const qData = questionMetadata[activeQid];
-                return questionHasTitle(qData ?? null) ? qData!.question.title : activeQid;
+                return questionHasTitle(qData ?? null) ? (
+                  qData!.question.title
+                ) : (
+                  <span className="font-monospace">{activeQid}</span>
+                );
               })}
             </div>
           </div>
