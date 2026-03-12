@@ -1,4 +1,5 @@
 import base64
+import binascii
 import hashlib
 import json
 import os
@@ -57,11 +58,7 @@ def count_words_from_html_base64(file_contents_b64: str) -> int:
     """
     if not file_contents_b64:
         return 0
-    try:
-        html = base64.b64decode(file_contents_b64).decode("utf-8", errors="replace")
-    except (ValueError, TypeError):
-        # If decode fails, treat as empty rather than crashing student submissions.
-        return 0
+    html = base64.b64decode(file_contents_b64, validate=True).decode("utf-8")
 
     # Convert HTML -> plain text using lxml. itertext() yields text nodes in
     # document order; joining with space prevents concatenation of words from
@@ -291,6 +288,18 @@ def parse(element_html: str, data: pl.QuestionData) -> None:
         pl.add_files_format_error(data, f"No submitted answer for {file_name}")
         return
 
+    # Validate format before persisting; reject malformed base64/UTF-8
+    word_count = 0
+    if file_contents:
+        try:
+            word_count = count_words_from_html_base64(file_contents)
+        except (binascii.Error, UnicodeDecodeError):
+            pl.add_files_format_error(
+                data,
+                f"Failed to decode submission for {file_name}. The file may be corrupted or invalid.",
+            )
+            return
+
     # We will store the files in the submitted_answer["_files"] key,
     # so delete the original submitted answer format to avoid
     # duplication
@@ -306,8 +315,6 @@ def parse(element_html: str, data: pl.QuestionData) -> None:
 
     # If content exists, enforce min/max word count
     if file_contents and (min_wc is not None or max_wc is not None):
-        word_count = count_words_from_html_base64(file_contents)
-
         if min_wc is not None and word_count < min_wc:
             pl.add_files_format_error(
                 data,

@@ -172,7 +172,12 @@
         : rtePurify.sanitize(quill.getSemanticHTML(), rtePurifyConfig);
     const getCountableText = () => extractTextFromHtml(getStoredContent());
 
-    const counter = options.counter === 'none' ? null : new Counter(options.counter, uuid, getCountableText);
+    const getCounterText =
+      options.counter === 'character'
+        ? () => quill.getText()
+        : () => getCountableText();
+    const counter =
+      options.counter === 'none' ? null : new Counter(options.counter, uuid, getCounterText);
 
     // --- Live min/max word-count invalid message wiring ---
     const editorContainer = baseElement.closest('.pl-rich-text-editor-container');
