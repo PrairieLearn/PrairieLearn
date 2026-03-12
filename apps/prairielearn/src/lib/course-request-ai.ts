@@ -26,9 +26,9 @@ interface AiSource {
   title?: string;
 }
 
-export type LegitimacyResult = z.infer<typeof legitimacySchema> & { sources: AiSource[] };
-export type TimezoneResult = z.infer<typeof timezoneSchema> & { sources: AiSource[] };
-export type PrefixResult = z.infer<typeof prefixSchema> & { sources: AiSource[] };
+type LegitimacyResult = z.infer<typeof legitimacySchema> & { sources: AiSource[] };
+type TimezoneResult = z.infer<typeof timezoneSchema> & { sources: AiSource[] };
+type PrefixResult = z.infer<typeof prefixSchema> & { sources: AiSource[] };
 
 function createCourseRequestAiClient() {
   if (!config.administratorOpenAiApiKey) {
