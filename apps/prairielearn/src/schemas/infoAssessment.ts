@@ -1,5 +1,6 @@
 import { type ZodSchema, z } from 'zod';
 
+import { AccessControlJsonSchema } from './accessControl.js';
 import { CommentJsonSchema } from './comment.js';
 
 function uniqueArray<T extends ZodSchema>(schema: T) {
@@ -173,6 +174,8 @@ export const AssessmentAccessRuleJsonSchema = z
   .describe(
     'An access rule that permits people to access this assessment. All restrictions in the rule must be satisfied for the rule to allow access.',
   );
+
+export type AssessmentAccessRuleJson = z.input<typeof AssessmentAccessRuleJsonSchema>;
 
 export const PointsSingleJsonSchema = z
   .number()
@@ -407,6 +410,10 @@ export const AssessmentJsonSchema = z
       )
       .optional()
       .default([]),
+    accessControl: z
+      .array(AccessControlJsonSchema)
+      .describe('Access control settings for the assessment.')
+      .optional(),
     text: z.string().describe('HTML text shown on the assessment overview page.').optional(),
     maxPoints: z
       .number()

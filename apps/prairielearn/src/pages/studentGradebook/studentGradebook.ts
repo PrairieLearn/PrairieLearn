@@ -54,6 +54,7 @@ router.get(
       user_id: res.locals.user.id,
       authz_data: res.locals.authz_data,
       req_date: res.locals.req_date,
+      display_timezone: res.locals.course_instance.display_timezone,
       auth: 'student',
     });
     const rows = rawRows.map((row, index) => mapRow(row, rawRows[index - 1]));
@@ -79,6 +80,7 @@ router.get(
       user_id: res.locals.user.id,
       authz_data: res.locals.authz_data,
       req_date: res.locals.req_date,
+      display_timezone: res.locals.course_instance.display_timezone,
       auth: 'student',
     });
 

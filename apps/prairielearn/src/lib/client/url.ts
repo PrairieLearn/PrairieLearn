@@ -35,6 +35,10 @@ export function getCourseInstanceStudentsUrl(courseInstanceId: string): string {
   return `/pl/course_instance/${courseInstanceId}/instructor/instance_admin/students`;
 }
 
+export function getCourseInstanceStudentLabelsUrl(courseInstanceId: string): string {
+  return `/pl/course_instance/${courseInstanceId}/instructor/instance_admin/students/labels`;
+}
+
 export function getCourseInstancePublishingUrl(courseInstanceId: string): string {
   return `/pl/course_instance/${courseInstanceId}/instructor/instance_admin/publishing`;
 }
@@ -103,6 +107,16 @@ export function getAdministratorCourseRequestsUrl({ urlPrefix }: { urlPrefix: st
 type QuestionUrlParts =
   | { courseInstanceId: string; courseId?: undefined }
   | { courseInstanceId?: undefined; courseId: string };
+
+export function getAssessmentAccessUrl({
+  courseInstanceId,
+  assessmentId,
+}: {
+  courseInstanceId: string;
+  assessmentId: string;
+}): string {
+  return `/pl/course_instance/${courseInstanceId}/instructor/assessment/${assessmentId}/access`;
+}
 
 export function getQuestionUrl({
   courseInstanceId,

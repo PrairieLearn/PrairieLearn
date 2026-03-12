@@ -3,6 +3,7 @@ import assert from 'node:assert';
 import async from 'async';
 
 import * as namedLocks from '@prairielearn/named-locks';
+import { runInTransactionAsync } from '@prairielearn/postgres';
 
 import { chalk } from '../lib/chalk.js';
 import { config } from '../lib/config.js';
@@ -19,6 +20,7 @@ import { selectInstitutionForCourse } from '../models/institution.js';
 import { flushElementCache } from '../question-servers/freeform.js';
 
 import * as courseDB from './course-db.js';
+import { syncAccessControl } from './fromDisk/accessControl.js';
 import * as syncAssessmentModules from './fromDisk/assessmentModules.js';
 import * as syncAssessmentSets from './fromDisk/assessmentSets.js';
 import * as syncAssessments from './fromDisk/assessments.js';
@@ -195,6 +197,11 @@ export async function syncDiskToSqlWithLock(
     await timed('Synced assessment modules', () =>
       syncAssessmentModules.sync(courseId, courseData),
     );
+    const institution = await selectInstitutionForCourse({ course_id: courseId });
+    const hasEnhancedAccessControl = await features.enabled('enhanced-access-control', {
+      institution_id: institution.id,
+      course_id: courseId,
+    });
     await timed('Synced all assessments', async () => {
       // Ensure that a single course with a ton of course instances can't
       // monopolize the database connection pool.
@@ -203,9 +210,40 @@ export async function syncDiskToSqlWithLock(
         3,
         async ([ciid, courseInstanceData]) => {
           const courseInstanceId = courseInstanceIds[ciid];
-          await timed(`Synced assessments for ${ciid}`, () =>
-            syncAssessments.sync(courseId, courseInstanceId, courseInstanceData, questionIds),
+          const assessmentIds = await timed(`Synced assessments for ${ciid}`, () =>
+            syncAssessments.sync(
+              courseId,
+              courseInstanceId,
+              courseInstanceData,
+              questionIds,
+              hasEnhancedAccessControl,
+            ),
           );
+
+          if (assessmentIds.name_to_id_map && hasEnhancedAccessControl) {
+            const idMap = assessmentIds.name_to_id_map;
+            await timed(`Synced access control for ${ciid}`, async () => {
+              for (const [tid, assessment] of Object.entries(courseInstanceData.assessments)) {
+                const assessmentId = idMap[tid];
+                const accessControlRules = assessment.data?.accessControl;
+                if (assessmentId) {
+                  if (!accessControlRules || infofile.hasErrors(assessment)) {
+                    await runInTransactionAsync(async () => {
+                      await syncAccessControl(courseInstanceId, assessmentId, []);
+                    });
+                  } else {
+                    try {
+                      await runInTransactionAsync(async () => {
+                        await syncAccessControl(courseInstanceId, assessmentId, accessControlRules);
+                      });
+                    } catch (err) {
+                      infofile.addError(assessment, String(err));
+                    }
+                  }
+                }
+              }
+            });
+          }
         },
       );
     });

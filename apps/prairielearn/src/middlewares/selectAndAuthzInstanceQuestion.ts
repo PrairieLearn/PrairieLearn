@@ -6,6 +6,7 @@ import * as error from '@prairielearn/error';
 import * as sqldb from '@prairielearn/postgres';
 import { IdSchema } from '@prairielearn/zod';
 
+import { resolveModernAssessmentInstanceAccess } from '../lib/access-control-modern.js';
 import { assessmentInstanceLabel } from '../lib/assessment.shared.js';
 import {
   AssessmentInstanceSchema,
@@ -86,7 +87,7 @@ export type ResLocalsInstanceQuestion = z.infer<typeof SelectAndAuthzInstanceQue
 };
 
 export async function selectAndAuthzInstanceQuestion(req: Request, res: Response) {
-  const row = await sqldb.queryOptionalRow(
+  let row = await sqldb.queryOptionalRow(
     sql.select_and_auth,
     {
       instance_question_id: req.params.instance_question_id,
@@ -99,7 +100,19 @@ export async function selectAndAuthzInstanceQuestion(req: Request, res: Response
   );
   if (row === null) throw new error.HttpStatusError(403, 'Access denied');
 
-  // TODO: consider row.assessment.modern_access_control
+  if (row.assessment.modern_access_control) {
+    const modernResult = await resolveModernAssessmentInstanceAccess({
+      assessmentId: row.assessment.id,
+      userId: res.locals.authz_data.user.id,
+      courseInstanceId: res.locals.course_instance.id,
+      authzData: res.locals.authz_data,
+      reqDate: res.locals.req_date,
+      displayTimezone: res.locals.course_instance.display_timezone,
+      assessmentInstance: row.assessment_instance,
+      groupWork: row.assessment.team_work,
+    });
+    row = { ...row, authz_result: modernResult };
+  }
   if (!row.authz_result.authorized) throw new error.HttpStatusError(403, 'Access denied');
 
   Object.assign(res.locals, row, {

@@ -1,6 +1,7 @@
 import * as path from 'path';
 
 import { Temporal } from '@js-temporal/polyfill';
+import * as trpcExpress from '@trpc/server/adapters/express';
 import { Router } from 'express';
 import fs from 'fs-extra';
 import { z } from 'zod';
@@ -9,6 +10,7 @@ import * as error from '@prairielearn/error';
 import { flash } from '@prairielearn/flash';
 import * as sqldb from '@prairielearn/postgres';
 import { Hydrate } from '@prairielearn/react/server';
+import { generatePrefixCsrfToken } from '@prairielearn/signed-token';
 
 import { DeleteCourseInstanceModal } from '../../components/DeleteCourseInstanceModal.js';
 import { PageLayout } from '../../components/PageLayout.js';
@@ -32,6 +34,7 @@ import { formatJsonWithPrettier } from '../../lib/prettier.js';
 import { typedAsyncHandler } from '../../lib/res-locals.js';
 import { validateShortName } from '../../lib/short-name.js';
 import { getCanonicalTimezones } from '../../lib/timezones.js';
+import { handleTrpcError } from '../../lib/trpc.js';
 import { getCanonicalHost } from '../../lib/url.js';
 import { selectCourseInstanceByUuid } from '../../models/course-instances.js';
 import { insertCourseInstancePermissions } from '../../models/course-permissions.js';
@@ -40,9 +43,19 @@ import { uniqueEnrollmentCode } from '../../sync/fromDisk/courseInstances.js';
 
 import { InstructorInstanceAdminSettings } from './instructorInstanceAdminSettings.html.js';
 import { SettingsFormBodySchema } from './instructorInstanceAdminSettings.types.js';
+import { createContext, settingsRouter } from './trpc.js';
 
 const router = Router();
 const sql = sqldb.loadSqlEquiv(import.meta.url);
+
+router.use(
+  '/trpc',
+  trpcExpress.createExpressMiddleware({
+    router: settingsRouter,
+    createContext,
+    onError: handleTrpcError,
+  }),
+);
 
 router.get(
   '/',
@@ -100,6 +113,14 @@ router.get(
 
     const canEdit = authz_data.has_course_permission_edit && !course.example_course;
 
+    const trpcCsrfToken = generatePrefixCsrfToken(
+      {
+        url: req.originalUrl.split('?')[0].replace(/\/$/, '') + '/trpc',
+        authn_user_id: res.locals.authn_user.id,
+      },
+      config.secretKey,
+    );
+
     res.send(
       PageLayout({
         resLocals: res.locals,
@@ -114,6 +135,7 @@ router.get(
             <Hydrate>
               <InstructorInstanceAdminSettings
                 csrfToken={__csrf_token}
+                trpcCsrfToken={trpcCsrfToken}
                 urlPrefix={urlPrefix}
                 navPage={navPage}
                 canEdit={canEdit}
@@ -168,6 +190,8 @@ router.post(
         self_enrollment_enabled,
         self_enrollment_use_enrollment_code,
         course_instance_permission,
+        access_control_strategy,
+        preserve_incompatible,
       } = z
         .object({
           short_name: z.string().trim(),
@@ -177,6 +201,8 @@ router.post(
           self_enrollment_enabled: z.boolean(),
           self_enrollment_use_enrollment_code: z.boolean(),
           course_instance_permission: EnumCourseInstanceRoleSchema.optional().default('None'),
+          access_control_strategy: z.enum(['migrate', 'keep', 'wipe']).optional().default('wipe'),
+          preserve_incompatible: z.boolean().optional().default(false),
         })
         .parse(req.body);
 
@@ -262,6 +288,10 @@ router.post(
         metadataOverrides: {
           publishing: resolvedPublishing,
           selfEnrollment: resolvedSelfEnrollment,
+        },
+        accessControlMigration: {
+          strategy: access_control_strategy,
+          preserveIncompatible: preserve_incompatible,
         },
       });
 

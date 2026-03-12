@@ -18,6 +18,8 @@ const featureNames = [
   // Can be applied to any context.
   'assessment-questions-editor',
   'rich-text-editor',
+  // Enhanced access control UI for assessments.
+  'enhanced-access-control',
 ] as const;
 
 const features = new FeatureManager(featureNames);

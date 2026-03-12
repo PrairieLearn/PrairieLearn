@@ -2,6 +2,7 @@
 
 import { loadSqlEquiv, queryRows } from '@prairielearn/postgres';
 
+import { resolveModernAssessmentAccessBatch } from './access-control-modern.js';
 import {
   type StaffGradebookRow,
   StaffGradebookRowSchema,
@@ -16,7 +17,40 @@ interface GetGradebookRowsParams {
   user_id: string;
   authz_data: any;
   req_date: any;
+  display_timezone: string;
   auth: 'student' | 'instructor';
+}
+
+async function applyModernAccessControl<
+  T extends {
+    modern_access_control: boolean;
+    assessment_id: string;
+    show_closed_assessment_score: boolean;
+    assessment_instance: { points: number | null; score_perc: number | null };
+  },
+>(rows: T[], params: GetGradebookRowsParams): Promise<void> {
+  const hasModern = rows.some((r) => r.modern_access_control);
+  if (!hasModern) return;
+
+  const modernResults = await resolveModernAssessmentAccessBatch({
+    courseInstanceId: params.course_instance_id,
+    userId: params.user_id,
+    authzData: params.authz_data,
+    reqDate: params.req_date,
+    displayTimezone: params.display_timezone,
+  });
+
+  for (const row of rows) {
+    if (!row.modern_access_control) continue;
+    const result = modernResults.get(row.assessment_id);
+    if (result) {
+      row.show_closed_assessment_score = result.show_closed_assessment_score;
+      if (params.auth === 'student' && !result.show_closed_assessment_score) {
+        row.assessment_instance.points = null;
+        row.assessment_instance.score_perc = null;
+      }
+    }
+  }
 }
 
 async function getGradebookRows(
@@ -32,31 +66,42 @@ async function getGradebookRows({
   user_id,
   authz_data,
   req_date,
+  display_timezone,
   auth,
 }: GetGradebookRowsParams): Promise<StudentGradebookRow[] | StaffGradebookRow[]> {
+  const queryParams = { course_instance_id, user_id, authz_data, req_date };
+
   if (auth === 'student') {
-    return await queryRows(
+    const rows = await queryRows(
       sql.select_assessment_instances,
-      {
-        course_instance_id,
-        user_id,
-        authz_data,
-        req_date,
-      },
+      queryParams,
       StudentGradebookRowSchema,
     );
-  }
-
-  return await queryRows(
-    sql.select_assessment_instances,
-    {
+    await applyModernAccessControl(rows, {
       course_instance_id,
       user_id,
       authz_data,
       req_date,
-    },
+      display_timezone,
+      auth,
+    });
+    return rows;
+  }
+
+  const rows = await queryRows(
+    sql.select_assessment_instances,
+    queryParams,
     StaffGradebookRowSchema,
   );
+  await applyModernAccessControl(rows, {
+    course_instance_id,
+    user_id,
+    authz_data,
+    req_date,
+    display_timezone,
+    auth,
+  });
+  return rows;
 }
 
 export { getGradebookRows };

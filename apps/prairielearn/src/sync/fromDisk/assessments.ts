@@ -53,6 +53,7 @@ type AssessmentInfoFile = infofile.InfoFile<AssessmentJson>;
 function getParamsForAssessment(
   assessmentInfoFile: AssessmentInfoFile,
   questionIds: Record<string, any>,
+  hasEnhancedAccessControl: boolean,
 ) {
   if (infofile.hasErrors(assessmentInfoFile)) return null;
   const assessment = assessmentInfoFile.data;
@@ -367,8 +368,10 @@ function getParamsForAssessment(
     has_roles: groupRoles.length > 0,
     json_can_view: groups.rolePermissions.canView,
     json_can_submit: groups.rolePermissions.canSubmit,
-    // TODO: This will be conditional based on the access control settings in the future.
-    modern_access_control: false,
+    modern_access_control:
+      hasEnhancedAccessControl &&
+      allowAccess.length === 0 &&
+      (assessment.accessControl?.length ?? 0) > 0,
     allowAccess,
     zones,
     alternativeGroups,
@@ -429,6 +432,7 @@ export async function sync(
   courseInstanceId: string,
   courseInstanceData: CourseInstanceData,
   questionIds: Record<string, any>,
+  hasEnhancedAccessControl: boolean,
 ) {
   const assessments = courseInstanceData.assessments;
 
@@ -483,11 +487,11 @@ export async function sync(
       assessment.uuid,
       infofile.stringifyErrors(assessment),
       infofile.stringifyWarnings(assessment),
-      getParamsForAssessment(assessment, questionIds),
+      getParamsForAssessment(assessment, questionIds, hasEnhancedAccessControl),
     ]);
   });
 
-  await sqldb.callRow(
+  return await sqldb.callRow(
     'sync_assessments',
     [assessmentParams, courseId, courseInstanceId, config.checkSharingOnSync],
     SprocSyncAssessmentsSchema,

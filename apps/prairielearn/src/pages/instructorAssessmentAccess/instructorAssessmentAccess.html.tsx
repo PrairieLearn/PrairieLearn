@@ -1,13 +1,18 @@
 import { z } from 'zod';
 
 import { html } from '@prairielearn/html';
+import { hydrateHtml } from '@prairielearn/react/server';
 
 import { CommentPopoverHtml } from '../../components/CommentPopover.js';
 import { PageLayout } from '../../components/PageLayout.js';
+import { extractPageContext } from '../../lib/client/page-context.js';
 import { isRenderableComment } from '../../lib/comments.js';
 import { config } from '../../lib/config.js';
 import { JsonCommentSchema } from '../../lib/db-types.js';
 import type { ResLocalsForPage } from '../../lib/res-locals.js';
+
+import { AccessControl } from './components/AccessControl.js';
+import type { AccessControlJsonWithId } from './components/types.js';
 
 export const AssessmentAccessRulesSchema = z.object({
   mode: z.string(),
@@ -148,6 +153,47 @@ export function InstructorAssessmentAccess({
           >
         </div>
       </div>
+    `,
+  });
+}
+
+export function InstructorAssessmentAccessNew({
+  resLocals,
+  origHash,
+  trpcCsrfToken,
+  initialData,
+}: {
+  resLocals: ResLocalsForPage<'assessment'>;
+  origHash: string;
+  trpcCsrfToken: string;
+  initialData: AccessControlJsonWithId[];
+}) {
+  const pageContext = extractPageContext(resLocals, {
+    pageType: 'courseInstance',
+    accessType: 'instructor',
+  });
+
+  return PageLayout({
+    resLocals,
+    pageTitle: 'Access',
+    navContext: {
+      type: 'instructor',
+      page: 'assessment',
+      subPage: 'access',
+    },
+    options: {
+      fullWidth: true,
+    },
+    content: html`
+      ${hydrateHtml(
+        <AccessControl
+          courseInstance={pageContext.course_instance}
+          csrfToken={trpcCsrfToken}
+          origHash={origHash}
+          assessmentId={resLocals.assessment.id}
+          initialData={initialData}
+        />,
+      )}
     `,
   });
 }

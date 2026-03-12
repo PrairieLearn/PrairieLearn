@@ -8,6 +8,7 @@ WITH
       a.order_by AS assessment_order_by,
       a.title,
       a.team_work,
+      a.modern_access_control,
       aset.id AS assessment_set_id,
       aset.name AS assessment_set_name,
       aset.heading AS assessment_set_heading,
@@ -46,6 +47,7 @@ WITH
       mia.assessment_order_by,
       mia.title || ' instance #' || ai.number,
       NULL::boolean AS team_work,
+      mia.modern_access_control,
       mia.assessment_set_id,
       mia.assessment_set_name,
       mia.assessment_set_heading,
@@ -81,6 +83,7 @@ WITH
       a.order_by AS assessment_order_by,
       a.title,
       a.team_work,
+      a.modern_access_control,
       aset.id AS assessment_set_id,
       aset.name AS assessment_set_name,
       aset.heading AS assessment_set_heading,
@@ -200,8 +203,8 @@ SELECT
 FROM
   all_rows
 WHERE
-  -- TODO: shift this check into typescript so that we are setup for evaluation of modern access control.
   authorized
+  OR modern_access_control
 ORDER BY
   CASE
     WHEN $assessments_group_by = 'Module' THEN assessment_module_number
