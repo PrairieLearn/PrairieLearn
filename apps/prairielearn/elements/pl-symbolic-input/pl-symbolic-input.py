@@ -798,6 +798,9 @@ def grade(element_html: str, data: pl.QuestionData) -> None:
     allow_trig = pl.get_boolean_attrib(
         element, "allow-trig-functions", ALLOW_TRIG_FUNCTIONS_DEFAULT
     )
+    simplify_expression = pl.get_boolean_attrib(
+        element, "display-simplified-expression", DISPLAY_SIMPLIFIED_EXPRESSION_DEFAULT
+    )
     additional_simplifications = psu.get_items_list(
         pl.get_string_attrib(
             element, "additional-simplifications", ADDITIONAL_SIMPLIFICATIONS_DEFAULT
@@ -830,9 +833,14 @@ def grade(element_html: str, data: pl.QuestionData) -> None:
                 allow_complex=allow_complex,
                 allow_trig_functions=allow_trig,
                 custom_functions=custom_functions,
+                simplify_expression=simplify_expression,
             )
         else:
-            a_tru_sympy = psu.json_to_sympy(a_tru, allow_complex=allow_complex)
+            a_tru_sympy = psu.json_to_sympy(
+                a_tru,
+                allow_complex=allow_complex,
+                simplify_expression=simplify_expression,
+            )
 
         # Parse submitted answer
         if isinstance(a_sub, str):
@@ -844,10 +852,14 @@ def grade(element_html: str, data: pl.QuestionData) -> None:
                 allow_trig_functions=allow_trig,
                 custom_functions=custom_functions,
                 assumptions=a_tru_sympy.assumptions0,
+                simplify_expression=simplify_expression,
             )
         else:
             a_sub_sympy = psu.json_to_sympy(
-                a_sub, allow_complex=allow_complex, allow_trig_functions=allow_trig
+                a_sub,
+                allow_complex=allow_complex,
+                allow_trig_functions=allow_trig,
+                simplify_expression=simplify_expression,
             )
 
         for simplification in additional_simplifications:
