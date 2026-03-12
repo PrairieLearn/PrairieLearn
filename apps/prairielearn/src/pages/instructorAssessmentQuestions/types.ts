@@ -100,6 +100,8 @@ export interface EditorState {
   collapsedGroups: Set<string>;
   /** Tracks which zones are collapsed by their trackingId */
   collapsedZones: Set<string>;
+  /** The currently selected item in the split-pane editor */
+  selectedItem: SelectedItem;
 }
 
 /**
@@ -210,6 +212,20 @@ export type EditorAction =
       beforeAlternativeTrackingId: string | null;
     }
   | { type: 'REMOVE_QUESTION_BY_QID'; qid: string }
+  | { type: 'SET_SELECTED_ITEM'; selectedItem: SelectedItem }
+  | {
+      /**
+       * Compound action dispatched after fetching question data in the picker.
+       * The reducer reads the latest zones and selectedItem to atomically
+       * apply all mutations (remove duplicates, update metadata, add/change
+       * the question, update selection).
+       */
+      type: 'QUESTION_PICKED';
+      qid: string;
+      metadata: EditorQuestionMetadata;
+      /** The selectedItem at the time the pick was initiated; used to detect stale picks. */
+      expectedSelectedItem: SelectedItem;
+    }
   // Stubbed for future PR - will implement history tracking
   | { type: 'UNDO' }
   | { type: 'REDO' };

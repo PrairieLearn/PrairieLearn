@@ -1,6 +1,6 @@
 import type { SelectedItem, ZoneAssessmentForm } from '../types.js';
 
-import { findQuestionByTrackingId } from './useAssessmentEditor.js';
+import { findQuestionByTrackingId } from './zoneLookup.js';
 
 function findAlternativeLocation(zones: ZoneAssessmentForm[], alternativeTrackingId: string) {
   for (const zone of zones) {

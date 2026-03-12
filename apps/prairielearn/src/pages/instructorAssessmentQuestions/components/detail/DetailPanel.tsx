@@ -6,7 +6,7 @@ import type {
   SelectedItem,
   ZoneAssessmentForm,
 } from '../../types.js';
-import { findQuestionByTrackingId } from '../../utils/useAssessmentEditor.js';
+import { findQuestionByTrackingId } from '../../utils/zoneLookup.js';
 
 import { AltGroupDetailPanel } from './AltGroupDetailPanel.js';
 import { QuestionDetailPanel } from './QuestionDetailPanel.js';
