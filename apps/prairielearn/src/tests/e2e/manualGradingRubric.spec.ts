@@ -99,17 +99,29 @@ test.describe('Manual grading rubric submission panel update', () => {
     await firstRow.locator('input[type="text"]').first().fill('Full credit for correct solution');
 
     await page.locator('#rubric-setting').getByRole('button', { name: 'Save' }).click();
-    await expect(
-      page.locator('.js-main-grading-panel .js-selectable-rubric-item').first(),
-    ).toBeVisible({ timeout: 10000 });
+    const rubricCheckboxes = page.locator('input[name="rubric_item_selected_manual"]');
+    await expect(rubricCheckboxes.first()).toBeVisible({ timeout: 10000 });
 
-    await page.locator('.js-selectable-rubric-item').first().check();
+    await rubricCheckboxes.first().check();
     await page.locator('form[name="manual-grading-form"] textarea').fill('Good work on this!');
+
+    // Debug: capture the form data before submit
+    const formData = await page.evaluate(() => {
+      const form = document.querySelector<HTMLFormElement>('form[name="manual-grading-form"]');
+      if (!form) return 'no form found';
+      const fd = new FormData(form);
+      return Object.fromEntries(fd.entries());
+    });
+    console.log('Form data before grade:', JSON.stringify(formData, null, 2));
+
     // Use #grade-button — there's also a hidden group-grading button.
-    await page.locator('#grade-button').click();
+    const [response] = await Promise.all([
+      page.waitForNavigation(),
+      page.locator('#grade-button').click(),
+    ]);
+    console.log('Grade response status:', response?.status(), 'url:', response?.url());
 
     // After grading, PL redirects to the next IQ to grade. Navigate back.
-    await page.waitForLoadState('load');
     await page.goto(manualGradingIQUrl);
     await expect(page.locator('[data-testid="submission-status"] .badge').first()).toBeVisible();
 
@@ -128,12 +140,28 @@ test.describe('Manual grading rubric submission panel update', () => {
 
     await page.locator('#rubric-setting').getByRole('button', { name: 'Save' }).click();
 
-    await expect(page.locator('.js-main-grading-panel .js-selectable-rubric-item')).toHaveCount(2, {
+    await expect(page.locator('input[name="rubric_item_selected_manual"]')).toHaveCount(2, {
       timeout: 10000,
     });
     await expect(page.locator('body[data-e2e-no-reload="true"]')).toBeVisible();
 
     // The submission panel should have been replaced via AJAX with updated rubric feedback.
+    // Wait a bit for the async submission panel replacement to complete
+    await page.waitForTimeout(2000);
+
+    const debugInfo = await page.evaluate(() => {
+      const submissionEls = document.querySelectorAll('[id^="submission-"]');
+      const feedbackEls = document.querySelectorAll('[data-testid="submission-with-feedback"]');
+      const rubricContainers = document.querySelectorAll('[data-testid^="rubric-item-container-"]');
+      return {
+        submissionIds: Array.from(submissionEls).map((el) => el.id),
+        feedbackCount: feedbackEls.length,
+        rubricContainerCount: rubricContainers.length,
+        feedbackHTML: feedbackEls[0]?.innerHTML?.slice(0, 1000) ?? 'none',
+      };
+    });
+    console.log('Debug submission panel:', JSON.stringify(debugInfo, null, 2));
+
     await expect(
       page
         .locator('[data-testid="submission-with-feedback"] [data-testid^="rubric-item-container-"]')

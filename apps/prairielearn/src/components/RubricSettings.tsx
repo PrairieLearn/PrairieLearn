@@ -6,6 +6,7 @@ import { downloadAsJSON, executeScripts, parseHTMLElement } from '@prairielearn/
 
 import type { AiGradingGeneralStats } from '../ee/lib/ai-grading/types.js';
 import { b64EncodeUnicode } from '../lib/base64-util.js';
+import { mathjaxTypeset } from '../lib/client/mathjax.js';
 import type { StaffAssessmentQuestion } from '../lib/client/safe-db-types.js';
 import type { RubricItem } from '../lib/db-types.js';
 import type { RenderedRubricItem, RubricData } from '../lib/manualGrading.types.js';
@@ -42,17 +43,6 @@ const ExportedRubricDataSchema = z.object({
 
 type ExportedRubricData = z.infer<typeof ExportedRubricDataSchema>;
 
-/**
- * Explicitly declaring these functions from the window of the instance question page
- * so they can be called in the component.
- */
-declare global {
-  interface Window {
-    resetInstructorGradingPanel: () => any;
-    mathjaxTypeset: (elements?: Element[]) => Promise<any>;
-  }
-}
-
 export function RubricSettings({
   hasCourseInstancePermissionEdit,
   assessmentQuestion,
@@ -60,6 +50,7 @@ export function RubricSettings({
   csrfToken,
   aiGradingStats,
   context,
+  onRubricSaved,
 }: {
   hasCourseInstancePermissionEdit: boolean;
   assessmentQuestion: StaffAssessmentQuestion;
@@ -67,6 +58,7 @@ export function RubricSettings({
   csrfToken: string;
   aiGradingStats: AiGradingGeneralStats | null;
   context: Record<string, any>;
+  onRubricSaved?: (data: { rubric_data: RubricData | null; modifiedAt: string }) => void;
 }) {
   const showAiGradingStats = Boolean(aiGradingStats);
   const rubricItemsWithDisagreementCount = aiGradingStats?.rubric_stats ?? {};
@@ -443,58 +435,11 @@ export function RubricSettings({
           const newSubmission = parseHTMLElement(document, data.submissionPanel);
           oldSubmission.replaceWith(newSubmission);
           executeScripts(newSubmission);
-          await window.mathjaxTypeset([newSubmission]);
+          await mathjaxTypeset([newSubmission]);
         }
       }
 
-      if (data.gradingPanel) {
-        const gradingPanel = document.querySelector<HTMLElement>('.js-main-grading-panel');
-        if (!gradingPanel) return;
-
-        const oldRubricForm = gradingPanel.querySelector<HTMLFormElement>(
-          'form[name="manual-grading-form"]',
-        );
-        if (!oldRubricForm) return;
-
-        // Save values in grading rubric so they can be re-applied once the form is re-created.
-        const rubricFormData = Array.from(new FormData(oldRubricForm).entries());
-        // The CSRF token of the returned panels is not valid for the current form (it uses a
-        // different URL), so save the old value to be used in future requests.
-        const oldCsrfToken =
-          oldRubricForm.querySelector<HTMLInputElement>('[name=__csrf_token]')?.value ?? '';
-
-        gradingPanel.innerHTML = data.gradingPanel;
-
-        // Restore any values that had been set before the settings were configured.
-        const newRubricForm = gradingPanel.querySelector<HTMLFormElement>(
-          'form[name="manual-grading-form"]',
-        );
-        if (!newRubricForm) return;
-
-        newRubricForm
-          .querySelectorAll<HTMLInputElement>('input[type="checkbox"]')
-          .forEach((input) => {
-            input.checked = false;
-          });
-        rubricFormData.forEach(([item_name, item_value]) => {
-          newRubricForm
-            .querySelectorAll<HTMLInputElement | HTMLTextAreaElement>(`[name="${item_name}"]`)
-            .forEach((input) => {
-              if (input.name === 'modified_at') {
-                // Do not reset modified_at, as the rubric settings may have changed it
-              } else if (input.type !== 'checkbox' && !(item_value instanceof File)) {
-                input.value = item_value;
-              } else if (input instanceof HTMLInputElement && input.value === item_value) {
-                input.checked = true;
-              }
-            });
-        });
-        document.querySelectorAll<HTMLInputElement>('input[name=__csrf_token]').forEach((input) => {
-          input.value = oldCsrfToken;
-        });
-        window.resetInstructorGradingPanel();
-        await window.mathjaxTypeset([gradingPanel]);
-      }
+      onRubricSaved?.({ rubric_data: data.rubric_data, modifiedAt: data.modifiedAt });
 
       // Since we are preserving the temporary rubric item selection in the instance question page, the page is not refreshed
       // after saving. Suppose we start with setting A, and update it to B and save it. Ideally we would expect a "Discard changes"
@@ -1206,5 +1151,3 @@ function RubricRow({
     </tr>
   );
 }
-
-RubricSettings.displayName = 'RubricSettings';

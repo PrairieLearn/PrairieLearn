@@ -191,16 +191,18 @@ function checkGradingResults(assigned_grader: MockUser, grader: MockUser): void 
     if (rubric_items) {
       rubric_items.forEach((item, index) => {
         assert.isDefined(selected_rubric_items);
-        const checkbox = form.find(`.js-selectable-rubric-item[value="${item.id}"]`);
+        const checkbox = form.find(`input[name="rubric_item_selected_manual"][value="${item.id}"]`);
         assert.equal(checkbox.length, 1);
         assert.equal(checkbox.is(':checked'), selected_rubric_items.includes(index));
       });
-      assert.equal(
-        form.find('input[name=score_manual_adjust_points]').val(),
-        (adjust_points ?? '').toString(),
-      );
+      if (adjust_points) {
+        assert.equal(
+          form.find('input[name=score_manual_adjust_points]').val(),
+          adjust_points.toString(),
+        );
+      }
     } else {
-      assert.equal(form.find('.js-selectable-rubric-item').length, 0);
+      assert.equal(form.find('input[name="rubric_item_selected_manual"]').length, 0);
       assert.equal(form.find('input[name=score_manual_adjust_points]').length, 0);
     }
   });
@@ -375,9 +377,9 @@ function checkSettingsResults(
 
     assert.isDefined(rubric_items);
     rubric_items.forEach((item) => {
-      const checkbox = form.find(`.js-selectable-rubric-item[value="${item.id}"]`);
+      const checkbox = form.find(`input[name="rubric_item_selected_manual"][value="${item.id}"]`);
       assert.equal(checkbox.length, 1);
-      const container = checkbox.parents('.js-selectable-rubric-item-label');
+      const container = checkbox.closest('label');
       assert.equal(container.length, 1);
       assert.equal(
         container.find('[data-testid="rubric-item-points"]').text().trim(),

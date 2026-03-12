@@ -38,7 +38,6 @@ import { selectCourseInstanceGraderStaff } from '../../../models/course-instance
 import { selectUserById } from '../../../models/user.js';
 import { selectAndAuthzVariant } from '../../../models/variant.js';
 
-import { GradingPanel } from './gradingPanel.html.js';
 import {
   type GradingJobData,
   GradingJobDataSchema,
@@ -349,14 +348,10 @@ router.get(
       const rubric_data = await manualGrading.selectRubricData({
         assessment_question: res.locals.assessment_question,
       });
-      const gradingPanel = GradingPanel({
-        ...locals,
-        context: 'main',
-      }).toString();
       const aiGradingEnabled = await features.enabledFromLocals('ai-grading', res.locals);
 
       // `prepareLocalsForRender` guarantees a submission exists.
-      const submission = res.locals.submission!;
+      const submission = locals.resLocals.submission!;
       const panels = await renderPanelsForSubmission({
         unsafe_submission_id: submission.id,
         question: res.locals.question,
@@ -372,10 +367,10 @@ router.get(
       });
 
       res.json({
-        gradingPanel,
         rubric_data,
         submissionPanel: panels.submissionPanel,
         submissionId: submission.id,
+        modifiedAt: locals.resLocals.instance_question.modified_at.toISOString(),
         aiGradingStats:
           aiGradingEnabled && res.locals.assessment_question.ai_grading_mode
             ? await calculateAiGradingStats(res.locals.assessment_question)
