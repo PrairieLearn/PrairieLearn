@@ -1,5 +1,5 @@
 import { useCallback, useEffect, useRef, useState } from 'react';
-import { Button, Form, ProgressBar } from 'react-bootstrap';
+import { Alert, Button, Form, ProgressBar } from 'react-bootstrap';
 
 interface ChatMessage {
   id: string;
@@ -295,32 +295,6 @@ export function AgentChatPanel({
                   <div style={{ whiteSpace: 'pre-wrap', fontSize: '0.875rem' }}>
                     {message.content}
                   </div>
-                  {message.special === 'rubricGenerated' && phase === 'rubricReady' && (
-                    <div className="mt-2 d-flex flex-wrap gap-2">
-                      <Button variant="outline-primary" size="sm">
-                        <i className="bi bi-pencil me-1" />
-                        Edit rubric
-                      </Button>
-                      <Button variant="success" size="sm" onClick={startGradingProgress}>
-                        <i className="bi bi-play-fill me-1" />
-                        Start grading
-                      </Button>
-                    </div>
-                  )}
-                  {message.special === 'rubricProposal' &&
-                    phase === 'proposalPending' &&
-                    activeProposal && (
-                      <div className="mt-2 d-flex flex-wrap gap-2">
-                        <Button variant="success" size="sm" onClick={handleAccept}>
-                          <i className="bi bi-check-lg me-1" />
-                          Accept
-                        </Button>
-                        <Button variant="outline-danger" size="sm" onClick={handleReject}>
-                          <i className="bi bi-x-lg me-1" />
-                          Reject
-                        </Button>
-                      </div>
-                    )}
                 </div>
               </div>
             )}
@@ -329,7 +303,7 @@ export function AgentChatPanel({
         <div ref={messagesEndRef} />
       </div>
 
-      {/* Bottom area: progress + input */}
+      {/* Bottom area: progress + action buttons + input */}
       <div className="border-top px-3 py-2 bg-light">
         {/* Progress bar — shown during grading */}
         {(isGrading || phase === 'proposalPending' || phase === 'complete') && (
@@ -348,9 +322,6 @@ export function AgentChatPanel({
                   Grading
                 </span>
               )}
-              {phase === 'proposalPending' && (
-                <span className="badge bg-warning text-dark">Paused</span>
-              )}
               {phase === 'complete' && <span className="badge bg-primary">Complete</span>}
             </div>
             <ProgressBar
@@ -359,6 +330,16 @@ export function AgentChatPanel({
               style={{ height: 6 }}
             />
           </div>
+        )}
+
+        {/* Paused alert when proposal is pending */}
+        {phase === 'proposalPending' && (
+          <Alert variant="warning" className="py-2 px-3 mb-2 d-flex align-items-center gap-2">
+            <i className="bi bi-exclamation-triangle-fill" />
+            <small className="fw-semibold">
+              Action requested: review the proposed rubric change
+            </small>
+          </Alert>
         )}
 
         {/* Generate rubric button */}
@@ -379,6 +360,44 @@ export function AgentChatPanel({
           <div className="text-center mb-2">
             <span className="spinner-border spinner-border-sm text-primary me-2" role="status" />
             <small className="text-muted">Generating rubric...</small>
+          </div>
+        )}
+
+        {/* Rubric ready action buttons */}
+        {phase === 'rubricReady' && (
+          <div className="d-flex gap-2 mb-2">
+            <Button variant="outline-primary" size="sm" className="flex-grow-1">
+              <i className="bi bi-pencil me-1" />
+              Edit rubric
+            </Button>
+            <Button
+              variant="success"
+              size="sm"
+              className="flex-grow-1"
+              onClick={startGradingProgress}
+            >
+              <i className="bi bi-play-fill me-1" />
+              Start grading
+            </Button>
+          </div>
+        )}
+
+        {/* Proposal accept/reject buttons */}
+        {phase === 'proposalPending' && activeProposal && (
+          <div className="d-flex gap-2 mb-2">
+            <Button variant="success" size="sm" className="flex-grow-1" onClick={handleAccept}>
+              <i className="bi bi-check-lg me-1" />
+              Accept
+            </Button>
+            <Button
+              variant="outline-danger"
+              size="sm"
+              className="flex-grow-1"
+              onClick={handleReject}
+            >
+              <i className="bi bi-x-lg me-1" />
+              Reject
+            </Button>
           </div>
         )}
 
