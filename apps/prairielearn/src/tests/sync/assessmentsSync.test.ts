@@ -44,7 +44,6 @@ const sql = sqldb.loadSqlEquiv(import.meta.url);
 function makeAssessment(
   courseData: util.CourseData,
   type: 'Homework' | 'Exam' = 'Exam',
-  preferences?: Record<string, string | number | boolean>,
 ): AssessmentJsonInput {
   const assessmentSet = courseData.course.assessmentSets?.[0].name ?? '';
   return {
@@ -55,7 +54,6 @@ function makeAssessment(
     number: '1',
     zones: [],
     allowAccess: [],
-    ...preferences,
   };
 }
 
@@ -4393,6 +4391,15 @@ describe('Assessment syncing', () => {
     await util.writeAndSyncCourseData(courseData);
     const syncedAssessment = await findSyncedAssessment('prefDefault');
     assert.isNull(syncedAssessment.sync_errors);
+
+    const assessmentQuestions = await util.dumpTableWithSchema(
+      'assessment_questions',
+      AssessmentQuestionSchema,
+    );
+    const aq = assessmentQuestions.find((q) => q.assessment_id === syncedAssessment.id);
+    assert.isOk(aq);
+    // No overrides were specified, so preferences should be null (not the merged defaults).
+    assert.isNull(aq.preferences);
   });
 
   it('allows specifying only a subset of preference keys', async () => {
@@ -4414,6 +4421,36 @@ describe('Assessment syncing', () => {
     await util.writeAndSyncCourseData(courseData);
     const syncedAssessment = await findSyncedAssessment('prefSubset');
     assert.isNull(syncedAssessment.sync_errors);
+  });
+
+  it('stores only overrides in assessment_questions.preferences, not merged defaults', async () => {
+    const courseData = util.getCourseData();
+    const assessment = makeAssessment(courseData, 'Exam');
+    assessment.zones?.push({
+      title: 'zone 1',
+      questions: [
+        {
+          id: util.PREFERENCES_QUESTION_ID,
+          points: 5,
+          preferences: {
+            num: 99,
+          },
+        },
+      ],
+    });
+    courseData.courseInstances[util.COURSE_INSTANCE_ID].assessments['prefOverrides'] = assessment;
+    await util.writeAndSyncCourseData(courseData);
+    const syncedAssessment = await findSyncedAssessment('prefOverrides');
+    assert.isNull(syncedAssessment.sync_errors);
+
+    const assessmentQuestions = await util.dumpTableWithSchema(
+      'assessment_questions',
+      AssessmentQuestionSchema,
+    );
+    const aq = assessmentQuestions.find((q) => q.assessment_id === syncedAssessment.id);
+    assert.isOk(aq);
+    // Should contain ONLY the override, not the merged defaults (str, bool).
+    assert.deepEqual(aq.preferences, { num: 99 });
   });
 
   it('records an error if preferences is not an object', async () => {

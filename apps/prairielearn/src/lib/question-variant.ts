@@ -17,7 +17,7 @@ import {
   type Course,
   type CourseInstance,
   type Question,
-  type QuestionPreferenceDefinitionSchema,
+  type QuestionPreferenceValuesSchema,
   type Variant,
   VariantSchema,
 } from './db-types.js';
@@ -32,7 +32,7 @@ const VariantWithFormattedDateSchema = VariantSchema.extend({
 });
 type VariantWithFormattedDate = z.infer<typeof VariantWithFormattedDateSchema>;
 
-type QuestionPreferenceDefinition = z.infer<typeof QuestionPreferenceDefinitionSchema>;
+type QuestionPreferenceValues = z.infer<typeof QuestionPreferenceValuesSchema>;
 
 const InstanceQuestionDataSchema = z.object({
   question_id: IdSchema,
@@ -49,7 +49,7 @@ interface VariantCreationData {
   params: Record<string, any>;
   true_answer: Record<string, any>;
   options: Record<string, any>;
-  preferences: QuestionPreferenceDefinition;
+  preferences: QuestionPreferenceValues;
   broken: boolean;
 }
 
@@ -254,7 +254,7 @@ async function makeAndInsertVariant({
   const question = await selectQuestion(question_id, instance_question_id);
 
   // Look up preferences for this question instance
-  let preferences: QuestionPreferenceDefinition = extractDefaultPreferences(
+  let preferences: QuestionPreferenceValues = extractDefaultPreferences(
     question.preferences_schema,
   );
 

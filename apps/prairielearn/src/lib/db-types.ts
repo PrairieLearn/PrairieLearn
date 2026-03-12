@@ -102,7 +102,7 @@ export type EnumQuestionType = z.infer<typeof EnumQuestionTypeSchema>;
 // *******************************************************************************
 export const JsonCommentSchema = z.union([z.string(), z.array(z.any()), z.record(z.any())]);
 
-export const QuestionPreferenceDefinitionSchema = z.record(
+export const QuestionPreferenceValuesSchema = z.record(
   z.string(),
   z.union([z.string(), z.number(), z.boolean()]),
 );
@@ -489,7 +489,7 @@ export const AssessmentQuestionSchema = z.object({
   number_submissions_hist: z.array(z.number()).nullable(),
   number_submissions_variance: z.number().nullable(),
   points_list: z.array(z.number()).nullable(),
-  preferences: QuestionPreferenceDefinitionSchema.nullable(),
+  preferences: QuestionPreferenceValuesSchema.nullable(),
   question_id: IdSchema,
   question_score_variance: z.number().nullable(),
   quintile_question_scores: z.array(z.number()).nullable(),
@@ -1548,7 +1548,7 @@ export const VariantSchema = z.object({
   open: z.boolean().nullable(),
   options: z.record(z.string(), z.any()).nullable(),
   params: z.record(z.string(), z.any()).nullable(),
-  preferences: QuestionPreferenceDefinitionSchema.nullable(),
+  preferences: QuestionPreferenceValuesSchema,
   question_id: IdSchema,
   team_id: IdSchema.nullable(),
   true_answer: z.record(z.string(), z.any()).nullable(),

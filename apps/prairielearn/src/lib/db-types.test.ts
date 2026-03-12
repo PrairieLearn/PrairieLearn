@@ -16,7 +16,7 @@ const schemaNameOverrides: Record<string, string | null> = {
 };
 
 // Schemas not associated with a table.
-const customSchemas = new Set(['IdSchema', 'IntervalSchema', 'QuestionPreferenceDefinitionSchema']);
+const customSchemas = new Set(['IdSchema', 'IntervalSchema', 'QuestionPreferenceValuesSchema']);
 const unusedSchemas = new Set([
   'JsonCommentSchema',
   // TODO: Make these the primary schemas after renaming "teams" back to "groups"

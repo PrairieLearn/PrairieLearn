@@ -329,10 +329,9 @@ function getParamsForAssessment(
         assessmentQuestionNumber++;
         const questionId = questionIds[alternative.qid];
 
-        let mergedPreferences: QuestionPreferences | null = null;
         if (questionId !== undefined) {
           const preferencesSchema = getPreferencesSchema(alternative.qid);
-          const { preferences: merged, errors: preferenceErrors } = mergeAndValidatePreferences(
+          const { errors: preferenceErrors } = mergeAndValidatePreferences(
             ajv,
             alternative.qid,
             preferencesSchema,
@@ -340,9 +339,6 @@ function getParamsForAssessment(
           );
           for (const error of preferenceErrors) {
             infofile.addError(assessmentInfoFile, error);
-          }
-          if (preferencesSchema) {
-            mergedPreferences = merged;
           }
         }
 
@@ -381,7 +377,7 @@ function getParamsForAssessment(
           json_max_points: alternative.jsonMaxPoints,
           json_max_auto_points: alternative.jsonMaxAutoPoints,
           json_tries_per_variant: alternative.jsonTriesPerVariant,
-          preferences: mergedPreferences,
+          preferences: alternative.preferences ?? null,
         };
       });
 

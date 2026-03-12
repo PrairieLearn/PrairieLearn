@@ -7,7 +7,7 @@ const sql = sqldb.loadSqlEquiv(import.meta.url);
 import {
   type AssessmentQuestion,
   AssessmentQuestionSchema,
-  QuestionPreferenceDefinitionSchema,
+  QuestionPreferenceValuesSchema,
 } from '../lib/db-types.js';
 
 export async function selectAssessmentQuestionById(id: string): Promise<AssessmentQuestion> {
@@ -36,7 +36,7 @@ export async function selectPreferencesForInstanceQuestion(instance_question_id:
   const row = await sqldb.queryRow(
     sql.select_preferences_for_instance_question,
     { instance_question_id },
-    z.object({ preferences: QuestionPreferenceDefinitionSchema.nullable() }),
+    z.object({ preferences: QuestionPreferenceValuesSchema.nullable() }),
   );
   return row.preferences;
 }

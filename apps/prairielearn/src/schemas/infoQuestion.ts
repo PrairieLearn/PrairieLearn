@@ -2,9 +2,17 @@ import { z } from 'zod';
 
 import { CommentJsonSchema } from './comment.js';
 
-// Note that this is intentionally not expressed as a union of more precise types.
-// `ajv` doesn't present errors in a sensible way if we do that. Instead, we
-// perform validation manually in the syncing code.
+// This schema is intentionally a subset of JSON Schema. The `type`, `default`,
+// and `enum` keys map directly to their JSON Schema equivalents, which allows
+// the syncing code to pass preference field definitions directly to AJV for
+// validation of assessment-level overrides. If new keys are added here, they
+// must either be valid JSON Schema keywords or the AJV validation in
+// `assessments.ts` (`mergeAndValidatePreferences`) must be updated to construct
+// the JSON Schema explicitly.
+//
+// Not expressed as a union of more precise types because `ajv` doesn't present
+// errors in a sensible way if we do that. Instead, we perform validation
+// manually in the syncing code (e.g., checking that `default` matches `type`).
 const QuestionPreferencesFieldSchema = z
   .object({
     type: z.enum(['string', 'number', 'boolean']),
