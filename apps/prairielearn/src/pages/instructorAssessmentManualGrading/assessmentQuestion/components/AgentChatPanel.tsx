@@ -70,6 +70,7 @@ export function AgentChatPanel({
   const [inputValue, setInputValue] = useState('');
   const [phase, setPhase] = useState<ChatPhase>('idle');
   const [gradedCount, setGradedCount] = useState(0);
+  const [gradingTotal, setGradingTotal] = useState(TOTAL_GRADING_SUBMISSIONS);
   const [activeTab, setActiveTab] = useState('current');
   const messagesEndRef = useRef<HTMLDivElement>(null);
   const gradingIntervalRef = useRef<ReturnType<typeof setInterval> | null>(null);
@@ -141,6 +142,7 @@ export function AgentChatPanel({
 
   const startGradingProgress = useCallback(() => {
     setGradedCount(0);
+    setGradingTotal(TOTAL_GRADING_SUBMISSIONS);
     setPhase('grading');
     rubricChangedRef.current = false;
     addMessage('system', 'AI grading started.');
@@ -260,6 +262,7 @@ export function AgentChatPanel({
     addMessage('user', 'Yes, allow rubric proposals.');
     setPhase('rerunning');
     setGradedCount(0);
+    setGradingTotal(PROPOSAL_AT);
     setTimeout(() => {
       addMessage(
         'assistant',
@@ -302,6 +305,7 @@ export function AgentChatPanel({
     addMessage('user', 'No, just regrade without proposals.');
     setPhase('rerunning');
     setGradedCount(0);
+    setGradingTotal(PROPOSAL_AT);
     setTimeout(() => {
       addMessage(
         'assistant',
@@ -398,9 +402,6 @@ export function AgentChatPanel({
 
   const isGrading = phase === 'grading' || phase === 'rerunning';
   const showOutdatedActions = phase === 'complete' && rubricChangedRef.current;
-
-  // For rerun progress, max is PROPOSAL_AT not TOTAL_GRADING_SUBMISSIONS.
-  const progressMax = phase === 'rerunning' ? PROPOSAL_AT : TOTAL_GRADING_SUBMISSIONS;
   const showProgress = isGrading || phase === 'proposalPending' || phase === 'complete';
 
   return (
@@ -478,7 +479,7 @@ export function AgentChatPanel({
           <div className="mb-2">
             <div className="d-flex justify-content-between align-items-center mb-1">
               <small className="text-muted">
-                Graded {Math.min(gradedCount, progressMax)}/{progressMax} submissions
+                Graded {Math.min(gradedCount, gradingTotal)}/{gradingTotal} submissions
                 {phase === 'rerunning' && ' (rerun)'}
               </small>
               {isGrading && (
@@ -494,7 +495,7 @@ export function AgentChatPanel({
               {phase === 'complete' && <span className="badge bg-primary">Complete</span>}
             </div>
             <ProgressBar
-              now={(Math.min(gradedCount, progressMax) / progressMax) * 100}
+              now={(Math.min(gradedCount, gradingTotal) / gradingTotal) * 100}
               variant={phase === 'complete' ? 'primary' : 'success'}
               style={{ height: 6 }}
             />
