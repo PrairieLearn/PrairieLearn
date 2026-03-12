@@ -1,5 +1,5 @@
 import { type OpenAIProvider } from '@ai-sdk/openai';
-import type { GenerateObjectResult, GenerateTextResult, LanguageModelUsage } from 'ai';
+import type { GenerateTextResult, LanguageModelUsage } from 'ai';
 
 import type { CounterClockwiseRotationDegrees } from '../ee/lib/ai-grading/types.js';
 
@@ -12,27 +12,22 @@ type Prompt = (string | string[])[];
 /**
  * AI image grading response and, if rotation correction occurred, associated rotation correction responses.
  */
-type AiGradingResponse = GenerateObjectResult<any> | GenerateTextResult<any, any>;
-
-/**
- * AI image grading response and, if rotation correction occurred, associated rotation correction responses.
- */
 export type AiImageGradingResponses =
   | {
       rotationCorrectionApplied: false;
-      finalGradingResponse: AiGradingResponse;
+      finalGradingResponse: GenerateTextResult<any, any>;
     }
   | {
       rotationCorrectionApplied: true;
-      finalGradingResponse: AiGradingResponse;
+      finalGradingResponse: GenerateTextResult<any, any>;
       rotationCorrections: Record<
         string,
         {
           degreesRotated: CounterClockwiseRotationDegrees;
-          response: AiGradingResponse;
+          response: GenerateTextResult<any, any>;
         }
       >;
-      gradingResponseWithRotationIssue: AiGradingResponse;
+      gradingResponseWithRotationIssue: GenerateTextResult<any, any>;
     };
 
 /**
@@ -50,7 +45,7 @@ export function logResponseUsage({
   response,
   logger,
 }: {
-  response: GenerateObjectResult<any> | GenerateTextResult<any, any>;
+  response: GenerateTextResult<any, any>;
   logger: { info: (msg: string) => void };
 }) {
   const usage = response.usage;
@@ -68,7 +63,7 @@ export function logResponsesUsage({
   responses,
   logger,
 }: {
-  responses: (GenerateObjectResult<any> | GenerateTextResult<any, any>)[];
+  responses: GenerateTextResult<any, any>[];
   logger: { info: (msg: string) => void };
 }) {
   const { inputTokens, cachedInputTokens, outputTokens, reasoningTokens, totalTokens } =

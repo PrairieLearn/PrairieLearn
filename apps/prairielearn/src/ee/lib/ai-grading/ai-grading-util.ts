@@ -1,7 +1,7 @@
 import {
-  type GenerateObjectResult,
   type GenerateTextResult,
   type LanguageModel,
+  type LanguageModelMiddleware,
   type LanguageModelUsage,
   type ModelMessage,
   Output,
@@ -487,7 +487,7 @@ export async function insertAiGradingJob({
   job_sequence_id: string;
   model_id: AiGradingModelId;
   prompt: ModelMessage[];
-  response: GenerateObjectResult<any> | GenerateTextResult<any, any>;
+  response: GenerateTextResult<any, any>;
   course_id: string;
   course_instance_id?: string;
 }): Promise<void> {
@@ -536,15 +536,15 @@ export async function insertAiGradingJobWithRotationCorrection({
   job_sequence_id: string;
   model_id: AiGradingModelId;
   prompt: ModelMessage[];
-  gradingResponseWithRotationIssue: GenerateObjectResult<any> | GenerateTextResult<any, any>;
+  gradingResponseWithRotationIssue: GenerateTextResult<any, any>;
   rotationCorrections: Record<
     string,
     {
       degreesRotated: CounterClockwiseRotationDegrees;
-      response: GenerateObjectResult<any> | GenerateTextResult<any, any>;
+      response: GenerateTextResult<any, any>;
     }
   >;
-  gradingResponseWithRotationCorrection: GenerateObjectResult<any> | GenerateTextResult<any, any>;
+  gradingResponseWithRotationCorrection: GenerateTextResult<any, any>;
   course_id: string;
   course_instance_id?: string;
 }): Promise<void> {
@@ -890,6 +890,37 @@ export async function correctImagesOrientation({
     rotationCorrections,
   };
 }
+/**
+ * Creates a language model middleware that repairs malformed JSON from Google Gemini models.
+ *
+ * The middleware intercepts the raw text output from the model and attempts to fix
+ * unescaped backslashes in rubric item keys using `correctGeminiMalformedRubricGradingJson`.
+ *
+ * The repair function is destructive on valid JSON (it double-escapes backslashes),
+ * so it only runs after a JSON parse failure.
+ */
+export function createGeminiRepairMiddleware(): LanguageModelMiddleware {
+  return {
+    specificationVersion: 'v3',
+    wrapGenerate: async ({ doGenerate }) => {
+      const result = await doGenerate();
+      return {
+        ...result,
+        content: result.content.map((part) => {
+          if (part.type !== 'text') return part;
+          try {
+            JSON.parse(part.text);
+            return part;
+          } catch {
+            const repaired = correctGeminiMalformedRubricGradingJson(part.text);
+            return repaired ? { ...part, text: repaired } : part;
+          }
+        }),
+      };
+    },
+  };
+}
+
 /**
  * Correct malformed AI rubric grading responses from Google Gemini by escaping backslashes in rubric item keys.
  *

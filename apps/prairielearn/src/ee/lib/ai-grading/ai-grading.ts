@@ -3,13 +3,7 @@ import assert from 'node:assert';
 import { createAnthropic } from '@ai-sdk/anthropic';
 import { createGoogleGenerativeAI } from '@ai-sdk/google';
 import { type OpenAIResponsesProviderOptions, createOpenAI } from '@ai-sdk/openai';
-import {
-  type JSONParseError,
-  Output,
-  type TypeValidationError,
-  generateObject,
-  generateText,
-} from 'ai';
+import { Output, generateText, wrapLanguageModel } from 'ai';
 import * as async from 'async';
 import mustache from 'mustache';
 import { z } from 'zod';
@@ -50,8 +44,8 @@ import { selectGradingJobsInfo } from './ai-grading-stats.js';
 import {
   addAiGradingCostToIntervalUsage,
   containsImageCapture,
-  correctGeminiMalformedRubricGradingJson,
   correctImagesOrientation,
+  createGeminiRepairMiddleware,
   extractSubmissionImages,
   generatePrompt,
   getIntervalUsage,
@@ -145,6 +139,11 @@ export async function aiGrade({
       })(model_id);
     }
   });
+
+  const gradingModel =
+    provider === 'google'
+      ? wrapLanguageModel({ model, middleware: createGeminiRepairMiddleware() })
+      : model;
 
   const question_course = await getQuestionCourse(question, course);
 
@@ -407,21 +406,6 @@ export async function aiGrade({
           finalGradingResponse,
           rotationCorrectionApplied,
         } = (await run(async () => {
-          const experimental_repairText: (options: {
-            text: string;
-            error: JSONParseError | TypeValidationError;
-          }) => Promise<string | null> = async (options) => {
-            if (provider !== 'google' || options.error.name !== 'AI_JSONParseError') {
-              return null;
-            }
-            // If a JSON parse error occurs with a Google Gemini model, we attempt to correct
-            // unescaped backslashes in the rubric item keys of the response.
-
-            // TODO: Remove this temporary fix once Google fixes the underlying issue.
-            // Issue on the Google GenAI repository: https://github.com/googleapis/js-genai/issues/1226#issue-3783507624
-            return correctGeminiMalformedRubricGradingJson(options.text);
-          };
-
           if (
             !hasImage ||
             !submission.submitted_answer ||
@@ -430,12 +414,10 @@ export async function aiGrade({
             provider !== 'google'
           ) {
             return {
-              // eslint-disable-next-line @typescript-eslint/no-deprecated -- generateText doesn't support experimental_repairText
-              finalGradingResponse: await generateObject({
-                model,
-                schema: RubricGradingResultSchema,
+              finalGradingResponse: await generateText({
+                model: gradingModel,
+                output: Output.object({ schema: RubricGradingResultSchema }),
                 messages: input,
-                experimental_repairText,
                 providerOptions: {
                   openai: openaiProviderOptions,
                 },
@@ -444,19 +426,17 @@ export async function aiGrade({
             };
           }
 
-          // eslint-disable-next-line @typescript-eslint/no-deprecated -- generateText doesn't support experimental_repairText
-          const initialResponse = await generateObject({
-            model,
-            schema: RubricImageGradingResultSchema,
+          const initialResponse = await generateText({
+            model: gradingModel,
+            output: Output.object({ schema: RubricImageGradingResultSchema }),
             messages: input,
-            experimental_repairText,
             providerOptions: {
               openai: openaiProviderOptions,
             },
           });
 
           if (
-            initialResponse.object.handwriting_orientations.every(
+            initialResponse.output.handwriting_orientations.every(
               (orientation) => orientation === 'Upright (0 degrees)',
             )
           ) {
@@ -495,12 +475,10 @@ export async function aiGrade({
           });
 
           // Perform grading with the rotation-corrected images.
-          // eslint-disable-next-line @typescript-eslint/no-deprecated -- generateText doesn't support experimental_repairText
-          const finalResponse = await generateObject({
-            model,
-            schema: RubricImageGradingResultSchema,
+          const finalResponse = await generateText({
+            model: gradingModel,
+            output: Output.object({ schema: RubricImageGradingResultSchema }),
             messages: input,
-            experimental_repairText,
             providerOptions: {
               openai: openaiProviderOptions,
             },
@@ -547,9 +525,9 @@ export async function aiGrade({
           }
         }
 
-        logger.info(`Parsed response: ${JSON.stringify(finalGradingResponse.object, null, 2)}`);
+        logger.info(`Parsed response: ${JSON.stringify(finalGradingResponse.output, null, 2)}`);
         const { appliedRubricItems, appliedRubricDescription } = parseAiRubricItems({
-          ai_rubric_items: finalGradingResponse.object.rubric_items,
+          ai_rubric_items: finalGradingResponse.output.rubric_items,
           rubric_items,
         });
 
