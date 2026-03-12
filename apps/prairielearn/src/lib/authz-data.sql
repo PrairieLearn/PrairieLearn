@@ -6,14 +6,10 @@ SELECT
   jsonb_build_object(
     'course_role',
     CASE
-    -- If user is institution admin, they are course owner
-      WHEN ia.id IS NOT NULL THEN 'Owner'::enum_course_role
-      ELSE
+    -- If user is institution admin, they have Owner permission
+      WHEN ia.id IS NOT NULL THEN 'Owner'
       -- If user is staff member, use course_permissions to determine role
-      COALESCE(
-        cp.course_role::enum_course_role,
-        'None'::enum_course_role
-      )
+      ELSE COALESCE(cp.course_role, 'None')
     END
   ) AS permissions_course,
   permissions_course_instance.*
