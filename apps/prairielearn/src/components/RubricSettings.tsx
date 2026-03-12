@@ -69,6 +69,7 @@ export function RubricSettings({
   aiGradingStats,
   context,
   proposedRubricItem,
+  proposalAccepted,
   onAcceptProposal,
 }: {
   hasCourseInstancePermissionEdit: boolean;
@@ -78,6 +79,7 @@ export function RubricSettings({
   aiGradingStats: AiGradingGeneralStats | null;
   context: Record<string, any>;
   proposedRubricItem?: ProposedRubricItem | null;
+  proposalAccepted?: boolean;
   onAcceptProposal?: (item: ProposedRubricItem) => void;
 }) {
   const showAiGradingStats = Boolean(aiGradingStats);
@@ -150,7 +152,11 @@ export function RubricSettings({
     setRubricItems([...rubricItems, newItem]);
   } else if (!proposedRubricItem && prevProposalRef.current) {
     prevProposalRef.current = null;
-    if (proposedItemIdx !== null) {
+    if (proposalAccepted) {
+      // Proposal was accepted — keep the item, just clear the "NEW" badge.
+      setProposedItemIdx(null);
+    } else if (proposedItemIdx !== null) {
+      // Proposal was rejected — remove the item.
       setRubricItems(rubricItems.filter((_, i) => i !== proposedItemIdx));
       setProposedItemIdx(null);
     }

@@ -35,6 +35,7 @@ type ChatPhase =
   | 'grading'
   | 'proposalPending'
   | 'complete'
+  | 'regradePrompt'
   | 'rerunning';
 
 const TOTAL_GRADING_SUBMISSIONS = 100;
@@ -43,11 +44,11 @@ const GRADING_INTERVAL_MS = 150;
 
 const CHAT_WIDTH = 480;
 
-/** Fake chat tabs for the prototype. */
-const CHAT_TABS = [
-  { id: 'current', label: 'Q3: Projection' },
-  { id: 'tab2', label: 'Q1: Eigenvalues' },
-  { id: 'tab3', label: 'Q5: Determinants' },
+/** Fake chat windows for the prototype. */
+const CHAT_WINDOWS = [
+  { id: 'current', label: 'Q3: Projection', active: true },
+  { id: 'tab2', label: 'Q1: Eigenvalues', active: false },
+  { id: 'tab3', label: 'Q5: Determinants', active: false },
 ];
 
 interface AgentChatPanelProps {
@@ -242,9 +243,21 @@ export function AgentChatPanel({
     }, 5000);
   }, [addMessage]);
 
-  /** Rerun grading on the outdated submissions. */
-  const handleRerunWithProposals = useCallback(() => {
-    addMessage('user', 'Rerun grading on outdated submissions (with rubric proposals allowed).');
+  /** Step 1: User clicks "Regrade" — ask about proposals. */
+  const handleRegrade = useCallback(() => {
+    addMessage('user', 'Regrade the outdated submissions.');
+    setPhase('regradePrompt');
+    setTimeout(() => {
+      addMessage(
+        'assistant',
+        `Should I be allowed to propose rubric changes while re-grading the ${PROPOSAL_AT} outdated submissions?`,
+      );
+    }, 500);
+  }, [addMessage]);
+
+  /** Step 2a: Regrade with proposals allowed. */
+  const handleRegradeWithProposals = useCallback(() => {
+    addMessage('user', 'Yes, allow rubric proposals.');
     setPhase('rerunning');
     setGradedCount(0);
     setTimeout(() => {
@@ -254,7 +267,6 @@ export function AgentChatPanel({
       );
     }, 500);
 
-    // Simulate rerun progress.
     let count = 0;
     gradingIntervalRef.current = setInterval(() => {
       count += 1;
@@ -285,8 +297,9 @@ export function AgentChatPanel({
     }, GRADING_INTERVAL_MS);
   }, [addMessage]);
 
-  const handleRerunNoProposals = useCallback(() => {
-    addMessage('user', 'Rerun grading on outdated submissions (no rubric proposals).');
+  /** Step 2b: Regrade without proposals. */
+  const handleRegradeNoProposals = useCallback(() => {
+    addMessage('user', 'No, just regrade without proposals.');
     setPhase('rerunning');
     setGradedCount(0);
     setTimeout(() => {
@@ -402,26 +415,24 @@ export function AgentChatPanel({
         zIndex: 1030,
       }}
     >
-      {/* Chat tabs */}
-      <div className="border-bottom bg-white px-2 pt-2" style={{ flexShrink: 0 }}>
-        <ul className="nav nav-tabs" style={{ fontSize: '0.8125rem' }}>
-          {CHAT_TABS.map((tab) => (
-            <li key={tab.id} className="nav-item">
-              <button
-                type="button"
-                className={`nav-link py-1 px-3 ${activeTab === tab.id ? 'active' : ''}`}
-                onClick={() => setActiveTab(tab.id)}
-              >
-                {tab.label}
-              </button>
-            </li>
-          ))}
-          <li className="nav-item">
-            <button type="button" className="nav-link py-1 px-2 text-muted" disabled>
-              <i className="bi bi-plus-lg" />
-            </button>
-          </li>
-        </ul>
+      {/* Chat windows selector */}
+      <div
+        className="border-bottom bg-white d-flex align-items-center"
+        style={{ flexShrink: 0, overflow: 'hidden' }}
+      >
+        {CHAT_WINDOWS.map((win) => (
+          <button
+            key={win.id}
+            type="button"
+            className={`btn btn-sm rounded-0 border-0 px-3 py-2 ${
+              activeTab === win.id ? 'bg-light fw-semibold' : 'text-muted'
+            }`}
+            style={{ fontSize: '0.8125rem', whiteSpace: 'nowrap' }}
+            onClick={() => setActiveTab(win.id)}
+          >
+            {win.label}
+          </button>
+        ))}
       </div>
 
       {/* Messages */}
@@ -564,25 +575,48 @@ export function AgentChatPanel({
           </div>
         )}
 
-        {/* Outdated grading actions */}
+        {/* Outdated grading actions — step 1: regrade or leave */}
         {showOutdatedActions && (
-          <div className="mb-2">
-            <small className="text-muted d-block mb-1">
-              {PROPOSAL_AT} submissions were graded with an outdated rubric:
-            </small>
-            <div className="d-flex flex-column gap-1">
-              <Button variant="primary" size="sm" onClick={handleRerunWithProposals}>
-                <i className="bi bi-arrow-repeat me-1" />
-                Rerun with rubric proposals
-              </Button>
-              <Button variant="outline-primary" size="sm" onClick={handleRerunNoProposals}>
-                <i className="bi bi-arrow-repeat me-1" />
-                Rerun without proposals
-              </Button>
-              <Button variant="outline-secondary" size="sm" onClick={handleLeaveAsIs}>
-                Leave gradings as-is
-              </Button>
-            </div>
+          <div className="d-flex gap-2 mb-2">
+            <Button
+              variant="outline-secondary"
+              size="sm"
+              className="flex-grow-1"
+              onClick={handleRegrade}
+            >
+              <i className="bi bi-arrow-repeat me-1" />
+              Regrade
+            </Button>
+            <Button
+              variant="outline-secondary"
+              size="sm"
+              className="flex-grow-1"
+              onClick={handleLeaveAsIs}
+            >
+              Leave as-is
+            </Button>
+          </div>
+        )}
+
+        {/* Outdated grading actions — step 2: proposal preference */}
+        {phase === 'regradePrompt' && (
+          <div className="d-flex gap-2 mb-2">
+            <Button
+              variant="outline-secondary"
+              size="sm"
+              className="flex-grow-1"
+              onClick={handleRegradeWithProposals}
+            >
+              Allow proposals
+            </Button>
+            <Button
+              variant="outline-secondary"
+              size="sm"
+              className="flex-grow-1"
+              onClick={handleRegradeNoProposals}
+            >
+              No proposals
+            </Button>
           </div>
         )}
 

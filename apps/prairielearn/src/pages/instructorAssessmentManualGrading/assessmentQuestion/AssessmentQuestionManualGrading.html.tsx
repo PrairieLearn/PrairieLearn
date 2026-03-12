@@ -111,12 +111,16 @@ function AssessmentQuestionManualGradingInner({
 
   // Rubric proposal state shared between chat panel and rubric settings.
   const [activeProposal, setActiveProposal] = useState<RubricProposal | null>(null);
+  // When true, proposal was accepted — RubricSettings should keep the item but remove the badge.
+  const [proposalAccepted, setProposalAccepted] = useState(false);
 
   const handleAcceptProposal = useCallback(() => {
+    setProposalAccepted(true);
     setActiveProposal(null);
   }, []);
 
   const handleRejectProposal = useCallback(() => {
+    setProposalAccepted(false);
     setActiveProposal(null);
   }, []);
 
@@ -125,10 +129,12 @@ function AssessmentQuestionManualGradingInner({
   }, []);
 
   const handleNewProposal = useCallback((proposal: RubricProposal) => {
+    setProposalAccepted(false);
     setActiveProposal(proposal);
   }, []);
 
   const handleAcceptProposalFromRubric = useCallback((_item: ProposedRubricItem) => {
+    setProposalAccepted(true);
     setActiveProposal(null);
   }, []);
 
@@ -212,6 +218,7 @@ function AssessmentQuestionManualGradingInner({
           proposedRubricItem={
             aiGradingMode && activeProposal ? proposalToRubricItem(activeProposal) : null
           }
+          proposalAccepted={proposalAccepted}
           onAcceptProposal={handleAcceptProposalFromRubric}
           onSetGroupInfoModalState={setGroupInfoModalState}
           onSetConflictModalState={setConflictModalState}

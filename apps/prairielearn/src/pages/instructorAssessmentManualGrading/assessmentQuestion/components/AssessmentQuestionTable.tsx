@@ -91,6 +91,7 @@ interface AssessmentQuestionTableProps {
   onSetConflictModalState: (modalState: ConflictModalState) => void;
   mutations: ReturnType<typeof useManualGradingActions>;
   proposedRubricItem?: ProposedRubricItem | null;
+  proposalAccepted?: boolean;
   onAcceptProposal?: (item: ProposedRubricItem) => void;
 }
 
@@ -185,6 +186,7 @@ export function AssessmentQuestionTable({
   onSetConflictModalState,
   mutations,
   proposedRubricItem,
+  proposalAccepted,
   onAcceptProposal,
 }: AssessmentQuestionTableProps) {
   const trpc = useTRPC();
@@ -664,6 +666,7 @@ export function AssessmentQuestionTable({
             question_qid: questionQid,
           }}
           proposedRubricItem={proposedRubricItem}
+          proposalAccepted={proposalAccepted}
           onAcceptProposal={onAcceptProposal}
         />
       </div>
