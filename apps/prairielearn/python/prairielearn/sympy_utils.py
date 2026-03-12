@@ -404,7 +404,7 @@ def sympy_check(
             raise HasInvalidSymbolError(str_item)
         if isinstance(item, sympy.Float):
             raise HasFloatError(float(str_item))
-        if not allow_complex and item == sympy.I:
+        if not allow_complex and (item == sympy.I or item.is_extended_real is False):
             raise HasComplexError("complex values not allowed")
 
         work_stack.extend(item.args)
