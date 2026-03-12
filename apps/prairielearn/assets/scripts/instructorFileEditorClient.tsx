@@ -244,7 +244,7 @@ class InstructorFileEditor {
           return { errorCode: SaveErrorCode.INVALID_JSON };
         } else if (this.fileMetadata.uuid) {
           if ('uuid' in parsedContent) {
-            if (parsedContent.uuid !== this.fileMetadata.uuid) {
+            if (String(parsedContent.uuid).toLowerCase() !== this.fileMetadata.uuid.toLowerCase()) {
               return {
                 errorCode: SaveErrorCode.UUID_CHANGED,
                 originalUuid: this.fileMetadata.uuid,
