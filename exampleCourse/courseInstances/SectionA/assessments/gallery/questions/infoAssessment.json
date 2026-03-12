@@ -8,30 +8,43 @@
     {
       "title": "Checkbox Input",
       "questions": [
-        { "id": "gallery/checkbox/simple", "autoPoints": 1 },
-        { "id": "gallery/checkbox/complex", "autoPoints": 1 }
+        {
+          "id": "gallery/checkbox/simple",
+          "autoPoints": 1
+        },
+        {
+          "id": "gallery/checkbox/complex",
+          "autoPoints": 1
+        }
       ]
     },
     {
       "title": "Include Figure",
       "questions": [
-        { "id": "gallery/includeFigure/simple", "autoPoints": 1 },
-        { "id": "gallery/includeFigure/complex", "autoPoints": 1 }
+        {
+          "id": "gallery/includeFigure/simple",
+          "autoPoints": 1
+        },
+        {
+          "id": "gallery/includeFigure/complex",
+          "autoPoints": 1
+        }
       ]
     },
     {
       "title": "Multiple-choice Input",
       "questions": [
-        { "id": "gallery/multipleChoice/simple", "autoPoints": 1 },
-        { "id": "gallery/multipleChoice/complex", "autoPoints": 1 },
-        { "id": "gallery/multipleChoice/advanced", "autoPoints": 1 },
         {
-          "id": "gallery/multipleChoice/withPreferences",
-          "points": 1,
-          "preferences": {
-            "gravitational_constant": 13,
-            "fired_object": "bowling ball"
-          }
+          "id": "gallery/multipleChoice/simple",
+          "autoPoints": 1
+        },
+        {
+          "id": "gallery/multipleChoice/complex",
+          "autoPoints": 1
+        },
+        {
+          "id": "gallery/multipleChoice/advanced",
+          "autoPoints": 1
         }
       ]
     }

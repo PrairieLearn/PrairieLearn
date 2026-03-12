@@ -1,0 +1,19 @@
+<pl-question-panel>
+  <p>A {{preferences.fired_object}} with mass $m = {{params.m}} \rm\ kg$ is dropped from a cliff.</p>
+  <p>
+    Assume the acceleration due to gravity is
+    $g = {{preferences.gravitational_constant}} \rm\ m/s^2$.
+  </p>
+  <p>
+    Using the formula $F = ma$, what is the magnitude of the net force acting on the
+    {{preferences.fired_object}}?
+  </p>
+</pl-question-panel>
+
+<pl-multiple-choice answers-name="force_answer" none-of-the-above="{{params.none}}">
+  <pl-answer correct="true">{{params.F_c}}</pl-answer>
+  <pl-answer correct="false">{{params.F_x1}}</pl-answer>
+  <pl-answer correct="false">{{params.F_x2}}</pl-answer>
+  <pl-answer correct="false">{{params.F_x3}}</pl-answer>
+  <pl-answer correct="false">{{params.F_x4}}</pl-answer>
+</pl-multiple-choice>
