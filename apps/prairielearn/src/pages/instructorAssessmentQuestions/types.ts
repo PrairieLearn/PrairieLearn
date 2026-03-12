@@ -1,5 +1,4 @@
 import type { Dispatch } from 'react';
-import { z } from 'zod';
 
 import type { EditorQuestionMetadata } from '../../lib/assessment-question.shared.js';
 import type {
@@ -10,10 +9,10 @@ import type {
   Tag,
   Topic,
 } from '../../lib/db-types.js';
-import {
-  QuestionAlternativeJsonSchema,
-  ZoneAssessmentJsonSchema,
-  ZoneQuestionBlockJsonSchema,
+import type {
+  QuestionAlternativeJson,
+  ZoneAssessmentJson,
+  ZoneQuestionBlockJson,
 } from '../../schemas/infoAssessment.js';
 
 import type { AssessmentAdvancedDefaults } from './utils/formHelpers.js';
@@ -31,35 +30,22 @@ export interface ChangeTrackingResult {
  * Branded UUID type for stable drag-and-drop identity.
  * Using a branded type prevents accidental confusion with question IDs (QIDs).
  */
-export const TrackingIdSchema = z.string().uuid().brand<'TrackingId'>();
-export type TrackingId = z.infer<typeof TrackingIdSchema>;
+export type TrackingId = string & { __brand: 'TrackingId' };
 
 /**
  * Form version of QuestionAlternativeJson - adds trackingId for stable drag-and-drop identity.
  */
-export const QuestionAlternativeFormSchema = QuestionAlternativeJsonSchema.extend({
-  trackingId: TrackingIdSchema,
-});
-export type QuestionAlternativeForm = z.infer<typeof QuestionAlternativeFormSchema>;
-
-/**
- * Form version of ZoneQuestionBlockJson - adds trackingId, updates alternatives type.
- */
-const ZoneQuestionBlockFormSchema = ZoneQuestionBlockJsonSchema.omit({
-  alternatives: true,
-}).extend({
-  trackingId: TrackingIdSchema,
-  alternatives: z.array(QuestionAlternativeFormSchema).min(1).optional(),
-});
+export type QuestionAlternativeForm = QuestionAlternativeJson & {
+  trackingId: TrackingId;
+};
 
 /**
  * Shared fields across both question block variants.
  * Excludes the discriminating `id` and `alternatives` properties.
  */
-type ZoneQuestionBlockFormBase = Omit<
-  z.infer<typeof ZoneQuestionBlockFormSchema>,
-  'id' | 'alternatives'
->;
+type ZoneQuestionBlockFormBase = Omit<ZoneQuestionBlockJson, 'id' | 'alternatives'> & {
+  trackingId: TrackingId;
+};
 
 /**
  * A standalone question block — has a QID, no alternatives.
@@ -101,11 +87,8 @@ export function assertStandaloneQuestion(
 /**
  * Form version of ZoneAssessmentJson - adds trackingId, updates questions type.
  */
-export const ZoneAssessmentFormSchema = ZoneAssessmentJsonSchema.omit({ questions: true }).extend({
-  trackingId: TrackingIdSchema,
-  questions: z.array(ZoneQuestionBlockFormSchema),
-});
-export type ZoneAssessmentForm = Omit<z.infer<typeof ZoneAssessmentFormSchema>, 'questions'> & {
+export type ZoneAssessmentForm = Omit<ZoneAssessmentJson, 'questions'> & {
+  trackingId: TrackingId;
   questions: ZoneQuestionBlockForm[];
 };
 
