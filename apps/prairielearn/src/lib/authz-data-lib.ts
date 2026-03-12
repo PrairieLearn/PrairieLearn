@@ -18,7 +18,6 @@ import {
   type Institution,
   InstitutionSchema,
   SprocAuthzCourseInstanceSchema,
-  SprocAuthzCourseSchema,
   type User,
 } from './db-types.js';
 
@@ -124,7 +123,7 @@ export const CourseOrInstanceContextDataSchema = z.object({
   course: CourseSchema,
   institution: InstitutionSchema,
   course_instance: CourseInstanceSchema.nullable(),
-  permissions_course: SprocAuthzCourseSchema,
+  permissions_course: z.object({ course_role: EnumCourseRoleSchema }),
   permissions_course_instance: SprocAuthzCourseInstanceSchema,
 });
 export type CourseOrInstanceContextData = z.infer<typeof CourseOrInstanceContextDataSchema>;

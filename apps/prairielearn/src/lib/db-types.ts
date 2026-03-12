@@ -162,12 +162,6 @@ export const SprocAuthzAssessmentInstanceSchema = z.object({
   time_limit_min: z.number().nullable(),
 });
 
-// Result of authz_course sproc
-export const SprocAuthzCourseSchema = z.object({
-  course_role: EnumCourseRoleSchema,
-});
-export type SprocAuthzCourse = z.infer<typeof SprocAuthzCourseSchema>;
-
 // Result of users_is_instructor_in_course_instance sproc
 export const SprocUsersIsInstructorInCourseInstanceSchema = z.object({
   is_instructor: z.boolean(),
