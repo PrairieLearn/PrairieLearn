@@ -1,4 +1,4 @@
-import type { StaffAssessmentQuestionRow } from '../../../../lib/assessment-question.shared.js';
+import type { EditorQuestionMetadata } from '../../../../lib/assessment-question.shared.js';
 import type { ZoneAssessmentForm } from '../../types.js';
 
 export function DragPreview({
@@ -8,7 +8,7 @@ export function DragPreview({
 }: {
   activeDragId: string;
   zones: ZoneAssessmentForm[];
-  questionMetadata: Partial<Record<string, StaffAssessmentQuestionRow>>;
+  questionMetadata: Partial<Record<string, EditorQuestionMetadata>>;
 }) {
   for (const [zoneIndex, zone] of zones.entries()) {
     if (zone.trackingId === activeDragId) {

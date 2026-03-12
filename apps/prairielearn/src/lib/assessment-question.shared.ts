@@ -4,10 +4,14 @@ import {
   StaffAlternativeGroupSchema,
   StaffAssessmentQuestionSchema,
   StaffAssessmentSchema,
+  type StaffCourse,
   StaffCourseInstanceSchema,
   StaffCourseSchema,
+  type StaffQuestion,
   StaffQuestionSchema,
+  type StaffTag,
   StaffTagSchema,
+  type StaffTopic,
   StaffTopicSchema,
   StaffZoneSchema,
 } from '../lib/client/safe-db-types.js';
@@ -53,3 +57,18 @@ export const StaffAssessmentQuestionRowSchema =
   RawStaffAssessmentQuestionRowSchema.brand<'StaffAssessmentQuestionRow'>();
 
 export type StaffAssessmentQuestionRow = z.infer<typeof StaffAssessmentQuestionRowSchema>;
+
+/**
+ * Lightweight metadata type for the assessment editor. Contains only the
+ * fields the editor actually reads, avoiding the need to construct dummy
+ * zone / alternative_group / assessment_question objects.
+ */
+export interface EditorQuestionMetadata {
+  question: StaffQuestion;
+  topic: StaffTopic;
+  course: StaffCourse;
+  tags: StaffTag[] | null;
+  other_assessments: OtherAssessment[] | null;
+  open_issue_count: number;
+  assessment_question_id: string | null;
+}

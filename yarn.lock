@@ -4982,7 +4982,7 @@ __metadata:
     fast-glob: "npm:^3.3.3"
     fast-json-stable-stringify: "npm:^2.1.0"
     fetch-cookie: "npm:^3.2.0"
-    file-type: "npm:^21.3.0"
+    file-type: "npm:^21.3.1"
     filesize: "npm:^11.0.13"
     folder-hash: "npm:^4.1.1"
     fs-extra: "npm:^11.3.4"
@@ -5074,7 +5074,7 @@ __metadata:
     stripe: "npm:^20.4.0"
     superjson: "npm:^2.2.6"
     tablesorter: "npm:^2.32.0"
-    tar: "npm:^7.5.10"
+    tar: "npm:^7.5.11"
     tmp: "npm:^0.2.5"
     tmp-promise: "npm:^3.0.3"
     tom-select: "npm:^2.5.2"
@@ -14012,15 +14012,15 @@ __metadata:
   languageName: node
   linkType: hard
 
-"file-type@npm:^21.3.0":
-  version: 21.3.0
-  resolution: "file-type@npm:21.3.0"
+"file-type@npm:^21.3.1":
+  version: 21.3.1
+  resolution: "file-type@npm:21.3.1"
   dependencies:
     "@tokenizer/inflate": "npm:^0.4.1"
     strtok3: "npm:^10.3.4"
     token-types: "npm:^6.1.1"
     uint8array-extras: "npm:^1.4.0"
-  checksum: 10c0/1b1fa909e6063044a6da1d2ea348ee4d747ed9286382d3f0d4d6532c11fb2ea9f2e7e67b2bc7d745d1bc937e05dee1aa8cb912c64250933bcb393a3744f4e284
+  checksum: 10c0/66a8eda781c803c6fc372464abba88cee564cfe30f029716f06909da1564bc51d0a4e8d34654b881dc751cdb0513338b3c0747e06a608cee0dd5c5499b018d47
   languageName: node
   linkType: hard
 
@@ -20663,16 +20663,16 @@ __metadata:
   languageName: node
   linkType: hard
 
-"tar@npm:*, tar@npm:^7.5.10, tar@npm:^7.5.4":
-  version: 7.5.10
-  resolution: "tar@npm:7.5.10"
+"tar@npm:*, tar@npm:^7.5.11, tar@npm:^7.5.4":
+  version: 7.5.11
+  resolution: "tar@npm:7.5.11"
   dependencies:
     "@isaacs/fs-minipass": "npm:^4.0.0"
     chownr: "npm:^3.0.0"
     minipass: "npm:^7.1.2"
     minizlib: "npm:^3.1.0"
     yallist: "npm:^5.0.0"
-  checksum: 10c0/ed905e4b33886377df6e9206e5d1bd34458c21666e27943f946799416f86348c938590d573d6a69312cb29c583b122647a64ec92782f2b7e24e68d985dd72531
+  checksum: 10c0/b6bb420550ef50ef23356018155e956cd83282c97b6128d8d5cfe5740c57582d806a244b2ef0bf686a74ce526babe8b8b9061527623e935e850008d86d838929
   languageName: node
   linkType: hard
 

@@ -20,6 +20,7 @@ import { idsEqual } from '../../../lib/id.js';
 
 import { ExamResetNotSupportedModal } from './ExamResetNotSupportedModal.js';
 import { ResetQuestionVariantsModal } from './ResetQuestionVariantsModal.js';
+import { ViewSwitcherDropdown } from './ViewSwitcherDropdown.js';
 
 function Title({
   questionRow,
@@ -57,6 +58,7 @@ export function InstructorAssessmentQuestionsTableLegacy({
   hasCoursePermissionPreview,
   hasCourseInstancePermissionEdit,
   csrfToken,
+  switchViewUrl,
 }: {
   course: StaffCourse;
   questionRows: StaffAssessmentQuestionRow[];
@@ -67,6 +69,7 @@ export function InstructorAssessmentQuestionsTableLegacy({
   hasCoursePermissionPreview: boolean;
   hasCourseInstancePermissionEdit: boolean;
   csrfToken: string;
+  switchViewUrl: string | null;
 }) {
   const [resetAssessmentQuestionId, setResetAssessmentQuestionId] = useState('');
   const [showResetModal, setShowResetModal] = useState(false);
@@ -117,6 +120,12 @@ export function InstructorAssessmentQuestionsTableLegacy({
           <h1>
             {assessmentSetName} {assessmentNumber}: Questions
           </h1>
+          <ViewSwitcherDropdown
+            currentView="classic"
+            switchViewUrl={switchViewUrl}
+            className="ms-auto"
+            toggleClassName="text-white"
+          />
         </div>
         <div className="table-responsive">
           <table className="table table-sm table-hover" aria-label="Assessment questions">

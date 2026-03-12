@@ -314,10 +314,9 @@ export async function gradeAssessmentInstance({
     // to grade a broken variant as an error.
     if (row.variant.broken_at) return;
 
-    const check_submission_id = null;
     await gradeVariant({
       variant: row.variant,
-      check_submission_id,
+      check_submission_id: null,
       question: row.question,
       variant_course: row.variant_course,
       user_id,

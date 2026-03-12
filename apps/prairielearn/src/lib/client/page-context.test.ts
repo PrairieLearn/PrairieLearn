@@ -325,7 +325,6 @@ const STAFF_QUESTION = {
   directory: 'questions/question1',
   draft: false,
   external_grading_enable_networking: null,
-  external_grading_enabled: undefined,
   external_grading_entrypoint: null,
   external_grading_environment: {},
   external_grading_files: null,

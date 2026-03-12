@@ -1,4 +1,4 @@
-import type { StaffAssessmentQuestionRow } from '../../../../lib/assessment-question.shared.js';
+import type { EditorQuestionMetadata } from '../../../../lib/assessment-question.shared.js';
 import type {
   CourseQuestionForPicker,
   DetailActions,
@@ -6,7 +6,7 @@ import type {
   SelectedItem,
   ZoneAssessmentForm,
 } from '../../types.js';
-import { findQuestionByTrackingId } from '../../utils/useAssessmentEditor.js';
+import { findQuestionByTrackingId } from '../../utils/zoneLookup.js';
 
 import { AltGroupDetailPanel } from './AltGroupDetailPanel.js';
 import { QuestionDetailPanel } from './QuestionDetailPanel.js';
@@ -30,7 +30,7 @@ export function DetailPanel({
 }: {
   selectedItem: SelectedItem;
   zones: ZoneAssessmentForm[];
-  questionMetadata: Partial<Record<string, StaffAssessmentQuestionRow>>;
+  questionMetadata: Partial<Record<string, EditorQuestionMetadata>>;
   state: DetailState;
   actions: DetailActions;
   courseQuestions: CourseQuestionForPicker[];
@@ -65,6 +65,7 @@ export function DetailPanel({
           state={state}
           onUpdate={actions.onUpdateZone}
           onDelete={actions.onDeleteZone}
+          onFormValidChange={actions.onFormValidChange}
         />
       );
     }
@@ -86,6 +87,7 @@ export function DetailPanel({
           onDelete={actions.onDeleteQuestion}
           onPickQuestion={actions.onPickQuestion}
           onResetButtonClick={actions.onResetButtonClick}
+          onFormValidChange={actions.onFormValidChange}
         />
       );
     }
@@ -117,6 +119,7 @@ export function DetailPanel({
           onDelete={actions.onDeleteQuestion}
           onPickQuestion={actions.onPickQuestion}
           onResetButtonClick={actions.onResetButtonClick}
+          onFormValidChange={actions.onFormValidChange}
         />
       );
     }
@@ -137,6 +140,7 @@ export function DetailPanel({
           state={state}
           onUpdate={actions.onUpdateQuestion}
           onDelete={(trackingId) => actions.onDeleteQuestion(trackingId, '')}
+          onFormValidChange={actions.onFormValidChange}
         />
       );
     }
