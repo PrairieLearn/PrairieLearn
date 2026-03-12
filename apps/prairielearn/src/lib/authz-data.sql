@@ -5,24 +5,16 @@ SELECT
   to_jsonb(ci.*) AS course_instance,
   jsonb_build_object(
     'course_role',
-    COALESCE(
-      (
-        -- If user is institution admin, they are course owner
-        SELECT
-          'Owner'::enum_course_role
-        FROM
-          institution_administrators AS ia
-          JOIN institutions AS i ON (i.id = ia.institution_id)
-          JOIN courses AS c ON (c.institution_id = i.id)
-        WHERE
-          c.id = $course_id
-          AND ia.user_id = $user_id
-      ),
+    CASE
+    -- If user is institution admin, they are course owner
+      WHEN ia.id IS NOT NULL THEN 'Owner'::enum_course_role
+      ELSE
       -- If user is staff member, use course_permissions to determine role
-      cp.course_role::enum_course_role,
-      -- Otherwise, user has no role in the course
-      'None'::enum_course_role
-    )
+      COALESCE(
+        cp.course_role::enum_course_role,
+        'None'::enum_course_role
+      )
+    END
   ) AS permissions_course,
   permissions_course_instance.*
 FROM
@@ -36,6 +28,10 @@ FROM
   LEFT JOIN course_permissions AS cp ON (
     cp.course_id = c.id
     AND cp.user_id = $user_id
+  )
+  LEFT JOIN institution_administrators AS ia ON (
+    ia.institution_id = i.id
+    AND ia.user_id = $user_id
   )
   JOIN LATERAL authz_course_instance ($user_id, ci.id, $req_date) AS permissions_course_instance ON TRUE
 WHERE
