@@ -869,11 +869,6 @@ def grade(element_html: str, data: pl.QuestionData) -> None:
             timeout=SYMPY_TIMEOUT,
             timeout_format_error="Your answer did not converge, try a simpler expression.",
         )
-    except psu.HasComplexError:
-        data["format_errors"][name] = (
-            "Your answer contains a complex number. "
-            "Complex numbers are not allowed for this problem."
-        )
     except ValueError as e:
         # We only want to catch the integer string conversion limit ValueError.
         # Others might be outside of the student's control and should error like normal.
