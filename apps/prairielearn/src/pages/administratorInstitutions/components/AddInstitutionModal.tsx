@@ -22,11 +22,13 @@ export function AddInstitutionModal({
   availableTimezones,
   supportedAuthenticationProviders,
   onClose,
+  aiSecretsConfigured,
 }: {
   show: boolean;
   availableTimezones: Timezone[];
   supportedAuthenticationProviders: StaffAuthnProvider[];
   onClose: () => void;
+  aiSecretsConfigured: boolean;
 }) {
   const trpc = useTRPC();
   const mutation = useMutation(trpc.addInstitution.mutationOptions());
@@ -51,7 +53,7 @@ export function AddInstitutionModal({
   const institutionName = watch('long_name');
   const emailDomain = watch('short_name');
 
-  const onSubmit = async (data: AddInstitutionFormData) => {
+  const onSubmit = (data: AddInstitutionFormData) => {
     mutation.mutate(
       {
         shortName: data.short_name,
@@ -121,20 +123,44 @@ export function AddInstitutionModal({
             <label className="form-label" htmlFor="display_timezone">
               Timezone
             </label>
-            <select
-              className="form-select"
-              id="display_timezone"
-              {...register('display_timezone', { required: 'Select a timezone' })}
-            >
-              <option value="" disabled hidden>
-                Timezone
-              </option>
-              {availableTimezones.map((tz, i) => (
-                <option key={tz.name} value={tz.name} id={`timezone-${i}`}>
-                  {formatTimezone(tz)}
+            <div className="input-group">
+              <select
+                className="form-select"
+                id="display_timezone"
+                {...register('display_timezone', { required: 'Select a timezone' })}
+              >
+                <option value="" disabled hidden>
+                  Timezone
                 </option>
-              ))}
-            </select>
+                {availableTimezones.map((tz, i) => (
+                  <option key={tz.name} value={tz.name} id={`timezone-${i}`}>
+                    {formatTimezone(tz)}
+                  </option>
+                ))}
+              </select>
+              <OverlayTrigger
+                trigger={['hover', 'focus']}
+                placement="top"
+                tooltip={{
+                  body: aiSecretsConfigured
+                    ? 'Uses AI web search to suggest the correct timezone based on the institution name and domain. Fill in the short name and long name first.'
+                    : 'AI features require the correspondent OpenAI key to be configured.',
+                  props: { id: 'suggest-timezone-tooltip' },
+                }}
+              >
+                <span className="d-inline-block">
+                  <button
+                    type="button"
+                    className="btn btn-secondary"
+                    aria-busy={isFetchingTimezone}
+                    disabled={isFetchingTimezone || !aiSecretsConfigured}
+                    onClick={handleSuggestTimezone}
+                  >
+                    {isFetchingTimezone ? 'Suggesting...' : 'Suggest timezone'}
+                  </button>
+                </span>
+              </OverlayTrigger>
+            </div>
             <small id="display_timezone_help" className="form-text text-muted">
               The allowable timezones are from the{' '}
               <a
@@ -147,35 +173,15 @@ export function AddInstitutionModal({
               . It's best to use a city-based timezone that has the same times as the institution,
               e.g. "America/Chicago".
             </small>
-            <div className="mt-2">
-              <OverlayTrigger
-                trigger={['hover', 'focus']}
-                placement="top"
-                tooltip={{
-                  body: 'Uses AI web search to suggest the correct timezone based on the institution name and domain. Fill in the short name and long name first.',
-                  props: { id: 'suggest-timezone-tooltip' },
-                }}
-              >
-                <button
-                  type="button"
-                  className="btn btn-secondary btn-sm"
-                  aria-busy={isFetchingTimezone}
-                  disabled={isFetchingTimezone}
-                  onClick={handleSuggestTimezone}
-                >
-                  {isFetchingTimezone ? 'Suggesting...' : 'Suggest timezone'}
-                </button>
-              </OverlayTrigger>
-              {isTimezoneError && (
-                <div className="mt-2 text-danger small">Failed to suggest timezone. Try again.</div>
+            {isTimezoneError && (
+              <div className="mt-2 text-danger small">Failed to suggest timezone. Try again.</div>
+            )}
+            <div aria-live="polite" aria-atomic="true">
+              {timezoneData && (
+                <div className="mt-2 text-muted small">
+                  <ReactMarkdown>{timezoneData.reasoning}</ReactMarkdown>
+                </div>
               )}
-              <div aria-live="polite" aria-atomic="true">
-                {timezoneData && (
-                  <div className="mt-2 text-muted small">
-                    <ReactMarkdown>{timezoneData.reasoning}</ReactMarkdown>
-                  </div>
-                )}
-              </div>
             </div>
           </div>
           <div className="mb-3">

@@ -1,8 +1,8 @@
 import { useMutation, useQuery } from '@tanstack/react-query';
 import clsx from 'clsx';
-import { useEffect, useState } from 'react';
+import { useState } from 'react';
 import { Alert, Dropdown, Modal } from 'react-bootstrap';
-import { useForm } from 'react-hook-form';
+import { FormProvider, useForm } from 'react-hook-form';
 import ReactMarkdown from 'react-markdown';
 
 import { OverlayTrigger } from '@prairielearn/ui';
@@ -10,32 +10,32 @@ import { OverlayTrigger } from '@prairielearn/ui';
 import type { AdminInstitution } from '../lib/client/safe-db-types.js';
 import { getAdministratorCourseRequestsUrl } from '../lib/client/url.js';
 import type { CourseRequestRow } from '../lib/course-request.js';
+import type { Timezone } from '../lib/timezone.shared.js';
 import { useTRPC } from '../trpc/administrator/trpc-context.js';
 
+import { type CourseFormFieldValues, CourseFormFields } from './CourseFormFields.js';
 import { JobStatus } from './JobStatus.js';
 
-interface CourseRequestApproveFormData {
-  institution_id: string;
-  short_name: string;
-  title: string;
-  display_timezone: string;
-  path: string;
-  repository_short_name: string;
+interface CourseRequestApproveFormData extends CourseFormFieldValues {
   github_user: string;
 }
 
 export function CourseRequestsTable({
   rows,
   institutions,
+  availableTimezones,
   coursesRoot,
   showAll,
   urlPrefix,
+  aiSecretsConfigured,
 }: {
   rows: CourseRequestRow[];
   institutions: AdminInstitution[];
+  availableTimezones: Timezone[];
   coursesRoot: string;
   showAll: boolean;
   urlPrefix: string;
+  aiSecretsConfigured: boolean;
 }) {
   const headerPrefix = showAll ? 'All' : 'Pending';
   return (
@@ -75,9 +75,11 @@ export function CourseRequestsTable({
                 key={row.id}
                 row={row}
                 institutions={institutions}
+                availableTimezones={availableTimezones}
                 coursesRoot={coursesRoot}
                 showAll={showAll}
                 urlPrefix={urlPrefix}
+                aiSecretsConfigured={aiSecretsConfigured}
               />
             ))}
           </tbody>
@@ -98,20 +100,24 @@ CourseRequestsTable.displayName = 'CourseRequestsTable';
 function CourseRequestTableRow({
   row,
   institutions,
+  availableTimezones,
   coursesRoot,
   showAll,
   urlPrefix,
+  aiSecretsConfigured,
 }: {
   row: CourseRequestRow;
   institutions: AdminInstitution[];
+  availableTimezones: Timezone[];
   coursesRoot: string;
   showAll: boolean;
   urlPrefix: string;
+  aiSecretsConfigured: boolean;
 }) {
   const [noteOpen, setNoteOpen] = useState(Boolean(row.note));
   const [jobsOpen, setJobsOpen] = useState(false);
   const [showDenyPopover, setShowDenyPopover] = useState(false);
-  const [showApprovePopover, setShowApprovePopover] = useState(false);
+  const [showApproveModal, setShowApproveModal] = useState(false);
 
   return (
     <>
@@ -176,25 +182,22 @@ function CourseRequestTableRow({
               <button
                 type="button"
                 className="btn btn-sm btn-success text-nowrap"
-                onClick={() => setShowApprovePopover(true)}
+                onClick={() => setShowApproveModal(true)}
               >
                 <i className="fa fa-check" aria-hidden="true" /> Approve
               </button>
-              <Modal
-                show={showApprovePopover}
-                backdrop="static"
-                onHide={() => setShowApprovePopover(false)}
-              >
-                <Modal.Body>
-                  <CourseRequestApproveForm
-                    request={row}
-                    institutions={institutions}
-                    coursesRoot={coursesRoot}
-                    urlPrefix={urlPrefix}
-                    onCancel={() => setShowApprovePopover(false)}
-                  />
-                </Modal.Body>
-              </Modal>
+              {showApproveModal && (
+                <CourseRequestApproveModal
+                  request={row}
+                  institutions={institutions}
+                  availableTimezones={availableTimezones}
+                  coursesRoot={coursesRoot}
+                  urlPrefix={urlPrefix}
+                  show={showApproveModal}
+                  aiSecretsConfigured={aiSecretsConfigured}
+                  onCancel={() => setShowApproveModal(false)}
+                />
+              )}
             </div>
           )}
         </td>
@@ -277,18 +280,24 @@ function CourseRequestTableRow({
   );
 }
 
-function CourseRequestApproveForm({
+function CourseRequestApproveModal({
   request,
   institutions,
+  availableTimezones,
   coursesRoot,
   urlPrefix,
+  show,
   onCancel,
+  aiSecretsConfigured,
 }: {
   request: CourseRequestRow;
   institutions: AdminInstitution[];
+  availableTimezones: Timezone[];
   coursesRoot: string;
   urlPrefix: string;
+  show: boolean;
   onCancel: () => void;
+  aiSecretsConfigured: boolean;
 }) {
   const trpc = useTRPC();
   const mutation = useMutation(trpc.courseRequests.createCourse.mutationOptions());
@@ -296,13 +305,7 @@ function CourseRequestApproveForm({
   const repoName = 'pl-' + request.short_name.replaceAll(' ', '').toLowerCase();
   const path = coursesRoot + '/' + repoName;
 
-  const {
-    register,
-    handleSubmit,
-    watch,
-    setValue,
-    formState: { errors, isSubmitting },
-  } = useForm<CourseRequestApproveFormData>({
+  const methods = useForm<CourseRequestApproveFormData>({
     mode: 'onSubmit',
     defaultValues: {
       institution_id: '',
@@ -314,24 +317,12 @@ function CourseRequestApproveForm({
       github_user: request.github_user ?? '',
     },
   });
-  const institutionId = watch('institution_id');
 
-  const { data: prefixData } = useQuery({
-    ...trpc.courseRequests.selectInstitutionPrefixQuery.queryOptions({ institutionId }),
-    enabled: !!institutionId,
-  });
-
-  useEffect(() => {
-    if (prefixData?.prefix) {
-      const shortNameSlug = request.short_name.replaceAll(' ', '').toLowerCase();
-      const newRepoName = `pl-${prefixData.prefix}-${shortNameSlug}`;
-      setValue('repository_short_name', newRepoName);
-      setValue('path', `${coursesRoot}/${newRepoName}`);
-    }
-  }, [prefixData, request.short_name, coursesRoot, setValue]);
-
-  const selectedInstitution = institutions.find((i) => i.id === institutionId);
-  const isDefaultInstitution = selectedInstitution?.short_name === 'Default';
+  const {
+    register,
+    handleSubmit,
+    formState: { isSubmitting },
+  } = methods;
 
   const onSubmit = (data: CourseRequestApproveFormData) => {
     mutation.mutate(
@@ -365,389 +356,193 @@ function CourseRequestApproveForm({
     enabled: false,
   });
 
-  const emailDomain = request.work_email?.split('@')[1] ?? '';
-  const {
-    data: suggestedPrefixData,
-    isFetching: isFetchingPrefix,
-    isError: isPrefixError,
-    refetch: suggestRepositoryNamePrefix,
-  } = useQuery({
-    ...trpc.courseRequests.suggestPrefixFromEmailQuery.queryOptions({
-      institutionName: request.institution ?? '',
-      emailDomain,
-    }),
-    enabled: false,
-  });
-
-  useEffect(() => {
-    if (suggestedPrefixData?.prefix) {
-      const shortNameSlug = request.short_name.replaceAll(' ', '').toLowerCase();
-      const newRepoName = `pl-${suggestedPrefixData.prefix}-${shortNameSlug}`;
-      setValue('repository_short_name', newRepoName);
-      setValue('path', `${coursesRoot}/${newRepoName}`);
-    }
-  }, [suggestedPrefixData, request.short_name, coursesRoot, setValue]);
-
   return (
-    <form name={`create-course-from-request-form-${request.id}`} onSubmit={handleSubmit(onSubmit)}>
-      <div className="card mb-3">
-        <div className="card-header d-flex align-items-center justify-content-between py-2">
-          <strong>Requesting instructor</strong>
-          <OverlayTrigger
-            trigger={['hover', 'focus']}
-            placement="top"
-            tooltip={{
-              body: 'Uses AI web search to verify whether the instructor appears in faculty directories or professional profiles at their stated institution.',
-              props: { id: 'check-instructor-legitimacy-tooltip' },
-            }}
-          >
-            <button
-              type="button"
-              className="btn btn-sm btn-outline-secondary"
-              disabled={isCheckingLegitimacy}
-              aria-busy={isCheckingLegitimacy}
-              onClick={() => checkLegitimacy()}
-            >
-              {isCheckingLegitimacy ? (
-                <>
-                  <i className="fa fa-spinner fa-spin" aria-hidden="true" /> Checking...
-                </>
-              ) : (
-                <>
-                  <i className="fa fa-search" aria-hidden="true" /> Check legitimacy
-                </>
-              )}
-            </button>
-          </OverlayTrigger>
-        </div>
-        <div className="card-body py-2">
-          <div className="row g-2 small">
-            <div className="col-12">
-              <strong>Requested by:</strong>{' '}
-              {request.first_name || request.last_name ? (
-                <span>
-                  {request.first_name} {request.last_name}
-                  {request.work_email && ` (${request.work_email})`}
-                </span>
-              ) : request.work_email ? (
-                <span>{request.work_email}</span>
-              ) : (
-                <span className="fst-italic text-muted">Not provided</span>
-              )}
-            </div>
-            <div className="col-12">
-              <strong>PrairieLearn user:</strong>{' '}
-              {request.user_name ? (
-                <span>
-                  {request.user_name} ({request.user_uid})
-                </span>
-              ) : (
-                <span>{request.user_uid}</span>
-              )}
-            </div>
-            <div className="col-12">
-              <strong>Institution:</strong>{' '}
-              {request.institution ? (
-                <span>{request.institution}</span>
-              ) : (
-                <span className="fst-italic text-muted">Not provided</span>
-              )}
-            </div>
-            <div className="col-12">
-              <strong>GitHub:</strong>{' '}
-              {request.github_user ? (
-                <a
-                  href={`https://github.com/${request.github_user}`}
-                  target="_blank"
-                  rel="noreferrer"
+    <Modal show={show} backdrop="static" onHide={onCancel}>
+      <FormProvider {...methods}>
+        <form
+          name={`create-course-from-request-form-${request.id}`}
+          onSubmit={handleSubmit(onSubmit)}
+        >
+          <Modal.Header closeButton>
+            <Modal.Title>Approve course request</Modal.Title>
+          </Modal.Header>
+          <Modal.Body>
+            <div className="card mb-3">
+              <div className="card-header d-flex align-items-center justify-content-between py-2">
+                <strong>Requesting instructor</strong>
+                <OverlayTrigger
+                  trigger={['hover', 'focus']}
+                  placement="bottom"
+                  tooltip={{
+                    body: aiSecretsConfigured
+                      ? 'Uses AI web search to verify whether the instructor appears in faculty directories or professional profiles at their stated institution.'
+                      : 'AI features require the correspondent OpenAI key to be configured.',
+                    props: { id: 'check-instructor-legitimacy-tooltip' },
+                  }}
                 >
-                  {request.github_user}
-                </a>
-              ) : (
-                <span className="fst-italic text-muted">Not provided</span>
-              )}
-            </div>
-          </div>
-          {isLegitimacyError && (
-            <div className="mt-2 text-danger small">Failed to check legitimacy. Try again.</div>
-          )}
-          <div aria-live="polite" aria-atomic="true">
-            {legitimacyData && (
-              <div className="mt-2 pt-2 border-top">
-                <div className="d-flex align-items-start gap-2">
-                  <span
-                    className={clsx('badge', {
-                      'text-bg-success': legitimacyData.confidence === 'high',
-                      'text-bg-warning': legitimacyData.confidence === 'medium',
-                      'text-bg-danger': legitimacyData.confidence === 'low',
-                    })}
-                  >
-                    {legitimacyData.isLikely ? 'Likely legitimate' : 'Uncertain'} &middot;{' '}
-                    {legitimacyData.confidence} confidence
+                  <span className="d-inline-block">
+                    <button
+                      type="button"
+                      className="btn btn-sm btn-outline-secondary"
+                      disabled={isCheckingLegitimacy || !aiSecretsConfigured}
+                      aria-busy={isCheckingLegitimacy}
+                      onClick={() => checkLegitimacy()}
+                    >
+                      {isCheckingLegitimacy ? (
+                        <>
+                          <i className="fa fa-spinner fa-spin" aria-hidden="true" /> Checking...
+                        </>
+                      ) : (
+                        <>
+                          <i className="fa fa-search" aria-hidden="true" /> Check legitimacy
+                        </>
+                      )}
+                    </button>
                   </span>
+                </OverlayTrigger>
+              </div>
+              <div className="card-body py-2">
+                <div className="row g-2 small">
+                  <div className="col-12">
+                    <strong>Requested by:</strong>{' '}
+                    {request.first_name || request.last_name ? (
+                      <span>
+                        {request.first_name} {request.last_name}
+                        {request.work_email && ` (${request.work_email})`}
+                      </span>
+                    ) : request.work_email ? (
+                      <span>{request.work_email}</span>
+                    ) : (
+                      <span className="fst-italic text-muted">Not provided</span>
+                    )}
+                  </div>
+                  <div className="col-12">
+                    <strong>PrairieLearn user:</strong>{' '}
+                    {request.user_name ? (
+                      <span>
+                        {request.user_name} ({request.user_uid})
+                      </span>
+                    ) : (
+                      <span>{request.user_uid}</span>
+                    )}
+                  </div>
+                  <div className="col-12">
+                    <strong>Institution:</strong>{' '}
+                    {request.institution ? (
+                      <span>{request.institution}</span>
+                    ) : (
+                      <span className="fst-italic text-muted">Not provided</span>
+                    )}
+                  </div>
+                  <div className="col-12">
+                    <strong>GitHub:</strong>{' '}
+                    {request.github_user ? (
+                      <a
+                        href={`https://github.com/${request.github_user}`}
+                        target="_blank"
+                        rel="noreferrer"
+                      >
+                        {request.github_user}
+                      </a>
+                    ) : (
+                      <span className="fst-italic text-muted">Not provided</span>
+                    )}
+                  </div>
                 </div>
-                <small className="text-muted">
-                  <ReactMarkdown>{legitimacyData.summary}</ReactMarkdown>
-                </small>
-                {legitimacyData.sources.length > 0 && (
-                  <div className="mt-1">
-                    <span className="small text-muted">Sources</span>
-                    <div className="d-flex flex-wrap gap-1">
-                      {legitimacyData.sources
-                        .filter(
-                          (source, index, arr) =>
-                            arr.findIndex((s) => s.url === source.url) === index,
-                        )
-                        .map((source) => (
-                          <a
-                            key={source.url}
-                            href={source.url}
-                            target="_blank"
-                            rel="noreferrer"
-                            className="small"
-                          >
-                            {source.title ?? source.url}
-                          </a>
-                        ))}
-                    </div>
+                {isLegitimacyError && (
+                  <div className="mt-2 text-danger small">
+                    Failed to check legitimacy. Try again.
                   </div>
                 )}
+                <div aria-live="polite" aria-atomic="true">
+                  {legitimacyData && (
+                    <div className="mt-2 pt-2 border-top">
+                      <div className="d-flex align-items-start gap-2">
+                        <span
+                          className={clsx('badge', {
+                            'text-bg-success': legitimacyData.confidence === 'high',
+                            'text-bg-warning': legitimacyData.confidence === 'medium',
+                            'text-bg-danger': legitimacyData.confidence === 'low',
+                          })}
+                        >
+                          {legitimacyData.isLikely ? 'Likely legitimate' : 'Uncertain'} &middot;{' '}
+                          {legitimacyData.confidence} confidence
+                        </span>
+                      </div>
+                      <small className="text-muted">
+                        <ReactMarkdown>{legitimacyData.summary}</ReactMarkdown>
+                      </small>
+                      {legitimacyData.sources.length > 0 && (
+                        <div className="mt-1">
+                          <span className="small text-muted">Sources</span>
+                          <div className="d-flex flex-wrap gap-1">
+                            {legitimacyData.sources
+                              .filter(
+                                (source, index, arr) =>
+                                  arr.findIndex((s) => s.url === source.url) === index,
+                              )
+                              .map((source) => (
+                                <a
+                                  key={source.url}
+                                  href={source.url}
+                                  target="_blank"
+                                  rel="noreferrer"
+                                  className="small"
+                                >
+                                  {source.title ?? source.url}
+                                </a>
+                              ))}
+                          </div>
+                        </div>
+                      )}
+                    </div>
+                  )}
+                </div>
               </div>
+            </div>
+            <CourseFormFields
+              institutions={institutions}
+              availableTimezones={availableTimezones}
+              coursesRoot={coursesRoot}
+              suggestPrefixOptions={{
+                institutionName: request.institution ?? '',
+                emailDomain: request.work_email?.split('@')[1] ?? '',
+                enabled: !!(request.institution && request.work_email),
+              }}
+              aiSecretsConfigured={aiSecretsConfigured}
+            />
+            <div className="mb-3">
+              <label className="form-label" htmlFor="courseRequestAddInputGithubUser">
+                GitHub username
+              </label>
+              <input
+                type="text"
+                className="form-control"
+                id="courseRequestAddInputGithubUser"
+                {...register('github_user')}
+              />
+            </div>
+            {mutation.isError && (
+              <Alert variant="danger" dismissible onClose={() => mutation.reset()}>
+                {mutation.error.message}
+              </Alert>
             )}
-          </div>
-        </div>
-      </div>
-      <div className="mb-3">
-        <label className="form-label" htmlFor="courseRequestAddInstitution">
-          Institution:
-        </label>
-        <select
-          id="courseRequestAddInstitution"
-          className={clsx('form-select', errors.institution_id && 'is-invalid')}
-          aria-invalid={errors.institution_id ? true : undefined}
-          aria-errormessage={
-            errors.institution_id ? 'courseRequestAddInstitution-error' : undefined
-          }
-          {...register('institution_id', {
-            required: 'Select an institution',
-            onChange: (e) => {
-              const selected = institutions.find((i) => i.id === e.target.value);
-              if (selected) {
-                setValue('display_timezone', selected.display_timezone);
-              }
-            },
-          })}
-        >
-          <option value="" disabled>
-            Select an institution...
-          </option>
-          {institutions.map((i) => (
-            <option key={i.id} value={i.id}>
-              {i.short_name}
-            </option>
-          ))}
-        </select>
-        {errors.institution_id && (
-          <div id="courseRequestAddInstitution-error" className="invalid-feedback">
-            {errors.institution_id.message}
-          </div>
-        )}
-        {isDefaultInstitution && (
-          <div className="form-text text-warning">
-            <i className="fa fa-exclamation-triangle" aria-hidden="true" /> The "Default"
-            institution is typically not intended for new courses.
-          </div>
-        )}
-      </div>
-      <div className="mb-3">
-        <label className="form-label" htmlFor="courseRequestAddInputShortName">
-          Short name:
-        </label>
-        <input
-          type="text"
-          className={clsx('form-control', errors.short_name && 'is-invalid')}
-          id="courseRequestAddInputShortName"
-          placeholder="XC 101"
-          aria-invalid={errors.short_name ? true : undefined}
-          aria-errormessage={errors.short_name ? 'courseRequestAddInputShortName-error' : undefined}
-          {...register('short_name', {
-            required: 'Enter a short name',
-            pattern: {
-              value: /^[A-Z]+ [A-Z0-9]+$/,
-              message:
-                'The course rubric and number should be a series of letters, followed by a space, followed by a series of numbers and/or letters.',
-            },
-          })}
-        />
-        {errors.short_name && (
-          <div id="courseRequestAddInputShortName-error" className="invalid-feedback">
-            {errors.short_name.message}
-          </div>
-        )}
-      </div>
-      <div className="mb-3">
-        <label className="form-label" htmlFor="courseRequestAddInputTitle">
-          Title:
-        </label>
-        <input
-          type="text"
-          className={clsx('form-control', errors.title && 'is-invalid')}
-          id="courseRequestAddInputTitle"
-          placeholder="Template course title"
-          maxLength={75}
-          aria-invalid={errors.title ? true : undefined}
-          aria-errormessage={errors.title ? 'courseRequestAddInputTitle-error' : undefined}
-          {...register('title', {
-            required: 'Enter a title',
-            maxLength: { value: 75, message: 'Title must be at most 75 characters' },
-          })}
-        />
-        {errors.title && (
-          <div id="courseRequestAddInputTitle-error" className="invalid-feedback">
-            {errors.title.message}
-          </div>
-        )}
-      </div>
-      <div className="mb-3">
-        <label className="form-label" htmlFor="courseRequestAddInputTimezone">
-          Timezone:
-        </label>
-        <input
-          type="text"
-          className={clsx('form-control', errors.display_timezone && 'is-invalid')}
-          id="courseRequestAddInputTimezone"
-          aria-invalid={errors.display_timezone ? true : undefined}
-          aria-errormessage={
-            errors.display_timezone ? 'courseRequestAddInputTimezone-error' : undefined
-          }
-          {...register('display_timezone', { required: 'Enter a timezone' })}
-        />
-        {errors.display_timezone && (
-          <div id="courseRequestAddInputTimezone-error" className="invalid-feedback">
-            {errors.display_timezone.message}
-          </div>
-        )}
-      </div>
-      <div className="mb-3">
-        <label className="form-label" htmlFor="courseRequestAddInputPath">
-          Path:
-        </label>
-        <input
-          type="text"
-          className={clsx('form-control', errors.path && 'is-invalid')}
-          id="courseRequestAddInputPath"
-          aria-invalid={errors.path ? true : undefined}
-          aria-errormessage={errors.path ? 'courseRequestAddInputPath-error' : undefined}
-          {...register('path', { required: 'Enter a path' })}
-        />
-        {errors.path && (
-          <div id="courseRequestAddInputPath-error" className="invalid-feedback">
-            {errors.path.message}
-          </div>
-        )}
-      </div>
-      <div className="mb-3">
-        <label className="form-label" htmlFor="courseRequestAddInputRepositoryName">
-          Repository name:
-        </label>
-        <input
-          type="text"
-          className={clsx('form-control', errors.repository_short_name && 'is-invalid')}
-          id="courseRequestAddInputRepositoryName"
-          aria-invalid={errors.repository_short_name ? true : undefined}
-          aria-errormessage={
-            errors.repository_short_name ? 'courseRequestAddInputRepositoryName-error' : undefined
-          }
-          {...register('repository_short_name', { required: 'Enter a repository name' })}
-        />
-        {errors.repository_short_name && (
-          <div id="courseRequestAddInputRepositoryName-error" className="invalid-feedback">
-            {errors.repository_short_name.message}
-          </div>
-        )}
-      </div>
-      <div className="mb-3">
-        <label className="form-label" htmlFor="courseRequestAddInputGithubUser">
-          GitHub username:
-        </label>
-        <input
-          type="text"
-          className="form-control"
-          id="courseRequestAddInputGithubUser"
-          {...register('github_user')}
-        />
-      </div>
-
-      {mutation.isError && (
-        <Alert variant="danger" dismissible onClose={() => mutation.reset()}>
-          {mutation.error.message}
-        </Alert>
-      )}
-      <div className="mb-3">
-        <OverlayTrigger
-          trigger={['hover', 'focus']}
-          placement="top"
-          tooltip={{
-            body: 'Uses AI web search to suggest a short prefix for the repository name based on the institution (e.g. "uiuc" for the University of Illinois). Useful when no existing courses are found for the selected institution.',
-            props: { id: 'suggest-prefix-tooltip' },
-          }}
-        >
-          <button
-            type="button"
-            className="btn btn-secondary"
-            disabled={isFetchingPrefix || !request.institution || !request.work_email}
-            aria-busy={isFetchingPrefix}
-            onClick={() => suggestRepositoryNamePrefix()}
-          >
-            {isFetchingPrefix ? 'Suggesting...' : 'Suggest prefix'}
-          </button>
-        </OverlayTrigger>
-        {isPrefixError && (
-          <div className="mt-2 text-danger small">Failed to suggest prefix. Try again.</div>
-        )}
-        <div aria-live="polite" aria-atomic="true">
-          {suggestedPrefixData && (
-            <div className="mt-2 text-muted small">
-              <ReactMarkdown>{suggestedPrefixData.reasoning}</ReactMarkdown>
-            </div>
-          )}
-          {suggestedPrefixData && suggestedPrefixData.sources.length > 0 && (
-            <div className="mt-1">
-              <span className="small text-muted">Sources</span>
-              <div className="d-flex flex-wrap gap-1">
-                {suggestedPrefixData.sources
-                  .filter(
-                    (source, index, arr) => arr.findIndex((s) => s.url === source.url) === index,
-                  )
-                  .map((source) => (
-                    <a
-                      key={source.url}
-                      href={source.url}
-                      target="_blank"
-                      rel="noreferrer"
-                      className="small"
-                    >
-                      {source.title ?? source.url}
-                    </a>
-                  ))}
-              </div>
-            </div>
-          )}
-        </div>
-      </div>
-      <div className="d-flex justify-content-end gap-2">
-        <button type="button" className="btn btn-secondary" onClick={onCancel}>
-          Cancel
-        </button>
-        <button
-          type="submit"
-          className="btn btn-primary"
-          disabled={isSubmitting || mutation.isPending}
-        >
-          Create course
-        </button>
-      </div>
-    </form>
+          </Modal.Body>
+          <Modal.Footer>
+            <button type="button" className="btn btn-secondary" onClick={onCancel}>
+              Cancel
+            </button>
+            <button
+              type="submit"
+              className="btn btn-primary"
+              disabled={isSubmitting || mutation.isPending}
+            >
+              Create course
+            </button>
+          </Modal.Footer>
+        </form>
+      </FormProvider>
+    </Modal>
   );
 }
 

@@ -2,18 +2,16 @@ import { createOpenAI } from '@ai-sdk/openai';
 import { type ModelMessage, Output, generateText } from 'ai';
 import { z } from 'zod';
 
-import { logger } from '@prairielearn/logger';
-
-import { formatPrompt, logResponseUsage } from './ai-util.js';
+import { formatPrompt } from './ai-util.js';
 import { config } from './config.js';
 
 function createCourseRequestAiClient() {
-  if (!config.courseRequestOpenAiApiKey) {
-    throw new Error('courseRequestOpenAiApiKey is not configured');
+  if (!config.administratorOpenAiApiKey) {
+    throw new Error('administratorOpenAiApiKey is not configured');
   }
   return createOpenAI({
-    apiKey: config.courseRequestOpenAiApiKey,
-    organization: config.courseRequestOpenAiOrganization ?? undefined,
+    apiKey: config.administratorOpenAiApiKey,
+    organization: config.administratorOpenAiOrganization ?? undefined,
   });
 }
 
@@ -77,7 +75,6 @@ export async function checkInstructorLegitimacy({
     messages: input,
   });
 
-  logResponseUsage({ response, logger });
   return {
     ...response.output,
     sources: response.sources
@@ -126,7 +123,6 @@ export async function suggestTimezone({
     messages: input,
   });
 
-  logResponseUsage({ response, logger });
   return {
     ...response.output,
     sources: response.sources
@@ -178,7 +174,6 @@ export async function suggestPrefixFromEmailDomain({
     model: openai.chat('gpt-4o-search-preview'),
   });
 
-  logResponseUsage({ response, logger });
   return {
     ...response.output,
     sources: response.sources

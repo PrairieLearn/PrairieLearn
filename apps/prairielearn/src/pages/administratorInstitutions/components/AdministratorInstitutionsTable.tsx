@@ -20,12 +20,14 @@ export function AdministratorInstitutionsTable({
   supportedAuthenticationProviders,
   trpcCsrfToken,
   isEnterprise,
+  aiSecretsConfigured,
 }: {
   institutions: InstitutionRow[];
   availableTimezones: Timezone[];
   supportedAuthenticationProviders: StaffAuthnProvider[];
   trpcCsrfToken: string;
   isEnterprise: boolean;
+  aiSecretsConfigured: boolean;
 }) {
   const [showModal, setShowModal] = useState(false);
   const [queryClient] = useState(() => new QueryClient());
@@ -92,6 +94,7 @@ export function AdministratorInstitutionsTable({
             show={showModal}
             availableTimezones={availableTimezones}
             supportedAuthenticationProviders={supportedAuthenticationProviders}
+            aiSecretsConfigured={aiSecretsConfigured}
             onClose={() => setShowModal(false)}
           />
         </>

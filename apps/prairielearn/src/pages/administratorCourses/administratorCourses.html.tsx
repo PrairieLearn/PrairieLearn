@@ -1,27 +1,23 @@
-import { QueryClient, useMutation, useQuery } from '@tanstack/react-query';
+import { QueryClient, useMutation } from '@tanstack/react-query';
 import clsx from 'clsx';
-import { useEffect, useState } from 'react';
+import { useState } from 'react';
 import { Alert, Modal } from 'react-bootstrap';
-import { useForm } from 'react-hook-form';
+import { FormProvider, useForm } from 'react-hook-form';
 
 import { OverlayTrigger } from '@prairielearn/ui';
 
+import { type CourseFormFieldValues, CourseFormFields } from '../../components/CourseFormFields.js';
 import { CourseRequestsTable } from '../../components/CourseRequestsTable.js';
 import type { AdminInstitution } from '../../lib/client/safe-db-types.js';
 import { QueryClientProviderDebug } from '../../lib/client/tanstackQuery.js';
 import type { CourseRequestRow } from '../../lib/course-request.js';
+import type { Timezone } from '../../lib/timezone.shared.js';
 import { createAdministratorTrpcClient } from '../../trpc/administrator/trpc-client.js';
 import { TRPCProvider, useTRPC } from '../../trpc/administrator/trpc-context.js';
 
 import type { CourseWithInstitution } from './administratorCourses.shared.js';
 
-interface InsertCourseFormData {
-  institution_id: string;
-  short_name: string;
-  title: string;
-  display_timezone: string;
-  path: string;
-  repository: string;
+interface InsertCourseFormData extends CourseFormFieldValues {
   branch: string;
 }
 
@@ -44,19 +40,23 @@ type CourseColumnName =
 export function AdministratorCourses({
   courseRequests,
   institutions,
+  availableTimezones,
   courses,
   coursesRoot,
   trpcCsrfToken,
   urlPrefix,
   courseRepoDefaultBranch,
+  aiSecretsConfigured,
 }: {
   courseRequests: CourseRequestRow[];
   institutions: AdminInstitution[];
+  availableTimezones: Timezone[];
   courses: CourseWithInstitution[];
   coursesRoot: string;
   trpcCsrfToken: string;
   urlPrefix: string;
   courseRepoDefaultBranch: string;
+  aiSecretsConfigured: boolean;
 }) {
   const [queryClient] = useState(() => new QueryClient());
   const [trpcClient] = useState(() => createAdministratorTrpcClient({ csrfToken: trpcCsrfToken }));
@@ -72,9 +72,11 @@ export function AdministratorCourses({
           <CourseRequestsTable
             rows={courseRequests}
             institutions={institutions}
+            availableTimezones={availableTimezones}
             coursesRoot={coursesRoot}
             urlPrefix={urlPrefix}
             showAll={false}
+            aiSecretsConfigured={aiSecretsConfigured}
           />
           <div id="courses" className="card mb-4">
             <div className="card-header bg-primary text-white d-flex align-items-center">
@@ -87,20 +89,15 @@ export function AdministratorCourses({
                 <i className="fa fa-plus" aria-hidden="true" />
                 <span className="d-none d-sm-inline">Add course</span>
               </button>
-              <Modal
+              <CourseInsertModal
+                institutions={institutions}
+                availableTimezones={availableTimezones}
+                coursesRoot={coursesRoot}
+                courseRepoDefaultBranch={courseRepoDefaultBranch}
                 show={showInsertCourseModal}
-                backdrop="static"
-                onHide={() => setShowInsertCourseModal(false)}
-              >
-                <Modal.Body>
-                  <CourseInsertForm
-                    institutions={institutions}
-                    coursesRoot={coursesRoot}
-                    courseRepoDefaultBranch={courseRepoDefaultBranch}
-                    onCancel={() => setShowInsertCourseModal(false)}
-                  />
-                </Modal.Body>
-              </Modal>
+                aiSecretsConfigured={aiSecretsConfigured}
+                onCancel={() => setShowInsertCourseModal(false)}
+              />
             </div>
             <div className="table-responsive">
               <table className="table table-sm table-hover table-striped" aria-label="Courses">
@@ -254,28 +251,27 @@ function CourseDeleteForm({
   );
 }
 
-function CourseInsertForm({
+function CourseInsertModal({
   institutions,
+  availableTimezones,
   coursesRoot,
   courseRepoDefaultBranch,
+  show,
   onCancel,
+  aiSecretsConfigured,
 }: {
   institutions: AdminInstitution[];
+  availableTimezones: Timezone[];
   coursesRoot: string;
   courseRepoDefaultBranch: string;
+  show: boolean;
   onCancel: () => void;
+  aiSecretsConfigured: boolean;
 }) {
   const trpc = useTRPC();
   const mutation = useMutation(trpc.courses.insert.mutationOptions());
 
-  const {
-    register,
-    handleSubmit,
-    watch,
-    setValue,
-    getValues,
-    formState: { errors, isSubmitting },
-  } = useForm<InsertCourseFormData>({
+  const methods = useForm<InsertCourseFormData>({
     mode: 'onSubmit',
     defaultValues: {
       institution_id: '',
@@ -283,32 +279,20 @@ function CourseInsertForm({
       title: '',
       display_timezone: institutions[0]?.display_timezone ?? '',
       path: `${coursesRoot}/pl-XXX`,
-      repository: 'git@github.com:PrairieLearn/pl-XXX.git',
+      repository_short_name: 'pl-XXX',
       branch: courseRepoDefaultBranch,
     },
   });
+
+  const {
+    register,
+    handleSubmit,
+    watch,
+    formState: { errors, isSubmitting },
+  } = methods;
+
   const institutionId = watch('institution_id');
-  const shortName = watch('short_name');
-
-  const { data: prefixData } = useQuery({
-    ...trpc.courseRequests.selectInstitutionPrefixQuery.queryOptions({ institutionId }),
-    enabled: !!institutionId,
-  });
-
-  useEffect(() => {
-    if (!shortName) return;
-    if (institutionId && !prefixData) return;
-    const slug = shortName.replaceAll(' ', '').toLowerCase();
-    const newRepoShortName = prefixData?.prefix ? `pl-${prefixData.prefix}-${slug}` : `pl-${slug}`;
-    setValue('path', `${coursesRoot}/${newRepoShortName}`);
-    setValue(
-      'repository',
-      getValues('repository').replace(/\/pl-[^/]+\.git$/, `/${newRepoShortName}.git`),
-    );
-  }, [prefixData, shortName, institutionId, coursesRoot, getValues, setValue]);
-
   const selectedInstitution = institutions.find((i) => i.id === institutionId);
-  const isDefaultInstitution = selectedInstitution?.short_name === 'Default';
 
   const onSubmit = (data: InsertCourseFormData) => {
     mutation.mutate(
@@ -319,195 +303,70 @@ function CourseInsertForm({
         shortName: data.short_name,
         institutionId: data.institution_id,
         displayTimezone: data.display_timezone,
-        repository: data.repository,
+        repository: `git@github.com:PrairieLearn/${data.repository_short_name}.git`,
       },
       { onSuccess: () => window.location.reload() },
     );
   };
 
   return (
-    <form name="add-course-form" onSubmit={handleSubmit(onSubmit)}>
-      <div className="mb-3">
-        <label className="form-label" htmlFor="courseAddInstitution">
-          Institution:
-        </label>
-        <select
-          id="courseAddInstitution"
-          className={clsx('form-select', errors.institution_id && 'is-invalid')}
-          aria-invalid={errors.institution_id ? true : undefined}
-          aria-errormessage={errors.institution_id ? 'courseAddInstitution-error' : undefined}
-          {...register('institution_id', {
-            required: 'Select an institution',
-            onChange: (e) => {
-              const selected = institutions.find((i) => i.id === e.target.value);
-              if (selected) {
-                setValue('display_timezone', selected.display_timezone);
-              }
-            },
-          })}
-        >
-          <option value="" disabled>
-            Select an institution...
-          </option>
-          {institutions.map((i) => (
-            <option key={i.id} value={i.id}>
-              {i.short_name}
-            </option>
-          ))}
-        </select>
-        {errors.institution_id && (
-          <div id="courseAddInstitution-error" className="invalid-feedback">
-            {errors.institution_id.message}
-          </div>
-        )}
-        {isDefaultInstitution && (
-          <div className="form-text text-warning">
-            <i className="fa fa-exclamation-triangle" aria-hidden="true" /> The "Default"
-            institution is typically not intended for new courses.
-          </div>
-        )}
-      </div>
-      <div className="mb-3">
-        <label className="form-label" htmlFor="courseAddInputShortName">
-          Short name:
-        </label>
-        <input
-          type="text"
-          className={clsx('form-control', errors.short_name && 'is-invalid')}
-          id="courseAddInputShortName"
-          placeholder="XC 101"
-          aria-invalid={errors.short_name ? true : undefined}
-          aria-errormessage={errors.short_name ? 'courseAddInputShortName-error' : undefined}
-          {...register('short_name', {
-            required: 'Enter a short name',
-            pattern: {
-              value: /^[A-Z]+ [A-Z0-9]+$/,
-              message:
-                'The course rubric and number should be a series of letters, followed by a space, followed by a series of numbers and/or letters.',
-            },
-          })}
-        />
-        {errors.short_name && (
-          <div id="courseAddInputShortName-error" className="invalid-feedback">
-            {errors.short_name.message}
-          </div>
-        )}
-      </div>
-      <div className="mb-3">
-        <label className="form-label" htmlFor="courseAddInputTitle">
-          Title:
-        </label>
-        <input
-          type="text"
-          className={clsx('form-control', errors.title && 'is-invalid')}
-          id="courseAddInputTitle"
-          placeholder="Template course title"
-          aria-invalid={errors.title ? true : undefined}
-          aria-errormessage={errors.title ? 'courseAddInputTitle-error' : undefined}
-          maxLength={75}
-          {...register('title', {
-            required: 'Enter a title',
-            maxLength: { value: 75, message: 'Title must be at most 75 characters' },
-          })}
-        />
-        {errors.title && (
-          <div id="courseAddInputTitle-error" className="invalid-feedback">
-            {errors.title.message}
-          </div>
-        )}
-      </div>
-      <div className="mb-3">
-        <label className="form-label" htmlFor="courseAddInputTimezone">
-          Timezone:
-        </label>
-        <input
-          type="text"
-          className={clsx('form-control', errors.display_timezone && 'is-invalid')}
-          id="courseAddInputTimezone"
-          aria-invalid={errors.display_timezone ? true : undefined}
-          aria-errormessage={errors.display_timezone ? 'courseAddInputTimezone-error' : undefined}
-          {...register('display_timezone', { required: 'Enter a timezone' })}
-        />
-        {errors.display_timezone && (
-          <div id="courseAddInputTimezone-error" className="invalid-feedback">
-            {errors.display_timezone.message}
-          </div>
-        )}
-      </div>
-      <div className="mb-3">
-        <label className="form-label" htmlFor="courseAddInputPath">
-          Path:
-        </label>
-        <input
-          type="text"
-          className={clsx('form-control', errors.path && 'is-invalid')}
-          id="courseAddInputPath"
-          placeholder="/data1/courses/pl-XXX"
-          aria-invalid={errors.path ? true : undefined}
-          aria-errormessage={errors.path ? 'courseAddInputPath-error' : undefined}
-          {...register('path', { required: 'Enter a path' })}
-        />
-        {errors.path && (
-          <div id="courseAddInputPath-error" className="invalid-feedback">
-            {errors.path.message}
-          </div>
-        )}
-      </div>
-      <div className="mb-3">
-        <label className="form-label" htmlFor="courseAddInputRepository">
-          Repository:
-        </label>
-        <input
-          type="text"
-          className={clsx('form-control', errors.repository && 'is-invalid')}
-          id="courseAddInputRepository"
-          placeholder="git@github.com:PrairieLearn/pl-XXX.git"
-          aria-invalid={errors.repository ? true : undefined}
-          aria-errormessage={errors.repository ? 'courseAddInputRepository-error' : undefined}
-          {...register('repository', { required: 'Enter a repository' })}
-        />
-        {errors.repository && (
-          <div id="courseAddInputRepository-error" className="invalid-feedback">
-            {errors.repository.message}
-          </div>
-        )}
-      </div>
-      <div className="mb-3">
-        <label className="form-label" htmlFor="courseAddInputBranch">
-          Branch:
-        </label>
-        <input
-          type="text"
-          className={clsx('form-control', errors.branch && 'is-invalid')}
-          id="courseAddInputBranch"
-          aria-invalid={errors.branch ? true : undefined}
-          aria-errormessage={errors.branch ? 'courseAddInputBranch-error' : undefined}
-          {...register('branch', { required: 'Enter a branch' })}
-        />
-        {errors.branch && (
-          <div id="courseAddInputBranch-error" className="invalid-feedback">
-            {errors.branch.message}
-          </div>
-        )}
-      </div>
-      {mutation.isError && (
-        <Alert variant="danger" dismissible onClose={() => mutation.reset()}>
-          {mutation.error.message}
-        </Alert>
-      )}
-      <div className="d-flex flex-wrap gap-1">
-        <button type="button" className="btn btn-secondary" onClick={onCancel}>
-          Cancel
-        </button>
-        <button
-          type="submit"
-          className="btn btn-primary"
-          disabled={isSubmitting || mutation.isPending}
-        >
-          Add course
-        </button>
-      </div>
-    </form>
+    <Modal show={show} backdrop="static" onHide={onCancel}>
+      <FormProvider {...methods}>
+        <form name="add-course-form" onSubmit={handleSubmit(onSubmit)}>
+          <Modal.Header closeButton>
+            <Modal.Title>Add course</Modal.Title>
+          </Modal.Header>
+          <Modal.Body>
+            <CourseFormFields
+              institutions={institutions}
+              availableTimezones={availableTimezones}
+              coursesRoot={coursesRoot}
+              suggestPrefixOptions={{
+                institutionName: selectedInstitution?.long_name ?? '',
+                emailDomain: selectedInstitution?.short_name ?? '',
+                enabled: !!selectedInstitution,
+              }}
+              aiSecretsConfigured={aiSecretsConfigured}
+            />
+            <div className="mb-3">
+              <label className="form-label" htmlFor="courseAddInputBranch">
+                Branch
+              </label>
+              <input
+                type="text"
+                className={clsx('form-control', errors.branch && 'is-invalid')}
+                id="courseAddInputBranch"
+                aria-invalid={errors.branch ? true : undefined}
+                aria-errormessage={errors.branch ? 'courseAddInputBranch-error' : undefined}
+                {...register('branch', { required: 'Enter a branch' })}
+              />
+              {errors.branch && (
+                <div id="courseAddInputBranch-error" className="invalid-feedback">
+                  {errors.branch.message}
+                </div>
+              )}
+            </div>
+            {mutation.isError && (
+              <Alert variant="danger" dismissible onClose={() => mutation.reset()}>
+                {mutation.error.message}
+              </Alert>
+            )}
+          </Modal.Body>
+          <Modal.Footer>
+            <button type="button" className="btn btn-secondary" onClick={onCancel}>
+              Cancel
+            </button>
+            <button
+              type="submit"
+              className="btn btn-primary"
+              disabled={isSubmitting || mutation.isPending}
+            >
+              Add course
+            </button>
+          </Modal.Footer>
+        </form>
+      </FormProvider>
+    </Modal>
   );
 }
 

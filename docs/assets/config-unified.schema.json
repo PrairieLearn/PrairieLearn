@@ -1276,11 +1276,11 @@
       "type": "number",
       "default": 1
     },
-    "courseRequestOpenAiApiKey": {
+    "administratorOpenAiApiKey": {
       "type": ["string", "null"],
       "default": null
     },
-    "courseRequestOpenAiOrganization": {
+    "administratorOpenAiOrganization": {
       "type": ["string", "null"],
       "default": null
     },

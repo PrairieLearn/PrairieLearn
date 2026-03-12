@@ -71,6 +71,7 @@ router.get(
               supportedAuthenticationProviders={supportedAuthenticationProviders}
               trpcCsrfToken={trpcCsrfToken}
               isEnterprise={isEnterprise()}
+              aiSecretsConfigured={!!config.administratorOpenAiApiKey}
             />
           </Hydrate>
         ),

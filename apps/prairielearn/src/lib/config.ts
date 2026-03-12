@@ -588,8 +588,8 @@ export const ConfigSchema = z.object({
   /**
    * OpenAI credentials for AI-assisted course request review.
    */
-  courseRequestOpenAiApiKey: z.string().nullable().default(null),
-  courseRequestOpenAiOrganization: z.string().nullable().default(null),
+  administratorOpenAiApiKey: z.string().nullable().default(null),
+  administratorOpenAiOrganization: z.string().nullable().default(null),
   requireTermsAcceptance: z.boolean().default(false),
   pyroscopeEnabled: z.boolean().default(false),
   pyroscopeServerAddress: z.string().nullable().default(null),
