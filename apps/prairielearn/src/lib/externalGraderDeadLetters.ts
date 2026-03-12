@@ -129,6 +129,9 @@ async function processQueueMessage(
   }
   if (!message.Body) {
     logger.error('Dead letter message is missing body', { queueName });
+    Sentry.captureException(new Error('Dead letter message is missing body'), {
+      extra: { queueName, messageId: message.MessageId },
+    });
     await deleteMessage(sqs, queueUrl, message.ReceiptHandle);
     return;
   }
