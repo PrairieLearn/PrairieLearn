@@ -1918,10 +1918,6 @@ export async function initExpress(): Promise<Express> {
     (await import('./pages/administratorCourses/administratorCourses.js')).default,
   );
   app.use(
-    '/pl/administrator/networks',
-    (await import('./pages/administratorNetworks/administratorNetworks.js')).default,
-  );
-  app.use(
     '/pl/administrator/workspaces',
     (await import('./pages/administratorWorkspaces/administratorWorkspaces.js')).default,
   );
