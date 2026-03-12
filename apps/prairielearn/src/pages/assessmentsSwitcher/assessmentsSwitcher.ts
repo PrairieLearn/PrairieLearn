@@ -4,9 +4,15 @@ import asyncHandler from 'express-async-handler';
 import { run } from '@prairielearn/run';
 
 import type { NavSubPage } from '../../components/Navbar.types.js';
+import { loadAssessmentsForQuestion } from '../../lib/assessment-question-context.js';
+import { extractPageContext } from '../../lib/client/page-context.js';
 import { selectAssessments } from '../../models/assessment.js';
+import { selectCourseInstancesWithStaffAccess } from '../../models/course-instances.js';
 
-import { AssessmentSwitcher } from './assessmentsSwitcher.html.js';
+import {
+  AssessmentSwitcher,
+  QuestionAssessmentSwitcherWithTabs,
+} from './assessmentsSwitcher.html.js';
 
 const router = Router({ mergeParams: true });
 
@@ -41,3 +47,44 @@ router.get(
 );
 
 export default router;
+
+export const questionAssessmentSwitcherByCourseRouter = Router({ mergeParams: true });
+
+questionAssessmentSwitcherByCourseRouter.get(
+  '/',
+  asyncHandler(async (req, res) => {
+    const { authz_data: authzData, course } = extractPageContext(res.locals, {
+      pageType: 'course',
+      accessType: 'instructor',
+    });
+
+    const courseInstances = await selectCourseInstancesWithStaffAccess({
+      course,
+      authzData,
+      requiredRole: ['Previewer'],
+    });
+
+    const questionId = req.params.question_id;
+    const currentCourseInstanceId = (req.query.course_instance_id as string) || undefined;
+    const currentAssessmentQuestionId = (req.query.assessment_question_id as string) || undefined;
+
+    const courseInstanceAssessments = await Promise.all(
+      courseInstances.map(async (ci) => ({
+        courseInstance: ci,
+        assessments: await loadAssessmentsForQuestion(questionId, ci.id),
+      })),
+    );
+
+    const filtered = courseInstanceAssessments.filter((entry) => entry.assessments.length > 0);
+
+    res.send(
+      QuestionAssessmentSwitcherWithTabs({
+        courseInstanceAssessments: filtered,
+        courseId: course.id,
+        questionId,
+        currentCourseInstanceId,
+        currentAssessmentQuestionId,
+      }),
+    );
+  }),
+);

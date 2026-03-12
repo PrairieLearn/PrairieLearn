@@ -12,8 +12,7 @@ import { run } from '@prairielearn/run';
 import { IdSchema } from '@prairielearn/zod';
 
 import {
-  loadAssessmentQuestionContext,
-  loadAssessmentsForQuestion,
+  getAssessmentQuestionContext,
   loadNavQuestions,
 } from '../../lib/assessment-question-context.js';
 import { getRuntimeDirectoryForCourse } from '../../lib/chunks.js';
@@ -69,42 +68,22 @@ router.get(
       res.locals.questionRenderContext = 'manual_grading';
     }
 
-    const assessment_question_id = req.query.assessment_question_id
-      ? IdSchema.parse(req.query.assessment_question_id)
-      : null;
-
     const variant_seed = req.query.variant_seed ? z.string().parse(req.query.variant_seed) : null;
     const variant_id = req.query.variant_id ? IdSchema.parse(req.query.variant_id) : null;
     // req.query.variant_id might be undefined, which will generate a new variant
     await getAndRenderVariant(variant_id, variant_seed, res.locals);
     await logPageView('instructorQuestionPreview', req, res);
 
-    const assessmentsList = res.locals.course_instance
-      ? await loadAssessmentsForQuestion(res.locals.question.id, res.locals.course_instance.id)
-      : null;
+    // Assessment context is loaded by the selectAndAuthzAssessmentQuestionFromQuery
+    // middleware when ?assessment_question_id is present.
+    const assessmentQuestionContext = getAssessmentQuestionContext(res.locals);
 
-    const assessmentQuestionContext =
-      assessment_question_id && res.locals.course_instance
-        ? await loadAssessmentQuestionContext(
-            assessment_question_id,
-            res.locals.question.id,
-            res.locals.course_instance.id,
-          )
-        : null;
-
-    const { prevQuestion, nextQuestion } =
-      assessmentQuestionContext && assessment_question_id
-        ? await loadNavQuestions(assessmentQuestionContext.assessment.id, assessment_question_id)
-        : { prevQuestion: null, nextQuestion: null };
-
-    // Set assessment context on res.locals so the navbar tabs can read it
-    // (e.g., to enable/disable the manual grading tab).
-    if (assessmentQuestionContext) {
-      Object.assign(res.locals, {
-        assessment_question: assessmentQuestionContext.assessment_question,
-        assessment: assessmentQuestionContext.assessment,
-      });
-    }
+    const { prevQuestion, nextQuestion } = assessmentQuestionContext
+      ? await loadNavQuestions(
+          assessmentQuestionContext.assessment.id,
+          assessmentQuestionContext.assessment_question.id,
+        )
+      : { prevQuestion: null, nextQuestion: null };
 
     const questionCopyTargets = await getQuestionCopyTargets({
       course: res.locals.course,
@@ -194,7 +173,6 @@ router.get(
         resLocals: res.locals,
         questionCopyTargets,
         assessmentQuestionContext,
-        assessmentsList,
         prevQuestion,
         nextQuestion,
       }),

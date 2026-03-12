@@ -31,6 +31,11 @@ interface SideNavTabInfo {
   tabTooltip?: string;
   htmlSuffix?: (resLocals: UntypedResLocals) => HtmlValue;
   renderCondition?: (resLocals: UntypedResLocals) => boolean;
+  /**
+   * Override the standard active logic. Return `true` to force active,
+   * `false` to force inactive, or `undefined` to use standard logic.
+   */
+  isActiveOverride?: (resLocals: UntypedResLocals) => boolean | undefined;
 }
 
 const sideNavPagesTabs = {
@@ -67,6 +72,7 @@ const sideNavPagesTabs = {
       urlSuffix: '/course_admin/questions',
       iconClasses: 'fa fa-question',
       tabLabel: 'Questions',
+      isActiveOverride: (resLocals) => (resLocals.assessment_question ? false : undefined),
     },
     {
       activePages: ['course_admin'],
@@ -113,12 +119,19 @@ const sideNavPagesTabs = {
   ],
   instance_admin: [
     {
-      activePages: ['instance_admin', 'assessments', 'assessment', 'assessment_instance'],
+      activePages: [
+        'instance_admin',
+        'assessments',
+        'assessment',
+        'assessment_instance',
+        'question',
+      ],
       checkActiveSubPageForPages: ['instance_admin'],
       activeSubPages: ['assessments'],
       urlSuffix: '/instance_admin/assessments',
       iconClasses: 'fa fa-list',
       tabLabel: 'Assessments',
+      isActiveOverride: (resLocals) => (resLocals.assessment_question ? true : undefined),
     },
     {
       activePages: ['instance_admin'],
@@ -383,6 +396,7 @@ function SideNavLink({
     tabTooltip,
     htmlSuffix,
     renderCondition,
+    isActiveOverride,
   } = tabInfo;
 
   if (renderCondition != null && !renderCondition(resLocals)) return '';
@@ -390,9 +404,15 @@ function SideNavLink({
   const urlSuffix =
     typeof tabInfo.urlSuffix === 'function' ? tabInfo.urlSuffix(resLocals) : tabInfo.urlSuffix;
 
-  let isActive = activePages.includes(navPage);
-  if (isActive && (!checkActiveSubPageForPages || checkActiveSubPageForPages.includes(navPage))) {
-    isActive = activeSubPages.includes(navSubPage);
+  const activeOverride = isActiveOverride?.(resLocals);
+  let isActive: boolean;
+  if (activeOverride !== undefined) {
+    isActive = activeOverride;
+  } else {
+    isActive = activePages.includes(navPage);
+    if (isActive && (!checkActiveSubPageForPages || checkActiveSubPageForPages.includes(navPage))) {
+      isActive = activeSubPages.includes(navSubPage);
+    }
   }
 
   return html`

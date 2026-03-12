@@ -562,6 +562,11 @@ export async function initExpress(): Promise<Express> {
       (await import('./pages/assessmentsSwitcher/assessmentsSwitcher.js')).default,
     ],
   );
+  app.use('/pl/navbar/course/:course_id(\\d+)/question/:question_id(\\d+)/assessment_switcher', [
+    (await import('./middlewares/authzCourseOrInstance.js')).default,
+    (await import('./pages/assessmentsSwitcher/assessmentsSwitcher.js'))
+      .questionAssessmentSwitcherByCourseRouter,
+  ]);
 
   // Handles updates to the side nav expanded state.
   app.use(
@@ -1099,6 +1104,7 @@ export async function initExpress(): Promise<Express> {
       res.locals.navPage = 'question';
       next();
     },
+    (await import('./middlewares/selectAndAuthzAssessmentQuestionFromQuery.js')).default,
   );
   app.use(
     '/pl/course_instance/:course_instance_id(\\d+)/instructor/question/:question_id(\\d+)/settings',

@@ -5,11 +5,9 @@ import { Router } from 'express';
 import { stringifyStream } from '@prairielearn/csv';
 import * as error from '@prairielearn/error';
 import * as sqldb from '@prairielearn/postgres';
-import { IdSchema } from '@prairielearn/zod';
 
 import {
-  loadAssessmentQuestionContext,
-  loadAssessmentsForQuestion,
+  getAssessmentQuestionContext,
   loadNavQuestions,
 } from '../../lib/assessment-question-context.js';
 import { updateAssessmentQuestionStatsForAssessment } from '../../lib/assessment.js';
@@ -40,41 +38,23 @@ router.get(
       throw new error.HttpStatusError(403, 'Access denied');
     }
 
-    const assessmentQuestionId = req.query.assessment_question_id
-      ? IdSchema.parse(req.query.assessment_question_id)
-      : null;
+    // Assessment context is loaded by the selectAndAuthzAssessmentQuestionFromQuery
+    // middleware when ?assessment_question_id is present.
+    const assessmentQuestionContext = getAssessmentQuestionContext(res.locals);
 
-    const [rows, assessmentQuestionContext, assessmentsList] = await Promise.all([
+    const [rows, navQuestions] = await Promise.all([
       sqldb.queryRows(
         sql.assessment_question_stats,
         { question_id: res.locals.question.id },
         AssessmentQuestionStatsRowSchema,
       ),
-      assessmentQuestionId && res.locals.course_instance
-        ? loadAssessmentQuestionContext(
-            assessmentQuestionId,
-            res.locals.question.id,
-            res.locals.course_instance.id,
+      assessmentQuestionContext
+        ? loadNavQuestions(
+            assessmentQuestionContext.assessment.id,
+            assessmentQuestionContext.assessment_question.id,
           )
         : null,
-      res.locals.course_instance
-        ? loadAssessmentsForQuestion(res.locals.question.id, res.locals.course_instance.id)
-        : null,
     ]);
-
-    const navQuestions =
-      assessmentQuestionContext && assessmentQuestionId
-        ? await loadNavQuestions(assessmentQuestionContext.assessment.id, assessmentQuestionId)
-        : null;
-
-    // Set assessment context on res.locals so the navbar tabs can read it
-    // (e.g., to enable/disable the manual grading tab).
-    if (assessmentQuestionContext) {
-      Object.assign(res.locals, {
-        assessment_question: assessmentQuestionContext.assessment_question,
-        assessment: assessmentQuestionContext.assessment,
-      });
-    }
 
     res.send(
       InstructorQuestionStatistics({
@@ -82,7 +62,6 @@ router.get(
         rows,
         resLocals: res.locals,
         assessmentQuestionContext,
-        assessmentsList,
         prevQuestion: navQuestions?.prevQuestion ?? null,
         nextQuestion: navQuestions?.nextQuestion ?? null,
       }),
@@ -171,18 +150,9 @@ router.post(
   '/',
   typedAsyncHandler<'instructor-question'>(async (req, res) => {
     if (req.body.__action === 'refresh_stats') {
-      const assessmentQuestionId = req.query.assessment_question_id
-        ? IdSchema.parse(req.query.assessment_question_id)
-        : null;
-      if (assessmentQuestionId && res.locals.course_instance) {
-        const context = await loadAssessmentQuestionContext(
-          assessmentQuestionId,
-          res.locals.question.id,
-          res.locals.course_instance.id,
-        );
-        if (context) {
-          await updateAssessmentQuestionStatsForAssessment(context.assessment.id);
-        }
+      const context = getAssessmentQuestionContext(res.locals);
+      if (context) {
+        await updateAssessmentQuestionStatsForAssessment(context.assessment.id);
       }
       res.redirect(req.originalUrl);
     } else {

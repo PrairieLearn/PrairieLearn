@@ -11,21 +11,12 @@ const AssessmentQuestionContextSchema = z.object({
   assessment_question: AssessmentQuestionSchema,
   assessment: AssessmentSchema,
   assessment_set: AssessmentSetSchema,
+  assessment_label: z.string(),
   number_in_alternative_group: z.string(),
+  zone_title: z.string().nullable(),
 });
 
 export type AssessmentQuestionContext = z.infer<typeof AssessmentQuestionContextSchema>;
-
-const AssessmentForPickerSchema = z.object({
-  assessment_question_id: IdSchema,
-  assessment_id: IdSchema,
-  assessment_label: z.string(),
-  assessment_color: z.string(),
-  course_instance_id: IdSchema,
-  course_instance_short_name: z.string(),
-});
-
-export type AssessmentForPicker = z.infer<typeof AssessmentForPickerSchema>;
 
 const NavQuestionSchema = z.object({
   id: IdSchema,
@@ -53,17 +44,44 @@ export async function loadAssessmentQuestionContext(
   );
 }
 
+/**
+ * Extracts the assessment question context from res.locals, if it was set by
+ * the selectAndAuthzAssessmentQuestionFromQuery middleware.
+ */
+export function getAssessmentQuestionContext(
+  resLocals: Record<string, any>,
+): AssessmentQuestionContext | null {
+  if (!resLocals.assessment_question) return null;
+  return {
+    assessment_question: resLocals.assessment_question,
+    assessment: resLocals.assessment,
+    assessment_set: resLocals.assessment_set,
+    assessment_label: resLocals.assessment_label,
+    number_in_alternative_group: resLocals.number_in_alternative_group,
+    zone_title: resLocals.zone_title ?? null,
+  };
+}
+
+const QuestionAssessmentSchema = z.object({
+  assessment_question_id: IdSchema,
+  assessment_id: IdSchema,
+  tid: z.string(),
+  title: z.string(),
+  number: z.string(),
+  assessment_set: AssessmentSetSchema,
+  label: z.string(),
+});
+
+export type QuestionAssessment = z.infer<typeof QuestionAssessmentSchema>;
+
 export async function loadAssessmentsForQuestion(
   questionId: string,
   courseInstanceId: string,
-): Promise<AssessmentForPicker[]> {
+): Promise<QuestionAssessment[]> {
   return sqldb.queryRows(
     sql.select_assessments_for_question,
-    {
-      question_id: questionId,
-      course_instance_id: courseInstanceId,
-    },
-    AssessmentForPickerSchema,
+    { question_id: questionId, course_instance_id: courseInstanceId },
+    QuestionAssessmentSchema,
   );
 }
 

@@ -12,7 +12,7 @@ import { getNavPageTabs } from '../lib/navPageTabs.js';
 import { computeStatus } from '../lib/publishing.js';
 import type { UntypedResLocals } from '../lib/res-locals.types.js';
 
-import { AssessmentNavigation } from './AssessmentNavigation.js';
+import { AssessmentNavigation, QuestionAssessmentNavigation } from './AssessmentNavigation.js';
 import { HeadContents } from './HeadContents.js';
 import { Navbar } from './Navbar.js';
 import type { NavContext } from './Navbar.types.js';
@@ -403,6 +403,20 @@ export function PageLayout({
                     subPage: navContext.subPage,
                     assessment: resLocals.assessment,
                     assessmentSet: resLocals.assessment_set,
+                    switcherUrl:
+                      navContext.page === 'question' && resLocals.question
+                        ? `/pl/navbar/course/${resLocals.course.id}/question/${resLocals.question.id}/assessment_switcher?course_instance_id=${resLocals.course_instance.id}${resLocals.assessment_question ? `&assessment_question_id=${resLocals.assessment_question.id}` : ''}`
+                        : undefined,
+                  })
+                : ''}
+              ${!resLocals.assessment &&
+              sideNavEnabled &&
+              navContext.page === 'question' &&
+              resLocals.question
+                ? QuestionAssessmentNavigation({
+                    courseId: resLocals.course.id,
+                    questionId: resLocals.question.id,
+                    courseInstanceId: resLocals.course_instance?.id,
                   })
                 : ''}
               ${showContextNavigation && !resolvedOptions.hideContextNavigation

@@ -7,10 +7,8 @@ import { AssessmentQuestionConfigPanel } from '../../components/AssessmentQuesti
 import { BreadcrumbsHtml } from '../../components/Breadcrumbs.js';
 import { Modal } from '../../components/Modal.js';
 import { PageLayout } from '../../components/PageLayout.js';
-import { QuestionAssessmentPicker } from '../../components/QuestionAssessmentPicker.js';
 import { ScorebarHtml } from '../../components/Scorebar.js';
 import type {
-  AssessmentForPicker,
   AssessmentQuestionContext,
   NavQuestion,
 } from '../../lib/assessment-question-context.js';
@@ -50,7 +48,6 @@ export function InstructorQuestionStatistics({
   rows,
   resLocals,
   assessmentQuestionContext,
-  assessmentsList,
   prevQuestion,
   nextQuestion,
 }: {
@@ -58,13 +55,11 @@ export function InstructorQuestionStatistics({
   rows: AssessmentQuestionStatsRow[];
   resLocals: ResLocalsForPage<'instructor-question'>;
   assessmentQuestionContext?: AssessmentQuestionContext | null;
-  assessmentsList?: AssessmentForPicker[] | null;
   prevQuestion?: NavQuestion | null;
   nextQuestion?: NavQuestion | null;
 }) {
   const histminiOptions = { width: 60, height: 20, ymax: 1 };
   const hasAssessmentContext = assessmentQuestionContext != null;
-  const currentPath = `question/${resLocals.question.id}/statistics`;
 
   return PageLayout({
     resLocals,
@@ -91,6 +86,9 @@ export function InstructorQuestionStatistics({
                       assessmentQuestionContext.assessment.number,
                     href: `${resLocals.urlPrefix}/assessment/${assessmentQuestionContext.assessment.id}/questions`,
                   },
+                  ...(assessmentQuestionContext.zone_title
+                    ? [{ label: assessmentQuestionContext.zone_title }]
+                    : []),
                   {
                     label: `${assessmentQuestionContext.number_in_alternative_group}: ${resLocals.question.title}`,
                   },
@@ -104,6 +102,8 @@ export function InstructorQuestionStatistics({
                         href="${resLocals.urlPrefix}/question/${prevQuestion.question_id}/statistics?assessment_question_id=${prevQuestion.id}"
                         class="btn btn-sm btn-outline-primary"
                         aria-label="Previous question"
+                        data-bs-toggle="tooltip"
+                        title="${prevQuestion.question_number}: ${prevQuestion.question_title}"
                       >
                         <i class="bi bi-chevron-left"></i>
                       </a>
@@ -123,6 +123,8 @@ export function InstructorQuestionStatistics({
                         href="${resLocals.urlPrefix}/question/${nextQuestion.question_id}/statistics?assessment_question_id=${nextQuestion.id}"
                         class="btn btn-sm btn-outline-primary"
                         aria-label="Next question"
+                        data-bs-toggle="tooltip"
+                        title="${nextQuestion.question_number}: ${nextQuestion.question_title}"
                       >
                         <i class="bi bi-chevron-right"></i>
                       </a>
@@ -157,27 +159,14 @@ export function InstructorQuestionStatistics({
               })}
         </div>
 
-        ${hasAssessmentContext || assessmentsList
+        ${hasAssessmentContext
           ? html`
-              <div class="${hasAssessmentContext ? 'col-lg-3 col-sm-12' : ''}">
-                ${assessmentsList
-                  ? QuestionAssessmentPicker({
-                      assessments: assessmentsList,
-                      selectedAssessmentQuestionId: hasAssessmentContext
-                        ? assessmentQuestionContext.assessment_question.id
-                        : null,
-                      currentPath,
-                      urlPrefix: resLocals.urlPrefix,
-                    })
-                  : ''}
-                ${hasAssessmentContext
-                  ? AssessmentQuestionConfigPanel({
-                      assessment_question: assessmentQuestionContext.assessment_question,
-                      assessment: assessmentQuestionContext.assessment,
-                      numberInAlternativeGroup:
-                        assessmentQuestionContext.number_in_alternative_group,
-                    })
-                  : ''}
+              <div class="col-lg-3 col-sm-12">
+                ${AssessmentQuestionConfigPanel({
+                  assessment_question: assessmentQuestionContext.assessment_question,
+                  assessment: assessmentQuestionContext.assessment,
+                  numberInAlternativeGroup: assessmentQuestionContext.number_in_alternative_group,
+                })}
               </div>
             `
           : ''}
