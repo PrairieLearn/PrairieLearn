@@ -38,7 +38,7 @@
     "@changesets/cli": "^2.30.0",
     "@html-eslint/eslint-plugin": "^0.58.1",
     "@playwright/test": "^1.58.2",
-    "@postgres-language-server/cli": "^0.21.0",
+    "@postgres-language-server/cli": "^0.22.0",
     "@prairielearn/eslint-config": "workspace:^",
     "@reteps/tree-sitter-htmlmustache": "^0.7.1",
     "@typescript/native-preview": "^7.0.0-dev.20260305.1",
