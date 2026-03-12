@@ -1,3 +1,4 @@
+import * as trpcExpress from '@trpc/server/adapters/express';
 import { Router } from 'express';
 import asyncHandler from 'express-async-handler';
 import { z } from 'zod';
@@ -6,6 +7,7 @@ import * as error from '@prairielearn/error';
 import { flash } from '@prairielearn/flash';
 import * as sqldb from '@prairielearn/postgres';
 import { run } from '@prairielearn/run';
+import { generatePrefixCsrfToken } from '@prairielearn/signed-token';
 import { DateFromISOString, IdSchema } from '@prairielearn/zod';
 
 import { calculateAiGradingStats } from '../../../ee/lib/ai-grading/ai-grading-stats.js';
@@ -26,6 +28,7 @@ import {
   updateManualInstanceQuestionGroup,
 } from '../../../ee/lib/ai-instance-question-grouping/ai-instance-question-grouping-util.js';
 import { AiGradingJobSchema, GradingJobSchema } from '../../../lib/db-types.js';
+import { config } from '../../../lib/config.js';
 import { features } from '../../../lib/features/index.js';
 import { idsEqual } from '../../../lib/id.js';
 import { reportIssueFromForm } from '../../../lib/issues.js';
@@ -33,6 +36,7 @@ import * as manualGrading from '../../../lib/manualGrading.js';
 import { formatJsonWithPrettier } from '../../../lib/prettier.js';
 import { getAndRenderVariant, renderPanelsForSubmission } from '../../../lib/question-render.js';
 import { type ResLocalsForPage, typedAsyncHandler } from '../../../lib/res-locals.js';
+import { handleTrpcError } from '../../../lib/trpc.js';
 import { createAuthzMiddleware } from '../../../middlewares/authzHelper.js';
 import { selectCourseInstanceGraderStaff } from '../../../models/course-instances.js';
 import { selectUserById } from '../../../models/user.js';
@@ -43,6 +47,7 @@ import {
   GradingJobDataSchema,
   InstanceQuestion as InstanceQuestionPage,
 } from './instanceQuestion.html.js';
+import { createContext, manualGradingInstanceQuestionRouter } from './trpc.js';
 
 const router = Router();
 const sql = sqldb.loadSqlEquiv(import.meta.url);
@@ -264,6 +269,14 @@ router.get(
       z.number(),
     );
 
+    const trpcCsrfToken = generatePrefixCsrfToken(
+      {
+        url: req.originalUrl.split('?')[0] + '/trpc',
+        authn_user_id: res.locals.authn_user.id,
+      },
+      config.secretKey,
+    );
+
     res.send(
       InstanceQuestionPage({
         ...localsForRender,
@@ -281,8 +294,18 @@ router.get(
         skipGradedSubmissions: req.session.skip_graded_submissions,
         showSubmissionsAssignedToMeOnly: req.session.show_submissions_assigned_to_me_only,
         submissionCredits,
+        trpcCsrfToken,
       }),
     );
+  }),
+);
+
+router.use(
+  '/trpc',
+  trpcExpress.createExpressMiddleware({
+    router: manualGradingInstanceQuestionRouter,
+    createContext,
+    onError: handleTrpcError,
   }),
 );
 

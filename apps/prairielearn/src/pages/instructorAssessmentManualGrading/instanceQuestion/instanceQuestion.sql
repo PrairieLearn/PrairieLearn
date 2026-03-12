@@ -130,6 +130,38 @@ SELECT
       AND gj.deleted_at IS NULL
   );
 
+-- BLOCK select_submission_and_variant_for_grading
+SELECT
+  s.id AS submission_id,
+  s.feedback AS submission_feedback,
+  s.manual_rubric_grading_id AS submission_manual_rubric_grading_id,
+  s.true_answer AS submission_true_answer,
+  s.params AS submission_params,
+  s.submitted_answer AS submission_submitted_answer,
+  v.params AS variant_params,
+  v.true_answer AS variant_true_answer
+FROM
+  variants AS v
+  JOIN submissions AS s ON (s.variant_id = v.id)
+WHERE
+  v.instance_question_id = $instance_question_id
+ORDER BY
+  v.date DESC,
+  s.date DESC
+LIMIT
+  1;
+
+-- BLOCK select_open_issues_for_instance_question
+SELECT
+  i.id,
+  i.open
+FROM
+  issues AS i
+WHERE
+  i.instance_question_id = $instance_question_id
+  AND i.course_caused
+  AND i.open IS TRUE;
+
 -- BLOCK select_submission_credit_values
 SELECT DISTINCT
   s.credit

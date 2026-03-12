@@ -245,6 +245,7 @@ export function AssessmentQuestionTable({
   const [rowSelection, setRowSelection] = useState({});
   const [showDeleteAiGradingModal, setShowDeleteAiGradingModal] = useState(false);
   const [showDeleteAiGroupingsModal, setShowDeleteAiGroupingsModal] = useState(false);
+  const [rubricSettingsOpen, setRubricSettingsOpen] = useState(false);
   const scrollRef = useRef<HTMLDivElement | null>(null);
 
   const queryClientInstance = useQueryClient();
@@ -659,6 +660,8 @@ export function AssessmentQuestionTable({
             assessment_tid: assessment.tid!,
             question_qid: questionQid,
           }}
+          settingsOpen={rubricSettingsOpen}
+          onToggleSettingsOpen={() => setRubricSettingsOpen((prev) => !prev)}
         />
       </div>
       {aiGradingMode && (

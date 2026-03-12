@@ -1,7 +1,9 @@
 import { useCallback, useEffect, useRef, useState } from 'react';
 import { Dropdown, Modal } from 'react-bootstrap';
+import { useForm } from 'react-hook-form';
 
 import { run } from '@prairielearn/run';
+import { OverlayTrigger } from '@prairielearn/ui';
 
 import type { InstanceQuestionAIGradingInfo } from '../../../ee/lib/ai-grading/types.js';
 import { mathjaxTypeset } from '../../../lib/client/mathjax.js';
@@ -44,6 +46,7 @@ interface GradingPanelProps {
   instanceQuestionGroups?: StaffInstanceQuestionGroup[];
   skipGradedSubmissions: boolean;
   showSubmissionsAssignedToMeOnly: boolean;
+  onToggleRubricSettings?: () => void;
   graderGuidelinesRendered: string | null;
   conflictGradingJob: ConflictGradingJobProps | null;
   conflictGradingJobDateFormatted: string | null;
@@ -69,6 +72,7 @@ function GradingPointsInput({
   showRubricButton,
   usePercentage,
   onPointsChange,
+  onToggleRubricSettings,
 }: {
   type: 'manual' | 'auto';
   typeLabel: string;
@@ -82,6 +86,7 @@ function GradingPointsInput({
   showRubricButton: boolean;
   usePercentage: boolean;
   onPointsChange?: (points: number, source: 'points' | 'percentage') => void;
+  onToggleRubricSettings?: () => void;
 }) {
   const [editEnabled, setEditEnabled] = useState(false);
   const percentage = maxPoints ? roundPoints((points * 100) / maxPoints) : 0;
@@ -118,16 +123,11 @@ function GradingPointsInput({
                 <i className="fas fa-pencil" />
               </button>
             )}
-            {showRubricButton && (
+            {showRubricButton && onToggleRubricSettings && (
               <button
                 type="button"
                 className="btn btn-outline-secondary"
-                onClick={() => {
-                  const toggleBtn = document.querySelector<HTMLElement>(
-                    '[data-bs-target="#rubric-setting"]',
-                  );
-                  toggleBtn?.click();
-                }}
+                onClick={onToggleRubricSettings}
               >
                 <i className="fas fa-list-check" /> Rubric
               </button>
@@ -177,27 +177,24 @@ function TotalPointsDisplay({
   usePercentage,
   disabled,
   showRubricButton,
+  onToggleRubricSettings,
 }: {
   totalPoints: number;
   maxPoints: number;
   usePercentage: boolean;
   disabled: boolean;
   showRubricButton: boolean;
+  onToggleRubricSettings?: () => void;
 }) {
   const percentage = maxPoints ? roundPoints((totalPoints * 100) / maxPoints) : 0;
   return (
     <>
-      {showRubricButton && !disabled && (
+      {showRubricButton && !disabled && onToggleRubricSettings && (
         <span className="float-end btn-group btn-group-sm ms-1" role="group">
           <button
             type="button"
             className="btn btn-outline-secondary"
-            onClick={() => {
-              const toggleBtn = document.querySelector<HTMLElement>(
-                '[data-bs-target="#rubric-setting"]',
-              );
-              toggleBtn?.click();
-            }}
+            onClick={onToggleRubricSettings}
           >
             <i className="fas fa-list-check" /> Rubric
           </button>
@@ -257,15 +254,20 @@ function RubricItemCheckbox({
         }}
       >
         {aiChecked !== undefined && (
-          <input
-            type="checkbox"
-            style={{ marginLeft: '3px', marginRight: '8px' }}
-            checked={aiChecked}
-            data-bs-toggle="tooltip"
-            data-bs-placement="top"
-            title={aiChecked ? 'Selected by AI' : 'Not selected by AI'}
-            disabled
-          />
+          <OverlayTrigger
+            placement="top"
+            tooltip={{
+              body: aiChecked ? 'Selected by AI' : 'Not selected by AI',
+              props: { id: `tooltip-ai-checked-${item.rubric_item.id}` },
+            }}
+          >
+            <input
+              type="checkbox"
+              style={{ marginLeft: '3px', marginRight: '8px' }}
+              checked={aiChecked}
+              disabled
+            />
+          </OverlayTrigger>
         )}
         <input
           type="checkbox"
@@ -355,12 +357,20 @@ function RubricInputSection({
           className="d-flex align-items-center gap-2 text-secondary mb-1"
           style={{ paddingLeft: '3px' }}
         >
-          <div data-bs-toggle="tooltip" data-bs-title="AI grading">
-            <i className="bi bi-stars" />
-          </div>
-          <div data-bs-toggle="tooltip" data-bs-title="Manual grading">
-            <i className="bi bi-person-fill" />
-          </div>
+          <OverlayTrigger
+            tooltip={{ body: 'AI grading', props: { id: 'tooltip-ai-grading-icon' } }}
+          >
+            <div>
+              <i className="bi bi-stars" />
+            </div>
+          </OverlayTrigger>
+          <OverlayTrigger
+            tooltip={{ body: 'Manual grading', props: { id: 'tooltip-manual-grading-icon' } }}
+          >
+            <div>
+              <i className="bi bi-person-fill" />
+            </div>
+          </OverlayTrigger>
         </div>
       )}
       {rubricData.rubric_items.map((item) => (
@@ -420,6 +430,14 @@ function RubricInputSection({
   );
 }
 
+interface GradingFormValues {
+  autoPoints: number;
+  manualPoints: number;
+  adjustPoints: number;
+  usePercentage: boolean;
+  selectedRubricItemIds: string[];
+}
+
 function GradingForm({
   csrfToken,
   modifiedAt,
@@ -445,6 +463,7 @@ function GradingForm({
   skipGradedSubmissions,
   showSubmissionsAssignedToMeOnly,
   graderGuidelinesRendered,
+  onToggleRubricSettings,
 }: {
   csrfToken: string;
   modifiedAt: string;
@@ -470,28 +489,32 @@ function GradingForm({
   skipGradedSubmissions: boolean;
   showSubmissionsAssignedToMeOnly: boolean;
   graderGuidelinesRendered: string | null;
+  onToggleRubricSettings?: () => void;
 }) {
-  const [usePercentage, setUsePercentage] = useState(() => {
-    if (typeof window !== 'undefined') {
-      return window.localStorage.getItem('manual_grading_score_use') === 'percentage';
-    }
-    return false;
+  const { watch, setValue, getValues } = useForm<GradingFormValues>({
+    defaultValues: {
+      autoPoints: initialAutoPoints,
+      manualPoints: initialManualPoints,
+      adjustPoints: rubricGrading?.adjust_points ?? 0,
+      usePercentage:
+        typeof window !== 'undefined'
+          ? window.localStorage.getItem('manual_grading_score_use') === 'percentage'
+          : false,
+      selectedRubricItemIds: rubricGrading?.rubric_items
+        ? Object.entries(rubricGrading.rubric_items)
+            .filter(([, item]) => item.score)
+            .map(([id]) => id)
+        : [],
+    },
   });
 
-  const [autoPoints, setAutoPoints] = useState(initialAutoPoints);
-  const [manualPoints, setManualPoints] = useState(initialManualPoints);
+  const autoPoints = watch('autoPoints');
+  const manualPoints = watch('manualPoints');
+  const adjustPoints = watch('adjustPoints');
+  const usePercentage = watch('usePercentage');
+  const selectedRubricItemIds = watch('selectedRubricItemIds');
+  const selectedItems = new Set(selectedRubricItemIds);
 
-  // Rubric state
-  const [selectedItems, setSelectedItems] = useState<Set<string>>(() => {
-    if (!rubricGrading?.rubric_items) return new Set();
-    return new Set(
-      Object.entries(rubricGrading.rubric_items)
-        .filter(([, item]) => item.score)
-        .map(([id]) => id),
-    );
-  });
-
-  const [adjustPoints, setAdjustPoints] = useState(rubricGrading?.adjust_points ?? 0);
   const [adjustPointsShown, setAdjustPointsShown] = useState(
     !!rubricGrading?.adjust_points || disabled,
   );
@@ -571,21 +594,22 @@ function GradingForm({
         (item) => item.rubric_item.key_binding === event.key,
       );
       if (matchingItem) {
-        setSelectedItems((prev) => {
-          const next = new Set(prev);
-          if (next.has(matchingItem.rubric_item.id)) {
-            next.delete(matchingItem.rubric_item.id);
-          } else {
-            next.add(matchingItem.rubric_item.id);
-          }
-          return next;
-        });
+        const current = getValues('selectedRubricItemIds');
+        const id = matchingItem.rubric_item.id;
+        if (current.includes(id)) {
+          setValue(
+            'selectedRubricItemIds',
+            current.filter((x) => x !== id),
+          );
+        } else {
+          setValue('selectedRubricItemIds', [...current, id]);
+        }
       }
     };
 
     document.addEventListener('keypress', handler);
     return () => document.removeEventListener('keypress', handler);
-  }, [disabled, rubricData]);
+  }, [disabled, rubricData, getValues, setValue]);
 
   // MathJax typesetting
   useEffect(() => {
@@ -601,37 +625,28 @@ function GradingForm({
   ) => {
     const max = type === 'auto' ? maxAutoPoints : maxManualPoints;
     const pts = source === 'percentage' ? (value * max) / 100 : value;
-    const rounded = roundPoints(pts);
-    if (type === 'auto') {
-      setAutoPoints(rounded);
-    } else {
-      setManualPoints(rounded);
-    }
+    setValue(type === 'auto' ? 'autoPoints' : 'manualPoints', roundPoints(pts));
   };
 
   const handleAdjustPointsChange = (value: number, source: 'points' | 'percentage') => {
     const maxPts = maxManualPoints || maxPoints;
-    if (source === 'percentage') {
-      setAdjustPoints((value * maxPts) / 100);
-    } else {
-      setAdjustPoints(value);
-    }
+    setValue('adjustPoints', source === 'percentage' ? (value * maxPts) / 100 : value);
   };
 
   const handleToggleItem = (id: string) => {
-    setSelectedItems((prev) => {
-      const next = new Set(prev);
-      if (next.has(id)) {
-        next.delete(id);
-      } else {
-        next.add(id);
-      }
-      return next;
-    });
+    const current = getValues('selectedRubricItemIds');
+    if (current.includes(id)) {
+      setValue(
+        'selectedRubricItemIds',
+        current.filter((x) => x !== id),
+      );
+    } else {
+      setValue('selectedRubricItemIds', [...current, id]);
+    }
   };
 
   const handlePercentageToggle = (checked: boolean) => {
-    setUsePercentage(checked);
+    setValue('usePercentage', checked);
     window.localStorage.setItem('manual_grading_score_use', checked ? 'percentage' : 'points');
   };
 
@@ -729,13 +744,23 @@ function GradingForm({
             <label className="form-label d-flex align-items-center gap-2">
               Submission Group:
               {instanceQuestionGroups && instanceQuestionGroups.length > 0 && (
-                <div
-                  data-bs-toggle="tooltip"
-                  data-bs-html="true"
-                  data-bs-title={displayedSelectedGroup.instance_question_group_description}
+                <OverlayTrigger
+                  tooltip={{
+                    body: (
+                      <span
+                        // eslint-disable-next-line @eslint-react/dom/no-dangerously-set-innerhtml
+                        dangerouslySetInnerHTML={{
+                          __html: displayedSelectedGroup.instance_question_group_description,
+                        }}
+                      />
+                    ),
+                    props: { id: 'tooltip-submission-group-info' },
+                  }}
                 >
-                  <i className="fas fa-circle-info text-secondary" />
-                </div>
+                  <div>
+                    <i className="fas fa-circle-info text-secondary" />
+                  </div>
+                </OverlayTrigger>
               )}
             </label>
             <Dropdown className="w-100 mb-2">
@@ -790,6 +815,7 @@ function GradingForm({
             }
             usePercentage={usePercentage}
             onPointsChange={(val, source) => handlePointsChange('manual', val, source)}
+            onToggleRubricSettings={onToggleRubricSettings}
           />
           {showRubricInManualSection && (
             <RubricInputSection
@@ -832,6 +858,7 @@ function GradingForm({
                 usePercentage={usePercentage}
                 disabled={disabled}
                 showRubricButton={!!showRubricInTotalSection}
+                onToggleRubricSettings={onToggleRubricSettings}
               />
               {showRubricInTotalSection && (
                 <RubricInputSection
@@ -950,7 +977,8 @@ function GradingForm({
             {!disabled && (
               <>
                 {context === 'main' && (
-                  <div
+                  <Dropdown
+                    as="div"
                     className={`btn-group ${selectedGroup ? '' : 'd-none'}`}
                     style={{ display: 'inline-flex' }}
                   >
@@ -962,44 +990,38 @@ function GradingForm({
                     >
                       Grade
                     </button>
-                    <button
-                      type="button"
-                      className="btn btn-primary dropdown-toggle dropdown-toggle-split"
-                      data-bs-toggle="dropdown"
-                      aria-haspopup="true"
-                      aria-expanded="false"
-                    />
-                    <div className="dropdown-menu dropdown-menu-end">
-                      <button
+                    <Dropdown.Toggle variant="primary" split />
+                    <Dropdown.Menu align="end">
+                      <Dropdown.Item
+                        as="button"
                         type="submit"
-                        className="dropdown-item"
                         name="__action"
                         value="add_manual_grade"
                       >
                         This instance question
-                      </button>
-                      <div className="dropdown-divider" />
-                      <button
+                      </Dropdown.Item>
+                      <Dropdown.Divider />
+                      <Dropdown.Item
+                        as="button"
                         type="submit"
-                        className="dropdown-item"
                         name="__action"
                         value="add_manual_grade_for_instance_question_group_ungraded"
                       >
                         All ungraded instance questions in submission group
-                      </button>
-                      <button
+                      </Dropdown.Item>
+                      <Dropdown.Item
+                        as="button"
                         type="submit"
-                        className="dropdown-item"
                         name="__action"
                         value="add_manual_grade_for_instance_question_group"
                       >
                         All instance questions in submission group
-                      </button>
-                      <div className="dropdown-item-text text-muted small">
+                      </Dropdown.Item>
+                      <Dropdown.ItemText className="text-muted small">
                         AI can make mistakes. Review submission group assignments before grading.
-                      </div>
-                    </div>
-                  </div>
+                      </Dropdown.ItemText>
+                    </Dropdown.Menu>
+                  </Dropdown>
                 )}
                 <button
                   id="grade-button"
@@ -1012,7 +1034,7 @@ function GradingForm({
                 </button>
               </>
             )}
-            <div className="btn-group">
+            <Dropdown as="div" className="btn-group">
               <button
                 type="submit"
                 className="btn btn-secondary"
@@ -1023,46 +1045,39 @@ function GradingForm({
               </button>
               {!disabled && (
                 <>
-                  <button
-                    type="button"
-                    className="btn btn-secondary dropdown-toggle dropdown-toggle-split"
-                    data-bs-toggle="dropdown"
-                    aria-haspopup="true"
-                    aria-expanded="false"
-                    aria-label="Change assigned grader"
-                  />
-                  <div className="dropdown-menu dropdown-menu-end">
+                  <Dropdown.Toggle variant="secondary" aria-label="Change assigned grader" split />
+                  <Dropdown.Menu align="end">
                     {(graders || []).map((grader) => (
-                      <button
+                      <Dropdown.Item
                         key={grader.id}
+                        as="button"
                         type="submit"
-                        className="dropdown-item"
                         name="__action"
                         value={`reassign_${grader.id}`}
                       >
                         Assign to: {grader.name} ({grader.uid})
-                      </button>
+                      </Dropdown.Item>
                     ))}
-                    <button
+                    <Dropdown.Item
+                      as="button"
                       type="submit"
-                      className="dropdown-item"
                       name="__action"
                       value="reassign_nobody"
                     >
                       Tag for grading without assigned grader
-                    </button>
-                    <button
+                    </Dropdown.Item>
+                    <Dropdown.Item
+                      as="button"
                       type="submit"
-                      className="dropdown-item"
                       name="__action"
                       value="reassign_graded"
                     >
                       Tag as graded (keep current grade)
-                    </button>
-                  </div>
+                    </Dropdown.Item>
+                  </Dropdown.Menu>
                 </>
               )}
-            </div>
+            </Dropdown>
           </span>
         </li>
       </ul>
@@ -1092,6 +1107,7 @@ export function InstanceQuestionGradingPanel(props: GradingPanelProps) {
     skipGradedSubmissions,
     showSubmissionsAssignedToMeOnly: showSubmissionsAssignedToMeOnlyProp,
     graderGuidelinesRendered,
+    onToggleRubricSettings,
     conflictGradingJob,
     conflictGradingJobDateFormatted,
     conflictLastGraderName,
@@ -1135,6 +1151,7 @@ export function InstanceQuestionGradingPanel(props: GradingPanelProps) {
         skipGradedSubmissions={skipGradedSubmissions}
         showSubmissionsAssignedToMeOnly={showSubmissionsAssignedToMeOnly}
         graderGuidelinesRendered={graderGuidelinesRendered}
+        onToggleRubricSettings={onToggleRubricSettings}
       />
 
       {conflictGradingJob && (

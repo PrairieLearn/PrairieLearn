@@ -48,6 +48,7 @@ export function InstanceQuestion({
   skipGradedSubmissions,
   showSubmissionsAssignedToMeOnly,
   submissionCredits,
+  trpcCsrfToken,
 }: {
   resLocals: ResLocalsForPage<'instance-question'>;
   conflict_grading_job: GradingJobData | null;
@@ -68,6 +69,7 @@ export function InstanceQuestion({
   skipGradedSubmissions: boolean;
   showSubmissionsAssignedToMeOnly: boolean;
   submissionCredits: number[];
+  trpcCsrfToken: string;
 }) {
   const instanceQuestionGroupsExist = instanceQuestionGroups
     ? instanceQuestionGroups.length > 0
@@ -143,6 +145,71 @@ export function InstanceQuestion({
     csrfToken: resLocals.__csrf_token,
   }).toString();
 
+  // Build initialPageData matching the tRPC pageData query return shape.
+  const initialPageData = {
+    rubricData: rubric_data,
+    modifiedAt: resLocals.instance_question.modified_at.toISOString(),
+    aiGradingStats,
+    assessmentQuestion: StaffAssessmentQuestionSchema.parse(resLocals.assessment_question),
+    rubricSettingsContext: {
+      course_short_name: resLocals.course.short_name,
+      course_instance_short_name: resLocals.course_instance.short_name,
+      assessment_tid: resLocals.assessment.tid,
+      question_qid: resLocals.question.qid,
+      variant_params: resLocals.variant.params,
+      variant_true_answer: resLocals.variant.true_answer,
+      submission_submitted_answer: resLocals.submission.submitted_answer,
+    },
+    submissionId: resLocals.submission.id,
+    instanceQuestionId: resLocals.instance_question.id,
+    maxAutoPoints: resLocals.assessment_question.max_auto_points ?? 0,
+    maxManualPoints: resLocals.assessment_question.max_manual_points ?? 0,
+    maxPoints: resLocals.assessment_question.max_points ?? 0,
+    autoPoints: auto_points,
+    manualPoints: manual_points,
+    totalPoints: points,
+    submissionFeedback:
+      (resLocals.submission.feedback as Record<string, any> | null)?.manual ?? null,
+    rubricGrading: resLocals.submission.rubric_grading
+      ? {
+          adjust_points: resLocals.submission.rubric_grading.adjust_points,
+          rubric_items: resLocals.submission.rubric_grading.rubric_items,
+        }
+      : null,
+    openIssues,
+    graders: graders?.map((g) => StaffUserSchema.parse(g)) ?? null,
+    aiGradingInfo,
+    hasEditPermission: resLocals.authz_data.has_course_instance_permission_edit,
+    showInstanceQuestionGroup: instanceQuestionGroupsExist && aiGradingMode,
+    selectedInstanceQuestionGroup: selectedInstanceQuestionGroup
+      ? StaffInstanceQuestionGroupSchema.parse(selectedInstanceQuestionGroup)
+      : null,
+    instanceQuestionGroups: (instanceQuestionGroups ?? []).map((g) =>
+      StaffInstanceQuestionGroupSchema.parse(g),
+    ),
+    graderGuidelinesRendered,
+    conflictGradingJob: conflict_grading_job
+      ? {
+          grader_name: conflict_grading_job.grader_name,
+          auto_points: conflict_grading_job.auto_points,
+          manual_points: conflict_grading_job.manual_points,
+          score: conflict_grading_job.score,
+          feedback: conflict_grading_job.feedback,
+        }
+      : null,
+    conflictGradingJobDateFormatted: conflict_grading_job?.date
+      ? formatDateYMDHM(conflict_grading_job.date, resLocals.course_instance.display_timezone)
+      : null,
+    conflictLastGraderName: lastGraderName,
+    existingDateFormatted: formatDateYMDHM(
+      resLocals.instance_question.modified_at,
+      resLocals.course_instance.display_timezone,
+    ),
+    displayTimezone: resLocals.course_instance.display_timezone,
+    hasNon100CreditSubmissions: submissionCredits.some((credit) => credit !== 100),
+    effectiveShowSubmissionsAssignedToMeOnly,
+  };
+
   return PageLayout({
     resLocals: {
       ...resLocals,
@@ -182,80 +249,13 @@ export function InstanceQuestion({
     content: html`
       ${hydrateHtml(
         <ManualGradingInstanceQuestionPage
-          initialRubricData={rubric_data}
-          initialModifiedAt={resLocals.instance_question.modified_at.toISOString()}
-          rubricSettings={{
-            hasCourseInstancePermissionEdit:
-              resLocals.authz_data.has_course_instance_permission_edit,
-            assessmentQuestion: StaffAssessmentQuestionSchema.parse(resLocals.assessment_question),
-            csrfToken: __csrf_token,
-            aiGradingStats,
-            context: {
-              course_short_name: resLocals.course.short_name,
-              course_instance_short_name: resLocals.course_instance.short_name,
-              assessment_tid: resLocals.assessment.tid,
-              question_qid: resLocals.question.qid,
-              variant_params: resLocals.variant.params,
-              variant_true_answer: resLocals.variant.true_answer,
-              submission_submitted_answer: resLocals.submission.submitted_answer,
-            },
-          }}
-          gradingPanel={{
-            csrfToken: __csrf_token,
-            submissionId: resLocals.submission.id,
-            instanceQuestionId: resLocals.instance_question.id,
-            maxAutoPoints: resLocals.assessment_question.max_auto_points ?? 0,
-            maxManualPoints: resLocals.assessment_question.max_manual_points ?? 0,
-            maxPoints: resLocals.assessment_question.max_points ?? 0,
-            autoPoints: auto_points,
-            manualPoints: manual_points,
-            totalPoints: points,
-            submissionFeedback:
-              (resLocals.submission.feedback as Record<string, any> | null)?.manual ?? null,
-            rubricGrading: resLocals.submission.rubric_grading
-              ? {
-                  adjust_points: resLocals.submission.rubric_grading.adjust_points,
-                  rubric_items: resLocals.submission.rubric_grading.rubric_items,
-                }
-              : null,
-            openIssues,
-            graders: graders?.map((g) => StaffUserSchema.parse(g)) ?? null,
-            aiGradingInfo,
-            hasEditPermission: resLocals.authz_data.has_course_instance_permission_edit,
-            showInstanceQuestionGroup: instanceQuestionGroupsExist && aiGradingMode,
-            selectedInstanceQuestionGroup: selectedInstanceQuestionGroup
-              ? StaffInstanceQuestionGroupSchema.parse(selectedInstanceQuestionGroup)
-              : null,
-            instanceQuestionGroups: instanceQuestionGroups?.map((g) =>
-              StaffInstanceQuestionGroupSchema.parse(g),
-            ),
-            skipGradedSubmissions,
-            showSubmissionsAssignedToMeOnly: effectiveShowSubmissionsAssignedToMeOnly,
-            graderGuidelinesRendered,
-            conflictGradingJob: conflict_grading_job
-              ? {
-                  grader_name: conflict_grading_job.grader_name,
-                  auto_points: conflict_grading_job.auto_points,
-                  manual_points: conflict_grading_job.manual_points,
-                  score: conflict_grading_job.score,
-                  feedback: conflict_grading_job.feedback,
-                }
-              : null,
-            conflictGradingJobDateFormatted: conflict_grading_job?.date
-              ? formatDateYMDHM(
-                  conflict_grading_job.date,
-                  resLocals.course_instance.display_timezone,
-                )
-              : null,
-            conflictLastGraderName: lastGraderName,
-            existingDateFormatted: formatDateYMDHM(
-              resLocals.instance_question.modified_at,
-              resLocals.course_instance.display_timezone,
-            ),
-            displayTimezone: resLocals.course_instance.display_timezone,
-          }}
+          initialPageData={initialPageData}
+          trpcCsrfToken={trpcCsrfToken}
+          csrfToken={__csrf_token}
+          hasCourseInstancePermissionEdit={
+            resLocals.authz_data.has_course_instance_permission_edit
+          }
           assessmentInstanceOpen={resLocals.assessment_instance.open ?? false}
-          hasNon100CreditSubmissions={submissionCredits.some((credit) => credit !== 100)}
           breadcrumb={{
             urlPrefix: resLocals.urlPrefix,
             assessmentId: resLocals.assessment.id,
@@ -265,7 +265,8 @@ export function InstanceQuestion({
           }}
           aiGradingEnabled={aiGradingEnabled}
           aiGradingMode={aiGradingMode}
-          csrfToken={__csrf_token}
+          skipGradedSubmissions={skipGradedSubmissions}
+          showSubmissionsAssignedToMeOnly={showSubmissionsAssignedToMeOnly}
           questionContainerHtml={questionContainerHtml}
           personalNotesPanelHtml={personalNotesPanelHtml}
           instructorInfoPanelHtml={instructorInfoPanelHtml}

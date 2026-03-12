@@ -104,6 +104,7 @@ export function ManualGradingInstanceQuestionPage({
 }: ManualGradingInstanceQuestionPageProps) {
   const [rubricData, setRubricData] = useState(initialRubricData);
   const [modifiedAt, setModifiedAt] = useState(initialModifiedAt);
+  const [rubricSettingsOpen, setRubricSettingsOpen] = useState(false);
 
   const handleRubricSaved = useCallback(
     (data: { rubric_data: RubricData | null; modifiedAt: string }) => {
@@ -185,7 +186,9 @@ export function ManualGradingInstanceQuestionPage({
           csrfToken={rubricSettings.csrfToken}
           aiGradingStats={rubricSettings.aiGradingStats}
           context={rubricSettings.context}
+          settingsOpen={rubricSettingsOpen}
           onRubricSaved={handleRubricSaved}
+          onToggleSettingsOpen={() => setRubricSettingsOpen((prev) => !prev)}
         />
       </div>
 
@@ -202,6 +205,7 @@ export function ManualGradingInstanceQuestionPage({
               {...gradingPanel}
               rubricData={rubricData}
               modifiedAt={modifiedAt}
+              onToggleRubricSettings={() => setRubricSettingsOpen((prev) => !prev)}
             />
           </div>
 
