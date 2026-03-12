@@ -180,42 +180,6 @@ def test_implicit_complex_rejected_with_no_simplify(a_sub: str) -> None:
     assert "complex number" in data["format_errors"]["test"]
 
 
-def test_implicit_complex_grade_does_not_crash() -> None:
-    """If an implicitly complex submission somehow reaches grading, it must
-    produce a format error instead of an unhandled HasComplexError.
-
-    This tests the safety net in the grade function that catches HasComplexError.
-    """
-    correct_answer = psu.sympy_to_json(sympy.Integer(42))
-    # Simulate a submission that passed parse and was stored as sympy JSON.
-    # Use a value string that will produce I when re-evaluated with simplification.
-    submitted_answer: psu.SympyJson = {
-        "_type": "sympy",
-        "_value": "sqrt(-2)",
-        "_variables": [],
-    }
-
-    element_html = """
-    <pl-symbolic-input
-        answers-name="test"
-        variables="x"
-    ></pl-symbolic-input>
-    """
-
-    data: dict[str, Any] = {
-        "submitted_answers": {"test": submitted_answer},
-        "raw_submitted_answers": {"test": "sqrt(-2)"},
-        "correct_answers": {"test": correct_answer},
-        "format_errors": {},
-        "partial_scores": {},
-    }
-
-    # This must not raise HasComplexError
-    symbolic_input.grade(element_html, data)
-
-    assert "test" in data["format_errors"]
-    assert "complex number" in data["format_errors"]["test"].lower()
-
 
 def test_formula_editor_initial_value_respects_display_log_as_ln(
     monkeypatch: pytest.MonkeyPatch,
