@@ -222,8 +222,6 @@ export async function syncDiskToSqlWithLock(
               courseInstanceId,
               courseInstanceData,
               questionIds,
-              courseData.questions,
-              sharedQuestionPreferencesByCi.get(ciid) ?? {},
             ),
           );
         },

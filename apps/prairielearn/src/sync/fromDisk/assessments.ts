@@ -107,24 +107,12 @@ function mergeAndValidatePreferences(
  */
 
 function getParamsForAssessment(
-  ajv: Ajv,
   assessmentInfoFile: AssessmentInfoFile,
   questionIds: Record<string, any>,
-  questions: Record<string, InfoFile<QuestionJson>>,
-  sharedQuestionPreferences: Record<string, QuestionPreferencesSchemaJson>,
 ) {
   if (infofile.hasErrors(assessmentInfoFile)) return null;
   const assessment = assessmentInfoFile.data;
   if (!assessment) throw new Error(`Missing assessment data for ${assessmentInfoFile.uuid}`);
-
-  const getPreferencesSchema = (qid: string): QuestionPreferencesSchemaJson | null => {
-    if (qid.startsWith('@')) {
-      return sharedQuestionPreferences[qid] ?? null;
-    }
-    const questionInfo = questions[qid];
-    if (!questionInfo.data?.preferences) return null;
-    return questionInfo.data.preferences;
-  };
 
   // It used to be the case that assessment access rules could be associated with a
   // particular user role, e.g., Student, TA, or Instructor. Now, all access rules
@@ -329,18 +317,10 @@ function getParamsForAssessment(
         assessmentQuestionNumber++;
         const questionId = questionIds[alternative.qid];
 
-        if (questionId !== undefined) {
-          const preferencesSchema = getPreferencesSchema(alternative.qid);
-          const { errors: preferenceErrors } = mergeAndValidatePreferences(
-            ajv,
-            alternative.qid,
-            preferencesSchema,
-            alternative.preferences,
-          );
-          for (const error of preferenceErrors) {
-            infofile.addError(assessmentInfoFile, error);
-          }
-        }
+        // Preference validation has already been performed by
+        // preValidateAssessmentPreferences() before this function runs.
+        // If there were errors, getParamsForAssessment would have returned
+        // null early due to the hasErrors check at the top.
 
         return {
           number: assessmentQuestionNumber,
@@ -517,8 +497,6 @@ export async function sync(
   courseInstanceId: string,
   courseInstanceData: CourseInstanceData,
   questionIds: Record<string, any>,
-  questions: Record<string, InfoFile<QuestionJson>>,
-  sharedQuestionPreferences: Record<string, QuestionPreferencesSchemaJson>,
 ) {
   const assessments = courseInstanceData.assessments;
 
@@ -567,18 +545,8 @@ export async function sync(
     });
   }
 
-  const ajv = new Ajv({ allErrors: true, allowUnionTypes: true });
-
   const assessmentParams = Object.entries(assessments).map(([tid, assessment]) => {
-    // getParamsForAssessment must be called before stringifyErrors/stringifyWarnings so
-    // that any errors it adds to the infofile are captured in the serialized output.
-    const params = getParamsForAssessment(
-      ajv,
-      assessment,
-      questionIds,
-      questions,
-      sharedQuestionPreferences,
-    );
+    const params = getParamsForAssessment(assessment, questionIds);
     return JSON.stringify([
       tid,
       assessment.uuid,
@@ -619,19 +587,6 @@ export function preValidateAssessmentPreferences(
           } else {
             if (!(qid in questions)) return; // Missing QID will be caught later during assessment sync
             schema = questions[qid].data?.preferences ?? null;
-          }
-          // We must catch the "no schema but overrides provided" case here
-          // so the assessment has errors before `getParamsForAssessment` runs.
-          // Without this, the assessment params are still built and passed to
-          // the sproc, which hits a DB assertion.
-          if (!schema) {
-            if (preferences && Object.keys(preferences).length > 0) {
-              infofile.addError(
-                assessment,
-                `Question "${qid}" does not define a preferences schema, but preferences were provided in the assessment`,
-              );
-            }
-            return;
           }
           const { errors } = mergeAndValidatePreferences(ajv, qid, schema, preferences);
           for (const error of errors) {
