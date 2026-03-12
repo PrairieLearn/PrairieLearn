@@ -54,6 +54,7 @@ function makeState(overrides?: Partial<EditorState>): EditorState {
     questionMetadata: {},
     collapsedGroups: new Set<string>(),
     collapsedZones: new Set<string>(),
+    selectedItem: null,
     ...overrides,
   };
 }
@@ -477,5 +478,35 @@ describe('createEditorReducer', () => {
 
     state = reducer(state, { type: 'EXPAND_ALL_GROUPS' });
     expect(state.collapsedGroups.size).toBe(0);
+  });
+
+  it('QUESTION_PICKED removes duplicate when QID already exists in assessment', () => {
+    const existingQ = makeQuestion('q-existing', { id: 'shared-qid', autoPoints: 99 });
+    const initialState = makeState({
+      zones: [makeZone('z1', [existingQ]), makeZone('z2', [])],
+      questionMetadata: {
+        'shared-qid': { question: { grading_method: 'Internal' } } as any,
+      },
+      // Picker is open in z2
+      selectedItem: { type: 'picker', zoneTrackingId: tid('z2') as string },
+    });
+    const reducer = createEditorReducer(initialState);
+
+    const newMetadata = { question: { grading_method: 'Internal' } } as any;
+    const state = reducer(initialState, {
+      type: 'QUESTION_PICKED',
+      qid: 'shared-qid',
+      metadata: newMetadata,
+      expectedSelectedItem: initialState.selectedItem,
+    });
+
+    // Old entry removed from z1
+    expect(state.zones[0].questions).toHaveLength(0);
+    // New entry added to z2 with fresh defaults (not the old autoPoints: 99)
+    expect(state.zones[1].questions).toHaveLength(1);
+    expect(state.zones[1].questions[0].id).toBe('shared-qid');
+    expect(state.zones[1].questions[0].autoPoints).toBe(1);
+    // Metadata updated
+    expect(state.questionMetadata['shared-qid']).toBe(newMetadata);
   });
 });

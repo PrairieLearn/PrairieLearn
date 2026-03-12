@@ -7,11 +7,9 @@
   "module": "Module1",
   "allowAccess": [
     {
-      "mode": "Exam",
+      "examUuid": "e66122b5-c793-4235-9851-9a3aa80ae39b",
       "credit": 100,
-      "timeLimitMin": 50,
-      "startDate": "1920-07-07T23:59:59",
-      "endDate": "2300-07-10T23:59:59"
+      "timeLimitMin": 50
     }
   ],
   "zones": [
