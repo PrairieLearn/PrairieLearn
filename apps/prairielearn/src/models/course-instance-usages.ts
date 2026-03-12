@@ -23,7 +23,7 @@
  * `duration` for compute usage.
  */
 
-import type { GenerateObjectResult, LanguageModelUsage } from 'ai';
+import type { GenerateObjectResult, GenerateTextResult, LanguageModelUsage } from 'ai';
 
 import { execute, loadSqlEquiv } from '@prairielearn/postgres';
 
@@ -133,15 +133,15 @@ export async function updateCourseInstanceUsagesForAiGradingResponses({
   gradingJobId: string;
   authnUserId: string;
   model: keyof Config['costPerMillionTokens'];
-  gradingResponseWithRotationIssue?: GenerateObjectResult<any>;
+  gradingResponseWithRotationIssue?: GenerateObjectResult<any> | GenerateTextResult<any, any>;
   rotationCorrections?: Record<
     string,
     {
       degreesRotated: CounterClockwiseRotationDegrees;
-      response: GenerateObjectResult<any>;
+      response: GenerateObjectResult<any> | GenerateTextResult<any, any>;
     }
   >;
-  finalGradingResponse: GenerateObjectResult<any>;
+  finalGradingResponse: GenerateObjectResult<any> | GenerateTextResult<any, any>;
 }) {
   const responses = [
     ...(gradingResponseWithRotationIssue ? [gradingResponseWithRotationIssue] : []),

@@ -324,6 +324,7 @@ function badGet(url: string, expected_status: number, should_parse: boolean) {
           (resolve, reject) => {
             // We deliberately use the deprecated `node:url#parse()` instead of
             // `new URL()` to avoid path normalization.
+            // eslint-disable-next-line @typescript-eslint/no-deprecated
             const parsedUrl = nodeUrl.parse(url);
             const req = http.request(
               {

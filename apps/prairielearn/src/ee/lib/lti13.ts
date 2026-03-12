@@ -227,6 +227,7 @@ export async function getOpenidClientConfig(
 
   // Only for testing
   if (config.devMode) {
+    // eslint-disable-next-line @typescript-eslint/no-deprecated
     client.allowInsecureRequests(openidClientConfig);
   }
 

@@ -4,8 +4,9 @@ import {
   type LanguageModel,
   type LanguageModelUsage,
   type ModelMessage,
+  Output,
   type UserContent,
-  generateObject,
+  generateText,
 } from 'ai';
 import * as cheerio from 'cheerio';
 import { Redis } from 'ioredis';
@@ -535,12 +536,12 @@ export async function insertAiGradingJobWithRotationCorrection({
   job_sequence_id: string;
   model_id: AiGradingModelId;
   prompt: ModelMessage[];
-  gradingResponseWithRotationIssue: GenerateObjectResult<any>;
+  gradingResponseWithRotationIssue: GenerateObjectResult<any> | GenerateTextResult<any, any>;
   rotationCorrections: Record<
     string,
     {
       degreesRotated: CounterClockwiseRotationDegrees;
-      response: GenerateObjectResult<any>;
+      response: GenerateObjectResult<any> | GenerateTextResult<any, any>;
     }
   >;
   gradingResponseWithRotationCorrection: GenerateObjectResult<any> | GenerateTextResult<any, any>;
@@ -766,7 +767,7 @@ async function correctImageOrientation({
 }): Promise<{
   correctedImage: string;
   degreesRotated: CounterClockwiseRotationDegrees;
-  response: GenerateObjectResult<any>;
+  response: GenerateTextResult<any, any>;
 }> {
   const rotated90 = await rotateBase64Image(image, 90);
   const rotated180 = await rotateBase64Image(image, 180);
@@ -809,13 +810,13 @@ async function correctImageOrientation({
     });
   }
 
-  const response = await generateObject({
+  const response = await generateText({
     model,
-    schema: RotationCorrectionOutputSchema,
+    output: Output.object({ schema: RotationCorrectionOutputSchema }),
     messages: prompt,
   });
 
-  const index = Number.parseInt(response.object.upright_image) - 1;
+  const index = Number.parseInt(response.output.upright_image) - 1;
 
   return {
     correctedImage: images[index],
@@ -860,7 +861,7 @@ export async function correctImagesOrientation({
     string,
     {
       degreesRotated: CounterClockwiseRotationDegrees;
-      response: GenerateObjectResult<any>;
+      response: GenerateTextResult<any, any>;
     }
   > = {};
 

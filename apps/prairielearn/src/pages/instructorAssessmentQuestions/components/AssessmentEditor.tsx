@@ -81,8 +81,6 @@ function useBeforeUnload(enabled: boolean): () => void {
     const handler = (event: BeforeUnloadEvent) => {
       if (disabledRef.current) return;
       event.preventDefault();
-      event.returnValue = 'prompt';
-      return 'prompt';
     };
     window.addEventListener('beforeunload', handler);
     return () => window.removeEventListener('beforeunload', handler);

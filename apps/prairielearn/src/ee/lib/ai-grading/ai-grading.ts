@@ -3,7 +3,13 @@ import assert from 'node:assert';
 import { createAnthropic } from '@ai-sdk/anthropic';
 import { createGoogleGenerativeAI } from '@ai-sdk/google';
 import { type OpenAIResponsesProviderOptions, createOpenAI } from '@ai-sdk/openai';
-import { type JSONParseError, type TypeValidationError, generateObject } from 'ai';
+import {
+  type JSONParseError,
+  Output,
+  type TypeValidationError,
+  generateObject,
+  generateText,
+} from 'ai';
 import * as async from 'async';
 import mustache from 'mustache';
 import { z } from 'zod';
@@ -424,6 +430,7 @@ export async function aiGrade({
             provider !== 'google'
           ) {
             return {
+              // eslint-disable-next-line @typescript-eslint/no-deprecated -- generateText doesn't support experimental_repairText
               finalGradingResponse: await generateObject({
                 model,
                 schema: RubricGradingResultSchema,
@@ -437,6 +444,7 @@ export async function aiGrade({
             };
           }
 
+          // eslint-disable-next-line @typescript-eslint/no-deprecated -- generateText doesn't support experimental_repairText
           const initialResponse = await generateObject({
             model,
             schema: RubricImageGradingResultSchema,
@@ -487,6 +495,7 @@ export async function aiGrade({
           });
 
           // Perform grading with the rotation-corrected images.
+          // eslint-disable-next-line @typescript-eslint/no-deprecated -- generateText doesn't support experimental_repairText
           const finalResponse = await generateObject({
             model,
             schema: RubricImageGradingResultSchema,
@@ -704,9 +713,9 @@ export async function aiGrade({
             provider !== 'google'
           ) {
             return {
-              finalGradingResponse: await generateObject({
+              finalGradingResponse: await generateText({
                 model,
-                schema: GradingResultSchema,
+                output: Output.object({ schema: GradingResultSchema }),
                 messages: input,
                 providerOptions: {
                   openai: openaiProviderOptions,
@@ -716,9 +725,9 @@ export async function aiGrade({
             };
           }
 
-          const initialResponse = await generateObject({
+          const initialResponse = await generateText({
             model,
-            schema: ImageGradingResultSchema,
+            output: Output.object({ schema: ImageGradingResultSchema }),
             messages: input,
             providerOptions: {
               openai: openaiProviderOptions,
@@ -726,7 +735,7 @@ export async function aiGrade({
           });
 
           if (
-            initialResponse.object.handwriting_orientations.every(
+            initialResponse.output.handwriting_orientations.every(
               (orientation) => orientation === 'Upright (0 degrees)',
             )
           ) {
@@ -754,9 +763,9 @@ export async function aiGrade({
           });
 
           // Perform grading with the rotation-corrected images.
-          const finalResponse = await generateObject({
+          const finalResponse = await generateText({
             model,
-            schema: ImageGradingResultSchema,
+            output: Output.object({ schema: ImageGradingResultSchema }),
             messages: input,
             providerOptions: {
               openai: openaiProviderOptions,
@@ -804,12 +813,12 @@ export async function aiGrade({
           }
         }
 
-        logger.info(`Parsed response: ${JSON.stringify(finalGradingResponse.object, null, 2)}`);
-        const score = finalGradingResponse.object.score;
+        logger.info(`Parsed response: ${JSON.stringify(finalGradingResponse.output, null, 2)}`);
+        const score = finalGradingResponse.output.score;
 
         if (shouldUpdateScore) {
           // Requires grading: update instance question score
-          const feedback = finalGradingResponse.object.feedback;
+          const feedback = finalGradingResponse.output.feedback;
           await runInTransactionAsync(async () => {
             const { grading_job_id } = await manualGrading.updateInstanceQuestionScore({
               assessment,
@@ -910,7 +919,7 @@ export async function aiGrade({
           });
         }
 
-        logger.info(`AI score: ${finalGradingResponse.object.score}`);
+        logger.info(`AI score: ${finalGradingResponse.output.score}`);
       }
 
       return true;

@@ -12,22 +12,27 @@ type Prompt = (string | string[])[];
 /**
  * AI image grading response and, if rotation correction occurred, associated rotation correction responses.
  */
+type AiGradingResponse = GenerateObjectResult<any> | GenerateTextResult<any, any>;
+
+/**
+ * AI image grading response and, if rotation correction occurred, associated rotation correction responses.
+ */
 export type AiImageGradingResponses =
   | {
       rotationCorrectionApplied: false;
-      finalGradingResponse: GenerateObjectResult<any>;
+      finalGradingResponse: AiGradingResponse;
     }
   | {
       rotationCorrectionApplied: true;
-      finalGradingResponse: GenerateObjectResult<any>;
+      finalGradingResponse: AiGradingResponse;
       rotationCorrections: Record<
         string,
         {
           degreesRotated: CounterClockwiseRotationDegrees;
-          response: GenerateObjectResult<any>;
+          response: AiGradingResponse;
         }
       >;
-      gradingResponseWithRotationIssue: GenerateObjectResult<any>;
+      gradingResponseWithRotationIssue: AiGradingResponse;
     };
 
 /**
@@ -71,9 +76,9 @@ export function logResponsesUsage({
       (acc, response) => {
         const usage = response.usage;
         acc.inputTokens += usage.inputTokens ?? 0;
-        acc.cachedInputTokens += usage.cachedInputTokens ?? 0;
+        acc.cachedInputTokens += usage.inputTokenDetails.cacheReadTokens ?? 0;
         acc.outputTokens += usage.outputTokens ?? 0;
-        acc.reasoningTokens += usage.reasoningTokens ?? 0;
+        acc.reasoningTokens += usage.outputTokenDetails.reasoningTokens ?? 0;
         acc.totalTokens += usage.totalTokens ?? 0;
         return acc;
       },

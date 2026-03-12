@@ -36,6 +36,7 @@ export async function runLegacySqlAdminQuery(
     encoding: 'utf8',
   });
   // We wanted to discourage the use of queryAsync, but it is still needed here.
+  // eslint-disable-next-line @typescript-eslint/no-deprecated
   const result = await defaultPool.queryAsync(sql, params);
   return { rows: result.rows, columns: result.fields.map((field: { name: string }) => field.name) };
 }
