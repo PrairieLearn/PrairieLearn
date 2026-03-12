@@ -64,6 +64,7 @@ import { DEV_EXECUTION_MODE, config, loadConfig, setLocalsFromConfig } from './l
 import { pullAndUpdateCourse } from './lib/course.js';
 import { UserSchema } from './lib/db-types.js';
 import * as externalGrader from './lib/externalGrader.js';
+import * as externalGraderDeadLetters from './lib/externalGraderDeadLetters.js';
 import * as externalGraderResults from './lib/externalGraderResults.js';
 import * as externalGradingSocket from './lib/externalGradingSocket.js';
 import * as externalImageCaptureSocket from './lib/externalImageCaptureSocket.js';
@@ -2567,6 +2568,7 @@ if (shouldStartServer) {
     // requests, as they may actually end up executing course code.
     if (config.externalGradingEnableResults) {
       await externalGraderResults.init();
+      await externalGraderDeadLetters.init();
     }
 
     await cron.init();
@@ -2609,6 +2611,7 @@ if (shouldStartServer) {
     }
     // First, stop all services that use the database.
     const serviceResults = await Promise.allSettled([
+      externalGraderDeadLetters.stop(),
       externalGraderResults.stop(),
       cron.stop(),
       serverJobs.stop(),
