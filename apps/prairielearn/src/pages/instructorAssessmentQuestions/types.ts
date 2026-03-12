@@ -45,7 +45,7 @@ export type QuestionAlternativeForm = z.infer<typeof QuestionAlternativeFormSche
 /**
  * Form version of ZoneQuestionBlockJson - adds trackingId, updates alternatives type.
  */
-export const ZoneQuestionBlockFormSchema = ZoneQuestionBlockJsonSchema.omit({
+const ZoneQuestionBlockFormSchema = ZoneQuestionBlockJsonSchema.omit({
   alternatives: true,
 }).extend({
   trackingId: TrackingIdSchema,
