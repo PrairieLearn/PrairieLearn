@@ -4,14 +4,11 @@ SELECT
   to_jsonb(a) AS assessment,
   to_jsonb(aset) AS assessment_set,
   (aset.abbreviation || a.number) AS assessment_label,
-  admin_assessment_question_number (aq.id) AS number_in_alternative_group,
-  z.title AS zone_title
+  admin_assessment_question_number (aq.id) AS number_in_alternative_group
 FROM
   assessment_questions AS aq
   JOIN assessments AS a ON (a.id = aq.assessment_id)
   JOIN assessment_sets AS aset ON (aset.id = a.assessment_set_id)
-  LEFT JOIN alternative_groups AS ag ON (ag.id = aq.alternative_group_id)
-  LEFT JOIN zones AS z ON (z.id = ag.zone_id)
 WHERE
   aq.id = $assessment_question_id
   AND aq.question_id = $question_id

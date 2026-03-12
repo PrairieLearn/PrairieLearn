@@ -86,9 +86,6 @@ export function InstructorQuestionStatistics({
                       assessmentQuestionContext.assessment.number,
                     href: `${resLocals.urlPrefix}/assessment/${assessmentQuestionContext.assessment.id}/questions`,
                   },
-                  ...(assessmentQuestionContext.zone_title
-                    ? [{ label: assessmentQuestionContext.zone_title }]
-                    : []),
                   {
                     label: `${assessmentQuestionContext.number_in_alternative_group}: ${resLocals.question.title}`,
                   },

@@ -13,7 +13,6 @@ const AssessmentQuestionContextSchema = z.object({
   assessment_set: AssessmentSetSchema,
   assessment_label: z.string(),
   number_in_alternative_group: z.string(),
-  zone_title: z.string().nullable(),
 });
 
 export type AssessmentQuestionContext = z.infer<typeof AssessmentQuestionContextSchema>;
@@ -58,7 +57,6 @@ export function getAssessmentQuestionContext(
     assessment_set: resLocals.assessment_set,
     assessment_label: resLocals.assessment_label,
     number_in_alternative_group: resLocals.number_in_alternative_group,
-    zone_title: resLocals.zone_title ?? null,
   };
 }
 

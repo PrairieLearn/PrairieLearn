@@ -9,7 +9,7 @@ import { loadAssessmentQuestionContext } from '../lib/assessment-question-contex
  * if present, loads the assessment question context onto `res.locals`. This
  * populates the same fields that `selectAndAuthzAssessmentQuestion` and
  * `selectAndAuthzAssessment` would set (assessment_question, assessment,
- * assessment_set, assessment_label, number_in_alternative_group, zone_title).
+ * assessment_set, assessment_label, number_in_alternative_group).
  *
  * Intended for use in the question route middleware chain so that question
  * pages can optionally display assessment context without needing a separate URL.
