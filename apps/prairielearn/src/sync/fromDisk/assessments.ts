@@ -117,7 +117,6 @@ function getParamsForAssessment(
   const assessment = assessmentInfoFile.data;
   if (!assessment) throw new Error(`Missing assessment data for ${assessmentInfoFile.uuid}`);
 
-  // Helper to get preferences schema for a question
   const getPreferencesSchema = (qid: string): QuestionPreferencesSchemaJson | null => {
     if (qid.startsWith('@')) {
       return sharedQuestionPreferences[qid] ?? null;
