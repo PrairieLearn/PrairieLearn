@@ -9,6 +9,7 @@ import { OverlayTrigger } from '@prairielearn/ui';
 import type { AdminInstitution } from '../lib/client/safe-db-types.js';
 import { getAdministratorCourseRequestsUrl } from '../lib/client/url.js';
 import type { CourseRequestRow } from '../lib/course-request.js';
+import { type Timezone, formatTimezone } from '../lib/timezone.shared.js';
 import { useTRPC } from '../trpc/administrator/trpc-context.js';
 
 import { JobStatus } from './JobStatus.js';
@@ -26,12 +27,14 @@ interface CourseRequestApproveFormData {
 export function CourseRequestsTable({
   rows,
   institutions,
+  availableTimezones,
   coursesRoot,
   showAll,
   urlPrefix,
 }: {
   rows: CourseRequestRow[];
   institutions: AdminInstitution[];
+  availableTimezones: Timezone[];
   coursesRoot: string;
   showAll: boolean;
   urlPrefix: string;
@@ -74,6 +77,7 @@ export function CourseRequestsTable({
                 key={row.id}
                 row={row}
                 institutions={institutions}
+                availableTimezones={availableTimezones}
                 coursesRoot={coursesRoot}
                 showAll={showAll}
                 urlPrefix={urlPrefix}
@@ -97,12 +101,14 @@ CourseRequestsTable.displayName = 'CourseRequestsTable';
 function CourseRequestTableRow({
   row,
   institutions,
+  availableTimezones,
   coursesRoot,
   showAll,
   urlPrefix,
 }: {
   row: CourseRequestRow;
   institutions: AdminInstitution[];
+  availableTimezones: Timezone[];
   coursesRoot: string;
   showAll: boolean;
   urlPrefix: string;
@@ -188,6 +194,7 @@ function CourseRequestTableRow({
                   <CourseRequestApproveForm
                     request={row}
                     institutions={institutions}
+                    availableTimezones={availableTimezones}
                     coursesRoot={coursesRoot}
                     urlPrefix={urlPrefix}
                     onCancel={() => setShowApprovePopover(false)}
@@ -279,12 +286,14 @@ function CourseRequestTableRow({
 function CourseRequestApproveForm({
   request,
   institutions,
+  availableTimezones,
   coursesRoot,
   urlPrefix,
   onCancel,
 }: {
   request: CourseRequestRow;
   institutions: AdminInstitution[];
+  availableTimezones: Timezone[];
   coursesRoot: string;
   urlPrefix: string;
   onCancel: () => void;
@@ -435,16 +444,24 @@ function CourseRequestApproveForm({
         <label className="form-label" htmlFor="courseRequestAddInputTimezone">
           Timezone:
         </label>
-        <input
-          type="text"
-          className={clsx('form-control', errors.display_timezone && 'is-invalid')}
+        <select
+          className={clsx('form-select', errors.display_timezone && 'is-invalid')}
           id="courseRequestAddInputTimezone"
           aria-invalid={errors.display_timezone ? true : undefined}
           aria-errormessage={
             errors.display_timezone ? 'courseRequestAddInputTimezone-error' : undefined
           }
-          {...register('display_timezone', { required: 'Enter a timezone' })}
-        />
+          {...register('display_timezone', { required: 'Select a timezone' })}
+        >
+          <option value="" disabled>
+            Select a timezone...
+          </option>
+          {availableTimezones.map((tz) => (
+            <option key={tz.name} value={tz.name}>
+              {formatTimezone(tz)}
+            </option>
+          ))}
+        </select>
         {errors.display_timezone && (
           <div id="courseRequestAddInputTimezone-error" className="invalid-feedback">
             {errors.display_timezone.message}

@@ -10,6 +10,7 @@ import { CourseRequestsTable } from '../../components/CourseRequestsTable.js';
 import type { AdminInstitution } from '../../lib/client/safe-db-types.js';
 import { QueryClientProviderDebug } from '../../lib/client/tanstackQuery.js';
 import type { CourseRequestRow } from '../../lib/course-request.js';
+import type { Timezone } from '../../lib/timezone.shared.js';
 import { createAdministratorTrpcClient } from '../../trpc/administrator/trpc-client.js';
 import { TRPCProvider, useTRPC } from '../../trpc/administrator/trpc-context.js';
 
@@ -44,6 +45,7 @@ type CourseColumnName =
 export function AdministratorCourses({
   courseRequests,
   institutions,
+  availableTimezones,
   courses,
   coursesRoot,
   trpcCsrfToken,
@@ -52,6 +54,7 @@ export function AdministratorCourses({
 }: {
   courseRequests: CourseRequestRow[];
   institutions: AdminInstitution[];
+  availableTimezones: Timezone[];
   courses: CourseWithInstitution[];
   coursesRoot: string;
   trpcCsrfToken: string;
@@ -72,6 +75,7 @@ export function AdministratorCourses({
           <CourseRequestsTable
             rows={courseRequests}
             institutions={institutions}
+            availableTimezones={availableTimezones}
             coursesRoot={coursesRoot}
             urlPrefix={urlPrefix}
             showAll={false}

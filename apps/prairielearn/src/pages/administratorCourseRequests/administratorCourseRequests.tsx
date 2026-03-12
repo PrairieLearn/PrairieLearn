@@ -8,6 +8,7 @@ import { AdminInstitutionSchema } from '../../lib/client/safe-db-types.js';
 import { config } from '../../lib/config.js';
 import { selectAllCourseRequests } from '../../lib/course-request.js';
 import { typedAsyncHandler } from '../../lib/res-locals.js';
+import { getCanonicalTimezones } from '../../lib/timezones.js';
 import { selectAllInstitutions } from '../../models/institution.js';
 
 import { AdministratorCourseRequests } from './administratorCourseRequests.html.js';
@@ -19,6 +20,7 @@ router.get(
   typedAsyncHandler<'plain'>(async (req, res) => {
     const rows = await selectAllCourseRequests();
     const institutions = await selectAllInstitutions();
+    const availableTimezones = await getCanonicalTimezones();
     const trpcCsrfToken = generatePrefixCsrfToken(
       {
         url: `${res.locals.urlPrefix}/administrator/trpc`,
@@ -43,6 +45,7 @@ router.get(
             <AdministratorCourseRequests
               rows={rows}
               institutions={AdminInstitutionSchema.array().parse(institutions)}
+              availableTimezones={availableTimezones}
               coursesRoot={config.coursesRoot}
               trpcCsrfToken={trpcCsrfToken}
               urlPrefix={res.locals.urlPrefix}
