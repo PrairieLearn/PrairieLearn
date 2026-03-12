@@ -312,7 +312,9 @@ onDocumentReady(() => {
       if (
         $('.sticky-header-container:visible input.bootstrap-table-filter-control-qid').length > 0
       ) {
-        $('.sticky-header-container:visible input.bootstrap-table-filter-control-qid').trigger('focus');
+        $('.sticky-header-container:visible input.bootstrap-table-filter-control-qid').trigger(
+          'focus',
+        );
       } else {
         $('input.bootstrap-table-filter-control-qid').trigger('focus');
       }

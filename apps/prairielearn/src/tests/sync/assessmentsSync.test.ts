@@ -4110,7 +4110,7 @@ describe('Assessment syncing', () => {
     assert.isNull(syncedAssessment.sync_errors);
 
     // Verify group config was synced
-    const groupConfigs = await util.dumpTableWithSchema('group_configs', GroupConfigSchema);
+    const groupConfigs = await util.dumpTableWithSchema('team_configs', GroupConfigSchema);
     const groupConfig = groupConfigs.find((gc) => gc.assessment_id === syncedAssessment.id);
     assert.isOk(groupConfig);
     assert.equal(groupConfig.minimum, 2);
@@ -4121,7 +4121,7 @@ describe('Assessment syncing', () => {
     assert.equal(groupConfig.student_authz_choose_name, true);
 
     // Verify group roles were synced
-    const groupRoles = await util.dumpTableWithSchema('group_roles', GroupRoleSchema);
+    const groupRoles = await util.dumpTableWithSchema('team_roles', GroupRoleSchema);
     const assessmentRoles = groupRoles.filter((r) => r.assessment_id === syncedAssessment.id);
     assert.equal(assessmentRoles.length, 3);
 
@@ -4172,8 +4172,7 @@ describe('Assessment syncing', () => {
     assert.isDefined(assessmentQuestion);
 
     // Check group roles were created
-
-    const syncedRoles = await util.dumpTableWithSchema('group_roles', GroupRoleSchema);
+    const syncedRoles = await util.dumpTableWithSchema('team_roles', GroupRoleSchema);
     const manager = syncedRoles.find((role) => role.role_name === 'Manager');
     const recorder = syncedRoles.find((role) => role.role_name === 'Recorder');
     const contributor = syncedRoles.find((role) => role.role_name === 'Contributor');
