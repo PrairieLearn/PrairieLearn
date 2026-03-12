@@ -50,9 +50,10 @@ def element_inner_html(element: lxml.html.HtmlElement) -> str:
 def count_words_from_html_base64(file_contents_b64: str) -> int:
     """Count words from base64-encoded HTML contents stored by the element.
 
-    Words are counted as sequences of word characters (alphanumeric and
-    underscore). HTML tags are stripped to extract plain text, then the text is
-    split on sequences of non-word characters (whitespace, punctuation, etc.).
+    HTML tags are stripped to extract plain text. itertext() is used (rather than
+    text_content()) so that adjacent elements (lists, inline formatting, blocks)
+    are separated by spaces instead of being concatenated. Words are then split
+    on whitespace.
     """
     if not file_contents_b64:
         return 0
@@ -62,10 +63,13 @@ def count_words_from_html_base64(file_contents_b64: str) -> int:
         # If decode fails, treat as empty rather than crashing student submissions.
         return 0
 
-    # Convert HTML -> plain text using lxml
+    # Convert HTML -> plain text using lxml. itertext() yields text nodes in
+    # document order; joining with space prevents concatenation of words from
+    # adjacent elements (e.g. <p>hello</p><p><strong>world</strong></p> would
+    # otherwise become "helloworld" instead of "hello world").
     try:
         root = lxml.html.fromstring(html)
-        text = root.text_content()
+        text = " ".join(root.itertext())
     except lxml.etree.LxmlError:
         # If HTML is malformed, fallback to a naive strip of tags by parsing fragments
         try:
@@ -75,13 +79,15 @@ def count_words_from_html_base64(file_contents_b64: str) -> int:
                 if isinstance(frag, str):
                     parts.append(frag)
                 else:
-                    parts.append(frag.text_content())
+                    parts.append(
+                        " ".join(frag.itertext()) if hasattr(frag, "itertext") else frag.text_content()
+                    )
             text = " ".join(parts)
         except lxml.etree.LxmlError:
             text = html
 
-    # Split on non-word characters; filter empty tokens from leading/trailing
-    tokens = [t for t in re.split(r"\W+", text) if t]
+    # Split on whitespace; filter empty tokens
+    tokens = [t for t in re.split(r"\s+", text) if t]
     return len(tokens)
 
 def prepare(element_html: str, data: pl.QuestionData) -> None:

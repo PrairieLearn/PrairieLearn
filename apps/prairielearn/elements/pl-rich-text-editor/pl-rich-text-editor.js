@@ -12,12 +12,31 @@
     }
   });
 
-  // Words are counted as sequences of word characters (alphanumeric and
-  // underscore). The text is split on sequences of non-word characters
-  // (whitespace, punctuation, etc.).
+  // Words are split on whitespace. This must match the Python logic in
+  // count_words_from_html_base64 so the live counter and validation agree.
   const countWords = (text) => {
-    const tokens = text.trim() ? text.split(/\W+/).filter((t) => t) : [];
+    const tokens = text.trim() ? text.trim().split(/\s+/).filter((t) => t) : [];
     return tokens.length;
+  };
+
+  // Extract plain text from HTML with spaces between adjacent elements.
+  // Matches Python's " ".join(root.itertext()) so that lists, inline
+  // formatting, and adjacent blocks (e.g. <p>hello</p><p><strong>world</strong></p>)
+  // are counted correctly. Used for both the live counter and min/max validation.
+  const extractTextFromHtml = (html) => {
+    if (!html) return '';
+    const div = document.createElement('div');
+    div.innerHTML = html;
+    const texts = [];
+    const walk = (node) => {
+      if (node.nodeType === Node.TEXT_NODE) {
+        texts.push(node.textContent);
+      } else if (node.nodeType === Node.ELEMENT_NODE) {
+        for (const child of node.childNodes) walk(child);
+      }
+    };
+    walk(div);
+    return texts.join(' ');
   };
 
   class Counter {
@@ -133,8 +152,27 @@
     // Ensure that the initial content is not part of the undo stack
     quill.history.clear();
 
-    const getText = () => quill.getText();
-    const counter = options.counter === 'none' ? null : new Counter(options.counter, uuid, getText);
+    // Use the same text extraction as the hidden input so the live counter and
+    // min/max validation match server-side validation (formulas, lists, formatting).
+
+
+    // An alternative solution would be to use the `getText` method, but this
+    // would cause a false positive for elements that are part of the answer
+    // but don't have a text (e.g., images).
+    //
+    // Because `isBlank` is undocumented, this solution may break in the
+    // future (see https://github.com/slab/quill/issues/4254). To ensure that
+    // the element continues to work if this method is removed, we use
+    // optional chaining in the call. This would cause the empty check to
+    // fail but not crash, so the element can continue working.
+
+    const getStoredContent = () =>
+      quill.editor?.isBlank?.()
+        ? ''
+        : rtePurify.sanitize(quill.getSemanticHTML(), rtePurifyConfig);
+    const getCountableText = () => extractTextFromHtml(getStoredContent());
+
+    const counter = options.counter === 'none' ? null : new Counter(options.counter, uuid, getCountableText);
 
     // --- Live min/max word-count invalid message wiring ---
     const editorContainer = baseElement.closest('.pl-rich-text-editor-container');
@@ -154,7 +192,7 @@
     const updateInvalidUI = () => {
       if (!hasBounds) return;
 
-      const wc = countWords(getText());
+      const wc = countWords(getCountableText());
       const tooFew = Number.isFinite(minWordCount) && wc < minWordCount;
       const tooMany = Number.isFinite(maxWordCount) && wc > maxWordCount;
       const isInvalid = tooFew || tooMany;
@@ -182,19 +220,7 @@
       // This is not a perfect solution, since it will not catch cases like
       // content with only a space or a bulleted list without text, but we're ok
       // with this caveat.
-      //
-      // An alternative solution would be to use the `getText` method, but this
-      // would cause a false positive for elements that are part of the answer
-      // but don't have a text (e.g., images).
-      //
-      // Because `isBlank` is undocumented, this solution may break in the
-      // future (see https://github.com/slab/quill/issues/4254). To ensure that
-      // the element continues to work if this method is removed, we use
-      // optional chaining in the call. This would cause the empty check to
-      // fail but not crash, so the element can continue working.
-      const contents = quill.editor?.isBlank?.()
-        ? ''
-        : rtePurify.sanitize(quill.getSemanticHTML(), rtePurifyConfig);
+      const contents = getStoredContent();
       inputElement.val(
         btoa(
           he.encode(contents, {
