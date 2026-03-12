@@ -1,5 +1,5 @@
 import { EncodedData } from '@prairielearn/browser-utils';
-import { type HtmlSafeString, escapeHtml, html, unsafeHtml } from '@prairielearn/html';
+import { type HtmlValue, escapeHtml, html, unsafeHtml } from '@prairielearn/html';
 import { run } from '@prairielearn/run';
 
 import type {
@@ -440,19 +440,17 @@ export function QuestionTitle({
   questionContext: QuestionContext;
   question: Question;
   questionNumber: string;
-}): HtmlSafeString {
+}): HtmlValue {
   const hasTitle = !!question.title?.trim();
 
   if (questionContext === 'student_homework') {
-    return hasTitle ? html`${questionNumber}. ${question.title}` : html`${questionNumber}`;
+    return hasTitle ? `${questionNumber}. ${question.title}` : questionNumber;
   } else if (questionContext === 'student_exam') {
     return hasTitle
-      ? html`Question ${questionNumber}: ${question.title}`
-      : html`Question ${questionNumber}`;
+      ? `Question ${questionNumber}: ${question.title}`
+      : `Question ${questionNumber}`;
   } else {
-    return hasTitle
-      ? html`${question.title}`
-      : html`<span class="font-monospace">${question.qid}</span>`;
+    return hasTitle ? question.title : html`<span class="font-monospace">${question.qid}</span>`;
   }
 }
 

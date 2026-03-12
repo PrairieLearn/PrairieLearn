@@ -485,11 +485,9 @@ export function StudentAssessmentInstance({
                             rowLabelText:
                               resLocals.assessment.type === 'Exam'
                                 ? `Question ${instance_question_row.question_number}`
-                                : // Note: if `question_title` is empty, this renders "N. " with a
-                                  // trailing separator. This path isn't currently triggered in
-                                  // practice. If it ever is, add a fallback here — but QIDs must
-                                  // not be shown to students.
-                                  `${instance_question_row.question_number}. ${instance_question_row.question_title}`,
+                                : instance_question_row.question_title
+                                  ? `${instance_question_row.question_number}. ${instance_question_row.question_title}`
+                                  : instance_question_row.question_number,
                           })}
                         </div>
                       </td>
