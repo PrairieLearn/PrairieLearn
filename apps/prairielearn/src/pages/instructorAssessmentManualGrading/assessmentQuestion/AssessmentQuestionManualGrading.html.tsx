@@ -68,6 +68,7 @@ function proposalToRubricItem(proposal: RubricProposal): ProposedRubricItem {
     description: proposal.itemDescription,
     points: proposal.points,
     explanation: proposal.explanation,
+    graderNote: proposal.graderNote,
   };
 }
 
@@ -108,16 +109,8 @@ function AssessmentQuestionManualGradingInner({
   const mutations = useManualGradingActions();
   const { setAiGradingModeMutation, groupSubmissionMutation } = mutations;
 
-  const totalSubmissions = instanceQuestionsInfo.length;
-  const gradedSubmissions = instanceQuestionsInfo.filter(
-    (row) => !row.instance_question.requires_manual_grading,
-  ).length;
-
   // Rubric proposal state shared between chat panel and rubric settings.
-  // Initialized with demo data for the prototype.
-  const [activeProposal, setActiveProposal] = useState<RubricProposal | null>(
-    AgentChatPanel.DEMO_PROPOSAL,
-  );
+  const [activeProposal, setActiveProposal] = useState<RubricProposal | null>(null);
 
   const handleAcceptProposal = useCallback(() => {
     setActiveProposal(null);
@@ -127,18 +120,25 @@ function AssessmentQuestionManualGradingInner({
     setActiveProposal(null);
   }, []);
 
+  const handleSuggestChanges = useCallback((_text: string) => {
+    // In the real implementation, this would send the suggestion to the LLM.
+  }, []);
+
+  const handleNewProposal = useCallback((proposal: RubricProposal) => {
+    setActiveProposal(proposal);
+  }, []);
+
   const handleAcceptProposalFromRubric = useCallback((_item: ProposedRubricItem) => {
-    // In the real implementation, this would save the (potentially edited) item.
     setActiveProposal(null);
   }, []);
 
   const handleUpdateProposal = useCallback((item: ProposedRubricItem) => {
-    // Sync edits back to the proposal so the chat panel stays in sync.
     setActiveProposal({
       action: item.action,
       itemDescription: item.description,
       points: item.points,
       explanation: item.explanation,
+      graderNote: item.graderNote,
     });
   }, []);
 
@@ -230,11 +230,11 @@ function AssessmentQuestionManualGradingInner({
       </div>
       {aiGradingMode && (
         <AgentChatPanel
-          totalSubmissions={totalSubmissions}
-          gradedSubmissions={gradedSubmissions}
           activeProposal={activeProposal}
           onAcceptProposal={handleAcceptProposal}
           onRejectProposal={handleRejectProposal}
+          onSuggestChanges={handleSuggestChanges}
+          onNewProposal={handleNewProposal}
         />
       )}
 

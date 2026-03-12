@@ -58,6 +58,7 @@ export interface ProposedRubricItem {
   description: string;
   points: number;
   explanation: string;
+  graderNote: string;
 }
 
 export function RubricSettings({
@@ -1011,62 +1012,100 @@ function ProposedRubricRow({
   const [points, setPoints] = useState(item.points);
   const [description, setDescription] = useState(item.description);
   const [explanation, setExplanation] = useState(item.explanation);
+  const [graderNote, setGraderNote] = useState(item.graderNote);
 
   return (
-    <tr style={{ backgroundColor: '#fff8e1', borderLeft: '3px solid #ffc107' }}>
-      <td className="text-nowrap align-middle">
-        <span className="badge bg-warning text-dark">
-          <i className="bi bi-stars me-1" />
-          Proposed
-        </span>
-      </td>
-      <td className="align-middle" style={{ width: 80 }}>
-        <input
-          type="number"
-          className="form-control form-control-sm"
-          value={points}
-          onChange={(e) => {
-            const val = Number(e.target.value);
-            setPoints(val);
-            onUpdate?.({ ...item, points: val, description, explanation });
-          }}
-        />
-      </td>
-      <td className="align-middle">
-        <input
-          type="text"
-          className="form-control form-control-sm"
-          value={description}
-          onChange={(e) => {
-            setDescription(e.target.value);
-            onUpdate?.({ ...item, points, description: e.target.value, explanation });
-          }}
-        />
-      </td>
-      <td className="align-middle">
-        <input
-          type="text"
-          className="form-control form-control-sm"
-          value={explanation}
-          onChange={(e) => {
-            setExplanation(e.target.value);
-            onUpdate?.({ ...item, points, description, explanation: e.target.value });
-          }}
-        />
-      </td>
-      <td className="align-middle" />
-      <td className="align-middle" />
-      <td className="align-middle">
-        <button
-          type="button"
-          className="btn btn-success btn-sm"
-          onClick={() => onAccept?.({ ...item, points, description, explanation })}
-        >
-          <i className="bi bi-check-lg me-1" />
-          Save
-        </button>
-      </td>
-    </tr>
+    <>
+      <tr style={{ backgroundColor: '#e8f5e9', borderLeft: '4px solid #4caf50' }}>
+        <td className="text-nowrap align-middle">
+          <span className="badge bg-success">
+            <i className="bi bi-stars me-1" />
+            AI proposed
+          </span>
+        </td>
+        <td className="align-middle" style={{ width: 80 }}>
+          <input
+            type="number"
+            className="form-control form-control-sm"
+            value={points}
+            onChange={(e) => {
+              const val = Number(e.target.value);
+              setPoints(val);
+              onUpdate?.({ ...item, points: val, description, explanation, graderNote });
+            }}
+          />
+        </td>
+        <td className="align-middle">
+          <input
+            type="text"
+            className="form-control form-control-sm"
+            value={description}
+            onChange={(e) => {
+              setDescription(e.target.value);
+              onUpdate?.({
+                ...item,
+                points,
+                description: e.target.value,
+                explanation,
+                graderNote,
+              });
+            }}
+          />
+        </td>
+        <td className="align-middle">
+          <input
+            type="text"
+            className="form-control form-control-sm"
+            value={explanation}
+            onChange={(e) => {
+              setExplanation(e.target.value);
+              onUpdate?.({
+                ...item,
+                points,
+                description,
+                explanation: e.target.value,
+                graderNote,
+              });
+            }}
+          />
+        </td>
+        <td className="align-middle" />
+        <td className="align-middle" />
+        <td className="align-middle">
+          <button
+            type="button"
+            className="btn btn-success btn-sm"
+            onClick={() => onAccept?.({ ...item, points, description, explanation, graderNote })}
+          >
+            <i className="bi bi-check-lg me-1" />
+            Save
+          </button>
+        </td>
+      </tr>
+      {/* Grader note row */}
+      <tr style={{ backgroundColor: '#e8f5e9', borderLeft: '4px solid #4caf50' }}>
+        <td colSpan={7} className="pt-0 pb-2">
+          <div className="d-flex align-items-start gap-2">
+            <small className="text-muted fw-semibold text-nowrap mt-1">Grader note:</small>
+            <input
+              type="text"
+              className="form-control form-control-sm"
+              value={graderNote}
+              onChange={(e) => {
+                setGraderNote(e.target.value);
+                onUpdate?.({
+                  ...item,
+                  points,
+                  description,
+                  explanation,
+                  graderNote: e.target.value,
+                });
+              }}
+            />
+          </div>
+        </td>
+      </tr>
+    </>
   );
 }
 

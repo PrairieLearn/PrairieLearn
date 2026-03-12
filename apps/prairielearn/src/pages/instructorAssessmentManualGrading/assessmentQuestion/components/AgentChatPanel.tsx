@@ -1,11 +1,13 @@
 import { useCallback, useEffect, useRef, useState } from 'react';
-import { Button, Form } from 'react-bootstrap';
+import { Button, Form, ProgressBar } from 'react-bootstrap';
 
 interface ChatMessage {
   id: string;
   role: 'user' | 'assistant' | 'system';
   content: string;
   timestamp: Date;
+  /** Special message type for structured responses with action buttons. */
+  special?: 'rubricGenerated' | 'rubricProposal';
 }
 
 export interface RubricProposal {
@@ -13,96 +15,233 @@ export interface RubricProposal {
   itemDescription: string;
   points: number;
   explanation: string;
+  graderNote: string;
 }
 
-const DEMO_PROPOSAL: RubricProposal = {
+const RUBRIC_PROPOSAL: RubricProposal = {
   action: 'add',
   itemDescription: 'Uses valid alternative projection method (dot product approach)',
   points: 3,
   explanation:
     'The student uses the dot product formula to compute the projection instead of the matrix formula. This is a valid alternative approach.',
+  graderNote:
+    'Encountered in 12 submissions so far. Students who use this method tend to arrive at the correct answer.',
 };
 
-const DEMO_MESSAGES: ChatMessage[] = [
-  {
-    id: '1',
-    role: 'system',
-    content: 'Chat started. AI grading agent is ready.',
-    timestamp: new Date('2026-03-07T12:00:00'),
-  },
-  {
-    id: '2',
-    role: 'assistant',
-    content:
-      "I've sampled 5 random submissions and analyzed the rubric. Here's what I found:\n\n- Most submissions correctly apply the projection formula\n- Common errors include incorrect intermediate computations and missing final answers\n- The current rubric covers the main grading criteria well",
-    timestamp: new Date('2026-03-07T12:00:05'),
-  },
-  {
-    id: '3',
-    role: 'user',
-    content: 'Start grading all ungraded submissions.',
-    timestamp: new Date('2026-03-07T12:01:00'),
-  },
-  {
-    id: '4',
-    role: 'assistant',
-    content:
-      "Starting AI grading on 547 ungraded submissions. I'll notify you if I encounter any ambiguous cases that need rubric clarification.",
-    timestamp: new Date('2026-03-07T12:01:02'),
-  },
-  {
-    id: '5',
-    role: 'system',
-    content: 'Grading paused: rubric change proposed.',
-    timestamp: new Date('2026-03-07T12:03:30'),
-  },
-  {
-    id: '6',
-    role: 'assistant',
-    content:
-      "I've encountered several submissions that use an alternative but valid approach to compute the projection. The current rubric doesn't account for this method. I've proposed a new rubric item — you can see it highlighted in the rubric settings above.",
-    timestamp: new Date('2026-03-07T12:03:31'),
-  },
-];
+type ChatPhase = 'idle' | 'generating' | 'rubricReady' | 'grading' | 'proposalPending' | 'complete';
+
+const TOTAL_GRADING_SUBMISSIONS = 100;
+const PROPOSAL_AT = 50;
+const GRADING_INTERVAL_MS = 150;
 
 const CHAT_WIDTH = 480;
 
 interface AgentChatPanelProps {
-  totalSubmissions: number;
-  gradedSubmissions: number;
   activeProposal: RubricProposal | null;
   onAcceptProposal: () => void;
   onRejectProposal: () => void;
+  onSuggestChanges: (text: string) => void;
+  onNewProposal: (proposal: RubricProposal) => void;
 }
 
 export function AgentChatPanel({
-  totalSubmissions,
-  gradedSubmissions,
   activeProposal,
   onAcceptProposal,
   onRejectProposal,
+  onSuggestChanges,
+  onNewProposal,
 }: AgentChatPanelProps) {
-  const [messages, setMessages] = useState<ChatMessage[]>(DEMO_MESSAGES);
+  const [messages, setMessages] = useState<ChatMessage[]>([]);
   const [inputValue, setInputValue] = useState('');
-  const [isGrading, setIsGrading] = useState(true);
+  const [phase, setPhase] = useState<ChatPhase>('idle');
+  const [gradedCount, setGradedCount] = useState(0);
   const messagesEndRef = useRef<HTMLDivElement>(null);
+  const gradingIntervalRef = useRef<ReturnType<typeof setInterval> | null>(null);
 
   useEffect(() => {
     messagesEndRef.current?.scrollIntoView({ behavior: 'smooth' });
   }, [messages]);
 
+  // Cleanup grading interval on unmount.
+  useEffect(() => {
+    return () => {
+      if (gradingIntervalRef.current) clearInterval(gradingIntervalRef.current);
+    };
+  }, []);
+
+  const addMessage = useCallback(
+    (role: ChatMessage['role'], content: string, special?: ChatMessage['special']) => {
+      setMessages((prev) => [
+        ...prev,
+        { id: String(Date.now()) + Math.random(), role, content, timestamp: new Date(), special },
+      ]);
+    },
+    [],
+  );
+
+  const startGradingProgress = useCallback(() => {
+    setGradedCount(0);
+    setPhase('grading');
+    addMessage('system', 'AI grading started.');
+
+    gradingIntervalRef.current = setInterval(() => {
+      setGradedCount((prev) => {
+        const next = prev + 1;
+        if (next === PROPOSAL_AT) {
+          // Pause grading and propose a rubric change.
+          if (gradingIntervalRef.current) clearInterval(gradingIntervalRef.current);
+          gradingIntervalRef.current = null;
+
+          setTimeout(() => {
+            setPhase('proposalPending');
+            onNewProposal(RUBRIC_PROPOSAL);
+            setMessages((msgs) => [
+              ...msgs,
+              {
+                id: String(Date.now()) + Math.random(),
+                role: 'system',
+                content: 'Grading paused: rubric change proposed.',
+                timestamp: new Date(),
+              },
+              {
+                id: String(Date.now()) + Math.random(),
+                role: 'assistant',
+                content:
+                  "I've encountered several submissions that use an alternative but valid approach to compute the projection. The current rubric doesn't account for this method.\n\nI've proposed a new rubric item — you can see it highlighted in the rubric settings above. You can accept, reject, or suggest changes.",
+                timestamp: new Date(),
+                special: 'rubricProposal',
+              },
+            ]);
+          }, 0);
+          return next;
+        }
+        if (next >= TOTAL_GRADING_SUBMISSIONS) {
+          if (gradingIntervalRef.current) clearInterval(gradingIntervalRef.current);
+          gradingIntervalRef.current = null;
+
+          setTimeout(() => {
+            setPhase('complete');
+            setMessages((msgs) => [
+              ...msgs,
+              {
+                id: String(Date.now()) + Math.random(),
+                role: 'system',
+                content: 'Grading complete.',
+                timestamp: new Date(),
+              },
+              {
+                id: String(Date.now()) + Math.random(),
+                role: 'assistant',
+                content: `All ${TOTAL_GRADING_SUBMISSIONS} submissions have been graded! You can review the results in the table above. Let me know if you'd like to adjust anything.`,
+                timestamp: new Date(),
+              },
+            ]);
+          }, 0);
+          return next;
+        }
+        return next;
+      });
+    }, GRADING_INTERVAL_MS);
+  }, [addMessage, onNewProposal]);
+
+  const resumeGrading = useCallback(() => {
+    setPhase('grading');
+    addMessage('system', 'Grading resumed.');
+
+    gradingIntervalRef.current = setInterval(() => {
+      setGradedCount((prev) => {
+        const next = prev + 1;
+        if (next >= TOTAL_GRADING_SUBMISSIONS) {
+          if (gradingIntervalRef.current) clearInterval(gradingIntervalRef.current);
+          gradingIntervalRef.current = null;
+
+          setTimeout(() => {
+            setPhase('complete');
+            setMessages((msgs) => [
+              ...msgs,
+              {
+                id: String(Date.now()) + Math.random(),
+                role: 'system',
+                content: 'Grading complete.',
+                timestamp: new Date(),
+              },
+              {
+                id: String(Date.now()) + Math.random(),
+                role: 'assistant',
+                content: `All ${TOTAL_GRADING_SUBMISSIONS} submissions have been graded! You can review the results in the table above. Let me know if you'd like to adjust anything.`,
+                timestamp: new Date(),
+              },
+            ]);
+          }, 0);
+          return next;
+        }
+        return next;
+      });
+    }, GRADING_INTERVAL_MS);
+  }, [addMessage]);
+
+  const handleAccept = useCallback(() => {
+    onAcceptProposal();
+    addMessage('user', 'Accept the proposed rubric change.');
+    setTimeout(() => {
+      addMessage('assistant', 'Rubric updated. Resuming grading with the new rubric item applied.');
+      resumeGrading();
+    }, 500);
+  }, [onAcceptProposal, addMessage, resumeGrading]);
+
+  const handleReject = useCallback(() => {
+    onRejectProposal();
+    addMessage('user', 'Reject the proposed rubric change.');
+    setTimeout(() => {
+      addMessage('assistant', 'Understood. Continuing grading without the proposed change.');
+      resumeGrading();
+    }, 500);
+  }, [onRejectProposal, addMessage, resumeGrading]);
+
+  const handleGenerateRubric = useCallback(() => {
+    setPhase('generating');
+    addMessage('assistant', 'Generating rubric...');
+
+    setTimeout(() => {
+      setPhase('rubricReady');
+      setMessages((prev) => [
+        ...prev,
+        {
+          id: String(Date.now()) + Math.random(),
+          role: 'assistant',
+          content:
+            "Rubric generated! I've analyzed the question and created a rubric with scoring criteria. You can review and edit it in the rubric settings above.",
+          timestamp: new Date(),
+          special: 'rubricGenerated',
+        },
+      ]);
+    }, 5000);
+  }, [addMessage]);
+
   const handleSend = useCallback(() => {
     if (!inputValue.trim()) return;
 
-    const newMessage: ChatMessage = {
-      id: String(Date.now()),
-      role: 'user',
-      content: inputValue,
-      timestamp: new Date(),
-    };
-    setMessages((prev) => [...prev, newMessage]);
+    const text = inputValue.trim();
+    addMessage('user', text);
     setInputValue('');
-  }, [inputValue]);
+
+    if (phase === 'proposalPending') {
+      onSuggestChanges(text);
+      setTimeout(() => {
+        addMessage(
+          'assistant',
+          "[PLACEHOLDER] I've noted your feedback on the rubric change. Let me know if you'd like to accept, reject, or further refine the proposal.",
+        );
+      }, 1000);
+    } else {
+      setTimeout(() => {
+        addMessage(
+          'assistant',
+          "[PLACEHOLDER] Thanks for your message. Let me know how you'd like to proceed.",
+        );
+      }, 1000);
+    }
+  }, [inputValue, addMessage, phase, onSuggestChanges]);
 
   const handleKeyDown = useCallback(
     (e: React.KeyboardEvent) => {
@@ -113,6 +252,8 @@ export function AgentChatPanel({
     },
     [handleSend],
   );
+
+  const isGrading = phase === 'grading';
 
   return (
     <div
@@ -126,51 +267,15 @@ export function AgentChatPanel({
         zIndex: 1030,
       }}
     >
-      {/* Header */}
-      <div className="border-bottom px-3 py-2 d-flex align-items-center justify-content-between bg-light">
-        <div className="d-flex align-items-center gap-2">
-          <i className="bi bi-stars text-primary" />
-          <span className="fw-semibold">AI grading agent</span>
-        </div>
-        <Button
-          variant="outline-secondary"
-          size="sm"
-          title="End chat"
-          onClick={() => setIsGrading(false)}
-        >
-          <i className="bi bi-x-lg" />
-        </Button>
-      </div>
-
-      {/* Progress bar */}
-      <div className="border-bottom px-3 py-2 bg-light">
-        <div className="d-flex justify-content-between align-items-center mb-1">
-          <small className="text-muted">
-            Graded {gradedSubmissions}/{totalSubmissions} submissions
-          </small>
-          {isGrading ? (
-            <span className="badge bg-success d-flex align-items-center gap-1">
-              <span
-                className="spinner-grow spinner-grow-sm"
-                role="status"
-                style={{ width: '0.5rem', height: '0.5rem' }}
-              />
-              Grading
-            </span>
-          ) : (
-            <span className="badge bg-secondary">Paused</span>
-          )}
-        </div>
-        <div className="progress" style={{ height: 6 }}>
-          <div
-            className="progress-bar bg-success"
-            style={{ width: `${(gradedSubmissions / totalSubmissions) * 100}%` }}
-          />
-        </div>
-      </div>
-
       {/* Messages */}
       <div className="flex-grow-1 overflow-auto px-3 py-2" style={{ minHeight: 0 }}>
+        {messages.length === 0 && (
+          <div className="text-center text-muted mt-4">
+            <i className="bi bi-stars d-block mb-2" style={{ fontSize: '2rem' }} />
+            <p>AI grading agent is ready.</p>
+            <p className="small">Generate a rubric to get started, or ask anything below.</p>
+          </div>
+        )}
         {messages.map((message) => (
           <div key={message.id} className="mb-3">
             {message.role === 'system' ? (
@@ -190,6 +295,32 @@ export function AgentChatPanel({
                   <div style={{ whiteSpace: 'pre-wrap', fontSize: '0.875rem' }}>
                     {message.content}
                   </div>
+                  {message.special === 'rubricGenerated' && phase === 'rubricReady' && (
+                    <div className="mt-2 d-flex flex-wrap gap-2">
+                      <Button variant="outline-primary" size="sm">
+                        <i className="bi bi-pencil me-1" />
+                        Edit rubric
+                      </Button>
+                      <Button variant="success" size="sm" onClick={startGradingProgress}>
+                        <i className="bi bi-play-fill me-1" />
+                        Start grading
+                      </Button>
+                    </div>
+                  )}
+                  {message.special === 'rubricProposal' &&
+                    phase === 'proposalPending' &&
+                    activeProposal && (
+                      <div className="mt-2 d-flex flex-wrap gap-2">
+                        <Button variant="success" size="sm" onClick={handleAccept}>
+                          <i className="bi bi-check-lg me-1" />
+                          Accept
+                        </Button>
+                        <Button variant="outline-danger" size="sm" onClick={handleReject}>
+                          <i className="bi bi-x-lg me-1" />
+                          Reject
+                        </Button>
+                      </div>
+                    )}
                 </div>
               </div>
             )}
@@ -198,55 +329,67 @@ export function AgentChatPanel({
         <div ref={messagesEndRef} />
       </div>
 
-      {/* Proposal accept/reject bar */}
-      {activeProposal && (
-        <div className="border-top bg-white px-3 py-2">
-          <div className="d-flex align-items-center gap-1 mb-2">
-            <i className="bi bi-pencil-square text-warning" />
-            <small className="fw-semibold">Proposed rubric change</small>
-            <span className="badge bg-success ms-1" style={{ fontSize: '0.6875rem' }}>
-              {activeProposal.action}
-            </span>
-          </div>
-          <div className="mb-2" style={{ fontSize: '0.8125rem' }}>
-            <strong>{activeProposal.points} pts</strong> &mdash; {activeProposal.itemDescription}
-          </div>
-          <div className="d-flex gap-2">
-            <Button variant="success" size="sm" className="flex-grow-1" onClick={onAcceptProposal}>
-              <i className="bi bi-check-lg me-1" />
-              Accept
-            </Button>
-            <Button
-              variant="outline-danger"
-              size="sm"
-              className="flex-grow-1"
-              onClick={onRejectProposal}
-            >
-              <i className="bi bi-x-lg me-1" />
-              Reject
-            </Button>
-          </div>
-        </div>
-      )}
-
-      {/* Input */}
+      {/* Bottom area: progress + input */}
       <div className="border-top px-3 py-2 bg-light">
-        {!isGrading && (
+        {/* Progress bar — shown during grading */}
+        {(isGrading || phase === 'proposalPending' || phase === 'complete') && (
+          <div className="mb-2">
+            <div className="d-flex justify-content-between align-items-center mb-1">
+              <small className="text-muted">
+                Graded {gradedCount}/{TOTAL_GRADING_SUBMISSIONS} submissions
+              </small>
+              {isGrading && (
+                <span className="badge bg-success d-flex align-items-center gap-1">
+                  <span
+                    className="spinner-grow spinner-grow-sm"
+                    role="status"
+                    style={{ width: '0.5rem', height: '0.5rem' }}
+                  />
+                  Grading
+                </span>
+              )}
+              {phase === 'proposalPending' && (
+                <span className="badge bg-warning text-dark">Paused</span>
+              )}
+              {phase === 'complete' && <span className="badge bg-primary">Complete</span>}
+            </div>
+            <ProgressBar
+              now={(gradedCount / TOTAL_GRADING_SUBMISSIONS) * 100}
+              variant={phase === 'complete' ? 'primary' : 'success'}
+              style={{ height: 6 }}
+            />
+          </div>
+        )}
+
+        {/* Generate rubric button */}
+        {phase === 'idle' && (
           <Button
-            variant="primary"
+            variant="outline-primary"
             size="sm"
             className="w-100 mb-2"
-            onClick={() => setIsGrading(true)}
+            onClick={handleGenerateRubric}
           >
             <i className="bi bi-stars me-1" />
-            Start AI grading
+            Generate new rubric
           </Button>
         )}
+
+        {/* Generating indicator */}
+        {phase === 'generating' && (
+          <div className="text-center mb-2">
+            <span className="spinner-border spinner-border-sm text-primary me-2" role="status" />
+            <small className="text-muted">Generating rubric...</small>
+          </div>
+        )}
+
+        {/* Input field */}
         <div className="d-flex gap-2">
           <Form.Control
             as="textarea"
             rows={2}
-            placeholder="Ask anything..."
+            placeholder={
+              phase === 'proposalPending' ? 'Suggest changes to the proposal...' : 'Ask anything...'
+            }
             value={inputValue}
             style={{ resize: 'none', fontSize: '0.875rem' }}
             onChange={(e) => setInputValue(e.target.value)}
@@ -270,5 +413,4 @@ export function AgentChatPanel({
   );
 }
 
-AgentChatPanel.DEMO_PROPOSAL = DEMO_PROPOSAL;
 AgentChatPanel.CHAT_WIDTH = CHAT_WIDTH;
