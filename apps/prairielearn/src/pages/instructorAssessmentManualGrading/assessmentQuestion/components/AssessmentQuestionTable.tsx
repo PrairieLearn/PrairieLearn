@@ -92,7 +92,6 @@ interface AssessmentQuestionTableProps {
   mutations: ReturnType<typeof useManualGradingActions>;
   proposedRubricItem?: ProposedRubricItem | null;
   onAcceptProposal?: (item: ProposedRubricItem) => void;
-  onUpdateProposal?: (item: ProposedRubricItem) => void;
 }
 
 function AiGradingOptionContent({ text, numToGrade }: { text: string; numToGrade: number }) {
@@ -187,7 +186,6 @@ export function AssessmentQuestionTable({
   mutations,
   proposedRubricItem,
   onAcceptProposal,
-  onUpdateProposal,
 }: AssessmentQuestionTableProps) {
   const trpc = useTRPC();
   // Query state management
@@ -667,7 +665,6 @@ export function AssessmentQuestionTable({
           }}
           proposedRubricItem={proposedRubricItem}
           onAcceptProposal={onAcceptProposal}
-          onUpdateProposal={onUpdateProposal}
         />
       </div>
       {aiGradingMode && (

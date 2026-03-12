@@ -132,16 +132,6 @@ function AssessmentQuestionManualGradingInner({
     setActiveProposal(null);
   }, []);
 
-  const handleUpdateProposal = useCallback((item: ProposedRubricItem) => {
-    setActiveProposal({
-      action: item.action,
-      itemDescription: item.description,
-      points: item.points,
-      explanation: item.explanation,
-      graderNote: item.graderNote,
-    });
-  }, []);
-
   return (
     <>
       {setAiGradingModeMutation.isError && (
@@ -223,7 +213,6 @@ function AssessmentQuestionManualGradingInner({
             aiGradingMode && activeProposal ? proposalToRubricItem(activeProposal) : null
           }
           onAcceptProposal={handleAcceptProposalFromRubric}
-          onUpdateProposal={handleUpdateProposal}
           onSetGroupInfoModalState={setGroupInfoModalState}
           onSetConflictModalState={setConflictModalState}
         />

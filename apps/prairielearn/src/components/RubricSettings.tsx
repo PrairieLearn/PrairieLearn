@@ -70,7 +70,6 @@ export function RubricSettings({
   context,
   proposedRubricItem,
   onAcceptProposal,
-  onUpdateProposal,
 }: {
   hasCourseInstancePermissionEdit: boolean;
   assessmentQuestion: StaffAssessmentQuestion;
@@ -80,7 +79,6 @@ export function RubricSettings({
   context: Record<string, any>;
   proposedRubricItem?: ProposedRubricItem | null;
   onAcceptProposal?: (item: ProposedRubricItem) => void;
-  onUpdateProposal?: (item: ProposedRubricItem) => void;
 }) {
   const showAiGradingStats = Boolean(aiGradingStats);
   const rubricItemsWithDisagreementCount = aiGradingStats?.rubric_stats ?? {};
@@ -127,6 +125,36 @@ export function RubricSettings({
   const [wasUsingRubric, setWasUsingRubric] = useState<boolean>(Boolean(rubricData?.rubric));
   const [modifiedAt, setModifiedAt] = useState<Date | null>(rubricData?.rubric.modified_at ?? null);
   const [copyPopoverTarget, setCopyPopoverTarget] = useState<HTMLElement | null>(null);
+
+  // Track the index of a proposed rubric item injected by the AI agent.
+  const [proposedItemIdx, setProposedItemIdx] = useState<number | null>(null);
+  const prevProposalRef = useRef<ProposedRubricItem | null | undefined>(null);
+
+  // Synchronize proposal state during render (not in useEffect) to satisfy lint rules.
+  if (proposedRubricItem && proposedRubricItem !== prevProposalRef.current) {
+    prevProposalRef.current = proposedRubricItem;
+    const newItem: RubricItemData = {
+      rubric_item: {
+        always_show_to_students: true,
+        deleted_at: null,
+        description: proposedRubricItem.description,
+        explanation: proposedRubricItem.explanation,
+        grader_note: proposedRubricItem.graderNote,
+        key_binding: null,
+        points: proposedRubricItem.points,
+      },
+      num_submissions: null,
+      disagreement_count: null,
+    };
+    setProposedItemIdx(rubricItems.length);
+    setRubricItems([...rubricItems, newItem]);
+  } else if (!proposedRubricItem && prevProposalRef.current) {
+    prevProposalRef.current = null;
+    if (proposedItemIdx !== null) {
+      setRubricItems(rubricItems.filter((_, i) => i !== proposedItemIdx));
+      setProposedItemIdx(null);
+    }
+  }
 
   // Also define default for rubric-related variables
   const defaultRubricItemsRef = useRef<RubricItemData[]>(rubricItemDataMerged);
@@ -534,6 +562,13 @@ export function RubricSettings({
       defaultGraderGuidelinesRef.current = rubric?.grader_guidelines ?? '';
       setWasUsingRubric(Boolean(rubric));
       setModifiedAt(rubric ? new Date(rubric.modified_at) : null);
+
+      // If the proposed item was included in the save, accept it.
+      if (proposedItemIdx !== null && proposedRubricItem) {
+        onAcceptProposal?.(proposedRubricItem);
+        setProposedItemIdx(null);
+      }
+
       onCancel();
     } else {
       window.location.replace(res.url);
@@ -773,9 +808,34 @@ export function RubricSettings({
                     showAiGradingStats={showAiGradingStats}
                     submissionCount={aiGradingStats?.submission_rubric_count ?? 0}
                     hasCourseInstancePermissionEdit={hasCourseInstancePermissionEdit}
-                    deleteRow={() => deleteRow(idx)}
-                    moveUp={() => moveUp(idx)}
-                    moveDown={() => moveDown(idx)}
+                    isProposed={idx === proposedItemIdx}
+                    deleteRow={() => {
+                      deleteRow(idx);
+                      if (idx === proposedItemIdx) {
+                        setProposedItemIdx(null);
+                        onAcceptProposal?.(proposedRubricItem!);
+                      }
+                    }}
+                    moveUp={() => {
+                      moveUp(idx);
+                      if (proposedItemIdx !== null) {
+                        if (idx === proposedItemIdx) {
+                          setProposedItemIdx(proposedItemIdx - 1);
+                        } else if (idx - 1 === proposedItemIdx) {
+                          setProposedItemIdx(proposedItemIdx + 1);
+                        }
+                      }
+                    }}
+                    moveDown={() => {
+                      moveDown(idx);
+                      if (proposedItemIdx !== null) {
+                        if (idx === proposedItemIdx) {
+                          setProposedItemIdx(proposedItemIdx + 1);
+                        } else if (idx + 1 === proposedItemIdx) {
+                          setProposedItemIdx(proposedItemIdx - 1);
+                        }
+                      }
+                    }}
                     updateRubricItem={(patch) => updateRubricItem(idx, patch)}
                     onDragStart={() => onDragStart(idx)}
                     onDragOver={() => onDragOver(idx)}
@@ -797,13 +857,6 @@ export function RubricSettings({
                     </em>
                   </td>
                 </tr>
-              )}
-              {proposedRubricItem && (
-                <ProposedRubricRow
-                  item={proposedRubricItem}
-                  onAccept={onAcceptProposal}
-                  onUpdate={onUpdateProposal}
-                />
               )}
             </tbody>
           </table>
@@ -1000,115 +1053,6 @@ export function RubricSettings({
   );
 }
 
-function ProposedRubricRow({
-  item,
-  onAccept,
-  onUpdate,
-}: {
-  item: ProposedRubricItem;
-  onAccept?: (item: ProposedRubricItem) => void;
-  onUpdate?: (item: ProposedRubricItem) => void;
-}) {
-  const [points, setPoints] = useState(item.points);
-  const [description, setDescription] = useState(item.description);
-  const [explanation, setExplanation] = useState(item.explanation);
-  const [graderNote, setGraderNote] = useState(item.graderNote);
-
-  return (
-    <>
-      <tr style={{ backgroundColor: '#e8f5e9', borderLeft: '4px solid #4caf50' }}>
-        <td className="text-nowrap align-middle">
-          <span className="badge bg-success">
-            <i className="bi bi-stars me-1" />
-            AI proposed
-          </span>
-        </td>
-        <td className="align-middle" style={{ width: 80 }}>
-          <input
-            type="number"
-            className="form-control form-control-sm"
-            value={points}
-            onChange={(e) => {
-              const val = Number(e.target.value);
-              setPoints(val);
-              onUpdate?.({ ...item, points: val, description, explanation, graderNote });
-            }}
-          />
-        </td>
-        <td className="align-middle">
-          <input
-            type="text"
-            className="form-control form-control-sm"
-            value={description}
-            onChange={(e) => {
-              setDescription(e.target.value);
-              onUpdate?.({
-                ...item,
-                points,
-                description: e.target.value,
-                explanation,
-                graderNote,
-              });
-            }}
-          />
-        </td>
-        <td className="align-middle">
-          <input
-            type="text"
-            className="form-control form-control-sm"
-            value={explanation}
-            onChange={(e) => {
-              setExplanation(e.target.value);
-              onUpdate?.({
-                ...item,
-                points,
-                description,
-                explanation: e.target.value,
-                graderNote,
-              });
-            }}
-          />
-        </td>
-        <td className="align-middle" />
-        <td className="align-middle" />
-        <td className="align-middle">
-          <button
-            type="button"
-            className="btn btn-success btn-sm"
-            onClick={() => onAccept?.({ ...item, points, description, explanation, graderNote })}
-          >
-            <i className="bi bi-check-lg me-1" />
-            Save
-          </button>
-        </td>
-      </tr>
-      {/* Grader note row */}
-      <tr style={{ backgroundColor: '#e8f5e9', borderLeft: '4px solid #4caf50' }}>
-        <td colSpan={7} className="pt-0 pb-2">
-          <div className="d-flex align-items-start gap-2">
-            <small className="text-muted fw-semibold text-nowrap mt-1">Grader note:</small>
-            <input
-              type="text"
-              className="form-control form-control-sm"
-              value={graderNote}
-              onChange={(e) => {
-                setGraderNote(e.target.value);
-                onUpdate?.({
-                  ...item,
-                  points,
-                  description,
-                  explanation,
-                  graderNote: e.target.value,
-                });
-              }}
-            />
-          </div>
-        </td>
-      </tr>
-    </>
-  );
-}
-
 function RubricRow({
   item,
   showAiGradingStats,
@@ -1120,6 +1064,7 @@ function RubricRow({
   onDragStart,
   onDragOver,
   hasCourseInstancePermissionEdit,
+  isProposed,
 }: {
   item: RubricItemData;
   showAiGradingStats: boolean;
@@ -1131,9 +1076,13 @@ function RubricRow({
   onDragStart: () => void;
   onDragOver: () => void;
   hasCourseInstancePermissionEdit: boolean;
+  isProposed?: boolean;
 }) {
   return (
     <tr
+      style={
+        isProposed ? { backgroundColor: '#e8f5e9', borderLeft: '4px solid #4caf50' } : undefined
+      }
       onDragOver={(e) => {
         if (!hasCourseInstancePermissionEdit) return;
         e.preventDefault();
@@ -1173,6 +1122,12 @@ function RubricRow({
               <i className="fas fa-trash text-danger" aria-hidden="true" />
             </button>
           </>
+        )}
+        {isProposed && (
+          <span className="badge bg-success ms-1">
+            <i className="bi bi-stars me-1" />
+            NEW
+          </span>
         )}
         {item.rubric_item.id && (
           <>
