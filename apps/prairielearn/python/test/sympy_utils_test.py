@@ -372,6 +372,10 @@ class TestExceptions:
     VARIABLES: tuple[str] = ("n",)
 
     COMPLEX_CASES = ("i", "5 * i", "j", "I")
+    # Expressions that evaluate to complex numbers without containing an explicit
+    # imaginary unit. These are important to test with simplify_expression=False,
+    # where evaluateFalse keeps expressions like sqrt(-2) unevaluated.
+    IMPLICIT_COMPLEX_CASES = ("sqrt(-2)", "sqrt(-1)", "(-2)^(1/2)", "sqrt(-2) + 3")
     NO_FLOATS_CASES = ("3.5", "4.2n", "3.5*n", "3.14159*n**2", "sin(2.3)")
     INVALID_EXPRESSION_CASES = ("5==5", "5!=5", "5>5", "5<5", "5>=5", "5<=5")
     INVALID_FUNCTION_CASES = ("eval(n)", "f(n)", "g(n)+cos(n)", "dir(n)", "sin(f(n))")
@@ -387,6 +391,21 @@ class TestExceptions:
     def test_not_allowed_complex(self, a_sub: str) -> None:
         with pytest.raises((psu.HasComplexError, psu.HasInvalidSymbolError)):
             psu.convert_string_to_sympy(a_sub, self.VARIABLES, allow_complex=False)
+
+    @pytest.mark.parametrize("a_sub", IMPLICIT_COMPLEX_CASES)
+    def test_not_allowed_implicit_complex_no_simplify(self, a_sub: str) -> None:
+        """Expressions like sqrt(-2) must raise HasComplexError even with simplify_expression=False."""
+        with pytest.raises(psu.HasComplexError):
+            psu.convert_string_to_sympy(
+                a_sub, self.VARIABLES, allow_complex=False, simplify_expression=False
+            )
+
+    @pytest.mark.parametrize("a_sub", IMPLICIT_COMPLEX_CASES)
+    def test_not_allowed_implicit_complex_with_simplify(self, a_sub: str) -> None:
+        with pytest.raises(psu.HasComplexError):
+            psu.convert_string_to_sympy(
+                a_sub, self.VARIABLES, allow_complex=False, simplify_expression=True
+            )
 
     @pytest.mark.parametrize("a_sub", COMPLEX_CASES)
     def test_reserved_variables(self, a_sub: str) -> None:
@@ -465,6 +484,21 @@ class TestExceptions:
             )
             assert format_error is not None
             assert target_string in format_error
+
+    @pytest.mark.parametrize("a_sub", IMPLICIT_COMPLEX_CASES)
+    def test_implicit_complex_format_error_no_simplify(self, a_sub: str) -> None:
+        """validate_string_as_sympy must return a format error for implicitly complex
+        expressions like sqrt(-2) even with simplify_expression=False.
+        """
+        format_error = psu.validate_string_as_sympy(
+            a_sub,
+            self.VARIABLES,
+            allow_complex=False,
+            allow_trig_functions=True,
+            simplify_expression=False,
+        )
+        assert format_error is not None
+        assert "complex number" in format_error
 
     @pytest.mark.parametrize(
         ("expr", "expected_caret", "with_vars"),

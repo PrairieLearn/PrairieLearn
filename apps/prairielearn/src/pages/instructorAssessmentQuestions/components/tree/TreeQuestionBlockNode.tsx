@@ -12,6 +12,7 @@ import {
   getSharedTopic,
   hasAltGroupChooseExceedsCount,
   hasPointsMismatch,
+  questionHasTitle,
 } from '../../utils/questions.js';
 
 import { ChangeIndicatorBadges } from './ChangeIndicatorBadges.js';
@@ -89,10 +90,10 @@ export function TreeQuestionBlockNode({
     selectedItem?.type === 'altGroup' &&
     selectedItem.questionTrackingId === zoneQuestionBlock.trackingId;
 
-  if (!hasAlternatives) {
-    // Single question (no alternatives)
-    const questionData =
-      (zoneQuestionBlock.id ? questionMetadata[zoneQuestionBlock.id] : null) ?? null;
+  if (!zoneQuestionBlock.alternatives) {
+    // Standalone question (no alternatives) — narrowed to StandaloneQuestionBlockForm.
+
+    const questionData = questionMetadata[zoneQuestionBlock.id] ?? null;
     const isSelected =
       selectedItem?.type === 'question' &&
       selectedItem.questionTrackingId === zoneQuestionBlock.trackingId;
@@ -114,9 +115,7 @@ export function TreeQuestionBlockNode({
               questionTrackingId: zoneQuestionBlock.trackingId,
             })
           }
-          onDelete={() =>
-            onDeleteQuestion(zoneQuestionBlock.trackingId, zoneQuestionBlock.id ?? '')
-          }
+          onDelete={() => onDeleteQuestion(zoneQuestionBlock.trackingId, zoneQuestionBlock.id)}
         />
       </div>
     );
@@ -309,8 +308,7 @@ export function TreeQuestionBlockNode({
       {!isCollapsed && (
         <SortableContext items={alternativeIds} strategy={verticalListSortingStrategy}>
           {alternatives?.map((alternative) => {
-            const altQuestionData =
-              (alternative.id ? questionMetadata[alternative.id] : null) ?? null;
+            const altQuestionData = questionMetadata[alternative.id] ?? null;
             const isAltSelected =
               selectedItem?.type === 'alternative' &&
               selectedItem.questionTrackingId === zoneQuestionBlock.trackingId &&
@@ -358,9 +356,16 @@ export function TreeQuestionBlockNode({
           )}
           <div className="flex-grow-1" style={{ minWidth: 0 }}>
             <div className="text-truncate">
-              {active?.data.current?.qid
-                ? questionMetadata[active.data.current.qid]?.question.title
-                : null}
+              {run(() => {
+                const activeQid = active?.data.current?.qid;
+                if (!activeQid) return null;
+                const qData = questionMetadata[activeQid];
+                return questionHasTitle(qData ?? null) ? (
+                  qData!.question.title
+                ) : (
+                  <span className="font-monospace">{activeQid}</span>
+                );
+              })}
             </div>
           </div>
         </div>

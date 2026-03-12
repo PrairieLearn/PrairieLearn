@@ -146,6 +146,35 @@ def test_parse_without_variables_attribute_with_assumptions() -> None:
     assert data["submitted_answers"]["test"]["_type"] == "sympy"
 
 
+@pytest.mark.parametrize("a_sub", ["sqrt(-2)", "sqrt(-1)", "(-2)^(1/2)"])
+def test_implicit_complex_rejected_with_no_simplify(a_sub: str) -> None:
+    """Submitting an implicitly complex expression like sqrt(-2) must produce a
+    format error during parse, even when display-simplified-expression is false.
+    """
+    correct_answer = psu.sympy_to_json(sympy.Integer(42))
+
+    element_html = """
+    <pl-symbolic-input
+        answers-name="test"
+        variables="x"
+        display-simplified-expression="false"
+    ></pl-symbolic-input>
+    """
+
+    data: dict[str, Any] = {
+        "submitted_answers": {"test": a_sub},
+        "raw_submitted_answers": {"test": a_sub},
+        "correct_answers": {"test": correct_answer},
+        "format_errors": {},
+        "partial_scores": {},
+    }
+
+    symbolic_input.parse(element_html, data)
+
+    assert "test" in data["format_errors"]
+    assert "complex number" in data["format_errors"]["test"]
+
+
 def test_formula_editor_initial_value_respects_display_log_as_ln(
     monkeypatch: pytest.MonkeyPatch,
 ) -> None:
