@@ -253,6 +253,7 @@ export function TreeQuestionRow({
                   urlPrefix={`/pl/course_instance/${courseInstanceId}/instructor`}
                   issueQid={questionData.question.qid}
                   className="ms-1"
+                  onClick={(e) => e.stopPropagation()}
                 />
               </>
             ) : (
