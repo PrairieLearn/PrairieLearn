@@ -18,16 +18,8 @@ SELECT
           c.id = $course_id
           AND ia.user_id = $user_id
       ),
-      (
-        -- If user is staff member, use course_permissions to determine role
-        SELECT
-          cp.course_role::enum_course_role
-        FROM
-          course_permissions AS cp
-        WHERE
-          cp.user_id = $user_id
-          AND cp.course_id = $course_id
-      ),
+      -- If user is staff member, use course_permissions to determine role
+      cp.course_role::enum_course_role,
       -- Otherwise, user has no role in the course
       'None'::enum_course_role
     )
@@ -40,6 +32,10 @@ FROM
     (c.id = ci.course_id)
     AND (ci.id = $course_instance_id)
     AND (ci.deleted_at IS NULL)
+  )
+  LEFT JOIN course_permissions AS cp ON (
+    cp.course_id = c.id
+    AND cp.user_id = $user_id
   )
   JOIN LATERAL authz_course_instance ($user_id, ci.id, $req_date) AS permissions_course_instance ON TRUE
 WHERE
