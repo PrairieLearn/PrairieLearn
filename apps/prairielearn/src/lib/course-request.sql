@@ -118,7 +118,8 @@ WHERE
 GROUP BY
   prefix
 ORDER BY
-  count(*) DESC
+  count(*) DESC,
+  prefix ASC
 LIMIT
   1;
 

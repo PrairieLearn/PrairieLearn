@@ -89,15 +89,17 @@ export function AdministratorCourses({
                 <i className="fa fa-plus" aria-hidden="true" />
                 <span className="d-none d-sm-inline">Add course</span>
               </button>
-              <CourseInsertModal
-                institutions={institutions}
-                availableTimezones={availableTimezones}
-                coursesRoot={coursesRoot}
-                courseRepoDefaultBranch={courseRepoDefaultBranch}
-                show={showInsertCourseModal}
-                aiSecretsConfigured={aiSecretsConfigured}
-                onCancel={() => setShowInsertCourseModal(false)}
-              />
+              {showInsertCourseModal && (
+                <CourseInsertModal
+                  institutions={institutions}
+                  availableTimezones={availableTimezones}
+                  coursesRoot={coursesRoot}
+                  courseRepoDefaultBranch={courseRepoDefaultBranch}
+                  show={showInsertCourseModal}
+                  aiSecretsConfigured={aiSecretsConfigured}
+                  onCancel={() => setShowInsertCourseModal(false)}
+                />
+              )}
             </div>
             <div className="table-responsive">
               <table className="table table-sm table-hover table-striped" aria-label="Courses">

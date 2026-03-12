@@ -98,6 +98,7 @@ export function AddInstitutionModal({
               type="text"
               className="form-control"
               id="short_name"
+              aria-describedby="short_name_help"
               {...register('short_name', { required: 'Enter a short name' })}
             />
             <small id="short_name_help" className="form-text text-muted">
@@ -113,6 +114,7 @@ export function AddInstitutionModal({
               type="text"
               className="form-control"
               id="long_name"
+              aria-describedby="long_name_help"
               {...register('long_name', { required: 'Enter a long name' })}
             />
             <small id="long_name_help" className="form-text text-muted">
@@ -127,6 +129,7 @@ export function AddInstitutionModal({
               <select
                 className="form-select"
                 id="display_timezone"
+                aria-describedby="display_timezone_help"
                 {...register('display_timezone', { required: 'Select a timezone' })}
               >
                 <option value="" disabled hidden>
@@ -148,15 +151,18 @@ export function AddInstitutionModal({
                   props: { id: 'suggest-timezone-tooltip' },
                 }}
               >
-                <span className="d-inline-block">
+                <span className="d-inline-block ms-2">
                   <button
                     type="button"
                     className="btn btn-secondary"
+                    aria-label="Suggest timezone"
                     aria-busy={isFetchingTimezone}
-                    disabled={isFetchingTimezone || !aiSecretsConfigured}
+                    disabled={
+                      isFetchingTimezone || !aiSecretsConfigured || !institutionName || !emailDomain
+                    }
                     onClick={handleSuggestTimezone}
                   >
-                    {isFetchingTimezone ? 'Suggesting...' : 'Suggest timezone'}
+                    {isFetchingTimezone ? 'Suggesting...' : 'Suggest'}
                   </button>
                 </span>
               </OverlayTrigger>
@@ -173,10 +179,10 @@ export function AddInstitutionModal({
               . It's best to use a city-based timezone that has the same times as the institution,
               e.g. "America/Chicago".
             </small>
-            {isTimezoneError && (
-              <div className="mt-2 text-danger small">Failed to suggest timezone. Try again.</div>
-            )}
             <div aria-live="polite" aria-atomic="true">
+              {isTimezoneError && (
+                <div className="mt-2 text-danger small">Failed to suggest timezone. Try again.</div>
+              )}
               {timezoneData && (
                 <div className="mt-2 text-muted small">
                   <ReactMarkdown>{timezoneData.reasoning}</ReactMarkdown>
@@ -192,6 +198,7 @@ export function AddInstitutionModal({
               type="text"
               className="form-control"
               id="uid_regexp"
+              aria-describedby="uid_regexp_help"
               {...register('uid_regexp')}
             />
             <small id="uid_regexp_help" className="form-text text-muted">

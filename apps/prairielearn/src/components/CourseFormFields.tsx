@@ -75,6 +75,12 @@ export function CourseFormFields({
   const pathMatchesRepo =
     !repositoryShortName || !path || path === `${coursesRoot}/${repositoryShortName}`;
 
+  const prefixReady = !institutionId || prefixData !== undefined;
+  const expectedRepoShortName =
+    prefixReady && shortName.trim() ? buildRepoShortName(prefixData?.prefix, shortName) : null;
+  const repoMatchesShortName =
+    !expectedRepoShortName || !repositoryShortName || repositoryShortName === expectedRepoShortName;
+
   const {
     data: suggestedPrefixData,
     isFetching: isFetchingPrefix,
@@ -130,12 +136,14 @@ export function CourseFormFields({
             {errors.institution_id.message}
           </div>
         )}
-        {isDefaultInstitution && (
-          <div className="form-text text-warning">
-            <i className="fa fa-exclamation-triangle" aria-hidden="true" /> The "Default"
-            institution is typically not intended for new courses.
-          </div>
-        )}
+        <div aria-live="polite" aria-atomic="true">
+          {isDefaultInstitution && (
+            <div className="form-text text-warning">
+              <i className="fa fa-exclamation-triangle" aria-hidden="true" /> The "Default"
+              institution is typically not intended for new courses.
+            </div>
+          )}
+        </div>
       </div>
       <div className="mb-3">
         <label className="form-label" htmlFor="courseFormShortName">
@@ -153,7 +161,7 @@ export function CourseFormFields({
             pattern: {
               value: /^[A-Z]+ [A-Z0-9]+$/,
               message:
-                'The course rubric and number should be a series of letters, followed by a space, followed by a series of numbers and/or letters.',
+                'The course rubric and number should be a series of upper case letters, followed by a space, followed by a series of numbers and/or letters.',
             },
           })}
         />
@@ -230,16 +238,18 @@ export function CourseFormFields({
             {errors.path.message}
           </div>
         )}
-        {!pathMatchesRepo && (
-          <div className="form-text text-warning">
-            <i className="fa fa-exclamation-triangle" aria-hidden="true" /> Path and repository name
-            are out of sync. Expected path to be{' '}
-            <code>
-              {coursesRoot}/{repositoryShortName}
-            </code>
-            .
-          </div>
-        )}
+        <div aria-live="polite" aria-atomic="true">
+          {!pathMatchesRepo && (
+            <div className="form-text text-warning">
+              <i className="fa fa-exclamation-triangle" aria-hidden="true" /> Path and repository
+              name are out of sync. Expected path to be{' '}
+              <code>
+                {coursesRoot}/{repositoryShortName}
+              </code>
+              .
+            </div>
+          )}
+        </div>
       </div>
       <div className="mb-3">
         <label className="form-label" htmlFor="courseFormRepositoryName">
@@ -261,13 +271,21 @@ export function CourseFormFields({
             {errors.repository_short_name.message}
           </div>
         )}
-        {!repoFormatValid && (
-          <div className="form-text text-warning">
-            <i className="fa fa-exclamation-triangle" aria-hidden="true" /> Repository name should
-            follow the format <code>pl-&#123;institution&#125;-&#123;course&#125;</code> (e.g.{' '}
-            <code>pl-uiuc-cs101</code>).
-          </div>
-        )}
+        <div aria-live="polite" aria-atomic="true">
+          {!repoFormatValid && (
+            <div className="form-text text-warning">
+              <i className="fa fa-exclamation-triangle" aria-hidden="true" /> Repository name should
+              follow the format <code>pl-&#123;institution&#125;-&#123;course&#125;</code> (e.g.{' '}
+              <code>pl-uiuc-cs101</code>).
+            </div>
+          )}
+          {!repoMatchesShortName && (
+            <div className="form-text text-warning">
+              <i className="fa fa-exclamation-triangle" aria-hidden="true" /> Repository name is out
+              of sync with the short name. Expected <code>{expectedRepoShortName}</code>.
+            </div>
+          )}
+        </div>
       </div>
       {prefixData !== undefined && !prefixData.prefix && (
         <div className="mb-3">
@@ -285,6 +303,7 @@ export function CourseFormFields({
               <button
                 type="button"
                 className="btn btn-sm btn-outline-secondary"
+                aria-label="Suggest repository and path prefix"
                 disabled={isFetchingPrefix || !suggestPrefixOptions.enabled || !aiSecretsConfigured}
                 aria-busy={isFetchingPrefix}
                 onClick={() => suggestPrefix()}
@@ -304,10 +323,10 @@ export function CourseFormFields({
               </button>
             </span>
           </OverlayTrigger>
-          {isPrefixError && (
-            <div className="mt-2 text-danger small">Failed to suggest prefix. Try again.</div>
-          )}
           <div aria-live="polite" aria-atomic="true">
+            {isPrefixError && (
+              <div className="mt-2 text-danger small">Failed to suggest prefix. Try again.</div>
+            )}
             {suggestedPrefixData && (
               <div className="mt-2 text-muted small">
                 <ReactMarkdown>{suggestedPrefixData.reasoning}</ReactMarkdown>

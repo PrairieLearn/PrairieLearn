@@ -8,6 +8,7 @@ import { generatePrefixCsrfToken } from '@prairielearn/signed-token';
 
 import { PageLayout } from '../../components/PageLayout.js';
 import { getSupportedAuthenticationProviders } from '../../lib/authn-providers.js';
+import { extractPageContext } from '../../lib/client/page-context.js';
 import {
   AdminInstitutionSchema,
   StaffAuthnProviderSchema,
@@ -32,7 +33,12 @@ router.use('/trpc', administratorInstitutionsTrpcRouter);
 
 router.get(
   '/',
-  asyncHandler(async (req, res) => {
+  asyncHandler(async (_req, res) => {
+    const { urlPrefix, authn_user } = extractPageContext(res.locals, {
+      pageType: 'plain',
+      accessType: 'instructor',
+      withAuthzData: false,
+    });
     const institutions = await sqldb.queryRows(sql.select_institutions, InstitutionRowSchema);
     const availableTimezones = await getCanonicalTimezones();
     const allSupportedProviders = await getSupportedAuthenticationProviders();
@@ -45,8 +51,8 @@ router.get(
 
     const trpcCsrfToken = generatePrefixCsrfToken(
       {
-        url: `${res.locals.urlPrefix}/administrator/institutions/trpc`,
-        authn_user_id: res.locals.authn_user.id,
+        url: `${urlPrefix}/administrator/institutions/trpc`,
+        authn_user_id: authn_user.id,
       },
       config.secretKey,
     );

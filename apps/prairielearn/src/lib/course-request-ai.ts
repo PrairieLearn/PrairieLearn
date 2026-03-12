@@ -5,6 +5,31 @@ import { z } from 'zod';
 import { formatPrompt } from './ai-util.js';
 import { config } from './config.js';
 
+const legitimacySchema = z.object({
+  isLikely: z.boolean(),
+  confidence: z.enum(['high', 'medium', 'low']),
+  summary: z.string(),
+});
+
+const timezoneSchema = z.object({
+  timezone: z.string(),
+  reasoning: z.string(),
+});
+
+const prefixSchema = z.object({
+  prefix: z.string(),
+  reasoning: z.string(),
+});
+
+interface AiSource {
+  url: string;
+  title?: string;
+}
+
+export type LegitimacyResult = z.infer<typeof legitimacySchema> & { sources: AiSource[] };
+export type TimezoneResult = z.infer<typeof timezoneSchema> & { sources: AiSource[] };
+export type PrefixResult = z.infer<typeof prefixSchema> & { sources: AiSource[] };
+
 function createCourseRequestAiClient() {
   if (!config.administratorOpenAiApiKey) {
     throw new Error('administratorOpenAiApiKey is not configured');
@@ -29,12 +54,7 @@ export async function checkInstructorLegitimacy({
   institution: string | null;
   userDisplayName: string | null;
   userUid: string;
-}): Promise<{
-  isLikely: boolean;
-  confidence: 'high' | 'medium' | 'low';
-  summary: string;
-  sources: { url: string; title?: string }[];
-}> {
+}): Promise<LegitimacyResult> {
   const openai = createCourseRequestAiClient();
 
   const input: ModelMessage[] = [
@@ -63,11 +83,7 @@ export async function checkInstructorLegitimacy({
     },
   ];
 
-  const schema = z.object({
-    isLikely: z.boolean(),
-    confidence: z.enum(['high', 'medium', 'low']),
-    summary: z.string(),
-  });
+  const schema = legitimacySchema;
 
   const response = await generateText({
     model: openai.chat('gpt-4o-search-preview'),
@@ -89,7 +105,7 @@ export async function suggestTimezone({
 }: {
   emailDomain: string;
   institutionName: string;
-}): Promise<{ timezone: string; reasoning: string; sources: { url: string; title?: string }[] }> {
+}): Promise<TimezoneResult> {
   const openai = createCourseRequestAiClient();
 
   const input: ModelMessage[] = [
@@ -112,10 +128,7 @@ export async function suggestTimezone({
     },
   ];
 
-  const schema = z.object({
-    timezone: z.string(),
-    reasoning: z.string(),
-  });
+  const schema = timezoneSchema;
 
   const response = await generateText({
     model: openai.chat('gpt-4o-search-preview'),
@@ -137,7 +150,7 @@ export async function suggestPrefixFromEmailDomain({
 }: {
   emailDomain: string;
   institutionName: string;
-}): Promise<{ prefix: string; reasoning: string; sources: { url: string; title?: string }[] }> {
+}): Promise<PrefixResult> {
   const openai = createCourseRequestAiClient();
 
   const input: ModelMessage[] = [
@@ -163,10 +176,7 @@ export async function suggestPrefixFromEmailDomain({
     },
   ];
 
-  const schema = z.object({
-    prefix: z.string(),
-    reasoning: z.string(),
-  });
+  const schema = prefixSchema;
 
   const response = await generateText({
     messages: input,
