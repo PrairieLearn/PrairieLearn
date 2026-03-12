@@ -1,13 +1,14 @@
 import {
+  type EditorQuestionMetadata,
   type OtherAssessment,
   type StaffAssessmentQuestionRow,
-  StaffAssessmentQuestionRowSchema,
 } from '../../../lib/assessment-question.shared.js';
 import type {
   StaffAssessment,
   StaffCourse,
   StaffCourseInstance,
   StaffTag,
+  StaffTopic,
 } from '../../../lib/client/safe-db-types.js';
 import type { EnumAssessmentType } from '../../../lib/db-types.js';
 import type { QuestionPointsJson, ZoneAssessmentJson } from '../../../schemas/infoAssessment.js';
@@ -20,6 +21,7 @@ import type {
   ZoneQuestionBlockForm,
 } from '../types.js';
 
+export type QuestionMetadataMap = Partial<Record<string, EditorQuestionMetadata>>;
 /**
  * Compresses an array of points by collapsing consecutive runs.
  * e.g. [10, 10, 10, 5, 5] → "10×3, 5, 5"
@@ -86,13 +88,16 @@ export function normalizeQuestionPoints<T extends ZoneQuestionBlockForm | Questi
   return normalized;
 }
 
-export function questionDisplayName(course: StaffCourse, question: StaffAssessmentQuestionRow) {
-  if (!question.question.qid) throw new Error('Question QID is required');
-  if (course.id === question.question.course_id) {
-    return question.question.qid;
+export function questionDisplayName(
+  course: StaffCourse,
+  row: Pick<EditorQuestionMetadata, 'question' | 'course'>,
+) {
+  if (!row.question.qid) throw new Error('Question QID is required');
+  if (course.id === row.question.course_id) {
+    return row.question.qid;
   }
-  if (!question.course.sharing_name) throw new Error('Sharing name is required');
-  return `@${question.course.sharing_name}/${question.question.qid}`;
+  if (!row.course.sharing_name) throw new Error('Sharing name is required');
+  return `@${row.course.sharing_name}/${row.question.qid}`;
 }
 
 /**
@@ -119,6 +124,7 @@ export function buildHierarchicalAssessment(
       questions: [],
       advanceScorePerc: row.zone.advance_score_perc ?? undefined,
       gradeRateMinutes: row.zone.json_grade_rate_minutes ?? undefined,
+      allowRealTimeGrading: row.zone.json_allow_real_time_grading ?? undefined,
       canView: row.zone.json_can_view ?? [],
       canSubmit: row.zone.json_can_submit ?? [],
     };
@@ -140,6 +146,7 @@ export function buildHierarchicalAssessment(
         canView: row.alternative_group.json_can_view ?? [],
         canSubmit: row.alternative_group.json_can_submit ?? [],
         gradeRateMinutes: row.alternative_group.json_grade_rate_minutes ?? undefined,
+        allowRealTimeGrading: row.alternative_group.json_allow_real_time_grading ?? undefined,
         numberChoose: row.alternative_group.number_choose ?? undefined,
         triesPerVariant: row.alternative_group.json_tries_per_variant ?? undefined,
         points: row.alternative_group.json_points ?? undefined,
@@ -176,6 +183,8 @@ export function buildHierarchicalAssessment(
     } else {
       // Set the top level question ID if there are no alternatives
       zones[zoneNumber - 1].questions[positionInZone].id = questionDisplayName(course, row);
+      zones[zoneNumber - 1].questions[positionInZone].comment =
+        row.assessment_question.json_comment ?? undefined;
     }
   }
   return zones;
@@ -218,10 +227,10 @@ export function computeZonePointTotals(
             alt.maxPoints ??
             q.maxAutoPoints ??
             q.maxPoints ??
-            alt.points ??
             alt.autoPoints ??
-            q.points ??
-            q.autoPoints,
+            alt.points ??
+            q.autoPoints ??
+            q.points,
         ),
         manual: alt.manualPoints ?? q.manualPoints ?? 0,
       }));
@@ -235,13 +244,17 @@ export function computeZonePointTotals(
       };
     }
     return {
-      auto: firstPoints(q.maxAutoPoints ?? q.maxPoints ?? q.points ?? q.autoPoints),
+      auto: firstPoints(q.maxAutoPoints ?? q.maxPoints ?? q.autoPoints ?? q.points),
       manual: q.manualPoints ?? 0,
     };
   });
 
   // If the zone uses bestQuestions or numberChoose, only the best N blocks count.
-  const zoneChoose = opts?.bestQuestions ?? opts?.numberChoose;
+  // When both are set, the effective limit is the smaller of the two.
+  const zoneChoose =
+    opts?.bestQuestions != null && opts.numberChoose != null
+      ? Math.min(opts.bestQuestions, opts.numberChoose)
+      : (opts?.bestQuestions ?? opts?.numberChoose);
   if (zoneChoose != null && zoneChoose < blockPoints.length) {
     blockPoints.sort((a, b) => b.auto + b.manual - (a.auto + a.manual));
     blockPoints.length = zoneChoose;
@@ -284,24 +297,53 @@ export function computeQuestionTotalPoints(
 export function hasPointsMismatch(
   alternatives: QuestionAlternativeForm[],
   assessmentType: EnumAssessmentType,
-  parent?: QuestionPointsJson,
+  parent?: QuestionPointsJson & { numberChoose?: number | null },
 ): boolean {
   if (alternatives.length <= 1) return false;
+  // When all alternatives are selected, different point values don't cause
+  // inconsistency — every student gets the same total. The assessment instance
+  // creation process selects all alternatives when number_choose is NULL.
+  const effectiveChoose = parent?.numberChoose ?? alternatives.length;
+  if (effectiveChoose >= alternatives.length) return false;
 
   const totals = alternatives.map((alt) => computeQuestionTotalPoints(alt, assessmentType, parent));
   return totals.some((t) => t !== totals[0]);
 }
 
+type ZonePointsMismatchKind = 'numberChoose' | 'bestQuestions' | 'both';
+
+const ZONE_POINTS_MISMATCH_TEXT: Record<ZonePointsMismatchKind, { label: string; body: string }> = {
+  numberChoose: {
+    label: 'Inconsistent points',
+    body: 'Students will receive different total points because this zone randomly selects questions with different point values.',
+  },
+  bestQuestions: {
+    label: 'Inconsistent points',
+    body: 'Students will receive different total points because only the best-scoring questions count and questions have different point values.',
+  },
+  both: {
+    label: 'Inconsistent points',
+    body: 'Students will receive different total points because this zone randomly selects questions and only counts the best-scoring ones, and questions have different point values.',
+  },
+};
+
 /**
- * Returns true if question blocks in a zone with bestQuestions or numberChoose
- * have different contributed total point values.
+ * Returns label and body text describing why question blocks in a zone have
+ * inconsistent point values, or null if there is no mismatch.
  */
-export function hasZonePointsMismatch(
+export function getZonePointsMismatch(
   zone: ZoneAssessmentForm,
   assessmentType: EnumAssessmentType,
-): boolean {
-  if (zone.bestQuestions == null && zone.numberChoose == null) return false;
-  if (zone.questions.length <= 1) return false;
+): { label: string; body: string } | null {
+  if (zone.bestQuestions == null && zone.numberChoose == null) return null;
+  if (zone.questions.length <= 1) return null;
+  // When all questions are both presented and counted, every student sees the
+  // same total regardless of individual point values — no warning needed.
+  const effectiveChoose = zone.numberChoose ?? zone.questions.length;
+  const effectiveBest = zone.bestQuestions ?? effectiveChoose;
+  if (effectiveChoose >= zone.questions.length && effectiveBest >= effectiveChoose) {
+    return null;
+  }
 
   const blockTotals = zone.questions.map((block) => {
     if (block.alternatives) {
@@ -314,7 +356,44 @@ export function hasZonePointsMismatch(
     return computeQuestionTotalPoints(block, assessmentType);
   });
 
-  return blockTotals.some((t) => t !== blockTotals[0]);
+  if (!blockTotals.some((t) => t !== blockTotals[0])) return null;
+
+  const hasNumberChoose = zone.numberChoose != null && zone.numberChoose < zone.questions.length;
+  const hasBestQuestions = zone.bestQuestions != null && zone.bestQuestions < effectiveChoose;
+
+  const kind: ZonePointsMismatchKind =
+    hasNumberChoose && hasBestQuestions
+      ? 'both'
+      : hasBestQuestions
+        ? 'bestQuestions'
+        : 'numberChoose';
+  return ZONE_POINTS_MISMATCH_TEXT[kind];
+}
+
+/**
+ * Returns true if a zone's numberChoose or bestQuestions exceeds the number of questions.
+ */
+export function hasZoneChooseExceedsCount(zone: ZoneAssessmentForm): boolean {
+  const count = computeZoneQuestionCount(zone.questions);
+  if (count === 0) return false;
+  if (zone.numberChoose != null && zone.numberChoose > count) return true;
+  if (zone.bestQuestions != null && zone.bestQuestions > count) return true;
+  if (
+    zone.bestQuestions != null &&
+    zone.numberChoose != null &&
+    zone.bestQuestions > zone.numberChoose
+  ) {
+    return true;
+  }
+  return false;
+}
+
+/**
+ * Returns true if an alt group's numberChoose exceeds the number of alternatives.
+ */
+export function hasAltGroupChooseExceedsCount(block: ZoneQuestionBlockForm): boolean {
+  if (block.numberChoose == null || block.alternatives == null) return false;
+  return block.numberChoose > block.alternatives.length;
 }
 
 export function toAssessmentForPicker(assessments: OtherAssessment[]): AssessmentForPicker[] {
@@ -329,14 +408,25 @@ export function toAssessmentForPicker(assessments: OtherAssessment[]): Assessmen
   }));
 }
 
+export function toEditorMetadata(row: StaffAssessmentQuestionRow): EditorQuestionMetadata {
+  return {
+    question: row.question,
+    topic: row.topic,
+    course: row.course,
+    tags: row.tags,
+    other_assessments: row.other_assessments,
+    open_issue_count: row.open_issue_count,
+    assessment_question_id: row.assessment_question.id,
+  };
+}
+
 export function buildQuestionMetadata(opts: {
   data: QuestionByQidResult;
   assessment: StaffAssessment;
   courseInstance: StaffCourseInstance;
-  course: StaffCourse;
   courseQuestions?: CourseQuestionForPicker[];
-}): StaffAssessmentQuestionRow {
-  const { data, assessment, courseInstance, course, courseQuestions } = opts;
+}): EditorQuestionMetadata {
+  const { data, assessment, courseInstance, courseQuestions } = opts;
 
   const otherAssessments: OtherAssessment[] | null = (() => {
     if (!courseQuestions) return null;
@@ -358,117 +448,15 @@ export function buildQuestionMetadata(opts: {
     return filtered.length > 0 ? filtered : null;
   })();
 
-  return StaffAssessmentQuestionRowSchema.parse({
-    zone: {
-      id: '0',
-      assessment_id: assessment.id,
-      number: 0,
-      title: null,
-      max_points: null,
-      best_questions: null,
-      number_choose: null,
-      advance_score_perc: null,
-      lockpoint: false,
-      json_allow_real_time_grading: null,
-      json_can_submit: null,
-      json_can_view: null,
-      json_comment: null,
-      json_grade_rate_minutes: null,
-    },
-    course_instance: courseInstance,
-    course,
+  return {
     question: data.question,
     topic: data.topic,
-    open_issue_count: data.open_issue_count,
+    course: data.course,
     tags: data.tags,
     other_assessments: otherAssessments,
-    assessment,
-    assessment_question: {
-      id: '0',
-      question_id: data.question.id,
-      assessment_id: assessment.id,
-      ai_grading_mode: false,
-      allow_real_time_grading: true,
-      alternative_group_id: null,
-      advance_score_perc: null,
-      average_average_submission_score: null,
-      average_first_submission_score: null,
-      average_last_submission_score: null,
-      average_max_submission_score: null,
-      average_number_submissions: null,
-      average_submission_score_hist: null,
-      average_submission_score_variance: null,
-      deleted_at: null,
-      discrimination: null,
-      effective_advance_score_perc: 0,
-      first_submission_score_hist: null,
-      first_submission_score_variance: null,
-      force_max_points: null,
-      grade_rate_minutes: null,
-      incremental_submission_points_array_averages: null,
-      incremental_submission_points_array_variances: null,
-      incremental_submission_score_array_averages: null,
-      incremental_submission_score_array_variances: null,
-      init_points: null,
-      json_allow_real_time_grading: null,
-      json_auto_points: null,
-      json_comment: null,
-      json_force_max_points: null,
-      json_grade_rate_minutes: null,
-      json_manual_points: null,
-      json_max_auto_points: null,
-      json_max_points: null,
-      json_points: null,
-      json_tries_per_variant: null,
-      last_submission_score_hist: null,
-      last_submission_score_variance: null,
-      manual_rubric_id: null,
-      max_auto_points: null,
-      max_manual_points: null,
-      max_points: null,
-      max_submission_score_hist: null,
-      max_submission_score_variance: null,
-      mean_question_score: null,
-      median_question_score: null,
-      number: 0,
-      number_in_alternative_group: null,
-      number_submissions_hist: null,
-      number_submissions_variance: null,
-      points_list: null,
-      question_score_variance: null,
-      quintile_question_scores: null,
-      some_nonzero_submission_perc: null,
-      some_perfect_submission_perc: null,
-      some_submission_perc: null,
-      submission_score_array_averages: null,
-      submission_score_array_variances: null,
-      tries_per_variant: null,
-    },
-    alternative_group: {
-      id: '0',
-      assessment_id: assessment.id,
-      number: 0,
-      zone_id: '0',
-      advance_score_perc: null,
-      json_allow_real_time_grading: null,
-      json_auto_points: null,
-      json_can_submit: null,
-      json_can_view: null,
-      json_comment: null,
-      json_force_max_points: null,
-      json_grade_rate_minutes: null,
-      json_has_alternatives: null,
-      json_manual_points: null,
-      json_max_auto_points: null,
-      json_max_points: null,
-      json_points: null,
-      json_tries_per_variant: null,
-      number_choose: null,
-    },
-    start_new_zone: false,
-    start_new_alternative_group: true,
-    alternative_group_size: 1,
-  });
+    open_issue_count: data.open_issue_count,
+    assessment_question_id: null,
+  };
 }
 
 /**
@@ -477,7 +465,7 @@ export function buildQuestionMetadata(opts: {
  */
 export function getSharedTags(
   alternatives: { id: string }[],
-  questionMetadata: Partial<Record<string, StaffAssessmentQuestionRow>>,
+  questionMetadata: QuestionMetadataMap,
 ): StaffTag[] {
   const tagSets = alternatives
     .filter((alt) => alt.id && questionMetadata[alt.id]?.tags)
@@ -494,4 +482,20 @@ export function getSharedTags(
   if (!firstTaggedAlt) return [];
   const firstTags = questionMetadata[firstTaggedAlt.id]!.tags!;
   return firstTags.filter((t) => intersection.has(t.name));
+}
+
+/**
+ * Returns the topic shared by all alternatives in an alt group, or null if they differ.
+ */
+export function getSharedTopic(
+  alternatives: { id: string }[],
+  questionMetadata: QuestionMetadataMap,
+): StaffTopic | null {
+  const topics = alternatives
+    .filter((alt) => alt.id && questionMetadata[alt.id])
+    .map((alt) => questionMetadata[alt.id]!.topic);
+  if (topics.length === 0) return null;
+  const firstName = topics[0].name;
+  if (topics.every((t) => t.name === firstName)) return topics[0];
+  return null;
 }

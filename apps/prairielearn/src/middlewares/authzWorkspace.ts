@@ -99,7 +99,7 @@ export default function ({ publicQuestionEndpoint } = { publicQuestionEndpoint: 
       // We'll deny access to such variants if the user is in Exam mode to prevent
       // a student from using a workspace for a course in which they're an
       // instructor to infiltrate or exfiltrate exam data.
-      const { mode } = await getModeForRequest(req, res);
+      const mode = await getModeForRequest(req, res);
       if (mode !== 'Public') {
         throw new HttpStatusError(403, 'Access denied');
       }

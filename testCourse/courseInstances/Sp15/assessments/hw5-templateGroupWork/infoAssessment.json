@@ -14,27 +14,15 @@
       { "name": "Reflector", "minMembers": 1, "maxMembers": 1 },
       { "name": "Contributor" }
     ],
-    "studentPermissions": {
-      "canCreateGroup": true,
-      "canJoinGroup": true,
-      "canLeaveGroup": true
-    },
+    "studentPermissions": { "canCreateGroup": true, "canJoinGroup": true, "canLeaveGroup": true },
     "rolePermissions": {
       "canAssignRoles": ["Manager"],
       "canView": ["Manager", "Reflector", "Recorder", "Contributor"]
     }
   },
   "allowAccess": [
-    {
-      "credit": 100,
-      "startDate": "2019-01-18T00:00:01",
-      "endDate": "2019-01-28T23:59:59"
-    },
-    {
-      "credit": 50,
-      "startDate": "2019-01-28T00:00:01",
-      "endDate": "2019-01-30T23:59:59"
-    },
+    { "credit": 100, "startDate": "2019-01-18T00:00:01", "endDate": "2019-01-28T23:59:59" },
+    { "credit": 50, "startDate": "2019-01-28T00:00:01", "endDate": "2019-01-30T23:59:59" },
     { "credit": 0, "startDate": "2019-01-30T00:00:01" }
   ],
   "zones": [
@@ -43,12 +31,17 @@
       "title": "Fundamental questions",
       "bestQuestions": 3,
       "questions": [
-        { "id": "demo/demoNewton-page1", "points": 1, "maxPoints": 5 },
-        { "id": "demo/demoNewton-page2", "points": 1, "maxPoints": 5, "canView": ["Recorder"] },
+        { "id": "demo/demoNewton-page1", "autoPoints": 1, "maxAutoPoints": 5 },
+        {
+          "id": "demo/demoNewton-page2",
+          "autoPoints": 1,
+          "maxAutoPoints": 5,
+          "canView": ["Recorder"]
+        },
         {
           "id": "addNumbers",
-          "points": 1,
-          "maxPoints": 5,
+          "autoPoints": 1,
+          "maxAutoPoints": 5,
           "canView": ["Reflector"],
           "canSubmit": ["Reflector"]
         }
