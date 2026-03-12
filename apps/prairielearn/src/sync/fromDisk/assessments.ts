@@ -611,6 +611,7 @@ export function preValidateAssessmentPreferences(
   sharedQuestionPreferences: Record<string, QuestionPreferencesSchemaJson>,
 ): void {
   const ajv = new Ajv({ allErrors: true, allowUnionTypes: true });
+
   for (const assessment of Object.values(assessments)) {
     if (infofile.hasErrors(assessment) || !assessment.data) continue;
     for (const zone of assessment.data.zones) {
@@ -618,17 +619,11 @@ export function preValidateAssessmentPreferences(
         const validate = (qid: string, preferences: QuestionPreferences | undefined) => {
           let schema: QuestionPreferencesSchemaJson | null;
           if (qid.startsWith('@')) {
-            if (qid in sharedQuestionPreferences) {
-              schema = sharedQuestionPreferences[qid];
-            } else {
-              return;
-            }
+            if (!(qid in sharedQuestionPreferences)) return;
+            schema = sharedQuestionPreferences[qid];
           } else {
-            const questionInfo = questions[qid];
-
-            // eslint-disable-next-line @typescript-eslint/no-unnecessary-condition
-            if (!questionInfo) return; // Missing QID will be caught later during assessment sync
-            schema = questionInfo.data?.preferences ?? null;
+            if (!(qid in questions)) return; // Missing QID will be caught later during assessment sync
+            schema = questions[qid].data?.preferences ?? null;
           }
           // We must catch the "no schema but overrides provided" case here
           // so the assessment has errors before `getParamsForAssessment` runs.
@@ -648,6 +643,7 @@ export function preValidateAssessmentPreferences(
             infofile.addError(assessment, error);
           }
         };
+
         if (question.alternatives) {
           for (const alt of question.alternatives) {
             if (alt.id) validate(alt.id, alt.preferences);
