@@ -81,9 +81,7 @@ describe('Auto-test questions in exampleCourse', () => {
   });
 
   describe('Auto-test questions in exampleCourse', { timeout: 60_000 }, function () {
-    beforeAll(async () => {
-      await helperServer.before(EXAMPLE_COURSE_PATH)();
-    });
+    beforeAll(helperServer.before(EXAMPLE_COURSE_PATH));
 
     afterAll(helperServer.after);
 
