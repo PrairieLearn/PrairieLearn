@@ -626,7 +626,19 @@ export function preValidateAssessmentPreferences(
             if (!questionInfo) return; // Missing QID will be caught later during assessment sync
             schema = questionInfo.data?.preferences ?? null;
           }
-          if (!schema) return;
+          // We must catch the "no schema but overrides provided" case here
+          // so the assessment has errors before `getParamsForAssessment` runs.
+          // Without this, the assessment params are still built and passed to
+          // the sproc, which hits a DB assertion.
+          if (!schema) {
+            if (preferences && Object.keys(preferences).length > 0) {
+              infofile.addError(
+                assessment,
+                `Question "${qid}" does not define a preferences schema, but preferences were provided in the assessment`,
+              );
+            }
+            return;
+          }
           const { errors } = mergeAndValidatePreferences(qid, schema, preferences);
           for (const error of errors) {
             infofile.addError(assessment, error);
