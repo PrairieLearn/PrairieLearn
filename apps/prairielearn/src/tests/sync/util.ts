@@ -254,11 +254,7 @@ const courseInstances: Record<string, CourseInstanceData> = {
         type: 'Exam',
         set: 'PRIVATE SET',
         number: '100',
-        allowAccess: [
-          {
-            mode: 'Exam',
-          },
-        ],
+        allowAccess: [{ credit: 100 }],
         zones: [
           {
             title: 'zone 1',
