@@ -25,9 +25,6 @@ import { isDateInFuture } from '../dates.js';
 import * as infofile from '../infofile.js';
 import { type InfoFile } from '../infofile.js';
 
-// We use a single global instance so that schemas aren't recompiled every time they're used.
-const ajv = new Ajv({ allErrors: true, allowUnionTypes: true });
-
 const sql = sqldb.loadSqlEquiv(import.meta.url);
 
 type AssessmentInfoFile = infofile.InfoFile<AssessmentJson>;
@@ -38,6 +35,7 @@ interface MergePreferencesResult {
 }
 
 function mergeAndValidatePreferences(
+  ajv: Ajv,
   qid: string,
   schema: QuestionPreferencesSchemaJson | null | undefined,
   overrides: QuestionPreferences | undefined,
@@ -109,6 +107,7 @@ function mergeAndValidatePreferences(
  */
 
 function getParamsForAssessment(
+  ajv: Ajv,
   assessmentInfoFile: AssessmentInfoFile,
   questionIds: Record<string, any>,
   questions: Record<string, InfoFile<QuestionJson>>,
@@ -335,6 +334,7 @@ function getParamsForAssessment(
         if (questionId !== undefined) {
           const preferencesSchema = getPreferencesSchema(alternative.qid);
           const { preferences: merged, errors: preferenceErrors } = mergeAndValidatePreferences(
+            ajv,
             alternative.qid,
             preferencesSchema,
             alternative.preferences,
@@ -572,10 +572,13 @@ export async function sync(
     });
   }
 
+  const ajv = new Ajv({ allErrors: true, allowUnionTypes: true });
+
   const assessmentParams = Object.entries(assessments).map(([tid, assessment]) => {
     // getParamsForAssessment must be called before stringifyErrors/stringifyWarnings so
     // that any errors it adds to the infofile are captured in the serialized output.
     const params = getParamsForAssessment(
+      ajv,
       assessment,
       questionIds,
       questions,
@@ -607,6 +610,7 @@ export function preValidateAssessmentPreferences(
   questions: Record<string, InfoFile<QuestionJson>>,
   sharedQuestionPreferences: Record<string, QuestionPreferencesSchemaJson>,
 ): void {
+  const ajv = new Ajv({ allErrors: true, allowUnionTypes: true });
   for (const assessment of Object.values(assessments)) {
     if (infofile.hasErrors(assessment) || !assessment.data) continue;
     for (const zone of assessment.data.zones) {
@@ -639,7 +643,7 @@ export function preValidateAssessmentPreferences(
             }
             return;
           }
-          const { errors } = mergeAndValidatePreferences(qid, schema, preferences);
+          const { errors } = mergeAndValidatePreferences(ajv, qid, schema, preferences);
           for (const error of errors) {
             infofile.addError(assessment, error);
           }
