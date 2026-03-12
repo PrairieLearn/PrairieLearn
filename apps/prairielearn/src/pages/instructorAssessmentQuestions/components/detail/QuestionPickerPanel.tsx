@@ -6,7 +6,6 @@ import { FilterDropdown, type FilterItem } from '@prairielearn/ui';
 
 import { getQuestionCreateUrl, getQuestionUrl } from '../../../../lib/client/url.js';
 import type { CourseQuestionForPicker } from '../../types.js';
-import { titleHasText } from '../../utils/questions.js';
 import { AssessmentBadges } from '../AssessmentBadges.js';
 import { QuestionTopicTagBadges } from '../QuestionTopicTagBadges.js';
 
@@ -279,7 +278,7 @@ export function QuestionPickerPanel({
             {virtualRows.map((virtualRow) => {
               const question = sortedQuestions[virtualRow.index];
               const qid = question.qid;
-              const hasTitle = titleHasText(question.title);
+              const hasTitle = !!question.title?.trim();
               const accessibleLabel = hasTitle ? `${qid}: ${question.title}` : qid;
               const addedZoneNames = questionsInAssessment.get(qid);
               const isInAssessment = addedZoneNames != null;

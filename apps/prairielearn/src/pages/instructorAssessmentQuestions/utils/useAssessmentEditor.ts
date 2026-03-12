@@ -1,23 +1,15 @@
 import { useReducer, useState } from 'react';
 
 import {
-  type AltGroupBlockForm,
   type EditorAction,
   type EditorState,
   type QuestionAlternativeForm,
   type ZoneAssessmentForm,
   type ZoneQuestionBlockForm,
-  assertSingleQuestion,
+  assertStandaloneQuestion,
 } from '../types.js';
 
 import { alternativeToQuestionBlock, questionBlockToAlternative } from './dataTransform.js';
-
-/**
- * Asserts that a question block is an alternative group (has alternatives).
- */
-function assertAltGroup(q: ZoneQuestionBlockForm): asserts q is AltGroupBlockForm {
-  if (!q.alternatives) throw new Error('Expected an alternative group, not a single question');
-}
 
 /**
  * Finds a zone by its trackingId.
@@ -447,13 +439,12 @@ export function createEditorReducer(initialState: EditorState) {
         const newZones = structuredClone(state.zones);
 
         const groupResult = findQuestionByTrackingId(newZones, altGroupTrackingId);
-        if (!groupResult) {
+        if (!groupResult?.question.alternatives) {
           throw new Error(
             `ADD_ALTERNATIVE: Alt group with trackingId ${altGroupTrackingId} not found`,
           );
         }
 
-        assertAltGroup(groupResult.question);
         groupResult.question.alternatives.push(alternative);
 
         const newQuestionMetadata =
@@ -482,13 +473,11 @@ export function createEditorReducer(initialState: EditorState) {
 
         // Find the destination alt group
         const toGroupResult = findQuestionByTrackingId(newZones, toAltGroupTrackingId);
-        if (!toGroupResult) {
+        if (!toGroupResult?.question.alternatives) {
           throw new Error(
             `REORDER_ALTERNATIVE: Alt group with trackingId ${toAltGroupTrackingId} not found`,
           );
         }
-
-        assertAltGroup(toGroupResult.question);
 
         // Remove alternative from source
         const [movedAlt] = fromResult.question.alternatives!.splice(fromResult.alternativeIndex, 1);
@@ -577,17 +566,15 @@ export function createEditorReducer(initialState: EditorState) {
 
         // Find the destination alt group
         const toGroupResult = findQuestionByTrackingId(newZones, toAltGroupTrackingId);
-        if (!toGroupResult) {
+        if (!toGroupResult?.question.alternatives) {
           throw new Error(
             `MERGE_QUESTION_INTO_ALT_GROUP: Alt group with trackingId ${toAltGroupTrackingId} not found`,
           );
         }
 
-        assertAltGroup(toGroupResult.question);
-
         // Remove question from source zone
         const [removedQuestion] = fromResult.zone.questions.splice(fromResult.questionIndex, 1);
-        assertSingleQuestion(removedQuestion);
+        assertStandaloneQuestion(removedQuestion);
 
         // Convert to alternative
         const newAlt = questionBlockToAlternative(removedQuestion);

@@ -24,25 +24,11 @@ import type {
 export type QuestionMetadataMap = Partial<Record<string, EditorQuestionMetadata>>;
 
 /**
- * Whether the title is non-empty after trimming whitespace.
- */
-export function titleHasText(title: string | null | undefined): boolean {
-  return (title?.trim().length ?? 0) > 0;
-}
-
-/**
- * Returns the title when present, otherwise falls back to the QID.
- */
-export function titleOrQid(title: string | null | undefined, qid: string): string {
-  return titleHasText(title) ? title! : qid;
-}
-
-/**
  * Whether the question has a non-empty, non-whitespace title.
  * When false, callers should display the QID instead.
  */
 export function questionHasTitle(questionData: EditorQuestionMetadata | null): boolean {
-  return titleHasText(questionData?.question.title);
+  return (questionData?.question.title?.trim().length ?? 0) > 0;
 }
 
 /**

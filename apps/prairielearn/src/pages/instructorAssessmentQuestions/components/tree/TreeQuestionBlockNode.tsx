@@ -6,18 +6,13 @@ import { useCallback, useMemo } from 'react';
 import { run } from '@prairielearn/run';
 import { OverlayTrigger } from '@prairielearn/ui';
 
-import {
-  type TreeActions,
-  type TreeState,
-  type ZoneQuestionBlockForm,
-  assertSingleQuestion,
-} from '../../types.js';
+import type { TreeActions, TreeState, ZoneQuestionBlockForm } from '../../types.js';
 import {
   getSharedTags,
   getSharedTopic,
   hasAltGroupChooseExceedsCount,
   hasPointsMismatch,
-  titleOrQid,
+  questionHasTitle,
 } from '../../utils/questions.js';
 
 import { ChangeIndicatorBadges } from './ChangeIndicatorBadges.js';
@@ -95,9 +90,8 @@ export function TreeQuestionBlockNode({
     selectedItem?.type === 'altGroup' &&
     selectedItem.questionTrackingId === zoneQuestionBlock.trackingId;
 
-  if (!hasAlternatives) {
-    // Single question (no alternatives) — must have an id.
-    assertSingleQuestion(zoneQuestionBlock);
+  if (!zoneQuestionBlock.alternatives) {
+    // Standalone question (no alternatives) — narrowed to StandaloneQuestionBlockForm.
 
     const questionData = questionMetadata[zoneQuestionBlock.id] ?? null;
     const isSelected =
@@ -365,7 +359,8 @@ export function TreeQuestionBlockNode({
               {run(() => {
                 const activeQid = active?.data.current?.qid;
                 if (!activeQid) return null;
-                return titleOrQid(questionMetadata[activeQid]?.question.title, activeQid);
+                const qData = questionMetadata[activeQid];
+                return questionHasTitle(qData ?? null) ? qData!.question.title : activeQid;
               })}
             </div>
           </div>

@@ -33,7 +33,7 @@ import type {
   DetailState,
   QuestionAlternativeForm,
   SelectedItem,
-  SingleQuestionBlockForm,
+  StandaloneQuestionBlockForm,
   TreeActions,
   TreeState,
   ZoneAssessmentForm,
@@ -592,7 +592,7 @@ function AssessmentEditorInner({
       handleRemoveQuestionByQid(qid);
     }
 
-    const newQuestion: SingleQuestionBlockForm = {
+    const newQuestion: StandaloneQuestionBlockForm = {
       ...createQuestionWithTrackingId(),
       id: qid,
       ...getDefaultPointFieldsForNewQuestion(questionData.question.grading_method),

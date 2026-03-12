@@ -313,34 +313,37 @@ export function QuestionDetailPanel({
       {/* Question header (title, tags, badges) — same in both modes */}
       {questionData && (
         <div className="mb-3">
-          <div className="fw-semibold mb-1 d-inline-flex align-items-center">
-            {hasCoursePermissionPreview ? (
-              <a
-                href={getQuestionUrl({
-                  courseInstanceId,
-                  questionId: questionData.question.id,
-                })}
-              >
-                {hasTitle ? (
-                  questionData.question.title
-                ) : (
-                  <span className="font-monospace">{question.id}</span>
-                )}
-              </a>
-            ) : hasTitle ? (
+          {run(() => {
+            const titleContent = hasTitle ? (
               questionData.question.title
             ) : (
               <span className="font-monospace">{question.id}</span>
-            )}
-            {!hasTitle && (
-              <CopyButton
-                text={question.id}
-                tooltipId="copy-qid"
-                ariaLabel="Copy QID"
-                className="ms-1"
-              />
-            )}
-          </div>
+            );
+            return (
+              <div className="fw-semibold mb-1 d-inline-flex align-items-center">
+                {hasCoursePermissionPreview ? (
+                  <a
+                    href={getQuestionUrl({
+                      courseInstanceId,
+                      questionId: questionData.question.id,
+                    })}
+                  >
+                    {titleContent}
+                  </a>
+                ) : (
+                  titleContent
+                )}
+                {!hasTitle && (
+                  <CopyButton
+                    text={question.id}
+                    tooltipId="copy-qid"
+                    ariaLabel="Copy QID"
+                    className="ms-1"
+                  />
+                )}
+              </div>
+            );
+          })}
           {hasTitle && (
             <span
               className="d-inline-flex align-items-center text-muted font-monospace"

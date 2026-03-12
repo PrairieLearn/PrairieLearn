@@ -64,7 +64,7 @@ type ZoneQuestionBlockFormBase = Omit<
 /**
  * A standalone question block — has a QID, no alternatives.
  */
-export type SingleQuestionBlockForm = ZoneQuestionBlockFormBase & {
+export type StandaloneQuestionBlockForm = ZoneQuestionBlockFormBase & {
   id: string;
   alternatives?: undefined;
 };
@@ -81,21 +81,21 @@ export type AltGroupBlockForm = ZoneQuestionBlockFormBase & {
  * A question block is either a standalone question or an alternative group.
  * Discriminate via `q.alternatives != null` (alt group) or `q.id != null` (single question).
  */
-export type ZoneQuestionBlockForm = SingleQuestionBlockForm | AltGroupBlockForm;
+export type ZoneQuestionBlockForm = StandaloneQuestionBlockForm | AltGroupBlockForm;
 
 /**
  * A question (standalone or alternative) that is known to have a QID.
  * Used by components that only render individual questions, never alt groups.
  */
-export type QuestionWithId = SingleQuestionBlockForm | QuestionAlternativeForm;
+export type QuestionWithId = StandaloneQuestionBlockForm | QuestionAlternativeForm;
 
 /**
- * Asserts that a question block is a single question (not an alternative group).
+ * Asserts that a question block is a standalone question (not an alternative group).
  */
-export function assertSingleQuestion(
+export function assertStandaloneQuestion(
   q: ZoneQuestionBlockForm,
-): asserts q is SingleQuestionBlockForm {
-  if (!q.id) throw new Error('Expected a single question block, not an alternative group');
+): asserts q is StandaloneQuestionBlockForm {
+  if (!q.id) throw new Error('Expected a standalone question block, not an alternative group');
 }
 
 /**
@@ -158,7 +158,7 @@ export type EditorAction =
   | {
       type: 'ADD_QUESTION';
       zoneTrackingId: string;
-      question: SingleQuestionBlockForm;
+      question: StandaloneQuestionBlockForm;
       questionData: EditorQuestionMetadata;
     }
   | {

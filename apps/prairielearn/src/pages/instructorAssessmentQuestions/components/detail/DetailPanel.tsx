@@ -5,7 +5,7 @@ import {
   type DetailState,
   type SelectedItem,
   type ZoneAssessmentForm,
-  assertSingleQuestion,
+  assertStandaloneQuestion,
 } from '../../types.js';
 import { findQuestionByTrackingId } from '../../utils/useAssessmentEditor.js';
 
@@ -75,7 +75,7 @@ export function DetailPanel({
       const result = findQuestionByTrackingId(zones, selectedItem.questionTrackingId);
       if (!result) throw new Error(`Question not found: ${selectedItem.questionTrackingId}`);
       const { question, zone } = result;
-      assertSingleQuestion(question);
+      assertStandaloneQuestion(question);
       const questionData = questionMetadata[question.id] ?? null;
       return (
         <QuestionDetailPanel

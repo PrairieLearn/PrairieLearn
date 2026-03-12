@@ -9,7 +9,7 @@ import type {
 import type {
   AltGroupBlockForm,
   QuestionAlternativeForm,
-  SingleQuestionBlockForm,
+  StandaloneQuestionBlockForm,
   TrackingId,
   ZoneAssessmentForm,
   ZoneQuestionBlockForm,
@@ -135,11 +135,11 @@ export function createZoneWithTrackingId(
  * New trackingIds are always generated (this is for new questions, not existing ones).
  * Accepts a partial question for creating new empty questions.
  */
-export function createQuestionWithTrackingId(): Omit<SingleQuestionBlockForm, 'id'> {
+export function createQuestionWithTrackingId(): Omit<StandaloneQuestionBlockForm, 'id'> {
   return {
     trackingId: createTrackingId(),
     autoPoints: 1,
-  } as Omit<SingleQuestionBlockForm, 'id'>;
+  } as Omit<StandaloneQuestionBlockForm, 'id'>;
 }
 
 /**
@@ -195,7 +195,7 @@ export function createAltGroupWithTrackingId(): AltGroupBlockForm {
 export function alternativeToQuestionBlock(
   alt: QuestionAlternativeForm,
   parentGroup?: ZoneQuestionBlockForm,
-): SingleQuestionBlockForm {
+): StandaloneQuestionBlockForm {
   const merged = { ...alt };
   if (parentGroup) {
     merged.autoPoints ??= parentGroup.autoPoints;
@@ -207,7 +207,7 @@ export function alternativeToQuestionBlock(
     merged.gradeRateMinutes ??= parentGroup.gradeRateMinutes;
     merged.allowRealTimeGrading ??= parentGroup.allowRealTimeGrading;
   }
-  return omitUndefined(merged) as SingleQuestionBlockForm;
+  return omitUndefined(merged) as StandaloneQuestionBlockForm;
 }
 
 /**
