@@ -10,9 +10,9 @@ import type {
   Topic,
 } from '../../lib/db-types.js';
 import type {
-  QuestionAlternativeJson,
-  ZoneAssessmentJson,
-  ZoneQuestionBlockJson,
+  QuestionAlternativeJsonInput,
+  ZoneAssessmentJsonInput,
+  ZoneQuestionBlockJsonInput,
 } from '../../schemas/infoAssessment.js';
 
 import type { AssessmentAdvancedDefaults } from './utils/formHelpers.js';
@@ -35,7 +35,7 @@ export type TrackingId = string & { __brand: 'TrackingId' };
 /**
  * Form version of QuestionAlternativeJson - adds trackingId for stable drag-and-drop identity.
  */
-export type QuestionAlternativeForm = QuestionAlternativeJson & {
+export type QuestionAlternativeForm = QuestionAlternativeJsonInput & {
   trackingId: TrackingId;
 };
 
@@ -43,7 +43,7 @@ export type QuestionAlternativeForm = QuestionAlternativeJson & {
  * Shared fields across both question block variants.
  * Excludes the discriminating `id` and `alternatives` properties.
  */
-type ZoneQuestionBlockFormBase = Omit<ZoneQuestionBlockJson, 'id' | 'alternatives'> & {
+type ZoneQuestionBlockFormBase = Omit<ZoneQuestionBlockJsonInput, 'id' | 'alternatives'> & {
   trackingId: TrackingId;
 };
 
@@ -87,7 +87,7 @@ export function assertStandaloneQuestion(
 /**
  * Form version of ZoneAssessmentJson - adds trackingId, updates questions type.
  */
-export type ZoneAssessmentForm = Omit<ZoneAssessmentJson, 'questions'> & {
+export type ZoneAssessmentForm = Omit<ZoneAssessmentJsonInput, 'questions'> & {
   trackingId: TrackingId;
   questions: ZoneQuestionBlockForm[];
 };

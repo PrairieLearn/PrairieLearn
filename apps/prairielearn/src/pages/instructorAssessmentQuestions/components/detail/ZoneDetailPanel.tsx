@@ -27,7 +27,7 @@ interface ZoneFormData {
   maxPoints?: number;
   numberChoose?: number;
   bestQuestions?: number;
-  lockpoint: boolean;
+  lockpoint?: boolean;
   comment?: string;
   advanceScorePerc?: number;
   gradeRateMinutes?: number;

@@ -139,7 +139,7 @@ export function createQuestionWithTrackingId(): Omit<StandaloneQuestionBlockForm
   return {
     trackingId: createTrackingId(),
     autoPoints: 1,
-  } as Omit<StandaloneQuestionBlockForm, 'id'>;
+  };
 }
 
 /**
