@@ -3,7 +3,7 @@ import asyncHandler from 'express-async-handler';
 import z from 'zod';
 
 import { HttpStatusError } from '@prairielearn/error';
-import { callRow, loadSqlEquiv, queryRows } from '@prairielearn/postgres';
+import { callScalar, loadSqlEquiv, queryRows } from '@prairielearn/postgres';
 import { Hydrate } from '@prairielearn/react/server';
 import { assertNever } from '@prairielearn/utils';
 import { UniqueUidsFromStringSchema } from '@prairielearn/zod';
@@ -147,7 +147,7 @@ async function processInvitations({
     try {
       const user = await selectOptionalUserByUid(uid);
       if (user) {
-        const isInstructor = await callRow(
+        const isInstructor = await callScalar(
           'users_is_instructor_in_course_instance',
           [user.id, courseInstance.id],
           z.boolean(),

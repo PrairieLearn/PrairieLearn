@@ -235,7 +235,6 @@ export async function constructCourseOrInstanceContext({
   const authzData = {
     user,
     mode,
-    mode_reason: rawAuthzData.mode_reason,
     course_role,
     ...calculateCourseRolePermissions(course_role),
     ...(await run(async () => {
