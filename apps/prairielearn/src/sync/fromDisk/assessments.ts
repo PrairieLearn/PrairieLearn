@@ -66,7 +66,6 @@ function mergeAndValidatePreferences(
     for (const error of validate.errors) {
       const path = error.instancePath || '';
       let message = `Question "${qid}": preferences${path} ${error.message}`;
-
       if (error.keyword === 'enum' && error.params.allowedValues) {
         message += `: ${error.params.allowedValues.join(', ')}`;
       }

@@ -351,90 +351,24 @@
     "preferences": {
       "type": "object",
       "additionalProperties": {
-        "anyOf": [
-          {
-            "type": "object",
-            "additionalProperties": false,
-            "required": ["type", "default"],
-            "properties": {
-              "type": {
-                "type": "string",
-                "const": "string"
-              },
-              "default": {
-                "type": "string"
-              }
-            }
+        "type": "object",
+        "additionalProperties": false,
+        "required": ["type", "default"],
+        "properties": {
+          "type": {
+            "type": "string",
+            "enum": ["string", "number", "boolean"]
           },
-          {
-            "type": "object",
-            "additionalProperties": false,
-            "required": ["type", "default"],
-            "properties": {
-              "type": {
-                "type": "string",
-                "const": "number"
-              },
-              "default": {
-                "type": "number"
-              }
-            }
+          "default": {
+            "type": ["string", "number", "boolean"]
           },
-          {
-            "type": "object",
-            "additionalProperties": false,
-            "required": ["type", "default"],
-            "properties": {
-              "type": {
-                "type": "string",
-                "const": "boolean"
-              },
-              "default": {
-                "type": "boolean"
-              }
-            }
-          },
-          {
-            "type": "object",
-            "additionalProperties": false,
-            "required": ["type", "enum", "default"],
-            "properties": {
-              "type": {
-                "type": "string",
-                "const": "string"
-              },
-              "enum": {
-                "type": "array",
-                "items": {
-                  "type": "string"
-                }
-              },
-              "default": {
-                "type": "string"
-              }
-            }
-          },
-          {
-            "type": "object",
-            "additionalProperties": false,
-            "required": ["type", "enum", "default"],
-            "properties": {
-              "type": {
-                "type": "string",
-                "const": "number"
-              },
-              "enum": {
-                "type": "array",
-                "items": {
-                  "type": "number"
-                }
-              },
-              "default": {
-                "type": "number"
-              }
+          "enum": {
+            "type": "array",
+            "items": {
+              "type": ["string", "number"]
             }
           }
-        ]
+        }
       },
       "propertyNames": {
         "minLength": 1
