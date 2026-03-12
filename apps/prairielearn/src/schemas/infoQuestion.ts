@@ -1,7 +1,24 @@
 import { z } from 'zod';
 
 import { CommentJsonSchema } from './comment.js';
-import { QuestionPreferencesSchemaJsonSchema } from './questionPreferences.js';
+
+// Note that this is intentionally not expressed as a union of more precise types.
+// `ajv` doesn't present errors in a sensible way if we do that. Instead, we
+// perform validation manually in the syncing code.
+const QuestionPreferencesFieldSchema = z
+  .object({
+    type: z.enum(['string', 'number', 'boolean']),
+    default: z.union([z.string(), z.number(), z.boolean()]),
+    enum: z.array(z.union([z.string(), z.number()])).optional(),
+  })
+  .strict();
+
+export const QuestionPreferencesSchemaJsonSchema = z.record(
+  z.string().min(1),
+  QuestionPreferencesFieldSchema,
+);
+
+export type QuestionPreferencesSchemaJson = z.infer<typeof QuestionPreferencesSchemaJsonSchema>;
 
 const QuestionDependencyJsonSchema = z
   .object({
