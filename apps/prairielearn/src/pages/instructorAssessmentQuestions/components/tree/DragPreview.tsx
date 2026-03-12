@@ -1,5 +1,6 @@
 import type { EditorQuestionMetadata } from '../../../../lib/assessment-question.shared.js';
 import type { ZoneAssessmentForm } from '../../types.js';
+import { questionHasTitle } from '../../utils/questions.js';
 
 export function DragPreview({
   activeDragId,
@@ -20,19 +21,29 @@ export function DragPreview({
     }
     for (const question of zone.questions) {
       if (question.trackingId === activeDragId) {
-        const qData = question.id ? questionMetadata[question.id] : null;
+        const qData = (question.id ? questionMetadata[question.id] : null) ?? null;
+        const hasTitle = questionHasTitle(qData);
         return (
           <div className="bg-body border rounded shadow-sm px-3 py-2 text-truncate">
-            {qData?.question.title ?? question.id ?? 'Alternative group'}
+            {hasTitle ? (
+              qData!.question.title
+            ) : (
+              <span className="font-monospace">{question.id ?? 'Alternative group'}</span>
+            )}
           </div>
         );
       }
       for (const alt of question.alternatives ?? []) {
         if (alt.trackingId === activeDragId) {
-          const altData = alt.id ? questionMetadata[alt.id] : null;
+          const altData = questionMetadata[alt.id] ?? null;
+          const hasTitle = questionHasTitle(altData);
           return (
             <div className="bg-body border rounded shadow-sm px-3 py-2 text-truncate">
-              {altData?.question.title ?? alt.id}
+              {hasTitle ? (
+                altData!.question.title
+              ) : (
+                <span className="font-monospace">{alt.id}</span>
+              )}
             </div>
           );
         }
