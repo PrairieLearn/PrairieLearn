@@ -412,18 +412,20 @@ function StudentsCard({
     mutationFn: async ({
       enrollmentIds,
       labelId,
+      labelName: _labelName,
     }: {
       enrollmentIds: string[];
       labelId: string;
+      labelName: string;
     }) => {
       return await trpcClient.batchAddLabel.mutate({ enrollmentIds, labelId });
     },
-    onSuccess: async (result) => {
+    onSuccess: async (result, { labelName }) => {
       const parts: string[] = [
-        `Added label to ${result.added} student${result.added !== 1 ? 's' : ''}.`,
+        `Added label "${labelName}" to ${result.added} student${result.added !== 1 ? 's' : ''}.`,
       ];
       if (result.alreadyHaveLabel > 0) {
-        parts.push(`${result.alreadyHaveLabel} already had the label.`);
+        parts.push(`${result.alreadyHaveLabel} already had the label "${labelName}".`);
       }
       if (result.notFound > 0) {
         parts.push(`${result.notFound} not found.`);
@@ -438,15 +440,17 @@ function StudentsCard({
     mutationFn: async ({
       enrollmentIds,
       labelId,
+      labelName: _labelName,
     }: {
       enrollmentIds: string[];
       labelId: string;
+      labelName: string;
     }) => {
       return await trpcClient.batchRemoveLabel.mutate({ enrollmentIds, labelId });
     },
-    onSuccess: async (result) => {
+    onSuccess: async (result, { labelName }) => {
       const parts: string[] = [
-        `Removed label from ${result.removed} student${result.removed !== 1 ? 's' : ''}.`,
+        `Removed label "${labelName}" from ${result.removed} student${result.removed !== 1 ? 's' : ''}.`,
       ];
       if (result.didNotHaveLabel > 0) {
         parts.push(`${result.didNotHaveLabel} did not have the label.`);
@@ -763,11 +767,13 @@ function StudentsCard({
                                 batchRemoveLabelMutation.mutate({
                                   enrollmentIds: selectedEnrollmentIds,
                                   labelId: label.id,
+                                  labelName: label.name,
                                 });
                               } else {
                                 batchAddLabelMutation.mutate({
                                   enrollmentIds: selectedEnrollmentIds,
                                   labelId: label.id,
+                                  labelName: label.name,
                                 });
                               }
                             }}

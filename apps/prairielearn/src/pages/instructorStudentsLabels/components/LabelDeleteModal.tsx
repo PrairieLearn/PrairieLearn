@@ -74,7 +74,7 @@ export function LabelDeleteModal({
         {(data?.userData.length ?? 0) > 0 && (
           <Alert variant="warning">
             This label has {data?.userData.length} student
-            {data?.userData.length !== 1 ? 's' : ''}. They will be removed from this label.
+            {data?.userData.length !== 1 ? 's' : ''}. This label will be removed from them.
             <details className="mt-2">
               <summary style={{ cursor: 'pointer' }}>Show affected students</summary>
               <div className="mt-2 p-2 bg-light border rounded">
