@@ -36,6 +36,14 @@ import {
   t,
 } from './trpc-init.js';
 
+function getCourseInstanceContainer(coursePath: string, shortName: string) {
+  const rootPath = path.join(coursePath, 'courseInstances', shortName);
+  return {
+    rootPath,
+    invalidRootPaths: [path.join(rootPath, 'assessments')],
+  };
+}
+
 const list = t.procedure
   .use(requireCourseInstancePermissionView)
   .output(
@@ -140,6 +148,7 @@ const create = t.procedure
         course_instance.short_name!,
         'infoCourseInstance.json',
       ),
+      container: getCourseInstanceContainer(course.path, course_instance.short_name!),
       errorMessage: 'Failed to save course instance configuration',
       origHash: origHash ?? '',
       locals,
@@ -228,6 +237,7 @@ const edit = t.procedure
         course_instance.short_name!,
         'infoCourseInstance.json',
       ),
+      container: getCourseInstanceContainer(course.path, course_instance.short_name!),
       errorMessage: 'Failed to save course instance configuration',
       origHash: origHash ?? '',
       locals,
@@ -331,6 +341,7 @@ const destroy = t.procedure
         course_instance.short_name!,
         'infoCourseInstance.json',
       ),
+      container: getCourseInstanceContainer(course.path, course_instance.short_name!),
       errorMessage: 'Failed to save course instance configuration',
       origHash: origHash ?? '',
       locals,
