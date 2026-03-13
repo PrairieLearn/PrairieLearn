@@ -166,7 +166,9 @@ export function InstructorCourseAdminStaff({
             ? html`
                 <p class="alert alert-warning">
                   Users with name "<span class="text-danger">Unknown user</span>" either have never
-                  logged in or have an incorrect UID.
+                  logged in or have an incorrect UID. Please verify that each UID is the correct
+                  email address. If a UID is wrong, remove the user and re-add them with the correct
+                  UID.
                 </p>
               `
             : ''}
@@ -267,7 +269,8 @@ function CoursePermissionsInsertForm({
           aria-describedby="addUsersInputUidHelp"
         ></textarea>
         <small id="addUsersInputUidHelp" class="form-text text-muted">
-          Enter up to ${uidsLimit} UIDs separated by commas, semicolons, or whitespace.
+          Enter up to ${uidsLimit} UIDs as email addresses, separated by commas, semicolons, or
+          whitespace.
         </small>
       </div>
 

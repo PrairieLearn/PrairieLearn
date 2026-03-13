@@ -3,16 +3,17 @@ import debugfn from 'debug';
 import { Router } from 'express';
 
 import * as error from '@prairielearn/error';
+import { flash } from '@prairielearn/flash';
 import { type HtmlSafeString, html } from '@prairielearn/html';
 import { logger } from '@prairielearn/logger';
 import * as sqldb from '@prairielearn/postgres';
+import { UniqueUidsFromStringSchema } from '@prairielearn/zod';
 
 import { extractPageContext } from '../../lib/client/page-context.js';
 import { type User } from '../../lib/db-types.js';
 import { httpPrefixForCourseRepo } from '../../lib/github.js';
 import { idsEqual } from '../../lib/id.js';
 import { typedAsyncHandler } from '../../lib/res-locals.js';
-import { parseUniqueValuesFromString } from '../../lib/string-util.js';
 import { createAuthzMiddleware } from '../../middlewares/authzHelper.js';
 import {
   type CourseInstanceAuthz,
@@ -102,10 +103,14 @@ router.post(
     }
 
     if (req.body.__action === 'course_permissions_insert_by_user_uids') {
-      const uids = parseUniqueValuesFromString(req.body.uid, MAX_UIDS);
-
-      // Verify there is at least one UID
-      if (uids.length === 0) throw new error.HttpStatusError(400, 'Empty list of UIDs');
+      const uidParseResult = UniqueUidsFromStringSchema(MAX_UIDS).safeParse(req.body.uid);
+      if (!uidParseResult.success) {
+        throw new error.HttpStatusError(
+          400,
+          uidParseResult.error.issues.map((issue) => issue.message).join('; '),
+        );
+      }
+      const uids = uidParseResult.data;
 
       // Verify the requested course role is valid
       if (!['None', 'Previewer', 'Viewer', 'Editor', 'Owner'].includes(req.body.course_role)) {
@@ -147,6 +152,7 @@ router.post(
         given_cp: [] as string[],
         not_given_cp: [] as string[],
         not_given_cip: [] as string[],
+        unknown_users: [] as string[],
         errors: [] as string[],
       };
 
@@ -170,6 +176,10 @@ router.post(
         }
 
         memo.given_cp.push(uid);
+
+        if (user.name == null) {
+          memo.unknown_users.push(uid);
+        }
 
         if (!course_instance) return memo;
 
@@ -272,6 +282,15 @@ ${given_cp_and_cip.join(',\n')}
           info: html`${info}`,
         });
       }
+
+      if (result.unknown_users.length > 0) {
+        flash(
+          'warning',
+          html`The following UIDs were added to the course staff, but they do not match any user who
+          has previously logged in: ${result.unknown_users.join(', ')}.`,
+        );
+      }
+
       res.redirect(req.originalUrl);
     } else if (req.body.__action === 'course_permissions_update_role') {
       if (
