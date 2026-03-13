@@ -211,12 +211,7 @@ export async function syncDiskToSqlWithLock(
         async ([ciid, courseInstanceData]) => {
           const courseInstanceId = courseInstanceIds[ciid];
           await timed(`Synced assessments for ${ciid}`, () =>
-            syncAssessments.sync(
-              courseId,
-              courseInstanceId,
-              courseInstanceData,
-              questionIds,
-            ),
+            syncAssessments.sync(courseId, courseInstanceId, courseInstanceData, questionIds),
           );
         },
       );
