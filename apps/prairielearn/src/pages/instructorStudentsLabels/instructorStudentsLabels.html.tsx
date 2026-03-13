@@ -23,10 +23,7 @@ interface StudentLabelsPageProps {
   origHash: string | null;
 }
 
-type StudentLabelsCardProps = Omit<
-  StudentLabelsPageProps,
-  'isDevMode' | 'trpcCsrfToken'
-> & {
+type StudentLabelsCardProps = Omit<StudentLabelsPageProps, 'isDevMode' | 'trpcCsrfToken'> & {
   trpcClient: StudentLabelsTrpcClient;
 };
 
@@ -186,7 +183,11 @@ export function InstructorStudentsLabels({
 
   return (
     <QueryClientProviderDebug client={queryClient} isDevMode={isDevMode}>
-      <StudentLabelsCard trpcClient={trpcClient} courseInstanceId={courseInstanceId} {...innerProps} />
+      <StudentLabelsCard
+        trpcClient={trpcClient}
+        courseInstanceId={courseInstanceId}
+        {...innerProps}
+      />
     </QueryClientProviderDebug>
   );
 }

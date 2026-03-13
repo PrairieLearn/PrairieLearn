@@ -63,7 +63,12 @@ router.get(
       config.secretKey,
     );
     const origHash = await getOriginalHash(
-      path.join(course.path, 'courseInstances', courseInstance.short_name, 'infoCourseInstance.json'),
+      path.join(
+        course.path,
+        'courseInstances',
+        courseInstance.short_name,
+        'infoCourseInstance.json',
+      ),
     );
 
     res.send(
