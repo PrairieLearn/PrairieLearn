@@ -4664,9 +4664,10 @@ describe('Assessment syncing', () => {
         await util.writeAndSyncCourseData(courseData);
       });
       const syncedAssessment = await findSyncedAssessment('sharedPrefBad');
-      assert.isNotNull(syncedAssessment.sync_errors);
-      assert.match(syncedAssessment.sync_errors, /gravity/);
-      assert.match(syncedAssessment.sync_errors, /must be number/);
+      assert.equal(
+        syncedAssessment.sync_errors,
+        `Question "@${SHARING_NAME}/${SHARED_PREFS_QID}": preferences/gravity must be number`,
+      );
     });
 
     it('records an error when setting preferences on a shared question without a schema', async () => {
@@ -4688,8 +4689,10 @@ describe('Assessment syncing', () => {
         await util.writeAndSyncCourseData(courseData);
       });
       const syncedAssessment = await findSyncedAssessment('sharedNoPref');
-      assert.isNotNull(syncedAssessment.sync_errors);
-      assert.match(syncedAssessment.sync_errors, /does not define a preferences schema/);
+      assert.equal(
+        syncedAssessment.sync_errors,
+        `Question "@${SHARING_NAME}/${SHARED_NO_PREFS_QID}" does not define a preferences schema, but preferences were provided in the assessment`,
+      );
     });
   });
 });
