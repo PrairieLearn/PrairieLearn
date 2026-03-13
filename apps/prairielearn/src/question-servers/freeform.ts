@@ -871,7 +871,7 @@ export async function prepare(
       correct_answers: variant.true_answer ?? {},
       variant_seed: Number.parseInt(variant.variant_seed, 36),
       options: { ...variant.options, ...getContextOptions(context) },
-      preferences: variant.preferences ?? {},
+      preferences: variant.preferences,
       answers_names: {},
     } satisfies ExecutionData;
 
@@ -992,7 +992,7 @@ async function renderPanel({
     feedback: submission?.feedback ?? {},
     variant_seed: Number.parseInt(variant.variant_seed, 36),
     options,
-    preferences: variant.preferences ?? {},
+    preferences: variant.preferences,
     raw_submitted_answers: submission?.raw_submitted_answer ?? {},
     editable: !!(
       locals.allowAnswerEditing &&
@@ -1531,7 +1531,7 @@ export async function file(
       correct_answers: variant.true_answer ?? {},
       variant_seed: Number.parseInt(variant.variant_seed, 36),
       options: { ...variant.options, ...getContextOptions(context) },
-      preferences: variant.preferences ?? {},
+      preferences: variant.preferences,
       filename,
     } satisfies ExecutionData;
 
@@ -1586,7 +1586,7 @@ export async function parse(
       format_errors: submission.format_errors ?? {},
       variant_seed: Number.parseInt(variant.variant_seed, 36),
       options: { ...variant.options, ...getContextOptions(context) },
-      preferences: variant.preferences ?? {},
+      preferences: variant.preferences,
       raw_submitted_answers: submission.raw_submitted_answer ?? {},
       gradable: submission.gradable ?? true,
     } satisfies ExecutionData;
@@ -1643,7 +1643,7 @@ export async function grade(
       feedback: submission.feedback == null ? {} : submission.feedback,
       variant_seed: Number.parseInt(variant.variant_seed, 36),
       options: { ...variant.options, ...getContextOptions(context) },
-      preferences: variant.preferences ?? {},
+      preferences: variant.preferences,
       raw_submitted_answers: submission.raw_submitted_answer ?? {},
       gradable: submission.gradable ?? true,
     } satisfies ExecutionData;
@@ -1698,7 +1698,7 @@ export async function test(
       feedback: {},
       variant_seed: Number.parseInt(variant.variant_seed, 36),
       options: { ...variant.options, ...getContextOptions(context) },
-      preferences: variant.preferences ?? {},
+      preferences: variant.preferences,
       raw_submitted_answers: {},
       gradable: true as boolean,
       test_type,
