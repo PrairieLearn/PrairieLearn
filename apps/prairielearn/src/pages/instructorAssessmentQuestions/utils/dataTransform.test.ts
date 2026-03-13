@@ -11,7 +11,13 @@ import {
 import * as courseDB from '../../../sync/course-db.js';
 import type { ZoneAssessmentForm } from '../types.js';
 
-import { addTrackingIds, serializeZonesForJson, stripTrackingIds } from './dataTransform.js';
+import {
+  createAltGroupWithTrackingId,
+  getDefaultPointFieldsForNewQuestion,
+  prepareZonesForEditor,
+  serializeZonesForJson,
+  stripTrackingIds,
+} from './dataTransform.js';
 
 describe('serializeZonesForJson', () => {
   test('should strip defaults while preserving structure for all example course assessments', async () => {
@@ -93,6 +99,35 @@ describe('serializeZonesForJson', () => {
     }
   });
 
+  it('preserves explicit default allowRealTimeGrading on zones', () => {
+    const parsedZones = [
+      ZoneAssessmentJsonSchema.parse({
+        title: 'Zone with default allowRealTimeGrading',
+        allowRealTimeGrading: true,
+        questions: [{ id: 'q1' }],
+      }),
+    ];
+
+    // Explicit `true` must be preserved because a parent assessment may set
+    // allowRealTimeGrading to `false`, and stripping the zone's `true` would
+    // silently change its effective value via inheritance.
+    const serialized = serializeZonesForJson(parsedZones);
+    expect(serialized[0].allowRealTimeGrading).toBe(true);
+  });
+
+  it('preserves non-default allowRealTimeGrading on zones', () => {
+    const parsedZones = [
+      ZoneAssessmentJsonSchema.parse({
+        title: 'Zone with non-default allowRealTimeGrading',
+        allowRealTimeGrading: false,
+        questions: [{ id: 'q1' }],
+      }),
+    ];
+
+    const serialized = serializeZonesForJson(parsedZones);
+    expect(serialized[0].allowRealTimeGrading).toBe(false);
+  });
+
   it('preserves lockpoint when serializing zones', () => {
     const parsedZones = [
       ZoneAssessmentJsonSchema.parse({
@@ -110,7 +145,7 @@ describe('serializeZonesForJson', () => {
   });
 });
 
-describe('addTrackingIds', () => {
+describe('prepareZonesForEditor', () => {
   it('adds trackingIds to zones, questions, and alternatives', () => {
     const zones: ZoneAssessmentJson[] = [
       {
@@ -130,7 +165,7 @@ describe('addTrackingIds', () => {
       },
     ];
 
-    const result = addTrackingIds(zones);
+    const result = prepareZonesForEditor(zones, {});
 
     expect(result).toHaveLength(1);
     expect(result[0].trackingId).toBeDefined();
@@ -156,7 +191,7 @@ describe('addTrackingIds', () => {
       },
     ];
 
-    const result = addTrackingIds(zones);
+    const result = prepareZonesForEditor(zones, {});
 
     const trackingIds = [
       result[0].trackingId,
@@ -165,6 +200,241 @@ describe('addTrackingIds', () => {
     ];
     const uniqueIds = new Set(trackingIds);
     expect(uniqueIds.size).toBe(trackingIds.length);
+  });
+});
+
+describe('new question defaults', () => {
+  it('uses manual points for Manual questions', () => {
+    expect(getDefaultPointFieldsForNewQuestion('Manual')).toEqual({
+      autoPoints: undefined,
+      manualPoints: 1,
+    });
+  });
+
+  it('starts empty alt groups without inherited point defaults', () => {
+    const result = createAltGroupWithTrackingId();
+
+    expect(result.autoPoints).toBeUndefined();
+    expect(result.manualPoints).toBeUndefined();
+    expect(result.alternatives).toEqual([]);
+  });
+});
+
+describe('prepareZonesForEditor normalization', () => {
+  it('normalizes legacy points/maxPoints to autoPoints/maxAutoPoints', () => {
+    const zones: ZoneAssessmentJson[] = [
+      {
+        lockpoint: false,
+        canSubmit: [],
+        canView: [],
+        questions: [
+          { id: 'q1', points: 5, maxPoints: 10, canSubmit: [], canView: [] },
+          {
+            numberChoose: 1,
+            canSubmit: [],
+            canView: [],
+            points: 3,
+            alternatives: [{ id: 'alt1', points: 2, maxPoints: 8 }],
+          },
+        ],
+      },
+    ];
+
+    const result = prepareZonesForEditor(zones, {});
+
+    expect(result[0].questions[0].autoPoints).toBe(5);
+    expect(result[0].questions[0].maxAutoPoints).toBe(10);
+    expect(result[0].questions[0].points).toBeUndefined();
+    expect(result[0].questions[0].maxPoints).toBeUndefined();
+
+    expect(result[0].questions[1].autoPoints).toBe(3);
+    expect(result[0].questions[1].points).toBeUndefined();
+
+    expect(result[0].questions[1].alternatives![0].autoPoints).toBe(2);
+    expect(result[0].questions[1].alternatives![0].maxAutoPoints).toBe(8);
+    expect(result[0].questions[1].alternatives![0].points).toBeUndefined();
+    expect(result[0].questions[1].alternatives![0].maxPoints).toBeUndefined();
+  });
+
+  it('does not normalize when autoPoints is already set', () => {
+    const zones: ZoneAssessmentJson[] = [
+      {
+        lockpoint: false,
+        canSubmit: [],
+        canView: [],
+        questions: [{ id: 'q1', autoPoints: 7, points: 5, canSubmit: [], canView: [] }],
+      },
+    ];
+
+    const result = prepareZonesForEditor(zones, {});
+
+    expect(result[0].questions[0].autoPoints).toBe(7);
+    expect(result[0].questions[0].points).toBe(5);
+  });
+
+  it('normalizes points to autoPoints for Exam assessments', () => {
+    const zones: ZoneAssessmentJson[] = [
+      {
+        lockpoint: false,
+        canSubmit: [],
+        canView: [],
+        questions: [{ id: 'q1', points: 5, canSubmit: [], canView: [] }],
+      },
+    ];
+
+    const result = prepareZonesForEditor(zones, {});
+
+    expect(result[0].questions[0].autoPoints).toBe(5);
+    expect(result[0].questions[0].points).toBeUndefined();
+  });
+
+  it('normalizes points to manualPoints for Manual grading questions', () => {
+    const zones: ZoneAssessmentJson[] = [
+      {
+        lockpoint: false,
+        canSubmit: [],
+        canView: [],
+        questions: [{ id: 'q1', points: 5, canSubmit: [], canView: [] }],
+      },
+    ];
+
+    const metadata = {
+      q1: { question: { grading_method: 'Manual' } },
+    } as any;
+
+    const result = prepareZonesForEditor(zones, metadata);
+
+    expect(result[0].questions[0].manualPoints).toBe(5);
+    expect(result[0].questions[0].points).toBeUndefined();
+    expect(result[0].questions[0].autoPoints).toBeUndefined();
+  });
+
+  it('uses maxPoints as manualPoints for Manual questions with both points and maxPoints', () => {
+    const zones: ZoneAssessmentJson[] = [
+      {
+        lockpoint: false,
+        canSubmit: [],
+        canView: [],
+        questions: [{ id: 'q1', points: 2, maxPoints: 6, canSubmit: [], canView: [] }],
+      },
+    ];
+
+    const metadata = {
+      q1: { question: { grading_method: 'Manual' } },
+    } as any;
+
+    const result = prepareZonesForEditor(zones, metadata);
+
+    expect(result[0].questions[0].manualPoints).toBe(6);
+    expect(result[0].questions[0].points).toBeUndefined();
+    expect(result[0].questions[0].maxPoints).toBeUndefined();
+    expect(result[0].questions[0].autoPoints).toBeUndefined();
+  });
+
+  it('uses first element of points array as manualPoints for Manual questions', () => {
+    const zones: ZoneAssessmentJson[] = [
+      {
+        lockpoint: false,
+        canSubmit: [],
+        canView: [],
+        questions: [{ id: 'q1', points: [4, 3, 2], canSubmit: [], canView: [] }],
+      },
+    ];
+
+    const metadata = {
+      q1: { question: { grading_method: 'Manual' } },
+    } as any;
+
+    const result = prepareZonesForEditor(zones, metadata);
+
+    expect(result[0].questions[0].manualPoints).toBe(4);
+    expect(result[0].questions[0].points).toBeUndefined();
+    expect(result[0].questions[0].autoPoints).toBeUndefined();
+  });
+
+  it('uses maxPoints as manualPoints for Manual questions with only maxPoints', () => {
+    const zones: ZoneAssessmentJson[] = [
+      {
+        lockpoint: false,
+        canSubmit: [],
+        canView: [],
+        questions: [{ id: 'q1', maxPoints: 6, canSubmit: [], canView: [] }],
+      },
+    ];
+
+    const metadata = {
+      q1: { question: { grading_method: 'Manual' } },
+    } as any;
+
+    const result = prepareZonesForEditor(zones, metadata);
+
+    expect(result[0].questions[0].manualPoints).toBe(6);
+    expect(result[0].questions[0].maxPoints).toBeUndefined();
+    expect(result[0].questions[0].autoPoints).toBeUndefined();
+  });
+
+  it('skips Manual normalization when maxAutoPoints is already set', () => {
+    const zones: ZoneAssessmentJson[] = [
+      {
+        lockpoint: false,
+        canSubmit: [],
+        canView: [],
+        questions: [{ id: 'q1', points: 2, maxAutoPoints: 6, canSubmit: [], canView: [] }],
+      },
+    ];
+
+    const metadata = {
+      q1: { question: { grading_method: 'Manual' } },
+    } as any;
+
+    const result = prepareZonesForEditor(zones, metadata);
+
+    // maxAutoPoints signals split-point mode; manualPoints was intentionally omitted
+    expect(result[0].questions[0].manualPoints).toBeUndefined();
+    expect(result[0].questions[0].autoPoints).toBe(2);
+    expect(result[0].questions[0].maxAutoPoints).toBe(6);
+    expect(result[0].questions[0].points).toBeUndefined();
+  });
+
+  it('skips Manual normalization when autoPoints is already set', () => {
+    const zones: ZoneAssessmentJson[] = [
+      {
+        lockpoint: false,
+        canSubmit: [],
+        canView: [],
+        questions: [{ id: 'q1', autoPoints: 3, canSubmit: [], canView: [] }],
+      },
+    ];
+
+    const metadata = {
+      q1: { question: { grading_method: 'Manual' } },
+    } as any;
+
+    const result = prepareZonesForEditor(zones, metadata);
+
+    expect(result[0].questions[0].manualPoints).toBeUndefined();
+    expect(result[0].questions[0].autoPoints).toBe(3);
+  });
+
+  it('does not overwrite existing manualPoints for Manual grading questions', () => {
+    const zones: ZoneAssessmentJson[] = [
+      {
+        lockpoint: false,
+        canSubmit: [],
+        canView: [],
+        questions: [{ id: 'q1', points: 5, manualPoints: 10, canSubmit: [], canView: [] }],
+      },
+    ];
+
+    const metadata = {
+      q1: { question: { grading_method: 'Manual' } },
+    } as any;
+
+    const result = prepareZonesForEditor(zones, metadata);
+
+    expect(result[0].questions[0].manualPoints).toBe(10);
+    expect(result[0].questions[0].autoPoints).toBe(5);
+    expect(result[0].questions[0].points).toBeUndefined();
   });
 });
 

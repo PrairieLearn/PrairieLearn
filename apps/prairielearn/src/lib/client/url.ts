@@ -117,3 +117,7 @@ export function getQuestionUrl({
     : `/pl/course/${courseId}`;
   return `${urlPrefix}/question/${questionId}`;
 }
+
+export function getQuestionCreateUrl(courseInstanceId: string): string {
+  return `/pl/course_instance/${courseInstanceId}/instructor/course_admin/questions/create`;
+}

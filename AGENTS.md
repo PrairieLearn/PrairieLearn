@@ -19,7 +19,7 @@ Backend: TypeScript / Express / Python / PostgreSQL
 
 ## Packages
 
-Libraries live in `packages/`. If you update a package, you MUST add a changeset. Create a markdown file in `.changeset/` with a name like `fix-my-bug.md` containing:
+Libraries live in `packages/`. If you update a public package (one without `"private": true` in its `package.json`), you MUST add a changeset. Create a markdown file in `.changeset/` with a name like `fix-my-bug.md` containing:
 
 ```markdown
 ---
@@ -114,6 +114,7 @@ When working with assessment "groups" / "teams", see the [`groups-and-teams` ski
 ### SQL query conventions
 
 - Use `to_jsonb(table.*)` if you need to select all columns from a table as JSON. This is preferred over explicit `jsonb_build_object` calls because it automatically includes all columns and stays in sync with schema changes.
+- When writing SQL, get table and column names from `database/tables/` (the source of truth) or from nearby existing queries in the same feature area. Do NOT rely on names found in old migrations, as tables and columns may have been renamed since those migrations were written.
 
 ## TypeScript guidance
 
