@@ -3,6 +3,7 @@ import { describe, expect, it } from 'vitest';
 import type {
   EditorState,
   QuestionAlternativeForm,
+  StandaloneQuestionBlockForm,
   TrackingId,
   ZoneAssessmentForm,
   ZoneQuestionBlockForm,
@@ -54,6 +55,7 @@ function makeState(overrides?: Partial<EditorState>): EditorState {
     questionMetadata: {},
     collapsedGroups: new Set<string>(),
     collapsedZones: new Set<string>(),
+    selectedItem: null,
     ...overrides,
   };
 }
@@ -72,7 +74,7 @@ describe('createEditorReducer', () => {
     let state = reducer(initialState, {
       type: 'ADD_QUESTION',
       zoneTrackingId: 'z1',
-      question: q,
+      question: q as StandaloneQuestionBlockForm,
       questionData: MOCK_QUESTION_DATA,
     });
     expect(state.zones[0].questions).toHaveLength(1);
@@ -97,7 +99,6 @@ describe('createEditorReducer', () => {
 
   it('alternative group lifecycle: add group, add/update/delete alternatives', () => {
     const altGroup = makeQuestion('ag1', {
-      id: 'ag-qid',
       alternatives: [],
       numberChoose: 1,
       autoPoints: 3,
@@ -145,10 +146,9 @@ describe('createEditorReducer', () => {
     state = reducer(state, {
       type: 'DELETE_QUESTION',
       questionTrackingId: 'ag1',
-      questionId: 'ag-qid',
+      questionId: '',
     });
     expect(state.zones[0].questions).toHaveLength(0);
-    expect(state.questionMetadata['ag-qid']).toBeUndefined();
     expect(state.questionMetadata['alt-qid-2']).toBeUndefined();
   });
 
@@ -157,7 +157,6 @@ describe('createEditorReducer', () => {
     const q2 = makeQuestion('q2', { id: 'qid-2' });
     const q3 = makeQuestion('q3', { id: 'qid-3' });
     const altGroup = makeQuestion('ag1', {
-      id: 'ag-qid',
       alternatives: [makeAlternative('a1', { id: 'alt-qid-1' })],
     });
     const initialState = makeState({
@@ -166,7 +165,6 @@ describe('createEditorReducer', () => {
         'qid-1': MOCK_QUESTION_DATA,
         'qid-2': MOCK_QUESTION_DATA,
         'qid-3': MOCK_QUESTION_DATA,
-        'ag-qid': MOCK_QUESTION_DATA,
         'alt-qid-1': MOCK_QUESTION_DATA,
       },
     });
@@ -199,7 +197,6 @@ describe('createEditorReducer', () => {
     });
     expect(state.zones).toHaveLength(1);
     expect(state.questionMetadata['qid-3']).toBeUndefined();
-    expect(state.questionMetadata['ag-qid']).toBeUndefined();
     expect(state.questionMetadata['alt-qid-1']).toBeUndefined();
     expect(state.questionMetadata['qid-1']).toBe(MOCK_QUESTION_DATA);
     expect(state.questionMetadata['qid-2']).toBe(MOCK_QUESTION_DATA);
@@ -209,7 +206,6 @@ describe('createEditorReducer', () => {
     const alt1 = makeAlternative('a1', { id: 'alt-qid-1', autoPoints: 5 });
     const alt2 = makeAlternative('a2', { id: 'alt-qid-2' });
     const altGroup = makeQuestion('ag1', {
-      id: 'ag-qid',
       alternatives: [alt1, alt2],
       numberChoose: 1,
       autoPoints: 3,
@@ -259,7 +255,6 @@ describe('createEditorReducer', () => {
     // alt2 has its own autoPoints, which should be preserved
     const alt2 = makeAlternative('a2', { id: 'alt-qid-2', autoPoints: 7 });
     const altGroup = makeQuestion('ag1', {
-      id: 'ag-qid',
       alternatives: [alt1, alt2],
       numberChoose: 1,
       autoPoints: 3,
@@ -309,7 +304,6 @@ describe('createEditorReducer', () => {
       allowRealTimeGrading: true,
     });
     const altGroup = makeQuestion('ag1', {
-      id: 'ag-qid',
       alternatives: [alt, alt2],
       numberChoose: 1,
       autoPoints: 3,
@@ -361,13 +355,11 @@ describe('createEditorReducer', () => {
     // alt has no own points — inherits from whichever group it's in
     const alt = makeAlternative('a1', { id: 'alt-qid-1' });
     const altGroupA = makeQuestion('agA', {
-      id: 'ag-qid-A',
       alternatives: [alt],
       numberChoose: 1,
       autoPoints: 5,
     });
     const altGroupB = makeQuestion('agB', {
-      id: 'ag-qid-B',
       alternatives: [makeAlternative('b1', { id: 'alt-qid-B1' })],
       numberChoose: 1,
       autoPoints: 10,
@@ -406,7 +398,6 @@ describe('createEditorReducer', () => {
   it('REMOVE_QUESTION_BY_QID: standalone, alternative, and nonexistent', () => {
     const alt = makeAlternative('a1', { id: 'alt-qid' });
     const altGroup = makeQuestion('ag1', {
-      id: 'ag-qid',
       alternatives: [alt],
     });
     const standalone = makeQuestion('q1', { id: 'standalone-qid' });
@@ -415,7 +406,6 @@ describe('createEditorReducer', () => {
       questionMetadata: {
         'standalone-qid': MOCK_QUESTION_DATA,
         'alt-qid': MOCK_QUESTION_DATA,
-        'ag-qid': MOCK_QUESTION_DATA,
       },
     });
     const reducer = createEditorReducer(initialState);
@@ -477,5 +467,35 @@ describe('createEditorReducer', () => {
 
     state = reducer(state, { type: 'EXPAND_ALL_GROUPS' });
     expect(state.collapsedGroups.size).toBe(0);
+  });
+
+  it('QUESTION_PICKED removes duplicate when QID already exists in assessment', () => {
+    const existingQ = makeQuestion('q-existing', { id: 'shared-qid', autoPoints: 99 });
+    const initialState = makeState({
+      zones: [makeZone('z1', [existingQ]), makeZone('z2', [])],
+      questionMetadata: {
+        'shared-qid': { question: { grading_method: 'Internal' } } as any,
+      },
+      // Picker is open in z2
+      selectedItem: { type: 'picker', zoneTrackingId: tid('z2') as string },
+    });
+    const reducer = createEditorReducer(initialState);
+
+    const newMetadata = { question: { grading_method: 'Internal' } } as any;
+    const state = reducer(initialState, {
+      type: 'QUESTION_PICKED',
+      qid: 'shared-qid',
+      metadata: newMetadata,
+      expectedSelectedItem: initialState.selectedItem,
+    });
+
+    // Old entry removed from z1
+    expect(state.zones[0].questions).toHaveLength(0);
+    // New entry added to z2 with fresh defaults (not the old autoPoints: 99)
+    expect(state.zones[1].questions).toHaveLength(1);
+    expect(state.zones[1].questions[0].id).toBe('shared-qid');
+    expect(state.zones[1].questions[0].autoPoints).toBe(1);
+    // Metadata updated
+    expect(state.questionMetadata['shared-qid']).toBe(newMetadata);
   });
 });

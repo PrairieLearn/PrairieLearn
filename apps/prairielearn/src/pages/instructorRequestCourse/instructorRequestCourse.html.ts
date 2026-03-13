@@ -198,6 +198,7 @@ function CourseNewRequestCard({ csrfToken }: { csrfToken: string }): HtmlValue {
               id="cr-title"
               placeholder="Elementary Mathematics"
               minlength="1"
+              maxlength="75"
               required
             />
             <small class="form-text text-muted">

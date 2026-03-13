@@ -22,6 +22,15 @@ import type {
 } from '../types.js';
 
 export type QuestionMetadataMap = Partial<Record<string, EditorQuestionMetadata>>;
+
+/**
+ * Whether the question has a non-empty, non-whitespace title.
+ * When false, callers should display the QID instead.
+ */
+export function questionHasTitle(questionData: EditorQuestionMetadata | null): boolean {
+  return (questionData?.question.title?.trim().length ?? 0) > 0;
+}
+
 /**
  * Compresses an array of points by collapsing consecutive runs.
  * e.g. [10, 10, 10, 5, 5] → "10×3, 5, 5"
@@ -227,10 +236,10 @@ export function computeZonePointTotals(
             alt.maxPoints ??
             q.maxAutoPoints ??
             q.maxPoints ??
-            alt.points ??
             alt.autoPoints ??
-            q.points ??
-            q.autoPoints,
+            alt.points ??
+            q.autoPoints ??
+            q.points,
         ),
         manual: alt.manualPoints ?? q.manualPoints ?? 0,
       }));
@@ -244,7 +253,7 @@ export function computeZonePointTotals(
       };
     }
     return {
-      auto: firstPoints(q.maxAutoPoints ?? q.maxPoints ?? q.points ?? q.autoPoints),
+      auto: firstPoints(q.maxAutoPoints ?? q.maxPoints ?? q.autoPoints ?? q.points),
       manual: q.manualPoints ?? 0,
     };
   });
