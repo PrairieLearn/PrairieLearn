@@ -48,10 +48,13 @@ class ThreadingTimeout:
         self.swallow_exc = swallow_exc
         self.state = TimeoutState.EXECUTED
         # We prefer signal.SIGALRM over PyThreadState_SetAsyncExc because the
-        # latter only interrupts Python bytecode execution. When the target
-        # thread is blocked in C code (e.g. SymPy's C extensions, time.sleep),
-        # the async exception is never delivered and the timeout hangs.
-        # SIGALRM is an OS-level signal that reliably interrupts C extensions.
+        # latter only interrupts Python bytecode execution — async exceptions
+        # are checked between bytecode instructions in CPython's eval loop
+        # (see https://github.com/python/cpython/blob/3.13/Python/ceval_gil.c#L1320-L1330).
+        # When the target thread is blocked in C code (e.g. SymPy's C
+        # extensions, time.sleep), the async exception is never delivered and
+        # the timeout hangs. SIGALRM is an OS-level signal that reliably
+        # interrupts C extensions.
         #
         # SIGALRM can only be used from the main thread. In production, grading
         # code always runs in the main thread of forked zygote workers, and
