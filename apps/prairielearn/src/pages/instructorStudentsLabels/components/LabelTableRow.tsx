@@ -1,5 +1,5 @@
-import { ExpandableUserList } from '../../../components/ExpandableUserList.js';
 import { StudentLabelBadge } from '../../../components/StudentLabelBadge.js';
+import { getCourseInstanceStudentsUrl } from '../../../lib/client/url.js';
 import type { StudentLabelWithUserData } from '../instructorStudentsLabels.types.js';
 
 export function LabelTableRow({
@@ -15,18 +15,22 @@ export function LabelTableRow({
   onEdit: (label: StudentLabelWithUserData) => void;
   onDelete: (label: StudentLabelWithUserData) => void;
 }) {
+  const count = label.user_data.length;
+  const studentsUrl = `${getCourseInstanceStudentsUrl(courseInstanceId)}?student_labels=${encodeURIComponent(label.student_label.id)}`;
+
   return (
     <tr>
       <td className="align-middle">
         <StudentLabelBadge label={label.student_label} />
       </td>
       <td className="align-middle">
-        <ExpandableUserList
-          users={label.user_data}
-          courseInstanceId={courseInstanceId}
-          emptyText="0 students"
-          nameFallback="uid"
-        />
+        {count === 0 ? (
+          <span className="text-muted">0 students</span>
+        ) : (
+          <a href={studentsUrl}>
+            {count} {count === 1 ? 'student' : 'students'}
+          </a>
+        )}
       </td>
       {canEdit && (
         <td className="align-middle">
