@@ -56,9 +56,6 @@ window.PLOrderBlocks = function (uuid, options) {
 
   function initializeKeyboardHandling() {
     const blocks = fullContainer.querySelectorAll('.pl-order-block');
-    if (blocks.length === 0) return;
-
-    blocks.forEach((block) => block.setAttribute('tabindex', '-1'));
     let blockNum = 0;
     blocks.forEach((block) => {
       block.setAttribute('tabindex', '-1');
@@ -480,25 +477,5 @@ window.PLOrderBlocks = function (uuid, options) {
     });
   }
 
-  const resizeHandler = () => markScrollableContent(fullContainer);
-  window.addEventListener('resize', resizeHandler);
-
-  // after addEventListener
-  this.destroy = () => {
-    window.removeEventListener('resize', resizeHandler);
-    resize.disconnect();
-
-    if (gateDragVsScroll) {
-      fullContainer.removeEventListener('pointerdown', gateDragVsScroll, { capture: true });
-      fullContainer.removeEventListener('touchstart', gateDragVsScroll, { capture: true });
-      fullContainer.removeEventListener('mousedown', gateDragVsScroll, { capture: true });
-    }
-
-    try {
-      $(sortables).sortable('destroy');
-    } catch {
-      // sortable may already be destroyed or not yet initialized
-    }
-  };
   initializeKeyboardHandling();
 };

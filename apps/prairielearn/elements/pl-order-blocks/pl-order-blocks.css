@@ -16,7 +16,7 @@ div.pl-order-blocks-bottom {
 li.pl-order-blocks-code {
   list-style-type: none;
   padding: 0px !important;
-  background-color: #f0f0f0;
+  background-color: var(--pl-code-background-color, transparent);
 }
 
 .pl-order-blocks-code .pl-code > div {
@@ -28,7 +28,7 @@ li.pl-order-blocks-code .pl-order-block-handle {
   flex: 0 0 16px;
   width: 16px;
   margin-left: 2px;
-  padding-left: 10px;
+  padding-left: 4px;
 }
 
 .pl-order-blocks-code .pl-code,
