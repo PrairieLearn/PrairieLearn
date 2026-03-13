@@ -22,6 +22,15 @@ import type {
 } from '../types.js';
 
 export type QuestionMetadataMap = Partial<Record<string, EditorQuestionMetadata>>;
+
+/**
+ * Whether the question has a non-empty, non-whitespace title.
+ * When false, callers should display the QID instead.
+ */
+export function questionHasTitle(questionData: EditorQuestionMetadata | null): boolean {
+  return (questionData?.question.title?.trim().length ?? 0) > 0;
+}
+
 /**
  * Compresses an array of points by collapsing consecutive runs.
  * e.g. [10, 10, 10, 5, 5] → "10×3, 5, 5"

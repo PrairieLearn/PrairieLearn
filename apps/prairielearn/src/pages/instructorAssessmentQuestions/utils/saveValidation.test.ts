@@ -15,7 +15,7 @@ function makeQuestion(overrides: Partial<ZoneQuestionBlockForm> = {}): ZoneQuest
     canSubmit: [],
     canView: [],
     ...overrides,
-  };
+  } as ZoneQuestionBlockForm;
 }
 
 function makeZone(overrides: Partial<ZoneAssessmentForm> = {}): ZoneAssessmentForm {
