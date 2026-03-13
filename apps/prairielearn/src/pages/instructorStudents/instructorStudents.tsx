@@ -1,3 +1,5 @@
+import * as path from 'path';
+
 import { Router } from 'express';
 import asyncHandler from 'express-async-handler';
 import z from 'zod';
@@ -16,6 +18,7 @@ import { StaffEnrollmentSchema, StaffStudentLabelSchema } from '../../lib/client
 import { getSelfEnrollmentLinkUrl, getStudentCourseInstanceUrl } from '../../lib/client/url.js';
 import { config } from '../../lib/config.js';
 import { getCourseOwners } from '../../lib/course.js';
+import { getOriginalHash } from '../../lib/editors.js';
 import type { CourseInstance } from '../../lib/db-types.js';
 import { typedAsyncHandler } from '../../lib/res-locals.js';
 import { type ServerJobLogger, createServerJob } from '../../lib/server-jobs.js';
@@ -30,7 +33,7 @@ import {
 } from '../../models/enrollment.js';
 import { selectStudentLabelsInCourseInstance } from '../../models/student-label.js';
 import { selectOptionalUserByUid } from '../../models/user.js';
-import { getStudentLabelsTrpcProps } from '../instructorStudentsLabels/utils/trpc-setup.js';
+import { generatePrefixCsrfToken } from '@prairielearn/signed-token';
 
 import { InstructorStudents } from './instructorStudents.html.js';
 import { StudentRowSchema } from './instructorStudents.shared.js';
@@ -511,11 +514,14 @@ router.get(
       host,
     ).href;
 
-    const { trpcUrl, trpcCsrfToken, origHash } = await getStudentLabelsTrpcProps({
-      course,
-      courseInstance,
-      authnUserId: res.locals.authn_user.id,
-    });
+    const trpcUrl = `/pl/course_instance/${courseInstance.id}/instructor/trpc`;
+    const trpcCsrfToken = generatePrefixCsrfToken(
+      { url: trpcUrl, authn_user_id: res.locals.authn_user.id },
+      config.secretKey,
+    );
+    const origHash = await getOriginalHash(
+      path.join(course.path, 'courseInstances', courseInstance.short_name!, 'infoCourseInstance.json'),
+    );
 
     res.send(
       PageLayout({
@@ -544,7 +550,6 @@ router.get(
               csrfToken={csrfToken}
               selfEnrollLink={selfEnrollLink}
               trpcCsrfToken={trpcCsrfToken}
-              trpcUrl={trpcUrl}
               origHash={origHash}
             />
           </Hydrate>

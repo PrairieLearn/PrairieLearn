@@ -17,7 +17,7 @@ import {
   selectEnrollmentsByUidsOrPendingUidsInCourseInstance,
 } from '../models/enrollment.js';
 import { createStudentLabel, selectEnrollmentsInStudentLabel } from '../models/student-label.js';
-import type { StudentLabelsRouter } from '../pages/instructorInstanceAdminTrpc/trpc.js';
+import type { CourseInstanceRouter } from '../trpc/courseInstance/trpc.js';
 
 import {
   type CourseRepoFixture,
@@ -41,12 +41,11 @@ async function createTrpcClient() {
   const props = superjson.parse<{ trpcCsrfToken: string }>(propsJson);
   const trpcCsrfToken = props.trpcCsrfToken;
 
-  return createTRPCClient<StudentLabelsRouter>({
+  return createTRPCClient<CourseInstanceRouter>({
     links: [
       httpLink({
-        url: `${siteUrl}/pl/course_instance/1/instructor/instance_admin/trpc/student_labels`,
+        url: `${siteUrl}/pl/course_instance/1/instructor/trpc`,
         headers: {
-          'X-TRPC': 'true',
           'X-CSRF-Token': trpcCsrfToken,
         },
         transformer: superjson,
@@ -93,7 +92,7 @@ describe('Student labels batch actions', () => {
 
   test.sequential('should batch add label to multiple students', async () => {
     const trpcClient = await createTrpcClient();
-    await trpcClient.batchAddLabel.mutate({
+    await trpcClient.studentLabels.batchAdd.mutate({
       enrollmentIds,
       labelId: label.id,
     });
@@ -113,7 +112,7 @@ describe('Student labels batch actions', () => {
 
   test.sequential('should batch remove label from multiple students', async () => {
     const trpcClient = await createTrpcClient();
-    await trpcClient.batchRemoveLabel.mutate({
+    await trpcClient.studentLabels.batchRemove.mutate({
       enrollmentIds: [enrollmentIds[0], enrollmentIds[1]],
       labelId: label.id,
     });
@@ -124,7 +123,7 @@ describe('Student labels batch actions', () => {
 
   test.sequential('should remove label from the last student', async () => {
     const trpcClient = await createTrpcClient();
-    await trpcClient.batchRemoveLabel.mutate({
+    await trpcClient.studentLabels.batchRemove.mutate({
       enrollmentIds: [enrollmentIds[2]],
       labelId: label.id,
     });
@@ -136,7 +135,7 @@ describe('Student labels batch actions', () => {
   test.sequential('should fail when adding non-existent label', async () => {
     const trpcClient = await createTrpcClient();
     try {
-      await trpcClient.batchAddLabel.mutate({
+      await trpcClient.studentLabels.batchAdd.mutate({
         enrollmentIds: [enrollmentIds[0]],
         labelId: '999999',
       });

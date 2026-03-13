@@ -1,18 +1,21 @@
+import * as path from 'path';
+
 import { Router } from 'express';
 import asyncHandler from 'express-async-handler';
 
 import { Hydrate } from '@prairielearn/react/server';
+import { generatePrefixCsrfToken } from '@prairielearn/signed-token';
 
 import { InsufficientCoursePermissionsCardPage } from '../../components/InsufficientCoursePermissionsCard.js';
 import { PageLayout } from '../../components/PageLayout.js';
 import { extractPageContext } from '../../lib/client/page-context.js';
 import { config } from '../../lib/config.js';
 import { getCourseOwners } from '../../lib/course.js';
+import { getOriginalHash } from '../../lib/editors.js';
 import { createAuthzMiddleware } from '../../middlewares/authzHelper.js';
 
 import { InstructorStudentsLabels } from './instructorStudentsLabels.html.js';
 import { getStudentLabelsWithUserData } from './queries.js';
-import { getStudentLabelsTrpcProps } from './utils/trpc-setup.js';
 
 const router = Router();
 
@@ -54,11 +57,14 @@ router.get(
     const labels = await getStudentLabelsWithUserData(courseInstance.id);
     const canEdit = authz_data.has_course_instance_permission_edit ?? false;
 
-    const { trpcUrl, trpcCsrfToken, origHash } = await getStudentLabelsTrpcProps({
-      course,
-      courseInstance,
-      authnUserId: res.locals.authn_user.id,
-    });
+    const trpcUrl = `/pl/course_instance/${courseInstance.id}/instructor/trpc`;
+    const trpcCsrfToken = generatePrefixCsrfToken(
+      { url: trpcUrl, authn_user_id: res.locals.authn_user.id },
+      config.secretKey,
+    );
+    const origHash = await getOriginalHash(
+      path.join(course.path, 'courseInstances', courseInstance.short_name!, 'infoCourseInstance.json'),
+    );
 
     res.send(
       PageLayout({
@@ -74,7 +80,6 @@ router.get(
             <InstructorStudentsLabels
               csrfToken={__csrf_token}
               trpcCsrfToken={trpcCsrfToken}
-              trpcUrl={trpcUrl}
               courseInstanceId={courseInstance.id}
               initialLabels={labels}
               canEdit={canEdit}

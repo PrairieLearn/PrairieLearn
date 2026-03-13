@@ -12,7 +12,9 @@ import { getCourseInstanceJobSequenceUrl } from '../../../lib/client/url.js';
 import { parseUniqueValuesFromString } from '../../../lib/string-util.js';
 import { ColorJsonSchema } from '../../../schemas/infoCourse.js';
 import { MAX_LABEL_UIDS } from '../instructorStudentsLabels.types.js';
-import type { StudentLabelsTrpcClient } from '../utils/trpc-client.js';
+import type { createCourseInstanceTrpcClient } from '../../../trpc/courseInstance/trpc-client.js';
+
+type StudentLabelsTrpcClient = ReturnType<typeof createCourseInstanceTrpcClient>;
 
 export type LabelModifyModalData =
   | { type: 'add'; origHash: string | null }
@@ -83,7 +85,7 @@ export function LabelModifyModal({
       const color = ColorJsonSchema.parse(formData.color);
       const uids = parseUniqueValuesFromString(formData.uids.trim(), MAX_LABEL_UIDS);
       if (data?.type === 'edit') {
-        return await trpcClient.editLabel.mutate({
+        return await trpcClient.studentLabels.edit.mutate({
           labelId: data.labelId,
           name: formData.name.trim(),
           color,
@@ -91,7 +93,7 @@ export function LabelModifyModal({
           origHash: data.origHash,
         });
       } else {
-        return await trpcClient.createLabel.mutate({
+        return await trpcClient.studentLabels.create.mutate({
           name: formData.name.trim(),
           color,
           uids,
@@ -115,7 +117,7 @@ export function LabelModifyModal({
 
     if (uids.length > 0) {
       try {
-        const result = await trpcClient.checkUids.query({ uids });
+        const result = await trpcClient.studentLabels.checkUids.query({ uids });
         if (result.unenrolledUids.length > 0) {
           setStage({ type: 'confirming', unknownUids: result.unenrolledUids });
           return;

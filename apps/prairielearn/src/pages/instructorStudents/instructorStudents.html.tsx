@@ -52,7 +52,7 @@ import {
 import type { EnumEnrollmentStatus } from '../../lib/db-types.js';
 import { courseInstanceFilenamePrefix } from '../../lib/sanitize-name.js';
 import { MAX_LABEL_UIDS } from '../instructorStudentsLabels/instructorStudentsLabels.types.js';
-import { createStudentLabelsTrpcClient } from '../instructorStudentsLabels/utils/trpc-client.js';
+import { createCourseInstanceTrpcClient } from '../../trpc/courseInstance/trpc-client.js';
 
 import { InviteStudentsModal } from './components/InviteStudentsModal.js';
 import { SyncStudentsModal } from './components/SyncStudentsModal.js';
@@ -223,7 +223,6 @@ interface StudentsCardProps {
   timezone: string;
   selfEnrollLink: string;
   trpcCsrfToken: string;
-  trpcUrl: string;
   origHash: string | null;
 }
 
@@ -246,7 +245,6 @@ function StudentsCard({
   csrfToken,
   selfEnrollLink,
   trpcCsrfToken,
-  trpcUrl,
   origHash: initialOrigHash,
 }: StudentsCardProps) {
   const [origHash, setOrigHash] = useState(initialOrigHash);
@@ -274,12 +272,14 @@ function StudentsCard({
   const { createCheckboxProps } = useShiftClickCheckbox<StudentRow>();
 
   const queryClient = useQueryClient();
-  const [trpcClient] = useState(() => createStudentLabelsTrpcClient(trpcCsrfToken, trpcUrl));
+  const [trpcClient] = useState(() =>
+    createCourseInstanceTrpcClient({ csrfToken: trpcCsrfToken, courseInstanceId: courseInstance.id }),
+  );
 
   const { data: studentLabels = initialStudentLabels } = useQuery({
     queryKey: ['student-labels', courseInstance.id],
     queryFn: async () => {
-      const result = await trpcClient.labels.query();
+      const result = await trpcClient.studentLabels.list.query();
       setOrigHash(result.origHash);
       return result.labels.map((l) => l.student_label);
     },
@@ -419,7 +419,7 @@ function StudentsCard({
       labelId: string;
       labelName: string;
     }) => {
-      return await trpcClient.batchAddLabel.mutate({ enrollmentIds, labelId });
+      return await trpcClient.studentLabels.batchAdd.mutate({ enrollmentIds, labelId });
     },
     onSuccess: async (result, { labelName }) => {
       const parts: string[] = [
@@ -447,7 +447,7 @@ function StudentsCard({
       labelId: string;
       labelName: string;
     }) => {
-      return await trpcClient.batchRemoveLabel.mutate({ enrollmentIds, labelId });
+      return await trpcClient.studentLabels.batchRemove.mutate({ enrollmentIds, labelId });
     },
     onSuccess: async (result, { labelName }) => {
       const parts: string[] = [
@@ -937,7 +937,6 @@ export const InstructorStudents = ({
   csrfToken,
   isDevMode,
   trpcCsrfToken,
-  trpcUrl,
   origHash,
 }: {
   authzData: PageContextWithAuthzData['authz_data'];
@@ -960,7 +959,6 @@ export const InstructorStudents = ({
           timezone={timezone}
           csrfToken={csrfToken}
           trpcCsrfToken={trpcCsrfToken}
-          trpcUrl={trpcUrl}
           origHash={origHash}
         />
       </QueryClientProviderDebug>

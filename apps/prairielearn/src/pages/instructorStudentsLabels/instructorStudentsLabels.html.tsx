@@ -9,15 +9,13 @@ import { LabelDeleteModal, type LabelDeleteModalData } from './components/LabelD
 import { LabelModifyModal, type LabelModifyModalData } from './components/LabelModifyModal.js';
 import { LabelTableRow } from './components/LabelTableRow.js';
 import type { StudentLabelWithUserData } from './instructorStudentsLabels.types.js';
-import {
-  type StudentLabelsTrpcClient,
-  createStudentLabelsTrpcClient,
-} from './utils/trpc-client.js';
+import { createCourseInstanceTrpcClient } from '../../trpc/courseInstance/trpc-client.js';
+
+type StudentLabelsTrpcClient = ReturnType<typeof createCourseInstanceTrpcClient>;
 
 interface StudentLabelsPageProps {
   csrfToken: string;
   trpcCsrfToken: string;
-  trpcUrl: string;
   courseInstanceId: string;
   initialLabels: StudentLabelWithUserData[];
   canEdit: boolean;
@@ -27,7 +25,7 @@ interface StudentLabelsPageProps {
 
 type StudentLabelsCardProps = Omit<
   StudentLabelsPageProps,
-  'isDevMode' | 'trpcCsrfToken' | 'trpcUrl'
+  'isDevMode' | 'trpcCsrfToken'
 > & {
   trpcClient: StudentLabelsTrpcClient;
 };
@@ -47,7 +45,7 @@ function StudentLabelsCard({
   const { data: labels = initialLabels } = useQuery({
     queryKey: ['student-labels-with-user-data', courseInstanceId],
     queryFn: async () => {
-      const result = await trpcClient.labels.query();
+      const result = await trpcClient.studentLabels.list.query();
       setOrigHash(result.origHash);
       return result.labels;
     },
@@ -178,15 +176,17 @@ function StudentLabelsCard({
 export function InstructorStudentsLabels({
   isDevMode,
   trpcCsrfToken,
-  trpcUrl,
+  courseInstanceId,
   ...innerProps
 }: StudentLabelsPageProps) {
   const [queryClient] = useState(() => new QueryClient());
-  const [trpcClient] = useState(() => createStudentLabelsTrpcClient(trpcCsrfToken, trpcUrl));
+  const [trpcClient] = useState(() =>
+    createCourseInstanceTrpcClient({ csrfToken: trpcCsrfToken, courseInstanceId }),
+  );
 
   return (
     <QueryClientProviderDebug client={queryClient} isDevMode={isDevMode}>
-      <StudentLabelsCard trpcClient={trpcClient} {...innerProps} />
+      <StudentLabelsCard trpcClient={trpcClient} courseInstanceId={courseInstanceId} {...innerProps} />
     </QueryClientProviderDebug>
   );
 }

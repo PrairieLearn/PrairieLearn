@@ -23,7 +23,7 @@ import {
   selectEnrollmentsInStudentLabel,
   selectStudentLabelsInCourseInstance,
 } from '../models/student-label.js';
-import type { StudentLabelsRouter } from '../pages/instructorInstanceAdminTrpc/trpc.js';
+import type { CourseInstanceRouter } from '../trpc/courseInstance/trpc.js';
 import { getStudentLabelsWithUserData } from '../pages/instructorStudentsLabels/queries.js';
 
 import {
@@ -57,12 +57,11 @@ async function createTrpcClient() {
   const props = superjson.parse<{ trpcCsrfToken: string }>(propsJson);
   const trpcCsrfToken = props.trpcCsrfToken;
 
-  return createTRPCClient<StudentLabelsRouter>({
+  return createTRPCClient<CourseInstanceRouter>({
     links: [
       httpLink({
-        url: `${siteUrl}/pl/course_instance/1/instructor/instance_admin/trpc/student_labels`,
+        url: `${siteUrl}/pl/course_instance/1/instructor/trpc`,
         headers: {
-          'X-TRPC': 'true',
           'X-CSRF-Token': trpcCsrfToken,
         },
         transformer: superjson,
@@ -106,18 +105,18 @@ describe('Instructor student labels page', () => {
     // Get tRPC client
     const trpcClient = await createTrpcClient();
 
-    const result = await trpcClient.labels.query();
+    const result = await trpcClient.studentLabels.list.query();
     assert.isArray(result.labels);
     assert.isNotNull(result.origHash);
 
-    const validCheckResult = await trpcClient.checkUids.query({ uids: [studentUids[0]] });
+    const validCheckResult = await trpcClient.studentLabels.checkUids.query({ uids: [studentUids[0]] });
     assert.deepEqual(validCheckResult.unenrolledUids, []);
 
     const invalidUid = 'nonexistent@example.com';
-    const invalidCheckResult = await trpcClient.checkUids.query({ uids: [invalidUid] });
+    const invalidCheckResult = await trpcClient.studentLabels.checkUids.query({ uids: [invalidUid] });
     assert.deepEqual(invalidCheckResult.unenrolledUids, [invalidUid]);
 
-    const mixedCheckResult = await trpcClient.checkUids.query({
+    const mixedCheckResult = await trpcClient.studentLabels.checkUids.query({
       uids: [studentUids[0], invalidUid],
     });
     assert.deepEqual(mixedCheckResult.unenrolledUids, [invalidUid]);
@@ -130,7 +129,7 @@ describe('Instructor student labels page', () => {
     );
 
     // Create label without students
-    await trpcClient.createLabel.mutate({
+    await trpcClient.studentLabels.create.mutate({
       name: 'Test Label A',
       color: 'blue1',
       uids: [],
@@ -150,7 +149,7 @@ describe('Instructor student labels page', () => {
     );
 
     // Create label with students
-    await trpcClient.createLabel.mutate({
+    await trpcClient.studentLabels.create.mutate({
       name: 'Test Label B',
       color: 'green2',
       uids: [studentUids[0], studentUids[1]],
@@ -172,7 +171,7 @@ describe('Instructor student labels page', () => {
 
     // Attempt to create label with duplicate name - should fail
     try {
-      await trpcClient.createLabel.mutate({
+      await trpcClient.studentLabels.create.mutate({
         name: 'Test Label A',
         color: 'red1',
         uids: [],
@@ -181,12 +180,12 @@ describe('Instructor student labels page', () => {
       assert.fail('Expected error for duplicate name');
     } catch (err) {
       assert.instanceOf(err, TRPCClientError);
-      assert.include((err as TRPCClientErrorLike<StudentLabelsRouter>).message, 'already exists');
+      assert.include((err as TRPCClientErrorLike<CourseInstanceRouter>).message, 'already exists');
     }
 
     // Attempt to create label with empty name - should fail
     try {
-      await trpcClient.createLabel.mutate({
+      await trpcClient.studentLabels.create.mutate({
         name: '',
         color: 'gray1',
         uids: [],
@@ -210,7 +209,7 @@ describe('Instructor student labels page', () => {
     assert.isDefined(labelA);
 
     // Edit label name
-    await trpcClient.editLabel.mutate({
+    await trpcClient.studentLabels.edit.mutate({
       labelId: labelA.id,
       name: 'Test Label A Renamed',
       color: 'blue1',
@@ -229,7 +228,7 @@ describe('Instructor student labels page', () => {
     );
 
     // Edit label color
-    await trpcClient.editLabel.mutate({
+    await trpcClient.studentLabels.edit.mutate({
       labelId: labelA.id,
       name: 'Test Label A Renamed',
       color: 'purple3',
@@ -248,7 +247,7 @@ describe('Instructor student labels page', () => {
     );
 
     // Add students to label via edit
-    await trpcClient.editLabel.mutate({
+    await trpcClient.studentLabels.edit.mutate({
       labelId: labelA.id,
       name: 'Test Label A Renamed',
       color: 'purple3',
@@ -266,7 +265,7 @@ describe('Instructor student labels page', () => {
     );
 
     // Remove students via edit (set empty uids)
-    await trpcClient.editLabel.mutate({
+    await trpcClient.studentLabels.edit.mutate({
       labelId: labelA.id,
       name: 'Test Label A Renamed',
       color: 'purple3',
@@ -287,7 +286,7 @@ describe('Instructor student labels page', () => {
     assert.isDefined(labelB);
 
     try {
-      await trpcClient.editLabel.mutate({
+      await trpcClient.studentLabels.edit.mutate({
         labelId: labelA.id,
         name: 'Test Label B',
         color: 'purple3',
@@ -297,7 +296,7 @@ describe('Instructor student labels page', () => {
       assert.fail('Expected error for duplicate name');
     } catch (err) {
       assert.instanceOf(err, TRPCClientError);
-      assert.include((err as TRPCClientErrorLike<StudentLabelsRouter>).message, 'already exists');
+      assert.include((err as TRPCClientErrorLike<CourseInstanceRouter>).message, 'already exists');
     }
   });
 
@@ -312,7 +311,7 @@ describe('Instructor student labels page', () => {
     const labelA = labels.find((l) => l.name === 'Test Label A Renamed');
     assert.isDefined(labelA);
 
-    await trpcClient.deleteLabel.mutate({
+    await trpcClient.studentLabels.remove.mutate({
       labelId: labelA.id,
       origHash,
     });
@@ -329,7 +328,7 @@ describe('Instructor student labels page', () => {
 
     // Attempt to delete non-existent label - should fail with NOT_FOUND
     try {
-      await trpcClient.deleteLabel.mutate({
+      await trpcClient.studentLabels.remove.mutate({
         labelId: '999999',
         origHash,
       });
@@ -354,12 +353,12 @@ describe('Instructor student labels page', () => {
     );
 
     // checkUids should recognize the invited student's UID as valid
-    const checkResult = await trpcClient.checkUids.query({ uids: [invitedUid] });
+    const checkResult = await trpcClient.studentLabels.checkUids.query({ uids: [invitedUid] });
     assert.deepEqual(checkResult.unenrolledUids, []);
 
     // checkUids should still flag truly unknown UIDs
     const unknownUid = 'totally-unknown@example.com';
-    const mixedResult = await trpcClient.checkUids.query({
+    const mixedResult = await trpcClient.studentLabels.checkUids.query({
       uids: [invitedUid, studentUids[0], unknownUid],
     });
     assert.deepEqual(mixedResult.unenrolledUids, [unknownUid]);
@@ -368,7 +367,7 @@ describe('Instructor student labels page', () => {
     const origHash = await getOriginalHash(
       getCourseInstanceJsonPath(courseRepo.courseLiveDir, courseInstanceShortName),
     );
-    await trpcClient.createLabel.mutate({
+    await trpcClient.studentLabels.create.mutate({
       name: 'Invited Label',
       color: 'red1',
       uids: [invitedUid, studentUids[0]],

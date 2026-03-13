@@ -1,19 +1,14 @@
 import * as crypto from 'node:crypto';
 import * as path from 'node:path';
 
-import { TRPCError, initTRPC } from '@trpc/server';
-import type { CreateExpressContextOptions } from '@trpc/server/adapters/express';
-import superjson from 'superjson';
+import { TRPCError } from '@trpc/server';
 import { z } from 'zod';
 
-import { HttpStatusError } from '@prairielearn/error';
 import { runInTransactionAsync } from '@prairielearn/postgres';
 import { IdSchema } from '@prairielearn/zod';
 
-import type { CourseInstance, StudentLabel } from '../../lib/db-types.js';
 import { saveJsonFile } from '../../lib/editorUtil.js';
 import { getOriginalHash } from '../../lib/editors.js';
-import type { ResLocalsForPage } from '../../lib/res-locals.js';
 import {
   selectEnrollmentsByIdsInCourseInstance,
   selectEnrollmentsByUidsOrPendingUidsInCourseInstance,
@@ -22,110 +17,24 @@ import {
   addLabelToEnrollments,
   removeLabelFromEnrollments,
   selectEnrollmentsInStudentLabel,
-  selectOptionalStudentLabelById,
   selectStudentLabelByUuid,
 } from '../../models/student-label.js';
-import { ColorJsonSchema } from '../../schemas/infoCourse.js';
-import { type CourseInstanceJsonInput } from '../../schemas/infoCourseInstance.js';
 import {
   MAX_LABEL_UIDS,
   StudentLabelWithUserDataSchema,
-} from '../instructorStudentsLabels/instructorStudentsLabels.types.js';
-import { getStudentLabelsWithUserData } from '../instructorStudentsLabels/queries.js';
+} from '../../pages/instructorStudentsLabels/instructorStudentsLabels.types.js';
+import { getStudentLabelsWithUserData } from '../../pages/instructorStudentsLabels/queries.js';
+import { ColorJsonSchema } from '../../schemas/infoCourse.js';
+import { type CourseInstanceJsonInput } from '../../schemas/infoCourseInstance.js';
 
-async function selectStudentLabelByIdOrNotFound({
-  id,
-  courseInstance,
-}: {
-  id: string;
-  courseInstance: CourseInstance;
-}): Promise<StudentLabel> {
-  try {
-    const label = await selectOptionalStudentLabelById({ id, courseInstance });
-    if (label == null) {
-      throw new TRPCError({
-        code: 'NOT_FOUND',
-        message: 'Label not found',
-      });
-    }
-    return label;
-  } catch (error) {
-    if (error instanceof TRPCError) throw error;
-    if (error instanceof HttpStatusError) {
-      throw new TRPCError({
-        code: 'FORBIDDEN',
-        message: error.message,
-        cause: error,
-      });
-    }
-    throw new TRPCError({
-      code: 'INTERNAL_SERVER_ERROR',
-      message: 'Failed to look up label',
-      cause: error,
-    });
-  }
-}
+import {
+  requireCourseInstancePermissionEdit,
+  requireCourseInstancePermissionView,
+  selectStudentLabelByIdOrNotFound,
+  t,
+} from './trpc-init.js';
 
-export function createTRPCContext({ res }: CreateExpressContextOptions) {
-  const locals = res.locals as ResLocalsForPage<'course-instance'>;
-
-  return {
-    course: locals.course,
-    course_instance: locals.course_instance,
-    authz_data: locals.authz_data,
-    locals,
-  };
-}
-
-type TRPCContext = Awaited<ReturnType<typeof createTRPCContext>>;
-
-interface SaveJobErrorCause {
-  jobSequenceId: string;
-}
-
-function isSaveJobErrorCause(cause: unknown): cause is SaveJobErrorCause {
-  return (
-    typeof cause === 'object' &&
-    cause !== null &&
-    'jobSequenceId' in cause &&
-    typeof (cause as SaveJobErrorCause).jobSequenceId === 'string'
-  );
-}
-
-const t = initTRPC.context<TRPCContext>().create({
-  transformer: superjson,
-  errorFormatter({ shape, error }) {
-    return {
-      ...shape,
-      data: {
-        ...shape.data,
-        jobSequenceId: isSaveJobErrorCause(error.cause) ? error.cause.jobSequenceId : undefined,
-      },
-    };
-  },
-});
-
-const requireCourseInstancePermissionView = t.middleware(async (opts) => {
-  if (!opts.ctx.authz_data.has_course_instance_permission_view) {
-    throw new TRPCError({
-      code: 'FORBIDDEN',
-      message: 'Access denied (must be a student data viewer)',
-    });
-  }
-  return opts.next();
-});
-
-const requireCourseInstancePermissionEdit = t.middleware(async (opts) => {
-  if (!opts.ctx.authz_data.has_course_instance_permission_edit) {
-    throw new TRPCError({
-      code: 'FORBIDDEN',
-      message: 'Access denied (must be a student data editor)',
-    });
-  }
-  return opts.next();
-});
-
-const labelsQuery = t.procedure
+const list = t.procedure
   .use(requireCourseInstancePermissionView)
   .output(
     z.object({
@@ -148,7 +57,7 @@ const labelsQuery = t.procedure
     return { labels, origHash };
   });
 
-const checkUidsQuery = t.procedure
+const checkUids = t.procedure
   .use(requireCourseInstancePermissionView)
   .input(z.object({ uids: z.array(z.string()).max(MAX_LABEL_UIDS) }))
   .output(z.object({ unenrolledUids: z.array(z.string()) }))
@@ -168,7 +77,7 @@ const checkUidsQuery = t.procedure
     return { unenrolledUids };
   });
 
-const createLabelMutation = t.procedure
+const create = t.procedure
   .use(requireCourseInstancePermissionEdit)
   .input(
     z.object({
@@ -241,7 +150,7 @@ const createLabelMutation = t.procedure
     return { origHash: saveResult.origHash };
   });
 
-const editLabelMutation = t.procedure
+const edit = t.procedure
   .use(requireCourseInstancePermissionEdit)
   .input(
     z.object({
@@ -347,7 +256,7 @@ const editLabelMutation = t.procedure
     return { origHash: saveResult.origHash };
   });
 
-const deleteLabelMutation = t.procedure
+const remove = t.procedure
   .use(requireCourseInstancePermissionEdit)
   .input(
     z.object({
@@ -400,7 +309,7 @@ const deleteLabelMutation = t.procedure
     return { origHash: saveResult.origHash };
   });
 
-const batchAddLabelMutation = t.procedure
+const batchAdd = t.procedure
   .use(requireCourseInstancePermissionEdit)
   .input(
     z.object({
@@ -437,7 +346,7 @@ const batchAddLabelMutation = t.procedure
     return { added, alreadyHaveLabel, notFound };
   });
 
-const batchRemoveLabelMutation = t.procedure
+const batchRemove = t.procedure
   .use(requireCourseInstancePermissionEdit)
   .input(
     z.object({
@@ -475,13 +384,11 @@ const batchRemoveLabelMutation = t.procedure
   });
 
 export const studentLabelsRouter = t.router({
-  labels: labelsQuery,
-  checkUids: checkUidsQuery,
-  createLabel: createLabelMutation,
-  editLabel: editLabelMutation,
-  deleteLabel: deleteLabelMutation,
-  batchAddLabel: batchAddLabelMutation,
-  batchRemoveLabel: batchRemoveLabelMutation,
+  list,
+  checkUids,
+  create,
+  edit,
+  remove,
+  batchAdd,
+  batchRemove,
 });
-
-export type StudentLabelsRouter = typeof studentLabelsRouter;

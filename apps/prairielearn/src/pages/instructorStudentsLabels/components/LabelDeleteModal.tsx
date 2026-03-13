@@ -3,7 +3,9 @@ import { Alert, Button, Modal } from 'react-bootstrap';
 
 import { extractJobSequenceId } from '../../../lib/client/errors.js';
 import { getCourseInstanceJobSequenceUrl } from '../../../lib/client/url.js';
-import type { StudentLabelsTrpcClient } from '../utils/trpc-client.js';
+import type { createCourseInstanceTrpcClient } from '../../../trpc/courseInstance/trpc-client.js';
+
+type StudentLabelsTrpcClient = ReturnType<typeof createCourseInstanceTrpcClient>;
 
 export interface LabelDeleteModalData {
   labelId: string;
@@ -32,7 +34,7 @@ export function LabelDeleteModal({
 }) {
   const deleteMutation = useMutation({
     mutationFn: async ({ labelId }: { labelId: string }) => {
-      return await trpcClient.deleteLabel.mutate({
+      return await trpcClient.studentLabels.remove.mutate({
         labelId,
         origHash,
       });
