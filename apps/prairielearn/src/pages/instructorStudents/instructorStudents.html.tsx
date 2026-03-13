@@ -51,6 +51,7 @@ import {
 } from '../../lib/client/url.js';
 import type { EnumEnrollmentStatus } from '../../lib/db-types.js';
 import { courseInstanceFilenamePrefix } from '../../lib/sanitize-name.js';
+import { MAX_LABEL_UIDS } from '../instructorStudentsLabels/instructorStudentsLabels.types.js';
 import { createStudentLabelsTrpcClient } from '../instructorStudentsLabels/utils/trpc-client.js';
 
 import { InviteStudentsModal } from './components/InviteStudentsModal.js';
@@ -559,11 +560,7 @@ function StudentsCard({
           return (
             <div className="d-flex flex-wrap gap-1">
               {labels.map((label) => (
-                <StudentLabelBadge
-                  key={label.id}
-                  label={label}
-                  href={`${labelsUrl}?label=${encodeURIComponent(label.name)}`}
-                />
+                <StudentLabelBadge key={label.id} label={label} href={labelsUrl} />
               ))}
             </div>
           );
@@ -670,6 +667,7 @@ function StudentsCard({
     return states;
   }, [selectedRows, studentLabels]);
 
+  const tooManySelectedForLabels = selectedEnrollmentIds.length > MAX_LABEL_UIDS;
   const isLabelMutationPending =
     batchAddLabelMutation.isPending || batchRemoveLabelMutation.isPending;
   const emptyStateText = run(() => {
@@ -740,9 +738,22 @@ function StudentsCard({
               origHash !== null &&
               selectedEnrollmentIds.length > 0 && (
                 <Dropdown autoClose="outside">
-                  <Dropdown.Toggle variant="light" size="sm">
-                    Labels
-                  </Dropdown.Toggle>
+                  {tooManySelectedForLabels ? (
+                    <OverlayTrigger
+                      tooltip={{
+                        body: `Select at most ${MAX_LABEL_UIDS} students to apply labels.`,
+                        props: { id: 'students-label-limit-tooltip' },
+                      }}
+                    >
+                      <Dropdown.Toggle variant="light" size="sm" disabled>
+                        Labels
+                      </Dropdown.Toggle>
+                    </OverlayTrigger>
+                  ) : (
+                    <Dropdown.Toggle variant="light" size="sm">
+                      Labels
+                    </Dropdown.Toggle>
+                  )}
                   <Dropdown.Menu style={{ minWidth: '220px' }}>
                     {studentLabels.map((label) => {
                       const state = labelAssignmentState.get(label.id);
@@ -760,7 +771,7 @@ function StudentsCard({
                           <IndeterminateCheckbox
                             checked={isChecked}
                             indeterminate={isIndeterminate}
-                            disabled={isLabelMutationPending}
+                            disabled={isLabelMutationPending || tooManySelectedForLabels}
                             aria-label={`${isChecked ? 'Remove' : 'Add'} label "${label.name}" ${isChecked ? 'from' : 'to'} selected students`}
                             onChange={() => {
                               if (isChecked) {
