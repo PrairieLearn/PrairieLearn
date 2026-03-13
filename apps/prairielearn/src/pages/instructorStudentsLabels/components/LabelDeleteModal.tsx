@@ -34,7 +34,7 @@ export function LabelDeleteModal({
 }) {
   const deleteMutation = useMutation({
     mutationFn: async ({ labelId }: { labelId: string }) => {
-      return await trpcClient.studentLabels.remove.mutate({
+      return await trpcClient.studentLabels.destroy.mutate({
         labelId,
         origHash,
       });

@@ -256,7 +256,7 @@ const edit = t.procedure
     return { origHash: saveResult.origHash };
   });
 
-const remove = t.procedure
+const destroy = t.procedure
   .use(requireCourseInstancePermissionEdit)
   .input(
     z.object({
@@ -388,7 +388,7 @@ export const studentLabelsRouter = t.router({
   checkUids,
   create,
   edit,
-  remove,
+  destroy,
   batchAdd,
   batchRemove,
 });

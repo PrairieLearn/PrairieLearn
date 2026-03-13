@@ -23,8 +23,8 @@ import {
   selectEnrollmentsInStudentLabel,
   selectStudentLabelsInCourseInstance,
 } from '../models/student-label.js';
-import type { CourseInstanceRouter } from '../trpc/courseInstance/trpc.js';
 import { getStudentLabelsWithUserData } from '../pages/instructorStudentsLabels/queries.js';
+import type { CourseInstanceRouter } from '../trpc/courseInstance/trpc.js';
 
 import {
   type CourseRepoFixture,
@@ -109,11 +109,15 @@ describe('Instructor student labels page', () => {
     assert.isArray(result.labels);
     assert.isNotNull(result.origHash);
 
-    const validCheckResult = await trpcClient.studentLabels.checkUids.query({ uids: [studentUids[0]] });
+    const validCheckResult = await trpcClient.studentLabels.checkUids.query({
+      uids: [studentUids[0]],
+    });
     assert.deepEqual(validCheckResult.unenrolledUids, []);
 
     const invalidUid = 'nonexistent@example.com';
-    const invalidCheckResult = await trpcClient.studentLabels.checkUids.query({ uids: [invalidUid] });
+    const invalidCheckResult = await trpcClient.studentLabels.checkUids.query({
+      uids: [invalidUid],
+    });
     assert.deepEqual(invalidCheckResult.unenrolledUids, [invalidUid]);
 
     const mixedCheckResult = await trpcClient.studentLabels.checkUids.query({
@@ -311,7 +315,7 @@ describe('Instructor student labels page', () => {
     const labelA = labels.find((l) => l.name === 'Test Label A Renamed');
     assert.isDefined(labelA);
 
-    await trpcClient.studentLabels.remove.mutate({
+    await trpcClient.studentLabels.destroy.mutate({
       labelId: labelA.id,
       origHash,
     });
@@ -328,7 +332,7 @@ describe('Instructor student labels page', () => {
 
     // Attempt to delete non-existent label - should fail with NOT_FOUND
     try {
-      await trpcClient.studentLabels.remove.mutate({
+      await trpcClient.studentLabels.destroy.mutate({
         labelId: '999999',
         origHash,
       });
