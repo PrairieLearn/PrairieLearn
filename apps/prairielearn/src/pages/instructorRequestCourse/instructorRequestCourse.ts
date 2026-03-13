@@ -89,6 +89,10 @@ router.post(
       flash('error', 'The course title should not be empty.');
       error = true;
     }
+    if (title.length > 75) {
+      flash('error', 'The course title must be at most 75 characters.');
+      error = true;
+    }
     if (first_name.length === 0) {
       flash('error', 'The first name should not be empty.');
       error = true;
