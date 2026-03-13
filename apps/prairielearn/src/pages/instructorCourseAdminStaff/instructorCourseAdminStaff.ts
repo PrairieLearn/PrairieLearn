@@ -105,10 +105,11 @@ router.post(
     if (req.body.__action === 'course_permissions_insert_by_user_uids') {
       const uidParseResult = UniqueUidsFromStringSchema(MAX_UIDS).safeParse(req.body.uid);
       if (!uidParseResult.success) {
-        throw new error.HttpStatusError(
-          400,
-          uidParseResult.error.issues.map((issue) => issue.message).join('; '),
+        flash(
+          'error',
+          html`${uidParseResult.error.issues.map((issue) => issue.message).join('; ')}`,
         );
+        return res.redirect(req.originalUrl);
       }
       const uids = uidParseResult.data;
 
