@@ -1,6 +1,7 @@
 import { z } from 'zod';
 
 import { EncodedData } from '@prairielearn/browser-utils';
+import { formatDate } from '@prairielearn/formatter';
 import { html, unsafeHtml } from '@prairielearn/html';
 import { run } from '@prairielearn/run';
 import { DateFromISOString, IdSchema } from '@prairielearn/zod';
@@ -27,6 +28,7 @@ import { compiledScriptTag } from '../../lib/assets.js';
 import {
   type AssessmentInstance,
   AssessmentQuestionSchema,
+  EnumQuestionAccessModeSchema,
   type GroupConfig,
   InstanceQuestionSchema,
 } from '../../lib/db-types.js';
@@ -38,12 +40,18 @@ import { SimpleVariantWithScoreSchema } from '../../models/variant.js';
 export const InstanceQuestionRowSchema = InstanceQuestionSchema.extend({
   start_new_zone: z.boolean(),
   zone_id: IdSchema,
+  zone_number: z.number(),
   zone_title: z.string().nullable(),
+  lockpoint: z.boolean(),
+  lockpoint_crossed: z.boolean(),
+  lockpoint_crossed_at: DateFromISOString.nullable(),
+  lockpoint_crossed_authn_user_uid: z.string().nullable(),
   question_title: z.string(),
   max_points: z.number().nullable(),
   max_manual_points: z.number().nullable(),
   max_auto_points: z.number().nullable(),
   init_points: z.number().nullable(),
+  grade_rate_minutes: AssessmentQuestionSchema.shape.grade_rate_minutes,
   allow_real_time_grading: AssessmentQuestionSchema.shape.allow_real_time_grading,
   row_order: z.number(),
   question_number: z.string(),
@@ -53,13 +61,11 @@ export const InstanceQuestionRowSchema = InstanceQuestionSchema.extend({
   zone_has_best_questions: z.boolean(),
   zone_question_count: z.number(),
   file_count: z.number(),
-  sequence_locked: z.boolean(),
+  question_access_mode: EnumQuestionAccessModeSchema,
   prev_advance_score_perc: z.number().nullable(),
   prev_title: z.string().nullable(),
-  prev_sequence_locked: z.boolean().nullable(),
-  allow_grade_left_ms: z.coerce.number(),
-  allow_grade_date: DateFromISOString.nullable(),
-  allow_grade_interval: z.string(),
+  prev_question_access_mode: EnumQuestionAccessModeSchema.nullable(),
+  allowGradeLeftMs: z.number().default(0), // Computed after the query if needed, defaults to zero if grade_rate_minutes is null
   previous_variants: z.array(SimpleVariantWithScoreSchema).optional(),
   group_role_permissions: z
     .object({
@@ -115,7 +121,7 @@ export function StudentAssessmentInstance({
 
   instance_question_rows.forEach((question) => {
     if (question.status === 'saved') {
-      if (question.allow_grade_left_ms > 0) {
+      if (question.allowGradeLeftMs > 0) {
         suspendedSavedAnswers++;
       } else if (
         (question.max_auto_points || !question.max_manual_points) &&
@@ -163,6 +169,41 @@ export function StudentAssessmentInstance({
   const showUnauthorizedEditWarning = !resLocals.authz_result.authorized_edit;
   const showCardFooter = showExamFooterContent || showUnauthorizedEditWarning;
 
+  const firstUncrossedLockpointZoneNumber = instance_question_rows
+    .filter((row) => row.start_new_zone && row.lockpoint && !row.lockpoint_crossed)
+    .map((row) => row.zone_number)
+    .sort((a, b) => a - b)[0];
+
+  // Check whether an unmet advanceScorePerc in a prior zone should block
+  // crossing this lockpoint. We check for blocked_sequence in prior zones,
+  // but also the first question of the lockpoint zone itself: when
+  // advanceScorePerc is on the last question of the preceding zone, the
+  // blocked_sequence state propagates into the lockpoint zone's first
+  // question via the question_order window function.
+  const hasUnmetAdvanceScorePercBeforeLockpoint = (zoneNumber: number) =>
+    instance_question_rows.some(
+      (row) =>
+        row.question_access_mode === 'blocked_sequence' &&
+        (row.zone_number < zoneNumber || (row.zone_number === zoneNumber && row.start_new_zone)),
+    );
+
+  function isLockpointCrossable(row: InstanceQuestionRow) {
+    return (
+      resLocals.assessment_instance.open &&
+      resLocals.authz_result.active &&
+      resLocals.authz_result.authorized_edit &&
+      row.lockpoint &&
+      !row.lockpoint_crossed &&
+      row.zone_number === firstUncrossedLockpointZoneNumber &&
+      !hasUnmetAdvanceScorePercBeforeLockpoint(row.zone_number)
+    );
+  }
+
+  const crossableLockpointRows = instance_question_rows.filter(
+    (row) =>
+      row.start_new_zone && row.lockpoint && !row.lockpoint_crossed && isLockpointCrossable(row),
+  );
+
   return PageLayout({
     resLocals,
     pageTitle: '', // Calculated automatically
@@ -194,6 +235,52 @@ export function StudentAssessmentInstance({
             csrfToken: resLocals.__csrf_token,
           })
         : ''}
+      ${crossableLockpointRows.map((row) =>
+        Modal({
+          id: `crossLockpointModal-${row.zone_id}`,
+          title: 'Proceed to next questions?',
+          body: html`
+            <p>
+              After proceeding, you will not be able to submit answers to previous questions. You
+              can still review your previous submissions.
+            </p>
+            ${groupConfig != null
+              ? html`
+                  <p class="fw-bold">
+                    This will affect all group members. No one in your group will be able to submit
+                    answers to previous questions.
+                  </p>
+                `
+              : ''}
+            <div class="form-check">
+              <input
+                class="form-check-input"
+                type="checkbox"
+                id="lockpoint-confirm-${row.zone_id}"
+                onchange="document.getElementById('lockpoint-submit-${row.zone_id}').disabled = !this.checked"
+              />
+              <label class="form-check-label" for="lockpoint-confirm-${row.zone_id}">
+                I understand that I will not be able to submit answers to previous questions
+              </label>
+            </div>
+          `,
+          footer: html`
+            <input type="hidden" name="__csrf_token" value="${resLocals.__csrf_token}" />
+            <input type="hidden" name="zone_id" value="${row.zone_id}" />
+            <button type="button" class="btn btn-secondary" data-bs-dismiss="modal">Cancel</button>
+            <button
+              id="lockpoint-submit-${row.zone_id}"
+              type="submit"
+              name="__action"
+              value="cross_lockpoint"
+              class="btn btn-warning"
+              disabled
+            >
+              Confirm
+            </button>
+          `,
+        }),
+      )}
       ${showTimeLimitExpiredModal ? TimeLimitExpiredModal({ showAutomatically: true }) : ''}
       ${userCanDeleteAssessmentInstance
         ? RegenerateInstanceModal({ csrfToken: resLocals.__csrf_token })
@@ -335,6 +422,18 @@ export function StudentAssessmentInstance({
                   }
 
                   return html`
+                    ${instance_question_row.start_new_zone && instance_question_row.lockpoint
+                      ? LockpointRow({
+                          row: instance_question_row,
+                          colspan: zoneTitleColspan,
+                          crossable: !!isLockpointCrossable(instance_question_row),
+                          blockedByAdvanceScorePerc: hasUnmetAdvanceScorePercBeforeLockpoint(
+                            instance_question_row.zone_number,
+                          ),
+                          isGroupAssessment: groupConfig != null,
+                          displayTimezone: resLocals.course_instance.display_timezone,
+                        })
+                      : ''}
                     ${showZoneInfo
                       ? html`
                           <tr>
@@ -371,31 +470,42 @@ export function StudentAssessmentInstance({
                         `
                       : ''}
                     <tr
-                      class="${instance_question_row.sequence_locked
+                      class="${instance_question_row.question_access_mode === 'blocked_sequence' ||
+                      instance_question_row.question_access_mode === 'blocked_lockpoint'
                         ? 'bg-light pl-sequence-locked'
                         : ''}"
                     >
                       <td>
-                        ${RowLabel({
-                          instance_question_row,
-                          userGroupRoles,
-                          urlPrefix: resLocals.urlPrefix,
-                          rowLabelText:
-                            resLocals.assessment.type === 'Exam'
-                              ? `Question ${instance_question_row.question_number}`
-                              : `${instance_question_row.question_number}. ${instance_question_row.question_title}`,
-                        })}
+                        <div class="d-flex align-items-center">
+                          ${RowLabel({
+                            instance_question_row,
+                            userGroupRoles,
+                            urlPrefix: resLocals.urlPrefix,
+                            hasStatusColumn: resLocals.assessment.type === 'Exam',
+                            rowLabelText:
+                              resLocals.assessment.type === 'Exam'
+                                ? `Question ${instance_question_row.question_number}`
+                                : `${instance_question_row.question_number}. ${instance_question_row.question_title}`,
+                          })}
+                        </div>
                       </td>
                       ${resLocals.assessment.type === 'Exam'
                         ? html`
-                            <td>
-                              ${ExamQuestionStatus({
-                                instance_question: instance_question_row,
-                                assessment_question: instance_question_row, // Required fields are in instance_question
-                                realTimeGradingPartiallyDisabled:
-                                  someQuestionsAllowRealTimeGrading &&
-                                  someQuestionsForbidRealTimeGrading,
-                              })}
+                            <td class="align-middle lh-1">
+                              ${
+                                // Override the status badge for questions blocked by a lockpoint:
+                                // show "Locked" instead of the misleading "unanswered".
+                                instance_question_row.question_access_mode === 'blocked_lockpoint'
+                                  ? html`<span class="badge text-bg-secondary">Locked</span>`
+                                  : ExamQuestionStatus({
+                                      instance_question: instance_question_row,
+                                      assessment_question: instance_question_row, // Required fields are in instance_question
+                                      realTimeGradingPartiallyDisabled:
+                                        someQuestionsAllowRealTimeGrading &&
+                                        someQuestionsForbidRealTimeGrading,
+                                      allowGradeLeftMs: instance_question_row.allowGradeLeftMs,
+                                    })
+                              }
                             </td>
                             ${resLocals.has_auto_grading_question &&
                             someQuestionsAllowRealTimeGrading
@@ -623,10 +733,9 @@ export function StudentAssessmentInstance({
                                   `
                                 : html`
                                     <li>
-                                      When you are done, please logout and close your browser; there
-                                      is no need to do anything else. If you have any saved answers
-                                      when you leave, they will be automatically graded before your
-                                      final score is computed.
+                                      When you are done, please logout and close your browser. If
+                                      you have any saved answers when you leave, they will be
+                                      automatically graded before your final score is computed.
                                     </li>
                                   `}
                             </ul>
@@ -845,46 +954,158 @@ function ZoneInfoPopover({ label, content }: { label: string; content: string })
   `;
 }
 
+function LockpointRow({
+  row,
+  colspan,
+  crossable,
+  blockedByAdvanceScorePerc,
+  isGroupAssessment,
+  displayTimezone,
+}: {
+  row: InstanceQuestionRow;
+  colspan: number;
+  crossable: boolean;
+  blockedByAdvanceScorePerc: boolean;
+  isGroupAssessment: boolean;
+  displayTimezone: string;
+}) {
+  if (row.lockpoint_crossed) {
+    return html`
+      <tr class="table-light">
+        <td colspan="${colspan}" class="py-2">
+          <div class="d-flex">
+            <i class="fas fa-check-circle text-success me-2 mt-1" aria-hidden="true"></i>
+            <div>
+              <span class="fw-bold">Lockpoint</span>
+              <small class="text-muted d-block">
+                Previous questions
+                locked${isGroupAssessment && row.lockpoint_crossed_authn_user_uid
+                  ? html` by ${row.lockpoint_crossed_authn_user_uid}`
+                  : ''}${row.lockpoint_crossed_at
+                  ? html` at ${formatDate(row.lockpoint_crossed_at, displayTimezone)}`
+                  : ''}
+              </small>
+            </div>
+          </div>
+        </td>
+      </tr>
+    `;
+  }
+
+  if (crossable) {
+    return html`
+      <tr class="table-warning">
+        <td colspan="${colspan}" class="py-2">
+          <div
+            class="d-flex flex-column flex-sm-row justify-content-between align-items-sm-center gap-2"
+          >
+            <div class="d-flex">
+              <i class="fas fa-lock text-warning me-2 mt-1" aria-hidden="true"></i>
+              <div>
+                <span class="fw-bold">Lockpoint</span>
+                <small class="text-muted d-block">
+                  After proceeding, you will not be able to submit answers to previous questions.
+                </small>
+              </div>
+            </div>
+            <button
+              type="button"
+              class="btn btn-warning btn-sm text-nowrap"
+              data-bs-toggle="modal"
+              data-bs-target="#crossLockpointModal-${row.zone_id}"
+            >
+              Proceed to next questions
+            </button>
+          </div>
+        </td>
+      </tr>
+    `;
+  }
+
+  return html`
+    <tr class="table-light">
+      <td colspan="${colspan}" class="py-2">
+        <div class="d-flex">
+          <i class="fas fa-lock text-secondary me-2 mt-1" aria-hidden="true"></i>
+          <div>
+            <span class="fw-bold text-muted">Lockpoint</span>
+            <small class="text-muted d-block">
+              ${blockedByAdvanceScorePerc
+                ? 'A previous question requires a higher score before you can proceed past this lockpoint.'
+                : 'Complete previous questions to unlock.'}
+            </small>
+          </div>
+        </div>
+      </td>
+    </tr>
+  `;
+}
+
 function RowLabel({
   instance_question_row,
   userGroupRoles,
   rowLabelText,
   urlPrefix,
+  hasStatusColumn,
 }: {
   instance_question_row: InstanceQuestionRow;
   userGroupRoles: string | null;
   rowLabelText: string;
   urlPrefix: string;
+  hasStatusColumn: boolean;
 }) {
-  let lockedPopoverText: string | null = null;
-  if (instance_question_row.sequence_locked) {
-    lockedPopoverText = instance_question_row.prev_sequence_locked
-      ? 'A previous question must be completed before you can access this one.'
-      : `You must score at least ${instance_question_row.prev_advance_score_perc}% on ${instance_question_row.prev_title} to unlock this question.`;
+  let lockMessage: string | null = null;
+  let showLink = true;
+
+  if (instance_question_row.question_access_mode === 'blocked_sequence') {
+    showLink = false;
+    lockMessage =
+      instance_question_row.prev_question_access_mode === 'blocked_sequence'
+        ? 'A previous question must be completed before you can access this one.'
+        : `You must score at least ${instance_question_row.prev_advance_score_perc}% on ${instance_question_row.prev_title} to unlock this question.`;
+  } else if (instance_question_row.question_access_mode === 'blocked_lockpoint') {
+    showLink = false;
   } else if (!(instance_question_row.group_role_permissions?.can_view ?? true)) {
-    lockedPopoverText = `Your current group role (${userGroupRoles}) restricts access to this question.`;
+    showLink = false;
+    lockMessage = `Your current group role (${userGroupRoles}) restricts access to this question.`;
+  } else if (instance_question_row.question_access_mode === 'read_only_lockpoint') {
+    lockMessage =
+      'You can no longer submit answers to this question because you have advanced past a lockpoint.';
   }
 
   return html`
-    ${lockedPopoverText != null
+    ${showLink
       ? html`
-          <span class="text-muted">${rowLabelText}</span>
-          <button
-            type="button"
-            class="btn btn-xs border text-secondary ms-1"
-            data-bs-toggle="popover"
-            data-bs-container="body"
-            data-bs-html="true"
-            data-bs-content="${lockedPopoverText}"
-            data-test-id="locked-instance-question-row"
-            aria-label="Locked"
-          >
-            <i class="fas fa-lock" aria-hidden="true"></i>
-          </button>
-        `
-      : html`
           <a href="${urlPrefix}/instance_question/${instance_question_row.id}/">${rowLabelText}</a>
-        `}
+        `
+      : html`<span class="text-muted">${rowLabelText}</span>`}
+    ${
+      // On exams, blocked_lockpoint questions show "Locked" in the Status column,
+      // so we skip the inline badge to avoid duplication. On homeworks (no Status
+      // column), we render the badge here instead.
+      instance_question_row.question_access_mode === 'blocked_lockpoint' && !hasStatusColumn
+        ? html`
+            <span class="badge bg-secondary ms-1" data-test-id="locked-instance-question-row">
+              Locked
+            </span>
+          `
+        : lockMessage != null
+          ? html`
+              <button
+                type="button"
+                class="btn btn-xs border text-secondary ms-1"
+                data-bs-toggle="popover"
+                data-bs-container="body"
+                data-bs-html="true"
+                data-bs-content="${lockMessage}"
+                data-test-id="locked-instance-question-row"
+                aria-label="Locked"
+              >
+                <i class="fas fa-lock" aria-hidden="true"></i>
+              </button>
+            `
+          : ''
+    }
     ${instance_question_row.file_count > 0
       ? html`
           <button

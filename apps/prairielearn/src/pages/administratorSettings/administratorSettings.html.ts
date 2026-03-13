@@ -251,38 +251,104 @@ export function AdministratorSettings({
           <div class="mb-4 p-4 bg-dark">
             <button type="button" class="btn btn-outline-light">Light</button>
           </div>
-          <h3>Custom colors</h3>
-          <div class="mb-4" style="display: grid; grid-template-columns: 1fr 1fr 1fr; gap: 1rem;">
-            <button type="button" class="btn color-red1">Red 1</button>
-            <button type="button" class="btn color-red2">Red 2</button>
-            <button type="button" class="btn color-red3">Red 3</button>
-            <button type="button" class="btn color-pink1">Pink 1</button>
-            <button type="button" class="btn color-pink2">Pink 2</button>
-            <button type="button" class="btn color-pink3">Pink 3</button>
-            <button type="button" class="btn color-purple1">Purple 1</button>
-            <button type="button" class="btn color-purple2">Purple 2</button>
-            <button type="button" class="btn color-purple3">Purple 3</button>
-            <button type="button" class="btn color-blue1">Blue 1</button>
-            <button type="button" class="btn color-blue2">Blue 2</button>
-            <button type="button" class="btn color-blue3">Blue 3</button>
-            <button type="button" class="btn color-turquoise1">Turquoise 1</button>
-            <button type="button" class="btn color-turquoise2">Turquoise 2</button>
-            <button type="button" class="btn color-turquoise3">Turquoise 3</button>
-            <button type="button" class="btn color-green1">Green 1</button>
-            <button type="button" class="btn color-green2">Green 2</button>
-            <button type="button" class="btn color-green3">Green 3</button>
-            <button type="button" class="btn color-yellow1">Yellow 1</button>
-            <button type="button" class="btn color-yellow2">Yellow 2</button>
-            <button type="button" class="btn color-yellow3">Yellow 3</button>
-            <button type="button" class="btn color-orange1">Orange 1</button>
-            <button type="button" class="btn color-orange2">Orange 2</button>
-            <button type="button" class="btn color-orange3">Orange 3</button>
-            <button type="button" class="btn color-brown1">Brown 1</button>
-            <button type="button" class="btn color-brown2">Brown 2</button>
-            <button type="button" class="btn color-brown3">Brown 3</button>
-            <button type="button" class="btn color-gray1">Gray 1</button>
-            <button type="button" class="btn color-gray2">Gray 2</button>
-            <button type="button" class="btn color-gray3">Gray 3</button>
+          <h3>Custom color badges</h3>
+          <div class="mb-4 d-flex flex-wrap gap-2">
+            <span class="badge color-red1">Red 1</span>
+            <span class="badge color-red2">Red 2</span>
+            <span class="badge color-red3">Red 3</span>
+            <span class="badge color-pink1">Pink 1</span>
+            <span class="badge color-pink2">Pink 2</span>
+            <span class="badge color-pink3">Pink 3</span>
+            <span class="badge color-purple1">Purple 1</span>
+            <span class="badge color-purple2">Purple 2</span>
+            <span class="badge color-purple3">Purple 3</span>
+            <span class="badge color-blue1">Blue 1</span>
+            <span class="badge color-blue2">Blue 2</span>
+            <span class="badge color-blue3">Blue 3</span>
+            <span class="badge color-turquoise1">Turquoise 1</span>
+            <span class="badge color-turquoise2">Turquoise 2</span>
+            <span class="badge color-turquoise3">Turquoise 3</span>
+            <span class="badge color-green1">Green 1</span>
+            <span class="badge color-green2">Green 2</span>
+            <span class="badge color-green3">Green 3</span>
+            <span class="badge color-yellow1">Yellow 1</span>
+            <span class="badge color-yellow2">Yellow 2</span>
+            <span class="badge color-yellow3">Yellow 3</span>
+            <span class="badge color-orange1">Orange 1</span>
+            <span class="badge color-orange2">Orange 2</span>
+            <span class="badge color-orange3">Orange 3</span>
+            <span class="badge color-brown1">Brown 1</span>
+            <span class="badge color-brown2">Brown 2</span>
+            <span class="badge color-brown3">Brown 3</span>
+            <span class="badge color-gray1">Gray 1</span>
+            <span class="badge color-gray2">Gray 2</span>
+            <span class="badge color-gray3">Gray 3</span>
+          </div>
+          <h3>Custom color badge pills</h3>
+          <div class="mb-4 d-flex flex-wrap gap-2">
+            <span class="badge rounded-pill color-red1">Red 1</span>
+            <span class="badge rounded-pill color-red2">Red 2</span>
+            <span class="badge rounded-pill color-red3">Red 3</span>
+            <span class="badge rounded-pill color-pink1">Pink 1</span>
+            <span class="badge rounded-pill color-pink2">Pink 2</span>
+            <span class="badge rounded-pill color-pink3">Pink 3</span>
+            <span class="badge rounded-pill color-purple1">Purple 1</span>
+            <span class="badge rounded-pill color-purple2">Purple 2</span>
+            <span class="badge rounded-pill color-purple3">Purple 3</span>
+            <span class="badge rounded-pill color-blue1">Blue 1</span>
+            <span class="badge rounded-pill color-blue2">Blue 2</span>
+            <span class="badge rounded-pill color-blue3">Blue 3</span>
+            <span class="badge rounded-pill color-turquoise1">Turquoise 1</span>
+            <span class="badge rounded-pill color-turquoise2">Turquoise 2</span>
+            <span class="badge rounded-pill color-turquoise3">Turquoise 3</span>
+            <span class="badge rounded-pill color-green1">Green 1</span>
+            <span class="badge rounded-pill color-green2">Green 2</span>
+            <span class="badge rounded-pill color-green3">Green 3</span>
+            <span class="badge rounded-pill color-yellow1">Yellow 1</span>
+            <span class="badge rounded-pill color-yellow2">Yellow 2</span>
+            <span class="badge rounded-pill color-yellow3">Yellow 3</span>
+            <span class="badge rounded-pill color-orange1">Orange 1</span>
+            <span class="badge rounded-pill color-orange2">Orange 2</span>
+            <span class="badge rounded-pill color-orange3">Orange 3</span>
+            <span class="badge rounded-pill color-brown1">Brown 1</span>
+            <span class="badge rounded-pill color-brown2">Brown 2</span>
+            <span class="badge rounded-pill color-brown3">Brown 3</span>
+            <span class="badge rounded-pill color-gray1">Gray 1</span>
+            <span class="badge rounded-pill color-gray2">Gray 2</span>
+            <span class="badge rounded-pill color-gray3">Gray 3</span>
+          </div>
+          <h3>Clickable color badges</h3>
+          <div class="mb-4 d-flex flex-wrap gap-2">
+            <button type="button" class="btn btn-badge color-red1">Red 1</button>
+            <button type="button" class="btn btn-badge color-red2">Red 2</button>
+            <button type="button" class="btn btn-badge color-red3">Red 3</button>
+            <button type="button" class="btn btn-badge color-pink1">Pink 1</button>
+            <button type="button" class="btn btn-badge color-pink2">Pink 2</button>
+            <button type="button" class="btn btn-badge color-pink3">Pink 3</button>
+            <button type="button" class="btn btn-badge color-purple1">Purple 1</button>
+            <button type="button" class="btn btn-badge color-purple2">Purple 2</button>
+            <button type="button" class="btn btn-badge color-purple3">Purple 3</button>
+            <button type="button" class="btn btn-badge color-blue1">Blue 1</button>
+            <button type="button" class="btn btn-badge color-blue2">Blue 2</button>
+            <button type="button" class="btn btn-badge color-blue3">Blue 3</button>
+            <button type="button" class="btn btn-badge color-turquoise1">Turquoise 1</button>
+            <button type="button" class="btn btn-badge color-turquoise2">Turquoise 2</button>
+            <button type="button" class="btn btn-badge color-turquoise3">Turquoise 3</button>
+            <button type="button" class="btn btn-badge color-green1">Green 1</button>
+            <button type="button" class="btn btn-badge color-green2">Green 2</button>
+            <button type="button" class="btn btn-badge color-green3">Green 3</button>
+            <button type="button" class="btn btn-badge color-yellow1">Yellow 1</button>
+            <button type="button" class="btn btn-badge color-yellow2">Yellow 2</button>
+            <button type="button" class="btn btn-badge color-yellow3">Yellow 3</button>
+            <button type="button" class="btn btn-badge color-orange1">Orange 1</button>
+            <button type="button" class="btn btn-badge color-orange2">Orange 2</button>
+            <button type="button" class="btn btn-badge color-orange3">Orange 3</button>
+            <button type="button" class="btn btn-badge color-brown1">Brown 1</button>
+            <button type="button" class="btn btn-badge color-brown2">Brown 2</button>
+            <button type="button" class="btn btn-badge color-brown3">Brown 3</button>
+            <button type="button" class="btn btn-badge color-gray1">Gray 1</button>
+            <button type="button" class="btn btn-badge color-gray2">Gray 2</button>
+            <button type="button" class="btn btn-badge color-gray3">Gray 3</button>
           </div>
           <h3>Ghost button</h3>
           <p>

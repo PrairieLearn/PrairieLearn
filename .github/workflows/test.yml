@@ -67,6 +67,18 @@ jobs:
       # We run the following steps in this job instead of separately to avoid the
       # overhead of pulling the image another time.
 
+      - name: Tag prairielearn image as latest for executor build
+        run: docker tag prairielearn/prairielearn:${{ env.COMMIT_SHA }} prairielearn/prairielearn:latest
+
+      - name: Build the executor docker image
+        run: docker build -t prairielearn/executor:latest ./images/executor
+
+      - name: Run executor smoke test
+        run: |
+          docker run --rm prairielearn/executor:latest \
+            yarn workspace @prairielearn/prairielearn run test:executor-smoke-test
+        timeout-minutes: 5
+
       - name: Create a temporary directory for host files
         run: mkdir -p /tmp/prairielearn
       - name: Start the container
@@ -117,6 +129,11 @@ jobs:
         with:
           username: ${{ secrets.DOCKERHUB_USERNAME }}
           password: ${{ secrets.DOCKERHUB_TOKEN }}
+
+      # The default Azure apt mirror on GitHub Actions runners is frequently
+      # slow or throttled, causing apt-get operations to take minutes instead
+      # of seconds. This action finds and configures a faster mirror.
+      - uses: vegardit/fast-apt-mirror.sh@v1
 
       # We uninstall `man-db` to speed up the installation of other packages
       # by avoiding building man pages for them. As this is a non-interactive
@@ -217,7 +234,7 @@ jobs:
 
       - name: Upload Vitest blob report to GitHub Actions Artifacts
         if: ${{ !cancelled() }}
-        uses: actions/upload-artifact@v6
+        uses: actions/upload-artifact@v7
         with:
           name: blob-report-${{ matrix.shardIndex }}
           path: .vitest-reports/*
@@ -225,7 +242,7 @@ jobs:
           retention-days: 1
       - name: Upload Playwright blob report to GitHub Actions Artifacts
         if: ${{ !cancelled() }}
-        uses: actions/upload-artifact@v6
+        uses: actions/upload-artifact@v7
         with:
           name: playwright-blob-report-${{ matrix.shardIndex }}
           path: apps/prairielearn/test-results/blob-report/*
@@ -252,7 +269,7 @@ jobs:
         # Note that this means playwright is installed in the root workspace, not the prairielearn workspace.
         run: yarn workspaces focus prairielearn
       - name: Download Vitest blob reports from GitHub Actions Artifacts
-        uses: actions/download-artifact@v7
+        uses: actions/download-artifact@v8
         with:
           path: .vitest-reports
           pattern: blob-report-*
@@ -261,7 +278,7 @@ jobs:
       - name: Merge Vitest reports
         run: yarn vitest --watch=false --merge-reports --coverage
       - name: Download Playwright blob reports from GitHub Actions Artifacts
-        uses: actions/download-artifact@v7
+        uses: actions/download-artifact@v8
         with:
           path: apps/prairielearn/test-results/blob-report
           pattern: playwright-blob-report-*
@@ -274,7 +291,7 @@ jobs:
           token: ${{ secrets.CODECOV_TOKEN }}
           flags: javascript
       - name: Upload HTML report
-        uses: actions/upload-artifact@v6
+        uses: actions/upload-artifact@v7
         with:
           name: html-report--attempt-${{ github.run_attempt }}
           path: playwright-report

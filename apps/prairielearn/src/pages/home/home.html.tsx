@@ -31,6 +31,7 @@ export const InstructorHomePageCourseSchema = z.object({
 type InstructorHomePageCourse = z.infer<typeof InstructorHomePageCourseSchema>;
 
 export const StudentHomePageCourseSchema = z.object({
+  course_id: RawStudentCourseSchema.shape.id,
   course_instance: RawStudentCourseInstanceSchema,
   course_short_name: RawStudentCourseSchema.shape.short_name,
   course_title: RawStudentCourseSchema.shape.title,
@@ -122,8 +123,11 @@ function DevModeCard({ isDevMode }: { isDevMode: boolean }) {
           different page or if you reload the current page in your web browser.
         </p>
         <p className="mb-0">
-          See the <a href="https://docs.prairielearn.com">PrairieLearn documentation</a> for
-          information on creating questions and assessments.
+          See the{' '}
+          <a href="https://docs.prairielearn.com" target="_blank" rel="noreferrer">
+            PrairieLearn documentation
+          </a>{' '}
+          for information on creating questions and assessments.
         </p>
       </div>
     </div>

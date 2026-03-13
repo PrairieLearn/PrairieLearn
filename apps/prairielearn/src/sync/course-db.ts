@@ -1045,6 +1045,10 @@ function validateQuestion({
     }
   }
 
+  if (question.gradingMethod === 'External' && !question.externalGradingOptions) {
+    errors.push('"externalGradingOptions" is required when "gradingMethod" is "External"');
+  }
+
   if (question.externalGradingOptions?.timeout) {
     if (question.externalGradingOptions.timeout > config.externalGradingMaximumTimeout) {
       warnings.push(
@@ -1235,6 +1239,9 @@ function validateAssessment({
 
       if (rule.examUuid && rule.mode === 'Public') {
         warnings.push('Invalid allowAccess rule: examUuid cannot be used with "mode": "Public"');
+      }
+      if (!rule.examUuid && rule.mode === 'Exam') {
+        warnings.push('Invalid allowAccess rule: examUuid is required with "mode": "Exam"');
       }
     });
   }
@@ -1506,6 +1513,19 @@ function validateAssessment({
       });
     });
   }
+
+  if (assessment.zones[0]?.lockpoint) {
+    errors.push('The first zone cannot have lockpoint: true');
+  }
+
+  assessment.zones.forEach((zone) => {
+    // A lockpoint zone with no questions would create a pointless barrier -
+    // the student would have to cross a lockpoint with nothing to work on
+    // in the zone, which is almost certainly a configuration mistake.
+    if (zone.lockpoint && zone.numberChoose === 0) {
+      errors.push('A lockpoint zone must include at least one selectable question');
+    }
+  });
 
   return { warnings, errors };
 }

@@ -39,8 +39,6 @@ updates:
       # We're putting off this upgrade for now:
       # https://github.com/PrairieLearn/PrairieLearn/pull/6835
       - dependency-name: 'fabric'
-      # Recent versions of `threejs` don't include the pre-bundled file we rely on.
-      - dependency-name: 'three'
       # novnc 1.5.0+ no longer publishes ESM files:
       # https://github.com/novnc/noVNC/issues/1792
       - dependency-name: '@novnc/novnc'
@@ -52,6 +50,18 @@ updates:
       # ready to upgrade to it.
       - dependency-name: 'express'
         versions: ['>=5']
+      # body-parser 2.x and cookie 1.x are intended for Express 5, which
+      # we are not yet ready to upgrade to.
+      - dependency-name: 'body-parser'
+        versions: ['>=2']
+      - dependency-name: '@types/body-parser'
+        versions: ['>=2']
+      - dependency-name: 'cookie'
+        versions: ['>=1']
+      - dependency-name: '@types/cookie'
+        versions: ['>=1']
+      - dependency-name: 'express-static-gzip'
+        versions: ['>=3']
       # JQuery 4 made significant breaking changes. We are migrating code to
       # vanilla JS where possible and only keeping it for backwards
       # compatibility, so we don't want to upgrade.
@@ -91,6 +101,15 @@ updates:
         update-types:
           - 'patch'
           - 'minor'
+    ignore:
+      # clang needs to match the version of clang installed on the graders, so we want to avoid automatic updates here.
+      - dependency-name: 'clang'
+        versions: ['>=19']
+      # We are not yet ready to upgrade to pandas 3.0, which has some breaking changes.
+      - dependency-name: 'pandas'
+        versions: ['>=3.0']
+      - dependency-name: 'pandas-stubs'
+        versions: ['>=3.0']
 
   - package-ecosystem: uv
     multi-ecosystem-group: python
@@ -98,3 +117,8 @@ updates:
     # Currently we only have a `uv.lock` in the root directory.
     directories:
       - '/'
+    ignore:
+      - dependency-name: 'pandas'
+        versions: ['>=3.0']
+      - dependency-name: 'pandas-stubs'
+        versions: ['>=3.0']

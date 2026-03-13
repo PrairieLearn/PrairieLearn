@@ -3,11 +3,12 @@ import fs from 'node:fs';
 import * as core from '@actions/core';
 import * as github from '@actions/github';
 
-const CI_REPORT_MARKER = '<!-- ci-report -->';
 const SECTION_START = '<!-- bundle-sizes -->';
 const SECTION_END = '<!-- /bundle-sizes -->';
 const BASELINE_BRANCH = 'size-report';
 const BASELINE_PATH = 'bundle-sizes.json';
+const UPSTREAM_OWNER = 'PrairieLearn';
+const UPSTREAM_REPO = 'PrairieLearn';
 
 interface AssetSizes {
   raw: number;
@@ -105,7 +106,17 @@ function buildCommentSection(oldSizes: SizesJson | null, newSizes: SizesJson): s
   } else if (!biggestEntry || biggestEntry.absDiff < THRESHOLD_BYTES) {
     summaryLine = 'No significant size changes';
   } else {
-    summaryLine = `Largest change: ${formatBytes(biggestEntry.absDiff)} (\`${biggestEntry.name}\`)`;
+    const netDiff = newTotal - oldTotal;
+    const netSign = netDiff > 0 ? '+' : '';
+    const largestSign =
+      biggestEntry.kind === 'removed'
+        ? '-'
+        : biggestEntry.kind === 'new'
+          ? '+'
+          : biggestEntry.newGzip! >= biggestEntry.oldGzip!
+            ? '+'
+            : '-';
+    summaryLine = `Net: ${netSign}${formatBytes(netDiff)} (largest: ${largestSign}${formatBytes(biggestEntry.absDiff)})`;
   }
 
   const lines: string[] = [
@@ -149,32 +160,13 @@ function buildCommentSection(oldSizes: SizesJson | null, newSizes: SizesJson): s
   return lines.join('\n');
 }
 
-function upsertSection(existingBody: string | null, newSection: string): string {
-  if (!existingBody) {
-    return `${CI_REPORT_MARKER}\n${newSection}`;
-  }
-
-  const startIdx = existingBody.indexOf(SECTION_START);
-  const endIdx = existingBody.indexOf(SECTION_END);
-
-  if (startIdx !== -1 && endIdx !== -1) {
-    // Replace existing section.
-    return (
-      existingBody.slice(0, startIdx) + newSection + existingBody.slice(endIdx + SECTION_END.length)
-    );
-  }
-
-  // Append section.
-  return existingBody + '\n' + newSection;
-}
-
 async function fetchBaseline(
   octokit: ReturnType<typeof github.getOctokit>,
 ): Promise<SizesJson | null> {
   try {
     const response = await octokit.rest.repos.getContent({
-      owner: github.context.repo.owner,
-      repo: github.context.repo.repo,
+      owner: UPSTREAM_OWNER,
+      repo: UPSTREAM_REPO,
       path: BASELINE_PATH,
       ref: BASELINE_BRANCH,
     });
@@ -198,8 +190,8 @@ async function isLatestMasterCommit(
   octokit: ReturnType<typeof github.getOctokit>,
 ): Promise<boolean> {
   const { data: branch } = await octokit.rest.repos.getBranch({
-    owner: github.context.repo.owner,
-    repo: github.context.repo.repo,
+    owner: UPSTREAM_OWNER,
+    repo: UPSTREAM_REPO,
     branch: 'master',
   });
   return branch.commit.sha === github.context.sha;
@@ -209,6 +201,14 @@ async function pushBaseline(
   octokit: ReturnType<typeof github.getOctokit>,
   sizes: SizesJson,
 ): Promise<void> {
+  // Only the upstream repo should update the baseline. Forks don't have the
+  // size-report branch and their GITHUB_TOKEN can't write to the upstream.
+  const { owner, repo } = github.context.repo;
+  if (owner !== UPSTREAM_OWNER || repo !== UPSTREAM_REPO) {
+    core.info('Skipping baseline update on fork');
+    return;
+  }
+
   // Skip if a newer commit has already landed on master, since that build
   // will (or already did) write a more up-to-date baseline.
   if (!(await isLatestMasterCommit(octokit))) {
@@ -222,8 +222,8 @@ async function pushBaseline(
   let existingSha: string | undefined;
   try {
     const response = await octokit.rest.repos.getContent({
-      owner: github.context.repo.owner,
-      repo: github.context.repo.repo,
+      owner: UPSTREAM_OWNER,
+      repo: UPSTREAM_REPO,
       path: BASELINE_PATH,
       ref: BASELINE_BRANCH,
     });
@@ -241,8 +241,8 @@ async function pushBaseline(
 
   try {
     await octokit.rest.repos.createOrUpdateFileContents({
-      owner: github.context.repo.owner,
-      repo: github.context.repo.repo,
+      owner: UPSTREAM_OWNER,
+      repo: UPSTREAM_REPO,
       path: BASELINE_PATH,
       message: 'Update bundle size baseline',
       content,
@@ -262,53 +262,6 @@ async function pushBaseline(
   }
 
   core.info('Pushed bundle size baseline to size-report branch');
-}
-
-async function commentOnPr(
-  octokit: ReturnType<typeof github.getOctokit>,
-  prNumber: number,
-  section: string,
-): Promise<void> {
-  try {
-    const comments = await octokit.paginate(
-      'GET /repos/{owner}/{repo}/issues/{issue_number}/comments',
-      {
-        owner: github.context.repo.owner,
-        repo: github.context.repo.repo,
-        issue_number: prNumber,
-      },
-    );
-
-    const existingComment = comments.find(
-      (comment) =>
-        comment.user?.login === 'github-actions[bot]' && comment.body?.includes(CI_REPORT_MARKER),
-    );
-
-    const body = upsertSection(existingComment?.body ?? null, section);
-
-    if (existingComment) {
-      await octokit.rest.issues.updateComment({
-        owner: github.context.repo.owner,
-        repo: github.context.repo.repo,
-        comment_id: existingComment.id,
-        body,
-      });
-    } else {
-      await octokit.rest.issues.createComment({
-        owner: github.context.repo.owner,
-        repo: github.context.repo.repo,
-        issue_number: prNumber,
-        body,
-      });
-    }
-  } catch (err: unknown) {
-    if (typeof err === 'object' && err !== null && 'status' in err && err.status === 403) {
-      core.warning('Could not comment on PR (token lacks write permissions). Bundle size summary:');
-      core.info(section);
-      return;
-    }
-    throw err;
-  }
 }
 
 async function main() {
@@ -342,10 +295,13 @@ async function main() {
     // Fetch baseline from size-report branch.
     const oldSizes = await fetchBaseline(octokit);
 
-    // Build the comment section and post it.
     const section = buildCommentSection(oldSizes, newSizes);
-    await commentOnPr(octokit, prNumber, section);
-    core.info('Posted bundle size comment on PR');
+    const reportPath = core.getInput('report-path');
+    if (reportPath) {
+      fs.writeFileSync(reportPath, section);
+      core.info(`Wrote report section to ${reportPath}`);
+    }
+    core.info(section);
   } else {
     core.info(`No action needed for event: ${eventName}`);
   }

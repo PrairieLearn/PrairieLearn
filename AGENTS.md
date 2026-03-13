@@ -19,7 +19,7 @@ Backend: TypeScript / Express / Python / PostgreSQL
 
 ## Packages
 
-Libraries live in `packages/`. If you update a package, you MUST add a changeset. Create a markdown file in `.changeset/` with a name like `fix-my-bug.md` containing:
+Libraries live in `packages/`. If you update a public package (one without `"private": true` in its `package.json`), you MUST add a changeset. Create a markdown file in `.changeset/` with a name like `fix-my-bug.md` containing:
 
 ```markdown
 ---
@@ -108,6 +108,7 @@ When working with assessment "groups" / "teams", see the [`groups-and-teams` ski
 ### SQL query conventions
 
 - Use `to_jsonb(table.*)` if you need to select all columns from a table as JSON. This is preferred over explicit `jsonb_build_object` calls because it automatically includes all columns and stays in sync with schema changes.
+- When writing SQL, get table and column names from `database/tables/` (the source of truth) or from nearby existing queries in the same feature area. Do NOT rely on names found in old migrations, as tables and columns may have been renamed since those migrations were written.
 
 ## TypeScript guidance
 
@@ -126,7 +127,8 @@ When working with assessment "groups" / "teams", see the [`groups-and-teams` ski
 - Don't add extra comments that a human wouldn't add or that are inconsistent with the rest of the file.
 - Always check for existing model functions in `apps/prairielearn/src/models/` or lib functions before writing one-off database queries.
 - Express request handlers must always either send a response (either by calling `res.send`/etc. or throwing an error) or explicitly pass control by calling `next(...)`.
-- Don't re-export functions or types from other modules just for convenience or backward compatibility (e.g. `export { bar } from 'foo'`).
+- DO NOT re-export functions or types from other modules for convenience or backward compatibility within applications (e.g. `export { bar } from 'foo'` in `apps/*`). When moving a function to a new module, update all callers to import from the new location directly. Package-level barrel exports in `packages/*/src/index.ts` are expected and should be used to provide a clean public API.
+- When importing library code, prefer top-level imports instead of using dynamic `import()` statements inside functions. Notable exceptions are our `ee` code, and module registration patterns.
 
 ### User interface conventions
 
@@ -149,12 +151,14 @@ Avoid running the entire test suite unless necessary, as it can be time-consumin
 
 Tests expect Postgres, Redis, and an S3-compatible store to be running, and usually they already are. If you suspect that they're not, run `make start-support` from the root directory.
 
-To test UI code looks correct, you should try to connect to the development server at `http://localhost:3000` and screenshot the page with `playwright`. A development server can be started with `make dev`, but the developer has typically already started one up.
+To test UI code looks correct, you should try to connect to the development server and screenshot the page with `playwright`. The dev server runs on the port specified by the `CONDUCTOR_PORT` environment variable (if set) or `3000`. If you can't determine the port, ask the user.
 
 When writing tests:
 
 - Don't add assertion messages unless they provide information that isn't obvious from reading the assertion itself (e.g., `assert.isNull(linkRecord)` is clear without a message).
 - Don't use defensive checks in tests -- tests should fail fast if unexpected data exists.
+- In e2e tests, don't use CSS class selectors (e.g. `page.locator('.my-class')`). Prefer Playwright's recommended locators: `getByRole`, `getByText`, `getByTestId`, `getByLabel`. Add `data-testid` attributes or `aria-label` to page components when needed.
+- Don't add comments that narrate what the code already says (e.g., `// Click the button` before a `.click()` call). Only add comments when the intent isn't obvious from reading the code.
 - Prefer using the existing test course and its course instances for testing. Don't create new courses or course instances just to get a clean slate; instead, use transaction rollbacks or wipe the state between tests.
 - Avoid duplicating test setup code. Extract repeated blocks into shared helpers.
 
@@ -187,3 +191,13 @@ When changing element properties or options, you MUST update the corresponding d
 
 - For Python tests, use `uv run pytest path/to/testfile.py` from the root directory.
 - To run all Python tests, use `make test-python` from the root directory.
+
+## Meta-management
+
+When you get corrected or discover a codebase convention through trial and error, consider whether adding a rule to this file would prevent the same mistake in future sessions. Only propose an addition if:
+
+- The mistake stems from something non-obvious about this codebase (not general best practices).
+- It's likely to recur — another agent reading the current instructions would plausibly make the same error.
+- It can be stated as a direct rule ("Use X", "Don't do Y"), not a narrative about what happened.
+
+When proposing, suggest the specific text and which section it belongs in. Don't add it without user approval.

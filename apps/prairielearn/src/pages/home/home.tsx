@@ -13,6 +13,7 @@ import { constructCourseOrInstanceContext } from '../../lib/authz-data.js';
 import { extractPageContext } from '../../lib/client/page-context.js';
 import { StaffInstitutionSchema } from '../../lib/client/safe-db-types.js';
 import { config } from '../../lib/config.js';
+import { idsEqual } from '../../lib/id.js';
 import { isEnterprise } from '../../lib/license.js';
 import { computeStatus } from '../../lib/publishing.js';
 import { typedAsyncHandler } from '../../lib/res-locals.js';
@@ -75,6 +76,9 @@ router.get(
     );
 
     const studentCourses = allStudentCourses.filter((entry) => {
+      // Filter out courses where user also has instructor access.
+      if (instructorCourses.some((course) => idsEqual(course.id, entry.course_id))) return false;
+
       // Legacy courses are already filtered by check_course_instance_access in SQL
       if (!entry.course_instance.modern_publishing) return true;
 

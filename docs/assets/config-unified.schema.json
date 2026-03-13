@@ -443,15 +443,15 @@
     },
     "sslCertificateFile": {
       "type": "string",
-      "default": "/etc/ssl/certs/localhost.crt"
+      "default": "/etc/pki/tls/certs/localhost.crt"
     },
     "sslKeyFile": {
       "type": "string",
-      "default": "/etc/ssl/private/localhost.key"
+      "default": "/etc/pki/tls/private/localhost.key"
     },
     "sslCAFile": {
       "type": "string",
-      "default": "/etc/ssl/certs/server-chain.crt"
+      "default": "/etc/pki/tls/certs/server-chain.crt"
     },
     "fileUploadMaxBytes": {
       "type": "number",
@@ -581,6 +581,11 @@
     "secretKey": {
       "type": "string",
       "default": "THIS_IS_THE_SECRET_KEY"
+    },
+    "databaseEncryptionKey": {
+      "type": "string",
+      "pattern": "^[0-9a-f]{64}$",
+      "default": "0000000000000000000000000000000000000000000000000000000000000000"
     },
     "secretSlackOpsBotEndpoint": {
       "type": ["string", "null"],
@@ -1351,7 +1356,7 @@
         "gpt-5.2-2025-12-11",
         "gemini-2.5-flash",
         "gemini-3-flash-preview",
-        "gemini-3-pro-preview",
+        "gemini-3.1-pro-preview",
         "claude-opus-4-5",
         "claude-haiku-4-5",
         "claude-sonnet-4-5"
@@ -1398,7 +1403,7 @@
         "gemini-3-flash-preview": {
           "$ref": "#/properties/costPerMillionTokens/properties/gpt-4o-2024-11-20"
         },
-        "gemini-3-pro-preview": {
+        "gemini-3.1-pro-preview": {
           "$ref": "#/properties/costPerMillionTokens/properties/gpt-4o-2024-11-20"
         },
         "claude-opus-4-5": {
@@ -1454,7 +1459,7 @@
           "cacheWrite": 0,
           "output": 3
         },
-        "gemini-3-pro-preview": {
+        "gemini-3.1-pro-preview": {
           "input": 2,
           "cachedInput": 0.2,
           "cacheWrite": 0,

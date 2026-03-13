@@ -284,14 +284,14 @@ async function updateInstanceQuestionFromCsvRow(
       partial_scores: getPartialScoresOrNull(record),
     };
     if (Object.values(new_score).some((value) => value != null)) {
-      await manualGrading.updateInstanceQuestionScore(
+      await manualGrading.updateInstanceQuestionScore({
         assessment,
-        submission_data.instance_question_id,
-        submission_data.submission_id,
-        null, // check_modified_at
-        new_score,
+        instance_question_id: submission_data.instance_question_id,
+        submission_id: submission_data.submission_id,
+        check_modified_at: null,
+        score: new_score,
         authn_user_id,
-      );
+      });
       return true;
     } else {
       return false;
@@ -303,7 +303,7 @@ async function getAssessmentInstanceId(record: Record<string, any>, assessment_i
   if (record.uid != null) {
     return {
       id: record.uid,
-      assessment_instance_id: await sqldb.queryOptionalRow(
+      assessment_instance_id: await sqldb.queryOptionalScalar(
         sql.select_assessment_instance_uid,
         {
           assessment_id,
@@ -316,7 +316,7 @@ async function getAssessmentInstanceId(record: Record<string, any>, assessment_i
   } else if (record.group_name != null) {
     return {
       id: record.group_name,
-      assessment_instance_id: await sqldb.queryOptionalRow(
+      assessment_instance_id: await sqldb.queryOptionalScalar(
         sql.select_assessment_instance_group,
         {
           assessment_id,

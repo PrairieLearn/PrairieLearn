@@ -669,7 +669,7 @@ describe('Assessment syncing', () => {
     const assessment = makeAssessment(courseData);
     assessment.allowAccess?.push(
       {
-        mode: 'Exam',
+        examUuid: 'f593a8c9-ccd4-449c-936c-c26c96ea089b',
       },
       {
         mode: 'Public',
@@ -722,7 +722,6 @@ describe('Assessment syncing', () => {
     // an empty points array, so we can't test that here as it's impossible
     // for it to ever be written to the database.
     assessment.allowAccess?.push({
-      mode: 'Exam',
       uids: [],
     });
     courseData.courseInstances[util.COURSE_INSTANCE_ID].assessments['newexam'] = assessment;
@@ -1721,6 +1720,23 @@ describe('Assessment syncing', () => {
     assert.match(
       syncedAssessment.sync_warnings,
       /Invalid allowAccess rule: examUuid cannot be used with "mode": "Public"/,
+    );
+  });
+
+  it('records an error if an access rule mode=Exam without an examUuid', async () => {
+    const courseData = util.getCourseData();
+    const assessment = makeAssessment(courseData);
+    assessment.allowAccess?.push({
+      mode: 'Exam',
+      credit: 100,
+    });
+    courseData.courseInstances[util.COURSE_INSTANCE_ID].assessments['fail'] = assessment;
+    await util.writeAndSyncCourseData(courseData);
+    const syncedAssessment = await findSyncedAssessment('fail');
+    assert.isNotNull(syncedAssessment.sync_warnings);
+    assert.match(
+      syncedAssessment.sync_warnings,
+      /Invalid allowAccess rule: examUuid is required with "mode": "Exam"/,
     );
   });
 
@@ -3183,6 +3199,70 @@ describe('Assessment syncing', () => {
     );
     assert.isDefined(matchingAlternativeGroup);
     assert.isNull(matchingAlternativeGroup.number_choose);
+  });
+
+  it('syncs zone lockpoints', async () => {
+    const courseData = util.getCourseData();
+    const assessment = makeAssessment(courseData, 'Exam');
+    assessment.zones = [
+      {
+        title: 'zone 1',
+        questions: [{ id: util.QUESTION_ID, points: 10 }],
+      },
+      {
+        title: 'zone 2',
+        lockpoint: true,
+        questions: [{ id: util.ALTERNATIVE_QUESTION_ID, points: 10 }],
+      },
+    ];
+    courseData.courseInstances[util.COURSE_INSTANCE_ID].assessments['lockpointSync'] = assessment;
+    await util.writeAndSyncCourseData(courseData);
+
+    const syncedData = await getSyncedAssessmentData('lockpointSync');
+    assert.lengthOf(syncedData.zones, 2);
+    assert.isFalse(syncedData.zones[0].lockpoint);
+    assert.isTrue(syncedData.zones[1].lockpoint);
+  });
+
+  it('records an error when the first zone is a lockpoint', async () => {
+    const courseData = util.getCourseData();
+    const assessment = makeAssessment(courseData, 'Exam');
+    assessment.zones = [
+      {
+        lockpoint: true,
+        questions: [{ id: util.QUESTION_ID, points: 10 }],
+      },
+    ];
+    courseData.courseInstances[util.COURSE_INSTANCE_ID].assessments['fail'] = assessment;
+    await util.writeAndSyncCourseData(courseData);
+
+    const syncedAssessment = await findSyncedAssessment('fail');
+    assert.isNotNull(syncedAssessment.sync_errors);
+    assert.match(syncedAssessment.sync_errors, /The first zone cannot have lockpoint: true/);
+  });
+
+  it('records an error when a lockpoint zone has numberChoose set to 0', async () => {
+    const courseData = util.getCourseData();
+    const assessment = makeAssessment(courseData, 'Exam');
+    assessment.zones = [
+      {
+        questions: [{ id: util.QUESTION_ID, points: 10 }],
+      },
+      {
+        lockpoint: true,
+        numberChoose: 0,
+        questions: [{ id: util.ALTERNATIVE_QUESTION_ID, points: 10 }],
+      },
+    ];
+    courseData.courseInstances[util.COURSE_INSTANCE_ID].assessments['fail'] = assessment;
+    await util.writeAndSyncCourseData(courseData);
+
+    const syncedAssessment = await findSyncedAssessment('fail');
+    assert.isNotNull(syncedAssessment.sync_errors);
+    assert.match(
+      syncedAssessment.sync_errors,
+      /A lockpoint zone must include at least one selectable question/,
+    );
   });
 
   describe('allowRealTimeGrading hierarchical inheritance', () => {

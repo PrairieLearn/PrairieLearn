@@ -6,7 +6,6 @@ columns
     directory: text
     draft: boolean not null default false
     external_grading_enable_networking: boolean
-    external_grading_enabled: boolean default false
     external_grading_entrypoint: text
     external_grading_environment: jsonb not null default '{}'::jsonb
     external_grading_files: text[] default ARRAY[]::text[]
@@ -44,7 +43,6 @@ columns
 
 indexes
     questions_pkey: PRIMARY KEY (id) USING btree (id)
-    questions_course_id_number_nondeleted_key: UNIQUE USING btree (course_id, uuid) WHERE deleted_at IS NULL
     questions_course_id_uuid_key: UNIQUE USING btree (course_id, uuid)
     questions_course_id_publicly_shared_idx: USING btree (course_id) WHERE deleted_at IS NULL AND (share_publicly = true OR share_source_publicly = true)
     questions_template_directory_idx: USING btree (template_directory)

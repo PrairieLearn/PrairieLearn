@@ -411,7 +411,7 @@ def test_grade_answer_parametrized_key_error_blank(
     question_data["format_errors"] = {}
     pl.grade_answer_parameterized(question_data, question_name, grading_function)
 
-    assert question_data["partial_scores"][question_name]["score"] == 0.0
+    assert question_data["partial_scores"][question_name]["score"] == pytest.approx(0.0)
 
 
 class TimeoutTestCase(NamedTuple):
@@ -1229,40 +1229,21 @@ def test_is_correct_ndarray2d_sf(
     assert pl.is_correct_ndarray2d_sf(submitted, true, digits) == expected
 
 
-def test_load_extension() -> None:
+def test_load_extension(question_data: pl.QuestionData) -> None:
     """Test loading extensions with the load_extension function."""
     director = Path(__file__).parent
     controller = "dummy_extension.py"
 
-    # Create mock data with extension info
-    data: pl.QuestionData = {
-        "extensions": {
-            "dummy": {
-                "directory": director,
-                "controller": controller,
-            }
-        },
-        # Fill required fields with empty values
-        "params": {},
-        "correct_answers": {},
-        "submitted_answers": {},
-        "format_errors": {},
-        "partial_scores": {},
-        "score": 0,
-        "feedback": {},
-        "variant_seed": "",
-        "options": {},
-        "raw_submitted_answers": {},
-        "editable": True,
-        "panel": "question",
-        "num_valid_submissions": 0,
-        "manual_grading": False,
-        "ai_grading": False,
-        "answers_names": {},
+    question_data["extensions"] = {
+        "dummy": {
+            "directory": director,
+            "controller": controller,
+        }
     }
+    question_data["editable"] = True
 
     # Test successful loading
-    ext = pl.load_extension(data, "dummy")
+    ext = pl.load_extension(question_data, "dummy")
     assert ext.sample_function() == "Hello from dummy extension"
     assert ext.SAMPLE_CONSTANT == 42
     with pytest.raises(AttributeError):
@@ -1270,10 +1251,10 @@ def test_load_extension() -> None:
 
     # Test loading non-existent extension
     with pytest.raises(ValueError, match="Could not find extension"):
-        pl.load_extension(data, "nonexistent")
+        pl.load_extension(question_data, "nonexistent")
 
     # Test loading all extensions
-    exts = pl.load_all_extensions(data)
+    exts = pl.load_all_extensions(question_data)
     assert len(exts) == 1
     assert "dummy" in exts
     assert exts["dummy"].sample_function() == "Hello from dummy extension"

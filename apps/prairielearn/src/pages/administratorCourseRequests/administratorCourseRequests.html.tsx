@@ -1,43 +1,46 @@
-import { html } from '@prairielearn/html';
+import { QueryClient } from '@tanstack/react-query';
+import { useState } from 'react';
 
 import { CourseRequestsTable } from '../../components/CourseRequestsTable.js';
-import { PageLayout } from '../../components/PageLayout.js';
-import { type CourseRequestRow } from '../../lib/course-request.js';
-import { type Institution } from '../../lib/db-types.js';
-import type { ResLocalsForPage } from '../../lib/res-locals.js';
+import type { AdminInstitution } from '../../lib/client/safe-db-types.js';
+import { QueryClientProviderDebug } from '../../lib/client/tanstackQuery.js';
+import type { CourseRequestRow } from '../../lib/course-request.js';
+import type { Timezone } from '../../lib/timezone.shared.js';
+import { createAdministratorTrpcClient } from '../../trpc/administrator/trpc-client.js';
+import { TRPCProvider } from '../../trpc/administrator/trpc-context.js';
 
 export function AdministratorCourseRequests({
   rows,
   institutions,
+  availableTimezones,
   coursesRoot,
-  resLocals,
+  trpcCsrfToken,
+  urlPrefix,
 }: {
   rows: CourseRequestRow[];
-  institutions: Institution[];
+  institutions: AdminInstitution[];
+  availableTimezones: Timezone[];
   coursesRoot: string;
-  resLocals: ResLocalsForPage<'plain'>;
+  trpcCsrfToken: string;
+  urlPrefix: string;
 }) {
-  return PageLayout({
-    resLocals,
-    pageTitle: 'Course Requests',
-    navContext: {
-      type: 'administrator',
-      page: 'admin',
-      subPage: 'courses',
-    },
-    options: {
-      fullWidth: true,
-    },
-    content: html`
-      <h1 class="visually-hidden">All Course Requests</h1>
-      ${CourseRequestsTable({
-        rows,
-        institutions,
-        coursesRoot,
-        showAll: true,
-        csrfToken: resLocals.__csrf_token,
-        urlPrefix: resLocals.urlPrefix,
-      })}
-    `,
-  });
+  const [queryClient] = useState(() => new QueryClient());
+  const [trpcClient] = useState(() => createAdministratorTrpcClient({ csrfToken: trpcCsrfToken }));
+  return (
+    <QueryClientProviderDebug client={queryClient}>
+      <TRPCProvider trpcClient={trpcClient} queryClient={queryClient}>
+        <h1 className="visually-hidden">All course requests</h1>
+        <CourseRequestsTable
+          rows={rows}
+          institutions={institutions}
+          availableTimezones={availableTimezones}
+          coursesRoot={coursesRoot}
+          urlPrefix={urlPrefix}
+          showAll
+        />
+      </TRPCProvider>
+    </QueryClientProviderDebug>
+  );
 }
+
+AdministratorCourseRequests.displayName = 'AdministratorCourseRequests';

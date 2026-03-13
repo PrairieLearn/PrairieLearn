@@ -5,7 +5,7 @@ import { z } from 'zod';
 
 import { flash } from '@prairielearn/flash';
 import { logger } from '@prairielearn/logger';
-import { loadSqlEquiv, queryRow, queryRows } from '@prairielearn/postgres';
+import { loadSqlEquiv, queryRow, queryRows, queryScalar } from '@prairielearn/postgres';
 import * as Sentry from '@prairielearn/sentry';
 import { IdSchema } from '@prairielearn/zod';
 
@@ -89,6 +89,10 @@ router.post(
       flash('error', 'The course title should not be empty.');
       error = true;
     }
+    if (title.length > 75) {
+      flash('error', 'The course title must be at most 75 characters.');
+      error = true;
+    }
     if (first_name.length === 0) {
       flash('error', 'The first name should not be empty.');
       error = true;
@@ -110,7 +114,7 @@ router.post(
       error = true;
     }
 
-    const hasExistingCourseRequest = await queryRow(
+    const hasExistingCourseRequest = await queryScalar(
       sql.get_existing_course_requests,
       {
         user_id: res.locals.authn_user.id,
@@ -143,7 +147,7 @@ router.post(
     });
 
     // Check if we can automatically approve and create the course.
-    const canAutoCreateCourse = await queryRow(
+    const canAutoCreateCourse = await queryScalar(
       sql.can_auto_create_course,
       { user_id: res.locals.authn_user.id },
       z.boolean(),

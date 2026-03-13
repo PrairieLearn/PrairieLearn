@@ -28,7 +28,7 @@
       "questions": [
         {
           "numberChoose": 1,
-          "points": 5,
+          "autoPoints": 5,
           "alternatives": [
             { "id": "template/checkbox/random-prompt" },
             { "id": "template/multiple-choice/multi-correct-pool" }
@@ -36,7 +36,7 @@
         },
         {
           "numberChoose": 1,
-          "points": [5, 1],
+          "autoPoints": [5, 1],
           "alternatives": [
             { "id": "template/multiple-choice/images" },
             { "id": "demo/multipleChoiceSingleCorrect" }
@@ -44,7 +44,7 @@
         },
         {
           "numberChoose": 1,
-          "points": 5,
+          "autoPoints": 5,
           "alternatives": [
             { "id": "template/multiple-choice/random-prompt-true-false" },
             { "id": "template/multiple-choice/random-prompt" }
@@ -52,7 +52,7 @@
         },
         {
           "numberChoose": 1,
-          "points": [5, 2],
+          "autoPoints": [5, 2],
           "alternatives": [
             { "id": "demo/fixedCheckbox" },
             { "id": "template/symbolic-input/random" }
@@ -64,8 +64,8 @@
       "title": "Manually graded questions",
       "questions": [
         { "id": "demo/manualGrade/codeUpload", "autoPoints": [10, 7, 4], "manualPoints": 5 },
-        { "id": "demo/fileDownloadUpload", "points": [10] },
-        { "id": "demo/markdownEditorLivePreview", "points": [5] }
+        { "id": "demo/fileDownloadUpload", "manualPoints": 10 },
+        { "id": "demo/markdownEditorLivePreview", "manualPoints": 5 }
       ]
     }
   ],
