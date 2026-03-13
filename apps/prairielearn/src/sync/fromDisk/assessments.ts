@@ -23,7 +23,6 @@ import {
 import { type CourseInstanceData, convertLegacyGroupsToGroupsConfig } from '../course-db.js';
 import { isDateInFuture } from '../dates.js';
 import * as infofile from '../infofile.js';
-import { type InfoFile } from '../infofile.js';
 
 const sql = sqldb.loadSqlEquiv(import.meta.url);
 
@@ -570,7 +569,7 @@ export async function sync(
  */
 export function preValidateAssessmentPreferences(
   assessments: CourseInstanceData['assessments'],
-  questions: Record<string, InfoFile<QuestionJson>>,
+  questions: Record<string, infofile.InfoFile<QuestionJson>>,
   sharedQuestionPreferences: Record<string, QuestionPreferencesSchemaJson | null>,
 ): void {
   const ajv = new Ajv({ allErrors: true, allowUnionTypes: true });
@@ -589,9 +588,7 @@ export function preValidateAssessmentPreferences(
             schema = questions[qid].data?.preferences ?? null;
           }
           const { errors } = mergeAndValidatePreferences(ajv, qid, schema, preferences);
-          for (const error of errors) {
-            infofile.addError(assessment, error);
-          }
+          infofile.addErrors(assessment, errors);
         };
 
         if (question.alternatives) {
