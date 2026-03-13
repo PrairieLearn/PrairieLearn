@@ -73,7 +73,7 @@ export function LabelModifyModal({
     watch,
     setValue,
   } = useForm<LabelFormValues>({
-    values: defaultValues,
+    defaultValues,
     mode: 'onSubmit',
     reValidateMode: 'onSubmit',
   });
