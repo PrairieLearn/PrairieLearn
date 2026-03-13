@@ -123,6 +123,21 @@ export default ESLintUtils.RuleCreator.withoutDocs({
       node: TSESTree.Node,
       eventHandlerFunction: TSESTree.Node,
     ): boolean {
+      // Check if the event handler itself is in a deferred/boundary context
+      const handlerParent = eventHandlerFunction.parent;
+      if (handlerParent?.type === 'CallExpression') {
+        const callbackIndex = handlerParent.arguments.indexOf(
+          eventHandlerFunction as TSESTree.CallExpressionArgument,
+        );
+        if (
+          callbackIndex !== -1 &&
+          (isKnownDeferredCallee(handlerParent.callee) ||
+            isKnownEventBoundaryCallback(handlerParent, callbackIndex))
+        ) {
+          return true;
+        }
+      }
+
       let current: TSESTree.Node | undefined = node;
 
       while (current && current !== eventHandlerFunction) {
@@ -291,13 +306,26 @@ export default ESLintUtils.RuleCreator.withoutDocs({
         | TSESTree.FunctionExpression
         | TSESTree.FunctionDeclaration,
     ) {
-      if (!isJSXEventHandler(node) && !isTypedReactEventHandler(node)) {
+      if (isJSXEventHandler(node) || isTypedReactEventHandler(node)) {
+        const eventParam = getEventParameter(node);
+        if (eventParam) {
+          trackedEventFunctions.set(node, eventParam);
+        }
         return;
       }
 
-      const eventParam = getEventParameter(node);
-      if (eventParam) {
-        trackedEventFunctions.set(node, eventParam);
+      // react-hook-form: handleSubmit((_data, e) => { ... })
+      // The event is the second parameter, and the entire callback is deferred.
+      const parent = node.parent;
+      if (
+        parent?.type === 'CallExpression' &&
+        parent.arguments[0] === node &&
+        isKnownEventBoundaryCallback(parent, 0)
+      ) {
+        const secondParam = node.params[1];
+        if (secondParam?.type === 'Identifier') {
+          trackedEventFunctions.set(node, secondParam);
+        }
       }
     }
 
