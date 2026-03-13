@@ -8,6 +8,7 @@ on:
       - '**-code-freeze'
   pull_request:
   merge_group:
+  workflow_dispatch:
 
 concurrency:
   # Ensure that we only run one concurrent job for Pull Requests. This ensures
