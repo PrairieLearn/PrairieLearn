@@ -25,7 +25,9 @@ import {
   TeamRoleSchema,
   ZoneSchema,
 } from '../../lib/db-types.js';
+import { features } from '../../lib/features/index.js';
 import { idsEqual } from '../../lib/id.js';
+import { updateCourseSharingName } from '../../models/course.js';
 import type {
   AssessmentJsonInput,
   AssessmentSetJsonInput,
@@ -4579,5 +4581,115 @@ describe('Assessment syncing', () => {
     const syncedQuestion = syncedQuestions.find((q) => q.qid === 'emptyKeyPref');
     assert.isDefined(syncedQuestion);
     assert.isNotNull(syncedQuestion.sync_errors);
+  });
+
+  describe('preferences on shared questions', () => {
+    const SHARING_NAME = 'SHARING_PREFS';
+    const SHARED_PREFS_QID = 'sharedPrefsQuestion';
+    const SHARED_NO_PREFS_QID = 'sharedNoPrefsQuestion';
+
+    async function setupSharingCourse() {
+      await features.enable('question-sharing');
+
+      const sharingCourseData = util.getCourseData();
+      sharingCourseData.course.name = 'Sharing Prefs Course';
+      sharingCourseData.questions = {
+        private: sharingCourseData.questions.private,
+        [SHARED_PREFS_QID]: {
+          uuid: 'aaaa1111-bbbb-cccc-dddd-eeee00001111',
+          type: 'v3',
+          title: 'Shared question with preferences',
+          topic: 'Test',
+          tags: ['test'],
+          sharePublicly: true,
+          preferences: {
+            gravity: { type: 'number', default: 9.8 },
+            mode: { type: 'string', enum: ['easy', 'hard'], default: 'easy' },
+          },
+        },
+        [SHARED_NO_PREFS_QID]: {
+          uuid: 'aaaa2222-bbbb-cccc-dddd-eeee00002222',
+          type: 'v3',
+          title: 'Shared question without preferences',
+          topic: 'Test',
+          tags: ['test'],
+          sharePublicly: true,
+        },
+      };
+      const { syncResults } = await util.writeAndSyncCourseData(sharingCourseData);
+      await updateCourseSharingName({
+        course_id: syncResults.courseId,
+        sharing_name: SHARING_NAME,
+      });
+    }
+
+    it('syncs valid preferences on a shared question without errors', async () => {
+      await setupSharingCourse();
+      const courseData = util.getCourseData();
+      const assessment = makeAssessment(courseData, 'Exam');
+      assessment.zones?.push({
+        title: 'zone 1',
+        questions: [
+          {
+            id: `@${SHARING_NAME}/${SHARED_PREFS_QID}`,
+            points: 5,
+            preferences: { gravity: 3.7, mode: 'hard' },
+          },
+        ],
+      });
+      courseData.courseInstances[util.COURSE_INSTANCE_ID].assessments['sharedPrefOk'] = assessment;
+      await withConfig({ checkSharingOnSync: true }, async () => {
+        await util.writeAndSyncCourseData(courseData);
+      });
+      const syncedAssessment = await findSyncedAssessment('sharedPrefOk');
+      assert.isNull(syncedAssessment.sync_errors);
+    });
+
+    it('records an error for an invalid preference value on a shared question', async () => {
+      await setupSharingCourse();
+      const courseData = util.getCourseData();
+      const assessment = makeAssessment(courseData, 'Exam');
+      assessment.zones?.push({
+        title: 'zone 1',
+        questions: [
+          {
+            id: `@${SHARING_NAME}/${SHARED_PREFS_QID}`,
+            points: 5,
+            preferences: { gravity: 'not a number' },
+          },
+        ],
+      });
+      courseData.courseInstances[util.COURSE_INSTANCE_ID].assessments['sharedPrefBad'] = assessment;
+      await withConfig({ checkSharingOnSync: true }, async () => {
+        await util.writeAndSyncCourseData(courseData);
+      });
+      const syncedAssessment = await findSyncedAssessment('sharedPrefBad');
+      assert.isNotNull(syncedAssessment.sync_errors);
+      assert.match(syncedAssessment.sync_errors, /gravity/);
+      assert.match(syncedAssessment.sync_errors, /must be number/);
+    });
+
+    it('records an error when setting preferences on a shared question without a schema', async () => {
+      await setupSharingCourse();
+      const courseData = util.getCourseData();
+      const assessment = makeAssessment(courseData, 'Exam');
+      assessment.zones?.push({
+        title: 'zone 1',
+        questions: [
+          {
+            id: `@${SHARING_NAME}/${SHARED_NO_PREFS_QID}`,
+            points: 5,
+            preferences: { someKey: 'someValue' },
+          },
+        ],
+      });
+      courseData.courseInstances[util.COURSE_INSTANCE_ID].assessments['sharedNoPref'] = assessment;
+      await withConfig({ checkSharingOnSync: true }, async () => {
+        await util.writeAndSyncCourseData(courseData);
+      });
+      const syncedAssessment = await findSyncedAssessment('sharedNoPref');
+      assert.isNotNull(syncedAssessment.sync_errors);
+      assert.match(syncedAssessment.sync_errors, /does not define a preferences schema/);
+    });
   });
 });

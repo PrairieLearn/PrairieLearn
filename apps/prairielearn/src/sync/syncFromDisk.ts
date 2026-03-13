@@ -180,7 +180,7 @@ export async function syncDiskToSqlWithLock(
     // could produce influences whether the "Unknown" assessment set is created.
     const sharedQuestionPreferencesByCi = new Map<
       string,
-      Record<string, QuestionPreferencesSchemaJson>
+      Record<string, QuestionPreferencesSchemaJson | null>
     >();
     await timed('Check sharing validity', async () => {
       await async.eachLimit(Object.entries(courseData.courseInstances), 3, async ([ciid, ci]) => {

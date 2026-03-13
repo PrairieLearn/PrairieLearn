@@ -571,7 +571,7 @@ export async function sync(
 export function preValidateAssessmentPreferences(
   assessments: CourseInstanceData['assessments'],
   questions: Record<string, InfoFile<QuestionJson>>,
-  sharedQuestionPreferences: Record<string, QuestionPreferencesSchemaJson>,
+  sharedQuestionPreferences: Record<string, QuestionPreferencesSchemaJson | null>,
 ): void {
   const ajv = new Ajv({ allErrors: true, allowUnionTypes: true });
 
@@ -582,7 +582,7 @@ export function preValidateAssessmentPreferences(
         const validate = (qid: string, preferences: QuestionPreferences | undefined) => {
           let schema: QuestionPreferencesSchemaJson | null;
           if (qid.startsWith('@')) {
-            if (!(qid in sharedQuestionPreferences)) return;
+            if (!(qid in sharedQuestionPreferences)) return; // Unknown QID; will be caught later
             schema = sharedQuestionPreferences[qid];
           } else {
             if (!(qid in questions)) return; // Missing QID will be caught later during assessment sync
@@ -610,7 +610,7 @@ export async function validateAssessmentSharedQuestions(
   courseId: string,
   assessments: CourseInstanceData['assessments'],
   questionIds: Record<string, string>,
-): Promise<Record<string, QuestionPreferencesSchemaJson>> {
+): Promise<Record<string, QuestionPreferencesSchemaJson | null>> {
   // A set of all imported question IDs.
   const importedQids = new Set<string>();
 
@@ -680,13 +680,11 @@ export async function validateAssessmentSharedQuestions(
         preferences_schema: QuestionPreferencesSchemaJsonSchema.nullable(),
       }),
     );
-    const sharedQuestionPreferences: Record<string, QuestionPreferencesSchemaJson> = {};
+    const sharedQuestionPreferences: Record<string, QuestionPreferencesSchemaJson | null> = {};
     for (const row of importedQuestions) {
       const fullQid = '@' + row.sharing_name + '/' + row.qid;
       questionIds[fullQid] = row.id;
-      if (row.preferences_schema) {
-        sharedQuestionPreferences[fullQid] = row.preferences_schema;
-      }
+      sharedQuestionPreferences[fullQid] = row.preferences_schema;
     }
     const missingQids = new Set(Array.from(importedQids).filter((qid) => !(qid in questionIds)));
     if (config.checkSharingOnSync) {
