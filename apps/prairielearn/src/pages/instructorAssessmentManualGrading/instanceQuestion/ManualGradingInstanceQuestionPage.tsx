@@ -6,12 +6,13 @@ import { QueryClientProviderDebug } from '../../../lib/client/tanstackQuery.js';
 import type { RubricData } from '../../../lib/manualGrading.types.js';
 
 import { InstanceQuestionGradingPanel } from './InstanceQuestionGradingPanel.js';
-import type { PageData } from './trpc.js';
+import type { GradingContextData, RubricQueryData } from './trpc.js';
 import { createManualGradingInstanceQuestionTrpcClient } from './utils/trpc-client.js';
 import { TRPCProvider, useTRPC } from './utils/trpc-context.js';
 
 interface ManualGradingInstanceQuestionPageProps {
-  initialPageData: PageData;
+  initialRubricData: RubricQueryData;
+  initialGradingContext: GradingContextData;
   trpcCsrfToken: string;
   csrfToken: string;
   hasCourseInstancePermissionEdit: boolean;
@@ -33,7 +34,8 @@ interface ManualGradingInstanceQuestionPageProps {
 }
 
 export function ManualGradingInstanceQuestionPage({
-  initialPageData,
+  initialRubricData,
+  initialGradingContext,
   trpcCsrfToken,
   ...rest
 }: ManualGradingInstanceQuestionPageProps) {
@@ -48,7 +50,11 @@ export function ManualGradingInstanceQuestionPage({
   return (
     <QueryClientProviderDebug client={queryClient}>
       <TRPCProvider trpcClient={trpcClient} queryClient={queryClient}>
-        <ManualGradingInstanceQuestionPageInner initialPageData={initialPageData} {...rest} />
+        <ManualGradingInstanceQuestionPageInner
+          initialRubricData={initialRubricData}
+          initialGradingContext={initialGradingContext}
+          {...rest}
+        />
       </TRPCProvider>
     </QueryClientProviderDebug>
   );
@@ -59,7 +65,8 @@ ManualGradingInstanceQuestionPage.displayName = 'ManualGradingInstanceQuestionPa
 type InnerProps = Omit<ManualGradingInstanceQuestionPageProps, 'trpcCsrfToken'>;
 
 function ManualGradingInstanceQuestionPageInner({
-  initialPageData,
+  initialRubricData,
+  initialGradingContext,
   csrfToken,
   hasCourseInstancePermissionEdit,
   assessmentInstanceOpen,
@@ -80,11 +87,17 @@ function ManualGradingInstanceQuestionPageInner({
       ? new URLSearchParams(window.location.search).get('conflict_grading_job_id')
       : null;
 
-  const { data: pageData } = useQuery({
-    ...trpc.pageData.queryOptions({
+  const { data: rubricData } = useQuery({
+    ...trpc.rubricData.queryOptions(),
+    initialData: initialRubricData,
+    staleTime: Infinity,
+  });
+
+  const { data: gradingContext } = useQuery({
+    ...trpc.gradingContext.queryOptions({
       conflictGradingJobId,
     }),
-    initialData: initialPageData,
+    initialData: initialGradingContext,
     staleTime: Infinity,
   });
 
@@ -93,10 +106,10 @@ function ManualGradingInstanceQuestionPageInner({
   const handleRubricSaved = useCallback(
     (_data: { rubric_data: RubricData | null; modifiedAt: string }) => {
       void queryClient.invalidateQueries({
-        queryKey: trpc.pageData.queryKey({ conflictGradingJobId }),
+        queryKey: trpc.rubricData.queryKey(),
       });
     },
-    [queryClient, trpc, conflictGradingJobId],
+    [queryClient, trpc],
   );
 
   return (
@@ -109,7 +122,7 @@ function ManualGradingInstanceQuestionPageInner({
         </div>
       )}
 
-      {pageData.hasNon100CreditSubmissions && (
+      {gradingContext.hasNon100CreditSubmissions && (
         <div className="alert alert-warning" role="alert">
           There are submissions in this assessment instance with credit different than 100%.
           Submitting a manual grade will override any credit limits set for this assessment
@@ -166,11 +179,11 @@ function ManualGradingInstanceQuestionPageInner({
       <div className="mb-3">
         <RubricSettings
           hasCourseInstancePermissionEdit={hasCourseInstancePermissionEdit}
-          assessmentQuestion={pageData.assessmentQuestion}
-          rubricData={pageData.rubricData}
+          assessmentQuestion={rubricData.assessmentQuestion}
+          rubricData={rubricData.rubricData}
           csrfToken={csrfToken}
-          aiGradingStats={pageData.aiGradingStats}
-          context={pageData.rubricSettingsContext}
+          aiGradingStats={rubricData.aiGradingStats}
+          context={gradingContext.rubricSettingsContext}
           settingsOpen={rubricSettingsOpen}
           onRubricSaved={handleRubricSaved}
           onToggleSettingsOpen={() => setRubricSettingsOpen((prev) => !prev)}
@@ -188,37 +201,37 @@ function ManualGradingInstanceQuestionPageInner({
             <div className="card-header bg-info">Grading</div>
             <InstanceQuestionGradingPanel
               csrfToken={csrfToken}
-              modifiedAt={pageData.modifiedAt}
-              submissionId={pageData.submissionId}
-              instanceQuestionId={pageData.instanceQuestionId}
-              maxAutoPoints={pageData.maxAutoPoints}
-              maxManualPoints={pageData.maxManualPoints}
-              maxPoints={pageData.maxPoints}
-              autoPoints={pageData.autoPoints}
-              manualPoints={pageData.manualPoints}
-              totalPoints={pageData.totalPoints}
-              submissionFeedback={pageData.submissionFeedback}
-              rubricData={pageData.rubricData}
-              rubricGrading={pageData.rubricGrading}
-              openIssues={pageData.openIssues}
-              graders={pageData.graders}
-              aiGradingInfo={pageData.aiGradingInfo}
-              hasEditPermission={pageData.hasEditPermission}
-              showInstanceQuestionGroup={pageData.showInstanceQuestionGroup}
-              selectedInstanceQuestionGroup={pageData.selectedInstanceQuestionGroup}
-              instanceQuestionGroups={pageData.instanceQuestionGroups}
+              modifiedAt={rubricData.modifiedAt}
+              submissionId={gradingContext.submissionId}
+              instanceQuestionId={gradingContext.instanceQuestionId}
+              maxAutoPoints={gradingContext.maxAutoPoints}
+              maxManualPoints={gradingContext.maxManualPoints}
+              maxPoints={gradingContext.maxPoints}
+              autoPoints={gradingContext.autoPoints}
+              manualPoints={gradingContext.manualPoints}
+              totalPoints={gradingContext.totalPoints}
+              submissionFeedback={gradingContext.submissionFeedback}
+              rubricData={rubricData.rubricData}
+              rubricGrading={rubricData.rubricGrading}
+              openIssues={gradingContext.openIssues}
+              graders={gradingContext.graders}
+              aiGradingInfo={gradingContext.aiGradingInfo}
+              hasEditPermission={gradingContext.hasEditPermission}
+              showInstanceQuestionGroup={gradingContext.showInstanceQuestionGroup}
+              selectedInstanceQuestionGroup={gradingContext.selectedInstanceQuestionGroup}
+              instanceQuestionGroups={gradingContext.instanceQuestionGroups}
               skipGradedSubmissions={skipGradedSubmissions}
               showSubmissionsAssignedToMeOnly={
-                pageData.effectiveShowSubmissionsAssignedToMeOnly
+                gradingContext.effectiveShowSubmissionsAssignedToMeOnly
                   ? showSubmissionsAssignedToMeOnly
                   : false
               }
-              graderGuidelinesRendered={pageData.graderGuidelinesRendered}
-              conflictGradingJob={pageData.conflictGradingJob}
-              conflictGradingJobDateFormatted={pageData.conflictGradingJobDateFormatted}
-              conflictLastGraderName={pageData.conflictLastGraderName}
-              existingDateFormatted={pageData.existingDateFormatted}
-              displayTimezone={pageData.displayTimezone}
+              graderGuidelinesRendered={rubricData.graderGuidelinesRendered}
+              conflictGradingJob={gradingContext.conflictGradingJob}
+              conflictGradingJobDateFormatted={gradingContext.conflictGradingJobDateFormatted}
+              conflictLastGraderName={gradingContext.conflictLastGraderName}
+              existingDateFormatted={gradingContext.existingDateFormatted}
+              displayTimezone={gradingContext.displayTimezone}
               onToggleRubricSettings={() => setRubricSettingsOpen((prev) => !prev)}
             />
           </div>

@@ -13,27 +13,19 @@ import { DateFromISOString, IdSchema } from '@prairielearn/zod';
 import { calculateAiGradingStats } from '../../../ee/lib/ai-grading/ai-grading-stats.js';
 import {
   containsImageCapture,
-  selectLastSubmissionId,
-  selectRubricGradingItems,
   toggleAiGradingMode,
 } from '../../../ee/lib/ai-grading/ai-grading-util.js';
-import type {
-  InstanceQuestionAIGradingInfo,
-  InstanceQuestionAIGradingInfoBase,
-} from '../../../ee/lib/ai-grading/types.js';
 import {
   selectAssessmentQuestionHasInstanceQuestionGroups,
   selectInstanceQuestionGroup,
   selectInstanceQuestionGroups,
   updateManualInstanceQuestionGroup,
 } from '../../../ee/lib/ai-instance-question-grouping/ai-instance-question-grouping-util.js';
-import { AiGradingJobSchema, GradingJobSchema } from '../../../lib/db-types.js';
 import { config } from '../../../lib/config.js';
 import { features } from '../../../lib/features/index.js';
 import { idsEqual } from '../../../lib/id.js';
 import { reportIssueFromForm } from '../../../lib/issues.js';
 import * as manualGrading from '../../../lib/manualGrading.js';
-import { formatJsonWithPrettier } from '../../../lib/prettier.js';
 import { getAndRenderVariant, renderPanelsForSubmission } from '../../../lib/question-render.js';
 import { type ResLocalsForPage, typedAsyncHandler } from '../../../lib/res-locals.js';
 import { handleTrpcError } from '../../../lib/trpc.js';
@@ -44,13 +36,14 @@ import { selectAndAuthzVariant } from '../../../models/variant.js';
 
 import {
   type GradingJobData,
-  GradingJobDataSchema,
   InstanceQuestion as InstanceQuestionPage,
 } from './instanceQuestion.html.js';
+import { GradingJobDataSchema, buildAiGradingInfo } from './queries.js';
 import { createContext, manualGradingInstanceQuestionRouter } from './trpc.js';
 
-const router = Router();
 const sql = sqldb.loadSqlEquiv(import.meta.url);
+
+const router = Router();
 
 async function prepareLocalsForRender(
   query: Record<string, any>,
@@ -83,8 +76,26 @@ async function prepareLocalsForRender(
       },
       GradingJobDataSchema,
     );
-    if (conflict_grading_job != null) {
-      await manualGrading.populateManualGradingData(conflict_grading_job);
+  }
+
+  // Extract rubric grading from the conflict grading job, if present.
+  let conflict_rubric_grading: {
+    adjust_points: number;
+    rubric_items: Record<string, { score: number }> | null;
+  } | null = null;
+  if (conflict_grading_job?.manual_rubric_grading_id) {
+    const gradingData: Record<string, any> = {
+      manual_rubric_grading_id: conflict_grading_job.manual_rubric_grading_id,
+    };
+    await manualGrading.populateManualGradingData(gradingData);
+    if (gradingData.rubric_grading) {
+      conflict_rubric_grading = {
+        adjust_points: gradingData.rubric_grading.adjust_points as number,
+        rubric_items: gradingData.rubric_grading.rubric_items as Record<
+          string,
+          { score: number }
+        > | null,
+      };
     }
   }
 
@@ -93,7 +104,7 @@ async function prepareLocalsForRender(
     authzData: resLocals.authz_data,
     requiredRole: ['Student Data Viewer'],
   });
-  return { resLocals, conflict_grading_job, graders };
+  return { resLocals, conflict_grading_job, conflict_rubric_grading, graders };
 }
 
 router.get(
@@ -129,135 +140,20 @@ router.get(
       assessmentQuestionId: res.locals.assessment_question.id,
     });
 
-    /**
-     * Contains the prompt and selected rubric items of the AI grader.
-     * If the submission was not graded by AI, this will be undefined.
-     */
-    let aiGradingInfo: InstanceQuestionAIGradingInfo | undefined = undefined;
-
     const localsForRender = await prepareLocalsForRender(req.query, res.locals);
 
-    if (aiGradingEnabled) {
-      const submission_id = await selectLastSubmissionId(instance_question.id);
-      const ai_grading_job_data = await sqldb.queryOptionalRow(
-        sql.select_ai_grading_job_data_for_submission,
-        {
-          submission_id,
-        },
-        z.object({
-          id: GradingJobSchema.shape.id,
-          manual_rubric_grading_id: GradingJobSchema.shape.manual_rubric_grading_id,
-          prompt: AiGradingJobSchema.shape.prompt,
-          completion: AiGradingJobSchema.shape.completion,
-          rotation_correction_degrees: AiGradingJobSchema.shape.rotation_correction_degrees,
-        }),
-      );
-
-      if (ai_grading_job_data) {
-        const promptForGradingJob = ai_grading_job_data.prompt;
-        const selectedRubricItems = await selectRubricGradingItems(
-          ai_grading_job_data.manual_rubric_grading_id,
-        );
-
-        /** The submission was also manually graded if a manual grading job exists for it.*/
-        const submissionManuallyGraded =
-          (await sqldb.queryOptionalScalar(
-            sql.select_exists_manual_grading_job_for_submission,
-            { submission_id },
-            z.boolean(),
-          )) ?? false;
-
-        const formattedPrompt =
-          promptForGradingJob !== null
-            ? (await formatJsonWithPrettier(JSON.stringify(promptForGradingJob, null, 2)))
-                .replaceAll('\\n', '\n')
-                .trimStart()
-            : '';
-
-        // We're dealing with a schemaless JSON blob here. We'll be defensive and
-        // try to avoid errors when extracting the explanation. Note that for some
-        // time, the explanation wasn't included in the completion at all, so it
-        // may legitimately be missing.
-        //
-        // Over the lifetime of this feature, we've changed which APIs/libraries we
-        // use to generate the completion, so we need to handle all formats we've ever
-        // used for backwards-compatibility. Each one is documented below.
-        const explanation = run(() => {
-          const completion = ai_grading_job_data.completion;
-          if (!completion) return null;
-
-          // OpenAI chat completion format
-          if (completion.choices) {
-            const explanation = completion?.choices?.[0]?.message?.parsed?.explanation;
-            if (typeof explanation !== 'string') return null;
-
-            return explanation.trim() || null;
-          }
-
-          // OpenAI response format
-          if (completion.output_parsed) {
-            const explanation = completion?.output_parsed?.explanation;
-            if (typeof explanation !== 'string') return null;
-
-            return explanation.trim() || null;
-          }
-
-          // `ai` package format
-          if (completion.object) {
-            const explanation = completion?.object?.explanation;
-            if (typeof explanation !== 'string') return null;
-
-            return explanation.trim() || null;
-          }
-
-          return null;
-        });
-
-        const correctedDegrees = ai_grading_job_data.rotation_correction_degrees;
-        const parsed = z.record(z.string(), z.number()).safeParse(correctedDegrees ?? {});
-        const validatedDegrees = parsed.success ? parsed.data : {};
-        const rotationCorrectionDegrees = Object.fromEntries(
-          Object.entries(validatedDegrees).filter(([, degrees]) => degrees !== 0),
-        );
-
-        const hasPersistedRotationCorrectionData =
-          correctedDegrees != null &&
-          typeof correctedDegrees === 'object' &&
-          Object.keys(correctedDegrees).length > 0;
-
-        const hasImage = run(() => {
-          // Use persisted rotation metadata to infer image context. This preserves
-          // historical AI grading context even if the current rendered HTML no
-          // longer includes image-capture markers.
-          if (hasPersistedRotationCorrectionData) return true;
-          if (localsForRender.resLocals.submissionHtmls.length > 0) {
-            return containsImageCapture(localsForRender.resLocals.submissionHtmls[0]);
-          }
-          return false;
-        });
-
-        const aiGradingInfoBase: InstanceQuestionAIGradingInfoBase = {
-          submissionManuallyGraded,
-          prompt: formattedPrompt,
-          selectedRubricItemIds: selectedRubricItems.map((item) => item.id),
-          explanation,
-        };
-
-        if (hasImage) {
-          aiGradingInfo = {
-            ...aiGradingInfoBase,
-            hasImage: true,
-            rotationCorrectionDegrees,
-          };
-        } else {
-          aiGradingInfo = {
-            ...aiGradingInfoBase,
-            hasImage: false,
-            rotationCorrectionDegrees: null,
-          };
-        }
-      }
-    }
+    const aiGradingInfo = aiGradingEnabled
+      ? await buildAiGradingInfo({
+          instanceQuestionId: instance_question.id,
+          submissionSubmittedAnswer: localsForRender.resLocals.submission?.submitted_answer ?? null,
+          hasImageFallback: () => {
+            if (localsForRender.resLocals.submissionHtmls.length > 0) {
+              return containsImageCapture(localsForRender.resLocals.submissionHtmls[0]);
+            }
+            return false;
+          },
+        })
+      : undefined;
 
     req.session.skip_graded_submissions = req.session.skip_graded_submissions ?? true;
     req.session.show_submissions_assigned_to_me_only =
@@ -496,7 +392,7 @@ router.post(
             applied_rubric_items: body.rubric_item_selected_manual.map((id) => ({
               rubric_item_id: id,
             })),
-            adjust_points: body.score_manual_adjust_points || null,
+            adjust_points: body.score_manual_adjust_points ?? null,
           }
         : undefined;
       const { modified_at_conflict, grading_job_id } =
@@ -647,7 +543,7 @@ router.post(
             applied_rubric_items: body.rubric_item_selected_manual.map((id) => ({
               rubric_item_id: id,
             })),
-            adjust_points: body.score_manual_adjust_points || null,
+            adjust_points: body.score_manual_adjust_points ?? null,
           }
         : undefined;
 

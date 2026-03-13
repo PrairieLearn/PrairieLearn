@@ -21,6 +21,7 @@ interface ConflictGradingJobProps {
   manual_points: number | null;
   score: number | null;
   feedback: Record<string, any> | null;
+  rubric_grading: RubricGradingProps | null;
 }
 
 interface GradingPanelProps {
@@ -517,6 +518,18 @@ function GradingForm({
     !!rubricGrading?.adjust_points || disabled,
   );
 
+  useEffect(() => {
+    setValue('adjustPoints', rubricGrading?.adjust_points ?? 0);
+    setValue(
+      'selectedRubricItemIds',
+      rubricGrading?.rubric_items
+        ? Object.entries(rubricGrading.rubric_items)
+            .filter(([, item]) => item.score)
+            .map(([id]) => id)
+        : [],
+    );
+  }, [rubricGrading, setValue]);
+
   const [selectedGroup, setSelectedGroup] = useState<{
     id: string;
     assessment_question_id: string;
@@ -725,7 +738,7 @@ function GradingForm({
             name="score_manual_points"
             value={roundPoints(effectiveManualPoints)}
           />
-          <input type="hidden" name="score_manual_adjust_points" value={adjustPoints || ''} />
+          <input type="hidden" name="score_manual_adjust_points" value={adjustPoints} />
         </>
       )}
       <ul className="list-group list-group-flush">
@@ -1123,7 +1136,7 @@ export function InstanceQuestionGradingPanel(props: GradingPanelProps) {
   } = props;
 
   const { rubricData } = props;
-  const [rubricGrading] = useState(props.rubricGrading);
+  const rubricGrading = props.rubricGrading;
 
   const disabled = !hasEditPermission;
   const showSubmissionsAssignedToMeOnly = !hasEditPermission
@@ -1229,7 +1242,7 @@ export function InstanceQuestionGradingPanel(props: GradingPanelProps) {
                     initialManualPoints={conflictGradingJob.manual_points ?? 0}
                     submissionFeedback={conflictGradingJob.feedback?.manual ?? null}
                     rubricData={rubricData}
-                    rubricGrading={rubricGrading}
+                    rubricGrading={conflictGradingJob.rubric_grading}
                     openIssues={openIssues}
                     graders={graders}
                     disabled={false}

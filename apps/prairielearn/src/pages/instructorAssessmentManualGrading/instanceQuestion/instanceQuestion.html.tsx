@@ -1,7 +1,6 @@
 import assert from 'assert';
 
 import mustache from 'mustache';
-import { z } from 'zod';
 
 import { formatDateYMDHM } from '@prairielearn/formatter';
 import { html, unsafeHtml } from '@prairielearn/html';
@@ -22,20 +21,19 @@ import {
   StaffInstanceQuestionGroupSchema,
   StaffUserSchema,
 } from '../../../lib/client/safe-db-types.js';
-import { GradingJobSchema, type InstanceQuestionGroup, type User } from '../../../lib/db-types.js';
+import { type InstanceQuestionGroup, type User } from '../../../lib/db-types.js';
 import type { ResLocalsForPage } from '../../../lib/res-locals.js';
 
 import { ManualGradingInstanceQuestionPage } from './ManualGradingInstanceQuestionPage.js';
+import { type GradingJobData, GradingJobDataSchema } from './queries.js';
+import type { GradingContextData, RubricQueryData } from './trpc.js';
 
-export const GradingJobDataSchema = GradingJobSchema.extend({
-  score_perc: z.number().nullable(),
-  grader_name: z.string().nullable(),
-});
-export type GradingJobData = z.infer<typeof GradingJobDataSchema>;
+export { GradingJobDataSchema, type GradingJobData };
 
 export function InstanceQuestion({
   resLocals,
   conflict_grading_job,
+  conflict_rubric_grading,
   graders,
   assignedGrader,
   lastGrader,
@@ -52,6 +50,10 @@ export function InstanceQuestion({
 }: {
   resLocals: ResLocalsForPage<'instance-question'>;
   conflict_grading_job: GradingJobData | null;
+  conflict_rubric_grading: {
+    adjust_points: number;
+    rubric_items: Record<string, { score: number }> | null;
+  } | null;
   graders: User[] | null;
   assignedGrader: User | null;
   lastGrader: User | null;
@@ -145,12 +147,22 @@ export function InstanceQuestion({
     csrfToken: resLocals.__csrf_token,
   }).toString();
 
-  // Build initialPageData matching the tRPC pageData query return shape.
-  const initialPageData = {
+  // Build initial data matching the tRPC query return shapes.
+  const initialRubricData: RubricQueryData = {
     rubricData: rubric_data,
-    modifiedAt: resLocals.instance_question.modified_at.toISOString(),
-    aiGradingStats,
+    rubricGrading: resLocals.submission.rubric_grading
+      ? {
+          adjust_points: resLocals.submission.rubric_grading.adjust_points,
+          rubric_items: resLocals.submission.rubric_grading.rubric_items,
+        }
+      : null,
+    graderGuidelinesRendered,
     assessmentQuestion: StaffAssessmentQuestionSchema.parse(resLocals.assessment_question),
+    aiGradingStats,
+    modifiedAt: resLocals.instance_question.modified_at.toISOString(),
+  };
+
+  const initialGradingContext: GradingContextData = {
     rubricSettingsContext: {
       course_short_name: resLocals.course.short_name,
       course_instance_short_name: resLocals.course_instance.short_name,
@@ -170,12 +182,6 @@ export function InstanceQuestion({
     totalPoints: points,
     submissionFeedback:
       (resLocals.submission.feedback as Record<string, any> | null)?.manual ?? null,
-    rubricGrading: resLocals.submission.rubric_grading
-      ? {
-          adjust_points: resLocals.submission.rubric_grading.adjust_points,
-          rubric_items: resLocals.submission.rubric_grading.rubric_items,
-        }
-      : null,
     openIssues,
     graders: graders?.map((g) => StaffUserSchema.parse(g)) ?? [],
     aiGradingInfo,
@@ -187,7 +193,6 @@ export function InstanceQuestion({
     instanceQuestionGroups: (instanceQuestionGroups ?? []).map((g) =>
       StaffInstanceQuestionGroupSchema.parse(g),
     ),
-    graderGuidelinesRendered,
     conflictGradingJob: conflict_grading_job
       ? {
           grader_name: conflict_grading_job.grader_name,
@@ -195,6 +200,7 @@ export function InstanceQuestion({
           manual_points: conflict_grading_job.manual_points,
           score: conflict_grading_job.score,
           feedback: conflict_grading_job.feedback,
+          rubric_grading: conflict_rubric_grading,
         }
       : null,
     conflictGradingJobDateFormatted: conflict_grading_job?.date
@@ -249,7 +255,8 @@ export function InstanceQuestion({
     content: html`
       ${hydrateHtml(
         <ManualGradingInstanceQuestionPage
-          initialPageData={initialPageData}
+          initialRubricData={initialRubricData}
+          initialGradingContext={initialGradingContext}
           trpcCsrfToken={trpcCsrfToken}
           csrfToken={__csrf_token}
           hasCourseInstancePermissionEdit={resLocals.authz_data.has_course_instance_permission_edit}
