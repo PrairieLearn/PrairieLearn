@@ -1,5 +1,4 @@
 import type { Dispatch } from 'react';
-import { z } from 'zod';
 
 import type { EditorQuestionMetadata } from '../../lib/assessment-question.shared.js';
 import type {
@@ -10,10 +9,10 @@ import type {
   Tag,
   Topic,
 } from '../../lib/db-types.js';
-import {
-  QuestionAlternativeJsonSchema,
-  ZoneAssessmentJsonSchema,
-  ZoneQuestionBlockJsonSchema,
+import type {
+  QuestionAlternativeJsonInput,
+  ZoneAssessmentJsonInput,
+  ZoneQuestionBlockJsonInput,
 } from '../../schemas/infoAssessment.js';
 
 import type { AssessmentAdvancedDefaults } from './utils/formHelpers.js';
@@ -31,36 +30,67 @@ export interface ChangeTrackingResult {
  * Branded UUID type for stable drag-and-drop identity.
  * Using a branded type prevents accidental confusion with question IDs (QIDs).
  */
-export const TrackingIdSchema = z.string().uuid().brand<'TrackingId'>();
-export type TrackingId = z.infer<typeof TrackingIdSchema>;
+export type TrackingId = string & { __brand: 'TrackingId' };
 
 /**
  * Form version of QuestionAlternativeJson - adds trackingId for stable drag-and-drop identity.
  */
-export const QuestionAlternativeFormSchema = QuestionAlternativeJsonSchema.extend({
-  trackingId: TrackingIdSchema,
-});
-export type QuestionAlternativeForm = z.infer<typeof QuestionAlternativeFormSchema>;
+export type QuestionAlternativeForm = QuestionAlternativeJsonInput & {
+  trackingId: TrackingId;
+};
 
 /**
- * Form version of ZoneQuestionBlockJson - adds trackingId, updates alternatives type.
+ * Shared fields across both question block variants.
+ * Excludes the discriminating `id` and `alternatives` properties.
  */
-export const ZoneQuestionBlockFormSchema = ZoneQuestionBlockJsonSchema.omit({
-  alternatives: true,
-}).extend({
-  trackingId: TrackingIdSchema,
-  alternatives: z.array(QuestionAlternativeFormSchema).min(1).optional(),
-});
-export type ZoneQuestionBlockForm = z.infer<typeof ZoneQuestionBlockFormSchema>;
+type ZoneQuestionBlockFormBase = Omit<ZoneQuestionBlockJsonInput, 'id' | 'alternatives'> & {
+  trackingId: TrackingId;
+};
+
+/**
+ * A standalone question block — has a QID, no alternatives.
+ */
+export type StandaloneQuestionBlockForm = ZoneQuestionBlockFormBase & {
+  id: string;
+  alternatives?: undefined;
+};
+
+/**
+ * An alternative group — has alternatives, no direct QID.
+ */
+export type AltGroupBlockForm = ZoneQuestionBlockFormBase & {
+  id?: undefined;
+  alternatives: QuestionAlternativeForm[];
+};
+
+/**
+ * A question block is either a standalone question or an alternative group.
+ * Discriminate via `q.alternatives != null` (alt group) or `q.id != null` (single question).
+ */
+export type ZoneQuestionBlockForm = StandaloneQuestionBlockForm | AltGroupBlockForm;
+
+/**
+ * A question (standalone or alternative) that is known to have a QID.
+ * Used by components that only render individual questions, never alt groups.
+ */
+export type QuestionWithId = StandaloneQuestionBlockForm | QuestionAlternativeForm;
+
+/**
+ * Asserts that a question block is a standalone question (not an alternative group).
+ */
+export function assertStandaloneQuestion(
+  q: ZoneQuestionBlockForm,
+): asserts q is StandaloneQuestionBlockForm {
+  if (!q.id) throw new Error('Expected a standalone question block, not an alternative group');
+}
 
 /**
  * Form version of ZoneAssessmentJson - adds trackingId, updates questions type.
  */
-export const ZoneAssessmentFormSchema = ZoneAssessmentJsonSchema.omit({ questions: true }).extend({
-  trackingId: TrackingIdSchema,
-  questions: z.array(ZoneQuestionBlockFormSchema),
-});
-export type ZoneAssessmentForm = z.infer<typeof ZoneAssessmentFormSchema>;
+export type ZoneAssessmentForm = Omit<ZoneAssessmentJsonInput, 'questions'> & {
+  trackingId: TrackingId;
+  questions: ZoneQuestionBlockForm[];
+};
 
 /**
  * Assessment data for the question picker, including fields needed for grouping.
@@ -113,13 +143,13 @@ export type EditorAction =
   | {
       type: 'ADD_QUESTION';
       zoneTrackingId: string;
-      question: ZoneQuestionBlockForm & { id: string };
+      question: StandaloneQuestionBlockForm;
       questionData: EditorQuestionMetadata;
     }
   | {
       type: 'ADD_QUESTION';
       zoneTrackingId: string;
-      question: ZoneQuestionBlockForm;
+      question: AltGroupBlockForm;
       questionData?: undefined;
     }
   | {

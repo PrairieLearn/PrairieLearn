@@ -1,12 +1,14 @@
 import { useReducer, useState } from 'react';
 
-import type {
-  EditorAction,
-  EditorState,
-  QuestionAlternativeForm,
-  SelectedItem,
-  ZoneAssessmentForm,
-  ZoneQuestionBlockForm,
+import {
+  type EditorAction,
+  type EditorState,
+  type QuestionAlternativeForm,
+  type SelectedItem,
+  type StandaloneQuestionBlockForm,
+  type ZoneAssessmentForm,
+  type ZoneQuestionBlockForm,
+  assertStandaloneQuestion,
 } from '../types.js';
 
 import {
@@ -97,11 +99,6 @@ function removeQid(
     for (let qi = 0; qi < zone.questions.length; qi++) {
       const q = zone.questions[qi];
       if (q.id === qid) {
-        if (q.alternatives) {
-          for (const alt of q.alternatives) {
-            if (alt.id) delete questionMetadata[alt.id];
-          }
-        }
         delete questionMetadata[qid];
         zone.questions.splice(qi, 1);
         return;
@@ -162,10 +159,9 @@ function handleQuestionPicked(
         Object.assign(altGroupResult.question, pointFields);
       }
 
+      if (!altGroupResult.question.alternatives) return state;
+
       const newAlt = { ...createAlternativeWithTrackingId(), id: qid } as QuestionAlternativeForm;
-      if (!altGroupResult.question.alternatives) {
-        altGroupResult.question.alternatives = [];
-      }
       altGroupResult.question.alternatives.push(newAlt);
       newQuestionMetadata[qid] = metadata;
     } else {
@@ -252,7 +248,7 @@ function handleQuestionPicked(
         updatedFound.zone.questions[updatedFound.questionIndex] = {
           ...updatedFound.question,
           id: qid,
-        };
+        } as ZoneQuestionBlockForm;
       }
 
       return {
@@ -275,7 +271,7 @@ function handleQuestionPicked(
     const zoneResult = findZoneByTrackingId(newZones, selectedItem.zoneTrackingId);
     if (!zoneResult) return state;
 
-    const newQuestion: ZoneQuestionBlockForm & { id: string } = {
+    const newQuestion: StandaloneQuestionBlockForm = {
       ...createQuestionWithTrackingId(),
       id: qid,
       ...getDefaultPointFieldsForNewQuestion(gradingMethod),
@@ -355,7 +351,7 @@ export function createEditorReducer(initialState: EditorState) {
           questionResult.zone.questions[questionResult.questionIndex] = {
             ...questionResult.question,
             ...question,
-          };
+          } as ZoneQuestionBlockForm;
         }
 
         return {
@@ -617,15 +613,12 @@ export function createEditorReducer(initialState: EditorState) {
         const newZones = structuredClone(state.zones);
 
         const groupResult = findQuestionByTrackingId(newZones, altGroupTrackingId);
-        if (!groupResult) {
+        if (!groupResult?.question.alternatives) {
           throw new Error(
             `ADD_ALTERNATIVE: Alt group with trackingId ${altGroupTrackingId} not found`,
           );
         }
 
-        if (!groupResult.question.alternatives) {
-          groupResult.question.alternatives = [];
-        }
         groupResult.question.alternatives.push(alternative);
 
         const newQuestionMetadata =
@@ -654,14 +647,10 @@ export function createEditorReducer(initialState: EditorState) {
 
         // Find the destination alt group
         const toGroupResult = findQuestionByTrackingId(newZones, toAltGroupTrackingId);
-        if (!toGroupResult) {
+        if (!toGroupResult?.question.alternatives) {
           throw new Error(
             `REORDER_ALTERNATIVE: Alt group with trackingId ${toAltGroupTrackingId} not found`,
           );
-        }
-
-        if (!toGroupResult.question.alternatives) {
-          toGroupResult.question.alternatives = [];
         }
 
         // Remove alternative from source
@@ -751,18 +740,15 @@ export function createEditorReducer(initialState: EditorState) {
 
         // Find the destination alt group
         const toGroupResult = findQuestionByTrackingId(newZones, toAltGroupTrackingId);
-        if (!toGroupResult) {
+        if (!toGroupResult?.question.alternatives) {
           throw new Error(
             `MERGE_QUESTION_INTO_ALT_GROUP: Alt group with trackingId ${toAltGroupTrackingId} not found`,
           );
         }
 
-        if (!toGroupResult.question.alternatives) {
-          toGroupResult.question.alternatives = [];
-        }
-
         // Remove question from source zone
         const [removedQuestion] = fromResult.zone.questions.splice(fromResult.questionIndex, 1);
+        assertStandaloneQuestion(removedQuestion);
 
         // Convert to alternative
         const newAlt = questionBlockToAlternative(removedQuestion);

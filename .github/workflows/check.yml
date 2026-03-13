@@ -101,6 +101,7 @@ jobs:
         run: make typecheck-contrib
       - name: Run the TypeScript typechecker for scripts
         run: make typecheck-scripts
+      - uses: vegardit/fast-apt-mirror.sh@v1
       - name: Start Postgres
         run: |
           sudo apt-get purge -y man-db
@@ -152,6 +153,7 @@ jobs:
         with:
           show-progress: false
 
+      - uses: vegardit/fast-apt-mirror.sh@v1
       - name: Install OS packages
         run: |-
           sudo apt-get update
@@ -219,6 +221,7 @@ jobs:
           sudo curl -fsSL https://github.com/hadolint/hadolint/releases/download/v2.14.0/hadolint-Linux-x86_64 -o /bin/hadolint && \
           sudo chmod +x /bin/hadolint
 
+      - uses: vegardit/fast-apt-mirror.sh@v1
       - name: Install OS packages
         run: |-
           sudo apt-get update
