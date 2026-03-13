@@ -11,7 +11,6 @@ import { selectOptionalEnrollmentByUserId } from '../models/enrollment.js';
 
 import {
   type ConstructedCourseOrInstanceContext,
-  CourseOrInstanceContextDataSchema,
   type PlainAuthzData,
   calculateCourseInstanceRolePermissions,
   calculateCourseRolePermissions,
@@ -19,14 +18,27 @@ import {
 } from './authz-data-lib.js';
 import {
   type CourseInstance,
+  CourseInstanceSchema,
+  CourseSchema,
   EnumCourseInstanceRoleSchema,
   EnumCourseRoleSchema,
+  EnumEnrollmentStatusSchema,
   EnumModeSchema,
+  InstitutionSchema,
   type User,
 } from './db-types.js';
 import { ipToMode } from './exam-mode.js';
 
 const sql = sqldb.loadSqlEquiv(import.meta.url);
+
+const CourseOrInstanceContextDataSchema = z.object({
+  course: CourseSchema,
+  institution: InstitutionSchema,
+  course_instance: CourseInstanceSchema.nullable(),
+  course_role: EnumCourseRoleSchema,
+  course_instance_role: EnumCourseInstanceRoleSchema,
+  enrollment_status: EnumEnrollmentStatusSchema.nullable(),
+});
 
 /**
  * If `course_id` is not provided, but `course_instance_id` is,
@@ -36,30 +48,16 @@ async function selectCourseOrInstanceContextData({
   user_id,
   course_id,
   course_instance_id,
-  ip,
-  req_date,
 }: {
   user_id: string;
   course_id: string | null;
   course_instance_id: string | null;
-  ip: string | null;
-  req_date: Date;
 }) {
-  const result = await sqldb.queryOptionalRow(
+  return await sqldb.queryOptionalRow(
     sql.select_course_or_instance_context_data,
-    {
-      user_id,
-      course_id,
-      course_instance_id,
-      req_date,
-    },
-    CourseOrInstanceContextDataSchema.omit({ mode: true }),
+    { user_id, course_id, course_instance_id },
+    CourseOrInstanceContextDataSchema,
   );
-  if (result === null) return null;
-  return {
-    ...result,
-    mode: await ipToMode({ ip, date: req_date, authn_user_id: user_id }),
-  };
 }
 
 export const CourseOrInstanceOverridesSchema = z.object({
@@ -186,8 +184,6 @@ export async function constructCourseOrInstanceContext({
     user_id: user.id,
     course_id,
     course_instance_id,
-    ip,
-    req_date,
   });
 
   if (rawAuthzData === null) {
@@ -213,16 +209,14 @@ export async function constructCourseOrInstanceContext({
         resolvedOverrides.allow_example_course_override &&
         // If we can step _up_ to Viewer, do so.
         // We don't want to accidentally decrease the role of an existing user.
-        ['None', 'Previewer'].includes(rawAuthzData.permissions_course.course_role)
+        ['None', 'Previewer'].includes(rawAuthzData.course_role)
       ) {
         return 'Viewer';
       }
-
       // Otherwise, return the actual role.
-      return rawAuthzData.permissions_course.course_role;
     }
 
-    return rawAuthzData.permissions_course.course_role;
+    return rawAuthzData.course_role;
   });
 
   const course_instance_role = run(() => {
@@ -232,10 +226,11 @@ export async function constructCourseOrInstanceContext({
     if (is_administrator) {
       return 'Student Data Editor';
     }
-    return rawAuthzData.permissions_course_instance.course_instance_role;
+    return rawAuthzData.course_instance_role;
   });
 
-  const mode = resolvedOverrides.mode ?? rawAuthzData.mode;
+  const mode =
+    resolvedOverrides.mode ?? (await ipToMode({ ip, date: req_date, authn_user_id: user.id }));
 
   const authzData = {
     user,
@@ -257,10 +252,15 @@ export async function constructCourseOrInstanceContext({
                 req_date,
               );
             }
+            const has_student_access = await sqldb.callScalar(
+              'check_course_instance_access',
+              [course_instance_id, user.uid, user.institution_id, req_date],
+              z.boolean(),
+            );
             return {
-              has_student_access: rawAuthzData.permissions_course_instance.has_student_access,
+              has_student_access,
               has_student_access_with_enrollment:
-                rawAuthzData.permissions_course_instance.has_student_access_with_enrollment,
+                has_student_access && rawAuthzData.enrollment_status === 'joined',
             };
           })),
         };
@@ -288,4 +288,18 @@ export async function constructCourseOrInstanceContext({
     institution: rawAuthzData.institution,
     courseInstance: rawAuthzData.course_instance,
   };
+}
+
+export async function selectCourseInstanceRole({
+  courseInstanceId,
+  userId,
+}: {
+  userId: string;
+  courseInstanceId: string;
+}) {
+  return await sqldb.queryScalar(
+    sql.select_course_instance_role,
+    { course_instance_id: courseInstanceId, user_id: userId },
+    EnumCourseInstanceRoleSchema,
+  );
 }
