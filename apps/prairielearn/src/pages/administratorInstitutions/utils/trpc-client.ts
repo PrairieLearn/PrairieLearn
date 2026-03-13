@@ -5,15 +5,15 @@ import type { AdministratorInstitutionsRouter } from '../trpc.js';
 
 export function createAdministratorInstitutionsTrpcClient({
   csrfToken,
-  url = '/pl/administrator/institutions/trpc',
+  urlPrefix = '/pl',
 }: {
   csrfToken: string;
-  url?: string;
+  urlPrefix?: string;
 }) {
   return createTRPCClient<AdministratorInstitutionsRouter>({
     links: [
       httpLink({
-        url,
+        url: `${urlPrefix}/administrator/institutions/trpc`,
         headers: { 'X-CSRF-Token': csrfToken },
         transformer: superjson,
       }),

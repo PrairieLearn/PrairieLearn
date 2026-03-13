@@ -1,6 +1,8 @@
 import { TRPCError } from '@trpc/server';
 import { z } from 'zod';
 
+import { IdSchema } from '@prairielearn/zod';
+
 import { checkCoursePathExists, checkCourseRepositoryUrlExists } from '../../lib/course.js';
 import {
   deleteCourse,
@@ -15,7 +17,7 @@ const insert = t.procedure
   .use(requireAdministrator)
   .input(
     z.object({
-      institutionId: z.string().min(1, 'Institution is required'),
+      institutionId: IdSchema,
       shortName: z
         .string()
         .min(1, 'Short name is required')
@@ -63,7 +65,7 @@ const deleteCourseProcedure = t.procedure
   .use(requireAdministrator)
   .input(
     z.object({
-      courseId: z.string().min(1),
+      courseId: IdSchema,
       confirmShortName: z.string().min(1, 'Confirmation is required'),
     }),
   )
@@ -86,7 +88,7 @@ const updateColumn = t.procedure
   .use(requireAdministrator)
   .input(
     z.object({
-      courseId: z.string(),
+      courseId: IdSchema,
       columnName: z.enum([
         'short_name',
         'title',
@@ -99,6 +101,26 @@ const updateColumn = t.procedure
     }),
   )
   .mutation(async ({ input, ctx }) => {
+    if (input.columnName === 'repository') {
+      const repoExists = await checkCourseRepositoryUrlExists(input.value);
+      if (repoExists) {
+        throw new TRPCError({
+          code: 'BAD_REQUEST',
+          message: 'A course with this repository already exists.',
+        });
+      }
+    }
+
+    if (input.columnName === 'path') {
+      const pathExists = await checkCoursePathExists(input.value);
+      if (pathExists) {
+        throw new TRPCError({
+          code: 'BAD_REQUEST',
+          message: 'A course with this path already exists.',
+        });
+      }
+    }
+
     await updateCourseColumn({
       courseId: input.courseId,
       columnName: input.columnName,

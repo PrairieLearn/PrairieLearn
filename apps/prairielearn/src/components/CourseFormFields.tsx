@@ -54,39 +54,35 @@ export function CourseFormFields({
   const path = watch('path');
   const repositoryShortName = watch('repository_short_name');
 
-  const { data: prefixData } = useQuery({
+  const { data: prefixData, isError: isPrefixQueryError } = useQuery({
     ...trpc.courseRequests.selectInstitutionPrefixQuery.queryOptions({ institutionId }),
     enabled: !!institutionId,
   });
 
+  const selectedInstitution = institutions.find((i) => i.id === institutionId);
+  const isDefaultInstitution = selectedInstitution?.short_name === 'Default';
+
   useEffect(() => {
     if (!shortName) return;
     if (institutionId && !prefixData) return;
+    if (isDefaultInstitution) return;
     const newRepoShortName = buildRepoShortName(prefixData?.prefix, shortName);
     setValue('path', `${coursesRoot}/${newRepoShortName}`);
     setValue('repository_short_name', newRepoShortName);
-  }, [prefixData, shortName, institutionId, coursesRoot, setValue]);
-
-  const selectedInstitution = institutions.find((i) => i.id === institutionId);
-  const isDefaultInstitution = selectedInstitution?.short_name === 'Default';
+  }, [prefixData, shortName, institutionId, isDefaultInstitution, coursesRoot, setValue]);
 
   const repoFormatValid =
     !repositoryShortName || /^pl-[a-z0-9]+-[a-z0-9]+$/.test(repositoryShortName);
   const pathMatchesRepo =
     !repositoryShortName || !path || path === `${coursesRoot}/${repositoryShortName}`;
 
-  const prefixReady = !institutionId || prefixData !== undefined;
+  const prefixReady = !institutionId || prefixData !== undefined || isPrefixQueryError;
   const expectedRepoShortName =
     prefixReady && shortName.trim() ? buildRepoShortName(prefixData?.prefix, shortName) : null;
   const repoMatchesShortName =
     !expectedRepoShortName || !repositoryShortName || repositoryShortName === expectedRepoShortName;
 
-  const {
-    data: suggestedPrefixData,
-    isFetching: isFetchingPrefix,
-    isError: isPrefixError,
-    refetch: suggestPrefix,
-  } = useQuery({
+  const suggestPrefixQuery = useQuery({
     ...trpc.courseRequests.suggestPrefixFromEmailQuery.queryOptions({
       institutionName: suggestPrefixOptions.institutionName,
       emailDomain: suggestPrefixOptions.emailDomain,
@@ -95,11 +91,11 @@ export function CourseFormFields({
   });
 
   useEffect(() => {
-    if (!suggestedPrefixData?.prefix) return;
-    const newRepoShortName = buildRepoShortName(suggestedPrefixData.prefix, shortName);
+    if (!suggestPrefixQuery.data?.prefix) return;
+    const newRepoShortName = buildRepoShortName(suggestPrefixQuery.data.prefix, shortName);
     setValue('path', `${coursesRoot}/${newRepoShortName}`);
     setValue('repository_short_name', newRepoShortName);
-  }, [suggestedPrefixData, shortName, coursesRoot, setValue]);
+  }, [suggestPrefixQuery.data, shortName, coursesRoot, setValue]);
 
   return (
     <>
@@ -141,6 +137,11 @@ export function CourseFormFields({
             <div className="form-text text-warning">
               <i className="fa fa-exclamation-triangle" aria-hidden="true" /> The "Default"
               institution is typically not intended for new courses.
+            </div>
+          )}
+          {isPrefixQueryError && (
+            <div className="form-text text-danger">
+              Failed to load institution prefix. Repository name will not be auto-filled.
             </div>
           )}
         </div>
@@ -304,11 +305,15 @@ export function CourseFormFields({
                 type="button"
                 className="btn btn-sm btn-outline-secondary"
                 aria-label="Suggest repository and path prefix"
-                disabled={isFetchingPrefix || !suggestPrefixOptions.enabled || !aiSecretsConfigured}
-                aria-busy={isFetchingPrefix}
-                onClick={() => suggestPrefix()}
+                disabled={
+                  suggestPrefixQuery.isFetching ||
+                  !suggestPrefixOptions.enabled ||
+                  !aiSecretsConfigured
+                }
+                aria-busy={suggestPrefixQuery.isFetching}
+                onClick={() => suggestPrefixQuery.refetch()}
               >
-                {isFetchingPrefix ? (
+                {suggestPrefixQuery.isFetching ? (
                   <>
                     {' '}
                     <i className="fa fa-spinner fa-spin" aria-hidden="true" /> Suggesting...
@@ -324,19 +329,19 @@ export function CourseFormFields({
             </span>
           </OverlayTrigger>
           <div aria-live="polite" aria-atomic="true">
-            {isPrefixError && (
+            {suggestPrefixQuery.isError && (
               <div className="mt-2 text-danger small">Failed to suggest prefix. Try again.</div>
             )}
-            {suggestedPrefixData && (
+            {suggestPrefixQuery.data && (
               <div className="mt-2 text-muted small">
-                <ReactMarkdown>{suggestedPrefixData.reasoning}</ReactMarkdown>
+                <ReactMarkdown>{suggestPrefixQuery.data.reasoning}</ReactMarkdown>
               </div>
             )}
-            {suggestedPrefixData && suggestedPrefixData.sources.length > 0 && (
+            {suggestPrefixQuery.data && suggestPrefixQuery.data.sources.length > 0 && (
               <div className="mt-1">
                 <span className="small text-muted">Sources</span>
                 <div className="d-flex flex-wrap gap-1">
-                  {suggestedPrefixData.sources
+                  {suggestPrefixQuery.data.sources
                     .filter(
                       (source, index, arr) => arr.findIndex((s) => s.url === source.url) === index,
                     )

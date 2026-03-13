@@ -186,18 +186,16 @@ function CourseRequestTableRow({
               >
                 <i className="fa fa-check" aria-hidden="true" /> Approve
               </button>
-              {showApproveModal && (
-                <CourseRequestApproveModal
-                  request={row}
-                  institutions={institutions}
-                  availableTimezones={availableTimezones}
-                  coursesRoot={coursesRoot}
-                  urlPrefix={urlPrefix}
-                  show={showApproveModal}
-                  aiSecretsConfigured={aiSecretsConfigured}
-                  onCancel={() => setShowApproveModal(false)}
-                />
-              )}
+              <CourseRequestApproveModal
+                request={row}
+                institutions={institutions}
+                availableTimezones={availableTimezones}
+                coursesRoot={coursesRoot}
+                urlPrefix={urlPrefix}
+                show={showApproveModal}
+                aiSecretsConfigured={aiSecretsConfigured}
+                onCancel={() => setShowApproveModal(false)}
+              />
             </div>
           )}
         </td>
@@ -344,12 +342,7 @@ function CourseRequestApproveModal({
     );
   };
 
-  const {
-    data: legitimacyData,
-    isFetching: isCheckingLegitimacy,
-    isError: isLegitimacyError,
-    refetch: checkLegitimacy,
-  } = useQuery({
+  const legitimacyQuery = useQuery({
     ...trpc.courseRequests.checkInstructorLegitimacyQuery.queryOptions({
       courseRequestId: request.id,
     }),
@@ -384,11 +377,11 @@ function CourseRequestApproveModal({
                     <button
                       type="button"
                       className="btn btn-sm btn-outline-secondary"
-                      disabled={isCheckingLegitimacy || !aiSecretsConfigured}
-                      aria-busy={isCheckingLegitimacy}
-                      onClick={() => checkLegitimacy()}
+                      disabled={legitimacyQuery.isFetching || !aiSecretsConfigured}
+                      aria-busy={legitimacyQuery.isFetching}
+                      onClick={() => legitimacyQuery.refetch()}
                     >
-                      {isCheckingLegitimacy ? (
+                      {legitimacyQuery.isFetching ? (
                         <>
                           <i className="fa fa-spinner fa-spin" aria-hidden="true" /> Checking...
                         </>
@@ -449,34 +442,34 @@ function CourseRequestApproveModal({
                     )}
                   </div>
                 </div>
-                {isLegitimacyError && (
-                  <div className="mt-2 text-danger small">
-                    Failed to check legitimacy. Try again.
-                  </div>
-                )}
                 <div aria-live="polite" aria-atomic="true">
-                  {legitimacyData && (
+                  {legitimacyQuery.isError && (
+                    <div className="mt-2 text-danger small">
+                      Failed to check legitimacy. Try again.
+                    </div>
+                  )}
+                  {legitimacyQuery.data && (
                     <div className="mt-2 pt-2 border-top">
                       <div className="d-flex align-items-start gap-2">
                         <span
                           className={clsx('badge', {
-                            'text-bg-success': legitimacyData.confidence === 'high',
-                            'text-bg-warning': legitimacyData.confidence === 'medium',
-                            'text-bg-danger': legitimacyData.confidence === 'low',
+                            'text-bg-success': legitimacyQuery.data.confidence === 'high',
+                            'text-bg-warning': legitimacyQuery.data.confidence === 'medium',
+                            'text-bg-danger': legitimacyQuery.data.confidence === 'low',
                           })}
                         >
-                          {legitimacyData.isLikely ? 'Likely legitimate' : 'Uncertain'} &middot;{' '}
-                          {legitimacyData.confidence} confidence
+                          {legitimacyQuery.data.legitimate ? 'Likely legitimate' : 'Uncertain'}{' '}
+                          &middot; {legitimacyQuery.data.confidence} confidence
                         </span>
                       </div>
                       <small className="text-muted">
-                        <ReactMarkdown>{legitimacyData.summary}</ReactMarkdown>
+                        <ReactMarkdown>{legitimacyQuery.data.summary}</ReactMarkdown>
                       </small>
-                      {legitimacyData.sources.length > 0 && (
+                      {legitimacyQuery.data.sources.length > 0 && (
                         <div className="mt-1">
                           <span className="small text-muted">Sources</span>
                           <div className="d-flex flex-wrap gap-1">
-                            {legitimacyData.sources
+                            {legitimacyQuery.data.sources
                               .filter(
                                 (source, index, arr) =>
                                   arr.findIndex((s) => s.url === source.url) === index,

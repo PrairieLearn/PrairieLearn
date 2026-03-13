@@ -61,7 +61,7 @@ export function AdministratorCourses({
   const [queryClient] = useState(() => new QueryClient());
   const [trpcClient] = useState(() => createAdministratorTrpcClient({ csrfToken: trpcCsrfToken }));
 
-  const [showInsertCourseModal, setShowInsertCourseModal] = useState(false);
+  const [showAddCourseModal, setShowAddCourseModal] = useState(false);
   const [deleteCourseId, setDeleteCourseId] = useState<string | null>(null);
 
   return (
@@ -84,22 +84,20 @@ export function AdministratorCourses({
               <button
                 type="button"
                 className="btn btn-sm btn-light ms-auto"
-                onClick={() => setShowInsertCourseModal(true)}
+                onClick={() => setShowAddCourseModal(true)}
               >
                 <i className="fa fa-plus" aria-hidden="true" />
                 <span className="d-none d-sm-inline">Add course</span>
               </button>
-              {showInsertCourseModal && (
-                <CourseInsertModal
-                  institutions={institutions}
-                  availableTimezones={availableTimezones}
-                  coursesRoot={coursesRoot}
-                  courseRepoDefaultBranch={courseRepoDefaultBranch}
-                  show={showInsertCourseModal}
-                  aiSecretsConfigured={aiSecretsConfigured}
-                  onCancel={() => setShowInsertCourseModal(false)}
-                />
-              )}
+              <CourseInsertModal
+                institutions={institutions}
+                availableTimezones={availableTimezones}
+                coursesRoot={coursesRoot}
+                courseRepoDefaultBranch={courseRepoDefaultBranch}
+                show={showAddCourseModal}
+                aiSecretsConfigured={aiSecretsConfigured}
+                onCancel={() => setShowAddCourseModal(false)}
+              />
             </div>
             <div className="table-responsive">
               <table className="table table-sm table-hover table-striped" aria-label="Courses">

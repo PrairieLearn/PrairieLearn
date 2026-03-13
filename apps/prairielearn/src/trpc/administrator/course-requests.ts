@@ -1,6 +1,8 @@
 import { TRPCError } from '@trpc/server';
 import { z } from 'zod';
 
+import { IdSchema } from '@prairielearn/zod';
+
 import {
   checkInstructorLegitimacy,
   suggestPrefixFromEmailDomain,
@@ -8,7 +10,7 @@ import {
 import {
   createCourseFromRequest,
   denyCourseRequest,
-  selectCourseRequestForAi,
+  selectCourseRequestById,
   selectInstitutionPrefix,
   updateCourseRequestNote,
 } from '../../lib/course-request.js';
@@ -18,7 +20,7 @@ import { requireAdministrator, t } from './trpc-init.js';
 
 const deny = t.procedure
   .use(requireAdministrator)
-  .input(z.object({ courseRequestId: z.string() }))
+  .input(z.object({ courseRequestId: IdSchema }))
   .mutation(async ({ input, ctx }) => {
     await denyCourseRequest({
       courseRequestId: input.courseRequestId,
@@ -28,7 +30,7 @@ const deny = t.procedure
 
 const updateNote = t.procedure
   .use(requireAdministrator)
-  .input(z.object({ courseRequestId: z.string(), note: z.string() }))
+  .input(z.object({ courseRequestId: IdSchema, note: z.string() }))
   .mutation(async ({ input }) => {
     await updateCourseRequestNote({
       courseRequestId: input.courseRequestId,
@@ -40,7 +42,7 @@ const createCourse = t.procedure
   .use(requireAdministrator)
   .input(
     z.object({
-      courseRequestId: z.string().min(1),
+      courseRequestId: IdSchema,
       shortName: z
         .string()
         .min(1, 'Short name is required')
@@ -49,7 +51,7 @@ const createCourse = t.procedure
           'The course rubric and number should be a series of letters, followed by a space, followed by a series of numbers and/or letters.',
         ),
       title: z.string().min(1, 'Title is required').max(75, 'Title must be at most 75 characters'),
-      institutionId: z.string().min(1, 'Institution is required'),
+      institutionId: IdSchema,
       displayTimezone: z.string().min(1, 'Timezone is required'),
       path: z.string().min(1, 'Path is required'),
       repoShortName: z.string().min(1, 'Repository name is required'),
@@ -90,17 +92,17 @@ const createCourse = t.procedure
 
 const checkInstructorLegitimacyQuery = t.procedure
   .use(requireAdministrator)
-  .input(z.object({ courseRequestId: z.string() }))
+  .input(z.object({ courseRequestId: IdSchema }))
   .output(
     z.object({
-      isLikely: z.boolean(),
-      confidence: z.enum(['high', 'medium', 'low']),
       summary: z.string(),
+      confidence: z.enum(['high', 'medium', 'low']),
+      legitimate: z.boolean(),
       sources: z.array(z.object({ url: z.string(), title: z.string().optional() })),
     }),
   )
   .query(async ({ input }) => {
-    const courseRequest = await selectCourseRequestForAi({
+    const courseRequest = await selectCourseRequestById({
       courseRequestId: input.courseRequestId,
     });
 
@@ -116,7 +118,7 @@ const checkInstructorLegitimacyQuery = t.procedure
 
 const selectInstitutionPrefixQuery = t.procedure
   .use(requireAdministrator)
-  .input(z.object({ institutionId: z.string() }))
+  .input(z.object({ institutionId: IdSchema }))
   .output(
     z.object({
       prefix: z.string().nullable(),

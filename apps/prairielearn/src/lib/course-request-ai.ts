@@ -6,19 +6,43 @@ import { formatPrompt } from './ai-util.js';
 import { config } from './config.js';
 
 const legitimacySchema = z.object({
-  isLikely: z.boolean(),
-  confidence: z.enum(['high', 'medium', 'low']),
-  summary: z.string(),
+  summary: z
+    .string()
+    .describe(
+      '1-2 sentences describing what you found or did not find, explicitly noting any discrepancies between the account and form information.',
+    ),
+  confidence: z
+    .enum(['high', 'medium', 'low'])
+    .describe(
+      '"high" if you found direct evidence (e.g. a faculty page), "medium" for indirect evidence, "low" if you found little or nothing.',
+    ),
+  legitimate: z
+    .boolean()
+    .describe(
+      'true if you found clear evidence they work at this institution, false if you could not.',
+    ),
 });
 
 const timezoneSchema = z.object({
-  timezone: z.string(),
-  reasoning: z.string(),
+  reasoning: z
+    .string()
+    .describe(
+      "1-2 sentences explaining how you identified the institution's location and timezone.",
+    ),
+  timezone: z
+    .string()
+    .describe(
+      'A valid IANA tz database identifier (e.g. "America/Chicago", "Europe/London"). Always use a city-based timezone, never a UTC offset.',
+    ),
 });
 
 const prefixSchema = z.object({
-  prefix: z.string(),
-  reasoning: z.string(),
+  reasoning: z
+    .string()
+    .describe(
+      "Explain how you identified the institution's primary domain and derived the prefix.",
+    ),
+  prefix: z.string().describe('Lowercase only, no spaces or special characters.'),
 });
 
 interface AiSource {
@@ -65,10 +89,6 @@ export async function checkInstructorLegitimacy({
         'Search the web to determine whether the person described by the user is a legitimate academic instructor or researcher at their stated institution.',
         'Use sources like faculty pages, staff directories, university websites, or professional profiles (e.g. LinkedIn, Google Scholar).',
         'The user provides both the name entered on the course request form and the name on their PrairieLearn account. If the PrairieLearn account name or email differs significantly from the submitted name and work email, lower your confidence accordingly and treat it as a reason to doubt the request.',
-        'For each field in your response:',
-        '- isLikely: true if you found clear evidence they work at this institution, false if you could not',
-        '- confidence: "high" if you found direct evidence (e.g. a faculty page), "medium" for indirect evidence, "low" if you found little or nothing',
-        '- summary: 1-2 sentences describing what you found or did not find, explicitly noting any discrepancies between the account and form information',
       ]),
     },
     {
@@ -83,12 +103,11 @@ export async function checkInstructorLegitimacy({
     },
   ];
 
-  const schema = legitimacySchema;
-
   const response = await generateText({
-    model: openai.chat('gpt-4o-search-preview'),
-    output: Output.object({ schema }),
+    model: openai.responses('gpt-5-mini'),
+    output: Output.object({ schema: legitimacySchema }),
     messages: input,
+    tools: { web_search: openai.tools.webSearch({}) },
   });
 
   return {
@@ -114,9 +133,6 @@ export async function suggestTimezone({
       content: formatPrompt([
         'You are helping a PrairieLearn administrator configure a new institution.',
         'Search the web to determine the correct timezone for the institution provided by the user.',
-        'Return the timezone as a valid IANA tz database identifier (e.g. "America/Chicago", "Europe/London").',
-        'Always use a city-based timezone, never a UTC offset.',
-        "In the reasoning field, write 1-2 sentences explaining how you identified the institution's location and timezone.",
       ]),
     },
     {
@@ -128,12 +144,11 @@ export async function suggestTimezone({
     },
   ];
 
-  const schema = timezoneSchema;
-
   const response = await generateText({
-    model: openai.chat('gpt-4o-search-preview'),
-    output: Output.object({ schema }),
+    model: openai.responses('gpt-5-mini'),
+    output: Output.object({ schema: timezoneSchema }),
     messages: input,
+    tools: { web_search: openai.tools.webSearch({}) },
   });
 
   return {
@@ -159,12 +174,9 @@ export async function suggestPrefixFromEmailDomain({
       content: formatPrompt([
         'You are helping a PrairieLearn administrator name a GitHub repository for a new course.',
         'Repository names follow the pattern "pl-{institution-prefix}-{course-name}". Your job is to determine the correct institution prefix.',
-        'Rules for the prefix:',
-        '- Identify the institution as a whole, NOT a department. For example, if the domain is "cs.illinois.edu", the prefix is "uiuc" (not "cs").',
-        '- Use the institution\'s widely-recognized abbreviation (e.g. "mit", "ubc", "eth", "uiuc").',
-        '- Search the web to confirm the abbreviation, especially for lesser-known institutions.',
-        '- Lowercase only, no spaces or special characters, max 10 characters.',
-        'In the reasoning field, explain how you identified the institution and chose the abbreviation.',
+        'Identify the institution as a whole, NOT a department. For example, if the domain is "cs.illinois.edu", the prefix is "uiuc" (not "cs").',
+        'Derive the prefix from the institution\'s primary domain name. For example, "berkeley.edu" gives "berkeley", "ubc.ca" gives "ubc".',
+        "Search the web to find the institution's primary domain if it is not obvious from the email domain.",
       ]),
     },
     {
@@ -176,12 +188,11 @@ export async function suggestPrefixFromEmailDomain({
     },
   ];
 
-  const schema = prefixSchema;
-
   const response = await generateText({
+    model: openai.responses('gpt-5-mini'),
+    output: Output.object({ schema: prefixSchema }),
     messages: input,
-    output: Output.object({ schema }),
-    model: openai.chat('gpt-4o-search-preview'),
+    tools: { web_search: openai.tools.webSearch({}) },
   });
 
   return {

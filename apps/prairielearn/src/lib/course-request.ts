@@ -49,15 +49,6 @@ const CourseRequestRowSchema = z.object({
 });
 export type CourseRequestRow = z.infer<typeof CourseRequestRowSchema>;
 
-const CourseRequestForAiSchema = z.object({
-  first_name: z.string().nullable(),
-  last_name: z.string().nullable(),
-  work_email: z.string().nullable(),
-  institution: z.string().nullable(),
-  user_name: z.string().nullable(),
-  user_uid: z.string(),
-});
-
 async function selectCourseRequests(show_all: boolean) {
   return await queryRows(sql.select_course_requests, { show_all }, CourseRequestRowSchema);
 }
@@ -196,10 +187,10 @@ export async function selectInstitutionPrefix({ institutionId }: { institutionId
   );
 }
 
-export async function selectCourseRequestForAi({ courseRequestId }: { courseRequestId: string }) {
+export async function selectCourseRequestById({ courseRequestId }: { courseRequestId: string }) {
   return await queryRow(
     sql.select_course_request_by_id,
     { course_request_id: courseRequestId },
-    CourseRequestForAiSchema,
+    CourseRequestRowSchema,
   );
 }

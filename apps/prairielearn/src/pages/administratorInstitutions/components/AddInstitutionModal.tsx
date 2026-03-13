@@ -66,18 +66,13 @@ export function AddInstitutionModal({
     );
   };
 
-  const {
-    data: timezoneData,
-    isFetching: isFetchingTimezone,
-    isError: isTimezoneError,
-    refetch: suggestTimezone,
-  } = useQuery({
+  const timezoneQuery = useQuery({
     ...trpc.suggestTimezoneQuery.queryOptions({ institutionName, emailDomain }),
     enabled: false,
   });
 
   async function handleSuggestTimezone() {
-    const { data } = await suggestTimezone();
+    const { data } = await timezoneQuery.refetch();
     if (data?.timezone) {
       setValue('display_timezone', data.timezone);
     }
@@ -125,7 +120,7 @@ export function AddInstitutionModal({
             <label className="form-label" htmlFor="display_timezone">
               Timezone
             </label>
-            <div className="input-group">
+            <div className="d-flex gap-2 align-items-center">
               <select
                 className="form-select"
                 id="display_timezone"
@@ -151,18 +146,21 @@ export function AddInstitutionModal({
                   props: { id: 'suggest-timezone-tooltip' },
                 }}
               >
-                <span className="d-inline-block ms-2">
+                <span className="d-inline-block">
                   <button
                     type="button"
                     className="btn btn-secondary"
                     aria-label="Suggest timezone"
-                    aria-busy={isFetchingTimezone}
+                    aria-busy={timezoneQuery.isFetching}
                     disabled={
-                      isFetchingTimezone || !aiSecretsConfigured || !institutionName || !emailDomain
+                      timezoneQuery.isFetching ||
+                      !aiSecretsConfigured ||
+                      !institutionName ||
+                      !emailDomain
                     }
                     onClick={handleSuggestTimezone}
                   >
-                    {isFetchingTimezone ? 'Suggesting...' : 'Suggest'}
+                    {timezoneQuery.isFetching ? 'Suggesting...' : 'Suggest'}
                   </button>
                 </span>
               </OverlayTrigger>
@@ -180,12 +178,12 @@ export function AddInstitutionModal({
               e.g. "America/Chicago".
             </small>
             <div aria-live="polite" aria-atomic="true">
-              {isTimezoneError && (
+              {timezoneQuery.isError && (
                 <div className="mt-2 text-danger small">Failed to suggest timezone. Try again.</div>
               )}
-              {timezoneData && (
+              {timezoneQuery.data && (
                 <div className="mt-2 text-muted small">
-                  <ReactMarkdown>{timezoneData.reasoning}</ReactMarkdown>
+                  <ReactMarkdown>{timezoneQuery.data.reasoning}</ReactMarkdown>
                 </div>
               )}
             </div>
