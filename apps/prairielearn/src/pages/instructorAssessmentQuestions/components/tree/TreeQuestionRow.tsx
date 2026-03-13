@@ -8,10 +8,16 @@ import { CopyButton } from '../../../../components/CopyButton.js';
 import type { EditorQuestionMetadata } from '../../../../lib/assessment-question.shared.js';
 import { getQuestionUrl } from '../../../../lib/client/url.js';
 import type { EnumAssessmentType } from '../../../../lib/db-types.js';
-import type { QuestionAlternativeForm, TreeState, ZoneQuestionBlockForm } from '../../types.js';
+import type {
+  QuestionAlternativeForm,
+  QuestionWithId,
+  TreeState,
+  ZoneQuestionBlockForm,
+} from '../../types.js';
 import {
   compactPoints,
   computeQuestionTotalPoints,
+  questionHasTitle,
   toAssessmentForPicker,
 } from '../../utils/questions.js';
 import { AssessmentBadges } from '../AssessmentBadges.js';
@@ -177,7 +183,7 @@ export function TreeQuestionRow({
   onClick,
   onDelete,
 }: {
-  question: ZoneQuestionBlockForm | QuestionAlternativeForm;
+  question: QuestionWithId;
   zoneQuestionBlock: ZoneQuestionBlockForm;
   isAlternative: boolean;
   questionData: EditorQuestionMetadata | null;
@@ -202,6 +208,8 @@ export function TreeQuestionRow({
     questionData?.question.grading_method === 'Manual' &&
     ((question.autoPoints ?? zoneQuestionBlock.autoPoints) != null ||
       (question.maxAutoPoints ?? zoneQuestionBlock.maxAutoPoints) != null);
+
+  const hasTitle = questionHasTitle(questionData);
 
   return (
     <div
@@ -245,14 +253,29 @@ export function TreeQuestionRow({
                   className="link-underline-opacity-0 link-underline-opacity-100-hover text-primary-emphasis"
                   onClick={(e) => e.stopPropagation()}
                 >
-                  {questionData.question.title}
+                  {hasTitle ? (
+                    questionData.question.title
+                  ) : (
+                    <span className="font-monospace">{question.id}</span>
+                  )}
                 </a>
+                {!hasTitle && (
+                  <CopyButton
+                    text={question.id}
+                    tooltipId={`copy-qid-${question.id}`}
+                    ariaLabel="Copy QID"
+                    className="hover-show ms-1"
+                    onClick={(e) => e.stopPropagation()}
+                  />
+                )}
               </>
-            ) : (
+            ) : hasTitle ? (
               questionData.question.title
+            ) : (
+              <span className="font-monospace">{question.id}</span>
             )
           ) : (
-            <span className="text-muted small">{question.id}</span>
+            <span className="text-muted small font-monospace">{question.id}</span>
           )}
           {hasManualGradingAutoPointsWarning && (
             <WarningIndicator
@@ -268,7 +291,7 @@ export function TreeQuestionRow({
             changeTracking={changeTracking}
           />
         </div>
-        {question.id && (
+        {hasTitle && (
           <div
             className="d-flex align-items-center text-muted font-monospace"
             style={{ fontSize: '0.75rem' }}
@@ -323,7 +346,7 @@ export function TreeQuestionRow({
         <button
           type="button"
           className="btn btn-sm border-0 text-muted ms-1 tree-delete-btn hover-show"
-          aria-label={`Delete ${question.id ?? 'question'}`}
+          aria-label={`Delete ${question.id}`}
           title="Delete question"
           onClick={(e) => {
             e.stopPropagation();

@@ -565,7 +565,9 @@
     "PointsJsonSchema": {
       "anyOf": [
         {
-          "$ref": "#/definitions/PointsSingleJsonSchema"
+          "description": "A single point value.",
+          "$ref": "#/definitions/PointsSingleJsonSchema",
+          "default": 0
         },
         {
           "$ref": "#/definitions/PointsListJsonSchema"
@@ -575,8 +577,7 @@
     "PointsSingleJsonSchema": {
       "description": "A single point value.",
       "type": "number",
-      "minimum": 0,
-      "default": 0
+      "minimum": 0
     },
     "PointsListJsonSchema": {
       "description": "An array of point values.",
