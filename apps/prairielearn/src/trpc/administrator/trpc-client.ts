@@ -5,15 +5,15 @@ import type { AdministratorRouter } from '../../trpc/administrator/trpc.js';
 
 export function createAdministratorTrpcClient({
   csrfToken,
-  url = '/pl/administrator/trpc',
+  urlPrefix = '/pl',
 }: {
   csrfToken: string;
-  url?: string;
+  urlPrefix?: string;
 }) {
   return createTRPCClient<AdministratorRouter>({
     links: [
       httpLink({
-        url,
+        url: `${urlPrefix}/administrator/trpc`,
         headers: { 'X-CSRF-Token': csrfToken },
         transformer: superjson,
       }),
