@@ -113,20 +113,6 @@ export type ConstructedCourseOrInstanceContext =
     }
   | ConstructedCourseOrInstanceSuccessContext;
 
-/** The full authz data from a database query. This is NOT what is on res.locals. */
-export interface CourseOrInstanceContextData {
-  course: Course;
-  institution: Institution;
-  course_instance: CourseInstance | null;
-  mode: EnumMode;
-  permissions_course: { course_role: EnumCourseRole };
-  permissions_course_instance: {
-    course_instance_role: EnumCourseInstanceRole;
-    has_student_access: boolean;
-    has_student_access_with_enrollment: boolean;
-  };
-}
-
 export type AuthzDataWithoutEffectiveUser = PlainAuthzData | DangerousSystemAuthzData;
 
 export type AuthzDataWithEffectiveUser =
