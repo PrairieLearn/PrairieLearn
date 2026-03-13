@@ -50,18 +50,12 @@ WITH
       aq.assessment_id,
       count(*) AS num_instance_questions_to_grade
     FROM
-      assessment_questions AS aq
+      assessments AS a
+      JOIN assessment_questions AS aq ON (aq.assessment_id = a.id)
       JOIN instance_questions AS iq ON (iq.assessment_question_id = aq.id)
     WHERE
-      aq.assessment_id IN (
-        SELECT
-          id
-        FROM
-          assessments
-        WHERE
-          course_instance_id = $course_instance_id
-          AND deleted_at IS NULL
-      )
+      a.course_instance_id = $course_instance_id
+      AND a.deleted_at IS NULL
       AND aq.deleted_at IS NULL
       AND iq.requires_manual_grading
     GROUP BY
