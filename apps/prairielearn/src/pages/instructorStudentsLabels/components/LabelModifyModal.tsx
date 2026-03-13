@@ -11,8 +11,8 @@ import { extractJobSequenceId } from '../../../lib/client/errors.js';
 import { getCourseInstanceJobSequenceUrl } from '../../../lib/client/url.js';
 import { parseUniqueValuesFromString } from '../../../lib/string-util.js';
 import { ColorJsonSchema } from '../../../schemas/infoCourse.js';
-import { MAX_LABEL_UIDS } from '../instructorStudentsLabels.types.js';
 import type { createCourseInstanceTrpcClient } from '../../../trpc/courseInstance/trpc-client.js';
+import { MAX_LABEL_UIDS } from '../instructorStudentsLabels.types.js';
 
 type StudentLabelsTrpcClient = ReturnType<typeof createCourseInstanceTrpcClient>;
 

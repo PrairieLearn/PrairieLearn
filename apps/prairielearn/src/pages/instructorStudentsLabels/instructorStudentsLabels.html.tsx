@@ -4,12 +4,12 @@ import { useState } from 'react';
 import { useModalState } from '@prairielearn/ui';
 
 import { QueryClientProviderDebug } from '../../lib/client/tanstackQuery.js';
+import { createCourseInstanceTrpcClient } from '../../trpc/courseInstance/trpc-client.js';
 
 import { LabelDeleteModal, type LabelDeleteModalData } from './components/LabelDeleteModal.js';
 import { LabelModifyModal, type LabelModifyModalData } from './components/LabelModifyModal.js';
 import { LabelTableRow } from './components/LabelTableRow.js';
 import type { StudentLabelWithUserData } from './instructorStudentsLabels.types.js';
-import { createCourseInstanceTrpcClient } from '../../trpc/courseInstance/trpc-client.js';
 
 type StudentLabelsTrpcClient = ReturnType<typeof createCourseInstanceTrpcClient>;
 

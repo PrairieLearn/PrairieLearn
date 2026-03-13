@@ -51,8 +51,8 @@ import {
 } from '../../lib/client/url.js';
 import type { EnumEnrollmentStatus } from '../../lib/db-types.js';
 import { courseInstanceFilenamePrefix } from '../../lib/sanitize-name.js';
-import { MAX_LABEL_UIDS } from '../instructorStudentsLabels/instructorStudentsLabels.types.js';
 import { createCourseInstanceTrpcClient } from '../../trpc/courseInstance/trpc-client.js';
+import { MAX_LABEL_UIDS } from '../instructorStudentsLabels/instructorStudentsLabels.types.js';
 
 import { InviteStudentsModal } from './components/InviteStudentsModal.js';
 import { SyncStudentsModal } from './components/SyncStudentsModal.js';
@@ -273,7 +273,10 @@ function StudentsCard({
 
   const queryClient = useQueryClient();
   const [trpcClient] = useState(() =>
-    createCourseInstanceTrpcClient({ csrfToken: trpcCsrfToken, courseInstanceId: courseInstance.id }),
+    createCourseInstanceTrpcClient({
+      csrfToken: trpcCsrfToken,
+      courseInstanceId: courseInstance.id,
+    }),
   );
 
   const { data: studentLabels = initialStudentLabels } = useQuery({

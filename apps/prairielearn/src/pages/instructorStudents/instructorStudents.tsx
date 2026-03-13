@@ -7,6 +7,7 @@ import z from 'zod';
 import { HttpStatusError } from '@prairielearn/error';
 import { callScalar, loadSqlEquiv, queryRows } from '@prairielearn/postgres';
 import { Hydrate } from '@prairielearn/react/server';
+import { generatePrefixCsrfToken } from '@prairielearn/signed-token';
 import { assertNever } from '@prairielearn/utils';
 import { UniqueUidsFromStringSchema } from '@prairielearn/zod';
 
@@ -18,8 +19,8 @@ import { StaffEnrollmentSchema, StaffStudentLabelSchema } from '../../lib/client
 import { getSelfEnrollmentLinkUrl, getStudentCourseInstanceUrl } from '../../lib/client/url.js';
 import { config } from '../../lib/config.js';
 import { getCourseOwners } from '../../lib/course.js';
-import { getOriginalHash } from '../../lib/editors.js';
 import type { CourseInstance } from '../../lib/db-types.js';
+import { getOriginalHash } from '../../lib/editors.js';
 import { typedAsyncHandler } from '../../lib/res-locals.js';
 import { type ServerJobLogger, createServerJob } from '../../lib/server-jobs.js';
 import { getCanonicalHost, getUrl } from '../../lib/url.js';
@@ -33,7 +34,6 @@ import {
 } from '../../models/enrollment.js';
 import { selectStudentLabelsInCourseInstance } from '../../models/student-label.js';
 import { selectOptionalUserByUid } from '../../models/user.js';
-import { generatePrefixCsrfToken } from '@prairielearn/signed-token';
 
 import { InstructorStudents } from './instructorStudents.html.js';
 import { StudentRowSchema } from './instructorStudents.shared.js';
@@ -520,7 +520,12 @@ router.get(
       config.secretKey,
     );
     const origHash = await getOriginalHash(
-      path.join(course.path, 'courseInstances', courseInstance.short_name!, 'infoCourseInstance.json'),
+      path.join(
+        course.path,
+        'courseInstances',
+        courseInstance.short_name,
+        'infoCourseInstance.json',
+      ),
     );
 
     res.send(
