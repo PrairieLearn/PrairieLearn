@@ -3,6 +3,11 @@ import assert from 'node:assert';
 import { html, unsafeHtml } from '@prairielearn/html';
 import { run } from '@prairielearn/run';
 
+import {
+  CalculatorDrawer,
+  CalculatorDrawerHeadScripts,
+  CalculatorDrawerToggle,
+} from '../../components/CalculatorDrawer.js';
 import { InstructorInfoPanel } from '../../components/InstructorInfoPanel.js';
 import { PageLayout } from '../../components/PageLayout.js';
 import { QuestionContainer } from '../../components/QuestionContainer.js';
@@ -49,7 +54,7 @@ export function InstructorQuestionPreview({
         name="mathjax-fonts-path"
         content="${nodeModulesAssetPath('@mathjax/mathjax-newcm-font')}"
       />
-      ${compiledScriptTag('question.ts')}
+      ${compiledScriptTag('question.ts')} ${CalculatorDrawerHeadScripts()}
       <script defer src="${nodeModulesAssetPath('mathjax/tex-svg.js')}"></script>
       <script>
         document.urlPrefix = '${resLocals.urlPrefix}';
@@ -83,6 +88,9 @@ export function InstructorQuestionPreview({
         }
       </style>
     `,
+    postContent: CalculatorDrawer({
+      storageKey: `calculator-preview-${resLocals.question.id}`,
+    }),
     content: html`
       ${manualGradingPreviewEnabled
         ? html`
@@ -167,6 +175,7 @@ export function InstructorQuestionPreview({
               </div>
             </div>
           </div>
+          ${CalculatorDrawerToggle({ showInfoPopover: true })}
           ${InstructorInfoPanel({
             course: resLocals.course,
             course_instance: resLocals.course_instance,

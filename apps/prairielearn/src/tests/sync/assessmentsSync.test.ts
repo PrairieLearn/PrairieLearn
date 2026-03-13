@@ -18,6 +18,7 @@ import {
   AssessmentQuestionSchema,
   AssessmentSchema,
   AssessmentSetSchema,
+  AssessmentToolSchema,
   type GroupRole,
   GroupRoleSchema,
   QuestionSchema,
@@ -26,6 +27,7 @@ import {
   ZoneSchema,
 } from '../../lib/db-types.js';
 import { idsEqual } from '../../lib/id.js';
+import { selectEnabledAssessmentTools } from '../../models/assessment.js';
 import type {
   AssessmentJsonInput,
   AssessmentSetJsonInput,
@@ -4231,5 +4233,216 @@ describe('Assessment syncing', () => {
     assert.isDefined(contributorPermission);
     assert.isFalse(contributorPermission.can_view, 'Contributor should not have can_view');
     assert.isFalse(contributorPermission.can_submit, 'Contributor should not have can_submit');
+  });
+
+  describe('Assessment tools syncing', () => {
+    it('syncs assessment-level tools', async () => {
+      const courseData = util.getCourseData();
+      const assessment = makeAssessment(courseData);
+      assessment.tools = { calculator: { enabled: true } };
+      courseData.courseInstances[util.COURSE_INSTANCE_ID].assessments['newexam'] = assessment;
+      await util.writeAndSyncCourseData(courseData);
+
+      const syncedAssessment = await findSyncedAssessment('newexam');
+      const tools = await util.dumpTableWithSchema('assessment_tools', AssessmentToolSchema);
+      const assessmentTools = tools.filter(
+        (t) => t.assessment_id != null && idsEqual(t.assessment_id, syncedAssessment.id),
+      );
+
+      assert.lengthOf(assessmentTools, 1);
+      assert.equal(assessmentTools[0].tool, 'calculator');
+      assert.isTrue(assessmentTools[0].enabled);
+      assert.isNotNull(assessmentTools[0].assessment_id);
+      assert.isNull(assessmentTools[0].zone_id);
+    });
+
+    it('syncs zone-level tools', async () => {
+      const courseData = util.getCourseData();
+      const assessment = makeAssessment(courseData);
+      assessment.zones = [
+        {
+          title: 'zone 1',
+          questions: [{ id: util.QUESTION_ID, points: 5 }],
+          tools: { calculator: { enabled: true } },
+        },
+      ];
+      courseData.courseInstances[util.COURSE_INSTANCE_ID].assessments['newexam'] = assessment;
+      await util.writeAndSyncCourseData(courseData);
+
+      const tools = await util.dumpTableWithSchema('assessment_tools', AssessmentToolSchema);
+      const syncedData = await getSyncedAssessmentData('newexam');
+      const zoneIds = syncedData.zones.map((z) => z.id);
+      const assessmentZoneTools = tools.filter((t) =>
+        zoneIds.some((zid) => t.zone_id != null && idsEqual(t.zone_id, zid)),
+      );
+
+      assert.lengthOf(assessmentZoneTools, 1);
+      assert.equal(assessmentZoneTools[0].tool, 'calculator');
+      assert.isTrue(assessmentZoneTools[0].enabled);
+      assert.isNotNull(assessmentZoneTools[0].zone_id);
+      assert.isNull(assessmentZoneTools[0].assessment_id);
+    });
+
+    it('syncs both assessment-level and zone-level tools', async () => {
+      const courseData = util.getCourseData();
+      const assessment = makeAssessment(courseData);
+      assessment.tools = { calculator: { enabled: true } };
+      assessment.zones = [
+        {
+          title: 'zone 1',
+          questions: [{ id: util.QUESTION_ID, points: 5 }],
+          tools: { calculator: { enabled: false } },
+        },
+      ];
+      courseData.courseInstances[util.COURSE_INSTANCE_ID].assessments['newexam'] = assessment;
+      await util.writeAndSyncCourseData(courseData);
+
+      const syncedAssessment = await findSyncedAssessment('newexam');
+      const syncedData = await getSyncedAssessmentData('newexam');
+      const tools = await util.dumpTableWithSchema('assessment_tools', AssessmentToolSchema);
+
+      const assessmentLevelTools = tools.filter(
+        (t) => t.assessment_id != null && idsEqual(t.assessment_id, syncedAssessment.id),
+      );
+      const zoneIds = syncedData.zones.map((z) => z.id);
+      const zoneLevelTools = tools.filter((t) =>
+        zoneIds.some((zid) => t.zone_id != null && idsEqual(t.zone_id, zid)),
+      );
+
+      assert.lengthOf(assessmentLevelTools, 1);
+      assert.isTrue(assessmentLevelTools[0].enabled);
+
+      assert.lengthOf(zoneLevelTools, 1);
+      assert.isFalse(zoneLevelTools[0].enabled);
+    });
+
+    it('zone-level disabled tool overrides assessment-level enabled tool', async () => {
+      const courseData = util.getCourseData();
+      const assessment = makeAssessment(courseData);
+      assessment.tools = { calculator: { enabled: true } };
+      assessment.zones = [
+        {
+          title: 'zone 1',
+          questions: [{ id: util.QUESTION_ID, points: 5 }],
+          tools: { calculator: { enabled: false } },
+        },
+      ];
+      courseData.courseInstances[util.COURSE_INSTANCE_ID].assessments['newexam'] = assessment;
+      await util.writeAndSyncCourseData(courseData);
+
+      const syncedAssessment = await findSyncedAssessment('newexam');
+      const syncedData = await getSyncedAssessmentData('newexam');
+      const enabledTools = await selectEnabledAssessmentTools({
+        assessment_id: syncedAssessment.id,
+        zone_id: syncedData.zones[0].id,
+      });
+
+      assert.lengthOf(enabledTools, 0);
+    });
+
+    it('zone-level enabled tool overrides assessment-level disabled tool', async () => {
+      const courseData = util.getCourseData();
+      const assessment = makeAssessment(courseData);
+      assessment.tools = { calculator: { enabled: false } };
+      assessment.zones = [
+        {
+          title: 'zone 1',
+          questions: [{ id: util.QUESTION_ID, points: 5 }],
+          tools: { calculator: { enabled: true } },
+        },
+      ];
+      courseData.courseInstances[util.COURSE_INSTANCE_ID].assessments['newexam'] = assessment;
+      await util.writeAndSyncCourseData(courseData);
+
+      const syncedAssessment = await findSyncedAssessment('newexam');
+      const syncedData = await getSyncedAssessmentData('newexam');
+      const enabledTools = await selectEnabledAssessmentTools({
+        assessment_id: syncedAssessment.id,
+        zone_id: syncedData.zones[0].id,
+      });
+
+      assert.lengthOf(enabledTools, 1);
+      assert.equal(enabledTools[0].tool, 'calculator');
+    });
+
+    it('falls back to assessment-level tool when zone has no tool override', async () => {
+      const courseData = util.getCourseData();
+      const assessment = makeAssessment(courseData);
+      assessment.tools = { calculator: { enabled: true } };
+      assessment.zones = [
+        {
+          title: 'zone 1',
+          questions: [{ id: util.QUESTION_ID, points: 5 }],
+        },
+      ];
+      courseData.courseInstances[util.COURSE_INSTANCE_ID].assessments['newexam'] = assessment;
+      await util.writeAndSyncCourseData(courseData);
+
+      const syncedAssessment = await findSyncedAssessment('newexam');
+      const syncedData = await getSyncedAssessmentData('newexam');
+      const enabledTools = await selectEnabledAssessmentTools({
+        assessment_id: syncedAssessment.id,
+        zone_id: syncedData.zones[0].id,
+      });
+
+      assert.lengthOf(enabledTools, 1);
+      assert.equal(enabledTools[0].tool, 'calculator');
+    });
+
+    it('removes tools on re-sync when removed from JSON', async () => {
+      const courseData = util.getCourseData();
+      const assessment = makeAssessment(courseData);
+      assessment.tools = { calculator: { enabled: true } };
+      courseData.courseInstances[util.COURSE_INSTANCE_ID].assessments['newexam'] = assessment;
+      const { courseDir } = await util.writeAndSyncCourseData(courseData);
+
+      // Remove tools and re-sync
+      delete assessment.tools;
+      await util.overwriteAndSyncCourseData(courseData, courseDir);
+
+      const syncedAssessment = await findSyncedAssessment('newexam');
+      const tools = await util.dumpTableWithSchema('assessment_tools', AssessmentToolSchema);
+      const assessmentTools = tools.filter(
+        (t) => t.assessment_id != null && idsEqual(t.assessment_id, syncedAssessment.id),
+      );
+
+      assert.lengthOf(assessmentTools, 0);
+    });
+
+    it('updates tool enabled status on re-sync', async () => {
+      const courseData = util.getCourseData();
+      const assessment = makeAssessment(courseData);
+      assessment.tools = { calculator: { enabled: true } };
+      courseData.courseInstances[util.COURSE_INSTANCE_ID].assessments['newexam'] = assessment;
+      const { courseDir } = await util.writeAndSyncCourseData(courseData);
+
+      // Update enabled status and re-sync
+      assessment.tools = { calculator: { enabled: false } };
+      await util.overwriteAndSyncCourseData(courseData, courseDir);
+
+      const syncedAssessment = await findSyncedAssessment('newexam');
+      const tools = await util.dumpTableWithSchema('assessment_tools', AssessmentToolSchema);
+      const assessmentTools = tools.filter(
+        (t) => t.assessment_id != null && idsEqual(t.assessment_id, syncedAssessment.id),
+      );
+
+      assert.lengthOf(assessmentTools, 1);
+      assert.isFalse(assessmentTools[0].enabled);
+    });
+
+    it('does not create tools when tools property is absent', async () => {
+      const courseData = util.getCourseData();
+      const assessment = makeAssessment(courseData);
+      courseData.courseInstances[util.COURSE_INSTANCE_ID].assessments['newexam'] = assessment;
+      await util.writeAndSyncCourseData(courseData);
+
+      const syncedAssessment = await findSyncedAssessment('newexam');
+      const tools = await util.dumpTableWithSchema('assessment_tools', AssessmentToolSchema);
+      const assessmentTools = tools.filter(
+        (t) => t.assessment_id != null && idsEqual(t.assessment_id, syncedAssessment.id),
+      );
+
+      assert.lengthOf(assessmentTools, 0);
+    });
   });
 });

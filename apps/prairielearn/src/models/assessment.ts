@@ -5,6 +5,7 @@ import {
   loadSqlEquiv,
   queryCursor,
   queryOptionalRow,
+  queryOptionalScalar,
   queryRow,
   queryRows,
 } from '@prairielearn/postgres';
@@ -15,6 +16,7 @@ import {
   AssessmentModuleSchema,
   AssessmentSchema,
   AssessmentSetSchema,
+  AssessmentToolSchema,
 } from '../lib/db-types.js';
 
 const sql = loadSqlEquiv(import.meta.url);
@@ -69,6 +71,48 @@ export const AssessmentRowSchema = AssessmentStatsRowSchema.extend({
   open_issue_count: z.coerce.number(),
 });
 export type AssessmentRow = z.infer<typeof AssessmentRowSchema>;
+
+/**
+ * Returns the effective enabled tools for a question in a given zone and
+ * assessment. Zone-level tool configuration overrides assessment-level
+ * configuration on a per-tool basis: if a zone defines a tool (even as
+ * disabled), the assessment-level row for that tool is ignored.
+ */
+const EnabledAssessmentToolSchema = z.object({
+  tool: AssessmentToolSchema.shape.tool,
+  settings: AssessmentToolSchema.shape.settings,
+});
+
+export async function selectEnabledAssessmentTools({
+  assessment_id,
+  zone_id,
+}: {
+  assessment_id: string;
+  zone_id?: string | null;
+}) {
+  if (zone_id == null) {
+    return await queryRows(
+      sql.select_enabled_assessment_tools_no_zone,
+      { assessment_id },
+      EnabledAssessmentToolSchema,
+    );
+  }
+  return await queryRows(
+    sql.select_enabled_assessment_tools,
+    { assessment_id, zone_id },
+    EnabledAssessmentToolSchema,
+  );
+}
+
+export async function selectZoneIdForInstanceQuestion(
+  instance_question_id: string,
+): Promise<string | null> {
+  return await queryOptionalScalar(
+    sql.select_zone_id_for_instance_question,
+    { instance_question_id },
+    IdSchema,
+  );
+}
 
 export async function selectAssessments({
   course_instance_id,

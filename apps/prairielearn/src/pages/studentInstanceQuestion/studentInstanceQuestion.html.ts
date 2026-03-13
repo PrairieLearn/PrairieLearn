@@ -6,6 +6,11 @@ import {
   RegenerateInstanceModal,
 } from '../../components/AssessmentRegenerate.js';
 import { AssessmentScorePanel } from '../../components/AssessmentScorePanel.js';
+import {
+  CalculatorDrawer,
+  CalculatorDrawerHeadScripts,
+  CalculatorDrawerToggle,
+} from '../../components/CalculatorDrawer.js';
 import { InstructorInfoPanel } from '../../components/InstructorInfoPanel.js';
 import { PageLayout } from '../../components/PageLayout.js';
 import { PersonalNotesPanel } from '../../components/PersonalNotesPanel.js';
@@ -14,7 +19,7 @@ import { QuestionNavSideGroup } from '../../components/QuestionNavigation.js';
 import { QuestionScorePanel } from '../../components/QuestionScore.js';
 import { assetPath, compiledScriptTag, nodeModulesAssetPath } from '../../lib/assets.js';
 import { type CopyTarget } from '../../lib/copy-content.js';
-import type { User } from '../../lib/db-types.js';
+import type { AssessmentTool, User } from '../../lib/db-types.js';
 import { getRoleNamesForUser } from '../../lib/groups.js';
 import type { UntypedResLocals } from '../../lib/res-locals.types.js';
 
@@ -24,15 +29,21 @@ export function StudentInstanceQuestion({
   assignedGrader,
   lastGrader,
   questionCopyTargets,
+  enabledTools = [],
 }: {
+  /** TODO: refine type here to ResLocalsForPage<'instance-question'> and fix type errors */
   resLocals: UntypedResLocals;
   userCanDeleteAssessmentInstance: boolean;
   assignedGrader?: User | null;
   lastGrader?: User | null;
   questionCopyTargets?: CopyTarget[] | null;
+  enabledTools?: Pick<AssessmentTool, 'tool' | 'settings'>[];
 }) {
   const questionContext =
     resLocals.assessment.type === 'Exam' ? 'student_exam' : 'student_homework';
+  // TODO: support more tools
+  // eslint-disable-next-line @typescript-eslint/no-unnecessary-condition
+  const hasCalculator = enabledTools.some((t) => t.tool === 'calculator');
 
   return PageLayout({
     resLocals,
@@ -46,7 +57,7 @@ export function StudentInstanceQuestion({
         name="mathjax-fonts-path"
         content="${nodeModulesAssetPath('@mathjax/mathjax-newcm-font')}"
       />
-      ${compiledScriptTag('question.ts')}
+      ${compiledScriptTag('question.ts')} ${hasCalculator ? CalculatorDrawerHeadScripts() : ''}
       ${resLocals.assessment.type === 'Exam'
         ? html`
             ${compiledScriptTag('examTimeLimitCountdown.ts')}
@@ -82,9 +93,16 @@ export function StudentInstanceQuestion({
             ${unsafeHtml(resLocals.extraHeadersHtml)}
           `}
     `,
-    preContent: userCanDeleteAssessmentInstance
-      ? RegenerateInstanceModal({ csrfToken: resLocals.__csrf_token })
-      : undefined,
+    preContent: html`
+      ${userCanDeleteAssessmentInstance
+        ? RegenerateInstanceModal({ csrfToken: resLocals.__csrf_token })
+        : ''}
+    `,
+    postContent: hasCalculator
+      ? CalculatorDrawer({
+          storageKey: `calculator-${resLocals.assessment.uuid}-${resLocals.assessment_instance.id}`,
+        })
+      : '',
     content: html`
       ${userCanDeleteAssessmentInstance ? RegenerateInstanceAlert() : ''}
       <div class="row">
@@ -205,6 +223,7 @@ export function StudentInstanceQuestion({
                 csrfToken: resLocals.__csrf_token,
               })
             : ''}
+          ${hasCalculator ? CalculatorDrawerToggle() : ''}
           ${InstructorInfoPanel({
             course: resLocals.course,
             course_instance: resLocals.course_instance,

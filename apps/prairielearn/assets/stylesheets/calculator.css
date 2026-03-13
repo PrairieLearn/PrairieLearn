@@ -1,0 +1,473 @@
+/* #region Math field overrides */
+
+math-field::part(menu-toggle) {
+  display: none;
+}
+
+math-field::part(virtual-keyboard-toggle) {
+  display: none;
+}
+
+/* Apparently theme="light" does not override prefers-color-scheme
+ * so we are manually overriding the relevant CSS variables to ensure
+ * the math field looks good in dark mode regardless of user preference.
+ * https://github.com/arnog/mathlive/blob/8342e1cb75e7828ef7cb092ef42887858215e669/css/mathfield.less
+ * https://github.com/arnog/mathlive/blob/8342e1cb75e7828ef7cb092ef42887858215e669/src/ui/colors/colors.less
+ */
+math-field.force-light {
+  --hue: 210;
+  --caret-color: hsl(var(--hue), 40%, 49%);
+  --selection-color: #000;
+  --selection-background-color: hsl(var(--hue), 70%, 85%);
+  --contains-highlight-background-color: hsl(var(--hue), 40%, 95%);
+  --contains-highlight-color: hsl(var(--hue), 40%, 49%);
+  --text-highlight-background-color: hsla(var(--hue), 40%, 50%, 0.1);
+  
+  /* override mathlive/css/mathfield.less */
+  --_contains-highlight-background-color: var(
+    --contains-highlight-background-color,
+    hsl(var(--_hue), 40%, 95%)
+  );
+  --_caret-color: var(--caret-color, hsl(var(--_hue), 40%, 49%));
+
+  --_selection-color: var(--selection-color, #000);
+  --_selection-background-color: var(
+    --selection-background-color,
+    hsl(var(--_hue), 70%, 85%)
+  );
+
+  --_text-highlight-background-color: var(
+    --highlight-text,
+    hsla(var(--_hue), 40%, 50%, 0.1)
+  );
+
+  --_contains-highlight-background-color: var(
+    --contains-highlight-background-color,
+    hsl(var(--_hue), 40%, 95%)
+  );
+
+  --_latex-color: var(--latex-color, hsl(var(--_hue), 80%, 40%));
+
+  --_composition-background-color: var(--composition-background-color, #fff1c2);
+  --_composition-text-color: var(--composition-text-color, black);
+  --_composition-underline-color: var(
+    --composition-underline-color,
+    transparent
+  );
+
+  --_smart-fence-color: var(--smart-fence-color, currentColor);
+  --_smart-fence-opacity: var(--smart-fence-opacity, 0.5);
+
+  /* override mathlive/src/ui/colors/colors.less */
+  --semantic-blue: var(--blue-700);
+  --semantic-red: var(--red-400);
+  --semantic-orange: var(--orange-400);
+  --semantic-green: var(--green-700);
+
+  --neutral-100: #f5f5f5;
+  --neutral-200: #eeeeee;
+  --neutral-300: #e0e0e0;
+  --neutral-400: #bdbdbd;
+  --neutral-500: #9e9e9e;
+  --neutral-600: #757575;
+  --neutral-700: #616161;
+  --neutral-800: #424242;
+  --neutral-900: #212121;
+}
+
+/* Disable MathJax click activation on calculator buttons while keeping keyboard a11y
+ * TODO: Investigate if we can further improve this behavior.
+ * See https://docs.mathjax.org/en/v4.0/upgrading/whats-new-4.0/explorer.html#exploring-expressions
+*/
+.calculator-main mjx-container {
+  pointer-events: none !important;
+}
+
+/* #endregion */
+
+/* #region Drawer */
+
+.calculator-drawer {
+  position: fixed;
+  bottom: 0;
+  right: 16px;
+  background: var(--bs-body-bg, #fff);
+  box-shadow: 0 -2px 10px rgba(0, 0, 0, 0.15);
+  transform: translateY(100%);
+  transition: transform 0.3s ease;
+  max-height: 80vh;
+  min-width: 460px;
+  border-radius: 8px 8px 0 0;
+}
+
+.calculator-drawer.open {
+  transform: translateY(0);
+}
+
+.calculator-drawer.no-transition {
+  transition: none !important;
+}
+
+.calculator-resize-handle {
+  position: absolute;
+  left: 0;
+  top: 0;
+  bottom: 0;
+  width: 8px;
+  cursor: col-resize;
+  touch-action: none;
+  z-index: 1;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  transition: background-color 0.15s;
+}
+
+.calculator-resize-handle::after {
+  content: '';
+  width: 4px;
+  height: 32px;
+  border-radius: 2px;
+  background-color: transparent;
+  transition: background-color 0.15s;
+}
+
+.calculator-resize-handle:hover {
+  background-color: rgba(0, 0, 0, 0.06);
+}
+
+.calculator-resize-handle:hover::after {
+  background-color: rgba(0, 0, 0, 0.3);
+}
+
+.calculator-drawer-header {
+  padding: 6px 12px;
+  cursor: pointer;
+}
+
+.calculator-drawer-body {
+  min-height: 0;
+}
+
+/* #endregion */
+
+/* #region Floating action button */
+
+.calculator-fab {
+  position: fixed;
+  bottom: 0;
+  right: 0;
+  z-index: 1040;
+  display: none;
+  align-items: center;
+  font-size: 0.9rem;
+  transition: opacity 0.2s ease;
+}
+
+.calculator-fab:hover {
+  opacity: 0.9;
+}
+
+.calculator-fab.visible {
+  display: flex;
+}
+
+.calculator-fab-close {
+  background: none;
+  border: none;
+  color: #fff;
+  width: 20px;
+  height: 20px;
+  cursor: pointer;
+  font-size: 0.8rem;
+  border-radius: 50%;
+  transition: all 0.2s ease;
+}
+
+.calculator-fab-close:hover {
+  background: rgba(255, 255, 255, 0.3);
+}
+
+/* #endregion */
+
+/* #region Input & output fields */
+
+math-field.pl-calculator-input {
+  height: auto;
+  font-size: 1rem;
+  display: block;
+  border-radius: unset;
+  outline: none;
+}
+
+math-field.pl-calculator-input:focus {
+  outline: none;
+  border: 1px solid var(--bs-primary);
+}
+
+.input-container.error {
+  border: 1px solid var(--bs-danger) !important;
+}
+
+.input-container {
+  min-height: 38px;
+}
+
+.input-container math-field.pl-calculator-input {
+  border: none;
+}
+
+.input-container .calculator-action-btn:hover {
+  color: var(--bs-danger);
+}
+
+.output-panel {
+  min-height: 38px;
+}
+
+math-field.pl-calculator-output {
+  height: auto;
+  font-size: 1rem;
+  display: block;
+  border: 0;
+  max-width: 100%;
+  overflow: hidden;
+}
+
+math-field.pl-calculator-output:focus {
+  outline: none;
+}
+
+/* #endregion */
+
+/* #region History panel */
+
+.history-panel {
+  height: 150px;
+}
+
+.history-content {
+  min-width: 0;
+}
+
+.history-row {
+  padding: 2px 6px;
+  transition: background-color 0.15s;
+}
+
+.history-row:hover {
+  background-color: var(--bs-tertiary-bg);
+}
+
+math-field.history-text {
+  height: auto;
+  font-size: inherit;
+  border: 0;
+  min-width: 0;
+  display: block;
+  background: transparent;
+  pointer-events: none;
+}
+
+math-field.history-text:focus {
+  outline: none;
+}
+
+.calculator-action-btn {
+  border: none;
+  background: transparent;
+  color: var(--bs-gray-500);
+  padding: 2px 6px;
+  border-radius: var(--bs-border-radius-sm);
+  cursor: pointer;
+}
+
+.calculator-action-btn:hover {
+  background-color: var(--bs-gray-300);
+  color: var(--bs-gray-700);
+}
+
+.history-mode-switch {
+  font-size: 0.65rem;
+}
+
+.history-mode-switch .form-check-input {
+  width: 1.8em;
+  height: 1em;
+}
+
+/* #endregion */
+
+/* #region Keyboard layout */
+
+.calculator-main {
+  container-type: inline-size;
+  container-name: calculator;
+}
+
+.toggle-label {
+  font-size: 0.85rem;
+}
+
+/* Hide abc and func keyboards by default, show only main */
+#abc-keyboard,
+#func-keyboard {
+  display: none;
+}
+
+#main-keyboard {
+  display: flex;
+}
+
+/* Shared keyboard dimensions */
+#main-keyboard,
+#abc-keyboard,
+#func-keyboard {
+  height: 200px;
+  gap: 5px;
+  padding: 5px;
+}
+
+/* Make button rows stretch to fill available height */
+.btn-row {
+  flex: 1;
+}
+
+/* Don't stretch action column buttons in func keyboard */
+#func-keyboard .col-action {
+  align-self: start;
+}
+
+/* #endregion */
+
+/* #region Keyboard buttons */
+
+.btn-key.uppercase {
+  text-transform: uppercase;
+}
+
+#main-keyboard .btn,
+#func-keyboard .btn {
+  min-width: 50px;
+  flex: 1;
+  margin: 3px;
+  font-size: 1rem;
+  white-space: nowrap;
+}
+
+#abc-keyboard .btn {
+  width: 9%;
+  max-width: 55px;
+  min-width: 35px;
+  display: inline-block;
+  margin: 3px;
+  font-size: 1rem;
+  white-space: nowrap;
+  padding: unset;
+}
+
+#abc-keyboard .btn-wide {
+  width: 11%;
+  max-width: 70px;
+}
+
+#abc-keyboard .btn-row {
+  flex-wrap: nowrap;
+  align-items: stretch;
+}
+
+/* Chevron navigation buttons */
+.col-nav {
+  display: none;
+  width: 24px;
+  background-color: var(--bs-tertiary-bg);
+  color: var(--bs-secondary-color);
+  border: none;
+  border-radius: var(--bs-border-radius-sm);
+  cursor: pointer;
+}
+
+.col-nav svg {
+  transform: scaleX(0.5);
+}
+
+.col-nav:hover {
+  background: var(--bs-secondary-bg);
+  color: var(--bs-body-color);
+}
+
+/* #endregion */
+
+/* #region Keyboard column sizing & responsive breakpoints */
+
+#main-keyboard .col-functions,
+#main-keyboard .col-numbers {
+  width: 280px;
+}
+
+#main-keyboard .col-extras {
+  width: 130px;
+}
+
+/* Breakpoint: hide functions column, show chevron to toggle */
+@container calculator (max-width: 740px) {
+  #main-keyboard .col-functions {
+    display: none !important;
+  }
+
+  #main-keyboard .col-nav-left {
+    display: flex;
+  }
+
+  #main-keyboard.show-functions .col-functions {
+    display: flex !important;
+  }
+  #main-keyboard.show-functions .col-numbers {
+    display: none !important;
+  }
+  #main-keyboard.show-functions .col-nav-left {
+    display: none;
+  }
+  #main-keyboard.show-functions .col-nav-right {
+    display: flex;
+  }
+}
+
+#func-keyboard .col-trig,
+#func-keyboard .col-math {
+  width: 240px;
+}
+
+#func-keyboard .col-action {
+  width: 80px;
+}
+
+#func-keyboard .btn {
+  min-width: 60px;
+}
+
+/* Breakpoint: hide trig column, show chevron to toggle */
+@container calculator (max-width: 560px) {
+  #func-keyboard .col-trig {
+    display: none !important;
+  }
+
+  #func-keyboard .col-nav-left {
+    display: flex;
+  }
+
+  #func-keyboard.show-trig .col-trig {
+    display: flex !important;
+  }
+  #func-keyboard.show-trig .col-math {
+    display: none !important;
+  }
+  #func-keyboard.show-trig .col-nav-left {
+    display: none;
+  }
+  #func-keyboard.show-trig .col-nav-right {
+    display: flex;
+  }
+}
+
+/* #endregion */
