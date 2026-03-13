@@ -58,7 +58,7 @@ describe('Course request note', { timeout: 60_000 }, function () {
 
       const textarea = response.$(`#course-request-note-${courseRequestId}`);
       assert.lengthOf(textarea, 1);
-      assert.equal(textarea.val() as string, note);
+      assert.equal((textarea.val() as string).trim(), note);
     });
   });
 

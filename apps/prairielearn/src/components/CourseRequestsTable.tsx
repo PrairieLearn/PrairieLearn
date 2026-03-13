@@ -681,6 +681,6 @@ function CourseRequestEditNoteForm({
 }
 
 function EmptyState({ value, label }: { value: string | null; label: string }) {
-  if (value) return <>{value}</>;
+  if (value) return value;
   return <span className="text-muted fst-italic">{label}</span>;
 }
