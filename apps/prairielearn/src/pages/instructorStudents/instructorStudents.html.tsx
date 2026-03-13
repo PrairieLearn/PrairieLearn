@@ -102,6 +102,8 @@ function SelectAllCheckbox({ table }: { table: Table<StudentRow> }) {
   );
 }
 
+// These defaults must be declared outside the component to ensure referential
+// stability across renders, as `[] !== []` in JavaScript.
 const DEFAULT_SORT: SortingState = [{ id: 'user_uid', desc: false }];
 
 const DEFAULT_PINNING: ColumnPinningState = { left: ['select', 'user_uid'], right: [] };
@@ -184,7 +186,7 @@ function ManageEnrollmentsDropdown({
             show={copiedCode ? true : undefined}
           >
             <Dropdown.Item as="button" type="button" onClick={handleCopyCode}>
-              <i className="bi bi-key me-2" />
+              <i className="bi bi-key me-2" aria-hidden="true" />
               Copy enrollment code
             </Dropdown.Item>
           </OverlayTrigger>
@@ -200,13 +202,13 @@ function ManageEnrollmentsDropdown({
           show={copiedLink ? true : undefined}
         >
           <Dropdown.Item as="button" type="button" onClick={handleCopyLink}>
-            <i className="bi bi-link-45deg me-2" />
+            <i className="bi bi-link-45deg me-2" aria-hidden="true" />
             Copy enrollment link
           </Dropdown.Item>
         </OverlayTrigger>
       )}
       <Dropdown.Item as="a" href={getSelfEnrollmentSettingsUrl(courseInstance.id)}>
-        <i className="bi bi-gear me-2" />
+        <i className="bi bi-gear me-2" aria-hidden="true" />
         Manage settings
       </Dropdown.Item>
     </DropdownButton>
@@ -282,9 +284,9 @@ function StudentsCard({
   const { data: studentLabels = initialStudentLabels } = useQuery({
     queryKey: ['student-labels', courseInstance.id],
     queryFn: async () => {
-      const result = await trpcClient.studentLabels.list.query();
+      const result = await trpcClient.studentLabels.listDefinitions.query();
       setOrigHash(result.origHash);
-      return result.labels.map((l) => l.student_label);
+      return result.labels;
     },
     staleTime: Infinity,
     initialData: initialStudentLabels,

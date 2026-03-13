@@ -7,6 +7,7 @@ import { z } from 'zod';
 import { runInTransactionAsync } from '@prairielearn/postgres';
 import { IdSchema } from '@prairielearn/zod';
 
+import { StaffStudentLabelSchema } from '../../lib/client/safe-db-types.js';
 import { saveJsonFile } from '../../lib/editorUtil.js';
 import { getOriginalHash } from '../../lib/editors.js';
 import {
@@ -18,6 +19,7 @@ import {
   removeLabelFromEnrollments,
   selectEnrollmentsInStudentLabel,
   selectStudentLabelByUuid,
+  selectStudentLabelsInCourseInstance,
 } from '../../models/student-label.js';
 import {
   MAX_LABEL_UIDS,
@@ -55,6 +57,32 @@ const list = t.procedure
     const origHash = await getOriginalHash(courseInstanceJsonPath);
 
     return { labels, origHash };
+  });
+
+const listDefinitions = t.procedure
+  .use(requireCourseInstancePermissionView)
+  .output(
+    z.object({
+      labels: z.array(StaffStudentLabelSchema),
+      origHash: z.string().nullable(),
+    }),
+  )
+  .query(async (opts) => {
+    const { course, course_instance } = opts.ctx;
+    const labels = await selectStudentLabelsInCourseInstance(course_instance);
+
+    const courseInstanceJsonPath = path.join(
+      course.path,
+      'courseInstances',
+      course_instance.short_name!,
+      'infoCourseInstance.json',
+    );
+    const origHash = await getOriginalHash(courseInstanceJsonPath);
+
+    return {
+      labels: labels.map((l) => StaffStudentLabelSchema.parse(l)),
+      origHash,
+    };
   });
 
 const checkUids = t.procedure
@@ -125,29 +153,33 @@ const create = t.procedure
       });
     }
 
-    // If enrollment assignment fails below, the label will exist (from the sync)
-    // but without the requested student assignments.
     const uids = [...new Set(rawUids)];
+    let enrollmentWarning: string | undefined;
     if (uids.length > 0) {
-      const enrolledRecords = await selectEnrollmentsByUidsOrPendingUidsInCourseInstance({
-        uids,
-        courseInstance: course_instance,
-        requiredRole: ['Student Data Editor'],
-        authzData: authz_data,
-      });
+      try {
+        const enrolledRecords = await selectEnrollmentsByUidsOrPendingUidsInCourseInstance({
+          uids,
+          courseInstance: course_instance,
+          requiredRole: ['Student Data Editor'],
+          authzData: authz_data,
+        });
 
-      const newLabel = await selectStudentLabelByUuid({
-        uuid: newUuid,
-        courseInstance: course_instance,
-      });
-      await addLabelToEnrollments({
-        enrollments: enrolledRecords.map((r) => r.enrollment),
-        label: newLabel,
-        authzData: authz_data,
-      });
+        const newLabel = await selectStudentLabelByUuid({
+          uuid: newUuid,
+          courseInstance: course_instance,
+        });
+        await addLabelToEnrollments({
+          enrollments: enrolledRecords.map((r) => r.enrollment),
+          label: newLabel,
+          authzData: authz_data,
+        });
+      } catch {
+        enrollmentWarning =
+          'The label was created, but assigning students failed. Edit the label to retry.';
+      }
     }
 
-    return { origHash: saveResult.origHash };
+    return { origHash: saveResult.origHash, enrollmentWarning };
   });
 
 const edit = t.procedure
@@ -209,51 +241,57 @@ const edit = t.procedure
       });
     }
 
-    const updatedLabel = await selectStudentLabelByUuid({
-      uuid: label.uuid,
-      courseInstance: course_instance,
-    });
-
-    const currentEnrollments = await selectEnrollmentsInStudentLabel(updatedLabel);
-    const currentEnrollmentIdSet = new Set(currentEnrollments.map((e) => e.id));
-
-    const uids = [...new Set(rawUids)];
-    const desiredEnrollments =
-      uids.length > 0
-        ? (
-            await selectEnrollmentsByUidsOrPendingUidsInCourseInstance({
-              uids,
-              courseInstance: course_instance,
-              requiredRole: ['Student Data Editor'],
-              authzData: authz_data,
-            })
-          ).map((r) => r.enrollment)
-        : [];
-    const desiredEnrollmentIdSet = new Set(desiredEnrollments.map((e) => e.id));
-
-    const toAdd = desiredEnrollments.filter((e) => !currentEnrollmentIdSet.has(e.id));
-    const toRemove = currentEnrollments.filter((e) => !desiredEnrollmentIdSet.has(e.id));
-
-    if (toAdd.length > 0 || toRemove.length > 0) {
-      await runInTransactionAsync(async () => {
-        if (toAdd.length > 0) {
-          await addLabelToEnrollments({
-            enrollments: toAdd,
-            label: updatedLabel,
-            authzData: authz_data,
-          });
-        }
-        if (toRemove.length > 0) {
-          await removeLabelFromEnrollments({
-            enrollments: toRemove,
-            label: updatedLabel,
-            authzData: authz_data,
-          });
-        }
+    let enrollmentWarning: string | undefined;
+    try {
+      const updatedLabel = await selectStudentLabelByUuid({
+        uuid: label.uuid,
+        courseInstance: course_instance,
       });
+
+      const currentEnrollments = await selectEnrollmentsInStudentLabel(updatedLabel);
+      const currentEnrollmentIdSet = new Set(currentEnrollments.map((e) => e.id));
+
+      const uids = [...new Set(rawUids)];
+      const desiredEnrollments =
+        uids.length > 0
+          ? (
+              await selectEnrollmentsByUidsOrPendingUidsInCourseInstance({
+                uids,
+                courseInstance: course_instance,
+                requiredRole: ['Student Data Editor'],
+                authzData: authz_data,
+              })
+            ).map((r) => r.enrollment)
+          : [];
+      const desiredEnrollmentIdSet = new Set(desiredEnrollments.map((e) => e.id));
+
+      const toAdd = desiredEnrollments.filter((e) => !currentEnrollmentIdSet.has(e.id));
+      const toRemove = currentEnrollments.filter((e) => !desiredEnrollmentIdSet.has(e.id));
+
+      if (toAdd.length > 0 || toRemove.length > 0) {
+        await runInTransactionAsync(async () => {
+          if (toAdd.length > 0) {
+            await addLabelToEnrollments({
+              enrollments: toAdd,
+              label: updatedLabel,
+              authzData: authz_data,
+            });
+          }
+          if (toRemove.length > 0) {
+            await removeLabelFromEnrollments({
+              enrollments: toRemove,
+              label: updatedLabel,
+              authzData: authz_data,
+            });
+          }
+        });
+      }
+    } catch {
+      enrollmentWarning =
+        'The label was saved, but updating student assignments failed. Edit the label to retry.';
     }
 
-    return { origHash: saveResult.origHash };
+    return { origHash: saveResult.origHash, enrollmentWarning };
   });
 
 const destroy = t.procedure
@@ -319,7 +357,9 @@ const batchAdd = t.procedure
   )
   .mutation(async (opts) => {
     const { course_instance, authz_data } = opts.ctx;
-    const { enrollmentIds, labelId } = opts.input;
+    const { enrollmentIds: rawEnrollmentIds, labelId } = opts.input;
+
+    const enrollmentIds = [...new Set(rawEnrollmentIds)];
 
     const label = await selectStudentLabelByIdOrNotFound({
       id: labelId,
@@ -356,7 +396,9 @@ const batchRemove = t.procedure
   )
   .mutation(async (opts) => {
     const { course_instance, authz_data } = opts.ctx;
-    const { enrollmentIds, labelId } = opts.input;
+    const { enrollmentIds: rawEnrollmentIds, labelId } = opts.input;
+
+    const enrollmentIds = [...new Set(rawEnrollmentIds)];
 
     const label = await selectStudentLabelByIdOrNotFound({
       id: labelId,
@@ -385,6 +427,7 @@ const batchRemove = t.procedure
 
 export const studentLabelsRouter = t.router({
   list,
+  listDefinitions,
   checkUids,
   create,
   edit,

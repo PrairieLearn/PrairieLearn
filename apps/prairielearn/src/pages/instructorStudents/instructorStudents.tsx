@@ -133,7 +133,15 @@ async function processInvitations({
   authzData: AuthzDataWithEffectiveUser;
   job: ServerJobLogger;
   counts: InviteCounts;
+  /**
+   * If true, skips students who are currently blocked. This is useful for `invite_uids`.
+   * If false, blocked students can be handled by `allowReenroll` in `sync_students`.
+   */
   skipBlocked: boolean;
+  /**
+   * If true, re-enrolls blocked/removed students. This is useful for `sync_students`.
+   * If false, skips blocked/removed students. This is useful for `invite_uids`.
+   */
   allowReenroll: boolean;
   actionDetail?: 'invited' | 'invited_by_manual_sync';
 }): Promise<void> {

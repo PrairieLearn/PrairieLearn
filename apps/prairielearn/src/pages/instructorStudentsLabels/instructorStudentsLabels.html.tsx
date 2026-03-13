@@ -1,5 +1,6 @@
 import { QueryClient, useQuery, useQueryClient } from '@tanstack/react-query';
 import { useState } from 'react';
+import { Alert } from 'react-bootstrap';
 
 import { useModalState } from '@prairielearn/ui';
 
@@ -37,6 +38,7 @@ function StudentLabelsCard({
   const editModal = useModalState<LabelModifyModalData>();
   const deleteModal = useModalState<LabelDeleteModalData>();
   const [origHash, setOrigHash] = useState(initialOrigHash);
+  const [enrollmentWarning, setEnrollmentWarning] = useState<string | null>(null);
   const queryClient = useQueryClient();
 
   const { data: labels = initialLabels } = useQuery({
@@ -82,8 +84,12 @@ function StudentLabelsCard({
     deleteModal.hide();
   };
 
-  const handleEditSuccess = async (newOrigHash: string | null) => {
-    setOrigHash(newOrigHash);
+  const handleEditSuccess = async (result: {
+    origHash: string | null;
+    enrollmentWarning?: string;
+  }) => {
+    setOrigHash(result.origHash);
+    setEnrollmentWarning(result.enrollmentWarning ?? null);
     await invalidateLabels();
     editModal.hide();
   };
@@ -108,6 +114,12 @@ function StudentLabelsCard({
           accommodations, or any custom categorization. Labels are not visible to students.
         </small>
       </div>
+
+      {enrollmentWarning && (
+        <Alert variant="warning" dismissible onClose={() => setEnrollmentWarning(null)}>
+          {enrollmentWarning}
+        </Alert>
+      )}
 
       {canEditProp && origHash === null && (
         <div className="alert alert-info" role="alert">

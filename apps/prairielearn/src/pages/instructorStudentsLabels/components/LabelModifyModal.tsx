@@ -49,7 +49,7 @@ export function LabelModifyModal({
   show: boolean;
   onHide: () => void;
   onExited?: () => void;
-  onSuccess: (newOrigHash: string | null) => void;
+  onSuccess: (result: { origHash: string | null; enrollmentWarning?: string }) => void;
   initialUids?: string[];
 }) {
   const [stage, setStage] = useState<
@@ -101,7 +101,7 @@ export function LabelModifyModal({
         });
       }
     },
-    onSuccess: (result) => onSuccess(result.origHash),
+    onSuccess: (result) => onSuccess(result),
   });
 
   const onFormSubmit = async (formData: LabelFormValues) => {
