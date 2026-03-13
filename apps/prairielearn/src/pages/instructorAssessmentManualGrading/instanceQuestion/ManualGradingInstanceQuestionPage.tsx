@@ -203,7 +203,6 @@ function ManualGradingInstanceQuestionPageInner({
               csrfToken={csrfToken}
               modifiedAt={rubricData.modifiedAt}
               submissionId={gradingContext.submissionId}
-              instanceQuestionId={gradingContext.instanceQuestionId}
               maxAutoPoints={gradingContext.maxAutoPoints}
               maxManualPoints={gradingContext.maxManualPoints}
               maxPoints={gradingContext.maxPoints}
@@ -231,7 +230,6 @@ function ManualGradingInstanceQuestionPageInner({
               conflictGradingJobDateFormatted={gradingContext.conflictGradingJobDateFormatted}
               conflictLastGraderName={gradingContext.conflictLastGraderName}
               existingDateFormatted={gradingContext.existingDateFormatted}
-              displayTimezone={gradingContext.displayTimezone}
               onToggleRubricSettings={() => setRubricSettingsOpen((prev) => !prev)}
             />
           </div>

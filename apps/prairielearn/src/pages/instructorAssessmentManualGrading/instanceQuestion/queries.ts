@@ -74,6 +74,53 @@ export async function fetchSubmissionAndVariant(
   );
 }
 
+export async function fetchGradingJobData({
+  gradingJobId,
+  instanceQuestionId,
+}: {
+  gradingJobId: string;
+  instanceQuestionId: string;
+}): Promise<GradingJobData | null> {
+  return sqldb.queryOptionalRow(
+    sql.select_grading_job_data,
+    {
+      grading_job_id: gradingJobId,
+      instance_question_id: instanceQuestionId,
+    },
+    GradingJobDataSchema,
+  );
+}
+
+export async function fetchSubmissionCredits(assessmentInstanceId: string): Promise<number[]> {
+  return sqldb.queryScalars(
+    sql.select_submission_credit_values,
+    { assessment_instance_id: assessmentInstanceId },
+    z.number(),
+  );
+}
+
+export interface RubricGradingData {
+  adjust_points: number;
+  rubric_items: Record<string, { score: number }> | null;
+}
+
+export async function fetchRubricGrading(
+  manualRubricGradingId: string,
+): Promise<RubricGradingData | null> {
+  const gradingData: Record<string, any> = {
+    manual_rubric_grading_id: manualRubricGradingId,
+  };
+  await manualGrading.populateManualGradingData(gradingData);
+  if (!gradingData.rubric_grading) return null;
+  return {
+    adjust_points: gradingData.rubric_grading.adjust_points as number,
+    rubric_items: gradingData.rubric_grading.rubric_items as Record<
+      string,
+      { score: number }
+    > | null,
+  };
+}
+
 /**
  * Builds the AI grading info for an instance question. This logic was previously
  * duplicated between the SSR route handler and the tRPC query.
@@ -220,21 +267,9 @@ export async function buildRubricDataPayload({
   submissionAndVariant: SubmissionAndVariant;
   aiGradingEnabled: boolean;
 }) {
-  const rubricGrading = await run(async () => {
-    if (!submissionAndVariant.submission_manual_rubric_grading_id) return null;
-    const gradingData: Record<string, any> = {
-      manual_rubric_grading_id: submissionAndVariant.submission_manual_rubric_grading_id,
-    };
-    await manualGrading.populateManualGradingData(gradingData);
-    if (!gradingData.rubric_grading) return null;
-    return {
-      adjust_points: gradingData.rubric_grading.adjust_points as number,
-      rubric_items: gradingData.rubric_grading.rubric_items as Record<
-        string,
-        { score: number }
-      > | null,
-    };
-  });
+  const rubricGrading = submissionAndVariant.submission_manual_rubric_grading_id
+    ? await fetchRubricGrading(submissionAndVariant.submission_manual_rubric_grading_id)
+    : null;
 
   const rubricData = await manualGrading.selectRubricData({
     assessment_question: assessmentQuestion,
@@ -344,39 +379,19 @@ export async function buildGradingContextPayload({
 
   // Fetch conflict grading job
   const conflictGradingJob = conflictGradingJobId
-    ? await sqldb.queryOptionalRow(
-        sql.select_grading_job_data,
-        {
-          grading_job_id: IdSchema.parse(conflictGradingJobId),
-          instance_question_id: instanceQuestion.id,
-        },
-        GradingJobDataSchema,
-      )
+    ? await fetchGradingJobData({
+        gradingJobId: IdSchema.parse(conflictGradingJobId),
+        instanceQuestionId: instanceQuestion.id,
+      })
     : null;
 
   // Extract rubric grading from the conflict grading job, if present.
-  const conflictRubricGrading = await run(async () => {
-    if (!conflictGradingJob?.manual_rubric_grading_id) return null;
-    const gradingData: Record<string, any> = {
-      manual_rubric_grading_id: conflictGradingJob.manual_rubric_grading_id,
-    };
-    await manualGrading.populateManualGradingData(gradingData);
-    if (!gradingData.rubric_grading) return null;
-    return {
-      adjust_points: gradingData.rubric_grading.adjust_points as number,
-      rubric_items: gradingData.rubric_grading.rubric_items as Record<
-        string,
-        { score: number }
-      > | null,
-    };
-  });
+  const conflictRubricGrading = conflictGradingJob?.manual_rubric_grading_id
+    ? await fetchRubricGrading(conflictGradingJob.manual_rubric_grading_id)
+    : null;
 
   // Fetch submission credits
-  const submissionCredits = await sqldb.queryScalars(
-    sql.select_submission_credit_values,
-    { assessment_instance_id: assessmentInstance.id },
-    z.number(),
-  );
+  const submissionCredits = await fetchSubmissionCredits(assessmentInstance.id);
 
   const instanceQuestionGroupsExist = instanceQuestionGroups.length > 0;
   const auto_points = instanceQuestion.auto_points ?? 0;
@@ -431,7 +446,6 @@ export async function buildGradingContextPayload({
       instanceQuestion.modified_at,
       courseInstance.display_timezone,
     ),
-    displayTimezone: courseInstance.display_timezone,
     hasNon100CreditSubmissions: submissionCredits.some((credit) => credit !== 100),
     effectiveShowSubmissionsAssignedToMeOnly: authzData.has_course_instance_permission_edit,
   };

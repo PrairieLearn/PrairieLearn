@@ -34,11 +34,14 @@ import { selectCourseInstanceGraderStaff } from '../../../models/course-instance
 import { selectUserById } from '../../../models/user.js';
 import { selectAndAuthzVariant } from '../../../models/variant.js';
 
+import { InstanceQuestion as InstanceQuestionPage } from './instanceQuestion.html.js';
 import {
   type GradingJobData,
-  InstanceQuestion as InstanceQuestionPage,
-} from './instanceQuestion.html.js';
-import { GradingJobDataSchema, buildAiGradingInfo } from './queries.js';
+  buildAiGradingInfo,
+  fetchGradingJobData,
+  fetchRubricGrading,
+  fetchSubmissionCredits,
+} from './queries.js';
 import { createContext, manualGradingInstanceQuestionRouter } from './trpc.js';
 
 const sql = sqldb.loadSqlEquiv(import.meta.url);
@@ -68,36 +71,16 @@ async function prepareLocalsForRender(
 
   let conflict_grading_job: GradingJobData | null = null;
   if (query.conflict_grading_job_id) {
-    conflict_grading_job = await sqldb.queryOptionalRow(
-      sql.select_grading_job_data,
-      {
-        grading_job_id: IdSchema.parse(query.conflict_grading_job_id),
-        instance_question_id: resLocals.instance_question.id, // for authz
-      },
-      GradingJobDataSchema,
-    );
+    conflict_grading_job = await fetchGradingJobData({
+      gradingJobId: IdSchema.parse(query.conflict_grading_job_id),
+      instanceQuestionId: resLocals.instance_question.id,
+    });
   }
 
   // Extract rubric grading from the conflict grading job, if present.
-  let conflict_rubric_grading: {
-    adjust_points: number;
-    rubric_items: Record<string, { score: number }> | null;
-  } | null = null;
-  if (conflict_grading_job?.manual_rubric_grading_id) {
-    const gradingData: Record<string, any> = {
-      manual_rubric_grading_id: conflict_grading_job.manual_rubric_grading_id,
-    };
-    await manualGrading.populateManualGradingData(gradingData);
-    if (gradingData.rubric_grading) {
-      conflict_rubric_grading = {
-        adjust_points: gradingData.rubric_grading.adjust_points as number,
-        rubric_items: gradingData.rubric_grading.rubric_items as Record<
-          string,
-          { score: number }
-        > | null,
-      };
-    }
-  }
+  const conflict_rubric_grading = conflict_grading_job?.manual_rubric_grading_id
+    ? await fetchRubricGrading(conflict_grading_job.manual_rubric_grading_id)
+    : null;
 
   const graders = await selectCourseInstanceGraderStaff({
     courseInstance: resLocals.course_instance,
@@ -159,11 +142,7 @@ router.get(
     req.session.show_submissions_assigned_to_me_only =
       req.session.show_submissions_assigned_to_me_only ?? true;
 
-    const submissionCredits = await sqldb.queryScalars(
-      sql.select_submission_credit_values,
-      { assessment_instance_id: res.locals.assessment_instance.id },
-      z.number(),
-    );
+    const submissionCredits = await fetchSubmissionCredits(res.locals.assessment_instance.id);
 
     const trpcCsrfToken = generatePrefixCsrfToken(
       {
@@ -208,6 +187,10 @@ router.use(
 router.put(
   '/manual_instance_question_group',
   asyncHandler(async (req, res) => {
+    if (!res.locals.authz_data.has_course_instance_permission_edit) {
+      throw new error.HttpStatusError(403, 'Access denied (must be a student data editor)');
+    }
+
     const aiGradingEnabled = await features.enabledFromLocals('ai-grading', res.locals);
     if (!aiGradingEnabled) {
       throw new error.HttpStatusError(403, 'Access denied (feature not available)');
@@ -262,42 +245,38 @@ router.get(
 router.get(
   '/grading_rubric_panels',
   typedAsyncHandler<'instructor-instance-question'>(async (req, res) => {
-    try {
-      const locals = await prepareLocalsForRender({}, res.locals);
-      const rubric_data = await manualGrading.selectRubricData({
-        assessment_question: res.locals.assessment_question,
-      });
-      const aiGradingEnabled = await features.enabledFromLocals('ai-grading', res.locals);
+    const locals = await prepareLocalsForRender({}, res.locals);
+    const rubric_data = await manualGrading.selectRubricData({
+      assessment_question: res.locals.assessment_question,
+    });
+    const aiGradingEnabled = await features.enabledFromLocals('ai-grading', res.locals);
 
-      // `prepareLocalsForRender` guarantees a submission exists.
-      const submission = locals.resLocals.submission!;
-      const panels = await renderPanelsForSubmission({
-        unsafe_submission_id: submission.id,
-        question: res.locals.question,
-        instance_question: res.locals.instance_question,
-        variant: res.locals.variant,
-        user: res.locals.user,
-        urlPrefix: res.locals.urlPrefix,
-        questionContext: 'manual_grading',
-        questionRenderContext: 'manual_grading',
-        authorizedEdit: false,
-        renderScorePanels: false,
-        groupRolePermissions: null,
-      });
+    // `prepareLocalsForRender` guarantees a submission exists.
+    const submission = locals.resLocals.submission!;
+    const panels = await renderPanelsForSubmission({
+      unsafe_submission_id: submission.id,
+      question: res.locals.question,
+      instance_question: res.locals.instance_question,
+      variant: res.locals.variant,
+      user: res.locals.user,
+      urlPrefix: res.locals.urlPrefix,
+      questionContext: 'manual_grading',
+      questionRenderContext: 'manual_grading',
+      authorizedEdit: false,
+      renderScorePanels: false,
+      groupRolePermissions: null,
+    });
 
-      res.json({
-        rubric_data,
-        submissionPanel: panels.submissionPanel,
-        submissionId: submission.id,
-        modifiedAt: locals.resLocals.instance_question.modified_at.toISOString(),
-        aiGradingStats:
-          aiGradingEnabled && res.locals.assessment_question.ai_grading_mode
-            ? await calculateAiGradingStats(res.locals.assessment_question)
-            : null,
-      });
-    } catch (err) {
-      res.send({ err: String(err) });
-    }
+    res.json({
+      rubric_data,
+      submissionPanel: panels.submissionPanel,
+      submissionId: submission.id,
+      modifiedAt: locals.resLocals.instance_question.modified_at.toISOString(),
+      aiGradingStats:
+        aiGradingEnabled && res.locals.assessment_question.ai_grading_mode
+          ? await calculateAiGradingStats(res.locals.assessment_question)
+          : null,
+    });
   }),
 );
 
@@ -588,24 +567,20 @@ router.post(
         }),
       );
     } else if (body.__action === 'modify_rubric_settings') {
-      try {
-        await manualGrading.updateAssessmentQuestionRubric({
-          assessment: res.locals.assessment,
-          assessment_question_id: res.locals.instance_question.assessment_question_id,
-          use_rubric: body.use_rubric,
-          replace_auto_points: body.replace_auto_points,
-          starting_points: body.starting_points,
-          min_points: body.min_points,
-          max_extra_points: body.max_extra_points,
-          rubric_items: body.rubric_items,
-          tag_for_manual_grading: body.tag_for_manual_grading,
-          grader_guidelines: body.grader_guidelines,
-          authn_user_id: res.locals.authn_user.id,
-        });
-        res.redirect(req.baseUrl + '/grading_rubric_panels');
-      } catch (err) {
-        res.status(500).send({ err: String(err) });
-      }
+      await manualGrading.updateAssessmentQuestionRubric({
+        assessment: res.locals.assessment,
+        assessment_question_id: res.locals.instance_question.assessment_question_id,
+        use_rubric: body.use_rubric,
+        replace_auto_points: body.replace_auto_points,
+        starting_points: body.starting_points,
+        min_points: body.min_points,
+        max_extra_points: body.max_extra_points,
+        rubric_items: body.rubric_items,
+        tag_for_manual_grading: body.tag_for_manual_grading,
+        grader_guidelines: body.grader_guidelines,
+        authn_user_id: res.locals.authn_user.id,
+      });
+      res.redirect(req.baseUrl + '/grading_rubric_panels');
     } else if (body.__action === 'report_issue') {
       await reportIssueFromForm(req, res);
       res.redirect(req.originalUrl);

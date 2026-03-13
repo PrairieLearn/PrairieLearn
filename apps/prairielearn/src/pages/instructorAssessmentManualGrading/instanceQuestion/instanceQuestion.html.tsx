@@ -25,10 +25,8 @@ import { type InstanceQuestionGroup, type User } from '../../../lib/db-types.js'
 import type { ResLocalsForPage } from '../../../lib/res-locals.js';
 
 import { ManualGradingInstanceQuestionPage } from './ManualGradingInstanceQuestionPage.js';
-import { type GradingJobData, GradingJobDataSchema } from './queries.js';
+import type { GradingJobData } from './queries.js';
 import type { GradingContextData, RubricQueryData } from './trpc.js';
-
-export { GradingJobDataSchema, type GradingJobData };
 
 export function InstanceQuestion({
   resLocals,
@@ -211,7 +209,6 @@ export function InstanceQuestion({
       resLocals.instance_question.modified_at,
       resLocals.course_instance.display_timezone,
     ),
-    displayTimezone: resLocals.course_instance.display_timezone,
     hasNon100CreditSubmissions: submissionCredits.some((credit) => credit !== 100),
     effectiveShowSubmissionsAssignedToMeOnly,
   };
