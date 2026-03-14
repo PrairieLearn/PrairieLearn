@@ -75,7 +75,7 @@ export interface TagPickerProps<T = void> {
   name?: string;
   /** ID for the input element. */
   id?: string;
-  /** Accessible label for the component. */
+  /** ID of the element whose text labels this component. */
   'aria-labelledby'?: string;
   label?: string;
   description?: string;
@@ -364,10 +364,13 @@ export function TagPicker<T = void>({
                 {(item: ComboBoxItem<T>) => (
                   <ListBoxItem
                     id={item.id}
-                    className={({ isFocused }) =>
-                      clsx('dropdown-item d-flex align-items-center gap-2', isFocused && 'active')
-                    }
-                    style={{ cursor: 'pointer' }}
+                    className="dropdown-item d-flex align-items-center gap-2"
+                    style={({ isFocused }) => ({
+                      cursor: 'pointer',
+                      backgroundColor: isFocused
+                        ? 'var(--bs-list-group-action-hover-bg)'
+                        : undefined,
+                    })}
                     textValue={item.searchableText ?? item.label}
                   >
                     {({ isSelected }) => (

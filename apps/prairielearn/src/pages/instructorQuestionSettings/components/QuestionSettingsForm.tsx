@@ -74,7 +74,8 @@ interface QuestionSettingsFormValues {
   workspace_environment: string;
   workspace_enable_networking: boolean;
   workspace_rewrite_url: boolean;
-  external_grading_ui_enabled: boolean;
+  /** Tracks the state of the checkbox */
+  external_grading_enabled: boolean;
   external_grading_image: string;
   external_grading_entrypoint: string;
   external_grading_files: string;
@@ -83,7 +84,7 @@ interface QuestionSettingsFormValues {
   external_grading_environment: string;
 }
 
-function validateJson(value: string): string | true {
+function validateJsonObject(value: string): string | true {
   if (!value || value.trim() === '' || value.trim() === '{}') return true;
   try {
     const parsed = JSON.parse(value);
@@ -147,7 +148,7 @@ export const QuestionSettingsForm = ({
     workspace_enable_networking: question.workspace_enable_networking ?? false,
     workspace_rewrite_url: question.workspace_url_rewrite ?? true,
     // The state of the checkbox, defaulting to the presence of an external grading image
-    external_grading_ui_enabled: !!question.external_grading_image,
+    external_grading_enabled: !!question.external_grading_image,
     external_grading_image: question.external_grading_image ?? '',
     external_grading_entrypoint: question.external_grading_entrypoint ?? '',
     external_grading_files: question.external_grading_files?.join(', ') ?? '',
@@ -175,7 +176,7 @@ export const QuestionSettingsForm = ({
   const selectedTags = watch('tags');
   const selectedGradingMethod = watch('grading_method');
   const workspaceEnabled = watch('workspace_enabled');
-  const externalGradingUIEnabled = watch('external_grading_ui_enabled');
+  const externalGradingEnabled = watch('external_grading_enabled');
 
   const isExternalGrading = selectedGradingMethod === 'External';
 
@@ -589,7 +590,7 @@ export const QuestionSettingsForm = ({
                   errors.workspace_environment ? 'workspace_environment-error' : undefined
                 }
                 {...register('workspace_environment', {
-                  validate: validateJson,
+                  validate: validateJsonObject,
                 })}
               />
               {errors.workspace_environment && (
@@ -649,9 +650,8 @@ export const QuestionSettingsForm = ({
               className="form-check-input"
               type="checkbox"
               id="externalGradingEnabled"
-              checked={externalGradingUIEnabled}
               disabled={!canEdit}
-              {...register('external_grading_ui_enabled')}
+              {...register('external_grading_enabled')}
             />
             <label className="form-check-label h4 mb-0" htmlFor="externalGradingEnabled">
               External grading
@@ -665,7 +665,7 @@ export const QuestionSettingsForm = ({
           </a>
           .
         </small>
-        {(isExternalGrading || externalGradingUIEnabled) && (
+        {(isExternalGrading || externalGradingEnabled) && (
           <div className={clsx('mt-3', !isExternalGrading && 'ps-4')} id="external-grading-options">
             <div className="mb-3">
               <label className="form-label" htmlFor="external_grading_image">
@@ -781,7 +781,7 @@ export const QuestionSettingsForm = ({
                     : undefined
                 }
                 {...register('external_grading_environment', {
-                  validate: validateJson,
+                  validate: validateJsonObject,
                 })}
               />
               {errors.external_grading_environment && (
