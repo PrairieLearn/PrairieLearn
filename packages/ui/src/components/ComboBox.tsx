@@ -368,7 +368,7 @@ export function TagPicker<T = void>({
                     style={({ isFocused }) => ({
                       cursor: 'pointer',
                       backgroundColor: isFocused
-                        ? 'var(--bs-list-group-action-hover-bg)'
+                        ? 'var(--bs-primary-bg-subtle)'
                         : undefined,
                     })}
                     textValue={item.searchableText ?? item.label}
