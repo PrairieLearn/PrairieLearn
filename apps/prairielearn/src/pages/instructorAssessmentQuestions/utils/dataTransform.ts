@@ -253,6 +253,7 @@ function serializeQuestionAlternative(alternative: QuestionAlternativeJson) {
     advanceScorePerc: alternative.advanceScorePerc,
     gradeRateMinutes: alternative.gradeRateMinutes,
     allowRealTimeGrading: alternative.allowRealTimeGrading,
+    preferences: alternative.preferences,
     // For some reason, comment gets set to the empty string if it's not set.
     comment: alternative.comment || undefined,
   });
@@ -287,6 +288,7 @@ function serializeQuestionBlock(question: ZoneQuestionBlockJson) {
     allowRealTimeGrading: question.allowRealTimeGrading,
     canSubmit: propertyValueWithDefault(undefined, question.canSubmit, isEmptyArray),
     canView: propertyValueWithDefault(undefined, question.canView, isEmptyArray),
+    preferences: question.preferences,
     // For some reason, comment gets set to the empty string if it's not set.
     comment: question.comment || undefined,
   });

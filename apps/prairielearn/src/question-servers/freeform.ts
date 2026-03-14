@@ -76,6 +76,7 @@ type ElementNameMap = Record<
     directory: string;
   }
 >;
+
 // Maps core element names to element info
 let coreElementsCache: ElementNameMap = {};
 // Maps course IDs to course element info
@@ -464,6 +465,7 @@ function checkData(data: Record<string, any>, origData: Record<string, any>, pha
              || checkProp('correct_answers',       'object',  allPhases,                            ['generate', 'prepare', 'parse', 'grade'])
              || checkProp('variant_seed',          'integer', allPhases,                            [])
              || checkProp('options',               'object',  allPhases,                            [])
+             || checkProp('preferences',           'object',  allPhases,                            [])
              || checkProp('submitted_answers',     'object',  ['render', 'parse', 'grade'],         ['parse', 'grade'])
              || checkProp('format_errors',         'object',  ['render', 'parse', 'grade', 'test'], ['parse', 'grade', 'test'])
              || checkProp('raw_submitted_answers', 'object',  ['render', 'parse', 'grade', 'test'], ['test'])
@@ -821,6 +823,7 @@ export async function generate(
   question: Question,
   course: Course,
   variant_seed: string,
+  preferences: Record<string, string | number | boolean> = {},
 ): QuestionServerReturnValue<GenerateResultData> {
   return instrumented('freeform.generate', async () => {
     const context = await getContext(question, course);
@@ -830,6 +833,7 @@ export async function generate(
       correct_answers: {},
       variant_seed: Number.parseInt(variant_seed, 36),
       options: { ...course.options, ...question.options, ...getContextOptions(context) },
+      preferences,
     } satisfies ExecutionData;
 
     return await withCodeCaller(course, async (codeCaller) => {
@@ -867,6 +871,7 @@ export async function prepare(
       correct_answers: variant.true_answer ?? {},
       variant_seed: Number.parseInt(variant.variant_seed, 36),
       options: { ...variant.options, ...getContextOptions(context) },
+      preferences: variant.preferences,
       answers_names: {},
     } satisfies ExecutionData;
 
@@ -987,6 +992,7 @@ async function renderPanel({
     feedback: submission?.feedback ?? {},
     variant_seed: Number.parseInt(variant.variant_seed, 36),
     options,
+    preferences: variant.preferences,
     raw_submitted_answers: submission?.raw_submitted_answer ?? {},
     editable: !!(
       locals.allowAnswerEditing &&
@@ -1525,6 +1531,7 @@ export async function file(
       correct_answers: variant.true_answer ?? {},
       variant_seed: Number.parseInt(variant.variant_seed, 36),
       options: { ...variant.options, ...getContextOptions(context) },
+      preferences: variant.preferences,
       filename,
     } satisfies ExecutionData;
 
@@ -1579,6 +1586,7 @@ export async function parse(
       format_errors: submission.format_errors ?? {},
       variant_seed: Number.parseInt(variant.variant_seed, 36),
       options: { ...variant.options, ...getContextOptions(context) },
+      preferences: variant.preferences,
       raw_submitted_answers: submission.raw_submitted_answer ?? {},
       gradable: submission.gradable ?? true,
     } satisfies ExecutionData;
@@ -1635,6 +1643,7 @@ export async function grade(
       feedback: submission.feedback == null ? {} : submission.feedback,
       variant_seed: Number.parseInt(variant.variant_seed, 36),
       options: { ...variant.options, ...getContextOptions(context) },
+      preferences: variant.preferences,
       raw_submitted_answers: submission.raw_submitted_answer ?? {},
       gradable: submission.gradable ?? true,
     } satisfies ExecutionData;
@@ -1689,6 +1698,7 @@ export async function test(
       feedback: {},
       variant_seed: Number.parseInt(variant.variant_seed, 36),
       options: { ...variant.options, ...getContextOptions(context) },
+      preferences: variant.preferences,
       raw_submitted_answers: {},
       gradable: true as boolean,
       test_type,

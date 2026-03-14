@@ -188,12 +188,15 @@ export function buildHierarchicalAssessment(
         maxPoints: row.assessment_question.json_max_points ?? undefined,
         maxAutoPoints: row.assessment_question.json_max_auto_points ?? undefined,
         manualPoints: row.assessment_question.json_manual_points ?? undefined,
+        preferences: row.assessment_question.preferences ?? undefined,
       };
     } else {
       // Set the top level question ID if there are no alternatives
       zones[zoneNumber - 1].questions[positionInZone].id = questionDisplayName(course, row);
       zones[zoneNumber - 1].questions[positionInZone].comment =
         row.assessment_question.json_comment ?? undefined;
+      zones[zoneNumber - 1].questions[positionInZone].preferences =
+        row.assessment_question.preferences ?? undefined;
     }
   }
   return zones;
