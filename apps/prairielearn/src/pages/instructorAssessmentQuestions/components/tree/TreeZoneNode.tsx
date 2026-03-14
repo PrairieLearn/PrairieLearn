@@ -93,12 +93,16 @@ export function TreeZoneNode({
           role="button"
           tabIndex={0}
           className={clsx(
-            'tree-row d-flex align-items-center px-2 py-2 border-bottom user-select-none',
+            'tree-row d-flex align-items-center ps-2 py-2 border-bottom user-select-none',
             isSelected
               ? 'tree-row-selected bg-body-secondary'
               : 'bg-body-secondary list-group-item-action',
           )}
           style={{
+            // Extra right padding prevents macOS overlay scrollbars
+            // from overlapping row content.
+            // https://bugzilla.mozilla.org/show_bug.cgi?id=636564
+            paddingRight: '1.5rem',
             cursor: 'pointer',
             position: 'sticky',
             top: 0,

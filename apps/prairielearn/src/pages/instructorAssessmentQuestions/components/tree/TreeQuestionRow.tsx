@@ -5,6 +5,7 @@ import { type ReactElement, useId } from 'react';
 import { OverlayTrigger } from '@prairielearn/ui';
 
 import { CopyButton } from '../../../../components/CopyButton.js';
+import { IssueBadge } from '../../../../components/IssueBadge.js';
 import type { EditorQuestionMetadata } from '../../../../lib/assessment-question.shared.js';
 import { getQuestionUrl } from '../../../../lib/client/url.js';
 import type { EnumAssessmentType } from '../../../../lib/db-types.js';
@@ -221,7 +222,10 @@ export function TreeQuestionRow({
       )}
       style={{
         paddingLeft: indent,
-        paddingRight: '0.5rem',
+        // Extra right padding prevents macOS overlay scrollbars
+        // from overlapping row content like the points badge.
+        // https://bugzilla.mozilla.org/show_bug.cgi?id=636564
+        paddingRight: '1.5rem',
         cursor: 'pointer',
         ...(hasManualGradingAutoPointsWarning && {
           borderLeft: '6px solid var(--bs-warning)',
@@ -259,6 +263,13 @@ export function TreeQuestionRow({
                     <span className="font-monospace">{question.id}</span>
                   )}
                 </a>
+                <IssueBadge
+                  count={questionData.open_issue_count}
+                  urlPrefix={`/pl/course_instance/${courseInstanceId}/instructor`}
+                  issueQid={questionData.question.qid}
+                  className="ms-1"
+                  onClick={(e) => e.stopPropagation()}
+                />
                 {!hasTitle && (
                   <CopyButton
                     text={question.id}

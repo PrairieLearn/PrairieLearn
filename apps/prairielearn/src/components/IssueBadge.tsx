@@ -1,4 +1,5 @@
 import clsx from 'clsx';
+import React from 'react';
 
 import { renderHtml } from '@prairielearn/react';
 
@@ -11,9 +12,11 @@ export function IssueBadge({
   issueAid,
   urlPrefix,
   className,
+  onClick,
 }: {
   count: number;
   className?: string;
+  onClick?: React.MouseEventHandler<HTMLAnchorElement>;
 } & (
   | {
       suppressLink: true;
@@ -44,6 +47,7 @@ export function IssueBadge({
       className={clsx('badge', 'rounded-pill', 'text-bg-danger', className)}
       href={`${urlPrefix}/course_admin/issues?q=${query}`}
       aria-label={`${count} open ${count === 1 ? 'issue' : 'issues'}`}
+      onClick={onClick}
     >
       {count}
     </a>
