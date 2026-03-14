@@ -1,5 +1,22 @@
 # @prairielearn/ui
 
+## 3.3.0
+
+### Minor Changes
+
+- a00d61f: Add `useResizeHandle` hook for keyboard-accessible split pane resizers
+
+### Patch Changes
+
+- a00d61f: Fix inconsistent vertical padding in FilterDropdown list
+- dab7ca0: Fix OverlayTrigger focus trapping when trigger prop is an array
+- dab7ca0: Fix OverlayTrigger returning focus on tooltip dismiss, which created an infinite focus loop for focus-triggered tooltips
+- 0dd8480: Fix resize handle width desync when bounds change dynamically
+- aaeb317: TagPicker: Fix rendering bugs, and move selected tags outside the `ComboBox` component to avoid nested interactive elements.
+  ComboBox: Refactor implementation
+- 45221b9: Make TanstackTable easier to test
+- aaeb317: Replace the `TagPicker` Select-based workaround with React Aria's released multi-select ComboBox implementation.
+
 ## 3.2.2
 
 ### Patch Changes

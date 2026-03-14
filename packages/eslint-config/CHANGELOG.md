@@ -1,5 +1,16 @@
 # @prairielearn/eslint-config
 
+## 2.1.0
+
+### Minor Changes
+
+- 18391d4: Add rule for noreferrer in target=\_blank links
+
+### Patch Changes
+
+- Updated dependencies [aaeb317]
+  - @prairielearn/eslint-plugin@4.0.1
+
 ## 2.0.1
 
 ### Patch Changes
