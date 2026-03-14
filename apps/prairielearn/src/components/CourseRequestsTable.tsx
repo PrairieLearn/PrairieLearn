@@ -1,26 +1,22 @@
-import { useMutation } from '@tanstack/react-query';
+import { useMutation, useQuery } from '@tanstack/react-query';
 import clsx from 'clsx';
 import { useState } from 'react';
 import { Alert, Dropdown, Modal } from 'react-bootstrap';
-import { useForm } from 'react-hook-form';
+import { FormProvider, useForm } from 'react-hook-form';
+import ReactMarkdown from 'react-markdown';
 
 import { OverlayTrigger } from '@prairielearn/ui';
 
 import type { AdminInstitution } from '../lib/client/safe-db-types.js';
 import { getAdministratorCourseRequestsUrl } from '../lib/client/url.js';
 import type { CourseRequestRow } from '../lib/course-request.js';
-import { type Timezone, formatTimezone } from '../lib/timezone.shared.js';
+import type { Timezone } from '../lib/timezone.shared.js';
 import { useTRPC } from '../trpc/administrator/trpc-context.js';
 
+import { type CourseFormFieldValues, CourseFormFields } from './CourseFormFields.js';
 import { JobStatus } from './JobStatus.js';
 
-interface CourseRequestApproveFormData {
-  institution_id: string;
-  short_name: string;
-  title: string;
-  display_timezone: string;
-  path: string;
-  repository_short_name: string;
+interface CourseRequestApproveFormData extends CourseFormFieldValues {
   github_user: string;
 }
 
@@ -31,6 +27,7 @@ export function CourseRequestsTable({
   coursesRoot,
   showAll,
   urlPrefix,
+  aiSecretsConfigured,
 }: {
   rows: CourseRequestRow[];
   institutions: AdminInstitution[];
@@ -38,6 +35,7 @@ export function CourseRequestsTable({
   coursesRoot: string;
   showAll: boolean;
   urlPrefix: string;
+  aiSecretsConfigured: boolean;
 }) {
   const headerPrefix = showAll ? 'All' : 'Pending';
   return (
@@ -81,6 +79,7 @@ export function CourseRequestsTable({
                 coursesRoot={coursesRoot}
                 showAll={showAll}
                 urlPrefix={urlPrefix}
+                aiSecretsConfigured={aiSecretsConfigured}
               />
             ))}
           </tbody>
@@ -105,6 +104,7 @@ function CourseRequestTableRow({
   coursesRoot,
   showAll,
   urlPrefix,
+  aiSecretsConfigured,
 }: {
   row: CourseRequestRow;
   institutions: AdminInstitution[];
@@ -112,11 +112,12 @@ function CourseRequestTableRow({
   coursesRoot: string;
   showAll: boolean;
   urlPrefix: string;
+  aiSecretsConfigured: boolean;
 }) {
   const [noteOpen, setNoteOpen] = useState(Boolean(row.note));
   const [jobsOpen, setJobsOpen] = useState(false);
   const [showDenyPopover, setShowDenyPopover] = useState(false);
-  const [showApprovePopover, setShowApprovePopover] = useState(false);
+  const [showApproveModal, setShowApproveModal] = useState(false);
 
   return (
     <>
@@ -181,26 +182,20 @@ function CourseRequestTableRow({
               <button
                 type="button"
                 className="btn btn-sm btn-success text-nowrap"
-                onClick={() => setShowApprovePopover(true)}
+                onClick={() => setShowApproveModal(true)}
               >
                 <i className="fa fa-check" aria-hidden="true" /> Approve
               </button>
-              <Modal
-                show={showApprovePopover}
-                backdrop="static"
-                onHide={() => setShowApprovePopover(false)}
-              >
-                <Modal.Body>
-                  <CourseRequestApproveForm
-                    request={row}
-                    institutions={institutions}
-                    availableTimezones={availableTimezones}
-                    coursesRoot={coursesRoot}
-                    urlPrefix={urlPrefix}
-                    onCancel={() => setShowApprovePopover(false)}
-                  />
-                </Modal.Body>
-              </Modal>
+              <CourseRequestApproveModal
+                request={row}
+                institutions={institutions}
+                availableTimezones={availableTimezones}
+                coursesRoot={coursesRoot}
+                urlPrefix={urlPrefix}
+                show={showApproveModal}
+                aiSecretsConfigured={aiSecretsConfigured}
+                onCancel={() => setShowApproveModal(false)}
+              />
             </div>
           )}
         </td>
@@ -283,20 +278,24 @@ function CourseRequestTableRow({
   );
 }
 
-function CourseRequestApproveForm({
+function CourseRequestApproveModal({
   request,
   institutions,
   availableTimezones,
   coursesRoot,
   urlPrefix,
+  show,
   onCancel,
+  aiSecretsConfigured,
 }: {
   request: CourseRequestRow;
   institutions: AdminInstitution[];
   availableTimezones: Timezone[];
   coursesRoot: string;
   urlPrefix: string;
+  show: boolean;
   onCancel: () => void;
+  aiSecretsConfigured: boolean;
 }) {
   const trpc = useTRPC();
   const mutation = useMutation(trpc.courseRequests.createCourse.mutationOptions());
@@ -304,13 +303,7 @@ function CourseRequestApproveForm({
   const repoName = 'pl-' + request.short_name.replaceAll(' ', '').toLowerCase();
   const path = coursesRoot + '/' + repoName;
 
-  const {
-    register,
-    handleSubmit,
-    watch,
-    setValue,
-    formState: { errors, isSubmitting },
-  } = useForm<CourseRequestApproveFormData>({
+  const methods = useForm<CourseRequestApproveFormData>({
     mode: 'onSubmit',
     defaultValues: {
       institution_id: '',
@@ -322,10 +315,12 @@ function CourseRequestApproveForm({
       github_user: request.github_user ?? '',
     },
   });
-  const institutionId = watch('institution_id');
 
-  const selectedInstitution = institutions.find((i) => i.id === institutionId);
-  const isDefaultInstitution = selectedInstitution?.short_name === 'Default';
+  const {
+    register,
+    handleSubmit,
+    formState: { isSubmitting },
+  } = methods;
 
   const onSubmit = (data: CourseRequestApproveFormData) => {
     mutation.mutate(
@@ -347,195 +342,200 @@ function CourseRequestApproveForm({
     );
   };
 
-  return (
-    <form name={`create-course-from-request-form-${request.id}`} onSubmit={handleSubmit(onSubmit)}>
-      <div className="mb-3">
-        <label className="form-label" htmlFor="courseRequestAddInstitution">
-          Institution:
-        </label>
-        <select
-          id="courseRequestAddInstitution"
-          className={clsx('form-select', errors.institution_id && 'is-invalid')}
-          aria-invalid={errors.institution_id ? true : undefined}
-          aria-errormessage={
-            errors.institution_id ? 'courseRequestAddInstitution-error' : undefined
-          }
-          {...register('institution_id', {
-            required: 'Select an institution',
-            onChange: (e) => {
-              const selected = institutions.find((i) => i.id === e.target.value);
-              if (selected) {
-                setValue('display_timezone', selected.display_timezone);
-              }
-            },
-          })}
-        >
-          <option value="" disabled>
-            Select an institution...
-          </option>
-          {institutions.map((i) => (
-            <option key={i.id} value={i.id}>
-              {i.short_name}
-            </option>
-          ))}
-        </select>
-        {errors.institution_id && (
-          <div id="courseRequestAddInstitution-error" className="invalid-feedback">
-            {errors.institution_id.message}
-          </div>
-        )}
-        {isDefaultInstitution && (
-          <div className="form-text text-warning">
-            <i className="fa fa-exclamation-triangle" aria-hidden="true" /> The "Default"
-            institution is typically not intended for new courses.
-          </div>
-        )}
-      </div>
-      <div className="mb-3">
-        <label className="form-label" htmlFor="courseRequestAddInputShortName">
-          Short name:
-        </label>
-        <input
-          type="text"
-          className={clsx('form-control', errors.short_name && 'is-invalid')}
-          id="courseRequestAddInputShortName"
-          placeholder="XC 101"
-          aria-invalid={errors.short_name ? true : undefined}
-          aria-errormessage={errors.short_name ? 'courseRequestAddInputShortName-error' : undefined}
-          {...register('short_name', {
-            required: 'Enter a short name',
-            pattern: {
-              value: /^[A-Z]+ [A-Z0-9]+$/,
-              message:
-                'The course rubric and number should be a series of letters, followed by a space, followed by a series of numbers and/or letters.',
-            },
-          })}
-        />
-        {errors.short_name && (
-          <div id="courseRequestAddInputShortName-error" className="invalid-feedback">
-            {errors.short_name.message}
-          </div>
-        )}
-      </div>
-      <div className="mb-3">
-        <label className="form-label" htmlFor="courseRequestAddInputTitle">
-          Title:
-        </label>
-        <input
-          type="text"
-          className={clsx('form-control', errors.title && 'is-invalid')}
-          id="courseRequestAddInputTitle"
-          placeholder="Template course title"
-          maxLength={75}
-          aria-invalid={errors.title ? true : undefined}
-          aria-errormessage={errors.title ? 'courseRequestAddInputTitle-error' : undefined}
-          {...register('title', {
-            required: 'Enter a title',
-            maxLength: { value: 75, message: 'Title must be at most 75 characters' },
-          })}
-        />
-        {errors.title && (
-          <div id="courseRequestAddInputTitle-error" className="invalid-feedback">
-            {errors.title.message}
-          </div>
-        )}
-      </div>
-      <div className="mb-3">
-        <label className="form-label" htmlFor="courseRequestAddInputTimezone">
-          Timezone:
-        </label>
-        <select
-          className={clsx('form-select', errors.display_timezone && 'is-invalid')}
-          id="courseRequestAddInputTimezone"
-          aria-invalid={errors.display_timezone ? true : undefined}
-          aria-errormessage={
-            errors.display_timezone ? 'courseRequestAddInputTimezone-error' : undefined
-          }
-          {...register('display_timezone', { required: 'Select a timezone' })}
-        >
-          <option value="" disabled>
-            Select a timezone...
-          </option>
-          {availableTimezones.map((tz) => (
-            <option key={tz.name} value={tz.name}>
-              {formatTimezone(tz)}
-            </option>
-          ))}
-        </select>
-        {errors.display_timezone && (
-          <div id="courseRequestAddInputTimezone-error" className="invalid-feedback">
-            {errors.display_timezone.message}
-          </div>
-        )}
-      </div>
-      <div className="mb-3">
-        <label className="form-label" htmlFor="courseRequestAddInputPath">
-          Path:
-        </label>
-        <input
-          type="text"
-          className={clsx('form-control', errors.path && 'is-invalid')}
-          id="courseRequestAddInputPath"
-          aria-invalid={errors.path ? true : undefined}
-          aria-errormessage={errors.path ? 'courseRequestAddInputPath-error' : undefined}
-          {...register('path', { required: 'Enter a path' })}
-        />
-        {errors.path && (
-          <div id="courseRequestAddInputPath-error" className="invalid-feedback">
-            {errors.path.message}
-          </div>
-        )}
-      </div>
-      <div className="mb-3">
-        <label className="form-label" htmlFor="courseRequestAddInputRepositoryName">
-          Repository name:
-        </label>
-        <input
-          type="text"
-          className={clsx('form-control', errors.repository_short_name && 'is-invalid')}
-          id="courseRequestAddInputRepositoryName"
-          aria-invalid={errors.repository_short_name ? true : undefined}
-          aria-errormessage={
-            errors.repository_short_name ? 'courseRequestAddInputRepositoryName-error' : undefined
-          }
-          {...register('repository_short_name', { required: 'Enter a repository name' })}
-        />
-        {errors.repository_short_name && (
-          <div id="courseRequestAddInputRepositoryName-error" className="invalid-feedback">
-            {errors.repository_short_name.message}
-          </div>
-        )}
-      </div>
-      <div className="mb-3">
-        <label className="form-label" htmlFor="courseRequestAddInputGithubUser">
-          GitHub username:
-        </label>
-        <input
-          type="text"
-          className="form-control"
-          id="courseRequestAddInputGithubUser"
-          {...register('github_user')}
-        />
-      </div>
+  const legitimacyQuery = useQuery({
+    ...trpc.courseRequests.checkInstructorLegitimacyQuery.queryOptions({
+      courseRequestId: request.id,
+    }),
+    enabled: false,
+  });
 
-      {mutation.isError && (
-        <Alert variant="danger" dismissible onClose={() => mutation.reset()}>
-          {mutation.error.message}
-        </Alert>
-      )}
-      <div className="d-flex justify-content-end gap-2">
-        <button type="button" className="btn btn-secondary" onClick={onCancel}>
-          Cancel
-        </button>
-        <button
-          type="submit"
-          className="btn btn-primary"
-          disabled={isSubmitting || mutation.isPending}
+  return (
+    <Modal show={show} backdrop="static" onHide={onCancel}>
+      <FormProvider {...methods}>
+        <form
+          name={`create-course-from-request-form-${request.id}`}
+          onSubmit={handleSubmit(onSubmit)}
         >
-          Create course
-        </button>
-      </div>
-    </form>
+          <Modal.Header closeButton>
+            <Modal.Title>Approve course request</Modal.Title>
+          </Modal.Header>
+          <Modal.Body>
+            <div className="card mb-3">
+              <div className="card-header d-flex align-items-center justify-content-between py-2">
+                <strong>Requesting instructor</strong>
+                <OverlayTrigger
+                  trigger={['hover', 'focus']}
+                  placement="bottom"
+                  tooltip={{
+                    body: aiSecretsConfigured
+                      ? 'Uses AI web search to verify whether the instructor appears in faculty directories or professional profiles at their stated institution.'
+                      : 'AI features require the correspondent OpenAI key to be configured.',
+                    props: { id: 'check-instructor-legitimacy-tooltip' },
+                  }}
+                >
+                  <span className="d-inline-block">
+                    <button
+                      type="button"
+                      className="btn btn-sm btn-outline-secondary"
+                      disabled={legitimacyQuery.isFetching || !aiSecretsConfigured}
+                      aria-busy={legitimacyQuery.isFetching}
+                      onClick={() => legitimacyQuery.refetch()}
+                    >
+                      {legitimacyQuery.isFetching ? (
+                        <>
+                          <i className="fa fa-spinner fa-spin" aria-hidden="true" /> Checking...
+                        </>
+                      ) : (
+                        <>
+                          <i className="fa fa-search" aria-hidden="true" /> Check legitimacy
+                        </>
+                      )}
+                    </button>
+                  </span>
+                </OverlayTrigger>
+              </div>
+              <div className="card-body py-2">
+                <div className="row g-2 small">
+                  <div className="col-12">
+                    <strong>Requested by:</strong>{' '}
+                    {request.first_name || request.last_name ? (
+                      <span>
+                        {request.first_name} {request.last_name}
+                        {request.work_email && ` (${request.work_email})`}
+                      </span>
+                    ) : request.work_email ? (
+                      <span>{request.work_email}</span>
+                    ) : (
+                      <span className="fst-italic text-muted">Not provided</span>
+                    )}
+                  </div>
+                  <div className="col-12">
+                    <strong>PrairieLearn user:</strong>{' '}
+                    {request.user_name ? (
+                      <span>
+                        {request.user_name} ({request.user_uid})
+                      </span>
+                    ) : (
+                      <span>{request.user_uid}</span>
+                    )}
+                  </div>
+                  <div className="col-12">
+                    <strong>Institution:</strong>{' '}
+                    {request.institution ? (
+                      <span>{request.institution}</span>
+                    ) : (
+                      <span className="fst-italic text-muted">Not provided</span>
+                    )}
+                  </div>
+                  <div className="col-12">
+                    <strong>GitHub:</strong>{' '}
+                    {request.github_user ? (
+                      <a
+                        href={`https://github.com/${request.github_user}`}
+                        target="_blank"
+                        rel="noreferrer"
+                      >
+                        {request.github_user}
+                      </a>
+                    ) : (
+                      <span className="fst-italic text-muted">Not provided</span>
+                    )}
+                  </div>
+                </div>
+                <div aria-live="polite" aria-atomic="true">
+                  {legitimacyQuery.isError && (
+                    <div className="mt-2 text-danger small">
+                      Failed to check legitimacy. Try again.
+                    </div>
+                  )}
+                  {legitimacyQuery.data && (
+                    <div className="mt-2 pt-2 border-top">
+                      <div className="d-flex align-items-start gap-2">
+                        <span
+                          className={clsx('badge', {
+                            'text-bg-success': legitimacyQuery.data.confidence === 'high',
+                            'text-bg-warning': legitimacyQuery.data.confidence === 'medium',
+                            'text-bg-danger': legitimacyQuery.data.confidence === 'low',
+                          })}
+                        >
+                          {legitimacyQuery.data.legitimate ? 'Likely legitimate' : 'Uncertain'}{' '}
+                          &middot; {legitimacyQuery.data.confidence} confidence
+                        </span>
+                      </div>
+                      <small className="text-muted">
+                        <ReactMarkdown>{legitimacyQuery.data.summary}</ReactMarkdown>
+                      </small>
+                      {legitimacyQuery.data.sources.length > 0 && (
+                        <div className="mt-1">
+                          <span className="small text-muted">Sources</span>
+                          <div className="d-flex flex-wrap gap-1">
+                            {legitimacyQuery.data.sources
+                              .filter(
+                                (source, index, arr) =>
+                                  arr.findIndex((s) => s.url === source.url) === index,
+                              )
+                              .map((source) => (
+                                <a
+                                  key={source.url}
+                                  href={source.url}
+                                  target="_blank"
+                                  rel="noreferrer"
+                                  className="small"
+                                >
+                                  {source.title ?? source.url}
+                                </a>
+                              ))}
+                          </div>
+                        </div>
+                      )}
+                    </div>
+                  )}
+                </div>
+              </div>
+            </div>
+            <CourseFormFields
+              institutions={institutions}
+              availableTimezones={availableTimezones}
+              coursesRoot={coursesRoot}
+              suggestPrefixOptions={{
+                institutionName: request.institution ?? '',
+                emailDomain: request.work_email?.split('@')[1] ?? '',
+                enabled: !!(request.institution && request.work_email),
+              }}
+              aiSecretsConfigured={aiSecretsConfigured}
+            />
+            <div className="mb-3">
+              <label className="form-label" htmlFor="courseRequestAddInputGithubUser">
+                GitHub username
+              </label>
+              <input
+                type="text"
+                className="form-control"
+                id="courseRequestAddInputGithubUser"
+                {...register('github_user')}
+              />
+            </div>
+            {mutation.isError && (
+              <Alert variant="danger" dismissible onClose={() => mutation.reset()}>
+                {mutation.error.message}
+              </Alert>
+            )}
+          </Modal.Body>
+          <Modal.Footer>
+            <button type="button" className="btn btn-secondary" onClick={onCancel}>
+              Cancel
+            </button>
+            <button
+              type="submit"
+              className="btn btn-primary"
+              disabled={isSubmitting || mutation.isPending}
+            >
+              Create course
+            </button>
+          </Modal.Footer>
+        </form>
+      </FormProvider>
+    </Modal>
   );
 }
 

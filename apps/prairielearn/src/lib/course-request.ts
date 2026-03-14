@@ -1,7 +1,15 @@
 import { z } from 'zod';
 
 import { logger } from '@prairielearn/logger';
-import { execute, executeRow, loadSqlEquiv, queryRows, queryScalar } from '@prairielearn/postgres';
+import {
+  execute,
+  executeRow,
+  loadSqlEquiv,
+  queryOptionalRow,
+  queryRow,
+  queryRows,
+  queryScalar,
+} from '@prairielearn/postgres';
 import * as Sentry from '@prairielearn/sentry';
 import { DateFromISOString, IdSchema } from '@prairielearn/zod';
 
@@ -169,4 +177,20 @@ export async function updateCourseRequestNote({
   note: string;
 }) {
   await executeRow(sql.update_course_request_note, { id: courseRequestId, note });
+}
+
+export async function selectInstitutionPrefix({ institutionId }: { institutionId: string }) {
+  return await queryOptionalRow(
+    sql.select_institution_prefix,
+    { institution_id: institutionId },
+    z.object({ prefix: z.string().nullable() }),
+  );
+}
+
+export async function selectCourseRequestById({ courseRequestId }: { courseRequestId: string }) {
+  return await queryRow(
+    sql.select_course_request_by_id,
+    { course_request_id: courseRequestId },
+    CourseRequestRowSchema,
+  );
 }

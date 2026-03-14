@@ -1276,6 +1276,14 @@
       "type": "number",
       "default": 1
     },
+    "administratorOpenAiApiKey": {
+      "type": ["string", "null"],
+      "default": null
+    },
+    "administratorOpenAiOrganization": {
+      "type": ["string", "null"],
+      "default": null
+    },
     "requireTermsAcceptance": {
       "type": "boolean",
       "default": false
