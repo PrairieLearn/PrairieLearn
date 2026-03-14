@@ -311,7 +311,7 @@ function GradebookTable({
         },
       }),
 
-      columnHelper.accessor('student_labels', {
+      columnHelper.accessor('student_label_ids', {
         id: 'student_labels',
         meta: {
           label: 'Labels',
@@ -323,8 +323,11 @@ function GradebookTable({
           </span>
         ),
         cell: (info) => {
-          const labels = info.getValue();
-          if (labels.length === 0) return '—';
+          const labelIds = info.getValue();
+          if (labelIds.length === 0) return '—';
+          const labels = labelIds
+            .map((id) => studentLabels.find((l) => l.id === id))
+            .filter((l): l is StaffStudentLabel => l != null);
           return (
             <div className="d-flex flex-wrap gap-1">
               {labels.map((label) => (
@@ -335,9 +338,7 @@ function GradebookTable({
         },
         filterFn: (row, columnId, filterValues: string[]) => {
           if (filterValues.length === 0) return true;
-          const labelIds = new Set(
-            row.getValue<GradebookRow['student_labels']>(columnId).map((l) => l.id),
-          );
+          const labelIds = new Set(row.getValue<GradebookRow['student_label_ids']>(columnId));
           return filterValues.some((id) => labelIds.has(id));
         },
       }),
@@ -405,7 +406,14 @@ function GradebookTable({
         }),
       ),
     ],
-    [assessmentsBySet.groups, assessmentsBySet.headingById, urlPrefix, courseInstanceId, csrfToken],
+    [
+      assessmentsBySet.groups,
+      assessmentsBySet.headingById,
+      urlPrefix,
+      courseInstanceId,
+      csrfToken,
+      studentLabels,
+    ],
   );
 
   const allColumnIds = extractLeafColumnIds(columns);
@@ -468,7 +476,7 @@ function GradebookTable({
       student_labels: ({
         header,
       }: {
-        header: Header<GradebookRow, GradebookRow['student_labels']>;
+        header: Header<GradebookRow, GradebookRow['student_label_ids']>;
       }) => (
         <MultiSelectColumnFilter
           column={header.column}
@@ -539,8 +547,11 @@ function GradebookTable({
               {
                 name: 'Labels',
                 value:
-                  row.student_labels.length > 0
-                    ? row.student_labels.map((l) => l.name).join(', ')
+                  row.student_label_ids.length > 0
+                    ? row.student_label_ids
+                        .map((id) => studentLabels.find((l) => l.id === id)?.name)
+                        .filter(Boolean)
+                        .join('; ')
                     : null,
               },
             ];

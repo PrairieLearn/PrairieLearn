@@ -148,13 +148,12 @@ WITH
     SELECT
       sle.enrollment_id,
       jsonb_agg(
-        to_jsonb(sl.*)
+        sle.student_label_id
         ORDER BY
-          sl.name
-      ) AS student_labels
+          sle.student_label_id
+      ) AS student_label_ids
     FROM
       student_label_enrollments sle
-      JOIN student_labels sl ON sl.id = sle.student_label_id
       JOIN enrollments e ON e.id = sle.enrollment_id
     WHERE
       e.course_instance_id = $course_instance_id
@@ -169,7 +168,7 @@ SELECT
   u.role,
   to_jsonb(e.*) AS enrollment,
   COALESCE(s.scores, '{}') AS scores,
-  COALESCE(sla.student_labels, '[]'::jsonb) AS student_labels
+  COALESCE(sla.student_label_ids, '[]'::jsonb) AS student_label_ids
 FROM
   course_users AS u
   LEFT JOIN enrollments AS e ON (

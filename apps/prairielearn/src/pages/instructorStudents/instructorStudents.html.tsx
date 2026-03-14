@@ -552,16 +552,19 @@ function StudentsCard({
         },
       }),
 
-      columnHelper.accessor((row) => row.student_labels, {
+      columnHelper.accessor((row) => row.student_label_ids, {
         id: 'student_labels',
         meta: {
           label: 'Student labels',
         },
         header: 'Labels',
         cell: (info) => {
-          const labels = info.getValue();
-          if (labels.length === 0) return '—';
+          const labelIds = info.getValue();
+          if (labelIds.length === 0) return '—';
           const labelsUrl = getCourseInstanceStudentLabelsUrl(courseInstance.id);
+          const labels = labelIds
+            .map((id) => studentLabels.find((l) => l.id === id))
+            .filter((l): l is StaffStudentLabel => l != null);
           return (
             <div className="d-flex flex-wrap gap-1">
               {labels.map((label) => (
@@ -572,10 +575,8 @@ function StudentsCard({
         },
         filterFn: (row, columnId, filterValues: string[]) => {
           if (filterValues.length === 0) return true;
-          const studentLabelIds = new Set(
-            row.getValue<StudentRow['student_labels']>(columnId).map((l) => l.id),
-          );
-          return filterValues.some((filterId) => studentLabelIds.has(filterId));
+          const labelIdSet = new Set(row.getValue<StudentRow['student_label_ids']>(columnId));
+          return filterValues.some((filterId) => labelIdSet.has(filterId));
         },
       }),
       columnHelper.accessor((row) => row.enrollment.first_joined_at, {
@@ -590,7 +591,7 @@ function StudentsCard({
         },
       }),
     ],
-    [timezone, courseInstance.id, createCheckboxProps],
+    [timezone, courseInstance.id, createCheckboxProps, studentLabels],
   );
 
   const allColumnIds = columns
@@ -657,7 +658,7 @@ function StudentsCard({
 
     studentLabels.forEach((label) => {
       const studentsWithLabel = selectedRows.filter((row) =>
-        row.original.student_labels.some((l) => l.id === label.id),
+        row.original.student_label_ids.includes(label.id),
       ).length;
 
       if (studentsWithLabel === 0) {
@@ -848,7 +849,7 @@ function StudentsCard({
             student_labels: ({
               header,
             }: {
-              header: Header<StudentRow, StudentRow['student_labels']>;
+              header: Header<StudentRow, StudentRow['student_label_ids']>;
             }) => {
               const labelIds = studentLabels.map((l) => l.id);
               return (
