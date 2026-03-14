@@ -1,7 +1,7 @@
 import { useMutation } from '@tanstack/react-query';
 import { Alert, Button, Modal } from 'react-bootstrap';
 
-import { extractJobSequenceId } from '../../../lib/client/errors.js';
+import { getAppError } from '../../../lib/client/errors.js';
 import { getCourseInstanceJobSequenceUrl } from '../../../lib/client/url.js';
 import { useTRPC } from '../../../trpc/courseInstance/context.js';
 
@@ -35,7 +35,29 @@ export function LabelDeleteModal({
     onSuccess: (result) => onSuccess(result.origHash),
   });
 
-  const jobSequenceId = extractJobSequenceId(deleteMutation.error);
+  const appError = getAppError<'studentLabels.destroy'>(deleteMutation.error);
+
+  function renderMutationError() {
+    if (!appError) return null;
+
+    switch (appError.code) {
+      case 'SYNC_JOB_FAILED':
+        return (
+          <Alert variant="danger" dismissible onClose={() => deleteMutation.reset()}>
+            {appError.message}{' '}
+            <a href={getCourseInstanceJobSequenceUrl(courseInstanceId, appError.jobSequenceId)}>
+              View job logs
+            </a>
+          </Alert>
+        );
+      case 'UNKNOWN':
+        return (
+          <Alert variant="danger" dismissible onClose={() => deleteMutation.reset()}>
+            {appError.message}
+          </Alert>
+        );
+    }
+  }
 
   return (
     <Modal
@@ -50,19 +72,7 @@ export function LabelDeleteModal({
         <Modal.Title>Delete student label</Modal.Title>
       </Modal.Header>
       <Modal.Body>
-        {deleteMutation.isError && (
-          <Alert variant="danger" dismissible onClose={() => deleteMutation.reset()}>
-            {deleteMutation.error.message}
-            {jobSequenceId && (
-              <>
-                {' '}
-                <a href={getCourseInstanceJobSequenceUrl(courseInstanceId, jobSequenceId)}>
-                  View job logs
-                </a>
-              </>
-            )}
-          </Alert>
-        )}
+        {renderMutationError()}
         <p>
           Are you sure you want to delete the label <strong>{data?.labelName}</strong>?
         </p>

@@ -8,6 +8,8 @@ import type { CourseInstance, StudentLabel } from '../../lib/db-types.js';
 import type { ResLocalsForPage } from '../../lib/res-locals.js';
 import { selectOptionalStudentLabelById } from '../../models/student-label.js';
 
+import { AppError } from './app-errors.js';
+
 export async function selectStudentLabelByIdOrNotFound({
   id,
   courseInstance,
@@ -54,19 +56,6 @@ export function createContext({ res }: CreateExpressContextOptions) {
 
 type TRPCContext = Awaited<ReturnType<typeof createContext>>;
 
-interface SaveJobErrorCause {
-  jobSequenceId: string;
-}
-
-function isSaveJobErrorCause(cause: unknown): cause is SaveJobErrorCause {
-  return (
-    typeof cause === 'object' &&
-    cause !== null &&
-    'jobSequenceId' in cause &&
-    typeof (cause as SaveJobErrorCause).jobSequenceId === 'string'
-  );
-}
-
 export const t = initTRPC.context<TRPCContext>().create({
   transformer: superjson,
   errorFormatter({ shape, error }) {
@@ -74,7 +63,7 @@ export const t = initTRPC.context<TRPCContext>().create({
       ...shape,
       data: {
         ...shape.data,
-        jobSequenceId: isSaveJobErrorCause(error.cause) ? error.cause.jobSequenceId : null,
+        appError: error instanceof AppError ? error.meta : null,
       },
     };
   },

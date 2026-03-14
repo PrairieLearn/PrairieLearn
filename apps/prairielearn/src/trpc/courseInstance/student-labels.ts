@@ -29,6 +29,7 @@ import { getStudentLabelsWithUserData } from '../../pages/instructorStudentsLabe
 import { ColorJsonSchema } from '../../schemas/infoCourse.js';
 import { type CourseInstanceJsonInput } from '../../schemas/infoCourseInstance.js';
 
+import { throwAppError } from './app-errors.js';
 import {
   type createContext,
   requireCourseInstancePermissionEdit,
@@ -36,6 +37,13 @@ import {
   selectStudentLabelByIdOrNotFound,
   t,
 } from './init.js';
+
+export interface StudentLabelErrors {
+  upsert:
+    | { code: 'LABEL_NAME_TAKEN'; name: string }
+    | { code: 'SYNC_JOB_FAILED'; jobSequenceId: string };
+  destroy: { code: 'SYNC_JOB_FAILED'; jobSequenceId: string };
+}
 
 function getCourseInstanceContainer(coursePath: string, shortName: string) {
   const rootPath = path.join(coursePath, 'courseInstances', shortName);
@@ -134,10 +142,7 @@ async function createLabel(
     applyChanges: (jsonContents) => {
       const studentLabels = jsonContents.studentLabels ?? [];
       if (studentLabels.some((l) => l.name === name)) {
-        throw new TRPCError({
-          code: 'BAD_REQUEST',
-          message: 'A label with this name already exists',
-        });
+        throwAppError<StudentLabelErrors>({ code: 'LABEL_NAME_TAKEN', name });
       }
       studentLabels.push({ uuid: newUuid, name, color });
       jsonContents.studentLabels = studentLabels;
@@ -156,11 +161,10 @@ async function createLabel(
   });
 
   if (!saveResult.success) {
-    throw new TRPCError({
-      code: 'INTERNAL_SERVER_ERROR',
-      message: saveResult.error,
-      cause: { jobSequenceId: saveResult.jobSequenceId },
-    });
+    throwAppError<StudentLabelErrors>(
+      { code: 'SYNC_JOB_FAILED', jobSequenceId: saveResult.jobSequenceId },
+      'INTERNAL_SERVER_ERROR',
+    );
   }
 
   const uids = [...new Set(rawUids)];
@@ -221,10 +225,7 @@ async function editLabel(
         });
       }
       if (studentLabels.some((l, i) => i !== labelIndex && l.name === name)) {
-        throw new TRPCError({
-          code: 'BAD_REQUEST',
-          message: 'A label with this name already exists',
-        });
+        throwAppError<StudentLabelErrors>({ code: 'LABEL_NAME_TAKEN', name });
       }
       studentLabels[labelIndex] = { uuid: studentLabels[labelIndex].uuid, name, color };
       jsonContents.studentLabels = studentLabels;
@@ -243,11 +244,10 @@ async function editLabel(
   });
 
   if (!saveResult.success) {
-    throw new TRPCError({
-      code: 'INTERNAL_SERVER_ERROR',
-      message: saveResult.error,
-      cause: { jobSequenceId: saveResult.jobSequenceId },
-    });
+    throwAppError<StudentLabelErrors>(
+      { code: 'SYNC_JOB_FAILED', jobSequenceId: saveResult.jobSequenceId },
+      'INTERNAL_SERVER_ERROR',
+    );
   }
 
   let enrollmentWarning: string | undefined;
@@ -398,11 +398,10 @@ const destroy = t.procedure
     });
 
     if (!saveResult.success) {
-      throw new TRPCError({
-        code: 'INTERNAL_SERVER_ERROR',
-        message: saveResult.error,
-        cause: { jobSequenceId: saveResult.jobSequenceId },
-      });
+      throwAppError<StudentLabelErrors>(
+        { code: 'SYNC_JOB_FAILED', jobSequenceId: saveResult.jobSequenceId },
+        'INTERNAL_SERVER_ERROR',
+      );
     }
 
     return { origHash: saveResult.origHash };

@@ -1,13 +1,14 @@
-import { useQueryClient, useMutation } from '@tanstack/react-query';
+import { useMutation, useQueryClient } from '@tanstack/react-query';
 import clsx from 'clsx';
 import { useState } from 'react';
 import { Alert, Modal } from 'react-bootstrap';
 import { useForm } from 'react-hook-form';
 
 import { run } from '@prairielearn/run';
+import { assertNever } from '@prairielearn/utils';
 
 import { ColorPicker } from '../../../components/ColorPicker.js';
-import { extractJobSequenceId } from '../../../lib/client/errors.js';
+import { getAppError } from '../../../lib/client/errors.js';
 import { getCourseInstanceJobSequenceUrl } from '../../../lib/client/url.js';
 import { parseUniqueValuesFromString } from '../../../lib/string-util.js';
 import { ColorJsonSchema } from '../../../schemas/infoCourse.js';
@@ -128,7 +129,37 @@ export function LabelModifyModal({
     });
   };
 
-  const jobSequenceId = extractJobSequenceId(saveMutation.error);
+  const appError = getAppError<'studentLabels.upsert'>(saveMutation.error);
+
+  function renderMutationError() {
+    if (!appError) return null;
+
+    switch (appError.code) {
+      case 'LABEL_NAME_TAKEN':
+        return (
+          <Alert variant="danger" dismissible onClose={() => saveMutation.reset()}>
+            A label named &ldquo;{appError.name}&rdquo; already exists.
+          </Alert>
+        );
+      case 'SYNC_JOB_FAILED':
+        return (
+          <Alert variant="danger" dismissible onClose={() => saveMutation.reset()}>
+            {appError.message}{' '}
+            <a href={getCourseInstanceJobSequenceUrl(courseInstanceId, appError.jobSequenceId)}>
+              View job logs
+            </a>
+          </Alert>
+        );
+      case 'UNKNOWN':
+        return (
+          <Alert variant="danger" dismissible onClose={() => saveMutation.reset()}>
+            {appError.message}
+          </Alert>
+        );
+      default:
+        assertNever(appError);
+    }
+  }
 
   if (stage.type === 'confirming') {
     return (
@@ -137,19 +168,7 @@ export function LabelModifyModal({
           <Modal.Title>Confirm unknown UIDs</Modal.Title>
         </Modal.Header>
         <Modal.Body>
-          {saveMutation.isError && (
-            <Alert variant="danger" dismissible onClose={() => saveMutation.reset()}>
-              {saveMutation.error.message}
-              {jobSequenceId && (
-                <>
-                  {' '}
-                  <a href={getCourseInstanceJobSequenceUrl(courseInstanceId, jobSequenceId)}>
-                    View job logs
-                  </a>
-                </>
-              )}
-            </Alert>
-          )}
+          {renderMutationError()}
           <p>The following UIDs are not found in this course instance:</p>
           <div className="mb-3 p-3 bg-light border rounded">
             {stage.unknownUids.map((uid) => (
@@ -198,19 +217,7 @@ export function LabelModifyModal({
       </Modal.Header>
       <form onSubmit={handleSubmit(onFormSubmit)}>
         <Modal.Body>
-          {saveMutation.isError && (
-            <Alert variant="danger" dismissible onClose={() => saveMutation.reset()}>
-              {saveMutation.error.message}
-              {jobSequenceId && (
-                <>
-                  {' '}
-                  <a href={getCourseInstanceJobSequenceUrl(courseInstanceId, jobSequenceId)}>
-                    View job logs
-                  </a>
-                </>
-              )}
-            </Alert>
-          )}
+          {renderMutationError()}
           <div className="d-flex flex-column align-items-center mb-4">
             <span className={clsx('badge', `color-${selectedColor}`)}>
               {watch('name') || 'Label preview'}
