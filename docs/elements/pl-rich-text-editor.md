@@ -27,6 +27,10 @@ Provides an in-browser rich text editor, aimed mostly at manual grading essay-ty
 | `quill-theme`        | string                              | `"snow"`             | Specifies a Quill editor theme; the most common themes are `"snow"` (which uses a default toolbar) or `"bubble"` (which hides the default toolbar, showing formatting options when text is selected). See [the Quill documentation](https://quilljs.com/docs/themes/) for more information about additional themes.                                                                                                                                       |
 | `source-file-name`   | string                              | —                    | Name of the source file with existing content to be displayed in the editor. The format of this file must match the format specified in the `format` attribute.                                                                                                                                                                                                                                                                                           |
 
+## Word count
+
+The algorithm identifies words by splitting on whitespace, a convention that works well for most standard English texts. In contexts such as formulas, programming syntax, or languages without space-separated words, the resulting count may not correspond to meaningful linguistic units.
+
 ## Using more than one element in a question
 
 The `pl-rich-text-editor` element creates a file submission corresponding to the HTML content of the student answer. If the file name is not provided, the name `answer.html` is used. If more than one `pl-rich-text-editor` is included in a question, they must each contain a different file name; in that case, the file name must be explicitly provided, as the default name would clash between elements.

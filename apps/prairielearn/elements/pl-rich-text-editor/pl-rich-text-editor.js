@@ -12,31 +12,21 @@
     }
   });
 
-  // Words are split on whitespace. This must match the Python logic in
+  // Words are split on ASCII whitespace. This must match the Python logic in
   // count_words_from_html_base64 so the live counter and validation agree.
   const countWords = (text) => {
-    const tokens = text.trim() ? text.trim().split(/\s+/).filter((t) => t) : [];
+    const trimmed = text.trim();
+    const tokens = trimmed ? trimmed.split(/[ \t\n\r\f\v]+/).filter((t) => t) : [];
     return tokens.length;
   };
 
-  // Extract plain text from HTML with spaces between adjacent elements.
-  // Matches Python's " ".join(root.itertext()) so that lists, inline
-  // formatting, and adjacent blocks (e.g. <p>hello</p><p><strong>world</strong></p>)
-  // are counted correctly. Used for both the live counter and min/max validation.
-  const extractTextFromHtml = (html) => {
+  // Convert sanitized HTML to text for word counting. Replaces tags and &nbsp;
+  // with spaces, then countWords splits on whitespace. No DOM/HTML parsing.
+  const htmlToCountableText = (html) => {
     if (!html) return '';
-    const div = document.createElement('div');
-    div.innerHTML = html;
-    const texts = [];
-    const walk = (node) => {
-      if (node.nodeType === Node.TEXT_NODE) {
-        texts.push(node.textContent);
-      } else if (node.nodeType === Node.ELEMENT_NODE) {
-        for (const child of node.childNodes) walk(child);
-      }
-    };
-    walk(div);
-    return texts.join(' ');
+    return html
+      .replace(/<[^>]+>/g, ' ')
+      .replace(/&nbsp;|&#160;|&#xA0;|[\u00A0]/g, ' ');
   };
 
   class Counter {
@@ -170,7 +160,7 @@
       quill.editor?.isBlank?.()
         ? ''
         : rtePurify.sanitize(quill.getSemanticHTML(), rtePurifyConfig);
-    const getCountableText = () => extractTextFromHtml(getStoredContent());
+    const getCountableText = () => htmlToCountableText(getStoredContent());
 
     const getCounterText =
       options.counter === 'character'
