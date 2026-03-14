@@ -83,22 +83,13 @@ export function LabelModifyModal({
     mutationFn: async (formData: LabelFormValues) => {
       const color = ColorJsonSchema.parse(formData.color);
       const uids = parseUniqueValuesFromString(formData.uids.trim(), MAX_LABEL_UIDS);
-      if (data?.type === 'edit') {
-        return await trpcClient.studentLabels.edit.mutate({
-          labelId: data.labelId,
-          name: formData.name.trim(),
-          color,
-          uids,
-          origHash: data.origHash,
-        });
-      } else {
-        return await trpcClient.studentLabels.create.mutate({
-          name: formData.name.trim(),
-          color,
-          uids,
-          origHash: data?.origHash ?? null,
-        });
-      }
+      return await trpcClient.studentLabels.upsert.mutate({
+        labelId: data?.type === 'edit' ? data.labelId : undefined,
+        name: formData.name.trim(),
+        color,
+        uids,
+        origHash: data?.origHash ?? null,
+      });
     },
     onSuccess: (result) => onSuccess(result),
   });
