@@ -218,6 +218,11 @@ export function LabelModifyModal({
               )}
             </Alert>
           )}
+          <div className="d-flex flex-column align-items-center mb-4">
+            <span className={clsx('badge', `color-${selectedColor}`)}>
+              {watch('name') || 'Label preview'}
+            </span>
+          </div>
           <div className="mb-3">
             <label className="form-label" htmlFor="label-name">
               Label name
