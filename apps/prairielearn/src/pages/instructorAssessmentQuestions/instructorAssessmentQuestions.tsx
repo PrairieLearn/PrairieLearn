@@ -160,6 +160,7 @@ router.get(
                 course={pageContext.course}
                 questionRows={questionRows}
                 urlPrefix={pageContext.urlPrefix}
+                courseInstanceId={pageContext.course_instance.id}
                 assessmentType={pageContext.assessment.type}
                 assessmentSetName={pageContext.assessment_set.name}
                 assessmentNumber={pageContext.assessment.number}

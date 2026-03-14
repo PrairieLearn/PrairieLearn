@@ -2,14 +2,15 @@ import clsx from 'clsx';
 
 import { renderHtml } from '@prairielearn/react';
 
-import { encodeSearchString } from '../lib/uri-util.shared.js';
+import { getCourseIssuesUrl } from '../lib/client/url.js';
 
 export function IssueBadge({
   count,
   suppressLink,
   issueQid,
   issueAid,
-  urlPrefix,
+  courseId,
+  courseInstanceId,
   className,
 }: {
   count: number;
@@ -17,13 +18,15 @@ export function IssueBadge({
 } & (
   | {
       suppressLink: true;
-      urlPrefix?: undefined;
+      courseId?: undefined;
+      courseInstanceId?: undefined;
       issueQid?: undefined;
       issueAid?: undefined;
     }
   | {
       suppressLink?: false;
-      urlPrefix: string;
+      courseId: string;
+      courseInstanceId?: string;
       issueQid?: string | null;
       issueAid?: string | null;
     }
@@ -37,12 +40,10 @@ export function IssueBadge({
     );
   }
 
-  const query = encodeSearchString({ is: 'open', qid: issueQid, assessment: issueAid });
-
   return (
     <a
       className={clsx('badge', 'rounded-pill', 'text-bg-danger', className)}
-      href={`${urlPrefix}/course_admin/issues?q=${query}`}
+      href={getCourseIssuesUrl({ courseId, courseInstanceId, qid: issueQid, assessment: issueAid })}
       aria-label={`${count} open ${count === 1 ? 'issue' : 'issues'}`}
     >
       {count}
@@ -55,7 +56,8 @@ export function IssueBadgeHtml({
   suppressLink,
   issueQid,
   issueAid,
-  urlPrefix,
+  courseId,
+  courseInstanceId,
   className,
 }: {
   count: number;
@@ -63,13 +65,15 @@ export function IssueBadgeHtml({
 } & (
   | {
       suppressLink: true;
-      urlPrefix?: undefined;
+      courseId?: undefined;
+      courseInstanceId?: undefined;
       issueQid?: undefined;
       issueAid?: undefined;
     }
   | {
       suppressLink?: false;
-      urlPrefix: string;
+      courseId: string;
+      courseInstanceId?: string;
       issueQid?: string | null;
       issueAid?: string | null;
     }
@@ -84,7 +88,8 @@ export function IssueBadgeHtml({
     <IssueBadge
       count={count}
       className={className}
-      urlPrefix={urlPrefix}
+      courseId={courseId}
+      courseInstanceId={courseInstanceId}
       issueQid={issueQid}
       issueAid={issueAid}
     />,

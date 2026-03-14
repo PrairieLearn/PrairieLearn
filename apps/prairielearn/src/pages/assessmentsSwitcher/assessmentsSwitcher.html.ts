@@ -12,12 +12,14 @@ export function AssessmentSwitcher({
   assessmentRows,
   assessmentsGroupBy,
   currentAssessmentId,
+  courseId,
   courseInstanceId,
   targetSubPage,
 }: {
   assessmentRows: AssessmentRow[];
   assessmentsGroupBy: 'Set' | 'Module';
   currentAssessmentId: string;
+  courseId: string;
   courseInstanceId: string;
   /** The subPage that assessment links should redirect to. */
   targetSubPage?: NavSubPage;
@@ -72,7 +74,8 @@ export function AssessmentSwitcher({
               </a>
               ${IssueBadgeHtml({
                 count: row.open_issue_count,
-                urlPrefix: `/pl/course_instance/${courseInstanceId}/instructor`,
+                courseId,
+                courseInstanceId,
                 issueAid: row.tid,
               })}
             </div>

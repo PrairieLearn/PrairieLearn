@@ -37,7 +37,7 @@ export function InstructorAssessments({
   assessmentModules: AssessmentModule[];
   assessmentsGroupBy: 'Set' | 'Module';
 }) {
-  const { urlPrefix, authz_data, course, __csrf_token } = resLocals;
+  const { urlPrefix, authz_data, course, course_instance, __csrf_token } = resLocals;
 
   return PageLayout({
     resLocals,
@@ -134,7 +134,8 @@ export function InstructorAssessments({
                             </a>
                             ${IssueBadgeHtml({
                               count: row.open_issue_count,
-                              urlPrefix,
+                              courseId: course.id,
+                              courseInstanceId: course_instance.id,
                               issueAid: row.tid,
                             })}
                           </td>

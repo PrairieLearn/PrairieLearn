@@ -52,6 +52,7 @@ export function InstructorAssessmentQuestionsTableLegacy({
   course,
   questionRows,
   urlPrefix,
+  courseInstanceId,
   assessmentType,
   assessmentSetName,
   assessmentNumber,
@@ -66,6 +67,7 @@ export function InstructorAssessmentQuestionsTableLegacy({
   assessmentSetName: string;
   assessmentNumber: string;
   urlPrefix: string;
+  courseInstanceId?: string;
   hasCoursePermissionPreview: boolean;
   hasCourseInstancePermissionEdit: boolean;
   csrfToken: string;
@@ -161,7 +163,8 @@ export function InstructorAssessmentQuestionsTableLegacy({
                           urlPrefix={urlPrefix}
                         />
                         <IssueBadge
-                          urlPrefix={urlPrefix}
+                          courseId={course.id}
+                          courseInstanceId={courseInstanceId}
                           count={questionRow.open_issue_count}
                           issueQid={question.qid}
                         />
