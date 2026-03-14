@@ -46,6 +46,7 @@ async function createTrpcClient() {
       httpLink({
         url: `${siteUrl}/pl/course_instance/1/instructor/trpc`,
         headers: {
+          'X-TRPC': 'true',
           'X-CSRF-Token': trpcCsrfToken,
         },
         transformer: superjson,

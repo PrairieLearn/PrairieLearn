@@ -62,6 +62,7 @@ async function createTrpcClient() {
       httpLink({
         url: `${siteUrl}/pl/course_instance/1/instructor/trpc`,
         headers: {
+          'X-TRPC': 'true',
           'X-CSRF-Token': trpcCsrfToken,
         },
         transformer: superjson,
@@ -98,11 +99,9 @@ describe('Instructor student labels page', () => {
   afterAll(helperServer.after);
 
   test.sequential('should load page and API endpoints correctly', async () => {
-    // Test main page loads
     const pageResponse = await fetch(labelsUrl);
     assert.equal(pageResponse.status, 200);
 
-    // Get tRPC client
     const trpcClient = await createTrpcClient();
 
     const result = await trpcClient.studentLabels.list.query();
@@ -387,7 +386,7 @@ describe('Instructor student labels page', () => {
     assert.equal(enrollmentsInLabel.length, 2);
 
     // Verify the display query includes the invited student
-    const labelsWithUserData = await getStudentLabelsWithUserData('1');
+    const labelsWithUserData = await getStudentLabelsWithUserData(courseInstance);
     const labelData = labelsWithUserData.find((l) => l.student_label.name === 'Invited Label');
     assert.isDefined(labelData);
     const uidsInLabel = labelData.user_data.map((u) => u.uid);

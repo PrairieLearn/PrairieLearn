@@ -51,7 +51,7 @@ import {
 } from '../../lib/client/url.js';
 import type { EnumEnrollmentStatus } from '../../lib/db-types.js';
 import { courseInstanceFilenamePrefix } from '../../lib/sanitize-name.js';
-import { createCourseInstanceTrpcClient } from '../../trpc/courseInstance/trpc-client.js';
+import { createCourseInstanceTrpcClient } from '../../trpc/courseInstance/client.js';
 import { MAX_LABEL_UIDS } from '../instructorStudentsLabels/instructorStudentsLabels.types.js';
 
 import { InviteStudentsModal } from './components/InviteStudentsModal.js';

@@ -1,11 +1,11 @@
-import { QueryClient, useQuery, useQueryClient } from '@tanstack/react-query';
+import { QueryClient, useQuery } from '@tanstack/react-query';
 import { useState } from 'react';
 import { Alert } from 'react-bootstrap';
 
 import { useModalState } from '@prairielearn/ui';
 
 import { QueryClientProviderDebug } from '../../lib/client/tanstackQuery.js';
-import { createCourseInstanceTrpcClient } from '../../trpc/courseInstance/trpc-client.js';
+import { createCourseInstanceTrpcClient } from '../../trpc/courseInstance/client.js';
 
 import { LabelDeleteModal, type LabelDeleteModalData } from './components/LabelDeleteModal.js';
 import { LabelModifyModal, type LabelModifyModalData } from './components/LabelModifyModal.js';
@@ -39,9 +39,8 @@ function StudentLabelsCard({
   const deleteModal = useModalState<LabelDeleteModalData>();
   const [origHash, setOrigHash] = useState(initialOrigHash);
   const [enrollmentWarning, setEnrollmentWarning] = useState<string | null>(null);
-  const queryClient = useQueryClient();
 
-  const { data: labels = initialLabels } = useQuery({
+  const { data: labels = initialLabels, refetch: refetchLabels } = useQuery({
     queryKey: ['student-labels-with-user-data', courseInstanceId],
     queryFn: async () => {
       const result = await trpcClient.studentLabels.list.query();
@@ -53,11 +52,6 @@ function StudentLabelsCard({
   });
 
   const canEdit = canEditProp && origHash !== null;
-
-  const invalidateLabels = () =>
-    queryClient.invalidateQueries({
-      queryKey: ['student-labels-with-user-data', courseInstanceId],
-    });
 
   const handleEdit = (label: StudentLabelWithUserData) => {
     editModal.showWithData({
@@ -80,7 +74,7 @@ function StudentLabelsCard({
 
   const handleDeleteSuccess = async (newOrigHash: string | null) => {
     setOrigHash(newOrigHash);
-    await invalidateLabels();
+    await refetchLabels();
     deleteModal.hide();
   };
 
@@ -90,7 +84,7 @@ function StudentLabelsCard({
   }) => {
     setOrigHash(result.origHash);
     setEnrollmentWarning(result.enrollmentWarning ?? null);
-    await invalidateLabels();
+    await refetchLabels();
     editModal.hide();
   };
 

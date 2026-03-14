@@ -11,7 +11,7 @@ import { extractJobSequenceId } from '../../../lib/client/errors.js';
 import { getCourseInstanceJobSequenceUrl } from '../../../lib/client/url.js';
 import { parseUniqueValuesFromString } from '../../../lib/string-util.js';
 import { ColorJsonSchema } from '../../../schemas/infoCourse.js';
-import type { createCourseInstanceTrpcClient } from '../../../trpc/courseInstance/trpc-client.js';
+import type { createCourseInstanceTrpcClient } from '../../../trpc/courseInstance/client.js';
 import { MAX_LABEL_UIDS } from '../instructorStudentsLabels.types.js';
 
 type StudentLabelsTrpcClient = ReturnType<typeof createCourseInstanceTrpcClient>;
@@ -67,7 +67,6 @@ export function LabelModifyModal({
   const {
     register,
     handleSubmit,
-    trigger,
     setError,
     formState: { errors },
     watch,
@@ -181,14 +180,7 @@ export function LabelModifyModal({
             type="button"
             className="btn btn-warning"
             disabled={saveMutation.isPending}
-            onClick={async () => {
-              const isValid = await trigger('name');
-              if (!isValid) {
-                setStage({ type: 'editing' });
-                return;
-              }
-              saveMutation.mutate(watch());
-            }}
+            onClick={() => saveMutation.mutate(watch())}
           >
             {saveMutation.isPending ? 'Saving...' : 'Save anyway'}
           </button>

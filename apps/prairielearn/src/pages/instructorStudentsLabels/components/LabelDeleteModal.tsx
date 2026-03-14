@@ -3,7 +3,7 @@ import { Alert, Button, Modal } from 'react-bootstrap';
 
 import { extractJobSequenceId } from '../../../lib/client/errors.js';
 import { getCourseInstanceJobSequenceUrl } from '../../../lib/client/url.js';
-import type { createCourseInstanceTrpcClient } from '../../../trpc/courseInstance/trpc-client.js';
+import type { createCourseInstanceTrpcClient } from '../../../trpc/courseInstance/client.js';
 
 type StudentLabelsTrpcClient = ReturnType<typeof createCourseInstanceTrpcClient>;
 

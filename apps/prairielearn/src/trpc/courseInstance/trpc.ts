@@ -2,8 +2,8 @@ import { createExpressMiddleware } from '@trpc/server/adapters/express';
 
 import { handleTrpcError } from '../../lib/trpc.js';
 
+import { createContext, t } from './init.js';
 import { studentLabelsRouter } from './student-labels.js';
-import { createContext, t } from './trpc-init.js';
 
 export const courseInstanceRouter = t.router({
   studentLabels: studentLabelsRouter,

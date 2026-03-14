@@ -54,7 +54,7 @@ router.get(
       return;
     }
 
-    const labels = await getStudentLabelsWithUserData(courseInstance.id);
+    const labels = await getStudentLabelsWithUserData(courseInstance);
     const canEdit = authz_data.has_course_instance_permission_edit ?? false;
 
     const trpcUrl = `/pl/course_instance/${courseInstance.id}/instructor/trpc`;

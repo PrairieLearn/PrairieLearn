@@ -15,6 +15,7 @@ export function createCourseInstanceTrpcClient({
       httpLink({
         url: `/pl/course_instance/${courseInstanceId}/instructor/trpc`,
         headers: {
+          'X-TRPC': 'true',
           'X-CSRF-Token': csrfToken,
         },
         transformer: superjson,

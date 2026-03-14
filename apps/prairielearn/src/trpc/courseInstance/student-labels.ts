@@ -34,7 +34,7 @@ import {
   requireCourseInstancePermissionView,
   selectStudentLabelByIdOrNotFound,
   t,
-} from './trpc-init.js';
+} from './init.js';
 
 function getCourseInstanceContainer(coursePath: string, shortName: string) {
   const rootPath = path.join(coursePath, 'courseInstances', shortName);
@@ -54,7 +54,7 @@ const list = t.procedure
   )
   .query(async (opts) => {
     const { course, course_instance } = opts.ctx;
-    const labels = await getStudentLabelsWithUserData(course_instance.id);
+    const labels = await getStudentLabelsWithUserData(course_instance);
 
     const courseInstancePath = path.join(
       course.path,
@@ -125,7 +125,8 @@ const create = t.procedure
   )
   .mutation(async (opts) => {
     const { course, course_instance, authz_data, locals } = opts.ctx;
-    const { name, color, uids: rawUids, origHash } = opts.input;
+    const { name: rawName, color, uids: rawUids, origHash } = opts.input;
+    const name = rawName.trim();
 
     const newUuid = crypto.randomUUID();
 
@@ -204,7 +205,8 @@ const edit = t.procedure
   )
   .mutation(async (opts) => {
     const { course, course_instance, authz_data, locals } = opts.ctx;
-    const { labelId, name, color, uids: rawUids, origHash } = opts.input;
+    const { labelId, name: rawName, color, uids: rawUids, origHash } = opts.input;
+    const name = rawName.trim();
 
     const label = await selectStudentLabelByIdOrNotFound({
       id: labelId,

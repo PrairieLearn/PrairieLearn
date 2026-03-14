@@ -65,33 +65,31 @@ router.get(
       throw new HttpStatusError(404, 'Student not found');
     }
 
-    const [
-      gradebookRows,
-      studentLabels,
-      availableStudentLabels,
-      rawEnrollmentAuditEvents,
-      rawLabelAuditEvents,
-    ] = await Promise.all([
-      student.user?.id
-        ? getGradebookRows({
-            course_instance_id: courseInstance.id,
-            user_id: student.user.id,
-            authz_data: res.locals.authz_data,
-            req_date: res.locals.req_date,
-            auth: 'instructor',
-          })
-        : [],
-      selectStudentLabelsForEnrollment(student.enrollment),
-      selectStudentLabelsInCourseInstance(courseInstance),
-      selectAuditEventsByEnrollmentId({
-        enrollment_id: req.params.enrollment_id,
-        table_names: ['enrollments'],
-      }),
-      selectAuditEventsByEnrollmentId({
-        enrollment_id: req.params.enrollment_id,
-        table_names: ['student_label_enrollments'],
-      }),
-    ]);
+    const [gradebookRows, studentLabels, availableStudentLabels, rawAllAuditEvents] =
+      await Promise.all([
+        student.user?.id
+          ? getGradebookRows({
+              course_instance_id: courseInstance.id,
+              user_id: student.user.id,
+              authz_data: res.locals.authz_data,
+              req_date: res.locals.req_date,
+              auth: 'instructor',
+            })
+          : [],
+        selectStudentLabelsForEnrollment(student.enrollment),
+        selectStudentLabelsInCourseInstance(courseInstance),
+        selectAuditEventsByEnrollmentId({
+          enrollment_id: req.params.enrollment_id,
+          table_names: ['enrollments', 'student_label_enrollments'],
+        }),
+      ]);
+
+    const rawEnrollmentAuditEvents = rawAllAuditEvents.filter(
+      (e) => e.table_name === 'enrollments',
+    );
+    const rawLabelAuditEvents = rawAllAuditEvents.filter(
+      (e) => e.table_name === 'student_label_enrollments',
+    );
 
     const pageTitle = run(() => {
       if (student.user) {

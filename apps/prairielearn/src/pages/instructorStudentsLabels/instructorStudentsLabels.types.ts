@@ -3,12 +3,13 @@ import { z } from 'zod';
 import { IdSchema } from '@prairielearn/zod';
 
 import { StaffStudentLabelSchema } from '../../lib/client/safe-db-types.js';
+import { UserSchema } from '../../lib/db-types.js';
 
 export const MAX_LABEL_UIDS = 1000;
 
 const StudentLabelUserDataSchema = z.object({
-  uid: z.string(),
-  name: z.string().nullable(),
+  uid: UserSchema.shape.uid,
+  name: UserSchema.shape.name,
   enrollment_id: IdSchema,
 });
 

@@ -53,8 +53,8 @@ function renderLabelEventText(event: StaffAuditEvent): string {
   }
 
   const detailMap: Record<SupportedActionsForTable<'student_label_enrollments'>, string> = {
-    enrollment_added: `Added to label "${labelName}"`,
-    enrollment_removed: `Removed from label "${labelName}"`,
+    enrollment_added: `Label "${labelName}" added`,
+    enrollment_removed: `Label "${labelName}" removed`,
   };
 
   const detail = detailMap[action_detail as SupportedActionsForTable<'student_label_enrollments'>];
@@ -108,40 +108,30 @@ export function StudentEnrollmentAuditEventsTable({ events }: StudentAuditEvents
 export function StudentLabelAuditEventsTable({ events }: StudentAuditEventsTableProps) {
   if (events.length === 0) {
     return (
-      <>
-        <div className="card-body">
-          <div className="text-muted">No label events found.</div>
-        </div>
-        <div className="card-footer text-muted small">
-          Missing events? Label events were not logged before February 2026.
-        </div>
-      </>
+      <div className="card-body">
+        <div className="text-muted">No label events found.</div>
+      </div>
     );
   }
 
   return (
-    <>
-      <table className="table table-sm table-hover" aria-label="Student label audit events">
-        <thead>
-          <tr>
-            <th>Date</th>
-            <th>Event</th>
+    <table className="table table-sm table-hover" aria-label="Student label audit events">
+      <thead>
+        <tr>
+          <th>Date</th>
+          <th>Event</th>
+        </tr>
+      </thead>
+      <tbody>
+        {events.map((e) => (
+          <tr key={e.id}>
+            <td className="align-middle">
+              <FriendlyDate date={e.date} />
+            </td>
+            <td className="align-middle">{renderLabelEventText(e)}</td>
           </tr>
-        </thead>
-        <tbody>
-          {events.map((e) => (
-            <tr key={e.id}>
-              <td className="align-middle">
-                <FriendlyDate date={e.date} />
-              </td>
-              <td className="align-middle">{renderLabelEventText(e)}</td>
-            </tr>
-          ))}
-        </tbody>
-      </table>
-      <div className="card-footer text-muted small">
-        Missing events? Label events were not logged before February 2026.
-      </div>
-    </>
+        ))}
+      </tbody>
+    </table>
   );
 }

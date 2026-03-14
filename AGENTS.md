@@ -107,7 +107,7 @@ Course content repositories use JSON files like `infoCourse.json`, `infoCourseIn
 
 ### SQL query conventions
 
-- Use `to_jsonb(table.*)` to select all columns from a table as JSON. This is preferred over explicit `jsonb_build_object` calls because it automatically includes all columns and stays in sync with schema changes.
+- Use `to_jsonb(table.*)` if you need to select all columns from a table as JSON. This is preferred over explicit `jsonb_build_object` calls because it automatically includes all columns and stays in sync with schema changes.
 
 When working with assessment "groups" / "teams", see the [`groups-and-teams` skill](./.agents/skills/groups-and-teams/SKILL.md).
 

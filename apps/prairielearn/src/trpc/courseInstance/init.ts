@@ -74,7 +74,7 @@ export const t = initTRPC.context<TRPCContext>().create({
       ...shape,
       data: {
         ...shape.data,
-        jobSequenceId: isSaveJobErrorCause(error.cause) ? error.cause.jobSequenceId : undefined,
+        jobSequenceId: isSaveJobErrorCause(error.cause) ? error.cause.jobSequenceId : null,
       },
     };
   },
