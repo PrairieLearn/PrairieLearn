@@ -79,8 +79,7 @@ export default ESLintUtils.RuleCreator.withoutDocs({
           /^set[A-Z0-9_]/.test(callee.name) ||
           callee.name === 'queueMicrotask' ||
           callee.name === 'requestAnimationFrame' ||
-          callee.name === 'requestIdleCallback' ||
-          callee.name === 'startTransition'
+          callee.name === 'requestIdleCallback'
         );
       }
 
