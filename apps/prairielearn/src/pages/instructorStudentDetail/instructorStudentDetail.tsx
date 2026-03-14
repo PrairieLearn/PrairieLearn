@@ -6,10 +6,12 @@ import { HttpStatusError } from '@prairielearn/error';
 import { loadSqlEquiv, queryOptionalRow } from '@prairielearn/postgres';
 import { Hydrate } from '@prairielearn/react/server';
 import { run } from '@prairielearn/run';
+import { generatePrefixCsrfToken } from '@prairielearn/signed-token';
 
 import { PageLayout } from '../../components/PageLayout.js';
 import { extractPageContext } from '../../lib/client/page-context.js';
 import { StaffAuditEventSchema, StaffStudentLabelSchema } from '../../lib/client/safe-db-types.js';
+import { config } from '../../lib/config.js';
 import { getGradebookRows } from '../../lib/gradebook.js';
 import { getCourseInstanceUrl } from '../../lib/url.js';
 import { selectAuditEventsByEnrollmentId } from '../../models/audit-event.js';
@@ -20,9 +22,6 @@ import {
   setEnrollmentStatus,
 } from '../../models/enrollment.js';
 import {
-  addLabelToEnrollment,
-  removeLabelFromEnrollment,
-  selectStudentLabelById,
   selectStudentLabelsForEnrollment,
   selectStudentLabelsInCourseInstance,
 } from '../../models/student-label.js';
@@ -47,6 +46,12 @@ router.get(
     });
     const { urlPrefix, course_instance: courseInstance } = pageContext;
     const courseInstanceUrl = getCourseInstanceUrl(courseInstance.id);
+
+    const trpcUrl = `/pl/course_instance/${courseInstance.id}/instructor/trpc`;
+    const trpcCsrfToken = generatePrefixCsrfToken(
+      { url: trpcUrl, authn_user_id: res.locals.authn_user.id },
+      config.secretKey,
+    );
 
     const student = await queryOptionalRow(
       sql.select_student_info,
@@ -125,7 +130,9 @@ router.get(
                 .parse(availableStudentLabels)}
               urlPrefix={urlPrefix}
               courseInstanceUrl={courseInstanceUrl}
+              courseInstanceId={courseInstance.id}
               csrfToken={pageContext.__csrf_token}
+              trpcCsrfToken={trpcCsrfToken}
               hasCourseInstancePermissionEdit={
                 pageContext.authz_data.has_course_instance_permission_edit ?? false
               }
@@ -229,32 +236,6 @@ router.post(
           pendingUid,
           authzData,
           requiredRole: ['Student Data Editor'],
-        });
-        res.redirect(req.originalUrl);
-        break;
-      }
-      case 'add_label': {
-        const { student_label_id } = z.object({ student_label_id: z.string() }).parse(req.body);
-
-        const label = await selectStudentLabelById({ id: student_label_id, courseInstance });
-
-        await addLabelToEnrollment({
-          enrollment,
-          label,
-          authzData,
-        });
-        res.redirect(req.originalUrl);
-        break;
-      }
-      case 'remove_label': {
-        const { student_label_id } = z.object({ student_label_id: z.string() }).parse(req.body);
-
-        const label = await selectStudentLabelById({ id: student_label_id, courseInstance });
-
-        await removeLabelFromEnrollment({
-          enrollment,
-          label,
-          authzData,
         });
         res.redirect(req.originalUrl);
         break;

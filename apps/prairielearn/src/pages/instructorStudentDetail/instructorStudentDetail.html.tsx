@@ -4,6 +4,7 @@ import { TimezoneContext } from '../../components/FriendlyDate.js';
 import { setCookieClient } from '../../lib/client/cookie.js';
 import { type StaffAuditEvent, type StaffStudentLabel } from '../../lib/client/safe-db-types.js';
 import { type StaffGradebookRow } from '../../lib/gradebook.shared.js';
+import { createCourseInstanceTrpcClient } from '../../trpc/courseInstance/client.js';
 
 import { OverviewCard, type UserDetail } from './components/OverviewCard.js';
 import {
@@ -21,7 +22,9 @@ interface StudentDetailProps {
   availableStudentLabels: StaffStudentLabel[];
   urlPrefix: string;
   courseInstanceUrl: string;
+  courseInstanceId: string;
   csrfToken: string;
+  trpcCsrfToken: string;
   hasCourseInstancePermissionEdit?: boolean;
   hasModernPublishing: boolean;
 }
@@ -33,16 +36,21 @@ export function InstructorStudentDetail({
   labelAuditEvents,
   gradebookRows,
   student,
-  studentLabels,
-  availableStudentLabels,
+  studentLabels: initialStudentLabels,
+  availableStudentLabels: initialAvailableStudentLabels,
   urlPrefix,
   courseInstanceUrl,
+  courseInstanceId,
   csrfToken,
+  trpcCsrfToken,
   hasCourseInstancePermissionEdit,
   hasModernPublishing,
 }: StudentDetailProps) {
   const { user, course_instance } = student;
   const [activeTab, setActiveTab] = useState<AuditTab>('enrollment');
+  const [trpcClient] = useState(() =>
+    createCourseInstanceTrpcClient({ csrfToken: trpcCsrfToken, courseInstanceId }),
+  );
 
   const handleViewGradebookAsStudent = () => {
     if (!user) throw new Error('User is required');
@@ -55,10 +63,11 @@ export function InstructorStudentDetail({
     <TimezoneContext value={course_instance.display_timezone}>
       <OverviewCard
         student={student}
-        studentLabels={studentLabels}
-        availableStudentLabels={availableStudentLabels}
+        initialStudentLabels={initialStudentLabels}
+        initialAvailableStudentLabels={initialAvailableStudentLabels}
         courseInstanceUrl={courseInstanceUrl}
         csrfToken={csrfToken}
+        trpcClient={trpcClient}
         hasCourseInstancePermissionEdit={hasCourseInstancePermissionEdit ?? false}
         hasModernPublishing={hasModernPublishing}
       />

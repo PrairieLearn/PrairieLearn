@@ -1,3 +1,4 @@
+import { useState } from 'react';
 import { z } from 'zod';
 
 import { run } from '@prairielearn/run';
@@ -13,6 +14,9 @@ import {
   StaffUserSchema,
 } from '../../../lib/client/safe-db-types.js';
 import { getCourseInstanceStudentLabelsUrl } from '../../../lib/client/url.js';
+import type { createCourseInstanceTrpcClient } from '../../../trpc/courseInstance/client.js';
+
+type StudentLabelsTrpcClient = ReturnType<typeof createCourseInstanceTrpcClient>;
 
 export const UserDetailSchema = z.object({
   user: StaffUserSchema.nullable(),
@@ -25,22 +29,27 @@ export type UserDetail = z.infer<typeof UserDetailSchema>;
 
 export function OverviewCard({
   student,
-  studentLabels,
-  availableStudentLabels,
+  initialStudentLabels,
+  initialAvailableStudentLabels,
   courseInstanceUrl,
   csrfToken,
+  trpcClient,
   hasCourseInstancePermissionEdit,
   hasModernPublishing,
 }: {
   student: UserDetail;
-  studentLabels: StaffStudentLabel[];
-  availableStudentLabels: StaffStudentLabel[];
+  initialStudentLabels: StaffStudentLabel[];
+  initialAvailableStudentLabels: StaffStudentLabel[];
   courseInstanceUrl: string;
   csrfToken: string;
+  trpcClient: StudentLabelsTrpcClient;
   hasCourseInstancePermissionEdit: boolean;
   hasModernPublishing: boolean;
 }) {
   const { user, enrollment, role } = student;
+  const [studentLabels, setStudentLabels] = useState(initialStudentLabels);
+  const availableStudentLabels = initialAvailableStudentLabels;
+  const [isLabelMutating, setIsLabelMutating] = useState(false);
   const handleViewAsStudent = () => {
     if (!user) throw new Error('User is required');
     setCookieClient(['pl_requested_uid', 'pl2_requested_uid'], user.uid);
@@ -177,18 +186,26 @@ export function OverviewCard({
             {studentLabels.map((label) => (
               <StudentLabelBadge key={label.id} label={label}>
                 {hasCourseInstancePermissionEdit && (
-                  <form method="POST" className="d-inline">
-                    <input type="hidden" name="__csrf_token" value={csrfToken} />
-                    <input type="hidden" name="__action" value="remove_label" />
-                    <input type="hidden" name="student_label_id" value={label.id} />
-                    <button
-                      type="submit"
-                      className="btn p-0 lh-1"
-                      aria-label={`Remove label "${label.name}"`}
-                    >
-                      <i className="bi bi-x text-danger" aria-hidden="true" />
-                    </button>
-                  </form>
+                  <button
+                    type="button"
+                    className="btn p-0 lh-1"
+                    disabled={isLabelMutating}
+                    aria-label={`Remove label "${label.name}"`}
+                    onClick={async () => {
+                      setIsLabelMutating(true);
+                      try {
+                        await trpcClient.studentLabels.batchRemove.mutate({
+                          enrollmentIds: [enrollment.id],
+                          labelId: label.id,
+                        });
+                        setStudentLabels((prev) => prev.filter((l) => l.id !== label.id));
+                      } finally {
+                        setIsLabelMutating(false);
+                      }
+                    }}
+                  >
+                    <i className="bi bi-x text-danger" aria-hidden="true" />
+                  </button>
                 )}
               </StudentLabelBadge>
             ))}
@@ -225,14 +242,25 @@ export function OverviewCard({
                     <ul className="dropdown-menu">
                       {unassignedLabels.map((label) => (
                         <li key={label.id}>
-                          <form method="POST">
-                            <input type="hidden" name="__csrf_token" value={csrfToken} />
-                            <input type="hidden" name="__action" value="add_label" />
-                            <input type="hidden" name="student_label_id" value={label.id} />
-                            <button type="submit" className="dropdown-item">
-                              {label.name}
-                            </button>
-                          </form>
+                          <button
+                            type="button"
+                            className="dropdown-item"
+                            disabled={isLabelMutating}
+                            onClick={async () => {
+                              setIsLabelMutating(true);
+                              try {
+                                await trpcClient.studentLabels.batchAdd.mutate({
+                                  enrollmentIds: [enrollment.id],
+                                  labelId: label.id,
+                                });
+                                setStudentLabels((prev) => [...prev, label]);
+                              } finally {
+                                setIsLabelMutating(false);
+                              }
+                            }}
+                          >
+                            {label.name}
+                          </button>
                         </li>
                       ))}
                       {unassignedLabels.length === 0 && (
