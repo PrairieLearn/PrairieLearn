@@ -1,5 +1,11 @@
 # @prairielearn/eslint-plugin
 
+## 4.0.1
+
+### Patch Changes
+
+- aaeb317: Expand the `no-current-target-in-callback` rule to also flag `event.currentTarget` accesses after `await` in React event handlers.
+
 ## 4.0.0
 
 ### Major Changes
