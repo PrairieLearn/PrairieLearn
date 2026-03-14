@@ -51,7 +51,8 @@ function StudentLabelsCard({
     initialData: initialLabels,
   });
 
-  const canEdit = canEditProp && origHash !== null;
+  const canEdit = canEditProp;
+  const canEditEnabled = canEditProp && origHash !== null;
 
   const handleEdit = (label: StudentLabelWithUserData) => {
     editModal.showWithData({
@@ -97,6 +98,7 @@ function StudentLabelsCard({
             <button
               type="button"
               className="btn btn-outline-primary btn-sm text-nowrap"
+              disabled={!canEditEnabled}
               onClick={() => editModal.showWithData({ type: 'add', origHash })}
             >
               Add label
@@ -143,6 +145,7 @@ function StudentLabelsCard({
                   label={label}
                   courseInstanceId={courseInstanceId}
                   canEdit={canEdit}
+                  disabled={!canEditEnabled}
                   onEdit={handleEdit}
                   onDelete={handleDelete}
                 />

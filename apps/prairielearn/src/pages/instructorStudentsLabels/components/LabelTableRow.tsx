@@ -6,12 +6,14 @@ export function LabelTableRow({
   label,
   courseInstanceId,
   canEdit,
+  disabled,
   onEdit,
   onDelete,
 }: {
   label: StudentLabelWithUserData;
   courseInstanceId: string;
   canEdit: boolean;
+  disabled?: boolean;
   onEdit: (label: StudentLabelWithUserData) => void;
   onDelete: (label: StudentLabelWithUserData) => void;
 }) {
@@ -39,6 +41,7 @@ export function LabelTableRow({
               type="button"
               className="btn btn-sm btn-outline-primary"
               aria-label={`Edit ${label.student_label.name}`}
+              disabled={disabled}
               onClick={() => onEdit(label)}
             >
               Edit
@@ -47,6 +50,7 @@ export function LabelTableRow({
               type="button"
               className="btn btn-sm btn-outline-danger"
               aria-label={`Delete ${label.student_label.name}`}
+              disabled={disabled}
               onClick={() => onDelete(label)}
             >
               Delete
