@@ -367,9 +367,7 @@ export function TagPicker<T = void>({
                     className="dropdown-item d-flex align-items-center gap-2"
                     style={({ isFocused }) => ({
                       cursor: 'pointer',
-                      backgroundColor: isFocused
-                        ? 'var(--bs-primary-bg-subtle)'
-                        : undefined,
+                      backgroundColor: isFocused ? 'var(--bs-primary-bg-subtle)' : undefined,
                     })}
                     textValue={item.searchableText ?? item.label}
                   >
