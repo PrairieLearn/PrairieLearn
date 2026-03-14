@@ -1,7 +1,9 @@
 import base64
+import binascii
 import hashlib
 import json
 import os
+import re
 from enum import Enum
 
 import chevron
@@ -29,6 +31,8 @@ SOURCE_FILE_NAME_DEFAULT = None
 DIRECTORY_DEFAULT = "."
 MARKDOWN_SHORTCUTS_DEFAULT = True
 CLIPBOARD_ENABLED_DEFAULT = True
+MIN_WORD_COUNT_DEFAULT = None
+MAX_WORD_COUNT_DEFAULT = None
 
 
 def get_answer_name(file_name: str) -> str:
@@ -42,6 +46,21 @@ def element_inner_html(element: lxml.html.HtmlElement) -> str:
         str(lxml.html.tostring(c), "utf-8") for c in element.iterchildren()
     ])
 
+
+def count_words_from_html_base64(file_contents_b64: str) -> int:
+    """Count words from base64-encoded HTML contents stored by the element.
+
+    Uses sanitized HTML as input: replaces tags and &nbsp; with spaces, then
+    splits on ASCII whitespace. No HTML parsing; matches the JS logic.
+    """
+    if not file_contents_b64:
+        return 0
+    html = base64.b64decode(file_contents_b64, validate=True).decode("utf-8")
+
+    text = re.sub(r"<[^>]+>", " ", html)
+    text = re.sub(r"&nbsp;|&#160;|&#xA0;|\u00A0", " ", text)
+    tokens = [t for t in re.split(r"\s+", text.strip(), flags=re.ASCII) if t]
+    return len(tokens)
 
 def prepare(element_html: str, data: pl.QuestionData) -> None:
     element = lxml.html.fragment_fromstring(element_html)
@@ -57,6 +76,8 @@ def prepare(element_html: str, data: pl.QuestionData) -> None:
         "markdown-shortcuts",
         "counter",
         "clipboard-enabled",
+        "min-word-count",
+        "max-word-count",
     ]
     pl.check_attribs(element, required_attribs, optional_attribs)
     source_file_name = pl.get_string_attrib(
@@ -87,6 +108,16 @@ def prepare(element_html: str, data: pl.QuestionData) -> None:
             'Existing text cannot be added inside rich-text element when "source-file-name" attribute is used.'
         )
 
+    min_wc = pl.get_integer_attrib(element, "min-word-count", MIN_WORD_COUNT_DEFAULT)
+    max_wc = pl.get_integer_attrib(element, "max-word-count", MAX_WORD_COUNT_DEFAULT)
+    if min_wc is not None and min_wc < 0:
+        raise ValueError('Attribute "min-word-count" must be >= 0.')
+    if max_wc is not None and max_wc < 0:
+        raise ValueError('Attribute "max-word-count" must be >= 0.')
+    if min_wc is not None and max_wc is not None and min_wc > max_wc:
+        raise ValueError(
+            f'Invalid bounds: min-word-count ({min_wc}) cannot exceed max-word-count ({max_wc}).'
+        )
 
 def render(element_html: str, data: pl.QuestionData) -> str:
     if data["panel"] == "answer":
@@ -107,6 +138,10 @@ def render(element_html: str, data: pl.QuestionData) -> str:
         element, "markdown-shortcuts", MARKDOWN_SHORTCUTS_DEFAULT
     )
     counter = pl.get_enum_attrib(element, "counter", Counter, Counter.NONE)
+    min_wc = pl.get_integer_attrib(element, "min-word-count", MIN_WORD_COUNT_DEFAULT)
+    max_wc = pl.get_integer_attrib(element, "max-word-count", MAX_WORD_COUNT_DEFAULT)
+    if min_wc is not None or max_wc is not None:
+        counter = Counter.WORD
     clipboard_enabled = pl.get_boolean_attrib(
         element, "clipboard-enabled", CLIPBOARD_ENABLED_DEFAULT
     )
@@ -154,6 +189,16 @@ def render(element_html: str, data: pl.QuestionData) -> str:
             "modules": {"clipboard": {} if clipboard_enabled else {"enabled": False}},
             "theme": quill_theme or None,
         }
+        has_word_count_bounds = min_wc is not None or max_wc is not None
+        if min_wc is None and max_wc is None:
+            word_count_requirements_text = None
+        elif min_wc is not None and max_wc is not None:
+            word_count_requirements_text = f"Required: {min_wc}\u2013{max_wc} words"
+        elif min_wc is not None:
+            word_count_requirements_text = f"Minimum: {min_wc} words"
+        else:
+            word_count_requirements_text = f"Maximum: {max_wc} words"
+
         html_params = {
             "name": answer_name,
             "file_name": file_name,
@@ -161,6 +206,13 @@ def render(element_html: str, data: pl.QuestionData) -> str:
             "quill_options_json": json.dumps(quill_options),
             "counter_enabled": counter != Counter.NONE,
             "clipboard_enabled": clipboard_enabled,
+            "min_word_count": min_wc,
+            "max_word_count": max_wc,
+            "min_word_count_is_set": min_wc is not None,
+            "max_word_count_is_set": max_wc is not None,
+            "has_word_count_bounds": has_word_count_bounds,
+            "word_count_requirements_text": word_count_requirements_text,
+            "footer_enabled": (counter != Counter.NONE) or has_word_count_bounds,
         }
 
         if submitted_file:
@@ -211,6 +263,18 @@ def parse(element_html: str, data: pl.QuestionData) -> None:
         pl.add_files_format_error(data, f"No submitted answer for {file_name}")
         return
 
+    # Validate format before persisting; reject malformed base64/UTF-8
+    word_count = 0
+    if file_contents:
+        try:
+            word_count = count_words_from_html_base64(file_contents)
+        except (binascii.Error, UnicodeDecodeError):
+            pl.add_files_format_error(
+                data,
+                f"Failed to decode submission for {file_name}. The file may be corrupted or invalid.",
+            )
+            return
+
     # We will store the files in the submitted_answer["_files"] key,
     # so delete the original submitted answer format to avoid
     # duplication
@@ -219,3 +283,23 @@ def parse(element_html: str, data: pl.QuestionData) -> None:
     # submissions (stored as HTML) from submissions using the older version of
     # pl-rich-text-editor (potentially stored in Markdown)
     pl.add_submitted_file(data, file_name, file_contents, mimetype="text/html")
+
+    # Word count validation after adding the file so that the file is stored in the submitted_answers["_files"] key
+    min_wc = pl.get_integer_attrib(element, "min-word-count", MIN_WORD_COUNT_DEFAULT)
+    max_wc = pl.get_integer_attrib(element, "max-word-count", MAX_WORD_COUNT_DEFAULT)
+
+    # If content exists, enforce min/max word count
+    if file_contents and (min_wc is not None or max_wc is not None):
+        if min_wc is not None and word_count < min_wc:
+            pl.add_files_format_error(
+                data,
+                f"{file_name} is invalid: {word_count} words (minimum {min_wc})."
+            )
+            return
+
+        if max_wc is not None and word_count > max_wc:
+            pl.add_files_format_error(
+                data,
+                f"{file_name} is invalid: {word_count} words (maximum {max_wc})."
+            )
+            return

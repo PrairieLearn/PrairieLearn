@@ -12,6 +12,23 @@
     }
   });
 
+  // Words are split on ASCII whitespace. This must match the Python logic in
+  // count_words_from_html_base64 so the live counter and validation agree.
+  const countWords = (text) => {
+    const trimmed = text.trim();
+    const tokens = trimmed ? trimmed.split(/[ \t\n\r\f\v]+/).filter((t) => t) : [];
+    return tokens.length;
+  };
+
+  // Convert sanitized HTML to text for word counting. Replaces tags and &nbsp;
+  // with spaces, then countWords splits on whitespace. No DOM/HTML parsing.
+  const htmlToCountableText = (html) => {
+    if (!html) return '';
+    return html
+      .replace(/<[^>]+>/g, ' ')
+      .replace(/&nbsp;|&#160;|&#xA0;|[\u00A0]/g, ' ');
+  };
+
   class Counter {
     constructor(unit, uuid, getText) {
       this.unit = unit;
@@ -24,9 +41,7 @@
 
     calculate(text) {
       if (this.unit === 'word') {
-        const trimmed = text.trim();
-        // Splitting empty text returns a non-empty array
-        return trimmed.length > 0 ? trimmed.split(/\s+/).length : 0;
+        return countWords(text);
       } else if (this.unit === 'character') {
         // Use a spread so that Unicode characters are counted instead of utf-16 code units
         return [...text].length;
@@ -127,8 +142,68 @@
     // Ensure that the initial content is not part of the undo stack
     quill.history.clear();
 
-    const getText = () => quill.getText();
-    const counter = options.counter === 'none' ? null : new Counter(options.counter, uuid, getText);
+    // Use the same text extraction as the hidden input so the live counter and
+    // min/max validation match server-side validation (formulas, lists, formatting).
+
+
+    // An alternative solution would be to use the `getText` method, but this
+    // would cause a false positive for elements that are part of the answer
+    // but don't have a text (e.g., images).
+    //
+    // Because `isBlank` is undocumented, this solution may break in the
+    // future (see https://github.com/slab/quill/issues/4254). To ensure that
+    // the element continues to work if this method is removed, we use
+    // optional chaining in the call. This would cause the empty check to
+    // fail but not crash, so the element can continue working.
+
+    const getStoredContent = () =>
+      quill.editor?.isBlank?.()
+        ? ''
+        : rtePurify.sanitize(quill.getSemanticHTML(), rtePurifyConfig);
+    const getCountableText = () => htmlToCountableText(getStoredContent());
+
+    const getCounterText =
+      options.counter === 'character'
+        ? () => quill.getText()
+        : () => getCountableText();
+    const counter =
+      options.counter === 'none' ? null : new Counter(options.counter, uuid, getCounterText);
+
+    // --- Live min/max word-count invalid message wiring ---
+    const editorContainer = baseElement.closest('.pl-rich-text-editor-container');
+    const invalidElement = document.getElementById(`rte-invalid-${uuid}`);
+
+    // Read bounds from HTML data attributes on the container
+    const minWordCount = editorContainer?.dataset?.minWordCount
+      ? Number(editorContainer.dataset.minWordCount)
+      : null;
+    const maxWordCount = editorContainer?.dataset?.maxWordCount
+      ? Number(editorContainer.dataset.maxWordCount)
+      : null;
+
+    const hasBounds =
+      invalidElement && (Number.isFinite(minWordCount) || Number.isFinite(maxWordCount));
+
+    const updateInvalidUI = () => {
+      if (!hasBounds) return;
+
+      const wc = countWords(getCountableText());
+      const tooFew = Number.isFinite(minWordCount) && wc < minWordCount;
+      const tooMany = Number.isFinite(maxWordCount) && wc > maxWordCount;
+      const isInvalid = tooFew || tooMany;
+
+      if (!isInvalid) {
+        invalidElement.classList.add('d-none');
+        invalidElement.textContent = '';
+        return;
+      }
+
+      invalidElement.classList.remove('d-none');
+      const msg = tooFew
+        ? `Too few words (${wc} of ${minWordCount})`
+        : `Too many words (${wc} of ${maxWordCount})`;
+      invalidElement.textContent = msg;
+    };
 
     const updateHiddenInput = function () {
       // If a user types something and erases it, the editor will be blank, but
@@ -140,19 +215,7 @@
       // This is not a perfect solution, since it will not catch cases like
       // content with only a space or a bulleted list without text, but we're ok
       // with this caveat.
-      //
-      // An alternative solution would be to use the `getText` method, but this
-      // would cause a false positive for elements that are part of the answer
-      // but don't have a text (e.g., images).
-      //
-      // Because `isBlank` is undocumented, this solution may break in the
-      // future (see https://github.com/slab/quill/issues/4254). To ensure that
-      // the element continues to work if this method is removed, we use
-      // optional chaining in the call. This would cause the empty check to
-      // fail but not crash, so the element can continue working.
-      const contents = quill.editor?.isBlank?.()
-        ? ''
-        : rtePurify.sanitize(quill.getSemanticHTML(), rtePurifyConfig);
+      const contents = getStoredContent();
       inputElement.val(
         btoa(
           he.encode(contents, {
@@ -166,6 +229,9 @@
       if (counter) {
         counter.update();
       }
+
+      // Update word count requirements UI
+      updateInvalidUI();
     };
 
     quill.on('text-change', updateHiddenInput);

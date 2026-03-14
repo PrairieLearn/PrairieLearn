@@ -123,6 +123,58 @@
 * [continue]
 </pl-rich-text-editor>
 
+<hr>
+
+<pl-question-panel>
+  <p>
+    A minimum word count can be enforced using <code>min-word-count</code>.
+    Submissions with fewer words will be rejected. The word counter is
+    automatically enabled when bounds are set.
+  </p>
+
+  <p>
+    Write at least 10 words describing your favorite season.
+  </p>
+</pl-question-panel>
+
+<pl-rich-text-editor file-name="min-words.html" min-word-count="10">
+</pl-rich-text-editor>
+
+<hr>
+
+<pl-question-panel>
+  <p>
+    A maximum word count can be enforced using <code>max-word-count</code>.
+    Submissions exceeding the limit will be rejected.
+  </p>
+
+  <p>
+    In 25 words or fewer, summarize the plot of your favorite movie.
+  </p>
+</pl-question-panel>
+
+<pl-rich-text-editor file-name="max-words.html" max-word-count="25">
+</pl-rich-text-editor>
+
+<hr>
+
+<pl-question-panel>
+  <p>
+    Both <code>min-word-count</code> and <code>max-word-count</code> can be
+    used together to require answers within a specific range.
+  </p>
+
+  <p>
+    Write between 50 and 100 words explaining why you chose your major.
+  </p>
+</pl-question-panel>
+
+<pl-rich-text-editor file-name="word-range.html" min-word-count="50" max-word-count="100">
+</pl-rich-text-editor>
+
+<hr>
+
+
 <pl-submission-panel>
   <hr>
   <p>The file previews below are typically not needed, but are listed below to demonstrate the output format of the answers above.</p>
