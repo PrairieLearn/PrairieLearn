@@ -1,4 +1,4 @@
-import { useMutation } from '@tanstack/react-query';
+import { useQueryClient, useMutation } from '@tanstack/react-query';
 import clsx from 'clsx';
 import { useState } from 'react';
 import { Alert, Modal } from 'react-bootstrap';
@@ -11,10 +11,8 @@ import { extractJobSequenceId } from '../../../lib/client/errors.js';
 import { getCourseInstanceJobSequenceUrl } from '../../../lib/client/url.js';
 import { parseUniqueValuesFromString } from '../../../lib/string-util.js';
 import { ColorJsonSchema } from '../../../schemas/infoCourse.js';
-import type { createCourseInstanceTrpcClient } from '../../../trpc/courseInstance/client.js';
+import { useTRPC } from '../../../trpc/courseInstance/context.js';
 import { MAX_LABEL_UIDS } from '../instructorStudentsLabels.types.js';
-
-type StudentLabelsTrpcClient = ReturnType<typeof createCourseInstanceTrpcClient>;
 
 export type LabelModifyModalData =
   | { type: 'add'; origHash: string | null }
@@ -35,7 +33,6 @@ interface LabelFormValues {
 
 export function LabelModifyModal({
   data,
-  trpcClient,
   courseInstanceId,
   show,
   onHide,
@@ -44,7 +41,6 @@ export function LabelModifyModal({
   initialUids,
 }: {
   data: LabelModifyModalData | null;
-  trpcClient: StudentLabelsTrpcClient;
   courseInstanceId: string;
   show: boolean;
   onHide: () => void;
@@ -52,6 +48,8 @@ export function LabelModifyModal({
   onSuccess: (result: { origHash: string | null; enrollmentWarning?: string }) => void;
   initialUids?: string[];
 }) {
+  const trpc = useTRPC();
+  const queryClient = useQueryClient();
   const [stage, setStage] = useState<
     { type: 'editing' } | { type: 'confirming'; unknownUids: string[] }
   >({ type: 'editing' });
@@ -80,17 +78,7 @@ export function LabelModifyModal({
   const selectedColor = watch('color');
 
   const saveMutation = useMutation({
-    mutationFn: async (formData: LabelFormValues) => {
-      const color = ColorJsonSchema.parse(formData.color);
-      const uids = parseUniqueValuesFromString(formData.uids.trim(), MAX_LABEL_UIDS);
-      return await trpcClient.studentLabels.upsert.mutate({
-        labelId: data?.type === 'edit' ? data.labelId : undefined,
-        name: formData.name.trim(),
-        color,
-        uids,
-        origHash: data?.origHash ?? null,
-      });
-    },
+    ...trpc.studentLabels.upsert.mutationOptions(),
     onSuccess: (result) => onSuccess(result),
   });
 
@@ -107,7 +95,9 @@ export function LabelModifyModal({
 
     if (uids.length > 0) {
       try {
-        const result = await trpcClient.studentLabels.checkUids.query({ uids });
+        const result = await queryClient.fetchQuery(
+          trpc.studentLabels.checkUids.queryOptions({ uids }),
+        );
         if (result.unenrolledUids.length > 0) {
           setStage({ type: 'confirming', unknownUids: result.unenrolledUids });
           return;
@@ -123,7 +113,19 @@ export function LabelModifyModal({
       }
     }
 
-    saveMutation.mutate(formData);
+    submitMutation(formData);
+  };
+
+  const submitMutation = (formData: LabelFormValues) => {
+    const color = ColorJsonSchema.parse(formData.color);
+    const uids = parseUniqueValuesFromString(formData.uids.trim(), MAX_LABEL_UIDS);
+    saveMutation.mutate({
+      labelId: data?.type === 'edit' ? data.labelId : undefined,
+      name: formData.name.trim(),
+      color,
+      uids,
+      origHash: data?.origHash ?? null,
+    });
   };
 
   const jobSequenceId = extractJobSequenceId(saveMutation.error);
@@ -171,7 +173,7 @@ export function LabelModifyModal({
             type="button"
             className="btn btn-warning"
             disabled={saveMutation.isPending}
-            onClick={() => saveMutation.mutate(watch())}
+            onClick={() => submitMutation(watch())}
           >
             {saveMutation.isPending ? 'Saving...' : 'Save anyway'}
           </button>

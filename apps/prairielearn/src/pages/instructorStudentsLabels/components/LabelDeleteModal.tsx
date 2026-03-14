@@ -3,9 +3,7 @@ import { Alert, Button, Modal } from 'react-bootstrap';
 
 import { extractJobSequenceId } from '../../../lib/client/errors.js';
 import { getCourseInstanceJobSequenceUrl } from '../../../lib/client/url.js';
-import type { createCourseInstanceTrpcClient } from '../../../trpc/courseInstance/client.js';
-
-type StudentLabelsTrpcClient = ReturnType<typeof createCourseInstanceTrpcClient>;
+import { useTRPC } from '../../../trpc/courseInstance/context.js';
 
 export interface LabelDeleteModalData {
   labelId: string;
@@ -15,7 +13,6 @@ export interface LabelDeleteModalData {
 
 export function LabelDeleteModal({
   data,
-  trpcClient,
   courseInstanceId,
   origHash,
   show,
@@ -24,7 +21,6 @@ export function LabelDeleteModal({
   onSuccess,
 }: {
   data: LabelDeleteModalData | null;
-  trpcClient: StudentLabelsTrpcClient;
   courseInstanceId: string;
   origHash: string | null;
   show: boolean;
@@ -32,13 +28,10 @@ export function LabelDeleteModal({
   onExited?: () => void;
   onSuccess: (newOrigHash: string | null) => void;
 }) {
+  const trpc = useTRPC();
+
   const deleteMutation = useMutation({
-    mutationFn: async ({ labelId }: { labelId: string }) => {
-      return await trpcClient.studentLabels.destroy.mutate({
-        labelId,
-        origHash,
-      });
-    },
+    ...trpc.studentLabels.destroy.mutationOptions(),
     onSuccess: (result) => onSuccess(result.origHash),
   });
 
@@ -95,7 +88,7 @@ export function LabelDeleteModal({
         <Button
           variant="danger"
           disabled={deleteMutation.isPending || !data}
-          onClick={() => data && deleteMutation.mutate({ labelId: data.labelId })}
+          onClick={() => data && deleteMutation.mutate({ labelId: data.labelId, origHash })}
         >
           {deleteMutation.isPending ? (
             <>

@@ -6,13 +6,12 @@ import { useModalState } from '@prairielearn/ui';
 
 import { QueryClientProviderDebug } from '../../lib/client/tanstackQuery.js';
 import { createCourseInstanceTrpcClient } from '../../trpc/courseInstance/client.js';
+import { TRPCProvider, useTRPC } from '../../trpc/courseInstance/context.js';
 
 import { LabelDeleteModal, type LabelDeleteModalData } from './components/LabelDeleteModal.js';
 import { LabelModifyModal, type LabelModifyModalData } from './components/LabelModifyModal.js';
 import { LabelTableRow } from './components/LabelTableRow.js';
 import type { StudentLabelWithUserData } from './instructorStudentsLabels.types.js';
-
-type StudentLabelsTrpcClient = ReturnType<typeof createCourseInstanceTrpcClient>;
 
 interface StudentLabelsPageProps {
   csrfToken: string;
@@ -24,32 +23,31 @@ interface StudentLabelsPageProps {
   origHash: string | null;
 }
 
-type StudentLabelsCardProps = Omit<StudentLabelsPageProps, 'isDevMode' | 'trpcCsrfToken'> & {
-  trpcClient: StudentLabelsTrpcClient;
-};
-
 function StudentLabelsCard({
-  trpcClient,
   courseInstanceId,
   initialLabels,
   canEdit: canEditProp,
   origHash: initialOrigHash,
-}: Omit<StudentLabelsCardProps, 'csrfToken'>) {
+}: {
+  courseInstanceId: string;
+  initialLabels: StudentLabelWithUserData[];
+  canEdit: boolean;
+  origHash: string | null;
+}) {
+  const trpc = useTRPC();
   const editModal = useModalState<LabelModifyModalData>();
   const deleteModal = useModalState<LabelDeleteModalData>();
-  const [origHash, setOrigHash] = useState(initialOrigHash);
   const [enrollmentWarning, setEnrollmentWarning] = useState<string | null>(null);
 
-  const { data: labels = initialLabels, refetch: refetchLabels } = useQuery({
-    queryKey: ['student-labels-with-user-data', courseInstanceId],
-    queryFn: async () => {
-      const result = await trpcClient.studentLabels.list.query();
-      setOrigHash(result.origHash);
-      return result.labels;
-    },
+  const { data, refetch: refetchLabels } = useQuery({
+    ...trpc.studentLabels.list.queryOptions(),
     staleTime: Infinity,
-    initialData: initialLabels,
+    initialData: { labels: initialLabels, origHash: initialOrigHash },
   });
+
+  const labels = data.labels;
+  const [origHashOverride, setOrigHashOverride] = useState<string | null>(null);
+  const origHash = origHashOverride ?? data.origHash ?? initialOrigHash;
 
   const canEdit = canEditProp;
   const canEditEnabled = canEditProp && origHash !== null;
@@ -74,7 +72,7 @@ function StudentLabelsCard({
   };
 
   const handleDeleteSuccess = async (newOrigHash: string | null) => {
-    setOrigHash(newOrigHash);
+    setOrigHashOverride(newOrigHash);
     await refetchLabels();
     deleteModal.hide();
   };
@@ -83,7 +81,7 @@ function StudentLabelsCard({
     origHash: string | null;
     enrollmentWarning?: string;
   }) => {
-    setOrigHash(result.origHash);
+    setOrigHashOverride(result.origHash);
     setEnrollmentWarning(result.enrollmentWarning ?? null);
     await refetchLabels();
     editModal.hide();
@@ -157,7 +155,6 @@ function StudentLabelsCard({
 
       <LabelModifyModal
         data={editModal.data}
-        trpcClient={trpcClient}
         courseInstanceId={courseInstanceId}
         show={editModal.show}
         onHide={editModal.onHide}
@@ -167,7 +164,6 @@ function StudentLabelsCard({
 
       <LabelDeleteModal
         data={deleteModal.data}
-        trpcClient={trpcClient}
         courseInstanceId={courseInstanceId}
         origHash={origHash}
         show={deleteModal.show}
@@ -192,11 +188,9 @@ export function InstructorStudentsLabels({
 
   return (
     <QueryClientProviderDebug client={queryClient} isDevMode={isDevMode}>
-      <StudentLabelsCard
-        trpcClient={trpcClient}
-        courseInstanceId={courseInstanceId}
-        {...innerProps}
-      />
+      <TRPCProvider trpcClient={trpcClient} queryClient={queryClient}>
+        <StudentLabelsCard courseInstanceId={courseInstanceId} {...innerProps} />
+      </TRPCProvider>
     </QueryClientProviderDebug>
   );
 }
