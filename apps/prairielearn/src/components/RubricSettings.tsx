@@ -53,6 +53,14 @@ declare global {
   }
 }
 
+export interface ProposedRubricItem {
+  action: 'add' | 'modify' | 'remove';
+  description: string;
+  points: number;
+  explanation: string;
+  graderNote: string;
+}
+
 export function RubricSettings({
   hasCourseInstancePermissionEdit,
   assessmentQuestion,
@@ -60,6 +68,9 @@ export function RubricSettings({
   csrfToken,
   aiGradingStats,
   context,
+  proposedRubricItem,
+  proposalAccepted,
+  onAcceptProposal,
 }: {
   hasCourseInstancePermissionEdit: boolean;
   assessmentQuestion: StaffAssessmentQuestion;
@@ -67,6 +78,9 @@ export function RubricSettings({
   csrfToken: string;
   aiGradingStats: AiGradingGeneralStats | null;
   context: Record<string, any>;
+  proposedRubricItem?: ProposedRubricItem | null;
+  proposalAccepted?: boolean;
+  onAcceptProposal?: (item: ProposedRubricItem) => void;
 }) {
   const showAiGradingStats = Boolean(aiGradingStats);
   const rubricItemsWithDisagreementCount = aiGradingStats?.rubric_stats ?? {};
@@ -113,6 +127,40 @@ export function RubricSettings({
   const [wasUsingRubric, setWasUsingRubric] = useState<boolean>(Boolean(rubricData?.rubric));
   const [modifiedAt, setModifiedAt] = useState<Date | null>(rubricData?.rubric.modified_at ?? null);
   const [copyPopoverTarget, setCopyPopoverTarget] = useState<HTMLElement | null>(null);
+
+  // Track the index of a proposed rubric item injected by the AI agent.
+  const [proposedItemIdx, setProposedItemIdx] = useState<number | null>(null);
+  const prevProposalRef = useRef<ProposedRubricItem | null | undefined>(null);
+
+  // Synchronize proposal state during render (not in useEffect) to satisfy lint rules.
+  if (proposedRubricItem && proposedRubricItem !== prevProposalRef.current) {
+    prevProposalRef.current = proposedRubricItem;
+    const newItem: RubricItemData = {
+      rubric_item: {
+        always_show_to_students: true,
+        deleted_at: null,
+        description: proposedRubricItem.description,
+        explanation: proposedRubricItem.explanation,
+        grader_note: proposedRubricItem.graderNote,
+        key_binding: null,
+        points: proposedRubricItem.points,
+      },
+      num_submissions: null,
+      disagreement_count: null,
+    };
+    setProposedItemIdx(rubricItems.length);
+    setRubricItems([...rubricItems, newItem]);
+  } else if (!proposedRubricItem && prevProposalRef.current) {
+    prevProposalRef.current = null;
+    if (proposalAccepted) {
+      // Proposal was accepted — keep the item, just clear the "NEW" badge.
+      setProposedItemIdx(null);
+    } else if (proposedItemIdx !== null) {
+      // Proposal was rejected — remove the item.
+      setRubricItems(rubricItems.filter((_, i) => i !== proposedItemIdx));
+      setProposedItemIdx(null);
+    }
+  }
 
   // Also define default for rubric-related variables
   const defaultRubricItemsRef = useRef<RubricItemData[]>(rubricItemDataMerged);
@@ -520,6 +568,13 @@ export function RubricSettings({
       defaultGraderGuidelinesRef.current = rubric?.grader_guidelines ?? '';
       setWasUsingRubric(Boolean(rubric));
       setModifiedAt(rubric ? new Date(rubric.modified_at) : null);
+
+      // If the proposed item was included in the save, accept it.
+      if (proposedItemIdx !== null && proposedRubricItem) {
+        onAcceptProposal?.(proposedRubricItem);
+        setProposedItemIdx(null);
+      }
+
       onCancel();
     } else {
       window.location.replace(res.url);
@@ -759,9 +814,34 @@ export function RubricSettings({
                     showAiGradingStats={showAiGradingStats}
                     submissionCount={aiGradingStats?.submission_rubric_count ?? 0}
                     hasCourseInstancePermissionEdit={hasCourseInstancePermissionEdit}
-                    deleteRow={() => deleteRow(idx)}
-                    moveUp={() => moveUp(idx)}
-                    moveDown={() => moveDown(idx)}
+                    isProposed={idx === proposedItemIdx}
+                    deleteRow={() => {
+                      deleteRow(idx);
+                      if (idx === proposedItemIdx) {
+                        setProposedItemIdx(null);
+                        onAcceptProposal?.(proposedRubricItem!);
+                      }
+                    }}
+                    moveUp={() => {
+                      moveUp(idx);
+                      if (proposedItemIdx !== null) {
+                        if (idx === proposedItemIdx) {
+                          setProposedItemIdx(proposedItemIdx - 1);
+                        } else if (idx - 1 === proposedItemIdx) {
+                          setProposedItemIdx(proposedItemIdx + 1);
+                        }
+                      }
+                    }}
+                    moveDown={() => {
+                      moveDown(idx);
+                      if (proposedItemIdx !== null) {
+                        if (idx === proposedItemIdx) {
+                          setProposedItemIdx(proposedItemIdx + 1);
+                        } else if (idx + 1 === proposedItemIdx) {
+                          setProposedItemIdx(proposedItemIdx - 1);
+                        }
+                      }
+                    }}
                     updateRubricItem={(patch) => updateRubricItem(idx, patch)}
                     onDragStart={() => onDragStart(idx)}
                     onDragOver={() => onDragOver(idx)}
@@ -990,6 +1070,7 @@ function RubricRow({
   onDragStart,
   onDragOver,
   hasCourseInstancePermissionEdit,
+  isProposed,
 }: {
   item: RubricItemData;
   showAiGradingStats: boolean;
@@ -1001,9 +1082,13 @@ function RubricRow({
   onDragStart: () => void;
   onDragOver: () => void;
   hasCourseInstancePermissionEdit: boolean;
+  isProposed?: boolean;
 }) {
   return (
     <tr
+      style={
+        isProposed ? { backgroundColor: '#e8f5e9', borderLeft: '4px solid #4caf50' } : undefined
+      }
       onDragOver={(e) => {
         if (!hasCourseInstancePermissionEdit) return;
         e.preventDefault();
@@ -1043,6 +1128,12 @@ function RubricRow({
               <i className="fas fa-trash text-danger" aria-hidden="true" />
             </button>
           </>
+        )}
+        {isProposed && (
+          <span className="badge bg-success ms-1">
+            <i className="bi bi-stars me-1" />
+            NEW
+          </span>
         )}
         {item.rubric_item.id && (
           <>

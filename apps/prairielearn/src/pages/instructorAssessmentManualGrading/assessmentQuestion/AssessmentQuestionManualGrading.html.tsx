@@ -1,9 +1,10 @@
 import { QueryClient, useQueryClient } from '@tanstack/react-query';
-import { useState } from 'react';
+import { useCallback, useState } from 'react';
 import { Alert } from 'react-bootstrap';
 
 import { NuqsAdapter } from '@prairielearn/ui';
 
+import type { ProposedRubricItem } from '../../../components/RubricSettings.js';
 import type { AiGradingGeneralStats } from '../../../ee/lib/ai-grading/types.js';
 import type { PageContext } from '../../../lib/client/page-context.js';
 import type {
@@ -17,6 +18,7 @@ import type { EnumAiGradingProvider } from '../../../lib/db-types.js';
 import type { RubricData } from '../../../lib/manualGrading.types.js';
 
 import type { InstanceQuestionRowWithAIGradingStats } from './assessmentQuestion.types.js';
+import { AgentChatPanel, type RubricProposal } from './components/AgentChatPanel.js';
 import { AiGradingUnavailableModal } from './components/AiGradingUnavailableModal.js';
 import { AssessmentQuestionTable } from './components/AssessmentQuestionTable.js';
 import {
@@ -60,6 +62,16 @@ type AssessmentQuestionManualGradingInnerProps = Omit<
   'search' | 'isDevMode' | 'trpcCsrfToken'
 >;
 
+function proposalToRubricItem(proposal: RubricProposal): ProposedRubricItem {
+  return {
+    action: proposal.action,
+    description: proposal.itemDescription,
+    points: proposal.points,
+    explanation: proposal.explanation,
+    graderNote: proposal.graderNote,
+  };
+}
+
 function AssessmentQuestionManualGradingInner({
   hasCourseInstancePermissionEdit,
   instanceQuestionsInfo,
@@ -96,6 +108,35 @@ function AssessmentQuestionManualGradingInner({
 
   const mutations = useManualGradingActions();
   const { setAiGradingModeMutation, groupSubmissionMutation } = mutations;
+
+  // Rubric proposal state shared between chat panel and rubric settings.
+  const [activeProposal, setActiveProposal] = useState<RubricProposal | null>(null);
+  // When true, proposal was accepted — RubricSettings should keep the item but remove the badge.
+  const [proposalAccepted, setProposalAccepted] = useState(false);
+
+  const handleAcceptProposal = useCallback(() => {
+    setProposalAccepted(true);
+    setActiveProposal(null);
+  }, []);
+
+  const handleRejectProposal = useCallback(() => {
+    setProposalAccepted(false);
+    setActiveProposal(null);
+  }, []);
+
+  const handleSuggestChanges = useCallback((_text: string) => {
+    // In the real implementation, this would send the suggestion to the LLM.
+  }, []);
+
+  const handleNewProposal = useCallback((proposal: RubricProposal) => {
+    setProposalAccepted(false);
+    setActiveProposal(proposal);
+  }, []);
+
+  const handleAcceptProposalFromRubric = useCallback((_item: ProposedRubricItem) => {
+    setProposalAccepted(true);
+    setActiveProposal(null);
+  }, []);
 
   return (
     <>
@@ -154,28 +195,44 @@ function AssessmentQuestionManualGradingInner({
           </div>
         )}
       </div>
-      <AssessmentQuestionTable
-        hasCourseInstancePermissionEdit={hasCourseInstancePermissionEdit}
-        course={course}
-        courseInstance={courseInstance}
-        csrfToken={csrfToken}
-        instanceQuestionsInfo={instanceQuestionsInfo}
-        urlPrefix={urlPrefix}
-        assessment={assessment}
-        assessmentQuestion={assessmentQuestion}
-        questionQid={questionQid}
-        aiGradingMode={aiGradingMode}
-        aiGradingModelSelectionEnabled={aiGradingModelSelectionEnabled}
-        rubricData={rubricData}
-        instanceQuestionGroups={instanceQuestionGroups}
-        courseStaff={courseStaff}
-        aiGradingStats={aiGradingStats}
-        mutations={mutations}
-        initialOngoingJobSequenceTokens={initialOngoingJobSequenceTokens}
-        availableAiGradingProviders={availableAiGradingProviders}
-        onSetGroupInfoModalState={setGroupInfoModalState}
-        onSetConflictModalState={setConflictModalState}
-      />
+      <div style={aiGradingMode ? { marginRight: AgentChatPanel.CHAT_WIDTH } : undefined}>
+        <AssessmentQuestionTable
+          hasCourseInstancePermissionEdit={hasCourseInstancePermissionEdit}
+          course={course}
+          courseInstance={courseInstance}
+          csrfToken={csrfToken}
+          instanceQuestionsInfo={instanceQuestionsInfo}
+          urlPrefix={urlPrefix}
+          assessment={assessment}
+          assessmentQuestion={assessmentQuestion}
+          questionQid={questionQid}
+          aiGradingMode={aiGradingMode}
+          aiGradingModelSelectionEnabled={aiGradingModelSelectionEnabled}
+          rubricData={rubricData}
+          instanceQuestionGroups={instanceQuestionGroups}
+          courseStaff={courseStaff}
+          aiGradingStats={aiGradingStats}
+          mutations={mutations}
+          initialOngoingJobSequenceTokens={initialOngoingJobSequenceTokens}
+          availableAiGradingProviders={availableAiGradingProviders}
+          proposedRubricItem={
+            aiGradingMode && activeProposal ? proposalToRubricItem(activeProposal) : null
+          }
+          proposalAccepted={proposalAccepted}
+          onAcceptProposal={handleAcceptProposalFromRubric}
+          onSetGroupInfoModalState={setGroupInfoModalState}
+          onSetConflictModalState={setConflictModalState}
+        />
+      </div>
+      {aiGradingMode && (
+        <AgentChatPanel
+          activeProposal={activeProposal}
+          onAcceptProposal={handleAcceptProposal}
+          onRejectProposal={handleRejectProposal}
+          onSuggestChanges={handleSuggestChanges}
+          onNewProposal={handleNewProposal}
+        />
+      )}
 
       <GroupInfoModal
         modalState={groupInfoModalState}
