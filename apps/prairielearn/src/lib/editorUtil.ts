@@ -1,10 +1,16 @@
 import * as path from 'path';
 
+import fs from 'fs-extra';
 import z from 'zod';
 
 import * as sqldb from '@prairielearn/postgres';
 
+import type { AuthzData } from './authz-data-lib.js';
+import { b64EncodeUnicode } from './base64-util.js';
+import type { Course, User } from './db-types.js';
 import { type FileDetails, type FileMetadata, FileType } from './editorUtil.shared.js';
+import { FileModifyEditor, getOriginalHash } from './editors.js';
+import { formatJsonWithPrettier } from './prettier.js';
 
 const sql = sqldb.loadSqlEquiv(import.meta.url);
 
@@ -95,4 +101,55 @@ export async function getFileMetadataForPath(
     uuid: res.uuid,
     type: details.type,
   };
+}
+
+export async function saveJsonFile<T extends Record<string, unknown>>({
+  applyChanges,
+  jsonPath,
+  origHash,
+  locals,
+  container,
+  errorMessage,
+}: {
+  applyChanges: (jsonContents: T) => T;
+  jsonPath: string;
+  origHash: string;
+  locals: { authz_data: AuthzData; course: Course; user: User };
+  container: { rootPath: string; invalidRootPaths: string[] };
+  errorMessage: string;
+}): Promise<
+  { success: true; origHash: string } | { success: false; error: string; jobSequenceId: string }
+> {
+  const jsonContents = await fs.readJson(jsonPath);
+  const modifiedJsonContents = applyChanges(jsonContents);
+  const formattedJson = await formatJsonWithPrettier(JSON.stringify(modifiedJsonContents));
+
+  const editor = new FileModifyEditor({
+    locals,
+    container,
+    filePath: jsonPath,
+    editContents: b64EncodeUnicode(formattedJson),
+    origHash,
+  });
+
+  const serverJob = await editor.prepareServerJob();
+  try {
+    await editor.executeWithServerJob(serverJob);
+  } catch {
+    return {
+      success: false,
+      error: errorMessage,
+      jobSequenceId: serverJob.jobSequenceId,
+    };
+  }
+
+  const newHash = await getOriginalHash(jsonPath);
+  if (newHash === null) {
+    return {
+      success: false,
+      error: 'Failed to get original hash',
+      jobSequenceId: serverJob.jobSequenceId,
+    };
+  }
+  return { success: true, origHash: newHash };
 }

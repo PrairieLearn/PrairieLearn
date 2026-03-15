@@ -1,46 +1,56 @@
+import { useState } from 'react';
+
 import { TimezoneContext } from '../../components/FriendlyDate.js';
 import { setCookieClient } from '../../lib/client/cookie.js';
-import { type StaffAuditEvent } from '../../lib/client/safe-db-types.js';
+import { type StaffAuditEvent, type StaffStudentLabel } from '../../lib/client/safe-db-types.js';
 import { type StaffGradebookRow } from '../../lib/gradebook.shared.js';
+import { createCourseInstanceTrpcClient } from '../../trpc/courseInstance/client.js';
 
 import { OverviewCard, type UserDetail } from './components/OverviewCard.js';
-import { StudentAuditEventsTable } from './components/StudentAuditEventsTable.js';
+import {
+  StudentEnrollmentAuditEventsTable,
+  StudentLabelAuditEventsTable,
+} from './components/StudentAuditEventsTable.js';
 import { StudentGradebookTable } from './components/StudentGradebookTable.js';
 
 interface StudentDetailProps {
-  auditEvents: StaffAuditEvent[];
+  enrollmentAuditEvents: StaffAuditEvent[];
+  labelAuditEvents: StaffAuditEvent[];
   gradebookRows: StaffGradebookRow[];
   student: UserDetail;
+  studentLabels: StaffStudentLabel[];
+  availableStudentLabels: StaffStudentLabel[];
   urlPrefix: string;
   courseInstanceUrl: string;
+  courseInstanceId: string;
   csrfToken: string;
+  trpcCsrfToken: string;
   hasCourseInstancePermissionEdit?: boolean;
   hasModernPublishing: boolean;
 }
 
+type AuditTab = 'enrollment' | 'labels';
+
 export function InstructorStudentDetail({
-  auditEvents,
+  enrollmentAuditEvents,
+  labelAuditEvents,
   gradebookRows,
   student,
+  studentLabels: initialStudentLabels,
+  availableStudentLabels: initialAvailableStudentLabels,
   urlPrefix,
   courseInstanceUrl,
+  courseInstanceId,
   csrfToken,
+  trpcCsrfToken,
   hasCourseInstancePermissionEdit,
   hasModernPublishing,
 }: StudentDetailProps) {
   const { user, course_instance } = student;
-
-  const gradebookRowsBySet = new Map<string, StaffGradebookRow[]>();
-  gradebookRows.forEach((row) => {
-    const setHeading = row.assessment_set.heading;
-    if (!gradebookRowsBySet.has(setHeading)) {
-      gradebookRowsBySet.set(setHeading, []);
-    }
-    const setAssessments = gradebookRowsBySet.get(setHeading);
-    if (setAssessments) {
-      setAssessments.push(row);
-    }
-  });
+  const [activeTab, setActiveTab] = useState<AuditTab>('enrollment');
+  const [trpcClient] = useState(() =>
+    createCourseInstanceTrpcClient({ csrfToken: trpcCsrfToken, courseInstanceId }),
+  );
 
   const handleViewGradebookAsStudent = () => {
     if (!user) throw new Error('User is required');
@@ -53,8 +63,11 @@ export function InstructorStudentDetail({
     <TimezoneContext value={course_instance.display_timezone}>
       <OverviewCard
         student={student}
+        initialStudentLabels={initialStudentLabels}
+        initialAvailableStudentLabels={initialAvailableStudentLabels}
         courseInstanceUrl={courseInstanceUrl}
         csrfToken={csrfToken}
+        trpcClient={trpcClient}
         hasCourseInstancePermissionEdit={hasCourseInstancePermissionEdit ?? false}
         hasModernPublishing={hasModernPublishing}
       />
@@ -77,10 +90,36 @@ export function InstructorStudentDetail({
       </div>
 
       <div className="card mb-4">
-        <div className="card-header bg-primary text-white d-flex align-items-center justify-content-between">
-          <h2 className="mb-0">Enrollment events</h2>
+        <div className="card-header bg-primary text-white">
+          <h2 className="mb-0">Audit events</h2>
         </div>
-        <StudentAuditEventsTable events={auditEvents} />
+        <div className="card-header">
+          <ul className="nav nav-tabs card-header-tabs">
+            <li className="nav-item">
+              <button
+                type="button"
+                className={`nav-link ${activeTab === 'enrollment' ? 'active' : ''}`}
+                onClick={() => setActiveTab('enrollment')}
+              >
+                Enrollment
+              </button>
+            </li>
+            <li className="nav-item">
+              <button
+                type="button"
+                className={`nav-link ${activeTab === 'labels' ? 'active' : ''}`}
+                onClick={() => setActiveTab('labels')}
+              >
+                Labels
+              </button>
+            </li>
+          </ul>
+        </div>
+        {activeTab === 'enrollment' ? (
+          <StudentEnrollmentAuditEventsTable events={enrollmentAuditEvents} />
+        ) : (
+          <StudentLabelAuditEventsTable events={labelAuditEvents} />
+        )}
       </div>
     </TimezoneContext>
   );

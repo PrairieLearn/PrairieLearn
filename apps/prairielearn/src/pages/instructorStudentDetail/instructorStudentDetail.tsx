@@ -1,14 +1,17 @@
 import { Router } from 'express';
 import asyncHandler from 'express-async-handler';
+import { z } from 'zod';
 
 import { HttpStatusError } from '@prairielearn/error';
 import { loadSqlEquiv, queryOptionalRow } from '@prairielearn/postgres';
 import { Hydrate } from '@prairielearn/react/server';
 import { run } from '@prairielearn/run';
+import { generatePrefixCsrfToken } from '@prairielearn/signed-token';
 
 import { PageLayout } from '../../components/PageLayout.js';
 import { extractPageContext } from '../../lib/client/page-context.js';
-import { StaffAuditEventSchema } from '../../lib/client/safe-db-types.js';
+import { StaffAuditEventSchema, StaffStudentLabelSchema } from '../../lib/client/safe-db-types.js';
+import { config } from '../../lib/config.js';
 import { getGradebookRows } from '../../lib/gradebook.js';
 import { getCourseInstanceUrl } from '../../lib/url.js';
 import { selectAuditEventsByEnrollmentId } from '../../models/audit-event.js';
@@ -18,6 +21,10 @@ import {
   selectEnrollmentById,
   setEnrollmentStatus,
 } from '../../models/enrollment.js';
+import {
+  selectStudentLabelsForEnrollment,
+  selectStudentLabelsInCourseInstance,
+} from '../../models/student-label.js';
 import { selectUserById } from '../../models/user.js';
 
 import { UserDetailSchema } from './components/OverviewCard.js';
@@ -39,6 +46,12 @@ router.get(
     });
     const { urlPrefix, course_instance: courseInstance } = pageContext;
     const courseInstanceUrl = getCourseInstanceUrl(courseInstance.id);
+
+    const trpcUrl = `/pl/course_instance/${courseInstance.id}/instructor/trpc`;
+    const trpcCsrfToken = generatePrefixCsrfToken(
+      { url: trpcUrl, authn_user_id: res.locals.authn_user.id },
+      config.secretKey,
+    );
 
     const student = await queryOptionalRow(
       sql.select_student_info,
@@ -66,6 +79,19 @@ router.get(
           auth: 'instructor',
         })
       : [];
+    const studentLabels = await selectStudentLabelsForEnrollment(student.enrollment);
+    const availableStudentLabels = await selectStudentLabelsInCourseInstance(courseInstance);
+    const rawAllAuditEvents = await selectAuditEventsByEnrollmentId({
+      enrollment_id: req.params.enrollment_id,
+      table_names: ['enrollments', 'student_label_enrollments'],
+    });
+
+    const rawEnrollmentAuditEvents = rawAllAuditEvents.filter(
+      (e) => e.table_name === 'enrollments',
+    );
+    const rawLabelAuditEvents = rawAllAuditEvents.filter(
+      (e) => e.table_name === 'student_label_enrollments',
+    );
 
     const pageTitle = run(() => {
       if (student.user) {
@@ -74,11 +100,10 @@ router.get(
       return `${student.enrollment.pending_uid}`;
     });
 
-    const rawAuditEvents = await selectAuditEventsByEnrollmentId({
-      enrollment_id: req.params.enrollment_id,
-      table_names: ['enrollments'],
-    });
-    const auditEvents = rawAuditEvents.map((event) => StaffAuditEventSchema.parse(event));
+    const enrollmentAuditEvents = rawEnrollmentAuditEvents.map((event) =>
+      StaffAuditEventSchema.parse(event),
+    );
+    const labelAuditEvents = rawLabelAuditEvents.map((event) => StaffAuditEventSchema.parse(event));
 
     res.send(
       PageLayout({
@@ -86,20 +111,27 @@ router.get(
         pageTitle,
         navContext: {
           type: 'instructor',
-          page: 'instance_admin',
-          subPage: 'students',
+          page: 'students',
+          subPage: 'detail',
         },
         content: (
           <Hydrate>
             <InstructorStudentDetail
-              auditEvents={auditEvents}
+              enrollmentAuditEvents={enrollmentAuditEvents}
+              labelAuditEvents={labelAuditEvents}
               gradebookRows={gradebookRows}
               student={student}
+              studentLabels={z.array(StaffStudentLabelSchema).parse(studentLabels)}
+              availableStudentLabels={z
+                .array(StaffStudentLabelSchema)
+                .parse(availableStudentLabels)}
               urlPrefix={urlPrefix}
               courseInstanceUrl={courseInstanceUrl}
+              courseInstanceId={courseInstance.id}
               csrfToken={pageContext.__csrf_token}
+              trpcCsrfToken={trpcCsrfToken}
               hasCourseInstancePermissionEdit={
-                pageContext.authz_data.has_course_instance_permission_edit
+                pageContext.authz_data.has_course_instance_permission_edit ?? false
               }
               hasModernPublishing={courseInstance.modern_publishing}
             />

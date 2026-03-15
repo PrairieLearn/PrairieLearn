@@ -50,6 +50,15 @@ FROM
 WHERE
   id = $id;
 
+-- BLOCK select_enrollments_by_ids_in_course_instance
+SELECT
+  *
+FROM
+  enrollments
+WHERE
+  id = ANY ($ids::bigint[])
+  AND course_instance_id = $course_instance_id;
+
 -- BLOCK select_enrollment_by_uid
 SELECT
   e.*
@@ -61,6 +70,20 @@ WHERE
   AND (
     e.pending_uid = $uid
     OR u.uid = $uid
+  );
+
+-- BLOCK select_enrollments_by_uids_or_pending_uids
+SELECT
+  to_jsonb(e) AS enrollment,
+  COALESCE(u.uid, e.pending_uid) AS uid
+FROM
+  enrollments AS e
+  LEFT JOIN users AS u ON (u.id = e.user_id)
+WHERE
+  e.course_instance_id = $course_instance_id
+  AND (
+    u.uid = ANY ($uids::text[])
+    OR e.pending_uid = ANY ($uids::text[])
   );
 
 -- BLOCK select_enrollments_by_uids_in_course_instance
