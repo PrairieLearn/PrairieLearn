@@ -4842,6 +4842,7 @@ __metadata:
     "@prairielearn/ui": "workspace:^"
     "@prairielearn/utils": "workspace:^"
     "@prairielearn/vite-plugin-express": "workspace:^"
+    "@prairielearn/workflows": "workspace:^"
     "@prairielearn/workspace-utils": "workspace:^"
     "@prairielearn/zod": "workspace:^"
     "@pyroscope/nodejs": "npm:^0.4.10"
@@ -5272,6 +5273,24 @@ __metadata:
     strip-ansi: "npm:^7.2.0"
     typescript: "npm:^5.9.3"
     vite: "npm:^7.3.1"
+  languageName: unknown
+  linkType: soft
+
+"@prairielearn/workflows@workspace:^, @prairielearn/workflows@workspace:packages/workflows":
+  version: 0.0.0-use.local
+  resolution: "@prairielearn/workflows@workspace:packages/workflows"
+  dependencies:
+    "@prairielearn/logger": "workspace:^"
+    "@prairielearn/postgres": "workspace:^"
+    "@prairielearn/tsconfig": "workspace:^"
+    "@types/node": "npm:^24.11.0"
+    "@typescript/native-preview": "npm:^7.0.0-dev.20260305.1"
+    "@vitest/coverage-v8": "npm:^4.0.18"
+    pg: "npm:^8.20.0"
+    typescript: "npm:^5.9.3"
+    typescript-cp: "npm:^0.1.9"
+    vitest: "npm:^4.0.18"
+    zod: "npm:^3.25.76"
   languageName: unknown
   linkType: soft
 
