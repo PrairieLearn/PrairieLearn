@@ -404,7 +404,14 @@ def sympy_check(
             raise HasInvalidSymbolError(str_item)
         if isinstance(item, sympy.Float):
             raise HasFloatError(float(str_item))
-        if not allow_complex and item == sympy.I:
+        # Detect complex numbers both in simplified form (sympy.I) and in
+        # unevaluated form (e.g. sqrt(-2) kept as Pow(-2, 1/2) by evaluateFalse).
+        # The is_finite guard excludes zoo (complex infinity from 1/0) and similar
+        # non-finite values, which aren't complex in the student-input sense.
+        if not allow_complex and (
+            item == sympy.I
+            or (item.is_extended_real is False and item.is_finite is not False)
+        ):
             raise HasComplexError("complex values not allowed")
 
         work_stack.extend(item.args)

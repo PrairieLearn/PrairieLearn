@@ -80,6 +80,13 @@ onDocumentReady(() => {
       new window.bootstrap.Tooltip(sideNavTogglerButton);
     }
 
+    appContainerDiv.addEventListener(
+      'transitionend',
+      // Pages can listen for this event to re-render when the side nav is toggled.
+      () => window.dispatchEvent(new Event('side-nav-toggle')),
+      { once: true },
+    );
+
     if (persistToggleState) {
       // Update the side nav expanded state
       await fetch('/pl/side_nav/settings', {

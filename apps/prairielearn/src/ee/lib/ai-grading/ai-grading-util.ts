@@ -71,6 +71,7 @@ const MODELS_SUPPORTING_SYSTEM_MSG_AFTER_USER_MSG = new Set<AiGradingModelId>([
 export async function generatePrompt({
   questionPrompt,
   questionAnswer,
+  rotationCorrected = false,
   submission_text,
   submitted_answer,
   rubric_items,
@@ -81,6 +82,8 @@ export async function generatePrompt({
 }: {
   questionPrompt: string;
   questionAnswer: string;
+  /** If true, the prompt will include that rotation correction was applied prior to grading. */
+  rotationCorrected?: boolean;
   submission_text: string;
   submitted_answer: Record<string, any> | null;
   rubric_items: RubricItem[];
@@ -189,6 +192,16 @@ export async function generatePrompt({
     );
   }
 
+  if (rotationCorrected) {
+    input.push({
+      role: systemRoleAfterUserMessage,
+      content: formatPrompt([
+        'One or more images were uploaded in a rotated state by the student (this was an error by the student). The system corrected their rotation.',
+        'If there are rubric items associated with image rotation, then please note that one or more images were rotated incorrectly.',
+      ]),
+    });
+  }
+
   input.push(
     {
       role: systemRoleAfterUserMessage,
@@ -239,10 +252,10 @@ export function generateSubmissionMessage({
         return segment;
       case 'image':
         if (segment.fileData) {
-          // fileData does not contain the MIME type header, so we add it.
           return {
             type: 'image',
-            image: `data:image/jpeg;base64,${segment.fileData}`,
+            image: segment.fileData,
+            mediaType: 'image/jpeg',
             providerOptions: {
               openai: {
                 imageDetail: 'auto',
@@ -784,7 +797,8 @@ async function correctImageOrientation({
         },
         {
           type: 'image',
-          image: `data:image/jpeg;base64,${images[i - 1]}`,
+          image: images[i - 1],
+          mediaType: 'image/jpeg',
           providerOptions: {
             openai: {
               imageDetail: 'auto',

@@ -178,11 +178,18 @@ export async function syncDiskToSqlWithLock(
     // syncing the assessment sets, as the presence of errors that this validation
     // could produce influences whether the "Unknown" assessment set is created.
     await timed('Check sharing validity', async () => {
-      await async.eachLimit(Object.values(courseData.courseInstances), 3, async (ci) => {
-        await syncAssessments.validateAssessmentSharedQuestions(
+      await async.eachLimit(Object.entries(courseData.courseInstances), 3, async ([, ci]) => {
+        const prefs = await syncAssessments.validateAssessmentSharedQuestions(
           courseId,
           ci.assessments,
           questionIds,
+        );
+        // Pre-validate question preferences so that errors are present when
+        // assessment sets are synced (which influences whether "Unknown" is created).
+        syncAssessments.preValidateAssessmentPreferences(
+          ci.assessments,
+          courseData.questions,
+          prefs,
         );
       });
     });

@@ -45,6 +45,7 @@ WITH
         params,
         true_answer,
         options,
+        preferences,
         broken,
         broken_at,
         authn_user_id,
@@ -64,6 +65,7 @@ WITH
         $params,
         $true_answer,
         $options,
+        $preferences,
         $broken,
         CASE
           WHEN $broken THEN NOW()

@@ -8,6 +8,7 @@ on:
 jobs:
   release:
     name: Release
+    if: github.repository == 'PrairieLearn/PrairieLearn'
     runs-on: ubuntu-latest
     permissions:
       # Needed for OIDC trusted publishing
