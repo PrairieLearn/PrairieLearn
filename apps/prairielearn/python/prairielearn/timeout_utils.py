@@ -7,9 +7,10 @@ from prairielearn.timeout_utils import ...
 """
 
 import ctypes
+import signal
 import threading
 from enum import IntEnum
-from types import TracebackType
+from types import FrameType, TracebackType
 
 from typing_extensions import Self
 
@@ -46,12 +47,34 @@ class ThreadingTimeout:
         self.seconds = seconds
         self.swallow_exc = swallow_exc
         self.state = TimeoutState.EXECUTED
-        tid = threading.current_thread().ident
-        if tid is None:
-            raise RuntimeError(
-                "Cannot create timeout context: thread ID is unavailable."
-            )
-        self.target_tid = tid
+        # We prefer signal.SIGALRM over PyThreadState_SetAsyncExc because the
+        # latter only interrupts Python bytecode execution — async exceptions
+        # are checked between bytecode instructions in CPython's eval loop
+        # (see https://github.com/python/cpython/blob/3.13/Python/ceval_gil.c#L1320-L1330).
+        # When the target thread is blocked in C code (e.g. SymPy's C
+        # extensions, time.sleep), the async exception is never delivered and
+        # the timeout hangs. SIGALRM is an OS-level signal that reliably
+        # interrupts C extensions.
+        #
+        # SIGALRM can only be used from the main thread. In production, grading
+        # code always runs in the main thread of forked zygote workers, and
+        # tests run in the main thread as well, so we should always take this
+        # path. The PyThreadState_SetAsyncExc fallback is kept in case future
+        # changes cause this code to run outside the main thread.
+        self._use_signal = (
+            threading.current_thread() is threading.main_thread()
+            and hasattr(signal, "SIGALRM")
+        )
+        if self._use_signal:
+            self._prev_handler: signal._HANDLER | None = None
+            self._prev_timer: float = 0.0
+        else:
+            tid = threading.current_thread().ident
+            if tid is None:
+                raise RuntimeError(
+                    "Cannot create timeout context: thread ID is unavailable."
+                )
+            self.target_tid = tid
         self.timer = None
 
     def __bool__(self) -> bool:
@@ -82,7 +105,7 @@ class ThreadingTimeout:
         if exc_type is TimeoutExceptionError:
             if self.state != TimeoutState.TIMED_OUT:
                 self.state = TimeoutState.INTERRUPTED
-                self.suppress_interrupt()
+            self.suppress_interrupt()
             return self.swallow_exc
         else:
             if exc_type is None:
@@ -104,14 +127,33 @@ class ThreadingTimeout:
         self.state = TimeoutState.CANCELED
         self.suppress_interrupt()
 
+    def _alarm_handler(self, _signum: int, _frame: FrameType | None) -> None:
+        self.state = TimeoutState.TIMED_OUT
+        raise TimeoutExceptionError
+
     def setup_interrupt(self) -> None:
         """Setting up the resource that interrupts the block"""
-        self.timer = threading.Timer(self.seconds, self.stop)
-        self.timer.start()
+        if self._use_signal:
+            self._prev_handler = signal.signal(signal.SIGALRM, self._alarm_handler)
+            # setitimer returns (previous_interval, previous_remaining); we save remaining
+            prev = signal.setitimer(signal.ITIMER_REAL, self.seconds)
+            self._prev_timer = prev[0]
+        else:
+            self.timer = threading.Timer(self.seconds, self.stop)
+            self.timer.start()
 
     def suppress_interrupt(self) -> None:
         """Removing the resource that interrupts the block"""
-        if self.timer is not None:
+        if self._use_signal:
+            # Cancel our timer
+            signal.setitimer(signal.ITIMER_REAL, 0)
+            # Restore previous handler
+            if self._prev_handler is not None:
+                signal.signal(signal.SIGALRM, self._prev_handler)
+            # Restore previous timer if there was one
+            if self._prev_timer > 0:
+                signal.setitimer(signal.ITIMER_REAL, self._prev_timer)
+        elif self.timer is not None:
             self.timer.cancel()
         else:
             raise ValueError("No timer has been initialized")
