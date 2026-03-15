@@ -1,8 +1,12 @@
 {{#show_widget}}
   <script>
     $(async () => {
-        const module = await import("pl-excalidraw-js");
-        await module.initializeExcalidraw("{{uuid}}", "{{name}}", JSON.parse(atob("{{metadata}}")));
+      const module = await import("pl-excalidraw-js");
+      await module.initializeExcalidraw(
+        "{{uuid}}",
+        "{{name}}",
+        JSON.parse(atob("{{metadata}}")),
+      );
     });
   </script>
 {{/show_widget}}

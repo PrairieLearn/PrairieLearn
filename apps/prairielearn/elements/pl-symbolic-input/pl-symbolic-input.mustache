@@ -8,8 +8,8 @@
   {{/label}}
   {{#formula_editor}}
     <script>
-      $(function() {
-          window.PLSymbolicInput("{{name}}");
+      $(function () {
+        window.PLSymbolicInput("{{name}}");
       });
     </script>
     <input name="{{name}}" id="symbolic-input-sub-{{name}}" type="hidden" value="" />
@@ -118,8 +118,8 @@
       {{#label}}<span>{{{label}}}</span>{{/label}}
       {{#formula_editor}}
         <script>
-          $(function() {
-              window.PLSymbolicInputParseError("{{uuid}}");
+          $(function () {
+            window.PLSymbolicInputParseError("{{uuid}}");
           });
         </script>
         {{#raw_submitted_answer_latex}}
