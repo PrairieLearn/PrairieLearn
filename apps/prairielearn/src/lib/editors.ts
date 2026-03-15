@@ -67,6 +67,9 @@ async function syncCourseFromDisk(
     throw new Error('Sync completely failed due to invalid question sharing edit.');
   }
 
+  // eslint-disable-next-line @typescript-eslint/no-unnecessary-condition
+  assert(syncResult.status === 'complete');
+
   if (config.chunksGenerator) {
     const chunkChanges = await updateChunksForCourse({
       coursePath: course.path,
@@ -80,8 +83,13 @@ async function syncCourseFromDisk(
 
   await updateCourseCommitHash(course);
 
+  // JSON errors mean individual entities failed to sync (e.g., a question has
+  // invalid JSON), but the sync as a whole completed. We set `hadJsonErrors`
+  // on `job.data` before throwing so the file editor can distinguish this
+  // from a hard failure.
   if (syncResult.hadJsonErrors) {
-    throw new Error('One or more JSON files contained errors and were unable to be synced');
+    job.data.hadJsonErrors = true;
+    throw new Error('One or more JSON files contained errors and were unable to be synced.');
   }
 }
 
