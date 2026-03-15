@@ -5,9 +5,14 @@ import { z } from 'zod';
 
 import { DateFromISOString, IdSchema, IntervalSchema } from '@prairielearn/zod';
 
+import { QuestionPreferencesSchemaJsonSchema } from '../schemas/index.js';
+
 // *******************************************************************************
 // Enum schemas. These should be alphabetized by their corresponding enum name.
 // *******************************************************************************
+
+export const EnumAiGradingProviderSchema = z.enum(['openai', 'google', 'anthropic']);
+export type EnumAiGradingProvider = z.infer<typeof EnumAiGradingProviderSchema>;
 
 export const EnumAiQuestionGenerationMessageRoleSchema = z.enum(['user', 'assistant']);
 export type EnumAiQuestionGenerationMessageRole = z.infer<
@@ -71,9 +76,6 @@ export type EnumJobStatus = z.infer<typeof EnumJobStatusSchema>;
 export const EnumModeSchema = z.enum(['Public', 'Exam', 'SEB']);
 export type EnumMode = z.infer<typeof EnumModeSchema>;
 
-export const EnumModeReasonSchema = z.enum(['Default', 'PrairieTest', 'Network']);
-export type EnumModeReason = z.infer<typeof EnumModeReasonSchema>;
-
 export const EnumPlanGrantTypeSchema = z.enum(['trial', 'stripe', 'invoice', 'gift']);
 export type EnumPlanGrantType = z.infer<typeof EnumPlanGrantTypeSchema>;
 
@@ -99,6 +101,11 @@ export type EnumQuestionType = z.infer<typeof EnumQuestionTypeSchema>;
 // Miscellaneous schemas; keep these alphabetized.
 // *******************************************************************************
 export const JsonCommentSchema = z.union([z.string(), z.array(z.any()), z.record(z.any())]);
+
+export const QuestionPreferenceValuesSchema = z.record(
+  z.string(),
+  z.union([z.string(), z.number(), z.boolean()]),
+);
 
 // *******************************************************************************
 // Sproc schemas. These should be alphabetized by their corresponding sproc name.
@@ -171,7 +178,6 @@ export type SprocAuthzCourse = z.infer<typeof SprocAuthzCourseSchema>;
 // Result of ip_to_mode sproc
 export const SprocIpToModeSchema = z.object({
   mode: EnumModeSchema,
-  mode_reason: EnumModeReasonSchema,
 });
 export type SprocIpToMode = z.infer<typeof SprocIpToModeSchema>;
 
@@ -483,6 +489,7 @@ export const AssessmentQuestionSchema = z.object({
   number_submissions_hist: z.array(z.number()).nullable(),
   number_submissions_variance: z.number().nullable(),
   points_list: z.array(z.number()).nullable(),
+  preferences: QuestionPreferenceValuesSchema.nullable(),
   question_id: IdSchema,
   question_score_variance: z.number().nullable(),
   quintile_question_scores: z.array(z.number()).nullable(),
@@ -633,6 +640,7 @@ export const CourseSchema = z.object({
 export type Course = z.infer<typeof CourseSchema>;
 
 export const CourseInstanceSchema = z.object({
+  ai_grading_use_custom_api_keys: z.boolean(),
   assessments_group_by: z.enum(['Set', 'Module']),
   course_id: IdSchema,
   deleted_at: DateFromISOString.nullable(),
@@ -669,6 +677,18 @@ export const CourseInstanceAccessRuleSchema = z.object({
   uids: z.string().array().nullable(),
 });
 export type CourseInstanceAccessRule = z.infer<typeof CourseInstanceAccessRuleSchema>;
+
+export const CourseInstanceAiGradingCredentialSchema = z.object({
+  course_instance_id: IdSchema,
+  created_at: DateFromISOString,
+  created_by: IdSchema,
+  encrypted_secret_key: z.string(),
+  id: IdSchema,
+  provider: EnumAiGradingProviderSchema,
+});
+export type CourseInstanceAiGradingCredential = z.infer<
+  typeof CourseInstanceAiGradingCredentialSchema
+>;
 
 export const CourseInstancePublishingExtensionSchema = z.object({
   course_instance_id: IdSchema,
@@ -767,15 +787,7 @@ export const EnrollmentSchema = z.object({
 });
 export type Enrollment = z.infer<typeof EnrollmentSchema>;
 
-export const ExamModeNetworkSchema = z.object({
-  created_at: DateFromISOString.nullable(),
-  during: z.unknown().nullable(), // https://github.com/PrairieLearn/PrairieLearn/pull/12437#discussion_r2219773815
-  id: IdSchema,
-  location: z.string().nullable(),
-  network: z.string().cidr().nullable(),
-  purpose: z.string().nullable(),
-});
-export type ExamModeNetwork = z.infer<typeof ExamModeNetworkSchema>;
+export const ExamModeNetworkSchema = null;
 
 export const FeatureGrantSchema = null;
 
@@ -1274,7 +1286,6 @@ export const QuestionSchema = z.object({
   directory: z.string().nullable(),
   draft: z.boolean(),
   external_grading_enable_networking: z.boolean().nullable(),
-  external_grading_enabled: z.boolean(),
   external_grading_entrypoint: z.string().nullable(),
   external_grading_environment: z.record(z.string(), z.string().nullable()),
   external_grading_files: z.any().nullable(),
@@ -1290,6 +1301,7 @@ export const QuestionSchema = z.object({
   number: z.number().nullable(),
   options: z.any().nullable(),
   partial_credit: z.boolean().nullable(),
+  preferences_schema: QuestionPreferencesSchemaJsonSchema.nullable(),
   qid: z.string().nullable(),
   share_publicly: z.boolean(),
   share_source_publicly: z.boolean(),
@@ -1536,6 +1548,7 @@ export const VariantSchema = z.object({
   open: z.boolean().nullable(),
   options: z.record(z.string(), z.any()).nullable(),
   params: z.record(z.string(), z.any()).nullable(),
+  preferences: QuestionPreferenceValuesSchema,
   question_id: IdSchema,
   team_id: IdSchema.nullable(),
   true_answer: z.record(z.string(), z.any()).nullable(),
@@ -1646,6 +1659,7 @@ export const TableNames = [
   'chunks',
   'client_fingerprints',
   'course_instance_access_rules',
+  'course_instance_ai_grading_credentials',
   'course_instance_permissions',
   'course_instance_publishing_extension_enrollments',
   'course_instance_publishing_extensions',

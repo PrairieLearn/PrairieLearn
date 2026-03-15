@@ -38,7 +38,13 @@ export function getNavPageTabs() {
         iconClasses: 'far fa-calendar-alt',
         tabLabel: 'Publishing',
       },
-
+      {
+        activeSubPage: 'ai_grading',
+        urlSuffix: '/instance_admin/ai_grading',
+        iconClasses: 'bi bi-stars',
+        tabLabel: 'AI grading',
+        renderCondition: (resLocals) => resLocals.ai_grading_enabled,
+      },
       {
         activeSubPage: 'lti',
         urlSuffix: '/instance_admin/lti',
@@ -47,7 +53,6 @@ export function getNavPageTabs() {
         renderCondition: (resLocals) =>
           resLocals.lti11_enabled && resLocals.authz_data.has_course_permission_edit,
       },
-
       {
         activeSubPage: 'billing',
         urlSuffix: '/instance_admin/billing',
@@ -243,12 +248,6 @@ export function getNavPageTabs() {
         urlSuffix: '/administrator/courses',
         iconClasses: 'fa fa-chalkboard',
         tabLabel: 'Courses',
-      },
-      {
-        activeSubPage: 'networks',
-        urlSuffix: '/administrator/networks',
-        iconClasses: 'fas fa-network-wired',
-        tabLabel: 'Exam networks',
       },
       {
         activeSubPage: 'queries',

@@ -13,7 +13,7 @@ import { generatePrefixCsrfToken } from '@prairielearn/signed-token';
 
 import { PageLayout } from '../../components/PageLayout.js';
 import { selectAssessmentQuestions } from '../../lib/assessment-question.js';
-import { compiledScriptTag } from '../../lib/assets.js';
+import { compiledScriptTag, compiledStylesheetTag } from '../../lib/assets.js';
 import { b64EncodeUnicode } from '../../lib/base64-util.js';
 import { extractPageContext } from '../../lib/client/page-context.js';
 import { config } from '../../lib/config.js';
@@ -22,10 +22,11 @@ import { features } from '../../lib/features/index.js';
 import { getPaths } from '../../lib/instructorFiles.js';
 import { formatJsonWithPrettier } from '../../lib/prettier.js';
 import { handleTrpcError } from '../../lib/trpc.js';
+import { getUrl } from '../../lib/url.js';
 import { resetVariantsForAssessmentQuestion } from '../../models/variant.js';
 import { ZoneAssessmentJsonSchema } from '../../schemas/infoAssessment.js';
 
-import { InstructorAssessmentQuestionsTable } from './components/InstructorAssessmentQuestionsTable.js';
+import { AssessmentQuestionsEditor } from './components/AssessmentEditor.js';
 import { InstructorAssessmentQuestionsTableLegacy } from './components/InstructorAssessmentQuestionsTableLegacy.js';
 import { assessmentQuestionsRouter, createContext } from './trpc.js';
 import { serializeZonesForJson } from './utils/dataTransform.js';
@@ -82,14 +83,16 @@ router.get(
       res.locals,
     );
 
+    const showLegacy = !editorEnabled || req.query.view === 'legacy';
+    const showEditor = editorEnabled && !showLegacy;
+
     const pageContext = extractPageContext(res.locals, {
       pageType: 'assessment',
       accessType: 'instructor',
     });
 
     const canEdit =
-      pageContext.authz_data.has_course_instance_permission_edit &&
-      !res.locals.course.example_course;
+      pageContext.authz_data.has_course_permission_edit && !res.locals.course.example_course;
 
     const trpcCsrfToken = generatePrefixCsrfToken(
       {
@@ -99,11 +102,30 @@ router.get(
       config.secretKey,
     );
 
+    const search = getUrl(req).search;
+
+    // Build toggle link that adds/removes the `view=legacy` query parameter.
+    const toggleUrl = (() => {
+      if (!editorEnabled) return null;
+      const url = getUrl(req);
+      const params = new URLSearchParams(url.search);
+      if (showEditor) {
+        params.set('view', 'legacy');
+      } else {
+        params.delete('view');
+      }
+      const qs = params.toString();
+      return `${url.pathname}${qs ? `?${qs}` : ''}`;
+    })();
+
     res.send(
       PageLayout({
         resLocals: res.locals,
         pageTitle: 'Questions',
-        headContent: compiledScriptTag('instructorAssessmentQuestionsClient.ts'),
+        headContent: [
+          compiledScriptTag('instructorAssessmentQuestionsClient.ts'),
+          compiledStylesheetTag('instructorAssessmentQuestions.css'),
+        ],
         navContext: {
           type: 'instructor',
           page: 'assessment',
@@ -111,23 +133,27 @@ router.get(
         },
         options: {
           fullWidth: true,
+          contentPadding: !showEditor,
         },
         content: (
           <Hydrate>
-            {editorEnabled ? (
-              <InstructorAssessmentQuestionsTable
+            {showEditor ? (
+              <AssessmentQuestionsEditor
                 course={pageContext.course}
                 courseInstance={pageContext.course_instance}
                 questionRows={questionRows}
                 jsonZones={jsonZones}
-                urlPrefix={pageContext.urlPrefix}
                 assessment={pageContext.assessment}
-                assessmentSetName={pageContext.assessment_set.name}
                 hasCoursePermissionPreview={pageContext.authz_data.has_course_permission_preview}
-                canEdit={canEdit ?? false}
+                hasCourseInstancePermissionEdit={
+                  pageContext.authz_data.has_course_instance_permission_edit ?? false
+                }
+                canEdit={canEdit}
                 csrfToken={res.locals.__csrf_token}
                 origHash={origHash}
                 trpcCsrfToken={trpcCsrfToken}
+                search={search}
+                switchViewUrl={toggleUrl}
               />
             ) : (
               <InstructorAssessmentQuestionsTableLegacy
@@ -142,6 +168,7 @@ router.get(
                   pageContext.authz_data.has_course_instance_permission_edit ?? false
                 }
                 csrfToken={res.locals.__csrf_token}
+                switchViewUrl={toggleUrl}
               />
             )}
           </Hydrate>
@@ -164,7 +191,9 @@ router.post(
   '/',
   asyncHandler(async (req, res) => {
     if (req.body.__action === 'reset_question_variants') {
-      // TODO: What permission do we need to reset question variants?
+      if (!res.locals.authz_data.has_course_instance_permission_edit) {
+        throw new HttpStatusError(403, 'Access denied (must be course instance editor)');
+      }
 
       if (res.locals.assessment.type === 'Exam') {
         // See https://github.com/PrairieLearn/PrairieLearn/issues/12977
