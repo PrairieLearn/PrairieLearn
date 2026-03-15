@@ -252,11 +252,13 @@ export async function constructCourseOrInstanceContext({
                 req_date,
               );
             }
+            /* eslint-disable @typescript-eslint/no-deprecated */
             return {
               has_student_access: rawAuthzData.permissions_course_instance.has_student_access,
               has_student_access_with_enrollment:
                 rawAuthzData.permissions_course_instance.has_student_access_with_enrollment,
             };
+            /* eslint-enable @typescript-eslint/no-deprecated */
           })),
         };
       }

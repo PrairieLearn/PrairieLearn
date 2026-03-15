@@ -81,8 +81,8 @@ function useBeforeUnload(enabled: boolean): () => void {
     const handler = (event: BeforeUnloadEvent) => {
       if (disabledRef.current) return;
       event.preventDefault();
+      // eslint-disable-next-line @typescript-eslint/no-deprecated -- MDN recommends setting returnValue for legacy browser support
       event.returnValue = 'prompt';
-      return 'prompt';
     };
     window.addEventListener('beforeunload', handler);
     return () => window.removeEventListener('beforeunload', handler);

@@ -230,6 +230,7 @@ export async function deleteCourse({
     if (deletedCourse == null) {
       throw new Error('Course to delete not found');
     }
+    // eslint-disable-next-line @typescript-eslint/no-deprecated
     await insertAuditLog({
       authn_user_id,
       action: 'soft_delete',
@@ -271,6 +272,7 @@ export async function insertCourse({
       },
       CourseSchema,
     );
+    // eslint-disable-next-line @typescript-eslint/no-deprecated
     await insertAuditLog({
       authn_user_id,
       action: 'insert',

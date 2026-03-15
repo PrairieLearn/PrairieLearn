@@ -304,7 +304,7 @@ onDocumentReady(() => {
 
   $('#questionsTable').bootstrapTable(tableSettings);
 
-  $(document).keydown((event) => {
+  $(document).on('keydown', (event) => {
     if (
       (event.ctrlKey || event.metaKey) &&
       String.fromCharCode(event.which).toLowerCase() === 'f'
@@ -312,9 +312,11 @@ onDocumentReady(() => {
       if (
         $('.sticky-header-container:visible input.bootstrap-table-filter-control-qid').length > 0
       ) {
-        $('.sticky-header-container:visible input.bootstrap-table-filter-control-qid').focus();
+        $('.sticky-header-container:visible input.bootstrap-table-filter-control-qid').trigger(
+          'focus',
+        );
       } else {
-        $('input.bootstrap-table-filter-control-qid').focus();
+        $('input.bootstrap-table-filter-control-qid').trigger('focus');
       }
       event.preventDefault();
     }

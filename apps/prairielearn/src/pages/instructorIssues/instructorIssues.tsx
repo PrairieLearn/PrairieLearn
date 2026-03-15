@@ -1,5 +1,3 @@
-import * as url from 'node:url';
-
 import { Router } from 'express';
 import SearchString from 'search-string';
 import { z } from 'zod';
@@ -20,6 +18,7 @@ import { compiledStylesheetTag } from '../../lib/assets.js';
 import { extractPageContext } from '../../lib/client/page-context.js';
 import { idsEqual } from '../../lib/id.js';
 import { typedAsyncHandler } from '../../lib/res-locals.js';
+import { getUrl } from '../../lib/url.js';
 import type { ResLocalsCourseInstanceAuthz } from '../../middlewares/authzCourseOrInstance.js';
 import { selectCourseInstancesWithStaffAccess } from '../../models/course-instances.js';
 
@@ -162,7 +161,7 @@ router.get(
     // than the number of actual issues. In this case, redirect to the same page
     // without setting the page number.
     if (offset > 0 && issueRows.length === 0) {
-      res.redirect(`${url.parse(req.originalUrl).pathname}?q=${encodeURIComponent(filterQuery)}`);
+      res.redirect(`${getUrl(req).pathname}?q=${encodeURIComponent(filterQuery)}`);
       return;
     }
 

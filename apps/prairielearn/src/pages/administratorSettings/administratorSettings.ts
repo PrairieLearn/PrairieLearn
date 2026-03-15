@@ -60,7 +60,7 @@ router.post(
 
       const { syncContextDocuments } = await import('../../ee/lib/contextEmbeddings.js');
       const jobSequenceId = await syncContextDocuments(
-        openai.textEmbeddingModel('text-embedding-3-small'),
+        openai.embeddingModel('text-embedding-3-small'),
         res.locals.authn_user.id,
       );
       res.redirect('/pl/administrator/jobSequence/' + jobSequenceId);

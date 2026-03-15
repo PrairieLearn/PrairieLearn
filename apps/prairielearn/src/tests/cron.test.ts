@@ -44,6 +44,12 @@ describe('Cron', { timeout: 60_000 }, function () {
     });
 
     it('should all have successfully completed', async () => {
+      // Poll for completion since some cron jobs may still be finishing.
+      for (let i = 0; i < 3; i++) {
+        const rowCount = await sqldb.execute(sql.select_unsuccessful_cron_jobs);
+        if (rowCount === 0) return;
+        await new Promise((resolve) => setTimeout(resolve, 1000));
+      }
       const rowCount = await sqldb.execute(sql.select_unsuccessful_cron_jobs);
       assert.equal(rowCount, 0);
     });

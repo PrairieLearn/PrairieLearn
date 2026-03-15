@@ -610,7 +610,7 @@ export async function leaveGroup(
           authn_user_id: authnUserId,
         });
 
-        // teams with low enough size should only use required roles
+        // groups with low enough size should only use required roles
         const minRolesToFill = sum(
           groupInfo.rolesInfo?.groupRoles.map((role) => role.minimum ?? 0) ?? [],
         );

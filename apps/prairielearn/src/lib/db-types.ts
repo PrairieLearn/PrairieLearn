@@ -894,6 +894,7 @@ export const GradingJobSchema = z.object({
 });
 export type GradingJob = z.infer<typeof GradingJobSchema>;
 
+/* eslint-disable @typescript-eslint/no-deprecated */
 /** @deprecated */
 export const TeamSchema = z.object({
   course_instance_id: IdSchema,
@@ -979,6 +980,7 @@ export type GroupUser = TeamUser;
 export const GroupUserRoleSchema = TeamUserRoleSchema;
 export type GroupUserRole = TeamUserRole;
 export const GroupLogSchema = TeamLogSchema;
+/* eslint-enable @typescript-eslint/no-deprecated */
 
 export const InstanceQuestionSchema = z.object({
   ai_instance_question_group_id: IdSchema.nullable(),

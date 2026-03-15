@@ -1,5 +1,5 @@
 import { type OpenAIResponsesProviderOptions, createOpenAI } from '@ai-sdk/openai';
-import { type LanguageModel, type ModelMessage, generateObject } from 'ai';
+import { type LanguageModel, type ModelMessage, Output, generateText } from 'ai';
 import * as async from 'async';
 import { z } from 'zod';
 
@@ -122,10 +122,12 @@ async function aiEvaluateStudentResponse({
     },
   ];
 
-  const response = await generateObject({
+  const response = await generateText({
     model,
-    schema: z.object({
-      correct: z.boolean().describe('Whether or not the student submission is correct.'),
+    output: Output.object({
+      schema: z.object({
+        correct: z.boolean().describe('Whether or not the student submission is correct.'),
+      }),
     }),
     messages: input,
     providerOptions: {
@@ -146,7 +148,7 @@ async function aiEvaluateStudentResponse({
 
   logResponseUsage({ response, logger });
 
-  return response.object.correct;
+  return response.output.correct;
 }
 
 /**

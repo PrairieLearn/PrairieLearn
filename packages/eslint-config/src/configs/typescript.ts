@@ -40,6 +40,7 @@ export function typescriptConfig(): TSESLint.FlatConfig.ConfigArray {
 export function typescriptTypeAwareRules(): TSESLint.FlatConfig.Rules {
   return {
     '@typescript-eslint/no-base-to-string': 'off',
+    '@typescript-eslint/no-deprecated': 'error',
     '@typescript-eslint/no-invalid-void-type': [
       'error',
       {
