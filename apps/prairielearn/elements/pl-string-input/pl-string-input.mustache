@@ -1,18 +1,25 @@
 <script>
-  $(function(){
-      document.querySelectorAll('.pl-string-input-multiline#pl-string-input-{{uuid}}-area').forEach((input) => {
-          input.addEventListener('input', function () {
+  $(function () {
+    document
+      .querySelectorAll(
+        ".pl-string-input-multiline#pl-string-input-{{uuid}}-area",
+      )
+      .forEach((input) => {
+        input.addEventListener("input", function () {
           // Adjusts the height based on the feedback content. If the feedback changes, the height
           // changes as well. This is done by resetting the height (so the scrollHeight is computed
           // based on the minimum height) and then using the scrollHeight plus padding as the new height.
-          this.style.height = '';
+          this.style.height = "";
           if (this.scrollHeight) {
-              const style = window.getComputedStyle(this);
-              this.style.height =
-              this.scrollHeight + parseFloat(style.paddingTop) + parseFloat(style.paddingBottom) + 'px';
+            const style = window.getComputedStyle(this);
+            this.style.height =
+              this.scrollHeight +
+              parseFloat(style.paddingTop) +
+              parseFloat(style.paddingBottom) +
+              "px";
           }
-          });
-          input.dispatchEvent(new Event('input'));
+        });
+        input.dispatchEvent(new Event("input"));
       });
   });
 </script>
