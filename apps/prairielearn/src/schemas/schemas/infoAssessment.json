@@ -60,11 +60,13 @@
     },
     "maxPoints": {
       "description": "The number of points that must be earned in this assessment to achieve a score of 100%.",
-      "type": "number"
+      "type": "number",
+      "minimum": 0
     },
     "maxBonusPoints": {
       "description": "The maximum number of additional points that can be earned beyond maxPoints.",
-      "type": "number"
+      "type": "number",
+      "minimum": 0
     },
     "allowPersonalNotes": {
       "description": "Whether students are allowed to upload personal notes for this assessment.",
@@ -367,7 +369,8 @@
         },
         "maxPoints": {
           "description": "Only this many of the points that are awarded for answering questions in this zone will count toward the total points.",
-          "type": "number"
+          "type": "number",
+          "minimum": 0
         },
         "numberChoose": {
           "description": "Number of questions to choose from this zone.",
