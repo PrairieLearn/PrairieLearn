@@ -1,17 +1,11 @@
 import * as path from 'path';
 
-import {
-  TRPCClientError,
-  type TRPCClientErrorLike,
-  createTRPCClient,
-  httpLink,
-} from '@trpc/client';
-import * as cheerio from 'cheerio';
+import { TRPCClientError } from '@trpc/client';
 import fetch from 'node-fetch';
-import superjson from 'superjson';
 import { afterAll, assert, beforeAll, describe, test } from 'vitest';
 
 import { queryOptionalRow, queryRows } from '@prairielearn/postgres';
+import { generatePrefixCsrfToken } from '@prairielearn/signed-token';
 
 import { config } from '../lib/config.js';
 import { EnrollmentSchema } from '../lib/db-types.js';
@@ -24,6 +18,7 @@ import {
   selectStudentLabelsInCourseInstance,
 } from '../models/student-label.js';
 import { getStudentLabelsWithUserData } from '../pages/instructorStudentsLabels/queries.js';
+import { createCourseInstanceTrpcClient } from '../trpc/courseInstance/client.js';
 import type { CourseInstanceRouter } from '../trpc/courseInstance/trpc.js';
 
 import {
@@ -45,29 +40,15 @@ function getCourseInstanceJsonPath(courseLiveDir: string, courseInstanceShortNam
   );
 }
 
-async function createTrpcClient() {
-  // Fetch the page to get the CSRF token from hydration data
-  const pageResponse = await fetch(labelsUrl);
-  const pageHtml = await pageResponse.text();
-  const $ = cheerio.load(pageHtml);
-
-  // Extract trpcCsrfToken from the hydration data
-  const dataScript = $('script[data-component-props][data-component="InstructorStudentsLabels"]');
-  const propsJson = dataScript.text();
-  const props = superjson.parse<{ trpcCsrfToken: string }>(propsJson);
-  const trpcCsrfToken = props.trpcCsrfToken;
-
-  return createTRPCClient<CourseInstanceRouter>({
-    links: [
-      httpLink({
-        url: `${siteUrl}/pl/course_instance/1/instructor/trpc`,
-        headers: {
-          'X-TRPC': 'true',
-          'X-CSRF-Token': trpcCsrfToken,
-        },
-        transformer: superjson,
-      }),
-    ],
+function createTrpcClient() {
+  const csrfToken = generatePrefixCsrfToken(
+    { url: '/pl/course_instance/1/instructor/trpc', authn_user_id: '1' },
+    config.secretKey,
+  );
+  return createCourseInstanceTrpcClient({
+    csrfToken,
+    courseInstanceId: '1',
+    urlBase: siteUrl,
   });
 }
 
@@ -102,7 +83,7 @@ describe('Instructor student labels page', () => {
     const pageResponse = await fetch(labelsUrl);
     assert.equal(pageResponse.status, 200);
 
-    const trpcClient = await createTrpcClient();
+    const trpcClient = createTrpcClient();
 
     const result = await trpcClient.studentLabels.list.query();
     assert.isArray(result.labels);
@@ -126,7 +107,7 @@ describe('Instructor student labels page', () => {
   });
 
   test.sequential('should handle create label operations', async () => {
-    const trpcClient = await createTrpcClient();
+    const trpcClient = createTrpcClient();
     let origHash = await getOriginalHash(
       getCourseInstanceJsonPath(courseRepo.courseLiveDir, courseInstanceShortName),
     );
@@ -183,7 +164,7 @@ describe('Instructor student labels page', () => {
       assert.fail('Expected error for duplicate name');
     } catch (err) {
       assert.instanceOf(err, TRPCClientError);
-      assert.include((err as TRPCClientErrorLike<CourseInstanceRouter>).message, 'already exists');
+      assert.include((err as TRPCClientError<CourseInstanceRouter>).message, 'already exists');
     }
 
     // Attempt to create label with empty name - should fail
@@ -201,7 +182,7 @@ describe('Instructor student labels page', () => {
   });
 
   test.sequential('should handle edit label operations', async () => {
-    const trpcClient = await createTrpcClient();
+    const trpcClient = createTrpcClient();
     let origHash = await getOriginalHash(
       getCourseInstanceJsonPath(courseRepo.courseLiveDir, courseInstanceShortName),
     );
@@ -299,12 +280,12 @@ describe('Instructor student labels page', () => {
       assert.fail('Expected error for duplicate name');
     } catch (err) {
       assert.instanceOf(err, TRPCClientError);
-      assert.include((err as TRPCClientErrorLike<CourseInstanceRouter>).message, 'already exists');
+      assert.include((err as TRPCClientError<CourseInstanceRouter>).message, 'already exists');
     }
   });
 
   test.sequential('should handle delete label operations', async () => {
-    const trpcClient = await createTrpcClient();
+    const trpcClient = createTrpcClient();
     let origHash = await getOriginalHash(
       getCourseInstanceJsonPath(courseRepo.courseLiveDir, courseInstanceShortName),
     );
@@ -342,7 +323,7 @@ describe('Instructor student labels page', () => {
   });
 
   test.sequential('should support invited (pending) students in labels', async () => {
-    const trpcClient = await createTrpcClient();
+    const trpcClient = createTrpcClient();
     const invitedUid = 'invited-student@example.com';
 
     // Create an invited enrollment (pending_uid, no user_id)

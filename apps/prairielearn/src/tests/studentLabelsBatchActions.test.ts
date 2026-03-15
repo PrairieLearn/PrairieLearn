@@ -1,10 +1,10 @@
 import * as crypto from 'node:crypto';
 
-import { TRPCClientError, createTRPCClient, httpLink } from '@trpc/client';
-import * as cheerio from 'cheerio';
+import { TRPCClientError } from '@trpc/client';
 import fetch from 'node-fetch';
-import superjson from 'superjson';
 import { afterAll, assert, beforeAll, describe, test } from 'vitest';
+
+import { generatePrefixCsrfToken } from '@prairielearn/signed-token';
 
 import { dangerousFullSystemAuthz } from '../lib/authz-data-lib.js';
 import { config } from '../lib/config.js';
@@ -17,7 +17,7 @@ import {
   selectEnrollmentsByUidsOrPendingUidsInCourseInstance,
 } from '../models/enrollment.js';
 import { createStudentLabel, selectEnrollmentsInStudentLabel } from '../models/student-label.js';
-import type { CourseInstanceRouter } from '../trpc/courseInstance/trpc.js';
+import { createCourseInstanceTrpcClient } from '../trpc/courseInstance/client.js';
 
 import {
   type CourseRepoFixture,
@@ -29,29 +29,15 @@ import * as helperServer from './helperServer.js';
 const siteUrl = `http://localhost:${config.serverPort}`;
 const studentsUrl = `${siteUrl}/pl/course_instance/1/instructor/instance_admin/students`;
 
-async function createTrpcClient() {
-  // Fetch the students page to get the CSRF token from hydration data
-  const pageResponse = await fetch(studentsUrl);
-  const pageHtml = await pageResponse.text();
-  const $ = cheerio.load(pageHtml);
-
-  // Extract trpcCsrfToken from the hydration data
-  const dataScript = $('script[data-component-props][data-component="InstructorStudents"]');
-  const propsJson = dataScript.text();
-  const props = superjson.parse<{ trpcCsrfToken: string }>(propsJson);
-  const trpcCsrfToken = props.trpcCsrfToken;
-
-  return createTRPCClient<CourseInstanceRouter>({
-    links: [
-      httpLink({
-        url: `${siteUrl}/pl/course_instance/1/instructor/trpc`,
-        headers: {
-          'X-TRPC': 'true',
-          'X-CSRF-Token': trpcCsrfToken,
-        },
-        transformer: superjson,
-      }),
-    ],
+function createTrpcClient() {
+  const csrfToken = generatePrefixCsrfToken(
+    { url: '/pl/course_instance/1/instructor/trpc', authn_user_id: '1' },
+    config.secretKey,
+  );
+  return createCourseInstanceTrpcClient({
+    csrfToken,
+    courseInstanceId: '1',
+    urlBase: siteUrl,
   });
 }
 
@@ -92,7 +78,7 @@ describe('Student labels batch actions', () => {
   });
 
   test.sequential('should batch add label to multiple students', async () => {
-    const trpcClient = await createTrpcClient();
+    const trpcClient = createTrpcClient();
     await trpcClient.studentLabels.batchAdd.mutate({
       enrollmentIds,
       labelId: label.id,
@@ -112,7 +98,7 @@ describe('Student labels batch actions', () => {
   });
 
   test.sequential('should batch remove label from multiple students', async () => {
-    const trpcClient = await createTrpcClient();
+    const trpcClient = createTrpcClient();
     await trpcClient.studentLabels.batchRemove.mutate({
       enrollmentIds: [enrollmentIds[0], enrollmentIds[1]],
       labelId: label.id,
@@ -123,7 +109,7 @@ describe('Student labels batch actions', () => {
   });
 
   test.sequential('should remove label from the last student', async () => {
-    const trpcClient = await createTrpcClient();
+    const trpcClient = createTrpcClient();
     await trpcClient.studentLabels.batchRemove.mutate({
       enrollmentIds: [enrollmentIds[2]],
       labelId: label.id,
@@ -134,7 +120,7 @@ describe('Student labels batch actions', () => {
   });
 
   test.sequential('should fail when adding non-existent label', async () => {
-    const trpcClient = await createTrpcClient();
+    const trpcClient = createTrpcClient();
     try {
       await trpcClient.studentLabels.batchAdd.mutate({
         enrollmentIds: [enrollmentIds[0]],
