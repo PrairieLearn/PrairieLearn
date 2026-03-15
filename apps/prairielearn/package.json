@@ -151,6 +151,7 @@
     "domhandler": "^5.0.3",
     "dompurify": "^3.3.2",
     "dropzone": "^5.9.3",
+    "echarts": "^6.0.0",
     "es-main": "^1.4.0",
     "es-toolkit": "^1.45.1",
     "execa": "^9.6.1",

@@ -1,12 +1,17 @@
+import * as trpcExpress from '@trpc/server/adapters/express';
 import { Router } from 'express';
 import { z } from 'zod';
 
 import * as error from '@prairielearn/error';
 import { flash } from '@prairielearn/flash';
 import { execute, loadSqlEquiv, queryRow } from '@prairielearn/postgres';
+import { generatePrefixCsrfToken } from '@prairielearn/signed-token';
 
+import { config } from '../../../lib/config.js';
 import { CourseInstanceSchema, CourseSchema } from '../../../lib/db-types.js';
+import { features } from '../../../lib/features/index.js';
 import { typedAsyncHandler } from '../../../lib/res-locals.js';
+import { handleTrpcError } from '../../../lib/trpc.js';
 import { parseDesiredPlanGrants } from '../../lib/billing/components/PlanGrantsEditor.js';
 import {
   getPlanGrantsForCourseInstance,
@@ -15,6 +20,7 @@ import {
 import { getInstitution } from '../../lib/institution.js';
 
 import { AdministratorInstitutionCourseInstance } from './administratorInstitutionCourseInstance.html.js';
+import { adminCreditPoolRouter, createAdminContext } from './trpc.js';
 
 const sql = loadSqlEquiv(import.meta.url);
 const router = Router({ mergeParams: true });
@@ -39,24 +45,64 @@ async function selectCourseInstanceAndCourseInInstitution({
   );
 }
 
-router.get(
-  '/',
-  typedAsyncHandler<'plain'>(async (req, res) => {
-    const institution = await getInstitution(req.params.institution_id);
+// Middleware: load course and course_instance into res.locals for tRPC context.
+router.use(
+  typedAsyncHandler<'plain'>(async (req, res, next) => {
     const { course, course_instance } = await selectCourseInstanceAndCourseInInstitution({
       institution_id: req.params.institution_id,
       unsafe_course_instance_id: req.params.course_instance_id,
     });
+    (res.locals as any).course = course;
+    (res.locals as any).course_instance = course_instance;
+    next();
+  }),
+);
+
+// Mount tRPC for the admin credit pool section.
+router.use(
+  '/trpc',
+  trpcExpress.createExpressMiddleware({
+    router: adminCreditPoolRouter,
+    createContext: createAdminContext,
+    onError: handleTrpcError,
+  }),
+);
+
+router.get(
+  '/',
+  typedAsyncHandler<'plain'>(async (req, res) => {
+    const course = (res.locals as any).course;
+    const course_instance = (res.locals as any).course_instance;
+
+    const institution = await getInstitution(req.params.institution_id);
     const planGrants = await getPlanGrantsForCourseInstance({
       institution_id: institution.id,
       course_instance_id: course_instance.id,
     });
+    const aiGradingEnabled = await features.enabled('ai-grading', {
+      institution_id: institution.id,
+      course_id: course.id,
+      course_instance_id: course_instance.id,
+    });
+
+    const trpcCsrfToken = aiGradingEnabled
+      ? generatePrefixCsrfToken(
+          {
+            url: req.originalUrl.split('?')[0] + '/trpc',
+            authn_user_id: res.locals.authn_user.id,
+          },
+          config.secretKey,
+        )
+      : null;
+
     res.send(
       AdministratorInstitutionCourseInstance({
         institution,
         course,
         course_instance,
         planGrants,
+        aiGradingEnabled,
+        trpcCsrfToken,
         resLocals: res.locals,
       }),
     );
@@ -66,10 +112,7 @@ router.get(
 router.post(
   '/',
   typedAsyncHandler<'plain'>(async (req, res) => {
-    const { course_instance } = await selectCourseInstanceAndCourseInInstitution({
-      institution_id: req.params.institution_id,
-      unsafe_course_instance_id: req.params.course_instance_id,
-    });
+    const course_instance = (res.locals as any).course_instance;
 
     if (course_instance.deleted_at != null) {
       throw new error.HttpStatusError(403, 'Cannot modify a deleted course instance');

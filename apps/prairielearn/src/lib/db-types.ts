@@ -249,6 +249,21 @@ export const AdministratorSchema = z.object({
 });
 export type Administrator = z.infer<typeof AdministratorSchema>;
 
+export const AiGradingCreditPoolChangeSchema = z.object({
+  ai_grading_job_id: IdSchema.nullable(),
+  assessment_question_id: IdSchema.nullable(),
+  course_instance_id: IdSchema,
+  created_at: DateFromISOString,
+  credit_after_milli_dollars: z.coerce.number(),
+  credit_before_milli_dollars: z.coerce.number(),
+  credit_type: z.enum(['transferable', 'non_transferable']),
+  delta_milli_dollars: z.coerce.number(),
+  id: IdSchema,
+  reason: z.string(),
+  user_id: IdSchema.nullable(),
+});
+export type AiGradingCreditPoolChange = z.infer<typeof AiGradingCreditPoolChangeSchema>;
+
 export const AiGradingJobSchema = z.object({
   completion: z.any(),
   completion_tokens: z.number(),
@@ -643,6 +658,8 @@ export const CourseInstanceSchema = z.object({
   ai_grading_use_custom_api_keys: z.boolean(),
   assessments_group_by: z.enum(['Set', 'Module']),
   course_id: IdSchema,
+  credit_non_transferable_milli_dollars: z.coerce.number(),
+  credit_transferable_milli_dollars: z.coerce.number(),
   deleted_at: DateFromISOString.nullable(),
   display_timezone: z.string(),
   enrollment_code: z.string(),
@@ -1636,6 +1653,7 @@ export type Zone = z.infer<typeof ZoneSchema>;
 export const TableNames = [
   'access_tokens',
   'administrators',
+  'ai_grading_credit_pool_changes',
   'ai_grading_jobs',
   'ai_question_generation_messages',
   'ai_question_generation_prompts',

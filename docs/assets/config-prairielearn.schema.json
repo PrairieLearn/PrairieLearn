@@ -1084,6 +1084,10 @@
       "type": "number",
       "default": 10
     },
+    "aiGradingInfrastructureFeePercent": {
+      "type": "number",
+      "default": 0.2
+    },
     "aiQuestionGenerationRateLimitDollars": {
       "type": "number",
       "default": 1

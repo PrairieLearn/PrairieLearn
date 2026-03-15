@@ -102,6 +102,8 @@ const createStudentAuthzData = (overrides: Record<string, any> = {}) => ({
 const STUDENT_COURSE_INSTANCE = {
   assessments_group_by: 'Set' as const,
   course_id: '1',
+  credit_non_transferable_milli_dollars: 0,
+  credit_transferable_milli_dollars: 0,
   deleted_at: null,
   display_timezone: 'America/Chicago',
   id: '1',
