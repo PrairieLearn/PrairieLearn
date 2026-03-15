@@ -6,7 +6,7 @@ import path from 'node:path';
 import { test as base } from '@playwright/test';
 import * as tmp from 'tmp-promise';
 
-import type { CourseInstance } from '../../lib/db-types.js';
+import type { Course, CourseInstance } from '../../lib/db-types.js';
 import { type FeatureName, features } from '../../lib/features/index.js';
 import { TEST_COURSE_PATH } from '../../lib/paths.js';
 import { selectCourseInstanceByShortName } from '../../models/course-instances.js';
@@ -28,6 +28,8 @@ interface WorkerFixtures {
   workerPort: number;
   /** Path to the temporary writable copy of testCourse */
   testCoursePath: string;
+  /** The default QA 101 course */
+  course: Course;
   /** The default QA 101 / Sp15 course instance */
   courseInstance: CourseInstance;
 }
@@ -78,11 +80,18 @@ export const test = base.extend<TestFixtures, WorkerFixtures>({
     { scope: 'worker' },
   ],
 
-  courseInstance: [
+  course: [
     async ({ testCoursePath, workerPort: _workerPort }, use) => {
       await syncCourse(testCoursePath);
 
       const course = await selectCourseByShortName('QA 101');
+      await use(course);
+    },
+    { scope: 'worker' },
+  ],
+
+  courseInstance: [
+    async ({ course }, use) => {
       const courseInstance = await selectCourseInstanceByShortName({
         course,
         shortName: 'Sp15',

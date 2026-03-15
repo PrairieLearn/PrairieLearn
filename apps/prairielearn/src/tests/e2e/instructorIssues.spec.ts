@@ -2,6 +2,7 @@ import * as sqldb from '@prairielearn/postgres';
 import { IdSchema } from '@prairielearn/zod';
 
 import { insertIssue } from '../../lib/issues.js';
+import { selectAssessmentByTid } from '../../models/assessment.js';
 import { selectQuestionByQid } from '../../models/question.js';
 import { type AuthUser, getOrCreateUser } from '../utils/auth.js';
 
@@ -13,18 +14,34 @@ async function closeIssue(issueId: string) {
   await sqldb.execute(sql.close_issue, { issue_id: issueId });
 }
 
+async function updateAssessmentDeletedAt(assessmentId: string, deletedAt: Date | null) {
+  await sqldb.execute(sql.update_assessment_deleted_at, {
+    assessment_id: assessmentId,
+    deleted_at: deletedAt,
+  });
+}
+
+async function updateAssessmentSetId(assessmentId: string, assessmentSetId: string | null) {
+  await sqldb.execute(sql.update_assessment_set_id, {
+    assessment_id: assessmentId,
+    assessment_set_id: assessmentSetId,
+  });
+}
+
+async function setIssueAssessment(issueId: string, assessmentId: string) {
+  await sqldb.execute(sql.set_issue_assessment, { issue_id: issueId, assessment_id: assessmentId });
+}
+
 async function insertTestVariant({
   questionId,
   courseId,
   authnUserId,
   userId,
-  variantSeed,
 }: {
   questionId: string;
   courseId: string;
   authnUserId: string;
   userId: string;
-  variantSeed?: string;
 }) {
   return await sqldb.queryScalar(
     sql.insert_test_variant,
@@ -33,7 +50,7 @@ async function insertTestVariant({
       course_id: courseId,
       authn_user_id: authnUserId,
       user_id: userId,
-      variant_seed: variantSeed ?? `test_seed_${Date.now()}`,
+      variant_seed: 'test_seed',
     },
     IdSchema,
   );
@@ -103,7 +120,6 @@ async function createTestIssues(courseId: string) {
       courseId,
       authnUserId: user.id,
       userId: user.id,
-      variantSeed: `seed_${Date.now()}_${Math.random()}`,
     });
 
     const issueId = await insertIssue({
@@ -272,7 +288,6 @@ test.describe('Instructor issues page', () => {
         courseId: courseInstance.course_id,
         authnUserId: user.id,
         userId: user.id,
-        variantSeed: `cancel_test_${Date.now()}`,
       });
 
       await insertIssue({
@@ -297,6 +312,95 @@ test.describe('Instructor issues page', () => {
       await modal.getByRole('button', { name: 'Cancel' }).click();
       await expect(modal).not.toBeVisible();
       await expect(page.getByTestId('issue-list-item')).toHaveCount(countBefore);
+    });
+  });
+
+  test.describe('Deleted assessment', () => {
+    test('shows deleted assessment badge with label for soft-deleted assessments', async ({
+      page,
+      course,
+      courseInstance,
+    }) => {
+      const user = await getOrCreateUser(TEST_USER);
+      const addNumbersQuestion = await selectQuestionByQid({
+        qid: 'addNumbers',
+        course_id: course.id,
+      });
+
+      const assessment = await selectAssessmentByTid({
+        course_instance_id: courseInstance.id,
+        tid: 'exam1-automaticTestSuite',
+      });
+
+      const variantId = await insertTestVariant({
+        questionId: addNumbersQuestion.id,
+        courseId: course.id,
+        authnUserId: user.id,
+        userId: user.id,
+      });
+
+      const issueId = await insertIssue({
+        variantId,
+        studentMessage: 'Issue on deleted assessment',
+        instructorMessage: 'test issue for deleted assessment',
+        manuallyReported: true,
+        courseCaused: true,
+        courseData: {},
+        systemData: {},
+        userId: user.id,
+        authnUserId: user.id,
+      });
+
+      await setIssueAssessment(issueId, assessment.id);
+      await updateAssessmentDeletedAt(assessment.id, new Date());
+
+      await page.goto(issuesUrl);
+
+      await expect(page.getByText('E1 (deleted)').first()).toBeVisible();
+    });
+
+    test('falls back to tid when assessment set is missing', async ({
+      page,
+      course,
+      courseInstance,
+    }) => {
+      const user = await getOrCreateUser(TEST_USER);
+      const addNumbersQuestion = await selectQuestionByQid({
+        qid: 'addNumbers',
+        course_id: course.id,
+      });
+
+      const assessment = await selectAssessmentByTid({
+        course_instance_id: courseInstance.id,
+        tid: 'exam2-miscProblems',
+      });
+
+      const variantId = await insertTestVariant({
+        questionId: addNumbersQuestion.id,
+        courseId: course.id,
+        authnUserId: user.id,
+        userId: user.id,
+      });
+
+      const issueId = await insertIssue({
+        variantId,
+        studentMessage: 'Issue on assessment without set',
+        instructorMessage: 'test issue for assessment without set',
+        manuallyReported: true,
+        courseCaused: true,
+        courseData: {},
+        systemData: {},
+        userId: user.id,
+        authnUserId: user.id,
+      });
+
+      await setIssueAssessment(issueId, assessment.id);
+      await updateAssessmentDeletedAt(assessment.id, new Date());
+      await updateAssessmentSetId(assessment.id, null);
+
+      await page.goto(issuesUrl);
+
+      await expect(page.getByText('exam2-miscProblems (deleted)').first()).toBeVisible();
     });
   });
 });
