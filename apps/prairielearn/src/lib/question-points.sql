@@ -24,6 +24,8 @@ WITH
       current_value = $current_value,
       points_list = $points_list::double precision[],
       variants_points_list = $variants_points_list::double precision[],
+      requires_manual_grading = iq.requires_manual_grading
+      AND $has_manual_points::boolean,
       number_attempts = iq.number_attempts + 1
     WHERE
       iq.id = $instance_question_id

@@ -27,6 +27,7 @@ INSERT INTO
     assessment_instance_id,
     assessment_question_id,
     requires_manual_grading,
+    manual_points,
     status
   )
 VALUES
@@ -34,6 +35,7 @@ VALUES
     $assessment_instance_id,
     $assessment_question_id,
     $requires_manual_grading,
+    0,
     'saved' -- Must not be the default 'unanswered' status
   )
 RETURNING

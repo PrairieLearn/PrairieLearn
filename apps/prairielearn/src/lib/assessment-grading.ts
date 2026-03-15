@@ -23,6 +23,16 @@ const AssessmentInstanceZonePointsSchema = z.object({
 });
 type AssessmentInstanceZonePoints = z.infer<typeof AssessmentInstanceZonePointsSchema>;
 
+export async function updateAssessmentInstancesScorePercPending(
+  assessment_instance_ids: string[],
+): Promise<void> {
+  if (assessment_instance_ids.length === 0) return;
+
+  await execute(sql.update_assessment_instances_score_perc_pending, {
+    assessment_instance_ids,
+  });
+}
+
 export async function updateAssessmentInstanceGrade({
   assessment_instance_id,
   authn_user_id,
@@ -30,6 +40,7 @@ export async function updateAssessmentInstanceGrade({
   onlyLogIfScoreUpdated = false,
   allowDecrease = false,
   precomputedPointsByZone,
+  recomputePending = true,
 }: {
   assessment_instance_id: string;
   authn_user_id: string | null;
@@ -37,6 +48,7 @@ export async function updateAssessmentInstanceGrade({
   onlyLogIfScoreUpdated?: boolean;
   allowDecrease?: boolean;
   precomputedPointsByZone?: AssessmentInstanceZonePoints[];
+  recomputePending?: boolean;
 }): Promise<{ updated: boolean; points: number; score_perc: number }> {
   return await runInTransactionAsync(async () => {
     const assessmentInstance = await queryRow(
@@ -82,6 +94,10 @@ export async function updateAssessmentInstanceGrade({
     }
     if (!allowDecrease) {
       score_perc = Math.max(score_perc, assessmentInstance.score_perc ?? 0);
+    }
+
+    if (recomputePending) {
+      await updateAssessmentInstancesScorePercPending([assessment_instance_id]);
     }
 
     const updated =

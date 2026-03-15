@@ -13,6 +13,7 @@ import { computeNextAllowedGradingTimeMs } from '../models/instance-question.js'
 import { lockVariant } from '../models/variant.js';
 import * as questionServers from '../question-servers/index.js';
 
+import { updateAssessmentInstancesScorePercPending } from './assessment-grading.js';
 import { ensureChunksForCourseAsync } from './chunks.js';
 import {
   AssessmentQuestionSchema,
@@ -52,6 +53,11 @@ const VariantForSubmissionSchema = VariantSchema.extend({
   assessment_instance_open: z.boolean().nullable(),
 });
 
+const UpdatedInstanceQuestionPostSubmissionSchema = InstanceQuestionSchema.extend({
+  newly_requires_manual_grading: z.boolean(),
+  pending_state_changed: z.boolean(),
+});
+
 type SubmissionDataForSaving = Pick<Submission, 'variant_id' | 'auth_user_id'> &
   Pick<Partial<Submission>, 'credit' | 'mode' | 'client_fingerprint_id'> & {
     submitted_answer: NonNullable<Submission['submitted_answer']>;
@@ -73,6 +79,7 @@ async function insertSubmission({
   user_id,
   auth_user_id,
   client_fingerprint_id,
+  recomputePendingAfterSubmission = true,
 }: {
   submitted_answer: Record<string, any> | null;
   raw_submitted_answer: Record<string, any> | null;
@@ -88,6 +95,7 @@ async function insertSubmission({
   user_id: string;
   auth_user_id: string | null;
   client_fingerprint_id?: string | null;
+  recomputePendingAfterSubmission?: boolean;
 }): Promise<{ submission_id: string; variant: Variant }> {
   return await sqldb.runInTransactionAsync(async () => {
     await lockVariant({ variant_id });
@@ -156,7 +164,7 @@ async function insertSubmission({
     await updateCourseInstanceUsagesForSubmission({ submission_id, user_id });
 
     if (variant.instance_question_id != null) {
-      const instanceQuestion = await sqldb.queryRow(
+      const updatedInstanceQuestion = await sqldb.queryRow(
         sql.update_instance_question_post_submission,
         {
           instance_question_id: variant.instance_question_id,
@@ -165,9 +173,17 @@ async function insertSubmission({
           status: gradable ? 'saved' : 'invalid',
           requires_manual_grading: (variant.max_manual_points ?? 0) > 0,
         },
-        InstanceQuestionSchema,
+        UpdatedInstanceQuestionPostSubmissionSchema,
       );
-      await updateInstanceQuestionStats({ instanceQuestion });
+      await updateInstanceQuestionStats({ instanceQuestion: updatedInstanceQuestion });
+
+      if (
+        recomputePendingAfterSubmission &&
+        variant.assessment_instance_id != null &&
+        updatedInstanceQuestion.pending_state_changed
+      ) {
+        await updateAssessmentInstancesScorePercPending([variant.assessment_instance_id]);
+      }
     }
 
     return { submission_id, variant };
@@ -188,6 +204,7 @@ export async function saveSubmission(
   variant: Variant,
   question: Question,
   variant_course: Course,
+  recomputePendingAfterSubmission = true,
 ): Promise<{ submission_id: string; variant: Variant }> {
   const submission: Partial<Submission> & SubmissionDataForSaving = {
     ...submissionData,
@@ -267,6 +284,7 @@ export async function saveSubmission(
     ...data,
     gradable: !!data.gradable && !hasFatalIssue,
     broken: hasFatalIssue,
+    recomputePendingAfterSubmission,
   });
 }
 
@@ -363,6 +381,7 @@ export async function gradeVariant({
   authn_user_id,
   ignoreGradeRateLimit,
   ignoreRealTimeGradingDisabled,
+  recomputePendingOnInsertJob = true,
 }: {
   variant: Variant;
   check_submission_id: string | null;
@@ -372,7 +391,8 @@ export async function gradeVariant({
   authn_user_id: string | null;
   ignoreGradeRateLimit: boolean;
   ignoreRealTimeGradingDisabled: boolean;
-}): Promise<void> {
+  recomputePendingOnInsertJob?: boolean;
+}): Promise<boolean> {
   const question_course = await getQuestionCourse(question, variant_course);
 
   const submission = await selectSubmissionForGrading(
@@ -380,16 +400,20 @@ export async function gradeVariant({
     check_submission_id,
     ignoreRealTimeGradingDisabled,
   );
-  if (submission == null) return;
+  if (submission == null) return false;
 
   if (!ignoreGradeRateLimit && variant.instance_question_id != null) {
     const nextGradingAllowedMs = await computeNextAllowedGradingTimeMs({
       instanceQuestionId: variant.instance_question_id,
     });
-    if (nextGradingAllowedMs > 0) return;
+    if (nextGradingAllowedMs > 0) return false;
   }
 
-  const grading_job = await insertGradingJob({ submission_id: submission.id, authn_user_id });
+  const grading_job = await insertGradingJob({
+    submission_id: submission.id,
+    authn_user_id,
+    recomputePending: recomputePendingOnInsertJob,
+  });
 
   if (question.grading_method === 'External') {
     // For external grading we just need to trigger the grading job to start.
@@ -409,6 +433,7 @@ export async function gradeVariant({
       { type: 'elementExtensions' },
     ]);
     await externalGrader.beginGradingJob(grading_job.id);
+    return recomputePendingOnInsertJob;
   } else {
     // For Internal grading we call the grading code. For Manual grading, if the question
     // reached this point, it has auto points, so it should be treated like Internal.
@@ -452,7 +477,7 @@ export async function gradeVariant({
     // If the submission was marked invalid during grading the grading
     // job will be marked ungradable and we should bail here to prevent
     // LTI updates.
-    if (!grading_job_post_update.gradable) return;
+    if (!grading_job_post_update.gradable) return recomputePendingOnInsertJob;
 
     const assessment_instance_id = await sqldb.queryOptionalScalar(
       sql.select_assessment_for_submission,
@@ -462,6 +487,7 @@ export async function gradeVariant({
     if (assessment_instance_id != null) {
       await ltiOutcomes.updateScore(assessment_instance_id);
     }
+    return true;
   }
 }
 
@@ -489,22 +515,45 @@ export async function saveAndGradeSubmission(
     variant,
     question,
     course,
+    false,
   );
 
-  await gradeVariant({
-    // Note that parsing a submission may modify the `params` and `true_answer`
-    // of the variant (for v3 questions, this is `data["params"]` and
-    // `data["correct_answers"])`. This is why we need to use the variant
-    // returned from `saveSubmission` rather than the one passed to this
-    // function.
-    variant: updated_variant,
-    check_submission_id: submission_id,
-    question,
-    variant_course: course,
-    user_id: submissionData.user_id,
-    authn_user_id: submissionData.auth_user_id,
-    ignoreGradeRateLimit,
-    ignoreRealTimeGradingDisabled,
-  });
+  const recomputePendingForSubmission = async () => {
+    const assessment_instance_id = await sqldb.queryOptionalRow(
+      sql.select_assessment_for_submission,
+      { submission_id },
+      IdSchema.nullable(),
+    );
+    if (assessment_instance_id != null) {
+      await updateAssessmentInstancesScorePercPending([assessment_instance_id]);
+    }
+  };
+
+  let pendingRecomputeHandled = false;
+  try {
+    pendingRecomputeHandled = await gradeVariant({
+      // Note that parsing a submission may modify the `params` and `true_answer`
+      // of the variant (for v3 questions, this is `data["params"]` and
+      // `data["correct_answers"])`. This is why we need to use the variant
+      // returned from `saveSubmission` rather than the one passed to this
+      // function.
+      variant: updated_variant,
+      check_submission_id: submission_id,
+      question,
+      variant_course: course,
+      user_id: submissionData.user_id,
+      authn_user_id: submissionData.auth_user_id,
+      ignoreGradeRateLimit,
+      ignoreRealTimeGradingDisabled,
+      recomputePendingOnInsertJob: question.grading_method === 'External',
+    });
+  } catch (error) {
+    await recomputePendingForSubmission();
+    throw error;
+  }
+
+  if (!pendingRecomputeHandled) {
+    await recomputePendingForSubmission();
+  }
   return submission_id;
 }

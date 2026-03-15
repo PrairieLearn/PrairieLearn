@@ -1,5 +1,7 @@
-import { execute, loadSqlEquiv, queryRows } from '@prairielearn/postgres';
+import { execute, loadSqlEquiv, queryRows, runInTransactionAsync } from '@prairielearn/postgres';
+import { IdSchema } from '@prairielearn/zod';
 
+import { updateAssessmentInstancesScorePercPending } from '../../../lib/assessment-grading.js';
 import type { Assessment, AssessmentQuestion } from '../../../lib/db-types.js';
 
 import { InstanceQuestionRowSchema } from './assessmentQuestion.types.js';
@@ -38,12 +40,32 @@ export async function updateInstanceQuestions({
   update_assigned_grader: boolean;
   assigned_grader: string | null;
 }) {
-  await execute(sql.update_instance_questions, {
+  const params = {
     assessment_question_id: assessment_question.id,
     instance_question_ids,
     update_requires_manual_grading,
     requires_manual_grading,
     update_assigned_grader,
     assigned_grader,
+  };
+
+  if (!update_requires_manual_grading) {
+    if (update_assigned_grader) {
+      await execute(sql.update_instance_questions_assigned_grader, {
+        assessment_question_id: assessment_question.id,
+        instance_question_ids,
+        assigned_grader,
+      });
+    }
+    return;
+  }
+
+  await runInTransactionAsync(async () => {
+    const assessmentInstanceIds = await queryRows(
+      sql.update_instance_questions_returning_assessment_instance_id,
+      params,
+      IdSchema,
+    );
+    await updateAssessmentInstancesScorePercPending(Array.from(new Set(assessmentInstanceIds)));
   });
 }

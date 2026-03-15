@@ -28,15 +28,50 @@ LIMIT
   1;
 
 -- BLOCK update_assigned_grader
-UPDATE instance_questions AS iq
-SET
-  requires_manual_grading = $requires_manual_grading::boolean,
-  assigned_grader = CASE
-    WHEN $requires_manual_grading::boolean THEN $assigned_grader::bigint
-    ELSE assigned_grader
-  END
-WHERE
-  iq.id = $instance_question_id;
+WITH
+  locked_assessment_instance AS (
+    SELECT
+      ai.id
+    FROM
+      assessment_instances AS ai
+      JOIN instance_questions AS iq ON (iq.assessment_instance_id = ai.id)
+    WHERE
+      iq.id = $instance_question_id
+    FOR NO KEY UPDATE OF
+      ai
+  ),
+  updated_instance_question AS (
+    UPDATE instance_questions AS iq
+    SET
+      requires_manual_grading = $requires_manual_grading::boolean,
+      assigned_grader = CASE
+        WHEN $requires_manual_grading::boolean THEN $assigned_grader::bigint
+        ELSE assigned_grader
+      END
+    WHERE
+      iq.id = $instance_question_id
+      AND EXISTS (
+        SELECT
+          1
+        FROM
+          locked_assessment_instance AS lai
+        WHERE
+          lai.id = iq.assessment_instance_id
+      )
+      AND (
+        iq.requires_manual_grading IS DISTINCT FROM $requires_manual_grading::boolean
+        OR (
+          $requires_manual_grading::boolean
+          AND iq.assigned_grader IS DISTINCT FROM $assigned_grader::bigint
+        )
+      )
+    RETURNING
+      iq.assessment_instance_id
+  )
+SELECT
+  uiq.assessment_instance_id
+FROM
+  updated_instance_question AS uiq;
 
 -- BLOCK close_issues_for_instance_question
 WITH

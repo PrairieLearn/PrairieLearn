@@ -826,11 +826,20 @@ FOR NO KEY UPDATE OF
 
 -- BLOCK update_assessment_instance_score
 WITH
+  cleared_instance_questions AS (
+    UPDATE instance_questions AS iq
+    SET
+      requires_manual_grading = FALSE
+    WHERE
+      iq.assessment_instance_id = $assessment_instance_id
+      AND iq.requires_manual_grading = TRUE
+  ),
   updated_assessment_instances AS (
     UPDATE assessment_instances AS ai
     SET
       points = $points,
       score_perc = $score_perc,
+      score_perc_pending = 0,
       modified_at = now()
     WHERE
       ai.id = $assessment_instance_id
@@ -843,14 +852,16 @@ INSERT INTO
     auth_user_id,
     max_points,
     points,
-    score_perc
+    score_perc,
+    score_perc_pending
   )
 SELECT
   ai.id,
   $authn_user_id,
   ai.max_points,
   ai.points,
-  ai.score_perc
+  ai.score_perc,
+  ai.score_perc_pending
 FROM
   updated_assessment_instances AS ai;
 
