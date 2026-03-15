@@ -502,14 +502,12 @@ router.get(
       return;
     }
 
-    const [students, studentLabels] = await Promise.all([
-      queryRows(
-        sql.select_users_and_enrollments_for_course_instance,
-        { course_instance_id: courseInstance.id },
-        StudentRowSchema,
-      ),
-      selectStudentLabelsInCourseInstance(courseInstance),
-    ]);
+    const students = await queryRows(
+      sql.select_users_and_enrollments_for_course_instance,
+      { course_instance_id: courseInstance.id },
+      StudentRowSchema,
+    );
+    const studentLabels = await selectStudentLabelsInCourseInstance(courseInstance);
 
     const host = getCanonicalHost(req);
     const selfEnrollLink = new URL(

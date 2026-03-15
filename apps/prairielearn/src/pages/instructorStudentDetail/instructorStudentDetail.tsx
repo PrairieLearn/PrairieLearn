@@ -70,24 +70,21 @@ router.get(
       throw new HttpStatusError(404, 'Student not found');
     }
 
-    const [gradebookRows, studentLabels, availableStudentLabels, rawAllAuditEvents] =
-      await Promise.all([
-        student.user?.id
-          ? getGradebookRows({
-              course_instance_id: courseInstance.id,
-              user_id: student.user.id,
-              authz_data: res.locals.authz_data,
-              req_date: res.locals.req_date,
-              auth: 'instructor',
-            })
-          : [],
-        selectStudentLabelsForEnrollment(student.enrollment),
-        selectStudentLabelsInCourseInstance(courseInstance),
-        selectAuditEventsByEnrollmentId({
-          enrollment_id: req.params.enrollment_id,
-          table_names: ['enrollments', 'student_label_enrollments'],
-        }),
-      ]);
+    const gradebookRows = student.user?.id
+      ? await getGradebookRows({
+          course_instance_id: courseInstance.id,
+          user_id: student.user.id,
+          authz_data: res.locals.authz_data,
+          req_date: res.locals.req_date,
+          auth: 'instructor',
+        })
+      : [];
+    const studentLabels = await selectStudentLabelsForEnrollment(student.enrollment);
+    const availableStudentLabels = await selectStudentLabelsInCourseInstance(courseInstance);
+    const rawAllAuditEvents = await selectAuditEventsByEnrollmentId({
+      enrollment_id: req.params.enrollment_id,
+      table_names: ['enrollments', 'student_label_enrollments'],
+    });
 
     const rawEnrollmentAuditEvents = rawAllAuditEvents.filter(
       (e) => e.table_name === 'enrollments',
