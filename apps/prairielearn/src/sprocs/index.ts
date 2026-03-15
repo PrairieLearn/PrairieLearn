@@ -36,7 +36,6 @@ export async function init() {
       'admin_assessment_question_number.sql',
       'authz_course.sql',
       'authz_course_instance.sql',
-      'ip_to_mode.sql',
       'users_select_or_insert.sql',
       'users_select_or_insert_lti.sql',
       'users_is_instructor_in_course_instance.sql',

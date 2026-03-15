@@ -175,12 +175,6 @@ export const SprocAuthzCourseSchema = z.object({
 });
 export type SprocAuthzCourse = z.infer<typeof SprocAuthzCourseSchema>;
 
-// Result of ip_to_mode sproc
-export const SprocIpToModeSchema = z.object({
-  mode: EnumModeSchema,
-});
-export type SprocIpToMode = z.infer<typeof SprocIpToModeSchema>;
-
 // Result of users_is_instructor_in_course_instance sproc
 export const SprocUsersIsInstructorInCourseInstanceSchema = z.object({
   is_instructor: z.boolean(),
