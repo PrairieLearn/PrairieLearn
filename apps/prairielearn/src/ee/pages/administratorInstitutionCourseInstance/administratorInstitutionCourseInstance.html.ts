@@ -47,7 +47,7 @@ export function AdministratorInstitutionCourseInstance({
             </a>
           </li>
           <li class="breadcrumb-item active" aria-current="page">
-            ${course_instance.short_name ?? '—'}: ${course_instance.long_name ?? '—'}
+            ${course_instance.short_name}: ${course_instance.long_name ?? '—'}
           </li>
         </ol>
       </nav>

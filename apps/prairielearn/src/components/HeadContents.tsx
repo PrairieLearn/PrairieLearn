@@ -123,7 +123,7 @@ function getTitle({ resLocals, pageTitle, pageNote }: TitleOptions) {
   // If page is associated with a particular course,
   // always display the short name, e.g. QA 101
   if (course != null) {
-    let courseName = course.short_name ?? '';
+    let courseName = course.short_name;
     // If an instructor is viewing, always display the
     // short course instance name, e.g. fa19
     if (navbarType === 'instructor' && course_instance != null) {

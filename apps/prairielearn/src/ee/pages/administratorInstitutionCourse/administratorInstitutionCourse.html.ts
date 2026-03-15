@@ -143,8 +143,7 @@ export function AdministratorInstitutionCourse({
                     <div class="d-flex align-items-center">
                       <a
                         href="/pl/administrator/institution/${institution.id}/course_instance/${course_instance.id}"
-                        >${course_instance.short_name ?? '—'}:
-                        ${course_instance.long_name ?? '—'}</a
+                        >${course_instance.short_name}: ${course_instance.long_name ?? '—'}</a
                       >
                       ${isDeleted
                         ? html`<span class="badge text-bg-danger ms-2">Deleted</span>`
