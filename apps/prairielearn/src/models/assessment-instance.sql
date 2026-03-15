@@ -1,3 +1,15 @@
+-- BLOCK select_and_lock_assessment_instance
+SELECT
+  to_jsonb(ai.*) AS assessment_instance,
+  to_jsonb(a.*) AS assessment
+FROM
+  assessment_instances AS ai
+  JOIN assessments AS a ON (a.id = ai.assessment_id)
+WHERE
+  ai.id = $assessment_instance_id
+FOR NO KEY UPDATE OF
+  ai;
+
 -- BLOCK select_assessment_instance_by_id
 SELECT
   *

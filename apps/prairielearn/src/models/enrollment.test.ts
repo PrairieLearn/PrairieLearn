@@ -4,6 +4,7 @@ import { queryRow } from '@prairielearn/postgres';
 
 import { dangerousFullSystemAuthz } from '../lib/authz-data-lib.js';
 import {
+  type Course,
   type CourseInstance,
   type Enrollment,
   EnrollmentSchema,
@@ -15,6 +16,11 @@ import * as helperDb from '../tests/helperDb.js';
 import { getOrCreateUser } from '../tests/utils/auth.js';
 
 import { selectCourseInstanceById } from './course-instances.js';
+import {
+  insertCourseInstancePermissions,
+  insertCoursePermissionsByUserUid,
+} from './course-permissions.js';
+import { selectCourseById } from './course.js';
 import {
   ensureUncheckedEnrollment,
   selectOptionalEnrollmentByPendingUid,
@@ -468,5 +474,189 @@ describe('DB validation of enrollment', () => {
         // Expected to fail due to constraint violation
       }
     }
+  });
+});
+
+describe('staff permissions enrollment updates', () => {
+  let course: Course;
+  let courseInstance: CourseInstance;
+
+  beforeEach(async function () {
+    await helperDb.before();
+    await helperCourse.syncCourse(EXAMPLE_COURSE_PATH);
+    courseInstance = await selectCourseInstanceById('1');
+    course = await selectCourseById(courseInstance.course_id);
+  });
+
+  afterEach(async function () {
+    await helperDb.after();
+  });
+
+  async function createEnrolledUser(uid: string) {
+    const user = await getOrCreateUser({ uid, name: uid, uin: uid, email: uid });
+    await ensureUncheckedEnrollment({
+      courseInstance,
+      userId: user.id,
+      requiredRole: ['System'],
+      authzData: dangerousFullSystemAuthz(),
+      actionDetail: 'explicit_joined',
+    });
+    return user;
+  }
+
+  async function getEnrollmentStatus(userId: string) {
+    const enrollment = await selectOptionalEnrollmentByUserId({
+      courseInstance,
+      userId,
+      requiredRole: ['System'],
+      authzData: dangerousFullSystemAuthz(),
+    });
+    assert.isNotNull(enrollment);
+    return enrollment.status;
+  }
+
+  it('sets enrollment to removed when granting course-level staff permissions', async () => {
+    const user = await createEnrolledUser('student1@test.com');
+    assert.equal(await getEnrollmentStatus(user.id), 'joined');
+
+    await insertCoursePermissionsByUserUid({
+      course_id: course.id,
+      uid: user.uid,
+      course_role: 'Viewer',
+      authn_user_id: user.id,
+    });
+
+    assert.equal(await getEnrollmentStatus(user.id), 'removed');
+  });
+
+  it('sets enrollment to removed when granting course instance-level staff permissions', async () => {
+    const user = await createEnrolledUser('student2@test.com');
+    assert.equal(await getEnrollmentStatus(user.id), 'joined');
+
+    await insertCourseInstancePermissions({
+      course_id: course.id,
+      course_instance_id: courseInstance.id,
+      user_id: user.id,
+      course_instance_role: 'Student Data Viewer',
+      authn_user_id: user.id,
+    });
+
+    assert.equal(await getEnrollmentStatus(user.id), 'removed');
+  });
+
+  it('does not change enrollment when granting None role', async () => {
+    const user = await createEnrolledUser('student3@test.com');
+
+    await insertCoursePermissionsByUserUid({
+      course_id: course.id,
+      uid: user.uid,
+      course_role: 'None',
+      authn_user_id: user.id,
+    });
+
+    assert.equal(await getEnrollmentStatus(user.id), 'joined');
+  });
+
+  it('sets blocked enrollment to removed when granting staff permissions', async () => {
+    const user = await getOrCreateUser({
+      uid: 'blocked-staff@test.com',
+      name: 'blocked-staff@test.com',
+      uin: 'blocked-staff@test.com',
+      email: 'blocked-staff@test.com',
+    });
+    await createEnrollmentWithStatus({
+      userId: user.id,
+      courseInstance,
+      status: 'blocked',
+      firstJoinedAt: new Date(),
+    });
+    assert.equal(await getEnrollmentStatus(user.id), 'blocked');
+
+    await insertCoursePermissionsByUserUid({
+      course_id: course.id,
+      uid: user.uid,
+      course_role: 'Viewer',
+      authn_user_id: user.id,
+    });
+
+    assert.equal(await getEnrollmentStatus(user.id), 'removed');
+  });
+
+  it('hard deletes invited enrollment when granting staff permissions', async () => {
+    const user = await getOrCreateUser({
+      uid: 'invited-staff@test.com',
+      name: 'invited-staff@test.com',
+      uin: 'invited-staff@test.com',
+      email: 'invited-staff@test.com',
+    });
+    await createEnrollmentWithStatus({
+      userId: null,
+      courseInstance,
+      status: 'invited',
+      pendingUid: user.uid,
+    });
+
+    const initialEnrollment = await selectOptionalEnrollmentByPendingUid({
+      pendingUid: user.uid,
+      courseInstance,
+      requiredRole: ['System'],
+      authzData: dangerousFullSystemAuthz(),
+    });
+    assert.isNotNull(initialEnrollment);
+    assert.equal(initialEnrollment.status, 'invited');
+
+    await insertCoursePermissionsByUserUid({
+      course_id: course.id,
+      uid: user.uid,
+      course_role: 'Viewer',
+      authn_user_id: user.id,
+    });
+
+    const enrollment = await selectOptionalEnrollmentByPendingUid({
+      pendingUid: user.uid,
+      courseInstance,
+      requiredRole: ['System'],
+      authzData: dangerousFullSystemAuthz(),
+    });
+    assert.isNull(enrollment);
+  });
+
+  it('hard deletes rejected enrollment when granting staff permissions', async () => {
+    const user = await getOrCreateUser({
+      uid: 'rejected-staff@test.com',
+      name: 'rejected-staff@test.com',
+      uin: 'rejected-staff@test.com',
+      email: 'rejected-staff@test.com',
+    });
+    await createEnrollmentWithStatus({
+      userId: null,
+      courseInstance,
+      status: 'rejected',
+      pendingUid: user.uid,
+    });
+
+    const initialEnrollment = await selectOptionalEnrollmentByPendingUid({
+      pendingUid: user.uid,
+      courseInstance,
+      requiredRole: ['System'],
+      authzData: dangerousFullSystemAuthz(),
+    });
+    assert.isNotNull(initialEnrollment);
+    assert.equal(initialEnrollment.status, 'rejected');
+
+    await insertCoursePermissionsByUserUid({
+      course_id: course.id,
+      uid: user.uid,
+      course_role: 'Viewer',
+      authn_user_id: user.id,
+    });
+
+    const enrollment = await selectOptionalEnrollmentByPendingUid({
+      pendingUid: user.uid,
+      courseInstance,
+      requiredRole: ['System'],
+      authzData: dangerousFullSystemAuthz(),
+    });
+    assert.isNull(enrollment);
   });
 });
