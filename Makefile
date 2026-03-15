@@ -204,6 +204,10 @@ format-d2:
 lint-d2:
 	@d2 fmt --check docs/**/*.d2
 
+build-docker:
+	@docker build -t prairielearn/prairielearn .
+dev-docker:
+	@docker run -it --rm -p 3000:3000 -w /PrairieLearn -v .:/PrairieLearn prairielearn/prairielearn /bin/bash
 
 dangerous-drop-all-dbs:
 	@echo "Dropping all databases matching 'prairielearn_%'..."
