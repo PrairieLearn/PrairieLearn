@@ -164,7 +164,7 @@ describe('Instructor student labels page', () => {
       assert.fail('Expected error for duplicate name');
     } catch (err) {
       assert.instanceOf(err, TRPCClientError);
-      assert.include((err as TRPCClientError<CourseInstanceRouter>).message, 'already exists');
+      assert.include((err as TRPCClientError<CourseInstanceRouter>).message, 'LABEL_NAME_TAKEN');
     }
 
     // Attempt to create label with empty name - should fail
@@ -280,7 +280,7 @@ describe('Instructor student labels page', () => {
       assert.fail('Expected error for duplicate name');
     } catch (err) {
       assert.instanceOf(err, TRPCClientError);
-      assert.include((err as TRPCClientError<CourseInstanceRouter>).message, 'already exists');
+      assert.include((err as TRPCClientError<CourseInstanceRouter>).message, 'LABEL_NAME_TAKEN');
     }
   });
 

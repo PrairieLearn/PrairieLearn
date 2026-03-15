@@ -29,7 +29,7 @@ import { getStudentLabelsWithUserData } from '../../pages/instructorStudentsLabe
 import { ColorJsonSchema } from '../../schemas/infoCourse.js';
 import { type CourseInstanceJsonInput } from '../../schemas/infoCourseInstance.js';
 
-import { throwAppError } from './app-errors.js';
+import { type StudentLabelErrors, throwAppError } from './app-errors.js';
 import {
   type createContext,
   requireCourseInstancePermissionEdit,
@@ -37,13 +37,6 @@ import {
   selectStudentLabelByIdOrNotFound,
   t,
 } from './init.js';
-
-export interface StudentLabelErrors {
-  upsert:
-    | { code: 'LABEL_NAME_TAKEN'; name: string }
-    | { code: 'SYNC_JOB_FAILED'; jobSequenceId: string };
-  destroy: { code: 'SYNC_JOB_FAILED'; jobSequenceId: string };
-}
 
 function getCourseInstanceContainer(coursePath: string, shortName: string) {
   const rootPath = path.join(coursePath, 'courseInstances', shortName);

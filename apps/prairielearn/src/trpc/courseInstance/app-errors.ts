@@ -1,8 +1,6 @@
 import { TRPCError } from '@trpc/server';
 import type { TRPC_ERROR_CODE_KEY } from '@trpc/server/unstable-core-do-not-import';
 
-import type { StudentLabelErrors } from './student-labels.js';
-
 /**
  * Typed application-level errors for tRPC procedures.
  *
@@ -10,6 +8,14 @@ import type { StudentLabelErrors } from './student-labels.js';
  * This module works around that by attaching discriminated error metadata via
  * the error formatter, so the client can narrow on `appError.code` per procedure.
  */
+
+export interface StudentLabelErrors {
+  upsert:
+    | { code: 'LABEL_NAME_TAKEN'; name: string }
+    | { code: 'SYNC_JOB_FAILED'; jobSequenceId: string };
+  destroy: { code: 'SYNC_JOB_FAILED'; jobSequenceId: string };
+}
+
 export interface CourseInstanceErrorMap {
   studentLabels: StudentLabelErrors;
 }
