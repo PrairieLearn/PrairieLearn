@@ -4129,66 +4129,66 @@ __metadata:
   languageName: node
   linkType: hard
 
-"@postgres-language-server/cli-aarch64-apple-darwin@npm:0.21.0":
-  version: 0.21.0
-  resolution: "@postgres-language-server/cli-aarch64-apple-darwin@npm:0.21.0"
+"@postgres-language-server/cli-aarch64-apple-darwin@npm:0.22.0":
+  version: 0.22.0
+  resolution: "@postgres-language-server/cli-aarch64-apple-darwin@npm:0.22.0"
   conditions: os=darwin & cpu=arm64
   languageName: node
   linkType: hard
 
-"@postgres-language-server/cli-aarch64-linux-gnu@npm:0.21.0":
-  version: 0.21.0
-  resolution: "@postgres-language-server/cli-aarch64-linux-gnu@npm:0.21.0"
+"@postgres-language-server/cli-aarch64-linux-gnu@npm:0.22.0":
+  version: 0.22.0
+  resolution: "@postgres-language-server/cli-aarch64-linux-gnu@npm:0.22.0"
   conditions: os=linux & cpu=arm64
   languageName: node
   linkType: hard
 
-"@postgres-language-server/cli-aarch64-windows-msvc@npm:0.21.0":
-  version: 0.21.0
-  resolution: "@postgres-language-server/cli-aarch64-windows-msvc@npm:0.21.0"
+"@postgres-language-server/cli-aarch64-windows-msvc@npm:0.22.0":
+  version: 0.22.0
+  resolution: "@postgres-language-server/cli-aarch64-windows-msvc@npm:0.22.0"
   conditions: os=win32 & cpu=arm64
   languageName: node
   linkType: hard
 
-"@postgres-language-server/cli-x86_64-apple-darwin@npm:0.21.0":
-  version: 0.21.0
-  resolution: "@postgres-language-server/cli-x86_64-apple-darwin@npm:0.21.0"
+"@postgres-language-server/cli-x86_64-apple-darwin@npm:0.22.0":
+  version: 0.22.0
+  resolution: "@postgres-language-server/cli-x86_64-apple-darwin@npm:0.22.0"
   conditions: os=darwin & cpu=x64
   languageName: node
   linkType: hard
 
-"@postgres-language-server/cli-x86_64-linux-gnu@npm:0.21.0":
-  version: 0.21.0
-  resolution: "@postgres-language-server/cli-x86_64-linux-gnu@npm:0.21.0"
+"@postgres-language-server/cli-x86_64-linux-gnu@npm:0.22.0":
+  version: 0.22.0
+  resolution: "@postgres-language-server/cli-x86_64-linux-gnu@npm:0.22.0"
   conditions: os=linux & cpu=x64
   languageName: node
   linkType: hard
 
-"@postgres-language-server/cli-x86_64-linux-musl@npm:0.21.0":
-  version: 0.21.0
-  resolution: "@postgres-language-server/cli-x86_64-linux-musl@npm:0.21.0"
+"@postgres-language-server/cli-x86_64-linux-musl@npm:0.22.0":
+  version: 0.22.0
+  resolution: "@postgres-language-server/cli-x86_64-linux-musl@npm:0.22.0"
   conditions: os=linux & cpu=x64
   languageName: node
   linkType: hard
 
-"@postgres-language-server/cli-x86_64-windows-msvc@npm:0.21.0":
-  version: 0.21.0
-  resolution: "@postgres-language-server/cli-x86_64-windows-msvc@npm:0.21.0"
+"@postgres-language-server/cli-x86_64-windows-msvc@npm:0.22.0":
+  version: 0.22.0
+  resolution: "@postgres-language-server/cli-x86_64-windows-msvc@npm:0.22.0"
   conditions: os=win32 & cpu=x64
   languageName: node
   linkType: hard
 
-"@postgres-language-server/cli@npm:^0.21.0":
-  version: 0.21.0
-  resolution: "@postgres-language-server/cli@npm:0.21.0"
+"@postgres-language-server/cli@npm:^0.22.0":
+  version: 0.22.0
+  resolution: "@postgres-language-server/cli@npm:0.22.0"
   dependencies:
-    "@postgres-language-server/cli-aarch64-apple-darwin": "npm:0.21.0"
-    "@postgres-language-server/cli-aarch64-linux-gnu": "npm:0.21.0"
-    "@postgres-language-server/cli-aarch64-windows-msvc": "npm:0.21.0"
-    "@postgres-language-server/cli-x86_64-apple-darwin": "npm:0.21.0"
-    "@postgres-language-server/cli-x86_64-linux-gnu": "npm:0.21.0"
-    "@postgres-language-server/cli-x86_64-linux-musl": "npm:0.21.0"
-    "@postgres-language-server/cli-x86_64-windows-msvc": "npm:0.21.0"
+    "@postgres-language-server/cli-aarch64-apple-darwin": "npm:0.22.0"
+    "@postgres-language-server/cli-aarch64-linux-gnu": "npm:0.22.0"
+    "@postgres-language-server/cli-aarch64-windows-msvc": "npm:0.22.0"
+    "@postgres-language-server/cli-x86_64-apple-darwin": "npm:0.22.0"
+    "@postgres-language-server/cli-x86_64-linux-gnu": "npm:0.22.0"
+    "@postgres-language-server/cli-x86_64-linux-musl": "npm:0.22.0"
+    "@postgres-language-server/cli-x86_64-windows-msvc": "npm:0.22.0"
   dependenciesMeta:
     "@postgres-language-server/cli-aarch64-apple-darwin":
       optional: true
@@ -4206,7 +4206,7 @@ __metadata:
       optional: true
   bin:
     postgres-language-server: bin/postgres-language-server
-  checksum: 10c0/5d357a0bfa3e3c5fddbab5d8d4ca4ce1ed0c2c0a4ab2d15e1ea450dc3c9d8fbe358f77b2d569958a3f65249955234b75f6d278e966c1c8610e540ace7c864627
+  checksum: 10c0/72f50fe2711570072a7fb336b4c6466926c1b0ace06d2e82ddb98d2df689a1f7ea6b2a48e22ddc41fa0e7f1fde2b40c0d36a0efbb35bf22c38afbf39394e2a64
   languageName: node
   linkType: hard
 
@@ -18369,7 +18369,7 @@ __metadata:
     "@changesets/cli": "npm:^2.30.0"
     "@html-eslint/eslint-plugin": "npm:^0.58.1"
     "@playwright/test": "npm:^1.58.2"
-    "@postgres-language-server/cli": "npm:^0.21.0"
+    "@postgres-language-server/cli": "npm:^0.22.0"
     "@prairielearn/eslint-config": "workspace:^"
     "@reteps/tree-sitter-htmlmustache": "npm:^0.7.1"
     "@types/tar-stream": "npm:^3.1.4"
