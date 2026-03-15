@@ -1,52 +1,84 @@
 <pl-question-panel>
-<p>
-Construct a correct logic diagram using the image provided below. There are more than one correct answer.
-</p>
-<br>
+  <p>
+    Construct a correct logic diagram using the image provided below. There are more than one
+    correct answer.
+  </p>
+  <br>
 </pl-question-panel>
 
 <pl-hide-in-panel answer="true">
-<div class="mb-3">
-<pl-overlay width="500" clip="false">
-    <pl-background>
-      <div id="logic-diagram">
-        <pl-figure
-        file-name="logic-diagram.png"
-        directory="clientFilesQuestion"
-        alt="A three-input logic diagram. The top line, x, feeds through an arrowhead and into the output F. The middle line, y, feeds through a triangle with a circle on the right, then a semicircle. The bottom line, z, feeds into the semicircle. The semicircle feeds through an arrowhead into the output F."
-        ></pl-figure>
-      </div>
-    </pl-background>
+  <div class="mb-3">
+    <pl-overlay width="500" clip="false">
+      <pl-background>
+        <div id="logic-diagram">
+          <pl-figure
+            file-name="logic-diagram.png"
+            directory="clientFilesQuestion"
+            alt="A three-input logic diagram. The top line, x, feeds through an arrowhead and into the output F. The middle line, y, feeds through a triangle with a circle on the right, then a semicircle. The bottom line, z, feeds into the semicircle. The semicircle feeds through an arrowhead into the output F."
+          ></pl-figure>
+        </div>
+      </pl-background>
       <pl-location left="50" top="15">
-        <pl-multiple-choice display="dropdown" order="ascend" answers-name="x" aria-label="Input x" size="2" hide-letter-keys="true" placeholder="">
+        <pl-multiple-choice
+          display="dropdown"
+          order="ascend"
+          answers-name="x"
+          aria-label="Input x"
+          size="2"
+          hide-letter-keys="true"
+          placeholder=""
+        >
           <pl-answer correct="true">1</pl-answer>
           <pl-answer correct="false">0</pl-answer>
         </pl-multiple-choice>
       </pl-location>
       <pl-location left="50" top="75">
-        <pl-multiple-choice display="dropdown" order="ascend" answers-name="y" aria-label="Input y" size="2" hide-letter-keys="true" placeholder="">
+        <pl-multiple-choice
+          display="dropdown"
+          order="ascend"
+          answers-name="y"
+          aria-label="Input y"
+          size="2"
+          hide-letter-keys="true"
+          placeholder=""
+        >
           <pl-answer correct="true">1</pl-answer>
           <pl-answer correct="false">0</pl-answer>
         </pl-multiple-choice>
       </pl-location>
       <pl-location left="50" top="120">
-        <pl-multiple-choice display="dropdown" order="ascend" answers-name="z" aria-label="Input z" size="2" hide-letter-keys="true" placeholder="">
+        <pl-multiple-choice
+          display="dropdown"
+          order="ascend"
+          answers-name="z"
+          aria-label="Input z"
+          size="2"
+          hide-letter-keys="true"
+          placeholder=""
+        >
           <pl-answer correct="true">1</pl-answer>
           <pl-answer correct="false">0</pl-answer>
         </pl-multiple-choice>
       </pl-location>
       <pl-location left="460" top="72">
-          <pl-multiple-choice display="dropdown" order="ascend" answers-name="F" aria-label="Output F" size="2" hide-letter-keys="true" placeholder="">
-            <pl-answer correct="true">1</pl-answer>
-            <pl-answer correct="false">0</pl-answer>
-          </pl-multiple-choice>
+        <pl-multiple-choice
+          display="dropdown"
+          order="ascend"
+          answers-name="F"
+          aria-label="Output F"
+          size="2"
+          hide-letter-keys="true"
+          placeholder=""
+        >
+          <pl-answer correct="true">1</pl-answer>
+          <pl-answer correct="false">0</pl-answer>
+        </pl-multiple-choice>
       </pl-location>
-</pl-overlay>
-</div>
+    </pl-overlay>
+  </div>
 </pl-hide-in-panel>
 
-
 <pl-submission-panel>
-<br>
+  <br>
   <p>{{feedback.F}}</p>
 </pl-submission-panel>
