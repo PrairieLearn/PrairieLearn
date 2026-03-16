@@ -13,7 +13,7 @@ export async function createAdminContext({ req, res }: CreateExpressContextOptio
   const locals = res.locals as ResLocalsForPage<'plain'>;
   const course_instance = await selectCourseInstanceById(req.params.course_instance_id);
   const course = await selectCourseById(course_instance.course_id);
-  
+
   return {
     course,
     course_instance,

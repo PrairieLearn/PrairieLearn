@@ -505,7 +505,7 @@ export async function insertAiGradingJob({
       course_id,
       course_instance_id,
     },
-    IdSchema
+    IdSchema,
   );
   return result;
 }
@@ -591,7 +591,7 @@ export async function insertAiGradingJobWithRotationCorrection({
       course_id,
       course_instance_id,
     },
-    IdSchema
+    IdSchema,
   );
   return result;
 }
