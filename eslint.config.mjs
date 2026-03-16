@@ -33,8 +33,10 @@ export default [
       allowDbTypes: [
         // This is innocuous, it's just a string enum.
         'SprocUsersGetDisplayedRoleSchema',
-        // This is also just an enum.
+        // The following are just enums.
         'EnumAiQuestionGenerationMessageStatus',
+        'EnumAiGradingProviderSchema',
+        'EnumAiGradingProvider',
       ],
     },
     tsconfigRootDir: path.join(import.meta.dirname, 'apps', 'prairielearn'),

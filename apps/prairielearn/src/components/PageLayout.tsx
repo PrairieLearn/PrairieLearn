@@ -131,6 +131,8 @@ function LegacyPublishingBannerComponent({
       <a
         href="https://docs.prairielearn.com/courseInstance/#migrating-from-allowaccess"
         className="alert-link"
+        target="_blank"
+        rel="noreferrer"
       >
         Migrate to publishing
       </a>{' '}

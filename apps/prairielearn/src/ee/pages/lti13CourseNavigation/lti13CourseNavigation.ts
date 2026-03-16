@@ -59,21 +59,6 @@ async function courseInstancesAllowedToLink({
   return course_instances.filter((ci) => ci.has_course_instance_permission_edit);
 }
 
-async function coursesAllowedToLink({
-  user_id,
-  is_administrator,
-}: {
-  user_id: string;
-  is_administrator: boolean;
-}) {
-  const courses = await selectCoursesWithEditAccess({
-    user_id,
-    is_administrator,
-  });
-
-  return courses.filter((c) => c.permissions_course.has_course_permission_edit);
-}
-
 router.get(
   '/course_instances',
   typedAsyncHandler<'plain'>(async (req, res) => {
@@ -196,7 +181,7 @@ router.get(
       Lti13CourseNavigationInstructor({
         resLocals: res.locals,
         courseName,
-        courses: await coursesAllowedToLink({
+        courses: await selectCoursesWithEditAccess({
           user_id: res.locals.authn_user.id,
           is_administrator: res.locals.is_administrator,
         }),

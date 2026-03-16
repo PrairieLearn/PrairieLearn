@@ -17,15 +17,15 @@
   --color-green1: #8effc1;
   --color-green2: #2ecc71;
   --color-green3: #008c31;
-  --color-yellow1: #fde3a7;
-  --color-yellow2: #f5ab35;
-  --color-yellow3: #d87400;
+  --color-yellow1: #fdeea5;
+  --color-yellow2: #f5ce32;
+  --color-yellow3: #d6a100;
   --color-orange1: #ffdcb5;
   --color-orange2: #ff926b;
   --color-orange3: #c3522b;
-  --color-brown1: #f6c4a3;
-  --color-brown2: #ce9c7b;
-  --color-brown3: #8e5c3b;
+  --color-brown1: #e6bfa8;
+  --color-brown2: #c0957c;
+  --color-brown3: #7d5640;
   --color-gray1: #e0e0e0;
   --color-gray2: #909090;
   --color-gray3: #505050;
@@ -68,360 +68,360 @@
 
 .badge.color-red1 {
   color: #c73000;
-  background-color: #fff0eb;
-  border: 1px solid #ffb9a4;
+  background-color: #ffebe4;
+  border: 1px solid #ffccbc;
 }
 
 .btn.btn-badge.color-red1 {
   --pl-badge-text: #c73000;
-  --pl-badge-bg: #fff0eb;
-  --pl-badge-border: #ffb9a4;
+  --pl-badge-bg: #ffebe4;
+  --pl-badge-border: #ffccbc;
 }
 
 .badge.color-red2 {
   color: #9c0f00;
-  background-color: #ffd3ce;
-  border: 1px solid #ff9387;
+  background-color: #ffc4be;
+  border: 1px solid #ff6c5c;
 }
 
 .btn.btn-badge.color-red2 {
   --pl-badge-text: #9c0f00;
-  --pl-badge-bg: #ffd3ce;
-  --pl-badge-border: #ff9387;
+  --pl-badge-bg: #ffc4be;
+  --pl-badge-border: #ff6c5c;
 }
 
 .badge.color-red3 {
   color: #5a140d;
-  background-color: #f5bbb5;
-  border: 1px solid #ec8176;
+  background-color: #f2aba3;
+  border: 1px solid #c72c1c;
 }
 
 .btn.btn-badge.color-red3 {
   --pl-badge-text: #5a140d;
-  --pl-badge-bg: #f5bbb5;
-  --pl-badge-border: #ec8176;
+  --pl-badge-bg: #f2aba3;
+  --pl-badge-border: #c72c1c;
 }
 
 .badge.color-pink1 {
   color: #c70053;
-  background-color: #ffebf3;
-  border: 1px solid #ffa4ca;
+  background-color: #ffe4ef;
+  border: 1px solid #ffbcd8;
 }
 
 .btn.btn-badge.color-pink1 {
   --pl-badge-text: #c70053;
-  --pl-badge-bg: #ffebf3;
-  --pl-badge-border: #ffa4ca;
+  --pl-badge-bg: #ffe4ef;
+  --pl-badge-border: #ffbcd8;
 }
 
 .badge.color-pink2 {
   color: #95053c;
-  background-color: #fecee0;
-  border: 1px solid #fb89b4;
+  background-color: #fdbed6;
+  border: 1px solid #fa5c98;
 }
 
 .btn.btn-badge.color-pink2 {
   --pl-badge-text: #95053c;
-  --pl-badge-bg: #fecee0;
-  --pl-badge-border: #fb89b4;
+  --pl-badge-bg: #fdbed6;
+  --pl-badge-border: #fa5c98;
 }
 
 .badge.color-pink3 {
   color: #540d28;
-  background-color: #f3b2cb;
-  border: 1px solid #ea74a1;
+  background-color: #f2a8c4;
+  border: 1px solid #ba1c58;
 }
 
 .btn.btn-badge.color-pink3 {
   --pl-badge-text: #540d28;
-  --pl-badge-bg: #f3b2cb;
-  --pl-badge-border: #ea74a1;
+  --pl-badge-bg: #f2a8c4;
+  --pl-badge-border: #ba1c58;
 }
 
 .badge.color-purple1 {
   color: #72437b;
-  background-color: #f4eef6;
-  border: 1px solid #d8c0dd;
+  background-color: #f1e8f3;
+  border: 1px solid #dcc6e0;
 }
 
 .btn.btn-badge.color-purple1 {
   --pl-badge-text: #72437b;
-  --pl-badge-bg: #f4eef6;
-  --pl-badge-border: #d8c0dd;
+  --pl-badge-bg: #f1e8f3;
+  --pl-badge-border: #dcc6e0;
 }
 
 .badge.color-purple2 {
   color: #472555;
-  background-color: #e1cde9;
-  border: 1px solid #c39cd3;
+  background-color: #d7bde2;
+  border: 1px solid #9b59b6;
 }
 
 .btn.btn-badge.color-purple2 {
   --pl-badge-text: #472555;
-  --pl-badge-bg: #e1cde9;
-  --pl-badge-border: #c39cd3;
+  --pl-badge-bg: #d7bde2;
+  --pl-badge-border: #9b59b6;
 }
 
 .badge.color-purple3 {
   color: #2a0938;
-  background-color: #d8a1f0;
-  border: 1px solid #bf63e6;
+  background-color: #dcaaf1;
+  border: 1px solid #5e147d;
 }
 
 .btn.btn-badge.color-purple3 {
   --pl-badge-text: #2a0938;
-  --pl-badge-bg: #d8a1f0;
-  --pl-badge-border: #bf63e6;
+  --pl-badge-bg: #dcaaf1;
+  --pl-badge-border: #5e147d;
 }
 
 .badge.color-blue1 {
   color: #006f8c;
-  background-color: #c4f2ff;
-  border: 1px solid #7ce3ff;
+  background-color: #b0eeff;
+  border: 1px solid #39d5ff;
 }
 
 .btn.btn-badge.color-blue1 {
   --pl-badge-text: #006f8c;
-  --pl-badge-bg: #c4f2ff;
-  --pl-badge-border: #7ce3ff;
+  --pl-badge-bg: #b0eeff;
+  --pl-badge-border: #39d5ff;
 }
 
 .badge.color-blue2 {
   color: #084465;
-  background-color: #b5e1f9;
-  border: 1px solid #72c6f4;
+  background-color: #9cd7f7;
+  border: 1px solid #1297e0;
 }
 
 .btn.btn-badge.color-blue2 {
   --pl-badge-text: #084465;
-  --pl-badge-bg: #b5e1f9;
-  --pl-badge-border: #72c6f4;
+  --pl-badge-bg: #9cd7f7;
+  --pl-badge-border: #1297e0;
 }
 
 .badge.color-blue3 {
   color: #002748;
-  background-color: #96cfff;
-  border: 1px solid #4fafff;
+  background-color: #7ec4ff;
+  border: 1px solid #0057a0;
 }
 
 .btn.btn-badge.color-blue3 {
   --pl-badge-text: #002748;
-  --pl-badge-bg: #96cfff;
-  --pl-badge-border: #4fafff;
+  --pl-badge-bg: #7ec4ff;
+  --pl-badge-border: #0057a0;
 }
 
 .badge.color-turquoise1 {
   color: #047573;
-  background-color: #cffefd;
-  border: 1px solid #89fbf9;
+  background-color: #bffdfc;
+  border: 1px solid #5efaf7;
 }
 
 .btn.btn-badge.color-turquoise1 {
   --pl-badge-text: #047573;
-  --pl-badge-bg: #cffefd;
-  --pl-badge-border: #89fbf9;
+  --pl-badge-bg: #bffdfc;
+  --pl-badge-border: #5efaf7;
 }
 
 .badge.color-turquoise2 {
   color: #125b56;
-  background-color: #bcf2ee;
-  border: 1px solid #80e7e0;
+  background-color: #a5eee9;
+  border: 1px solid #27cbc0;
 }
 
 .btn.btn-badge.color-turquoise2 {
   --pl-badge-text: #125b56;
-  --pl-badge-bg: #bcf2ee;
-  --pl-badge-border: #80e7e0;
+  --pl-badge-bg: #a5eee9;
+  --pl-badge-border: #27cbc0;
 }
 
 .badge.color-turquoise3 {
   color: #003f3a;
-  background-color: #90fff6;
-  border: 1px solid #48fff1;
+  background-color: #6bfff3;
+  border: 1px solid #008b80;
 }
 
 .btn.btn-badge.color-turquoise3 {
   --pl-badge-text: #003f3a;
-  --pl-badge-bg: #90fff6;
-  --pl-badge-border: #48fff1;
+  --pl-badge-bg: #6bfff3;
+  --pl-badge-border: #008b80;
 }
 
 .badge.color-green1 {
   color: #00632d;
-  background-color: #ddffec;
-  border: 1px solid #96ffc5;
+  background-color: #d2ffe6;
+  border: 1px solid #8effc1;
 }
 
 .btn.btn-badge.color-green1 {
   --pl-badge-text: #00632d;
-  --pl-badge-bg: #ddffec;
-  --pl-badge-border: #96ffc5;
+  --pl-badge-bg: #d2ffe6;
+  --pl-badge-border: #8effc1;
 }
 
 .badge.color-green2 {
   color: #155c33;
-  background-color: #bff1d4;
-  border: 1px solid #85e4ad;
+  background-color: #aaecc6;
+  border: 1px solid #2ecc71;
 }
 
 .btn.btn-badge.color-green2 {
   --pl-badge-text: #155c33;
-  --pl-badge-bg: #bff1d4;
-  --pl-badge-border: #85e4ad;
+  --pl-badge-bg: #aaecc6;
+  --pl-badge-border: #2ecc71;
 }
 
 .badge.color-green3 {
   color: #003f16;
-  background-color: #90ffb7;
-  border: 1px solid #49ff88;
+  background-color: #6bff9f;
+  border: 1px solid #008c31;
 }
 
 .btn.btn-badge.color-green3 {
   --pl-badge-text: #003f16;
-  --pl-badge-bg: #90ffb7;
-  --pl-badge-border: #49ff88;
+  --pl-badge-bg: #6bff9f;
+  --pl-badge-border: #008c31;
 }
 
 .badge.color-yellow1 {
-  color: #906503;
-  background-color: #fef7e5;
-  border: 1px solid #fde09f;
+  color: #665502;
+  background-color: #fef8db;
+  border: 1px solid #fdeea5;
 }
 
 .btn.btn-badge.color-yellow1 {
-  --pl-badge-text: #906503;
-  --pl-badge-bg: #fef7e5;
-  --pl-badge-border: #fde09f;
+  --pl-badge-text: #665502;
+  --pl-badge-bg: #fef8db;
+  --pl-badge-border: #fdeea5;
 }
 
 .badge.color-yellow2 {
-  color: #805106;
-  background-color: #fce6c2;
-  border: 1px solid #f9ca7e;
+  color: #7f6606;
+  background-color: #fbebad;
+  border: 1px solid #f5ce32;
 }
 
 .btn.btn-badge.color-yellow2 {
-  --pl-badge-text: #805106;
-  --pl-badge-bg: #fce6c2;
-  --pl-badge-border: #f9ca7e;
+  --pl-badge-text: #7f6606;
+  --pl-badge-bg: #fbebad;
+  --pl-badge-border: #f5ce32;
 }
 
 .badge.color-yellow3 {
-  color: #613400;
-  background-color: #ffd6a7;
-  border: 1px solid #ffb55f;
+  color: #604800;
+  background-color: #ffe289;
+  border: 1px solid #d6a100;
 }
 
 .btn.btn-badge.color-yellow3 {
-  --pl-badge-text: #613400;
-  --pl-badge-bg: #ffd6a7;
-  --pl-badge-border: #ffb55f;
+  --pl-badge-text: #604800;
+  --pl-badge-bg: #ffe289;
+  --pl-badge-border: #d6a100;
 }
 
 .badge.color-orange1 {
   color: #995000;
-  background-color: #fff5e9;
-  border: 1px solid #ffd3a1;
+  background-color: #fff1e1;
+  border: 1px solid #ffdcb5;
 }
 
 .btn.btn-badge.color-orange1 {
   --pl-badge-text: #995000;
-  --pl-badge-bg: #fff5e9;
-  --pl-badge-border: #ffd3a1;
+  --pl-badge-bg: #fff1e1;
+  --pl-badge-border: #ffdcb5;
 }
 
 .badge.color-orange2 {
   color: #a32b00;
-  background-color: #ffded3;
-  border: 1px solid #ffaa8b;
+  background-color: #ffd3c4;
+  border: 1px solid #ff926b;
 }
 
 .btn.btn-badge.color-orange2 {
   --pl-badge-text: #a32b00;
-  --pl-badge-bg: #ffded3;
-  --pl-badge-border: #ffaa8b;
+  --pl-badge-bg: #ffd3c4;
+  --pl-badge-border: #ff926b;
 }
 
 .badge.color-orange3 {
   color: #582513;
-  background-color: #f0cabc;
-  border: 1px solid #e39b82;
+  background-color: #ebb8a6;
+  border: 1px solid #c3522b;
 }
 
 .btn.btn-badge.color-orange3 {
   --pl-badge-text: #582513;
-  --pl-badge-bg: #f0cabc;
-  --pl-badge-border: #e39b82;
+  --pl-badge-bg: #ebb8a6;
+  --pl-badge-border: #c3522b;
 }
 
 .badge.color-brown1 {
-  color: #a84d10;
-  background-color: #fcede3;
-  border: 1px solid #f6c4a2;
+  color: #8b4d28;
+  background-color: #f5e5dc;
+  border: 1px solid #e6bfa8;
 }
 
 .btn.btn-badge.color-brown1 {
-  --pl-badge-text: #a84d10;
-  --pl-badge-bg: #fcede3;
-  --pl-badge-border: #f6c4a2;
+  --pl-badge-text: #8b4d28;
+  --pl-badge-bg: #f5e5dc;
+  --pl-badge-border: #e6bfa8;
 }
 
 .badge.color-brown2 {
-  color: #6c4328;
-  background-color: #f0e1d7;
-  border: 1px solid #ddbaa3;
+  color: #60412e;
+  background-color: #e6d5cb;
+  border: 1px solid #c0957c;
 }
 
 .btn.btn-badge.color-brown2 {
-  --pl-badge-text: #6c4328;
-  --pl-badge-bg: #f0e1d7;
-  --pl-badge-border: #ddbaa3;
+  --pl-badge-text: #60412e;
+  --pl-badge-bg: #e6d5cb;
+  --pl-badge-border: #c0957c;
 }
 
 .badge.color-brown3 {
-  color: #40291b;
-  background-color: #e4cdbe;
-  border: 1px solid #cfa68b;
+  color: #38271d;
+  background-color: #d4b9aa;
+  border: 1px solid #7d5640;
 }
 
 .btn.btn-badge.color-brown3 {
-  --pl-badge-text: #40291b;
-  --pl-badge-bg: #e4cdbe;
-  --pl-badge-border: #cfa68b;
+  --pl-badge-text: #38271d;
+  --pl-badge-bg: #d4b9aa;
+  --pl-badge-border: #7d5640;
 }
 
 .badge.color-gray1 {
   color: #656565;
-  background-color: #f6f6f6;
-  border: 1px solid #d2d2d2;
+  background-color: #f3f3f3;
+  border: 1px solid #e0e0e0;
 }
 
 .btn.btn-badge.color-gray1 {
   --pl-badge-text: #656565;
-  --pl-badge-bg: #f6f6f6;
-  --pl-badge-border: #d2d2d2;
+  --pl-badge-bg: #f3f3f3;
+  --pl-badge-border: #e0e0e0;
 }
 
 .badge.color-gray2 {
   color: #414141;
-  background-color: #dedede;
-  border: 1px solid #bababa;
+  background-color: #d3d3d3;
+  border: 1px solid #909090;
 }
 
 .btn.btn-badge.color-gray2 {
   --pl-badge-text: #414141;
-  --pl-badge-bg: #dedede;
-  --pl-badge-border: #bababa;
+  --pl-badge-bg: #d3d3d3;
+  --pl-badge-border: #909090;
 }
 
 .badge.color-gray3 {
   color: #242424;
-  background-color: #cbcbcb;
-  border: 1px solid #a7a7a7;
+  background-color: #bdbdbd;
+  border: 1px solid #505050;
 }
 
 .btn.btn-badge.color-gray3 {
   --pl-badge-text: #242424;
-  --pl-badge-bg: #cbcbcb;
-  --pl-badge-border: #a7a7a7;
+  --pl-badge-bg: #bdbdbd;
+  --pl-badge-border: #505050;
 }

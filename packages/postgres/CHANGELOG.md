@@ -1,5 +1,11 @@
 # @prairielearn/postgres
 
+## 6.0.1
+
+### Patch Changes
+
+- 144cd19: Upgrade all JavaScript dependencies
+
 ## 6.0.0
 
 ### Major Changes

@@ -79,9 +79,8 @@ router.post(
       );
       res.send(JSON.stringify({}));
     } else if (req.body.__action === 'grade_all' || req.body.__action === 'close_all') {
-      const assessment_id = res.locals.assessment.id;
       const job_sequence_id = await gradeAllAssessmentInstances({
-        assessment_id,
+        assessment_id: res.locals.assessment.id,
         user_id: res.locals.user.id,
         authn_user_id: res.locals.authn_user.id,
         close: req.body.__action === 'close_all',

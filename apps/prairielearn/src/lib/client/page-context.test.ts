@@ -130,6 +130,7 @@ const mockStudentData = {
 const mockInstructorData = {
   course_instance: {
     ...STUDENT_COURSE_INSTANCE,
+    ai_grading_use_custom_api_keys: false,
     enrollment_code: 'AAABBBDDDD',
     enrollment_limit: 10,
     json_comment: 'foo',
@@ -292,6 +293,7 @@ const STAFF_ASSESSMENT_QUESTION = {
   number_submissions_hist: [1, 2, 3, 4],
   number_submissions_variance: 2,
   points_list: [0, 50, 100],
+  preferences: null,
   question_id: '1',
   question_score_variance: 20,
   quintile_question_scores: [60, 70, 80, 90, 100],
@@ -320,7 +322,6 @@ const STAFF_QUESTION = {
   directory: 'questions/question1',
   draft: false,
   external_grading_enable_networking: null,
-  external_grading_enabled: false,
   external_grading_entrypoint: null,
   external_grading_environment: {},
   external_grading_files: null,
@@ -333,6 +334,8 @@ const STAFF_QUESTION = {
   json_workspace_comment: null,
   number: 1,
   options: null,
+  preferences: null,
+  preferences_schema: null,
   partial_credit: true,
   qid: 'question1',
   share_publicly: false,

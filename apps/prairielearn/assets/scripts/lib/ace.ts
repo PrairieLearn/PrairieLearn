@@ -11,6 +11,9 @@ export function configureAceBasePaths() {
   const aceBasePath =
     document.querySelector('meta[name="ace-base-path"]')?.getAttribute('content') ?? null;
 
+  if (aceBasePath) {
+    ace.config.set('basePath', aceBasePath);
+  }
   ace.config.set('modePath', aceBasePath);
   ace.config.set('workerPath', aceBasePath);
   ace.config.set('themePath', aceBasePath);
