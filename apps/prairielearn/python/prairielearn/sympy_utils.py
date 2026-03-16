@@ -837,11 +837,11 @@ def validate_string_as_sympy(
     imaginary_unit: str | None = None,
     simplify_expression: bool = True,
     assumptions: dict[str, dict[str, bool]] | None = None,
-) -> str | None:
-    """Try to parse expr as a SymPy expression. If it fails, return a string with an appropriate error message for display on the frontend.
+) -> str | sympy.Expr:
+    """Try to parse expr as a SymPy expression.
 
     Returns:
-        `None` if the expression is valid, and an error message otherwise.
+        The parsed SymPy expression on success, or an error message string on failure.
     """
     try:
         expr_parsed = convert_string_to_sympy(
@@ -957,7 +957,7 @@ def validate_string_as_sympy(
             f"(denoted ${imaginary_unit}$): $${sympy.latex(expr_parsed)}$$"
         )
 
-    return None
+    return expr_parsed
 
 
 def get_items_list(items_string: str | None) -> list[str]:

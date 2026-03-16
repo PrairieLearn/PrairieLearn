@@ -184,9 +184,9 @@ class TestSympy:
     @pytest.mark.parametrize("a_pair", EXPR_PAIRS)
     def test_valid_format(self, a_pair: tuple[str, sympy.Expr]) -> None:
         a_sub, _ = a_pair
-        assert (
-            psu.validate_string_as_sympy(a_sub, self.SYMBOL_NAMES, allow_complex=True)
-            is None
+        assert not isinstance(
+            psu.validate_string_as_sympy(a_sub, self.SYMBOL_NAMES, allow_complex=True),
+            str,
         )
 
     @pytest.mark.parametrize(
@@ -482,7 +482,7 @@ class TestExceptions:
                 allow_complex=False,
                 allow_trig_functions=True,
             )
-            assert format_error is not None
+            assert isinstance(format_error, str)
             assert target_string in format_error
 
     @pytest.mark.parametrize("a_sub", IMPLICIT_COMPLEX_CASES)
@@ -497,7 +497,7 @@ class TestExceptions:
             allow_trig_functions=True,
             simplify_expression=False,
         )
-        assert format_error is not None
+        assert isinstance(format_error, str)
         assert "complex number" in format_error
 
     @pytest.mark.parametrize(
@@ -620,7 +620,7 @@ class TestExceptions:
         correct character in the original input expression.
         """
         error_msg = psu.validate_string_as_sympy(expr, self.VARIABLES + with_vars)
-        assert error_msg is not None
+        assert isinstance(error_msg, str)
         match = re.search(r"<pre>(.*?)</pre>", error_msg, re.DOTALL)
         assert match is not None
         assert match.group(1) == expected_caret
@@ -637,7 +637,7 @@ class TestExceptions:
             ["x"],
             simplify_expression=False,
         )
-        assert error_msg is not None
+        assert isinstance(error_msg, str)
         assert 'invalid symbol "m"' in error_msg
 
 
@@ -722,12 +722,12 @@ class TestValidateStringConfigurationErrors:
 
     def test_conflicting_variable_error_message(self) -> None:
         error_msg = psu.validate_string_as_sympy("x + 1", ["pi", "x"])
-        assert error_msg is not None
+        assert isinstance(error_msg, str)
         assert "conflicts with a built-in constant" in error_msg
 
     def test_conflicting_function_error_message(self) -> None:
         error_msg = psu.validate_string_as_sympy(
             "x + 1", ["x"], custom_functions=["sin"]
         )
-        assert error_msg is not None
+        assert isinstance(error_msg, str)
         assert "conflicts with a built-in function" in error_msg
