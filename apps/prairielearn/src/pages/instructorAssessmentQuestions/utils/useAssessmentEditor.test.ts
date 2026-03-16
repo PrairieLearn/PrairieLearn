@@ -498,4 +498,67 @@ describe('createEditorReducer', () => {
     // Metadata updated
     expect(state.questionMetadata['shared-qid']).toBe(newMetadata);
   });
+
+  it('QUESTION_PICKED clears stale preferences when changing a question QID', () => {
+    const standalone = makeQuestion('q1', {
+      id: 'old-qid',
+      preferences: { oldPref: 'stale' },
+    });
+    const altGroup = makeQuestion('ag1', {
+      alternatives: [
+        makeAlternative('a1', {
+          id: 'old-alt-qid',
+          preferences: { oldAltPref: true },
+        }),
+      ],
+    });
+    const initialState = makeState({
+      zones: [makeZone('z1', [standalone, altGroup])],
+      questionMetadata: {
+        'old-qid': { question: { grading_method: 'Internal' } } as any,
+        'old-alt-qid': { question: { grading_method: 'Internal' } } as any,
+      },
+      selectedItem: {
+        type: 'picker',
+        zoneTrackingId: 'z1',
+        returnToSelection: { type: 'question', questionTrackingId: 'q1' },
+      },
+    });
+    const reducer = createEditorReducer(initialState);
+
+    const standaloneState = reducer(initialState, {
+      type: 'QUESTION_PICKED',
+      qid: 'new-qid',
+      metadata: { question: { grading_method: 'Internal' } } as any,
+      expectedSelectedItem: initialState.selectedItem,
+    });
+
+    expect(standaloneState.zones[0].questions[0].id).toBe('new-qid');
+    expect(standaloneState.zones[0].questions[0].preferences).toBeUndefined();
+
+    const alternativePicker = {
+      type: 'picker' as const,
+      zoneTrackingId: 'z1',
+      returnToSelection: {
+        type: 'alternative' as const,
+        questionTrackingId: 'ag1',
+        alternativeTrackingId: 'a1',
+      },
+    };
+    const alternativeState = reducer(
+      {
+        ...standaloneState,
+        selectedItem: alternativePicker,
+      },
+      {
+        type: 'QUESTION_PICKED',
+        qid: 'new-alt-qid',
+        metadata: { question: { grading_method: 'Internal' } } as any,
+        expectedSelectedItem: alternativePicker,
+      },
+    );
+
+    expect(alternativeState.zones[0].questions[1].alternatives?.[0].id).toBe('new-alt-qid');
+    expect(alternativeState.zones[0].questions[1].alternatives?.[0].preferences).toBeUndefined();
+  });
 });
