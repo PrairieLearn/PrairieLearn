@@ -836,7 +836,7 @@ def validate_string_as_sympy(
     custom_functions: list[str] | None = None,
     imaginary_unit: str | None = None,
     simplify_expression: bool = True,
-    assumptions: dict[str, dict[str, bool]] | None = None,
+    assumptions: AssumptionsDictT | None = None,
 ) -> str | sympy.Expr:
     """Try to parse expr as a SymPy expression.
 
