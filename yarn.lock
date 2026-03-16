@@ -4982,7 +4982,7 @@ __metadata:
     fast-glob: "npm:^3.3.3"
     fast-json-stable-stringify: "npm:^2.1.0"
     fetch-cookie: "npm:^3.2.0"
-    file-type: "npm:^21.3.1"
+    file-type: "npm:^21.3.2"
     filesize: "npm:^11.0.13"
     folder-hash: "npm:^4.1.1"
     fs-extra: "npm:^11.3.4"
@@ -14012,15 +14012,15 @@ __metadata:
   languageName: node
   linkType: hard
 
-"file-type@npm:^21.3.1":
-  version: 21.3.1
-  resolution: "file-type@npm:21.3.1"
+"file-type@npm:^21.3.2":
+  version: 21.3.2
+  resolution: "file-type@npm:21.3.2"
   dependencies:
     "@tokenizer/inflate": "npm:^0.4.1"
     strtok3: "npm:^10.3.4"
     token-types: "npm:^6.1.1"
     uint8array-extras: "npm:^1.4.0"
-  checksum: 10c0/66a8eda781c803c6fc372464abba88cee564cfe30f029716f06909da1564bc51d0a4e8d34654b881dc751cdb0513338b3c0747e06a608cee0dd5c5499b018d47
+  checksum: 10c0/74d02787d2702f9d8592c715be1258cc6b865db98f400d17308f029d6bb895dc3135fcd2e5b4788b01e1b3ff4fc7e83d5fa32fd81e59a20f30b3dfe5f1e52aca
   languageName: node
   linkType: hard
 
@@ -21230,16 +21230,16 @@ __metadata:
   linkType: hard
 
 "undici@npm:^6.23.0":
-  version: 6.23.0
-  resolution: "undici@npm:6.23.0"
-  checksum: 10c0/d846b3fdfd05aa6081ba1eab5db6bbc21b283042c7a43722b86d1ee2bf749d7c990ceac0c809f9a07ffd88b1b0f4c0f548a8362c035088cb1997d63abdda499c
+  version: 6.24.1
+  resolution: "undici@npm:6.24.1"
+  checksum: 10c0/53fdbaa357139a2c12deed34f67d67fc6ad269630ba85a1507e7717f53ad2d3a02c95fbd17d3ab321e34c60b6f0a716cdc2f7e2eca1e07178702dc89cc3a73c4
   languageName: node
   linkType: hard
 
 "undici@npm:^7.16.0, undici@npm:^7.19.0, undici@npm:^7.21.0":
-  version: 7.22.0
-  resolution: "undici@npm:7.22.0"
-  checksum: 10c0/09777c06f3f18f761f03e3a4c9c04fd9fcca8ad02ccea43602ee4adf73fcba082806f1afb637f6ea714ef6279c5323c25b16d435814c63db720f63bfc20d316b
+  version: 7.24.4
+  resolution: "undici@npm:7.24.4"
+  checksum: 10c0/cb302e81fadb7f0b7946ab77595715c0961b46a025ccecae79ba599432d0bc8d1e3da4dfe7ff66bc74f115c1b8ff0f099bc4e9bf313db4562da23995872c6d17
   languageName: node
   linkType: hard
 

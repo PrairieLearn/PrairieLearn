@@ -49,6 +49,7 @@ columns
     number_submissions_hist: double precision[]
     number_submissions_variance: double precision
     points_list: double precision[]
+    preferences: jsonb
     question_id: bigint not null
     question_score_variance: double precision
     quintile_question_scores: double precision[]

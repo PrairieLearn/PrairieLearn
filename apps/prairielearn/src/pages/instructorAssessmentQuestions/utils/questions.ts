@@ -22,6 +22,15 @@ import type {
 } from '../types.js';
 
 export type QuestionMetadataMap = Partial<Record<string, EditorQuestionMetadata>>;
+
+/**
+ * Whether the question has a non-empty, non-whitespace title.
+ * When false, callers should display the QID instead.
+ */
+export function questionHasTitle(questionData: EditorQuestionMetadata | null): boolean {
+  return (questionData?.question.title?.trim().length ?? 0) > 0;
+}
+
 /**
  * Compresses an array of points by collapsing consecutive runs.
  * e.g. [10, 10, 10, 5, 5] → "10×3, 5, 5"
@@ -179,12 +188,15 @@ export function buildHierarchicalAssessment(
         maxPoints: row.assessment_question.json_max_points ?? undefined,
         maxAutoPoints: row.assessment_question.json_max_auto_points ?? undefined,
         manualPoints: row.assessment_question.json_manual_points ?? undefined,
+        preferences: row.assessment_question.preferences ?? undefined,
       };
     } else {
       // Set the top level question ID if there are no alternatives
       zones[zoneNumber - 1].questions[positionInZone].id = questionDisplayName(course, row);
       zones[zoneNumber - 1].questions[positionInZone].comment =
         row.assessment_question.json_comment ?? undefined;
+      zones[zoneNumber - 1].questions[positionInZone].preferences =
+        row.assessment_question.preferences ?? undefined;
     }
   }
   return zones;

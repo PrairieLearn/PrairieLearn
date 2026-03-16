@@ -278,6 +278,8 @@ export function QuestionPickerPanel({
             {virtualRows.map((virtualRow) => {
               const question = sortedQuestions[virtualRow.index];
               const qid = question.qid;
+              const hasTitle = !!question.title?.trim();
+              const accessibleLabel = hasTitle ? `${qid}: ${question.title}` : qid;
               const addedZoneNames = questionsInAssessment.get(qid);
               const isInAssessment = addedZoneNames != null;
               const isCurrentChange = currentChangeQid === qid;
@@ -293,7 +295,7 @@ export function QuestionPickerPanel({
                   data-index={virtualRow.index}
                   role={isDisabled ? undefined : 'button'}
                   tabIndex={isDisabled ? undefined : 0}
-                  aria-label={`${qid}: ${question.title}${isCurrentChange ? ' (current)' : isInAssessment ? ` (in ${addedZoneNames.join(', ')})` : ''}`}
+                  aria-label={`${accessibleLabel}${isCurrentChange ? ' (current)' : isInAssessment ? ` (in ${addedZoneNames.join(', ')})` : ''}`}
                   aria-disabled={isDisabled || undefined}
                   className="d-flex align-items-center px-2 py-1 border-bottom list-group-item-action picker-row"
                   style={{
@@ -342,7 +344,7 @@ export function QuestionPickerPanel({
                         </span>
                       )}
                     </div>
-                    <div className="text-truncate small">{question.title}</div>
+                    {hasTitle && <div className="text-truncate small">{question.title}</div>}
                     <div className="d-flex flex-wrap gap-1 mt-1">
                       <QuestionTopicTagBadges
                         topic={question.topic}

@@ -1,6 +1,6 @@
 -- BLOCK select_courses
 SELECT
-  c.*,
+  to_jsonb(c.*) AS course,
   to_jsonb(i.*) AS institution
 FROM
   courses AS c
