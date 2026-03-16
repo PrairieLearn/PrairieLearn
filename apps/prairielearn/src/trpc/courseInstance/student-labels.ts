@@ -300,15 +300,14 @@ const create = t.procedure
   .use(requireCourseInstancePermissionEdit)
   .input(
     z.object({
-      name: z.string().min(1, 'Label name is required').max(255),
+      name: z.string().trim().min(1, 'Label name is required').max(255),
       color: ColorJsonSchema,
       uids: z.array(z.string()).max(MAX_LABEL_UIDS).default([]),
       origHash: z.string().nullable(),
     }),
   )
   .mutation(async (opts) => {
-    const name = opts.input.name.trim();
-    return createLabel(opts.ctx, { ...opts.input, name });
+    return createLabel(opts.ctx, opts.input);
   });
 
 const edit = t.procedure
@@ -316,15 +315,14 @@ const edit = t.procedure
   .input(
     z.object({
       labelId: IdSchema,
-      name: z.string().min(1, 'Label name is required').max(255),
+      name: z.string().trim().min(1, 'Label name is required').max(255),
       color: ColorJsonSchema,
       uids: z.array(z.string()).max(MAX_LABEL_UIDS).default([]),
       origHash: z.string().nullable(),
     }),
   )
   .mutation(async (opts) => {
-    const name = opts.input.name.trim();
-    return editLabel(opts.ctx, { ...opts.input, name });
+    return editLabel(opts.ctx, opts.input);
   });
 
 const upsert = t.procedure
@@ -332,18 +330,17 @@ const upsert = t.procedure
   .input(
     z.object({
       labelId: IdSchema.optional(),
-      name: z.string().min(1, 'Label name is required').max(255),
+      name: z.string().trim().min(1, 'Label name is required').max(255),
       color: ColorJsonSchema,
       uids: z.array(z.string()).max(MAX_LABEL_UIDS).default([]),
       origHash: z.string().nullable(),
     }),
   )
   .mutation(async (opts) => {
-    const name = opts.input.name.trim();
     if (opts.input.labelId != null) {
-      return editLabel(opts.ctx, { ...opts.input, labelId: opts.input.labelId, name });
+      return editLabel(opts.ctx, { ...opts.input, labelId: opts.input.labelId });
     } else {
-      return createLabel(opts.ctx, { ...opts.input, name });
+      return createLabel(opts.ctx, opts.input);
     }
   });
 

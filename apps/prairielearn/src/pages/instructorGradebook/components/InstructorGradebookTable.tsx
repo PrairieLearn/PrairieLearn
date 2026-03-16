@@ -550,8 +550,7 @@ function GradebookTable({
                   row.student_label_ids.length > 0
                     ? row.student_label_ids
                         .map((id) => studentLabels.find((l) => l.id === id)?.name)
-                        .filter(Boolean)
-                        .join('; ')
+                        .filter((name): name is string => name != null)
                     : null,
               },
             ];
