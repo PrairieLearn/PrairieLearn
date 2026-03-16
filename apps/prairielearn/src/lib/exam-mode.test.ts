@@ -28,8 +28,11 @@ describe('ipToMode tests', function () {
   afterAll(helperDb.after);
 
   describe('IP validation', () => {
-    it('should throw if ip is null', async () => {
+    it('should throw if ip is null or undefined', async () => {
       await expect(ipToMode({ ip: null, date: new Date(), authn_user_id })).rejects.toThrow(
+        'IP address is required',
+      );
+      await expect(ipToMode({ ip: undefined, date: new Date(), authn_user_id })).rejects.toThrow(
         'IP address is required',
       );
     });
