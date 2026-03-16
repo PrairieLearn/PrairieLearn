@@ -1,4 +1,4 @@
-import { afterAll, assert, beforeAll, describe, it } from 'vitest';
+import { afterAll, assert, beforeAll, describe, expect, it } from 'vitest';
 
 import { execute, loadSqlEquiv, queryScalar } from '@prairielearn/postgres';
 
@@ -26,6 +26,17 @@ describe('ipToMode tests', function () {
   });
 
   afterAll(helperDb.after);
+
+  describe('IP validation', () => {
+    it('should throw if ip is null or undefined', async () => {
+      await expect(ipToMode({ ip: null, date: new Date(), authn_user_id })).rejects.toThrow(
+        'IP address is required',
+      );
+      await expect(ipToMode({ ip: undefined, date: new Date(), authn_user_id })).rejects.toThrow(
+        'IP address is required',
+      );
+    });
+  });
 
   describe('No reservations', () => {
     it('should return "Public"', async () => {
@@ -89,6 +100,20 @@ describe('ipToMode tests', function () {
             ip: '192.168.0.1',
             // 10 minutes from now.
             date: new Date(Date.now() + 1000 * 60 * 10),
+            authn_user_id,
+          });
+          assert.equal(result, 'Public');
+        });
+      });
+
+      it('should return "Public" with a correct IP address when session is far in the future', async () => {
+        await helperDb.runInTransactionAndRollback(async () => {
+          await createCenterExamReservation();
+
+          const result = await ipToMode({
+            ip: '10.0.0.1',
+            // 3 hours from now (well outside the 1-hour window around session date).
+            date: new Date(Date.now() + 1000 * 60 * 60 * 3),
             authn_user_id,
           });
           assert.equal(result, 'Public');
@@ -328,6 +353,36 @@ describe('ipToMode tests', function () {
   });
 
   describe('Course exam', () => {
+    it('should return "Public" before check-in when session is starting soon', async () => {
+      await helperDb.runInTransactionAndRollback(async () => {
+        await createCourseExamReservation();
+
+        const result = await ipToMode({
+          ip: '192.168.0.1',
+          // 10 minutes ago.
+          date: new Date(Date.now() - 1000 * 60 * 10),
+          authn_user_id,
+        });
+        assert.equal(result, 'Public');
+      });
+    });
+
+    it('should return "Public" after access ends', async () => {
+      await helperDb.runInTransactionAndRollback(async () => {
+        await createCourseExamReservation();
+
+        await execute(sql.start_reservations);
+
+        const result = await ipToMode({
+          ip: '192.168.0.1',
+          // 90 minutes from now (well past the 20min access_end + 30min grace period).
+          date: new Date(Date.now() + 1000 * 60 * 90),
+          authn_user_id,
+        });
+        assert.equal(result, 'Public');
+      });
+    });
+
     it('should return "Exam" after check-in and before access start', async () => {
       await helperDb.runInTransactionAndRollback(async () => {
         await createCourseExamReservation();

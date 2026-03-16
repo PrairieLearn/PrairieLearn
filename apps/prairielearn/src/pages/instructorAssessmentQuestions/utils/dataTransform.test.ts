@@ -438,6 +438,59 @@ describe('prepareZonesForEditor normalization', () => {
   });
 });
 
+describe('serializeZonesForJson preferences', () => {
+  it('preserves preferences on standalone questions', () => {
+    const parsedZones = [
+      ZoneAssessmentJsonSchema.parse({
+        questions: [
+          {
+            id: 'q1',
+            preferences: { gravitational_constant: 9.8, fired_object: 'cannon ball' },
+          },
+        ],
+      }),
+    ];
+
+    const serialized = serializeZonesForJson(parsedZones);
+    expect(serialized[0].questions[0].preferences).toEqual({
+      gravitational_constant: 9.8,
+      fired_object: 'cannon ball',
+    });
+  });
+
+  it('preserves preferences on alternatives', () => {
+    const parsedZones = [
+      ZoneAssessmentJsonSchema.parse({
+        questions: [
+          {
+            numberChoose: 1,
+            alternatives: [
+              { id: 'alt1', preferences: { mode: 'hard' } },
+              { id: 'alt2', preferences: { mode: 'easy' } },
+            ],
+          },
+        ],
+      }),
+    ];
+
+    const serialized = serializeZonesForJson(parsedZones);
+    const alts = serialized[0].questions[0].alternatives!;
+    expect(alts[0].preferences).toEqual({ mode: 'hard' });
+    expect(alts[1].preferences).toEqual({ mode: 'easy' });
+  });
+
+  it('does not include preferences key when not set', () => {
+    const parsedZones = [
+      ZoneAssessmentJsonSchema.parse({
+        questions: [{ id: 'q1' }],
+      }),
+    ];
+
+    const serialized = serializeZonesForJson(parsedZones);
+    expect(serialized[0].questions[0]).not.toHaveProperty('preferences');
+  });
+});
+
 describe('stripTrackingIds', () => {
   it('removes trackingIds from zones, questions, and alternatives', () => {
     const zones: ZoneAssessmentForm[] = [
