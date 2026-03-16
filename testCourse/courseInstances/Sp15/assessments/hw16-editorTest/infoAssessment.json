@@ -39,7 +39,6 @@
             { "id": "manualGrade/codeUpload" },
             { "id": "internalGrade/addingNumbers2" }
           ],
-          "comment": "Alternative group",
           "points": 1
         }
       ]
