@@ -436,6 +436,219 @@ describe('prepareZonesForEditor normalization', () => {
     expect(result[0].questions[0].autoPoints).toBe(5);
     expect(result[0].questions[0].points).toBeUndefined();
   });
+
+  it('normalizes alt group points to manualPoints when all alternatives are Manual', () => {
+    const zones: ZoneAssessmentJson[] = [
+      {
+        lockpoint: false,
+        canSubmit: [],
+        canView: [],
+        questions: [
+          {
+            numberChoose: 1,
+            points: 10,
+            canSubmit: [],
+            canView: [],
+            alternatives: [{ id: 'alt1' }, { id: 'alt2' }],
+          },
+        ],
+      },
+    ];
+
+    const metadata = {
+      alt1: { question: { grading_method: 'Manual' } },
+      alt2: { question: { grading_method: 'Manual' } },
+    } as any;
+
+    const result = prepareZonesForEditor(zones, metadata);
+
+    expect(result[0].questions[0].manualPoints).toBe(10);
+    expect(result[0].questions[0].autoPoints).toBeUndefined();
+    expect(result[0].questions[0].points).toBeUndefined();
+  });
+
+  it('normalizes alt group points to autoPoints when all alternatives are auto-graded', () => {
+    const zones: ZoneAssessmentJson[] = [
+      {
+        lockpoint: false,
+        canSubmit: [],
+        canView: [],
+        questions: [
+          {
+            numberChoose: 1,
+            points: 10,
+            canSubmit: [],
+            canView: [],
+            alternatives: [{ id: 'alt1' }, { id: 'alt2' }],
+          },
+        ],
+      },
+    ];
+
+    const metadata = {
+      alt1: { question: { grading_method: 'External' } },
+      alt2: { question: { grading_method: 'Internal' } },
+    } as any;
+
+    const result = prepareZonesForEditor(zones, metadata);
+
+    expect(result[0].questions[0].autoPoints).toBe(10);
+    expect(result[0].questions[0].manualPoints).toBeUndefined();
+    expect(result[0].questions[0].points).toBeUndefined();
+  });
+
+  it('pushes alt group points to alternatives when grading methods are mixed', () => {
+    const zones: ZoneAssessmentJson[] = [
+      {
+        lockpoint: false,
+        canSubmit: [],
+        canView: [],
+        questions: [
+          {
+            numberChoose: 1,
+            points: 10,
+            canSubmit: [],
+            canView: [],
+            alternatives: [{ id: 'alt1' }, { id: 'alt2' }],
+          },
+        ],
+      },
+    ];
+
+    const metadata = {
+      alt1: { question: { grading_method: 'Manual' } },
+      alt2: { question: { grading_method: 'External' } },
+    } as any;
+
+    const result = prepareZonesForEditor(zones, metadata);
+    const group = result[0].questions[0];
+
+    // Group-level points should be cleared
+    expect(group.points).toBeUndefined();
+    expect(group.autoPoints).toBeUndefined();
+    expect(group.manualPoints).toBeUndefined();
+
+    // Each alternative gets points based on its grading method
+    expect(group.alternatives![0].manualPoints).toBe(10);
+    expect(group.alternatives![0].autoPoints).toBeUndefined();
+    expect(group.alternatives![1].autoPoints).toBe(10);
+    expect(group.alternatives![1].manualPoints).toBeUndefined();
+  });
+
+  it('falls through to autoPoints when alt group has no metadata', () => {
+    const zones: ZoneAssessmentJson[] = [
+      {
+        lockpoint: false,
+        canSubmit: [],
+        canView: [],
+        questions: [
+          {
+            numberChoose: 1,
+            points: 10,
+            canSubmit: [],
+            canView: [],
+            alternatives: [{ id: 'alt1' }, { id: 'alt2' }],
+          },
+        ],
+      },
+    ];
+
+    const result = prepareZonesForEditor(zones, {});
+
+    // No metadata → unknown grading methods → defaults to autoPoints
+    expect(result[0].questions[0].autoPoints).toBe(10);
+    expect(result[0].questions[0].points).toBeUndefined();
+  });
+
+  it('does not override alternative-level points when pushing group points in mixed mode', () => {
+    const zones: ZoneAssessmentJson[] = [
+      {
+        lockpoint: false,
+        canSubmit: [],
+        canView: [],
+        questions: [
+          {
+            numberChoose: 1,
+            points: 10,
+            canSubmit: [],
+            canView: [],
+            alternatives: [{ id: 'alt1' }, { id: 'alt2', autoPoints: 7 }],
+          },
+        ],
+      },
+    ];
+
+    const metadata = {
+      alt1: { question: { grading_method: 'Manual' } },
+      alt2: { question: { grading_method: 'External' } },
+    } as any;
+
+    const result = prepareZonesForEditor(zones, metadata);
+    const group = result[0].questions[0];
+
+    // alt1 inherits group points → manualPoints
+    expect(group.alternatives![0].manualPoints).toBe(10);
+    // alt2 already has autoPoints, so group points are NOT pushed
+    expect(group.alternatives![1].autoPoints).toBe(7);
+  });
+
+  it('normalizes alt group maxPoints to manualPoints when all alternatives are Manual', () => {
+    const zones: ZoneAssessmentJson[] = [
+      {
+        lockpoint: false,
+        canSubmit: [],
+        canView: [],
+        questions: [
+          {
+            numberChoose: 1,
+            maxPoints: 20,
+            canSubmit: [],
+            canView: [],
+            alternatives: [{ id: 'alt1' }],
+          },
+        ],
+      },
+    ];
+
+    const metadata = {
+      alt1: { question: { grading_method: 'Manual' } },
+    } as any;
+
+    const result = prepareZonesForEditor(zones, metadata);
+
+    expect(result[0].questions[0].manualPoints).toBe(20);
+    expect(result[0].questions[0].maxPoints).toBeUndefined();
+    expect(result[0].questions[0].autoPoints).toBeUndefined();
+  });
+
+  it('sets pointsDistributedInfoBanner flag on mixed alt groups', () => {
+    const zones: ZoneAssessmentJson[] = [
+      {
+        lockpoint: false,
+        canSubmit: [],
+        canView: [],
+        questions: [
+          {
+            numberChoose: 1,
+            points: 10,
+            canSubmit: [],
+            canView: [],
+            alternatives: [{ id: 'alt1' }, { id: 'alt2' }],
+          },
+        ],
+      },
+    ];
+
+    const metadata = {
+      alt1: { question: { grading_method: 'Manual' } },
+      alt2: { question: { grading_method: 'External' } },
+    } as any;
+
+    const result = prepareZonesForEditor(zones, metadata);
+    const group = result[0].questions[0] as any;
+
+    expect(group.pointsDistributedInfoBanner).toBe(true);
+  });
 });
 
 describe('serializeZonesForJson preferences', () => {

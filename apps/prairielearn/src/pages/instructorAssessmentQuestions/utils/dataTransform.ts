@@ -65,6 +65,70 @@ function normalizeQuestionPoints<T extends QuestionPointsJson>(obj: T, gradingMe
 }
 
 /**
+ * Returns the effective grading method for an alt group by examining its alternatives.
+ * - All Manual → 'Manual'
+ * - All non-Manual (or unknown) → undefined
+ * - Mixed → 'mixed'
+ */
+function getAltGroupGradingMethod(
+  alternatives: QuestionAlternativeJson[],
+  getGradingMethod: (id?: string) => string | null | undefined,
+): 'Manual' | 'mixed' | undefined {
+  const methods = alternatives.map((alt) => getGradingMethod(alt.id));
+  const known = methods.filter((m) => m != null);
+  if (known.length === 0) return undefined;
+  const allManual = known.every((m) => m === 'Manual');
+  const allNonManual = known.every((m) => m !== 'Manual');
+  if (allManual) return 'Manual';
+  if (allNonManual) return undefined;
+  return 'mixed';
+}
+
+/** Returns true when a question block uses only legacy point fields. */
+function hasLegacyPoints(question: ZoneQuestionBlockJson): boolean {
+  return (
+    (question.points != null || question.maxPoints != null) &&
+    question.autoPoints == null &&
+    question.maxAutoPoints == null &&
+    question.manualPoints == null
+  );
+}
+
+/**
+ * For mixed-grading alt groups, copies group-level `points`/`maxPoints` to each
+ * alternative (when the alternative doesn't already have its own points), then
+ * normalizes per-alternative based on grading method. Clears points from the group.
+ */
+function pushPointsToAlternatives(
+  question: ZoneQuestionBlockJson,
+  getGradingMethod: (id?: string) => string | null | undefined,
+): ZoneQuestionBlockForm {
+  const { points, maxPoints, ...groupRest } = question;
+  return {
+    ...groupRest,
+    pointsDistributedInfoBanner: true,
+    trackingId: createTrackingId(),
+    alternatives: (question.alternatives ?? []).map((alt) => {
+      const inherited = { ...alt };
+      // Only push if the alternative doesn't have its own point fields
+      if (
+        inherited.points == null &&
+        inherited.autoPoints == null &&
+        inherited.maxAutoPoints == null &&
+        inherited.manualPoints == null
+      ) {
+        if (points != null) inherited.points = points;
+        if (maxPoints != null) inherited.maxPoints = maxPoints;
+      }
+      return {
+        ...normalizeQuestionPoints(inherited, getGradingMethod(alt.id) ?? undefined),
+        trackingId: createTrackingId(),
+      };
+    }),
+  } as ZoneQuestionBlockForm;
+}
+
+/**
  * Prepares raw JSON zones for the editor by adding tracking IDs and
  * normalizing legacy point fields. Converts `points`/`maxPoints` to
  * `autoPoints`/`maxAutoPoints` (or `manualPoints` for manually-graded questions).
@@ -80,14 +144,32 @@ export function prepareZonesForEditor(
   return zones.map((zone) => ({
     ...zone,
     trackingId: createTrackingId(),
-    questions: zone.questions.map((question) => ({
-      ...normalizeQuestionPoints(question, getGradingMethod(question.id)),
-      trackingId: createTrackingId(),
-      alternatives: question.alternatives?.map((alt) => ({
-        ...normalizeQuestionPoints(alt, getGradingMethod(alt.id)),
+    questions: zone.questions.map((question) => {
+      // Alt groups have no `id`, so we can't look up a grading method directly.
+      // Determine it from the alternatives' grading methods instead.
+      const altGroupGradingMethod =
+        question.alternatives && !question.id
+          ? getAltGroupGradingMethod(question.alternatives, getGradingMethod)
+          : undefined;
+
+      if (altGroupGradingMethod === 'mixed' && hasLegacyPoints(question)) {
+        return pushPointsToAlternatives(question, getGradingMethod);
+      }
+
+      const groupMethod =
+        altGroupGradingMethod === 'mixed'
+          ? undefined
+          : (altGroupGradingMethod ?? getGradingMethod(question.id));
+
+      return {
+        ...normalizeQuestionPoints(question, groupMethod),
         trackingId: createTrackingId(),
-      })),
-    })),
+        alternatives: question.alternatives?.map((alt) => ({
+          ...normalizeQuestionPoints(alt, getGradingMethod(alt.id)),
+          trackingId: createTrackingId(),
+        })),
+      };
+    }),
   })) as ZoneAssessmentForm[];
 }
 
@@ -104,7 +186,12 @@ export function stripTrackingIds(zones: ZoneAssessmentForm[]): ZoneAssessmentJso
       questions: questions
         .filter((q) => !q.alternatives || q.alternatives.length > 0)
         .map((question: ZoneQuestionBlockForm) => {
-          const { trackingId: _trackingId, alternatives, ...questionRest } = question;
+          const {
+            trackingId: _trackingId,
+            pointsDistributedInfoBanner: _banner,
+            alternatives,
+            ...questionRest
+          } = question as ZoneQuestionBlockForm & { pointsDistributedInfoBanner?: boolean };
           return {
             ...questionRest,
             alternatives: alternatives?.map((alt: QuestionAlternativeForm) => {

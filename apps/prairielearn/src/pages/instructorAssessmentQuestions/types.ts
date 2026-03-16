@@ -61,6 +61,8 @@ export type StandaloneQuestionBlockForm = ZoneQuestionBlockFormBase & {
 export type AltGroupBlockForm = ZoneQuestionBlockFormBase & {
   id?: undefined;
   alternatives: QuestionAlternativeForm[];
+  /** Transient flag: set when legacy `points` were pushed to alternatives due to mixed grading methods. Not serialized. */
+  pointsDistributedInfoBanner?: boolean;
 };
 
 /**

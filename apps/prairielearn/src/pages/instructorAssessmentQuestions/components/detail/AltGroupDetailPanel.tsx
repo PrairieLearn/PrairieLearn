@@ -2,7 +2,12 @@ import clsx from 'clsx';
 import { useCallback, useEffect, useMemo } from 'react';
 import { useForm } from 'react-hook-form';
 
-import type { DetailState, ZoneAssessmentForm, ZoneQuestionBlockForm } from '../../types.js';
+import type {
+  AltGroupBlockForm,
+  DetailState,
+  ZoneAssessmentForm,
+  ZoneQuestionBlockForm,
+} from '../../types.js';
 import {
   coerceToNumber,
   coerceToOptionalString,
@@ -179,6 +184,23 @@ export function AltGroupDetailPanel({
         <div className="alert alert-warning small mb-3" role="alert">
           <i className="bi bi-exclamation-triangle-fill me-1" aria-hidden="true" />
           Number to choose exceeds the number of alternatives in this group.
+        </div>
+      )}
+      {(zoneQuestionBlock as AltGroupBlockForm).pointsDistributedInfoBanner && (
+        <div className="alert alert-info small mb-3 alert-dismissible" role="alert">
+          <i className="bi bi-info-circle-fill me-1" aria-hidden="true" />
+          This group contains both auto-graded and manually-graded questions. Points have been
+          distributed to individual alternatives based on each question's grading method.
+          <button
+            type="button"
+            className="btn-close"
+            aria-label="Dismiss"
+            onClick={() =>
+              onUpdate(zoneQuestionBlock.trackingId, {
+                pointsDistributedInfoBanner: undefined,
+              })
+            }
+          />
         </div>
       )}
       <div className="d-flex flex-column gap-2">
