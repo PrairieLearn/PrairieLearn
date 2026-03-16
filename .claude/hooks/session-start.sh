@@ -17,7 +17,7 @@ for bin in /usr/lib/postgresql/16/bin/*; do
 done
 
 # We need graphviz for the python dependencies.
-apt-get update -qq && apt-get install -y -qq graphviz libgraphviz-dev 2>&1
+apt-get update -qq && apt-get install -y -qq graphviz libgraphviz-dev postgresql-16-pgvector 2>&1
 
 # nvm is already installed in the default Claude Code environment, but we need to install Node.js 24.
 nvm install 24
