@@ -357,7 +357,7 @@ export function QuestionDetailPanel({
             : null}
         </div>
         {questionData && (
-          <>
+          <div className="d-flex flex-column gap-1">
             {hasTitle && (
               <span
                 className="d-inline-flex align-items-center text-muted font-monospace"
@@ -372,13 +372,13 @@ export function QuestionDetailPanel({
                 />
               </span>
             )}
-            <div className="mt-1">
+            <div>
               <span className={`badge color-${questionData.topic.color}`}>
                 {questionData.topic.name}
               </span>
             </div>
             {questionData.tags && questionData.tags.length > 0 && (
-              <div className="d-flex flex-wrap gap-1 mt-1">
+              <div className="d-flex flex-wrap gap-1">
                 {questionData.tags.map((tag) => (
                   <span key={tag.name} className={`badge color-${tag.color}`}>
                     {tag.name}
@@ -387,14 +387,14 @@ export function QuestionDetailPanel({
               </div>
             )}
             {questionData.other_assessments && questionData.other_assessments.length > 0 && (
-              <div className="d-flex flex-wrap align-items-center gap-1 mt-1">
+              <div className="d-flex flex-wrap align-items-center gap-1">
                 <AssessmentBadges
                   assessments={toAssessmentForPicker(questionData.other_assessments)}
                   courseInstanceId={courseInstanceId}
                 />
               </div>
             )}
-          </>
+          </div>
         )}
       </div>
 

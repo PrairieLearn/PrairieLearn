@@ -171,7 +171,7 @@ export function AltGroupDetailPanel({
 
   return (
     <div className="p-3">
-      <div className="fw-semibold mb-3 d-inline-flex align-items-center">
+      <div className="fw-semibold mb-2 d-inline-flex align-items-center">
         <AssessmentQuestionNumber questionNumber={questionNumber} />
         <span>Alternative group</span>
       </div>
