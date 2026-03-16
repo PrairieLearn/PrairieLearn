@@ -154,6 +154,7 @@ SET
   deleted_at = current_timestamp
 WHERE
   id = $course_id
+  AND deleted_at IS NULL
 RETURNING
   *;
 
@@ -196,6 +197,76 @@ SET
   sharing_name = $sharing_name
 WHERE
   id = $course_id;
+
+-- BLOCK update_course_column_short_name
+UPDATE courses
+SET
+  short_name = $value
+WHERE
+  id = $course_id
+  AND deleted_at IS NULL
+RETURNING
+  *;
+
+-- BLOCK update_course_column_title
+UPDATE courses
+SET
+  title = $value
+WHERE
+  id = $course_id
+  AND deleted_at IS NULL
+RETURNING
+  *;
+
+-- BLOCK update_course_column_display_timezone
+UPDATE courses
+SET
+  display_timezone = $value
+WHERE
+  id = $course_id
+  AND deleted_at IS NULL
+RETURNING
+  *;
+
+-- BLOCK update_course_column_path
+UPDATE courses
+SET
+  path = $value
+WHERE
+  id = $course_id
+  AND deleted_at IS NULL
+RETURNING
+  *;
+
+-- BLOCK update_course_column_repository
+UPDATE courses
+SET
+  repository = $value
+WHERE
+  id = $course_id
+  AND deleted_at IS NULL
+RETURNING
+  *;
+
+-- BLOCK update_course_column_branch
+UPDATE courses
+SET
+  branch = $value
+WHERE
+  id = $course_id
+  AND deleted_at IS NULL
+RETURNING
+  *;
+
+-- BLOCK update_course_column_institution_id
+UPDATE courses
+SET
+  institution_id = $value::bigint
+WHERE
+  id = $course_id
+  AND deleted_at IS NULL
+RETURNING
+  *;
 
 -- BLOCK find_courses_by_sharing_names
 SELECT

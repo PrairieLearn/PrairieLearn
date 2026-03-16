@@ -284,6 +284,57 @@ export async function insertCourse({
   });
 }
 
+const updateCourseColumnSqlMap = {
+  short_name: sql.update_course_column_short_name,
+  title: sql.update_course_column_title,
+  display_timezone: sql.update_course_column_display_timezone,
+  path: sql.update_course_column_path,
+  repository: sql.update_course_column_repository,
+  branch: sql.update_course_column_branch,
+  institution_id: sql.update_course_column_institution_id,
+} as const;
+
+export async function updateCourseColumn({
+  courseId,
+  columnName,
+  value,
+  authnUserId,
+}: {
+  courseId: string;
+  columnName:
+    | 'short_name'
+    | 'title'
+    | 'display_timezone'
+    | 'path'
+    | 'repository'
+    | 'branch'
+    | 'institution_id';
+  value: string;
+  authnUserId: string;
+}): Promise<Course> {
+  return await runInTransactionAsync(async () => {
+    const oldCourse = await selectCourseById(courseId);
+    const course = await queryRow(
+      updateCourseColumnSqlMap[columnName],
+      { course_id: courseId, value },
+      CourseSchema,
+    );
+    await insertAuditLog({
+      authn_user_id: authnUserId,
+      action: 'update',
+      table_name: 'courses',
+      column_name: columnName,
+      row_id: courseId,
+      parameters: { [columnName]: value },
+      old_state: oldCourse,
+      new_state: course,
+      course_id: courseId,
+      institution_id: course.institution_id,
+    });
+    return course;
+  });
+}
+
 /**
  * Update the `show_getting_started` column for a course.
  */
