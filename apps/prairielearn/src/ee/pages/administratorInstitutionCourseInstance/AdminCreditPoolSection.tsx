@@ -25,10 +25,14 @@ export function AdminCreditPoolSection({
   trpcCsrfToken,
   useCustomApiKeys,
   isDeleted,
+  maxAddDollars,
+  maxDeductDollars,
 }: {
   trpcCsrfToken: string;
   useCustomApiKeys: boolean;
   isDeleted: boolean;
+  maxAddDollars: number;
+  maxDeductDollars: number;
 }) {
   const [queryClient] = useState(() => new QueryClient());
   const [trpcClient] = useState(() => createAdminCreditPoolTrpcClient(trpcCsrfToken));
@@ -36,7 +40,12 @@ export function AdminCreditPoolSection({
   return (
     <QueryClientProviderDebug client={queryClient}>
       <TRPCProvider trpcClient={trpcClient} queryClient={queryClient}>
-        <AdminCreditPoolContent useCustomApiKeys={useCustomApiKeys} isDeleted={isDeleted} />
+        <AdminCreditPoolContent
+          useCustomApiKeys={useCustomApiKeys}
+          isDeleted={isDeleted}
+          maxAddDollars={maxAddDollars}
+          maxDeductDollars={maxDeductDollars}
+        />
       </TRPCProvider>
     </QueryClientProviderDebug>
   );
@@ -47,9 +56,13 @@ AdminCreditPoolSection.displayName = 'AdminCreditPoolSection';
 function AdminCreditPoolContent({
   useCustomApiKeys,
   isDeleted,
+  maxAddDollars,
+  maxDeductDollars,
 }: {
   useCustomApiKeys: boolean;
   isDeleted: boolean;
+  maxAddDollars: number;
+  maxDeductDollars: number;
 }) {
   const trpc = useTRPC();
   const queryClient = useQueryClient();
@@ -122,6 +135,8 @@ function AdminCreditPoolContent({
         isPending={adjustMutation.isPending}
         error={adjustMutation.isError ? adjustMutation.error.message : null}
         isSuccess={adjustMutation.isSuccess}
+        maxAddDollars={maxAddDollars}
+        maxDeductDollars={maxDeductDollars}
         onSubmit={(data) => adjustMutation.mutate(data)}
         onDismissError={() => adjustMutation.reset()}
         onDismissSuccess={() => adjustMutation.reset()}
@@ -229,6 +244,8 @@ function AdjustCreditsForm({
   isPending,
   error,
   isSuccess,
+  maxAddDollars,
+  maxDeductDollars,
   onSubmit,
   onDismissError,
   onDismissSuccess,
@@ -237,6 +254,8 @@ function AdjustCreditsForm({
   isPending: boolean;
   error: string | null;
   isSuccess: boolean;
+  maxAddDollars: number;
+  maxDeductDollars: number;
   onSubmit: (data: {
     action: 'add' | 'deduct';
     amount_dollars: number;
@@ -299,6 +318,7 @@ function AdjustCreditsForm({
                 className="form-control"
                 id="amount_dollars"
                 min="0.01"
+                max={action === 'add' ? maxAddDollars : maxDeductDollars}
                 step="0.01"
                 placeholder="0.00"
                 value={amountStr}

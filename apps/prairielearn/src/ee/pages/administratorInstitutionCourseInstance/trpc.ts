@@ -1,8 +1,9 @@
-import { initTRPC } from '@trpc/server';
+import { TRPCError, initTRPC } from '@trpc/server';
 import type { CreateExpressContextOptions } from '@trpc/server/adapters/express';
 import superjson from 'superjson';
 import { z } from 'zod';
 
+import { config } from '../../../lib/config.js';
 import type { ResLocalsForPage } from '../../../lib/res-locals.js';
 import { adjustCreditPool, selectCreditPool } from '../../../models/ai-grading-credit-pool.js';
 import { selectCourseInstanceById } from '../../../models/course-instances.js';
@@ -37,6 +38,16 @@ const adjustCreditPoolMutation = t.procedure
     }),
   )
   .mutation(async (opts) => {
+    const maxDollars =
+      opts.input.action === 'add'
+        ? config.aiGradingCreditPoolMaxAddDollars
+        : config.aiGradingCreditPoolMaxDeductDollars;
+    if (opts.input.amount_dollars > maxDollars) {
+      throw new TRPCError({
+        code: 'BAD_REQUEST',
+        message: `Amount exceeds the maximum of $${maxDollars} for ${opts.input.action} adjustments`,
+      });
+    }
     const delta =
       Math.round(opts.input.amount_dollars * 1000) * (opts.input.action === 'deduct' ? -1 : 1);
     await adjustCreditPool({

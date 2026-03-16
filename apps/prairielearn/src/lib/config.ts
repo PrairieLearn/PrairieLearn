@@ -591,6 +591,14 @@ export const ConfigSchema = z.object({
    */
   aiGradingInfrastructureFeePercent: z.number().default(0.2),
   /**
+   * Maximum dollar amount an admin can add to a credit pool in a single adjustment.
+   */
+  aiGradingCreditPoolMaxAddDollars: z.number().default(10_000),
+  /**
+   * Maximum dollar amount an admin can deduct from a credit pool in a single adjustment.
+   */
+  aiGradingCreditPoolMaxDeductDollars: z.number().default(10_000),
+  /**
    * The hourly spending rate limit for AI question generation, in US dollars.
    * Accounts for both input and output tokens.
    */

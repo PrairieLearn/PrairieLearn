@@ -21,6 +21,8 @@ export function AdministratorInstitutionCourseInstance({
   planGrants,
   aiGradingEnabled,
   trpcCsrfToken,
+  maxAddDollars,
+  maxDeductDollars,
   resLocals,
 }: {
   institution: Institution;
@@ -29,6 +31,8 @@ export function AdministratorInstitutionCourseInstance({
   planGrants: PlanGrant[];
   aiGradingEnabled: boolean;
   trpcCsrfToken: string | null;
+  maxAddDollars: number;
+  maxDeductDollars: number;
   resLocals: ResLocalsForPage<'plain'>;
 }) {
   const isDeleted = course_instance.deleted_at !== null;
@@ -145,6 +149,8 @@ export function AdministratorInstitutionCourseInstance({
               trpcCsrfToken={trpcCsrfToken}
               useCustomApiKeys={course_instance.ai_grading_use_custom_api_keys}
               isDeleted={isDeleted}
+              maxAddDollars={maxAddDollars}
+              maxDeductDollars={maxDeductDollars}
             />,
           )
         : ''}
