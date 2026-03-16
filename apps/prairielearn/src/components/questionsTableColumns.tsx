@@ -359,53 +359,25 @@ export function createQuestionsTableFilters({
     (props: { header: Header<SafeQuestionsPageData, unknown> }) => React.ReactNode
   > = {
     topic: ({ header }) => (
-      <CategoricalColumnFilter
-        column={header.column}
-        allColumnValues={allTopics}
-        renderValueLabel={({ value }) => <span>{value}</span>}
-      />
+      <CategoricalColumnFilter column={header.column} allColumnValues={allTopics} />
     ),
     tags: ({ header }) => (
-      <CategoricalColumnFilter
-        column={header.column}
-        allColumnValues={allTags}
-        renderValueLabel={({ value }) => <span>{value}</span>}
-      />
+      <CategoricalColumnFilter column={header.column} allColumnValues={allTags} />
     ),
     display_type: ({ header }) => (
-      <CategoricalColumnFilter
-        column={header.column}
-        allColumnValues={allVersions}
-        renderValueLabel={({ value }) => <span>{value}</span>}
-      />
+      <CategoricalColumnFilter column={header.column} allColumnValues={allVersions} />
     ),
     grading_method: ({ header }) => (
-      <CategoricalColumnFilter
-        column={header.column}
-        allColumnValues={allGradingMethods}
-        renderValueLabel={({ value }) => <span>{value}</span>}
-      />
+      <CategoricalColumnFilter column={header.column} allColumnValues={allGradingMethods} />
     ),
     external_grading_image: ({ header }) => (
-      <CategoricalColumnFilter
-        column={header.column}
-        allColumnValues={allExternalGradingImages}
-        renderValueLabel={({ value }) => <span>{value}</span>}
-      />
+      <CategoricalColumnFilter column={header.column} allColumnValues={allExternalGradingImages} />
     ),
     workspace_image: ({ header }) => (
-      <CategoricalColumnFilter
-        column={header.column}
-        allColumnValues={allWorkspaceImages}
-        renderValueLabel={({ value }) => <span>{value}</span>}
-      />
+      <CategoricalColumnFilter column={header.column} allColumnValues={allWorkspaceImages} />
     ),
     sharing_sets: ({ header }) => (
-      <CategoricalColumnFilter
-        column={header.column}
-        allColumnValues={allSharingSets}
-        renderValueLabel={({ value }) => <span>{value}</span>}
-      />
+      <CategoricalColumnFilter column={header.column} allColumnValues={allSharingSets} />
     ),
   };
 
@@ -417,11 +389,7 @@ export function createQuestionsTableFilters({
     ];
 
     filterMap[`ci_${ci.id}`] = ({ header }) => (
-      <CategoricalColumnFilter
-        column={header.column}
-        allColumnValues={assessmentLabels}
-        renderValueLabel={({ value }) => <span>{value}</span>}
-      />
+      <CategoricalColumnFilter column={header.column} allColumnValues={assessmentLabels} />
     );
   });
 
