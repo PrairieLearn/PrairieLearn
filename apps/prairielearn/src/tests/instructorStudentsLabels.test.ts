@@ -113,7 +113,7 @@ describe('Instructor student labels page', () => {
     );
 
     // Create label without students
-    await trpcClient.studentLabels.create.mutate({
+    await trpcClient.studentLabels.upsert.mutate({
       name: 'Test Label A',
       color: 'blue1',
       uids: [],
@@ -133,7 +133,7 @@ describe('Instructor student labels page', () => {
     );
 
     // Create label with students
-    await trpcClient.studentLabels.create.mutate({
+    await trpcClient.studentLabels.upsert.mutate({
       name: 'Test Label B',
       color: 'green2',
       uids: [studentUids[0], studentUids[1]],
@@ -155,7 +155,7 @@ describe('Instructor student labels page', () => {
 
     // Attempt to create label with duplicate name - should fail
     try {
-      await trpcClient.studentLabels.create.mutate({
+      await trpcClient.studentLabels.upsert.mutate({
         name: 'Test Label A',
         color: 'red1',
         uids: [],
@@ -169,7 +169,7 @@ describe('Instructor student labels page', () => {
 
     // Attempt to create label with empty name - should fail
     try {
-      await trpcClient.studentLabels.create.mutate({
+      await trpcClient.studentLabels.upsert.mutate({
         name: '',
         color: 'gray1',
         uids: [],
@@ -193,7 +193,7 @@ describe('Instructor student labels page', () => {
     assert.isDefined(labelA);
 
     // Edit label name
-    await trpcClient.studentLabels.edit.mutate({
+    await trpcClient.studentLabels.upsert.mutate({
       labelId: labelA.id,
       name: 'Test Label A Renamed',
       color: 'blue1',
@@ -212,7 +212,7 @@ describe('Instructor student labels page', () => {
     );
 
     // Edit label color
-    await trpcClient.studentLabels.edit.mutate({
+    await trpcClient.studentLabels.upsert.mutate({
       labelId: labelA.id,
       name: 'Test Label A Renamed',
       color: 'purple3',
@@ -231,7 +231,7 @@ describe('Instructor student labels page', () => {
     );
 
     // Add students to label via edit
-    await trpcClient.studentLabels.edit.mutate({
+    await trpcClient.studentLabels.upsert.mutate({
       labelId: labelA.id,
       name: 'Test Label A Renamed',
       color: 'purple3',
@@ -249,7 +249,7 @@ describe('Instructor student labels page', () => {
     );
 
     // Remove students via edit (set empty uids)
-    await trpcClient.studentLabels.edit.mutate({
+    await trpcClient.studentLabels.upsert.mutate({
       labelId: labelA.id,
       name: 'Test Label A Renamed',
       color: 'purple3',
@@ -270,7 +270,7 @@ describe('Instructor student labels page', () => {
     assert.isDefined(labelB);
 
     try {
-      await trpcClient.studentLabels.edit.mutate({
+      await trpcClient.studentLabels.upsert.mutate({
         labelId: labelA.id,
         name: 'Test Label B',
         color: 'purple3',
@@ -351,7 +351,7 @@ describe('Instructor student labels page', () => {
     const origHash = await getOriginalHash(
       getCourseInstanceJsonPath(courseRepo.courseLiveDir, courseInstanceShortName),
     );
-    await trpcClient.studentLabels.create.mutate({
+    await trpcClient.studentLabels.upsert.mutate({
       name: 'Invited Label',
       color: 'red1',
       uids: [invitedUid, studentUids[0]],

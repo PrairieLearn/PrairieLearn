@@ -238,6 +238,11 @@ function GradebookTable({
     return { groups, headingById };
   }, [courseAssessments]);
 
+  const studentLabelsById = useMemo(
+    () => new Map(studentLabels.map((l) => [l.id, l])),
+    [studentLabels],
+  );
+
   const columns = useMemo(
     () => [
       columnHelper.accessor('uid', {
@@ -326,7 +331,7 @@ function GradebookTable({
           const labelIds = info.getValue();
           if (labelIds.length === 0) return '—';
           const labels = labelIds
-            .map((id) => studentLabels.find((l) => l.id === id))
+            .map((id) => studentLabelsById.get(id))
             .filter((l): l is StaffStudentLabel => l != null);
           return (
             <div className="d-flex flex-wrap gap-1">
@@ -412,7 +417,7 @@ function GradebookTable({
       urlPrefix,
       courseInstanceId,
       csrfToken,
-      studentLabels,
+      studentLabelsById,
     ],
   );
 
@@ -482,15 +487,15 @@ function GradebookTable({
           column={header.column}
           allColumnValues={labelIds}
           renderValueLabel={({ value }) => {
-            const label = studentLabels.find((l) => l.id === String(value));
-            if (!label) return <span>{String(value)}</span>;
+            const label = studentLabelsById.get(value);
+            if (!label) return <span>{value}</span>;
             return <span>{label.name}</span>;
           }}
         />
       ),
       ...assessmentFilters,
     };
-  }, [courseAssessments, studentLabels]);
+  }, [courseAssessments, studentLabels, studentLabelsById]);
 
   const table = useReactTable({
     data: gradebookRows,
@@ -549,7 +554,7 @@ function GradebookTable({
                 value:
                   row.student_label_ids.length > 0
                     ? row.student_label_ids
-                        .map((id) => studentLabels.find((l) => l.id === id)?.name)
+                        .map((id) => studentLabelsById.get(id)?.name)
                         .filter((name): name is string => name != null)
                     : null,
               },

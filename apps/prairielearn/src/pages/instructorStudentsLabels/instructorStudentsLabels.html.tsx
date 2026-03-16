@@ -26,7 +26,7 @@ interface StudentLabelsPageProps {
 function StudentLabelsCard({
   courseInstanceId,
   initialLabels,
-  canEdit: canEditProp,
+  canEdit,
   origHash: initialOrigHash,
 }: {
   courseInstanceId: string;
@@ -48,9 +48,6 @@ function StudentLabelsCard({
   const labels = data.labels;
   const [origHashOverride, setOrigHashOverride] = useState<string | null>(null);
   const origHash = origHashOverride ?? data.origHash ?? initialOrigHash;
-
-  const canEdit = canEditProp;
-  const canEditEnabled = canEditProp && origHash !== null;
 
   const handleEdit = (label: StudentLabelWithUserData) => {
     editModal.showWithData({
@@ -96,7 +93,7 @@ function StudentLabelsCard({
             <button
               type="button"
               className="btn btn-outline-primary btn-sm text-nowrap"
-              disabled={!canEditEnabled}
+              disabled={origHash === null}
               onClick={() => editModal.showWithData({ type: 'add', origHash })}
             >
               Add label
@@ -115,7 +112,7 @@ function StudentLabelsCard({
         </Alert>
       )}
 
-      {canEditProp && origHash === null && (
+      {canEdit && origHash === null && (
         <div className="alert alert-info" role="alert">
           You cannot edit student labels because the <code>infoCourseInstance.json</code> file does
           not exist.
@@ -143,7 +140,7 @@ function StudentLabelsCard({
                   label={label}
                   courseInstanceId={courseInstanceId}
                   canEdit={canEdit}
-                  disabled={!canEditEnabled}
+                  disabled={origHash === null}
                   onEdit={handleEdit}
                   onDelete={handleDelete}
                 />
