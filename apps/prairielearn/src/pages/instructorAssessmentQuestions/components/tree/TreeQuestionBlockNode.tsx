@@ -202,7 +202,12 @@ export function TreeQuestionBlockNode({
               <i className="bi bi-stack me-1" aria-hidden="true" />
               {run(() => {
                 const { min, max } = computeAltGroupChosenRange(zone, zoneQuestionBlock);
-                const chosenLabel = min === max ? `${min} chosen` : `${min}-${max} chosen`;
+                const allChosen = min === displayCount && max === displayCount;
+                const chosenLabel = allChosen
+                  ? 'all chosen'
+                  : min === max
+                    ? `${min} chosen`
+                    : `${min}-${max} chosen`;
                 return (
                   <>
                     {displayCount} Alternative{displayCount !== 1 ? 's' : ''}{' '}
