@@ -23,12 +23,8 @@ import {
 import { config } from '../lib/config.js';
 import { clearCookie } from '../lib/cookie.js';
 import {
-  type Course,
-  type CourseInstance,
   type EnumCourseInstanceRole,
   type EnumCourseRole,
-  type EnumMode,
-  type Institution,
   InstitutionSchema,
   UserSchema,
 } from '../lib/db-types.js';
@@ -298,17 +294,17 @@ type SelectUser = z.infer<typeof SelectUserSchema>;
 
 interface ResLocalsCourseAuthz {
   authn_user: ResLocalsAuthnUser['authn_user'];
-  authn_mode: EnumMode;
+  authn_mode: ConstructedCourseOrInstanceSuccessContext['authzData']['mode'];
   authn_is_administrator: ResLocalsAuthnUser['is_administrator'];
-  authn_course_role: EnumCourseRole;
+  authn_course_role: ConstructedCourseOrInstanceSuccessContext['authzData']['course_role'];
   authn_has_course_permission_preview: boolean;
   authn_has_course_permission_view: boolean;
   authn_has_course_permission_edit: boolean;
   authn_has_course_permission_own: boolean;
   user: ResLocalsAuthnUser['authn_user'];
-  mode: EnumMode;
+  mode: ConstructedCourseOrInstanceSuccessContext['authzData']['mode'];
   is_administrator: ResLocalsAuthnUser['is_administrator'];
-  course_role: EnumCourseRole;
+  course_role: ConstructedCourseOrInstanceSuccessContext['authzData']['course_role'];
   has_course_permission_preview: boolean;
   has_course_permission_view: boolean;
   has_course_permission_edit: boolean;
@@ -317,22 +313,34 @@ interface ResLocalsCourseAuthz {
 }
 
 export interface ResLocalsCourseInstanceAuthz extends ResLocalsCourseAuthz {
-  authn_course_instance_role: EnumCourseInstanceRole;
+  authn_course_instance_role: NonNullable<
+    ConstructedCourseOrInstanceSuccessContext['authzData']['course_instance_role']
+  >;
   authn_has_course_instance_permission_view: boolean;
   authn_has_course_instance_permission_edit: boolean;
-  authn_has_student_access: boolean;
-  authn_has_student_access_with_enrollment: boolean;
-  course_instance_role: EnumCourseInstanceRole;
+  authn_has_student_access: NonNullable<
+    ConstructedCourseOrInstanceSuccessContext['authzData']['has_student_access']
+  >;
+  authn_has_student_access_with_enrollment: NonNullable<
+    ConstructedCourseOrInstanceSuccessContext['authzData']['has_student_access_with_enrollment']
+  >;
+  course_instance_role: NonNullable<
+    ConstructedCourseOrInstanceSuccessContext['authzData']['course_instance_role']
+  >;
   has_course_instance_permission_view: boolean;
   has_course_instance_permission_edit: boolean;
-  has_student_access_with_enrollment: boolean;
-  has_student_access: boolean;
+  has_student_access_with_enrollment: NonNullable<
+    ConstructedCourseOrInstanceSuccessContext['authzData']['has_student_access_with_enrollment']
+  >;
+  has_student_access: NonNullable<
+    ConstructedCourseOrInstanceSuccessContext['authzData']['has_student_access']
+  >;
   user_with_requested_uid_has_instructor_access_to_course_instance: boolean | null;
 }
 
 export interface ResLocalsCourse {
-  course: Course;
-  institution: Institution;
+  course: ConstructedCourseOrInstanceSuccessContext['course'];
+  institution: ConstructedCourseOrInstanceSuccessContext['institution'];
   side_nav_expanded: boolean;
   authz_data: ResLocalsCourseAuthz;
   user: ResLocalsCourseAuthz['user'];
@@ -342,7 +350,7 @@ export interface ResLocalsCourse {
 }
 
 export interface ResLocalsCourseInstance extends ResLocalsCourse {
-  course_instance: CourseInstance;
+  course_instance: NonNullable<ConstructedCourseOrInstanceSuccessContext['courseInstance']>;
   authz_data: ResLocalsCourseInstanceAuthz;
   user: ResLocalsCourseInstanceAuthz['user'];
 }
