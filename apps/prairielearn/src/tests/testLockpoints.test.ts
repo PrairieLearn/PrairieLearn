@@ -250,28 +250,6 @@ describe('Assessment lockpoints', { timeout: 60_000 }, function () {
     assert.isTrue(response.ok);
   });
 
-  test.sequential('student cannot access lockpoint-blocked question', async function () {
-    const studentUser: AuthUser = {
-      uid: 'lockpoint-student@example.com',
-      name: 'Lockpoint Student',
-      uin: '000000099',
-      email: 'lockpoint-student@example.com',
-    };
-    await enrollUser('1', studentUser);
-    await withUser(studentUser, async () => {
-      const created = await createAssessmentInstance(context.assessmentId);
-      const questionStates = await selectQuestionStates(created.assessmentInstanceId);
-      const lockedQuestion = questionStates.find(
-        (q) => q.question_access_mode === 'blocked_lockpoint',
-      );
-      assert.isDefined(lockedQuestion);
-
-      const response = await helperClient.fetchCheerio(lockedQuestion.url);
-      assert.isFalse(response.ok);
-      assert.equal(response.status, 403);
-    });
-  });
-
   test.sequential('next-question navigation explains lockpoint requirement', async function () {
     const response = await helperClient.fetchCheerio(context.questionStates[0].url);
     assert.isTrue(response.ok);
@@ -508,4 +486,26 @@ describe('Assessment lockpoints', { timeout: 60_000 }, function () {
       }
     },
   );
+
+  test.sequential('student cannot access lockpoint-blocked question', async function () {
+    const studentUser: AuthUser = {
+      uid: 'lockpoint-student@example.com',
+      name: 'Lockpoint Student',
+      uin: '000000099',
+      email: 'lockpoint-student@example.com',
+    };
+    await enrollUser('1', studentUser);
+    await withUser(studentUser, async () => {
+      const created = await createAssessmentInstance(context.assessmentId);
+      const questionStates = await selectQuestionStates(created.assessmentInstanceId);
+      const lockedQuestion = questionStates.find(
+        (q) => q.question_access_mode === 'blocked_lockpoint',
+      );
+      assert.isDefined(lockedQuestion);
+
+      const response = await helperClient.fetchCheerio(lockedQuestion.url);
+      assert.isFalse(response.ok);
+      assert.equal(response.status, 403);
+    });
+  });
 });
