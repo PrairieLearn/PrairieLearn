@@ -5,6 +5,8 @@ import { z } from 'zod';
 
 import { DateFromISOString, IdSchema, IntervalSchema } from '@prairielearn/zod';
 
+import { QuestionPreferencesSchemaJsonSchema } from '../schemas/index.js';
+
 // *******************************************************************************
 // Enum schemas. These should be alphabetized by their corresponding enum name.
 // *******************************************************************************
@@ -99,6 +101,11 @@ export type EnumQuestionType = z.infer<typeof EnumQuestionTypeSchema>;
 // Miscellaneous schemas; keep these alphabetized.
 // *******************************************************************************
 export const JsonCommentSchema = z.union([z.string(), z.array(z.any()), z.record(z.any())]);
+
+export const QuestionPreferenceValuesSchema = z.record(
+  z.string(),
+  z.union([z.string(), z.number(), z.boolean()]),
+);
 
 // *******************************************************************************
 // Sproc schemas. These should be alphabetized by their corresponding sproc name.
@@ -482,6 +489,7 @@ export const AssessmentQuestionSchema = z.object({
   number_submissions_hist: z.array(z.number()).nullable(),
   number_submissions_variance: z.number().nullable(),
   points_list: z.array(z.number()).nullable(),
+  preferences: QuestionPreferenceValuesSchema.nullable(),
   question_id: IdSchema,
   question_score_variance: z.number().nullable(),
   quintile_question_scores: z.array(z.number()).nullable(),
@@ -1293,6 +1301,7 @@ export const QuestionSchema = z.object({
   number: z.number().nullable(),
   options: z.any().nullable(),
   partial_credit: z.boolean().nullable(),
+  preferences_schema: QuestionPreferencesSchemaJsonSchema.nullable(),
   qid: z.string().nullable(),
   share_publicly: z.boolean(),
   share_source_publicly: z.boolean(),
@@ -1539,6 +1548,7 @@ export const VariantSchema = z.object({
   open: z.boolean().nullable(),
   options: z.record(z.string(), z.any()).nullable(),
   params: z.record(z.string(), z.any()).nullable(),
+  preferences: QuestionPreferenceValuesSchema,
   question_id: IdSchema,
   team_id: IdSchema.nullable(),
   true_answer: z.record(z.string(), z.any()).nullable(),
