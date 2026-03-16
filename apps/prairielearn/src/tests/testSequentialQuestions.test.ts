@@ -273,7 +273,7 @@ describe(
           );
           assert.isDefined(lockedQuestion);
 
-          const lockedUrl = `${context.courseInstanceBaseUrl}/instance_question/${lockedQuestion!.instance_question_id}/`;
+          const lockedUrl = `${context.courseInstanceBaseUrl}/instance_question/${lockedQuestion.instance_question_id}/`;
           const lockedResponse = await helperClient.fetchCheerio(lockedUrl);
           assert.isFalse(lockedResponse.ok);
           assert.equal(lockedResponse.status, 403);
