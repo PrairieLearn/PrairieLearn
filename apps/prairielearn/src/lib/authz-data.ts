@@ -297,9 +297,11 @@ export async function selectCourseInstanceRole({
   userId: string;
   courseInstanceId: string;
 }) {
-  return await sqldb.queryScalar(
-    sql.select_course_instance_role,
-    { course_instance_id: courseInstanceId, user_id: userId },
-    EnumCourseInstanceRoleSchema,
+  return (
+    (await sqldb.queryOptionalScalar(
+      sql.select_course_instance_role,
+      { course_instance_id: courseInstanceId, user_id: userId },
+      EnumCourseInstanceRoleSchema,
+    )) ?? 'None'
   );
 }
