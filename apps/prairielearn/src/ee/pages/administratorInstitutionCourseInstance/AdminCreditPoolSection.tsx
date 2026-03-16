@@ -3,6 +3,8 @@ import clsx from 'clsx';
 import { useEffect, useState } from 'react';
 import { Alert, Dropdown, Spinner } from 'react-bootstrap';
 
+import { run } from '@prairielearn/run';
+
 import { QueryClientProviderDebug } from '../../../lib/client/tanstackQuery.js';
 import { BalanceCards } from '../../components/ai-grading-credits/BalanceCards.js';
 import {
@@ -10,6 +12,10 @@ import {
   type GroupByOption,
 } from '../../components/ai-grading-credits/DailySpendingChart.js';
 import { TransactionHistoryTable } from '../../components/ai-grading-credits/TransactionHistoryTable.js';
+import {
+  CHART_DAYS_OPTIONS,
+  type ChartDays,
+} from '../../components/ai-grading-credits/constants.js';
 
 import { createAdminCreditPoolTrpcClient } from './utils/trpc-client.js';
 import { TRPCProvider, useTRPC } from './utils/trpc-context.js';
@@ -49,7 +55,7 @@ function AdminCreditPoolContent({
 
   const [showHistory, setShowHistory] = useState(false);
   const [page, setPage] = useState(1);
-  const [chartDays, setChartDays] = useState<7 | 14 | 30>(30);
+  const [chartDays, setChartDays] = useState<ChartDays>(30);
   const [groupBy, setGroupBy] = useState<GroupByOption>('none');
 
   const poolQuery = useQuery(trpc.creditPool.queryOptions());
@@ -127,10 +133,17 @@ function AdminCreditPoolContent({
             <div className="d-flex align-items-center gap-2">
               <Dropdown onSelect={(key) => setGroupBy((key ?? 'none') as GroupByOption)}>
                 <Dropdown.Toggle variant="outline-secondary" size="sm">
-                  {groupBy === 'none' && 'Group by'}
-                  {groupBy === 'user' && 'Group by user'}
-                  {groupBy === 'assessment' && 'Group by assessment'}
-                  {groupBy === 'question' && 'Group by question'}
+                  {run(() => {
+                    if (groupBy === 'user') {
+                      return 'Group by user';
+                    } else if (groupBy === 'assessment') {
+                      return 'Group by assessment';
+                    } else if (groupBy === 'question') {
+                      return 'Group by question';
+                    } else {
+                      return 'Group by';
+                    }
+                  })}
                 </Dropdown.Toggle>
                 <Dropdown.Menu>
                   <Dropdown.Item eventKey="none" active={groupBy === 'none'}>
@@ -148,7 +161,7 @@ function AdminCreditPoolContent({
                 </Dropdown.Menu>
               </Dropdown>
               <div className="btn-group btn-group-sm" role="group" aria-label="Time range">
-                {([7, 14, 30] as const).map((d) => (
+                {CHART_DAYS_OPTIONS.map((d) => (
                   <button
                     key={d}
                     type="button"
@@ -237,6 +250,13 @@ function AdjustCreditsForm({
     'non_transferable',
   );
 
+  function handleSubmit() {
+    const amount = Number(amountStr);
+    if (!Number.isFinite(amount) || amount <= 0) return;
+    onSubmit({ action, amount_dollars: amount, credit_type: creditType });
+    setAmountStr('');
+  }
+
   return (
     <div className="border rounded p-3 mb-3">
       <h3 className="h6 mb-3">Adjust credits</h3>
@@ -248,10 +268,7 @@ function AdjustCreditsForm({
       <form
         onSubmit={(e) => {
           e.preventDefault();
-          const amount = Number(amountStr);
-          if (!Number.isFinite(amount) || amount <= 0) return;
-          onSubmit({ action, amount_dollars: amount, credit_type: creditType });
-          setAmountStr('');
+          handleSubmit();
         }}
       >
         <div className="row g-3 align-items-end">

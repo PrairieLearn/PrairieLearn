@@ -1,14 +1,12 @@
 import * as trpcExpress from '@trpc/server/adapters/express';
 import { Router } from 'express';
-import { z } from 'zod';
 
 import * as error from '@prairielearn/error';
 import { flash } from '@prairielearn/flash';
-import { execute, loadSqlEquiv, queryRow } from '@prairielearn/postgres';
+import { execute, loadSqlEquiv } from '@prairielearn/postgres';
 import { generatePrefixCsrfToken } from '@prairielearn/signed-token';
 
 import { config } from '../../../lib/config.js';
-import { CourseInstanceSchema, CourseSchema } from '../../../lib/db-types.js';
 import { features } from '../../../lib/features/index.js';
 import { typedAsyncHandler } from '../../../lib/res-locals.js';
 import { handleTrpcError } from '../../../lib/trpc.js';
@@ -25,39 +23,6 @@ import { adminCreditPoolRouter, createAdminContext } from './trpc.js';
 const sql = loadSqlEquiv(import.meta.url);
 const router = Router({ mergeParams: true });
 
-async function selectCourseInstanceAndCourseInInstitution({
-  institution_id,
-  unsafe_course_instance_id,
-}: {
-  institution_id: string;
-  unsafe_course_instance_id: string;
-}) {
-  return await queryRow(
-    sql.select_course_and_instance,
-    {
-      institution_id,
-      course_instance_id: unsafe_course_instance_id,
-    },
-    z.object({
-      course: CourseSchema,
-      course_instance: CourseInstanceSchema,
-    }),
-  );
-}
-
-// Middleware: load course and course_instance into res.locals for tRPC context.
-router.use(
-  typedAsyncHandler<'plain'>(async (req, res, next) => {
-    const { course, course_instance } = await selectCourseInstanceAndCourseInInstitution({
-      institution_id: req.params.institution_id,
-      unsafe_course_instance_id: req.params.course_instance_id,
-    });
-    (res.locals as any).course = course;
-    (res.locals as any).course_instance = course_instance;
-    next();
-  }),
-);
-
 // Mount tRPC for the admin credit pool section.
 router.use(
   '/trpc',
@@ -70,19 +35,16 @@ router.use(
 
 router.get(
   '/',
-  typedAsyncHandler<'plain'>(async (req, res) => {
-    const course = (res.locals as any).course;
-    const course_instance = (res.locals as any).course_instance;
-
+  typedAsyncHandler<'course-instance'>(async (req, res) => {
     const institution = await getInstitution(req.params.institution_id);
     const planGrants = await getPlanGrantsForCourseInstance({
       institution_id: institution.id,
-      course_instance_id: course_instance.id,
+      course_instance_id: res.locals.course_instance.id,
     });
     const aiGradingEnabled = await features.enabled('ai-grading', {
       institution_id: institution.id,
-      course_id: course.id,
-      course_instance_id: course_instance.id,
+      course_id: res.locals.course.id,
+      course_instance_id: res.locals.course_instance.id,
     });
 
     const trpcCsrfToken = aiGradingEnabled
@@ -98,8 +60,8 @@ router.get(
     res.send(
       AdministratorInstitutionCourseInstance({
         institution,
-        course,
-        course_instance,
+        course: res.locals.course,
+        course_instance: res.locals.course_instance,
         planGrants,
         aiGradingEnabled,
         trpcCsrfToken,
@@ -111,16 +73,14 @@ router.get(
 
 router.post(
   '/',
-  typedAsyncHandler<'plain'>(async (req, res) => {
-    const course_instance = (res.locals as any).course_instance;
-
-    if (course_instance.deleted_at != null) {
+  typedAsyncHandler<'course-instance'>(async (req, res) => {
+    if (res.locals.course_instance.deleted_at != null) {
       throw new error.HttpStatusError(403, 'Cannot modify a deleted course instance');
     }
 
     if (req.body.__action === 'update_enrollment_limit') {
       await execute(sql.update_enrollment_limit, {
-        course_instance_id: course_instance.id,
+        course_instance_id: res.locals.course_instance.id,
         enrollment_limit: req.body.enrollment_limit || null,
       });
       flash('success', 'Successfully updated enrollment limit.');
@@ -133,7 +93,7 @@ router.post(
         allowedPlans: ['compute', 'everything'],
       });
       await reconcilePlanGrantsForCourseInstance(
-        course_instance.id,
+        res.locals.course_instance.id,
         desiredPlans,
         res.locals.authn_user.id,
       );

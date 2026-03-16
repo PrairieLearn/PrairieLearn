@@ -15,6 +15,10 @@ import {
 } from '../../components/ai-grading-credits/DailySpendingChart.js';
 import { TransactionHistoryTable } from '../../components/ai-grading-credits/TransactionHistoryTable.js';
 import {
+  CHART_DAYS_OPTIONS,
+  type ChartDays,
+} from '../../components/ai-grading-credits/constants.js';
+import {
   AI_GRADING_PROVIDER_DISPLAY_NAMES,
   AI_GRADING_PROVIDER_OPTIONS,
 } from '../../lib/ai-grading/ai-grading-models.shared.js';
@@ -409,7 +413,7 @@ function CreditPoolSection({ useCustomApiKeys }: { useCustomApiKeys: boolean }) 
   const trpc = useTRPC();
   const [showHistory, setShowHistory] = useState(false);
   const [page, setPage] = useState(1);
-  const [chartDays, setChartDays] = useState<7 | 14 | 30>(30);
+  const [chartDays, setChartDays] = useState<ChartDays>(30);
   const [groupBy, setGroupBy] = useState<GroupByOption>('none');
 
   const poolQuery = useQuery(trpc.creditPool.queryOptions());
@@ -483,7 +487,7 @@ function CreditPoolSection({ useCustomApiKeys }: { useCustomApiKeys: boolean }) 
                 </Dropdown.Menu>
               </Dropdown>
               <div className="btn-group btn-group-sm" role="group" aria-label="Time range">
-                {([7, 14, 30] as const).map((d) => (
+                {CHART_DAYS_OPTIONS.map((d) => (
                   <button
                     key={d}
                     type="button"

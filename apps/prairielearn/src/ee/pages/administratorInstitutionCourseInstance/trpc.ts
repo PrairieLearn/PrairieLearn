@@ -3,16 +3,12 @@ import type { CreateExpressContextOptions } from '@trpc/server/adapters/express'
 import superjson from 'superjson';
 import { z } from 'zod';
 
-import type { Course, CourseInstance } from '../../../lib/db-types.js';
+import type { ResLocalsForPage } from '../../../lib/res-locals.js';
 import { adjustCreditPool, selectCreditPool } from '../../../models/ai-grading-credit-pool.js';
 import { creditPoolProcedures, requireAiGradingFeature } from '../../lib/credit-pool-trpc.js';
 
 export function createAdminContext({ res }: CreateExpressContextOptions) {
-  const locals = res.locals as {
-    course: Course;
-    course_instance: CourseInstance;
-    authn_user: { id: string };
-  };
+  const locals = res.locals as ResLocalsForPage<'course-instance'>;
 
   return {
     course: locals.course,

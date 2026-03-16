@@ -3,7 +3,6 @@ import { z } from 'zod';
 import {
   execute,
   loadSqlEquiv,
-  queryOptionalRow,
   queryRow,
   queryRows,
   runInTransactionAsync,
@@ -19,11 +18,6 @@ const CreditPoolSchema = z.object({
 
 type CreditPool = z.infer<typeof CreditPoolSchema>;
 
-const CreditPoolBalancesSchema = z.object({
-  credit_transferable_milli_dollars: z.coerce.number(),
-  credit_non_transferable_milli_dollars: z.coerce.number(),
-});
-
 /**
  * Get the credit pool balances for a course instance.
  */
@@ -32,9 +26,21 @@ export async function selectCreditPool(course_instance_id: string): Promise<Cred
 }
 
 /**
+ * Compute how a cost should be split between non-transferable (first) and transferable credits.
+ */
+function splitDeduction(
+  cost: number,
+  nonTransferableBalance: number,
+): { nonTransferableDeduction: number; transferableDeduction: number } {
+  const nonTransferableDeduction = Math.min(cost, nonTransferableBalance);
+  const transferableDeduction = cost - nonTransferableDeduction;
+  return { nonTransferableDeduction, transferableDeduction };
+}
+
+/**
  * Atomically deduct credits from the pool for AI grading.
  * Deducts from non-transferable credits first, then transferable.
- * Throws if the pool has insufficient credits (the UPDATE returns zero rows).
+ * Throws if the pool has insufficient credits.
  */
 export async function deductCreditsForAiGrading({
   course_instance_id,
@@ -52,41 +58,38 @@ export async function deductCreditsForAiGrading({
   reason: string;
 }): Promise<void> {
   await runInTransactionAsync(async () => {
-    // Lock the row and get the current pool state before deduction for logging.
     const before = await queryRow(
       sql.select_credit_pool_for_update,
       { course_instance_id },
       CreditPoolSchema,
     );
 
-    // Atomically deduct; returns null if insufficient credits.
-    const result = await queryOptionalRow(
-      sql.deduct_credits,
-      { course_instance_id, cost_milli_dollars },
-      CreditPoolBalancesSchema,
-    );
-
-    if (!result) {
+    if (before.total_milli_dollars < cost_milli_dollars) {
       throw new Error('Insufficient AI grading credits');
     }
 
-    const afterTotal =
-      result.credit_transferable_milli_dollars + result.credit_non_transferable_milli_dollars;
-
-    // Determine how the deduction was split between pools.
-    const nonTransferableDeducted = Math.min(
+    const { nonTransferableDeduction, transferableDeduction } = splitDeduction(
       cost_milli_dollars,
       before.credit_non_transferable_milli_dollars,
     );
-    const transferableDeducted = cost_milli_dollars - nonTransferableDeducted;
 
-    // Log the non-transferable deduction if any.
-    if (nonTransferableDeducted > 0) {
+    const newNonTransferable =
+      before.credit_non_transferable_milli_dollars - nonTransferableDeduction;
+    const newTransferable = before.credit_transferable_milli_dollars - transferableDeduction;
+    const newTotal = newNonTransferable + newTransferable;
+
+    await execute(sql.update_credit_balances, {
+      course_instance_id,
+      credit_transferable_milli_dollars: newTransferable,
+      credit_non_transferable_milli_dollars: newNonTransferable,
+    });
+
+    if (nonTransferableDeduction > 0) {
       await execute(sql.insert_credit_pool_change, {
         course_instance_id,
         credit_before_milli_dollars: before.total_milli_dollars,
-        credit_after_milli_dollars: before.total_milli_dollars - nonTransferableDeducted,
-        delta_milli_dollars: -nonTransferableDeducted,
+        credit_after_milli_dollars: before.total_milli_dollars - nonTransferableDeduction,
+        delta_milli_dollars: -nonTransferableDeduction,
         credit_type: 'non_transferable',
         reason,
         user_id,
@@ -95,13 +98,12 @@ export async function deductCreditsForAiGrading({
       });
     }
 
-    // Log the transferable deduction if any.
-    if (transferableDeducted > 0) {
+    if (transferableDeduction > 0) {
       await execute(sql.insert_credit_pool_change, {
         course_instance_id,
-        credit_before_milli_dollars: before.total_milli_dollars - nonTransferableDeducted,
-        credit_after_milli_dollars: afterTotal,
-        delta_milli_dollars: -transferableDeducted,
+        credit_before_milli_dollars: before.total_milli_dollars - nonTransferableDeduction,
+        credit_after_milli_dollars: newTotal,
+        delta_milli_dollars: -transferableDeduction,
         credit_type: 'transferable',
         reason,
         user_id,
@@ -150,19 +152,15 @@ export async function adjustCreditPool({
       );
     }
 
-    const newBalance = currentBalance + delta_milli_dollars;
-
-    if (credit_type === 'transferable') {
-      await execute(sql.update_credit_transferable, {
-        course_instance_id,
-        credit_transferable_milli_dollars: newBalance,
-      });
-    } else {
-      await execute(sql.update_credit_non_transferable, {
-        course_instance_id,
-        credit_non_transferable_milli_dollars: newBalance,
-      });
-    }
+    await execute(sql.update_credit_balances, {
+      course_instance_id,
+      credit_transferable_milli_dollars:
+        before.credit_transferable_milli_dollars +
+        (credit_type === 'transferable' ? delta_milli_dollars : 0),
+      credit_non_transferable_milli_dollars:
+        before.credit_non_transferable_milli_dollars +
+        (credit_type === 'non_transferable' ? delta_milli_dollars : 0),
+    });
 
     await execute(sql.insert_credit_pool_change, {
       course_instance_id,
@@ -220,13 +218,23 @@ const DailySpendingPointSchema = z.object({
 
 type DailySpendingPoint = z.infer<typeof DailySpendingPointSchema>;
 
+function computeDateRange(days: number): { start_date: string; end_date: string } {
+  const end = new Date();
+  const start = new Date();
+  start.setDate(start.getDate() - days);
+
+  const fmt = (d: Date) => d.toISOString().slice(0, 10);
+  return { start_date: fmt(start), end_date: fmt(end) };
+}
+
 export async function selectDailySpending(
   course_instance_id: string,
   days: number,
 ): Promise<DailySpendingPoint[]> {
+  const { start_date, end_date } = computeDateRange(days);
   return await queryRows(
     sql.select_daily_spending,
-    { course_instance_id, days },
+    { course_instance_id, start_date, end_date },
     DailySpendingPointSchema,
   );
 }
@@ -244,9 +252,10 @@ export async function selectDailySpendingGrouped(
   days: number,
   group_by: 'user' | 'assessment' | 'question',
 ): Promise<GroupedDailySpendingPoint[]> {
+  const { start_date, end_date } = computeDateRange(days);
   return await queryRows(
     sql.select_daily_spending_grouped,
-    { course_instance_id, days, group_by },
+    { course_instance_id, start_date, end_date, group_by },
     GroupedDailySpendingPointSchema,
   );
 }

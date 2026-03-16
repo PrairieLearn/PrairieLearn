@@ -23,30 +23,13 @@ WHERE
   id = $course_instance_id
 FOR UPDATE;
 
--- BLOCK deduct_credits
--- Deducts from non_transferable first, then transferable.
--- Returns zero rows if insufficient credits.
+-- BLOCK update_credit_balances
 UPDATE course_instances
 SET
-  credit_non_transferable_milli_dollars = GREATEST(
-    0,
-    credit_non_transferable_milli_dollars - $cost_milli_dollars
-  ),
-  credit_transferable_milli_dollars = GREATEST(
-    0,
-    credit_transferable_milli_dollars - GREATEST(
-      0,
-      $cost_milli_dollars - credit_non_transferable_milli_dollars
-    )
-  )
+  credit_transferable_milli_dollars = $credit_transferable_milli_dollars,
+  credit_non_transferable_milli_dollars = $credit_non_transferable_milli_dollars
 WHERE
-  id = $course_instance_id
-  AND (
-    credit_transferable_milli_dollars + credit_non_transferable_milli_dollars
-  ) >= $cost_milli_dollars
-RETURNING
-  credit_transferable_milli_dollars,
-  credit_non_transferable_milli_dollars;
+  id = $course_instance_id;
 
 -- BLOCK insert_credit_pool_change
 INSERT INTO
@@ -75,26 +58,6 @@ VALUES
   )
 RETURNING
   *;
-
--- BLOCK update_credit_transferable
-UPDATE course_instances
-SET
-  credit_transferable_milli_dollars = $credit_transferable_milli_dollars
-WHERE
-  id = $course_instance_id
-RETURNING
-  credit_transferable_milli_dollars,
-  credit_non_transferable_milli_dollars;
-
--- BLOCK update_credit_non_transferable
-UPDATE course_instances
-SET
-  credit_non_transferable_milli_dollars = $credit_non_transferable_milli_dollars
-WHERE
-  id = $course_instance_id
-RETURNING
-  credit_transferable_milli_dollars,
-  credit_non_transferable_milli_dollars;
 
 -- BLOCK select_credit_pool_changes_batched
 WITH
@@ -163,37 +126,31 @@ OFFSET
   $offset;
 
 -- BLOCK select_daily_spending
-WITH
-  date_range AS (
-    SELECT
-      generate_series(
-        DATE_TRUNC('day', NOW() - ($days || ' days')::interval),
-        DATE_TRUNC('day', NOW()),
-        '1 day'::interval
-      )::date AS day
-  ),
-  daily AS (
-    SELECT
-      DATE_TRUNC('day', c.created_at)::date AS day,
-      SUM(ABS(c.delta_milli_dollars)) AS spending_milli_dollars
-    FROM
-      ai_grading_credit_pool_changes AS c
-    WHERE
-      c.course_instance_id = $course_instance_id
-      AND c.created_at >= NOW() - ($days || ' days')::interval
-      AND c.delta_milli_dollars < 0
-      AND c.ai_grading_job_id IS NOT NULL
-    GROUP BY
-      DATE_TRUNC('day', c.created_at)::date
-  )
 SELECT
-  dr.day AS date,
-  COALESCE(d.spending_milli_dollars, 0)::bigint AS spending_milli_dollars
+  d::date AS date,
+  COALESCE(
+    (
+      SELECT
+        SUM(ABS(c.delta_milli_dollars))
+      FROM
+        ai_grading_credit_pool_changes AS c
+      WHERE
+        c.course_instance_id = $course_instance_id
+        AND c.created_at >= d
+        AND c.created_at < d + '1 day'::interval
+        AND c.delta_milli_dollars < 0
+        AND c.ai_grading_job_id IS NOT NULL
+    ),
+    0
+  )::bigint AS spending_milli_dollars
 FROM
-  date_range AS dr
-  LEFT JOIN daily AS d ON d.day = dr.day
+  generate_series(
+    $start_date::date,
+    $end_date::date,
+    '1 day'::interval
+  ) AS d
 ORDER BY
-  dr.day ASC;
+  d ASC;
 
 -- BLOCK select_daily_spending_grouped
 SELECT
@@ -222,7 +179,8 @@ FROM
   LEFT JOIN questions AS q ON q.id = aq.question_id
 WHERE
   c.course_instance_id = $course_instance_id
-  AND c.created_at >= NOW() - ($days || ' days')::interval
+  AND c.created_at >= $start_date
+  AND c.created_at::date <= $end_date::date
   AND c.delta_milli_dollars < 0
   AND c.ai_grading_job_id IS NOT NULL
 GROUP BY
