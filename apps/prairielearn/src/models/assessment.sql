@@ -40,46 +40,14 @@ FROM
 WHERE
   iq.id = $instance_question_id;
 
--- BLOCK select_enabled_assessment_tools
-WITH
-  zone_tools AS (
-    SELECT
-      tool
-    FROM
-      assessment_tools
-    WHERE
-      zone_id = $zone_id
-  )
+-- BLOCK select_assessment_tools
 SELECT
   *
 FROM
   assessment_tools
 WHERE
-  enabled = TRUE
-  AND (
-    -- Zone-level tools take priority on a per-tool basis
-    zone_id = $zone_id
-    OR (
-      -- Fall back to assessment-level tools for tools not overridden at zone level
-      assessment_id = $assessment_id
-      AND tool NOT IN (
-        SELECT
-          tool
-        FROM
-          zone_tools
-      )
-    )
-  );
-
--- BLOCK select_enabled_assessment_tools_no_zone
-SELECT
-  *
-FROM
-  assessment_tools
-WHERE
-  assessment_id = $assessment_id
-  AND zone_id IS NULL
-  AND enabled = TRUE;
+  zone_id = $zone_id
+  OR assessment_id = $assessment_id;
 
 -- BLOCK select_assessments_for_course_instance
 WITH

@@ -16,6 +16,7 @@ import {
   AssessmentModuleSchema,
   AssessmentSchema,
   AssessmentSetSchema,
+  type AssessmentTool,
   AssessmentToolSchema,
 } from '../lib/db-types.js';
 
@@ -83,20 +84,24 @@ export async function selectEnabledAssessmentTools({
   zone_id,
 }: {
   assessment_id: string;
-  zone_id?: string;
-}) {
-  if (zone_id == null) {
-    return await queryRows(
-      sql.select_enabled_assessment_tools_no_zone,
-      { assessment_id },
-      AssessmentToolSchema,
-    );
-  }
-  return await queryRows(
-    sql.select_enabled_assessment_tools,
+  zone_id: string;
+}): Promise<AssessmentTool[]> {
+  const allTools = await queryRows(
+    sql.select_assessment_tools,
     { assessment_id, zone_id },
     AssessmentToolSchema,
   );
+
+  const zoneTools = new Set(allTools.filter((t) => t.zone_id != null).map((t) => t.tool));
+
+  return allTools.filter((t) => {
+    if (t.zone_id != null) {
+      // Zone-level tool: include only if enabled.
+      return t.enabled;
+    }
+    // Assessment-level tool: include only if enabled AND not overridden at zone level.
+    return t.enabled && !zoneTools.has(t.tool);
+  });
 }
 
 export async function selectZoneIdForInstanceQuestion(
