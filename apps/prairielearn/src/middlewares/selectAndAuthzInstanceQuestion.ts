@@ -86,10 +86,6 @@ export type ResLocalsInstanceQuestion = z.infer<typeof SelectAndAuthzInstanceQue
 };
 
 export async function selectAndAuthzInstanceQuestion(req: Request, res: Response) {
-  const is_instructor =
-    res.locals.authz_data?.has_course_permission_preview ||
-    res.locals.authz_data?.has_course_instance_permission_view;
-
   const row = await sqldb.queryOptionalRow(
     sql.select_and_auth,
     {
@@ -98,11 +94,22 @@ export async function selectAndAuthzInstanceQuestion(req: Request, res: Response
       course_instance_id: res.locals.course_instance.id,
       authz_data: res.locals.authz_data,
       req_date: res.locals.req_date,
-      is_instructor: !!is_instructor,
     },
     SelectAndAuthzInstanceQuestionSchema,
   );
   if (row === null) throw new error.HttpStatusError(403, 'Access denied');
+
+  // Sequence/lockpoint restrictions should not block instructors from accessing
+  // student question instances (e.g. for manual grading or viewing submissions).
+  // We check *effective* permissions so that an instructor emulating a student
+  // still sees the same restrictions the student sees.
+  const isInstructor =
+    res.locals.authz_data?.has_course_permission_preview ||
+    res.locals.authz_data?.has_course_instance_permission_view;
+  const accessMode = row.instance_question_info.question_access_mode;
+  if (!isInstructor && (accessMode === 'blocked_sequence' || accessMode === 'blocked_lockpoint')) {
+    throw new error.HttpStatusError(403, 'Access denied');
+  }
 
   // TODO: consider row.assessment.modern_access_control
   if (!row.authz_result.authorized) throw new error.HttpStatusError(403, 'Access denied');

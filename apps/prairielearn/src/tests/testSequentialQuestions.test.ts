@@ -8,6 +8,8 @@ import { SprocQuestionOrderSchema } from '../lib/db-types.js';
 
 import * as helperClient from './helperClient.js';
 import * as helperServer from './helperServer.js';
+import { type AuthUser, withUser } from './utils/auth.js';
+import { enrollUser } from './utils/enrollments.js';
 
 const sql = sqldb.loadSqlEquiv(import.meta.url);
 
@@ -134,11 +136,10 @@ describe(
       },
     );
 
-    test.sequential('Accessing Question 3 returns a 403', async function () {
+    test.sequential('Instructor can access sequence-locked Question 3', async function () {
       context.lockedQuestion = context.instanceQuestions[2];
       const response = await helperClient.fetchCheerio(context.lockedQuestion.url);
-      assert.isTrue(!response.ok);
-      assert.equal(response.status, 403);
+      assert.isTrue(response.ok);
     });
 
     test.sequential(
@@ -233,5 +234,51 @@ describe(
     test.sequential('Unlocking question 4 does NOT cascade to question 6', function () {
       assert.isTrue(context.instanceQuestions[5].locked);
     });
+
+    // Tests for student sequence lock enforcement (the student should be blocked).
+    const studentUser: AuthUser = {
+      uid: 'student@example.com',
+      name: 'Student User',
+      uin: '000000001',
+      email: 'student@example.com',
+    };
+
+    test.sequential(
+      'student gets 403 when accessing a sequence-locked question',
+      async function () {
+        await enrollUser('1', studentUser);
+        await withUser(studentUser, async () => {
+          const csrfResponse = await helperClient.fetchCheerio(context.assessmentUrl);
+          const csrfToken = helperClient.getCSRFToken(csrfResponse.$('form'));
+          const instanceResponse = await helperClient.fetchCheerio(context.assessmentUrl, {
+            method: 'POST',
+            body: new URLSearchParams({
+              __action: 'new_instance',
+              __csrf_token: csrfToken,
+            }),
+          });
+          assert.isTrue(instanceResponse.ok);
+
+          // Locked questions don't have links in the HTML, so we use the
+          // question_order sproc to find a locked instance_question_id.
+          const urlParts = instanceResponse.url.split('/');
+          const assessmentInstanceId = urlParts[urlParts.length - 1];
+          const results = await sqldb.callRows(
+            'question_order',
+            [assessmentInstanceId],
+            SprocQuestionOrderSchema,
+          );
+          const lockedQuestion = results.find(
+            (e) => e.question_access_mode === 'blocked_sequence',
+          );
+          assert.isDefined(lockedQuestion);
+
+          const lockedUrl = `${context.courseInstanceBaseUrl}/instance_question/${lockedQuestion!.instance_question_id}/`;
+          const lockedResponse = await helperClient.fetchCheerio(lockedUrl);
+          assert.isFalse(lockedResponse.ok);
+          assert.equal(lockedResponse.status, 403);
+        });
+      },
+    );
   },
 );
