@@ -408,11 +408,21 @@ def sympy_check(
         # unevaluated form (e.g. sqrt(-2) kept as Pow(-2, 1/2) by evaluateFalse).
         # The is_finite guard excludes zoo (complex infinity from 1/0) and similar
         # non-finite values, which aren't complex in the student-input sense.
-        if not allow_complex and (
-            item == sympy.I
-            or (item.is_extended_real is False and item.is_finite is not False)
-        ):
-            raise HasComplexError("complex values not allowed")
+        #
+        # The is_extended_real query can trigger internal sympy bugs on certain
+        # unevaluated expressions (e.g. sec(0) with evaluateFalse), so we catch
+        # AttributeError and skip the check for those items.
+        if not allow_complex:
+            if item is sympy.I:
+                raise HasComplexError("complex values not allowed")
+            try:
+                is_complex = (
+                    item.is_extended_real is False and item.is_finite is not False
+                )
+            except AttributeError:
+                is_complex = False
+            if is_complex:
+                raise HasComplexError("complex values not allowed")
 
         work_stack.extend(item.args)
 

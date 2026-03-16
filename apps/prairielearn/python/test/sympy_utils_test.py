@@ -501,6 +501,28 @@ class TestExceptions:
         assert "complex number" in format_error
 
     @pytest.mark.parametrize(
+        "a_sub",
+        [
+            "sec(0)",
+            "(16-9*(sec(0)^2))/3",
+            "csc(1)",
+            "sec(n)",
+        ],
+    )
+    def test_trig_no_crash_with_no_simplify(self, a_sub: str) -> None:
+        """Expressions with sec/csc must not crash sympy_check when
+        simplify_expression=False. Regression test for a sympy bug where
+        checking is_extended_real on unevaluated sec(0) raises AttributeError.
+        """
+        psu.convert_string_to_sympy(
+            a_sub,
+            self.VARIABLES,
+            allow_complex=False,
+            allow_trig_functions=True,
+            simplify_expression=False,
+        )
+
+    @pytest.mark.parametrize(
         ("expr", "expected_caret", "with_vars"),
         [
             # #14141: '#' after large integer — stringify_expr wraps it as Integer(1234567890),

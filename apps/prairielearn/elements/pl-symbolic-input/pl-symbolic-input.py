@@ -530,16 +530,24 @@ def parse(element_html: str, data: pl.QuestionData) -> None:
     if isinstance(a_tru, dict):
         assumptions_dict = a_tru.get("_assumptions")
 
-    a_sub_parsed = psu.convert_string_to_sympy(
-        a_sub,
-        variables,
-        allow_hidden=True,
-        allow_complex=allow_complex,
-        allow_trig_functions=allow_trig,
-        assumptions=assumptions_dict,
-        custom_functions=custom_functions,
-        simplify_expression=simplify_expression,
-    )
+    try:
+        a_sub_parsed = psu.convert_string_to_sympy(
+            a_sub,
+            variables,
+            allow_hidden=True,
+            allow_complex=allow_complex,
+            allow_trig_functions=allow_trig,
+            assumptions=assumptions_dict,
+            custom_functions=custom_functions,
+            simplify_expression=simplify_expression,
+        )
+    except psu.HasComplexError:
+        data["format_errors"][name] = (
+            "Your answer contains a complex number. "
+            "All numbers must be expressed as integers (or ratios of integers)."
+        )
+        data["submitted_answers"][name] = None
+        return
 
     # Make sure we can parse the json again
     try:
