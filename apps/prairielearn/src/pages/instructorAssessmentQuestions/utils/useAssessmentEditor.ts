@@ -243,11 +243,15 @@ function handleQuestionPicked(
         const alt = updatedFound.question.alternatives?.find(
           (a) => a.trackingId === returnTo.alternativeTrackingId,
         );
-        if (alt) alt.id = qid;
+        if (alt) {
+          alt.id = qid;
+          alt.preferences = undefined;
+        }
       } else {
         updatedFound.zone.questions[updatedFound.questionIndex] = {
           ...updatedFound.question,
           id: qid,
+          preferences: undefined,
         } as ZoneQuestionBlockForm;
       }
 
