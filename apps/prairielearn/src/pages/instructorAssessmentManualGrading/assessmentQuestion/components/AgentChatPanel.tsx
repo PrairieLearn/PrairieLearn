@@ -44,13 +44,6 @@ const GRADING_INTERVAL_MS = 150;
 
 const CHAT_WIDTH = 480;
 
-/** Fake chat windows for the prototype. */
-const CHAT_WINDOWS = [
-  { id: 'current', label: 'Q3: Projection', active: true },
-  { id: 'tab2', label: 'Q1: Eigenvalues', active: false },
-  { id: 'tab3', label: 'Q5: Determinants', active: false },
-];
-
 interface AgentChatPanelProps {
   activeProposal: RubricProposal | null;
   onAcceptProposal: () => void;
@@ -71,7 +64,6 @@ export function AgentChatPanel({
   const [phase, setPhase] = useState<ChatPhase>('idle');
   const [gradedCount, setGradedCount] = useState(0);
   const [gradingTotal, setGradingTotal] = useState(TOTAL_GRADING_SUBMISSIONS);
-  const [activeTab, setActiveTab] = useState('current');
   const messagesEndRef = useRef<HTMLDivElement>(null);
   const gradingIntervalRef = useRef<ReturnType<typeof setInterval> | null>(null);
   /** Whether the rubric was changed mid-grading (proposal accepted). */
@@ -416,26 +408,6 @@ export function AgentChatPanel({
         zIndex: 1030,
       }}
     >
-      {/* Chat windows selector */}
-      <div
-        className="border-bottom bg-white d-flex align-items-center"
-        style={{ flexShrink: 0, overflow: 'hidden' }}
-      >
-        {CHAT_WINDOWS.map((win) => (
-          <button
-            key={win.id}
-            type="button"
-            className={`btn btn-sm rounded-0 border-0 px-3 py-2 ${
-              activeTab === win.id ? 'bg-light fw-semibold' : 'text-muted'
-            }`}
-            style={{ fontSize: '0.8125rem', whiteSpace: 'nowrap' }}
-            onClick={() => setActiveTab(win.id)}
-          >
-            {win.label}
-          </button>
-        ))}
-      </div>
-
       {/* Messages */}
       <div className="flex-grow-1 overflow-auto px-3 py-2" style={{ minHeight: 0 }}>
         {messages.length === 0 && (
