@@ -28,7 +28,6 @@
   },
   "dependencies": {
     "@types/tar-stream": "^3.1.4",
-    "echarts-for-react": "^3.0.6",
     "get-stream": "^9.0.1",
     "node-gyp": "^12.2.0",
     "react": "^19.2.4",

@@ -10,6 +10,8 @@ import { config } from '../../../lib/config.js';
 import { features } from '../../../lib/features/index.js';
 import { typedAsyncHandler } from '../../../lib/res-locals.js';
 import { handleTrpcError } from '../../../lib/trpc.js';
+import { selectCourseInstanceById } from '../../../models/course-instances.js';
+import { selectCourseById } from '../../../models/course.js';
 import { parseDesiredPlanGrants } from '../../lib/billing/components/PlanGrantsEditor.js';
 import {
   getPlanGrantsForCourseInstance,
@@ -35,16 +37,19 @@ router.use(
 
 router.get(
   '/',
-  typedAsyncHandler<'course-instance'>(async (req, res) => {
+  typedAsyncHandler<'plain'>(async (req, res) => {
     const institution = await getInstitution(req.params.institution_id);
+    const course_instance = await selectCourseInstanceById(req.params.course_instance_id);
+    const course = await selectCourseById(course_instance.course_id);
+
     const planGrants = await getPlanGrantsForCourseInstance({
       institution_id: institution.id,
-      course_instance_id: res.locals.course_instance.id,
+      course_instance_id: course_instance.id,
     });
     const aiGradingEnabled = await features.enabled('ai-grading', {
       institution_id: institution.id,
-      course_id: res.locals.course.id,
-      course_instance_id: res.locals.course_instance.id,
+      course_id: course.id,
+      course_instance_id: course_instance.id,
     });
 
     const trpcCsrfToken = aiGradingEnabled
@@ -60,8 +65,8 @@ router.get(
     res.send(
       AdministratorInstitutionCourseInstance({
         institution,
-        course: res.locals.course,
-        course_instance: res.locals.course_instance,
+        course,
+        course_instance,
         planGrants,
         aiGradingEnabled,
         trpcCsrfToken,
@@ -73,14 +78,16 @@ router.get(
 
 router.post(
   '/',
-  typedAsyncHandler<'course-instance'>(async (req, res) => {
-    if (res.locals.course_instance.deleted_at != null) {
+  typedAsyncHandler<'plain'>(async (req, res) => {
+    const course_instance = await selectCourseInstanceById(req.params.course_instance_id);
+
+    if (course_instance.deleted_at != null) {
       throw new error.HttpStatusError(403, 'Cannot modify a deleted course instance');
     }
 
     if (req.body.__action === 'update_enrollment_limit') {
       await execute(sql.update_enrollment_limit, {
-        course_instance_id: res.locals.course_instance.id,
+        course_instance_id: course_instance.id,
         enrollment_limit: req.body.enrollment_limit || null,
       });
       flash('success', 'Successfully updated enrollment limit.');
@@ -93,7 +100,7 @@ router.post(
         allowedPlans: ['compute', 'everything'],
       });
       await reconcilePlanGrantsForCourseInstance(
-        res.locals.course_instance.id,
+        course_instance.id,
         desiredPlans,
         res.locals.authn_user.id,
       );

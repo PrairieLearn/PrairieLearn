@@ -5,14 +5,18 @@ import { z } from 'zod';
 
 import type { ResLocalsForPage } from '../../../lib/res-locals.js';
 import { adjustCreditPool, selectCreditPool } from '../../../models/ai-grading-credit-pool.js';
+import { selectCourseInstanceById } from '../../../models/course-instances.js';
+import { selectCourseById } from '../../../models/course.js';
 import { creditPoolProcedures, requireAiGradingFeature } from '../../lib/credit-pool-trpc.js';
 
-export function createAdminContext({ res }: CreateExpressContextOptions) {
-  const locals = res.locals as ResLocalsForPage<'course-instance'>;
-
+export async function createAdminContext({ req, res }: CreateExpressContextOptions) {
+  const locals = res.locals as ResLocalsForPage<'plain'>;
+  const course_instance = await selectCourseInstanceById(req.params.course_instance_id);
+  const course = await selectCourseById(course_instance.course_id);
+  
   return {
-    course: locals.course,
-    course_instance: locals.course_instance,
+    course,
+    course_instance,
     authn_user: locals.authn_user,
   };
 }
