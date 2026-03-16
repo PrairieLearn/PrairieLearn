@@ -509,6 +509,12 @@ def parse(element_html: str, data: pl.QuestionData) -> None:
             data["submitted_answers"][name] = None
             return
 
+    # Retrieve variable assumptions encoded in correct answer
+    assumptions_dict = None
+    a_tru = data["correct_answers"].get(name, {})
+    if isinstance(a_tru, dict):
+        assumptions_dict = a_tru.get("_assumptions")
+
     error_msg = psu.validate_string_as_sympy(
         a_sub,
         variables,
@@ -517,6 +523,7 @@ def parse(element_html: str, data: pl.QuestionData) -> None:
         imaginary_unit=imaginary_unit,
         custom_functions=custom_functions,
         simplify_expression=simplify_expression,
+        assumptions=assumptions_dict,
     )
 
     if error_msg is not None:
@@ -524,30 +531,16 @@ def parse(element_html: str, data: pl.QuestionData) -> None:
         data["submitted_answers"][name] = None
         return
 
-    # Retrieve variable assumptions encoded in correct answer
-    assumptions_dict = None
-    a_tru = data["correct_answers"].get(name, {})
-    if isinstance(a_tru, dict):
-        assumptions_dict = a_tru.get("_assumptions")
-
-    try:
-        a_sub_parsed = psu.convert_string_to_sympy(
-            a_sub,
-            variables,
-            allow_hidden=True,
-            allow_complex=allow_complex,
-            allow_trig_functions=allow_trig,
-            assumptions=assumptions_dict,
-            custom_functions=custom_functions,
-            simplify_expression=simplify_expression,
-        )
-    except psu.HasComplexError:
-        data["format_errors"][name] = (
-            "Your answer contains a complex number. "
-            "All numbers must be expressed as integers (or ratios of integers)."
-        )
-        data["submitted_answers"][name] = None
-        return
+    a_sub_parsed = psu.convert_string_to_sympy(
+        a_sub,
+        variables,
+        allow_hidden=True,
+        allow_complex=allow_complex,
+        allow_trig_functions=allow_trig,
+        assumptions=assumptions_dict,
+        custom_functions=custom_functions,
+        simplify_expression=simplify_expression,
+    )
 
     # Make sure we can parse the json again
     try:
