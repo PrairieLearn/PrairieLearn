@@ -8,6 +8,7 @@ on:
       - '**-code-freeze'
   pull_request:
   merge_group:
+  workflow_dispatch:
 
 concurrency:
   # Ensure that we only run one concurrent job for Pull Requests. This ensures
@@ -203,11 +204,14 @@ jobs:
       - name: Run the HTML linter
         run: make lint-html
       - name: Upload Python coverage report to Codecov
+        if: ${{ env.CODECOV_TOKEN != '' }}
         uses: codecov/codecov-action@v5.5.2
         with:
           token: ${{ secrets.CODECOV_TOKEN }}
           directory: apps/prairielearn/python
           flags: python
+        env:
+          CODECOV_TOKEN: ${{ secrets.CODECOV_TOKEN }}
 
   check-other:
     name: Other
