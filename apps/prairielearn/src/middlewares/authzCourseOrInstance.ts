@@ -296,7 +296,6 @@ type SelectUser = z.infer<typeof SelectUserSchema>;
 interface ResLocalsCourseAuthz {
   authn_user: ResLocalsAuthnUser['authn_user'];
   authn_mode: CourseOrInstanceContextData['mode'];
-  authn_mode_reason: CourseOrInstanceContextData['mode_reason'];
   authn_is_administrator: ResLocalsAuthnUser['is_administrator'];
   authn_course_role: CourseOrInstanceContextData['permissions_course']['course_role'];
   authn_has_course_permission_preview: boolean;
@@ -305,7 +304,6 @@ interface ResLocalsCourseAuthz {
   authn_has_course_permission_own: boolean;
   user: ResLocalsAuthnUser['authn_user'];
   mode: CourseOrInstanceContextData['mode'];
-  mode_reason: CourseOrInstanceContextData['mode_reason'];
   is_administrator: ResLocalsAuthnUser['is_administrator'];
   course_role: CourseOrInstanceContextData['permissions_course']['course_role'];
   has_course_permission_preview: boolean;
@@ -572,7 +570,6 @@ export async function authzCourseOrInstance(req: Request, res: Response) {
               }
             : {}),
           mode: authnAuthzData.mode,
-          mode_reason: authnAuthzData.mode_reason,
         }),
         course: authnCourse,
         institution: authnInstitution,
@@ -626,7 +623,6 @@ export async function authzCourseOrInstance(req: Request, res: Response) {
     // Authn user data
     authn_user: authnAuthzData.user,
     authn_mode: authnAuthzData.mode,
-    authn_mode_reason: authnAuthzData.mode_reason,
     authn_is_administrator: res.locals.is_administrator,
     authn_course_role: authnAuthzData.course_role,
     authn_has_course_permission_preview: authnAuthzData.has_course_permission_preview,
@@ -650,7 +646,6 @@ export async function authzCourseOrInstance(req: Request, res: Response) {
     // Effective user data
     user: effectiveAuthzData.user,
     mode: effectiveAuthzData.mode,
-    mode_reason: effectiveAuthzData.mode_reason,
     is_administrator: effectiveUserData?.is_administrator ?? res.locals.is_administrator,
     course_role: effectiveAuthzData.course_role,
     has_course_permission_preview: effectiveAuthzData.has_course_permission_preview,

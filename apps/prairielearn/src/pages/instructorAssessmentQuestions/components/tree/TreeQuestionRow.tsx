@@ -5,46 +5,40 @@ import { type ReactElement, useId } from 'react';
 import { OverlayTrigger } from '@prairielearn/ui';
 
 import { CopyButton } from '../../../../components/CopyButton.js';
-import { HistMini } from '../../../../components/HistMini.js';
-import type { StaffAssessmentQuestionRow } from '../../../../lib/assessment-question.shared.js';
+import type { EditorQuestionMetadata } from '../../../../lib/assessment-question.shared.js';
 import { getQuestionUrl } from '../../../../lib/client/url.js';
 import type { EnumAssessmentType } from '../../../../lib/db-types.js';
-import type { QuestionAlternativeForm, TreeState, ZoneQuestionBlockForm } from '../../types.js';
+import type {
+  QuestionAlternativeForm,
+  QuestionWithId,
+  TreeState,
+  ZoneQuestionBlockForm,
+} from '../../types.js';
 import {
   compactPoints,
   computeQuestionTotalPoints,
+  questionHasTitle,
   toAssessmentForPicker,
 } from '../../utils/questions.js';
 import { AssessmentBadges } from '../AssessmentBadges.js';
 
 import { ChangeIndicatorBadges } from './ChangeIndicatorBadges.js';
 import { DragHandle } from './DragHandle.js';
+import { WarningIndicator } from './WarningIndicator.js';
 
 export function PointsBadge({
   question,
   zoneQuestionBlock,
   assessmentType,
-  gradingMethod,
 }: {
   question: ZoneQuestionBlockForm | QuestionAlternativeForm;
   zoneQuestionBlock: ZoneQuestionBlockForm;
   assessmentType: EnumAssessmentType;
-  gradingMethod?: string;
 }): ReactElement | null {
   const tooltipId = useId();
   const forceMax = question.forceMaxPoints ?? zoneQuestionBlock.forceMaxPoints;
-  const rawAutoPoints =
-    question.points ??
-    question.autoPoints ??
-    zoneQuestionBlock.points ??
-    zoneQuestionBlock.autoPoints;
-  const rawManualPoints = question.manualPoints ?? zoneQuestionBlock.manualPoints;
-
-  // When the question uses manual grading, `points`/`autoPoints` in the JSON
-  // actually represent manual points, not auto points.
-  const isManualGrading = gradingMethod === 'Manual';
-  const autoPoints = isManualGrading ? undefined : rawAutoPoints;
-  const manualPoints = isManualGrading ? (rawAutoPoints ?? rawManualPoints) : rawManualPoints;
+  const autoPoints = question.autoPoints ?? zoneQuestionBlock.autoPoints;
+  const manualPoints = question.manualPoints ?? zoneQuestionBlock.manualPoints;
 
   if (assessmentType === 'Exam') {
     if (autoPoints == null && manualPoints == null) return null;
@@ -74,7 +68,7 @@ export function PointsBadge({
       const manualStr = String(manualPoints);
       compactParts.push(
         <span key="manual">
-          <i className="bi bi-person-fill me-1" aria-hidden="true" />
+          <i className="bi bi-pen-fill me-1" aria-hidden="true" />
           {manualStr}
         </span>,
       );
@@ -111,12 +105,7 @@ export function PointsBadge({
 
   // Homework
   const initPoints = Array.isArray(autoPoints) ? autoPoints[0] : autoPoints;
-  const maxAutoPoints =
-    question.maxPoints ??
-    question.maxAutoPoints ??
-    zoneQuestionBlock.maxPoints ??
-    zoneQuestionBlock.maxAutoPoints ??
-    autoPoints;
+  const maxAutoPoints = question.maxAutoPoints ?? zoneQuestionBlock.maxAutoPoints ?? autoPoints;
   const maxAuto = Array.isArray(maxAutoPoints) ? maxAutoPoints[0] : maxAutoPoints;
 
   if (initPoints == null && maxAuto == null && manualPoints == null) return null;
@@ -146,7 +135,7 @@ export function PointsBadge({
     const manualStr = String(manualPoints);
     compactParts.push(
       <span key="manual">
-        <i className="bi bi-person-fill me-1" aria-hidden="true" />
+        <i className="bi bi-pen-fill me-1" aria-hidden="true" />
         {manualStr}
       </span>,
     );
@@ -194,10 +183,10 @@ export function TreeQuestionRow({
   onClick,
   onDelete,
 }: {
-  question: ZoneQuestionBlockForm | QuestionAlternativeForm;
+  question: QuestionWithId;
   zoneQuestionBlock: ZoneQuestionBlockForm;
   isAlternative: boolean;
-  questionData: StaffAssessmentQuestionRow | null;
+  questionData: EditorQuestionMetadata | null;
   state: TreeState;
   isSelected: boolean;
   draggableAttributes: DraggableAttributes;
@@ -215,6 +204,13 @@ export function TreeQuestionRow({
   } = state;
   const indent = isAlternative ? '4.5rem' : '2.5rem';
 
+  const hasManualGradingAutoPointsWarning =
+    questionData?.question.grading_method === 'Manual' &&
+    ((question.autoPoints ?? zoneQuestionBlock.autoPoints) != null ||
+      (question.maxAutoPoints ?? zoneQuestionBlock.maxAutoPoints) != null);
+
+  const hasTitle = questionHasTitle(questionData);
+
   return (
     <div
       role="button"
@@ -223,7 +219,14 @@ export function TreeQuestionRow({
         'tree-row d-flex align-items-center py-1 border-bottom',
         isSelected ? 'tree-row-selected' : 'list-group-item-action',
       )}
-      style={{ paddingLeft: indent, paddingRight: '0.5rem', cursor: 'pointer' }}
+      style={{
+        paddingLeft: indent,
+        paddingRight: '0.5rem',
+        cursor: 'pointer',
+        ...(hasManualGradingAutoPointsWarning && {
+          borderLeft: '6px solid var(--bs-warning)',
+        }),
+      }}
       onClick={(e) => {
         e.stopPropagation();
         onClick();
@@ -250,14 +253,36 @@ export function TreeQuestionRow({
                   className="link-underline-opacity-0 link-underline-opacity-100-hover text-primary-emphasis"
                   onClick={(e) => e.stopPropagation()}
                 >
-                  {questionData.question.title}
+                  {hasTitle ? (
+                    questionData.question.title
+                  ) : (
+                    <span className="font-monospace">{question.id}</span>
+                  )}
                 </a>
+                {!hasTitle && (
+                  <CopyButton
+                    text={question.id}
+                    tooltipId={`copy-qid-${question.id}`}
+                    ariaLabel="Copy QID"
+                    className="hover-show ms-1"
+                    onClick={(e) => e.stopPropagation()}
+                  />
+                )}
               </>
-            ) : (
+            ) : hasTitle ? (
               questionData.question.title
+            ) : (
+              <span className="font-monospace">{question.id}</span>
             )
           ) : (
-            <span className="text-muted small">{question.id}</span>
+            <span className="text-muted small font-monospace">{question.id}</span>
+          )}
+          {hasManualGradingAutoPointsWarning && (
+            <WarningIndicator
+              tooltipId={`manual-auto-points-${question.trackingId}`}
+              label="Auto points ignored"
+              body="Auto points have no effect on manually-graded questions"
+            />
           )}
           <ChangeIndicatorBadges
             trackingId={question.trackingId}
@@ -266,7 +291,7 @@ export function TreeQuestionRow({
             changeTracking={changeTracking}
           />
         </div>
-        {question.id && (
+        {hasTitle && (
           <div
             className="d-flex align-items-center text-muted font-monospace"
             style={{ fontSize: '0.75rem' }}
@@ -283,20 +308,13 @@ export function TreeQuestionRow({
         )}
         {viewType === 'detailed' && questionData && (
           <>
-            {(questionData.tags?.length ||
-              questionData.assessment_question.number_submissions_hist) && (
+            {questionData.tags != null && questionData.tags.length > 0 && (
               <div className="d-flex flex-wrap align-items-center gap-1 mt-1">
-                {questionData.tags?.map((tag) => (
+                {questionData.tags.map((tag) => (
                   <span key={tag.name} className={`badge color-${tag.color}`}>
                     {tag.name}
                   </span>
                 ))}
-                {questionData.assessment_question.number_submissions_hist && (
-                  <HistMini
-                    data={questionData.assessment_question.number_submissions_hist}
-                    options={{ width: 60, height: 20 }}
-                  />
-                )}
               </div>
             )}
             {questionData.other_assessments && questionData.other_assessments.length > 0 && (
@@ -322,14 +340,13 @@ export function TreeQuestionRow({
           question={question}
           zoneQuestionBlock={zoneQuestionBlock}
           assessmentType={assessmentType}
-          gradingMethod={questionData?.question.grading_method}
         />
       </div>
       {editMode && onDelete && (
         <button
           type="button"
           className="btn btn-sm border-0 text-muted ms-1 tree-delete-btn hover-show"
-          aria-label={`Delete ${question.id ?? 'question'}`}
+          aria-label={`Delete ${question.id}`}
           title="Delete question"
           onClick={(e) => {
             e.stopPropagation();

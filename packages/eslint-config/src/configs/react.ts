@@ -50,6 +50,8 @@ export function reactConfig(): TSESLint.FlatConfig.ConfigArray {
         '@eslint-react/naming-convention/use-state': 'off',
         // Forbid `snake_case` props.
         '@eslint-react/no-forbidden-props': ['error', { forbid: ['/_/'] }],
+        // Forbid `target="_blank"` without `rel="noreferrer"` for security reasons.
+        '@eslint-react/dom/no-unsafe-target-blank': 'error',
 
         // jsx-a11y strict rules
         ...jsxA11yX.configs.strict.rules,

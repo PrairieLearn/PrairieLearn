@@ -37,6 +37,7 @@ export {
 } from './components/tanstack-table-utils.js';
 
 export { useModalState } from './hooks/use-modal-state.js';
+export { useResizeHandle } from './hooks/use-resize-handle.js';
 export {
   ComboBox,
   TagPicker,

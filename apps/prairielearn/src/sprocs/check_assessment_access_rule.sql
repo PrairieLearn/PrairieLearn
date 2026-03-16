@@ -2,7 +2,6 @@ CREATE FUNCTION
     check_assessment_access_rule (
         IN assessment_access_rule assessment_access_rules,
         IN mode enum_mode,
-        IN mode_reason enum_mode_reason,
         IN user_id bigint,
         IN uid text,
         IN date timestamp with time zone,
@@ -40,7 +39,7 @@ BEGIN
     -- ############################################################
     -- check access with PrairieTest
 
-    IF (assessment_access_rule.exam_uuid IS NULL AND mode = 'Exam' AND mode_reason = 'PrairieTest') THEN
+    IF (assessment_access_rule.exam_uuid IS NULL AND mode = 'Exam') THEN
         -- Assessments without an exam_uuid are not allowed when the user is
         -- in exam mode because of a PrairieTest reservation.
         authorized := FALSE;
@@ -51,17 +50,12 @@ BEGIN
         authorized := FALSE;
     END IF;
 
-    IF (assessment_access_rule.exam_uuid IS NOT NULL AND mode_reason IS DISTINCT FROM 'PrairieTest') THEN
-        -- Only use exam_uuid when we are using PrairieTest.
-        authorized := FALSE;
-    END IF;
-
     IF (assessment_access_rule.exam_uuid IS NOT NULL AND assessment_access_rule.mode IS DISTINCT FROM 'Exam') THEN
         -- Only use exam_uuid if the access rule has an explicit mode=Exam.
         authorized := FALSE;
     END IF;
 
-    IF (assessment_access_rule.exam_uuid IS NOT NULL AND mode = 'Exam' AND mode_reason = 'PrairieTest') THEN
+    IF (assessment_access_rule.exam_uuid IS NOT NULL AND mode = 'Exam') THEN
         -- Look for a checked-in PrairieTest reservation.
         SELECT r.access_end
         INTO exam_access_end

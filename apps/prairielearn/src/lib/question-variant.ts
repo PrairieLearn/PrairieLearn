@@ -8,6 +8,7 @@ import * as sqldb from '@prairielearn/postgres';
 import { workspaceFastGlobDefaultOptions } from '@prairielearn/workspace-utils';
 import { IdSchema } from '@prairielearn/zod';
 
+import { selectPreferencesForInstanceQuestion } from '../models/assessment-question.js';
 import { selectCourseById } from '../models/course.js';
 import { selectQuestionById, selectQuestionByInstanceQuestionId } from '../models/question.js';
 import * as questionServers from '../question-servers/index.js';
@@ -16,11 +17,13 @@ import {
   type Course,
   type CourseInstance,
   type Question,
+  type QuestionPreferenceValuesSchema,
   type Variant,
   VariantSchema,
 } from './db-types.js';
 import { idsEqual } from './id.js';
 import { writeCourseIssues } from './issues.js';
+import { extractDefaultPreferences } from './question-preferences.js';
 
 const sql = sqldb.loadSqlEquiv(import.meta.url);
 
@@ -28,6 +31,8 @@ const VariantWithFormattedDateSchema = VariantSchema.extend({
   formatted_date: z.string(),
 });
 type VariantWithFormattedDate = z.infer<typeof VariantWithFormattedDateSchema>;
+
+type QuestionPreferenceValues = z.infer<typeof QuestionPreferenceValuesSchema>;
 
 const InstanceQuestionDataSchema = z.object({
   question_id: IdSchema,
@@ -44,39 +49,48 @@ interface VariantCreationData {
   params: Record<string, any>;
   true_answer: Record<string, any>;
   options: Record<string, any>;
+  preferences: QuestionPreferenceValues;
   broken: boolean;
 }
 
 /**
  * Internal function, do not call directly. Create a variant object, do not write to DB.
- * @param question - The question for the variant.
- * @param course - The course for the question.
- * @param options - Options controlling the creation.
- * @param options.variant_seed - The seed for the variant.
  */
-export async function makeVariant(
-  question: Question,
-  course: Course,
-  options: { variant_seed?: string | null },
-): Promise<{
+export async function makeVariant({
+  question,
+  course,
+  variant_seed: variant_seed_option,
+  preferences = {},
+}: {
+  question: Question;
+  course: Course;
+  variant_seed?: string | null;
+  preferences?: Record<string, string | number | boolean>;
+}): Promise<{
   courseIssues: (Error & { fatal?: boolean; data?: any })[];
   variant: VariantCreationData;
 }> {
   let variant_seed: string;
-  if (options.variant_seed != null) {
-    variant_seed = options.variant_seed;
+  if (variant_seed_option != null) {
+    variant_seed = variant_seed_option;
   } else {
     variant_seed = Math.floor(Math.random() * 2 ** 32).toString(36);
   }
 
   const questionModule = questionServers.getModule(question.type);
-  const { courseIssues, data } = await questionModule.generate(question, course, variant_seed);
+  const { courseIssues, data } = await questionModule.generate(
+    question,
+    course,
+    variant_seed,
+    preferences,
+  );
   const hasFatalIssue = courseIssues.some((issue) => issue.fatal);
   let variant: VariantCreationData = {
     variant_seed,
     params: data.params || {},
     true_answer: data.true_answer || {},
     options: data.options || {},
+    preferences,
     broken: hasFatalIssue,
   };
 
@@ -107,6 +121,7 @@ export async function makeVariant(
       true_answer: data.true_answer,
       options: data.options || {},
       broken: hasFatalIssue,
+      preferences,
     };
   }
 
@@ -237,11 +252,23 @@ async function makeAndInsertVariant({
   client_fingerprint_id: string | null;
 }): Promise<VariantWithFormattedDate> {
   const question = await selectQuestion(question_id, instance_question_id);
-  const { courseIssues, variant: variantData } = await makeVariant(
-    question,
-    question_course,
-    options,
+
+  // Look up preferences for this question instance
+  let preferences: QuestionPreferenceValues = extractDefaultPreferences(
+    question.preferences_schema,
   );
+
+  if (instance_question_id) {
+    const result = await selectPreferencesForInstanceQuestion(instance_question_id);
+    preferences = result ? { ...preferences, ...result } : preferences;
+  }
+
+  const { courseIssues, variant: variantData } = await makeVariant({
+    question,
+    course: question_course,
+    variant_seed: options.variant_seed,
+    preferences,
+  });
 
   const variant = await sqldb.runInTransactionAsync(async () => {
     let real_user_id: string | null = user_id;

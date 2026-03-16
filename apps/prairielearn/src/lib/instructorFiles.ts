@@ -154,7 +154,8 @@ export function getPaths(
           <code>${path.basename(testsDir)}</code> and will be accessible only from the server. It
           will not be accessible from the student's web browser. This is appropriate for code to
           support
-          <a href="https://docs.prairielearn.com/externalGrading/"> externally graded questions</a
+          <a href="https://docs.prairielearn.com/externalGrading/" target="_blank" rel="noreferrer">
+            externally graded questions</a
           >.`,
       });
     }

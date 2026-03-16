@@ -3,6 +3,7 @@ import type { ReactNode } from 'react';
 
 import type { TreeActions, TreeState, ViewType, ZoneAssessmentForm } from '../../types.js';
 import { ViewToggle } from '../EditModeToolbar.js';
+import { ViewSwitcherDropdown } from '../ViewSwitcherDropdown.js';
 
 import { TreeZoneNode } from './TreeZoneNode.js';
 
@@ -15,6 +16,7 @@ export function AssessmentTree({
   onViewTypeChange,
   onToggleExpandCollapse,
   editControls,
+  switchViewUrl,
 }: {
   zones: ZoneAssessmentForm[];
   state: TreeState;
@@ -24,18 +26,28 @@ export function AssessmentTree({
   onViewTypeChange: (viewType: ViewType) => void;
   onToggleExpandCollapse: () => void;
   editControls: ReactNode;
+  switchViewUrl: string | null;
 }) {
   const { editMode, viewType } = state;
+  const hasAlternatives = zones.some((zone) => zone.questions.some((q) => q.alternatives != null));
   return (
     <div className="d-flex flex-column h-100">
       <div className="d-flex align-items-center px-3 py-2 border-bottom bg-body flex-shrink-0">
         <ViewToggle
           viewType={viewType}
           isAllExpanded={isAllExpanded}
+          hasAlternatives={hasAlternatives}
           onViewTypeChange={onViewTypeChange}
           onToggleExpandCollapse={onToggleExpandCollapse}
         />
-        {editControls && <div className="ms-auto">{editControls}</div>}
+        <div className="ms-auto d-flex gap-2 align-items-center">
+          <ViewSwitcherDropdown
+            currentView="new"
+            switchViewUrl={switchViewUrl}
+            editMode={editMode}
+          />
+          {editControls}
+        </div>
       </div>
       <div className="split-pane__left-body">
         <SortableContext

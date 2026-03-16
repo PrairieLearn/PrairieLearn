@@ -14,8 +14,8 @@ import {
   computeQuestionTotalPoints,
   computeZonePointTotals,
   computeZoneQuestionCount,
+  getZonePointsMismatch,
   hasPointsMismatch,
-  hasZonePointsMismatch,
   normalizeQuestionPoints,
   questionDisplayName,
 } from './questions.js';
@@ -167,6 +167,40 @@ describe('buildHierarchicalAssessment', () => {
     expect(result[0].questions[0].alternatives![0].id).toBe('alt1');
     expect(result[0].questions[0].alternatives![1].id).toBe('alt2');
   });
+
+  it('preserves zone overrides and standalone question comments', () => {
+    const rows: StaffAssessmentQuestionRow[] = [
+      {
+        question: { qid: 'q1', course_id: 'course-1' },
+        course: { sharing_name: 'test' },
+        zone: {
+          number: 1,
+          title: 'Zone 1',
+          json_allow_real_time_grading: false,
+        },
+        alternative_group: {
+          number: 1,
+          id: 'ag1',
+          json_has_alternatives: false,
+          number_choose: 1,
+          json_allow_real_time_grading: false,
+        },
+        assessment_question: {
+          number: 1,
+          json_comment: { note: 'standalone question comment' },
+        },
+        start_new_alternative_group: true,
+      } as unknown as StaffAssessmentQuestionRow,
+    ];
+
+    const result = buildHierarchicalAssessment(course, rows);
+
+    expect(result[0].allowRealTimeGrading).toBe(false);
+    expect(result[0].questions[0].allowRealTimeGrading).toBe(false);
+    expect(result[0].questions[0].comment).toEqual({
+      note: 'standalone question comment',
+    });
+  });
 });
 
 describe('computeQuestionTotalPoints', () => {
@@ -222,12 +256,12 @@ describe('hasPointsMismatch', () => {
       expected: false,
     },
     {
-      name: 'different totals',
+      name: 'different totals without numberChoose (all selected)',
       alternatives: [
         { trackingId: 't1', id: 'q1', points: 10 },
         { trackingId: 't2', id: 'q2', points: 5 },
       ],
-      expected: true,
+      expected: false,
     },
     {
       name: 'single alternative',
@@ -245,9 +279,26 @@ describe('hasPointsMismatch', () => {
     ] as QuestionAlternativeForm[];
     expect(hasPointsMismatch(alternatives, 'Homework', { points: 10 })).toBe(false);
   });
+
+  it('returns false when numberChoose >= alternatives (all selected)', () => {
+    const alternatives = [
+      { trackingId: 't1', id: 'q1', points: 10 },
+      { trackingId: 't2', id: 'q2', points: 5 },
+    ] as QuestionAlternativeForm[];
+    expect(hasPointsMismatch(alternatives, 'Homework', { numberChoose: 2 })).toBe(false);
+  });
+
+  it('returns true when numberChoose < alternatives with different points', () => {
+    const alternatives = [
+      { trackingId: 't1', id: 'q1', points: 10 },
+      { trackingId: 't2', id: 'q2', points: 5 },
+      { trackingId: 't3', id: 'q3', points: 10 },
+    ] as QuestionAlternativeForm[];
+    expect(hasPointsMismatch(alternatives, 'Homework', { numberChoose: 2 })).toBe(true);
+  });
 });
 
-describe('hasZonePointsMismatch', () => {
+describe('getZonePointsMismatch', () => {
   it.each([
     {
       name: 'no bestQuestions or numberChoose',
@@ -258,7 +309,6 @@ describe('hasZonePointsMismatch', () => {
           { trackingId: 'q2', id: 'q2', points: 5 },
         ],
       },
-      expected: false,
     },
     {
       name: 'same totals with numberChoose',
@@ -270,19 +320,6 @@ describe('hasZonePointsMismatch', () => {
           { trackingId: 'q2', id: 'q2', autoPoints: 6, manualPoints: 4 },
         ],
       },
-      expected: false,
-    },
-    {
-      name: 'different totals with bestQuestions',
-      zone: {
-        trackingId: 'z1',
-        bestQuestions: 1,
-        questions: [
-          { trackingId: 'q1', id: 'q1', points: 10 },
-          { trackingId: 'q2', id: 'q2', points: 5 },
-        ],
-      },
-      expected: true,
     },
     {
       name: 'only one question',
@@ -291,10 +328,94 @@ describe('hasZonePointsMismatch', () => {
         bestQuestions: 1,
         questions: [{ trackingId: 'q1', id: 'q1', points: 10 }],
       },
-      expected: false,
     },
-  ])('returns $expected when $name', ({ zone, expected }) => {
-    expect(hasZonePointsMismatch(zone as ZoneAssessmentForm, 'Homework')).toBe(expected);
+    {
+      name: 'different points but numberChoose >= question count',
+      zone: {
+        trackingId: 'z1',
+        numberChoose: 3,
+        questions: [
+          { trackingId: 'q1', id: 'q1', points: 10 },
+          { trackingId: 'q2', id: 'q2', points: 5 },
+          { trackingId: 'q3', id: 'q3', points: 3 },
+        ],
+      },
+    },
+    {
+      name: 'different points but bestQuestions >= question count',
+      zone: {
+        trackingId: 'z1',
+        bestQuestions: 2,
+        questions: [
+          { trackingId: 'q1', id: 'q1', points: 10 },
+          { trackingId: 'q2', id: 'q2', points: 5 },
+        ],
+      },
+    },
+  ])('returns null when $name', ({ zone }) => {
+    expect(getZonePointsMismatch(zone as ZoneAssessmentForm, 'Homework')).toBeNull();
+  });
+
+  it('warns about random selection when numberChoose < question count', () => {
+    const zone = {
+      trackingId: 'z1',
+      numberChoose: 1,
+      questions: [
+        { trackingId: 'q1', id: 'q1', points: 10 },
+        { trackingId: 'q2', id: 'q2', points: 5 },
+      ],
+    };
+    const result = getZonePointsMismatch(zone as ZoneAssessmentForm, 'Homework');
+    expect(result?.label).toBe('Inconsistent points');
+    expect(result?.body).toContain('randomly selects');
+  });
+
+  it('warns about best-scoring when bestQuestions < question count', () => {
+    const zone = {
+      trackingId: 'z1',
+      bestQuestions: 1,
+      questions: [
+        { trackingId: 'q1', id: 'q1', points: 10 },
+        { trackingId: 'q2', id: 'q2', points: 5 },
+      ],
+    };
+    const result = getZonePointsMismatch(zone as ZoneAssessmentForm, 'Homework');
+    expect(result?.label).toBe('Inconsistent points');
+    expect(result?.body).toContain('best-scoring');
+  });
+
+  it('warns about both when bestQuestions < numberChoose (numberChoose covers all)', () => {
+    const zone = {
+      trackingId: 'z1',
+      numberChoose: 3,
+      bestQuestions: 2,
+      questions: [
+        { trackingId: 'q1', id: 'q1', points: 10 },
+        { trackingId: 'q2', id: 'q2', points: 5 },
+        { trackingId: 'q3', id: 'q3', points: 3 },
+      ],
+    };
+    const result = getZonePointsMismatch(zone as ZoneAssessmentForm, 'Homework');
+    expect(result?.label).toBe('Inconsistent points');
+    expect(result?.body).toContain('best-scoring');
+  });
+
+  it('warns about both when numberChoose and bestQuestions are both active', () => {
+    const zone = {
+      trackingId: 'z1',
+      numberChoose: 3,
+      bestQuestions: 2,
+      questions: [
+        { trackingId: 'q1', id: 'q1', points: 10 },
+        { trackingId: 'q2', id: 'q2', points: 5 },
+        { trackingId: 'q3', id: 'q3', points: 3 },
+        { trackingId: 'q4', id: 'q4', points: 7 },
+      ],
+    };
+    const result = getZonePointsMismatch(zone as ZoneAssessmentForm, 'Homework');
+    expect(result?.label).toBe('Inconsistent points');
+    expect(result?.body).toContain('randomly selects');
+    expect(result?.body).toContain('best-scoring');
   });
 });
 
