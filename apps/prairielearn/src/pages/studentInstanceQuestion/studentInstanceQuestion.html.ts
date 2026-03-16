@@ -37,7 +37,7 @@ export function StudentInstanceQuestion({
   assignedGrader?: User | null;
   lastGrader?: User | null;
   questionCopyTargets?: CopyTarget[] | null;
-  enabledTools?: Pick<AssessmentTool, 'tool' | 'settings'>[];
+  enabledTools?: AssessmentTool[];
 }) {
   const questionContext =
     resLocals.assessment.type === 'Exam' ? 'student_exam' : 'student_homework';

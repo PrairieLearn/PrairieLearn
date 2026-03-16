@@ -78,29 +78,24 @@ export type AssessmentRow = z.infer<typeof AssessmentRowSchema>;
  * configuration on a per-tool basis: if a zone defines a tool (even as
  * disabled), the assessment-level row for that tool is ignored.
  */
-const EnabledAssessmentToolSchema = z.object({
-  tool: AssessmentToolSchema.shape.tool,
-  settings: AssessmentToolSchema.shape.settings,
-});
-
 export async function selectEnabledAssessmentTools({
   assessment_id,
   zone_id,
 }: {
   assessment_id: string;
-  zone_id?: string | null;
+  zone_id?: string;
 }) {
   if (zone_id == null) {
     return await queryRows(
       sql.select_enabled_assessment_tools_no_zone,
       { assessment_id },
-      EnabledAssessmentToolSchema,
+      AssessmentToolSchema,
     );
   }
   return await queryRows(
     sql.select_enabled_assessment_tools,
     { assessment_id, zone_id },
-    EnabledAssessmentToolSchema,
+    AssessmentToolSchema,
   );
 }
 
@@ -110,8 +105,20 @@ export async function selectZoneIdForInstanceQuestion(
   return await queryOptionalScalar(
     sql.select_zone_id_for_instance_question,
     { instance_question_id },
-    IdSchema,
+    IdSchema.nullable(),
   );
+}
+
+export async function selectEnabledToolsForInstanceQuestion({
+  instance_question_id,
+  assessment_id,
+}: {
+  instance_question_id: string;
+  assessment_id: string;
+}) {
+  const zone_id = await selectZoneIdForInstanceQuestion(instance_question_id);
+  if (zone_id == null) return [];
+  return selectEnabledAssessmentTools({ assessment_id, zone_id });
 }
 
 export async function selectAssessments({

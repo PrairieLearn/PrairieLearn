@@ -51,8 +51,7 @@ WITH
       zone_id = $zone_id
   )
 SELECT
-  tool,
-  settings
+  *
 FROM
   assessment_tools
 WHERE
@@ -74,8 +73,7 @@ WHERE
 
 -- BLOCK select_enabled_assessment_tools_no_zone
 SELECT
-  tool,
-  settings
+  *
 FROM
   assessment_tools
 WHERE

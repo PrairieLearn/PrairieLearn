@@ -299,12 +299,14 @@ export const ZoneQuestionBlockJsonSchema = QuestionPointsJsonSchema.extend({
 
 export type ZoneQuestionBlockJson = z.infer<typeof ZoneQuestionBlockJsonSchema>;
 
-export const AssessmentToolsJsonSchema = z.object({
-  enabled: z.boolean().describe('Whether this assessment tool is enabled.'),
-  // leave room for additional keys in the future
-}).catchall(z.unknown());
+export const AssessmentToolJsonSchema = z
+  .object({
+    enabled: z.boolean().describe('Whether this assessment tool is enabled.'),
+    // leave room for additional keys in the future
+  })
+  .catchall(z.unknown());
 
-export type AssessmentToolsJson = z.infer<typeof AssessmentToolsJsonSchema>;
+export type AssessmentToolJson = z.infer<typeof AssessmentToolJsonSchema>;
 
 export const ZoneAssessmentJsonSchema = z.object({
   title: z
@@ -372,7 +374,7 @@ export const ZoneAssessmentJsonSchema = z.object({
     .optional()
     .default([]),
   tools: z
-    .record(EnumAssessmentToolSchema, AssessmentToolsJsonSchema)
+    .record(EnumAssessmentToolSchema, AssessmentToolJsonSchema)
     .describe('Tools available for questions in this zone. Overrides assessment-level tools.')
     .optional(),
 });
@@ -560,7 +562,7 @@ export const AssessmentJsonSchema = z
       .optional()
       .default(false),
     tools: z
-      .record(EnumAssessmentToolSchema, AssessmentToolsJsonSchema)
+      .record(EnumAssessmentToolSchema, AssessmentToolJsonSchema)
       .describe('Configuration for assessment tools.')
       .optional(),
   })
