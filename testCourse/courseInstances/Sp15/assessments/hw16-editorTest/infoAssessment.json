@@ -18,12 +18,29 @@
       ]
     },
     {
+      "numberChoose": 2,
       "questions": [
         { "id": "addVectors", "autoPoints": 2, "maxAutoPoints": 11 },
         {
           "alternatives": [{ "id": "aiGradingMultiImageCapture" }, { "id": "aiGradingRubrics" }],
+          "comment": "Alternative group",
           "numberChoose": 1,
           "autoPoints": 1
+        }
+      ]
+    },
+    {
+      "comment": "Points format translations",
+      "questions": [
+        { "id": "demo/imageCapture", "points": 2 },
+        { "alternatives": [{ "id": "manualGrade/shortAnswer" }], "points": 2 },
+        {
+          "alternatives": [
+            { "id": "manualGrade/codeUpload" },
+            { "id": "internalGrade/addingNumbers2" }
+          ],
+          "comment": "Alternative group",
+          "points": 1
         }
       ]
     }

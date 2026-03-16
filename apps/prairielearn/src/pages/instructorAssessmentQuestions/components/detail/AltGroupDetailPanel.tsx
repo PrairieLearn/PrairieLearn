@@ -168,6 +168,14 @@ export function AltGroupDetailPanel({
     zoneQuestionBlock.alternatives != null &&
     hasPointsMismatch(zoneQuestionBlock.alternatives, assessmentType, zoneQuestionBlock);
   const chooseExceeds = hasAltGroupChooseExceedsCount(zoneQuestionBlock);
+  const hasAutoGradedWithOnlyManualPoints =
+    zoneQuestionBlock.alternatives?.some((alt) => {
+      const metadata = questionMetadata[alt.id];
+      if (!metadata || metadata.question.grading_method === 'Manual') return false;
+      const effectiveManualPoints = alt.manualPoints ?? zoneQuestionBlock.manualPoints;
+      const effectiveAutoPoints = alt.autoPoints ?? zoneQuestionBlock.autoPoints;
+      return effectiveManualPoints != null && effectiveAutoPoints == null;
+    }) ?? false;
 
   const Wrapper = editMode ? 'div' : 'dl';
 
@@ -201,6 +209,13 @@ export function AltGroupDetailPanel({
               })
             }
           />
+        </div>
+      )}
+      {hasAutoGradedWithOnlyManualPoints && (
+        <div className="alert alert-info small mb-3" role="alert">
+          <i className="bi bi-info-circle-fill me-1" aria-hidden="true" />
+          One or more alternatives in this group are auto-graded but only have manual points.
+          Auto-grading results for those questions will not contribute to the score.
         </div>
       )}
       <div className="d-flex flex-column gap-2">
