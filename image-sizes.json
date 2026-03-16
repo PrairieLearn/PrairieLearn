@@ -1,122 +1,162 @@
 {
   "prairielearn/executor": {
     "linux/amd64": {
-      "digest": "sha256:fc5c02c9e05dcf117f2a44140795cb4f20fbe1688e678369debda53cb8bee39a",
-      "size": 1324150743
+      "digest": "sha256:2dc28b7c6e984dc6f86461726de8bd57046234a5663745e597b43a33dd071c3d",
+      "size": 1322942881
     },
     "linux/arm64": {
-      "digest": "sha256:3c38b074f10322deab8223d775be6041eb0e439a492c07ef5558a81c7d8fa5aa",
-      "size": 1290180590
+      "digest": "sha256:0f11018872364930965da6c8d930bbb0cace121b3c2447b55d46b69c3e75b757",
+      "size": 1289106091
     }
   },
   "prairielearn/prairielearn": {
     "linux/amd64": {
-      "digest": "sha256:4c7ada6f79b1e511d8f23b270ae8d4ebe97d96e9bf4e20f28c3794fdff649a07",
-      "size": 1324147915
+      "digest": "sha256:10d5ce0fa0102ede37d075b1ea6781e640dfde4889e47711b439a6bc1e0c42cb",
+      "size": 1322940057
     },
     "linux/arm64": {
-      "digest": "sha256:96ef0ac6d50c79b660a3bc6379fa6a8c291f2c75bea6cf89eb30159b71aa9450",
-      "size": 1290177757
+      "digest": "sha256:d8cc7ed3de9f11457d3c3419a07e9acd6a17f61b9248b121d04baad774eabc95",
+      "size": 1289103267
     }
   },
   "prairielearn/workspace-desktop": {
     "linux/amd64": {
-      "digest": "sha256:ba0a3a131670a54e2581a4f4f8dddbf790348a3a28c579da1f18d4cee829916c",
-      "size": 809108721
+      "digest": "sha256:9463009300c170dc4011bb54de89d3df4d9550862ebb8e96a58ca91a2f0fcb3e",
+      "size": 810761186
     },
     "linux/arm64": {
-      "digest": "sha256:84bda75f396b0cae6fb84312b3acdc0f5969ceb3f1feb9d2baee31e66b824d1e",
-      "size": 787463772
+      "digest": "sha256:34ae2455e9443898cd7e61d52a02c4eca98f158a80765b0d5348afaa5c12a9d8",
+      "size": 789054645
     }
   },
   "prairielearn/grader-python": {
     "linux/amd64": {
-      "digest": "sha256:f207ae92047370bd5a22ce6adc9bc03f14896f2acfee7dffdd34a6b323b62a79",
-      "size": 541241283
+      "digest": "sha256:5cdab31decd461987490eb3064e81d9d6d0a118c59498534d7ea3e586fe8a0ce",
+      "size": 541614280
     },
     "linux/arm64": {
-      "digest": "sha256:974e47c57f12cf1e1cc692fc1376eb8b68414ad60592583c2a70cb15390177b8",
-      "size": 519160907
+      "digest": "sha256:62c7cb3f10496fda36f73c489f698b15e662ab5a985640a1757f10531040c820",
+      "size": 519763929
     }
   },
   "prairielearn/workspace-jupyterlab-base": {
     "linux/amd64": {
-      "digest": "sha256:33fe0e96fe8bb0a345c916d3e102cae1b6469ba80868b3d6a186aeb308618162",
-      "size": 655456769
+      "digest": "sha256:c8f2da3b93a59e20fa57073f0382e4a705824d5720319aca96db332a1dcea747",
+      "size": 657997870
     },
     "linux/arm64": {
-      "digest": "sha256:a6fe4df0889225cf198e58e9f074de9329ec3d54c65b576134b98cf332f483ff",
-      "size": 609682654
+      "digest": "sha256:bd4a86044c3e444f2631bab1c4fd3fc6e85ada40bb6536f4de43ef18f09d9314",
+      "size": 612206708
     }
   },
   "prairielearn/workspace-jupyterlab-python": {
     "linux/amd64": {
-      "digest": "sha256:8f9ca685c12cbf47265939325872070cc9cb8199691d1d54f239de5af288baf0",
-      "size": 933431622
+      "digest": "sha256:c5809c9e6ad04986f9990d8f7c371bf91018813803f4ae954de1997541074a15",
+      "size": 935866462
     },
     "linux/arm64": {
-      "digest": "sha256:62350924f7c448ed33c9d589400a2e08778be5e162ced71e58518e2c5e0e1b7c",
-      "size": 881334342
+      "digest": "sha256:5c02d01d1fb3c6db12d646cfac53df7fc5faa75e86e69371078f46738b861158",
+      "size": 883759467
     }
   },
   "prairielearn/workspace-jupyterlab-r": {
     "linux/amd64": {
-      "digest": "sha256:dceb36a3eb1d83945d418e42dfc1588ede5a7ffededcb61b2c37950b05253c19",
-      "size": 1220634490
+      "digest": "sha256:327c1529a883b7f57167b9b10f8dea36c663cad0016df605b2f0b8ed3fcd3e55",
+      "size": 1244299083
     },
     "linux/arm64": {
-      "digest": "sha256:bb9d722b1994601d8ece91420349dfee5b9a91fc31bdbe23eb0f388944007b3c",
-      "size": 1157152276
+      "digest": "sha256:fb76159b6d10aff22eca98c31b5559760f086b0b84f22f815410b55a93b43727",
+      "size": 1163421934
     }
   },
   "prairielearn/workspace-vscode-python": {
     "linux/amd64": {
-      "digest": "sha256:7c90884f0b186fc5e7edad1f0fe35113639368c79396be70f70cdf12b3af4b83",
-      "size": 718391896
+      "digest": "sha256:5b545003214b225a33650d485ae0d7f2f93404aae400ebf95df4a650e111d03b",
+      "size": 723817795
     },
     "linux/arm64": {
-      "digest": "sha256:5c7fac6e822056a1a1db7c6269f088b2aa5873e3f272b5a5a9e9211f5dac19a1",
-      "size": 698551917
+      "digest": "sha256:62ab736b0bd5cb094ac6feeb02892189557019c3c19c2ef0552f41af3ff1c9e9",
+      "size": 704193148
     }
   },
   "prairielearn/workspace-vscode-base": {
     "linux/amd64": {
-      "digest": "sha256:d568493cc4b08fcef5d112783cc6d263b520f930a91edabead6cb26797512c4b",
-      "size": 252986803
+      "digest": "sha256:af439ef30dcf2bcfc90bab053d9a9af94a56c75a6ee38dce09b2062d5ab8e81a",
+      "size": 258117850
     },
     "linux/arm64": {
-      "digest": "sha256:ca54d4f58927421a29d78674648c5687d5ec3f2ba96c18eb5b3a59aac360f512",
-      "size": 251269923
+      "digest": "sha256:a8b2ce0324ae616fb9f8af9eb80820561ac334da6a4c8f5fa0f220e262477db6",
+      "size": 256449762
     }
   },
   "prairielearn/workspace-vscode-cpp": {
     "linux/amd64": {
-      "digest": "sha256:bcb185630cb95a2dfdb41d77007701dac8695b3b156266bf9d3e355480986ed9",
-      "size": 410442128
+      "digest": "sha256:c7e24c5d27109590a79d21ac8afa9531f140a64cfd77720df798f8266c8ec83a",
+      "size": 415627133
     },
     "linux/arm64": {
-      "digest": "sha256:23350dc8d8c1fa17d5aa227a03de097f0501d3c3aec8ddd39bb18ec572dd9ad8",
-      "size": 403178257
+      "digest": "sha256:a025665e8d03874aeaa9da0107273f9e984c7823ed2b5cac33616eb46303d934",
+      "size": 408414794
     }
   },
   "prairielearn/workspace-vscode-java": {
     "linux/amd64": {
-      "digest": "sha256:0cd22a7229575e5dffbdeb95cff944809e38d71f5c5ae93f7d764c4eb91e91d3",
-      "size": 491509625
+      "digest": "sha256:f7cf077e1e7957e15432d2b76adb22522d448e5db954d2d34dddd9dab314ff05",
+      "size": 496641758
     },
     "linux/arm64": {
-      "digest": "sha256:a42644e0f0692ef0967d970eaaefbb82d9ad81fcf52e0081bcbc6a8a885198f0",
-      "size": 487371234
+      "digest": "sha256:09745f6080938d5e0749f96aab7cc91609786502e050dbabe0bea1288ef69e5f",
+      "size": 492551431
     }
   },
   "prairielearn/workspace-xtermjs": {
     "linux/amd64": {
-      "digest": "sha256:7dc43cc28b8f7b7cc14b71d7f1f96dca020e5f22c080b097e21ce2722f3c7862",
-      "size": 512323402
+      "digest": "sha256:71660e05517625bb7d42ccc1362158177980b26b97b71880febb634ed6555b40",
+      "size": 520244611
     },
     "linux/arm64": {
-      "digest": "sha256:b8e286aae11d82177cce1fd86637988a1daa09ba1e1a247371f6118dda2db811",
-      "size": 502002204
+      "digest": "sha256:2ade0d9b07df1f5fb77005be2d3601c4af6fe0eef0d137eee0ad76ec3e75f1b7",
+      "size": 509897457
+    }
+  },
+  "prairielearn/grader-c": {
+    "linux/amd64": {
+      "digest": "sha256:e019315606ceec9c86282e9fe6948692334e663faa80c2f5afab493ecd2ca700",
+      "size": 402187037
+    },
+    "linux/arm64": {
+      "digest": "sha256:d75797892c04a061cb9073d7812b5bfc81991b5a560f80fed1061c351d76aa8d",
+      "size": 372915628
+    }
+  },
+  "prairielearn/grader-java": {
+    "linux/amd64": {
+      "digest": "sha256:c2545b29d4c8f3bca51d713dc0d9bec4447c482b4a810c1c5dff40da94b2efd1",
+      "size": 210886273
+    },
+    "linux/arm64": {
+      "digest": "sha256:a7ecf15b7d42458f549f39a4a3ce54107c44c0ac3b9c1d8b0e59fcfe01a35bc9",
+      "size": 207575780
+    }
+  },
+  "prairielearn/grader-r": {
+    "linux/amd64": {
+      "digest": "sha256:a546cab04d88b5880f4bc0e9ee6043384f5874c63683bcb844aa4e590b1c3f5e",
+      "size": 613631344
+    },
+    "linux/arm64": {
+      "digest": "sha256:a36086c0177a258e8c37cb5b2a5c18a268bf7d5e3c782b87827db71ca3b86f75",
+      "size": 607442702
+    }
+  },
+  "prairielearn/workspace-rstudio": {
+    "linux/amd64": {
+      "digest": "sha256:ac38cf312ef1fd0e6e20224615d6bd672077b229785983cde82b5a3dbfa06671",
+      "size": 923205811
+    },
+    "linux/arm64": {
+      "digest": "sha256:4cf1bea4ad8882f05507899f15851b26732f1d7cee967fcf12c452337abe58ca",
+      "size": 908783602
     }
   }
 }
