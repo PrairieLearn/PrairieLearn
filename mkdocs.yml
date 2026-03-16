@@ -117,7 +117,9 @@ plugins:
 
           inventories:
             - url: https://numpy.org/doc/stable/objects.inv
-            - url: https://pandas.pydata.org/pandas-docs/stable/objects.inv
+            # Pandas docs has been unstable recently, which causes CI errors.
+            # https://github.com/pandas-dev/pandas/issues/64584
+            # - url: https://pandas.pydata.org/pandas-docs/stable/objects.inv
             - url: https://matplotlib.org/objects.inv
             - url: https://networkx.org/documentation/latest/objects.inv
             # - url: https://docs.sympy.org/latest/objects.inv # Doesn't seem to support ARM yet.

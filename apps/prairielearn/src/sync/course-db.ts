@@ -35,7 +35,7 @@ import * as infofile from './infofile.js';
 import { isDraftQid } from './question.js';
 
 // We use a single global instance so that schemas aren't recompiled every time they're used
-const ajv = new Ajv({ allErrors: true });
+const ajv = new Ajv({ allErrors: true, allowUnionTypes: true });
 
 const DEFAULT_ASSESSMENT_SETS: AssessmentSetJson[] = [
   {
@@ -1045,12 +1045,42 @@ function validateQuestion({
     }
   }
 
+  if (question.gradingMethod === 'External' && !question.externalGradingOptions) {
+    errors.push('"externalGradingOptions" is required when "gradingMethod" is "External"');
+  }
+
   if (question.externalGradingOptions?.timeout) {
     if (question.externalGradingOptions.timeout > config.externalGradingMaximumTimeout) {
       warnings.push(
         `External grading timeout value of ${question.externalGradingOptions.timeout} seconds exceeds the maximum value and has been limited to ${config.externalGradingMaximumTimeout} seconds.`,
       );
       question.externalGradingOptions.timeout = config.externalGradingMaximumTimeout;
+    }
+  }
+
+  if (question.preferences) {
+    for (const [key, field] of Object.entries(question.preferences)) {
+      if (typeof field.default !== field.type) {
+        errors.push(
+          `preferences.${key}: default value must be of type "${field.type}", got ${typeof field.default}`,
+        );
+      }
+      if (field.enum) {
+        if (field.type === 'boolean') {
+          errors.push(`preferences.${key}: boolean preferences cannot have enum values`);
+        } else {
+          for (const [i, val] of field.enum.entries()) {
+            if (typeof val !== field.type) {
+              errors.push(
+                `preferences.${key}.enum[${i}]: enum values must be of type "${field.type}", got ${typeof val}`,
+              );
+            }
+          }
+          if (!field.enum.includes(field.default as string | number)) {
+            errors.push(`preferences.${key}: default value must be present in the enum options`);
+          }
+        }
+      }
     }
   }
 
@@ -1236,6 +1266,9 @@ function validateAssessment({
       if (rule.examUuid && rule.mode === 'Public') {
         warnings.push('Invalid allowAccess rule: examUuid cannot be used with "mode": "Public"');
       }
+      if (!rule.examUuid && rule.mode === 'Exam') {
+        warnings.push('Invalid allowAccess rule: examUuid is required with "mode": "Exam"');
+      }
     });
   }
 
@@ -1272,7 +1305,13 @@ function validateAssessment({
       let alternatives: (QuestionPointsJson & { allowRealTimeGrading: boolean })[] = [];
       if (zoneQuestion.alternatives && zoneQuestion.id) {
         errors.push('Cannot specify both "alternatives" and "id" in one question');
-      } else if (zoneQuestion.alternatives) {
+      }
+      if (zoneQuestion.alternatives && zoneQuestion.preferences) {
+        errors.push(
+          'Cannot specify "preferences" on an alternative group. Set "preferences" on each alternative instead.',
+        );
+      }
+      if (zoneQuestion.alternatives) {
         zoneQuestion.alternatives.forEach((alternative) => checkAndRecordQid(alternative.id));
         alternatives = zoneQuestion.alternatives.map((alternative) => {
           return {

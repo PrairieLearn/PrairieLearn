@@ -2,38 +2,34 @@ import { afterAll, assert, beforeAll, describe, it } from 'vitest';
 
 import * as sqldb from '@prairielearn/postgres';
 
-import { SprocIpToModeSchema, UserSchema } from '../../lib/db-types.js';
+import { UserSchema } from '../../lib/db-types.js';
+import { ipToMode } from '../../lib/exam-mode.js';
 import * as helperDb from '../helperDb.js';
 
 const sql = sqldb.loadSqlEquiv(import.meta.url);
 
-let user_id: string | null = null;
+let authn_user_id: string;
 
 async function createCenterExamReservation() {
-  await sqldb.execute(sql.create_center_exam_reservation, { user_id });
+  await sqldb.execute(sql.create_center_exam_reservation, { user_id: authn_user_id });
 }
 
 async function createCourseExamReservation() {
-  await sqldb.execute(sql.create_course_exam_reservation, { user_id });
+  await sqldb.execute(sql.create_course_exam_reservation, { user_id: authn_user_id });
 }
 
 describe('sproc ip_to_mode tests', function () {
   beforeAll(async function () {
     await helperDb.before();
-    user_id = await sqldb.queryRow(sql.setup, UserSchema.shape.id);
+    authn_user_id = await sqldb.queryScalar(sql.setup, UserSchema.shape.id);
   });
 
   afterAll(helperDb.after);
 
   describe('No reservations', () => {
     it('should return "Public"', async () => {
-      const result = await sqldb.callRow(
-        'ip_to_mode',
-        ['10.0.0.1', new Date(), user_id],
-        SprocIpToModeSchema,
-      );
-      assert.equal(result.mode, 'Public');
-      assert.equal(result.mode_reason, 'Default');
+      const result = await ipToMode({ ip: '10.0.0.1', date: new Date(), authn_user_id });
+      assert.equal(result, 'Public');
     });
   });
 
@@ -49,21 +45,14 @@ describe('sproc ip_to_mode tests', function () {
           await createCenterExamReservation();
 
           console.log('before ip_to_mode query');
-          const result = await sqldb.callRow(
-            'ip_to_mode',
-            [
-              '10.0.0.1',
-              // 10 minutes ago.
-              new Date(Date.now() - 1000 * 60 * 10),
-              user_id,
-            ],
-            SprocIpToModeSchema,
-          );
+          const result = await ipToMode({
+            ip: '10.0.0.1',
+            // 10 minutes ago.
+            date: new Date(Date.now() - 1000 * 60 * 10),
+            authn_user_id,
+          });
 
-          console.log('before assertions');
-          assert.equal(result.mode, 'Exam');
-          assert.equal(result.mode_reason, 'PrairieTest');
-          console.log('after assertions');
+          assert.equal(result, 'Exam');
         });
         console.log('after transaction');
       });
@@ -72,18 +61,13 @@ describe('sproc ip_to_mode tests', function () {
         await helperDb.runInTransactionAndRollback(async () => {
           await createCenterExamReservation();
 
-          const result = await sqldb.callRow(
-            'ip_to_mode',
-            [
-              '10.0.0.1',
-              // 10 minutes from now.
-              new Date(Date.now() + 1000 * 60 * 10),
-              user_id,
-            ],
-            SprocIpToModeSchema,
-          );
-          assert.equal(result.mode, 'Exam');
-          assert.equal(result.mode_reason, 'PrairieTest');
+          const result = await ipToMode({
+            ip: '10.0.0.1',
+            // 10 minutes from now.
+            date: new Date(Date.now() + 1000 * 60 * 10),
+            authn_user_id,
+          });
+          assert.equal(result, 'Exam');
         });
       });
 
@@ -91,18 +75,13 @@ describe('sproc ip_to_mode tests', function () {
         await helperDb.runInTransactionAndRollback(async () => {
           await createCenterExamReservation();
 
-          const result = await sqldb.callRow(
-            'ip_to_mode',
-            [
-              '192.168.0.1',
-              // 10 minutes ago.
-              new Date(Date.now() - 1000 * 60 * 10),
-              user_id,
-            ],
-            SprocIpToModeSchema,
-          );
-          assert.equal(result.mode, 'Public');
-          assert.equal(result.mode_reason, 'Default');
+          const result = await ipToMode({
+            ip: '192.168.0.1',
+            // 10 minutes ago.
+            date: new Date(Date.now() - 1000 * 60 * 10),
+            authn_user_id,
+          });
+          assert.equal(result, 'Public');
         });
       });
 
@@ -110,18 +89,13 @@ describe('sproc ip_to_mode tests', function () {
         await helperDb.runInTransactionAndRollback(async () => {
           await createCenterExamReservation();
 
-          const result = await sqldb.callRow(
-            'ip_to_mode',
-            [
-              '192.168.0.1',
-              // 10 minutes from now.
-              new Date(Date.now() + 1000 * 60 * 10),
-              user_id,
-            ],
-            SprocIpToModeSchema,
-          );
-          assert.equal(result.mode, 'Public');
-          assert.equal(result.mode_reason, 'Default');
+          const result = await ipToMode({
+            ip: '192.168.0.1',
+            // 10 minutes from now.
+            date: new Date(Date.now() + 1000 * 60 * 10),
+            authn_user_id,
+          });
+          assert.equal(result, 'Public');
         });
       });
 
@@ -130,46 +104,31 @@ describe('sproc ip_to_mode tests', function () {
           await createCenterExamReservation();
 
           // Add another exam/session/location/reservation.
-          await sqldb.execute(sql.insert_second_reservation, { user_id });
+          await sqldb.execute(sql.insert_second_reservation, { user_id: authn_user_id });
 
-          const firstSessionInLocation = await sqldb.callRow(
-            'ip_to_mode',
-            [
-              '10.0.0.1',
-              // 10 minutes ago.
-              new Date(Date.now() - 1000 * 60 * 10),
-              user_id,
-            ],
-            SprocIpToModeSchema,
-          );
-          assert.equal(firstSessionInLocation.mode, 'Exam');
-          assert.equal(firstSessionInLocation.mode_reason, 'PrairieTest');
+          const firstSessionInLocation = await ipToMode({
+            ip: '10.0.0.1',
+            // 10 minutes ago.
+            date: new Date(Date.now() - 1000 * 60 * 10),
+            authn_user_id,
+          });
+          assert.equal(firstSessionInLocation, 'Exam');
 
-          const secondSessionInLocation = await sqldb.callRow(
-            'ip_to_mode',
-            [
-              '10.1.1.1',
-              // 10 minutes ago.
-              new Date(Date.now() - 1000 * 60 * 10),
-              user_id,
-            ],
-            SprocIpToModeSchema,
-          );
-          assert.equal(secondSessionInLocation.mode, 'Exam');
-          assert.equal(secondSessionInLocation.mode_reason, 'PrairieTest');
+          const secondSessionInLocation = await ipToMode({
+            ip: '10.1.1.1',
+            // 10 minutes ago.
+            date: new Date(Date.now() - 1000 * 60 * 10),
+            authn_user_id,
+          });
+          assert.equal(secondSessionInLocation, 'Exam');
 
-          const notInLocation = await sqldb.callRow(
-            'ip_to_mode',
-            [
-              '192.168.0.1',
-              // 10 minutes ago.
-              new Date(Date.now() - 1000 * 60 * 10),
-              user_id,
-            ],
-            SprocIpToModeSchema,
-          );
-          assert.equal(notInLocation.mode, 'Public');
-          assert.equal(notInLocation.mode_reason, 'Default');
+          const notInLocation = await ipToMode({
+            ip: '192.168.0.1',
+            // 10 minutes ago.
+            date: new Date(Date.now() - 1000 * 60 * 10),
+            authn_user_id,
+          });
+          assert.equal(notInLocation, 'Public');
         });
       });
     });
@@ -180,13 +139,8 @@ describe('sproc ip_to_mode tests', function () {
           await createCenterExamReservation();
           await sqldb.execute(sql.check_in_reservations);
 
-          const result = await sqldb.callRow(
-            'ip_to_mode',
-            ['10.0.0.1', new Date(), user_id],
-            SprocIpToModeSchema,
-          );
-          assert.equal(result.mode, 'Exam');
-          assert.equal(result.mode_reason, 'PrairieTest');
+          const result = await ipToMode({ ip: '10.0.0.1', date: new Date(), authn_user_id });
+          assert.equal(result, 'Exam');
         });
       });
 
@@ -195,13 +149,12 @@ describe('sproc ip_to_mode tests', function () {
           await createCenterExamReservation();
           await sqldb.execute(sql.check_in_reservations);
 
-          const result = await sqldb.callRow(
-            'ip_to_mode',
-            ['10.0.0.1', new Date(Date.now() + 2 * 60 * 60 * 1000), user_id],
-            SprocIpToModeSchema,
-          );
-          assert.equal(result.mode, 'Public');
-          assert.equal(result.mode_reason, 'Default');
+          const result = await ipToMode({
+            ip: '10.0.0.1',
+            date: new Date(Date.now() + 2 * 60 * 60 * 1000),
+            authn_user_id,
+          });
+          assert.equal(result, 'Public');
         });
       });
 
@@ -210,13 +163,8 @@ describe('sproc ip_to_mode tests', function () {
           await createCenterExamReservation();
           await sqldb.execute(sql.check_in_reservations);
 
-          const result = await sqldb.callRow(
-            'ip_to_mode',
-            ['192.168.0.1', new Date(), user_id],
-            SprocIpToModeSchema,
-          );
-          assert.equal(result.mode, 'Public');
-          assert.equal(result.mode_reason, 'Default');
+          const result = await ipToMode({ ip: '192.168.0.1', date: new Date(), authn_user_id });
+          assert.equal(result, 'Public');
         });
       });
     });
@@ -227,13 +175,8 @@ describe('sproc ip_to_mode tests', function () {
           await createCenterExamReservation();
           await sqldb.execute(sql.start_reservations);
 
-          const result = await sqldb.callRow(
-            'ip_to_mode',
-            ['10.0.0.1', new Date(), user_id],
-            SprocIpToModeSchema,
-          );
-          assert.equal(result.mode, 'Exam');
-          assert.equal(result.mode_reason, 'PrairieTest');
+          const result = await ipToMode({ ip: '10.0.0.1', date: new Date(), authn_user_id });
+          assert.equal(result, 'Exam');
         });
       });
 
@@ -242,18 +185,13 @@ describe('sproc ip_to_mode tests', function () {
           await createCenterExamReservation();
           await sqldb.execute(sql.start_reservations);
 
-          const result = await sqldb.callRow(
-            'ip_to_mode',
-            [
-              '10.0.0.1',
-              // 25 minutes from now (5 minutes after access end)
-              new Date(Date.now() + 1000 * 60 * 25),
-              user_id,
-            ],
-            SprocIpToModeSchema,
-          );
-          assert.equal(result.mode, 'Exam');
-          assert.equal(result.mode_reason, 'PrairieTest');
+          const result = await ipToMode({
+            ip: '10.0.0.1',
+            // 25 minutes from now (5 minutes after access end)
+            date: new Date(Date.now() + 1000 * 60 * 25),
+            authn_user_id,
+          });
+          assert.equal(result, 'Exam');
         });
       });
 
@@ -262,18 +200,13 @@ describe('sproc ip_to_mode tests', function () {
           await createCenterExamReservation();
           await sqldb.execute(sql.start_reservations);
 
-          const result = await sqldb.callRow(
-            'ip_to_mode',
-            [
-              '10.0.0.1',
-              // 60 minutes from now (40 minutes after access end)
-              new Date(Date.now() + 1000 * 60 * 60),
-              user_id,
-            ],
-            SprocIpToModeSchema,
-          );
-          assert.equal(result.mode, 'Public');
-          assert.equal(result.mode_reason, 'Default');
+          const result = await ipToMode({
+            ip: '10.0.0.1',
+            // 60 minutes from now (40 minutes after access end)
+            date: new Date(Date.now() + 1000 * 60 * 60),
+            authn_user_id,
+          });
+          assert.equal(result, 'Public');
         });
       });
 
@@ -282,13 +215,8 @@ describe('sproc ip_to_mode tests', function () {
           await createCenterExamReservation();
           await sqldb.execute(sql.start_reservations);
 
-          const result = await sqldb.callRow(
-            'ip_to_mode',
-            ['192.168.0.1', new Date(), user_id],
-            SprocIpToModeSchema,
-          );
-          assert.equal(result.mode, 'Public');
-          assert.equal(result.mode_reason, 'Default');
+          const result = await ipToMode({ ip: '192.168.0.1', date: new Date(), authn_user_id });
+          assert.equal(result, 'Public');
         });
       });
     });
@@ -303,18 +231,13 @@ describe('sproc ip_to_mode tests', function () {
           // Remove IP restriction.
           await sqldb.execute('UPDATE pt_locations SET filter_networks = FALSE;');
 
-          const result = await sqldb.callRow(
-            'ip_to_mode',
-            [
-              '192.168.0.1',
-              // 10 minutes ago.
-              new Date(Date.now() - 1000 * 60 * 10),
-              user_id,
-            ],
-            SprocIpToModeSchema,
-          );
-          assert.equal(result.mode, 'Public');
-          assert.equal(result.mode_reason, 'Default');
+          const result = await ipToMode({
+            ip: '192.168.0.1',
+            // 10 minutes ago.
+            date: new Date(Date.now() - 1000 * 60 * 10),
+            authn_user_id,
+          });
+          assert.equal(result, 'Public');
         });
       });
 
@@ -325,18 +248,13 @@ describe('sproc ip_to_mode tests', function () {
           // Remove IP restriction.
           await sqldb.execute('UPDATE pt_locations SET filter_networks = FALSE;');
 
-          const result = await sqldb.callRow(
-            'ip_to_mode',
-            [
-              '192.168.0.1',
-              // 10 minutes from now.
-              new Date(Date.now() + 1000 * 60 * 10),
-              user_id,
-            ],
-            SprocIpToModeSchema,
-          );
-          assert.equal(result.mode, 'Public');
-          assert.equal(result.mode_reason, 'Default');
+          const result = await ipToMode({
+            ip: '192.168.0.1',
+            // 10 minutes from now.
+            date: new Date(Date.now() + 1000 * 60 * 10),
+            authn_user_id,
+          });
+          assert.equal(result, 'Public');
         });
       });
     });
@@ -351,13 +269,8 @@ describe('sproc ip_to_mode tests', function () {
 
           await sqldb.execute(sql.check_in_reservations);
 
-          const result = await sqldb.callRow(
-            'ip_to_mode',
-            ['192.168.0.1', new Date(), user_id],
-            SprocIpToModeSchema,
-          );
-          assert.equal(result.mode, 'Exam');
-          assert.equal(result.mode_reason, 'PrairieTest');
+          const result = await ipToMode({ ip: '192.168.0.1', date: new Date(), authn_user_id });
+          assert.equal(result, 'Exam');
         });
       });
     });
@@ -372,13 +285,8 @@ describe('sproc ip_to_mode tests', function () {
 
           await sqldb.execute(sql.start_reservations);
 
-          const result = await sqldb.callRow(
-            'ip_to_mode',
-            ['192.168.0.01', new Date(), user_id],
-            SprocIpToModeSchema,
-          );
-          assert.equal(result.mode, 'Exam');
-          assert.equal(result.mode_reason, 'PrairieTest');
+          const result = await ipToMode({ ip: '192.168.0.01', date: new Date(), authn_user_id });
+          assert.equal(result, 'Exam');
         });
       });
 
@@ -391,18 +299,13 @@ describe('sproc ip_to_mode tests', function () {
 
           await sqldb.execute(sql.start_reservations);
 
-          const result = await sqldb.callRow(
-            'ip_to_mode',
-            [
-              '192.168.0.01',
-              // 90 minutes from now.
-              new Date(Date.now() + 1000 * 60 * 90),
-              user_id,
-            ],
-            SprocIpToModeSchema,
-          );
-          assert.equal(result.mode, 'Public');
-          assert.equal(result.mode_reason, 'Default');
+          const result = await ipToMode({
+            ip: '192.168.0.01',
+            // 90 minutes from now.
+            date: new Date(Date.now() + 1000 * 60 * 90),
+            authn_user_id,
+          });
+          assert.equal(result, 'Public');
         });
       });
 
@@ -416,17 +319,13 @@ describe('sproc ip_to_mode tests', function () {
           await sqldb.execute(sql.check_in_reservations);
           await sqldb.execute(sql.start_reservations);
 
-          const result = await sqldb.callRow(
-            'ip_to_mode',
-            [
-              '192.168.0.01',
-              // 50 minutes from now.
-              new Date(Date.now() + 1000 * 60 * 50),
-              user_id,
-            ],
-            SprocIpToModeSchema,
-          );
-          assert.equal(result.mode, 'Public');
+          const result = await ipToMode({
+            ip: '192.168.0.01',
+            // 50 minutes from now.
+            date: new Date(Date.now() + 1000 * 60 * 50),
+            authn_user_id,
+          });
+          assert.equal(result, 'Public');
         });
       });
     });
@@ -439,13 +338,8 @@ describe('sproc ip_to_mode tests', function () {
 
         await sqldb.execute(sql.check_in_reservations);
 
-        const result = await sqldb.callRow(
-          'ip_to_mode',
-          ['192.168.0.1', new Date(), user_id],
-          SprocIpToModeSchema,
-        );
-        assert.equal(result.mode, 'Exam');
-        assert.equal(result.mode_reason, 'PrairieTest');
+        const result = await ipToMode({ ip: '192.168.0.1', date: new Date(), authn_user_id });
+        assert.equal(result, 'Exam');
       });
     });
 
@@ -456,13 +350,8 @@ describe('sproc ip_to_mode tests', function () {
         await sqldb.execute(sql.check_in_reservations);
         await sqldb.execute(sql.start_reservations);
 
-        const result = await sqldb.callRow(
-          'ip_to_mode',
-          ['192.168.0.1', new Date(), user_id],
-          SprocIpToModeSchema,
-        );
-        assert.equal(result.mode, 'Exam');
-        assert.equal(result.mode_reason, 'PrairieTest');
+        const result = await ipToMode({ ip: '192.168.0.1', date: new Date(), authn_user_id });
+        assert.equal(result, 'Exam');
       });
     });
 
@@ -472,13 +361,8 @@ describe('sproc ip_to_mode tests', function () {
 
         await sqldb.execute(sql.start_reservations);
 
-        const result = await sqldb.callRow(
-          'ip_to_mode',
-          ['192.168.0.1', new Date(), user_id],
-          SprocIpToModeSchema,
-        );
-        assert.equal(result.mode, 'Exam');
-        assert.equal(result.mode_reason, 'PrairieTest');
+        const result = await ipToMode({ ip: '192.168.0.1', date: new Date(), authn_user_id });
+        assert.equal(result, 'Exam');
       });
     });
   });

@@ -1,5 +1,20 @@
 # @prairielearn/compiled-assets
 
+## 4.1.2
+
+### Patch Changes
+
+- 144cd19: Upgrade all JavaScript dependencies
+
+## 4.1.1
+
+### Patch Changes
+
+- 3c4799a: Upgrade all JavaScript dependencies
+- 373afc1: Pin Express 4-era dependencies to current major versions
+- Updated dependencies [3c4799a]
+  - @prairielearn/html@5.0.2
+
 ## 4.1.0
 
 ### Minor Changes

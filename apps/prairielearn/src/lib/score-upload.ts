@@ -303,7 +303,7 @@ async function getAssessmentInstanceId(record: Record<string, any>, assessment_i
   if (record.uid != null) {
     return {
       id: record.uid,
-      assessment_instance_id: await sqldb.queryOptionalRow(
+      assessment_instance_id: await sqldb.queryOptionalScalar(
         sql.select_assessment_instance_uid,
         {
           assessment_id,
@@ -316,7 +316,7 @@ async function getAssessmentInstanceId(record: Record<string, any>, assessment_i
   } else if (record.group_name != null) {
     return {
       id: record.group_name,
-      assessment_instance_id: await sqldb.queryOptionalRow(
+      assessment_instance_id: await sqldb.queryOptionalScalar(
         sql.select_assessment_instance_group,
         {
           assessment_id,

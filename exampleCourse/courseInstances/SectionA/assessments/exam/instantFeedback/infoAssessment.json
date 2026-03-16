@@ -16,15 +16,17 @@
     }
   ],
   "zones": [
-    { "questions": [{ "id": "template/number-input/random-prompt", "points": [3, 1] }] },
-    { "questions": [{ "id": "template/matrix-component-input/random-graph", "points": [3, 1] }] },
-    { "questions": [{ "id": "demo/annotated/engCircuit", "points": [5, 4, 3, 2, 1] }] },
+    { "questions": [{ "id": "template/number-input/random-prompt", "autoPoints": [3, 1] }] },
+    {
+      "questions": [{ "id": "template/matrix-component-input/random-graph", "autoPoints": [3, 1] }]
+    },
+    { "questions": [{ "id": "demo/annotated/engCircuit", "autoPoints": [5, 4, 3, 2, 1] }] },
     {
       "questions": [
         {
           "comment": "Similar questions",
           "numberChoose": 1,
-          "points": [4, 2, 1],
+          "autoPoints": [4, 2, 1],
           "alternatives": [
             { "id": "demo/annotated/mathOuterProduct" },
             { "id": "demo/annotated/mathMatrixMult" },
@@ -34,5 +36,5 @@
       ]
     }
   ],
-  "text": "<p><strong>Comments about this assessment:</strong> </p><p> This is an example of an auto-graded exam with instant feedback, where students will receive a single (fixed) variant for each question, and can have a pre-defined number of retry attempts, depending on the difficulty level and question type. Read more <a href=https://github.com/PrairieLearn/PrairieLearn/blob/master/exampleCourse/courseInstances/SectionA/assessments/exam/instantFeedback/__docs/docs.md target=_blank>here</a>.</p><p> You can enter any general instructions for your exam here. For example, you can provide access to <a target=\"_blank\" href=\"{{ client_files_course }}/formulas.pdf\">formula sheet</a>.</p>"
+  "text": "<p><strong>Comments about this assessment:</strong> </p><p> This is an example of an auto-graded exam with instant feedback, where students will receive a single (fixed) variant for each question, and can have a pre-defined number of retry attempts, depending on the difficulty level and question type. Read more <a href=\"https://github.com/PrairieLearn/PrairieLearn/blob/master/exampleCourse/courseInstances/SectionA/assessments/exam/instantFeedback/__docs/docs.md\" rel=\"noreferrer\" target=\"_blank\">here</a>.</p><p> You can enter any general instructions for your exam here. For example, you can provide access to <a target=\"_blank\" href=\"{{ client_files_course }}/formulas.pdf\">formula sheet</a>.</p>"
 }

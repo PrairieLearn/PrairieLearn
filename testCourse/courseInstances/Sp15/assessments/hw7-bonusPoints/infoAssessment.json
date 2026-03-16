@@ -10,8 +10,8 @@
   "zones": [
     {
       "questions": [
-        { "id": "partialCredit1", "points": 8 },
-        { "id": "partialCredit2", "points": 8 }
+        { "id": "partialCredit1", "autoPoints": 8 },
+        { "id": "partialCredit2", "autoPoints": 8 }
       ]
     }
   ]

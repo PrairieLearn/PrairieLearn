@@ -1,6 +1,12 @@
 import { z } from 'zod';
 
-import { loadSqlEquiv, queryRow, queryRows, runInTransactionAsync } from '@prairielearn/postgres';
+import {
+  loadSqlEquiv,
+  queryRow,
+  queryRows,
+  queryScalars,
+  runInTransactionAsync,
+} from '@prairielearn/postgres';
 import { type WithRequiredKeys } from '@prairielearn/utils';
 
 import {
@@ -115,7 +121,7 @@ export function getPlanNamesFromPlanGrants(planGrants: PlanGrant[]): PlanName[] 
 export async function getRequiredPlansForCourseInstance(
   course_instance_id: string,
 ): Promise<PlanName[]> {
-  return await queryRows(
+  return await queryScalars(
     sql.select_required_plans_for_course_instance,
     { course_instance_id },
     z.enum(PLAN_NAMES),

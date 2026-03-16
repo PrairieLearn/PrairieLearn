@@ -3,7 +3,7 @@ import z from 'zod';
 import {
   execute,
   loadSqlEquiv,
-  queryOptionalRow,
+  queryOptionalScalar,
   queryRow,
   queryRows,
   runInTransactionAsync,
@@ -48,7 +48,7 @@ export async function updateAssessmentInstanceGrade({
     if (credit == null) {
       // If credit was not explicitly set, fetch it from the last submission.
       credit =
-        (await queryOptionalRow(
+        (await queryOptionalScalar(
           sql.select_credit_of_last_submission,
           { assessment_instance_id },
           SubmissionSchema.shape.credit,

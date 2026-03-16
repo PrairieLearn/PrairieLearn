@@ -22,6 +22,24 @@ NODE_ENV=production node apps/prairielearn/dist/server.js --config /path/to/conf
 
 The `config.json` file should contain appropriate overrides for the keys in [`lib/config.ts`](https://github.com/PrairieLearn/PrairieLearn/blob/master/apps/prairielearn/src/lib/config.ts). At a minimum, you'll probably want to update the various `postgres*` options to point it at your database.
 
+### Handling unknown SSH hosts
+
+PrairieLearn uses SSH for all Git operations — including course sync (clone/fetch/push), editor commits, and course creation from a remote repo. Connections to a new Git host may fail with a "Host key verification failed" error if the host is not in `known_hosts`. To automatically accept host keys for new hosts, set `gitSshCommand` in your `config.json`:
+
+```json title="config.json"
+{
+  "gitSshCommand": "ssh -o StrictHostKeyChecking=accept-new"
+}
+```
+
+This accepts host keys on first connection and saves them, but still rejects connections if a previously-seen host's key changes. If you need to specify both a custom SSH key and accept new hosts, combine the options:
+
+```json title="config.json"
+{
+  "gitSshCommand": "ssh -i /path/to/key -o StrictHostKeyChecking=accept-new"
+}
+```
+
 ### Reverse Proxy
 
 A reverse proxy can be implemented using something like [Apache](https://httpd.apache.org/docs/2.4/howto/reverse_proxy.html) or [NGINX](https://docs.nginx.com/nginx/admin-guide/web-server/reverse-proxy/).

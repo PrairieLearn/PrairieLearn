@@ -19,9 +19,9 @@
     {
       "title": "Main zone",
       "questions": [
-        { "id": "partialCredit1", "points": 10 },
-        { "id": "fossilFuelsRadio", "points": 2, "maxPoints": 10 },
-        { "id": "positionTimeGraph", "points": 2, "maxPoints": 10 }
+        { "id": "partialCredit1", "autoPoints": 10 },
+        { "id": "fossilFuelsRadio", "autoPoints": 2, "maxAutoPoints": 10 },
+        { "id": "positionTimeGraph", "autoPoints": 2, "maxAutoPoints": 10 }
       ]
     }
   ]
