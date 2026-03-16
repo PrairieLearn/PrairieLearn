@@ -461,9 +461,8 @@ export function computeAltGroupChosenRange(
   // and there's leftover budget after the last full round.
   const hasCapacityForNextRound = targetSize > fullRoundsGuaranteed;
   const hasLeftoverBudget = budget > questionsDealtByRound[fullRoundsGuaranteed];
-  const max = hasCapacityForNextRound && hasLeftoverBudget
-    ? fullRoundsGuaranteed + 1
-    : fullRoundsGuaranteed;
+  const max =
+    hasCapacityForNextRound && hasLeftoverBudget ? fullRoundsGuaranteed + 1 : fullRoundsGuaranteed;
 
   return { min: fullRoundsGuaranteed, max };
 }
