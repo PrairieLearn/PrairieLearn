@@ -42,6 +42,11 @@ PROPS: dict[str, PropInfo] = {
         "present_phases": all_phases,
         "edit_phases": frozenset(),
     },
+    "preferences": {
+        "type": "object",
+        "present_phases": all_phases,
+        "edit_phases": frozenset(),
+    },
     "submitted_answers": {
         "type": "object",
         "present_phases": frozenset({"render", "parse", "grade"}),
