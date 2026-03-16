@@ -6,7 +6,10 @@ import { FormProvider, useForm } from 'react-hook-form';
 
 import { OverlayTrigger } from '@prairielearn/ui';
 
-import { type CourseFormFieldValues, CourseFormFields } from '../../components/CourseFormFields.js';
+import {
+  AdministratorCourseFormFields,
+  type CourseFormFieldValues,
+} from '../../components/AdminstratorCourseFormFields.js';
 import { CourseRequestsTable } from '../../components/CourseRequestsTable.js';
 import type { AdminInstitution } from '../../lib/client/safe-db-types.js';
 import { QueryClientProviderDebug } from '../../lib/client/tanstackQuery.js';
@@ -84,6 +87,7 @@ export function AdministratorCourses({
               <button
                 type="button"
                 className="btn btn-sm btn-light ms-auto"
+                aria-label="Add course"
                 onClick={() => setShowAddCourseModal(true)}
               >
                 <i className="fa fa-plus" aria-hidden="true" />
@@ -317,14 +321,13 @@ function CourseInsertModal({
             <Modal.Title>Add course</Modal.Title>
           </Modal.Header>
           <Modal.Body>
-            <CourseFormFields
+            <AdministratorCourseFormFields
               institutions={institutions}
               availableTimezones={availableTimezones}
               coursesRoot={coursesRoot}
               suggestPrefixOptions={{
                 institutionName: selectedInstitution?.long_name ?? '',
                 emailDomain: selectedInstitution?.short_name ?? '',
-                enabled: !!selectedInstitution,
               }}
               aiSecretsConfigured={aiSecretsConfigured}
             />

@@ -1,4 +1,5 @@
 import { useMutation, useQuery } from '@tanstack/react-query';
+import clsx from 'clsx';
 import { Alert, Modal } from 'react-bootstrap';
 import { useForm } from 'react-hook-form';
 import ReactMarkdown from 'react-markdown';
@@ -42,7 +43,7 @@ export function AddInstitutionModal({
     handleSubmit,
     watch,
     setValue,
-    formState: { isSubmitting },
+    formState: { isSubmitting, errors },
   } = useForm<AddInstitutionFormData>({
     mode: 'onSubmit',
     defaultValues: {
@@ -91,11 +92,18 @@ export function AddInstitutionModal({
             </label>
             <input
               type="text"
-              className="form-control"
+              className={clsx('form-control', errors.short_name && 'is-invalid')}
               id="short_name"
               aria-describedby="short_name_help"
+              aria-invalid={errors.short_name ? true : undefined}
+              aria-errormessage={errors.short_name ? 'short_name-error' : undefined}
               {...register('short_name', { required: 'Enter a short name' })}
             />
+            {errors.short_name && (
+              <div id="short_name-error" className="invalid-feedback">
+                {errors.short_name.message}
+              </div>
+            )}
             <small id="short_name_help" className="form-text text-muted">
               An abbreviation or short name, e.g. "illinois.edu" or "ubc.ca". Usually this should be
               the institution's domain.
@@ -107,11 +115,18 @@ export function AddInstitutionModal({
             </label>
             <input
               type="text"
-              className="form-control"
+              className={clsx('form-control', errors.long_name && 'is-invalid')}
               id="long_name"
               aria-describedby="long_name_help"
+              aria-invalid={errors.long_name ? true : undefined}
+              aria-errormessage={errors.long_name ? 'long_name-error' : undefined}
               {...register('long_name', { required: 'Enter a long name' })}
             />
+            {errors.long_name && (
+              <div id="long_name-error" className="invalid-feedback">
+                {errors.long_name.message}
+              </div>
+            )}
             <small id="long_name_help" className="form-text text-muted">
               Use the full name of the university, e.g. "University of Illinois Urbana-Champaign".
             </small>
@@ -122,9 +137,11 @@ export function AddInstitutionModal({
             </label>
             <div className="d-flex gap-2 align-items-center">
               <select
-                className="form-select"
+                className={clsx('form-select', errors.display_timezone && 'is-invalid')}
                 id="display_timezone"
                 aria-describedby="display_timezone_help"
+                aria-invalid={errors.display_timezone ? true : undefined}
+                aria-errormessage={errors.display_timezone ? 'display_timezone-error' : undefined}
                 {...register('display_timezone', { required: 'Select a timezone' })}
               >
                 <option value="" disabled hidden>
@@ -165,6 +182,11 @@ export function AddInstitutionModal({
                 </span>
               </OverlayTrigger>
             </div>
+            {errors.display_timezone && (
+              <div id="display_timezone-error" className="invalid-feedback d-block">
+                {errors.display_timezone.message}
+              </div>
+            )}
             <small id="display_timezone_help" className="form-text text-muted">
               The allowable timezones are from the{' '}
               <a

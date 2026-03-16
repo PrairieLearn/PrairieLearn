@@ -13,7 +13,10 @@ import type { CourseRequestRow } from '../lib/course-request.js';
 import type { Timezone } from '../lib/timezone.shared.js';
 import { useTRPC } from '../trpc/administrator/trpc-context.js';
 
-import { type CourseFormFieldValues, CourseFormFields } from './CourseFormFields.js';
+import {
+  AdministratorCourseFormFields,
+  type CourseFormFieldValues,
+} from './AdminstratorCourseFormFields.js';
 import { JobStatus } from './JobStatus.js';
 
 interface CourseRequestApproveFormData extends CourseFormFieldValues {
@@ -369,7 +372,7 @@ function CourseRequestApproveModal({
                   tooltip={{
                     body: aiSecretsConfigured
                       ? 'Uses AI web search to verify whether the instructor appears in faculty directories or professional profiles at their stated institution.'
-                      : 'AI features require the correspondent OpenAI key to be configured.',
+                      : 'AI features require the corresponding OpenAI key to be configured.',
                     props: { id: 'check-instructor-legitimacy-tooltip' },
                   }}
                 >
@@ -453,12 +456,18 @@ function CourseRequestApproveModal({
                       <div className="d-flex align-items-start gap-2">
                         <span
                           className={clsx('badge', {
-                            'text-bg-success': legitimacyQuery.data.confidence === 'high',
-                            'text-bg-warning': legitimacyQuery.data.confidence === 'medium',
-                            'text-bg-danger': legitimacyQuery.data.confidence === 'low',
+                            'text-bg-success':
+                              legitimacyQuery.data.legitimate &&
+                              legitimacyQuery.data.confidence === 'high',
+                            'text-bg-warning':
+                              legitimacyQuery.data.legitimate &&
+                              legitimacyQuery.data.confidence !== 'high',
+                            'text-bg-danger': !legitimacyQuery.data.legitimate,
                           })}
                         >
-                          {legitimacyQuery.data.legitimate ? 'Likely legitimate' : 'Uncertain'}{' '}
+                          {legitimacyQuery.data.legitimate
+                            ? 'Likely legitimate'
+                            : 'Likely not legitimate'}{' '}
                           &middot; {legitimacyQuery.data.confidence} confidence
                         </span>
                       </div>
@@ -493,14 +502,13 @@ function CourseRequestApproveModal({
                 </div>
               </div>
             </div>
-            <CourseFormFields
+            <AdministratorCourseFormFields
               institutions={institutions}
               availableTimezones={availableTimezones}
               coursesRoot={coursesRoot}
               suggestPrefixOptions={{
                 institutionName: request.institution ?? '',
                 emailDomain: request.work_email?.split('@')[1] ?? '',
-                enabled: !!(request.institution && request.work_email),
               }}
               aiSecretsConfigured={aiSecretsConfigured}
             />

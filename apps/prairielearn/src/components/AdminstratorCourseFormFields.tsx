@@ -24,7 +24,7 @@ function buildRepoShortName(prefix: string | null | undefined, shortName: string
   return prefix ? `pl-${prefix}-${slug}` : `pl-${slug}`;
 }
 
-export function CourseFormFields({
+export function AdministratorCourseFormFields({
   institutions,
   availableTimezones,
   coursesRoot,
@@ -37,7 +37,6 @@ export function CourseFormFields({
   suggestPrefixOptions: {
     institutionName: string;
     emailDomain: string;
-    enabled: boolean;
   };
   aiSecretsConfigured: boolean;
 }) {
@@ -296,7 +295,7 @@ export function CourseFormFields({
             tooltip={{
               body: aiSecretsConfigured
                 ? 'Uses AI web search to suggest a short prefix for the repository name based on the institution (e.g. "uiuc" for the University of Illinois). Useful when no existing courses are found for the selected institution.'
-                : 'AI features require the correspondent OpenAI key to be configured.',
+                : 'AI features require the corresponding OpenAI key to be configured.',
               props: { id: 'suggest-prefix-tooltip' },
             }}
           >
@@ -307,7 +306,8 @@ export function CourseFormFields({
                 aria-label="Suggest repository and path prefix"
                 disabled={
                   suggestPrefixQuery.isFetching ||
-                  !suggestPrefixOptions.enabled ||
+                  !suggestPrefixOptions.institutionName ||
+                  !suggestPrefixOptions.emailDomain ||
                   !aiSecretsConfigured
                 }
                 aria-busy={suggestPrefixQuery.isFetching}
@@ -341,21 +341,19 @@ export function CourseFormFields({
               <div className="mt-1">
                 <span className="small text-muted">Sources</span>
                 <div className="d-flex flex-wrap gap-1">
-                  {suggestPrefixQuery.data.sources
-                    .filter(
-                      (source, index, arr) => arr.findIndex((s) => s.url === source.url) === index,
-                    )
-                    .map((source) => (
-                      <a
-                        key={source.url}
-                        href={source.url}
-                        target="_blank"
-                        rel="noreferrer"
-                        className="small"
-                      >
-                        {source.title ?? source.url}
-                      </a>
-                    ))}
+                  {[
+                    ...new Map(suggestPrefixQuery.data.sources.map((s) => [s.url, s])).values(),
+                  ].map((source) => (
+                    <a
+                      key={source.url}
+                      href={source.url}
+                      target="_blank"
+                      rel="noreferrer"
+                      className="small"
+                    >
+                      {source.title ?? source.url}
+                    </a>
+                  ))}
                 </div>
               </div>
             )}

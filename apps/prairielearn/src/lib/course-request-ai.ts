@@ -104,7 +104,7 @@ export async function checkInstructorLegitimacy({
   ];
 
   const response = await generateText({
-    model: openai.responses('gpt-5-mini'),
+    model: openai.responses('gpt-4o-mini'),
     output: Output.object({ schema: legitimacySchema }),
     messages: input,
     tools: { web_search: openai.tools.webSearch({}) },
@@ -145,7 +145,7 @@ export async function suggestTimezone({
   ];
 
   const response = await generateText({
-    model: openai.responses('gpt-5-mini'),
+    model: openai.responses('gpt-4o-mini'),
     output: Output.object({ schema: timezoneSchema }),
     messages: input,
     tools: { web_search: openai.tools.webSearch({}) },
@@ -189,7 +189,7 @@ export async function suggestPrefixFromEmailDomain({
   ];
 
   const response = await generateText({
-    model: openai.responses('gpt-5-mini'),
+    model: openai.responses('gpt-4o-mini'),
     output: Output.object({ schema: prefixSchema }),
     messages: input,
     tools: { web_search: openai.tools.webSearch({}) },
