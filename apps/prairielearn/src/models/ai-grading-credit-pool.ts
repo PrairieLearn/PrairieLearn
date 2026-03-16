@@ -1,3 +1,4 @@
+import { Temporal } from '@js-temporal/polyfill';
 import { z } from 'zod';
 
 import {
@@ -219,12 +220,15 @@ const DailySpendingPointSchema = z.object({
 type DailySpendingPoint = z.infer<typeof DailySpendingPointSchema>;
 
 function computeDateRange(days: number): { start_date: string; end_date: string } {
-  const end = new Date();
-  const start = new Date();
-  start.setDate(start.getDate() - days);
+  const now = Temporal.Now.zonedDateTimeISO('UTC');
+  const startOfToday = now.startOfDay();
+  const startDate = startOfToday.subtract({ days });
+  const endDate = startOfToday.add({ hours: 23, minutes: 59, seconds: 59 });
 
-  const fmt = (d: Date) => d.toISOString().slice(0, 10);
-  return { start_date: fmt(start), end_date: fmt(end) };
+  return {
+    start_date: startDate.toInstant().toString(),
+    end_date: endDate.toInstant().toString(),
+  };
 }
 
 export async function selectDailySpending(
