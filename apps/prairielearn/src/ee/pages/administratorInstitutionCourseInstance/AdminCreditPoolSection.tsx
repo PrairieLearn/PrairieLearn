@@ -15,6 +15,7 @@ import { TransactionHistoryTable } from '../../components/ai-grading-credits/Tra
 import {
   CHART_DAYS_OPTIONS,
   type ChartDays,
+  DEFAULT_CHART_DAYS,
 } from '../../components/ai-grading-credits/constants.js';
 
 import { createAdminCreditPoolTrpcClient } from './utils/trpc-client.js';
@@ -55,7 +56,7 @@ function AdminCreditPoolContent({
 
   const [showHistory, setShowHistory] = useState(false);
   const [page, setPage] = useState(1);
-  const [chartDays, setChartDays] = useState<ChartDays>(30);
+  const [chartDays, setChartDays] = useState<ChartDays>(DEFAULT_CHART_DAYS);
   const [groupBy, setGroupBy] = useState<GroupByOption>('none');
 
   const poolQuery = useQuery(trpc.creditPool.queryOptions());
