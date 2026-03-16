@@ -97,7 +97,7 @@ If a migration was created on the current feature branch (i.e., it has not been 
 
 If you make a change to the database, make sure to update the database schema description in `database/` and the Zod types/table list in `apps/prairielearn/src/lib/db-types.ts`.
 
-Dropping a sproc (stored procedure) only requires removing the file from `apps/prairielearn/src/sprocs`. Do not author a migration that uses `DROP FUNCTION`.
+Dropping a sproc (stored procedure) only requires removing the file from `apps/prairielearn/src/sprocs` and updating `apps/prairielearn/src/sprocs/index.ts`. Do not author a migration that uses `DROP FUNCTION`.
 
 **Always prefer existing model functions over one-off raw SQL queries.** Check `apps/prairielearn/src/models/` for existing functions before writing any database queries. Model functions provide type safety, consistent patterns, and proper abstractions. Only write raw queries when no suitable model function exists.
 
