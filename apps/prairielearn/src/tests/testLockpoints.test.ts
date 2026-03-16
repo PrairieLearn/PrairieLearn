@@ -243,14 +243,10 @@ describe('Assessment lockpoints', { timeout: 60_000 }, function () {
     );
   });
 
-  test.sequential(
-    'lockpoint-not-yet-crossed question is not directly accessible',
-    async function () {
-      const response = await helperClient.fetchCheerio(context.questionStates[1].url);
-      assert.isFalse(response.ok);
-      assert.equal(response.status, 403);
-    },
-  );
+  test.sequential('instructor can access lockpoint-blocked question', async function () {
+    const response = await helperClient.fetchCheerio(context.questionStates[1].url);
+    assert.isTrue(response.ok);
+  });
 
   test.sequential('next-question navigation explains lockpoint requirement', async function () {
     const response = await helperClient.fetchCheerio(context.questionStates[0].url);
