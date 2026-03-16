@@ -108,7 +108,7 @@ function AdminCreditPoolContent({
         </p>
       )}
 
-      <BalanceCards pool={pool} context="admin" />
+      <BalanceCards pool={pool} context="admin" dimmed={useCustomApiKeys} />
 
       <AdjustCreditsForm
         isDeleted={isDeleted}

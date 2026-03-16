@@ -20,6 +20,7 @@ const TOOLTIP_TEXT = {
 export function BalanceCards({
   pool,
   context,
+  dimmed = false,
 }: {
   pool: {
     total_milli_dollars: number;
@@ -27,21 +28,24 @@ export function BalanceCards({
     credit_non_transferable_milli_dollars: number;
   };
   context: 'instructor' | 'admin';
+  dimmed?: boolean;
 }) {
   const transferableTooltipId = useId();
   const nonTransferableTooltipId = useId();
   const tooltips = TOOLTIP_TEXT[context];
 
+  const dimStyle = dimmed ? { opacity: 0.4 } : undefined;
+
   return (
     <div className="row mb-3 g-3">
       <div className="col-md-4">
-        <div className="border rounded p-3 text-center">
+        <div className="border rounded p-3 text-center" style={dimStyle}>
           <div className="text-muted small">Total available</div>
           <div className="h4 mb-0">{formatMilliDollars(pool.total_milli_dollars)}</div>
         </div>
       </div>
       <div className="col-md-4">
-        <div className="border rounded p-3 text-center">
+        <div className="border rounded p-3 text-center" style={dimStyle}>
           <div className="text-muted small">
             Transferable{' '}
             <OverlayTrigger
@@ -60,7 +64,7 @@ export function BalanceCards({
         </div>
       </div>
       <div className="col-md-4">
-        <div className="border rounded p-3 text-center">
+        <div className="border rounded p-3 text-center" style={dimStyle}>
           <div className="text-muted small">
             Non-transferable{' '}
             <OverlayTrigger

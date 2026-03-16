@@ -453,7 +453,7 @@ function CreditPoolSection({ useCustomApiKeys }: { useCustomApiKeys: boolean }) 
         </p>
       )}
 
-      <BalanceCards pool={pool} context="instructor" />
+      <BalanceCards pool={pool} context="instructor" dimmed={useCustomApiKeys} />
 
       <div>
         <div className="mb-3">
@@ -523,12 +523,7 @@ function CreditPoolSection({ useCustomApiKeys }: { useCustomApiKeys: boolean }) 
 
   return (
     <div className="border-top pt-3 mt-3">
-      <div className={
-        clsx(
-          'd-flex align-items-center gap-2',
-          useCustomApiKeys ? 'mb-1': 'mb-3'
-        )
-      }>
+      <div className={clsx('d-flex align-items-center gap-2', useCustomApiKeys ? 'mb-1' : 'mb-3')}>
         <h2 className="h5 mb-0">AI grading credits</h2>
         {useCustomApiKeys && <span className="badge text-bg-secondary">Inactive</span>}
       </div>
