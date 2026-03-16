@@ -621,6 +621,40 @@ describe('prepareZonesForEditor normalization', () => {
     expect(result[0].questions[0].autoPoints).toBeUndefined();
   });
 
+  it('treats manual + unknown metadata as mixed to avoid dropping auto points', () => {
+    const zones: ZoneAssessmentJson[] = [
+      {
+        lockpoint: false,
+        canSubmit: [],
+        canView: [],
+        questions: [
+          {
+            numberChoose: 1,
+            points: 10,
+            canSubmit: [],
+            canView: [],
+            alternatives: [{ id: 'alt1' }, { id: 'alt2' }],
+          },
+        ],
+      },
+    ];
+
+    // alt2 has no metadata (e.g. stale/deleted qid)
+    const metadata = {
+      alt1: { question: { grading_method: 'Manual' } },
+    } as any;
+
+    const result = prepareZonesForEditor(zones, metadata);
+    const group = result[0].questions[0];
+
+    // Should be treated as mixed: points pushed to alternatives
+    expect(group.points).toBeUndefined();
+    expect(group.autoPoints).toBeUndefined();
+    expect(group.manualPoints).toBeUndefined();
+    expect(group.alternatives![0].manualPoints).toBe(10);
+    expect(group.alternatives![1].autoPoints).toBe(10);
+  });
+
   it('sets pointsDistributedInfoBanner flag on mixed alt groups', () => {
     const zones: ZoneAssessmentJson[] = [
       {

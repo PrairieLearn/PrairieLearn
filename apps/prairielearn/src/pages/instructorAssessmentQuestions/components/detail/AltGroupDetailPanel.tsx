@@ -1,13 +1,8 @@
 import clsx from 'clsx';
-import { useCallback, useEffect, useMemo } from 'react';
+import { useCallback, useEffect, useMemo, useState } from 'react';
 import { useForm } from 'react-hook-form';
 
-import type {
-  AltGroupBlockForm,
-  DetailState,
-  ZoneAssessmentForm,
-  ZoneQuestionBlockForm,
-} from '../../types.js';
+import type { DetailState, ZoneAssessmentForm, ZoneQuestionBlockForm } from '../../types.js';
 import {
   coerceToNumber,
   coerceToOptionalString,
@@ -70,6 +65,8 @@ export function AltGroupDetailPanel({
 }) {
   const { editMode, assessmentType, constantQuestionValue, assessmentDefaults } = state;
   const alternativeCount = zoneQuestionBlock.alternatives?.length ?? 0;
+
+  const [bannerDismissed, setBannerDismissed] = useState(false);
 
   const sharedTopic = getSharedTopic(zoneQuestionBlock.alternatives ?? [], questionMetadata);
   const sharedTags = getSharedTags(zoneQuestionBlock.alternatives ?? [], questionMetadata);
@@ -194,7 +191,7 @@ export function AltGroupDetailPanel({
           Number to choose exceeds the number of alternatives in this group.
         </div>
       )}
-      {(zoneQuestionBlock as AltGroupBlockForm).pointsDistributedInfoBanner && (
+      {zoneQuestionBlock.pointsDistributedInfoBanner && !bannerDismissed && (
         <div className="alert alert-info small mb-3 alert-dismissible" role="alert">
           <i className="bi bi-info-circle-fill me-1" aria-hidden="true" />
           This group contains both auto-graded and manually-graded questions. Points have been
@@ -203,11 +200,7 @@ export function AltGroupDetailPanel({
             type="button"
             className="btn-close"
             aria-label="Dismiss"
-            onClick={() =>
-              onUpdate(zoneQuestionBlock.trackingId, {
-                pointsDistributedInfoBanner: undefined,
-              })
-            }
+            onClick={() => setBannerDismissed(true)}
           />
         </div>
       )}
