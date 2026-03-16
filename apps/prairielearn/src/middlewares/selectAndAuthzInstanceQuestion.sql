@@ -130,4 +130,7 @@ WHERE
   )
   AND q.deleted_at IS NULL
   AND a.deleted_at IS NULL
-  AND iqi.question_access_mode NOT IN ('blocked_sequence', 'blocked_lockpoint');
+  AND (
+    $is_instructor
+    OR iqi.question_access_mode NOT IN ('blocked_sequence', 'blocked_lockpoint')
+  );

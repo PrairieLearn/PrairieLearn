@@ -86,6 +86,10 @@ export type ResLocalsInstanceQuestion = z.infer<typeof SelectAndAuthzInstanceQue
 };
 
 export async function selectAndAuthzInstanceQuestion(req: Request, res: Response) {
+  const is_instructor =
+    res.locals.authz_data?.has_course_permission_preview ||
+    res.locals.authz_data?.has_course_instance_permission_view;
+
   const row = await sqldb.queryOptionalRow(
     sql.select_and_auth,
     {
@@ -94,6 +98,7 @@ export async function selectAndAuthzInstanceQuestion(req: Request, res: Response
       course_instance_id: res.locals.course_instance.id,
       authz_data: res.locals.authz_data,
       req_date: res.locals.req_date,
+      is_instructor: !!is_instructor,
     },
     SelectAndAuthzInstanceQuestionSchema,
   );
