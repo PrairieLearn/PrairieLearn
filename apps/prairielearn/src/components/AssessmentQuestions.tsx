@@ -56,21 +56,20 @@ export function AssessmentQuestionHeaders({
 }
 
 /**
- * Renders the question number badge for public assessment questions.
+ * Renders a question number badge such as "3." or "3.2.".
  */
 export function AssessmentQuestionNumber({
-  alternativeGroupSize,
-  alternativeGroupNumber,
-  numberInAlternativeGroup,
+  questionNumber,
+  alternativeNumber,
 }: {
-  alternativeGroupSize: number;
-  alternativeGroupNumber: number;
-  numberInAlternativeGroup: number | null;
+  questionNumber: number;
+  alternativeNumber?: number | null;
 }) {
-  const numberText =
-    alternativeGroupSize === 1
-      ? `${alternativeGroupNumber}.`
-      : `${alternativeGroupNumber}.${numberInAlternativeGroup}.`;
-
-  return <span className="badge color-gray1 me-2">{numberText} </span>;
+  return (
+    <span className="badge color-gray1 me-2">
+      {alternativeNumber != null
+        ? `${questionNumber}.${alternativeNumber}.`
+        : `${questionNumber}.`}{' '}
+    </span>
+  );
 }

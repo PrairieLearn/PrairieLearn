@@ -32,11 +32,13 @@ import { makeDraggableStyle } from './dragUtils.js';
 export function TreeZoneNode({
   zone,
   zoneNumber,
+  questionStartNumber,
   state,
   actions,
 }: {
   zone: ZoneAssessmentForm;
   zoneNumber: number;
+  questionStartNumber: number;
   state: TreeState;
   actions: TreeActions;
 }) {
@@ -254,10 +256,11 @@ export function TreeZoneNode({
         {/* Zone content */}
         {!isCollapsed && (
           <>
-            {zone.questions.map((zoneQuestionBlock) => (
+            {zone.questions.map((zoneQuestionBlock, questionIndex) => (
               <TreeQuestionBlockNode
                 key={zoneQuestionBlock.trackingId}
                 zoneQuestionBlock={zoneQuestionBlock}
+                questionNumber={questionStartNumber + questionIndex}
                 state={state}
                 actions={actions}
               />

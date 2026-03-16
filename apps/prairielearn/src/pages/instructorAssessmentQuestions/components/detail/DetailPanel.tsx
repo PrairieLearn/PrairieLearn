@@ -74,7 +74,7 @@ export function DetailPanel({
     case 'question': {
       const result = findQuestionByTrackingId(zones, selectedItem.questionTrackingId);
       if (!result) throw new Error(`Question not found: ${selectedItem.questionTrackingId}`);
-      const { question, zone } = result;
+      const { question, zone, questionNumber } = result;
       assertStandaloneQuestion(question);
       const questionData = questionMetadata[question.id] ?? null;
       return (
@@ -83,6 +83,7 @@ export function DetailPanel({
           question={question}
           zone={zone}
           questionData={questionData}
+          questionNumber={questionNumber}
           idPrefix={`question-${question.trackingId}`}
           state={state}
           onUpdate={actions.onUpdateQuestion}
@@ -101,13 +102,15 @@ export function DetailPanel({
       }
       const block = blockResult.question;
       const zone = blockResult.zone;
-      const alternative = block.alternatives?.find(
-        (a) => a.trackingId === selectedItem.alternativeTrackingId,
-      );
-      if (!alternative) {
+      const altIndex =
+        block.alternatives?.findIndex((a) => a.trackingId === selectedItem.alternativeTrackingId) ??
+        -1;
+      if (altIndex === -1 || !block.alternatives) {
         throw new Error(`Alternative not found: ${selectedItem.alternativeTrackingId}`);
       }
+      const alternative = block.alternatives[altIndex];
       const altData = questionMetadata[alternative.id] ?? null;
+      const { questionNumber } = blockResult;
       return (
         <QuestionDetailPanel
           key={alternative.trackingId}
@@ -115,6 +118,8 @@ export function DetailPanel({
           zoneQuestionBlock={block}
           zone={zone}
           questionData={altData}
+          questionNumber={questionNumber}
+          alternativeNumber={altIndex + 1}
           idPrefix={`alt-${alternative.trackingId}`}
           state={state}
           onUpdate={actions.onUpdateQuestion}
@@ -132,12 +137,14 @@ export function DetailPanel({
         throw new Error(`Alt group not found: ${selectedItem.questionTrackingId}`);
       }
       const block = altGroupResult.question;
+      const { questionNumber } = altGroupResult;
       return (
         <AltGroupDetailPanel
           key={block.trackingId}
           zoneQuestionBlock={block}
           zone={altGroupResult.zone}
           questionMetadata={questionMetadata}
+          questionNumber={questionNumber}
           idPrefix={`altgroup-${block.trackingId}`}
           state={state}
           onUpdate={actions.onUpdateQuestion}

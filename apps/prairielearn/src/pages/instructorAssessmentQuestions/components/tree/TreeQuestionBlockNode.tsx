@@ -6,6 +6,7 @@ import { useCallback, useMemo } from 'react';
 import { run } from '@prairielearn/run';
 import { OverlayTrigger } from '@prairielearn/ui';
 
+import { AssessmentQuestionNumber } from '../../../../components/AssessmentQuestions.js';
 import type { TreeActions, TreeState, ZoneQuestionBlockForm } from '../../types.js';
 import {
   getSharedTags,
@@ -33,10 +34,12 @@ import { makeDraggableStyle } from './dragUtils.js';
  */
 export function TreeQuestionBlockNode({
   zoneQuestionBlock,
+  questionNumber,
   state,
   actions,
 }: {
   zoneQuestionBlock: ZoneQuestionBlockForm;
+  questionNumber: number;
   state: TreeState;
   actions: TreeActions;
 }) {
@@ -105,6 +108,7 @@ export function TreeQuestionBlockNode({
           zoneQuestionBlock={zoneQuestionBlock}
           isAlternative={false}
           questionData={questionData}
+          questionNumber={questionNumber}
           state={state}
           isSelected={isSelected}
           draggableAttributes={attributes}
@@ -194,6 +198,9 @@ export function TreeQuestionBlockNode({
         <div className="flex-grow-1" style={{ minWidth: 0 }}>
           <div className="d-flex align-items-center">
             <span className="text-truncate text-primary">
+              {state.viewType === 'detailed' && (
+                <AssessmentQuestionNumber questionNumber={questionNumber} />
+              )}
               <i className="bi bi-stack me-1" aria-hidden="true" />
               {run(() => {
                 const choose = zoneQuestionBlock.numberChoose;
@@ -310,7 +317,7 @@ export function TreeQuestionBlockNode({
       )}
       {!isCollapsed && (
         <SortableContext items={alternativeIds} strategy={verticalListSortingStrategy}>
-          {alternatives?.map((alternative) => {
+          {alternatives?.map((alternative, altIndex) => {
             const altQuestionData = questionMetadata[alternative.id] ?? null;
             const isAltSelected =
               selectedItem?.type === 'alternative' &&
@@ -323,6 +330,8 @@ export function TreeQuestionBlockNode({
                 alternative={alternative}
                 zoneQuestionBlock={zoneQuestionBlock}
                 questionData={altQuestionData}
+                questionNumber={questionNumber}
+                alternativeNumber={altIndex + 1}
                 state={state}
                 isSelected={isAltSelected}
                 onClick={() =>

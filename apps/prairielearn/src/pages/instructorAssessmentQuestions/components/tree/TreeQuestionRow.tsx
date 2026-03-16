@@ -4,6 +4,7 @@ import { type ReactElement, useId } from 'react';
 
 import { OverlayTrigger } from '@prairielearn/ui';
 
+import { AssessmentQuestionNumber } from '../../../../components/AssessmentQuestions.js';
 import { CopyButton } from '../../../../components/CopyButton.js';
 import { IssueBadge } from '../../../../components/IssueBadge.js';
 import type { EditorQuestionMetadata } from '../../../../lib/assessment-question.shared.js';
@@ -177,6 +178,8 @@ export function TreeQuestionRow({
   zoneQuestionBlock,
   isAlternative,
   questionData,
+  questionNumber,
+  alternativeNumber,
   state,
   isSelected,
   draggableAttributes,
@@ -188,6 +191,8 @@ export function TreeQuestionRow({
   zoneQuestionBlock: ZoneQuestionBlockForm;
   isAlternative: boolean;
   questionData: EditorQuestionMetadata | null;
+  questionNumber: number;
+  alternativeNumber?: number;
   state: TreeState;
   isSelected: boolean;
   draggableAttributes: DraggableAttributes;
@@ -249,6 +254,12 @@ export function TreeQuestionRow({
       />
       <div className="flex-grow-1" style={{ minWidth: 0 }}>
         <div className="text-truncate">
+          {viewType === 'detailed' && (
+            <AssessmentQuestionNumber
+              questionNumber={questionNumber}
+              alternativeNumber={alternativeNumber}
+            />
+          )}
           {questionData ? (
             hasCoursePermissionPreview ? (
               <>
