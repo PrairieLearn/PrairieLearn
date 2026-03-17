@@ -107,13 +107,97 @@ describe('classifyArchetype', () => {
   });
 
   it('classifies single-reduced-credit', () => {
-    const rules: AssessmentAccessRuleJson[] = [{ credit: 50, startDate: '2024-01-01', endDate: '2024-06-01' }];
+    const rules: AssessmentAccessRuleJson[] = [
+      { credit: 50, startDate: '2024-01-01', endDate: '2024-06-01' },
+    ];
     expect(classifyArchetype(rules)).toBe('single-reduced-credit');
   });
 
   it('returns unclassified for empty rules', () => {
     const rules: AssessmentAccessRuleJson[] = [];
     expect(classifyArchetype(rules)).toBe('no-op');
+  });
+
+  it('ignores UID rules and classifies remainder', () => {
+    const rules: AssessmentAccessRuleJson[] = [
+      { credit: 100, startDate: '2024-01-01', endDate: '2024-06-01' },
+      { uids: ['user@example.com'], credit: 100, endDate: '2024-07-01' },
+    ];
+    expect(classifyArchetype(rules)).toBe('single-deadline');
+  });
+
+  it('classifies all-UID rules as no-op', () => {
+    const rules: AssessmentAccessRuleJson[] = [
+      { uids: ['user@example.com'], credit: 100, endDate: '2024-06-01' },
+    ];
+    expect(classifyArchetype(rules)).toBe('no-op');
+  });
+
+  it('ignores UID rules mixed with declining-credit', () => {
+    const rules: AssessmentAccessRuleJson[] = [
+      { credit: 100, startDate: '2024-01-01', endDate: '2024-03-01' },
+      { credit: 50, startDate: '2024-03-01', endDate: '2024-06-01' },
+      { uids: ['user@example.com'], credit: 100 },
+    ];
+    expect(classifyArchetype(rules)).toBe('declining-credit');
+  });
+
+  it('classifies mode-only rule as view-only (mode does not override viewing)', () => {
+    const rules: AssessmentAccessRuleJson[] = [{ mode: 'Exam' }];
+    expect(classifyArchetype(rules)).toBe('view-only');
+  });
+
+  it('classifies combined mode-gated and hides-closed modifiers', () => {
+    const rules: AssessmentAccessRuleJson[] = [
+      {
+        credit: 100,
+        startDate: '2024-01-01',
+        endDate: '2024-06-01',
+        mode: 'Exam',
+        showClosedAssessment: false,
+      },
+    ];
+    expect(classifyArchetype(rules)).toBe('single-deadline (mode-gated, hides-closed)');
+  });
+
+  it('classifies hides-score modifier', () => {
+    const rules: AssessmentAccessRuleJson[] = [
+      {
+        credit: 100,
+        startDate: '2024-01-01',
+        endDate: '2024-06-01',
+        showClosedAssessmentScore: false,
+      },
+    ];
+    expect(classifyArchetype(rules)).toBe('single-deadline (hides-score)');
+  });
+
+  it('classifies declining-credit with bonus and reduced (no full)', () => {
+    const rules: AssessmentAccessRuleJson[] = [
+      { credit: 120, startDate: '2024-01-01', endDate: '2024-02-01' },
+      { credit: 50, startDate: '2024-02-01', endDate: '2024-06-01' },
+    ];
+    expect(classifyArchetype(rules)).toBe('declining-credit');
+  });
+
+  it('classifies timed-assessment with mode-gated', () => {
+    const rules: AssessmentAccessRuleJson[] = [
+      {
+        credit: 100,
+        startDate: '2024-01-01',
+        endDate: '2024-06-01',
+        timeLimitMin: 60,
+        mode: 'Exam',
+      },
+    ];
+    expect(classifyArchetype(rules)).toBe('timed-assessment (mode-gated)');
+  });
+
+  it('classifies single bonus credit as single-deadline', () => {
+    const rules: AssessmentAccessRuleJson[] = [
+      { credit: 120, startDate: '2024-01-01', endDate: '2024-06-01' },
+    ];
+    expect(classifyArchetype(rules)).toBe('single-deadline');
   });
 });
 
@@ -239,6 +323,131 @@ describe('migrateAllowAccess', () => {
     const { result } = migrateAllowAccess('single-deadline', rules);
     expect(result.afterComplete?.hideScore).toBe(true);
   });
+
+  it('ignores UID rules during migration', () => {
+    const rules: AssessmentAccessRuleJson[] = [
+      { credit: 100, startDate: '2024-01-01', endDate: '2024-06-01' },
+      { uids: ['user@example.com'], credit: 100, endDate: '2024-12-01' },
+    ];
+    const { result } = migrateAllowAccess('single-deadline', rules);
+    expect(result.dateControl?.dueDate).toBe('2024-06-01');
+  });
+
+  it('multi-deadline produces collapse warning', () => {
+    const rules: AssessmentAccessRuleJson[] = [
+      { credit: 100, startDate: '2024-01-01', endDate: '2024-02-01' },
+      { credit: 100, startDate: '2024-03-01', endDate: '2024-04-01' },
+    ];
+    const { warnings } = migrateAllowAccess('multi-deadline', rules);
+    expect(warnings[0]).toMatch(/collapsed/);
+  });
+
+  it('declining-credit with bonus and reduced (no full)', () => {
+    const rules: AssessmentAccessRuleJson[] = [
+      { credit: 120, startDate: '2024-01-01', endDate: '2024-02-01' },
+      { credit: 50, startDate: '2024-02-01', endDate: '2024-06-01' },
+    ];
+    const { result } = migrateAllowAccess('declining-credit', rules);
+    expect(result.dateControl?.lateDeadlines).toHaveLength(1);
+    expect(result.dateControl?.earlyDeadlines).toBeUndefined();
+  });
+
+  it('migrates single-reduced-credit', () => {
+    const rules: AssessmentAccessRuleJson[] = [
+      { credit: 50, startDate: '2024-01-01', endDate: '2024-06-01' },
+    ];
+    const { result } = migrateAllowAccess('single-reduced-credit', rules);
+    expect(result.dateControl?.enabled).toBe(true);
+    expect(result.dateControl?.releaseDate).toBe('2024-01-01');
+    expect(result.dateControl?.dueDate).toBe('2024-06-01');
+  });
+
+  it('migrates multiple prairietest exams', () => {
+    const rules: AssessmentAccessRuleJson[] = [
+      { examUuid: 'exam-1', credit: 100 },
+      { examUuid: 'exam-2', credit: 100 },
+    ];
+    const { result } = migrateAllowAccess('prairietest-exam', rules);
+    expect(result.integrations?.prairieTest?.exams).toHaveLength(2);
+  });
+
+  it('includes both hideQuestions and hideScore in afterComplete', () => {
+    const rules: AssessmentAccessRuleJson[] = [
+      {
+        credit: 100,
+        startDate: '2024-01-01',
+        endDate: '2024-06-01',
+        showClosedAssessment: false,
+        showClosedAssessmentScore: false,
+      },
+    ];
+    const { result } = migrateAllowAccess('single-deadline', rules);
+    expect(result.afterComplete?.hideQuestions).toBe(true);
+    expect(result.afterComplete?.hideScore).toBe(true);
+  });
+
+  it('handles modifier suffix stripping for mode-gated hides-closed', () => {
+    const rules: AssessmentAccessRuleJson[] = [
+      {
+        credit: 100,
+        startDate: '2024-01-01',
+        endDate: '2024-06-01',
+        mode: 'Exam',
+        showClosedAssessment: false,
+      },
+    ];
+    const { result } = migrateAllowAccess('single-deadline (mode-gated, hides-closed)', rules);
+    expect(result.dateControl?.dueDate).toBe('2024-06-01');
+    expect(result.afterComplete?.hideQuestions).toBe(true);
+  });
+
+  it('password-gated without dates', () => {
+    const rules: AssessmentAccessRuleJson[] = [{ password: 'secret', credit: 100 }];
+    const { result } = migrateAllowAccess('password-gated', rules);
+    expect(result.dateControl?.password).toBe('secret');
+    expect(result.dateControl?.releaseDate).toBeUndefined();
+    expect(result.dateControl?.dueDate).toBeUndefined();
+  });
+
+  it('returns unsupported warning for unknown archetype', () => {
+    const { result, warnings } = migrateAllowAccess('some-future-thing', []);
+    expect(warnings[0]).toMatch(/Unsupported/);
+    expect(result).toEqual({});
+  });
+
+  it('no-op returns warning with empty result', () => {
+    const { result, warnings } = migrateAllowAccess('no-op', [{}]);
+    expect(warnings[0]).toMatch(/No-op/);
+    expect(result).toEqual({});
+  });
+
+  it('declining-credit with no credit rules returns warning', () => {
+    const rules: AssessmentAccessRuleJson[] = [{ startDate: '2024-01-01' }];
+    const { result, warnings } = migrateAllowAccess('declining-credit', rules);
+    expect(warnings[0]).toMatch(/No credit rules found/);
+    expect(result).toEqual({});
+  });
+
+  it('single-deadline with no credit rule returns warning', () => {
+    const rules: AssessmentAccessRuleJson[] = [{ startDate: '2024-01-01' }];
+    const { result, warnings } = migrateAllowAccess('single-deadline', rules);
+    expect(warnings[0]).toMatch(/No credit rule found/);
+    expect(result).toEqual({});
+  });
+
+  it('prairietest-exam with no examUuid returns warning', () => {
+    const rules: AssessmentAccessRuleJson[] = [{ credit: 100 }];
+    const { result, warnings } = migrateAllowAccess('prairietest-exam', rules);
+    expect(warnings[0]).toMatch(/No examUuid rule found/);
+    expect(result).toEqual({});
+  });
+
+  it('password-gated with no password returns warning', () => {
+    const rules: AssessmentAccessRuleJson[] = [{ credit: 100 }];
+    const { result, warnings } = migrateAllowAccess('password-gated', rules);
+    expect(warnings[0]).toMatch(/No password rule found/);
+    expect(result).toEqual({});
+  });
 });
 
 describe('analyzeAssessmentFile', () => {
@@ -306,6 +515,81 @@ describe('analyzeAssessmentFile', () => {
     );
     const result = await analyzeAssessmentFile(filePath, 'e01');
     expect(result!.hasUidRules).toBe(true);
+  });
+
+  it('classifies from non-UID rules when mixed with UID rules', async () => {
+    const filePath = path.join(tmpDir, 'infoAssessment.json');
+    await fs.writeFile(
+      filePath,
+      JSON.stringify({
+        type: 'Exam',
+        title: 'E1',
+        allowAccess: [
+          { credit: 100, startDate: '2024-01-01', endDate: '2024-03-01' },
+          { credit: 50, startDate: '2024-03-01', endDate: '2024-06-01' },
+          { uids: ['user@example.com'], credit: 100, endDate: '2024-07-01' },
+        ],
+      }),
+    );
+    const result = await analyzeAssessmentFile(filePath, 'e01');
+    expect(result).not.toBeNull();
+    expect(result!.archetype).toBe('declining-credit');
+    expect(result!.hasUidRules).toBe(true);
+    expect(result!.canMigrate).toBe(true);
+  });
+
+  it('all-UID rules produces unclassified and canMigrate=false', async () => {
+    const filePath = path.join(tmpDir, 'infoAssessment.json');
+    await fs.writeFile(
+      filePath,
+      JSON.stringify({
+        type: 'Exam',
+        title: 'E1',
+        allowAccess: [{ uids: ['user@example.com'], credit: 100 }],
+      }),
+    );
+    const result = await analyzeAssessmentFile(filePath, 'e01');
+    expect(result).not.toBeNull();
+    expect(result!.archetype).toBe('unclassified');
+    expect(result!.canMigrate).toBe(false);
+    expect(result!.hasUidRules).toBe(true);
+  });
+
+  it('returns null for empty allowAccess array', async () => {
+    const filePath = path.join(tmpDir, 'infoAssessment.json');
+    await fs.writeFile(
+      filePath,
+      JSON.stringify({
+        type: 'Exam',
+        title: 'E1',
+        allowAccess: [],
+      }),
+    );
+    const result = await analyzeAssessmentFile(filePath, 'e01');
+    expect(result).toBeNull();
+  });
+
+  it('returns null for invalid JSON file', async () => {
+    const filePath = path.join(tmpDir, 'infoAssessment.json');
+    await fs.writeFile(filePath, 'not valid json {{{');
+    const result = await analyzeAssessmentFile(filePath, 'e01');
+    expect(result).toBeNull();
+  });
+
+  it('no-op rule is technically migratable', async () => {
+    const filePath = path.join(tmpDir, 'infoAssessment.json');
+    await fs.writeFile(
+      filePath,
+      JSON.stringify({
+        type: 'Homework',
+        title: 'HW1',
+        allowAccess: [{}],
+      }),
+    );
+    const result = await analyzeAssessmentFile(filePath, 'hw01');
+    expect(result).not.toBeNull();
+    expect(result!.archetype).toBe('no-op');
+    expect(result!.canMigrate).toBe(true);
   });
 });
 
@@ -470,5 +754,122 @@ describe('applyMigrationToAssessmentFile', () => {
 
     const result = JSON.parse(await fs.readFile(filePath, 'utf-8'));
     expect(result.accessControl).toBeUndefined();
+  });
+
+  it('migrates non-UID rules when mixed with UID rules', async () => {
+    const filePath = path.join(tmpDir, 'infoAssessment.json');
+    await fs.writeFile(
+      filePath,
+      JSON.stringify({
+        type: 'Homework',
+        title: 'HW1',
+        allowAccess: [
+          { credit: 100, startDate: '2024-01-01', endDate: '2024-06-01' },
+          { uids: ['user@example.com'], credit: 100, endDate: '2024-12-01' },
+        ],
+      }),
+    );
+
+    await applyMigrationToAssessmentFile(filePath, 'migrate', false);
+
+    const result = JSON.parse(await fs.readFile(filePath, 'utf-8'));
+    expect(result.allowAccess).toBeUndefined();
+    expect(result.accessControl).toHaveLength(1);
+    expect(result.accessControl[0].dateControl?.dueDate).toBe('2024-06-01');
+  });
+
+  it('declining-credit full pipeline', async () => {
+    const filePath = path.join(tmpDir, 'infoAssessment.json');
+    await fs.writeFile(
+      filePath,
+      JSON.stringify({
+        type: 'Homework',
+        title: 'HW1',
+        allowAccess: [
+          { credit: 100, startDate: '2024-01-01', endDate: '2024-03-01' },
+          { credit: 50, startDate: '2024-03-01', endDate: '2024-06-01' },
+        ],
+      }),
+    );
+
+    await applyMigrationToAssessmentFile(filePath, 'migrate', false);
+
+    const result = JSON.parse(await fs.readFile(filePath, 'utf-8'));
+    expect(result.allowAccess).toBeUndefined();
+    expect(result.accessControl).toHaveLength(1);
+    expect(result.accessControl[0].dateControl?.lateDeadlines).toHaveLength(1);
+  });
+
+  it('wipe with UID-only rules removes allowAccess without accessControl', async () => {
+    const filePath = path.join(tmpDir, 'infoAssessment.json');
+    await fs.writeFile(
+      filePath,
+      JSON.stringify({
+        type: 'Exam',
+        title: 'E1',
+        allowAccess: [{ uids: ['user@example.com'], credit: 100 }],
+      }),
+    );
+
+    await applyMigrationToAssessmentFile(filePath, 'wipe', false);
+
+    const result = JSON.parse(await fs.readFile(filePath, 'utf-8'));
+    expect(result.allowAccess).toBeUndefined();
+    expect(result.accessControl).toBeUndefined();
+  });
+
+  it('all-UID rules with preserveIncompatible:true keeps allowAccess', async () => {
+    const filePath = path.join(tmpDir, 'infoAssessment.json');
+    await fs.writeFile(
+      filePath,
+      JSON.stringify({
+        type: 'Exam',
+        title: 'E1',
+        allowAccess: [{ uids: ['user@example.com'], credit: 100 }],
+      }),
+    );
+
+    await applyMigrationToAssessmentFile(filePath, 'migrate', true);
+
+    const result = JSON.parse(await fs.readFile(filePath, 'utf-8'));
+    expect(result.allowAccess).toBeDefined();
+    expect(result.accessControl).toBeUndefined();
+  });
+
+  it('all-UID rules with preserveIncompatible:false removes allowAccess', async () => {
+    const filePath = path.join(tmpDir, 'infoAssessment.json');
+    await fs.writeFile(
+      filePath,
+      JSON.stringify({
+        type: 'Exam',
+        title: 'E1',
+        allowAccess: [{ uids: ['user@example.com'], credit: 100 }],
+      }),
+    );
+
+    await applyMigrationToAssessmentFile(filePath, 'migrate', false);
+
+    const result = JSON.parse(await fs.readFile(filePath, 'utf-8'));
+    expect(result.allowAccess).toBeUndefined();
+    expect(result.accessControl).toBeUndefined();
+  });
+
+  it('no-op rules produce empty accessControl entry', async () => {
+    const filePath = path.join(tmpDir, 'infoAssessment.json');
+    await fs.writeFile(
+      filePath,
+      JSON.stringify({
+        type: 'Homework',
+        title: 'HW1',
+        allowAccess: [{}],
+      }),
+    );
+
+    await applyMigrationToAssessmentFile(filePath, 'migrate', false);
+
+    const result = JSON.parse(await fs.readFile(filePath, 'utf-8'));
+    expect(result.allowAccess).toBeUndefined();
+    expect(result.accessControl).toHaveLength(1);
+    expect(result.accessControl[0]).toEqual({});
   });
 });

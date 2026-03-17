@@ -4,16 +4,6 @@ import { type Path, useController, useWatch } from 'react-hook-form';
 import { FieldWrapper } from '../FieldWrapper.js';
 import type { AccessControlFormData } from '../types.js';
 
-function formatInheritedDate(value: string | null): string {
-  if (!value) return 'Released immediately';
-  try {
-    const date = new Date(value);
-    return `After ${date.toLocaleDateString('en-US', { month: 'short', day: 'numeric', year: 'numeric', hour: 'numeric', minute: '2-digit' })}`;
-  } catch {
-    return `After ${value}`;
-  }
-}
-
 interface ReleaseDateInputProps {
   value: string | null;
   onChange: (value: string | null) => void;
@@ -86,7 +76,6 @@ export function OverrideReleaseDateField({ index }: { index: number }) {
     <FieldWrapper
       isOverridden={isOverridden}
       label="Release date"
-      inheritedValue={formatInheritedDate(mainValue)}
       headerContent={<strong>Release date</strong>}
       onOverride={() => field.onChange(mainValue)}
       onRemoveOverride={() => field.onChange(undefined)}

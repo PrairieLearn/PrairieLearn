@@ -62,7 +62,7 @@ function AccessControlInner({
   };
 
   return (
-    <div>
+    <div style={{ height: '100%' }} data-split-pane-page>
       {showSuccess && (
         <Alert variant="success" dismissible onClose={() => setShowSuccess(false)}>
           Access control updated successfully.

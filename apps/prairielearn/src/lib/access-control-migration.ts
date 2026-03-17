@@ -50,7 +50,7 @@ interface NewAccessControl {
   };
 }
 
-interface AssessmentMigrationAnalysis {
+export interface AssessmentMigrationAnalysis {
   tid: string;
   title: string;
   type: string;
@@ -106,7 +106,9 @@ function anyHidesClosedScore(rules: AssessmentAccessRuleJson[]): boolean {
   return rules.some((r) => r.showClosedAssessmentScore === false);
 }
 
-function buildAfterComplete(rules: AssessmentAccessRuleJson[]): NewAccessControl['afterComplete'] | undefined {
+function buildAfterComplete(
+  rules: AssessmentAccessRuleJson[],
+): NewAccessControl['afterComplete'] | undefined {
   const hidesAssessment = anyHidesClosedAssessment(rules);
   const hidesScore = anyHidesClosedScore(rules);
   if (!hidesAssessment && !hidesScore) return undefined;
@@ -180,6 +182,7 @@ function withMods(
 }
 
 export function classifyArchetype(rules: AssessmentAccessRuleJson[]): string {
+  rules = rules.filter((r) => !r.uids);
   const analyzed = rules.map(analyzeRule);
   const creditRules = analyzed.filter((r) => r.creditType !== 'none');
   const nonCreditRules = analyzed.filter((r) => r.creditType === 'none');
@@ -362,7 +365,10 @@ function migratePrairieTestExam(rules: AssessmentAccessRuleJson[]): {
   return { result, warnings };
 }
 
-function migrateViewOnly(rules: AssessmentAccessRuleJson[]): { result: NewAccessControl; warnings: string[] } {
+function migrateViewOnly(rules: AssessmentAccessRuleJson[]): {
+  result: NewAccessControl;
+  warnings: string[];
+} {
   const warnings: string[] = [];
   const allDates = rules.map((r) => r.startDate).filter(Boolean) as string[];
   const releaseDate = allDates.sort()[0];
@@ -448,14 +454,20 @@ function migratePasswordGated(rules: AssessmentAccessRuleJson[]): {
   return { result, warnings };
 }
 
-function migrateHidden(_rules: AssessmentAccessRuleJson[]): { result: NewAccessControl; warnings: string[] } {
+function migrateHidden(_rules: AssessmentAccessRuleJson[]): {
+  result: NewAccessControl;
+  warnings: string[];
+} {
   return {
     result: { blockAccess: true },
     warnings: [],
   };
 }
 
-function migrateNoOp(_rules: AssessmentAccessRuleJson[]): { result: NewAccessControl; warnings: string[] } {
+function migrateNoOp(_rules: AssessmentAccessRuleJson[]): {
+  result: NewAccessControl;
+  warnings: string[];
+} {
   return {
     result: {},
     warnings: ['No-op access rule — produces empty accessControl entry'],
@@ -470,6 +482,7 @@ export function migrateAllowAccess(
   archetype: string,
   rules: AssessmentAccessRuleJson[],
 ): { result: NewAccessControl; warnings: string[] } {
+  rules = rules.filter((r) => !r.uids);
   const base = archetype.replace(/\s*\(.*\)$/, '');
 
   switch (base) {
@@ -508,6 +521,31 @@ export function migrateAllowAccess(
     default:
       return { result: {}, warnings: [`Unsupported archetype: ${archetype}`] };
   }
+}
+
+// ---------------------------------------------------------------------------
+// JSON-level migration (pure, synchronous)
+// ---------------------------------------------------------------------------
+
+export function migrateAssessmentJson(
+  jsonContent: string,
+): { json: string; warnings: string[] } | null {
+  const data = JSON.parse(jsonContent);
+  const allowAccess = data.allowAccess as AssessmentAccessRuleJson[] | undefined;
+  if (!allowAccess || !Array.isArray(allowAccess) || allowAccess.length === 0) return null;
+
+  const rulesForMigration = allowAccess.filter((rule) => !rule.uids);
+  const archetype =
+    rulesForMigration.length > 0 ? classifyArchetype(rulesForMigration) : 'unclassified';
+  const { result, warnings } = migrateAllowAccess(archetype, rulesForMigration);
+  const canMigrate =
+    archetype !== 'unclassified' && !warnings.some((w) => w.startsWith('Unsupported'));
+
+  if (!canMigrate) return null;
+
+  data.accessControl = [result];
+  delete data.allowAccess;
+  return { json: JSON.stringify(data), warnings };
 }
 
 // ---------------------------------------------------------------------------

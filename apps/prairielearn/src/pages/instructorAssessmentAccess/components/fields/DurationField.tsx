@@ -62,13 +62,10 @@ export function OverrideDurationField({ index }: { index: number }) {
   const value = field.value as number | null | undefined;
   const isOverridden = value !== undefined;
 
-  const inheritedText = mainValue !== null ? `${mainValue} minutes` : 'No time limit';
-
   return (
     <FieldWrapper
       isOverridden={isOverridden}
       label="Time limit"
-      inheritedValue={inheritedText}
       onOverride={() => field.onChange(mainValue)}
       onRemoveOverride={() => field.onChange(undefined)}
     >

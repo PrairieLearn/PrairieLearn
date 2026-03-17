@@ -70,13 +70,10 @@ export function OverridePasswordField({ index }: { index: number }) {
   const value = field.value as string | null | undefined;
   const isOverridden = value !== undefined;
 
-  const inheritedText = mainValue !== null ? 'Password protected' : 'No password';
-
   return (
     <FieldWrapper
       isOverridden={isOverridden}
       label="Password"
-      inheritedValue={inheritedText}
       onOverride={() => field.onChange(mainValue)}
       onRemoveOverride={() => field.onChange(undefined)}
     >

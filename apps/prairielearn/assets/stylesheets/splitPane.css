@@ -1,0 +1,132 @@
+/* Full-height layout: make the split pane fill remaining space in the
+   app-main-container flex column instead of using a hardcoded viewport offset. */
+#content:has([data-split-pane-page]) {
+  flex: 1;
+  min-height: 0;
+}
+
+/* On wider viewports, prevent overflowing #content so that only the
+   tree/detail panels scroll (not the outer app-main-container).
+   On narrow viewports, allow natural page scrolling since the tab bar
+   consumes significant vertical space. */
+@media (min-width: 769px) {
+  #content:has([data-split-pane-page]) {
+    overflow: hidden;
+  }
+}
+
+#content:has([data-split-pane-page]) > .js-hydrated-component {
+  height: 100%;
+}
+
+/* ── SplitPane layout ─────────────────────────────────────────────────── */
+
+.split-pane {
+  display: flex;
+  position: relative;
+  min-height: 400px;
+  height: 100%;
+}
+
+.split-pane__left {
+  flex: 1;
+  min-width: 0;
+}
+
+@media (min-width: 769px) {
+  .split-pane__left {
+    display: flex;
+    flex-direction: column;
+  }
+
+  .split-pane__left-body {
+    overflow: auto;
+    flex: 1 1 0;
+    min-height: 0;
+  }
+}
+
+.split-pane__separator {
+  width: 4px;
+  cursor: col-resize;
+  background-color: var(--bs-border-color);
+  flex-shrink: 0;
+}
+
+.split-pane__right {
+  flex-shrink: 0;
+  display: flex;
+  flex-direction: column;
+}
+
+.split-pane__right-header {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  padding: 0.5rem 1rem;
+  border-bottom: var(--bs-border-width) solid var(--bs-border-color);
+  flex-shrink: 0;
+}
+
+.split-pane__right-body {
+  overflow: auto;
+  flex: 1;
+  display: flex;
+  flex-direction: column;
+  container-type: inline-size;
+}
+
+@container (max-width: 600px) {
+  .split-pane__right-body .row > [class*='col-'] {
+    flex: 0 0 auto;
+    width: 100%;
+  }
+}
+
+/* Wide: hide right panel + separator when collapsed */
+.split-pane[data-collapsed] .split-pane__separator,
+.split-pane[data-collapsed] .split-pane__right {
+  display: none;
+}
+
+/* Toggle is only visible when collapsed (hidden when right panel is open) */
+.split-pane__toggle {
+  position: absolute;
+  right: 0;
+  top: 8px;
+}
+
+.split-pane:not([data-collapsed]) .split-pane__toggle {
+  display: none;
+}
+
+/* ── Narrow viewport overrides ────────────────────────────────────────── */
+
+@media (max-width: 768px) {
+  .split-pane {
+    display: block;
+    min-height: 500px;
+  }
+
+  /* Separator and toggle are not used on narrow viewports */
+  .split-pane__separator,
+  .split-pane__toggle {
+    display: none !important;
+  }
+
+  /* When detail is open: hide the tree, show the right panel full-width */
+  .split-pane:not([data-collapsed]) .split-pane__left {
+    display: none;
+  }
+
+  .split-pane:not([data-collapsed]) .split-pane__right {
+    display: flex;
+    width: 100% !important;
+    height: 100%;
+  }
+
+  /* When collapsed: show the tree, hide the right panel */
+  .split-pane[data-collapsed] .split-pane__left {
+    display: block;
+  }
+}

@@ -5,6 +5,8 @@ import { hydrateHtml } from '@prairielearn/react/server';
 
 import { CommentPopoverHtml } from '../../components/CommentPopover.js';
 import { PageLayout } from '../../components/PageLayout.js';
+import type { AssessmentMigrationAnalysis } from '../../lib/access-control-migration.js';
+import { compiledStylesheetTag } from '../../lib/assets.js';
 import { extractPageContext } from '../../lib/client/page-context.js';
 import { isRenderableComment } from '../../lib/comments.js';
 import { config } from '../../lib/config.js';
@@ -35,9 +37,15 @@ type AssessmentAccessRules = z.infer<typeof AssessmentAccessRulesSchema>;
 export function InstructorAssessmentAccess({
   resLocals,
   accessRules,
+  migrationAnalysis,
+  origHash,
+  canEdit,
 }: {
   resLocals: ResLocalsForPage<'assessment'>;
   accessRules: AssessmentAccessRules[];
+  migrationAnalysis: AssessmentMigrationAnalysis | null;
+  origHash: string;
+  canEdit: boolean;
 }) {
   const showComments = accessRules.some((access_rule) => isRenderableComment(access_rule.comment));
   return PageLayout({
@@ -153,8 +161,60 @@ export function InstructorAssessmentAccess({
           >
         </div>
       </div>
+
+      ${migrationAnalysis && canEdit
+        ? MigrationCard({ migrationAnalysis, origHash, csrfToken: resLocals.__csrf_token })
+        : ''}
     `,
   });
+}
+
+function MigrationCard({
+  migrationAnalysis,
+  origHash,
+  csrfToken,
+}: {
+  migrationAnalysis: AssessmentMigrationAnalysis;
+  origHash: string;
+  csrfToken: string;
+}) {
+  return html`
+    <div class="card mb-4">
+      <div class="card-header bg-secondary text-white">
+        <h2 class="h6 mb-0">Migrate to modern access control</h2>
+      </div>
+      <div class="card-body">
+        <p>
+          Classification: <code>${migrationAnalysis.archetype}</code>
+          (${migrationAnalysis.ruleCount} legacy
+          rule${migrationAnalysis.ruleCount === 1 ? '' : 's'})
+        </p>
+        ${migrationAnalysis.hasUidRules
+          ? html`
+              <div class="alert alert-warning">
+                This assessment has UID-based access rules that will be removed during migration.
+                UID-based rules have no equivalent in the modern access control format.
+              </div>
+            `
+          : ''}
+        ${migrationAnalysis.canMigrate
+          ? html`
+              <form method="POST">
+                <input type="hidden" name="__csrf_token" value="${csrfToken}" />
+                <input type="hidden" name="__action" value="migrate_access_control" />
+                <input type="hidden" name="orig_hash" value="${origHash}" />
+                <button type="submit" class="btn btn-primary">Migrate to modern format</button>
+              </form>
+            `
+          : html`
+              <p class="text-muted mb-0">
+                This assessment's access rules cannot be automatically migrated. Manual conversion
+                is required.
+              </p>
+            `}
+      </div>
+    </div>
+  `;
 }
 
 export function InstructorAssessmentAccessNew({
@@ -176,6 +236,7 @@ export function InstructorAssessmentAccessNew({
   return PageLayout({
     resLocals,
     pageTitle: 'Access',
+    headContent: [compiledStylesheetTag('splitPane.css')],
     navContext: {
       type: 'instructor',
       page: 'assessment',

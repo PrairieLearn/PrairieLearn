@@ -1,10 +1,11 @@
 import clsx from 'clsx';
 import { useCallback, useState } from 'react';
-import { Alert, Button, Form, Offcanvas } from 'react-bootstrap';
+import { Alert, Button, Form } from 'react-bootstrap';
 import { FormProvider, useFieldArray, useForm } from 'react-hook-form';
 
 import { OverlayTrigger } from '@prairielearn/ui';
 
+import { SplitPane } from '../../../components/SplitPane.js';
 import type { PageContext } from '../../../lib/client/page-context.js';
 
 import { AccessControlSummary } from './AccessControlSummary.js';
@@ -82,14 +83,15 @@ function collectErrorMessages(
   return messages;
 }
 
+type SelectedRule = { type: 'main' } | { type: 'override'; index: number } | null;
+
 export function AccessControlForm({
   initialData = defaultInitialData,
   onSubmit,
   courseInstance,
   isSaving = false,
 }: AccessControlFormProps) {
-  const [showMainRuleDrawer, setShowMainRuleDrawer] = useState(false);
-  const [editingOverrideIndex, setEditingOverrideIndex] = useState<number | null>(null);
+  const [selectedRule, setSelectedRule] = useState<SelectedRule>(null);
   const [deleteModalState, setDeleteModalState] = useState<{
     show: boolean;
     overrideIndex: number | null;
@@ -145,10 +147,10 @@ export function AccessControlForm({
     );
     if (firstLabelIndex === -1) {
       appendOverride(newOverride);
-      setEditingOverrideIndex(watchedData.overrides.length);
+      setSelectedRule({ type: 'override', index: watchedData.overrides.length });
     } else {
       insertOverride(firstLabelIndex, newOverride);
-      setEditingOverrideIndex(firstLabelIndex);
+      setSelectedRule({ type: 'override', index: firstLabelIndex });
     }
   };
 
@@ -158,6 +160,12 @@ export function AccessControlForm({
 
   const handleDeleteConfirm = () => {
     if (deleteModalState.overrideIndex !== null) {
+      if (
+        selectedRule?.type === 'override' &&
+        selectedRule.index === deleteModalState.overrideIndex
+      ) {
+        setSelectedRule(null);
+      }
       removeOverride(deleteModalState.overrideIndex);
     }
     setDeleteModalState({ show: false, overrideIndex: null });
@@ -220,141 +228,152 @@ export function AccessControlForm({
     </button>
   );
 
+  const enabledToggle =
+    selectedRule?.type === 'main' ? (
+      <Button
+        variant={watchedData.mainRule.enabled ? 'success' : 'outline-secondary'}
+        size="sm"
+        aria-pressed={watchedData.mainRule.enabled}
+        onClick={() =>
+          setValue('mainRule.enabled', !watchedData.mainRule.enabled, { shouldDirty: true })
+        }
+      >
+        <i
+          className={`bi bi-${watchedData.mainRule.enabled ? 'check-lg' : 'x-lg'} me-1`}
+          aria-hidden="true"
+        />
+        {watchedData.mainRule.enabled ? 'Enabled' : 'Disabled'}
+      </Button>
+    ) : selectedRule?.type === 'override' ? (
+      (() => {
+        const overrideEnabled = watchedData.overrides[selectedRule.index]?.enabled;
+        return (
+          <Button
+            variant={overrideEnabled ? 'success' : 'outline-secondary'}
+            size="sm"
+            aria-pressed={overrideEnabled}
+            onClick={() =>
+              setValue(`overrides.${selectedRule.index}.enabled`, !overrideEnabled, {
+                shouldDirty: true,
+              })
+            }
+          >
+            <i
+              className={`bi bi-${overrideEnabled ? 'check-lg' : 'x-lg'} me-1`}
+              aria-hidden="true"
+            />
+            {overrideEnabled ? 'Enabled' : 'Disabled'}
+          </Button>
+        );
+      })()
+    ) : null;
+
+  const rightTitle =
+    selectedRule?.type === 'main'
+      ? 'Main rule'
+      : selectedRule?.type === 'override'
+        ? getOverrideName(selectedRule.index)
+        : undefined;
+
+  const rightHeaderAction = selectedRule ? (
+    <div className="d-flex align-items-center gap-2">
+      {enabledToggle}
+      <button
+        type="button"
+        className="btn btn-sm btn-outline-secondary"
+        aria-label="Close detail panel"
+        onClick={() => setSelectedRule(null)}
+      >
+        <i className="bi bi-x-lg" aria-hidden="true" />
+      </button>
+    </div>
+  ) : undefined;
+
+  const rightPanel =
+    selectedRule?.type === 'main' ? (
+      <div className="p-3">
+        <MainRuleForm courseInstance={courseInstance} />
+      </div>
+    ) : selectedRule?.type === 'override' ? (
+      (() => {
+        const override = watchedData.overrides[selectedRule.index];
+        const hasNoTargets =
+          (override.appliesTo.targetType === 'individual' &&
+            override.appliesTo.individuals.length === 0) ||
+          (override.appliesTo.targetType === 'student_label' &&
+            override.appliesTo.studentLabels.length === 0);
+        return (
+          <div className="p-3">
+            {hasNoTargets && (
+              <Alert variant="warning">
+                This override has no targets. Add at least one student or student label for this
+                rule to take effect.
+              </Alert>
+            )}
+            <p className="text-muted">
+              Fields that are not overridden inherit their values from the main rule and any earlier
+              overrides. Click "Override" on a field to set a custom value for this group.
+            </p>
+            <AppliesToField namePrefix={`overrides.${selectedRule.index}`} />
+            <OverrideRuleContent index={selectedRule.index} />
+          </div>
+        );
+      })()
+    ) : null;
+
   return (
     <FormProvider {...methods}>
-      <Form onSubmit={handleSubmit(handleFormSubmit)}>
-        <AccessControlSummary
-          courseInstanceId={courseInstance.id}
-          getOverrideName={getOverrideName}
-          mainRule={watchedData.mainRule}
-          overrides={watchedData.overrides}
-          mainRuleErrors={mainRuleErrors}
-          getOverrideErrors={getOverrideErrors}
-          onAddOverride={addOverride}
-          onRemoveOverride={handleDeleteClick}
-          onMoveOverride={moveOverride}
-          onEditMainRule={() => setShowMainRuleDrawer(true)}
-          onEditOverride={(index) => setEditingOverrideIndex(index)}
-        />
-
-        <div className="d-flex gap-2 mt-3">
-          {saveDisabledReason ? (
-            <OverlayTrigger tooltip={{ props: { id: 'save-tooltip' }, body: saveDisabledReason }}>
-              <span className="d-inline-block">{saveButton}</span>
-            </OverlayTrigger>
-          ) : (
-            saveButton
-          )}
-          {isDirty && (
-            <button
-              className="btn btn-sm btn-outline-secondary"
-              type="button"
-              disabled={isSaving}
-              onClick={() => reset()}
-            >
-              Cancel
-            </button>
-          )}
-        </div>
-      </Form>
-
-      <Offcanvas
-        show={showMainRuleDrawer}
-        placement="end"
-        style={{ width: '75vw' }}
-        onHide={() => setShowMainRuleDrawer(false)}
-      >
-        <Offcanvas.Header closeButton>
-          <Offcanvas.Title className="d-flex align-items-center gap-2">
-            Main rule
-            <Button
-              variant={watchedData.mainRule.enabled ? 'success' : 'outline-secondary'}
-              size="sm"
-              aria-pressed={watchedData.mainRule.enabled}
-              onClick={() =>
-                setValue('mainRule.enabled', !watchedData.mainRule.enabled, { shouldDirty: true })
-              }
-            >
-              <i
-                className={`bi bi-${watchedData.mainRule.enabled ? 'check-lg' : 'x-lg'} me-1`}
-                aria-hidden="true"
+      <Form style={{ height: '100%' }} onSubmit={handleSubmit(handleFormSubmit)}>
+        <SplitPane
+          forceOpen={selectedRule}
+          rightCollapsed={selectedRule == null ? true : undefined}
+          rightTitle={rightTitle}
+          rightHeaderAction={rightHeaderAction}
+          defaultRightWidth={550}
+          maxRightWidth={800}
+          left={
+            <div className="split-pane__left-body p-3">
+              <AccessControlSummary
+                courseInstanceId={courseInstance.id}
+                getOverrideName={getOverrideName}
+                mainRule={watchedData.mainRule}
+                overrides={watchedData.overrides}
+                mainRuleErrors={mainRuleErrors}
+                getOverrideErrors={getOverrideErrors}
+                onAddOverride={addOverride}
+                onRemoveOverride={handleDeleteClick}
+                onMoveOverride={moveOverride}
+                onEditMainRule={() => setSelectedRule({ type: 'main' })}
+                onEditOverride={(index) => setSelectedRule({ type: 'override', index })}
               />
-              {watchedData.mainRule.enabled ? 'Enabled' : 'Disabled'}
-            </Button>
-          </Offcanvas.Title>
-        </Offcanvas.Header>
-        <Offcanvas.Body>
-          <MainRuleForm courseInstance={courseInstance} />
-          <div className="mt-3">
-            <Button variant="primary" onClick={() => setShowMainRuleDrawer(false)}>
-              Done
-            </Button>
-          </div>
-        </Offcanvas.Body>
-      </Offcanvas>
 
-      <Offcanvas
-        show={editingOverrideIndex !== null}
-        placement="end"
-        style={{ width: '75vw' }}
-        onHide={() => setEditingOverrideIndex(null)}
-      >
-        <Offcanvas.Header closeButton>
-          <Offcanvas.Title className="d-flex align-items-center gap-2">
-            {editingOverrideIndex !== null ? getOverrideName(editingOverrideIndex) : ''}
-            {editingOverrideIndex !== null &&
-              (() => {
-                const overrideEnabled = watchedData.overrides[editingOverrideIndex]?.enabled;
-                return (
-                  <Button
-                    variant={overrideEnabled ? 'success' : 'outline-secondary'}
-                    size="sm"
-                    aria-pressed={overrideEnabled}
-                    onClick={() =>
-                      setValue(`overrides.${editingOverrideIndex}.enabled`, !overrideEnabled, {
-                        shouldDirty: true,
-                      })
-                    }
+              <div className="d-flex gap-2 mt-3">
+                {saveDisabledReason ? (
+                  <OverlayTrigger
+                    tooltip={{ props: { id: 'save-tooltip' }, body: saveDisabledReason }}
                   >
-                    <i
-                      className={`bi bi-${overrideEnabled ? 'check-lg' : 'x-lg'} me-1`}
-                      aria-hidden="true"
-                    />
-                    {overrideEnabled ? 'Enabled' : 'Disabled'}
-                  </Button>
-                );
-              })()}
-          </Offcanvas.Title>
-        </Offcanvas.Header>
-        <Offcanvas.Body>
-          {editingOverrideIndex !== null &&
-            (() => {
-              const override = watchedData.overrides[editingOverrideIndex];
-              const hasNoTargets =
-                (override.appliesTo.targetType === 'individual' &&
-                  override.appliesTo.individuals.length === 0) ||
-                (override.appliesTo.targetType === 'student_label' &&
-                  override.appliesTo.studentLabels.length === 0);
-              return (
-                <>
-                  {hasNoTargets && (
-                    <Alert variant="warning">
-                      This override has no targets. Add at least one student or student label for
-                      this rule to take effect.
-                    </Alert>
-                  )}
-                  <AppliesToField namePrefix={`overrides.${editingOverrideIndex}`} />
-                  <OverrideRuleContent index={editingOverrideIndex} />
-                  <div className="mt-3">
-                    <Button variant="primary" onClick={() => setEditingOverrideIndex(null)}>
-                      Done
-                    </Button>
-                  </div>
-                </>
-              );
-            })()}
-        </Offcanvas.Body>
-      </Offcanvas>
+                    <span className="d-inline-block">{saveButton}</span>
+                  </OverlayTrigger>
+                ) : (
+                  saveButton
+                )}
+                {isDirty && (
+                  <button
+                    className="btn btn-sm btn-outline-secondary"
+                    type="button"
+                    disabled={isSaving}
+                    onClick={() => reset()}
+                  >
+                    Cancel
+                  </button>
+                )}
+              </div>
+            </div>
+          }
+          right={rightPanel}
+          onClose={() => setSelectedRule(null)}
+        />
+      </Form>
 
       <ConfirmationModal
         show={deleteModalState.show}

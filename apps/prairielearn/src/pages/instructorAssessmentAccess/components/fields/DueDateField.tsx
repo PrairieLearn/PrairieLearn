@@ -6,16 +6,6 @@ import { FieldWrapper } from '../FieldWrapper.js';
 import type { AccessControlFormData, DeadlineEntry } from '../types.js';
 import { getLatestEarlyDeadlineDate, getUserTimezone } from '../utils/dateUtils.js';
 
-function formatInheritedDate(value: string | null): string {
-  if (!value) return 'No due date';
-  try {
-    const date = new Date(value);
-    return `Due ${date.toLocaleDateString('en-US', { month: 'short', day: 'numeric', year: 'numeric', hour: 'numeric', minute: '2-digit' })}`;
-  } catch {
-    return `Due ${value}`;
-  }
-}
-
 interface DueDateInputProps {
   value: string | null;
   onChange: (value: string | null) => void;
@@ -169,7 +159,6 @@ export function OverrideDueDateField({ index }: { index: number }) {
     <FieldWrapper
       isOverridden={isOverridden}
       label="Due date"
-      inheritedValue={formatInheritedDate(mainValue)}
       headerContent={<strong>Due date</strong>}
       onOverride={() => field.onChange(mainValue)}
       onRemoveOverride={() => field.onChange(undefined)}

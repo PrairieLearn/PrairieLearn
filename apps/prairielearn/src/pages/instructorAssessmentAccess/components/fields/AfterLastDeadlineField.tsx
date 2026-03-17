@@ -24,13 +24,6 @@ function getMode(value: AfterLastDeadlineValue | null): AfterLastDeadlineMode {
   return 'partial_credit';
 }
 
-function formatInheritedValue(value: AfterLastDeadlineValue | null): string {
-  if (!value) return 'No submissions';
-  if (!value.allowSubmissions) return 'No submissions';
-  if (value.credit === undefined) return 'Practice submissions';
-  return `${value.credit}% credit`;
-}
-
 interface AfterLastDeadlineInputProps {
   value: AfterLastDeadlineValue | null;
   onChange: (value: AfterLastDeadlineValue | null) => void;
@@ -219,7 +212,6 @@ export function OverrideAfterLastDeadlineField({ index }: { index: number }) {
     <FieldWrapper
       isOverridden={isOverridden}
       label="After last deadline"
-      inheritedValue={formatInheritedValue(mainValue)}
       onOverride={() => field.onChange(mainValue ?? { allowSubmissions: false })}
       onRemoveOverride={() => field.onChange(undefined)}
     >

@@ -108,6 +108,7 @@ router.get(
         pageTitle: 'Questions',
         headContent: [
           compiledScriptTag('instructorAssessmentQuestionsClient.ts'),
+          compiledStylesheetTag('splitPane.css'),
           compiledStylesheetTag('instructorAssessmentQuestions.css'),
         ],
         navContext: {

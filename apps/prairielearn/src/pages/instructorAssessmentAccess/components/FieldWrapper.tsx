@@ -6,8 +6,6 @@ interface FieldWrapperProps {
   isOverridden: boolean;
   /** Label shown when field is not overridden */
   label: string;
-  /** The inherited value to display when not overridden */
-  inheritedValue?: ReactNode;
   /** Called when user clicks Override button */
   onOverride?: () => void;
   /** Called when user clicks Remove Override button */
@@ -20,12 +18,11 @@ interface FieldWrapperProps {
 
 /**
  * Wrapper for override fields that shows an override/remove button
- * and the inherited value when not overridden.
+ * when not overridden.
  */
 export function FieldWrapper({
   isOverridden,
   label,
-  inheritedValue,
   onOverride,
   onRemoveOverride,
   children,
@@ -37,20 +34,8 @@ export function FieldWrapper({
     <Card className="mb-3" style={cardStyle}>
       <Card.Body>
         {!isOverridden ? (
-          <div className="d-flex justify-content-between align-items-start">
-            <div>
-              <span className="text-muted">{label}</span>
-              {inheritedValue != null && (
-                <div className="mt-1">
-                  <span className="text-muted">
-                    <i className="bi bi-arrow-return-right me-1" aria-hidden="true" />
-                    {inheritedValue}
-                  </span>
-                  <br />
-                  <small className="text-muted">Default from main rule</small>
-                </div>
-              )}
-            </div>
+          <div className="d-flex justify-content-between align-items-center">
+            <span className="text-muted">{label}</span>
             {onOverride && (
               <Button size="sm" variant="outline-primary" className="ms-3" onClick={onOverride}>
                 Override

@@ -285,8 +285,8 @@ export function RuleSummaryCard({
 
   return (
     <Card className="mb-3">
-      <Card.Header className="d-flex justify-content-between align-items-center">
-        <div className="d-flex align-items-center gap-2">
+      <Card.Header className="d-flex flex-column flex-sm-row justify-content-between align-items-sm-center gap-2">
+        <div className="d-flex align-items-center gap-2 flex-wrap">
           {dragHandleProps && (
             <button
               type="button"
@@ -311,7 +311,7 @@ export function RuleSummaryCard({
             </Badge>
           )}
         </div>
-        <div className="d-flex gap-2">
+        <div className="d-flex gap-2 flex-shrink-0">
           {onEditStudentLabels && (
             <Button variant="outline-secondary" size="sm" onClick={onEditStudentLabels}>
               <i className="bi bi-people me-1" /> Student labels
@@ -347,27 +347,29 @@ export function RuleSummaryCard({
         {dateTableRows.length > 0 && (
           <div className="mb-3">
             <strong className="d-block mb-2">Deadlines</strong>
-            <Table size="sm" className="mb-0" bordered>
-              <thead className="table-light">
-                <tr>
-                  <th>Date</th>
-                  <th>Credit</th>
-                  <th>Visibility</th>
-                </tr>
-              </thead>
-              <tbody>
-                {dateTableRows.map((row) => (
-                  <tr key={`${row.date}-${row.label}-${row.credit}-${row.visibility}`}>
-                    <td>
-                      {row.label && <span className="text-muted me-1">{row.label}:</span>}
-                      {row.date}
-                    </td>
-                    <td>{row.credit}</td>
-                    <td>{row.visibility}</td>
+            <div className="table-responsive">
+              <Table size="sm" className="mb-0" bordered>
+                <thead className="table-light">
+                  <tr>
+                    <th>Date</th>
+                    <th>Credit</th>
+                    <th>Visibility</th>
                   </tr>
-                ))}
-              </tbody>
-            </Table>
+                </thead>
+                <tbody>
+                  {dateTableRows.map((row) => (
+                    <tr key={`${row.date}-${row.label}-${row.credit}-${row.visibility}`}>
+                      <td>
+                        {row.label && <span className="text-muted me-1">{row.label}:</span>}
+                        {row.date}
+                      </td>
+                      <td>{row.credit}</td>
+                      <td>{row.visibility}</td>
+                    </tr>
+                  ))}
+                </tbody>
+              </Table>
+            </div>
           </div>
         )}
 

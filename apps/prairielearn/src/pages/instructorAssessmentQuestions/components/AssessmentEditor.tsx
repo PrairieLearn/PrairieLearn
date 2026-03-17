@@ -18,6 +18,7 @@ import { useEffect, useId, useMemo, useRef, useState } from 'react';
 import { run } from '@prairielearn/run';
 import { NuqsAdapter, OverlayTrigger, useModalState } from '@prairielearn/ui';
 
+import { SplitPane } from '../../../components/SplitPane.js';
 import type { StaffAssessmentQuestionRow } from '../../../lib/assessment-question.shared.js';
 import type {
   StaffAssessment,
@@ -59,7 +60,6 @@ import { findQuestionByTrackingId, useAssessmentEditor } from '../utils/useAsses
 import { EditModeToolbar } from './EditModeToolbar.js';
 import { ExamResetNotSupportedModal } from './ExamResetNotSupportedModal.js';
 import { ResetQuestionVariantsModal } from './ResetQuestionVariantsModal.js';
-import { SplitPane } from './SplitPane.js';
 import { DetailPanel } from './detail/DetailPanel.js';
 import { AssessmentTree } from './tree/AssessmentTree.js';
 import { DragPreview } from './tree/DragPreview.js';
@@ -1180,7 +1180,7 @@ function AssessmentEditorInner({
         <div
           data-dragging={isDragging || undefined}
           style={{ height: '100%' }}
-          data-assessment-editor
+          data-split-pane-page
         >
           <SplitPane
             forceOpen={selectedItem}

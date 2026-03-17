@@ -30,32 +30,6 @@ function getHideScoreMode(value: ScoreVisibilityValue): HideScoreMode {
   return 'hide_score_until_date';
 }
 
-function formatQuestionVisibility(value: QuestionVisibilityValue): string {
-  const mode = getHideQuestionsMode(value);
-  switch (mode) {
-    case 'show_questions':
-      return 'Show questions';
-    case 'hide_questions_forever':
-      return 'Hide questions permanently';
-    case 'hide_questions_until_date':
-      return `Hide questions until ${value.showAgainDate || 'date'}`;
-    case 'hide_questions_between_dates':
-      return 'Hide questions between dates';
-  }
-}
-
-function formatScoreVisibility(value: ScoreVisibilityValue): string {
-  const mode = getHideScoreMode(value);
-  switch (mode) {
-    case 'show_score':
-      return 'Show score';
-    case 'hide_score_forever':
-      return 'Hide score permanently';
-    case 'hide_score_until_date':
-      return `Hide score until ${value.showAgainDate || 'date'}`;
-  }
-}
-
 interface QuestionVisibilityInputProps {
   value: QuestionVisibilityValue;
   onChange: (value: QuestionVisibilityValue) => void;
@@ -394,7 +368,6 @@ export function OverrideAfterCompleteForm({
         <FieldWrapper
           isOverridden={qvOverridden}
           label="Question visibility"
-          inheritedValue={formatQuestionVisibility(mainQV)}
           headerContent={<strong>Question visibility</strong>}
           onOverride={() => qvField.onChange({ ...mainQV })}
           onRemoveOverride={() => qvField.onChange(undefined)}
@@ -410,7 +383,6 @@ export function OverrideAfterCompleteForm({
         <FieldWrapper
           isOverridden={svOverridden}
           label="Score visibility"
-          inheritedValue={formatScoreVisibility(mainSV)}
           headerContent={<strong>Score visibility</strong>}
           onOverride={() => svField.onChange({ ...mainSV })}
           onRemoveOverride={() => svField.onChange(undefined)}

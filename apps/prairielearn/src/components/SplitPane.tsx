@@ -8,9 +8,6 @@ import {
   useSyncExternalStore,
 } from 'react';
 
-const DEFAULT_RIGHT_WIDTH = 360;
-const MIN_RIGHT_WIDTH = 280;
-const MAX_RIGHT_WIDTH = 600;
 const COLLAPSE_BREAKPOINT = 768;
 
 function useNarrowViewport(): boolean {
@@ -33,6 +30,9 @@ export function SplitPane({
   rightCollapsed: rightCollapsedProp,
   forceOpen,
   onClose,
+  defaultRightWidth = 360,
+  minRightWidth = 280,
+  maxRightWidth = 600,
 }: {
   left: ReactNode;
   right: ReactNode;
@@ -44,8 +44,11 @@ export function SplitPane({
   forceOpen?: unknown;
   /** Called when the user closes the detail panel via the X button. */
   onClose?: () => void;
+  defaultRightWidth?: number;
+  minRightWidth?: number;
+  maxRightWidth?: number;
 }) {
-  const [rightWidth, setRightWidth] = useState(DEFAULT_RIGHT_WIDTH);
+  const [rightWidth, setRightWidth] = useState(defaultRightWidth);
   const isNarrow = useNarrowViewport();
   const [manualCollapsed, setManualCollapsed] = useState(true);
   const isDraggingRef = useRef(false);
@@ -71,7 +74,7 @@ export function SplitPane({
       const onMouseMove = (ev: MouseEvent) => {
         if (!isDraggingRef.current) return;
         const delta = startX - ev.clientX;
-        const newWidth = Math.min(MAX_RIGHT_WIDTH, Math.max(MIN_RIGHT_WIDTH, startWidth + delta));
+        const newWidth = Math.min(maxRightWidth, Math.max(minRightWidth, startWidth + delta));
         setRightWidth(newWidth);
       };
 
@@ -84,7 +87,7 @@ export function SplitPane({
       document.addEventListener('mousemove', onMouseMove);
       document.addEventListener('mouseup', onMouseUp);
     },
-    [rightWidth],
+    [rightWidth, minRightWidth, maxRightWidth],
   );
 
   const closeButton = rightHeaderAction ?? (

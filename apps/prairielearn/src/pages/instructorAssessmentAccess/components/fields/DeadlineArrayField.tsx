@@ -318,19 +318,10 @@ export function OverrideDeadlineArrayField({ index, type }: OverrideDeadlineArra
     overrideReleaseDate !== undefined ? overrideReleaseDate : mainReleaseDate;
   const effectiveDueDate = overrideDueDate !== undefined ? overrideDueDate : mainDueDate;
 
-  const mainDeadlines = useWatch({
-    name: `mainRule.${fieldPath}` as Path<AccessControlFormData>,
-  }) as DeadlineEntry[];
-  const inheritedText =
-    mainDeadlines.length > 0
-      ? `${mainDeadlines.length} ${isEarly ? 'early' : 'late'} deadline(s)`
-      : `No ${isEarly ? 'early' : 'late'} deadlines`;
-
   return (
     <FieldWrapper
       isOverridden={isOverridden}
       label={label}
-      inheritedValue={inheritedText}
       onOverride={() => field.onChange([])}
       onRemoveOverride={() => field.onChange(undefined)}
     >

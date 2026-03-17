@@ -68,27 +68,29 @@ function MainRuleSummaryContent({ rule }: { rule: MainRuleData }) {
     <div>
       {dateTableRows.length > 0 && (
         <div className="mb-3">
-          <Table size="sm" className="mb-0" bordered>
-            <thead className="table-light">
-              <tr>
-                <th>Date</th>
-                <th>Credit</th>
-                <th>Visibility</th>
-              </tr>
-            </thead>
-            <tbody>
-              {dateTableRows.map((row) => (
-                <tr key={`${row.date}-${row.label}-${row.credit}-${row.visibility}`}>
-                  <td>
-                    {row.label && <span className="text-muted me-1">{row.label}:</span>}
-                    {row.date}
-                  </td>
-                  <td>{row.credit}</td>
-                  <td>{row.visibility}</td>
+          <div className="table-responsive">
+            <Table size="sm" className="mb-0" bordered>
+              <thead className="table-light">
+                <tr>
+                  <th>Date</th>
+                  <th>Credit</th>
+                  <th>Visibility</th>
                 </tr>
-              ))}
-            </tbody>
-          </Table>
+              </thead>
+              <tbody>
+                {dateTableRows.map((row) => (
+                  <tr key={`${row.date}-${row.label}-${row.credit}-${row.visibility}`}>
+                    <td>
+                      {row.label && <span className="text-muted me-1">{row.label}:</span>}
+                      {row.date}
+                    </td>
+                    <td>{row.credit}</td>
+                    <td>{row.visibility}</td>
+                  </tr>
+                ))}
+              </tbody>
+            </Table>
+          </div>
         </div>
       )}
 
@@ -166,6 +168,13 @@ export function AccessControlSummary({
 
   return (
     <div>
+      <p className="text-muted">
+        The <strong>main rule</strong> defines default access settings for all students. Add{' '}
+        <strong>overrides</strong> below to customize settings for specific students or groups.
+        Overrides cascade: each override layers on top of previous ones, and only the settings you
+        explicitly configure are changed.
+      </p>
+
       <section className="mb-4">
         <div className="d-flex justify-content-between align-items-center mb-3">
           <h5 className="mb-0">Main rule</h5>
@@ -243,6 +252,12 @@ export function AccessControlSummary({
             </SortableContext>
           </DndContext>
         )}
+
+        <p className="text-muted small mt-3 mb-0">
+          Overrides are applied in order from top to bottom. Student label overrides are evaluated
+          first, then individual overrides (which take priority). Each override inherits all
+          settings from the ones above it — only explicitly overridden fields are changed.
+        </p>
       </section>
     </div>
   );
