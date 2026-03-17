@@ -70,6 +70,7 @@ const minimalStudentCourse: z.input<typeof StudentCourseSchema> = {
 };
 
 const minimalStaffCourseInstance: z.input<typeof StaffCourseInstanceSchema> = {
+  ai_grading_use_custom_api_keys: false,
   assessments_group_by: 'Set',
   course_id: '1',
   deleted_at: null,
@@ -404,6 +405,7 @@ const minimalStaffAssessmentQuestion: z.input<typeof StaffAssessmentQuestionSche
   number_submissions_hist: null,
   number_submissions_variance: null,
   points_list: null,
+  preferences: null,
   question_id: '8',
   question_score_variance: null,
   quintile_question_scores: null,
@@ -446,7 +448,6 @@ const minimalStaffQuestion: z.input<typeof StaffQuestionSchema> = {
   directory: null,
   draft: false,
   external_grading_enable_networking: null,
-  external_grading_enabled: false,
   external_grading_entrypoint: null,
   external_grading_environment: {},
   external_grading_files: null,
@@ -460,6 +461,7 @@ const minimalStaffQuestion: z.input<typeof StaffQuestionSchema> = {
   number: null,
   options: null,
   partial_credit: null,
+  preferences_schema: null,
   qid: null,
   share_publicly: false,
   share_source_publicly: false,

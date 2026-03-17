@@ -506,6 +506,16 @@
           },
           "uniqueItems": true,
           "default": []
+        },
+        "preferences": {
+          "description": "The preferences passed to the question to customize its behavior.",
+          "type": "object",
+          "additionalProperties": {
+            "$ref": "#/definitions/QuestionAlternativeJsonSchema/properties/preferences/additionalProperties"
+          },
+          "propertyNames": {
+            "minLength": 1
+          }
         }
       }
     },
@@ -559,13 +569,25 @@
         "allowRealTimeGrading": {
           "description": "Whether to allow real-time grading for this question alternative. If not specified, inherits from the question level.",
           "type": "boolean"
+        },
+        "preferences": {
+          "description": "The preferences passed to the question to customize its behavior.",
+          "type": "object",
+          "additionalProperties": {
+            "type": ["string", "number", "boolean"]
+          },
+          "propertyNames": {
+            "minLength": 1
+          }
         }
       }
     },
     "PointsJsonSchema": {
       "anyOf": [
         {
-          "$ref": "#/definitions/PointsSingleJsonSchema"
+          "description": "A single point value.",
+          "$ref": "#/definitions/PointsSingleJsonSchema",
+          "default": 0
         },
         {
           "$ref": "#/definitions/PointsListJsonSchema"
@@ -575,8 +597,7 @@
     "PointsSingleJsonSchema": {
       "description": "A single point value.",
       "type": "number",
-      "minimum": 0,
-      "default": 0
+      "minimum": 0
     },
     "PointsListJsonSchema": {
       "description": "An array of point values.",
@@ -599,6 +620,15 @@
       "type": "number",
       "minimum": 0,
       "maximum": 100
+    },
+    "QuestionPreferencesJsonSchema": {
+      "type": "object",
+      "additionalProperties": {
+        "$ref": "#/definitions/QuestionAlternativeJsonSchema/properties/preferences/additionalProperties"
+      },
+      "propertyNames": {
+        "minLength": 1
+      }
     },
     "LegacyGroupRoleJsonSchema": {
       "description": "A custom role for use in group assessments that allows control over certain permissions.",

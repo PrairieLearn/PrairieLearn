@@ -43,6 +43,7 @@ class OrderBlocksAnswerData(TypedDict):
     ranking: int
     index: int
     tag: str
+    pre_dragged: bool | None
     distractor_for: str | None
     depends: Edges | ColoredEdges  # only used with DAG grader
     group_info: GroupInfo  # only used with DAG grader
@@ -220,7 +221,7 @@ def prepare(html: str, data: pl.QuestionData) -> None:
             "ranking": answer_options.ranking,
             "index": i,
             "tag": answer_options.tag,
-            "pre-dragged": answer_options.pre_dragged,
+            "pre_dragged": answer_options.pre_dragged,
             "distractor_for": answer_options.distractor_for,
             "depends": answer_options.depends,  # only used with DAG grader
             "group_info": answer_options.group_info,  # only used with DAG grader

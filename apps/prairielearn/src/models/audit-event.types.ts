@@ -8,6 +8,7 @@ import type { TableName } from '../lib/db-types.js';
  */
 export const requiredTableFields = {
   course_instances: ['course_instance_id'],
+  course_instance_ai_grading_credentials: ['course_instance_id'],
   courses: ['course_id'],
   users: ['subject_user_id'],
   teams: ['team_id'],
@@ -25,6 +26,10 @@ export const requiredTableFields = {
 export type SupportedTableActionCombination =
   | {
       tableName: 'course_instances';
+      actionDetail?: null;
+    }
+  | {
+      tableName: 'course_instance_ai_grading_credentials';
       actionDetail?: null;
     }
   | {

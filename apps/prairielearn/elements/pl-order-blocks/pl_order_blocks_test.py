@@ -73,6 +73,8 @@ def assert_answer_options(
     ):
         if "correct" in test_options:
             assert answer_options.correct == test_options["correct"]
+        if "pre-dragged" in test_options:
+            assert answer_options.pre_dragged == test_options["pre-dragged"]
         if "ranking" in test_options:
             assert answer_options.ranking == test_options["ranking"]
         if "indent" in test_options:
@@ -295,9 +297,9 @@ def test_answer_validation(options: dict, answer_options_list: list[dict]) -> No
             },
             [
                 {"tag": "1", "correct": True, "pre-dragged": True},
-                {"tag": "2", "distractor_for": "1", "pre-dragged": True},
+                {"tag": "2", "distractor-for": "1", "pre-dragged": True},
             ],
-            "A block with distractors cannot be be pre-dragged.",
+            "A block with distractors cannot be pre-dragged.",
         ),
     ],
 )
@@ -311,7 +313,6 @@ def test_pre_dragged_validation_failure(
     question = build_tag("pl-order-blocks", options, tags_html)
     html_element = lxml.html.fromstring(question)
     order_blocks_options = OrderBlocksOptions(html_element)
-    assert_order_blocks_options(order_blocks_options, options)
     with pytest.raises(ValueError, match=error):
         order_blocks_options.validate()
 

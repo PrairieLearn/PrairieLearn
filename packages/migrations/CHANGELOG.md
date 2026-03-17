@@ -1,5 +1,15 @@
 # @prairielearn/migrations
 
+## 5.0.3
+
+### Patch Changes
+
+- 144cd19: Upgrade all JavaScript dependencies
+- Updated dependencies [144cd19]
+  - @prairielearn/error@3.0.4
+  - @prairielearn/named-locks@4.0.3
+  - @prairielearn/postgres@6.0.1
+
 ## 5.0.2
 
 ### Patch Changes

@@ -122,16 +122,19 @@ function InstanceUserInfo({
   return html`
     <div>
       <details>
+        <summary>
+          <h3 class="card-title ${instance_group != null ? 'h5' : 'd-inline-block h5 mb-0'}">
+            ${instance_group != null ? 'Group details' : 'Student details'}
+          </h3>
+        </summary>
         ${instance_group != null
           ? html`
-              <summary><h3 class="card-title h5">Group details</h3></summary>
               <div class="d-flex flex-wrap">
                 <div class="pe-1">${instance_group.name}</div>
                 <div class="pe-1">(${instance_group_uid_list?.join(', ')})</div>
               </div>
             `
           : html`
-              <summary><h3 class="card-title d-inline-block h5 mb-0">Student details</h3></summary>
               <div class="d-flex flex-wrap mt-2">
                 <div class="pe-1">${instance_user?.name}</div>
                 <div class="pe-1">${instance_user?.uid}</div>

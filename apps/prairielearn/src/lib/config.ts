@@ -82,6 +82,11 @@ export const ConfigSchema = z.object({
     .refine((s) => s.startsWith('/') && !s.endsWith('/'), {
       message: 'must be an absolute path and not end with a slash',
     }),
+  /**
+   * Root directory for course repositories on disk. The default is appropriate
+   * for production; for local development you typically want to set this to
+   * the directory that contains your test course(s).
+   */
   coursesRoot: z.string().default('/data1/courses'),
   /** Set to null or '' to disable Redis. */
   redisUrl: z.string().nullable().default('redis://localhost:6379/'),
@@ -203,6 +208,10 @@ export const ConfigSchema = z.object({
   // TODO: tweak this value once we see the data from #2267
   questionTimeoutMilliseconds: z.number().default(10000),
   secretKey: z.string().default('THIS_IS_THE_SECRET_KEY'),
+  databaseEncryptionKey: z
+    .string()
+    .regex(/^[0-9a-f]{64}$/i)
+    .default('0'.repeat(64)),
   secretSlackOpsBotEndpoint: z.string().nullable().default(null),
   secretSlackToken: z.string().nullable().default(null),
   secretSlackCourseRequestChannel: z.string().nullable().default(null),
@@ -210,6 +219,11 @@ export const ConfigSchema = z.object({
   githubCourseOwner: z.string().default('PrairieLearn'),
   githubCourseTemplate: z.string().default('pl-template'),
   githubMachineTeam: z.string().default('machine'),
+  /**
+   * Custom SSH command used for git operations (clone, fetch, push).
+   * Set to `ssh -o StrictHostKeyChecking=accept-new` to automatically
+   * accept host keys for new hosts without manual intervention.
+   */
   gitSshCommand: z.string().nullable().default(null),
   externalGradingUseAws: z.boolean().default(false),
   externalGradingJobsQueueName: z.string().default('grading_jobs_dev'),
@@ -695,6 +709,13 @@ export async function loadConfig(paths: string[]) {
 
     if (!config.cookieDomain.startsWith('.')) {
       throw new Error('cookieDomain must start with a dot, e.g. ".example.com"');
+    }
+
+    const defaultKey = ConfigSchema.parse({}).databaseEncryptionKey;
+    if (config.databaseEncryptionKey === defaultKey) {
+      throw new Error(
+        'databaseEncryptionKey must be set to a secure value in production environments',
+      );
     }
   }
 

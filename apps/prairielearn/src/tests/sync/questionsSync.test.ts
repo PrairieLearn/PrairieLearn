@@ -544,6 +544,18 @@ describe('Question syncing', () => {
     assert.match(syncedQuestion.sync_errors, /Error validating question options/);
   });
 
+  it('records an error if gradingMethod is External but externalGradingOptions is missing', async () => {
+    const courseData = util.getCourseData();
+    courseData.questions[util.QUESTION_ID].gradingMethod = 'External';
+    const courseDir = await util.writeCourseToTempDirectory(courseData);
+    await util.syncCourseData(courseDir);
+    const syncedQuestions = await util.dumpTableWithSchema('questions', QuestionSchema);
+    const syncedQuestion = syncedQuestions.find((q) => q.qid === util.QUESTION_ID);
+    assert.isDefined(syncedQuestion);
+    assert.isNotNull(syncedQuestion.sync_errors);
+    assert.match(syncedQuestion.sync_errors, /externalGradingOptions/);
+  });
+
   it('records a warning if same UUID is used in multiple questions', async () => {
     const courseData = util.getCourseData();
     courseData.questions['test2'] = courseData.questions[util.QUESTION_ID];
@@ -723,32 +735,6 @@ describe('Question syncing', () => {
     assert.equal(newQuestionRow2.uuid, '0e3097ba-b554-4908-9eac-d46a78d6c249');
   });
 
-  it('defaults external_grading_enabled based on presence of externalGradingOptions', async () => {
-    const courseData = util.getCourseData();
-
-    // Question with no externalGradingOptions at all
-    const questionWithout = makeQuestion(courseData);
-    courseData.questions['noExtGrading'] = questionWithout;
-
-    // Question with externalGradingOptions but no explicit enabled
-    const questionWith = makeQuestion(courseData);
-    questionWith.externalGradingOptions = {
-      image: 'docker-image',
-      entrypoint: 'entrypoint',
-    };
-    courseData.questions['extGradingNoEnabled'] = questionWith;
-
-    await util.writeAndSyncCourseData(courseData);
-
-    const syncedQuestions = await util.dumpTableWithSchema('questions', QuestionSchema);
-
-    const syncedWithout = syncedQuestions.find((q) => q.qid === 'noExtGrading');
-    assert.isFalse(syncedWithout?.external_grading_enabled);
-
-    const syncedWith = syncedQuestions.find((q) => q.qid === 'extGradingNoEnabled');
-    assert.isTrue(syncedWith?.external_grading_enabled);
-  });
-
   it('syncs draft questions', async () => {
     const courseData = util.getCourseData();
     const question = makeQuestion(courseData);
@@ -874,5 +860,184 @@ describe('Question syncing', () => {
     assert.match(syncedQuestion.sync_errors, /"sharingSets" cannot be used/);
     assert.match(syncedQuestion.sync_errors, /"sharePublicly" cannot be used/);
     assert.match(syncedQuestion.sync_errors, /"shareSourcePublicly" cannot be used/);
+  });
+
+  describe('question preferences schema validation', () => {
+    it('syncs successfully with a valid preferences schema', async () => {
+      const courseData = util.getCourseData();
+      const courseDir = await util.writeCourseToTempDirectory(courseData);
+      await util.syncCourseData(courseDir);
+      const syncedQuestion = await findSyncedQuestion(util.PREFERENCES_QUESTION_ID);
+      assert.isNull(syncedQuestion.sync_errors);
+    });
+
+    it('syncs successfully with valid string enum preferences', async () => {
+      const courseData = util.getCourseData();
+      courseData.questions[util.PREFERENCES_QUESTION_ID].preferences = {
+        color: { type: 'string', enum: ['red', 'blue'], default: 'red' },
+      };
+      const courseDir = await util.writeCourseToTempDirectory(courseData);
+      await util.syncCourseData(courseDir);
+      const syncedQuestion = await findSyncedQuestion(util.PREFERENCES_QUESTION_ID);
+      assert.isNull(syncedQuestion.sync_errors);
+    });
+
+    it('syncs successfully with valid number enum preferences', async () => {
+      const courseData = util.getCourseData();
+      courseData.questions[util.PREFERENCES_QUESTION_ID].preferences = {
+        count: { type: 'number', enum: [1, 2, 3], default: 1 },
+      };
+      const courseDir = await util.writeCourseToTempDirectory(courseData);
+      await util.syncCourseData(courseDir);
+      const syncedQuestion = await findSyncedQuestion(util.PREFERENCES_QUESTION_ID);
+      assert.isNull(syncedQuestion.sync_errors);
+    });
+
+    it('syncs successfully with a valid boolean preference', async () => {
+      const courseData = util.getCourseData();
+      courseData.questions[util.PREFERENCES_QUESTION_ID].preferences = {
+        enabled: { type: 'boolean', default: false },
+      };
+      const courseDir = await util.writeCourseToTempDirectory(courseData);
+      await util.syncCourseData(courseDir);
+      const syncedQuestion = await findSyncedQuestion(util.PREFERENCES_QUESTION_ID);
+      assert.isNull(syncedQuestion.sync_errors);
+    });
+
+    it('fails with an error when a preferences field has an unknown type', async () => {
+      const courseData = util.getCourseData();
+      courseData.questions[util.PREFERENCES_QUESTION_ID].preferences = {
+        ...courseData.questions[util.PREFERENCES_QUESTION_ID].preferences,
+        badField: { type: 'invalid' as any, default: 'hello' as any },
+      };
+      const courseDir = await util.writeCourseToTempDirectory(courseData);
+      await util.syncCourseData(courseDir);
+      const syncedQuestion = await findSyncedQuestion(util.PREFERENCES_QUESTION_ID);
+      assert.isNotNull(syncedQuestion.sync_errors);
+      assert.match(syncedQuestion.sync_errors, /must be equal to one of the allowed values/);
+    });
+
+    it('fails with an error when a string default is given for a number type', async () => {
+      const courseData = util.getCourseData();
+      courseData.questions[util.PREFERENCES_QUESTION_ID].preferences = {
+        badNum: { type: 'number', default: 'not-a-number' as any },
+      };
+      const courseDir = await util.writeCourseToTempDirectory(courseData);
+      await util.syncCourseData(courseDir);
+      const syncedQuestion = await findSyncedQuestion(util.PREFERENCES_QUESTION_ID);
+      assert.isNotNull(syncedQuestion.sync_errors);
+      assert.match(syncedQuestion.sync_errors, /default value must be of type "number"/);
+    });
+
+    it('fails with an error when a number default is given for a string type', async () => {
+      const courseData = util.getCourseData();
+      courseData.questions[util.PREFERENCES_QUESTION_ID].preferences = {
+        badStr: { type: 'string', default: 42 as any },
+      };
+      const courseDir = await util.writeCourseToTempDirectory(courseData);
+      await util.syncCourseData(courseDir);
+      const syncedQuestion = await findSyncedQuestion(util.PREFERENCES_QUESTION_ID);
+      assert.isNotNull(syncedQuestion.sync_errors);
+      assert.match(syncedQuestion.sync_errors, /default value must be of type "string"/);
+    });
+
+    it('fails with an error when a string default is given for a boolean type', async () => {
+      const courseData = util.getCourseData();
+      courseData.questions[util.PREFERENCES_QUESTION_ID].preferences = {
+        badBool: { type: 'boolean', default: 'yes' as any },
+      };
+      const courseDir = await util.writeCourseToTempDirectory(courseData);
+      await util.syncCourseData(courseDir);
+      const syncedQuestion = await findSyncedQuestion(util.PREFERENCES_QUESTION_ID);
+      assert.isNotNull(syncedQuestion.sync_errors);
+      assert.match(syncedQuestion.sync_errors, /default value must be of type "boolean"/);
+    });
+
+    it('fails with an error when a preferences field is missing its default value', async () => {
+      const courseData = util.getCourseData();
+      courseData.questions[util.PREFERENCES_QUESTION_ID].preferences = {
+        ...courseData.questions[util.PREFERENCES_QUESTION_ID].preferences,
+        noDefault: { type: 'string' } as any,
+      };
+      const courseDir = await util.writeCourseToTempDirectory(courseData);
+      await util.syncCourseData(courseDir);
+      const syncedQuestion = await findSyncedQuestion(util.PREFERENCES_QUESTION_ID);
+      assert.isNotNull(syncedQuestion.sync_errors);
+      assert.match(syncedQuestion.sync_errors, /must have required property 'default'/);
+    });
+
+    it('fails with an error when a preferences enum field default is not in the enum list', async () => {
+      const courseData = util.getCourseData();
+      courseData.questions[util.PREFERENCES_QUESTION_ID].preferences = {
+        badEnum: { type: 'string', enum: ['a', 'b'], default: 'c' },
+      };
+      const courseDir = await util.writeCourseToTempDirectory(courseData);
+      await util.syncCourseData(courseDir);
+      const syncedQuestion = await findSyncedQuestion(util.PREFERENCES_QUESTION_ID);
+      assert.isNotNull(syncedQuestion.sync_errors);
+      assert.match(syncedQuestion.sync_errors, /default value must be present in the enum options/);
+    });
+
+    it('fails with an error when number enum values are given for a string type', async () => {
+      const courseData = util.getCourseData();
+      courseData.questions[util.PREFERENCES_QUESTION_ID].preferences = {
+        badEnumType: { type: 'string', enum: [1, 2] as any, default: 'a' },
+      };
+      const courseDir = await util.writeCourseToTempDirectory(courseData);
+      await util.syncCourseData(courseDir);
+      const syncedQuestion = await findSyncedQuestion(util.PREFERENCES_QUESTION_ID);
+      assert.isNotNull(syncedQuestion.sync_errors);
+      assert.match(syncedQuestion.sync_errors, /enum values must be of type "string"/);
+    });
+
+    it('fails with an error when string enum values are given for a number type', async () => {
+      const courseData = util.getCourseData();
+      courseData.questions[util.PREFERENCES_QUESTION_ID].preferences = {
+        badEnumType: { type: 'number', enum: ['a', 'b'] as any, default: 1 },
+      };
+      const courseDir = await util.writeCourseToTempDirectory(courseData);
+      await util.syncCourseData(courseDir);
+      const syncedQuestion = await findSyncedQuestion(util.PREFERENCES_QUESTION_ID);
+      assert.isNotNull(syncedQuestion.sync_errors);
+      assert.match(syncedQuestion.sync_errors, /enum values must be of type "number"/);
+    });
+
+    it('fails with an error when a boolean preference has enum values', async () => {
+      const courseData = util.getCourseData();
+      courseData.questions[util.PREFERENCES_QUESTION_ID].preferences = {
+        badBool: { type: 'boolean', enum: ['yes', 'no'], default: true } as any,
+      };
+      const courseDir = await util.writeCourseToTempDirectory(courseData);
+      await util.syncCourseData(courseDir);
+      const syncedQuestion = await findSyncedQuestion(util.PREFERENCES_QUESTION_ID);
+      assert.isNotNull(syncedQuestion.sync_errors);
+      assert.match(syncedQuestion.sync_errors, /boolean preferences cannot have enum values/);
+    });
+
+    it('fails with an error when an unknown property is in a preferences field', async () => {
+      const courseData = util.getCourseData();
+      courseData.questions[util.PREFERENCES_QUESTION_ID].preferences = {
+        badProp: { type: 'string', default: 'hi', extra: true } as any,
+      };
+      const courseDir = await util.writeCourseToTempDirectory(courseData);
+      await util.syncCourseData(courseDir);
+      const syncedQuestion = await findSyncedQuestion(util.PREFERENCES_QUESTION_ID);
+      assert.isNotNull(syncedQuestion.sync_errors);
+      assert.match(syncedQuestion.sync_errors, /must NOT have additional properties/);
+    });
+
+    it('reports multiple errors for multiple invalid preference fields', async () => {
+      const courseData = util.getCourseData();
+      courseData.questions[util.PREFERENCES_QUESTION_ID].preferences = {
+        bad1: { type: 'number', default: 'wrong' as any },
+        bad2: { type: 'string', enum: ['a'], default: 'b' },
+      };
+      const courseDir = await util.writeCourseToTempDirectory(courseData);
+      await util.syncCourseData(courseDir);
+      const syncedQuestion = await findSyncedQuestion(util.PREFERENCES_QUESTION_ID);
+      assert.isNotNull(syncedQuestion.sync_errors);
+      assert.match(syncedQuestion.sync_errors, /preferences\.bad1/);
+      assert.match(syncedQuestion.sync_errors, /preferences\.bad2/);
+    });
   });
 });
