@@ -130,14 +130,20 @@ export function CalculatorDrawer({ storageKey }: { storageKey: string }): HtmlSa
                 <button
                   type="button"
                   class="calculator-action-btn history-copy-btn"
-                  title="Copy to clipboard"
+                  data-bs-toggle="tooltip"
+                  data-bs-placement="left"
+                  data-bs-delay="300"
+                  data-bs-title="Copy to clipboard"
                 >
                   <i class="bi bi-copy"></i>
                 </button>
                 <button
                   type="button"
                   class="calculator-action-btn history-insert-btn"
-                  title="Insert into input"
+                  data-bs-toggle="tooltip"
+                  data-bs-placement="left"
+                  data-bs-delay="300"
+                  data-bs-title="Insert into input"
                 >
                   <i class="bi bi-arrow-down"></i>
                 </button>
@@ -151,14 +157,20 @@ export function CalculatorDrawer({ storageKey }: { storageKey: string }): HtmlSa
                 <button
                   type="button"
                   class="calculator-action-btn history-copy-btn"
-                  title="Copy to clipboard"
+                  data-bs-toggle="tooltip"
+                  data-bs-placement="left"
+                  data-bs-delay="300"
+                  data-bs-title="Copy to clipboard"
                 >
                   <i class="bi bi-copy"></i>
                 </button>
                 <button
                   type="button"
                   class="calculator-action-btn history-insert-btn"
-                  title="Insert into input"
+                  data-bs-toggle="tooltip"
+                  data-bs-placement="left"
+                  data-bs-delay="300"
+                  data-bs-title="Insert into input"
                 >
                   <i class="bi bi-arrow-down"></i>
                 </button>
@@ -183,7 +195,7 @@ export function CalculatorDrawer({ storageKey }: { storageKey: string }): HtmlSa
             class="calculator-action-btn"
             name="clear"
             data-bs-toggle="tooltip"
-            data-bs-placement="right"
+            data-bs-placement="left"
             data-bs-delay="300"
             data-bs-title="Clear input"
           >
@@ -207,7 +219,7 @@ export function CalculatorDrawer({ storageKey }: { storageKey: string }): HtmlSa
             type="button"
             class="calculator-action-btn"
             data-bs-toggle="tooltip"
-            data-bs-placement="right"
+            data-bs-placement="left"
             data-bs-delay="300"
             data-bs-title="Copy this output"
           >
