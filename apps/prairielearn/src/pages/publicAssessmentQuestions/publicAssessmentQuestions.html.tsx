@@ -93,6 +93,7 @@ function AssessmentQuestionsTable({
                             ? question.assessment_question.number_in_alternative_group
                             : undefined
                         }
+                        className="me-2"
                       />,
                     )}${question.question.title}
                   </a>

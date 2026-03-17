@@ -61,26 +61,14 @@ export function AssessmentQuestionHeaders({
 export function AssessmentQuestionNumber({
   questionNumber,
   alternativeNumber,
+  className,
 }: {
   questionNumber: number;
   alternativeNumber?: number | null;
+  className?: string;
 }) {
   return (
-    <span className="me-2">
-      {formatAssessmentQuestionNumber({ questionNumber, alternativeNumber })}{' '}
-    </span>
-  );
-}
-
-export function formatAssessmentQuestionNumber({
-  questionNumber,
-  alternativeNumber,
-}: {
-  questionNumber: number;
-  alternativeNumber?: number | null;
-}) {
-  return (
-    <span style={{ fontVariant: 'tabular-nums' }}>
+    <span className={className} style={{ fontVariant: 'tabular-nums' }}>
       {alternativeNumber != null ? `${questionNumber}.${alternativeNumber}.` : `${questionNumber}.`}
     </span>
   );

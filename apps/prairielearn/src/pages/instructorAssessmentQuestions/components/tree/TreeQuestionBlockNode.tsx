@@ -6,7 +6,6 @@ import { useCallback, useMemo } from 'react';
 import { run } from '@prairielearn/run';
 import { OverlayTrigger } from '@prairielearn/ui';
 
-import { AssessmentQuestionNumber } from '../../../../components/AssessmentQuestions.js';
 import type {
   TreeActions,
   TreeState,

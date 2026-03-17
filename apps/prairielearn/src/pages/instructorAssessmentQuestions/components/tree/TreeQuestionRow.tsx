@@ -5,7 +5,7 @@ import { type ReactElement, useId } from 'react';
 import { run } from '@prairielearn/run';
 import { OverlayTrigger } from '@prairielearn/ui';
 
-import { formatAssessmentQuestionNumber } from '../../../../components/AssessmentQuestions.js';
+import { AssessmentQuestionNumber } from '../../../../components/AssessmentQuestions.js';
 import { CopyButton } from '../../../../components/CopyButton.js';
 import { IssueBadge } from '../../../../components/IssueBadge.js';
 import type { EditorQuestionMetadata } from '../../../../lib/assessment-question.shared.js';
@@ -224,7 +224,10 @@ export function TreeQuestionRow({
 
     return (
       <>
-        {formatAssessmentQuestionNumber({ questionNumber, alternativeNumber })}{' '}
+        <AssessmentQuestionNumber
+          questionNumber={questionNumber}
+          alternativeNumber={alternativeNumber}
+        />{' '}
         {hasTitle ? questionData.question.title : qid}
       </>
     );

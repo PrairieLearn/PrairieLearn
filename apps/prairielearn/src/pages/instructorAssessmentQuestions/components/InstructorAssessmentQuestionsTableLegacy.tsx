@@ -39,6 +39,7 @@ function Title({
         alternativeNumber={
           alternative_group_size > 1 ? assessment_question.number_in_alternative_group : undefined
         }
+        className="me-2"
       />
       {question.title}
     </>
