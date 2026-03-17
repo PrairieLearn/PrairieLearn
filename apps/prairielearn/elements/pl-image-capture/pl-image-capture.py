@@ -171,17 +171,14 @@ def parse(element_html: str, data: pl.QuestionData) -> None:
 
     pl.add_submitted_file(data, file_name, b64_payload)
 
-    # We remove the captured image from submitted_answers to prevent it from
-    # appearing in assessment instance logs.
-    #
-    # Also, in older versions of image capture, the image file was stored directly in submitted_answers.
-    # Popping file_name ensures that we update older submissions that saved the file to
-    # submitted_answers[file_name].
-
-    data["submitted_answers"].pop(file_name, None)
-    data["submitted_answers"].pop(f"{file_name}_changed", None)
+    # Replace base64 image data with a placeholder to avoid bloating logs.
+    if file_name in data["submitted_answers"]:
+        data["submitted_answers"][file_name] = "[Image base64 data]"
     if file_name in data["raw_submitted_answers"]:
         data["raw_submitted_answers"][file_name] = "[Image base64 data]"
+
+    # Remove the _changed flag used by the frontend for unsaved changes warnings.
+    data["submitted_answers"].pop(f"{file_name}_changed", None)
     data["raw_submitted_answers"].pop(f"{file_name}_changed", None)
 
 
