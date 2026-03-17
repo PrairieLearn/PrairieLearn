@@ -18,12 +18,10 @@
       ]
     },
     {
-      "numberChoose": 2,
       "questions": [
         { "id": "addVectors", "autoPoints": 2, "maxAutoPoints": 11 },
         {
           "alternatives": [{ "id": "aiGradingMultiImageCapture" }, { "id": "aiGradingRubrics" }],
-          "comment": "Alternative group",
           "numberChoose": 1,
           "autoPoints": 1
         }
