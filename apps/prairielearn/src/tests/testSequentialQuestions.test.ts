@@ -235,17 +235,15 @@ describe(
       assert.isTrue(context.instanceQuestions[5].locked);
     });
 
-    // Tests for student sequence lock enforcement (the student should be blocked).
-    const studentUser: AuthUser = {
-      uid: 'student@example.com',
-      name: 'Student User',
-      uin: '000000001',
-      email: 'student@example.com',
-    };
-
     test.sequential(
       'student gets 403 when accessing a sequence-locked question',
       async function () {
+        const studentUser: AuthUser = {
+          uid: 'student@example.com',
+          name: 'Student User',
+          uin: '000000001',
+          email: 'student@example.com',
+        };
         await enrollUser('1', studentUser);
         await withUser(studentUser, async () => {
           const csrfResponse = await helperClient.fetchCheerio(context.assessmentUrl);
