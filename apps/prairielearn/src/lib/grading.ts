@@ -133,13 +133,13 @@ async function insertSubmission({
       });
     }
 
-    const delta = await sqldb.queryOptionalRow(
+    const delta = await sqldb.queryOptionalScalar(
       sql.select_and_update_last_access,
       { user_id: variant.user_id, group_id: variant.team_id },
       IntervalSchema.nullable(),
     );
 
-    const submission_id = await sqldb.queryRow(
+    const submission_id = await sqldb.queryScalar(
       sql.insert_submission,
       {
         variant_id,
@@ -209,7 +209,7 @@ export async function saveSubmission(
 
   // if workspace, get workspace_id
   if (question.workspace_image != null) {
-    const workspace_id = await sqldb.queryOptionalRow(
+    const workspace_id = await sqldb.queryOptionalScalar(
       sql.select_workspace_id,
       { variant_id: submission.variant_id },
       IdSchema,

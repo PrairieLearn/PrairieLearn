@@ -22,4 +22,5 @@ def question_data() -> QuestionData:
         "manual_grading": False,
         "ai_grading": False,
         "answers_names": {},
+        "gradable": False,
     }

@@ -14,6 +14,7 @@ describe('calculateModernCourseInstanceStudentAccess', () => {
   function createMockCourseInstance(overrides: Partial<CourseInstance> = {}): CourseInstance {
     return {
       id: 'test-course-instance-id',
+      ai_grading_use_custom_api_keys: false,
       course_id: 'test-course-id',
       short_name: 'Test',
       long_name: 'Test Course Instance',

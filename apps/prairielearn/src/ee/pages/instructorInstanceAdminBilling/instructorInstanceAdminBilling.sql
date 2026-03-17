@@ -15,7 +15,7 @@ WITH
       questions
     WHERE
       course_id = $course_id
-      AND external_grading_enabled = TRUE
+      AND external_grading_image IS NOT NULL
       AND deleted_at IS NULL
   ),
   workspace_count AS (

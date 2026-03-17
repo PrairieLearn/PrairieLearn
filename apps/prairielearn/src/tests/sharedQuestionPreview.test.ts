@@ -57,7 +57,7 @@ describe('Shared Question Preview', { timeout: 60_000 }, function () {
 
   beforeAll(async () => {
     for (const testQuestion of testQuestions) {
-      testQuestion.id = await sqldb.queryRow(
+      testQuestion.id = await sqldb.queryScalar(
         sql.select_question_id,
         { qid: testQuestion.qid },
         z.string(),

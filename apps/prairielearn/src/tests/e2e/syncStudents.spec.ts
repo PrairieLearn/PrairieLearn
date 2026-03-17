@@ -1,91 +1,21 @@
 import { dangerousFullSystemAuthz } from '../../lib/authz-data-lib.js';
 import { getCourseInstanceStudentsUrl } from '../../lib/client/url.js';
-import { selectCourseInstanceByShortName } from '../../models/course-instances.js';
-import { selectCourseByShortName } from '../../models/course.js';
 import {
   ensureUncheckedEnrollment,
   inviteStudentByUid,
   setEnrollmentStatus,
 } from '../../models/enrollment.js';
-import { syncCourse } from '../helperCourse.js';
-import { type AuthUser, getOrCreateUser } from '../utils/auth.js';
+import { getOrCreateUser } from '../utils/auth.js';
 
 import { expect, test } from './fixtures.js';
 import { waitForJobAndCheckOutput } from './jobSequenceUtils.js';
 
-// Test users for sync scenarios
-const NEW_STUDENT: AuthUser = { uid: 'sync_new@test.com', uin: null, name: 'New Student' };
-const ENROLLED_STUDENT: AuthUser = {
-  uid: 'sync_enrolled@test.com',
-  uin: null,
-  name: 'Enrolled Student',
-};
-const INVITED_STUDENT: AuthUser = {
-  uid: 'sync_invited@test.com',
-  uin: null,
-  name: 'Invited Student',
-};
-const STUDENT_TO_REMOVE: AuthUser = {
-  uid: 'sync_to_remove@test.com',
-  uin: null,
-  name: 'Student To Remove',
-};
-
-let courseInstanceId: string;
-
-/**
- * Creates test users and sets up the database for testing sync students.
- */
-async function createTestData() {
-  const course = await selectCourseByShortName('QA 101');
-  const courseInstance = await selectCourseInstanceByShortName({ course, shortName: 'Sp15' });
-  courseInstanceId = courseInstance.id;
-
-  // Create a new student (not enrolled)
-  await getOrCreateUser(NEW_STUDENT);
-
-  // Create an already enrolled student
-  const enrolledUser = await getOrCreateUser(ENROLLED_STUDENT);
-
-  await ensureUncheckedEnrollment({
-    userId: enrolledUser.id,
-    courseInstance,
-    authzData: dangerousFullSystemAuthz(),
-    requiredRole: ['System'],
-    actionDetail: 'implicit_joined',
-  });
-
-  // Create a student with a pending invitation
-  await inviteStudentByUid({
-    uid: INVITED_STUDENT.uid,
-    courseInstance,
-    authzData: dangerousFullSystemAuthz(),
-    requiredRole: ['System'],
-  });
-
-  // Create a student who will be removed (currently enrolled)
-  const studentToRemoveUser = await getOrCreateUser(STUDENT_TO_REMOVE);
-
-  await ensureUncheckedEnrollment({
-    userId: studentToRemoveUser.id,
-    courseInstance,
-    authzData: dangerousFullSystemAuthz(),
-    requiredRole: ['System'],
-    actionDetail: 'implicit_joined',
-  });
-}
-
 test.describe('Sync students', () => {
-  test.beforeAll(async ({ testCoursePath }) => {
-    await syncCourse(testCoursePath);
-    await createTestData();
-  });
-
-  test('allows deselecting previewed students before syncing', async ({ page }) => {
+  test('allows deselecting previewed students before syncing', async ({ page, courseInstance }) => {
     const inviteOnlyUid = 'sync_toggle_invite@test.com';
     await getOrCreateUser({ uid: inviteOnlyUid, name: 'Toggle Invite', uin: null });
 
-    await page.goto(getCourseInstanceStudentsUrl(courseInstanceId));
+    await page.goto(getCourseInstanceStudentsUrl(courseInstance.id));
     await expect(page).toHaveTitle(/Students/);
 
     await page.getByRole('button', { name: 'Manage enrollments' }).click();
@@ -109,77 +39,73 @@ test.describe('Sync students', () => {
     expect(updatedCount).toBe(initialCount - 1);
   });
 
-  test('can sync students with invites, cancellations, and removals', async ({ page }) => {
-    // Create fresh users for this test to avoid conflicts
-    await getOrCreateUser({ uid: 'fresh_sync_new@test.com', name: 'Fresh New', uin: null });
-    const freshToRemove = await getOrCreateUser({
-      uid: 'fresh_sync_remove@test.com',
-      name: 'Fresh Remove',
+  test('can sync students with invites, cancellations, and removals', async ({
+    page,
+    courseInstance,
+  }) => {
+    // Create a new student to invite
+    await getOrCreateUser({ uid: 'sync_add@test.com', name: 'Sync Add', uin: null });
+
+    // Create an enrolled student to remove
+    const toRemove = await getOrCreateUser({
+      uid: 'sync_remove@test.com',
+      name: 'Sync Remove',
       uin: null,
     });
-
-    const course = await selectCourseByShortName('QA 101');
-    const courseInstance = await selectCourseInstanceByShortName({ course, shortName: 'Sp15' });
-
-    // Enroll a student who will be removed
     await ensureUncheckedEnrollment({
-      userId: freshToRemove.id,
+      userId: toRemove.id,
       courseInstance,
       authzData: dangerousFullSystemAuthz(),
       requiredRole: ['System'],
       actionDetail: 'implicit_joined',
     });
 
-    // Create a pending invitation that will be cancelled
+    // Create a pending invitation to cancel
     await inviteStudentByUid({
-      uid: 'fresh_sync_cancel@test.com',
+      uid: 'sync_cancel@test.com',
       courseInstance,
       authzData: dangerousFullSystemAuthz(),
       requiredRole: ['System'],
     });
 
-    await page.goto(getCourseInstanceStudentsUrl(courseInstanceId));
+    await page.goto(getCourseInstanceStudentsUrl(courseInstance.id));
     await expect(page).toHaveTitle(/Students/);
 
-    // Open the manage enrollments dropdown and click synchronize student list
     await page.getByRole('button', { name: 'Manage enrollments' }).click();
     await page.getByRole('button', { name: 'Synchronize student list' }).click();
 
-    // Modal should open with expected content
     await expect(page.getByRole('dialog')).toBeVisible();
     await expect(
       page.getByRole('dialog').getByText('Synchronize student list', { exact: true }),
     ).toBeVisible();
     await expect(page.getByRole('textbox', { name: 'Student UIDs' })).toBeVisible();
 
-    // Enter student list with fresh_sync_new but NOT fresh_sync_remove or fresh_sync_cancel
-    await page.getByRole('textbox', { name: 'Student UIDs' }).fill('fresh_sync_new@test.com');
+    // Sync with only sync_add — sync_remove and sync_cancel should be removed/cancelled
+    await page.getByRole('textbox', { name: 'Student UIDs' }).fill('sync_add@test.com');
 
     await page.getByRole('button', { name: 'Compare' }).click();
 
-    // Should show preview with correct students in each category
     await expect(page.getByText('Review the changes below')).toBeVisible();
 
     const dialog = page.getByRole('dialog');
     await expect(dialog.getByText('Students to add')).toBeVisible();
-    await expect(dialog.getByText('fresh_sync_new@test.com')).toBeVisible();
+    await expect(dialog.getByText('sync_add@test.com')).toBeVisible();
     await expect(dialog.getByText('Students to remove')).toBeVisible();
-    await expect(dialog.getByText('fresh_sync_cancel@test.com')).toBeVisible();
-    await expect(dialog.getByText('fresh_sync_remove@test.com')).toBeVisible();
+    await expect(dialog.getByText('sync_cancel@test.com')).toBeVisible();
+    await expect(dialog.getByText('sync_remove@test.com')).toBeVisible();
 
-    // Click sync button
     await page.getByRole('button', { name: /Update \d+ student/ }).click();
 
-    // Check job output
     await waitForJobAndCheckOutput(page, [
-      'fresh_sync_new@test.com: Invited',
-      'fresh_sync_cancel@test.com: Invitation cancelled',
-      'fresh_sync_remove@test.com: Removed',
+      'sync_add@test.com: Invited',
+      'sync_cancel@test.com: Invitation cancelled',
+      'sync_remove@test.com: Removed',
     ]);
   });
 
   test('re-invites blocked and removed students who reappear on the student list', async ({
     page,
+    courseInstance,
   }) => {
     const blockedUser = await getOrCreateUser({
       uid: 'sync_blocked@test.com',
@@ -191,9 +117,6 @@ test.describe('Sync students', () => {
       name: 'Removed Student',
       uin: null,
     });
-
-    const course = await selectCourseByShortName('QA 101');
-    const courseInstance = await selectCourseInstanceByShortName({ course, shortName: 'Sp15' });
 
     const blockedEnrollment = await ensureUncheckedEnrollment({
       userId: blockedUser.id,
@@ -227,7 +150,7 @@ test.describe('Sync students', () => {
       requiredRole: ['System'],
     });
 
-    await page.goto(getCourseInstanceStudentsUrl(courseInstanceId));
+    await page.goto(getCourseInstanceStudentsUrl(courseInstance.id));
     await expect(page).toHaveTitle(/Students/);
 
     await page.getByRole('button', { name: 'Manage enrollments' }).click();
@@ -253,8 +176,8 @@ test.describe('Sync students', () => {
     ]);
   });
 
-  test('shows validation error for invalid email format', async ({ page }) => {
-    await page.goto(getCourseInstanceStudentsUrl(courseInstanceId));
+  test('shows validation error for invalid email format', async ({ page, courseInstance }) => {
+    await page.goto(getCourseInstanceStudentsUrl(courseInstance.id));
 
     await page.getByRole('button', { name: 'Manage enrollments' }).click();
     await page.getByRole('button', { name: 'Synchronize student list' }).click();

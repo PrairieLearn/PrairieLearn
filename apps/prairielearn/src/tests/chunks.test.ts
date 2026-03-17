@@ -310,24 +310,24 @@ describe('chunks', () => {
       courseId = results.id;
 
       // Find the ID of the course instance
-      courseInstanceId = await sqldb.queryRow(
+      courseInstanceId = await sqldb.queryScalar(
         sql.select_course_instance,
         { long_name: 'Spring 2015' },
         IdSchema,
       );
 
       // Find the ID of an assessment that has clientFilesAssessment
-      assessmentId = await sqldb.queryRow(
+      assessmentId = await sqldb.queryScalar(
         sql.select_assessment,
         { tid: 'exam1-automaticTestSuite' },
         IdSchema,
       );
 
       // Find the ID of a question.
-      questionId = await sqldb.queryRow(sql.select_question, { qid: 'addNumbers' }, IdSchema);
+      questionId = await sqldb.queryScalar(sql.select_question, { qid: 'addNumbers' }, IdSchema);
 
       // Find the ID of a nested question.
-      nestedQuestionId = await sqldb.queryRow(
+      nestedQuestionId = await sqldb.queryScalar(
         sql.select_question,
         { qid: 'subfolder/nestedQuestion' },
         IdSchema,
@@ -710,7 +710,7 @@ describe('chunks', () => {
       await syncDiskToSql(courseId, courseDir, logger);
 
       // Fetch the (new) course instance ID by long_name; this should now differ from the previous id
-      const newCourseInstanceId = await sqldb.queryRow(
+      const newCourseInstanceId = await sqldb.queryScalar(
         sql.select_course_instance,
         { long_name: 'Spring 2015' },
         IdSchema,
@@ -903,7 +903,7 @@ describe('chunks', () => {
       await syncDiskToSql(courseId, courseDir, logger);
 
       // Fetch the (new) assessment ID by TID; this should now differ from the previous id
-      const newAssessmentId = await sqldb.queryRow(
+      const newAssessmentId = await sqldb.queryScalar(
         sql.select_assessment,
         { tid: 'exam1-automaticTestSuite' },
         IdSchema,

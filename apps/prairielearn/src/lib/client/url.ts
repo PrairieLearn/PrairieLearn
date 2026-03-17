@@ -96,6 +96,10 @@ export function getAiQuestionGenerationDraftsUrl({ urlPrefix }: { urlPrefix: str
   return `${urlPrefix}/ai_generate_question_drafts`;
 }
 
+export function getAdministratorCourseRequestsUrl({ urlPrefix }: { urlPrefix: string }): string {
+  return `${urlPrefix}/administrator/courseRequests`;
+}
+
 type QuestionUrlParts =
   | { courseInstanceId: string; courseId?: undefined }
   | { courseInstanceId?: undefined; courseId: string };
@@ -109,4 +113,8 @@ export function getQuestionUrl({
     ? `/pl/course_instance/${courseInstanceId}/instructor`
     : `/pl/course/${courseId}`;
   return `${urlPrefix}/question/${questionId}`;
+}
+
+export function getQuestionCreateUrl(courseInstanceId: string): string {
+  return `/pl/course_instance/${courseInstanceId}/instructor/course_admin/questions/create`;
 }

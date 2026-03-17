@@ -3,7 +3,7 @@ import asyncHandler from 'express-async-handler';
 import { z } from 'zod';
 
 import * as error from '@prairielearn/error';
-import { loadSqlEquiv, queryRow } from '@prairielearn/postgres';
+import { loadSqlEquiv, queryRow, queryScalar } from '@prairielearn/postgres';
 import { Hydrate } from '@prairielearn/react/server';
 
 import { PageLayout } from '../../../components/PageLayout.js';
@@ -32,7 +32,7 @@ async function loadPageData(res: Response) {
     course_instance_id: res.locals.course_instance.id,
   });
 
-  const enrollmentCount = await queryRow(
+  const enrollmentCount = await queryScalar(
     sql.course_instance_enrollment_count,
     { course_instance_id: res.locals.course_instance.id },
     z.number(),

@@ -25,7 +25,8 @@ WITH
 SELECT
   q.qid,
   q.id,
-  c.sharing_name
+  c.sharing_name,
+  q.preferences_schema
 FROM
   questions AS q
   JOIN sharing_set_questions AS ssq ON q.id = ssq.question_id
@@ -39,11 +40,13 @@ FROM
 WHERE
   ssc.course_id = $course_id
   AND c.example_course IS FALSE
+  AND q.deleted_at IS NULL
 UNION
 SELECT
   q.qid,
   q.id,
-  c.sharing_name
+  c.sharing_name,
+  q.preferences_schema
 FROM
   questions AS q
   JOIN courses AS c ON c.id = q.course_id
@@ -53,7 +56,8 @@ FROM
   )
 WHERE
   q.share_publicly
-  AND c.example_course IS FALSE;
+  AND c.example_course IS FALSE
+  AND q.deleted_at IS NULL;
 
 -- BLOCK get_institution_id
 SELECT

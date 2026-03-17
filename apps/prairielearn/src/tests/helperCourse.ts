@@ -15,7 +15,14 @@ const sql = loadSqlEquiv(import.meta.url);
 
 export async function syncCourse(courseDir = TEST_COURSE_PATH) {
   const { logger, getOutput } = makeMockLogger();
-  const syncResult = await syncFromDisk.syncOrCreateDiskToSql(courseDir, logger);
+  let syncResult;
+  try {
+    syncResult = await syncFromDisk.syncOrCreateDiskToSql(courseDir, logger);
+  } catch (err) {
+    // Log any output to make investigating test failures easier.
+    console.log(getOutput());
+    throw err;
+  }
   if (syncResult.status === 'sharing_error' || syncResult.hadJsonErrorsOrWarnings) {
     console.log(getOutput());
     throw new Error(`Errors or warnings found during sync of ${courseDir}`);

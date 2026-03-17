@@ -117,8 +117,11 @@ function DevModeCard({ isDevMode }: { isDevMode: boolean }) {
           different page or if you reload the current page in your web browser.
         </p>
         <p className="mb-0">
-          See the <a href="https://docs.prairielearn.com">PrairieLearn documentation</a> for
-          information on creating questions and assessments.
+          See the{' '}
+          <a href="https://docs.prairielearn.com" target="_blank" rel="noreferrer">
+            PrairieLearn documentation
+          </a>{' '}
+          for information on creating questions and assessments.
         </p>
       </div>
     </div>
