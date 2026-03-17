@@ -32,6 +32,7 @@ assessment_sets.style.fill: "#f0fff0"
 topics.style.fill: "#f0fff0"
 alternative_groups.style.fill: "#f0fff0"
 zones.style.fill: "#f0fff0"
+assessment_tools.style.fill: "#f0fff0"
 
 issues.style.fill: lavender
 enrollments.style.fill: lavender
@@ -75,6 +76,8 @@ assessment_sets -> courses
 topics -> courses
 zones -> assessments
 alternative_groups -> zones
+assessment_tools -> assessments
+assessment_tools -> zones
 
 issues -> variants: {
   style.stroke-dash: 5

@@ -7,8 +7,6 @@ import { RawStaffUserSchema, StaffUserSchema } from './client/safe-db-types.js';
 import {
   type Course,
   type CourseInstance,
-  CourseInstanceSchema,
-  CourseSchema,
   type EnumCourseInstanceRole,
   EnumCourseInstanceRoleSchema,
   type EnumCourseRole,
@@ -16,9 +14,6 @@ import {
   type EnumMode,
   EnumModeSchema,
   type Institution,
-  InstitutionSchema,
-  SprocAuthzCourseInstanceSchema,
-  SprocAuthzCourseSchema,
   type User,
 } from './db-types.js';
 
@@ -117,17 +112,6 @@ export type ConstructedCourseOrInstanceContext =
       courseInstance: null;
     }
   | ConstructedCourseOrInstanceSuccessContext;
-
-/** The full authz data from a database query. This is NOT what is on res.locals. */
-export const CourseOrInstanceContextDataSchema = z.object({
-  mode: EnumModeSchema,
-  course: CourseSchema,
-  institution: InstitutionSchema,
-  course_instance: CourseInstanceSchema.nullable(),
-  permissions_course: SprocAuthzCourseSchema,
-  permissions_course_instance: SprocAuthzCourseInstanceSchema,
-});
-export type CourseOrInstanceContextData = z.infer<typeof CourseOrInstanceContextDataSchema>;
 
 export type AuthzDataWithoutEffectiveUser = PlainAuthzData | DangerousSystemAuthzData;
 

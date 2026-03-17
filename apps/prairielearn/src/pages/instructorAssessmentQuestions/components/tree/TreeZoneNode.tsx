@@ -176,7 +176,7 @@ export function TreeZoneNode({
                 placement="top"
                 tooltip={{
                   props: { id: `${badgeTooltipId}-choose` },
-                  body: 'Number of questions to randomly select from this zone',
+                  body: `${zone.numberChoose} question${zone.numberChoose !== 1 ? 's are' : ' is'} randomly selected from this zone, spread across groups as evenly as possible.`,
                 }}
               >
                 <button type="button" className="btn btn-badge color-blue3">
@@ -254,6 +254,7 @@ export function TreeZoneNode({
               <TreeQuestionBlockNode
                 key={zoneQuestionBlock.trackingId}
                 zoneQuestionBlock={zoneQuestionBlock}
+                zone={zone}
                 state={state}
                 actions={actions}
               />
