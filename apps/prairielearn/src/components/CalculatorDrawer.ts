@@ -13,6 +13,12 @@ export function CalculatorDrawerToggle({
   showInfoPopover = false,
 }: { showInfoPopover?: boolean } = {}): HtmlSafeString {
   // TODO: there might be more tools, which makes this card not calculator specific.
+
+  const toolsTitleContent = html`<div class="d-flex justify-content-between flex-nowrap">
+    Tools
+    <span class="badge color-green1">New</span>
+  </div>`;
+
   const toolsPopoverContent = html`
     Tools can be enabled
     <a
@@ -23,7 +29,13 @@ export function CalculatorDrawerToggle({
     <a href="https://docs.prairielearn.com/assessment/configuration/#overriding-tools-per-zone"
       >per-zone</a
     >
-    in <code>infoAssessment.json</code> and are disabled by default.
+    in <code>infoAssessment.json</code> and are disabled by default. Please give us
+    <a
+      href="https://github.com/PrairieLearn/PrairieLearn/discussions/14448"
+      target="_blank"
+      rel="noopener noreferrer"
+      >feedback</a
+    >!
   `;
 
   return html`
@@ -38,7 +50,7 @@ export function CalculatorDrawerToggle({
                 data-bs-toggle="popover"
                 data-bs-container="body"
                 data-bs-html="true"
-                data-bs-title="Enabling tools"
+                data-bs-title="${escapeHtml(toolsTitleContent)}"
                 data-bs-content="${escapeHtml(toolsPopoverContent)}"
                 data-bs-placement="auto"
               >
