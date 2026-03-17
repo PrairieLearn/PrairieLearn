@@ -2,7 +2,7 @@ columns
     assessment_access_control_id: bigint not null
     enrollment_id: bigint not null
     id: bigint not null default nextval('assessment_access_control_enrollments_id_seq'::regclass)
-    target_type: text not null default 'enrollment'::text
+    target_type: enum_assessment_access_control_target_type not null default 'enrollment'::enum_assessment_access_control_target_type
 
 indexes
     assessment_access_control_enrollments_pkey: PRIMARY KEY (id) USING btree (id)
@@ -11,7 +11,7 @@ indexes
     assessment_access_control_enrollments_enrollment_id_idx: USING btree (enrollment_id)
 
 check constraints
-    assessment_access_control_enrollments_target_type_check: CHECK (target_type = 'enrollment'::text)
+    assessment_access_control_enrollments_target_type_check: CHECK (target_type = 'enrollment'::enum_assessment_access_control_target_type)
 
 foreign-key constraints
     assessment_access_control_enr_assessment_access_control_id_fkey: FOREIGN KEY (assessment_access_control_id, target_type) REFERENCES assessment_access_control(id, target_type) ON UPDATE CASCADE ON DELETE CASCADE

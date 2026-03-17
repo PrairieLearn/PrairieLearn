@@ -16,7 +16,7 @@ DECLARE
     rule_number integer;
     new_rule_id bigint;
     max_json_rule_number integer;
-    incoming_target_type text;
+    incoming_target_type enum_assessment_access_control_target_type;
 BEGIN
     max_json_rule_number := JSON_RULE_START + COALESCE(array_length(rules_data, 1), 0) - 1;
 
@@ -48,7 +48,7 @@ BEGIN
     FOR rule IN SELECT * FROM UNNEST(rules_data) LOOP
         -- If the target_type changed for this number, delete the old row first
         -- to avoid unique constraint conflicts (the conflict key includes target_type)
-        incoming_target_type := (rule ->> 'target_type')::text;
+        incoming_target_type := (rule ->> 'target_type')::enum_assessment_access_control_target_type;
         DELETE FROM assessment_access_control
         WHERE assessment_id = syncing_assessment_id
             AND course_instance_id = syncing_course_instance_id
@@ -94,7 +94,7 @@ BEGIN
             (rule ->> 'enabled')::boolean,
             (rule ->> 'block_access')::boolean,
             (rule ->> 'list_before_release')::boolean,
-            (rule ->> 'target_type')::text,
+            (rule ->> 'target_type')::enum_assessment_access_control_target_type,
             (rule ->> 'date_control_overridden')::boolean,
             (rule ->> 'date_control_release_date_overridden')::boolean,
             (rule ->> 'date_control_release_date')::timestamp with time zone,

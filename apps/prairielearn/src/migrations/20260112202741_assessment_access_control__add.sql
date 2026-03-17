@@ -1,3 +1,6 @@
+-- Enum for access control target types
+CREATE TYPE enum_assessment_access_control_target_type AS ENUM('none', 'enrollment', 'student_label');
+
 -- Main access control rules table
 CREATE TABLE assessment_access_control (
   id BIGSERIAL PRIMARY KEY,
@@ -8,9 +11,7 @@ CREATE TABLE assessment_access_control (
   list_before_release boolean,
   number INTEGER NOT NULL,
   -- Target type: 'none' for main rule (applies to all), 'enrollment' for individual students, 'student_label' for student labels
-  target_type TEXT NOT NULL CHECK (
-    target_type IN ('none', 'enrollment', 'student_label')
-  ),
+  target_type enum_assessment_access_control_target_type NOT NULL,
   date_control_overridden boolean NOT NULL DEFAULT false,
   date_control_release_date_overridden boolean NOT NULL DEFAULT false,
   date_control_release_date TIMESTAMP WITH TIME ZONE,
@@ -42,7 +43,11 @@ CREATE TABLE assessment_access_control (
   )
 );
 
--- Unique constraint needed for composite foreign key from child tables
+-- Unique index on (id, target_type) is needed so child tables can use a composite
+-- foreign key (assessment_access_control_id, target_type) that enforces data consistency:
+-- it guarantees that a child row (e.g. in _enrollments) can only reference a parent row
+-- whose target_type matches (e.g. 'enrollment'), preventing linking an enrollment target
+-- to a rule with target_type='student_label' or 'none'.
 CREATE UNIQUE INDEX assessment_access_control_id_target_type_idx ON assessment_access_control (id, target_type);
 
 -- Enforce bidirectional relationship: number=0 ⟺ target_type='none'
@@ -54,7 +59,7 @@ CREATE TABLE assessment_access_control_enrollments (
   id BIGSERIAL PRIMARY KEY,
   assessment_access_control_id BIGINT NOT NULL,
   -- Constant column to enforce that parent has target_type = 'enrollment'
-  target_type TEXT NOT NULL DEFAULT 'enrollment' CHECK (target_type = 'enrollment'),
+  target_type enum_assessment_access_control_target_type NOT NULL DEFAULT 'enrollment' CHECK (target_type = 'enrollment'),
   enrollment_id BIGINT NOT NULL REFERENCES enrollments (id) ON DELETE CASCADE ON UPDATE CASCADE,
   UNIQUE (assessment_access_control_id, enrollment_id),
   FOREIGN KEY (assessment_access_control_id, target_type) REFERENCES assessment_access_control (id, target_type) ON DELETE CASCADE ON UPDATE CASCADE
@@ -69,7 +74,7 @@ CREATE TABLE assessment_access_control_student_labels (
   id BIGSERIAL PRIMARY KEY,
   assessment_access_control_id BIGINT NOT NULL,
   -- Constant column to enforce that parent has target_type = 'student_label'
-  target_type TEXT NOT NULL DEFAULT 'student_label' CHECK (target_type = 'student_label'),
+  target_type enum_assessment_access_control_target_type NOT NULL DEFAULT 'student_label' CHECK (target_type = 'student_label'),
   student_label_id BIGINT NOT NULL REFERENCES student_labels (id) ON DELETE CASCADE ON UPDATE CASCADE,
   UNIQUE (assessment_access_control_id, student_label_id),
   FOREIGN KEY (assessment_access_control_id, target_type) REFERENCES assessment_access_control (id, target_type) ON DELETE CASCADE ON UPDATE CASCADE
