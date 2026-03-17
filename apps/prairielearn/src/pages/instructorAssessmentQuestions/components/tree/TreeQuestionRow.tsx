@@ -251,6 +251,7 @@ export function TreeQuestionRow({
                 <a
                   href={getQuestionUrl({ courseInstanceId, questionId: questionData.question.id })}
                   target={editMode ? '_blank' : undefined}
+                  rel="noopener noreferrer"
                   className="link-underline-opacity-0 link-underline-opacity-100-hover text-primary-emphasis"
                   onClick={(e) => e.stopPropagation()}
                 >
