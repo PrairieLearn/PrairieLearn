@@ -329,8 +329,8 @@ function AdjustCreditsForm({
                 placeholder="0.00"
                 value={amountStr}
                 disabled={isDeleted}
-                required
                 aria-invalid={isAmountInvalid || undefined}
+                required
                 onChange={(e) => setAmountStr(e.target.value)}
               />
             </div>
