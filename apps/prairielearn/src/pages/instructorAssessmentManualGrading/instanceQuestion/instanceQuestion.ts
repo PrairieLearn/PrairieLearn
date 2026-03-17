@@ -44,6 +44,7 @@ import {
 
 const router = Router();
 const sql = sqldb.loadSqlEquiv(import.meta.url);
+const AssessmentInstanceIdRowSchema = z.object({ assessment_instance_id: IdSchema });
 
 async function prepareLocalsForRender(
   query: Record<string, any>,
@@ -676,15 +677,16 @@ router.post(
         }
       }
       await sqldb.runInTransactionAsync(async () => {
-        const assessmentInstanceId = await sqldb.queryOptionalRow(
+        const assessment_instance = await sqldb.queryOptionalRow(
           sql.update_assigned_grader,
           {
             instance_question_id: res.locals.instance_question.id,
             assigned_grader,
             requires_manual_grading: actionPrompt !== 'graded',
           },
-          IdSchema.nullable(),
+          AssessmentInstanceIdRowSchema,
         );
+        const assessmentInstanceId = assessment_instance?.assessment_instance_id;
         if (assessmentInstanceId != null) {
           await updateAssessmentInstancesScorePercPending([assessmentInstanceId]);
         }

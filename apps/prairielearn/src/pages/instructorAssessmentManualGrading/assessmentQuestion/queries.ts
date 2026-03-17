@@ -1,3 +1,5 @@
+import { z } from 'zod';
+
 import { execute, loadSqlEquiv, queryRows, runInTransactionAsync } from '@prairielearn/postgres';
 import { IdSchema } from '@prairielearn/zod';
 
@@ -7,6 +9,7 @@ import type { Assessment, AssessmentQuestion } from '../../../lib/db-types.js';
 import { InstanceQuestionRowSchema } from './assessmentQuestion.types.js';
 
 const sql = loadSqlEquiv(import.meta.url);
+const AssessmentInstanceIdRowSchema = z.object({ assessment_instance_id: IdSchema });
 
 export async function selectInstanceQuestionsForManualGrading({
   assessment,
@@ -61,11 +64,13 @@ export async function updateInstanceQuestions({
   }
 
   await runInTransactionAsync(async () => {
-    const assessment_instance_ids = await queryRows(
+    const assessment_instances = await queryRows(
       sql.update_instance_questions_returning_assessment_instance_id,
       params,
-      IdSchema,
+      AssessmentInstanceIdRowSchema,
     );
-    await updateAssessmentInstancesScorePercPending(Array.from(new Set(assessment_instance_ids)));
+    await updateAssessmentInstancesScorePercPending(
+      Array.from(new Set(assessment_instances.map((row) => row.assessment_instance_id))),
+    );
   });
 }

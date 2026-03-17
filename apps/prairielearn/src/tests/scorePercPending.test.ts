@@ -17,7 +17,7 @@ import { selectAssessmentByTid } from '../models/assessment.js';
 import * as helperServer from './helperServer.js';
 
 const sql = sqldb.loadSqlEquiv(import.meta.url);
-const PendingQuestionCountSchema = z.number();
+const PendingQuestionCountRowSchema = z.object({ count: z.number() });
 
 const siteUrl = 'http://localhost:' + config.serverPort;
 
@@ -139,10 +139,10 @@ describe('score_perc_pending', { timeout: 40_000 }, () => {
     );
     assert.equal(refreshed.score_perc_pending, 0);
 
-    const pendingQuestions = await sqldb.queryRow(
+    const { count: pendingQuestions } = await sqldb.queryRow(
       sql.count_pending_instance_questions,
       { assessment_instance_id: assessmentInstance.id },
-      PendingQuestionCountSchema,
+      PendingQuestionCountRowSchema,
     );
     assert.equal(pendingQuestions, 0);
   });
@@ -305,10 +305,10 @@ describe('score_perc_pending', { timeout: 40_000 }, () => {
     );
     assert.equal(refreshed.score_perc_pending, 0);
 
-    const pendingQuestions = await sqldb.queryRow(
+    const { count: pendingQuestions } = await sqldb.queryRow(
       sql.count_pending_instance_questions,
       { assessment_instance_id: assessmentInstance.id },
-      PendingQuestionCountSchema,
+      PendingQuestionCountRowSchema,
     );
     assert.equal(pendingQuestions, 0);
   });

@@ -53,6 +53,10 @@ const VariantForSubmissionSchema = VariantSchema.extend({
   assessment_instance_open: z.boolean().nullable(),
 });
 
+const AssessmentInstanceIdRowSchema = z.object({
+  assessment_instance_id: IdSchema.nullable(),
+});
+
 type SubmissionDataForSaving = Pick<Submission, 'variant_id' | 'auth_user_id'> &
   Pick<Partial<Submission>, 'credit' | 'mode' | 'client_fingerprint_id'> & {
     submitted_answer: NonNullable<Submission['submitted_answer']>;
@@ -471,11 +475,12 @@ export async function gradeVariant({
     // LTI updates.
     if (!grading_job_post_update.gradable) return recomputePendingOnInsertJob;
 
-    const assessment_instance_id = await sqldb.queryOptionalRow(
+    const assessment_instance = await sqldb.queryOptionalRow(
       sql.select_assessment_for_submission,
       { submission_id: submission.id },
-      IdSchema.nullable(),
+      AssessmentInstanceIdRowSchema,
     );
+    const assessment_instance_id = assessment_instance?.assessment_instance_id;
     if (assessment_instance_id != null) {
       await ltiOutcomes.updateScore(assessment_instance_id);
     }
@@ -511,11 +516,12 @@ export async function saveAndGradeSubmission(
   );
 
   const recomputePendingForSubmission = async () => {
-    const assessment_instance_id = await sqldb.queryOptionalRow(
+    const assessment_instance = await sqldb.queryOptionalRow(
       sql.select_assessment_for_submission,
       { submission_id },
-      IdSchema.nullable(),
+      AssessmentInstanceIdRowSchema,
     );
+    const assessment_instance_id = assessment_instance?.assessment_instance_id;
     if (assessment_instance_id != null) {
       await updateAssessmentInstancesScorePercPending([assessment_instance_id]);
     }

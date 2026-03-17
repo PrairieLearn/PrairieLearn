@@ -40,6 +40,7 @@ import {
 } from './manualGrading.types.js';
 
 const sql = sqldb.loadSqlEquiv(import.meta.url);
+const AssessmentInstanceIdRowSchema = z.object({ assessment_instance_id: IdSchema });
 
 /**
  * Builds the URL of an instance question tagged to be manually graded for a particular
@@ -373,12 +374,14 @@ export async function updateAssessmentQuestionRubric({
     }
 
     if (tag_for_manual_grading) {
-      const assessment_instance_ids = await sqldb.queryRows(
+      const assessment_instances = await sqldb.queryRows(
         sql.tag_for_manual_grading,
         { assessment_question_id },
-        IdSchema,
+        AssessmentInstanceIdRowSchema,
       );
-      await updateAssessmentInstancesScorePercPending(Array.from(new Set(assessment_instance_ids)));
+      await updateAssessmentInstancesScorePercPending(
+        Array.from(new Set(assessment_instances.map((row) => row.assessment_instance_id))),
+      );
     }
   });
 }

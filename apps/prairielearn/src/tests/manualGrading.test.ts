@@ -27,7 +27,9 @@ import {
 import * as helperServer from './helperServer.js';
 
 const sql = sqldb.loadSqlEquiv(import.meta.url);
-const ExpectedScorePercPendingSchema = z.number();
+const ExpectedScorePercPendingRowSchema = z.object({
+  expected_score_perc_pending: z.number(),
+});
 
 const siteUrl = 'http://localhost:' + config.serverPort;
 const baseUrl = siteUrl + '/pl';
@@ -185,10 +187,10 @@ async function assertScorePercPending(iqId: string | number) {
     { iqId },
     AssessmentInstanceSchema,
   );
-  const expected_score_perc_pending = await sqldb.queryRow(
+  const { expected_score_perc_pending } = await sqldb.queryRow(
     sql.get_expected_score_perc_pending_for_iq,
     { iqId },
-    ExpectedScorePercPendingSchema,
+    ExpectedScorePercPendingRowSchema,
   );
   assert.closeTo(assessmentInstance.score_perc_pending, expected_score_perc_pending, 0.0001);
 }
