@@ -234,7 +234,8 @@ export function TreeZoneNode({
           {editMode && (
             <button
               type="button"
-              className="btn btn-sm border-0 text-muted ms-1 tree-delete-btn hover-show"
+              className={`btn btn-sm border-0 text-muted ms-1 tree-delete-btn ${isSelected ? '' : 'hover-show'}`}
+              style={{ visibility: 'visible' }}
               aria-label="Delete zone"
               title="Delete zone"
               onClick={(e) => {

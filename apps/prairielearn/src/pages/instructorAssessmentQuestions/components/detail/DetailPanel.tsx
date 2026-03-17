@@ -65,7 +65,6 @@ export function DetailPanel({
           idPrefix={`zone-${zone.trackingId}`}
           state={state}
           onUpdate={actions.onUpdateZone}
-          onDelete={actions.onDeleteZone}
           onFormValidChange={actions.onFormValidChange}
         />
       );
@@ -86,7 +85,6 @@ export function DetailPanel({
           idPrefix={`question-${question.trackingId}`}
           state={state}
           onUpdate={actions.onUpdateQuestion}
-          onDelete={actions.onDeleteQuestion}
           onPickQuestion={actions.onPickQuestion}
           onResetButtonClick={actions.onResetButtonClick}
           onFormValidChange={actions.onFormValidChange}
@@ -118,7 +116,6 @@ export function DetailPanel({
           idPrefix={`alt-${alternative.trackingId}`}
           state={state}
           onUpdate={actions.onUpdateQuestion}
-          onDelete={actions.onDeleteQuestion}
           onPickQuestion={actions.onPickQuestion}
           onResetButtonClick={actions.onResetButtonClick}
           onFormValidChange={actions.onFormValidChange}
@@ -141,7 +138,6 @@ export function DetailPanel({
           idPrefix={`altgroup-${block.trackingId}`}
           state={state}
           onUpdate={actions.onUpdateQuestion}
-          onDelete={(trackingId) => actions.onDeleteQuestion(trackingId, '')}
           onFormValidChange={actions.onFormValidChange}
         />
       );
