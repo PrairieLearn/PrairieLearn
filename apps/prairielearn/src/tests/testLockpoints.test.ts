@@ -498,9 +498,7 @@ describe('Assessment lockpoints', { timeout: 60_000 }, function () {
     await withUser(studentUser, async () => {
       const created = await createAssessmentInstance(context.assessmentId);
       const questionStates = await selectQuestionStates(created.assessmentInstanceId);
-      const unlockedQuestion = questionStates.find(
-        (q) => q.question_access_mode === 'default',
-      );
+      const unlockedQuestion = questionStates.find((q) => q.question_access_mode === 'default');
       assert.isDefined(unlockedQuestion);
       const unlockedResponse = await helperClient.fetchCheerio(unlockedQuestion.url);
       assert.isTrue(unlockedResponse.ok);

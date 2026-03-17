@@ -268,17 +268,13 @@ describe(
             [assessmentInstanceId],
             SprocQuestionOrderSchema,
           );
-          const unlockedQuestion = results.find(
-            (e) => e.question_access_mode === 'default',
-          );
+          const unlockedQuestion = results.find((e) => e.question_access_mode === 'default');
           assert.isDefined(unlockedQuestion);
           const unlockedUrl = `${context.courseInstanceBaseUrl}/instance_question/${unlockedQuestion.instance_question_id}/`;
           const unlockedResponse = await helperClient.fetchCheerio(unlockedUrl);
           assert.isTrue(unlockedResponse.ok);
 
-          const lockedQuestion = results.find(
-            (e) => e.question_access_mode === 'blocked_sequence',
-          );
+          const lockedQuestion = results.find((e) => e.question_access_mode === 'blocked_sequence');
           assert.isDefined(lockedQuestion);
           const lockedUrl = `${context.courseInstanceBaseUrl}/instance_question/${lockedQuestion.instance_question_id}/`;
           const lockedResponse = await helperClient.fetchCheerio(lockedUrl);
