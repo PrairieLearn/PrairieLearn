@@ -1,4 +1,6 @@
+import { useChat } from '@ai-sdk/react';
 import { QueryClient, useQueryClient } from '@tanstack/react-query';
+import { DefaultChatTransport } from 'ai';
 import { useState } from 'react';
 import { Alert } from 'react-bootstrap';
 
@@ -55,6 +57,7 @@ interface AssessmentQuestionManualGradingProps {
   questionTitle: string;
   questionNumber: number;
   availableAiGradingProviders: EnumAiGradingProvider[];
+  chatCsrfToken: string;
 }
 
 type AssessmentQuestionManualGradingInnerProps = Omit<
@@ -84,6 +87,7 @@ function AssessmentQuestionManualGradingInner({
   questionTitle,
   questionNumber,
   availableAiGradingProviders,
+  chatCsrfToken,
 }: AssessmentQuestionManualGradingInnerProps) {
   const trpc = useTRPC();
   const queryClient = useQueryClient();
@@ -94,12 +98,25 @@ function AssessmentQuestionManualGradingInner({
   const [aiGradingMode, setAiGradingMode] = useState(initialAiGradingMode);
   const [chatInput, setChatInput] = useState('');
 
-  const testMessages: ChatMessage[] = [
-    { id: '1', role: 'user', content: 'Grade all submissions for correctness.' },
-    { id: '2', role: 'assistant', content: 'I will review each submission and assess correctness based on the rubric criteria.' },
-    { id: '3', role: 'user', content: 'Focus on partial credit for students who got the right approach but wrong answer.' },
-    { id: '4', role: 'assistant', content: 'Understood. I will award partial credit when the methodology is correct even if the final answer is wrong.' },
-  ];
+  const chatUrl = `${urlPrefix}/assessment/${assessment.id}/manual_grading/assessment_question/${assessmentQuestion.id}/chat`;
+
+  const { messages, sendMessage, status } = useChat({
+    transport: new DefaultChatTransport({
+      api: chatUrl,
+      headers: { 'X-CSRF-Token': chatCsrfToken },
+    }),
+  });
+
+  const isGenerating = status === 'streaming' || status === 'submitted';
+
+  const chatMessages: ChatMessage[] = messages.map((m) => ({
+    id: m.id,
+    role: m.role as 'user' | 'assistant',
+    content: m.parts
+      .filter((p): p is { type: 'text'; text: string } => p.type === 'text')
+      .map((p) => p.text)
+      .join('\n'),
+  }));
 
   // AI grading is available only if the question uses manual grading.
   const isAiGradingAvailable = (assessmentQuestion.max_manual_points ?? 0) > 0;
@@ -110,123 +127,123 @@ function AssessmentQuestionManualGradingInner({
   return (
     <div className="d-flex flex-row gap-3" style={{ maxHeight: '80vh' }}>
       <div className="flex-grow-1" style={{ minWidth: 0, overflowY: 'auto' }}>
-      {setAiGradingModeMutation.isError && (
-        <Alert
-          variant="danger"
-          className="mb-3"
-          dismissible
-          onClose={() => setAiGradingModeMutation.reset()}
-        >
-          <strong>Error:</strong> {setAiGradingModeMutation.error.message}
-        </Alert>
-      )}
-      <div className="d-flex flex-row justify-content-between align-items-center mb-3 gap-2">
-        <nav aria-label="breadcrumb">
-          <ol className="breadcrumb mb-0">
-            <li className="breadcrumb-item">
-              <a href={`${urlPrefix}/assessment/${assessment.id}/manual_grading`}>Manual grading</a>
-            </li>
-            <li className="breadcrumb-item active" aria-current="page">
-              Question {questionNumber}. {questionTitle}
-            </li>
-          </ol>
-        </nav>
-        {aiGradingEnabled && (
-          <div className="card px-3 py-2 mb-0">
-            <div
-              className={`form-check form-switch mb-0 ${isAiGradingAvailable ? 'opacity-100' : 'opacity-75'}`}
-            >
-              <input
-                className="form-check-input"
-                type="checkbox"
-                role="switch"
-                id="switchCheckDefault"
-                checked={aiGradingMode}
-                onChange={() => {
-                  if (!isAiGradingAvailable) {
-                    setShowAiGradingUnavailableModal(true);
-                    return;
-                  }
-                  setAiGradingModeMutation.mutate(
-                    { enabled: !aiGradingMode },
-                    {
-                      onSuccess: () => {
-                        setAiGradingMode((prev) => !prev);
-                      },
-                    },
-                  );
-                }}
-              />
-              <label className="form-check-label" htmlFor="switchCheckDefault">
-                <i className="bi bi-stars" />
-                AI grading mode
-              </label>
-            </div>
-          </div>
+        {setAiGradingModeMutation.isError && (
+          <Alert
+            variant="danger"
+            className="mb-3"
+            dismissible
+            onClose={() => setAiGradingModeMutation.reset()}
+          >
+            <strong>Error:</strong> {setAiGradingModeMutation.error.message}
+          </Alert>
         )}
+        <div className="d-flex flex-row justify-content-between align-items-center mb-3 gap-2">
+          <nav aria-label="breadcrumb">
+            <ol className="breadcrumb mb-0">
+              <li className="breadcrumb-item">
+                <a href={`${urlPrefix}/assessment/${assessment.id}/manual_grading`}>
+                  Manual grading
+                </a>
+              </li>
+              <li className="breadcrumb-item active" aria-current="page">
+                Question {questionNumber}. {questionTitle}
+              </li>
+            </ol>
+          </nav>
+          {aiGradingEnabled && (
+            <div className="card px-3 py-2 mb-0">
+              <div
+                className={`form-check form-switch mb-0 ${isAiGradingAvailable ? 'opacity-100' : 'opacity-75'}`}
+              >
+                <input
+                  className="form-check-input"
+                  type="checkbox"
+                  role="switch"
+                  id="switchCheckDefault"
+                  checked={aiGradingMode}
+                  onChange={() => {
+                    if (!isAiGradingAvailable) {
+                      setShowAiGradingUnavailableModal(true);
+                      return;
+                    }
+                    setAiGradingModeMutation.mutate(
+                      { enabled: !aiGradingMode },
+                      {
+                        onSuccess: () => {
+                          setAiGradingMode((prev) => !prev);
+                        },
+                      },
+                    );
+                  }}
+                />
+                <label className="form-check-label" htmlFor="switchCheckDefault">
+                  <i className="bi bi-stars" />
+                  AI grading mode
+                </label>
+              </div>
+            </div>
+          )}
+        </div>
+        <AssessmentQuestionTable
+          hasCourseInstancePermissionEdit={hasCourseInstancePermissionEdit}
+          course={course}
+          courseInstance={courseInstance}
+          csrfToken={csrfToken}
+          instanceQuestionsInfo={instanceQuestionsInfo}
+          urlPrefix={urlPrefix}
+          assessment={assessment}
+          assessmentQuestion={assessmentQuestion}
+          questionQid={questionQid}
+          aiGradingMode={aiGradingMode}
+          aiGradingModelSelectionEnabled={aiGradingModelSelectionEnabled}
+          rubricData={rubricData}
+          instanceQuestionGroups={instanceQuestionGroups}
+          courseStaff={courseStaff}
+          aiGradingStats={aiGradingStats}
+          mutations={mutations}
+          initialOngoingJobSequenceTokens={initialOngoingJobSequenceTokens}
+          availableAiGradingProviders={availableAiGradingProviders}
+          onSetGroupInfoModalState={setGroupInfoModalState}
+          onSetConflictModalState={setConflictModalState}
+        />
+
+        <GroupInfoModal
+          modalState={groupInfoModalState}
+          numOpenInstances={numOpenInstances}
+          mutation={groupSubmissionMutation}
+          onHide={() => setGroupInfoModalState(null)}
+        />
+
+        <GradingConflictModal
+          modalState={conflictModalState}
+          onHide={() => {
+            setConflictModalState(null);
+            // Refetch the table data to show the latest state.
+            void queryClient.invalidateQueries({
+              queryKey: trpc.instances.queryKey(),
+            });
+          }}
+        />
+
+        <AiGradingUnavailableModal
+          show={showAiGradingUnavailableModal}
+          onHide={() => setShowAiGradingUnavailableModal(false)}
+        />
       </div>
-      <AssessmentQuestionTable
-        hasCourseInstancePermissionEdit={hasCourseInstancePermissionEdit}
-        course={course}
-        courseInstance={courseInstance}
-        csrfToken={csrfToken}
-        instanceQuestionsInfo={instanceQuestionsInfo}
-        urlPrefix={urlPrefix}
-        assessment={assessment}
-        assessmentQuestion={assessmentQuestion}
-        questionQid={questionQid}
-        aiGradingMode={aiGradingMode}
-        aiGradingModelSelectionEnabled={aiGradingModelSelectionEnabled}
-        rubricData={rubricData}
-        instanceQuestionGroups={instanceQuestionGroups}
-        courseStaff={courseStaff}
-        aiGradingStats={aiGradingStats}
-        mutations={mutations}
-        initialOngoingJobSequenceTokens={initialOngoingJobSequenceTokens}
-        availableAiGradingProviders={availableAiGradingProviders}
-        onSetGroupInfoModalState={setGroupInfoModalState}
-        onSetConflictModalState={setConflictModalState}
-      />
-
-      <GroupInfoModal
-        modalState={groupInfoModalState}
-        numOpenInstances={numOpenInstances}
-        mutation={groupSubmissionMutation}
-        onHide={() => setGroupInfoModalState(null)}
-      />
-
-      <GradingConflictModal
-        modalState={conflictModalState}
-        onHide={() => {
-          setConflictModalState(null);
-          // Refetch the table data to show the latest state.
-          void queryClient.invalidateQueries({
-            queryKey: trpc.instances.queryKey(),
-          });
-        }}
-      />
-
-      <AiGradingUnavailableModal
-        show={showAiGradingUnavailableModal}
-        onHide={() => setShowAiGradingUnavailableModal(false)}
-      />
-      </div>
-      <div
-        className="d-flex flex-column bg-light border rounded"
-        style={{ width: 350 }}
-      >
+      <div className="d-flex flex-column bg-light border rounded" style={{ width: 350 }}>
         <div className="flex-grow-1 overflow-auto p-3">
-          <Messages messages={testMessages} />
+          <Messages messages={chatMessages} />
         </div>
         <div className="p-3 border-top">
           <GradingPromptInput
             value={chatInput}
+            disabled={false}
+            isGenerating={isGenerating}
             onChange={setChatInput}
-            onSubmit={() => {
+            onSubmit={(text) => {
+              void sendMessage({ text });
               setChatInput('');
             }}
-            disabled={false}
-            isGenerating={false}
             onStop={() => {}}
           />
         </div>
