@@ -128,7 +128,7 @@ def parse(element_html: str, data: pl.QuestionData) -> None:
     if not submitted_file_content:
         if not allow_blank:
             pl.add_files_format_error(data, f"No image was submitted for {file_name}.")
-            
+
         # Replace base64 image data with a placeholder to avoid bloating logs.
         if file_name in data["submitted_answers"]:
             data["submitted_answers"][file_name] = "[Image base64 data]"
