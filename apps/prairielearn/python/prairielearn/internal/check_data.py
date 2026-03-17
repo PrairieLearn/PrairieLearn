@@ -60,7 +60,7 @@ PROPS: dict[str, PropInfo] = {
     "raw_submitted_answers": {
         "type": "object",
         "present_phases": frozenset({"render", "parse", "grade", "test"}),
-        "edit_phases": frozenset({"test"}),
+        "edit_phases": frozenset({"parse", "test"}),
     },
     "partial_scores": {
         "type": "object",

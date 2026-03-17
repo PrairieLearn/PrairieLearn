@@ -129,6 +129,9 @@ def parse(element_html: str, data: pl.QuestionData) -> None:
         if not allow_blank:
             pl.add_files_format_error(data, f"No image was submitted for {file_name}.")
         data["submitted_answers"].pop(file_name, None)
+        data["submitted_answers"].pop(f"{file_name}_changed", None)
+        if file_name in data["raw_submitted_answers"]:
+            data["raw_submitted_answers"][file_name] = "[Image base64 data]"
         return
 
     if not submitted_file_content.startswith("data:"):
@@ -176,6 +179,10 @@ def parse(element_html: str, data: pl.QuestionData) -> None:
     # submitted_answers[file_name].
 
     data["submitted_answers"].pop(file_name, None)
+    data["submitted_answers"].pop(f"{file_name}_changed", None)
+    if file_name in data["raw_submitted_answers"]:
+        data["raw_submitted_answers"][file_name] = "[Image base64 data]"
+    data["raw_submitted_answers"].pop(f"{file_name}_changed", None)
 
 
 def test(element_html: str, data: pl.ElementTestData) -> None:
