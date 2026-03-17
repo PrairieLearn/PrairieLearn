@@ -61,26 +61,27 @@ RETURNING
 
 -- BLOCK select_credit_pool_changes_batched
 WITH
+  last_change_per_sequence AS (
+    SELECT DISTINCT
+      ON (j2.job_sequence_id) j2.job_sequence_id,
+      c2.credit_after_milli_dollars
+    FROM
+      ai_grading_credit_pool_changes AS c2
+      JOIN ai_grading_jobs AS j2 ON j2.id = c2.ai_grading_job_id
+    WHERE
+      c2.course_instance_id = $course_instance_id
+      AND j2.job_sequence_id IS NOT NULL
+    ORDER BY
+      j2.job_sequence_id ASC,
+      c2.id DESC
+  ),
   batched AS (
     SELECT
       MIN(c.id) AS id,
       j.job_sequence_id,
       MIN(c.created_at) AS created_at,
       SUM(c.delta_milli_dollars) AS delta_milli_dollars,
-      (
-        SELECT
-          c2.credit_after_milli_dollars
-        FROM
-          ai_grading_credit_pool_changes AS c2
-          JOIN ai_grading_jobs AS j2 ON j2.id = c2.ai_grading_job_id
-        WHERE
-          j2.job_sequence_id = j.job_sequence_id
-          AND c2.course_instance_id = $course_instance_id
-        ORDER BY
-          c2.id DESC
-        LIMIT
-          1
-      ) AS credit_after_milli_dollars,
+      lc.credit_after_milli_dollars,
       COUNT(DISTINCT c.ai_grading_job_id)::int AS submission_count,
       'AI grading' AS reason,
       MAX(u.name) AS user_name,
@@ -88,13 +89,15 @@ WITH
     FROM
       ai_grading_credit_pool_changes AS c
       JOIN ai_grading_jobs AS j ON j.id = c.ai_grading_job_id
+      JOIN last_change_per_sequence AS lc ON lc.job_sequence_id = j.job_sequence_id
       LEFT JOIN users AS u ON u.id = c.user_id
     WHERE
       c.course_instance_id = $course_instance_id
       AND c.ai_grading_job_id IS NOT NULL
       AND j.job_sequence_id IS NOT NULL
     GROUP BY
-      j.job_sequence_id
+      j.job_sequence_id,
+      lc.credit_after_milli_dollars
     UNION ALL
     SELECT
       c.id,
@@ -146,29 +149,32 @@ OFFSET
   $offset;
 
 -- BLOCK select_daily_spending
+WITH
+  daily_totals AS (
+    SELECT
+      c.created_at::date AS day,
+      SUM(ABS(c.delta_milli_dollars)) AS total
+    FROM
+      ai_grading_credit_pool_changes AS c
+    WHERE
+      c.course_instance_id = $course_instance_id
+      AND c.created_at >= $start_date::date
+      AND c.created_at < ($end_date::date + '1 day'::interval)
+      AND c.delta_milli_dollars < 0
+      AND c.ai_grading_job_id IS NOT NULL
+    GROUP BY
+      c.created_at::date
+  )
 SELECT
   d::date AS date,
-  COALESCE(
-    (
-      SELECT
-        SUM(ABS(c.delta_milli_dollars))
-      FROM
-        ai_grading_credit_pool_changes AS c
-      WHERE
-        c.course_instance_id = $course_instance_id
-        AND c.created_at >= d
-        AND c.created_at < d + '1 day'::interval
-        AND c.delta_milli_dollars < 0
-        AND c.ai_grading_job_id IS NOT NULL
-    ),
-    0
-  )::bigint AS spending_milli_dollars
+  COALESCE(daily_totals.total, 0)::bigint AS spending_milli_dollars
 FROM
   generate_series(
     $start_date::date,
     $end_date::date,
     '1 day'::interval
   ) AS d
+  LEFT JOIN daily_totals ON daily_totals.day = d::date
 ORDER BY
   d ASC;
 

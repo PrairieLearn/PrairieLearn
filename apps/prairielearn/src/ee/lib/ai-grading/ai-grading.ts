@@ -110,6 +110,52 @@ function calculateTotalGradingCostMilliDollars({
   return calculateCostWithFeeMilliDollars(totalRawCost, config.aiGradingInfrastructureFeePercent);
 }
 
+/**
+ * If cost tracking is enabled, calculate the total grading cost and deduct
+ * credits for a single AI grading operation. Must be called inside the same
+ * transaction that inserts the grading job.
+ */
+async function deductAiGradingCostIfNeeded({
+  trackRateLimitAndCost,
+  model_id,
+  gradingResponseWithRotationIssue,
+  rotationCorrections,
+  finalGradingResponse,
+  course_instance_id,
+  user_id,
+  ai_grading_job_id,
+  assessment_question_id,
+  instance_question_id,
+}: {
+  trackRateLimitAndCost: boolean;
+  model_id: AiGradingModelId;
+  gradingResponseWithRotationIssue?: GenerateObjectResult<any>;
+  rotationCorrections?: Record<string, { response: GenerateObjectResult<any> }>;
+  finalGradingResponse: GenerateObjectResult<any>;
+  course_instance_id: string;
+  user_id: string;
+  ai_grading_job_id: string;
+  assessment_question_id: string;
+  instance_question_id: string;
+}): Promise<void> {
+  if (!trackRateLimitAndCost) return;
+
+  const costMilliDollars = calculateTotalGradingCostMilliDollars({
+    model_id,
+    gradingResponseWithRotationIssue,
+    rotationCorrections,
+    finalGradingResponse,
+  });
+  await deductCreditsForAiGrading({
+    course_instance_id,
+    cost_milli_dollars: costMilliDollars,
+    user_id,
+    ai_grading_job_id,
+    assessment_question_id,
+    reason: `AI graded instance question ${instance_question_id}`,
+  });
+}
+
 const PARALLEL_SUBMISSION_GRADING_LIMIT = 20;
 const HOURLY_USAGE_CAP_REACHED_MESSAGE = 'Hourly usage cap reached. Try again later.';
 const INSUFFICIENT_CREDITS_MESSAGE = 'Insufficient AI grading credits.';
@@ -270,7 +316,12 @@ export async function aiGrade({
       return;
     }
 
-    // Check credit pool before starting the batch.
+    // Check credit pool before starting the batch. This is a best-effort
+    // check without FOR UPDATE — concurrent batches may both pass this check.
+    // Credits are deducted per-submission *after* the API call, so if the pool
+    // is exhausted mid-batch the API cost is already incurred but the deduction
+    // will fail for remaining items. A future improvement could pre-reserve
+    // estimated credits for the batch.
     if (trackRateLimitAndCost) {
       const creditPool = await selectCreditPool(course_instance.id);
       if (creditPool.total_milli_dollars <= 0) {
@@ -672,22 +723,18 @@ export async function aiGrade({
               finalGradingResponse,
             });
 
-            if (trackRateLimitAndCost) {
-              const costMilliDollars = calculateTotalGradingCostMilliDollars({
-                model_id,
-                gradingResponseWithRotationIssue,
-                rotationCorrections,
-                finalGradingResponse,
-              });
-              await deductCreditsForAiGrading({
-                course_instance_id: course_instance.id,
-                cost_milli_dollars: costMilliDollars,
-                user_id: authn_user_id,
-                ai_grading_job_id: aiGradingJobId,
-                assessment_question_id: assessment_question.id,
-                reason: `AI graded instance question ${instance_question.id}`,
-              });
-            }
+            await deductAiGradingCostIfNeeded({
+              trackRateLimitAndCost,
+              model_id,
+              gradingResponseWithRotationIssue,
+              rotationCorrections,
+              finalGradingResponse,
+              course_instance_id: course_instance.id,
+              user_id: authn_user_id,
+              ai_grading_job_id: aiGradingJobId,
+              assessment_question_id: assessment_question.id,
+              instance_question_id: instance_question.id,
+            });
           });
         } else {
           // Does not require grading: only create grading job and rubric grading
@@ -748,22 +795,18 @@ export async function aiGrade({
               finalGradingResponse,
             });
 
-            if (trackRateLimitAndCost) {
-              const costMilliDollars = calculateTotalGradingCostMilliDollars({
-                model_id,
-                gradingResponseWithRotationIssue,
-                rotationCorrections,
-                finalGradingResponse,
-              });
-              await deductCreditsForAiGrading({
-                course_instance_id: course_instance.id,
-                cost_milli_dollars: costMilliDollars,
-                user_id: authn_user_id,
-                ai_grading_job_id: aiGradingJobId,
-                assessment_question_id: assessment_question.id,
-                reason: `AI graded instance question ${instance_question.id}`,
-              });
-            }
+            await deductAiGradingCostIfNeeded({
+              trackRateLimitAndCost,
+              model_id,
+              gradingResponseWithRotationIssue,
+              rotationCorrections,
+              finalGradingResponse,
+              course_instance_id: course_instance.id,
+              user_id: authn_user_id,
+              ai_grading_job_id: aiGradingJobId,
+              assessment_question_id: assessment_question.id,
+              instance_question_id: instance_question.id,
+            });
           });
         }
 
@@ -961,22 +1004,18 @@ export async function aiGrade({
               finalGradingResponse,
             });
 
-            if (trackRateLimitAndCost) {
-              const costMilliDollars = calculateTotalGradingCostMilliDollars({
-                model_id,
-                gradingResponseWithRotationIssue,
-                rotationCorrections,
-                finalGradingResponse,
-              });
-              await deductCreditsForAiGrading({
-                course_instance_id: course_instance.id,
-                cost_milli_dollars: costMilliDollars,
-                user_id: authn_user_id,
-                ai_grading_job_id: aiGradingJobId,
-                assessment_question_id: assessment_question.id,
-                reason: `AI graded instance question ${instance_question.id}`,
-              });
-            }
+            await deductAiGradingCostIfNeeded({
+              trackRateLimitAndCost,
+              model_id,
+              gradingResponseWithRotationIssue,
+              rotationCorrections,
+              finalGradingResponse,
+              course_instance_id: course_instance.id,
+              user_id: authn_user_id,
+              ai_grading_job_id: aiGradingJobId,
+              assessment_question_id: assessment_question.id,
+              instance_question_id: instance_question.id,
+            });
           });
         } else {
           // Does not require grading: only create grading job and rubric grading
@@ -1027,22 +1066,18 @@ export async function aiGrade({
               finalGradingResponse,
             });
 
-            if (trackRateLimitAndCost) {
-              const costMilliDollars = calculateTotalGradingCostMilliDollars({
-                model_id,
-                gradingResponseWithRotationIssue,
-                rotationCorrections,
-                finalGradingResponse,
-              });
-              await deductCreditsForAiGrading({
-                course_instance_id: course_instance.id,
-                cost_milli_dollars: costMilliDollars,
-                user_id: authn_user_id,
-                ai_grading_job_id: aiGradingJobId,
-                assessment_question_id: assessment_question.id,
-                reason: `AI graded instance question ${instance_question.id}`,
-              });
-            }
+            await deductAiGradingCostIfNeeded({
+              trackRateLimitAndCost,
+              model_id,
+              gradingResponseWithRotationIssue,
+              rotationCorrections,
+              finalGradingResponse,
+              course_instance_id: course_instance.id,
+              user_id: authn_user_id,
+              ai_grading_job_id: aiGradingJobId,
+              assessment_question_id: assessment_question.id,
+              instance_question_id: instance_question.id,
+            });
           });
         }
 

@@ -1,12 +1,9 @@
-import EChartsReactModule, { type EChartsOption, type EChartsReactProps } from 'echarts-for-react';
+import type { XAXisComponentOption, YAXisComponentOption } from 'echarts';
 
 import { type HtmlSafeString, html, unsafeHtml } from '@prairielearn/html';
 
+import { EChart, axisTooltipFormatter } from '../../../components/EChart.js';
 import { formatMilliDollars } from '../../../lib/ai-grading-credits.js';
-
-// Workaround: echarts-for-react is CJS with a class default export that
-// doesn't resolve as a valid JSX element under moduleResolution: NodeNext.
-const EChartsReact = EChartsReactModule as unknown as React.ComponentType<EChartsReactProps>;
 
 export type GroupByOption = 'none' | 'user' | 'assessment' | 'question';
 
@@ -47,19 +44,12 @@ export function DailySpendingChart({
     max: (value: { max: number }) => Math.max(100, value.max),
   };
 
-  const option: EChartsOption =
+  const option =
     groupedData && groupedData.length > 0
       ? buildGroupedOption({ dates, groupedData, bootstrapFont, xAxis, yAxis })
       : buildSimpleOption({ data, bootstrapFont, xAxis, yAxis });
 
-  return (
-    <EChartsReact
-      option={option}
-      style={{ height: '200px', width: '100%' }}
-      opts={{ renderer: 'canvas' }}
-      notMerge
-    />
-  );
+  return <EChart option={option} style={{ height: '200px', width: '100%' }} notMerge />;
 }
 
 function formatDate(dateStr: string): string {
@@ -85,9 +75,9 @@ function buildGroupedOption({
   dates: string[];
   groupedData: { date: Date; group_label: string; spending_milli_dollars: number }[];
   bootstrapFont: string;
-  xAxis: EChartsOption;
-  yAxis: EChartsOption;
-}): EChartsOption {
+  xAxis: XAXisComponentOption;
+  yAxis: YAXisComponentOption;
+}) {
   const uniqueGroups = [...new Set(groupedData.map((d) => d.group_label))];
 
   const lookup = new Map<string, number>();
@@ -108,7 +98,7 @@ function buildGroupedOption({
     grid: { top: 40, right: 10, bottom: 30, left: 60 },
     legend: {
       show: true,
-      type: 'scroll',
+      type: 'scroll' as const,
       top: 0,
       formatter: (name: string) => {
         const parts = name.split('\n');
@@ -123,21 +113,19 @@ function buildGroupedOption({
       },
     },
     tooltip: {
-      trigger: 'axis',
-      formatter: (
-        params: { value: number; name: string; marker: string; seriesName: string }[],
-      ) => {
+      trigger: 'axis' as const,
+      formatter: axisTooltipFormatter((params) => {
         const nonZero = params.filter((p) => p.value > 0);
         const lines =
           nonZero.length === 0
             ? html`Credits used: $0.00`
             : nonZero.map((p) => {
-                const displayName = p.seriesName.split('\n')[0];
+                const displayName = p.seriesName?.split('\n')[0];
                 const amount = formatMilliDollars(p.value);
                 return html`${unsafeHtml(p.marker)} ${displayName}: ${amount}<br />`;
               });
         return html`${formatDate(params[0].name)}${tooltipDivider()}${lines}`.toString();
-      },
+      }),
     },
     xAxis,
     yAxis,
@@ -153,26 +141,26 @@ function buildSimpleOption({
 }: {
   data: { spending_milli_dollars: number }[];
   bootstrapFont: string;
-  xAxis: EChartsOption;
-  yAxis: EChartsOption;
-}): EChartsOption {
+  xAxis: XAXisComponentOption;
+  yAxis: YAXisComponentOption;
+}) {
   return {
     textStyle: { fontFamily: bootstrapFont },
     grid: { top: 10, right: 10, bottom: 30, left: 60 },
     legend: { show: false },
     tooltip: {
-      trigger: 'axis',
-      formatter: (params: { value: number; name: string }[]) => {
+      trigger: 'axis' as const,
+      formatter: axisTooltipFormatter((params) => {
         const p = params[0];
         const label = `Credits used: ${formatMilliDollars(p.value)}`;
         return html`${formatDate(p.name)}${tooltipDivider()}${label}`.toString();
-      },
+      }),
     },
     xAxis,
     yAxis,
     series: [
       {
-        type: 'bar',
+        type: 'bar' as const,
         data: data.map((d) => d.spending_milli_dollars),
         itemStyle: { color: '#5470c6' },
       },

@@ -1,13 +1,15 @@
 /**
  * Format milli-dollars as a display string.
- * Examples: 4509 → "$4.51", 0 → "$0.00", 5 → "<$0.01"
+ * Examples: 4509 → "$4.51", 0 → "$0.00", 5 → "<$0.01", -4509 → "-$4.51"
  */
 export function formatMilliDollars(milliDollars: number): string {
-  if (milliDollars > 0 && milliDollars < 10) {
-    return '<$0.01';
+  const abs = Math.abs(milliDollars);
+  const sign = milliDollars < 0 ? '-' : '';
+  if (abs > 0 && abs < 10) {
+    return `${sign}<$0.01`;
   }
-  const dollars = milliDollars / 1000;
-  return `$${dollars.toFixed(2)}`;
+  const dollars = abs / 1000;
+  return `${sign}$${dollars.toFixed(2)}`;
 }
 
 /**

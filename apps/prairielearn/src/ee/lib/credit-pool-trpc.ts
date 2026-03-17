@@ -71,3 +71,7 @@ export const creditPoolProcedures = {
       );
     }),
 };
+
+// Standalone router from the shared procedures, used for client-side type extraction.
+const _creditPoolRouter = t.router(creditPoolProcedures);
+export type CreditPoolRouter = typeof _creditPoolRouter;

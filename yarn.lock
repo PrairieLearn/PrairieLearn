@@ -4973,7 +4973,6 @@ __metadata:
     dompurify: "npm:^3.3.2"
     dropzone: "npm:^5.9.3"
     echarts: "npm:^6.0.0"
-    echarts-for-react: "npm:^3.0.6"
     es-main: "npm:^1.4.0"
     es-toolkit: "npm:^1.45.1"
     execa: "npm:^9.6.1"
@@ -12786,19 +12785,6 @@ __metadata:
   languageName: node
   linkType: hard
 
-"echarts-for-react@npm:^3.0.6":
-  version: 3.0.6
-  resolution: "echarts-for-react@npm:3.0.6"
-  dependencies:
-    fast-deep-equal: "npm:^3.1.3"
-    size-sensor: "npm:^1.0.1"
-  peerDependencies:
-    echarts: ^3.0.0 || ^4.0.0 || ^5.0.0 || ^6.0.0
-    react: ^15.0.0 || >=16.0.0
-  checksum: 10c0/c39db42f66bd94cab99cf64c2f21988903057632d904eb812ade93c3394e11c6c3cdd04569220719865793964bb3b8977cffc3d637d47d681a9ab3c91fdb2e98
-  languageName: node
-  linkType: hard
-
 "echarts@npm:^6.0.0":
   version: 6.0.0
   resolution: "echarts@npm:6.0.0"
@@ -20049,13 +20035,6 @@ __metadata:
   version: 1.0.5
   resolution: "sisteransi@npm:1.0.5"
   checksum: 10c0/230ac975cca485b7f6fe2b96a711aa62a6a26ead3e6fb8ba17c5a00d61b8bed0d7adc21f5626b70d7c33c62ff4e63933017a6462942c719d1980bb0b1207ad46
-  languageName: node
-  linkType: hard
-
-"size-sensor@npm:^1.0.1":
-  version: 1.0.3
-  resolution: "size-sensor@npm:1.0.3"
-  checksum: 10c0/3975d7d432b35b24d1df41ad8acb216fffed43798e05976bc820fee6702362f60a5987e131e4e2c35073777c46002cd880601e71919947f0d7513610fa144b5f
   languageName: node
   linkType: hard
 

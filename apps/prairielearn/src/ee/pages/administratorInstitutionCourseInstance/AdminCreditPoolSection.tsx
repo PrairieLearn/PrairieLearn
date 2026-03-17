@@ -1,22 +1,10 @@
-import { QueryClient, useMutation, useQuery, useQueryClient } from '@tanstack/react-query';
-import clsx from 'clsx';
+import { QueryClient, useMutation, useQueryClient } from '@tanstack/react-query';
 import { useEffect, useState } from 'react';
-import { Alert, Dropdown, Spinner } from 'react-bootstrap';
+import { Alert } from 'react-bootstrap';
 
-import { run } from '@prairielearn/run';
-
+import { formatMilliDollars } from '../../../lib/ai-grading-credits.js';
 import { QueryClientProviderDebug } from '../../../lib/client/tanstackQuery.js';
-import { BalanceCards } from '../../components/ai-grading-credits/BalanceCards.js';
-import {
-  DailySpendingChart,
-  type GroupByOption,
-} from '../../components/ai-grading-credits/DailySpendingChart.js';
-import { TransactionHistoryTable } from '../../components/ai-grading-credits/TransactionHistoryTable.js';
-import {
-  CHART_DAYS_OPTIONS,
-  type ChartDays,
-  DEFAULT_CHART_DAYS,
-} from '../../components/ai-grading-credits/constants.js';
+import { CreditPoolDashboard } from '../../components/ai-grading-credits/CreditPoolDashboard.js';
 
 import { createAdminCreditPoolTrpcClient } from './utils/trpc-client.js';
 import { TRPCProvider, useTRPC } from './utils/trpc-context.js';
@@ -67,33 +55,11 @@ function AdminCreditPoolContent({
   const trpc = useTRPC();
   const queryClient = useQueryClient();
 
-  const [showHistory, setShowHistory] = useState(false);
-  const [page, setPage] = useState(1);
-  const [chartDays, setChartDays] = useState<ChartDays>(DEFAULT_CHART_DAYS);
-  const [groupBy, setGroupBy] = useState<GroupByOption>('none');
-
-  const poolQuery = useQuery(trpc.creditPool.queryOptions());
-  const changesQuery = useQuery({
-    ...trpc.creditPoolChanges.queryOptions({ page }),
-    enabled: showHistory,
-  });
-  const dailySpendingQuery = useQuery(trpc.dailySpending.queryOptions({ days: chartDays }));
-  const validGroupBy = groupBy !== 'none' ? groupBy : undefined;
-  const groupedSpendingQuery = useQuery({
-    ...trpc.dailySpendingGrouped.queryOptions({
-      days: chartDays,
-      group_by: validGroupBy ?? 'user',
-    }),
-    enabled: validGroupBy != null,
-  });
-
   const adjustMutation = useMutation({
     ...trpc.adjustCreditPool.mutationOptions(),
     onSuccess: () => {
       void queryClient.invalidateQueries({ queryKey: trpc.creditPool.queryKey() });
-      if (showHistory) {
-        void queryClient.invalidateQueries({ queryKey: trpc.creditPoolChanges.queryKey() });
-      }
+      void queryClient.invalidateQueries({ queryKey: trpc.creditPoolChanges.queryKey() });
     },
   });
 
@@ -104,138 +70,35 @@ function AdminCreditPoolContent({
     return () => clearTimeout(timer);
   }, [adjustIsSuccess, adjustReset]);
 
-  if (poolQuery.isError) {
-    return <Alert variant="danger">Failed to load credit pool data.</Alert>;
-  }
-
-  if (!poolQuery.data) {
-    return (
-      <div className="text-center py-4">
-        <Spinner animation="border" size="sm" className="me-2" />
-        Loading AI grading credits...
-      </div>
-    );
-  }
-
-  const pool = poolQuery.data;
-
   return (
     <div className="mb-5">
-      <h2 className="h4 mt-4">AI grading credits</h2>
-
-      {useCustomApiKeys && (
-        <p className="text-muted">
-          While custom API keys are active, PrairieLearn AI grading credits are not deducted.
-        </p>
-      )}
-
-      <BalanceCards pool={pool} context="admin" dimmed={useCustomApiKeys} />
-
-      <AdjustCreditsForm
-        isDeleted={isDeleted}
-        isPending={adjustMutation.isPending}
-        error={adjustMutation.isError ? adjustMutation.error.message : null}
-        isSuccess={adjustMutation.isSuccess}
-        maxAddDollars={maxAddDollars}
-        maxDeductDollars={maxDeductDollars}
-        onSubmit={(data) => adjustMutation.mutate(data)}
-        onDismissError={() => adjustMutation.reset()}
-        onDismissSuccess={() => adjustMutation.reset()}
-      />
-
-      <div>
-        <div className="mb-3">
-          <div className="d-flex justify-content-between align-items-center mb-2">
-            <h3 className="h6 mb-0">Daily usage</h3>
-            <div className="d-flex align-items-center gap-2">
-              <Dropdown onSelect={(key) => setGroupBy((key ?? 'none') as GroupByOption)}>
-                <Dropdown.Toggle variant="outline-secondary" size="sm">
-                  {run(() => {
-                    if (groupBy === 'user') {
-                      return 'Group by user';
-                    } else if (groupBy === 'assessment') {
-                      return 'Group by assessment';
-                    } else if (groupBy === 'question') {
-                      return 'Group by question';
-                    } else {
-                      return 'Group by';
-                    }
-                  })}
-                </Dropdown.Toggle>
-                <Dropdown.Menu>
-                  <Dropdown.Item eventKey="none" active={groupBy === 'none'}>
-                    Group by
-                  </Dropdown.Item>
-                  <Dropdown.Item eventKey="user" active={groupBy === 'user'}>
-                    Group by user
-                  </Dropdown.Item>
-                  <Dropdown.Item eventKey="assessment" active={groupBy === 'assessment'}>
-                    Group by assessment
-                  </Dropdown.Item>
-                  <Dropdown.Item eventKey="question" active={groupBy === 'question'}>
-                    Group by question
-                  </Dropdown.Item>
-                </Dropdown.Menu>
-              </Dropdown>
-              <div className="btn-group btn-group-sm" role="group" aria-label="Time range">
-                {CHART_DAYS_OPTIONS.map((d) => (
-                  <button
-                    key={d}
-                    type="button"
-                    className={clsx(
-                      'btn',
-                      d === chartDays ? 'btn-primary' : 'btn-outline-secondary',
-                    )}
-                    onClick={() => setChartDays(d)}
-                  >
-                    {d}d
-                  </button>
-                ))}
-              </div>
-            </div>
-          </div>
-          {dailySpendingQuery.data && (
-            <DailySpendingChart
-              data={dailySpendingQuery.data}
-              groupedData={groupBy !== 'none' ? groupedSpendingQuery.data : undefined}
-            />
-          )}
-        </div>
-
-        <div>
-          <button
-            type="button"
-            className="btn btn-sm btn-outline-secondary"
-            onClick={() => {
-              setShowHistory(!showHistory);
-              if (!showHistory) {
-                setPage(1);
-              }
-            }}
-          >
-            {showHistory ? 'Hide transaction history' : 'Show transaction history'}
-          </button>
-
-          {showHistory && (
-            <div className="mt-3">
-              {changesQuery.isLoading && (
-                <p className="text-muted">Loading transaction history...</p>
-              )}
-              {changesQuery.isError && (
-                <Alert variant="danger">Failed to load transaction history.</Alert>
-              )}
-              {changesQuery.data && (
-                <TransactionHistoryTable
-                  rows={changesQuery.data.rows}
-                  totalCount={changesQuery.data.totalCount}
-                  page={page}
-                  onPageChange={setPage}
-                />
-              )}
-            </div>
-          )}
-        </div>
-      </div>
+      <CreditPoolDashboard
+        trpc={trpc}
+        balanceContext="admin"
+        dimmed={useCustomApiKeys}
+        header={
+          <>
+            <h2 className="h4 mt-4">AI grading credits</h2>
+            {useCustomApiKeys && (
+              <p className="text-muted">
+                While custom API keys are active, PrairieLearn AI grading credits are not deducted.
+              </p>
+            )}
+          </>
+        }
+      >
+        <AdjustCreditsForm
+          isDeleted={isDeleted}
+          isPending={adjustMutation.isPending}
+          error={adjustMutation.isError ? adjustMutation.error.message : null}
+          isSuccess={adjustMutation.isSuccess}
+          maxAddDollars={maxAddDollars}
+          maxDeductDollars={maxDeductDollars}
+          onSubmit={(data) => adjustMutation.mutate(data)}
+          onDismissError={() => adjustMutation.reset()}
+          onDismissSuccess={() => adjustMutation.reset()}
+        />
+      </CreditPoolDashboard>
     </div>
   );
 }
@@ -330,10 +193,16 @@ function AdjustCreditsForm({
                 value={amountStr}
                 disabled={isDeleted}
                 aria-invalid={isAmountInvalid || undefined}
+                aria-errormessage={isAmountInvalid ? 'amount-error' : undefined}
                 required
                 onChange={(e) => setAmountStr(e.target.value)}
               />
             </div>
+            {isAmountInvalid && (
+              <div id="amount-error" className="text-danger small mt-1">
+                Enter an amount between $0.01 and {formatMilliDollars(maxForAction * 1000)}.
+              </div>
+            )}
           </div>
           <div className="col-auto">
             <label className="form-label" htmlFor="credit_type">

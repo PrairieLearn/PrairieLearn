@@ -58,8 +58,8 @@ export function TransactionHistoryTable({
                       change.delta_milli_dollars > 0 ? 'text-success' : 'text-danger',
                     )}
                   >
-                    {change.delta_milli_dollars > 0 ? '+' : '-'}
-                    {formatMilliDollars(Math.abs(change.delta_milli_dollars))}
+                    {change.delta_milli_dollars > 0 ? '+' : ''}
+                    {formatMilliDollars(change.delta_milli_dollars)}
                   </td>
                   <td className="align-middle px-3 py-2">
                     {formatMilliDollars(change.credit_after_milli_dollars)}
