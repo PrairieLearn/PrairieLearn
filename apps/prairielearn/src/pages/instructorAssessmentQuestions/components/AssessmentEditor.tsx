@@ -12,7 +12,7 @@ import {
 } from '@dnd-kit/core';
 import { sortableKeyboardCoordinates } from '@dnd-kit/sortable';
 import { QueryClient, useMutation, useQuery, useQueryClient } from '@tanstack/react-query';
-import { parseAsStringLiteral, useQueryState } from 'nuqs';
+import { parseAsString, parseAsStringLiteral, useQueryState } from 'nuqs';
 import { useCallback, useEffect, useId, useMemo, useRef, useState } from 'react';
 
 import { run } from '@prairielearn/run';
@@ -55,7 +55,7 @@ import { getStructuralSaveValidationErrorKind } from '../utils/saveValidation.js
 import { createAssessmentQuestionsTrpcClient } from '../utils/trpc-client.js';
 import { TRPCProvider, useTRPC } from '../utils/trpc-context.js';
 import { useAssessmentEditor } from '../utils/useAssessmentEditor.js';
-import { findQuestionByTrackingId } from '../utils/zoneLookup.js';
+import { findAlternativeByTrackingId, findQuestionByTrackingId } from '../utils/zoneLookup.js';
 
 import { EditModeToolbar } from './EditModeToolbar.js';
 import { ExamResetNotSupportedModal } from './ExamResetNotSupportedModal.js';
@@ -156,6 +156,10 @@ function AssessmentEditorInner({
     mutationFn: (qid: string) => queryClient.fetchQuery(trpc.questionByQid.queryOptions({ qid })),
   });
 
+  const [preselectedZone, setPreselectedZone] = useQueryState('selectedZone', parseAsString.withDefault(''));
+  const [preselectedQuestionId, setPreselectedQuestionId] = useQueryState('selectedQuestion', parseAsString.withDefault(''));
+  const [preselectedAlternativeGroup, setPreselectedAlternativeGroup] = useQueryState('selectedAlternativeGroup', parseAsString.withDefault(''));
+  
   const [initialState] = useState<EditorState>(() => {
     const questionMetadataMap = Object.fromEntries(
       questionRows.map((r) => [questionDisplayName(course, r), toEditorMetadata(r)]),
@@ -172,8 +176,50 @@ function AssessmentEditorInner({
   const { zones, questionMetadata, collapsedGroups, collapsedZones, selectedItem, dispatch } =
     useAssessmentEditor(initialState);
 
+  function setPreselected({ zone = null, question = null, alternativeGroup = null }: { zone?: number | null, question?: string | null, alternativeGroup?: number | null }) {
+    setPreselectedZone(zone ? String(zone) : null);
+    setPreselectedQuestionId(question ?? null);
+    setPreselectedAlternativeGroup(alternativeGroup ? String(alternativeGroup) : null);
+  }
+
   const setSelectedItem = useCallback(
-    (item: SelectedItem) => dispatch({ type: 'SET_SELECTED_ITEM', selectedItem: item }),
+    (item: SelectedItem) => {
+      dispatch({ type: 'SET_SELECTED_ITEM', selectedItem: item });
+      
+      if (!item) 
+        return setPreselected({});
+
+      switch (item.type) {
+        case 'question': {
+          const foundQuestion = findQuestionByTrackingId(zones, item.questionTrackingId);
+          setPreselected(foundQuestion?.question.id ? { question: foundQuestion.question.id } : {});
+          break;
+        }
+        case 'zone': {
+          const foundZoneIndex = zones.findIndex((z) => z.trackingId === item.zoneTrackingId);
+          setPreselected(foundZoneIndex !== -1 ? { zone: foundZoneIndex } : {});
+          break;
+        }
+        case 'altGroup': {
+          const foundZoneIndex = zones.findIndex((z) => z.questions.some((q) => q.trackingId === item.questionTrackingId));
+          if (foundZoneIndex !== -1) {
+            const questionIndex = zones[foundZoneIndex].questions.findIndex((q) => q.trackingId === item.questionTrackingId);
+            setPreselected(questionIndex !== -1 ? { zone: foundZoneIndex, alternativeGroup: questionIndex } : {});
+          } else {
+            setPreselected({});
+          }
+          break;
+        }
+        case 'alternative': {
+          const foundAlternative = findAlternativeByTrackingId(zones, item.alternativeTrackingId);
+          setPreselected(foundAlternative?.alternative.id ? { question: foundAlternative.alternative.id } : {});
+          break;
+        }
+        default:
+          setPreselected({});
+          break;
+      }
+    },
     [dispatch],
   );
 
@@ -253,6 +299,42 @@ function AssessmentEditorInner({
     });
     return qidToZones;
   }, [zones]);
+
+
+  useEffect(() => {
+    if (zones.length && !selectedItem) {
+      if (preselectedQuestionId) {
+        const foundZone = zones.find((z) => z.questions.some((q) => q.id === preselectedQuestionId || q.alternatives?.some((a) => a.id === preselectedQuestionId)))
+        if (foundZone) {
+          const foundQuestion = foundZone.questions.find((q) => q.id === preselectedQuestionId);
+          if (foundQuestion) {
+            return setSelectedItem({ type: 'question', questionTrackingId: foundQuestion.trackingId });
+          }
+          const foundParentQuestion = foundZone.questions.find((q) => q.alternatives?.some((a) => a.id === preselectedQuestionId));
+          if (foundParentQuestion) {
+            const foundAlternative = foundParentQuestion.alternatives?.find((a) => a.id === preselectedQuestionId);
+            if (foundAlternative) {
+              return setSelectedItem({ type: 'alternative', questionTrackingId: foundParentQuestion.trackingId, alternativeTrackingId: foundAlternative.trackingId });
+            }
+          }
+        }
+      } else if (preselectedAlternativeGroup && preselectedZone) {
+        const foundZone = zones.at(Number(preselectedZone));
+        if (foundZone) {
+          const foundAlternativeGroup = foundZone.questions.at(Number(preselectedAlternativeGroup));
+          if (foundAlternativeGroup) {
+            setSelectedItem({ type: 'altGroup', questionTrackingId: foundAlternativeGroup.trackingId });
+          }
+        }
+      } else if (preselectedZone) {
+        const foundZone = zones.at(Number(preselectedZone));
+        if (foundZone) {
+          setSelectedItem({ type: 'zone', zoneTrackingId: foundZone.trackingId });
+        }
+      }
+    }
+  }, [])
+
 
   const disabledQids = useMemo(() => {
     const disabled = new Set<string>();
