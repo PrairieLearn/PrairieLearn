@@ -1,6 +1,7 @@
 -- BLOCK select_assessment_for_submission
 SELECT
-  ai.id AS assessment_instance_id
+  ai.id AS assessment_instance_id,
+  s.id AS submission_id
 FROM
   submissions AS s
   JOIN variants AS v ON (v.id = s.variant_id)
