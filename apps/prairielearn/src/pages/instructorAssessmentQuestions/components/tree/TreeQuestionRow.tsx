@@ -279,13 +279,6 @@ export function TreeQuestionRow({
               >
                 {renderedTitle}
               </a>
-              <IssueBadge
-                count={questionData.open_issue_count}
-                urlPrefix={`/pl/course_instance/${courseInstanceId}/instructor`}
-                issueQid={questionData.question.qid}
-                className="ms-1"
-                onClick={(e) => e.stopPropagation()}
-              />
               {!hasTitle && (
                 <CopyButton
                   text={question.id}
@@ -298,6 +291,15 @@ export function TreeQuestionRow({
             </>
           ) : (
             renderedTitle
+          )}
+          {questionData && (
+            <IssueBadge
+              count={questionData.open_issue_count}
+              urlPrefix={`/pl/course_instance/${courseInstanceId}/instructor`}
+              issueQid={questionData.question.qid}
+              className="ms-1"
+              onClick={(e) => e.stopPropagation()}
+            />
           )}
           {hasManualGradingAutoPointsWarning && (
             <WarningIndicator
