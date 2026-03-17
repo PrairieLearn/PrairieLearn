@@ -51,9 +51,7 @@ export function TransactionHistoryTable({
             ) : (
               rows.map((change) => (
                 <tr key={change.id}>
-                  <td className="align-middle px-3 py-2">
-                    {new Date(change.created_at).toLocaleString()}
-                  </td>
+                  <td className="align-middle px-3 py-2">{change.created_at.toLocaleString()}</td>
                   <td
                     className={clsx(
                       'align-middle px-3 py-2 fw-bold',

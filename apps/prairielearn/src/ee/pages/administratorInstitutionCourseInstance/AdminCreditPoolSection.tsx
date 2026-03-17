@@ -78,12 +78,13 @@ function AdminCreditPoolContent({
     enabled: showHistory,
   });
   const dailySpendingQuery = useQuery(trpc.dailySpending.queryOptions({ days: chartDays }));
+  const validGroupBy = groupBy !== 'none' ? groupBy : undefined;
   const groupedSpendingQuery = useQuery({
     ...trpc.dailySpendingGrouped.queryOptions({
       days: chartDays,
-      group_by: groupBy as 'user' | 'assessment' | 'question',
+      group_by: validGroupBy ?? 'user',
     }),
-    enabled: groupBy !== 'none',
+    enabled: validGroupBy != null,
   });
 
   const adjustMutation = useMutation({
@@ -270,10 +271,15 @@ function AdjustCreditsForm({
     'non_transferable',
   );
 
+  const parsedAmount = Number(amountStr);
+  const maxForAction = action === 'add' ? maxAddDollars : maxDeductDollars;
+  const isAmountInvalid =
+    amountStr !== '' &&
+    (!Number.isFinite(parsedAmount) || parsedAmount <= 0 || parsedAmount > maxForAction);
+
   function handleSubmit() {
-    const amount = Number(amountStr);
-    if (!Number.isFinite(amount) || amount <= 0) return;
-    onSubmit({ action, amount_dollars: amount, credit_type: creditType });
+    if (!Number.isFinite(parsedAmount) || parsedAmount <= 0) return;
+    onSubmit({ action, amount_dollars: parsedAmount, credit_type: creditType });
     setAmountStr('');
   }
 
@@ -318,12 +324,13 @@ function AdjustCreditsForm({
                 className="form-control"
                 id="amount_dollars"
                 min="0.01"
-                max={action === 'add' ? maxAddDollars : maxDeductDollars}
+                max={maxForAction}
                 step="0.01"
                 placeholder="0.00"
                 value={amountStr}
                 disabled={isDeleted}
                 required
+                aria-invalid={isAmountInvalid || undefined}
                 onChange={(e) => setAmountStr(e.target.value)}
               />
             </div>

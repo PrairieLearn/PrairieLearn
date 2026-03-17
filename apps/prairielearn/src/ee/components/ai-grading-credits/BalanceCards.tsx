@@ -55,7 +55,13 @@ export function BalanceCards({
                 props: { id: transferableTooltipId },
               }}
             >
-              <i className="bi bi-info-circle" aria-hidden="true" />
+              <button
+                type="button"
+                className="btn btn-link p-0 border-0 align-baseline"
+                aria-label="More information about transferable credits"
+              >
+                <i className="bi bi-info-circle" aria-hidden="true" />
+              </button>
             </OverlayTrigger>
           </div>
           <div className="h5 mb-0">
@@ -74,7 +80,13 @@ export function BalanceCards({
                 props: { id: nonTransferableTooltipId },
               }}
             >
-              <i className="bi bi-info-circle" aria-hidden="true" />
+              <button
+                type="button"
+                className="btn btn-link p-0 border-0 align-baseline"
+                aria-label="More information about non-transferable credits"
+              >
+                <i className="bi bi-info-circle" aria-hidden="true" />
+              </button>
             </OverlayTrigger>
           </div>
           <div className="h5 mb-0">

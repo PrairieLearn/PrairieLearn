@@ -423,12 +423,13 @@ function CreditPoolSection({ useCustomApiKeys }: { useCustomApiKeys: boolean }) 
     enabled: showHistory,
   });
   const dailySpendingQuery = useQuery(trpc.dailySpending.queryOptions({ days: chartDays }));
+  const validGroupBy = groupBy !== 'none' ? groupBy : undefined;
   const groupedSpendingQuery = useQuery({
     ...trpc.dailySpendingGrouped.queryOptions({
       days: chartDays,
-      group_by: groupBy as 'user' | 'assessment' | 'question',
+      group_by: validGroupBy ?? 'user',
     }),
-    enabled: groupBy !== 'none',
+    enabled: validGroupBy != null,
   });
 
   if (poolQuery.isError) {
