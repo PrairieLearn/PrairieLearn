@@ -4,7 +4,7 @@ import { generatePrefixCsrfToken } from '@prairielearn/signed-token';
 
 import { config } from '../lib/config.js';
 import { insertCourseRequest, selectAllCourseRequests } from '../lib/course-request.js';
-import { createAdministratorTrpcClient } from '../trpc/administrator/trpc-client.js';
+import { createAdministratorTrpcClient } from '../trpc/administrator/client.js';
 
 import * as helperClient from './helperClient.js';
 import * as helperServer from './helperServer.js';

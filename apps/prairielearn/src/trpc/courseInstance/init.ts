@@ -2,8 +2,6 @@ import { TRPCError, initTRPC } from '@trpc/server';
 import type { CreateExpressContextOptions } from '@trpc/server/adapters/express';
 import superjson from 'superjson';
 
-import { HttpStatusError } from '@prairielearn/error';
-
 import type { CourseInstance, StudentLabel } from '../../lib/db-types.js';
 import type { ResLocalsForPage } from '../../lib/res-locals.js';
 import { selectOptionalStudentLabelById } from '../../models/student-label.js';
@@ -17,30 +15,14 @@ export async function selectStudentLabelByIdOrNotFound({
   id: string;
   courseInstance: CourseInstance;
 }): Promise<StudentLabel> {
-  try {
-    const label = await selectOptionalStudentLabelById({ id, courseInstance });
-    if (label == null) {
-      throw new TRPCError({
-        code: 'NOT_FOUND',
-        message: 'Label not found',
-      });
-    }
-    return label;
-  } catch (error) {
-    if (error instanceof TRPCError) throw error;
-    if (error instanceof HttpStatusError) {
-      throw new TRPCError({
-        code: 'FORBIDDEN',
-        message: error.message,
-        cause: error,
-      });
-    }
+  const label = await selectOptionalStudentLabelById({ id, courseInstance });
+  if (label == null) {
     throw new TRPCError({
-      code: 'INTERNAL_SERVER_ERROR',
-      message: 'Failed to look up label',
-      cause: error,
+      code: 'NOT_FOUND',
+      message: 'Label not found',
     });
   }
+  return label;
 }
 
 export function createContext({ res }: CreateExpressContextOptions) {
@@ -63,7 +45,7 @@ export const t = initTRPC.context<TRPCContext>().create({
       ...shape,
       data: {
         ...shape.data,
-        appError: error instanceof AppError ? error.meta : null,
+        ...(error instanceof AppError ? { appError: error.meta } : {}),
       },
     };
   },

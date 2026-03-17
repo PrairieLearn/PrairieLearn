@@ -174,10 +174,10 @@ const upsert = t.procedure
     });
 
     if (!saveResult.success) {
-      throwAppError<StudentLabelErrors>(
-        { code: 'SYNC_JOB_FAILED', jobSequenceId: saveResult.jobSequenceId },
-        'INTERNAL_SERVER_ERROR',
-      );
+      throwAppError<StudentLabelErrors>({
+        code: 'SYNC_JOB_FAILED',
+        jobSequenceId: saveResult.jobSequenceId,
+      });
     }
 
     const uids = [...new Set(rawUids)];
@@ -287,10 +287,10 @@ const destroy = t.procedure
     });
 
     if (!saveResult.success) {
-      throwAppError<StudentLabelErrors>(
-        { code: 'SYNC_JOB_FAILED', jobSequenceId: saveResult.jobSequenceId },
-        'INTERNAL_SERVER_ERROR',
-      );
+      throwAppError<StudentLabelErrors>({
+        code: 'SYNC_JOB_FAILED',
+        jobSequenceId: saveResult.jobSequenceId,
+      });
     }
 
     return { origHash: saveResult.origHash };

@@ -9,7 +9,7 @@ import {
   updateCourseColumn,
 } from '../../models/course.js';
 
-import { requireAdministrator, t } from './trpc-init.js';
+import { requireAdministrator, t } from './init.js';
 
 const insert = t.procedure
   .use(requireAdministrator)
