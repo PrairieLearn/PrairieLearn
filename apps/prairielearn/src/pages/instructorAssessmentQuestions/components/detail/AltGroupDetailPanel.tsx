@@ -212,9 +212,9 @@ export function AltGroupDetailPanel({
           editMode={editMode}
           id={`${idPrefix}-numberChoose`}
           label="Number to choose"
-          viewValue={zoneQuestionBlock.numberChoose ?? 1}
+          viewValue={zoneQuestionBlock.numberChoose ?? 'All'}
           error={errors.numberChoose}
-          helpText={`How many of the ${alternativeCount} alternatives to randomly choose for each student (default: 1).`}
+          helpText={`How many of the ${alternativeCount} alternative${alternativeCount !== 1 ? 's' : ''} to randomly choose for each student (leave empty for all).`}
         >
           {(aria) => (
             <input

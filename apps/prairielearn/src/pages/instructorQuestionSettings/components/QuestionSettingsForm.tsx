@@ -240,6 +240,7 @@ export const QuestionSettingsForm = ({
           id="qid"
           disabled={!canEdit}
           aria-invalid={!!errors.qid || undefined}
+          defaultValue={defaultValues.qid}
           aria-errormessage={errors.qid ? 'qid-error' : undefined}
           {...register('qid', {
             required: 'QID is required',
@@ -277,6 +278,7 @@ export const QuestionSettingsForm = ({
           className="form-control"
           id="title"
           disabled={!canEdit}
+          defaultValue={defaultValues.title}
           {...register('title')}
         />
         <small className="form-text text-muted">
@@ -387,6 +389,7 @@ export const QuestionSettingsForm = ({
           className="form-select"
           id="grading_method"
           disabled={!canEdit}
+          defaultValue={defaultValues.grading_method}
           {...register('grading_method')}
         >
           <option value="Internal">Internal</option>
@@ -402,6 +405,7 @@ export const QuestionSettingsForm = ({
           type="checkbox"
           id="single_variant"
           disabled={!canEdit}
+          defaultChecked={defaultValues.single_variant}
           {...register('single_variant')}
         />
         <label className="form-check-label" htmlFor="single_variant">
@@ -419,6 +423,7 @@ export const QuestionSettingsForm = ({
           type="checkbox"
           id="show_correct_answer"
           disabled={!canEdit}
+          defaultChecked={defaultValues.show_correct_answer}
           {...register('show_correct_answer')}
         />
         <label className="form-check-label" htmlFor="show_correct_answer">
@@ -473,6 +478,7 @@ export const QuestionSettingsForm = ({
                 id="workspace_image"
                 disabled={!canEdit}
                 aria-invalid={!!errors.workspace_image || undefined}
+                defaultValue={defaultValues.workspace_image}
                 aria-errormessage={errors.workspace_image ? 'workspace_image-error' : undefined}
                 {...register('workspace_image', {
                   required: 'Image is required for workspace',
@@ -499,6 +505,7 @@ export const QuestionSettingsForm = ({
                 id="workspace_port"
                 disabled={!canEdit}
                 aria-invalid={!!errors.workspace_port || undefined}
+                defaultValue={defaultValues.workspace_port}
                 aria-errormessage={errors.workspace_port ? 'workspace_port-error' : undefined}
                 // Disable default behavior of incrementing/decrementing the value when scrolling
                 onWheel={(e) => e.currentTarget.blur()}
@@ -526,6 +533,7 @@ export const QuestionSettingsForm = ({
                 id="workspace_home"
                 disabled={!canEdit}
                 aria-invalid={!!errors.workspace_home || undefined}
+                defaultValue={defaultValues.workspace_home}
                 aria-errormessage={errors.workspace_home ? 'workspace_home-error' : undefined}
                 {...register('workspace_home', {
                   required: 'Home is required for workspace',
@@ -550,6 +558,7 @@ export const QuestionSettingsForm = ({
                 className="form-control"
                 id="workspace_graded_files"
                 disabled={!canEdit}
+                defaultValue={defaultValues.workspace_graded_files}
                 {...register('workspace_graded_files')}
               />
               <small className="form-text text-muted">
@@ -568,6 +577,7 @@ export const QuestionSettingsForm = ({
                 className="form-control"
                 id="workspace_args"
                 disabled={!canEdit}
+                defaultValue={defaultValues.workspace_args}
                 {...register('workspace_args')}
               />
               <small className="form-text text-muted">
@@ -586,6 +596,7 @@ export const QuestionSettingsForm = ({
                 id="workspace_environment"
                 disabled={!canEdit}
                 aria-invalid={!!errors.workspace_environment || undefined}
+                defaultValue={defaultValues.workspace_environment}
                 aria-errormessage={
                   errors.workspace_environment ? 'workspace_environment-error' : undefined
                 }
@@ -610,6 +621,7 @@ export const QuestionSettingsForm = ({
                 type="checkbox"
                 id="workspace_enable_networking"
                 disabled={!canEdit}
+                defaultChecked={defaultValues.workspace_enable_networking}
                 {...register('workspace_enable_networking')}
               />
               <label className="form-check-label" htmlFor="workspace_enable_networking">
@@ -626,6 +638,7 @@ export const QuestionSettingsForm = ({
                 type="checkbox"
                 id="workspace_rewrite_url"
                 disabled={!canEdit}
+                defaultChecked={defaultValues.workspace_rewrite_url}
                 {...register('workspace_rewrite_url')}
               />
               <label className="form-check-label" htmlFor="workspace_rewrite_url">
@@ -651,6 +664,7 @@ export const QuestionSettingsForm = ({
               type="checkbox"
               id="externalGradingEnabled"
               disabled={!canEdit}
+              defaultChecked={defaultValues.external_grading_enabled}
               {...register('external_grading_enabled')}
             />
             <label className="form-check-label h4 mb-0" htmlFor="externalGradingEnabled">
@@ -677,6 +691,7 @@ export const QuestionSettingsForm = ({
                 id="external_grading_image"
                 disabled={!canEdit}
                 aria-invalid={!!errors.external_grading_image || undefined}
+                defaultValue={defaultValues.external_grading_image}
                 aria-errormessage={
                   errors.external_grading_image ? 'external_grading_image-error' : undefined
                 }
@@ -704,6 +719,7 @@ export const QuestionSettingsForm = ({
                 className="form-control"
                 id="external_grading_entrypoint"
                 disabled={!canEdit}
+                defaultValue={defaultValues.external_grading_entrypoint}
                 {...register('external_grading_entrypoint')}
               />
               <small className="form-text text-muted">
@@ -721,6 +737,7 @@ export const QuestionSettingsForm = ({
                 className="form-control"
                 id="external_grading_files"
                 disabled={!canEdit}
+                defaultValue={defaultValues.external_grading_files}
                 {...register('external_grading_files')}
               />
               <small className="form-text text-muted">
@@ -740,6 +757,7 @@ export const QuestionSettingsForm = ({
                 id="external_grading_timeout"
                 disabled={!canEdit}
                 aria-invalid={!!errors.external_grading_timeout || undefined}
+                defaultValue={defaultValues.external_grading_timeout}
                 aria-errormessage={
                   errors.external_grading_timeout ? 'external_grading_timeout-error' : undefined
                 }
@@ -775,6 +793,7 @@ export const QuestionSettingsForm = ({
                 id="external_grading_environment"
                 disabled={!canEdit}
                 aria-invalid={!!errors.external_grading_environment || undefined}
+                defaultValue={defaultValues.external_grading_environment}
                 aria-errormessage={
                   errors.external_grading_environment
                     ? 'external_grading_environment-error'
@@ -801,6 +820,7 @@ export const QuestionSettingsForm = ({
                 type="checkbox"
                 id="external_grading_enable_networking"
                 disabled={!canEdit}
+                defaultChecked={defaultValues.external_grading_enable_networking}
                 {...register('external_grading_enable_networking')}
               />
               <label className="form-check-label" htmlFor="external_grading_enable_networking">
