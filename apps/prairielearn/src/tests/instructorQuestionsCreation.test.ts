@@ -6,7 +6,7 @@ import { afterAll, assert, beforeAll, describe, test } from 'vitest';
 import { config } from '../lib/config.js';
 import { EXAMPLE_COURSE_PATH } from '../lib/paths.js';
 
-import { fetchCheerio } from './helperClient.js';
+import { assertEditError, fetchCheerio } from './helperClient.js';
 import {
   type CourseRepoFixture,
   createCourseRepoFixture,
@@ -463,6 +463,65 @@ describe('Creating a question', () => {
       assert.match(
         createQuestionResponse.url,
         /\/pl\/course_instance\/1\/instructor\/edit_error\/\d+$/,
+      );
+    },
+  );
+
+  test.sequential(
+    'should not be able to create a question that is a subdirectory of an existing question',
+    async () => {
+      // "test-question" already exists. Try to create "test-question/nested".
+      const questionsResponse = await fetchCheerio(
+        `${siteUrl}/pl/course_instance/1/instructor/course_admin/questions/create`,
+      );
+      assert.equal(questionsResponse.status, 200);
+
+      const createQuestionResponse = await fetchCheerio(
+        `${siteUrl}/pl/course_instance/1/instructor/course_admin/questions/create`,
+        {
+          method: 'POST',
+          body: new URLSearchParams({
+            __action: 'add_question',
+            __csrf_token: questionsResponse.$('input[name=__csrf_token]').val() as string,
+            orig_hash: questionsResponse.$('input[name=orig_hash]').val() as string,
+            title: 'Nested Question',
+            qid: 'test-question/nested',
+            start_from: 'empty',
+          }),
+        },
+      );
+
+      await assertEditError(createQuestionResponse, 'is a subdirectory of the existing question');
+    },
+  );
+
+  test.sequential(
+    'should not be able to create a question that is a parent directory of an existing question',
+    async () => {
+      // "test/question" already exists. Try to create "test".
+      const questionsResponse = await fetchCheerio(
+        `${siteUrl}/pl/course_instance/1/instructor/course_admin/questions/create`,
+      );
+      assert.equal(questionsResponse.status, 200);
+
+      const createQuestionResponse = await fetchCheerio(
+        `${siteUrl}/pl/course_instance/1/instructor/course_admin/questions/create`,
+        {
+          method: 'POST',
+          body: new URLSearchParams({
+            __action: 'add_question',
+            __csrf_token: questionsResponse.$('input[name=__csrf_token]').val() as string,
+            orig_hash: questionsResponse.$('input[name=orig_hash]').val() as string,
+            title: 'Parent Question',
+            qid: 'test',
+            start_from: 'empty',
+          }),
+        },
+      );
+
+      await assertEditError(
+        createQuestionResponse,
+        'would be a parent directory of the existing question',
       );
     },
   );

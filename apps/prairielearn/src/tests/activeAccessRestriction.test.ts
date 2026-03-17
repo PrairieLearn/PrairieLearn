@@ -212,7 +212,7 @@ describe(
     });
 
     test.sequential('count number of variants generated', async () => {
-      context.numberOfVariants = await sqldb.queryRow(
+      context.numberOfVariants = await sqldb.queryScalar(
         sql.count_variants,
         { assessment_instance_id: helperClient.parseAssessmentInstanceId(context.examInstanceUrl) },
         z.number(),
@@ -343,7 +343,7 @@ describe(
     });
 
     test.sequential('ensure that no new variants have been created', async () => {
-      const countVariantsResult = await sqldb.queryRow(
+      const countVariantsResult = await sqldb.queryScalar(
         sql.count_variants,
         { assessment_instance_id: helperClient.parseAssessmentInstanceId(context.examInstanceUrl) },
         z.number(),
@@ -436,7 +436,7 @@ describe(
     });
 
     test.sequential('count number of variants generated', async () => {
-      context.numberOfVariants = await sqldb.queryRow(
+      context.numberOfVariants = await sqldb.queryScalar(
         sql.count_variants,
         { assessment_instance_id: helperClient.parseAssessmentInstanceId(context.hwInstanceUrl) },
         z.number(),
@@ -486,7 +486,7 @@ describe(
     );
 
     test.sequential('ensure that no new variants have been created', async () => {
-      const countVariantsResult = await sqldb.queryRow(
+      const countVariantsResult = await sqldb.queryScalar(
         sql.count_variants,
         { assessment_instance_id: helperClient.parseAssessmentInstanceId(context.hwInstanceUrl) },
         z.number(),
@@ -561,7 +561,7 @@ describe(
     test.sequential(
       'check that no credit is received for an answer submitted when active is false',
       async () => {
-        const points = await sqldb.queryRow(
+        const points = await sqldb.queryScalar(
           sql.read_assessment_instance_points,
           { assessment_id: context.hwId },
           z.number(),
@@ -691,7 +691,7 @@ describe(
     });
 
     test.sequential('check that no files or text were attached', async () => {
-      const numberOfFiles = await sqldb.queryRow(
+      const numberOfFiles = await sqldb.queryScalar(
         sql.get_attached_files,
         { assessment_id: context.hwId },
         z.number(),

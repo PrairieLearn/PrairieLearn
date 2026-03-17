@@ -1,7 +1,7 @@
 import z from 'zod';
 
 import { makeBatchedMigration } from '@prairielearn/migrations';
-import { queryRow, queryRows } from '@prairielearn/postgres';
+import { queryRows, queryScalar } from '@prairielearn/postgres';
 import { updateWorkspaceDiskUsage } from '@prairielearn/workspace-utils';
 
 import { config } from '../lib/config.js';
@@ -9,7 +9,7 @@ import { WorkspaceSchema } from '../lib/db-types.js';
 
 export default makeBatchedMigration({
   async getParameters() {
-    const max = await queryRow(
+    const max = await queryScalar(
       'SELECT MAX(id) as max from workspaces;',
       z.bigint({ coerce: true }).nullable(),
     );

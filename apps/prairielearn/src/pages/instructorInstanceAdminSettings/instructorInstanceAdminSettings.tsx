@@ -66,7 +66,7 @@ router.get(
       { course_id: course.id },
       z.object({ short_name: z.string(), long_name: z.string().nullable() }),
     );
-    const enrollmentCount = await sqldb.queryRow(
+    const enrollmentCount = await sqldb.queryScalar(
       sql.select_enrollment_count,
       { course_instance_id: courseInstance.id },
       z.number(),

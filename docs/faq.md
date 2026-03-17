@@ -86,14 +86,12 @@ Second, edit the assessment `pl-exp101/courseInstance/Fa17/assessments/final/inf
 {
   "allowAccess": [
     {
-      "mode": "Exam",
       "credit": 100,
       "startDate": "2017-12-14T00:00:01",
       "endDate": "2017-12-22T22:10:59"
     },
     {
       "uids": ["student@example.com"],
-      "mode": "Exam",
       "credit": 100,
       "startDate": "2018-02-01T00:00:01",
       "endDate": "2018-02-28T23:59:59"

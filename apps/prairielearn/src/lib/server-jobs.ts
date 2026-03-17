@@ -12,6 +12,7 @@ import {
   loadSqlEquiv,
   queryRow,
   queryRows,
+  queryScalars,
   runInTransactionAsync,
 } from '@prairielearn/postgres';
 import * as Sentry from '@prairielearn/sentry';
@@ -587,7 +588,7 @@ export async function errorAbandonedJobs() {
     }
   }
 
-  const abandonedJobSequences = await queryRows(sql.error_abandoned_job_sequences, IdSchema);
+  const abandonedJobSequences = await queryScalars(sql.error_abandoned_job_sequences, IdSchema);
   abandonedJobSequences.forEach(function (job_sequence_id) {
     socketServer.io!.to('jobSequence-' + job_sequence_id).emit('update');
   });
@@ -632,7 +633,7 @@ export async function getJobSequenceIds({
   status?: EnumJobStatus;
   type?: string;
 }) {
-  return await queryRows(
+  return await queryScalars(
     sql.select_job_sequence_ids,
     {
       assessment_question_id: assessment_question_id ?? null,

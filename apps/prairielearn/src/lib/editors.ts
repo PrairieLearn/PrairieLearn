@@ -469,6 +469,52 @@ async function getExistingShortNames(rootDirectory: string, infoFile: string) {
   return files;
 }
 
+/**
+ * Validates that a new QID does not conflict with any existing question QIDs
+ * by being a subdirectory or parent directory of an existing question. The sync
+ * process stops recursing into subdirectories once it finds an info.json, so
+ * nesting one question inside another would make the nested question invisible.
+ *
+ * @param newQid - The QID to validate.
+ * @param existingQids - List of existing question QIDs.
+ * @param skipQid - Optional QID to skip (e.g., the question being renamed).
+ */
+function validateQidNesting(newQid: string, existingQids: string[], skipQid?: string): void {
+  const normalizedNewQid = path.normalize(newQid);
+  for (const existingQid of existingQids) {
+    if (skipQid != null && existingQid === skipQid) continue;
+
+    const normalizedExistingQid = path.normalize(existingQid);
+    if (normalizedNewQid.startsWith(normalizedExistingQid + '/')) {
+      throw new AugmentedError(
+        `The QID "${newQid}" is a subdirectory of the existing question "${existingQid}". A question cannot be nested inside another question's directory.`,
+        {
+          info: html`
+            <p>
+              The QID <code>${newQid}</code> is a subdirectory of the existing question
+              <code>${existingQid}</code>. A question cannot be nested inside another question's
+              directory.
+            </p>
+          `,
+        },
+      );
+    }
+    if (normalizedExistingQid.startsWith(normalizedNewQid + '/')) {
+      throw new AugmentedError(
+        `The QID "${newQid}" would be a parent directory of the existing question "${existingQid}". A question cannot contain another question's directory.`,
+        {
+          info: html`
+            <p>
+              The QID <code>${newQid}</code> would be a parent directory of the existing question
+              <code>${existingQid}</code>. A question cannot contain another question's directory.
+            </p>
+          `,
+        },
+      );
+    }
+  }
+}
+
 export class AssessmentCopyEditor extends Editor {
   private assessment: Assessment;
   private course_instance: CourseInstance;
@@ -806,7 +852,7 @@ export class CourseInstanceCopyEditor extends Editor {
     const courseInstancesPath = path.join(this.course.path, 'courseInstances');
 
     debug('Get all existing long names');
-    const oldNamesLong = await sqldb.queryRows(
+    const oldNamesLong = await sqldb.queryScalars(
       sql.select_course_instances_with_course,
       { course_id: this.course.id },
       z.string(),
@@ -1219,7 +1265,7 @@ export class QuestionAddEditor extends Editor {
 
     const { qid, title } = await run(async () => {
       if (!(this.qid && this.title) && this.isDraft) {
-        let draftNumber = await sqldb.queryRow(
+        let draftNumber = await sqldb.queryScalar(
           sql.update_draft_number,
           { course_id: this.course.id },
           z.number(),
@@ -1229,7 +1275,7 @@ export class QuestionAddEditor extends Editor {
           await fs.pathExists(path.join(questionsPath, '__drafts__', `draft_${draftNumber}`))
         ) {
           // increment and sync to postgres
-          draftNumber = await sqldb.queryRow(
+          draftNumber = await sqldb.queryScalar(
             sql.update_draft_number,
             { course_id: this.course.id },
             z.number(),
@@ -1273,6 +1319,9 @@ export class QuestionAddEditor extends Editor {
         `,
       });
     }
+
+    const existingQids = await getExistingShortNames(questionsPath, 'info.json');
+    validateQidNesting(qid, existingQids);
 
     if (this.template_source !== 'empty' && this.template_qid) {
       const sourceQuestionsPath =
@@ -1642,6 +1691,11 @@ export class QuestionRenameEditor extends Editor {
       });
     }
 
+    if (qidChanging) {
+      const existingQids = await getExistingShortNames(questionsPath, 'info.json');
+      validateQidNesting(this.qid_new, existingQids, this.question.qid);
+    }
+
     const pathsToAdd: string[] = [];
 
     if (qidChanging) {
@@ -1829,7 +1883,7 @@ export class QuestionCopyEditor extends Editor {
 }
 
 async function selectQuestionTitlesForCourse(course: Course): Promise<string[]> {
-  return await sqldb.queryRows(
+  return await sqldb.queryScalars(
     sql.select_question_titles_for_course,
     { course_id: course.id },
     z.string(),
@@ -1837,7 +1891,7 @@ async function selectQuestionTitlesForCourse(course: Course): Promise<string[]> 
 }
 
 async function selectQuestionUuidsForCourse(course: Course): Promise<string[]> {
-  return await sqldb.queryRows(
+  return await sqldb.queryScalars(
     sql.select_question_uuids_for_course,
     { course_id: course.id },
     z.string(),
@@ -1908,6 +1962,8 @@ async function copyQuestion({
     questionTitle = names.longName;
   }
   const questionPath = path.join(questionsPath, qid);
+
+  validateQidNesting(qid, oldShortNames);
 
   const fromPath = from_path;
   const toPath = questionPath;

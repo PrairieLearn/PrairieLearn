@@ -19,15 +19,17 @@
     }
   ],
   "zones": [
-    { "questions": [{ "id": "template/number-input/random-prompt", "points": [3, 1] }] },
-    { "questions": [{ "id": "template/matrix-component-input/random-graph", "points": [3, 1] }] },
-    { "questions": [{ "id": "demo/annotated/engCircuit", "points": [5, 4, 3, 2, 1] }] },
+    { "questions": [{ "id": "template/number-input/random-prompt", "autoPoints": [3, 1] }] },
+    {
+      "questions": [{ "id": "template/matrix-component-input/random-graph", "autoPoints": [3, 1] }]
+    },
+    { "questions": [{ "id": "demo/annotated/engCircuit", "autoPoints": [5, 4, 3, 2, 1] }] },
     {
       "questions": [
         {
           "comment": "Similar questions",
           "numberChoose": 1,
-          "points": [4, 2, 1],
+          "autoPoints": [4, 2, 1],
           "alternatives": [
             { "id": "demo/annotated/mathOuterProduct" },
             { "id": "demo/annotated/mathMatrixMult" },
@@ -37,5 +39,5 @@
       ]
     }
   ],
-  "text": "<p><strong>Comments about this assessment:</strong> </p><p> This is an example of a practice exam, where students can generate many different instances of the same assessment for additional practice. </p> <p> You can read more about a general exam setup <a href=https://github.com/PrairieLearn/PrairieLearn/blob/master/exampleCourse/courseInstances/SectionA/assessments/exam/instantFeedback/__docs/docs.md target=_blank>here</a>.</p>"
+  "text": "<p><strong>Comments about this assessment:</strong> </p><p> This is an example of a practice exam, where students can generate many different instances of the same assessment for additional practice. </p> <p> You can read more about a general exam setup <a href=\"https://github.com/PrairieLearn/PrairieLearn/blob/master/exampleCourse/courseInstances/SectionA/assessments/exam/instantFeedback/__docs/docs.md\" rel=\"noreferrer\" target=\"_blank\">here</a>.</p>"
 }

@@ -1,4 +1,5 @@
 import fs from 'fs-extra';
+import z from 'zod';
 
 import { HttpStatusError } from '@prairielearn/error';
 import * as namedLocks from '@prairielearn/named-locks';
@@ -33,7 +34,7 @@ export async function checkAssessmentInstanceBelongsToCourseInstance(
   course_instance_id: string,
 ): Promise<void> {
   if (
-    (await sqldb.queryOptionalRow(
+    (await sqldb.queryOptionalScalar(
       sql.check_belongs,
       { assessment_instance_id, course_instance_id },
       IdSchema,
@@ -203,4 +204,53 @@ export async function pullAndUpdateCourse({
   });
 
   return { jobSequenceId: serverJob.jobSequenceId, jobPromise };
+}
+
+export async function checkCourseRepositoryExists(repoName: string) {
+  // Escape SQL LIKE wildcards so they are matched literally.
+  const escapedRepoName = repoName.replaceAll('%', '\\%').replaceAll('_', '\\_');
+  const result = await sqldb.queryScalar(
+    sql.exists_by_course_request_repository_name,
+    { repoName: escapedRepoName },
+    z.boolean(),
+  );
+  return result;
+}
+
+/**
+ * Extracts the "owner/repo.git" suffix from a Git repository URL,
+ * handling both SSH (git@github.com:Org/repo.git) and HTTPS
+ * (https://github.com/Org/repo.git) formats.
+ */
+function extractRepoSuffix(repository: string): string | null {
+  // SSH format: git@host:owner/repo.git
+  const sshMatch = repository.match(/:([^/]+\/[^/]+\.git)$/);
+  if (sshMatch) return sshMatch[1];
+
+  // HTTPS format: https://host/owner/repo.git
+  const httpsMatch = repository.match(/\/([^/]+\/[^/]+\.git)$/);
+  if (httpsMatch) return httpsMatch[1];
+
+  return null;
+}
+
+export async function checkCourseRepositoryUrlExists(repository: string) {
+  const suffix = extractRepoSuffix(repository);
+  if (suffix == null) {
+    // Fall back to exact match if we can't parse the URL.
+    return await sqldb.queryScalar(sql.exists_by_course_repository, { repository }, z.boolean());
+  }
+
+  // Escape SQL LIKE wildcards so they are matched literally.
+  const escapedSuffix = suffix.replaceAll('%', '\\%').replaceAll('_', '\\_');
+  return await sqldb.queryScalar(
+    sql.exists_by_course_repository_suffix,
+    { suffix: escapedSuffix },
+    z.boolean(),
+  );
+}
+
+export async function checkCoursePathExists(path: string) {
+  const result = await sqldb.queryScalar(sql.exists_by_course_path, { path }, z.boolean());
+  return result;
 }

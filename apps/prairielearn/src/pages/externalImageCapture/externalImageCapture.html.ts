@@ -24,6 +24,7 @@ export function ExternalImageCapture({
     content: html`
       <form
         id="external-image-capture-form"
+        method="POST"
         hx-post
         hx-trigger="submit"
         hx-swap="none"
@@ -54,7 +55,14 @@ export function ExternalImageCapture({
           </h1>
           <p>You should now see your captured image on the assessment page.</p>
         </div>
-        <div id="external-image-capture-failed-container" class="d-none">
+        <div id="external-image-capture-connection-failed-container" class="d-none">
+          <h1 class="d-flex align-items-center gap-2">
+            <i class="bi bi-x-circle-fill text-danger me-2"></i>
+            Connection failed
+          </h1>
+          <p>Unable to connect to the server. Please try again.</p>
+        </div>
+        <div id="external-image-capture-upload-failed-container" class="d-none">
           <h1 class="d-flex align-items-center gap-2">
             <i class="bi bi-x-circle-fill text-danger me-2"></i>
             Upload failed
