@@ -252,20 +252,12 @@ export function CalculatorDrawer({ storageKey }: { storageKey: string }): HtmlSa
                 class="btn-check"
                 name="btnradio"
                 id="main-btn"
-                autocomplete="off"
                 data-panel="main"
                 checked
               />
               <label class="btn btn-outline-secondary" for="main-btn">main</label>
 
-              <input
-                type="radio"
-                class="btn-check"
-                name="btnradio"
-                id="abc-btn"
-                autocomplete="off"
-                data-panel="abc"
-              />
+              <input type="radio" class="btn-check" name="btnradio" id="abc-btn" data-panel="abc" />
               <label class="btn btn-outline-secondary" for="abc-btn">abc</label>
 
               <input
@@ -273,7 +265,6 @@ export function CalculatorDrawer({ storageKey }: { storageKey: string }): HtmlSa
                 class="btn-check"
                 name="btnradio"
                 id="func-btn"
-                autocomplete="off"
                 data-panel="func"
               />
               <label class="btn btn-outline-secondary" for="func-btn">func</label>
