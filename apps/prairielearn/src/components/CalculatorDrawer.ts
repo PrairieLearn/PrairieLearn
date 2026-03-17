@@ -15,7 +15,13 @@ export function CalculatorDrawerToggle({
   // TODO: there might be more tools, which makes this card not calculator specific. refactor to a more generic component
   const toolsPopoverContent = html` <p>
       Tools can be enabled per-assessment or per-zone in your
-      <code>infoAssessment.json</code>:
+      <code>infoAssessment.json</code>.
+      <a
+        href="https://docs.prairielearn.com/assessment/configuration/#assessment-tools"
+        target="_blank"
+        rel="noreferrer"
+        >Learn more</a
+      >
     </p>
     <pre class="mb-0"><code>"tools":
   {
@@ -32,7 +38,7 @@ export function CalculatorDrawerToggle({
           ? html`
               <button
                 type="button"
-                class="btn btn-link ms-auto text-white border-0"
+                class="btn btn-link btn-sm ms-auto text-white border-0 p-0"
                 data-bs-toggle="popover"
                 data-bs-container="body"
                 data-bs-html="true"
