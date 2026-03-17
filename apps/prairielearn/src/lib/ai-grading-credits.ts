@@ -15,7 +15,7 @@ export function formatMilliDollars(milliDollars: number): string {
  *
  * @param rawCostDollars - The raw API cost in US dollars (e.g. 0.0045)
  * @param feeDecimal - The infrastructure fee as a decimal (e.g. 0.2 for 20%)
- * @returns The total cost in milli-dollars, rounded up to the nearest milli-dollar
+ * @returns The total cost in milli-dollars, rounded to the nearest milli-dollar
  */
 export function calculateCostWithFeeMilliDollars(
   rawCostDollars: number,

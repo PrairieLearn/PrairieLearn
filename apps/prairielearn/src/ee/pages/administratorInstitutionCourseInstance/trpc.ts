@@ -15,6 +15,13 @@ export async function createAdminContext({ req, res }: CreateExpressContextOptio
   const course_instance = await selectCourseInstanceById(req.params.course_instance_id);
   const course = await selectCourseById(course_instance.course_id);
 
+  if (course.institution_id !== req.params.institution_id) {
+    throw new TRPCError({
+      code: 'NOT_FOUND',
+      message: 'Course instance not found in this institution',
+    });
+  }
+
   return {
     course,
     course_instance,
@@ -38,6 +45,12 @@ const adjustCreditPoolMutation = t.procedure
     }),
   )
   .mutation(async (opts) => {
+    if (opts.ctx.course_instance.deleted_at != null) {
+      throw new TRPCError({
+        code: 'FORBIDDEN',
+        message: 'Cannot adjust credits for a deleted course instance',
+      });
+    }
     const maxDollars =
       opts.input.action === 'add'
         ? config.aiGradingCreditPoolMaxAddDollars

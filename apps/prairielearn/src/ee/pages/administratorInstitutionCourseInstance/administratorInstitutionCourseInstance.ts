@@ -42,6 +42,10 @@ router.get(
     const course_instance = await selectCourseInstanceById(req.params.course_instance_id);
     const course = await selectCourseById(course_instance.course_id);
 
+    if (course.institution_id !== institution.id) {
+      throw new error.HttpStatusError(404, 'Course instance not found in this institution');
+    }
+
     const planGrants = await getPlanGrantsForCourseInstance({
       institution_id: institution.id,
       course_instance_id: course_instance.id,
@@ -82,6 +86,12 @@ router.post(
   '/',
   typedAsyncHandler<'plain'>(async (req, res) => {
     const course_instance = await selectCourseInstanceById(req.params.course_instance_id);
+    const course = await selectCourseById(course_instance.course_id);
+    const institution = await getInstitution(req.params.institution_id);
+
+    if (course.institution_id !== institution.id) {
+      throw new error.HttpStatusError(404, 'Course instance not found in this institution');
+    }
 
     if (course_instance.deleted_at != null) {
       throw new error.HttpStatusError(403, 'Cannot modify a deleted course instance');

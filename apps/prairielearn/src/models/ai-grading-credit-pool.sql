@@ -81,7 +81,7 @@ WITH
         LIMIT
           1
       ) AS credit_after_milli_dollars,
-      COUNT(*)::int AS submission_count,
+      COUNT(DISTINCT c.ai_grading_job_id)::int AS submission_count,
       'AI grading' AS reason,
       MAX(u.name) AS user_name,
       MAX(u.uid) AS user_uid
@@ -92,8 +92,28 @@ WITH
     WHERE
       c.course_instance_id = $course_instance_id
       AND c.ai_grading_job_id IS NOT NULL
+      AND j.job_sequence_id IS NOT NULL
     GROUP BY
       j.job_sequence_id
+    UNION ALL
+    SELECT
+      c.id,
+      NULL::bigint AS job_sequence_id,
+      c.created_at,
+      c.delta_milli_dollars,
+      c.credit_after_milli_dollars,
+      1 AS submission_count,
+      'AI grading' AS reason,
+      u.name AS user_name,
+      u.uid AS user_uid
+    FROM
+      ai_grading_credit_pool_changes AS c
+      JOIN ai_grading_jobs AS j ON j.id = c.ai_grading_job_id
+      LEFT JOIN users AS u ON u.id = c.user_id
+    WHERE
+      c.course_instance_id = $course_instance_id
+      AND c.ai_grading_job_id IS NOT NULL
+      AND j.job_sequence_id IS NULL
     UNION ALL
     SELECT
       c.id,

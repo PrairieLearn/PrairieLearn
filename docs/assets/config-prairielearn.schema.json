@@ -1088,6 +1088,14 @@
       "type": "number",
       "default": 0.2
     },
+    "aiGradingCreditPoolMaxAddDollars": {
+      "type": "number",
+      "default": 10000
+    },
+    "aiGradingCreditPoolMaxDeductDollars": {
+      "type": "number",
+      "default": 10000
+    },
     "aiQuestionGenerationRateLimitDollars": {
       "type": "number",
       "default": 1
