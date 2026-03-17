@@ -408,6 +408,65 @@ export function hasAltGroupChooseExceedsCount(block: ZoneQuestionBlockForm): boo
   return block.numberChoose > block.alternatives.length;
 }
 
+/**
+ * Computes the [min, max] range of questions chosen from a specific alt group,
+ * based on the zone's spreading algorithm (mirrors `z_numbered_assessment_questions`
+ * in `assessment.sql`).
+ *
+ * Think of it like dealing cards in rounds: round 1 deals one question to each
+ * block, round 2 deals a second to blocks large enough, etc. The zone's
+ * `numberChoose` is the total number of cards dealt.
+ */
+export function computeAltGroupChosenRange(
+  zone: ZoneAssessmentForm,
+  targetBlock: ZoneQuestionBlockForm,
+): { min: number; max: number } {
+  // Compute the effective size of each block (how many questions it contributes).
+  const blockSizes = zone.questions.map((block) => {
+    if (block.alternatives) {
+      return Math.min(block.numberChoose ?? block.alternatives.length, block.alternatives.length);
+    }
+    return 1;
+  });
+
+  const targetIdx = zone.questions.indexOf(targetBlock);
+  const targetSize = blockSizes[targetIdx];
+
+  // If zone.numberChoose is null (select all), every block contributes its full effective size.
+  if (zone.numberChoose == null) {
+    return { min: targetSize, max: targetSize };
+  }
+
+  const budget = zone.numberChoose;
+
+  // Build rounds: round k (1-indexed) has one question from each block with size >= k.
+  // questionsDealtByRound[k] = cumulative questions dealt through round k.
+  const maxRound = Math.max(...blockSizes, 0);
+  const questionsDealtByRound: number[] = [0];
+  for (let k = 1; k <= maxRound; k++) {
+    const blocksInRound = blockSizes.filter((s) => s >= k).length;
+    questionsDealtByRound[k] = questionsDealtByRound[k - 1] + blocksInRound;
+  }
+
+  // How many full rounds is the target guaranteed to participate in?
+  // That's the last round k (up to targetSize) where the cumulative deal fits in budget.
+  let fullRoundsGuaranteed = 0;
+  for (let k = 0; k <= targetSize; k++) {
+    if (questionsDealtByRound[k] <= budget) {
+      fullRoundsGuaranteed = k;
+    }
+  }
+
+  // The target *might* get one more if it has capacity in the next round
+  // and there's leftover budget after the last full round.
+  const hasCapacityForNextRound = targetSize > fullRoundsGuaranteed;
+  const hasLeftoverBudget = budget > questionsDealtByRound[fullRoundsGuaranteed];
+  const max =
+    hasCapacityForNextRound && hasLeftoverBudget ? fullRoundsGuaranteed + 1 : fullRoundsGuaranteed;
+
+  return { min: fullRoundsGuaranteed, max };
+}
+
 export function toAssessmentForPicker(assessments: OtherAssessment[]): AssessmentForPicker[] {
   return assessments.map((a) => ({
     assessment_id: String(a.assessment_id),
