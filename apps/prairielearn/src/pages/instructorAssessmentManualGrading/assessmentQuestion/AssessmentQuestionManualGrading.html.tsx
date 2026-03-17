@@ -1,4 +1,5 @@
 import { QueryClient, useQueryClient } from '@tanstack/react-query';
+import clsx from 'clsx';
 import { useState } from 'react';
 import { Alert } from 'react-bootstrap';
 
@@ -17,6 +18,7 @@ import type { EnumAiGradingProvider } from '../../../lib/db-types.js';
 import type { RubricData } from '../../../lib/manualGrading.types.js';
 
 import type { InstanceQuestionRowWithAIGradingStats } from './assessmentQuestion.types.js';
+import { AgentGradingPromptInput } from './components/AgentGradingPromptInput.js';
 import { AiGradingUnavailableModal } from './components/AiGradingUnavailableModal.js';
 import { AssessmentQuestionTable } from './components/AssessmentQuestionTable.js';
 import {
@@ -94,88 +96,118 @@ function AssessmentQuestionManualGradingInner({
   // AI grading is available only if the question uses manual grading.
   const isAiGradingAvailable = (assessmentQuestion.max_manual_points ?? 0) > 0;
 
+  const [promptValue, setPromptValue] = useState('');
+
   const mutations = useManualGradingActions();
   const { setAiGradingModeMutation, groupSubmissionMutation } = mutations;
 
   return (
-    <>
-      {setAiGradingModeMutation.isError && (
-        <Alert
-          variant="danger"
-          className="mb-3"
-          dismissible
-          onClose={() => setAiGradingModeMutation.reset()}
-        >
-          <strong>Error:</strong> {setAiGradingModeMutation.error.message}
-        </Alert>
-      )}
-      <div className="d-flex flex-row justify-content-between align-items-center mb-3 gap-2">
-        <nav aria-label="breadcrumb">
-          <ol className="breadcrumb mb-0">
-            <li className="breadcrumb-item">
-              <a href={`${urlPrefix}/assessment/${assessment.id}/manual_grading`}>Manual grading</a>
-            </li>
-            <li className="breadcrumb-item active" aria-current="page">
-              Question {questionNumber}. {questionTitle}
-            </li>
-          </ol>
-        </nav>
-        {aiGradingEnabled && (
-          <div className="card px-3 py-2 mb-0">
-            <div
-              className={`form-check form-switch mb-0 ${isAiGradingAvailable ? 'opacity-100' : 'opacity-75'}`}
-            >
-              <input
-                className="form-check-input"
-                type="checkbox"
-                role="switch"
-                id="switchCheckDefault"
-                checked={aiGradingMode}
-                onChange={() => {
-                  if (!isAiGradingAvailable) {
-                    setShowAiGradingUnavailableModal(true);
-                    return;
-                  }
-                  setAiGradingModeMutation.mutate(
-                    { enabled: !aiGradingMode },
-                    {
-                      onSuccess: () => {
-                        setAiGradingMode((prev) => !prev);
-                      },
-                    },
-                  );
-                }}
-              />
-              <label className="form-check-label" htmlFor="switchCheckDefault">
-                <i className="bi bi-stars" />
-                AI grading mode
-              </label>
-            </div>
-          </div>
+    <div className={clsx('manual-grading-content', !aiGradingMode && 'no-chat')}>
+      {/* <div className="manual-grading-main">
+        {setAiGradingModeMutation.isError && (
+          <Alert
+            variant="danger"
+            className="mb-3"
+            dismissible
+            onClose={() => setAiGradingModeMutation.reset()}
+          >
+            <strong>Error:</strong> {setAiGradingModeMutation.error.message}
+          </Alert>
         )}
-      </div>
-      <AssessmentQuestionTable
-        hasCourseInstancePermissionEdit={hasCourseInstancePermissionEdit}
-        course={course}
-        courseInstance={courseInstance}
-        csrfToken={csrfToken}
-        instanceQuestionsInfo={instanceQuestionsInfo}
-        urlPrefix={urlPrefix}
-        assessment={assessment}
-        assessmentQuestion={assessmentQuestion}
-        questionQid={questionQid}
-        aiGradingMode={aiGradingMode}
-        aiGradingModelSelectionEnabled={aiGradingModelSelectionEnabled}
-        rubricData={rubricData}
-        instanceQuestionGroups={instanceQuestionGroups}
-        courseStaff={courseStaff}
-        aiGradingStats={aiGradingStats}
-        mutations={mutations}
-        initialOngoingJobSequenceTokens={initialOngoingJobSequenceTokens}
-        availableAiGradingProviders={availableAiGradingProviders}
-        onSetGroupInfoModalState={setGroupInfoModalState}
-        onSetConflictModalState={setConflictModalState}
-      />
+        <div className="d-flex flex-row justify-content-between align-items-center mb-3 gap-2">
+          <nav aria-label="breadcrumb">
+            <ol className="breadcrumb mb-0">
+              <li className="breadcrumb-item">
+                <a href={`${urlPrefix}/assessment/${assessment.id}/manual_grading`}>
+                  Manual grading
+                </a>
+              </li>
+              <li className="breadcrumb-item active" aria-current="page">
+                Question {questionNumber}. {questionTitle}
+              </li>
+            </ol>
+          </nav>
+          {aiGradingEnabled && (
+            <div className="card px-3 py-2 mb-0">
+              <div
+                className={clsx(
+                  'form-check form-switch mb-0',
+                  isAiGradingAvailable ? 'opacity-100' : 'opacity-75',
+                )}
+              >
+                <input
+                  className="form-check-input"
+                  type="checkbox"
+                  role="switch"
+                  id="switchCheckDefault"
+                  checked={aiGradingMode}
+                  onChange={() => {
+                    if (!isAiGradingAvailable) {
+                      setShowAiGradingUnavailableModal(true);
+                      return;
+                    }
+                    setAiGradingModeMutation.mutate(
+                      { enabled: !aiGradingMode },
+                      {
+                        onSuccess: () => {
+                          setAiGradingMode((prev) => !prev);
+                        },
+                      },
+                    );
+                  }}
+                />
+                <label className="form-check-label" htmlFor="switchCheckDefault">
+                  <i className="bi bi-stars" />
+                  AI grading mode
+                </label>
+              </div>
+            </div>
+          )}
+        </div>
+        <AssessmentQuestionTable
+          hasCourseInstancePermissionEdit={hasCourseInstancePermissionEdit}
+          course={course}
+          courseInstance={courseInstance}
+          csrfToken={csrfToken}
+          instanceQuestionsInfo={instanceQuestionsInfo}
+          urlPrefix={urlPrefix}
+          assessment={assessment}
+          assessmentQuestion={assessmentQuestion}
+          questionQid={questionQid}
+          aiGradingMode={aiGradingMode}
+          aiGradingModelSelectionEnabled={aiGradingModelSelectionEnabled}
+          rubricData={rubricData}
+          instanceQuestionGroups={instanceQuestionGroups}
+          courseStaff={courseStaff}
+          aiGradingStats={aiGradingStats}
+          mutations={mutations}
+          initialOngoingJobSequenceTokens={initialOngoingJobSequenceTokens}
+          availableAiGradingProviders={availableAiGradingProviders}
+          onSetGroupInfoModalState={setGroupInfoModalState}
+          onSetConflictModalState={setConflictModalState}
+        />
+      </div> */}
+
+      {aiGradingMode && (
+        <div className="manual-grading-chat d-flex flex-column bg-light border-start">
+          <div className="flex-grow-1 overflow-auto px-3 py-2">
+            {/* Chat messages will go here */}
+          </div>
+          <div className="border-top px-3 py-2">
+            <AgentGradingPromptInput
+              value={promptValue}
+              disabled={false}
+              isGenerating={false}
+              onChange={setPromptValue}
+              onSubmit={() => {
+                // TODO: handle submission
+                setPromptValue('');
+              }}
+              onStop={() => {}}
+            />
+          </div>
+        </div>
+      )}
 
       <GroupInfoModal
         modalState={groupInfoModalState}
@@ -199,7 +231,7 @@ function AssessmentQuestionManualGradingInner({
         show={showAiGradingUnavailableModal}
         onHide={() => setShowAiGradingUnavailableModal(false)}
       />
-    </>
+    </div>
   );
 }
 

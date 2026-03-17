@@ -1,0 +1,30 @@
+.manual-grading-container {
+  flex-grow: 1;
+  min-height: 0;
+}
+
+.manual-grading-content {
+  height: 100%;
+  display: grid;
+  grid-template-areas: 'main chat';
+  grid-template-rows: 1fr;
+  grid-template-columns: 1fr auto;
+}
+
+.manual-grading-content.no-chat {
+  grid-template-areas: 'main';
+  grid-template-columns: 1fr;
+}
+
+.manual-grading-main {
+  grid-area: main;
+  min-height: 0;
+  overflow-y: auto;
+  padding: 1rem;
+}
+
+.manual-grading-chat {
+  grid-area: chat;
+  min-height: 0;
+  width: 480px;
+}

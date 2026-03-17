@@ -2,6 +2,7 @@ import * as trpcExpress from '@trpc/server/adapters/express';
 import { Router } from 'express';
 import z from 'zod';
 
+import { compiledStylesheetTag } from '@prairielearn/compiled-assets';
 import * as error from '@prairielearn/error';
 import { Hydrate } from '@prairielearn/react/server';
 import { run } from '@prairielearn/run';
@@ -144,8 +145,10 @@ router.get(
         },
         options: {
           fullWidth: true,
+          contentPadding: false,
           pageNote: `Question ${number_in_alternative_group}`,
         },
+        headContent: [compiledStylesheetTag('assessmentQuestionManualGrading.css')],
         content: (
           <>
             <AssessmentOpenInstancesAlert
@@ -154,7 +157,7 @@ router.get(
               urlPrefix={urlPrefix}
             />
 
-            <Hydrate>
+            <Hydrate className="manual-grading-container">
               <AssessmentQuestionManualGrading
                 hasCourseInstancePermissionEdit={hasCourseInstancePermissionEdit}
                 search={search}
