@@ -5,7 +5,7 @@ import { z } from 'zod';
 
 import { DateFromISOString, IdSchema, IntervalSchema } from '@prairielearn/zod';
 
-import { QuestionPreferencesSchemaJsonSchema } from '../schemas/index.js';
+import { EnumAssessmentToolSchema, QuestionPreferencesSchemaJsonSchema } from '../schemas/index.js';
 
 // *******************************************************************************
 // Enum schemas. These should be alphabetized by their corresponding enum name.
@@ -505,9 +505,6 @@ export const AssessmentQuestionRolePermissionSchema = z.object({
 export type AssessmentQuestionRolePermission = z.infer<
   typeof AssessmentQuestionRolePermissionSchema
 >;
-
-export const EnumAssessmentToolSchema = z.enum(['calculator']);
-export type EnumAssessmentTool = z.infer<typeof EnumAssessmentToolSchema>;
 
 export const AssessmentToolSchema = z.object({
   assessment_id: IdSchema.nullable(),

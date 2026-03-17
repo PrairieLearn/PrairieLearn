@@ -1,8 +1,8 @@
 import { type ZodSchema, z } from 'zod';
 
-import { EnumAssessmentToolSchema } from '../lib/db-types.js';
-
 import { CommentJsonSchema } from './comment.js';
+
+export const EnumAssessmentToolSchema = z.enum(['calculator']);
 
 function uniqueArray<T extends ZodSchema>(schema: T) {
   return z.array(schema).refine((items) => new Set(items).size === items.length, {
@@ -309,14 +309,10 @@ export const ZoneQuestionBlockJsonSchema = QuestionPointsJsonSchema.extend({
 export type ZoneQuestionBlockJson = z.infer<typeof ZoneQuestionBlockJsonSchema>;
 export type ZoneQuestionBlockJsonInput = z.input<typeof ZoneQuestionBlockJsonSchema>;
 
-export const AssessmentToolJsonSchema = z
-  .object({
-    enabled: z.boolean().describe('Whether this assessment tool is enabled.'),
-    // leave room for additional keys in the future
-  })
-  .catchall(z.unknown());
-
-export type AssessmentToolJson = z.infer<typeof AssessmentToolJsonSchema>;
+const AssessmentToolJsonSchema = z.object({
+  enabled: z.boolean().describe('Whether this assessment tool is enabled.'),
+  // leave room for additional keys in the future
+});
 
 export const ZoneAssessmentJsonSchema = z.object({
   title: z
