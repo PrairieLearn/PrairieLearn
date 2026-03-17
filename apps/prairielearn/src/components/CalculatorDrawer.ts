@@ -12,23 +12,19 @@ export function CalculatorDrawerHeadScripts(): HtmlSafeString {
 export function CalculatorDrawerToggle({
   showInfoPopover = false,
 }: { showInfoPopover?: boolean } = {}): HtmlSafeString {
-  // TODO: there might be more tools, which makes this card not calculator specific. refactor to a more generic component
-  const toolsPopoverContent = html` <p>
-      Tools can be enabled per-assessment or per-zone in your
-      <code>infoAssessment.json</code>.
-      <a
-        href="https://docs.prairielearn.com/assessment/configuration/#assessment-tools"
-        target="_blank"
-        rel="noreferrer"
-        >Learn more</a
-      >
-    </p>
-    <pre class="mb-0"><code>"tools":
-  {
-    "calculator": {
-      "enabled": true
-    }
-  }</code></pre>`;
+  // TODO: there might be more tools, which makes this card not calculator specific.
+  const toolsPopoverContent = html`
+    Tools can be enabled
+    <a
+      href="https://docs.prairielearn.com/assessment/configuration/#enabling-tools-for-an-entire-assessment"
+      >per-assessment</a
+    >
+    or
+    <a href="https://docs.prairielearn.com/assessment/configuration/#overriding-tools-per-zone"
+      >per-zone</a
+    >
+    in <code>infoAssessment.json</code> and are disabled by default.
+  `;
 
   return html`
     <div class="card mb-4">

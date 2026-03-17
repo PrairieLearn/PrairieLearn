@@ -810,9 +810,17 @@ Assessment tools provide students with utilities they can use while working on q
 
 ### Available tools
 
-| Tool         | Description                                                                      |
-| ------------ | -------------------------------------------------------------------------------- |
-| `calculator` | A scientific calculator with expression evaluation, history, and deg/rad toggle. |
+| Tool                        | Description                                                                      |
+| --------------------------- | -------------------------------------------------------------------------------- |
+| [`calculator`](#calculator) | A scientific calculator with expression evaluation, history, and deg/rad toggle. |
+
+#### Calculator
+
+The calculator tool is a scientific calculator with expression evaluation, history, and deg/rad toggle. The calculator history is persistent across the assessment.
+
+| Property  | Type    | Description                                           |
+| --------- | ------- | ----------------------------------------------------- |
+| `enabled` | boolean | Whether the calculator is enabled. (default: `false`) |
 
 ### Enabling tools for an entire assessment
 
@@ -830,7 +838,7 @@ To enable a tool for all questions in an assessment, add a `tools` property to t
 
 ### Overriding tools per zone
 
-Zone-level tool configuration overrides the assessment-level configuration on a per-tool basis. For example, you can enable the calculator for the entire assessment but disable it in a specific zone:
+Zone-level tool configuration override the assessment-level configuration on a per-tool basis. For example, you can enable the calculator for the entire assessment but disable it in a specific zone:
 
 ```json title="infoAssessment.json"
 {
@@ -851,17 +859,18 @@ Zone-level tool configuration overrides the assessment-level configuration on a 
     },
     {
       "title": "Part 2: Calculator allowed",
+      "lockpoint": true,
       "questions": [{ "id": "complexCalculation", "points": 10 }]
     }
   ]
 }
 ```
 
-In this example, the calculator is disabled in "Part 1" (zone-level override) but remains enabled in "Part 2" (inherits from the assessment-level configuration).
+In this example, the calculator is disabled in "Part 1: No calculator" (zone-level override) but remains enabled in "Part 2: Calculator allowed" (inherits from the assessment-level configuration). Because "Part 2: Calculator allowed" has a [lockpoint](#lockpoints), students will have to complete all questions in "Part 1: No calculator" before they can attempt any questions in "Part 2: Calculator allowed".
 
-!!! note
+!!! warning
 
-    If a zone defines a tool configuration — even if it sets `"enabled": false` — it fully overrides the assessment-level setting for that tool. Zones that do not define a tool inherit the assessment-level configuration.
+    It is highly recommended to use [lockpoints](#lockpoints) when configuring tools per zone. If you do not use lockpoints, students may access tools from other zones by keeping a browser tab open with the other zone's question open.
 
 ## Access control
 
