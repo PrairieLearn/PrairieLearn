@@ -40,6 +40,7 @@ In addition to those properties, the following properties can be used to further
 | `advanceScorePerc`                                             | number  | Minimum score percentage require to advance to the next question (Exams only). (default: 0)                                 |
 | `gradeRateMinutes`                                             | number  | Minimum amount of time (in minutes) between graded submissions to the same question. (default: 0)                           |
 | [`groups`](#enabling-group-work-for-collaborative-assessments) | object  | Configuration for group-based assessments. (default: none)                                                                  |
+| [`tools`](#assessment-tools)                                   | object  | Configuration for assessment tools (e.g., calculator). (default: none)                                                      |
 
 See the [reference for `infoAssessment.json`](../schemas/infoAssessment.md) for more information about what can be added to this file.
 
@@ -802,6 +803,65 @@ When issue reporting is allowed, students see a button labeled "Report an error 
 Course staff see any reported issues show up on the "Issues" tab.
 
 ![Issue report](assessment-report3.png)
+
+## Assessment tools
+
+Assessment tools provide students with utilities they can use while working on questions. Tools can be configured at the assessment level or overridden per zone.
+
+### Available tools
+
+| Tool         | Description                                                                      |
+| ------------ | -------------------------------------------------------------------------------- |
+| `calculator` | A scientific calculator with expression evaluation, history, and deg/rad toggle. |
+
+### Enabling tools for an entire assessment
+
+To enable a tool for all questions in an assessment, add a `tools` property to the `infoAssessment.json` file:
+
+```json title="infoAssessment.json"
+{
+  "tools": {
+    "calculator": {
+      "enabled": true
+    }
+  }
+}
+```
+
+### Overriding tools per zone
+
+Zone-level tool configuration overrides the assessment-level configuration on a per-tool basis. For example, you can enable the calculator for the entire assessment but disable it in a specific zone:
+
+```json title="infoAssessment.json"
+{
+  "tools": {
+    "calculator": {
+      "enabled": true
+    }
+  },
+  "zones": [
+    {
+      "title": "Part 1: No calculator",
+      "tools": {
+        "calculator": {
+          "enabled": false
+        }
+      },
+      "questions": [{ "id": "manualComputation", "points": 10 }]
+    },
+    {
+      "title": "Part 2: Calculator allowed",
+      "questions": [{ "id": "complexCalculation", "points": 10 }]
+    }
+  ]
+}
+```
+
+In this example, the calculator is disabled in "Part 1" (zone-level override) but remains enabled in "Part 2" (inherits from the assessment-level configuration).
+
+!!! note
+
+    If a zone defines a tool configuration — even if it sets `"enabled": false` — it fully overrides the assessment-level setting for that tool. Zones that do not define a tool inherit the assessment-level configuration.
 
 ## Access control
 
