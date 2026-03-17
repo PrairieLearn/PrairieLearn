@@ -95,7 +95,7 @@ export function TreeZoneNode({
           role="button"
           tabIndex={0}
           className={clsx(
-            'tree-row d-flex align-items-center ps-2 py-2 border-bottom user-select-none',
+            'tree-row d-flex align-items-center ps-2 py-2 border-bottom user-select-none text-body',
             isSelected
               ? 'tree-row-selected bg-body-secondary'
               : 'bg-body-secondary list-group-item-action',

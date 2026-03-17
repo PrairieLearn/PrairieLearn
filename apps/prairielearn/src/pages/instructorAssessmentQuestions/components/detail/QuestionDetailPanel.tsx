@@ -11,7 +11,6 @@ import {
 import { run } from '@prairielearn/run';
 import { OverlayTrigger } from '@prairielearn/ui';
 
-import { AssessmentQuestionNumber } from '../../../../components/AssessmentQuestions.js';
 import { CopyButton } from '../../../../components/CopyButton.js';
 import type { EditorQuestionMetadata } from '../../../../lib/assessment-question.shared.js';
 import { getQuestionUrl } from '../../../../lib/client/url.js';
@@ -70,8 +69,6 @@ export function QuestionDetailPanel({
   zoneQuestionBlock,
   zone,
   questionData,
-  questionNumber,
-  alternativeNumber,
   idPrefix,
   state,
   onUpdate,
@@ -84,8 +81,6 @@ export function QuestionDetailPanel({
   zoneQuestionBlock?: ZoneQuestionBlockForm;
   zone?: ZoneAssessmentForm;
   questionData: EditorQuestionMetadata | null;
-  questionNumber: number;
-  alternativeNumber?: number;
   idPrefix: string;
   state: DetailState;
   onUpdate: (
@@ -318,10 +313,6 @@ export function QuestionDetailPanel({
       {/* Question header (number, title, tags, badges) — same in both modes */}
       <div className="mb-3">
         <div className="fw-semibold mb-1 d-inline-flex align-items-center">
-          <AssessmentQuestionNumber
-            questionNumber={questionNumber}
-            alternativeNumber={alternativeNumber}
-          />
           {questionData
             ? run(() => {
                 const titleContent = hasTitle ? (

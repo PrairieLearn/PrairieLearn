@@ -2,7 +2,6 @@ import clsx from 'clsx';
 import { useCallback, useEffect, useMemo } from 'react';
 import { useForm } from 'react-hook-form';
 
-import { AssessmentQuestionNumber } from '../../../../components/AssessmentQuestions.js';
 import type { DetailState, ZoneAssessmentForm, ZoneQuestionBlockForm } from '../../types.js';
 import {
   coerceToNumber,
@@ -46,7 +45,6 @@ export function AltGroupDetailPanel({
   zoneQuestionBlock,
   zone,
   questionMetadata,
-  questionNumber,
   idPrefix,
   state,
   onUpdate,
@@ -56,7 +54,6 @@ export function AltGroupDetailPanel({
   zoneQuestionBlock: ZoneQuestionBlockForm;
   zone: ZoneAssessmentForm;
   questionMetadata: QuestionMetadataMap;
-  questionNumber: number;
   idPrefix: string;
   state: DetailState;
   onUpdate: (
@@ -171,10 +168,6 @@ export function AltGroupDetailPanel({
 
   return (
     <div className="p-3">
-      <div className="fw-semibold mb-2 d-inline-flex align-items-center">
-        <AssessmentQuestionNumber questionNumber={questionNumber} />
-        <span>Alternative group</span>
-      </div>
       {pointsMismatch && (
         <div className="alert alert-warning small mb-3" role="alert">
           <i className="bi bi-exclamation-triangle-fill me-1" aria-hidden="true" />

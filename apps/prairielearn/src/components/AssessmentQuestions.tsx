@@ -66,10 +66,22 @@ export function AssessmentQuestionNumber({
   alternativeNumber?: number | null;
 }) {
   return (
-    <span className="badge color-gray1 me-2">
-      {alternativeNumber != null
-        ? `${questionNumber}.${alternativeNumber}.`
-        : `${questionNumber}.`}{' '}
+    <span className="me-2">
+      {formatAssessmentQuestionNumber({ questionNumber, alternativeNumber })}{' '}
+    </span>
+  );
+}
+
+export function formatAssessmentQuestionNumber({
+  questionNumber,
+  alternativeNumber,
+}: {
+  questionNumber: number;
+  alternativeNumber?: number | null;
+}) {
+  return (
+    <span style={{ fontVariant: 'tabular-nums' }}>
+      {alternativeNumber != null ? `${questionNumber}.${alternativeNumber}.` : `${questionNumber}.`}
     </span>
   );
 }

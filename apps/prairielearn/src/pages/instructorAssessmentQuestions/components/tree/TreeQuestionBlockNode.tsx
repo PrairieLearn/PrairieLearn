@@ -220,7 +220,7 @@ export function TreeQuestionBlockNode({
                     : `${min}-${max} chosen`;
                 return (
                   <>
-                    {displayCount} Alternative{displayCount !== 1 ? 's' : ''}{' '}
+                    {displayCount} alternative{displayCount !== 1 ? 's' : ''}{' '}
                     <span className="text-secondary">({chosenLabel})</span>
                   </>
                 );

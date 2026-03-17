@@ -2,9 +2,10 @@ import type { DraggableAttributes, DraggableSyntheticListeners } from '@dnd-kit/
 import clsx from 'clsx';
 import { type ReactElement, useId } from 'react';
 
+import { run } from '@prairielearn/run';
 import { OverlayTrigger } from '@prairielearn/ui';
 
-import { AssessmentQuestionNumber } from '../../../../components/AssessmentQuestions.js';
+import { formatAssessmentQuestionNumber } from '../../../../components/AssessmentQuestions.js';
 import { CopyButton } from '../../../../components/CopyButton.js';
 import { IssueBadge } from '../../../../components/IssueBadge.js';
 import type { EditorQuestionMetadata } from '../../../../lib/assessment-question.shared.js';
@@ -216,6 +217,18 @@ export function TreeQuestionRow({
       (question.maxAutoPoints ?? zoneQuestionBlock.maxAutoPoints) != null);
 
   const hasTitle = questionHasTitle(questionData);
+  const renderedTitle = run(() => {
+    const qid = <span className="font-monospace">{question.id}</span>;
+
+    if (!questionData) return qid;
+
+    return (
+      <>
+        {formatAssessmentQuestionNumber({ questionNumber, alternativeNumber })}{' '}
+        {hasTitle ? questionData.question.title : qid}
+      </>
+    );
+  });
 
   return (
     <div
@@ -254,12 +267,6 @@ export function TreeQuestionRow({
       />
       <div className="flex-grow-1" style={{ minWidth: 0 }}>
         <div className="text-truncate">
-          {viewType === 'detailed' && (
-            <AssessmentQuestionNumber
-              questionNumber={questionNumber}
-              alternativeNumber={alternativeNumber}
-            />
-          )}
           {questionData ? (
             hasCoursePermissionPreview ? (
               <>
@@ -268,11 +275,7 @@ export function TreeQuestionRow({
                   className="link-underline-opacity-0 link-underline-opacity-100-hover text-primary-emphasis"
                   onClick={(e) => e.stopPropagation()}
                 >
-                  {hasTitle ? (
-                    questionData.question.title
-                  ) : (
-                    <span className="font-monospace">{question.id}</span>
-                  )}
+                  {renderedTitle}
                 </a>
                 <IssueBadge
                   count={questionData.open_issue_count}
@@ -291,10 +294,8 @@ export function TreeQuestionRow({
                   />
                 )}
               </>
-            ) : hasTitle ? (
-              questionData.question.title
             ) : (
-              <span className="font-monospace">{question.id}</span>
+              renderedTitle
             )
           ) : (
             <span className="text-muted small font-monospace">{question.id}</span>
