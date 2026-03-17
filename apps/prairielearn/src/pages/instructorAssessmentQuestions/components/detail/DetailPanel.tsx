@@ -101,13 +101,12 @@ export function DetailPanel({
       }
       const block = blockResult.question;
       const zone = blockResult.zone;
-      const altIndex =
-        block.alternatives?.findIndex((a) => a.trackingId === selectedItem.alternativeTrackingId) ??
-        -1;
-      if (altIndex === -1 || !block.alternatives) {
+      const alternative = block.alternatives?.find(
+        (a) => a.trackingId === selectedItem.alternativeTrackingId,
+      );
+      if (!alternative) {
         throw new Error(`Alternative not found: ${selectedItem.alternativeTrackingId}`);
       }
-      const alternative = block.alternatives[altIndex];
       const altData = questionMetadata[alternative.id] ?? null;
       return (
         <QuestionDetailPanel

@@ -270,38 +270,34 @@ export function TreeQuestionRow({
       />
       <div className="flex-grow-1" style={{ minWidth: 0 }}>
         <div className="text-truncate">
-          {questionData ? (
-            hasCoursePermissionPreview ? (
-              <>
-                <a
-                  href={getQuestionUrl({ courseInstanceId, questionId: questionData.question.id })}
-                  className="link-underline-opacity-0 link-underline-opacity-100-hover text-primary-emphasis"
-                  onClick={(e) => e.stopPropagation()}
-                >
-                  {renderedTitle}
-                </a>
-                <IssueBadge
-                  count={questionData.open_issue_count}
-                  urlPrefix={`/pl/course_instance/${courseInstanceId}/instructor`}
-                  issueQid={questionData.question.qid}
-                  className="ms-1"
+          {questionData && hasCoursePermissionPreview ? (
+            <>
+              <a
+                href={getQuestionUrl({ courseInstanceId, questionId: questionData.question.id })}
+                className="link-underline-opacity-0 link-underline-opacity-100-hover text-primary-emphasis"
+                onClick={(e) => e.stopPropagation()}
+              >
+                {renderedTitle}
+              </a>
+              <IssueBadge
+                count={questionData.open_issue_count}
+                urlPrefix={`/pl/course_instance/${courseInstanceId}/instructor`}
+                issueQid={questionData.question.qid}
+                className="ms-1"
+                onClick={(e) => e.stopPropagation()}
+              />
+              {!hasTitle && (
+                <CopyButton
+                  text={question.id}
+                  tooltipId={`copy-qid-${question.id}`}
+                  ariaLabel="Copy QID"
+                  className="hover-show ms-1"
                   onClick={(e) => e.stopPropagation()}
                 />
-                {!hasTitle && (
-                  <CopyButton
-                    text={question.id}
-                    tooltipId={`copy-qid-${question.id}`}
-                    ariaLabel="Copy QID"
-                    className="hover-show ms-1"
-                    onClick={(e) => e.stopPropagation()}
-                  />
-                )}
-              </>
-            ) : (
-              renderedTitle
-            )
+              )}
+            </>
           ) : (
-            <span className="text-muted small font-monospace">{question.id}</span>
+            renderedTitle
           )}
           {hasManualGradingAutoPointsWarning && (
             <WarningIndicator
