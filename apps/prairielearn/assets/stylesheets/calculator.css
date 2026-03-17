@@ -251,7 +251,6 @@ math-field.pl-calculator-output:focus {
   background-color: var(--bs-tertiary-bg);
 }
 
-
 math-field.history-text {
   height: auto;
   font-size: inherit;
