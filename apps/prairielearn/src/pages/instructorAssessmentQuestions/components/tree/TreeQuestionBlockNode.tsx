@@ -206,9 +206,6 @@ export function TreeQuestionBlockNode({
         <div className="flex-grow-1" style={{ minWidth: 0 }}>
           <div className="d-flex align-items-center">
             <span className="text-truncate text-primary">
-              {state.viewType === 'detailed' && (
-                <AssessmentQuestionNumber questionNumber={questionNumber} />
-              )}
               <i className="bi bi-stack me-1" aria-hidden="true" />
               {run(() => {
                 const { min, max } = computeAltGroupChosenRange(zone, zoneQuestionBlock);
