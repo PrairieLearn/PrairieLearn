@@ -79,14 +79,14 @@ export function CalculatorDrawer({ storageKey }: { storageKey: string }): HtmlSa
       <i class="bi bi-calculator"></i>
       <span> Calculator </span>
       <i class="bi bi-chevron-up"></i>
-      <span class="calculator-fab-close" id="calculatorFabClose" aria-label="Dismiss calculator">
+      <span class="calculator-fab-close" id="calculatorFabClose">
         <i class="bi bi-x-lg"></i>
       </span>
     </button>
     <div
       class="calculator-drawer d-flex flex-column overflow-hidden"
       id="calculatorDrawer"
-      aria-hidden="true"
+      inert
       data-storage-key="${storageKey}"
     >
       <div class="calculator-resize-handle" id="calculatorResizeHandle"></div>
