@@ -34,7 +34,7 @@ FROM
           a.type
         )
         ORDER BY
-          admin_assessment_question_number (aq.id)
+          (aset.number, a.order_by, a.id)
       ) AS matched_assessments
     FROM
       assessment_questions AS aq

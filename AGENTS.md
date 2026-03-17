@@ -97,6 +97,8 @@ If a migration was created on the current feature branch (i.e., it has not been 
 
 If you make a change to the database, make sure to update the database schema description in `database/` and the Zod types/table list in `apps/prairielearn/src/lib/db-types.ts`.
 
+Dropping a sproc (stored procedure) only requires removing the file from `apps/prairielearn/src/sprocs` and updating `apps/prairielearn/src/sprocs/index.ts`. Do not author a migration that uses `DROP FUNCTION`.
+
 **Always prefer existing model functions over one-off raw SQL queries.** Check `apps/prairielearn/src/models/` for existing functions before writing any database queries. Model functions provide type safety, consistent patterns, and proper abstractions. Only write raw queries when no suitable model function exists.
 
 When inserting audit events (`insertAuditEvent`), always do so inside the same transaction as the action being audited. Use `runInTransactionAsync` to wrap the original database mutation and its corresponding audit log insertion together. This ensures that if either the action or the audit event fails, both are rolled back.
@@ -108,6 +110,7 @@ When working with assessment "groups" / "teams", see the [`groups-and-teams` ski
 ### SQL query conventions
 
 - Use `to_jsonb(table.*)` if you need to select all columns from a table as JSON. This is preferred over explicit `jsonb_build_object` calls because it automatically includes all columns and stays in sync with schema changes.
+- When writing SQL, get table and column names from `database/tables/` (the source of truth) or from nearby existing queries in the same feature area. Do NOT rely on names found in old migrations, as tables and columns may have been renamed since those migrations were written.
 
 ## TypeScript guidance
 
@@ -133,6 +136,7 @@ When working with assessment "groups" / "teams", see the [`groups-and-teams` ski
 
 - Use `react-bootstrap` components for UI elements.
 - Titles and buttons should use sentence case ("Save course", "Discard these changes").
+- Form inputs with validation errors should include `aria-invalid` and `aria-errormessage` attributes pointing to the error message element's `id`.
 - Prefer using [Bootstrap Icons](https://icons.getbootstrap.com/) for icons in new code.
 
 ### Testing
@@ -159,7 +163,6 @@ When writing tests:
 - In e2e tests, don't use CSS class selectors (e.g. `page.locator('.my-class')`). Prefer Playwright's recommended locators: `getByRole`, `getByText`, `getByTestId`, `getByLabel`. Add `data-testid` attributes or `aria-label` to page components when needed.
 - Don't add comments that narrate what the code already says (e.g., `// Click the button` before a `.click()` call). Only add comments when the intent isn't obvious from reading the code.
 - Prefer using the existing test course and its course instances for testing. Don't create new courses or course instances just to get a clean slate; instead, use transaction rollbacks or wipe the state between tests.
-- Playwright e2e tests run fully in parallel (`fullyParallel: true`). Each test must be self-contained — set up its own state (users, enrollments, etc.) rather than relying on shared mutable state from `beforeAll`. Use the `courseInstance` fixture for the default course instance. Don't use module-level variables to share state between tests.
 
 ### Rendering HTML
 

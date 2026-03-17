@@ -14,8 +14,6 @@ import {
   type EnumCourseRole,
   EnumCourseRoleSchema,
   type EnumMode,
-  type EnumModeReason,
-  EnumModeReasonSchema,
   EnumModeSchema,
   type Institution,
   InstitutionSchema,
@@ -101,7 +99,6 @@ interface RawPlainAuthzData {
   has_student_access?: boolean;
 
   mode: EnumMode;
-  mode_reason: EnumModeReason;
 }
 export type PlainAuthzData = Brand<RawPlainAuthzData, 'PlainAuthzData'>;
 
@@ -124,7 +121,6 @@ export type ConstructedCourseOrInstanceContext =
 /** The full authz data from a database query. This is NOT what is on res.locals. */
 export const CourseOrInstanceContextDataSchema = z.object({
   mode: EnumModeSchema,
-  mode_reason: EnumModeReasonSchema,
   course: CourseSchema,
   institution: InstitutionSchema,
   course_instance: CourseInstanceSchema.nullable(),

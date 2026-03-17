@@ -47,7 +47,7 @@ router.get(
 
     const purchases = isEnterprise() ? await getPurchasesForUser(authn_user.id) : [];
 
-    const { mode } = await ipToMode({
+    const mode = await ipToMode({
       ip: req.ip,
       date: res.locals.req_date,
       authn_user_id: authn_user.id,
@@ -100,7 +100,7 @@ router.post(
   '/',
   asyncHandler(async (req, res) => {
     if (req.body.__action === 'token_generate') {
-      const { mode } = await ipToMode({
+      const mode = await ipToMode({
         ip: req.ip,
         date: res.locals.req_date,
         authn_user_id: res.locals.authn_user.id,

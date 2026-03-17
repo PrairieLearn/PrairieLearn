@@ -115,7 +115,6 @@ export async function databaseExists(dbName: string): Promise<boolean> {
 }
 
 export async function setupDatabases({ configurePool = true }: { configurePool?: boolean } = {}) {
-  // In e2e tests, the template database should always exist.
   const templateExists = await databaseExists(POSTGRES_DATABASE_TEMPLATE);
   const dbName = getDatabaseNameForCurrentWorker();
   if (!templateExists) {
