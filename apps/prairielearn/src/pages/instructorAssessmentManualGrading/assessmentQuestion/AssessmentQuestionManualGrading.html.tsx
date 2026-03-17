@@ -4,6 +4,7 @@ import { Alert } from 'react-bootstrap';
 
 import { NuqsAdapter } from '@prairielearn/ui';
 
+import { type ChatMessage, Messages } from '../../../components/ChatMessages.js';
 import type { AiGradingGeneralStats } from '../../../ee/lib/ai-grading/types.js';
 import type { PageContext } from '../../../lib/client/page-context.js';
 import type {
@@ -23,6 +24,7 @@ import {
   type ConflictModalState,
   GradingConflictModal,
 } from './components/GradingConflictModal.js';
+import { GradingPromptInput } from './components/GradingPromptInput.js';
 import { GroupInfoModal, type GroupInfoModalState } from './components/GroupInfoModal.js';
 import { createManualGradingTrpcClient } from './utils/trpc-client.js';
 import { TRPCProvider, useTRPC } from './utils/trpc-context.js';
@@ -90,6 +92,14 @@ function AssessmentQuestionManualGradingInner({
   const [showAiGradingUnavailableModal, setShowAiGradingUnavailableModal] = useState(false);
 
   const [aiGradingMode, setAiGradingMode] = useState(initialAiGradingMode);
+  const [chatInput, setChatInput] = useState('');
+
+  const testMessages: ChatMessage[] = [
+    { id: '1', role: 'user', content: 'Grade all submissions for correctness.' },
+    { id: '2', role: 'assistant', content: 'I will review each submission and assess correctness based on the rubric criteria.' },
+    { id: '3', role: 'user', content: 'Focus on partial credit for students who got the right approach but wrong answer.' },
+    { id: '4', role: 'assistant', content: 'Understood. I will award partial credit when the methodology is correct even if the final answer is wrong.' },
+  ];
 
   // AI grading is available only if the question uses manual grading.
   const isAiGradingAvailable = (assessmentQuestion.max_manual_points ?? 0) > 0;
@@ -98,7 +108,8 @@ function AssessmentQuestionManualGradingInner({
   const { setAiGradingModeMutation, groupSubmissionMutation } = mutations;
 
   return (
-    <>
+    <div className="d-flex flex-row gap-3" style={{ maxHeight: '80vh' }}>
+      <div className="flex-grow-1" style={{ minWidth: 0, overflowY: 'auto' }}>
       {setAiGradingModeMutation.isError && (
         <Alert
           variant="danger"
@@ -199,7 +210,28 @@ function AssessmentQuestionManualGradingInner({
         show={showAiGradingUnavailableModal}
         onHide={() => setShowAiGradingUnavailableModal(false)}
       />
-    </>
+      </div>
+      <div
+        className="d-flex flex-column bg-light border rounded"
+        style={{ width: 350 }}
+      >
+        <div className="flex-grow-1 overflow-auto p-3">
+          <Messages messages={testMessages} />
+        </div>
+        <div className="p-3 border-top">
+          <GradingPromptInput
+            value={chatInput}
+            onChange={setChatInput}
+            onSubmit={() => {
+              setChatInput('');
+            }}
+            disabled={false}
+            isGenerating={false}
+            onStop={() => {}}
+          />
+        </div>
+      </div>
+    </div>
   );
 }
 
