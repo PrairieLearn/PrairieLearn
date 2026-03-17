@@ -389,9 +389,10 @@ export function initCalculator(storageKey: string, { drawer, fab, fabClose }: Dr
 
     ce.assign('ans', ce.parse('\\bot'));
     shouldAutoInsertAns = false;
-    if (calculatorInputElement.value.includes('{ans}')) {
-      calculatorInputElement.dispatchEvent(new CustomEvent('input'));
-    }
+    // Clear the input and output fields
+    calculatorInputElement.executeCommand('deleteAll');
+    calculatorOutput.value = '';
+    calculatorInputContainer.classList.remove('error');
   });
 
   registerCustomFunctions(ce);
