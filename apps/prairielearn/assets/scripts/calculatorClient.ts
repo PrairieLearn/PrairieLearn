@@ -388,9 +388,12 @@ export function initCalculator(storageKey: string, { drawer, fab, fabClose }: Dr
 
     const data = getCalculatorData(storageKey);
     data.history = [];
+    data.variable = [];
+    data.temp_input = null;
     setCalculatorData(storageKey, data);
 
-    ce.assign('ans', ce.parse('\\bot'));
+    ce.popScope();
+    ce.pushScope();
     shouldAutoInsertAns = false;
     // Clear the input and output fields
     calculatorInputElement.executeCommand('deleteAll');
@@ -726,6 +729,16 @@ export function initCalculator(storageKey: string, { drawer, fab, fabClose }: Dr
       historyItem.dataset.angleMode = newMode;
       updateModeBadge(modeBadge, newMode);
       reevaluateHistoryItem(historyItem);
+
+      // Persist the angle mode change to localStorage
+      const items = Array.from(historyPanel.querySelectorAll<HTMLElement>('.history-item'));
+      const domIndex = items.indexOf(historyItem);
+      const data = getCalculatorData(storageKey);
+      const storageIndex = data.history.length - 1 - domIndex;
+      if (storageIndex >= 0 && storageIndex < data.history.length) {
+        data.history[storageIndex].angleMode = newMode;
+        setCalculatorData(storageKey, data);
+      }
     });
 
     historyPanel.insertBefore(clone, historyPanel.firstChild);
@@ -908,17 +921,10 @@ export function containsTrigFunction(input: string): boolean {
   return /sin|cos|tan|cot|sec|csc/i.test(input);
 }
 
-const MODE_BADGE_CLASSES: Record<AngleMode, string> = {
-  rad: 'color-blue1',
-  deg: 'color-orange1',
-};
-
 function updateModeBadge(badge: HTMLElement, mode: AngleMode) {
   badge.textContent = mode;
-  for (const cls of Object.values(MODE_BADGE_CLASSES)) {
-    badge.classList.remove(cls);
-  }
-  badge.classList.add(MODE_BADGE_CLASSES[mode]);
+  badge.classList.toggle('color-blue1', mode === 'rad');
+  badge.classList.toggle('color-orange1', mode === 'deg');
 }
 
 function ensureElement<E extends Element>(element: E | null): E {
@@ -952,13 +958,7 @@ onDocumentReady(() => {
   if (toggleBtn) {
     toggleBtn.addEventListener('click', () => {
       initIfNeeded();
-      fab.classList.remove('visible');
-      drawer.classList.add('open');
-      drawer.setAttribute('aria-hidden', 'false');
-      const data = getCalculatorData(storageKey);
-      data.isOpen = true;
-      setCalculatorData(storageKey, data);
-      drawer.querySelector<MathfieldElement>('#calculator-input')?.focus();
+      fab.click();
     });
   }
 

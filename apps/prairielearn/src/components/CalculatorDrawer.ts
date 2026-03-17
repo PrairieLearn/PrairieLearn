@@ -163,10 +163,9 @@ export function CalculatorDrawer({ storageKey }: { storageKey: string }): HtmlSa
                   data-bs-delay="300"
                   data-bs-title="Toggle deg/rad"
                 ></button>
-                <span class="flex-grow-1"></span>
                 <button
                   type="button"
-                  class="calculator-action-btn history-action-btn history-copy-btn"
+                  class="calculator-action-btn history-action-btn history-copy-btn ms-auto"
                   data-bs-toggle="tooltip"
                   data-bs-placement="left"
                   data-bs-delay="300"
