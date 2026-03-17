@@ -236,7 +236,7 @@ export function TreeZoneNode({
               type="button"
               className={clsx(
                 'btn btn-sm border-0 text-muted ms-1 tree-delete-btn',
-                !isSelected && 'hover-show'
+                !isSelected && 'hover-show',
               )}
               aria-label="Delete zone"
               title="Delete zone"

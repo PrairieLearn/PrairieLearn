@@ -306,7 +306,7 @@ export function TreeQuestionBlockNode({
             type="button"
             className={clsx(
               'btn btn-sm border-0 text-muted ms-1 tree-delete-btn',
-              !isAltGroupSelected && 'hover-show'
+              !isAltGroupSelected && 'hover-show',
             )}
             aria-label="Delete alternative group"
             title="Delete alternative group"
