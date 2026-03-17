@@ -91,6 +91,7 @@ export function AdministratorCourseFormFields({
 
   useEffect(() => {
     if (!suggestPrefixQuery.data?.prefix) return;
+    if (!shortName.trim()) return;
     const newRepoShortName = buildRepoShortName(suggestPrefixQuery.data.prefix, shortName);
     setValue('path', `${coursesRoot}/${newRepoShortName}`);
     setValue('repository_short_name', newRepoShortName);
@@ -306,6 +307,7 @@ export function AdministratorCourseFormFields({
                 aria-label="Suggest repository and path prefix"
                 disabled={
                   suggestPrefixQuery.isFetching ||
+                  !shortName.trim() ||
                   !suggestPrefixOptions.institutionName ||
                   !suggestPrefixOptions.emailDomain ||
                   !aiSecretsConfigured

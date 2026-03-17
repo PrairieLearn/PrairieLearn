@@ -98,7 +98,18 @@ const checkInstructorLegitimacyQuery = t.procedure
       summary: z.string(),
       confidence: z.enum(['high', 'medium', 'low']),
       legitimate: z.boolean(),
-      sources: z.array(z.object({ url: z.string(), title: z.string().optional() })),
+      sources: z
+        .array(z.object({ url: z.string().url(), title: z.string().optional() }))
+        .transform((sources) =>
+          sources.filter((s) => {
+            try {
+              new URL(s.url);
+              return true;
+            } catch {
+              return false;
+            }
+          }),
+        ),
     }),
   )
   .query(async ({ input }) => {
@@ -136,7 +147,18 @@ const suggestPrefixFromEmailQuery = t.procedure
     z.object({
       prefix: z.string(),
       reasoning: z.string(),
-      sources: z.array(z.object({ url: z.string(), title: z.string().optional() })),
+      sources: z
+        .array(z.object({ url: z.string().url(), title: z.string().optional() }))
+        .transform((sources) =>
+          sources.filter((s) => {
+            try {
+              new URL(s.url);
+              return true;
+            } catch {
+              return false;
+            }
+          }),
+        ),
     }),
   )
   .query(async ({ input }) => {

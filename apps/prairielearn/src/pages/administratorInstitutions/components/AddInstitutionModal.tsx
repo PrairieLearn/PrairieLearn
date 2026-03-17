@@ -159,7 +159,7 @@ export function AddInstitutionModal({
                 tooltip={{
                   body: aiSecretsConfigured
                     ? 'Uses AI web search to suggest the correct timezone based on the institution name and domain. Fill in the short name and long name first.'
-                    : 'AI features require the correspondent OpenAI key to be configured.',
+                    : 'AI features require the corresponding OpenAI key to be configured.',
                   props: { id: 'suggest-timezone-tooltip' },
                 }}
               >
