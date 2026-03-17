@@ -211,11 +211,12 @@ describe('new question defaults', () => {
     });
   });
 
-  it('starts empty alt groups without inherited point defaults', () => {
+  it('starts empty alt groups without inherited point defaults or numberChoose', () => {
     const result = createAltGroupWithTrackingId();
 
     expect(result.autoPoints).toBeUndefined();
     expect(result.manualPoints).toBeUndefined();
+    expect(result.numberChoose).toBeUndefined();
     expect(result.alternatives).toEqual([]);
   });
 });

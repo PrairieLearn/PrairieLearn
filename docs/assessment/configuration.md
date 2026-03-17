@@ -207,7 +207,7 @@ If a question alternative list is specified, some of these questions are first s
 | `maxPoints`            | number          | The maximum points available for this question (or for each question in this alternative list if `alternatives` is set) on a Homework that allows multiple attempts for more points. May only be specified in Homework-type assessments, and only if `points` is specified. (Optional; default: same as `points`)                                                |
 | `id`                   | string          | The question ID if this slot contains just one question (can’t be specified with `alternatives`). (Optional; default: none)                                                                                                                                                                                                                                      |
 | `alternatives`         | array           | The list of question alternatives if this slot contains multiple alternative questions (can’t be specified with `id`). (Optional; default: none)                                                                                                                                                                                                                 |
-| `numberChoose`         | integer         | If `alternatives` are specified, the number of them to select. (Optional; default `1`).                                                                                                                                                                                                                                                                          |
+| `numberChoose`         | integer         | If `alternatives` are specified, the number of them to select. (Optional; default: select all).                                                                                                                                                                                                                                                                  |
 | `triesPerVariant`      | integer         | The maximum number of attempts allowed for each question variant (on Homeworks). (Optional; default `1`)                                                                                                                                                                                                                                                         |
 | `allowRealTimeGrading` | boolean         | Whether to allow real-time grading for this question (Exams only). (Optional; default `true`)                                                                                                                                                                                                                                                                    |
 | `forceMaxPoints`       | boolean         | Whether to force all students to receive maximum points. See [Regrading](regrading.md). (Optional; default `false`)                                                                                                                                                                                                                                              |
@@ -355,9 +355,28 @@ PrairieLearn distinguishes between _assessments_ and _assessment instances_. An 
 
 The specific questions assigned to a particular assessment instance are chosen in three steps:
 
-1. For each entry in the zone `questions` array, either take the single question in that entry or randomly select some of the questions from the list of question alternatives to give the _selected questions_. If `numberChoose` is specified, randomly select that many questions from the list of alternatives (defaults to 1).
+1. For each entry in the zone `questions` array, either take the single question in that entry or randomly select some of the questions from the list of question alternatives to give the _selected questions_. If `numberChoose` is specified, randomly select that many questions from the list of alternatives (defaults to selecting all alternatives).
 
 2. For each zone, concatenate the _selected questions_ from each `questions` entry to form the total list of _available zone questions_. If `numberChoose` is specified for the zone, randomly select that many questions from the available zone questions to give the _zone questions_ (defaults to selecting all of the available zone questions). If shuffling is enabled, randomly shuffle the order of the _zone questions_.
+
+   The selection tries to stratify / spread out the selection between the different questions equally.
+
+   ```json
+   {
+     "zones": [
+       {
+         "numberChoose": 3,
+         "questions": [
+           { "alternatives": [{ "id": "q1" }, { "id": "q2" }] },
+           { "alternatives": [{ "id": "q3" }, { "id": "q4" }], "numberChoose": 1 },
+           { "id": "q5" }
+         ]
+       }
+     ]
+   }
+   ```
+
+   When `numberChoose` is set to 3, it will try to select one question from each group (spreading out the selection). Thus, one of the two alternatives in the first question, one of the two alternatives in the second question, and the third question will be selected. The algorithm will never select both `q1` and `q2` with `numberChoose = 3`.
 
 3. Concatenate the _zone questions_ from each zone to form the total set of _assessment questions_. This set of questions forms the _assessment instance_ for this student/group.
 

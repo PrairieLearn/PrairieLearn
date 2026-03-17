@@ -7,8 +7,14 @@ import { run } from '@prairielearn/run';
 import { OverlayTrigger } from '@prairielearn/ui';
 
 import { AssessmentQuestionNumber } from '../../../../components/AssessmentQuestions.js';
-import type { TreeActions, TreeState, ZoneQuestionBlockForm } from '../../types.js';
+import type {
+  TreeActions,
+  TreeState,
+  ZoneAssessmentForm,
+  ZoneQuestionBlockForm,
+} from '../../types.js';
 import {
+  computeAltGroupChosenRange,
   getSharedTags,
   getSharedTopic,
   hasAltGroupChooseExceedsCount,
@@ -35,11 +41,13 @@ import { makeDraggableStyle } from './dragUtils.js';
 export function TreeQuestionBlockNode({
   zoneQuestionBlock,
   questionNumber,
+  zone,
   state,
   actions,
 }: {
   zoneQuestionBlock: ZoneQuestionBlockForm;
   questionNumber: number;
+  zone: ZoneAssessmentForm;
   state: TreeState;
   actions: TreeActions;
 }) {
@@ -203,9 +211,19 @@ export function TreeQuestionBlockNode({
               )}
               <i className="bi bi-stack me-1" aria-hidden="true" />
               {run(() => {
-                const choose = zoneQuestionBlock.numberChoose;
-                if (choose == null) return `Choose ${displayCount} of ${displayCount}`;
-                return `Choose ${choose} of ${displayCount}`;
+                const { min, max } = computeAltGroupChosenRange(zone, zoneQuestionBlock);
+                const allChosen = min === displayCount && max === displayCount;
+                const chosenLabel = allChosen
+                  ? 'all chosen'
+                  : min === max
+                    ? `${min} chosen`
+                    : `${min}-${max} chosen`;
+                return (
+                  <>
+                    {displayCount} Alternative{displayCount !== 1 ? 's' : ''}{' '}
+                    <span className="text-secondary">({chosenLabel})</span>
+                  </>
+                );
               })}
               <ChangeIndicatorBadges
                 trackingId={zoneQuestionBlock.trackingId}
