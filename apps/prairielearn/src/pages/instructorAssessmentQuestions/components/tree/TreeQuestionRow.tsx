@@ -346,7 +346,10 @@ export function TreeQuestionRow({
       {editMode && onDelete && (
         <button
           type="button"
-          className={`btn btn-sm border-0 text-muted ms-1 tree-delete-btn ${isSelected ? '' : 'hover-show'}`}
+          className={clsx(
+            `btn btn-sm border-0 text-muted ms-1 tree-delete-btn`,
+            !isSelected && 'hover-show'
+          )}
           aria-label={`Delete ${question.id}`}
           title="Delete question"
           onClick={(e) => {
