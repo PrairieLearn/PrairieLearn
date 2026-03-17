@@ -1,3 +1,10 @@
+import * as trpcExpress from '@trpc/server/adapters/express';
+import {
+  convertToModelMessages,
+  createUIMessageStream,
+  pipeUIMessageStreamToResponse,
+  streamText,
+} from 'ai';
 import { Router } from 'express';
 import z from 'zod';
 
@@ -8,6 +15,7 @@ import { generatePrefixCsrfToken } from '@prairielearn/signed-token';
 
 import { AssessmentOpenInstancesAlert } from '../../../components/AssessmentOpenInstancesAlert.js';
 import { PageLayout } from '../../../components/PageLayout.js';
+import { getAgenticGradingModel } from '../../../ee/lib/ai-grading/ai-grading-agent.js';
 import { getAvailableAiGradingProviders } from '../../../ee/lib/ai-grading/ai-grading-credentials.js';
 import {
   calculateAiGradingStats,
@@ -130,6 +138,14 @@ router.get(
       config.secretKey,
     );
 
+    const chatCsrfToken = generatePrefixCsrfToken(
+      {
+        url: req.originalUrl.split('?')[0] + '/chat',
+        authn_user_id: res.locals.authn_user.id,
+      },
+      config.secretKey,
+    );
+
     const availableAiGradingProviders = aiGradingEnabled
       ? await getAvailableAiGradingProviders(course_instance)
       : [];
@@ -189,6 +205,7 @@ router.get(
                 questionTitle={question.title ?? ''}
                 questionNumber={Number(number_in_alternative_group)}
                 availableAiGradingProviders={availableAiGradingProviders}
+                chatCsrfToken={chatCsrfToken}
               />
             </Hydrate>
           </>
@@ -241,6 +258,49 @@ router.get(
     );
   }),
 );
+
+router.post(
+  '/chat',
+  typedAsyncHandler<'instructor-assessment-question'>(async (req, res) => {
+    if (!res.locals.authz_data.has_course_instance_permission_view) {
+      throw new error.HttpStatusError(403, 'Access denied (must be a student data viewer)');
+    }
+
+    const { model } = getAgenticGradingModel();
+
+    const uiMessages = req.body.messages;
+    if (!Array.isArray(uiMessages) || uiMessages.length === 0) {
+      throw new error.HttpStatusError(400, 'No messages provided');
+    }
+    const messages = await convertToModelMessages(uiMessages);
+
+    const stream = createUIMessageStream({
+      execute({ writer }) {
+        const result = streamText({
+          model,
+          system:
+            'You are an AI grading assistant for PrairieLearn, an educational assessment platform. ' +
+            'You help instructors with grading student submissions. ' +
+            'Be concise and helpful.',
+          messages,
+        });
+        writer.merge(result.toUIMessageStream());
+      },
+    });
+
+    pipeUIMessageStreamToResponse({ response: res, stream });
+  }),
+);
+
+router.use(
+  '/trpc',
+  trpcExpress.createExpressMiddleware({
+    router: manualGradingAssessmentQuestionRouter,
+    createContext,
+    onError: handleTrpcError,
+  }),
+);
+
 
 router.post(
   '/',
