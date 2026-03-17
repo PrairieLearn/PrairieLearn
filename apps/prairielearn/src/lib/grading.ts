@@ -53,11 +53,6 @@ const VariantForSubmissionSchema = VariantSchema.extend({
   assessment_instance_open: z.boolean().nullable(),
 });
 
-const UpdatedInstanceQuestionPostSubmissionSchema = InstanceQuestionSchema.extend({
-  newly_requires_manual_grading: z.boolean(),
-  pending_state_changed: z.boolean(),
-});
-
 type SubmissionDataForSaving = Pick<Submission, 'variant_id' | 'auth_user_id'> &
   Pick<Partial<Submission>, 'credit' | 'mode' | 'client_fingerprint_id'> & {
     submitted_answer: NonNullable<Submission['submitted_answer']>;
@@ -173,15 +168,11 @@ async function insertSubmission({
           status: gradable ? 'saved' : 'invalid',
           requires_manual_grading: (variant.max_manual_points ?? 0) > 0,
         },
-        UpdatedInstanceQuestionPostSubmissionSchema,
+        InstanceQuestionSchema,
       );
       await updateInstanceQuestionStats({ instanceQuestion: updatedInstanceQuestion });
 
-      if (
-        recomputePendingAfterSubmission &&
-        variant.assessment_instance_id != null &&
-        updatedInstanceQuestion.pending_state_changed
-      ) {
+      if (recomputePendingAfterSubmission && variant.assessment_instance_id != null) {
         await updateAssessmentInstancesScorePercPending([variant.assessment_instance_id]);
       }
     }
@@ -371,6 +362,7 @@ async function selectSubmissionForGrading(
  * @param params.authn_user_id - The currently authenticated user.
  * @param params.ignoreGradeRateLimit - Whether to ignore grade rate limits.
  * @param params.ignoreRealTimeGradingDisabled - Whether to ignore real-time grading disabled checks.
+ * @param params.recomputePendingOnInsertJob - Whether to recompute pending score when creating the grading job.
  */
 export async function gradeVariant({
   variant,

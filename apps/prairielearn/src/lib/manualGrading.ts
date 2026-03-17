@@ -378,7 +378,7 @@ export async function updateAssessmentQuestionRubric({
         { assessment_question_id },
         IdSchema,
       );
-      await updateAssessmentInstancesScorePercPending(assessment_instance_ids);
+      await updateAssessmentInstancesScorePercPending(Array.from(new Set(assessment_instance_ids)));
     }
   });
 }

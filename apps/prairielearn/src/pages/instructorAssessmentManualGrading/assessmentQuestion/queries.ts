@@ -61,11 +61,11 @@ export async function updateInstanceQuestions({
   }
 
   await runInTransactionAsync(async () => {
-    const assessmentInstanceIds = await queryRows(
+    const assessment_instance_ids = await queryRows(
       sql.update_instance_questions_returning_assessment_instance_id,
       params,
       IdSchema,
     );
-    await updateAssessmentInstancesScorePercPending(Array.from(new Set(assessmentInstanceIds)));
+    await updateAssessmentInstancesScorePercPending(Array.from(new Set(assessment_instance_ids)));
   });
 }
