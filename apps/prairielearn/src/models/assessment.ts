@@ -104,16 +104,6 @@ export async function selectEnabledAssessmentTools({
   });
 }
 
-export async function selectZoneIdForInstanceQuestion(
-  instance_question_id: string,
-): Promise<string | null> {
-  return await queryOptionalScalar(
-    sql.select_zone_id_for_instance_question,
-    { instance_question_id },
-    IdSchema.nullable(),
-  );
-}
-
 export async function selectEnabledToolsForInstanceQuestion({
   instance_question_id,
   assessment_id,
@@ -121,7 +111,11 @@ export async function selectEnabledToolsForInstanceQuestion({
   instance_question_id: string;
   assessment_id: string;
 }) {
-  const zone_id = await selectZoneIdForInstanceQuestion(instance_question_id);
+  const zone_id = await queryOptionalScalar(
+    sql.select_zone_id_for_instance_question,
+    { instance_question_id },
+    IdSchema.nullable(),
+  );
   if (zone_id == null) return [];
   return selectEnabledAssessmentTools({ assessment_id, zone_id });
 }
