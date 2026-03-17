@@ -22,7 +22,7 @@ math-field.force-light {
   --contains-highlight-background-color: hsl(var(--hue), 40%, 95%);
   --contains-highlight-color: hsl(var(--hue), 40%, 49%);
   --text-highlight-background-color: hsla(var(--hue), 40%, 50%, 0.1);
-  
+
   /* override mathlive/css/mathfield.less */
   --_contains-highlight-background-color: var(
     --contains-highlight-background-color,
@@ -31,15 +31,9 @@ math-field.force-light {
   --_caret-color: var(--caret-color, hsl(var(--_hue), 40%, 49%));
 
   --_selection-color: var(--selection-color, #000);
-  --_selection-background-color: var(
-    --selection-background-color,
-    hsl(var(--_hue), 70%, 85%)
-  );
+  --_selection-background-color: var(--selection-background-color, hsl(var(--_hue), 70%, 85%));
 
-  --_text-highlight-background-color: var(
-    --highlight-text,
-    hsla(var(--_hue), 40%, 50%, 0.1)
-  );
+  --_text-highlight-background-color: var(--highlight-text, hsla(var(--_hue), 40%, 50%, 0.1));
 
   --_contains-highlight-background-color: var(
     --contains-highlight-background-color,
@@ -50,10 +44,7 @@ math-field.force-light {
 
   --_composition-background-color: var(--composition-background-color, #fff1c2);
   --_composition-text-color: var(--composition-text-color, black);
-  --_composition-underline-color: var(
-    --composition-underline-color,
-    transparent
-  );
+  --_composition-underline-color: var(--composition-underline-color, transparent);
 
   --_smart-fence-color: var(--smart-fence-color, currentColor);
   --_smart-fence-opacity: var(--smart-fence-opacity, 0.5);
@@ -91,6 +82,7 @@ math-field.force-light {
   position: fixed;
   bottom: 0;
   right: 16px;
+  z-index: 1045; /* FAB offcanvas layer */
   background: var(--bs-body-bg, #fff);
   box-shadow: 0 -2px 10px rgba(0, 0, 0, 0.15);
   transform: translateY(100%);
@@ -157,7 +149,7 @@ math-field.force-light {
   position: fixed;
   bottom: 0;
   right: 0;
-  z-index: 1040;
+  z-index: 1045; /* FAB offcanvas-backdrop layer */
   display: none;
   align-items: center;
   font-size: 0.9rem;
