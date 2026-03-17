@@ -79,9 +79,7 @@ describe('deductCreditsForAiGrading', () => {
     setupChangeCount = (await selectAllChanges(ciId)).length;
   }
 
-  function deductionChanges(
-    allChanges: Awaited<ReturnType<typeof selectAllChanges>>,
-  ) {
+  function deductionChanges(allChanges: Awaited<ReturnType<typeof selectAllChanges>>) {
     return allChanges.slice(setupChangeCount);
   }
 
@@ -204,7 +202,6 @@ describe('deductCreditsForAiGrading', () => {
     const changes = deductionChanges(await selectAllChanges(ciId));
     assert.equal(changes.length, 0);
   });
-
 });
 
 describe('adjustCreditPool', () => {
