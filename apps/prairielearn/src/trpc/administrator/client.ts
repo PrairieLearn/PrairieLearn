@@ -14,7 +14,7 @@ export function createAdministratorTrpcClient({
     links: [
       httpLink({
         url: `${urlPrefix}/administrator/trpc`,
-        headers: { 'X-CSRF-Token': csrfToken },
+        headers: { 'X-TRPC': 'true', 'X-CSRF-Token': csrfToken },
         transformer: superjson,
       }),
     ],

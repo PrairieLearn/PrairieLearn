@@ -112,7 +112,6 @@ describe('Instructor student labels page', () => {
       getCourseInstanceJsonPath(courseRepo.courseLiveDir, courseInstanceShortName),
     );
 
-    // Create label without students
     await trpcClient.studentLabels.upsert.mutate({
       name: 'Test Label A',
       color: 'blue1',
@@ -120,19 +119,16 @@ describe('Instructor student labels page', () => {
       origHash,
     });
 
-    // Verify label exists in database
     const courseInstance = await selectCourseInstanceById('1');
     let labels = await selectStudentLabelsInCourseInstance(courseInstance);
     const labelA = labels.find((l) => l.name === 'Test Label A');
     assert.isDefined(labelA);
     assert.equal(labelA.color, 'blue1');
 
-    // Refresh origHash after the first mutation
     origHash = await getOriginalHash(
       getCourseInstanceJsonPath(courseRepo.courseLiveDir, courseInstanceShortName),
     );
 
-    // Create label with students
     await trpcClient.studentLabels.upsert.mutate({
       name: 'Test Label B',
       color: 'green2',
@@ -140,7 +136,6 @@ describe('Instructor student labels page', () => {
       origHash,
     });
 
-    // Verify label exists with enrollments
     labels = await selectStudentLabelsInCourseInstance(courseInstance);
     const labelB = labels.find((l) => l.name === 'Test Label B');
     assert.isDefined(labelB);
@@ -148,12 +143,10 @@ describe('Instructor student labels page', () => {
     assert.equal(studentsWithLabelB.length, 2);
     assert.includeMembers(studentsWithLabelB, [enrollmentIds[0], enrollmentIds[1]]);
 
-    // Refresh origHash after the second mutation
     origHash = await getOriginalHash(
       getCourseInstanceJsonPath(courseRepo.courseLiveDir, courseInstanceShortName),
     );
 
-    // Attempt to create label with duplicate name - should fail
     try {
       await trpcClient.studentLabels.upsert.mutate({
         name: 'Test Label A',
@@ -167,7 +160,6 @@ describe('Instructor student labels page', () => {
       assert.include((err as TRPCClientError<CourseInstanceRouter>).message, 'LABEL_NAME_TAKEN');
     }
 
-    // Attempt to create label with empty name - should fail
     try {
       await trpcClient.studentLabels.upsert.mutate({
         name: '',
@@ -187,12 +179,10 @@ describe('Instructor student labels page', () => {
       getCourseInstanceJsonPath(courseRepo.courseLiveDir, courseInstanceShortName),
     );
 
-    // Get current labels
     let labels = await selectStudentLabelsInCourseInstance(await selectCourseInstanceById('1'));
     let labelA = labels.find((l) => l.name === 'Test Label A');
     assert.isDefined(labelA);
 
-    // Edit label name
     await trpcClient.studentLabels.upsert.mutate({
       labelId: labelA.id,
       name: 'Test Label A Renamed',
@@ -201,17 +191,14 @@ describe('Instructor student labels page', () => {
       origHash,
     });
 
-    // Verify name changed
     labels = await selectStudentLabelsInCourseInstance(await selectCourseInstanceById('1'));
     labelA = labels.find((l) => l.name === 'Test Label A Renamed');
     assert.isDefined(labelA);
 
-    // Refresh origHash after the mutation
     origHash = await getOriginalHash(
       getCourseInstanceJsonPath(courseRepo.courseLiveDir, courseInstanceShortName),
     );
 
-    // Edit label color
     await trpcClient.studentLabels.upsert.mutate({
       labelId: labelA.id,
       name: 'Test Label A Renamed',
@@ -225,12 +212,10 @@ describe('Instructor student labels page', () => {
     assert.isDefined(labelA);
     assert.equal(labelA.color, 'purple3');
 
-    // Refresh origHash after the mutation
     origHash = await getOriginalHash(
       getCourseInstanceJsonPath(courseRepo.courseLiveDir, courseInstanceShortName),
     );
 
-    // Add students to label via edit
     await trpcClient.studentLabels.upsert.mutate({
       labelId: labelA.id,
       name: 'Test Label A Renamed',
@@ -243,12 +228,10 @@ describe('Instructor student labels page', () => {
     assert.equal(studentsWithLabel.length, 1);
     assert.include(studentsWithLabel, enrollmentIds[2]);
 
-    // Refresh origHash after the mutation
     origHash = await getOriginalHash(
       getCourseInstanceJsonPath(courseRepo.courseLiveDir, courseInstanceShortName),
     );
 
-    // Remove students via edit (set empty uids)
     await trpcClient.studentLabels.upsert.mutate({
       labelId: labelA.id,
       name: 'Test Label A Renamed',
@@ -260,12 +243,10 @@ describe('Instructor student labels page', () => {
     studentsWithLabel = (await selectEnrollmentsInStudentLabel(labelA)).map((e) => e.id);
     assert.equal(studentsWithLabel.length, 0);
 
-    // Refresh origHash after the mutation
     origHash = await getOriginalHash(
       getCourseInstanceJsonPath(courseRepo.courseLiveDir, courseInstanceShortName),
     );
 
-    // Attempt to rename to existing label name - should fail
     const labelB = labels.find((l) => l.name === 'Test Label B');
     assert.isDefined(labelB);
 
@@ -290,7 +271,6 @@ describe('Instructor student labels page', () => {
       getCourseInstanceJsonPath(courseRepo.courseLiveDir, courseInstanceShortName),
     );
 
-    // Get current labels
     let labels = await selectStudentLabelsInCourseInstance(await selectCourseInstanceById('1'));
     const labelA = labels.find((l) => l.name === 'Test Label A Renamed');
     assert.isDefined(labelA);
@@ -300,17 +280,14 @@ describe('Instructor student labels page', () => {
       origHash,
     });
 
-    // Verify label is deleted
     labels = await selectStudentLabelsInCourseInstance(await selectCourseInstanceById('1'));
     const deletedLabel = labels.find((l) => l.name === 'Test Label A Renamed');
     assert.isUndefined(deletedLabel);
 
-    // Refresh origHash after the mutation
     origHash = await getOriginalHash(
       getCourseInstanceJsonPath(courseRepo.courseLiveDir, courseInstanceShortName),
     );
 
-    // Attempt to delete non-existent label - should fail with NOT_FOUND
     try {
       await trpcClient.studentLabels.destroy.mutate({
         labelId: '999999',
@@ -326,7 +303,6 @@ describe('Instructor student labels page', () => {
     const trpcClient = createTrpcClient();
     const invitedUid = 'invited-student@example.com';
 
-    // Create an invited enrollment (pending_uid, no user_id)
     await queryOptionalRow(
       `INSERT INTO enrollments (course_instance_id, status, pending_uid)
        VALUES ($1, 'invited', $2)
@@ -336,18 +312,15 @@ describe('Instructor student labels page', () => {
       EnrollmentSchema,
     );
 
-    // checkUids should recognize the invited student's UID as valid
     const checkResult = await trpcClient.studentLabels.checkUids.query({ uids: [invitedUid] });
     assert.deepEqual(checkResult.unenrolledUids, []);
 
-    // checkUids should still flag truly unknown UIDs
     const unknownUid = 'totally-unknown@example.com';
     const mixedResult = await trpcClient.studentLabels.checkUids.query({
       uids: [invitedUid, studentUids[0], unknownUid],
     });
     assert.deepEqual(mixedResult.unenrolledUids, [unknownUid]);
 
-    // Create a label with the invited student
     const origHash = await getOriginalHash(
       getCourseInstanceJsonPath(courseRepo.courseLiveDir, courseInstanceShortName),
     );
@@ -358,7 +331,6 @@ describe('Instructor student labels page', () => {
       origHash,
     });
 
-    // Verify the label has both enrollments
     const courseInstance = await selectCourseInstanceById('1');
     const labels = await selectStudentLabelsInCourseInstance(courseInstance);
     const invitedLabel = labels.find((l) => l.name === 'Invited Label');
@@ -366,7 +338,6 @@ describe('Instructor student labels page', () => {
     const enrollmentsInLabel = await selectEnrollmentsInStudentLabel(invitedLabel);
     assert.equal(enrollmentsInLabel.length, 2);
 
-    // Verify the display query includes the invited student
     const labelsWithUserData = await getStudentLabelsWithUserData(courseInstance);
     const labelData = labelsWithUserData.find((l) => l.student_label.name === 'Invited Label');
     assert.isDefined(labelData);
