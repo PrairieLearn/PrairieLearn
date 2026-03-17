@@ -533,6 +533,9 @@ describe('prepareZonesForEditor normalization', () => {
     expect(group.alternatives![0].autoPoints).toBeUndefined();
     expect(group.alternatives![1].autoPoints).toBe(10);
     expect(group.alternatives![1].manualPoints).toBeUndefined();
+
+    // Info banner flag should be set for mixed alt groups
+    expect((group as any).pointsDistributedInfoBanner).toBe(true);
   });
 
   it('falls through to autoPoints when alt group has no metadata', () => {
@@ -653,35 +656,6 @@ describe('prepareZonesForEditor normalization', () => {
     expect(group.manualPoints).toBeUndefined();
     expect(group.alternatives![0].manualPoints).toBe(10);
     expect(group.alternatives![1].autoPoints).toBe(10);
-  });
-
-  it('sets pointsDistributedInfoBanner flag on mixed alt groups', () => {
-    const zones: ZoneAssessmentJson[] = [
-      {
-        lockpoint: false,
-        canSubmit: [],
-        canView: [],
-        questions: [
-          {
-            numberChoose: 1,
-            points: 10,
-            canSubmit: [],
-            canView: [],
-            alternatives: [{ id: 'alt1' }, { id: 'alt2' }],
-          },
-        ],
-      },
-    ];
-
-    const metadata = {
-      alt1: { question: { grading_method: 'Manual' } },
-      alt2: { question: { grading_method: 'External' } },
-    } as any;
-
-    const result = prepareZonesForEditor(zones, metadata);
-    const group = result[0].questions[0] as any;
-
-    expect(group.pointsDistributedInfoBanner).toBe(true);
   });
 });
 

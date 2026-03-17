@@ -1,5 +1,5 @@
 import clsx from 'clsx';
-import { useCallback, useEffect, useMemo, useState } from 'react';
+import { useCallback, useEffect, useMemo } from 'react';
 import { useForm } from 'react-hook-form';
 
 import type { DetailState, ZoneAssessmentForm, ZoneQuestionBlockForm } from '../../types.js';
@@ -50,6 +50,7 @@ export function AltGroupDetailPanel({
   onUpdate,
   onDelete,
   onFormValidChange,
+  onDismissBanner,
 }: {
   zoneQuestionBlock: ZoneQuestionBlockForm;
   zone: ZoneAssessmentForm;
@@ -62,11 +63,10 @@ export function AltGroupDetailPanel({
   ) => void;
   onDelete: (questionTrackingId: string) => void;
   onFormValidChange: (isValid: boolean) => void;
+  onDismissBanner: (trackingId: string) => void;
 }) {
   const { editMode, assessmentType, constantQuestionValue, assessmentDefaults } = state;
   const alternativeCount = zoneQuestionBlock.alternatives?.length ?? 0;
-
-  const [bannerDismissed, setBannerDismissed] = useState(false);
 
   const sharedTopic = getSharedTopic(zoneQuestionBlock.alternatives ?? [], questionMetadata);
   const sharedTags = getSharedTags(zoneQuestionBlock.alternatives ?? [], questionMetadata);
@@ -191,19 +191,20 @@ export function AltGroupDetailPanel({
           Number to choose exceeds the number of alternatives in this group.
         </div>
       )}
-      {zoneQuestionBlock.pointsDistributedInfoBanner && !bannerDismissed && (
-        <div className="alert alert-info small mb-3 alert-dismissible" role="alert">
-          <i className="bi bi-info-circle-fill me-1" aria-hidden="true" />
-          This group contains both auto-graded and manually-graded questions. Points have been
-          distributed to individual alternatives based on each question's grading method.
-          <button
-            type="button"
-            className="btn-close"
-            aria-label="Dismiss"
-            onClick={() => setBannerDismissed(true)}
-          />
-        </div>
-      )}
+      {zoneQuestionBlock.pointsDistributedInfoBanner &&
+        !state.dismissedBanners.has(zoneQuestionBlock.trackingId) && (
+          <div className="alert alert-info small mb-3 alert-dismissible" role="alert">
+            <i className="bi bi-info-circle-fill me-1" aria-hidden="true" />
+            This group contains both auto-graded and manually-graded questions. Points have been
+            distributed to individual alternatives based on each question's grading method.
+            <button
+              type="button"
+              className="btn-close"
+              aria-label="Dismiss"
+              onClick={() => onDismissBanner(zoneQuestionBlock.trackingId)}
+            />
+          </div>
+        )}
       {hasAutoGradedWithOnlyManualPoints && (
         <div className="alert alert-info small mb-3" role="alert">
           <i className="bi bi-info-circle-fill me-1" aria-hidden="true" />

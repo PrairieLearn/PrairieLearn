@@ -28,20 +28,6 @@
           "autoPoints": 1
         }
       ]
-    },
-    {
-      "comment": "Points format translations",
-      "questions": [
-        { "id": "demo/imageCapture", "points": 2 },
-        { "alternatives": [{ "id": "manualGrade/shortAnswer" }], "points": 2 },
-        {
-          "alternatives": [
-            { "id": "manualGrade/codeUpload" },
-            { "id": "internalGrade/addingNumbers2" }
-          ],
-          "points": 1
-        }
-      ]
     }
   ]
 }

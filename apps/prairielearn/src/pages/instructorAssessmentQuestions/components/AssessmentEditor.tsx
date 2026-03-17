@@ -165,12 +165,20 @@ function AssessmentEditorInner({
       questionMetadata: questionMetadataMap,
       collapsedGroups: new Set<string>(),
       collapsedZones: new Set<string>(),
+      dismissedBanners: new Set<string>(),
       selectedItem: null,
     };
   });
 
-  const { zones, questionMetadata, collapsedGroups, collapsedZones, selectedItem, dispatch } =
-    useAssessmentEditor(initialState);
+  const {
+    zones,
+    questionMetadata,
+    collapsedGroups,
+    collapsedZones,
+    dismissedBanners,
+    selectedItem,
+    dispatch,
+  } = useAssessmentEditor(initialState);
 
   const setSelectedItem = useCallback(
     (item: SelectedItem) => dispatch({ type: 'SET_SELECTED_ITEM', selectedItem: item }),
@@ -841,6 +849,7 @@ function AssessmentEditorInner({
       courseInstanceId: courseInstance.id,
       courseId: course.id,
       hasCoursePermissionPreview,
+      dismissedBanners,
     }),
     [
       editMode,
@@ -851,7 +860,13 @@ function AssessmentEditorInner({
       courseInstance.id,
       course.id,
       hasCoursePermissionPreview,
+      dismissedBanners,
     ],
+  );
+
+  const handleDismissBanner = useCallback(
+    (trackingId: string) => dispatch({ type: 'DISMISS_BANNER', trackingId }),
+    [dispatch],
   );
 
   const detailActions: DetailActions = useMemo(
@@ -866,13 +881,14 @@ function AssessmentEditorInner({
       onRemoveQuestionByQid: handleRemoveQuestionByQid,
       onResetButtonClick: resetModal.showWithData,
       onFormValidChange: handleFormValidChange,
+      onDismissBanner: handleDismissBanner,
     }),
     // Handlers close over `zones` (updated on dispatch) and `courseQuestions`
     // (used by handleQuestionPicked to build metadata), so these deps
     // correctly capture all change triggers. Listing each handler individually
     // would be redundant and cause unnecessary re-memoization.
     // eslint-disable-next-line react-hooks/exhaustive-deps
-    [zones, selectedItem, courseQuestions],
+    [zones, selectedItem, courseQuestions, handleDismissBanner],
   );
 
   const toggleExpandCollapse = () => {

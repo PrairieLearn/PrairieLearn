@@ -403,7 +403,7 @@ test.describe('Assessment questions', () => {
     const savedContent = await fs.readFile(infoAssessmentPath, 'utf-8');
     const savedAssessment = JSON.parse(savedContent);
 
-    expect(savedAssessment.zones).toHaveLength(3);
+    expect(savedAssessment.zones).toHaveLength(2);
     expect(savedAssessment.zones[0].title).toBe('Keep zone');
     expect(savedAssessment.zones[0].questions).toEqual([
       { id: 'downloadFile', autoPoints: 5, maxAutoPoints: 10 },

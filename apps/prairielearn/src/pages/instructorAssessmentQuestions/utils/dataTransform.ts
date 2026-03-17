@@ -24,12 +24,6 @@ function createTrackingId(): TrackingId {
   return crypto.randomUUID() as TrackingId;
 }
 
-type PointsGradingMethod = 'manual' | 'auto';
-
-function toPointsGradingMethod(dbGradingMethod: string | null | undefined): PointsGradingMethod {
-  return dbGradingMethod === 'Manual' ? 'manual' : 'auto';
-}
-
 /**
  * Normalizes legacy `points`/`maxPoints` fields for the editor.
  * - For manually-graded questions: `maxPoints` or `points` → `manualPoints`
@@ -38,7 +32,7 @@ function toPointsGradingMethod(dbGradingMethod: string | null | undefined): Poin
  */
 function normalizeQuestionPoints<T extends QuestionPointsJson>(
   obj: T,
-  gradingMethod: PointsGradingMethod,
+  isManualGrading: boolean,
 ): T {
   const result = { ...obj };
   // For Manual questions, the sync code (sync_assessments.sql) uses max_points as
@@ -48,7 +42,7 @@ function normalizeQuestionPoints<T extends QuestionPointsJson>(
   // Skip if split-point fields (autoPoints/maxAutoPoints) are already set, since those
   // indicate the author is using modern fields and intentionally omitted manualPoints.
   if (
-    gradingMethod === 'manual' &&
+    isManualGrading &&
     result.manualPoints == null &&
     result.autoPoints == null &&
     result.maxAutoPoints == null
@@ -133,7 +127,7 @@ function pushPointsToAlternatives(
         if (maxPoints != null) inherited.maxPoints = maxPoints;
       }
       return {
-        ...normalizeQuestionPoints(inherited, toPointsGradingMethod(getGradingMethod(alt.id))),
+        ...normalizeQuestionPoints(inherited, getGradingMethod(alt.id) === 'Manual'),
         trackingId: createTrackingId(),
       };
     }),
@@ -168,17 +162,16 @@ export function prepareZonesForEditor(
         return pushPointsToAlternatives(question, getGradingMethod);
       }
 
-      const groupMethod: PointsGradingMethod =
+      const isManualGrading =
         altGroupGradingMethod === 'manual' || altGroupGradingMethod === 'auto'
-          ? altGroupGradingMethod
-          : // Fallback to the question's grading method if the alt group is mixed
-            toPointsGradingMethod(getGradingMethod(question.id));
+          ? altGroupGradingMethod === 'manual'
+          : getGradingMethod(question.id) === 'Manual';
 
       return {
-        ...normalizeQuestionPoints(question, groupMethod),
+        ...normalizeQuestionPoints(question, isManualGrading),
         trackingId: createTrackingId(),
         alternatives: question.alternatives?.map((alt) => ({
-          ...normalizeQuestionPoints(alt, toPointsGradingMethod(getGradingMethod(alt.id))),
+          ...normalizeQuestionPoints(alt, getGradingMethod(alt.id) === 'Manual'),
           trackingId: createTrackingId(),
         })),
       };
