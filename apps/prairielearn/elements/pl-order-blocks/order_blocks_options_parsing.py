@@ -497,9 +497,7 @@ class OrderBlocksOptions:
                     )
                 used_tags.append(answer_options.tag)
                 if answer_options.pre_dragged and answer_options.tag in distractor_tags:
-                    raise ValueError(
-                        "A block with distractors cannot be pre-dragged."
-                    )
+                    raise ValueError("A block with distractors cannot be pre-dragged.")
             elif answer_options.pre_dragged:
                 raise ValueError("Incorrect blocks cannot be pre-dragged.")
 

@@ -43,7 +43,7 @@ class OrderBlocksAnswerData(TypedDict):
     ranking: int
     index: int
     tag: str
-    pre_dragged: bool | None
+    pre_dragged: bool
     distractor_for: str | None
     depends: Edges | ColoredEdges  # only used with DAG grader
     group_info: GroupInfo  # only used with DAG grader
@@ -345,7 +345,7 @@ def render(element_html: str, data: pl.QuestionData) -> str:
         editable = data["editable"]
 
         all_blocks = data["params"][answer_name]
-        pre_dragged_blocks = [block for block in all_blocks if block["pre-dragged"]]
+        pre_dragged_blocks = [block for block in all_blocks if block["pre_dragged"]]
 
         # We aren't allowed to mutate the `data` object during render, so we'll
         # make a deep copy of the submitted answer so we can update indentation
