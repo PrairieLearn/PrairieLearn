@@ -118,30 +118,17 @@ export function CalculatorDrawer({ storageKey }: { storageKey: string }): HtmlSa
         ></div>
 
         <template id="history-item-template">
-          <div class="history-item d-flex align-items-stretch border-bottom">
+          <div class="history-item d-flex align-items-stretch border-top">
             <div class="history-content flex-grow-1 d-flex flex-column">
-              <div class="history-row history-input d-flex align-items-center gap-2 border-top">
+              <div class="history-row history-input d-flex align-items-center gap-2 ps-2 pe-2">
                 <math-field
                   theme="light"
                   class="history-text flex-grow-1 force-light"
                   contenteditable="false"
                 ></math-field>
-                <div
-                  class="form-check form-switch history-mode-switch d-flex align-items-center gap-1 m-0 p-0 text-nowrap"
-                  title="Toggle deg/rad"
-                >
-                  <span class="toggle-label text-body-secondary">rad</span>
-                  <input
-                    class="form-check-input m-0"
-                    type="checkbox"
-                    role="switch"
-                    style="cursor: pointer"
-                  />
-                  <span class="toggle-label text-body-secondary">deg</span>
-                </div>
                 <button
                   type="button"
-                  class="calculator-action-btn history-copy-btn"
+                  class="calculator-action-btn history-action-btn history-copy-btn"
                   data-bs-toggle="tooltip"
                   data-bs-placement="left"
                   data-bs-delay="300"
@@ -151,24 +138,35 @@ export function CalculatorDrawer({ storageKey }: { storageKey: string }): HtmlSa
                 </button>
                 <button
                   type="button"
-                  class="calculator-action-btn history-insert-btn"
+                  class="calculator-action-btn history-action-btn history-insert-btn"
                   data-bs-toggle="tooltip"
                   data-bs-placement="left"
                   data-bs-delay="300"
                   data-bs-title="Insert into input"
                 >
-                  <i class="bi bi-arrow-down"></i>
+                  <i class="bi bi-box-arrow-in-down"></i>
                 </button>
               </div>
-              <div class="history-row history-output d-flex align-items-center gap-2 border-top">
+              <div
+                class="history-row history-output d-flex align-items-center gap-2 text-body-secondary ps-4 pe-2 small"
+              >
                 <math-field
                   theme="light"
-                  class="history-text flex-grow-1 force-light"
+                  class="history-text force-light"
                   contenteditable="false"
                 ></math-field>
                 <button
                   type="button"
-                  class="calculator-action-btn history-copy-btn"
+                  class="history-mode-badge badge"
+                  data-bs-toggle="tooltip"
+                  data-bs-placement="left"
+                  data-bs-delay="300"
+                  data-bs-title="Toggle deg/rad"
+                ></button>
+                <span class="flex-grow-1"></span>
+                <button
+                  type="button"
+                  class="calculator-action-btn history-action-btn history-copy-btn"
                   data-bs-toggle="tooltip"
                   data-bs-placement="left"
                   data-bs-delay="300"
@@ -178,65 +176,67 @@ export function CalculatorDrawer({ storageKey }: { storageKey: string }): HtmlSa
                 </button>
                 <button
                   type="button"
-                  class="calculator-action-btn history-insert-btn"
+                  class="calculator-action-btn history-action-btn history-insert-btn"
                   data-bs-toggle="tooltip"
                   data-bs-placement="left"
                   data-bs-delay="300"
                   data-bs-title="Insert into input"
                 >
-                  <i class="bi bi-arrow-down"></i>
+                  <i class="bi bi-box-arrow-in-down"></i>
                 </button>
               </div>
             </div>
           </div>
         </template>
 
-        <div class="input-container d-flex align-items-center px-1 border">
-          <math-field
-            theme="light"
-            id="calculator-input"
-            class="pl-calculator-input flex-grow-1 force-light"
-            autofocus="autofocus"
-            placeholder="\\mathrm{Use\\ keyboard\\ or\\ buttons\\ below\\ to\\ start}"
-            autocomplete="off"
-            data-enable-grammarly="false"
+        <div class="calculator-input-group border">
+          <div class="input-container d-flex align-items-center px-1">
+            <math-field
+              theme="light"
+              id="calculator-input"
+              class="pl-calculator-input flex-grow-1 force-light"
+              autofocus="autofocus"
+              placeholder="\\mathrm{Use\\ keyboard\\ or\\ buttons\\ below\\ to\\ start}"
+              autocomplete="off"
+              data-enable-grammarly="false"
+            >
+            </math-field>
+            <button
+              type="button"
+              class="calculator-action-btn"
+              name="clear"
+              data-bs-toggle="tooltip"
+              data-bs-placement="left"
+              data-bs-delay="300"
+              data-bs-title="Clear input"
+            >
+              <i class="bi bi-x-lg"></i>
+            </button>
+          </div>
+          <div
+            id="calculator-output-panel"
+            class="output-panel d-flex align-items-center gap-2 px-1"
           >
-          </math-field>
-          <button
-            type="button"
-            class="calculator-action-btn"
-            name="clear"
-            data-bs-toggle="tooltip"
-            data-bs-placement="left"
-            data-bs-delay="300"
-            data-bs-title="Clear input"
-          >
-            <i class="bi bi-x-lg"></i>
-          </button>
-        </div>
-        <div
-          id="calculator-output-panel"
-          class="output-panel d-flex align-items-center gap-2 px-1 border border-top-0 border-bottom-0"
-        >
-          <math-field
-            theme="light"
-            id="calculator-output"
-            class="pl-calculator-output flex-grow-1 force-light"
-            contenteditable="false"
-            placeholder="\\mathrm{Output\\ will\\ be\\ displayed\\ here}"
-          >
-          </math-field>
-          <button
-            id="calculator-output-copy"
-            type="button"
-            class="calculator-action-btn"
-            data-bs-toggle="tooltip"
-            data-bs-placement="left"
-            data-bs-delay="300"
-            data-bs-title="Copy this output"
-          >
-            <i class="bi bi-copy"></i>
-          </button>
+            <math-field
+              theme="light"
+              id="calculator-output"
+              class="pl-calculator-output flex-grow-1 force-light"
+              contenteditable="false"
+              placeholder="\\mathrm{Output\\ will\\ be\\ displayed\\ here}"
+            >
+            </math-field>
+            <button
+              id="calculator-output-copy"
+              type="button"
+              class="calculator-action-btn"
+              data-bs-toggle="tooltip"
+              data-bs-placement="left"
+              data-bs-delay="300"
+              data-bs-title="Copy this output"
+            >
+              <i class="bi bi-copy"></i>
+            </button>
+          </div>
         </div>
 
         <div class="calculator-main bg-body-secondary overflow-hidden p-2 border">

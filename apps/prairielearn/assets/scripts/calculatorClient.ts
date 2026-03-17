@@ -93,7 +93,9 @@ export function initCalculator(storageKey: string, { drawer, fab, fabClose }: Dr
   const calculatorInputElement = ensureElement(
     document.querySelector<MathfieldElement>('#calculator-input'),
   );
-  const calculatorInputContainer = ensureElement(calculatorInputElement.parentElement);
+  const calculatorInputGroup = ensureElement(
+    calculatorInputElement.closest<HTMLElement>('.calculator-input-group'),
+  );
   const calculatorOutput = ensureElement(
     document.querySelector<MathfieldElement>('#calculator-output'),
   );
@@ -305,7 +307,7 @@ export function initCalculator(storageKey: string, { drawer, fab, fabClose }: Dr
       copyButton.onclick = function () {
         void navigator.clipboard.writeText('');
       };
-      calculatorInputContainer.classList.remove('error');
+      calculatorInputGroup.classList.remove('error');
       return;
     }
 
@@ -317,7 +319,7 @@ export function initCalculator(storageKey: string, { drawer, fab, fabClose }: Dr
     });
 
     if (!result) {
-      calculatorInputContainer.classList.add('error');
+      calculatorInputGroup.classList.add('error');
       calculatorOutput.value = '';
       copyButton.onclick = null;
       return;
@@ -327,16 +329,17 @@ export function initCalculator(storageKey: string, { drawer, fab, fabClose }: Dr
 
     if (hasError(evaluated.json)) {
       console.error('Error in evaluated expression:', evaluated.toString());
-      calculatorInputContainer.classList.add('error');
+      calculatorInputGroup.classList.add('error');
       calculatorOutput.value = '';
       copyButton.onclick = null;
       return;
     }
 
-    calculatorInputContainer.classList.remove('error');
+    calculatorInputGroup.classList.remove('error');
     calculatorOutput.value = `=${displayed}`;
 
     copyButton.onclick = function () {
+      window.bootstrap.Tooltip.getInstance(copyButton)?.hide();
       void navigator.clipboard.writeText(ce.parse(displayed).toString());
     };
 
@@ -392,7 +395,7 @@ export function initCalculator(storageKey: string, { drawer, fab, fabClose }: Dr
     // Clear the input and output fields
     calculatorInputElement.executeCommand('deleteAll');
     calculatorOutput.value = '';
-    calculatorInputContainer.classList.remove('error');
+    calculatorInputGroup.classList.remove('error');
   });
 
   registerCustomFunctions(ce);
@@ -665,13 +668,13 @@ export function initCalculator(storageKey: string, { drawer, fab, fabClose }: Dr
     const outputField = ensureElement(outputRow.querySelector<MathfieldElement>('.history-text'));
     outputField.value = `=${displayed}`;
 
-    // Only show rad/deg toggle if expression contains trig functions
-    const modeSwitch = ensureElement(clone.querySelector<HTMLElement>('.history-mode-switch'));
+    // Only show rad/deg badge if expression contains trig functions
+    const modeBadge = ensureElement(clone.querySelector<HTMLElement>('.history-mode-badge'));
     const hasTrig = containsTrigFunction(input);
     if (!hasTrig) {
-      modeSwitch.classList.remove('d-flex');
-      modeSwitch.classList.add('d-none');
-      modeSwitch.setAttribute('aria-hidden', 'true');
+      modeBadge.classList.add('d-none');
+    } else {
+      updateModeBadge(modeBadge, angleMode);
     }
 
     const normalizeLatex = (latex: string) => ce.parse(latex).toString();
@@ -687,9 +690,11 @@ export function initCalculator(storageKey: string, { drawer, fab, fabClose }: Dr
       clone.querySelector<HTMLElement>('.history-output .history-copy-btn'),
     );
     inputCopyBtn.addEventListener('click', () => {
+      window.bootstrap.Tooltip.getInstance(inputCopyBtn)?.hide();
       void navigator.clipboard.writeText(normalizeLatex(input));
     });
     outputCopyBtn.addEventListener('click', () => {
+      window.bootstrap.Tooltip.getInstance(outputCopyBtn)?.hide();
       void navigator.clipboard.writeText(normalizeLatex(outputField.value.replace(/^=/, '')));
     });
 
@@ -701,27 +706,30 @@ export function initCalculator(storageKey: string, { drawer, fab, fabClose }: Dr
       clone.querySelector<HTMLElement>('.history-output .history-insert-btn'),
     );
     inputInsertBtn.addEventListener('click', () => {
+      window.bootstrap.Tooltip.getInstance(inputInsertBtn)?.hide();
       calculatorInputElement.insert(input);
       calculatorInputElement.dispatchEvent(new CustomEvent('input'));
+      calculatorInputElement.focus();
     });
     outputInsertBtn.addEventListener('click', () => {
+      window.bootstrap.Tooltip.getInstance(outputInsertBtn)?.hide();
       calculatorInputElement.insert(outputField.value.replace(/^=/, ''));
       calculatorInputElement.dispatchEvent(new CustomEvent('input'));
+      calculatorInputElement.focus();
     });
 
-    // Deg/rad mode switch
-    const modeSwitchInput = ensureElement(modeSwitch.querySelector('input'));
-    modeSwitchInput.checked = angleMode === 'deg';
-
-    modeSwitchInput.addEventListener('change', () => {
-      const isDeg = modeSwitchInput.checked;
-      const newMode = isDeg ? 'deg' : 'rad';
+    // Deg/rad mode badge
+    modeBadge.addEventListener('click', () => {
+      // Hide tooltip before changing text, otherwise it stays open
+      window.bootstrap.Tooltip.getInstance(modeBadge)?.hide();
+      const newMode = historyItem.dataset.angleMode === 'deg' ? 'rad' : 'deg';
       historyItem.dataset.angleMode = newMode;
-
+      updateModeBadge(modeBadge, newMode);
       reevaluateHistoryItem(historyItem);
     });
 
     historyPanel.insertBefore(clone, historyPanel.firstChild);
+    historyPanel.scrollTop = 0;
     clearHistoryBtn.classList.remove('d-none');
   }
 }
@@ -768,6 +776,7 @@ function initDrawerUI(
     drawer.classList.add('open');
     drawer.setAttribute('aria-hidden', 'false');
     setIsOpen(true);
+    drawer.querySelector<MathfieldElement>('#calculator-input')?.focus();
   }
 
   function collapseDrawer() {
@@ -899,6 +908,19 @@ export function containsTrigFunction(input: string): boolean {
   return /sin|cos|tan|cot|sec|csc/i.test(input);
 }
 
+const MODE_BADGE_CLASSES: Record<AngleMode, string> = {
+  rad: 'color-blue1',
+  deg: 'color-orange1',
+};
+
+function updateModeBadge(badge: HTMLElement, mode: AngleMode) {
+  badge.textContent = mode;
+  for (const cls of Object.values(MODE_BADGE_CLASSES)) {
+    badge.classList.remove(cls);
+  }
+  badge.classList.add(MODE_BADGE_CLASSES[mode]);
+}
+
 function ensureElement<E extends Element>(element: E | null): E {
   if (!element) {
     throw new Error('Element is required but not found in the DOM.');
@@ -936,6 +958,7 @@ onDocumentReady(() => {
       const data = getCalculatorData(storageKey);
       data.isOpen = true;
       setCalculatorData(storageKey, data);
+      drawer.querySelector<MathfieldElement>('#calculator-input')?.focus();
     });
   }
 

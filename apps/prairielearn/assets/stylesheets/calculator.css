@@ -184,29 +184,29 @@ math-field.force-light {
 
 /* #region Input & output fields */
 
+.calculator-input-group {
+  border-bottom: none;
+}
+
+.calculator-input-group.error {
+  border-color: var(--bs-danger) !important;
+}
+
 math-field.pl-calculator-input {
   height: auto;
   font-size: 1rem;
   display: block;
+  border: none;
   border-radius: unset;
   outline: none;
 }
 
 math-field.pl-calculator-input:focus {
   outline: none;
-  border: 1px solid var(--bs-primary);
-}
-
-.input-container.error {
-  border: 1px solid var(--bs-danger) !important;
 }
 
 .input-container {
   min-height: 38px;
-}
-
-.input-container math-field.pl-calculator-input {
-  border: none;
 }
 
 .input-container .calculator-action-btn:hover {
@@ -214,16 +214,17 @@ math-field.pl-calculator-input:focus {
 }
 
 .output-panel {
-  min-height: 38px;
+  min-height: 28px;
 }
 
 math-field.pl-calculator-output {
   height: auto;
-  font-size: 1rem;
+  font-size: 0.85rem;
   display: block;
   border: 0;
   max-width: 100%;
   overflow: hidden;
+  color: var(--bs-secondary-color);
 }
 
 math-field.pl-calculator-output:focus {
@@ -243,13 +244,13 @@ math-field.pl-calculator-output:focus {
 }
 
 .history-row {
-  padding: 2px 6px;
   transition: background-color 0.15s;
 }
 
 .history-row:hover {
   background-color: var(--bs-tertiary-bg);
 }
+
 
 math-field.history-text {
   height: auto;
@@ -279,13 +280,13 @@ math-field.history-text:focus {
   color: var(--bs-gray-700);
 }
 
-.history-mode-switch {
-  font-size: 0.65rem;
+.history-action-btn {
+  font-size: 0.75rem;
 }
 
-.history-mode-switch .form-check-input {
-  width: 1.8em;
-  height: 1em;
+.history-mode-badge {
+  cursor: pointer;
+  font-size: 0.65rem;
 }
 
 /* #endregion */
