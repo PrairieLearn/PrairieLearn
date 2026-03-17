@@ -438,7 +438,6 @@
           "type": "object",
           "additionalProperties": {
             "type": "object",
-            "additionalProperties": {},
             "required": ["enabled"],
             "properties": {
               "enabled": {
