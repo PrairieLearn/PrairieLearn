@@ -1,10 +1,5 @@
 import * as trpcExpress from '@trpc/server/adapters/express';
-import {
-  convertToModelMessages,
-  createUIMessageStream,
-  pipeUIMessageStreamToResponse,
-  streamText,
-} from 'ai';
+import { convertToModelMessages, createUIMessageStream, pipeUIMessageStreamToResponse } from 'ai';
 import { Router } from 'express';
 import z from 'zod';
 
@@ -15,7 +10,10 @@ import { generatePrefixCsrfToken } from '@prairielearn/signed-token';
 
 import { AssessmentOpenInstancesAlert } from '../../../components/AssessmentOpenInstancesAlert.js';
 import { PageLayout } from '../../../components/PageLayout.js';
-import { getAgenticGradingModel } from '../../../ee/lib/ai-grading/ai-grading-agent.js';
+import {
+  AI_GRADING_AGENT_INSTRUCTIONS,
+  streamAiGradingAssistantResponse,
+} from '../../../ee/lib/ai-grading/ai-grading-agent.js';
 import { getAvailableAiGradingProviders } from '../../../ee/lib/ai-grading/ai-grading-credentials.js';
 import {
   calculateAiGradingStats,
@@ -35,7 +33,7 @@ import { features } from '../../../lib/features/index.js';
 import { generateJobSequenceToken } from '../../../lib/generateJobSequenceToken.js';
 import * as manualGrading from '../../../lib/manualGrading.js';
 import { typedAsyncHandler } from '../../../lib/res-locals.js';
-import { getJobSequenceIds } from '../../../lib/server-jobs.js';
+import { createServerJob, getJobSequenceIds } from '../../../lib/server-jobs.js';
 import { handleTrpcError } from '../../../lib/trpc.js';
 import { getUrl } from '../../../lib/url.js';
 import { createAuthzMiddleware } from '../../../middlewares/authzHelper.js';
@@ -264,29 +262,146 @@ router.post(
       throw new error.HttpStatusError(403, 'Access denied (must be a student data viewer)');
     }
 
-    const { model } = getAgenticGradingModel();
+    const { assessment, assessment_question, question, urlPrefix, authz_data } = extractPageContext(
+      res.locals,
+      {
+        pageType: 'assessmentQuestion',
+        accessType: 'instructor',
+      },
+    );
 
-    const uiMessages = req.body.messages;
-    if (!Array.isArray(uiMessages) || uiMessages.length === 0) {
+    const uiMessages = run(() => {
+      if (Array.isArray(req.body.messages)) {
+        return req.body.messages;
+      }
+      if (req.body.message != null) {
+        return [req.body.message];
+      }
+      return [];
+    });
+    if (uiMessages.length === 0) {
       throw new error.HttpStatusError(400, 'No messages provided');
     }
     const messages = await convertToModelMessages(uiMessages);
+    const rubricGenerationCompleted = req.body.rubric_generation_completed === true;
+
+    const serverJob = await createServerJob({
+      courseId: res.locals.course.id,
+      courseInstanceId: res.locals.course_instance.id,
+      assessmentId: assessment.id,
+      assessmentQuestionId: assessment_question.id,
+      userId: res.locals.user.id,
+      authnUserId: res.locals.authn_user.id,
+      type: 'ai_grading',
+      description: 'Generate rubric with AI chat',
+      reportErrorsToSentry: true,
+    });
 
     const stream = createUIMessageStream({
-      execute({ writer }) {
-        const result = streamText({
-          model,
-          system:
-            'You are an AI grading assistant for PrairieLearn, an educational assessment platform. ' +
-            'You help instructors with grading student submissions. ' +
-            'Be concise and helpful.',
-          messages,
+      async execute({ writer }) {
+        await serverJob.execute(async (job) => {
+          job.info('AI grading chat request');
+          job.info('System instructions:');
+          job.info(AI_GRADING_AGENT_INSTRUCTIONS);
+          job.info('Initial model messages:');
+          job.info(JSON.stringify(messages, null, 2));
+
+          const result = await streamAiGradingAssistantResponse({
+            messages,
+            context: {
+              assessment,
+              assessmentQuestion: assessment_question,
+              course: res.locals.course,
+              question,
+              urlPrefix,
+              authnUserId: res.locals.authn_user.id,
+              hasCourseInstancePermissionEdit:
+                authz_data.has_course_instance_permission_edit ?? false,
+              rubricGenerationCompleted,
+              stagedRubricData: req.body.staged_rubric_data ?? null,
+              stagedRubricItemDiffs: req.body.staged_rubric_item_diffs ?? null,
+            },
+          });
+
+          const errorState = { hasError: false };
+          writer.merge(
+            result.toUIMessageStream({
+              messageMetadata({ part }) {
+                if (part.type === 'start') {
+                  return {
+                    job_sequence_id: serverJob.jobSequenceId,
+                    status: 'streaming',
+                  };
+                }
+
+                if (part.type === 'finish') {
+                  return {
+                    job_sequence_id: serverJob.jobSequenceId,
+                    status: errorState.hasError ? 'errored' : 'completed',
+                  };
+                }
+              },
+              onError(err) {
+                errorState.hasError = true;
+                job.error(String(err));
+                return String(err);
+              },
+            }),
+          );
+
+          let steps: Awaited<typeof result.steps> = [];
+          try {
+            steps = await result.steps;
+          } catch (err) {
+            job.error('Failed to get steps');
+            job.error(String(err));
+          }
+
+          let totalUsage: Awaited<typeof result.totalUsage> | undefined;
+          try {
+            totalUsage = await result.totalUsage;
+          } catch (err) {
+            job.error('Failed to get usage');
+            job.error(String(err));
+          }
+
+          job.info('Finish reason: ' + (await result.finishReason));
+          job.info('Agent steps:');
+          job.info(JSON.stringify(steps, null, 2));
+          job.info('Usage:');
+          job.info(JSON.stringify(totalUsage, null, 2));
         });
-        writer.merge(result.toUIMessageStream());
       },
     });
 
     pipeUIMessageStreamToResponse({ response: res, stream });
+  }),
+);
+
+router.get(
+  '/chat/rubric_data',
+  typedAsyncHandler<'instructor-assessment-question'>(async (req, res) => {
+    if (!res.locals.authz_data.has_course_instance_permission_view) {
+      throw new error.HttpStatusError(403, 'Access denied (must be a student data viewer)');
+    }
+
+    const { assessment_question } = extractPageContext(res.locals, {
+      pageType: 'assessmentQuestion',
+      accessType: 'instructor',
+    });
+
+    const aiGradingEnabled = await features.enabledFromLocals('ai-grading', res.locals);
+    const rubric_data = await manualGrading.selectRubricData({
+      assessment_question,
+    });
+
+    res.json({
+      rubric_data,
+      aiGradingStats:
+        aiGradingEnabled && assessment_question.ai_grading_mode
+          ? await calculateAiGradingStats(assessment_question)
+          : null,
+    });
   }),
 );
 

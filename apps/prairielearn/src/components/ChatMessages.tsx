@@ -1,3 +1,5 @@
+import type { ReactNode } from 'react';
+
 export interface ChatMessage {
   id: string;
   role: 'user' | 'assistant';
@@ -25,11 +27,20 @@ export function Message({ message }: { message: ChatMessage }) {
   );
 }
 
-export function Messages({ messages }: { messages: ChatMessage[] }) {
+export function Messages({
+  messages,
+  renderAfterMessage,
+}: {
+  messages: ChatMessage[];
+  renderAfterMessage?: (message: ChatMessage) => ReactNode;
+}) {
   return (
     <>
       {messages.map((message) => (
-        <Message key={message.id} message={message} />
+        <div key={message.id}>
+          <Message message={message} />
+          {renderAfterMessage?.(message)}
+        </div>
       ))}
     </>
   );
