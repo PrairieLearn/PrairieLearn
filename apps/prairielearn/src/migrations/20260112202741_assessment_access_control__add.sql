@@ -61,13 +61,13 @@ CREATE TABLE assessment_access_control_enrollments (
   -- Constant column to enforce that parent has target_type = 'enrollment'
   target_type enum_assessment_access_control_target_type NOT NULL DEFAULT 'enrollment' CHECK (target_type = 'enrollment'),
   enrollment_id BIGINT NOT NULL REFERENCES enrollments (id) ON DELETE CASCADE ON UPDATE CASCADE,
-  UNIQUE (assessment_access_control_id, enrollment_id),
-  FOREIGN KEY (assessment_access_control_id, target_type) REFERENCES assessment_access_control (id, target_type) ON DELETE CASCADE ON UPDATE CASCADE
+  CONSTRAINT aac_enrollments_aac_id_enrollment_id_unique UNIQUE (assessment_access_control_id, enrollment_id),
+  CONSTRAINT aac_enrollments_aac_id_target_type_fkey FOREIGN KEY (assessment_access_control_id, target_type) REFERENCES assessment_access_control (id, target_type) ON DELETE CASCADE ON UPDATE CASCADE
 );
 
-CREATE INDEX assessment_access_control_enrollments_aac_id_idx ON assessment_access_control_enrollments (assessment_access_control_id);
+CREATE INDEX aac_enrollments_aac_id_idx ON assessment_access_control_enrollments (assessment_access_control_id);
 
-CREATE INDEX assessment_access_control_enrollments_enrollment_id_idx ON assessment_access_control_enrollments (enrollment_id);
+CREATE INDEX aac_enrollments_enrollment_id_idx ON assessment_access_control_enrollments (enrollment_id);
 
 -- Student label targeting table (links access control rules to student labels)
 CREATE TABLE assessment_access_control_student_labels (
@@ -76,13 +76,13 @@ CREATE TABLE assessment_access_control_student_labels (
   -- Constant column to enforce that parent has target_type = 'student_label'
   target_type enum_assessment_access_control_target_type NOT NULL DEFAULT 'student_label' CHECK (target_type = 'student_label'),
   student_label_id BIGINT NOT NULL REFERENCES student_labels (id) ON DELETE CASCADE ON UPDATE CASCADE,
-  UNIQUE (assessment_access_control_id, student_label_id),
-  FOREIGN KEY (assessment_access_control_id, target_type) REFERENCES assessment_access_control (id, target_type) ON DELETE CASCADE ON UPDATE CASCADE
+  CONSTRAINT aac_student_labels_aac_id_student_label_id_unique UNIQUE (assessment_access_control_id, student_label_id),
+  CONSTRAINT aac_student_labels_aac_id_target_type_fkey FOREIGN KEY (assessment_access_control_id, target_type) REFERENCES assessment_access_control (id, target_type) ON DELETE CASCADE ON UPDATE CASCADE
 );
 
-CREATE INDEX assessment_access_control_student_labels_aac_id_idx ON assessment_access_control_student_labels (assessment_access_control_id);
+CREATE INDEX aac_student_labels_aac_id_idx ON assessment_access_control_student_labels (assessment_access_control_id);
 
-CREATE INDEX assessment_access_control_student_labels_sg_id_idx ON assessment_access_control_student_labels (student_label_id);
+CREATE INDEX aac_student_labels_student_label_id_idx ON assessment_access_control_student_labels (student_label_id);
 
 -- Early deadline table
 CREATE TABLE assessment_access_control_early_deadline (
@@ -91,10 +91,10 @@ CREATE TABLE assessment_access_control_early_deadline (
   date TIMESTAMP WITH TIME ZONE NOT NULL,
   credit INT NOT NULL,
   sort_order INTEGER NOT NULL,
-  CONSTRAINT assessment_access_control_early_deadline_access_control_id_fkey FOREIGN KEY (assessment_access_control_id) REFERENCES assessment_access_control (id) ON DELETE CASCADE ON UPDATE CASCADE
+  CONSTRAINT aac_early_deadline_aac_id_fkey FOREIGN KEY (assessment_access_control_id) REFERENCES assessment_access_control (id) ON DELETE CASCADE ON UPDATE CASCADE
 );
 
-CREATE INDEX assessment_access_control_early_deadline_access_control_id_idx ON assessment_access_control_early_deadline (assessment_access_control_id);
+CREATE INDEX aac_early_deadline_aac_id_idx ON assessment_access_control_early_deadline (assessment_access_control_id);
 
 -- Late deadline table
 CREATE TABLE assessment_access_control_late_deadline (
@@ -103,10 +103,10 @@ CREATE TABLE assessment_access_control_late_deadline (
   date TIMESTAMP WITH TIME ZONE NOT NULL,
   credit INT NOT NULL,
   sort_order INTEGER NOT NULL,
-  CONSTRAINT assessment_access_control_late_deadline_access_control_id_fkey FOREIGN KEY (assessment_access_control_id) REFERENCES assessment_access_control (id) ON DELETE CASCADE ON UPDATE CASCADE
+  CONSTRAINT aac_late_deadline_aac_id_fkey FOREIGN KEY (assessment_access_control_id) REFERENCES assessment_access_control (id) ON DELETE CASCADE ON UPDATE CASCADE
 );
 
-CREATE INDEX assessment_access_control_late_deadline_access_control_id_idx ON assessment_access_control_late_deadline (assessment_access_control_id);
+CREATE INDEX aac_late_deadline_aac_id_idx ON assessment_access_control_late_deadline (assessment_access_control_id);
 
 -- PrairieTest exam table
 CREATE TABLE assessment_access_control_prairietest_exam (
@@ -114,7 +114,7 @@ CREATE TABLE assessment_access_control_prairietest_exam (
   assessment_access_control_id BIGINT NOT NULL,
   uuid uuid NOT NULL,
   read_only boolean,
-  CONSTRAINT assessment_access_control_prairietest_ex_access_control_id_fkey FOREIGN KEY (assessment_access_control_id) REFERENCES assessment_access_control (id) ON DELETE CASCADE ON UPDATE CASCADE
+  CONSTRAINT aac_prairietest_exam_aac_id_fkey FOREIGN KEY (assessment_access_control_id) REFERENCES assessment_access_control (id) ON DELETE CASCADE ON UPDATE CASCADE
 );
 
-CREATE INDEX assessment_access_control_prairietest_exam_aac_id_idx ON assessment_access_control_prairietest_exam (assessment_access_control_id);
+CREATE INDEX aac_prairietest_exam_aac_id_idx ON assessment_access_control_prairietest_exam (assessment_access_control_id);
