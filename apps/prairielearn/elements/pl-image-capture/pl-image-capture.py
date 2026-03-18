@@ -132,7 +132,6 @@ def parse(element_html: str, data: pl.QuestionData) -> None:
     if not submitted_file_content:
         if not allow_blank:
             pl.add_files_format_error(data, f"No image was submitted for {file_name}.")
-
         return
 
     if not submitted_file_content.startswith("data:"):
