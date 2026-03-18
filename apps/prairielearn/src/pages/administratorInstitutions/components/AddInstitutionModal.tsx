@@ -72,10 +72,14 @@ export function AddInstitutionModal({
     enabled: false,
   });
 
+  const validTimezoneNames = new Set(availableTimezones.map((tz) => tz.name));
+
   async function handleSuggestTimezone() {
     const { data } = await timezoneQuery.refetch();
-    if (data?.timezone) {
-      setValue('display_timezone', data.timezone);
+    if (data?.timezone && validTimezoneNames.has(data.timezone)) {
+      setValue('display_timezone', data.timezone, { shouldValidate: true, shouldDirty: true });
+    } else {
+      setValue('display_timezone', '', { shouldValidate: true });
     }
   }
 

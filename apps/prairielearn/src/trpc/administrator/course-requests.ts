@@ -103,8 +103,8 @@ const checkInstructorLegitimacyQuery = t.procedure
         .transform((sources) =>
           sources.filter((s) => {
             try {
-              new URL(s.url);
-              return true;
+              const parsed = new URL(s.url);
+              return parsed.protocol === 'http:' || parsed.protocol === 'https:';
             } catch {
               return false;
             }
@@ -152,8 +152,8 @@ const suggestPrefixFromEmailQuery = t.procedure
         .transform((sources) =>
           sources.filter((s) => {
             try {
-              new URL(s.url);
-              return true;
+              const parsed = new URL(s.url);
+              return parsed.protocol === 'http:' || parsed.protocol === 'https:';
             } catch {
               return false;
             }
