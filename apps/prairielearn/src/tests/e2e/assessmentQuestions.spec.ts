@@ -310,7 +310,7 @@ test.describe('Assessment questions', () => {
 
       await page
         .getByRole('button')
-        .filter({ hasText: /2 Alternatives \(1 chosen\)/ })
+        .filter({ hasText: /2 alternatives \(1 chosen\)/ })
         .click();
 
       await page.getByRole('button', { name: 'Add alternative', exact: true }).last().click();
@@ -352,7 +352,7 @@ test.describe('Assessment questions', () => {
 
       await page
         .getByRole('button')
-        .filter({ hasText: /2 Alternatives \(1 chosen\)/ })
+        .filter({ hasText: /2 alternatives \(1 chosen\)/ })
         .click();
 
       const numberChooseInput = page.getByLabel('Number to choose');
