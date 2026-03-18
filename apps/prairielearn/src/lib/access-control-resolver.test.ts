@@ -55,7 +55,7 @@ const baseInput: AccessControlResolverInput = {
   authzModeReason: 'Default',
   courseRole: 'None',
   courseInstanceRole: 'None',
-  prairieTestReservation: null,
+  prairieTestReservations: [],
 };
 
 describe('resolveAccessControl', () => {
@@ -831,7 +831,7 @@ describe('resolveAccessControl', () => {
         rules: [prairieTestMainRule],
         authzMode: 'Exam',
         authzModeReason: 'PrairieTest',
-        prairieTestReservation: validReservation,
+        prairieTestReservations: [validReservation],
       });
       expect(result.authorized).toBe(true);
       expect(result.examAccessEnd).toEqual(validReservation.accessEnd);
@@ -843,7 +843,7 @@ describe('resolveAccessControl', () => {
         rules: [prairieTestMainRule],
         authzMode: 'Public',
         authzModeReason: 'Default',
-        prairieTestReservation: validReservation,
+        prairieTestReservations: [validReservation],
       });
       expect(result.authorized).toBe(false);
     });
@@ -854,10 +854,12 @@ describe('resolveAccessControl', () => {
         rules: [prairieTestMainRule],
         authzMode: 'Exam',
         authzModeReason: 'PrairieTest',
-        prairieTestReservation: {
-          examUuid: 'wrong-uuid',
-          accessEnd: new Date('2025-03-15T14:00:00Z'),
-        },
+        prairieTestReservations: [
+          {
+            examUuid: 'wrong-uuid',
+            accessEnd: new Date('2025-03-15T14:00:00Z'),
+          },
+        ],
       });
       expect(result.authorized).toBe(false);
     });
@@ -868,9 +870,25 @@ describe('resolveAccessControl', () => {
         rules: [prairieTestMainRule],
         authzMode: 'Exam',
         authzModeReason: 'PrairieTest',
-        prairieTestReservation: null,
+        prairieTestReservations: [],
       });
       expect(result.authorized).toBe(false);
+    });
+
+    it('grants access when matching reservation exists among multiple', () => {
+      const wrongReservation: PrairieTestReservation = {
+        examUuid: 'other-exam-uuid',
+        accessEnd: new Date('2025-03-15T16:00:00Z'),
+      };
+      const result = resolveAccessControl({
+        ...baseInput,
+        rules: [prairieTestMainRule],
+        authzMode: 'Exam',
+        authzModeReason: 'PrairieTest',
+        prairieTestReservations: [wrongReservation, validReservation],
+      });
+      expect(result.authorized).toBe(true);
+      expect(result.examAccessEnd).toEqual(validReservation.accessEnd);
     });
 
     it('denies access for non-exam rule when in PrairieTest exam mode', () => {
@@ -933,10 +951,12 @@ describe('resolveAccessControl', () => {
         ],
         authzMode: 'Exam',
         authzModeReason: 'PrairieTest',
-        prairieTestReservation: {
-          examUuid: 'exam-uuid-1',
-          accessEnd: new Date('2025-03-15T14:00:00Z'),
-        },
+        prairieTestReservations: [
+          {
+            examUuid: 'exam-uuid-1',
+            accessEnd: new Date('2025-03-15T14:00:00Z'),
+          },
+        ],
       });
       expect(result.timeLimitMin).toBeNull();
     });

@@ -14,7 +14,8 @@ DECLARE
     new_rule_id bigint;
     next_number integer;
 BEGIN
-    PERFORM pg_advisory_xact_lock(syncing_assessment_id);
+    -- Lock the assessment row to serialize concurrent access control modifications.
+    PERFORM id FROM assessments WHERE id = syncing_assessment_id FOR NO KEY UPDATE;
 
     -- Check if updating an existing rule (rule_data contains 'id')
     existing_rule_id := (rule_data ->> 'id')::bigint;

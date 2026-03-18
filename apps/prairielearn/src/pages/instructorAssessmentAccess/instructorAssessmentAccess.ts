@@ -65,7 +65,7 @@ router.get(
   typedAsyncHandler<'assessment'>(async (req, res) => {
     const assessmentId = res.locals.assessment.id;
 
-    const jsonRules = await fetchAllAccessControlRules(assessmentId);
+    const jsonRules = await fetchAllAccessControlRules(res.locals.assessment);
 
     if (jsonRules.length > 0) {
       const origHash = computeHash(jsonRules);

@@ -268,22 +268,20 @@ function AfterCompleteCard({
   return (
     <Card className="mb-4">
       <Card.Header>
-        <div>
-          <div className="d-flex align-items-center">
-            <span>{title}</span>
-            <OverlayTrigger trigger="click" placement="right" popover={infoPopoverConfig}>
-              <Button
-                variant="link"
-                size="sm"
-                className="ms-2 p-0"
-                aria-label="When is an assessment complete?"
-              >
-                <i className="bi bi-info-circle" aria-hidden="true" />
-              </Button>
-            </OverlayTrigger>
-          </div>
-          <Form.Text className="text-muted">{description}</Form.Text>
+        <div className="d-flex align-items-center">
+          <span>{title}</span>
+          <OverlayTrigger trigger="click" placement="right" popover={infoPopoverConfig}>
+            <Button
+              variant="link"
+              size="sm"
+              className="ms-2 p-0"
+              aria-label="When is an assessment complete?"
+            >
+              <i className="bi bi-info-circle" aria-hidden="true" />
+            </Button>
+          </OverlayTrigger>
         </div>
+        <Form.Text className="text-muted">{description}</Form.Text>
       </Card.Header>
       <Card.Body>
         <Row>{children}</Row>

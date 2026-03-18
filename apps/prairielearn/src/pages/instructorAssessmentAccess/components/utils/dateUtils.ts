@@ -9,10 +9,10 @@ interface DateRange {
   end: Date;
 }
 
-export function getEarlyDeadlineRange(
+export function getDeadlineRange(
   index: number,
   deadlines: DeadlineEntry[],
-  releaseDate: string | null | undefined,
+  anchorDate: string | null | undefined,
 ): DateRange | null {
   const currentDeadline = deadlines[index];
   if (!currentDeadline.date) return null;
@@ -21,33 +21,8 @@ export function getEarlyDeadlineRange(
   let startDate: Date | null = null;
 
   if (index === 0) {
-    if (releaseDate) {
-      startDate = new Date(releaseDate);
-    }
-  } else {
-    const previousDeadline = deadlines[index - 1];
-    if (previousDeadline.date) {
-      startDate = new Date(previousDeadline.date);
-    }
-  }
-
-  return { start: startDate, end: endDate };
-}
-
-export function getLateDeadlineRange(
-  index: number,
-  deadlines: DeadlineEntry[],
-  dueDate: string | null | undefined,
-): DateRange | null {
-  const currentDeadline = deadlines[index];
-  if (!currentDeadline.date) return null;
-
-  const endDate = new Date(currentDeadline.date);
-  let startDate: Date | null = null;
-
-  if (index === 0) {
-    if (dueDate) {
-      startDate = new Date(dueDate);
+    if (anchorDate) {
+      startDate = new Date(anchorDate);
     }
   } else {
     const previousDeadline = deadlines[index - 1];

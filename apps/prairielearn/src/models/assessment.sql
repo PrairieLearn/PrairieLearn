@@ -1,3 +1,12 @@
+-- BLOCK lock_assessment_row
+SELECT
+  id
+FROM
+  assessments
+WHERE
+  id = $assessment_id
+FOR NO KEY UPDATE;
+
 -- BLOCK select_assessment_by_id
 SELECT
   *

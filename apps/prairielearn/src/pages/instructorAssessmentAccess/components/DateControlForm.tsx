@@ -36,18 +36,16 @@ export function MainDateControlForm({
   return (
     <Card className="mb-4">
       <Card.Header>
-        <div>
-          <Form.Check
-            type="checkbox"
-            id="mainRule-date-control-enabled"
-            label={title}
-            {...register('mainRule.dateControlEnabled')}
-            aria-describedby="mainRule-date-control-help"
-          />
-          <Form.Text id="mainRule-date-control-help" className="text-muted">
-            {description}
-          </Form.Text>
-        </div>
+        <Form.Check
+          type="checkbox"
+          id="mainRule-date-control-enabled"
+          label={title}
+          {...register('mainRule.dateControlEnabled')}
+          aria-describedby="mainRule-date-control-help"
+        />
+        <Form.Text id="mainRule-date-control-help" className="text-muted">
+          {description}
+        </Form.Text>
       </Card.Header>
       <Card.Body
         style={{
@@ -56,44 +54,42 @@ export function MainDateControlForm({
         }}
         aria-disabled={!dateControlEnabled ? true : undefined}
       >
-        <div>
-          <Row className="mb-3">
-            <Col md={6}>
-              <MainReleaseDateField />
-            </Col>
-            <Col md={6}>
-              <MainDueDateField />
-            </Col>
-          </Row>
+        <Row className="mb-3">
+          <Col md={6}>
+            <MainReleaseDateField />
+          </Col>
+          <Col md={6}>
+            <MainDueDateField />
+          </Col>
+        </Row>
 
-          <Row className="mb-4">
-            <Col md={6}>
-              <MainDeadlineArrayField type="early" />
-            </Col>
-            <Col md={6}>
-              <MainDeadlineArrayField type="late" />
-            </Col>
-          </Row>
+        <Row className="mb-4">
+          <Col md={6}>
+            <MainDeadlineArrayField type="early" />
+          </Col>
+          <Col md={6}>
+            <MainDeadlineArrayField type="late" />
+          </Col>
+        </Row>
 
-          <hr className="my-4" />
+        <hr className="my-4" />
 
-          {hasAnyDateControl && (
-            <div className="mb-3">
-              <MainAfterLastDeadlineField />
-            </div>
-          )}
+        {hasAnyDateControl && (
+          <div className="mb-3">
+            <MainAfterLastDeadlineField />
+          </div>
+        )}
 
-          <hr className="my-4" />
+        <hr className="my-4" />
 
-          <Row className="mb-3">
-            <Col md={6}>
-              <MainDurationField />
-            </Col>
-            <Col md={6}>
-              <MainPasswordField />
-            </Col>
-          </Row>
-        </div>
+        <Row className="mb-3">
+          <Col md={6}>
+            <MainDurationField />
+          </Col>
+          <Col md={6}>
+            <MainPasswordField />
+          </Col>
+        </Row>
       </Card.Body>
     </Card>
   );
@@ -113,44 +109,40 @@ export function OverrideDateControlForm({
   return (
     <Card className="mb-4">
       <Card.Header>
-        <div>
-          <div>{title}</div>
-          <Form.Text className="text-muted">{description}</Form.Text>
-        </div>
+        <div>{title}</div>
+        <Form.Text className="text-muted">{description}</Form.Text>
       </Card.Header>
       <Card.Body>
-        <div>
-          <Row className="mb-3">
-            <Col md={6}>
-              <OverrideReleaseDateField index={index} />
-            </Col>
-            <Col md={6}>
-              <OverrideDueDateField index={index} />
-            </Col>
-          </Row>
+        <Row className="mb-3">
+          <Col md={6}>
+            <OverrideReleaseDateField index={index} />
+          </Col>
+          <Col md={6}>
+            <OverrideDueDateField index={index} />
+          </Col>
+        </Row>
 
-          <Row className="mb-4">
-            <Col md={6}>
-              <OverrideDeadlineArrayField index={index} type="early" />
-            </Col>
-            <Col md={6}>
-              <OverrideDeadlineArrayField index={index} type="late" />
-            </Col>
-          </Row>
+        <Row className="mb-4">
+          <Col md={6}>
+            <OverrideDeadlineArrayField index={index} type="early" />
+          </Col>
+          <Col md={6}>
+            <OverrideDeadlineArrayField index={index} type="late" />
+          </Col>
+        </Row>
 
-          <div className="mb-3">
-            <OverrideAfterLastDeadlineField index={index} />
-          </div>
-
-          <Row className="mb-3">
-            <Col md={6}>
-              <OverrideDurationField index={index} />
-            </Col>
-            <Col md={6}>
-              <OverridePasswordField index={index} />
-            </Col>
-          </Row>
+        <div className="mb-3">
+          <OverrideAfterLastDeadlineField index={index} />
         </div>
+
+        <Row className="mb-3">
+          <Col md={6}>
+            <OverrideDurationField index={index} />
+          </Col>
+          <Col md={6}>
+            <OverridePasswordField index={index} />
+          </Col>
+        </Row>
       </Card.Body>
     </Card>
   );

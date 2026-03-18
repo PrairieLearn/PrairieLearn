@@ -650,6 +650,21 @@ describe('applyMigrationToAssessmentFile', () => {
     await fs.rm(tmpDir, { recursive: true, force: true });
   });
 
+  it('keep strategy leaves file unchanged', async () => {
+    const filePath = path.join(tmpDir, 'infoAssessment.json');
+    const originalData = {
+      type: 'Homework',
+      title: 'HW1',
+      allowAccess: [{ credit: 100, startDate: '2024-01-01', endDate: '2024-06-01' }],
+    };
+    await fs.writeFile(filePath, JSON.stringify(originalData));
+
+    await applyMigrationToAssessmentFile(filePath, 'keep', false);
+
+    const result = JSON.parse(await fs.readFile(filePath, 'utf-8'));
+    expect(result).toEqual(originalData);
+  });
+
   it('wipe strategy removes allowAccess', async () => {
     const filePath = path.join(tmpDir, 'infoAssessment.json');
     await fs.writeFile(

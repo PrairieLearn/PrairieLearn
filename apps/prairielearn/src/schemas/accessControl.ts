@@ -15,7 +15,9 @@ const AfterLastDeadlineJsonSchema = z.object({
 const DateControlJsonSchema = z
   .object({
     enabled: z.boolean().optional().describe('Whether dateControl is enabled or not'), // convenience flag for saying everything is overriden and disabled
-    releaseDate: DatetimeLocalStringSchema.optional().describe('Deadline date as ISO String'),
+    releaseDate: DatetimeLocalStringSchema.nullable()
+      .optional()
+      .describe('Deadline date as ISO String'),
     dueDate: DatetimeLocalStringSchema.nullable().optional().describe('Due date as ISO String'),
     earlyDeadlines: z
       .array(DeadlineEntryJsonSchema)
@@ -27,13 +29,14 @@ const DateControlJsonSchema = z
       .nullable()
       .optional()
       .describe('Array of late deadlines with credit as percentages'),
-    afterLastDeadline: AfterLastDeadlineJsonSchema.describe(
-      'Controls for assessment behaviour after last deadline',
-    ).optional(),
+    afterLastDeadline: AfterLastDeadlineJsonSchema.nullable()
+      .describe('Controls for assessment behaviour after last deadline')
+      .optional(),
     durationMinutes: z
       .number()
       .int()
       .positive()
+      .nullable()
       .optional()
       .describe('Desired duration limit for assessment'),
     password: z.string().nullable().optional().describe('Password for assessment'),

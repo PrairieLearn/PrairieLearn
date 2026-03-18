@@ -288,26 +288,26 @@ function overrideToJson(rule: OverrideData): AccessControlJsonWithId {
     rule.password !== undefined;
 
   if (hasDateControl) {
-    output.dateControl = {};
-    if (rule.releaseDate !== undefined && rule.releaseDate !== null) {
+    output.dateControl = { enabled: true };
+    if (rule.releaseDate !== undefined) {
       output.dateControl.releaseDate = rule.releaseDate;
     }
-    if (rule.dueDate !== undefined && rule.dueDate !== null) {
+    if (rule.dueDate !== undefined) {
       output.dateControl.dueDate = rule.dueDate;
     }
-    if (rule.earlyDeadlines !== undefined && rule.earlyDeadlines.length > 0) {
+    if (rule.earlyDeadlines !== undefined) {
       output.dateControl.earlyDeadlines = rule.earlyDeadlines;
     }
-    if (rule.lateDeadlines !== undefined && rule.lateDeadlines.length > 0) {
+    if (rule.lateDeadlines !== undefined) {
       output.dateControl.lateDeadlines = rule.lateDeadlines;
     }
-    if (rule.afterLastDeadline !== undefined && rule.afterLastDeadline !== null) {
+    if (rule.afterLastDeadline !== undefined) {
       output.dateControl.afterLastDeadline = rule.afterLastDeadline;
     }
-    if (rule.durationMinutes !== undefined && rule.durationMinutes !== null) {
+    if (rule.durationMinutes !== undefined) {
       output.dateControl.durationMinutes = rule.durationMinutes;
     }
-    if (rule.password !== undefined && rule.password !== null) {
+    if (rule.password !== undefined) {
       output.dateControl.password = rule.password;
     }
   }

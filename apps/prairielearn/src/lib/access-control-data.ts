@@ -267,18 +267,17 @@ const PrairieTestReservationRowSchema = z.object({
   access_end: DateFromISOString,
 });
 
-export async function selectPrairieTestReservation(
+export async function selectPrairieTestReservations(
   userId: string,
   date: Date,
-): Promise<PrairieTestReservation | null> {
-  const row = await queryOptionalRow(
+): Promise<PrairieTestReservation[]> {
+  const rows = await queryRows(
     sql.select_prairietest_reservation,
     { user_id: userId, date },
     PrairieTestReservationRowSchema,
   );
-  if (!row) return null;
-  return {
+  return rows.map((row) => ({
     examUuid: row.exam_uuid,
     accessEnd: row.access_end,
-  };
+  }));
 }

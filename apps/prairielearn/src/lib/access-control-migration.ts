@@ -523,6 +523,10 @@ export function migrateAllowAccess(
   }
 }
 
+function isMigratable(archetype: string, warnings: string[]): boolean {
+  return archetype !== 'unclassified' && !warnings.some((w) => w.startsWith('Unsupported'));
+}
+
 // ---------------------------------------------------------------------------
 // JSON-level migration (pure, synchronous)
 // ---------------------------------------------------------------------------
@@ -538,8 +542,7 @@ export function migrateAssessmentJson(
   const archetype =
     rulesForMigration.length > 0 ? classifyArchetype(rulesForMigration) : 'unclassified';
   const { result, warnings } = migrateAllowAccess(archetype, rulesForMigration);
-  const canMigrate =
-    archetype !== 'unclassified' && !warnings.some((w) => w.startsWith('Unsupported'));
+  const canMigrate = isMigratable(archetype, warnings);
 
   if (!canMigrate) return null;
 
@@ -581,8 +584,7 @@ export async function analyzeAssessmentFile(
     rulesForClassification.length > 0 ? classifyArchetype(rulesForClassification) : 'unclassified';
 
   const { warnings } = migrateAllowAccess(archetype, rulesForClassification);
-  const canMigrate =
-    archetype !== 'unclassified' && !warnings.some((w) => w.startsWith('Unsupported'));
+  const canMigrate = isMigratable(archetype, warnings);
 
   return {
     tid,
@@ -654,13 +656,16 @@ export async function applyMigrationToAssessmentFile(
     return;
   }
 
+  if (strategy === 'keep') {
+    return;
+  }
+
   // strategy === 'migrate'
   const rulesForMigration = allowAccess.filter((rule) => !rule.uids);
   const archetype =
     rulesForMigration.length > 0 ? classifyArchetype(rulesForMigration) : 'unclassified';
   const { result, warnings } = migrateAllowAccess(archetype, rulesForMigration);
-  const canMigrate =
-    archetype !== 'unclassified' && !warnings.some((w) => w.startsWith('Unsupported'));
+  const canMigrate = isMigratable(archetype, warnings);
 
   if (canMigrate) {
     data.accessControl = [result];

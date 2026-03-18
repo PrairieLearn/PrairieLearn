@@ -12,13 +12,14 @@ import {
   runInTransactionAsync,
 } from '@prairielearn/postgres';
 
-import { AssessmentAccessControlSchema } from '../../lib/db-types.js';
+import { type Assessment, AssessmentAccessControlSchema } from '../../lib/db-types.js';
 import { features } from '../../lib/features/index.js';
 import type { ResLocalsForPage } from '../../lib/res-locals.js';
+import { lockAssessment } from '../../models/assessment.js';
 import { insertAuditEvent } from '../../models/audit-event.js';
 import {
   type EnrollmentAccessControlRuleData,
-  deleteEnrollmentAccessControl,
+  deleteEnrollmentAccessControlsByIds,
   syncEnrollmentAccessControl,
 } from '../../models/enrollment-access-control.js';
 import { selectUsersAndEnrollmentsByUidsInCourseInstance } from '../../models/enrollment.js';
@@ -296,11 +297,11 @@ async function fetchEnrollmentRules(assessmentId: string): Promise<AccessControl
 }
 
 export async function fetchAllAccessControlRules(
-  assessmentId: string,
+  assessment: Assessment,
 ): Promise<AccessControlJsonWithId[]> {
   const [jsonRules, enrollmentRules] = await Promise.all([
-    fetchAccessControlJsonRules(assessmentId),
-    fetchEnrollmentRules(assessmentId),
+    fetchAccessControlJsonRules(assessment.id),
+    fetchEnrollmentRules(assessment.id),
   ]);
   return [...jsonRules, ...enrollmentRules];
 }
@@ -315,7 +316,15 @@ function formJsonToEnrollmentRuleData(
     enabled: rule.enabled ?? true,
     blockAccess: rule.blockAccess ?? false,
     listBeforeRelease: rule.listBeforeRelease ?? true,
-    dateControlOverridden: dc?.enabled === true,
+    dateControlOverridden:
+      dc?.enabled === true ||
+      dc?.releaseDate !== undefined ||
+      dc?.dueDate !== undefined ||
+      dc?.earlyDeadlines !== undefined ||
+      dc?.lateDeadlines !== undefined ||
+      dc?.afterLastDeadline !== undefined ||
+      dc?.durationMinutes !== undefined ||
+      dc?.password !== undefined,
     releaseDateOverridden: dc?.releaseDate !== undefined,
     releaseDate: dc?.releaseDate ?? null,
     dueDateOverridden: dc?.dueDate !== undefined,
@@ -427,7 +436,8 @@ const saveAllRules = t.procedure
     const assessmentId = opts.ctx.assessment.id;
 
     return runInTransactionAsync(async () => {
-      const currentRules = await fetchAllAccessControlRules(assessmentId);
+      await lockAssessment(opts.ctx.assessment);
+      const currentRules = await fetchAllAccessControlRules(opts.ctx.assessment);
       const currentHash = computeHash(currentRules);
 
       if (currentHash !== origHash) {
@@ -448,12 +458,12 @@ const saveAllRules = t.procedure
           currentRules.filter((r) => r.ruleType === 'enrollment').map((r) => r.id),
         );
         const submittedIds = new Set(enrollmentRules.filter((r) => r.id).map((r) => r.id));
-
-        for (const existingId of existingIds) {
-          if (!submittedIds.has(existingId)) {
-            await deleteEnrollmentAccessControl(existingId, courseInstanceId, assessmentId);
-          }
-        }
+        const idsToDelete = [...existingIds].filter((id) => !submittedIds.has(id));
+        await deleteEnrollmentAccessControlsByIds(
+          idsToDelete,
+          opts.ctx.course_instance,
+          opts.ctx.assessment,
+        );
       }
 
       if (enrollmentRules !== undefined && enrollmentRules.length > 0) {
@@ -511,7 +521,7 @@ const saveAllRules = t.procedure
         agentAuthnUserId: opts.ctx.authn_user.id,
       });
 
-      const newRules = await fetchAllAccessControlRules(assessmentId);
+      const newRules = await fetchAllAccessControlRules(opts.ctx.assessment);
       const newHash = computeHash(newRules);
 
       return { newHash };

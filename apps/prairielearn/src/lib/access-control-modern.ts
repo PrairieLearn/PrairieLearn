@@ -3,7 +3,7 @@ import type { z } from 'zod';
 import {
   selectAccessControlRulesForAssessment,
   selectAccessControlRulesForCourseInstance,
-  selectPrairieTestReservation,
+  selectPrairieTestReservations,
   selectStudentContext,
 } from './access-control-data.js';
 import {
@@ -71,12 +71,12 @@ export async function resolveModernAssessmentAccess(
 ): Promise<SprocAuthzAssessment & { list_before_release: boolean; block_access: boolean }> {
   const { assessmentId, userId, courseInstanceId, authzData, reqDate, displayTimezone } = input;
 
-  const [rules, student, prairieTestReservation] = await Promise.all([
+  const [rules, student, prairieTestReservations] = await Promise.all([
     selectAccessControlRulesForAssessment(courseInstanceId, assessmentId),
     selectStudentContext(userId, courseInstanceId),
     authzData.mode === 'Exam' && authzData.mode_reason === 'PrairieTest'
-      ? selectPrairieTestReservation(userId, reqDate)
-      : Promise.resolve(null),
+      ? selectPrairieTestReservations(userId, reqDate)
+      : Promise.resolve([]),
   ]);
 
   const result = resolveAccessControl({
@@ -88,7 +88,7 @@ export async function resolveModernAssessmentAccess(
     authzModeReason: authzData.mode_reason ?? null,
     courseRole: authzData.course_role ?? 'None',
     courseInstanceRole: authzData.course_instance_role ?? 'None',
-    prairieTestReservation,
+    prairieTestReservations,
   });
 
   return {
@@ -165,12 +165,12 @@ export async function resolveModernAssessmentAccessBatch(
 > {
   const { courseInstanceId, userId, authzData, reqDate, displayTimezone } = input;
 
-  const [allRules, student, prairieTestReservation] = await Promise.all([
+  const [allRules, student, prairieTestReservations] = await Promise.all([
     selectAccessControlRulesForCourseInstance(courseInstanceId),
     selectStudentContext(userId, courseInstanceId),
     authzData.mode === 'Exam' && authzData.mode_reason === 'PrairieTest'
-      ? selectPrairieTestReservation(userId, reqDate)
-      : Promise.resolve(null),
+      ? selectPrairieTestReservations(userId, reqDate)
+      : Promise.resolve([]),
   ]);
 
   const results = new Map<
@@ -188,7 +188,7 @@ export async function resolveModernAssessmentAccessBatch(
       authzModeReason: authzData.mode_reason ?? null,
       courseRole: authzData.course_role ?? 'None',
       courseInstanceRole: authzData.course_instance_role ?? 'None',
-      prairieTestReservation,
+      prairieTestReservations,
     });
 
     results.set(assessmentId, {

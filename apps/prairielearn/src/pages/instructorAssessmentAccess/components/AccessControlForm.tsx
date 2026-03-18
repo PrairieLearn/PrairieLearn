@@ -216,13 +216,11 @@ export function AccessControlForm({
         ? 'Fix validation errors before saving'
         : null;
 
-  const saveButtonDisabled = saveDisabledReason !== null;
-
   const saveButton = (
     <button
-      className={clsx('btn btn-sm', saveButtonDisabled ? 'btn-outline-secondary' : 'btn-primary')}
+      className={clsx('btn btn-sm', saveDisabledReason ? 'btn-outline-secondary' : 'btn-primary')}
       type="submit"
-      disabled={saveButtonDisabled}
+      disabled={saveDisabledReason !== null}
     >
       <i className="bi bi-floppy" aria-hidden="true" /> Save and sync
     </button>

@@ -35,7 +35,7 @@ export interface AccessControlResolverInput {
   authzModeReason: EnumModeReason | null;
   courseRole: EnumCourseRole;
   courseInstanceRole: EnumCourseInstanceRole;
-  prairieTestReservation: PrairieTestReservation | null;
+  prairieTestReservations: PrairieTestReservation[];
 }
 
 export interface AccessControlResolverResult {
@@ -66,22 +66,86 @@ const UNAUTHORIZED_RESULT: AccessControlResolverResult = {
   blockAccess: false,
 };
 
-const COURSE_ROLE_ORDER: EnumCourseRole[] = ['None', 'Previewer', 'Viewer', 'Editor', 'Owner'];
-const COURSE_INSTANCE_ROLE_ORDER: EnumCourseInstanceRole[] = [
-  'None',
-  'Student Data Viewer',
-  'Student Data Editor',
-];
+const COURSE_ROLE_RANK = new Map<EnumCourseRole, number>([
+  ['None', 0],
+  ['Previewer', 1],
+  ['Viewer', 2],
+  ['Editor', 3],
+  ['Owner', 4],
+]);
+const COURSE_INSTANCE_ROLE_RANK = new Map<EnumCourseInstanceRole, number>([
+  ['None', 0],
+  ['Student Data Viewer', 1],
+  ['Student Data Editor', 2],
+]);
 
 function roleAtLeast(actual: EnumCourseRole, minimum: EnumCourseRole): boolean {
-  return COURSE_ROLE_ORDER.indexOf(actual) >= COURSE_ROLE_ORDER.indexOf(minimum);
+  return (COURSE_ROLE_RANK.get(actual) ?? 0) >= (COURSE_ROLE_RANK.get(minimum) ?? 0);
 }
 
 function instanceRoleAtLeast(
   actual: EnumCourseInstanceRole,
   minimum: EnumCourseInstanceRole,
 ): boolean {
-  return COURSE_INSTANCE_ROLE_ORDER.indexOf(actual) >= COURSE_INSTANCE_ROLE_ORDER.indexOf(minimum);
+  return (
+    (COURSE_INSTANCE_ROLE_RANK.get(actual) ?? 0) >= (COURSE_INSTANCE_ROLE_RANK.get(minimum) ?? 0)
+  );
+}
+
+function mergeDateControl(
+  base: AccessControlJson['dateControl'],
+  override: AccessControlJson['dateControl'],
+  stripBaseEnabled: boolean,
+): AccessControlJson['dateControl'] {
+  if (!base && !override) return undefined;
+  if (!base) return override;
+  if (!override) {
+    if (stripBaseEnabled) {
+      const { enabled: _enabled, ...rest } = base;
+      return { ...rest };
+    }
+    return { ...base };
+  }
+
+  const merged: NonNullable<AccessControlJson['dateControl']> = stripBaseEnabled
+    ? (() => {
+        const { enabled: _e, ...r } = base;
+        return { ...r };
+      })()
+    : { ...base };
+  const ov = override;
+  if (ov.enabled !== undefined) merged.enabled = ov.enabled;
+  if (ov.releaseDate !== undefined) merged.releaseDate = ov.releaseDate;
+  if (ov.dueDate !== undefined) merged.dueDate = ov.dueDate;
+  if (ov.earlyDeadlines !== undefined) merged.earlyDeadlines = ov.earlyDeadlines;
+  if (ov.lateDeadlines !== undefined) merged.lateDeadlines = ov.lateDeadlines;
+  if (ov.afterLastDeadline !== undefined) merged.afterLastDeadline = ov.afterLastDeadline;
+  if (ov.durationMinutes !== undefined) merged.durationMinutes = ov.durationMinutes;
+  if (ov.password !== undefined) merged.password = ov.password;
+  return merged;
+}
+
+function mergeAfterComplete(
+  base: AccessControlJson['afterComplete'],
+  override: AccessControlJson['afterComplete'],
+): AccessControlJson['afterComplete'] {
+  if (!base && !override) return undefined;
+  if (!base) return override;
+  if (!override) return { ...base };
+
+  const merged = { ...base };
+  if (override.hideQuestions !== undefined) merged.hideQuestions = override.hideQuestions;
+  if (override.showQuestionsAgainDate !== undefined) {
+    merged.showQuestionsAgainDate = override.showQuestionsAgainDate;
+  }
+  if (override.hideQuestionsAgainDate !== undefined) {
+    merged.hideQuestionsAgainDate = override.hideQuestionsAgainDate;
+  }
+  if (override.hideScore !== undefined) merged.hideScore = override.hideScore;
+  if (override.showScoreAgainDate !== undefined) {
+    merged.showScoreAgainDate = override.showScoreAgainDate;
+  }
+  return merged;
 }
 
 export function mergeRules(
@@ -99,58 +163,11 @@ export function mergeRules(
   }
 
   // Per-rule fields: only from override, never inherited from main.
-  // enabled, blockAccess, name, labels, integrations are per-rule concepts.
   if (override.enabled !== undefined) merged.enabled = override.enabled;
   if (override.blockAccess !== undefined) merged.blockAccess = override.blockAccess;
 
-  // dateControl: inherit sub-fields from main (except dateControl.enabled), override can replace.
-  if (main.dateControl || override.dateControl) {
-    if (!main.dateControl) {
-      merged.dateControl = override.dateControl;
-    } else if (!override.dateControl) {
-      const { enabled: _enabled, ...rest } = main.dateControl;
-      merged.dateControl = { ...rest };
-    } else {
-      const { enabled: _enabled, ...mainRest } = main.dateControl;
-      merged.dateControl = { ...mainRest };
-      const ov = override.dateControl;
-      if (ov.enabled !== undefined) merged.dateControl.enabled = ov.enabled;
-      if (ov.releaseDate !== undefined) merged.dateControl.releaseDate = ov.releaseDate;
-      if (ov.dueDate !== undefined) merged.dateControl.dueDate = ov.dueDate;
-      if (ov.earlyDeadlines !== undefined) merged.dateControl.earlyDeadlines = ov.earlyDeadlines;
-      if (ov.lateDeadlines !== undefined) merged.dateControl.lateDeadlines = ov.lateDeadlines;
-      if (ov.afterLastDeadline !== undefined) {
-        merged.dateControl.afterLastDeadline = ov.afterLastDeadline;
-      }
-      if (ov.durationMinutes !== undefined) {
-        merged.dateControl.durationMinutes = ov.durationMinutes;
-      }
-      if (ov.password !== undefined) merged.dateControl.password = ov.password;
-    }
-  }
-
-  // afterComplete: inherit sub-fields from main, override can replace.
-  if (main.afterComplete || override.afterComplete) {
-    if (!main.afterComplete) {
-      merged.afterComplete = override.afterComplete;
-    } else if (!override.afterComplete) {
-      merged.afterComplete = { ...main.afterComplete };
-    } else {
-      merged.afterComplete = { ...main.afterComplete };
-      const ov = override.afterComplete;
-      if (ov.hideQuestions !== undefined) merged.afterComplete.hideQuestions = ov.hideQuestions;
-      if (ov.showQuestionsAgainDate !== undefined) {
-        merged.afterComplete.showQuestionsAgainDate = ov.showQuestionsAgainDate;
-      }
-      if (ov.hideQuestionsAgainDate !== undefined) {
-        merged.afterComplete.hideQuestionsAgainDate = ov.hideQuestionsAgainDate;
-      }
-      if (ov.hideScore !== undefined) merged.afterComplete.hideScore = ov.hideScore;
-      if (ov.showScoreAgainDate !== undefined) {
-        merged.afterComplete.showScoreAgainDate = ov.showScoreAgainDate;
-      }
-    }
-  }
+  merged.dateControl = mergeDateControl(main.dateControl, override.dateControl, true);
+  merged.afterComplete = mergeAfterComplete(main.afterComplete, override.afterComplete);
 
   return merged;
 }
@@ -177,52 +194,8 @@ export function cascadeOverrides(
   // enabled is per-rule, doesn't cascade.
   if (next.enabled !== undefined) merged.enabled = next.enabled;
 
-  // dateControl: inherit sub-fields from base, next can replace.
-  if (base.dateControl || next.dateControl) {
-    if (!base.dateControl) {
-      merged.dateControl = next.dateControl;
-    } else if (!next.dateControl) {
-      merged.dateControl = { ...base.dateControl };
-    } else {
-      merged.dateControl = { ...base.dateControl };
-      const ov = next.dateControl;
-      if (ov.enabled !== undefined) merged.dateControl.enabled = ov.enabled;
-      if (ov.releaseDate !== undefined) merged.dateControl.releaseDate = ov.releaseDate;
-      if (ov.dueDate !== undefined) merged.dateControl.dueDate = ov.dueDate;
-      if (ov.earlyDeadlines !== undefined) merged.dateControl.earlyDeadlines = ov.earlyDeadlines;
-      if (ov.lateDeadlines !== undefined) merged.dateControl.lateDeadlines = ov.lateDeadlines;
-      if (ov.afterLastDeadline !== undefined) {
-        merged.dateControl.afterLastDeadline = ov.afterLastDeadline;
-      }
-      if (ov.durationMinutes !== undefined) {
-        merged.dateControl.durationMinutes = ov.durationMinutes;
-      }
-      if (ov.password !== undefined) merged.dateControl.password = ov.password;
-    }
-  }
-
-  // afterComplete: inherit from base, next can replace.
-  if (base.afterComplete || next.afterComplete) {
-    if (!base.afterComplete) {
-      merged.afterComplete = next.afterComplete;
-    } else if (!next.afterComplete) {
-      merged.afterComplete = { ...base.afterComplete };
-    } else {
-      merged.afterComplete = { ...base.afterComplete };
-      const ov = next.afterComplete;
-      if (ov.hideQuestions !== undefined) merged.afterComplete.hideQuestions = ov.hideQuestions;
-      if (ov.showQuestionsAgainDate !== undefined) {
-        merged.afterComplete.showQuestionsAgainDate = ov.showQuestionsAgainDate;
-      }
-      if (ov.hideQuestionsAgainDate !== undefined) {
-        merged.afterComplete.hideQuestionsAgainDate = ov.hideQuestionsAgainDate;
-      }
-      if (ov.hideScore !== undefined) merged.afterComplete.hideScore = ov.hideScore;
-      if (ov.showScoreAgainDate !== undefined) {
-        merged.afterComplete.showScoreAgainDate = ov.showScoreAgainDate;
-      }
-    }
-  }
+  merged.dateControl = mergeDateControl(base.dateControl, next.dateControl, false);
+  merged.afterComplete = mergeAfterComplete(base.afterComplete, next.afterComplete);
 
   return merged;
 }
@@ -344,7 +317,7 @@ export function computeCredit(
 }
 
 function computeTimeLimitMin(
-  durationMinutes: number | undefined,
+  durationMinutes: number | null | undefined,
   nextDeadline: Date | null,
   date: Date,
   authzMode: EnumMode | null,
@@ -434,7 +407,7 @@ export function resolveAccessControl(
     authzModeReason,
     courseRole,
     courseInstanceRole,
-    prairieTestReservation,
+    prairieTestReservations,
   } = input;
 
   if (
@@ -515,15 +488,14 @@ export function resolveAccessControl(
       return { ...UNAUTHORIZED_RESULT };
     }
 
-    if (!prairieTestReservation) {
+    const matchingReservation = prairieTestReservations.find((r) =>
+      prairieTestExamUuids.includes(r.examUuid),
+    );
+    if (!matchingReservation) {
       return { ...UNAUTHORIZED_RESULT };
     }
 
-    if (!prairieTestExamUuids.includes(prairieTestReservation.examUuid)) {
-      return { ...UNAUTHORIZED_RESULT };
-    }
-
-    examAccessEnd = prairieTestReservation.accessEnd;
+    examAccessEnd = matchingReservation.accessEnd;
   } else if (authzMode === 'Exam' && authzModeReason === 'PrairieTest') {
     // No PrairieTest exams configured but student is in PrairieTest exam mode
     return { ...UNAUTHORIZED_RESULT };

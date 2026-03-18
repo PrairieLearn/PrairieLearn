@@ -12,11 +12,7 @@ import {
 import { FriendlyDate } from '../../../../components/FriendlyDate.js';
 import { FieldWrapper } from '../FieldWrapper.js';
 import type { AccessControlFormData, DeadlineEntry } from '../types.js';
-import {
-  getEarlyDeadlineRange,
-  getLateDeadlineRange,
-  getUserTimezone,
-} from '../utils/dateUtils.js';
+import { getDeadlineRange, getUserTimezone } from '../utils/dateUtils.js';
 
 interface DeadlineArrayInputProps {
   type: 'early' | 'late';
@@ -64,9 +60,8 @@ function DeadlineArrayInput({
       credit: f.credit,
     }));
 
-    const range = isEarly
-      ? getEarlyDeadlineRange(index, currentDeadlines, releaseDate)
-      : getLateDeadlineRange(index, currentDeadlines, dueDate);
+    const anchorDate = isEarly ? releaseDate : dueDate;
+    const range = getDeadlineRange(index, currentDeadlines, anchorDate);
 
     if (!range) return null;
 

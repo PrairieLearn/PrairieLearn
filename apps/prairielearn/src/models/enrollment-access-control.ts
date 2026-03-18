@@ -1,6 +1,8 @@
 import { callScalar, execute, loadSqlEquiv, runInTransactionAsync } from '@prairielearn/postgres';
 import { IdSchema } from '@prairielearn/zod';
 
+import type { Assessment, CourseInstance } from '../lib/db-types.js';
+
 const sql = loadSqlEquiv(import.meta.url);
 
 export interface EnrollmentAccessControlRuleData {
@@ -98,14 +100,15 @@ export async function syncEnrollmentAccessControl(
   );
 }
 
-export async function deleteEnrollmentAccessControl(
-  accessControlId: string,
-  courseInstanceId: string,
-  assessmentId: string,
+export async function deleteEnrollmentAccessControlsByIds(
+  ids: string[],
+  courseInstance: CourseInstance,
+  assessment: Assessment,
 ): Promise<void> {
-  await execute(sql.delete_enrollment_rule, {
-    id: accessControlId,
-    course_instance_id: courseInstanceId,
-    assessment_id: assessmentId,
+  if (ids.length === 0) return;
+  await execute(sql.delete_enrollment_rules_by_ids, {
+    ids,
+    course_instance_id: courseInstance.id,
+    assessment_id: assessment.id,
   });
 }

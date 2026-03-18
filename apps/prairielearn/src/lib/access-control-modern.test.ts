@@ -25,7 +25,7 @@ describe('resolveModernAssessmentInstanceAccess', () => {
       studentLabelIds: [],
     });
 
-    vi.spyOn(accessControlData, 'selectPrairieTestReservation').mockResolvedValue(null);
+    vi.spyOn(accessControlData, 'selectPrairieTestReservations').mockResolvedValue([]);
   });
 
   const baseInput = {
