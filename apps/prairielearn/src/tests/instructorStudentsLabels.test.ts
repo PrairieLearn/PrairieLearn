@@ -25,12 +25,12 @@ import { getStudentLabelsWithUserData } from '../pages/instructorStudentsLabels/
 import { createCourseInstanceTrpcClient } from '../trpc/courseInstance/client.js';
 import type { CourseInstanceRouter } from '../trpc/courseInstance/trpc.js';
 
+import * as helperClient from './helperClient.js';
 import {
   type CourseRepoFixture,
   createCourseRepoFixture,
   updateCourseRepository,
 } from './helperCourse.js';
-import * as helperClient from './helperClient.js';
 import * as helperServer from './helperServer.js';
 import { getOrCreateUser } from './utils/auth.js';
 
