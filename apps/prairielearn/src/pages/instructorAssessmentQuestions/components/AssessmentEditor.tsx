@@ -135,6 +135,8 @@ interface AssessmentEditorInnerProps {
   csrfToken: string;
   origHash: string;
   switchViewUrl: string | null;
+  questionSharingEnabled: boolean;
+  consumePublicQuestionsEnabled: boolean;
 }
 
 function AssessmentEditorInner({
@@ -149,6 +151,8 @@ function AssessmentEditorInner({
   csrfToken,
   origHash,
   switchViewUrl,
+  questionSharingEnabled,
+  consumePublicQuestionsEnabled,
 }: AssessmentEditorInnerProps) {
   const trpc = useTRPC();
   const queryClient = useQueryClient();
@@ -388,7 +392,7 @@ function AssessmentEditorInner({
   const handleQuestionPicked = async (qid: string) => {
     try {
       const questionData = await questionByQidMutation.mutateAsync(qid);
-
+      if (!questionData) return;
       dispatch({
         type: 'QUESTION_PICKED',
         qid,
@@ -1045,6 +1049,8 @@ function AssessmentEditorInner({
                 currentAssessmentId={assessment.id}
                 isPickingQuestion={questionByQidMutation.isPending}
                 pickerError={questionByQidMutation.error}
+                questionSharingEnabled={questionSharingEnabled}
+                consumePublicQuestionsEnabled={consumePublicQuestionsEnabled}
               />
             }
             onClose={() => setSelectedItem(null)}

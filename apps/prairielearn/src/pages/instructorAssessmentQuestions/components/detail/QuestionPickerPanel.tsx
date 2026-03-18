@@ -1,11 +1,14 @@
 import { rankItem } from '@tanstack/match-sorter-utils';
+import { useQuery } from '@tanstack/react-query';
 import { useVirtualizer } from '@tanstack/react-virtual';
-import { useMemo, useRef, useState } from 'react';
+import { useEffect, useMemo, useRef, useState } from 'react';
 
 import { FilterDropdown, type FilterItem } from '@prairielearn/ui';
 
 import { getQuestionCreateUrl, getQuestionUrl } from '../../../../lib/client/url.js';
+import type { QuestionByQidResult } from '../../trpc.js';
 import type { CourseQuestionForPicker } from '../../types.js';
+import { useTRPC } from '../../utils/trpc-context.js';
 import { AssessmentBadges } from '../AssessmentBadges.js';
 import { QuestionTopicTagBadges } from '../QuestionTopicTagBadges.js';
 
@@ -29,6 +32,8 @@ export function QuestionPickerPanel({
   courseId,
   courseInstanceId,
   currentAssessmentId,
+  questionSharingEnabled,
+  consumePublicQuestionsEnabled,
   onQuestionSelected,
   onRemoveQuestionByQid,
 }: {
@@ -42,10 +47,14 @@ export function QuestionPickerPanel({
   currentAssessmentId?: string;
   isPickingQuestion?: boolean;
   pickerError: Error | null;
+  questionSharingEnabled: boolean;
+  consumePublicQuestionsEnabled: boolean;
   onQuestionSelected: (qid: string) => void;
   onRemoveQuestionByQid: (qid: string) => void;
 }) {
+  const trpc = useTRPC();
   const [searchQuery, setSearchQuery] = useState('');
+  const [debouncedSearchQuery, setDebouncedSearchQuery] = useState(searchQuery);
   const [selectedTopics, setSelectedTopics] = useState<Set<string>>(() => new Set());
   const [selectedTags, setSelectedTags] = useState<Set<string>>(() => new Set());
   const [selectedAssessments, setSelectedAssessments] = useState<Set<string>>(() => new Set());
@@ -53,6 +62,14 @@ export function QuestionPickerPanel({
     () => new Set(),
   );
   const [expandedTagsQids, setExpandedTagsQids] = useState<Set<string>>(() => new Set());
+
+  const sharedQuestionMode =
+    searchQuery.startsWith('@') && (questionSharingEnabled || consumePublicQuestionsEnabled);
+  const hasSlash = sharedQuestionMode && debouncedSearchQuery.includes('/');
+
+  const sharedQuestionQuery = useQuery({
+    ...trpc.questionByQid.queryOptions({ qid: debouncedSearchQuery }, { enabled: hasSlash }),
+  });
 
   const scrollParentRef = useRef<HTMLDivElement>(null);
 
@@ -160,6 +177,10 @@ export function QuestionPickerPanel({
     onQuestionSelected(question.qid);
   };
 
+  const handleSelectShared = (result: QuestionByQidResult) => {
+    onQuestionSelected(`@${result.course.sharing_name}/${result.question.qid}`);
+  };
+
   const clearFilters = () => {
     setSelectedTopics(new Set());
     setSelectedTags(new Set());
@@ -174,6 +195,11 @@ export function QuestionPickerPanel({
     selectedGradingMethods.size > 0;
 
   const virtualRows = rowVirtualizer.getVirtualItems();
+
+  useEffect(() => {
+    const timer = setTimeout(() => setDebouncedSearchQuery(searchQuery), 300);
+    return () => clearTimeout(timer);
+  }, [searchQuery]);
 
   if (isLoading) {
     return (
@@ -237,23 +263,95 @@ export function QuestionPickerPanel({
           )}
         </div>
       </div>
-      {searchQuery.trimStart().startsWith('@') && (
-        <div className="alert alert-warning small mx-2 mt-2 mb-0" role="alert">
-          <i className="bi bi-info-circle me-1" aria-hidden="true" />
-          Shared questions from other courses are not yet searchable here.
-        </div>
-      )}
       {pickerError && (
         <div className="alert alert-danger small mx-2 mt-2 mb-0" role="alert">
           <i className="bi bi-exclamation-triangle-fill me-1" aria-hidden="true" />
           {pickerError.message || 'Failed to add question. Please try again.'}
         </div>
       )}
-      <div className="px-2 py-1 bg-light border-bottom text-muted small">
-        {sortedQuestions.length} {sortedQuestions.length === 1 ? 'question' : 'questions'} found
-      </div>
+      {!sharedQuestionMode && (
+        <div className="px-2 py-1 bg-light border-bottom text-muted small">
+          {sortedQuestions.length} {sortedQuestions.length === 1 ? 'question' : 'questions'} found
+        </div>
+      )}
       <div ref={scrollParentRef} className="flex-grow-1" style={{ overflow: 'auto' }}>
-        {sortedQuestions.length === 0 ? (
+        {sharedQuestionMode ? (
+          sharedQuestionQuery.isFetching ? (
+            <div className="d-flex align-items-center justify-content-center py-5 text-muted">
+              <div className="spinner-border spinner-border-sm me-2" role="status">
+                <span className="visually-hidden">Searching...</span>
+              </div>
+              Searching...
+            </div>
+          ) : sharedQuestionQuery.data ? (
+            (() => {
+              const result = sharedQuestionQuery.data;
+              const qid = `@${result.course.sharing_name}/${result.question.qid}`;
+              const hasTitle = !!result.question.title?.trim();
+              const isDisabled = !!isPickingQuestion;
+              return (
+                <div
+                  role={isDisabled ? undefined : 'button'}
+                  tabIndex={isDisabled ? undefined : 0}
+                  aria-label={hasTitle ? `${qid}: ${result.question.title}` : qid}
+                  aria-disabled={isDisabled || undefined}
+                  className="d-flex align-items-center px-2 py-1 border-bottom list-group-item-action picker-row"
+                  style={{
+                    cursor: isDisabled ? 'not-allowed' : 'pointer',
+                    fontSize: '0.85rem',
+                    opacity: isDisabled ? 0.5 : undefined,
+                  }}
+                  onClick={isDisabled ? undefined : () => handleSelectShared(result)}
+                  onKeyDown={
+                    isDisabled
+                      ? undefined
+                      : (e) => {
+                          if (e.target !== e.currentTarget) return;
+                          if (e.key === 'Enter' || e.key === ' ') {
+                            e.preventDefault();
+                            handleSelectShared(result);
+                          }
+                        }
+                  }
+                >
+                  <div className="flex-grow-1" style={{ minWidth: 0 }}>
+                    <div className="d-flex align-items-center gap-1">
+                      <code className="small">{qid}</code>
+                      <span
+                        className="badge bg-light text-muted border"
+                        style={{ fontSize: '0.65rem' }}
+                      >
+                        {result.course.short_name}
+                      </span>
+                    </div>
+                    {hasTitle && <div className="text-truncate small">{result.question.title}</div>}
+                    <div className="d-flex flex-wrap gap-1 mt-1">
+                      <QuestionTopicTagBadges
+                        topic={result.topic}
+                        tags={result.tags}
+                        qid={qid}
+                        isExpanded={expandedTagsQids.has(qid)}
+                        setExpandedQids={setExpandedTagsQids}
+                      />
+                    </div>
+                  </div>
+                </div>
+              );
+            })()
+          ) : hasSlash ? (
+            <div className="d-flex flex-column align-items-center justify-content-center text-muted py-5 text-center px-3">
+              <i className="bi bi-search display-6 mb-2" aria-hidden="true" />
+              <p className="mb-1">No shared question found.</p>
+            </div>
+          ) : (
+            <div className="d-flex flex-column align-items-center justify-content-center text-muted py-5 text-center px-3">
+              <i className="bi bi-share display-6 mb-2" aria-hidden="true" />
+              <p className="mb-1">
+                Type <code>@sharing-name/qid</code> to find a shared question.
+              </p>
+            </div>
+          )
+        ) : sortedQuestions.length === 0 ? (
           <div className="d-flex flex-column align-items-center justify-content-center text-muted py-5 text-center px-3">
             <i className="bi bi-search display-6 mb-2" aria-hidden="true" />
             <p className="mb-1">No questions match your search criteria.</p>

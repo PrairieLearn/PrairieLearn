@@ -82,6 +82,11 @@ router.get(
       'assessment-questions-editor',
       res.locals,
     );
+    const questionSharingEnabled = await features.enabledFromLocals('question-sharing', res.locals);
+    const consumePublicQuestionsEnabled = await features.enabledFromLocals(
+      'consume-public-questions',
+      res.locals,
+    );
 
     const showLegacy = !editorEnabled || req.query.view === 'legacy';
     const showEditor = editorEnabled && !showLegacy;
@@ -154,6 +159,8 @@ router.get(
                 trpcCsrfToken={trpcCsrfToken}
                 search={search}
                 switchViewUrl={toggleUrl}
+                questionSharingEnabled={questionSharingEnabled}
+                consumePublicQuestionsEnabled={consumePublicQuestionsEnabled}
               />
             ) : (
               <InstructorAssessmentQuestionsTableLegacy
