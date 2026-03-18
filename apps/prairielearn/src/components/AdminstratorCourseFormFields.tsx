@@ -157,20 +157,22 @@ export function AdministratorCourseFormFields({
           placeholder="XC 101"
           aria-invalid={errors.short_name ? true : undefined}
           aria-errormessage={errors.short_name ? 'courseFormShortName-error' : undefined}
-          {...register('short_name', {
-            required: 'Enter a short name',
-            pattern: {
-              value: /^[A-Z]+ [A-Z0-9]+$/,
-              message:
-                'The course rubric and number should be a series of upper case letters, followed by a space, followed by a series of numbers and/or letters.',
-            },
-          })}
+          {...register('short_name', { required: 'Enter a short name' })}
         />
         {errors.short_name && (
           <div id="courseFormShortName-error" className="invalid-feedback">
             {errors.short_name.message}
           </div>
         )}
+        <div aria-live="polite" aria-atomic="true">
+          {shortName && !/^[A-Z]+ [A-Z0-9]+$/.test(shortName) && (
+            <div className="form-text text-warning">
+              <i className="fa fa-exclamation-triangle" aria-hidden="true" /> The course rubric and
+              number should be a series of upper case letters, followed by a space, followed by a
+              series of numbers and/or letters.
+            </div>
+          )}
+        </div>
       </div>
       <div className="mb-3">
         <label className="form-label" htmlFor="courseFormTitle">
