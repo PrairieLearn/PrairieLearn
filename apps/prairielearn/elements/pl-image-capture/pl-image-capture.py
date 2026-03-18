@@ -124,7 +124,7 @@ def parse(element_html: str, data: pl.QuestionData) -> None:
     # Later, we will move the image to submitted_answers["_files"], and pop
     # submitted_answers[file_name].
     submitted_file_content = data["submitted_answers"].get(file_name)
-    
+
     # Remove the _changed flag used by the frontend for unsaved changes warnings.
     data["submitted_answers"].pop(f"{file_name}_changed", None)
     data["raw_submitted_answers"].pop(f"{file_name}_changed", None)
@@ -172,12 +172,13 @@ def parse(element_html: str, data: pl.QuestionData) -> None:
     pl.add_submitted_file(data, file_name, b64_payload)
 
     # Replace base64 image data with a placeholder to avoid bloating logs.
-    # This is safe since pl.add_submitted_file was called before replacing 
+    # This is safe since pl.add_submitted_file was called before replacing
     # the image data with placeholders.
     if file_name in data["submitted_answers"]:
         data["submitted_answers"][file_name] = "[Image base64 data]"
     if file_name in data["raw_submitted_answers"]:
         data["raw_submitted_answers"][file_name] = "[Image base64 data]"
+
 
 def test(element_html: str, data: pl.ElementTestData) -> None:
     result = data["test_type"]
