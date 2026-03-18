@@ -26,7 +26,7 @@ import {
   useShiftClickCheckbox,
 } from '@prairielearn/ui';
 
-import { type AiRubricItemDiff, RubricSettings } from '../../../../components/RubricSettings.js';
+import { RubricSettings } from '../../../../components/RubricSettings.js';
 import { ServerJobsProgressInfo } from '../../../../components/ServerJobProgress/ServerJobProgressBars.js';
 import { useServerJobProgress } from '../../../../components/ServerJobProgress/useServerJobProgress.js';
 import {
@@ -83,7 +83,6 @@ interface AssessmentQuestionTableProps {
   aiGradingMode: boolean;
   aiGradingModelSelectionEnabled: boolean;
   rubricData: RubricData | null;
-  aiRubricItemDiffs?: Partial<Record<number, AiRubricItemDiff>>;
   instanceQuestionGroups: StaffInstanceQuestionGroup[];
   courseStaff: StaffUser[];
   aiGradingStats: AiGradingGeneralStats | null;
@@ -174,7 +173,6 @@ export function AssessmentQuestionTable({
   aiGradingMode,
   aiGradingModelSelectionEnabled,
   rubricData,
-  aiRubricItemDiffs,
   instanceQuestionGroups,
   courseStaff,
   course,
@@ -656,7 +654,6 @@ export function AssessmentQuestionTable({
           rubricData={rubricData}
           csrfToken={csrfToken}
           aiGradingStats={aiGradingStats}
-          aiRubricItemDiffs={aiRubricItemDiffs}
           context={{
             course_short_name: course.short_name,
             course_instance_short_name: courseInstance.short_name,
