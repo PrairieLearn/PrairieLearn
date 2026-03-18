@@ -595,6 +595,54 @@ describe('prepareZonesForEditor normalization', () => {
     expect(group.alternatives![1].autoPoints).toBe(7);
   });
 
+  it('preserves inherited maxPoints for legacy mixed-group alternatives with their own points', () => {
+    const zones: ZoneAssessmentJson[] = [
+      {
+        lockpoint: false,
+        canSubmit: [],
+        canView: [],
+        questions: [
+          {
+            numberChoose: 1,
+            maxPoints: 5,
+            canSubmit: [],
+            canView: [],
+            alternatives: [
+              { id: 'alt1', points: 2 },
+              { id: 'alt2', points: 3 },
+            ],
+          },
+        ],
+      },
+    ];
+
+    const metadata = {
+      alt1: { question: { grading_method: 'Manual' } },
+      alt2: { question: { grading_method: 'External' } },
+    } as any;
+
+    const prepared = prepareZonesForEditor(zones, metadata);
+    const saved = serializeZonesForJson(stripTrackingIds(prepared));
+
+    // Both alternatives keep their own legacy `points`, but they also inherit
+    // the group's `maxPoints: 5`. Sync resolves that inherited max differently
+    // by grading method: Manual uses it as `manualPoints`, while auto-graded
+    // questions keep their own points and receive it as `maxAutoPoints`.
+    expect(saved).toEqual([
+      {
+        questions: [
+          {
+            numberChoose: 1,
+            alternatives: [
+              { id: 'alt1', manualPoints: 5 },
+              { id: 'alt2', autoPoints: 3, maxAutoPoints: 5 },
+            ],
+          },
+        ],
+      },
+    ]);
+  });
+
   it('normalizes alt group maxPoints to manualPoints when all alternatives are Manual', () => {
     const zones: ZoneAssessmentJson[] = [
       {

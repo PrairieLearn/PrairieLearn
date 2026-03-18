@@ -100,10 +100,51 @@ function hasLegacyPoints(question: ZoneQuestionBlockJson): boolean {
   );
 }
 
+function firstPointValue(points: QuestionPointsJson['points']): number | undefined {
+  if (points == null) return undefined;
+  return Array.isArray(points) ? points[0] : points;
+}
+
+/**
+ * Materializes group-level legacy `points`/`maxPoints` onto a single alternative
+ * while preserving any point fields the alternative already defines.
+ */
+function normalizeMixedGroupAlternativePoints(
+  alternative: QuestionAlternativeJson,
+  groupPoints: QuestionPointsJson['points'],
+  groupMaxPoints: QuestionPointsJson['maxPoints'],
+  isManualGrading: boolean,
+): QuestionAlternativeJson {
+  const normalized = normalizeQuestionPoints(alternative, isManualGrading);
+
+  if (isManualGrading) {
+    if (alternative.manualPoints == null) {
+      const effectiveManualPoints =
+        alternative.maxPoints ??
+        groupMaxPoints ??
+        firstPointValue(alternative.points ?? groupPoints);
+      if (effectiveManualPoints != null) {
+        normalized.manualPoints = effectiveManualPoints;
+      }
+    }
+  } else {
+    if (normalized.autoPoints == null && (alternative.points ?? groupPoints) != null) {
+      normalized.autoPoints = alternative.points ?? groupPoints;
+    }
+    if (normalized.maxAutoPoints == null && (alternative.maxPoints ?? groupMaxPoints) != null) {
+      normalized.maxAutoPoints = alternative.maxPoints ?? groupMaxPoints;
+    }
+  }
+
+  delete normalized.points;
+  delete normalized.maxPoints;
+  return normalized;
+}
+
 /**
  * For mixed-grading alt groups, copies group-level `points`/`maxPoints` to each
- * alternative (when the alternative doesn't already have its own points), then
- * normalizes per-alternative based on grading method. Clears points from the group.
+ * alternative as needed, then normalizes per-alternative based on grading
+ * method. Clears points from the group.
  */
 function pushPointsToAlternatives(
   question: ZoneQuestionBlockJson,
@@ -114,23 +155,15 @@ function pushPointsToAlternatives(
     ...groupRest,
     pointsDistributedInfoBanner: true,
     trackingId: createTrackingId(),
-    alternatives: (question.alternatives ?? []).map((alt) => {
-      const inherited = { ...alt };
-      // Only push if the alternative doesn't have its own point fields
-      if (
-        inherited.points == null &&
-        inherited.autoPoints == null &&
-        inherited.maxAutoPoints == null &&
-        inherited.manualPoints == null
-      ) {
-        if (points != null) inherited.points = points;
-        if (maxPoints != null) inherited.maxPoints = maxPoints;
-      }
-      return {
-        ...normalizeQuestionPoints(inherited, getGradingMethod(alt.id) === 'Manual'),
-        trackingId: createTrackingId(),
-      };
-    }),
+    alternatives: (question.alternatives ?? []).map((alt) => ({
+      ...normalizeMixedGroupAlternativePoints(
+        alt,
+        points,
+        maxPoints,
+        getGradingMethod(alt.id) === 'Manual',
+      ),
+      trackingId: createTrackingId(),
+    })),
   } as AltGroupBlockForm;
 }
 
