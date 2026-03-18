@@ -88,6 +88,8 @@ export function StudentAuditEventsTable({ events }: StudentAuditEventsTableProps
     );
   }
 
+  // TODO: if/when we add more audit events to this table, consider adding
+  // search/filter functionality to help the user find specific events.
   return (
     <>
       <table className="table table-sm table-hover" aria-label="Student audit events">
