@@ -468,7 +468,7 @@ function checkData(data: Record<string, any>, origData: Record<string, any>, pha
              || checkProp('preferences',           'object',  allPhases,                            [])
              || checkProp('submitted_answers',     'object',  ['render', 'parse', 'grade'],         ['parse', 'grade'])
              || checkProp('format_errors',         'object',  ['render', 'parse', 'grade', 'test'], ['parse', 'grade', 'test'])
-             || checkProp('raw_submitted_answers', 'object',  ['render', 'parse', 'grade', 'test'], ['parse', 'test'])
+             || checkProp('raw_submitted_answers', 'object',  ['render', 'parse', 'grade', 'test'], ['test'])
              || checkProp('partial_scores',        'object',  ['render', 'grade', 'test'],          ['grade', 'test'])
              || checkProp('score',                 'number',  ['render', 'grade', 'test'],          ['grade', 'test'])
              || checkProp('feedback',              'object',  ['render', 'parse', 'grade', 'test'], ['grade', 'parse', 'test'])
