@@ -175,7 +175,6 @@ export function createAltGroupWithTrackingId(): AltGroupBlockForm {
   return {
     trackingId: createTrackingId(),
     alternatives: [],
-    numberChoose: 1,
     canSubmit: [],
     canView: [],
   } as AltGroupBlockForm;

@@ -11,6 +11,7 @@ import type {
 import {
   buildHierarchicalAssessment,
   compactPoints,
+  computeAltGroupChosenRange,
   computeQuestionTotalPoints,
   computeZonePointTotals,
   computeZoneQuestionCount,
@@ -594,5 +595,71 @@ describe('computeZoneQuestionCount', () => {
       },
     ];
     expect(computeZoneQuestionCount(questions as ZoneQuestionBlockForm[])).toBe(3);
+  });
+});
+
+describe('computeAltGroupChosenRange', () => {
+  function makeAlt(id: string) {
+    return { trackingId: id, id } as ZoneQuestionBlockForm;
+  }
+
+  function makeAltGroup(id: string, altCount: number, numberChoose?: number) {
+    return {
+      trackingId: id,
+      numberChoose,
+      alternatives: Array.from({ length: altCount }, (_, i) => ({
+        trackingId: `${id}-a${i}`,
+        id: `${id}-q${i}`,
+      })),
+    } as ZoneQuestionBlockForm;
+  }
+
+  it.each([
+    { name: 'no zone numberChoose', zoneChoose: undefined, agChoose: 2, alts: 3, expected: 2 },
+    { name: 'zone numberChoose >= effective', zoneChoose: 3, agChoose: 2, alts: 3, expected: 2 },
+    { name: 'zone numberChoose < effective', zoneChoose: 2, agChoose: 3, alts: 3, expected: 2 },
+    {
+      name: 'null ag numberChoose (all)',
+      zoneChoose: undefined,
+      agChoose: undefined,
+      alts: 3,
+      expected: 3,
+    },
+    { name: 'empty alt group', zoneChoose: 2, agChoose: undefined, alts: 0, expected: 0 },
+  ])('single group: $name -> min=max=$expected', ({ zoneChoose, agChoose, alts, expected }) => {
+    const ag = makeAltGroup('ag1', alts, agChoose);
+    const zone = {
+      trackingId: 'z1',
+      numberChoose: zoneChoose,
+      questions: [ag],
+    } as ZoneAssessmentForm;
+    expect(computeAltGroupChosenRange(zone, ag)).toEqual({ min: expected, max: expected });
+  });
+
+  it('spreads evenly across multiple alt groups, producing a range', () => {
+    // Two groups each effective=2, zone picks 3 of 4.
+    // Layer 1: 2 questions, layer 2: 2 questions. C=[0,2,4].
+    // guaranteed=1 (C[1]=2 <= 3), max=2 (has layer 2 and 3 > C[1]).
+    const ag1 = makeAltGroup('ag1', 2, 2);
+    const ag2 = makeAltGroup('ag2', 2, 2);
+    const zone = { trackingId: 'z1', numberChoose: 3, questions: [ag1, ag2] } as ZoneAssessmentForm;
+
+    expect(computeAltGroupChosenRange(zone, ag1)).toEqual({ min: 1, max: 2 });
+    expect(computeAltGroupChosenRange(zone, ag2)).toEqual({ min: 1, max: 2 });
+  });
+
+  it('caps alt group at guaranteed when zone budget is exhausted by layer 1', () => {
+    // Standalone(1) + alt group(effective=2). Zone picks 2.
+    // Layer 1: 2 items. C=[0,2,3]. Z=2.
+    // For alt group: guaranteed=1 (C[1]=2 <= 2), no budget left → max=1.
+    const standalone = makeAlt('q1');
+    const ag = makeAltGroup('ag1', 2, 2);
+    const zone = {
+      trackingId: 'z1',
+      numberChoose: 2,
+      questions: [standalone, ag],
+    } as ZoneAssessmentForm;
+
+    expect(computeAltGroupChosenRange(zone, ag)).toEqual({ min: 1, max: 1 });
   });
 });
