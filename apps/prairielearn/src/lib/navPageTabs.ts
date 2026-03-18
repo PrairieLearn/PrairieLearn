@@ -250,12 +250,6 @@ export function getNavPageTabs() {
         tabLabel: 'Courses',
       },
       {
-        activeSubPage: 'networks',
-        urlSuffix: '/administrator/networks',
-        iconClasses: 'fas fa-network-wired',
-        tabLabel: 'Exam networks',
-      },
-      {
         activeSubPage: 'queries',
         urlSuffix: '/administrator/queries',
         iconClasses: 'fas fa-database',

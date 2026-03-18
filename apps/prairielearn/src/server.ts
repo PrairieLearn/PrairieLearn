@@ -64,6 +64,7 @@ import { DEV_EXECUTION_MODE, config, loadConfig, setLocalsFromConfig } from './l
 import { pullAndUpdateCourse } from './lib/course.js';
 import { UserSchema } from './lib/db-types.js';
 import * as externalGrader from './lib/externalGrader.js';
+import * as externalGraderDeadLetters from './lib/externalGraderDeadLetters.js';
 import * as externalGraderResults from './lib/externalGraderResults.js';
 import * as externalGradingSocket from './lib/externalGradingSocket.js';
 import * as externalImageCaptureSocket from './lib/externalImageCaptureSocket.js';
@@ -88,6 +89,7 @@ import { makeWorkspaceProxyMiddleware } from './middlewares/workspaceProxy.js';
 import { selectCourseById } from './models/course.js';
 import * as freeformServer from './question-servers/freeform.js';
 import * as sprocs from './sprocs/index.js';
+import { administratorTrpcRouter } from './trpc/administrator/trpc.js';
 
 process.on('warning', (e) => console.warn(e));
 
@@ -1901,6 +1903,8 @@ export async function initExpress(): Promise<Express> {
 
   app.use('/pl/administrator', (await import('./middlewares/authzIsAdministrator.js')).default);
 
+  app.use('/pl/administrator/trpc', administratorTrpcRouter);
+
   app.use(
     '/pl/administrator/admins',
     (await import('./pages/administratorAdmins/administratorAdmins.js')).default,
@@ -1916,10 +1920,6 @@ export async function initExpress(): Promise<Express> {
   app.use(
     '/pl/administrator/courses',
     (await import('./pages/administratorCourses/administratorCourses.js')).default,
-  );
-  app.use(
-    '/pl/administrator/networks',
-    (await import('./pages/administratorNetworks/administratorNetworks.js')).default,
   );
   app.use(
     '/pl/administrator/workspaces',
@@ -2571,6 +2571,7 @@ if (shouldStartServer) {
     // requests, as they may actually end up executing course code.
     if (config.externalGradingEnableResults) {
       await externalGraderResults.init();
+      await externalGraderDeadLetters.init();
     }
 
     await cron.init();
@@ -2613,6 +2614,7 @@ if (shouldStartServer) {
     }
     // First, stop all services that use the database.
     const serviceResults = await Promise.allSettled([
+      externalGraderDeadLetters.stop(),
       externalGraderResults.stop(),
       cron.stop(),
       serverJobs.stop(),

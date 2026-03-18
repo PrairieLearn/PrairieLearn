@@ -6,14 +6,11 @@
   "set": "Homework",
   "number": "15",
   "zones": [
-    {
-      "title": "Warmup",
-      "questions": [{ "id": "partialCredit1", "points": 1 }]
-    },
+    { "title": "Warmup", "questions": [{ "id": "partialCredit1", "autoPoints": 1 }] },
     {
       "title": "Main questions",
       "lockpoint": true,
-      "questions": [{ "id": "partialCredit2", "points": 1 }]
+      "questions": [{ "id": "partialCredit2", "autoPoints": 1 }]
     }
   ]
 }

@@ -18,7 +18,11 @@ const accessRuleRecommendation = (
     Course instance access rules are deprecated. It is recommended that you switch to the new
     publishing system. You can do so by editing the <code>infoCourseInstance.json</code> file for
     the course instance. For more information, see the{' '}
-    <a href="https://docs.prairielearn.com/courseInstance/#migrating-from-allowaccess">
+    <a
+      href="https://docs.prairielearn.com/courseInstance/#migrating-from-allowaccess"
+      target="_blank"
+      rel="noreferrer"
+    >
       documentation on migrating to publishing
     </a>
     .

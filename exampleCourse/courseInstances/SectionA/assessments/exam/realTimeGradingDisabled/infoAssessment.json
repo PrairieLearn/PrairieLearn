@@ -12,7 +12,7 @@
       "questions": [
         {
           "numberChoose": 1,
-          "points": 25,
+          "autoPoints": 25,
           "alternatives": [
             { "id": "template/checkbox/random-prompt" },
             { "id": "template/multiple-choice/multi-correct-pool" }
@@ -25,7 +25,7 @@
       "questions": [
         {
           "numberChoose": 1,
-          "points": 10,
+          "autoPoints": 10,
           "alternatives": [
             { "id": "template/multiple-choice/images" },
             { "id": "demo/multipleChoiceSingleCorrect" }
@@ -33,7 +33,7 @@
         },
         {
           "numberChoose": 1,
-          "points": 10,
+          "autoPoints": 10,
           "alternatives": [
             { "id": "template/multiple-choice/random-prompt-true-false" },
             { "id": "template/multiple-choice/random-prompt" }
@@ -46,13 +46,13 @@
       "questions": [
         {
           "numberChoose": 1,
-          "points": 5,
+          "autoPoints": 5,
           "alternatives": [
             { "id": "demo/fixedCheckbox" },
             { "id": "template/symbolic-input/random" }
           ]
         },
-        { "id": "demo/randomMultipleChoice", "points": 5 }
+        { "id": "demo/randomMultipleChoice", "autoPoints": 5 }
       ]
     }
   ],

@@ -72,11 +72,6 @@ export async function init() {
       intervalSec: 'daily',
     },
     {
-      name: 'sendExternalGraderDeadLetters',
-      module: await import('./sendExternalGraderDeadLetters.js'),
-      intervalSec: 'daily',
-    },
-    {
       name: 'serverLoad',
       module: await import('./serverLoad.js'),
       intervalSec: config.cronOverrideAllIntervalsSec || config.cronIntervalServerLoadSec,

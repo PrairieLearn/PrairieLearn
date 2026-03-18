@@ -6,6 +6,7 @@ import { z } from 'zod';
 import * as sqldb from '@prairielearn/postgres';
 
 import {
+  StaffCourseSchema,
   StaffQuestionSchema,
   StaffTagSchema,
   StaffTopicSchema,
@@ -49,6 +50,7 @@ const courseQuestionsQuery = t.procedure.query(async (opts) => {
     id: q.id,
     qid: q.qid,
     title: q.title,
+    grading_method: q.grading_method,
     topic: { id: q.topic.id, name: q.topic.name, color: q.topic.color },
     tags: q.tags?.map((t) => ({ id: t.id, name: t.name, color: t.color })) ?? null,
     assessments:
@@ -69,6 +71,7 @@ const courseQuestionsQuery = t.procedure.query(async (opts) => {
 const QuestionByQidResultSchema = z.object({
   question: StaffQuestionSchema,
   topic: StaffTopicSchema,
+  course: StaffCourseSchema,
   open_issue_count: z.number(),
   tags: z.array(StaffTagSchema),
 });

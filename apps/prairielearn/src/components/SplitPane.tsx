@@ -8,19 +8,14 @@ import {
   useSyncExternalStore,
 } from 'react';
 
-const COLLAPSE_BREAKPOINT = 768;
+import { useResizeHandle } from '@prairielearn/ui';
 
-function useNarrowViewport(): boolean {
-  return useSyncExternalStore(
-    (callback) => {
-      const mq = window.matchMedia(`(max-width: ${COLLAPSE_BREAKPOINT}px)`);
-      mq.addEventListener('change', callback);
-      return () => mq.removeEventListener('change', callback);
-    },
-    () => window.matchMedia(`(max-width: ${COLLAPSE_BREAKPOINT}px)`).matches,
-    () => false,
-  );
-}
+const DEFAULT_RIGHT_WIDTH = 360;
+const MIN_RIGHT_WIDTH = 280;
+const MAX_RIGHT_WIDTH = 600;
+const MIN_LEFT_WIDTH = 400;
+const SEPARATOR_WIDTH = 4;
+const NARROW_CONTAINER_BREAKPOINT = MIN_LEFT_WIDTH + MIN_RIGHT_WIDTH + SEPARATOR_WIDTH;
 
 export function SplitPane({
   left,
@@ -30,9 +25,6 @@ export function SplitPane({
   rightCollapsed: rightCollapsedProp,
   forceOpen,
   onClose,
-  defaultRightWidth = 360,
-  minRightWidth = 280,
-  maxRightWidth = 600,
 }: {
   left: ReactNode;
   right: ReactNode;
@@ -48,13 +40,23 @@ export function SplitPane({
   minRightWidth?: number;
   maxRightWidth?: number;
 }) {
-  const [rightWidth, setRightWidth] = useState(defaultRightWidth);
-  const isNarrow = useNarrowViewport();
   const [manualCollapsed, setManualCollapsed] = useState(true);
-  const isDraggingRef = useRef(false);
   const prevForceOpenRef = useRef(forceOpen);
   const narrowContainerRef = useRef<HTMLDivElement>(null);
   const savedScrollTopRef = useRef(0);
+
+  const containerWidth = useSyncExternalStore(
+    useCallback((callback: () => void) => {
+      window.addEventListener('resize', callback);
+      window.addEventListener('side-nav-toggle', callback);
+      return () => {
+        window.removeEventListener('resize', callback);
+        window.removeEventListener('side-nav-toggle', callback);
+      };
+    }, []),
+    () => narrowContainerRef.current?.clientWidth ?? 0,
+    () => 0,
+  );
 
   // Re-open panel when forceOpen changes (e.g. user selects a tree item)
   if (forceOpen && forceOpen !== prevForceOpenRef.current) {
@@ -62,33 +64,21 @@ export function SplitPane({
   }
   prevForceOpenRef.current = forceOpen;
 
+  const isNarrow = containerWidth > 0 && containerWidth <= NARROW_CONTAINER_BREAKPOINT;
   const isCollapsed = rightCollapsedProp ?? manualCollapsed;
 
-  const handleMouseDown = useCallback(
-    (e: React.MouseEvent) => {
-      e.preventDefault();
-      isDraggingRef.current = true;
-      const startX = e.clientX;
-      const startWidth = rightWidth;
+  const dynamicMaxWidth =
+    containerWidth > 0
+      ? Math.max(0, Math.min(MAX_RIGHT_WIDTH, containerWidth - MIN_LEFT_WIDTH - SEPARATOR_WIDTH))
+      : MAX_RIGHT_WIDTH;
 
-      const onMouseMove = (ev: MouseEvent) => {
-        if (!isDraggingRef.current) return;
-        const delta = startX - ev.clientX;
-        const newWidth = Math.min(maxRightWidth, Math.max(minRightWidth, startWidth + delta));
-        setRightWidth(newWidth);
-      };
-
-      const onMouseUp = () => {
-        isDraggingRef.current = false;
-        document.removeEventListener('mousemove', onMouseMove);
-        document.removeEventListener('mouseup', onMouseUp);
-      };
-
-      document.addEventListener('mousemove', onMouseMove);
-      document.addEventListener('mouseup', onMouseUp);
-    },
-    [rightWidth, minRightWidth, maxRightWidth],
-  );
+  const { width: rightWidth, separatorProps } = useResizeHandle({
+    initialWidth: DEFAULT_RIGHT_WIDTH,
+    minWidth: MIN_RIGHT_WIDTH,
+    maxWidth: dynamicMaxWidth,
+    ariaLabel: 'Resize panel',
+    ariaControls: 'split-pane-detail',
+  });
 
   const closeButton = rightHeaderAction ?? (
     <button
@@ -143,22 +133,17 @@ export function SplitPane({
   }, [isNarrow, isCollapsed]);
 
   return (
-    <div ref={narrowContainerRef} className="split-pane" data-collapsed={isCollapsed || undefined}>
+    <div
+      ref={narrowContainerRef}
+      className="split-pane"
+      data-collapsed={isCollapsed || undefined}
+      data-narrow={isNarrow || undefined}
+    >
       <div className="split-pane__left">{left}</div>
 
-      {/* Separator is interactive (resizable) but uses role="separator" which jsx-a11y considers non-interactive */}
-      {/* eslint-disable jsx-a11y-x/no-noninteractive-element-interactions, jsx-a11y-x/no-noninteractive-tabindex */}
-      <div
-        className="split-pane__separator"
-        role="separator"
-        tabIndex={0}
-        aria-orientation="vertical"
-        aria-label="Resize panel"
-        onMouseDown={handleMouseDown}
-      />
-      {/* eslint-enable jsx-a11y-x/no-noninteractive-element-interactions, jsx-a11y-x/no-noninteractive-tabindex */}
+      <div className="split-pane__separator" {...separatorProps} />
 
-      <div className="split-pane__right" style={{ width: rightWidth }}>
+      <div id="split-pane-detail" className="split-pane__right" style={{ width: rightWidth }}>
         <div className="split-pane__right-header">
           <span className="fw-semibold small">{rightTitle}</span>
           {closeButton}
