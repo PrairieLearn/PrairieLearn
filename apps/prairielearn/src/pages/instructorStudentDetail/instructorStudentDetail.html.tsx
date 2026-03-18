@@ -21,6 +21,7 @@ interface StudentDetailProps {
   courseInstanceId: string;
   csrfToken: string;
   trpcCsrfToken: string;
+  hasCoursePermissionEdit?: boolean;
   hasCourseInstancePermissionEdit?: boolean;
   hasModernPublishing: boolean;
 }
@@ -36,6 +37,7 @@ export function InstructorStudentDetail({
   courseInstanceId,
   csrfToken,
   trpcCsrfToken,
+  hasCoursePermissionEdit,
   hasCourseInstancePermissionEdit,
   hasModernPublishing,
 }: StudentDetailProps) {
@@ -60,6 +62,7 @@ export function InstructorStudentDetail({
         courseInstanceUrl={courseInstanceUrl}
         csrfToken={csrfToken}
         trpcClient={trpcClient}
+        hasCoursePermissionEdit={hasCoursePermissionEdit ?? false}
         hasCourseInstancePermissionEdit={hasCourseInstancePermissionEdit ?? false}
         hasModernPublishing={hasModernPublishing}
       />

@@ -33,6 +33,7 @@ import { type StudentLabelErrors, throwAppError } from './app-errors.js';
 import {
   requireCourseInstancePermissionEdit,
   requireCourseInstancePermissionView,
+  requireCoursePermissionEdit,
   selectStudentLabelByIdOrNotFound,
   t,
 } from './init.js';
@@ -115,13 +116,14 @@ const checkUids = t.procedure
   });
 
 const upsert = t.procedure
+  .use(requireCoursePermissionEdit)
   .use(requireCourseInstancePermissionEdit)
   .input(
     z.object({
       labelId: IdSchema.optional(),
       name: z.string().trim().min(1, 'Label name is required').max(255),
       color: ColorJsonSchema,
-      uids: z.array(z.string()).max(MAX_LABEL_UIDS).default([]),
+      uids: z.array(z.string()).max(MAX_LABEL_UIDS).optional(),
       origHash: z.string().nullable(),
     }),
   )
@@ -178,6 +180,10 @@ const upsert = t.procedure
         code: 'SYNC_JOB_FAILED',
         jobSequenceId: saveResult.jobSequenceId,
       });
+    }
+
+    if (rawUids === undefined) {
+      return { origHash: saveResult.origHash };
     }
 
     const uids = [...new Set(rawUids)];
@@ -244,6 +250,7 @@ const upsert = t.procedure
   });
 
 const destroy = t.procedure
+  .use(requireCoursePermissionEdit)
   .use(requireCourseInstancePermissionEdit)
   .input(
     z.object({

@@ -29,7 +29,6 @@ router.get(
     const {
       course_instance: courseInstance,
       authz_data,
-      __csrf_token,
       course,
     } = extractPageContext(res.locals, {
       pageType: 'courseInstance',
@@ -54,8 +53,10 @@ router.get(
       return;
     }
 
-    const labels = await getStudentLabelsWithUserData(courseInstance);
-    const canEdit = authz_data.has_course_instance_permission_edit ?? false;
+    const initialLabels = await getStudentLabelsWithUserData(courseInstance);
+    const canEdit =
+      authz_data.has_course_permission_edit &&
+      (authz_data.has_course_instance_permission_edit ?? false);
 
     const trpcUrl = `/pl/course_instance/${courseInstance.id}/instructor/trpc`;
     const trpcCsrfToken = generatePrefixCsrfToken(
@@ -83,10 +84,9 @@ router.get(
         content: (
           <Hydrate>
             <InstructorStudentsLabels
-              csrfToken={__csrf_token}
               trpcCsrfToken={trpcCsrfToken}
               courseInstanceId={courseInstance.id}
-              initialLabels={labels}
+              initialLabels={initialLabels}
               canEdit={canEdit}
               isDevMode={config.devMode}
               origHash={origHash}

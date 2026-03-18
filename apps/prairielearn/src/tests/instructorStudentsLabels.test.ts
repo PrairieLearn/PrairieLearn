@@ -12,6 +12,10 @@ import { EnrollmentSchema } from '../lib/db-types.js';
 import { getOriginalHash } from '../lib/editors.js';
 import { TEST_COURSE_PATH } from '../lib/paths.js';
 import { selectCourseInstanceById } from '../models/course-instances.js';
+import {
+  insertCourseInstancePermissions,
+  insertCoursePermissionsByUserUid,
+} from '../models/course-permissions.js';
 import { generateAndEnrollUsers } from '../models/enrollment.js';
 import {
   selectEnrollmentsInStudentLabel,
@@ -26,7 +30,9 @@ import {
   createCourseRepoFixture,
   updateCourseRepository,
 } from './helperCourse.js';
+import * as helperClient from './helperClient.js';
 import * as helperServer from './helperServer.js';
+import { getOrCreateUser } from './utils/auth.js';
 
 const siteUrl = `http://localhost:${config.serverPort}`;
 const labelsUrl = `${siteUrl}/pl/course_instance/1/instructor/instance_admin/students/labels`;
@@ -62,6 +68,26 @@ describe('Instructor student labels page', () => {
     courseRepo = await createCourseRepoFixture(TEST_COURSE_PATH);
     await helperServer.before(courseRepo.courseLiveDir)();
     await updateCourseRepository({ courseId: '1', repository: courseRepo.courseOriginDir });
+
+    const instructor = await getOrCreateUser({
+      uid: 'instructor@example.com',
+      name: 'Test Instructor',
+      uin: '100000000',
+      email: 'instructor@example.com',
+    });
+    await insertCoursePermissionsByUserUid({
+      course_id: '1',
+      uid: instructor.uid,
+      course_role: 'Owner',
+      authn_user_id: instructor.id,
+    });
+    await insertCourseInstancePermissions({
+      course_id: '1',
+      user_id: instructor.id,
+      course_instance_id: '1',
+      course_instance_role: 'Student Data Editor',
+      authn_user_id: instructor.id,
+    });
 
     const courseInstance = await selectCourseInstanceById('1');
     courseInstanceShortName = courseInstance.short_name!;
@@ -173,6 +199,39 @@ describe('Instructor student labels page', () => {
     }
   });
 
+  test.sequential(
+    'should require student data view and only show label management actions to users with both permissions',
+    async () => {
+      const courseEditorOnly = await helperClient.fetchCheerio(labelsUrl, {
+        headers: {
+          cookie:
+            'pl_test_user=test_instructor; pl2_requested_course_role=Editor; pl2_requested_course_instance_role=None',
+        },
+      });
+      assert.equal(courseEditorOnly.status, 403);
+
+      const studentDataEditorOnly = await helperClient.fetchCheerio(labelsUrl, {
+        headers: {
+          cookie:
+            'pl_test_user=test_instructor; pl2_requested_course_role=None; pl2_requested_course_instance_role=Student Data Editor',
+        },
+      });
+      assert.equal(studentDataEditorOnly.status, 200);
+      assert.lengthOf(studentDataEditorOnly.$('button:contains("Add label")'), 0);
+      assert.lengthOf(studentDataEditorOnly.$('th:contains("Students")'), 1);
+
+      const editorAndStudentDataEditor = await helperClient.fetchCheerio(labelsUrl, {
+        headers: {
+          cookie:
+            'pl_test_user=test_instructor; pl2_requested_course_role=Editor; pl2_requested_course_instance_role=Student Data Editor',
+        },
+      });
+      assert.equal(editorAndStudentDataEditor.status, 200);
+      assert.lengthOf(editorAndStudentDataEditor.$('button:contains("Add label")'), 1);
+      assert.lengthOf(editorAndStudentDataEditor.$('th:contains("Students")'), 1);
+    },
+  );
+
   test.sequential('should handle edit label operations', async () => {
     const trpcClient = createTrpcClient();
     let origHash = await getOriginalHash(
@@ -203,7 +262,7 @@ describe('Instructor student labels page', () => {
       labelId: labelA.id,
       name: 'Test Label A Renamed',
       color: 'purple3',
-      uids: [],
+      uids: [studentUids[2]],
       origHash,
     });
 
@@ -211,6 +270,10 @@ describe('Instructor student labels page', () => {
     labelA = labels.find((l) => l.name === 'Test Label A Renamed');
     assert.isDefined(labelA);
     assert.equal(labelA.color, 'purple3');
+
+    let studentsWithLabel = (await selectEnrollmentsInStudentLabel(labelA)).map((e) => e.id);
+    assert.equal(studentsWithLabel.length, 1);
+    assert.include(studentsWithLabel, enrollmentIds[2]);
 
     origHash = await getOriginalHash(
       getCourseInstanceJsonPath(courseRepo.courseLiveDir, courseInstanceShortName),
@@ -220,11 +283,10 @@ describe('Instructor student labels page', () => {
       labelId: labelA.id,
       name: 'Test Label A Renamed',
       color: 'purple3',
-      uids: [studentUids[2]],
       origHash,
     });
 
-    let studentsWithLabel = (await selectEnrollmentsInStudentLabel(labelA)).map((e) => e.id);
+    studentsWithLabel = (await selectEnrollmentsInStudentLabel(labelA)).map((e) => e.id);
     assert.equal(studentsWithLabel.length, 1);
     assert.include(studentsWithLabel, enrollmentIds[2]);
 
@@ -303,14 +365,14 @@ describe('Instructor student labels page', () => {
     const trpcClient = createTrpcClient();
     const invitedUid = 'invited-student@example.com';
 
-    await queryOptionalRow(
+    const invitedEnrollment = await queryOptionalRow(
       `INSERT INTO enrollments (course_instance_id, status, pending_uid)
        VALUES ($1, 'invited', $2)
-       ON CONFLICT DO NOTHING
        RETURNING *`,
       ['1', invitedUid],
       EnrollmentSchema,
     );
+    assert.isNotNull(invitedEnrollment);
 
     const checkResult = await trpcClient.studentLabels.checkUids.query({ uids: [invitedUid] });
     assert.deepEqual(checkResult.unenrolledUids, []);
@@ -335,6 +397,7 @@ describe('Instructor student labels page', () => {
     const labels = await selectStudentLabelsInCourseInstance(courseInstance);
     const invitedLabel = labels.find((l) => l.name === 'Invited Label');
     assert.isDefined(invitedLabel);
+
     const enrollmentsInLabel = await selectEnrollmentsInStudentLabel(invitedLabel);
     assert.equal(enrollmentsInLabel.length, 2);
 

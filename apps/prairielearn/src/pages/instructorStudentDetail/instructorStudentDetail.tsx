@@ -119,6 +119,7 @@ router.get(
               courseInstanceId={courseInstance.id}
               csrfToken={pageContext.__csrf_token}
               trpcCsrfToken={trpcCsrfToken}
+              hasCoursePermissionEdit={pageContext.authz_data.has_course_permission_edit}
               hasCourseInstancePermissionEdit={
                 pageContext.authz_data.has_course_instance_permission_edit ?? false
               }

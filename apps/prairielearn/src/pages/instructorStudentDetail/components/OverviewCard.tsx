@@ -35,6 +35,7 @@ export function OverviewCard({
   csrfToken,
   trpcClient,
   hasCourseInstancePermissionEdit,
+  hasCoursePermissionEdit,
   hasModernPublishing,
 }: {
   student: UserDetail;
@@ -44,12 +45,14 @@ export function OverviewCard({
   csrfToken: string;
   trpcClient: StudentLabelsTrpcClient;
   hasCourseInstancePermissionEdit: boolean;
+  hasCoursePermissionEdit: boolean;
   hasModernPublishing: boolean;
 }) {
   const { user, enrollment, role } = student;
   const [studentLabels, setStudentLabels] = useState(initialStudentLabels);
   const availableStudentLabels = initialAvailableStudentLabels;
   const [isLabelMutating, setIsLabelMutating] = useState(false);
+  const canManageLabels = hasCoursePermissionEdit && hasCourseInstancePermissionEdit;
   const handleViewAsStudent = () => {
     if (!user) throw new Error('User is required');
     setCookieClient(['pl_requested_uid', 'pl2_requested_uid'], user.uid);
@@ -212,7 +215,7 @@ export function OverviewCard({
             {studentLabels.length === 0 && availableStudentLabels.length === 0 && (
               <span className="text-muted fst-italic">
                 No labels configured.{' '}
-                {hasCourseInstancePermissionEdit && (
+                {canManageLabels && (
                   <a href={getCourseInstanceStudentLabelsUrl(student.course_instance.id)}>
                     Manage labels
                   </a>
@@ -277,7 +280,7 @@ export function OverviewCard({
                           href={getCourseInstanceStudentLabelsUrl(student.course_instance.id)}
                         >
                           <i className="bi bi-gear me-1" aria-hidden="true" />
-                          Manage labels
+                          {canManageLabels ? 'Manage labels' : 'View labels'}
                         </a>
                       </li>
                     </ul>

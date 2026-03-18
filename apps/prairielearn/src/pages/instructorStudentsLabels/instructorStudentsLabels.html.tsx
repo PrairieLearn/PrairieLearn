@@ -14,7 +14,6 @@ import { LabelTableRow } from './components/LabelTableRow.js';
 import type { StudentLabelWithUserData } from './instructorStudentsLabels.types.js';
 
 interface StudentLabelsPageProps {
-  csrfToken: string;
   trpcCsrfToken: string;
   courseInstanceId: string;
   initialLabels: StudentLabelWithUserData[];
@@ -105,6 +104,13 @@ function StudentLabelsCard({
           accommodations, or any custom categorization. Labels are not visible to students.
         </small>
       </div>
+
+      {!canEdit && (
+        <Alert variant="info">
+          You can view labels on this page, but creating, renaming, deleting, and assigning labels
+          here requires both course editor and student data editor permissions.
+        </Alert>
+      )}
 
       {enrollmentWarning && (
         <Alert variant="warning" dismissible onClose={() => setEnrollmentWarning(null)}>

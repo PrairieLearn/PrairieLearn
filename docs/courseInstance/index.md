@@ -259,7 +259,7 @@ Allowable timezones are those in the TZ column in the [list of tz database time 
 
 Student labels let you organize students with colored badges. Use them for sections, TA assignments, accommodations, or any other grouping.
 
-To manage labels, go to **Students → Labels**. You can create labels with custom names and colors, then assign students by entering their UIDs. You can also assign labels from the main Students page using batch actions, or from an individual student's page.
+To review configured labels and their assigned students, go to **Students → Labels**. Users with student data viewer access can view that page. Users who have both course editor and student data editor access can create, rename, delete, and assign labels there by entering UIDs. Student data editors can also apply existing labels from the main Students page using batch actions, or from an individual student's page.
 
 Labels appear in the student roster, gradebook, and student detail pages.
 
