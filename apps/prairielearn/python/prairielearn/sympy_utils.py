@@ -855,6 +855,14 @@ def try_parse_string_as_sympy(
 
     Returns:
         A parsed SymPy expression on success, or a formatted error message on failure.
+
+    Example::
+
+        result = try_parse_string_as_sympy("x + 1", ["x"])
+        if isinstance(result, SympyParseFailure):
+            print(result.error)
+        else:
+            print(result.expr)
     """
     try:
         expr_parsed = convert_string_to_sympy(
