@@ -106,6 +106,8 @@ const config: KnipConfig = {
         'src/lib/client/safe-db-types.ts',
         // We have team -> group aliases in this file
         'src/lib/db-types.ts',
+        // Ambient module declaration for echarts types
+        'src/typings/echarts.d.ts',
       ],
       project: ['**/*.{ts,cts,mts,tsx}'],
     },
