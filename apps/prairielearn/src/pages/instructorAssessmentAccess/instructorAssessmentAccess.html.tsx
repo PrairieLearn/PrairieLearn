@@ -4,6 +4,7 @@ import { html } from '@prairielearn/html';
 import { hydrateHtml } from '@prairielearn/react/server';
 
 import { CommentPopoverHtml } from '../../components/CommentPopover.js';
+import { Modal } from '../../components/Modal.js';
 import { PageLayout } from '../../components/PageLayout.js';
 import type { AssessmentMigrationAnalysis } from '../../lib/access-control-migration.js';
 import { compiledStylesheetTag } from '../../lib/assets.js';
@@ -34,16 +35,25 @@ export const AssessmentAccessRulesSchema = z.object({
 });
 type AssessmentAccessRules = z.infer<typeof AssessmentAccessRulesSchema>;
 
+interface MigrationPreview {
+  beforeJson: string;
+  afterJson: string;
+  warnings: string[];
+  hasUidRules: boolean;
+}
+
 export function InstructorAssessmentAccess({
   resLocals,
   accessRules,
   migrationAnalysis,
+  migrationPreview,
   origHash,
   canEdit,
 }: {
   resLocals: ResLocalsForPage<'assessment'>;
   accessRules: AssessmentAccessRules[];
   migrationAnalysis: AssessmentMigrationAnalysis | null;
+  migrationPreview: MigrationPreview | null;
   origHash: string;
   canEdit: boolean;
 }) {
@@ -63,6 +73,26 @@ export function InstructorAssessmentAccess({
       <div class="card mb-4">
         <div class="card-header bg-primary text-white d-flex align-items-center">
           <h1>${resLocals.assessment_set.name} ${resLocals.assessment.number}: Access</h1>
+          ${migrationPreview && canEdit
+            ? html`
+                <button
+                  type="button"
+                  class="btn btn-light btn-sm ms-auto"
+                  data-bs-toggle="modal"
+                  data-bs-target="#migrationConfirmModal"
+                >
+                  Migrate to modern format
+                </button>
+              `
+            : ''}
+        </div>
+
+        <div class="alert alert-warning mb-0 rounded-0 border-start-0 border-end-0 border-top-0">
+          ${migrationAnalysis && !migrationAnalysis.canMigrate
+            ? html`This assessment uses the legacy access control system. Automatic migration is not
+              available for this assessment's access rules.`
+            : html`This assessment uses the legacy access control system. Consider migrating to the
+              modern format for a better editing experience.`}
         </div>
 
         <div class="table-responsive">
@@ -162,59 +192,100 @@ export function InstructorAssessmentAccess({
         </div>
       </div>
 
-      ${migrationAnalysis && canEdit
-        ? MigrationCard({ migrationAnalysis, origHash, csrfToken: resLocals.__csrf_token })
+      ${migrationPreview && canEdit
+        ? MigrationConfirmModal({ migrationPreview, resLocals, origHash })
         : ''}
     `,
   });
 }
 
-function MigrationCard({
-  migrationAnalysis,
+function MigrationConfirmModal({
+  migrationPreview,
+  resLocals,
   origHash,
-  csrfToken,
 }: {
-  migrationAnalysis: AssessmentMigrationAnalysis;
+  migrationPreview: MigrationPreview;
+  resLocals: ResLocalsForPage<'assessment'>;
   origHash: string;
-  csrfToken: string;
 }) {
-  return html`
-    <div class="card mb-4">
-      <div class="card-header bg-secondary text-white">
-        <h2 class="h6 mb-0">Migrate to modern access control</h2>
-      </div>
-      <div class="card-body">
-        <p>
-          Classification: <code>${migrationAnalysis.archetype}</code>
-          (${migrationAnalysis.ruleCount} legacy
-          rule${migrationAnalysis.ruleCount === 1 ? '' : 's'})
-        </p>
-        ${migrationAnalysis.hasUidRules
+  return Modal({
+    id: 'migrationConfirmModal',
+    title: 'Migrate to modern format',
+    size: 'modal-xl',
+    content: html`
+      <div class="modal-body">
+        ${migrationPreview.hasUidRules
           ? html`
               <div class="alert alert-warning">
-                This assessment has UID-based access rules that will be removed during migration.
-                UID-based rules have no equivalent in the modern access control format.
+                <i class="bi bi-exclamation-triangle-fill"></i>
+                This assessment has UID-based access rules that will be dropped during migration.
+                UID-based rules are not supported in the modern format.
               </div>
             `
           : ''}
-        ${migrationAnalysis.canMigrate
+        ${migrationPreview.warnings.length > 0
           ? html`
-              <form method="POST">
-                <input type="hidden" name="__csrf_token" value="${csrfToken}" />
-                <input type="hidden" name="__action" value="migrate_access_control" />
-                <input type="hidden" name="orig_hash" value="${origHash}" />
-                <button type="submit" class="btn btn-primary">Migrate to modern format</button>
-              </form>
+              <div class="alert alert-info">
+                <i class="bi bi-info-circle-fill"></i>
+                <strong>Migration notes:</strong>
+                <ul class="mb-0 mt-1">
+                  ${migrationPreview.warnings.map((w) => html`<li>${w}</li>`)}
+                </ul>
+              </div>
             `
-          : html`
-              <p class="text-muted mb-0">
-                This assessment's access rules cannot be automatically migrated. Manual conversion
-                is required.
-              </p>
-            `}
+          : ''}
+        <ul class="nav nav-tabs" role="tablist">
+          <li class="nav-item" role="presentation">
+            <button
+              class="nav-link active"
+              data-bs-toggle="tab"
+              data-bs-target="#migration-before"
+              type="button"
+              role="tab"
+              aria-controls="migration-before"
+              aria-selected="true"
+            >
+              Previous state
+            </button>
+          </li>
+          <li class="nav-item" role="presentation">
+            <button
+              class="nav-link"
+              data-bs-toggle="tab"
+              data-bs-target="#migration-after"
+              type="button"
+              role="tab"
+              aria-controls="migration-after"
+              aria-selected="false"
+            >
+              New state
+            </button>
+          </li>
+        </ul>
+        <div class="tab-content border border-top-0 rounded-bottom">
+          <div class="tab-pane fade show active p-3" id="migration-before" role="tabpanel">
+            <pre
+              style="max-height: 400px; overflow-y: auto;"
+              class="mb-0"
+            ><code>${migrationPreview.beforeJson}</code></pre>
+          </div>
+          <div class="tab-pane fade p-3" id="migration-after" role="tabpanel">
+            <pre
+              style="max-height: 400px; overflow-y: auto;"
+              class="mb-0"
+            ><code>${migrationPreview.afterJson}</code></pre>
+          </div>
+        </div>
       </div>
-    </div>
-  `;
+    `,
+    footer: html`
+      <input type="hidden" name="__action" value="migrate_access_control" />
+      <input type="hidden" name="__csrf_token" value="${resLocals.__csrf_token}" />
+      <input type="hidden" name="orig_hash" value="${origHash}" />
+      <button type="button" class="btn btn-secondary" data-bs-dismiss="modal">Cancel</button>
+      <button type="submit" class="btn btn-primary">Confirm migration</button>
+    `,
+  });
 }
 
 export function InstructorAssessmentAccessNew({

@@ -1,5 +1,9 @@
 # Assessment access control
 
+!!! tip "Modern access control"
+
+    PrairieLearn has a newer `accessControl` format that replaces the `allowAccess` system documented on this page. The modern format provides structured deadlines, cascading overrides for student groups, and a clearer configuration model. See [Modern access control](accessControlModern.md) for details.
+
 By default, assessments are only accessible to [course staff](../course/index.md#course-staff). To control access to assessments, the `allowAccess` option is used in the `infoAssessment.json` files.
 
 ## Access control checks

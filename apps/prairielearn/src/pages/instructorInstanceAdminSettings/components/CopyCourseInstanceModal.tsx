@@ -395,7 +395,6 @@ function AccessControlStep({
           <thead className="table-light sticky-top">
             <tr>
               <th>Assessment</th>
-              <th>Archetype</th>
               <th className="text-center">Status</th>
             </tr>
           </thead>
@@ -405,9 +404,6 @@ function AccessControlStep({
                 <td>
                   <code>{a.tid}</code>
                   <small className="text-muted d-block">{a.title}</small>
-                </td>
-                <td>
-                  <small>{a.archetype}</small>
                 </td>
                 <td className="text-center">
                   {a.canMigrate ? (
