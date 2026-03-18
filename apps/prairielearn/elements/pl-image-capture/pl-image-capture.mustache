@@ -21,19 +21,12 @@ $(function() {
       class="js-hidden-capture-input"
       type="hidden"
       name="{{answer_name}}"
-      data-skip-unload-check="true"
+      data-deferred-initial-value="true"
     />
     <input
       class="js-hidden-original-capture-input"
       type="hidden"
       data-skip-unload-check="true"
-      disabled
-    />
-    <input 
-      class="js-hidden-capture-changed-flag"
-      type="hidden"
-      name="{{answer_name}}_changed"
-      value="false"
       disabled
     />
     <input
