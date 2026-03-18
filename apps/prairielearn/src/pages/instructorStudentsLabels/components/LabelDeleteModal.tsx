@@ -4,11 +4,12 @@ import { Alert, Button, Modal } from 'react-bootstrap';
 import { getAppError } from '../../../lib/client/errors.js';
 import { getCourseInstanceJobSequenceUrl } from '../../../lib/client/url.js';
 import { useTRPC } from '../../../trpc/courseInstance/context.js';
+import type { StudentLabelUserData } from '../instructorStudentsLabels.types.js';
 
 export interface LabelDeleteModalData {
   labelId: string;
   labelName: string;
-  userData: { uid: string; name: string | null }[];
+  userData: StudentLabelUserData[];
 }
 
 export function LabelDeleteModal({
@@ -76,14 +77,14 @@ export function LabelDeleteModal({
         <p>
           Are you sure you want to delete the label <strong>{data?.labelName}</strong>?
         </p>
-        {(data?.userData.length ?? 0) > 0 && (
+        {data && data.userData.length > 0 && (
           <Alert variant="warning">
-            This label has {data?.userData.length} student
-            {data?.userData.length !== 1 ? 's' : ''}. This label will be removed from them.
+            This label has {data.userData.length} student
+            {data.userData.length !== 1 ? 's' : ''}. This label will be removed from them.
             <details className="mt-2">
               <summary style={{ cursor: 'pointer' }}>Show affected students</summary>
               <div className="mt-2 p-2 bg-light border rounded">
-                {data?.userData.map((user) => (
+                {data.userData.map((user) => (
                   <div key={user.uid}>{user.name || user.uid}</div>
                 ))}
               </div>

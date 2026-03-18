@@ -12,6 +12,7 @@ const StudentLabelUserDataSchema = z.object({
   name: UserSchema.shape.name,
   enrollment_id: IdSchema,
 });
+export type StudentLabelUserData = z.infer<typeof StudentLabelUserDataSchema>;
 
 export const StudentLabelWithUserDataSchema = z.object({
   student_label: StaffStudentLabelSchema,

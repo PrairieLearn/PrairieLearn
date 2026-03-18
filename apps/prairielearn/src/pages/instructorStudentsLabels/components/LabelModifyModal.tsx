@@ -2,7 +2,7 @@ import { useMutation, useQueryClient } from '@tanstack/react-query';
 import clsx from 'clsx';
 import { useState } from 'react';
 import { Alert, Modal } from 'react-bootstrap';
-import { useForm } from 'react-hook-form';
+import { Controller, useForm } from 'react-hook-form';
 
 import { run } from '@prairielearn/run';
 import { assertNever } from '@prairielearn/utils';
@@ -39,7 +39,6 @@ export function LabelModifyModal({
   onHide,
   onExited,
   onSuccess,
-  initialUids,
 }: {
   data: LabelModifyModalData | null;
   courseInstanceId: string;
@@ -47,7 +46,6 @@ export function LabelModifyModal({
   onHide: () => void;
   onExited?: () => void;
   onSuccess: (result: { origHash: string | null; enrollmentWarning?: string }) => void;
-  initialUids?: string[];
 }) {
   const trpc = useTRPC();
   const queryClient = useQueryClient();
@@ -55,23 +53,22 @@ export function LabelModifyModal({
     { type: 'editing' } | { type: 'confirming'; unknownUids: string[] }
   >({ type: 'editing' });
 
-  const defaultValues = run(() => {
+  const values = run(() => {
     if (data === null) return { name: '', color: 'blue1', uids: '' };
-    if (data.type === 'add') {
-      return { name: '', color: 'blue1', uids: initialUids?.join('\n') ?? '' };
-    }
+    if (data.type === 'add') return { name: '', color: 'blue1', uids: '' };
     return { name: data.name, color: data.color, uids: data.uids.join('\n') };
   });
 
   const {
+    control,
     register,
     handleSubmit,
     setError,
     formState: { errors },
     watch,
-    setValue,
   } = useForm<LabelFormValues>({
-    defaultValues,
+    // Use reactive values because this modal stays mounted while editing different labels.
+    values,
     mode: 'onSubmit',
     reValidateMode: 'onSubmit',
   });
@@ -119,12 +116,11 @@ export function LabelModifyModal({
 
   const submitMutation = (formData: LabelFormValues) => {
     const color = ColorJsonSchema.parse(formData.color);
-    const uids = parseUniqueValuesFromString(formData.uids.trim(), MAX_LABEL_UIDS);
     saveMutation.mutate({
       labelId: data?.type === 'edit' ? data.labelId : undefined,
       name: formData.name.trim(),
       color,
-      uids,
+      uids: parseUniqueValuesFromString(formData.uids.trim(), MAX_LABEL_UIDS),
       origHash: data?.origHash ?? null,
     });
   };
@@ -245,10 +241,12 @@ export function LabelModifyModal({
             <label className="form-label" htmlFor="label-color">
               Color
             </label>
-            <ColorPicker
-              id="label-color"
-              value={selectedColor}
-              onChange={(color) => setValue('color', color)}
+            <Controller
+              control={control}
+              name="color"
+              render={({ field }) => (
+                <ColorPicker id="label-color" value={field.value} onChange={field.onChange} />
+              )}
             />
           </div>
           <div className="mb-0">
