@@ -64,12 +64,22 @@ function renderLabelEventText(event: StaffAuditEvent): string {
   return detail;
 }
 
-export function StudentEnrollmentAuditEventsTable({ events }: StudentAuditEventsTableProps) {
+function renderEventText(event: StaffAuditEvent): string {
+  if (event.table_name === 'enrollments') {
+    return renderEnrollmentEventText(event);
+  }
+  if (event.table_name === 'student_label_enrollments') {
+    return renderLabelEventText(event);
+  }
+  return 'Unknown event';
+}
+
+export function StudentAuditEventsTable({ events }: StudentAuditEventsTableProps) {
   if (events.length === 0) {
     return (
       <>
         <div className="card-body">
-          <div className="text-muted">No enrollment events found.</div>
+          <div className="text-muted">No audit events found.</div>
         </div>
         <div className="card-footer text-muted small">
           Missing events? Enrollment events were not logged before October 2025.
@@ -80,7 +90,7 @@ export function StudentEnrollmentAuditEventsTable({ events }: StudentAuditEvents
 
   return (
     <>
-      <table className="table table-sm table-hover" aria-label="Student enrollment audit events">
+      <table className="table table-sm table-hover" aria-label="Student audit events">
         <thead>
           <tr>
             <th>Date</th>
@@ -93,7 +103,7 @@ export function StudentEnrollmentAuditEventsTable({ events }: StudentAuditEvents
               <td className="align-middle">
                 <FriendlyDate date={e.date} />
               </td>
-              <td className="align-middle">{renderEnrollmentEventText(e)}</td>
+              <td className="align-middle">{renderEventText(e)}</td>
             </tr>
           ))}
         </tbody>
@@ -102,36 +112,5 @@ export function StudentEnrollmentAuditEventsTable({ events }: StudentAuditEvents
         Missing events? Enrollment events were not logged before October 2025.
       </div>
     </>
-  );
-}
-
-export function StudentLabelAuditEventsTable({ events }: StudentAuditEventsTableProps) {
-  if (events.length === 0) {
-    return (
-      <div className="card-body">
-        <div className="text-muted">No label events found.</div>
-      </div>
-    );
-  }
-
-  return (
-    <table className="table table-sm table-hover" aria-label="Student label audit events">
-      <thead>
-        <tr>
-          <th>Date</th>
-          <th>Event</th>
-        </tr>
-      </thead>
-      <tbody>
-        {events.map((e) => (
-          <tr key={e.id}>
-            <td className="align-middle">
-              <FriendlyDate date={e.date} />
-            </td>
-            <td className="align-middle">{renderLabelEventText(e)}</td>
-          </tr>
-        ))}
-      </tbody>
-    </table>
   );
 }

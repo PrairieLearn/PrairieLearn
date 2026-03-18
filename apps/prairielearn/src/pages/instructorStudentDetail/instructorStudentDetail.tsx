@@ -81,17 +81,10 @@ router.get(
       : [];
     const studentLabels = await selectStudentLabelsForEnrollment(student.enrollment);
     const availableStudentLabels = await selectStudentLabelsInCourseInstance(courseInstance);
-    const rawAllAuditEvents = await selectAuditEventsByEnrollmentId({
+    const rawAuditEvents = await selectAuditEventsByEnrollmentId({
       enrollment_id: req.params.enrollment_id,
       table_names: ['enrollments', 'student_label_enrollments'],
     });
-
-    const rawEnrollmentAuditEvents = rawAllAuditEvents.filter(
-      (e) => e.table_name === 'enrollments',
-    );
-    const rawLabelAuditEvents = rawAllAuditEvents.filter(
-      (e) => e.table_name === 'student_label_enrollments',
-    );
 
     const pageTitle = run(() => {
       if (student.user) {
@@ -100,10 +93,7 @@ router.get(
       return `${student.enrollment.pending_uid}`;
     });
 
-    const enrollmentAuditEvents = rawEnrollmentAuditEvents.map((event) =>
-      StaffAuditEventSchema.parse(event),
-    );
-    const labelAuditEvents = rawLabelAuditEvents.map((event) => StaffAuditEventSchema.parse(event));
+    const auditEvents = rawAuditEvents.map((event) => StaffAuditEventSchema.parse(event));
 
     res.send(
       PageLayout({
@@ -117,8 +107,7 @@ router.get(
         content: (
           <Hydrate>
             <InstructorStudentDetail
-              enrollmentAuditEvents={enrollmentAuditEvents}
-              labelAuditEvents={labelAuditEvents}
+              auditEvents={auditEvents}
               gradebookRows={gradebookRows}
               student={student}
               studentLabels={z.array(StaffStudentLabelSchema).parse(studentLabels)}

@@ -7,15 +7,11 @@ import { type StaffGradebookRow } from '../../lib/gradebook.shared.js';
 import { createCourseInstanceTrpcClient } from '../../trpc/courseInstance/client.js';
 
 import { OverviewCard, type UserDetail } from './components/OverviewCard.js';
-import {
-  StudentEnrollmentAuditEventsTable,
-  StudentLabelAuditEventsTable,
-} from './components/StudentAuditEventsTable.js';
+import { StudentAuditEventsTable } from './components/StudentAuditEventsTable.js';
 import { StudentGradebookTable } from './components/StudentGradebookTable.js';
 
 interface StudentDetailProps {
-  enrollmentAuditEvents: StaffAuditEvent[];
-  labelAuditEvents: StaffAuditEvent[];
+  auditEvents: StaffAuditEvent[];
   gradebookRows: StaffGradebookRow[];
   student: UserDetail;
   studentLabels: StaffStudentLabel[];
@@ -29,11 +25,8 @@ interface StudentDetailProps {
   hasModernPublishing: boolean;
 }
 
-type AuditTab = 'enrollment' | 'labels';
-
 export function InstructorStudentDetail({
-  enrollmentAuditEvents,
-  labelAuditEvents,
+  auditEvents,
   gradebookRows,
   student,
   studentLabels: initialStudentLabels,
@@ -47,7 +40,6 @@ export function InstructorStudentDetail({
   hasModernPublishing,
 }: StudentDetailProps) {
   const { user, course_instance } = student;
-  const [activeTab, setActiveTab] = useState<AuditTab>('enrollment');
   const [trpcClient] = useState(() =>
     createCourseInstanceTrpcClient({ csrfToken: trpcCsrfToken, courseInstanceId }),
   );
@@ -90,36 +82,10 @@ export function InstructorStudentDetail({
       </div>
 
       <div className="card mb-4">
-        <div className="card-header bg-primary text-white">
+        <div className="card-header bg-primary text-white d-flex align-items-center justify-content-between">
           <h2 className="mb-0">Audit events</h2>
         </div>
-        <div className="card-header">
-          <ul className="nav nav-tabs card-header-tabs">
-            <li className="nav-item">
-              <button
-                type="button"
-                className={`nav-link ${activeTab === 'enrollment' ? 'active' : ''}`}
-                onClick={() => setActiveTab('enrollment')}
-              >
-                Enrollment
-              </button>
-            </li>
-            <li className="nav-item">
-              <button
-                type="button"
-                className={`nav-link ${activeTab === 'labels' ? 'active' : ''}`}
-                onClick={() => setActiveTab('labels')}
-              >
-                Labels
-              </button>
-            </li>
-          </ul>
-        </div>
-        {activeTab === 'enrollment' ? (
-          <StudentEnrollmentAuditEventsTable events={enrollmentAuditEvents} />
-        ) : (
-          <StudentLabelAuditEventsTable events={labelAuditEvents} />
-        )}
+        <StudentAuditEventsTable events={auditEvents} />
       </div>
     </TimezoneContext>
   );
