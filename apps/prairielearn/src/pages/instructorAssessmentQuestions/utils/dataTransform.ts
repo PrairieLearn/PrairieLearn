@@ -118,6 +118,14 @@ function normalizeMixedGroupAlternativePoints(
   const normalized = normalizeQuestionPoints(alternative, isManualGrading);
 
   if (isManualGrading) {
+    // Check the *original* alternative for manualPoints, not the normalized
+    // one. `normalizeQuestionPoints` may have already derived manualPoints
+    // from the alternative's own `points`, but the sync code
+    // (sync_assessments.ts) resolves manual points as
+    // `maxPoints ?? points`, preferring the group's values when the
+    // alternative doesn't define its own. We intentionally overwrite
+    // to match that priority: alt maxPoints > group maxPoints > alt points
+    // > group points.
     if (alternative.manualPoints == null) {
       const effectiveManualPoints =
         alternative.maxPoints ??
@@ -128,6 +136,8 @@ function normalizeMixedGroupAlternativePoints(
       }
     }
   } else {
+    // `autoPoints` can be `number | number[]` so we assign directly;
+    // `manualPoints` above uses `firstPointValue` because it must be scalar.
     if (normalized.autoPoints == null && (alternative.points ?? groupPoints) != null) {
       normalized.autoPoints = alternative.points ?? groupPoints;
     }
