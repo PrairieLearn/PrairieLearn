@@ -184,9 +184,25 @@ class TestSympy:
     @pytest.mark.parametrize("a_pair", EXPR_PAIRS)
     def test_valid_format(self, a_pair: tuple[str, sympy.Expr]) -> None:
         a_sub, _ = a_pair
-        assert not isinstance(
-            psu.validate_string_as_sympy(a_sub, self.SYMBOL_NAMES, allow_complex=True),
-            str,
+        assert (
+            psu.validate_string_as_sympy(a_sub, self.SYMBOL_NAMES, allow_complex=True)
+            is None
+        )
+
+    @pytest.mark.parametrize(("a_sub", "sympy_ref"), EXPR_PAIRS)
+    def test_try_parse_string_as_sympy(self, a_sub: str, sympy_ref: sympy.Expr) -> None:
+        assert psu.SympyParseSuccess(sympy_ref) == psu.try_parse_string_as_sympy(
+            a_sub,
+            self.SYMBOL_NAMES,
+            allow_complex=True,
+        )
+
+    def test_try_parse_string_as_sympy_returns_failure(self) -> None:
+        result = psu.try_parse_string_as_sympy("0.1", self.SYMBOL_NAMES)
+        assert isinstance(result, psu.SympyParseFailure)
+        assert (
+            result.error == "Your answer contains the floating-point number 0.1. "
+            "All numbers must be expressed as integers (or ratios of integers)."
         )
 
     @pytest.mark.parametrize(
@@ -482,7 +498,7 @@ class TestExceptions:
                 allow_complex=False,
                 allow_trig_functions=True,
             )
-            assert isinstance(format_error, str)
+            assert format_error is not None
             assert target_string in format_error
 
     @pytest.mark.parametrize("a_sub", IMPLICIT_COMPLEX_CASES)
@@ -497,7 +513,7 @@ class TestExceptions:
             allow_trig_functions=True,
             simplify_expression=False,
         )
-        assert isinstance(format_error, str)
+        assert format_error is not None
         assert "complex number" in format_error
 
     @pytest.mark.parametrize(
@@ -620,7 +636,7 @@ class TestExceptions:
         correct character in the original input expression.
         """
         error_msg = psu.validate_string_as_sympy(expr, self.VARIABLES + with_vars)
-        assert isinstance(error_msg, str)
+        assert error_msg is not None
         match = re.search(r"<pre>(.*?)</pre>", error_msg, re.DOTALL)
         assert match is not None
         assert match.group(1) == expected_caret
@@ -637,7 +653,7 @@ class TestExceptions:
             ["x"],
             simplify_expression=False,
         )
-        assert isinstance(error_msg, str)
+        assert error_msg is not None
         assert 'invalid symbol "m"' in error_msg
 
 
@@ -722,12 +738,12 @@ class TestValidateStringConfigurationErrors:
 
     def test_conflicting_variable_error_message(self) -> None:
         error_msg = psu.validate_string_as_sympy("x + 1", ["pi", "x"])
-        assert isinstance(error_msg, str)
+        assert error_msg is not None
         assert "conflicts with a built-in constant" in error_msg
 
     def test_conflicting_function_error_message(self) -> None:
         error_msg = psu.validate_string_as_sympy(
             "x + 1", ["x"], custom_functions=["sin"]
         )
-        assert isinstance(error_msg, str)
+        assert error_msg is not None
         assert "conflicts with a built-in function" in error_msg
