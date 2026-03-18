@@ -10,6 +10,8 @@ export function SortableAlternativeRow({
   alternative,
   zoneQuestionBlock,
   questionData,
+  questionNumber,
+  alternativeNumber,
   state,
   isSelected,
   onClick,
@@ -18,6 +20,8 @@ export function SortableAlternativeRow({
   alternative: QuestionAlternativeForm;
   zoneQuestionBlock: ZoneQuestionBlockForm;
   questionData: EditorQuestionMetadata | null;
+  questionNumber: number;
+  alternativeNumber: number;
   state: TreeState;
   isSelected: boolean;
   onClick: () => void;
@@ -37,6 +41,8 @@ export function SortableAlternativeRow({
         question={alternative}
         zoneQuestionBlock={zoneQuestionBlock}
         questionData={questionData}
+        questionNumber={questionNumber}
+        alternativeNumber={alternativeNumber}
         state={state}
         isSelected={isSelected}
         draggableAttributes={attributes}

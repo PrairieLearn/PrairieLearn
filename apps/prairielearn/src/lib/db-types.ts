@@ -5,7 +5,7 @@ import { z } from 'zod';
 
 import { DateFromISOString, IdSchema, IntervalSchema } from '@prairielearn/zod';
 
-import { QuestionPreferencesSchemaJsonSchema } from '../schemas/index.js';
+import { EnumAssessmentToolSchema, QuestionPreferencesSchemaJsonSchema } from '../schemas/index.js';
 
 // *******************************************************************************
 // Enum schemas. These should be alphabetized by their corresponding enum name.
@@ -169,18 +169,6 @@ export const SprocAuthzAssessmentInstanceSchema = z.object({
   time_limit_min: z.number().nullable(),
 });
 
-// Result of authz_course sproc
-export const SprocAuthzCourseSchema = z.object({
-  course_role: EnumCourseRoleSchema,
-});
-export type SprocAuthzCourse = z.infer<typeof SprocAuthzCourseSchema>;
-
-// Result of ip_to_mode sproc
-export const SprocIpToModeSchema = z.object({
-  mode: EnumModeSchema,
-});
-export type SprocIpToMode = z.infer<typeof SprocIpToModeSchema>;
-
 // Result of users_is_instructor_in_course_instance sproc
 export const SprocUsersIsInstructorInCourseInstanceSchema = z.object({
   is_instructor: z.boolean(),
@@ -215,16 +203,6 @@ export const SprocServerLoadsCurrentSchema = z.object({
 export const SprocSyncAssessmentsSchema = z.object({
   name_to_id_map: z.record(z.string(), IdSchema).nullable(),
 });
-
-// Result of authz_course_instance sproc
-export const SprocAuthzCourseInstanceSchema = z.object({
-  course_instance_role: EnumCourseInstanceRoleSchema,
-  /** @deprecated This field only considers the legacy access system. The value should be augmented with the modern publishing system. */
-  has_student_access: z.boolean(),
-  /** @deprecated This field only considers the legacy access system. The value should be augmented with the modern publishing system. */
-  has_student_access_with_enrollment: z.boolean(),
-});
-export type SprocAuthzCourseInstance = z.infer<typeof SprocAuthzCourseInstanceSchema>;
 
 // *******************************************************************************
 // Database table schemas. These should be alphabetized by their corresponding
@@ -511,6 +489,16 @@ export const AssessmentQuestionRolePermissionSchema = z.object({
 export type AssessmentQuestionRolePermission = z.infer<
   typeof AssessmentQuestionRolePermissionSchema
 >;
+
+export const AssessmentToolSchema = z.object({
+  assessment_id: IdSchema.nullable(),
+  enabled: z.boolean(),
+  id: IdSchema,
+  settings: z.record(z.unknown()),
+  tool: EnumAssessmentToolSchema,
+  zone_id: IdSchema.nullable(),
+});
+export type AssessmentTool = z.infer<typeof AssessmentToolSchema>;
 
 export const AssessmentSetSchema = z.object({
   abbreviation: z.string(),
@@ -1649,6 +1637,7 @@ export const TableNames = [
   'assessment_score_logs',
   'assessment_sets',
   'assessment_state_logs',
+  'assessment_tools',
   'assessments',
   'audit_events',
   'audit_logs',
