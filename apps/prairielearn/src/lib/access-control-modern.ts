@@ -11,6 +11,8 @@ import {
   resolveAccessControl,
 } from './access-control-resolver.js';
 import type {
+  Assessment,
+  CourseInstance,
   EnumCourseInstanceRole,
   EnumCourseRole,
   EnumMode,
@@ -34,9 +36,9 @@ interface AuthzDataForAccessControl {
 }
 
 interface ModernAssessmentAccessInput {
-  assessmentId: string;
+  assessment: Assessment;
   userId: string;
-  courseInstanceId: string;
+  courseInstance: CourseInstance;
   authzData: AuthzDataForAccessControl;
   reqDate: Date;
   displayTimezone: string;
@@ -69,11 +71,11 @@ function resolverResultToSprocAuthzAssessment(
 export async function resolveModernAssessmentAccess(
   input: ModernAssessmentAccessInput,
 ): Promise<SprocAuthzAssessment & { list_before_release: boolean; block_access: boolean }> {
-  const { assessmentId, userId, courseInstanceId, authzData, reqDate, displayTimezone } = input;
+  const { assessment, userId, courseInstance, authzData, reqDate, displayTimezone } = input;
 
   const [rules, student, prairieTestReservations] = await Promise.all([
-    selectAccessControlRulesForAssessment(courseInstanceId, assessmentId),
-    selectStudentContext(userId, courseInstanceId),
+    selectAccessControlRulesForAssessment(courseInstance, assessment),
+    selectStudentContext(userId, courseInstance),
     authzData.mode === 'Exam' && authzData.mode_reason === 'PrairieTest'
       ? selectPrairieTestReservations(userId, reqDate)
       : Promise.resolve([]),
@@ -123,7 +125,7 @@ export async function resolveModernAssessmentInstanceAccess(
   // the instance's team. For individual work, check that the user_id matches.
   let ownsInstance: boolean;
   if (groupWork && assessmentInstance.team_id != null) {
-    const userGroupId = await getGroupId(input.assessmentId, authzData.user.id);
+    const userGroupId = await getGroupId(input.assessment.id, authzData.user.id);
     ownsInstance = userGroupId != null && idsEqual(userGroupId, assessmentInstance.team_id);
   } else {
     ownsInstance = assessmentInstance.user_id === authzData.user.id;
@@ -151,7 +153,7 @@ export async function resolveModernAssessmentInstanceAccess(
 }
 
 interface ModernAssessmentAccessBatchInput {
-  courseInstanceId: string;
+  courseInstance: CourseInstance;
   userId: string;
   authzData: AuthzDataForAccessControl;
   reqDate: Date;
@@ -163,11 +165,11 @@ export async function resolveModernAssessmentAccessBatch(
 ): Promise<
   Map<string, SprocAuthzAssessment & { list_before_release: boolean; block_access: boolean }>
 > {
-  const { courseInstanceId, userId, authzData, reqDate, displayTimezone } = input;
+  const { courseInstance, userId, authzData, reqDate, displayTimezone } = input;
 
   const [allRules, student, prairieTestReservations] = await Promise.all([
-    selectAccessControlRulesForCourseInstance(courseInstanceId),
-    selectStudentContext(userId, courseInstanceId),
+    selectAccessControlRulesForCourseInstance(courseInstance),
+    selectStudentContext(userId, courseInstance),
     authzData.mode === 'Exam' && authzData.mode_reason === 'PrairieTest'
       ? selectPrairieTestReservations(userId, reqDate)
       : Promise.resolve([]),

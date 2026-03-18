@@ -50,14 +50,14 @@ const TARGET_TYPE_ORDER: Record<string, number> = {
  * Helper to find synced access control rules for an assessment,
  * sorted by (target_type, number).
  */
-async function getAssessmentDbId(assessmentTid: string): Promise<string> {
+async function getAssessment(assessmentTid: string) {
   const syncedAssessments = await util.dumpTableWithSchema('assessments', AssessmentSchema);
   const assessment = syncedAssessments.find((a) => a.tid === assessmentTid && a.deleted_at == null);
   assert.isOk(assessment);
-  return assessment.id;
+  return assessment;
 }
 
-async function getCourseInstanceDbId(courseInstanceShortName: string): Promise<string> {
+async function getCourseInstance(courseInstanceShortName: string) {
   const syncedCourseInstances = await util.dumpTableWithSchema(
     'course_instances',
     CourseInstanceSchema,
@@ -66,11 +66,12 @@ async function getCourseInstanceDbId(courseInstanceShortName: string): Promise<s
     (ci) => ci.short_name === courseInstanceShortName,
   );
   assert.isOk(courseInstance);
-  return courseInstance.id;
+  return courseInstance;
 }
 
 async function findSyncedAccessControlRules(assessmentId: string) {
-  const dbId = await getAssessmentDbId(assessmentId);
+  const assessment = await getAssessment(assessmentId);
+  const dbId = assessment.id;
 
   const allRules = await util.dumpTableWithSchema(
     'assessment_access_control',
@@ -1362,9 +1363,9 @@ describe('Access control syncing', () => {
       ].accessControl = [mainRule, overrideRule];
       await util.writeAndSyncCourseData(courseData);
 
-      const dbId = await getAssessmentDbId(util.ASSESSMENT_ID);
-      const ciId = await getCourseInstanceDbId(util.COURSE_INSTANCE_ID);
-      const rules = await selectAccessControlRulesForAssessment(ciId, dbId);
+      const assessment = await getAssessment(util.ASSESSMENT_ID);
+      const courseInstance = await getCourseInstance(util.COURSE_INSTANCE_ID);
+      const rules = await selectAccessControlRulesForAssessment(courseInstance, assessment);
       const override = rules.find((r) => r.number > 0);
       assert.isOk(override);
       assert.equal(override.rule.dateControl?.afterLastDeadline?.allowSubmissions, false);
@@ -1386,9 +1387,9 @@ describe('Access control syncing', () => {
       ].accessControl = [mainRule, overrideRule];
       await util.writeAndSyncCourseData(courseData);
 
-      const dbId = await getAssessmentDbId(util.ASSESSMENT_ID);
-      const ciId = await getCourseInstanceDbId(util.COURSE_INSTANCE_ID);
-      const rules = await selectAccessControlRulesForAssessment(ciId, dbId);
+      const assessment = await getAssessment(util.ASSESSMENT_ID);
+      const courseInstance = await getCourseInstance(util.COURSE_INSTANCE_ID);
+      const rules = await selectAccessControlRulesForAssessment(courseInstance, assessment);
       const override = rules.find((r) => r.number > 0);
       assert.isOk(override);
       assert.equal(override.rule.afterComplete?.hideQuestions, true);
@@ -1410,9 +1411,9 @@ describe('Access control syncing', () => {
       ].accessControl = [mainRule, overrideRule];
       await util.writeAndSyncCourseData(courseData);
 
-      const dbId = await getAssessmentDbId(util.ASSESSMENT_ID);
-      const ciId = await getCourseInstanceDbId(util.COURSE_INSTANCE_ID);
-      const rules = await selectAccessControlRulesForAssessment(ciId, dbId);
+      const assessment = await getAssessment(util.ASSESSMENT_ID);
+      const courseInstance = await getCourseInstance(util.COURSE_INSTANCE_ID);
+      const rules = await selectAccessControlRulesForAssessment(courseInstance, assessment);
       const override = rules.find((r) => r.number > 0);
       assert.isOk(override);
       assert.equal(override.rule.afterComplete?.hideScore, true);

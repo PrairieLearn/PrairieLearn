@@ -2,6 +2,7 @@ import { beforeEach, describe, expect, it, vi } from 'vitest';
 
 import * as accessControlData from './access-control-data.js';
 import { resolveModernAssessmentInstanceAccess } from './access-control-modern.js';
+import type { Assessment, CourseInstance } from './db-types.js';
 import * as groups from './groups.js';
 
 describe('resolveModernAssessmentInstanceAccess', () => {
@@ -29,9 +30,9 @@ describe('resolveModernAssessmentInstanceAccess', () => {
   });
 
   const baseInput = {
-    assessmentId: '1',
+    assessment: { id: '1' } as Assessment,
     userId: 'user-1',
-    courseInstanceId: 'ci-1',
+    courseInstance: { id: 'ci-1' } as CourseInstance,
     authzData: {
       user: { id: 'user-1' },
       mode: 'Public' as const,

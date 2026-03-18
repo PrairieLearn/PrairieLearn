@@ -126,3 +126,24 @@ FROM
 WHERE
   id = ANY ($ids::bigint[])
   AND course_instance_id = $course_instance_id;
+
+-- BLOCK select_users_and_enrollments_for_course_instance
+SELECT
+  to_jsonb(e) AS enrollment,
+  to_jsonb(u) AS user
+FROM
+  enrollments AS e
+  LEFT JOIN users AS u ON (u.id = e.user_id)
+WHERE
+  e.course_instance_id = $course_instance_id
+ORDER BY
+  COALESCE(u.uid, e.pending_uid) ASC;
+
+-- BLOCK validate_enrollment_ids_in_course_instance
+SELECT
+  count(*)::integer
+FROM
+  enrollments
+WHERE
+  id = ANY ($enrollment_ids::bigint[])
+  AND course_instance_id = $course_instance_id;

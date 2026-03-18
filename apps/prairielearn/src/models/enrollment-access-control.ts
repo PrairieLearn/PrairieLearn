@@ -42,8 +42,8 @@ export interface EnrollmentAccessControlRuleData {
  * These rules are stored in the database with target_type = 'enrollment'.
  */
 export async function syncEnrollmentAccessControl(
-  courseInstanceId: string,
-  assessmentId: string,
+  courseInstance: CourseInstance,
+  assessment: Assessment,
   ruleData: EnrollmentAccessControlRuleData,
   enrollmentIds: string[],
 ): Promise<string> {
@@ -88,8 +88,8 @@ export async function syncEnrollmentAccessControl(
     callScalar(
       'sync_enrollment_access_control',
       [
-        courseInstanceId,
-        assessmentId,
+        courseInstance.id,
+        assessment.id,
         ruleJson,
         enrollmentIds,
         earlyDeadlinesJson,

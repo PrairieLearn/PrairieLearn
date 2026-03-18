@@ -67,9 +67,9 @@ async function selectAndAuthzAssessmentInstance(req: Request, res: Response) {
 
   if (row.assessment.modern_access_control) {
     const modernResult = await resolveModernAssessmentInstanceAccess({
-      assessmentId: row.assessment.id,
+      assessment: row.assessment,
       userId: res.locals.authz_data.user.id,
-      courseInstanceId: res.locals.course_instance.id,
+      courseInstance: res.locals.course_instance,
       authzData: res.locals.authz_data,
       reqDate: res.locals.req_date,
       displayTimezone: res.locals.course_instance.display_timezone,

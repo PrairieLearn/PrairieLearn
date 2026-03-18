@@ -1,17 +1,3 @@
--- BLOCK select_enrolled_students
-SELECT
-  e.id::text AS id,
-  u.uid,
-  u.name
-FROM
-  enrollments AS e
-  JOIN users AS u ON (u.id = e.user_id)
-WHERE
-  e.course_instance_id = $course_instance_id
-  AND e.status = 'joined'
-ORDER BY
-  u.uid;
-
 -- BLOCK select_all_json_rules
 SELECT
   aac.id::text AS id,
@@ -99,15 +85,6 @@ WHERE
   AND aac.target_type IN ('none', 'student_label')
 ORDER BY
   aac.number;
-
--- BLOCK validate_enrollment_ids
-SELECT
-  count(*)::integer
-FROM
-  enrollments
-WHERE
-  id = ANY ($enrollment_ids::bigint[])
-  AND course_instance_id = $course_instance_id;
 
 -- BLOCK select_all_enrollment_rules
 SELECT

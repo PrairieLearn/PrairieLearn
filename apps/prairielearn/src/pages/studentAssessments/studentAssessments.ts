@@ -30,7 +30,7 @@ router.get(
     const hasModern = rows.some((r) => r.modern_access_control);
     const modernResults = hasModern
       ? await resolveModernAssessmentAccessBatch({
-          courseInstanceId: res.locals.course_instance.id,
+          courseInstance: res.locals.course_instance,
           userId: res.locals.user.id,
           authzData: res.locals.authz_data,
           reqDate: res.locals.req_date,

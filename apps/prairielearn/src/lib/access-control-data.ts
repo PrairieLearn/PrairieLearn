@@ -10,7 +10,7 @@ import type {
   PrairieTestReservation,
   StudentContext,
 } from './access-control-resolver.js';
-import { AssessmentAccessControlSchema } from './db-types.js';
+import { type Assessment, AssessmentAccessControlSchema, type CourseInstance } from './db-types.js';
 
 const sql = loadSqlEquiv(import.meta.url);
 
@@ -208,23 +208,23 @@ function rowToAccessControlRuleInput(row: AccessControlRuleRow): AccessControlRu
 }
 
 export async function selectAccessControlRulesForAssessment(
-  courseInstanceId: string,
-  assessmentId: string,
+  courseInstance: CourseInstance,
+  assessment: Assessment,
 ): Promise<AccessControlRuleInput[]> {
   const rows = await queryRows(
     sql.select_access_control_rules_for_assessment,
-    { course_instance_id: courseInstanceId, assessment_id: assessmentId },
+    { course_instance_id: courseInstance.id, assessment_id: assessment.id },
     AccessControlRuleRowSchema,
   );
   return rows.map(rowToAccessControlRuleInput);
 }
 
 export async function selectAccessControlRulesForCourseInstance(
-  courseInstanceId: string,
+  courseInstance: CourseInstance,
 ): Promise<Map<string, AccessControlRuleInput[]>> {
   const rows = await queryRows(
     sql.select_access_control_rules_for_course_instance,
-    { course_instance_id: courseInstanceId },
+    { course_instance_id: courseInstance.id },
     CourseInstanceAccessControlRuleRowSchema,
   );
 
@@ -246,11 +246,11 @@ const StudentContextRowSchema = z.object({
 
 export async function selectStudentContext(
   userId: string,
-  courseInstanceId: string,
+  courseInstance: CourseInstance,
 ): Promise<StudentContext> {
   const row = await queryOptionalRow(
     sql.select_student_context,
-    { user_id: userId, course_instance_id: courseInstanceId },
+    { user_id: userId, course_instance_id: courseInstance.id },
     StudentContextRowSchema,
   );
   if (!row) {
