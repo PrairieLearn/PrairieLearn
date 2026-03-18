@@ -561,7 +561,7 @@ export async function sync(
     ]);
   });
 
-  await sqldb.runInTransactionAsync(async () => {
+  return await sqldb.runInTransactionAsync(async () => {
     const { name_to_id_map } = await sqldb.callRow(
       'sync_assessments',
       [assessmentParams, courseId, courseInstanceId, config.checkSharingOnSync],
@@ -569,6 +569,7 @@ export async function sync(
     );
 
     await syncAssessmentTools(assessments, name_to_id_map);
+    return { name_to_id_map };
   });
 }
 

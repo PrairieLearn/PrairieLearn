@@ -52,7 +52,6 @@ const baseInput: AccessControlResolverInput = {
   date: new Date('2025-03-15T12:00:00Z'),
   displayTimezone: 'America/Chicago',
   authzMode: 'Public',
-  authzModeReason: 'Default',
   courseRole: 'None',
   courseInstanceRole: 'None',
   prairieTestReservations: [],
@@ -830,7 +829,6 @@ describe('resolveAccessControl', () => {
         ...baseInput,
         rules: [prairieTestMainRule],
         authzMode: 'Exam',
-        authzModeReason: 'PrairieTest',
         prairieTestReservations: [validReservation],
       });
       expect(result.authorized).toBe(true);
@@ -842,7 +840,6 @@ describe('resolveAccessControl', () => {
         ...baseInput,
         rules: [prairieTestMainRule],
         authzMode: 'Public',
-        authzModeReason: 'Default',
         prairieTestReservations: [validReservation],
       });
       expect(result.authorized).toBe(false);
@@ -853,7 +850,6 @@ describe('resolveAccessControl', () => {
         ...baseInput,
         rules: [prairieTestMainRule],
         authzMode: 'Exam',
-        authzModeReason: 'PrairieTest',
         prairieTestReservations: [
           {
             examUuid: 'wrong-uuid',
@@ -869,7 +865,6 @@ describe('resolveAccessControl', () => {
         ...baseInput,
         rules: [prairieTestMainRule],
         authzMode: 'Exam',
-        authzModeReason: 'PrairieTest',
         prairieTestReservations: [],
       });
       expect(result.authorized).toBe(false);
@@ -884,7 +879,6 @@ describe('resolveAccessControl', () => {
         ...baseInput,
         rules: [prairieTestMainRule],
         authzMode: 'Exam',
-        authzModeReason: 'PrairieTest',
         prairieTestReservations: [wrongReservation, validReservation],
       });
       expect(result.authorized).toBe(true);
@@ -896,7 +890,6 @@ describe('resolveAccessControl', () => {
         ...baseInput,
         rules: [makeMainRule()],
         authzMode: 'Exam',
-        authzModeReason: 'PrairieTest',
       });
       expect(result.authorized).toBe(false);
     });
@@ -950,7 +943,6 @@ describe('resolveAccessControl', () => {
           },
         ],
         authzMode: 'Exam',
-        authzModeReason: 'PrairieTest',
         prairieTestReservations: [
           {
             examUuid: 'exam-uuid-1',

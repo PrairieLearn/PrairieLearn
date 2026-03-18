@@ -1,8 +1,7 @@
-/* eslint no-restricted-imports: ["error", {"patterns": ["db-types.js"] }] */
-
 import { loadSqlEquiv, queryRows } from '@prairielearn/postgres';
 
 import { resolveModernAssessmentAccessBatch } from './access-control-modern.js';
+import { type CourseInstance } from './db-types.js';
 import {
   type StaffGradebookRow,
   StaffGradebookRowSchema,
@@ -13,11 +12,11 @@ import {
 const sql = loadSqlEquiv(import.meta.url);
 
 interface GetGradebookRowsParams {
-  course_instance_id: string;
-  user_id: string;
-  authz_data: any;
-  req_date: any;
-  display_timezone: string;
+  courseInstance: CourseInstance;
+  userId: string;
+  authzData: any;
+  reqDate: Date;
+  displayTimezone: string;
   auth: 'student' | 'instructor';
 }
 
@@ -33,11 +32,11 @@ async function applyModernAccessControl<
   if (!hasModern) return;
 
   const modernResults = await resolveModernAssessmentAccessBatch({
-    courseInstanceId: params.course_instance_id,
-    userId: params.user_id,
-    authzData: params.authz_data,
-    reqDate: params.req_date,
-    displayTimezone: params.display_timezone,
+    courseInstance: params.courseInstance,
+    userId: params.userId,
+    authzData: params.authzData,
+    reqDate: params.reqDate,
+    displayTimezone: params.displayTimezone,
   });
 
   for (const row of rows) {
@@ -62,14 +61,19 @@ async function getGradebookRows(
 ): Promise<StaffGradebookRow[]>;
 
 async function getGradebookRows({
-  course_instance_id,
-  user_id,
-  authz_data,
-  req_date,
-  display_timezone,
+  courseInstance,
+  userId,
+  authzData,
+  reqDate,
+  displayTimezone,
   auth,
 }: GetGradebookRowsParams): Promise<StudentGradebookRow[] | StaffGradebookRow[]> {
-  const queryParams = { course_instance_id, user_id, authz_data, req_date };
+  const queryParams = {
+    course_instance_id: courseInstance.id,
+    user_id: userId,
+    authz_data: authzData,
+    reqDate,
+  };
 
   if (auth === 'student') {
     const rows = await queryRows(
@@ -78,11 +82,11 @@ async function getGradebookRows({
       StudentGradebookRowSchema,
     );
     await applyModernAccessControl(rows, {
-      course_instance_id,
-      user_id,
-      authz_data,
-      req_date,
-      display_timezone,
+      courseInstance,
+      userId,
+      authzData,
+      reqDate,
+      displayTimezone,
       auth,
     });
     return rows;
@@ -94,11 +98,11 @@ async function getGradebookRows({
     StaffGradebookRowSchema,
   );
   await applyModernAccessControl(rows, {
-    course_instance_id,
-    user_id,
-    authz_data,
-    req_date,
-    display_timezone,
+    courseInstance,
+    userId,
+    authzData,
+    reqDate,
+    displayTimezone,
     auth,
   });
   return rows;

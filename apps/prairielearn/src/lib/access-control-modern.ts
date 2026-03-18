@@ -16,7 +16,6 @@ import type {
   EnumCourseInstanceRole,
   EnumCourseRole,
   EnumMode,
-  EnumModeReason,
   SprocAuthzAssessmentInstanceSchema,
   SprocAuthzAssessmentSchema,
 } from './db-types.js';
@@ -29,7 +28,6 @@ type SprocAuthzAssessmentInstance = z.infer<typeof SprocAuthzAssessmentInstanceS
 interface AuthzDataForAccessControl {
   user: { id: string };
   mode?: EnumMode;
-  mode_reason?: EnumModeReason;
   course_role?: EnumCourseRole;
   course_instance_role?: EnumCourseInstanceRole;
   has_course_instance_permission_view?: boolean;
@@ -47,7 +45,6 @@ interface ModernAssessmentAccessInput {
 function resolverResultToSprocAuthzAssessment(
   result: AccessControlResolverResult,
   authzMode: EnumMode | undefined,
-  authzModeReason: EnumModeReason | undefined,
 ): SprocAuthzAssessment {
   return {
     authorized: result.authorized,
@@ -59,10 +56,7 @@ function resolverResultToSprocAuthzAssessment(
     show_closed_assessment: result.showClosedAssessment,
     show_closed_assessment_score: result.showClosedAssessmentScore,
     exam_access_end: result.examAccessEnd,
-    mode:
-      authzMode === 'Exam' && authzModeReason === 'PrairieTest' && result.examAccessEnd
-        ? 'Exam'
-        : null,
+    mode: authzMode === 'Exam' && result.examAccessEnd ? 'Exam' : null,
     next_active_time: null,
     access_rules: [],
   };
@@ -76,7 +70,7 @@ export async function resolveModernAssessmentAccess(
   const [rules, student, prairieTestReservations] = await Promise.all([
     selectAccessControlRulesForAssessment(courseInstance, assessment),
     selectStudentContext(userId, courseInstance),
-    authzData.mode === 'Exam' && authzData.mode_reason === 'PrairieTest'
+    authzData.mode === 'Exam'
       ? selectPrairieTestReservations(userId, reqDate)
       : Promise.resolve([]),
   ]);
@@ -87,14 +81,13 @@ export async function resolveModernAssessmentAccess(
     date: reqDate,
     displayTimezone,
     authzMode: authzData.mode ?? null,
-    authzModeReason: authzData.mode_reason ?? null,
     courseRole: authzData.course_role ?? 'None',
     courseInstanceRole: authzData.course_instance_role ?? 'None',
     prairieTestReservations,
   });
 
   return {
-    ...resolverResultToSprocAuthzAssessment(result, authzData.mode, authzData.mode_reason),
+    ...resolverResultToSprocAuthzAssessment(result, authzData.mode),
     list_before_release: result.listBeforeRelease,
     block_access: result.blockAccess,
   };
@@ -170,7 +163,7 @@ export async function resolveModernAssessmentAccessBatch(
   const [allRules, student, prairieTestReservations] = await Promise.all([
     selectAccessControlRulesForCourseInstance(courseInstance),
     selectStudentContext(userId, courseInstance),
-    authzData.mode === 'Exam' && authzData.mode_reason === 'PrairieTest'
+    authzData.mode === 'Exam'
       ? selectPrairieTestReservations(userId, reqDate)
       : Promise.resolve([]),
   ]);
@@ -187,14 +180,13 @@ export async function resolveModernAssessmentAccessBatch(
       date: reqDate,
       displayTimezone,
       authzMode: authzData.mode ?? null,
-      authzModeReason: authzData.mode_reason ?? null,
       courseRole: authzData.course_role ?? 'None',
       courseInstanceRole: authzData.course_instance_role ?? 'None',
       prairieTestReservations,
     });
 
     results.set(assessmentId, {
-      ...resolverResultToSprocAuthzAssessment(result, authzData.mode, authzData.mode_reason),
+      ...resolverResultToSprocAuthzAssessment(result, authzData.mode),
       list_before_release: result.listBeforeRelease,
       block_access: result.blockAccess,
     });

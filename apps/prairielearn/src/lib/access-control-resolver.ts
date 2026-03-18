@@ -1,11 +1,6 @@
 import type { AccessControlJson } from '../schemas/accessControl.js';
 
-import type {
-  EnumCourseInstanceRole,
-  EnumCourseRole,
-  EnumMode,
-  EnumModeReason,
-} from './db-types.js';
+import type { EnumCourseInstanceRole, EnumCourseRole, EnumMode } from './db-types.js';
 
 export interface AccessControlRuleInput {
   rule: AccessControlJson;
@@ -32,7 +27,6 @@ export interface AccessControlResolverInput {
   date: Date;
   displayTimezone: string;
   authzMode: EnumMode | null;
-  authzModeReason: EnumModeReason | null;
   courseRole: EnumCourseRole;
   courseInstanceRole: EnumCourseInstanceRole;
   prairieTestReservations: PrairieTestReservation[];
@@ -404,7 +398,6 @@ export function resolveAccessControl(
     date,
     displayTimezone,
     authzMode,
-    authzModeReason,
     courseRole,
     courseInstanceRole,
     prairieTestReservations,
@@ -484,7 +477,7 @@ export function resolveAccessControl(
 
   if (hasPrairieTestExams) {
     // Exam-only rule: must be in exam mode with PrairieTest reason
-    if (authzMode !== 'Exam' || authzModeReason !== 'PrairieTest') {
+    if (authzMode !== 'Exam') {
       return { ...UNAUTHORIZED_RESULT };
     }
 
@@ -496,7 +489,7 @@ export function resolveAccessControl(
     }
 
     examAccessEnd = matchingReservation.accessEnd;
-  } else if (authzMode === 'Exam' && authzModeReason === 'PrairieTest') {
+  } else if (authzMode === 'Exam') {
     // No PrairieTest exams configured but student is in PrairieTest exam mode
     return { ...UNAUTHORIZED_RESULT };
   }
