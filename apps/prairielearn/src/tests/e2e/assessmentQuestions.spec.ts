@@ -313,7 +313,7 @@ test.describe('Assessment questions', () => {
         .filter({ hasText: /2 alternatives \(1 chosen\)/ })
         .click();
 
-      await page.getByRole('button', { name: 'Add alternative', exact: true }).last().click();
+      await page.getByRole('button', { name: 'Add alternative', exact: true }).first().click();
       await expect(page.getByLabel('Search by QID or title')).toBeVisible();
 
       await page.getByLabel('Search by QID or title').fill('addNumbers');
@@ -333,10 +333,10 @@ test.describe('Assessment questions', () => {
       const savedContent = await fs.readFile(infoAssessmentPath, 'utf-8');
       const savedAssessment = JSON.parse(savedContent);
 
-      const lastBlock = savedAssessment.zones.at(-1).questions.at(-1);
-      expect(lastBlock.numberChoose).toBe(1);
-      expect(lastBlock.alternatives).toHaveLength(3);
-      expect(lastBlock.alternatives[2].id).toBe('addNumbers');
+      const altGroupBlock = savedAssessment.zones[2].questions[1];
+      expect(altGroupBlock.numberChoose).toBe(1);
+      expect(altGroupBlock.alternatives).toHaveLength(3);
+      expect(altGroupBlock.alternatives[2].id).toBe('addNumbers');
     });
 
     test('revalidates number to choose when alternatives are deleted from the tree', async ({
