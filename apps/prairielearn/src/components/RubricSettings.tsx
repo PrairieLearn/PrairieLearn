@@ -46,19 +46,6 @@ const ExportedRubricDataSchema = z.object({
 
 type ExportedRubricData = z.infer<typeof ExportedRubricDataSchema>;
 
-export type AiRubricItemDiffField =
-  | 'points'
-  | 'description'
-  | 'explanation'
-  | 'grader_note'
-  | 'always_show_to_students';
-
-export interface AiRubricItemDiff {
-  status: 'new' | 'updated' | 'removed';
-  changed_fields: AiRubricItemDiffField[];
-  description: string;
-}
-
 function parseRubricData(data: unknown): RubricData | null {
   const parsed = RubricDataSchema.nullable().safeParse(data);
   return parsed.success ? parsed.data : null;
@@ -93,7 +80,6 @@ export function RubricSettings({
   csrfToken,
   aiGradingStats,
   context,
-  aiRubricItemDiffs = {},
 }: {
   hasCourseInstancePermissionEdit: boolean;
   assessmentQuestion: StaffAssessmentQuestion;
@@ -101,7 +87,6 @@ export function RubricSettings({
   csrfToken: string;
   aiGradingStats: AiGradingGeneralStats | null;
   context: Record<string, any>;
-  aiRubricItemDiffs?: Partial<Record<number, AiRubricItemDiff>>;
 }) {
   const showAiGradingStats = Boolean(aiGradingStats);
   const rubricItemsWithDisagreementCount = aiGradingStats?.rubric_stats ?? {};
@@ -830,7 +815,6 @@ export function RubricSettings({
                   <RubricRow
                     key={it.rubric_item.id ?? `row-${idx}`}
                     item={it}
-                    aiRubricItemDiff={aiRubricItemDiffs[idx]}
                     showAiGradingStats={showAiGradingStats}
                     submissionCount={aiGradingStats?.submission_rubric_count ?? 0}
                     hasCourseInstancePermissionEdit={hasCourseInstancePermissionEdit}
@@ -1056,7 +1040,6 @@ export function RubricSettings({
 
 function RubricRow({
   item,
-  aiRubricItemDiff,
   showAiGradingStats,
   submissionCount,
   deleteRow,
@@ -1068,7 +1051,6 @@ function RubricRow({
   hasCourseInstancePermissionEdit,
 }: {
   item: RubricItemData;
-  aiRubricItemDiff?: AiRubricItemDiff;
   showAiGradingStats: boolean;
   submissionCount: number;
   deleteRow: () => void;
@@ -1079,21 +1061,8 @@ function RubricRow({
   onDragOver: () => void;
   hasCourseInstancePermissionEdit: boolean;
 }) {
-  const isRemoved = aiRubricItemDiff?.status === 'removed';
-  const isUpdatedField = (field: AiRubricItemDiffField) =>
-    aiRubricItemDiff?.status === 'updated' && aiRubricItemDiff.changed_fields.includes(field);
-  const rowClassName =
-    aiRubricItemDiff?.status === 'new'
-      ? 'table-success'
-      : aiRubricItemDiff?.status === 'updated'
-        ? 'table-primary'
-        : aiRubricItemDiff?.status === 'removed'
-          ? 'table-danger'
-          : undefined;
-
   return (
     <tr
-      className={rowClassName}
       onDragOver={(e) => {
         if (!hasCourseInstancePermissionEdit) return;
         e.preventDefault();
@@ -1108,8 +1077,7 @@ function RubricRow({
               className="btn btn-sm btn-ghost"
               style={{ cursor: 'grab' }}
               aria-label="Drag to reorder"
-              draggable={!isRemoved}
-              disabled={isRemoved}
+              draggable
               onDragStart={onDragStart}
             >
               <i className="fas fa-arrows-up-down" aria-hidden="true" />
@@ -1129,37 +1097,11 @@ function RubricRow({
               type="button"
               className="btn btn-sm btn-ghost text-danger"
               aria-label="Delete"
-              disabled={isRemoved}
               onClick={deleteRow}
             >
               <i className="fas fa-trash text-danger" aria-hidden="true" />
             </button>
           </>
-        )}
-        {aiRubricItemDiff && (
-          <div className="small mt-1">
-            {aiRubricItemDiff.status === 'new' && (
-              <span className="fw-semibold">New item (pending).</span>
-            )}
-            {aiRubricItemDiff.status === 'updated' && (
-              <span className="fw-semibold">
-                Updated fields (pending):{' '}
-                {aiRubricItemDiff.changed_fields
-                  .map((field) => field.replaceAll('_', ' '))
-                  .join(', ')}
-                .
-              </span>
-            )}
-            {aiRubricItemDiff.status === 'removed' && (
-              <span className="fw-semibold">Removed item (pending).</span>
-            )}
-            {aiRubricItemDiff.description && (
-              <>
-                {' '}
-                <span>{aiRubricItemDiff.description}</span>
-              </>
-            )}
-          </div>
         )}
         {item.rubric_item.id && (
           <>
@@ -1200,12 +1142,12 @@ function RubricRow({
       <td className="align-middle">
         <input
           type="number"
-          className={`form-control ${isUpdatedField('points') ? 'bg-primary-subtle border-primary' : ''}`}
+          className="form-control"
           style={{ width: '5rem' }}
           step="any"
           value={item.rubric_item.points ?? ''}
           aria-label="Points"
-          disabled={!hasCourseInstancePermissionEdit || isRemoved}
+          disabled={!hasCourseInstancePermissionEdit}
           required
           onInput={({ currentTarget }) =>
             updateRubricItem({
@@ -1220,12 +1162,12 @@ function RubricRow({
       <td className="align-middle">
         <input
           type="text"
-          className={`form-control ${isUpdatedField('description') ? 'bg-primary-subtle border-primary' : ''}`}
+          className="form-control"
           maxLength={100}
           style={{ minWidth: '15rem' }}
           value={item.rubric_item.description}
           aria-label="Description"
-          disabled={!hasCourseInstancePermissionEdit || isRemoved}
+          disabled={!hasCourseInstancePermissionEdit}
           required
           onInput={(e) => updateRubricItem({ description: e.currentTarget.value })}
         />
@@ -1233,7 +1175,7 @@ function RubricRow({
 
       <td className="align-middle">
         <textarea
-          className={`form-control ${isUpdatedField('explanation') ? 'bg-primary-subtle border-primary' : ''}`}
+          className="form-control"
           /**
            * In one of the previous versions, explanation wasn't displayed correctly
            * when used this way. We fixed it by making the textarea uncontrolled and
@@ -1245,47 +1187,43 @@ function RubricRow({
           maxLength={10000}
           style={{ minWidth: '15rem' }}
           aria-label="Explanation"
-          disabled={!hasCourseInstancePermissionEdit || isRemoved}
+          disabled={!hasCourseInstancePermissionEdit}
           onInput={(e) => updateRubricItem({ explanation: e.currentTarget.value })}
         />
       </td>
 
       <td className="align-middle">
         <textarea
-          className={`form-control ${isUpdatedField('grader_note') ? 'bg-primary-subtle border-primary' : ''}`}
+          className="form-control"
           value={item.rubric_item.grader_note ?? ''}
           maxLength={10000}
           style={{ minWidth: '15rem' }}
           aria-label="Grader note"
-          disabled={!hasCourseInstancePermissionEdit || isRemoved}
+          disabled={!hasCourseInstancePermissionEdit}
           onInput={(e) => updateRubricItem({ grader_note: e.currentTarget.value })}
         />
       </td>
 
       <td className="align-middle">
-        <div
-          className={`form-check form-check-inline ${isUpdatedField('always_show_to_students') ? 'bg-primary-subtle border rounded px-1' : ''}`}
-        >
+        <div className="form-check form-check-inline">
           <label className="form-check-label text-nowrap">
             <input
               type="radio"
               className="form-check-input"
               checked={item.rubric_item.always_show_to_students}
-              disabled={!hasCourseInstancePermissionEdit || isRemoved}
+              disabled={!hasCourseInstancePermissionEdit}
               onChange={() => updateRubricItem({ always_show_to_students: true })}
             />
             Always
           </label>
         </div>
-        <div
-          className={`form-check form-check-inline ${isUpdatedField('always_show_to_students') ? 'bg-primary-subtle border rounded px-1' : ''}`}
-        >
+        <div className="form-check form-check-inline">
           <label className="form-check-label text-nowrap">
             <input
               type="radio"
               className="form-check-input"
               checked={!item.rubric_item.always_show_to_students}
-              disabled={!hasCourseInstancePermissionEdit || isRemoved}
+              disabled={!hasCourseInstancePermissionEdit}
               onChange={() => updateRubricItem({ always_show_to_students: false })}
             />
             If selected

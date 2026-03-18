@@ -283,7 +283,6 @@ router.post(
       throw new error.HttpStatusError(400, 'No messages provided');
     }
     const messages = await convertToModelMessages(uiMessages);
-    const rubricGenerationCompleted = req.body.rubric_generation_completed === true;
 
     const serverJob = await createServerJob({
       courseId: res.locals.course.id,
@@ -317,9 +316,6 @@ router.post(
               authnUserId: res.locals.authn_user.id,
               hasCourseInstancePermissionEdit:
                 authz_data.has_course_instance_permission_edit ?? false,
-              rubricGenerationCompleted,
-              stagedRubricData: req.body.staged_rubric_data ?? null,
-              stagedRubricItemDiffs: req.body.staged_rubric_item_diffs ?? null,
             },
           });
 

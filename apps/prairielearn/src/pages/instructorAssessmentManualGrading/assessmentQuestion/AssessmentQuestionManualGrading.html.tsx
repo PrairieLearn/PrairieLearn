@@ -7,10 +7,6 @@ import { Alert } from 'react-bootstrap';
 import { NuqsAdapter } from '@prairielearn/ui';
 
 import { type ChatMessage, Messages } from '../../../components/ChatMessages.js';
-import type {
-  AiRubricItemDiff,
-  AiRubricItemDiffField,
-} from '../../../components/RubricSettings.js';
 import type { AiGradingGeneralStats } from '../../../ee/lib/ai-grading/types.js';
 import type { PageContext } from '../../../lib/client/page-context.js';
 import type {
@@ -75,66 +71,10 @@ type RubricChatMessage = UIMessage<{
 }>;
 
 const GENERATE_NEW_RUBRIC_PROMPT = 'Generate a new rubric.';
-const PROPOSAL_TOOL_TYPES = [
-  'tool-propose_add_rubric_item',
-  'tool-propose_edit_rubric_item',
-  'tool-propose_delete_rubric_item',
-] as const;
-
-type ProposalToolType = (typeof PROPOSAL_TOOL_TYPES)[number];
 
 function parseRubricData(data: unknown): RubricData | null {
   const parsedRubricData = RubricDataSchema.nullable().safeParse(data);
   return parsedRubricData.success ? parsedRubricData.data : null;
-}
-
-function isProposalToolType(type: string): type is ProposalToolType {
-  return (PROPOSAL_TOOL_TYPES as readonly string[]).includes(type);
-}
-
-function parseAiRubricItemDiffs(data: unknown): Partial<Record<number, AiRubricItemDiff>> {
-  if (typeof data !== 'object' || data == null) {
-    return {};
-  }
-
-  const allowedStatuses = new Set<AiRubricItemDiff['status']>(['new', 'updated', 'removed']);
-  const allowedFields = new Set<AiRubricItemDiffField>([
-    'points',
-    'description',
-    'explanation',
-    'grader_note',
-    'always_show_to_students',
-  ]);
-
-  const parsedDiffs: Partial<Record<number, AiRubricItemDiff>> = {};
-  for (const [rawIndex, rawDiff] of Object.entries(data)) {
-    const index = Number(rawIndex);
-    if (!Number.isInteger(index) || index < 0) continue;
-    if (typeof rawDiff !== 'object' || rawDiff == null) continue;
-
-    const status = (rawDiff as { status?: unknown }).status;
-    if (typeof status !== 'string' || !allowedStatuses.has(status as AiRubricItemDiff['status'])) {
-      continue;
-    }
-
-    const changedFieldsRaw = (rawDiff as { changed_fields?: unknown }).changed_fields;
-    const changed_fields = Array.isArray(changedFieldsRaw)
-      ? changedFieldsRaw.filter(
-          (field): field is AiRubricItemDiffField =>
-            typeof field === 'string' && allowedFields.has(field as AiRubricItemDiffField),
-        )
-      : [];
-
-    const descriptionRaw = (rawDiff as { description?: unknown }).description;
-    const parsedStatus = status as AiRubricItemDiff['status'];
-    parsedDiffs[index] = {
-      status: parsedStatus,
-      changed_fields,
-      description: typeof descriptionRaw === 'string' ? descriptionRaw : '',
-    };
-  }
-
-  return parsedDiffs;
 }
 
 function sanitizeMessagesForServer(messages: RubricChatMessage[]): RubricChatMessage[] {
@@ -145,10 +85,7 @@ function sanitizeMessagesForServer(messages: RubricChatMessage[]): RubricChatMes
         (part) =>
           part.type === 'text' ||
           !isToolPart(part) ||
-          (part.type !== 'tool-get_initialization_context' &&
-            part.type !== 'tool-get_rubric_items' &&
-            part.type !== 'tool-set_rubric' &&
-            !isProposalToolType(part.type)),
+          (part.type !== 'tool-get_initialization_context' && part.type !== 'tool-set_rubric'),
       ),
     }))
     .filter((message) => message.parts.length > 0);
@@ -180,19 +117,6 @@ function partToChatContent(part: UIMessage['parts'][0]): string | null {
     return null;
   }
 
-  if (part.type === 'tool-get_rubric_items') {
-    if (part.state === 'input-streaming' || part.state === 'input-available') {
-      return 'Calling tool: Get rubric items...';
-    }
-    if (part.state === 'output-available') {
-      return 'Tool called: Get rubric items';
-    }
-    if (part.state === 'output-error') {
-      return `Tool error while getting rubric items: ${part.errorText}`;
-    }
-    return null;
-  }
-
   if (part.type === 'tool-set_rubric') {
     if (part.state === 'input-streaming' || part.state === 'input-available') {
       return 'Calling tool: Set rubric...';
@@ -202,45 +126,6 @@ function partToChatContent(part: UIMessage['parts'][0]): string | null {
     }
     if (part.state === 'output-error') {
       return `Tool error while setting rubric: ${part.errorText}`;
-    }
-    return null;
-  }
-
-  if (part.type === 'tool-propose_add_rubric_item') {
-    if (part.state === 'input-streaming' || part.state === 'input-available') {
-      return 'Applying proposed rubric item addition...';
-    }
-    if (part.state === 'output-available') {
-      return 'Proposed change: added a rubric item.';
-    }
-    if (part.state === 'output-error') {
-      return `Tool error while proposing rubric item addition: ${part.errorText}`;
-    }
-    return null;
-  }
-
-  if (part.type === 'tool-propose_edit_rubric_item') {
-    if (part.state === 'input-streaming' || part.state === 'input-available') {
-      return 'Applying proposed rubric item update...';
-    }
-    if (part.state === 'output-available') {
-      return 'Proposed change: updated a rubric item.';
-    }
-    if (part.state === 'output-error') {
-      return `Tool error while proposing rubric item update: ${part.errorText}`;
-    }
-    return null;
-  }
-
-  if (part.type === 'tool-propose_delete_rubric_item') {
-    if (part.state === 'input-streaming' || part.state === 'input-available') {
-      return 'Applying proposed rubric item removal...';
-    }
-    if (part.state === 'output-available') {
-      return 'Proposed change: removed a rubric item.';
-    }
-    if (part.state === 'output-error') {
-      return `Tool error while proposing rubric item removal: ${part.errorText}`;
     }
     return null;
   }
@@ -301,32 +186,19 @@ function AssessmentQuestionManualGradingInner({
   const [conflictModalState, setConflictModalState] = useState<ConflictModalState>(null);
   const [showAiGradingUnavailableModal, setShowAiGradingUnavailableModal] = useState(false);
   const [rubricDataState, setRubricDataState] = useState(() => parseRubricData(rubricData));
-  const [committedRubricDataState, setCommittedRubricDataState] = useState(() =>
-    parseRubricData(rubricData),
-  );
   const [aiGradingStatsState, setAiGradingStatsState] = useState(aiGradingStats);
   const [hasGeneratedRubric, setHasGeneratedRubric] = useState(false);
-  const [aiRubricItemDiffsState, setAiRubricItemDiffsState] = useState<
-    Partial<Record<number, AiRubricItemDiff>>
-  >({});
-  const [isApplyingProposedChanges, setIsApplyingProposedChanges] = useState(false);
 
   const [aiGradingMode, setAiGradingMode] = useState(initialAiGradingMode);
   const [chatInput, setChatInput] = useState('');
 
   const chatUrl = `${urlPrefix}/assessment/${assessment.id}/manual_grading/assessment_question/${assessmentQuestion.id}/chat`;
   const rubricDataUrl = `${chatUrl}/rubric_data`;
-  const hasPendingRubricProposals = Object.keys(aiRubricItemDiffsState).length > 0;
 
   const { messages, sendMessage, status } = useChat<RubricChatMessage>({
     transport: new DefaultChatTransport({
       api: chatUrl,
       headers: { 'X-CSRF-Token': chatCsrfToken },
-      body: {
-        rubric_generation_completed: hasGeneratedRubric,
-        staged_rubric_data: rubricDataState,
-        staged_rubric_item_diffs: aiRubricItemDiffsState,
-      },
       prepareSendMessagesRequest: ({ messages, headers, body }) => {
         return {
           headers,
@@ -338,25 +210,6 @@ function AssessmentQuestionManualGradingInner({
       },
     }),
     onFinish({ message }) {
-      const latestProposalPart = [...message.parts].reverse().find((part) => {
-        return (
-          isToolPart(part) && isProposalToolType(part.type) && part.state === 'output-available'
-        );
-      });
-      if (latestProposalPart && isToolPart(latestProposalPart)) {
-        const toolOutput = latestProposalPart.output as {
-          proposed_rubric?: unknown;
-          proposed_rubric_item_diffs?: unknown;
-        };
-        const proposedRubricData = parseRubricData(toolOutput.proposed_rubric);
-        if (proposedRubricData) {
-          setRubricDataState(proposedRubricData);
-          setAiRubricItemDiffsState(parseAiRubricItemDiffs(toolOutput.proposed_rubric_item_diffs));
-          triggerOpenRubricEditor();
-        }
-        return;
-      }
-
       const didSetRubric = message.parts.some(
         (part) =>
           isToolPart(part) && part.type === 'tool-set_rubric' && part.state === 'output-available',
@@ -379,8 +232,6 @@ function AssessmentQuestionManualGradingInner({
           };
           const parsedRubricData = parseRubricData(data.rubric_data);
           setRubricDataState(parsedRubricData);
-          setCommittedRubricDataState(parsedRubricData);
-          setAiRubricItemDiffsState({});
           setAiGradingStatsState(data.aiGradingStats);
         })
         .catch(() => {
@@ -420,76 +271,6 @@ function AssessmentQuestionManualGradingInner({
 
   const mutations = useManualGradingActions();
   const { setAiGradingModeMutation, groupSubmissionMutation } = mutations;
-
-  const rejectProposedRubricChanges = () => {
-    setRubricDataState(committedRubricDataState);
-    setAiRubricItemDiffsState({});
-  };
-
-  const applyProposedRubricChanges = async () => {
-    if (rubricDataState == null) return;
-
-    setIsApplyingProposedChanges(true);
-    try {
-      const rubricItems = rubricDataState.rubric_items.flatMap((item, index) => {
-        const diff = aiRubricItemDiffsState[index];
-        if (diff?.status === 'removed') {
-          return [];
-        }
-
-        return [
-          {
-            id: diff?.status === 'new' ? undefined : item.rubric_item.id,
-            order: index,
-            points: item.rubric_item.points,
-            description: item.rubric_item.description,
-            explanation: item.rubric_item.explanation,
-            grader_note: item.rubric_item.grader_note,
-            always_show_to_students: item.rubric_item.always_show_to_students,
-          },
-        ];
-      });
-
-      const res = await fetch(window.location.pathname, {
-        method: 'POST',
-        headers: { 'Content-Type': 'application/json', Accept: 'application/json' },
-        body: JSON.stringify({
-          __csrf_token: csrfToken,
-          __action: 'modify_rubric_settings',
-          use_rubric: true,
-          replace_auto_points: rubricDataState.rubric.replace_auto_points,
-          starting_points: rubricDataState.rubric.starting_points,
-          min_points: rubricDataState.rubric.min_points,
-          max_extra_points: rubricDataState.rubric.max_extra_points,
-          rubric_items: rubricItems,
-          tag_for_manual_grading: false,
-          grader_guidelines: rubricDataState.rubric.grader_guidelines,
-        }),
-      });
-      if (!res.ok) {
-        return;
-      }
-
-      const refreshedRes = await fetch(rubricDataUrl, {
-        headers: { 'X-CSRF-Token': chatCsrfToken },
-      });
-      if (!refreshedRes.ok) {
-        return;
-      }
-
-      const refreshedData = (await refreshedRes.json()) as {
-        rubric_data: unknown;
-        aiGradingStats: AiGradingGeneralStats | null;
-      };
-      const parsedRubricData = parseRubricData(refreshedData.rubric_data);
-      setRubricDataState(parsedRubricData);
-      setCommittedRubricDataState(parsedRubricData);
-      setAiRubricItemDiffsState({});
-      setAiGradingStatsState(refreshedData.aiGradingStats);
-    } finally {
-      setIsApplyingProposedChanges(false);
-    }
-  };
 
   return (
     <div className="d-flex flex-row gap-3" style={{ maxHeight: '80vh' }}>
@@ -564,7 +345,6 @@ function AssessmentQuestionManualGradingInner({
           aiGradingMode={aiGradingMode}
           aiGradingModelSelectionEnabled={aiGradingModelSelectionEnabled}
           rubricData={rubricDataState}
-          aiRubricItemDiffs={aiRubricItemDiffsState}
           instanceQuestionGroups={instanceQuestionGroups}
           courseStaff={courseStaff}
           aiGradingStats={aiGradingStatsState}
@@ -619,28 +399,6 @@ function AssessmentQuestionManualGradingInner({
                         Open rubric editor
                       </button>
                     )}
-                    {hasPendingRubricProposals && (
-                      <>
-                        <button
-                          type="button"
-                          className="btn btn-outline-secondary btn-sm"
-                          disabled={isApplyingProposedChanges}
-                          onClick={rejectProposedRubricChanges}
-                        >
-                          Reject changes
-                        </button>
-                        <button
-                          type="button"
-                          className="btn btn-primary btn-sm"
-                          disabled={isApplyingProposedChanges}
-                          onClick={() => {
-                            void applyProposedRubricChanges();
-                          }}
-                        >
-                          Approve changes
-                        </button>
-                      </>
-                    )}
                   </div>
                 </div>
               );
@@ -683,38 +441,10 @@ function AssessmentQuestionManualGradingInner({
               </button>
             </div>
           )}
-          {hasGeneratedRubric && !hasPendingRubricProposals && (
+          {hasGeneratedRubric && (
             <div className="small text-muted mb-2">
               You can give suggestions in chat, or start AI grading.
             </div>
-          )}
-          {hasPendingRubricProposals && (
-            <>
-              <div className="small text-muted mb-2">
-                Proposed rubric changes are shown in the rubric editor. You can approve, reject, or
-                ask for more changes.
-              </div>
-              <div className="d-flex justify-content-end gap-2 mb-2">
-                <button
-                  type="button"
-                  className="btn btn-outline-secondary btn-sm"
-                  disabled={isApplyingProposedChanges}
-                  onClick={rejectProposedRubricChanges}
-                >
-                  Reject changes
-                </button>
-                <button
-                  type="button"
-                  className="btn btn-primary btn-sm"
-                  disabled={isApplyingProposedChanges}
-                  onClick={() => {
-                    void applyProposedRubricChanges();
-                  }}
-                >
-                  Approve changes
-                </button>
-              </div>
-            </>
           )}
           <GradingPromptInput
             value={chatInput}
