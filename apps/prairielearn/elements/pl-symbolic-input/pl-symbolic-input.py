@@ -509,37 +509,30 @@ def parse(element_html: str, data: pl.QuestionData) -> None:
             data["submitted_answers"][name] = None
             return
 
-    error_msg = psu.validate_string_as_sympy(
-        a_sub,
-        variables,
-        allow_complex=allow_complex,
-        allow_trig_functions=allow_trig,
-        imaginary_unit=imaginary_unit,
-        custom_functions=custom_functions,
-        simplify_expression=simplify_expression,
-    )
-
-    if error_msg is not None:
-        data["format_errors"][name] = error_msg
-        data["submitted_answers"][name] = None
-        return
-
     # Retrieve variable assumptions encoded in correct answer
     assumptions_dict = None
     a_tru = data["correct_answers"].get(name, {})
     if isinstance(a_tru, dict):
         assumptions_dict = a_tru.get("_assumptions")
 
-    a_sub_parsed = psu.convert_string_to_sympy(
+    result = psu.try_parse_string_as_sympy(
         a_sub,
         variables,
         allow_hidden=True,
         allow_complex=allow_complex,
         allow_trig_functions=allow_trig,
-        assumptions=assumptions_dict,
+        imaginary_unit=imaginary_unit,
         custom_functions=custom_functions,
         simplify_expression=simplify_expression,
+        assumptions=assumptions_dict,
     )
+
+    if isinstance(result, psu.SympyParseFailure):
+        data["format_errors"][name] = result.error
+        data["submitted_answers"][name] = None
+        return
+
+    a_sub_parsed = result.expr
 
     # Make sure we can parse the json again
     try:

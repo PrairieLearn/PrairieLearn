@@ -110,6 +110,12 @@ export function QuestionDetailPanel({
   const isManualGrading = questionData?.question.grading_method === 'Manual';
   const hasTitle = questionHasTitle(questionData);
 
+  const isAutoGradedWithOnlyManualPoints =
+    questionData != null &&
+    !isManualGrading &&
+    (question.manualPoints ?? zoneQuestionBlock?.manualPoints) != null &&
+    (question.autoPoints ?? zoneQuestionBlock?.autoPoints) == null;
+
   // For read-only display, use merged values (own ?? inherited)
   const autoPointsValue = question.autoPoints ?? zoneQuestionBlock?.autoPoints;
   const maxAutoPointsValue = question.maxAutoPoints ?? zoneQuestionBlock?.maxAutoPoints;
@@ -451,6 +457,7 @@ export function QuestionDetailPanel({
           resetAndSave={resetAndSave}
           showAutoPointsForManual={showAutoPointsForManual}
           showMaxAutoPointsForManual={showMaxAutoPointsForManual}
+          showManualPointsOnlyForAutoGraded={isAutoGradedWithOnlyManualPoints}
           onFieldOverrideChange={(field, overridden) =>
             setOverriddenFields((prev) => ({ ...prev, [field]: overridden }))
           }
@@ -617,6 +624,7 @@ function PointsFields({
   resetAndSave,
   showAutoPointsForManual,
   showMaxAutoPointsForManual,
+  showManualPointsOnlyForAutoGraded,
   onFieldOverrideChange,
 }: {
   assessmentType: EnumAssessmentType;
@@ -641,6 +649,7 @@ function PointsFields({
   resetAndSave: (field: string) => void;
   showAutoPointsForManual: boolean;
   showMaxAutoPointsForManual: boolean;
+  showManualPointsOnlyForAutoGraded: boolean;
   onFieldOverrideChange: (field: string, overridden: boolean) => void;
 }) {
   const isHomework = assessmentType === 'Homework';
@@ -815,6 +824,13 @@ function PointsFields({
 
   return (
     <>
+      {showManualPointsOnlyForAutoGraded && (
+        <div className="alert alert-info small py-2 mb-2" role="alert">
+          <i className="bi bi-info-circle-fill me-1" aria-hidden="true" />
+          This question is auto-graded but only has manual points. Auto-grading results will not
+          contribute to the score.
+        </div>
+      )}
       {isManualGrading && manualPointsField}
       {(showAutoPointsForManual || showMaxAutoPointsForManual) && (
         <div className="alert alert-warning small py-2 mb-2" role="alert">
