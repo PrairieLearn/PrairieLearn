@@ -348,26 +348,6 @@ describe('resolveAccessControl', () => {
     });
   });
 
-  describe('block access', () => {
-    it('denies access when blockAccess is true', () => {
-      const result = resolveAccessControl({
-        ...baseInput,
-        rules: [makeMainRule({ blockAccess: true })],
-      });
-      expect(result.authorized).toBe(false);
-      expect(result.blockAccess).toBe(true);
-    });
-
-    it('allows access when blockAccess is false', () => {
-      const result = resolveAccessControl({
-        ...baseInput,
-        rules: [makeMainRule({ blockAccess: false })],
-      });
-      expect(result.authorized).toBe(true);
-      expect(result.blockAccess).toBe(false);
-    });
-  });
-
   describe('disabled rule', () => {
     it('denies access when main rule is disabled', () => {
       const result = resolveAccessControl({
@@ -655,52 +635,6 @@ describe('resolveAccessControl', () => {
       // Due date from student_label override (June 1 UTC = May 31 CDT) should carry through
       expect(result.creditDateString).toContain('May 31');
     });
-
-    it('blockAccess cascades between overrides', () => {
-      const result = resolveAccessControl({
-        ...baseInput,
-        rules: [
-          makeMainRule({}),
-          makeOverrideRule(
-            1,
-            { blockAccess: true },
-            { targetType: 'student_label', studentLabelIds: ['label-1'] },
-          ),
-          makeOverrideRule(
-            1,
-            { dateControl: { dueDate: '2025-06-01T00:00:00Z' } },
-            { targetType: 'enrollment', enrollmentIds: ['enroll-1'] },
-          ),
-        ],
-        student: { enrollmentId: 'enroll-1', studentLabelIds: ['label-1'] },
-      });
-      // blockAccess from student_label cascades through to enrollment override
-      expect(result.authorized).toBe(false);
-      expect(result.blockAccess).toBe(true);
-    });
-
-    it('blockAccess can be explicitly overridden to false', () => {
-      const result = resolveAccessControl({
-        ...baseInput,
-        rules: [
-          makeMainRule({}),
-          makeOverrideRule(
-            1,
-            { blockAccess: true },
-            { targetType: 'student_label', studentLabelIds: ['label-1'] },
-          ),
-          makeOverrideRule(
-            1,
-            { blockAccess: false },
-            { targetType: 'enrollment', enrollmentIds: ['enroll-1'] },
-          ),
-        ],
-        student: { enrollmentId: 'enroll-1', studentLabelIds: ['label-1'] },
-      });
-      // enrollment explicitly sets blockAccess=false, overriding student_label's true
-      expect(result.authorized).toBe(true);
-      expect(result.blockAccess).toBe(false);
-    });
   });
 
   describe('disabled/blocking main with override', () => {
@@ -714,18 +648,6 @@ describe('resolveAccessControl', () => {
             { dateControl: { dueDate: '2025-05-01T00:00:00Z' } },
             { targetType: 'enrollment', enrollmentIds: ['enroll-1'] },
           ),
-        ],
-        student: { enrollmentId: 'enroll-1', studentLabelIds: [] },
-      });
-      expect(result.authorized).toBe(true);
-    });
-
-    it('authorizes when main has blockAccess but matched override does not', () => {
-      const result = resolveAccessControl({
-        ...baseInput,
-        rules: [
-          makeMainRule({ blockAccess: true }),
-          makeOverrideRule(1, {}, { targetType: 'enrollment', enrollmentIds: ['enroll-1'] }),
         ],
         student: { enrollmentId: 'enroll-1', studentLabelIds: [] },
       });
@@ -789,23 +711,6 @@ describe('resolveAccessControl', () => {
         student: { enrollmentId: 'enroll-1', studentLabelIds: [] },
       });
       expect(result.password).toBe('override-pass');
-    });
-
-    it('override can set blockAccess', () => {
-      const result = resolveAccessControl({
-        ...baseInput,
-        rules: [
-          makeMainRule({}),
-          makeOverrideRule(
-            1,
-            { blockAccess: true },
-            { targetType: 'enrollment', enrollmentIds: ['enroll-1'] },
-          ),
-        ],
-        student: { enrollmentId: 'enroll-1', studentLabelIds: [] },
-      });
-      expect(result.authorized).toBe(false);
-      expect(result.blockAccess).toBe(true);
     });
   });
 
@@ -1116,11 +1021,6 @@ describe('mergeRules', () => {
     expect(result.enabled).toBe(false);
   });
 
-  it('overrides blockAccess field', () => {
-    const result = mergeRules({}, { blockAccess: true });
-    expect(result.blockAccess).toBe(true);
-  });
-
   it('preserves main dateControl fields not in override', () => {
     const result = mergeRules(
       { dateControl: { dueDate: '2025-04-01T00:00:00Z', password: 'secret' } },
@@ -1160,11 +1060,6 @@ describe('mergeRules', () => {
   it('does not inherit enabled from main', () => {
     const result = mergeRules({ enabled: false }, {});
     expect(result.enabled).toBeUndefined();
-  });
-
-  it('does not inherit blockAccess from main', () => {
-    const result = mergeRules({ blockAccess: true }, {});
-    expect(result.blockAccess).toBeUndefined();
   });
 
   it('does not inherit name from main', () => {
@@ -1207,19 +1102,6 @@ describe('mergeRules', () => {
 });
 
 describe('cascadeOverrides', () => {
-  it('inherits blockAccess from base when next does not set it', () => {
-    const result = cascadeOverrides(
-      { blockAccess: true },
-      { dateControl: { dueDate: '2025-05-01' } },
-    );
-    expect(result.blockAccess).toBe(true);
-  });
-
-  it('next overrides blockAccess from base', () => {
-    const result = cascadeOverrides({ blockAccess: true }, { blockAccess: false });
-    expect(result.blockAccess).toBe(false);
-  });
-
   it('merges dateControl sub-fields from base and next', () => {
     const result = cascadeOverrides(
       { dateControl: { dueDate: '2025-04-01', password: 'pw1' } },
@@ -1232,7 +1114,7 @@ describe('cascadeOverrides', () => {
   it('inherits all dateControl from base when next has none', () => {
     const result = cascadeOverrides(
       { dateControl: { dueDate: '2025-04-01', password: 'pw1' } },
-      { blockAccess: false },
+      {},
     );
     expect(result.dateControl?.dueDate).toBe('2025-04-01');
     expect(result.dateControl?.password).toBe('pw1');

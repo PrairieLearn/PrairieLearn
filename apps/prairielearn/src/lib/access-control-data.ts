@@ -178,7 +178,6 @@ function rowToAccessControlRuleInput(row: AccessControlRuleRow): AccessControlRu
   const rule: AccessControlJson = {};
 
   if (row.enabled != null) rule.enabled = row.enabled;
-  if (row.block_access != null) rule.blockAccess = row.block_access;
   if (row.list_before_release != null) rule.listBeforeRelease = row.list_before_release;
 
   const dateControl = buildDateControl(row);

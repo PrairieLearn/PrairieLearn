@@ -49,10 +49,6 @@ export default asyncHandler(async (req, res, next) => {
       reqDate: res.locals.req_date,
       displayTimezone: res.locals.course_instance.display_timezone,
     });
-    if (modernResult.block_access) {
-      res.status(403).send(AccessDenied({ resLocals: res.locals }));
-      return;
-    }
     row = { ...row, authz_result: modernResult };
   }
   if (!row.authz_result.authorized) {

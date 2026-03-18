@@ -35,7 +35,6 @@ function makeAccessControlRule(
       releaseDate: '2024-03-14T00:01:00',
       dueDate: '2024-03-21T23:59:00',
     },
-    blockAccess: false, // provide a default non-null value
     ...overrides,
   };
 }
@@ -261,49 +260,7 @@ describe('Access control syncing', () => {
     });
   });
 
-  describe('blockAccess and listBeforeRelease', () => {
-    it('syncs blockAccess: true', async () => {
-      const courseData = util.getCourseData();
-      const rule = makeAccessControlRule({ blockAccess: true });
-      courseData.courseInstances[util.COURSE_INSTANCE_ID].assessments[
-        util.ASSESSMENT_ID
-      ].accessControl = [rule];
-
-      await util.writeAndSyncCourseData(courseData);
-
-      const syncedRules = await findSyncedAccessControlRules(util.ASSESSMENT_ID);
-      assert.equal(syncedRules.length, 1);
-      assert.equal(syncedRules[0].block_access, true);
-    });
-
-    it('syncs blockAccess: false', async () => {
-      const courseData = util.getCourseData();
-      const rule = makeAccessControlRule({ blockAccess: false });
-      courseData.courseInstances[util.COURSE_INSTANCE_ID].assessments[
-        util.ASSESSMENT_ID
-      ].accessControl = [rule];
-
-      await util.writeAndSyncCourseData(courseData);
-
-      const syncedRules = await findSyncedAccessControlRules(util.ASSESSMENT_ID);
-      assert.equal(syncedRules.length, 1);
-      assert.equal(syncedRules[0].block_access, false);
-    });
-
-    it('defaults block_access to false when blockAccess is undefined', async () => {
-      const courseData = util.getCourseData();
-      const { blockAccess: _blockAccess, ...ruleWithoutBlockAccess } = makeAccessControlRule();
-      courseData.courseInstances[util.COURSE_INSTANCE_ID].assessments[
-        util.ASSESSMENT_ID
-      ].accessControl = [ruleWithoutBlockAccess];
-
-      await util.writeAndSyncCourseData(courseData);
-
-      const syncedRules = await findSyncedAccessControlRules(util.ASSESSMENT_ID);
-      assert.equal(syncedRules.length, 1);
-      assert.equal(syncedRules[0].block_access, false);
-    });
-
+  describe('listBeforeRelease', () => {
     it('syncs listBeforeRelease: true', async () => {
       const courseData = util.getCourseData();
       const rule = makeAccessControlRule({ listBeforeRelease: true });
@@ -334,12 +291,10 @@ describe('Access control syncing', () => {
 
     it('defaults list_before_release to true when listBeforeRelease is undefined', async () => {
       const courseData = util.getCourseData();
-      const { blockAccess: _blockAccess, ...ruleWithoutBlockAccess } = makeAccessControlRule();
-      // blockAccess was the only non-undefined field from makeAccessControlRule defaults,
-      // listBeforeRelease was already undefined, so this rule tests the default
+      const rule = makeAccessControlRule();
       courseData.courseInstances[util.COURSE_INSTANCE_ID].assessments[
         util.ASSESSMENT_ID
-      ].accessControl = [ruleWithoutBlockAccess];
+      ].accessControl = [rule];
 
       await util.writeAndSyncCourseData(courseData);
 

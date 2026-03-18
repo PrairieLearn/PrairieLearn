@@ -118,7 +118,6 @@ function dbBaseRowToAccessControlJson(row: BaseRuleRow): AccessControlJson & { i
   return {
     id: row.id,
     enabled: row.enabled ?? undefined,
-    blockAccess: row.block_access,
     listBeforeRelease: row.list_before_release,
     dateControl: Object.keys(dateControl).length > 0 ? dateControl : undefined,
     afterComplete: Object.keys(afterComplete).length > 0 ? afterComplete : undefined,

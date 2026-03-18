@@ -61,7 +61,6 @@ BEGIN
             assessment_id,
             number,
             enabled,
-            block_access,
             list_before_release,
             target_type,
             date_control_overridden,
@@ -92,7 +91,6 @@ BEGIN
             syncing_assessment_id,
             rule_number,
             (rule ->> 'enabled')::boolean,
-            (rule ->> 'block_access')::boolean,
             (rule ->> 'list_before_release')::boolean,
             (rule ->> 'target_type')::enum_assessment_access_control_target_type,
             (rule ->> 'date_control_overridden')::boolean,
@@ -121,7 +119,6 @@ BEGIN
         )
         ON CONFLICT (course_instance_id, assessment_id, number, target_type) DO UPDATE SET
             enabled = EXCLUDED.enabled,
-            block_access = EXCLUDED.block_access,
             list_before_release = EXCLUDED.list_before_release,
             target_type = EXCLUDED.target_type,
             date_control_overridden = EXCLUDED.date_control_overridden,

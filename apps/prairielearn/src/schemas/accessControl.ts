@@ -100,11 +100,6 @@ export const AccessControlJsonSchema = z.object({
   name: z.string().optional().describe('Name for AccessControl rule'),
   labels: z.array(z.string()).optional().describe('Array of student label names this set targets'),
   enabled: z.boolean().optional().describe('Whether this set of permissions is enabled'),
-  blockAccess: z
-    .boolean()
-    .optional()
-    .nullable()
-    .describe('Short circuit for whether the targets should have access to the assessment'),
   listBeforeRelease: z
     .boolean()
     .optional()

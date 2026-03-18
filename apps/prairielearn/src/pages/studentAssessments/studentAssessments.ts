@@ -52,12 +52,10 @@ router.get(
           active: result.active,
           show_closed_assessment_score: result.show_closed_assessment_score,
           list_before_release: result.list_before_release,
-          block_access: result.block_access,
         };
       })
       .filter((row): row is NonNullable<typeof row> => {
         if (row == null) return false;
-        if ('block_access' in row && row.block_access) return false;
         if (row.list_before_release) return true;
         return row.authorized;
       });

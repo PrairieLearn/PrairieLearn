@@ -76,9 +76,6 @@ async function selectAndAuthzAssessmentInstance(req: Request, res: Response) {
       assessmentInstance: row.assessment_instance,
       groupWork: row.assessment.team_work,
     });
-    if (modernResult.block_access) {
-      throw new error.HttpStatusError(403, 'Access denied');
-    }
     row = { ...row, authz_result: modernResult };
   }
 

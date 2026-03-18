@@ -13,9 +13,15 @@ The `accessControl` field is an array of rules in `infoAssessment.json`:
 ```json
 {
   "accessControl": [
-    { /* main rule — applies to all students, sets defaults */ },
-    { /* override — targets specific students via labels */ },
-    { /* override — targets specific students via labels */ }
+    {
+      /* main rule — applies to all students, sets defaults */
+    },
+    {
+      /* override — targets specific students via labels */
+    },
+    {
+      /* override — targets specific students via labels */
+    }
   ]
 }
 ```
@@ -33,18 +39,13 @@ Below is a complete skeleton showing all available fields. All fields are option
     {
       "name": "Main rule",
       "enabled": true,
-      "blockAccess": false,
       "listBeforeRelease": false,
       "dateControl": {
         "enabled": true,
         "releaseDate": "2025-01-15T00:00:01",
         "dueDate": "2025-02-15T23:59:59",
-        "earlyDeadlines": [
-          { "date": "2025-02-01T23:59:59", "credit": 110 }
-        ],
-        "lateDeadlines": [
-          { "date": "2025-02-22T23:59:59", "credit": 80 }
-        ],
+        "earlyDeadlines": [{ "date": "2025-02-01T23:59:59", "credit": 110 }],
+        "lateDeadlines": [{ "date": "2025-02-22T23:59:59", "credit": 80 }],
         "afterLastDeadline": {
           "allowSubmissions": true,
           "credit": 0
@@ -55,9 +56,7 @@ Below is a complete skeleton showing all available fields. All fields are option
       "integrations": {
         "prairieTest": {
           "enabled": true,
-          "exams": [
-            { "examUuid": "5719ebfe-ad20-42b1-b0dc-c47f0f714871" }
-          ]
+          "exams": [{ "examUuid": "5719ebfe-ad20-42b1-b0dc-c47f0f714871" }]
         }
       },
       "afterComplete": {
@@ -86,23 +85,23 @@ Below is a complete skeleton showing all available fields. All fields are option
 
 Controls when the assessment is available and how credit is computed over time.
 
-| Field | Type | Description |
-|---|---|---|
-| `enabled` | boolean | Master toggle. If `false` or absent, no date restrictions apply and the assessment is always open with 100% credit. |
-| `releaseDate` | string | ISO datetime. The assessment is not visible to students before this date. |
-| `dueDate` | string | ISO datetime. The primary deadline. Students receive 100% credit before this date. |
-| `earlyDeadlines` | array | Array of `{date, credit}` objects. Deadlines _before_ the due date offering bonus credit (e.g., 110%). |
-| `lateDeadlines` | array | Array of `{date, credit}` objects. Deadlines _after_ the due date offering reduced credit (e.g., 80%). |
-| `afterLastDeadline` | object | Controls behavior after all deadlines have passed. See below. |
-| `durationMinutes` | integer | Time limit in minutes for timed assessments. |
-| `password` | string | Proctor password required to start the assessment. |
+| Field               | Type    | Description                                                                                                         |
+| ------------------- | ------- | ------------------------------------------------------------------------------------------------------------------- |
+| `enabled`           | boolean | Master toggle. If `false` or absent, no date restrictions apply and the assessment is always open with 100% credit. |
+| `releaseDate`       | string  | ISO datetime. The assessment is not visible to students before this date.                                           |
+| `dueDate`           | string  | ISO datetime. The primary deadline. Students receive 100% credit before this date.                                  |
+| `earlyDeadlines`    | array   | Array of `{date, credit}` objects. Deadlines _before_ the due date offering bonus credit (e.g., 110%).              |
+| `lateDeadlines`     | array   | Array of `{date, credit}` objects. Deadlines _after_ the due date offering reduced credit (e.g., 80%).              |
+| `afterLastDeadline` | object  | Controls behavior after all deadlines have passed. See below.                                                       |
+| `durationMinutes`   | integer | Time limit in minutes for timed assessments.                                                                        |
+| `password`          | string  | Proctor password required to start the assessment.                                                                  |
 
 #### `afterLastDeadline`
 
-| Field | Type | Default | Description |
-|---|---|---|---|
+| Field              | Type    | Default     | Description                                                    |
+| ------------------ | ------- | ----------- | -------------------------------------------------------------- |
 | `allowSubmissions` | boolean | (see below) | Whether students can still submit answers after all deadlines. |
-| `credit` | number | `0` | Credit percentage after the last deadline. |
+| `credit`           | number  | `0`         | Credit percentage after the last deadline.                     |
 
 After the last deadline, the assessment is considered "active" (students can submit) only if `credit > 0` **and** `allowSubmissions` is not `false`.
 
@@ -127,11 +126,11 @@ earlyDeadline (110%)    dueDate (100%)    lateDeadline (80%)
 
 #### PrairieTest
 
-| Field | Type | Description |
-|---|---|---|
-| `prairieTest.enabled` | boolean | Whether PrairieTest integration is active. |
-| `prairieTest.exams` | array | Array of exam objects. |
-| `prairieTest.exams[].examUuid` | string | UUID of the associated PrairieTest exam. |
+| Field                          | Type    | Description                                 |
+| ------------------------------ | ------- | ------------------------------------------- |
+| `prairieTest.enabled`          | boolean | Whether PrairieTest integration is active.  |
+| `prairieTest.exams`            | array   | Array of exam objects.                      |
+| `prairieTest.exams[].examUuid` | string  | UUID of the associated PrairieTest exam.    |
 | `prairieTest.exams[].readOnly` | boolean | Whether the exam is read-only for students. |
 
 When PrairieTest exams are configured, students must be checked in via PrairieTest to access the assessment. Students not checked in are blocked. The `durationMinutes` field has no effect when PrairieTest is active — time limits are enforced by PrairieTest.
@@ -140,13 +139,13 @@ When PrairieTest exams are configured, students must be checked in via PrairieTe
 
 Controls what students can see after completing an assessment.
 
-| Field | Type | Description |
-|---|---|---|
-| `hideQuestions` | boolean | If `true`, questions are hidden after assessment completion. |
-| `showQuestionsAgainDate` | string | ISO datetime. Date to reveal questions back to students. |
-| `hideQuestionsAgainDate` | string | ISO datetime. Date to re-hide questions after revealing them. |
-| `hideScore` | boolean | If `true`, the score is hidden after assessment completion. |
-| `showScoreAgainDate` | string | ISO datetime. Date to reveal the score to students. |
+| Field                    | Type    | Description                                                   |
+| ------------------------ | ------- | ------------------------------------------------------------- |
+| `hideQuestions`          | boolean | If `true`, questions are hidden after assessment completion.  |
+| `showQuestionsAgainDate` | string  | ISO datetime. Date to reveal questions back to students.      |
+| `hideQuestionsAgainDate` | string  | ISO datetime. Date to re-hide questions after revealing them. |
+| `hideScore`              | boolean | If `true`, the score is hidden after assessment completion.   |
+| `showScoreAgainDate`     | string  | ISO datetime. Date to reveal the score to students.           |
 
 The visibility logic follows a toggle pattern:
 
@@ -158,11 +157,10 @@ The same logic applies to `hideScore` / `showScoreAgainDate` (there is no "hide 
 
 ### Other fields
 
-| Field | Type | Description |
-|---|---|---|
-| `name` | string | A descriptive name for the rule (for display in the UI). |
-| `enabled` | boolean | If `false`, the rule is skipped entirely. Useful for temporarily disabling an override without deleting it. |
-| `blockAccess` | boolean | If `true`, access is completely blocked for the targeted students. |
+| Field               | Type    | Description                                                                                                            |
+| ------------------- | ------- | ---------------------------------------------------------------------------------------------------------------------- |
+| `name`              | string  | A descriptive name for the rule (for display in the UI).                                                               |
+| `enabled`           | boolean | If `false`, the rule is skipped entirely. Useful for temporarily disabling an override without deleting it.            |
 | `listBeforeRelease` | boolean | If `true`, the assessment title is shown on the Assessments page before the release date, but students cannot open it. |
 
 ## Student labels and overrides
@@ -181,9 +179,9 @@ When a student accesses an assessment, the system resolves which rule applies us
 
 1. **Start with the main rule** (the first element, which applies to everyone).
 2. **Find all matching overrides** for this student:
-    - A label-based override matches if the student has _any_ of the listed labels.
-    - An enrollment-based override matches if the student is specifically listed.
-    - Disabled overrides (`enabled: false`) are skipped.
+   - A label-based override matches if the student has _any_ of the listed labels.
+   - An enrollment-based override matches if the student is specifically listed.
+   - Disabled overrides (`enabled: false`) are skipped.
 3. **Sort matching overrides**: label-based overrides first, then enrollment-based overrides. Within the same type, overrides are processed in array order.
 4. **Cascade matching overrides together**: Process the matching overrides in order. Each subsequent override's explicitly-set fields replace the previous ones. Fields not set by a later override are kept from earlier ones.
 5. **Merge the cascaded result onto the main rule**: The cascaded override's fields replace the main rule's fields where set. Unset fields fall through to the main rule's values.
@@ -196,13 +194,12 @@ When a student accesses an assessment, the system resolves which rule applies us
 
 Not all fields behave the same way during cascading:
 
-| Field | Main → Override merge | Override → Override cascade |
-|---|---|---|
-| `dateControl.*` sub-fields | Override replaces individual sub-fields; unset sub-fields inherit from main | Later override replaces; unset fields kept from earlier |
-| `afterComplete.*` sub-fields | Same as `dateControl` | Same as `dateControl` |
-| `listBeforeRelease` | Inherits from main; override can replace | Cascades (carries from earlier override; later can replace) |
-| `blockAccess` | Per-rule only — does NOT inherit from main | Cascades (carries from earlier override; later can replace) |
-| `enabled` | Per-rule only — does NOT inherit from main | Per-rule only — does NOT cascade |
+| Field                        | Main → Override merge                                                       | Override → Override cascade                                 |
+| ---------------------------- | --------------------------------------------------------------------------- | ----------------------------------------------------------- |
+| `dateControl.*` sub-fields   | Override replaces individual sub-fields; unset sub-fields inherit from main | Later override replaces; unset fields kept from earlier     |
+| `afterComplete.*` sub-fields | Same as `dateControl`                                                       | Same as `dateControl`                                       |
+| `listBeforeRelease`          | Inherits from main; override can replace                                    | Cascades (carries from earlier override; later can replace) |
+| `enabled`                    | Per-rule only — does NOT inherit from main                                  | Per-rule only — does NOT cascade                            |
 
 ### Override examples
 
@@ -260,34 +257,12 @@ Not all fields behave the same way during cascading:
 }
 ```
 
-| Student | Due date | Duration | Explanation |
-|---|---|---|---|
-| Default | Feb 15 | 60 min | Main rule only |
-| Section B only | Feb 20 | 60 min | Section B override replaces `dueDate`; `durationMinutes` inherited from main |
-| Extended time only | Feb 15 | 90 min | Extended time override replaces `durationMinutes`; `dueDate` inherited from main |
-| Section B AND Extended time | Feb 20 | 90 min | Both overrides cascade: Section B sets `dueDate`, Extended time sets `durationMinutes` |
-
-#### Example 3: Blocking access for a label
-
-```json
-{
-  "accessControl": [
-    {
-      "dateControl": {
-        "enabled": true,
-        "dueDate": "2025-03-01T23:59:59"
-      }
-    },
-    {
-      "labels": ["Suspended"],
-      "blockAccess": true
-    }
-  ]
-}
-```
-
-- **Students with "Suspended" label**: access blocked entirely.
-- **All other students**: normal access.
+| Student                     | Due date | Duration | Explanation                                                                            |
+| --------------------------- | -------- | -------- | -------------------------------------------------------------------------------------- |
+| Default                     | Feb 15   | 60 min   | Main rule only                                                                         |
+| Section B only              | Feb 20   | 60 min   | Section B override replaces `dueDate`; `durationMinutes` inherited from main           |
+| Extended time only          | Feb 15   | 90 min   | Extended time override replaces `durationMinutes`; `dueDate` inherited from main       |
+| Section B AND Extended time | Feb 20   | 90 min   | Both overrides cascade: Section B sets `dueDate`, Extended time sets `durationMinutes` |
 
 ## Examples
 
@@ -319,9 +294,7 @@ Students can access the homework from Jan 15 to Feb 15 for 100% credit. After Fe
         "enabled": true,
         "releaseDate": "2025-01-15T00:00:01",
         "dueDate": "2025-02-15T23:59:59",
-        "earlyDeadlines": [
-          { "date": "2025-02-01T23:59:59", "credit": 110 }
-        ],
+        "earlyDeadlines": [{ "date": "2025-02-01T23:59:59", "credit": 110 }],
         "lateDeadlines": [
           { "date": "2025-02-22T23:59:59", "credit": 80 },
           { "date": "2025-03-01T23:59:59", "credit": 50 }
@@ -336,14 +309,14 @@ Students can access the homework from Jan 15 to Feb 15 for 100% credit. After Fe
 }
 ```
 
-| Period | Credit |
-|---|---|
-| Before Jan 15 | Not visible |
-| Jan 15 – Feb 1 | 110% (early bonus) |
-| Feb 1 – Feb 15 | 100% (full credit) |
-| Feb 15 – Feb 22 | 80% (late penalty) |
-| Feb 22 – Mar 1 | 50% (late penalty) |
-| After Mar 1 | 0% (can still view and submit for feedback) |
+| Period          | Credit                                      |
+| --------------- | ------------------------------------------- |
+| Before Jan 15   | Not visible                                 |
+| Jan 15 – Feb 1  | 110% (early bonus)                          |
+| Feb 1 – Feb 15  | 100% (full credit)                          |
+| Feb 15 – Feb 22 | 80% (late penalty)                          |
+| Feb 22 – Mar 1  | 50% (late penalty)                          |
+| After Mar 1     | 0% (can still view and submit for feedback) |
 
 ### Timed exam with password
 
@@ -381,9 +354,7 @@ If a student starts close enough to the due date that less than 90 minutes remai
       "integrations": {
         "prairieTest": {
           "enabled": true,
-          "exams": [
-            { "examUuid": "5719ebfe-ad20-42b1-b0dc-c47f0f714871" }
-          ]
+          "exams": [{ "examUuid": "5719ebfe-ad20-42b1-b0dc-c47f0f714871" }]
         }
       },
       "afterComplete": {

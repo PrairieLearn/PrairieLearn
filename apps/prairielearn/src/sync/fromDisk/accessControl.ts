@@ -29,7 +29,6 @@ function mapField<T>(jsonValue: T | null | undefined): {
 interface PreparedRule {
   number: number;
   enabled: boolean;
-  blockAccess: boolean;
   listBeforeRelease: boolean;
   targetType: 'none' | 'student_label';
   dateControlOverridden: boolean;
@@ -129,7 +128,6 @@ export async function syncAccessControl(
     const afterLastDeadline = dateControl.afterLastDeadline ?? {};
 
     const enabled = mapField(rule.enabled);
-    const blockAccess = mapField(rule.blockAccess);
     const listBeforeRelease = mapField(rule.listBeforeRelease);
     const releaseDateField = mapField(dateControl.releaseDate);
     const dueDateField = mapField(dateControl.dueDate);
@@ -171,7 +169,6 @@ export async function syncAccessControl(
     preparedRules.push({
       number: ruleNumber,
       enabled: enabled.value ?? true,
-      blockAccess: blockAccess.value ?? false,
       listBeforeRelease: listBeforeRelease.value ?? true,
       targetType,
       dateControlOverridden,
@@ -211,7 +208,6 @@ export async function syncAccessControl(
     JSON.stringify({
       number: r.number,
       enabled: r.enabled,
-      block_access: r.blockAccess,
       list_before_release: r.listBeforeRelease,
       target_type: r.targetType,
       date_control_overridden: r.dateControlOverridden,

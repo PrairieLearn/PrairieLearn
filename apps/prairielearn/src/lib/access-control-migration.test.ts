@@ -281,7 +281,7 @@ describe('migrateAllowAccess', () => {
   it('migrates hidden', () => {
     const rules: AssessmentAccessRuleJson[] = [{ active: false }];
     const { result } = migrateAllowAccess('hidden', rules);
-    expect(result.blockAccess).toBe(true);
+    expect(result.enabled).toBe(false);
   });
 
   it('migrates no-op', () => {

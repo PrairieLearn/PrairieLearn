@@ -10,7 +10,6 @@ import {
 const defaultMainRule: MainRuleData = {
   trackingId: 'main-1',
   enabled: true,
-  blockAccess: false,
   listBeforeRelease: true,
   dateControlEnabled: true,
   releaseDate: '2025-03-01T00:00:00Z',
@@ -68,37 +67,6 @@ describe('formDataToJson', () => {
     expect('lateDeadlines' in dc).toBe(false);
     expect('afterLastDeadline' in dc).toBe(false);
     expect('durationMinutes' in dc).toBe(false);
-  });
-
-  it('sets blockAccess on override when explicitly provided', () => {
-    const override: OverrideData = {
-      trackingId: 'o-3',
-      enabled: true,
-      blockAccess: true,
-      appliesTo: {
-        targetType: 'individual',
-        individuals: [{ uid: 'a@b.com', name: 'A' }],
-        studentLabels: [],
-      },
-    };
-
-    const result = formDataToJson(buildFormData(override));
-    expect(result[1].blockAccess).toBe(true);
-  });
-
-  it('omits blockAccess on override when undefined', () => {
-    const override: OverrideData = {
-      trackingId: 'o-4',
-      enabled: true,
-      appliesTo: {
-        targetType: 'individual',
-        individuals: [{ uid: 'a@b.com', name: 'A' }],
-        studentLabels: [],
-      },
-    };
-
-    const result = formDataToJson(buildFormData(override));
-    expect('blockAccess' in result[1]).toBe(false);
   });
 
   it('serializes student_label appliesTo with labels', () => {

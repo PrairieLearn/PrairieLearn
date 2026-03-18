@@ -19,10 +19,6 @@ export function MainRuleForm({ courseInstance: _courseInstance }: MainRuleFormPr
     name: 'mainRule.enabled',
   });
 
-  const blockAccess = useWatch<AccessControlFormData, 'mainRule.blockAccess'>({
-    name: 'mainRule.blockAccess',
-  });
-
   const releaseDate = useWatch<AccessControlFormData, 'mainRule.releaseDate'>({
     name: 'mainRule.releaseDate',
   });
@@ -39,21 +35,6 @@ export function MainRuleForm({ courseInstance: _courseInstance }: MainRuleFormPr
   return (
     <div>
       {ruleEnabled && (
-        <Form.Group className="mb-3">
-          <Form.Check
-            type="checkbox"
-            id="mainRule-block-access"
-            label="Block access"
-            {...register('mainRule.blockAccess')}
-            aria-describedby="mainRule-block-access-help"
-          />
-          <Form.Text id="mainRule-block-access-help" className="text-muted">
-            Deny access if this rule applies
-          </Form.Text>
-        </Form.Group>
-      )}
-
-      {ruleEnabled && !blockAccess && (
         <>
           {(hasDateRelease || hasPrairieTestRelease) && (
             <Form.Group className="mb-3">

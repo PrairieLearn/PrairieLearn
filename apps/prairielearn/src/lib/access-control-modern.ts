@@ -64,7 +64,7 @@ function resolverResultToSprocAuthzAssessment(
 
 export async function resolveModernAssessmentAccess(
   input: ModernAssessmentAccessInput,
-): Promise<SprocAuthzAssessment & { list_before_release: boolean; block_access: boolean }> {
+): Promise<SprocAuthzAssessment & { list_before_release: boolean }> {
   const { assessment, userId, courseInstance, authzData, reqDate, displayTimezone } = input;
 
   const [rules, student, prairieTestReservations] = await Promise.all([
@@ -89,7 +89,6 @@ export async function resolveModernAssessmentAccess(
   return {
     ...resolverResultToSprocAuthzAssessment(result, authzData.mode),
     list_before_release: result.listBeforeRelease,
-    block_access: result.blockAccess,
   };
 }
 
@@ -105,7 +104,7 @@ interface ModernAssessmentInstanceAccessInput extends ModernAssessmentAccessInpu
 
 export async function resolveModernAssessmentInstanceAccess(
   input: ModernAssessmentInstanceAccessInput,
-): Promise<SprocAuthzAssessmentInstance & { list_before_release: boolean; block_access: boolean }> {
+): Promise<SprocAuthzAssessmentInstance & { list_before_release: boolean }> {
   const assessmentResult = await resolveModernAssessmentAccess(input);
 
   const { assessmentInstance, authzData, reqDate, groupWork } = input;
@@ -155,9 +154,7 @@ interface ModernAssessmentAccessBatchInput {
 
 export async function resolveModernAssessmentAccessBatch(
   input: ModernAssessmentAccessBatchInput,
-): Promise<
-  Map<string, SprocAuthzAssessment & { list_before_release: boolean; block_access: boolean }>
-> {
+): Promise<Map<string, SprocAuthzAssessment & { list_before_release: boolean }>> {
   const { courseInstance, userId, authzData, reqDate, displayTimezone } = input;
 
   const [allRules, student, prairieTestReservations] = await Promise.all([
@@ -168,10 +165,7 @@ export async function resolveModernAssessmentAccessBatch(
       : Promise.resolve([]),
   ]);
 
-  const results = new Map<
-    string,
-    SprocAuthzAssessment & { list_before_release: boolean; block_access: boolean }
-  >();
+  const results = new Map<string, SprocAuthzAssessment & { list_before_release: boolean }>();
 
   for (const [assessmentId, rules] of allRules) {
     const result = resolveAccessControl({
@@ -188,7 +182,6 @@ export async function resolveModernAssessmentAccessBatch(
     results.set(assessmentId, {
       ...resolverResultToSprocAuthzAssessment(result, authzData.mode),
       list_before_release: result.listBeforeRelease,
-      block_access: result.blockAccess,
     });
   }
 

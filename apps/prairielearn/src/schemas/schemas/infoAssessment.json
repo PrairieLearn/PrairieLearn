@@ -743,24 +743,6 @@
           "description": "Whether this set of permissions is enabled",
           "type": "boolean"
         },
-        "blockAccess": {
-          "description": "Short circuit for whether the targets should have access to the assessment",
-          "anyOf": [
-            {
-              "anyOf": [
-                {
-                  "not": {}
-                },
-                {
-                  "type": "boolean"
-                }
-              ]
-            },
-            {
-              "type": "null"
-            }
-          ]
-        },
         "listBeforeRelease": {
           "description": "Whether students can see the title and click into the assessment before release",
           "anyOf": [
@@ -788,7 +770,14 @@
             },
             "releaseDate": {
               "description": "Deadline date as ISO String",
-              "$ref": "#/definitions/DatetimeLocalStringSchema"
+              "anyOf": [
+                {
+                  "$ref": "#/definitions/DatetimeLocalStringSchema"
+                },
+                {
+                  "type": "null"
+                }
+              ]
             },
             "dueDate": {
               "description": "Due date as ISO String",
@@ -831,20 +820,34 @@
             },
             "afterLastDeadline": {
               "description": "Controls for assessment behaviour after last deadline",
-              "type": "object",
-              "properties": {
-                "allowSubmissions": {
-                  "type": "boolean"
+              "anyOf": [
+                {
+                  "type": "object",
+                  "properties": {
+                    "allowSubmissions": {
+                      "type": "boolean"
+                    },
+                    "credit": {
+                      "type": "number"
+                    }
+                  }
                 },
-                "credit": {
-                  "type": "number"
+                {
+                  "type": "null"
                 }
-              }
+              ]
             },
             "durationMinutes": {
               "description": "Desired duration limit for assessment",
-              "type": "integer",
-              "exclusiveMinimum": 0
+              "anyOf": [
+                {
+                  "type": "integer",
+                  "exclusiveMinimum": 0
+                },
+                {
+                  "type": "null"
+                }
+              ]
             },
             "password": {
               "description": "Password for assessment",

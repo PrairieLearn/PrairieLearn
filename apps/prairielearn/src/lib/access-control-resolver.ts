@@ -43,7 +43,6 @@ export interface AccessControlResolverResult {
   showClosedAssessmentScore: boolean;
   examAccessEnd: Date | null;
   listBeforeRelease: boolean;
-  blockAccess: boolean;
 }
 
 const UNAUTHORIZED_RESULT: AccessControlResolverResult = {
@@ -57,7 +56,6 @@ const UNAUTHORIZED_RESULT: AccessControlResolverResult = {
   showClosedAssessmentScore: true,
   examAccessEnd: null,
   listBeforeRelease: false,
-  blockAccess: false,
 };
 
 const COURSE_ROLE_RANK = new Map<EnumCourseRole, number>([
@@ -158,7 +156,6 @@ export function mergeRules(
 
   // Per-rule fields: only from override, never inherited from main.
   if (override.enabled !== undefined) merged.enabled = override.enabled;
-  if (override.blockAccess !== undefined) merged.blockAccess = override.blockAccess;
 
   merged.dateControl = mergeDateControl(main.dateControl, override.dateControl, true);
   merged.afterComplete = mergeAfterComplete(main.afterComplete, override.afterComplete);
@@ -168,18 +165,12 @@ export function mergeRules(
 
 /**
  * Cascades two override JSONs where the second wins.
- * Unlike `mergeRules`, `blockAccess` inherits through the cascade
- * (between overrides it should carry forward).
  */
 export function cascadeOverrides(
   base: AccessControlJson,
   next: AccessControlJson,
 ): AccessControlJson {
   const merged: AccessControlJson = {};
-
-  // blockAccess cascades between overrides (inherits from base, next can replace).
-  if (base.blockAccess !== undefined) merged.blockAccess = base.blockAccess;
-  if (next.blockAccess !== undefined) merged.blockAccess = next.blockAccess;
 
   // listBeforeRelease cascades.
   if (base.listBeforeRelease !== undefined) merged.listBeforeRelease = base.listBeforeRelease;
@@ -418,7 +409,6 @@ export function resolveAccessControl(
       showClosedAssessmentScore: true,
       examAccessEnd: null,
       listBeforeRelease: false,
-      blockAccess: false,
     };
   }
 
@@ -465,10 +455,6 @@ export function resolveAccessControl(
   if (effectiveRule.enabled === false) {
     return { ...UNAUTHORIZED_RESULT };
   }
-  if (effectiveRule.blockAccess) {
-    return { ...UNAUTHORIZED_RESULT, blockAccess: true };
-  }
-
   const creditResult = computeCredit(effectiveRule.dateControl, date, effectiveRule, authzMode);
 
   const prairieTestExamUuids = mainRuleInput.prairietestExamUuids;
@@ -534,6 +520,5 @@ export function resolveAccessControl(
     showClosedAssessmentScore,
     examAccessEnd,
     listBeforeRelease: creditResult.listBeforeRelease,
-    blockAccess: false,
   };
 }

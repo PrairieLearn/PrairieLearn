@@ -20,7 +20,6 @@ interface NewAccessControl {
   name?: string;
   labels?: string[];
   enabled?: boolean;
-  blockAccess?: boolean | null;
   listBeforeRelease?: boolean | null;
   dateControl?: {
     enabled?: boolean;
@@ -459,7 +458,7 @@ function migrateHidden(_rules: AssessmentAccessRuleJson[]): {
   warnings: string[];
 } {
   return {
-    result: { blockAccess: true },
+    result: { enabled: false },
     warnings: [],
   };
 }

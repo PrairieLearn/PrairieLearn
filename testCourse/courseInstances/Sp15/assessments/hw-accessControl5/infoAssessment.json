@@ -7,7 +7,7 @@
   "accessControl": [
     {
       "enabled": true,
-      "blockAccess": false,
+
       "listBeforeRelease": true,
       "dateControl": {
         "enabled": true,
@@ -18,7 +18,7 @@
     },
     {
       "enabled": true,
-      "blockAccess": false,
+
       "listBeforeRelease": true,
       "labels": ["Section A"],
       "dateControl": { "enabled": true, "dueDate": "2026-01-28T18:14" }

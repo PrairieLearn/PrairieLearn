@@ -24,7 +24,6 @@ BEGIN
         -- Update existing enrollment rule
         UPDATE assessment_access_control SET
             enabled = (rule_data ->> 'enabled')::boolean,
-            block_access = (rule_data ->> 'block_access')::boolean,
             list_before_release = (rule_data ->> 'list_before_release')::boolean,
             date_control_overridden = (rule_data ->> 'date_control_overridden')::boolean,
             date_control_release_date_overridden = (rule_data ->> 'date_control_release_date_overridden')::boolean,
@@ -81,7 +80,6 @@ BEGIN
             number,
             target_type,
             enabled,
-            block_access,
             list_before_release,
             date_control_overridden,
             date_control_release_date_overridden,
@@ -112,7 +110,6 @@ BEGIN
             next_number,
             'enrollment',
             (rule_data ->> 'enabled')::boolean,
-            (rule_data ->> 'block_access')::boolean,
             (rule_data ->> 'list_before_release')::boolean,
             (rule_data ->> 'date_control_overridden')::boolean,
             (rule_data ->> 'date_control_release_date_overridden')::boolean,

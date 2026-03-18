@@ -7,7 +7,6 @@ CREATE TABLE assessment_access_control (
   course_instance_id BIGINT NOT NULL REFERENCES course_instances (id) ON DELETE CASCADE ON UPDATE CASCADE,
   assessment_id BIGINT NOT NULL REFERENCES assessments (id) ON DELETE CASCADE ON UPDATE CASCADE,
   enabled boolean,
-  block_access boolean,
   list_before_release boolean,
   number INTEGER NOT NULL,
   -- Target type: 'none' for main rule (applies to all), 'enrollment' for individual students, 'student_label' for student labels

@@ -222,7 +222,6 @@ export const AssessmentAccessControlSchema = z.object({
   after_complete_show_score_again_date_overridden: z.boolean(),
 
   assessment_id: IdSchema,
-  block_access: z.boolean().nullable(),
   course_instance_id: IdSchema,
 
   // Date control fields

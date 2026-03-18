@@ -193,11 +193,6 @@ export function generateRuleSummary(
     return lines;
   }
 
-  if (rule.blockAccess) {
-    lines.push('Blocks access');
-    return lines;
-  }
-
   const durationMinutes = rule.durationMinutes;
   if (durationMinutes !== undefined) {
     if (durationMinutes !== null) {
@@ -305,11 +300,6 @@ export function RuleSummaryCard({
           )}
           <strong>{title}</strong>
           {!rule.enabled && <Badge bg="secondary">Disabled</Badge>}
-          {rule.enabled && rule.blockAccess && (
-            <Badge bg="warning" text="dark">
-              Blocks access
-            </Badge>
-          )}
         </div>
         <div className="d-flex gap-2 flex-shrink-0">
           {onEditStudentLabels && (

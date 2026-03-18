@@ -59,44 +59,6 @@ test.describe('Access control UI', () => {
     await expect(page.getByRole('button', { name: /Save and sync/i })).toBeDisabled();
   });
 
-  test('can edit main rule via drawer and save', async ({ page, courseInstance }) => {
-    const assessment = await selectAssessmentByTid({
-      course_instance_id: courseInstance.id,
-      tid: 'hw-accessControl2',
-    });
-    await navigateToAccessPage(page, courseInstance.id, assessment.id);
-
-    // Click Edit on the main rule card
-    const mainRuleSection = page.locator('section').filter({ hasText: 'Main rule' }).first();
-    await mainRuleSection.getByRole('button', { name: /Edit/i }).click();
-
-    const drawer = getVisibleDialog(page);
-    await expect(drawer).toBeVisible();
-
-    // Check "Block access" checkbox
-    await drawer.getByLabel('Block access').check();
-
-    // Click "Done" to close the drawer
-    await drawer.getByRole('button', { name: 'Done' }).click();
-    await expect(drawer).not.toBeVisible();
-
-    // Verify "Blocks access" badge appears on summary card
-    await expect(page.getByText('Blocks access').first()).toBeVisible();
-
-    // Save and sync
-    await page.getByRole('button', { name: /Save and sync/i }).click();
-    await expect(page.getByText('Access control updated successfully.')).toBeVisible();
-
-    // Verify DB state
-    const records = await getAccessControlRecords(assessment.id);
-    const mainRule = records.find((r) => r.number === 0);
-    expect(mainRule?.block_access).toBe(true);
-
-    // Reload page and verify persisted
-    await navigateToAccessPage(page, courseInstance.id, assessment.id);
-    await expect(page.getByText('Blocks access').first()).toBeVisible();
-  });
-
   test('can add a student-label override, configure it, and save', async ({
     page,
     courseInstance,

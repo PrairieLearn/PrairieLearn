@@ -8,7 +8,6 @@ columns
     after_complete_show_score_again_date: timestamp with time zone
     after_complete_show_score_again_date_overridden: boolean not null default false
     assessment_id: bigint not null
-    block_access: boolean
     course_instance_id: bigint not null
     date_control_after_last_deadline_allow_submissions: boolean
     date_control_after_last_deadline_credit: integer

@@ -66,7 +66,6 @@ export const MainRuleSchema = z.object({
   id: z.string().optional(),
   trackingId: z.string(),
   enabled: z.boolean(),
-  blockAccess: z.boolean(),
   listBeforeRelease: z.boolean(),
   dateControlEnabled: z.boolean(),
   releaseDate: z.string().nullable(),
@@ -87,7 +86,6 @@ export const OverrideSchema = z.object({
   id: z.string().optional(),
   trackingId: z.string(),
   enabled: z.boolean(),
-  blockAccess: z.boolean().optional(),
   appliesTo: AppliesToSchema,
   releaseDate: z.string().nullable().optional(),
   dueDate: z.string().nullable().optional(),
@@ -135,7 +133,6 @@ export function jsonToMainRuleFormData(json: AccessControlJsonWithId): MainRuleD
     id: json.id,
     trackingId: json.id ?? crypto.randomUUID(),
     enabled: json.enabled ?? true,
-    blockAccess: json.blockAccess ?? false,
     listBeforeRelease: json.listBeforeRelease ?? true,
     dateControlEnabled: dc?.enabled ?? false,
     releaseDate: dc?.releaseDate ?? null,
@@ -189,8 +186,6 @@ export function jsonToOverrideFormData(json: AccessControlJsonWithId): OverrideD
     appliesTo,
   };
 
-  if (json.blockAccess !== undefined) result.blockAccess = json.blockAccess ?? false;
-
   if (dc?.releaseDate !== undefined) result.releaseDate = dc.releaseDate;
   if (dc?.dueDate !== undefined) result.dueDate = dc.dueDate;
   if (dc?.earlyDeadlines !== undefined) result.earlyDeadlines = dc.earlyDeadlines ?? [];
@@ -220,7 +215,6 @@ function mainRuleToJson(rule: MainRuleData): AccessControlJsonWithId {
   const output: AccessControlJsonWithId = {
     id: rule.id,
     enabled: rule.enabled,
-    blockAccess: rule.blockAccess,
     listBeforeRelease: rule.listBeforeRelease,
   };
 
@@ -275,8 +269,6 @@ function overrideToJson(rule: OverrideData): AccessControlJsonWithId {
     enabled: rule.enabled,
     labels,
   };
-
-  if (rule.blockAccess !== undefined) output.blockAccess = rule.blockAccess;
 
   const hasDateControl =
     rule.releaseDate !== undefined ||
