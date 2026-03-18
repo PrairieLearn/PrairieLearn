@@ -392,7 +392,6 @@ function AssessmentEditorInner({
   const handleQuestionPicked = async (qid: string) => {
     try {
       const questionData = await questionByQidMutation.mutateAsync(qid);
-      if (!questionData) return;
       dispatch({
         type: 'QUESTION_PICKED',
         qid,

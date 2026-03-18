@@ -95,6 +95,10 @@ const questionByQidQuery = t.procedure.input(z.object({ qid: z.string() })).quer
       QuestionByQidResultSchema,
     );
 
+    if (!result) {
+      throw new TRPCError({ code: 'NOT_FOUND', message: 'Shared question not found' });
+    }
+
     return result;
   }
   const result = await sqldb.queryOptionalRow(

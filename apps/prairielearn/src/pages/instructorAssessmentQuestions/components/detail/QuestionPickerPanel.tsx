@@ -1,6 +1,7 @@
 import { rankItem } from '@tanstack/match-sorter-utils';
 import { useQuery } from '@tanstack/react-query';
 import { useVirtualizer } from '@tanstack/react-virtual';
+import { TRPCClientError } from '@trpc/client';
 import { useEffect, useMemo, useRef, useState } from 'react';
 
 import { FilterDropdown, type FilterItem } from '@prairielearn/ui';
@@ -69,6 +70,7 @@ export function QuestionPickerPanel({
 
   const sharedQuestionQuery = useQuery({
     ...trpc.questionByQid.queryOptions({ qid: debouncedSearchQuery }, { enabled: hasSlash }),
+    retry: false,
   });
 
   const scrollParentRef = useRef<HTMLDivElement>(null);
@@ -338,11 +340,19 @@ export function QuestionPickerPanel({
                 </div>
               );
             })()
-          ) : hasSlash ? (
-            <div className="d-flex flex-column align-items-center justify-content-center text-muted py-5 text-center px-3">
-              <i className="bi bi-search display-6 mb-2" aria-hidden="true" />
-              <p className="mb-1">No shared question found.</p>
-            </div>
+          ) : sharedQuestionQuery.isError ? (
+            sharedQuestionQuery.error instanceof TRPCClientError &&
+            sharedQuestionQuery.error.data?.code === 'NOT_FOUND' ? (
+              <div className="d-flex flex-column align-items-center justify-content-center text-muted py-5 text-center px-3">
+                <i className="bi bi-search display-6 mb-2" aria-hidden="true" />
+                <p className="mb-1">No shared question found.</p>
+              </div>
+            ) : (
+              <div className="d-flex flex-column align-items-center justify-content-center text-danger py-5 text-center px-3">
+                <i className="bi bi-exclamation-circle display-6 mb-2" aria-hidden="true" />
+                <p className="mb-1">Failed to search for shared question. Try again.</p>
+              </div>
+            )
           ) : (
             <div className="d-flex flex-column align-items-center justify-content-center text-muted py-5 text-center px-3">
               <i className="bi bi-share display-6 mb-2" aria-hidden="true" />
