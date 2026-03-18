@@ -51,6 +51,7 @@ const MAX_IMAGE_SIDE_LENGTH = 2000;
       this.resizingCtx = null;
 
       /** Original captured image width and height */
+      this.originalImageCaptureDataUrl = null;
       this.originalImageWidth = null;
       this.originalImageHeight = null;
 
@@ -886,16 +887,8 @@ const MAX_IMAGE_SIDE_LENGTH = 2000;
         this.setHiddenCaptureInputValue(dataUrl);
 
         if (originalCapture) {
-          const hiddenOriginalCaptureInput = this.imageCaptureDiv.querySelector(
-            '.js-hidden-original-capture-input',
-          );
-
-          this.ensureElementsExist({
-            hiddenOriginalCaptureInput,
-          });
-
           if (dataUrl) {
-            hiddenOriginalCaptureInput.value = dataUrl;
+            this.originalImageCaptureDataUrl = dataUrl;
             if (capturePreview.complete) {
               this.originalImageWidth = capturePreview.naturalWidth;
               this.originalImageHeight = capturePreview.naturalHeight;
@@ -906,7 +899,7 @@ const MAX_IMAGE_SIDE_LENGTH = 2000;
               };
             }
           } else {
-            hiddenOriginalCaptureInput.removeAttribute('value');
+            this.originalImageCaptureDataUrl = null;
           }
           if (this.cropper) {
             this.resetCropRotateInterfaceState();
@@ -1131,9 +1124,7 @@ const MAX_IMAGE_SIDE_LENGTH = 2000;
           cropperImage,
         });
 
-        cropperImage.src = this.imageCaptureDiv.querySelector(
-          '.js-hidden-original-capture-input',
-        ).value;
+        cropperImage.src = this.originalImageCaptureDataUrl;
 
         this.cropper = new Cropper.default(
           `#image-capture-${this.uuid} .js-cropper-container .js-cropper-base-image`,
@@ -1143,9 +1134,7 @@ const MAX_IMAGE_SIDE_LENGTH = 2000;
         this.cropper.getCropperCanvas().scaleStep = 0;
       } else {
         // If the cropper already exists, update its image source to the original capture.
-        this.cropper.getCropperImage().src = this.imageCaptureDiv.querySelector(
-          '.js-hidden-original-capture-input',
-        ).value;
+        this.cropper.getCropperImage().src = this.originalImageCaptureDataUrl;
       }
 
       const cropperHandle = this.imageCaptureDiv.querySelector(
@@ -1353,20 +1342,12 @@ const MAX_IMAGE_SIDE_LENGTH = 2000;
      * Resets the crop/rotation interface state and any transformations applied to the image.
      */
     resetAllCropRotation() {
-      const hiddenOriginalCaptureInput = this.imageCaptureDiv.querySelector(
-        '.js-hidden-original-capture-input',
-      );
-
-      this.ensureElementsExist({
-        hiddenOriginalCaptureInput,
-      });
-
       this.previousCropRotateState = null;
 
       this.cancelCropRotate(false);
 
       this.loadCapturePreviewFromDataUrl({
-        dataUrl: hiddenOriginalCaptureInput.value,
+        dataUrl: this.originalImageCaptureDataUrl,
         originalCapture: false,
       });
     }
