@@ -1,4 +1,4 @@
-import { useDroppable } from '@dnd-kit/core';
+import { useDndContext, useDroppable } from '@dnd-kit/core';
 import { SortableContext, useSortable, verticalListSortingStrategy } from '@dnd-kit/sortable';
 import clsx from 'clsx';
 import { useCallback, useMemo } from 'react';
@@ -6,14 +6,27 @@ import { useCallback, useMemo } from 'react';
 import { run } from '@prairielearn/run';
 import { OverlayTrigger } from '@prairielearn/ui';
 
-import type { TreeActions, TreeState, ZoneQuestionBlockForm } from '../../types.js';
-import { getSharedTags, hasPointsMismatch } from '../../utils/questions.js';
+import type {
+  TreeActions,
+  TreeState,
+  ZoneAssessmentForm,
+  ZoneQuestionBlockForm,
+} from '../../types.js';
+import {
+  computeAltGroupChosenRange,
+  getSharedTags,
+  getSharedTopic,
+  hasAltGroupChooseExceedsCount,
+  hasPointsMismatch,
+  questionHasTitle,
+} from '../../utils/questions.js';
 
 import { ChangeIndicatorBadges } from './ChangeIndicatorBadges.js';
 import { CollapseToggleButton } from './CollapseToggleButton.js';
 import { DragHandle } from './DragHandle.js';
 import { SortableAlternativeRow } from './SortableAlternativeRow.js';
 import { PointsBadge, TreeQuestionRow } from './TreeQuestionRow.js';
+import { WarningIndicator } from './WarningIndicator.js';
 import { makeDraggableStyle } from './dragUtils.js';
 
 /**
@@ -26,10 +39,14 @@ import { makeDraggableStyle } from './dragUtils.js';
  */
 export function TreeQuestionBlockNode({
   zoneQuestionBlock,
+  questionNumber,
+  zone,
   state,
   actions,
 }: {
   zoneQuestionBlock: ZoneQuestionBlockForm;
+  questionNumber: number;
+  zone: ZoneAssessmentForm;
   state: TreeState;
   actions: TreeActions;
 }) {
@@ -49,7 +66,7 @@ export function TreeQuestionBlockNode({
 
   const { attributes, listeners, setNodeRef, transform, transition, isDragging } = useSortable({
     id: zoneQuestionBlock.trackingId,
-    data: { type: 'question', hasAlternatives },
+    data: { type: 'question', hasAlternatives, qid: zoneQuestionBlock.id },
     disabled: !editMode,
   });
 
@@ -77,14 +94,16 @@ export function TreeQuestionBlockNode({
     [alternatives],
   );
 
+  const { active } = useDndContext();
+
   const isAltGroupSelected =
     selectedItem?.type === 'altGroup' &&
     selectedItem.questionTrackingId === zoneQuestionBlock.trackingId;
 
-  if (!hasAlternatives) {
-    // Single question (no alternatives)
-    const questionData =
-      (zoneQuestionBlock.id ? questionMetadata[zoneQuestionBlock.id] : null) ?? null;
+  if (!zoneQuestionBlock.alternatives) {
+    // Standalone question (no alternatives) — narrowed to StandaloneQuestionBlockForm.
+
+    const questionData = questionMetadata[zoneQuestionBlock.id] ?? null;
     const isSelected =
       selectedItem?.type === 'question' &&
       selectedItem.questionTrackingId === zoneQuestionBlock.trackingId;
@@ -96,6 +115,7 @@ export function TreeQuestionBlockNode({
           zoneQuestionBlock={zoneQuestionBlock}
           isAlternative={false}
           questionData={questionData}
+          questionNumber={questionNumber}
           state={state}
           isSelected={isSelected}
           draggableAttributes={attributes}
@@ -106,9 +126,7 @@ export function TreeQuestionBlockNode({
               questionTrackingId: zoneQuestionBlock.trackingId,
             })
           }
-          onDelete={() =>
-            onDeleteQuestion(zoneQuestionBlock.trackingId, zoneQuestionBlock.id ?? '')
-          }
+          onDelete={() => onDeleteQuestion(zoneQuestionBlock.trackingId, zoneQuestionBlock.id)}
         />
       </div>
     );
@@ -117,8 +135,18 @@ export function TreeQuestionBlockNode({
   // Alternative group
   const alternativeCount = alternatives?.length ?? 0;
 
+  // Is one of our alternatives being dragged away?
+  const isDraggingChildOut =
+    active?.data.current?.type === 'alternative' &&
+    active.data.current.parentTrackingId === zoneQuestionBlock.trackingId;
+
+  const displayCount = alternativeCount + (isMergeOver ? 1 : 0) - (isDraggingChildOut ? 1 : 0);
+
   const pointsMismatch =
     alternatives != null && hasPointsMismatch(alternatives, assessmentType, zoneQuestionBlock);
+  // This warning triggers when alternatives are deleted from a group, reducing
+  // the count below an already-saved numberChoose.
+  const chooseExceeds = hasAltGroupChooseExceedsCount(zoneQuestionBlock);
 
   return (
     <div
@@ -144,9 +172,12 @@ export function TreeQuestionBlockNode({
         )}
         style={{
           paddingLeft: '2.5rem',
-          paddingRight: '0.5rem',
+          // Extra right padding prevents macOS overlay scrollbars
+          // from overlapping row content like the points badge.
+          // https://bugzilla.mozilla.org/show_bug.cgi?id=636564
+          paddingRight: '1.5rem',
           cursor: 'pointer',
-          ...(pointsMismatch && { borderLeft: '6px solid var(--bs-warning)' }),
+          ...(chooseExceeds || pointsMismatch ? { borderLeft: '6px solid var(--bs-warning)' } : {}),
         }}
         onClick={(e) => {
           e.stopPropagation();
@@ -172,33 +203,47 @@ export function TreeQuestionBlockNode({
           onToggle={toggleCollapse}
         />
         <div className="flex-grow-1" style={{ minWidth: 0 }}>
-          <div className="text-truncate text-primary">
-            <i className="bi bi-stack me-1" aria-hidden="true" />
-            {run(() => {
-              const choose = zoneQuestionBlock.numberChoose;
-              if (choose == null) return `Choose ${alternativeCount} of ${alternativeCount}`;
-              return `Choose ${choose} of ${alternativeCount}`;
-            })}
-            {pointsMismatch && (
-              <OverlayTrigger
-                placement="top"
-                tooltip={{
-                  props: { id: `points-mismatch-${zoneQuestionBlock.trackingId}` },
-                  body: 'Alternatives have different point values',
-                }}
-              >
-                <i
-                  className="bi bi-exclamation-triangle-fill text-warning ms-1"
-                  aria-hidden="true"
+          <div className="d-flex align-items-center">
+            <span className="text-truncate text-primary">
+              <i className="bi bi-stack me-1" aria-hidden="true" />
+              {run(() => {
+                const { min, max } = computeAltGroupChosenRange(zone, zoneQuestionBlock);
+                const allChosen = min === displayCount && max === displayCount;
+                const chosenLabel = allChosen
+                  ? 'all chosen'
+                  : min === max
+                    ? `${min} chosen`
+                    : `${min}-${max} chosen`;
+                return (
+                  <>
+                    {displayCount} alternative{displayCount !== 1 ? 's' : ''}{' '}
+                    <span className="text-secondary">({chosenLabel})</span>
+                  </>
+                );
+              })}
+              <ChangeIndicatorBadges
+                trackingId={zoneQuestionBlock.trackingId}
+                comment={zoneQuestionBlock.comment}
+                editMode={editMode}
+                changeTracking={changeTracking}
+              />
+            </span>
+            <span className="d-inline-flex align-items-center gap-1 flex-wrap ms-2">
+              {pointsMismatch && (
+                <WarningIndicator
+                  tooltipId={`points-mismatch-${zoneQuestionBlock.trackingId}`}
+                  label="Inconsistent points"
+                  body="Students will receive different total points because this group has alternatives with different point values"
                 />
-              </OverlayTrigger>
-            )}
-            <ChangeIndicatorBadges
-              trackingId={zoneQuestionBlock.trackingId}
-              comment={zoneQuestionBlock.comment}
-              editMode={editMode}
-              changeTracking={changeTracking}
-            />
+              )}
+              {chooseExceeds && (
+                <WarningIndicator
+                  tooltipId={`choose-exceeds-${zoneQuestionBlock.trackingId}`}
+                  label="Choose exceeds count"
+                  body="Number to choose exceeds the number of alternatives in this group"
+                />
+              )}
+            </span>
           </div>
           {alternatives && alternatives.length > 0 && (
             <div
@@ -220,27 +265,38 @@ export function TreeQuestionBlockNode({
             const sharedTags = getSharedTags(alternatives, questionMetadata);
             if (sharedTags.length === 0) return null;
             return (
-              <div className="d-flex flex-wrap gap-1 mt-1">
+              <div className="d-flex flex-wrap align-items-center gap-1 mt-1">
                 {sharedTags.map((tag) => (
                   <span key={tag.name} className={`badge color-${tag.color}`}>
                     {tag.name}
                   </span>
                 ))}
+                <OverlayTrigger
+                  placement="top"
+                  tooltip={{
+                    props: { id: `shared-tags-${zoneQuestionBlock.trackingId}` },
+                    body: 'Tags shared across all alternatives',
+                  }}
+                >
+                  <button
+                    type="button"
+                    className="btn btn-xs btn-ghost p-0"
+                    aria-label="Tags shared across all alternatives"
+                  >
+                    <i className="bi bi-question-circle text-muted" aria-hidden="true" />
+                  </button>
+                </OverlayTrigger>
               </div>
             );
           })}
         </div>
         {run(() => {
           if (!alternatives || alternatives.length === 0) return null;
-          const topics = alternatives
-            .map((alt) => (alt.id ? questionMetadata[alt.id]?.topic : null))
-            .filter(Boolean);
-          if (topics.length !== alternatives.length) return null;
-          const first = topics[0]!;
-          if (!topics.every((t) => t!.name === first.name)) return null;
+          const topic = getSharedTopic(alternatives, questionMetadata);
+          if (!topic) return null;
           return (
             <div className="ms-2 me-2">
-              <span className={`badge color-${first.color}`}>{first.name}</span>
+              <span className={`badge color-${topic.color}`}>{topic.name}</span>
             </div>
           );
         })}
@@ -269,15 +325,14 @@ export function TreeQuestionBlockNode({
 
       {/* Alternatives */}
       {!isCollapsed && alternativeCount === 0 && editMode && (
-        <div className="text-muted fst-italic border-bottom py-2" style={{ paddingLeft: '3.5rem' }}>
+        <div className="text-muted fst-italic border-bottom py-2" style={{ paddingLeft: '4.5rem' }}>
           No alternatives yet. Use "Add alternative" to add questions.
         </div>
       )}
       {!isCollapsed && (
         <SortableContext items={alternativeIds} strategy={verticalListSortingStrategy}>
-          {alternatives?.map((alternative) => {
-            const altQuestionData =
-              (alternative.id ? questionMetadata[alternative.id] : null) ?? null;
+          {alternatives?.map((alternative, altIndex) => {
+            const altQuestionData = questionMetadata[alternative.id] ?? null;
             const isAltSelected =
               selectedItem?.type === 'alternative' &&
               selectedItem.questionTrackingId === zoneQuestionBlock.trackingId &&
@@ -289,6 +344,8 @@ export function TreeQuestionBlockNode({
                 alternative={alternative}
                 zoneQuestionBlock={zoneQuestionBlock}
                 questionData={altQuestionData}
+                questionNumber={questionNumber}
+                alternativeNumber={altIndex + 1}
                 state={state}
                 isSelected={isAltSelected}
                 onClick={() =>
@@ -312,6 +369,32 @@ export function TreeQuestionBlockNode({
             );
           })}
         </SortableContext>
+      )}
+      {!isCollapsed && isMergeOver && (
+        <div
+          className="tree-row d-flex align-items-center py-1 border-bottom"
+          style={{ paddingLeft: '4.5rem', paddingRight: '1.5rem', opacity: 0.5 }}
+        >
+          {editMode && (
+            <span className="me-2" style={{ visibility: 'hidden' }}>
+              <i className="bi bi-grip-vertical" aria-hidden="true" />
+            </span>
+          )}
+          <div className="flex-grow-1" style={{ minWidth: 0 }}>
+            <div className="text-truncate">
+              {run(() => {
+                const activeQid = active?.data.current?.qid;
+                if (!activeQid) return null;
+                const qData = questionMetadata[activeQid];
+                return questionHasTitle(qData ?? null) ? (
+                  qData!.question.title
+                ) : (
+                  <span className="font-monospace">{activeQid}</span>
+                );
+              })}
+            </div>
+          </div>
+        </div>
       )}
       {!isCollapsed && editMode && (
         <div className="border-bottom py-2" style={{ paddingLeft: '4.5rem' }}>

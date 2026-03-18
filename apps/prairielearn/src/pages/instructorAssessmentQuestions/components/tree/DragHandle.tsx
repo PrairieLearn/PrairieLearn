@@ -26,7 +26,11 @@ export function DragHandle({
       onClick={(e) => e.stopPropagation()}
       onKeyDown={(e) => {
         listeners.onKeyDown(e);
-        if (e.key === 'Enter' || e.key === ' ') {
+        // Stop propagation to prevent the parent accordion from toggling,
+        // but only when NOT actively dragging. During an active drag,
+        // dnd-kit's KeyboardSensor listens at the document level and needs
+        // events to bubble up for arrow key movement and Space/Enter to drop.
+        if ((e.key === 'Enter' || e.key === ' ') && !attributes?.['aria-pressed']) {
           e.stopPropagation();
         }
       }}

@@ -178,7 +178,6 @@ describe('computeChangeTracking', () => {
         questions: [
           makeQuestion({
             trackingId: questionId,
-            id: 'q1',
             alternatives: [makeAlternative({ trackingId: altId, id: 'alt1' })],
           }),
         ],

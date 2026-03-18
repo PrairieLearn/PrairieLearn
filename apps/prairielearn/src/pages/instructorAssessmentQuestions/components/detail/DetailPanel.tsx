@@ -1,12 +1,13 @@
-import type { StaffAssessmentQuestionRow } from '../../../../lib/assessment-question.shared.js';
-import type {
-  CourseQuestionForPicker,
-  DetailActions,
-  DetailState,
-  SelectedItem,
-  ZoneAssessmentForm,
+import type { EditorQuestionMetadata } from '../../../../lib/assessment-question.shared.js';
+import {
+  type CourseQuestionForPicker,
+  type DetailActions,
+  type DetailState,
+  type SelectedItem,
+  type ZoneAssessmentForm,
+  assertStandaloneQuestion,
 } from '../../types.js';
-import { findQuestionByTrackingId } from '../../utils/useAssessmentEditor.js';
+import { findQuestionByTrackingId } from '../../utils/zoneLookup.js';
 
 import { AltGroupDetailPanel } from './AltGroupDetailPanel.js';
 import { QuestionDetailPanel } from './QuestionDetailPanel.js';
@@ -30,7 +31,7 @@ export function DetailPanel({
 }: {
   selectedItem: SelectedItem;
   zones: ZoneAssessmentForm[];
-  questionMetadata: Partial<Record<string, StaffAssessmentQuestionRow>>;
+  questionMetadata: Partial<Record<string, EditorQuestionMetadata>>;
   state: DetailState;
   actions: DetailActions;
   courseQuestions: CourseQuestionForPicker[];
@@ -65,6 +66,7 @@ export function DetailPanel({
           state={state}
           onUpdate={actions.onUpdateZone}
           onDelete={actions.onDeleteZone}
+          onFormValidChange={actions.onFormValidChange}
         />
       );
     }
@@ -73,19 +75,21 @@ export function DetailPanel({
       const result = findQuestionByTrackingId(zones, selectedItem.questionTrackingId);
       if (!result) throw new Error(`Question not found: ${selectedItem.questionTrackingId}`);
       const { question, zone } = result;
-      const questionData = (question.id ? questionMetadata[question.id] : null) ?? null;
+      assertStandaloneQuestion(question);
+      const questionData = questionMetadata[question.id] ?? null;
       return (
         <QuestionDetailPanel
           key={question.trackingId}
           question={question}
           zone={zone}
-          questionData={questionData ?? null}
+          questionData={questionData}
           idPrefix={`question-${question.trackingId}`}
           state={state}
           onUpdate={actions.onUpdateQuestion}
           onDelete={actions.onDeleteQuestion}
           onPickQuestion={actions.onPickQuestion}
           onResetButtonClick={actions.onResetButtonClick}
+          onFormValidChange={actions.onFormValidChange}
         />
       );
     }
@@ -103,20 +107,21 @@ export function DetailPanel({
       if (!alternative) {
         throw new Error(`Alternative not found: ${selectedItem.alternativeTrackingId}`);
       }
-      const altData = (alternative.id ? questionMetadata[alternative.id] : null) ?? null;
+      const altData = questionMetadata[alternative.id] ?? null;
       return (
         <QuestionDetailPanel
           key={alternative.trackingId}
           question={alternative}
           zoneQuestionBlock={block}
           zone={zone}
-          questionData={altData ?? null}
+          questionData={altData}
           idPrefix={`alt-${alternative.trackingId}`}
           state={state}
           onUpdate={actions.onUpdateQuestion}
           onDelete={actions.onDeleteQuestion}
           onPickQuestion={actions.onPickQuestion}
           onResetButtonClick={actions.onResetButtonClick}
+          onFormValidChange={actions.onFormValidChange}
         />
       );
     }
@@ -137,6 +142,7 @@ export function DetailPanel({
           state={state}
           onUpdate={actions.onUpdateQuestion}
           onDelete={(trackingId) => actions.onDeleteQuestion(trackingId, '')}
+          onFormValidChange={actions.onFormValidChange}
         />
       );
     }

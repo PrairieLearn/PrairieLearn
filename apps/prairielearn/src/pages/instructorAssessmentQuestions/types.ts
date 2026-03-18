@@ -1,12 +1,18 @@
 import type { Dispatch } from 'react';
-import { z } from 'zod';
 
-import type { StaffAssessmentQuestionRow } from '../../lib/assessment-question.shared.js';
-import type { EnumAssessmentType } from '../../lib/db-types.js';
-import {
-  QuestionAlternativeJsonSchema,
-  ZoneAssessmentJsonSchema,
-  ZoneQuestionBlockJsonSchema,
+import type { EditorQuestionMetadata } from '../../lib/assessment-question.shared.js';
+import type {
+  Assessment,
+  AssessmentSet,
+  EnumAssessmentType,
+  Question,
+  Tag,
+  Topic,
+} from '../../lib/db-types.js';
+import type {
+  QuestionAlternativeJsonInput,
+  ZoneAssessmentJsonInput,
+  ZoneQuestionBlockJsonInput,
 } from '../../schemas/infoAssessment.js';
 
 import type { AssessmentAdvancedDefaults } from './utils/formHelpers.js';
@@ -24,48 +30,79 @@ export interface ChangeTrackingResult {
  * Branded UUID type for stable drag-and-drop identity.
  * Using a branded type prevents accidental confusion with question IDs (QIDs).
  */
-export const TrackingIdSchema = z.string().uuid().brand<'TrackingId'>();
-export type TrackingId = z.infer<typeof TrackingIdSchema>;
+export type TrackingId = string & { __brand: 'TrackingId' };
 
 /**
  * Form version of QuestionAlternativeJson - adds trackingId for stable drag-and-drop identity.
  */
-export const QuestionAlternativeFormSchema = QuestionAlternativeJsonSchema.extend({
-  trackingId: TrackingIdSchema,
-});
-export type QuestionAlternativeForm = z.infer<typeof QuestionAlternativeFormSchema>;
+export type QuestionAlternativeForm = QuestionAlternativeJsonInput & {
+  trackingId: TrackingId;
+};
 
 /**
- * Form version of ZoneQuestionBlockJson - adds trackingId, updates alternatives type.
+ * Shared fields across both question block variants.
+ * Excludes the discriminating `id` and `alternatives` properties.
  */
-export const ZoneQuestionBlockFormSchema = ZoneQuestionBlockJsonSchema.omit({
-  alternatives: true,
-}).extend({
-  trackingId: TrackingIdSchema,
-  alternatives: z.array(QuestionAlternativeFormSchema).min(1).optional(),
-});
-export type ZoneQuestionBlockForm = z.infer<typeof ZoneQuestionBlockFormSchema>;
+type ZoneQuestionBlockFormBase = Omit<ZoneQuestionBlockJsonInput, 'id' | 'alternatives'> & {
+  trackingId: TrackingId;
+};
+
+/**
+ * A standalone question block — has a QID, no alternatives.
+ */
+export type StandaloneQuestionBlockForm = ZoneQuestionBlockFormBase & {
+  id: string;
+  alternatives?: undefined;
+};
+
+/**
+ * An alternative group — has alternatives, no direct QID.
+ */
+export type AltGroupBlockForm = ZoneQuestionBlockFormBase & {
+  id?: undefined;
+  alternatives: QuestionAlternativeForm[];
+};
+
+/**
+ * A question block is either a standalone question or an alternative group.
+ * Discriminate via `q.alternatives != null` (alt group) or `q.id != null` (single question).
+ */
+export type ZoneQuestionBlockForm = StandaloneQuestionBlockForm | AltGroupBlockForm;
+
+/**
+ * A question (standalone or alternative) that is known to have a QID.
+ * Used by components that only render individual questions, never alt groups.
+ */
+export type QuestionWithId = StandaloneQuestionBlockForm | QuestionAlternativeForm;
+
+/**
+ * Asserts that a question block is a standalone question (not an alternative group).
+ */
+export function assertStandaloneQuestion(
+  q: ZoneQuestionBlockForm,
+): asserts q is StandaloneQuestionBlockForm {
+  if (!q.id) throw new Error('Expected a standalone question block, not an alternative group');
+}
 
 /**
  * Form version of ZoneAssessmentJson - adds trackingId, updates questions type.
  */
-export const ZoneAssessmentFormSchema = ZoneAssessmentJsonSchema.omit({ questions: true }).extend({
-  trackingId: TrackingIdSchema,
-  questions: z.array(ZoneQuestionBlockFormSchema),
-});
-export type ZoneAssessmentForm = z.infer<typeof ZoneAssessmentFormSchema>;
+export type ZoneAssessmentForm = Omit<ZoneAssessmentJsonInput, 'questions'> & {
+  trackingId: TrackingId;
+  questions: ZoneQuestionBlockForm[];
+};
 
 /**
  * Assessment data for the question picker, including fields needed for grouping.
  */
 export interface AssessmentForPicker {
-  assessment_id: string;
+  assessment_id: Assessment['id'];
   label: string;
-  color: string;
-  assessment_set_abbreviation?: string;
-  assessment_set_name?: string;
-  assessment_set_color?: string;
-  assessment_number?: string;
+  color: AssessmentSet['color'];
+  assessment_set_abbreviation?: AssessmentSet['abbreviation'];
+  assessment_set_name?: AssessmentSet['name'];
+  assessment_set_color?: AssessmentSet['color'];
+  assessment_number?: Assessment['number'];
 }
 
 /**
@@ -73,11 +110,12 @@ export interface AssessmentForPicker {
  * Only includes fields needed for display and selection.
  */
 export interface CourseQuestionForPicker {
-  id: string;
+  id: Question['id'];
   qid: string;
-  title: string;
-  topic: { id: string; name: string; color: string };
-  tags: { id: string; name: string; color: string }[] | null;
+  title: Question['title'];
+  grading_method: Question['grading_method'];
+  topic: Pick<Topic, 'id' | 'name' | 'color'>;
+  tags: Pick<Tag, 'id' | 'name' | 'color'>[] | null;
   assessments: AssessmentForPicker[] | null;
 }
 
@@ -87,11 +125,13 @@ export interface CourseQuestionForPicker {
  */
 export interface EditorState {
   zones: ZoneAssessmentForm[];
-  questionMetadata: Partial<Record<string, StaffAssessmentQuestionRow>>;
+  questionMetadata: Partial<Record<string, EditorQuestionMetadata>>;
   /** Tracks which alternative groups are collapsed by their trackingId */
   collapsedGroups: Set<string>;
   /** Tracks which zones are collapsed by their trackingId */
   collapsedZones: Set<string>;
+  /** The currently selected item in the split-pane editor */
+  selectedItem: SelectedItem;
 }
 
 /**
@@ -103,8 +143,14 @@ export type EditorAction =
   | {
       type: 'ADD_QUESTION';
       zoneTrackingId: string;
-      question: ZoneQuestionBlockForm;
-      questionData?: StaffAssessmentQuestionRow;
+      question: StandaloneQuestionBlockForm;
+      questionData: EditorQuestionMetadata;
+    }
+  | {
+      type: 'ADD_QUESTION';
+      zoneTrackingId: string;
+      question: AltGroupBlockForm;
+      questionData?: undefined;
     }
   | {
       type: 'UPDATE_QUESTION';
@@ -155,7 +201,7 @@ export type EditorAction =
       type: 'UPDATE_QUESTION_METADATA';
       questionId: string;
       oldQuestionId?: string;
-      questionData: StaffAssessmentQuestionRow;
+      questionData: EditorQuestionMetadata;
     }
   | {
       type: 'TOGGLE_GROUP_COLLAPSE';
@@ -172,7 +218,7 @@ export type EditorAction =
       type: 'ADD_ALTERNATIVE';
       altGroupTrackingId: string;
       alternative: QuestionAlternativeForm;
-      questionData?: StaffAssessmentQuestionRow;
+      questionData?: EditorQuestionMetadata;
     }
   | {
       type: 'REORDER_ALTERNATIVE';
@@ -196,6 +242,20 @@ export type EditorAction =
       beforeAlternativeTrackingId: string | null;
     }
   | { type: 'REMOVE_QUESTION_BY_QID'; qid: string }
+  | { type: 'SET_SELECTED_ITEM'; selectedItem: SelectedItem }
+  | {
+      /**
+       * Compound action dispatched after fetching question data in the picker.
+       * The reducer reads the latest zones and selectedItem to atomically
+       * apply all mutations (remove duplicates, update metadata, add/change
+       * the question, update selection).
+       */
+      type: 'QUESTION_PICKED';
+      qid: string;
+      metadata: EditorQuestionMetadata;
+      /** The selectedItem at the time the pick was initiated; used to detect stale picks. */
+      expectedSelectedItem: SelectedItem;
+    }
   // Stubbed for future PR - will implement history tracking
   | { type: 'UNDO' }
   | { type: 'REDO' };
@@ -244,7 +304,7 @@ export interface TreeState {
   editMode: boolean;
   viewType: ViewType;
   selectedItem: SelectedItem;
-  questionMetadata: Partial<Record<string, StaffAssessmentQuestionRow>>;
+  questionMetadata: Partial<Record<string, EditorQuestionMetadata>>;
   collapsedGroups: Set<string>;
   collapsedZones: Set<string>;
   changeTracking: ChangeTrackingResult;
@@ -258,6 +318,7 @@ export interface TreeState {
  */
 export interface DetailState {
   editMode: boolean;
+  hasCourseInstancePermissionEdit: boolean;
   assessmentType: EnumAssessmentType;
   constantQuestionValue: boolean;
   assessmentDefaults: AssessmentAdvancedDefaults;
@@ -287,4 +348,5 @@ export interface DetailActions {
   onPickQuestion: (currentSelection: SelectedItem) => void;
   onRemoveQuestionByQid: (qid: string) => void;
   onResetButtonClick: (assessmentQuestionId: string) => void;
+  onFormValidChange: (isValid: boolean) => void;
 }

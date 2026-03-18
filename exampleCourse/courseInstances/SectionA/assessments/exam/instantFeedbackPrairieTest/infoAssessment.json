@@ -9,15 +9,17 @@
     { "examUuid": "2b26b075-4c91-4fa0-8f1e-219326f4d046", "credit": 100 }
   ],
   "zones": [
-    { "questions": [{ "id": "template/number-input/random-prompt", "points": [3, 1] }] },
-    { "questions": [{ "id": "template/matrix-component-input/random-graph", "points": [3, 1] }] },
-    { "questions": [{ "id": "demo/annotated/engCircuit", "points": [5, 4, 3, 2, 1] }] },
+    { "questions": [{ "id": "template/number-input/random-prompt", "autoPoints": [3, 1] }] },
+    {
+      "questions": [{ "id": "template/matrix-component-input/random-graph", "autoPoints": [3, 1] }]
+    },
+    { "questions": [{ "id": "demo/annotated/engCircuit", "autoPoints": [5, 4, 3, 2, 1] }] },
     {
       "questions": [
         {
           "comment": "Similar questions",
           "numberChoose": 1,
-          "points": [4, 2, 1],
+          "autoPoints": [4, 2, 1],
           "alternatives": [
             { "id": "demo/annotated/mathOuterProduct" },
             { "id": "demo/annotated/mathMatrixMult" },

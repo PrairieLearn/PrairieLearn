@@ -2,6 +2,8 @@ import { type ZodSchema, z } from 'zod';
 
 import { CommentJsonSchema } from './comment.js';
 
+export const EnumAssessmentToolSchema = z.enum(['calculator']);
+
 function uniqueArray<T extends ZodSchema>(schema: T) {
   return z.array(schema).refine((items) => new Set(items).size === items.length, {
     message: 'All items must be unique, no duplicate values allowed',
@@ -174,18 +176,14 @@ export const AssessmentAccessRuleJsonSchema = z
     'An access rule that permits people to access this assessment. All restrictions in the rule must be satisfied for the rule to allow access.',
   );
 
-export const PointsSingleJsonSchema = z
-  .number()
-  .gte(0)
-  .default(0)
-  .describe('A single point value.');
+export const PointsSingleJsonSchema = z.number().gte(0).describe('A single point value.');
 
 export const PointsListJsonSchema = z
   .array(PointsSingleJsonSchema)
   .min(1)
   .describe('An array of point values.');
 
-export const PointsJsonSchema = z.union([PointsSingleJsonSchema, PointsListJsonSchema]);
+export const PointsJsonSchema = z.union([PointsSingleJsonSchema.default(0), PointsListJsonSchema]);
 
 export const QuestionIdJsonSchema = z
   .string()
@@ -200,6 +198,12 @@ export const AdvanceScorePercJsonSchema = z
   .gte(0)
   .lte(100)
   .describe('Minimum score percentage to unlock access to subsequent questions.');
+
+export const QuestionPreferencesJsonSchema = z.record(
+  z.string().min(1),
+  z.union([z.string(), z.number(), z.boolean()]),
+);
+export type QuestionPreferences = z.infer<typeof QuestionPreferencesJsonSchema>;
 
 const QuestionPointsJsonSchema = z.object({
   points: PointsJsonSchema.optional(),
@@ -235,9 +239,13 @@ export const QuestionAlternativeJsonSchema = QuestionPointsJsonSchema.extend({
       'Whether to allow real-time grading for this question alternative. If not specified, inherits from the question level.',
     )
     .optional(),
+  preferences: QuestionPreferencesJsonSchema.describe(
+    'The preferences passed to the question to customize its behavior.',
+  ).optional(),
 });
 
 export type QuestionAlternativeJson = z.infer<typeof QuestionAlternativeJsonSchema>;
+export type QuestionAlternativeJsonInput = z.input<typeof QuestionAlternativeJsonSchema>;
 
 // 'Block' is used to signify that this can either be a single question, or
 // a container for multiple question alternatives.
@@ -293,9 +301,18 @@ export const ZoneQuestionBlockJsonSchema = QuestionPointsJsonSchema.extend({
     )
     .optional()
     .default([]),
+  preferences: QuestionPreferencesJsonSchema.describe(
+    'The preferences passed to the question to customize its behavior.',
+  ).optional(),
 });
 
 export type ZoneQuestionBlockJson = z.infer<typeof ZoneQuestionBlockJsonSchema>;
+export type ZoneQuestionBlockJsonInput = z.input<typeof ZoneQuestionBlockJsonSchema>;
+
+const AssessmentToolJsonSchema = z.object({
+  enabled: z.boolean().describe('Whether this assessment tool is enabled.'),
+  // leave room for additional keys in the future
+});
 
 export const ZoneAssessmentJsonSchema = z.object({
   title: z
@@ -362,6 +379,10 @@ export const ZoneAssessmentJsonSchema = z.object({
     )
     .optional()
     .default([]),
+  tools: z
+    .record(EnumAssessmentToolSchema, AssessmentToolJsonSchema)
+    .describe('Tools available for questions in this zone. Overrides assessment-level tools.')
+    .optional(),
 });
 
 export type ZoneAssessmentJson = z.infer<typeof ZoneAssessmentJsonSchema>;
@@ -546,6 +567,10 @@ export const AssessmentJsonSchema = z
       )
       .optional()
       .default(false),
+    tools: z
+      .record(EnumAssessmentToolSchema, AssessmentToolJsonSchema)
+      .describe('Configuration for assessment tools.')
+      .optional(),
   })
   .strict()
   .describe('Configuration data for an assessment.');

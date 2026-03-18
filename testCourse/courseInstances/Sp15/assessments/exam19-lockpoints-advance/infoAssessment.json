@@ -10,15 +10,15 @@
     {
       "title": "Sequential prerequisite",
       "questions": [
-        { "id": "partialCredit1", "points": 1, "advanceScorePerc": 100 },
-        { "id": "partialCredit2", "points": 1 },
-        { "id": "partialCredit3", "points": 1, "advanceScorePerc": 100 }
+        { "id": "partialCredit1", "autoPoints": 1, "advanceScorePerc": 100 },
+        { "id": "partialCredit2", "autoPoints": 1 },
+        { "id": "partialCredit3", "autoPoints": 1, "advanceScorePerc": 100 }
       ]
     },
     {
       "title": "Lockpoint zone",
       "lockpoint": true,
-      "questions": [{ "id": "addNumbers", "points": 1 }]
+      "questions": [{ "id": "addNumbers", "autoPoints": 1 }]
     }
   ]
 }
