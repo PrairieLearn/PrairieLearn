@@ -1,0 +1,9 @@
+{
+  "uuid": "b2c3d4e5-f6a7-8901-bcde-f12345678901",
+  "type": "Homework",
+  "title": "Sharing Test Homework",
+  "set": "Homework",
+  "number": "1",
+  "allowAccess": [{ "credit": 100 }],
+  "zones": [{ "questions": [{ "id": "@test-sharing-name/questionPreferences", "autoPoints": 1 }] }]
+}

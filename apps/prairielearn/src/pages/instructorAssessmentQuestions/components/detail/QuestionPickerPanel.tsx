@@ -290,7 +290,8 @@ export function QuestionPickerPanel({
               const result = sharedQuestionQuery.data;
               const qid = `@${result.course.sharing_name}/${result.question.qid}`;
               const hasTitle = !!result.question.title?.trim();
-              const isDisabled = !!isPickingQuestion;
+              const isCurrentChange = currentChangeQid === qid;
+              const isDisabled = (disabledQids.has(qid) && !isCurrentChange) || !!isPickingQuestion;
               return (
                 <div
                   role={isDisabled ? undefined : 'button'}
@@ -345,20 +346,19 @@ export function QuestionPickerPanel({
             sharedQuestionQuery.error.data?.code === 'NOT_FOUND' ? (
               <div className="d-flex flex-column align-items-center justify-content-center text-muted py-5 text-center px-3">
                 <i className="bi bi-search display-6 mb-2" aria-hidden="true" />
-                <p className="mb-1">No shared question found.</p>
+                <p className="mb-1">Shared question not found.</p>
               </div>
             ) : (
               <div className="d-flex flex-column align-items-center justify-content-center text-danger py-5 text-center px-3">
                 <i className="bi bi-exclamation-circle display-6 mb-2" aria-hidden="true" />
-                <p className="mb-1">Failed to search for shared question. Try again.</p>
+                <p className="mb-1">Failed to search for a shared question. Try again.</p>
               </div>
             )
           ) : (
             <div className="d-flex flex-column align-items-center justify-content-center text-muted py-5 text-center px-3">
               <i className="bi bi-share display-6 mb-2" aria-hidden="true" />
-              <p className="mb-1">
-                Type <code>@sharing-name/qid</code> to find a shared question.
-              </p>
+              <p className="mb-1">To add a shared question, enter its exact reference:</p>
+              <code>@&lt;sharing-name&gt;/&lt;qid&gt;</code>
             </div>
           )
         ) : sortedQuestions.length === 0 ? (
