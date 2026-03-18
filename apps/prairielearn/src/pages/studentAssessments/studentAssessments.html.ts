@@ -111,9 +111,11 @@ export function StudentAssessments({
                     <td class="text-center align-middle">
                       ${row.list_before_release
                         ? html`<span class="text-muted">Opens soon</span>`
-                        : row.assessment_instance_open !== false
-                          ? row.credit_date_string
-                          : 'Assessment closed.'}
+                        : row.credit_date_string === 'None'
+                          ? ''
+                          : row.assessment_instance_open !== false
+                            ? row.credit_date_string
+                            : 'Assessment closed.'}
                       ${row.modern_access_control
                         ? ''
                         : StudentAccessRulesPopover({

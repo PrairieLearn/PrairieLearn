@@ -104,18 +104,17 @@ describe('resolveAccessControl', () => {
 
     it('does not grant staff override for None/None roles', () => {
       const result = resolveAccessControl(baseInput);
-      // Not staff, but main rule with no date control should still authorize
       expect(result.authorized).toBe(true);
       expect(result.creditDateString).not.toBe('100% (Staff override)');
     });
   });
 
   describe('main rule only, no date control', () => {
-    it('always authorizes with 100% credit', () => {
+    it('returns 0 credit when no dateControl configured', () => {
       const result = resolveAccessControl(baseInput);
       expect(result.authorized).toBe(true);
-      expect(result.credit).toBe(100);
-      expect(result.active).toBe(true);
+      expect(result.credit).toBe(0);
+      expect(result.active).toBe(false);
     });
 
     it('returns unauthorized when no main rule exists', () => {
@@ -293,7 +292,7 @@ describe('resolveAccessControl', () => {
       expect(result.listBeforeRelease).toBe(false);
     });
 
-    it('handles dateControl with enabled=false as no date control', () => {
+    it('handles dateControl with enabled=false as no date control (0 credit)', () => {
       const result = resolveAccessControl({
         ...baseInput,
         rules: [
@@ -306,8 +305,8 @@ describe('resolveAccessControl', () => {
         ],
         date: new Date('2025-03-15T12:00:00Z'),
       });
-      expect(result.credit).toBe(100);
-      expect(result.active).toBe(true);
+      expect(result.credit).toBe(0);
+      expect(result.active).toBe(false);
     });
   });
 
@@ -1003,9 +1002,292 @@ describe('resolveAccessControl', () => {
       expect(result.creditDateString).toBe('None');
     });
 
-    it('shows just credit percentage when no deadline', () => {
+    it('shows "None" when no dateControl configured', () => {
       const result = resolveAccessControl(baseInput);
-      expect(result.creditDateString).toBe('100%');
+      expect(result.creditDateString).toBe('None');
+    });
+  });
+
+  describe('timeline edge cases from cascading', () => {
+    it('blocks access when due date is before release date', () => {
+      const result = resolveAccessControl({
+        ...baseInput,
+        rules: [
+          makeMainRule({
+            dateControl: {
+              releaseDate: '2025-03-15T00:00:00Z',
+              dueDate: '2025-04-01T00:00:00Z',
+            },
+          }),
+          makeOverrideRule(
+            1,
+            { dateControl: { dueDate: '2025-03-01T00:00:00Z' } },
+            { targetType: 'enrollment', enrollmentIds: ['enroll-1'] },
+          ),
+        ],
+        date: new Date('2025-03-20T00:00:00Z'),
+      });
+      expect(result.credit).toBe(0);
+      expect(result.active).toBe(false);
+    });
+
+    it('ignores early deadline that falls before release date', () => {
+      const result = resolveAccessControl({
+        ...baseInput,
+        rules: [
+          makeMainRule({
+            dateControl: {
+              releaseDate: '2025-03-03T00:00:00Z',
+              earlyDeadlines: [
+                { date: '2025-03-01T00:00:00Z', credit: 120 },
+                { date: '2025-03-10T00:00:00Z', credit: 110 },
+              ],
+              dueDate: '2025-03-20T00:00:00Z',
+            },
+          }),
+        ],
+        date: new Date('2025-03-05T00:00:00Z'),
+      });
+      expect(result.credit).toBe(110);
+    });
+
+    it('ignores late deadline that falls before release date', () => {
+      const result = resolveAccessControl({
+        ...baseInput,
+        rules: [
+          makeMainRule({
+            dateControl: {
+              releaseDate: '2025-03-15T00:00:00Z',
+              dueDate: '2025-03-20T00:00:00Z',
+              lateDeadlines: [
+                { date: '2025-03-10T00:00:00Z', credit: 80 },
+                { date: '2025-03-25T00:00:00Z', credit: 50 },
+              ],
+            },
+          }),
+        ],
+        date: new Date('2025-03-22T00:00:00Z'),
+      });
+      expect(result.credit).toBe(50);
+    });
+
+    it('handles early deadline after due date by using due date', () => {
+      const result = resolveAccessControl({
+        ...baseInput,
+        rules: [
+          makeMainRule({
+            dateControl: {
+              releaseDate: '2025-01-01T00:00:00Z',
+              earlyDeadlines: [
+                { date: '2025-03-01T00:00:00Z', credit: 120 },
+                { date: '2025-03-02T00:00:00Z', credit: 110 },
+              ],
+              dueDate: '2025-03-15T00:00:00Z',
+            },
+          }),
+          makeOverrideRule(
+            1,
+            { dateControl: { dueDate: '2025-02-15T00:00:00Z' } },
+            { targetType: 'enrollment', enrollmentIds: ['enroll-1'] },
+          ),
+        ],
+        date: new Date('2025-01-15T00:00:00Z'),
+      });
+      // Early deadlines are after due date (Feb 15), so ignored
+      expect(result.credit).toBe(100);
+    });
+
+    it('ignores late deadline that falls before due date', () => {
+      const result = resolveAccessControl({
+        ...baseInput,
+        rules: [
+          makeMainRule({
+            dateControl: {
+              releaseDate: '2025-03-01T00:00:00Z',
+              dueDate: '2025-03-20T00:00:00Z',
+              lateDeadlines: [{ date: '2025-03-25T00:00:00Z', credit: 80 }],
+            },
+          }),
+          makeOverrideRule(
+            1,
+            { dateControl: { dueDate: '2025-03-30T00:00:00Z' } },
+            { targetType: 'enrollment', enrollmentIds: ['enroll-1'] },
+          ),
+        ],
+        date: new Date('2025-04-01T00:00:00Z'),
+      });
+      // Late deadline March 25 < due date March 30, so ignored → past due date → 0
+      expect(result.credit).toBe(0);
+    });
+
+    it('ignores afterLastDeadline when there are no deadlines', () => {
+      const result = resolveAccessControl({
+        ...baseInput,
+        rules: [
+          makeMainRule({
+            dateControl: {
+              releaseDate: '2025-03-01T00:00:00Z',
+              afterLastDeadline: { credit: 50, allowSubmissions: true },
+            },
+          }),
+        ],
+        date: new Date('2025-03-15T00:00:00Z'),
+      });
+      expect(result.credit).toBe(0);
+      expect(result.active).toBe(false);
+    });
+  });
+
+  describe('no date control defaults', () => {
+    it('returns 0 credit when dateControl is absent', () => {
+      const result = resolveAccessControl({
+        ...baseInput,
+        rules: [makeMainRule({})],
+      });
+      expect(result.credit).toBe(0);
+      expect(result.active).toBe(false);
+    });
+
+    it('returns 0 credit when dateControl.enabled is false', () => {
+      const result = resolveAccessControl({
+        ...baseInput,
+        rules: [
+          makeMainRule({
+            dateControl: {
+              enabled: false,
+              dueDate: '2025-05-01T00:00:00Z',
+            },
+          }),
+        ],
+      });
+      expect(result.credit).toBe(0);
+      expect(result.active).toBe(false);
+    });
+
+    it('returns 0 credit when dateControl enabled with no deadlines and no due date', () => {
+      const result = resolveAccessControl({
+        ...baseInput,
+        rules: [
+          makeMainRule({
+            dateControl: {
+              enabled: true,
+              releaseDate: '2025-03-01T00:00:00Z',
+            },
+          }),
+        ],
+        date: new Date('2025-03-15T00:00:00Z'),
+      });
+      expect(result.credit).toBe(0);
+      expect(result.active).toBe(false);
+    });
+  });
+
+  describe('enabled on main rule', () => {
+    it('returns unauthorized when main rule enabled is false', () => {
+      const result = resolveAccessControl({
+        ...baseInput,
+        rules: [makeMainRule({ enabled: false })],
+      });
+      expect(result.authorized).toBe(false);
+      expect(result.credit).toBe(0);
+    });
+  });
+
+  describe('afterComplete visibility edge cases', () => {
+    it('ignores showQuestionsAgainDate when hideQuestions is false', () => {
+      const result = resolveAccessControl({
+        ...baseInput,
+        rules: [
+          makeMainRule({
+            dateControl: { dueDate: '2025-03-10T00:00:00Z' },
+            afterComplete: {
+              hideQuestions: false,
+              showQuestionsAgainDate: '2025-06-01T00:00:00Z',
+            },
+          }),
+        ],
+      });
+      expect(result.showClosedAssessment).toBe(true);
+    });
+
+    it('ignores hideQuestionsAgainDate when hideQuestions is false', () => {
+      const result = resolveAccessControl({
+        ...baseInput,
+        rules: [
+          makeMainRule({
+            dateControl: { dueDate: '2025-03-10T00:00:00Z' },
+            afterComplete: {
+              hideQuestions: false,
+              hideQuestionsAgainDate: '2025-01-01T00:00:00Z',
+            },
+          }),
+        ],
+      });
+      expect(result.showClosedAssessment).toBe(true);
+    });
+
+    it('ignores showScoreAgainDate when hideScore is false', () => {
+      const result = resolveAccessControl({
+        ...baseInput,
+        rules: [
+          makeMainRule({
+            dateControl: { dueDate: '2025-03-10T00:00:00Z' },
+            afterComplete: {
+              hideScore: false,
+              showScoreAgainDate: '2025-06-01T00:00:00Z',
+            },
+          }),
+        ],
+      });
+      expect(result.showClosedAssessmentScore).toBe(true);
+    });
+
+    it('ignores hideQuestionsAgainDate when showQuestionsAgainDate is not set', () => {
+      const result = resolveAccessControl({
+        ...baseInput,
+        rules: [
+          makeMainRule({
+            dateControl: { dueDate: '2025-03-10T00:00:00Z' },
+            afterComplete: {
+              hideQuestions: true,
+              hideQuestionsAgainDate: '2025-04-01T00:00:00Z',
+            },
+          }),
+        ],
+        date: new Date('2025-05-01T00:00:00Z'),
+      });
+      // hideQuestions: true, no showQuestionsAgainDate → stays hidden
+      expect(result.showClosedAssessment).toBe(false);
+    });
+  });
+
+  describe('listBeforeRelease edge cases', () => {
+    it('lists assessment normally when listBeforeRelease set without dateControl', () => {
+      const result = resolveAccessControl({
+        ...baseInput,
+        rules: [makeMainRule({ listBeforeRelease: true })],
+      });
+      // No dateControl → no release date concept → assessment just listed
+      expect(result.authorized).toBe(true);
+      // Not "before release" since there's no release
+      expect(result.listBeforeRelease).toBe(false);
+    });
+
+    it('lists assessment normally when dateControl has no releaseDate', () => {
+      const result = resolveAccessControl({
+        ...baseInput,
+        rules: [
+          makeMainRule({
+            listBeforeRelease: true,
+            dateControl: {
+              dueDate: '2025-04-01T00:00:00Z',
+            },
+          }),
+        ],
+      });
+      // dateControl exists but no releaseDate → always available
+      expect(result.authorized).toBe(true);
+      expect(result.listBeforeRelease).toBe(false);
     });
   });
 });
@@ -1146,21 +1428,21 @@ describe('cascadeOverrides', () => {
 });
 
 describe('computeCredit', () => {
-  it('returns 100% when dateControl is undefined', () => {
+  it('returns 0% when dateControl is undefined', () => {
     const result = computeCredit(undefined, new Date(), {}, 'Public');
-    expect(result.credit).toBe(100);
-    expect(result.active).toBe(true);
+    expect(result.credit).toBe(0);
+    expect(result.active).toBe(false);
   });
 
-  it('returns 100% when dateControl.enabled is false', () => {
+  it('returns 0% when dateControl.enabled is false', () => {
     const result = computeCredit(
       { enabled: false, dueDate: '2020-01-01T00:00:00Z' },
       new Date('2025-01-01T00:00:00Z'),
       {},
       'Public',
     );
-    expect(result.credit).toBe(100);
-    expect(result.active).toBe(true);
+    expect(result.credit).toBe(0);
+    expect(result.active).toBe(false);
   });
 
   it('returns password from dateControl', () => {

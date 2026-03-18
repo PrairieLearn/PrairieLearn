@@ -192,7 +192,6 @@ interface CreditResult {
   nextDeadlineDate: Date | null;
   password: string | null;
   timeLimitMin: number | null;
-  listBeforeRelease: boolean;
 }
 
 export function computeCredit(
@@ -203,29 +202,39 @@ export function computeCredit(
 ): CreditResult {
   if (!dateControl || dateControl.enabled === false) {
     return {
-      credit: 100,
-      active: true,
+      credit: 0,
+      active: false,
       beforeRelease: false,
       nextDeadlineDate: null,
       password: null,
       timeLimitMin: null,
-      listBeforeRelease: false,
     };
   }
 
-  if (dateControl.releaseDate) {
-    const releaseDate = new Date(dateControl.releaseDate);
-    if (date < releaseDate) {
-      return {
-        credit: 0,
-        active: false,
-        beforeRelease: true,
-        nextDeadlineDate: releaseDate,
-        password: null,
-        timeLimitMin: null,
-        listBeforeRelease: effectiveRule.listBeforeRelease ?? false,
-      };
-    }
+  const releaseDate = dateControl.releaseDate ? new Date(dateControl.releaseDate) : null;
+  const dueDate = dateControl.dueDate ? new Date(dateControl.dueDate) : null;
+
+  if (releaseDate && date < releaseDate) {
+    return {
+      credit: 0,
+      active: false,
+      beforeRelease: true,
+      nextDeadlineDate: releaseDate,
+      password: null,
+      timeLimitMin: null,
+    };
+  }
+
+  // If due date is before release date, access is blocked.
+  if (dueDate && releaseDate && dueDate <= releaseDate) {
+    return {
+      credit: 0,
+      active: false,
+      beforeRelease: false,
+      nextDeadlineDate: null,
+      password: null,
+      timeLimitMin: null,
+    };
   }
 
   // Build timeline segments: each entry is [deadline, creditBefore]
@@ -234,31 +243,39 @@ export function computeCredit(
 
   if (dateControl.earlyDeadlines) {
     for (const entry of dateControl.earlyDeadlines) {
-      timeline.push({ date: new Date(entry.date), credit: entry.credit });
+      const entryDate = new Date(entry.date);
+      // Filter out early deadlines before release date or after/at due date.
+      if (releaseDate && entryDate <= releaseDate) continue;
+      if (dueDate && entryDate >= dueDate) continue;
+      timeline.push({ date: entryDate, credit: entry.credit });
     }
   }
 
-  if (dateControl.dueDate) {
-    timeline.push({ date: new Date(dateControl.dueDate), credit: 100 });
+  if (dueDate) {
+    timeline.push({ date: dueDate, credit: 100 });
   }
 
   if (dateControl.lateDeadlines) {
     for (const entry of dateControl.lateDeadlines) {
-      timeline.push({ date: new Date(entry.date), credit: entry.credit });
+      const entryDate = new Date(entry.date);
+      // Filter out late deadlines before release date or before/at due date.
+      if (releaseDate && entryDate <= releaseDate) continue;
+      if (dueDate && entryDate <= dueDate) continue;
+      timeline.push({ date: entryDate, credit: entry.credit });
     }
   }
 
   timeline.sort((a, b) => a.date.getTime() - b.date.getTime());
 
+  // No due date and no deadlines = no credit granted.
   if (timeline.length === 0) {
     return {
-      credit: 100,
-      active: true,
+      credit: 0,
+      active: false,
       beforeRelease: false,
       nextDeadlineDate: null,
-      password: dateControl.password ?? null,
-      timeLimitMin: computeTimeLimitMin(dateControl.durationMinutes, null, date, authzMode),
-      listBeforeRelease: false,
+      password: null,
+      timeLimitMin: null,
     };
   }
 
@@ -281,12 +298,13 @@ export function computeCredit(
           date,
           authzMode,
         ),
-        listBeforeRelease: false,
       };
     }
   }
 
-  // We are past the last deadline
+  // We are past the last deadline.
+  // If there are no deadlines after filtering (only due date was present and we're past it),
+  // or if afterLastDeadline is not configured, use defaults.
   const afterLast = dateControl.afterLastDeadline;
   const credit = afterLast?.credit ?? 0;
   const active = credit > 0 && afterLast?.allowSubmissions !== false;
@@ -297,7 +315,6 @@ export function computeCredit(
     nextDeadlineDate: null,
     password: dateControl.password ?? null,
     timeLimitMin: computeTimeLimitMin(dateControl.durationMinutes, null, date, authzMode),
-    listBeforeRelease: false,
   };
 }
 
@@ -452,9 +469,6 @@ export function resolveAccessControl(
   }
   const effectiveRule = mergeRules(mainRuleInput.rule, cascadedOverride);
 
-  if (effectiveRule.enabled === false) {
-    return { ...UNAUTHORIZED_RESULT };
-  }
   const creditResult = computeCredit(effectiveRule.dateControl, date, effectiveRule, authzMode);
 
   const prairieTestExamUuids = mainRuleInput.prairietestExamUuids;
@@ -496,11 +510,20 @@ export function resolveAccessControl(
     date,
   );
 
+  // listBeforeRelease is a policy flag on the rule, not derived from credit.
+  // It's only meaningful when we're before the release date.
+  const listBeforeRelease =
+    creditResult.beforeRelease && (effectiveRule.listBeforeRelease ?? false);
+
   // If the assessment is before its release date and listBeforeRelease is false,
   // the student should not see or access it at all.
-  if (creditResult.beforeRelease && !creditResult.listBeforeRelease) {
+  if (creditResult.beforeRelease && !listBeforeRelease) {
     return { ...UNAUTHORIZED_RESULT };
   }
+
+  // Derive authorized from enabled flag.
+  // enabled: false means the assessment is disabled — no access.
+  const authorized = effectiveRule.enabled !== false;
 
   const creditDateString = formatCreditDateString(
     creditResult.credit,
@@ -508,6 +531,14 @@ export function resolveAccessControl(
     creditResult.nextDeadlineDate,
     displayTimezone,
   );
+
+  if (!authorized) {
+    return {
+      ...UNAUTHORIZED_RESULT,
+      showClosedAssessment,
+      showClosedAssessmentScore,
+    };
+  }
 
   return {
     authorized: true,
@@ -519,6 +550,6 @@ export function resolveAccessControl(
     showClosedAssessment,
     showClosedAssessmentScore,
     examAccessEnd,
-    listBeforeRelease: creditResult.listBeforeRelease,
+    listBeforeRelease,
   };
 }

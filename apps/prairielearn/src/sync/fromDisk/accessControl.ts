@@ -123,6 +123,12 @@ export async function syncAccessControl(
   const preparedRules: PreparedRule[] = [];
   for (let i = 0; i < accessControlRules.length; i++) {
     const rule = accessControlRules[i];
+
+    if (i > 0 && rule.enabled !== undefined) {
+      throw new Error(
+        `'enabled' cannot be set on override rules (rule ${i}). It can only be set on the base rule (rule 0).`,
+      );
+    }
     const dateControl = rule.dateControl ?? {};
     const afterComplete = rule.afterComplete ?? {};
     const afterLastDeadline = dateControl.afterLastDeadline ?? {};
