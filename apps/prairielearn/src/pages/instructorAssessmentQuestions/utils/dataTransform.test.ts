@@ -535,7 +535,7 @@ describe('prepareZonesForEditor normalization', () => {
     expect(group.alternatives![1].manualPoints).toBeUndefined();
 
     // Info banner flag should be set for mixed alt groups
-    expect((group as any).pointsDistributedInfoBanner).toBe(true);
+    expect(group.pointsDistributedInfoBanner).toBe(true);
   });
 
   it('falls through to autoPoints when alt group has no metadata', () => {
