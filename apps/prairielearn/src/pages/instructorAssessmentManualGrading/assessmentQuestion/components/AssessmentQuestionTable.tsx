@@ -86,6 +86,7 @@ interface AssessmentQuestionTableProps {
   instanceQuestionGroups: StaffInstanceQuestionGroup[];
   courseStaff: StaffUser[];
   aiGradingStats: AiGradingGeneralStats | null;
+  disableRubricEditor?: boolean;
   initialOngoingJobSequenceTokens: Record<string, string> | null;
   availableAiGradingProviders: EnumAiGradingProvider[];
   onSetGroupInfoModalState: (modalState: GroupInfoModalState) => void;
@@ -179,6 +180,7 @@ export function AssessmentQuestionTable({
   course,
   courseInstance,
   aiGradingStats,
+  disableRubricEditor = false,
   initialOngoingJobSequenceTokens,
   availableAiGradingProviders,
   onSetGroupInfoModalState,
@@ -656,6 +658,7 @@ export function AssessmentQuestionTable({
           csrfToken={csrfToken}
           aiGradingStats={aiGradingStats}
           aiRubricItemDiffs={aiRubricItemDiffs}
+          disableRubricEditing={disableRubricEditor}
           context={{
             course_short_name: course.short_name,
             course_instance_short_name: courseInstance.short_name,

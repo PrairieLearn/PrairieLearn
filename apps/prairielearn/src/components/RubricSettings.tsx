@@ -88,6 +88,7 @@ declare global {
 
 export function RubricSettings({
   hasCourseInstancePermissionEdit,
+  disableRubricEditing = false,
   assessmentQuestion,
   rubricData,
   csrfToken,
@@ -96,6 +97,7 @@ export function RubricSettings({
   aiRubricItemDiffs = {},
 }: {
   hasCourseInstancePermissionEdit: boolean;
+  disableRubricEditing?: boolean;
   assessmentQuestion: StaffAssessmentQuestion;
   rubricData: RubricData | null;
   csrfToken: string;
@@ -103,6 +105,8 @@ export function RubricSettings({
   context: Record<string, any>;
   aiRubricItemDiffs?: Partial<Record<number, AiRubricItemDiff>>;
 }) {
+  const hasPendingAiProposals = Object.keys(aiRubricItemDiffs).length > 0;
+  const canEditRubric = hasCourseInstancePermissionEdit && !disableRubricEditing;
   const showAiGradingStats = Boolean(aiGradingStats);
   const rubricItemsWithDisagreementCount = aiGradingStats?.rubric_stats ?? {};
   const rubricItemDataMerged =
@@ -140,7 +144,6 @@ export function RubricSettings({
     rubricData?.rubric.grader_guidelines ?? '',
   );
 
-  const [draggedIdx, setDraggedIdx] = useState<number | null>(null);
   const [settingsError, setSettingsError] = useState<string | null>(null);
   const [showImportModal, setShowImportModal] = useState<boolean>(false);
   const [importModalWarning, setImportModalWarning] = useState<string | null>(null);
@@ -252,41 +255,6 @@ export function RubricSettings({
 
   const deleteRow = (idx: number) => {
     setRubricItems((prev) => prev.filter((_, i) => i !== idx));
-  };
-
-  /**
-   * Update current dragged row index
-   * @param idx The current index of the row that is being dragged
-   */
-  function onDragStart(idx: number) {
-    setDraggedIdx(idx);
-  }
-
-  function onDragOver(overIdx: number) {
-    if (draggedIdx === null || draggedIdx === overIdx) return;
-    setRubricItems((items) => {
-      const newItems = [...items];
-      [newItems[draggedIdx], newItems[overIdx]] = [newItems[overIdx], newItems[draggedIdx]];
-      return newItems;
-    });
-    setDraggedIdx(overIdx);
-  }
-
-  const moveUp = (idx: number) => {
-    if (idx === 0) return;
-    setRubricItems((prev) => {
-      const next = prev.slice();
-      [next[idx - 1], next[idx]] = [next[idx], next[idx - 1]];
-      return next;
-    });
-  };
-  const moveDown = (idx: number) => {
-    setRubricItems((prev) => {
-      if (idx >= prev.length - 1) return prev;
-      const next = prev.slice();
-      [next[idx + 1], next[idx]] = [next[idx], next[idx + 1]];
-      return next;
-    });
   };
 
   const updateRubricItem = (idx: number, patch: Partial<RubricItemData['rubric_item']>) => {
@@ -635,7 +603,7 @@ export function RubricSettings({
                         className="form-check-input"
                         type="radio"
                         checked={!replaceAutoPoints}
-                        disabled={!hasCourseInstancePermissionEdit}
+                        disabled={!canEditRubric}
                         onChange={() => {
                           setReplaceAutoPoints(false);
                           if (startingPoints !== 0) {
@@ -665,7 +633,7 @@ export function RubricSettings({
                         className="form-check-input"
                         type="radio"
                         checked={replaceAutoPoints}
-                        disabled={!hasCourseInstancePermissionEdit}
+                        disabled={!canEditRubric}
                         onChange={() => {
                           setReplaceAutoPoints(true);
                           if (startingPoints !== 0) {
@@ -701,7 +669,7 @@ export function RubricSettings({
                     className="form-check-input"
                     type="radio"
                     checked={startingPoints === 0}
-                    disabled={!hasCourseInstancePermissionEdit}
+                    disabled={!canEditRubric}
                     onChange={() => setStartingPoints(0)}
                   />
                   Positive grading (start at zero, add points)
@@ -713,7 +681,7 @@ export function RubricSettings({
                     className="form-check-input"
                     type="radio"
                     checked={startingPoints !== 0}
-                    disabled={!hasCourseInstancePermissionEdit}
+                    disabled={!canEditRubric}
                     onChange={() =>
                       setStartingPoints(
                         replaceAutoPoints
@@ -760,7 +728,7 @@ export function RubricSettings({
                       className="form-control"
                       type="number"
                       value={minPoints ?? ''}
-                      disabled={!hasCourseInstancePermissionEdit}
+                      disabled={!canEditRubric}
                       onInput={({ currentTarget }) =>
                         setMinPoints(
                           currentTarget.value.length > 0 ? Number(currentTarget.value) : null,
@@ -786,7 +754,7 @@ export function RubricSettings({
                       className="form-control"
                       type="number"
                       value={maxExtraPoints}
-                      disabled={!hasCourseInstancePermissionEdit}
+                      disabled={!canEditRubric}
                       onInput={(e: any) => setMaxExtraPoints(Number(e.target.value))}
                     />
                   </label>
@@ -803,7 +771,7 @@ export function RubricSettings({
                 className="form-control"
                 rows={5}
                 value={graderGuidelines}
-                disabled={!hasCourseInstancePermissionEdit}
+                disabled={!canEditRubric}
                 onChange={(e) => setGraderGuidelines(e.currentTarget.value)}
               />
             </div>
@@ -815,7 +783,7 @@ export function RubricSettings({
           <table className="table table-sm border-bottom mb-3" aria-label="Rubric items">
             <thead>
               <tr className="table-light fw-bold">
-                <td style={{ width: '1px' }} />
+                <td style={{ width: '1px' }}>#</td>
                 <td>Points</td>
                 <td>Description</td>
                 <td>Detailed explanation</td>
@@ -829,17 +797,15 @@ export function RubricSettings({
                 rubricItems.map((it, idx) => (
                   <RubricRow
                     key={it.rubric_item.id ?? `row-${idx}`}
+                    displayNumber={idx + 1}
                     item={it}
                     aiRubricItemDiff={aiRubricItemDiffs[idx]}
                     showAiGradingStats={showAiGradingStats}
                     submissionCount={aiGradingStats?.submission_rubric_count ?? 0}
-                    hasCourseInstancePermissionEdit={hasCourseInstancePermissionEdit}
+                    hasCourseInstancePermissionEdit={canEditRubric}
+                    hasPendingAiProposals={hasPendingAiProposals}
                     deleteRow={() => deleteRow(idx)}
-                    moveUp={() => moveUp(idx)}
-                    moveDown={() => moveDown(idx)}
                     updateRubricItem={(patch) => updateRubricItem(idx, patch)}
-                    onDragStart={() => onDragStart(idx)}
-                    onDragOver={() => onDragOver(idx)}
                   />
                 ))
               ) : (
@@ -881,7 +847,12 @@ export function RubricSettings({
         ))}
         <div className="mb-3 gap-1 d-flex">
           {hasCourseInstancePermissionEdit && (
-            <button type="button" className="btn btn-sm btn-secondary" onClick={addRubricItemRow}>
+            <button
+              type="button"
+              className="btn btn-sm btn-secondary"
+              disabled={!canEditRubric}
+              onClick={addRubricItemRow}
+            >
               Add item
             </button>
           )}
@@ -893,6 +864,7 @@ export function RubricSettings({
               id="import-rubric-button"
               type="button"
               className="btn btn-sm btn-primary"
+              disabled={!canEditRubric}
               onClick={() => setShowImportModal(!showImportModal)}
             >
               <i className="fas fa-upload" aria-hidden="true" /> Import rubric
@@ -954,6 +926,7 @@ export function RubricSettings({
             <button
               type="button"
               className="btn btn-sm btn-ghost"
+              disabled={!canEditRubric}
               data-bs-toggle="tooltip"
               data-bs-placement="bottom"
               data-bs-title="Imported rubric point values will be scaled to match the maximum points for this question."
@@ -1014,7 +987,7 @@ export function RubricSettings({
               className="form-check-input"
               type="checkbox"
               checked={tagForGrading}
-              disabled={!hasCourseInstancePermissionEdit}
+              disabled={!canEditRubric}
               onChange={() => setTagForGrading(!tagForGrading)}
             />
             Require all graded submissions to be manually graded/reviewed
@@ -1036,17 +1009,32 @@ export function RubricSettings({
               <button
                 type="button"
                 className="btn btn-link btn-sm me-auto text-danger"
+                disabled={!canEditRubric}
                 onClick={() => submitSettings(false)}
               >
                 Delete rubric
               </button>
             )}
-            <button type="button" className="btn btn-secondary me-2" onClick={onCancel}>
-              Discard changes
-            </button>
-            <button type="button" className="btn btn-primary" onClick={() => submitSettings(true)}>
-              Save
-            </button>
+            {!hasPendingAiProposals && (
+              <>
+                <button
+                  type="button"
+                  className="btn btn-secondary me-2"
+                  disabled={!canEditRubric}
+                  onClick={onCancel}
+                >
+                  Discard changes
+                </button>
+                <button
+                  type="button"
+                  className="btn btn-primary"
+                  disabled={!canEditRubric}
+                  onClick={() => submitSettings(true)}
+                >
+                  Save
+                </button>
+              </>
+            )}
           </div>
         )}
       </div>
@@ -1055,31 +1043,28 @@ export function RubricSettings({
 }
 
 function RubricRow({
+  displayNumber,
   item,
   aiRubricItemDiff,
   showAiGradingStats,
   submissionCount,
+  hasPendingAiProposals,
   deleteRow,
-  moveUp,
-  moveDown,
   updateRubricItem,
-  onDragStart,
-  onDragOver,
   hasCourseInstancePermissionEdit,
 }: {
+  displayNumber: number;
   item: RubricItemData;
   aiRubricItemDiff?: AiRubricItemDiff;
   showAiGradingStats: boolean;
   submissionCount: number;
+  hasPendingAiProposals: boolean;
   deleteRow: () => void;
-  moveUp: () => void;
-  moveDown: () => void;
   updateRubricItem: (patch: Partial<RubricItemData['rubric_item']>) => void;
-  onDragStart: () => void;
-  onDragOver: () => void;
   hasCourseInstancePermissionEdit: boolean;
 }) {
   const isRemoved = aiRubricItemDiff?.status === 'removed';
+  const disableDeleteAndReorder = !hasCourseInstancePermissionEdit || hasPendingAiProposals;
   const isUpdatedField = (field: AiRubricItemDiffField) =>
     aiRubricItemDiff?.status === 'updated' && aiRubricItemDiff.changed_fields.includes(field);
   const rowClassName =
@@ -1088,78 +1073,52 @@ function RubricRow({
       : aiRubricItemDiff?.status === 'updated'
         ? 'table-primary'
         : aiRubricItemDiff?.status === 'removed'
-          ? 'table-danger'
+          ? 'table-danger opacity-75'
           : undefined;
+  const changeTagClassName =
+    aiRubricItemDiff?.status === 'new'
+      ? 'text-bg-success'
+      : aiRubricItemDiff?.status === 'updated'
+        ? 'text-bg-primary'
+        : aiRubricItemDiff?.status === 'removed'
+          ? 'text-bg-danger'
+          : null;
+  const changeTagText =
+    aiRubricItemDiff?.status === 'new'
+      ? 'Add'
+      : aiRubricItemDiff?.status === 'updated'
+        ? 'Update'
+        : aiRubricItemDiff?.status === 'removed'
+          ? 'Delete'
+          : null;
 
   return (
-    <tr
-      className={rowClassName}
-      onDragOver={(e) => {
-        if (!hasCourseInstancePermissionEdit) return;
-        e.preventDefault();
-        onDragOver();
-      }}
-    >
+    <tr className={rowClassName}>
       <td className="text-nowrap align-middle">
-        {hasCourseInstancePermissionEdit && (
+        <div className="d-flex align-items-center gap-1 mb-1">
+          <span className="badge text-bg-light border">{displayNumber}</span>
+          {changeTagText && <span className={`badge ${changeTagClassName}`}>{changeTagText}</span>}
+        </div>
+        {hasCourseInstancePermissionEdit && !hasPendingAiProposals && (
           <>
             <button
               type="button"
               className="btn btn-sm btn-ghost"
-              style={{ cursor: 'grab' }}
-              aria-label="Drag to reorder"
-              draggable={!isRemoved}
-              disabled={isRemoved}
-              onDragStart={onDragStart}
+              aria-label="Reordering disabled"
+              disabled={true}
             >
               <i className="fas fa-arrows-up-down" aria-hidden="true" />
-            </button>
-            <button type="button" className="visually-hidden" aria-label="Move up" onClick={moveUp}>
-              <i className="fas fa-arrow-up" aria-hidden="true" />
-            </button>
-            <button
-              type="button"
-              className="visually-hidden"
-              aria-label="Move down"
-              onClick={moveDown}
-            >
-              <i className="fas fa-arrow-down" aria-hidden="true" />
             </button>
             <button
               type="button"
               className="btn btn-sm btn-ghost text-danger"
               aria-label="Delete"
-              disabled={isRemoved}
+              disabled={isRemoved || disableDeleteAndReorder}
               onClick={deleteRow}
             >
               <i className="fas fa-trash text-danger" aria-hidden="true" />
             </button>
           </>
-        )}
-        {aiRubricItemDiff && (
-          <div className="small mt-1">
-            {aiRubricItemDiff.status === 'new' && (
-              <span className="fw-semibold">New item (pending).</span>
-            )}
-            {aiRubricItemDiff.status === 'updated' && (
-              <span className="fw-semibold">
-                Updated fields (pending):{' '}
-                {aiRubricItemDiff.changed_fields
-                  .map((field) => field.replaceAll('_', ' '))
-                  .join(', ')}
-                .
-              </span>
-            )}
-            {aiRubricItemDiff.status === 'removed' && (
-              <span className="fw-semibold">Removed item (pending).</span>
-            )}
-            {aiRubricItemDiff.description && (
-              <>
-                {' '}
-                <span>{aiRubricItemDiff.description}</span>
-              </>
-            )}
-          </div>
         )}
         {item.rubric_item.id && (
           <>
@@ -1200,7 +1159,7 @@ function RubricRow({
       <td className="align-middle">
         <input
           type="number"
-          className={`form-control ${isUpdatedField('points') ? 'bg-primary-subtle border-primary' : ''}`}
+          className={`form-control ${isUpdatedField('points') ? 'bg-primary-subtle border-primary border-2' : ''}`}
           style={{ width: '5rem' }}
           step="any"
           value={item.rubric_item.points ?? ''}
@@ -1220,7 +1179,7 @@ function RubricRow({
       <td className="align-middle">
         <input
           type="text"
-          className={`form-control ${isUpdatedField('description') ? 'bg-primary-subtle border-primary' : ''}`}
+          className={`form-control ${isUpdatedField('description') ? 'bg-primary-subtle border-primary border-2' : ''}`}
           maxLength={100}
           style={{ minWidth: '15rem' }}
           value={item.rubric_item.description}
@@ -1233,7 +1192,7 @@ function RubricRow({
 
       <td className="align-middle">
         <textarea
-          className={`form-control ${isUpdatedField('explanation') ? 'bg-primary-subtle border-primary' : ''}`}
+          className={`form-control ${isUpdatedField('explanation') ? 'bg-primary-subtle border-primary border-2' : ''}`}
           /**
            * In one of the previous versions, explanation wasn't displayed correctly
            * when used this way. We fixed it by making the textarea uncontrolled and
@@ -1252,7 +1211,7 @@ function RubricRow({
 
       <td className="align-middle">
         <textarea
-          className={`form-control ${isUpdatedField('grader_note') ? 'bg-primary-subtle border-primary' : ''}`}
+          className={`form-control ${isUpdatedField('grader_note') ? 'bg-primary-subtle border-primary border-2' : ''}`}
           value={item.rubric_item.grader_note ?? ''}
           maxLength={10000}
           style={{ minWidth: '15rem' }}

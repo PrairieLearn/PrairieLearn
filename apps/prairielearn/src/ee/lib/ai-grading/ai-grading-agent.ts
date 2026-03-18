@@ -29,6 +29,7 @@ export const AI_GRADING_AGENT_INSTRUCTIONS =
   '(1) get_initialization_context, then (2) set_rubric. ' +
   'Do not call set_rubric before get_initialization_context. ' +
   'After rubric generation is complete, when the user asks for rubric edits, first call get_rubric_items and then call propose_* rubric tools to stage concrete changes. ' +
+  'When referring to rubric item numbers, use the display_number values returned by get_rubric_items. ' +
   'Do not only describe edits in text; use tools to stage them. ' +
   'Questions are randomized, so rubric items must be robust across random variants and must not hardcode numeric values. ' +
   'Rubric items must be clear for consistent grading by different graders. ' +
@@ -85,6 +86,7 @@ const ProposeAddRubricItemInputSchema = z.object({
 const ProposeEditRubricItemInputSchema = z.object({
   target_rubric_item_id: IdSchema.optional(),
   target_rubric_item_number: z.coerce.number().optional(),
+  target_display_number: z.coerce.number().optional(),
   points: z.coerce.number().optional(),
   description: z.string().max(100).optional(),
   explanation: z.string().nullable().optional(),
@@ -95,6 +97,13 @@ const ProposeEditRubricItemInputSchema = z.object({
 const ProposeDeleteRubricItemInputSchema = z.object({
   target_rubric_item_id: IdSchema.optional(),
   target_rubric_item_number: z.coerce.number().optional(),
+  target_display_number: z.coerce.number().optional(),
+});
+
+const ProposeUndoRubricItemChangeInputSchema = z.object({
+  target_rubric_item_id: IdSchema.optional(),
+  target_rubric_item_number: z.coerce.number().optional(),
+  target_display_number: z.coerce.number().optional(),
 });
 
 const RubricDiffSchema = z.object({
@@ -115,6 +124,7 @@ const GetRubricItemsOutputSchema = z.object({
   rubric_items: z.array(
     z.object({
       row_index: z.number(),
+      display_number: z.number(),
       rubric_item_id: z.string(),
       rubric_item_number: z.number(),
       points: z.number(),
@@ -219,6 +229,7 @@ function userRequestedRubricChanges(messages: ModelMessage[]): boolean {
     'rewrite',
     'split',
     'reorder',
+    'undo',
   ].some((keyword) => text.includes(keyword));
 }
 
@@ -302,7 +313,7 @@ async function getInitializationContext({
   return {
     question_html: questionHtml,
     answer_html: answerHtml,
-    sample_submissions: [], //sampleSubmissions,
+    sample_submissions: sampleSubmissions,
     current_rubric: rubricData,
   };
 }
@@ -342,13 +353,21 @@ function findRubricItemIndex({
   rubricData,
   targetRubricItemId,
   targetRubricItemNumber,
+  targetDisplayNumber,
 }: {
   rubricData: RubricData;
   targetRubricItemId?: string;
   targetRubricItemNumber?: number;
+  targetDisplayNumber?: number;
 }): number {
   if (targetRubricItemId) {
     return rubricData.rubric_items.findIndex((item) => item.rubric_item.id === targetRubricItemId);
+  }
+  if (targetDisplayNumber != null && targetDisplayNumber > 0) {
+    const zeroBasedIndex = targetDisplayNumber - 1;
+    if (zeroBasedIndex >= 0 && zeroBasedIndex < rubricData.rubric_items.length) {
+      return zeroBasedIndex;
+    }
   }
   if (targetRubricItemNumber != null) {
     return rubricData.rubric_items.findIndex(
@@ -356,6 +375,30 @@ function findRubricItemIndex({
     );
   }
   return -1;
+}
+
+function removeRubricRowAndReindexDiffs({
+  rubricData,
+  rubricItemDiffs,
+  index,
+}: {
+  rubricData: RubricData;
+  rubricItemDiffs: Partial<Record<number, RubricItemDiff>>;
+  index: number;
+}) {
+  rubricData.rubric_items.splice(index, 1);
+  const nextDiffs: Partial<Record<number, RubricItemDiff>> = {};
+  for (const [rawIndex, diff] of Object.entries(rubricItemDiffs)) {
+    const currentIndex = Number(rawIndex);
+    if (!Number.isInteger(currentIndex) || diff == null) continue;
+    if (currentIndex === index) continue;
+    if (currentIndex > index) {
+      nextDiffs[currentIndex - 1] = diff;
+    } else {
+      nextDiffs[currentIndex] = diff;
+    }
+  }
+  return nextDiffs;
 }
 
 function createAiGradingAgent({
@@ -427,6 +470,7 @@ function createAiGradingAgent({
               'propose_add_rubric_item',
               'propose_edit_rubric_item',
               'propose_delete_rubric_item',
+              'propose_undo_rubric_item_change',
             ].includes(toolName),
           ),
         );
@@ -461,6 +505,7 @@ function createAiGradingAgent({
               'propose_add_rubric_item',
               'propose_edit_rubric_item',
               'propose_delete_rubric_item',
+              'propose_undo_rubric_item_change',
             ],
             toolChoice: 'required',
           };
@@ -472,6 +517,7 @@ function createAiGradingAgent({
             'propose_add_rubric_item',
             'propose_edit_rubric_item',
             'propose_delete_rubric_item',
+            'propose_undo_rubric_item_change',
           ],
           toolChoice: 'auto',
         };
@@ -571,6 +617,7 @@ function createAiGradingAgent({
               const diff = rubricItemDiffs[index];
               return {
                 row_index: index,
+                display_number: index + 1,
                 rubric_item_id: item.rubric_item.id,
                 rubric_item_number: item.rubric_item.number,
                 points: item.rubric_item.points,
@@ -649,6 +696,7 @@ function createAiGradingAgent({
             rubricData,
             targetRubricItemId: body.target_rubric_item_id,
             targetRubricItemNumber: body.target_rubric_item_number,
+            targetDisplayNumber: body.target_display_number,
           });
           if (itemIndex < 0) {
             throw new Error('Unable to find rubric item to edit.');
@@ -682,14 +730,27 @@ function createAiGradingAgent({
           }
 
           const priorDiff = rubricItemDiffs[itemIndex];
-          rubricItemDiffs[itemIndex] = {
-            status: priorDiff?.status === 'new' ? 'new' : 'updated',
-            changed_fields:
-              priorDiff?.status === 'new'
-                ? [...new Set([...priorDiff.changed_fields, ...changedFields])]
-                : changedFields,
-            description: 'Proposed by AI.',
-          };
+          if (priorDiff?.status === 'removed' && changedFields.length === 0) {
+            delete rubricItemDiffs[itemIndex];
+          } else if (priorDiff?.status === 'new') {
+            rubricItemDiffs[itemIndex] = {
+              status: 'new',
+              changed_fields: [...new Set([...priorDiff.changed_fields, ...changedFields])],
+              description: 'Proposed by AI.',
+            };
+          } else if (priorDiff?.status === 'updated') {
+            rubricItemDiffs[itemIndex] = {
+              status: 'updated',
+              changed_fields: [...new Set([...priorDiff.changed_fields, ...changedFields])],
+              description: 'Proposed by AI.',
+            };
+          } else if (changedFields.length > 0 || priorDiff?.status === 'removed') {
+            rubricItemDiffs[itemIndex] = {
+              status: 'updated',
+              changed_fields: changedFields,
+              description: 'Proposed by AI.',
+            };
+          }
           setWorkingProposalState({ rubricData, rubricItemDiffs });
 
           return {
@@ -712,9 +773,24 @@ function createAiGradingAgent({
             rubricData,
             targetRubricItemId: body.target_rubric_item_id,
             targetRubricItemNumber: body.target_rubric_item_number,
+            targetDisplayNumber: body.target_display_number,
           });
           if (itemIndex < 0) {
             throw new Error('Unable to find rubric item to delete.');
+          }
+
+          if (rubricItemDiffs[itemIndex]?.status === 'new') {
+            const reindexedDiffs = removeRubricRowAndReindexDiffs({
+              rubricData,
+              rubricItemDiffs,
+              index: itemIndex,
+            });
+            setWorkingProposalState({ rubricData, rubricItemDiffs: reindexedDiffs });
+            return {
+              message: 'Undid proposed new rubric item.',
+              proposed_rubric: rubricData,
+              proposed_rubric_item_diffs: stringifyRubricItemDiffs(reindexedDiffs),
+            };
           }
 
           rubricItemDiffs[itemIndex] = {
@@ -726,6 +802,54 @@ function createAiGradingAgent({
 
           return {
             message: 'Proposed removing a rubric item.',
+            proposed_rubric: rubricData,
+            proposed_rubric_item_diffs: stringifyRubricItemDiffs(rubricItemDiffs),
+          };
+        },
+      }),
+      propose_undo_rubric_item_change: tool({
+        description:
+          'Undo a previously proposed add/edit/delete change for a rubric item. This is temporary and does not save to the database.',
+        inputSchema: ProposeUndoRubricItemChangeInputSchema,
+        outputSchema: ProposalToolOutputSchema,
+        execute: async (body) => {
+          const rubricData = await getWorkingRubricData();
+          const rubricItemDiffs = getWorkingRubricDiffs();
+
+          const itemIndex = findRubricItemIndex({
+            rubricData,
+            targetRubricItemId: body.target_rubric_item_id,
+            targetRubricItemNumber: body.target_rubric_item_number,
+            targetDisplayNumber: body.target_display_number,
+          });
+          if (itemIndex < 0) {
+            throw new Error('Unable to find rubric item change to undo.');
+          }
+
+          const priorDiff = rubricItemDiffs[itemIndex];
+          if (!priorDiff) {
+            throw new Error('No pending change exists for this rubric item.');
+          }
+
+          if (priorDiff.status === 'new') {
+            const reindexedDiffs = removeRubricRowAndReindexDiffs({
+              rubricData,
+              rubricItemDiffs,
+              index: itemIndex,
+            });
+            setWorkingProposalState({ rubricData, rubricItemDiffs: reindexedDiffs });
+            return {
+              message: 'Undid proposed rubric item addition.',
+              proposed_rubric: rubricData,
+              proposed_rubric_item_diffs: stringifyRubricItemDiffs(reindexedDiffs),
+            };
+          }
+
+          delete rubricItemDiffs[itemIndex];
+          setWorkingProposalState({ rubricData, rubricItemDiffs });
+
+          return {
+            message: 'Undid proposed rubric item change.',
             proposed_rubric: rubricData,
             proposed_rubric_item_diffs: stringifyRubricItemDiffs(rubricItemDiffs),
           };
