@@ -198,11 +198,6 @@ function AdjustCreditsForm({
                 onChange={(e) => setAmountStr(e.target.value)}
               />
             </div>
-            {isAmountInvalid && (
-              <div id="amount-error" className="text-danger small mt-1">
-                Enter an amount between $0.01 and {formatMilliDollars(maxForAction * 1000)}.
-              </div>
-            )}
           </div>
           <div className="col-auto">
             <label className="form-label" htmlFor="credit_type">
@@ -227,6 +222,11 @@ function AdjustCreditsForm({
             </div>
           )}
         </div>
+        {isAmountInvalid && (
+          <div id="amount-error" className="text-danger small mt-1">
+            Enter an amount between $0.01 and {formatMilliDollars(maxForAction * 1000)}.
+          </div>
+        )}
       </form>
       {isSuccess && (
         <Alert
