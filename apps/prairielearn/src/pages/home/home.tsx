@@ -1,3 +1,4 @@
+import { filterSeries } from 'async';
 import { Router } from 'express';
 import asyncHandler from 'express-async-handler';
 import { z } from 'zod';
@@ -10,7 +11,10 @@ import { assertNever } from '@prairielearn/utils';
 
 import { PageLayout } from '../../components/PageLayout.js';
 import { redirectToTermsPageIfNeeded } from '../../ee/lib/terms.js';
-import { constructCourseOrInstanceContext } from '../../lib/authz-data.js';
+import {
+  checkCourseInstanceLegacyAccess,
+  constructCourseOrInstanceContext,
+} from '../../lib/authz-data.js';
 import { extractPageContext } from '../../lib/client/page-context.js';
 import { StaffInstitutionSchema } from '../../lib/client/safe-db-types.js';
 import { config } from '../../lib/config.js';
@@ -71,12 +75,18 @@ router.get(
       StudentHomePageCourseSchema,
     );
 
-    const studentCourses = allStudentCourses.filter((entry) => {
+    const studentCourses = await filterSeries(allStudentCourses, async (entry) => {
       // Filter out courses where user also has instructor access.
       if (instructorCourses.some((course) => idsEqual(course.id, entry.course_id))) return false;
 
-      // Legacy courses are already filtered by check_course_instance_access in SQL
-      if (!entry.course_instance.modern_publishing) return true;
+      // Legacy courses must be filtered using access rules
+      if (!entry.course_instance.modern_publishing) {
+        return await checkCourseInstanceLegacyAccess({
+          course_instance_id: entry.course_instance.id,
+          user_id: res.locals.authn_user.id,
+          req_date: res.locals.req_date,
+        });
+      }
 
       // For modern publishing courses, check access dates
       const startDate = entry.course_instance.publishing_start_date;

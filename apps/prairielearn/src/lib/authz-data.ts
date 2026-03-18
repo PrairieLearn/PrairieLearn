@@ -68,6 +68,22 @@ export const CourseOrInstanceOverridesSchema = z.object({
 });
 type CourseOrInstanceOverrides = z.infer<typeof CourseOrInstanceOverridesSchema>;
 
+export async function checkCourseInstanceLegacyAccess({
+  course_instance_id,
+  user_id,
+  req_date,
+}: {
+  course_instance_id: string;
+  user_id: string;
+  req_date: Date;
+}) {
+  return await sqldb.queryScalar(
+    sql.check_course_instance_legacy_access,
+    { course_instance_id, user_id, req_date },
+    z.boolean(),
+  );
+}
+
 /**
  * Checks if the user has access to the course instance. If the user is a student,
  * the course instance must be published to them.
@@ -252,11 +268,11 @@ export async function constructCourseOrInstanceContext({
                 req_date,
               );
             }
-            const has_student_access = await sqldb.callScalar(
-              'check_course_instance_access',
-              [course_instance_id, user.uid, user.institution_id, req_date],
-              z.boolean(),
-            );
+            const has_student_access = await checkCourseInstanceLegacyAccess({
+              course_instance_id: rawAuthzData.course_instance.id,
+              user_id: user.id,
+              req_date,
+            });
             return {
               has_student_access,
               has_student_access_with_enrollment:
