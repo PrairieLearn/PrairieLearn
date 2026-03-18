@@ -109,8 +109,8 @@ SELECT
 FROM
   course_instances AS ci
   JOIN courses AS c ON (c.id = ci.course_id)
-  JOIN institutions AS i ON (i.id = u.institution_id)
   JOIN users AS u ON (u.id = $user_id)
+  JOIN institutions AS i ON (i.id = u.institution_id)
   JOIN course_instance_access_rules AS ciar ON (ciar.course_instance_id = ci.id)
 WHERE
   ci.id = $course_instance_id;
