@@ -154,7 +154,7 @@ A question can support different unit systems by defining a preference:
 
 ```python title="server.py"
 import random
-
+import math
 
 def generate(data):
     if data["preferences"]["unit_system"] == "SI":
