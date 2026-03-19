@@ -2,9 +2,12 @@ import type { DraggableAttributes, DraggableSyntheticListeners } from '@dnd-kit/
 import clsx from 'clsx';
 import { type ReactElement, useId } from 'react';
 
+import { run } from '@prairielearn/run';
 import { OverlayTrigger } from '@prairielearn/ui';
 
+import { AssessmentQuestionNumber } from '../../../../components/AssessmentQuestions.js';
 import { CopyButton } from '../../../../components/CopyButton.js';
+import { IssueBadge } from '../../../../components/IssueBadge.js';
 import type { EditorQuestionMetadata } from '../../../../lib/assessment-question.shared.js';
 import { getQuestionUrl } from '../../../../lib/client/url.js';
 import type { EnumAssessmentType } from '../../../../lib/db-types.js';
@@ -176,6 +179,8 @@ export function TreeQuestionRow({
   zoneQuestionBlock,
   isAlternative,
   questionData,
+  questionNumber,
+  alternativeNumber,
   state,
   isSelected,
   draggableAttributes,
@@ -187,6 +192,8 @@ export function TreeQuestionRow({
   zoneQuestionBlock: ZoneQuestionBlockForm;
   isAlternative: boolean;
   questionData: EditorQuestionMetadata | null;
+  questionNumber: number;
+  alternativeNumber?: number;
   state: TreeState;
   isSelected: boolean;
   draggableAttributes: DraggableAttributes;
@@ -210,6 +217,21 @@ export function TreeQuestionRow({
       (question.maxAutoPoints ?? zoneQuestionBlock.maxAutoPoints) != null);
 
   const hasTitle = questionHasTitle(questionData);
+  const renderedTitle = run(() => {
+    const qid = <span className="font-monospace">{question.id}</span>;
+
+    if (!questionData) return qid;
+
+    return (
+      <>
+        <AssessmentQuestionNumber
+          questionNumber={questionNumber}
+          alternativeNumber={alternativeNumber}
+        />{' '}
+        {hasTitle ? questionData.question.title : qid}
+      </>
+    );
+  });
 
   return (
     <div
@@ -221,7 +243,10 @@ export function TreeQuestionRow({
       )}
       style={{
         paddingLeft: indent,
-        paddingRight: '0.5rem',
+        // Extra right padding prevents macOS overlay scrollbars
+        // from overlapping row content like the points badge.
+        // https://bugzilla.mozilla.org/show_bug.cgi?id=636564
+        paddingRight: '1.5rem',
         cursor: 'pointer',
         ...(hasManualGradingAutoPointsWarning && {
           borderLeft: '6px solid var(--bs-warning)',
@@ -245,37 +270,36 @@ export function TreeQuestionRow({
       />
       <div className="flex-grow-1" style={{ minWidth: 0 }}>
         <div className="text-truncate">
-          {questionData ? (
-            hasCoursePermissionPreview ? (
-              <>
-                <a
-                  href={getQuestionUrl({ courseInstanceId, questionId: questionData.question.id })}
-                  className="link-underline-opacity-0 link-underline-opacity-100-hover text-primary-emphasis"
+          {questionData && hasCoursePermissionPreview ? (
+            <>
+              <a
+                href={getQuestionUrl({ courseInstanceId, questionId: questionData.question.id })}
+                className="link-underline-opacity-0 link-underline-opacity-100-hover text-primary-emphasis"
+                onClick={(e) => e.stopPropagation()}
+              >
+                {renderedTitle}
+              </a>
+              {!hasTitle && (
+                <CopyButton
+                  text={question.id}
+                  tooltipId={`copy-qid-${question.id}`}
+                  ariaLabel="Copy QID"
+                  className="hover-show ms-1"
                   onClick={(e) => e.stopPropagation()}
-                >
-                  {hasTitle ? (
-                    questionData.question.title
-                  ) : (
-                    <span className="font-monospace">{question.id}</span>
-                  )}
-                </a>
-                {!hasTitle && (
-                  <CopyButton
-                    text={question.id}
-                    tooltipId={`copy-qid-${question.id}`}
-                    ariaLabel="Copy QID"
-                    className="hover-show ms-1"
-                    onClick={(e) => e.stopPropagation()}
-                  />
-                )}
-              </>
-            ) : hasTitle ? (
-              questionData.question.title
-            ) : (
-              <span className="font-monospace">{question.id}</span>
-            )
+                />
+              )}
+            </>
           ) : (
-            <span className="text-muted small font-monospace">{question.id}</span>
+            renderedTitle
+          )}
+          {questionData && (
+            <IssueBadge
+              count={questionData.open_issue_count}
+              urlPrefix={`/pl/course_instance/${courseInstanceId}/instructor`}
+              issueQid={questionData.question.qid}
+              className="ms-1"
+              onClick={(e) => e.stopPropagation()}
+            />
           )}
           {hasManualGradingAutoPointsWarning && (
             <WarningIndicator

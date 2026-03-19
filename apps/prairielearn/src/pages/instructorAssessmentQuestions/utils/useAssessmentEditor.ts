@@ -595,6 +595,15 @@ export function createEditorReducer(initialState: EditorState) {
         };
       }
 
+      case 'DISMISS_BANNER': {
+        const newDismissedBanners = new Set(state.dismissedBanners);
+        newDismissedBanners.add(action.trackingId);
+        return {
+          ...state,
+          dismissedBanners: newDismissedBanners,
+        };
+      }
+
       case 'EXPAND_ALL_GROUPS': {
         return {
           ...state,
@@ -874,6 +883,7 @@ export function useAssessmentEditor(initialState: EditorState) {
     questionMetadata: state.questionMetadata,
     collapsedGroups: state.collapsedGroups,
     collapsedZones: state.collapsedZones,
+    dismissedBanners: state.dismissedBanners,
     selectedItem: state.selectedItem,
     canUndo: false,
     canRedo: false,

@@ -32,11 +32,13 @@ import { makeDraggableStyle } from './dragUtils.js';
 export function TreeZoneNode({
   zone,
   zoneNumber,
+  questionStartNumber,
   state,
   actions,
 }: {
   zone: ZoneAssessmentForm;
   zoneNumber: number;
+  questionStartNumber: number;
   state: TreeState;
   actions: TreeActions;
 }) {
@@ -93,12 +95,16 @@ export function TreeZoneNode({
           role="button"
           tabIndex={0}
           className={clsx(
-            'tree-row d-flex align-items-center px-2 py-2 border-bottom user-select-none',
+            'tree-row d-flex align-items-center ps-2 py-2 border-bottom user-select-none text-body',
             isSelected
               ? 'tree-row-selected bg-body-secondary'
               : 'bg-body-secondary list-group-item-action',
           )}
           style={{
+            // Extra right padding prevents macOS overlay scrollbars
+            // from overlapping row content.
+            // https://bugzilla.mozilla.org/show_bug.cgi?id=636564
+            paddingRight: '1.5rem',
             cursor: 'pointer',
             position: 'sticky',
             top: 0,
@@ -176,7 +182,7 @@ export function TreeZoneNode({
                 placement="top"
                 tooltip={{
                   props: { id: `${badgeTooltipId}-choose` },
-                  body: 'Number of questions to randomly select from this zone',
+                  body: `${zone.numberChoose} question${zone.numberChoose !== 1 ? 's are' : ' is'} randomly selected from this zone, spread across groups as evenly as possible.`,
                 }}
               >
                 <button type="button" className="btn btn-badge color-blue3">
@@ -250,10 +256,12 @@ export function TreeZoneNode({
         {/* Zone content */}
         {!isCollapsed && (
           <>
-            {zone.questions.map((zoneQuestionBlock) => (
+            {zone.questions.map((zoneQuestionBlock, questionIndex) => (
               <TreeQuestionBlockNode
                 key={zoneQuestionBlock.trackingId}
                 zoneQuestionBlock={zoneQuestionBlock}
+                questionNumber={questionStartNumber + questionIndex}
+                zone={zone}
                 state={state}
                 actions={actions}
               />

@@ -6,8 +6,14 @@ import { useCallback, useMemo } from 'react';
 import { run } from '@prairielearn/run';
 import { OverlayTrigger } from '@prairielearn/ui';
 
-import type { TreeActions, TreeState, ZoneQuestionBlockForm } from '../../types.js';
+import type {
+  TreeActions,
+  TreeState,
+  ZoneAssessmentForm,
+  ZoneQuestionBlockForm,
+} from '../../types.js';
 import {
+  computeAltGroupChosenRange,
   getSharedTags,
   getSharedTopic,
   hasAltGroupChooseExceedsCount,
@@ -33,10 +39,14 @@ import { makeDraggableStyle } from './dragUtils.js';
  */
 export function TreeQuestionBlockNode({
   zoneQuestionBlock,
+  questionNumber,
+  zone,
   state,
   actions,
 }: {
   zoneQuestionBlock: ZoneQuestionBlockForm;
+  questionNumber: number;
+  zone: ZoneAssessmentForm;
   state: TreeState;
   actions: TreeActions;
 }) {
@@ -105,6 +115,7 @@ export function TreeQuestionBlockNode({
           zoneQuestionBlock={zoneQuestionBlock}
           isAlternative={false}
           questionData={questionData}
+          questionNumber={questionNumber}
           state={state}
           isSelected={isSelected}
           draggableAttributes={attributes}
@@ -161,7 +172,10 @@ export function TreeQuestionBlockNode({
         )}
         style={{
           paddingLeft: '2.5rem',
-          paddingRight: '0.5rem',
+          // Extra right padding prevents macOS overlay scrollbars
+          // from overlapping row content like the points badge.
+          // https://bugzilla.mozilla.org/show_bug.cgi?id=636564
+          paddingRight: '1.5rem',
           cursor: 'pointer',
           ...(chooseExceeds || pointsMismatch ? { borderLeft: '6px solid var(--bs-warning)' } : {}),
         }}
@@ -193,9 +207,19 @@ export function TreeQuestionBlockNode({
             <span className="text-truncate text-primary">
               <i className="bi bi-stack me-1" aria-hidden="true" />
               {run(() => {
-                const choose = zoneQuestionBlock.numberChoose;
-                if (choose == null) return `Choose ${displayCount} of ${displayCount}`;
-                return `Choose ${choose} of ${displayCount}`;
+                const { min, max } = computeAltGroupChosenRange(zone, zoneQuestionBlock);
+                const allChosen = min === displayCount && max === displayCount;
+                const chosenLabel = allChosen
+                  ? 'all chosen'
+                  : min === max
+                    ? `${min} chosen`
+                    : `${min}-${max} chosen`;
+                return (
+                  <>
+                    {displayCount} alternative{displayCount !== 1 ? 's' : ''}{' '}
+                    <span className="text-secondary">({chosenLabel})</span>
+                  </>
+                );
               })}
               <ChangeIndicatorBadges
                 trackingId={zoneQuestionBlock.trackingId}
@@ -307,7 +331,7 @@ export function TreeQuestionBlockNode({
       )}
       {!isCollapsed && (
         <SortableContext items={alternativeIds} strategy={verticalListSortingStrategy}>
-          {alternatives?.map((alternative) => {
+          {alternatives?.map((alternative, altIndex) => {
             const altQuestionData = questionMetadata[alternative.id] ?? null;
             const isAltSelected =
               selectedItem?.type === 'alternative' &&
@@ -320,6 +344,8 @@ export function TreeQuestionBlockNode({
                 alternative={alternative}
                 zoneQuestionBlock={zoneQuestionBlock}
                 questionData={altQuestionData}
+                questionNumber={questionNumber}
+                alternativeNumber={altIndex + 1}
                 state={state}
                 isSelected={isAltSelected}
                 onClick={() =>
@@ -347,7 +373,7 @@ export function TreeQuestionBlockNode({
       {!isCollapsed && isMergeOver && (
         <div
           className="tree-row d-flex align-items-center py-1 border-bottom"
-          style={{ paddingLeft: '4.5rem', paddingRight: '0.5rem', opacity: 0.5 }}
+          style={{ paddingLeft: '4.5rem', paddingRight: '1.5rem', opacity: 0.5 }}
         >
           {editMode && (
             <span className="me-2" style={{ visibility: 'hidden' }}>

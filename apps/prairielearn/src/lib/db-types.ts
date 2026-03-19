@@ -5,7 +5,7 @@ import { z } from 'zod';
 
 import { DateFromISOString, IdSchema, IntervalSchema } from '@prairielearn/zod';
 
-import { QuestionPreferencesSchemaJsonSchema } from '../schemas/index.js';
+import { EnumAssessmentToolSchema, QuestionPreferencesSchemaJsonSchema } from '../schemas/index.js';
 
 // *******************************************************************************
 // Enum schemas. These should be alphabetized by their corresponding enum name.
@@ -169,12 +169,6 @@ export const SprocAuthzAssessmentInstanceSchema = z.object({
   time_limit_min: z.number().nullable(),
 });
 
-// Result of authz_course sproc
-export const SprocAuthzCourseSchema = z.object({
-  course_role: EnumCourseRoleSchema,
-});
-export type SprocAuthzCourse = z.infer<typeof SprocAuthzCourseSchema>;
-
 // Result of users_is_instructor_in_course_instance sproc
 export const SprocUsersIsInstructorInCourseInstanceSchema = z.object({
   is_instructor: z.boolean(),
@@ -210,16 +204,6 @@ export const SprocSyncAssessmentsSchema = z.object({
   name_to_id_map: z.record(z.string(), IdSchema).nullable(),
 });
 
-// Result of authz_course_instance sproc
-export const SprocAuthzCourseInstanceSchema = z.object({
-  course_instance_role: EnumCourseInstanceRoleSchema,
-  /** @deprecated This field only considers the legacy access system. The value should be augmented with the modern publishing system. */
-  has_student_access: z.boolean(),
-  /** @deprecated This field only considers the legacy access system. The value should be augmented with the modern publishing system. */
-  has_student_access_with_enrollment: z.boolean(),
-});
-export type SprocAuthzCourseInstance = z.infer<typeof SprocAuthzCourseInstanceSchema>;
-
 // *******************************************************************************
 // Database table schemas. These should be alphabetized by their corresponding
 // table name. For instance, `TeamSchema` should come before `TeamConfigSchema`
@@ -242,6 +226,21 @@ export const AdministratorSchema = z.object({
   user_id: IdSchema,
 });
 export type Administrator = z.infer<typeof AdministratorSchema>;
+
+export const AiGradingCreditPoolChangeSchema = z.object({
+  ai_grading_job_id: IdSchema.nullable(),
+  assessment_question_id: IdSchema.nullable(),
+  course_instance_id: IdSchema,
+  created_at: DateFromISOString,
+  credit_after_milli_dollars: z.coerce.number(),
+  credit_before_milli_dollars: z.coerce.number(),
+  credit_type: z.enum(['transferable', 'non_transferable']),
+  delta_milli_dollars: z.coerce.number(),
+  id: IdSchema,
+  reason: z.string(),
+  user_id: IdSchema.nullable(),
+});
+export type AiGradingCreditPoolChange = z.infer<typeof AiGradingCreditPoolChangeSchema>;
 
 export const AiGradingJobSchema = z.object({
   completion: z.any(),
@@ -506,6 +505,16 @@ export type AssessmentQuestionRolePermission = z.infer<
   typeof AssessmentQuestionRolePermissionSchema
 >;
 
+export const AssessmentToolSchema = z.object({
+  assessment_id: IdSchema.nullable(),
+  enabled: z.boolean(),
+  id: IdSchema,
+  settings: z.record(z.unknown()),
+  tool: EnumAssessmentToolSchema,
+  zone_id: IdSchema.nullable(),
+});
+export type AssessmentTool = z.infer<typeof AssessmentToolSchema>;
+
 export const AssessmentSetSchema = z.object({
   abbreviation: z.string(),
   color: z.string(),
@@ -637,6 +646,8 @@ export const CourseInstanceSchema = z.object({
   ai_grading_use_custom_api_keys: z.boolean(),
   assessments_group_by: z.enum(['Set', 'Module']),
   course_id: IdSchema,
+  credit_non_transferable_milli_dollars: z.coerce.number(),
+  credit_transferable_milli_dollars: z.coerce.number(),
   deleted_at: DateFromISOString.nullable(),
   display_timezone: z.string(),
   enrollment_code: z.string(),
@@ -1630,6 +1641,7 @@ export type Zone = z.infer<typeof ZoneSchema>;
 export const TableNames = [
   'access_tokens',
   'administrators',
+  'ai_grading_credit_pool_changes',
   'ai_grading_jobs',
   'ai_question_generation_messages',
   'ai_question_generation_prompts',
@@ -1643,6 +1655,7 @@ export const TableNames = [
   'assessment_score_logs',
   'assessment_sets',
   'assessment_state_logs',
+  'assessment_tools',
   'assessments',
   'audit_events',
   'audit_logs',

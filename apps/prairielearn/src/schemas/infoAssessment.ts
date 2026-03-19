@@ -2,6 +2,8 @@ import { type ZodSchema, z } from 'zod';
 
 import { CommentJsonSchema } from './comment.js';
 
+export const EnumAssessmentToolSchema = z.enum(['calculator']);
+
 function uniqueArray<T extends ZodSchema>(schema: T) {
   return z.array(schema).refine((items) => new Set(items).size === items.length, {
     message: 'All items must be unique, no duplicate values allowed',
@@ -307,6 +309,11 @@ export const ZoneQuestionBlockJsonSchema = QuestionPointsJsonSchema.extend({
 export type ZoneQuestionBlockJson = z.infer<typeof ZoneQuestionBlockJsonSchema>;
 export type ZoneQuestionBlockJsonInput = z.input<typeof ZoneQuestionBlockJsonSchema>;
 
+const AssessmentToolJsonSchema = z.object({
+  enabled: z.boolean().describe('Whether this assessment tool is enabled.'),
+  // leave room for additional keys in the future
+});
+
 export const ZoneAssessmentJsonSchema = z.object({
   title: z
     .string()
@@ -372,6 +379,10 @@ export const ZoneAssessmentJsonSchema = z.object({
     )
     .optional()
     .default([]),
+  tools: z
+    .record(EnumAssessmentToolSchema, AssessmentToolJsonSchema)
+    .describe('Tools available for questions in this zone. Overrides assessment-level tools.')
+    .optional(),
 });
 
 export type ZoneAssessmentJson = z.infer<typeof ZoneAssessmentJsonSchema>;
@@ -556,6 +567,10 @@ export const AssessmentJsonSchema = z
       )
       .optional()
       .default(false),
+    tools: z
+      .record(EnumAssessmentToolSchema, AssessmentToolJsonSchema)
+      .describe('Configuration for assessment tools.')
+      .optional(),
   })
   .strict()
   .describe('Configuration data for an assessment.');
