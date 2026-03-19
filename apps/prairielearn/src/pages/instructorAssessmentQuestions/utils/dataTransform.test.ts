@@ -11,7 +11,13 @@ import {
 import * as courseDB from '../../../sync/course-db.js';
 import type { ZoneAssessmentForm } from '../types.js';
 
-import { prepareZonesForEditor, serializeZonesForJson, stripTrackingIds } from './dataTransform.js';
+import {
+  createAltGroupWithTrackingId,
+  getDefaultPointFieldsForNewQuestion,
+  prepareZonesForEditor,
+  serializeZonesForJson,
+  stripTrackingIds,
+} from './dataTransform.js';
 
 describe('serializeZonesForJson', () => {
   test('should strip defaults while preserving structure for all example course assessments', async () => {
@@ -93,7 +99,7 @@ describe('serializeZonesForJson', () => {
     }
   });
 
-  it('strips default allowRealTimeGrading from zones', () => {
+  it('preserves explicit default allowRealTimeGrading on zones', () => {
     const parsedZones = [
       ZoneAssessmentJsonSchema.parse({
         title: 'Zone with default allowRealTimeGrading',
@@ -102,12 +108,11 @@ describe('serializeZonesForJson', () => {
       }),
     ];
 
+    // Explicit `true` must be preserved because a parent assessment may set
+    // allowRealTimeGrading to `false`, and stripping the zone's `true` would
+    // silently change its effective value via inheritance.
     const serialized = serializeZonesForJson(parsedZones);
-    expect(serialized[0].allowRealTimeGrading).toBeUndefined();
-
-    // Re-parsing the stripped value should leave it undefined (not re-introduce the default)
-    const reparsed = serialized.map((zone) => ZoneAssessmentJsonSchema.parse(zone));
-    expect(reparsed[0].allowRealTimeGrading).toBeUndefined();
+    expect(serialized[0].allowRealTimeGrading).toBe(true);
   });
 
   it('preserves non-default allowRealTimeGrading on zones', () => {
@@ -195,6 +200,24 @@ describe('prepareZonesForEditor', () => {
     ];
     const uniqueIds = new Set(trackingIds);
     expect(uniqueIds.size).toBe(trackingIds.length);
+  });
+});
+
+describe('new question defaults', () => {
+  it('uses manual points for Manual questions', () => {
+    expect(getDefaultPointFieldsForNewQuestion('Manual')).toEqual({
+      autoPoints: undefined,
+      manualPoints: 1,
+    });
+  });
+
+  it('starts empty alt groups without inherited point defaults or numberChoose', () => {
+    const result = createAltGroupWithTrackingId();
+
+    expect(result.autoPoints).toBeUndefined();
+    expect(result.manualPoints).toBeUndefined();
+    expect(result.numberChoose).toBeUndefined();
+    expect(result.alternatives).toEqual([]);
   });
 });
 
@@ -413,6 +436,328 @@ describe('prepareZonesForEditor normalization', () => {
     expect(result[0].questions[0].manualPoints).toBe(10);
     expect(result[0].questions[0].autoPoints).toBe(5);
     expect(result[0].questions[0].points).toBeUndefined();
+  });
+
+  it('normalizes alt group points to manualPoints when all alternatives are Manual', () => {
+    const zones: ZoneAssessmentJson[] = [
+      {
+        lockpoint: false,
+        canSubmit: [],
+        canView: [],
+        questions: [
+          {
+            numberChoose: 1,
+            points: 10,
+            canSubmit: [],
+            canView: [],
+            alternatives: [{ id: 'alt1' }, { id: 'alt2' }],
+          },
+        ],
+      },
+    ];
+
+    const metadata = {
+      alt1: { question: { grading_method: 'Manual' } },
+      alt2: { question: { grading_method: 'Manual' } },
+    } as any;
+
+    const result = prepareZonesForEditor(zones, metadata);
+
+    expect(result[0].questions[0].manualPoints).toBe(10);
+    expect(result[0].questions[0].autoPoints).toBeUndefined();
+    expect(result[0].questions[0].points).toBeUndefined();
+  });
+
+  it('normalizes alt group points to autoPoints when all alternatives are auto-graded', () => {
+    const zones: ZoneAssessmentJson[] = [
+      {
+        lockpoint: false,
+        canSubmit: [],
+        canView: [],
+        questions: [
+          {
+            numberChoose: 1,
+            points: 10,
+            canSubmit: [],
+            canView: [],
+            alternatives: [{ id: 'alt1' }, { id: 'alt2' }],
+          },
+        ],
+      },
+    ];
+
+    const metadata = {
+      alt1: { question: { grading_method: 'External' } },
+      alt2: { question: { grading_method: 'Internal' } },
+    } as any;
+
+    const result = prepareZonesForEditor(zones, metadata);
+
+    expect(result[0].questions[0].autoPoints).toBe(10);
+    expect(result[0].questions[0].manualPoints).toBeUndefined();
+    expect(result[0].questions[0].points).toBeUndefined();
+  });
+
+  it('pushes alt group points to alternatives when grading methods are mixed', () => {
+    const zones: ZoneAssessmentJson[] = [
+      {
+        lockpoint: false,
+        canSubmit: [],
+        canView: [],
+        questions: [
+          {
+            numberChoose: 1,
+            points: 10,
+            canSubmit: [],
+            canView: [],
+            alternatives: [{ id: 'alt1' }, { id: 'alt2' }],
+          },
+        ],
+      },
+    ];
+
+    const metadata = {
+      alt1: { question: { grading_method: 'Manual' } },
+      alt2: { question: { grading_method: 'External' } },
+    } as any;
+
+    const result = prepareZonesForEditor(zones, metadata);
+    const group = result[0].questions[0];
+
+    // Group-level points should be cleared
+    expect(group.points).toBeUndefined();
+    expect(group.autoPoints).toBeUndefined();
+    expect(group.manualPoints).toBeUndefined();
+
+    // Each alternative gets points based on its grading method
+    expect(group.alternatives![0].manualPoints).toBe(10);
+    expect(group.alternatives![0].autoPoints).toBeUndefined();
+    expect(group.alternatives![1].autoPoints).toBe(10);
+    expect(group.alternatives![1].manualPoints).toBeUndefined();
+
+    // Info banner flag should be set for mixed alt groups
+    expect(group.pointsDistributedInfoBanner).toBe(true);
+  });
+
+  it('falls through to autoPoints when alt group has no metadata', () => {
+    const zones: ZoneAssessmentJson[] = [
+      {
+        lockpoint: false,
+        canSubmit: [],
+        canView: [],
+        questions: [
+          {
+            numberChoose: 1,
+            points: 10,
+            canSubmit: [],
+            canView: [],
+            alternatives: [{ id: 'alt1' }, { id: 'alt2' }],
+          },
+        ],
+      },
+    ];
+
+    const result = prepareZonesForEditor(zones, {});
+
+    // No metadata → unknown grading methods → defaults to autoPoints
+    expect(result[0].questions[0].autoPoints).toBe(10);
+    expect(result[0].questions[0].points).toBeUndefined();
+  });
+
+  it('does not override alternative-level points when pushing group points in mixed mode', () => {
+    const zones: ZoneAssessmentJson[] = [
+      {
+        lockpoint: false,
+        canSubmit: [],
+        canView: [],
+        questions: [
+          {
+            numberChoose: 1,
+            points: 10,
+            canSubmit: [],
+            canView: [],
+            alternatives: [{ id: 'alt1' }, { id: 'alt2', autoPoints: 7 }],
+          },
+        ],
+      },
+    ];
+
+    const metadata = {
+      alt1: { question: { grading_method: 'Manual' } },
+      alt2: { question: { grading_method: 'External' } },
+    } as any;
+
+    const result = prepareZonesForEditor(zones, metadata);
+    const group = result[0].questions[0];
+
+    // alt1 inherits group points → manualPoints
+    expect(group.alternatives![0].manualPoints).toBe(10);
+    // alt2 already has autoPoints, so group points are NOT pushed
+    expect(group.alternatives![1].autoPoints).toBe(7);
+  });
+
+  it('preserves inherited maxPoints for legacy mixed-group alternatives with their own points', () => {
+    const zones: ZoneAssessmentJson[] = [
+      {
+        lockpoint: false,
+        canSubmit: [],
+        canView: [],
+        questions: [
+          {
+            numberChoose: 1,
+            maxPoints: 5,
+            canSubmit: [],
+            canView: [],
+            alternatives: [
+              { id: 'alt1', points: 2 },
+              { id: 'alt2', points: 3 },
+            ],
+          },
+        ],
+      },
+    ];
+
+    const metadata = {
+      alt1: { question: { grading_method: 'Manual' } },
+      alt2: { question: { grading_method: 'External' } },
+    } as any;
+
+    const prepared = prepareZonesForEditor(zones, metadata);
+    const saved = serializeZonesForJson(stripTrackingIds(prepared));
+
+    // Both alternatives keep their own legacy `points`, but they also inherit
+    // the group's `maxPoints: 5`. Sync resolves that inherited max differently
+    // by grading method: Manual uses it as `manualPoints`, while auto-graded
+    // questions keep their own points and receive it as `maxAutoPoints`.
+    expect(saved).toEqual([
+      {
+        questions: [
+          {
+            numberChoose: 1,
+            alternatives: [
+              { id: 'alt1', manualPoints: 5 },
+              { id: 'alt2', autoPoints: 3, maxAutoPoints: 5 },
+            ],
+          },
+        ],
+      },
+    ]);
+  });
+
+  it('normalizes alt group maxPoints to manualPoints when all alternatives are Manual', () => {
+    const zones: ZoneAssessmentJson[] = [
+      {
+        lockpoint: false,
+        canSubmit: [],
+        canView: [],
+        questions: [
+          {
+            numberChoose: 1,
+            maxPoints: 20,
+            canSubmit: [],
+            canView: [],
+            alternatives: [{ id: 'alt1' }],
+          },
+        ],
+      },
+    ];
+
+    const metadata = {
+      alt1: { question: { grading_method: 'Manual' } },
+    } as any;
+
+    const result = prepareZonesForEditor(zones, metadata);
+
+    expect(result[0].questions[0].manualPoints).toBe(20);
+    expect(result[0].questions[0].maxPoints).toBeUndefined();
+    expect(result[0].questions[0].autoPoints).toBeUndefined();
+  });
+
+  it('treats manual + unknown metadata as mixed to avoid dropping auto points', () => {
+    const zones: ZoneAssessmentJson[] = [
+      {
+        lockpoint: false,
+        canSubmit: [],
+        canView: [],
+        questions: [
+          {
+            numberChoose: 1,
+            points: 10,
+            canSubmit: [],
+            canView: [],
+            alternatives: [{ id: 'alt1' }, { id: 'alt2' }],
+          },
+        ],
+      },
+    ];
+
+    // alt2 has no metadata (e.g. stale/deleted qid)
+    const metadata = {
+      alt1: { question: { grading_method: 'Manual' } },
+    } as any;
+
+    const result = prepareZonesForEditor(zones, metadata);
+    const group = result[0].questions[0];
+
+    // Should be treated as mixed: points pushed to alternatives
+    expect(group.points).toBeUndefined();
+    expect(group.autoPoints).toBeUndefined();
+    expect(group.manualPoints).toBeUndefined();
+    expect(group.alternatives![0].manualPoints).toBe(10);
+    expect(group.alternatives![1].autoPoints).toBe(10);
+  });
+});
+
+describe('serializeZonesForJson preferences', () => {
+  it('preserves preferences on standalone questions', () => {
+    const parsedZones = [
+      ZoneAssessmentJsonSchema.parse({
+        questions: [
+          {
+            id: 'q1',
+            preferences: { gravitational_constant: 9.8, fired_object: 'cannon ball' },
+          },
+        ],
+      }),
+    ];
+
+    const serialized = serializeZonesForJson(parsedZones);
+    expect(serialized[0].questions[0].preferences).toEqual({
+      gravitational_constant: 9.8,
+      fired_object: 'cannon ball',
+    });
+  });
+
+  it('preserves preferences on alternatives', () => {
+    const parsedZones = [
+      ZoneAssessmentJsonSchema.parse({
+        questions: [
+          {
+            numberChoose: 1,
+            alternatives: [
+              { id: 'alt1', preferences: { mode: 'hard' } },
+              { id: 'alt2', preferences: { mode: 'easy' } },
+            ],
+          },
+        ],
+      }),
+    ];
+
+    const serialized = serializeZonesForJson(parsedZones);
+    const alts = serialized[0].questions[0].alternatives!;
+    expect(alts[0].preferences).toEqual({ mode: 'hard' });
+    expect(alts[1].preferences).toEqual({ mode: 'easy' });
+  });
+
+  it('does not include preferences key when not set', () => {
+    const parsedZones = [
+      ZoneAssessmentJsonSchema.parse({
+        questions: [{ id: 'q1' }],
+      }),
+    ];
+
+    const serialized = serializeZonesForJson(parsedZones);
+    expect(serialized[0].questions[0]).not.toHaveProperty('preferences');
   });
 });
 

@@ -26,10 +26,10 @@ import type {
 } from '../../../lib/client/safe-db-types.js';
 import { QueryClientProviderDebug } from '../../../lib/client/tanstackQuery.js';
 import type { ZoneAssessmentJson } from '../../../schemas/infoAssessment.js';
-import type { QuestionByQidResult } from '../trpc.js';
 import type {
   DetailActions,
   DetailState,
+  EditorState,
   QuestionAlternativeForm,
   SelectedItem,
   TreeActions,
@@ -39,8 +39,6 @@ import type {
 } from '../types.js';
 import {
   createAltGroupWithTrackingId,
-  createAlternativeWithTrackingId,
-  createQuestionWithTrackingId,
   createZoneWithTrackingId,
   prepareZonesForEditor,
   stripTrackingIds,
@@ -51,11 +49,13 @@ import {
   buildQuestionMetadata,
   normalizeQuestionPoints,
   questionDisplayName,
+  toEditorMetadata,
 } from '../utils/questions.js';
 import { getStructuralSaveValidationErrorKind } from '../utils/saveValidation.js';
 import { createAssessmentQuestionsTrpcClient } from '../utils/trpc-client.js';
 import { TRPCProvider, useTRPC } from '../utils/trpc-context.js';
-import { findQuestionByTrackingId, useAssessmentEditor } from '../utils/useAssessmentEditor.js';
+import { useAssessmentEditor } from '../utils/useAssessmentEditor.js';
+import { findQuestionByTrackingId } from '../utils/zoneLookup.js';
 
 import { EditModeToolbar } from './EditModeToolbar.js';
 import { ExamResetNotSupportedModal } from './ExamResetNotSupportedModal.js';
@@ -130,6 +130,7 @@ interface AssessmentEditorInnerProps {
   jsonZones: ZoneAssessmentJson[];
   assessment: StaffAssessment;
   hasCoursePermissionPreview: boolean;
+  hasCourseInstancePermissionEdit: boolean;
   canEdit: boolean;
   csrfToken: string;
   origHash: string;
@@ -143,6 +144,7 @@ function AssessmentEditorInner({
   jsonZones,
   assessment,
   hasCoursePermissionPreview,
+  hasCourseInstancePermissionEdit,
   canEdit,
   csrfToken,
   origHash,
@@ -154,20 +156,35 @@ function AssessmentEditorInner({
     mutationFn: (qid: string) => queryClient.fetchQuery(trpc.questionByQid.queryOptions({ qid })),
   });
 
-  const [initialState] = useState(() => {
+  const [initialState] = useState<EditorState>(() => {
     const questionMetadataMap = Object.fromEntries(
-      questionRows.map((r) => [questionDisplayName(course, r), r]),
+      questionRows.map((r) => [questionDisplayName(course, r), toEditorMetadata(r)]),
     );
     return {
       zones: prepareZonesForEditor(jsonZones, questionMetadataMap),
       questionMetadata: questionMetadataMap,
       collapsedGroups: new Set<string>(),
       collapsedZones: new Set<string>(),
+      dismissedBanners: new Set<string>(),
+      selectedItem: null,
     };
   });
 
-  const { zones, questionMetadata, collapsedGroups, collapsedZones, dispatch } =
-    useAssessmentEditor(initialState);
+  const {
+    zones,
+    questionMetadata,
+    collapsedGroups,
+    collapsedZones,
+    dismissedBanners,
+    selectedItem,
+    dispatch,
+  } = useAssessmentEditor(initialState);
+
+  const setSelectedItem = useCallback(
+    (item: SelectedItem) => dispatch({ type: 'SET_SELECTED_ITEM', selectedItem: item }),
+    [dispatch],
+  );
+
   const initialZonesJson = useMemo(() => JSON.stringify(initialState.zones), [initialState.zones]);
   const initialPropsMap = useMemo(() => buildPropsMap(initialState.zones), [initialState.zones]);
   const changeTracking = useMemo(
@@ -192,12 +209,6 @@ function AssessmentEditorInner({
   const [activeDragId, setActiveDragId] = useState<string | null>(null);
   const isDragging = activeDragId !== null;
   const isKeyboardDragRef = useRef(false);
-  const [selectedItem, setSelectedItem] = useState<SelectedItem>(null);
-
-  // Ref tracks the latest selectedItem so async handlers (handleQuestionPicked)
-  // can detect if the selection changed during an await and bail out early.
-  const selectedItemRef = useRef(selectedItem);
-  selectedItemRef.current = selectedItem;
 
   // Tracks validation errors for the currently mounted detail form only.
   // Invalid draft values in the open form are discarded on unmount because
@@ -211,7 +222,7 @@ function AssessmentEditorInner({
   // mounted form will report its own validity, while persisted tree-state
   // invariants are checked separately from `zones`.
   useEffect(() => {
-    // eslint-disable-next-line react-you-might-not-need-an-effect/no-chain-state-updates, @eslint-react/hooks-extra/no-direct-set-state-in-use-effect
+    // eslint-disable-next-line react-you-might-not-need-an-effect/no-adjust-state-on-prop-change, react-you-might-not-need-an-effect/no-chain-state-updates, @eslint-react/hooks-extra/no-direct-set-state-in-use-effect
     setSelectedFormHasErrors(false);
   }, [selectedItem]);
 
@@ -383,185 +394,24 @@ function AssessmentEditorInner({
   };
 
   const handleQuestionPicked = async (qid: string) => {
-    if (selectedItem?.type === 'altGroupPicker') {
-      let questionData: QuestionByQidResult;
-      try {
-        questionData = await questionByQidMutation.mutateAsync(qid);
-      } catch {
-        // mutateAsync re-throws, but the error is stored in mutation.error
-        // and surfaced via pickerError. We just need to bail out here.
-        return;
-      }
-      if (selectedItemRef.current !== selectedItem) return;
-
-      const metadata = buildQuestionMetadata({
-        data: questionData,
-        assessment,
-        courseInstance,
-        course,
-        courseQuestions,
-      });
-
-      // Remove from current location if already in assessment (move behavior)
-      if (questionsInAssessment.has(qid)) {
-        handleRemoveQuestionByQid(qid);
-      }
-
-      if (selectedItem.altGroupTrackingId) {
-        // Adding to existing alt group
-        const newAlt = { ...createAlternativeWithTrackingId(), id: qid } as QuestionAlternativeForm;
-        dispatch({
-          type: 'ADD_ALTERNATIVE',
-          altGroupTrackingId: selectedItem.altGroupTrackingId,
-          alternative: newAlt,
-          questionData: metadata,
-        });
-      } else {
-        // Creating new alt group: first question picked creates the group
-        const newAltGroup = createAltGroupWithTrackingId();
-        const firstAlt = {
-          ...createAlternativeWithTrackingId(),
-          id: qid,
-        } as QuestionAlternativeForm;
-        newAltGroup.alternatives = [firstAlt];
-
-        // Don't pass questionData to ADD_QUESTION — it stores metadata under
-        // question.id, which is undefined for alt groups. Store it separately.
-        dispatch({
-          type: 'ADD_QUESTION',
-          zoneTrackingId: selectedItem.zoneTrackingId,
-          question: newAltGroup,
-        });
-        dispatch({
-          type: 'UPDATE_QUESTION_METADATA',
-          questionId: qid,
-          questionData: metadata,
-        });
-
-        // Update selection so subsequent picks add to this group
-        setSelectedItem({
-          type: 'altGroupPicker',
-          zoneTrackingId: selectedItem.zoneTrackingId,
-          altGroupTrackingId: newAltGroup.trackingId,
-        });
-      }
-      // Stay in picker for "add another" behavior
-      return;
-    }
-
-    if (selectedItem?.type !== 'picker') return;
-
-    if (selectedItem.returnToSelection) {
-      // Returning to a question detail panel after picking a new QID
-      const returnTo = selectedItem.returnToSelection;
-      if (returnTo.type === 'question' || returnTo.type === 'alternative') {
-        const questionTrackingId = returnTo.questionTrackingId;
-
-        let questionData: QuestionByQidResult;
-        try {
-          questionData = await questionByQidMutation.mutateAsync(qid);
-        } catch {
-          // mutateAsync re-throws, but the error is stored in mutation.error
-          // and surfaced via pickerError. We just need to bail out here.
-          return;
-        }
-        if (selectedItemRef.current !== selectedItem) return;
-
-        const found = findQuestionByTrackingId(zones, questionTrackingId);
-
-        // Remove from current location if already in assessment (move behavior),
-        // but skip if the question being removed is the one we're about to update.
-        if (questionsInAssessment.has(qid)) {
-          const currentQid = run(() => {
-            if (!found) return undefined;
-            if (returnTo.type === 'alternative') {
-              return found.question.alternatives?.find(
-                (a) => a.trackingId === returnTo.alternativeTrackingId,
-              )?.id;
-            }
-            return found.question.id;
-          });
-          if (currentQid !== qid) {
-            handleRemoveQuestionByQid(qid);
-          }
-        }
-        if (found) {
-          const oldId =
-            returnTo.type === 'alternative'
-              ? found.question.alternatives?.find(
-                  (a) => a.trackingId === returnTo.alternativeTrackingId,
-                )?.id
-              : found.question.id;
-
-          dispatch({
-            type: 'UPDATE_QUESTION_METADATA',
-            questionId: qid,
-            oldQuestionId: oldId,
-            questionData: buildQuestionMetadata({
-              data: questionData,
-              assessment,
-              courseInstance,
-              course,
-              courseQuestions,
-            }),
-          });
-
-          if (returnTo.type === 'alternative') {
-            dispatch({
-              type: 'UPDATE_QUESTION',
-              questionTrackingId,
-              alternativeTrackingId: returnTo.alternativeTrackingId,
-              question: { id: qid },
-            });
-          } else {
-            dispatch({
-              type: 'UPDATE_QUESTION',
-              questionTrackingId,
-              question: { id: qid },
-            });
-          }
-        }
-
-        setSelectedItem(returnTo);
-      }
-      return;
-    }
-
-    // Adding a new question to a zone
-    let questionData: QuestionByQidResult;
     try {
-      questionData = await questionByQidMutation.mutateAsync(qid);
+      const questionData = await questionByQidMutation.mutateAsync(qid);
+
+      dispatch({
+        type: 'QUESTION_PICKED',
+        qid,
+        metadata: buildQuestionMetadata({
+          data: questionData,
+          assessment,
+          courseInstance,
+          courseQuestions,
+        }),
+        expectedSelectedItem: selectedItem,
+      });
     } catch {
       // mutateAsync re-throws, but the error is stored in mutation.error
       // and surfaced via pickerError. We just need to bail out here.
-      return;
     }
-    if (selectedItemRef.current !== selectedItem) return;
-
-    // Remove from current location if already in assessment (move behavior)
-    if (questionsInAssessment.has(qid)) {
-      handleRemoveQuestionByQid(qid);
-    }
-
-    const newQuestion = {
-      id: qid,
-      ...createQuestionWithTrackingId(),
-    } as ZoneQuestionBlockForm;
-
-    dispatch({
-      type: 'ADD_QUESTION',
-      zoneTrackingId: selectedItem.zoneTrackingId,
-      question: newQuestion,
-      questionData: buildQuestionMetadata({
-        data: questionData,
-        assessment,
-        courseInstance,
-        course,
-        courseQuestions,
-      }),
-    });
-
-    // Stay in picker for "add another" behavior
   };
 
   const handlePickerDone = () => {
@@ -624,49 +474,6 @@ function AssessmentEditorInner({
     questionId: string,
     alternativeTrackingId?: string,
   ) => {
-    // Clear selection if the deleted item was selected
-    if (
-      selectedItem?.type === 'question' &&
-      selectedItem.questionTrackingId === questionTrackingId
-    ) {
-      setSelectedItem(null);
-    }
-    if (
-      selectedItem?.type === 'alternative' &&
-      selectedItem.alternativeTrackingId === alternativeTrackingId
-    ) {
-      setSelectedItem(null);
-    }
-    if (
-      selectedItem?.type === 'altGroup' &&
-      selectedItem.questionTrackingId === questionTrackingId &&
-      alternativeTrackingId === undefined
-    ) {
-      setSelectedItem(null);
-    }
-    if (
-      selectedItem?.type === 'altGroupPicker' &&
-      selectedItem.altGroupTrackingId === questionTrackingId &&
-      alternativeTrackingId === undefined
-    ) {
-      setSelectedItem(null);
-    }
-    if (selectedItem?.type === 'picker' && selectedItem.returnToSelection) {
-      const returnTo = selectedItem.returnToSelection;
-      if (
-        (returnTo.type === 'question' || returnTo.type === 'altGroup') &&
-        returnTo.questionTrackingId === questionTrackingId
-      ) {
-        setSelectedItem(null);
-      }
-      if (
-        returnTo.type === 'alternative' &&
-        returnTo.alternativeTrackingId === alternativeTrackingId
-      ) {
-        setSelectedItem(null);
-      }
-    }
-
     dispatch({
       type: 'DELETE_QUESTION',
       questionTrackingId,
@@ -695,44 +502,6 @@ function AssessmentEditorInner({
   };
 
   const handleDeleteZone = (zoneTrackingId: string) => {
-    if (selectedItem) {
-      const zone = zones.find((z) => z.trackingId === zoneTrackingId);
-      const trackingIds = new Set<string>([zoneTrackingId]);
-      if (zone) {
-        for (const q of zone.questions) {
-          trackingIds.add(q.trackingId);
-          for (const alt of q.alternatives ?? []) {
-            trackingIds.add(alt.trackingId);
-          }
-        }
-      }
-
-      const shouldClear = run(() => {
-        switch (selectedItem.type) {
-          case 'zone':
-            return trackingIds.has(selectedItem.zoneTrackingId);
-          case 'question':
-          case 'altGroup':
-            return trackingIds.has(selectedItem.questionTrackingId);
-          case 'alternative':
-            return trackingIds.has(selectedItem.alternativeTrackingId);
-          case 'picker':
-            return trackingIds.has(selectedItem.zoneTrackingId);
-          case 'altGroupPicker':
-            return (
-              trackingIds.has(selectedItem.zoneTrackingId) ||
-              (selectedItem.altGroupTrackingId !== undefined &&
-                trackingIds.has(selectedItem.altGroupTrackingId))
-            );
-          default:
-            return false;
-        }
-      });
-
-      if (shouldClear) {
-        setSelectedItem(null);
-      }
-    }
     dispatch({ type: 'DELETE_ZONE', zoneTrackingId });
   };
 
@@ -828,15 +597,6 @@ function AssessmentEditorInner({
         toAltGroupTrackingId: altGroupTrackingId,
         beforeAlternativeTrackingId: null,
       });
-      // The question's trackingId is preserved but it's now an alternative
-      // inside the group. Update the selection so DetailPanel can find it.
-      if (selectedItem?.type === 'question' && selectedItem.questionTrackingId === activeIdStr) {
-        setSelectedItem({
-          type: 'alternative',
-          questionTrackingId: altGroupTrackingId,
-          alternativeTrackingId: activeIdStr,
-        });
-      }
       return;
     }
 
@@ -871,12 +631,6 @@ function AssessmentEditorInner({
     });
   };
 
-  const upgradeSelectedAlternativeToQuestion = (trackingId: string) => {
-    if (selectedItem?.type === 'alternative' && selectedItem.alternativeTrackingId === trackingId) {
-      setSelectedItem({ type: 'question', questionTrackingId: trackingId });
-    }
-  };
-
   const handleDragOver = ({ active, over }: DragOverEvent) => {
     if (!over) return;
 
@@ -906,7 +660,7 @@ function AssessmentEditorInner({
           toZoneTrackingId: targetZone.trackingId,
           beforeQuestionTrackingId: null,
         });
-        upgradeSelectedAlternativeToQuestion(activeIdStr);
+
         return;
       }
 
@@ -941,7 +695,6 @@ function AssessmentEditorInner({
           toZoneTrackingId: toZone.trackingId,
           beforeQuestionTrackingId: toZone.questions[toPos.questionIndex].trackingId,
         });
-        upgradeSelectedAlternativeToQuestion(activeIdStr);
       }
       return;
     }
@@ -1089,22 +842,31 @@ function AssessmentEditorInner({
   const detailState: DetailState = useMemo(
     () => ({
       editMode,
+      hasCourseInstancePermissionEdit,
       assessmentType: assessment.type,
       constantQuestionValue: assessment.constant_question_value ?? false,
       assessmentDefaults,
       courseInstanceId: courseInstance.id,
       courseId: course.id,
       hasCoursePermissionPreview,
+      dismissedBanners,
     }),
     [
       editMode,
+      hasCourseInstancePermissionEdit,
       assessment.type,
       assessment.constant_question_value,
       assessmentDefaults,
       courseInstance.id,
       course.id,
       hasCoursePermissionPreview,
+      dismissedBanners,
     ],
+  );
+
+  const handleDismissBanner = useCallback(
+    (trackingId: string) => dispatch({ type: 'DISMISS_BANNER', trackingId }),
+    [dispatch],
   );
 
   const detailActions: DetailActions = useMemo(
@@ -1119,13 +881,14 @@ function AssessmentEditorInner({
       onRemoveQuestionByQid: handleRemoveQuestionByQid,
       onResetButtonClick: resetModal.showWithData,
       onFormValidChange: handleFormValidChange,
+      onDismissBanner: handleDismissBanner,
     }),
     // Handlers close over `zones` (updated on dispatch) and `courseQuestions`
     // (used by handleQuestionPicked to build metadata), so these deps
     // correctly capture all change triggers. Listing each handler individually
     // would be redundant and cause unnecessary re-memoization.
     // eslint-disable-next-line react-hooks/exhaustive-deps
-    [zones, selectedItem, courseQuestions],
+    [zones, selectedItem, courseQuestions, handleDismissBanner],
   );
 
   const toggleExpandCollapse = () => {
@@ -1273,7 +1036,6 @@ function AssessmentEditorInner({
                     saveButtonDisabledReason={saveButtonDisabledReason}
                     onSubmit={disableBeforeUnload}
                     onCancel={() => {
-                      setSelectedItem(null);
                       dispatch({ type: 'RESET' });
                       setEditMode(false);
                     }}

@@ -12,12 +12,13 @@ import { run } from '@prairielearn/run';
 import { OverlayTrigger } from '@prairielearn/ui';
 
 import { CopyButton } from '../../../../components/CopyButton.js';
-import type { StaffAssessmentQuestionRow } from '../../../../lib/assessment-question.shared.js';
+import type { EditorQuestionMetadata } from '../../../../lib/assessment-question.shared.js';
 import { getQuestionUrl } from '../../../../lib/client/url.js';
 import type { EnumAssessmentType } from '../../../../lib/db-types.js';
 import type {
   DetailState,
   QuestionAlternativeForm,
+  QuestionWithId,
   SelectedItem,
   ZoneAssessmentForm,
   ZoneQuestionBlockForm,
@@ -25,16 +26,21 @@ import type {
 import {
   coerceToNumber,
   coerceToOptionalString,
-  extractStringComment,
+  commentToString,
   formatPoints,
   formatPointsValue,
   makeResetAndSave,
+  parseCommentValue,
   parsePointsListValue,
   validateAtLeastOnePointsField,
   validateNonIncreasingPoints,
   validatePointsListFormat,
 } from '../../utils/formHelpers.js';
-import { toAssessmentForPicker, validatePositiveInteger } from '../../utils/questions.js';
+import {
+  questionHasTitle,
+  toAssessmentForPicker,
+  validatePositiveInteger,
+} from '../../utils/questions.js';
 import { useAutoSave } from '../../utils/useAutoSave.js';
 import { AssessmentBadges } from '../AssessmentBadges.js';
 
@@ -71,10 +77,10 @@ export function QuestionDetailPanel({
   onResetButtonClick,
   onFormValidChange,
 }: {
-  question: ZoneQuestionBlockForm | QuestionAlternativeForm;
+  question: QuestionWithId;
   zoneQuestionBlock?: ZoneQuestionBlockForm;
   zone?: ZoneAssessmentForm;
-  questionData: StaffAssessmentQuestionRow | null;
+  questionData: EditorQuestionMetadata | null;
   idPrefix: string;
   state: DetailState;
   onUpdate: (
@@ -93,6 +99,7 @@ export function QuestionDetailPanel({
 }) {
   const {
     editMode,
+    hasCourseInstancePermissionEdit,
     assessmentType,
     constantQuestionValue,
     assessmentDefaults,
@@ -101,6 +108,13 @@ export function QuestionDetailPanel({
   } = state;
   const isAlternative = !!zoneQuestionBlock;
   const isManualGrading = questionData?.question.grading_method === 'Manual';
+  const hasTitle = questionHasTitle(questionData);
+
+  const isAutoGradedWithOnlyManualPoints =
+    questionData != null &&
+    !isManualGrading &&
+    (question.manualPoints ?? zoneQuestionBlock?.manualPoints) != null &&
+    (question.autoPoints ?? zoneQuestionBlock?.autoPoints) == null;
 
   // For read-only display, use merged values (own ?? inherited)
   const autoPointsValue = question.autoPoints ?? zoneQuestionBlock?.autoPoints;
@@ -145,8 +159,8 @@ export function QuestionDetailPanel({
   } = useForm<QuestionFormData>({
     mode: 'onChange',
     values: {
-      id: question.id ?? '',
-      comment: extractStringComment(question.comment) || undefined,
+      id: question.id,
+      comment: commentToString(question.comment),
       autoPoints: isAlternative ? ownAutoPoints : (autoPointsValue ?? undefined),
       maxAutoPoints: isAlternative ? ownMaxAutoPoints : (maxAutoPointsValue ?? undefined),
       manualPoints: isAlternative ? ownManualPoints : (manualPointsValue ?? undefined),
@@ -190,6 +204,7 @@ export function QuestionDetailPanel({
         questionTrackingId,
         {
           ...data,
+          comment: parseCommentValue(data.comment),
           forceMaxPoints: hasForceMaxPointsParent
             ? data.forceMaxPoints
             : data.forceMaxPoints || undefined,
@@ -301,58 +316,86 @@ export function QuestionDetailPanel({
 
   return (
     <div className="p-3">
-      {/* Question header (title, tags, badges) — same in both modes */}
-      {questionData && (
-        <div className="mb-3">
-          <div className="fw-semibold mb-1">
-            {hasCoursePermissionPreview ? (
-              <a href={getQuestionUrl({ courseInstanceId, questionId: questionData.question.id })}>
-                {questionData.question.title}
-              </a>
-            ) : (
-              questionData.question.title
-            )}
-          </div>
-          <span
-            className="d-inline-flex align-items-center text-muted font-monospace"
-            style={{ fontSize: '0.75rem' }}
-          >
-            {question.id}
-            {question.id && (
-              <CopyButton
-                text={question.id}
-                tooltipId="copy-qid"
-                ariaLabel="Copy QID"
-                className="ms-1"
-              />
-            )}
-          </span>
-          <div className="mt-1">
-            <span className={`badge color-${questionData.topic.color}`}>
-              {questionData.topic.name}
-            </span>
-          </div>
-          {questionData.tags && questionData.tags.length > 0 && (
-            <div className="d-flex flex-wrap gap-1 mt-1">
-              {questionData.tags.map((tag) => (
-                <span key={tag.name} className={`badge color-${tag.color}`}>
-                  {tag.name}
-                </span>
-              ))}
-            </div>
-          )}
-          {questionData.other_assessments && questionData.other_assessments.length > 0 && (
-            <div className="d-flex flex-wrap align-items-center gap-1 mt-1">
-              <AssessmentBadges
-                assessments={toAssessmentForPicker(questionData.other_assessments)}
-                courseInstanceId={courseInstanceId}
-              />
-            </div>
-          )}
+      {/* Question header (number, title, tags, badges) — same in both modes */}
+      <div className="mb-3">
+        <div className="fw-semibold mb-1 d-inline-flex align-items-center">
+          {questionData
+            ? run(() => {
+                const titleContent = hasTitle ? (
+                  questionData.question.title
+                ) : (
+                  <span className="font-monospace">{question.id}</span>
+                );
+                return (
+                  <>
+                    {hasCoursePermissionPreview ? (
+                      <a
+                        href={getQuestionUrl({
+                          courseInstanceId,
+                          questionId: questionData.question.id,
+                        })}
+                      >
+                        {titleContent}
+                      </a>
+                    ) : (
+                      titleContent
+                    )}
+                    {!hasTitle && (
+                      <CopyButton
+                        text={question.id}
+                        tooltipId="copy-qid"
+                        ariaLabel="Copy QID"
+                        className="ms-1"
+                      />
+                    )}
+                  </>
+                );
+              })
+            : null}
         </div>
-      )}
+        {questionData && (
+          <div className="d-flex flex-column gap-1">
+            {hasTitle && (
+              <span
+                className="d-inline-flex align-items-center text-muted font-monospace"
+                style={{ fontSize: '0.75rem' }}
+              >
+                {question.id}
+                <CopyButton
+                  text={question.id}
+                  tooltipId="copy-qid"
+                  ariaLabel="Copy QID"
+                  className="ms-1"
+                />
+              </span>
+            )}
+            <div>
+              <span className={`badge color-${questionData.topic.color}`}>
+                {questionData.topic.name}
+              </span>
+            </div>
+            {questionData.tags && questionData.tags.length > 0 && (
+              <div className="d-flex flex-wrap gap-1">
+                {questionData.tags.map((tag) => (
+                  <span key={tag.name} className={`badge color-${tag.color}`}>
+                    {tag.name}
+                  </span>
+                ))}
+              </div>
+            )}
+            {questionData.other_assessments && questionData.other_assessments.length > 0 && (
+              <div className="d-flex flex-wrap align-items-center gap-1">
+                <AssessmentBadges
+                  assessments={toAssessmentForPicker(questionData.other_assessments)}
+                  courseInstanceId={courseInstanceId}
+                />
+              </div>
+            )}
+          </div>
+        )}
+      </div>
 
-      <DetailSectionHeader first={!questionData}>Settings</DetailSectionHeader>
+      <DetailSectionHeader>Settings</DetailSectionHeader>
 
       {/* QID field — edit mode only */}
       {editMode && (
@@ -414,6 +457,7 @@ export function QuestionDetailPanel({
           resetAndSave={resetAndSave}
           showAutoPointsForManual={showAutoPointsForManual}
           showMaxAutoPointsForManual={showMaxAutoPointsForManual}
+          showManualPointsOnlyForAutoGraded={isAutoGradedWithOnlyManualPoints}
           onFieldOverrideChange={(field, overridden) =>
             setOverriddenFields((prev) => ({ ...prev, [field]: overridden }))
           }
@@ -487,7 +531,7 @@ export function QuestionDetailPanel({
           label="Comment"
           viewValue={
             question.comment != null ? (
-              <span className="text-break">{String(question.comment)}</span>
+              <span className="text-break">{commentToString(question.comment)}</span>
             ) : undefined
           }
           helpText="Internal note, not shown to students."
@@ -516,23 +560,25 @@ export function QuestionDetailPanel({
 
       {/* Action buttons */}
       <div className="d-flex gap-2">
-        {questionData && questionData.assessment_question.id !== '0' && (
-          <OverlayTrigger
-            placement="top"
-            tooltip={{
-              props: { id: 'reset-variants-tooltip' },
-              body: 'Resets all existing variants for this question on this assessment, so students will get new variants on their next visit.',
-            }}
-          >
-            <button
-              type="button"
-              className="btn btn-sm btn-outline-secondary"
-              onClick={() => onResetButtonClick(questionData.assessment_question.id)}
+        {!editMode &&
+          hasCourseInstancePermissionEdit &&
+          questionData?.assessment_question_id != null && (
+            <OverlayTrigger
+              placement="top"
+              tooltip={{
+                props: { id: 'reset-variants-tooltip' },
+                body: 'Resets all existing variants for this question on this assessment, so students will get new variants on their next visit.',
+              }}
             >
-              Reset question variants
-            </button>
-          </OverlayTrigger>
-        )}
+              <button
+                type="button"
+                className="btn btn-sm btn-outline-secondary"
+                onClick={() => onResetButtonClick(questionData.assessment_question_id!)}
+              >
+                Reset question variants
+              </button>
+            </OverlayTrigger>
+          )}
         {editMode && (
           <OverlayTrigger
             placement="top"
@@ -544,7 +590,7 @@ export function QuestionDetailPanel({
             <button
               type="button"
               className="btn btn-sm btn-outline-danger"
-              onClick={() => onDelete(questionTrackingId, question.id ?? '', alternativeTrackingId)}
+              onClick={() => onDelete(questionTrackingId, question.id, alternativeTrackingId)}
             >
               Delete
             </button>
@@ -578,6 +624,7 @@ function PointsFields({
   resetAndSave,
   showAutoPointsForManual,
   showMaxAutoPointsForManual,
+  showManualPointsOnlyForAutoGraded,
   onFieldOverrideChange,
 }: {
   assessmentType: EnumAssessmentType;
@@ -602,6 +649,7 @@ function PointsFields({
   resetAndSave: (field: string) => void;
   showAutoPointsForManual: boolean;
   showMaxAutoPointsForManual: boolean;
+  showManualPointsOnlyForAutoGraded: boolean;
   onFieldOverrideChange: (field: string, overridden: boolean) => void;
 }) {
   const isHomework = assessmentType === 'Homework';
@@ -776,6 +824,13 @@ function PointsFields({
 
   return (
     <>
+      {showManualPointsOnlyForAutoGraded && (
+        <div className="alert alert-info small py-2 mb-2" role="alert">
+          <i className="bi bi-info-circle-fill me-1" aria-hidden="true" />
+          This question is auto-graded but only has manual points. Auto-grading results will not
+          contribute to the score.
+        </div>
+      )}
       {isManualGrading && manualPointsField}
       {(showAutoPointsForManual || showMaxAutoPointsForManual) && (
         <div className="alert alert-warning small py-2 mb-2" role="alert">

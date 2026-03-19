@@ -8,6 +8,7 @@ on:
       - '**-code-freeze'
   pull_request:
   merge_group:
+  workflow_dispatch:
 
 concurrency:
   # Ensure that we only run one concurrent job for Pull Requests. This ensures
@@ -101,6 +102,7 @@ jobs:
         run: make typecheck-contrib
       - name: Run the TypeScript typechecker for scripts
         run: make typecheck-scripts
+      - uses: vegardit/fast-apt-mirror.sh@v1
       - name: Start Postgres
         run: |
           sudo apt-get purge -y man-db
@@ -152,6 +154,7 @@ jobs:
         with:
           show-progress: false
 
+      - uses: vegardit/fast-apt-mirror.sh@v1
       - name: Install OS packages
         run: |-
           sudo apt-get update
@@ -201,11 +204,14 @@ jobs:
       - name: Run the HTML linter
         run: make lint-html
       - name: Upload Python coverage report to Codecov
+        if: ${{ env.CODECOV_TOKEN != '' }}
         uses: codecov/codecov-action@v5.5.2
         with:
           token: ${{ secrets.CODECOV_TOKEN }}
           directory: apps/prairielearn/python
           flags: python
+        env:
+          CODECOV_TOKEN: ${{ secrets.CODECOV_TOKEN }}
 
   check-other:
     name: Other
@@ -219,6 +225,7 @@ jobs:
           sudo curl -fsSL https://github.com/hadolint/hadolint/releases/download/v2.14.0/hadolint-Linux-x86_64 -o /bin/hadolint && \
           sudo chmod +x /bin/hadolint
 
+      - uses: vegardit/fast-apt-mirror.sh@v1
       - name: Install OS packages
         run: |-
           sudo apt-get update

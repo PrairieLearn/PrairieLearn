@@ -1,3 +1,4 @@
+import { Ajv } from 'ajv';
 import { z } from 'zod';
 
 import * as sqldb from '@prairielearn/postgres';
@@ -6,12 +7,18 @@ import { assertNever } from '@prairielearn/utils';
 import { IdSchema } from '@prairielearn/zod';
 
 import { config } from '../../lib/config.js';
-import { SprocSyncAssessmentsSchema } from '../../lib/db-types.js';
+import { type AssessmentTool, SprocSyncAssessmentsSchema } from '../../lib/db-types.js';
 import { features } from '../../lib/features/index.js';
+import { extractDefaultPreferences } from '../../lib/question-preferences.js';
 import {
   type AssessmentJson,
+  EnumAssessmentToolSchema,
   type QuestionAlternativeJson,
+  type QuestionJson,
   type QuestionPointsJson,
+  type QuestionPreferences,
+  type QuestionPreferencesSchemaJson,
+  QuestionPreferencesSchemaJsonSchema,
   type ZoneQuestionBlockJson,
 } from '../../schemas/index.js';
 import { type CourseInstanceData, convertLegacyGroupsToGroupsConfig } from '../course-db.js';
@@ -21,6 +28,55 @@ import * as infofile from '../infofile.js';
 const sql = sqldb.loadSqlEquiv(import.meta.url);
 
 type AssessmentInfoFile = infofile.InfoFile<AssessmentJson>;
+
+interface MergePreferencesResult {
+  preferences: QuestionPreferences;
+  errors: string[];
+}
+
+function mergeAndValidatePreferences(
+  ajv: Ajv,
+  qid: string,
+  schema: QuestionPreferencesSchemaJson | null | undefined,
+  overrides: QuestionPreferences | undefined,
+): MergePreferencesResult {
+  const errors: string[] = [];
+  if (!schema) {
+    if (overrides && Object.keys(overrides).length > 0) {
+      errors.push(
+        `Question "${qid}" does not define a preferences schema, but preferences were provided in the assessment`,
+      );
+    }
+    return { preferences: {}, errors };
+  }
+
+  const merged: QuestionPreferences = { ...extractDefaultPreferences(schema), ...overrides };
+
+  const validate = ajv.compile({
+    type: 'object',
+    properties: schema,
+    additionalProperties: false,
+  });
+
+  const valid = validate(merged);
+
+  if (!valid && validate.errors) {
+    for (const error of validate.errors) {
+      const path = error.instancePath || '';
+      let message = `Question "${qid}": preferences${path} ${error.message}`;
+      if (error.keyword === 'enum' && error.params.allowedValues) {
+        message += `: ${error.params.allowedValues.join(', ')}`;
+      }
+      if (error.keyword === 'additionalProperties' && error.params.additionalProperty) {
+        message += `: "${error.params.additionalProperty}"`;
+      }
+
+      errors.push(message);
+    }
+  }
+
+  return { preferences: merged, errors };
+}
 
 /**
  * SYNCING PROCESS:
@@ -48,6 +104,7 @@ type AssessmentInfoFile = infofile.InfoFile<AssessmentJson>;
  *   j) Soft-delete unused assessment questions (from deleted assessments)
  *   k) Delete unused assessment access rules (from deleted assessments)
  *   l) Delete unused zones (from deletes assessments)
+ * 5. Sync assessment tools (assessment-level and zone-level)
  */
 
 function getParamsForAssessment(
@@ -177,6 +234,7 @@ function getParamsForAssessment(
             jsonMaxPoints: alternative.maxPoints ?? null,
             jsonPoints: alternative.points ?? null,
             jsonTriesPerVariant: alternative.triesPerVariant ?? null,
+            preferences: alternative.preferences,
           };
         });
       } else if (question.id) {
@@ -209,6 +267,7 @@ function getParamsForAssessment(
             jsonMaxAutoPoints: question.maxAutoPoints ?? null,
             jsonPoints: question.points ?? null,
             jsonTriesPerVariant: question.triesPerVariant ?? null,
+            preferences: question.preferences,
           },
         ];
       }
@@ -258,6 +317,12 @@ function getParamsForAssessment(
       const questions = normalizedAlternatives.map((alternative, alternativeIndex) => {
         assessmentQuestionNumber++;
         const questionId = questionIds[alternative.qid];
+
+        // Preference validation has already been performed by
+        // preValidateAssessmentPreferences() before this function runs.
+        // If there were errors, getParamsForAssessment would have returned
+        // null early due to the hasErrors check at the top.
+
         return {
           number: assessmentQuestionNumber,
           has_split_points: alternative.hasSplitPoints,
@@ -293,6 +358,7 @@ function getParamsForAssessment(
           json_max_points: alternative.jsonMaxPoints,
           json_max_auto_points: alternative.jsonMaxAutoPoints,
           json_tries_per_variant: alternative.jsonTriesPerVariant,
+          preferences: alternative.preferences ?? null,
         };
       });
 
@@ -326,6 +392,9 @@ function getParamsForAssessment(
     maximum: role.maxMembers,
     can_assign_roles: groups.rolePermissions.canAssignRoles.includes(role.name),
   }));
+
+  // If any errors were added during zone/question processing treat as error.
+  if (infofile.hasErrors(assessmentInfoFile)) return null;
 
   return {
     type: assessment.type,
@@ -478,27 +547,173 @@ export async function sync(
   }
 
   const assessmentParams = Object.entries(assessments).map(([tid, assessment]) => {
+    const params = getParamsForAssessment(assessment, questionIds);
     return JSON.stringify([
       tid,
       assessment.uuid,
       infofile.stringifyErrors(assessment),
       infofile.stringifyWarnings(assessment),
-      getParamsForAssessment(assessment, questionIds),
+      params,
     ]);
   });
 
-  await sqldb.callRow(
-    'sync_assessments',
-    [assessmentParams, courseId, courseInstanceId, config.checkSharingOnSync],
-    SprocSyncAssessmentsSchema,
-  );
+  await sqldb.runInTransactionAsync(async () => {
+    const { name_to_id_map } = await sqldb.callRow(
+      'sync_assessments',
+      [assessmentParams, courseId, courseInstanceId, config.checkSharingOnSync],
+      SprocSyncAssessmentsSchema,
+    );
+
+    await syncAssessmentTools(assessments, name_to_id_map);
+  });
+}
+
+async function syncAssessmentTools(
+  assessments: CourseInstanceData['assessments'],
+  nameToIdMap: Record<string, string> | null,
+) {
+  interface AssessmentLevelToolRow {
+    assessment_id: AssessmentTool['assessment_id'];
+    zone_id?: never;
+    tool: AssessmentTool['tool'];
+    enabled: AssessmentTool['enabled'];
+    settings: AssessmentTool['settings'];
+  }
+
+  interface ZoneLevelToolRow {
+    zone_id: AssessmentTool['zone_id'];
+    assessment_id?: never;
+    tool: AssessmentTool['tool'];
+    enabled: AssessmentTool['enabled'];
+    settings: AssessmentTool['settings'];
+  }
+
+  const toolRows: (AssessmentLevelToolRow | ZoneLevelToolRow)[] = [];
+  const assessmentIds: string[] = [];
+  const assessmentsWithZoneTools: { assessmentId: string; zones: AssessmentJson['zones'] }[] = [];
+
+  for (const [tid, assessment] of Object.entries(assessments)) {
+    const assessmentId = nameToIdMap?.[tid];
+    if (!assessmentId) continue;
+
+    assessmentIds.push(assessmentId);
+
+    if (assessment.data?.tools) {
+      for (const [toolName, { enabled, ...settings }] of Object.entries(assessment.data.tools)) {
+        const tool = EnumAssessmentToolSchema.parse(toolName);
+        toolRows.push({
+          assessment_id: assessmentId,
+          tool,
+          enabled,
+          settings,
+        });
+      }
+    }
+
+    const zones = assessment.data?.zones;
+    if (!zones) continue;
+    if (zones.some((zone) => zone.tools)) {
+      assessmentsWithZoneTools.push({ assessmentId, zones });
+    }
+  }
+
+  const zoneRowsByAssessment = new Map<string, Map<number, { id: string; number: number }>>();
+  if (assessmentsWithZoneTools.length > 0) {
+    const allZoneRows = await sqldb.queryRows(
+      sql.select_zone_ids,
+      { assessment_ids: assessmentsWithZoneTools.map(({ assessmentId }) => assessmentId) },
+      z.object({ id: IdSchema, assessment_id: IdSchema, number: z.number() }),
+    );
+    for (const row of allZoneRows) {
+      let byNumber = zoneRowsByAssessment.get(row.assessment_id);
+      if (!byNumber) {
+        byNumber = new Map();
+        zoneRowsByAssessment.set(row.assessment_id, byNumber);
+      }
+      byNumber.set(row.number, row);
+    }
+  }
+
+  for (const { assessmentId, zones } of assessmentsWithZoneTools) {
+    const zoneRowsByNumber = zoneRowsByAssessment.get(assessmentId)!;
+
+    for (const [index, zone] of zones.entries()) {
+      if (!zone.tools) continue;
+
+      const zoneNumber = index + 1;
+      const zoneRow = zoneRowsByNumber.get(zoneNumber);
+      if (!zoneRow) {
+        throw new Error(
+          `Zone number ${zoneNumber} not found in database for assessment ID ${assessmentId}.`,
+        );
+      }
+
+      for (const [toolName, { enabled, ...settings }] of Object.entries(zone.tools)) {
+        const tool = EnumAssessmentToolSchema.parse(toolName);
+        toolRows.push({
+          zone_id: zoneRow.id,
+          tool,
+          enabled,
+          settings,
+        });
+      }
+    }
+  }
+
+  if (assessmentIds.length > 0) {
+    await sqldb.execute(sql.sync_assessment_tools, {
+      tools: JSON.stringify(toolRows),
+      assessment_ids: assessmentIds,
+    });
+  }
+}
+
+/**
+ * Pre-validates preferences for assessment questions and adds errors to the
+ * assessment infofile. Must be called before assessment sets are synced so that
+ * errors influence whether the "Unknown" fallback set is created.
+ */
+export function preValidateAssessmentPreferences(
+  assessments: CourseInstanceData['assessments'],
+  questions: Record<string, infofile.InfoFile<QuestionJson>>,
+  sharedQuestionPreferences: Record<string, QuestionPreferencesSchemaJson | null>,
+): void {
+  const ajv = new Ajv({ allErrors: true, allowUnionTypes: true });
+
+  for (const assessment of Object.values(assessments)) {
+    if (infofile.hasErrors(assessment) || !assessment.data) continue;
+    for (const zone of assessment.data.zones) {
+      for (const question of zone.questions) {
+        const validate = (qid: string, preferences: QuestionPreferences | undefined) => {
+          let schema: QuestionPreferencesSchemaJson | null;
+          if (qid.startsWith('@')) {
+            if (!(qid in sharedQuestionPreferences)) return; // Unknown QID; will be caught later
+            schema = sharedQuestionPreferences[qid];
+          } else {
+            if (!(qid in questions)) return; // Missing QID will be caught later during assessment sync
+            schema = questions[qid].data?.preferences ?? null;
+          }
+          const { errors } = mergeAndValidatePreferences(ajv, qid, schema, preferences);
+          infofile.addErrors(assessment, errors);
+        };
+
+        if (question.alternatives) {
+          for (const alt of question.alternatives) {
+            if (alt.id) validate(alt.id, alt.preferences);
+          }
+        } else if (question.id) {
+          validate(question.id, question.preferences);
+        }
+      }
+    }
+  }
 }
 
 export async function validateAssessmentSharedQuestions(
   courseId: string,
   assessments: CourseInstanceData['assessments'],
   questionIds: Record<string, string>,
-) {
+): Promise<Record<string, QuestionPreferencesSchemaJson | null>> {
   // A set of all imported question IDs.
   const importedQids = new Set<string>();
 
@@ -561,10 +776,18 @@ export async function validateAssessmentSharedQuestions(
           Array.from(importedQids, parseSharedQuestionReference),
         ),
       },
-      z.object({ sharing_name: z.string(), qid: z.string(), id: IdSchema }),
+      z.object({
+        sharing_name: z.string(),
+        qid: z.string(),
+        id: IdSchema,
+        preferences_schema: QuestionPreferencesSchemaJsonSchema.nullable(),
+      }),
     );
+    const sharedQuestionPreferences: Record<string, QuestionPreferencesSchemaJson | null> = {};
     for (const row of importedQuestions) {
-      questionIds['@' + row.sharing_name + '/' + row.qid] = row.id;
+      const fullQid = '@' + row.sharing_name + '/' + row.qid;
+      questionIds[fullQid] = row.id;
+      sharedQuestionPreferences[fullQid] = row.preferences_schema;
     }
     const missingQids = new Set(Array.from(importedQids).filter((qid) => !(qid in questionIds)));
     if (config.checkSharingOnSync) {
@@ -580,5 +803,7 @@ export async function validateAssessmentSharedQuestions(
         }
       }
     }
+    return sharedQuestionPreferences;
   }
+  return {};
 }

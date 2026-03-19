@@ -1,5 +1,6 @@
 import {
   type ReactNode,
+  useCallback,
   useEffect,
   useLayoutEffect,
   useRef,
@@ -12,19 +13,9 @@ import { useResizeHandle } from '@prairielearn/ui';
 const DEFAULT_RIGHT_WIDTH = 360;
 const MIN_RIGHT_WIDTH = 280;
 const MAX_RIGHT_WIDTH = 600;
-const COLLAPSE_BREAKPOINT = 768;
-
-function useNarrowViewport(): boolean {
-  return useSyncExternalStore(
-    (callback) => {
-      const mq = window.matchMedia(`(max-width: ${COLLAPSE_BREAKPOINT}px)`);
-      mq.addEventListener('change', callback);
-      return () => mq.removeEventListener('change', callback);
-    },
-    () => window.matchMedia(`(max-width: ${COLLAPSE_BREAKPOINT}px)`).matches,
-    () => false,
-  );
-}
+const MIN_LEFT_WIDTH = 400;
+const SEPARATOR_WIDTH = 4;
+const NARROW_CONTAINER_BREAKPOINT = MIN_LEFT_WIDTH + MIN_RIGHT_WIDTH + SEPARATOR_WIDTH;
 
 export function SplitPane({
   left,
@@ -46,11 +37,23 @@ export function SplitPane({
   /** Called when the user closes the detail panel via the X button. */
   onClose?: () => void;
 }) {
-  const isNarrow = useNarrowViewport();
   const [manualCollapsed, setManualCollapsed] = useState(true);
   const prevForceOpenRef = useRef(forceOpen);
   const narrowContainerRef = useRef<HTMLDivElement>(null);
   const savedScrollTopRef = useRef(0);
+
+  const containerWidth = useSyncExternalStore(
+    useCallback((callback: () => void) => {
+      window.addEventListener('resize', callback);
+      window.addEventListener('side-nav-toggle', callback);
+      return () => {
+        window.removeEventListener('resize', callback);
+        window.removeEventListener('side-nav-toggle', callback);
+      };
+    }, []),
+    () => narrowContainerRef.current?.clientWidth ?? 0,
+    () => 0,
+  );
 
   // Re-open panel when forceOpen changes (e.g. user selects a tree item)
   if (forceOpen && forceOpen !== prevForceOpenRef.current) {
@@ -58,12 +61,18 @@ export function SplitPane({
   }
   prevForceOpenRef.current = forceOpen;
 
+  const isNarrow = containerWidth > 0 && containerWidth <= NARROW_CONTAINER_BREAKPOINT;
   const isCollapsed = rightCollapsedProp ?? manualCollapsed;
+
+  const dynamicMaxWidth =
+    containerWidth > 0
+      ? Math.max(0, Math.min(MAX_RIGHT_WIDTH, containerWidth - MIN_LEFT_WIDTH - SEPARATOR_WIDTH))
+      : MAX_RIGHT_WIDTH;
 
   const { width: rightWidth, separatorProps } = useResizeHandle({
     initialWidth: DEFAULT_RIGHT_WIDTH,
     minWidth: MIN_RIGHT_WIDTH,
-    maxWidth: MAX_RIGHT_WIDTH,
+    maxWidth: dynamicMaxWidth,
     ariaLabel: 'Resize panel',
     ariaControls: 'split-pane-detail',
   });
@@ -121,7 +130,12 @@ export function SplitPane({
   }, [isNarrow, isCollapsed]);
 
   return (
-    <div ref={narrowContainerRef} className="split-pane" data-collapsed={isCollapsed || undefined}>
+    <div
+      ref={narrowContainerRef}
+      className="split-pane"
+      data-collapsed={isCollapsed || undefined}
+      data-narrow={isNarrow || undefined}
+    >
       <div className="split-pane__left">{left}</div>
 
       <div className="split-pane__separator" {...separatorProps} />

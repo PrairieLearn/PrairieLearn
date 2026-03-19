@@ -18,6 +18,7 @@ WITH
 SELECT
   to_jsonb(q.*) AS question,
   to_jsonb(top.*) AS topic,
+  to_jsonb(c.*) AS course,
   coalesce(ic.open_issue_count, 0)::integer AS open_issue_count,
   COALESCE(
     (
@@ -38,6 +39,7 @@ SELECT
 FROM
   questions AS q
   JOIN topics AS top ON (top.id = q.topic_id)
+  JOIN courses AS c ON (c.id = q.course_id)
   LEFT JOIN issue_count AS ic ON (ic.question_id = q.id)
 WHERE
   q.course_id = $course_id

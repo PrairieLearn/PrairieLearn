@@ -11,6 +11,7 @@ import { afterAll, assert, beforeAll, describe, it } from 'vitest';
 import { config } from '../lib/config.js';
 import type { Course, Question, Submission, Variant } from '../lib/db-types.js';
 import { EXAMPLE_COURSE_PATH } from '../lib/paths.js';
+import { extractDefaultPreferences } from '../lib/question-preferences.js';
 import { buildQuestionUrls } from '../lib/question-render.js';
 import { makeVariant } from '../lib/question-variant.js';
 import * as questionServers from '../question-servers/index.js';
@@ -290,20 +291,22 @@ describe('Internally graded question lifecycle tests', { timeout: 60_000 }, func
         context.skip();
       }
       const question = {
-        options: info.options ?? {}, // Use options from info.json if available
+        options: info.options ?? {},
+        preferences_schema: info.preferences ?? null,
         directory: relativePath,
         type: 'Freeform',
       } as unknown as Question;
 
+      // Extract default preferences from info.json preferences schema
+      const preferences = info.preferences ? extractDefaultPreferences(info.preferences) : {};
+
       // Prepare and generate
-      const { courseIssues: prepareGenerateIssues, variant: rawVariant } = await makeVariant(
+      const { courseIssues: prepareGenerateIssues, variant: rawVariant } = await makeVariant({
         question,
         course,
-        {
-          variant_seed: null,
-        },
-      );
-
+        variant_seed: null,
+        preferences,
+      });
       assert.isEmpty(prepareGenerateIssues, 'Prepare/Generate should not produce any issues');
 
       const variant = rawVariant as Variant;

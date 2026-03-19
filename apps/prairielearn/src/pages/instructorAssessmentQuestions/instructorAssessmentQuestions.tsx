@@ -92,8 +92,7 @@ router.get(
     });
 
     const canEdit =
-      pageContext.authz_data.has_course_instance_permission_edit &&
-      !res.locals.course.example_course;
+      pageContext.authz_data.has_course_permission_edit && !res.locals.course.example_course;
 
     const trpcCsrfToken = generatePrefixCsrfToken(
       {
@@ -146,7 +145,10 @@ router.get(
                 jsonZones={jsonZones}
                 assessment={pageContext.assessment}
                 hasCoursePermissionPreview={pageContext.authz_data.has_course_permission_preview}
-                canEdit={canEdit ?? false}
+                hasCourseInstancePermissionEdit={
+                  pageContext.authz_data.has_course_instance_permission_edit ?? false
+                }
+                canEdit={canEdit}
                 csrfToken={res.locals.__csrf_token}
                 origHash={origHash}
                 trpcCsrfToken={trpcCsrfToken}
@@ -189,7 +191,9 @@ router.post(
   '/',
   asyncHandler(async (req, res) => {
     if (req.body.__action === 'reset_question_variants') {
-      // TODO: What permission do we need to reset question variants?
+      if (!res.locals.authz_data.has_course_instance_permission_edit) {
+        throw new HttpStatusError(403, 'Access denied (must be course instance editor)');
+      }
 
       if (res.locals.assessment.type === 'Exam') {
         // See https://github.com/PrairieLearn/PrairieLearn/issues/12977

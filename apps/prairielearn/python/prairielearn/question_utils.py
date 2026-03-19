@@ -94,10 +94,13 @@ class QuestionData(TypedDict):
     """The number of valid (not containing format errors) submissions by the student for the current variant."""
 
     manual_grading: bool
-    """Whether the question is being rendered in the manual grading view."""
+    """Whether manual-grading content should be shown. This is true in the manual grading view, and also for question and answer panels when rendered for AI grading."""
 
     ai_grading: bool
-    """Whether the question is being rendered in the AI grading view."""
+    """Whether the question is being rendered for AI grading."""
+
+    gradable: bool
+    """Whether the submission can be graded. Automatically set to ``False`` if there are format errors."""
 
     answers_names: dict[str, bool]
     """A dictionary whose keys list the names of the answers in the question."""

@@ -130,6 +130,11 @@ jobs:
           username: ${{ secrets.DOCKERHUB_USERNAME }}
           password: ${{ secrets.DOCKERHUB_TOKEN }}
 
+      # The default Azure apt mirror on GitHub Actions runners is frequently
+      # slow or throttled, causing apt-get operations to take minutes instead
+      # of seconds. This action finds and configures a faster mirror.
+      - uses: vegardit/fast-apt-mirror.sh@v1
+
       # We uninstall `man-db` to speed up the installation of other packages
       # by avoiding building man pages for them. As this is a non-interactive
       # environment, we will never need man pages anyways.

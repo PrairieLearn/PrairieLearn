@@ -31,6 +31,7 @@ interface TestExam {
   title: string;
   questions: TestExamQuestion[];
   keyedQuestions: Record<string, TestExamQuestion>;
+  examUuid: string;
 }
 
 const exam1AutomaticTestSuiteQuestions: TestExamQuestion[] = [
@@ -50,10 +51,36 @@ export const exams: Record<string, TestExam> = {
     title: 'Exam for automatic test suite',
     questions: exam1AutomaticTestSuiteQuestions,
     keyedQuestions: keyBy(exam1AutomaticTestSuiteQuestions, (question) => question.qid),
+    examUuid: 'e66122b5-c793-4235-9851-9a3aa80ae39b',
   },
 };
 
 export const exam1AutomaticTestSuite = exams['exam1-automaticTestSuite'];
+
+export async function withPTReservation<T>(
+  {
+    userId,
+    accessStart,
+    accessEnd,
+  }: {
+    userId: string;
+    accessStart: Date;
+    accessEnd: Date;
+  },
+  fn: () => Promise<T>,
+) {
+  try {
+    await sqldb.execute(sql.create_pt_reservation, {
+      user_id: userId,
+      access_start: accessStart,
+      access_end: accessEnd,
+      exam_uuid: exam1AutomaticTestSuite.examUuid,
+    });
+    return await fn();
+  } finally {
+    await sqldb.execute(sql.delete_pt_reservation);
+  }
+}
 
 export function startExam(locals: Record<string, any>, examTid: keyof typeof exams) {
   if (!(examTid in exams)) {
