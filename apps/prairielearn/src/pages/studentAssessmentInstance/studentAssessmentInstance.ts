@@ -276,9 +276,10 @@ router.get(
 
     const showTimeLimitExpiredModal = req.query.timeLimitExpired === 'true';
 
-    // team_id can be null for instructor previews of team_work assessments,
-    // since the instructor isn't part of a team.
-    // TODO: This still isn't handled well, see https://github.com/PrairieLearn/PrairieLearn/issues/6636
+    // team_id can be null when an assessment instance was created before
+    // team_work was enabled (e.g. instructor previewed a homework, then later
+    // added a groups config and synced). The redirect middleware filters these
+    // out, but we guard here too for safety.
     if (!res.locals.assessment.team_work || !res.locals.assessment_instance.team_id) {
       res.send(
         StudentAssessmentInstance({
