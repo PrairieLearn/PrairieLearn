@@ -4,7 +4,6 @@ import superjson from 'superjson';
 import { z } from 'zod';
 
 import { EnumAiGradingProviderSchema } from '../../../lib/db-types.js';
-import { features } from '../../../lib/features/index.js';
 import type { ResLocalsForPage } from '../../../lib/res-locals.js';
 import { encryptForStorage } from '../../../lib/storage-crypt.js';
 import {
@@ -12,6 +11,7 @@ import {
   updateUseCustomApiKeys,
   upsertCredential,
 } from '../../../models/ai-grading-credentials.js';
+import { creditPoolProcedures, requireAiGradingFeature } from '../../lib/credit-pool-trpc.js';
 
 import { formatCredential } from './utils/format.js';
 
@@ -37,23 +37,6 @@ const requireEditPermission = t.middleware(async (opts) => {
     throw new TRPCError({
       code: 'FORBIDDEN',
       message: 'Access denied',
-    });
-  }
-  return opts.next();
-});
-
-const requireAiGradingFeature = t.middleware(async (opts) => {
-  const enabled = await features.enabled('ai-grading', {
-    institution_id: opts.ctx.course.institution_id,
-    course_id: opts.ctx.course.id,
-    course_instance_id: opts.ctx.course_instance.id,
-    user_id: opts.ctx.authn_user.id,
-  });
-
-  if (!enabled) {
-    throw new TRPCError({
-      code: 'FORBIDDEN',
-      message: 'Access denied (feature not available)',
     });
   }
   return opts.next();
@@ -106,6 +89,7 @@ const deleteCredentialMutation = t.procedure
   });
 
 export const aiGradingSettingsRouter = t.router({
+  ...creditPoolProcedures,
   updateUseCustomApiKeys: updateUseCustomApiKeysMutation,
   addCredential: addCredentialMutation,
   deleteCredential: deleteCredentialMutation,

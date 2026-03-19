@@ -90,6 +90,7 @@ import { selectCourseById } from './models/course.js';
 import * as freeformServer from './question-servers/freeform.js';
 import * as sprocs from './sprocs/index.js';
 import { administratorTrpcRouter } from './trpc/administrator/trpc.js';
+import { courseInstanceTrpcRouter } from './trpc/courseInstance/trpc.js';
 
 process.on('warning', (e) => console.warn(e));
 
@@ -1266,6 +1267,14 @@ export async function initExpress(): Promise<Express> {
       ).default,
     );
   }
+  app.use(
+    '/pl/course_instance/:course_instance_id(\\d+)/instructor/trpc',
+    courseInstanceTrpcRouter,
+  );
+  app.use(
+    '/pl/course_instance/:course_instance_id(\\d+)/instructor/instance_admin/students/labels',
+    (await import('./pages/instructorStudentsLabels/instructorStudentsLabels.js')).default,
+  );
   app.use(
     '/pl/course_instance/:course_instance_id(\\d+)/instructor/instance_admin/assessments',
     (await import('./pages/instructorAssessments/instructorAssessments.js')).default,
