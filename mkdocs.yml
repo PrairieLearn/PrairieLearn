@@ -222,6 +222,7 @@ nav:
           - 'Overview': question/overview.md
           - '<code>question.html</code>': 'question/template.md'
           - '<code>server.py</code>': 'question/server.md'
+          - 'Preferences': 'question/preferences.md'
           - 'Runtime environment': 'question/runtime.md'
           - 'Accessibility': 'question/accessibility.md'
       - 'Elements':
