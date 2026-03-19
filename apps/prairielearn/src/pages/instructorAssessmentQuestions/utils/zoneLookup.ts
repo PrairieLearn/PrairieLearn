@@ -218,15 +218,15 @@ export function getInitialSelectedZoneItem(
       const includesAltGroup = preselection.slice(3).includes(':');
       if (!includesAltGroup) {
         const zoneIndex = Number.parseInt(preselection.slice(2));
-        const zone = zones[zoneIndex];
+        const zone = zones.at(zoneIndex);
         if (zone) {
           return { type: 'zone', zoneTrackingId: zone.trackingId };
         }
       } else {
         const [zoneIndex, altGroupIndex] = preselection.slice(2).split(':').map(Number);
-        const zone = zones[zoneIndex];
+        const zone = zones.at(zoneIndex);
         if (zone) {
-          const altGroup = zone.questions[altGroupIndex];
+          const altGroup = zone.questions.at(altGroupIndex);
           if (altGroup) {
             return { type: 'altGroup', questionTrackingId: altGroup.trackingId };
           }
