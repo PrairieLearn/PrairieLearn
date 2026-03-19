@@ -1,5 +1,4 @@
 import * as d3 from 'd3';
-import { useEffect, useRef } from 'react';
 
 interface HistMiniProps {
   data: number[];
@@ -92,23 +91,4 @@ export function renderHistMini({
     .attr('x2', width)
     .attr('y2', height)
     .attr('class', 'x axis');
-}
-
-export function HistMini({ data, options }: HistMiniProps) {
-  // For this to work on the server, we need to use a ref.
-  // d3.create() is not supported on the server.
-  const containerRef = useRef<HTMLDivElement>(null);
-
-  useEffect(() => {
-    if (containerRef.current) {
-      containerRef.current.innerHTML = '';
-      renderHistMini({
-        element: containerRef.current,
-        data,
-        options: options ?? {},
-      });
-    }
-  }, [data, options]);
-
-  return <div ref={containerRef} className="histmini" />;
 }
