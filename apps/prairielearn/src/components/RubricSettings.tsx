@@ -1162,8 +1162,6 @@ function RubricRow({
           required
           onInput={({ currentTarget }) =>
             updateRubricItem({
-              // currentTarget.value will be an empty string if the input is not valid yet
-              // so we can use this to check for partially done inputs such as just a "-" as well
               points: currentTarget.value.length > 0 ? Number(currentTarget.value) : null,
             })
           }
@@ -1187,13 +1185,6 @@ function RubricRow({
       <td className="align-middle">
         <textarea
           className="form-control"
-          /**
-           * In one of the previous versions, explanation wasn't displayed correctly
-           * when used this way. We fixed it by making the textarea uncontrolled and
-           * putting the explanation text in the body of the textarea element.
-           * However, this method will not work well with "Discard changes".
-           * Ditto for grader note below.
-           */
           value={item.rubric_item.explanation ?? ''}
           maxLength={10000}
           style={{ minWidth: '15rem' }}

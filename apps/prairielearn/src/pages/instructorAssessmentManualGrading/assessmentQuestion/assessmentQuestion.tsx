@@ -11,8 +11,10 @@ import { generatePrefixCsrfToken } from '@prairielearn/signed-token';
 import { AssessmentOpenInstancesAlert } from '../../../components/AssessmentOpenInstancesAlert.js';
 import { PageLayout } from '../../../components/PageLayout.js';
 import {
-  AI_GRADING_AGENT_INSTRUCTIONS,
-  streamAiGradingAssistantResponse,
+  editRubric,
+  extractConversationHistory,
+  extractLatestInstruction,
+  generateRubric,
 } from '../../../ee/lib/ai-grading/ai-grading-agent.js';
 import { getAvailableAiGradingProviders } from '../../../ee/lib/ai-grading/ai-grading-credentials.js';
 import {
@@ -273,6 +275,11 @@ router.post(
       },
     );
 
+    const phase = req.body.phase as 'generate' | 'edit' | undefined;
+    if (!phase || !['generate', 'edit'].includes(phase)) {
+      throw new error.HttpStatusError(400, 'Invalid or missing phase');
+    }
+
     const uiMessages = run(() => {
       if (Array.isArray(req.body.messages)) {
         return req.body.messages;
@@ -295,80 +302,84 @@ router.post(
       userId: res.locals.user.id,
       authnUserId: res.locals.authn_user.id,
       type: 'ai_grading',
-      description: 'Generate rubric with AI chat',
+      description: phase === 'generate' ? 'Generate rubric with AI' : 'Edit rubric with AI',
       reportErrorsToSentry: true,
     });
 
     const stream = createUIMessageStream({
       async execute({ writer }) {
         await serverJob.execute(async (job) => {
-          job.info('AI grading chat request');
-          job.info('System instructions:');
-          job.info(AI_GRADING_AGENT_INSTRUCTIONS);
-          job.info('Initial model messages:');
-          job.info(JSON.stringify(messages, null, 2));
+          const agentContext = {
+            assessment,
+            assessmentQuestion: assessment_question,
+            course: res.locals.course,
+            question,
+            urlPrefix,
+            authnUserId: res.locals.authn_user.id,
+            hasCourseInstancePermissionEdit:
+              authz_data.has_course_instance_permission_edit ?? false,
+          };
 
-          const result = await streamAiGradingAssistantResponse({
-            messages,
-            context: {
-              assessment,
-              assessmentQuestion: assessment_question,
-              course: res.locals.course,
-              question,
-              urlPrefix,
-              authnUserId: res.locals.authn_user.id,
-              hasCourseInstancePermissionEdit:
-                authz_data.has_course_instance_permission_edit ?? false,
-            },
-          });
+          job.info(`AI grading chat request — phase: ${phase}`);
 
-          const errorState = { hasError: false };
-          writer.merge(
-            result.toUIMessageStream({
-              messageMetadata({ part }) {
-                if (part.type === 'start') {
-                  return {
-                    job_sequence_id: serverJob.jobSequenceId,
-                    status: 'streaming',
-                  };
-                }
+          const textPartId = 'summary';
 
-                if (part.type === 'finish') {
-                  return {
-                    job_sequence_id: serverJob.jobSequenceId,
-                    status: errorState.hasError ? 'errored' : 'completed',
-                  };
-                }
-              },
-              onError(err) {
-                errorState.hasError = true;
-                job.error(String(err));
-                return String(err);
-              },
-            }),
-          );
-
-          let steps: Awaited<typeof result.steps> = [];
           try {
-            steps = await result.steps;
-          } catch (err) {
-            job.error('Failed to get steps');
-            job.error(String(err));
-          }
+            if (phase === 'generate') {
+              const result = await generateRubric(agentContext, job);
+              writer.write({
+                type: 'start',
+                messageMetadata: {
+                  job_sequence_id: serverJob.jobSequenceId,
+                  status: 'completed',
+                  phase: 'generate',
+                },
+              });
+              writer.write({ type: 'start-step' });
+              writer.write({ type: 'text-start', id: textPartId });
+              writer.write({ type: 'text-delta', id: textPartId, delta: result.summary });
+              writer.write({ type: 'text-end', id: textPartId });
+              writer.write({ type: 'finish-step' });
+              writer.write({ type: 'finish' });
+            } else {
+              const instruction = extractLatestInstruction(messages);
+              const conversationHistory = extractConversationHistory(messages);
 
-          let totalUsage: Awaited<typeof result.totalUsage> | undefined;
-          try {
-            totalUsage = await result.totalUsage;
-          } catch (err) {
-            job.error('Failed to get usage');
-            job.error(String(err));
-          }
+              job.info('Instruction: ' + instruction);
+              job.info('Conversation history: ' + JSON.stringify(conversationHistory, null, 2));
 
-          job.info('Finish reason: ' + (await result.finishReason));
-          job.info('Agent steps:');
-          job.info(JSON.stringify(steps, null, 2));
-          job.info('Usage:');
-          job.info(JSON.stringify(totalUsage, null, 2));
+              const result = await editRubric(agentContext, instruction, conversationHistory, job);
+              writer.write({
+                type: 'start',
+                messageMetadata: {
+                  job_sequence_id: serverJob.jobSequenceId,
+                  status: 'completed',
+                  phase: 'edit',
+                  rubric_modified: result.rubricModified,
+                },
+              });
+              writer.write({ type: 'start-step' });
+              writer.write({ type: 'text-start', id: textPartId });
+              writer.write({ type: 'text-delta', id: textPartId, delta: result.summary });
+              writer.write({ type: 'text-end', id: textPartId });
+              writer.write({ type: 'finish-step' });
+              writer.write({ type: 'finish' });
+            }
+          } catch (err) {
+            job.error(String(err));
+            writer.write({
+              type: 'start',
+              messageMetadata: {
+                job_sequence_id: serverJob.jobSequenceId,
+                status: 'errored',
+                phase,
+              },
+            });
+            writer.write({ type: 'start-step' });
+            writer.write({ type: 'error', errorText: String(err) });
+            writer.write({ type: 'finish-step' });
+            writer.write({ type: 'finish' });
+          }
         });
       },
     });

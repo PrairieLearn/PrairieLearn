@@ -83,6 +83,7 @@ interface AssessmentQuestionTableProps {
   aiGradingMode: boolean;
   aiGradingModelSelectionEnabled: boolean;
   rubricData: RubricData | null;
+  rubricEditingDisabled?: boolean;
   instanceQuestionGroups: StaffInstanceQuestionGroup[];
   courseStaff: StaffUser[];
   aiGradingStats: AiGradingGeneralStats | null;
@@ -173,6 +174,7 @@ export function AssessmentQuestionTable({
   aiGradingMode,
   aiGradingModelSelectionEnabled,
   rubricData,
+  rubricEditingDisabled = false,
   instanceQuestionGroups,
   courseStaff,
   course,
@@ -649,7 +651,9 @@ export function AssessmentQuestionTable({
     <>
       <div className="mb-3">
         <RubricSettings
-          hasCourseInstancePermissionEdit={hasCourseInstancePermissionEdit}
+          hasCourseInstancePermissionEdit={
+            hasCourseInstancePermissionEdit && !rubricEditingDisabled
+          }
           assessmentQuestion={assessmentQuestion}
           rubricData={rubricData}
           csrfToken={csrfToken}

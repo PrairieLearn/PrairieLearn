@@ -1,7 +1,7 @@
 import { useChat } from '@ai-sdk/react';
 import { QueryClient, useQueryClient } from '@tanstack/react-query';
-import { DefaultChatTransport, type ToolUIPart, type UIMessage } from 'ai';
-import { useState } from 'react';
+import { DefaultChatTransport, type UIMessage } from 'ai';
+import { useMemo, useRef, useState } from 'react';
 import { Alert } from 'react-bootstrap';
 
 import { NuqsAdapter } from '@prairielearn/ui';
@@ -17,7 +17,7 @@ import type {
 } from '../../../lib/client/safe-db-types.js';
 import { QueryClientProviderDebug } from '../../../lib/client/tanstackQuery.js';
 import type { EnumAiGradingProvider } from '../../../lib/db-types.js';
-import { type RubricData, RubricDataSchema } from '../../../lib/manualGrading.types.js';
+import type { RubricData } from '../../../lib/manualGrading.types.js';
 import { createAssessmentQuestionTrpcClient } from '../../../trpc/assessmentQuestion/client.js';
 import { TRPCProvider, useTRPC } from '../../../trpc/assessmentQuestion/context.js';
 
@@ -65,71 +65,19 @@ type AssessmentQuestionManualGradingInnerProps = Omit<
   'search' | 'isDevMode' | 'trpcCsrfToken'
 >;
 
+type RubricPhase = 'generate' | 'edit';
+
 type RubricChatMessage = UIMessage<{
   job_sequence_id?: string;
   status?: 'streaming' | 'completed' | 'errored';
+  phase?: RubricPhase;
+  rubric_modified?: boolean;
 }>;
-
-const GENERATE_NEW_RUBRIC_PROMPT = 'Generate a new rubric.';
-
-function parseRubricData(data: unknown): RubricData | null {
-  const parsedRubricData = RubricDataSchema.nullable().safeParse(data);
-  return parsedRubricData.success ? parsedRubricData.data : null;
-}
-
-function sanitizeMessagesForServer(messages: RubricChatMessage[]): RubricChatMessage[] {
-  return messages
-    .map((message) => ({
-      ...message,
-      parts: message.parts.filter(
-        (part) =>
-          part.type === 'text' ||
-          !isToolPart(part) ||
-          (part.type !== 'tool-get_initialization_context' && part.type !== 'tool-set_rubric'),
-      ),
-    }))
-    .filter((message) => message.parts.length > 0);
-}
-
-function isToolPart(part: UIMessage['parts'][0]): part is ToolUIPart {
-  return part.type.startsWith('tool-');
-}
 
 function partToChatContent(part: UIMessage['parts'][0]): string | null {
   if (part.type === 'text') {
     return part.text;
   }
-
-  if (!isToolPart(part)) {
-    return null;
-  }
-
-  if (part.type === 'tool-get_initialization_context') {
-    if (part.state === 'input-streaming' || part.state === 'input-available') {
-      return 'Calling tool: Get initialization context...';
-    }
-    if (part.state === 'output-available') {
-      return 'Tool called: Get initialization context';
-    }
-    if (part.state === 'output-error') {
-      return `Tool error while getting initialization context: ${part.errorText}`;
-    }
-    return null;
-  }
-
-  if (part.type === 'tool-set_rubric') {
-    if (part.state === 'input-streaming' || part.state === 'input-available') {
-      return 'Calling tool: Set rubric...';
-    }
-    if (part.state === 'output-available') {
-      return 'Tool called: Set rubric';
-    }
-    if (part.state === 'output-error') {
-      return `Tool error while setting rubric: ${part.errorText}`;
-    }
-    return null;
-  }
-
   return null;
 }
 
@@ -180,20 +128,41 @@ function AssessmentQuestionManualGradingInner({
   availableAiGradingProviders,
   chatCsrfToken,
 }: AssessmentQuestionManualGradingInnerProps) {
+  const initialRubricData = rubricData;
   const trpc = useTRPC();
   const queryClient = useQueryClient();
   const [groupInfoModalState, setGroupInfoModalState] = useState<GroupInfoModalState>(null);
   const [conflictModalState, setConflictModalState] = useState<ConflictModalState>(null);
   const [showAiGradingUnavailableModal, setShowAiGradingUnavailableModal] = useState(false);
-  const [rubricDataState, setRubricDataState] = useState(() => parseRubricData(rubricData));
+  const [rubricDataState, setRubricDataState] = useState(initialRubricData);
   const [aiGradingStatsState, setAiGradingStatsState] = useState(aiGradingStats);
-  const [hasGeneratedRubric, setHasGeneratedRubric] = useState(false);
+  const [hasGeneratedRubric, setHasGeneratedRubric] = useState(initialRubricData != null);
+  const hasGeneratedRubricRef = useRef(initialRubricData != null);
 
   const [aiGradingMode, setAiGradingMode] = useState(initialAiGradingMode);
   const [chatInput, setChatInput] = useState('');
+  const currentPhaseRef = useRef<RubricPhase>('generate');
 
   const chatUrl = `${urlPrefix}/assessment/${assessment.id}/manual_grading/assessment_question/${assessmentQuestion.id}/chat`;
   const rubricDataUrl = `${chatUrl}/rubric_data`;
+
+  const refreshRubricData = () => {
+    void fetch(rubricDataUrl, {
+      headers: { 'X-CSRF-Token': chatCsrfToken },
+    })
+      .then(async (response) => {
+        if (!response.ok) return;
+        const data = (await response.json()) as {
+          rubric_data: unknown;
+          aiGradingStats: AiGradingGeneralStats | null;
+        };
+        setRubricDataState(data.rubric_data as RubricData | null);
+        setAiGradingStatsState(data.aiGradingStats);
+      })
+      .catch(() => {
+        // Ignore chat-side fetch errors; users can still refresh manually.
+      });
+  };
 
   const { messages, sendMessage, status } = useChat<RubricChatMessage>({
     transport: new DefaultChatTransport({
@@ -204,51 +173,57 @@ function AssessmentQuestionManualGradingInner({
           headers,
           body: {
             ...body,
-            messages: sanitizeMessagesForServer(messages),
+            phase: currentPhaseRef.current,
+            messages,
           },
         };
       },
     }),
     onFinish({ message }) {
-      const didSetRubric = message.parts.some(
-        (part) =>
-          isToolPart(part) && part.type === 'tool-set_rubric' && part.state === 'output-available',
-      );
-      if (!didSetRubric) {
+      const phase = message.metadata?.phase;
+
+      if (phase === 'generate') {
+        setHasGeneratedRubric(true);
+        hasGeneratedRubricRef.current = true;
+        triggerOpenRubricEditor();
+        refreshRubricData();
+
+        void queryClient.invalidateQueries({
+          queryKey: trpc.instances.queryKey(),
+        });
         return;
       }
 
-      setHasGeneratedRubric(true);
-      triggerOpenRubricEditor();
+      if (phase === 'edit') {
+        const rubricModified = message.metadata?.rubric_modified ?? false;
+        if (rubricModified) {
+          setHasGeneratedRubric(true);
+          hasGeneratedRubricRef.current = true;
+          triggerOpenRubricEditor();
+          refreshRubricData();
 
-      void fetch(rubricDataUrl, {
-        headers: { 'X-CSRF-Token': chatCsrfToken },
-      })
-        .then(async (response) => {
-          if (!response.ok) return;
-          const data = (await response.json()) as {
-            rubric_data: unknown;
-            aiGradingStats: AiGradingGeneralStats | null;
-          };
-          const parsedRubricData = parseRubricData(data.rubric_data);
-          setRubricDataState(parsedRubricData);
-          setAiGradingStatsState(data.aiGradingStats);
-        })
-        .catch(() => {
-          // Ignore chat-side fetch errors; users can still refresh manually.
-        });
-
-      void queryClient.invalidateQueries({
-        queryKey: trpc.instances.queryKey(),
-      });
+          void queryClient.invalidateQueries({
+            queryKey: trpc.instances.queryKey(),
+          });
+        }
+      }
     },
   });
 
   const isGenerating = status === 'streaming' || status === 'submitted';
 
-  const latestJobSequenceId =
-    [...messages].reverse().find((message) => message.metadata?.job_sequence_id != null)?.metadata
-      ?.job_sequence_id ?? null;
+  // Build a lookup of message id -> job_sequence_id for per-message job logs
+  const jobSequenceByMessageId = useMemo(() => {
+    const map = new Map<string, string>();
+    for (const m of messages) {
+      const jsId = m.metadata?.job_sequence_id;
+      if (jsId) {
+        map.set(m.id, jsId);
+      }
+    }
+    return map;
+  }, [messages]);
+
   const lastAssistantMessageId =
     [...messages].reverse().find((message) => message.role === 'assistant')?.id ?? null;
 
@@ -345,6 +320,7 @@ function AssessmentQuestionManualGradingInner({
           aiGradingMode={aiGradingMode}
           aiGradingModelSelectionEnabled={aiGradingModelSelectionEnabled}
           rubricData={rubricDataState}
+          rubricEditingDisabled={isGenerating}
           instanceQuestionGroups={instanceQuestionGroups}
           courseStaff={courseStaff}
           aiGradingStats={aiGradingStatsState}
@@ -383,41 +359,49 @@ function AssessmentQuestionManualGradingInner({
           <Messages
             messages={displayedChatMessages}
             renderAfterMessage={(message) => {
-              if (message.role !== 'assistant' || message.id !== lastAssistantMessageId) {
-                return null;
-              }
+              const jobSequenceId = jobSequenceByMessageId.get(message.id);
+
+              if (message.role !== 'assistant') return null;
 
               return (
                 <div className="mb-3">
-                  <div className="d-flex flex-wrap gap-2">
-                    {hasGeneratedRubric && (
-                      <button
-                        type="button"
-                        className="btn btn-outline-secondary btn-sm"
-                        onClick={triggerOpenRubricEditor}
-                      >
-                        Open rubric editor
-                      </button>
-                    )}
-                  </div>
+                  {jobSequenceId && (
+                    <a
+                      className="small"
+                      href={`${urlPrefix}/jobSequence/${jobSequenceId}`}
+                      target="_blank"
+                      rel="noreferrer"
+                    >
+                      View job logs
+                    </a>
+                  )}
+                  {message.id === lastAssistantMessageId && (
+                    <div className="d-flex flex-wrap gap-2 mt-1">
+                      {hasGeneratedRubric && (
+                        <button
+                          type="button"
+                          className="btn btn-outline-secondary btn-sm"
+                          onClick={triggerOpenRubricEditor}
+                        >
+                          Open rubric editor
+                        </button>
+                      )}
+                    </div>
+                  )}
                 </div>
               );
             }}
           />
-        </div>
-        <div className="p-3 border-top">
-          {latestJobSequenceId && (
-            <div className="mb-2 text-end">
-              <a
-                href={`${urlPrefix}/jobSequence/${latestJobSequenceId}`}
-                target="_blank"
-                rel="noreferrer"
-                className="small"
-              >
-                View job logs ({latestJobSequenceId})
-              </a>
+          {isGenerating && (
+            <div className="d-flex align-items-center gap-1 small text-muted">
+              <div className="spinner-border spinner-border-sm" role="status">
+                <span className="visually-hidden">Working...</span>
+              </div>
+              Working...
             </div>
           )}
+        </div>
+        <div className="p-3 border-top">
           {!hasGeneratedRubric && (
             <div className="d-flex justify-content-end mb-2">
               <button
@@ -425,7 +409,8 @@ function AssessmentQuestionManualGradingInner({
                 className="btn btn-outline-primary btn-sm"
                 disabled={isGenerating}
                 onClick={() => {
-                  void sendMessage({ text: GENERATE_NEW_RUBRIC_PROMPT });
+                  currentPhaseRef.current = 'generate';
+                  void sendMessage({ text: 'Generate a new rubric.' });
                 }}
               >
                 <i className="bi bi-stars me-1" />
@@ -441,14 +426,9 @@ function AssessmentQuestionManualGradingInner({
               </button>
             </div>
           )}
-          {hasGeneratedRubric && (
-            <div className="small text-muted mb-2">
-              You can give suggestions in chat, or start AI grading.
-            </div>
-          )}
           <GradingPromptInput
             value={chatInput}
-            disabled={false}
+            disabled={!hasGeneratedRubric}
             isGenerating={isGenerating}
             onChange={setChatInput}
             onSubmit={(text) => {
@@ -456,6 +436,7 @@ function AssessmentQuestionManualGradingInner({
               if (trimmedText.length === 0) {
                 return;
               }
+              currentPhaseRef.current = 'edit';
               void sendMessage({ text: trimmedText });
               setChatInput('');
             }}
