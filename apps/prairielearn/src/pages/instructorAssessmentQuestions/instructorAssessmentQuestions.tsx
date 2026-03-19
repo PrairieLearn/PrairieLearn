@@ -27,7 +27,6 @@ import { resetVariantsForAssessmentQuestion } from '../../models/variant.js';
 import { ZoneAssessmentJsonSchema } from '../../schemas/infoAssessment.js';
 
 import { AssessmentQuestionsEditor } from './components/AssessmentEditor.js';
-import { InstructorAssessmentQuestionsTableLegacy } from './components/InstructorAssessmentQuestionsTableLegacy.js';
 import { assessmentQuestionsRouter, createContext } from './trpc.js';
 import { serializeZonesForJson } from './utils/dataTransform.js';
 import { buildHierarchicalAssessment } from './utils/questions.js';
@@ -78,18 +77,11 @@ router.get(
     // for doing operations.
     const jsonZones = buildHierarchicalAssessment(res.locals.course, questionRows);
 
-    const editorEnabled = await features.enabledFromLocals(
-      'assessment-questions-editor',
-      res.locals,
-    );
     const questionSharingEnabled = await features.enabledFromLocals('question-sharing', res.locals);
     const consumePublicQuestionsEnabled = await features.enabledFromLocals(
       'consume-public-questions',
       res.locals,
     );
-
-    const showLegacy = !editorEnabled || req.query.view === 'legacy';
-    const showEditor = editorEnabled && !showLegacy;
 
     const pageContext = extractPageContext(res.locals, {
       pageType: 'assessment',
@@ -109,20 +101,6 @@ router.get(
 
     const search = getUrl(req).search;
 
-    // Build toggle link that adds/removes the `view=legacy` query parameter.
-    const toggleUrl = (() => {
-      if (!editorEnabled) return null;
-      const url = getUrl(req);
-      const params = new URLSearchParams(url.search);
-      if (showEditor) {
-        params.set('view', 'legacy');
-      } else {
-        params.delete('view');
-      }
-      const qs = params.toString();
-      return `${url.pathname}${qs ? `?${qs}` : ''}`;
-    })();
-
     res.send(
       PageLayout({
         resLocals: res.locals,
@@ -138,46 +116,28 @@ router.get(
         },
         options: {
           fullWidth: true,
-          contentPadding: !showEditor,
+          contentPadding: false,
         },
         content: (
           <Hydrate>
-            {showEditor ? (
-              <AssessmentQuestionsEditor
-                course={pageContext.course}
-                courseInstance={pageContext.course_instance}
-                questionRows={questionRows}
-                jsonZones={jsonZones}
-                assessment={pageContext.assessment}
-                hasCoursePermissionPreview={pageContext.authz_data.has_course_permission_preview}
-                hasCourseInstancePermissionEdit={
-                  pageContext.authz_data.has_course_instance_permission_edit ?? false
-                }
-                canEdit={canEdit}
-                csrfToken={res.locals.__csrf_token}
-                origHash={origHash}
-                trpcCsrfToken={trpcCsrfToken}
-                search={search}
-                switchViewUrl={toggleUrl}
-                questionSharingEnabled={questionSharingEnabled}
-                consumePublicQuestionsEnabled={consumePublicQuestionsEnabled}
-              />
-            ) : (
-              <InstructorAssessmentQuestionsTableLegacy
-                course={pageContext.course}
-                questionRows={questionRows}
-                urlPrefix={pageContext.urlPrefix}
-                assessmentType={pageContext.assessment.type}
-                assessmentSetName={pageContext.assessment_set.name}
-                assessmentNumber={pageContext.assessment.number}
-                hasCoursePermissionPreview={pageContext.authz_data.has_course_permission_preview}
-                hasCourseInstancePermissionEdit={
-                  pageContext.authz_data.has_course_instance_permission_edit ?? false
-                }
-                csrfToken={res.locals.__csrf_token}
-                switchViewUrl={toggleUrl}
-              />
-            )}
+            <AssessmentQuestionsEditor
+              course={pageContext.course}
+              courseInstance={pageContext.course_instance}
+              questionRows={questionRows}
+              jsonZones={jsonZones}
+              assessment={pageContext.assessment}
+              hasCoursePermissionPreview={pageContext.authz_data.has_course_permission_preview}
+              hasCourseInstancePermissionEdit={
+                pageContext.authz_data.has_course_instance_permission_edit ?? false
+              }
+              canEdit={canEdit}
+              csrfToken={res.locals.__csrf_token}
+              origHash={origHash}
+              trpcCsrfToken={trpcCsrfToken}
+              search={search}
+              questionSharingEnabled={questionSharingEnabled}
+              consumePublicQuestionsEnabled={consumePublicQuestionsEnabled}
+            />
           </Hydrate>
         ),
       }),
@@ -214,14 +174,6 @@ router.post(
       });
       res.redirect(req.originalUrl);
     } else if (req.body.__action === 'save_questions') {
-      const editorEnabled = await features.enabledFromLocals(
-        'assessment-questions-editor',
-        res.locals,
-      );
-      if (!editorEnabled) {
-        throw new HttpStatusError(403, 'Assessment questions editor feature is not enabled');
-      }
-
       if (!res.locals.authz_data.has_course_permission_edit) {
         throw new HttpStatusError(403, 'Access denied (must be course editor)');
       }
