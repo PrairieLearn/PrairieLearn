@@ -18,6 +18,17 @@ export interface AccessControlJsonWithId extends AccessControlJson {
   individuals?: AccessControlIndividual[];
 }
 
+/** Field names that belong to the date control section of an access control rule. */
+export const DATE_CONTROL_FIELD_NAMES = [
+  'releaseDate',
+  'dueDate',
+  'earlyDeadlines',
+  'lateDeadlines',
+  'afterLastDeadline',
+  'durationMinutes',
+  'password',
+] as const;
+
 export const DeadlineEntrySchema = z.object({
   date: z.string(),
   credit: z.number(),
@@ -353,16 +364,7 @@ function overrideToJson(rule: OverrideData): AccessControlJsonWithId {
 
   const of = new Set(rule.overriddenFields);
 
-  const dateControlFields = [
-    'releaseDate',
-    'dueDate',
-    'earlyDeadlines',
-    'lateDeadlines',
-    'afterLastDeadline',
-    'durationMinutes',
-    'password',
-  ] as const;
-  const hasDateControl = dateControlFields.some((f) => of.has(f));
+  const hasDateControl = DATE_CONTROL_FIELD_NAMES.some((f) => of.has(f));
 
   if (hasDateControl) {
     output.dateControl = { enabled: true };

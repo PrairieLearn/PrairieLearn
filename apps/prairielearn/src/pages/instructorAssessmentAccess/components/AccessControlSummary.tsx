@@ -10,9 +10,14 @@ import {
 import { SortableContext, useSortable, verticalListSortingStrategy } from '@dnd-kit/sortable';
 import { CSS } from '@dnd-kit/utilities';
 import { Fragment, useId, useMemo } from 'react';
-import { Alert, Button, Table } from 'react-bootstrap';
+import { Alert, Button } from 'react-bootstrap';
 
-import { RuleSummaryCard, generateDateTableRows, generateRuleSummary } from './RuleSummary.js';
+import {
+  DateTableView,
+  RuleSummaryCard,
+  generateDateTableRows,
+  generateRuleSummary,
+} from './RuleSummary.js';
 import type { MainRuleData, OverrideData } from './types.js';
 
 interface SortableOverrideCardProps {
@@ -68,29 +73,7 @@ function MainRuleSummaryContent({ rule }: { rule: MainRuleData }) {
     <div>
       {dateTableRows.length > 0 && (
         <div className="mb-3">
-          <div className="table-responsive">
-            <Table size="sm" className="mb-0" bordered>
-              <thead className="table-light">
-                <tr>
-                  <th>Date</th>
-                  <th>Credit</th>
-                  <th>Visibility</th>
-                </tr>
-              </thead>
-              <tbody>
-                {dateTableRows.map((row) => (
-                  <tr key={`${row.date}-${row.label}-${row.credit}-${row.visibility}`}>
-                    <td>
-                      {row.label && <span className="text-muted me-1">{row.label}:</span>}
-                      {row.date}
-                    </td>
-                    <td>{row.credit}</td>
-                    <td>{row.visibility}</td>
-                  </tr>
-                ))}
-              </tbody>
-            </Table>
-          </div>
+          <DateTableView rows={dateTableRows} />
         </div>
       )}
 

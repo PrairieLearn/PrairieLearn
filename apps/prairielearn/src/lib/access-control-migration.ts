@@ -611,12 +611,6 @@ export async function analyzeCourseInstanceAssessments(
 
   for (const dir of dirs) {
     const infoPath = path.join(assessmentsPath, dir, 'infoAssessment.json');
-    try {
-      await fs.access(infoPath);
-    } catch {
-      continue;
-    }
-
     const analysis = await analyzeAssessmentFile(infoPath, dir);
     if (analysis) {
       assessments.push(analysis);

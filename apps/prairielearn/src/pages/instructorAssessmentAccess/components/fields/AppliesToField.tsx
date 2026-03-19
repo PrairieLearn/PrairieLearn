@@ -63,14 +63,6 @@ export function AppliesToField({ namePrefix }: AppliesToFieldProps) {
     }
   };
 
-  const handleRemoveAllIndividuals = () => {
-    removeIndividual();
-  };
-
-  const handleRemoveAllStudentLabels = () => {
-    removeStudentLabel();
-  };
-
   // appliesTo may be undefined during initial render
   const typedAppliesTo = appliesTo as AppliesTo | undefined;
   const currentTargetType = typedAppliesTo?.targetType ?? 'individual';
@@ -147,12 +139,12 @@ export function AppliesToField({ namePrefix }: AppliesToFieldProps) {
           />
 
           {currentTargetType === 'individual' && individuals.length > 0 && (
-            <Button variant="outline-secondary" size="sm" onClick={handleRemoveAllIndividuals}>
+            <Button variant="outline-secondary" size="sm" onClick={() => removeIndividual()}>
               Remove all
             </Button>
           )}
           {currentTargetType === 'student_label' && studentLabels.length > 0 && (
-            <Button variant="outline-secondary" size="sm" onClick={handleRemoveAllStudentLabels}>
+            <Button variant="outline-secondary" size="sm" onClick={() => removeStudentLabel()}>
               Remove all
             </Button>
           )}

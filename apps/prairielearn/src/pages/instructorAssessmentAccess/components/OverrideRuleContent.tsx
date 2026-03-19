@@ -14,7 +14,7 @@ export function OverrideRuleContent({ index }: OverrideRuleContentProps) {
   }) as boolean | undefined;
 
   return (
-    <div>
+    <>
       {isEnabled && (
         <div className="mb-3">
           <OverrideDateControlForm
@@ -30,6 +30,6 @@ export function OverrideRuleContent({ index }: OverrideRuleContentProps) {
           />
         </div>
       )}
-    </div>
+    </>
   );
 }

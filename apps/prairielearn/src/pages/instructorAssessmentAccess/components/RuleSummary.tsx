@@ -5,7 +5,12 @@ import {
   getStudentEnrollmentUrl,
 } from '../../../lib/client/url.js';
 
-import type { DeadlineEntry, MainRuleData, OverrideData } from './types.js';
+import {
+  DATE_CONTROL_FIELD_NAMES,
+  type DeadlineEntry,
+  type MainRuleData,
+  type OverrideData,
+} from './types.js';
 
 type RuleData = MainRuleData | OverrideData;
 type SummaryVerbosity = 'compact' | 'verbose';
@@ -51,18 +56,9 @@ export function generateDateTableRows(
   // For main rule: check dateControlEnabled flag
   // For override: check if any date field is overridden
   const isMain = isMainRuleData(rule);
-  const dateControlFieldNames = [
-    'releaseDate',
-    'dueDate',
-    'earlyDeadlines',
-    'lateDeadlines',
-    'afterLastDeadline',
-    'durationMinutes',
-    'password',
-  ];
   const isDateControlEnabled = isMain
     ? rule.dateControlEnabled
-    : dateControlFieldNames.some((f) => isOverrideFieldActive(rule, f));
+    : DATE_CONTROL_FIELD_NAMES.some((f) => isOverrideFieldActive(rule, f));
 
   if (!isDateControlEnabled) {
     return rows;
@@ -243,6 +239,35 @@ export function generateRuleSummary(
   return lines;
 }
 
+export function DateTableView({ rows }: { rows: DateTableRow[] }) {
+  if (rows.length === 0) return null;
+  return (
+    <div className="table-responsive">
+      <Table size="sm" className="mb-0" bordered>
+        <thead className="table-light">
+          <tr>
+            <th>Date</th>
+            <th>Credit</th>
+            <th>Visibility</th>
+          </tr>
+        </thead>
+        <tbody>
+          {rows.map((row) => (
+            <tr key={`${row.date}-${row.label}-${row.credit}-${row.visibility}`}>
+              <td>
+                {row.label && <span className="text-muted me-1">{row.label}:</span>}
+                {row.date}
+              </td>
+              <td>{row.credit}</td>
+              <td>{row.visibility}</td>
+            </tr>
+          ))}
+        </tbody>
+      </Table>
+    </div>
+  );
+}
+
 interface RuleSummaryCardProps {
   rule: RuleData;
   isMainRule: boolean;
@@ -341,29 +366,7 @@ export function RuleSummaryCard({
         {dateTableRows.length > 0 && (
           <div className="mb-3">
             <strong className="d-block mb-2">Deadlines</strong>
-            <div className="table-responsive">
-              <Table size="sm" className="mb-0" bordered>
-                <thead className="table-light">
-                  <tr>
-                    <th>Date</th>
-                    <th>Credit</th>
-                    <th>Visibility</th>
-                  </tr>
-                </thead>
-                <tbody>
-                  {dateTableRows.map((row) => (
-                    <tr key={`${row.date}-${row.label}-${row.credit}-${row.visibility}`}>
-                      <td>
-                        {row.label && <span className="text-muted me-1">{row.label}:</span>}
-                        {row.date}
-                      </td>
-                      <td>{row.credit}</td>
-                      <td>{row.visibility}</td>
-                    </tr>
-                  ))}
-                </tbody>
-              </Table>
-            </div>
+            <DateTableView rows={dateTableRows} />
           </div>
         )}
 

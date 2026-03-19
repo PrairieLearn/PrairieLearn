@@ -1,9 +1,9 @@
 import clsx from 'clsx';
-import { useCallback, useState } from 'react';
+import { useState } from 'react';
 import { Alert, Button, Form } from 'react-bootstrap';
 import { FormProvider, useFieldArray, useForm } from 'react-hook-form';
 
-import { OverlayTrigger } from '@prairielearn/ui';
+import { OverlayTrigger, useModalState } from '@prairielearn/ui';
 
 import { SplitPane } from '../../../components/SplitPane.js';
 import type { PageContext } from '../../../lib/client/page-context.js';
@@ -92,13 +92,7 @@ export function AccessControlForm({
   isSaving = false,
 }: AccessControlFormProps) {
   const [selectedRule, setSelectedRule] = useState<SelectedRule>(null);
-  const [deleteModalState, setDeleteModalState] = useState<{
-    show: boolean;
-    overrideIndex: number | null;
-  }>({
-    show: false,
-    overrideIndex: null,
-  });
+  const deleteModal = useModalState<number>();
 
   const mainRule = initialData[0]
     ? jsonToMainRuleFormData(initialData[0])
@@ -155,24 +149,17 @@ export function AccessControlForm({
   };
 
   const handleDeleteClick = (index: number) => {
-    setDeleteModalState({ show: true, overrideIndex: index });
+    deleteModal.showWithData(index);
   };
 
   const handleDeleteConfirm = () => {
-    if (deleteModalState.overrideIndex !== null) {
-      if (
-        selectedRule?.type === 'override' &&
-        selectedRule.index === deleteModalState.overrideIndex
-      ) {
+    if (deleteModal.data !== null) {
+      if (selectedRule?.type === 'override' && selectedRule.index === deleteModal.data) {
         setSelectedRule(null);
       }
-      removeOverride(deleteModalState.overrideIndex);
+      removeOverride(deleteModal.data);
     }
-    setDeleteModalState({ show: false, overrideIndex: null });
-  };
-
-  const handleDeleteCancel = () => {
-    setDeleteModalState({ show: false, overrideIndex: null });
+    deleteModal.hide();
   };
 
   const getOverrideName = (index: number): string => {
@@ -202,11 +189,8 @@ export function AccessControlForm({
   const mainRuleErrors = collectErrorMessages(
     errors.mainRule as Record<string, unknown> | undefined,
   );
-  const getOverrideErrors = useCallback(
-    (index: number): string[] =>
-      collectErrorMessages(errors.overrides?.[index] as Record<string, unknown> | undefined),
-    [errors.overrides],
-  );
+  const getOverrideErrors = (index: number): string[] =>
+    collectErrorMessages(errors.overrides?.[index] as Record<string, unknown> | undefined);
 
   const saveDisabledReason = isSaving
     ? 'Saving...'
@@ -374,13 +358,13 @@ export function AccessControlForm({
       </Form>
 
       <ConfirmationModal
-        show={deleteModalState.show}
+        show={deleteModal.show}
         title="Delete override rule"
-        message={`Are you sure you want to delete "${deleteModalState.overrideIndex !== null ? getOverrideName(deleteModalState.overrideIndex) : ''}"? This action cannot be undone.`}
+        message={`Are you sure you want to delete "${deleteModal.data !== null ? getOverrideName(deleteModal.data) : ''}"? This action cannot be undone.`}
         confirmText="Delete"
         confirmVariant="danger"
         onConfirm={handleDeleteConfirm}
-        onCancel={handleDeleteCancel}
+        onCancel={deleteModal.hide}
       />
     </FormProvider>
   );

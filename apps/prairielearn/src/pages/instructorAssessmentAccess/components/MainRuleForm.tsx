@@ -33,7 +33,7 @@ export function MainRuleForm({ courseInstance: _courseInstance }: MainRuleFormPr
   const hasPrairieTestRelease = prairieTestExams.length > 0;
 
   return (
-    <div>
+    <>
       {ruleEnabled && (
         <>
           {(hasDateRelease || hasPrairieTestRelease) && (
@@ -57,6 +57,6 @@ export function MainRuleForm({ courseInstance: _courseInstance }: MainRuleFormPr
           <MainAfterCompleteForm />
         </>
       )}
-    </div>
+    </>
   );
 }
