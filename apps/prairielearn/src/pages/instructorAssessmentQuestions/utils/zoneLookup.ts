@@ -133,7 +133,7 @@ export function findAlternativeByTrackingId(
  * Finds a question or an alternative by QID across all zones.
  * Returns the parent question and zone, and includes alternative details when matched.
  */
-export function findQuestionOrAlternativeByQid(
+function findQuestionOrAlternativeByQid(
   zones: ZoneAssessmentForm[],
   qid: string,
 ): {
