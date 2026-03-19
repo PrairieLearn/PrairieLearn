@@ -379,17 +379,17 @@ test.describe('Assessment questions', () => {
     await enterEditMode(page, courseInstance.id, assessment.id);
 
     await page.getByRole('button').filter({ hasText: 'partialCredit1' }).first().click();
-    await page.getByRole('button', { name: 'Delete', exact: true }).click();
+    await page.getByTestId('delete-question-button-partialCredit1').click();
 
     await page.getByRole('button').filter({ hasText: 'partialCredit2' }).first().click();
-    await page.getByRole('button', { name: 'Delete', exact: true }).click();
+    await page.getByTestId('delete-question-button-partialCredit2').click();
 
     // Save should be disabled because the zone has 0 questions
     const saveButton = page.getByRole('button', { name: 'Save and sync' });
     await expect(saveButton).toBeDisabled();
 
     await page.getByRole('button').filter({ hasText: 'Zone to delete' }).first().click();
-    await page.getByRole('button', { name: 'Delete zone', exact: true }).last().click();
+    await page.getByTestId('delete-zone-Zone to delete').last().click();
 
     await saveButton.click();
     await expect(page.getByRole('button', { name: 'Edit', exact: true })).toBeVisible();

@@ -353,6 +353,7 @@ export function TreeQuestionRow({
           )}
           aria-label={`Delete ${question.id}`}
           title="Delete question"
+          data-testid={`delete-question-button-${question.id}`}
           onClick={(e) => {
             e.stopPropagation();
             onDelete();

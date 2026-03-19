@@ -240,6 +240,7 @@ export function TreeZoneNode({
               )}
               aria-label="Delete zone"
               title="Delete zone"
+              data-testid={`delete-zone-${zone.title}`}
               onClick={(e) => {
                 e.stopPropagation();
                 onDeleteZone(zone.trackingId);
