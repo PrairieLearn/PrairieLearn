@@ -1,5 +1,5 @@
 import * as trpcExpress from '@trpc/server/adapters/express';
-import { convertToModelMessages, createUIMessageStream, pipeUIMessageStreamToResponse } from 'ai';
+import { createUIMessageStream, pipeUIMessageStreamToResponse } from 'ai';
 import { Router } from 'express';
 import z from 'zod';
 
@@ -10,12 +10,7 @@ import { generatePrefixCsrfToken } from '@prairielearn/signed-token';
 
 import { AssessmentOpenInstancesAlert } from '../../../components/AssessmentOpenInstancesAlert.js';
 import { PageLayout } from '../../../components/PageLayout.js';
-import {
-  editRubric,
-  extractConversationHistory,
-  extractLatestInstruction,
-  generateRubric,
-} from '../../../ee/lib/ai-grading/ai-grading-agent.js';
+import { editRubric, generateRubric } from '../../../ee/lib/ai-grading/ai-grading-agent.js';
 import { getAvailableAiGradingProviders } from '../../../ee/lib/ai-grading/ai-grading-credentials.js';
 import {
   calculateAiGradingStats,
@@ -25,8 +20,13 @@ import {
   selectAssessmentQuestionHasInstanceQuestionGroups,
   selectInstanceQuestionGroups,
 } from '../../../ee/lib/ai-instance-question-grouping/ai-instance-question-grouping-util.js';
+import {
+  deleteAiGradingMessages,
+  selectAiGradingMessages,
+} from '../../../ee/models/ai-grading-message.js';
 import { extractPageContext } from '../../../lib/client/page-context.js';
 import {
+  StaffAiGradingMessageSchema,
   StaffInstanceQuestionGroupSchema,
   StaffUserSchema,
 } from '../../../lib/client/safe-db-types.js';
@@ -148,6 +148,12 @@ router.get(
       ? await getAvailableAiGradingProviders(course_instance)
       : [];
 
+    const initialChatMessages = aiGradingEnabled
+      ? z
+          .array(StaffAiGradingMessageSchema)
+          .parse(await selectAiGradingMessages(assessment_question.id))
+      : [];
+
     res.send(
       PageLayout({
         resLocals: res.locals,
@@ -204,6 +210,7 @@ router.get(
                 questionNumber={Number(number_in_alternative_group)}
                 availableAiGradingProviders={availableAiGradingProviders}
                 chatCsrfToken={chatCsrfToken}
+                initialChatMessages={initialChatMessages}
               />
             </Hydrate>
           </>
@@ -277,19 +284,10 @@ router.post(
       throw new error.HttpStatusError(400, 'Invalid or missing phase');
     }
 
-    const uiMessages = run(() => {
-      if (Array.isArray(req.body.messages)) {
-        return req.body.messages;
-      }
-      if (req.body.message != null) {
-        return [req.body.message];
-      }
-      return [];
-    });
-    if (uiMessages.length === 0) {
-      throw new error.HttpStatusError(400, 'No messages provided');
+    const userMessage = typeof req.body.message === 'string' ? req.body.message.trim() : '';
+    if (phase === 'edit' && userMessage.length === 0) {
+      throw new error.HttpStatusError(400, 'No message provided');
     }
-    const messages = await convertToModelMessages(uiMessages);
 
     const serverJob = await createServerJob({
       courseId: res.locals.course.id,
@@ -323,7 +321,7 @@ router.post(
 
           try {
             if (phase === 'generate') {
-              const result = await generateRubric(agentContext, job);
+              const result = await generateRubric(agentContext, job, serverJob.jobSequenceId);
               writer.write({
                 type: 'start',
                 messageMetadata: {
@@ -339,13 +337,18 @@ router.post(
               writer.write({ type: 'finish-step' });
               writer.write({ type: 'finish' });
             } else {
-              const instruction = extractLatestInstruction(messages);
-              const conversationHistory = extractConversationHistory(messages);
+              // Load persisted conversation history from the database
+              const persistedMessages = await selectAiGradingMessages(assessment_question.id);
 
-              job.info('Instruction: ' + instruction);
-              job.info('Conversation history: ' + JSON.stringify(conversationHistory, null, 2));
+              job.info('Instruction: ' + userMessage);
 
-              const result = await editRubric(agentContext, instruction, conversationHistory, job);
+              const result = await editRubric(
+                agentContext,
+                userMessage,
+                persistedMessages,
+                job,
+                serverJob.jobSequenceId,
+              );
               writer.write({
                 type: 'start',
                 messageMetadata: {
@@ -382,6 +385,23 @@ router.post(
     });
 
     pipeUIMessageStreamToResponse({ response: res, stream });
+  }),
+);
+
+router.post(
+  '/chat/clear',
+  typedAsyncHandler<'instructor-assessment-question'>(async (req, res) => {
+    if (!res.locals.authz_data.has_course_instance_permission_edit) {
+      throw new error.HttpStatusError(403, 'Access denied (must be a student data editor)');
+    }
+
+    const { assessment_question } = extractPageContext(res.locals, {
+      pageType: 'assessmentQuestion',
+      accessType: 'instructor',
+    });
+
+    await deleteAiGradingMessages(assessment_question.id);
+    res.sendStatus(200);
   }),
 );
 
