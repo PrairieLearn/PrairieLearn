@@ -4,8 +4,17 @@ import { createOpenAI } from '@ai-sdk/openai';
 import { type LanguageModel, type ModelMessage, generateObject } from 'ai';
 import z from 'zod';
 
+import { execute, loadSqlEquiv, queryRow } from '@prairielearn/postgres';
+
 import { config } from '../../../lib/config.js';
-import type { Assessment, AssessmentQuestion, Course, Question } from '../../../lib/db-types.js';
+import {
+  type AiGradingMessage,
+  AiGradingMessageSchema,
+  type Assessment,
+  type AssessmentQuestion,
+  type Course,
+  type Question,
+} from '../../../lib/db-types.js';
 import * as manualGrading from '../../../lib/manualGrading.js';
 import { buildQuestionUrls } from '../../../lib/question-render.js';
 import { getQuestionCourse } from '../../../lib/question-variant.js';
@@ -17,6 +26,8 @@ import {
   selectInstanceQuestionsForAssessmentQuestion,
   selectLastVariantAndSubmission,
 } from './ai-grading-util.js';
+
+const sql = loadSqlEquiv(import.meta.url);
 
 const AGENTIC_AI_GRADING_MODEL: AiGradingModelId = 'gpt-5-mini-2025-08-07';
 
@@ -107,11 +118,6 @@ export interface AiGradingAgentContext {
   hasCourseInstancePermissionEdit: boolean;
 }
 
-export interface ConversationHistoryEntry {
-  role: 'instructor' | 'assistant';
-  content: string;
-}
-
 interface JobLogger {
   info(msg: string): void;
   error(msg: string): void;
@@ -136,33 +142,11 @@ export interface EditRubricResult {
 // Helpers
 // ---------------------------------------------------------------------------
 
-function getMessageText(message: ModelMessage): string {
-  if (typeof message.content === 'string') {
-    return message.content;
-  }
-
-  return message.content
-    .map((part) => (part.type === 'text' ? part.text : ''))
-    .filter((text) => text.length > 0)
+function getTextFromParts(parts: AiGradingMessage['parts']): string {
+  return parts
+    .map((part: { type: string; text?: string }) => (part.type === 'text' ? (part.text ?? '') : ''))
+    .filter((text: string) => text.length > 0)
     .join(' ');
-}
-
-export function extractConversationHistory(messages: ModelMessage[]): ConversationHistoryEntry[] {
-  // All messages except the last user message (which is the current instruction)
-  const allButLast = messages.slice(0, -1);
-  return allButLast
-    .map(
-      (msg): ConversationHistoryEntry => ({
-        role: msg.role === 'user' ? 'instructor' : 'assistant',
-        content: getMessageText(msg),
-      }),
-    )
-    .filter((entry) => entry.content.length > 0);
-}
-
-export function extractLatestInstruction(messages: ModelMessage[]): string {
-  const lastUser = [...messages].reverse().find((m) => m.role === 'user');
-  return lastUser ? getMessageText(lastUser) : '';
 }
 
 // ---------------------------------------------------------------------------
@@ -255,177 +239,156 @@ async function getInitializationContext({
 }
 
 // ---------------------------------------------------------------------------
+// Message persistence helpers
+// ---------------------------------------------------------------------------
+
+async function insertUserMessage({
+  assessmentQuestionId,
+  authnUserId,
+  phase,
+  text,
+}: {
+  assessmentQuestionId: string;
+  authnUserId: string;
+  phase: 'generate' | 'edit';
+  text: string;
+}) {
+  await execute(sql.insert_user_message, {
+    assessment_question_id: assessmentQuestionId,
+    authn_user_id: authnUserId,
+    phase,
+    parts: JSON.stringify([{ type: 'text', text }]),
+  });
+}
+
+async function insertInitialAssistantMessage({
+  assessmentQuestionId,
+  jobSequenceId,
+  phase,
+  modelId,
+}: {
+  assessmentQuestionId: string;
+  jobSequenceId: string;
+  phase: 'generate' | 'edit';
+  modelId: string;
+}) {
+  return await queryRow(
+    sql.insert_initial_assistant_message,
+    {
+      assessment_question_id: assessmentQuestionId,
+      job_sequence_id: jobSequenceId,
+      phase,
+      model: modelId,
+    },
+    AiGradingMessageSchema,
+  );
+}
+
+async function finalizeAssistantMessage({
+  messageId,
+  status,
+  parts,
+  modelId,
+  usage,
+}: {
+  messageId: string;
+  status: 'completed' | 'errored';
+  parts: { type: string; text: string }[];
+  modelId: string;
+  usage: {
+    inputTokens: number;
+    outputTokens: number;
+  };
+}) {
+  await execute(sql.finalize_assistant_message, {
+    id: messageId,
+    status,
+    parts: JSON.stringify(parts),
+    model: modelId,
+    usage_input_tokens: usage.inputTokens,
+    usage_input_tokens_cache_read: 0,
+    usage_input_tokens_cache_write: 0,
+    usage_output_tokens: usage.outputTokens,
+    usage_output_tokens_reasoning: 0,
+  });
+}
+
+// ---------------------------------------------------------------------------
 // Phase 1: Generate Rubric
 // ---------------------------------------------------------------------------
 
 export async function generateRubric(
   context: AiGradingAgentContext,
   job: JobLogger,
+  jobSequenceId: string,
 ): Promise<GenerateRubricResult> {
   if (!context.hasCourseInstancePermissionEdit) {
     throw new Error('Access denied (must be a student data editor)');
   }
 
-  const initContext = await getInitializationContext(context);
-
-  const messages: ModelMessage[] = [
-    { role: 'system', content: RUBRIC_GENERATION_SYSTEM_PROMPT },
-    { role: 'user', content: `Question HTML:\n${initContext.question_html}` },
-    { role: 'user', content: `Answer HTML:\n${initContext.answer_html}` },
-  ];
-
-  // Add sample submissions as text
-  for (const sub of initContext.sample_submissions) {
-    messages.push(sub.submission_message);
-  }
-
-  // Add current rubric if one exists
-  if (initContext.current_rubric) {
-    messages.push({
-      role: 'user',
-      content: `The current rubric (if any) is:\n${JSON.stringify(initContext.current_rubric, null, 2)}`,
-    });
-  }
-
-  job.info('Phase: generate');
-  job.info('System prompt: ' + RUBRIC_GENERATION_SYSTEM_PROMPT);
-  job.info('Model messages: ' + JSON.stringify(messages, null, 2));
-
-  const { model } = getAgenticGradingModel();
-  const result = await generateObject({
-    model,
-    schema: RubricOutputSchema,
-    messages,
+  // Persist the user message
+  await insertUserMessage({
+    assessmentQuestionId: context.assessmentQuestion.id,
+    authnUserId: context.authnUserId,
+    phase: 'generate',
+    text: 'Generate a new rubric.',
   });
 
-  job.info('Generated rubric: ' + JSON.stringify(result.object, null, 2));
-  job.info('Usage: ' + JSON.stringify(result.usage, null, 2));
+  const { model, modelId } = getAgenticGradingModel();
 
-  // Save to DB
-  await manualGrading.updateAssessmentQuestionRubric({
-    assessment: context.assessment,
-    assessment_question_id: context.assessmentQuestion.id,
-    use_rubric: true,
-    replace_auto_points: result.object.replace_auto_points,
-    starting_points: result.object.starting_points,
-    min_points: result.object.min_points,
-    max_extra_points: result.object.max_extra_points,
-    rubric_items: result.object.rubric_items.map((item, idx) => ({
-      order: idx,
-      points: item.points,
-      description: item.description,
-      explanation: item.explanation,
-      grader_note: item.grader_note,
-      always_show_to_students: item.always_show_to_students,
-    })),
-    tag_for_manual_grading: false,
-    grader_guidelines: null,
-    authn_user_id: context.authnUserId,
+  // Insert the initial assistant message (streaming)
+  const messageRow = await insertInitialAssistantMessage({
+    assessmentQuestionId: context.assessmentQuestion.id,
+    jobSequenceId,
+    phase: 'generate',
+    modelId,
   });
 
-  const itemSummaries = result.object.rubric_items
-    .map((item) => `• ${item.description} (${item.points > 0 ? '+' : ''}${item.points} pts)`)
-    .join('\n');
+  try {
+    const initContext = await getInitializationContext(context);
 
-  return {
-    rubric: result.object,
-    summary: `Generated a rubric with ${result.object.rubric_items.length} items:\n${itemSummaries}`,
-  };
-}
+    const messages: ModelMessage[] = [
+      { role: 'system', content: RUBRIC_GENERATION_SYSTEM_PROMPT },
+      { role: 'user', content: `Question HTML:\n${initContext.question_html}` },
+      { role: 'user', content: `Answer HTML:\n${initContext.answer_html}` },
+    ];
 
-// ---------------------------------------------------------------------------
-// Phase 2: Edit Rubric
-// ---------------------------------------------------------------------------
+    // Add sample submissions as text
+    for (const sub of initContext.sample_submissions) {
+      messages.push(sub.submission_message);
+    }
 
-export async function editRubric(
-  context: AiGradingAgentContext,
-  instruction: string,
-  conversationHistory: ConversationHistoryEntry[],
-  job: JobLogger,
-): Promise<EditRubricResult> {
-  const currentRubricData = await manualGrading.selectRubricData({
-    assessment_question: context.assessmentQuestion,
-  });
-  if (!currentRubricData) {
-    throw new Error('No rubric exists for this assessment question.');
-  }
-
-  const currentRubricJson = {
-    rubric_items: currentRubricData.rubric_items.map((i) => ({
-      points: i.rubric_item.points,
-      description: i.rubric_item.description,
-      explanation: i.rubric_item.explanation,
-      grader_note: i.rubric_item.grader_note,
-      always_show_to_students: i.rubric_item.always_show_to_students,
-    })),
-    starting_points: currentRubricData.rubric.starting_points,
-    replace_auto_points: currentRubricData.rubric.replace_auto_points,
-    min_points: currentRubricData.rubric.min_points,
-    max_extra_points: currentRubricData.rubric.max_extra_points,
-  };
-
-  const messages: ModelMessage[] = [
-    { role: 'system', content: RUBRIC_EDITING_SYSTEM_PROMPT },
-    {
-      role: 'user',
-      content: `Here is the current rubric:\n\n${JSON.stringify(currentRubricJson, null, 2)}`,
-    },
-  ];
-
-  // Add conversation history (same pattern as the example file)
-  if (conversationHistory.length > 0) {
-    messages.push({
-      role: 'user',
-      content:
-        "The following are PAST exchanges between you and the instructor. Use this context to understand the instructor's preferences and maintain consistency.",
-    });
-
-    for (const entry of conversationHistory) {
+    // Add current rubric if one exists
+    if (initContext.current_rubric) {
       messages.push({
-        role: entry.role === 'instructor' ? 'user' : 'assistant',
-        content: entry.content,
+        role: 'user',
+        content: `The current rubric (if any) is:\n${JSON.stringify(initContext.current_rubric, null, 2)}`,
       });
     }
 
-    messages.push({
-      role: 'user',
-      content: '[END OF PAST CONVERSATION HISTORY]',
+    job.info('Phase: generate');
+    job.info('System prompt: ' + RUBRIC_GENERATION_SYSTEM_PROMPT);
+    job.info('Model messages: ' + JSON.stringify(messages, null, 2));
+
+    const result = await generateObject({
+      model,
+      schema: RubricOutputSchema,
+      messages,
     });
-  }
 
-  // Add current instruction
-  messages.push({
-    role: 'user',
-    content: `Please modify the rubric according to this instruction:\n\n${instruction}`,
-  });
+    job.info('Generated rubric: ' + JSON.stringify(result.object, null, 2));
+    job.info('Usage: ' + JSON.stringify(result.usage, null, 2));
 
-  job.info('Phase: edit');
-  job.info('System prompt: ' + RUBRIC_EDITING_SYSTEM_PROMPT);
-  job.info('Model messages: ' + JSON.stringify(messages, null, 2));
-
-  const { model } = getAgenticGradingModel();
-  const result = await generateObject({
-    model,
-    schema: EditRubricOutputSchema,
-    messages,
-  });
-
-  job.info('Edit result: ' + JSON.stringify(result.object, null, 2));
-  job.info('Usage: ' + JSON.stringify(result.usage, null, 2));
-
-  const { message, updated_rubric } = result.object;
-
-  if (updated_rubric) {
-    // Save to DB directly (same as generateRubric)
+    // Save to DB
     await manualGrading.updateAssessmentQuestionRubric({
       assessment: context.assessment,
       assessment_question_id: context.assessmentQuestion.id,
       use_rubric: true,
-      replace_auto_points: updated_rubric.replace_auto_points,
-      starting_points: updated_rubric.starting_points,
-      min_points: updated_rubric.min_points,
-      max_extra_points: updated_rubric.max_extra_points,
-      rubric_items: updated_rubric.rubric_items.map((item, idx) => ({
+      replace_auto_points: result.object.replace_auto_points,
+      starting_points: result.object.starting_points,
+      min_points: result.object.min_points,
+      max_extra_points: result.object.max_extra_points,
+      rubric_items: result.object.rubric_items.map((item, idx) => ({
         order: idx,
         points: item.points,
         description: item.description,
@@ -437,10 +400,194 @@ export async function editRubric(
       grader_guidelines: null,
       authn_user_id: context.authnUserId,
     });
-  }
 
-  return {
-    summary: message,
-    rubricModified: updated_rubric != null,
-  };
+    const itemSummaries = result.object.rubric_items
+      .map((item) => `• ${item.description} (${item.points > 0 ? '+' : ''}${item.points} pts)`)
+      .join('\n');
+
+    const summary = `Generated a rubric with ${result.object.rubric_items.length} items:\n${itemSummaries}\n\nWould you like to make any changes to the rubric?`;
+
+    // Finalize the assistant message
+    await finalizeAssistantMessage({
+      messageId: messageRow.id,
+      status: 'completed',
+      parts: [{ type: 'text', text: summary }],
+      modelId,
+      usage: {
+        inputTokens: result.usage.inputTokens ?? 0,
+        outputTokens: result.usage.outputTokens ?? 0,
+      },
+    });
+
+    return {
+      rubric: result.object,
+      summary,
+    };
+  } catch (err) {
+    await finalizeAssistantMessage({
+      messageId: messageRow.id,
+      status: 'errored',
+      parts: [{ type: 'text', text: String(err) }],
+      modelId,
+      usage: { inputTokens: 0, outputTokens: 0 },
+    });
+    throw err;
+  }
+}
+
+// ---------------------------------------------------------------------------
+// Phase 2: Edit Rubric
+// ---------------------------------------------------------------------------
+
+export async function editRubric(
+  context: AiGradingAgentContext,
+  instruction: string,
+  persistedMessages: AiGradingMessage[],
+  job: JobLogger,
+  jobSequenceId: string,
+): Promise<EditRubricResult> {
+  // Persist the user message
+  await insertUserMessage({
+    assessmentQuestionId: context.assessmentQuestion.id,
+    authnUserId: context.authnUserId,
+    phase: 'edit',
+    text: instruction,
+  });
+
+  const { model, modelId } = getAgenticGradingModel();
+
+  // Insert the initial assistant message (streaming)
+  const messageRow = await insertInitialAssistantMessage({
+    assessmentQuestionId: context.assessmentQuestion.id,
+    jobSequenceId,
+    phase: 'edit',
+    modelId,
+  });
+
+  try {
+    const currentRubricData = await manualGrading.selectRubricData({
+      assessment_question: context.assessmentQuestion,
+    });
+    if (!currentRubricData) {
+      throw new Error('No rubric exists for this assessment question.');
+    }
+
+    const currentRubricJson = {
+      rubric_items: currentRubricData.rubric_items.map((i) => ({
+        points: i.rubric_item.points,
+        description: i.rubric_item.description,
+        explanation: i.rubric_item.explanation,
+        grader_note: i.rubric_item.grader_note,
+        always_show_to_students: i.rubric_item.always_show_to_students,
+      })),
+      starting_points: currentRubricData.rubric.starting_points,
+      replace_auto_points: currentRubricData.rubric.replace_auto_points,
+      min_points: currentRubricData.rubric.min_points,
+      max_extra_points: currentRubricData.rubric.max_extra_points,
+    };
+
+    const messages: ModelMessage[] = [
+      { role: 'system', content: RUBRIC_EDITING_SYSTEM_PROMPT },
+      {
+        role: 'user',
+        content: `Here is the current rubric:\n\n${JSON.stringify(currentRubricJson, null, 2)}`,
+      },
+    ];
+
+    // Build conversation history from persisted edit-phase messages
+    const editMessages = persistedMessages.filter(
+      (m) => m.phase === 'edit' && m.status === 'completed' && m.include_in_context,
+    );
+
+    if (editMessages.length > 0) {
+      messages.push({
+        role: 'user',
+        content:
+          "The following are PAST exchanges between you and the instructor. Use this context to understand the instructor's preferences and maintain consistency.",
+      });
+
+      for (const entry of editMessages) {
+        messages.push({
+          role: entry.role,
+          content: getTextFromParts(entry.parts),
+        });
+      }
+
+      messages.push({
+        role: 'user',
+        content: '[END OF PAST CONVERSATION HISTORY]',
+      });
+    }
+
+    // Add current instruction
+    messages.push({
+      role: 'user',
+      content: `Please modify the rubric according to this instruction:\n\n${instruction}`,
+    });
+
+    job.info('Phase: edit');
+    job.info('System prompt: ' + RUBRIC_EDITING_SYSTEM_PROMPT);
+    job.info('Model messages: ' + JSON.stringify(messages, null, 2));
+
+    const result = await generateObject({
+      model,
+      schema: EditRubricOutputSchema,
+      messages,
+    });
+
+    job.info('Edit result: ' + JSON.stringify(result.object, null, 2));
+    job.info('Usage: ' + JSON.stringify(result.usage, null, 2));
+
+    const { message, updated_rubric } = result.object;
+
+    if (updated_rubric) {
+      // Save to DB directly (same as generateRubric)
+      await manualGrading.updateAssessmentQuestionRubric({
+        assessment: context.assessment,
+        assessment_question_id: context.assessmentQuestion.id,
+        use_rubric: true,
+        replace_auto_points: updated_rubric.replace_auto_points,
+        starting_points: updated_rubric.starting_points,
+        min_points: updated_rubric.min_points,
+        max_extra_points: updated_rubric.max_extra_points,
+        rubric_items: updated_rubric.rubric_items.map((item, idx) => ({
+          order: idx,
+          points: item.points,
+          description: item.description,
+          explanation: item.explanation,
+          grader_note: item.grader_note,
+          always_show_to_students: item.always_show_to_students,
+        })),
+        tag_for_manual_grading: false,
+        grader_guidelines: null,
+        authn_user_id: context.authnUserId,
+      });
+    }
+
+    // Finalize the assistant message
+    await finalizeAssistantMessage({
+      messageId: messageRow.id,
+      status: 'completed',
+      parts: [{ type: 'text', text: message }],
+      modelId,
+      usage: {
+        inputTokens: result.usage.inputTokens ?? 0,
+        outputTokens: result.usage.outputTokens ?? 0,
+      },
+    });
+
+    return {
+      summary: message,
+      rubricModified: updated_rubric != null,
+    };
+  } catch (err) {
+    await finalizeAssistantMessage({
+      messageId: messageRow.id,
+      status: 'errored',
+      parts: [{ type: 'text', text: String(err) }],
+      modelId,
+      usage: { inputTokens: 0, outputTokens: 0 },
+    });
+    throw err;
+  }
 }

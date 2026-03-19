@@ -2,7 +2,7 @@ import { useChat } from '@ai-sdk/react';
 import { QueryClient, useQueryClient } from '@tanstack/react-query';
 import { DefaultChatTransport, type UIMessage } from 'ai';
 import { useMemo, useRef, useState } from 'react';
-import { Alert } from 'react-bootstrap';
+import { Alert, Button, Modal } from 'react-bootstrap';
 
 import { NuqsAdapter } from '@prairielearn/ui';
 
@@ -10,6 +10,7 @@ import { type ChatMessage, Messages } from '../../../components/ChatMessages.js'
 import type { AiGradingGeneralStats } from '../../../ee/lib/ai-grading/types.js';
 import type { PageContext } from '../../../lib/client/page-context.js';
 import type {
+  StaffAiGradingMessage,
   StaffAssessment,
   StaffAssessmentQuestion,
   StaffInstanceQuestionGroup,
@@ -58,6 +59,7 @@ interface AssessmentQuestionManualGradingProps {
   questionNumber: number;
   availableAiGradingProviders: EnumAiGradingProvider[];
   chatCsrfToken: string;
+  initialChatMessages: StaffAiGradingMessage[];
 }
 
 type AssessmentQuestionManualGradingInnerProps = Omit<
@@ -104,6 +106,28 @@ function triggerOpenRubricEditor() {
   scrollToRubricEditor();
 }
 
+function persistedMessagesToInitialMessages(
+  persistedMessages: StaffAiGradingMessage[],
+): RubricChatMessage[] {
+  return persistedMessages
+    .filter((m) => m.status === 'completed')
+    .map((m) => ({
+      id: m.id,
+      role: m.role,
+      parts: m.parts.map((part: { type: string; text?: string }) => {
+        if (part.type === 'text') {
+          return { type: 'text' as const, text: part.text ?? '' };
+        }
+        return { type: 'text' as const, text: '' };
+      }),
+      metadata: {
+        job_sequence_id: m.job_sequence_id ?? undefined,
+        status: m.status as 'streaming' | 'completed' | 'errored',
+        phase: m.phase as RubricPhase,
+      },
+    }));
+}
+
 function AssessmentQuestionManualGradingInner({
   hasCourseInstancePermissionEdit,
   instanceQuestionsInfo,
@@ -127,6 +151,7 @@ function AssessmentQuestionManualGradingInner({
   questionNumber,
   availableAiGradingProviders,
   chatCsrfToken,
+  initialChatMessages,
 }: AssessmentQuestionManualGradingInnerProps) {
   const initialRubricData = rubricData;
   const trpc = useTRPC();
@@ -136,12 +161,19 @@ function AssessmentQuestionManualGradingInner({
   const [showAiGradingUnavailableModal, setShowAiGradingUnavailableModal] = useState(false);
   const [rubricDataState, setRubricDataState] = useState(initialRubricData);
   const [aiGradingStatsState, setAiGradingStatsState] = useState(aiGradingStats);
-  const [hasGeneratedRubric, setHasGeneratedRubric] = useState(initialRubricData != null);
-  const hasGeneratedRubricRef = useRef(initialRubricData != null);
+
+  const hasPersistedGenerateMessage = initialChatMessages.some(
+    (m) => m.phase === 'generate' && m.role === 'assistant' && m.status === 'completed',
+  );
+  const [hasGeneratedRubric, setHasGeneratedRubric] = useState(
+    initialRubricData != null || hasPersistedGenerateMessage,
+  );
+  const hasGeneratedRubricRef = useRef(initialRubricData != null || hasPersistedGenerateMessage);
 
   const [aiGradingMode, setAiGradingMode] = useState(initialAiGradingMode);
   const [chatInput, setChatInput] = useState('');
   const currentPhaseRef = useRef<RubricPhase>('generate');
+  const [showClearConfirm, setShowClearConfirm] = useState(false);
 
   const chatUrl = `${urlPrefix}/assessment/${assessment.id}/manual_grading/assessment_question/${assessmentQuestion.id}/chat`;
   const rubricDataUrl = `${chatUrl}/rubric_data`;
@@ -164,17 +196,26 @@ function AssessmentQuestionManualGradingInner({
       });
   };
 
-  const { messages, sendMessage, status } = useChat<RubricChatMessage>({
+  const { messages, setMessages, sendMessage, status } = useChat<RubricChatMessage>({
+    messages: persistedMessagesToInitialMessages(initialChatMessages),
     transport: new DefaultChatTransport({
       api: chatUrl,
       headers: { 'X-CSRF-Token': chatCsrfToken },
-      prepareSendMessagesRequest: ({ messages, headers, body }) => {
+      prepareSendMessagesRequest: ({ messages: chatMsgs, headers, body }) => {
+        const lastMessage = chatMsgs[chatMsgs.length - 1];
+        const messageText =
+          lastMessage.role === 'user'
+            ? (lastMessage.parts as { type: string; text?: string }[])
+                .map((p) => (p.type === 'text' ? (p.text ?? '') : ''))
+                .filter(Boolean)
+                .join('\n\n')
+            : '';
         return {
           headers,
           body: {
             ...body,
             phase: currentPhaseRef.current,
-            messages,
+            message: messageText,
           },
         };
       },
@@ -224,9 +265,6 @@ function AssessmentQuestionManualGradingInner({
     return map;
   }, [messages]);
 
-  const lastAssistantMessageId =
-    [...messages].reverse().find((message) => message.role === 'assistant')?.id ?? null;
-
   const chatMessages: ChatMessage[] = messages
     .map((m) => {
       return {
@@ -246,6 +284,20 @@ function AssessmentQuestionManualGradingInner({
 
   const mutations = useManualGradingActions();
   const { setAiGradingModeMutation, groupSubmissionMutation } = mutations;
+
+  const handleClearChat = () => {
+    setShowClearConfirm(false);
+    void fetch(`${chatUrl}/clear`, {
+      method: 'POST',
+      headers: { 'X-CSRF-Token': chatCsrfToken },
+    }).then((response) => {
+      if (response.ok) {
+        setMessages([]);
+        setHasGeneratedRubric(initialRubricData != null);
+        hasGeneratedRubricRef.current = initialRubricData != null;
+      }
+    });
+  };
 
   return (
     <div className="d-flex flex-row gap-3" style={{ maxHeight: '80vh' }}>
@@ -355,6 +407,20 @@ function AssessmentQuestionManualGradingInner({
         />
       </div>
       <div className="d-flex flex-column bg-light border rounded" style={{ width: 350 }}>
+        <div className="d-flex justify-content-between align-items-center p-3 pb-0">
+          <span className="fw-bold small">AI assistant</span>
+          {messages.length > 0 && (
+            <button
+              type="button"
+              className="btn btn-outline-secondary btn-sm"
+              disabled={isGenerating}
+              aria-label="Clear chat history"
+              onClick={() => setShowClearConfirm(true)}
+            >
+              <i className="bi bi-trash" />
+            </button>
+          )}
+        </div>
         <div className="flex-grow-1 overflow-auto p-3">
           <Messages
             messages={displayedChatMessages}
@@ -374,19 +440,6 @@ function AssessmentQuestionManualGradingInner({
                     >
                       View job logs
                     </a>
-                  )}
-                  {message.id === lastAssistantMessageId && (
-                    <div className="d-flex flex-wrap gap-2 mt-1">
-                      {hasGeneratedRubric && (
-                        <button
-                          type="button"
-                          className="btn btn-outline-secondary btn-sm"
-                          onClick={triggerOpenRubricEditor}
-                        >
-                          Open rubric editor
-                        </button>
-                      )}
-                    </div>
                   )}
                 </div>
               );
@@ -444,6 +497,23 @@ function AssessmentQuestionManualGradingInner({
           />
         </div>
       </div>
+
+      <Modal show={showClearConfirm} centered onHide={() => setShowClearConfirm(false)}>
+        <Modal.Header closeButton>
+          <Modal.Title>Clear chat history</Modal.Title>
+        </Modal.Header>
+        <Modal.Body>
+          Are you sure you want to clear the chat history? This action cannot be undone.
+        </Modal.Body>
+        <Modal.Footer>
+          <Button variant="secondary" onClick={() => setShowClearConfirm(false)}>
+            Cancel
+          </Button>
+          <Button variant="danger" onClick={handleClearChat}>
+            Clear chat
+          </Button>
+        </Modal.Footer>
+      </Modal>
     </div>
   );
 }
