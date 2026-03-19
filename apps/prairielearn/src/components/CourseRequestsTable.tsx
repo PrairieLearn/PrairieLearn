@@ -10,8 +10,8 @@ import { OverlayTrigger } from '@prairielearn/ui';
 import type { AdminInstitution } from '../lib/client/safe-db-types.js';
 import { getAdministratorCourseRequestsUrl } from '../lib/client/url.js';
 import type { CourseRequestRow } from '../lib/course-request.js';
-import type { Timezone } from '../lib/timezone.shared.js';
-import { useTRPC } from '../trpc/administrator/trpc-context.js';
+import { type Timezone } from '../lib/timezone.shared.js';
+import { useTRPC } from '../trpc/administrator/context.js';
 
 import {
   AdministratorCourseFormFields,

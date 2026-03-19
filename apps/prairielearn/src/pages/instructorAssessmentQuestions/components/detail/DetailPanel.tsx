@@ -143,6 +143,7 @@ export function DetailPanel({
           onUpdate={actions.onUpdateQuestion}
           onDelete={(trackingId) => actions.onDeleteQuestion(trackingId, '')}
           onFormValidChange={actions.onFormValidChange}
+          onDismissBanner={actions.onDismissBanner}
         />
       );
     }
