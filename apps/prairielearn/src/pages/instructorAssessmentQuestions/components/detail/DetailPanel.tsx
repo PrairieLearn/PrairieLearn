@@ -28,6 +28,8 @@ export function DetailPanel({
   currentAssessmentId,
   isPickingQuestion,
   pickerError,
+  questionSharingEnabled,
+  consumePublicQuestionsEnabled,
 }: {
   selectedItem: SelectedItem;
   zones: ZoneAssessmentForm[];
@@ -42,6 +44,8 @@ export function DetailPanel({
   currentAssessmentId: string;
   isPickingQuestion?: boolean;
   pickerError: Error | null;
+  questionSharingEnabled: boolean;
+  consumePublicQuestionsEnabled: boolean;
 }) {
   if (selectedItem == null) {
     return null;
@@ -162,6 +166,8 @@ export function DetailPanel({
           currentAssessmentId={currentAssessmentId}
           isPickingQuestion={isPickingQuestion}
           pickerError={pickerError}
+          questionSharingEnabled={questionSharingEnabled}
+          consumePublicQuestionsEnabled={consumePublicQuestionsEnabled}
           onQuestionSelected={actions.onQuestionPicked}
           onRemoveQuestionByQid={actions.onRemoveQuestionByQid}
         />
