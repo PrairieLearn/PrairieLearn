@@ -215,22 +215,19 @@ export function getInitialSelectedZoneItem(
     }
 
     case 'z': {
-      const includesAltGroup = preselection.slice(3).includes(':');
-      if (!includesAltGroup) {
-        const zoneIndex = Number.parseInt(preselection.slice(2));
-        const zone = zones.at(zoneIndex);
-        if (zone) {
-          return { type: 'zone', zoneTrackingId: zone.trackingId };
-        }
-      } else {
-        const [zoneIndex, altGroupIndex] = preselection.slice(2).split(':').map(Number);
-        const zone = zones.at(zoneIndex);
-        if (zone) {
-          const altGroup = zone.questions.at(altGroupIndex);
-          if (altGroup) {
-            return { type: 'altGroup', questionTrackingId: altGroup.trackingId };
-          }
-        }
+      const zoneMatch = /^z:(\d+)$/.exec(preselection);
+      if (zoneMatch) {
+        const zone = zones.at(Number(zoneMatch[1]));
+        return zone ? { type: 'zone', zoneTrackingId: zone.trackingId } : null;
+      }
+
+      const altGroupMatch = /^z:(\d+):(\d+)$/.exec(preselection);
+      if (altGroupMatch) {
+        const zone = zones.at(Number(altGroupMatch[1]));
+        const altGroup = zone?.questions.at(Number(altGroupMatch[2]));
+        return altGroup?.alternatives
+          ? { type: 'altGroup', questionTrackingId: altGroup.trackingId }
+          : null;
       }
       return null;
     }
