@@ -12,14 +12,12 @@ export function AssessmentSwitcher({
   assessmentRows,
   assessmentsGroupBy,
   currentAssessmentId,
-  courseId,
   courseInstanceId,
   targetSubPage,
 }: {
   assessmentRows: AssessmentRow[];
   assessmentsGroupBy: 'Set' | 'Module';
   currentAssessmentId: string;
-  courseId: string;
   courseInstanceId: string;
   /** The subPage that assessment links should redirect to. */
   targetSubPage?: NavSubPage;
