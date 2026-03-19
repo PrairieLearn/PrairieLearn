@@ -58,30 +58,28 @@ const UNAUTHORIZED_RESULT: AccessControlResolverResult = {
   listBeforeRelease: false,
 };
 
-const COURSE_ROLE_RANK = new Map<EnumCourseRole, number>([
-  ['None', 0],
-  ['Previewer', 1],
-  ['Viewer', 2],
-  ['Editor', 3],
-  ['Owner', 4],
-]);
-const COURSE_INSTANCE_ROLE_RANK = new Map<EnumCourseInstanceRole, number>([
-  ['None', 0],
-  ['Student Data Viewer', 1],
-  ['Student Data Editor', 2],
-]);
+const COURSE_ROLE_RANK: Record<EnumCourseRole, number> = {
+  None: 0,
+  Previewer: 1,
+  Viewer: 2,
+  Editor: 3,
+  Owner: 4,
+};
+const COURSE_INSTANCE_ROLE_RANK: Record<EnumCourseInstanceRole, number> = {
+  None: 0,
+  'Student Data Viewer': 1,
+  'Student Data Editor': 2,
+};
 
 function roleAtLeast(actual: EnumCourseRole, minimum: EnumCourseRole): boolean {
-  return (COURSE_ROLE_RANK.get(actual) ?? 0) >= (COURSE_ROLE_RANK.get(minimum) ?? 0);
+  return COURSE_ROLE_RANK[actual] >= COURSE_ROLE_RANK[minimum];
 }
 
 function instanceRoleAtLeast(
   actual: EnumCourseInstanceRole,
   minimum: EnumCourseInstanceRole,
 ): boolean {
-  return (
-    (COURSE_INSTANCE_ROLE_RANK.get(actual) ?? 0) >= (COURSE_INSTANCE_ROLE_RANK.get(minimum) ?? 0)
-  );
+  return COURSE_INSTANCE_ROLE_RANK[actual] >= COURSE_INSTANCE_ROLE_RANK[minimum];
 }
 
 function mergeDateControl(
