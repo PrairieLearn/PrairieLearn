@@ -244,9 +244,8 @@ export function TreeZoneNode({
                 'btn btn-sm border-0 text-muted ms-1 tree-delete-btn',
                 !isSelected && 'hover-show',
               )}
-              aria-label="Delete zone"
+              aria-label={`Delete zone '${zone.title}'`}
               title="Delete zone"
-              data-testid={`delete-zone-${zone.title}`}
               onClick={(e) => {
                 e.stopPropagation();
                 onDeleteZone(zone.trackingId);

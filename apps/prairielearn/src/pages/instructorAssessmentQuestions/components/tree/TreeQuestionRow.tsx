@@ -375,9 +375,8 @@ export function TreeQuestionRow({
             'btn btn-sm border-0 text-muted ms-1 tree-delete-btn',
             !isSelected && 'hover-show',
           )}
-          aria-label={`Delete ${question.id}`}
+          aria-label={`Delete question ${question.id}`}
           title="Delete question"
-          data-testid={`delete-question-button-${question.id}`}
           onClick={(e) => {
             e.stopPropagation();
             onDelete();
