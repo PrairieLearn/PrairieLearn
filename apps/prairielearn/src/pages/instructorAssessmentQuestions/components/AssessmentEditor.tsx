@@ -55,7 +55,13 @@ import { getStructuralSaveValidationErrorKind } from '../utils/saveValidation.js
 import { createAssessmentQuestionsTrpcClient } from '../utils/trpc-client.js';
 import { TRPCProvider, useTRPC } from '../utils/trpc-context.js';
 import { useAssessmentEditor } from '../utils/useAssessmentEditor.js';
-import { findAlternativeByTrackingId, findQuestionByTrackingId } from '../utils/zoneLookup.js';
+import {
+  findAltGroupByTrackingId,
+  findAlternativeByTrackingId,
+  findQuestionByTrackingId,
+  findZoneByTrackingId,
+  getInitialSelectedZoneItem,
+} from '../utils/zoneLookup.js';
 
 import { EditModeToolbar } from './EditModeToolbar.js';
 import { ExamResetNotSupportedModal } from './ExamResetNotSupportedModal.js';
@@ -135,6 +141,9 @@ interface AssessmentEditorInnerProps {
   csrfToken: string;
   origHash: string;
   switchViewUrl: string | null;
+  questionSharingEnabled: boolean;
+  consumePublicQuestionsEnabled: boolean;
+  search: string;
 }
 
 function AssessmentEditorInner({
@@ -149,6 +158,9 @@ function AssessmentEditorInner({
   csrfToken,
   origHash,
   switchViewUrl,
+  questionSharingEnabled,
+  consumePublicQuestionsEnabled,
+  search,
 }: AssessmentEditorInnerProps) {
   const trpc = useTRPC();
   const queryClient = useQueryClient();
@@ -156,71 +168,68 @@ function AssessmentEditorInner({
     mutationFn: (qid: string) => queryClient.fetchQuery(trpc.questionByQid.queryOptions({ qid })),
   });
 
-  const [preselectedZone, setPreselectedZone] = useQueryState('selectedZone', parseAsString.withDefault(''));
-  const [preselectedQuestionId, setPreselectedQuestionId] = useQueryState('selectedQuestion', parseAsString.withDefault(''));
-  const [preselectedAlternativeGroup, setPreselectedAlternativeGroup] = useQueryState('selectedAlternativeGroup', parseAsString.withDefault(''));
-  
+  const [_preselection, setPreselection] = useQueryState('selected', parseAsString.withDefault(''));
+
   const [initialState] = useState<EditorState>(() => {
     const questionMetadataMap = Object.fromEntries(
       questionRows.map((r) => [questionDisplayName(course, r), toEditorMetadata(r)]),
     );
+
+    const zones = prepareZonesForEditor(jsonZones, questionMetadataMap);
+
     return {
-      zones: prepareZonesForEditor(jsonZones, questionMetadataMap),
+      zones,
       questionMetadata: questionMetadataMap,
       collapsedGroups: new Set<string>(),
       collapsedZones: new Set<string>(),
-      selectedItem: null,
+      dismissedBanners: new Set<string>(),
+      selectedItem: getInitialSelectedZoneItem(search, zones),
     };
   });
 
   const { zones, questionMetadata, collapsedGroups, collapsedZones, selectedItem, dispatch } =
     useAssessmentEditor(initialState);
 
-  function setPreselected({ zone = null, question = null, alternativeGroup = null }: { zone?: number | null, question?: string | null, alternativeGroup?: number | null }) {
-    setPreselectedZone(zone ? String(zone) : null);
-    setPreselectedQuestionId(question ?? null);
-    setPreselectedAlternativeGroup(alternativeGroup ? String(alternativeGroup) : null);
-  }
-
   const setSelectedItem = useCallback(
-    (item: SelectedItem) => {
+    async (item: SelectedItem) => {
       dispatch({ type: 'SET_SELECTED_ITEM', selectedItem: item });
-      
-      if (!item) 
-        return setPreselected({});
+
+      if (!item) {
+        await setPreselection(null);
+        return;
+      }
 
       switch (item.type) {
         case 'question': {
           const foundQuestion = findQuestionByTrackingId(zones, item.questionTrackingId);
-          setPreselected(foundQuestion?.question.id ? { question: foundQuestion.question.id } : {});
-          break;
+          await setPreselection(
+            !foundQuestion?.question.id ? null : `q:${foundQuestion.question.id}`,
+          );
+          return;
         }
         case 'zone': {
-          const foundZoneIndex = zones.findIndex((z) => z.trackingId === item.zoneTrackingId);
-          setPreselected(foundZoneIndex !== -1 ? { zone: foundZoneIndex } : {});
-          break;
+          const foundZone = findZoneByTrackingId(zones, item.zoneTrackingId);
+          await setPreselection(!foundZone ? null : `z:${foundZone.zoneIndex}`);
+          return;
         }
         case 'altGroup': {
-          const foundZoneIndex = zones.findIndex((z) => z.questions.some((q) => q.trackingId === item.questionTrackingId));
-          if (foundZoneIndex !== -1) {
-            const questionIndex = zones[foundZoneIndex].questions.findIndex((q) => q.trackingId === item.questionTrackingId);
-            setPreselected(questionIndex !== -1 ? { zone: foundZoneIndex, alternativeGroup: questionIndex } : {});
-          } else {
-            setPreselected({});
-          }
-          break;
+          const foundAltGroup = findAltGroupByTrackingId(zones, item.questionTrackingId);
+          await setPreselection(
+            !foundAltGroup ? null : `z:${foundAltGroup.zoneIndex}:${foundAltGroup.altGroupIndex}`,
+          );
+          return;
         }
         case 'alternative': {
-          const foundAlternative = findAlternativeByTrackingId(zones, item.alternativeTrackingId);
-          setPreselected(foundAlternative?.alternative.id ? { question: foundAlternative.alternative.id } : {});
-          break;
+          const foundAlt = findAlternativeByTrackingId(zones, item.alternativeTrackingId);
+          await setPreselection(!foundAlt?.alternative.id ? null : `q:${foundAlt.alternative.id}`);
+          return;
         }
         default:
-          setPreselected({});
-          break;
+          await setPreselection(null);
+          return;
       }
     },
-    [dispatch],
+    [dispatch, setPreselection, zones],
   );
 
   const initialZonesJson = useMemo(() => JSON.stringify(initialState.zones), [initialState.zones]);
@@ -299,42 +308,6 @@ function AssessmentEditorInner({
     });
     return qidToZones;
   }, [zones]);
-
-
-  useEffect(() => {
-    if (zones.length && !selectedItem) {
-      if (preselectedQuestionId) {
-        const foundZone = zones.find((z) => z.questions.some((q) => q.id === preselectedQuestionId || q.alternatives?.some((a) => a.id === preselectedQuestionId)))
-        if (foundZone) {
-          const foundQuestion = foundZone.questions.find((q) => q.id === preselectedQuestionId);
-          if (foundQuestion) {
-            return setSelectedItem({ type: 'question', questionTrackingId: foundQuestion.trackingId });
-          }
-          const foundParentQuestion = foundZone.questions.find((q) => q.alternatives?.some((a) => a.id === preselectedQuestionId));
-          if (foundParentQuestion) {
-            const foundAlternative = foundParentQuestion.alternatives?.find((a) => a.id === preselectedQuestionId);
-            if (foundAlternative) {
-              return setSelectedItem({ type: 'alternative', questionTrackingId: foundParentQuestion.trackingId, alternativeTrackingId: foundAlternative.trackingId });
-            }
-          }
-        }
-      } else if (preselectedAlternativeGroup && preselectedZone) {
-        const foundZone = zones.at(Number(preselectedZone));
-        if (foundZone) {
-          const foundAlternativeGroup = foundZone.questions.at(Number(preselectedAlternativeGroup));
-          if (foundAlternativeGroup) {
-            setSelectedItem({ type: 'altGroup', questionTrackingId: foundAlternativeGroup.trackingId });
-          }
-        }
-      } else if (preselectedZone) {
-        const foundZone = zones.at(Number(preselectedZone));
-        if (foundZone) {
-          setSelectedItem({ type: 'zone', zoneTrackingId: foundZone.trackingId });
-        }
-      }
-    }
-  }, [])
-
 
   const disabledQids = useMemo(() => {
     const disabled = new Set<string>();
@@ -1173,11 +1146,12 @@ export function AssessmentQuestionsEditor({
 }: AssessmentEditorProps) {
   const [queryClient] = useState(() => new QueryClient());
   const [trpcClient] = useState(() => createAssessmentQuestionsTrpcClient(trpcCsrfToken));
+
   return (
     <NuqsAdapter search={search}>
       <QueryClientProviderDebug client={queryClient}>
         <TRPCProvider trpcClient={trpcClient} queryClient={queryClient}>
-          <AssessmentEditorInner {...innerProps} />
+          <AssessmentEditorInner search={search} {...innerProps} />
         </TRPCProvider>
       </QueryClientProviderDebug>
     </NuqsAdapter>
