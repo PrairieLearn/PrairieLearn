@@ -198,41 +198,41 @@ function AssessmentEditorInner({
   } = useAssessmentEditor(initialState);
 
   const setSelectedItem = useCallback(
-    async (item: SelectedItem) => {
+    (item: SelectedItem) => {
       dispatch({ type: 'SET_SELECTED_ITEM', selectedItem: item });
 
       if (!item) {
-        await setPreselection(null);
+        void setPreselection(null);
         return;
       }
 
       switch (item.type) {
         case 'question': {
           const foundQuestion = findQuestionByTrackingId(zones, item.questionTrackingId);
-          await setPreselection(
+          void setPreselection(
             !foundQuestion?.question.id ? null : `q:${foundQuestion.question.id}`,
           );
           return;
         }
         case 'zone': {
           const foundZone = findZoneByTrackingId(zones, item.zoneTrackingId);
-          await setPreselection(!foundZone ? null : `z:${foundZone.zoneIndex}`);
+          void setPreselection(!foundZone ? null : `z:${foundZone.zoneIndex}`);
           return;
         }
         case 'altGroup': {
           const foundAltGroup = findAltGroupByTrackingId(zones, item.questionTrackingId);
-          await setPreselection(
+          void setPreselection(
             !foundAltGroup ? null : `z:${foundAltGroup.zoneIndex}:${foundAltGroup.altGroupIndex}`,
           );
           return;
         }
         case 'alternative': {
           const foundAlt = findAlternativeByTrackingId(zones, item.alternativeTrackingId);
-          await setPreselection(!foundAlt?.alternative.id ? null : `q:${foundAlt.alternative.id}`);
+          void setPreselection(!foundAlt?.alternative.id ? null : `q:${foundAlt.alternative.id}`);
           return;
         }
         default:
-          await setPreselection(null);
+          void setPreselection(null);
           return;
       }
     },
