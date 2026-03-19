@@ -5,6 +5,7 @@ import { Hydrate } from '@prairielearn/react/server';
 import { generatePrefixCsrfToken } from '@prairielearn/signed-token';
 
 import { PageLayout } from '../../components/PageLayout.js';
+import { extractPageContext } from '../../lib/client/page-context.js';
 import { AdminInstitutionSchema } from '../../lib/client/safe-db-types.js';
 import { config } from '../../lib/config.js';
 import { selectPendingCourseRequests } from '../../lib/course-request.js';
@@ -21,14 +22,19 @@ const sql = sqldb.loadSqlEquiv(import.meta.url);
 router.get(
   '/',
   typedAsyncHandler<'plain'>(async (req, res) => {
+    const { urlPrefix, authn_user } = extractPageContext(res.locals, {
+      pageType: 'plain',
+      accessType: 'instructor',
+      withAuthzData: false,
+    });
     const course_requests = await selectPendingCourseRequests();
     const institutions = await selectAllInstitutions();
     const availableTimezones = await getCanonicalTimezones();
     const courses = await sqldb.queryRows(sql.select_courses, CourseWithInstitutionSchema);
     const trpcCsrfToken = generatePrefixCsrfToken(
       {
-        url: `${res.locals.urlPrefix}/administrator/trpc`,
-        authn_user_id: res.locals.authn_user.id,
+        url: `${urlPrefix}/administrator/trpc`,
+        authn_user_id: authn_user.id,
       },
       config.secretKey,
     );
@@ -53,8 +59,9 @@ router.get(
               courses={courses}
               coursesRoot={config.coursesRoot}
               trpcCsrfToken={trpcCsrfToken}
-              urlPrefix={res.locals.urlPrefix}
+              urlPrefix={urlPrefix}
               courseRepoDefaultBranch={config.courseRepoDefaultBranch}
+              aiSecretsConfigured={!!config.administratorOpenAiApiKey}
             />
           </Hydrate>
         ),

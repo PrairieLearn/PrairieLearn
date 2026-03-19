@@ -3,7 +3,12 @@ import assert from 'node:assert';
 import { createAnthropic } from '@ai-sdk/anthropic';
 import { createGoogleGenerativeAI } from '@ai-sdk/google';
 import { type OpenAIResponsesProviderOptions, createOpenAI } from '@ai-sdk/openai';
-import { type JSONParseError, type TypeValidationError, generateObject } from 'ai';
+import {
+  type GenerateObjectResult,
+  type JSONParseError,
+  type TypeValidationError,
+  generateObject,
+} from 'ai';
 import * as async from 'async';
 import mustache from 'mustache';
 import { z } from 'zod';
@@ -15,7 +20,12 @@ import { assertNever } from '@prairielearn/utils';
 import { IdSchema } from '@prairielearn/zod';
 
 import {
+  calculateCostWithFeeMilliDollars,
+  formatMilliDollars,
+} from '../../../lib/ai-grading-credits.js';
+import {
   type AiImageGradingResponses,
+  calculateResponseCost,
   logResponseUsage,
   logResponsesUsage,
 } from '../../../lib/ai-util.js';
@@ -34,6 +44,10 @@ import { getQuestionCourse } from '../../../lib/question-variant.js';
 import { createServerJob } from '../../../lib/server-jobs.js';
 import { emitServerJobProgressUpdate } from '../../../lib/serverJobProgressSocket.js';
 import { JobItemStatus } from '../../../lib/serverJobProgressSocket.shared.js';
+import {
+  deductCreditsForAiGrading,
+  selectCreditPool,
+} from '../../../models/ai-grading-credit-pool.js';
 import { updateCourseInstanceUsagesForAiGradingResponses } from '../../../models/course-instance-usages.js';
 import { selectCompleteRubric } from '../../../models/rubrics.js';
 import * as questionServers from '../../../question-servers/index.js';
@@ -63,8 +77,88 @@ import {
 
 const sql = loadSqlEquiv(import.meta.url);
 
+/**
+ * Calculate the total cost in milli-dollars (with infrastructure fee) for all
+ * responses from a single grading operation.
+ */
+function calculateTotalGradingCostMilliDollars({
+  model_id,
+  gradingResponseWithRotationIssue,
+  rotationCorrections,
+  finalGradingResponse,
+}: {
+  model_id: AiGradingModelId;
+  gradingResponseWithRotationIssue?: GenerateObjectResult<any>;
+  rotationCorrections?: Record<string, { response: GenerateObjectResult<any> }>;
+  finalGradingResponse: GenerateObjectResult<any>;
+}): number {
+  let totalRawCost = calculateResponseCost({ model: model_id, usage: finalGradingResponse.usage });
+  if (gradingResponseWithRotationIssue) {
+    totalRawCost += calculateResponseCost({
+      model: model_id,
+      usage: gradingResponseWithRotationIssue.usage,
+    });
+  }
+  if (rotationCorrections) {
+    for (const correction of Object.values(rotationCorrections)) {
+      totalRawCost += calculateResponseCost({
+        model: model_id,
+        usage: correction.response.usage,
+      });
+    }
+  }
+  return calculateCostWithFeeMilliDollars(totalRawCost, config.aiGradingInfrastructureFeePercent);
+}
+
+/**
+ * If cost tracking is enabled, calculate the total grading cost and deduct
+ * credits for a single AI grading operation. Must be called inside the same
+ * transaction that inserts the grading job.
+ */
+async function deductAiGradingCostIfNeeded({
+  trackRateLimitAndCost,
+  model_id,
+  gradingResponseWithRotationIssue,
+  rotationCorrections,
+  finalGradingResponse,
+  course_instance_id,
+  user_id,
+  ai_grading_job_id,
+  assessment_question_id,
+  instance_question_id,
+}: {
+  trackRateLimitAndCost: boolean;
+  model_id: AiGradingModelId;
+  gradingResponseWithRotationIssue?: GenerateObjectResult<any>;
+  rotationCorrections?: Record<string, { response: GenerateObjectResult<any> }>;
+  finalGradingResponse: GenerateObjectResult<any>;
+  course_instance_id: string;
+  user_id: string;
+  ai_grading_job_id: string;
+  assessment_question_id: string;
+  instance_question_id: string;
+}): Promise<void> {
+  if (!trackRateLimitAndCost) return;
+
+  const costMilliDollars = calculateTotalGradingCostMilliDollars({
+    model_id,
+    gradingResponseWithRotationIssue,
+    rotationCorrections,
+    finalGradingResponse,
+  });
+  await deductCreditsForAiGrading({
+    course_instance_id,
+    cost_milli_dollars: costMilliDollars,
+    user_id,
+    ai_grading_job_id,
+    assessment_question_id,
+    reason: `AI graded instance question ${instance_question_id}`,
+  });
+}
+
 const PARALLEL_SUBMISSION_GRADING_LIMIT = 20;
 const HOURLY_USAGE_CAP_REACHED_MESSAGE = 'Hourly usage cap reached. Try again later.';
+const INSUFFICIENT_CREDITS_MESSAGE = 'Insufficient AI grading credits.';
 
 /**
  * Grade instance questions using AI.
@@ -220,6 +314,39 @@ export async function aiGrade({
         item_statuses,
       });
       return;
+    }
+
+    // Check credit pool before starting the batch. This is a best-effort
+    // check without FOR UPDATE — concurrent batches may both pass this check.
+    // Credits are deducted per-submission *after* the API call, so if the pool
+    // is exhausted mid-batch the API cost is already incurred but the deduction
+    // will fail for remaining items. A future improvement could pre-reserve
+    // estimated credits for the batch.
+    if (trackRateLimitAndCost) {
+      const creditPool = await selectCreditPool(course_instance.id);
+      if (creditPool.total_milli_dollars <= 0) {
+        job.error(
+          `${INSUFFICIENT_CREDITS_MESSAGE} Available credits: ${formatMilliDollars(creditPool.total_milli_dollars)}.`,
+        );
+
+        item_statuses = instance_questions.reduce(
+          (acc, instance_question) => {
+            acc[instance_question.id] = JobItemStatus.failed;
+            return acc;
+          },
+          {} as Record<string, JobItemStatus>,
+        );
+
+        await emitServerJobProgressUpdate({
+          job_sequence_id: serverJob.jobSequenceId,
+          num_complete: instance_questions.length,
+          num_failed: instance_questions.length,
+          num_total: instance_questions.length,
+          job_failure_message: INSUFFICIENT_CREDITS_MESSAGE,
+          item_statuses,
+        });
+        return;
+      }
     }
 
     job.info(`Using model ${model_id} for AI grading.`);
@@ -575,19 +702,17 @@ export async function aiGrade({
               course_instance_id: course_instance.id,
             };
 
-            if (rotationCorrectionApplied) {
-              await insertAiGradingJobWithRotationCorrection({
-                ...aiGradingJobParams,
-                gradingResponseWithRotationIssue,
-                rotationCorrections,
-                gradingResponseWithRotationCorrection: finalGradingResponse,
-              });
-            } else {
-              await insertAiGradingJob({
-                ...aiGradingJobParams,
-                response: finalGradingResponse,
-              });
-            }
+            const aiGradingJobId = rotationCorrectionApplied
+              ? await insertAiGradingJobWithRotationCorrection({
+                  ...aiGradingJobParams,
+                  gradingResponseWithRotationIssue,
+                  rotationCorrections,
+                  gradingResponseWithRotationCorrection: finalGradingResponse,
+                })
+              : await insertAiGradingJob({
+                  ...aiGradingJobParams,
+                  response: finalGradingResponse,
+                });
 
             await updateCourseInstanceUsagesForAiGradingResponses({
               gradingJobId: grading_job_id,
@@ -596,6 +721,19 @@ export async function aiGrade({
               gradingResponseWithRotationIssue,
               rotationCorrections,
               finalGradingResponse,
+            });
+
+            await deductAiGradingCostIfNeeded({
+              trackRateLimitAndCost,
+              model_id,
+              gradingResponseWithRotationIssue,
+              rotationCorrections,
+              finalGradingResponse,
+              course_instance_id: course_instance.id,
+              user_id: authn_user_id,
+              ai_grading_job_id: aiGradingJobId,
+              assessment_question_id: assessment_question.id,
+              instance_question_id: instance_question.id,
             });
           });
         } else {
@@ -636,19 +774,17 @@ export async function aiGrade({
               course_instance_id: course_instance.id,
             };
 
-            if (rotationCorrectionApplied) {
-              await insertAiGradingJobWithRotationCorrection({
-                ...aiGradingJobParams,
-                gradingResponseWithRotationIssue,
-                rotationCorrections,
-                gradingResponseWithRotationCorrection: finalGradingResponse,
-              });
-            } else {
-              await insertAiGradingJob({
-                ...aiGradingJobParams,
-                response: finalGradingResponse,
-              });
-            }
+            const aiGradingJobId = rotationCorrectionApplied
+              ? await insertAiGradingJobWithRotationCorrection({
+                  ...aiGradingJobParams,
+                  gradingResponseWithRotationIssue,
+                  rotationCorrections,
+                  gradingResponseWithRotationCorrection: finalGradingResponse,
+                })
+              : await insertAiGradingJob({
+                  ...aiGradingJobParams,
+                  response: finalGradingResponse,
+                });
 
             await updateCourseInstanceUsagesForAiGradingResponses({
               gradingJobId: grading_job_id,
@@ -657,6 +793,19 @@ export async function aiGrade({
               gradingResponseWithRotationIssue,
               rotationCorrections,
               finalGradingResponse,
+            });
+
+            await deductAiGradingCostIfNeeded({
+              trackRateLimitAndCost,
+              model_id,
+              gradingResponseWithRotationIssue,
+              rotationCorrections,
+              finalGradingResponse,
+              course_instance_id: course_instance.id,
+              user_id: authn_user_id,
+              ai_grading_job_id: aiGradingJobId,
+              assessment_question_id: assessment_question.id,
+              instance_question_id: instance_question.id,
             });
           });
         }
@@ -834,19 +983,17 @@ export async function aiGrade({
               course_instance_id: course_instance.id,
             };
 
-            if (rotationCorrectionApplied) {
-              await insertAiGradingJobWithRotationCorrection({
-                ...aiGradingJobParams,
-                gradingResponseWithRotationIssue,
-                rotationCorrections,
-                gradingResponseWithRotationCorrection: finalGradingResponse,
-              });
-            } else {
-              await insertAiGradingJob({
-                ...aiGradingJobParams,
-                response: finalGradingResponse,
-              });
-            }
+            const aiGradingJobId = rotationCorrectionApplied
+              ? await insertAiGradingJobWithRotationCorrection({
+                  ...aiGradingJobParams,
+                  gradingResponseWithRotationIssue,
+                  rotationCorrections,
+                  gradingResponseWithRotationCorrection: finalGradingResponse,
+                })
+              : await insertAiGradingJob({
+                  ...aiGradingJobParams,
+                  response: finalGradingResponse,
+                });
 
             await updateCourseInstanceUsagesForAiGradingResponses({
               gradingJobId: grading_job_id,
@@ -855,6 +1002,19 @@ export async function aiGrade({
               gradingResponseWithRotationIssue,
               rotationCorrections,
               finalGradingResponse,
+            });
+
+            await deductAiGradingCostIfNeeded({
+              trackRateLimitAndCost,
+              model_id,
+              gradingResponseWithRotationIssue,
+              rotationCorrections,
+              finalGradingResponse,
+              course_instance_id: course_instance.id,
+              user_id: authn_user_id,
+              ai_grading_job_id: aiGradingJobId,
+              assessment_question_id: assessment_question.id,
+              instance_question_id: instance_question.id,
             });
           });
         } else {
@@ -885,19 +1045,17 @@ export async function aiGrade({
               course_id: course.id,
               course_instance_id: course_instance.id,
             };
-            if (rotationCorrectionApplied) {
-              await insertAiGradingJobWithRotationCorrection({
-                ...aiGradingJobParams,
-                gradingResponseWithRotationIssue,
-                rotationCorrections,
-                gradingResponseWithRotationCorrection: finalGradingResponse,
-              });
-            } else {
-              await insertAiGradingJob({
-                ...aiGradingJobParams,
-                response: finalGradingResponse,
-              });
-            }
+            const aiGradingJobId = rotationCorrectionApplied
+              ? await insertAiGradingJobWithRotationCorrection({
+                  ...aiGradingJobParams,
+                  gradingResponseWithRotationIssue,
+                  rotationCorrections,
+                  gradingResponseWithRotationCorrection: finalGradingResponse,
+                })
+              : await insertAiGradingJob({
+                  ...aiGradingJobParams,
+                  response: finalGradingResponse,
+                });
 
             await updateCourseInstanceUsagesForAiGradingResponses({
               gradingJobId: grading_job_id,
@@ -906,6 +1064,19 @@ export async function aiGrade({
               gradingResponseWithRotationIssue,
               rotationCorrections,
               finalGradingResponse,
+            });
+
+            await deductAiGradingCostIfNeeded({
+              trackRateLimitAndCost,
+              model_id,
+              gradingResponseWithRotationIssue,
+              rotationCorrections,
+              finalGradingResponse,
+              course_instance_id: course_instance.id,
+              user_id: authn_user_id,
+              ai_grading_job_id: aiGradingJobId,
+              assessment_question_id: assessment_question.id,
+              instance_question_id: instance_question.id,
             });
           });
         }

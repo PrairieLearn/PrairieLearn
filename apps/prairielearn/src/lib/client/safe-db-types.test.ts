@@ -73,6 +73,8 @@ const minimalStaffCourseInstance: z.input<typeof StaffCourseInstanceSchema> = {
   ai_grading_use_custom_api_keys: false,
   assessments_group_by: 'Set',
   course_id: '1',
+  credit_non_transferable_milli_dollars: 0,
+  credit_transferable_milli_dollars: 0,
   deleted_at: null,
   display_timezone: 'UTC',
   enrollment_code: 'AAABBBCCCC',
