@@ -104,6 +104,11 @@ export async function init() {
       module: await import('./cleanTimeSeries.js'),
       intervalSec: config.cronOverrideAllIntervalsSec || config.cronIntervalCleanTimeSeriesSec,
     },
+    {
+      name: 'recoverStaleWorkflows',
+      module: await import('./recoverStaleWorkflows.js'),
+      intervalSec: config.cronOverrideAllIntervalsSec || 60,
+    },
   ];
 
   if (isEnterprise()) {

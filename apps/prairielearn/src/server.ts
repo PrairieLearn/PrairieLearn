@@ -54,6 +54,7 @@ import { run } from '@prairielearn/run';
 import { createSessionMiddleware } from '@prairielearn/session';
 import { getCheckedSignedTokenData } from '@prairielearn/signed-token';
 import { assertNever } from '@prairielearn/utils';
+import * as workflows from '@prairielearn/workflows';
 
 import * as cron from './cron/index.js';
 import * as assets from './lib/assets.js';
@@ -2363,6 +2364,14 @@ if (shouldStartServer) {
     await namedLocks.init(pgConfig, idleErrorHandler, {
       renewIntervalMs: config.namedLocksRenewIntervalMs,
     });
+
+    await workflows.init();
+
+    // Register workflow definitions. AI grading is behind an enterprise
+    // feature flag at runtime, but registering the definition is harmless.
+    const { registerAiGradingWorkflow } =
+      await import('./ee/lib/ai-grading/ai-grading-workflow.js');
+    registerAiGradingWorkflow();
 
     logger.verbose('Successfully connected to database');
 

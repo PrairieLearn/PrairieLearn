@@ -7,6 +7,7 @@ import * as error from '@prairielearn/error';
 import { Hydrate } from '@prairielearn/react/server';
 import { run } from '@prairielearn/run';
 import { generatePrefixCsrfToken } from '@prairielearn/signed-token';
+import { cancelWorkflow, getActiveWorkflowRun } from '@prairielearn/workflows';
 
 import { AssessmentOpenInstancesAlert } from '../../../components/AssessmentOpenInstancesAlert.js';
 import { PageLayout } from '../../../components/PageLayout.js';
@@ -292,6 +293,15 @@ router.post(
       throw new error.HttpStatusError(400, 'No message provided');
     }
 
+    // Look up the active workflow run for this assessment question (if any).
+    // The workflow is used for state tracking and message association.
+    // It does NOT drive the AI calls — the route handler does that directly.
+    const workflowRun = await getActiveWorkflowRun('ai_grading', {
+      assessment_question_id: assessment_question.id,
+    });
+
+    const workflowRunId = workflowRun?.id ?? null;
+
     const serverJob = await createServerJob({
       courseId: res.locals.course.id,
       courseInstanceId: res.locals.course_instance.id,
@@ -318,19 +328,26 @@ router.post(
               authz_data.has_course_instance_permission_edit ?? false,
           };
 
-          job.info(`AI grading chat request — phase: ${phase}`);
+          job.info(`AI grading chat request — phase: ${phase}, workflow: ${workflowRunId}`);
 
           const textPartId = 'summary';
 
           try {
             if (phase === 'generate') {
-              const result = await generateRubric(agentContext, job, serverJob.jobSequenceId);
+              const result = await generateRubric(
+                agentContext,
+                job,
+                serverJob.jobSequenceId,
+                workflowRunId,
+              );
+
               writer.write({
                 type: 'start',
                 messageMetadata: {
                   job_sequence_id: serverJob.jobSequenceId,
                   status: 'completed',
                   phase: 'generate',
+                  workflow_run_id: workflowRunId,
                 },
               });
               writer.write({ type: 'start-step' });
@@ -351,7 +368,9 @@ router.post(
                 persistedMessages,
                 job,
                 serverJob.jobSequenceId,
+                workflowRunId,
               );
+
               writer.write({
                 type: 'start',
                 messageMetadata: {
@@ -359,6 +378,7 @@ router.post(
                   status: 'completed',
                   phase: 'edit',
                   rubric_modified: result.rubricModified,
+                  workflow_run_id: workflowRunId,
                 },
               });
               writer.write({ type: 'start-step' });
@@ -403,6 +423,14 @@ router.post(
       accessType: 'instructor',
     });
 
+    // Cancel active workflow if one exists
+    const activeWorkflow = await getActiveWorkflowRun('ai_grading', {
+      assessment_question_id: assessment_question.id,
+    });
+    if (activeWorkflow) {
+      await cancelWorkflow(activeWorkflow.id);
+    }
+
     await deleteAiGradingMessages(assessment_question.id);
     res.sendStatus(200);
   }),
@@ -425,8 +453,20 @@ router.get(
       assessment_question,
     });
 
+    const workflowRun = await getActiveWorkflowRun('ai_grading', {
+      assessment_question_id: assessment_question.id,
+    });
+
     res.json({
       rubric_data,
+      workflow_status: workflowRun
+        ? {
+            id: workflowRun.id,
+            status: workflowRun.status,
+            phase: workflowRun.phase,
+            state: workflowRun.state,
+          }
+        : null,
       aiGradingStats:
         aiGradingEnabled && assessment_question.ai_grading_mode
           ? await calculateAiGradingStats(assessment_question)

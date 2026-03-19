@@ -247,17 +247,20 @@ async function insertUserMessage({
   authnUserId,
   phase,
   text,
+  workflowRunId,
 }: {
   assessmentQuestionId: string;
   authnUserId: string;
   phase: 'generate' | 'edit';
   text: string;
+  workflowRunId?: string | null;
 }) {
   await execute(sql.insert_user_message, {
     assessment_question_id: assessmentQuestionId,
     authn_user_id: authnUserId,
     phase,
     parts: JSON.stringify([{ type: 'text', text }]),
+    workflow_run_id: workflowRunId ?? null,
   });
 }
 
@@ -266,11 +269,13 @@ async function insertInitialAssistantMessage({
   jobSequenceId,
   phase,
   modelId,
+  workflowRunId,
 }: {
   assessmentQuestionId: string;
   jobSequenceId: string;
   phase: 'generate' | 'edit';
   modelId: string;
+  workflowRunId?: string | null;
 }) {
   return await queryRow(
     sql.insert_initial_assistant_message,
@@ -279,6 +284,7 @@ async function insertInitialAssistantMessage({
       job_sequence_id: jobSequenceId,
       phase,
       model: modelId,
+      workflow_run_id: workflowRunId ?? null,
     },
     AiGradingMessageSchema,
   );
@@ -321,6 +327,7 @@ export async function generateRubric(
   context: AiGradingAgentContext,
   job: JobLogger,
   jobSequenceId: string,
+  workflowRunId?: string | null,
 ): Promise<GenerateRubricResult> {
   if (!context.hasCourseInstancePermissionEdit) {
     throw new Error('Access denied (must be a student data editor)');
@@ -332,6 +339,7 @@ export async function generateRubric(
     authnUserId: context.authnUserId,
     phase: 'generate',
     text: 'Generate a new rubric.',
+    workflowRunId,
   });
 
   const { model, modelId } = getAgenticGradingModel();
@@ -342,6 +350,7 @@ export async function generateRubric(
     jobSequenceId,
     phase: 'generate',
     modelId,
+    workflowRunId,
   });
 
   try {
@@ -445,6 +454,7 @@ export async function editRubric(
   persistedMessages: AiGradingMessage[],
   job: JobLogger,
   jobSequenceId: string,
+  workflowRunId?: string | null,
 ): Promise<EditRubricResult> {
   // Persist the user message
   await insertUserMessage({
@@ -452,6 +462,7 @@ export async function editRubric(
     authnUserId: context.authnUserId,
     phase: 'edit',
     text: instruction,
+    workflowRunId,
   });
 
   const { model, modelId } = getAgenticGradingModel();
@@ -462,6 +473,7 @@ export async function editRubric(
     jobSequenceId,
     phase: 'edit',
     modelId,
+    workflowRunId,
   });
 
   try {

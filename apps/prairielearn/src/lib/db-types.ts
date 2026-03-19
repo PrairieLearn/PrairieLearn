@@ -358,6 +358,7 @@ export const AiGradingMessageSchema = z.object({
   usage_input_tokens_cache_write: z.number(),
   usage_output_tokens: z.number(),
   usage_output_tokens_reasoning: z.number(),
+  workflow_run_id: IdSchema.nullable(),
 });
 export type AiGradingMessage = z.infer<typeof AiGradingMessageSchema>;
 

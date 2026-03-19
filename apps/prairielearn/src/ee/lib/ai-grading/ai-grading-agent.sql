@@ -6,7 +6,8 @@ INSERT INTO
     role,
     status,
     phase,
-    parts
+    parts,
+    workflow_run_id
   )
 VALUES
   (
@@ -15,7 +16,8 @@ VALUES
     'user',
     'completed',
     $phase,
-    $parts::jsonb
+    $parts::jsonb,
+    $workflow_run_id
   );
 
 -- BLOCK insert_initial_assistant_message
@@ -31,7 +33,8 @@ INSERT INTO
     usage_input_tokens_cache_read,
     usage_input_tokens_cache_write,
     usage_output_tokens,
-    usage_output_tokens_reasoning
+    usage_output_tokens_reasoning,
+    workflow_run_id
   )
 VALUES
   (
@@ -45,7 +48,8 @@ VALUES
     0,
     0,
     0,
-    0
+    0,
+    $workflow_run_id
   )
 RETURNING
   *;

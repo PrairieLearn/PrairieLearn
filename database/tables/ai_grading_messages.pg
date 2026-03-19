@@ -16,10 +16,12 @@ columns
     usage_input_tokens_cache_write: integer not null default 0
     usage_output_tokens: integer not null default 0
     usage_output_tokens_reasoning: integer not null default 0
+    workflow_run_id: bigint
 
 indexes
     ai_grading_messages_pkey: PRIMARY KEY (id) USING btree (id)
     ai_grading_messages_assessment_question_id_idx: USING btree (assessment_question_id)
+    ai_grading_messages_workflow_run_id_idx: USING btree (workflow_run_id)
 
 check constraints
     ai_grading_messages_authn_user_check: CHECK (role = 'user'::enum_ai_question_generation_message_role AND authn_user_id IS NOT NULL OR role = 'assistant'::enum_ai_question_generation_message_role AND authn_user_id IS NULL)

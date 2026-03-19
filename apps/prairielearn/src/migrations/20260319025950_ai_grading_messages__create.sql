@@ -18,6 +18,7 @@ CREATE TABLE IF NOT EXISTS ai_grading_messages (
   usage_output_tokens INT NOT NULL DEFAULT 0,
   usage_output_tokens_reasoning INT NOT NULL DEFAULT 0,
   include_in_context BOOLEAN NOT NULL DEFAULT TRUE,
+  workflow_run_id BIGINT,
   -- User messages never have a model. Assistant messages always have one.
   CONSTRAINT ai_grading_messages_model_check CHECK (
     (
@@ -43,3 +44,5 @@ CREATE TABLE IF NOT EXISTS ai_grading_messages (
 );
 
 CREATE INDEX IF NOT EXISTS ai_grading_messages_assessment_question_id_idx ON ai_grading_messages (assessment_question_id);
+
+CREATE INDEX IF NOT EXISTS ai_grading_messages_workflow_run_id_idx ON ai_grading_messages (workflow_run_id);

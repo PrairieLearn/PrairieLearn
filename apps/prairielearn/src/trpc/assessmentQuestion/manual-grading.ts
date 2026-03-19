@@ -2,6 +2,7 @@ import { TRPCError } from '@trpc/server';
 import { z } from 'zod';
 
 import { run } from '@prairielearn/run';
+import { getActiveWorkflowRun, resumeWorkflow } from '@prairielearn/workflows';
 
 import {
   AI_GRADING_MODEL_IDS,
@@ -224,6 +225,70 @@ const setRequiresManualGradingMutation = t.procedure
     });
   });
 
+const workflowStatusQuery = t.procedure
+  .use(requireAiGradingFeature)
+  .output(
+    z
+      .object({
+        id: z.string(),
+        status: z.string(),
+        phase: z.string(),
+        state: z.record(z.unknown()),
+      })
+      .nullable(),
+  )
+  .query(async (opts) => {
+    if (!opts.ctx.authz_data.has_course_instance_permission_view) {
+      throw new TRPCError({
+        code: 'FORBIDDEN',
+        message: 'Access denied (must be a student data viewer)',
+      });
+    }
+
+    const workflowRun = await getActiveWorkflowRun('ai_grading', {
+      assessment_question_id: opts.ctx.assessment_question.id,
+    });
+
+    if (!workflowRun) return null;
+
+    return {
+      id: workflowRun.id,
+      status: workflowRun.status,
+      phase: workflowRun.phase,
+      state: workflowRun.state,
+    };
+  });
+
+const workflowActionMutation = t.procedure
+  .use(requireCourseInstancePermissionEdit)
+  .use(requireAiGradingFeature)
+  .input(
+    z.object({
+      action: z.string(),
+    }),
+  )
+  .mutation(async (opts) => {
+    const workflowRun = await getActiveWorkflowRun('ai_grading', {
+      assessment_question_id: opts.ctx.assessment_question.id,
+    });
+
+    if (!workflowRun) {
+      throw new TRPCError({
+        code: 'NOT_FOUND',
+        message: 'No active workflow found',
+      });
+    }
+
+    if (workflowRun.status !== 'waiting_for_input') {
+      throw new TRPCError({
+        code: 'BAD_REQUEST',
+        message: `Workflow is not waiting for input (status: ${workflowRun.status})`,
+      });
+    }
+
+    await resumeWorkflow(workflowRun.id, { action: opts.input.action });
+  });
+
 export const manualGradingRouter = t.router({
   instances,
   setAiGradingMode: setAiGradingModeMutation,
@@ -233,4 +298,6 @@ export const manualGradingRouter = t.router({
   aiGradeInstanceQuestions: aiGradeInstanceQuestionsMutation,
   setAssignedGrader: setAssignedGraderMutation,
   setRequiresManualGrading: setRequiresManualGradingMutation,
+  workflowStatus: workflowStatusQuery,
+  workflowAction: workflowActionMutation,
 });
