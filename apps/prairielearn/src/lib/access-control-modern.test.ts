@@ -1,7 +1,10 @@
 import { beforeEach, describe, expect, it, vi } from 'vitest';
 
 import * as accessControlData from './access-control-data.js';
-import { resolveModernAssessmentInstanceAccess } from './access-control-modern.js';
+import {
+  resolveModernAssessmentInstanceAccess,
+  type ModernAssessmentInstanceAccessInput,
+} from './access-control-modern.js';
 import type { Assessment, CourseInstance } from './db-types.js';
 import * as groups from './groups.js';
 
@@ -35,15 +38,14 @@ describe('resolveModernAssessmentInstanceAccess', () => {
     courseInstance: { id: 'ci-1' } as CourseInstance,
     authzData: {
       user: { id: 'user-1' },
-      mode: 'Public' as const,
-      mode_reason: 'Default' as const,
-      course_role: 'None' as const,
-      course_instance_role: 'None' as const,
+      mode: 'Public',
+      course_role: 'None',
+      course_instance_role: 'None',
       has_course_instance_permission_view: false,
     },
     reqDate: new Date('2025-03-15T12:00:00Z'),
     displayTimezone: 'America/Chicago',
-  };
+  } satisfies Partial<ModernAssessmentInstanceAccessInput>;
 
   describe('individual (non-group) assessment instances', () => {
     it('grants access when user owns the instance', async () => {

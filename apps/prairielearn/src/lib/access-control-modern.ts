@@ -92,7 +92,7 @@ export async function resolveModernAssessmentAccess(
   };
 }
 
-interface ModernAssessmentInstanceAccessInput extends ModernAssessmentAccessInput {
+export interface ModernAssessmentInstanceAccessInput extends ModernAssessmentAccessInput {
   assessmentInstance: {
     id: string;
     user_id: string | null;
