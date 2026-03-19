@@ -14,190 +14,163 @@ import {
 } from './access-control-migration.js';
 
 describe('classifyArchetype', () => {
-  it('classifies no-op rules', () => {
-    const rules: AssessmentAccessRuleJson[] = [{}];
-    expect(classifyArchetype(rules)).toBe('no-op');
-  });
+  const cases: { name: string; rules: AssessmentAccessRuleJson[]; expected: string }[] = [
+    { name: 'no-op rules', rules: [{}], expected: 'no-op' },
+    {
+      name: 'prairietest-exam',
+      rules: [
+        { examUuid: 'abc-123', mode: 'Exam', credit: 100 },
+        { startDate: '2024-01-01', active: false },
+      ],
+      expected: 'prairietest-exam',
+    },
+    {
+      name: 'password-gated',
+      rules: [{ password: 'secret', credit: 100, startDate: '2024-01-01', endDate: '2024-06-01' }],
+      expected: 'password-gated',
+    },
+    {
+      name: 'timed-assessment',
+      rules: [{ credit: 100, startDate: '2024-01-01', endDate: '2024-06-01', timeLimitMin: 60 }],
+      expected: 'timed-assessment',
+    },
+    {
+      name: 'single-deadline',
+      rules: [{ credit: 100, startDate: '2024-01-01', endDate: '2024-06-01' }],
+      expected: 'single-deadline',
+    },
+    {
+      name: 'single-deadline-with-viewing',
+      rules: [
+        { credit: 100, startDate: '2024-01-01', endDate: '2024-06-01' },
+        { startDate: '2024-01-01' },
+      ],
+      expected: 'single-deadline-with-viewing',
+    },
+    {
+      name: 'declining-credit',
+      rules: [
+        { credit: 100, startDate: '2024-01-01', endDate: '2024-03-01' },
+        { credit: 50, startDate: '2024-03-01', endDate: '2024-06-01' },
+      ],
+      expected: 'declining-credit',
+    },
+    {
+      name: 'multi-deadline',
+      rules: [
+        { credit: 100, startDate: '2024-01-01', endDate: '2024-02-01' },
+        { credit: 100, startDate: '2024-03-01', endDate: '2024-04-01' },
+      ],
+      expected: 'multi-deadline',
+    },
+    {
+      name: 'single full-credit without dates',
+      rules: [{ credit: 100 }],
+      expected: 'single-deadline',
+    },
+    { name: 'view-only', rules: [{ startDate: '2024-01-01' }], expected: 'view-only' },
+    { name: 'hidden', rules: [{ active: false }], expected: 'hidden' },
+    {
+      name: 'single-deadline with mode-gated',
+      rules: [{ credit: 100, startDate: '2024-01-01', endDate: '2024-06-01', mode: 'Exam' }],
+      expected: 'single-deadline (mode-gated)',
+    },
+    {
+      name: 'single-deadline with hides-closed',
+      rules: [
+        {
+          credit: 100,
+          startDate: '2024-01-01',
+          endDate: '2024-06-01',
+          showClosedAssessment: false,
+        },
+      ],
+      expected: 'single-deadline (hides-closed)',
+    },
+    {
+      name: 'single-reduced-credit',
+      rules: [{ credit: 50, startDate: '2024-01-01', endDate: '2024-06-01' }],
+      expected: 'single-reduced-credit',
+    },
+    { name: 'empty rules', rules: [], expected: 'no-op' },
+    {
+      name: 'ignores UID rules, classifies remainder',
+      rules: [
+        { credit: 100, startDate: '2024-01-01', endDate: '2024-06-01' },
+        { uids: ['user@example.com'], credit: 100, endDate: '2024-07-01' },
+      ],
+      expected: 'single-deadline',
+    },
+    {
+      name: 'all-UID rules',
+      rules: [{ uids: ['user@example.com'], credit: 100, endDate: '2024-06-01' }],
+      expected: 'no-op',
+    },
+    {
+      name: 'UID rules mixed with declining-credit',
+      rules: [
+        { credit: 100, startDate: '2024-01-01', endDate: '2024-03-01' },
+        { credit: 50, startDate: '2024-03-01', endDate: '2024-06-01' },
+        { uids: ['user@example.com'], credit: 100 },
+      ],
+      expected: 'declining-credit',
+    },
+    { name: 'mode-only rule', rules: [{ mode: 'Exam' }], expected: 'view-only' },
+    {
+      name: 'combined mode-gated and hides-closed',
+      rules: [
+        {
+          credit: 100,
+          startDate: '2024-01-01',
+          endDate: '2024-06-01',
+          mode: 'Exam',
+          showClosedAssessment: false,
+        },
+      ],
+      expected: 'single-deadline (mode-gated, hides-closed)',
+    },
+    {
+      name: 'hides-score modifier',
+      rules: [
+        {
+          credit: 100,
+          startDate: '2024-01-01',
+          endDate: '2024-06-01',
+          showClosedAssessmentScore: false,
+        },
+      ],
+      expected: 'single-deadline (hides-score)',
+    },
+    {
+      name: 'declining-credit with bonus and reduced',
+      rules: [
+        { credit: 120, startDate: '2024-01-01', endDate: '2024-02-01' },
+        { credit: 50, startDate: '2024-02-01', endDate: '2024-06-01' },
+      ],
+      expected: 'declining-credit',
+    },
+    {
+      name: 'timed-assessment with mode-gated',
+      rules: [
+        {
+          credit: 100,
+          startDate: '2024-01-01',
+          endDate: '2024-06-01',
+          timeLimitMin: 60,
+          mode: 'Exam',
+        },
+      ],
+      expected: 'timed-assessment (mode-gated)',
+    },
+    {
+      name: 'single bonus credit',
+      rules: [{ credit: 120, startDate: '2024-01-01', endDate: '2024-06-01' }],
+      expected: 'single-deadline',
+    },
+  ];
 
-  it('classifies prairietest-exam', () => {
-    const rules: AssessmentAccessRuleJson[] = [
-      { examUuid: 'abc-123', mode: 'Exam', credit: 100 },
-      { startDate: '2024-01-01', active: false },
-    ];
-    expect(classifyArchetype(rules)).toBe('prairietest-exam');
-  });
-
-  it('classifies password-gated', () => {
-    const rules: AssessmentAccessRuleJson[] = [
-      { password: 'secret', credit: 100, startDate: '2024-01-01', endDate: '2024-06-01' },
-    ];
-    expect(classifyArchetype(rules)).toBe('password-gated');
-  });
-
-  it('classifies timed-assessment', () => {
-    const rules: AssessmentAccessRuleJson[] = [
-      { credit: 100, startDate: '2024-01-01', endDate: '2024-06-01', timeLimitMin: 60 },
-    ];
-    expect(classifyArchetype(rules)).toBe('timed-assessment');
-  });
-
-  it('classifies single-deadline', () => {
-    const rules: AssessmentAccessRuleJson[] = [
-      { credit: 100, startDate: '2024-01-01', endDate: '2024-06-01' },
-    ];
-    expect(classifyArchetype(rules)).toBe('single-deadline');
-  });
-
-  it('classifies single-deadline-with-viewing', () => {
-    const rules: AssessmentAccessRuleJson[] = [
-      { credit: 100, startDate: '2024-01-01', endDate: '2024-06-01' },
-      { startDate: '2024-01-01' },
-    ];
-    expect(classifyArchetype(rules)).toBe('single-deadline-with-viewing');
-  });
-
-  it('classifies declining-credit', () => {
-    const rules: AssessmentAccessRuleJson[] = [
-      { credit: 100, startDate: '2024-01-01', endDate: '2024-03-01' },
-      { credit: 50, startDate: '2024-03-01', endDate: '2024-06-01' },
-    ];
-    expect(classifyArchetype(rules)).toBe('declining-credit');
-  });
-
-  it('classifies multi-deadline', () => {
-    const rules: AssessmentAccessRuleJson[] = [
-      { credit: 100, startDate: '2024-01-01', endDate: '2024-02-01' },
-      { credit: 100, startDate: '2024-03-01', endDate: '2024-04-01' },
-    ];
-    expect(classifyArchetype(rules)).toBe('multi-deadline');
-  });
-
-  it('classifies single full-credit without dates as single-deadline', () => {
-    const rules: AssessmentAccessRuleJson[] = [{ credit: 100 }];
-    expect(classifyArchetype(rules)).toBe('single-deadline');
-  });
-
-  it('classifies view-only', () => {
-    const rules: AssessmentAccessRuleJson[] = [{ startDate: '2024-01-01' }];
-    expect(classifyArchetype(rules)).toBe('view-only');
-  });
-
-  it('classifies hidden', () => {
-    const rules: AssessmentAccessRuleJson[] = [{ active: false }];
-    expect(classifyArchetype(rules)).toBe('hidden');
-  });
-
-  it('classifies single-deadline with mode-gated modifier', () => {
-    const rules: AssessmentAccessRuleJson[] = [
-      { credit: 100, startDate: '2024-01-01', endDate: '2024-06-01', mode: 'Exam' },
-    ];
-    expect(classifyArchetype(rules)).toBe('single-deadline (mode-gated)');
-  });
-
-  it('classifies single-deadline with hides-closed modifier', () => {
-    const rules: AssessmentAccessRuleJson[] = [
-      {
-        credit: 100,
-        startDate: '2024-01-01',
-        endDate: '2024-06-01',
-        showClosedAssessment: false,
-      },
-    ];
-    expect(classifyArchetype(rules)).toBe('single-deadline (hides-closed)');
-  });
-
-  it('classifies single-reduced-credit', () => {
-    const rules: AssessmentAccessRuleJson[] = [
-      { credit: 50, startDate: '2024-01-01', endDate: '2024-06-01' },
-    ];
-    expect(classifyArchetype(rules)).toBe('single-reduced-credit');
-  });
-
-  it('returns unclassified for empty rules', () => {
-    const rules: AssessmentAccessRuleJson[] = [];
-    expect(classifyArchetype(rules)).toBe('no-op');
-  });
-
-  it('ignores UID rules and classifies remainder', () => {
-    const rules: AssessmentAccessRuleJson[] = [
-      { credit: 100, startDate: '2024-01-01', endDate: '2024-06-01' },
-      { uids: ['user@example.com'], credit: 100, endDate: '2024-07-01' },
-    ];
-    expect(classifyArchetype(rules)).toBe('single-deadline');
-  });
-
-  it('classifies all-UID rules as no-op', () => {
-    const rules: AssessmentAccessRuleJson[] = [
-      { uids: ['user@example.com'], credit: 100, endDate: '2024-06-01' },
-    ];
-    expect(classifyArchetype(rules)).toBe('no-op');
-  });
-
-  it('ignores UID rules mixed with declining-credit', () => {
-    const rules: AssessmentAccessRuleJson[] = [
-      { credit: 100, startDate: '2024-01-01', endDate: '2024-03-01' },
-      { credit: 50, startDate: '2024-03-01', endDate: '2024-06-01' },
-      { uids: ['user@example.com'], credit: 100 },
-    ];
-    expect(classifyArchetype(rules)).toBe('declining-credit');
-  });
-
-  it('classifies mode-only rule as view-only (mode does not override viewing)', () => {
-    const rules: AssessmentAccessRuleJson[] = [{ mode: 'Exam' }];
-    expect(classifyArchetype(rules)).toBe('view-only');
-  });
-
-  it('classifies combined mode-gated and hides-closed modifiers', () => {
-    const rules: AssessmentAccessRuleJson[] = [
-      {
-        credit: 100,
-        startDate: '2024-01-01',
-        endDate: '2024-06-01',
-        mode: 'Exam',
-        showClosedAssessment: false,
-      },
-    ];
-    expect(classifyArchetype(rules)).toBe('single-deadline (mode-gated, hides-closed)');
-  });
-
-  it('classifies hides-score modifier', () => {
-    const rules: AssessmentAccessRuleJson[] = [
-      {
-        credit: 100,
-        startDate: '2024-01-01',
-        endDate: '2024-06-01',
-        showClosedAssessmentScore: false,
-      },
-    ];
-    expect(classifyArchetype(rules)).toBe('single-deadline (hides-score)');
-  });
-
-  it('classifies declining-credit with bonus and reduced (no full)', () => {
-    const rules: AssessmentAccessRuleJson[] = [
-      { credit: 120, startDate: '2024-01-01', endDate: '2024-02-01' },
-      { credit: 50, startDate: '2024-02-01', endDate: '2024-06-01' },
-    ];
-    expect(classifyArchetype(rules)).toBe('declining-credit');
-  });
-
-  it('classifies timed-assessment with mode-gated', () => {
-    const rules: AssessmentAccessRuleJson[] = [
-      {
-        credit: 100,
-        startDate: '2024-01-01',
-        endDate: '2024-06-01',
-        timeLimitMin: 60,
-        mode: 'Exam',
-      },
-    ];
-    expect(classifyArchetype(rules)).toBe('timed-assessment (mode-gated)');
-  });
-
-  it('classifies single bonus credit as single-deadline', () => {
-    const rules: AssessmentAccessRuleJson[] = [
-      { credit: 120, startDate: '2024-01-01', endDate: '2024-06-01' },
-    ];
-    expect(classifyArchetype(rules)).toBe('single-deadline');
+  it.each(cases)('classifies $name as $expected', ({ rules, expected }) => {
+    expect(classifyArchetype(rules)).toBe(expected);
   });
 });
 
