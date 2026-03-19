@@ -134,7 +134,6 @@ export function InstructorAssessments({
                             </a>
                             ${IssueBadgeHtml({
                               count: row.open_issue_count,
-                              courseId: course.id,
                               courseInstanceId: course_instance.id,
                               issueAid: row.tid,
                             })}

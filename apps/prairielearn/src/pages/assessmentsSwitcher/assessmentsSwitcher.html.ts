@@ -74,7 +74,6 @@ export function AssessmentSwitcher({
               </a>
               ${IssueBadgeHtml({
                 count: row.open_issue_count,
-                courseId,
                 courseInstanceId,
                 issueAid: row.tid,
               })}

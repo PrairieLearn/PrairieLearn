@@ -118,16 +118,17 @@ export function getQuestionPreviewUrl({
 }
 
 export function getCourseIssuesUrl({
-  courseId,
-  courseInstanceId,
   qid,
   assessment,
+  courseId,
+  courseInstanceId,
 }: {
-  courseId: string;
-  courseInstanceId?: string;
   qid?: string | null;
   assessment?: string | null;
-}): string {
+} & (
+  | { courseInstanceId: string; courseId?: undefined }
+  | { courseInstanceId?: undefined; courseId: string }
+)): string {
   const urlPrefix = courseInstanceId
     ? `/pl/course_instance/${courseInstanceId}/instructor`
     : `/pl/course/${courseId}`;

@@ -41,7 +41,7 @@ export function createQuestionsTableColumns({
         const prefix = qidPrefix && question.share_publicly ? qidPrefix : '';
 
         return (
-          <span className="text-nowrap">
+          <span className="d-inline-flex align-items-center text-nowrap" style={{ minWidth: 0 }}>
             <CopyButton
               text={`${prefix}${question.qid}`}
               tooltipId={`copy-qid-${question.qid}`}
@@ -57,6 +57,7 @@ export function createQuestionsTableColumns({
               return null;
             })}
             <a
+              className="text-truncate"
               href={getQuestionPreviewUrl({
                 courseId,
                 courseInstanceId,
@@ -70,7 +71,7 @@ export function createQuestionsTableColumns({
             {question.open_issue_count > 0 && (
               <IssueBadge
                 count={question.open_issue_count}
-                className="ms-1"
+                className="ms-1 flex-shrink-0"
                 issueQid={question.qid}
                 courseId={courseId}
                 courseInstanceId={courseInstanceId}
@@ -79,8 +80,26 @@ export function createQuestionsTableColumns({
           </span>
         );
       },
+      meta: {
+        autoSize: true,
+        autoSizeSample: (questions: SafeQuestionsPageData[]) => {
+          if (questions.length === 0) return [];
+
+          const measureQuestion = (q: SafeQuestionsPageData) => {
+            const issueCountChars = q.open_issue_count.toString().length;
+            const qidChars = q.qid.length;
+            return qidChars + issueCountChars;
+          };
+
+          // Do not mutate the original array
+          return questions
+            .map((q, i) => ({ measure: measureQuestion(q), i }))
+            .sort((a, b) => b.measure - a.measure)
+            .slice(0, 5)
+            .map(({ i }) => i);
+        },
+      },
       size: 250,
-      maxSize: 800,
     }),
 
     columnHelper.accessor('title', {
@@ -88,7 +107,6 @@ export function createQuestionsTableColumns({
       header: 'Title',
       cell: (info) => <div className="text-wrap">{info.getValue()}</div>,
       size: 300,
-      maxSize: 800,
     }),
 
     columnHelper.accessor('topic', {
