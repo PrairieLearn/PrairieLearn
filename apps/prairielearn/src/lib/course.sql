@@ -39,6 +39,10 @@ SELECT
       courses
     WHERE
       lower(repository) = lower($repository)
+      AND (
+        $exclude_course_id::bigint IS NULL
+        OR id <> $exclude_course_id
+      )
       AND deleted_at IS NULL
   ) AS exists;
 
@@ -54,6 +58,10 @@ SELECT
         repository ILIKE '%/' || $suffix ESCAPE '\'
         OR repository ILIKE '%:' || $suffix ESCAPE '\'
       )
+      AND (
+        $exclude_course_id::bigint IS NULL
+        OR id <> $exclude_course_id
+      )
       AND deleted_at IS NULL
   ) AS exists;
 
@@ -66,5 +74,9 @@ SELECT
       courses
     WHERE
       path = $path
+      AND (
+        $exclude_course_id::bigint IS NULL
+        OR id <> $exclude_course_id
+      )
       AND deleted_at IS NULL
   ) AS exists;

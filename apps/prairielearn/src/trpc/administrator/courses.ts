@@ -102,7 +102,7 @@ const updateColumn = t.procedure
   )
   .mutation(async ({ input, ctx }) => {
     if (input.columnName === 'repository') {
-      const repoExists = await checkCourseRepositoryUrlExists(input.value);
+      const repoExists = await checkCourseRepositoryUrlExists(input.value, input.courseId);
       if (repoExists) {
         throw new TRPCError({
           code: 'BAD_REQUEST',
@@ -112,7 +112,7 @@ const updateColumn = t.procedure
     }
 
     if (input.columnName === 'path') {
-      const pathExists = await checkCoursePathExists(input.value);
+      const pathExists = await checkCoursePathExists(input.value, input.courseId);
       if (pathExists) {
         throw new TRPCError({
           code: 'BAD_REQUEST',
