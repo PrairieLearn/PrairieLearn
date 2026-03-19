@@ -200,44 +200,38 @@ function AssessmentEditorInner({
   const setSelectedItem = useCallback(
     (item: SelectedItem) => {
       dispatch({ type: 'SET_SELECTED_ITEM', selectedItem: item });
+    },
+    [dispatch],
+  );
 
-      if (!item) {
-        void setPreselection(null);
-        return;
-      }
-
-      switch (item.type) {
+  useEffect(() => {
+    const next = run(() => {
+      switch (selectedItem?.type) {
         case 'question': {
-          const foundQuestion = findQuestionByTrackingId(zones, item.questionTrackingId);
-          void setPreselection(
-            !foundQuestion?.question.id ? null : `q:${foundQuestion.question.id}`,
-          );
-          return;
+          const foundQuestion = findQuestionByTrackingId(zones, selectedItem.questionTrackingId);
+          return foundQuestion?.question.id ? `q:${foundQuestion.question.id}` : null;
         }
         case 'zone': {
-          const foundZone = findZoneByTrackingId(zones, item.zoneTrackingId);
-          void setPreselection(!foundZone ? null : `z:${foundZone.zoneIndex}`);
-          return;
+          const foundZone = findZoneByTrackingId(zones, selectedItem.zoneTrackingId);
+          return foundZone ? `z:${foundZone.zoneIndex}` : null;
         }
         case 'altGroup': {
-          const foundAltGroup = findAltGroupByTrackingId(zones, item.questionTrackingId);
-          void setPreselection(
-            !foundAltGroup ? null : `z:${foundAltGroup.zoneIndex}:${foundAltGroup.altGroupIndex}`,
-          );
-          return;
+          const foundAltGroup = findAltGroupByTrackingId(zones, selectedItem.questionTrackingId);
+          return foundAltGroup
+            ? `z:${foundAltGroup.zoneIndex}:${foundAltGroup.altGroupIndex}`
+            : null;
         }
         case 'alternative': {
-          const foundAlt = findAlternativeByTrackingId(zones, item.alternativeTrackingId);
-          void setPreselection(!foundAlt?.alternative.id ? null : `q:${foundAlt.alternative.id}`);
-          return;
+          const foundAlt = findAlternativeByTrackingId(zones, selectedItem.alternativeTrackingId);
+          return foundAlt ? `q:${foundAlt.alternative.id}` : null;
         }
         default:
-          void setPreselection(null);
-          return;
+          return null;
       }
-    },
-    [dispatch, setPreselection, zones],
-  );
+    });
+    // eslint-disable-next-line @eslint-react/hooks-extra/no-direct-set-state-in-use-effect
+    void setPreselection(next);
+  }, [selectedItem, zones, setPreselection]);
 
   const initialZonesJson = useMemo(() => JSON.stringify(initialState.zones), [initialState.zones]);
   const initialPropsMap = useMemo(() => buildPropsMap(initialState.zones), [initialState.zones]);
