@@ -80,6 +80,10 @@ for (const dep of REFERENCED_NODE_MODULES_DEPS) {
 
 const config: KnipConfig = {
   tags: ['-knipignore'],
+  // The knip language server reports "Unused file" false positives for non-TS files
+  // that don't match the `project` glob. Ignore them explicitly as a workaround.
+  // https://github.com/webpro-nl/knip/issues/1606
+  ignore: ['**/*.{css,html,json,md,mustache,png,py,sql,svg}'],
   workspaces: {
     '.': {
       entry: ['scripts/*.{mts,mjs}'],
@@ -102,6 +106,8 @@ const config: KnipConfig = {
         'src/lib/client/safe-db-types.ts',
         // We have team -> group aliases in this file
         'src/lib/db-types.ts',
+        // Ambient module declaration for echarts types
+        'src/typings/echarts.d.ts',
       ],
       project: ['**/*.{ts,cts,mts,tsx}'],
     },

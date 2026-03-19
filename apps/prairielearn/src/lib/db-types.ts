@@ -5,6 +5,8 @@ import { z } from 'zod';
 
 import { DateFromISOString, IdSchema, IntervalSchema } from '@prairielearn/zod';
 
+import { EnumAssessmentToolSchema, QuestionPreferencesSchemaJsonSchema } from '../schemas/index.js';
+
 // *******************************************************************************
 // Enum schemas. These should be alphabetized by their corresponding enum name.
 // *******************************************************************************
@@ -74,9 +76,6 @@ export type EnumJobStatus = z.infer<typeof EnumJobStatusSchema>;
 export const EnumModeSchema = z.enum(['Public', 'Exam', 'SEB']);
 export type EnumMode = z.infer<typeof EnumModeSchema>;
 
-export const EnumModeReasonSchema = z.enum(['Default', 'PrairieTest', 'Network']);
-export type EnumModeReason = z.infer<typeof EnumModeReasonSchema>;
-
 export const EnumPlanGrantTypeSchema = z.enum(['trial', 'stripe', 'invoice', 'gift']);
 export type EnumPlanGrantType = z.infer<typeof EnumPlanGrantTypeSchema>;
 
@@ -102,6 +101,11 @@ export type EnumQuestionType = z.infer<typeof EnumQuestionTypeSchema>;
 // Miscellaneous schemas; keep these alphabetized.
 // *******************************************************************************
 export const JsonCommentSchema = z.union([z.string(), z.array(z.any()), z.record(z.any())]);
+
+export const QuestionPreferenceValuesSchema = z.record(
+  z.string(),
+  z.union([z.string(), z.number(), z.boolean()]),
+);
 
 // *******************************************************************************
 // Sproc schemas. These should be alphabetized by their corresponding sproc name.
@@ -165,19 +169,6 @@ export const SprocAuthzAssessmentInstanceSchema = z.object({
   time_limit_min: z.number().nullable(),
 });
 
-// Result of authz_course sproc
-export const SprocAuthzCourseSchema = z.object({
-  course_role: EnumCourseRoleSchema,
-});
-export type SprocAuthzCourse = z.infer<typeof SprocAuthzCourseSchema>;
-
-// Result of ip_to_mode sproc
-export const SprocIpToModeSchema = z.object({
-  mode: EnumModeSchema,
-  mode_reason: EnumModeReasonSchema,
-});
-export type SprocIpToMode = z.infer<typeof SprocIpToModeSchema>;
-
 // Result of users_is_instructor_in_course_instance sproc
 export const SprocUsersIsInstructorInCourseInstanceSchema = z.object({
   is_instructor: z.boolean(),
@@ -213,16 +204,6 @@ export const SprocSyncAssessmentsSchema = z.object({
   name_to_id_map: z.record(z.string(), IdSchema).nullable(),
 });
 
-// Result of authz_course_instance sproc
-export const SprocAuthzCourseInstanceSchema = z.object({
-  course_instance_role: EnumCourseInstanceRoleSchema,
-  /** @deprecated This field only considers the legacy access system. The value should be augmented with the modern publishing system. */
-  has_student_access: z.boolean(),
-  /** @deprecated This field only considers the legacy access system. The value should be augmented with the modern publishing system. */
-  has_student_access_with_enrollment: z.boolean(),
-});
-export type SprocAuthzCourseInstance = z.infer<typeof SprocAuthzCourseInstanceSchema>;
-
 // *******************************************************************************
 // Database table schemas. These should be alphabetized by their corresponding
 // table name. For instance, `TeamSchema` should come before `TeamConfigSchema`
@@ -245,6 +226,21 @@ export const AdministratorSchema = z.object({
   user_id: IdSchema,
 });
 export type Administrator = z.infer<typeof AdministratorSchema>;
+
+export const AiGradingCreditPoolChangeSchema = z.object({
+  ai_grading_job_id: IdSchema.nullable(),
+  assessment_question_id: IdSchema.nullable(),
+  course_instance_id: IdSchema,
+  created_at: DateFromISOString,
+  credit_after_milli_dollars: z.coerce.number(),
+  credit_before_milli_dollars: z.coerce.number(),
+  credit_type: z.enum(['transferable', 'non_transferable']),
+  delta_milli_dollars: z.coerce.number(),
+  id: IdSchema,
+  reason: z.string(),
+  user_id: IdSchema.nullable(),
+});
+export type AiGradingCreditPoolChange = z.infer<typeof AiGradingCreditPoolChangeSchema>;
 
 export const AiGradingJobSchema = z.object({
   completion: z.any(),
@@ -486,6 +482,7 @@ export const AssessmentQuestionSchema = z.object({
   number_submissions_hist: z.array(z.number()).nullable(),
   number_submissions_variance: z.number().nullable(),
   points_list: z.array(z.number()).nullable(),
+  preferences: QuestionPreferenceValuesSchema.nullable(),
   question_id: IdSchema,
   question_score_variance: z.number().nullable(),
   quintile_question_scores: z.array(z.number()).nullable(),
@@ -507,6 +504,16 @@ export const AssessmentQuestionRolePermissionSchema = z.object({
 export type AssessmentQuestionRolePermission = z.infer<
   typeof AssessmentQuestionRolePermissionSchema
 >;
+
+export const AssessmentToolSchema = z.object({
+  assessment_id: IdSchema.nullable(),
+  enabled: z.boolean(),
+  id: IdSchema,
+  settings: z.record(z.unknown()),
+  tool: EnumAssessmentToolSchema,
+  zone_id: IdSchema.nullable(),
+});
+export type AssessmentTool = z.infer<typeof AssessmentToolSchema>;
 
 export const AssessmentSetSchema = z.object({
   abbreviation: z.string(),
@@ -639,6 +646,8 @@ export const CourseInstanceSchema = z.object({
   ai_grading_use_custom_api_keys: z.boolean(),
   assessments_group_by: z.enum(['Set', 'Module']),
   course_id: IdSchema,
+  credit_non_transferable_milli_dollars: z.coerce.number(),
+  credit_transferable_milli_dollars: z.coerce.number(),
   deleted_at: DateFromISOString.nullable(),
   display_timezone: z.string(),
   enrollment_code: z.string(),
@@ -783,15 +792,7 @@ export const EnrollmentSchema = z.object({
 });
 export type Enrollment = z.infer<typeof EnrollmentSchema>;
 
-export const ExamModeNetworkSchema = z.object({
-  created_at: DateFromISOString.nullable(),
-  during: z.unknown().nullable(), // https://github.com/PrairieLearn/PrairieLearn/pull/12437#discussion_r2219773815
-  id: IdSchema,
-  location: z.string().nullable(),
-  network: z.string().cidr().nullable(),
-  purpose: z.string().nullable(),
-});
-export type ExamModeNetwork = z.infer<typeof ExamModeNetworkSchema>;
+export const ExamModeNetworkSchema = null;
 
 export const FeatureGrantSchema = null;
 
@@ -1290,7 +1291,6 @@ export const QuestionSchema = z.object({
   directory: z.string().nullable(),
   draft: z.boolean(),
   external_grading_enable_networking: z.boolean().nullable(),
-  external_grading_enabled: z.unknown(), // TODO: remove this column in a follow-up migration
   external_grading_entrypoint: z.string().nullable(),
   external_grading_environment: z.record(z.string(), z.string().nullable()),
   external_grading_files: z.any().nullable(),
@@ -1306,6 +1306,7 @@ export const QuestionSchema = z.object({
   number: z.number().nullable(),
   options: z.any().nullable(),
   partial_credit: z.boolean().nullable(),
+  preferences_schema: QuestionPreferencesSchemaJsonSchema.nullable(),
   qid: z.string().nullable(),
   share_publicly: z.boolean(),
   share_source_publicly: z.boolean(),
@@ -1552,6 +1553,7 @@ export const VariantSchema = z.object({
   open: z.boolean().nullable(),
   options: z.record(z.string(), z.any()).nullable(),
   params: z.record(z.string(), z.any()).nullable(),
+  preferences: QuestionPreferenceValuesSchema,
   question_id: IdSchema,
   team_id: IdSchema.nullable(),
   true_answer: z.record(z.string(), z.any()).nullable(),
@@ -1639,6 +1641,7 @@ export type Zone = z.infer<typeof ZoneSchema>;
 export const TableNames = [
   'access_tokens',
   'administrators',
+  'ai_grading_credit_pool_changes',
   'ai_grading_jobs',
   'ai_question_generation_messages',
   'ai_question_generation_prompts',
@@ -1652,6 +1655,7 @@ export const TableNames = [
   'assessment_score_logs',
   'assessment_sets',
   'assessment_state_logs',
+  'assessment_tools',
   'assessments',
   'audit_events',
   'audit_logs',

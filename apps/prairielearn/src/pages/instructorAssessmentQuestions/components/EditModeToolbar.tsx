@@ -40,15 +40,18 @@ export function ViewToggle({
         <button
           className="btn btn-sm btn-outline-secondary"
           type="button"
+          aria-label={isAllExpanded ? 'Collapse alternatives' : 'Expand alternatives'}
           onClick={onToggleExpandCollapse}
         >
           {isAllExpanded ? (
             <>
-              <i className="bi bi-chevron-contract" aria-hidden="true" /> Collapse alternatives
+              <i className="bi bi-chevron-contract" aria-hidden="true" />{' '}
+              <span className="toolbar-btn-label">Collapse alternatives</span>
             </>
           ) : (
             <>
-              <i className="bi bi-chevron-expand" aria-hidden="true" /> Expand alternatives
+              <i className="bi bi-chevron-expand" aria-hidden="true" />{' '}
+              <span className="toolbar-btn-label">Expand alternatives</span>
             </>
           )}
         </button>
@@ -103,9 +106,11 @@ export function EditModeToolbar({
       )}
       type="submit"
       disabled={saveButtonDisabled}
+      aria-label="Save and sync"
       {...(saveButtonDisabledReason && { 'aria-describedby': saveTooltipId })}
     >
-      <i className="bi bi-floppy" aria-hidden="true" /> Save and sync
+      <i className="bi bi-floppy" aria-hidden="true" />{' '}
+      <span className="toolbar-btn-label">Save and sync</span>
     </button>
   );
 

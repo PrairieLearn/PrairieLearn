@@ -53,6 +53,13 @@ export function useAutoSave<T extends FieldValues>({
 
   // Save on unmount in case the deferred effect above hasn't fired yet
   // (React can unmount before a pending useEffect runs).
+  //
+  // Cleanup cannot await trigger(), so this is only a best-effort save of
+  // the latest render's validated state. If a field change and its validation
+  // result have not both committed by unmount time, this may save the previous
+  // valid snapshot or drop the latest invalid draft. The save POST still parses
+  // against the server-side assessment JSON schema before writing to disk, but
+  // that schema does not enforce every client-side form invariant.
   useEffect(() => {
     return () => {
       if (isDirtyRef.current && isValidRef.current) {

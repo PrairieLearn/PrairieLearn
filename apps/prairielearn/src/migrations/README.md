@@ -137,3 +137,7 @@ If you have no meaningful reads from the old column, you can combine the first a
 
 - Third PR: Finalize
   - Remove the column from the database
+
+### Drop sproc
+
+No database migrations are needed to drop a sproc. Just delete the file from the `sprocs/` directory (and entry in `sprocs/index.ts`) and commit the change.

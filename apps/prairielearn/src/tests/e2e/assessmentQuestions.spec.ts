@@ -24,6 +24,8 @@ async function keyboardDrag(page: Page, source: Locator, direction: 'up' | 'down
   const arrowKey = direction === 'up' ? 'ArrowUp' : 'ArrowDown';
   await source.focus();
   await page.keyboard.press(' ');
+  // Wait for dnd-kit to activate the drag before issuing arrow key moves.
+  await expect(source).toHaveAttribute('aria-pressed', 'true');
   for (let i = 0; i < steps; i++) {
     await page.keyboard.press(arrowKey);
   }
@@ -308,10 +310,10 @@ test.describe('Assessment questions', () => {
 
       await page
         .getByRole('button')
-        .filter({ hasText: /Choose 1 of 2/ })
+        .filter({ hasText: /2 alternatives \(1 chosen\)/ })
         .click();
 
-      await page.getByRole('button', { name: 'Add alternative', exact: true }).last().click();
+      await page.getByRole('button', { name: 'Add alternative', exact: true }).first().click();
       await expect(page.getByLabel('Search by QID or title')).toBeVisible();
 
       await page.getByLabel('Search by QID or title').fill('addNumbers');
@@ -331,10 +333,10 @@ test.describe('Assessment questions', () => {
       const savedContent = await fs.readFile(infoAssessmentPath, 'utf-8');
       const savedAssessment = JSON.parse(savedContent);
 
-      const lastBlock = savedAssessment.zones.at(-1).questions.at(-1);
-      expect(lastBlock.numberChoose).toBe(1);
-      expect(lastBlock.alternatives).toHaveLength(3);
-      expect(lastBlock.alternatives[2].id).toBe('addNumbers');
+      const altGroupBlock = savedAssessment.zones[2].questions[1];
+      expect(altGroupBlock.numberChoose).toBe(1);
+      expect(altGroupBlock.alternatives).toHaveLength(3);
+      expect(altGroupBlock.alternatives[2].id).toBe('addNumbers');
     });
 
     test('revalidates number to choose when alternatives are deleted from the tree', async ({
@@ -350,19 +352,20 @@ test.describe('Assessment questions', () => {
 
       await page
         .getByRole('button')
-        .filter({ hasText: /Choose 1 of 2/ })
+        .filter({ hasText: /2 alternatives \(1 chosen\)/ })
         .click();
 
       const numberChooseInput = page.getByLabel('Number to choose');
       await numberChooseInput.clear();
       await numberChooseInput.fill('2');
-      await expect(page.getByText('Cannot exceed number of alternatives (2).')).not.toBeVisible();
+      const warningText = 'Number to choose exceeds the number of alternatives in this group.';
+      await expect(page.getByText(warningText)).not.toBeVisible();
 
       await page
         .getByRole('button', { name: 'Delete aiGradingMultiImageCapture', exact: true })
         .click();
 
-      await expect(page.getByText('Cannot exceed number of alternatives (1).')).toBeVisible();
+      await expect(page.getByText(warningText)).toBeVisible();
     });
   });
 

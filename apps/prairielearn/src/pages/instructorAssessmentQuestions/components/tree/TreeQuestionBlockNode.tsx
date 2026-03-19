@@ -6,12 +6,19 @@ import { useCallback, useMemo } from 'react';
 import { run } from '@prairielearn/run';
 import { OverlayTrigger } from '@prairielearn/ui';
 
-import type { TreeActions, TreeState, ZoneQuestionBlockForm } from '../../types.js';
+import type {
+  TreeActions,
+  TreeState,
+  ZoneAssessmentForm,
+  ZoneQuestionBlockForm,
+} from '../../types.js';
 import {
+  computeAltGroupChosenRange,
   getSharedTags,
   getSharedTopic,
   hasAltGroupChooseExceedsCount,
   hasPointsMismatch,
+  questionHasTitle,
 } from '../../utils/questions.js';
 
 import { ChangeIndicatorBadges } from './ChangeIndicatorBadges.js';
@@ -32,10 +39,14 @@ import { makeDraggableStyle } from './dragUtils.js';
  */
 export function TreeQuestionBlockNode({
   zoneQuestionBlock,
+  questionNumber,
+  zone,
   state,
   actions,
 }: {
   zoneQuestionBlock: ZoneQuestionBlockForm;
+  questionNumber: number;
+  zone: ZoneAssessmentForm;
   state: TreeState;
   actions: TreeActions;
 }) {
@@ -89,10 +100,10 @@ export function TreeQuestionBlockNode({
     selectedItem?.type === 'altGroup' &&
     selectedItem.questionTrackingId === zoneQuestionBlock.trackingId;
 
-  if (!hasAlternatives) {
-    // Single question (no alternatives)
-    const questionData =
-      (zoneQuestionBlock.id ? questionMetadata[zoneQuestionBlock.id] : null) ?? null;
+  if (!zoneQuestionBlock.alternatives) {
+    // Standalone question (no alternatives) — narrowed to StandaloneQuestionBlockForm.
+
+    const questionData = questionMetadata[zoneQuestionBlock.id] ?? null;
     const isSelected =
       selectedItem?.type === 'question' &&
       selectedItem.questionTrackingId === zoneQuestionBlock.trackingId;
@@ -104,6 +115,7 @@ export function TreeQuestionBlockNode({
           zoneQuestionBlock={zoneQuestionBlock}
           isAlternative={false}
           questionData={questionData}
+          questionNumber={questionNumber}
           state={state}
           isSelected={isSelected}
           draggableAttributes={attributes}
@@ -114,9 +126,7 @@ export function TreeQuestionBlockNode({
               questionTrackingId: zoneQuestionBlock.trackingId,
             })
           }
-          onDelete={() =>
-            onDeleteQuestion(zoneQuestionBlock.trackingId, zoneQuestionBlock.id ?? '')
-          }
+          onDelete={() => onDeleteQuestion(zoneQuestionBlock.trackingId, zoneQuestionBlock.id)}
         />
       </div>
     );
@@ -162,11 +172,12 @@ export function TreeQuestionBlockNode({
         )}
         style={{
           paddingLeft: '2.5rem',
-          paddingRight: '0.5rem',
+          // Extra right padding prevents macOS overlay scrollbars
+          // from overlapping row content like the points badge.
+          // https://bugzilla.mozilla.org/show_bug.cgi?id=636564
+          paddingRight: '1.5rem',
           cursor: 'pointer',
-          ...((pointsMismatch || chooseExceeds) && {
-            borderLeft: '6px solid var(--bs-warning)',
-          }),
+          ...(chooseExceeds || pointsMismatch ? { borderLeft: '6px solid var(--bs-warning)' } : {}),
         }}
         onClick={(e) => {
           e.stopPropagation();
@@ -196,9 +207,19 @@ export function TreeQuestionBlockNode({
             <span className="text-truncate text-primary">
               <i className="bi bi-stack me-1" aria-hidden="true" />
               {run(() => {
-                const choose = zoneQuestionBlock.numberChoose;
-                if (choose == null) return `Choose ${displayCount} of ${displayCount}`;
-                return `Choose ${choose} of ${displayCount}`;
+                const { min, max } = computeAltGroupChosenRange(zone, zoneQuestionBlock);
+                const allChosen = min === displayCount && max === displayCount;
+                const chosenLabel = allChosen
+                  ? 'all chosen'
+                  : min === max
+                    ? `${min} chosen`
+                    : `${min}-${max} chosen`;
+                return (
+                  <>
+                    {displayCount} alternative{displayCount !== 1 ? 's' : ''}{' '}
+                    <span className="text-secondary">({chosenLabel})</span>
+                  </>
+                );
               })}
               <ChangeIndicatorBadges
                 trackingId={zoneQuestionBlock.trackingId}
@@ -304,15 +325,14 @@ export function TreeQuestionBlockNode({
 
       {/* Alternatives */}
       {!isCollapsed && alternativeCount === 0 && editMode && (
-        <div className="text-muted fst-italic border-bottom py-2" style={{ paddingLeft: '3.5rem' }}>
+        <div className="text-muted fst-italic border-bottom py-2" style={{ paddingLeft: '4.5rem' }}>
           No alternatives yet. Use "Add alternative" to add questions.
         </div>
       )}
       {!isCollapsed && (
         <SortableContext items={alternativeIds} strategy={verticalListSortingStrategy}>
-          {alternatives?.map((alternative) => {
-            const altQuestionData =
-              (alternative.id ? questionMetadata[alternative.id] : null) ?? null;
+          {alternatives?.map((alternative, altIndex) => {
+            const altQuestionData = questionMetadata[alternative.id] ?? null;
             const isAltSelected =
               selectedItem?.type === 'alternative' &&
               selectedItem.questionTrackingId === zoneQuestionBlock.trackingId &&
@@ -324,6 +344,8 @@ export function TreeQuestionBlockNode({
                 alternative={alternative}
                 zoneQuestionBlock={zoneQuestionBlock}
                 questionData={altQuestionData}
+                questionNumber={questionNumber}
+                alternativeNumber={altIndex + 1}
                 state={state}
                 isSelected={isAltSelected}
                 onClick={() =>
@@ -351,7 +373,7 @@ export function TreeQuestionBlockNode({
       {!isCollapsed && isMergeOver && (
         <div
           className="tree-row d-flex align-items-center py-1 border-bottom"
-          style={{ paddingLeft: '4.5rem', paddingRight: '0.5rem', opacity: 0.5 }}
+          style={{ paddingLeft: '4.5rem', paddingRight: '1.5rem', opacity: 0.5 }}
         >
           {editMode && (
             <span className="me-2" style={{ visibility: 'hidden' }}>
@@ -360,9 +382,16 @@ export function TreeQuestionBlockNode({
           )}
           <div className="flex-grow-1" style={{ minWidth: 0 }}>
             <div className="text-truncate">
-              {active?.data.current?.qid
-                ? questionMetadata[active.data.current.qid]?.question.title
-                : null}
+              {run(() => {
+                const activeQid = active?.data.current?.qid;
+                if (!activeQid) return null;
+                const qData = questionMetadata[activeQid];
+                return questionHasTitle(qData ?? null) ? (
+                  qData!.question.title
+                ) : (
+                  <span className="font-monospace">{activeQid}</span>
+                );
+              })}
             </div>
           </div>
         </div>

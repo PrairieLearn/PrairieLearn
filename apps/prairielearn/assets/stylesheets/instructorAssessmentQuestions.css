@@ -1,22 +1,32 @@
 /* Prevent double-scrolling: make the editor fill remaining space in the
-   app-main-container flex column instead of using a hardcoded viewport offset. */
+   app-main-container flex column instead of using a hardcoded viewport offset.
+   Use a flex column so sync-error alerts and the editor share the space. */
 #content:has([data-assessment-editor]) {
+  display: flex;
+  flex-direction: column;
   flex: 1;
   min-height: 0;
 }
 
-/* On wider viewports, prevent the editor from overflowing #content so that
-   only the tree/detail panels scroll (not the outer app-main-container).
-   On narrow viewports, allow natural page scrolling since the tab bar
-   consumes significant vertical space. */
-@media (min-width: 769px) {
-  #content:has([data-assessment-editor]) {
-    overflow: hidden;
-  }
+/* When the split pane is wide enough for side-by-side, prevent the editor
+   from overflowing #content so that only the tree/detail panels scroll
+   (not the outer app-main-container). When narrow, allow natural page
+   scrolling since the tab bar consumes significant vertical space. */
+#content:has([data-assessment-editor] .split-pane:not([data-narrow])) {
+  overflow: hidden;
+}
+
+/* When sync errors/warnings are present above the editor, cap their height
+   so the editor remains usable. The alert becomes independently scrollable. */
+#content:has([data-assessment-editor]) > .alert {
+  flex-shrink: 0;
+  max-height: 25vh;
+  overflow-y: auto;
 }
 
 #content:has([data-assessment-editor]) > .js-hydrated-component {
-  height: 100%;
+  flex: 1;
+  min-height: 0;
 }
 
 /* ── SplitPane layout ─────────────────────────────────────────────────── */
@@ -34,19 +44,19 @@
   /* Contain z-indexed children (e.g. sticky zone headers) so they don't
      paint over the separator's focus ring. */
   isolation: isolate;
+  container-type: inline-size;
+  container-name: split-left;
 }
 
-@media (min-width: 769px) {
-  .split-pane__left {
-    display: flex;
-    flex-direction: column;
-  }
+.split-pane:not([data-narrow]) .split-pane__left {
+  display: flex;
+  flex-direction: column;
+}
 
-  .split-pane__left-body {
-    overflow: auto;
-    flex: 1 1 0;
-    min-height: 0;
-  }
+.split-pane:not([data-narrow]) .split-pane__left-body {
+  overflow: auto;
+  flex: 1 1 0;
+  min-height: 0;
 }
 
 .split-pane__separator {
@@ -102,34 +112,39 @@
   display: none;
 }
 
-/* ── Narrow viewport overrides ────────────────────────────────────────── */
+/* ── Narrow container overrides ───────────────────────────────────────── */
 
-@media (max-width: 768px) {
-  .split-pane {
-    display: block;
-    min-height: 500px;
-  }
+.split-pane[data-narrow] {
+  display: block;
+  min-height: 500px;
+}
 
-  /* Separator and toggle are not used on narrow viewports */
-  .split-pane__separator,
-  .split-pane__toggle {
-    display: none !important;
-  }
+/* Separator and toggle are not used in narrow mode */
+.split-pane[data-narrow] .split-pane__separator,
+.split-pane[data-narrow] .split-pane__toggle {
+  display: none !important;
+}
 
-  /* When detail is open: hide the tree, show the right panel full-width */
-  .split-pane:not([data-collapsed]) .split-pane__left {
+/* When detail is open: hide the tree, show the right panel full-width */
+.split-pane[data-narrow]:not([data-collapsed]) .split-pane__left {
+  display: none;
+}
+
+.split-pane[data-narrow]:not([data-collapsed]) .split-pane__right {
+  display: flex;
+  width: 100% !important;
+  height: 100%;
+}
+
+/* When collapsed: show the tree, hide the right panel */
+.split-pane[data-narrow][data-collapsed] .split-pane__left {
+  display: block;
+}
+
+/* ── Toolbar button text: hide when the left pane is narrow ────────── */
+@container split-left (max-width: 650px) {
+  .toolbar-btn-label {
     display: none;
-  }
-
-  .split-pane:not([data-collapsed]) .split-pane__right {
-    display: flex;
-    width: 100% !important;
-    height: 100%;
-  }
-
-  /* When collapsed: show the tree, hide the right panel */
-  .split-pane[data-collapsed] .split-pane__left {
-    display: block;
   }
 }
 
