@@ -3,9 +3,12 @@ import type { CreateExpressContextOptions } from '@trpc/server/adapters/express'
 import superjson from 'superjson';
 import { z } from 'zod';
 
+import { execute } from '@prairielearn/postgres';
 import { run } from '@prairielearn/run';
 
+import { estimateAiGradingCost } from '../../../ee/lib/ai-grading/ai-grading-cost-estimation.js';
 import {
+  AI_GRADING_MODELS,
   AI_GRADING_MODEL_IDS,
   type AiGradingModelId,
   DEFAULT_AI_GRADING_MODEL,
@@ -18,10 +21,12 @@ import {
 import { aiGrade } from '../../../ee/lib/ai-grading/ai-grading.js';
 import { deleteAiInstanceQuestionGroups } from '../../../ee/lib/ai-instance-question-grouping/ai-instance-question-grouping-util.js';
 import { aiInstanceQuestionGrouping } from '../../../ee/lib/ai-instance-question-grouping/ai-instance-question-grouping.js';
+import { config } from '../../../lib/config.js';
 import { features } from '../../../lib/features/index.js';
 import { generateJobSequenceToken } from '../../../lib/generateJobSequenceToken.js';
 import { idsEqual } from '../../../lib/id.js';
 import type { ResLocalsForPage } from '../../../lib/res-locals.js';
+import { selectCreditPool } from '../../../models/ai-grading-credit-pool.js';
 import { selectCourseInstanceGraderStaff } from '../../../models/course-instances.js';
 
 import { InstanceQuestionRowWithAIGradingStatsSchema } from './assessmentQuestion.types.js';
@@ -167,6 +172,52 @@ const aiGroupInstanceQuestionsMutation = t.procedure
     return { job_sequence_id, job_sequence_token };
   });
 
+const getAiGradingModalDataQuery = t.procedure
+  .use(requireCourseInstancePermissionEdit)
+  .use(requireAiGradingFeature)
+  .input(
+    z.object({
+      selection: z.union([z.literal('all'), z.literal('human_graded'), z.string().array()]),
+    }),
+  )
+  .query(async (opts) => {
+    const mode = Array.isArray(opts.input.selection) ? 'selected' : opts.input.selection;
+    const instance_question_ids = Array.isArray(opts.input.selection)
+      ? opts.input.selection
+      : undefined;
+
+    const costEstimate = await estimateAiGradingCost({
+      assessment_question: opts.ctx.assessment_question,
+      question: opts.ctx.question,
+      course: opts.ctx.course,
+      urlPrefix: opts.ctx.urlPrefix,
+      mode,
+      instance_question_ids,
+    });
+
+    const using_custom_api_keys = opts.ctx.course_instance.ai_grading_use_custom_api_keys;
+    const credit_pool = using_custom_api_keys
+      ? null
+      : await selectCreditPool(opts.ctx.course_instance.id);
+
+    const model_pricing: Record<string, { input: number; output: number }> = {};
+    for (const model of AI_GRADING_MODELS) {
+      const pricing = config.costPerMillionTokens[model.modelId];
+      model_pricing[model.modelId] = { input: pricing.input, output: pricing.output };
+    }
+
+    return {
+      num_to_grade: costEstimate.num_to_grade,
+      avg_input_tokens_per_submission: costEstimate.avg_input_tokens_per_submission,
+      estimated_output_tokens: costEstimate.estimated_output_tokens,
+      has_images: costEstimate.has_images,
+      credit_pool,
+      model_pricing,
+      infrastructure_fee_percent: config.aiGradingInfrastructureFeePercent,
+      using_custom_api_keys,
+    };
+  });
+
 const aiGradeInstanceQuestionMutation = t.procedure
   .use(requireCourseInstancePermissionEdit)
   .use(requireAiGradingFeature)
@@ -211,6 +262,13 @@ const aiGradeInstanceQuestionMutation = t.procedure
         return opts.input.selection;
       }),
     });
+
+    // Persist the selected model as the preferred model for this assessment question.
+    await execute(
+      'UPDATE assessment_questions SET ai_grading_preferred_model = $model_id WHERE id = $id',
+      { model_id: opts.input.model_id, id: opts.ctx.assessment_question.id },
+    );
+
     const job_sequence_token = generateJobSequenceToken(job_sequence_id);
     return { job_sequence_id, job_sequence_token };
   });
@@ -272,6 +330,7 @@ export const manualGradingAssessmentQuestionRouter = t.router({
   deleteAiInstanceQuestionGroupings: deleteAiInstanceQuestionGroupingsMutation,
   aiGroupInstanceQuestions: aiGroupInstanceQuestionsMutation,
   aiGradeInstanceQuestions: aiGradeInstanceQuestionMutation,
+  getAiGradingModalData: getAiGradingModalDataQuery,
   setAssignedGrader: setAssignedGraderMutation,
   setRequiresManualGrading: setRequiresManualGradingMutation,
 });

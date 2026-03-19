@@ -17,6 +17,10 @@ import type { EnumAiGradingProvider } from '../../../lib/db-types.js';
 import type { RubricData } from '../../../lib/manualGrading.types.js';
 
 import type { InstanceQuestionRowWithAIGradingStats } from './assessmentQuestion.types.js';
+import {
+  AiGradingModelSelectionModal,
+  type AiGradingModelSelectionModalState,
+} from './components/AiGradingModelSelectionModal.js';
 import { AiGradingUnavailableModal } from './components/AiGradingUnavailableModal.js';
 import { AssessmentQuestionTable } from './components/AssessmentQuestionTable.js';
 import {
@@ -88,6 +92,12 @@ function AssessmentQuestionManualGradingInner({
   const [groupInfoModalState, setGroupInfoModalState] = useState<GroupInfoModalState>(null);
   const [conflictModalState, setConflictModalState] = useState<ConflictModalState>(null);
   const [showAiGradingUnavailableModal, setShowAiGradingUnavailableModal] = useState(false);
+  const [modelSelectionModalState, setModelSelectionModalState] =
+    useState<AiGradingModelSelectionModalState>(null);
+  const [pendingGradingJob, setPendingGradingJob] = useState<{
+    job_sequence_id: string;
+    job_sequence_token: string;
+  } | null>(null);
 
   const [aiGradingMode, setAiGradingMode] = useState(initialAiGradingMode);
 
@@ -173,8 +183,22 @@ function AssessmentQuestionManualGradingInner({
         mutations={mutations}
         initialOngoingJobSequenceTokens={initialOngoingJobSequenceTokens}
         availableAiGradingProviders={availableAiGradingProviders}
+        pendingGradingJob={pendingGradingJob}
         onSetGroupInfoModalState={setGroupInfoModalState}
         onSetConflictModalState={setConflictModalState}
+        onSetModelSelectionModalState={setModelSelectionModalState}
+        onPendingGradingJobHandled={() => setPendingGradingJob(null)}
+      />
+
+      <AiGradingModelSelectionModal
+        modalState={modelSelectionModalState}
+        mutation={mutations.gradeSubmissionsMutation}
+        availableProviders={availableAiGradingProviders}
+        aiGradingPreferredModel={assessmentQuestion.ai_grading_preferred_model ?? null}
+        onSuccess={(data) => {
+          setPendingGradingJob(data);
+        }}
+        onHide={() => setModelSelectionModalState(null)}
       />
 
       <GroupInfoModal

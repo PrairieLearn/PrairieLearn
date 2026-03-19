@@ -11,7 +11,6 @@ import {
   getSortedRowModel,
   useReactTable,
 } from '@tanstack/react-table';
-import clsx from 'clsx';
 import { parseAsArrayOf, parseAsString, parseAsStringLiteral, useQueryState } from 'nuqs';
 import { useCallback, useEffect, useMemo, useRef, useState } from 'react';
 import { Alert, Button, Dropdown, Modal } from 'react-bootstrap';
@@ -29,11 +28,7 @@ import {
 import { RubricSettings } from '../../../../components/RubricSettings.js';
 import { ServerJobsProgressInfo } from '../../../../components/ServerJobProgress/ServerJobProgressBars.js';
 import { useServerJobProgress } from '../../../../components/ServerJobProgress/useServerJobProgress.js';
-import {
-  AI_GRADING_MODELS,
-  type AiGradingModelId,
-  DEFAULT_AI_GRADING_MODEL,
-} from '../../../../ee/lib/ai-grading/ai-grading-models.shared.js';
+import { DEFAULT_AI_GRADING_MODEL } from '../../../../ee/lib/ai-grading/ai-grading-models.shared.js';
 import type { AiGradingGeneralStats } from '../../../../ee/lib/ai-grading/types.js';
 import type { PageContext } from '../../../../lib/client/page-context.js';
 import type {
@@ -56,6 +51,7 @@ import { generateAiGraderName } from '../utils/columnUtils.js';
 import { useTRPC } from '../utils/trpc-context.js';
 import { type useManualGradingActions } from '../utils/useManualGradingActions.js';
 
+import type { AiGradingModelSelectionModalState } from './AiGradingModelSelectionModal.js';
 import type { ConflictModalState } from './GradingConflictModal.js';
 import type { GroupInfoModalState } from './GroupInfoModal.js';
 import { QueryErrors } from './QueryErrors.js';
@@ -89,6 +85,9 @@ interface AssessmentQuestionTableProps {
   availableAiGradingProviders: EnumAiGradingProvider[];
   onSetGroupInfoModalState: (modalState: GroupInfoModalState) => void;
   onSetConflictModalState: (modalState: ConflictModalState) => void;
+  onSetModelSelectionModalState: (modalState: AiGradingModelSelectionModalState) => void;
+  pendingGradingJob: { job_sequence_id: string; job_sequence_token: string } | null;
+  onPendingGradingJobHandled: () => void;
   mutations: ReturnType<typeof useManualGradingActions>;
 }
 
@@ -104,60 +103,18 @@ function AiGradingOptionContent({ text, numToGrade }: { text: string; numToGrade
 function AiGradingOption({
   text,
   numToGrade,
-  aiGradingModelSelectionEnabled,
-  availableProviders,
-  onSelectModel,
+  disabled,
+  onSelect,
 }: {
   text: string;
   numToGrade: number;
-  aiGradingModelSelectionEnabled: boolean;
-  availableProviders: EnumAiGradingProvider[];
-  onSelectModel: (modelId: AiGradingModelId) => void;
+  disabled: boolean;
+  onSelect: () => void;
 }) {
-  const isDefaultModelAvailable = availableProviders.includes(
-    AI_GRADING_MODELS.find((m) => m.modelId === DEFAULT_AI_GRADING_MODEL)!.provider,
-  );
-
-  if (!aiGradingModelSelectionEnabled) {
-    return (
-      <Dropdown.Item
-        disabled={numToGrade === 0 || !isDefaultModelAvailable}
-        onClick={() => onSelectModel(DEFAULT_AI_GRADING_MODEL)}
-      >
-        <AiGradingOptionContent text={text} numToGrade={numToGrade} />
-      </Dropdown.Item>
-    );
-  }
-
-  const hasAnyAvailableModel = AI_GRADING_MODELS.some((model) =>
-    availableProviders.includes(model.provider),
-  );
-
   return (
-    <Dropdown drop="end">
-      <Dropdown.Toggle
-        className={clsx('dropdown-item', !(numToGrade > 0 && hasAnyAvailableModel) && 'disabled')}
-      >
-        <AiGradingOptionContent text={text} numToGrade={numToGrade} />
-      </Dropdown.Toggle>
-      <Dropdown.Menu>
-        <p className="my-0 text-muted px-3">AI grader model</p>
-        <Dropdown.Divider />
-        {AI_GRADING_MODELS.map((model) => {
-          const isAvailable = availableProviders.includes(model.provider);
-          return (
-            <Dropdown.Item
-              key={model.modelId}
-              disabled={!isAvailable}
-              onClick={() => onSelectModel(model.modelId)}
-            >
-              {model.name}
-              {!isAvailable && <span className="text-muted ms-2">(no API key)</span>}
-            </Dropdown.Item>
-          );
-        })}
-      </Dropdown.Menu>
-    </Dropdown>
+    <Dropdown.Item disabled={numToGrade === 0 || disabled} onClick={onSelect}>
+      <AiGradingOptionContent text={text} numToGrade={numToGrade} />
+    </Dropdown.Item>
   );
 }
 
@@ -181,6 +138,9 @@ export function AssessmentQuestionTable({
   availableAiGradingProviders,
   onSetGroupInfoModalState,
   onSetConflictModalState,
+  onSetModelSelectionModalState,
+  pendingGradingJob,
+  onPendingGradingJobHandled,
   mutations,
 }: AssessmentQuestionTableProps) {
   const trpc = useTRPC();
@@ -402,6 +362,17 @@ export function AssessmentQuestionTable({
       });
     },
   });
+
+  // When the parent signals a new grading job from the modal, start tracking it.
+  useEffect(() => {
+    if (pendingGradingJob) {
+      serverJobProgress.handleAddOngoingJobSequence(
+        pendingGradingJob.job_sequence_id,
+        pendingGradingJob.job_sequence_token,
+      );
+      onPendingGradingJobHandled();
+    }
+  }, [pendingGradingJob, serverJobProgress, onPendingGradingJobHandled]);
 
   // Create columns using the extracted function
   const columns = useMemo(
@@ -780,68 +751,87 @@ export function AssessmentQuestionTable({
                       <AiGradingOption
                         text="Grade all human-graded"
                         numToGrade={aiGradingCounts.humanGraded}
-                        aiGradingModelSelectionEnabled={aiGradingModelSelectionEnabled}
-                        availableProviders={availableAiGradingProviders}
-                        onSelectModel={(modelId) => {
-                          gradeSubmissionsMutation.mutate(
-                            {
-                              selection: 'human_graded',
-                              model_id: modelId,
-                            },
-                            {
-                              onSuccess: (data) => {
-                                serverJobProgress.handleAddOngoingJobSequence(
-                                  data.job_sequence_id,
-                                  data.job_sequence_token,
-                                );
+                        disabled={false}
+                        onSelect={() => {
+                          if (aiGradingModelSelectionEnabled) {
+                            onSetModelSelectionModalState({
+                              type: 'human_graded',
+                              numToGrade: aiGradingCounts.humanGraded,
+                            });
+                          } else {
+                            gradeSubmissionsMutation.mutate(
+                              {
+                                selection: 'human_graded',
+                                model_id: DEFAULT_AI_GRADING_MODEL,
                               },
-                            },
-                          );
+                              {
+                                onSuccess: (data) => {
+                                  serverJobProgress.handleAddOngoingJobSequence(
+                                    data.job_sequence_id,
+                                    data.job_sequence_token,
+                                  );
+                                },
+                              },
+                            );
+                          }
                         }}
                       />
                       <AiGradingOption
                         text="Grade selected"
                         numToGrade={aiGradingCounts.selected}
-                        aiGradingModelSelectionEnabled={aiGradingModelSelectionEnabled}
-                        availableProviders={availableAiGradingProviders}
-                        onSelectModel={(modelId) => {
-                          gradeSubmissionsMutation.mutate(
-                            {
-                              selection: selectedIds,
-                              model_id: modelId,
-                            },
-                            {
-                              onSuccess: (data) => {
-                                serverJobProgress.handleAddOngoingJobSequence(
-                                  data.job_sequence_id,
-                                  data.job_sequence_token,
-                                );
-                                table.resetRowSelection();
+                        disabled={false}
+                        onSelect={() => {
+                          if (aiGradingModelSelectionEnabled) {
+                            onSetModelSelectionModalState({
+                              type: 'selected',
+                              ids: selectedIds,
+                              numToGrade: aiGradingCounts.selected,
+                            });
+                          } else {
+                            gradeSubmissionsMutation.mutate(
+                              {
+                                selection: selectedIds,
+                                model_id: DEFAULT_AI_GRADING_MODEL,
                               },
-                            },
-                          );
+                              {
+                                onSuccess: (data) => {
+                                  serverJobProgress.handleAddOngoingJobSequence(
+                                    data.job_sequence_id,
+                                    data.job_sequence_token,
+                                  );
+                                  table.resetRowSelection();
+                                },
+                              },
+                            );
+                          }
                         }}
                       />
                       <AiGradingOption
                         text="Grade all"
                         numToGrade={aiGradingCounts.all}
-                        aiGradingModelSelectionEnabled={aiGradingModelSelectionEnabled}
-                        availableProviders={availableAiGradingProviders}
-                        onSelectModel={(modelId) => {
-                          gradeSubmissionsMutation.mutate(
-                            {
-                              selection: 'all',
-                              model_id: modelId,
-                            },
-                            {
-                              onSuccess: (data) => {
-                                serverJobProgress.handleAddOngoingJobSequence(
-                                  data.job_sequence_id,
-                                  data.job_sequence_token,
-                                );
+                        disabled={false}
+                        onSelect={() => {
+                          if (aiGradingModelSelectionEnabled) {
+                            onSetModelSelectionModalState({
+                              type: 'all',
+                              numToGrade: aiGradingCounts.all,
+                            });
+                          } else {
+                            gradeSubmissionsMutation.mutate(
+                              {
+                                selection: 'all',
+                                model_id: DEFAULT_AI_GRADING_MODEL,
                               },
-                            },
-                          );
+                              {
+                                onSuccess: (data) => {
+                                  serverJobProgress.handleAddOngoingJobSequence(
+                                    data.job_sequence_id,
+                                    data.job_sequence_token,
+                                  );
+                                },
+                              },
+                            );
+                          }
                         }}
                       />
                       <Dropdown.Divider />
