@@ -439,6 +439,12 @@ window.PLOrderBlocks = function (uuid, options) {
     resize.observe(el);
   });
 
+  if (window.MathJax?.typesetPromise) {
+    window.MathJax.typesetPromise([fullContainer]).then(() => {
+      markScrollableContent(fullContainer);
+    });
+  }
+
   // If a user is on a touch device, we need to distinguish between
   // touch events that should trigger scrolling vs dragging.
   let gateDragVsScroll = null;

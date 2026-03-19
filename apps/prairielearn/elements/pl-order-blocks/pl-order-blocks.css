@@ -101,6 +101,11 @@ li.ui-state-highlight {
   white-space: nowrap;
 }
 
+.pl-order-blocks-horizontal .pl-order-block-content {
+  white-space: nowrap;
+  width: auto;
+}
+
 .pl-order-blocks-answer-container > ul {
   padding: 14px;
 }
