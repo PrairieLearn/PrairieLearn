@@ -145,7 +145,6 @@ def parse(element_html: str, data: pl.QuestionData) -> None:
     # to avoid bloating logs. The file content will be stored separately in
     # submitted_answers["_files"].
     data["submitted_answers"].pop(answer_name, None)
-    data["submitted_answers"].pop(f"{answer_name}_changed", None)
 
     if not submitted_file_content:
         if not allow_blank:
