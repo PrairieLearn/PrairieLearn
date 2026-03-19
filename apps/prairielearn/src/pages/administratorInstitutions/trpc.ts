@@ -6,7 +6,7 @@ import { suggestTimezone } from '../../lib/course-request-ai.js';
 import { handleTrpcError } from '../../lib/trpc.js';
 import { updateInstitutionAuthnProviders } from '../../models/institution-authn-provider.js';
 import { insertInstitution } from '../../models/institution.js';
-import { createContext, requireAdministrator, t } from '../../trpc/administrator/trpc-init.js';
+import { createContext, requireAdministrator, t } from '../../trpc/administrator/init.js';
 
 const suggestTimezoneQuery = t.procedure
   .use(requireAdministrator)

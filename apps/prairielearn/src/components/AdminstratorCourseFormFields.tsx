@@ -8,7 +8,7 @@ import { OverlayTrigger } from '@prairielearn/ui';
 
 import type { AdminInstitution } from '../lib/client/safe-db-types.js';
 import { type Timezone, formatTimezone } from '../lib/timezone.shared.js';
-import { useTRPC } from '../trpc/administrator/trpc-context.js';
+import { useTRPC } from '../trpc/administrator/context.js';
 
 export interface CourseFormFieldValues {
   institution_id: string;
