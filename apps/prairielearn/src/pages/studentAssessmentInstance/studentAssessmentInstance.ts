@@ -276,7 +276,10 @@ router.get(
 
     const showTimeLimitExpiredModal = req.query.timeLimitExpired === 'true';
 
-    if (!res.locals.assessment.team_work) {
+    // team_id can be null for instructor previews of team_work assessments,
+    // since the instructor isn't part of a team.
+    // TODO: This still isn't handled well, see https://github.com/PrairieLearn/PrairieLearn/issues/6636
+    if (!res.locals.assessment.team_work || !res.locals.assessment_instance.team_id) {
       res.send(
         StudentAssessmentInstance({
           instance_question_rows,
@@ -290,7 +293,7 @@ router.get(
 
     // Get the group config info
     const groupConfig = await getGroupConfig(res.locals.assessment.id);
-    const groupInfo = await getGroupInfo(res.locals.assessment_instance.team_id!, groupConfig);
+    const groupInfo = await getGroupInfo(res.locals.assessment_instance.team_id, groupConfig);
     const userCanAssignRoles =
       groupConfig.has_roles &&
       (canUserAssignGroupRoles(groupInfo, res.locals.user.id) ||
@@ -303,7 +306,7 @@ router.get(
         for (const question of instance_question_rows) {
           question.group_role_permissions = await getQuestionGroupPermissions(
             question.id,
-            res.locals.assessment_instance.team_id!,
+            res.locals.assessment_instance.team_id,
             res.locals.authz_data.user.id,
           );
         }
