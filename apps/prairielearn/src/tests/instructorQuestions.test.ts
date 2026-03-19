@@ -108,7 +108,7 @@ describe('Instructor questions', { timeout: 60_000 }, function () {
       const res = await fetch(questionsUrlCourse);
       assert.equal(res.status, 200);
     });
-    it('should contain question data via trpc endpoint', async () => {
+    it('should fetch question data from tRPC endpoint', async () => {
       questionData = await loadQuestionDataFromTrpc(questionsUrlCourse);
       assert.isArray(questionData);
       questionData.forEach((question) => assert.isObject(question));
@@ -129,7 +129,7 @@ describe('Instructor questions', { timeout: 60_000 }, function () {
       const res = await fetch(questionsUrl);
       assert.equal(res.status, 200);
     });
-    it('should contain question data via trpc endpoint', async () => {
+    it('should fetch question data from tRPC endpoint', async () => {
       questionData = await loadQuestionDataFromTrpc(questionsUrl);
       assert.isArray(questionData);
       questionData.forEach((question) => assert.isObject(question));

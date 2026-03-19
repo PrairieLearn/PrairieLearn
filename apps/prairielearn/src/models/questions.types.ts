@@ -9,6 +9,14 @@ import {
   TopicSchema,
 } from '../lib/db-types.js';
 
+/**
+ * Schema for question data returned by the model functions. This uses the full
+ * TopicSchema/TagSchema/SharingSetSchema because server-side consumers (e.g. the
+ * assessment questions picker) need fields like topic.id and tag.id.
+ *
+ * Client-side code should use SafeQuestionsPageDataSchema from
+ * QuestionsTable.shared.ts, which strips sensitive/unnecessary fields.
+ */
 export const QuestionsPageDataSchema = QuestionSchema.pick({
   id: true,
   grading_method: true,
@@ -17,7 +25,7 @@ export const QuestionsPageDataSchema = QuestionSchema.pick({
   share_publicly: true,
   share_source_publicly: true,
 }).extend({
-  // These are non-nullable in this context because the queries filter out draft questions.
+  // These are non-nullable because the queries filter out deleted questions (which lack a QID/title).
   qid: z.string(),
   title: z.string(),
   // The public questions query does not select these columns, so they must be optional.

@@ -15,7 +15,7 @@ import { SyncProblemButton } from '../../../components/SyncProblemButton.js';
 import { TagBadgeList } from '../../../components/TagBadge.js';
 import { TopicBadge } from '../../../components/TopicBadge.js';
 import type { StaffAssessmentQuestionRow } from '../../../lib/assessment-question.shared.js';
-import type { StaffCourse } from '../../../lib/client/safe-db-types.js';
+import type { StaffCourse, StaffCourseInstance } from '../../../lib/client/safe-db-types.js';
 import { idsEqual } from '../../../lib/id.js';
 
 import { ExamResetNotSupportedModal } from './ExamResetNotSupportedModal.js';
@@ -52,7 +52,7 @@ export function InstructorAssessmentQuestionsTableLegacy({
   course,
   questionRows,
   urlPrefix,
-  courseInstanceId,
+  courseInstance,
   assessmentType,
   assessmentSetName,
   assessmentNumber,
@@ -67,7 +67,7 @@ export function InstructorAssessmentQuestionsTableLegacy({
   assessmentSetName: string;
   assessmentNumber: string;
   urlPrefix: string;
-  courseInstanceId?: string;
+  courseInstance: StaffCourseInstance;
   hasCoursePermissionPreview: boolean;
   hasCourseInstancePermissionEdit: boolean;
   csrfToken: string;
@@ -164,7 +164,7 @@ export function InstructorAssessmentQuestionsTableLegacy({
                         />
                         <IssueBadge
                           courseId={course.id}
-                          courseInstanceId={courseInstanceId}
+                          courseInstanceId={courseInstance.id}
                           count={questionRow.open_issue_count}
                           issueQid={question.qid}
                         />

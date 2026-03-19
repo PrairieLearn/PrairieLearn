@@ -8,7 +8,13 @@ import {
 import { QuestionsPageDataSchema } from '../models/questions.types.js';
 
 /**
- * Schema for question data used in the QuestionsTable component.
+ * Client-safe schema for question data. Replaces full TopicSchema/TagSchema/SharingSetSchema
+ * with their public counterparts, stripping fields like `id` and `course_id` that
+ * shouldn't be sent to the client.
+ *
+ * We can't collapse this into QuestionsPageDataSchema because server-side consumers
+ * (e.g. the assessment questions picker in instructorAssessmentQuestions/trpc.ts) need
+ * the full topic/tag data including `id` fields.
  */
 export const SafeQuestionsPageDataSchema = QuestionsPageDataSchema.omit({
   topic: true,
@@ -17,6 +23,8 @@ export const SafeQuestionsPageDataSchema = QuestionsPageDataSchema.omit({
 }).extend({
   topic: PublicTopicSchema,
   tags: z.array(PublicTagSchema).nullable(),
+  // Sharing sets are only present on the instructor page (when question_sharing_enabled is true).
+  // The public questions page does not include sharing set data.
   sharing_sets: z.array(PublicSharingSetSchema).nullable().optional(),
 });
 

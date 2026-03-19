@@ -130,6 +130,9 @@ export function QuestionsTable<TQueryKey extends readonly unknown[]>({
     isError: isQuestionsError,
   } = useQuery({
     ...questionsQueryOptions,
+    // Provide a no-op queryFn if none was given (e.g. public questions page
+    // where data is embedded in the initial HTML and never refetched).
+    queryFn: questionsQueryOptions.queryFn ?? (() => initialQuestions),
     staleTime: Infinity,
     initialData: initialQuestions,
   });

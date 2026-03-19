@@ -1,4 +1,3 @@
-import * as trpcExpress from '@trpc/server/adapters/express';
 import { Router } from 'express';
 
 import { Hydrate } from '@prairielearn/react/server';
@@ -7,12 +6,10 @@ import { PageLayout } from '../../components/PageLayout.js';
 import { SafeQuestionsPageDataSchema } from '../../components/QuestionsTable.shared.js';
 import { config } from '../../lib/config.js';
 import { typedAsyncHandler } from '../../lib/res-locals.js';
-import { handleTrpcError } from '../../lib/trpc.js';
 import { getUrl } from '../../lib/url.js';
 import { selectPublicQuestionsForCourse } from '../../models/questions.js';
 
 import { PublicQuestionsTable } from './PublicQuestions.html.js';
-import { createContext, publicQuestionsRouter } from './trpc.js';
 
 const router = Router({ mergeParams: true });
 
@@ -51,21 +48,11 @@ router.get(
               qidPrefix={qidPrefix}
               search={search}
               isDevMode={config.devMode}
-              isPublic
             />
           </Hydrate>
         ),
       }),
     );
-  }),
-);
-
-router.use(
-  '/trpc',
-  trpcExpress.createExpressMiddleware({
-    router: publicQuestionsRouter,
-    createContext,
-    onError: handleTrpcError,
   }),
 );
 
