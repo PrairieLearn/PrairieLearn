@@ -87,11 +87,13 @@ function AssessmentQuestionsTable({
                   <a href="/pl/public/course/${course_id}/question/${question.question.id}/preview">
                     ${renderHtml(
                       <AssessmentQuestionNumber
-                        alternativeGroupSize={question.alternative_group_size}
-                        alternativeGroupNumber={question.alternative_group.number}
-                        numberInAlternativeGroup={
-                          question.assessment_question.number_in_alternative_group
+                        questionNumber={question.alternative_group.number}
+                        alternativeNumber={
+                          question.alternative_group_size > 1
+                            ? question.assessment_question.number_in_alternative_group
+                            : undefined
                         }
+                        className="me-2"
                       />,
                     )}${question.question.title}
                   </a>

@@ -50,6 +50,7 @@ export function AltGroupDetailPanel({
   onUpdate,
   onDelete,
   onFormValidChange,
+  onDismissBanner,
 }: {
   zoneQuestionBlock: ZoneQuestionBlockForm;
   zone: ZoneAssessmentForm;
@@ -62,6 +63,7 @@ export function AltGroupDetailPanel({
   ) => void;
   onDelete: (questionTrackingId: string) => void;
   onFormValidChange: (isValid: boolean) => void;
+  onDismissBanner: (trackingId: string) => void;
 }) {
   const { editMode, assessmentType, constantQuestionValue, assessmentDefaults } = state;
   const alternativeCount = zoneQuestionBlock.alternatives?.length ?? 0;
@@ -163,6 +165,14 @@ export function AltGroupDetailPanel({
     zoneQuestionBlock.alternatives != null &&
     hasPointsMismatch(zoneQuestionBlock.alternatives, assessmentType, zoneQuestionBlock);
   const chooseExceeds = hasAltGroupChooseExceedsCount(zoneQuestionBlock);
+  const hasAutoGradedWithOnlyManualPoints =
+    zoneQuestionBlock.alternatives?.some((alt) => {
+      const metadata = questionMetadata[alt.id];
+      if (!metadata || metadata.question.grading_method === 'Manual') return false;
+      const effectiveManualPoints = alt.manualPoints ?? zoneQuestionBlock.manualPoints;
+      const effectiveAutoPoints = alt.autoPoints ?? zoneQuestionBlock.autoPoints;
+      return effectiveManualPoints != null && effectiveAutoPoints == null;
+    }) ?? false;
 
   const Wrapper = editMode ? 'div' : 'dl';
 
@@ -179,6 +189,27 @@ export function AltGroupDetailPanel({
         <div className="alert alert-warning small mb-3" role="alert">
           <i className="bi bi-exclamation-triangle-fill me-1" aria-hidden="true" />
           Number to choose exceeds the number of alternatives in this group.
+        </div>
+      )}
+      {zoneQuestionBlock.pointsDistributedInfoBanner &&
+        !state.dismissedBanners.has(zoneQuestionBlock.trackingId) && (
+          <div className="alert alert-info small mb-3 alert-dismissible" role="alert">
+            <i className="bi bi-info-circle-fill me-1" aria-hidden="true" />
+            This group contains both auto-graded and manually-graded questions. Points have been
+            distributed to individual alternatives based on each question's grading method.
+            <button
+              type="button"
+              className="btn-close"
+              aria-label="Dismiss"
+              onClick={() => onDismissBanner(zoneQuestionBlock.trackingId)}
+            />
+          </div>
+        )}
+      {hasAutoGradedWithOnlyManualPoints && (
+        <div className="alert alert-info small mb-3" role="alert">
+          <i className="bi bi-info-circle-fill me-1" aria-hidden="true" />
+          One or more alternatives in this group are auto-graded but only have manual points.
+          Auto-grading results for those questions will not contribute to the score.
         </div>
       )}
       <div className="d-flex flex-column gap-2">
