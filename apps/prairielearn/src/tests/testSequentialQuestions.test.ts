@@ -54,14 +54,18 @@ describe(
         });
         assert.isTrue(response.ok);
 
+        // The page is a hydrated React component; extract props from the JSON script tag.
+        const propsJson = response
+          .$('script[data-component="AssessmentQuestionsEditor"][data-component-props]')
+          .text();
+        assert.isNotEmpty(propsJson);
+        const props = JSON.parse(propsJson);
+        const computedPercentages = props.json.questionRows.map(
+          (row: { assessment_question: { effective_advance_score_perc: number | null } }) =>
+            row.assessment_question.effective_advance_score_perc ?? 0,
+        );
+
         context.expectedPercentages = [0, 60, 75, 0, 30, 100];
-        const computedPercentages = response
-          .$('[data-testid="advance-score-perc"]')
-          .map((i, elem) => {
-            // turn string "25%" -> number 25
-            return Number(response.$(elem).text().trim().slice(0, -1));
-          })
-          .get();
         assert.deepEqual(computedPercentages, context.expectedPercentages);
       },
     );
