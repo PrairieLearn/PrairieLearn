@@ -6,8 +6,8 @@ import type { AdminInstitution } from '../../lib/client/safe-db-types.js';
 import { QueryClientProviderDebug } from '../../lib/client/tanstackQuery.js';
 import type { CourseRequestRow } from '../../lib/course-request.js';
 import type { Timezone } from '../../lib/timezone.shared.js';
-import { createAdministratorTrpcClient } from '../../trpc/administrator/trpc-client.js';
-import { TRPCProvider } from '../../trpc/administrator/trpc-context.js';
+import { createAdministratorTrpcClient } from '../../trpc/administrator/client.js';
+import { TRPCProvider } from '../../trpc/administrator/context.js';
 
 export function AdministratorCourseRequests({
   rows,
