@@ -1,4 +1,4 @@
-import { Button, Col, Form, InputGroup, Row } from 'react-bootstrap';
+import { Button, Form, InputGroup } from 'react-bootstrap';
 import {
   type Path,
   get,
@@ -164,8 +164,8 @@ function DeadlineArrayInput({
 
       {deadlineFields.map((deadlineField, index) => (
         <div key={deadlineField.id} className="mb-3">
-          <Row className="mb-1">
-            <Col md={6}>
+          <div className="d-flex gap-2 mb-1">
+            <div className="flex-grow-1">
               <Form.Control
                 type="datetime-local"
                 aria-label={`${isEarly ? 'Early' : 'Late'} deadline ${index + 1} date`}
@@ -189,52 +189,49 @@ function DeadlineArrayInput({
                   {getDateError(index)}
                 </Form.Text>
               )}
-            </Col>
-            <Col md={4}>
-              <InputGroup>
-                <Form.Control
-                  type="number"
-                  aria-label={`${isEarly ? 'Early' : 'Late'} deadline ${index + 1} credit percentage`}
-                  aria-invalid={!!getCreditError(index)}
-                  aria-errormessage={
-                    getCreditError(index)
-                      ? `${idPrefix}-${type}-deadline-${index}-credit-error`
-                      : undefined
-                  }
-                  placeholder="Credit"
-                  min={isEarly ? '101' : '0'}
-                  max={isEarly ? '200' : '99'}
-                  {...register(
-                    `${fieldArrayName}.${index}.credit` as Parameters<typeof register>[0],
-                    {
-                      valueAsNumber: true,
-                      validate: validateCredit,
-                    },
-                  )}
-                />
-                <InputGroup.Text>%</InputGroup.Text>
-              </InputGroup>
-              {getCreditError(index) && (
-                <Form.Text
-                  id={`${idPrefix}-${type}-deadline-${index}-credit-error`}
-                  className="text-danger"
-                  role="alert"
-                >
-                  {getCreditError(index)}
-                </Form.Text>
-              )}
-            </Col>
-            <Col md={2} className="d-flex align-items-start">
-              <Button
-                size="sm"
-                variant="outline-danger"
-                aria-label={`Remove ${isEarly ? 'early' : 'late'} deadline ${index + 1}`}
-                onClick={() => removeDeadline(index)}
-              >
-                <i className="bi bi-trash" aria-hidden="true" />
-              </Button>
-            </Col>
-          </Row>
+            </div>
+            <InputGroup style={{ width: 'auto', flex: '0 0 auto' }}>
+              <Form.Control
+                type="number"
+                style={{ width: '5rem' }}
+                aria-label={`${isEarly ? 'Early' : 'Late'} deadline ${index + 1} credit percentage`}
+                aria-invalid={!!getCreditError(index)}
+                aria-errormessage={
+                  getCreditError(index)
+                    ? `${idPrefix}-${type}-deadline-${index}-credit-error`
+                    : undefined
+                }
+                placeholder="Credit"
+                min={isEarly ? '101' : '0'}
+                max={isEarly ? '200' : '99'}
+                {...register(
+                  `${fieldArrayName}.${index}.credit` as Parameters<typeof register>[0],
+                  {
+                    valueAsNumber: true,
+                    validate: validateCredit,
+                  },
+                )}
+              />
+              <InputGroup.Text>%</InputGroup.Text>
+            </InputGroup>
+            <Button
+              size="sm"
+              variant="outline-danger"
+              aria-label={`Remove ${isEarly ? 'early' : 'late'} deadline ${index + 1}`}
+              onClick={() => removeDeadline(index)}
+            >
+              <i className="bi bi-trash" aria-hidden="true" />
+            </Button>
+          </div>
+          {getCreditError(index) && (
+            <Form.Text
+              id={`${idPrefix}-${type}-deadline-${index}-credit-error`}
+              className="text-danger"
+              role="alert"
+            >
+              {getCreditError(index)}
+            </Form.Text>
+          )}
           <Form.Text className="text-muted">{getTimeRangeText(index)}</Form.Text>
         </div>
       ))}

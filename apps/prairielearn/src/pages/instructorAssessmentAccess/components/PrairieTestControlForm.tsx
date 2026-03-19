@@ -55,12 +55,7 @@ export function PrairieTestControlForm({ onRemove }: PrairieTestControlFormProps
             </Button>
           </div>
 
-          {examFields.length === 0 ? (
-            <div className="alert alert-info">
-              <i className="bi bi-info-circle me-2" aria-hidden="true" />
-              No PrairieTest exams configured. Click "Add Exam" to link an exam.
-            </div>
-          ) : (
+          {examFields.length > 0 && (
             <div>
               {examFields.map((field, index) => (
                 <Card key={field.id} className="mb-3">

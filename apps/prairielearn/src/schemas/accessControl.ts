@@ -99,12 +99,15 @@ const AfterCompleteJsonSchema = z
 export const AccessControlJsonSchema = z.object({
   name: z.string().optional().describe('Name for AccessControl rule'),
   labels: z.array(z.string()).optional().describe('Array of student label names this set targets'),
-  enabled: z.boolean().optional().describe('Whether this set of permissions is enabled'),
+  enabled: z
+    .boolean()
+    .optional()
+    .describe('Whether this rule is enabled. Defaults to true for the main rule. Not inherited by overrides.'),
   listBeforeRelease: z
     .boolean()
     .optional()
     .nullable()
-    .describe('Whether students can see the title and click into the assessment before release'),
+    .describe('Whether students can see the assessment title before the release date. Defaults to false.'),
 
   dateControl: DateControlJsonSchema,
   integrations: IntegrationsJsonSchema,

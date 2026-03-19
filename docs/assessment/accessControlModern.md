@@ -157,11 +157,11 @@ The same logic applies to `hideScore` / `showScoreAgainDate` (there is no "hide 
 
 ### Other fields
 
-| Field               | Type    | Description                                                                                                            |
-| ------------------- | ------- | ---------------------------------------------------------------------------------------------------------------------- |
-| `name`              | string  | A descriptive name for the rule (for display in the UI).                                                               |
-| `enabled`           | boolean | If `false`, the rule is skipped entirely. Useful for temporarily disabling an override without deleting it.            |
-| `listBeforeRelease` | boolean | If `true`, the assessment title is shown on the Assessments page before the release date, but students cannot open it. |
+| Field               | Type    | Default | Description                                                                                                            |
+| ------------------- | ------- | ------- | ---------------------------------------------------------------------------------------------------------------------- |
+| `name`              | string  |         | A descriptive name for the rule (for display in the UI).                                                               |
+| `enabled`           | boolean | `true`  | If `false`, the rule is skipped entirely. Useful for temporarily disabling an override without deleting it. On overrides, omitting this field means the override does not affect whether the assessment is enabled. |
+| `listBeforeRelease` | boolean | `false` | If `true`, the assessment title is shown on the Assessments page before the release date, but students cannot open it. |
 
 ## Student labels and overrides
 

@@ -28,7 +28,7 @@ function mapField<T>(jsonValue: T | null | undefined): {
 
 interface PreparedRule {
   number: number;
-  enabled: boolean;
+  enabled: boolean | null;
   listBeforeRelease: boolean;
   targetType: 'none' | 'student_label';
   dateControlOverridden: boolean;
@@ -124,9 +124,9 @@ export async function syncAccessControl(
   for (let i = 0; i < accessControlRules.length; i++) {
     const rule = accessControlRules[i];
 
-    if (i > 0 && rule.enabled !== undefined) {
+    if (i > 0 && rule.dateControl?.enabled !== undefined) {
       throw new Error(
-        `'enabled' cannot be set on override rules (rule ${i}). It can only be set on the base rule (rule 0).`,
+        `'dateControl.enabled' cannot be set on override rules (rule ${i}). It can only be set on the base rule (rule 0).`,
       );
     }
     const dateControl = rule.dateControl ?? {};
@@ -174,8 +174,8 @@ export async function syncAccessControl(
 
     preparedRules.push({
       number: ruleNumber,
-      enabled: enabled.value ?? true,
-      listBeforeRelease: listBeforeRelease.value ?? true,
+      enabled: enabled.value,
+      listBeforeRelease: listBeforeRelease.value ?? false,
       targetType,
       dateControlOverridden,
       releaseDateOverridden: releaseDateField.overridden,

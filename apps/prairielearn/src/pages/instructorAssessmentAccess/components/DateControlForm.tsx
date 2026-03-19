@@ -54,23 +54,18 @@ export function MainDateControlForm({
         }}
         aria-disabled={!dateControlEnabled ? true : undefined}
       >
-        <Row className="mb-3">
-          <Col md={6}>
-            <MainReleaseDateField />
-          </Col>
-          <Col md={6}>
-            <MainDueDateField />
-          </Col>
-        </Row>
-
-        <Row className="mb-4">
-          <Col md={6}>
-            <MainDeadlineArrayField type="early" />
-          </Col>
-          <Col md={6}>
-            <MainDeadlineArrayField type="late" />
-          </Col>
-        </Row>
+        <div className="mb-3">
+          <MainReleaseDateField />
+        </div>
+        <div className="mb-3">
+          <MainDeadlineArrayField type="early" />
+        </div>
+        <div className="mb-3">
+          <MainDueDateField />
+        </div>
+        <div className="mb-4">
+          <MainDeadlineArrayField type="late" />
+        </div>
 
         <hr className="my-4" />
 
@@ -113,23 +108,18 @@ export function OverrideDateControlForm({
         <Form.Text className="text-muted">{description}</Form.Text>
       </Card.Header>
       <Card.Body>
-        <Row className="mb-3">
-          <Col md={6}>
-            <OverrideReleaseDateField index={index} />
-          </Col>
-          <Col md={6}>
-            <OverrideDueDateField index={index} />
-          </Col>
-        </Row>
-
-        <Row className="mb-4">
-          <Col md={6}>
-            <OverrideDeadlineArrayField index={index} type="early" />
-          </Col>
-          <Col md={6}>
-            <OverrideDeadlineArrayField index={index} type="late" />
-          </Col>
-        </Row>
+        <div className="mb-3">
+          <OverrideReleaseDateField index={index} />
+        </div>
+        <div className="mb-3">
+          <OverrideDeadlineArrayField index={index} type="early" />
+        </div>
+        <div className="mb-3">
+          <OverrideDueDateField index={index} />
+        </div>
+        <div className="mb-4">
+          <OverrideDeadlineArrayField index={index} type="late" />
+        </div>
 
         <div className="mb-3">
           <OverrideAfterLastDeadlineField index={index} />

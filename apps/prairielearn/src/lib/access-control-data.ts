@@ -51,14 +51,6 @@ function buildDateControl(row: AccessControlRuleRow): AccessControlJson['dateCon
   const dateControl: NonNullable<AccessControlJson['dateControl']> = {};
   let hasAnyField = false;
 
-  if (includeField(true)) {
-    // enabled is always included when dateControl is present
-    // For overrides with date_control_overridden, the whole dateControl block is overridden
-    if (override) {
-      dateControl.enabled = true;
-    }
-  }
-
   if (includeField(row.date_control_release_date_overridden)) {
     if (row.date_control_release_date) {
       dateControl.releaseDate = row.date_control_release_date.toISOString();

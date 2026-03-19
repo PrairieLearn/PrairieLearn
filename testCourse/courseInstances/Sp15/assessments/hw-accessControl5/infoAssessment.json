@@ -21,7 +21,7 @@
 
       "listBeforeRelease": true,
       "labels": ["Section A"],
-      "dateControl": { "enabled": true, "dueDate": "2026-01-28T18:14" }
+      "dateControl": { "dueDate": "2026-01-28T18:14" }
     }
   ],
   "zones": [

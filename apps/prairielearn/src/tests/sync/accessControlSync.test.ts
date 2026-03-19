@@ -1373,5 +1373,57 @@ describe('Access control syncing', () => {
       assert.isOk(override);
       assert.equal(override.rule.afterComplete?.hideScore, true);
     });
+
+    it('override dateControl does not contain enabled field', async () => {
+      const courseData = util.getCourseData();
+      const groupName = 'Test Group';
+      addStudentLabelToConfig(courseData, util.COURSE_INSTANCE_ID, groupName);
+
+      const mainRule = makeAccessControlRule();
+      const overrideRule: AccessControlJsonInput = {
+        labels: [groupName],
+        dateControl: {
+          dueDate: '2024-04-01T23:59:00',
+        },
+      };
+
+      courseData.courseInstances[util.COURSE_INSTANCE_ID].assessments[
+        util.ASSESSMENT_ID
+      ].accessControl = [mainRule, overrideRule];
+      await util.writeAndSyncCourseData(courseData);
+
+      const assessment = await getAssessment(util.ASSESSMENT_ID);
+      const courseInstance = await getCourseInstance(util.COURSE_INSTANCE_ID);
+      const rules = await selectAccessControlRulesForAssessment(courseInstance, assessment);
+      const override = rules.find((r) => r.number > 0);
+      assert.isOk(override);
+      assert.equal(override.rule.dateControl?.dueDate, '2024-04-01T23:59:00.000Z');
+      assert.isUndefined(override.rule.dateControl?.enabled);
+    });
+
+    it('main rule defaults enabled to undefined and listBeforeRelease to false', async () => {
+      const courseData = util.getCourseData();
+      const mainRule: AccessControlJsonInput = {
+        dateControl: {
+          releaseDate: '2024-03-14T00:01:00',
+          dueDate: '2024-03-21T23:59:00',
+        },
+      };
+
+      courseData.courseInstances[util.COURSE_INSTANCE_ID].assessments[
+        util.ASSESSMENT_ID
+      ].accessControl = [mainRule];
+      await util.writeAndSyncCourseData(courseData);
+
+      const assessment = await getAssessment(util.ASSESSMENT_ID);
+      const courseInstance = await getCourseInstance(util.COURSE_INSTANCE_ID);
+      const rules = await selectAccessControlRulesForAssessment(courseInstance, assessment);
+      const main = rules.find((r) => r.number === 0);
+      assert.isOk(main);
+      // enabled: omitted in JSON → null in DB → undefined in rule (treated as enabled)
+      assert.isUndefined(main.rule.enabled);
+      // listBeforeRelease: omitted in JSON → false in DB → false in rule
+      assert.equal(main.rule.listBeforeRelease, false);
+    });
   });
 });

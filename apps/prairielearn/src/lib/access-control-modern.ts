@@ -25,7 +25,7 @@ import { idsEqual } from './id.js';
 type SprocAuthzAssessment = z.infer<typeof SprocAuthzAssessmentSchema>;
 type SprocAuthzAssessmentInstance = z.infer<typeof SprocAuthzAssessmentInstanceSchema>;
 
-interface AuthzDataForAccessControl {
+export interface AuthzDataForAccessControl {
   user: { id: string };
   mode?: EnumMode;
   course_role?: EnumCourseRole;

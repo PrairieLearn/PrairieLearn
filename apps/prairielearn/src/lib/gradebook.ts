@@ -1,6 +1,9 @@
 import { loadSqlEquiv, queryRows } from '@prairielearn/postgres';
 
-import { resolveModernAssessmentAccessBatch } from './access-control-modern.js';
+import {
+  type AuthzDataForAccessControl,
+  resolveModernAssessmentAccessBatch,
+} from './access-control-modern.js';
 import { type CourseInstance } from './db-types.js';
 import {
   type StaffGradebookRow,
@@ -14,7 +17,7 @@ const sql = loadSqlEquiv(import.meta.url);
 interface GetGradebookRowsParams {
   courseInstance: CourseInstance;
   userId: string;
-  authzData: any;
+  authzData: AuthzDataForAccessControl;
   reqDate: Date;
   displayTimezone: string;
   auth: 'student' | 'instructor';

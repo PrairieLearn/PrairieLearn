@@ -83,12 +83,10 @@ function QuestionVisibilityInput({ value, onChange, idPrefix }: QuestionVisibili
         />
         {hideQuestionsMode === 'hide_questions_until_date' && (
           <div className="ms-4 mt-2">
-            <Form.Label htmlFor={`${idPrefix}-show-questions-date`}>
-              Show questions again on:
-            </Form.Label>
             <Form.Control
               id={`${idPrefix}-show-questions-date`}
               type="datetime-local"
+              aria-label="Show questions on"
               aria-describedby={`${idPrefix}-show-questions-date-help`}
               value={value.showAgainDate ?? ''}
               onChange={({ currentTarget }) =>
@@ -118,7 +116,7 @@ function QuestionVisibilityInput({ value, onChange, idPrefix }: QuestionVisibili
             <Row className="mb-2">
               <Col md={6}>
                 <Form.Label htmlFor={`${idPrefix}-show-questions-between-start`}>
-                  Show questions again on:
+                  Show questions on:
                 </Form.Label>
                 <Form.Control
                   id={`${idPrefix}-show-questions-between-start`}
