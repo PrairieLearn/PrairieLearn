@@ -1,9 +1,4 @@
-import type {
-  QuestionAlternativeForm,
-  SelectedItem,
-  ZoneAssessmentForm,
-  ZoneQuestionBlockForm,
-} from '../types.js';
+import type { SelectedItem, ZoneAssessmentForm, ZoneQuestionBlockForm } from '../types.js';
 
 /**
  * Checks whether a QID already exists somewhere in the assessment zones.
@@ -85,7 +80,7 @@ export function findAltGroupByTrackingId(
 ): {
   zone: ZoneAssessmentForm;
   zoneIndex: number;
-  altGroup: QuestionAlternativeForm;
+  altGroup: ZoneQuestionBlockForm;
   altGroupIndex: number;
 } | null {
   for (let zoneIndex = 0; zoneIndex < zones.length; zoneIndex++) {
@@ -106,7 +101,7 @@ export function findAlternativeByTrackingId(
   zones: ZoneAssessmentForm[],
   trackingId: string,
 ): {
-  alternative: QuestionAlternativeForm;
+  alternative: ZoneQuestionBlockForm;
   alternativeIndex: number;
   question: ZoneQuestionBlockForm;
   questionIndex: number;
@@ -146,7 +141,7 @@ export function findQuestionOrAlternativeByQid(
   questionIndex: number;
   zone: ZoneAssessmentForm;
   zoneIndex: number;
-  alternative: QuestionAlternativeForm | null;
+  alternative: ZoneQuestionBlockForm | null;
   alternativeIndex: number | null;
 } | null {
   for (let zoneIndex = 0; zoneIndex < zones.length; zoneIndex++) {
