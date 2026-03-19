@@ -10,6 +10,7 @@ import {
 
 import { FriendlyDate } from '../../../../components/FriendlyDate.js';
 import { FieldWrapper } from '../FieldWrapper.js';
+import { useOverrideField } from '../hooks/useOverrideField.js';
 import { getFieldName } from '../hooks/useTypedFormWatch.js';
 import type { AccessControlFormData, AfterLastDeadlineValue, DeadlineEntry } from '../types.js';
 import { getLastDeadlineDate, getUserTimezone } from '../utils/dateUtils.js';
@@ -191,19 +192,23 @@ export function OverrideAfterLastDeadlineField({ index }: { index: number }) {
     name: `overrides.${index}.afterLastDeadline` as Path<AccessControlFormData>,
   });
 
-  const value = field.value as AfterLastDeadlineValue | null | undefined;
-  const isOverridden = value !== undefined;
+  const { isOverridden, addOverride, removeOverride } = useOverrideField(
+    index,
+    'afterLastDeadline',
+  );
 
+  const { isOverridden: dueDateOverridden } = useOverrideField(index, 'dueDate');
   const dueDate = useWatch({
     name: `overrides.${index}.dueDate` as Path<AccessControlFormData>,
-  }) as string | null | undefined;
+  }) as string | null;
   const mainDueDate = useWatch<AccessControlFormData, 'mainRule.dueDate'>({
     name: 'mainRule.dueDate',
   });
 
+  const { isOverridden: lateDeadlinesOverridden } = useOverrideField(index, 'lateDeadlines');
   const lateDeadlines = useWatch({
     name: `overrides.${index}.lateDeadlines` as Path<AccessControlFormData>,
-  }) as DeadlineEntry[] | undefined;
+  }) as DeadlineEntry[];
   const mainLateDeadlines = useWatch<AccessControlFormData, 'mainRule.lateDeadlines'>({
     name: 'mainRule.lateDeadlines',
   });
@@ -212,14 +217,17 @@ export function OverrideAfterLastDeadlineField({ index }: { index: number }) {
     <FieldWrapper
       isOverridden={isOverridden}
       label="After last deadline"
-      onOverride={() => field.onChange(mainValue ?? { allowSubmissions: false })}
-      onRemoveOverride={() => field.onChange(undefined)}
+      onOverride={() => {
+        field.onChange(mainValue ?? { allowSubmissions: false });
+        addOverride();
+      }}
+      onRemoveOverride={removeOverride}
     >
       <AfterLastDeadlineInput
-        value={value as AfterLastDeadlineValue | null}
+        value={field.value as AfterLastDeadlineValue | null}
         idPrefix={`overrides-${index}`}
-        dueDate={dueDate !== undefined ? dueDate : mainDueDate}
-        lateDeadlines={lateDeadlines !== undefined ? lateDeadlines : mainLateDeadlines}
+        dueDate={dueDateOverridden ? dueDate : mainDueDate}
+        lateDeadlines={lateDeadlinesOverridden ? lateDeadlines : mainLateDeadlines}
         creditFieldPath={getFieldName(`overrides.${index}`, 'afterLastDeadline.credit')}
         onChange={field.onChange}
       />

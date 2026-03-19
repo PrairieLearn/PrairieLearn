@@ -14,6 +14,11 @@ function isMainRuleData(rule: RuleData): rule is MainRuleData {
   return 'dateControlEnabled' in rule;
 }
 
+function isOverrideFieldActive(rule: RuleData, fieldName: string): boolean {
+  if (isMainRuleData(rule)) return true;
+  return rule.overriddenFields.includes(fieldName);
+}
+
 function formatDate(dateStr: string): string {
   if (!dateStr) return '';
   try {
@@ -44,17 +49,20 @@ export function generateDateTableRows(
   const rows: DateTableRow[] = [];
 
   // For main rule: check dateControlEnabled flag
-  // For override: check if any date field is set (not undefined)
+  // For override: check if any date field is overridden
   const isMain = isMainRuleData(rule);
+  const dateControlFieldNames = [
+    'releaseDate',
+    'dueDate',
+    'earlyDeadlines',
+    'lateDeadlines',
+    'afterLastDeadline',
+    'durationMinutes',
+    'password',
+  ];
   const isDateControlEnabled = isMain
     ? rule.dateControlEnabled
-    : rule.releaseDate !== undefined ||
-      rule.dueDate !== undefined ||
-      rule.earlyDeadlines !== undefined ||
-      rule.lateDeadlines !== undefined ||
-      rule.afterLastDeadline !== undefined ||
-      rule.durationMinutes !== undefined ||
-      rule.password !== undefined;
+    : dateControlFieldNames.some((f) => isOverrideFieldActive(rule, f));
 
   if (!isDateControlEnabled) {
     return rows;
@@ -97,19 +105,17 @@ export function generateDateTableRows(
     });
   }
 
-  if (earlyDeadlines) {
-    earlyDeadlines.forEach((deadline: DeadlineEntry, index: number) => {
-      if (deadline.date) {
-        entries.push({
-          date: deadline.date,
-          timestamp: new Date(deadline.date).getTime(),
-          label: `Early ${index + 1}`,
-          credit: `${deadline.credit}%`,
-          visibility: 'Open',
-        });
-      }
-    });
-  }
+  earlyDeadlines.forEach((deadline: DeadlineEntry, index: number) => {
+    if (deadline.date) {
+      entries.push({
+        date: deadline.date,
+        timestamp: new Date(deadline.date).getTime(),
+        label: `Early ${index + 1}`,
+        credit: `${deadline.credit}%`,
+        visibility: 'Open',
+      });
+    }
+  });
 
   if (dueDate) {
     entries.push({
@@ -128,19 +134,17 @@ export function generateDateTableRows(
     });
   }
 
-  if (lateDeadlines) {
-    lateDeadlines.forEach((deadline: DeadlineEntry, index: number) => {
-      if (deadline.date) {
-        entries.push({
-          date: deadline.date,
-          timestamp: new Date(deadline.date).getTime(),
-          label: `Late ${index + 1}`,
-          credit: `${deadline.credit}%`,
-          visibility: 'Open',
-        });
-      }
-    });
-  }
+  lateDeadlines.forEach((deadline: DeadlineEntry, index: number) => {
+    if (deadline.date) {
+      entries.push({
+        date: deadline.date,
+        timestamp: new Date(deadline.date).getTime(),
+        label: `Late ${index + 1}`,
+        credit: `${deadline.credit}%`,
+        visibility: 'Open',
+      });
+    }
+  });
 
   entries.sort((a, b) => a.timestamp - b.timestamp);
 
@@ -163,11 +167,11 @@ export function generateDateTableRows(
     }
 
     const qv = rule.questionVisibility;
-    if (qv?.hideQuestions) {
+    if (qv.hideQuestions) {
       visibilityParts.push('Questions hidden');
     }
     const sv = rule.scoreVisibility;
-    if (sv?.hideScore) {
+    if (sv.hideScore) {
       visibilityParts.push('Score hidden');
     }
 
@@ -193,8 +197,8 @@ export function generateRuleSummary(
     return lines;
   }
 
-  const durationMinutes = rule.durationMinutes;
-  if (durationMinutes !== undefined) {
+  if (isOverrideFieldActive(rule, 'durationMinutes')) {
+    const durationMinutes = rule.durationMinutes;
     if (durationMinutes !== null) {
       lines.push(`Time limit: ${durationMinutes} minutes`);
     } else if (verbosity === 'verbose') {
@@ -202,8 +206,8 @@ export function generateRuleSummary(
     }
   }
 
-  const password = rule.password;
-  if (password !== undefined) {
+  if (isOverrideFieldActive(rule, 'password')) {
+    const password = rule.password;
     if (password !== null && password !== '') {
       lines.push('Password protected');
     } else if (verbosity === 'verbose') {
@@ -218,16 +222,16 @@ export function generateRuleSummary(
   const hasAfterLastDeadline = rule.afterLastDeadline != null;
 
   if (!hasAfterLastDeadline) {
-    const qv = rule.questionVisibility;
-    if (qv !== undefined) {
+    if (isOverrideFieldActive(rule, 'questionVisibility')) {
+      const qv = rule.questionVisibility;
       if (qv.hideQuestions) {
         lines.push('Questions hidden after completion');
       } else if (verbosity === 'verbose') {
         lines.push('Questions visible after completion');
       }
     }
-    const sv = rule.scoreVisibility;
-    if (sv !== undefined) {
+    if (isOverrideFieldActive(rule, 'scoreVisibility')) {
+      const sv = rule.scoreVisibility;
       if (sv.hideScore) {
         lines.push('Score hidden after completion');
       } else if (verbosity === 'verbose') {

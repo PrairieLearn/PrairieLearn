@@ -3,6 +3,7 @@ import { Button, Form, InputGroup } from 'react-bootstrap';
 import { type Path, useController, useWatch } from 'react-hook-form';
 
 import { FieldWrapper } from '../FieldWrapper.js';
+import { useOverrideField } from '../hooks/useOverrideField.js';
 import type { AccessControlFormData } from '../types.js';
 
 interface PasswordInputProps {
@@ -67,18 +68,20 @@ export function OverridePasswordField({ index }: { index: number }) {
     name: `overrides.${index}.password` as Path<AccessControlFormData>,
   });
 
-  const value = field.value as string | null | undefined;
-  const isOverridden = value !== undefined;
+  const { isOverridden, addOverride, removeOverride } = useOverrideField(index, 'password');
 
   return (
     <FieldWrapper
       isOverridden={isOverridden}
       label="Password"
-      onOverride={() => field.onChange(mainValue)}
-      onRemoveOverride={() => field.onChange(undefined)}
+      onOverride={() => {
+        field.onChange(mainValue);
+        addOverride();
+      }}
+      onRemoveOverride={removeOverride}
     >
       <PasswordInput
-        value={value as string | null}
+        value={field.value as string | null}
         idPrefix={`overrides-${index}`}
         onChange={field.onChange}
       />

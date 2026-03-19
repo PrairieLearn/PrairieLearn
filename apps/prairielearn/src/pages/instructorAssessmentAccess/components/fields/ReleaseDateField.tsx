@@ -2,6 +2,7 @@ import { Form } from 'react-bootstrap';
 import { type Path, useController, useWatch } from 'react-hook-form';
 
 import { FieldWrapper } from '../FieldWrapper.js';
+import { useOverrideField } from '../hooks/useOverrideField.js';
 import type { AccessControlFormData } from '../types.js';
 
 interface ReleaseDateInputProps {
@@ -69,19 +70,21 @@ export function OverrideReleaseDateField({ index }: { index: number }) {
     name: `overrides.${index}.releaseDate` as Path<AccessControlFormData>,
   });
 
-  const value = field.value as string | null | undefined;
-  const isOverridden = value !== undefined;
+  const { isOverridden, addOverride, removeOverride } = useOverrideField(index, 'releaseDate');
 
   return (
     <FieldWrapper
       isOverridden={isOverridden}
       label="Release date"
       headerContent={<strong>Release date</strong>}
-      onOverride={() => field.onChange(mainValue)}
-      onRemoveOverride={() => field.onChange(undefined)}
+      onOverride={() => {
+        field.onChange(mainValue);
+        addOverride();
+      }}
+      onRemoveOverride={removeOverride}
     >
       <ReleaseDateInput
-        value={value as string | null}
+        value={field.value as string | null}
         idPrefix={`overrides-${index}`}
         onChange={field.onChange}
       />

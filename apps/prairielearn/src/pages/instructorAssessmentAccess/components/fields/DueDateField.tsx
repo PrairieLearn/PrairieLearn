@@ -3,6 +3,7 @@ import { type Path, useController, useWatch } from 'react-hook-form';
 
 import { FriendlyDate } from '../../../../components/FriendlyDate.js';
 import { FieldWrapper } from '../FieldWrapper.js';
+import { useOverrideField } from '../hooks/useOverrideField.js';
 import type { AccessControlFormData, DeadlineEntry } from '../types.js';
 import { getLatestEarlyDeadlineDate, getUserTimezone } from '../utils/dateUtils.js';
 
@@ -138,19 +139,22 @@ export function OverrideDueDateField({ index }: { index: number }) {
     name: `overrides.${index}.dueDate` as Path<AccessControlFormData>,
   });
 
-  const value = field.value as string | null | undefined;
-  const isOverridden = value !== undefined;
+  const { isOverridden, addOverride, removeOverride } = useOverrideField(index, 'dueDate');
 
+  const value = field.value as string | null;
+
+  const { isOverridden: releaseDateOverridden } = useOverrideField(index, 'releaseDate');
   const releaseDate = useWatch({
     name: `overrides.${index}.releaseDate` as Path<AccessControlFormData>,
-  }) as string | null | undefined;
+  }) as string | null;
   const mainReleaseDate = useWatch<AccessControlFormData, 'mainRule.releaseDate'>({
     name: 'mainRule.releaseDate',
   });
 
+  const { isOverridden: earlyDeadlinesOverridden } = useOverrideField(index, 'earlyDeadlines');
   const earlyDeadlines = useWatch({
     name: `overrides.${index}.earlyDeadlines` as Path<AccessControlFormData>,
-  }) as DeadlineEntry[] | undefined;
+  }) as DeadlineEntry[];
   const mainEarlyDeadlines = useWatch<AccessControlFormData, 'mainRule.earlyDeadlines'>({
     name: 'mainRule.earlyDeadlines',
   });
@@ -160,14 +164,17 @@ export function OverrideDueDateField({ index }: { index: number }) {
       isOverridden={isOverridden}
       label="Due date"
       headerContent={<strong>Due date</strong>}
-      onOverride={() => field.onChange(mainValue)}
-      onRemoveOverride={() => field.onChange(undefined)}
+      onOverride={() => {
+        field.onChange(mainValue);
+        addOverride();
+      }}
+      onRemoveOverride={removeOverride}
     >
       <DueDateInput
-        value={value as string | null}
+        value={value}
         idPrefix={`overrides-${index}`}
-        releaseDate={releaseDate !== undefined ? releaseDate : mainReleaseDate}
-        earlyDeadlines={earlyDeadlines !== undefined ? earlyDeadlines : mainEarlyDeadlines}
+        releaseDate={releaseDateOverridden ? releaseDate : mainReleaseDate}
+        earlyDeadlines={earlyDeadlinesOverridden ? earlyDeadlines : mainEarlyDeadlines}
         onChange={field.onChange}
       />
     </FieldWrapper>

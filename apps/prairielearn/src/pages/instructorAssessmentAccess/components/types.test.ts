@@ -25,35 +25,46 @@ const defaultMainRule: MainRuleData = {
   scoreVisibility: { hideScore: false },
 };
 
+const baseOverride: OverrideData = {
+  trackingId: 'o-base',
+  enabled: true,
+  appliesTo: {
+    targetType: 'individual',
+    individuals: [{ uid: 'a@b.com', name: 'A' }],
+    studentLabels: [],
+  },
+  overriddenFields: [],
+  releaseDate: null,
+  dueDate: null,
+  earlyDeadlines: [],
+  lateDeadlines: [],
+  afterLastDeadline: null,
+  durationMinutes: null,
+  password: null,
+  questionVisibility: { hideQuestions: false },
+  scoreVisibility: { hideScore: false },
+};
+
 function buildFormData(override: OverrideData): AccessControlFormData {
   return { mainRule: defaultMainRule, overrides: [override] };
 }
 
 describe('formDataToJson', () => {
-  it('omits dateControl when no date fields are set on override', () => {
+  it('omits dateControl when no date fields are overridden', () => {
     const override: OverrideData = {
+      ...baseOverride,
       trackingId: 'o-1',
-      enabled: true,
-      appliesTo: {
-        targetType: 'individual',
-        individuals: [{ uid: 'a@b.com', name: 'A' }],
-        studentLabels: [],
-      },
     };
 
     const result = formDataToJson(buildFormData(override));
     expect(result[1].dateControl).toBeUndefined();
   });
 
-  it('includes only explicitly set date fields', () => {
+  it('includes only explicitly overridden date fields', () => {
     const override: OverrideData = {
+      ...baseOverride,
       trackingId: 'o-2',
-      enabled: true,
-      appliesTo: {
-        targetType: 'individual',
-        individuals: [{ uid: 'a@b.com', name: 'A' }],
-        studentLabels: [],
-      },
+      overriddenFields: ['dueDate', 'password'],
       dueDate: '2025-05-01T00:00:00Z',
       password: 'pw',
     };
@@ -71,8 +82,8 @@ describe('formDataToJson', () => {
 
   it('serializes student_label appliesTo with labels', () => {
     const override: OverrideData = {
+      ...baseOverride,
       trackingId: 'o-5',
-      enabled: true,
       appliesTo: {
         targetType: 'student_label',
         individuals: [],
@@ -91,8 +102,8 @@ describe('formDataToJson', () => {
 
   it('serializes individual appliesTo with ruleType and individuals', () => {
     const override: OverrideData = {
+      ...baseOverride,
       trackingId: 'o-6',
-      enabled: true,
       appliesTo: {
         targetType: 'individual',
         individuals: [{ enrollmentId: 'e-1', uid: 'user@test.com', name: 'Test User' }],
@@ -110,13 +121,9 @@ describe('formDataToJson', () => {
 
   it('serializes afterComplete visibility overrides', () => {
     const override: OverrideData = {
+      ...baseOverride,
       trackingId: 'o-7',
-      enabled: true,
-      appliesTo: {
-        targetType: 'individual',
-        individuals: [{ uid: 'a@b.com', name: 'A' }],
-        studentLabels: [],
-      },
+      overriddenFields: ['questionVisibility', 'scoreVisibility'],
       questionVisibility: { hideQuestions: true, showAgainDate: '2025-06-01T00:00:00Z' },
       scoreVisibility: { hideScore: true },
     };
@@ -128,15 +135,10 @@ describe('formDataToJson', () => {
     expect(overrideJson.afterComplete!.hideScore).toBe(true);
   });
 
-  it('omits afterComplete when neither visibility is set', () => {
+  it('omits afterComplete when neither visibility is overridden', () => {
     const override: OverrideData = {
+      ...baseOverride,
       trackingId: 'o-8',
-      enabled: true,
-      appliesTo: {
-        targetType: 'individual',
-        individuals: [{ uid: 'a@b.com', name: 'A' }],
-        studentLabels: [],
-      },
     };
 
     const overrideJson = formDataToJson(buildFormData(override))[1];
@@ -148,13 +150,22 @@ describe('formDataToJson', () => {
       mainRule: defaultMainRule,
       overrides: [
         {
+          ...baseOverride,
           trackingId: 'override-1',
-          enabled: true,
           appliesTo: {
             targetType: 'individual',
             individuals: [{ uid: 'user@example.com', name: 'Test User' }],
             studentLabels: [],
           },
+          overriddenFields: [
+            'releaseDate',
+            'dueDate',
+            'earlyDeadlines',
+            'lateDeadlines',
+            'afterLastDeadline',
+            'durationMinutes',
+            'password',
+          ],
           releaseDate: null,
           dueDate: null,
           earlyDeadlines: [],

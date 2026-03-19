@@ -2,7 +2,6 @@ import { Button, Col, Form, InputGroup, Row } from 'react-bootstrap';
 import {
   type Path,
   get,
-  useController,
   useFieldArray,
   useFormContext,
   useFormState,
@@ -11,6 +10,7 @@ import {
 
 import { FriendlyDate } from '../../../../components/FriendlyDate.js';
 import { FieldWrapper } from '../FieldWrapper.js';
+import { useOverrideField } from '../hooks/useOverrideField.js';
 import type { AccessControlFormData, DeadlineEntry } from '../types.js';
 import { getDeadlineRange, getUserTimezone } from '../utils/dateUtils.js';
 
@@ -288,12 +288,11 @@ export function OverrideDeadlineArrayField({ index, type }: OverrideDeadlineArra
   const fieldPath = isEarly ? 'earlyDeadlines' : 'lateDeadlines';
   const label = isEarly ? 'Early deadlines' : 'Late deadlines';
 
-  const { field } = useController({
-    name: `overrides.${index}.${fieldPath}` as Path<AccessControlFormData>,
-  });
+  const { isOverridden, addOverride, removeOverride } = useOverrideField(index, fieldPath);
 
-  const value = field.value as DeadlineEntry[] | undefined;
-  const isOverridden = value !== undefined;
+  const deadlines = useWatch({
+    name: `overrides.${index}.${fieldPath}` as Path<AccessControlFormData>,
+  }) as DeadlineEntry[];
 
   const mainReleaseDate = useWatch<AccessControlFormData, 'mainRule.releaseDate'>({
     name: 'mainRule.releaseDate',
@@ -302,23 +301,24 @@ export function OverrideDeadlineArrayField({ index, type }: OverrideDeadlineArra
     name: 'mainRule.dueDate',
   });
 
+  const { isOverridden: releaseDateOverridden } = useOverrideField(index, 'releaseDate');
   const overrideReleaseDate = useWatch({
     name: `overrides.${index}.releaseDate` as Path<AccessControlFormData>,
-  }) as string | null | undefined;
+  }) as string | null;
+  const { isOverridden: dueDateOverridden } = useOverrideField(index, 'dueDate');
   const overrideDueDate = useWatch({
     name: `overrides.${index}.dueDate` as Path<AccessControlFormData>,
-  }) as string | null | undefined;
+  }) as string | null;
 
-  const effectiveReleaseDate =
-    overrideReleaseDate !== undefined ? overrideReleaseDate : mainReleaseDate;
-  const effectiveDueDate = overrideDueDate !== undefined ? overrideDueDate : mainDueDate;
+  const effectiveReleaseDate = releaseDateOverridden ? overrideReleaseDate : mainReleaseDate;
+  const effectiveDueDate = dueDateOverridden ? overrideDueDate : mainDueDate;
 
   return (
     <FieldWrapper
       isOverridden={isOverridden}
       label={label}
-      onOverride={() => field.onChange([])}
-      onRemoveOverride={() => field.onChange(undefined)}
+      onOverride={addOverride}
+      onRemoveOverride={removeOverride}
     >
       <DeadlineArrayInput
         type={type}
@@ -326,7 +326,7 @@ export function OverrideDeadlineArrayField({ index, type }: OverrideDeadlineArra
         idPrefix={`overrides-${index}`}
         releaseDate={effectiveReleaseDate}
         dueDate={effectiveDueDate}
-        deadlines={value ?? []}
+        deadlines={deadlines}
       />
     </FieldWrapper>
   );

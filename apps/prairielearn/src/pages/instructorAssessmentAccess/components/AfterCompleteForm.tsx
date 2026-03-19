@@ -4,6 +4,7 @@ import { type Path, useController, useWatch } from 'react-hook-form';
 import { OverlayTrigger } from '@prairielearn/ui';
 
 import { FieldWrapper } from './FieldWrapper.js';
+import { useOverrideField } from './hooks/useOverrideField.js';
 import type {
   AccessControlFormData,
   QuestionVisibilityValue,
@@ -354,11 +355,16 @@ export function OverrideAfterCompleteForm({
     name: `overrides.${index}.scoreVisibility` as Path<AccessControlFormData>,
   });
 
-  const qvValue = qvField.value as QuestionVisibilityValue | undefined;
-  const svValue = svField.value as ScoreVisibilityValue | undefined;
-
-  const qvOverridden = qvValue !== undefined;
-  const svOverridden = svValue !== undefined;
+  const {
+    isOverridden: qvOverridden,
+    addOverride: addQvOverride,
+    removeOverride: removeQvOverride,
+  } = useOverrideField(index, 'questionVisibility');
+  const {
+    isOverridden: svOverridden,
+    addOverride: addSvOverride,
+    removeOverride: removeSvOverride,
+  } = useOverrideField(index, 'scoreVisibility');
 
   return (
     <AfterCompleteCard title={title} description={description}>
@@ -367,11 +373,14 @@ export function OverrideAfterCompleteForm({
           isOverridden={qvOverridden}
           label="Question visibility"
           headerContent={<strong>Question visibility</strong>}
-          onOverride={() => qvField.onChange({ ...mainQV })}
-          onRemoveOverride={() => qvField.onChange(undefined)}
+          onOverride={() => {
+            qvField.onChange({ ...mainQV });
+            addQvOverride();
+          }}
+          onRemoveOverride={removeQvOverride}
         >
           <QuestionVisibilityInput
-            value={qvValue!}
+            value={qvField.value as QuestionVisibilityValue}
             idPrefix={`overrides-${index}`}
             onChange={qvField.onChange}
           />
@@ -382,11 +391,14 @@ export function OverrideAfterCompleteForm({
           isOverridden={svOverridden}
           label="Score visibility"
           headerContent={<strong>Score visibility</strong>}
-          onOverride={() => svField.onChange({ ...mainSV })}
-          onRemoveOverride={() => svField.onChange(undefined)}
+          onOverride={() => {
+            svField.onChange({ ...mainSV });
+            addSvOverride();
+          }}
+          onRemoveOverride={removeSvOverride}
         >
           <ScoreVisibilityInput
-            value={svValue!}
+            value={svField.value as ScoreVisibilityValue}
             idPrefix={`overrides-${index}`}
             onChange={svField.onChange}
           />

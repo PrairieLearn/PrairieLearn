@@ -2,6 +2,7 @@ import { Form, InputGroup } from 'react-bootstrap';
 import { type Path, useController, useWatch } from 'react-hook-form';
 
 import { FieldWrapper } from '../FieldWrapper.js';
+import { useOverrideField } from '../hooks/useOverrideField.js';
 import type { AccessControlFormData } from '../types.js';
 
 interface DurationInputProps {
@@ -59,18 +60,20 @@ export function OverrideDurationField({ index }: { index: number }) {
     name: `overrides.${index}.durationMinutes` as Path<AccessControlFormData>,
   });
 
-  const value = field.value as number | null | undefined;
-  const isOverridden = value !== undefined;
+  const { isOverridden, addOverride, removeOverride } = useOverrideField(index, 'durationMinutes');
 
   return (
     <FieldWrapper
       isOverridden={isOverridden}
       label="Time limit"
-      onOverride={() => field.onChange(mainValue)}
-      onRemoveOverride={() => field.onChange(undefined)}
+      onOverride={() => {
+        field.onChange(mainValue);
+        addOverride();
+      }}
+      onRemoveOverride={removeOverride}
     >
       <DurationInput
-        value={value as number | null}
+        value={field.value as number | null}
         idPrefix={`overrides-${index}`}
         onChange={field.onChange}
       />
