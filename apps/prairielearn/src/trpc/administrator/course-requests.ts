@@ -8,7 +8,7 @@ import {
 } from '../../lib/course-request.js';
 import { checkCoursePathExists, checkCourseRepositoryExists } from '../../lib/course.js';
 
-import { requireAdministrator, t } from './trpc-init.js';
+import { requireAdministrator, t } from './init.js';
 
 const deny = t.procedure
   .use(requireAdministrator)

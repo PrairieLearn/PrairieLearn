@@ -45,6 +45,8 @@ export type QuestionAlternativeForm = QuestionAlternativeJsonInput & {
  */
 type ZoneQuestionBlockFormBase = Omit<ZoneQuestionBlockJsonInput, 'id' | 'alternatives'> & {
   trackingId: TrackingId;
+  /** Transient flag: set when legacy `points` were pushed to alternatives due to mixed grading methods. Not serialized. */
+  pointsDistributedInfoBanner?: boolean;
 };
 
 /**
@@ -130,6 +132,8 @@ export interface EditorState {
   collapsedGroups: Set<string>;
   /** Tracks which zones are collapsed by their trackingId */
   collapsedZones: Set<string>;
+  /** Tracks which points-distributed info banners have been dismissed by trackingId */
+  dismissedBanners: Set<string>;
   /** The currently selected item in the split-pane editor */
   selectedItem: SelectedItem;
 }
@@ -213,6 +217,7 @@ export type EditorAction =
     }
   | { type: 'EXPAND_ALL_GROUPS' }
   | { type: 'COLLAPSE_ALL_GROUPS' }
+  | { type: 'DISMISS_BANNER'; trackingId: string }
   | { type: 'RESET' }
   | {
       type: 'ADD_ALTERNATIVE';
@@ -325,6 +330,7 @@ export interface DetailState {
   courseInstanceId: string;
   courseId: string;
   hasCoursePermissionPreview: boolean;
+  dismissedBanners: Set<string>;
 }
 
 /**
@@ -349,4 +355,5 @@ export interface DetailActions {
   onRemoveQuestionByQid: (qid: string) => void;
   onResetButtonClick: (assessmentQuestionId: string) => void;
   onFormValidChange: (isValid: boolean) => void;
+  onDismissBanner: (trackingId: string) => void;
 }
