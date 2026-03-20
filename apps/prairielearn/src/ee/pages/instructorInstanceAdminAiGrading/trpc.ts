@@ -3,6 +3,7 @@ import type { CreateExpressContextOptions } from '@trpc/server/adapters/express'
 import superjson from 'superjson';
 import { z } from 'zod';
 
+import { config } from '../../../lib/config.js';
 import { EnumAiGradingProviderSchema } from '../../../lib/db-types.js';
 import type { ResLocalsForPage } from '../../../lib/res-locals.js';
 import { encryptForStorage } from '../../../lib/storage-crypt.js';
@@ -11,18 +12,23 @@ import {
   updateUseCustomApiKeys,
   upsertCredential,
 } from '../../../models/ai-grading-credentials.js';
+import { getOrCreateStripeCustomerId, getStripeClient } from '../../lib/billing/stripe.js';
 import { creditPoolProcedures, requireAiGradingFeature } from '../../lib/credit-pool-trpc.js';
+import { insertAiGradingCreditCheckoutSession } from '../../models/ai-grading-credit-checkout-sessions.js';
 
 import { formatCredential } from './utils/format.js';
 
-export function createContext({ res }: CreateExpressContextOptions) {
+export function createContext({ req, res }: CreateExpressContextOptions) {
   const locals = res.locals as ResLocalsForPage<'course-instance'>;
+
+  const host = config.serverCanonicalHost ?? `${req.protocol}://${req.get('host')}`;
 
   return {
     course: locals.course,
     course_instance: locals.course_instance,
     authn_user: locals.authn_user,
     authz_data: locals.authz_data,
+    host,
   };
 }
 
@@ -88,11 +94,91 @@ const deleteCredentialMutation = t.procedure
     });
   });
 
+const MIN_PURCHASE_CENTS = 500; // $5.00
+const MAX_PURCHASE_CENTS = 100_000; // $1,000.00
+
+const createCreditCheckoutSessionMutation = t.procedure
+  .use(requireEditPermission)
+  .use(requireAiGradingFeature)
+  .input(
+    z.object({
+      amount_cents: z.number().int().min(MIN_PURCHASE_CENTS).max(MAX_PURCHASE_CENTS),
+    }),
+  )
+  .mutation(async (opts) => {
+    if (!config.stripeSecretKey) {
+      throw new TRPCError({
+        code: 'PRECONDITION_FAILED',
+        message: 'Stripe is not configured.',
+      });
+    }
+
+    if (!config.stripeAiGradingCreditsProductId) {
+      throw new TRPCError({
+        code: 'PRECONDITION_FAILED',
+        message: 'AI grading credits product is not configured.',
+      });
+    }
+
+    const { authn_user, course, course_instance, host } = opts.ctx;
+    const amountCents = opts.input.amount_cents;
+
+    const stripe = getStripeClient();
+    const customerId = await getOrCreateStripeCustomerId(authn_user.id, {
+      name: authn_user.name,
+    });
+
+    const urlBase = `${host}/pl/course_instance/${course_instance.id}/instructor/instance_admin/ai_grading`;
+
+    const metadata = {
+      prairielearn_type: 'ai_grading_credits',
+      prairielearn_course_id: course.id,
+      prairielearn_course_instance_id: course_instance.id,
+      prairielearn_user_id: authn_user.id,
+    };
+
+    const session = await stripe.checkout.sessions.create({
+      customer: customerId,
+      customer_update: {
+        name: 'auto',
+        address: 'auto',
+      },
+      line_items: [
+        {
+          price_data: {
+            currency: 'usd',
+            product: config.stripeAiGradingCreditsProductId,
+            unit_amount: amountCents,
+          },
+          quantity: 1,
+        },
+      ],
+      mode: 'payment',
+      success_url: `${urlBase}?checkout=success&session_id={CHECKOUT_SESSION_ID}`,
+      cancel_url: `${urlBase}?checkout=cancelled`,
+      metadata,
+      payment_intent_data: {
+        metadata,
+      },
+    });
+
+    await insertAiGradingCreditCheckoutSession({
+      agent_user_id: authn_user.id,
+      stripe_object_id: session.id,
+      course_instance_id: course_instance.id,
+      data: session,
+      amount_cents: amountCents,
+    });
+
+    return { checkoutUrl: session.url };
+  });
+
 export const aiGradingSettingsRouter = t.router({
   ...creditPoolProcedures,
   updateUseCustomApiKeys: updateUseCustomApiKeysMutation,
   addCredential: addCredentialMutation,
   deleteCredential: deleteCredentialMutation,
+  createCreditCheckoutSession: createCreditCheckoutSessionMutation,
 });
 
 export type AiGradingSettingsRouter = typeof aiGradingSettingsRouter;

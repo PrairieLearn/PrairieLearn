@@ -67,6 +67,16 @@ router.get(
       config.secretKey,
     );
 
+    const stripePurchasingEnabled =
+      !!config.stripeSecretKey && !!config.stripeAiGradingCreditsProductId;
+
+    const checkoutStatus =
+      req.query.checkout === 'success'
+        ? 'success'
+        : req.query.checkout === 'cancelled'
+          ? 'cancelled'
+          : null;
+
     res.send(
       PageLayout({
         resLocals: res.locals,
@@ -85,6 +95,8 @@ router.get(
               canEdit={!!canEdit}
               isDevMode={config.devMode}
               aiGradingModelSelectionEnabled={aiGradingModelSelectionEnabled}
+              stripePurchasingEnabled={stripePurchasingEnabled}
+              initialCheckoutStatus={checkoutStatus}
             />
           </Hydrate>
         ),

@@ -1,6 +1,6 @@
-import { QueryClient, useMutation } from '@tanstack/react-query';
+import { QueryClient, useMutation, useQueryClient } from '@tanstack/react-query';
 import clsx from 'clsx';
-import { useState } from 'react';
+import { useEffect, useState } from 'react';
 import { Alert, Form, Modal } from 'react-bootstrap';
 import { useForm } from 'react-hook-form';
 
@@ -209,6 +209,8 @@ export function InstructorInstanceAdminAiGrading({
   canEdit,
   isDevMode,
   aiGradingModelSelectionEnabled,
+  stripePurchasingEnabled,
+  initialCheckoutStatus,
 }: {
   trpcCsrfToken: string;
   initialUseCustomApiKeys: boolean;
@@ -216,6 +218,8 @@ export function InstructorInstanceAdminAiGrading({
   canEdit: boolean;
   isDevMode: boolean;
   aiGradingModelSelectionEnabled: boolean;
+  stripePurchasingEnabled: boolean;
+  initialCheckoutStatus: 'success' | 'cancelled' | null;
 }) {
   const [queryClient] = useState(() => new QueryClient());
   const [trpcClient] = useState(() =>
@@ -230,6 +234,8 @@ export function InstructorInstanceAdminAiGrading({
           initialApiKeyCredentials={initialApiKeyCredentials}
           canEdit={canEdit}
           aiGradingModelSelectionEnabled={aiGradingModelSelectionEnabled}
+          stripePurchasingEnabled={stripePurchasingEnabled}
+          initialCheckoutStatus={initialCheckoutStatus}
         />
       </TRPCProvider>
     </QueryClientProviderDebug>
@@ -243,11 +249,15 @@ function AiGradingSettingsContent({
   initialApiKeyCredentials,
   canEdit,
   aiGradingModelSelectionEnabled,
+  stripePurchasingEnabled,
+  initialCheckoutStatus,
 }: {
   initialUseCustomApiKeys: boolean;
   initialApiKeyCredentials: AiGradingApiKeyCredential[];
   canEdit: boolean;
   aiGradingModelSelectionEnabled: boolean;
+  stripePurchasingEnabled: boolean;
+  initialCheckoutStatus: 'success' | 'cancelled' | null;
 }) {
   const trpc = useTRPC();
 
@@ -369,7 +379,12 @@ function AiGradingSettingsContent({
           </div>
         )}
 
-        <CreditPoolSection useCustomApiKeys={useCustomApiKeys} />
+        <CreditPoolSection
+          useCustomApiKeys={useCustomApiKeys}
+          canEdit={canEdit}
+          stripePurchasingEnabled={stripePurchasingEnabled}
+          initialCheckoutStatus={initialCheckoutStatus}
+        />
       </div>
 
       <AddApiKeyModal
@@ -402,11 +417,156 @@ function AiGradingSettingsContent({
   );
 }
 
-function CreditPoolSection({ useCustomApiKeys }: { useCustomApiKeys: boolean }) {
+function PurchaseCreditsModal({
+  show,
+  onHide,
+  onExited,
+}: {
+  show: boolean;
+  onHide: () => void;
+  onExited: () => void;
+}) {
   const trpc = useTRPC();
+
+  const checkoutMutation = useMutation({
+    ...trpc.createCreditCheckoutSession.mutationOptions(),
+    onSuccess: (data) => {
+      if (data.checkoutUrl) {
+        window.location.href = data.checkoutUrl;
+      }
+    },
+  });
+
+  const {
+    register,
+    handleSubmit,
+    reset,
+    formState: { errors },
+  } = useForm<{ amount: string }>({
+    defaultValues: { amount: '' },
+  });
+
+  return (
+    <Modal
+      show={show}
+      backdrop="static"
+      onHide={onHide}
+      onExited={() => {
+        reset();
+        checkoutMutation.reset();
+        onExited();
+      }}
+    >
+      <Modal.Header closeButton>
+        <Modal.Title>Purchase AI grading credits</Modal.Title>
+      </Modal.Header>
+      <form
+        onSubmit={handleSubmit((data) => {
+          const dollars = Number.parseFloat(data.amount);
+          const amountCents = Math.round(dollars * 100);
+          checkoutMutation.mutate({ amount_cents: amountCents });
+        })}
+      >
+        <Modal.Body>
+          {checkoutMutation.isError && (
+            <Alert variant="danger" dismissible onClose={() => checkoutMutation.reset()}>
+              {checkoutMutation.error.message}
+            </Alert>
+          )}
+          <Form.Group className="mb-3">
+            <Form.Label htmlFor="purchase-amount">Amount (USD)</Form.Label>
+            <div className="input-group">
+              <span className="input-group-text">$</span>
+              <Form.Control
+                id="purchase-amount"
+                type="number"
+                step="0.01"
+                min="5"
+                max="1000"
+                placeholder="e.g. 50.00"
+                defaultValue=""
+                className={clsx(errors.amount && 'is-invalid')}
+                aria-invalid={!!errors.amount}
+                aria-errormessage={errors.amount ? 'purchase-amount-error' : undefined}
+                {...register('amount', {
+                  required: 'Amount is required',
+                  validate: (value) => {
+                    const num = Number.parseFloat(value);
+                    if (Number.isNaN(num)) return 'Enter a valid number';
+                    if (num < 5) return 'Minimum purchase is $5.00';
+                    if (num > 1000) return 'Maximum purchase is $1,000.00';
+                    return true;
+                  },
+                })}
+              />
+            </div>
+            {errors.amount && (
+              <div className="text-danger small mt-1" id="purchase-amount-error">
+                {errors.amount.message}
+              </div>
+            )}
+            <div className="text-muted small mt-2">
+              Credits will be added to this course instance as non-transferable credits.
+            </div>
+          </Form.Group>
+        </Modal.Body>
+        <Modal.Footer>
+          <button
+            type="button"
+            className="btn btn-outline-secondary"
+            disabled={checkoutMutation.isPending}
+            onClick={onHide}
+          >
+            Cancel
+          </button>
+          <button type="submit" className="btn btn-primary" disabled={checkoutMutation.isPending}>
+            {checkoutMutation.isPending ? 'Redirecting...' : 'Continue to payment'}
+          </button>
+        </Modal.Footer>
+      </form>
+    </Modal>
+  );
+}
+
+function CreditPoolSection({
+  useCustomApiKeys,
+  canEdit,
+  stripePurchasingEnabled,
+  initialCheckoutStatus,
+}: {
+  useCustomApiKeys: boolean;
+  canEdit: boolean;
+  stripePurchasingEnabled: boolean;
+  initialCheckoutStatus: 'success' | 'cancelled' | null;
+}) {
+  const trpc = useTRPC();
+  const queryClient = useQueryClient();
+  const purchaseModalState = useModalState();
+  const [checkoutStatus, setCheckoutStatus] = useState(initialCheckoutStatus);
+
+  useEffect(() => {
+    if (initialCheckoutStatus === 'success') {
+      // Refetch credit pool data after a successful purchase.
+      void queryClient.invalidateQueries({ queryKey: trpc.creditPool.queryKey() });
+      void queryClient.invalidateQueries({
+        queryKey: trpc.creditPoolChanges.queryKey({ page: 1 }),
+      });
+    }
+  }, [initialCheckoutStatus, queryClient, trpc]);
 
   return (
     <div className="border-top pt-3 mt-3">
+      {checkoutStatus === 'success' && (
+        <Alert variant="success" dismissible onClose={() => setCheckoutStatus(null)}>
+          <i className="bi bi-check-circle-fill me-2" aria-hidden="true" />
+          Payment successful! Credits have been added to your pool.
+        </Alert>
+      )}
+      {checkoutStatus === 'cancelled' && (
+        <Alert variant="info" dismissible onClose={() => setCheckoutStatus(null)}>
+          Payment was cancelled. No credits were added.
+        </Alert>
+      )}
       <CreditPoolDashboard
         trpc={trpc}
         balanceContext="instructor"
@@ -415,12 +575,24 @@ function CreditPoolSection({ useCustomApiKeys }: { useCustomApiKeys: boolean }) 
           <>
             <div
               className={clsx(
-                'd-flex align-items-center gap-2',
+                'd-flex justify-content-between align-items-center',
                 useCustomApiKeys ? 'mb-1' : 'mb-3',
               )}
             >
-              <h2 className="h5 mb-0">AI grading credits</h2>
-              {useCustomApiKeys && <span className="badge text-bg-secondary">Inactive</span>}
+              <div className="d-flex align-items-center gap-2">
+                <h2 className="h5 mb-0">AI grading credits</h2>
+                {useCustomApiKeys && <span className="badge text-bg-secondary">Inactive</span>}
+              </div>
+              {stripePurchasingEnabled && canEdit && (
+                <button
+                  type="button"
+                  className="btn btn-sm btn-primary d-flex align-items-center gap-2"
+                  onClick={() => purchaseModalState.showWithData(null)}
+                >
+                  <i className="bi bi-cart-plus" aria-hidden="true" />
+                  Purchase credits
+                </button>
+              )}
             </div>
             {useCustomApiKeys && (
               <p className="text-muted small mb-3">
@@ -430,6 +602,7 @@ function CreditPoolSection({ useCustomApiKeys }: { useCustomApiKeys: boolean }) 
           </>
         }
       />
+      <PurchaseCreditsModal {...purchaseModalState} />
     </div>
   );
 }

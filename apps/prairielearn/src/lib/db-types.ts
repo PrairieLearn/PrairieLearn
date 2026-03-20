@@ -227,6 +227,19 @@ export const AdministratorSchema = z.object({
 });
 export type Administrator = z.infer<typeof AdministratorSchema>;
 
+export const AiGradingCreditCheckoutSessionSchema = z.object({
+  agent_user_id: IdSchema,
+  amount_cents: z.number(),
+  completed_at: DateFromISOString.nullable(),
+  course_instance_id: IdSchema,
+  created_at: DateFromISOString,
+  credits_added: z.boolean(),
+  data: z.any(),
+  id: IdSchema,
+  stripe_object_id: z.string(),
+});
+export type AiGradingCreditCheckoutSession = z.infer<typeof AiGradingCreditCheckoutSessionSchema>;
+
 export const AiGradingCreditPoolChangeSchema = z.object({
   ai_grading_job_id: IdSchema.nullable(),
   assessment_question_id: IdSchema.nullable(),
