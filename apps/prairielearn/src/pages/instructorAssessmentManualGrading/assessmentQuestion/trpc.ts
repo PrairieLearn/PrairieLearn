@@ -7,6 +7,7 @@ import { execute } from '@prairielearn/postgres';
 import { run } from '@prairielearn/run';
 
 import { estimateAiGradingCost } from '../../../ee/lib/ai-grading/ai-grading-cost-estimation.js';
+import { getAvailableAiGradingProviders } from '../../../ee/lib/ai-grading/ai-grading-credentials.js';
 import {
   AI_GRADING_MODELS,
   AI_GRADING_MODEL_IDS,
@@ -211,6 +212,7 @@ const getAiGradingModalDataQuery = t.procedure
       avg_input_tokens_per_submission: costEstimate.avg_input_tokens_per_submission,
       estimated_output_tokens: costEstimate.estimated_output_tokens,
       has_images: costEstimate.has_images,
+      estimation_reliable: costEstimate.estimation_reliable,
       credit_pool,
       model_pricing,
       infrastructure_fee_percent: config.aiGradingInfrastructureFeePercent,
@@ -243,6 +245,29 @@ const aiGradeInstanceQuestionMutation = t.procedure
       });
     }
 
+    // Validate that the selected model's provider has a configured API key.
+    const modelConfig = AI_GRADING_MODELS.find((m) => m.modelId === opts.input.model_id);
+    if (!modelConfig) {
+      throw new TRPCError({
+        code: 'BAD_REQUEST',
+        message: `Unknown model: ${opts.input.model_id}`,
+      });
+    }
+    const availableProviders = await getAvailableAiGradingProviders(opts.ctx.course_instance);
+    if (!availableProviders.includes(modelConfig.provider)) {
+      throw new TRPCError({
+        code: 'BAD_REQUEST',
+        message: `No API key configured for provider: ${modelConfig.provider}`,
+      });
+    }
+
+    // Persist the selected model before starting the grading job so that
+    // a failure after this point doesn't cause duplicate jobs on retry.
+    await execute(
+      'UPDATE assessment_questions SET ai_grading_preferred_model = $model_id WHERE id = $id',
+      { model_id: opts.input.model_id, id: opts.ctx.assessment_question.id },
+    );
+
     const job_sequence_id = await aiGrade({
       question: opts.ctx.question,
       course: opts.ctx.course,
@@ -262,12 +287,6 @@ const aiGradeInstanceQuestionMutation = t.procedure
         return opts.input.selection;
       }),
     });
-
-    // Persist the selected model as the preferred model for this assessment question.
-    await execute(
-      'UPDATE assessment_questions SET ai_grading_preferred_model = $model_id WHERE id = $id',
-      { model_id: opts.input.model_id, id: opts.ctx.assessment_question.id },
-    );
 
     const job_sequence_token = generateJobSequenceToken(job_sequence_id);
     return { job_sequence_id, job_sequence_token };

@@ -54,17 +54,14 @@ function getTitle(modalState: AiGradingModelSelectionModalState): string {
   }
 }
 
-const PROVIDER_INFO: Record<EnumAiGradingProvider, { icon: string; sublabel: string }> = {
+const PROVIDER_INFO: Record<EnumAiGradingProvider, { sublabel: string }> = {
   openai: {
-    icon: 'fas fa-pen-to-square',
     sublabel: 'General grading',
   },
   google: {
-    icon: 'fas fa-camera',
     sublabel: 'Images & multimodal',
   },
   anthropic: {
-    icon: 'fas fa-code',
     sublabel: 'Code & reasoning',
   },
 };
@@ -185,7 +182,6 @@ export function AiGradingModelSelectionModal({
         </Modal.Header>
 
         <Modal.Body>
-          {/* Provider tabs — 3 columns on md+, stacked on mobile */}
           <div className="text-muted small fw-semibold mb-2">Provider</div>
           <div role="radiogroup" aria-label="Select provider" className="row g-2">
             {providers.map((provider) => {
@@ -214,7 +210,6 @@ export function AiGradingModelSelectionModal({
                     }}
                   >
                     <div className={clsx('fw-semibold', { 'text-primary': isActive })}>
-                      <i className={clsx(info.icon, 'me-1')} aria-hidden="true" />
                       {AI_GRADING_PROVIDER_DISPLAY_NAMES[provider]}
                     </div>
                     <div className="text-muted small">{info.sublabel}</div>
@@ -226,7 +221,12 @@ export function AiGradingModelSelectionModal({
           </div>
 
           {/* Model options for active provider */}
-          <div className="text-muted small fw-semibold mt-3 mb-2">Model</div>
+          <div className="d-flex align-items-center justify-content-between mt-3 mb-2">
+            <div className="text-muted small fw-semibold">Model</div>
+            {data && !data.using_custom_api_keys && (
+              <div className="text-muted small fw-semibold">Estimated cost</div>
+            )}
+          </div>
           <div className="d-flex flex-column gap-2">
             {AI_GRADING_MODELS.filter((m) => m.provider === activeProvider).map((model) => {
               const isSelected = selectedModel === model.modelId;
@@ -298,8 +298,14 @@ export function AiGradingModelSelectionModal({
             </div>
           )}
 
+          {data && !data.estimation_reliable && (
+            <Alert variant="warning" className="mt-3 mb-0">
+              Cost estimates may be inaccurate. All sampled submissions failed to render.
+            </Alert>
+          )}
+
           {data && !data.using_custom_api_keys && (
-            <div className="border rounded p-3 mt-3">
+            <div className="border rounded p-3 mt-3" aria-live="polite">
               {/* Desktop: horizontal centered layout */}
               <div className="d-none d-md-flex text-center">
                 <div className="flex-fill py-1">

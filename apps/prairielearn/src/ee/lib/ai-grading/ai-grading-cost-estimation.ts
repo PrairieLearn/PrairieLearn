@@ -61,6 +61,7 @@ export async function estimateAiGradingCost({
   avg_input_tokens_per_submission: number;
   estimated_output_tokens: number;
   has_images: boolean;
+  estimation_reliable: boolean;
 }> {
   const all_instance_questions = await selectInstanceQuestionsForAssessmentQuestion({
     assessment_question_id: assessment_question.id,
@@ -92,13 +93,18 @@ export async function estimateAiGradingCost({
       avg_input_tokens_per_submission: 0,
       estimated_output_tokens: 0,
       has_images: false,
+      estimation_reliable: true,
     };
   }
 
-  // Take a random sample of submissions to estimate token counts.
+  // Take a random sample of submissions to estimate token counts (Fisher-Yates).
   const sampleSize = Math.min(20, num_to_grade);
-  const shuffled = [...filtered_instance_questions].sort(() => Math.random() - 0.5);
-  const sampled = shuffled.slice(0, sampleSize);
+  const pool = [...filtered_instance_questions];
+  for (let i = pool.length - 1; i > 0 && pool.length - i <= sampleSize; i--) {
+    const j = Math.floor(Math.random() * (i + 1));
+    [pool[i], pool[j]] = [pool[j], pool[i]];
+  }
+  const sampled = pool.slice(pool.length - sampleSize);
 
   const { rubric, rubric_items } = await selectCompleteRubric(assessment_question.id);
   const question_course = await getQuestionCourse(question, course);
@@ -193,6 +199,13 @@ export async function estimateAiGradingCost({
     }
   }
 
+  const estimation_reliable = successCount > 0;
+  if (!estimation_reliable) {
+    logger.warn(
+      `Cost estimation: all ${sampleSize} sampled submissions failed for assessment question ${assessment_question.id}`,
+    );
+  }
+
   const avg_input_tokens_per_submission =
     successCount > 0 ? Math.ceil(totalInputTokens / successCount) : 0;
 
@@ -216,5 +229,6 @@ export async function estimateAiGradingCost({
     avg_input_tokens_per_submission,
     estimated_output_tokens,
     has_images,
+    estimation_reliable,
   };
 }

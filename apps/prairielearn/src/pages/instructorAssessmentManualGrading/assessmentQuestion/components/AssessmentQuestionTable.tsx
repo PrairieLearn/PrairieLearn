@@ -363,13 +363,16 @@ export function AssessmentQuestionTable({
     },
   });
 
-  // When the parent signals a new grading job from the modal, start tracking it.
+  // When the parent signals a new grading job from the modal, start tracking it
+  // and reset row selection so checkboxes don't remain checked after grading.
   useEffect(() => {
     if (pendingGradingJob) {
       serverJobProgress.handleAddOngoingJobSequence(
         pendingGradingJob.job_sequence_id,
         pendingGradingJob.job_sequence_token,
       );
+      // eslint-disable-next-line react-you-might-not-need-an-effect/no-adjust-state-on-prop-change, @eslint-react/hooks-extra/no-direct-set-state-in-use-effect
+      setRowSelection({});
       onPendingGradingJobHandled();
     }
   }, [pendingGradingJob, serverJobProgress, onPendingGradingJobHandled]);
@@ -445,8 +448,9 @@ export function AssessmentQuestionTable({
     );
   }, [columns, aiGradingMode]);
 
-  // Use a ref to store the current default so the parser always uses the latest value
-  // This is pretty hacky, but @reteps couldn't figure out a better way to do this.
+  // We use a ref here because the nuqs column visibility parser captures the default
+  // at creation time, but the default changes when AI grading mode toggles. The ref
+  // lets the parser always read the latest default without re-creating the parser.
   //
   // We update the ref during rendering because we need it to be up to date before we
   // run the `useEffect()` hook that updates column visibility in response to the
