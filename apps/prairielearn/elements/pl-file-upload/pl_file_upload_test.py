@@ -105,6 +105,28 @@ def test_glob_to_regex_errors(glob_pattern: str) -> None:
         file_upload.glob_to_regex(glob_pattern)
 
 
+@pytest.mark.parametrize(
+    ("pattern", "expected_output"),
+    [
+        ("*.py", "test_file.py"),
+        ("test_?.txt", "test_x.txt"),
+        ("data[0-9].csv", "data0.csv"),
+        ("report.pdf", "report.pdf"),
+        ("*", "test_file"),
+        ("**", "test_file"),
+        ("**.py", "test_file.py"),
+        ("???.log", "xxx.log"),
+        ("[abc]_file.txt", "a_file.txt"),
+        ("[!a]*.txt", "btest_file.txt"),
+        ("[!abc]_file.txt", "d_file.txt"),
+        ("[!!]test.txt", "atest.txt"),
+    ],
+)
+def test_generate_filename_from_pattern(pattern: str, expected_output: str) -> None:
+    output = file_upload.generate_filename_from_pattern(pattern)
+    assert output == expected_output
+
+
 # Function must be backward compatible (i.e., if only file-names is defined, it should
 # produce the same has as an older version that only supported file-names)
 def test_get_answer_name_backward_compatible() -> None:

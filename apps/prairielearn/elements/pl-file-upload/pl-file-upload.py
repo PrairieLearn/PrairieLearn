@@ -1,3 +1,4 @@
+import base64
 import csv
 import fnmatch
 import hashlib
@@ -352,3 +353,71 @@ def parse(element_html: str, data: pl.QuestionData) -> None:
             file_name = file.get("name", "")
             if file_name in include_set:
                 pl.add_submitted_file(data, file_name, file.get("contents", ""))
+
+
+def generate_filename_from_pattern(pattern: str) -> str:
+    """Generate a plausible filename from a glob pattern for testing."""
+
+    def replace_bracket(m: re.Match[str]) -> str:
+        content = m.group(1)
+        if content.startswith("!"):
+            # Negated class: find a character that satisfies the constraint
+            bracket_pattern = "[" + content + "]"
+            for c in "abcdefghijklmnopqrstuvwxyz0123456789":
+                if fnmatch.fnmatch(c, bracket_pattern):
+                    return c
+            return "x"
+        return content[0]
+
+    result = re.sub(r"\[([^\]]+)\]", replace_bracket, pattern)
+    result = result.replace("**", "test_file")
+    result = result.replace("*", "test_file")
+    result = result.replace("?", "x")
+    return result
+
+
+def test(element_html: str, data: pl.ElementTestData) -> None:
+    element = lxml.html.fragment_fromstring(element_html)
+
+    raw_file_names = pl.get_string_attrib(element, "file-names", FILE_NAMES_DEFAULT)
+    raw_opt_file_names = pl.get_string_attrib(
+        element, "optional-file-names", OPTIONAL_FILE_NAMES_DEFAULT
+    )
+    raw_file_patterns = pl.get_string_attrib(
+        element, "file-patterns", FILE_PATTERNS_DEFAULT
+    )
+    raw_opt_file_patterns = pl.get_string_attrib(
+        element, "optional-file-patterns", OPTIONAL_FILE_PATTERNS_DEFAULT
+    )
+
+    answer_name = get_answer_name(
+        raw_file_names, raw_opt_file_names, raw_file_patterns, raw_opt_file_patterns
+    )
+    file_names = get_file_names_as_array(raw_file_names)
+    opt_file_names = get_file_names_as_array(raw_opt_file_names)
+    file_patterns = get_file_names_as_array(raw_file_patterns)
+    opt_file_patterns = get_file_names_as_array(raw_opt_file_patterns)
+    result = data["test_type"]
+
+    if result in {"correct", "incorrect"}:
+        all_names = (
+            file_names
+            + opt_file_names
+            + [generate_filename_from_pattern(p) for p in file_patterns]
+            + [generate_filename_from_pattern(p) for p in opt_file_patterns]
+        )
+        if not all_names:
+            return
+
+        files = []
+        for name in all_names:
+            content = base64.b64encode(f"Test {result} for {name}".encode()).decode(
+                "utf-8"
+            )
+            files.append({"name": name, "contents": content})
+
+        data["raw_submitted_answers"][answer_name] = json.dumps(files)
+
+    elif result == "invalid":
+        data["raw_submitted_answers"][answer_name] = ""
+        add_format_error(answer_name, data, "No submitted answer for file upload.")

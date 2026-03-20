@@ -234,6 +234,35 @@ export async function updateAssessmentInstance(
   return updated;
 }
 
+export async function closeAssessmentInstance({
+  assessment_instance_id,
+  authn_user_id,
+  client_fingerprint_id,
+}: {
+  assessment_instance_id: string;
+  authn_user_id: string | null;
+  client_fingerprint_id: string | null;
+}): Promise<void> {
+  await sqldb.runInTransactionAsync(async () => {
+    const assessmentInstance = await sqldb.queryOptionalRow(
+      sql.select_and_lock_assessment_instance,
+      { assessment_instance_id },
+      AssessmentInstanceSchema,
+    );
+    if (assessmentInstance == null) {
+      throw new error.HttpStatusError(404, 'Assessment instance not found');
+    }
+    if (!assessmentInstance.open) {
+      throw new error.HttpStatusError(403, 'Assessment instance is not open');
+    }
+    await sqldb.execute(sql.close_assessment_instance, {
+      assessment_instance_id,
+      authn_user_id,
+      client_fingerprint_id,
+    });
+  });
+}
+
 /**
  * Grade all questions in an assessment instance and (optionally) close it.
  *
@@ -274,7 +303,12 @@ export async function gradeAssessmentInstance({
   ignoreGradeRateLimit = close || ignoreGradeRateLimit;
   ignoreRealTimeGradingDisabled = close || ignoreRealTimeGradingDisabled;
 
-  if (requireOpen || close) {
+  if (close) {
+    // If we're supposed to close the assessment, do it *before* we
+    // start grading. This avoids a race condition where the student
+    // makes an additional submission while grading is already in progress.
+    await closeAssessmentInstance({ assessment_instance_id, authn_user_id, client_fingerprint_id });
+  } else if (requireOpen) {
     await sqldb.runInTransactionAsync(async () => {
       const assessmentInstance = await sqldb.queryOptionalRow(
         sql.select_and_lock_assessment_instance,
@@ -286,17 +320,6 @@ export async function gradeAssessmentInstance({
       }
       if (!assessmentInstance.open) {
         throw new error.HttpStatusError(403, 'Assessment instance is not open');
-      }
-
-      if (close) {
-        // If we're supposed to close the assessment, do it *before* we
-        // we start grading. This avoids a race condition where the student
-        // makes an additional submission while grading is already in progress.
-        await sqldb.execute(sql.close_assessment_instance, {
-          assessment_instance_id,
-          authn_user_id,
-          client_fingerprint_id,
-        });
       }
     });
   }

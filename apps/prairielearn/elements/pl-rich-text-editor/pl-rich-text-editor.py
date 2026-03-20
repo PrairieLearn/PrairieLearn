@@ -219,3 +219,28 @@ def parse(element_html: str, data: pl.QuestionData) -> None:
     # submissions (stored as HTML) from submissions using the older version of
     # pl-rich-text-editor (potentially stored in Markdown)
     pl.add_submitted_file(data, file_name, file_contents, mimetype="text/html")
+
+
+def test(element_html: str, data: pl.ElementTestData) -> None:
+    element = lxml.html.fragment_fromstring(element_html)
+    file_name = pl.get_string_attrib(element, "file-name", FILE_NAME_DEFAULT)
+    answer_name = get_answer_name(file_name)
+    allow_blank = pl.get_boolean_attrib(element, "allow-blank", ALLOW_BLANK_DEFAULT)
+    result = data["test_type"]
+
+    if result in {"correct", "incorrect"}:
+        html_content = f"<p>Test {result}</p>"
+        data["raw_submitted_answers"][answer_name] = base64.b64encode(
+            html_content.encode("utf-8")
+        ).decode("utf-8")
+    elif result == "invalid":
+        if allow_blank:
+            # When blank is allowed, there is no truly invalid submission, so
+            # we provide valid content. The grading pipeline will treat this
+            # the same as a correct submission.
+            data["raw_submitted_answers"][answer_name] = base64.b64encode(
+                b"<p>Test content (blank allowed, no invalid state)</p>"
+            ).decode("utf-8")
+        else:
+            data["raw_submitted_answers"][answer_name] = ""
+            pl.add_files_format_error(data, f"No submitted answer for {file_name}")
