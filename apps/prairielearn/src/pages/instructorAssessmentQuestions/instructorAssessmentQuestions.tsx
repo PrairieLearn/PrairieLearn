@@ -83,7 +83,6 @@ router.get(
       'consume-public-questions',
       res.locals,
     );
-;
     const showEditor = req.query.view !== 'legacy';
 
     const pageContext = extractPageContext(res.locals, {
