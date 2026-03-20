@@ -1,0 +1,26 @@
+columns
+    ai_grading_job_id: bigint
+    assessment_question_id: bigint
+    course_instance_id: bigint not null
+    created_at: timestamp with time zone not null default CURRENT_TIMESTAMP
+    credit_after_milli_dollars: bigint not null
+    credit_before_milli_dollars: bigint not null
+    credit_type: text not null
+    delta_milli_dollars: bigint not null
+    id: bigint not null default nextval('ai_grading_credit_pool_changes_id_seq'::regclass)
+    reason: text not null
+    user_id: bigint
+
+indexes
+    ai_grading_credit_pool_changes_pkey: PRIMARY KEY (id) USING btree (id)
+    ai_grading_credit_pool_changes_ci_created_idx: USING btree (course_instance_id, created_at)
+
+check constraints
+    ai_grading_credit_pool_changes_credit_type_check: CHECK (credit_type = ANY (ARRAY['transferable'::text, 'non_transferable'::text]))
+    chk_credit_ledger_math: CHECK (credit_after_milli_dollars = (credit_before_milli_dollars + delta_milli_dollars) AND credit_before_milli_dollars >= 0 AND credit_after_milli_dollars >= 0)
+
+foreign-key constraints
+    ai_grading_credit_pool_changes_ai_grading_job_id_fkey: FOREIGN KEY (ai_grading_job_id) REFERENCES ai_grading_jobs(id) ON UPDATE CASCADE ON DELETE SET NULL
+    ai_grading_credit_pool_changes_assessment_question_id_fkey: FOREIGN KEY (assessment_question_id) REFERENCES assessment_questions(id) ON UPDATE CASCADE ON DELETE SET NULL
+    ai_grading_credit_pool_changes_course_instance_id_fkey: FOREIGN KEY (course_instance_id) REFERENCES course_instances(id) ON UPDATE CASCADE ON DELETE CASCADE
+    ai_grading_credit_pool_changes_user_id_fkey: FOREIGN KEY (user_id) REFERENCES users(id) ON UPDATE CASCADE ON DELETE SET NULL

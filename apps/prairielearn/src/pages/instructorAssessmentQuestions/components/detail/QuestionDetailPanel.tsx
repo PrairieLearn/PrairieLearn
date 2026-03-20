@@ -72,7 +72,6 @@ export function QuestionDetailPanel({
   idPrefix,
   state,
   onUpdate,
-  onDelete,
   onPickQuestion,
   onResetButtonClick,
   onFormValidChange,
@@ -86,11 +85,6 @@ export function QuestionDetailPanel({
   onUpdate: (
     questionTrackingId: string,
     question: Partial<ZoneQuestionBlockForm> | Partial<QuestionAlternativeForm>,
-    alternativeTrackingId?: string,
-  ) => void;
-  onDelete: (
-    questionTrackingId: string,
-    questionId: string,
     alternativeTrackingId?: string,
   ) => void;
   onPickQuestion: (currentSelection: SelectedItem) => void;
@@ -109,6 +103,12 @@ export function QuestionDetailPanel({
   const isAlternative = !!zoneQuestionBlock;
   const isManualGrading = questionData?.question.grading_method === 'Manual';
   const hasTitle = questionHasTitle(questionData);
+
+  const isAutoGradedWithOnlyManualPoints =
+    questionData != null &&
+    !isManualGrading &&
+    (question.manualPoints ?? zoneQuestionBlock?.manualPoints) != null &&
+    (question.autoPoints ?? zoneQuestionBlock?.autoPoints) == null;
 
   // For read-only display, use merged values (own ?? inherited)
   const autoPointsValue = question.autoPoints ?? zoneQuestionBlock?.autoPoints;
@@ -310,80 +310,86 @@ export function QuestionDetailPanel({
 
   return (
     <div className="p-3">
-      {/* Question header (title, tags, badges) — same in both modes */}
-      {questionData && (
-        <div className="mb-3">
-          {run(() => {
-            const titleContent = hasTitle ? (
-              questionData.question.title
-            ) : (
-              <span className="font-monospace">{question.id}</span>
-            );
-            return (
-              <div className="fw-semibold mb-1 d-inline-flex align-items-center">
-                {hasCoursePermissionPreview ? (
-                  <a
-                    href={getQuestionUrl({
-                      courseInstanceId,
-                      questionId: questionData.question.id,
-                    })}
-                  >
-                    {titleContent}
-                  </a>
+      {/* Question header (number, title, tags, badges) — same in both modes */}
+      <div className="mb-3">
+        <div className="fw-semibold mb-1 d-inline-flex align-items-center">
+          {questionData
+            ? run(() => {
+                const titleContent = hasTitle ? (
+                  questionData.question.title
                 ) : (
-                  titleContent
-                )}
-                {!hasTitle && (
-                  <CopyButton
-                    text={question.id}
-                    tooltipId="copy-qid"
-                    ariaLabel="Copy QID"
-                    className="ms-1"
-                  />
-                )}
-              </div>
-            );
-          })}
-          {hasTitle && (
-            <span
-              className="d-inline-flex align-items-center text-muted font-monospace"
-              style={{ fontSize: '0.75rem' }}
-            >
-              {question.id}
-              <CopyButton
-                text={question.id}
-                tooltipId="copy-qid"
-                ariaLabel="Copy QID"
-                className="ms-1"
-              />
-            </span>
-          )}
-          <div className="mt-1">
-            <span className={`badge color-${questionData.topic.color}`}>
-              {questionData.topic.name}
-            </span>
-          </div>
-          {questionData.tags && questionData.tags.length > 0 && (
-            <div className="d-flex flex-wrap gap-1 mt-1">
-              {questionData.tags.map((tag) => (
-                <span key={tag.name} className={`badge color-${tag.color}`}>
-                  {tag.name}
-                </span>
-              ))}
-            </div>
-          )}
-          {questionData.other_assessments && questionData.other_assessments.length > 0 && (
-            <div className="d-flex flex-wrap align-items-center gap-1 mt-1">
-              <AssessmentBadges
-                assessments={toAssessmentForPicker(questionData.other_assessments)}
-                courseInstanceId={courseInstanceId}
-              />
-            </div>
-          )}
+                  <span className="font-monospace">{question.id}</span>
+                );
+                return (
+                  <>
+                    {hasCoursePermissionPreview ? (
+                      <a
+                        href={getQuestionUrl({
+                          courseInstanceId,
+                          questionId: questionData.question.id,
+                        })}
+                      >
+                        {titleContent}
+                      </a>
+                    ) : (
+                      titleContent
+                    )}
+                    {!hasTitle && (
+                      <CopyButton
+                        text={question.id}
+                        tooltipId="copy-qid"
+                        ariaLabel="Copy QID"
+                        className="ms-1"
+                      />
+                    )}
+                  </>
+                );
+              })
+            : null}
         </div>
-      )}
+        {questionData && (
+          <div className="d-flex flex-column gap-1">
+            {hasTitle && (
+              <span
+                className="d-inline-flex align-items-center text-muted font-monospace"
+                style={{ fontSize: '0.75rem' }}
+              >
+                {question.id}
+                <CopyButton
+                  text={question.id}
+                  tooltipId="copy-qid"
+                  ariaLabel="Copy QID"
+                  className="ms-1"
+                />
+              </span>
+            )}
+            <div>
+              <span className={`badge color-${questionData.topic.color}`}>
+                {questionData.topic.name}
+              </span>
+            </div>
+            {questionData.tags && questionData.tags.length > 0 && (
+              <div className="d-flex flex-wrap gap-1">
+                {questionData.tags.map((tag) => (
+                  <span key={tag.name} className={`badge color-${tag.color}`}>
+                    {tag.name}
+                  </span>
+                ))}
+              </div>
+            )}
+            {questionData.other_assessments && questionData.other_assessments.length > 0 && (
+              <div className="d-flex flex-wrap align-items-center gap-1">
+                <AssessmentBadges
+                  assessments={toAssessmentForPicker(questionData.other_assessments)}
+                  courseInstanceId={courseInstanceId}
+                />
+              </div>
+            )}
+          </div>
+        )}
+      </div>
 
-      <DetailSectionHeader first={!questionData}>Settings</DetailSectionHeader>
+      <DetailSectionHeader>Settings</DetailSectionHeader>
 
       {/* QID field — edit mode only */}
       {editMode && (
@@ -445,6 +451,7 @@ export function QuestionDetailPanel({
           resetAndSave={resetAndSave}
           showAutoPointsForManual={showAutoPointsForManual}
           showMaxAutoPointsForManual={showMaxAutoPointsForManual}
+          showManualPointsOnlyForAutoGraded={isAutoGradedWithOnlyManualPoints}
           onFieldOverrideChange={(field, overridden) =>
             setOverriddenFields((prev) => ({ ...prev, [field]: overridden }))
           }
@@ -566,23 +573,6 @@ export function QuestionDetailPanel({
               </button>
             </OverlayTrigger>
           )}
-        {editMode && (
-          <OverlayTrigger
-            placement="top"
-            tooltip={{
-              props: { id: 'delete-question-tooltip' },
-              body: 'Remove this question from the assessment',
-            }}
-          >
-            <button
-              type="button"
-              className="btn btn-sm btn-outline-danger"
-              onClick={() => onDelete(questionTrackingId, question.id, alternativeTrackingId)}
-            >
-              Delete
-            </button>
-          </OverlayTrigger>
-        )}
       </div>
     </div>
   );
@@ -611,6 +601,7 @@ function PointsFields({
   resetAndSave,
   showAutoPointsForManual,
   showMaxAutoPointsForManual,
+  showManualPointsOnlyForAutoGraded,
   onFieldOverrideChange,
 }: {
   assessmentType: EnumAssessmentType;
@@ -635,6 +626,7 @@ function PointsFields({
   resetAndSave: (field: string) => void;
   showAutoPointsForManual: boolean;
   showMaxAutoPointsForManual: boolean;
+  showManualPointsOnlyForAutoGraded: boolean;
   onFieldOverrideChange: (field: string, overridden: boolean) => void;
 }) {
   const isHomework = assessmentType === 'Homework';
@@ -809,6 +801,13 @@ function PointsFields({
 
   return (
     <>
+      {showManualPointsOnlyForAutoGraded && (
+        <div className="alert alert-info small py-2 mb-2" role="alert">
+          <i className="bi bi-info-circle-fill me-1" aria-hidden="true" />
+          This question is auto-graded but only has manual points. Auto-grading results will not
+          contribute to the score.
+        </div>
+      )}
       {isManualGrading && manualPointsField}
       {(showAutoPointsForManual || showMaxAutoPointsForManual) && (
         <div className="alert alert-warning small py-2 mb-2" role="alert">
