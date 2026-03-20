@@ -22,7 +22,7 @@ BEGIN
 
     IF existing_rule_id IS NOT NULL THEN
         -- Update existing enrollment rule
-        UPDATE assessment_access_control SET
+        UPDATE assessment_access_control_rules SET
             enabled = (rule_data ->> 'enabled')::boolean,
             list_before_release = (rule_data ->> 'list_before_release')::boolean,
             date_control_overridden = (rule_data ->> 'date_control_overridden')::boolean,
@@ -48,11 +48,13 @@ BEGIN
             after_complete_hide_score = (rule_data ->> 'after_complete_hide_score')::boolean,
             after_complete_show_score_again_date_overridden = (rule_data ->> 'after_complete_show_score_again_date_overridden')::boolean,
             after_complete_show_score_again_date = (rule_data ->> 'after_complete_show_score_again_date')::timestamp with time zone
-        WHERE id = existing_rule_id
-            AND assessment_id = syncing_assessment_id
-            AND course_instance_id = syncing_course_instance_id
-            AND target_type = 'enrollment'
-        RETURNING id INTO new_rule_id;
+        FROM assessments AS a
+        WHERE assessment_access_control_rules.id = existing_rule_id
+            AND assessment_access_control_rules.assessment_id = syncing_assessment_id
+            AND a.id = assessment_access_control_rules.assessment_id
+            AND a.course_instance_id = syncing_course_instance_id
+            AND assessment_access_control_rules.target_type = 'enrollment'
+        RETURNING assessment_access_control_rules.id INTO new_rule_id;
 
         IF new_rule_id IS NULL THEN
             RAISE EXCEPTION 'Access control rule % not found for assessment % in course instance %',
@@ -61,21 +63,20 @@ BEGIN
 
         -- Delete old child rows
         DELETE FROM assessment_access_control_enrollments
-        WHERE assessment_access_control_id = new_rule_id;
-        DELETE FROM assessment_access_control_early_deadline
-        WHERE assessment_access_control_id = new_rule_id;
-        DELETE FROM assessment_access_control_late_deadline
-        WHERE assessment_access_control_id = new_rule_id;
+        WHERE assessment_access_control_rule_id = new_rule_id;
+        DELETE FROM assessment_access_control_early_deadlines
+        WHERE assessment_access_control_rule_id = new_rule_id;
+        DELETE FROM assessment_access_control_late_deadlines
+        WHERE assessment_access_control_rule_id = new_rule_id;
     ELSE
         -- Get next available number for enrollment rules. Starts at 1 (not 0)
         -- because check_first_rule_is_none requires number=0 ⟺ target_type='none'.
         SELECT COALESCE(MAX(number), 0) + 1 INTO next_number
-        FROM assessment_access_control
+        FROM assessment_access_control_rules
         WHERE assessment_id = syncing_assessment_id AND target_type = 'enrollment';
 
         -- Insert new enrollment rule
-        INSERT INTO assessment_access_control (
-            course_instance_id,
+        INSERT INTO assessment_access_control_rules (
             assessment_id,
             number,
             target_type,
@@ -105,7 +106,6 @@ BEGIN
             after_complete_show_score_again_date_overridden,
             after_complete_show_score_again_date
         ) VALUES (
-            syncing_course_instance_id,
             syncing_assessment_id,
             next_number,
             'enrollment',
@@ -138,18 +138,18 @@ BEGIN
     END IF;
 
     -- Insert enrollment targets
-    INSERT INTO assessment_access_control_enrollments (assessment_access_control_id, enrollment_id)
+    INSERT INTO assessment_access_control_enrollments (assessment_access_control_rule_id, enrollment_id)
     SELECT new_rule_id, unnest(enrollment_ids);
 
     -- Insert early deadlines
-    INSERT INTO assessment_access_control_early_deadline (assessment_access_control_id, date, credit, sort_order)
-    SELECT new_rule_id, (d ->> 'date')::timestamp with time zone, (d ->> 'credit')::integer, ordinality - 1
-    FROM UNNEST(early_deadlines_data) WITH ORDINALITY AS d;
+    INSERT INTO assessment_access_control_early_deadlines (assessment_access_control_rule_id, date, credit)
+    SELECT new_rule_id, (d ->> 'date')::timestamp with time zone, (d ->> 'credit')::integer
+    FROM UNNEST(early_deadlines_data) AS d;
 
     -- Insert late deadlines
-    INSERT INTO assessment_access_control_late_deadline (assessment_access_control_id, date, credit, sort_order)
-    SELECT new_rule_id, (d ->> 'date')::timestamp with time zone, (d ->> 'credit')::integer, ordinality - 1
-    FROM UNNEST(late_deadlines_data) WITH ORDINALITY AS d;
+    INSERT INTO assessment_access_control_late_deadlines (assessment_access_control_rule_id, date, credit)
+    SELECT new_rule_id, (d ->> 'date')::timestamp with time zone, (d ->> 'credit')::integer
+    FROM UNNEST(late_deadlines_data) AS d;
 
     RETURN new_rule_id;
 END;

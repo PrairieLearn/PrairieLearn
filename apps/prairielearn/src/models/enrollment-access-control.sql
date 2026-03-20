@@ -1,7 +1,6 @@
 -- BLOCK delete_enrollment_rules_by_ids
-DELETE FROM assessment_access_control
+DELETE FROM assessment_access_control_rules
 WHERE
   id = ANY ($ids::bigint[])
   AND target_type = 'enrollment'
-  AND assessment_id = $assessment_id
-  AND course_instance_id = $course_instance_id;
+  AND assessment_id = $assessment_id;

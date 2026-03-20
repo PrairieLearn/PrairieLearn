@@ -10,15 +10,18 @@ import type {
   PrairieTestReservation,
   StudentContext,
 } from './access-control-resolver.js';
-import { type Assessment, AssessmentAccessControlSchema, type CourseInstance } from './db-types.js';
+import {
+  type Assessment,
+  AssessmentAccessControlRuleSchema,
+  type CourseInstance,
+} from './db-types.js';
 
 const sql = loadSqlEquiv(import.meta.url);
 
 const DeadlineJsonSchema = z.array(z.object({ date: z.string(), credit: z.number() })).nullable();
 
-const AccessControlRuleRowSchema = AssessmentAccessControlSchema.omit({
+const AccessControlRuleRowSchema = AssessmentAccessControlRuleSchema.omit({
   assessment_id: true,
-  course_instance_id: true,
 }).extend({
   enrollment_ids: z.array(IdSchema),
   student_label_ids: z.array(IdSchema),
@@ -199,12 +202,11 @@ function rowToAccessControlRuleInput(row: AccessControlRuleRow): AccessControlRu
 }
 
 export async function selectAccessControlRulesForAssessment(
-  courseInstance: CourseInstance,
   assessment: Assessment,
 ): Promise<AccessControlRuleInput[]> {
   const rows = await queryRows(
     sql.select_access_control_rules_for_assessment,
-    { course_instance_id: courseInstance.id, assessment_id: assessment.id },
+    { assessment_id: assessment.id },
     AccessControlRuleRowSchema,
   );
   return rows.map(rowToAccessControlRuleInput);

@@ -210,7 +210,7 @@ export const SprocSyncAssessmentsSchema = z.object({
 // because `Team` comes before `TeamConfig` alphabetically.
 // *******************************************************************************
 
-export const AssessmentAccessControlSchema = z.object({
+export const AssessmentAccessControlRuleSchema = z.object({
   // After complete fields
   after_complete_hide_questions: z.boolean().nullable(),
   after_complete_hide_questions_again_date: DateFromISOString.nullable(),
@@ -222,7 +222,6 @@ export const AssessmentAccessControlSchema = z.object({
   after_complete_show_score_again_date_overridden: z.boolean(),
 
   assessment_id: IdSchema,
-  course_instance_id: IdSchema,
 
   // Date control fields
   date_control_after_last_deadline_allow_submissions: z.boolean().nullable(),
@@ -251,18 +250,17 @@ export const AssessmentAccessControlSchema = z.object({
   // Target type: 'none' for main rule (applies to all), 'enrollment' for individual students, 'student_label' for labels
   target_type: z.enum(['none', 'enrollment', 'student_label']),
 });
-export type AssessmentAccessControl = z.infer<typeof AssessmentAccessControlSchema>;
+export type AssessmentAccessControlRule = z.infer<typeof AssessmentAccessControlRuleSchema>;
 
 export const AssessmentAccessControlEarlyDeadlineSchema = z.object({
-  assessment_access_control_id: IdSchema,
+  assessment_access_control_rule_id: IdSchema,
   credit: z.number().int(),
   date: DateFromISOString,
   id: IdSchema,
-  sort_order: z.number(),
 });
 
 export const AssessmentAccessControlEnrollmentSchema = z.object({
-  assessment_access_control_id: IdSchema,
+  assessment_access_control_rule_id: IdSchema,
   enrollment_id: IdSchema,
   id: IdSchema,
   target_type: z.literal('enrollment'),
@@ -272,22 +270,21 @@ export type AssessmentAccessControlEnrollment = z.infer<
 >;
 
 export const AssessmentAccessControlLateDeadlineSchema = z.object({
-  assessment_access_control_id: IdSchema,
+  assessment_access_control_rule_id: IdSchema,
   credit: z.number().int(),
   date: DateFromISOString,
   id: IdSchema,
-  sort_order: z.number(),
 });
 
 export const AssessmentAccessControlPrairietestExamSchema = z.object({
-  assessment_access_control_id: IdSchema,
+  assessment_access_control_rule_id: IdSchema,
   id: IdSchema,
-  read_only: z.boolean().nullable(),
+  read_only: z.boolean(),
   uuid: z.string(),
 });
 
 export const AssessmentAccessControlStudentLabelSchema = z.object({
-  assessment_access_control_id: IdSchema,
+  assessment_access_control_rule_id: IdSchema,
   id: IdSchema,
   student_label_id: IdSchema,
   target_type: z.literal('student_label'),
@@ -1730,11 +1727,11 @@ export const TableNames = [
   'ai_grading_jobs',
   'ai_question_generation_messages',
   'ai_question_generation_prompts',
-  'assessment_access_control',
-  'assessment_access_control_early_deadline',
+  'assessment_access_control_early_deadlines',
   'assessment_access_control_enrollments',
-  'assessment_access_control_late_deadline',
-  'assessment_access_control_prairietest_exam',
+  'assessment_access_control_late_deadlines',
+  'assessment_access_control_prairietest_exams',
+  'assessment_access_control_rules',
   'assessment_access_control_student_labels',
   'alternative_groups',
   'assessment_access_rules',

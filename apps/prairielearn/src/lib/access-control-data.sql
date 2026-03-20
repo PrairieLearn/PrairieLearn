@@ -1,33 +1,33 @@
 -- BLOCK select_access_control_rules_for_assessment
 SELECT
-  aac.id,
-  aac.number,
-  aac.target_type,
-  aac.enabled,
-  aac.list_before_release,
-  aac.date_control_overridden,
-  aac.date_control_release_date,
-  aac.date_control_release_date_overridden,
-  aac.date_control_due_date,
-  aac.date_control_due_date_overridden,
-  aac.date_control_duration_minutes,
-  aac.date_control_duration_minutes_overridden,
-  aac.date_control_password,
-  aac.date_control_password_overridden,
-  aac.date_control_after_last_deadline_allow_submissions,
-  aac.date_control_after_last_deadline_credit,
-  aac.date_control_after_last_deadline_credit_overridden,
-  aac.date_control_early_deadlines_overridden,
-  aac.date_control_late_deadlines_overridden,
-  aac.after_complete_hide_questions,
-  aac.after_complete_hide_questions_again_date,
-  aac.after_complete_hide_questions_again_date_overridden,
-  aac.after_complete_hide_score,
-  aac.after_complete_show_questions_again_date,
-  aac.after_complete_show_questions_again_date_overridden,
-  aac.after_complete_show_score_again_date,
-  aac.after_complete_show_score_again_date_overridden,
-  aac.integrations_prairietest_overridden,
+  aacr.id,
+  aacr.number,
+  aacr.target_type,
+  aacr.enabled,
+  aacr.list_before_release,
+  aacr.date_control_overridden,
+  aacr.date_control_release_date,
+  aacr.date_control_release_date_overridden,
+  aacr.date_control_due_date,
+  aacr.date_control_due_date_overridden,
+  aacr.date_control_duration_minutes,
+  aacr.date_control_duration_minutes_overridden,
+  aacr.date_control_password,
+  aacr.date_control_password_overridden,
+  aacr.date_control_after_last_deadline_allow_submissions,
+  aacr.date_control_after_last_deadline_credit,
+  aacr.date_control_after_last_deadline_credit_overridden,
+  aacr.date_control_early_deadlines_overridden,
+  aacr.date_control_late_deadlines_overridden,
+  aacr.after_complete_hide_questions,
+  aacr.after_complete_hide_questions_again_date,
+  aacr.after_complete_hide_questions_again_date_overridden,
+  aacr.after_complete_hide_score,
+  aacr.after_complete_show_questions_again_date,
+  aacr.after_complete_show_questions_again_date_overridden,
+  aacr.after_complete_show_score_again_date,
+  aacr.after_complete_show_score_again_date_overridden,
+  aacr.integrations_prairietest_overridden,
   COALESCE(
     array_agg(DISTINCT ace.enrollment_id) FILTER (
       WHERE
@@ -54,74 +54,73 @@ SELECT
       jsonb_agg(
         jsonb_build_object('date', ed.date, 'credit', ed.credit)
         ORDER BY
-          ed.sort_order
+          ed.date
       )
     FROM
-      assessment_access_control_early_deadline ed
+      assessment_access_control_early_deadlines ed
     WHERE
-      ed.assessment_access_control_id = aac.id
+      ed.assessment_access_control_rule_id = aacr.id
   ) AS early_deadlines,
   (
     SELECT
       jsonb_agg(
         jsonb_build_object('date', ld.date, 'credit', ld.credit)
         ORDER BY
-          ld.sort_order
+          ld.date
       )
     FROM
-      assessment_access_control_late_deadline ld
+      assessment_access_control_late_deadlines ld
     WHERE
-      ld.assessment_access_control_id = aac.id
+      ld.assessment_access_control_rule_id = aacr.id
   ) AS late_deadlines
 FROM
-  assessment_access_control aac
-  LEFT JOIN assessment_access_control_enrollments ace ON ace.assessment_access_control_id = aac.id
-  LEFT JOIN assessment_access_control_student_labels acsl ON acsl.assessment_access_control_id = aac.id
-  LEFT JOIN assessment_access_control_prairietest_exam acpe ON acpe.assessment_access_control_id = aac.id
+  assessment_access_control_rules aacr
+  LEFT JOIN assessment_access_control_enrollments ace ON ace.assessment_access_control_rule_id = aacr.id
+  LEFT JOIN assessment_access_control_student_labels acsl ON acsl.assessment_access_control_rule_id = aacr.id
+  LEFT JOIN assessment_access_control_prairietest_exams acpe ON acpe.assessment_access_control_rule_id = aacr.id
 WHERE
-  aac.course_instance_id = $course_instance_id
-  AND aac.assessment_id = $assessment_id
+  aacr.assessment_id = $assessment_id
 GROUP BY
-  aac.id
+  aacr.id
 ORDER BY
-  CASE aac.target_type
+  CASE aacr.target_type
     WHEN 'none' THEN 0
     WHEN 'enrollment' THEN 1
     WHEN 'student_label' THEN 2
   END,
-  aac.number;
+  aacr.number;
 
 -- BLOCK select_access_control_rules_for_course_instance
 SELECT
-  aac.id,
-  aac.assessment_id,
-  aac.number,
-  aac.target_type,
-  aac.enabled,
-  aac.list_before_release,
-  aac.date_control_overridden,
-  aac.date_control_release_date,
-  aac.date_control_release_date_overridden,
-  aac.date_control_due_date,
-  aac.date_control_due_date_overridden,
-  aac.date_control_duration_minutes,
-  aac.date_control_duration_minutes_overridden,
-  aac.date_control_password,
-  aac.date_control_password_overridden,
-  aac.date_control_after_last_deadline_allow_submissions,
-  aac.date_control_after_last_deadline_credit,
-  aac.date_control_after_last_deadline_credit_overridden,
-  aac.date_control_early_deadlines_overridden,
-  aac.date_control_late_deadlines_overridden,
-  aac.after_complete_hide_questions,
-  aac.after_complete_hide_questions_again_date,
-  aac.after_complete_hide_questions_again_date_overridden,
-  aac.after_complete_hide_score,
-  aac.after_complete_show_questions_again_date,
-  aac.after_complete_show_questions_again_date_overridden,
-  aac.after_complete_show_score_again_date,
-  aac.after_complete_show_score_again_date_overridden,
-  aac.integrations_prairietest_overridden,
+  aacr.id,
+  aacr.assessment_id,
+  aacr.number,
+  aacr.target_type,
+  aacr.enabled,
+  aacr.list_before_release,
+  aacr.date_control_overridden,
+  aacr.date_control_release_date,
+  aacr.date_control_release_date_overridden,
+  aacr.date_control_due_date,
+  aacr.date_control_due_date_overridden,
+  aacr.date_control_duration_minutes,
+  aacr.date_control_duration_minutes_overridden,
+  aacr.date_control_password,
+  aacr.date_control_password_overridden,
+  aacr.date_control_after_last_deadline_allow_submissions,
+  aacr.date_control_after_last_deadline_credit,
+  aacr.date_control_after_last_deadline_credit_overridden,
+  aacr.date_control_early_deadlines_overridden,
+  aacr.date_control_late_deadlines_overridden,
+  aacr.after_complete_hide_questions,
+  aacr.after_complete_hide_questions_again_date,
+  aacr.after_complete_hide_questions_again_date_overridden,
+  aacr.after_complete_hide_score,
+  aacr.after_complete_show_questions_again_date,
+  aacr.after_complete_show_questions_again_date_overridden,
+  aacr.after_complete_show_score_again_date,
+  aacr.after_complete_show_score_again_date_overridden,
+  aacr.integrations_prairietest_overridden,
   COALESCE(
     array_agg(DISTINCT ace.enrollment_id) FILTER (
       WHERE
@@ -148,42 +147,43 @@ SELECT
       jsonb_agg(
         jsonb_build_object('date', ed.date, 'credit', ed.credit)
         ORDER BY
-          ed.sort_order
+          ed.date
       )
     FROM
-      assessment_access_control_early_deadline ed
+      assessment_access_control_early_deadlines ed
     WHERE
-      ed.assessment_access_control_id = aac.id
+      ed.assessment_access_control_rule_id = aacr.id
   ) AS early_deadlines,
   (
     SELECT
       jsonb_agg(
         jsonb_build_object('date', ld.date, 'credit', ld.credit)
         ORDER BY
-          ld.sort_order
+          ld.date
       )
     FROM
-      assessment_access_control_late_deadline ld
+      assessment_access_control_late_deadlines ld
     WHERE
-      ld.assessment_access_control_id = aac.id
+      ld.assessment_access_control_rule_id = aacr.id
   ) AS late_deadlines
 FROM
-  assessment_access_control aac
-  LEFT JOIN assessment_access_control_enrollments ace ON ace.assessment_access_control_id = aac.id
-  LEFT JOIN assessment_access_control_student_labels acsl ON acsl.assessment_access_control_id = aac.id
-  LEFT JOIN assessment_access_control_prairietest_exam acpe ON acpe.assessment_access_control_id = aac.id
+  assessment_access_control_rules aacr
+  JOIN assessments a ON a.id = aacr.assessment_id
+  LEFT JOIN assessment_access_control_enrollments ace ON ace.assessment_access_control_rule_id = aacr.id
+  LEFT JOIN assessment_access_control_student_labels acsl ON acsl.assessment_access_control_rule_id = aacr.id
+  LEFT JOIN assessment_access_control_prairietest_exams acpe ON acpe.assessment_access_control_rule_id = aacr.id
 WHERE
-  aac.course_instance_id = $course_instance_id
+  a.course_instance_id = $course_instance_id
 GROUP BY
-  aac.id
+  aacr.id
 ORDER BY
-  aac.assessment_id,
-  CASE aac.target_type
+  aacr.assessment_id,
+  CASE aacr.target_type
     WHEN 'none' THEN 0
     WHEN 'enrollment' THEN 1
     WHEN 'student_label' THEN 2
   END,
-  aac.number;
+  aacr.number;
 
 -- BLOCK select_student_context
 SELECT

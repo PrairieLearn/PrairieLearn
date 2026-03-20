@@ -5,13 +5,16 @@ import { loadSqlEquiv, queryRows } from '@prairielearn/postgres';
 import type { AccessControlJsonWithId as SharedAccessControlJsonWithId } from '../pages/instructorAssessmentAccess/components/types.js';
 import type { AccessControlJson } from '../schemas/accessControl.js';
 
-import { type Assessment, AssessmentAccessControlSchema } from './db-types.js';
+import {
+  type Assessment,
+  AssessmentAccessControlPrairietestExamSchema,
+  AssessmentAccessControlRuleSchema,
+} from './db-types.js';
 
 const sql = loadSqlEquiv(import.meta.url);
 
-const AccessControlRuleBaseSchema = AssessmentAccessControlSchema.omit({
+const AccessControlRuleBaseSchema = AssessmentAccessControlRuleSchema.omit({
   assessment_id: true,
-  course_instance_id: true,
 });
 
 const DeadlineArraySchema = z.array(z.object({ date: z.string(), credit: z.number() })).nullable();
@@ -22,7 +25,7 @@ const JsonRuleRowSchema = AccessControlRuleBaseSchema.extend({
   early_deadlines: DeadlineArraySchema,
   late_deadlines: DeadlineArraySchema,
   prairietest_exams: z
-    .array(z.object({ examUuid: z.string(), readOnly: z.boolean().nullable() }))
+    .array(AssessmentAccessControlPrairietestExamSchema.pick({ uuid: true, read_only: true }))
     .nullable(),
 });
 
@@ -132,8 +135,8 @@ function dbRowToAccessControlJson(row: JsonRuleRow): AccessControlJson & { id: s
     integrations.prairieTest = {
       enabled: true,
       exams: row.prairietest_exams.map((e) => ({
-        examUuid: e.examUuid,
-        readOnly: e.readOnly ?? undefined,
+        examUuid: e.uuid,
+        readOnly: e.read_only,
       })),
     };
   }
@@ -153,7 +156,7 @@ const EnrollmentRuleRowSchema = AccessControlRuleBaseSchema.extend({
   enrollments: z
     .array(
       z.object({
-        enrollmentId: z.string(),
+        enrollment_id: z.string(),
         uid: z.string(),
         name: z.string().nullable(),
       }),
@@ -170,7 +173,11 @@ function dbEnrollmentRowToAccessControlJson(row: EnrollmentRuleRow): AccessContr
   return {
     ...base,
     ruleType: 'enrollment',
-    individuals: row.enrollments ?? [],
+    individuals: (row.enrollments ?? []).map((e) => ({
+      enrollmentId: e.enrollment_id,
+      uid: e.uid,
+      name: e.name,
+    })),
   };
 }
 

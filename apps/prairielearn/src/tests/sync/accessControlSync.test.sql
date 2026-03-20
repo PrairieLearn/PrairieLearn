@@ -21,8 +21,7 @@ RETURNING
 
 -- BLOCK insert_enrollment_access_control_rule
 INSERT INTO
-  assessment_access_control (
-    course_instance_id,
+  assessment_access_control_rules (
     assessment_id,
     enabled,
     list_before_release,
@@ -33,7 +32,6 @@ INSERT INTO
   )
 VALUES
   (
-    $course_instance_id,
     $assessment_id,
     true,
     true,
@@ -47,9 +45,12 @@ RETURNING
 
 -- BLOCK insert_enrollment_target
 INSERT INTO
-  assessment_access_control_enrollments (assessment_access_control_id, enrollment_id)
+  assessment_access_control_enrollments (assessment_access_control_rule_id, enrollment_id)
 VALUES
-  ($assessment_access_control_id, $enrollment_id);
+  (
+    $assessment_access_control_rule_id,
+    $enrollment_id
+  );
 
 -- BLOCK select_student_label_id
 SELECT
@@ -62,9 +63,15 @@ WHERE
 
 -- BLOCK insert_student_label_target
 INSERT INTO
-  assessment_access_control_student_labels (assessment_access_control_id, student_label_id)
+  assessment_access_control_student_labels (
+    assessment_access_control_rule_id,
+    student_label_id
+  )
 VALUES
-  ($assessment_access_control_id, $student_label_id);
+  (
+    $assessment_access_control_rule_id,
+    $student_label_id
+  );
 
 -- BLOCK insert_pt_exam
 INSERT INTO

@@ -18,7 +18,7 @@ export const requiredTableFields = {
   institutions: ['institution_id'],
   enrollments: ['course_instance_id', 'subject_user_id', 'action_detail'],
   student_label_enrollments: ['enrollment_id', 'action_detail'],
-  assessment_access_control: ['assessment_id'],
+  assessment_access_control_rules: ['assessment_id'],
 } as const satisfies Partial<Record<TableName, readonly string[]>>;
 
 /**
@@ -90,7 +90,7 @@ export type SupportedTableActionCombination =
       actionDetail?: 'enrollment_added' | 'enrollment_removed' | null;
     }
   | {
-      tableName: 'assessment_access_control';
+      tableName: 'assessment_access_control_rules';
       actionDetail?: 'rule_saved' | 'rule_deleted' | null;
     };
 export type SupportedActionsForTable<T extends TableName> = NonNullable<

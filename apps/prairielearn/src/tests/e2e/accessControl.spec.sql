@@ -2,7 +2,7 @@
 SELECT
   *
 FROM
-  assessment_access_control
+  assessment_access_control_rules
 WHERE
   assessment_id = $assessment_id
 ORDER BY

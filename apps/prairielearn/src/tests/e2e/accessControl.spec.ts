@@ -2,7 +2,7 @@ import type { Locator, Page } from '@playwright/test';
 
 import * as sqldb from '@prairielearn/postgres';
 
-import { AssessmentAccessControlSchema } from '../../lib/db-types.js';
+import { AssessmentAccessControlRuleSchema } from '../../lib/db-types.js';
 import { features } from '../../lib/features/index.js';
 import { selectAssessmentByTid } from '../../models/assessment.js';
 import { syncCourse } from '../helperCourse.js';
@@ -15,7 +15,7 @@ async function getAccessControlRecords(assessmentId: string) {
   return sqldb.queryRows(
     sql.select_access_controls,
     { assessment_id: assessmentId },
-    AssessmentAccessControlSchema,
+    AssessmentAccessControlRuleSchema,
   );
 }
 

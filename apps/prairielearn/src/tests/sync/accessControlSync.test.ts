@@ -12,7 +12,7 @@ import {
   AssessmentAccessControlEarlyDeadlineSchema,
   AssessmentAccessControlEnrollmentSchema,
   AssessmentAccessControlLateDeadlineSchema,
-  AssessmentAccessControlSchema,
+  AssessmentAccessControlRuleSchema,
   AssessmentAccessControlStudentLabelSchema,
   AssessmentSchema,
   CourseInstanceSchema,
@@ -55,25 +55,13 @@ async function getAssessment(assessmentTid: string) {
   return assessment;
 }
 
-async function getCourseInstance(courseInstanceShortName: string) {
-  const syncedCourseInstances = await util.dumpTableWithSchema(
-    'course_instances',
-    CourseInstanceSchema,
-  );
-  const courseInstance = syncedCourseInstances.find(
-    (ci) => ci.short_name === courseInstanceShortName,
-  );
-  assert.isOk(courseInstance);
-  return courseInstance;
-}
-
 async function findSyncedAccessControlRules(assessmentId: string) {
   const assessment = await getAssessment(assessmentId);
   const dbId = assessment.id;
 
   const allRules = await util.dumpTableWithSchema(
-    'assessment_access_control',
-    AssessmentAccessControlSchema,
+    'assessment_access_control_rules',
+    AssessmentAccessControlRuleSchema,
   );
   return allRules
     .filter((rule) => idsEqual(rule.assessment_id, dbId))
@@ -280,11 +268,11 @@ describe('Access control syncing', () => {
       assert.equal(syncedRules[0].date_control_early_deadlines_overridden, true);
 
       const allDeadlines = await util.dumpTableWithSchema(
-        'assessment_access_control_early_deadline',
+        'assessment_access_control_early_deadlines',
         AssessmentAccessControlEarlyDeadlineSchema,
       );
       const deadlines = allDeadlines.filter((d) =>
-        idsEqual(d.assessment_access_control_id, syncedRules[0].id),
+        idsEqual(d.assessment_access_control_rule_id, syncedRules[0].id),
       );
       assert.equal(deadlines.length, 2);
       assert.equal(deadlines[0].credit, 120);
@@ -304,11 +292,11 @@ describe('Access control syncing', () => {
       assert.equal(syncedRules[0].date_control_late_deadlines_overridden, true);
 
       const allDeadlines = await util.dumpTableWithSchema(
-        'assessment_access_control_late_deadline',
+        'assessment_access_control_late_deadlines',
         AssessmentAccessControlLateDeadlineSchema,
       );
       const deadlines = allDeadlines.filter((d) =>
-        idsEqual(d.assessment_access_control_id, syncedRules[0].id),
+        idsEqual(d.assessment_access_control_rule_id, syncedRules[0].id),
       );
       assert.equal(deadlines.length, 2);
       assert.equal(deadlines[0].credit, 80);
@@ -327,11 +315,11 @@ describe('Access control syncing', () => {
       assert.equal(syncedRules[0].date_control_late_deadlines_overridden, true);
 
       const allDeadlines = await util.dumpTableWithSchema(
-        'assessment_access_control_late_deadline',
+        'assessment_access_control_late_deadlines',
         AssessmentAccessControlLateDeadlineSchema,
       );
       const deadlines = allDeadlines.filter((d) =>
-        idsEqual(d.assessment_access_control_id, syncedRules[0].id),
+        idsEqual(d.assessment_access_control_rule_id, syncedRules[0].id),
       );
       assert.equal(deadlines.length, 0);
     });
@@ -353,11 +341,11 @@ describe('Access control syncing', () => {
 
       const initialRules = await findSyncedAccessControlRules(util.ASSESSMENT_ID);
       const allInitialDeadlines = await util.dumpTableWithSchema(
-        'assessment_access_control_late_deadline',
+        'assessment_access_control_late_deadlines',
         AssessmentAccessControlLateDeadlineSchema,
       );
       const initialDeadlines = allInitialDeadlines.filter((d) =>
-        idsEqual(d.assessment_access_control_id, initialRules[0].id),
+        idsEqual(d.assessment_access_control_rule_id, initialRules[0].id),
       );
       assert.equal(initialDeadlines.length, 1);
 
@@ -370,12 +358,12 @@ describe('Access control syncing', () => {
 
       const syncedRules = await findSyncedAccessControlRules(util.ASSESSMENT_ID);
       const allSyncedDeadlines = await util.dumpTableWithSchema(
-        'assessment_access_control_late_deadline',
+        'assessment_access_control_late_deadlines',
         AssessmentAccessControlLateDeadlineSchema,
       );
 
       const syncedDeadlines = allSyncedDeadlines.filter((d) =>
-        idsEqual(d.assessment_access_control_id, syncedRules[0].id),
+        idsEqual(d.assessment_access_control_rule_id, syncedRules[0].id),
       );
       assert.equal(syncedDeadlines.length, 0);
     });
@@ -640,11 +628,11 @@ describe('Access control syncing', () => {
       );
 
       await sqldb.execute(sql.insert_enrollment_target, {
-        assessment_access_control_id: enrollmentRule1Id,
+        assessment_access_control_rule_id: enrollmentRule1Id,
         enrollment_id: enrollment1Id,
       });
       await sqldb.execute(sql.insert_enrollment_target, {
-        assessment_access_control_id: enrollmentRule2Id,
+        assessment_access_control_rule_id: enrollmentRule2Id,
         enrollment_id: enrollment2Id,
       });
 
@@ -680,8 +668,8 @@ describe('Access control syncing', () => {
       );
       const enrollmentTargets = allEnrollments.filter(
         (e) =>
-          idsEqual(e.assessment_access_control_id, allRules[2].id) ||
-          idsEqual(e.assessment_access_control_id, allRules[3].id),
+          idsEqual(e.assessment_access_control_rule_id, allRules[2].id) ||
+          idsEqual(e.assessment_access_control_rule_id, allRules[3].id),
       );
       assert.equal(enrollmentTargets.length, 2);
 
@@ -713,8 +701,8 @@ describe('Access control syncing', () => {
       );
       const finalTargets = finalEnrollments.filter(
         (e) =>
-          idsEqual(e.assessment_access_control_id, allRules[3].id) ||
-          idsEqual(e.assessment_access_control_id, allRules[4].id),
+          idsEqual(e.assessment_access_control_rule_id, allRules[3].id) ||
+          idsEqual(e.assessment_access_control_rule_id, allRules[4].id),
       );
       assert.equal(finalTargets.length, 2);
     });
@@ -770,7 +758,7 @@ describe('Access control syncing', () => {
       );
 
       await sqldb.execute(sql.insert_enrollment_target, {
-        assessment_access_control_id: enrollmentRuleId,
+        assessment_access_control_rule_id: enrollmentRuleId,
         enrollment_id: enrollmentId,
       });
 
@@ -800,7 +788,7 @@ describe('Access control syncing', () => {
         AssessmentAccessControlEnrollmentSchema,
       );
       const enrollmentTarget = allEnrollments.find((e) =>
-        idsEqual(e.assessment_access_control_id, allRules[1].id),
+        idsEqual(e.assessment_access_control_rule_id, allRules[1].id),
       );
       assert.isOk(enrollmentTarget);
     });
@@ -856,7 +844,7 @@ describe('Access control syncing', () => {
         AssessmentAccessControlStudentLabelSchema,
       );
       const groupTargets = allStudentLabels.filter((t) =>
-        idsEqual(t.assessment_access_control_id, syncedRules[1].id),
+        idsEqual(t.assessment_access_control_rule_id, syncedRules[1].id),
       );
       assert.equal(groupTargets.length, 1);
     });
@@ -942,7 +930,7 @@ describe('Access control syncing', () => {
       );
 
       await sqldb.execute(sql.insert_enrollment_target, {
-        assessment_access_control_id: ruleId,
+        assessment_access_control_rule_id: ruleId,
         enrollment_id: enrollmentId,
       });
 
@@ -967,7 +955,7 @@ describe('Access control syncing', () => {
       let errorThrown = false;
       try {
         await sqldb.execute(sql.insert_student_label_target, {
-          assessment_access_control_id: ruleId,
+          assessment_access_control_rule_id: ruleId,
           student_label_id: studentLabelId,
         });
       } catch (error) {
@@ -1393,8 +1381,7 @@ describe('Access control syncing', () => {
       await util.writeAndSyncCourseData(courseData);
 
       const assessment = await getAssessment(util.ASSESSMENT_ID);
-      const courseInstance = await getCourseInstance(util.COURSE_INSTANCE_ID);
-      const rules = await selectAccessControlRulesForAssessment(courseInstance, assessment);
+      const rules = await selectAccessControlRulesForAssessment(assessment);
       const override = rules.find((r) => r.number > 0);
       assert.isOk(override);
       assert.equal(override.rule.dateControl?.afterLastDeadline?.allowSubmissions, false);
@@ -1417,8 +1404,7 @@ describe('Access control syncing', () => {
       await util.writeAndSyncCourseData(courseData);
 
       const assessment = await getAssessment(util.ASSESSMENT_ID);
-      const courseInstance = await getCourseInstance(util.COURSE_INSTANCE_ID);
-      const rules = await selectAccessControlRulesForAssessment(courseInstance, assessment);
+      const rules = await selectAccessControlRulesForAssessment(assessment);
       const override = rules.find((r) => r.number > 0);
       assert.isOk(override);
       assert.equal(override.rule.afterComplete?.hideQuestions, true);
@@ -1441,8 +1427,7 @@ describe('Access control syncing', () => {
       await util.writeAndSyncCourseData(courseData);
 
       const assessment = await getAssessment(util.ASSESSMENT_ID);
-      const courseInstance = await getCourseInstance(util.COURSE_INSTANCE_ID);
-      const rules = await selectAccessControlRulesForAssessment(courseInstance, assessment);
+      const rules = await selectAccessControlRulesForAssessment(assessment);
       const override = rules.find((r) => r.number > 0);
       assert.isOk(override);
       assert.equal(override.rule.afterComplete?.hideScore, true);
@@ -1467,8 +1452,7 @@ describe('Access control syncing', () => {
       await util.writeAndSyncCourseData(courseData);
 
       const assessment = await getAssessment(util.ASSESSMENT_ID);
-      const courseInstance = await getCourseInstance(util.COURSE_INSTANCE_ID);
-      const rules = await selectAccessControlRulesForAssessment(courseInstance, assessment);
+      const rules = await selectAccessControlRulesForAssessment(assessment);
       const override = rules.find((r) => r.number > 0);
       assert.isOk(override);
       assert.equal(
@@ -1493,8 +1477,7 @@ describe('Access control syncing', () => {
       await util.writeAndSyncCourseData(courseData);
 
       const assessment = await getAssessment(util.ASSESSMENT_ID);
-      const courseInstance = await getCourseInstance(util.COURSE_INSTANCE_ID);
-      const rules = await selectAccessControlRulesForAssessment(courseInstance, assessment);
+      const rules = await selectAccessControlRulesForAssessment(assessment);
       const main = rules.find((r) => r.number === 0);
       assert.isOk(main);
       // enabled: omitted in JSON → null in DB → undefined in rule (treated as enabled)

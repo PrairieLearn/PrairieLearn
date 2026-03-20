@@ -102,7 +102,6 @@ export async function deleteEnrollmentAccessControlsByIds(
   if (ids.length === 0) return;
   await execute(sql.delete_enrollment_rules_by_ids, {
     ids,
-    course_instance_id: assessment.course_instance_id,
     assessment_id: assessment.id,
   });
 }

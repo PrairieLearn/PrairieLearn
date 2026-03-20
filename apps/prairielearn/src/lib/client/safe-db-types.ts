@@ -20,7 +20,7 @@ import { type z } from 'zod';
 import {
   AccessTokenSchema as RawAccessTokenSchema,
   AlternativeGroupSchema as RawAlternativeGroupSchema,
-  AssessmentAccessControlSchema as RawAssessmentAccessControlSchema,
+  AssessmentAccessControlRuleSchema as RawAssessmentAccessControlRuleSchema,
   AssessmentInstanceSchema as RawAssessmentInstanceSchema,
   AssessmentModuleSchema as RawAssessmentModuleSchema,
   AssessmentQuestionSchema as RawAssessmentQuestionSchema,
@@ -61,11 +61,13 @@ export const StaffAlternativeGroupSchema =
   RawAlternativeGroupSchema.brand<'StaffAlternativeGroup'>();
 export type StaffAlternativeGroup = z.infer<typeof StaffAlternativeGroupSchema>;
 
-/** Assessment Access Control */
-export const RawStaffAssessmentAccessControlSchema = RawAssessmentAccessControlSchema;
-export const StaffAssessmentAccessControlSchema =
-  RawAssessmentAccessControlSchema.brand<'StaffAssessmentAccessControl'>();
-export type StaffAssessmentAccessControl = z.infer<typeof StaffAssessmentAccessControlSchema>;
+/** Assessment Access Control Rules */
+export const RawStaffAssessmentAccessControlRuleSchema = RawAssessmentAccessControlRuleSchema;
+export const StaffAssessmentAccessControlRuleSchema =
+  RawAssessmentAccessControlRuleSchema.brand<'StaffAssessmentAccessControlRule'>();
+export type StaffAssessmentAccessControlRule = z.infer<
+  typeof StaffAssessmentAccessControlRuleSchema
+>;
 
 /** Assessments */
 export const RawStaffAssessmentSchema = RawAssessmentSchema;
