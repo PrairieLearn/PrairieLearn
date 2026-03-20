@@ -16,6 +16,7 @@ export function AdministratorCourseRequests({
   coursesRoot,
   trpcCsrfToken,
   urlPrefix,
+  aiSecretsConfigured,
 }: {
   rows: CourseRequestRow[];
   institutions: AdminInstitution[];
@@ -23,6 +24,7 @@ export function AdministratorCourseRequests({
   coursesRoot: string;
   trpcCsrfToken: string;
   urlPrefix: string;
+  aiSecretsConfigured: boolean;
 }) {
   const [queryClient] = useState(() => new QueryClient());
   const [trpcClient] = useState(() => createAdministratorTrpcClient({ csrfToken: trpcCsrfToken }));
@@ -36,6 +38,7 @@ export function AdministratorCourseRequests({
           availableTimezones={availableTimezones}
           coursesRoot={coursesRoot}
           urlPrefix={urlPrefix}
+          aiSecretsConfigured={aiSecretsConfigured}
           showAll
         />
       </TRPCProvider>
