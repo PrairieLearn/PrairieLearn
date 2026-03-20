@@ -1,5 +1,7 @@
 import * as crypto from 'node:crypto';
+import * as path from 'node:path';
 
+import fs from 'fs-extra';
 import { afterAll, assert, beforeAll, beforeEach, describe, it } from 'vitest';
 
 import * as sqldb from '@prairielearn/postgres';
@@ -45,10 +47,7 @@ const TARGET_TYPE_ORDER: Record<string, number> = {
   enrollment: 2,
 };
 
-/**
- * Helper to find synced access control rules for an assessment,
- * sorted by (target_type, number).
- */
+/** Helper to find a synced assessment by TID. */
 async function getAssessment(assessmentTid: string) {
   const syncedAssessments = await util.dumpTableWithSchema('assessments', AssessmentSchema);
   const assessment = syncedAssessments.find((a) => a.tid === assessmentTid && a.deleted_at == null);
@@ -258,7 +257,7 @@ describe('Access control syncing', () => {
     it.each([
       { input: true, expected: true },
       { input: false, expected: false },
-      { input: undefined, expected: true },
+      { input: undefined, expected: false },
     ])('syncs listBeforeRelease: $input -> $expected', async ({ input, expected }) => {
       const rule = makeAccessControlRule(input !== undefined ? { listBeforeRelease: input } : {});
       const syncedRules = await syncRulesAndRead([rule]);
@@ -1049,6 +1048,107 @@ describe('Access control syncing', () => {
       assert.equal(syncedRules.length, 0, 'Rule with invalid date should not be synced');
     });
 
+    it('still rejects unknown labels when the course instance file is invalid', async () => {
+      const courseData = util.getCourseData();
+
+      courseData.courseInstances[util.COURSE_INSTANCE_ID].assessments[
+        util.ASSESSMENT_ID
+      ].accessControl = [
+        makeAccessControlRule({ dateControl: { durationMinutes: 60 } }),
+        makeAccessControlRule({
+          labels: ['foobar'],
+          dateControl: { durationMinutes: 90 },
+        }),
+      ];
+
+      const courseDir = await util.writeCourseToTempDirectory(courseData);
+      const courseInstanceInfoPath = path.join(
+        courseDir,
+        'courseInstances',
+        util.COURSE_INSTANCE_ID,
+        'infoCourseInstance.json',
+      );
+      await fs.writeJSON(courseInstanceInfoPath, {
+        uuid: courseData.courseInstances[util.COURSE_INSTANCE_ID].courseInstance.uuid,
+      });
+
+      const syncResults = await util.syncCourseData(courseDir);
+
+      assert.equal(syncResults.status, 'complete');
+      if (syncResults.status === 'complete') {
+        const courseInstance = syncResults.courseData.courseInstances[util.COURSE_INSTANCE_ID];
+        assert.isAbove(courseInstance.courseInstance.errors.length, 0);
+
+        const assessment = courseInstance.assessments[util.ASSESSMENT_ID];
+        assert.isTrue(
+          assessment.errors.some((error) => error.includes('Invalid student label(s): foobar')),
+        );
+        assert.isFalse(
+          assessment.errors.some((error) => error.includes('non-existent student labels')),
+        );
+      }
+
+      const syncedRules = await findSyncedAccessControlRules(util.ASSESSMENT_ID);
+      assert.equal(syncedRules.length, 0);
+    });
+
+    it('still syncs labels that already exist in the database when the course instance file is invalid', async () => {
+      const courseData = util.getCourseData();
+      const groupName = 'foo';
+
+      addStudentLabelToConfig(courseData, util.COURSE_INSTANCE_ID, groupName);
+      courseData.courseInstances[util.COURSE_INSTANCE_ID].assessments[
+        util.ASSESSMENT_ID
+      ].accessControl = [
+        makeAccessControlRule({ dateControl: { durationMinutes: 60 } }),
+        makeAccessControlRule({
+          labels: [groupName],
+          dateControl: { durationMinutes: 90 },
+        }),
+      ];
+
+      const courseDir = await util.writeCourseToTempDirectory(courseData);
+      await util.syncCourseData(courseDir);
+
+      courseData.courseInstances[util.COURSE_INSTANCE_ID].assessments[
+        util.ASSESSMENT_ID
+      ].accessControl = [
+        makeAccessControlRule({ dateControl: { durationMinutes: 60 } }),
+        makeAccessControlRule({
+          labels: [groupName],
+          dateControl: { durationMinutes: 120 },
+        }),
+      ];
+      await util.writeCourseToDirectory(courseData, courseDir);
+
+      const courseInstanceInfoPath = path.join(
+        courseDir,
+        'courseInstances',
+        util.COURSE_INSTANCE_ID,
+        'infoCourseInstance.json',
+      );
+      await fs.writeJSON(courseInstanceInfoPath, {
+        uuid: courseData.courseInstances[util.COURSE_INSTANCE_ID].courseInstance.uuid,
+      });
+
+      const syncResults = await util.syncCourseData(courseDir);
+
+      assert.equal(syncResults.status, 'complete');
+      if (syncResults.status === 'complete') {
+        const assessment =
+          syncResults.courseData.courseInstances[util.COURSE_INSTANCE_ID].assessments[
+            util.ASSESSMENT_ID
+          ];
+        assert.isFalse(
+          assessment.errors.some((error) => error.includes('Invalid student label(s): foo')),
+        );
+      }
+
+      const syncedRules = await findSyncedAccessControlRules(util.ASSESSMENT_ID);
+      assert.equal(syncedRules.length, 2);
+      assert.equal(syncedRules[1].date_control_duration_minutes, 120);
+    });
+
     it('rejects sync when non-assignment-level rule specifies integrations', async () => {
       const courseData = util.getCourseData();
       const groupName = 'Test Group';
@@ -1178,6 +1278,93 @@ describe('Access control syncing', () => {
       assert.equal(syncedRules2.length, 1);
       assert.equal(syncedRules2[0].date_control_duration_minutes, 90);
     });
+
+    it('does not let duplicate labels in one assessment block others from syncing', async () => {
+      const courseData = util.getCourseData();
+      const groupName = 'Test Group';
+
+      addStudentLabelToConfig(courseData, util.COURSE_INSTANCE_ID, groupName);
+
+      courseData.courseInstances[util.COURSE_INSTANCE_ID].assessments.test2 = {
+        uuid: '15d421af-a8d4-45a9-bd74-78e8b222f833',
+        title: 'Test assessment 2',
+        type: 'Exam',
+        set: 'PRIVATE SET',
+        number: '102',
+        zones: [],
+      };
+
+      courseData.courseInstances[util.COURSE_INSTANCE_ID].assessments[
+        util.ASSESSMENT_ID
+      ].accessControl = [makeAccessControlRule({ dateControl: { durationMinutes: 60 } })];
+      courseData.courseInstances[util.COURSE_INSTANCE_ID].assessments.test2.accessControl = [
+        makeAccessControlRule({ dateControl: { durationMinutes: 75 } }),
+        makeAccessControlRule({
+          labels: [groupName, groupName],
+          dateControl: { durationMinutes: 90 },
+        }),
+      ];
+
+      const { syncResults } = await util.writeAndSyncCourseData(courseData);
+
+      assert.equal(syncResults.status, 'complete');
+      if (syncResults.status === 'complete') {
+        const invalidAssessment =
+          syncResults.courseData.courseInstances[util.COURSE_INSTANCE_ID].assessments.test2;
+        assert.isOk(invalidAssessment.errors);
+        assert.isTrue(
+          invalidAssessment.errors.some((error) => error.includes('duplicate student labels')),
+        );
+      }
+
+      const syncedRules1 = await findSyncedAccessControlRules(util.ASSESSMENT_ID);
+      const syncedRules2 = await findSyncedAccessControlRules('test2');
+
+      assert.equal(syncedRules1.length, 1);
+      assert.equal(syncedRules1[0].date_control_duration_minutes, 60);
+      assert.equal(syncedRules2.length, 0);
+    });
+
+    it('does not let non-existent labels in one assessment block others from syncing', async () => {
+      const courseData = util.getCourseData();
+
+      courseData.courseInstances[util.COURSE_INSTANCE_ID].assessments.test2 = {
+        uuid: '0c4bb13b-dbdb-4cd5-8e1a-e1dadd0a55f1',
+        title: 'Test assessment 2',
+        type: 'Exam',
+        set: 'PRIVATE SET',
+        number: '102',
+        zones: [],
+      };
+
+      courseData.courseInstances[util.COURSE_INSTANCE_ID].assessments[
+        util.ASSESSMENT_ID
+      ].accessControl = [makeAccessControlRule({ dateControl: { durationMinutes: 60 } })];
+      courseData.courseInstances[util.COURSE_INSTANCE_ID].assessments.test2.accessControl = [
+        makeAccessControlRule({ dateControl: { durationMinutes: 75 } }),
+        makeAccessControlRule({
+          labels: ['missing-group'],
+          dateControl: { durationMinutes: 90 },
+        }),
+      ];
+
+      const { syncResults } = await util.writeAndSyncCourseData(courseData);
+
+      assert.equal(syncResults.status, 'complete');
+      if (syncResults.status === 'complete') {
+        const invalidAssessment =
+          syncResults.courseData.courseInstances[util.COURSE_INSTANCE_ID].assessments.test2;
+        assert.isOk(invalidAssessment.errors);
+        assert.isTrue(invalidAssessment.errors.some((error) => error.includes('missing-group')));
+      }
+
+      const syncedRules1 = await findSyncedAccessControlRules(util.ASSESSMENT_ID);
+      const syncedRules2 = await findSyncedAccessControlRules('test2');
+
+      assert.equal(syncedRules1.length, 1);
+      assert.equal(syncedRules1[0].date_control_duration_minutes, 60);
+      assert.equal(syncedRules2.length, 0);
+    });
   });
 
   describe('Round-trip: boolean override fields survive sync and read-back', () => {
@@ -1284,7 +1471,10 @@ describe('Access control syncing', () => {
       const rules = await selectAccessControlRulesForAssessment(courseInstance, assessment);
       const override = rules.find((r) => r.number > 0);
       assert.isOk(override);
-      assert.equal(override.rule.dateControl?.dueDate, '2024-04-01T23:59:00.000Z');
+      assert.equal(
+        override.rule.dateControl?.dueDate,
+        new Date('2024-04-01T23:59:00').toISOString(),
+      );
       assert.isUndefined(override.rule.dateControl?.enabled);
     });
 

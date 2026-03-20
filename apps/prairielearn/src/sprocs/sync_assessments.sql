@@ -690,6 +690,18 @@ BEGIN
         AND a.deleted_at IS NOT NULL
         AND a.course_instance_id = syncing_course_instance_id;
 
+    -- Delete JSON-synced access control rules for soft-deleted assessments.
+    -- Enrollment rules (target_type = 'enrollment') are deliberately kept so
+    -- that if an instructor restores a soft-deleted assessment, the enrollment-
+    -- specific rules (which are not persisted in JSON) come back automatically.
+    DELETE FROM assessment_access_control AS aac
+    USING assessments AS a
+    WHERE
+        aac.assessment_id = a.id
+        AND a.deleted_at IS NOT NULL
+        AND a.course_instance_id = syncing_course_instance_id
+        AND aac.target_type IN ('none', 'student_label');
+
     -- Delete unused zones
     DELETE FROM zones AS z
     USING assessments AS a

@@ -26,249 +26,273 @@ function mapField<T>(jsonValue: T | null | undefined): {
   }
 }
 
-interface PreparedRule {
-  number: number;
-  enabled: boolean | null;
-  listBeforeRelease: boolean;
-  targetType: 'none' | 'student_label';
-  dateControlOverridden: boolean;
-  releaseDateOverridden: boolean;
-  releaseDate: string | null;
-  dueDateOverridden: boolean;
-  dueDate: string | null;
-  earlyDeadlinesOverridden: boolean;
-  lateDeadlinesOverridden: boolean;
-  afterLastDeadlineAllowSubmissions: boolean | null;
-  afterLastDeadlineCreditOverridden: boolean;
-  afterLastDeadlineCredit: number | null;
-  durationMinutesOverridden: boolean;
-  durationMinutes: number | null;
-  passwordOverridden: boolean;
-  password: string | null;
-  integrationsPrairietestOverridden: boolean;
-  hideQuestions: boolean | null;
-  showQuestionsAgainDateOverridden: boolean;
-  showQuestionsAgainDate: string | null;
-  hideQuestionsAgainDateOverridden: boolean;
-  hideQuestionsAgainDate: string | null;
-  hideScore: boolean | null;
-  showScoreAgainDateOverridden: boolean;
-  showScoreAgainDate: string | null;
-  studentLabelIds: string[];
-  earlyDeadlines: { date: string; credit: number }[];
-  lateDeadlines: { date: string; credit: number }[];
-  prairietestExams: { uuid: string; readOnly: boolean }[];
-}
+const JSON_RULE_START = 0;
+const MAX_JSON_RULES = 1000;
+const UUID_REGEX = /^[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12}$/i;
 
-export async function syncAccessControl(
-  courseInstanceId: string,
-  assessmentId: string,
-  accessControlRules: AccessControlJson[],
-): Promise<void> {
-  const JSON_RULE_START = 0;
-  const MAX_JSON_RULES = 1000;
+/**
+ * Validates and prepares rules for a single assessment. Returns an error
+ * string if validation fails, or null if the rules are valid.
+ */
+function validateAssessmentRules(
+  rules: AccessControlJson[],
+  studentLabelIdByName: Map<string, string>,
+  invalidExamUuids: Set<string>,
+): string | null {
+  if (rules.length === 0) return null;
 
-  if (accessControlRules.length > MAX_JSON_RULES) {
-    throw new Error(
-      `Too many access control rules: ${accessControlRules.length}. Maximum allowed is ${MAX_JSON_RULES}.`,
+  if (rules.length > MAX_JSON_RULES) {
+    return `Too many access control rules: ${rules.length}. Maximum allowed is ${MAX_JSON_RULES}.`;
+  }
+
+  // Keep label validation here even though course-db validates it earlier.
+  // If the course instance config is invalid, course-db skips label existence
+  // checks to avoid cascading errors, and student label syncing is skipped.
+  // We still need to reject labels missing from the database here so that
+  // label-targeted rules are not silently treated as assignment-level rules.
+  for (const rule of rules) {
+    const ruleLabels = rule.labels ?? [];
+    const seenLabels = new Set<string>();
+    const duplicateLabels = new Set<string>();
+
+    for (const label of ruleLabels) {
+      if (seenLabels.has(label)) {
+        duplicateLabels.add(label);
+      } else {
+        seenLabels.add(label);
+      }
+    }
+
+    if (duplicateLabels.size > 0) {
+      return (
+        `Duplicate student label(s): ${[...duplicateLabels].join(', ')}. ` +
+        'Each label can only be targeted once per access control rule.'
+      );
+    }
+
+    const invalidLabels = [...seenLabels].filter((label) => !studentLabelIdByName.has(label));
+    if (invalidLabels.length > 0) {
+      return `Invalid student label(s): ${invalidLabels.join(', ')}.`;
+    }
+  }
+
+  const assessmentInvalidUuids: string[] = [];
+  for (const rule of rules) {
+    for (const e of rule.integrations?.prairieTest?.exams ?? []) {
+      if (invalidExamUuids.has(e.examUuid)) {
+        assessmentInvalidUuids.push(e.examUuid);
+      }
+    }
+  }
+  if (assessmentInvalidUuids.length > 0) {
+    return (
+      `Invalid PrairieTest exam UUID(s): ${assessmentInvalidUuids.join(', ')}. ` +
+      'These UUIDs do not match any known PrairieTest exams.'
     );
   }
 
+  for (let i = 0; i < rules.length; i++) {
+    if (i > 0 && rules[i].dateControl?.enabled !== undefined) {
+      return `'dateControl.enabled' cannot be set on override rules (rule ${i}). It can only be set on the base rule (rule 0).`;
+    }
+  }
+
+  return null;
+}
+
+function prepareRuleRow(
+  assessmentId: string,
+  ruleNumber: number,
+  rule: AccessControlJson,
+  studentLabelIdByName: Map<string, string>,
+): {
+  ruleRow: string;
+  studentLabels: string[];
+  earlyDeadlines: string[];
+  lateDeadlines: string[];
+  prairietestExams: string[];
+} {
+  const dateControl = rule.dateControl ?? {};
+  const afterComplete = rule.afterComplete ?? {};
+  const afterLastDeadline = dateControl.afterLastDeadline ?? {};
+
+  const enabled = mapField(rule.enabled);
+  const listBeforeRelease = mapField(rule.listBeforeRelease);
+  const releaseDateField = mapField(dateControl.releaseDate);
+  const dueDateField = mapField(dateControl.dueDate);
+  const earlyDeadlinesField = mapField(dateControl.earlyDeadlines);
+  const lateDeadlinesField = mapField(dateControl.lateDeadlines);
+  const durationMinutesField = mapField(dateControl.durationMinutes);
+  const passwordField = mapField(dateControl.password);
+  const afterLastDeadlineAllowSubmissionsField = mapField(afterLastDeadline.allowSubmissions);
+  const afterLastDeadlineCreditField = mapField(afterLastDeadline.credit);
+  const hideQuestionsField = mapField(afterComplete.hideQuestions);
+  const showQuestionsAgainDateField = mapField(afterComplete.showQuestionsAgainDate);
+  const hideQuestionsAgainDateField = mapField(afterComplete.hideQuestionsAgainDate);
+  const hideScoreField = mapField(afterComplete.hideScore);
+  const showScoreAgainDateField = mapField(afterComplete.showScoreAgainDate);
+
+  const dateControlOverridden =
+    releaseDateField.overridden ||
+    dueDateField.overridden ||
+    earlyDeadlinesField.overridden ||
+    lateDeadlinesField.overridden ||
+    durationMinutesField.overridden ||
+    passwordField.overridden ||
+    afterLastDeadlineAllowSubmissionsField.overridden ||
+    afterLastDeadlineCreditField.overridden;
+
+  const integrationsPrairietestOverridden = rule.integrations?.prairieTest?.exams !== undefined;
+
+  const ruleLabels = rule.labels ?? [];
+  const studentLabelIds = ruleLabels
+    .map((label) => studentLabelIdByName.get(label))
+    .filter((id): id is string => id !== undefined);
+
+  const targetType: 'none' | 'student_label' =
+    studentLabelIds.length > 0 ? 'student_label' : 'none';
+
+  const ruleRow = JSON.stringify({
+    assessment_id: assessmentId,
+    number: ruleNumber,
+    enabled: enabled.value,
+    list_before_release: listBeforeRelease.value ?? false,
+    target_type: targetType,
+    date_control_overridden: dateControlOverridden,
+    date_control_release_date_overridden: releaseDateField.overridden,
+    date_control_release_date: releaseDateField.value,
+    date_control_due_date_overridden: dueDateField.overridden,
+    date_control_due_date: dueDateField.value,
+    date_control_early_deadlines_overridden: earlyDeadlinesField.overridden,
+    date_control_late_deadlines_overridden: lateDeadlinesField.overridden,
+    date_control_after_last_deadline_allow_submissions:
+      afterLastDeadlineAllowSubmissionsField.value,
+    date_control_after_last_deadline_credit_overridden: afterLastDeadlineCreditField.overridden,
+    date_control_after_last_deadline_credit: afterLastDeadlineCreditField.value,
+    date_control_duration_minutes_overridden: durationMinutesField.overridden,
+    date_control_duration_minutes: durationMinutesField.value,
+    date_control_password_overridden: passwordField.overridden,
+    date_control_password: passwordField.value,
+    integrations_prairietest_overridden: integrationsPrairietestOverridden,
+    after_complete_hide_questions: hideQuestionsField.value,
+    after_complete_show_questions_again_date_overridden: showQuestionsAgainDateField.overridden,
+    after_complete_show_questions_again_date: showQuestionsAgainDateField.value,
+    after_complete_hide_questions_again_date_overridden: hideQuestionsAgainDateField.overridden,
+    after_complete_hide_questions_again_date: hideQuestionsAgainDateField.value,
+    after_complete_hide_score: hideScoreField.value,
+    after_complete_show_score_again_date_overridden: showScoreAgainDateField.overridden,
+    after_complete_show_score_again_date: showScoreAgainDateField.value,
+  });
+
+  // Child data arrays use [assessment_id, rule_number, ...data] format.
+  // The sproc joins on (assessment_id, rule_number) to resolve the access_control_id.
+  const studentLabels = studentLabelIds.map((labelId) =>
+    JSON.stringify([assessmentId, ruleNumber, labelId]),
+  );
+
+  const earlyDeadlines = (earlyDeadlinesField.value ?? []).map((d) =>
+    JSON.stringify([assessmentId, ruleNumber, d.date, d.credit]),
+  );
+
+  const lateDeadlines = (lateDeadlinesField.value ?? []).map((d) =>
+    JSON.stringify([assessmentId, ruleNumber, d.date, d.credit]),
+  );
+
+  const exams = rule.integrations?.prairieTest?.exams ?? [];
+  const prairietestExams = exams.map((e) =>
+    JSON.stringify([assessmentId, ruleNumber, e.examUuid, e.readOnly ?? false]),
+  );
+
+  return { ruleRow, studentLabels, earlyDeadlines, lateDeadlines, prairietestExams };
+}
+
+export interface AccessControlSyncInput {
+  assessmentId: string;
+  rules: AccessControlJson[];
+}
+
+/**
+ * Syncs access control rules for multiple assessments in a single sproc call.
+ * Returns a map of assessmentId → error message for assessments that failed
+ * validation. Assessments that fail validation are deliberately excluded from
+ * the sproc call so their existing database rules are preserved. This is
+ * consistent with how other sync operations handle errors: invalid new config
+ * should not destroy valid existing state.
+ *
+ * Returns a map of assessment ID → error message for assessments that failed
+ * validation. Callers should attach these to the in-memory assessment infofiles
+ * via `infofile.addError()` so they appear in the sync job log (the same way
+ * other late-discovered validation errors like invalid exam UUIDs are reported).
+ */
+export async function syncAllAccessControl(
+  courseInstanceId: string,
+  assessments: AccessControlSyncInput[],
+): Promise<Map<string, string>> {
+  const errors = new Map<string, string>();
+  if (assessments.length === 0) return errors;
+
+  // Query student labels once for the whole course instance.
   const existingLabels = await sqldb.queryRows(
     sql.select_student_labels,
     { course_instance_id: courseInstanceId },
     StudentLabelSchema,
   );
-  // Map by name since the JSON uses label names, not IDs
-  const validLabelIds = new Map(existingLabels.map((g) => [g.name, g.id]));
+  const studentLabelIdByName = new Map(existingLabels.map((g) => [g.name, g.id]));
 
-  const UUID_REGEX = /^[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12}$/i;
+  // Collect all exam UUIDs across all assessments and validate once.
   const allExamUuids = new Set<string>();
-  for (const rule of accessControlRules) {
-    const exams = rule.integrations?.prairieTest?.exams ?? [];
-    for (const e of exams) {
-      if (UUID_REGEX.test(e.examUuid)) {
-        allExamUuids.add(e.examUuid);
+  for (const { rules } of assessments) {
+    for (const rule of rules) {
+      for (const e of rule.integrations?.prairieTest?.exams ?? []) {
+        if (UUID_REGEX.test(e.examUuid)) {
+          allExamUuids.add(e.examUuid);
+        }
       }
     }
   }
 
+  const invalidExamUuids = new Set<string>();
   if (allExamUuids.size > 0) {
     const examValidation = await sqldb.queryRows(
       sql.check_exam_uuids_exist,
       { exam_uuids: JSON.stringify([...allExamUuids]) },
       z.object({ uuid: z.string(), uuid_exists: z.boolean() }),
     );
-    const invalidUuids = examValidation
-      .filter(({ uuid_exists }) => !uuid_exists)
-      .map(({ uuid }) => uuid);
-    if (invalidUuids.length > 0) {
-      throw new Error(
-        `Invalid PrairieTest exam UUID(s): ${invalidUuids.join(', ')}. ` +
-          'These UUIDs do not match any known PrairieTest exams.',
-      );
+    for (const { uuid, uuid_exists } of examValidation) {
+      if (!uuid_exists) invalidExamUuids.add(uuid);
     }
   }
 
-  for (const rule of accessControlRules) {
-    const ruleLabels = rule.labels ?? [];
-    const invalidLabels = ruleLabels.filter((label) => !validLabelIds.has(label));
-    if (invalidLabels.length > 0) {
-      throw new Error(
-        `Invalid student label(s): ${invalidLabels.join(', ')}. ` +
-          `Valid labels are: ${[...validLabelIds.keys()].join(', ') || '(none)'}`,
-      );
+  // Per-assessment validation.
+  for (const { assessmentId, rules } of assessments) {
+    const error = validateAssessmentRules(rules, studentLabelIdByName, invalidExamUuids);
+    if (error) {
+      errors.set(assessmentId, error);
     }
   }
-  const preparedRules: PreparedRule[] = [];
-  for (let i = 0; i < accessControlRules.length; i++) {
-    const rule = accessControlRules[i];
 
-    if (i > 0 && rule.dateControl?.enabled !== undefined) {
-      throw new Error(
-        `'dateControl.enabled' cannot be set on override rules (rule ${i}). It can only be set on the base rule (rule 0).`,
-      );
-    }
-    const dateControl = rule.dateControl ?? {};
-    const afterComplete = rule.afterComplete ?? {};
-    const afterLastDeadline = dateControl.afterLastDeadline ?? {};
-
-    const enabled = mapField(rule.enabled);
-    const listBeforeRelease = mapField(rule.listBeforeRelease);
-    const releaseDateField = mapField(dateControl.releaseDate);
-    const dueDateField = mapField(dateControl.dueDate);
-    const earlyDeadlinesField = mapField(dateControl.earlyDeadlines);
-    const lateDeadlinesField = mapField(dateControl.lateDeadlines);
-    const durationMinutesField = mapField(dateControl.durationMinutes);
-    const passwordField = mapField(dateControl.password);
-    const afterLastDeadlineAllowSubmissionsField = mapField(afterLastDeadline.allowSubmissions);
-    const afterLastDeadlineCreditField = mapField(afterLastDeadline.credit);
-    const hideQuestionsField = mapField(afterComplete.hideQuestions);
-    const showQuestionsAgainDateField = mapField(afterComplete.showQuestionsAgainDate);
-    const hideQuestionsAgainDateField = mapField(afterComplete.hideQuestionsAgainDate);
-    const hideScoreField = mapField(afterComplete.hideScore);
-    const showScoreAgainDateField = mapField(afterComplete.showScoreAgainDate);
-
-    const dateControlOverridden =
-      releaseDateField.overridden ||
-      dueDateField.overridden ||
-      earlyDeadlinesField.overridden ||
-      lateDeadlinesField.overridden ||
-      durationMinutesField.overridden ||
-      passwordField.overridden ||
-      afterLastDeadlineAllowSubmissionsField.overridden ||
-      afterLastDeadlineCreditField.overridden;
-
-    const integrationsPrairietestOverridden = rule.integrations?.prairieTest?.exams !== undefined;
-
-    const ruleLabels = rule.labels ?? [];
-    const studentLabelIds = ruleLabels
-      .map((label) => validLabelIds.get(label))
-      .filter((id): id is string => id !== undefined);
-
-    const ruleNumber = JSON_RULE_START + i;
-    const targetType: 'none' | 'student_label' =
-      studentLabelIds.length > 0 ? 'student_label' : 'none';
-
-    const exams = rule.integrations?.prairieTest?.exams ?? [];
-
-    preparedRules.push({
-      number: ruleNumber,
-      enabled: enabled.value,
-      listBeforeRelease: listBeforeRelease.value ?? false,
-      targetType,
-      dateControlOverridden,
-      releaseDateOverridden: releaseDateField.overridden,
-      releaseDate: releaseDateField.value,
-      dueDateOverridden: dueDateField.overridden,
-      dueDate: dueDateField.value,
-      earlyDeadlinesOverridden: earlyDeadlinesField.overridden,
-      lateDeadlinesOverridden: lateDeadlinesField.overridden,
-      afterLastDeadlineAllowSubmissions: afterLastDeadlineAllowSubmissionsField.value,
-      afterLastDeadlineCreditOverridden: afterLastDeadlineCreditField.overridden,
-      afterLastDeadlineCredit: afterLastDeadlineCreditField.value,
-      durationMinutesOverridden: durationMinutesField.overridden,
-      durationMinutes: durationMinutesField.value,
-      passwordOverridden: passwordField.overridden,
-      password: passwordField.value,
-      integrationsPrairietestOverridden,
-      hideQuestions: hideQuestionsField.value,
-      showQuestionsAgainDateOverridden: showQuestionsAgainDateField.overridden,
-      showQuestionsAgainDate: showQuestionsAgainDateField.value,
-      hideQuestionsAgainDateOverridden: hideQuestionsAgainDateField.overridden,
-      hideQuestionsAgainDate: hideQuestionsAgainDateField.value,
-      hideScore: hideScoreField.value,
-      showScoreAgainDateOverridden: showScoreAgainDateField.overridden,
-      showScoreAgainDate: showScoreAgainDateField.value,
-      studentLabelIds,
-      earlyDeadlines: earlyDeadlinesField.value ?? [],
-      lateDeadlines: lateDeadlinesField.value ?? [],
-      prairietestExams: exams.map((e) => ({
-        uuid: e.examUuid,
-        readOnly: e.readOnly ?? false,
-      })),
-    });
-  }
-
-  const ruleRows = preparedRules.map((r) =>
-    JSON.stringify({
-      number: r.number,
-      enabled: r.enabled,
-      list_before_release: r.listBeforeRelease,
-      target_type: r.targetType,
-      date_control_overridden: r.dateControlOverridden,
-      date_control_release_date_overridden: r.releaseDateOverridden,
-      date_control_release_date: r.releaseDate,
-      date_control_due_date_overridden: r.dueDateOverridden,
-      date_control_due_date: r.dueDate,
-      date_control_early_deadlines_overridden: r.earlyDeadlinesOverridden,
-      date_control_late_deadlines_overridden: r.lateDeadlinesOverridden,
-      date_control_after_last_deadline_allow_submissions: r.afterLastDeadlineAllowSubmissions,
-      date_control_after_last_deadline_credit_overridden: r.afterLastDeadlineCreditOverridden,
-      date_control_after_last_deadline_credit: r.afterLastDeadlineCredit,
-      date_control_duration_minutes_overridden: r.durationMinutesOverridden,
-      date_control_duration_minutes: r.durationMinutes,
-      date_control_password_overridden: r.passwordOverridden,
-      date_control_password: r.password,
-      integrations_prairietest_overridden: r.integrationsPrairietestOverridden,
-      after_complete_hide_questions: r.hideQuestions,
-      after_complete_show_questions_again_date_overridden: r.showQuestionsAgainDateOverridden,
-      after_complete_show_questions_again_date: r.showQuestionsAgainDate,
-      after_complete_hide_questions_again_date_overridden: r.hideQuestionsAgainDateOverridden,
-      after_complete_hide_questions_again_date: r.hideQuestionsAgainDate,
-      after_complete_hide_score: r.hideScore,
-      after_complete_show_score_again_date_overridden: r.showScoreAgainDateOverridden,
-      after_complete_show_score_again_date: r.showScoreAgainDate,
-    }),
-  );
-
-  // Prepare child data arrays with [rule_number, ...data] format
-  // The sproc will join on rule number to get the access_control_id
+  // Build batched data arrays. Assessments with validation errors are excluded
+  // entirely so their existing database rules are preserved (not cleaned up).
+  const validAssessmentIds: string[] = [];
+  const allRuleRows: string[] = [];
   const allStudentLabels: string[] = [];
-  for (const rule of preparedRules) {
-    for (const groupId of rule.studentLabelIds) {
-      allStudentLabels.push(JSON.stringify([rule.number, groupId]));
-    }
-  }
-
   const allEarlyDeadlines: string[] = [];
-  for (const rule of preparedRules) {
-    for (const deadline of rule.earlyDeadlines) {
-      allEarlyDeadlines.push(JSON.stringify([rule.number, deadline.date, deadline.credit]));
-    }
-  }
-
   const allLateDeadlines: string[] = [];
-  for (const rule of preparedRules) {
-    for (const deadline of rule.lateDeadlines) {
-      allLateDeadlines.push(JSON.stringify([rule.number, deadline.date, deadline.credit]));
-    }
-  }
-
   const allPrairietestExams: string[] = [];
-  for (const rule of preparedRules) {
-    for (const exam of rule.prairietestExams) {
-      allPrairietestExams.push(JSON.stringify([rule.number, exam.uuid, exam.readOnly]));
+
+  for (const { assessmentId, rules } of assessments) {
+    if (errors.has(assessmentId)) continue;
+    validAssessmentIds.push(assessmentId);
+
+    for (let i = 0; i < rules.length; i++) {
+      const { ruleRow, studentLabels, earlyDeadlines, lateDeadlines, prairietestExams } =
+        prepareRuleRow(assessmentId, JSON_RULE_START + i, rules[i], studentLabelIdByName);
+
+      allRuleRows.push(ruleRow);
+      allStudentLabels.push(...studentLabels);
+      allEarlyDeadlines.push(...earlyDeadlines);
+      allLateDeadlines.push(...lateDeadlines);
+      allPrairietestExams.push(...prairietestExams);
     }
   }
 
@@ -276,8 +300,8 @@ export async function syncAccessControl(
     'sync_access_control',
     [
       courseInstanceId,
-      assessmentId,
-      ruleRows,
+      validAssessmentIds,
+      allRuleRows,
       allStudentLabels,
       allEarlyDeadlines,
       allLateDeadlines,
@@ -285,4 +309,22 @@ export async function syncAccessControl(
     ],
     z.unknown(),
   );
+
+  return errors;
+}
+
+/**
+ * Syncs access control rules for a single assessment.
+ * Throws on validation errors.
+ */
+export async function syncAccessControl(
+  courseInstanceId: string,
+  assessmentId: string,
+  accessControlRules: AccessControlJson[],
+): Promise<void> {
+  const errors = await syncAllAccessControl(courseInstanceId, [
+    { assessmentId, rules: accessControlRules },
+  ]);
+  const error = errors.get(assessmentId);
+  if (error) throw new Error(error);
 }

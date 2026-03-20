@@ -20,7 +20,7 @@ import { selectInstitutionForCourse } from '../models/institution.js';
 import { flushElementCache } from '../question-servers/freeform.js';
 
 import * as courseDB from './course-db.js';
-import { syncAccessControl } from './fromDisk/accessControl.js';
+import { type AccessControlSyncInput, syncAllAccessControl } from './fromDisk/accessControl.js';
 import * as syncAssessmentModules from './fromDisk/assessmentModules.js';
 import * as syncAssessmentSets from './fromDisk/assessmentSets.js';
 import * as syncAssessments from './fromDisk/assessments.js';
@@ -230,25 +230,30 @@ export async function syncDiskToSqlWithLock(
           if (assessmentIds.name_to_id_map && hasEnhancedAccessControl) {
             const idMap = assessmentIds.name_to_id_map;
             await timed(`Synced access control for ${ciid}`, async () => {
+              const inputs: AccessControlSyncInput[] = [];
               for (const [tid, assessment] of Object.entries(courseInstanceData.assessments)) {
                 const assessmentId = idMap[tid];
+                if (!assessmentId) continue;
+
                 const accessControlRules = assessment.data?.accessControl;
-                if (assessmentId) {
-                  if (!accessControlRules || infofile.hasErrors(assessment)) {
-                    await runInTransactionAsync(async () => {
-                      await syncAccessControl(courseInstanceId, assessmentId, []);
-                    });
-                  } else {
-                    try {
-                      await runInTransactionAsync(async () => {
-                        await syncAccessControl(courseInstanceId, assessmentId, accessControlRules);
-                      });
-                    } catch (err) {
-                      infofile.addError(assessment, String(err));
-                    }
-                  }
+                if (!accessControlRules || infofile.hasErrors(assessment)) {
+                  inputs.push({ assessmentId, rules: [] });
+                } else {
+                  inputs.push({ assessmentId, rules: accessControlRules });
                 }
               }
+
+              await runInTransactionAsync(async () => {
+                const validationErrors = await syncAllAccessControl(courseInstanceId, inputs);
+                for (const [tid, assessment] of Object.entries(courseInstanceData.assessments)) {
+                  const assessmentId = idMap[tid];
+                  if (!assessmentId) continue;
+                  const error = validationErrors.get(assessmentId);
+                  if (error) {
+                    infofile.addError(assessment, error);
+                  }
+                }
+              });
             });
           }
         },

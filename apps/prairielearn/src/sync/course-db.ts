@@ -263,12 +263,18 @@ export async function loadFullCourse(
       );
     });
 
+    const validStudentLabelNames =
+      courseInstance.data == null
+        ? undefined
+        : new Set(courseInstance.data.studentLabels?.map((label) => label.name));
+
     const assessments = await loadAssessments({
       coursePath,
       courseInstanceDirectory,
       courseInstanceExpired,
       questions,
       sharingEnabled,
+      validStudentLabelNames,
     });
 
     for (const assessment of Object.values(assessments)) {
@@ -1131,8 +1137,10 @@ function formatValues(qids: Set<string> | string[]) {
  */
 export function validateAccessControlArray({
   accessControlJsonArray,
+  validStudentLabelNames,
 }: {
   accessControlJsonArray: AccessControlJson[];
+  validStudentLabelNames?: Set<string>;
 }): { warnings: string[]; errors: string[] }[] {
   const results: { warnings: string[]; errors: string[] }[] = accessControlJsonArray.map(() => ({
     warnings: [],
@@ -1171,6 +1179,33 @@ export function validateAccessControlArray({
 
   // Check for integrations on non-assignment-level rules
   accessControlJsonArray.forEach((rule, index) => {
+    const labels = rule.labels ?? [];
+    const seenLabels = new Set<string>();
+    const duplicateLabels = new Set<string>();
+
+    for (const label of labels) {
+      if (seenLabels.has(label)) {
+        duplicateLabels.add(label);
+      } else {
+        seenLabels.add(label);
+      }
+    }
+
+    if (duplicateLabels.size > 0) {
+      results[index].errors.push(
+        `Found duplicate student labels in this access control rule: ${formatValues(duplicateLabels)}.`,
+      );
+    }
+
+    if (validStudentLabelNames !== undefined) {
+      const invalidLabels = [...seenLabels].filter((label) => !validStudentLabelNames.has(label));
+      if (invalidLabels.length > 0) {
+        results[index].errors.push(
+          `The access control rule targets non-existent student labels: ${formatValues(invalidLabels)}.`,
+        );
+      }
+    }
+
     const isAssignmentLevel = rule.labels == null || rule.labels.length === 0;
     if (!isAssignmentLevel && rule.integrations != null) {
       results[index].errors.push(
@@ -1219,12 +1254,14 @@ function validateAssessment({
   questions,
   sharingEnabled,
   courseInstanceExpired,
+  validStudentLabelNames,
 }: {
   assessment: AssessmentJson;
   rawAssessment: AssessmentJsonInput;
   questions: Record<string, InfoFile<QuestionJson>>;
   sharingEnabled: boolean;
   courseInstanceExpired: boolean;
+  validStudentLabelNames?: Set<string>;
 }): { warnings: string[]; errors: string[] } {
   const warnings: string[] = [];
   const errors: string[] = [];
@@ -1608,6 +1645,7 @@ function validateAssessment({
   if (assessment.accessControl) {
     const accessControlValidation = validateAccessControlArray({
       accessControlJsonArray: assessment.accessControl,
+      validStudentLabelNames,
     });
     for (const result of accessControlValidation) {
       errors.push(...result.errors);
@@ -1864,12 +1902,14 @@ async function loadAssessments({
   courseInstanceExpired,
   questions,
   sharingEnabled,
+  validStudentLabelNames,
 }: {
   coursePath: string;
   courseInstanceDirectory: string;
   courseInstanceExpired: boolean;
   questions: Record<string, InfoFile<QuestionJson>>;
   sharingEnabled: boolean;
+  validStudentLabelNames?: Set<string>;
 }): Promise<Record<string, InfoFile<AssessmentJson>>> {
   const assessmentsPath = path.join('courseInstances', courseInstanceDirectory, 'assessments');
   const assessments = await loadInfoForDirectory({
@@ -1885,6 +1925,7 @@ async function loadAssessments({
         questions,
         sharingEnabled,
         courseInstanceExpired,
+        validStudentLabelNames,
       }),
     recursive: true,
   });
