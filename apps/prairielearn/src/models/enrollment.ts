@@ -941,12 +941,12 @@ export async function selectUsersAndEnrollmentsForCourseInstance(
 }
 
 export async function validateEnrollmentIdsInCourseInstance(
-  ids: string[],
+  ids: Set<string>,
   courseInstance: CourseInstanceContext,
 ): Promise<number> {
   return queryScalar(
     sql.validate_enrollment_ids_in_course_instance,
-    { enrollment_ids: ids, course_instance_id: courseInstance.id },
+    { enrollment_ids: [...ids], course_instance_id: courseInstance.id },
     z.number(),
   );
 }

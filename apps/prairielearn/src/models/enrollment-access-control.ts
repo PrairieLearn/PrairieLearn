@@ -1,7 +1,7 @@
-import { callScalar, execute, loadSqlEquiv, runInTransactionAsync } from '@prairielearn/postgres';
+import { callScalar, execute, loadSqlEquiv } from '@prairielearn/postgres';
 import { IdSchema } from '@prairielearn/zod';
 
-import type { Assessment, CourseInstance } from '../lib/db-types.js';
+import type { Assessment } from '../lib/db-types.js';
 
 const sql = loadSqlEquiv(import.meta.url);
 
@@ -41,7 +41,6 @@ export interface EnrollmentAccessControlRuleData {
  * These rules are stored in the database with target_type = 'enrollment'.
  */
 export async function syncEnrollmentAccessControl(
-  courseInstance: CourseInstance,
   assessment: Assessment,
   ruleData: EnrollmentAccessControlRuleData,
   enrollmentIds: string[],
@@ -82,31 +81,28 @@ export async function syncEnrollmentAccessControl(
     JSON.stringify({ date: d.date, credit: d.credit }),
   );
 
-  return runInTransactionAsync(async () =>
-    callScalar(
-      'sync_enrollment_access_control',
-      [
-        courseInstance.id,
-        assessment.id,
-        ruleJson,
-        enrollmentIds,
-        earlyDeadlinesJson,
-        lateDeadlinesJson,
-      ],
-      IdSchema,
-    ),
+  return callScalar(
+    'sync_enrollment_access_control',
+    [
+      assessment.course_instance_id,
+      assessment.id,
+      ruleJson,
+      enrollmentIds,
+      earlyDeadlinesJson,
+      lateDeadlinesJson,
+    ],
+    IdSchema,
   );
 }
 
 export async function deleteEnrollmentAccessControlsByIds(
   ids: string[],
-  courseInstance: CourseInstance,
   assessment: Assessment,
 ): Promise<void> {
   if (ids.length === 0) return;
   await execute(sql.delete_enrollment_rules_by_ids, {
     ids,
-    course_instance_id: courseInstance.id,
+    course_instance_id: assessment.course_instance_id,
     assessment_id: assessment.id,
   });
 }

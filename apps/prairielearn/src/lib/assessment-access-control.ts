@@ -36,7 +36,6 @@ type JsonRuleRow = z.infer<typeof JsonRuleRowSchema>;
  */
 function unmapField<T>(overridden: boolean, value: T | null): T | null | undefined {
   if (!overridden) return undefined;
-  if (value === null) return null;
   return value;
 }
 

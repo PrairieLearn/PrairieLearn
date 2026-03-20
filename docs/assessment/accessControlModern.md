@@ -1,5 +1,9 @@
 # Modern access control
 
+!!! warning "Not yet generally available"
+
+    This feature is under active development and is not yet available for general use. The documentation here is for internal reference only.
+
 The modern access control system uses a structured `accessControl` array in `infoAssessment.json`, replacing the legacy [`allowAccess`](accessControl.md) system. It provides a clearer model for managing deadlines, credit, and per-student overrides.
 
 !!! note

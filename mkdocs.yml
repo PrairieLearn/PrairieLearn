@@ -216,7 +216,8 @@ nav:
           - 'Overview': assessment/overview.md
           - 'Configuration': assessment/configuration.md
           - 'Access control': 'assessment/accessControl.md'
-          - 'Modern access control': 'assessment/accessControlModern.md'
+          # TODO: unhide once modern access control is generally available.
+          # - 'Modern access control': 'assessment/accessControlModern.md'
           - 'Remote exams': 'assessment/remoteExams.md'
           - 'Regrading assessments': 'assessment/regrading.md'
       - 'Questions':

@@ -11,7 +11,6 @@ import { fetchAllAccessControlRules } from '../../lib/assessment-access-control.
 import { features } from '../../lib/features/index.js';
 import type { ResLocalsForPage } from '../../lib/res-locals.js';
 import { lockAssessment } from '../../models/assessment.js';
-import { insertAuditEvent } from '../../models/audit-event.js';
 import {
   type EnrollmentAccessControlRuleData,
   deleteEnrollmentAccessControlsByIds,
@@ -263,11 +262,7 @@ const saveAllRules = t.procedure
         );
         const submittedIds = new Set(enrollmentRules.filter((r) => r.id).map((r) => r.id));
         const idsToDelete = [...existingIds].filter((id) => !submittedIds.has(id));
-        await deleteEnrollmentAccessControlsByIds(
-          idsToDelete,
-          opts.ctx.course_instance,
-          opts.ctx.assessment,
-        );
+        await deleteEnrollmentAccessControlsByIds(idsToDelete, opts.ctx.assessment);
       }
 
       if (enrollmentRules !== undefined && enrollmentRules.length > 0) {
@@ -283,13 +278,13 @@ const saveAllRules = t.procedure
           });
         }
 
-        const allEnrollmentIds = [...new Set(enrollmentRules.flatMap((r) => r.enrollmentIds))];
-        if (allEnrollmentIds.length > 0) {
+        const allEnrollmentIds = new Set(enrollmentRules.flatMap((r) => r.enrollmentIds));
+        if (allEnrollmentIds.size > 0) {
           const validCount = await validateEnrollmentIdsInCourseInstance(
             allEnrollmentIds,
             opts.ctx.course_instance,
           );
-          if (validCount !== allEnrollmentIds.length) {
+          if (validCount !== allEnrollmentIds.size) {
             throw new TRPCError({
               code: 'BAD_REQUEST',
               message: 'One or more enrollment IDs do not belong to this course instance.',
@@ -303,7 +298,6 @@ const saveAllRules = t.procedure
             ruleData.id = enrollmentRule.id;
           }
           await syncEnrollmentAccessControl(
-            opts.ctx.course_instance,
             opts.ctx.assessment,
             ruleData,
             enrollmentRule.enrollmentIds,
@@ -311,18 +305,8 @@ const saveAllRules = t.procedure
         }
       }
 
-      await insertAuditEvent({
-        tableName: 'assessment_access_control',
-        action: 'update',
-        actionDetail: 'rule_saved',
-        rowId: assessmentId,
-        oldRow: { rules: currentRules },
-        newRow: { rule_count: rulesToSync.length + (enrollmentRules?.length ?? 0) },
-        assessmentId,
-        courseInstanceId,
-        agentUserId: opts.ctx.authz_data.user.id,
-        agentAuthnUserId: opts.ctx.authn_user.id,
-      });
+      // TODO: Add audit logging for enrollment rule changes. Label/main rules
+      // are tracked in git; only enrollment rules need separate audit logs.
 
       const newRules = await fetchAllAccessControlRules(opts.ctx.assessment);
       const newHash = computeHash(newRules);
