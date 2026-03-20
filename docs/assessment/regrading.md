@@ -4,7 +4,7 @@ Despite all our best efforts, sometimes we put a broken question onto an exam. T
 
 1. If the error is detected when just a few students have taken the exam, either correct the question, remove it from the exam, or replace it with a new question. Either regrade the broken question with maximum points (see below) or adjust the scores of affected students [by hand](../manualGrading/index.md), perhaps with some correction factor for the added challenge they faced by encountering a broken question.
 
-2. If many students have taken the exam with the broken question then do not attempt to fix it but rather let the exam complete with all students experiencing the same issue. Then afterwards regrade the exam with all students being awarded maximum points for the broken question, as described below.
+2. If many students have taken the exam with the broken question then do not attempt to fix it but rather let the exam complete with all students experiencing the same issue. Then afterward regrade the exam with all students being awarded maximum points for the broken question, as described below.
 
 ## Regrading limitations
 
@@ -52,7 +52,7 @@ In the example above, the questions `anEasyQ` and `SecondAltQ` will award maximu
 
 After updating the `infoAssessment.json` file, go to the instructor page for the assessment and click the "Regrade all assessment instances" button at the top of the "Assessment instances" box, or use the "Action" menu to regrade a single assessment instance for just one student.
 
-**The `forceMaxPoints` setting only affects assessment instances that are explicitly regraded.** Students who take the exam later are not affected by `forceMaxPoints` in any way. Also, while regrading an assessment instance as the student is still working on it is possible, it may be confusing to the student if they see their points suddenly change during an exam, for example. As such, it is generally recommended to wait until the exam is over before regrading with `forceMaxPoints` to avoid confusion for students.
+**The `forceMaxPoints` setting only affects assessment instances that are explicitly regraded.** Students who take the exam later are not affected by `forceMaxPoints` while submitting answers. Also, while regrading an assessment instance as the student is still working on it is possible, it may be confusing to the student if they see their points suddenly change during an exam, for example. As such, it is generally recommended to wait until the exam is over before regrading with `forceMaxPoints` to avoid confusion for students.
 
 ### Handling questions with alternatives
 
