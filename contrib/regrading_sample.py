@@ -50,7 +50,9 @@ def update_externally_graded_question(row: dict[str, str]) -> None:
     feedback["results"]["points"] = sum(t["points"] for t in tests)
     feedback["results"]["max_points"] = sum(t["max_points"] for t in tests)
     feedback["results"]["score"] = (
-        feedback["results"]["points"] / feedback["results"]["max_points"]
+        (feedback["results"]["points"] / feedback["results"]["max_points"])
+        if feedback["results"]["max_points"] > 0
+        else 0
     )
     feedback["results"]["tests"] = tests
     row["feedback_json"] = json.dumps(feedback)
@@ -90,13 +92,12 @@ if __name__ == "__main__":
         open(args.output_file, "w", newline="") as csvout,
     ):
         reader = csv.DictReader(csvin)
-        fields = [*(reader.fieldnames or []), "partial_scores", "feedback_json"]
+        fields = [*(reader.fieldnames or []), "feedback_json"]
         writer = csv.DictWriter(csvout, fieldnames=fields)
         writer.writeheader()
 
         for row in reader:
             if row["qid"] == OFFENDING_QID:
-                row["partial_scores"] = ""
                 row["feedback_json"] = ""
 
                 # TODO Call either `update_externally_graded_question(row)` or `update_internally_graded_question(row)`
