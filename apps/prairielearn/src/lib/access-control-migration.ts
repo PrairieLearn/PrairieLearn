@@ -1,7 +1,5 @@
 /**
  * Migration library for converting legacy allowAccess arrays to modern accessControl format.
- *
- * Extracted from the standalone migrate-access-control.ts script.
  */
 
 import * as fs from 'fs/promises';

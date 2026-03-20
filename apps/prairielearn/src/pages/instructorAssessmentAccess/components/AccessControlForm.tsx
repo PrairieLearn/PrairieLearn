@@ -311,8 +311,6 @@ export function AccessControlForm({
           rightCollapsed={selectedRule == null ? true : undefined}
           rightTitle={rightTitle}
           rightHeaderAction={rightHeaderAction}
-          defaultRightWidth={550}
-          maxRightWidth={800}
           left={
             <div className="split-pane__left-body p-3">
               <AccessControlSummary

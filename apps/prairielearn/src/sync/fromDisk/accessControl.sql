@@ -7,7 +7,6 @@ WHERE
   course_instance_id = $course_instance_id;
 
 -- BLOCK check_exam_uuids_exist
--- Validate that exam UUIDs exist in pt_exams table
 SELECT
   exam_uuids.value AS uuid,
   EXISTS (

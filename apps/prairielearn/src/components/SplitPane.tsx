@@ -36,9 +36,6 @@ export function SplitPane({
   forceOpen?: unknown;
   /** Called when the user closes the detail panel via the X button. */
   onClose?: () => void;
-  defaultRightWidth?: number;
-  minRightWidth?: number;
-  maxRightWidth?: number;
 }) {
   const [manualCollapsed, setManualCollapsed] = useState(true);
   const prevForceOpenRef = useRef(forceOpen);
