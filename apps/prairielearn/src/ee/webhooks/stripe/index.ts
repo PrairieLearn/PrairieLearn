@@ -74,9 +74,9 @@ async function handleAiGradingCreditSessionUpdate(session: Stripe.Checkout.Sessi
     await adjustCreditPool({
       course_instance_id: localSession.course_instance_id,
       delta_milli_dollars: deltaMilliDollars,
-      credit_type: 'non_transferable',
+      credit_type: 'transferable',
       user_id: localSession.agent_user_id,
-      reason: 'Stripe purchase',
+      reason: 'Credit purchase',
     });
 
     await updateAiGradingCreditCheckoutSessionData({

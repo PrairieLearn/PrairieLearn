@@ -1,7 +1,9 @@
 import * as trpcExpress from '@trpc/server/adapters/express';
 import { Router } from 'express';
+import { z } from 'zod';
 
 import * as error from '@prairielearn/error';
+import { runInTransactionAsync } from '@prairielearn/postgres';
 import { Hydrate } from '@prairielearn/react/server';
 import { generatePrefixCsrfToken } from '@prairielearn/signed-token';
 
@@ -13,6 +15,13 @@ import { typedAsyncHandler } from '../../../lib/res-locals.js';
 import { handleTrpcError } from '../../../lib/trpc.js';
 import { createAuthzMiddleware } from '../../../middlewares/authzHelper.js';
 import { selectCredentials } from '../../../models/ai-grading-credentials.js';
+import { adjustCreditPool } from '../../../models/ai-grading-credit-pool.js';
+import { getStripeClient } from '../../lib/billing/stripe.js';
+import {
+  getAiGradingCreditCheckoutSessionByStripeObjectId,
+  markAiGradingCreditCheckoutSessionCompleted,
+  updateAiGradingCreditCheckoutSessionData,
+} from '../../models/ai-grading-credit-checkout-sessions.js';
 
 import { InstructorInstanceAdminAiGrading } from './instructorInstanceAdminAiGrading.html.js';
 import { aiGradingSettingsRouter, createContext } from './trpc.js';
@@ -70,12 +79,44 @@ router.get(
     const stripePurchasingEnabled =
       !!config.stripeSecretKey && !!config.stripeAiGradingCreditsProductId;
 
-    const checkoutStatus =
-      req.query.checkout === 'success'
-        ? 'success'
-        : req.query.checkout === 'cancelled'
-          ? 'cancelled'
-          : null;
+    // If the user just returned from a successful Stripe checkout, eagerly
+    // process the session so credits are available immediately (the webhook
+    // serves as a backup but may arrive later or not at all in local dev).
+    let checkoutStatus: 'success' | 'cancelled' | null = null;
+    if (req.query.checkout === 'success' && req.query.session_id) {
+      const stripeSessionId = z.string().parse(req.query.session_id);
+      const localSession = await getAiGradingCreditCheckoutSessionByStripeObjectId(stripeSessionId);
+
+      if (localSession && !localSession.credits_added) {
+        if (localSession.course_instance_id !== courseInstance.id) {
+          throw new error.HttpStatusError(400, 'Invalid session');
+        }
+
+        const stripe = getStripeClient();
+        const session = await stripe.checkout.sessions.retrieve(stripeSessionId);
+
+        if (session.payment_status === 'paid') {
+          const deltaMilliDollars = localSession.amount_cents * 10;
+          await runInTransactionAsync(async () => {
+            await adjustCreditPool({
+              course_instance_id: localSession.course_instance_id,
+              delta_milli_dollars: deltaMilliDollars,
+              credit_type: 'transferable',
+              user_id: localSession.agent_user_id,
+              reason: 'Credit purchase',
+            });
+            await updateAiGradingCreditCheckoutSessionData({
+              stripe_object_id: stripeSessionId,
+              data: session,
+            });
+            await markAiGradingCreditCheckoutSessionCompleted(stripeSessionId);
+          });
+        }
+      }
+      checkoutStatus = 'success';
+    } else if (req.query.checkout === 'cancelled') {
+      checkoutStatus = 'cancelled';
+    }
 
     res.send(
       PageLayout({

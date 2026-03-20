@@ -506,7 +506,8 @@ function PurchaseCreditsModal({
               </div>
             )}
             <div className="text-muted small mt-2">
-              Credits will be added to this course instance as non-transferable credits.
+              Credits will be added as transferable credits that can be used across course
+              instances.
             </div>
           </Form.Group>
         </Modal.Body>
