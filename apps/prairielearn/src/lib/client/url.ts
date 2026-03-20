@@ -20,7 +20,6 @@ export function getAssessmentInstanceUrl({
   if (publicURL) {
     urlPrefix = `/pl/public/course_instance/${courseInstanceId}`;
   } else if (urlPrefix === undefined) {
-    // Construct the URL prefix with the appropriate course instance
     urlPrefix = `/pl/course_instance/${courseInstanceId}/instructor`;
   }
 

@@ -218,7 +218,9 @@ export function InstructorInstanceAdminAiGrading({
   aiGradingModelSelectionEnabled: boolean;
 }) {
   const [queryClient] = useState(() => new QueryClient());
-  const [trpcClient] = useState(() => createAiGradingSettingsTrpcClient(trpcCsrfToken));
+  const [trpcClient] = useState(() =>
+    createAiGradingSettingsTrpcClient({ csrfToken: trpcCsrfToken }),
+  );
 
   return (
     <QueryClientProviderDebug client={queryClient} isDevMode={isDevMode}>

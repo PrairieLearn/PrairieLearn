@@ -1,3 +1,5 @@
+import * as path from 'path';
+
 import { Router } from 'express';
 import asyncHandler from 'express-async-handler';
 import z from 'zod';
@@ -5,6 +7,7 @@ import z from 'zod';
 import { HttpStatusError } from '@prairielearn/error';
 import { callScalar } from '@prairielearn/postgres';
 import { Hydrate } from '@prairielearn/react/server';
+import { generatePrefixCsrfToken } from '@prairielearn/signed-token';
 import { assertNever } from '@prairielearn/utils';
 import { UniqueUidsFromStringSchema } from '@prairielearn/zod';
 
@@ -12,11 +15,13 @@ import { InsufficientCoursePermissionsCardPage } from '../../components/Insuffic
 import { PageLayout } from '../../components/PageLayout.js';
 import type { AuthzDataWithEffectiveUser } from '../../lib/authz-data-lib.js';
 import { extractPageContext } from '../../lib/client/page-context.js';
-import { StaffEnrollmentSchema } from '../../lib/client/safe-db-types.js';
+import { StaffEnrollmentSchema, StaffStudentLabelSchema } from '../../lib/client/safe-db-types.js';
 import { getSelfEnrollmentLinkUrl, getStudentCourseInstanceUrl } from '../../lib/client/url.js';
 import { config } from '../../lib/config.js';
 import { getCourseOwners } from '../../lib/course.js';
 import type { CourseInstance } from '../../lib/db-types.js';
+import { getOriginalHash } from '../../lib/editors.js';
+import { typedAsyncHandler } from '../../lib/res-locals.js';
 import { type ServerJobLogger, createServerJob } from '../../lib/server-jobs.js';
 import { getCanonicalHost, getUrl } from '../../lib/url.js';
 import { createAuthzMiddleware } from '../../middlewares/authzHelper.js';
@@ -28,6 +33,7 @@ import {
   selectOptionalEnrollmentByUid,
   selectUsersAndEnrollmentsForCourseInstance,
 } from '../../models/enrollment.js';
+import { selectStudentLabelsInCourseInstance } from '../../models/student-label.js';
 import { selectOptionalUserByUid } from '../../models/user.js';
 
 import { InstructorStudents } from './instructorStudents.html.js';
@@ -35,7 +41,6 @@ import { StudentRowSchema } from './instructorStudents.shared.js';
 
 const router = Router();
 
-// Supports a client-side table refresh.
 router.get(
   '/data.json',
   asyncHandler(async (req, res) => {
@@ -110,9 +115,6 @@ interface InviteCounts {
   errors: number;
 }
 
-/**
- * Process invitations for a list of UIDs.
- */
 async function processInvitations({
   uids,
   courseInstance,
@@ -232,7 +234,7 @@ async function processInvitations({
 
 router.post(
   '/',
-  asyncHandler(async (req, res) => {
+  typedAsyncHandler<'course-instance'>(async (req, res) => {
     if (req.accepts('html')) {
       throw new HttpStatusError(406, 'Not Acceptable');
     }
@@ -288,11 +290,10 @@ router.post(
             authzData,
             job,
             counts,
-            skipBlocked: true, // invite_uids respects existing blocks
+            skipBlocked: true,
             allowReenroll: false,
           });
 
-          // Log summary at the end
           job.info('\nSummary:');
           job.info(`  Successfully invited: ${counts.invited}`);
           const summaryLines: [number, string][] = [
@@ -344,7 +345,6 @@ router.post(
           let removed = 0;
           let removeErrors = 0;
 
-          // Process invitations
           if (toInvite.length > 0) {
             job.info('Processing invitations...');
             await processInvitations({
@@ -353,13 +353,12 @@ router.post(
               authzData,
               job,
               counts: syncCounts,
-              skipBlocked: false, // sync_students can re-invite blocked students
+              skipBlocked: false,
               allowReenroll: true,
               actionDetail: 'invited_by_manual_sync',
             });
           }
 
-          // Process invitation cancellations
           if (toCancelInvitation.length > 0) {
             job.info('\nCancelling invitations...');
             for (const uid of toCancelInvitation) {
@@ -396,7 +395,6 @@ router.post(
             }
           }
 
-          // Process removals
           if (toRemove.length > 0) {
             job.info('\nProcessing removals...');
             for (const uid of toRemove) {
@@ -432,7 +430,6 @@ router.post(
             }
           }
 
-          // Log summary at the end
           job.info('\nSummary:');
           job.info(`  Invited: ${syncCounts.invited}`);
           job.info(`  Invitations cancelled: ${cancelled}`);
@@ -491,8 +488,8 @@ router.get(
           resLocals: res.locals,
           navContext: {
             type: 'instructor',
-            page: 'instance_admin',
-            subPage: 'students',
+            page: 'students',
+            subPage: 'overview',
           },
           courseOwners,
           pageTitle: 'Students',
@@ -504,6 +501,7 @@ router.get(
 
     const allRows = await selectUsersAndEnrollmentsForCourseInstance(courseInstance);
     const students = allRows.map((r) => StudentRowSchema.parse(r));
+    const studentLabels = await selectStudentLabelsInCourseInstance(courseInstance);
 
     const host = getCanonicalHost(req);
     const selfEnrollLink = new URL(
@@ -516,14 +514,28 @@ router.get(
       host,
     ).href;
 
+    const trpcUrl = `/pl/course_instance/${courseInstance.id}/instructor/trpc`;
+    const trpcCsrfToken = generatePrefixCsrfToken(
+      { url: trpcUrl, authn_user_id: res.locals.authn_user.id },
+      config.secretKey,
+    );
+    const origHash = await getOriginalHash(
+      path.join(
+        course.path,
+        'courseInstances',
+        courseInstance.short_name,
+        'infoCourseInstance.json',
+      ),
+    );
+
     res.send(
       PageLayout({
         resLocals: res.locals,
         pageTitle: 'Students',
         navContext: {
           type: 'instructor',
-          page: 'instance_admin',
-          subPage: 'students',
+          page: 'students',
+          subPage: 'overview',
         },
         options: {
           fullWidth: true,
@@ -535,12 +547,15 @@ router.get(
               isDevMode={config.devMode}
               authzData={authz_data}
               students={students}
+              studentLabels={z.array(StaffStudentLabelSchema).parse(studentLabels)}
               search={search}
               timezone={course.display_timezone}
               courseInstance={courseInstance}
               course={course}
               csrfToken={csrfToken}
               selfEnrollLink={selfEnrollLink}
+              trpcCsrfToken={trpcCsrfToken}
+              origHash={origHash}
             />
           </Hydrate>
         ),

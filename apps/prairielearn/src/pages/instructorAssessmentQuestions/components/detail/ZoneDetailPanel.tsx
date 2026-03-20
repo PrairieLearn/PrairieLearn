@@ -40,7 +40,6 @@ export function ZoneDetailPanel({
   idPrefix,
   state,
   onUpdate,
-  onDelete,
   onFormValidChange,
 }: {
   zone: ZoneAssessmentForm;
@@ -48,7 +47,6 @@ export function ZoneDetailPanel({
   idPrefix: string;
   state: DetailState;
   onUpdate: (zoneTrackingId: string, zone: Partial<ZoneAssessmentForm>) => void;
-  onDelete: (zoneTrackingId: string) => void;
   onFormValidChange: (isValid: boolean) => void;
 }) {
   const { editMode, assessmentType, assessmentDefaults } = state;
@@ -282,16 +280,6 @@ export function ZoneDetailPanel({
         inheritance={advancedInheritance}
         zoneIndex={zoneIndex}
       />
-
-      {editMode && (
-        <button
-          type="button"
-          className="btn btn-sm btn-outline-danger"
-          onClick={() => onDelete(zone.trackingId)}
-        >
-          Delete zone
-        </button>
-      )}
     </div>
   );
 }
