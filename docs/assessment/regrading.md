@@ -11,10 +11,13 @@ Despite all our best efforts, sometimes we put a broken question onto an exam. T
 PrairieLearn does not currently support recomputing scores for individual submissions. This means that, if the issue is related to updates in how a score is computed, then there is no automatic process to update scores of students that already completed the assessment. This includes, but is not limited to:
 
 - Changes in the computation of correct answers.
-- Changes in the `grade()` function.
+- Changes in the `grade()` or `parse()` functions.
 - Changes in the external grader tests.
 - Changes in weights of individual elements.
 - Changes in element attributes that affect grading, such as `partial-credit` for `pl-checkbox` or `grading-method` for `pl-order-blocks`.
+- Changes in the points for a question, alternative group or zone.
+- Changes in the points or bonus points for an assessment.
+- Adding, removing or replacing questions in an assessment with type Exam.
 
 If, however, the issue is related to a broken question where all students should be awarded maximum points, then there is an automatic process to regrade the assessment and award maximum points for the broken question.
 
