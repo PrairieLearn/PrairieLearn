@@ -72,7 +72,6 @@ export function QuestionDetailPanel({
   idPrefix,
   state,
   onUpdate,
-  onDelete,
   onPickQuestion,
   onResetButtonClick,
   onFormValidChange,
@@ -86,11 +85,6 @@ export function QuestionDetailPanel({
   onUpdate: (
     questionTrackingId: string,
     question: Partial<ZoneQuestionBlockForm> | Partial<QuestionAlternativeForm>,
-    alternativeTrackingId?: string,
-  ) => void;
-  onDelete: (
-    questionTrackingId: string,
-    questionId: string,
     alternativeTrackingId?: string,
   ) => void;
   onPickQuestion: (currentSelection: SelectedItem) => void;
@@ -579,23 +573,6 @@ export function QuestionDetailPanel({
               </button>
             </OverlayTrigger>
           )}
-        {editMode && (
-          <OverlayTrigger
-            placement="top"
-            tooltip={{
-              props: { id: 'delete-question-tooltip' },
-              body: 'Remove this question from the assessment',
-            }}
-          >
-            <button
-              type="button"
-              className="btn btn-sm btn-outline-danger"
-              onClick={() => onDelete(questionTrackingId, question.id, alternativeTrackingId)}
-            >
-              Delete
-            </button>
-          </OverlayTrigger>
-        )}
       </div>
     </div>
   );
