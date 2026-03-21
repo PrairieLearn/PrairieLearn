@@ -542,6 +542,157 @@ export function QuestionDetailPanel({
         </FormField>
       </Wrapper>
 
+      {questionData?.question.preferences_schema &&
+        Object.keys(questionData.question.preferences_schema).length > 0 && (
+          <>
+            <DetailSectionHeader>Preferences</DetailSectionHeader>
+            <Wrapper className={clsx(!editMode && 'mb-0')}>
+              {Object.entries(questionData.question.preferences_schema).map(([name, schema]) => {
+                const currentValue = question.preferences?.[name];
+                const hasOverride = currentValue != null;
+
+                if (schema.type === 'boolean') {
+                  return (
+                    <FormField
+                      key={name}
+                      editMode={editMode}
+                      id={`${idPrefix}-pref-${name}`}
+                      label={<span className="font-monospace">{name}</span>}
+                      viewValue={
+                        hasOverride ? String(currentValue) : `${String(schema.default)} (default)`
+                      }
+                      helpText={`Default: ${String(schema.default)}`}
+                    >
+                      {(aria) => (
+                        <div className="d-flex align-items-center gap-2">
+                          <select
+                            className="form-select form-select-sm"
+                            {...aria.inputProps}
+                            value={hasOverride ? String(currentValue) : ''}
+                            onChange={(e) => {
+                              const val = e.target.value;
+                              const newPreferences = { ...question.preferences };
+                              if (val === '') {
+                                delete newPreferences[name];
+                              } else {
+                                newPreferences[name] = val === 'true';
+                              }
+                              onUpdate(
+                                questionTrackingId,
+                                {
+                                  preferences:
+                                    Object.keys(newPreferences).length > 0
+                                      ? newPreferences
+                                      : undefined,
+                                },
+                                alternativeTrackingId,
+                              );
+                            }}
+                          >
+                            <option value="">Use default ({String(schema.default)})</option>
+                            <option value="true">true</option>
+                            <option value="false">false</option>
+                          </select>
+                        </div>
+                      )}
+                    </FormField>
+                  );
+                }
+
+                if (schema.enum && schema.enum.length > 0) {
+                  return (
+                    <FormField
+                      key={name}
+                      editMode={editMode}
+                      id={`${idPrefix}-pref-${name}`}
+                      label={<span className="font-monospace">{name}</span>}
+                      viewValue={
+                        hasOverride ? String(currentValue) : `${String(schema.default)} (default)`
+                      }
+                      helpText={`Default: ${String(schema.default)}`}
+                    >
+                      {(aria) => (
+                        <select
+                          className="form-select form-select-sm"
+                          {...aria.inputProps}
+                          value={hasOverride ? String(currentValue) : ''}
+                          onChange={(e) => {
+                            const val = e.target.value;
+                            const newPreferences = { ...question.preferences };
+                            if (val === '') {
+                              delete newPreferences[name];
+                            } else {
+                              newPreferences[name] = schema.type === 'number' ? Number(val) : val;
+                            }
+                            onUpdate(
+                              questionTrackingId,
+                              {
+                                preferences:
+                                  Object.keys(newPreferences).length > 0
+                                    ? newPreferences
+                                    : undefined,
+                              },
+                              alternativeTrackingId,
+                            );
+                          }}
+                        >
+                          <option value="">Use default ({String(schema.default)})</option>
+                          {schema.enum?.map((v) => (
+                            <option key={String(v)} value={String(v)}>
+                              {String(v)}
+                            </option>
+                          ))}
+                        </select>
+                      )}
+                    </FormField>
+                  );
+                }
+
+                return (
+                  <FormField
+                    key={name}
+                    editMode={editMode}
+                    id={`${idPrefix}-pref-${name}`}
+                    label={<span className="font-monospace">{name}</span>}
+                    viewValue={
+                      hasOverride ? String(currentValue) : `${String(schema.default)} (default)`
+                    }
+                    helpText={`Default: ${String(schema.default)}`}
+                  >
+                    {(aria) => (
+                      <input
+                        type={schema.type === 'number' ? 'number' : 'text'}
+                        step={schema.type === 'number' ? 'any' : undefined}
+                        className="form-control form-control-sm"
+                        {...aria.inputProps}
+                        placeholder={String(schema.default)}
+                        defaultValue={hasOverride ? String(currentValue) : ''}
+                        onBlur={(e) => {
+                          const val = e.target.value.trim();
+                          const newPreferences = { ...question.preferences };
+                          if (val === '') {
+                            delete newPreferences[name];
+                          } else {
+                            newPreferences[name] = schema.type === 'number' ? Number(val) : val;
+                          }
+                          onUpdate(
+                            questionTrackingId,
+                            {
+                              preferences:
+                                Object.keys(newPreferences).length > 0 ? newPreferences : undefined,
+                            },
+                            alternativeTrackingId,
+                          );
+                        }}
+                      />
+                    )}
+                  </FormField>
+                );
+              })}
+            </Wrapper>
+          </>
+        )}
+
       {/* Advanced fields */}
       <AdvancedFields
         register={register}

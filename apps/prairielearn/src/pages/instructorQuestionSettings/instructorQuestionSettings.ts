@@ -142,6 +142,19 @@ router.post(
         throw new error.HttpStatusError(400, 'Question info file does not exist');
       }
 
+      // Reconstruct preferences array from flat form keys (e.g. "preferences.0.name")
+      const preferencesArray: Record<string, string>[] = [];
+      for (const [key, value] of Object.entries(req.body)) {
+        const match = key.match(/^preferences\.(\d+)\.(\w+)$/);
+        if (match) {
+          const index = Number(match[1]);
+          const field = match[2];
+          if (!preferencesArray[index]) preferencesArray[index] = {};
+          preferencesArray[index][field] = value as string;
+        }
+      }
+      req.body.preferences = preferencesArray.filter(Boolean);
+
       const body = z
         .object({
           orig_hash: z.string(),
@@ -160,6 +173,16 @@ router.post(
           workspace_graded_files: GradedFilesSchema,
           workspace_enable_networking: BooleanFromCheckboxSchema,
           workspace_environment: z.string().optional(),
+          preferences: z
+            .array(
+              z.object({
+                name: z.string(),
+                type: z.enum(['string', 'number', 'boolean']),
+                default: z.string(),
+                enum: z.string().optional(),
+              }),
+            )
+            .default([]),
           external_grading_image: z.string().optional(),
           external_grading_files: GradedFilesSchema,
           external_grading_entrypoint: ArgumentsSchema,
@@ -207,6 +230,30 @@ router.post(
         body.show_correct_answer,
         true,
       );
+
+      // Build preferences schema from form array
+      if (body.preferences.length > 0) {
+        const preferencesSchema: Record<string, any> = {};
+        for (const pref of body.preferences) {
+          const entry: any = {
+            type: pref.type,
+            default:
+              pref.type === 'number'
+                ? Number(pref.default)
+                : pref.type === 'boolean'
+                  ? pref.default === 'true'
+                  : pref.default,
+          };
+          if (pref.enum && pref.enum.trim() !== '') {
+            const enumValues = pref.enum.split(',').map((v) => v.trim());
+            entry.enum = pref.type === 'number' ? enumValues.map(Number) : enumValues;
+          }
+          preferencesSchema[pref.name] = entry;
+        }
+        questionInfo.preferences = preferencesSchema;
+      } else {
+        delete questionInfo.preferences;
+      }
 
       const workspaceOptions = {
         comment: questionInfo.workspaceOptions?.comment ?? undefined,
