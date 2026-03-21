@@ -181,7 +181,7 @@ function dbEnrollmentRowToAccessControlJson(row: EnrollmentRuleRow): AccessContr
   };
 }
 
-export async function fetchAccessControlJsonRules(
+async function fetchAccessControlJsonRules(
   assessment: Assessment,
 ): Promise<(AccessControlJson & { id: string })[]> {
   const rows = await queryRows(
@@ -192,9 +192,7 @@ export async function fetchAccessControlJsonRules(
   return rows.map(dbRowToAccessControlJson);
 }
 
-export async function fetchEnrollmentRules(
-  assessment: Assessment,
-): Promise<AccessControlJsonWithId[]> {
+async function fetchEnrollmentRules(assessment: Assessment): Promise<AccessControlJsonWithId[]> {
   const rows = await queryRows(
     sql.select_all_enrollment_rules,
     { assessment_id: assessment.id },

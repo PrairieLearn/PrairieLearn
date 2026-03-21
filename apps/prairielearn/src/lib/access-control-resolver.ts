@@ -192,7 +192,7 @@ interface CreditResult {
   timeLimitMin: number | null;
 }
 
-export function computeCredit(
+function computeCredit(
   dateControl: AccessControlJson['dateControl'],
   date: Date,
   effectiveRule: AccessControlJson,

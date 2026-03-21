@@ -141,15 +141,6 @@ WHERE
 RETURNING
   *;
 
--- BLOCK select_enrollments_by_ids_in_course_instance
-SELECT
-  *
-FROM
-  enrollments
-WHERE
-  id = ANY ($ids::bigint[])
-  AND course_instance_id = $course_instance_id;
-
 -- BLOCK select_users_and_enrollments_for_course_instance
 SELECT
   to_jsonb(e) AS enrollment,
