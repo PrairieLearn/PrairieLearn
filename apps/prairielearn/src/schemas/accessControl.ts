@@ -102,12 +102,16 @@ export const AccessControlJsonSchema = z.object({
   enabled: z
     .boolean()
     .optional()
-    .describe('Whether this rule is enabled. Defaults to true for the main rule. Not inherited by overrides.'),
+    .describe(
+      'Whether this rule is enabled. Defaults to true for the main rule. Not inherited by overrides.',
+    ),
   listBeforeRelease: z
     .boolean()
     .optional()
     .nullable()
-    .describe('Whether students can see the assessment title before the release date. Defaults to false.'),
+    .describe(
+      'Whether students can see the assessment title before the release date. Defaults to false.',
+    ),
 
   dateControl: DateControlJsonSchema,
   integrations: IntegrationsJsonSchema,

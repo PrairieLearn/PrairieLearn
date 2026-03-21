@@ -2,8 +2,8 @@ import { beforeEach, describe, expect, it, vi } from 'vitest';
 
 import * as accessControlData from './access-control-data.js';
 import {
-  resolveModernAssessmentInstanceAccess,
   type ModernAssessmentInstanceAccessInput,
+  resolveModernAssessmentInstanceAccess,
 } from './access-control-modern.js';
 import type { Assessment, CourseInstance } from './db-types.js';
 import * as groups from './groups.js';

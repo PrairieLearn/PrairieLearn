@@ -347,6 +347,7 @@ not_in_nav: |
   elements/pl-dropdown.md
   elements/pl-variable-score.md
   dev-guide/contrib/*
+  assessment/accessControlModern.md
 
 validation:
   omitted_files: warn
