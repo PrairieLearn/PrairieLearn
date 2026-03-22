@@ -812,6 +812,7 @@ export function RubricSettings({
             <thead>
               <tr className="table-light fw-bold">
                 <td style={{ width: '1px' }} />
+                <td style={{ width: '1px' }} />
                 <td>Points</td>
                 <td>Description</td>
                 <td>Detailed explanation</td>
@@ -826,6 +827,7 @@ export function RubricSettings({
                   <RubricRow
                     key={it.rubric_item.id ?? `row-${idx}`}
                     item={it}
+                    itemNumber={idx + 1}
                     showAiGradingStats={showAiGradingStats}
                     submissionCount={aiGradingStats?.submission_rubric_count ?? 0}
                     hasCourseInstancePermissionEdit={hasCourseInstancePermissionEdit}
@@ -839,7 +841,7 @@ export function RubricSettings({
                 ))
               ) : (
                 <tr>
-                  <td colSpan={7}>
+                  <td colSpan={8}>
                     <em>
                       This question does not have any rubric items! Click "Add item" below to add
                       some
@@ -1051,6 +1053,7 @@ export function RubricSettings({
 
 function RubricRow({
   item,
+  itemNumber,
   showAiGradingStats,
   submissionCount,
   deleteRow,
@@ -1062,6 +1065,7 @@ function RubricRow({
   hasCourseInstancePermissionEdit,
 }: {
   item: RubricItemData;
+  itemNumber: number;
   showAiGradingStats: boolean;
   submissionCount: number;
   deleteRow: () => void;
@@ -1148,6 +1152,15 @@ function RubricRow({
             />
           </>
         )}
+      </td>
+
+      <td className="align-middle text-center">
+        <span
+          className="badge rounded-pill bg-light text-dark border"
+          style={{ minWidth: '1.5rem', fontSize: '0.75rem' }}
+        >
+          {itemNumber}
+        </span>
       </td>
 
       <td className="align-middle">

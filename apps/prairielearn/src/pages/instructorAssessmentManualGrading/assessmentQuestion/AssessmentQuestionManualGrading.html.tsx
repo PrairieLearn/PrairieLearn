@@ -214,6 +214,336 @@ const TOOL_STATUS_MESSAGES: Record<
   },
 };
 
+// ---------------------------------------------------------------------------
+// Rubric diff computation and rendering
+// ---------------------------------------------------------------------------
+
+interface DiffRubricItem {
+  rubric_item_id: string;
+  display_index: number;
+  points: number;
+  description: string;
+  explanation: string | null;
+  grader_note: string | null;
+  always_show_to_students: boolean;
+}
+
+interface DiffRubricState {
+  settings: Record<string, unknown> | null;
+  rubric_items: DiffRubricItem[];
+}
+
+interface FieldChange {
+  field: string;
+  before: string;
+  after: string;
+}
+
+interface ItemDiffEntry {
+  kind: 'added' | 'removed' | 'edited';
+  index: number;
+  description: string;
+  points: number;
+  fieldChanges: FieldChange[];
+}
+
+interface RubricDiffResult {
+  items: ItemDiffEntry[];
+  settingsChanges: FieldChange[];
+}
+
+const MUTATION_TOOL_TYPES = new Set([
+  'tool-generateRubric',
+  'tool-addRubricItem',
+  'tool-editRubricItem',
+  'tool-deleteRubricItem',
+  'tool-swapRubricItems',
+  'tool-editRubricSettings',
+]);
+
+function displayValue(value: unknown): string {
+  if (value === null || value === undefined || value === '') return '(empty)';
+  if (typeof value === 'boolean') return value ? 'Yes' : 'No';
+  return String(value);
+}
+
+const SETTINGS_LABELS: Record<string, string> = {
+  starting_points: 'Starting points',
+  min_points: 'Min points',
+  max_extra_points: 'Max extra credit',
+  replace_auto_points: 'Replace auto points',
+  grader_guidelines: 'Grader guidelines',
+};
+
+const ITEM_FIELD_LABELS: Record<string, string> = {
+  points: 'Points',
+  description: 'Description',
+  explanation: 'Explanation',
+  grader_note: 'Grader note',
+  always_show_to_students: 'Show to students',
+  display_index: 'Position',
+};
+
+function diffItemFields(before: DiffRubricItem, after: DiffRubricItem): FieldChange[] {
+  const changes: FieldChange[] = [];
+  const fields: (keyof DiffRubricItem)[] = [
+    'points',
+    'description',
+    'explanation',
+    'grader_note',
+    'always_show_to_students',
+    'display_index',
+  ];
+  for (const f of fields) {
+    const bVal = before[f];
+    const aVal = after[f];
+    if (f === 'display_index') {
+      if (bVal !== aVal) {
+        changes.push({
+          field: ITEM_FIELD_LABELS[f],
+          before: `#${bVal}`,
+          after: `#${aVal}`,
+        });
+      }
+    } else if (displayValue(bVal) !== displayValue(aVal)) {
+      changes.push({
+        field: ITEM_FIELD_LABELS[f] ?? f,
+        before: displayValue(bVal),
+        after: displayValue(aVal),
+      });
+    }
+  }
+  return changes;
+}
+
+function computeRubricDiff(before: DiffRubricState, after: DiffRubricState): RubricDiffResult {
+  const beforeIds = new Set(before.rubric_items.map((i) => i.rubric_item_id));
+  const afterIds = new Set(after.rubric_items.map((i) => i.rubric_item_id));
+  const beforeById = new Map(before.rubric_items.map((i) => [i.rubric_item_id, i]));
+
+  const items: ItemDiffEntry[] = [];
+
+  // Added items
+  for (const item of after.rubric_items) {
+    if (!beforeIds.has(item.rubric_item_id)) {
+      items.push({
+        kind: 'added',
+        index: item.display_index,
+        description: item.description,
+        points: item.points,
+        fieldChanges: [],
+      });
+    }
+  }
+
+  // Removed items
+  for (const item of before.rubric_items) {
+    if (!afterIds.has(item.rubric_item_id)) {
+      items.push({
+        kind: 'removed',
+        index: item.display_index,
+        description: item.description,
+        points: item.points,
+        fieldChanges: [],
+      });
+    }
+  }
+
+  // Edited items
+  for (const afterItem of after.rubric_items) {
+    const beforeItem = beforeById.get(afterItem.rubric_item_id);
+    if (!beforeItem) continue;
+    const fieldChanges = diffItemFields(beforeItem, afterItem);
+    if (fieldChanges.length > 0) {
+      items.push({
+        kind: 'edited',
+        index: afterItem.display_index,
+        description: afterItem.description,
+        points: afterItem.points,
+        fieldChanges,
+      });
+    }
+  }
+
+  // Sort by index for consistent display
+  items.sort((a, b) => a.index - b.index);
+
+  const settingsChanges: FieldChange[] = [];
+  if (before.settings && after.settings) {
+    for (const [key, label] of Object.entries(SETTINGS_LABELS)) {
+      const bVal = before.settings[key];
+      const aVal = after.settings[key];
+      if (displayValue(bVal) !== displayValue(aVal)) {
+        settingsChanges.push({
+          field: label,
+          before: displayValue(bVal),
+          after: displayValue(aVal),
+        });
+      }
+    }
+  }
+
+  return { items, settingsChanges };
+}
+
+function FieldChangeLine({ change }: { change: FieldChange }) {
+  return (
+    <div className="d-flex flex-column" style={{ fontSize: '0.8rem', lineHeight: 1.3 }}>
+      <span className="text-body-secondary fw-semibold" style={{ fontSize: '0.7rem' }}>
+        {change.field}
+      </span>
+      <div className="d-flex flex-column gap-0">
+        {change.before !== '(empty)' && (
+          <span
+            className="text-danger"
+            style={{ textDecoration: 'line-through', opacity: 0.7, wordBreak: 'break-word' }}
+          >
+            {change.before}
+          </span>
+        )}
+        {change.after !== '(empty)' && (
+          <span className="text-success" style={{ wordBreak: 'break-word' }}>
+            {change.after}
+          </span>
+        )}
+        {change.before !== '(empty)' && change.after === '(empty)' && (
+          <span className="text-body-secondary fst-italic">removed</span>
+        )}
+      </div>
+    </div>
+  );
+}
+
+function RubricDiff({ diff }: { diff: RubricDiffResult }) {
+  const hasChanges = diff.items.length > 0 || diff.settingsChanges.length > 0;
+  if (!hasChanges) return null;
+
+  const borderColor = (kind: ItemDiffEntry['kind']) => {
+    switch (kind) {
+      case 'added':
+        return '#198754';
+      case 'removed':
+        return '#dc3545';
+      case 'edited':
+        return '#0d6efd';
+    }
+  };
+
+  const bgColor = (kind: ItemDiffEntry['kind']) => {
+    switch (kind) {
+      case 'added':
+        return 'rgba(25, 135, 84, 0.05)';
+      case 'removed':
+        return 'rgba(220, 53, 69, 0.05)';
+      case 'edited':
+        return 'rgba(13, 110, 253, 0.05)';
+    }
+  };
+
+  const kindLabel = (kind: ItemDiffEntry['kind']) => {
+    switch (kind) {
+      case 'added':
+        return 'Added';
+      case 'removed':
+        return 'Removed';
+      case 'edited':
+        return 'Edited';
+    }
+  };
+
+  const kindIcon = (kind: ItemDiffEntry['kind']) => {
+    switch (kind) {
+      case 'added':
+        return 'bi-plus-circle-fill';
+      case 'removed':
+        return 'bi-dash-circle-fill';
+      case 'edited':
+        return 'bi-pencil-fill';
+    }
+  };
+
+  return (
+    <div className="mt-2 mb-1 d-flex flex-column gap-1" style={{ fontSize: '0.85rem' }}>
+      <div className="fw-semibold text-body-secondary" style={{ fontSize: '0.75rem' }}>
+        Changes
+      </div>
+      {diff.items.map((item) => (
+        <div
+          key={`${item.kind}-${item.index}-${item.description}`}
+          className="rounded px-2 py-1"
+          style={{
+            borderLeft: `3px solid ${borderColor(item.kind)}`,
+            background: bgColor(item.kind),
+          }}
+        >
+          <div className="d-flex align-items-start gap-1 flex-wrap">
+            <div className="d-flex align-items-center gap-1 flex-shrink-0">
+              <i
+                className={`bi ${kindIcon(item.kind)}`}
+                style={{ color: borderColor(item.kind), fontSize: '0.7rem' }}
+                aria-hidden="true"
+              />
+              <span
+                className="fw-semibold"
+                style={{ color: borderColor(item.kind), fontSize: '0.7rem' }}
+              >
+                {kindLabel(item.kind)}
+              </span>
+              <span
+                className="badge rounded-pill bg-light text-dark border"
+                style={{ fontSize: '0.65rem' }}
+              >
+                {item.index}
+              </span>
+            </div>
+            <span style={{ fontSize: '0.8rem', wordBreak: 'break-word', minWidth: 0 }}>
+              {item.description}
+              {(item.kind === 'added' || item.kind === 'removed') && (
+                <span className="text-body-secondary ms-1" style={{ fontSize: '0.75rem' }}>
+                  ({item.points > 0 ? '+' : ''}
+                  {item.points} pts)
+                </span>
+              )}
+            </span>
+          </div>
+          {item.fieldChanges.length > 0 && (
+            <div className="d-flex flex-column gap-1 mt-1 ps-3">
+              {item.fieldChanges.map((change) => (
+                <FieldChangeLine key={change.field} change={change} />
+              ))}
+            </div>
+          )}
+        </div>
+      ))}
+      {diff.settingsChanges.length > 0 && (
+        <div
+          className="rounded px-2 py-1"
+          style={{
+            borderLeft: '3px solid #6c757d',
+            background: 'rgba(108, 117, 125, 0.05)',
+          }}
+        >
+          <div className="d-flex align-items-center gap-1 mb-1">
+            <i
+              className="bi bi-gear-fill"
+              style={{ color: '#6c757d', fontSize: '0.7rem' }}
+              aria-hidden="true"
+            />
+            <span className="fw-semibold" style={{ color: '#6c757d', fontSize: '0.7rem' }}>
+              Settings
+            </span>
+          </div>
+          <div className="d-flex flex-column gap-1 ps-3">
+            {diff.settingsChanges.map((change) => (
+              <FieldChangeLine key={change.field} change={change} />
+            ))}
+          </div>
+        </div>
+      )}
+    </div>
+  );
+}
+
 function ToolCall({ part }: { part: ToolUIPart }) {
   if (
     part.state === 'approval-requested' ||
@@ -231,6 +561,55 @@ function ToolCall({ part }: { part: ToolUIPart }) {
   };
 
   return <ToolCallStatus state={part.state} statusText={getToolStatusText(part.state, messages)} />;
+}
+
+/**
+ * Compute a master diff across all mutation tool calls in a single message.
+ * Uses the `before` snapshot from the first mutation and `after` from the last.
+ */
+function MasterRubricDiff({
+  parts,
+  isComplete,
+}: {
+  parts: UIMessage['parts'];
+  isComplete: boolean;
+}) {
+  if (!isComplete) return null;
+
+  const diff = run(() => {
+    const mutationParts = parts.filter(
+      (p): p is ToolUIPart =>
+        isToolPart(p) && p.state === 'output-available' && MUTATION_TOOL_TYPES.has(p.type),
+    );
+    if (mutationParts.length === 0) return null;
+
+    let firstBefore: DiffRubricState | null = null;
+    let lastAfter: DiffRubricState | null = null;
+
+    for (const part of mutationParts) {
+      try {
+        const output = part.output as string | undefined;
+        if (!output) continue;
+        const parsed = JSON.parse(output) as { before?: DiffRubricState; after?: DiffRubricState };
+        if (parsed.before && !firstBefore) {
+          firstBefore = parsed.before;
+        }
+        if (parsed.after) {
+          lastAfter = parsed.after;
+        }
+      } catch {
+        continue;
+      }
+    }
+
+    if (!firstBefore || !lastAfter) return null;
+    const result = computeRubricDiff(firstBefore, lastAfter);
+    const hasChanges = result.items.length > 0 || result.settingsChanges.length > 0;
+    return hasChanges ? result : null;
+  });
+
+  if (!diff) return null;
+  return <RubricDiff diff={diff} />;
 }
 
 function MessageParts({ parts }: { parts: UIMessage['parts'] }) {
@@ -569,7 +948,7 @@ function AssessmentQuestionManualGradingInner({
           onHide={() => setShowAiGradingUnavailableModal(false)}
         />
       </div>
-      <div className="d-flex flex-column bg-light border rounded" style={{ width: 350 }}>
+      <div className="d-flex flex-column bg-light border rounded" style={{ width: 480 }}>
         <div className="d-flex justify-content-between align-items-center p-3 pb-0">
           <span className="fw-bold small">AI assistant</span>
           {messages.length > 0 && (
@@ -607,9 +986,15 @@ function AssessmentQuestionManualGradingInner({
               );
             }
 
+            const isMessageComplete =
+              message.metadata?.status === 'completed' ||
+              message.metadata?.status === 'errored' ||
+              !isGenerating;
+
             return (
               <div key={message.id} className="d-flex flex-column gap-1 mb-3">
                 <MessageParts parts={message.parts} />
+                <MasterRubricDiff parts={message.parts} isComplete={isMessageComplete} />
                 {jobSequenceId && (
                   <a
                     className="small"

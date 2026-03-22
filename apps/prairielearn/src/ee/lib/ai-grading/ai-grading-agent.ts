@@ -326,7 +326,8 @@ const RUBRIC_GENERATION_AGENT_SYSTEM_PROMPT = [
   'For positive grading: min_points should match the minimum attainable score, and question_max_points + max_extra_points should match the maximum attainable score.',
   'For negative grading: starting_points is near the max, items subtract points down to min_points.',
   'You cannot change the assessment question point values — those are fixed by the instructor.',
-  'After generating and optionally refining the rubric, summarize what was created.',
+  'After generating and optionally refining the rubric, briefly summarize your reasoning.',
+  'A detailed diff of all rubric changes will be automatically shown to the user after your message, so do NOT list individual item changes — focus on your rationale and any important decisions.',
 ].join(' ');
 
 const RUBRIC_EDITING_AGENT_SYSTEM_PROMPT = [
@@ -346,7 +347,8 @@ const RUBRIC_EDITING_AGENT_SYSTEM_PROMPT = [
   'Rubric items are binary: full credit or no credit. Account for nuances by creating separate items.',
   'Questions students received were programmatically generated and randomized. Avoid hardcoding randomized quantities and final solutions.',
   'You cannot change the assessment question point values — those are fixed by the instructor.',
-  'After making changes, respond conversationally to explain what you did.',
+  'After making changes, respond briefly to explain your reasoning.',
+  'A detailed diff of all rubric changes will be automatically shown to the user after your message, so do NOT list individual item changes — focus on your rationale and any important decisions.',
 ].join(' ');
 
 // ---------------------------------------------------------------------------
@@ -502,6 +504,51 @@ async function formatCurrentRubricState(context: AiGradingAgentContext): Promise
     null,
     2,
   );
+}
+
+/**
+ * Returns a lightweight snapshot object (not a string) for use in before/after
+ * diffs. The UI parses this from the tool output to render inline diffs.
+ */
+async function getRubricSnapshot(
+  context: AiGradingAgentContext,
+): Promise<{ settings: Record<string, unknown> | null; rubric_items: Record<string, unknown>[] }> {
+  const rubricData = await getCurrentRubricItems(context);
+  if (!rubricData) {
+    return { settings: null, rubric_items: [] };
+  }
+  return {
+    settings: {
+      starting_points: rubricData.rubric.starting_points,
+      replace_auto_points: rubricData.rubric.replace_auto_points,
+      min_points: rubricData.rubric.min_points,
+      max_extra_points: rubricData.rubric.max_extra_points,
+      grader_guidelines: rubricData.rubric.grader_guidelines,
+    },
+    rubric_items: rubricData.rubric_items.map((i, idx) => ({
+      rubric_item_id: i.rubric_item.id,
+      display_index: idx + 1,
+      points: i.rubric_item.points,
+      description: i.rubric_item.description,
+      explanation: i.rubric_item.explanation,
+      grader_note: i.rubric_item.grader_note,
+      always_show_to_students: i.rubric_item.always_show_to_students,
+    })),
+  };
+}
+
+/**
+ * Build the mutation tool result: includes the full after-state for the LLM
+ * plus a `before` snapshot so the UI can compute diffs.
+ */
+async function formatMutationResult(
+  context: AiGradingAgentContext,
+  beforeSnapshot: Awaited<ReturnType<typeof getRubricSnapshot>>,
+): Promise<string> {
+  const afterSnapshot = await getRubricSnapshot(context);
+  const afterStateStr = await formatCurrentRubricState(context);
+  const afterState = JSON.parse(afterStateStr);
+  return JSON.stringify({ ...afterState, before: beforeSnapshot, after: afterSnapshot });
 }
 
 // ---------------------------------------------------------------------------
@@ -746,6 +793,7 @@ function buildRubricToolsWithExecute({
         rubricMutex.run(async () => {
           job.info('Tool: generateRubric — gathering context and calling inner LLM');
 
+          const beforeSnapshot = await getRubricSnapshot(context);
           const initContext = await getInitializationContext(context);
 
           const freshAq = await selectAssessmentQuestionById(context.assessmentQuestion.id);
@@ -837,9 +885,9 @@ function buildRubricToolsWithExecute({
             authn_user_id: context.authnUserId,
           });
 
-          const savedState = await formatCurrentRubricState(context);
-          job.info(`generateRubric — saved rubric state: ${savedState}`);
-          return savedState;
+          const mutationResult = await formatMutationResult(context, beforeSnapshot);
+          job.info(`generateRubric — saved rubric state: ${mutationResult}`);
+          return mutationResult;
         }),
     }),
 
@@ -898,12 +946,12 @@ function buildRubricToolsWithExecute({
             position,
           } = input;
           job.info(`Tool: addRubricItem — input: ${JSON.stringify(input)}`);
+          const beforeSnapshot = await getRubricSnapshot(context);
           const rubricData = await getCurrentRubricItems(context);
           if (!rubricData) {
             return JSON.stringify({ error: 'No rubric exists. Generate one first.' });
           }
           const items = rubricDataToItems(rubricData);
-          job.info(`addRubricItem BEFORE: ${JSON.stringify(items)}`);
 
           const newItem: RubricItemForEdit = {
             order: 0,
@@ -920,12 +968,11 @@ function buildRubricToolsWithExecute({
             items.push(newItem);
           }
 
-          job.info(`addRubricItem AFTER (before save): ${JSON.stringify(items)}`);
           await saveRubricItems(context, rubricData, items);
 
-          const savedState = await formatCurrentRubricState(context);
-          job.info(`addRubricItem SAVED STATE: ${savedState}`);
-          return savedState;
+          const result = await formatMutationResult(context, beforeSnapshot);
+          job.info(`addRubricItem RESULT: ${result}`);
+          return result;
         }),
     }),
 
@@ -942,6 +989,7 @@ function buildRubricToolsWithExecute({
             always_show_to_students,
           } = input;
           job.info(`Tool: editRubricItem — input: ${JSON.stringify(input)}`);
+          const beforeSnapshot = await getRubricSnapshot(context);
           const rubricData = await getCurrentRubricItems(context);
           if (!rubricData) {
             return JSON.stringify({ error: 'No rubric exists.' });
@@ -958,8 +1006,6 @@ function buildRubricToolsWithExecute({
             });
           }
 
-          job.info(`editRubricItem BEFORE: ${JSON.stringify(item)}`);
-
           if (points !== undefined) item.points = points;
           if (description !== undefined) item.description = description;
           if (explanation !== undefined) item.explanation = explanation ?? '';
@@ -968,14 +1014,11 @@ function buildRubricToolsWithExecute({
             item.always_show_to_students = always_show_to_students;
           }
 
-          job.info(`editRubricItem AFTER (before save): ${JSON.stringify(item)}`);
-          job.info(`editRubricItem ALL ITEMS (before save): ${JSON.stringify(items)}`);
-
           await saveRubricItems(context, rubricData, items);
 
-          const savedState = await formatCurrentRubricState(context);
-          job.info(`editRubricItem SAVED STATE: ${savedState}`);
-          return savedState;
+          const result = await formatMutationResult(context, beforeSnapshot);
+          job.info(`editRubricItem RESULT: ${result}`);
+          return result;
         }),
     }),
 
@@ -985,12 +1028,12 @@ function buildRubricToolsWithExecute({
         rubricMutex.run(async () => {
           const { rubric_item_id } = input;
           job.info(`Tool: deleteRubricItem — input: ${JSON.stringify(input)}`);
+          const beforeSnapshot = await getRubricSnapshot(context);
           const rubricData = await getCurrentRubricItems(context);
           if (!rubricData) {
             return JSON.stringify({ error: 'No rubric exists.' });
           }
           const items = rubricDataToItems(rubricData);
-          job.info(`deleteRubricItem BEFORE: ${JSON.stringify(items)}`);
 
           const idx = items.findIndex((i) => i.id === rubric_item_id);
           if (idx === -1) {
@@ -1004,13 +1047,11 @@ function buildRubricToolsWithExecute({
           }
 
           items.splice(idx, 1);
-          job.info(`deleteRubricItem AFTER (before save): ${JSON.stringify(items)}`);
-
           await saveRubricItems(context, rubricData, items);
 
-          const savedState = await formatCurrentRubricState(context);
-          job.info(`deleteRubricItem SAVED STATE: ${savedState}`);
-          return savedState;
+          const result = await formatMutationResult(context, beforeSnapshot);
+          job.info(`deleteRubricItem RESULT: ${result}`);
+          return result;
         }),
     }),
 
@@ -1020,12 +1061,12 @@ function buildRubricToolsWithExecute({
         rubricMutex.run(async () => {
           const { rubric_item_id_a, rubric_item_id_b } = input;
           job.info(`Tool: swapRubricItems — input: ${JSON.stringify(input)}`);
+          const beforeSnapshot = await getRubricSnapshot(context);
           const rubricData = await getCurrentRubricItems(context);
           if (!rubricData) {
             return JSON.stringify({ error: 'No rubric exists.' });
           }
           const items = rubricDataToItems(rubricData);
-          job.info(`swapRubricItems BEFORE: ${JSON.stringify(items)}`);
 
           const idxA = items.findIndex((i) => i.id === rubric_item_id_a);
           const idxB = items.findIndex((i) => i.id === rubric_item_id_b);
@@ -1037,13 +1078,11 @@ function buildRubricToolsWithExecute({
           }
 
           [items[idxA], items[idxB]] = [items[idxB], items[idxA]];
-          job.info(`swapRubricItems AFTER (before save): ${JSON.stringify(items)}`);
-
           await saveRubricItems(context, rubricData, items);
 
-          const savedState = await formatCurrentRubricState(context);
-          job.info(`swapRubricItems SAVED STATE: ${savedState}`);
-          return savedState;
+          const result = await formatMutationResult(context, beforeSnapshot);
+          job.info(`swapRubricItems RESULT: ${result}`);
+          return result;
         }),
     }),
 
@@ -1052,6 +1091,7 @@ function buildRubricToolsWithExecute({
       execute: async (input) =>
         rubricMutex.run(async () => {
           job.info(`Tool: editRubricSettings — input: ${JSON.stringify(input)}`);
+          const beforeSnapshot = await getRubricSnapshot(context);
           const rubricData = await getCurrentRubricItems(context);
           if (!rubricData) {
             return JSON.stringify({ error: 'No rubric exists.' });
@@ -1091,9 +1131,9 @@ function buildRubricToolsWithExecute({
             authn_user_id: context.authnUserId,
           });
 
-          const savedState = await formatCurrentRubricState(context);
-          job.info(`editRubricSettings SAVED STATE: ${savedState}`);
-          return savedState;
+          const result = await formatMutationResult(context, beforeSnapshot);
+          job.info(`editRubricSettings RESULT: ${result}`);
+          return result;
         }),
     }),
 
