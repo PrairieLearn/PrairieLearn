@@ -3,7 +3,6 @@ import { Router } from 'express';
 import { z } from 'zod';
 
 import * as error from '@prairielearn/error';
-import { runInTransactionAsync } from '@prairielearn/postgres';
 import { Hydrate } from '@prairielearn/react/server';
 import { generatePrefixCsrfToken } from '@prairielearn/signed-token';
 
@@ -15,12 +14,10 @@ import { typedAsyncHandler } from '../../../lib/res-locals.js';
 import { handleTrpcError } from '../../../lib/trpc.js';
 import { createAuthzMiddleware } from '../../../middlewares/authzHelper.js';
 import { selectCredentials } from '../../../models/ai-grading-credentials.js';
-import { adjustCreditPool } from '../../../models/ai-grading-credit-pool.js';
 import { getStripeClient } from '../../lib/billing/stripe.js';
 import {
   getAiGradingCreditCheckoutSessionByStripeObjectId,
-  markAiGradingCreditCheckoutSessionCompleted,
-  updateAiGradingCreditCheckoutSessionData,
+  processAiGradingCreditPurchase,
 } from '../../models/ai-grading-credit-checkout-sessions.js';
 
 import { InstructorInstanceAdminAiGrading } from './instructorInstanceAdminAiGrading.html.js';
@@ -103,25 +100,7 @@ router.get(
           const session = await stripe.checkout.sessions.retrieve(stripeSessionId);
 
           if (session.payment_status === 'paid') {
-            const deltaMilliDollars = localSession.amount_cents * 10;
-            await runInTransactionAsync(async () => {
-              // Atomically claim this session to prevent double-crediting
-              // if the webhook fires concurrently.
-              const claimed = await markAiGradingCreditCheckoutSessionCompleted(stripeSessionId);
-              if (!claimed) return;
-
-              await adjustCreditPool({
-                course_instance_id: localSession.course_instance_id,
-                delta_milli_dollars: deltaMilliDollars,
-                credit_type: 'transferable',
-                user_id: localSession.agent_user_id,
-                reason: 'Credit purchase',
-              });
-              await updateAiGradingCreditCheckoutSessionData({
-                stripe_object_id: stripeSessionId,
-                data: session,
-              });
-            });
+            await processAiGradingCreditPurchase({ localSession, stripeSession: session });
           }
         }
       }

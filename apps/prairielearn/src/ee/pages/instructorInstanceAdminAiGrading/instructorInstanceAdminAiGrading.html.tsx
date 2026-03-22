@@ -428,9 +428,9 @@ function AiGradingSettingsContent({
 const COST_PER_SUBMISSION = 0.03;
 
 const CREDIT_PACKAGES = [
-  { dollars: 10, submissions: 300, tagline: 'Best for testing AI grading' },
-  { dollars: 25, submissions: 800, tagline: 'Best for small courses' },
-  { dollars: 100, submissions: 3000, tagline: 'Best for large courses' },
+  { dollars: 10, tagline: 'Best for testing AI grading' },
+  { dollars: 25, tagline: 'Best for small courses' },
+  { dollars: 100, tagline: 'Best for large courses' },
 ] as const;
 
 function roundSubmissionEstimate(dollars: number): number {
@@ -534,7 +534,9 @@ function PurchaseCreditsModal({
                     </div>
                     <div className="text-muted me-auto">{pkg.tagline}</div>
                     <div>
-                      Grades <strong>{formatSubmissionCount(pkg.submissions)}</strong> submissions
+                      Grades ~
+                      <strong>{formatSubmissionCount(roundSubmissionEstimate(pkg.dollars))}</strong>{' '}
+                      submissions
                     </div>
                   </div>
                   <div className="d-md-none">
@@ -543,7 +545,9 @@ function PurchaseCreditsModal({
                     </div>
                     <div className="text-muted">{pkg.tagline}</div>
                     <div>
-                      Grades <strong>{formatSubmissionCount(pkg.submissions)}</strong> submissions
+                      Grades ~
+                      <strong>{formatSubmissionCount(roundSubmissionEstimate(pkg.dollars))}</strong>{' '}
+                      submissions
                     </div>
                   </div>
                 </div>
@@ -585,7 +589,8 @@ function PurchaseCreditsModal({
                     step="1"
                     min="1"
                     max="10000"
-                    defaultValue="50"
+                    value={customAmount}
+                    aria-label="Custom dollar amount"
                     onFocus={() => setSelected({ type: 'custom' })}
                     onChange={(e) => {
                       const raw = e.target.value;
@@ -595,11 +600,9 @@ function PurchaseCreditsModal({
                       }
                       const num = Number.parseInt(raw, 10);
                       if (!Number.isFinite(num) || num < 0) {
-                        e.target.value = customAmount;
                         return;
                       }
                       if (num > 10000) {
-                        e.target.value = '10000';
                         setCustomAmount('10000');
                         return;
                       }
@@ -616,7 +619,7 @@ function PurchaseCreditsModal({
                 <div>
                   {customEstimate != null ? (
                     <span>
-                      Grades <strong>{formatSubmissionCount(customEstimate)}</strong> submissions
+                      Grades ~<strong>{formatSubmissionCount(customEstimate)}</strong> submissions
                     </span>
                   ) : (
                     <span className="text-muted">Enter amount for estimate</span>

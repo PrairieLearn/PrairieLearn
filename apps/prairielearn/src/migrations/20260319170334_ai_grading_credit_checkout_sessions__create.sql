@@ -1,12 +1,12 @@
 CREATE TABLE IF NOT EXISTS ai_grading_credit_checkout_sessions (
   id bigserial PRIMARY KEY,
   stripe_object_id text NOT NULL UNIQUE,
-  agent_user_id bigint NOT NULL,
-  course_instance_id bigint NOT NULL,
+  agent_user_id bigint NOT NULL REFERENCES users (user_id) ON UPDATE CASCADE ON DELETE CASCADE,
+  course_instance_id bigint NOT NULL REFERENCES course_instances (id) ON UPDATE CASCADE ON DELETE CASCADE,
   created_at timestamptz NOT NULL DEFAULT now(),
   completed_at timestamptz,
   data jsonb NOT NULL,
-  amount_cents integer NOT NULL,
+  amount_cents integer NOT NULL CHECK (amount_cents > 0),
   credits_added boolean NOT NULL DEFAULT FALSE
 );
 

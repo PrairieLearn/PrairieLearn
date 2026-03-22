@@ -14,3 +14,10 @@ indexes
     ai_grading_credit_checkout_sessions_stripe_object_id_key: UNIQUE (stripe_object_id) USING btree (stripe_object_id)
     ai_grading_credit_checkout_sessions_agent_user_id_idx: USING btree (agent_user_id)
     ai_grading_credit_checkout_sessions_course_instance_id_idx: USING btree (course_instance_id)
+
+check constraints
+    ai_grading_credit_checkout_sessions_amount_cents_check: CHECK ((amount_cents > 0))
+
+foreign-key constraints
+    ai_grading_credit_checkout_sessions_agent_user_id_fkey: FOREIGN KEY (agent_user_id) REFERENCES users(user_id) ON UPDATE CASCADE ON DELETE CASCADE
+    ai_grading_credit_checkout_sessions_course_instance_id_fkey: FOREIGN KEY (course_instance_id) REFERENCES course_instances(id) ON UPDATE CASCADE ON DELETE CASCADE

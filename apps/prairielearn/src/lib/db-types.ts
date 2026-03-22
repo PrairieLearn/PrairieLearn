@@ -234,7 +234,7 @@ export const AiGradingCreditCheckoutSessionSchema = z.object({
   course_instance_id: IdSchema,
   created_at: DateFromISOString,
   credits_added: z.boolean(),
-  data: z.any(),
+  data: z.record(z.unknown()),
   id: IdSchema,
   stripe_object_id: z.string(),
 });
@@ -1654,6 +1654,7 @@ export type Zone = z.infer<typeof ZoneSchema>;
 export const TableNames = [
   'access_tokens',
   'administrators',
+  'ai_grading_credit_checkout_sessions',
   'ai_grading_credit_pool_changes',
   'ai_grading_jobs',
   'ai_question_generation_messages',
