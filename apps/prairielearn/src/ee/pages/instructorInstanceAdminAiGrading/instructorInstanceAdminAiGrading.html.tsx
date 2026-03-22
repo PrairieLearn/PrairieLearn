@@ -211,6 +211,7 @@ export function InstructorInstanceAdminAiGrading({
   aiGradingModelSelectionEnabled,
   stripePurchasingEnabled,
   initialCheckoutStatus,
+  initialCheckoutAmountCents,
 }: {
   trpcCsrfToken: string;
   initialUseCustomApiKeys: boolean;
@@ -220,6 +221,7 @@ export function InstructorInstanceAdminAiGrading({
   aiGradingModelSelectionEnabled: boolean;
   stripePurchasingEnabled: boolean;
   initialCheckoutStatus: 'success' | 'cancelled' | null;
+  initialCheckoutAmountCents: number | null;
 }) {
   const [queryClient] = useState(() => new QueryClient());
   const [trpcClient] = useState(() =>
@@ -236,6 +238,7 @@ export function InstructorInstanceAdminAiGrading({
           aiGradingModelSelectionEnabled={aiGradingModelSelectionEnabled}
           stripePurchasingEnabled={stripePurchasingEnabled}
           initialCheckoutStatus={initialCheckoutStatus}
+          initialCheckoutAmountCents={initialCheckoutAmountCents}
         />
       </TRPCProvider>
     </QueryClientProviderDebug>
@@ -251,6 +254,7 @@ function AiGradingSettingsContent({
   aiGradingModelSelectionEnabled,
   stripePurchasingEnabled,
   initialCheckoutStatus,
+  initialCheckoutAmountCents,
 }: {
   initialUseCustomApiKeys: boolean;
   initialApiKeyCredentials: AiGradingApiKeyCredential[];
@@ -258,6 +262,7 @@ function AiGradingSettingsContent({
   aiGradingModelSelectionEnabled: boolean;
   stripePurchasingEnabled: boolean;
   initialCheckoutStatus: 'success' | 'cancelled' | null;
+  initialCheckoutAmountCents: number | null;
 }) {
   const trpc = useTRPC();
 
@@ -384,6 +389,7 @@ function AiGradingSettingsContent({
           canEdit={canEdit}
           stripePurchasingEnabled={stripePurchasingEnabled}
           initialCheckoutStatus={initialCheckoutStatus}
+          initialCheckoutAmountCents={initialCheckoutAmountCents}
         />
       </div>
 
@@ -417,6 +423,31 @@ function AiGradingSettingsContent({
   );
 }
 
+// Estimated average cost per AI-graded submission (in dollars).
+// This is approximate and may be updated after benchmarking.
+const COST_PER_SUBMISSION = 0.03;
+
+const CREDIT_PACKAGES = [
+  { dollars: 10, submissions: 300, tagline: 'Best for testing AI grading' },
+  { dollars: 25, submissions: 800, tagline: 'Best for small courses' },
+  { dollars: 100, submissions: 3000, tagline: 'Best for large courses' },
+] as const;
+
+function roundSubmissionEstimate(dollars: number): number {
+  const raw = Math.floor(dollars / COST_PER_SUBMISSION);
+  if (raw >= 1000) return Math.floor(raw / 100) * 100;
+  if (raw >= 100) return Math.floor(raw / 50) * 50;
+  if (raw >= 10) return Math.floor(raw / 10) * 10;
+  return raw;
+}
+
+function formatSubmissionCount(count: number): string {
+  if (count >= 1_000_000) return '1,000,000+';
+  return count.toLocaleString();
+}
+
+type SelectedPackage = { type: 'preset'; dollars: number } | { type: 'custom' };
+
 function PurchaseCreditsModal({
   show,
   onHide,
@@ -427,6 +458,8 @@ function PurchaseCreditsModal({
   onExited: () => void;
 }) {
   const trpc = useTRPC();
+  const [customAmount, setCustomAmount] = useState('50');
+  const [selected, setSelected] = useState<SelectedPackage>({ type: 'preset', dollars: 25 });
 
   const checkoutMutation = useMutation({
     ...trpc.createCreditCheckoutSession.mutationOptions(),
@@ -437,22 +470,26 @@ function PurchaseCreditsModal({
     },
   });
 
-  const {
-    register,
-    handleSubmit,
-    reset,
-    formState: { errors },
-  } = useForm<{ amount: string }>({
-    defaultValues: { amount: '' },
-  });
+  const customDollars = Math.max(0, Math.floor(Number.parseFloat(customAmount) || 0));
+  const purchaseDollars = selected.type === 'preset' ? selected.dollars : customDollars;
+  const canProceed = purchaseDollars >= 1 && purchaseDollars <= 10000;
+
+  function handleProceed() {
+    const amountCents = purchaseDollars * 100;
+    checkoutMutation.mutate({ amount_cents: amountCents });
+  }
+
+  const customEstimate = customDollars >= 1 ? roundSubmissionEstimate(customDollars) : null;
 
   return (
     <Modal
       show={show}
       backdrop="static"
+      size="lg"
       onHide={onHide}
       onExited={() => {
-        reset();
+        setCustomAmount('50');
+        setSelected({ type: 'preset', dollars: 25 });
         checkoutMutation.reset();
         onExited();
       }}
@@ -460,72 +497,235 @@ function PurchaseCreditsModal({
       <Modal.Header closeButton>
         <Modal.Title>Purchase AI grading credits</Modal.Title>
       </Modal.Header>
-      <form
-        onSubmit={handleSubmit((data) => {
-          const dollars = Number.parseFloat(data.amount);
-          const amountCents = Math.round(dollars * 100);
-          checkoutMutation.mutate({ amount_cents: amountCents });
-        })}
-      >
-        <Modal.Body>
-          {checkoutMutation.isError && (
-            <Alert variant="danger" dismissible onClose={() => checkoutMutation.reset()}>
-              {checkoutMutation.error.message}
-            </Alert>
-          )}
-          <Form.Group className="mb-3">
-            <Form.Label htmlFor="purchase-amount">Amount (USD)</Form.Label>
-            <div className="input-group">
-              <span className="input-group-text">$</span>
-              <Form.Control
-                id="purchase-amount"
-                type="number"
-                step="0.01"
-                min="5"
-                max="1000"
-                placeholder="e.g. 50.00"
-                defaultValue=""
-                className={clsx(errors.amount && 'is-invalid')}
-                aria-invalid={!!errors.amount}
-                aria-errormessage={errors.amount ? 'purchase-amount-error' : undefined}
-                {...register('amount', {
-                  required: 'Amount is required',
-                  validate: (value) => {
-                    const num = Number.parseFloat(value);
-                    if (Number.isNaN(num)) return 'Enter a valid number';
-                    if (num < 5) return 'Minimum purchase is $5.00';
-                    if (num > 1000) return 'Maximum purchase is $1,000.00';
-                    return true;
-                  },
+      <Modal.Body>
+        {checkoutMutation.isError && (
+          <Alert variant="danger" dismissible onClose={() => checkoutMutation.reset()}>
+            {checkoutMutation.error.message}
+          </Alert>
+        )}
+        <div className="mb-2 fw-semibold" style={{ fontSize: '0.85rem' }}>
+          Package
+        </div>
+        <div className="d-flex flex-column gap-2" role="radiogroup" aria-label="Credit package">
+          {CREDIT_PACKAGES.map((pkg) => {
+            const isSelected = selected.type === 'preset' && selected.dollars === pkg.dollars;
+            return (
+              <div
+                key={pkg.dollars}
+                className={clsx('card', {
+                  'border-primary bg-primary bg-opacity-10': isSelected,
                 })}
-              />
-            </div>
-            {errors.amount && (
-              <div className="text-danger small mt-1" id="purchase-amount-error">
-                {errors.amount.message}
+                style={{ cursor: 'pointer' }}
+                role="radio"
+                aria-checked={isSelected}
+                tabIndex={0}
+                onClick={() => setSelected({ type: 'preset', dollars: pkg.dollars })}
+                onKeyDown={(e) => {
+                  if (e.key === 'Enter' || e.key === ' ') {
+                    e.preventDefault();
+                    setSelected({ type: 'preset', dollars: pkg.dollars });
+                  }
+                }}
+              >
+                <div className="card-body py-3 px-4">
+                  <div className="d-none d-md-flex align-items-center gap-3">
+                    <div className="fw-bold" style={{ fontSize: '1.15rem', flexShrink: 0 }}>
+                      {`$${pkg.dollars}`}
+                    </div>
+                    <div className="text-muted me-auto">{pkg.tagline}</div>
+                    <div>
+                      Grades <strong>{formatSubmissionCount(pkg.submissions)}</strong> submissions
+                    </div>
+                  </div>
+                  <div className="d-md-none">
+                    <div className="fw-bold mb-1" style={{ fontSize: '1.15rem' }}>
+                      {`$${pkg.dollars}`}
+                    </div>
+                    <div className="text-muted">{pkg.tagline}</div>
+                    <div>
+                      Grades <strong>{formatSubmissionCount(pkg.submissions)}</strong> submissions
+                    </div>
+                  </div>
+                </div>
               </div>
-            )}
-            <div className="text-muted small mt-2">
-              Credits will be added as transferable credits that can be used across course
-              instances.
-            </div>
-          </Form.Group>
-        </Modal.Body>
-        <Modal.Footer>
-          <button
-            type="button"
-            className="btn btn-outline-secondary"
-            disabled={checkoutMutation.isPending}
-            onClick={onHide}
+            );
+          })}
+
+          <div className="mt-2 mb-1 fw-semibold" style={{ fontSize: '0.85rem' }}>
+            Custom package
+          </div>
+          <div
+            className={clsx('card', {
+              'border-primary bg-primary bg-opacity-10': selected.type === 'custom',
+            })}
+            style={{ cursor: 'pointer' }}
+            role="radio"
+            aria-checked={selected.type === 'custom'}
+            tabIndex={0}
+            onClick={() => setSelected({ type: 'custom' })}
+            onKeyDown={(e) => {
+              if (e.key === 'Enter' || e.key === ' ') {
+                e.preventDefault();
+                setSelected({ type: 'custom' });
+              }
+            }}
           >
-            Cancel
-          </button>
-          <button type="submit" className="btn btn-primary" disabled={checkoutMutation.isPending}>
-            {checkoutMutation.isPending ? 'Redirecting...' : 'Continue to payment'}
-          </button>
-        </Modal.Footer>
-      </form>
+            <div className="card-body py-3 px-4">
+              <div className="d-none d-md-flex align-items-center gap-3">
+                {/* eslint-disable-next-line jsx-a11y-x/click-events-have-key-events, jsx-a11y-x/no-static-element-interactions */}
+                <div
+                  className="input-group"
+                  style={{ width: '120px', flexShrink: 0 }}
+                  onClick={(e) => e.stopPropagation()}
+                >
+                  <span className="input-group-text">$</span>
+                  <input
+                    type="number"
+                    className="form-control"
+                    step="1"
+                    min="1"
+                    max="10000"
+                    defaultValue="50"
+                    onFocus={() => setSelected({ type: 'custom' })}
+                    onChange={(e) => {
+                      const raw = e.target.value;
+                      if (raw === '') {
+                        setCustomAmount('');
+                        return;
+                      }
+                      const num = Number.parseInt(raw, 10);
+                      if (!Number.isFinite(num) || num < 0) {
+                        e.target.value = customAmount;
+                        return;
+                      }
+                      if (num > 10000) {
+                        e.target.value = '10000';
+                        setCustomAmount('10000');
+                        return;
+                      }
+                      setCustomAmount(raw);
+                    }}
+                    onKeyDown={(e) => {
+                      if (e.key === '.' || e.key === '-' || e.key === 'e') {
+                        e.preventDefault();
+                      }
+                    }}
+                  />
+                </div>
+                <div className="text-muted me-auto">Enter your own amount</div>
+                <div>
+                  {customEstimate != null ? (
+                    <span>
+                      Grades <strong>{formatSubmissionCount(customEstimate)}</strong> submissions
+                    </span>
+                  ) : (
+                    <span className="text-muted">Enter amount for estimate</span>
+                  )}
+                </div>
+              </div>
+              <div className="d-md-none">
+                {/* eslint-disable-next-line jsx-a11y-x/click-events-have-key-events, jsx-a11y-x/no-static-element-interactions */}
+                <div
+                  className="input-group mb-2"
+                  style={{ width: '120px' }}
+                  onClick={(e) => e.stopPropagation()}
+                >
+                  <span className="input-group-text">$</span>
+                  <input
+                    type="number"
+                    className="form-control"
+                    step="1"
+                    min="1"
+                    max="10000"
+                    defaultValue="50"
+                    onFocus={() => setSelected({ type: 'custom' })}
+                    onChange={(e) => {
+                      const raw = e.target.value;
+                      if (raw === '') {
+                        setCustomAmount('');
+                        return;
+                      }
+                      const num = Number.parseInt(raw, 10);
+                      if (!Number.isFinite(num) || num < 0) {
+                        e.target.value = customAmount;
+                        return;
+                      }
+                      if (num > 10000) {
+                        e.target.value = '10000';
+                        setCustomAmount('10000');
+                        return;
+                      }
+                      setCustomAmount(raw);
+                    }}
+                    onKeyDown={(e) => {
+                      if (e.key === '.' || e.key === '-' || e.key === 'e') {
+                        e.preventDefault();
+                      }
+                    }}
+                  />
+                </div>
+                <div className="text-muted">Enter your own amount</div>
+                <div>
+                  {customEstimate != null ? (
+                    <span>
+                      Grades <strong>{formatSubmissionCount(customEstimate)}</strong> submissions
+                    </span>
+                  ) : (
+                    <span className="text-muted">Enter amount for estimate</span>
+                  )}
+                </div>
+              </div>
+            </div>
+          </div>
+        </div>
+
+        <div className="text-muted mt-3 small">Estimates may vary based on submission content.</div>
+      </Modal.Body>
+      <Modal.Footer>
+        <button
+          type="button"
+          className="btn btn-outline-secondary"
+          disabled={checkoutMutation.isPending}
+          onClick={onHide}
+        >
+          Cancel
+        </button>
+        <button
+          type="button"
+          className="btn btn-primary"
+          disabled={checkoutMutation.isPending || !canProceed}
+          onClick={handleProceed}
+        >
+          {checkoutMutation.isPending ? 'Redirecting...' : 'Proceed to payment'}
+        </button>
+      </Modal.Footer>
     </Modal>
+  );
+}
+
+function formatCents(cents: number): string {
+  return `$${(cents / 100).toFixed(2)}`;
+}
+
+function CreditPoolEmptyState({ onPurchase }: { onPurchase: () => void }) {
+  return (
+    <div className="text-center py-5">
+      <i
+        className="bi bi-stars d-block mb-3 text-muted"
+        aria-hidden="true"
+        style={{ fontSize: '2.5rem' }}
+      />
+      <h3 className="h5 mb-2">Get started with AI grading</h3>
+      <p className="text-muted mb-3">Buy credits to start grading submissions with AI.</p>
+      <button
+        type="button"
+        className="btn btn-primary d-inline-flex align-items-center gap-2"
+        onClick={onPurchase}
+      >
+        <i className="bi bi-cart-plus" aria-hidden="true" />
+        Purchase credits
+      </button>
+    </div>
   );
 }
 
@@ -534,11 +734,13 @@ function CreditPoolSection({
   canEdit,
   stripePurchasingEnabled,
   initialCheckoutStatus,
+  initialCheckoutAmountCents,
 }: {
   useCustomApiKeys: boolean;
   canEdit: boolean;
   stripePurchasingEnabled: boolean;
   initialCheckoutStatus: 'success' | 'cancelled' | null;
+  initialCheckoutAmountCents: number | null;
 }) {
   const trpc = useTRPC();
   const queryClient = useQueryClient();
@@ -560,7 +762,11 @@ function CreditPoolSection({
       {checkoutStatus === 'success' && (
         <Alert variant="success" dismissible onClose={() => setCheckoutStatus(null)}>
           <i className="bi bi-check-circle-fill me-2" aria-hidden="true" />
-          Payment successful! Credits have been added to your pool.
+          Payment successful!{' '}
+          {initialCheckoutAmountCents != null
+            ? `${formatCents(initialCheckoutAmountCents)} in credits has`
+            : 'Credits have'}{' '}
+          been added to your pool.
         </Alert>
       )}
       {checkoutStatus === 'cancelled' && (
@@ -572,7 +778,12 @@ function CreditPoolSection({
         trpc={trpc}
         balanceContext="instructor"
         dimmed={useCustomApiKeys}
-        header={
+        emptyState={
+          stripePurchasingEnabled && canEdit ? (
+            <CreditPoolEmptyState onPurchase={() => purchaseModalState.showWithData(null)} />
+          ) : undefined
+        }
+        header={({ isEmpty: isPoolEmpty }) => (
           <>
             <div
               className={clsx(
@@ -584,7 +795,7 @@ function CreditPoolSection({
                 <h2 className="h5 mb-0">AI grading credits</h2>
                 {useCustomApiKeys && <span className="badge text-bg-secondary">Inactive</span>}
               </div>
-              {stripePurchasingEnabled && canEdit && (
+              {stripePurchasingEnabled && canEdit && !isPoolEmpty && (
                 <button
                   type="button"
                   className="btn btn-sm btn-primary d-flex align-items-center gap-2"
@@ -601,7 +812,7 @@ function CreditPoolSection({
               </p>
             )}
           </>
-        }
+        )}
       />
       <PurchaseCreditsModal {...purchaseModalState} />
     </div>

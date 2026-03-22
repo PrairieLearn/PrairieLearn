@@ -83,34 +83,39 @@ router.get(
     // process the session so credits are available immediately (the webhook
     // serves as a backup but may arrive later or not at all in local dev).
     let checkoutStatus: 'success' | 'cancelled' | null = null;
+    let checkoutAmountCents: number | null = null;
     if (req.query.checkout === 'success' && req.query.session_id) {
       const stripeSessionId = z.string().parse(req.query.session_id);
       const localSession = await getAiGradingCreditCheckoutSessionByStripeObjectId(stripeSessionId);
 
-      if (localSession && !localSession.credits_added) {
-        if (localSession.course_instance_id !== courseInstance.id) {
-          throw new error.HttpStatusError(400, 'Invalid session');
-        }
+      if (localSession) {
+        checkoutAmountCents = localSession.amount_cents;
 
-        const stripe = getStripeClient();
-        const session = await stripe.checkout.sessions.retrieve(stripeSessionId);
+        if (!localSession.credits_added) {
+          if (localSession.course_instance_id !== courseInstance.id) {
+            throw new error.HttpStatusError(400, 'Invalid session');
+          }
 
-        if (session.payment_status === 'paid') {
-          const deltaMilliDollars = localSession.amount_cents * 10;
-          await runInTransactionAsync(async () => {
-            await adjustCreditPool({
-              course_instance_id: localSession.course_instance_id,
-              delta_milli_dollars: deltaMilliDollars,
-              credit_type: 'transferable',
-              user_id: localSession.agent_user_id,
-              reason: 'Credit purchase',
+          const stripe = getStripeClient();
+          const session = await stripe.checkout.sessions.retrieve(stripeSessionId);
+
+          if (session.payment_status === 'paid') {
+            const deltaMilliDollars = localSession.amount_cents * 10;
+            await runInTransactionAsync(async () => {
+              await adjustCreditPool({
+                course_instance_id: localSession.course_instance_id,
+                delta_milli_dollars: deltaMilliDollars,
+                credit_type: 'transferable',
+                user_id: localSession.agent_user_id,
+                reason: 'Credit purchase',
+              });
+              await updateAiGradingCreditCheckoutSessionData({
+                stripe_object_id: stripeSessionId,
+                data: session,
+              });
+              await markAiGradingCreditCheckoutSessionCompleted(stripeSessionId);
             });
-            await updateAiGradingCreditCheckoutSessionData({
-              stripe_object_id: stripeSessionId,
-              data: session,
-            });
-            await markAiGradingCreditCheckoutSessionCompleted(stripeSessionId);
-          });
+          }
         }
       }
       checkoutStatus = 'success';
@@ -138,6 +143,7 @@ router.get(
               aiGradingModelSelectionEnabled={aiGradingModelSelectionEnabled}
               stripePurchasingEnabled={stripePurchasingEnabled}
               initialCheckoutStatus={checkoutStatus}
+              initialCheckoutAmountCents={checkoutAmountCents}
             />
           </Hydrate>
         ),

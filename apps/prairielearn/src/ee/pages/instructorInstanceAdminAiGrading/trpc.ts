@@ -94,15 +94,20 @@ const deleteCredentialMutation = t.procedure
     });
   });
 
-const MIN_PURCHASE_CENTS = 500; // $5.00
-const MAX_PURCHASE_CENTS = 100_000; // $1,000.00
+const MIN_PURCHASE_CENTS = 100; // $1.00
+const MAX_PURCHASE_CENTS = 1_000_000; // $10,000.00
 
 const createCreditCheckoutSessionMutation = t.procedure
   .use(requireEditPermission)
   .use(requireAiGradingFeature)
   .input(
     z.object({
-      amount_cents: z.number().int().min(MIN_PURCHASE_CENTS).max(MAX_PURCHASE_CENTS),
+      amount_cents: z
+        .number()
+        .int()
+        .min(MIN_PURCHASE_CENTS)
+        .max(MAX_PURCHASE_CENTS)
+        .refine((v) => v % 100 === 0, 'Amount must be a whole dollar value'),
     }),
   )
   .mutation(async (opts) => {
