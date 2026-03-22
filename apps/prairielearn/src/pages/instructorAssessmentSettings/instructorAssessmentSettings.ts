@@ -19,6 +19,7 @@ import {
   AssessmentRenameEditor,
   FileModifyEditor,
   MultiEditor,
+  getAssessmentToolsConfig,
   getOriginalHash,
 } from '../../lib/editors.js';
 import { courseRepoContentUrl } from '../../lib/github.js';
@@ -28,6 +29,10 @@ import { typedAsyncHandler } from '../../lib/res-locals.js';
 import { validateShortName } from '../../lib/short-name.js';
 import { encodePath } from '../../lib/uri-util.js';
 import { getCanonicalHost } from '../../lib/url.js';
+import {
+  type AssessmentJsonInput,
+  EnumAssessmentToolSchema,
+} from '../../schemas/infoAssessment.js';
 
 import { InstructorAssessmentSettings } from './instructorAssessmentSettings.html.js';
 
@@ -72,7 +77,10 @@ router.get(
     );
     const fullInfoAssessmentPath = path.join(res.locals.course.path, infoAssessmentPath);
 
+    // TODO: both getOriginalHash and getAssessmentToolsConfig read and parse the infoAssessment.json file, optimize to only read once
     const origHash = (await getOriginalHash(fullInfoAssessmentPath)) ?? '';
+
+    const assessmentTools = await getAssessmentToolsConfig(fullInfoAssessmentPath);
 
     const assessmentGHLink = courseRepoContentUrl(
       res.locals.course,
@@ -94,6 +102,7 @@ router.get(
         assessmentSets,
         assessmentModules,
         canEdit,
+        assessmentTools,
       }),
     );
   }),
@@ -101,6 +110,7 @@ router.get(
 
 router.post(
   '/',
+  // TODO: typedAsyncHandler should type req.body
   typedAsyncHandler<'assessment'>(async (req, res) => {
     if (req.body.__action === 'copy_assessment') {
       const editor = new AssessmentCopyEditor({
@@ -164,7 +174,9 @@ router.post(
 
       const paths = getPaths(undefined, res.locals);
 
-      const assessmentInfo = JSON.parse(await fs.readFile(infoAssessmentPath, 'utf8'));
+      const assessmentInfo: AssessmentJsonInput = JSON.parse(
+        await fs.readFile(infoAssessmentPath, 'utf8'),
+      );
       assessmentInfo.title = req.body.title;
       assessmentInfo.set = req.body.set;
       assessmentInfo.number = req.body.number;
@@ -183,6 +195,19 @@ router.post(
         req.body.allow_personal_notes === 'on',
         true,
       );
+
+      assessmentInfo.tools = assessmentInfo.tools ?? {};
+      for (const tool of EnumAssessmentToolSchema.options) {
+        const enabled = req.body[`tool_${tool}`] === 'on';
+        // Only update the tool if it was already defined in the assessmentInfo
+        // or if it's being enabled. This prevents accidentally adding new tools
+        // to the assessmentInfo when editing an existing assessment that doesn't
+        // have those tools configured.
+        if (tool in assessmentInfo.tools || enabled) {
+          assessmentInfo.tools[tool] = { enabled };
+        }
+      }
+
       if (res.locals.assessment.type === 'Exam') {
         assessmentInfo.multipleInstance = propertyValueWithDefault(
           assessmentInfo.multipleInstance,

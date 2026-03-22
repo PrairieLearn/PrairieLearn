@@ -2,6 +2,7 @@ import clsx from 'clsx';
 import { useCallback, useEffect, useMemo } from 'react';
 import { useForm } from 'react-hook-form';
 
+import { EnumAssessmentToolSchema } from '../../../../schemas/infoAssessment.js';
 import type { DetailState, ZoneAssessmentForm } from '../../types.js';
 import {
   coerceToNumber,
@@ -32,6 +33,7 @@ interface ZoneFormData {
   advanceScorePerc?: number;
   gradeRateMinutes?: number;
   allowRealTimeGrading?: boolean;
+  [toolField: `tool_${string}`]: string;
 }
 
 export function ZoneDetailPanel({
@@ -61,6 +63,12 @@ export function ZoneDetailPanel({
     gradeRateMinutes: zone.gradeRateMinutes ?? undefined,
     // We do this so that `isDirty = false` when the value is inherited.
     allowRealTimeGrading: zone.allowRealTimeGrading ?? undefined,
+    ...Object.fromEntries(
+      EnumAssessmentToolSchema.options.map((tool) => [
+        `tool_${tool}` as const,
+        zone.tools?.[tool] == null ? 'inherit' : zone.tools[tool].enabled ? 'enabled' : 'disabled',
+      ]),
+    ),
   };
 
   const {
@@ -95,6 +103,17 @@ export function ZoneDetailPanel({
 
   const handleSave = useCallback(
     (data: ZoneFormData) => {
+      const tools: Record<string, { enabled: boolean }> = {};
+      // Only include tools that have been explicitly overridden
+      let hasToolOverride = false;
+      for (const tool of EnumAssessmentToolSchema.options) {
+        const value = data[`tool_${tool}`];
+        if (value === 'enabled' || value === 'disabled') {
+          tools[tool] = { enabled: value === 'enabled' };
+          hasToolOverride = true;
+        }
+      }
+
       onUpdate(zone.trackingId, {
         title: data.title || undefined,
         maxPoints: data.maxPoints,
@@ -105,6 +124,7 @@ export function ZoneDetailPanel({
         advanceScorePerc: data.advanceScorePerc,
         gradeRateMinutes: data.gradeRateMinutes,
         allowRealTimeGrading: data.allowRealTimeGrading,
+        tools: hasToolOverride ? tools : undefined,
       });
     },
     [onUpdate, zone.trackingId],
@@ -269,6 +289,43 @@ export function ZoneDetailPanel({
             />
           )}
         </FormField>
+      </Wrapper>
+
+      <DetailSectionHeader>Tools</DetailSectionHeader>
+      <Wrapper className={clsx(!editMode && 'mb-0')}>
+        {EnumAssessmentToolSchema.options.map((tool) => {
+          const toolLabel = tool[0].toUpperCase() + tool.slice(1);
+          const fieldName = `tool_${tool}` as const;
+          const currentValue = zone.tools?.[tool];
+          const viewValue =
+            currentValue == null
+              ? 'Inherit from assessment'
+              : currentValue.enabled
+                ? 'Enabled'
+                : 'Disabled';
+          return (
+            <FormField
+              key={tool}
+              editMode={editMode}
+              id={`${idPrefix}-tool-${tool}`}
+              label={toolLabel}
+              viewValue={viewValue}
+              helpText={`Override the assessment-level ${toolLabel.toLowerCase()} setting for this zone.`}
+            >
+              {(aria) => (
+                <select
+                  className="form-select form-select-sm"
+                  {...aria.inputProps}
+                  {...register(fieldName)}
+                >
+                  <option value="inherit">Inherit from assessment</option>
+                  <option value="enabled">Enabled</option>
+                  <option value="disabled">Disabled</option>
+                </select>
+              )}
+            </FormField>
+          );
+        })}
       </Wrapper>
 
       <AdvancedFields
