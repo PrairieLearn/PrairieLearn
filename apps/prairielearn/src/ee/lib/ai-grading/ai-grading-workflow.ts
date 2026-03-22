@@ -187,8 +187,34 @@ async function takeStep(context: WorkflowStepContext): Promise<StepResult> {
         );
       }
 
+      if (action === 'start_grading_stub') {
+        logger.info('Starting AI grading stub');
+        return result(
+          'grading',
+          { ...state, step: 'ai_grading_stub', action: undefined },
+          'waiting_for_input',
+        );
+      }
+
       // Stay waiting for edit instruction
       return result('rubric_setup', { ...state, step: 'rubric_editing' }, 'waiting_for_input');
+    }
+
+    case 'ai_grading_stub': {
+      // The startAiGrading tool moves the workflow here, waits 5s, then resumes
+      // with 'grading_stub_complete' to move back to rubric_editing.
+      const action = state.action;
+
+      if (action === 'grading_stub_complete') {
+        logger.info('AI grading stub complete, returning to rubric editing');
+        return result(
+          'rubric_setup',
+          { ...state, step: 'rubric_editing', action: undefined },
+          'waiting_for_input',
+        );
+      }
+
+      return result('grading', { ...state, step: 'ai_grading_stub' }, 'waiting_for_input');
     }
 
     // -----------------------------------------------------------------

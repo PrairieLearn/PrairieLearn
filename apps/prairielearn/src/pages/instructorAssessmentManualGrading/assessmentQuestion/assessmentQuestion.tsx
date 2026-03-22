@@ -1,5 +1,5 @@
 import * as trpcExpress from '@trpc/server/adapters/express';
-import { createUIMessageStream, pipeUIMessageStreamToResponse } from 'ai';
+import { JsonToSseTransformStream, type ModelMessage } from 'ai';
 import { Router } from 'express';
 import z from 'zod';
 
@@ -7,11 +7,16 @@ import * as error from '@prairielearn/error';
 import { Hydrate } from '@prairielearn/react/server';
 import { run } from '@prairielearn/run';
 import { generatePrefixCsrfToken } from '@prairielearn/signed-token';
-import { cancelWorkflow, getActiveWorkflowRun } from '@prairielearn/workflows';
+import { cancelWorkflow, getActiveWorkflowRun, startWorkflow } from '@prairielearn/workflows';
 
 import { AssessmentOpenInstancesAlert } from '../../../components/AssessmentOpenInstancesAlert.js';
 import { PageLayout } from '../../../components/PageLayout.js';
-import { editRubric, generateRubric } from '../../../ee/lib/ai-grading/ai-grading-agent.js';
+import {
+  type createRubricAgent,
+  editRubric,
+  finalizeAssistantMessage,
+  generateRubric,
+} from '../../../ee/lib/ai-grading/ai-grading-agent.js';
 import { getAvailableAiGradingProviders } from '../../../ee/lib/ai-grading/ai-grading-credentials.js';
 import {
   calculateAiGradingStats,
@@ -37,7 +42,7 @@ import { features } from '../../../lib/features/index.js';
 import { generateJobSequenceToken } from '../../../lib/generateJobSequenceToken.js';
 import * as manualGrading from '../../../lib/manualGrading.js';
 import { typedAsyncHandler } from '../../../lib/res-locals.js';
-import { createServerJob, getJobSequenceIds } from '../../../lib/server-jobs.js';
+import { type ServerJob, createServerJob, getJobSequenceIds } from '../../../lib/server-jobs.js';
 import { handleTrpcError } from '../../../lib/trpc.js';
 import { getUrl } from '../../../lib/url.js';
 import { createAuthzMiddleware } from '../../../middlewares/authzHelper.js';
@@ -314,100 +319,142 @@ router.post(
       reportErrorsToSentry: true,
     });
 
-    const stream = createUIMessageStream({
-      async execute({ writer }) {
-        await serverJob.execute(async (job) => {
-          const agentContext = {
-            assessment,
-            assessmentQuestion: assessment_question,
-            course: res.locals.course,
-            question,
-            urlPrefix,
-            authnUserId: res.locals.authn_user.id,
-            hasCourseInstancePermissionEdit:
-              authz_data.has_course_instance_permission_edit ?? false,
-          };
+    const agentContext = {
+      assessment,
+      assessmentQuestion: assessment_question,
+      course: res.locals.course,
+      question,
+      urlPrefix,
+      authnUserId: res.locals.authn_user.id,
+      hasCourseInstancePermissionEdit: authz_data.has_course_instance_permission_edit ?? false,
+    };
 
-          job.info(`AI grading chat request — phase: ${phase}, workflow: ${workflowRunId}`);
+    const sseStream = new JsonToSseTransformStream();
 
-          const textPartId = 'summary';
+    const runAgent = async (
+      agent: ReturnType<typeof createRubricAgent>,
+      messageId: string,
+      modelId: string,
+      promptArg: { prompt: string } | { messages: ModelMessage[] },
+      job: ServerJob,
+    ) => {
+      const agentRes = await agent.stream(promptArg);
 
-          try {
-            if (phase === 'generate') {
-              const result = await generateRubric(
-                agentContext,
-                job,
-                serverJob.jobSequenceId,
-                workflowRunId,
-              );
+      let finalParts: unknown[] = [];
+      const errorState = { hasError: false };
 
-              writer.write({
-                type: 'start',
-                messageMetadata: {
-                  job_sequence_id: serverJob.jobSequenceId,
-                  status: 'completed',
-                  phase: 'generate',
-                  workflow_run_id: workflowRunId,
-                },
-              });
-              writer.write({ type: 'start-step' });
-              writer.write({ type: 'text-start', id: textPartId });
-              writer.write({ type: 'text-delta', id: textPartId, delta: result.summary });
-              writer.write({ type: 'text-end', id: textPartId });
-              writer.write({ type: 'finish-step' });
-              writer.write({ type: 'finish' });
-            } else {
-              // Load persisted conversation history from the database
-              const persistedMessages = await selectAiGradingMessages(assessment_question.id);
-
-              job.info('Instruction: ' + userMessage);
-
-              const result = await editRubric(
-                agentContext,
-                userMessage,
-                persistedMessages,
-                job,
-                serverJob.jobSequenceId,
-                workflowRunId,
-              );
-
-              writer.write({
-                type: 'start',
-                messageMetadata: {
-                  job_sequence_id: serverJob.jobSequenceId,
-                  status: 'completed',
-                  phase: 'edit',
-                  rubric_modified: result.rubricModified,
-                  workflow_run_id: workflowRunId,
-                },
-              });
-              writer.write({ type: 'start-step' });
-              writer.write({ type: 'text-start', id: textPartId });
-              writer.write({ type: 'text-delta', id: textPartId, delta: result.summary });
-              writer.write({ type: 'text-end', id: textPartId });
-              writer.write({ type: 'finish-step' });
-              writer.write({ type: 'finish' });
-            }
-          } catch (err) {
-            job.error(String(err));
-            writer.write({
-              type: 'start',
-              messageMetadata: {
-                job_sequence_id: serverJob.jobSequenceId,
-                status: 'errored',
-                phase,
-              },
-            });
-            writer.write({ type: 'start-step' });
-            writer.write({ type: 'error', errorText: String(err) });
-            writer.write({ type: 'finish-step' });
-            writer.write({ type: 'finish' });
+      const uiStream = agentRes.toUIMessageStream({
+        generateMessageId: () => messageId,
+        messageMetadata: ({ part }) => {
+          if (part.type === 'start') {
+            return {
+              job_sequence_id: serverJob.jobSequenceId,
+              status: 'streaming',
+              phase,
+              workflow_run_id: workflowRunId,
+            };
           }
-        });
-      },
+          if (part.type === 'finish') {
+            return {
+              job_sequence_id: serverJob.jobSequenceId,
+              status: errorState.hasError ? 'errored' : 'completed',
+              phase,
+              rubric_modified: true,
+              workflow_run_id: workflowRunId,
+            };
+          }
+        },
+        onFinish: async ({ responseMessage }) => {
+          finalParts = responseMessage.parts;
+        },
+        onError(err): string {
+          errorState.hasError = true;
+          if (err instanceof Error) {
+            job.error(err.message);
+          }
+          return String(err);
+        },
+      });
+
+      await uiStream.pipeTo(sseStream.writable);
+
+      const totalUsage = await agentRes.totalUsage.then(
+        (usage) => usage,
+        () => ({ inputTokens: 0, outputTokens: 0 }),
+      );
+
+      job.info('Total usage: ' + JSON.stringify(totalUsage));
+
+      const finalStatus = errorState.hasError ? 'errored' : 'completed';
+
+      await finalizeAssistantMessage({
+        messageId,
+        status: finalStatus,
+        parts: finalParts,
+        modelId,
+        usage: {
+          inputTokens: totalUsage.inputTokens ?? 0,
+          outputTokens: totalUsage.outputTokens ?? 0,
+        },
+      });
+    };
+
+    const promise = serverJob.execute(async (job) => {
+      job.info(`AI grading chat request — phase: ${phase}, workflow: ${workflowRunId}`);
+
+      if (phase === 'generate') {
+        const { agent, messageRow, modelId } = await generateRubric(
+          agentContext,
+          job,
+          serverJob.jobSequenceId,
+          workflowRunId,
+        );
+
+        await runAgent(agent, messageRow.id, modelId, { prompt: 'Generate a new rubric.' }, job);
+
+        // Create a workflow at rubric_ready if one doesn't exist yet.
+        if (!workflowRunId) {
+          await startWorkflow({
+            type: 'ai_grading',
+            context: { assessment_question_id: assessment_question.id },
+            initialState: { step: 'rubric_ready', rubric_exists: true },
+            initialPhase: 'rubric_setup',
+          });
+        }
+      } else {
+        const persistedMessages = await selectAiGradingMessages(assessment_question.id);
+        job.info('Instruction: ' + userMessage);
+
+        const { agent, messageRow, modelId, messages } = await editRubric(
+          agentContext,
+          userMessage,
+          persistedMessages,
+          job,
+          serverJob.jobSequenceId,
+          workflowRunId,
+        );
+
+        await runAgent(agent, messageRow.id, modelId, { messages }, job);
+      }
     });
 
-    pipeUIMessageStreamToResponse({ response: res, stream });
+    // Don't await the promise — pipe the SSE stream to the response immediately.
+    void promise;
+
+    res.setHeader('Content-Type', 'text/event-stream');
+    res.setHeader('Cache-Control', 'no-cache');
+    res.setHeader('Connection', 'keep-alive');
+
+    const reader = sseStream.readable.getReader();
+    const pump = async () => {
+      while (true) {
+        const { done, value } = await reader.read();
+        if (done) break;
+        res.write(value);
+      }
+      res.end();
+    };
+    void pump();
   }),
 );
 

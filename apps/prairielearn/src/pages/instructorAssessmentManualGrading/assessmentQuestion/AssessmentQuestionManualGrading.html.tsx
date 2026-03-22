@@ -1,12 +1,12 @@
 import { useChat } from '@ai-sdk/react';
-import { QueryClient, useQueryClient } from '@tanstack/react-query';
-import { DefaultChatTransport, type UIMessage } from 'ai';
-import { useMemo, useRef, useState } from 'react';
+import { QueryClient, useMutation, useQueryClient } from '@tanstack/react-query';
+import { DefaultChatTransport, type ToolUIPart, type UIMessage } from 'ai';
+import { type ReactNode, useMemo, useRef, useState } from 'react';
 import { Alert, Button, Modal } from 'react-bootstrap';
 
+import { run } from '@prairielearn/run';
 import { NuqsAdapter } from '@prairielearn/ui';
 
-import { type ChatMessage, Messages } from '../../../components/ChatMessages.js';
 import type { AiGradingGeneralStats } from '../../../ee/lib/ai-grading/types.js';
 import type { PageContext } from '../../../lib/client/page-context.js';
 import type {
@@ -76,11 +76,160 @@ type RubricChatMessage = UIMessage<{
   rubric_modified?: boolean;
 }>;
 
-function partToChatContent(part: UIMessage['parts'][0]): string | null {
-  if (part.type === 'text') {
-    return part.text;
+// ---------------------------------------------------------------------------
+// Tool call rendering (adapted from AiQuestionGenerationChat.tsx)
+// ---------------------------------------------------------------------------
+
+function isToolPart(part: UIMessage['parts'][0]): part is ToolUIPart {
+  return part.type.startsWith('tool-');
+}
+
+function ToolCallStatus({
+  state,
+  statusText,
+}: {
+  state: Exclude<
+    ToolUIPart['state'],
+    'approval-requested' | 'approval-responded' | 'output-denied' | undefined
+  >;
+  statusText: ReactNode;
+}) {
+  const icon = run(() => {
+    switch (state) {
+      case 'input-streaming':
+      case 'input-available':
+        return (
+          <div className="spinner-border spinner-border-sm" role="status">
+            <span className="visually-hidden">Loading...</span>
+          </div>
+        );
+      case 'output-available':
+        return <i className="bi bi-check-lg text-success" aria-hidden="true" />;
+      case 'output-error':
+        return <i className="bi bi-x text-danger" aria-hidden="true" />;
+    }
+  });
+
+  return (
+    <div className="d-flex flex-row align-items-center gap-1 small text-muted">
+      {icon}
+      <span>{statusText}</span>
+    </div>
+  );
+}
+
+function getToolStatusText(
+  state: ToolUIPart['state'],
+  messages: { streaming: string; pending: string; done: string; error: string },
+): string {
+  switch (state) {
+    case 'input-streaming':
+      return messages.streaming;
+    case 'input-available':
+      return messages.pending;
+    case 'output-available':
+      return messages.done;
+    case 'output-error':
+      return messages.error;
+    default:
+      return messages.pending;
   }
-  return null;
+}
+
+const TOOL_STATUS_MESSAGES: Record<
+  string,
+  { streaming: string; pending: string; done: string; error: string }
+> = {
+  'tool-generateRubric': {
+    streaming: 'Generating rubric...',
+    pending: 'Generating rubric...',
+    done: 'Generated rubric',
+    error: 'Error generating rubric',
+  },
+  'tool-getRubric': {
+    streaming: 'Reading rubric...',
+    pending: 'Reading rubric...',
+    done: 'Read rubric',
+    error: 'Error reading rubric',
+  },
+  'tool-getRubricItem': {
+    streaming: 'Reading rubric item...',
+    pending: 'Reading rubric item...',
+    done: 'Read rubric item',
+    error: 'Error reading rubric item',
+  },
+  'tool-addRubricItem': {
+    streaming: 'Adding rubric item...',
+    pending: 'Adding rubric item...',
+    done: 'Added rubric item',
+    error: 'Error adding rubric item',
+  },
+  'tool-editRubricItem': {
+    streaming: 'Editing rubric item...',
+    pending: 'Editing rubric item...',
+    done: 'Edited rubric item',
+    error: 'Error editing rubric item',
+  },
+  'tool-deleteRubricItem': {
+    streaming: 'Deleting rubric item...',
+    pending: 'Deleting rubric item...',
+    done: 'Deleted rubric item',
+    error: 'Error deleting rubric item',
+  },
+  'tool-swapRubricItems': {
+    streaming: 'Swapping rubric items...',
+    pending: 'Swapping rubric items...',
+    done: 'Swapped rubric items',
+    error: 'Error swapping rubric items',
+  },
+  'tool-startAiGrading': {
+    streaming: 'Running AI grading...',
+    pending: 'Running AI grading...',
+    done: 'AI grading complete',
+    error: 'Error running AI grading',
+  },
+};
+
+function ToolCall({ part }: { part: ToolUIPart }) {
+  if (
+    part.state === 'approval-requested' ||
+    part.state === 'approval-responded' ||
+    part.state === 'output-denied'
+  ) {
+    return null;
+  }
+
+  const messages = TOOL_STATUS_MESSAGES[part.type] ?? {
+    streaming: 'Working...',
+    pending: 'Working...',
+    done: 'Done',
+    error: 'Error',
+  };
+
+  return <ToolCallStatus state={part.state} statusText={getToolStatusText(part.state, messages)} />;
+}
+
+function MessageParts({ parts }: { parts: UIMessage['parts'] }) {
+  return (
+    <>
+      {parts.map((part, index) => {
+        const key = `part-${index}`;
+        if (isToolPart(part)) {
+          return <ToolCall key={key} part={part} />;
+        } else if (part.type === 'text') {
+          if (!part.text) return null;
+          return (
+            <div key={key} style={{ whiteSpace: 'pre-wrap' }}>
+              {part.text}
+            </div>
+          );
+        } else if (part.type === 'step-start') {
+          return null;
+        }
+        return null;
+      })}
+    </>
+  );
 }
 
 function triggerOpenRubricEditor() {
@@ -114,11 +263,12 @@ function persistedMessagesToInitialMessages(
     .map((m) => ({
       id: m.id,
       role: m.role,
-      parts: m.parts.map((part: { type: string; text?: string }) => {
+      parts: m.parts.map((part: Record<string, unknown>) => {
         if (part.type === 'text') {
-          return { type: 'text' as const, text: part.text ?? '' };
+          return { type: 'text' as const, text: (part.text as string | undefined) ?? '' };
         }
-        return { type: 'text' as const, text: '' };
+        // Pass through tool parts and other part types as-is
+        return part as UIMessage['parts'][0];
       }),
       metadata: {
         job_sequence_id: m.job_sequence_id ?? undefined,
@@ -161,6 +311,9 @@ function AssessmentQuestionManualGradingInner({
   const [showAiGradingUnavailableModal, setShowAiGradingUnavailableModal] = useState(false);
   const [rubricDataState, setRubricDataState] = useState(initialRubricData);
   const [aiGradingStatsState, setAiGradingStatsState] = useState(aiGradingStats);
+  const [isGradingInProgress, setIsGradingInProgress] = useState(false);
+
+  const workflowActionMutation = useMutation(trpc.workflowAction.mutationOptions());
 
   const hasPersistedGenerateMessage = initialChatMessages.some(
     (m) => m.phase === 'generate' && m.role === 'assistant' && m.status === 'completed',
@@ -264,20 +417,6 @@ function AssessmentQuestionManualGradingInner({
     }
     return map;
   }, [messages]);
-
-  const chatMessages: ChatMessage[] = messages
-    .map((m) => {
-      return {
-        id: m.id,
-        role: m.role as 'user' | 'assistant',
-        content: m.parts
-          .map((part) => partToChatContent(part))
-          .filter((text): text is string => text != null)
-          .join('\n\n'),
-      };
-    })
-    .filter((message) => message.content.length > 0);
-  const displayedChatMessages = chatMessages;
 
   // AI grading is available only if the question uses manual grading.
   const isAiGradingAvailable = (assessmentQuestion.max_manual_points ?? 0) > 0;
@@ -422,37 +561,62 @@ function AssessmentQuestionManualGradingInner({
           )}
         </div>
         <div className="flex-grow-1 overflow-auto p-3">
-          <Messages
-            messages={displayedChatMessages}
-            renderAfterMessage={(message) => {
-              const jobSequenceId = jobSequenceByMessageId.get(message.id);
+          {messages.map((message) => {
+            const jobSequenceId = jobSequenceByMessageId.get(message.id);
 
-              if (message.role !== 'assistant') return null;
-
+            if (message.role === 'user') {
+              const textContent = message.parts
+                .filter((p): p is { type: 'text'; text: string } => p.type === 'text')
+                .map((p) => p.text)
+                .filter(Boolean)
+                .join('\n\n');
+              if (!textContent) return null;
               return (
-                <div className="mb-3">
-                  {jobSequenceId && (
-                    <a
-                      className="small"
-                      href={`${urlPrefix}/jobSequence/${jobSequenceId}`}
-                      target="_blank"
-                      rel="noreferrer"
-                    >
-                      View job logs
-                    </a>
-                  )}
+                <div key={message.id} className="d-flex flex-row-reverse mb-3">
+                  <div
+                    className="d-flex flex-column gap-2 p-3 rounded bg-secondary-subtle"
+                    style={{ maxWidth: '90%', whiteSpace: 'pre-wrap' }}
+                  >
+                    {textContent}
+                  </div>
                 </div>
               );
-            }}
-          />
-          {isGenerating && (
-            <div className="d-flex align-items-center gap-1 small text-muted">
-              <div className="spinner-border spinner-border-sm" role="status">
-                <span className="visually-hidden">Working...</span>
+            }
+
+            return (
+              <div key={message.id} className="d-flex flex-column gap-1 mb-3">
+                <MessageParts parts={message.parts} />
+                {jobSequenceId && (
+                  <a
+                    className="small"
+                    href={`${urlPrefix}/jobSequence/${jobSequenceId}`}
+                    target="_blank"
+                    rel="noreferrer"
+                  >
+                    View job logs
+                  </a>
+                )}
               </div>
-              Working...
-            </div>
-          )}
+            );
+          })}
+          {isGenerating &&
+            (() => {
+              // Hide the global "Working..." spinner when the last assistant message
+              // already has visible parts (tool call spinners or text).
+              const lastMsg = messages.at(-1);
+              const hasVisibleParts =
+                lastMsg?.role === 'assistant' &&
+                lastMsg.parts.some((p) => (p.type === 'text' && p.text) || isToolPart(p));
+              if (hasVisibleParts) return null;
+              return (
+                <div className="d-flex align-items-center gap-1 small text-muted">
+                  <div className="spinner-border spinner-border-sm" role="status">
+                    <span className="visually-hidden">Working...</span>
+                  </div>
+                  Working...
+                </div>
+              );
+            })()}
         </div>
         <div className="p-3 border-top">
           {!hasGeneratedRubric && (
@@ -473,9 +637,35 @@ function AssessmentQuestionManualGradingInner({
           )}
           {hasGeneratedRubric && (
             <div className="d-flex justify-content-end mb-2">
-              <button type="button" className="btn btn-outline-success btn-sm" onClick={() => {}}>
-                <i className="bi bi-play-fill me-1" />
-                Start AI grading
+              <button
+                type="button"
+                className="btn btn-outline-success btn-sm"
+                disabled={isGradingInProgress || workflowActionMutation.isPending}
+                onClick={() => {
+                  setIsGradingInProgress(true);
+                  workflowActionMutation.mutate(
+                    { action: 'proceed' },
+                    {
+                      onError: () => setIsGradingInProgress(false),
+                    },
+                  );
+                }}
+              >
+                {workflowActionMutation.isPending || isGradingInProgress ? (
+                  <>
+                    <span
+                      className="spinner-border spinner-border-sm me-1"
+                      role="status"
+                      aria-hidden="true"
+                    />
+                    Grading...
+                  </>
+                ) : (
+                  <>
+                    <i className="bi bi-play-fill me-1" />
+                    Start AI grading
+                  </>
+                )}
               </button>
             </div>
           )}

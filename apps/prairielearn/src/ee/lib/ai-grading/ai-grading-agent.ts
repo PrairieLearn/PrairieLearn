@@ -1,10 +1,23 @@
 import assert from 'node:assert';
 
 import { createOpenAI } from '@ai-sdk/openai';
-import { type LanguageModel, type ModelMessage, generateObject } from 'ai';
+import {
+  type InferUITools,
+  type LanguageModel,
+  type ModelMessage,
+  ToolLoopAgent,
+  type ToolSet,
+  type ToolUIPart,
+  type UIDataTypes,
+  type UIMessage,
+  generateObject,
+  stepCountIs,
+  tool,
+} from 'ai';
 import z from 'zod';
 
 import { execute, loadSqlEquiv, queryRow } from '@prairielearn/postgres';
+import { resumeWorkflow } from '@prairielearn/workflows';
 
 import { config } from '../../../lib/config.js';
 import {
@@ -18,6 +31,7 @@ import {
 import * as manualGrading from '../../../lib/manualGrading.js';
 import { buildQuestionUrls } from '../../../lib/question-render.js';
 import { getQuestionCourse } from '../../../lib/question-variant.js';
+import { selectAssessmentQuestionById } from '../../../models/assessment-question.js';
 import * as questionServers from '../../../question-servers/index.js';
 
 import type { AiGradingModelId } from './ai-grading-models.shared.js';
@@ -29,7 +43,7 @@ import {
 
 const sql = loadSqlEquiv(import.meta.url);
 
-const AGENTIC_AI_GRADING_MODEL: AiGradingModelId = 'gpt-5-mini-2025-08-07';
+const AGENTIC_AI_GRADING_MODEL: AiGradingModelId = 'gpt-5.4';
 
 // ---------------------------------------------------------------------------
 // Model
@@ -65,18 +79,101 @@ const RubricOutputSchema = z.object({
   max_extra_points: z.coerce.number(),
 });
 
-type RubricOutput = z.infer<typeof RubricOutputSchema>;
+// ---------------------------------------------------------------------------
+// Tool schemas (separated from execute so types can be inferred for the UI)
+// ---------------------------------------------------------------------------
 
-const EditRubricOutputSchema = z.object({
-  message: z
-    .string()
-    .describe(
-      'A conversational response to the instructor explaining what you did or answering their question.',
-    ),
-  updated_rubric: RubricOutputSchema.nullable().describe(
-    'The updated rubric if changes were made, or null if no rubric changes are needed (e.g. when answering a question).',
-  ),
-});
+const AI_GRADING_TOOLS = {
+  generateRubric: tool({
+    description:
+      'Generate a rubric from scratch by analyzing sample student submissions. This calls an inner LLM to produce the rubric and saves it to the database.',
+    inputSchema: z.object({}),
+    outputSchema: z.string(),
+  }),
+  getRubric: tool({
+    description:
+      'Get the full current rubric including all items. Each item includes a rubric_item_id (database ID) and a display_index (1-based position shown to users). Use rubric_item_id for other tool calls. Users may refer to items by display_index.',
+    inputSchema: z.object({}),
+    outputSchema: z.string(),
+  }),
+  getRubricItem: tool({
+    description: 'Get a specific rubric item by its database ID.',
+    inputSchema: z.object({
+      rubric_item_id: z.string().describe('The database ID of the rubric item'),
+    }),
+    outputSchema: z.string(),
+  }),
+  addRubricItem: tool({
+    description:
+      'Add a new rubric item to the rubric. Returns the updated rubric state after the addition.',
+    inputSchema: z.object({
+      points: z.number().describe('Points for this item (positive or negative)'),
+      description: z.string().max(100).describe('Short description (max 100 chars)'),
+      explanation: z.string().nullable().describe('Detailed explanation for students'),
+      grader_note: z.string().nullable().describe('Internal note for graders'),
+      always_show_to_students: z.boolean().describe('Whether to always show this item to students'),
+      position: z
+        .number()
+        .optional()
+        .describe('0-based position to insert at (default: end of list)'),
+    }),
+    outputSchema: z.string(),
+  }),
+  editRubricItem: tool({
+    description:
+      'Edit an existing rubric item. Only provided fields are changed. Returns the updated rubric state after the edit.',
+    inputSchema: z.object({
+      rubric_item_id: z.string().describe('The database ID of the rubric item to edit'),
+      points: z.number().optional().describe('New points value'),
+      description: z.string().max(100).optional().describe('New description (max 100 chars)'),
+      explanation: z.string().nullable().optional().describe('New explanation'),
+      grader_note: z.string().nullable().optional().describe('New grader note'),
+      always_show_to_students: z.boolean().optional(),
+    }),
+    outputSchema: z.string(),
+  }),
+  deleteRubricItem: tool({
+    description:
+      'Delete a rubric item by its database ID. Returns the updated rubric state after the deletion.',
+    inputSchema: z.object({
+      rubric_item_id: z.string().describe('The database ID of the rubric item to delete'),
+    }),
+    outputSchema: z.string(),
+  }),
+  swapRubricItems: tool({
+    description:
+      'Swap the positions of two rubric items. Returns the updated rubric state after the swap.',
+    inputSchema: z.object({
+      rubric_item_id_a: z.string().describe('Database ID of the first rubric item'),
+      rubric_item_id_b: z.string().describe('Database ID of the second rubric item'),
+    }),
+    outputSchema: z.string(),
+  }),
+  startAiGrading: tool({
+    description:
+      'Start AI grading of student submissions using the current rubric. This triggers the grading workflow.',
+    inputSchema: z.object({}),
+    outputSchema: z.string(),
+  }),
+} satisfies ToolSet;
+
+export type AiGradingUIMessageTools = InferUITools<typeof AI_GRADING_TOOLS>;
+
+export type AiGradingUIMessage = UIMessage<
+  AiGradingUIMessageMetadata,
+  UIDataTypes,
+  AiGradingUIMessageTools
+>;
+
+export type AiGradingToolUIPart = ToolUIPart<AiGradingUIMessageTools>;
+
+interface AiGradingUIMessageMetadata {
+  job_sequence_id?: string;
+  status?: 'streaming' | 'completed' | 'errored';
+  phase?: 'generate' | 'edit';
+  rubric_modified?: boolean;
+  workflow_run_id?: string | null;
+}
 
 // ---------------------------------------------------------------------------
 // System prompts
@@ -91,17 +188,29 @@ export const RUBRIC_GENERATION_SYSTEM_PROMPT = [
   'Create comprehensive rubric items that cover the key aspects of the assignment.',
 ].join(' ');
 
-export const RUBRIC_EDITING_SYSTEM_PROMPT = [
+const RUBRIC_GENERATION_AGENT_SYSTEM_PROMPT = [
+  'You are a rubric creation assistant for a course.',
+  'You have access to tools to generate and refine rubrics.',
+  'Start by calling the generateRubric tool to create an initial rubric from sample submissions.',
+  'After generation, you may optionally refine the rubric using surgical editing tools (addRubricItem, editRubricItem, deleteRubricItem, swapRubricItems).',
+  'Use getRubric to see the current state of the rubric at any time.',
+  'When referring to rubric items, use the rubric_item_id (database ID) from getRubric, not display indices.',
+  'Users may refer to items by their display number (1-based), so map those to the correct rubric_item_id.',
+  'After generating and optionally refining the rubric, summarize what was created.',
+].join(' ');
+
+const RUBRIC_EDITING_AGENT_SYSTEM_PROMPT = [
   'You are a lead teaching assistant for a course.',
-  'The instructor will provide you with the current rubric and may ask you to modify it or ask questions about it.',
-  'You have access to the full conversation history of all previous refinement requests.',
-  'If the instructor asks you to modify the rubric, follow the instructions carefully and provide the updated rubric in updated_rubric.',
-  'If the instructor asks a question or does not request changes, respond conversationally in the message field and set updated_rubric to null.',
-  'Maintain the overall structure unless explicitly told to change it.',
-  'Consider the context from previous conversations when making changes.',
+  'You help instructors modify rubrics using surgical editing tools.',
+  'IMPORTANT: You MUST always start by calling getRubric to see the current rubric state before making any changes.',
+  'Use addRubricItem, editRubricItem, deleteRubricItem, and swapRubricItems to make targeted changes.',
+  'When the user asks to change multiple items (e.g. "remove all explanations"), call editRubricItem for EACH affected item.',
+  'When referring to rubric items, use the rubric_item_id (database ID) from getRubric, not display indices.',
+  'Users may refer to items by their display number (1-based), so map those to the correct rubric_item_id.',
+  'If the user asks to start AI grading, call the startAiGrading tool.',
+  'Rubric items are binary: full credit or no credit. Account for nuances by creating separate items.',
   'Questions students received were programmatically generated and randomized. Avoid hardcoding randomized quantities and final solutions.',
-  'This rubric should work for any random variant of the question.',
-  'Rubric items cannot have partial credit: they are either fully awarded or not awarded at all.',
+  'After making changes, respond conversationally to explain what you did.',
 ].join(' ');
 
 // ---------------------------------------------------------------------------
@@ -128,16 +237,6 @@ interface RenderedSampleSubmission {
   submission_message: ModelMessage;
 }
 
-export interface GenerateRubricResult {
-  rubric: RubricOutput;
-  summary: string;
-}
-
-export interface EditRubricResult {
-  summary: string;
-  rubricModified: boolean;
-}
-
 // ---------------------------------------------------------------------------
 // Helpers
 // ---------------------------------------------------------------------------
@@ -147,6 +246,106 @@ function getTextFromParts(parts: AiGradingMessage['parts']): string {
     .map((part: { type: string; text?: string }) => (part.type === 'text' ? (part.text ?? '') : ''))
     .filter((text: string) => text.length > 0)
     .join(' ');
+}
+
+// ---------------------------------------------------------------------------
+// Rubric read helpers (used by tools)
+// ---------------------------------------------------------------------------
+
+async function getCurrentRubricItems(context: AiGradingAgentContext) {
+  // Re-fetch from DB to get the latest manual_rubric_id (it may have been
+  // set by a prior tool call like generateRubric within the same agent loop).
+  const freshAq = await selectAssessmentQuestionById(context.assessmentQuestion.id);
+  const rubricData = await manualGrading.selectRubricData({
+    assessment_question: freshAq,
+  });
+  return rubricData;
+}
+
+interface RubricItemForEdit {
+  id?: string;
+  order: number;
+  points: number;
+  description: string;
+  explanation: string | null;
+  grader_note: string | null;
+  always_show_to_students: boolean;
+}
+
+function rubricDataToItems(
+  rubricData: NonNullable<Awaited<ReturnType<typeof getCurrentRubricItems>>>,
+): RubricItemForEdit[] {
+  return rubricData.rubric_items.map((i) => ({
+    id: i.rubric_item.id,
+    order: i.rubric_item.number,
+    points: i.rubric_item.points,
+    description: i.rubric_item.description,
+    explanation: i.rubric_item.explanation,
+    grader_note: i.rubric_item.grader_note,
+    always_show_to_students: i.rubric_item.always_show_to_students,
+  }));
+}
+
+async function saveRubricItems(
+  context: AiGradingAgentContext,
+  rubricData: NonNullable<Awaited<ReturnType<typeof getCurrentRubricItems>>>,
+  items: RubricItemForEdit[],
+) {
+  await manualGrading.updateAssessmentQuestionRubric({
+    assessment: context.assessment,
+    assessment_question_id: context.assessmentQuestion.id,
+    use_rubric: true,
+    replace_auto_points: rubricData.rubric.replace_auto_points,
+    starting_points: rubricData.rubric.starting_points,
+    min_points: rubricData.rubric.min_points,
+    max_extra_points: rubricData.rubric.max_extra_points,
+    // Convert null explanation/grader_note to empty string so that the SQL
+    // COALESCE($explanation, explanation) actually clears the field instead of
+    // preserving the existing value.
+    rubric_items: items.map((item, idx) => ({
+      id: item.id,
+      order: idx,
+      points: item.points,
+      description: item.description,
+      explanation: item.explanation ?? '',
+      grader_note: item.grader_note ?? '',
+      always_show_to_students: item.always_show_to_students,
+    })),
+    tag_for_manual_grading: false,
+    grader_guidelines: rubricData.rubric.grader_guidelines,
+    authn_user_id: context.authnUserId,
+  });
+}
+
+/**
+ * Fetch the current rubric from DB and format it as a JSON string with
+ * display_index (1-based, in display order) for the LLM to consume.
+ */
+async function formatCurrentRubricState(context: AiGradingAgentContext): Promise<string> {
+  const rubricData = await getCurrentRubricItems(context);
+  if (!rubricData) {
+    return JSON.stringify({ error: 'No rubric exists.' });
+  }
+  const items = rubricData.rubric_items.map((i, idx) => ({
+    rubric_item_id: i.rubric_item.id,
+    display_index: idx + 1,
+    points: i.rubric_item.points,
+    description: i.rubric_item.description,
+    explanation: i.rubric_item.explanation,
+    grader_note: i.rubric_item.grader_note,
+    always_show_to_students: i.rubric_item.always_show_to_students,
+  }));
+  return JSON.stringify(
+    {
+      starting_points: rubricData.rubric.starting_points,
+      replace_auto_points: rubricData.rubric.replace_auto_points,
+      min_points: rubricData.rubric.min_points,
+      max_extra_points: rubricData.rubric.max_extra_points,
+      rubric_items: items,
+    },
+    null,
+    2,
+  );
 }
 
 // ---------------------------------------------------------------------------
@@ -242,7 +441,7 @@ async function getInitializationContext({
 // Message persistence helpers
 // ---------------------------------------------------------------------------
 
-async function insertUserMessage({
+export async function insertUserMessage({
   assessmentQuestionId,
   authnUserId,
   phase,
@@ -264,7 +463,7 @@ async function insertUserMessage({
   });
 }
 
-async function insertInitialAssistantMessage({
+export async function insertInitialAssistantMessage({
   assessmentQuestionId,
   jobSequenceId,
   phase,
@@ -290,7 +489,7 @@ async function insertInitialAssistantMessage({
   );
 }
 
-async function finalizeAssistantMessage({
+export async function finalizeAssistantMessage({
   messageId,
   status,
   parts,
@@ -299,7 +498,7 @@ async function finalizeAssistantMessage({
 }: {
   messageId: string;
   status: 'completed' | 'errored';
-  parts: { type: string; text: string }[];
+  parts: unknown[];
   modelId: string;
   usage: {
     inputTokens: number;
@@ -320,7 +519,381 @@ async function finalizeAssistantMessage({
 }
 
 // ---------------------------------------------------------------------------
-// Phase 1: Generate Rubric
+// ToolLoopAgent creation
+// ---------------------------------------------------------------------------
+
+/**
+ * Simple promise-based mutex to serialize rubric mutations.
+ * When the LLM issues parallel tool calls in a single step, each
+ * read-modify-write cycle must run sequentially to avoid lost updates.
+ */
+function createMutex() {
+  let chain = Promise.resolve();
+  return {
+    run<T>(fn: () => Promise<T>): Promise<T> {
+      const next = chain.then(fn, fn);
+      // Keep the chain going regardless of success/failure
+      chain = next.then(
+        () => {},
+        () => {},
+      );
+      return next;
+    },
+  };
+}
+
+function buildRubricToolsWithExecute({
+  context,
+  model,
+  workflowRunId,
+  job,
+}: {
+  context: AiGradingAgentContext;
+  model: LanguageModel;
+  workflowRunId: string | null;
+  job: JobLogger;
+}) {
+  const rubricMutex = createMutex();
+  return {
+    generateRubric: tool({
+      ...AI_GRADING_TOOLS.generateRubric,
+      execute: async () =>
+        rubricMutex.run(async () => {
+          job.info('Tool: generateRubric — gathering context and calling inner LLM');
+
+          const initContext = await getInitializationContext(context);
+
+          const messages: ModelMessage[] = [
+            { role: 'system', content: RUBRIC_GENERATION_SYSTEM_PROMPT },
+            { role: 'user', content: `Question HTML:\n${initContext.question_html}` },
+            { role: 'user', content: `Answer HTML:\n${initContext.answer_html}` },
+          ];
+
+          for (const sub of initContext.sample_submissions) {
+            messages.push(sub.submission_message);
+          }
+
+          if (initContext.current_rubric) {
+            messages.push({
+              role: 'user',
+              content: `The current rubric (if any) is:\n${JSON.stringify(initContext.current_rubric, null, 2)}`,
+            });
+          }
+
+          const result = await generateObject({
+            model,
+            schema: RubricOutputSchema,
+            messages,
+          });
+
+          job.info('Inner LLM generated rubric: ' + JSON.stringify(result.object, null, 2));
+
+          await manualGrading.updateAssessmentQuestionRubric({
+            assessment: context.assessment,
+            assessment_question_id: context.assessmentQuestion.id,
+            use_rubric: true,
+            replace_auto_points: result.object.replace_auto_points,
+            starting_points: result.object.starting_points,
+            min_points: result.object.min_points,
+            max_extra_points: result.object.max_extra_points,
+            rubric_items: result.object.rubric_items.map((item, idx) => ({
+              order: idx,
+              points: item.points,
+              description: item.description,
+              explanation: item.explanation,
+              grader_note: item.grader_note,
+              always_show_to_students: item.always_show_to_students,
+            })),
+            tag_for_manual_grading: false,
+            grader_guidelines: null,
+            authn_user_id: context.authnUserId,
+          });
+
+          const savedState = await formatCurrentRubricState(context);
+          job.info(`generateRubric — saved rubric state: ${savedState}`);
+          return savedState;
+        }),
+    }),
+
+    getRubric: tool({
+      ...AI_GRADING_TOOLS.getRubric,
+      execute: async () => {
+        const rubricState = await formatCurrentRubricState(context);
+        job.info(`Tool: getRubric — output: ${rubricState}`);
+        return rubricState;
+      },
+    }),
+
+    getRubricItem: tool({
+      ...AI_GRADING_TOOLS.getRubricItem,
+      execute: async ({ rubric_item_id }) => {
+        job.info(`Tool: getRubricItem — input: ${JSON.stringify({ rubric_item_id })}`);
+        const rubricData = await getCurrentRubricItems(context);
+        if (!rubricData) {
+          return JSON.stringify({ error: 'No rubric exists for this assessment question yet.' });
+        }
+        const item = rubricData.rubric_items.find((i) => i.rubric_item.id === rubric_item_id);
+        if (!item) {
+          return JSON.stringify({
+            error: `Rubric item with ID ${rubric_item_id} not found.`,
+          });
+        }
+        const idx = rubricData.rubric_items.indexOf(item);
+        const result = JSON.stringify(
+          {
+            rubric_item_id: item.rubric_item.id,
+            display_index: idx + 1,
+            points: item.rubric_item.points,
+            description: item.rubric_item.description,
+            explanation: item.rubric_item.explanation,
+            grader_note: item.rubric_item.grader_note,
+            always_show_to_students: item.rubric_item.always_show_to_students,
+          },
+          null,
+          2,
+        );
+        job.info(`Tool: getRubricItem — output: ${result}`);
+        return result;
+      },
+    }),
+
+    addRubricItem: tool({
+      ...AI_GRADING_TOOLS.addRubricItem,
+      execute: async (input) =>
+        rubricMutex.run(async () => {
+          const {
+            points,
+            description,
+            explanation,
+            grader_note,
+            always_show_to_students,
+            position,
+          } = input;
+          job.info(`Tool: addRubricItem — input: ${JSON.stringify(input)}`);
+          const rubricData = await getCurrentRubricItems(context);
+          if (!rubricData) {
+            return JSON.stringify({ error: 'No rubric exists. Generate one first.' });
+          }
+          const items = rubricDataToItems(rubricData);
+          job.info(`addRubricItem BEFORE: ${JSON.stringify(items)}`);
+
+          const newItem: RubricItemForEdit = {
+            order: 0,
+            points,
+            description,
+            explanation: explanation ?? '',
+            grader_note: grader_note ?? '',
+            always_show_to_students,
+          };
+
+          if (position != null && position >= 0 && position < items.length) {
+            items.splice(position, 0, newItem);
+          } else {
+            items.push(newItem);
+          }
+
+          job.info(`addRubricItem AFTER (before save): ${JSON.stringify(items)}`);
+          await saveRubricItems(context, rubricData, items);
+
+          const savedState = await formatCurrentRubricState(context);
+          job.info(`addRubricItem SAVED STATE: ${savedState}`);
+          return savedState;
+        }),
+    }),
+
+    editRubricItem: tool({
+      ...AI_GRADING_TOOLS.editRubricItem,
+      execute: async (input) =>
+        rubricMutex.run(async () => {
+          const {
+            rubric_item_id,
+            points,
+            description,
+            explanation,
+            grader_note,
+            always_show_to_students,
+          } = input;
+          job.info(`Tool: editRubricItem — input: ${JSON.stringify(input)}`);
+          const rubricData = await getCurrentRubricItems(context);
+          if (!rubricData) {
+            return JSON.stringify({ error: 'No rubric exists.' });
+          }
+          const items = rubricDataToItems(rubricData);
+          const item = items.find((i) => i.id === rubric_item_id);
+          if (!item) {
+            const availableIds = items.map((i) => i.id).join(', ');
+            job.error(
+              `editRubricItem: item ${rubric_item_id} not found. Available IDs: ${availableIds}`,
+            );
+            return JSON.stringify({
+              error: `Rubric item ${rubric_item_id} not found. Available IDs: ${availableIds}`,
+            });
+          }
+
+          job.info(`editRubricItem BEFORE: ${JSON.stringify(item)}`);
+
+          if (points !== undefined) item.points = points;
+          if (description !== undefined) item.description = description;
+          if (explanation !== undefined) item.explanation = explanation ?? '';
+          if (grader_note !== undefined) item.grader_note = grader_note ?? '';
+          if (always_show_to_students !== undefined) {
+            item.always_show_to_students = always_show_to_students;
+          }
+
+          job.info(`editRubricItem AFTER (before save): ${JSON.stringify(item)}`);
+          job.info(`editRubricItem ALL ITEMS (before save): ${JSON.stringify(items)}`);
+
+          await saveRubricItems(context, rubricData, items);
+
+          const savedState = await formatCurrentRubricState(context);
+          job.info(`editRubricItem SAVED STATE: ${savedState}`);
+          return savedState;
+        }),
+    }),
+
+    deleteRubricItem: tool({
+      ...AI_GRADING_TOOLS.deleteRubricItem,
+      execute: async (input) =>
+        rubricMutex.run(async () => {
+          const { rubric_item_id } = input;
+          job.info(`Tool: deleteRubricItem — input: ${JSON.stringify(input)}`);
+          const rubricData = await getCurrentRubricItems(context);
+          if (!rubricData) {
+            return JSON.stringify({ error: 'No rubric exists.' });
+          }
+          const items = rubricDataToItems(rubricData);
+          job.info(`deleteRubricItem BEFORE: ${JSON.stringify(items)}`);
+
+          const idx = items.findIndex((i) => i.id === rubric_item_id);
+          if (idx === -1) {
+            const availableIds = items.map((i) => i.id).join(', ');
+            job.error(
+              `deleteRubricItem: item ${rubric_item_id} not found. Available IDs: ${availableIds}`,
+            );
+            return JSON.stringify({
+              error: `Rubric item ${rubric_item_id} not found. Available IDs: ${availableIds}`,
+            });
+          }
+
+          items.splice(idx, 1);
+          job.info(`deleteRubricItem AFTER (before save): ${JSON.stringify(items)}`);
+
+          await saveRubricItems(context, rubricData, items);
+
+          const savedState = await formatCurrentRubricState(context);
+          job.info(`deleteRubricItem SAVED STATE: ${savedState}`);
+          return savedState;
+        }),
+    }),
+
+    swapRubricItems: tool({
+      ...AI_GRADING_TOOLS.swapRubricItems,
+      execute: async (input) =>
+        rubricMutex.run(async () => {
+          const { rubric_item_id_a, rubric_item_id_b } = input;
+          job.info(`Tool: swapRubricItems — input: ${JSON.stringify(input)}`);
+          const rubricData = await getCurrentRubricItems(context);
+          if (!rubricData) {
+            return JSON.stringify({ error: 'No rubric exists.' });
+          }
+          const items = rubricDataToItems(rubricData);
+          job.info(`swapRubricItems BEFORE: ${JSON.stringify(items)}`);
+
+          const idxA = items.findIndex((i) => i.id === rubric_item_id_a);
+          const idxB = items.findIndex((i) => i.id === rubric_item_id_b);
+          if (idxA === -1 || idxB === -1) {
+            const availableIds = items.map((i) => i.id).join(', ');
+            return JSON.stringify({
+              error: `One or both rubric items not found. Available IDs: ${availableIds}`,
+            });
+          }
+
+          [items[idxA], items[idxB]] = [items[idxB], items[idxA]];
+          job.info(`swapRubricItems AFTER (before save): ${JSON.stringify(items)}`);
+
+          await saveRubricItems(context, rubricData, items);
+
+          const savedState = await formatCurrentRubricState(context);
+          job.info(`swapRubricItems SAVED STATE: ${savedState}`);
+          return savedState;
+        }),
+    }),
+
+    startAiGrading: tool({
+      ...AI_GRADING_TOOLS.startAiGrading,
+      execute: async () => {
+        job.info('Tool: startAiGrading — moving workflow to grading state');
+        if (!workflowRunId) {
+          return 'Error: no active workflow found. Cannot start AI grading.';
+        }
+
+        await resumeWorkflow(workflowRunId, { action: 'start_grading_stub' });
+        await new Promise((resolve) => setTimeout(resolve, 5000));
+        await resumeWorkflow(workflowRunId, { action: 'grading_stub_complete' });
+
+        return 'AI grading has been started and completed.';
+      },
+    }),
+  };
+}
+
+export function createRubricAgent({
+  phase,
+  context,
+  model,
+  workflowRunId,
+  job,
+}: {
+  phase: 'generate' | 'edit';
+  context: AiGradingAgentContext;
+  model: LanguageModel;
+  workflowRunId: string | null;
+  job: JobLogger;
+}) {
+  const allTools = buildRubricToolsWithExecute({ context, model, workflowRunId, job });
+
+  const agent = new ToolLoopAgent({
+    model,
+    instructions:
+      phase === 'generate'
+        ? RUBRIC_GENERATION_AGENT_SYSTEM_PROMPT
+        : RUBRIC_EDITING_AGENT_SYSTEM_PROMPT,
+    stopWhen: [stepCountIs(15)],
+    prepareStep: async () => {
+      if (phase === 'generate') {
+        return {
+          activeTools: [
+            'generateRubric',
+            'getRubric',
+            'getRubricItem',
+            'addRubricItem',
+            'editRubricItem',
+            'deleteRubricItem',
+            'swapRubricItems',
+          ] as const,
+        };
+      } else {
+        return {
+          activeTools: [
+            'getRubric',
+            'getRubricItem',
+            'addRubricItem',
+            'editRubricItem',
+            'deleteRubricItem',
+            'swapRubricItems',
+            'startAiGrading',
+          ] as const,
+        };
+      }
+    },
+    tools: allTools,
+  });
+
+  return agent;
+}
+
+// ---------------------------------------------------------------------------
+// Public API — called by route handler
 // ---------------------------------------------------------------------------
 
 export async function generateRubric(
@@ -328,12 +901,11 @@ export async function generateRubric(
   job: JobLogger,
   jobSequenceId: string,
   workflowRunId?: string | null,
-): Promise<GenerateRubricResult> {
+) {
   if (!context.hasCourseInstancePermissionEdit) {
     throw new Error('Access denied (must be a student data editor)');
   }
 
-  // Persist the user message
   await insertUserMessage({
     assessmentQuestionId: context.assessmentQuestion.id,
     authnUserId: context.authnUserId,
@@ -344,7 +916,6 @@ export async function generateRubric(
 
   const { model, modelId } = getAgenticGradingModel();
 
-  // Insert the initial assistant message (streaming)
   const messageRow = await insertInitialAssistantMessage({
     assessmentQuestionId: context.assessmentQuestion.id,
     jobSequenceId,
@@ -353,100 +924,16 @@ export async function generateRubric(
     workflowRunId,
   });
 
-  try {
-    const initContext = await getInitializationContext(context);
+  const agent = createRubricAgent({
+    phase: 'generate',
+    context,
+    model,
+    workflowRunId: workflowRunId ?? null,
+    job,
+  });
 
-    const messages: ModelMessage[] = [
-      { role: 'system', content: RUBRIC_GENERATION_SYSTEM_PROMPT },
-      { role: 'user', content: `Question HTML:\n${initContext.question_html}` },
-      { role: 'user', content: `Answer HTML:\n${initContext.answer_html}` },
-    ];
-
-    // Add sample submissions as text
-    for (const sub of initContext.sample_submissions) {
-      messages.push(sub.submission_message);
-    }
-
-    // Add current rubric if one exists
-    if (initContext.current_rubric) {
-      messages.push({
-        role: 'user',
-        content: `The current rubric (if any) is:\n${JSON.stringify(initContext.current_rubric, null, 2)}`,
-      });
-    }
-
-    job.info('Phase: generate');
-    job.info('System prompt: ' + RUBRIC_GENERATION_SYSTEM_PROMPT);
-    job.info('Model messages: ' + JSON.stringify(messages, null, 2));
-
-    const result = await generateObject({
-      model,
-      schema: RubricOutputSchema,
-      messages,
-    });
-
-    job.info('Generated rubric: ' + JSON.stringify(result.object, null, 2));
-    job.info('Usage: ' + JSON.stringify(result.usage, null, 2));
-
-    // Save to DB
-    await manualGrading.updateAssessmentQuestionRubric({
-      assessment: context.assessment,
-      assessment_question_id: context.assessmentQuestion.id,
-      use_rubric: true,
-      replace_auto_points: result.object.replace_auto_points,
-      starting_points: result.object.starting_points,
-      min_points: result.object.min_points,
-      max_extra_points: result.object.max_extra_points,
-      rubric_items: result.object.rubric_items.map((item, idx) => ({
-        order: idx,
-        points: item.points,
-        description: item.description,
-        explanation: item.explanation,
-        grader_note: item.grader_note,
-        always_show_to_students: item.always_show_to_students,
-      })),
-      tag_for_manual_grading: false,
-      grader_guidelines: null,
-      authn_user_id: context.authnUserId,
-    });
-
-    const itemSummaries = result.object.rubric_items
-      .map((item) => `• ${item.description} (${item.points > 0 ? '+' : ''}${item.points} pts)`)
-      .join('\n');
-
-    const summary = `Generated a rubric with ${result.object.rubric_items.length} items:\n${itemSummaries}\n\nWould you like to make any changes to the rubric?`;
-
-    // Finalize the assistant message
-    await finalizeAssistantMessage({
-      messageId: messageRow.id,
-      status: 'completed',
-      parts: [{ type: 'text', text: summary }],
-      modelId,
-      usage: {
-        inputTokens: result.usage.inputTokens ?? 0,
-        outputTokens: result.usage.outputTokens ?? 0,
-      },
-    });
-
-    return {
-      rubric: result.object,
-      summary,
-    };
-  } catch (err) {
-    await finalizeAssistantMessage({
-      messageId: messageRow.id,
-      status: 'errored',
-      parts: [{ type: 'text', text: String(err) }],
-      modelId,
-      usage: { inputTokens: 0, outputTokens: 0 },
-    });
-    throw err;
-  }
+  return { agent, messageRow, modelId };
 }
-
-// ---------------------------------------------------------------------------
-// Phase 2: Edit Rubric
-// ---------------------------------------------------------------------------
 
 export async function editRubric(
   context: AiGradingAgentContext,
@@ -455,8 +942,7 @@ export async function editRubric(
   job: JobLogger,
   jobSequenceId: string,
   workflowRunId?: string | null,
-): Promise<EditRubricResult> {
-  // Persist the user message
+) {
   await insertUserMessage({
     assessmentQuestionId: context.assessmentQuestion.id,
     authnUserId: context.authnUserId,
@@ -467,7 +953,6 @@ export async function editRubric(
 
   const { model, modelId } = getAgenticGradingModel();
 
-  // Insert the initial assistant message (streaming)
   const messageRow = await insertInitialAssistantMessage({
     assessmentQuestionId: context.assessmentQuestion.id,
     jobSequenceId,
@@ -476,130 +961,47 @@ export async function editRubric(
     workflowRunId,
   });
 
-  try {
-    const currentRubricData = await manualGrading.selectRubricData({
-      assessment_question: context.assessmentQuestion,
-    });
-    if (!currentRubricData) {
-      throw new Error('No rubric exists for this assessment question.');
-    }
+  const agent = createRubricAgent({
+    phase: 'edit',
+    context,
+    model,
+    workflowRunId: workflowRunId ?? null,
+    job,
+  });
 
-    const currentRubricJson = {
-      rubric_items: currentRubricData.rubric_items.map((i) => ({
-        points: i.rubric_item.points,
-        description: i.rubric_item.description,
-        explanation: i.rubric_item.explanation,
-        grader_note: i.rubric_item.grader_note,
-        always_show_to_students: i.rubric_item.always_show_to_students,
-      })),
-      starting_points: currentRubricData.rubric.starting_points,
-      replace_auto_points: currentRubricData.rubric.replace_auto_points,
-      min_points: currentRubricData.rubric.min_points,
-      max_extra_points: currentRubricData.rubric.max_extra_points,
-    };
+  // Build conversation context messages for the agent
+  const messages: ModelMessage[] = [];
 
-    const messages: ModelMessage[] = [
-      { role: 'system', content: RUBRIC_EDITING_SYSTEM_PROMPT },
-      {
-        role: 'user',
-        content: `Here is the current rubric:\n\n${JSON.stringify(currentRubricJson, null, 2)}`,
-      },
-    ];
+  // Build conversation history from persisted edit-phase messages
+  const editMessages = persistedMessages.filter(
+    (m) => m.phase === 'edit' && m.status === 'completed' && m.include_in_context,
+  );
 
-    // Build conversation history from persisted edit-phase messages
-    const editMessages = persistedMessages.filter(
-      (m) => m.phase === 'edit' && m.status === 'completed' && m.include_in_context,
-    );
-
-    if (editMessages.length > 0) {
-      messages.push({
-        role: 'user',
-        content:
-          "The following are PAST exchanges between you and the instructor. Use this context to understand the instructor's preferences and maintain consistency.",
-      });
-
-      for (const entry of editMessages) {
-        messages.push({
-          role: entry.role,
-          content: getTextFromParts(entry.parts),
-        });
-      }
-
-      messages.push({
-        role: 'user',
-        content: '[END OF PAST CONVERSATION HISTORY]',
-      });
-    }
-
-    // Add current instruction
+  if (editMessages.length > 0) {
     messages.push({
       role: 'user',
-      content: `Please modify the rubric according to this instruction:\n\n${instruction}`,
+      content:
+        "The following are PAST exchanges between you and the instructor. Use this context to understand the instructor's preferences and maintain consistency.",
     });
 
-    job.info('Phase: edit');
-    job.info('System prompt: ' + RUBRIC_EDITING_SYSTEM_PROMPT);
-    job.info('Model messages: ' + JSON.stringify(messages, null, 2));
-
-    const result = await generateObject({
-      model,
-      schema: EditRubricOutputSchema,
-      messages,
-    });
-
-    job.info('Edit result: ' + JSON.stringify(result.object, null, 2));
-    job.info('Usage: ' + JSON.stringify(result.usage, null, 2));
-
-    const { message, updated_rubric } = result.object;
-
-    if (updated_rubric) {
-      // Save to DB directly (same as generateRubric)
-      await manualGrading.updateAssessmentQuestionRubric({
-        assessment: context.assessment,
-        assessment_question_id: context.assessmentQuestion.id,
-        use_rubric: true,
-        replace_auto_points: updated_rubric.replace_auto_points,
-        starting_points: updated_rubric.starting_points,
-        min_points: updated_rubric.min_points,
-        max_extra_points: updated_rubric.max_extra_points,
-        rubric_items: updated_rubric.rubric_items.map((item, idx) => ({
-          order: idx,
-          points: item.points,
-          description: item.description,
-          explanation: item.explanation,
-          grader_note: item.grader_note,
-          always_show_to_students: item.always_show_to_students,
-        })),
-        tag_for_manual_grading: false,
-        grader_guidelines: null,
-        authn_user_id: context.authnUserId,
+    for (const entry of editMessages) {
+      messages.push({
+        role: entry.role,
+        content: getTextFromParts(entry.parts),
       });
     }
 
-    // Finalize the assistant message
-    await finalizeAssistantMessage({
-      messageId: messageRow.id,
-      status: 'completed',
-      parts: [{ type: 'text', text: message }],
-      modelId,
-      usage: {
-        inputTokens: result.usage.inputTokens ?? 0,
-        outputTokens: result.usage.outputTokens ?? 0,
-      },
+    messages.push({
+      role: 'user',
+      content: '[END OF PAST CONVERSATION HISTORY]',
     });
-
-    return {
-      summary: message,
-      rubricModified: updated_rubric != null,
-    };
-  } catch (err) {
-    await finalizeAssistantMessage({
-      messageId: messageRow.id,
-      status: 'errored',
-      parts: [{ type: 'text', text: String(err) }],
-      modelId,
-      usage: { inputTokens: 0, outputTokens: 0 },
-    });
-    throw err;
   }
+
+  // Add current instruction
+  messages.push({
+    role: 'user',
+    content: instruction,
+  });
+
+  return { agent, messageRow, modelId, messages };
 }
