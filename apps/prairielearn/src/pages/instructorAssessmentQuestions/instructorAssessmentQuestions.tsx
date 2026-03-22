@@ -23,6 +23,7 @@ import { getPaths } from '../../lib/instructorFiles.js';
 import { formatJsonWithPrettier } from '../../lib/prettier.js';
 import { handleTrpcError } from '../../lib/trpc.js';
 import { getUrl } from '../../lib/url.js';
+import { selectZoneToolOverrides } from '../../models/assessment.js';
 import { resetVariantsForAssessmentQuestion } from '../../models/variant.js';
 import { ZoneAssessmentJsonSchema } from '../../schemas/infoAssessment.js';
 
@@ -77,6 +78,16 @@ router.get(
     // We use the database instead of the contents on disk as we want to consider the database as the 'source of truth'
     // for doing operations.
     const jsonZones = buildHierarchicalAssessment(res.locals.course, questionRows);
+
+    // Populate zone-level tool overrides from the assessment_tools table.
+    const zoneToolRows = await selectZoneToolOverrides({
+      assessment_id: res.locals.assessment.id,
+    });
+    for (const row of zoneToolRows) {
+      const zone = jsonZones[row.zone_number - 1];
+      zone.tools ??= {};
+      zone.tools[row.tool] = { enabled: row.enabled };
+    }
 
     const questionSharingEnabled = await features.enabledFromLocals('question-sharing', res.locals);
     const consumePublicQuestionsEnabled = await features.enabledFromLocals(

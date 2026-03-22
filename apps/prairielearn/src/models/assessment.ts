@@ -20,6 +20,7 @@ import {
   type AssessmentTool,
   AssessmentToolSchema,
 } from '../lib/db-types.js';
+import { EnumAssessmentToolSchema } from '../schemas/infoAssessment.js';
 
 const sql = loadSqlEquiv(import.meta.url);
 
@@ -119,6 +120,18 @@ export async function selectEnabledToolsForInstanceQuestion({
   );
   if (zone_id == null) return [];
   return selectEnabledAssessmentTools({ assessment_id, zone_id });
+}
+
+export async function selectZoneToolOverrides({ assessment_id }: { assessment_id: string }) {
+  return queryRows(
+    sql.select_zone_tool_overrides,
+    { assessment_id },
+    z.object({
+      zone_number: z.number(),
+      tool: EnumAssessmentToolSchema,
+      enabled: z.boolean(),
+    }),
+  );
 }
 
 export async function selectAssessments({
