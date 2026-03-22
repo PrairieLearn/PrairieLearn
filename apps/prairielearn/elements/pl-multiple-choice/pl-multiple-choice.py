@@ -531,6 +531,7 @@ def render(element_html: str, data: pl.QuestionData) -> str:
             }
 
             if should_display_badge and display_score:
+                assert score is not None
                 score_type, _ = pl.determine_score_params(score)
                 answer_html[score_type] = True
 
@@ -566,6 +567,7 @@ def render(element_html: str, data: pl.QuestionData) -> str:
 
         # Display the score badge if necessary
         if not hide_score_badge and display_score:
+            assert score is not None
             score_type, score_value = pl.determine_score_params(score)
             html_params[score_type] = score_value
 

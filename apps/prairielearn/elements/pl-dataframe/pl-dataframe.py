@@ -157,7 +157,7 @@ def render(element_html: str, data: pl.QuestionData) -> str:
             axis="index",
             # The Pandas type stubs removed this option, but it is still valid.
             # TODO: Remove after upgrading to Pandas 3.0, where this becomes the default.
-            copy=False,  # type: ignore
+            copy=False,
         )
         other = descriptors.style.map(lambda v: "font-weight: bold;")
         frame_style.set_table_styles([
@@ -171,7 +171,7 @@ def render(element_html: str, data: pl.QuestionData) -> str:
     if show_index:
         # Switch row indices to being 1-based if index is default. Ignore otherwise.
         if display_language is DisplayLanguage.R and using_default_index(frame):
-            frame_style.format_index(lambda x: x + 1)  # type: ignore
+            frame_style.format_index(lambda x: x + 1)
     else:
         frame_style.hide()
 

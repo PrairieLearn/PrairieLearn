@@ -27,7 +27,7 @@ def _suppress_panel_border() -> Iterator[None]:
             yield self.title
         renderable = self.renderable
         items = (
-            renderable.renderables  # type: ignore[union-attr]
+            renderable.renderables
             if hasattr(renderable, "renderables")
             else [renderable]
         )

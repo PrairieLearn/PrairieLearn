@@ -225,7 +225,7 @@ def to_json(
             # only numeric values (c.f. pandas-dev/pandas#46392)
             df_modified_names = v.copy()
 
-            if df_modified_names.columns.dtype in (np.float64, np.int64):  # type: ignore
+            if df_modified_names.columns.dtype in (np.float64, np.int64):
                 df_modified_names.columns = df_modified_names.columns.astype("string")
 
             # For version 2 storing a data frame, we use the table orientation alongside of
@@ -953,7 +953,8 @@ def latex_from_2darray(
     if A.ndim != 2:
         raise ValueError("input should be a 2D numpy array")
     lines = (
-        np.array2string(A, formatter=formatter)
+        np
+        .array2string(A, formatter=formatter)
         .replace("[", "")
         .replace("]", "")
         .splitlines()
